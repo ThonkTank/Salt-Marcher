@@ -328,13 +328,14 @@ Ziele:
 | Phase 3.3-3.3.1 | ✅ Abgeschlossen | Map POI Markers + Editor |
 | Phase 3.4.1 | ✅ Abgeschlossen | Dungeon Data Model |
 | Phase 3.4.2 | ✅ Abgeschlossen | Grid Renderer (Canvas) |
-| **Phase 3.4.3** | ⏳ **NÄCHSTER SCHRITT** | **Zoom/Pan/Click** |
-| Phase 3.4.4-5 | ⏳ Later | Token Management, FOW |
+| Phase 3.4.3 | ✅ Abgeschlossen | Navigation & Interactivity |
+| **Phase 3.4.4** | ⏳ **NÄCHSTER SCHRITT** | **Token Management** |
+| Phase 3.4.5 | ⏳ Optional | FOW, LOS |
 | Phase 4-6 | ⏳ Geplant | Events, Loot, Audio |
 
-**Aktueller Fokus:** Phase 3.4.3 (Interactive Features) ← **NÄCHSTER SCHRITT**
+**Aktueller Fokus:** Phase 3.4.4 (Token Management) ← **NÄCHSTER SCHRITT**
 
-**Test-Suite:** 267/269 grün (99.3% pass rate) ✅
+**Test-Suite:** 281/283 grün (99.3% pass rate) ✅ (+14 dungeon tests)
 
 ### Phase 0-1 – Foundation ✅
 - **Phase 0:** Tag-Taxonomie (`docs/TAGS.md`), Schema-Validatoren (`src/domain/schemas.ts`)
@@ -406,18 +407,18 @@ Ziele:
 
 ---
 
-#### Phase 3.4.3 - Navigation & Interactivity ⏳ NÄCHSTER SCHRITT
+#### Phase 3.4.3 - Navigation & Interactivity ✅ Abgeschlossen
 **Scope:** Zoom/Pan Controls und Click-to-Highlight für bessere Dungeon-Navigation
 
 **User Story:**
 > "Als GM will ich große Dungeons durch Zoom/Pan navigieren und Räume/Features anklicken können, damit ich während der Sitzung schnell Details anzeigen und den Fokus ändern kann."
 
 **Acceptance Criteria:**
-1. ⏳ Zoom/Pan Controls (Mausrad + Drag)
-2. ⏳ Click-to-highlight rooms (visuelles Feedback)
-3. ⏳ Hover tooltips für doors/features (zeige description)
-4. ⏳ Room detail panel (zeige room info on click)
-5. ⏳ Zoom-Level Indicator (z.B. "100%")
+1. ✅ Zoom/Pan Controls (Mausrad + Drag)
+2. ✅ Click-to-highlight rooms (visuelles Feedback)
+3. ✅ Hover tooltips für doors/features (zeige description)
+4. ✅ Room detail panel (zeige room info on click)
+5. ✅ Zoom-Level Indicator (z.B. "100%")
 
 **Implementation Plan:**
 
@@ -471,93 +472,35 @@ Ziele:
 ---
 
 #### Phase 3.4.4 - Token Management ⏳ Later
-**Scope:** Drag & Drop Token-Placement für Spieler/NPCs/Objekte
-- Token types: Player, NPC, Monster, Object
-- Drag & Drop from palette
-- Move tokens on grid
+- Drag & Drop Token-Placement (Player, NPC, Monster, Object)
 - Token state persistence
-
-**Estimated Time:** 4-5 hours
-
----
+- **Estimated:** 4-5 hours
 
 #### Phase 3.4.5 - Advanced Features ⏳ Optional
-**Scope:** Fog of War, Sound Radii, Line-of-Sight
-- FOW overlay (revealed/hidden cells)
-- Sound propagation visualization
-- LOS calculations
-
-**Estimated Time:** 4-6 hours (optional)
+- FOW overlay, Sound radius, LOS calculations
+- **Estimated:** 4-6 hours
 
 ---
 
-### Phase 2.5 – Faction Filtering ⏳ QoL
-Creature-Liste mit Faction-Filter-Dropdown, Relevance-Scoring (Exact > Partial > No match). Optional, da Random Generator bereits filtert.
+### Phase 4-6 – Zukünftige Phasen
 
-### Calculator & Loot Status ⚠️ Partial
-
-**XP Calculator (✅ Bereits in Phase 2.4 implementiert):**
-- ✅ Implementiert in `src/workmodes/encounter/presenter.ts:248-262`
-- ✅ D&D 5e CR-zu-XP Lookup Table (`xpByCr`)
-- ✅ Party XP Distribution (`deriveEncounterXpView`)
-- ✅ Modifier System (`EncounterXpRule` mit flat/percent/percentNextLevel/etc.)
-- ✅ Level Thresholds (`DND5E_XP_THRESHOLDS` in session-store.ts)
-- ✅ Unit-Tests: `xp-calculator.test.ts` ✅
-
-**Fehlende Infrastruktur (für Phase 5):**
-- ❌ Encounter-Preset Files (`SaltMarcher/EncounterPresets/*.md`) - Noch keine Markdown-Presets
-- ❌ Preset-Import/Export UI für Hausregeln
-- ❌ Loot Generator (`LootTemplateDocument` Schema existiert, keine Implementation)
-- ❌ Tag-basiertes Loot-Filtering (Terrain/Faction → passende Items)
-- ❌ Magic Item Level-Limits und Rarity-Distribution
-
-**Hinweis:** Phase 5 fokussiert auf **Loot & Preset Management**, nicht XP-Berechnung (bereits fertig).
-
-### Phase 3 – Orte & Dungeons ⏳ (Details siehe oben)
-Inkrementelle Slices: 3.1 (CRUD) → 3.2 (Hierarchy) → 3.3 (Map Integration) → 3.4 (Dungeons)
-
-### Phase 4 – Event Engine ⏳
-**Zielbild:** Kalender-Events mit Timeline/Inbox, Automations-Hooks für Reise/Fraktionen/Orte
-**Kickoff:** Trigger-Engine-Design, Wetter-Integration
-
-### Phase 5 – Calculator & Loot ⏳
-**Zielbild:** Modularer Calculator mit Regel-DSL, Loot-Pipeline (Gold/Items/Magie, Tag-Filter)
-**Kickoff:** Calculator-API entkoppeln, Loot-YAML-Format
-
-### Phase 6 – Audio & Release ⏳
-**Zielbild:** Audio-System (Playlists, Fade/Loop), UX-Finishing, Release-Doku
-**Kickoff:** Audio-Format definieren, Player-Prototyp
+- **Phase 4 – Event Engine:** Kalender-Events (Timeline/Inbox), Automations-Hooks, Wetter-Integration
+- **Phase 5 – Loot & Presets:** Loot-Generator (Tag-Filter), Calculator-Presets (Markdown-DSL), Magic Item Limits
+  - **Status XP Calculator:** ✅ Bereits in Phase 2.4 implementiert (xpByCr, EncounterXpRule, DND5E_XP_THRESHOLDS)
+- **Phase 6 – Audio & Release:** Audio-System (Playlists, Fade/Loop), UX-Finishing, Release-Doku
 
 ## 🧪 Test-Suite Status
 
-**Stats (Stand: 2025-10-29 - Post Phase 2.6):**
-- ✅ 222/224 Tests passing (99% pass rate)
-- 🎯 49→0 Failures (100% Reduktion seit Phase 1 Start!)
-- ⏭️ 2 Tests skipped (todo-governance, header-policy - nicht kritisch)
-- ⏱️ Test-Laufzeit: ~20s (schnell genug für TDD-Workflow)
+**Stats (Stand: 2025-10-29, nach Phase 3.4.3):**
+- ✅ 281/283 Tests passing (99.3% pass rate)
+- 🎯 49→0 Failures (100% Reduktion seit Phase 1 Start)
+- ⏭️ 2 Tests skipped (todo-governance, header-policy)
+- ⏱️ Test-Laufzeit: ~22s
+- ➕ +14 Dungeon Tests (GridRenderer: init, rendering, transforms, callbacks)
 
-**Test-Kategorien & Coverage:**
-- ✅ **Encounter Generator** (filterCreaturesByTags, calculateCreatureBudget, selectCreaturesForBudget) - 22 Tests ✨ NEW
-- ✅ **Almanac** (state-machine, calendar-repository, recurring events) - 12 Tests
-- ✅ **Cartographer** (editor mode, inspector mode, terrain brush) - 25 Tests
-- ✅ **Library** (view rendering, mode switching) - 18 Tests
-- ✅ **Domain** (creatures, spells, terrains, regions) - 45 Tests
-- ✅ **Integration** (encounter sync, travel tokens, XP calculator) - 32 Tests
-- ✅ **Store Architecture** (writable-store, persistent-store) - 28 Tests
-- ✅ **Encounter System** (presenter, XP calc, combat tracking) - 40 Tests
+**Key Kategorien:**
+- Encounter Generator (22), Almanac (12), Cartographer (25), Library (18), Dungeons (14)
+- Domain Logic (45), Integration (32), Store Architecture (28), Encounter (40)
+- **Coverage:** Core State ~90%, Domain ~85%, Encounter ~80%, Dungeons ~75%, UI ~40%
 
-**Coverage-Schätzung:**
-- Core State (Store API, Event-Bus): ~90%
-- Domain Logic (Creatures, XP Calc): ~85%
-- Encounter System (Presenter, Combat, Generator): ~80% ✨ verbessert
-- UI Components (View, Modal): ~40% (Mock-basiert)
-
-**Known Gaps:**
-- ❌ Kein E2E Testing (echtes Obsidian Plugin)
-- ❌ Performance-Tests für große Datensätze (>1000 Creatures)
-- ❌ Coverage-Reports (kein Tool konfiguriert)
-
-**Nächste Schritte:**
-1. Langfristig: E2E-Test-Suite mit echtem Obsidian-Plugin
-2. Coverage-Reports aktivieren (Istanbul/nyc)
-3. Performance-Tests für Stress-Szenarien (viele Creatures, große Karten)
+**Known Gaps:** E2E Testing, Performance-Tests (>1000 entities), Coverage-Reports
