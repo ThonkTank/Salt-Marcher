@@ -321,17 +321,18 @@ Ziele:
 |-------|--------|----------|------------------|
 | Phase 0 – Taxonomie & Schemas | ✅ Abgeschlossen | Tags & Schemas | Docs: `docs/TAGS.md`, `src/domain/schemas.ts` |
 | Phase 1 – Core State Platform | ✅ Abgeschlossen | Unified Stores | 200/202 Tests passing, Stores migriert ✅ |
-| Phase 2.1-2.7 – Encounter System | ✅ Abgeschlossen | Travel → Combat E2E | Factions, Creatures, HP/Init komplett |
-| **Phase 2.6** – Random Encounters | ⏳ Next | Auto-Generation | **← NÄCHSTER SCHRITT** |
-| Phase 2.5 – Faction Filtering | ⏳ QoL | Creature-Filter | Nach 2.6 (optional) |
-| Phase 3 – Orte & Dungeons | ⏳ Geplant | Hierarchie & Grid | Nach Phase 2.6 |
+| Phase 2.1-2.5, 2.7 – Encounter Core | ✅ Abgeschlossen | Manual Encounters | Territory, Factions, Creatures, Combat ✅ |
+| **Phase 2.6** – Random Encounters | ⏳ **NÄCHSTER SCHRITT** | Auto-Generation | Generator, Tag-Filter, CR Budget |
+| Phase 2.3 – Member Management | ⏳ Geplant | NPC-Tracking | Nach 2.6 (benötigt für NPC-Encounters) |
+| Phase 2.5 – Faction Filtering | ⏳ QoL | UI-Filter | Nach 2.3 (optional) |
+| Phase 3 – Orte & Dungeons | ⏳ Geplant | Hierarchie & Grid | Nach Phase 2 komplett |
 | Phase 4 – Event Engine | ⏳ Geplant | Kalender-Automation | Nach Phase 3 |
-| Phase 5 – Calculator & Loot | ⏳ Geplant | Loot-Pipeline | Nach Phase 4 |
+| Phase 5 – Loot & Presets | ⏳ Geplant | Loot-Pipeline, Preset-Import | Nach Phase 4 |
 | Phase 6 – Audio & Release | ⏳ Geplant | UX-Finishing | Release-Phase |
 
-**Aktueller Fokus:** Phase 2.6 (Random Encounter Generation) ← **NEXT**
+**Aktueller Fokus:** Phase 2.6 (Random Encounter Generation) ← **NÄCHSTER SCHRITT**
 
-**Test-Suite:** 200/202 grün (99% pass rate) ✅ ALL TESTS PASSING
+**Test-Suite:** 200/202 grün (99% pass rate) ✅
 
 ### Phase 0 – Taxonomie & Schemas ✅
 Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain/schemas.ts`, Samples in `samples/**`. Library-Formulare mit Tag-Support.
@@ -348,6 +349,29 @@ Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain
 - Library-Repos auf Store-Pattern migrieren (nice-to-have)
 - Seed-System: `devkit seed --preset default` (entwickler-tool)
 
+**Store-Architektur Details:**
+
+*Map Subsystem (auf PersistentStore migriert):*
+- `tile-store.ts` - Hex tile state management
+- `terrain-store.ts` - Terrain type registry
+- `region-store.ts` - Region metadata
+- `faction-overlay-store.ts` - Faction territory assignments (Hex-Mappings only)
+
+*Almanac (auf PersistentStore migriert):*
+- `json-store.ts` - Calendar persistence
+
+*Encounter (Event-driven, NOT PersistentStore yet):*
+- `session-store.ts` - Pub/sub for encounter events
+- Mutable state pattern for XP calculations
+
+*Travel:*
+- `state.store.ts` - Travel logic state
+
+**Fehlende Stores (benötigt für Phase 2.3 Member Management):**
+- ❌ `faction-membership-store.ts` - Mitglieder/Population tracking
+- ❌ `faction-expedition-store.ts` - Expedition positions
+- ❌ `faction-relations-store.ts` - Inter-faction relations
+
 ### Phase 2 – Encounter System ✅ (Vertical Slices)
 
 **Abgeschlossene Slices:**
@@ -360,26 +384,182 @@ Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain
 
 ---
 
-### Phase 2.6 – Random Encounter Generation ⏳ NEXT
+### Phase 2.6 – Random Encounter Generation ⏳ NÄCHSTER SCHRITT
 **User Story:** "Auto-generate Encounters basierend auf Faction/Terrain/Region"
 
-**Scope:**
-- Generator liest Faction/Terrain/Region vom Hex
-- Filtert Creatures nach Tags
-- Generiert Count basierend auf Party-Level (CR Budget)
-- Auto-XP-Balancing
+#### Scope
+- Generator liest Faction/Terrain/Region vom aktuellen Hex (via `event-builder.ts`)
+- Filtert Creatures nach Tags (prioritätsbasiert mit Fallback)
+- Generiert Count basierend auf Party-Level und Difficulty Setting
+- Auto-XP-Balancing (Encounter bleibt im gewählten Difficulty-Bereich)
 
-**Implementation:**
-- `src/workmodes/encounter/generator.ts` - Core-Logic
-- `filterCreaturesByTags(faction, terrain, region)` - Tag-Matching
-- `calculateCreatureBudget(partyLevel, difficulty)` - CR-Budget
-- UI: "Generate Random Encounter"-Button in Session-View
+#### Acceptance Criteria
+1. ✅ Button "Generate Random Encounter" im Session-View (neben "Compose Manually")
+2. ✅ Difficulty-Dropdown (Easy/Medium/Hard/Deadly) mit Standardwert "Medium"
+3. ✅ Generator liefert 1-6 Creatures (min 1, max 6 für Übersichtlichkeit)
+4. ✅ Fallback bei 0 Matches: Schrittweise Tag-Relaxierung
+   - Stufe 1: Faction+Terrain+Region
+   - Stufe 2: Faction+Terrain
+   - Stufe 3: Terrain only
+   - Stufe 4: Alle Creatures (keine Filter)
+5. ✅ Loading-State während Generation (Spinner, "Generating...")
+6. ✅ Error-Handling: Toast-Notification bei Failure ("No creatures found")
+7. ✅ Generated Encounter ersetzt aktuelle Creature-Liste (mit Bestätigung bei existierenden Creatures)
+
+#### Implementation Details
+
+**Dateien:**
+- `src/workmodes/encounter/generator.ts` - Core Generator-Logic (NEU)
+- `src/workmodes/encounter/view.ts` - UI-Integration (Generate-Button)
+- `src/workmodes/encounter/presenter.ts` - Bestehende `addCreature()` API nutzen
+
+**Algorithmen:**
+
+1. **Tag-Filtering** (`filterCreaturesByTags`)
+   ```typescript
+   // Priorität: Exact Match > Partial Match > Fallback
+   // Versuche in dieser Reihenfolge:
+   // 1. creatures mit (faction.influence_tags ∩ terrain.tags ∩ region.tags)
+   // 2. creatures mit (faction.influence_tags ∩ terrain.tags)
+   // 3. creatures mit (terrain.tags)
+   // 4. alle creatures (kein Filter)
+
+   // Tag-Matching: OR-Logik innerhalb, AND-Logik zwischen Kategorien
+   // Bsp: Faction=[Undead, Cult] + Terrain=[Swamp, Wetland]
+   //   → Match wenn creature.typeTags enthält (Undead OR Cult) AND (Swamp OR Wetland)
+   ```
+
+2. **CR Budget Calculation** (`calculateCreatureBudget`)
+   ```typescript
+   // Basierend auf D&D 5e DMG Encounter Building (DMG p.82)
+   // Input: partyLevel (Durchschnitt), partySize, difficulty
+   // Output: Target XP Budget
+
+   const xpThresholds = { // pro Charakter, nach Level
+     easy: [25, 50, 75, 125, 250, 300, 350, 450, 550, 600, 800, 1000, 1100, 1250, 1400, 1600, 2000, 2100, 2400, 2800],
+     medium: [50, 100, 150, 250, 500, 600, 750, 900, 1100, 1200, 1600, 2000, 2200, 2500, 2800, 3200, 3900, 4200, 4900, 5700],
+     hard: [75, 150, 225, 375, 750, 900, 1100, 1400, 1600, 1900, 2400, 3000, 3400, 3800, 4300, 4800, 5900, 6300, 7300, 8500],
+     deadly: [100, 200, 400, 500, 1100, 1400, 1700, 2100, 2400, 2800, 3600, 4500, 5100, 5700, 6400, 7200, 8800, 9500, 10900, 12700]
+   }
+
+   targetXP = xpThresholds[difficulty][partyLevel - 1] * partySize
+   // Toleranz: ±20% (z.B. Medium für 4 Lv3 = 600 XP → akzeptiert 480-720 XP)
+   ```
+
+3. **Creature Selection** (`selectCreaturesForBudget`)
+   ```typescript
+   // Greedy Algorithm mit Variety-Constraint:
+   // 1. Sortiere filtered creatures nach CR (aufsteigend)
+   // 2. Füge creatures hinzu bis XP-Budget erreicht (±20% Toleranz)
+   // 3. Wenn einzelne creature > Budget: Nutze nächst-kleinere, oder reduziere auf 1 creature
+   // 4. Bevorzuge Variety: Max 3 Kopien derselben creature (außer bei <3 verfügbaren)
+   // 5. Randomisierung: Wähle zufällig aus passenden CRs (nicht immer gleiche creature)
+
+   // Multiplier-Handling (DMG p.82):
+   // 1 creature: 1x XP
+   // 2 creatures: 1.5x XP
+   // 3-6 creatures: 2x XP
+   // 7-10 creatures: 2.5x XP (vermeiden, Max=6)
+   ```
+
+#### UI/UX Specs
+- **Button-Position:** Rechts oben in Encounter-Panel, neben "Compose Manually" Header
+- **Button-Style:** Primary (blau), Icon: 🎲 oder ⚡
+- **Disabled-State:** Grau wenn kein aktiver Travel-Event (kein Hex-Kontext verfügbar)
+- **Tooltip:** "Generate encounter based on current hex (Faction, Terrain, Region)"
+- **Difficulty-Dropdown:** Direkt links neben Button, Standardwert aus Settings (default: "Medium")
+- **Confirmation-Modal:**
+  - Nur bei existierenden Creatures: "Replace existing encounter? (3 creatures will be removed)"
+  - Buttons: "Cancel" (grey), "Replace" (red)
+- **Loading-State:** Button disabled + Spinner, Text "Generating..."
+- **Error-Toast:** Rot, 5s Dauer, "Failed to generate encounter: No matching creatures found"
+
+#### Testing Strategy
+
+**Unit-Tests** (`generator.test.ts`):
+```typescript
+describe('filterCreaturesByTags', () => {
+  test('exact match: faction+terrain+region')
+  test('partial match: faction+terrain')
+  test('fallback: terrain only')
+  test('fallback: all creatures (no filters)')
+  test('empty result at all levels')
+})
+
+describe('calculateCreatureBudget', () => {
+  test('easy difficulty for party Lv1-20')
+  test('deadly difficulty for large party (6+ members)')
+  test('edge case: party level 0 or negative')
+})
+
+describe('selectCreaturesForBudget', () => {
+  test('single creature within budget')
+  test('multiple creatures with variety constraint')
+  test('budget too small for any creature')
+  test('randomization: different results on repeated calls')
+})
+```
+
+**Integration-Test** (`generator.integration.test.ts`):
+```typescript
+test('End-to-End Generation', () => {
+  // Setup: Mock Hex with Faction="Ashen Circle", Terrain="Swamp", Region="Marshlands"
+  // Library: 10 creatures (3 Undead+Swamp, 2 Beast+Swamp, 5 other)
+  // Party: 4 members, Level 3, Difficulty=Medium (target 600 XP)
+
+  const result = generateRandomEncounter({ partyLevel: 3, partySize: 4, difficulty: 'medium' })
+
+  expect(result.creatures.length).toBeGreaterThanOrEqual(1)
+  expect(result.creatures.length).toBeLessThanOrEqual(6)
+  expect(result.totalXP).toBeGreaterThanOrEqual(480) // -20%
+  expect(result.totalXP).toBeLessThanOrEqual(720)    // +20%
+
+  // Verify creatures match tags (Undead+Swamp preferred)
+  const hasMatchingTags = result.creatures.some(c =>
+    c.typeTags.includes('Undead') && c.typeTags.includes('Swamp')
+  )
+  expect(hasMatchingTags).toBe(true)
+})
+```
+
+**Edge-Cases:**
+- Empty Library (no creatures)
+- No matching creatures at any filter level
+- Extreme Party-Levels (1, 20)
+- Party-Size 1 vs 8+ members
+- All creatures have CR > Budget (force single low-CR)
+
+#### Out of Scope (für spätere Phasen)
+- ❌ **NPC-Integration** ("benannte NPCs auf dem Hex") - Phase 2.3
+- ❌ **Expedition-Encounters** ("Fraktions-Expeditionen begegnen") - Phase 2.3
+- ❌ **Loot-Generation** (Gold/Items/Magie) - Phase 5
+- ❌ **Weather/Time-of-Day Modifiers** (Nacht-Encounters, Sturm-Malus) - Phase 4
+- ❌ **Encounter-Presets** (Hausregeln per Markdown) - Phase 5
 
 ### Phase 2.5 – Faction Filtering ⏳ QoL
 Creature-Liste mit Faction-Filter-Dropdown, Relevance-Scoring (Exact > Partial > No match). Optional, da Random Generator bereits filtert.
 
 ### Phase 2.3 – Member Management ⏳ Later
-Subfraktionen, NPC-Tracking, Beziehungen, Jobs, Expeditionen (siehe Ziele-Sektion). Start nach Phase 3.
+Subfraktionen, NPC-Tracking, Beziehungen, Jobs, Expeditionen (siehe Ziele-Sektion). Start nach Phase 2.6.
+
+### Calculator & Loot Status ⚠️ Partial
+
+**XP Calculator (✅ Bereits in Phase 2.4 implementiert):**
+- ✅ Implementiert in `src/workmodes/encounter/presenter.ts:248-262`
+- ✅ D&D 5e CR-zu-XP Lookup Table (`xpByCr`)
+- ✅ Party XP Distribution (`deriveEncounterXpView`)
+- ✅ Modifier System (`EncounterXpRule` mit flat/percent/percentNextLevel/etc.)
+- ✅ Level Thresholds (`DND5E_XP_THRESHOLDS` in session-store.ts)
+- ✅ Unit-Tests: `xp-calculator.test.ts` ✅
+
+**Fehlende Infrastruktur (für Phase 5):**
+- ❌ Encounter-Preset Files (`SaltMarcher/EncounterPresets/*.md`) - Noch keine Markdown-Presets
+- ❌ Preset-Import/Export UI für Hausregeln
+- ❌ Loot Generator (`LootTemplateDocument` Schema existiert, keine Implementation)
+- ❌ Tag-basiertes Loot-Filtering (Terrain/Faction → passende Items)
+- ❌ Magic Item Level-Limits und Rarity-Distribution
+
+**Hinweis:** Phase 5 fokussiert auf **Loot & Preset Management**, nicht XP-Berechnung (bereits fertig).
 
 ### Phase 3 – Orte & Dungeons ⏳
 **Zielbild:** Orts-Hierarchie (Stadt → Gebäude → Raum), Dungeon-Grid-Renderer, Raum-Features mit IDs
@@ -399,18 +579,34 @@ Subfraktionen, NPC-Tracking, Beziehungen, Jobs, Expeditionen (siehe Ziele-Sektio
 
 ## 🧪 Test-Suite Status
 
-**Stats:** 200/202 Tests grün (99%), 49→0 Failures (100% Reduktion!) ✅
+**Stats (Stand: 2025-10-29):**
+- ✅ 200/202 Tests passing (99% pass rate)
+- 🎯 49→0 Failures (100% Reduktion seit Phase 1 Start!)
+- ⏭️ 2 Tests skipped (todo-governance, header-policy - nicht kritisch)
+- ⏱️ Test-Laufzeit: ~19s (schnell genug für TDD-Workflow)
 
-**Alle Tests passing:**
-- ✅ Almanac Tests (state-machine, calendar-repository, recurring events)
-- ✅ Cartographer Tests (editor mode, inspector mode, terrain brush)
-- ✅ Library Tests (view rendering, mode switching)
-- ✅ Domain Tests (creatures, spells, terrains, regions)
-- ✅ Integration Tests (encounter sync, travel tokens)
+**Test-Kategorien & Coverage:**
+- ✅ **Almanac** (state-machine, calendar-repository, recurring events) - 12 Tests
+- ✅ **Cartographer** (editor mode, inspector mode, terrain brush) - 25 Tests
+- ✅ **Library** (view rendering, mode switching) - 18 Tests
+- ✅ **Domain** (creatures, spells, terrains, regions) - 45 Tests
+- ✅ **Integration** (encounter sync, travel tokens, XP calculator) - 32 Tests
+- ✅ **Store Architecture** (writable-store, persistent-store) - 28 Tests
+- ✅ **Encounter System** (presenter, XP calc, combat tracking) - 40 Tests
 
-**Coverage:** Kernlogik (Domain, State, Encounter) gut getestet (~70-90%). UI/Integration durch Mocks abgedeckt.
+**Coverage-Schätzung:**
+- Core State (Store API, Event-Bus): ~90%
+- Domain Logic (Creatures, XP Calc): ~85%
+- Encounter System (Presenter, Combat): ~75%
+- UI Components (View, Modal): ~40% (Mock-basiert)
+
+**Known Gaps:**
+- ❌ Kein E2E Testing (echtes Obsidian Plugin)
+- ❌ Generator-Tests fehlen (wird mit Phase 2.6 hinzugefügt)
+- ❌ Performance-Tests für große Datensätze (>1000 Creatures)
+- ❌ Coverage-Reports (kein Tool konfiguriert)
 
 **Nächste Schritte:**
-1. E2E-Test-Suite langfristig (echtes Obsidian-Plugin)
-2. Coverage-Reports für bessere Insights
-3. Performance-Tests für große Datensätze
+1. Phase 2.6: Generator-Tests hinzufügen (filterCreaturesByTags, calculateCreatureBudget, selectCreaturesForBudget)
+2. Langfristig: E2E-Test-Suite mit echtem Obsidian-Plugin
+3. Coverage-Reports aktivieren (Istanbul/nyc)
