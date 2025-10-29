@@ -597,15 +597,123 @@ export class DungeonView extends ItemView {
     }
 
     /**
-     * Update token detail view (placeholder for Step 4.2)
+     * Update token detail view
      */
     private updateTokenDetail(token: DungeonToken | null): void {
-        // TODO: Implement token detail panel in Step 4.2
-        if (token) {
-            logger.info("[dungeon-view] Token selected", { token });
-        } else {
-            logger.info("[dungeon-view] Token deselected");
+        if (!this.detailPanel) return;
+
+        if (!token) {
+            // Hide panel
+            this.detailPanel.style.display = "none";
+            return;
         }
+
+        // Clear panel
+        this.detailPanel.empty();
+
+        // Create close button
+        const header = this.detailPanel.createDiv({ cls: "sm-dungeon-detail-header" });
+        header.style.display = "flex";
+        header.style.justifyContent = "space-between";
+        header.style.alignItems = "center";
+        header.style.marginBottom = "16px";
+
+        const closeBtn = header.createEl("button", { text: "✕", cls: "sm-dungeon-detail-close" });
+        closeBtn.style.background = "none";
+        closeBtn.style.border = "none";
+        closeBtn.style.fontSize = "20px";
+        closeBtn.style.cursor = "pointer";
+        closeBtn.style.padding = "0";
+        closeBtn.style.marginLeft = "auto";
+        closeBtn.addEventListener("click", () => {
+            this.detailPanel!.style.display = "none";
+            // Clear selection in renderer
+            if (this.renderer && this.dungeon && isDungeonLocation(this.dungeon)) {
+                this.renderer.render(this.dungeon);
+            }
+        });
+
+        // Token type emoji
+        const typeEmoji = token.type === "player" ? "🧙" : token.type === "npc" ? "🙂" : token.type === "monster" ? "👹" : "📦";
+
+        // Token title
+        const title = this.detailPanel.createEl("h3", { text: `${typeEmoji} ${token.label}` });
+        title.style.marginTop = "0";
+        title.style.marginBottom = "8px";
+
+        // Token type
+        const typeLabel = this.detailPanel.createEl("h4", { text: token.type.charAt(0).toUpperCase() + token.type.slice(1) });
+        typeLabel.style.marginTop = "0";
+        typeLabel.style.marginBottom = "16px";
+        typeLabel.style.color = "var(--text-muted)";
+
+        // Position
+        const position = this.detailPanel.createEl("p");
+        position.style.fontSize = "12px";
+        position.style.color = "var(--text-muted)";
+        position.style.marginBottom = "8px";
+        position.textContent = `Position: (${token.position.x}, ${token.position.y})`;
+
+        // Color preview
+        if (token.color) {
+            const colorContainer = this.detailPanel.createDiv();
+            colorContainer.style.fontSize = "12px";
+            colorContainer.style.color = "var(--text-muted)";
+            colorContainer.style.marginBottom = "8px";
+            colorContainer.style.display = "flex";
+            colorContainer.style.alignItems = "center";
+
+            const colorLabel = colorContainer.createSpan({ text: "Color: " });
+            const colorSwatch = colorContainer.createEl("span");
+            colorSwatch.style.display = "inline-block";
+            colorSwatch.style.width = "20px";
+            colorSwatch.style.height = "20px";
+            colorSwatch.style.borderRadius = "50%";
+            colorSwatch.style.border = "1px solid var(--background-modifier-border)";
+            colorSwatch.style.marginLeft = "8px";
+            colorSwatch.style.backgroundColor = token.color;
+        }
+
+        // Size
+        if (token.size && token.size !== 1.0) {
+            const size = this.detailPanel.createEl("p");
+            size.style.fontSize = "12px";
+            size.style.color = "var(--text-muted)";
+            size.style.marginBottom = "16px";
+            size.textContent = `Size: ${token.size}x`;
+        }
+
+        // Action buttons
+        const actionsContainer = this.detailPanel.createDiv({ cls: "sm-token-actions" });
+        actionsContainer.style.marginTop = "24px";
+        actionsContainer.style.display = "flex";
+        actionsContainer.style.gap = "8px";
+
+        // Delete button
+        const deleteBtn = actionsContainer.createEl("button", { text: "🗑️ Delete", cls: "sm-dungeon-control" });
+        deleteBtn.style.flex = "1";
+        deleteBtn.addEventListener("click", () => {
+            this.deleteToken(token.id);
+        });
+
+        // Edit button (placeholder for Step 4.4)
+        const editBtn = actionsContainer.createEl("button", { text: "✏️ Edit", cls: "sm-dungeon-control" });
+        editBtn.style.flex = "1";
+        editBtn.addEventListener("click", () => {
+            // TODO: Implement in Step 4.4
+            logger.info("[dungeon-view] Edit token (not yet implemented)", { token });
+        });
+
+        // Show panel
+        this.detailPanel.style.display = "block";
+    }
+
+    /**
+     * Delete a token by ID (placeholder for Step 4.3)
+     */
+    private deleteToken(tokenId: string): void {
+        // TODO: Implement in Step 4.3
+        logger.info("[dungeon-view] Delete token (not yet implemented)", { tokenId });
     }
 
     /**

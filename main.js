@@ -93846,14 +93846,91 @@ ${body}`;
     }
   }
   /**
-   * Update token detail view (placeholder for Step 4.2)
+   * Update token detail view
    */
   updateTokenDetail(token) {
-    if (token) {
-      logger2.info("[dungeon-view] Token selected", { token });
-    } else {
-      logger2.info("[dungeon-view] Token deselected");
+    if (!this.detailPanel) return;
+    if (!token) {
+      this.detailPanel.style.display = "none";
+      return;
     }
+    this.detailPanel.empty();
+    const header = this.detailPanel.createDiv({ cls: "sm-dungeon-detail-header" });
+    header.style.display = "flex";
+    header.style.justifyContent = "space-between";
+    header.style.alignItems = "center";
+    header.style.marginBottom = "16px";
+    const closeBtn = header.createEl("button", { text: "\u2715", cls: "sm-dungeon-detail-close" });
+    closeBtn.style.background = "none";
+    closeBtn.style.border = "none";
+    closeBtn.style.fontSize = "20px";
+    closeBtn.style.cursor = "pointer";
+    closeBtn.style.padding = "0";
+    closeBtn.style.marginLeft = "auto";
+    closeBtn.addEventListener("click", () => {
+      this.detailPanel.style.display = "none";
+      if (this.renderer && this.dungeon && isDungeonLocation(this.dungeon)) {
+        this.renderer.render(this.dungeon);
+      }
+    });
+    const typeEmoji = token.type === "player" ? "\u{1F9D9}" : token.type === "npc" ? "\u{1F642}" : token.type === "monster" ? "\u{1F479}" : "\u{1F4E6}";
+    const title = this.detailPanel.createEl("h3", { text: `${typeEmoji} ${token.label}` });
+    title.style.marginTop = "0";
+    title.style.marginBottom = "8px";
+    const typeLabel = this.detailPanel.createEl("h4", { text: token.type.charAt(0).toUpperCase() + token.type.slice(1) });
+    typeLabel.style.marginTop = "0";
+    typeLabel.style.marginBottom = "16px";
+    typeLabel.style.color = "var(--text-muted)";
+    const position = this.detailPanel.createEl("p");
+    position.style.fontSize = "12px";
+    position.style.color = "var(--text-muted)";
+    position.style.marginBottom = "8px";
+    position.textContent = `Position: (${token.position.x}, ${token.position.y})`;
+    if (token.color) {
+      const colorContainer = this.detailPanel.createDiv();
+      colorContainer.style.fontSize = "12px";
+      colorContainer.style.color = "var(--text-muted)";
+      colorContainer.style.marginBottom = "8px";
+      colorContainer.style.display = "flex";
+      colorContainer.style.alignItems = "center";
+      const colorLabel = colorContainer.createSpan({ text: "Color: " });
+      const colorSwatch = colorContainer.createEl("span");
+      colorSwatch.style.display = "inline-block";
+      colorSwatch.style.width = "20px";
+      colorSwatch.style.height = "20px";
+      colorSwatch.style.borderRadius = "50%";
+      colorSwatch.style.border = "1px solid var(--background-modifier-border)";
+      colorSwatch.style.marginLeft = "8px";
+      colorSwatch.style.backgroundColor = token.color;
+    }
+    if (token.size && token.size !== 1) {
+      const size = this.detailPanel.createEl("p");
+      size.style.fontSize = "12px";
+      size.style.color = "var(--text-muted)";
+      size.style.marginBottom = "16px";
+      size.textContent = `Size: ${token.size}x`;
+    }
+    const actionsContainer = this.detailPanel.createDiv({ cls: "sm-token-actions" });
+    actionsContainer.style.marginTop = "24px";
+    actionsContainer.style.display = "flex";
+    actionsContainer.style.gap = "8px";
+    const deleteBtn = actionsContainer.createEl("button", { text: "\u{1F5D1}\uFE0F Delete", cls: "sm-dungeon-control" });
+    deleteBtn.style.flex = "1";
+    deleteBtn.addEventListener("click", () => {
+      this.deleteToken(token.id);
+    });
+    const editBtn = actionsContainer.createEl("button", { text: "\u270F\uFE0F Edit", cls: "sm-dungeon-control" });
+    editBtn.style.flex = "1";
+    editBtn.addEventListener("click", () => {
+      logger2.info("[dungeon-view] Edit token (not yet implemented)", { token });
+    });
+    this.detailPanel.style.display = "block";
+  }
+  /**
+   * Delete a token by ID (placeholder for Step 4.3)
+   */
+  deleteToken(tokenId) {
+    logger2.info("[dungeon-view] Delete token (not yet implemented)", { tokenId });
   }
   /**
    * Place a token at the specified grid coordinates
