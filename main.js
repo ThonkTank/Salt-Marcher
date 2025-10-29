@@ -88922,7 +88922,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian41.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian42.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -88935,7 +88935,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian41.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian42.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -88953,7 +88953,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian41.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian42.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -88969,7 +88969,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian41.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian42.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -88995,19 +88995,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian41.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian42.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger2.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger2.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian41.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian42.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger2.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger2.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian41.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian42.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -89019,7 +89019,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian41.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian42.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -89036,7 +89036,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian41.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian42.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -89126,11 +89126,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, all`);
   }
 }
-var import_obsidian41, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
+var import_obsidian42, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian41 = require("obsidian");
+    import_obsidian42 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -89157,16 +89157,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian42.TFolder)) {
+  if (!(folder instanceof import_obsidian43.TFolder)) {
     logger2.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian42.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian43.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian42.TFolder) {
+      } else if (child instanceof import_obsidian43.TFolder) {
         collectFiles(child);
       }
     }
@@ -89203,7 +89203,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian42.TFile) {
+  if (existingFile instanceof import_obsidian43.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -89271,7 +89271,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian42.TFile) {
+  if (existingFile instanceof import_obsidian43.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -89293,11 +89293,11 @@ async function generateAllIndexes(app) {
   ]);
   logger2.log("[Index] All indexes generated successfully");
 }
-var import_obsidian42, SALTMARCHER_DIR;
+var import_obsidian43, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian42 = require("obsidian");
+    import_obsidian43 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -91277,7 +91277,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian43 = require("obsidian");
+var import_obsidian44 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
@@ -92653,6 +92653,375 @@ async function openSessionRunner(app, file) {
   }
 }
 
+// src/workmodes/library/locations/dungeon-view.ts
+var import_obsidian40 = require("obsidian");
+
+// src/features/dungeons/rendering/grid-renderer.ts
+init_types3();
+var DEFAULT_OPTIONS = {
+  gridWidth: 30,
+  gridHeight: 20,
+  cellSize: 40,
+  showGrid: true,
+  showCoordinates: false
+};
+var GridRenderer = class {
+  constructor(canvas, options = {}) {
+    this.canvas = canvas;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Failed to get 2D rendering context");
+    }
+    this.ctx = ctx;
+    this.options = { ...DEFAULT_OPTIONS, ...options };
+    this.updateCanvasSize();
+  }
+  /**
+   * Render a dungeon location onto the canvas
+   */
+  render(dungeon) {
+    if (!isDungeonLocation(dungeon)) {
+      throw new Error("Cannot render non-dungeon location");
+    }
+    this.options.gridWidth = dungeon.grid_width;
+    this.options.gridHeight = dungeon.grid_height;
+    if (dungeon.cell_size) {
+      this.options.cellSize = dungeon.cell_size;
+    }
+    this.updateCanvasSize();
+    this.clear();
+    if (this.options.showGrid) {
+      this.renderGrid();
+    }
+    if (this.options.showCoordinates) {
+      this.renderCoordinates();
+    }
+    if (dungeon.rooms && dungeon.rooms.length > 0) {
+      this.renderRooms(dungeon.rooms);
+      for (const room of dungeon.rooms) {
+        if (room.doors && room.doors.length > 0) {
+          this.renderDoors(room.doors);
+        }
+        if (room.features && room.features.length > 0) {
+          this.renderFeatures(room.features);
+        }
+      }
+    }
+  }
+  /**
+   * Clear the canvas
+   */
+  clear() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.fillStyle = "#ffffff";
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+  /**
+   * Update renderer options
+   */
+  setOptions(options) {
+    this.options = { ...this.options, ...options };
+    this.updateCanvasSize();
+  }
+  /**
+   * Get current canvas dimensions
+   */
+  getDimensions() {
+    return {
+      width: this.options.gridWidth * this.options.cellSize,
+      height: this.options.gridHeight * this.options.cellSize
+    };
+  }
+  // ========================================================================
+  // PRIVATE HELPERS
+  // ========================================================================
+  /**
+   * Update canvas size based on grid dimensions
+   */
+  updateCanvasSize() {
+    const width = this.options.gridWidth * this.options.cellSize;
+    const height = this.options.gridHeight * this.options.cellSize;
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.canvas.style.width = `${width}px`;
+    this.canvas.style.height = `${height}px`;
+  }
+  /**
+   * Render grid lines
+   */
+  renderGrid() {
+    const { gridWidth, gridHeight, cellSize } = this.options;
+    const width = gridWidth * cellSize;
+    const height = gridHeight * cellSize;
+    this.ctx.strokeStyle = "#d0d0d0";
+    this.ctx.lineWidth = 1;
+    for (let x = 0; x <= gridWidth; x++) {
+      const px = x * cellSize;
+      this.ctx.beginPath();
+      this.ctx.moveTo(px, 0);
+      this.ctx.lineTo(px, height);
+      this.ctx.stroke();
+    }
+    for (let y = 0; y <= gridHeight; y++) {
+      const py = y * cellSize;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, py);
+      this.ctx.lineTo(width, py);
+      this.ctx.stroke();
+    }
+  }
+  /**
+   * Render cell coordinate labels
+   */
+  renderCoordinates() {
+    const { gridWidth, gridHeight, cellSize } = this.options;
+    this.ctx.fillStyle = "#999999";
+    this.ctx.font = "10px sans-serif";
+    this.ctx.textAlign = "left";
+    this.ctx.textBaseline = "top";
+    for (let x = 0; x < gridWidth; x += 5) {
+      for (let y = 0; y < gridHeight; y += 5) {
+        const px = x * cellSize + 2;
+        const py = y * cellSize + 2;
+        this.ctx.fillText(`${x},${y}`, px, py);
+      }
+    }
+  }
+  /**
+   * Render room boundaries and labels
+   */
+  renderRooms(rooms) {
+    const colors = [
+      "#ffd8a8",
+      // Warm beige
+      "#c5f6fa",
+      // Light cyan
+      "#d0ebff",
+      // Light blue
+      "#e3fafc",
+      // Very light cyan
+      "#fff3bf",
+      // Light yellow
+      "#f3f0ff",
+      // Light purple
+      "#ffe3e3",
+      // Light pink
+      "#d3f9d8"
+      // Light green
+    ];
+    rooms.forEach((room, index) => {
+      const { x, y, width, height } = room.grid_bounds;
+      const pixelPos = this.gridToPixel(x, y);
+      const pixelWidth = width * this.options.cellSize;
+      const pixelHeight = height * this.options.cellSize;
+      this.ctx.fillStyle = colors[index % colors.length];
+      this.ctx.fillRect(pixelPos.x, pixelPos.y, pixelWidth, pixelHeight);
+      this.ctx.strokeStyle = "#666666";
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(pixelPos.x, pixelPos.y, pixelWidth, pixelHeight);
+      const centerX = pixelPos.x + pixelWidth / 2;
+      const centerY = pixelPos.y + pixelHeight / 2;
+      this.ctx.fillStyle = "#000000";
+      this.ctx.font = "bold 16px sans-serif";
+      this.ctx.textAlign = "center";
+      this.ctx.textBaseline = "middle";
+      this.ctx.fillText(room.id, centerX, centerY);
+      if (room.name && pixelHeight > 50) {
+        this.ctx.font = "12px sans-serif";
+        this.ctx.fillText(room.name, centerX, centerY + 20);
+      }
+    });
+  }
+  /**
+   * Render door markers
+   */
+  renderDoors(doors) {
+    doors.forEach((door) => {
+      const { x, y } = door.position;
+      const pixelPos = this.gridToPixel(x, y);
+      const centerX = pixelPos.x + this.options.cellSize / 2;
+      const centerY = pixelPos.y + this.options.cellSize / 2;
+      this.ctx.font = "20px sans-serif";
+      this.ctx.textAlign = "center";
+      this.ctx.textBaseline = "middle";
+      this.ctx.fillText("\u{1F6AA}", centerX, centerY);
+      if (door.locked) {
+        this.ctx.font = "12px sans-serif";
+        this.ctx.fillText("\u{1F512}", centerX + 10, centerY - 10);
+      }
+      this.ctx.font = "10px sans-serif";
+      this.ctx.fillStyle = "#000000";
+      this.ctx.fillText(door.id, centerX, centerY + 15);
+    });
+  }
+  /**
+   * Render feature markers
+   */
+  renderFeatures(features) {
+    features.forEach((feature) => {
+      const { x, y } = feature.position;
+      const pixelPos = this.gridToPixel(x, y);
+      const centerX = pixelPos.x + this.options.cellSize / 2;
+      const centerY = pixelPos.y + this.options.cellSize / 2;
+      let icon = "\u{1F4E6}";
+      if (feature.type === "secret") {
+        icon = "\u{1F50D}";
+      } else if (feature.type === "trap" || feature.type === "hazard") {
+        icon = "\u26A0\uFE0F";
+      } else if (feature.type === "treasure") {
+        icon = "\u{1F4B0}";
+      }
+      this.ctx.font = "18px sans-serif";
+      this.ctx.textAlign = "center";
+      this.ctx.textBaseline = "middle";
+      this.ctx.fillText(icon, centerX, centerY);
+      const prefix = getFeatureTypePrefix(feature.type);
+      this.ctx.font = "bold 10px sans-serif";
+      this.ctx.fillStyle = "#000000";
+      this.ctx.fillText(`${prefix}${feature.id}`, centerX, centerY + 15);
+    });
+  }
+  /**
+   * Convert grid coordinates to pixel coordinates
+   */
+  gridToPixel(gridX, gridY) {
+    return {
+      x: gridX * this.options.cellSize,
+      y: gridY * this.options.cellSize
+    };
+  }
+  /**
+   * Convert pixel coordinates to grid coordinates
+   */
+  pixelToGrid(pixelX, pixelY) {
+    return {
+      x: Math.floor(pixelX / this.options.cellSize),
+      y: Math.floor(pixelY / this.options.cellSize)
+    };
+  }
+};
+
+// src/workmodes/library/locations/dungeon-view.ts
+init_types3();
+init_plugin_logger();
+init_frontmatter_utils();
+var VIEW_TYPE_DUNGEON = "salt-dungeon-view";
+var DungeonView = class extends import_obsidian40.ItemView {
+  constructor(leaf) {
+    super(leaf);
+    this.dungeon = null;
+    this.renderer = null;
+    this.canvas = null;
+    this.controlsContainer = null;
+    // View options
+    this.showGrid = true;
+    this.showCoordinates = false;
+  }
+  getViewType() {
+    return VIEW_TYPE_DUNGEON;
+  }
+  getDisplayText() {
+    return this.dungeon?.name || "Dungeon";
+  }
+  getIcon() {
+    return "map";
+  }
+  async onOpen() {
+    const container = this.containerEl.children[1];
+    container.empty();
+    container.addClass("sm-dungeon-view");
+    this.controlsContainer = container.createDiv({ cls: "sm-dungeon-controls" });
+    this.renderControls();
+    const canvasContainer = container.createDiv({ cls: "sm-dungeon-canvas-container" });
+    this.canvas = canvasContainer.createEl("canvas", { cls: "sm-dungeon-canvas" });
+    if (this.dungeon && isDungeonLocation(this.dungeon)) {
+      this.initializeRenderer();
+    }
+  }
+  async onClose() {
+    this.renderer = null;
+    this.canvas = null;
+    this.controlsContainer = null;
+    this.dungeon = null;
+  }
+  /**
+   * Set the dungeon data to display
+   */
+  setDungeon(dungeon) {
+    if (!isDungeonLocation(dungeon)) {
+      logger2.error("[dungeon-view] Cannot display non-dungeon location", { type: dungeon.type });
+      return;
+    }
+    this.dungeon = dungeon;
+    if (this.canvas) {
+      this.initializeRenderer();
+    }
+  }
+  /**
+   * Initialize the grid renderer with current dungeon data
+   */
+  initializeRenderer() {
+    if (!this.canvas || !this.dungeon || !isDungeonLocation(this.dungeon)) {
+      return;
+    }
+    try {
+      this.renderer = new GridRenderer(this.canvas, {
+        gridWidth: this.dungeon.grid_width,
+        gridHeight: this.dungeon.grid_height,
+        cellSize: this.dungeon.cell_size || 40,
+        showGrid: this.showGrid,
+        showCoordinates: this.showCoordinates
+      });
+      this.renderer.render(this.dungeon);
+    } catch (error) {
+      logger2.error("[dungeon-view] Failed to initialize renderer", error);
+    }
+  }
+  /**
+   * Render view controls (toggle buttons)
+   */
+  renderControls() {
+    if (!this.controlsContainer) return;
+    this.controlsContainer.empty();
+    const gridToggle = this.controlsContainer.createEl("button", {
+      cls: this.showGrid ? "sm-dungeon-control-active" : "sm-dungeon-control",
+      text: "\u{1F4CF} Grid"
+    });
+    gridToggle.addEventListener("click", () => {
+      this.showGrid = !this.showGrid;
+      this.updateRenderer();
+      this.renderControls();
+    });
+    const coordsToggle = this.controlsContainer.createEl("button", {
+      cls: this.showCoordinates ? "sm-dungeon-control-active" : "sm-dungeon-control",
+      text: "\u{1F522} Coordinates"
+    });
+    coordsToggle.addEventListener("click", () => {
+      this.showCoordinates = !this.showCoordinates;
+      this.updateRenderer();
+      this.renderControls();
+    });
+    const exportBtn = this.controlsContainer.createEl("button", {
+      cls: "sm-dungeon-control",
+      text: "\u{1F4BE} Export",
+      attr: { disabled: "true", title: "Coming soon" }
+    });
+  }
+  /**
+   * Update renderer options and re-render
+   */
+  updateRenderer() {
+    if (!this.renderer || !this.dungeon || !isDungeonLocation(this.dungeon)) {
+      return;
+    }
+    this.renderer.setOptions({
+      showGrid: this.showGrid,
+      showCoordinates: this.showCoordinates
+    });
+    this.renderer.render(this.dungeon);
+  }
+};
+
 // src/workmodes/view-manifest.ts
 var VIEW_MANIFEST = [
   {
@@ -92754,6 +93123,14 @@ var VIEW_MANIFEST = [
         }
       ]
     }
+  },
+  {
+    viewType: VIEW_TYPE_DUNGEON,
+    integrationId: "obsidian:dungeon-view",
+    displayName: "Dungeon View",
+    viewIcon: "map",
+    createView: (leaf) => new DungeonView(leaf)
+    // No activation - opened programmatically from Library
   }
 ];
 
@@ -96430,7 +96807,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian40 = require("obsidian");
+var import_obsidian41 = require("obsidian");
 init_plugin_logger();
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
@@ -96440,7 +96817,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian40.Notice(userMessage);
+  new import_obsidian41.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -96751,7 +97128,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian43.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian44.Plugin {
   async onload() {
     await logger2.init(this.app);
     logger2.log("Plugin loading...");

@@ -6,6 +6,7 @@ import { EncounterView, VIEW_ENCOUNTER, openEncounter } from "./encounter/view";
 import { LibraryView, VIEW_LIBRARY, openLibrary } from "./library/view";
 import { AlmanacView, VIEW_ALMANAC, openAlmanac } from "./almanac";
 import { SessionRunnerView, VIEW_SESSION_RUNNER, openSessionRunner } from "./session-runner";
+import { DungeonView, VIEW_TYPE_DUNGEON } from "./library/locations/dungeon-view";
 import type { IntegrationId } from "../app/integration-telemetry";
 
 export interface ViewActivationManifest {
@@ -143,5 +144,13 @@ export const VIEW_MANIFEST: ReadonlyArray<ViewManifestEntry> = [
                 },
             ],
         },
+    },
+    {
+        viewType: VIEW_TYPE_DUNGEON,
+        integrationId: "obsidian:dungeon-view",
+        displayName: "Dungeon View",
+        viewIcon: "map",
+        createView: (leaf) => new DungeonView(leaf),
+        // No activation - opened programmatically from Library
     },
 ] as const;
