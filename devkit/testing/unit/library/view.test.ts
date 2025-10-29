@@ -12,6 +12,8 @@ const SOURCE_LABELS: Record<Mode, string> = {
     equipment: "SaltMarcher/Equipment/",
     terrains: "SaltMarcher/Terrains.md",
     regions: "SaltMarcher/Regions.md",
+    factions: "SaltMarcher/Factions/",
+    calendars: "SaltMarcher/Calendars/",
 };
 
 vi.mock("src/workmodes/library/core/sources", () => ({
@@ -44,6 +46,10 @@ vi.mock("src/workmodes/library/view/spells", () => ({
     SpellsRenderer: createRenderer("spells" as Mode),
 }));
 
+vi.mock("src/workmodes/library/view/items", () => ({
+    ItemsRenderer: createRenderer("items" as Mode),
+}));
+
 vi.mock("src/workmodes/library/view/terrains", () => ({
     TerrainsRenderer: createRenderer("terrains" as Mode),
 }));
@@ -54,6 +60,14 @@ vi.mock("src/workmodes/library/view/equipment", () => ({
 
 vi.mock("src/workmodes/library/view/regions", () => ({
     RegionsRenderer: createRenderer("regions" as Mode),
+}));
+
+vi.mock("src/workmodes/library/view/factions", () => ({
+    FactionsRenderer: createRenderer("factions" as Mode),
+}));
+
+vi.mock("src/workmodes/library/view/calendars", () => ({
+    CalendarsRenderer: createRenderer("calendars" as Mode),
 }));
 
 const ensureObsidianDomHelpers = () => {
@@ -133,7 +147,7 @@ describe("LibraryView copy", () => {
         const heading = root.querySelector("h2");
         expect(heading?.textContent).toBe(LIBRARY_COPY.title);
 
-        const buttons = Array.from(root.querySelectorAll(".sm-lib-header button"));
+        const buttons = Array.from(root.querySelectorAll(".sm-browse-header button"));
         expect(buttons.map(b => b.textContent)).toEqual([
             LIBRARY_COPY.modes.creatures,
             LIBRARY_COPY.modes.spells,
@@ -141,6 +155,8 @@ describe("LibraryView copy", () => {
             LIBRARY_COPY.modes.equipment,
             LIBRARY_COPY.modes.terrains,
             LIBRARY_COPY.modes.regions,
+            LIBRARY_COPY.modes.factions,
+            LIBRARY_COPY.modes.calendars,
         ]);
 
         const search = root.querySelector("input[type=\"text\"]");
@@ -156,7 +172,7 @@ describe("LibraryView copy", () => {
     it("updates the source description when switching modes", async () => {
         await view.onOpen();
         const root = (view as unknown as { contentEl: HTMLElement }).contentEl;
-        const [_, __, ___, ____, terrainsButton, regionsButton] = Array.from(root.querySelectorAll(".sm-lib-header button"));
+        const [_, __, ___, ____, terrainsButton, regionsButton, ______, ________] = Array.from(root.querySelectorAll(".sm-browse-header button"));
 
         terrainsButton.dispatchEvent(new Event("click"));
         await flush();

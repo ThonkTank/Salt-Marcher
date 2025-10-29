@@ -9,22 +9,22 @@ const telemetryMocks = vi.hoisted(() => ({
     reportEditorToolIssue: vi.fn(({ stage, toolId }: { stage: string; toolId?: string }) => `issue:${stage}:${toolId ?? "unknown"}`),
 }));
 
-vi.mock("../../../src/workmodes/cartographer/editor/editor-telemetry", () => telemetryMocks);
+vi.mock("src/workmodes/cartographer/editor/editor-telemetry", () => telemetryMocks);
 
 const loadRegions = vi.fn();
 const applyBrush = vi.fn(() => Promise.resolve());
 
-vi.mock("../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-core", async () => {
+vi.mock("src/workmodes/cartographer/editor/tools/terrain-brush/brush-core", async () => {
     const actual = await vi.importActual<
-        typeof import("../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-core")
-    >("../../../src/workmodes/cartographer/editor/tools/terrain-brush/brush-core");
+        typeof import("src/workmodes/cartographer/editor/tools/terrain-brush/brush-core")
+    >("src/workmodes/cartographer/editor/tools/terrain-brush/brush-core");
     return {
         ...actual,
         applyBrush: (...args: unknown[]) => applyBrush(...args),
     };
 });
 
-vi.mock("../../../src/core/regions-store", () => ({
+vi.mock("src/features/maps/data/region-repository", () => ({
     loadRegions: (...args: unknown[]) => loadRegions(...args),
 }));
 
@@ -34,7 +34,7 @@ const attachBrushCircle = vi.fn(() => ({
     destroy: vi.fn(),
 }));
 
-vi.mock("../../../src/workmodes/cartographer/editor/tools/brush-circle", () => ({
+vi.mock("src/workmodes/cartographer/editor/tools/brush-circle", () => ({
     attachBrushCircle: (...args: unknown[]) => attachBrushCircle(...args),
 }));
 
@@ -49,16 +49,21 @@ beforeEach(() => {
 
 const svgNS = "http://www.w3.org/2000/svg";
 
-const createHandles = (): RenderHandles => ({
-    svg: document.createElementNS(svgNS, "svg"),
-    contentG: document.createElementNS(svgNS, "g"),
-    overlay: document.createElementNS(svgNS, "rect"),
-    polyByCoord: new Map(),
-    setFill: vi.fn(),
-    ensurePolys: vi.fn(),
-    setInteractionDelegate: vi.fn(),
-    destroy: vi.fn(),
-});
+const createHandles = (): RenderHandles => {
+    const svg = document.createElementNS(svgNS, "svg") as SVGSVGElement;
+    // Mock createSVGPoint for brush circle functionality
+    (svg as any).createSVGPoint = vi.fn(() => ({ x: 0, y: 0 }));
+    return {
+        svg,
+        contentG: document.createElementNS(svgNS, "g"),
+        overlay: document.createElementNS(svgNS, "rect"),
+        polyByCoord: new Map(),
+        setFill: vi.fn(),
+        ensurePolys: vi.fn(),
+        setInteractionDelegate: vi.fn(),
+        destroy: vi.fn(),
+    };
+};
 
 const createLifecycleContext = (options: {
     app?: App;

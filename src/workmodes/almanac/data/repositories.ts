@@ -334,7 +334,10 @@ class VaultStore {
 function sanitiseDefaults(defaults: CalendarDefaultsState): CalendarDefaultSnapshot {
   const travel: Record<string, string | null> = {};
   for (const [travelId, calendarId] of Object.entries(defaults.travel)) {
-    travel[travelId] = calendarId;
+    // Only include non-null values - deleted defaults should not appear in snapshot
+    if (calendarId !== null) {
+      travel[travelId] = calendarId;
+    }
   }
   return { global: defaults.global, travel };
 }

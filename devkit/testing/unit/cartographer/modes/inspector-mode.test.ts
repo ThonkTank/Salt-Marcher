@@ -6,20 +6,37 @@ import type { CartographerModeLifecycleContext } from "src/workmodes/cartographe
 import type { RenderHandles } from "src/features/maps/hex-mapper/hex-render";
 import { TERRAIN_COLORS } from "src/features/maps/domain/terrain";
 import { createInspectorMode } from "src/workmodes/cartographer/modes/inspector";
+import { createMockApp } from "../../../mocks/obsidian-api";
 
 const loadTile = vi.fn();
 const saveTile = vi.fn();
+const loadRegions = vi.fn();
+const factionsList = vi.fn();
+const factionsLoad = vi.fn();
 
-vi.mock("../../../src/core/hex-mapper/hex-notes", async () => {
+vi.mock("src/features/maps/data/tile-repository", async () => {
     const actual = await vi.importActual<
-        typeof import("../../../src/core/hex-mapper/hex-notes")
-    >("../../../src/core/hex-mapper/hex-notes");
+        typeof import("src/features/maps/data/tile-repository")
+    >("src/features/maps/data/tile-repository");
     return {
         ...actual,
         loadTile: (...args: unknown[]) => loadTile(...args),
         saveTile: (...args: unknown[]) => saveTile(...args),
     };
 });
+
+vi.mock("src/features/maps/data/region-repository", () => ({
+    loadRegions: (...args: unknown[]) => loadRegions(...args),
+}));
+
+vi.mock("src/workmodes/library/storage/data-sources", () => ({
+    LIBRARY_DATA_SOURCES: {
+        factions: {
+            list: (...args: unknown[]) => factionsList(...args),
+            load: (...args: unknown[]) => factionsLoad(...args),
+        },
+    },
+}));
 
 const svgNS = "http://www.w3.org/2000/svg";
 
@@ -41,7 +58,7 @@ const createLifecycleContext = (options: {
     file?: TFile | null;
     handles?: RenderHandles | null;
 } = {}): CartographerModeLifecycleContext => {
-    const app: App = options.app ?? ({ workspace: {} } as any);
+    const app: App = options.app ?? createMockApp();
     const sidebar = options.sidebarHost ?? document.createElement("div");
     const signal = options.signal ?? new AbortController().signal;
     const file = options.file ?? null;
@@ -78,6 +95,11 @@ beforeEach(() => {
     vi.useFakeTimers();
     loadTile.mockReset();
     saveTile.mockReset();
+    loadRegions.mockReset();
+    loadRegions.mockResolvedValue([]);
+    factionsList.mockReset();
+    factionsList.mockResolvedValue([]);
+    factionsLoad.mockReset();
 });
 
 afterEach(() => {
@@ -134,7 +156,7 @@ describe("createInspectorMode", () => {
         await Promise.resolve();
         await Promise.resolve();
 
-        expect(saveTile).toHaveBeenCalledWith(baseCtx.app, file, { r: 1, c: 2 }, { terrain: sampleTerrain, note: "updated" });
+        expect(saveTile).toHaveBeenCalledWith(baseCtx.app, file, { r: 1, c: 2 }, { terrain: sampleTerrain, region: "", faction: "", note: "updated" });
         expect(handles.setFill).toHaveBeenCalledWith({ r: 1, c: 2 }, TERRAIN_COLORS[sampleTerrain] ?? "transparent");
 
         await mode.onExit(baseCtx);

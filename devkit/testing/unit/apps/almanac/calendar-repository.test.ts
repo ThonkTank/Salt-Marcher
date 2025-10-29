@@ -84,7 +84,7 @@ describe("VaultCalendarRepository", () => {
 
         await reload.clearTravelDefault("travel-1");
         const cleared = await reload.getDefaults();
-        expect(cleared.travel["travel-1"]).toBeNull();
+        expect(cleared.travel["travel-1"]).toBeUndefined();
 
         await reload.deleteCalendar(gregorianSchema.id);
         const afterDelete = await reload.listCalendars();

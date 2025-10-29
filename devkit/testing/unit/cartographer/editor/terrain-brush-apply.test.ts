@@ -20,8 +20,8 @@ const noteMocks = vi.hoisted(() => ({
     loadTile: vi.fn(),
 }));
 
-vi.mock("../../../src/workmodes/cartographer/editor/editor-telemetry", () => telemetryMocks);
-vi.mock("../../../src/core/hex-mapper/hex-notes", () => noteMocks);
+vi.mock("src/workmodes/cartographer/editor/editor-telemetry", () => telemetryMocks);
+vi.mock("src/features/maps/data/tile-repository", () => noteMocks);
 
 const { reportEditorToolIssue } = telemetryMocks;
 const { saveTile, deleteTile, loadTile } = noteMocks;
