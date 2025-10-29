@@ -265,6 +265,121 @@ export class EncounterPresenter {
     }
 
     // ============================================================================
+    // Random Encounter Generation (Phase 2.6)
+    // ============================================================================
+
+    /**
+     * Generates a random encounter based on current travel context.
+     *
+     * @param difficulty Encounter difficulty (easy/medium/hard/deadly)
+     * @param app Obsidian App instance (for loading creatures from library)
+     * @param clearExisting If true, removes existing creatures before adding generated ones
+     * @returns Generated creatures or error
+     */
+    async generateEncounter(
+        difficulty: import("./generator").Difficulty,
+        app: import("obsidian").App,
+        clearExisting: boolean = false
+    ): Promise<{ success: true; creatures: EncounterCreature[] } | { success: false; error: string }> {
+        const session = this.persisted.session;
+        if (!session) {
+            return { success: false, error: "No active encounter session" };
+        }
+
+        try {
+            // Import generator and dependencies
+            const { generateRandomEncounter } = await import("./generator");
+            const { LIBRARY_DATA_SOURCES } = await import("../library/storage/data-sources");
+            const { loadRegions } = await import("../../features/maps/data/region-repository");
+            const { loadTerrains } = await import("../../features/maps/data/terrain-repository");
+
+            // Get hex context from encounter event
+            const event = session.event;
+            const factionName = event.factionName;
+            const regionName = event.regionName;
+            const terrainName = event.terrainName;
+
+            // Load context data
+            const [allCreatures, allFactions, allRegions, allTerrains] = await Promise.all([
+                LIBRARY_DATA_SOURCES.creatures.list(app).then(files =>
+                    Promise.all(files.map(f => LIBRARY_DATA_SOURCES.creatures.load(app, f)))
+                ),
+                LIBRARY_DATA_SOURCES.factions.list(app).then(files =>
+                    Promise.all(files.map(f => LIBRARY_DATA_SOURCES.factions.load(app, f)))
+                ),
+                loadRegions(app),
+                loadTerrains(app)
+            ]);
+
+            // Find matching context objects
+            const faction = factionName
+                ? allFactions.find(f => f.name.toLowerCase() === factionName.toLowerCase())
+                : null;
+            const region = regionName
+                ? allRegions.find(r => r.name.toLowerCase() === regionName.toLowerCase())
+                : null;
+            const terrain = terrainName
+                ? allTerrains.find(t => t.name.toLowerCase() === terrainName.toLowerCase())
+                : null;
+
+            // Get party configuration from XP state
+            const xpState = getEncounterXpState();
+            const partyMembers = xpState.party ?? [];
+            if (partyMembers.length === 0) {
+                return { success: false, error: "No party members configured. Add party members first." };
+            }
+
+            const partyLevel = Math.round(
+                partyMembers.reduce((sum, m) => sum + m.level, 0) / partyMembers.length
+            );
+            const partySize = partyMembers.length;
+
+            // Generate encounter
+            const result = generateRandomEncounter(
+                {
+                    faction: faction ?? null,
+                    terrain: terrain ?? null,
+                    region: region ?? null,
+                    creatures: allCreatures
+                },
+                {
+                    partyLevel,
+                    partySize,
+                    difficulty
+                }
+            );
+
+            if (result.creatures.length === 0) {
+                return { success: false, error: "No matching creatures found for this context." };
+            }
+
+            // Clear existing creatures if requested
+            if (clearExisting && session.creatures.length > 0) {
+                this.persisted = {
+                    ...this.persisted,
+                    session: {
+                        ...session,
+                        creatures: []
+                    }
+                };
+            }
+
+            // Add generated creatures
+            for (const creature of result.creatures) {
+                this.addCreature(creature);
+            }
+
+            return { success: true, creatures: result.creatures };
+
+        } catch (err: any) {
+            return {
+                success: false,
+                error: err?.message ?? "Unknown error during generation"
+            };
+        }
+    }
+
+    // ============================================================================
     // Combat Tracking Methods
     // ============================================================================
 

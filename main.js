@@ -3404,6 +3404,10 @@ var init_vault_preset_loader = __esm({
 });
 
 // src/workmodes/library/storage/data-sources.ts
+var data_sources_exports = {};
+__export(data_sources_exports, {
+  LIBRARY_DATA_SOURCES: () => LIBRARY_DATA_SOURCES
+});
 function createEntryLoader(extractMeta) {
   return async (app, file) => {
     const fm2 = await readFrontmatter(app, file);
@@ -5094,6 +5098,552 @@ var init_session_store = __esm({
   }
 });
 
+// src/workmodes/encounter/generator.ts
+var generator_exports = {};
+__export(generator_exports, {
+  calculateCreatureBudget: () => calculateCreatureBudget,
+  filterCreaturesByTags: () => filterCreaturesByTags,
+  generateRandomEncounter: () => generateRandomEncounter,
+  selectCreaturesForBudget: () => selectCreaturesForBudget
+});
+function getXpMultiplier(count) {
+  if (count === 1) return 1;
+  if (count === 2) return 1.5;
+  if (count >= 3 && count <= 6) return 2;
+  if (count >= 7 && count <= 10) return 2.5;
+  if (count >= 11 && count <= 14) return 3;
+  return 4;
+}
+function filterCreaturesByTags(ctx) {
+  const { faction, terrain, region, creatures } = ctx;
+  const factionTags = faction?.influence_tags?.map((t) => t.value.toLowerCase()) ?? [];
+  const terrainTags = [
+    ...terrain?.biome_tags?.map((t) => t.value.toLowerCase()) ?? [],
+    ...terrain?.difficulty_tags?.map((t) => t.value.toLowerCase()) ?? []
+  ];
+  const regionTags = [
+    ...region?.biome_tags?.map((t) => t.value.toLowerCase()) ?? [],
+    ...region?.danger_tags?.map((t) => t.value.toLowerCase()) ?? [],
+    ...region?.climate_tags?.map((t) => t.value.toLowerCase()) ?? [],
+    ...region?.settlement_tags?.map((t) => t.value.toLowerCase()) ?? []
+  ];
+  const matchesAnyTag = (creatureTags, filterTags) => {
+    if (filterTags.length === 0) return true;
+    if (creatureTags.length === 0) return false;
+    return creatureTags.some((ct) => filterTags.includes(ct.toLowerCase()));
+  };
+  const filterLevels = [
+    // Level 1: Faction + Terrain + Region (skip if any is empty)
+    ...factionTags.length > 0 && terrainTags.length > 0 && regionTags.length > 0 ? [{ level: 1, tags: [factionTags, terrainTags, regionTags] }] : [],
+    // Level 2: Faction + Terrain (skip if either is empty)
+    ...factionTags.length > 0 && terrainTags.length > 0 ? [{ level: 2, tags: [factionTags, terrainTags] }] : [],
+    // Level 3: Terrain only (skip if empty)
+    ...terrainTags.length > 0 ? [{ level: 3, tags: [terrainTags] }] : [],
+    // Level 4: No filter (always present)
+    { level: 4, tags: [] }
+  ];
+  for (const { level, tags } of filterLevels) {
+    const filtered = creatures.filter((creature) => {
+      const creatureTags = creature.typeTags?.map((t) => {
+        return typeof t === "string" ? t : t;
+      }) ?? [];
+      if (tags.length === 0) return true;
+      if (creatureTags.length === 0) return false;
+      return tags.every((filterTagSet) => matchesAnyTag(creatureTags, filterTagSet));
+    });
+    if (filtered.length > 0) {
+      logger.debug(`[generator] Filter level ${level}: ${filtered.length} matches`, {
+        factionTags,
+        terrainTags,
+        regionTags,
+        filterLevel: level
+      });
+      return { creatures: filtered, filterLevel: level };
+    }
+  }
+  logger.warn("[generator] No creatures found at any filter level");
+  return { creatures: [], filterLevel: 4 };
+}
+function calculateCreatureBudget(options) {
+  const { partyLevel, partySize, difficulty } = options;
+  if (partyLevel < 1 || partyLevel > 20) {
+    logger.warn(`[generator] Invalid party level: ${partyLevel}, clamping to 1-20`);
+  }
+  if (partySize < 1) {
+    logger.warn(`[generator] Invalid party size: ${partySize}, defaulting to 1`);
+  }
+  const level = Math.max(1, Math.min(20, partyLevel));
+  const size = Math.max(1, partySize);
+  const xpPerCharacter = XP_THRESHOLDS[difficulty][level - 1];
+  const targetXP = xpPerCharacter * size;
+  const minXP = Math.floor(targetXP * 0.8);
+  const maxXP = Math.ceil(targetXP * 1.2);
+  logger.debug(`[generator] Budget: ${targetXP} XP (${minXP}-${maxXP})`, {
+    partyLevel: level,
+    partySize: size,
+    difficulty,
+    xpPerCharacter
+  });
+  return { targetXP, minXP, maxXP };
+}
+function selectCreaturesForBudget(creatures, budget, options) {
+  if (creatures.length === 0) {
+    logger.warn("[generator] No creatures available for selection");
+    return [];
+  }
+  const { minXP, maxXP } = budget;
+  const MAX_CREATURES = 6;
+  const MAX_COPIES = 3;
+  const sorted = [...creatures].sort((a, b) => {
+    const crA = typeof a.cr === "string" ? parseFloat(a.cr) : 0;
+    const crB = typeof b.cr === "string" ? parseFloat(b.cr) : 0;
+    return crA - crB;
+  });
+  const getAdjustedXP = (selections) => {
+    const totalCount = Array.from(selections.values()).reduce((sum, count) => sum + count, 0);
+    const multiplier = getXpMultiplier(totalCount);
+    let rawXP = 0;
+    for (const [name, count] of selections) {
+      const creature = sorted.find((c) => c.name === name);
+      if (!creature) continue;
+      const cr = typeof creature.cr === "string" ? parseFloat(creature.cr) : 0;
+      const xpPerCreature = XP_BY_CR[cr] ?? 0;
+      rawXP += xpPerCreature * count;
+    }
+    return Math.round(rawXP * multiplier);
+  };
+  const rng = options.seed !== void 0 ? seededRandom(options.seed) : Math.random;
+  let bestSelection = /* @__PURE__ */ new Map();
+  let bestXP = 0;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const selection = /* @__PURE__ */ new Map();
+    const shuffled = [...sorted].sort(() => rng() - 0.5);
+    for (const creature of shuffled) {
+      if (Array.from(selection.values()).reduce((sum, c) => sum + c, 0) >= MAX_CREATURES) {
+        break;
+      }
+      const currentCopies = selection.get(creature.name) ?? 0;
+      if (currentCopies >= MAX_COPIES) continue;
+      selection.set(creature.name, currentCopies + 1);
+      const adjustedXP = getAdjustedXP(selection);
+      if (adjustedXP > maxXP) {
+        if (currentCopies === 0) {
+          selection.delete(creature.name);
+        } else {
+          selection.set(creature.name, currentCopies);
+        }
+      } else if (adjustedXP >= minXP) {
+        if (adjustedXP > bestXP || bestSelection.size === 0) {
+          bestSelection = new Map(selection);
+          bestXP = adjustedXP;
+        }
+      }
+    }
+    const finalXP = getAdjustedXP(selection);
+    if (finalXP >= minXP && finalXP <= maxXP) {
+      if (finalXP > bestXP || bestSelection.size === 0) {
+        bestSelection = new Map(selection);
+        bestXP = finalXP;
+      }
+    }
+  }
+  if (bestSelection.size === 0) {
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const creature = sorted[i];
+      const cr = typeof creature.cr === "string" ? parseFloat(creature.cr) : 0;
+      const xp = XP_BY_CR[cr] ?? 0;
+      if (xp <= maxXP) {
+        bestSelection.set(creature.name, 1);
+        bestXP = xp;
+        logger.debug("[generator] Fallback: Single creature", { name: creature.name, xp });
+        break;
+      }
+    }
+  }
+  const result = [];
+  for (const [name, count] of bestSelection) {
+    const creature = sorted.find((c) => c.name === name);
+    if (!creature) continue;
+    const cr = typeof creature.cr === "string" ? parseFloat(creature.cr) : 0;
+    result.push({
+      id: `${name}-${Date.now()}`,
+      name: creature.name,
+      count,
+      cr,
+      source: "library",
+      statblockPath: `Creatures/${creature.name}.md`
+      // TODO: Get actual path
+    });
+  }
+  logger.debug("[generator] Selected creatures", {
+    count: result.length,
+    totalXP: bestXP,
+    budget: `${minXP}-${maxXP}`,
+    creatures: result.map((c) => `${c.name} x${c.count}`)
+  });
+  return result;
+}
+function generateRandomEncounter(ctx, options) {
+  logger.info("[generator] Starting encounter generation", {
+    partyLevel: options.partyLevel,
+    partySize: options.partySize,
+    difficulty: options.difficulty,
+    availableCreatures: ctx.creatures.length
+  });
+  const { creatures: filteredCreatures, filterLevel } = filterCreaturesByTags(ctx);
+  if (filteredCreatures.length === 0) {
+    logger.error("[generator] No matching creatures found");
+    return { creatures: [], totalXP: 0, filterLevel: 4 };
+  }
+  const budget = calculateCreatureBudget(options);
+  const selectedCreatures = selectCreaturesForBudget(filteredCreatures, budget, options);
+  const totalXP = selectedCreatures.reduce((sum, creature) => {
+    const xpPerCreature = XP_BY_CR[creature.cr] ?? 0;
+    return sum + xpPerCreature * creature.count;
+  }, 0);
+  logger.info("[generator] Encounter generated successfully", {
+    creatureCount: selectedCreatures.length,
+    totalCreatures: selectedCreatures.reduce((sum, c) => sum + c.count, 0),
+    totalXP,
+    filterLevel
+  });
+  return {
+    creatures: selectedCreatures,
+    totalXP,
+    filterLevel
+  };
+}
+function seededRandom(seed) {
+  let state = seed;
+  return () => {
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    return state / 4294967296;
+  };
+}
+var XP_THRESHOLDS, XP_BY_CR;
+var init_generator = __esm({
+  "src/workmodes/encounter/generator.ts"() {
+    "use strict";
+    init_plugin_logger();
+    XP_THRESHOLDS = {
+      easy: [25, 50, 75, 125, 250, 300, 350, 450, 550, 600, 800, 1e3, 1100, 1250, 1400, 1600, 2e3, 2100, 2400, 2800],
+      medium: [50, 100, 150, 250, 500, 600, 750, 900, 1100, 1200, 1600, 2e3, 2200, 2500, 2800, 3200, 3900, 4200, 4900, 5700],
+      hard: [75, 150, 225, 375, 750, 900, 1100, 1400, 1600, 1900, 2400, 3e3, 3400, 3800, 4300, 4800, 5900, 6300, 7300, 8500],
+      deadly: [100, 200, 400, 500, 1100, 1400, 1700, 2100, 2400, 2800, 3600, 4500, 5100, 5700, 6400, 7200, 8800, 9500, 10900, 12700]
+    };
+    XP_BY_CR = {
+      0: 10,
+      0.125: 25,
+      0.25: 50,
+      0.5: 100,
+      1: 200,
+      2: 450,
+      3: 700,
+      4: 1100,
+      5: 1800,
+      6: 2300,
+      7: 2900,
+      8: 3900,
+      9: 5e3,
+      10: 5900,
+      11: 7200,
+      12: 8400,
+      13: 1e4,
+      14: 11500,
+      15: 13e3,
+      16: 15e3,
+      17: 18e3,
+      18: 2e4,
+      19: 22e3,
+      20: 25e3,
+      21: 33e3,
+      22: 41e3,
+      23: 5e4,
+      24: 62e3,
+      25: 75e3,
+      26: 9e4,
+      27: 105e3,
+      28: 12e4,
+      29: 135e3,
+      30: 155e3
+    };
+  }
+});
+
+// src/features/maps/state/terrain-store.ts
+async function ensureTerrainFile(app) {
+  const path = (0, import_obsidian17.normalizePath)(TERRAIN_FILE);
+  const existing = app.vault.getAbstractFileByPath(path);
+  if (existing instanceof import_obsidian17.TFile) {
+    return existing;
+  }
+  const dir = path.split("/").slice(0, -1).join("/");
+  if (dir) {
+    await app.vault.createFolder(dir).catch(() => {
+    });
+  }
+  const body = [
+    "---",
+    "smList: true",
+    "---",
+    "# Terrains",
+    "",
+    "```terrain",
+    ": transparent, speed: 1",
+    "Wald: #2e7d32, speed: 0.6",
+    "Meer: #0288d1, speed: 0.5",
+    "Berg: #6d4c41, speed: 0.4",
+    "```",
+    ""
+  ].join("\n");
+  return await app.vault.create(path, body);
+}
+function parseTerrainBlock(md) {
+  const match = md.match(BLOCK_RE2);
+  if (!match) return {};
+  const map = {};
+  for (const raw of match[1].split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const parsed = line.match(
+      /^("?)(.*?)(\1)\s*:\s*([^,]+?)(?:\s*,\s*speed\s*:\s*([-+]?\d*\.?\d+))?\s*$/i
+    );
+    if (!parsed) continue;
+    const name = parsed[2].trim();
+    const color = parsed[4].trim();
+    const speedValue = parsed[5] !== void 0 ? parseFloat(parsed[5]) : 1;
+    const speed = Number.isFinite(speedValue) ? speedValue : 1;
+    map[name] = { color, speed };
+  }
+  if (!map[""]) {
+    map[""] = { color: "transparent", speed: 1 };
+  }
+  return map;
+}
+function stringifyTerrainBlock(map) {
+  const entries = Object.entries(map);
+  entries.sort(([a], [b]) => a === "" ? -1 : b === "" ? 1 : a.localeCompare(b));
+  const lines = entries.map(([key, value]) => `${key || ":"}: ${value.color}, speed: ${value.speed}`);
+  return ["```terrain", ...lines, "```"].join("\n");
+}
+async function readTerrainsFromDisk(app) {
+  const file = await ensureTerrainFile(app);
+  const content = await app.vault.read(file);
+  return parseTerrainBlock(content);
+}
+async function writeTerrainsToDisk(app, map) {
+  const file = await ensureTerrainFile(app);
+  const content = await app.vault.read(file);
+  const block = stringifyTerrainBlock(map);
+  const updated = content.match(BLOCK_RE2) ? content.replace(BLOCK_RE2, block) : `${content}
+
+${block}
+`;
+  await app.vault.modify(file, updated);
+}
+function createInitialState2() {
+  return {
+    loaded: false,
+    map: {},
+    version: 0
+  };
+}
+function triggerTerrainEvent(app) {
+  app.workspace.trigger?.("salt:terrains-updated");
+}
+function createTerrainStore(app, options) {
+  const base = writable(createInitialState2(), {
+    name: "map-terrains",
+    debug: options?.debug
+  });
+  let dirty = false;
+  let loadPromise = null;
+  const persistent2 = {
+    subscribe: base.subscribe,
+    get: base.get,
+    set: (value) => {
+      base.set(value);
+      dirty = true;
+    },
+    update: (updater) => {
+      base.update((current) => {
+        const next = updater(current);
+        dirty = true;
+        return next;
+      });
+    },
+    load: async () => {
+      const terrainMap = await readTerrainsFromDisk(app);
+      base.set({
+        loaded: true,
+        map: terrainMap,
+        version: Date.now()
+      });
+      dirty = false;
+      setTerrains(terrainMap);
+      triggerTerrainEvent(app);
+    },
+    save: async () => {
+      const snapshot = base.get();
+      if (!snapshot.loaded) return;
+      await writeTerrainsToDisk(app, snapshot.map);
+      dirty = false;
+    },
+    isDirty: () => dirty,
+    getStorageKey: () => (0, import_obsidian17.normalizePath)(TERRAIN_FILE)
+  };
+  getStoreManager().register("map-terrains", persistent2);
+  const ensureLoaded = async () => {
+    const snapshot = persistent2.get();
+    if (snapshot.loaded && loadPromise === null) {
+      return;
+    }
+    if (!loadPromise) {
+      loadPromise = persistent2.load().finally(() => {
+        loadPromise = null;
+      });
+    }
+    await loadPromise;
+  };
+  const refresh = async () => {
+    loadPromise = persistent2.load().finally(() => {
+      loadPromise = null;
+    });
+    await loadPromise;
+  };
+  const getTerrains = async () => {
+    await ensureLoaded();
+    return persistent2.get().map;
+  };
+  const saveTerrains3 = async (next) => {
+    await ensureLoaded();
+    persistent2.update(() => ({
+      loaded: true,
+      map: { ...next },
+      version: Date.now()
+    }));
+    setTerrains(next);
+    await persistent2.save();
+    triggerTerrainEvent(app);
+  };
+  const watch = (options2) => {
+    const resolved = resolveWatcherOptions(options2);
+    const handleError = (error, reason) => {
+      if (resolved.onError) {
+        try {
+          resolved.onError(error, { reason });
+        } catch (handlerError) {
+          logger.error("[salt-marcher] Terrain watcher error handler threw", handlerError);
+        }
+        return;
+      }
+      logger.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
+    };
+    const update = async (reason) => {
+      try {
+        if (reason === "delete") {
+          await ensureTerrainFile(app);
+        }
+        await refresh();
+        triggerTerrainEvent(app);
+        await resolved.onChange?.();
+      } catch (error) {
+        handleError(error, reason);
+      }
+    };
+    const maybeUpdate = (reason, file) => {
+      if (!(file instanceof import_obsidian17.TFile)) return;
+      if ((0, import_obsidian17.normalizePath)(file.path) !== (0, import_obsidian17.normalizePath)(TERRAIN_FILE)) return;
+      void update(reason);
+    };
+    const refs = ["modify", "delete"].map(
+      (event) => app.vault.on(event, (file) => maybeUpdate(event, file))
+    );
+    let disposed = false;
+    return () => {
+      if (disposed) return;
+      disposed = true;
+      for (const ref of refs) {
+        app.vault.offref(ref);
+      }
+    };
+  };
+  return {
+    state: persistent2,
+    getTerrains,
+    saveTerrains: saveTerrains3,
+    refresh,
+    watch
+  };
+}
+function getTerrainStore(app, options) {
+  let store = storeRegistry2.get(app);
+  if (!store) {
+    store = createTerrainStore(app, options);
+    storeRegistry2.set(app, store);
+  }
+  return store;
+}
+function resolveWatcherOptions(maybe) {
+  if (typeof maybe === "function") {
+    return { onChange: maybe };
+  }
+  return maybe ?? {};
+}
+async function loadTerrains(app) {
+  const store = getTerrainStore(app);
+  return await store.getTerrains();
+}
+async function saveTerrains(app, map) {
+  const store = getTerrainStore(app);
+  await store.saveTerrains(map);
+}
+function watchTerrains(app, options) {
+  const store = getTerrainStore(app, typeof options === "object" ? options.storeOptions : void 0);
+  return store.watch(options);
+}
+var import_obsidian17, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
+var init_terrain_store = __esm({
+  "src/features/maps/state/terrain-store.ts"() {
+    "use strict";
+    import_obsidian17 = require("obsidian");
+    init_state();
+    init_store_manager();
+    init_plugin_logger();
+    init_terrain();
+    TERRAIN_FILE = "SaltMarcher/Terrains.md";
+    BLOCK_RE2 = /```terrain\s*([\s\S]*?)```/i;
+    storeRegistry2 = /* @__PURE__ */ new WeakMap();
+  }
+});
+
+// src/features/maps/data/terrain-repository.ts
+var terrain_repository_exports = {};
+__export(terrain_repository_exports, {
+  TERRAIN_FILE: () => TERRAIN_FILE,
+  ensureTerrainFile: () => ensureTerrainFile,
+  loadTerrains: () => loadTerrains2,
+  parseTerrainBlock: () => parseTerrainBlock,
+  saveTerrains: () => saveTerrains2,
+  stringifyTerrainBlock: () => stringifyTerrainBlock,
+  watchTerrains: () => watchTerrains2
+});
+async function loadTerrains2(app) {
+  return await loadTerrains(app);
+}
+async function saveTerrains2(app, next) {
+  await saveTerrains(app, next);
+}
+function watchTerrains2(app, options) {
+  return watchTerrains(app, options);
+}
+var init_terrain_repository = __esm({
+  "src/features/maps/data/terrain-repository.ts"() {
+    "use strict";
+    init_terrain_store();
+  }
+});
+
 // src/workmodes/encounter/presenter.ts
 function deriveEncounterXpView(state) {
   const party = state.party ?? [];
@@ -5524,6 +6074,89 @@ var init_presenter = __esm({
         }, 0);
         this.setEncounterXp(totalXp);
         this.emit();
+      }
+      // ============================================================================
+      // Random Encounter Generation (Phase 2.6)
+      // ============================================================================
+      /**
+       * Generates a random encounter based on current travel context.
+       *
+       * @param difficulty Encounter difficulty (easy/medium/hard/deadly)
+       * @param app Obsidian App instance (for loading creatures from library)
+       * @param clearExisting If true, removes existing creatures before adding generated ones
+       * @returns Generated creatures or error
+       */
+      async generateEncounter(difficulty, app, clearExisting = false) {
+        const session = this.persisted.session;
+        if (!session) {
+          return { success: false, error: "No active encounter session" };
+        }
+        try {
+          const { generateRandomEncounter: generateRandomEncounter2 } = await Promise.resolve().then(() => (init_generator(), generator_exports));
+          const { LIBRARY_DATA_SOURCES: LIBRARY_DATA_SOURCES2 } = await Promise.resolve().then(() => (init_data_sources(), data_sources_exports));
+          const { loadRegions: loadRegions3 } = await Promise.resolve().then(() => (init_region_repository(), region_repository_exports));
+          const { loadTerrains: loadTerrains3 } = await Promise.resolve().then(() => (init_terrain_repository(), terrain_repository_exports));
+          const event = session.event;
+          const factionName = event.factionName;
+          const regionName = event.regionName;
+          const terrainName = event.terrainName;
+          const [allCreatures, allFactions, allRegions, allTerrains] = await Promise.all([
+            LIBRARY_DATA_SOURCES2.creatures.list(app).then(
+              (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.creatures.load(app, f)))
+            ),
+            LIBRARY_DATA_SOURCES2.factions.list(app).then(
+              (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.factions.load(app, f)))
+            ),
+            loadRegions3(app),
+            loadTerrains3(app)
+          ]);
+          const faction = factionName ? allFactions.find((f) => f.name.toLowerCase() === factionName.toLowerCase()) : null;
+          const region = regionName ? allRegions.find((r) => r.name.toLowerCase() === regionName.toLowerCase()) : null;
+          const terrain = terrainName ? allTerrains.find((t) => t.name.toLowerCase() === terrainName.toLowerCase()) : null;
+          const xpState = getEncounterXpState();
+          const partyMembers = xpState.party ?? [];
+          if (partyMembers.length === 0) {
+            return { success: false, error: "No party members configured. Add party members first." };
+          }
+          const partyLevel = Math.round(
+            partyMembers.reduce((sum, m) => sum + m.level, 0) / partyMembers.length
+          );
+          const partySize = partyMembers.length;
+          const result = generateRandomEncounter2(
+            {
+              faction: faction ?? null,
+              terrain: terrain ?? null,
+              region: region ?? null,
+              creatures: allCreatures
+            },
+            {
+              partyLevel,
+              partySize,
+              difficulty
+            }
+          );
+          if (result.creatures.length === 0) {
+            return { success: false, error: "No matching creatures found for this context." };
+          }
+          if (clearExisting && session.creatures.length > 0) {
+            this.persisted = {
+              ...this.persisted,
+              session: {
+                ...session,
+                creatures: []
+              }
+            };
+          }
+          for (const creature of result.creatures) {
+            this.addCreature(creature);
+          }
+          return { success: true, creatures: result.creatures };
+        } catch (err) {
+          return {
+            success: false,
+            error: err?.message ?? "Unknown error during generation"
+          };
+        }
       }
       // ============================================================================
       // Combat Tracking Methods
@@ -6031,13 +6664,13 @@ var init_presenter = __esm({
 
 // src/workmodes/encounter/rule-presets.ts
 async function ensureEncounterRulePresetDir(app) {
-  const normalized = (0, import_obsidian17.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const normalized = (0, import_obsidian18.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
   let file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian17.TFolder) return file;
+  if (file instanceof import_obsidian18.TFolder) return file;
   await app.vault.createFolder(normalized).catch(() => {
   });
   file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian17.TFolder) return file;
+  if (file instanceof import_obsidian18.TFolder) return file;
   throw new Error(`Could not ensure encounter preset directory: ${normalized}`);
 }
 async function listEncounterRulePresets(app) {
@@ -6045,8 +6678,8 @@ async function listEncounterRulePresets(app) {
   const files = [];
   const walk = (folder) => {
     for (const child of folder.children) {
-      if (child instanceof import_obsidian17.TFolder) walk(child);
-      else if (child instanceof import_obsidian17.TFile && child.extension === "md") files.push(child);
+      if (child instanceof import_obsidian18.TFolder) walk(child);
+      else if (child instanceof import_obsidian18.TFile && child.extension === "md") files.push(child);
     }
   };
   walk(dir);
@@ -6074,18 +6707,18 @@ async function saveEncounterRulePreset(app, doc, options = {}) {
   const dir = await ensureEncounterRulePresetDir(app);
   if (options.path) {
     const existing = app.vault.getAbstractFileByPath(options.path);
-    if (existing instanceof import_obsidian17.TFile) {
+    if (existing instanceof import_obsidian18.TFile) {
       await app.vault.modify(existing, content);
       return existing;
     }
   }
   const baseName = sanitizeFileName2(sanitizedName, DEFAULT_PRESET_NAME);
   let fileName = `${baseName}.md`;
-  let targetPath = (0, import_obsidian17.normalizePath)(`${dir.path}/${fileName}`);
+  let targetPath = (0, import_obsidian18.normalizePath)(`${dir.path}/${fileName}`);
   let counter = 2;
   while (app.vault.getAbstractFileByPath(targetPath)) {
     fileName = `${baseName} (${counter}).md`;
-    targetPath = (0, import_obsidian17.normalizePath)(`${dir.path}/${fileName}`);
+    targetPath = (0, import_obsidian18.normalizePath)(`${dir.path}/${fileName}`);
     counter += 1;
   }
   const file = await app.vault.create(targetPath, content);
@@ -6192,17 +6825,17 @@ function createRuleId() {
   return `rule-${Date.now().toString(36)}-${random}`;
 }
 function isEncounterPresetFile(file) {
-  if (!(file instanceof import_obsidian17.TFile)) return false;
+  if (!(file instanceof import_obsidian18.TFile)) return false;
   if (file.extension !== "md") return false;
-  const normalized = (0, import_obsidian17.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const normalized = (0, import_obsidian18.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
   const base = `${normalized}/`;
   return file.path === normalized || file.path.startsWith(base);
 }
-var import_obsidian17, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
+var import_obsidian18, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
 var init_rule_presets = __esm({
   "src/workmodes/encounter/rule-presets.ts"() {
     "use strict";
-    import_obsidian17 = require("obsidian");
+    import_obsidian18 = require("obsidian");
     ENCOUNTER_RULE_PRESET_DIR = "SaltMarcher/EncounterPresets";
     DEFAULT_PRESET_NAME = "Encounter Rule Preset";
     MODIFIER_TYPES = /* @__PURE__ */ new Set([
@@ -6330,6 +6963,7 @@ var init_creature_list = __esm({
       constructor(app, containerEl, callbacks) {
         this.creatures = [];
         this.filteredCreatures = [];
+        this.currentDifficulty = "medium";
         this.app = app;
         this.containerEl = containerEl;
         this.callbacks = callbacks;
@@ -6339,6 +6973,41 @@ var init_creature_list = __esm({
         this.containerEl.addClass("sm-encounter-creature-list");
         const header = this.containerEl.createDiv({ cls: "sm-encounter-creature-list-header" });
         header.createEl("h3", { text: "Add Creatures", cls: "sm-encounter-section-title" });
+        if (this.callbacks.onGenerateEncounter) {
+          const generateRow = this.containerEl.createDiv({ cls: "sm-encounter-generate-row" });
+          const difficultyGroup = generateRow.createDiv({ cls: "sm-encounter-generate-difficulty" });
+          difficultyGroup.createEl("label", { text: "Difficulty:", cls: "sm-encounter-label" });
+          this.difficultySelect = difficultyGroup.createEl("select", {
+            cls: "sm-encounter-select"
+          });
+          const difficulties = [
+            { value: "easy", label: "Easy" },
+            { value: "medium", label: "Medium" },
+            { value: "hard", label: "Hard" },
+            { value: "deadly", label: "Deadly" }
+          ];
+          for (const diff of difficulties) {
+            const option = this.difficultySelect.createEl("option", {
+              value: diff.value,
+              text: diff.label
+            });
+            if (diff.value === this.currentDifficulty) {
+              option.selected = true;
+            }
+          }
+          this.difficultySelect.addEventListener("change", () => {
+            this.currentDifficulty = this.difficultySelect.value;
+          });
+          this.generateButton = generateRow.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-primary",
+            text: "\u{1F3B2} Generate Random Encounter",
+            attr: {
+              title: "Generate encounter based on current hex (Faction, Terrain, Region)"
+            }
+          });
+          this.generateButton.type = "button";
+          this.generateButton.addEventListener("click", () => this.handleGenerateClick());
+        }
         const searchRow = this.containerEl.createDiv({ cls: "sm-encounter-creature-search" });
         this.searchInput = searchRow.createEl("input", {
           cls: "sm-encounter-input",
@@ -6350,6 +7019,30 @@ var init_creature_list = __esm({
         this.searchInput.addEventListener("input", () => this.applyFilter());
         this.listEl = this.containerEl.createDiv({ cls: "sm-encounter-creature-list-items" });
         await this.loadCreatures();
+      }
+      handleGenerateClick() {
+        if (!this.callbacks.onGenerateEncounter) return;
+        this.setGenerateButtonState(true);
+        try {
+          this.callbacks.onGenerateEncounter(this.currentDifficulty);
+        } catch (err) {
+          logger.error("[creature-list] Generate encounter failed", err);
+          this.setGenerateButtonState(false);
+        }
+      }
+      setGenerateButtonState(loading) {
+        if (!this.generateButton) return;
+        this.generateButton.disabled = loading;
+        this.generateButton.setText(loading ? "Generating..." : "\u{1F3B2} Generate Random Encounter");
+      }
+      setGenerateButtonEnabled(enabled) {
+        if (!this.generateButton) return;
+        this.generateButton.disabled = !enabled;
+        if (!enabled) {
+          this.generateButton.setAttribute("title", "No travel context available (travel required)");
+        } else {
+          this.generateButton.setAttribute("title", "Generate encounter based on current hex (Faction, Terrain, Region)");
+        }
       }
       unmount() {
         this.containerEl.empty();
@@ -6807,11 +7500,11 @@ function createId(prefix) {
   const random = Math.random().toString(36).slice(2, 8);
   return `${prefix}-${Date.now().toString(36)}-${random}`;
 }
-var import_obsidian18, EncounterWorkspaceView, numberFormatter;
+var import_obsidian19, EncounterWorkspaceView, numberFormatter;
 var init_workspace_view = __esm({
   "src/workmodes/encounter/workspace-view.ts"() {
     "use strict";
-    import_obsidian18 = require("obsidian");
+    import_obsidian19 = require("obsidian");
     init_modals();
     init_plugin_logger();
     init_rule_presets();
@@ -7069,10 +7762,10 @@ var init_workspace_view = __esm({
       }
       registerPresetWatcher() {
         this.detachPresetWatcher?.();
-        const baseDir = (0, import_obsidian18.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+        const baseDir = (0, import_obsidian19.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
         const prefix = `${baseDir}/`;
         const handler = (file) => {
-          if (file instanceof import_obsidian18.TFile) {
+          if (file instanceof import_obsidian19.TFile) {
             if (isEncounterPresetFile(file)) {
               this.schedulePresetRefresh();
             }
@@ -7160,11 +7853,11 @@ var init_workspace_view = __esm({
         const presenter = this.presenter;
         const selected = this.getSelectedPreset();
         if (!presenter) {
-          new import_obsidian18.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          new import_obsidian19.Notice("Encounter-Presenter nicht verf\xFCgbar.");
           return;
         }
         if (!selected) {
-          new import_obsidian18.Notice("Bitte ein Preset ausw\xE4hlen.");
+          new import_obsidian19.Notice("Bitte ein Preset ausw\xE4hlen.");
           return;
         }
         try {
@@ -7182,16 +7875,16 @@ var init_workspace_view = __esm({
           if (typeof preset.encounterXp === "number" && Number.isFinite(preset.encounterXp)) {
             presenter.setEncounterXp(preset.encounterXp);
           }
-          new import_obsidian18.Notice(`Preset "${preset.name}" geladen.`);
+          new import_obsidian19.Notice(`Preset "${preset.name}" geladen.`);
         } catch (error) {
           logger.error("[encounter] failed to load preset", error);
-          new import_obsidian18.Notice("Preset konnte nicht geladen werden.");
+          new import_obsidian19.Notice("Preset konnte nicht geladen werden.");
         }
       }
       async handleSavePreset() {
         const presenter = this.presenter;
         if (!presenter) {
-          new import_obsidian18.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          new import_obsidian19.Notice("Encounter-Presenter nicht verf\xFCgbar.");
           return;
         }
         const selected = this.getSelectedPreset();
@@ -7211,14 +7904,14 @@ var init_workspace_view = __esm({
                   path: selected && selected.name === (name || fallbackName) ? selected.file.path : void 0
                 }
               );
-              new import_obsidian18.Notice(`Preset "${name || fallbackName}" gespeichert.`);
+              new import_obsidian19.Notice(`Preset "${name || fallbackName}" gespeichert.`);
               await this.refreshPresetOptions();
               if (this.presetSelectEl && this.presetSelectEl.isConnected) {
                 this.presetSelectEl.value = file.path;
               }
             } catch (error) {
               logger.error("[encounter] failed to save preset", error);
-              new import_obsidian18.Notice("Preset konnte nicht gespeichert werden.");
+              new import_obsidian19.Notice("Preset konnte nicht gespeichert werden.");
             }
             this.syncPresetControlsState();
           },
@@ -7234,21 +7927,21 @@ var init_workspace_view = __esm({
       async handleDeletePreset() {
         const selected = this.getSelectedPreset();
         if (!selected) {
-          new import_obsidian18.Notice("Bitte ein Preset ausw\xE4hlen.");
+          new import_obsidian19.Notice("Bitte ein Preset ausw\xE4hlen.");
           return;
         }
         const confirmed = window.confirm(`Preset "${selected.name}" l\xF6schen?`);
         if (!confirmed) return;
         try {
           await deleteEncounterRulePreset(this.app, selected.file);
-          new import_obsidian18.Notice(`Preset "${selected.name}" gel\xF6scht.`);
+          new import_obsidian19.Notice(`Preset "${selected.name}" gel\xF6scht.`);
           await this.refreshPresetOptions();
           if (this.presetSelectEl && this.presetSelectEl.isConnected) {
             this.presetSelectEl.value = "";
           }
         } catch (error) {
           logger.error("[encounter] failed to delete preset", error);
-          new import_obsidian18.Notice("Preset konnte nicht gel\xF6scht werden.");
+          new import_obsidian19.Notice("Preset konnte nicht gel\xF6scht werden.");
         }
         this.syncPresetControlsState();
       }
@@ -7975,16 +8668,16 @@ async function openEncounter(app) {
   await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
   app.workspace.revealLeaf(leaf);
 }
-var import_obsidian19, VIEW_ENCOUNTER, EncounterView;
+var import_obsidian20, VIEW_ENCOUNTER, EncounterView;
 var init_view = __esm({
   "src/workmodes/encounter/view.ts"() {
     "use strict";
-    import_obsidian19 = require("obsidian");
+    import_obsidian20 = require("obsidian");
     init_presenter();
     init_workspace_view();
     init_layout();
     VIEW_ENCOUNTER = "salt-encounter";
-    EncounterView = class extends import_obsidian19.ItemView {
+    EncounterView = class extends import_obsidian20.ItemView {
       constructor(leaf) {
         super(leaf);
         this.presenter = null;
@@ -9110,7 +9803,7 @@ function createRendererWrapper(type, coreRenderer, options) {
     supports: (spec) => spec.type === type,
     render: (args) => {
       const { container, spec, values, onChange } = args;
-      const setting = new import_obsidian20.Setting(container);
+      const setting = new import_obsidian21.Setting(container);
       if (spec.label) {
         setting.setName(spec.label);
       }
@@ -9135,11 +9828,11 @@ function createRendererWrapper(type, coreRenderer, options) {
     }
   };
 }
-var import_obsidian20;
+var import_obsidian21;
 var init_field_rendering_core = __esm({
   "src/features/data-manager/fields/field-rendering-core.ts"() {
     "use strict";
-    import_obsidian20 = require("obsidian");
+    import_obsidian21 = require("obsidian");
     init_plugin_logger();
     init_width_utils();
     init_token_field_core_new();
@@ -9446,7 +10139,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian21.setIcon)(moveUpBtn, "chevron-up");
+    (0, import_obsidian22.setIcon)(moveUpBtn, "chevron-up");
     moveUpBtn.addEventListener("click", moveUpHandler);
   }
   if (includeMoveButtons && moveDownHandler) {
@@ -9461,7 +10154,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian21.setIcon)(moveDownBtn, "chevron-down");
+    (0, import_obsidian22.setIcon)(moveDownBtn, "chevron-down");
     moveDownBtn.addEventListener("click", moveDownHandler);
   }
   const deleteHandler = resolvedActions.remove ?? context.remove;
@@ -9501,11 +10194,11 @@ function renderEntryCard(options) {
   renderBody(card, context);
   return slots;
 }
-var import_obsidian21;
+var import_obsidian22;
 var init_entry_card = __esm({
   "src/features/data-manager/storage/entry-card.ts"() {
     "use strict";
-    import_obsidian21 = require("obsidian");
+    import_obsidian22 = require("obsidian");
   }
 });
 
@@ -10497,11 +11190,11 @@ var init_renderer_checkbox = __esm({
 });
 
 // src/features/data-manager/fields/renderer-select.ts
-var import_obsidian22, selectFieldRenderer;
+var import_obsidian23, selectFieldRenderer;
 var init_renderer_select = __esm({
   "src/features/data-manager/fields/renderer-select.ts"() {
     "use strict";
-    import_obsidian22 = require("obsidian");
+    import_obsidian23 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_select_enhancement();
@@ -10510,7 +11203,7 @@ var init_renderer_select = __esm({
       supports: (spec) => spec.type === "select",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian22.Setting(container).setName(spec.label);
+        const setting = new import_obsidian23.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -10596,11 +11289,11 @@ var init_renderer_color = __esm({
 });
 
 // src/features/data-manager/fields/renderer-tokens.ts
-var import_obsidian23, tokenFieldRenderer;
+var import_obsidian24, tokenFieldRenderer;
 var init_renderer_tokens = __esm({
   "src/features/data-manager/fields/renderer-tokens.ts"() {
     "use strict";
-    import_obsidian23 = require("obsidian");
+    import_obsidian24 = require("obsidian");
     init_modal_utils();
     init_field_rendering_core();
     init_plugin_logger();
@@ -10611,7 +11304,7 @@ var init_renderer_tokens = __esm({
       render: (args) => {
         const { container, spec, values, onChange } = args;
         const tokenSpec = spec;
-        const setting = new import_obsidian23.Setting(container).setName(spec.label);
+        const setting = new import_obsidian24.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         setting.settingEl.addClass("sm-cc-setting--wide");
         setting.settingEl.addClass("sm-cc-setting--token-editor");
@@ -10708,11 +11401,11 @@ var init_renderer_heading = __esm({
 });
 
 // src/features/data-manager/fields/renderer-composite.ts
-var import_obsidian24, compositeFieldRenderer;
+var import_obsidian25, compositeFieldRenderer;
 var init_renderer_composite = __esm({
   "src/features/data-manager/fields/renderer-composite.ts"() {
     "use strict";
-    import_obsidian24 = require("obsidian");
+    import_obsidian25 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_field_rendering_core();
@@ -10720,7 +11413,7 @@ var init_renderer_composite = __esm({
       supports: (spec) => spec.type === "composite",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian24.Setting(container).setName(spec.label);
+        const setting = new import_obsidian25.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -10753,18 +11446,18 @@ var init_renderer_composite = __esm({
 });
 
 // src/features/data-manager/fields/renderer-autocomplete.ts
-var import_obsidian25, autocompleteFieldRenderer;
+var import_obsidian26, autocompleteFieldRenderer;
 var init_renderer_autocomplete = __esm({
   "src/features/data-manager/fields/renderer-autocomplete.ts"() {
     "use strict";
-    import_obsidian25 = require("obsidian");
+    import_obsidian26 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     autocompleteFieldRenderer = {
       supports: (spec) => spec.type === "autocomplete",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian25.Setting(container).setName(spec.label);
+        const setting = new import_obsidian26.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -10858,11 +11551,11 @@ var init_renderer_autocomplete = __esm({
 });
 
 // src/features/data-manager/fields/renderer-repeating.ts
-var import_obsidian26, repeatingFieldRenderer;
+var import_obsidian27, repeatingFieldRenderer;
 var init_renderer_repeating = __esm({
   "src/features/data-manager/fields/renderer-repeating.ts"() {
     "use strict";
-    import_obsidian26 = require("obsidian");
+    import_obsidian27 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_repeating_width_sync();
@@ -10874,7 +11567,7 @@ var init_renderer_repeating = __esm({
       supports: (spec) => spec.type === "repeating",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian26.Setting(container).setName(spec.label);
+        const setting = new import_obsidian27.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -11254,11 +11947,11 @@ function resolveTargetPath(storage, values) {
   const extension = storage.format === "md-frontmatter" || storage.format === "codeblock" ? "md" : storage.format === "json" ? "json" : "yaml";
   const target = ensureExtension(templatePath, extension);
   if (storage.directory) {
-    const sanitizedDir = (0, import_obsidian27.normalizePath)(storage.directory);
+    const sanitizedDir = (0, import_obsidian28.normalizePath)(storage.directory);
     const fileName = target.split("/").pop() ?? target;
-    return (0, import_obsidian27.normalizePath)(`${sanitizedDir}/${fileName}`);
+    return (0, import_obsidian28.normalizePath)(`${sanitizedDir}/${fileName}`);
   }
-  return (0, import_obsidian27.normalizePath)(target);
+  return (0, import_obsidian28.normalizePath)(target);
 }
 function buildFrontmatter(values, storage) {
   const frontmatter = {};
@@ -11304,7 +11997,7 @@ function buildMarkdownBody(values, storage) {
 function serializeMarkdown(storage, values, path) {
   const frontmatter = buildFrontmatter(values, storage);
   const body = buildMarkdownBody(values, storage);
-  const fm2 = (0, import_obsidian27.stringifyYaml)(frontmatter ?? {});
+  const fm2 = (0, import_obsidian28.stringifyYaml)(frontmatter ?? {});
   const content = [`---`, fm2.trimEnd(), `---`, "", body.trimEnd()].join("\n").trimEnd() + "\n";
   return { path, content, metadata: { frontmatter, format: storage.format } };
 }
@@ -11313,7 +12006,7 @@ function serializeJson(values, path) {
   return { path, content, metadata: { format: "json" } };
 }
 function serializeYaml(values, path) {
-  const content = (0, import_obsidian27.stringifyYaml)(values ?? {}) + "\n";
+  const content = (0, import_obsidian28.stringifyYaml)(values ?? {}) + "\n";
   return { path, content, metadata: { format: "yaml" } };
 }
 function serializeCodeblock(storage, values, path) {
@@ -11351,7 +12044,7 @@ function ensureFolder2(app, path) {
   parts.pop();
   const folder = parts.join("/");
   if (!folder) return Promise.resolve();
-  const normalized = (0, import_obsidian27.normalizePath)(folder);
+  const normalized = (0, import_obsidian28.normalizePath)(folder);
   const existing = app.vault.getAbstractFileByPath(normalized);
   if (existing) return Promise.resolve();
   return app.vault.createFolder(normalized).catch(() => {
@@ -11377,7 +12070,7 @@ async function persistSerializedPayload(app, storage, payload) {
     const blockRegex = new RegExp(`^\\s*${fence}${language}(?:\\s|$)[\\s\\S]*?${fence}`, "im");
     const normalizedBlock = content.trim();
     const blockWithNewline = normalizedBlock.endsWith("\\n") ? normalizedBlock : `${normalizedBlock}\\n`;
-    if (existing instanceof import_obsidian27.TFile) {
+    if (existing instanceof import_obsidian28.TFile) {
       const current = await app.vault.read(existing);
       const trimmedCurrent = current.trimEnd();
       const replacement = blockWithNewline.trimEnd();
@@ -11390,7 +12083,7 @@ async function persistSerializedPayload(app, storage, payload) {
       file = await app.vault.create(payload.path, initial.endsWith("\\n") ? initial : `${initial}\\n`);
     }
   } else {
-    if (existing instanceof import_obsidian27.TFile) {
+    if (existing instanceof import_obsidian28.TFile) {
       await app.vault.modify(existing, content);
       file = existing;
     } else {
@@ -11401,11 +12094,11 @@ async function persistSerializedPayload(app, storage, payload) {
   await storage.hooks?.afterWrite?.(result);
   return result;
 }
-var import_obsidian27;
+var import_obsidian28;
 var init_storage = __esm({
   "src/features/data-manager/storage/storage.ts"() {
     "use strict";
-    import_obsidian27 = require("obsidian");
+    import_obsidian28 = require("obsidian");
   }
 });
 
@@ -12008,11 +12701,11 @@ var init_modal_navigation = __esm({
 });
 
 // src/features/data-manager/modal/modal.ts
-var import_obsidian28, CreateModal;
+var import_obsidian29, CreateModal;
 var init_modal = __esm({
   "src/features/data-manager/modal/modal.ts"() {
     "use strict";
-    import_obsidian28 = require("obsidian");
+    import_obsidian29 = require("obsidian");
     init_grid_layout_manager();
     init_label_width_sync();
     init_register_renderers();
@@ -12024,7 +12717,7 @@ var init_modal = __esm({
     init_modal_utils();
     init_plugin_logger();
     registerAllFieldRenderers();
-    CreateModal = class extends import_obsidian28.Modal {
+    CreateModal = class extends import_obsidian29.Modal {
       constructor(app, spec, options, resolve) {
         super(app);
         this.completion = null;
@@ -12144,7 +12837,7 @@ var init_modal = __esm({
         this.fieldManager.updateVisibility();
       }
       buildActionButtons(container) {
-        const buttons = new import_obsidian28.Setting(container);
+        const buttons = new import_obsidian29.Setting(container);
         buttons.addButton((btn) => {
           this.cancelButton = btn;
           btn.setButtonText(this.spec.ui?.cancelLabel || "Abbrechen").onClick(() => {
@@ -12226,7 +12919,7 @@ var init_modal = __esm({
       }
       handleSubmissionError(error) {
         const message = error instanceof Error ? error.message : String(error ?? "Unbekannter Fehler");
-        new import_obsidian28.Notice(`Fehler beim Speichern: ${message}`);
+        new import_obsidian29.Notice(`Fehler beim Speichern: ${message}`);
       }
       lockBackgroundPointer() {
         const bg = document.querySelector(".modal-bg");
@@ -13058,15 +13751,15 @@ var init_ui = __esm({
 });
 
 // src/features/data-manager/browse/tabbed-browse-view.ts
-var import_obsidian29, TabbedBrowseView;
+var import_obsidian30, TabbedBrowseView;
 var init_tabbed_browse_view = __esm({
   "src/features/data-manager/browse/tabbed-browse-view.ts"() {
     "use strict";
-    import_obsidian29 = require("obsidian");
+    import_obsidian30 = require("obsidian");
     init_generic_list_renderer();
     init_watcher_hub();
     init_ui();
-    TabbedBrowseView = class extends import_obsidian29.ItemView {
+    TabbedBrowseView = class extends import_obsidian30.ItemView {
       constructor(leaf) {
         super(leaf);
         this.queries = /* @__PURE__ */ new Map();
@@ -14215,11 +14908,11 @@ function renderMultiattackEffect(container, entry, ctx) {
     text: "+ Angriff"
   });
 }
-var import_obsidian30, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
+var import_obsidian31, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
 var init_create_spec = __esm({
   "src/workmodes/library/creatures/create-spec.ts"() {
     "use strict";
-    import_obsidian30 = require("obsidian");
+    import_obsidian31 = require("obsidian");
     init_serializer();
     init_debug_logger();
     init_constants();
@@ -15226,14 +15919,14 @@ var init_create_spec = __esm({
                   cls: "sm-cc-entry-toggle",
                   attr: { "aria-expanded": "true", "aria-label": "Toggle entry" }
                 });
-                (0, import_obsidian30.setIcon)(toggle, "chevron-down");
+                (0, import_obsidian31.setIcon)(toggle, "chevron-down");
                 head.prepend(toggle);
                 toggle.addEventListener("click", (e) => {
                   e.stopPropagation();
                   const isExpanded = toggle.getAttribute("aria-expanded") === "true";
                   toggle.setAttribute("aria-expanded", String(!isExpanded));
                   slots.card.toggleClass("is-collapsed", isExpanded);
-                  (0, import_obsidian30.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
+                  (0, import_obsidian31.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
                 });
               }
             };
@@ -18466,263 +19159,6 @@ var init_registry = __esm({
     LIBRARY_LIST_SCHEMAS = {
       ...generateListSchemas(LIBRARY_CREATE_SPECS)
     };
-  }
-});
-
-// src/features/maps/state/terrain-store.ts
-async function ensureTerrainFile(app) {
-  const path = (0, import_obsidian31.normalizePath)(TERRAIN_FILE);
-  const existing = app.vault.getAbstractFileByPath(path);
-  if (existing instanceof import_obsidian31.TFile) {
-    return existing;
-  }
-  const dir = path.split("/").slice(0, -1).join("/");
-  if (dir) {
-    await app.vault.createFolder(dir).catch(() => {
-    });
-  }
-  const body = [
-    "---",
-    "smList: true",
-    "---",
-    "# Terrains",
-    "",
-    "```terrain",
-    ": transparent, speed: 1",
-    "Wald: #2e7d32, speed: 0.6",
-    "Meer: #0288d1, speed: 0.5",
-    "Berg: #6d4c41, speed: 0.4",
-    "```",
-    ""
-  ].join("\n");
-  return await app.vault.create(path, body);
-}
-function parseTerrainBlock(md) {
-  const match = md.match(BLOCK_RE2);
-  if (!match) return {};
-  const map = {};
-  for (const raw of match[1].split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const parsed = line.match(
-      /^("?)(.*?)(\1)\s*:\s*([^,]+?)(?:\s*,\s*speed\s*:\s*([-+]?\d*\.?\d+))?\s*$/i
-    );
-    if (!parsed) continue;
-    const name = parsed[2].trim();
-    const color = parsed[4].trim();
-    const speedValue = parsed[5] !== void 0 ? parseFloat(parsed[5]) : 1;
-    const speed = Number.isFinite(speedValue) ? speedValue : 1;
-    map[name] = { color, speed };
-  }
-  if (!map[""]) {
-    map[""] = { color: "transparent", speed: 1 };
-  }
-  return map;
-}
-function stringifyTerrainBlock(map) {
-  const entries = Object.entries(map);
-  entries.sort(([a], [b]) => a === "" ? -1 : b === "" ? 1 : a.localeCompare(b));
-  const lines = entries.map(([key, value]) => `${key || ":"}: ${value.color}, speed: ${value.speed}`);
-  return ["```terrain", ...lines, "```"].join("\n");
-}
-async function readTerrainsFromDisk(app) {
-  const file = await ensureTerrainFile(app);
-  const content = await app.vault.read(file);
-  return parseTerrainBlock(content);
-}
-async function writeTerrainsToDisk(app, map) {
-  const file = await ensureTerrainFile(app);
-  const content = await app.vault.read(file);
-  const block = stringifyTerrainBlock(map);
-  const updated = content.match(BLOCK_RE2) ? content.replace(BLOCK_RE2, block) : `${content}
-
-${block}
-`;
-  await app.vault.modify(file, updated);
-}
-function createInitialState2() {
-  return {
-    loaded: false,
-    map: {},
-    version: 0
-  };
-}
-function triggerTerrainEvent(app) {
-  app.workspace.trigger?.("salt:terrains-updated");
-}
-function createTerrainStore(app, options) {
-  const base = writable(createInitialState2(), {
-    name: "map-terrains",
-    debug: options?.debug
-  });
-  let dirty = false;
-  let loadPromise = null;
-  const persistent2 = {
-    subscribe: base.subscribe,
-    get: base.get,
-    set: (value) => {
-      base.set(value);
-      dirty = true;
-    },
-    update: (updater) => {
-      base.update((current) => {
-        const next = updater(current);
-        dirty = true;
-        return next;
-      });
-    },
-    load: async () => {
-      const terrainMap = await readTerrainsFromDisk(app);
-      base.set({
-        loaded: true,
-        map: terrainMap,
-        version: Date.now()
-      });
-      dirty = false;
-      setTerrains(terrainMap);
-      triggerTerrainEvent(app);
-    },
-    save: async () => {
-      const snapshot = base.get();
-      if (!snapshot.loaded) return;
-      await writeTerrainsToDisk(app, snapshot.map);
-      dirty = false;
-    },
-    isDirty: () => dirty,
-    getStorageKey: () => (0, import_obsidian31.normalizePath)(TERRAIN_FILE)
-  };
-  getStoreManager().register("map-terrains", persistent2);
-  const ensureLoaded = async () => {
-    const snapshot = persistent2.get();
-    if (snapshot.loaded && loadPromise === null) {
-      return;
-    }
-    if (!loadPromise) {
-      loadPromise = persistent2.load().finally(() => {
-        loadPromise = null;
-      });
-    }
-    await loadPromise;
-  };
-  const refresh = async () => {
-    loadPromise = persistent2.load().finally(() => {
-      loadPromise = null;
-    });
-    await loadPromise;
-  };
-  const getTerrains = async () => {
-    await ensureLoaded();
-    return persistent2.get().map;
-  };
-  const saveTerrains2 = async (next) => {
-    await ensureLoaded();
-    persistent2.update(() => ({
-      loaded: true,
-      map: { ...next },
-      version: Date.now()
-    }));
-    setTerrains(next);
-    await persistent2.save();
-    triggerTerrainEvent(app);
-  };
-  const watch = (options2) => {
-    const resolved = resolveWatcherOptions(options2);
-    const handleError = (error, reason) => {
-      if (resolved.onError) {
-        try {
-          resolved.onError(error, { reason });
-        } catch (handlerError) {
-          logger.error("[salt-marcher] Terrain watcher error handler threw", handlerError);
-        }
-        return;
-      }
-      logger.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
-    };
-    const update = async (reason) => {
-      try {
-        if (reason === "delete") {
-          await ensureTerrainFile(app);
-        }
-        await refresh();
-        triggerTerrainEvent(app);
-        await resolved.onChange?.();
-      } catch (error) {
-        handleError(error, reason);
-      }
-    };
-    const maybeUpdate = (reason, file) => {
-      if (!(file instanceof import_obsidian31.TFile)) return;
-      if ((0, import_obsidian31.normalizePath)(file.path) !== (0, import_obsidian31.normalizePath)(TERRAIN_FILE)) return;
-      void update(reason);
-    };
-    const refs = ["modify", "delete"].map(
-      (event) => app.vault.on(event, (file) => maybeUpdate(event, file))
-    );
-    let disposed = false;
-    return () => {
-      if (disposed) return;
-      disposed = true;
-      for (const ref of refs) {
-        app.vault.offref(ref);
-      }
-    };
-  };
-  return {
-    state: persistent2,
-    getTerrains,
-    saveTerrains: saveTerrains2,
-    refresh,
-    watch
-  };
-}
-function getTerrainStore(app, options) {
-  let store = storeRegistry2.get(app);
-  if (!store) {
-    store = createTerrainStore(app, options);
-    storeRegistry2.set(app, store);
-  }
-  return store;
-}
-function resolveWatcherOptions(maybe) {
-  if (typeof maybe === "function") {
-    return { onChange: maybe };
-  }
-  return maybe ?? {};
-}
-async function loadTerrains(app) {
-  const store = getTerrainStore(app);
-  return await store.getTerrains();
-}
-function watchTerrains(app, options) {
-  const store = getTerrainStore(app, typeof options === "object" ? options.storeOptions : void 0);
-  return store.watch(options);
-}
-var import_obsidian31, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
-var init_terrain_store = __esm({
-  "src/features/maps/state/terrain-store.ts"() {
-    "use strict";
-    import_obsidian31 = require("obsidian");
-    init_state();
-    init_store_manager();
-    init_plugin_logger();
-    init_terrain();
-    TERRAIN_FILE = "SaltMarcher/Terrains.md";
-    BLOCK_RE2 = /```terrain\s*([\s\S]*?)```/i;
-    storeRegistry2 = /* @__PURE__ */ new WeakMap();
-  }
-});
-
-// src/features/maps/data/terrain-repository.ts
-async function loadTerrains2(app) {
-  return await loadTerrains(app);
-}
-function watchTerrains2(app, options) {
-  return watchTerrains(app, options);
-}
-var init_terrain_repository = __esm({
-  "src/features/maps/data/terrain-repository.ts"() {
-    "use strict";
-    init_terrain_store();
   }
 });
 

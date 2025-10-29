@@ -393,18 +393,37 @@ Vollständige Tag-Taxonomie in `docs/TAGS.md`, Schema-Validatoren in `src/domain
 - Generiert Count basierend auf Party-Level und Difficulty Setting
 - Auto-XP-Balancing (Encounter bleibt im gewählten Difficulty-Bereich)
 
+#### Fortschritt (Stand: 2025-10-29)
+
+**✅ Abgeschlossen:**
+- Core Generator (`generator.ts`) - 500+ Zeilen
+- Unit-Tests (`generator.test.ts`) - 22 Tests, alle passing ✅
+- Tag-Filtering mit 4-Level-Fallback implementiert
+- XP Budget Calculation (D&D 5e DMG p.82)
+- Creature Selection mit Variety-Constraint
+- Test-Suite: 222/224 Tests passing (99%)
+
+**⏳ In Arbeit:**
+- UI-Integration (Generate-Button, Difficulty-Dropdown)
+- Event-Builder Integration (Hex-Kontext → Generator)
+- Integration-Test (End-to-End Flow)
+
+**Commits:**
+- `85ac660` feat(encounter): Implement Phase 2.6 Random Encounter Generator
+- `c5f0ccd` docs: Update Phase 2.6 specification and roadmap status
+
 #### Acceptance Criteria
-1. ✅ Button "Generate Random Encounter" im Session-View (neben "Compose Manually")
-2. ✅ Difficulty-Dropdown (Easy/Medium/Hard/Deadly) mit Standardwert "Medium"
-3. ✅ Generator liefert 1-6 Creatures (min 1, max 6 für Übersichtlichkeit)
-4. ✅ Fallback bei 0 Matches: Schrittweise Tag-Relaxierung
+1. ⏳ Button "Generate Random Encounter" im Session-View (neben "Compose Manually")
+2. ⏳ Difficulty-Dropdown (Easy/Medium/Hard/Deadly) mit Standardwert "Medium"
+3. ✅ Generator liefert 1-6 Creatures (min 1, max 6 für Übersichtlichkeit) - Core implementiert
+4. ✅ Fallback bei 0 Matches: Schrittweise Tag-Relaxierung - Core implementiert
    - Stufe 1: Faction+Terrain+Region
    - Stufe 2: Faction+Terrain
    - Stufe 3: Terrain only
    - Stufe 4: Alle Creatures (keine Filter)
-5. ✅ Loading-State während Generation (Spinner, "Generating...")
-6. ✅ Error-Handling: Toast-Notification bei Failure ("No creatures found")
-7. ✅ Generated Encounter ersetzt aktuelle Creature-Liste (mit Bestätigung bei existierenden Creatures)
+5. ⏳ Loading-State während Generation (Spinner, "Generating...")
+6. ⏳ Error-Handling: Toast-Notification bei Failure ("No creatures found")
+7. ⏳ Generated Encounter ersetzt aktuelle Creature-Liste (mit Bestätigung bei existierenden Creatures)
 
 #### Implementation Details
 
@@ -535,6 +554,61 @@ test('End-to-End Generation', () => {
 - ❌ **Loot-Generation** (Gold/Items/Magie) - Phase 5
 - ❌ **Weather/Time-of-Day Modifiers** (Nacht-Encounters, Sturm-Malus) - Phase 4
 - ❌ **Encounter-Presets** (Hausregeln per Markdown) - Phase 5
+
+#### Nächste Schritte (Priorisiert)
+
+**Schritt 1: UI-Komponenten erstellen** (Geschätzt: 1-2h)
+- **Ziel:** Generate-Button und Difficulty-Dropdown im Encounter-View
+- **Dateien:** `src/workmodes/encounter/view.ts`
+- **Tasks:**
+  1. Difficulty-Dropdown hinzufügen (Easy/Medium/Hard/Deadly, default: Medium)
+  2. "Generate Random Encounter" Button rechts vom Dropdown
+  3. Button disabled wenn kein Travel-Event (kein Hex-Kontext)
+  4. Tooltip: "Generate encounter based on current hex"
+  5. Styling: Primary-Button (blau), Icon optional (🎲)
+
+**Schritt 2: Generator Integration** (Geschätzt: 1-2h)
+- **Ziel:** Generator mit Encounter-Presenter verbinden
+- **Dateien:** `src/workmodes/encounter/presenter.ts`, `src/workmodes/encounter/view.ts`
+- **Tasks:**
+  1. `generateEncounter()` Methode in Presenter hinzufügen
+  2. Hex-Kontext aus Travel-Event lesen (Faction, Terrain, Region)
+  3. Creatures aus Library laden (Repository-Call)
+  4. Generator aufrufen mit Context + Options
+  5. Generierte Creatures via `addCreature()` hinzufügen
+  6. Bestehende Creatures vorher clearen (mit Confirmation-Modal)
+
+**Schritt 3: Loading & Error States** (Geschätzt: 30min)
+- **Ziel:** Feedback während Generation
+- **Tasks:**
+  1. Loading-State: Button disabled + Spinner während Generation
+  2. Success: Toast "Generated encounter: 3 creatures, 450 XP"
+  3. Error: Toast "Failed to generate: No matching creatures found"
+  4. Error: Toast "No hex context available (travel required)"
+
+**Schritt 4: Confirmation-Modal** (Geschätzt: 30min)
+- **Ziel:** Warnung bei überschreiben bestehender Creatures
+- **Komponente:** Obsidian Modal
+- **Text:** "Replace existing encounter? (X creatures will be removed)"
+- **Buttons:** "Cancel" (grey), "Replace" (red)
+- **Logic:** Nur zeigen wenn `creatures.length > 0`
+
+**Schritt 5: Integration-Test** (Geschätzt: 1h)
+- **Ziel:** End-to-End Flow testen
+- **Datei:** `devkit/testing/integration/encounter/generator.integration.test.ts`
+- **Test-Cases:**
+  1. Generate mit Faction+Terrain+Region Context
+  2. Generate ohne Context (Error)
+  3. Generate mit leerer Library (Error)
+  4. Generate ersetzt bestehende Creatures
+  5. Difficulty-Änderung beeinflusst XP-Budget
+
+**Schritt 6: DevKit Integration** (Optional, Geschätzt: 30min)
+- **Ziel:** Generator via DevKit CLI testbar machen
+- **Command:** `./devkit encounter generate --partyLevel 3 --difficulty medium`
+- **Nutzen:** Manuelles Testen ohne UI
+
+**Gesamt-Schätzung:** 4-6 Stunden für komplette Phase 2.6
 
 ### Phase 2.5 – Faction Filtering ⏳ QoL
 Creature-Liste mit Faction-Filter-Dropdown, Relevance-Scoring (Exact > Partial > No match). Optional, da Random Generator bereits filtert.
