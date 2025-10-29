@@ -4860,4340 +4860,6 @@ var init_editor = __esm({
   }
 });
 
-// src/workmodes/cartographer/modes/inspector.ts
-var inspector_exports = {};
-__export(inspector_exports, {
-  createInspectorMode: () => createInspectorMode
-});
-function createInspectorMode() {
-  let ui = {
-    panel: null,
-    form: null,
-    fileLabel: null,
-    message: null,
-    terrain: null,
-    region: null,
-    faction: null,
-    note: null
-  };
-  let state = {
-    file: null,
-    handles: null,
-    selection: null,
-    saveTimer: null
-  };
-  const lifecycle = createModeLifecycle();
-  const isAborted = () => lifecycle.isAborted();
-  const clearSaveTimer = () => {
-    if (state.saveTimer !== null) {
-      window.clearTimeout(state.saveTimer);
-      state.saveTimer = null;
-    }
-  };
-  const resetInputs = () => {
-    ui.terrain?.setValue("");
-    ui.terrain?.setDisabled(true);
-    ui.region?.setValue("");
-    ui.region?.setDisabled(true);
-    ui.faction?.setValue("");
-    ui.faction?.setDisabled(true);
-    ui.note?.setValue("");
-    ui.note?.setDisabled(true);
-  };
-  const updateMessage = () => {
-    if (!ui.message) return;
-    if (!state.file || !state.handles) {
-      ui.message.set({ message: state.file ? "Karte wird geladen \u2026" : "Keine Karte ausgew\xE4hlt.", tone: "info" });
-    } else if (!state.selection) {
-      ui.message.set({ message: "Hex anklicken, um Terrain & Notiz zu bearbeiten.", tone: "info" });
-    } else {
-      ui.message.set({ message: `Hex r${state.selection.r}, c${state.selection.c}`, tone: "info" });
-    }
-  };
-  const updateFileLabel = () => {
-    if (!ui.fileLabel) return;
-    ui.fileLabel.textContent = state.file ? state.file.basename : "Keine Karte";
-  };
-  const updatePanelState = () => {
-    const hasMap = !!state.file && !!state.handles;
-    ui.panel?.classList.toggle("is-disabled", !hasMap);
-    if (!hasMap) {
-      state.selection = null;
-      resetInputs();
-    }
-    updateMessage();
-  };
-  const scheduleSave = (ctx) => {
-    if (ctx.signal.aborted) return;
-    if (!state.selection) return;
-    const file = ctx.getFile();
-    if (!file) return;
-    const handles = ctx.getRenderHandles();
-    clearSaveTimer();
-    state.saveTimer = window.setTimeout(async () => {
-      if (ctx.signal.aborted) return;
-      const terrain = ui.terrain?.getValue() ?? "";
-      const region = ui.region?.getValue() ?? "";
-      const faction = ui.faction?.getValue() ?? "";
-      const note = ui.note?.getValue() ?? "";
-      try {
-        await saveTile(ctx.app, file, state.selection, { terrain, region, faction, note });
-      } catch (err) {
-        logger2.error("[inspector-mode] saveTile failed", err);
-      }
-      const color = TERRAIN_COLORS[terrain] ?? "transparent";
-      try {
-        handles?.setFill(state.selection, color);
-      } catch (err) {
-        logger2.error("[inspector-mode] setFill failed", err);
-      }
-    }, 250);
-  };
-  const loadSelection = async (ctx) => {
-    if (!state.selection) return;
-    const file = ctx.getFile();
-    if (!file) return;
-    let data = null;
-    try {
-      data = await loadTile(ctx.app, file, state.selection);
-    } catch (err) {
-      logger2.error("[inspector-mode] loadTile failed", err);
-      data = null;
-    }
-    if (ctx.signal.aborted) return;
-    ui.terrain?.setValue(data?.terrain ?? "");
-    ui.terrain?.setDisabled(false);
-    ui.region?.setValue(data?.region ?? "");
-    ui.region?.setDisabled(false);
-    ui.faction?.setValue(data?.faction ?? "");
-    ui.faction?.setDisabled(false);
-    ui.note?.setValue(data?.note ?? "");
-    ui.note?.setDisabled(false);
-    updateMessage();
-  };
-  const clearHost = (host) => {
-    while (host.firstChild) {
-      host.removeChild(host.firstChild);
-    }
-  };
-  return {
-    id: "inspector",
-    label: "Inspector",
-    async onEnter(ctx) {
-      lifecycle.bind(ctx);
-      ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, note: null };
-      state = { ...state, selection: null };
-      clearHost(ctx.sidebarHost);
-      ui.panel = document.createElement("div");
-      ui.panel.className = "sm-cartographer__panel sm-cartographer__panel--inspector";
-      ctx.sidebarHost.appendChild(ui.panel);
-      ui.form = buildForm(ui.panel, {
-        sections: [
-          { kind: "header", text: "Inspektor" },
-          { kind: "static", id: "file", cls: "sm-cartographer__panel-file" },
-          { kind: "status", id: "message", cls: "sm-cartographer__panel-info" },
-          {
-            kind: "row",
-            label: "Terrain:",
-            rowCls: "sm-cartographer__panel-row",
-            controls: [
-              {
-                kind: "select",
-                id: "terrain",
-                options: Object.keys(TERRAIN_COLORS).map((key) => ({
-                  value: key,
-                  label: key || "(leer)"
-                })),
-                disabled: true,
-                enhance: (select) => enhanceSelectToSearch(select, "Such-dropdown\u2026"),
-                onChange: () => scheduleSave(ctx)
-              }
-            ]
-          },
-          {
-            kind: "row",
-            label: "Region:",
-            rowCls: "sm-cartographer__panel-row",
-            controls: [
-              {
-                kind: "select",
-                id: "region",
-                options: [],
-                disabled: true,
-                enhance: (select) => enhanceSelectToSearch(select, "Such-dropdown\u2026"),
-                onChange: () => scheduleSave(ctx)
-              }
-            ]
-          },
-          {
-            kind: "row",
-            label: "Faction:",
-            rowCls: "sm-cartographer__panel-row",
-            controls: [
-              {
-                kind: "select",
-                id: "faction",
-                options: [],
-                disabled: true,
-                enhance: (select) => enhanceSelectToSearch(select, "Such-dropdown\u2026"),
-                onChange: () => scheduleSave(ctx)
-              }
-            ]
-          },
-          {
-            kind: "row",
-            label: "Notiz:",
-            rowCls: "sm-cartographer__panel-row",
-            controls: [
-              {
-                kind: "textarea",
-                id: "note",
-                rows: 6,
-                disabled: true,
-                onInput: () => scheduleSave(ctx)
-              }
-            ]
-          }
-        ]
-      });
-      ui.fileLabel = ui.form.getElement("file");
-      ui.message = ui.form.getStatus("message");
-      ui.terrain = ui.form.getControl("terrain");
-      ui.region = ui.form.getControl("region");
-      ui.faction = ui.form.getControl("faction");
-      ui.note = ui.form.getControl("note");
-      try {
-        const regions = await loadRegions2(ctx.app);
-        ui.region?.setOptions([
-          { label: "(none)", value: "" },
-          ...regions.map((r) => ({
-            label: r.name || "(unnamed)",
-            value: r.name ?? ""
-          }))
-        ]);
-      } catch (err) {
-        logger2.error("[inspector-mode] failed to load regions", err);
-      }
-      try {
-        const factionFiles = await LIBRARY_DATA_SOURCES.factions.list(ctx.app);
-        const factions = [];
-        for (const file of factionFiles) {
-          try {
-            const entry = await LIBRARY_DATA_SOURCES.factions.load(ctx.app, file);
-            factions.push({ name: entry.name });
-          } catch (err) {
-            logger2.warn(`[inspector-mode] failed to load faction ${file.path}`, err);
-          }
-        }
-        ui.faction?.setOptions([
-          { label: "(none)", value: "" },
-          ...factions.map((f) => ({
-            label: f.name || "(unnamed)",
-            value: f.name ?? ""
-          }))
-        ]);
-      } catch (err) {
-        logger2.error("[inspector-mode] failed to load factions", err);
-      }
-      updateFileLabel();
-      updatePanelState();
-    },
-    async onExit(ctx) {
-      lifecycle.bind(ctx);
-      clearSaveTimer();
-      ui.form?.destroy();
-      ui.panel?.remove();
-      ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, region: null, faction: null, note: null };
-      state = { file: null, handles: null, selection: null, saveTimer: null };
-      lifecycle.reset();
-    },
-    async onFileChange(file, handles, ctx) {
-      lifecycle.bind(ctx);
-      state.file = file;
-      state.handles = handles;
-      clearSaveTimer();
-      resetInputs();
-      updateFileLabel();
-      updatePanelState();
-      if (state.selection && state.file && state.handles && !isAborted()) {
-        await loadSelection(ctx);
-      }
-    },
-    async onHexClick(coord, _event, ctx) {
-      lifecycle.bind(ctx);
-      if (isAborted()) return;
-      if (!state.file || !state.handles) return;
-      clearSaveTimer();
-      state.selection = coord;
-      updateMessage();
-      if (isAborted()) return;
-      await loadSelection(ctx);
-    }
-  };
-}
-var init_inspector = __esm({
-  "src/workmodes/cartographer/modes/inspector.ts"() {
-    "use strict";
-    init_tile_repository();
-    init_terrain();
-    init_region_repository();
-    init_data_sources();
-    init_search_dropdown();
-    init_plugin_logger();
-    init_lifecycle();
-    init_form_builder();
-  }
-});
-
-// src/workmodes/encounter/session-store.ts
-function createInitialEncounterXpState() {
-  return {
-    party: [],
-    encounterXp: 0,
-    rules: []
-  };
-}
-function clonePartyMember(member) {
-  return { ...member };
-}
-function cloneRule(rule) {
-  return { ...rule };
-}
-function cloneMutableEncounterXpState(state) {
-  return {
-    party: state.party.map(clonePartyMember),
-    encounterXp: state.encounterXp,
-    rules: state.rules.map(cloneRule)
-  };
-}
-function createImmutableEncounterXpState(state) {
-  const party = Object.freeze(state.party.map(clonePartyMember));
-  const rules = Object.freeze(state.rules.map(cloneRule));
-  return {
-    party,
-    encounterXp: state.encounterXp,
-    rules
-  };
-}
-function emitEncounterXpState() {
-  const snapshot = createImmutableEncounterXpState(encounterXpState);
-  if (!xpStateListeners.size) {
-    return snapshot;
-  }
-  for (const listener of [...xpStateListeners]) {
-    try {
-      listener(snapshot);
-    } catch (err) {
-      logger2.error("[encounter] xp listener failed", err);
-    }
-  }
-  return snapshot;
-}
-function publishEncounterEvent(event) {
-  latestEvent = event;
-  for (const listener of [...listeners]) {
-    try {
-      listener(event);
-    } catch (err) {
-      logger2.error("[encounter] listener failed", err);
-    }
-  }
-}
-function subscribeToEncounterEvents(listener) {
-  listeners.add(listener);
-  if (latestEvent) {
-    try {
-      listener(latestEvent);
-    } catch (err) {
-      logger2.error("[encounter] listener failed", err);
-    }
-  }
-  return () => {
-    listeners.delete(listener);
-  };
-}
-function peekLatestEncounterEvent() {
-  return latestEvent;
-}
-function getEncounterXpState() {
-  return createImmutableEncounterXpState(encounterXpState);
-}
-function subscribeEncounterXpState(listener) {
-  xpStateListeners.add(listener);
-  try {
-    listener(getEncounterXpState());
-  } catch (err) {
-    logger2.error("[encounter] xp listener failed", err);
-  }
-  return () => {
-    xpStateListeners.delete(listener);
-  };
-}
-function updateEncounterXpState(mutator) {
-  const next = cloneMutableEncounterXpState(encounterXpState);
-  mutator(next);
-  encounterXpState = next;
-  return emitEncounterXpState();
-}
-function setEncounterXp(value) {
-  return updateEncounterXpState((draft) => {
-    draft.encounterXp = value;
-  });
-}
-function addPartyMember(member) {
-  return updateEncounterXpState((draft) => {
-    draft.party.push(clonePartyMember(member));
-  });
-}
-function updatePartyMember(id, patch) {
-  return updateEncounterXpState((draft) => {
-    const index = draft.party.findIndex((member) => member.id === id);
-    if (index === -1) {
-      return;
-    }
-    draft.party[index] = { ...draft.party[index], ...patch };
-  });
-}
-function removePartyMember(id) {
-  return updateEncounterXpState((draft) => {
-    draft.party = draft.party.filter((member) => member.id !== id);
-  });
-}
-function addRule(rule) {
-  return updateEncounterXpState((draft) => {
-    draft.rules.push(cloneRule(rule));
-  });
-}
-function updateRule(id, patch) {
-  return updateEncounterXpState((draft) => {
-    const index = draft.rules.findIndex((rule) => rule.id === id);
-    if (index === -1) {
-      return;
-    }
-    draft.rules[index] = { ...draft.rules[index], ...patch };
-  });
-}
-function removeRule(id) {
-  return updateEncounterXpState((draft) => {
-    draft.rules = draft.rules.filter((rule) => rule.id !== id);
-  });
-}
-function replaceEncounterXpState(state) {
-  encounterXpState = {
-    party: state.party.map(clonePartyMember),
-    encounterXp: state.encounterXp,
-    rules: state.rules.map(cloneRule)
-  };
-  return emitEncounterXpState();
-}
-var DND5E_XP_THRESHOLDS, latestEvent, listeners, encounterXpState, xpStateListeners;
-var init_session_store = __esm({
-  "src/workmodes/encounter/session-store.ts"() {
-    "use strict";
-    init_plugin_logger();
-    DND5E_XP_THRESHOLDS = {
-      1: 0,
-      2: 300,
-      3: 900,
-      4: 2700,
-      5: 6500,
-      6: 14e3,
-      7: 23e3,
-      8: 34e3,
-      9: 48e3,
-      10: 64e3,
-      11: 85e3,
-      12: 1e5,
-      13: 12e4,
-      14: 14e4,
-      15: 165e3,
-      16: 195e3,
-      17: 225e3,
-      18: 265e3,
-      19: 305e3,
-      20: 355e3
-    };
-    latestEvent = null;
-    listeners = /* @__PURE__ */ new Set();
-    encounterXpState = createInitialEncounterXpState();
-    xpStateListeners = /* @__PURE__ */ new Set();
-  }
-});
-
-// src/workmodes/encounter/generator.ts
-var generator_exports = {};
-__export(generator_exports, {
-  calculateCreatureBudget: () => calculateCreatureBudget,
-  filterCreaturesByTags: () => filterCreaturesByTags,
-  generateRandomEncounter: () => generateRandomEncounter,
-  selectCreaturesForBudget: () => selectCreaturesForBudget
-});
-function getXpMultiplier(count) {
-  if (count === 1) return 1;
-  if (count === 2) return 1.5;
-  if (count >= 3 && count <= 6) return 2;
-  if (count >= 7 && count <= 10) return 2.5;
-  if (count >= 11 && count <= 14) return 3;
-  return 4;
-}
-function filterCreaturesByTags(ctx) {
-  const { faction, terrain, region, creatures } = ctx;
-  const factionTags = faction?.influence_tags?.map((t) => t.value.toLowerCase()) ?? [];
-  const terrainTags = [
-    ...terrain?.biome_tags?.map((t) => t.value.toLowerCase()) ?? [],
-    ...terrain?.difficulty_tags?.map((t) => t.value.toLowerCase()) ?? []
-  ];
-  const regionTags = [
-    ...region?.biome_tags?.map((t) => t.value.toLowerCase()) ?? [],
-    ...region?.danger_tags?.map((t) => t.value.toLowerCase()) ?? [],
-    ...region?.climate_tags?.map((t) => t.value.toLowerCase()) ?? [],
-    ...region?.settlement_tags?.map((t) => t.value.toLowerCase()) ?? []
-  ];
-  const matchesAnyTag = (creatureTags, filterTags) => {
-    if (filterTags.length === 0) return true;
-    if (creatureTags.length === 0) return false;
-    return creatureTags.some((ct) => filterTags.includes(ct.toLowerCase()));
-  };
-  const filterLevels = [
-    // Level 1: Faction + Terrain + Region (skip if any is empty)
-    ...factionTags.length > 0 && terrainTags.length > 0 && regionTags.length > 0 ? [{ level: 1, tags: [factionTags, terrainTags, regionTags] }] : [],
-    // Level 2: Faction + Terrain (skip if either is empty)
-    ...factionTags.length > 0 && terrainTags.length > 0 ? [{ level: 2, tags: [factionTags, terrainTags] }] : [],
-    // Level 3: Terrain only (skip if empty)
-    ...terrainTags.length > 0 ? [{ level: 3, tags: [terrainTags] }] : [],
-    // Level 4: No filter (always present)
-    { level: 4, tags: [] }
-  ];
-  for (const { level, tags } of filterLevels) {
-    const filtered = creatures.filter((creature) => {
-      const creatureTags = creature.typeTags?.map((t) => {
-        return typeof t === "string" ? t : t;
-      }) ?? [];
-      if (tags.length === 0) return true;
-      if (creatureTags.length === 0) return false;
-      return tags.every((filterTagSet) => matchesAnyTag(creatureTags, filterTagSet));
-    });
-    if (filtered.length > 0) {
-      logger2.debug(`[generator] Filter level ${level}: ${filtered.length} matches`, {
-        factionTags,
-        terrainTags,
-        regionTags,
-        filterLevel: level
-      });
-      return { creatures: filtered, filterLevel: level };
-    }
-  }
-  logger2.warn("[generator] No creatures found at any filter level");
-  return { creatures: [], filterLevel: 4 };
-}
-function calculateCreatureBudget(options) {
-  const { partyLevel, partySize, difficulty } = options;
-  if (partyLevel < 1 || partyLevel > 20) {
-    logger2.warn(`[generator] Invalid party level: ${partyLevel}, clamping to 1-20`);
-  }
-  if (partySize < 1) {
-    logger2.warn(`[generator] Invalid party size: ${partySize}, defaulting to 1`);
-  }
-  const level = Math.max(1, Math.min(20, partyLevel));
-  const size = Math.max(1, partySize);
-  const xpPerCharacter = XP_THRESHOLDS[difficulty][level - 1];
-  const targetXP = xpPerCharacter * size;
-  const minXP = Math.floor(targetXP * 0.8);
-  const maxXP = Math.ceil(targetXP * 1.2);
-  logger2.debug(`[generator] Budget: ${targetXP} XP (${minXP}-${maxXP})`, {
-    partyLevel: level,
-    partySize: size,
-    difficulty,
-    xpPerCharacter
-  });
-  return { targetXP, minXP, maxXP };
-}
-function selectCreaturesForBudget(creatures, budget, options) {
-  if (creatures.length === 0) {
-    logger2.warn("[generator] No creatures available for selection");
-    return [];
-  }
-  const { minXP, maxXP } = budget;
-  const MAX_CREATURES = 6;
-  const MAX_COPIES = 3;
-  const sorted = [...creatures].sort((a, b) => {
-    const crA = typeof a.cr === "string" ? parseFloat(a.cr) : 0;
-    const crB = typeof b.cr === "string" ? parseFloat(b.cr) : 0;
-    return crA - crB;
-  });
-  const getAdjustedXP = (selections) => {
-    const totalCount = Array.from(selections.values()).reduce((sum, count) => sum + count, 0);
-    const multiplier = getXpMultiplier(totalCount);
-    let rawXP = 0;
-    for (const [name, count] of selections) {
-      const creature = sorted.find((c) => c.name === name);
-      if (!creature) continue;
-      const cr = typeof creature.cr === "string" ? parseFloat(creature.cr) : 0;
-      const xpPerCreature = XP_BY_CR[cr] ?? 0;
-      rawXP += xpPerCreature * count;
-    }
-    return Math.round(rawXP * multiplier);
-  };
-  const rng = options.seed !== void 0 ? seededRandom(options.seed) : Math.random;
-  let bestSelection = /* @__PURE__ */ new Map();
-  let bestXP = 0;
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const selection = /* @__PURE__ */ new Map();
-    const shuffled = [...sorted].sort(() => rng() - 0.5);
-    for (const creature of shuffled) {
-      if (Array.from(selection.values()).reduce((sum, c) => sum + c, 0) >= MAX_CREATURES) {
-        break;
-      }
-      const currentCopies = selection.get(creature.name) ?? 0;
-      if (currentCopies >= MAX_COPIES) continue;
-      selection.set(creature.name, currentCopies + 1);
-      const adjustedXP = getAdjustedXP(selection);
-      if (adjustedXP > maxXP) {
-        if (currentCopies === 0) {
-          selection.delete(creature.name);
-        } else {
-          selection.set(creature.name, currentCopies);
-        }
-      } else if (adjustedXP >= minXP) {
-        if (adjustedXP > bestXP || bestSelection.size === 0) {
-          bestSelection = new Map(selection);
-          bestXP = adjustedXP;
-        }
-      }
-    }
-    const finalXP = getAdjustedXP(selection);
-    if (finalXP >= minXP && finalXP <= maxXP) {
-      if (finalXP > bestXP || bestSelection.size === 0) {
-        bestSelection = new Map(selection);
-        bestXP = finalXP;
-      }
-    }
-  }
-  if (bestSelection.size === 0) {
-    for (let i = sorted.length - 1; i >= 0; i--) {
-      const creature = sorted[i];
-      const cr = typeof creature.cr === "string" ? parseFloat(creature.cr) : 0;
-      const xp = XP_BY_CR[cr] ?? 0;
-      if (xp <= maxXP) {
-        bestSelection.set(creature.name, 1);
-        bestXP = xp;
-        logger2.debug("[generator] Fallback: Single creature", { name: creature.name, xp });
-        break;
-      }
-    }
-  }
-  const result = [];
-  for (const [name, count] of bestSelection) {
-    const creature = sorted.find((c) => c.name === name);
-    if (!creature) continue;
-    const cr = typeof creature.cr === "string" ? parseFloat(creature.cr) : 0;
-    result.push({
-      id: `${name}-${Date.now()}`,
-      name: creature.name,
-      count,
-      cr,
-      source: "library",
-      statblockPath: `Creatures/${creature.name}.md`
-      // TODO: Get actual path
-    });
-  }
-  logger2.debug("[generator] Selected creatures", {
-    count: result.length,
-    totalXP: bestXP,
-    budget: `${minXP}-${maxXP}`,
-    creatures: result.map((c) => `${c.name} x${c.count}`)
-  });
-  return result;
-}
-function generateRandomEncounter(ctx, options) {
-  logger2.info("[generator] Starting encounter generation", {
-    partyLevel: options.partyLevel,
-    partySize: options.partySize,
-    difficulty: options.difficulty,
-    availableCreatures: ctx.creatures.length
-  });
-  const { creatures: filteredCreatures, filterLevel } = filterCreaturesByTags(ctx);
-  if (filteredCreatures.length === 0) {
-    logger2.error("[generator] No matching creatures found");
-    return { creatures: [], totalXP: 0, filterLevel: 4 };
-  }
-  const budget = calculateCreatureBudget(options);
-  const selectedCreatures = selectCreaturesForBudget(filteredCreatures, budget, options);
-  const totalXP = selectedCreatures.reduce((sum, creature) => {
-    const xpPerCreature = XP_BY_CR[creature.cr] ?? 0;
-    return sum + xpPerCreature * creature.count;
-  }, 0);
-  logger2.info("[generator] Encounter generated successfully", {
-    creatureCount: selectedCreatures.length,
-    totalCreatures: selectedCreatures.reduce((sum, c) => sum + c.count, 0),
-    totalXP,
-    filterLevel
-  });
-  return {
-    creatures: selectedCreatures,
-    totalXP,
-    filterLevel
-  };
-}
-function seededRandom(seed) {
-  let state = seed;
-  return () => {
-    state = (state * 1664525 + 1013904223) % 4294967296;
-    return state / 4294967296;
-  };
-}
-var XP_THRESHOLDS, XP_BY_CR;
-var init_generator = __esm({
-  "src/workmodes/encounter/generator.ts"() {
-    "use strict";
-    init_plugin_logger();
-    XP_THRESHOLDS = {
-      easy: [25, 50, 75, 125, 250, 300, 350, 450, 550, 600, 800, 1e3, 1100, 1250, 1400, 1600, 2e3, 2100, 2400, 2800],
-      medium: [50, 100, 150, 250, 500, 600, 750, 900, 1100, 1200, 1600, 2e3, 2200, 2500, 2800, 3200, 3900, 4200, 4900, 5700],
-      hard: [75, 150, 225, 375, 750, 900, 1100, 1400, 1600, 1900, 2400, 3e3, 3400, 3800, 4300, 4800, 5900, 6300, 7300, 8500],
-      deadly: [100, 200, 400, 500, 1100, 1400, 1700, 2100, 2400, 2800, 3600, 4500, 5100, 5700, 6400, 7200, 8800, 9500, 10900, 12700]
-    };
-    XP_BY_CR = {
-      0: 10,
-      0.125: 25,
-      0.25: 50,
-      0.5: 100,
-      1: 200,
-      2: 450,
-      3: 700,
-      4: 1100,
-      5: 1800,
-      6: 2300,
-      7: 2900,
-      8: 3900,
-      9: 5e3,
-      10: 5900,
-      11: 7200,
-      12: 8400,
-      13: 1e4,
-      14: 11500,
-      15: 13e3,
-      16: 15e3,
-      17: 18e3,
-      18: 2e4,
-      19: 22e3,
-      20: 25e3,
-      21: 33e3,
-      22: 41e3,
-      23: 5e4,
-      24: 62e3,
-      25: 75e3,
-      26: 9e4,
-      27: 105e3,
-      28: 12e4,
-      29: 135e3,
-      30: 155e3
-    };
-  }
-});
-
-// src/features/maps/state/terrain-store.ts
-async function ensureTerrainFile(app) {
-  const path = (0, import_obsidian18.normalizePath)(TERRAIN_FILE);
-  const existing = app.vault.getAbstractFileByPath(path);
-  if (existing instanceof import_obsidian18.TFile) {
-    return existing;
-  }
-  const dir = path.split("/").slice(0, -1).join("/");
-  if (dir) {
-    await app.vault.createFolder(dir).catch(() => {
-    });
-  }
-  const body = [
-    "---",
-    "smList: true",
-    "---",
-    "# Terrains",
-    "",
-    "```terrain",
-    ": transparent, speed: 1",
-    "Wald: #2e7d32, speed: 0.6",
-    "Meer: #0288d1, speed: 0.5",
-    "Berg: #6d4c41, speed: 0.4",
-    "```",
-    ""
-  ].join("\n");
-  return await app.vault.create(path, body);
-}
-function parseTerrainBlock(md) {
-  const match = md.match(BLOCK_RE2);
-  if (!match) return {};
-  const map = {};
-  for (const raw of match[1].split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const parsed = line.match(
-      /^("?)(.*?)(\1)\s*:\s*([^,]+?)(?:\s*,\s*speed\s*:\s*([-+]?\d*\.?\d+))?\s*$/i
-    );
-    if (!parsed) continue;
-    const name = parsed[2].trim();
-    const color = parsed[4].trim();
-    const speedValue = parsed[5] !== void 0 ? parseFloat(parsed[5]) : 1;
-    const speed = Number.isFinite(speedValue) ? speedValue : 1;
-    map[name] = { color, speed };
-  }
-  if (!map[""]) {
-    map[""] = { color: "transparent", speed: 1 };
-  }
-  return map;
-}
-function stringifyTerrainBlock(map) {
-  const entries = Object.entries(map);
-  entries.sort(([a], [b]) => a === "" ? -1 : b === "" ? 1 : a.localeCompare(b));
-  const lines = entries.map(([key, value]) => `${key || ":"}: ${value.color}, speed: ${value.speed}`);
-  return ["```terrain", ...lines, "```"].join("\n");
-}
-async function readTerrainsFromDisk(app) {
-  const file = await ensureTerrainFile(app);
-  const content = await app.vault.read(file);
-  return parseTerrainBlock(content);
-}
-async function writeTerrainsToDisk(app, map) {
-  const file = await ensureTerrainFile(app);
-  const content = await app.vault.read(file);
-  const block = stringifyTerrainBlock(map);
-  const updated = content.match(BLOCK_RE2) ? content.replace(BLOCK_RE2, block) : `${content}
-
-${block}
-`;
-  await app.vault.modify(file, updated);
-}
-function createInitialState2() {
-  return {
-    loaded: false,
-    map: {},
-    version: 0
-  };
-}
-function triggerTerrainEvent(app) {
-  app.workspace.trigger?.("salt:terrains-updated");
-}
-function createTerrainStore(app, options) {
-  const base = writable(createInitialState2(), {
-    name: "map-terrains",
-    debug: options?.debug
-  });
-  let dirty = false;
-  let loadPromise = null;
-  const persistent2 = {
-    subscribe: base.subscribe,
-    get: base.get,
-    set: (value) => {
-      base.set(value);
-      dirty = true;
-    },
-    update: (updater) => {
-      base.update((current) => {
-        const next = updater(current);
-        dirty = true;
-        return next;
-      });
-    },
-    load: async () => {
-      const terrainMap = await readTerrainsFromDisk(app);
-      base.set({
-        loaded: true,
-        map: terrainMap,
-        version: Date.now()
-      });
-      dirty = false;
-      setTerrains(terrainMap);
-      triggerTerrainEvent(app);
-    },
-    save: async () => {
-      const snapshot = base.get();
-      if (!snapshot.loaded) return;
-      await writeTerrainsToDisk(app, snapshot.map);
-      dirty = false;
-    },
-    isDirty: () => dirty,
-    getStorageKey: () => (0, import_obsidian18.normalizePath)(TERRAIN_FILE)
-  };
-  getStoreManager().register("map-terrains", persistent2);
-  const ensureLoaded = async () => {
-    const snapshot = persistent2.get();
-    if (snapshot.loaded && loadPromise === null) {
-      return;
-    }
-    if (!loadPromise) {
-      loadPromise = persistent2.load().finally(() => {
-        loadPromise = null;
-      });
-    }
-    await loadPromise;
-  };
-  const refresh = async () => {
-    loadPromise = persistent2.load().finally(() => {
-      loadPromise = null;
-    });
-    await loadPromise;
-  };
-  const getTerrains = async () => {
-    await ensureLoaded();
-    return persistent2.get().map;
-  };
-  const saveTerrains3 = async (next) => {
-    await ensureLoaded();
-    persistent2.update(() => ({
-      loaded: true,
-      map: { ...next },
-      version: Date.now()
-    }));
-    setTerrains(next);
-    await persistent2.save();
-    triggerTerrainEvent(app);
-  };
-  const watch = (options2) => {
-    const resolved = resolveWatcherOptions(options2);
-    const handleError = (error, reason) => {
-      if (resolved.onError) {
-        try {
-          resolved.onError(error, { reason });
-        } catch (handlerError) {
-          logger2.error("[salt-marcher] Terrain watcher error handler threw", handlerError);
-        }
-        return;
-      }
-      logger2.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
-    };
-    const update = async (reason) => {
-      try {
-        if (reason === "delete") {
-          await ensureTerrainFile(app);
-        }
-        await refresh();
-        triggerTerrainEvent(app);
-        await resolved.onChange?.();
-      } catch (error) {
-        handleError(error, reason);
-      }
-    };
-    const maybeUpdate = (reason, file) => {
-      if (!(file instanceof import_obsidian18.TFile)) return;
-      if ((0, import_obsidian18.normalizePath)(file.path) !== (0, import_obsidian18.normalizePath)(TERRAIN_FILE)) return;
-      void update(reason);
-    };
-    const refs = ["modify", "delete"].map(
-      (event) => app.vault.on(event, (file) => maybeUpdate(event, file))
-    );
-    let disposed = false;
-    return () => {
-      if (disposed) return;
-      disposed = true;
-      for (const ref of refs) {
-        app.vault.offref(ref);
-      }
-    };
-  };
-  return {
-    state: persistent2,
-    getTerrains,
-    saveTerrains: saveTerrains3,
-    refresh,
-    watch
-  };
-}
-function getTerrainStore(app, options) {
-  let store = storeRegistry2.get(app);
-  if (!store) {
-    store = createTerrainStore(app, options);
-    storeRegistry2.set(app, store);
-  }
-  return store;
-}
-function resolveWatcherOptions(maybe) {
-  if (typeof maybe === "function") {
-    return { onChange: maybe };
-  }
-  return maybe ?? {};
-}
-async function loadTerrains(app) {
-  const store = getTerrainStore(app);
-  return await store.getTerrains();
-}
-async function saveTerrains(app, map) {
-  const store = getTerrainStore(app);
-  await store.saveTerrains(map);
-}
-function watchTerrains(app, options) {
-  const store = getTerrainStore(app, typeof options === "object" ? options.storeOptions : void 0);
-  return store.watch(options);
-}
-var import_obsidian18, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
-var init_terrain_store = __esm({
-  "src/features/maps/state/terrain-store.ts"() {
-    "use strict";
-    import_obsidian18 = require("obsidian");
-    init_state();
-    init_store_manager();
-    init_plugin_logger();
-    init_terrain();
-    TERRAIN_FILE = "SaltMarcher/Terrains.md";
-    BLOCK_RE2 = /```terrain\s*([\s\S]*?)```/i;
-    storeRegistry2 = /* @__PURE__ */ new WeakMap();
-  }
-});
-
-// src/features/maps/data/terrain-repository.ts
-var terrain_repository_exports = {};
-__export(terrain_repository_exports, {
-  TERRAIN_FILE: () => TERRAIN_FILE,
-  ensureTerrainFile: () => ensureTerrainFile,
-  loadTerrains: () => loadTerrains2,
-  parseTerrainBlock: () => parseTerrainBlock,
-  saveTerrains: () => saveTerrains2,
-  stringifyTerrainBlock: () => stringifyTerrainBlock,
-  watchTerrains: () => watchTerrains2
-});
-async function loadTerrains2(app) {
-  return await loadTerrains(app);
-}
-async function saveTerrains2(app, next) {
-  await saveTerrains(app, next);
-}
-function watchTerrains2(app, options) {
-  return watchTerrains(app, options);
-}
-var init_terrain_repository = __esm({
-  "src/features/maps/data/terrain-repository.ts"() {
-    "use strict";
-    init_terrain_store();
-  }
-});
-
-// src/workmodes/encounter/presenter.ts
-function deriveEncounterXpView(state) {
-  const party = state.party ?? [];
-  const baseEncounterXp = sanitizeNonNegativeNumber(state.encounterXp ?? 0);
-  const partyCount = party.length;
-  const basePerMember = partyCount > 0 ? baseEncounterXp / partyCount : 0;
-  const globalWarnings = [];
-  if (partyCount === 0 && baseEncounterXp > 0) {
-    pushWarning(globalWarnings, "Encounter XP assigned but no party members present.");
-  }
-  const members = party.map((member) => {
-    const xpToNext = calculateXpToNextLevel(member.level, member.currentXp);
-    const warnings = [];
-    if (xpToNext === null) {
-      const sanitizedLevel = sanitizeLevel(member.level);
-      if (sanitizedLevel >= 20) {
-        pushWarning(warnings, "Maximum level reached.");
-      } else {
-        pushWarning(warnings, "XP threshold for next level unavailable.");
-      }
-    }
-    return {
-      member,
-      baseXp: basePerMember,
-      modifiersDelta: 0,
-      totalXp: basePerMember,
-      xpToNextLevel: xpToNext,
-      warnings
-    };
-  });
-  const ruleViews = [];
-  for (const rule of state.rules ?? []) {
-    const ruleWarnings = [];
-    const perMemberDeltas = [];
-    let totalDelta = 0;
-    if (!rule.enabled) {
-      for (const member of members) {
-        perMemberDeltas.push({
-          memberId: member.member.id,
-          memberName: member.member.name,
-          delta: 0
-        });
-      }
-      ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
-      continue;
-    }
-    if (!partyCount) {
-      if (rule.modifierValue !== 0) {
-        pushWarning(ruleWarnings, "Rule effect ignored because no party members are present.");
-      }
-      ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
-      for (const warning of ruleWarnings) {
-        pushWarning(globalWarnings, warning);
-      }
-      continue;
-    }
-    if (rule.scope !== "xp") {
-      for (const member of members) {
-        perMemberDeltas.push({
-          memberId: member.member.id,
-          memberName: member.member.name,
-          delta: 0
-        });
-      }
-      ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
-      continue;
-    }
-    const appendMemberDelta = (member, delta) => {
-      member.modifiersDelta += delta;
-      member.totalXp += delta;
-      perMemberDeltas.push({
-        memberId: member.member.id,
-        memberName: member.member.name,
-        delta
-      });
-      totalDelta += delta;
-    };
-    switch (rule.modifierType) {
-      case "flat": {
-        const perMember = rule.modifierValue / partyCount;
-        for (const member of members) {
-          appendMemberDelta(member, perMember);
-        }
-        break;
-      }
-      case "flatPerAverageLevel": {
-        let totalLevels = 0;
-        for (const member of members) {
-          totalLevels += sanitizeLevel(member.member.level);
-        }
-        const averageLevel = totalLevels / partyCount;
-        const totalAverageDelta = rule.modifierValue * averageLevel;
-        const perMember = totalAverageDelta / partyCount;
-        for (const member of members) {
-          appendMemberDelta(member, perMember);
-        }
-        break;
-      }
-      case "flatPerTotalLevel": {
-        for (const member of members) {
-          const sanitizedLevel = sanitizeLevel(member.member.level);
-          const delta = rule.modifierValue * sanitizedLevel;
-          appendMemberDelta(member, delta);
-        }
-        break;
-      }
-      case "percentTotal": {
-        const percent = rule.modifierValue / 100;
-        for (const member of members) {
-          const delta = member.totalXp * percent;
-          appendMemberDelta(member, delta);
-        }
-        break;
-      }
-      case "percentNextLevel": {
-        let aggregateNext = 0;
-        for (const member of members) {
-          if (member.xpToNextLevel == null) {
-            pushWarning(ruleWarnings, `${member.member.name} has no next-level XP threshold.`);
-            continue;
-          }
-          aggregateNext += member.xpToNextLevel;
-        }
-        if (aggregateNext === 0) {
-          for (const member of members) {
-            perMemberDeltas.push({
-              memberId: member.member.id,
-              memberName: member.member.name,
-              delta: 0
-            });
-          }
-          break;
-        }
-        const total = aggregateNext * (rule.modifierValue / 100);
-        const perMember = total / partyCount;
-        for (const member of members) {
-          appendMemberDelta(member, perMember);
-        }
-        break;
-      }
-    }
-    ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
-    for (const warning of ruleWarnings) {
-      pushWarning(globalWarnings, warning);
-    }
-  }
-  const finalParty = members.map((member) => ({
-    member: member.member,
-    baseXp: member.baseXp,
-    modifiersDelta: member.modifiersDelta,
-    totalXp: member.totalXp,
-    xpToNextLevel: member.xpToNextLevel,
-    warnings: member.warnings
-  }));
-  const totalEncounterXp = finalParty.reduce((sum, member) => sum + member.totalXp, 0);
-  return {
-    baseEncounterXp,
-    totalEncounterXp,
-    party: finalParty,
-    rules: ruleViews,
-    warnings: globalWarnings
-  };
-}
-function calculateXpToNextLevel(level, currentXp) {
-  const sanitizedLevel = sanitizeLevel(level);
-  if (sanitizedLevel >= 20) {
-    return null;
-  }
-  const currentThreshold = DND5E_XP_THRESHOLDS[sanitizedLevel];
-  const nextThreshold = DND5E_XP_THRESHOLDS[sanitizedLevel + 1];
-  if (typeof currentThreshold !== "number" || typeof nextThreshold !== "number") {
-    return null;
-  }
-  const effectiveCurrentXp = sanitizeOptionalNonNegativeNumber(currentXp) ?? currentThreshold;
-  if (effectiveCurrentXp >= nextThreshold) {
-    return 0;
-  }
-  return nextThreshold - effectiveCurrentXp;
-}
-function sanitizeRuleScope(scope) {
-  if (scope === "gold") {
-    return "gold";
-  }
-  return "xp";
-}
-function sanitizeNumber(value) {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return 0;
-  }
-  return value;
-}
-function sanitizeNonNegativeNumber(value) {
-  const numeric = sanitizeNumber(value);
-  return numeric < 0 ? 0 : numeric;
-}
-function sanitizeOptionalNonNegativeNumber(value) {
-  if (value === null || value === void 0) {
-    return void 0;
-  }
-  return sanitizeNonNegativeNumber(value);
-}
-function sanitizeLevel(level) {
-  const numeric = Math.floor(sanitizeNumber(level));
-  return numeric < 1 ? 1 : numeric;
-}
-function clampPercentage(value) {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
-  if (value > 100) return 100;
-  if (value < -100) return -100;
-  return value;
-}
-function clampIndex(index, length) {
-  if (length <= 0) return 0;
-  if (!Number.isFinite(index)) return 0;
-  const truncated = Math.trunc(index);
-  if (truncated < 0) return 0;
-  if (truncated >= length) return length - 1;
-  return truncated;
-}
-function clampToRange(value, range) {
-  if (value < range.min) return range.min;
-  if (value > range.max) return range.max;
-  return value;
-}
-function rollBetween(min, max) {
-  if (max <= min) {
-    return min;
-  }
-  return min + (max - min) * Math.random();
-}
-function pushWarning(collection, warning) {
-  if (!warning) return;
-  if (!collection.includes(warning)) {
-    collection.push(warning);
-  }
-}
-function shallowEqualPartyMembers(a, b) {
-  return a.id === b.id && a.name === b.name && a.level === b.level && (a.currentXp ?? void 0) === (b.currentXp ?? void 0);
-}
-function shallowEqualRules(a, b) {
-  return a.id === b.id && a.title === b.title && a.modifierType === b.modifierType && a.modifierValue === b.modifierValue && a.modifierValueMin === b.modifierValueMin && a.modifierValueMax === b.modifierValueMax && a.enabled === b.enabled && a.scope === b.scope && (a.notes ?? "") === (b.notes ?? "");
-}
-var defaultDeps, EncounterPresenter;
-var init_presenter = __esm({
-  "src/workmodes/encounter/presenter.ts"() {
-    "use strict";
-    init_session_store();
-    defaultDeps = {
-      now: () => (/* @__PURE__ */ new Date()).toISOString()
-    };
-    EncounterPresenter = class _EncounterPresenter {
-      constructor(initial, deps) {
-        this.listeners = /* @__PURE__ */ new Set();
-        this.deps = { ...defaultDeps, ...deps };
-        this.persisted = _EncounterPresenter.normalise(initial);
-        this.viewState = _EncounterPresenter.createViewState(this.persisted);
-        this.unsubscribeStore = subscribeToEncounterEvents((event) => this.applyEvent(event));
-        this.unsubscribeXpStore = subscribeEncounterXpState((xp) => this.applyXpState(xp));
-        if (initial?.xp) {
-          replaceEncounterXpState(this.persisted.xp);
-        }
-      }
-      dispose() {
-        this.unsubscribeStore?.();
-        this.unsubscribeXpStore?.();
-        this.listeners.clear();
-      }
-      /** Restores persisted state (e.g. when `setViewData` fires before `onOpen`). */
-      restore(state) {
-        const normalisedSession = _EncounterPresenter.normaliseSession(state?.session);
-        this.persisted = {
-          ...this.persisted,
-          session: normalisedSession
-        };
-        if (state?.xp) {
-          replaceEncounterXpState(_EncounterPresenter.normaliseXpState(state.xp));
-        } else {
-          this.emit();
-        }
-      }
-      getState() {
-        return this.viewState;
-      }
-      subscribe(listener) {
-        this.listeners.add(listener);
-        listener(this.viewState);
-        return () => {
-          this.listeners.delete(listener);
-        };
-      }
-      setNotes(notes) {
-        if (!this.persisted.session) return;
-        if (this.persisted.session.notes === notes) return;
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...this.persisted.session,
-            notes
-          }
-        };
-        this.emit();
-      }
-      markResolved() {
-        const session = this.persisted.session;
-        if (!session) return;
-        if (session.status === "resolved") return;
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            status: "resolved",
-            resolvedAt: this.deps.now()
-          }
-        };
-        this.emit();
-      }
-      reset() {
-        if (!this.persisted.session) return;
-        this.persisted = {
-          ...this.persisted,
-          session: null
-        };
-        this.emit();
-      }
-      addCreature(creature) {
-        const session = this.persisted.session;
-        if (!session) return;
-        const sanitized = {
-          ...creature,
-          count: Math.max(1, Math.floor(creature.count)),
-          cr: Math.max(0, creature.cr)
-        };
-        const existing = session.creatures.find((c) => c.id === sanitized.id);
-        if (existing) {
-          this.updateCreature(sanitized.id, { count: existing.count + sanitized.count });
-          return;
-        }
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            creatures: [...session.creatures, sanitized]
-          }
-        };
-        this.updateEncounterXpFromCreatures();
-      }
-      updateCreature(id, patch) {
-        const session = this.persisted.session;
-        if (!session) return;
-        const index = session.creatures.findIndex((c) => c.id === id);
-        if (index === -1) return;
-        const existing = session.creatures[index];
-        const updated = {
-          ...existing,
-          ...patch,
-          count: patch.count !== void 0 ? Math.max(1, Math.floor(patch.count)) : existing.count,
-          cr: patch.cr !== void 0 ? Math.max(0, patch.cr) : existing.cr
-        };
-        const nextCreatures = [...session.creatures];
-        nextCreatures[index] = updated;
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            creatures: nextCreatures
-          }
-        };
-        this.updateEncounterXpFromCreatures();
-      }
-      removeCreature(id) {
-        const session = this.persisted.session;
-        if (!session) return;
-        const filtered = session.creatures.filter((c) => c.id !== id);
-        if (filtered.length === session.creatures.length) return;
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            creatures: filtered
-          }
-        };
-        this.updateEncounterXpFromCreatures();
-      }
-      updateEncounterXpFromCreatures() {
-        const session = this.persisted.session;
-        if (!session) return;
-        const xpByCr = {
-          0: 10,
-          0.125: 25,
-          0.25: 50,
-          0.5: 100,
-          1: 200,
-          2: 450,
-          3: 700,
-          4: 1100,
-          5: 1800,
-          6: 2300,
-          7: 2900,
-          8: 3900,
-          9: 5e3,
-          10: 5900,
-          11: 7200,
-          12: 8400,
-          13: 1e4,
-          14: 11500,
-          15: 13e3,
-          16: 15e3,
-          17: 18e3,
-          18: 2e4,
-          19: 22e3,
-          20: 25e3,
-          21: 33e3,
-          22: 41e3,
-          23: 5e4,
-          24: 62e3,
-          25: 75e3,
-          26: 9e4,
-          27: 105e3,
-          28: 12e4,
-          29: 135e3,
-          30: 155e3
-        };
-        const totalXp = session.creatures.reduce((sum, creature) => {
-          const xpPerCreature = xpByCr[creature.cr] ?? 0;
-          return sum + xpPerCreature * creature.count;
-        }, 0);
-        this.setEncounterXp(totalXp);
-        this.emit();
-      }
-      // ============================================================================
-      // Random Encounter Generation (Phase 2.6)
-      // ============================================================================
-      /**
-       * Generates a random encounter based on current travel context.
-       *
-       * @param difficulty Encounter difficulty (easy/medium/hard/deadly)
-       * @param app Obsidian App instance (for loading creatures from library)
-       * @param clearExisting If true, removes existing creatures before adding generated ones
-       * @returns Generated creatures or error
-       */
-      async generateEncounter(difficulty, app, clearExisting = false) {
-        const session = this.persisted.session;
-        if (!session) {
-          return { success: false, error: "No active encounter session" };
-        }
-        try {
-          const { generateRandomEncounter: generateRandomEncounter2 } = await Promise.resolve().then(() => (init_generator(), generator_exports));
-          const { LIBRARY_DATA_SOURCES: LIBRARY_DATA_SOURCES2 } = await Promise.resolve().then(() => (init_data_sources(), data_sources_exports));
-          const { loadRegions: loadRegions3 } = await Promise.resolve().then(() => (init_region_repository(), region_repository_exports));
-          const { loadTerrains: loadTerrains3 } = await Promise.resolve().then(() => (init_terrain_repository(), terrain_repository_exports));
-          const event = session.event;
-          const factionName = event.factionName;
-          const regionName = event.regionName;
-          const terrainName = event.terrainName;
-          const [allCreatures, allFactions, allRegions, allTerrains] = await Promise.all([
-            LIBRARY_DATA_SOURCES2.creatures.list(app).then(
-              (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.creatures.load(app, f)))
-            ),
-            LIBRARY_DATA_SOURCES2.factions.list(app).then(
-              (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.factions.load(app, f)))
-            ),
-            loadRegions3(app),
-            loadTerrains3(app)
-          ]);
-          const faction = factionName ? allFactions.find((f) => f.name.toLowerCase() === factionName.toLowerCase()) : null;
-          const region = regionName ? allRegions.find((r) => r.name.toLowerCase() === regionName.toLowerCase()) : null;
-          const terrain = terrainName ? allTerrains.find((t) => t.name.toLowerCase() === terrainName.toLowerCase()) : null;
-          const xpState = getEncounterXpState();
-          const partyMembers = xpState.party ?? [];
-          if (partyMembers.length === 0) {
-            return { success: false, error: "No party members configured. Add party members first." };
-          }
-          const partyLevel = Math.round(
-            partyMembers.reduce((sum, m) => sum + m.level, 0) / partyMembers.length
-          );
-          const partySize = partyMembers.length;
-          const result = generateRandomEncounter2(
-            {
-              faction: faction ?? null,
-              terrain: terrain ?? null,
-              region: region ?? null,
-              creatures: allCreatures
-            },
-            {
-              partyLevel,
-              partySize,
-              difficulty
-            }
-          );
-          if (result.creatures.length === 0) {
-            return { success: false, error: "No matching creatures found for this context." };
-          }
-          if (clearExisting && session.creatures.length > 0) {
-            this.persisted = {
-              ...this.persisted,
-              session: {
-                ...session,
-                creatures: []
-              }
-            };
-          }
-          for (const creature of result.creatures) {
-            this.addCreature(creature);
-          }
-          return { success: true, creatures: result.creatures };
-        } catch (err) {
-          return {
-            success: false,
-            error: err?.message ?? "Unknown error during generation"
-          };
-        }
-      }
-      /**
-       * Loads faction members as CreatureListItems for display in Encounter Composer.
-       *
-       * @param factionName Name of the faction to load members from
-       * @param app Obsidian App instance (for loading creatures from library)
-       * @returns Array of CreatureListItems representing faction members
-       */
-      async loadFactionMembers(factionName, app) {
-        if (!factionName) return [];
-        try {
-          const { LIBRARY_DATA_SOURCES: LIBRARY_DATA_SOURCES2 } = await Promise.resolve().then(() => (init_data_sources(), data_sources_exports));
-          const allFactions = await LIBRARY_DATA_SOURCES2.factions.list(app).then(
-            (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.factions.load(app, f)))
-          );
-          const faction = allFactions.find((f) => f.name.toLowerCase() === factionName.toLowerCase());
-          if (!faction || !faction.members || faction.members.length === 0) {
-            return [];
-          }
-          const allCreatures = await LIBRARY_DATA_SOURCES2.creatures.list(app).then(
-            (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.creatures.load(app, f)))
-          );
-          const result = [];
-          for (const member of faction.members) {
-            const creature = allCreatures.find((c) => c.name.toLowerCase() === member.name.toLowerCase());
-            if (!creature) {
-              logger.warn(`[presenter] Faction member "${member.name}" not found in library`);
-              continue;
-            }
-            const crString = creature.cr;
-            let cr = 0;
-            if (crString) {
-              if (crString.includes("/")) {
-                const [num, denom] = crString.split("/").map((s) => Number(s.trim()));
-                if (Number.isFinite(num) && Number.isFinite(denom) && denom !== 0) {
-                  cr = num / denom;
-                }
-              } else {
-                const num = Number(crString);
-                if (Number.isFinite(num)) cr = num;
-              }
-            }
-            result.push({
-              name: creature.name,
-              cr,
-              type: creature.type,
-              path: `SaltMarcher/Creatures/${creature.name}.md`
-              // TODO: Get actual path from file
-            });
-          }
-          logger.debug(`[presenter] Loaded ${result.length} faction members for "${factionName}"`);
-          return result;
-        } catch (err) {
-          logger.error(`[presenter] Failed to load faction members for "${factionName}"`, err);
-          return [];
-        }
-      }
-      // ============================================================================
-      // Combat Tracking Methods
-      // ============================================================================
-      startCombat() {
-        const session = this.persisted.session;
-        if (!session) return;
-        if (session.combat?.isActive) return;
-        const participants = [];
-        for (const creature of session.creatures) {
-          for (let i = 0; i < creature.count; i++) {
-            const participantId = `${creature.id}-${i}`;
-            const name = creature.count > 1 ? `${creature.name} ${i + 1}` : creature.name;
-            participants.push({
-              id: participantId,
-              creatureId: creature.id,
-              name,
-              initiative: 0,
-              currentHp: 0,
-              // UI will prompt for max HP
-              maxHp: 0,
-              defeated: false
-            });
-          }
-        }
-        const combat = {
-          isActive: true,
-          participants: Object.freeze(participants),
-          activeParticipantId: null
-        };
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            combat
-          }
-        };
-        this.emit();
-      }
-      endCombat() {
-        const session = this.persisted.session;
-        if (!session) return;
-        if (!session.combat?.isActive) return;
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            combat: null
-          }
-        };
-        this.emit();
-      }
-      updateParticipantInitiative(id, initiative) {
-        const session = this.persisted.session;
-        if (!session?.combat) return;
-        const sanitized = sanitizeNumber(initiative);
-        const participants = [...session.combat.participants];
-        const index = participants.findIndex((p) => p.id === id);
-        if (index === -1) return;
-        participants[index] = { ...participants[index], initiative: sanitized };
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            combat: {
-              ...session.combat,
-              participants: Object.freeze(participants)
-            }
-          }
-        };
-        this.emit();
-      }
-      updateParticipantHp(id, currentHp, maxHp) {
-        const session = this.persisted.session;
-        if (!session?.combat) return;
-        const sanitizedCurrent = sanitizeNonNegativeNumber(currentHp);
-        const participants = [...session.combat.participants];
-        const index = participants.findIndex((p) => p.id === id);
-        if (index === -1) return;
-        const participant = participants[index];
-        const sanitizedMax = maxHp !== void 0 ? sanitizeNonNegativeNumber(maxHp) : participant.maxHp;
-        const clampedCurrent = Math.min(sanitizedCurrent, sanitizedMax);
-        participants[index] = {
-          ...participant,
-          currentHp: clampedCurrent,
-          maxHp: sanitizedMax,
-          defeated: clampedCurrent <= 0
-        };
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            combat: {
-              ...session.combat,
-              participants: Object.freeze(participants)
-            }
-          }
-        };
-        this.emit();
-      }
-      applyDamage(id, amount) {
-        const session = this.persisted.session;
-        if (!session?.combat) return;
-        const participants = [...session.combat.participants];
-        const index = participants.findIndex((p) => p.id === id);
-        if (index === -1) return;
-        const participant = participants[index];
-        const sanitizedAmount = sanitizeNonNegativeNumber(amount);
-        const newHp = Math.max(0, participant.currentHp - sanitizedAmount);
-        participants[index] = {
-          ...participant,
-          currentHp: newHp,
-          defeated: newHp <= 0
-        };
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            combat: {
-              ...session.combat,
-              participants: Object.freeze(participants)
-            }
-          }
-        };
-        this.emit();
-      }
-      applyHealing(id, amount) {
-        const session = this.persisted.session;
-        if (!session?.combat) return;
-        const participants = [...session.combat.participants];
-        const index = participants.findIndex((p) => p.id === id);
-        if (index === -1) return;
-        const participant = participants[index];
-        const sanitizedAmount = sanitizeNonNegativeNumber(amount);
-        const newHp = Math.min(participant.maxHp, participant.currentHp + sanitizedAmount);
-        participants[index] = {
-          ...participant,
-          currentHp: newHp,
-          defeated: newHp <= 0
-        };
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            combat: {
-              ...session.combat,
-              participants: Object.freeze(participants)
-            }
-          }
-        };
-        this.emit();
-      }
-      toggleDefeated(id) {
-        const session = this.persisted.session;
-        if (!session?.combat) return;
-        const participants = [...session.combat.participants];
-        const index = participants.findIndex((p) => p.id === id);
-        if (index === -1) return;
-        const participant = participants[index];
-        participants[index] = {
-          ...participant,
-          defeated: !participant.defeated
-        };
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            combat: {
-              ...session.combat,
-              participants: Object.freeze(participants)
-            }
-          }
-        };
-        this.emit();
-      }
-      setActiveParticipant(id) {
-        const session = this.persisted.session;
-        if (!session?.combat) return;
-        if (session.combat.activeParticipantId === id) return;
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            combat: {
-              ...session.combat,
-              activeParticipantId: id
-            }
-          }
-        };
-        this.emit();
-      }
-      sortParticipantsByInitiative() {
-        const session = this.persisted.session;
-        if (!session?.combat) return;
-        const sorted = [...session.combat.participants].sort((a, b) => b.initiative - a.initiative);
-        this.persisted = {
-          ...this.persisted,
-          session: {
-            ...session,
-            combat: {
-              ...session.combat,
-              participants: Object.freeze(sorted)
-            }
-          }
-        };
-        this.emit();
-      }
-      setEncounterXp(value) {
-        const sanitized = sanitizeNonNegativeNumber(value);
-        if (sanitized === this.persisted.xp.encounterXp) return;
-        setEncounterXp(sanitized);
-      }
-      addPartyMember(member) {
-        const sanitized = _EncounterPresenter.normalisePartyMember(member);
-        if (this.persisted.xp.party.some((existing) => existing.id === sanitized.id)) {
-          this.updatePartyMember(sanitized.id, sanitized);
-          return;
-        }
-        addPartyMember(sanitized);
-      }
-      updatePartyMember(id, patch) {
-        const existing = this.persisted.xp.party.find((member) => member.id === id);
-        if (!existing) return;
-        const sanitizedPatch = _EncounterPresenter.normalisePartyMemberPatch(patch, existing);
-        const next = { ...existing, ...sanitizedPatch };
-        if (shallowEqualPartyMembers(existing, next)) return;
-        updatePartyMember(id, sanitizedPatch);
-      }
-      removePartyMember(id) {
-        if (!this.persisted.xp.party.some((member) => member.id === id)) return;
-        removePartyMember(id);
-      }
-      removeRule(id) {
-        if (!this.persisted.xp.rules.some((rule) => rule.id === id)) return;
-        removeRule(id);
-      }
-      addRule(rule) {
-        const sanitized = _EncounterPresenter.normaliseRule(rule);
-        if (this.persisted.xp.rules.some((existing) => existing.id === sanitized.id)) {
-          this.updateRule(sanitized.id, sanitized);
-          return;
-        }
-        addRule(sanitized);
-      }
-      updateRule(id, patch) {
-        const existing = this.persisted.xp.rules.find((rule) => rule.id === id);
-        if (!existing) return;
-        const sanitizedPatch = _EncounterPresenter.normaliseRulePatch(patch, existing);
-        const next = { ...existing, ...sanitizedPatch };
-        if (shallowEqualRules(existing, next)) return;
-        updateRule(id, sanitizedPatch);
-      }
-      toggleRule(id, enabled) {
-        const existing = this.persisted.xp.rules.find((rule) => rule.id === id);
-        if (!existing) return;
-        const nextEnabled = enabled ?? !existing.enabled;
-        if (existing.enabled === nextEnabled) return;
-        updateRule(id, { enabled: nextEnabled });
-      }
-      replaceRules(rules) {
-        const sanitized = rules.map((rule) => _EncounterPresenter.normaliseRule(rule));
-        updateEncounterXpState((draft) => {
-          draft.rules = sanitized.map((rule) => ({ ...rule }));
-        });
-      }
-      moveRule(id, targetIndex) {
-        updateEncounterXpState((draft) => {
-          const currentIndex = draft.rules.findIndex((rule2) => rule2.id === id);
-          if (currentIndex === -1) return;
-          const normalisedIndex = clampIndex(targetIndex, draft.rules.length);
-          if (normalisedIndex === currentIndex) return;
-          const [rule] = draft.rules.splice(currentIndex, 1);
-          draft.rules.splice(normalisedIndex, 0, rule);
-        });
-      }
-      resetXpState() {
-        replaceEncounterXpState({
-          party: [],
-          encounterXp: 0,
-          rules: []
-        });
-      }
-      applyEvent(event) {
-        const prev = this.persisted.session;
-        if (!prev || prev.event.id !== event.id) {
-          this.persisted = {
-            ...this.persisted,
-            session: {
-              event,
-              notes: "",
-              status: "pending",
-              creatures: []
-            }
-          };
-        } else {
-          this.persisted = {
-            ...this.persisted,
-            session: {
-              ...prev,
-              event
-            }
-          };
-        }
-        this.emit();
-      }
-      applyXpState(xp) {
-        this.persisted = {
-          ...this.persisted,
-          xp: _EncounterPresenter.normaliseXpState(xp)
-        };
-        this.emit();
-      }
-      emit() {
-        this.viewState = _EncounterPresenter.createViewState(this.persisted);
-        for (const listener of [...this.listeners]) {
-          listener(this.viewState);
-        }
-      }
-      static normalise(initial) {
-        return {
-          session: _EncounterPresenter.normaliseSession(initial?.session),
-          xp: _EncounterPresenter.normaliseXpState(initial?.xp ?? getEncounterXpState())
-        };
-      }
-      static createViewState(persisted) {
-        return {
-          session: persisted.session,
-          xp: persisted.xp,
-          xpView: deriveEncounterXpView(persisted.xp)
-        };
-      }
-      static normaliseSession(session) {
-        if (!session || !session.event) {
-          return null;
-        }
-        const status = session.status === "resolved" ? "resolved" : "pending";
-        const creatures = (session.creatures ?? []).map((creature) => ({
-          ...creature,
-          count: Math.max(1, Math.floor(creature.count)),
-          cr: Math.max(0, creature.cr)
-        }));
-        const combat = session.combat ? _EncounterPresenter.normaliseCombat(session.combat) : null;
-        return {
-          event: session.event,
-          notes: session.notes ?? "",
-          status,
-          resolvedAt: session.resolvedAt ?? null,
-          creatures,
-          combat
-        };
-      }
-      static normaliseCombat(combat) {
-        const participants = (combat.participants ?? []).map((participant) => ({
-          ...participant,
-          initiative: sanitizeNumber(participant.initiative),
-          currentHp: sanitizeNonNegativeNumber(participant.currentHp),
-          maxHp: sanitizeNonNegativeNumber(participant.maxHp),
-          defeated: !!participant.defeated
-        }));
-        return {
-          isActive: !!combat.isActive,
-          participants: Object.freeze(participants),
-          activeParticipantId: combat.activeParticipantId ?? null
-        };
-      }
-      static normaliseXpState(xp) {
-        const baseEncounterXp = sanitizeNonNegativeNumber(xp?.encounterXp ?? 0);
-        const party = Object.freeze((xp?.party ?? []).map((member) => ({
-          ..._EncounterPresenter.normalisePartyMember(member)
-        })));
-        const rules = Object.freeze((xp?.rules ?? []).map((rule) => ({
-          ..._EncounterPresenter.normaliseRule(rule)
-        })));
-        return {
-          party,
-          encounterXp: baseEncounterXp,
-          rules
-        };
-      }
-      static normalisePartyMember(member) {
-        return {
-          ...member,
-          level: sanitizeLevel(member.level),
-          currentXp: sanitizeOptionalNonNegativeNumber(member.currentXp)
-        };
-      }
-      static normalisePartyMemberPatch(patch, existing) {
-        const next = {};
-        if (patch.name !== void 0) {
-          next.name = patch.name;
-        }
-        if (patch.level !== void 0) {
-          next.level = sanitizeLevel(patch.level);
-        }
-        if (patch.currentXp !== void 0) {
-          next.currentXp = sanitizeOptionalNonNegativeNumber(patch.currentXp);
-        }
-        if (patch.currentXp === null) {
-          next.currentXp = void 0;
-        }
-        if (patch.id !== void 0 && patch.id !== existing.id) {
-          next.id = existing.id;
-        }
-        return next;
-      }
-      static normaliseRule(rule) {
-        const modifierType = rule.modifierType;
-        const sanitizedValue = _EncounterPresenter.normaliseRuleModifierValue(modifierType, rule.modifierValue);
-        const range = _EncounterPresenter.normaliseRuleModifierRange(
-          modifierType,
-          rule.modifierValueMin,
-          rule.modifierValueMax,
-          sanitizedValue
-        );
-        return {
-          ...rule,
-          modifierType,
-          modifierValue: clampToRange(sanitizedValue, range),
-          modifierValueMin: range.min,
-          modifierValueMax: range.max,
-          enabled: rule.enabled !== false,
-          scope: sanitizeRuleScope(rule.scope),
-          notes: rule.notes ?? (rule.notes === "" ? "" : void 0)
-        };
-      }
-      static normaliseRulePatch(patch, existing) {
-        const next = {};
-        if (patch.title !== void 0) {
-          next.title = patch.title;
-        }
-        if (patch.scope !== void 0) {
-          next.scope = sanitizeRuleScope(patch.scope);
-        }
-        if (patch.notes !== void 0) {
-          next.notes = patch.notes;
-        }
-        const modifierType = patch.modifierType ?? existing.modifierType;
-        if (patch.modifierType !== void 0) {
-          next.modifierType = modifierType;
-        }
-        const hasRangeUpdate = patch.modifierValueMin !== void 0 || patch.modifierValueMax !== void 0 || patch.modifierType !== void 0;
-        let range = null;
-        if (hasRangeUpdate) {
-          range = _EncounterPresenter.normaliseRuleModifierRange(
-            modifierType,
-            patch.modifierValueMin ?? existing.modifierValueMin,
-            patch.modifierValueMax ?? existing.modifierValueMax,
-            existing.modifierValue
-          );
-          next.modifierValueMin = range.min;
-          next.modifierValueMax = range.max;
-        }
-        if (patch.modifierValue !== void 0) {
-          const sanitized = _EncounterPresenter.normaliseRuleModifierValue(modifierType, patch.modifierValue);
-          if (range) {
-            next.modifierValue = clampToRange(sanitized, range);
-          } else {
-            const currentRange = _EncounterPresenter.normaliseRuleModifierRange(
-              modifierType,
-              existing.modifierValueMin,
-              existing.modifierValueMax,
-              existing.modifierValue
-            );
-            next.modifierValue = clampToRange(sanitized, currentRange);
-          }
-        } else if (range) {
-          const sanitizedExisting = _EncounterPresenter.normaliseRuleModifierValue(
-            modifierType,
-            existing.modifierValue
-          );
-          if ((patch.modifierValueMin !== void 0 || patch.modifierValueMax !== void 0) && range.min !== range.max) {
-            next.modifierValue = rollBetween(range.min, range.max);
-          } else {
-            const clamped = clampToRange(sanitizedExisting, range);
-            if (clamped !== existing.modifierValue) {
-              next.modifierValue = clamped;
-            }
-          }
-        }
-        if (patch.enabled !== void 0) {
-          next.enabled = !!patch.enabled;
-        }
-        return next;
-      }
-      static normaliseRuleModifierValue(type, value) {
-        if (type === "flat" || type === "flatPerAverageLevel" || type === "flatPerTotalLevel") {
-          return sanitizeNumber(value);
-        }
-        return clampPercentage(sanitizeNumber(value));
-      }
-      static normaliseRuleModifierRange(type, min, max, fallback) {
-        const sanitizedFallback = _EncounterPresenter.normaliseRuleModifierValue(type, fallback);
-        const hasMin = min !== null && min !== void 0;
-        const hasMax = max !== null && max !== void 0;
-        const sanitizedMin = hasMin ? _EncounterPresenter.normaliseRuleModifierValue(type, min) : sanitizedFallback;
-        const sanitizedMax = hasMax ? _EncounterPresenter.normaliseRuleModifierValue(type, max) : sanitizedFallback;
-        if (sanitizedMin > sanitizedMax) {
-          return { min: sanitizedMax, max: sanitizedMin };
-        }
-        return { min: sanitizedMin, max: sanitizedMax };
-      }
-    };
-  }
-});
-
-// src/workmodes/encounter/rule-presets.ts
-async function ensureEncounterRulePresetDir(app) {
-  const normalized = (0, import_obsidian19.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
-  let file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian19.TFolder) return file;
-  await app.vault.createFolder(normalized).catch(() => {
-  });
-  file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian19.TFolder) return file;
-  throw new Error(`Could not ensure encounter preset directory: ${normalized}`);
-}
-async function listEncounterRulePresets(app) {
-  const dir = await ensureEncounterRulePresetDir(app);
-  const files = [];
-  const walk = (folder) => {
-    for (const child of folder.children) {
-      if (child instanceof import_obsidian19.TFolder) walk(child);
-      else if (child instanceof import_obsidian19.TFile && child.extension === "md") files.push(child);
-    }
-  };
-  walk(dir);
-  const summaries = files.map((file) => {
-    const cache = app.metadataCache.getFileCache(file);
-    const fm2 = cache?.frontmatter ?? {};
-    const name = typeof fm2.name === "string" && fm2.name.trim() ? fm2.name.trim() : file.basename;
-    const encounterXp = typeof fm2.encounterXp === "number" ? fm2.encounterXp : void 0;
-    return { file, name, encounterXp };
-  });
-  summaries.sort((a, b) => a.name.localeCompare(b.name, void 0, { sensitivity: "base" }));
-  return summaries;
-}
-async function loadEncounterRulePreset(app, file) {
-  const cache = app.metadataCache.getFileCache(file);
-  const fm2 = cache?.frontmatter ?? {};
-  const name = typeof fm2.name === "string" && fm2.name.trim() ? fm2.name.trim() : file.basename;
-  const encounterXp = typeof fm2.encounterXp === "number" ? fm2.encounterXp : void 0;
-  const rules = parsePresetRules(fm2.rules);
-  return { name, encounterXp, rules };
-}
-async function saveEncounterRulePreset(app, doc, options = {}) {
-  const sanitizedName = sanitizePresetName(doc.name);
-  const content = serializePreset(doc, sanitizedName);
-  const dir = await ensureEncounterRulePresetDir(app);
-  if (options.path) {
-    const existing = app.vault.getAbstractFileByPath(options.path);
-    if (existing instanceof import_obsidian19.TFile) {
-      await app.vault.modify(existing, content);
-      return existing;
-    }
-  }
-  const baseName = sanitizeFileName2(sanitizedName, DEFAULT_PRESET_NAME);
-  let fileName = `${baseName}.md`;
-  let targetPath = (0, import_obsidian19.normalizePath)(`${dir.path}/${fileName}`);
-  let counter = 2;
-  while (app.vault.getAbstractFileByPath(targetPath)) {
-    fileName = `${baseName} (${counter}).md`;
-    targetPath = (0, import_obsidian19.normalizePath)(`${dir.path}/${fileName}`);
-    counter += 1;
-  }
-  const file = await app.vault.create(targetPath, content);
-  return file;
-}
-async function deleteEncounterRulePreset(app, file) {
-  await app.vault.delete(file);
-}
-function parsePresetRules(raw) {
-  if (!Array.isArray(raw)) return [];
-  const rules = [];
-  for (const entry of raw) {
-    if (!entry || typeof entry !== "object") continue;
-    const data = entry;
-    const modifierType = parseModifierType(data.modifierType);
-    const modifierValue = parseNumber(data.modifierValue, 0);
-    const minValue = parseNumber(data.modifierValueMin, modifierValue);
-    const maxValue = parseNumber(data.modifierValueMax, modifierValue);
-    const scope = data.scope === PRESET_SCOPE_GOLD ? PRESET_SCOPE_GOLD : PRESET_SCOPE_XP;
-    let notes;
-    if (typeof data.notes === "string") {
-      notes = data.notes;
-    } else if (data.notes === "") {
-      notes = "";
-    }
-    const id = typeof data.id === "string" && data.id.trim() ? data.id.trim() : createRuleId();
-    const title = typeof data.title === "string" ? data.title : "";
-    const enabled = data.enabled !== false;
-    const normalisedMin = Math.min(minValue, maxValue);
-    const normalisedMax = Math.max(minValue, maxValue);
-    rules.push({
-      id,
-      title,
-      modifierType,
-      modifierValue,
-      modifierValueMin: normalisedMin,
-      modifierValueMax: normalisedMax,
-      enabled,
-      scope,
-      notes
-    });
-  }
-  return rules;
-}
-function parseModifierType(value) {
-  if (typeof value === "string" && MODIFIER_TYPES.has(value)) {
-    return value;
-  }
-  return "flat";
-}
-function parseNumber(value, fallback) {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim() !== "") {
-    const numeric = Number(value);
-    if (Number.isFinite(numeric)) return numeric;
-  }
-  return fallback;
-}
-function sanitizePresetName(name) {
-  const trimmed = (name ?? "").trim();
-  return trimmed || DEFAULT_PRESET_NAME;
-}
-function sanitizeFileName2(name, fallback) {
-  const trimmed = name.trim();
-  const base = trimmed || fallback;
-  return base.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").replace(/^\.+$/, fallback).slice(0, 120);
-}
-function serializePreset(doc, sanitizedName) {
-  const lines = ["---", `name: ${JSON.stringify(sanitizedName)}`];
-  if (typeof doc.encounterXp === "number" && Number.isFinite(doc.encounterXp)) {
-    lines.push(`encounterXp: ${Number(doc.encounterXp)}`);
-  }
-  if (!doc.rules.length) {
-    lines.push("rules: []", "---", "");
-    return lines.join("\n");
-  }
-  lines.push("rules:");
-  for (const rule of doc.rules) {
-    lines.push(`  - id: ${JSON.stringify(rule.id)}`);
-    lines.push(`    title: ${JSON.stringify(rule.title ?? "")}`);
-    lines.push(`    modifierType: ${JSON.stringify(rule.modifierType)}`);
-    lines.push(`    modifierValue: ${formatNumeric(rule.modifierValue)}`);
-    lines.push(`    modifierValueMin: ${formatNumeric(rule.modifierValueMin)}`);
-    lines.push(`    modifierValueMax: ${formatNumeric(rule.modifierValueMax)}`);
-    lines.push(`    enabled: ${rule.enabled ? "true" : "false"}`);
-    lines.push(`    scope: ${JSON.stringify(rule.scope)}`);
-    if (rule.notes !== void 0) {
-      lines.push(`    notes: ${JSON.stringify(rule.notes)}`);
-    }
-  }
-  lines.push("---", "");
-  return lines.join("\n");
-}
-function formatNumeric(value) {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "0";
-  return Number(value).toString();
-}
-function createRuleId() {
-  const cryptoApi = globalThis.crypto;
-  if (cryptoApi?.randomUUID) {
-    return `rule-${cryptoApi.randomUUID()}`;
-  }
-  const random = Math.random().toString(36).slice(2, 10);
-  return `rule-${Date.now().toString(36)}-${random}`;
-}
-function isEncounterPresetFile(file) {
-  if (!(file instanceof import_obsidian19.TFile)) return false;
-  if (file.extension !== "md") return false;
-  const normalized = (0, import_obsidian19.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
-  const base = `${normalized}/`;
-  return file.path === normalized || file.path.startsWith(base);
-}
-var import_obsidian19, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
-var init_rule_presets = __esm({
-  "src/workmodes/encounter/rule-presets.ts"() {
-    "use strict";
-    import_obsidian19 = require("obsidian");
-    ENCOUNTER_RULE_PRESET_DIR = "SaltMarcher/EncounterPresets";
-    DEFAULT_PRESET_NAME = "Encounter Rule Preset";
-    MODIFIER_TYPES = /* @__PURE__ */ new Set([
-      "flat",
-      "flatPerAverageLevel",
-      "flatPerTotalLevel",
-      "percentTotal",
-      "percentNextLevel"
-    ]);
-    PRESET_SCOPE_GOLD = "gold";
-    PRESET_SCOPE_XP = "xp";
-  }
-});
-
-// src/workmodes/encounter/session-view.ts
-var EncounterSessionView;
-var init_session_view = __esm({
-  "src/workmodes/encounter/session-view.ts"() {
-    "use strict";
-    EncounterSessionView = class {
-      constructor(parentEl) {
-        this.rootEl = null;
-        this.parentEl = parentEl;
-      }
-      mount() {
-        this.unmount();
-        const section = this.parentEl.createDiv({
-          cls: "sm-encounter-section sm-encounter-session sm-encounter-header"
-        });
-        this.rootEl = section;
-        this.titleEl = section.createEl("h2", {
-          cls: "sm-encounter-heading",
-          text: "Encounter"
-        });
-        this.statusEl = section.createDiv({
-          cls: "sm-encounter-status",
-          text: "Waiting for travel events\u2026"
-        });
-        const metaEl = section.createDiv({ cls: "sm-encounter-meta" });
-        this.summaryListEl = metaEl.createEl("ul", { cls: "sm-encounter-summary" });
-        this.emptyStateEl = section.createDiv({
-          cls: "sm-encounter-empty",
-          text: "No active encounter. Travel mode will populate this workspace when an encounter triggers."
-        });
-      }
-      unmount() {
-        this.rootEl?.remove();
-        this.rootEl = null;
-      }
-      render(session) {
-        if (!this.rootEl) return;
-        if (!session) {
-          this.titleEl.setText("Encounter");
-          this.statusEl.setText("Waiting for travel events\u2026");
-          this.summaryListEl.empty();
-          this.emptyStateEl.removeClass("sm-encounter-hidden");
-          return;
-        }
-        this.emptyStateEl.addClass("sm-encounter-hidden");
-        const { event, status, resolvedAt } = session;
-        const region = event.regionName ?? "Unknown region";
-        this.titleEl.setText(`Encounter \u2013 ${region}`);
-        if (status === "resolved") {
-          this.statusEl.setText(resolvedAt ? `Resolved ${resolvedAt}` : "Resolved");
-        } else {
-          this.statusEl.setText("Awaiting resolution");
-        }
-        this.summaryListEl.empty();
-        const summaryEntries = [];
-        if (event.coord) {
-          summaryEntries.push(["Hex", `${event.coord.r}, ${event.coord.c}`]);
-        }
-        if (event.factionName) {
-          summaryEntries.push(["Faction", event.factionName]);
-        }
-        if (event.mapName) {
-          summaryEntries.push(["Map", event.mapName]);
-        }
-        if (event.mapPath) {
-          summaryEntries.push(["Map path", event.mapPath]);
-        }
-        summaryEntries.push(["Triggered", event.triggeredAt]);
-        if (typeof event.travelClockHours === "number") {
-          summaryEntries.push(["Travel clock", `${event.travelClockHours.toFixed(2)} h`]);
-        }
-        if (typeof event.encounterOdds === "number") {
-          summaryEntries.push(["Encounter odds", `1 in ${event.encounterOdds}`]);
-        }
-        for (const [label, value] of summaryEntries) {
-          const li = this.summaryListEl.createEl("li");
-          li.createSpan({ cls: "label", text: `${label}: ` });
-          li.createSpan({ cls: "value", text: value });
-        }
-      }
-    };
-  }
-});
-
-// src/workmodes/encounter/creature-list.ts
-function parseCR(crString) {
-  if (!crString) return 0;
-  const str = crString.trim();
-  if (str.includes("/")) {
-    const [num2, denom] = str.split("/").map((s) => Number(s.trim()));
-    if (Number.isFinite(num2) && Number.isFinite(denom) && denom !== 0) {
-      return num2 / denom;
-    }
-  }
-  const num = Number(str);
-  return Number.isFinite(num) ? num : 0;
-}
-function formatCR(cr) {
-  if (cr === 0.125) return "1/8";
-  if (cr === 0.25) return "1/4";
-  if (cr === 0.5) return "1/2";
-  return String(cr);
-}
-var EncounterCreatureList;
-var init_creature_list = __esm({
-  "src/workmodes/encounter/creature-list.ts"() {
-    "use strict";
-    init_data_sources();
-    init_plugin_logger();
-    EncounterCreatureList = class {
-      constructor(app, containerEl, callbacks) {
-        this.creatures = [];
-        this.filteredCreatures = [];
-        this.currentDifficulty = "medium";
-        // Faction members
-        this.factionMembers = [];
-        this.factionName = null;
-        this.app = app;
-        this.containerEl = containerEl;
-        this.callbacks = callbacks;
-      }
-      async mount() {
-        this.containerEl.empty();
-        this.containerEl.addClass("sm-encounter-creature-list");
-        const header = this.containerEl.createDiv({ cls: "sm-encounter-creature-list-header" });
-        header.createEl("h3", { text: "Add Creatures", cls: "sm-encounter-section-title" });
-        if (this.callbacks.onGenerateEncounter) {
-          const generateRow = this.containerEl.createDiv({ cls: "sm-encounter-generate-row" });
-          const difficultyGroup = generateRow.createDiv({ cls: "sm-encounter-generate-difficulty" });
-          difficultyGroup.createEl("label", { text: "Difficulty:", cls: "sm-encounter-label" });
-          this.difficultySelect = difficultyGroup.createEl("select", {
-            cls: "sm-encounter-select"
-          });
-          const difficulties = [
-            { value: "easy", label: "Easy" },
-            { value: "medium", label: "Medium" },
-            { value: "hard", label: "Hard" },
-            { value: "deadly", label: "Deadly" }
-          ];
-          for (const diff of difficulties) {
-            const option = this.difficultySelect.createEl("option", {
-              value: diff.value,
-              text: diff.label
-            });
-            if (diff.value === this.currentDifficulty) {
-              option.selected = true;
-            }
-          }
-          this.difficultySelect.addEventListener("change", () => {
-            this.currentDifficulty = this.difficultySelect.value;
-          });
-          this.generateButton = generateRow.createEl("button", {
-            cls: "sm-encounter-button sm-encounter-button-primary",
-            text: "\u{1F3B2} Generate Random Encounter",
-            attr: {
-              title: "Generate encounter based on current hex (Faction, Terrain, Region)"
-            }
-          });
-          this.generateButton.type = "button";
-          this.generateButton.addEventListener("click", () => this.handleGenerateClick());
-        }
-        this.factionMembersSection = this.containerEl.createDiv({ cls: "sm-encounter-faction-members" });
-        const searchRow = this.containerEl.createDiv({ cls: "sm-encounter-creature-search" });
-        this.searchInput = searchRow.createEl("input", {
-          cls: "sm-encounter-input",
-          attr: {
-            type: "text",
-            placeholder: "Search creatures..."
-          }
-        });
-        this.searchInput.addEventListener("input", () => this.applyFilter());
-        this.listEl = this.containerEl.createDiv({ cls: "sm-encounter-creature-list-items" });
-        await this.loadCreatures();
-        this.renderFactionMembers();
-      }
-      handleGenerateClick() {
-        if (!this.callbacks.onGenerateEncounter) return;
-        this.setGenerateButtonState(true);
-        try {
-          this.callbacks.onGenerateEncounter(this.currentDifficulty);
-        } catch (err) {
-          logger2.error("[creature-list] Generate encounter failed", err);
-          this.setGenerateButtonState(false);
-        }
-      }
-      setGenerateButtonState(loading) {
-        if (!this.generateButton) return;
-        this.generateButton.disabled = loading;
-        this.generateButton.setText(loading ? "Generating..." : "\u{1F3B2} Generate Random Encounter");
-      }
-      setGenerateButtonEnabled(enabled) {
-        if (!this.generateButton) return;
-        this.generateButton.disabled = !enabled;
-        if (!enabled) {
-          this.generateButton.setAttribute("title", "No travel context available (travel required)");
-        } else {
-          this.generateButton.setAttribute("title", "Generate encounter based on current hex (Faction, Terrain, Region)");
-        }
-      }
-      unmount() {
-        this.containerEl.empty();
-        this.creatures = [];
-        this.filteredCreatures = [];
-        this.factionMembers = [];
-        this.factionName = null;
-      }
-      /**
-       * Sets faction members to display in separate section.
-       * Call this whenever the hex faction changes.
-       */
-      setFactionMembers(members, factionName) {
-        this.factionMembers = members;
-        this.factionName = factionName;
-        this.renderFactionMembers();
-      }
-      renderFactionMembers() {
-        this.factionMembersSection.empty();
-        if (!this.factionMembers.length || !this.factionName) {
-          this.factionMembersSection.style.display = "none";
-          return;
-        }
-        this.factionMembersSection.style.display = "block";
-        const header = this.factionMembersSection.createDiv({ cls: "sm-encounter-faction-members-header" });
-        header.createEl("h4", {
-          text: `${this.factionName} Members (${this.factionMembers.length})`,
-          cls: "sm-encounter-section-subtitle"
-        });
-        const membersList = this.factionMembersSection.createDiv({ cls: "sm-encounter-faction-members-list" });
-        for (const member of this.factionMembers) {
-          const row = membersList.createDiv({ cls: "sm-encounter-creature-item sm-encounter-faction-member-item" });
-          const nameEl = row.createDiv({ cls: "sm-encounter-creature-name" });
-          nameEl.setText(member.name);
-          const badge = nameEl.createSpan({ cls: "sm-faction-member-badge", text: "Faction Member" });
-          const metaEl = row.createDiv({ cls: "sm-encounter-creature-meta" });
-          metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR(member.cr)}` });
-          if (member.type) {
-            metaEl.createSpan({ cls: "sm-encounter-creature-type", text: member.type });
-          }
-          const addButton = row.createEl("button", {
-            cls: "sm-encounter-button sm-encounter-button-primary",
-            text: "Add"
-          });
-          addButton.type = "button";
-          addButton.addEventListener("click", () => {
-            this.callbacks.onAddCreature(member);
-          });
-        }
-      }
-      async loadCreatures() {
-        try {
-          const files = await LIBRARY_DATA_SOURCES.creatures.list(this.app);
-          const loaded = [];
-          for (const file of files) {
-            try {
-              const entry = await LIBRARY_DATA_SOURCES.creatures.load(this.app, file);
-              const cr = parseCR(entry.cr);
-              loaded.push({
-                name: entry.name,
-                cr,
-                type: entry.type,
-                path: file.path
-              });
-            } catch (err) {
-              logger2.warn(`[creature-list] failed to load ${file.path}`, err);
-            }
-          }
-          loaded.sort((a, b) => {
-            if (a.cr !== b.cr) return a.cr - b.cr;
-            return a.name.localeCompare(b.name);
-          });
-          this.creatures = loaded;
-          this.applyFilter();
-        } catch (err) {
-          logger2.error("[creature-list] failed to load creatures", err);
-          this.listEl.setText("Failed to load creatures from library.");
-        }
-      }
-      applyFilter() {
-        const query = this.searchInput.value.toLowerCase().trim();
-        if (!query) {
-          this.filteredCreatures = this.creatures;
-        } else {
-          this.filteredCreatures = this.creatures.filter((creature) => {
-            return creature.name.toLowerCase().includes(query) || creature.type?.toLowerCase().includes(query);
-          });
-        }
-        this.renderList();
-      }
-      renderList() {
-        this.listEl.empty();
-        if (!this.filteredCreatures.length) {
-          this.listEl.createDiv({
-            cls: "sm-encounter-empty-row",
-            text: this.creatures.length ? "No creatures match your search." : "No creatures found in library."
-          });
-          return;
-        }
-        for (const creature of this.filteredCreatures) {
-          const row = this.listEl.createDiv({ cls: "sm-encounter-creature-item" });
-          const nameEl = row.createDiv({ cls: "sm-encounter-creature-name" });
-          nameEl.setText(creature.name);
-          const metaEl = row.createDiv({ cls: "sm-encounter-creature-meta" });
-          metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR(creature.cr)}` });
-          if (creature.type) {
-            metaEl.createSpan({ cls: "sm-encounter-creature-type", text: creature.type });
-          }
-          const addButton = row.createEl("button", {
-            cls: "sm-encounter-button sm-encounter-button-primary",
-            text: "Add"
-          });
-          addButton.type = "button";
-          addButton.addEventListener("click", () => {
-            this.callbacks.onAddCreature(creature);
-          });
-        }
-      }
-    };
-  }
-});
-
-// src/workmodes/encounter/composition-view.ts
-function formatCR2(cr) {
-  if (cr === 0.125) return "1/8";
-  if (cr === 0.25) return "1/4";
-  if (cr === 0.5) return "1/2";
-  return String(cr);
-}
-var EncounterCompositionView;
-var init_composition_view = __esm({
-  "src/workmodes/encounter/composition-view.ts"() {
-    "use strict";
-    EncounterCompositionView = class {
-      constructor(containerEl, callbacks) {
-        this.containerEl = containerEl;
-        this.callbacks = callbacks;
-      }
-      mount() {
-        this.containerEl.empty();
-        this.containerEl.addClass("sm-encounter-composition");
-        const header = this.containerEl.createDiv({ cls: "sm-encounter-composition-header" });
-        header.createEl("h3", { text: "Encounter Composition", cls: "sm-encounter-section-title" });
-        this.listEl = this.containerEl.createDiv({ cls: "sm-encounter-composition-list" });
-      }
-      unmount() {
-        this.containerEl.empty();
-      }
-      render(creatures) {
-        this.listEl.empty();
-        if (!creatures.length) {
-          this.listEl.createDiv({
-            cls: "sm-encounter-empty-row",
-            text: "No creatures added yet. Use the list above to add creatures."
-          });
-          return;
-        }
-        for (const creature of creatures) {
-          const row = this.listEl.createDiv({ cls: "sm-encounter-composition-item" });
-          const nameEl = row.createDiv({ cls: "sm-encounter-composition-name" });
-          nameEl.setText(creature.name);
-          const metaEl = row.createDiv({ cls: "sm-encounter-composition-meta" });
-          metaEl.createSpan({ cls: "sm-encounter-composition-cr", text: `CR ${formatCR2(creature.cr)}` });
-          const countField = row.createDiv({ cls: "sm-encounter-composition-count" });
-          countField.createEl("label", {
-            attr: { for: `creature-count-${creature.id}` },
-            text: "Count:"
-          });
-          const countInput = countField.createEl("input", {
-            cls: "sm-encounter-input",
-            attr: {
-              id: `creature-count-${creature.id}`,
-              type: "number",
-              min: "1",
-              max: "99",
-              value: String(creature.count)
-            }
-          });
-          countInput.addEventListener("change", () => {
-            const value = Number(countInput.value);
-            if (!Number.isFinite(value) || value < 1) {
-              countInput.value = String(creature.count);
-              return;
-            }
-            const clamped = Math.max(1, Math.min(99, Math.floor(value)));
-            if (clamped !== value) {
-              countInput.value = String(clamped);
-            }
-            this.callbacks.onUpdateCount(creature.id, clamped);
-          });
-          const removeButton = row.createEl("button", {
-            cls: "sm-encounter-button sm-encounter-button-danger",
-            text: "Remove"
-          });
-          removeButton.type = "button";
-          removeButton.addEventListener("click", () => {
-            this.callbacks.onRemove(creature.id);
-          });
-        }
-      }
-    };
-  }
-});
-
-// src/workmodes/encounter/combat-tracker.ts
-var CombatTrackerView;
-var init_combat_tracker = __esm({
-  "src/workmodes/encounter/combat-tracker.ts"() {
-    "use strict";
-    CombatTrackerView = class {
-      constructor(containerEl, callbacks) {
-        this.containerEl = containerEl;
-        this.callbacks = callbacks;
-      }
-      mount() {
-        this.containerEl.empty();
-        this.containerEl.addClass("sm-combat-tracker");
-        this.headerEl = this.containerEl.createDiv({ cls: "sm-combat-tracker-header" });
-        this.headerEl.createEl("h3", { text: "Combat Tracker", cls: "sm-encounter-section-title" });
-        this.controlsEl = this.containerEl.createDiv({ cls: "sm-combat-tracker-controls" });
-        this.listEl = this.containerEl.createDiv({ cls: "sm-combat-tracker-list" });
-      }
-      unmount() {
-        this.containerEl.empty();
-      }
-      render(combat, hasCreatures) {
-        this.renderControls(combat, hasCreatures);
-        this.renderParticipants(combat);
-      }
-      renderControls(combat, hasCreatures) {
-        this.controlsEl.empty();
-        if (!combat || !combat.isActive) {
-          const startButton = this.controlsEl.createEl("button", {
-            cls: "sm-encounter-button sm-encounter-button-primary",
-            text: "Start Combat"
-          });
-          startButton.type = "button";
-          startButton.disabled = !hasCreatures;
-          startButton.addEventListener("click", () => {
-            this.callbacks.onStartCombat();
-          });
-          if (!hasCreatures) {
-            this.controlsEl.createDiv({
-              cls: "sm-combat-tracker-hint",
-              text: "Add creatures to start combat"
-            });
-          }
-        } else {
-          const sortButton = this.controlsEl.createEl("button", {
-            cls: "sm-encounter-button",
-            text: "Sort by Initiative"
-          });
-          sortButton.type = "button";
-          sortButton.addEventListener("click", () => {
-            this.callbacks.onSortByInitiative();
-          });
-          const endButton = this.controlsEl.createEl("button", {
-            cls: "sm-encounter-button sm-encounter-button-danger",
-            text: "End Combat"
-          });
-          endButton.type = "button";
-          endButton.addEventListener("click", () => {
-            this.callbacks.onEndCombat();
-          });
-        }
-      }
-      renderParticipants(combat) {
-        this.listEl.empty();
-        if (!combat || !combat.isActive) {
-          this.listEl.createDiv({
-            cls: "sm-encounter-empty-row",
-            text: "Combat not started. Click 'Start Combat' to begin tracking initiative and HP."
-          });
-          return;
-        }
-        if (!combat.participants.length) {
-          this.listEl.createDiv({
-            cls: "sm-encounter-empty-row",
-            text: "No participants in combat."
-          });
-          return;
-        }
-        for (const participant of combat.participants) {
-          const row = this.listEl.createDiv({ cls: "sm-combat-participant" });
-          if (participant.id === combat.activeParticipantId) {
-            row.addClass("sm-combat-participant-active");
-          }
-          if (participant.defeated) {
-            row.addClass("sm-combat-participant-defeated");
-          }
-          const initiativeCol = row.createDiv({ cls: "sm-combat-initiative" });
-          initiativeCol.createEl("label", {
-            attr: { for: `initiative-${participant.id}` },
-            text: "Init:"
-          });
-          const initiativeInput = initiativeCol.createEl("input", {
-            cls: "sm-encounter-input sm-combat-initiative-input",
-            attr: {
-              id: `initiative-${participant.id}`,
-              type: "number",
-              value: String(participant.initiative)
-            }
-          });
-          initiativeInput.addEventListener("change", () => {
-            const value = Number(initiativeInput.value);
-            if (Number.isFinite(value)) {
-              this.callbacks.onUpdateInitiative(participant.id, value);
-            } else {
-              initiativeInput.value = String(participant.initiative);
-            }
-          });
-          const nameCol = row.createDiv({ cls: "sm-combat-name" });
-          nameCol.setText(participant.name);
-          const hpCol = row.createDiv({ cls: "sm-combat-hp" });
-          const hpBar = hpCol.createDiv({ cls: "sm-combat-hp-bar" });
-          const hpFill = hpBar.createDiv({ cls: "sm-combat-hp-fill" });
-          const hpPercent = participant.maxHp > 0 ? participant.currentHp / participant.maxHp * 100 : 0;
-          hpFill.style.width = `${hpPercent}%`;
-          if (hpPercent > 66) {
-            hpFill.addClass("sm-combat-hp-high");
-          } else if (hpPercent > 33) {
-            hpFill.addClass("sm-combat-hp-medium");
-          } else {
-            hpFill.addClass("sm-combat-hp-low");
-          }
-          const hpInputs = hpCol.createDiv({ cls: "sm-combat-hp-inputs" });
-          hpInputs.createEl("label", {
-            attr: { for: `current-hp-${participant.id}` },
-            text: "HP:"
-          });
-          const currentHpInput = hpInputs.createEl("input", {
-            cls: "sm-encounter-input sm-combat-hp-input",
-            attr: {
-              id: `current-hp-${participant.id}`,
-              type: "number",
-              min: "0",
-              value: String(participant.currentHp)
-            }
-          });
-          hpInputs.createSpan({ text: "/" });
-          const maxHpInput = hpInputs.createEl("input", {
-            cls: "sm-encounter-input sm-combat-hp-input",
-            attr: {
-              id: `max-hp-${participant.id}`,
-              type: "number",
-              min: "0",
-              value: String(participant.maxHp)
-            }
-          });
-          currentHpInput.addEventListener("change", () => {
-            const current = Number(currentHpInput.value);
-            const max = Number(maxHpInput.value);
-            if (Number.isFinite(current)) {
-              this.callbacks.onUpdateHp(participant.id, current, max);
-            } else {
-              currentHpInput.value = String(participant.currentHp);
-            }
-          });
-          maxHpInput.addEventListener("change", () => {
-            const current = Number(currentHpInput.value);
-            const max = Number(maxHpInput.value);
-            if (Number.isFinite(max)) {
-              this.callbacks.onUpdateHp(participant.id, current, max);
-            } else {
-              maxHpInput.value = String(participant.maxHp);
-            }
-          });
-          const quickActions = row.createDiv({ cls: "sm-combat-quick-actions" });
-          const damageButton = quickActions.createEl("button", {
-            cls: "sm-encounter-button sm-combat-damage-btn",
-            text: "\u2212",
-            attr: { title: "Apply 1 damage" }
-          });
-          damageButton.type = "button";
-          damageButton.addEventListener("click", () => {
-            this.callbacks.onApplyDamage(participant.id, 1);
-          });
-          const healButton = quickActions.createEl("button", {
-            cls: "sm-encounter-button sm-combat-heal-btn",
-            text: "+",
-            attr: { title: "Apply 1 healing" }
-          });
-          healButton.type = "button";
-          healButton.addEventListener("click", () => {
-            this.callbacks.onApplyHealing(participant.id, 1);
-          });
-          const defeatedCheckbox = row.createEl("input", {
-            cls: "sm-combat-defeated-checkbox",
-            attr: {
-              type: "checkbox",
-              id: `defeated-${participant.id}`
-            }
-          });
-          defeatedCheckbox.checked = participant.defeated;
-          defeatedCheckbox.addEventListener("change", () => {
-            this.callbacks.onToggleDefeated(participant.id);
-          });
-          const defeatedLabel = row.createEl("label", {
-            cls: "sm-combat-defeated-label",
-            attr: { for: `defeated-${participant.id}` },
-            text: "Defeated"
-          });
-          const activeButton = row.createEl("button", {
-            cls: "sm-encounter-button sm-combat-active-btn",
-            text: participant.id === combat.activeParticipantId ? "Active" : "Set Active"
-          });
-          activeButton.type = "button";
-          if (participant.id === combat.activeParticipantId) {
-            activeButton.addClass("sm-combat-active-btn-selected");
-          }
-          activeButton.addEventListener("click", () => {
-            if (participant.id === combat.activeParticipantId) {
-              this.callbacks.onSetActive(null);
-            } else {
-              this.callbacks.onSetActive(participant.id);
-            }
-          });
-        }
-      }
-    };
-  }
-});
-
-// src/workmodes/encounter/workspace-view.ts
-function createSection(parent, className) {
-  return parent.createDiv({ cls: `sm-encounter-section ${className}` });
-}
-function getGoldBaseMultiplier(averageLevel) {
-  if (averageLevel >= 17) {
-    return 3.2;
-  }
-  if (averageLevel >= 11) {
-    return 1.6;
-  }
-  if (averageLevel >= 5) {
-    return 0.415;
-  }
-  if (averageLevel > 0) {
-    return 0.475;
-  }
-  return 0;
-}
-function createTextInput(parent, options) {
-  const field = createFieldContainer(parent);
-  field.createEl("label", { attr: { for: options.id }, text: options.label });
-  return field.createEl("input", {
-    cls: "sm-encounter-input",
-    attr: {
-      id: options.id,
-      type: "text",
-      placeholder: options.placeholder ?? "",
-      value: options.value != null ? String(options.value) : ""
-    }
-  });
-}
-function createNumberInput(parent, options) {
-  const field = createFieldContainer(parent);
-  field.createEl("label", { attr: { for: options.id }, text: options.label });
-  const attrs = {
-    id: options.id,
-    type: "number"
-  };
-  if (options.min !== void 0) attrs.min = String(options.min);
-  if (options.max !== void 0) attrs.max = String(options.max);
-  if (options.step !== void 0) attrs.step = String(options.step);
-  if (options.placeholder) attrs.placeholder = options.placeholder;
-  if (options.value !== void 0) attrs.value = String(options.value);
-  return field.createEl("input", {
-    cls: "sm-encounter-input",
-    attr: attrs
-  });
-}
-function createFieldContainer(parent) {
-  return parent.createDiv({ cls: "sm-encounter-field" });
-}
-function createStatItem(list, label, value) {
-  const item = list.createEl("li", { cls: "sm-encounter-result-summary-item" });
-  item.createEl("span", { cls: "label", text: `${label}:` });
-  item.createEl("span", { cls: "value", text: value });
-  return item;
-}
-function formatNumber(value) {
-  if (!Number.isFinite(value)) {
-    return "0";
-  }
-  return numberFormatter.format(value);
-}
-function formatSignedNumber(value) {
-  const formatted = formatNumber(Math.abs(value));
-  if (value > 0) return `+${formatted}`;
-  if (value < 0) return `-${formatted}`;
-  return formatted;
-}
-function createId(prefix) {
-  const globalCrypto = globalThis.crypto;
-  if (globalCrypto?.randomUUID) {
-    return `${prefix}-${globalCrypto.randomUUID()}`;
-  }
-  const random = Math.random().toString(36).slice(2, 8);
-  return `${prefix}-${Date.now().toString(36)}-${random}`;
-}
-var import_obsidian20, EncounterWorkspaceView, ConfirmReplaceModal, numberFormatter;
-var init_workspace_view = __esm({
-  "src/workmodes/encounter/workspace-view.ts"() {
-    "use strict";
-    import_obsidian20 = require("obsidian");
-    init_modals();
-    init_plugin_logger();
-    init_rule_presets();
-    init_session_view();
-    init_creature_list();
-    init_composition_view();
-    init_combat_tracker();
-    EncounterWorkspaceView = class {
-      constructor(app, containerEl) {
-        this.presenter = null;
-        this.presetOptions = [];
-        this.presetRefreshTimeout = null;
-        this.sessionView = null;
-        this.creatureList = null;
-        this.compositionView = null;
-        this.combatTracker = null;
-        this.app = app;
-        this.containerEl = containerEl;
-      }
-      mount() {
-        this.containerEl.addClass("sm-encounter-view");
-        this.renderShell();
-        this.registerPresetWatcher();
-        void this.refreshPresetOptions();
-        this.syncPresetControlsState();
-      }
-      unmount() {
-        this.sessionView?.unmount();
-        this.sessionView = null;
-        this.creatureList?.unmount();
-        this.creatureList = null;
-        this.compositionView?.unmount();
-        this.compositionView = null;
-        this.combatTracker?.unmount();
-        this.combatTracker = null;
-        this.containerEl.empty();
-        this.containerEl.removeClass("sm-encounter-view");
-        this.presenter = null;
-        this.detachPresetWatcher?.();
-        this.detachPresetWatcher = void 0;
-        if (this.presetRefreshTimeout != null) {
-          window.clearTimeout(this.presetRefreshTimeout);
-          this.presetRefreshTimeout = null;
-        }
-        this.presetOptions = [];
-      }
-      setPresenter(presenter) {
-        this.presenter = presenter;
-        this.syncPresetControlsState();
-      }
-      render(state) {
-        const session = state.session ?? null;
-        if (session && this.sessionView) {
-          this.sessionView.render(session.event);
-        }
-        if (this.compositionView) {
-          const creatures = session?.creatures ?? [];
-          this.compositionView.render(creatures);
-        }
-        if (this.combatTracker) {
-          const combat = session?.combat ?? null;
-          const hasCreatures = (session?.creatures?.length ?? 0) > 0;
-          this.combatTracker.render(combat, hasCreatures);
-        }
-        this.renderParty(state);
-        this.renderRules(state);
-        this.renderResults(state);
-        this.renderRuleEffectsDebug(state);
-        if (session && this.creatureList) {
-          const factionName = session.event.factionName;
-          void this.loadAndRenderFactionMembers(factionName);
-        }
-        this.syncSessionControls(session);
-      }
-      renderShell() {
-        this.containerEl.empty();
-        const sessionSection = createSection(this.containerEl, "sm-encounter-session");
-        this.sessionView = new EncounterSessionView(sessionSection);
-        this.sessionView.mount();
-        const creaturesSection = createSection(this.containerEl, "sm-encounter-creatures");
-        const creaturesLayout = creaturesSection.createDiv({ cls: "sm-encounter-creatures-layout" });
-        const creatureListContainer = creaturesLayout.createDiv({ cls: "sm-encounter-creature-list-container" });
-        this.creatureList = new EncounterCreatureList(this.app, creatureListContainer, {
-          onAddCreature: (creature) => this.handleAddCreature(creature),
-          onGenerateEncounter: (difficulty) => void this.handleGenerateEncounter(difficulty)
-        });
-        void this.creatureList.mount();
-        const compositionContainer = creaturesLayout.createDiv({ cls: "sm-encounter-composition-container" });
-        this.compositionView = new EncounterCompositionView(compositionContainer, {
-          onUpdateCount: (id, count) => this.handleUpdateCreatureCount(id, count),
-          onRemove: (id) => this.handleRemoveCreature(id)
-        });
-        this.compositionView.mount();
-        const combatSection = createSection(this.containerEl, "sm-encounter-combat");
-        this.combatTracker = new CombatTrackerView(combatSection, {
-          onStartCombat: () => this.handleStartCombat(),
-          onEndCombat: () => this.handleEndCombat(),
-          onUpdateInitiative: (id, initiative) => this.handleUpdateInitiative(id, initiative),
-          onUpdateHp: (id, currentHp, maxHp) => this.handleUpdateHp(id, currentHp, maxHp),
-          onApplyDamage: (id, amount) => this.handleApplyDamage(id, amount),
-          onApplyHealing: (id, amount) => this.handleApplyHealing(id, amount),
-          onToggleDefeated: (id) => this.handleToggleDefeated(id),
-          onSetActive: (id) => this.handleSetActive(id),
-          onSortByInitiative: () => this.handleSortByInitiative()
-        });
-        this.combatTracker.mount();
-        const xpSection = createSection(this.containerEl, "sm-encounter-xp");
-        xpSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Encounter XP & Rules" });
-        const xpRow = xpSection.createDiv({ cls: "sm-encounter-xp-row" });
-        const xpLeftGroup = xpRow.createDiv({ cls: "sm-encounter-xp-group sm-encounter-xp-group-left" });
-        this.xpInputEl = createNumberInput(xpLeftGroup, {
-          id: "encounter-base-xp",
-          label: "Base XP",
-          min: 0,
-          step: 1
-        });
-        this.xpInputEl.parentElement?.addClass("sm-encounter-field-inline");
-        this.xpInputEl.parentElement?.addClass("sm-encounter-field-base-xp");
-        this.xpInputEl.addEventListener("change", () => this.handleEncounterXpChange());
-        this.xpInputEl.addEventListener("input", () => {
-          this.xpErrorEl.setText("");
-        });
-        const xpLeftActions = xpLeftGroup.createDiv({ cls: "sm-encounter-inline-actions sm-encounter-inline-actions-left" });
-        const addRuleButton = xpLeftActions.createEl("button", {
-          cls: "sm-encounter-button",
-          text: "Add rule"
-        });
-        addRuleButton.type = "button";
-        addRuleButton.addEventListener("click", () => {
-          this.handleAddRule();
-        });
-        const xpRightGroup = xpRow.createDiv({ cls: "sm-encounter-xp-group sm-encounter-xp-group-right" });
-        this.presetSelectEl = xpRightGroup.createEl("select", {
-          cls: "sm-encounter-input sm-encounter-preset-select",
-          attr: { "aria-label": "Encounter rule preset" }
-        });
-        this.presetSelectEl.addEventListener("change", () => {
-          this.syncPresetControlsState();
-        });
-        const xpPresetActions = xpRightGroup.createDiv({
-          cls: "sm-encounter-inline-actions sm-encounter-inline-actions-right"
-        });
-        this.presetOpenButton = xpPresetActions.createEl("button", {
-          cls: "sm-encounter-button",
-          text: "Open preset"
-        });
-        this.presetOpenButton.type = "button";
-        this.presetOpenButton.addEventListener("click", () => {
-          void this.handleOpenPreset();
-        });
-        this.presetSaveButton = xpPresetActions.createEl("button", {
-          cls: "sm-encounter-button sm-encounter-button-primary",
-          text: "Save preset"
-        });
-        this.presetSaveButton.type = "button";
-        this.presetSaveButton.addEventListener("click", () => {
-          void this.handleSavePreset();
-        });
-        this.presetDeleteButton = xpPresetActions.createEl("button", {
-          cls: "sm-encounter-button sm-encounter-button-danger",
-          text: "Delete preset"
-        });
-        this.presetDeleteButton.type = "button";
-        this.presetDeleteButton.addEventListener("click", () => {
-          void this.handleDeletePreset();
-        });
-        this.xpErrorEl = xpSection.createDiv({ cls: "sm-encounter-error" });
-        this.ruleListEl = xpSection.createDiv({ cls: "sm-encounter-rule-list" });
-        const layoutEl = this.containerEl.createDiv({ cls: "sm-encounter-columns" });
-        const leftColumn = layoutEl.createDiv({ cls: "sm-encounter-column" });
-        const partySection = createSection(leftColumn, "sm-encounter-party");
-        partySection.createEl("h3", { cls: "sm-encounter-section-title", text: "Party" });
-        const partyForm = partySection.createEl("form", { cls: "sm-encounter-form" });
-        const partyFormGrid = partyForm.createDiv({ cls: "sm-encounter-form-grid" });
-        this.partyFormNameEl = createTextInput(partyFormGrid, {
-          id: "encounter-party-name",
-          label: "Name",
-          placeholder: "Character name"
-        });
-        this.partyFormLevelEl = createNumberInput(partyFormGrid, {
-          id: "encounter-party-level",
-          label: "Level",
-          min: 1,
-          step: 1,
-          value: 1
-        });
-        this.partyFormCurrentXpEl = createNumberInput(partyFormGrid, {
-          id: "encounter-party-current-xp",
-          label: "Current XP",
-          min: 0,
-          step: 1,
-          placeholder: "Optional"
-        });
-        const partySubmitWrapper = partyFormGrid.createDiv({ cls: "sm-encounter-field sm-encounter-field-actions" });
-        const partySubmitButton = partySubmitWrapper.createEl("button", {
-          cls: "sm-encounter-button",
-          text: "Add party member"
-        });
-        partySubmitButton.type = "submit";
-        this.partyFormErrorEl = partyForm.createDiv({ cls: "sm-encounter-error" });
-        partyForm.addEventListener("submit", (event) => {
-          event.preventDefault();
-          this.handleAddPartyMember();
-        });
-        partyForm.addEventListener("input", () => {
-          this.partyFormErrorEl.setText("");
-        });
-        this.partyListEl = partySection.createDiv({ cls: "sm-encounter-party-list" });
-        const rightColumn = layoutEl.createDiv({ cls: "sm-encounter-column" });
-        const resultsSection = createSection(rightColumn, "sm-encounter-results");
-        resultsSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Results" });
-        this.resultWarningsEl = resultsSection.createDiv({ cls: "sm-encounter-result-warnings" });
-        const breakdownWrapper = resultsSection.createDiv({ cls: "sm-encounter-breakdowns" });
-        this.xpResultsEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-party" });
-        this.treasureResultsEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-party" });
-        this.debugSectionEl = createSection(rightColumn, "sm-encounter-debug");
-        this.debugSectionEl.createEl("h3", {
-          cls: "sm-encounter-section-title",
-          text: "Debug"
-        });
-        this.debugRuleEffectsDetailsEl = this.debugSectionEl.createEl("details", {
-          cls: "sm-encounter-debug-details"
-        });
-        this.debugRuleEffectsDetailsEl.createEl("summary", {
-          cls: "sm-encounter-debug-summary",
-          text: "Rule effects"
-        });
-        this.debugRuleEffectsEl = this.debugRuleEffectsDetailsEl.createDiv({
-          cls: "sm-encounter-debug-rule-effects"
-        });
-        const notesSection = resultsSection.createDiv({ cls: "sm-encounter-notes" });
-        notesSection.createEl("label", {
-          cls: "sm-encounter-notes-label",
-          attr: { for: "encounter-notes" },
-          text: "Notes"
-        });
-        this.notesEl = notesSection.createEl("textarea", {
-          cls: "sm-encounter-notes-input",
-          attr: {
-            id: "encounter-notes",
-            placeholder: "Record tactical notes, initiative order, or follow-up tasks\u2026",
-            rows: "6"
-          }
-        });
-        this.notesEl.disabled = true;
-        this.notesEl.addEventListener("input", () => {
-          if (!this.presenter) return;
-          this.presenter.setNotes(this.notesEl.value);
-        });
-        const actionsRow = resultsSection.createDiv({ cls: "sm-encounter-actions" });
-        this.resolveBtn = actionsRow.createEl("button", {
-          cls: "sm-encounter-button sm-encounter-button-primary",
-          text: "Mark encounter resolved"
-        });
-        this.resolveBtn.type = "button";
-        this.resolveBtn.disabled = true;
-        this.resolveBtn.addEventListener("click", () => {
-          this.presenter?.markResolved();
-        });
-      }
-      registerPresetWatcher() {
-        this.detachPresetWatcher?.();
-        const baseDir = (0, import_obsidian20.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
-        const prefix = `${baseDir}/`;
-        const handler = (file) => {
-          if (file instanceof import_obsidian20.TFile) {
-            if (isEncounterPresetFile(file)) {
-              this.schedulePresetRefresh();
-            }
-            return;
-          }
-          if (file.path === baseDir || file.path.startsWith(prefix)) {
-            this.schedulePresetRefresh();
-          }
-        };
-        this.app.vault.on("create", handler);
-        this.app.vault.on("delete", handler);
-        this.app.vault.on("rename", handler);
-        this.app.vault.on("modify", handler);
-        this.detachPresetWatcher = () => {
-          this.app.vault.off("create", handler);
-          this.app.vault.off("delete", handler);
-          this.app.vault.off("rename", handler);
-          this.app.vault.off("modify", handler);
-        };
-      }
-      schedulePresetRefresh() {
-        if (this.presetRefreshTimeout != null) return;
-        this.presetRefreshTimeout = window.setTimeout(() => {
-          this.presetRefreshTimeout = null;
-          void this.refreshPresetOptions();
-        }, 100);
-      }
-      async refreshPresetOptions() {
-        const select = this.presetSelectEl;
-        if (!select || !select.isConnected) return;
-        const previousValue = select.value;
-        try {
-          const entries = await listEncounterRulePresets(this.app);
-          this.presetOptions = entries;
-          while (select.firstChild) {
-            select.removeChild(select.firstChild);
-          }
-          const placeholder = select.createEl("option", {
-            attr: { value: "" },
-            text: entries.length ? "Preset ausw\xE4hlen\u2026" : "Keine Presets gespeichert"
-          });
-          if (!entries.length) {
-            placeholder.selected = true;
-          }
-          for (const entry of entries) {
-            const option = select.createEl("option", {
-              attr: { value: entry.file.path },
-              text: entry.name
-            });
-            if (entry.file.path === previousValue) {
-              option.selected = true;
-            }
-          }
-          if (select.value !== previousValue) {
-            if (entries.some((entry) => entry.file.path === previousValue)) {
-              select.value = previousValue;
-            } else {
-              select.value = "";
-            }
-          }
-        } catch (error) {
-          logger2.error("[encounter] failed to list rule presets", error);
-        }
-        this.syncPresetControlsState();
-      }
-      getSelectedPreset() {
-        const value = this.presetSelectEl?.value;
-        if (!value) return null;
-        return this.presetOptions.find((entry) => entry.file.path === value) ?? null;
-      }
-      syncPresetControlsState() {
-        const hasPresenter = !!this.presenter;
-        const selected = this.getSelectedPreset();
-        if (this.presetOpenButton) {
-          this.presetOpenButton.disabled = !hasPresenter || !selected;
-        }
-        if (this.presetDeleteButton) {
-          this.presetDeleteButton.disabled = !selected;
-        }
-        if (this.presetSaveButton) {
-          this.presetSaveButton.disabled = !hasPresenter;
-        }
-      }
-      async handleOpenPreset() {
-        const presenter = this.presenter;
-        const selected = this.getSelectedPreset();
-        if (!presenter) {
-          new import_obsidian20.Notice("Encounter-Presenter nicht verf\xFCgbar.");
-          return;
-        }
-        if (!selected) {
-          new import_obsidian20.Notice("Bitte ein Preset ausw\xE4hlen.");
-          return;
-        }
-        try {
-          const preset = await loadEncounterRulePreset(this.app, selected.file);
-          const seen = /* @__PURE__ */ new Set();
-          const rules = preset.rules.map((rule) => {
-            let id = rule.id;
-            if (!id || seen.has(id)) {
-              id = createId("rule");
-            }
-            seen.add(id);
-            return { ...rule, id };
-          });
-          presenter.replaceRules(rules);
-          if (typeof preset.encounterXp === "number" && Number.isFinite(preset.encounterXp)) {
-            presenter.setEncounterXp(preset.encounterXp);
-          }
-          new import_obsidian20.Notice(`Preset "${preset.name}" geladen.`);
-        } catch (error) {
-          logger2.error("[encounter] failed to load preset", error);
-          new import_obsidian20.Notice("Preset konnte nicht geladen werden.");
-        }
-      }
-      async handleSavePreset() {
-        const presenter = this.presenter;
-        if (!presenter) {
-          new import_obsidian20.Notice("Encounter-Presenter nicht verf\xFCgbar.");
-          return;
-        }
-        const selected = this.getSelectedPreset();
-        const currentState = presenter.getState();
-        const rules = currentState.xp.rules.map((rule) => ({ ...rule }));
-        const encounterXp = currentState.xp.encounterXp;
-        const modal = new NameInputModal(
-          this.app,
-          async (rawName) => {
-            const name = rawName.trim();
-            const fallbackName = name || "Encounter Rule Preset";
-            try {
-              const file = await saveEncounterRulePreset(
-                this.app,
-                { name: name || fallbackName, encounterXp, rules },
-                {
-                  path: selected && selected.name === (name || fallbackName) ? selected.file.path : void 0
-                }
-              );
-              new import_obsidian20.Notice(`Preset "${name || fallbackName}" gespeichert.`);
-              await this.refreshPresetOptions();
-              if (this.presetSelectEl && this.presetSelectEl.isConnected) {
-                this.presetSelectEl.value = file.path;
-              }
-            } catch (error) {
-              logger2.error("[encounter] failed to save preset", error);
-              new import_obsidian20.Notice("Preset konnte nicht gespeichert werden.");
-            }
-            this.syncPresetControlsState();
-          },
-          {
-            title: "Preset speichern",
-            placeholder: "Preset-Name",
-            cta: "Speichern",
-            initialValue: selected?.name ?? ""
-          }
-        );
-        modal.open();
-      }
-      async handleDeletePreset() {
-        const selected = this.getSelectedPreset();
-        if (!selected) {
-          new import_obsidian20.Notice("Bitte ein Preset ausw\xE4hlen.");
-          return;
-        }
-        const confirmed = window.confirm(`Preset "${selected.name}" l\xF6schen?`);
-        if (!confirmed) return;
-        try {
-          await deleteEncounterRulePreset(this.app, selected.file);
-          new import_obsidian20.Notice(`Preset "${selected.name}" gel\xF6scht.`);
-          await this.refreshPresetOptions();
-          if (this.presetSelectEl && this.presetSelectEl.isConnected) {
-            this.presetSelectEl.value = "";
-          }
-        } catch (error) {
-          logger2.error("[encounter] failed to delete preset", error);
-          new import_obsidian20.Notice("Preset konnte nicht gel\xF6scht werden.");
-        }
-        this.syncPresetControlsState();
-      }
-      syncSessionControls(session) {
-        if (!session) {
-          this.notesEl.value = "";
-          this.notesEl.disabled = true;
-          this.resolveBtn.disabled = true;
-          this.resolveBtn.setText("Mark encounter resolved");
-          return;
-        }
-        if (this.notesEl.value !== session.notes) {
-          this.notesEl.value = session.notes;
-        }
-        this.notesEl.disabled = false;
-        if (session.status === "resolved") {
-          this.resolveBtn.disabled = true;
-          this.resolveBtn.setText("Encounter resolved");
-        } else {
-          this.resolveBtn.disabled = false;
-          this.resolveBtn.setText("Mark encounter resolved");
-        }
-      }
-      renderParty(state) {
-        const { party } = state.xp;
-        this.partyListEl.empty();
-        if (!party.length) {
-          this.partyListEl.createDiv({
-            cls: "sm-encounter-empty-row",
-            text: "No party members added yet."
-          });
-        }
-        for (const member of party) {
-          const itemEl = this.partyListEl.createDiv({ cls: "sm-encounter-party-item" });
-          const nameField = createFieldContainer(itemEl);
-          nameField.addClass("sm-encounter-party-field");
-          const nameLabel = nameField.createEl("label", {
-            attr: { for: `party-${member.id}-name` },
-            text: "Name"
-          });
-          nameLabel.addClass("sm-encounter-inline-label");
-          const nameInput = nameField.createEl("input", {
-            cls: "sm-encounter-input",
-            attr: {
-              id: `party-${member.id}-name`,
-              type: "text",
-              value: member.name
-            }
-          });
-          nameInput.addEventListener("change", () => {
-            const presenter = this.presenter;
-            if (!presenter) return;
-            const nextName = nameInput.value.trim();
-            presenter.updatePartyMember(member.id, { name: nextName });
-          });
-          const levelField = createFieldContainer(itemEl);
-          levelField.addClass("sm-encounter-party-field");
-          const levelLabel = levelField.createEl("label", {
-            attr: { for: `party-${member.id}-level` },
-            text: "Level"
-          });
-          levelLabel.addClass("sm-encounter-inline-label");
-          const levelInput = levelField.createEl("input", {
-            cls: "sm-encounter-input",
-            attr: {
-              id: `party-${member.id}-level`,
-              type: "number",
-              min: "1",
-              step: "1",
-              value: String(member.level)
-            }
-          });
-          levelInput.addEventListener("change", () => {
-            const presenter = this.presenter;
-            if (!presenter) return;
-            const numeric = Number(levelInput.value);
-            if (!Number.isFinite(numeric) || numeric < 1) {
-              levelInput.value = String(member.level);
-              return;
-            }
-            presenter.updatePartyMember(member.id, { level: Math.floor(numeric) });
-          });
-          const removeButton = itemEl.createEl("button", {
-            cls: "sm-encounter-button sm-encounter-button-danger sm-encounter-party-remove",
-            text: "Remove"
-          });
-          removeButton.type = "button";
-          removeButton.addEventListener("click", () => {
-            this.presenter?.removePartyMember(member.id);
-          });
-        }
-      }
-      renderRules(state) {
-        const rules = state.xp.rules;
-        const ruleViews = new Map(state.xpView.rules.map((view) => [view.rule.id, view]));
-        this.ruleListEl.empty();
-        if (!rules.length) {
-          this.ruleListEl.createDiv({
-            cls: "sm-encounter-empty-row",
-            text: "No rules configured yet."
-          });
-          return;
-        }
-        rules.forEach((rule) => {
-          const ruleItem = this.ruleListEl.createDiv({ cls: "sm-encounter-rule" });
-          if (!rule.enabled) {
-            ruleItem.addClass("is-disabled");
-          }
-          const headerRow = ruleItem.createDiv({ cls: "sm-encounter-rule-header" });
-          const toggleWrapper = headerRow.createDiv({ cls: "sm-encounter-rule-toggle" });
-          const toggleInput = toggleWrapper.createEl("input", {
-            cls: "sm-encounter-rule-toggle-input",
-            attr: {
-              type: "checkbox",
-              "aria-label": "Toggle rule",
-              checked: rule.enabled ? "true" : void 0
-            }
-          });
-          toggleInput.checked = rule.enabled;
-          toggleInput.addEventListener("change", () => {
-            const presenter = this.presenter;
-            if (!presenter) return;
-            presenter.toggleRule(rule.id, toggleInput.checked);
-          });
-          const titleInput = headerRow.createEl("input", {
-            cls: "sm-encounter-input sm-encounter-rule-title",
-            attr: {
-              type: "text",
-              value: rule.title,
-              placeholder: "Rule name",
-              "aria-label": "Rule name"
-            }
-          });
-          titleInput.addEventListener("change", () => {
-            const presenter = this.presenter;
-            if (!presenter) return;
-            presenter.updateRule(rule.id, { title: titleInput.value.trim() });
-          });
-          const scopeWrapper = headerRow.createDiv({ cls: "sm-encounter-rule-scope" });
-          const scopeSelect = scopeWrapper.createEl("select", {
-            cls: "sm-encounter-input",
-            attr: { "aria-label": "Rule scope" }
-          });
-          const scopeOptions = [
-            { value: "xp", label: "XP" },
-            { value: "gold", label: "Gold" }
-          ];
-          for (const option of scopeOptions) {
-            scopeSelect.createEl("option", {
-              attr: { value: option.value, selected: option.value === rule.scope ? "true" : void 0 },
-              text: option.label
-            });
-          }
-          scopeSelect.value = rule.scope;
-          scopeSelect.addEventListener("change", () => {
-            const presenter = this.presenter;
-            if (!presenter) return;
-            presenter.updateRule(rule.id, { scope: scopeSelect.value });
-          });
-          const valueWrapper = headerRow.createDiv({ cls: "sm-encounter-rule-range" });
-          const minInput = valueWrapper.createEl("input", {
-            cls: "sm-encounter-input sm-encounter-rule-range-input",
-            attr: {
-              id: `rule-${rule.id}-min`,
-              type: "number",
-              value: String(rule.modifierValueMin),
-              "aria-label": "Modifier minimum value"
-            }
-          });
-          valueWrapper.createSpan({ cls: "sm-encounter-rule-range-separator", text: "\u2013" });
-          const maxInput = valueWrapper.createEl("input", {
-            cls: "sm-encounter-input sm-encounter-rule-range-input",
-            attr: {
-              id: `rule-${rule.id}-max`,
-              type: "number",
-              value: String(rule.modifierValueMax),
-              "aria-label": "Modifier maximum value"
-            }
-          });
-          valueWrapper.createSpan({
-            cls: "sm-encounter-rule-range-result",
-            text: `\u2192 ${formatNumber(rule.modifierValue)}`
-          });
-          const typeSelect = headerRow.createEl("select", {
-            cls: "sm-encounter-input sm-encounter-rule-type",
-            attr: { "aria-label": "Modifier type" }
-          });
-          const typeOptions = [
-            { value: "flat", label: "Flat" },
-            { value: "flatPerAverageLevel", label: "Flat * avrg lvl" },
-            { value: "flatPerTotalLevel", label: "Flat * total lvl" },
-            { value: "percentTotal", label: "% of total" },
-            { value: "percentNextLevel", label: "% to next level" }
-          ];
-          for (const option of typeOptions) {
-            typeSelect.createEl("option", {
-              attr: { value: option.value, selected: option.value === rule.modifierType ? "true" : void 0 },
-              text: option.label
-            });
-          }
-          typeSelect.value = rule.modifierType;
-          typeSelect.addEventListener("change", () => {
-            const presenter = this.presenter;
-            if (!presenter) return;
-            presenter.updateRule(rule.id, { modifierType: typeSelect.value });
-          });
-          const ruleErrorEl = ruleItem.createDiv({ cls: "sm-encounter-error" });
-          const handleRangeChange = () => {
-            const presenter = this.presenter;
-            if (!presenter) return;
-            const minRaw = minInput.value.trim();
-            const maxRaw = maxInput.value.trim();
-            if (minRaw === "" || maxRaw === "") {
-              ruleErrorEl.setText("Modifier range requires both values.");
-              minInput.value = String(rule.modifierValueMin);
-              maxInput.value = String(rule.modifierValueMax);
-              return;
-            }
-            const minNumeric = Number(minRaw);
-            const maxNumeric = Number(maxRaw);
-            if (!Number.isFinite(minNumeric) || !Number.isFinite(maxNumeric)) {
-              ruleErrorEl.setText("Modifier range values must be numbers.");
-              minInput.value = String(rule.modifierValueMin);
-              maxInput.value = String(rule.modifierValueMax);
-              return;
-            }
-            ruleErrorEl.setText("");
-            const nextMin = Math.min(minNumeric, maxNumeric);
-            const nextMax = Math.max(minNumeric, maxNumeric);
-            if (nextMin !== minNumeric || nextMax !== maxNumeric) {
-              minInput.value = String(nextMin);
-              maxInput.value = String(nextMax);
-            }
-            presenter.updateRule(rule.id, { modifierValueMin: nextMin, modifierValueMax: nextMax });
-          };
-          minInput.addEventListener("change", handleRangeChange);
-          maxInput.addEventListener("change", handleRangeChange);
-          minInput.addEventListener("input", () => {
-            ruleErrorEl.setText("");
-          });
-          maxInput.addEventListener("input", () => {
-            ruleErrorEl.setText("");
-          });
-          const notesField = createFieldContainer(ruleItem);
-          notesField.addClass("sm-encounter-rule-notes");
-          notesField.createEl("label", {
-            attr: { for: `rule-${rule.id}-notes` },
-            text: "Notes"
-          });
-          const notesInput = notesField.createEl("textarea", {
-            cls: "sm-encounter-input",
-            attr: {
-              id: `rule-${rule.id}-notes`,
-              rows: rule.notes?.trim() ? "2" : "1"
-            },
-            text: rule.notes ?? ""
-          });
-          const syncNoteRows = () => {
-            const trimmed = notesInput.value.trim();
-            if (!trimmed) {
-              notesInput.rows = 1;
-              return;
-            }
-            const lineCount = trimmed.split(/\r?\n/).length;
-            notesInput.rows = Math.min(6, Math.max(2, lineCount));
-          };
-          syncNoteRows();
-          notesInput.addEventListener("input", () => {
-            syncNoteRows();
-          });
-          notesInput.addEventListener("change", () => {
-            const presenter = this.presenter;
-            if (!presenter) return;
-            const trimmed = notesInput.value.trim();
-            presenter.updateRule(rule.id, { notes: trimmed === "" ? "" : trimmed });
-          });
-          const removeButton = ruleItem.createEl("button", {
-            cls: "sm-encounter-button sm-encounter-button-danger",
-            text: "Remove rule"
-          });
-          removeButton.type = "button";
-          removeButton.addEventListener("click", () => {
-            this.presenter?.removeRule(rule.id);
-          });
-          const view = ruleViews.get(rule.id);
-          if (view?.warnings.length) {
-            const warningEl = ruleItem.createDiv({ cls: "sm-encounter-callout" });
-            view.warnings.forEach((warning) => {
-              warningEl.createEl("p", { text: warning });
-            });
-          }
-        });
-      }
-      renderResults(state) {
-        const { xpView } = state;
-        const partyViews = xpView.party;
-        const enabledXpRuleViews = xpView.rules.filter(
-          (ruleView) => ruleView.rule.enabled && ruleView.rule.scope === "xp"
-        );
-        const totalModifierDelta = enabledXpRuleViews.reduce((sum, ruleView) => sum + ruleView.totalDelta, 0);
-        const xpPerMember = partyViews.length ? xpView.totalEncounterXp / partyViews.length : 0;
-        const treasureSummary = this.calculateTreasureSummary(state);
-        const warnings = [];
-        const pushWarning2 = (message) => {
-          if (!message) return;
-          if (!warnings.includes(message)) {
-            warnings.push(message);
-          }
-        };
-        xpView.warnings.forEach(pushWarning2);
-        treasureSummary.warnings.forEach(pushWarning2);
-        this.resultWarningsEl.empty();
-        if (warnings.length) {
-          const warning = this.resultWarningsEl.createDiv({ cls: "sm-encounter-callout" });
-          warnings.forEach((message) => {
-            warning.createEl("p", { text: message });
-          });
-        }
-        this.xpResultsEl.empty();
-        this.xpResultsEl.createEl("h4", {
-          cls: "sm-encounter-subheading",
-          text: "XP Result."
-        });
-        const summaryCard = this.xpResultsEl.createDiv({
-          cls: "sm-encounter-result-party-member sm-encounter-result-party-member--xp-only"
-        });
-        const summaryList = summaryCard.createEl("ul", { cls: "sm-encounter-result-summary" });
-        createStatItem(summaryList, "Base XP", formatNumber(xpView.baseEncounterXp));
-        const modifiersItem = summaryList.createEl("li", {
-          cls: "sm-encounter-result-summary-item sm-encounter-result-summary-item--modifiers"
-        });
-        modifiersItem.createEl("span", { cls: "label", text: "Modifiers:" });
-        const modifiersValue = modifiersItem.createDiv({ cls: "value" });
-        if (enabledXpRuleViews.length) {
-          const modifiersList = modifiersValue.createEl("ul", { cls: "sm-encounter-result-modifier-list" });
-          for (const ruleView of enabledXpRuleViews) {
-            const modifierRow = modifiersList.createEl("li", { cls: "sm-encounter-result-modifier" });
-            const ruleTitle = ruleView.rule.title.trim();
-            modifierRow.createEl("span", {
-              cls: "name",
-              text: ruleTitle || "Untitled rule"
-            });
-            modifierRow.createEl("span", {
-              cls: "delta",
-              text: formatSignedNumber(ruleView.totalDelta)
-            });
-          }
-        } else {
-          modifiersValue.createEl("span", {
-            cls: "sm-encounter-result-modifier-empty",
-            text: "None"
-          });
-        }
-        createStatItem(summaryList, "Total Modifiers", formatSignedNumber(totalModifierDelta));
-        createStatItem(summaryList, "Total XP", formatNumber(xpView.totalEncounterXp));
-        createStatItem(summaryList, "XP per Character", formatNumber(xpPerMember));
-        if (!partyViews.length) {
-          this.xpResultsEl.createDiv({
-            cls: "sm-encounter-empty-row",
-            text: "No party members added yet."
-          });
-          this.renderTreasureResults(state, treasureSummary);
-          return;
-        }
-        const aggregatedWarnings = [];
-        for (const memberView of partyViews) {
-          for (const warning of memberView.warnings) {
-            aggregatedWarnings.push(`${memberView.member.name}: ${warning}`);
-          }
-        }
-        if (aggregatedWarnings.length) {
-          const warningEl = this.xpResultsEl.createDiv({ cls: "sm-encounter-callout" });
-          aggregatedWarnings.forEach((warning) => {
-            warningEl.createEl("p", { text: warning });
-          });
-        }
-        this.renderTreasureResults(state, treasureSummary);
-      }
-      renderTreasureResults(state, summary) {
-        this.treasureResultsEl.empty();
-        this.treasureResultsEl.createEl("h4", {
-          cls: "sm-encounter-subheading",
-          text: "Treasure."
-        });
-        const party = state.xp.party;
-        if (!party.length) {
-          this.treasureResultsEl.createDiv({
-            cls: "sm-encounter-empty-row",
-            text: "No party members added yet."
-          });
-          return;
-        }
-        const summaryCard = this.treasureResultsEl.createDiv({
-          cls: "sm-encounter-result-party-member sm-encounter-result-party-member--xp-only"
-        });
-        const summaryList = summaryCard.createEl("ul", { cls: "sm-encounter-result-summary" });
-        createStatItem(summaryList, "Gold Base", formatNumber(summary.baseGold));
-        const modifiersItem = summaryList.createEl("li", {
-          cls: "sm-encounter-result-summary-item sm-encounter-result-summary-item--modifiers"
-        });
-        modifiersItem.createEl("span", { cls: "label", text: "Modifiers:" });
-        const modifiersValue = modifiersItem.createDiv({ cls: "value" });
-        if (summary.enabledRules.length) {
-          const modifiersList = modifiersValue.createEl("ul", { cls: "sm-encounter-result-modifier-list" });
-          for (const rule of summary.enabledRules) {
-            const modifierRow = modifiersList.createEl("li", { cls: "sm-encounter-result-modifier" });
-            const ruleTitle = rule.rule.title.trim();
-            modifierRow.createEl("span", {
-              cls: "name",
-              text: ruleTitle || "Untitled rule"
-            });
-            modifierRow.createEl("span", {
-              cls: "delta",
-              text: formatSignedNumber(rule.delta)
-            });
-          }
-        } else {
-          modifiersValue.createEl("span", {
-            cls: "sm-encounter-result-modifier-empty",
-            text: "None"
-          });
-        }
-        createStatItem(summaryList, "Total Modifiers", formatSignedNumber(summary.totalModifierDelta));
-        createStatItem(summaryList, "Total Gold", formatNumber(summary.totalGold));
-        const goldPerCharacter = party.length ? summary.totalGold / party.length : 0;
-        createStatItem(summaryList, "Gold per Character", formatNumber(goldPerCharacter));
-      }
-      calculateTreasureSummary(state) {
-        const xpState = state.xp;
-        const xpView = state.xpView;
-        const party = xpState.party ?? [];
-        const partyViews = xpView.party;
-        const partyCount = party.length;
-        const totalLevels = party.reduce((sum, member) => sum + member.level, 0);
-        const averageLevel = partyCount > 0 ? totalLevels / partyCount : 0;
-        const baseMultiplier = getGoldBaseMultiplier(averageLevel);
-        const baseGold = partyCount > 0 ? xpView.baseEncounterXp * baseMultiplier : 0;
-        let runningGold = baseGold;
-        let totalModifierDelta = 0;
-        const enabledRules = [];
-        const warnings = [];
-        const pushWarning2 = (message) => {
-          if (!message) return;
-          if (!warnings.includes(message)) {
-            warnings.push(message);
-          }
-        };
-        const xpToNextByMember = new Map(
-          partyViews.map((memberView) => [memberView.member.id, memberView.xpToNextLevel])
-        );
-        for (const rule of xpState.rules ?? []) {
-          if (rule.scope !== "gold" || !rule.enabled) {
-            continue;
-          }
-          if (!partyCount) {
-            pushWarning2(`Gold rule "${rule.title}" ignored because no party members are present.`);
-            enabledRules.push({ rule, delta: 0 });
-            continue;
-          }
-          let delta = 0;
-          switch (rule.modifierType) {
-            case "flat": {
-              delta = rule.modifierValue;
-              break;
-            }
-            case "flatPerAverageLevel": {
-              delta = rule.modifierValue * averageLevel;
-              break;
-            }
-            case "flatPerTotalLevel": {
-              delta = rule.modifierValue * totalLevels;
-              break;
-            }
-            case "percentTotal": {
-              delta = runningGold * (rule.modifierValue / 100);
-              break;
-            }
-            case "percentNextLevel": {
-              let aggregateNext = 0;
-              let applied = false;
-              for (const member of party) {
-                const xpToNext = xpToNextByMember.get(member.id);
-                if (xpToNext == null) {
-                  pushWarning2(
-                    `${member.name} has no next-level XP threshold; "${rule.title}" gold modifier ignored for them.`
-                  );
-                  continue;
-                }
-                aggregateNext += xpToNext;
-                applied = true;
-              }
-              if (!applied || aggregateNext === 0) {
-                delta = 0;
-              } else {
-                delta = aggregateNext * rule.modifierValue / 100;
-              }
-              break;
-            }
-          }
-          totalModifierDelta += delta;
-          runningGold += delta;
-          enabledRules.push({ rule, delta });
-        }
-        return {
-          baseGold,
-          totalGold: baseGold + totalModifierDelta,
-          totalModifierDelta,
-          enabledRules,
-          warnings
-        };
-      }
-      renderRuleEffectsDebug(state) {
-        if (!this.debugRuleEffectsEl || !this.debugSectionEl || !this.debugRuleEffectsDetailsEl) {
-          return;
-        }
-        const { xpView } = state;
-        const partyViews = xpView.party;
-        const ruleViews = xpView.rules;
-        this.debugRuleEffectsEl.empty();
-        if (!ruleViews.length) {
-          this.debugSectionEl.addClass("sm-encounter-hidden");
-          this.debugRuleEffectsDetailsEl.open = false;
-          return;
-        }
-        this.debugSectionEl.removeClass("sm-encounter-hidden");
-        const runningTotals = /* @__PURE__ */ new Map();
-        for (const memberView of partyViews) {
-          runningTotals.set(memberView.member.id, memberView.baseXp);
-        }
-        for (const ruleView of ruleViews) {
-          const ruleResult = this.debugRuleEffectsEl.createDiv({ cls: "sm-encounter-result-rule" });
-          const title = ruleResult.createEl("div", {
-            cls: "sm-encounter-result-rule-title",
-            text: ruleView.rule.title
-          });
-          if (!ruleView.rule.enabled) {
-            title.addClass("is-disabled");
-          }
-          const deltaSummary = ruleResult.createDiv({ cls: "sm-encounter-result-rule-total" });
-          deltaSummary.createEl("span", { cls: "label", text: "Total delta:" });
-          deltaSummary.createEl("span", { cls: "value", text: formatSignedNumber(ruleView.totalDelta) });
-          const perMemberFinals = ruleView.perMemberDeltas.map((delta) => {
-            const previous = runningTotals.get(delta.memberId) ?? 0;
-            const shouldApply = ruleView.rule.enabled;
-            const total = shouldApply ? previous + delta.delta : previous;
-            if (shouldApply) {
-              runningTotals.set(delta.memberId, total);
-            }
-            return { ...delta, previous, total };
-          });
-          if (perMemberFinals.length) {
-            const perMemberList = ruleResult.createEl("ul", { cls: "sm-encounter-rule-deltas" });
-            perMemberFinals.forEach((delta) => {
-              perMemberList.createEl("li", {
-                text: `${delta.memberName}: ${formatSignedNumber(delta.delta)}`
-              });
-            });
-          }
-          if (ruleView.warnings.length) {
-            const warningEl = ruleResult.createDiv({ cls: "sm-encounter-callout" });
-            ruleView.warnings.forEach((warning) => {
-              warningEl.createEl("p", { text: warning });
-            });
-          }
-        }
-      }
-      handleAddPartyMember() {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        const name = this.partyFormNameEl.value.trim();
-        const levelValue = Number(this.partyFormLevelEl.value);
-        const currentXpRaw = this.partyFormCurrentXpEl.value.trim();
-        const errors = [];
-        if (!name) {
-          errors.push("Name is required.");
-        }
-        if (!Number.isFinite(levelValue) || levelValue < 1) {
-          errors.push("Level must be 1 or greater.");
-        }
-        let currentXp;
-        if (currentXpRaw !== "") {
-          const numericCurrent = Number(currentXpRaw);
-          if (!Number.isFinite(numericCurrent) || numericCurrent < 0) {
-            errors.push("Current XP must be a non-negative number.");
-          } else {
-            currentXp = numericCurrent;
-          }
-        }
-        if (errors.length) {
-          this.partyFormErrorEl.setText(errors.join(" "));
-          return;
-        }
-        const member = {
-          id: createId("party"),
-          name,
-          level: Math.floor(levelValue)
-        };
-        if (currentXp !== void 0) {
-          member.currentXp = currentXp;
-        }
-        presenter.addPartyMember(member);
-        this.partyFormNameEl.value = "";
-        this.partyFormLevelEl.value = "1";
-        this.partyFormCurrentXpEl.value = "";
-        this.partyFormErrorEl.setText("");
-        this.partyFormNameEl.focus();
-      }
-      handleEncounterXpChange() {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        const raw = this.xpInputEl.value.trim();
-        if (raw === "") {
-          this.xpErrorEl.setText("");
-          presenter.setEncounterXp(0);
-          return;
-        }
-        const numeric = Number(raw);
-        if (!Number.isFinite(numeric) || numeric < 0) {
-          this.xpErrorEl.setText("Encounter XP must be a non-negative number.");
-          return;
-        }
-        this.xpErrorEl.setText("");
-        presenter.setEncounterXp(numeric);
-      }
-      handleAddRule() {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        const rule = {
-          id: createId("rule"),
-          title: "",
-          modifierType: "flat",
-          modifierValue: 0,
-          modifierValueMin: 0,
-          modifierValueMax: 0,
-          enabled: true,
-          scope: "xp"
-        };
-        presenter.addRule(rule);
-      }
-      handleAddCreature(creature) {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.addCreature({
-          id: createId("creature"),
-          name: creature.name,
-          count: 1,
-          cr: creature.cr,
-          source: "library",
-          statblockPath: creature.path
-        });
-      }
-      async handleGenerateEncounter(difficulty) {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        this.creatureList?.setGenerateButtonState(true);
-        try {
-          const state = presenter.getState();
-          const session = state.session;
-          const hasCreatures = session?.creatures && session.creatures.length > 0;
-          if (hasCreatures) {
-            const confirmed = await this.showConfirmReplaceModal(session.creatures.length);
-            if (!confirmed) {
-              this.creatureList?.setGenerateButtonState(false);
-              return;
-            }
-          }
-          const result = await presenter.generateEncounter(difficulty, this.app, hasCreatures);
-          if (result.success) {
-            const xpByCr = {
-              0: 10,
-              0.125: 25,
-              0.25: 50,
-              0.5: 100,
-              1: 200,
-              2: 450,
-              3: 700,
-              4: 1100,
-              5: 1800,
-              6: 2300,
-              7: 2900,
-              8: 3900,
-              9: 5e3,
-              10: 5900,
-              11: 7200,
-              12: 8400,
-              13: 1e4,
-              14: 11500,
-              15: 13e3,
-              16: 15e3,
-              17: 18e3,
-              18: 2e4,
-              19: 22e3,
-              20: 25e3,
-              21: 33e3,
-              22: 41e3,
-              23: 5e4,
-              24: 62e3,
-              25: 75e3,
-              26: 9e4,
-              27: 105e3,
-              28: 12e4,
-              29: 135e3,
-              30: 155e3
-            };
-            const totalXP = result.creatures.reduce((sum, c) => {
-              return sum + (xpByCr[c.cr] ?? 0) * c.count;
-            }, 0);
-            const totalCreatureCount = result.creatures.reduce((sum, c) => sum + c.count, 0);
-            new import_obsidian20.Notice(`\u2705 Generated encounter: ${totalCreatureCount} creatures, ${totalXP} XP`);
-          } else {
-            new import_obsidian20.Notice(`\u274C ${result.error}`);
-          }
-        } catch (err) {
-          logger2.error("[workspace-view] Generate encounter failed", err);
-          new import_obsidian20.Notice(`\u274C Failed to generate encounter: ${err instanceof Error ? err.message : "Unknown error"}`);
-        } finally {
-          this.creatureList?.setGenerateButtonState(false);
-        }
-      }
-      async showConfirmReplaceModal(creatureCount) {
-        return new Promise((resolve) => {
-          const modal = new ConfirmReplaceModal(this.app, creatureCount, (confirmed) => {
-            resolve(confirmed);
-          });
-          modal.open();
-        });
-      }
-      handleUpdateCreatureCount(id, count) {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.updateCreature(id, { count });
-      }
-      handleRemoveCreature(id) {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.removeCreature(id);
-      }
-      handleStartCombat() {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.startCombat();
-      }
-      handleEndCombat() {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.endCombat();
-      }
-      handleUpdateInitiative(id, initiative) {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.updateParticipantInitiative(id, initiative);
-      }
-      handleUpdateHp(id, currentHp, maxHp) {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.updateParticipantHp(id, currentHp, maxHp);
-      }
-      handleApplyDamage(id, amount) {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.applyDamage(id, amount);
-      }
-      handleApplyHealing(id, amount) {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.applyHealing(id, amount);
-      }
-      handleToggleDefeated(id) {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.toggleDefeated(id);
-      }
-      handleSetActive(id) {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.setActiveParticipant(id);
-      }
-      handleSortByInitiative() {
-        const presenter = this.presenter;
-        if (!presenter) return;
-        presenter.sortParticipantsByInitiative();
-      }
-      async loadAndRenderFactionMembers(factionName) {
-        const presenter = this.presenter;
-        if (!presenter || !this.creatureList) return;
-        try {
-          const members = await presenter.loadFactionMembers(factionName, this.app);
-          this.creatureList.setFactionMembers(members, factionName ?? null);
-        } catch (err) {
-          logger2.error("[workspace-view] Failed to load faction members", err);
-          this.creatureList.setFactionMembers([], null);
-        }
-      }
-    };
-    ConfirmReplaceModal = class extends import_obsidian20.Modal {
-      constructor(app, creatureCount, onConfirm) {
-        super(app);
-        this.creatureCount = creatureCount;
-        this.onConfirm = onConfirm;
-      }
-      onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        contentEl.addClass("sm-confirm-modal");
-        contentEl.createEl("h2", { text: "Replace Existing Encounter?" });
-        const message = contentEl.createDiv({ cls: "sm-confirm-message" });
-        message.createEl("p", {
-          text: `You have ${this.creatureCount} creature${this.creatureCount === 1 ? "" : "s"} in the current encounter.`
-        });
-        message.createEl("p", {
-          text: "Generating a new encounter will remove all existing creatures."
-        });
-        message.createEl("p", {
-          text: "Do you want to continue?",
-          cls: "sm-confirm-question"
-        });
-        const buttonRow = contentEl.createDiv({ cls: "sm-confirm-buttons" });
-        const cancelButton = buttonRow.createEl("button", {
-          text: "Cancel",
-          cls: "sm-confirm-button sm-confirm-button-secondary"
-        });
-        cancelButton.addEventListener("click", () => {
-          this.onConfirm(false);
-          this.close();
-        });
-        const replaceButton = buttonRow.createEl("button", {
-          text: "Replace Encounter",
-          cls: "sm-confirm-button sm-confirm-button-danger"
-        });
-        replaceButton.addEventListener("click", () => {
-          this.onConfirm(true);
-          this.close();
-        });
-        cancelButton.focus();
-      }
-      onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
-      }
-    };
-    numberFormatter = new Intl.NumberFormat(void 0, {
-      maximumFractionDigits: 2,
-      minimumFractionDigits: 0
-    });
-  }
-});
-
-// src/workmodes/encounter/view.ts
-var view_exports = {};
-__export(view_exports, {
-  EncounterView: () => EncounterView,
-  VIEW_ENCOUNTER: () => VIEW_ENCOUNTER,
-  openEncounter: () => openEncounter
-});
-async function openEncounter(app) {
-  const leaf = getCenterLeaf(app);
-  await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
-  app.workspace.revealLeaf(leaf);
-}
-var import_obsidian21, VIEW_ENCOUNTER, EncounterView;
-var init_view = __esm({
-  "src/workmodes/encounter/view.ts"() {
-    "use strict";
-    import_obsidian21 = require("obsidian");
-    init_presenter();
-    init_workspace_view();
-    init_layout();
-    VIEW_ENCOUNTER = "salt-encounter";
-    EncounterView = class extends import_obsidian21.ItemView {
-      constructor(leaf) {
-        super(leaf);
-        this.presenter = null;
-        this.pendingState = null;
-        this.workspaceView = null;
-      }
-      getViewType() {
-        return VIEW_ENCOUNTER;
-      }
-      getDisplayText() {
-        return "Calculator";
-      }
-      getIcon() {
-        return "calculator";
-      }
-      async onOpen() {
-        const workspaceView = new EncounterWorkspaceView(this.app, this.contentEl);
-        workspaceView.mount();
-        this.workspaceView = workspaceView;
-        const presenter = new EncounterPresenter(this.pendingState);
-        this.pendingState = null;
-        this.presenter = presenter;
-        workspaceView.setPresenter(presenter);
-        this.detachPresenter = presenter.subscribe((state) => {
-          this.workspaceView?.render(state);
-        });
-      }
-      async onClose() {
-        this.detachPresenter?.();
-        this.presenter?.dispose();
-        this.detachPresenter = void 0;
-        this.presenter = null;
-        this.pendingState = null;
-        this.workspaceView?.setPresenter(null);
-        this.workspaceView?.unmount();
-        this.workspaceView = null;
-      }
-      getViewData() {
-        return this.presenter?.getState() ?? this.pendingState;
-      }
-      setViewData(data) {
-        if (this.presenter) {
-          this.presenter.restore(data);
-        } else {
-          this.pendingState = data;
-        }
-      }
-    };
-  }
-});
-
 // src/features/data-manager/layout/layout-utils.ts
 var FieldWidthCalculator;
 var init_layout_utils = __esm({
@@ -10268,7 +5934,7 @@ function createRendererWrapper(type, coreRenderer, options) {
     supports: (spec) => spec.type === type,
     render: (args) => {
       const { container, spec, values, onChange } = args;
-      const setting = new import_obsidian22.Setting(container);
+      const setting = new import_obsidian16.Setting(container);
       if (spec.label) {
         setting.setName(spec.label);
       }
@@ -10293,11 +5959,11 @@ function createRendererWrapper(type, coreRenderer, options) {
     }
   };
 }
-var import_obsidian22;
+var import_obsidian16;
 var init_field_rendering_core = __esm({
   "src/features/data-manager/fields/field-rendering-core.ts"() {
     "use strict";
-    import_obsidian22 = require("obsidian");
+    import_obsidian16 = require("obsidian");
     init_plugin_logger();
     init_width_utils();
     init_token_field_core_new();
@@ -10360,7 +6026,7 @@ var init_modal_utils = __esm({
 });
 
 // src/features/data-manager/fields/number-stepper-control.ts
-function createNumberInput2(parent, options = {}) {
+function createNumberInput(parent, options = {}) {
   const input = parent.createEl("input", {
     cls: options.className || "sm-cc-input",
     attr: {
@@ -10429,7 +6095,7 @@ function createNumberStepper(parent, options = {}) {
     });
     input.style.width = `${width}px`;
   };
-  input = createNumberInput2(container, {
+  input = createNumberInput(container, {
     ...inputOptions,
     onChange: (value) => {
       onChange?.(value);
@@ -10604,7 +6270,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian23.setIcon)(moveUpBtn, "chevron-up");
+    (0, import_obsidian17.setIcon)(moveUpBtn, "chevron-up");
     moveUpBtn.addEventListener("click", moveUpHandler);
   }
   if (includeMoveButtons && moveDownHandler) {
@@ -10619,7 +6285,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian23.setIcon)(moveDownBtn, "chevron-down");
+    (0, import_obsidian17.setIcon)(moveDownBtn, "chevron-down");
     moveDownBtn.addEventListener("click", moveDownHandler);
   }
   const deleteHandler = resolvedActions.remove ?? context.remove;
@@ -10659,11 +6325,11 @@ function renderEntryCard(options) {
   renderBody(card, context);
   return slots;
 }
-var import_obsidian23;
+var import_obsidian17;
 var init_entry_card = __esm({
   "src/features/data-manager/storage/entry-card.ts"() {
     "use strict";
-    import_obsidian23 = require("obsidian");
+    import_obsidian17 = require("obsidian");
   }
 });
 
@@ -11655,11 +7321,11 @@ var init_renderer_checkbox = __esm({
 });
 
 // src/features/data-manager/fields/renderer-select.ts
-var import_obsidian24, selectFieldRenderer;
+var import_obsidian18, selectFieldRenderer;
 var init_renderer_select = __esm({
   "src/features/data-manager/fields/renderer-select.ts"() {
     "use strict";
-    import_obsidian24 = require("obsidian");
+    import_obsidian18 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_select_enhancement();
@@ -11668,7 +7334,7 @@ var init_renderer_select = __esm({
       supports: (spec) => spec.type === "select",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian24.Setting(container).setName(spec.label);
+        const setting = new import_obsidian18.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -11754,11 +7420,11 @@ var init_renderer_color = __esm({
 });
 
 // src/features/data-manager/fields/renderer-tokens.ts
-var import_obsidian25, tokenFieldRenderer;
+var import_obsidian19, tokenFieldRenderer;
 var init_renderer_tokens = __esm({
   "src/features/data-manager/fields/renderer-tokens.ts"() {
     "use strict";
-    import_obsidian25 = require("obsidian");
+    import_obsidian19 = require("obsidian");
     init_modal_utils();
     init_field_rendering_core();
     init_plugin_logger();
@@ -11769,7 +7435,7 @@ var init_renderer_tokens = __esm({
       render: (args) => {
         const { container, spec, values, onChange } = args;
         const tokenSpec = spec;
-        const setting = new import_obsidian25.Setting(container).setName(spec.label);
+        const setting = new import_obsidian19.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         setting.settingEl.addClass("sm-cc-setting--wide");
         setting.settingEl.addClass("sm-cc-setting--token-editor");
@@ -11866,11 +7532,11 @@ var init_renderer_heading = __esm({
 });
 
 // src/features/data-manager/fields/renderer-composite.ts
-var import_obsidian26, compositeFieldRenderer;
+var import_obsidian20, compositeFieldRenderer;
 var init_renderer_composite = __esm({
   "src/features/data-manager/fields/renderer-composite.ts"() {
     "use strict";
-    import_obsidian26 = require("obsidian");
+    import_obsidian20 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_field_rendering_core();
@@ -11878,7 +7544,7 @@ var init_renderer_composite = __esm({
       supports: (spec) => spec.type === "composite",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian26.Setting(container).setName(spec.label);
+        const setting = new import_obsidian20.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -11911,18 +7577,18 @@ var init_renderer_composite = __esm({
 });
 
 // src/features/data-manager/fields/renderer-autocomplete.ts
-var import_obsidian27, autocompleteFieldRenderer;
+var import_obsidian21, autocompleteFieldRenderer;
 var init_renderer_autocomplete = __esm({
   "src/features/data-manager/fields/renderer-autocomplete.ts"() {
     "use strict";
-    import_obsidian27 = require("obsidian");
+    import_obsidian21 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     autocompleteFieldRenderer = {
       supports: (spec) => spec.type === "autocomplete",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian27.Setting(container).setName(spec.label);
+        const setting = new import_obsidian21.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -12016,11 +7682,11 @@ var init_renderer_autocomplete = __esm({
 });
 
 // src/features/data-manager/fields/renderer-repeating.ts
-var import_obsidian28, repeatingFieldRenderer;
+var import_obsidian22, repeatingFieldRenderer;
 var init_renderer_repeating = __esm({
   "src/features/data-manager/fields/renderer-repeating.ts"() {
     "use strict";
-    import_obsidian28 = require("obsidian");
+    import_obsidian22 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_repeating_width_sync();
@@ -12032,7 +7698,7 @@ var init_renderer_repeating = __esm({
       supports: (spec) => spec.type === "repeating",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian28.Setting(container).setName(spec.label);
+        const setting = new import_obsidian22.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -12412,11 +8078,11 @@ function resolveTargetPath(storage, values) {
   const extension = storage.format === "md-frontmatter" || storage.format === "codeblock" ? "md" : storage.format === "json" ? "json" : "yaml";
   const target = ensureExtension(templatePath, extension);
   if (storage.directory) {
-    const sanitizedDir = (0, import_obsidian29.normalizePath)(storage.directory);
+    const sanitizedDir = (0, import_obsidian23.normalizePath)(storage.directory);
     const fileName = target.split("/").pop() ?? target;
-    return (0, import_obsidian29.normalizePath)(`${sanitizedDir}/${fileName}`);
+    return (0, import_obsidian23.normalizePath)(`${sanitizedDir}/${fileName}`);
   }
-  return (0, import_obsidian29.normalizePath)(target);
+  return (0, import_obsidian23.normalizePath)(target);
 }
 function buildFrontmatter(values, storage) {
   const frontmatter = {};
@@ -12462,7 +8128,7 @@ function buildMarkdownBody(values, storage) {
 function serializeMarkdown(storage, values, path) {
   const frontmatter = buildFrontmatter(values, storage);
   const body = buildMarkdownBody(values, storage);
-  const fm2 = (0, import_obsidian29.stringifyYaml)(frontmatter ?? {});
+  const fm2 = (0, import_obsidian23.stringifyYaml)(frontmatter ?? {});
   const content = [`---`, fm2.trimEnd(), `---`, "", body.trimEnd()].join("\n").trimEnd() + "\n";
   return { path, content, metadata: { frontmatter, format: storage.format } };
 }
@@ -12471,7 +8137,7 @@ function serializeJson(values, path) {
   return { path, content, metadata: { format: "json" } };
 }
 function serializeYaml(values, path) {
-  const content = (0, import_obsidian29.stringifyYaml)(values ?? {}) + "\n";
+  const content = (0, import_obsidian23.stringifyYaml)(values ?? {}) + "\n";
   return { path, content, metadata: { format: "yaml" } };
 }
 function serializeCodeblock(storage, values, path) {
@@ -12509,7 +8175,7 @@ function ensureFolder2(app, path) {
   parts.pop();
   const folder = parts.join("/");
   if (!folder) return Promise.resolve();
-  const normalized = (0, import_obsidian29.normalizePath)(folder);
+  const normalized = (0, import_obsidian23.normalizePath)(folder);
   const existing = app.vault.getAbstractFileByPath(normalized);
   if (existing) return Promise.resolve();
   return app.vault.createFolder(normalized).catch(() => {
@@ -12535,7 +8201,7 @@ async function persistSerializedPayload(app, storage, payload) {
     const blockRegex = new RegExp(`^\\s*${fence}${language}(?:\\s|$)[\\s\\S]*?${fence}`, "im");
     const normalizedBlock = content.trim();
     const blockWithNewline = normalizedBlock.endsWith("\\n") ? normalizedBlock : `${normalizedBlock}\\n`;
-    if (existing instanceof import_obsidian29.TFile) {
+    if (existing instanceof import_obsidian23.TFile) {
       const current = await app.vault.read(existing);
       const trimmedCurrent = current.trimEnd();
       const replacement = blockWithNewline.trimEnd();
@@ -12548,7 +8214,7 @@ async function persistSerializedPayload(app, storage, payload) {
       file = await app.vault.create(payload.path, initial.endsWith("\\n") ? initial : `${initial}\\n`);
     }
   } else {
-    if (existing instanceof import_obsidian29.TFile) {
+    if (existing instanceof import_obsidian23.TFile) {
       await app.vault.modify(existing, content);
       file = existing;
     } else {
@@ -12559,11 +8225,11 @@ async function persistSerializedPayload(app, storage, payload) {
   await storage.hooks?.afterWrite?.(result);
   return result;
 }
-var import_obsidian29;
+var import_obsidian23;
 var init_storage = __esm({
   "src/features/data-manager/storage/storage.ts"() {
     "use strict";
-    import_obsidian29 = require("obsidian");
+    import_obsidian23 = require("obsidian");
   }
 });
 
@@ -13166,11 +8832,11 @@ var init_modal_navigation = __esm({
 });
 
 // src/features/data-manager/modal/modal.ts
-var import_obsidian30, CreateModal;
+var import_obsidian24, CreateModal;
 var init_modal = __esm({
   "src/features/data-manager/modal/modal.ts"() {
     "use strict";
-    import_obsidian30 = require("obsidian");
+    import_obsidian24 = require("obsidian");
     init_grid_layout_manager();
     init_label_width_sync();
     init_register_renderers();
@@ -13182,7 +8848,7 @@ var init_modal = __esm({
     init_modal_utils();
     init_plugin_logger();
     registerAllFieldRenderers();
-    CreateModal = class extends import_obsidian30.Modal {
+    CreateModal = class extends import_obsidian24.Modal {
       constructor(app, spec, options, resolve) {
         super(app);
         this.completion = null;
@@ -13302,7 +8968,7 @@ var init_modal = __esm({
         this.fieldManager.updateVisibility();
       }
       buildActionButtons(container) {
-        const buttons = new import_obsidian30.Setting(container);
+        const buttons = new import_obsidian24.Setting(container);
         buttons.addButton((btn) => {
           this.cancelButton = btn;
           btn.setButtonText(this.spec.ui?.cancelLabel || "Abbrechen").onClick(() => {
@@ -13384,7 +9050,7 @@ var init_modal = __esm({
       }
       handleSubmissionError(error) {
         const message = error instanceof Error ? error.message : String(error ?? "Unbekannter Fehler");
-        new import_obsidian30.Notice(`Fehler beim Speichern: ${message}`);
+        new import_obsidian24.Notice(`Fehler beim Speichern: ${message}`);
       }
       lockBackgroundPointer() {
         const bg = document.querySelector(".modal-bg");
@@ -14216,15 +9882,15 @@ var init_ui = __esm({
 });
 
 // src/features/data-manager/browse/tabbed-browse-view.ts
-var import_obsidian31, TabbedBrowseView;
+var import_obsidian25, TabbedBrowseView;
 var init_tabbed_browse_view = __esm({
   "src/features/data-manager/browse/tabbed-browse-view.ts"() {
     "use strict";
-    import_obsidian31 = require("obsidian");
+    import_obsidian25 = require("obsidian");
     init_generic_list_renderer();
     init_watcher_hub();
     init_ui();
-    TabbedBrowseView = class extends import_obsidian31.ItemView {
+    TabbedBrowseView = class extends import_obsidian25.ItemView {
       constructor(leaf) {
         super(leaf);
         this.queries = /* @__PURE__ */ new Map();
@@ -15373,11 +11039,11 @@ function renderMultiattackEffect(container, entry, ctx) {
     text: "+ Angriff"
   });
 }
-var import_obsidian32, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
+var import_obsidian26, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
 var init_create_spec = __esm({
   "src/workmodes/library/creatures/create-spec.ts"() {
     "use strict";
-    import_obsidian32 = require("obsidian");
+    import_obsidian26 = require("obsidian");
     init_serializer();
     init_debug_logger();
     init_constants();
@@ -16384,14 +12050,14 @@ var init_create_spec = __esm({
                   cls: "sm-cc-entry-toggle",
                   attr: { "aria-expanded": "true", "aria-label": "Toggle entry" }
                 });
-                (0, import_obsidian32.setIcon)(toggle, "chevron-down");
+                (0, import_obsidian26.setIcon)(toggle, "chevron-down");
                 head.prepend(toggle);
                 toggle.addEventListener("click", (e) => {
                   e.stopPropagation();
                   const isExpanded = toggle.getAttribute("aria-expanded") === "true";
                   toggle.setAttribute("aria-expanded", String(!isExpanded));
                   slots.card.toggleClass("is-collapsed", isExpanded);
-                  (0, import_obsidian32.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
+                  (0, import_obsidian26.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
                 });
               }
             };
@@ -20073,6 +15739,4645 @@ var init_registry = __esm({
   }
 });
 
+// src/features/maps/state/terrain-store.ts
+async function ensureTerrainFile(app) {
+  const path = (0, import_obsidian27.normalizePath)(TERRAIN_FILE);
+  const existing = app.vault.getAbstractFileByPath(path);
+  if (existing instanceof import_obsidian27.TFile) {
+    return existing;
+  }
+  const dir = path.split("/").slice(0, -1).join("/");
+  if (dir) {
+    await app.vault.createFolder(dir).catch(() => {
+    });
+  }
+  const body = [
+    "---",
+    "smList: true",
+    "---",
+    "# Terrains",
+    "",
+    "```terrain",
+    ": transparent, speed: 1",
+    "Wald: #2e7d32, speed: 0.6",
+    "Meer: #0288d1, speed: 0.5",
+    "Berg: #6d4c41, speed: 0.4",
+    "```",
+    ""
+  ].join("\n");
+  return await app.vault.create(path, body);
+}
+function parseTerrainBlock(md) {
+  const match = md.match(BLOCK_RE2);
+  if (!match) return {};
+  const map = {};
+  for (const raw of match[1].split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const parsed = line.match(
+      /^("?)(.*?)(\1)\s*:\s*([^,]+?)(?:\s*,\s*speed\s*:\s*([-+]?\d*\.?\d+))?\s*$/i
+    );
+    if (!parsed) continue;
+    const name = parsed[2].trim();
+    const color = parsed[4].trim();
+    const speedValue = parsed[5] !== void 0 ? parseFloat(parsed[5]) : 1;
+    const speed = Number.isFinite(speedValue) ? speedValue : 1;
+    map[name] = { color, speed };
+  }
+  if (!map[""]) {
+    map[""] = { color: "transparent", speed: 1 };
+  }
+  return map;
+}
+function stringifyTerrainBlock(map) {
+  const entries = Object.entries(map);
+  entries.sort(([a], [b]) => a === "" ? -1 : b === "" ? 1 : a.localeCompare(b));
+  const lines = entries.map(([key, value]) => `${key || ":"}: ${value.color}, speed: ${value.speed}`);
+  return ["```terrain", ...lines, "```"].join("\n");
+}
+async function readTerrainsFromDisk(app) {
+  const file = await ensureTerrainFile(app);
+  const content = await app.vault.read(file);
+  return parseTerrainBlock(content);
+}
+async function writeTerrainsToDisk(app, map) {
+  const file = await ensureTerrainFile(app);
+  const content = await app.vault.read(file);
+  const block = stringifyTerrainBlock(map);
+  const updated = content.match(BLOCK_RE2) ? content.replace(BLOCK_RE2, block) : `${content}
+
+${block}
+`;
+  await app.vault.modify(file, updated);
+}
+function createInitialState2() {
+  return {
+    loaded: false,
+    map: {},
+    version: 0
+  };
+}
+function triggerTerrainEvent(app) {
+  app.workspace.trigger?.("salt:terrains-updated");
+}
+function createTerrainStore(app, options) {
+  const base = writable(createInitialState2(), {
+    name: "map-terrains",
+    debug: options?.debug
+  });
+  let dirty = false;
+  let loadPromise = null;
+  const persistent2 = {
+    subscribe: base.subscribe,
+    get: base.get,
+    set: (value) => {
+      base.set(value);
+      dirty = true;
+    },
+    update: (updater) => {
+      base.update((current) => {
+        const next = updater(current);
+        dirty = true;
+        return next;
+      });
+    },
+    load: async () => {
+      const terrainMap = await readTerrainsFromDisk(app);
+      base.set({
+        loaded: true,
+        map: terrainMap,
+        version: Date.now()
+      });
+      dirty = false;
+      setTerrains(terrainMap);
+      triggerTerrainEvent(app);
+    },
+    save: async () => {
+      const snapshot = base.get();
+      if (!snapshot.loaded) return;
+      await writeTerrainsToDisk(app, snapshot.map);
+      dirty = false;
+    },
+    isDirty: () => dirty,
+    getStorageKey: () => (0, import_obsidian27.normalizePath)(TERRAIN_FILE)
+  };
+  getStoreManager().register("map-terrains", persistent2);
+  const ensureLoaded = async () => {
+    const snapshot = persistent2.get();
+    if (snapshot.loaded && loadPromise === null) {
+      return;
+    }
+    if (!loadPromise) {
+      loadPromise = persistent2.load().finally(() => {
+        loadPromise = null;
+      });
+    }
+    await loadPromise;
+  };
+  const refresh = async () => {
+    loadPromise = persistent2.load().finally(() => {
+      loadPromise = null;
+    });
+    await loadPromise;
+  };
+  const getTerrains = async () => {
+    await ensureLoaded();
+    return persistent2.get().map;
+  };
+  const saveTerrains3 = async (next) => {
+    await ensureLoaded();
+    persistent2.update(() => ({
+      loaded: true,
+      map: { ...next },
+      version: Date.now()
+    }));
+    setTerrains(next);
+    await persistent2.save();
+    triggerTerrainEvent(app);
+  };
+  const watch = (options2) => {
+    const resolved = resolveWatcherOptions(options2);
+    const handleError = (error, reason) => {
+      if (resolved.onError) {
+        try {
+          resolved.onError(error, { reason });
+        } catch (handlerError) {
+          logger2.error("[salt-marcher] Terrain watcher error handler threw", handlerError);
+        }
+        return;
+      }
+      logger2.error(`[salt-marcher] Terrain watcher failed after ${reason} event`, error);
+    };
+    const update = async (reason) => {
+      try {
+        if (reason === "delete") {
+          await ensureTerrainFile(app);
+        }
+        await refresh();
+        triggerTerrainEvent(app);
+        await resolved.onChange?.();
+      } catch (error) {
+        handleError(error, reason);
+      }
+    };
+    const maybeUpdate = (reason, file) => {
+      if (!(file instanceof import_obsidian27.TFile)) return;
+      if ((0, import_obsidian27.normalizePath)(file.path) !== (0, import_obsidian27.normalizePath)(TERRAIN_FILE)) return;
+      void update(reason);
+    };
+    const refs = ["modify", "delete"].map(
+      (event) => app.vault.on(event, (file) => maybeUpdate(event, file))
+    );
+    let disposed = false;
+    return () => {
+      if (disposed) return;
+      disposed = true;
+      for (const ref of refs) {
+        app.vault.offref(ref);
+      }
+    };
+  };
+  return {
+    state: persistent2,
+    getTerrains,
+    saveTerrains: saveTerrains3,
+    refresh,
+    watch
+  };
+}
+function getTerrainStore(app, options) {
+  let store = storeRegistry2.get(app);
+  if (!store) {
+    store = createTerrainStore(app, options);
+    storeRegistry2.set(app, store);
+  }
+  return store;
+}
+function resolveWatcherOptions(maybe) {
+  if (typeof maybe === "function") {
+    return { onChange: maybe };
+  }
+  return maybe ?? {};
+}
+async function loadTerrains(app) {
+  const store = getTerrainStore(app);
+  return await store.getTerrains();
+}
+async function saveTerrains(app, map) {
+  const store = getTerrainStore(app);
+  await store.saveTerrains(map);
+}
+function watchTerrains(app, options) {
+  const store = getTerrainStore(app, typeof options === "object" ? options.storeOptions : void 0);
+  return store.watch(options);
+}
+var import_obsidian27, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
+var init_terrain_store = __esm({
+  "src/features/maps/state/terrain-store.ts"() {
+    "use strict";
+    import_obsidian27 = require("obsidian");
+    init_state();
+    init_store_manager();
+    init_plugin_logger();
+    init_terrain();
+    TERRAIN_FILE = "SaltMarcher/Terrains.md";
+    BLOCK_RE2 = /```terrain\s*([\s\S]*?)```/i;
+    storeRegistry2 = /* @__PURE__ */ new WeakMap();
+  }
+});
+
+// src/features/maps/data/terrain-repository.ts
+var terrain_repository_exports = {};
+__export(terrain_repository_exports, {
+  TERRAIN_FILE: () => TERRAIN_FILE,
+  ensureTerrainFile: () => ensureTerrainFile,
+  loadTerrains: () => loadTerrains2,
+  parseTerrainBlock: () => parseTerrainBlock,
+  saveTerrains: () => saveTerrains2,
+  stringifyTerrainBlock: () => stringifyTerrainBlock,
+  watchTerrains: () => watchTerrains2
+});
+async function loadTerrains2(app) {
+  return await loadTerrains(app);
+}
+async function saveTerrains2(app, next) {
+  await saveTerrains(app, next);
+}
+function watchTerrains2(app, options) {
+  return watchTerrains(app, options);
+}
+var init_terrain_repository = __esm({
+  "src/features/maps/data/terrain-repository.ts"() {
+    "use strict";
+    init_terrain_store();
+  }
+});
+
+// src/workmodes/library/core/sources.ts
+async function ensureDir(app, dir) {
+  const normalizedDir = (0, import_obsidian28.normalizePath)(dir);
+  const folder = app.vault.getAbstractFileByPath(normalizedDir);
+  if (!folder) {
+    await app.vault.createFolder(normalizedDir).catch(() => {
+    });
+  }
+}
+async function ensureLibrarySource(app, source) {
+  const spec = SOURCE_MAP[source];
+  if (!spec) throw new Error(`Unknown library source: ${source}`);
+  await spec.ensure(app);
+}
+async function ensureLibrarySources(app, sources) {
+  const requested = sources ? Array.from(new Set(sources)) : LIBRARY_SOURCE_IDS;
+  await Promise.all(requested.map((source) => ensureLibrarySource(app, source)));
+}
+function describeLibrarySource(source) {
+  const spec = SOURCE_MAP[source];
+  if (!spec) throw new Error(`Unknown library source: ${source}`);
+  return spec.description;
+}
+var import_obsidian28, ensureCreatureDir, ensureSpellDir, ensureItemDir, ensureEquipmentDir, ensureFactionDir, ensureCalendarDir, SOURCE_MAP, LIBRARY_SOURCE_IDS;
+var init_sources = __esm({
+  "src/workmodes/library/core/sources.ts"() {
+    "use strict";
+    import_obsidian28 = require("obsidian");
+    init_terrain_repository();
+    init_region_repository();
+    init_entity_registry();
+    ensureCreatureDir = (app) => ensureDir(app, ENTITY_REGISTRY.creatures.directory);
+    ensureSpellDir = (app) => ensureDir(app, ENTITY_REGISTRY.spells.directory);
+    ensureItemDir = (app) => ensureDir(app, ENTITY_REGISTRY.items.directory);
+    ensureEquipmentDir = (app) => ensureDir(app, ENTITY_REGISTRY.equipment.directory);
+    ensureFactionDir = (app) => ensureDir(app, ENTITY_REGISTRY.factions.directory);
+    ensureCalendarDir = (app) => ensureDir(app, ENTITY_REGISTRY.calendars.directory);
+    SOURCE_MAP = Object.freeze({
+      creatures: {
+        ensure: ensureCreatureDir,
+        description: `${ENTITY_REGISTRY.creatures.directory}/`
+      },
+      spells: {
+        ensure: ensureSpellDir,
+        description: `${ENTITY_REGISTRY.spells.directory}/`
+      },
+      items: {
+        ensure: ensureItemDir,
+        description: `${ENTITY_REGISTRY.items.directory}/`
+      },
+      equipment: {
+        ensure: ensureEquipmentDir,
+        description: `${ENTITY_REGISTRY.equipment.directory}/`
+      },
+      terrains: {
+        ensure: ensureTerrainFile,
+        description: TERRAIN_FILE
+      },
+      regions: {
+        ensure: ensureRegionsFile,
+        description: REGIONS_FILE
+      },
+      factions: {
+        ensure: ensureFactionDir,
+        description: `${ENTITY_REGISTRY.factions.directory}/`
+      },
+      calendars: {
+        ensure: ensureCalendarDir,
+        description: `${ENTITY_REGISTRY.calendars.directory}/`
+      }
+    });
+    LIBRARY_SOURCE_IDS = Object.freeze(Object.keys(SOURCE_MAP));
+  }
+});
+
+// src/workmodes/library/locations/location-list-renderer.ts
+var LocationListRenderer;
+var init_location_list_renderer = __esm({
+  "src/workmodes/library/locations/location-list-renderer.ts"() {
+    "use strict";
+    init_generic_list_renderer();
+    init_locations();
+    LocationListRenderer = class extends GenericListRenderer {
+      constructor(app, container, config) {
+        super(app, container, config);
+        this.viewMode = "list";
+      }
+      /**
+       * Sets the view mode and triggers re-render.
+       */
+      setViewMode(mode) {
+        if (this.viewMode !== mode) {
+          this.viewMode = mode;
+          this.render();
+        }
+      }
+      /**
+       * Gets the current view mode.
+       */
+      getViewMode() {
+        return this.viewMode;
+      }
+      /**
+       * Override render to add view mode toggle and conditional rendering.
+       */
+      render() {
+        if (this.isDisposed()) return;
+        const container = this.container;
+        container.empty();
+        this.renderViewModeToggle(container);
+        if (this.viewMode === "tree") {
+          this.renderTreeView(container);
+        } else {
+          this.renderInternal();
+        }
+      }
+      /**
+       * Renders the view mode toggle button.
+       */
+      renderViewModeToggle(container) {
+        const toggleContainer = container.createDiv({ cls: "sm-location-view-toggle" });
+        const listBtn = toggleContainer.createEl("button", {
+          cls: this.viewMode === "list" ? "sm-toggle-active" : "",
+          text: "\u{1F4CB} List"
+        });
+        const treeBtn = toggleContainer.createEl("button", {
+          cls: this.viewMode === "tree" ? "sm-toggle-active" : "",
+          text: "\u{1F333} Tree"
+        });
+        listBtn.addEventListener("click", () => {
+          this.setViewMode("list");
+        });
+        treeBtn.addEventListener("click", () => {
+          this.setViewMode("tree");
+        });
+      }
+      /**
+       * Renders locations in tree view.
+       */
+      renderTreeView(container) {
+        const entries = this.entries;
+        if (!entries || entries.length === 0) {
+          container.createDiv({ cls: "sm-tree-empty", text: "Keine Orte vorhanden" });
+          return;
+        }
+        const locations = entries.map((entry) => ({
+          name: entry.name,
+          type: entry.type || "Geb\xE4ude",
+          description: entry.description,
+          parent: entry.parent,
+          owner_type: entry.owner_type,
+          owner_name: entry.owner_name,
+          region: entry.region,
+          coordinates: entry.coordinates,
+          notes: entry.notes
+        }));
+        const treeNodes = buildLocationTree(locations);
+        this.treeContainer = container.createDiv({ cls: "sm-location-tree-container" });
+        this.treeView = new LocationTreeView(this.treeContainer, {
+          onLocationClick: (locationName) => {
+            this.handleLocationClick(locationName);
+          }
+        });
+        this.treeView.render(treeNodes);
+      }
+      /**
+       * Handles click on a location in tree view.
+       * Opens the location details by triggering the "Open" action.
+       */
+      handleLocationClick(locationName) {
+        const entries = this.entries;
+        const entry = entries.find((e) => e.name === locationName);
+        if (!entry) return;
+        const viewConfig = this.viewConfig;
+        const actionContext = this.createActionContext();
+        const openAction = viewConfig.actions?.find((a) => a.id === "open");
+        if (openAction) {
+          openAction.handler(entry, actionContext);
+        }
+      }
+      /**
+       * Override destroy to clean up tree view.
+       */
+      destroy() {
+        this.treeView = void 0;
+        this.treeContainer = void 0;
+        super.destroy();
+      }
+    };
+  }
+});
+
+// src/workmodes/library/view.ts
+async function openLibrary(app) {
+  const leaf = app.workspace.getLeaf(true);
+  await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
+  app.workspace.revealLeaf(leaf);
+}
+var LIBRARY_COPY, VIEW_LIBRARY, LIBRARY_MODES, _LibraryView, LibraryView;
+var init_view = __esm({
+  "src/workmodes/library/view.ts"() {
+    "use strict";
+    init_data_manager();
+    init_data_sources();
+    init_registry();
+    init_sources();
+    init_location_list_renderer();
+    LIBRARY_COPY = {
+      title: "Library",
+      searchPlaceholder: "Search the library or enter a name\u2026",
+      createButton: "Create entry",
+      modes: {
+        creatures: "Creatures",
+        spells: "Spells",
+        items: "Items",
+        equipment: "Equipment",
+        terrains: "Terrains",
+        regions: "Regions",
+        factions: "Factions",
+        calendars: "Calendars",
+        locations: "Locations"
+      },
+      sources: {
+        prefix: "Source: "
+      }
+    };
+    VIEW_LIBRARY = "salt-library";
+    LIBRARY_MODES = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars", "locations"];
+    _LibraryView = class _LibraryView extends TabbedBrowseView {
+      get config() {
+        return _LibraryView.LIBRARY_CONFIG;
+      }
+      constructor(leaf) {
+        super(leaf);
+      }
+      /**
+       * Override createRenderer to use LocationListRenderer for locations mode.
+       */
+      createRenderer(mode, container) {
+        const rendererConfig = {
+          mode,
+          source: this.config.dataSources[mode],
+          schema: this.config.schemas[mode],
+          viewConfig: this.config.viewConfigs[mode],
+          watchers: this.watchers
+        };
+        if (mode === "locations") {
+          return new LocationListRenderer(
+            this.app,
+            container,
+            rendererConfig
+            // Type assertion needed due to Mode generics
+          );
+        }
+        return new GenericListRenderer(this.app, container, rendererConfig);
+      }
+    };
+    _LibraryView.LIBRARY_CONFIG = {
+      viewType: VIEW_LIBRARY,
+      icon: "library",
+      copy: LIBRARY_COPY,
+      defaultMode: "creatures",
+      modes: LIBRARY_MODES,
+      dataSources: LIBRARY_DATA_SOURCES,
+      schemas: LIBRARY_LIST_SCHEMAS,
+      viewConfigs: LIBRARY_VIEW_CONFIGS,
+      ensureSources: ensureLibrarySources,
+      describeSource: describeLibrarySource
+    };
+    LibraryView = _LibraryView;
+  }
+});
+
+// src/workmodes/cartographer/modes/inspector.ts
+var inspector_exports = {};
+__export(inspector_exports, {
+  createInspectorMode: () => createInspectorMode
+});
+function createInspectorMode() {
+  let ui = {
+    panel: null,
+    form: null,
+    fileLabel: null,
+    message: null,
+    terrain: null,
+    region: null,
+    faction: null,
+    note: null
+  };
+  let state = {
+    file: null,
+    handles: null,
+    selection: null,
+    saveTimer: null
+  };
+  const lifecycle = createModeLifecycle();
+  const isAborted = () => lifecycle.isAborted();
+  const clearSaveTimer = () => {
+    if (state.saveTimer !== null) {
+      window.clearTimeout(state.saveTimer);
+      state.saveTimer = null;
+    }
+  };
+  const resetInputs = () => {
+    ui.terrain?.setValue("");
+    ui.terrain?.setDisabled(true);
+    ui.region?.setValue("");
+    ui.region?.setDisabled(true);
+    ui.faction?.setValue("");
+    ui.faction?.setDisabled(true);
+    ui.note?.setValue("");
+    ui.note?.setDisabled(true);
+  };
+  const updateMessage = () => {
+    if (!ui.message) return;
+    if (!state.file || !state.handles) {
+      ui.message.set({ message: state.file ? "Karte wird geladen \u2026" : "Keine Karte ausgew\xE4hlt.", tone: "info" });
+    } else if (!state.selection) {
+      ui.message.set({ message: "Hex anklicken, um Terrain & Notiz zu bearbeiten.", tone: "info" });
+    } else {
+      ui.message.set({ message: `Hex r${state.selection.r}, c${state.selection.c}`, tone: "info" });
+    }
+  };
+  const updateFileLabel = () => {
+    if (!ui.fileLabel) return;
+    ui.fileLabel.textContent = state.file ? state.file.basename : "Keine Karte";
+  };
+  const updatePanelState = () => {
+    const hasMap = !!state.file && !!state.handles;
+    ui.panel?.classList.toggle("is-disabled", !hasMap);
+    if (!hasMap) {
+      state.selection = null;
+      resetInputs();
+    }
+    updateMessage();
+  };
+  const scheduleSave = (ctx) => {
+    if (ctx.signal.aborted) return;
+    if (!state.selection) return;
+    const file = ctx.getFile();
+    if (!file) return;
+    const handles = ctx.getRenderHandles();
+    clearSaveTimer();
+    state.saveTimer = window.setTimeout(async () => {
+      if (ctx.signal.aborted) return;
+      const terrain = ui.terrain?.getValue() ?? "";
+      const region = ui.region?.getValue() ?? "";
+      const faction = ui.faction?.getValue() ?? "";
+      const note = ui.note?.getValue() ?? "";
+      try {
+        await saveTile(ctx.app, file, state.selection, { terrain, region, faction, note });
+      } catch (err) {
+        logger2.error("[inspector-mode] saveTile failed", err);
+      }
+      const color = TERRAIN_COLORS[terrain] ?? "transparent";
+      try {
+        handles?.setFill(state.selection, color);
+      } catch (err) {
+        logger2.error("[inspector-mode] setFill failed", err);
+      }
+    }, 250);
+  };
+  const loadSelection = async (ctx) => {
+    if (!state.selection) return;
+    const file = ctx.getFile();
+    if (!file) return;
+    let data = null;
+    try {
+      data = await loadTile(ctx.app, file, state.selection);
+    } catch (err) {
+      logger2.error("[inspector-mode] loadTile failed", err);
+      data = null;
+    }
+    if (ctx.signal.aborted) return;
+    ui.terrain?.setValue(data?.terrain ?? "");
+    ui.terrain?.setDisabled(false);
+    ui.region?.setValue(data?.region ?? "");
+    ui.region?.setDisabled(false);
+    ui.faction?.setValue(data?.faction ?? "");
+    ui.faction?.setDisabled(false);
+    ui.note?.setValue(data?.note ?? "");
+    ui.note?.setDisabled(false);
+    if (ui.locationInfo) {
+      ui.locationInfo.empty();
+      const markerStore = getLocationMarkerStore(ctx.app, file);
+      const marker = markerStore.get(state.selection);
+      if (marker) {
+        const header = ui.locationInfo.createEl("h4", { text: "\u{1F4CD} Location" });
+        header.style.marginTop = "0";
+        header.style.marginBottom = "8px";
+        const infoDiv = ui.locationInfo.createDiv({ cls: "sm-location-marker-info" });
+        infoDiv.createDiv({ text: `${marker.displayIcon} ${marker.locationName}`, cls: "sm-location-name" });
+        infoDiv.createDiv({ text: `Type: ${marker.locationType}`, cls: "sm-location-type" });
+        if (marker.parent) {
+          infoDiv.createDiv({ text: `Parent: ${marker.parent}`, cls: "sm-location-parent" });
+        }
+        if (marker.ownerName) {
+          const ownerLabel = marker.ownerType === "faction" ? "Faction" : marker.ownerType === "npc" ? "Owner (NPC)" : "Owner";
+          infoDiv.createDiv({ text: `${ownerLabel}: ${marker.ownerName}`, cls: "sm-location-owner" });
+        }
+        const openBtn = ui.locationInfo.createEl("button", { text: "Open in Library" });
+        openBtn.style.marginTop = "8px";
+        openBtn.addEventListener("click", async () => {
+          const leaf = ctx.app.workspace.getLeaf(false);
+          await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
+          ctx.app.workspace.revealLeaf(leaf);
+        });
+      }
+    }
+    updateMessage();
+  };
+  const clearHost = (host) => {
+    while (host.firstChild) {
+      host.removeChild(host.firstChild);
+    }
+  };
+  return {
+    id: "inspector",
+    label: "Inspector",
+    async onEnter(ctx) {
+      lifecycle.bind(ctx);
+      ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, region: null, faction: null, note: null, locationInfo: null };
+      state = { ...state, selection: null };
+      clearHost(ctx.sidebarHost);
+      ui.panel = document.createElement("div");
+      ui.panel.className = "sm-cartographer__panel sm-cartographer__panel--inspector";
+      ctx.sidebarHost.appendChild(ui.panel);
+      ui.form = buildForm(ui.panel, {
+        sections: [
+          { kind: "header", text: "Inspektor" },
+          { kind: "static", id: "file", cls: "sm-cartographer__panel-file" },
+          { kind: "status", id: "message", cls: "sm-cartographer__panel-info" },
+          {
+            kind: "row",
+            label: "Terrain:",
+            rowCls: "sm-cartographer__panel-row",
+            controls: [
+              {
+                kind: "select",
+                id: "terrain",
+                options: Object.keys(TERRAIN_COLORS).map((key) => ({
+                  value: key,
+                  label: key || "(leer)"
+                })),
+                disabled: true,
+                enhance: (select) => enhanceSelectToSearch(select, "Such-dropdown\u2026"),
+                onChange: () => scheduleSave(ctx)
+              }
+            ]
+          },
+          {
+            kind: "row",
+            label: "Region:",
+            rowCls: "sm-cartographer__panel-row",
+            controls: [
+              {
+                kind: "select",
+                id: "region",
+                options: [],
+                disabled: true,
+                enhance: (select) => enhanceSelectToSearch(select, "Such-dropdown\u2026"),
+                onChange: () => scheduleSave(ctx)
+              }
+            ]
+          },
+          {
+            kind: "row",
+            label: "Faction:",
+            rowCls: "sm-cartographer__panel-row",
+            controls: [
+              {
+                kind: "select",
+                id: "faction",
+                options: [],
+                disabled: true,
+                enhance: (select) => enhanceSelectToSearch(select, "Such-dropdown\u2026"),
+                onChange: () => scheduleSave(ctx)
+              }
+            ]
+          },
+          {
+            kind: "row",
+            label: "Notiz:",
+            rowCls: "sm-cartographer__panel-row",
+            controls: [
+              {
+                kind: "textarea",
+                id: "note",
+                rows: 6,
+                disabled: true,
+                onInput: () => scheduleSave(ctx)
+              }
+            ]
+          },
+          { kind: "separator" },
+          { kind: "static", id: "location", cls: "sm-cartographer__location-info" }
+        ]
+      });
+      ui.fileLabel = ui.form.getElement("file");
+      ui.message = ui.form.getStatus("message");
+      ui.terrain = ui.form.getControl("terrain");
+      ui.region = ui.form.getControl("region");
+      ui.faction = ui.form.getControl("faction");
+      ui.note = ui.form.getControl("note");
+      ui.locationInfo = ui.form.getElement("location");
+      try {
+        const regions = await loadRegions2(ctx.app);
+        ui.region?.setOptions([
+          { label: "(none)", value: "" },
+          ...regions.map((r) => ({
+            label: r.name || "(unnamed)",
+            value: r.name ?? ""
+          }))
+        ]);
+      } catch (err) {
+        logger2.error("[inspector-mode] failed to load regions", err);
+      }
+      try {
+        const factionFiles = await LIBRARY_DATA_SOURCES.factions.list(ctx.app);
+        const factions = [];
+        for (const file of factionFiles) {
+          try {
+            const entry = await LIBRARY_DATA_SOURCES.factions.load(ctx.app, file);
+            factions.push({ name: entry.name });
+          } catch (err) {
+            logger2.warn(`[inspector-mode] failed to load faction ${file.path}`, err);
+          }
+        }
+        ui.faction?.setOptions([
+          { label: "(none)", value: "" },
+          ...factions.map((f) => ({
+            label: f.name || "(unnamed)",
+            value: f.name ?? ""
+          }))
+        ]);
+      } catch (err) {
+        logger2.error("[inspector-mode] failed to load factions", err);
+      }
+      updateFileLabel();
+      updatePanelState();
+    },
+    async onExit(ctx) {
+      lifecycle.bind(ctx);
+      clearSaveTimer();
+      ui.form?.destroy();
+      ui.panel?.remove();
+      ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, region: null, faction: null, note: null, locationInfo: null };
+      state = { file: null, handles: null, selection: null, saveTimer: null };
+      lifecycle.reset();
+    },
+    async onFileChange(file, handles, ctx) {
+      lifecycle.bind(ctx);
+      state.file = file;
+      state.handles = handles;
+      clearSaveTimer();
+      resetInputs();
+      updateFileLabel();
+      updatePanelState();
+      if (state.selection && state.file && state.handles && !isAborted()) {
+        await loadSelection(ctx);
+      }
+    },
+    async onHexClick(coord, _event, ctx) {
+      lifecycle.bind(ctx);
+      if (isAborted()) return;
+      if (!state.file || !state.handles) return;
+      clearSaveTimer();
+      state.selection = coord;
+      updateMessage();
+      if (isAborted()) return;
+      await loadSelection(ctx);
+    }
+  };
+}
+var init_inspector = __esm({
+  "src/workmodes/cartographer/modes/inspector.ts"() {
+    "use strict";
+    init_tile_repository();
+    init_terrain();
+    init_region_repository();
+    init_data_sources();
+    init_search_dropdown();
+    init_plugin_logger();
+    init_lifecycle();
+    init_form_builder();
+    init_location_marker_store();
+    init_view();
+  }
+});
+
+// src/workmodes/encounter/session-store.ts
+function createInitialEncounterXpState() {
+  return {
+    party: [],
+    encounterXp: 0,
+    rules: []
+  };
+}
+function clonePartyMember(member) {
+  return { ...member };
+}
+function cloneRule(rule) {
+  return { ...rule };
+}
+function cloneMutableEncounterXpState(state) {
+  return {
+    party: state.party.map(clonePartyMember),
+    encounterXp: state.encounterXp,
+    rules: state.rules.map(cloneRule)
+  };
+}
+function createImmutableEncounterXpState(state) {
+  const party = Object.freeze(state.party.map(clonePartyMember));
+  const rules = Object.freeze(state.rules.map(cloneRule));
+  return {
+    party,
+    encounterXp: state.encounterXp,
+    rules
+  };
+}
+function emitEncounterXpState() {
+  const snapshot = createImmutableEncounterXpState(encounterXpState);
+  if (!xpStateListeners.size) {
+    return snapshot;
+  }
+  for (const listener of [...xpStateListeners]) {
+    try {
+      listener(snapshot);
+    } catch (err) {
+      logger2.error("[encounter] xp listener failed", err);
+    }
+  }
+  return snapshot;
+}
+function publishEncounterEvent(event) {
+  latestEvent = event;
+  for (const listener of [...listeners]) {
+    try {
+      listener(event);
+    } catch (err) {
+      logger2.error("[encounter] listener failed", err);
+    }
+  }
+}
+function subscribeToEncounterEvents(listener) {
+  listeners.add(listener);
+  if (latestEvent) {
+    try {
+      listener(latestEvent);
+    } catch (err) {
+      logger2.error("[encounter] listener failed", err);
+    }
+  }
+  return () => {
+    listeners.delete(listener);
+  };
+}
+function peekLatestEncounterEvent() {
+  return latestEvent;
+}
+function getEncounterXpState() {
+  return createImmutableEncounterXpState(encounterXpState);
+}
+function subscribeEncounterXpState(listener) {
+  xpStateListeners.add(listener);
+  try {
+    listener(getEncounterXpState());
+  } catch (err) {
+    logger2.error("[encounter] xp listener failed", err);
+  }
+  return () => {
+    xpStateListeners.delete(listener);
+  };
+}
+function updateEncounterXpState(mutator) {
+  const next = cloneMutableEncounterXpState(encounterXpState);
+  mutator(next);
+  encounterXpState = next;
+  return emitEncounterXpState();
+}
+function setEncounterXp(value) {
+  return updateEncounterXpState((draft) => {
+    draft.encounterXp = value;
+  });
+}
+function addPartyMember(member) {
+  return updateEncounterXpState((draft) => {
+    draft.party.push(clonePartyMember(member));
+  });
+}
+function updatePartyMember(id, patch) {
+  return updateEncounterXpState((draft) => {
+    const index = draft.party.findIndex((member) => member.id === id);
+    if (index === -1) {
+      return;
+    }
+    draft.party[index] = { ...draft.party[index], ...patch };
+  });
+}
+function removePartyMember(id) {
+  return updateEncounterXpState((draft) => {
+    draft.party = draft.party.filter((member) => member.id !== id);
+  });
+}
+function addRule(rule) {
+  return updateEncounterXpState((draft) => {
+    draft.rules.push(cloneRule(rule));
+  });
+}
+function updateRule(id, patch) {
+  return updateEncounterXpState((draft) => {
+    const index = draft.rules.findIndex((rule) => rule.id === id);
+    if (index === -1) {
+      return;
+    }
+    draft.rules[index] = { ...draft.rules[index], ...patch };
+  });
+}
+function removeRule(id) {
+  return updateEncounterXpState((draft) => {
+    draft.rules = draft.rules.filter((rule) => rule.id !== id);
+  });
+}
+function replaceEncounterXpState(state) {
+  encounterXpState = {
+    party: state.party.map(clonePartyMember),
+    encounterXp: state.encounterXp,
+    rules: state.rules.map(cloneRule)
+  };
+  return emitEncounterXpState();
+}
+var DND5E_XP_THRESHOLDS, latestEvent, listeners, encounterXpState, xpStateListeners;
+var init_session_store = __esm({
+  "src/workmodes/encounter/session-store.ts"() {
+    "use strict";
+    init_plugin_logger();
+    DND5E_XP_THRESHOLDS = {
+      1: 0,
+      2: 300,
+      3: 900,
+      4: 2700,
+      5: 6500,
+      6: 14e3,
+      7: 23e3,
+      8: 34e3,
+      9: 48e3,
+      10: 64e3,
+      11: 85e3,
+      12: 1e5,
+      13: 12e4,
+      14: 14e4,
+      15: 165e3,
+      16: 195e3,
+      17: 225e3,
+      18: 265e3,
+      19: 305e3,
+      20: 355e3
+    };
+    latestEvent = null;
+    listeners = /* @__PURE__ */ new Set();
+    encounterXpState = createInitialEncounterXpState();
+    xpStateListeners = /* @__PURE__ */ new Set();
+  }
+});
+
+// src/workmodes/encounter/generator.ts
+var generator_exports = {};
+__export(generator_exports, {
+  calculateCreatureBudget: () => calculateCreatureBudget,
+  filterCreaturesByTags: () => filterCreaturesByTags,
+  generateRandomEncounter: () => generateRandomEncounter,
+  selectCreaturesForBudget: () => selectCreaturesForBudget
+});
+function getXpMultiplier(count) {
+  if (count === 1) return 1;
+  if (count === 2) return 1.5;
+  if (count >= 3 && count <= 6) return 2;
+  if (count >= 7 && count <= 10) return 2.5;
+  if (count >= 11 && count <= 14) return 3;
+  return 4;
+}
+function filterCreaturesByTags(ctx) {
+  const { faction, terrain, region, creatures } = ctx;
+  const factionTags = faction?.influence_tags?.map((t) => t.value.toLowerCase()) ?? [];
+  const terrainTags = [
+    ...terrain?.biome_tags?.map((t) => t.value.toLowerCase()) ?? [],
+    ...terrain?.difficulty_tags?.map((t) => t.value.toLowerCase()) ?? []
+  ];
+  const regionTags = [
+    ...region?.biome_tags?.map((t) => t.value.toLowerCase()) ?? [],
+    ...region?.danger_tags?.map((t) => t.value.toLowerCase()) ?? [],
+    ...region?.climate_tags?.map((t) => t.value.toLowerCase()) ?? [],
+    ...region?.settlement_tags?.map((t) => t.value.toLowerCase()) ?? []
+  ];
+  const matchesAnyTag = (creatureTags, filterTags) => {
+    if (filterTags.length === 0) return true;
+    if (creatureTags.length === 0) return false;
+    return creatureTags.some((ct) => filterTags.includes(ct.toLowerCase()));
+  };
+  const filterLevels = [
+    // Level 1: Faction + Terrain + Region (skip if any is empty)
+    ...factionTags.length > 0 && terrainTags.length > 0 && regionTags.length > 0 ? [{ level: 1, tags: [factionTags, terrainTags, regionTags] }] : [],
+    // Level 2: Faction + Terrain (skip if either is empty)
+    ...factionTags.length > 0 && terrainTags.length > 0 ? [{ level: 2, tags: [factionTags, terrainTags] }] : [],
+    // Level 3: Terrain only (skip if empty)
+    ...terrainTags.length > 0 ? [{ level: 3, tags: [terrainTags] }] : [],
+    // Level 4: No filter (always present)
+    { level: 4, tags: [] }
+  ];
+  for (const { level, tags } of filterLevels) {
+    const filtered = creatures.filter((creature) => {
+      const creatureTags = creature.typeTags?.map((t) => {
+        return typeof t === "string" ? t : t;
+      }) ?? [];
+      if (tags.length === 0) return true;
+      if (creatureTags.length === 0) return false;
+      return tags.every((filterTagSet) => matchesAnyTag(creatureTags, filterTagSet));
+    });
+    if (filtered.length > 0) {
+      logger2.debug(`[generator] Filter level ${level}: ${filtered.length} matches`, {
+        factionTags,
+        terrainTags,
+        regionTags,
+        filterLevel: level
+      });
+      return { creatures: filtered, filterLevel: level };
+    }
+  }
+  logger2.warn("[generator] No creatures found at any filter level");
+  return { creatures: [], filterLevel: 4 };
+}
+function calculateCreatureBudget(options) {
+  const { partyLevel, partySize, difficulty } = options;
+  if (partyLevel < 1 || partyLevel > 20) {
+    logger2.warn(`[generator] Invalid party level: ${partyLevel}, clamping to 1-20`);
+  }
+  if (partySize < 1) {
+    logger2.warn(`[generator] Invalid party size: ${partySize}, defaulting to 1`);
+  }
+  const level = Math.max(1, Math.min(20, partyLevel));
+  const size = Math.max(1, partySize);
+  const xpPerCharacter = XP_THRESHOLDS[difficulty][level - 1];
+  const targetXP = xpPerCharacter * size;
+  const minXP = Math.floor(targetXP * 0.8);
+  const maxXP = Math.ceil(targetXP * 1.2);
+  logger2.debug(`[generator] Budget: ${targetXP} XP (${minXP}-${maxXP})`, {
+    partyLevel: level,
+    partySize: size,
+    difficulty,
+    xpPerCharacter
+  });
+  return { targetXP, minXP, maxXP };
+}
+function selectCreaturesForBudget(creatures, budget, options) {
+  if (creatures.length === 0) {
+    logger2.warn("[generator] No creatures available for selection");
+    return [];
+  }
+  const { minXP, maxXP } = budget;
+  const MAX_CREATURES = 6;
+  const MAX_COPIES = 3;
+  const sorted = [...creatures].sort((a, b) => {
+    const crA = typeof a.cr === "string" ? parseFloat(a.cr) : 0;
+    const crB = typeof b.cr === "string" ? parseFloat(b.cr) : 0;
+    return crA - crB;
+  });
+  const getAdjustedXP = (selections) => {
+    const totalCount = Array.from(selections.values()).reduce((sum, count) => sum + count, 0);
+    const multiplier = getXpMultiplier(totalCount);
+    let rawXP = 0;
+    for (const [name, count] of selections) {
+      const creature = sorted.find((c) => c.name === name);
+      if (!creature) continue;
+      const cr = typeof creature.cr === "string" ? parseFloat(creature.cr) : 0;
+      const xpPerCreature = XP_BY_CR[cr] ?? 0;
+      rawXP += xpPerCreature * count;
+    }
+    return Math.round(rawXP * multiplier);
+  };
+  const rng = options.seed !== void 0 ? seededRandom(options.seed) : Math.random;
+  let bestSelection = /* @__PURE__ */ new Map();
+  let bestXP = 0;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const selection = /* @__PURE__ */ new Map();
+    const shuffled = [...sorted].sort(() => rng() - 0.5);
+    for (const creature of shuffled) {
+      if (Array.from(selection.values()).reduce((sum, c) => sum + c, 0) >= MAX_CREATURES) {
+        break;
+      }
+      const currentCopies = selection.get(creature.name) ?? 0;
+      if (currentCopies >= MAX_COPIES) continue;
+      selection.set(creature.name, currentCopies + 1);
+      const adjustedXP = getAdjustedXP(selection);
+      if (adjustedXP > maxXP) {
+        if (currentCopies === 0) {
+          selection.delete(creature.name);
+        } else {
+          selection.set(creature.name, currentCopies);
+        }
+      } else if (adjustedXP >= minXP) {
+        if (adjustedXP > bestXP || bestSelection.size === 0) {
+          bestSelection = new Map(selection);
+          bestXP = adjustedXP;
+        }
+      }
+    }
+    const finalXP = getAdjustedXP(selection);
+    if (finalXP >= minXP && finalXP <= maxXP) {
+      if (finalXP > bestXP || bestSelection.size === 0) {
+        bestSelection = new Map(selection);
+        bestXP = finalXP;
+      }
+    }
+  }
+  if (bestSelection.size === 0) {
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const creature = sorted[i];
+      const cr = typeof creature.cr === "string" ? parseFloat(creature.cr) : 0;
+      const xp = XP_BY_CR[cr] ?? 0;
+      if (xp <= maxXP) {
+        bestSelection.set(creature.name, 1);
+        bestXP = xp;
+        logger2.debug("[generator] Fallback: Single creature", { name: creature.name, xp });
+        break;
+      }
+    }
+  }
+  const result = [];
+  for (const [name, count] of bestSelection) {
+    const creature = sorted.find((c) => c.name === name);
+    if (!creature) continue;
+    const cr = typeof creature.cr === "string" ? parseFloat(creature.cr) : 0;
+    result.push({
+      id: `${name}-${Date.now()}`,
+      name: creature.name,
+      count,
+      cr,
+      source: "library",
+      statblockPath: `Creatures/${creature.name}.md`
+      // TODO: Get actual path
+    });
+  }
+  logger2.debug("[generator] Selected creatures", {
+    count: result.length,
+    totalXP: bestXP,
+    budget: `${minXP}-${maxXP}`,
+    creatures: result.map((c) => `${c.name} x${c.count}`)
+  });
+  return result;
+}
+function generateRandomEncounter(ctx, options) {
+  logger2.info("[generator] Starting encounter generation", {
+    partyLevel: options.partyLevel,
+    partySize: options.partySize,
+    difficulty: options.difficulty,
+    availableCreatures: ctx.creatures.length
+  });
+  const { creatures: filteredCreatures, filterLevel } = filterCreaturesByTags(ctx);
+  if (filteredCreatures.length === 0) {
+    logger2.error("[generator] No matching creatures found");
+    return { creatures: [], totalXP: 0, filterLevel: 4 };
+  }
+  const budget = calculateCreatureBudget(options);
+  const selectedCreatures = selectCreaturesForBudget(filteredCreatures, budget, options);
+  const totalXP = selectedCreatures.reduce((sum, creature) => {
+    const xpPerCreature = XP_BY_CR[creature.cr] ?? 0;
+    return sum + xpPerCreature * creature.count;
+  }, 0);
+  logger2.info("[generator] Encounter generated successfully", {
+    creatureCount: selectedCreatures.length,
+    totalCreatures: selectedCreatures.reduce((sum, c) => sum + c.count, 0),
+    totalXP,
+    filterLevel
+  });
+  return {
+    creatures: selectedCreatures,
+    totalXP,
+    filterLevel
+  };
+}
+function seededRandom(seed) {
+  let state = seed;
+  return () => {
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    return state / 4294967296;
+  };
+}
+var XP_THRESHOLDS, XP_BY_CR;
+var init_generator = __esm({
+  "src/workmodes/encounter/generator.ts"() {
+    "use strict";
+    init_plugin_logger();
+    XP_THRESHOLDS = {
+      easy: [25, 50, 75, 125, 250, 300, 350, 450, 550, 600, 800, 1e3, 1100, 1250, 1400, 1600, 2e3, 2100, 2400, 2800],
+      medium: [50, 100, 150, 250, 500, 600, 750, 900, 1100, 1200, 1600, 2e3, 2200, 2500, 2800, 3200, 3900, 4200, 4900, 5700],
+      hard: [75, 150, 225, 375, 750, 900, 1100, 1400, 1600, 1900, 2400, 3e3, 3400, 3800, 4300, 4800, 5900, 6300, 7300, 8500],
+      deadly: [100, 200, 400, 500, 1100, 1400, 1700, 2100, 2400, 2800, 3600, 4500, 5100, 5700, 6400, 7200, 8800, 9500, 10900, 12700]
+    };
+    XP_BY_CR = {
+      0: 10,
+      0.125: 25,
+      0.25: 50,
+      0.5: 100,
+      1: 200,
+      2: 450,
+      3: 700,
+      4: 1100,
+      5: 1800,
+      6: 2300,
+      7: 2900,
+      8: 3900,
+      9: 5e3,
+      10: 5900,
+      11: 7200,
+      12: 8400,
+      13: 1e4,
+      14: 11500,
+      15: 13e3,
+      16: 15e3,
+      17: 18e3,
+      18: 2e4,
+      19: 22e3,
+      20: 25e3,
+      21: 33e3,
+      22: 41e3,
+      23: 5e4,
+      24: 62e3,
+      25: 75e3,
+      26: 9e4,
+      27: 105e3,
+      28: 12e4,
+      29: 135e3,
+      30: 155e3
+    };
+  }
+});
+
+// src/workmodes/encounter/presenter.ts
+function deriveEncounterXpView(state) {
+  const party = state.party ?? [];
+  const baseEncounterXp = sanitizeNonNegativeNumber(state.encounterXp ?? 0);
+  const partyCount = party.length;
+  const basePerMember = partyCount > 0 ? baseEncounterXp / partyCount : 0;
+  const globalWarnings = [];
+  if (partyCount === 0 && baseEncounterXp > 0) {
+    pushWarning(globalWarnings, "Encounter XP assigned but no party members present.");
+  }
+  const members = party.map((member) => {
+    const xpToNext = calculateXpToNextLevel(member.level, member.currentXp);
+    const warnings = [];
+    if (xpToNext === null) {
+      const sanitizedLevel = sanitizeLevel(member.level);
+      if (sanitizedLevel >= 20) {
+        pushWarning(warnings, "Maximum level reached.");
+      } else {
+        pushWarning(warnings, "XP threshold for next level unavailable.");
+      }
+    }
+    return {
+      member,
+      baseXp: basePerMember,
+      modifiersDelta: 0,
+      totalXp: basePerMember,
+      xpToNextLevel: xpToNext,
+      warnings
+    };
+  });
+  const ruleViews = [];
+  for (const rule of state.rules ?? []) {
+    const ruleWarnings = [];
+    const perMemberDeltas = [];
+    let totalDelta = 0;
+    if (!rule.enabled) {
+      for (const member of members) {
+        perMemberDeltas.push({
+          memberId: member.member.id,
+          memberName: member.member.name,
+          delta: 0
+        });
+      }
+      ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
+      continue;
+    }
+    if (!partyCount) {
+      if (rule.modifierValue !== 0) {
+        pushWarning(ruleWarnings, "Rule effect ignored because no party members are present.");
+      }
+      ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
+      for (const warning of ruleWarnings) {
+        pushWarning(globalWarnings, warning);
+      }
+      continue;
+    }
+    if (rule.scope !== "xp") {
+      for (const member of members) {
+        perMemberDeltas.push({
+          memberId: member.member.id,
+          memberName: member.member.name,
+          delta: 0
+        });
+      }
+      ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
+      continue;
+    }
+    const appendMemberDelta = (member, delta) => {
+      member.modifiersDelta += delta;
+      member.totalXp += delta;
+      perMemberDeltas.push({
+        memberId: member.member.id,
+        memberName: member.member.name,
+        delta
+      });
+      totalDelta += delta;
+    };
+    switch (rule.modifierType) {
+      case "flat": {
+        const perMember = rule.modifierValue / partyCount;
+        for (const member of members) {
+          appendMemberDelta(member, perMember);
+        }
+        break;
+      }
+      case "flatPerAverageLevel": {
+        let totalLevels = 0;
+        for (const member of members) {
+          totalLevels += sanitizeLevel(member.member.level);
+        }
+        const averageLevel = totalLevels / partyCount;
+        const totalAverageDelta = rule.modifierValue * averageLevel;
+        const perMember = totalAverageDelta / partyCount;
+        for (const member of members) {
+          appendMemberDelta(member, perMember);
+        }
+        break;
+      }
+      case "flatPerTotalLevel": {
+        for (const member of members) {
+          const sanitizedLevel = sanitizeLevel(member.member.level);
+          const delta = rule.modifierValue * sanitizedLevel;
+          appendMemberDelta(member, delta);
+        }
+        break;
+      }
+      case "percentTotal": {
+        const percent = rule.modifierValue / 100;
+        for (const member of members) {
+          const delta = member.totalXp * percent;
+          appendMemberDelta(member, delta);
+        }
+        break;
+      }
+      case "percentNextLevel": {
+        let aggregateNext = 0;
+        for (const member of members) {
+          if (member.xpToNextLevel == null) {
+            pushWarning(ruleWarnings, `${member.member.name} has no next-level XP threshold.`);
+            continue;
+          }
+          aggregateNext += member.xpToNextLevel;
+        }
+        if (aggregateNext === 0) {
+          for (const member of members) {
+            perMemberDeltas.push({
+              memberId: member.member.id,
+              memberName: member.member.name,
+              delta: 0
+            });
+          }
+          break;
+        }
+        const total = aggregateNext * (rule.modifierValue / 100);
+        const perMember = total / partyCount;
+        for (const member of members) {
+          appendMemberDelta(member, perMember);
+        }
+        break;
+      }
+    }
+    ruleViews.push({ rule, totalDelta, perMemberDeltas, warnings: ruleWarnings });
+    for (const warning of ruleWarnings) {
+      pushWarning(globalWarnings, warning);
+    }
+  }
+  const finalParty = members.map((member) => ({
+    member: member.member,
+    baseXp: member.baseXp,
+    modifiersDelta: member.modifiersDelta,
+    totalXp: member.totalXp,
+    xpToNextLevel: member.xpToNextLevel,
+    warnings: member.warnings
+  }));
+  const totalEncounterXp = finalParty.reduce((sum, member) => sum + member.totalXp, 0);
+  return {
+    baseEncounterXp,
+    totalEncounterXp,
+    party: finalParty,
+    rules: ruleViews,
+    warnings: globalWarnings
+  };
+}
+function calculateXpToNextLevel(level, currentXp) {
+  const sanitizedLevel = sanitizeLevel(level);
+  if (sanitizedLevel >= 20) {
+    return null;
+  }
+  const currentThreshold = DND5E_XP_THRESHOLDS[sanitizedLevel];
+  const nextThreshold = DND5E_XP_THRESHOLDS[sanitizedLevel + 1];
+  if (typeof currentThreshold !== "number" || typeof nextThreshold !== "number") {
+    return null;
+  }
+  const effectiveCurrentXp = sanitizeOptionalNonNegativeNumber(currentXp) ?? currentThreshold;
+  if (effectiveCurrentXp >= nextThreshold) {
+    return 0;
+  }
+  return nextThreshold - effectiveCurrentXp;
+}
+function sanitizeRuleScope(scope) {
+  if (scope === "gold") {
+    return "gold";
+  }
+  return "xp";
+}
+function sanitizeNumber(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+  return value;
+}
+function sanitizeNonNegativeNumber(value) {
+  const numeric = sanitizeNumber(value);
+  return numeric < 0 ? 0 : numeric;
+}
+function sanitizeOptionalNonNegativeNumber(value) {
+  if (value === null || value === void 0) {
+    return void 0;
+  }
+  return sanitizeNonNegativeNumber(value);
+}
+function sanitizeLevel(level) {
+  const numeric = Math.floor(sanitizeNumber(level));
+  return numeric < 1 ? 1 : numeric;
+}
+function clampPercentage(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  if (value > 100) return 100;
+  if (value < -100) return -100;
+  return value;
+}
+function clampIndex(index, length) {
+  if (length <= 0) return 0;
+  if (!Number.isFinite(index)) return 0;
+  const truncated = Math.trunc(index);
+  if (truncated < 0) return 0;
+  if (truncated >= length) return length - 1;
+  return truncated;
+}
+function clampToRange(value, range) {
+  if (value < range.min) return range.min;
+  if (value > range.max) return range.max;
+  return value;
+}
+function rollBetween(min, max) {
+  if (max <= min) {
+    return min;
+  }
+  return min + (max - min) * Math.random();
+}
+function pushWarning(collection, warning) {
+  if (!warning) return;
+  if (!collection.includes(warning)) {
+    collection.push(warning);
+  }
+}
+function shallowEqualPartyMembers(a, b) {
+  return a.id === b.id && a.name === b.name && a.level === b.level && (a.currentXp ?? void 0) === (b.currentXp ?? void 0);
+}
+function shallowEqualRules(a, b) {
+  return a.id === b.id && a.title === b.title && a.modifierType === b.modifierType && a.modifierValue === b.modifierValue && a.modifierValueMin === b.modifierValueMin && a.modifierValueMax === b.modifierValueMax && a.enabled === b.enabled && a.scope === b.scope && (a.notes ?? "") === (b.notes ?? "");
+}
+var defaultDeps, EncounterPresenter;
+var init_presenter = __esm({
+  "src/workmodes/encounter/presenter.ts"() {
+    "use strict";
+    init_session_store();
+    defaultDeps = {
+      now: () => (/* @__PURE__ */ new Date()).toISOString()
+    };
+    EncounterPresenter = class _EncounterPresenter {
+      constructor(initial, deps) {
+        this.listeners = /* @__PURE__ */ new Set();
+        this.deps = { ...defaultDeps, ...deps };
+        this.persisted = _EncounterPresenter.normalise(initial);
+        this.viewState = _EncounterPresenter.createViewState(this.persisted);
+        this.unsubscribeStore = subscribeToEncounterEvents((event) => this.applyEvent(event));
+        this.unsubscribeXpStore = subscribeEncounterXpState((xp) => this.applyXpState(xp));
+        if (initial?.xp) {
+          replaceEncounterXpState(this.persisted.xp);
+        }
+      }
+      dispose() {
+        this.unsubscribeStore?.();
+        this.unsubscribeXpStore?.();
+        this.listeners.clear();
+      }
+      /** Restores persisted state (e.g. when `setViewData` fires before `onOpen`). */
+      restore(state) {
+        const normalisedSession = _EncounterPresenter.normaliseSession(state?.session);
+        this.persisted = {
+          ...this.persisted,
+          session: normalisedSession
+        };
+        if (state?.xp) {
+          replaceEncounterXpState(_EncounterPresenter.normaliseXpState(state.xp));
+        } else {
+          this.emit();
+        }
+      }
+      getState() {
+        return this.viewState;
+      }
+      subscribe(listener) {
+        this.listeners.add(listener);
+        listener(this.viewState);
+        return () => {
+          this.listeners.delete(listener);
+        };
+      }
+      setNotes(notes) {
+        if (!this.persisted.session) return;
+        if (this.persisted.session.notes === notes) return;
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...this.persisted.session,
+            notes
+          }
+        };
+        this.emit();
+      }
+      markResolved() {
+        const session = this.persisted.session;
+        if (!session) return;
+        if (session.status === "resolved") return;
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            status: "resolved",
+            resolvedAt: this.deps.now()
+          }
+        };
+        this.emit();
+      }
+      reset() {
+        if (!this.persisted.session) return;
+        this.persisted = {
+          ...this.persisted,
+          session: null
+        };
+        this.emit();
+      }
+      addCreature(creature) {
+        const session = this.persisted.session;
+        if (!session) return;
+        const sanitized = {
+          ...creature,
+          count: Math.max(1, Math.floor(creature.count)),
+          cr: Math.max(0, creature.cr)
+        };
+        const existing = session.creatures.find((c) => c.id === sanitized.id);
+        if (existing) {
+          this.updateCreature(sanitized.id, { count: existing.count + sanitized.count });
+          return;
+        }
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            creatures: [...session.creatures, sanitized]
+          }
+        };
+        this.updateEncounterXpFromCreatures();
+      }
+      updateCreature(id, patch) {
+        const session = this.persisted.session;
+        if (!session) return;
+        const index = session.creatures.findIndex((c) => c.id === id);
+        if (index === -1) return;
+        const existing = session.creatures[index];
+        const updated = {
+          ...existing,
+          ...patch,
+          count: patch.count !== void 0 ? Math.max(1, Math.floor(patch.count)) : existing.count,
+          cr: patch.cr !== void 0 ? Math.max(0, patch.cr) : existing.cr
+        };
+        const nextCreatures = [...session.creatures];
+        nextCreatures[index] = updated;
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            creatures: nextCreatures
+          }
+        };
+        this.updateEncounterXpFromCreatures();
+      }
+      removeCreature(id) {
+        const session = this.persisted.session;
+        if (!session) return;
+        const filtered = session.creatures.filter((c) => c.id !== id);
+        if (filtered.length === session.creatures.length) return;
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            creatures: filtered
+          }
+        };
+        this.updateEncounterXpFromCreatures();
+      }
+      updateEncounterXpFromCreatures() {
+        const session = this.persisted.session;
+        if (!session) return;
+        const xpByCr = {
+          0: 10,
+          0.125: 25,
+          0.25: 50,
+          0.5: 100,
+          1: 200,
+          2: 450,
+          3: 700,
+          4: 1100,
+          5: 1800,
+          6: 2300,
+          7: 2900,
+          8: 3900,
+          9: 5e3,
+          10: 5900,
+          11: 7200,
+          12: 8400,
+          13: 1e4,
+          14: 11500,
+          15: 13e3,
+          16: 15e3,
+          17: 18e3,
+          18: 2e4,
+          19: 22e3,
+          20: 25e3,
+          21: 33e3,
+          22: 41e3,
+          23: 5e4,
+          24: 62e3,
+          25: 75e3,
+          26: 9e4,
+          27: 105e3,
+          28: 12e4,
+          29: 135e3,
+          30: 155e3
+        };
+        const totalXp = session.creatures.reduce((sum, creature) => {
+          const xpPerCreature = xpByCr[creature.cr] ?? 0;
+          return sum + xpPerCreature * creature.count;
+        }, 0);
+        this.setEncounterXp(totalXp);
+        this.emit();
+      }
+      // ============================================================================
+      // Random Encounter Generation (Phase 2.6)
+      // ============================================================================
+      /**
+       * Generates a random encounter based on current travel context.
+       *
+       * @param difficulty Encounter difficulty (easy/medium/hard/deadly)
+       * @param app Obsidian App instance (for loading creatures from library)
+       * @param clearExisting If true, removes existing creatures before adding generated ones
+       * @returns Generated creatures or error
+       */
+      async generateEncounter(difficulty, app, clearExisting = false) {
+        const session = this.persisted.session;
+        if (!session) {
+          return { success: false, error: "No active encounter session" };
+        }
+        try {
+          const { generateRandomEncounter: generateRandomEncounter2 } = await Promise.resolve().then(() => (init_generator(), generator_exports));
+          const { LIBRARY_DATA_SOURCES: LIBRARY_DATA_SOURCES2 } = await Promise.resolve().then(() => (init_data_sources(), data_sources_exports));
+          const { loadRegions: loadRegions3 } = await Promise.resolve().then(() => (init_region_repository(), region_repository_exports));
+          const { loadTerrains: loadTerrains3 } = await Promise.resolve().then(() => (init_terrain_repository(), terrain_repository_exports));
+          const event = session.event;
+          const factionName = event.factionName;
+          const regionName = event.regionName;
+          const terrainName = event.terrainName;
+          const [allCreatures, allFactions, allRegions, allTerrains] = await Promise.all([
+            LIBRARY_DATA_SOURCES2.creatures.list(app).then(
+              (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.creatures.load(app, f)))
+            ),
+            LIBRARY_DATA_SOURCES2.factions.list(app).then(
+              (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.factions.load(app, f)))
+            ),
+            loadRegions3(app),
+            loadTerrains3(app)
+          ]);
+          const faction = factionName ? allFactions.find((f) => f.name.toLowerCase() === factionName.toLowerCase()) : null;
+          const region = regionName ? allRegions.find((r) => r.name.toLowerCase() === regionName.toLowerCase()) : null;
+          const terrain = terrainName ? allTerrains.find((t) => t.name.toLowerCase() === terrainName.toLowerCase()) : null;
+          const xpState = getEncounterXpState();
+          const partyMembers = xpState.party ?? [];
+          if (partyMembers.length === 0) {
+            return { success: false, error: "No party members configured. Add party members first." };
+          }
+          const partyLevel = Math.round(
+            partyMembers.reduce((sum, m) => sum + m.level, 0) / partyMembers.length
+          );
+          const partySize = partyMembers.length;
+          const result = generateRandomEncounter2(
+            {
+              faction: faction ?? null,
+              terrain: terrain ?? null,
+              region: region ?? null,
+              creatures: allCreatures
+            },
+            {
+              partyLevel,
+              partySize,
+              difficulty
+            }
+          );
+          if (result.creatures.length === 0) {
+            return { success: false, error: "No matching creatures found for this context." };
+          }
+          if (clearExisting && session.creatures.length > 0) {
+            this.persisted = {
+              ...this.persisted,
+              session: {
+                ...session,
+                creatures: []
+              }
+            };
+          }
+          for (const creature of result.creatures) {
+            this.addCreature(creature);
+          }
+          return { success: true, creatures: result.creatures };
+        } catch (err) {
+          return {
+            success: false,
+            error: err?.message ?? "Unknown error during generation"
+          };
+        }
+      }
+      /**
+       * Loads faction members as CreatureListItems for display in Encounter Composer.
+       *
+       * @param factionName Name of the faction to load members from
+       * @param app Obsidian App instance (for loading creatures from library)
+       * @returns Array of CreatureListItems representing faction members
+       */
+      async loadFactionMembers(factionName, app) {
+        if (!factionName) return [];
+        try {
+          const { LIBRARY_DATA_SOURCES: LIBRARY_DATA_SOURCES2 } = await Promise.resolve().then(() => (init_data_sources(), data_sources_exports));
+          const allFactions = await LIBRARY_DATA_SOURCES2.factions.list(app).then(
+            (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.factions.load(app, f)))
+          );
+          const faction = allFactions.find((f) => f.name.toLowerCase() === factionName.toLowerCase());
+          if (!faction || !faction.members || faction.members.length === 0) {
+            return [];
+          }
+          const allCreatures = await LIBRARY_DATA_SOURCES2.creatures.list(app).then(
+            (files) => Promise.all(files.map((f) => LIBRARY_DATA_SOURCES2.creatures.load(app, f)))
+          );
+          const result = [];
+          for (const member of faction.members) {
+            const creature = allCreatures.find((c) => c.name.toLowerCase() === member.name.toLowerCase());
+            if (!creature) {
+              logger.warn(`[presenter] Faction member "${member.name}" not found in library`);
+              continue;
+            }
+            const crString = creature.cr;
+            let cr = 0;
+            if (crString) {
+              if (crString.includes("/")) {
+                const [num, denom] = crString.split("/").map((s) => Number(s.trim()));
+                if (Number.isFinite(num) && Number.isFinite(denom) && denom !== 0) {
+                  cr = num / denom;
+                }
+              } else {
+                const num = Number(crString);
+                if (Number.isFinite(num)) cr = num;
+              }
+            }
+            result.push({
+              name: creature.name,
+              cr,
+              type: creature.type,
+              path: `SaltMarcher/Creatures/${creature.name}.md`
+              // TODO: Get actual path from file
+            });
+          }
+          logger.debug(`[presenter] Loaded ${result.length} faction members for "${factionName}"`);
+          return result;
+        } catch (err) {
+          logger.error(`[presenter] Failed to load faction members for "${factionName}"`, err);
+          return [];
+        }
+      }
+      // ============================================================================
+      // Combat Tracking Methods
+      // ============================================================================
+      startCombat() {
+        const session = this.persisted.session;
+        if (!session) return;
+        if (session.combat?.isActive) return;
+        const participants = [];
+        for (const creature of session.creatures) {
+          for (let i = 0; i < creature.count; i++) {
+            const participantId = `${creature.id}-${i}`;
+            const name = creature.count > 1 ? `${creature.name} ${i + 1}` : creature.name;
+            participants.push({
+              id: participantId,
+              creatureId: creature.id,
+              name,
+              initiative: 0,
+              currentHp: 0,
+              // UI will prompt for max HP
+              maxHp: 0,
+              defeated: false
+            });
+          }
+        }
+        const combat = {
+          isActive: true,
+          participants: Object.freeze(participants),
+          activeParticipantId: null
+        };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat
+          }
+        };
+        this.emit();
+      }
+      endCombat() {
+        const session = this.persisted.session;
+        if (!session) return;
+        if (!session.combat?.isActive) return;
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: null
+          }
+        };
+        this.emit();
+      }
+      updateParticipantInitiative(id, initiative) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const sanitized = sanitizeNumber(initiative);
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+        participants[index] = { ...participants[index], initiative: sanitized };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(participants)
+            }
+          }
+        };
+        this.emit();
+      }
+      updateParticipantHp(id, currentHp, maxHp) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const sanitizedCurrent = sanitizeNonNegativeNumber(currentHp);
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+        const participant = participants[index];
+        const sanitizedMax = maxHp !== void 0 ? sanitizeNonNegativeNumber(maxHp) : participant.maxHp;
+        const clampedCurrent = Math.min(sanitizedCurrent, sanitizedMax);
+        participants[index] = {
+          ...participant,
+          currentHp: clampedCurrent,
+          maxHp: sanitizedMax,
+          defeated: clampedCurrent <= 0
+        };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(participants)
+            }
+          }
+        };
+        this.emit();
+      }
+      applyDamage(id, amount) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+        const participant = participants[index];
+        const sanitizedAmount = sanitizeNonNegativeNumber(amount);
+        const newHp = Math.max(0, participant.currentHp - sanitizedAmount);
+        participants[index] = {
+          ...participant,
+          currentHp: newHp,
+          defeated: newHp <= 0
+        };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(participants)
+            }
+          }
+        };
+        this.emit();
+      }
+      applyHealing(id, amount) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+        const participant = participants[index];
+        const sanitizedAmount = sanitizeNonNegativeNumber(amount);
+        const newHp = Math.min(participant.maxHp, participant.currentHp + sanitizedAmount);
+        participants[index] = {
+          ...participant,
+          currentHp: newHp,
+          defeated: newHp <= 0
+        };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(participants)
+            }
+          }
+        };
+        this.emit();
+      }
+      toggleDefeated(id) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const participants = [...session.combat.participants];
+        const index = participants.findIndex((p) => p.id === id);
+        if (index === -1) return;
+        const participant = participants[index];
+        participants[index] = {
+          ...participant,
+          defeated: !participant.defeated
+        };
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(participants)
+            }
+          }
+        };
+        this.emit();
+      }
+      setActiveParticipant(id) {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        if (session.combat.activeParticipantId === id) return;
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              activeParticipantId: id
+            }
+          }
+        };
+        this.emit();
+      }
+      sortParticipantsByInitiative() {
+        const session = this.persisted.session;
+        if (!session?.combat) return;
+        const sorted = [...session.combat.participants].sort((a, b) => b.initiative - a.initiative);
+        this.persisted = {
+          ...this.persisted,
+          session: {
+            ...session,
+            combat: {
+              ...session.combat,
+              participants: Object.freeze(sorted)
+            }
+          }
+        };
+        this.emit();
+      }
+      setEncounterXp(value) {
+        const sanitized = sanitizeNonNegativeNumber(value);
+        if (sanitized === this.persisted.xp.encounterXp) return;
+        setEncounterXp(sanitized);
+      }
+      addPartyMember(member) {
+        const sanitized = _EncounterPresenter.normalisePartyMember(member);
+        if (this.persisted.xp.party.some((existing) => existing.id === sanitized.id)) {
+          this.updatePartyMember(sanitized.id, sanitized);
+          return;
+        }
+        addPartyMember(sanitized);
+      }
+      updatePartyMember(id, patch) {
+        const existing = this.persisted.xp.party.find((member) => member.id === id);
+        if (!existing) return;
+        const sanitizedPatch = _EncounterPresenter.normalisePartyMemberPatch(patch, existing);
+        const next = { ...existing, ...sanitizedPatch };
+        if (shallowEqualPartyMembers(existing, next)) return;
+        updatePartyMember(id, sanitizedPatch);
+      }
+      removePartyMember(id) {
+        if (!this.persisted.xp.party.some((member) => member.id === id)) return;
+        removePartyMember(id);
+      }
+      removeRule(id) {
+        if (!this.persisted.xp.rules.some((rule) => rule.id === id)) return;
+        removeRule(id);
+      }
+      addRule(rule) {
+        const sanitized = _EncounterPresenter.normaliseRule(rule);
+        if (this.persisted.xp.rules.some((existing) => existing.id === sanitized.id)) {
+          this.updateRule(sanitized.id, sanitized);
+          return;
+        }
+        addRule(sanitized);
+      }
+      updateRule(id, patch) {
+        const existing = this.persisted.xp.rules.find((rule) => rule.id === id);
+        if (!existing) return;
+        const sanitizedPatch = _EncounterPresenter.normaliseRulePatch(patch, existing);
+        const next = { ...existing, ...sanitizedPatch };
+        if (shallowEqualRules(existing, next)) return;
+        updateRule(id, sanitizedPatch);
+      }
+      toggleRule(id, enabled) {
+        const existing = this.persisted.xp.rules.find((rule) => rule.id === id);
+        if (!existing) return;
+        const nextEnabled = enabled ?? !existing.enabled;
+        if (existing.enabled === nextEnabled) return;
+        updateRule(id, { enabled: nextEnabled });
+      }
+      replaceRules(rules) {
+        const sanitized = rules.map((rule) => _EncounterPresenter.normaliseRule(rule));
+        updateEncounterXpState((draft) => {
+          draft.rules = sanitized.map((rule) => ({ ...rule }));
+        });
+      }
+      moveRule(id, targetIndex) {
+        updateEncounterXpState((draft) => {
+          const currentIndex = draft.rules.findIndex((rule2) => rule2.id === id);
+          if (currentIndex === -1) return;
+          const normalisedIndex = clampIndex(targetIndex, draft.rules.length);
+          if (normalisedIndex === currentIndex) return;
+          const [rule] = draft.rules.splice(currentIndex, 1);
+          draft.rules.splice(normalisedIndex, 0, rule);
+        });
+      }
+      resetXpState() {
+        replaceEncounterXpState({
+          party: [],
+          encounterXp: 0,
+          rules: []
+        });
+      }
+      applyEvent(event) {
+        const prev = this.persisted.session;
+        if (!prev || prev.event.id !== event.id) {
+          this.persisted = {
+            ...this.persisted,
+            session: {
+              event,
+              notes: "",
+              status: "pending",
+              creatures: []
+            }
+          };
+        } else {
+          this.persisted = {
+            ...this.persisted,
+            session: {
+              ...prev,
+              event
+            }
+          };
+        }
+        this.emit();
+      }
+      applyXpState(xp) {
+        this.persisted = {
+          ...this.persisted,
+          xp: _EncounterPresenter.normaliseXpState(xp)
+        };
+        this.emit();
+      }
+      emit() {
+        this.viewState = _EncounterPresenter.createViewState(this.persisted);
+        for (const listener of [...this.listeners]) {
+          listener(this.viewState);
+        }
+      }
+      static normalise(initial) {
+        return {
+          session: _EncounterPresenter.normaliseSession(initial?.session),
+          xp: _EncounterPresenter.normaliseXpState(initial?.xp ?? getEncounterXpState())
+        };
+      }
+      static createViewState(persisted) {
+        return {
+          session: persisted.session,
+          xp: persisted.xp,
+          xpView: deriveEncounterXpView(persisted.xp)
+        };
+      }
+      static normaliseSession(session) {
+        if (!session || !session.event) {
+          return null;
+        }
+        const status = session.status === "resolved" ? "resolved" : "pending";
+        const creatures = (session.creatures ?? []).map((creature) => ({
+          ...creature,
+          count: Math.max(1, Math.floor(creature.count)),
+          cr: Math.max(0, creature.cr)
+        }));
+        const combat = session.combat ? _EncounterPresenter.normaliseCombat(session.combat) : null;
+        return {
+          event: session.event,
+          notes: session.notes ?? "",
+          status,
+          resolvedAt: session.resolvedAt ?? null,
+          creatures,
+          combat
+        };
+      }
+      static normaliseCombat(combat) {
+        const participants = (combat.participants ?? []).map((participant) => ({
+          ...participant,
+          initiative: sanitizeNumber(participant.initiative),
+          currentHp: sanitizeNonNegativeNumber(participant.currentHp),
+          maxHp: sanitizeNonNegativeNumber(participant.maxHp),
+          defeated: !!participant.defeated
+        }));
+        return {
+          isActive: !!combat.isActive,
+          participants: Object.freeze(participants),
+          activeParticipantId: combat.activeParticipantId ?? null
+        };
+      }
+      static normaliseXpState(xp) {
+        const baseEncounterXp = sanitizeNonNegativeNumber(xp?.encounterXp ?? 0);
+        const party = Object.freeze((xp?.party ?? []).map((member) => ({
+          ..._EncounterPresenter.normalisePartyMember(member)
+        })));
+        const rules = Object.freeze((xp?.rules ?? []).map((rule) => ({
+          ..._EncounterPresenter.normaliseRule(rule)
+        })));
+        return {
+          party,
+          encounterXp: baseEncounterXp,
+          rules
+        };
+      }
+      static normalisePartyMember(member) {
+        return {
+          ...member,
+          level: sanitizeLevel(member.level),
+          currentXp: sanitizeOptionalNonNegativeNumber(member.currentXp)
+        };
+      }
+      static normalisePartyMemberPatch(patch, existing) {
+        const next = {};
+        if (patch.name !== void 0) {
+          next.name = patch.name;
+        }
+        if (patch.level !== void 0) {
+          next.level = sanitizeLevel(patch.level);
+        }
+        if (patch.currentXp !== void 0) {
+          next.currentXp = sanitizeOptionalNonNegativeNumber(patch.currentXp);
+        }
+        if (patch.currentXp === null) {
+          next.currentXp = void 0;
+        }
+        if (patch.id !== void 0 && patch.id !== existing.id) {
+          next.id = existing.id;
+        }
+        return next;
+      }
+      static normaliseRule(rule) {
+        const modifierType = rule.modifierType;
+        const sanitizedValue = _EncounterPresenter.normaliseRuleModifierValue(modifierType, rule.modifierValue);
+        const range = _EncounterPresenter.normaliseRuleModifierRange(
+          modifierType,
+          rule.modifierValueMin,
+          rule.modifierValueMax,
+          sanitizedValue
+        );
+        return {
+          ...rule,
+          modifierType,
+          modifierValue: clampToRange(sanitizedValue, range),
+          modifierValueMin: range.min,
+          modifierValueMax: range.max,
+          enabled: rule.enabled !== false,
+          scope: sanitizeRuleScope(rule.scope),
+          notes: rule.notes ?? (rule.notes === "" ? "" : void 0)
+        };
+      }
+      static normaliseRulePatch(patch, existing) {
+        const next = {};
+        if (patch.title !== void 0) {
+          next.title = patch.title;
+        }
+        if (patch.scope !== void 0) {
+          next.scope = sanitizeRuleScope(patch.scope);
+        }
+        if (patch.notes !== void 0) {
+          next.notes = patch.notes;
+        }
+        const modifierType = patch.modifierType ?? existing.modifierType;
+        if (patch.modifierType !== void 0) {
+          next.modifierType = modifierType;
+        }
+        const hasRangeUpdate = patch.modifierValueMin !== void 0 || patch.modifierValueMax !== void 0 || patch.modifierType !== void 0;
+        let range = null;
+        if (hasRangeUpdate) {
+          range = _EncounterPresenter.normaliseRuleModifierRange(
+            modifierType,
+            patch.modifierValueMin ?? existing.modifierValueMin,
+            patch.modifierValueMax ?? existing.modifierValueMax,
+            existing.modifierValue
+          );
+          next.modifierValueMin = range.min;
+          next.modifierValueMax = range.max;
+        }
+        if (patch.modifierValue !== void 0) {
+          const sanitized = _EncounterPresenter.normaliseRuleModifierValue(modifierType, patch.modifierValue);
+          if (range) {
+            next.modifierValue = clampToRange(sanitized, range);
+          } else {
+            const currentRange = _EncounterPresenter.normaliseRuleModifierRange(
+              modifierType,
+              existing.modifierValueMin,
+              existing.modifierValueMax,
+              existing.modifierValue
+            );
+            next.modifierValue = clampToRange(sanitized, currentRange);
+          }
+        } else if (range) {
+          const sanitizedExisting = _EncounterPresenter.normaliseRuleModifierValue(
+            modifierType,
+            existing.modifierValue
+          );
+          if ((patch.modifierValueMin !== void 0 || patch.modifierValueMax !== void 0) && range.min !== range.max) {
+            next.modifierValue = rollBetween(range.min, range.max);
+          } else {
+            const clamped = clampToRange(sanitizedExisting, range);
+            if (clamped !== existing.modifierValue) {
+              next.modifierValue = clamped;
+            }
+          }
+        }
+        if (patch.enabled !== void 0) {
+          next.enabled = !!patch.enabled;
+        }
+        return next;
+      }
+      static normaliseRuleModifierValue(type, value) {
+        if (type === "flat" || type === "flatPerAverageLevel" || type === "flatPerTotalLevel") {
+          return sanitizeNumber(value);
+        }
+        return clampPercentage(sanitizeNumber(value));
+      }
+      static normaliseRuleModifierRange(type, min, max, fallback) {
+        const sanitizedFallback = _EncounterPresenter.normaliseRuleModifierValue(type, fallback);
+        const hasMin = min !== null && min !== void 0;
+        const hasMax = max !== null && max !== void 0;
+        const sanitizedMin = hasMin ? _EncounterPresenter.normaliseRuleModifierValue(type, min) : sanitizedFallback;
+        const sanitizedMax = hasMax ? _EncounterPresenter.normaliseRuleModifierValue(type, max) : sanitizedFallback;
+        if (sanitizedMin > sanitizedMax) {
+          return { min: sanitizedMax, max: sanitizedMin };
+        }
+        return { min: sanitizedMin, max: sanitizedMax };
+      }
+    };
+  }
+});
+
+// src/workmodes/encounter/rule-presets.ts
+async function ensureEncounterRulePresetDir(app) {
+  const normalized = (0, import_obsidian31.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  let file = app.vault.getAbstractFileByPath(normalized);
+  if (file instanceof import_obsidian31.TFolder) return file;
+  await app.vault.createFolder(normalized).catch(() => {
+  });
+  file = app.vault.getAbstractFileByPath(normalized);
+  if (file instanceof import_obsidian31.TFolder) return file;
+  throw new Error(`Could not ensure encounter preset directory: ${normalized}`);
+}
+async function listEncounterRulePresets(app) {
+  const dir = await ensureEncounterRulePresetDir(app);
+  const files = [];
+  const walk = (folder) => {
+    for (const child of folder.children) {
+      if (child instanceof import_obsidian31.TFolder) walk(child);
+      else if (child instanceof import_obsidian31.TFile && child.extension === "md") files.push(child);
+    }
+  };
+  walk(dir);
+  const summaries = files.map((file) => {
+    const cache = app.metadataCache.getFileCache(file);
+    const fm2 = cache?.frontmatter ?? {};
+    const name = typeof fm2.name === "string" && fm2.name.trim() ? fm2.name.trim() : file.basename;
+    const encounterXp = typeof fm2.encounterXp === "number" ? fm2.encounterXp : void 0;
+    return { file, name, encounterXp };
+  });
+  summaries.sort((a, b) => a.name.localeCompare(b.name, void 0, { sensitivity: "base" }));
+  return summaries;
+}
+async function loadEncounterRulePreset(app, file) {
+  const cache = app.metadataCache.getFileCache(file);
+  const fm2 = cache?.frontmatter ?? {};
+  const name = typeof fm2.name === "string" && fm2.name.trim() ? fm2.name.trim() : file.basename;
+  const encounterXp = typeof fm2.encounterXp === "number" ? fm2.encounterXp : void 0;
+  const rules = parsePresetRules(fm2.rules);
+  return { name, encounterXp, rules };
+}
+async function saveEncounterRulePreset(app, doc, options = {}) {
+  const sanitizedName = sanitizePresetName(doc.name);
+  const content = serializePreset(doc, sanitizedName);
+  const dir = await ensureEncounterRulePresetDir(app);
+  if (options.path) {
+    const existing = app.vault.getAbstractFileByPath(options.path);
+    if (existing instanceof import_obsidian31.TFile) {
+      await app.vault.modify(existing, content);
+      return existing;
+    }
+  }
+  const baseName = sanitizeFileName2(sanitizedName, DEFAULT_PRESET_NAME);
+  let fileName = `${baseName}.md`;
+  let targetPath = (0, import_obsidian31.normalizePath)(`${dir.path}/${fileName}`);
+  let counter = 2;
+  while (app.vault.getAbstractFileByPath(targetPath)) {
+    fileName = `${baseName} (${counter}).md`;
+    targetPath = (0, import_obsidian31.normalizePath)(`${dir.path}/${fileName}`);
+    counter += 1;
+  }
+  const file = await app.vault.create(targetPath, content);
+  return file;
+}
+async function deleteEncounterRulePreset(app, file) {
+  await app.vault.delete(file);
+}
+function parsePresetRules(raw) {
+  if (!Array.isArray(raw)) return [];
+  const rules = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const data = entry;
+    const modifierType = parseModifierType(data.modifierType);
+    const modifierValue = parseNumber(data.modifierValue, 0);
+    const minValue = parseNumber(data.modifierValueMin, modifierValue);
+    const maxValue = parseNumber(data.modifierValueMax, modifierValue);
+    const scope = data.scope === PRESET_SCOPE_GOLD ? PRESET_SCOPE_GOLD : PRESET_SCOPE_XP;
+    let notes;
+    if (typeof data.notes === "string") {
+      notes = data.notes;
+    } else if (data.notes === "") {
+      notes = "";
+    }
+    const id = typeof data.id === "string" && data.id.trim() ? data.id.trim() : createRuleId();
+    const title = typeof data.title === "string" ? data.title : "";
+    const enabled = data.enabled !== false;
+    const normalisedMin = Math.min(minValue, maxValue);
+    const normalisedMax = Math.max(minValue, maxValue);
+    rules.push({
+      id,
+      title,
+      modifierType,
+      modifierValue,
+      modifierValueMin: normalisedMin,
+      modifierValueMax: normalisedMax,
+      enabled,
+      scope,
+      notes
+    });
+  }
+  return rules;
+}
+function parseModifierType(value) {
+  if (typeof value === "string" && MODIFIER_TYPES.has(value)) {
+    return value;
+  }
+  return "flat";
+}
+function parseNumber(value, fallback) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  return fallback;
+}
+function sanitizePresetName(name) {
+  const trimmed = (name ?? "").trim();
+  return trimmed || DEFAULT_PRESET_NAME;
+}
+function sanitizeFileName2(name, fallback) {
+  const trimmed = name.trim();
+  const base = trimmed || fallback;
+  return base.replace(/[\\/:*?"<>|]/g, "-").replace(/\s+/g, " ").replace(/^\.+$/, fallback).slice(0, 120);
+}
+function serializePreset(doc, sanitizedName) {
+  const lines = ["---", `name: ${JSON.stringify(sanitizedName)}`];
+  if (typeof doc.encounterXp === "number" && Number.isFinite(doc.encounterXp)) {
+    lines.push(`encounterXp: ${Number(doc.encounterXp)}`);
+  }
+  if (!doc.rules.length) {
+    lines.push("rules: []", "---", "");
+    return lines.join("\n");
+  }
+  lines.push("rules:");
+  for (const rule of doc.rules) {
+    lines.push(`  - id: ${JSON.stringify(rule.id)}`);
+    lines.push(`    title: ${JSON.stringify(rule.title ?? "")}`);
+    lines.push(`    modifierType: ${JSON.stringify(rule.modifierType)}`);
+    lines.push(`    modifierValue: ${formatNumeric(rule.modifierValue)}`);
+    lines.push(`    modifierValueMin: ${formatNumeric(rule.modifierValueMin)}`);
+    lines.push(`    modifierValueMax: ${formatNumeric(rule.modifierValueMax)}`);
+    lines.push(`    enabled: ${rule.enabled ? "true" : "false"}`);
+    lines.push(`    scope: ${JSON.stringify(rule.scope)}`);
+    if (rule.notes !== void 0) {
+      lines.push(`    notes: ${JSON.stringify(rule.notes)}`);
+    }
+  }
+  lines.push("---", "");
+  return lines.join("\n");
+}
+function formatNumeric(value) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "0";
+  return Number(value).toString();
+}
+function createRuleId() {
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi?.randomUUID) {
+    return `rule-${cryptoApi.randomUUID()}`;
+  }
+  const random = Math.random().toString(36).slice(2, 10);
+  return `rule-${Date.now().toString(36)}-${random}`;
+}
+function isEncounterPresetFile(file) {
+  if (!(file instanceof import_obsidian31.TFile)) return false;
+  if (file.extension !== "md") return false;
+  const normalized = (0, import_obsidian31.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const base = `${normalized}/`;
+  return file.path === normalized || file.path.startsWith(base);
+}
+var import_obsidian31, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
+var init_rule_presets = __esm({
+  "src/workmodes/encounter/rule-presets.ts"() {
+    "use strict";
+    import_obsidian31 = require("obsidian");
+    ENCOUNTER_RULE_PRESET_DIR = "SaltMarcher/EncounterPresets";
+    DEFAULT_PRESET_NAME = "Encounter Rule Preset";
+    MODIFIER_TYPES = /* @__PURE__ */ new Set([
+      "flat",
+      "flatPerAverageLevel",
+      "flatPerTotalLevel",
+      "percentTotal",
+      "percentNextLevel"
+    ]);
+    PRESET_SCOPE_GOLD = "gold";
+    PRESET_SCOPE_XP = "xp";
+  }
+});
+
+// src/workmodes/encounter/session-view.ts
+var EncounterSessionView;
+var init_session_view = __esm({
+  "src/workmodes/encounter/session-view.ts"() {
+    "use strict";
+    EncounterSessionView = class {
+      constructor(parentEl) {
+        this.rootEl = null;
+        this.parentEl = parentEl;
+      }
+      mount() {
+        this.unmount();
+        const section = this.parentEl.createDiv({
+          cls: "sm-encounter-section sm-encounter-session sm-encounter-header"
+        });
+        this.rootEl = section;
+        this.titleEl = section.createEl("h2", {
+          cls: "sm-encounter-heading",
+          text: "Encounter"
+        });
+        this.statusEl = section.createDiv({
+          cls: "sm-encounter-status",
+          text: "Waiting for travel events\u2026"
+        });
+        const metaEl = section.createDiv({ cls: "sm-encounter-meta" });
+        this.summaryListEl = metaEl.createEl("ul", { cls: "sm-encounter-summary" });
+        this.emptyStateEl = section.createDiv({
+          cls: "sm-encounter-empty",
+          text: "No active encounter. Travel mode will populate this workspace when an encounter triggers."
+        });
+      }
+      unmount() {
+        this.rootEl?.remove();
+        this.rootEl = null;
+      }
+      render(session) {
+        if (!this.rootEl) return;
+        if (!session) {
+          this.titleEl.setText("Encounter");
+          this.statusEl.setText("Waiting for travel events\u2026");
+          this.summaryListEl.empty();
+          this.emptyStateEl.removeClass("sm-encounter-hidden");
+          return;
+        }
+        this.emptyStateEl.addClass("sm-encounter-hidden");
+        const { event, status, resolvedAt } = session;
+        const region = event.regionName ?? "Unknown region";
+        this.titleEl.setText(`Encounter \u2013 ${region}`);
+        if (status === "resolved") {
+          this.statusEl.setText(resolvedAt ? `Resolved ${resolvedAt}` : "Resolved");
+        } else {
+          this.statusEl.setText("Awaiting resolution");
+        }
+        this.summaryListEl.empty();
+        const summaryEntries = [];
+        if (event.coord) {
+          summaryEntries.push(["Hex", `${event.coord.r}, ${event.coord.c}`]);
+        }
+        if (event.factionName) {
+          summaryEntries.push(["Faction", event.factionName]);
+        }
+        if (event.mapName) {
+          summaryEntries.push(["Map", event.mapName]);
+        }
+        if (event.mapPath) {
+          summaryEntries.push(["Map path", event.mapPath]);
+        }
+        summaryEntries.push(["Triggered", event.triggeredAt]);
+        if (typeof event.travelClockHours === "number") {
+          summaryEntries.push(["Travel clock", `${event.travelClockHours.toFixed(2)} h`]);
+        }
+        if (typeof event.encounterOdds === "number") {
+          summaryEntries.push(["Encounter odds", `1 in ${event.encounterOdds}`]);
+        }
+        for (const [label, value] of summaryEntries) {
+          const li = this.summaryListEl.createEl("li");
+          li.createSpan({ cls: "label", text: `${label}: ` });
+          li.createSpan({ cls: "value", text: value });
+        }
+      }
+    };
+  }
+});
+
+// src/workmodes/encounter/creature-list.ts
+function parseCR(crString) {
+  if (!crString) return 0;
+  const str = crString.trim();
+  if (str.includes("/")) {
+    const [num2, denom] = str.split("/").map((s) => Number(s.trim()));
+    if (Number.isFinite(num2) && Number.isFinite(denom) && denom !== 0) {
+      return num2 / denom;
+    }
+  }
+  const num = Number(str);
+  return Number.isFinite(num) ? num : 0;
+}
+function formatCR(cr) {
+  if (cr === 0.125) return "1/8";
+  if (cr === 0.25) return "1/4";
+  if (cr === 0.5) return "1/2";
+  return String(cr);
+}
+var EncounterCreatureList;
+var init_creature_list = __esm({
+  "src/workmodes/encounter/creature-list.ts"() {
+    "use strict";
+    init_data_sources();
+    init_plugin_logger();
+    EncounterCreatureList = class {
+      constructor(app, containerEl, callbacks) {
+        this.creatures = [];
+        this.filteredCreatures = [];
+        this.currentDifficulty = "medium";
+        // Faction members
+        this.factionMembers = [];
+        this.factionName = null;
+        this.app = app;
+        this.containerEl = containerEl;
+        this.callbacks = callbacks;
+      }
+      async mount() {
+        this.containerEl.empty();
+        this.containerEl.addClass("sm-encounter-creature-list");
+        const header = this.containerEl.createDiv({ cls: "sm-encounter-creature-list-header" });
+        header.createEl("h3", { text: "Add Creatures", cls: "sm-encounter-section-title" });
+        if (this.callbacks.onGenerateEncounter) {
+          const generateRow = this.containerEl.createDiv({ cls: "sm-encounter-generate-row" });
+          const difficultyGroup = generateRow.createDiv({ cls: "sm-encounter-generate-difficulty" });
+          difficultyGroup.createEl("label", { text: "Difficulty:", cls: "sm-encounter-label" });
+          this.difficultySelect = difficultyGroup.createEl("select", {
+            cls: "sm-encounter-select"
+          });
+          const difficulties = [
+            { value: "easy", label: "Easy" },
+            { value: "medium", label: "Medium" },
+            { value: "hard", label: "Hard" },
+            { value: "deadly", label: "Deadly" }
+          ];
+          for (const diff of difficulties) {
+            const option = this.difficultySelect.createEl("option", {
+              value: diff.value,
+              text: diff.label
+            });
+            if (diff.value === this.currentDifficulty) {
+              option.selected = true;
+            }
+          }
+          this.difficultySelect.addEventListener("change", () => {
+            this.currentDifficulty = this.difficultySelect.value;
+          });
+          this.generateButton = generateRow.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-primary",
+            text: "\u{1F3B2} Generate Random Encounter",
+            attr: {
+              title: "Generate encounter based on current hex (Faction, Terrain, Region)"
+            }
+          });
+          this.generateButton.type = "button";
+          this.generateButton.addEventListener("click", () => this.handleGenerateClick());
+        }
+        this.factionMembersSection = this.containerEl.createDiv({ cls: "sm-encounter-faction-members" });
+        const searchRow = this.containerEl.createDiv({ cls: "sm-encounter-creature-search" });
+        this.searchInput = searchRow.createEl("input", {
+          cls: "sm-encounter-input",
+          attr: {
+            type: "text",
+            placeholder: "Search creatures..."
+          }
+        });
+        this.searchInput.addEventListener("input", () => this.applyFilter());
+        this.listEl = this.containerEl.createDiv({ cls: "sm-encounter-creature-list-items" });
+        await this.loadCreatures();
+        this.renderFactionMembers();
+      }
+      handleGenerateClick() {
+        if (!this.callbacks.onGenerateEncounter) return;
+        this.setGenerateButtonState(true);
+        try {
+          this.callbacks.onGenerateEncounter(this.currentDifficulty);
+        } catch (err) {
+          logger2.error("[creature-list] Generate encounter failed", err);
+          this.setGenerateButtonState(false);
+        }
+      }
+      setGenerateButtonState(loading) {
+        if (!this.generateButton) return;
+        this.generateButton.disabled = loading;
+        this.generateButton.setText(loading ? "Generating..." : "\u{1F3B2} Generate Random Encounter");
+      }
+      setGenerateButtonEnabled(enabled) {
+        if (!this.generateButton) return;
+        this.generateButton.disabled = !enabled;
+        if (!enabled) {
+          this.generateButton.setAttribute("title", "No travel context available (travel required)");
+        } else {
+          this.generateButton.setAttribute("title", "Generate encounter based on current hex (Faction, Terrain, Region)");
+        }
+      }
+      unmount() {
+        this.containerEl.empty();
+        this.creatures = [];
+        this.filteredCreatures = [];
+        this.factionMembers = [];
+        this.factionName = null;
+      }
+      /**
+       * Sets faction members to display in separate section.
+       * Call this whenever the hex faction changes.
+       */
+      setFactionMembers(members, factionName) {
+        this.factionMembers = members;
+        this.factionName = factionName;
+        this.renderFactionMembers();
+      }
+      renderFactionMembers() {
+        this.factionMembersSection.empty();
+        if (!this.factionMembers.length || !this.factionName) {
+          this.factionMembersSection.style.display = "none";
+          return;
+        }
+        this.factionMembersSection.style.display = "block";
+        const header = this.factionMembersSection.createDiv({ cls: "sm-encounter-faction-members-header" });
+        header.createEl("h4", {
+          text: `${this.factionName} Members (${this.factionMembers.length})`,
+          cls: "sm-encounter-section-subtitle"
+        });
+        const membersList = this.factionMembersSection.createDiv({ cls: "sm-encounter-faction-members-list" });
+        for (const member of this.factionMembers) {
+          const row = membersList.createDiv({ cls: "sm-encounter-creature-item sm-encounter-faction-member-item" });
+          const nameEl = row.createDiv({ cls: "sm-encounter-creature-name" });
+          nameEl.setText(member.name);
+          const badge = nameEl.createSpan({ cls: "sm-faction-member-badge", text: "Faction Member" });
+          const metaEl = row.createDiv({ cls: "sm-encounter-creature-meta" });
+          metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR(member.cr)}` });
+          if (member.type) {
+            metaEl.createSpan({ cls: "sm-encounter-creature-type", text: member.type });
+          }
+          const addButton = row.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-primary",
+            text: "Add"
+          });
+          addButton.type = "button";
+          addButton.addEventListener("click", () => {
+            this.callbacks.onAddCreature(member);
+          });
+        }
+      }
+      async loadCreatures() {
+        try {
+          const files = await LIBRARY_DATA_SOURCES.creatures.list(this.app);
+          const loaded = [];
+          for (const file of files) {
+            try {
+              const entry = await LIBRARY_DATA_SOURCES.creatures.load(this.app, file);
+              const cr = parseCR(entry.cr);
+              loaded.push({
+                name: entry.name,
+                cr,
+                type: entry.type,
+                path: file.path
+              });
+            } catch (err) {
+              logger2.warn(`[creature-list] failed to load ${file.path}`, err);
+            }
+          }
+          loaded.sort((a, b) => {
+            if (a.cr !== b.cr) return a.cr - b.cr;
+            return a.name.localeCompare(b.name);
+          });
+          this.creatures = loaded;
+          this.applyFilter();
+        } catch (err) {
+          logger2.error("[creature-list] failed to load creatures", err);
+          this.listEl.setText("Failed to load creatures from library.");
+        }
+      }
+      applyFilter() {
+        const query = this.searchInput.value.toLowerCase().trim();
+        if (!query) {
+          this.filteredCreatures = this.creatures;
+        } else {
+          this.filteredCreatures = this.creatures.filter((creature) => {
+            return creature.name.toLowerCase().includes(query) || creature.type?.toLowerCase().includes(query);
+          });
+        }
+        this.renderList();
+      }
+      renderList() {
+        this.listEl.empty();
+        if (!this.filteredCreatures.length) {
+          this.listEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: this.creatures.length ? "No creatures match your search." : "No creatures found in library."
+          });
+          return;
+        }
+        for (const creature of this.filteredCreatures) {
+          const row = this.listEl.createDiv({ cls: "sm-encounter-creature-item" });
+          const nameEl = row.createDiv({ cls: "sm-encounter-creature-name" });
+          nameEl.setText(creature.name);
+          const metaEl = row.createDiv({ cls: "sm-encounter-creature-meta" });
+          metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR(creature.cr)}` });
+          if (creature.type) {
+            metaEl.createSpan({ cls: "sm-encounter-creature-type", text: creature.type });
+          }
+          const addButton = row.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-primary",
+            text: "Add"
+          });
+          addButton.type = "button";
+          addButton.addEventListener("click", () => {
+            this.callbacks.onAddCreature(creature);
+          });
+        }
+      }
+    };
+  }
+});
+
+// src/workmodes/encounter/composition-view.ts
+function formatCR2(cr) {
+  if (cr === 0.125) return "1/8";
+  if (cr === 0.25) return "1/4";
+  if (cr === 0.5) return "1/2";
+  return String(cr);
+}
+var EncounterCompositionView;
+var init_composition_view = __esm({
+  "src/workmodes/encounter/composition-view.ts"() {
+    "use strict";
+    EncounterCompositionView = class {
+      constructor(containerEl, callbacks) {
+        this.containerEl = containerEl;
+        this.callbacks = callbacks;
+      }
+      mount() {
+        this.containerEl.empty();
+        this.containerEl.addClass("sm-encounter-composition");
+        const header = this.containerEl.createDiv({ cls: "sm-encounter-composition-header" });
+        header.createEl("h3", { text: "Encounter Composition", cls: "sm-encounter-section-title" });
+        this.listEl = this.containerEl.createDiv({ cls: "sm-encounter-composition-list" });
+      }
+      unmount() {
+        this.containerEl.empty();
+      }
+      render(creatures) {
+        this.listEl.empty();
+        if (!creatures.length) {
+          this.listEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No creatures added yet. Use the list above to add creatures."
+          });
+          return;
+        }
+        for (const creature of creatures) {
+          const row = this.listEl.createDiv({ cls: "sm-encounter-composition-item" });
+          const nameEl = row.createDiv({ cls: "sm-encounter-composition-name" });
+          nameEl.setText(creature.name);
+          const metaEl = row.createDiv({ cls: "sm-encounter-composition-meta" });
+          metaEl.createSpan({ cls: "sm-encounter-composition-cr", text: `CR ${formatCR2(creature.cr)}` });
+          const countField = row.createDiv({ cls: "sm-encounter-composition-count" });
+          countField.createEl("label", {
+            attr: { for: `creature-count-${creature.id}` },
+            text: "Count:"
+          });
+          const countInput = countField.createEl("input", {
+            cls: "sm-encounter-input",
+            attr: {
+              id: `creature-count-${creature.id}`,
+              type: "number",
+              min: "1",
+              max: "99",
+              value: String(creature.count)
+            }
+          });
+          countInput.addEventListener("change", () => {
+            const value = Number(countInput.value);
+            if (!Number.isFinite(value) || value < 1) {
+              countInput.value = String(creature.count);
+              return;
+            }
+            const clamped = Math.max(1, Math.min(99, Math.floor(value)));
+            if (clamped !== value) {
+              countInput.value = String(clamped);
+            }
+            this.callbacks.onUpdateCount(creature.id, clamped);
+          });
+          const removeButton = row.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-danger",
+            text: "Remove"
+          });
+          removeButton.type = "button";
+          removeButton.addEventListener("click", () => {
+            this.callbacks.onRemove(creature.id);
+          });
+        }
+      }
+    };
+  }
+});
+
+// src/workmodes/encounter/combat-tracker.ts
+var CombatTrackerView;
+var init_combat_tracker = __esm({
+  "src/workmodes/encounter/combat-tracker.ts"() {
+    "use strict";
+    CombatTrackerView = class {
+      constructor(containerEl, callbacks) {
+        this.containerEl = containerEl;
+        this.callbacks = callbacks;
+      }
+      mount() {
+        this.containerEl.empty();
+        this.containerEl.addClass("sm-combat-tracker");
+        this.headerEl = this.containerEl.createDiv({ cls: "sm-combat-tracker-header" });
+        this.headerEl.createEl("h3", { text: "Combat Tracker", cls: "sm-encounter-section-title" });
+        this.controlsEl = this.containerEl.createDiv({ cls: "sm-combat-tracker-controls" });
+        this.listEl = this.containerEl.createDiv({ cls: "sm-combat-tracker-list" });
+      }
+      unmount() {
+        this.containerEl.empty();
+      }
+      render(combat, hasCreatures) {
+        this.renderControls(combat, hasCreatures);
+        this.renderParticipants(combat);
+      }
+      renderControls(combat, hasCreatures) {
+        this.controlsEl.empty();
+        if (!combat || !combat.isActive) {
+          const startButton = this.controlsEl.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-primary",
+            text: "Start Combat"
+          });
+          startButton.type = "button";
+          startButton.disabled = !hasCreatures;
+          startButton.addEventListener("click", () => {
+            this.callbacks.onStartCombat();
+          });
+          if (!hasCreatures) {
+            this.controlsEl.createDiv({
+              cls: "sm-combat-tracker-hint",
+              text: "Add creatures to start combat"
+            });
+          }
+        } else {
+          const sortButton = this.controlsEl.createEl("button", {
+            cls: "sm-encounter-button",
+            text: "Sort by Initiative"
+          });
+          sortButton.type = "button";
+          sortButton.addEventListener("click", () => {
+            this.callbacks.onSortByInitiative();
+          });
+          const endButton = this.controlsEl.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-danger",
+            text: "End Combat"
+          });
+          endButton.type = "button";
+          endButton.addEventListener("click", () => {
+            this.callbacks.onEndCombat();
+          });
+        }
+      }
+      renderParticipants(combat) {
+        this.listEl.empty();
+        if (!combat || !combat.isActive) {
+          this.listEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "Combat not started. Click 'Start Combat' to begin tracking initiative and HP."
+          });
+          return;
+        }
+        if (!combat.participants.length) {
+          this.listEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No participants in combat."
+          });
+          return;
+        }
+        for (const participant of combat.participants) {
+          const row = this.listEl.createDiv({ cls: "sm-combat-participant" });
+          if (participant.id === combat.activeParticipantId) {
+            row.addClass("sm-combat-participant-active");
+          }
+          if (participant.defeated) {
+            row.addClass("sm-combat-participant-defeated");
+          }
+          const initiativeCol = row.createDiv({ cls: "sm-combat-initiative" });
+          initiativeCol.createEl("label", {
+            attr: { for: `initiative-${participant.id}` },
+            text: "Init:"
+          });
+          const initiativeInput = initiativeCol.createEl("input", {
+            cls: "sm-encounter-input sm-combat-initiative-input",
+            attr: {
+              id: `initiative-${participant.id}`,
+              type: "number",
+              value: String(participant.initiative)
+            }
+          });
+          initiativeInput.addEventListener("change", () => {
+            const value = Number(initiativeInput.value);
+            if (Number.isFinite(value)) {
+              this.callbacks.onUpdateInitiative(participant.id, value);
+            } else {
+              initiativeInput.value = String(participant.initiative);
+            }
+          });
+          const nameCol = row.createDiv({ cls: "sm-combat-name" });
+          nameCol.setText(participant.name);
+          const hpCol = row.createDiv({ cls: "sm-combat-hp" });
+          const hpBar = hpCol.createDiv({ cls: "sm-combat-hp-bar" });
+          const hpFill = hpBar.createDiv({ cls: "sm-combat-hp-fill" });
+          const hpPercent = participant.maxHp > 0 ? participant.currentHp / participant.maxHp * 100 : 0;
+          hpFill.style.width = `${hpPercent}%`;
+          if (hpPercent > 66) {
+            hpFill.addClass("sm-combat-hp-high");
+          } else if (hpPercent > 33) {
+            hpFill.addClass("sm-combat-hp-medium");
+          } else {
+            hpFill.addClass("sm-combat-hp-low");
+          }
+          const hpInputs = hpCol.createDiv({ cls: "sm-combat-hp-inputs" });
+          hpInputs.createEl("label", {
+            attr: { for: `current-hp-${participant.id}` },
+            text: "HP:"
+          });
+          const currentHpInput = hpInputs.createEl("input", {
+            cls: "sm-encounter-input sm-combat-hp-input",
+            attr: {
+              id: `current-hp-${participant.id}`,
+              type: "number",
+              min: "0",
+              value: String(participant.currentHp)
+            }
+          });
+          hpInputs.createSpan({ text: "/" });
+          const maxHpInput = hpInputs.createEl("input", {
+            cls: "sm-encounter-input sm-combat-hp-input",
+            attr: {
+              id: `max-hp-${participant.id}`,
+              type: "number",
+              min: "0",
+              value: String(participant.maxHp)
+            }
+          });
+          currentHpInput.addEventListener("change", () => {
+            const current = Number(currentHpInput.value);
+            const max = Number(maxHpInput.value);
+            if (Number.isFinite(current)) {
+              this.callbacks.onUpdateHp(participant.id, current, max);
+            } else {
+              currentHpInput.value = String(participant.currentHp);
+            }
+          });
+          maxHpInput.addEventListener("change", () => {
+            const current = Number(currentHpInput.value);
+            const max = Number(maxHpInput.value);
+            if (Number.isFinite(max)) {
+              this.callbacks.onUpdateHp(participant.id, current, max);
+            } else {
+              maxHpInput.value = String(participant.maxHp);
+            }
+          });
+          const quickActions = row.createDiv({ cls: "sm-combat-quick-actions" });
+          const damageButton = quickActions.createEl("button", {
+            cls: "sm-encounter-button sm-combat-damage-btn",
+            text: "\u2212",
+            attr: { title: "Apply 1 damage" }
+          });
+          damageButton.type = "button";
+          damageButton.addEventListener("click", () => {
+            this.callbacks.onApplyDamage(participant.id, 1);
+          });
+          const healButton = quickActions.createEl("button", {
+            cls: "sm-encounter-button sm-combat-heal-btn",
+            text: "+",
+            attr: { title: "Apply 1 healing" }
+          });
+          healButton.type = "button";
+          healButton.addEventListener("click", () => {
+            this.callbacks.onApplyHealing(participant.id, 1);
+          });
+          const defeatedCheckbox = row.createEl("input", {
+            cls: "sm-combat-defeated-checkbox",
+            attr: {
+              type: "checkbox",
+              id: `defeated-${participant.id}`
+            }
+          });
+          defeatedCheckbox.checked = participant.defeated;
+          defeatedCheckbox.addEventListener("change", () => {
+            this.callbacks.onToggleDefeated(participant.id);
+          });
+          const defeatedLabel = row.createEl("label", {
+            cls: "sm-combat-defeated-label",
+            attr: { for: `defeated-${participant.id}` },
+            text: "Defeated"
+          });
+          const activeButton = row.createEl("button", {
+            cls: "sm-encounter-button sm-combat-active-btn",
+            text: participant.id === combat.activeParticipantId ? "Active" : "Set Active"
+          });
+          activeButton.type = "button";
+          if (participant.id === combat.activeParticipantId) {
+            activeButton.addClass("sm-combat-active-btn-selected");
+          }
+          activeButton.addEventListener("click", () => {
+            if (participant.id === combat.activeParticipantId) {
+              this.callbacks.onSetActive(null);
+            } else {
+              this.callbacks.onSetActive(participant.id);
+            }
+          });
+        }
+      }
+    };
+  }
+});
+
+// src/workmodes/encounter/workspace-view.ts
+function createSection(parent, className) {
+  return parent.createDiv({ cls: `sm-encounter-section ${className}` });
+}
+function getGoldBaseMultiplier(averageLevel) {
+  if (averageLevel >= 17) {
+    return 3.2;
+  }
+  if (averageLevel >= 11) {
+    return 1.6;
+  }
+  if (averageLevel >= 5) {
+    return 0.415;
+  }
+  if (averageLevel > 0) {
+    return 0.475;
+  }
+  return 0;
+}
+function createTextInput(parent, options) {
+  const field = createFieldContainer(parent);
+  field.createEl("label", { attr: { for: options.id }, text: options.label });
+  return field.createEl("input", {
+    cls: "sm-encounter-input",
+    attr: {
+      id: options.id,
+      type: "text",
+      placeholder: options.placeholder ?? "",
+      value: options.value != null ? String(options.value) : ""
+    }
+  });
+}
+function createNumberInput2(parent, options) {
+  const field = createFieldContainer(parent);
+  field.createEl("label", { attr: { for: options.id }, text: options.label });
+  const attrs = {
+    id: options.id,
+    type: "number"
+  };
+  if (options.min !== void 0) attrs.min = String(options.min);
+  if (options.max !== void 0) attrs.max = String(options.max);
+  if (options.step !== void 0) attrs.step = String(options.step);
+  if (options.placeholder) attrs.placeholder = options.placeholder;
+  if (options.value !== void 0) attrs.value = String(options.value);
+  return field.createEl("input", {
+    cls: "sm-encounter-input",
+    attr: attrs
+  });
+}
+function createFieldContainer(parent) {
+  return parent.createDiv({ cls: "sm-encounter-field" });
+}
+function createStatItem(list, label, value) {
+  const item = list.createEl("li", { cls: "sm-encounter-result-summary-item" });
+  item.createEl("span", { cls: "label", text: `${label}:` });
+  item.createEl("span", { cls: "value", text: value });
+  return item;
+}
+function formatNumber(value) {
+  if (!Number.isFinite(value)) {
+    return "0";
+  }
+  return numberFormatter.format(value);
+}
+function formatSignedNumber(value) {
+  const formatted = formatNumber(Math.abs(value));
+  if (value > 0) return `+${formatted}`;
+  if (value < 0) return `-${formatted}`;
+  return formatted;
+}
+function createId(prefix) {
+  const globalCrypto = globalThis.crypto;
+  if (globalCrypto?.randomUUID) {
+    return `${prefix}-${globalCrypto.randomUUID()}`;
+  }
+  const random = Math.random().toString(36).slice(2, 8);
+  return `${prefix}-${Date.now().toString(36)}-${random}`;
+}
+var import_obsidian32, EncounterWorkspaceView, ConfirmReplaceModal, numberFormatter;
+var init_workspace_view = __esm({
+  "src/workmodes/encounter/workspace-view.ts"() {
+    "use strict";
+    import_obsidian32 = require("obsidian");
+    init_modals();
+    init_plugin_logger();
+    init_rule_presets();
+    init_session_view();
+    init_creature_list();
+    init_composition_view();
+    init_combat_tracker();
+    EncounterWorkspaceView = class {
+      constructor(app, containerEl) {
+        this.presenter = null;
+        this.presetOptions = [];
+        this.presetRefreshTimeout = null;
+        this.sessionView = null;
+        this.creatureList = null;
+        this.compositionView = null;
+        this.combatTracker = null;
+        this.app = app;
+        this.containerEl = containerEl;
+      }
+      mount() {
+        this.containerEl.addClass("sm-encounter-view");
+        this.renderShell();
+        this.registerPresetWatcher();
+        void this.refreshPresetOptions();
+        this.syncPresetControlsState();
+      }
+      unmount() {
+        this.sessionView?.unmount();
+        this.sessionView = null;
+        this.creatureList?.unmount();
+        this.creatureList = null;
+        this.compositionView?.unmount();
+        this.compositionView = null;
+        this.combatTracker?.unmount();
+        this.combatTracker = null;
+        this.containerEl.empty();
+        this.containerEl.removeClass("sm-encounter-view");
+        this.presenter = null;
+        this.detachPresetWatcher?.();
+        this.detachPresetWatcher = void 0;
+        if (this.presetRefreshTimeout != null) {
+          window.clearTimeout(this.presetRefreshTimeout);
+          this.presetRefreshTimeout = null;
+        }
+        this.presetOptions = [];
+      }
+      setPresenter(presenter) {
+        this.presenter = presenter;
+        this.syncPresetControlsState();
+      }
+      render(state) {
+        const session = state.session ?? null;
+        if (session && this.sessionView) {
+          this.sessionView.render(session.event);
+        }
+        if (this.compositionView) {
+          const creatures = session?.creatures ?? [];
+          this.compositionView.render(creatures);
+        }
+        if (this.combatTracker) {
+          const combat = session?.combat ?? null;
+          const hasCreatures = (session?.creatures?.length ?? 0) > 0;
+          this.combatTracker.render(combat, hasCreatures);
+        }
+        this.renderParty(state);
+        this.renderRules(state);
+        this.renderResults(state);
+        this.renderRuleEffectsDebug(state);
+        if (session && this.creatureList) {
+          const factionName = session.event.factionName;
+          void this.loadAndRenderFactionMembers(factionName);
+        }
+        this.syncSessionControls(session);
+      }
+      renderShell() {
+        this.containerEl.empty();
+        const sessionSection = createSection(this.containerEl, "sm-encounter-session");
+        this.sessionView = new EncounterSessionView(sessionSection);
+        this.sessionView.mount();
+        const creaturesSection = createSection(this.containerEl, "sm-encounter-creatures");
+        const creaturesLayout = creaturesSection.createDiv({ cls: "sm-encounter-creatures-layout" });
+        const creatureListContainer = creaturesLayout.createDiv({ cls: "sm-encounter-creature-list-container" });
+        this.creatureList = new EncounterCreatureList(this.app, creatureListContainer, {
+          onAddCreature: (creature) => this.handleAddCreature(creature),
+          onGenerateEncounter: (difficulty) => void this.handleGenerateEncounter(difficulty)
+        });
+        void this.creatureList.mount();
+        const compositionContainer = creaturesLayout.createDiv({ cls: "sm-encounter-composition-container" });
+        this.compositionView = new EncounterCompositionView(compositionContainer, {
+          onUpdateCount: (id, count) => this.handleUpdateCreatureCount(id, count),
+          onRemove: (id) => this.handleRemoveCreature(id)
+        });
+        this.compositionView.mount();
+        const combatSection = createSection(this.containerEl, "sm-encounter-combat");
+        this.combatTracker = new CombatTrackerView(combatSection, {
+          onStartCombat: () => this.handleStartCombat(),
+          onEndCombat: () => this.handleEndCombat(),
+          onUpdateInitiative: (id, initiative) => this.handleUpdateInitiative(id, initiative),
+          onUpdateHp: (id, currentHp, maxHp) => this.handleUpdateHp(id, currentHp, maxHp),
+          onApplyDamage: (id, amount) => this.handleApplyDamage(id, amount),
+          onApplyHealing: (id, amount) => this.handleApplyHealing(id, amount),
+          onToggleDefeated: (id) => this.handleToggleDefeated(id),
+          onSetActive: (id) => this.handleSetActive(id),
+          onSortByInitiative: () => this.handleSortByInitiative()
+        });
+        this.combatTracker.mount();
+        const xpSection = createSection(this.containerEl, "sm-encounter-xp");
+        xpSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Encounter XP & Rules" });
+        const xpRow = xpSection.createDiv({ cls: "sm-encounter-xp-row" });
+        const xpLeftGroup = xpRow.createDiv({ cls: "sm-encounter-xp-group sm-encounter-xp-group-left" });
+        this.xpInputEl = createNumberInput2(xpLeftGroup, {
+          id: "encounter-base-xp",
+          label: "Base XP",
+          min: 0,
+          step: 1
+        });
+        this.xpInputEl.parentElement?.addClass("sm-encounter-field-inline");
+        this.xpInputEl.parentElement?.addClass("sm-encounter-field-base-xp");
+        this.xpInputEl.addEventListener("change", () => this.handleEncounterXpChange());
+        this.xpInputEl.addEventListener("input", () => {
+          this.xpErrorEl.setText("");
+        });
+        const xpLeftActions = xpLeftGroup.createDiv({ cls: "sm-encounter-inline-actions sm-encounter-inline-actions-left" });
+        const addRuleButton = xpLeftActions.createEl("button", {
+          cls: "sm-encounter-button",
+          text: "Add rule"
+        });
+        addRuleButton.type = "button";
+        addRuleButton.addEventListener("click", () => {
+          this.handleAddRule();
+        });
+        const xpRightGroup = xpRow.createDiv({ cls: "sm-encounter-xp-group sm-encounter-xp-group-right" });
+        this.presetSelectEl = xpRightGroup.createEl("select", {
+          cls: "sm-encounter-input sm-encounter-preset-select",
+          attr: { "aria-label": "Encounter rule preset" }
+        });
+        this.presetSelectEl.addEventListener("change", () => {
+          this.syncPresetControlsState();
+        });
+        const xpPresetActions = xpRightGroup.createDiv({
+          cls: "sm-encounter-inline-actions sm-encounter-inline-actions-right"
+        });
+        this.presetOpenButton = xpPresetActions.createEl("button", {
+          cls: "sm-encounter-button",
+          text: "Open preset"
+        });
+        this.presetOpenButton.type = "button";
+        this.presetOpenButton.addEventListener("click", () => {
+          void this.handleOpenPreset();
+        });
+        this.presetSaveButton = xpPresetActions.createEl("button", {
+          cls: "sm-encounter-button sm-encounter-button-primary",
+          text: "Save preset"
+        });
+        this.presetSaveButton.type = "button";
+        this.presetSaveButton.addEventListener("click", () => {
+          void this.handleSavePreset();
+        });
+        this.presetDeleteButton = xpPresetActions.createEl("button", {
+          cls: "sm-encounter-button sm-encounter-button-danger",
+          text: "Delete preset"
+        });
+        this.presetDeleteButton.type = "button";
+        this.presetDeleteButton.addEventListener("click", () => {
+          void this.handleDeletePreset();
+        });
+        this.xpErrorEl = xpSection.createDiv({ cls: "sm-encounter-error" });
+        this.ruleListEl = xpSection.createDiv({ cls: "sm-encounter-rule-list" });
+        const layoutEl = this.containerEl.createDiv({ cls: "sm-encounter-columns" });
+        const leftColumn = layoutEl.createDiv({ cls: "sm-encounter-column" });
+        const partySection = createSection(leftColumn, "sm-encounter-party");
+        partySection.createEl("h3", { cls: "sm-encounter-section-title", text: "Party" });
+        const partyForm = partySection.createEl("form", { cls: "sm-encounter-form" });
+        const partyFormGrid = partyForm.createDiv({ cls: "sm-encounter-form-grid" });
+        this.partyFormNameEl = createTextInput(partyFormGrid, {
+          id: "encounter-party-name",
+          label: "Name",
+          placeholder: "Character name"
+        });
+        this.partyFormLevelEl = createNumberInput2(partyFormGrid, {
+          id: "encounter-party-level",
+          label: "Level",
+          min: 1,
+          step: 1,
+          value: 1
+        });
+        this.partyFormCurrentXpEl = createNumberInput2(partyFormGrid, {
+          id: "encounter-party-current-xp",
+          label: "Current XP",
+          min: 0,
+          step: 1,
+          placeholder: "Optional"
+        });
+        const partySubmitWrapper = partyFormGrid.createDiv({ cls: "sm-encounter-field sm-encounter-field-actions" });
+        const partySubmitButton = partySubmitWrapper.createEl("button", {
+          cls: "sm-encounter-button",
+          text: "Add party member"
+        });
+        partySubmitButton.type = "submit";
+        this.partyFormErrorEl = partyForm.createDiv({ cls: "sm-encounter-error" });
+        partyForm.addEventListener("submit", (event) => {
+          event.preventDefault();
+          this.handleAddPartyMember();
+        });
+        partyForm.addEventListener("input", () => {
+          this.partyFormErrorEl.setText("");
+        });
+        this.partyListEl = partySection.createDiv({ cls: "sm-encounter-party-list" });
+        const rightColumn = layoutEl.createDiv({ cls: "sm-encounter-column" });
+        const resultsSection = createSection(rightColumn, "sm-encounter-results");
+        resultsSection.createEl("h3", { cls: "sm-encounter-section-title", text: "Results" });
+        this.resultWarningsEl = resultsSection.createDiv({ cls: "sm-encounter-result-warnings" });
+        const breakdownWrapper = resultsSection.createDiv({ cls: "sm-encounter-breakdowns" });
+        this.xpResultsEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-party" });
+        this.treasureResultsEl = breakdownWrapper.createDiv({ cls: "sm-encounter-result-party" });
+        this.debugSectionEl = createSection(rightColumn, "sm-encounter-debug");
+        this.debugSectionEl.createEl("h3", {
+          cls: "sm-encounter-section-title",
+          text: "Debug"
+        });
+        this.debugRuleEffectsDetailsEl = this.debugSectionEl.createEl("details", {
+          cls: "sm-encounter-debug-details"
+        });
+        this.debugRuleEffectsDetailsEl.createEl("summary", {
+          cls: "sm-encounter-debug-summary",
+          text: "Rule effects"
+        });
+        this.debugRuleEffectsEl = this.debugRuleEffectsDetailsEl.createDiv({
+          cls: "sm-encounter-debug-rule-effects"
+        });
+        const notesSection = resultsSection.createDiv({ cls: "sm-encounter-notes" });
+        notesSection.createEl("label", {
+          cls: "sm-encounter-notes-label",
+          attr: { for: "encounter-notes" },
+          text: "Notes"
+        });
+        this.notesEl = notesSection.createEl("textarea", {
+          cls: "sm-encounter-notes-input",
+          attr: {
+            id: "encounter-notes",
+            placeholder: "Record tactical notes, initiative order, or follow-up tasks\u2026",
+            rows: "6"
+          }
+        });
+        this.notesEl.disabled = true;
+        this.notesEl.addEventListener("input", () => {
+          if (!this.presenter) return;
+          this.presenter.setNotes(this.notesEl.value);
+        });
+        const actionsRow = resultsSection.createDiv({ cls: "sm-encounter-actions" });
+        this.resolveBtn = actionsRow.createEl("button", {
+          cls: "sm-encounter-button sm-encounter-button-primary",
+          text: "Mark encounter resolved"
+        });
+        this.resolveBtn.type = "button";
+        this.resolveBtn.disabled = true;
+        this.resolveBtn.addEventListener("click", () => {
+          this.presenter?.markResolved();
+        });
+      }
+      registerPresetWatcher() {
+        this.detachPresetWatcher?.();
+        const baseDir = (0, import_obsidian32.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+        const prefix = `${baseDir}/`;
+        const handler = (file) => {
+          if (file instanceof import_obsidian32.TFile) {
+            if (isEncounterPresetFile(file)) {
+              this.schedulePresetRefresh();
+            }
+            return;
+          }
+          if (file.path === baseDir || file.path.startsWith(prefix)) {
+            this.schedulePresetRefresh();
+          }
+        };
+        this.app.vault.on("create", handler);
+        this.app.vault.on("delete", handler);
+        this.app.vault.on("rename", handler);
+        this.app.vault.on("modify", handler);
+        this.detachPresetWatcher = () => {
+          this.app.vault.off("create", handler);
+          this.app.vault.off("delete", handler);
+          this.app.vault.off("rename", handler);
+          this.app.vault.off("modify", handler);
+        };
+      }
+      schedulePresetRefresh() {
+        if (this.presetRefreshTimeout != null) return;
+        this.presetRefreshTimeout = window.setTimeout(() => {
+          this.presetRefreshTimeout = null;
+          void this.refreshPresetOptions();
+        }, 100);
+      }
+      async refreshPresetOptions() {
+        const select = this.presetSelectEl;
+        if (!select || !select.isConnected) return;
+        const previousValue = select.value;
+        try {
+          const entries = await listEncounterRulePresets(this.app);
+          this.presetOptions = entries;
+          while (select.firstChild) {
+            select.removeChild(select.firstChild);
+          }
+          const placeholder = select.createEl("option", {
+            attr: { value: "" },
+            text: entries.length ? "Preset ausw\xE4hlen\u2026" : "Keine Presets gespeichert"
+          });
+          if (!entries.length) {
+            placeholder.selected = true;
+          }
+          for (const entry of entries) {
+            const option = select.createEl("option", {
+              attr: { value: entry.file.path },
+              text: entry.name
+            });
+            if (entry.file.path === previousValue) {
+              option.selected = true;
+            }
+          }
+          if (select.value !== previousValue) {
+            if (entries.some((entry) => entry.file.path === previousValue)) {
+              select.value = previousValue;
+            } else {
+              select.value = "";
+            }
+          }
+        } catch (error) {
+          logger2.error("[encounter] failed to list rule presets", error);
+        }
+        this.syncPresetControlsState();
+      }
+      getSelectedPreset() {
+        const value = this.presetSelectEl?.value;
+        if (!value) return null;
+        return this.presetOptions.find((entry) => entry.file.path === value) ?? null;
+      }
+      syncPresetControlsState() {
+        const hasPresenter = !!this.presenter;
+        const selected = this.getSelectedPreset();
+        if (this.presetOpenButton) {
+          this.presetOpenButton.disabled = !hasPresenter || !selected;
+        }
+        if (this.presetDeleteButton) {
+          this.presetDeleteButton.disabled = !selected;
+        }
+        if (this.presetSaveButton) {
+          this.presetSaveButton.disabled = !hasPresenter;
+        }
+      }
+      async handleOpenPreset() {
+        const presenter = this.presenter;
+        const selected = this.getSelectedPreset();
+        if (!presenter) {
+          new import_obsidian32.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          return;
+        }
+        if (!selected) {
+          new import_obsidian32.Notice("Bitte ein Preset ausw\xE4hlen.");
+          return;
+        }
+        try {
+          const preset = await loadEncounterRulePreset(this.app, selected.file);
+          const seen = /* @__PURE__ */ new Set();
+          const rules = preset.rules.map((rule) => {
+            let id = rule.id;
+            if (!id || seen.has(id)) {
+              id = createId("rule");
+            }
+            seen.add(id);
+            return { ...rule, id };
+          });
+          presenter.replaceRules(rules);
+          if (typeof preset.encounterXp === "number" && Number.isFinite(preset.encounterXp)) {
+            presenter.setEncounterXp(preset.encounterXp);
+          }
+          new import_obsidian32.Notice(`Preset "${preset.name}" geladen.`);
+        } catch (error) {
+          logger2.error("[encounter] failed to load preset", error);
+          new import_obsidian32.Notice("Preset konnte nicht geladen werden.");
+        }
+      }
+      async handleSavePreset() {
+        const presenter = this.presenter;
+        if (!presenter) {
+          new import_obsidian32.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          return;
+        }
+        const selected = this.getSelectedPreset();
+        const currentState = presenter.getState();
+        const rules = currentState.xp.rules.map((rule) => ({ ...rule }));
+        const encounterXp = currentState.xp.encounterXp;
+        const modal = new NameInputModal(
+          this.app,
+          async (rawName) => {
+            const name = rawName.trim();
+            const fallbackName = name || "Encounter Rule Preset";
+            try {
+              const file = await saveEncounterRulePreset(
+                this.app,
+                { name: name || fallbackName, encounterXp, rules },
+                {
+                  path: selected && selected.name === (name || fallbackName) ? selected.file.path : void 0
+                }
+              );
+              new import_obsidian32.Notice(`Preset "${name || fallbackName}" gespeichert.`);
+              await this.refreshPresetOptions();
+              if (this.presetSelectEl && this.presetSelectEl.isConnected) {
+                this.presetSelectEl.value = file.path;
+              }
+            } catch (error) {
+              logger2.error("[encounter] failed to save preset", error);
+              new import_obsidian32.Notice("Preset konnte nicht gespeichert werden.");
+            }
+            this.syncPresetControlsState();
+          },
+          {
+            title: "Preset speichern",
+            placeholder: "Preset-Name",
+            cta: "Speichern",
+            initialValue: selected?.name ?? ""
+          }
+        );
+        modal.open();
+      }
+      async handleDeletePreset() {
+        const selected = this.getSelectedPreset();
+        if (!selected) {
+          new import_obsidian32.Notice("Bitte ein Preset ausw\xE4hlen.");
+          return;
+        }
+        const confirmed = window.confirm(`Preset "${selected.name}" l\xF6schen?`);
+        if (!confirmed) return;
+        try {
+          await deleteEncounterRulePreset(this.app, selected.file);
+          new import_obsidian32.Notice(`Preset "${selected.name}" gel\xF6scht.`);
+          await this.refreshPresetOptions();
+          if (this.presetSelectEl && this.presetSelectEl.isConnected) {
+            this.presetSelectEl.value = "";
+          }
+        } catch (error) {
+          logger2.error("[encounter] failed to delete preset", error);
+          new import_obsidian32.Notice("Preset konnte nicht gel\xF6scht werden.");
+        }
+        this.syncPresetControlsState();
+      }
+      syncSessionControls(session) {
+        if (!session) {
+          this.notesEl.value = "";
+          this.notesEl.disabled = true;
+          this.resolveBtn.disabled = true;
+          this.resolveBtn.setText("Mark encounter resolved");
+          return;
+        }
+        if (this.notesEl.value !== session.notes) {
+          this.notesEl.value = session.notes;
+        }
+        this.notesEl.disabled = false;
+        if (session.status === "resolved") {
+          this.resolveBtn.disabled = true;
+          this.resolveBtn.setText("Encounter resolved");
+        } else {
+          this.resolveBtn.disabled = false;
+          this.resolveBtn.setText("Mark encounter resolved");
+        }
+      }
+      renderParty(state) {
+        const { party } = state.xp;
+        this.partyListEl.empty();
+        if (!party.length) {
+          this.partyListEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No party members added yet."
+          });
+        }
+        for (const member of party) {
+          const itemEl = this.partyListEl.createDiv({ cls: "sm-encounter-party-item" });
+          const nameField = createFieldContainer(itemEl);
+          nameField.addClass("sm-encounter-party-field");
+          const nameLabel = nameField.createEl("label", {
+            attr: { for: `party-${member.id}-name` },
+            text: "Name"
+          });
+          nameLabel.addClass("sm-encounter-inline-label");
+          const nameInput = nameField.createEl("input", {
+            cls: "sm-encounter-input",
+            attr: {
+              id: `party-${member.id}-name`,
+              type: "text",
+              value: member.name
+            }
+          });
+          nameInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            const nextName = nameInput.value.trim();
+            presenter.updatePartyMember(member.id, { name: nextName });
+          });
+          const levelField = createFieldContainer(itemEl);
+          levelField.addClass("sm-encounter-party-field");
+          const levelLabel = levelField.createEl("label", {
+            attr: { for: `party-${member.id}-level` },
+            text: "Level"
+          });
+          levelLabel.addClass("sm-encounter-inline-label");
+          const levelInput = levelField.createEl("input", {
+            cls: "sm-encounter-input",
+            attr: {
+              id: `party-${member.id}-level`,
+              type: "number",
+              min: "1",
+              step: "1",
+              value: String(member.level)
+            }
+          });
+          levelInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            const numeric = Number(levelInput.value);
+            if (!Number.isFinite(numeric) || numeric < 1) {
+              levelInput.value = String(member.level);
+              return;
+            }
+            presenter.updatePartyMember(member.id, { level: Math.floor(numeric) });
+          });
+          const removeButton = itemEl.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-danger sm-encounter-party-remove",
+            text: "Remove"
+          });
+          removeButton.type = "button";
+          removeButton.addEventListener("click", () => {
+            this.presenter?.removePartyMember(member.id);
+          });
+        }
+      }
+      renderRules(state) {
+        const rules = state.xp.rules;
+        const ruleViews = new Map(state.xpView.rules.map((view) => [view.rule.id, view]));
+        this.ruleListEl.empty();
+        if (!rules.length) {
+          this.ruleListEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No rules configured yet."
+          });
+          return;
+        }
+        rules.forEach((rule) => {
+          const ruleItem = this.ruleListEl.createDiv({ cls: "sm-encounter-rule" });
+          if (!rule.enabled) {
+            ruleItem.addClass("is-disabled");
+          }
+          const headerRow = ruleItem.createDiv({ cls: "sm-encounter-rule-header" });
+          const toggleWrapper = headerRow.createDiv({ cls: "sm-encounter-rule-toggle" });
+          const toggleInput = toggleWrapper.createEl("input", {
+            cls: "sm-encounter-rule-toggle-input",
+            attr: {
+              type: "checkbox",
+              "aria-label": "Toggle rule",
+              checked: rule.enabled ? "true" : void 0
+            }
+          });
+          toggleInput.checked = rule.enabled;
+          toggleInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            presenter.toggleRule(rule.id, toggleInput.checked);
+          });
+          const titleInput = headerRow.createEl("input", {
+            cls: "sm-encounter-input sm-encounter-rule-title",
+            attr: {
+              type: "text",
+              value: rule.title,
+              placeholder: "Rule name",
+              "aria-label": "Rule name"
+            }
+          });
+          titleInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            presenter.updateRule(rule.id, { title: titleInput.value.trim() });
+          });
+          const scopeWrapper = headerRow.createDiv({ cls: "sm-encounter-rule-scope" });
+          const scopeSelect = scopeWrapper.createEl("select", {
+            cls: "sm-encounter-input",
+            attr: { "aria-label": "Rule scope" }
+          });
+          const scopeOptions = [
+            { value: "xp", label: "XP" },
+            { value: "gold", label: "Gold" }
+          ];
+          for (const option of scopeOptions) {
+            scopeSelect.createEl("option", {
+              attr: { value: option.value, selected: option.value === rule.scope ? "true" : void 0 },
+              text: option.label
+            });
+          }
+          scopeSelect.value = rule.scope;
+          scopeSelect.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            presenter.updateRule(rule.id, { scope: scopeSelect.value });
+          });
+          const valueWrapper = headerRow.createDiv({ cls: "sm-encounter-rule-range" });
+          const minInput = valueWrapper.createEl("input", {
+            cls: "sm-encounter-input sm-encounter-rule-range-input",
+            attr: {
+              id: `rule-${rule.id}-min`,
+              type: "number",
+              value: String(rule.modifierValueMin),
+              "aria-label": "Modifier minimum value"
+            }
+          });
+          valueWrapper.createSpan({ cls: "sm-encounter-rule-range-separator", text: "\u2013" });
+          const maxInput = valueWrapper.createEl("input", {
+            cls: "sm-encounter-input sm-encounter-rule-range-input",
+            attr: {
+              id: `rule-${rule.id}-max`,
+              type: "number",
+              value: String(rule.modifierValueMax),
+              "aria-label": "Modifier maximum value"
+            }
+          });
+          valueWrapper.createSpan({
+            cls: "sm-encounter-rule-range-result",
+            text: `\u2192 ${formatNumber(rule.modifierValue)}`
+          });
+          const typeSelect = headerRow.createEl("select", {
+            cls: "sm-encounter-input sm-encounter-rule-type",
+            attr: { "aria-label": "Modifier type" }
+          });
+          const typeOptions = [
+            { value: "flat", label: "Flat" },
+            { value: "flatPerAverageLevel", label: "Flat * avrg lvl" },
+            { value: "flatPerTotalLevel", label: "Flat * total lvl" },
+            { value: "percentTotal", label: "% of total" },
+            { value: "percentNextLevel", label: "% to next level" }
+          ];
+          for (const option of typeOptions) {
+            typeSelect.createEl("option", {
+              attr: { value: option.value, selected: option.value === rule.modifierType ? "true" : void 0 },
+              text: option.label
+            });
+          }
+          typeSelect.value = rule.modifierType;
+          typeSelect.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            presenter.updateRule(rule.id, { modifierType: typeSelect.value });
+          });
+          const ruleErrorEl = ruleItem.createDiv({ cls: "sm-encounter-error" });
+          const handleRangeChange = () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            const minRaw = minInput.value.trim();
+            const maxRaw = maxInput.value.trim();
+            if (minRaw === "" || maxRaw === "") {
+              ruleErrorEl.setText("Modifier range requires both values.");
+              minInput.value = String(rule.modifierValueMin);
+              maxInput.value = String(rule.modifierValueMax);
+              return;
+            }
+            const minNumeric = Number(minRaw);
+            const maxNumeric = Number(maxRaw);
+            if (!Number.isFinite(minNumeric) || !Number.isFinite(maxNumeric)) {
+              ruleErrorEl.setText("Modifier range values must be numbers.");
+              minInput.value = String(rule.modifierValueMin);
+              maxInput.value = String(rule.modifierValueMax);
+              return;
+            }
+            ruleErrorEl.setText("");
+            const nextMin = Math.min(minNumeric, maxNumeric);
+            const nextMax = Math.max(minNumeric, maxNumeric);
+            if (nextMin !== minNumeric || nextMax !== maxNumeric) {
+              minInput.value = String(nextMin);
+              maxInput.value = String(nextMax);
+            }
+            presenter.updateRule(rule.id, { modifierValueMin: nextMin, modifierValueMax: nextMax });
+          };
+          minInput.addEventListener("change", handleRangeChange);
+          maxInput.addEventListener("change", handleRangeChange);
+          minInput.addEventListener("input", () => {
+            ruleErrorEl.setText("");
+          });
+          maxInput.addEventListener("input", () => {
+            ruleErrorEl.setText("");
+          });
+          const notesField = createFieldContainer(ruleItem);
+          notesField.addClass("sm-encounter-rule-notes");
+          notesField.createEl("label", {
+            attr: { for: `rule-${rule.id}-notes` },
+            text: "Notes"
+          });
+          const notesInput = notesField.createEl("textarea", {
+            cls: "sm-encounter-input",
+            attr: {
+              id: `rule-${rule.id}-notes`,
+              rows: rule.notes?.trim() ? "2" : "1"
+            },
+            text: rule.notes ?? ""
+          });
+          const syncNoteRows = () => {
+            const trimmed = notesInput.value.trim();
+            if (!trimmed) {
+              notesInput.rows = 1;
+              return;
+            }
+            const lineCount = trimmed.split(/\r?\n/).length;
+            notesInput.rows = Math.min(6, Math.max(2, lineCount));
+          };
+          syncNoteRows();
+          notesInput.addEventListener("input", () => {
+            syncNoteRows();
+          });
+          notesInput.addEventListener("change", () => {
+            const presenter = this.presenter;
+            if (!presenter) return;
+            const trimmed = notesInput.value.trim();
+            presenter.updateRule(rule.id, { notes: trimmed === "" ? "" : trimmed });
+          });
+          const removeButton = ruleItem.createEl("button", {
+            cls: "sm-encounter-button sm-encounter-button-danger",
+            text: "Remove rule"
+          });
+          removeButton.type = "button";
+          removeButton.addEventListener("click", () => {
+            this.presenter?.removeRule(rule.id);
+          });
+          const view = ruleViews.get(rule.id);
+          if (view?.warnings.length) {
+            const warningEl = ruleItem.createDiv({ cls: "sm-encounter-callout" });
+            view.warnings.forEach((warning) => {
+              warningEl.createEl("p", { text: warning });
+            });
+          }
+        });
+      }
+      renderResults(state) {
+        const { xpView } = state;
+        const partyViews = xpView.party;
+        const enabledXpRuleViews = xpView.rules.filter(
+          (ruleView) => ruleView.rule.enabled && ruleView.rule.scope === "xp"
+        );
+        const totalModifierDelta = enabledXpRuleViews.reduce((sum, ruleView) => sum + ruleView.totalDelta, 0);
+        const xpPerMember = partyViews.length ? xpView.totalEncounterXp / partyViews.length : 0;
+        const treasureSummary = this.calculateTreasureSummary(state);
+        const warnings = [];
+        const pushWarning2 = (message) => {
+          if (!message) return;
+          if (!warnings.includes(message)) {
+            warnings.push(message);
+          }
+        };
+        xpView.warnings.forEach(pushWarning2);
+        treasureSummary.warnings.forEach(pushWarning2);
+        this.resultWarningsEl.empty();
+        if (warnings.length) {
+          const warning = this.resultWarningsEl.createDiv({ cls: "sm-encounter-callout" });
+          warnings.forEach((message) => {
+            warning.createEl("p", { text: message });
+          });
+        }
+        this.xpResultsEl.empty();
+        this.xpResultsEl.createEl("h4", {
+          cls: "sm-encounter-subheading",
+          text: "XP Result."
+        });
+        const summaryCard = this.xpResultsEl.createDiv({
+          cls: "sm-encounter-result-party-member sm-encounter-result-party-member--xp-only"
+        });
+        const summaryList = summaryCard.createEl("ul", { cls: "sm-encounter-result-summary" });
+        createStatItem(summaryList, "Base XP", formatNumber(xpView.baseEncounterXp));
+        const modifiersItem = summaryList.createEl("li", {
+          cls: "sm-encounter-result-summary-item sm-encounter-result-summary-item--modifiers"
+        });
+        modifiersItem.createEl("span", { cls: "label", text: "Modifiers:" });
+        const modifiersValue = modifiersItem.createDiv({ cls: "value" });
+        if (enabledXpRuleViews.length) {
+          const modifiersList = modifiersValue.createEl("ul", { cls: "sm-encounter-result-modifier-list" });
+          for (const ruleView of enabledXpRuleViews) {
+            const modifierRow = modifiersList.createEl("li", { cls: "sm-encounter-result-modifier" });
+            const ruleTitle = ruleView.rule.title.trim();
+            modifierRow.createEl("span", {
+              cls: "name",
+              text: ruleTitle || "Untitled rule"
+            });
+            modifierRow.createEl("span", {
+              cls: "delta",
+              text: formatSignedNumber(ruleView.totalDelta)
+            });
+          }
+        } else {
+          modifiersValue.createEl("span", {
+            cls: "sm-encounter-result-modifier-empty",
+            text: "None"
+          });
+        }
+        createStatItem(summaryList, "Total Modifiers", formatSignedNumber(totalModifierDelta));
+        createStatItem(summaryList, "Total XP", formatNumber(xpView.totalEncounterXp));
+        createStatItem(summaryList, "XP per Character", formatNumber(xpPerMember));
+        if (!partyViews.length) {
+          this.xpResultsEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No party members added yet."
+          });
+          this.renderTreasureResults(state, treasureSummary);
+          return;
+        }
+        const aggregatedWarnings = [];
+        for (const memberView of partyViews) {
+          for (const warning of memberView.warnings) {
+            aggregatedWarnings.push(`${memberView.member.name}: ${warning}`);
+          }
+        }
+        if (aggregatedWarnings.length) {
+          const warningEl = this.xpResultsEl.createDiv({ cls: "sm-encounter-callout" });
+          aggregatedWarnings.forEach((warning) => {
+            warningEl.createEl("p", { text: warning });
+          });
+        }
+        this.renderTreasureResults(state, treasureSummary);
+      }
+      renderTreasureResults(state, summary) {
+        this.treasureResultsEl.empty();
+        this.treasureResultsEl.createEl("h4", {
+          cls: "sm-encounter-subheading",
+          text: "Treasure."
+        });
+        const party = state.xp.party;
+        if (!party.length) {
+          this.treasureResultsEl.createDiv({
+            cls: "sm-encounter-empty-row",
+            text: "No party members added yet."
+          });
+          return;
+        }
+        const summaryCard = this.treasureResultsEl.createDiv({
+          cls: "sm-encounter-result-party-member sm-encounter-result-party-member--xp-only"
+        });
+        const summaryList = summaryCard.createEl("ul", { cls: "sm-encounter-result-summary" });
+        createStatItem(summaryList, "Gold Base", formatNumber(summary.baseGold));
+        const modifiersItem = summaryList.createEl("li", {
+          cls: "sm-encounter-result-summary-item sm-encounter-result-summary-item--modifiers"
+        });
+        modifiersItem.createEl("span", { cls: "label", text: "Modifiers:" });
+        const modifiersValue = modifiersItem.createDiv({ cls: "value" });
+        if (summary.enabledRules.length) {
+          const modifiersList = modifiersValue.createEl("ul", { cls: "sm-encounter-result-modifier-list" });
+          for (const rule of summary.enabledRules) {
+            const modifierRow = modifiersList.createEl("li", { cls: "sm-encounter-result-modifier" });
+            const ruleTitle = rule.rule.title.trim();
+            modifierRow.createEl("span", {
+              cls: "name",
+              text: ruleTitle || "Untitled rule"
+            });
+            modifierRow.createEl("span", {
+              cls: "delta",
+              text: formatSignedNumber(rule.delta)
+            });
+          }
+        } else {
+          modifiersValue.createEl("span", {
+            cls: "sm-encounter-result-modifier-empty",
+            text: "None"
+          });
+        }
+        createStatItem(summaryList, "Total Modifiers", formatSignedNumber(summary.totalModifierDelta));
+        createStatItem(summaryList, "Total Gold", formatNumber(summary.totalGold));
+        const goldPerCharacter = party.length ? summary.totalGold / party.length : 0;
+        createStatItem(summaryList, "Gold per Character", formatNumber(goldPerCharacter));
+      }
+      calculateTreasureSummary(state) {
+        const xpState = state.xp;
+        const xpView = state.xpView;
+        const party = xpState.party ?? [];
+        const partyViews = xpView.party;
+        const partyCount = party.length;
+        const totalLevels = party.reduce((sum, member) => sum + member.level, 0);
+        const averageLevel = partyCount > 0 ? totalLevels / partyCount : 0;
+        const baseMultiplier = getGoldBaseMultiplier(averageLevel);
+        const baseGold = partyCount > 0 ? xpView.baseEncounterXp * baseMultiplier : 0;
+        let runningGold = baseGold;
+        let totalModifierDelta = 0;
+        const enabledRules = [];
+        const warnings = [];
+        const pushWarning2 = (message) => {
+          if (!message) return;
+          if (!warnings.includes(message)) {
+            warnings.push(message);
+          }
+        };
+        const xpToNextByMember = new Map(
+          partyViews.map((memberView) => [memberView.member.id, memberView.xpToNextLevel])
+        );
+        for (const rule of xpState.rules ?? []) {
+          if (rule.scope !== "gold" || !rule.enabled) {
+            continue;
+          }
+          if (!partyCount) {
+            pushWarning2(`Gold rule "${rule.title}" ignored because no party members are present.`);
+            enabledRules.push({ rule, delta: 0 });
+            continue;
+          }
+          let delta = 0;
+          switch (rule.modifierType) {
+            case "flat": {
+              delta = rule.modifierValue;
+              break;
+            }
+            case "flatPerAverageLevel": {
+              delta = rule.modifierValue * averageLevel;
+              break;
+            }
+            case "flatPerTotalLevel": {
+              delta = rule.modifierValue * totalLevels;
+              break;
+            }
+            case "percentTotal": {
+              delta = runningGold * (rule.modifierValue / 100);
+              break;
+            }
+            case "percentNextLevel": {
+              let aggregateNext = 0;
+              let applied = false;
+              for (const member of party) {
+                const xpToNext = xpToNextByMember.get(member.id);
+                if (xpToNext == null) {
+                  pushWarning2(
+                    `${member.name} has no next-level XP threshold; "${rule.title}" gold modifier ignored for them.`
+                  );
+                  continue;
+                }
+                aggregateNext += xpToNext;
+                applied = true;
+              }
+              if (!applied || aggregateNext === 0) {
+                delta = 0;
+              } else {
+                delta = aggregateNext * rule.modifierValue / 100;
+              }
+              break;
+            }
+          }
+          totalModifierDelta += delta;
+          runningGold += delta;
+          enabledRules.push({ rule, delta });
+        }
+        return {
+          baseGold,
+          totalGold: baseGold + totalModifierDelta,
+          totalModifierDelta,
+          enabledRules,
+          warnings
+        };
+      }
+      renderRuleEffectsDebug(state) {
+        if (!this.debugRuleEffectsEl || !this.debugSectionEl || !this.debugRuleEffectsDetailsEl) {
+          return;
+        }
+        const { xpView } = state;
+        const partyViews = xpView.party;
+        const ruleViews = xpView.rules;
+        this.debugRuleEffectsEl.empty();
+        if (!ruleViews.length) {
+          this.debugSectionEl.addClass("sm-encounter-hidden");
+          this.debugRuleEffectsDetailsEl.open = false;
+          return;
+        }
+        this.debugSectionEl.removeClass("sm-encounter-hidden");
+        const runningTotals = /* @__PURE__ */ new Map();
+        for (const memberView of partyViews) {
+          runningTotals.set(memberView.member.id, memberView.baseXp);
+        }
+        for (const ruleView of ruleViews) {
+          const ruleResult = this.debugRuleEffectsEl.createDiv({ cls: "sm-encounter-result-rule" });
+          const title = ruleResult.createEl("div", {
+            cls: "sm-encounter-result-rule-title",
+            text: ruleView.rule.title
+          });
+          if (!ruleView.rule.enabled) {
+            title.addClass("is-disabled");
+          }
+          const deltaSummary = ruleResult.createDiv({ cls: "sm-encounter-result-rule-total" });
+          deltaSummary.createEl("span", { cls: "label", text: "Total delta:" });
+          deltaSummary.createEl("span", { cls: "value", text: formatSignedNumber(ruleView.totalDelta) });
+          const perMemberFinals = ruleView.perMemberDeltas.map((delta) => {
+            const previous = runningTotals.get(delta.memberId) ?? 0;
+            const shouldApply = ruleView.rule.enabled;
+            const total = shouldApply ? previous + delta.delta : previous;
+            if (shouldApply) {
+              runningTotals.set(delta.memberId, total);
+            }
+            return { ...delta, previous, total };
+          });
+          if (perMemberFinals.length) {
+            const perMemberList = ruleResult.createEl("ul", { cls: "sm-encounter-rule-deltas" });
+            perMemberFinals.forEach((delta) => {
+              perMemberList.createEl("li", {
+                text: `${delta.memberName}: ${formatSignedNumber(delta.delta)}`
+              });
+            });
+          }
+          if (ruleView.warnings.length) {
+            const warningEl = ruleResult.createDiv({ cls: "sm-encounter-callout" });
+            ruleView.warnings.forEach((warning) => {
+              warningEl.createEl("p", { text: warning });
+            });
+          }
+        }
+      }
+      handleAddPartyMember() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        const name = this.partyFormNameEl.value.trim();
+        const levelValue = Number(this.partyFormLevelEl.value);
+        const currentXpRaw = this.partyFormCurrentXpEl.value.trim();
+        const errors = [];
+        if (!name) {
+          errors.push("Name is required.");
+        }
+        if (!Number.isFinite(levelValue) || levelValue < 1) {
+          errors.push("Level must be 1 or greater.");
+        }
+        let currentXp;
+        if (currentXpRaw !== "") {
+          const numericCurrent = Number(currentXpRaw);
+          if (!Number.isFinite(numericCurrent) || numericCurrent < 0) {
+            errors.push("Current XP must be a non-negative number.");
+          } else {
+            currentXp = numericCurrent;
+          }
+        }
+        if (errors.length) {
+          this.partyFormErrorEl.setText(errors.join(" "));
+          return;
+        }
+        const member = {
+          id: createId("party"),
+          name,
+          level: Math.floor(levelValue)
+        };
+        if (currentXp !== void 0) {
+          member.currentXp = currentXp;
+        }
+        presenter.addPartyMember(member);
+        this.partyFormNameEl.value = "";
+        this.partyFormLevelEl.value = "1";
+        this.partyFormCurrentXpEl.value = "";
+        this.partyFormErrorEl.setText("");
+        this.partyFormNameEl.focus();
+      }
+      handleEncounterXpChange() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        const raw = this.xpInputEl.value.trim();
+        if (raw === "") {
+          this.xpErrorEl.setText("");
+          presenter.setEncounterXp(0);
+          return;
+        }
+        const numeric = Number(raw);
+        if (!Number.isFinite(numeric) || numeric < 0) {
+          this.xpErrorEl.setText("Encounter XP must be a non-negative number.");
+          return;
+        }
+        this.xpErrorEl.setText("");
+        presenter.setEncounterXp(numeric);
+      }
+      handleAddRule() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        const rule = {
+          id: createId("rule"),
+          title: "",
+          modifierType: "flat",
+          modifierValue: 0,
+          modifierValueMin: 0,
+          modifierValueMax: 0,
+          enabled: true,
+          scope: "xp"
+        };
+        presenter.addRule(rule);
+      }
+      handleAddCreature(creature) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.addCreature({
+          id: createId("creature"),
+          name: creature.name,
+          count: 1,
+          cr: creature.cr,
+          source: "library",
+          statblockPath: creature.path
+        });
+      }
+      async handleGenerateEncounter(difficulty) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        this.creatureList?.setGenerateButtonState(true);
+        try {
+          const state = presenter.getState();
+          const session = state.session;
+          const hasCreatures = session?.creatures && session.creatures.length > 0;
+          if (hasCreatures) {
+            const confirmed = await this.showConfirmReplaceModal(session.creatures.length);
+            if (!confirmed) {
+              this.creatureList?.setGenerateButtonState(false);
+              return;
+            }
+          }
+          const result = await presenter.generateEncounter(difficulty, this.app, hasCreatures);
+          if (result.success) {
+            const xpByCr = {
+              0: 10,
+              0.125: 25,
+              0.25: 50,
+              0.5: 100,
+              1: 200,
+              2: 450,
+              3: 700,
+              4: 1100,
+              5: 1800,
+              6: 2300,
+              7: 2900,
+              8: 3900,
+              9: 5e3,
+              10: 5900,
+              11: 7200,
+              12: 8400,
+              13: 1e4,
+              14: 11500,
+              15: 13e3,
+              16: 15e3,
+              17: 18e3,
+              18: 2e4,
+              19: 22e3,
+              20: 25e3,
+              21: 33e3,
+              22: 41e3,
+              23: 5e4,
+              24: 62e3,
+              25: 75e3,
+              26: 9e4,
+              27: 105e3,
+              28: 12e4,
+              29: 135e3,
+              30: 155e3
+            };
+            const totalXP = result.creatures.reduce((sum, c) => {
+              return sum + (xpByCr[c.cr] ?? 0) * c.count;
+            }, 0);
+            const totalCreatureCount = result.creatures.reduce((sum, c) => sum + c.count, 0);
+            new import_obsidian32.Notice(`\u2705 Generated encounter: ${totalCreatureCount} creatures, ${totalXP} XP`);
+          } else {
+            new import_obsidian32.Notice(`\u274C ${result.error}`);
+          }
+        } catch (err) {
+          logger2.error("[workspace-view] Generate encounter failed", err);
+          new import_obsidian32.Notice(`\u274C Failed to generate encounter: ${err instanceof Error ? err.message : "Unknown error"}`);
+        } finally {
+          this.creatureList?.setGenerateButtonState(false);
+        }
+      }
+      async showConfirmReplaceModal(creatureCount) {
+        return new Promise((resolve) => {
+          const modal = new ConfirmReplaceModal(this.app, creatureCount, (confirmed) => {
+            resolve(confirmed);
+          });
+          modal.open();
+        });
+      }
+      handleUpdateCreatureCount(id, count) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.updateCreature(id, { count });
+      }
+      handleRemoveCreature(id) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.removeCreature(id);
+      }
+      handleStartCombat() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.startCombat();
+      }
+      handleEndCombat() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.endCombat();
+      }
+      handleUpdateInitiative(id, initiative) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.updateParticipantInitiative(id, initiative);
+      }
+      handleUpdateHp(id, currentHp, maxHp) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.updateParticipantHp(id, currentHp, maxHp);
+      }
+      handleApplyDamage(id, amount) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.applyDamage(id, amount);
+      }
+      handleApplyHealing(id, amount) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.applyHealing(id, amount);
+      }
+      handleToggleDefeated(id) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.toggleDefeated(id);
+      }
+      handleSetActive(id) {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.setActiveParticipant(id);
+      }
+      handleSortByInitiative() {
+        const presenter = this.presenter;
+        if (!presenter) return;
+        presenter.sortParticipantsByInitiative();
+      }
+      async loadAndRenderFactionMembers(factionName) {
+        const presenter = this.presenter;
+        if (!presenter || !this.creatureList) return;
+        try {
+          const members = await presenter.loadFactionMembers(factionName, this.app);
+          this.creatureList.setFactionMembers(members, factionName ?? null);
+        } catch (err) {
+          logger2.error("[workspace-view] Failed to load faction members", err);
+          this.creatureList.setFactionMembers([], null);
+        }
+      }
+    };
+    ConfirmReplaceModal = class extends import_obsidian32.Modal {
+      constructor(app, creatureCount, onConfirm) {
+        super(app);
+        this.creatureCount = creatureCount;
+        this.onConfirm = onConfirm;
+      }
+      onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.addClass("sm-confirm-modal");
+        contentEl.createEl("h2", { text: "Replace Existing Encounter?" });
+        const message = contentEl.createDiv({ cls: "sm-confirm-message" });
+        message.createEl("p", {
+          text: `You have ${this.creatureCount} creature${this.creatureCount === 1 ? "" : "s"} in the current encounter.`
+        });
+        message.createEl("p", {
+          text: "Generating a new encounter will remove all existing creatures."
+        });
+        message.createEl("p", {
+          text: "Do you want to continue?",
+          cls: "sm-confirm-question"
+        });
+        const buttonRow = contentEl.createDiv({ cls: "sm-confirm-buttons" });
+        const cancelButton = buttonRow.createEl("button", {
+          text: "Cancel",
+          cls: "sm-confirm-button sm-confirm-button-secondary"
+        });
+        cancelButton.addEventListener("click", () => {
+          this.onConfirm(false);
+          this.close();
+        });
+        const replaceButton = buttonRow.createEl("button", {
+          text: "Replace Encounter",
+          cls: "sm-confirm-button sm-confirm-button-danger"
+        });
+        replaceButton.addEventListener("click", () => {
+          this.onConfirm(true);
+          this.close();
+        });
+        cancelButton.focus();
+      }
+      onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+      }
+    };
+    numberFormatter = new Intl.NumberFormat(void 0, {
+      maximumFractionDigits: 2,
+      minimumFractionDigits: 0
+    });
+  }
+});
+
+// src/workmodes/encounter/view.ts
+var view_exports = {};
+__export(view_exports, {
+  EncounterView: () => EncounterView,
+  VIEW_ENCOUNTER: () => VIEW_ENCOUNTER,
+  openEncounter: () => openEncounter
+});
+async function openEncounter(app) {
+  const leaf = getCenterLeaf(app);
+  await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
+  app.workspace.revealLeaf(leaf);
+}
+var import_obsidian33, VIEW_ENCOUNTER, EncounterView;
+var init_view2 = __esm({
+  "src/workmodes/encounter/view.ts"() {
+    "use strict";
+    import_obsidian33 = require("obsidian");
+    init_presenter();
+    init_workspace_view();
+    init_layout();
+    VIEW_ENCOUNTER = "salt-encounter";
+    EncounterView = class extends import_obsidian33.ItemView {
+      constructor(leaf) {
+        super(leaf);
+        this.presenter = null;
+        this.pendingState = null;
+        this.workspaceView = null;
+      }
+      getViewType() {
+        return VIEW_ENCOUNTER;
+      }
+      getDisplayText() {
+        return "Calculator";
+      }
+      getIcon() {
+        return "calculator";
+      }
+      async onOpen() {
+        const workspaceView = new EncounterWorkspaceView(this.app, this.contentEl);
+        workspaceView.mount();
+        this.workspaceView = workspaceView;
+        const presenter = new EncounterPresenter(this.pendingState);
+        this.pendingState = null;
+        this.presenter = presenter;
+        workspaceView.setPresenter(presenter);
+        this.detachPresenter = presenter.subscribe((state) => {
+          this.workspaceView?.render(state);
+        });
+      }
+      async onClose() {
+        this.detachPresenter?.();
+        this.presenter?.dispose();
+        this.detachPresenter = void 0;
+        this.presenter = null;
+        this.pendingState = null;
+        this.workspaceView?.setPresenter(null);
+        this.workspaceView?.unmount();
+        this.workspaceView = null;
+      }
+      getViewData() {
+        return this.presenter?.getState() ?? this.pendingState;
+      }
+      setViewData(data) {
+        if (this.presenter) {
+          this.presenter.restore(data);
+        } else {
+          this.pendingState = data;
+        }
+      }
+    };
+  }
+});
+
 // src/workmodes/almanac/domain/index.ts
 function formatTimestamp(ts, monthName) {
   const month = monthName ?? ts.monthId;
@@ -21902,7 +22207,7 @@ var init_event_builder = __esm({
 function loadEncounterModule() {
   return Promise.all([
     Promise.resolve().then(() => (init_layout(), layout_exports)),
-    Promise.resolve().then(() => (init_view(), view_exports))
+    Promise.resolve().then(() => (init_view2(), view_exports))
   ]).then(([layout, encounter]) => ({
     getCenterLeaf: layout.getCenterLeaf,
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
@@ -90436,10 +90741,10 @@ var import_obsidian43 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
-var import_obsidian17 = require("obsidian");
+var import_obsidian30 = require("obsidian");
 
 // src/workmodes/cartographer/controller.ts
-var import_obsidian16 = require("obsidian");
+var import_obsidian29 = require("obsidian");
 init_options();
 init_map_list();
 
@@ -91057,7 +91362,7 @@ var CartographerController = class {
       }).catch((error) => {
         logger2.error("[cartographer] failed to load modes", error);
         this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
-        new import_obsidian16.Notice(MODE_PROVISION_NOTICE_MESSAGE);
+        new import_obsidian29.Notice(MODE_PROVISION_NOTICE_MESSAGE);
         this.modeLoad = void 0;
         throw error;
       });
@@ -91332,7 +91637,7 @@ function renderModeSelect(slot, initialModes, onChange) {
 // src/workmodes/cartographer/index.ts
 var VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 var VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
-var CartographerView = class extends import_obsidian17.ItemView {
+var CartographerView = class extends import_obsidian30.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -91391,262 +91696,8 @@ async function detachCartographerLeaves(app) {
 }
 
 // src/workmodes/view-manifest.ts
+init_view2();
 init_view();
-
-// src/workmodes/library/view.ts
-init_data_manager();
-init_data_sources();
-init_registry();
-
-// src/workmodes/library/core/sources.ts
-var import_obsidian33 = require("obsidian");
-init_terrain_repository();
-init_region_repository();
-init_entity_registry();
-async function ensureDir(app, dir) {
-  const normalizedDir = (0, import_obsidian33.normalizePath)(dir);
-  const folder = app.vault.getAbstractFileByPath(normalizedDir);
-  if (!folder) {
-    await app.vault.createFolder(normalizedDir).catch(() => {
-    });
-  }
-}
-var ensureCreatureDir = (app) => ensureDir(app, ENTITY_REGISTRY.creatures.directory);
-var ensureSpellDir = (app) => ensureDir(app, ENTITY_REGISTRY.spells.directory);
-var ensureItemDir = (app) => ensureDir(app, ENTITY_REGISTRY.items.directory);
-var ensureEquipmentDir = (app) => ensureDir(app, ENTITY_REGISTRY.equipment.directory);
-var ensureFactionDir = (app) => ensureDir(app, ENTITY_REGISTRY.factions.directory);
-var ensureCalendarDir = (app) => ensureDir(app, ENTITY_REGISTRY.calendars.directory);
-var SOURCE_MAP = Object.freeze({
-  creatures: {
-    ensure: ensureCreatureDir,
-    description: `${ENTITY_REGISTRY.creatures.directory}/`
-  },
-  spells: {
-    ensure: ensureSpellDir,
-    description: `${ENTITY_REGISTRY.spells.directory}/`
-  },
-  items: {
-    ensure: ensureItemDir,
-    description: `${ENTITY_REGISTRY.items.directory}/`
-  },
-  equipment: {
-    ensure: ensureEquipmentDir,
-    description: `${ENTITY_REGISTRY.equipment.directory}/`
-  },
-  terrains: {
-    ensure: ensureTerrainFile,
-    description: TERRAIN_FILE
-  },
-  regions: {
-    ensure: ensureRegionsFile,
-    description: REGIONS_FILE
-  },
-  factions: {
-    ensure: ensureFactionDir,
-    description: `${ENTITY_REGISTRY.factions.directory}/`
-  },
-  calendars: {
-    ensure: ensureCalendarDir,
-    description: `${ENTITY_REGISTRY.calendars.directory}/`
-  }
-});
-var LIBRARY_SOURCE_IDS = Object.freeze(Object.keys(SOURCE_MAP));
-async function ensureLibrarySource(app, source) {
-  const spec = SOURCE_MAP[source];
-  if (!spec) throw new Error(`Unknown library source: ${source}`);
-  await spec.ensure(app);
-}
-async function ensureLibrarySources(app, sources) {
-  const requested = sources ? Array.from(new Set(sources)) : LIBRARY_SOURCE_IDS;
-  await Promise.all(requested.map((source) => ensureLibrarySource(app, source)));
-}
-function describeLibrarySource(source) {
-  const spec = SOURCE_MAP[source];
-  if (!spec) throw new Error(`Unknown library source: ${source}`);
-  return spec.description;
-}
-
-// src/workmodes/library/locations/location-list-renderer.ts
-init_generic_list_renderer();
-init_locations();
-var LocationListRenderer = class extends GenericListRenderer {
-  constructor(app, container, config) {
-    super(app, container, config);
-    this.viewMode = "list";
-  }
-  /**
-   * Sets the view mode and triggers re-render.
-   */
-  setViewMode(mode) {
-    if (this.viewMode !== mode) {
-      this.viewMode = mode;
-      this.render();
-    }
-  }
-  /**
-   * Gets the current view mode.
-   */
-  getViewMode() {
-    return this.viewMode;
-  }
-  /**
-   * Override render to add view mode toggle and conditional rendering.
-   */
-  render() {
-    if (this.isDisposed()) return;
-    const container = this.container;
-    container.empty();
-    this.renderViewModeToggle(container);
-    if (this.viewMode === "tree") {
-      this.renderTreeView(container);
-    } else {
-      this.renderInternal();
-    }
-  }
-  /**
-   * Renders the view mode toggle button.
-   */
-  renderViewModeToggle(container) {
-    const toggleContainer = container.createDiv({ cls: "sm-location-view-toggle" });
-    const listBtn = toggleContainer.createEl("button", {
-      cls: this.viewMode === "list" ? "sm-toggle-active" : "",
-      text: "\u{1F4CB} List"
-    });
-    const treeBtn = toggleContainer.createEl("button", {
-      cls: this.viewMode === "tree" ? "sm-toggle-active" : "",
-      text: "\u{1F333} Tree"
-    });
-    listBtn.addEventListener("click", () => {
-      this.setViewMode("list");
-    });
-    treeBtn.addEventListener("click", () => {
-      this.setViewMode("tree");
-    });
-  }
-  /**
-   * Renders locations in tree view.
-   */
-  renderTreeView(container) {
-    const entries = this.entries;
-    if (!entries || entries.length === 0) {
-      container.createDiv({ cls: "sm-tree-empty", text: "Keine Orte vorhanden" });
-      return;
-    }
-    const locations = entries.map((entry) => ({
-      name: entry.name,
-      type: entry.type || "Geb\xE4ude",
-      description: entry.description,
-      parent: entry.parent,
-      owner_type: entry.owner_type,
-      owner_name: entry.owner_name,
-      region: entry.region,
-      coordinates: entry.coordinates,
-      notes: entry.notes
-    }));
-    const treeNodes = buildLocationTree(locations);
-    this.treeContainer = container.createDiv({ cls: "sm-location-tree-container" });
-    this.treeView = new LocationTreeView(this.treeContainer, {
-      onLocationClick: (locationName) => {
-        this.handleLocationClick(locationName);
-      }
-    });
-    this.treeView.render(treeNodes);
-  }
-  /**
-   * Handles click on a location in tree view.
-   * Opens the location details by triggering the "Open" action.
-   */
-  handleLocationClick(locationName) {
-    const entries = this.entries;
-    const entry = entries.find((e) => e.name === locationName);
-    if (!entry) return;
-    const viewConfig = this.viewConfig;
-    const actionContext = this.createActionContext();
-    const openAction = viewConfig.actions?.find((a) => a.id === "open");
-    if (openAction) {
-      openAction.handler(entry, actionContext);
-    }
-  }
-  /**
-   * Override destroy to clean up tree view.
-   */
-  destroy() {
-    this.treeView = void 0;
-    this.treeContainer = void 0;
-    super.destroy();
-  }
-};
-
-// src/workmodes/library/view.ts
-var LIBRARY_COPY = {
-  title: "Library",
-  searchPlaceholder: "Search the library or enter a name\u2026",
-  createButton: "Create entry",
-  modes: {
-    creatures: "Creatures",
-    spells: "Spells",
-    items: "Items",
-    equipment: "Equipment",
-    terrains: "Terrains",
-    regions: "Regions",
-    factions: "Factions",
-    calendars: "Calendars",
-    locations: "Locations"
-  },
-  sources: {
-    prefix: "Source: "
-  }
-};
-var VIEW_LIBRARY = "salt-library";
-var LIBRARY_MODES = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars", "locations"];
-var _LibraryView = class _LibraryView extends TabbedBrowseView {
-  get config() {
-    return _LibraryView.LIBRARY_CONFIG;
-  }
-  constructor(leaf) {
-    super(leaf);
-  }
-  /**
-   * Override createRenderer to use LocationListRenderer for locations mode.
-   */
-  createRenderer(mode, container) {
-    const rendererConfig = {
-      mode,
-      source: this.config.dataSources[mode],
-      schema: this.config.schemas[mode],
-      viewConfig: this.config.viewConfigs[mode],
-      watchers: this.watchers
-    };
-    if (mode === "locations") {
-      return new LocationListRenderer(
-        this.app,
-        container,
-        rendererConfig
-        // Type assertion needed due to Mode generics
-      );
-    }
-    return new GenericListRenderer(this.app, container, rendererConfig);
-  }
-};
-_LibraryView.LIBRARY_CONFIG = {
-  viewType: VIEW_LIBRARY,
-  icon: "library",
-  copy: LIBRARY_COPY,
-  defaultMode: "creatures",
-  modes: LIBRARY_MODES,
-  dataSources: LIBRARY_DATA_SOURCES,
-  schemas: LIBRARY_LIST_SCHEMAS,
-  viewConfigs: LIBRARY_VIEW_CONFIGS,
-  ensureSources: ensureLibrarySources,
-  describeSource: describeLibrarySource
-};
-var LibraryView = _LibraryView;
-async function openLibrary(app) {
-  const leaf = app.workspace.getLeaf(true);
-  await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
-  app.workspace.revealLeaf(leaf);
-}
 
 // src/workmodes/almanac/index.ts
 var import_obsidian34 = require("obsidian");

@@ -21,16 +21,19 @@ import {
     type FormStatusHandle,
     type FormTextareaHandle,
 } from "../../../ui/components/form-builder";
+import { getLocationMarkerStore } from "../../../features/maps/state/location-marker-store";
+import { VIEW_LIBRARY } from "../../library/view";
 
 type InspectorUI = {
     panel: HTMLElement | null;
-    form: FormBuilderInstance<"file" | "terrain" | "region" | "faction" | "note", never, never, "message"> | null;
+    form: FormBuilderInstance<"file" | "terrain" | "region" | "faction" | "note" | "location", never, never, "message"> | null;
     fileLabel: HTMLElement | null;
     message: FormStatusHandle | null;
     terrain: FormSelectHandle | null;
     region: FormSelectHandle | null;
     faction: FormSelectHandle | null;
     note: FormTextareaHandle | null;
+    locationInfo: HTMLElement | null;
 };
 
 type InspectorState = {
@@ -154,6 +157,42 @@ export function createInspectorMode(): CartographerMode {
         ui.faction?.setDisabled(false);
         ui.note?.setValue(data?.note ?? "");
         ui.note?.setDisabled(false);
+
+        // Load location marker info
+        if (ui.locationInfo) {
+            ui.locationInfo.empty();
+            const markerStore = getLocationMarkerStore(ctx.app, file);
+            const marker = markerStore.get(state.selection);
+
+            if (marker) {
+                const header = ui.locationInfo.createEl("h4", { text: "📍 Location" });
+                header.style.marginTop = "0";
+                header.style.marginBottom = "8px";
+
+                const infoDiv = ui.locationInfo.createDiv({ cls: "sm-location-marker-info" });
+                infoDiv.createDiv({ text: `${marker.displayIcon} ${marker.locationName}`, cls: "sm-location-name" });
+                infoDiv.createDiv({ text: `Type: ${marker.locationType}`, cls: "sm-location-type" });
+
+                if (marker.parent) {
+                    infoDiv.createDiv({ text: `Parent: ${marker.parent}`, cls: "sm-location-parent" });
+                }
+
+                if (marker.ownerName) {
+                    const ownerLabel = marker.ownerType === "faction" ? "Faction" : marker.ownerType === "npc" ? "Owner (NPC)" : "Owner";
+                    infoDiv.createDiv({ text: `${ownerLabel}: ${marker.ownerName}`, cls: "sm-location-owner" });
+                }
+
+                const openBtn = ui.locationInfo.createEl("button", { text: "Open in Library" });
+                openBtn.style.marginTop = "8px";
+                openBtn.addEventListener("click", async () => {
+                    const leaf = ctx.app.workspace.getLeaf(false);
+                    await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
+                    ctx.app.workspace.revealLeaf(leaf);
+                    // TODO: Navigate to specific location and open it
+                });
+            }
+        }
+
         updateMessage();
     };
 
@@ -168,7 +207,7 @@ export function createInspectorMode(): CartographerMode {
         label: "Inspector",
         async onEnter(ctx: CartographerModeLifecycleContext) {
             lifecycle.bind(ctx);
-            ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, note: null };
+            ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, region: null, faction: null, note: null, locationInfo: null };
             state = { ...state, selection: null };
 
             clearHost(ctx.sidebarHost);
@@ -243,6 +282,8 @@ export function createInspectorMode(): CartographerMode {
                             },
                         ],
                     },
+                    { kind: "separator" },
+                    { kind: "static", id: "location", cls: "sm-cartographer__location-info" },
                 ],
             });
 
@@ -252,6 +293,7 @@ export function createInspectorMode(): CartographerMode {
             ui.region = ui.form.getControl("region") as FormSelectHandle | null;
             ui.faction = ui.form.getControl("faction") as FormSelectHandle | null;
             ui.note = ui.form.getControl("note") as FormTextareaHandle | null;
+            ui.locationInfo = ui.form.getElement("location");
 
             // Load region options
             try {
@@ -298,7 +340,7 @@ export function createInspectorMode(): CartographerMode {
             clearSaveTimer();
             ui.form?.destroy();
             ui.panel?.remove();
-            ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, region: null, faction: null, note: null };
+            ui = { panel: null, form: null, fileLabel: null, message: null, terrain: null, region: null, faction: null, note: null, locationInfo: null };
             state = { file: null, handles: null, selection: null, saveTimer: null };
             lifecycle.reset();
         },
