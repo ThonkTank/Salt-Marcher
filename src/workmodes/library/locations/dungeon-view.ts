@@ -17,6 +17,7 @@ export const VIEW_TYPE_DUNGEON = "salt-dungeon-view";
  */
 export class DungeonView extends ItemView {
     private dungeon: LocationData | null = null;
+    private dungeonFile: TFile | null = null; // Track the file being edited
     private renderer: GridRenderer | null = null;
     private canvas: HTMLCanvasElement | null = null;
     private controlsContainer: HTMLElement | null = null;
@@ -105,13 +106,14 @@ export class DungeonView extends ItemView {
     /**
      * Set the dungeon data to display
      */
-    setDungeon(dungeon: LocationData): void {
+    setDungeon(dungeon: LocationData, file?: TFile): void {
         if (!isDungeonLocation(dungeon)) {
             logger.error("[dungeon-view] Cannot display non-dungeon location", { type: dungeon.type });
             return;
         }
 
         this.dungeon = dungeon;
+        this.dungeonFile = file || null;
 
         // Re-initialize renderer if view is already open
         if (this.canvas) {
@@ -481,6 +483,105 @@ export class DungeonView extends ItemView {
     }
 
     /**
+     * Save dungeon data back to file
+     */
+    private async saveDungeonToFile(): Promise<void> {
+        if (!this.dungeonFile || !this.dungeon || !isDungeonLocation(this.dungeon)) {
+            logger.warn("[dungeon-view] Cannot save: no file or invalid dungeon");
+            return;
+        }
+
+        try {
+            // Read current file content
+            const content = await this.app.vault.read(this.dungeonFile);
+
+            // Parse frontmatter
+            const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+            if (!fmMatch) {
+                logger.error("[dungeon-view] File has no frontmatter");
+                return;
+            }
+
+            const [, fmText, body] = fmMatch;
+
+            // Parse YAML frontmatter
+            // Simple approach: split into lines and update the tokens field
+            const fmLines = fmText.split("\n");
+            const updatedFmLines: string[] = [];
+            let inTokensArray = false;
+            let tokensInserted = false;
+
+            for (const line of fmLines) {
+                // Skip existing tokens array
+                if (line.startsWith("tokens:")) {
+                    inTokensArray = true;
+                    continue;
+                }
+
+                if (inTokensArray) {
+                    // Check if we're still in the tokens array (indented or array item)
+                    if (line.startsWith("  ") || line.startsWith("- ")) {
+                        continue; // Skip tokens array content
+                    } else {
+                        // Exited tokens array, insert new tokens here
+                        inTokensArray = false;
+                        if (!tokensInserted && this.dungeon.tokens && this.dungeon.tokens.length > 0) {
+                            updatedFmLines.push("tokens:");
+                            for (const token of this.dungeon.tokens) {
+                                updatedFmLines.push(`  - id: ${token.id}`);
+                                updatedFmLines.push(`    type: ${token.type}`);
+                                updatedFmLines.push(`    position:`);
+                                updatedFmLines.push(`      x: ${token.position.x}`);
+                                updatedFmLines.push(`      y: ${token.position.y}`);
+                                updatedFmLines.push(`    label: ${token.label}`);
+                                if (token.color) {
+                                    updatedFmLines.push(`    color: ${token.color}`);
+                                }
+                                if (token.size && token.size !== 1.0) {
+                                    updatedFmLines.push(`    size: ${token.size}`);
+                                }
+                            }
+                            tokensInserted = true;
+                        }
+                        updatedFmLines.push(line);
+                    }
+                } else {
+                    updatedFmLines.push(line);
+                }
+            }
+
+            // If tokens weren't inserted yet (no tokens field existed), add them at the end
+            if (!tokensInserted && this.dungeon.tokens && this.dungeon.tokens.length > 0) {
+                updatedFmLines.push("tokens:");
+                for (const token of this.dungeon.tokens) {
+                    updatedFmLines.push(`  - id: ${token.id}`);
+                    updatedFmLines.push(`    type: ${token.type}`);
+                    updatedFmLines.push(`    position:`);
+                    updatedFmLines.push(`      x: ${token.position.x}`);
+                    updatedFmLines.push(`      y: ${token.position.y}`);
+                    updatedFmLines.push(`    label: ${token.label}`);
+                    if (token.color) {
+                        updatedFmLines.push(`    color: ${token.color}`);
+                    }
+                    if (token.size && token.size !== 1.0) {
+                        updatedFmLines.push(`    size: ${token.size}`);
+                    }
+                }
+            }
+
+            // Reconstruct file content
+            const newContent = `---\n${updatedFmLines.join("\n")}\n---\n${body}`;
+
+            // Write back to file
+            await this.app.vault.modify(this.dungeonFile, newContent);
+
+            logger.info("[dungeon-view] Dungeon saved to file", { file: this.dungeonFile.path });
+        } catch (error) {
+            logger.error("[dungeon-view] Failed to save dungeon", error);
+        }
+    }
+
+    /**
      * Place a token at the specified grid coordinates
      */
     private placeToken(gridX: number, gridY: number): void {
@@ -533,7 +634,8 @@ export class DungeonView extends ItemView {
         // Update controls to reflect mode change
         this.renderControls();
 
-        // TODO: Persist changes to file (Step 3.4)
+        // Persist changes to file
+        this.saveDungeonToFile();
     }
 }
 
@@ -590,7 +692,7 @@ export async function openDungeonView(app: App, file: TFile): Promise<void> {
     // Set dungeon data
     const view = leaf.view;
     if (view instanceof DungeonView) {
-        view.setDungeon(location);
+        view.setDungeon(location, file);
     }
 
     // Reveal the leaf

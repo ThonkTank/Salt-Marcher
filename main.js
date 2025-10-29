@@ -93336,6 +93336,8 @@ var DungeonView = class extends import_obsidian41.ItemView {
   constructor(leaf) {
     super(leaf);
     this.dungeon = null;
+    this.dungeonFile = null;
+    // Track the file being edited
     this.renderer = null;
     this.canvas = null;
     this.controlsContainer = null;
@@ -93405,12 +93407,13 @@ var DungeonView = class extends import_obsidian41.ItemView {
   /**
    * Set the dungeon data to display
    */
-  setDungeon(dungeon) {
+  setDungeon(dungeon, file) {
     if (!isDungeonLocation(dungeon)) {
       logger2.error("[dungeon-view] Cannot display non-dungeon location", { type: dungeon.type });
       return;
     }
     this.dungeon = dungeon;
+    this.dungeonFile = file || null;
     if (this.canvas) {
       this.initializeRenderer();
     }
@@ -93696,6 +93699,87 @@ ${feature.description}`;
     this.detailPanel.style.display = "block";
   }
   /**
+   * Save dungeon data back to file
+   */
+  async saveDungeonToFile() {
+    if (!this.dungeonFile || !this.dungeon || !isDungeonLocation(this.dungeon)) {
+      logger2.warn("[dungeon-view] Cannot save: no file or invalid dungeon");
+      return;
+    }
+    try {
+      const content = await this.app.vault.read(this.dungeonFile);
+      const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+      if (!fmMatch) {
+        logger2.error("[dungeon-view] File has no frontmatter");
+        return;
+      }
+      const [, fmText, body] = fmMatch;
+      const fmLines = fmText.split("\n");
+      const updatedFmLines = [];
+      let inTokensArray = false;
+      let tokensInserted = false;
+      for (const line of fmLines) {
+        if (line.startsWith("tokens:")) {
+          inTokensArray = true;
+          continue;
+        }
+        if (inTokensArray) {
+          if (line.startsWith("  ") || line.startsWith("- ")) {
+            continue;
+          } else {
+            inTokensArray = false;
+            if (!tokensInserted && this.dungeon.tokens && this.dungeon.tokens.length > 0) {
+              updatedFmLines.push("tokens:");
+              for (const token of this.dungeon.tokens) {
+                updatedFmLines.push(`  - id: ${token.id}`);
+                updatedFmLines.push(`    type: ${token.type}`);
+                updatedFmLines.push(`    position:`);
+                updatedFmLines.push(`      x: ${token.position.x}`);
+                updatedFmLines.push(`      y: ${token.position.y}`);
+                updatedFmLines.push(`    label: ${token.label}`);
+                if (token.color) {
+                  updatedFmLines.push(`    color: ${token.color}`);
+                }
+                if (token.size && token.size !== 1) {
+                  updatedFmLines.push(`    size: ${token.size}`);
+                }
+              }
+              tokensInserted = true;
+            }
+            updatedFmLines.push(line);
+          }
+        } else {
+          updatedFmLines.push(line);
+        }
+      }
+      if (!tokensInserted && this.dungeon.tokens && this.dungeon.tokens.length > 0) {
+        updatedFmLines.push("tokens:");
+        for (const token of this.dungeon.tokens) {
+          updatedFmLines.push(`  - id: ${token.id}`);
+          updatedFmLines.push(`    type: ${token.type}`);
+          updatedFmLines.push(`    position:`);
+          updatedFmLines.push(`      x: ${token.position.x}`);
+          updatedFmLines.push(`      y: ${token.position.y}`);
+          updatedFmLines.push(`    label: ${token.label}`);
+          if (token.color) {
+            updatedFmLines.push(`    color: ${token.color}`);
+          }
+          if (token.size && token.size !== 1) {
+            updatedFmLines.push(`    size: ${token.size}`);
+          }
+        }
+      }
+      const newContent = `---
+${updatedFmLines.join("\n")}
+---
+${body}`;
+      await this.app.vault.modify(this.dungeonFile, newContent);
+      logger2.info("[dungeon-view] Dungeon saved to file", { file: this.dungeonFile.path });
+    } catch (error) {
+      logger2.error("[dungeon-view] Failed to save dungeon", error);
+    }
+  }
+  /**
    * Place a token at the specified grid coordinates
    */
   placeToken(gridX, gridY) {
@@ -93730,6 +93814,7 @@ ${feature.description}`;
       this.renderer.render(this.dungeon);
     }
     this.renderControls();
+    this.saveDungeonToFile();
   }
 };
 
