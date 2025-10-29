@@ -363,49 +363,48 @@ Territory Marking, Faction Context, Random Encounter Generator (22 tests), Comba
 
 ---
 
-#### Phase 3.4.4 - Token Management ⏳ NÄCHSTER SCHRITT
+#### Phase 3.4.4 - Token Management ⏳ IN PROGRESS
 **Scope:** Drag & Drop Token-Placement für Player, NPCs, Monsters auf Dungeon-Grid
 
 **User Story:**
 > "Als GM will ich Tokens für PCs/NPCs/Monster auf dem Dungeon-Grid platzieren und verschieben können, damit ich Positionen visuell tracken und im Combat verwenden kann."
 
 **Acceptance Criteria:**
-1. ⏳ Token-Typen definieren (Player, NPC, Monster, Object)
-2. ⏳ Token-Rendering auf Grid (Icons/Colors, Size)
-3. ⏳ Drag & Drop Token-Placement (snap to grid)
+1. ✅ Token-Typen definieren (Player, NPC, Monster, Object)
+2. ✅ Token-Rendering auf Grid (Icons/Colors, Size)
+3. ✅ Drag & Drop Token-Placement (snap to grid)
 4. ⏳ Token-Selection & Highlighting
-5. ⏳ Token-Persistence (save/load with dungeon)
+5. ✅ Token-Persistence (save/load with dungeon)
 
 **Implementation Plan:**
 
-**Schritt 1: Token Data Model** (~1h)
-- Define `DungeonToken` interface (id, type, position, label, color, size)
-- Add `tokens: DungeonToken[]` to `LocationData` (dungeon-specific)
-- Update serializer to save/load tokens from frontmatter
+**✅ Schritt 1: Token Data Model** (~1h) - COMPLETE
+- ✅ Define `DungeonToken` interface (id, type, position, label, color, size)
+- ✅ Add `tokens: DungeonToken[]` to `LocationData` (dungeon-specific)
+- ✅ Update serializer to save/load tokens from frontmatter
 
-**Schritt 2: Token Rendering** (~1h)
-- Extend `GridRenderer` with `renderTokens()` method
-- Render tokens as colored circles with labels
-- Layer order: Grid → Rooms → Tokens → Features/Doors
-- Selection indicator (highlight border)
+**✅ Schritt 2: Token Rendering** (~1h) - COMPLETE
+- ✅ Extend `GridRenderer` with `renderTokens()` method
+- ✅ Render tokens as colored circles with labels
+- ✅ Layer order: Grid → Rooms → Tokens → Features/Doors
+- ⏳ Selection indicator (highlight border) → Step 4
 
-**Schritt 3: Token Drag & Drop** (~1.5h)
-- Add "Add Token" button to DungeonView controls
-- Modal/dropdown to select token type & label
-- Drag token from palette or existing position
-- Snap to grid center on drop
-- Update dungeon data & re-render
+**✅ Schritt 3: Token Placement** (~1.5h) - COMPLETE
+- ✅ Add "Add Token" button to DungeonView controls
+- ✅ TokenCreationModal (type, label, color, size)
+- ✅ Click-to-place token on grid (snap to grid)
+- ✅ Update dungeon data & re-render
+- ✅ Persist to file frontmatter
 
-**Schritt 4: Token Management** (~1h)
-- Click token to select (show in detail panel)
-- Delete token button
-- Edit token properties (label, color)
-- Keyboard shortcuts (Delete key removes selected token)
+**⏳ Schritt 4: Token Management** (~1h) - NEXT
+- ⏳ Click token to select (show in detail panel)
+- ⏳ Delete token button
+- ⏳ Edit token properties (label, color)
+- ⏳ Keyboard shortcuts (Delete key removes selected token)
 
-**Schritt 5: Persistence & Tests** (~30min)
-- Token state persists in frontmatter
-- Unit tests for token rendering, placement, selection
-- Integration test: add/move/delete token workflow
+**⏳ Schritt 5: Tests** (~30min)
+- ⏳ Unit tests for token rendering, placement, selection
+- ⏳ Integration test: add/move/delete token workflow
 
 **Out of Scope:**
 - ❌ Token health tracking → Later
