@@ -19624,12 +19624,37 @@ var init_create_spec9 = __esm({
   }
 });
 
+// src/workmodes/library/locations/tree-builder.ts
+var init_tree_builder = __esm({
+  "src/workmodes/library/locations/tree-builder.ts"() {
+    "use strict";
+  }
+});
+
+// src/workmodes/library/locations/tree-view.ts
+var init_tree_view = __esm({
+  "src/workmodes/library/locations/tree-view.ts"() {
+    "use strict";
+  }
+});
+
+// src/workmodes/library/locations/breadcrumb.ts
+var init_breadcrumb = __esm({
+  "src/workmodes/library/locations/breadcrumb.ts"() {
+    "use strict";
+    init_tree_builder();
+  }
+});
+
 // src/workmodes/library/locations/index.ts
 var init_locations = __esm({
   "src/workmodes/library/locations/index.ts"() {
     "use strict";
     init_create_spec9();
     init_serializer9();
+    init_tree_builder();
+    init_tree_view();
+    init_breadcrumb();
   }
 });
 
