@@ -1,10 +1,12 @@
 // src/workmodes/library/view.ts
 import type { WorkspaceLeaf, App } from "obsidian";
-import { TabbedBrowseView } from "../../features/data-manager";
+import { TabbedBrowseView, GenericListRenderer } from "../../features/data-manager";
+import type { GenericListRendererConfig } from "../../features/data-manager/browse/types";
 import { LIBRARY_DATA_SOURCES, type FilterableLibraryMode, type LibraryEntry } from "./storage/data-sources";
 import { LIBRARY_LIST_SCHEMAS, LIBRARY_VIEW_CONFIGS } from "./registry";
 import type { LibraryActionContext } from "./types";
 import { describeLibrarySource, ensureLibrarySources } from "./core/sources";
+import { LocationListRenderer } from "./locations/location-list-renderer";
 
 type Mode = FilterableLibraryMode;
 
@@ -24,6 +26,7 @@ export const LIBRARY_COPY = {
         regions: "Regions",
         factions: "Factions",
         calendars: "Calendars",
+        locations: "Locations",
     },
     sources: {
         prefix: "Source: ",
@@ -34,7 +37,7 @@ type ModeCopy = typeof LIBRARY_COPY.modes;
 
 export const VIEW_LIBRARY = "salt-library";
 
-const LIBRARY_MODES: Mode[] = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars"];
+const LIBRARY_MODES: Mode[] = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars", "locations"];
 
 /**
  * Library view: Tab-based browser for all game entities.
@@ -60,6 +63,31 @@ export class LibraryView extends TabbedBrowseView<Mode, LibraryEntry<Mode>, Libr
 
     constructor(leaf: WorkspaceLeaf) {
         super(leaf);
+    }
+
+    /**
+     * Override createRenderer to use LocationListRenderer for locations mode.
+     */
+    protected createRenderer(mode: Mode, container: HTMLElement): GenericListRenderer<Mode, LibraryEntry<Mode>, LibraryActionContext> {
+        const rendererConfig: GenericListRendererConfig<Mode, LibraryEntry<Mode>, LibraryActionContext> = {
+            mode,
+            source: this.config.dataSources[mode],
+            schema: this.config.schemas[mode],
+            viewConfig: this.config.viewConfigs[mode],
+            watchers: this.watchers,
+        };
+
+        // Use custom LocationListRenderer for locations mode
+        if (mode === "locations") {
+            return new LocationListRenderer(
+                this.app,
+                container,
+                rendererConfig as any // Type assertion needed due to Mode generics
+            ) as any;
+        }
+
+        // Use default GenericListRenderer for all other modes
+        return new GenericListRenderer(this.app, container, rendererConfig);
     }
 }
 

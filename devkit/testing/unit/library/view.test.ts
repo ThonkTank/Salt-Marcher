@@ -14,6 +14,7 @@ const SOURCE_LABELS: Record<Mode, string> = {
     regions: "SaltMarcher/Regions.md",
     factions: "SaltMarcher/Factions/",
     calendars: "SaltMarcher/Calendars/",
+    locations: "SaltMarcher/Locations/",
 };
 
 vi.mock("src/workmodes/library/core/sources", () => ({
@@ -157,6 +158,7 @@ describe("LibraryView copy", () => {
             LIBRARY_COPY.modes.regions,
             LIBRARY_COPY.modes.factions,
             LIBRARY_COPY.modes.calendars,
+            LIBRARY_COPY.modes.locations,
         ]);
 
         const search = root.querySelector("input[type=\"text\"]");
@@ -172,7 +174,7 @@ describe("LibraryView copy", () => {
     it("updates the source description when switching modes", async () => {
         await view.onOpen();
         const root = (view as unknown as { contentEl: HTMLElement }).contentEl;
-        const [_, __, ___, ____, terrainsButton, regionsButton, ______, ________] = Array.from(root.querySelectorAll(".sm-browse-header button"));
+        const [_, __, ___, ____, terrainsButton, regionsButton, ______, ________, _________] = Array.from(root.querySelectorAll(".sm-browse-header button"));
 
         terrainsButton.dispatchEvent(new Event("click"));
         await flush();

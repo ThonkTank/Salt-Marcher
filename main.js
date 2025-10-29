@@ -19625,6 +19625,71 @@ var init_create_spec9 = __esm({
 });
 
 // src/workmodes/library/locations/tree-builder.ts
+function buildLocationTree(locations) {
+  const locationMap = /* @__PURE__ */ new Map();
+  for (const loc of locations) {
+    locationMap.set(loc.name, loc);
+  }
+  function isInCycle(locName) {
+    const visited = /* @__PURE__ */ new Set();
+    let current = locName;
+    while (current) {
+      if (visited.has(current)) {
+        return true;
+      }
+      visited.add(current);
+      const loc = locationMap.get(current);
+      if (!loc || !loc.parent || loc.parent.trim() === "") {
+        return false;
+      }
+      current = loc.parent;
+    }
+    return false;
+  }
+  const childrenMap = /* @__PURE__ */ new Map();
+  const roots = [];
+  for (const loc of locations) {
+    if (!loc.parent || loc.parent.trim() === "") {
+      roots.push(loc);
+    } else if (!locationMap.has(loc.parent)) {
+      roots.push(loc);
+    } else if (isInCycle(loc.name)) {
+      roots.push(loc);
+    } else {
+      if (!childrenMap.has(loc.parent)) {
+        childrenMap.set(loc.parent, []);
+      }
+      childrenMap.get(loc.parent).push(loc);
+    }
+  }
+  function buildNode(loc, depth, visited) {
+    if (visited.has(loc.name)) {
+      return null;
+    }
+    visited.add(loc.name);
+    const children = [];
+    const childLocations = childrenMap.get(loc.name) || [];
+    for (const child of childLocations) {
+      const childNode = buildNode(child, depth + 1, new Set(visited));
+      if (childNode !== null) {
+        children.push(childNode);
+      }
+    }
+    return {
+      location: loc,
+      children,
+      depth
+    };
+  }
+  const treeNodes = [];
+  for (const root of roots) {
+    const node = buildNode(root, 0, /* @__PURE__ */ new Set());
+    if (node !== null) {
+      treeNodes.push(node);
+    }
+  }
+  return treeNodes;
+}
 var init_tree_builder = __esm({
   "src/workmodes/library/locations/tree-builder.ts"() {
     "use strict";
@@ -19632,9 +19697,115 @@ var init_tree_builder = __esm({
 });
 
 // src/workmodes/library/locations/tree-view.ts
+var LOCATION_TYPE_ICONS, LocationTreeView;
 var init_tree_view = __esm({
   "src/workmodes/library/locations/tree-view.ts"() {
     "use strict";
+    LOCATION_TYPE_ICONS = {
+      "Stadt": "\u{1F3D9}\uFE0F",
+      "Dorf": "\u{1F3D8}\uFE0F",
+      "Weiler": "\u{1F3E1}",
+      "Geb\xE4ude": "\u{1F3E2}",
+      "Dungeon": "\u2694\uFE0F",
+      "Camp": "\u26FA",
+      "Landmark": "\u{1F5FF}",
+      "Ruine": "\u{1F3DA}\uFE0F",
+      "Festung": "\u{1F3F0}"
+    };
+    LocationTreeView = class {
+      constructor(containerEl, options = {}) {
+        this.currentNodes = [];
+        this.containerEl = containerEl;
+        this.expandedNodes = options.initialExpanded || /* @__PURE__ */ new Set();
+        this.options = options;
+      }
+      /**
+       * Renders the tree view with the given nodes.
+       */
+      render(nodes) {
+        this.currentNodes = nodes;
+        this.containerEl.empty();
+        if (nodes.length === 0) {
+          this.containerEl.createDiv({ cls: "sm-tree-empty", text: "Keine Orte vorhanden" });
+          return;
+        }
+        const treeContainer = this.containerEl.createDiv({ cls: this.options.containerClass || "sm-tree-view" });
+        for (const node of nodes) {
+          this.renderNode(treeContainer, node);
+        }
+      }
+      /**
+       * Recursively renders a tree node and its children.
+       */
+      renderNode(parentEl, node) {
+        const nodeEl = parentEl.createDiv({ cls: "sm-tree-node" });
+        nodeEl.style.paddingLeft = `${node.depth * 20}px`;
+        const contentEl = nodeEl.createDiv({ cls: "sm-tree-node-content" });
+        if (node.children.length > 0) {
+          const toggleBtn = contentEl.createSpan({ cls: "sm-tree-toggle" });
+          const isExpanded = this.expandedNodes.has(node.location.name);
+          toggleBtn.setText(isExpanded ? "\u25BC" : "\u25B6");
+          toggleBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            this.toggleNode(node.location.name);
+          });
+        } else {
+          contentEl.createSpan({ cls: "sm-tree-toggle sm-tree-toggle-empty", text: " " });
+        }
+        const icon = LOCATION_TYPE_ICONS[node.location.type] || "\u{1F4CD}";
+        contentEl.createSpan({ cls: "sm-tree-icon", text: icon });
+        const nameEl = contentEl.createSpan({ cls: "sm-tree-name", text: node.location.name });
+        nameEl.addEventListener("click", () => {
+          if (this.options.onLocationClick) {
+            this.options.onLocationClick(node.location.name);
+          }
+        });
+        if (node.location.owner_type && node.location.owner_type !== "none" && node.location.owner_name) {
+          const ownerBadge = contentEl.createSpan({ cls: "sm-tree-badge" });
+          ownerBadge.setText(`${node.location.owner_name}`);
+        }
+        if (this.expandedNodes.has(node.location.name)) {
+          for (const child of node.children) {
+            this.renderNode(parentEl, child);
+          }
+        }
+      }
+      /**
+       * Toggles a node's expanded state and re-renders.
+       */
+      toggleNode(name) {
+        if (this.expandedNodes.has(name)) {
+          this.expandedNodes.delete(name);
+        } else {
+          this.expandedNodes.add(name);
+        }
+        this.render(this.currentNodes);
+      }
+      /**
+       * Expands all nodes in the tree.
+       */
+      expandAll(nodes) {
+        const collectNames = (ns) => {
+          for (const node of ns) {
+            this.expandedNodes.add(node.location.name);
+            collectNames(node.children);
+          }
+        };
+        collectNames(nodes);
+      }
+      /**
+       * Collapses all nodes in the tree.
+       */
+      collapseAll() {
+        this.expandedNodes.clear();
+      }
+      /**
+       * Gets the current expanded state.
+       */
+      getExpandedNodes() {
+        return new Set(this.expandedNodes);
+      }
+    };
   }
 });
 
@@ -91090,6 +91261,117 @@ function describeLibrarySource(source) {
   return spec.description;
 }
 
+// src/workmodes/library/locations/location-list-renderer.ts
+init_generic_list_renderer();
+init_locations();
+var LocationListRenderer = class extends GenericListRenderer {
+  constructor(app, container, config) {
+    super(app, container, config);
+    this.viewMode = "list";
+  }
+  /**
+   * Sets the view mode and triggers re-render.
+   */
+  setViewMode(mode) {
+    if (this.viewMode !== mode) {
+      this.viewMode = mode;
+      this.render();
+    }
+  }
+  /**
+   * Gets the current view mode.
+   */
+  getViewMode() {
+    return this.viewMode;
+  }
+  /**
+   * Override render to add view mode toggle and conditional rendering.
+   */
+  render() {
+    if (this.isDisposed()) return;
+    const container = this.container;
+    container.empty();
+    this.renderViewModeToggle(container);
+    if (this.viewMode === "tree") {
+      this.renderTreeView(container);
+    } else {
+      this.renderInternal();
+    }
+  }
+  /**
+   * Renders the view mode toggle button.
+   */
+  renderViewModeToggle(container) {
+    const toggleContainer = container.createDiv({ cls: "sm-location-view-toggle" });
+    const listBtn = toggleContainer.createEl("button", {
+      cls: this.viewMode === "list" ? "sm-toggle-active" : "",
+      text: "\u{1F4CB} List"
+    });
+    const treeBtn = toggleContainer.createEl("button", {
+      cls: this.viewMode === "tree" ? "sm-toggle-active" : "",
+      text: "\u{1F333} Tree"
+    });
+    listBtn.addEventListener("click", () => {
+      this.setViewMode("list");
+    });
+    treeBtn.addEventListener("click", () => {
+      this.setViewMode("tree");
+    });
+  }
+  /**
+   * Renders locations in tree view.
+   */
+  renderTreeView(container) {
+    const entries = this.entries;
+    if (!entries || entries.length === 0) {
+      container.createDiv({ cls: "sm-tree-empty", text: "Keine Orte vorhanden" });
+      return;
+    }
+    const locations = entries.map((entry) => ({
+      name: entry.name,
+      type: entry.type || "Geb\xE4ude",
+      description: entry.description,
+      parent: entry.parent,
+      owner_type: entry.owner_type,
+      owner_name: entry.owner_name,
+      region: entry.region,
+      coordinates: entry.coordinates,
+      notes: entry.notes
+    }));
+    const treeNodes = buildLocationTree(locations);
+    this.treeContainer = container.createDiv({ cls: "sm-location-tree-container" });
+    this.treeView = new LocationTreeView(this.treeContainer, {
+      onLocationClick: (locationName) => {
+        this.handleLocationClick(locationName);
+      }
+    });
+    this.treeView.render(treeNodes);
+  }
+  /**
+   * Handles click on a location in tree view.
+   * Opens the location details by triggering the "Open" action.
+   */
+  handleLocationClick(locationName) {
+    const entries = this.entries;
+    const entry = entries.find((e) => e.name === locationName);
+    if (!entry) return;
+    const viewConfig = this.viewConfig;
+    const actionContext = this.createActionContext();
+    const openAction = viewConfig.actions?.find((a) => a.id === "open");
+    if (openAction) {
+      openAction.handler(entry, actionContext);
+    }
+  }
+  /**
+   * Override destroy to clean up tree view.
+   */
+  destroy() {
+    this.treeView = void 0;
+    this.treeContainer = void 0;
+    super.destroy();
+  }
+};
+
 // src/workmodes/library/view.ts
 var LIBRARY_COPY = {
   title: "Library",
@@ -91103,20 +91385,42 @@ var LIBRARY_COPY = {
     terrains: "Terrains",
     regions: "Regions",
     factions: "Factions",
-    calendars: "Calendars"
+    calendars: "Calendars",
+    locations: "Locations"
   },
   sources: {
     prefix: "Source: "
   }
 };
 var VIEW_LIBRARY = "salt-library";
-var LIBRARY_MODES = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars"];
+var LIBRARY_MODES = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars", "locations"];
 var _LibraryView = class _LibraryView extends TabbedBrowseView {
   get config() {
     return _LibraryView.LIBRARY_CONFIG;
   }
   constructor(leaf) {
     super(leaf);
+  }
+  /**
+   * Override createRenderer to use LocationListRenderer for locations mode.
+   */
+  createRenderer(mode, container) {
+    const rendererConfig = {
+      mode,
+      source: this.config.dataSources[mode],
+      schema: this.config.schemas[mode],
+      viewConfig: this.config.viewConfigs[mode],
+      watchers: this.watchers
+    };
+    if (mode === "locations") {
+      return new LocationListRenderer(
+        this.app,
+        container,
+        rendererConfig
+        // Type assertion needed due to Mode generics
+      );
+    }
+    return new GenericListRenderer(this.app, container, rendererConfig);
   }
 };
 _LibraryView.LIBRARY_CONFIG = {
