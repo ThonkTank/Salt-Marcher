@@ -315,7 +315,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 4 ✅ Event Engine Complete & Tested | Tests: 365/367 (99.5%) | **Next:** Phase 5 - Loot Generator
+**Status:** Phase 5 ⏳ Loot Generator (3/5 Complete) | Tests: 401/402 (99.75%) | **Next:** Phase 5.4 - Inherent Creature Loot
 
 **Abgeschlossen:**
 - **Phase 0-2:** Tags/Schemas, Store Platform, Encounter System (Travel→Combat E2E)
@@ -325,8 +325,12 @@ Ziele:
 - **Phase 4.3.3:** Timeline View (ItemView, Filter/Sort, Read/Unread, +14 Tests, Ribbon+Command)
 - **Phase 4.3.4:** Inbox StatusBar Widget (Reactive count, Menu, Mark-as-read, +10 Tests)
 - **Phase 4.4:** Integration Tests (E2E Hook Execution → Timeline Recording, +13 Tests)
+- **Phase 5.1:** Loot Types & Interfaces (ItemRarity, LootTable, GenerationContext/Config, +0 Tests)
+- **Phase 5.2:** Gold Calculation (XP-based formula, level multipliers, rule modifiers, +21 Tests)
+- **Phase 5.3:** Item Generation (Tag filtering, rarity limits, weighted selection, +16 Tests)
 
 **Nächste Schritte:**
-- **Phase 5:** Loot Generator - Tag-based generation, XP-scaling, inherent creature loot, gold calculation
+- **Phase 5.4:** Inherent Creature Loot - Creature-specific drops from statblocks (dragon scales, drow poison, etc.)
+- **Phase 5.5:** Integration & Full Tests - Integrate with Encounter system, E2E loot generation tests
 - **Phase 6:** Audio System - Playlist manager, auto-selection (terrain/weather/faction), fade transitions
 - **Release:** Final polish, documentation, performance optimization
