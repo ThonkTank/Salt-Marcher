@@ -88953,7 +88953,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian43.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian44.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -88966,7 +88966,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian43.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian44.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -88984,7 +88984,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian43.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian44.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -89000,7 +89000,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian43.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian44.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -89026,19 +89026,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian43.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian44.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger2.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger2.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian43.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian44.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger2.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger2.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian43.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian44.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -89050,7 +89050,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian43.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian44.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -89067,7 +89067,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian43.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian44.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -89157,11 +89157,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, all`);
   }
 }
-var import_obsidian43, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
+var import_obsidian44, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian43 = require("obsidian");
+    import_obsidian44 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -89188,16 +89188,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian44.TFolder)) {
+  if (!(folder instanceof import_obsidian45.TFolder)) {
     logger2.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian44.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian45.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian44.TFolder) {
+      } else if (child instanceof import_obsidian45.TFolder) {
         collectFiles(child);
       }
     }
@@ -89234,7 +89234,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian44.TFile) {
+  if (existingFile instanceof import_obsidian45.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -89302,7 +89302,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian44.TFile) {
+  if (existingFile instanceof import_obsidian45.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -89324,11 +89324,11 @@ async function generateAllIndexes(app) {
   ]);
   logger2.log("[Index] All indexes generated successfully");
 }
-var import_obsidian44, SALTMARCHER_DIR;
+var import_obsidian45, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian44 = require("obsidian");
+    import_obsidian45 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -91308,7 +91308,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian45 = require("obsidian");
+var import_obsidian46 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
@@ -94058,6 +94058,705 @@ ${body}`;
   }
 };
 
+// src/features/events/hook-executor.ts
+init_plugin_logger();
+var HookHandlerRegistry = class {
+  constructor() {
+    this.handlers = /* @__PURE__ */ new Map();
+  }
+  register(handler) {
+    this.handlers.set(handler.type, handler);
+    logger2.info("[hook-executor] Registered hook handler", { type: handler.type });
+  }
+  get(type) {
+    return this.handlers.get(type);
+  }
+  getAll() {
+    return Array.from(this.handlers.values());
+  }
+  clear() {
+    this.handlers.clear();
+  }
+};
+var HookExecutor = class {
+  constructor() {
+    this.registry = new HookHandlerRegistry();
+  }
+  /**
+   * Register a hook handler
+   */
+  registerHandler(handler) {
+    this.registry.register(handler);
+  }
+  /**
+   * Execute hooks from triggered events and phenomena
+   */
+  async executeHooks(events, phenomena, context) {
+    logger2.info("[hook-executor] Executing hooks", {
+      eventCount: events.length,
+      phenomenonCount: phenomena.length,
+      scope: context.scope
+    });
+    for (const event of events) {
+      if (!event.hooks || event.hooks.length === 0) continue;
+      const eventContext = {
+        ...context,
+        event
+      };
+      for (const hookDesc of event.hooks) {
+        await this.executeHook(hookDesc, eventContext);
+      }
+    }
+    for (const phenomenon of phenomena) {
+      const hooks = phenomenon.hooks;
+      if (!hooks || hooks.length === 0) continue;
+      const phenomenonContext = {
+        ...context,
+        phenomenon
+      };
+      for (const hookDesc of hooks) {
+        await this.executeHook(hookDesc, phenomenonContext);
+      }
+    }
+  }
+  /**
+   * Execute a single hook descriptor
+   */
+  async executeHook(descriptor, context) {
+    const handler = this.registry.get(descriptor.type);
+    if (!handler) {
+      logger2.warn("[hook-executor] No handler registered for hook type", {
+        type: descriptor.type,
+        hookId: descriptor.id
+      });
+      return;
+    }
+    if (!handler.canHandle(descriptor)) {
+      logger2.warn("[hook-executor] Handler cannot handle hook", {
+        type: descriptor.type,
+        hookId: descriptor.id
+      });
+      return;
+    }
+    try {
+      logger2.info("[hook-executor] Executing hook", {
+        type: descriptor.type,
+        hookId: descriptor.id,
+        config: descriptor.config
+      });
+      await handler.execute(descriptor, context);
+      logger2.info("[hook-executor] Hook executed successfully", {
+        type: descriptor.type,
+        hookId: descriptor.id
+      });
+    } catch (error) {
+      logger2.error("[hook-executor] Hook execution failed", {
+        type: descriptor.type,
+        hookId: descriptor.id,
+        error
+      });
+    }
+  }
+  /**
+   * Clear all registered handlers (for testing)
+   */
+  clear() {
+    this.registry.clear();
+  }
+};
+var globalHookExecutor = new HookExecutor();
+
+// src/features/events/hooks/notification-handler.ts
+init_plugin_logger();
+
+// src/features/events/hooks/weather-handler.ts
+init_plugin_logger();
+
+// src/features/events/hooks/faction-handler.ts
+init_plugin_logger();
+
+// src/features/events/hooks/location-handler.ts
+init_plugin_logger();
+
+// src/features/events/event-history-types.ts
+function isTriggeredEvent(entry) {
+  return "eventId" in entry;
+}
+function createInboxItem(entry) {
+  if (isTriggeredEvent(entry)) {
+    return {
+      entryId: entry.id,
+      type: "event",
+      title: entry.title,
+      timestamp: entry.timestamp,
+      triggeredAt: entry.triggeredAt,
+      priority: entry.priority ?? 50,
+      category: entry.category,
+      read: false
+    };
+  } else {
+    return {
+      entryId: entry.id,
+      type: "phenomenon",
+      title: entry.title ?? entry.phenomenonId,
+      timestamp: entry.timestamp,
+      triggeredAt: entry.triggeredAt,
+      priority: 50,
+      // Default priority for phenomena
+      read: false
+    };
+  }
+}
+
+// src/features/events/event-history-store.ts
+init_plugin_logger();
+var Observable = class {
+  constructor(initialValue) {
+    this.subscribers = /* @__PURE__ */ new Set();
+    this.value = initialValue;
+  }
+  subscribe(subscriber) {
+    this.subscribers.add(subscriber);
+    subscriber(this.value);
+    return () => this.subscribers.delete(subscriber);
+  }
+  set(newValue) {
+    this.value = newValue;
+    this.subscribers.forEach((subscriber) => subscriber(newValue));
+  }
+  update(updater) {
+    this.set(updater(this.value));
+  }
+  getValue() {
+    return this.value;
+  }
+};
+var EventHistoryStore = class {
+  constructor(storageKey = "salt-marcher-event-history") {
+    this.storageKey = storageKey;
+    this.timeline = new Observable([]);
+    this.readEntries = new Observable(/* @__PURE__ */ new Set());
+    this.loadFromStorage();
+  }
+  /**
+   * Add triggered event to timeline
+   */
+  addEvent(entry) {
+    this.timeline.update((entries) => {
+      const updated = [...entries, entry];
+      logger2.info("[event-history-store] Event added to timeline", {
+        entryId: entry.id,
+        eventId: entry.eventId,
+        title: entry.title,
+        totalEntries: updated.length
+      });
+      this.saveToStorage(updated, this.getCurrentReadEntries());
+      return updated;
+    });
+  }
+  /**
+   * Add triggered phenomenon to timeline
+   */
+  addPhenomenon(entry) {
+    this.timeline.update((entries) => {
+      const updated = [...entries, entry];
+      logger2.info("[event-history-store] Phenomenon added to timeline", {
+        entryId: entry.id,
+        phenomenonId: entry.phenomenonId,
+        title: entry.title,
+        totalEntries: updated.length
+      });
+      this.saveToStorage(updated, this.getCurrentReadEntries());
+      return updated;
+    });
+  }
+  /**
+   * Mark entry as read
+   */
+  markAsRead(entryId) {
+    this.readEntries.update((entries) => {
+      const updated = new Set(entries);
+      updated.add(entryId);
+      logger2.info("[event-history-store] Entry marked as read", { entryId });
+      this.saveToStorage(this.getCurrentTimeline(), updated);
+      return updated;
+    });
+  }
+  /**
+   * Mark entry as unread
+   */
+  markAsUnread(entryId) {
+    this.readEntries.update((entries) => {
+      const updated = new Set(entries);
+      updated.delete(entryId);
+      logger2.info("[event-history-store] Entry marked as unread", { entryId });
+      this.saveToStorage(this.getCurrentTimeline(), updated);
+      return updated;
+    });
+  }
+  /**
+   * Mark all entries as read
+   */
+  markAllAsRead() {
+    const timeline = this.getCurrentTimeline();
+    this.readEntries.set(new Set(timeline.map((e) => e.id)));
+    logger2.info("[event-history-store] All entries marked as read", {
+      count: timeline.length
+    });
+    this.saveToStorage(timeline, this.getCurrentReadEntries());
+  }
+  /**
+   * Clear all timeline entries
+   */
+  clear() {
+    this.timeline.set([]);
+    this.readEntries.set(/* @__PURE__ */ new Set());
+    logger2.info("[event-history-store] Timeline cleared");
+    this.saveToStorage([], /* @__PURE__ */ new Set());
+  }
+  /**
+   * Get timeline (all entries)
+   */
+  getTimeline() {
+    return this.timeline.getValue();
+  }
+  /**
+   * Subscribe to timeline changes
+   */
+  subscribeTimeline(callback) {
+    return this.timeline.subscribe(callback);
+  }
+  /**
+   * Get filtered timeline
+   */
+  getFilteredTimeline(filter) {
+    const timeline = this.timeline.getValue();
+    return timeline.filter((entry) => {
+      if (filter.scope && entry.scope !== filter.scope) return false;
+      if (filter.travelId !== void 0 && entry.travelId !== filter.travelId) return false;
+      if (filter.category && isTriggeredEvent(entry) && entry.category !== filter.category) return false;
+      if (filter.eventType && isTriggeredEvent(entry) && entry.eventType !== filter.eventType) return false;
+      return true;
+    });
+  }
+  /**
+   * Get sorted timeline
+   */
+  getSortedTimeline(sortOptions) {
+    const timeline = this.timeline.getValue();
+    const sorted = [...timeline];
+    sorted.sort((a, b) => {
+      let compareA;
+      let compareB;
+      switch (sortOptions.field) {
+        case "timestamp":
+          compareA = a.timestamp.year * 1e4 + a.timestamp.day;
+          compareB = b.timestamp.year * 1e4 + b.timestamp.day;
+          break;
+        case "triggeredAt":
+          compareA = a.triggeredAt.getTime();
+          compareB = b.triggeredAt.getTime();
+          break;
+        case "priority":
+          compareA = isTriggeredEvent(a) ? a.priority ?? 50 : 50;
+          compareB = isTriggeredEvent(b) ? b.priority ?? 50 : 50;
+          break;
+        case "title":
+          compareA = isTriggeredEvent(a) ? a.title : a.title ?? "";
+          compareB = isTriggeredEvent(b) ? b.title : b.title ?? "";
+          break;
+        default:
+          return 0;
+      }
+      if (compareA < compareB) return sortOptions.order === "asc" ? -1 : 1;
+      if (compareA > compareB) return sortOptions.order === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }
+  /**
+   * Get inbox (unread items sorted by priority)
+   */
+  getInbox() {
+    const timeline = this.timeline.getValue();
+    const readEntries = this.readEntries.getValue();
+    const unreadEntries = timeline.filter((entry) => !readEntries.has(entry.id));
+    const inboxItems = unreadEntries.map((entry) => createInboxItem(entry));
+    inboxItems.sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      return b.triggeredAt.getTime() - a.triggeredAt.getTime();
+    });
+    return inboxItems;
+  }
+  /**
+   * Subscribe to inbox changes
+   */
+  subscribeInbox(callback) {
+    const updateInbox = () => callback(this.getInbox());
+    const unsubTimeline = this.timeline.subscribe(updateInbox);
+    const unsubRead = this.readEntries.subscribe(updateInbox);
+    return () => {
+      unsubTimeline();
+      unsubRead();
+    };
+  }
+  /**
+   * Get inbox count
+   */
+  getInboxCount() {
+    return this.getInbox().length;
+  }
+  /**
+   * Subscribe to inbox count changes
+   */
+  subscribeInboxCount(callback) {
+    return this.subscribeInbox((inbox) => callback(inbox.length));
+  }
+  /**
+   * Get read status for an entry
+   */
+  isRead(entryId) {
+    return this.readEntries.getValue().has(entryId);
+  }
+  /**
+   * Subscribe to read status changes
+   */
+  subscribeReadStatus(entryId, callback) {
+    return this.readEntries.subscribe((readEntries) => callback(readEntries.has(entryId)));
+  }
+  // Private helper methods
+  getCurrentTimeline() {
+    return this.timeline.getValue();
+  }
+  getCurrentReadEntries() {
+    return this.readEntries.getValue();
+  }
+  saveToStorage(timeline, readEntries) {
+    try {
+      const data = {
+        timeline,
+        readEntries: Array.from(readEntries),
+        version: 1
+      };
+      localStorage.setItem(this.storageKey, JSON.stringify(data));
+    } catch (error) {
+      logger2.error("[event-history-store] Failed to save to storage", error);
+    }
+  }
+  loadFromStorage() {
+    try {
+      const stored = localStorage.getItem(this.storageKey);
+      if (!stored) return;
+      const data = JSON.parse(stored);
+      if (data.version === 1) {
+        this.timeline.set(data.timeline || []);
+        this.readEntries.set(new Set(data.readEntries || []));
+        logger2.info("[event-history-store] Loaded from storage", {
+          timelineCount: data.timeline?.length || 0,
+          readCount: data.readEntries?.length || 0
+        });
+      }
+    } catch (error) {
+      logger2.error("[event-history-store] Failed to load from storage", error);
+    }
+  }
+};
+var globalEventHistoryStore = new EventHistoryStore();
+
+// src/features/events/executing-hook-gateway.ts
+init_domain();
+init_plugin_logger();
+
+// src/features/events/timeline-view.ts
+var import_obsidian42 = require("obsidian");
+init_ui();
+init_plugin_logger();
+var VIEW_TYPE_TIMELINE = "event-timeline-view";
+var TimelineView = class extends import_obsidian42.ItemView {
+  constructor(leaf, store) {
+    super(leaf);
+    // Current filter/sort state
+    this.currentFilter = {};
+    this.currentSort = {
+      field: "triggeredAt",
+      order: "desc"
+    };
+    this.store = store;
+  }
+  getViewType() {
+    return VIEW_TYPE_TIMELINE;
+  }
+  getDisplayText() {
+    return "Event Timeline";
+  }
+  getIcon() {
+    return "clock";
+  }
+  async onOpen() {
+    const content = this.contentEl;
+    content.empty();
+    content.addClass("sm-timeline-view");
+    this.header = createWorkmodeHeader(content, {
+      title: "Event Timeline",
+      search: {
+        placeholder: "Search events\u2026",
+        disabled: true
+        // TODO: Enable search in future iteration
+      },
+      action: {
+        label: "Clear timeline",
+        onClick: () => this.handleClearTimeline()
+      }
+    });
+    this.rootEl = content.createDiv({ cls: "sm-timeline-container" });
+    this.renderFilterBar();
+    this.renderSortBar();
+    this.timelineListEl = this.rootEl.createDiv({ cls: "sm-timeline-list" });
+    this.emptyStateEl = this.rootEl.createDiv({
+      cls: "sm-timeline-empty",
+      text: "No events have been triggered yet. Travel mode and calendar advances will populate this timeline."
+    });
+    this.unsubscribeTimeline = this.store.subscribeTimeline(() => {
+      this.renderTimeline();
+    });
+    this.renderTimeline();
+    logger2.info("[timeline-view] View opened");
+  }
+  async onClose() {
+    this.unsubscribeTimeline?.();
+    this.unsubscribeTimeline = void 0;
+    this.header?.destroy();
+    this.header = void 0;
+    this.contentEl.removeClass("sm-timeline-view");
+    logger2.info("[timeline-view] View closed");
+  }
+  /**
+   * Render filter controls
+   */
+  renderFilterBar() {
+    if (!this.rootEl) return;
+    this.filterBarEl = this.rootEl.createDiv({ cls: "sm-timeline-filters" });
+    const scopeLabel = this.filterBarEl.createEl("label", {
+      cls: "sm-timeline-filter-label",
+      text: "Scope:"
+    });
+    const scopeSelect = this.filterBarEl.createEl("select", {
+      cls: "sm-timeline-filter-select"
+    });
+    scopeSelect.createEl("option", { value: "", text: "All" });
+    scopeSelect.createEl("option", { value: "global", text: "Global" });
+    scopeSelect.createEl("option", { value: "travel", text: "Travel" });
+    scopeSelect.addEventListener("change", () => {
+      this.currentFilter.scope = scopeSelect.value === "" ? void 0 : scopeSelect.value;
+      this.renderTimeline();
+    });
+    const categoryLabel = this.filterBarEl.createEl("label", {
+      cls: "sm-timeline-filter-label",
+      text: "Category:"
+    });
+    const categoryInput = this.filterBarEl.createEl("input", {
+      cls: "sm-timeline-filter-input",
+      attr: { type: "text", placeholder: "e.g., festival" }
+    });
+    categoryInput.addEventListener("input", () => {
+      this.currentFilter.category = categoryInput.value.trim() || void 0;
+      this.renderTimeline();
+    });
+    const clearButton = this.filterBarEl.createEl("button", {
+      cls: "sm-timeline-filter-clear",
+      text: "Clear filters"
+    });
+    clearButton.addEventListener("click", () => {
+      scopeSelect.value = "";
+      categoryInput.value = "";
+      this.currentFilter = {};
+      this.renderTimeline();
+    });
+  }
+  /**
+   * Render sort controls
+   */
+  renderSortBar() {
+    if (!this.rootEl) return;
+    this.sortBarEl = this.rootEl.createDiv({ cls: "sm-timeline-sort" });
+    const sortLabel = this.sortBarEl.createEl("label", {
+      cls: "sm-timeline-sort-label",
+      text: "Sort by:"
+    });
+    const sortFieldSelect = this.sortBarEl.createEl("select", {
+      cls: "sm-timeline-sort-select"
+    });
+    sortFieldSelect.createEl("option", { value: "triggeredAt", text: "Triggered time" });
+    sortFieldSelect.createEl("option", { value: "timestamp", text: "Event date" });
+    sortFieldSelect.createEl("option", { value: "priority", text: "Priority" });
+    sortFieldSelect.createEl("option", { value: "title", text: "Title" });
+    sortFieldSelect.value = this.currentSort.field;
+    sortFieldSelect.addEventListener("change", () => {
+      this.currentSort.field = sortFieldSelect.value;
+      this.renderTimeline();
+    });
+    const sortOrderSelect = this.sortBarEl.createEl("select", {
+      cls: "sm-timeline-sort-select"
+    });
+    sortOrderSelect.createEl("option", { value: "desc", text: "Newest first" });
+    sortOrderSelect.createEl("option", { value: "asc", text: "Oldest first" });
+    sortOrderSelect.value = this.currentSort.order;
+    sortOrderSelect.addEventListener("change", () => {
+      this.currentSort.order = sortOrderSelect.value;
+      this.renderTimeline();
+    });
+  }
+  /**
+   * Render timeline entries
+   */
+  renderTimeline() {
+    if (!this.timelineListEl || !this.emptyStateEl) return;
+    const filteredEntries = this.store.getFilteredTimeline(this.currentFilter);
+    const sortedEntries = this.sortEntries(filteredEntries, this.currentSort);
+    this.timelineListEl.empty();
+    if (sortedEntries.length === 0) {
+      this.emptyStateEl.removeClass("sm-timeline-hidden");
+      return;
+    }
+    this.emptyStateEl.addClass("sm-timeline-hidden");
+    for (const entry of sortedEntries) {
+      this.renderEntry(entry);
+    }
+    logger2.info("[timeline-view] Rendered timeline", {
+      total: sortedEntries.length,
+      filter: this.currentFilter,
+      sort: this.currentSort
+    });
+  }
+  /**
+   * Sort timeline entries (helper because we need to handle both timestamp and triggeredAt)
+   */
+  sortEntries(entries, sortOptions) {
+    const sorted = [...entries];
+    sorted.sort((a, b) => {
+      let compareA;
+      let compareB;
+      switch (sortOptions.field) {
+        case "timestamp":
+          compareA = a.timestamp.year * 1e4 + a.timestamp.day;
+          compareB = b.timestamp.year * 1e4 + b.timestamp.day;
+          break;
+        case "triggeredAt":
+          compareA = a.triggeredAt.getTime();
+          compareB = b.triggeredAt.getTime();
+          break;
+        case "priority":
+          compareA = isTriggeredEvent(a) ? a.priority ?? 50 : 50;
+          compareB = isTriggeredEvent(b) ? b.priority ?? 50 : 50;
+          break;
+        case "title":
+          compareA = isTriggeredEvent(a) ? a.title : a.title ?? "";
+          compareB = isTriggeredEvent(b) ? b.title : b.title ?? "";
+          break;
+        default:
+          return 0;
+      }
+      if (compareA < compareB) return sortOptions.order === "asc" ? -1 : 1;
+      if (compareA > compareB) return sortOptions.order === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }
+  /**
+   * Render a single timeline entry
+   */
+  renderEntry(entry) {
+    if (!this.timelineListEl) return;
+    const entryEl = this.timelineListEl.createDiv({ cls: "sm-timeline-entry" });
+    const isRead = this.store.isRead(entry.id);
+    if (!isRead) {
+      entryEl.addClass("sm-timeline-entry--unread");
+    }
+    const headerEl = entryEl.createDiv({ cls: "sm-timeline-entry-header" });
+    const typeEl = headerEl.createDiv({ cls: "sm-timeline-entry-type" });
+    if (isTriggeredEvent(entry)) {
+      typeEl.setText("Event");
+      typeEl.addClass("sm-timeline-entry-type--event");
+    } else {
+      typeEl.setText("Phenomenon");
+      typeEl.addClass("sm-timeline-entry-type--phenomenon");
+    }
+    const titleEl = headerEl.createDiv({ cls: "sm-timeline-entry-title" });
+    const title = isTriggeredEvent(entry) ? entry.title : entry.title ?? entry.phenomenonId;
+    titleEl.setText(title);
+    if (isTriggeredEvent(entry) && entry.category) {
+      const categoryEl = headerEl.createDiv({ cls: "sm-timeline-entry-category" });
+      categoryEl.setText(entry.category);
+    }
+    if (isTriggeredEvent(entry) && entry.priority !== void 0) {
+      const priorityEl = headerEl.createDiv({ cls: "sm-timeline-entry-priority" });
+      priorityEl.setText(`Priority: ${entry.priority}`);
+    }
+    const metaEl = entryEl.createDiv({ cls: "sm-timeline-entry-meta" });
+    const timestampEl = metaEl.createDiv({ cls: "sm-timeline-entry-meta-item" });
+    timestampEl.createSpan({ cls: "label", text: "Event date: " });
+    timestampEl.createSpan({ cls: "value", text: formatTimestamp2(entry.timestamp) });
+    const triggeredAtEl = metaEl.createDiv({ cls: "sm-timeline-entry-meta-item" });
+    triggeredAtEl.createSpan({ cls: "label", text: "Triggered: " });
+    triggeredAtEl.createSpan({ cls: "value", text: formatDate(entry.triggeredAt) });
+    const scopeEl = metaEl.createDiv({ cls: "sm-timeline-entry-meta-item" });
+    scopeEl.createSpan({ cls: "label", text: "Scope: " });
+    scopeEl.createSpan({ cls: "value", text: entry.scope });
+    const reasonEl = metaEl.createDiv({ cls: "sm-timeline-entry-meta-item" });
+    reasonEl.createSpan({ cls: "label", text: "Reason: " });
+    reasonEl.createSpan({ cls: "value", text: entry.reason });
+    const actionsEl = entryEl.createDiv({ cls: "sm-timeline-entry-actions" });
+    if (!isRead) {
+      const markReadBtn = actionsEl.createEl("button", {
+        cls: "sm-timeline-btn sm-timeline-btn-primary",
+        text: "Mark as read"
+      });
+      markReadBtn.addEventListener("click", () => {
+        this.store.markAsRead(entry.id);
+        this.renderTimeline();
+      });
+    } else {
+      const markUnreadBtn = actionsEl.createEl("button", {
+        cls: "sm-timeline-btn",
+        text: "Mark as unread"
+      });
+      markUnreadBtn.addEventListener("click", () => {
+        this.store.markAsUnread(entry.id);
+        this.renderTimeline();
+      });
+    }
+  }
+  /**
+   * Handle clear timeline button
+   */
+  handleClearTimeline() {
+    const confirmed = window.confirm("Clear entire timeline? This cannot be undone.");
+    if (!confirmed) return;
+    this.store.clear();
+    logger2.info("[timeline-view] Timeline cleared by user");
+  }
+};
+function formatTimestamp2(timestamp) {
+  return `${timestamp.year}-${timestamp.monthId}-${String(timestamp.day).padStart(2, "0")}`;
+}
+function formatDate(date) {
+  return date.toLocaleString();
+}
+async function openTimelineView(app, store) {
+  const { workspace } = app;
+  const existingLeaves = workspace.getLeavesOfType(VIEW_TYPE_TIMELINE);
+  if (existingLeaves.length > 0) {
+    workspace.revealLeaf(existingLeaves[0]);
+    return;
+  }
+  const leaf = workspace.getLeaf(true);
+  await leaf.setViewState({
+    type: VIEW_TYPE_TIMELINE,
+    active: true
+  });
+  workspace.revealLeaf(leaf);
+}
+
 // src/workmodes/view-manifest.ts
 var VIEW_MANIFEST = [
   {
@@ -94167,6 +94866,26 @@ var VIEW_MANIFEST = [
     viewIcon: "map",
     createView: (leaf) => new DungeonView(leaf)
     // No activation - opened programmatically from Library
+  },
+  {
+    viewType: VIEW_TYPE_TIMELINE,
+    integrationId: "obsidian:timeline-view",
+    displayName: "Event Timeline",
+    viewIcon: "clock",
+    createView: (leaf) => new TimelineView(leaf, globalEventHistoryStore),
+    activation: {
+      open: (app) => openTimelineView(app, globalEventHistoryStore),
+      ribbon: {
+        icon: "clock",
+        title: "Open Event Timeline"
+      },
+      commands: [
+        {
+          id: "open-event-timeline",
+          name: "Open Event Timeline"
+        }
+      ]
+    }
   }
 ];
 
@@ -97843,7 +98562,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian42 = require("obsidian");
+var import_obsidian43 = require("obsidian");
 init_plugin_logger();
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
@@ -97853,7 +98572,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian42.Notice(userMessage);
+  new import_obsidian43.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -98164,7 +98883,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian45.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian46.Plugin {
   async onload() {
     await logger2.init(this.app);
     logger2.log("Plugin loading...");

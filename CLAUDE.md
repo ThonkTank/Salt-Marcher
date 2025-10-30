@@ -315,8 +315,16 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 4.3 ⏳ | Tests: 328/330 (99.4%) | **Next:** Timeline/Inbox UI
+**Status:** Phase 4.3 ⏳ | Tests: 328/330 (99.4%) | **Next:** Timeline/Inbox UI Components
 
-**✅ Phase 0-4.2:** Tags/Schemas, Stores, Encounter, Locations, Dungeons, Hook System (4 Handlers)
-**✅ Phase 4.3.1-2:** Event History (Timeline/Inbox Store, Observable Pattern, +13 Tests)
-**⏳ Phase 4.3.3-6:** Timeline/Inbox UI, Integration Tests, Loot, Audio, Release
+**Abgeschlossen:**
+- **Phase 0-2:** Tags/Schemas, Store Platform, Encounter System (Travel→Combat E2E)
+- **Phase 3:** Locations (CRUD/Tree/Markers), Dungeons (Grid/Rooms/Doors/Features/Tokens)
+- **Phase 4.1-2:** Hook Executor + 4 Handlers (Notification/Weather/Faction/Location)
+- **Phase 4.3.1-2:** Event History Store (Timeline/Inbox, Observable, LocalStorage, +13 Tests)
+
+**Nächste Schritte:**
+- **Phase 4.3.3:** Timeline View - Chronologische Event-Liste mit Filter/Sort (UI-only, kein Backend)
+- **Phase 4.3.4:** Inbox Widget - Badge mit unread count + dropdown (UI-only, nutzt EventHistoryStore)
+- **Phase 4.4:** Integration Tests - E2E Hook Execution → Timeline Recording Flow
+- **Phase 5:** Loot Generator (Tags, XP-scaling) + **Phase 6:** Audio System + Release

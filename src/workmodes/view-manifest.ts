@@ -7,6 +7,7 @@ import { LibraryView, VIEW_LIBRARY, openLibrary } from "./library/view";
 import { AlmanacView, VIEW_ALMANAC, openAlmanac } from "./almanac";
 import { SessionRunnerView, VIEW_SESSION_RUNNER, openSessionRunner } from "./session-runner";
 import { DungeonView, VIEW_TYPE_DUNGEON } from "./library/locations/dungeon-view";
+import { TimelineView, VIEW_TYPE_TIMELINE, openTimelineView, globalEventHistoryStore } from "../features/events";
 import type { IntegrationId } from "../app/integration-telemetry";
 
 export interface ViewActivationManifest {
@@ -152,5 +153,25 @@ export const VIEW_MANIFEST: ReadonlyArray<ViewManifestEntry> = [
         viewIcon: "map",
         createView: (leaf) => new DungeonView(leaf),
         // No activation - opened programmatically from Library
+    },
+    {
+        viewType: VIEW_TYPE_TIMELINE,
+        integrationId: "obsidian:timeline-view",
+        displayName: "Event Timeline",
+        viewIcon: "clock",
+        createView: (leaf) => new TimelineView(leaf, globalEventHistoryStore),
+        activation: {
+            open: (app) => openTimelineView(app, globalEventHistoryStore),
+            ribbon: {
+                icon: "clock",
+                title: "Open Event Timeline",
+            },
+            commands: [
+                {
+                    id: "open-event-timeline",
+                    name: "Open Event Timeline",
+                },
+            ],
+        },
     },
 ] as const;
