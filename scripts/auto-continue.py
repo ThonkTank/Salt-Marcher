@@ -46,6 +46,10 @@ class FilteredLogFile:
         self.last_line = ""
         self.line_repeat_count = 0
 
+        # Track tool calls to avoid logging redraws
+        self.seen_tool_calls = set()  # Track tool call signatures
+        self.current_tool_output = []  # Buffer for current tool output
+
         # Patterns that indicate meaningful content
         self.meaningful_patterns = [
             r'^[●○■□▪▫►▸•]',  # Bullet points, markers
@@ -93,6 +97,7 @@ class FilteredLogFile:
             r'^[·•]\s+Pondering',  # Bullet + "Pondering"
             r'esc to interrupt',  # UI hints
             r'^\s*\(esc to interrupt',  # UI hints with parens
+            r'⎿.*Running',  # Tool output "Running..." (intermediate state)
         ]
 
         for pattern in ui_noise_patterns:
@@ -105,15 +110,21 @@ class FilteredLogFile:
             if not any(re.search(pattern, clean, re.IGNORECASE) for pattern in self.meaningful_patterns):
                 return
 
-        # Detect repeated lines (UI redraws) - be more aggressive
-        if clean.strip() == self.last_line.strip():
-            self.line_repeat_count += 1
-            # Skip if line repeats even once (screen redraws)
-            if self.line_repeat_count > 0:
+        # Track tool calls to avoid redraws
+        tool_call_match = re.match(r'^[●○]\s+(Read|Bash|Write|Edit|Grep|Glob|Task)\((.*?)\)', clean)
+        if tool_call_match:
+            tool_signature = f"{tool_call_match.group(1)}:{tool_call_match.group(2)[:50]}"
+            if tool_signature in self.seen_tool_calls:
+                # Already logged this tool call, skip redraw
                 return
-        else:
-            self.line_repeat_count = 0
-            self.last_line = clean
+            self.seen_tool_calls.add(tool_signature)
+
+        # Create content hash to detect duplicate blocks
+        content_hash = hash(clean.strip())
+        if content_hash == hash(self.last_line.strip()):
+            return
+
+        self.last_line = clean
 
         # Check if line contains meaningful content
         is_meaningful = any(re.search(pattern, clean, re.IGNORECASE)
