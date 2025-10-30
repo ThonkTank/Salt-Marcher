@@ -81,11 +81,35 @@ class FilteredLogFile:
         if len(clean.strip()) < 3:
             return
 
-        # Detect repeated lines (UI redraws)
+        # Skip UI noise patterns
+        ui_noise_patterns = [
+            r'^[\s─]+$',  # Only lines/whitespace
+            r'Try ["\'].*["\']',  # "Try 'how do I log an error?'"
+            r'\? for shortcuts',  # UI hints
+            r'Thinking on \(tab to toggle\)',  # UI state
+            r'ctrl\+[a-z]',  # Keyboard shortcuts
+            r'^[✶✻✽✹✸✷✺]\s+Pondering',  # Spinner + "Pondering"
+            r'^[✶✻✽✹✸✷✺]\s+Sussing',  # Spinner + "Sussing"
+            r'^[·•]\s+Pondering',  # Bullet + "Pondering"
+            r'esc to interrupt',  # UI hints
+            r'^\s*\(esc to interrupt',  # UI hints with parens
+        ]
+
+        for pattern in ui_noise_patterns:
+            if re.search(pattern, clean, re.IGNORECASE):
+                return
+
+        # Skip progress indicators, spinners
+        if any(char in clean for char in ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏', '✶', '✻', '✽', '✹']):
+            # Unless it's meaningful content WITH a spinner (like "● Read(...)")
+            if not any(re.search(pattern, clean, re.IGNORECASE) for pattern in self.meaningful_patterns):
+                return
+
+        # Detect repeated lines (UI redraws) - be more aggressive
         if clean.strip() == self.last_line.strip():
             self.line_repeat_count += 1
-            # Skip if line repeats more than 2 times
-            if self.line_repeat_count > 2:
+            # Skip if line repeats even once (screen redraws)
+            if self.line_repeat_count > 0:
                 return
         else:
             self.line_repeat_count = 0
@@ -95,14 +119,9 @@ class FilteredLogFile:
         is_meaningful = any(re.search(pattern, clean, re.IGNORECASE)
                            for pattern in self.meaningful_patterns)
 
-        # Skip lines that are just UI noise
+        # Skip if not meaningful
         if not is_meaningful:
-            # Skip progress indicators, spinners, etc.
-            if any(char in clean for char in ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']):
-                return
-            # Skip pure whitespace lines
-            if clean.strip() == '':
-                return
+            return
 
         # Write with timestamp
         timestamp = datetime.now().strftime('%H:%M:%S')
