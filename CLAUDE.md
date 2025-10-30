@@ -315,16 +315,18 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 4 ✅ Event Engine Complete | Tests: 352/354 (99.4%) | **Next:** Integration Tests
+**Status:** Phase 4 ✅ Event Engine Complete & Tested | Tests: 365/367 (99.5%) | **Next:** Phase 5 - Loot Generator
 
 **Abgeschlossen:**
 - **Phase 0-2:** Tags/Schemas, Store Platform, Encounter System (Travel→Combat E2E)
 - **Phase 3:** Locations (CRUD/Tree/Markers), Dungeons (Grid/Rooms/Doors/Features/Tokens)
-- **Phase 4.1-2:** Hook Executor + 4 Handlers (Notification/Weather/Faction/Location)
+- **Phase 4.1-2:** Hook Executor + 4 Handlers (Notification/Weather/Faction/Location, +8 Tests)
 - **Phase 4.3.1-2:** Event History Store (Timeline/Inbox, Observable, LocalStorage, +13 Tests)
 - **Phase 4.3.3:** Timeline View (ItemView, Filter/Sort, Read/Unread, +14 Tests, Ribbon+Command)
 - **Phase 4.3.4:** Inbox StatusBar Widget (Reactive count, Menu, Mark-as-read, +10 Tests)
+- **Phase 4.4:** Integration Tests (E2E Hook Execution → Timeline Recording, +13 Tests)
 
 **Nächste Schritte:**
-- **Phase 4.4:** Integration Tests - E2E Hook Execution → Timeline Recording Flow (Vitest, Vault Mocks)
-- **Phase 5:** Loot Generator (Tags, XP-scaling) + **Phase 6:** Audio System + Release
+- **Phase 5:** Loot Generator - Tag-based generation, XP-scaling, inherent creature loot, gold calculation
+- **Phase 6:** Audio System - Playlist manager, auto-selection (terrain/weather/faction), fade transitions
+- **Release:** Final polish, documentation, performance optimization
