@@ -61,30 +61,31 @@ class FilteredLogFile:
         clean = clean.replace('\x1b[?2004h', '').replace('\x1b[?2004l', '')
         clean = clean.replace('\x1b[?1004h', '').replace('\x1b[?2026h', '').replace('\x1b[?2026l', '')
 
-        # Skip if only whitespace or very short
-        if not clean.strip() or len(clean.strip()) < 3:
-            return
+        # Process each line separately (TUI sends full screen on re-render!)
+        for line in clean.split('\n'):
+            # Skip empty or very short lines
+            if not line.strip() or len(line.strip()) < 3:
+                continue
 
-        # Normalize line (remove extra spaces, trim)
-        normalized = ' '.join(clean.split())
+            # Normalize (remove extra spaces, trim)
+            normalized = ' '.join(line.split())
 
-        # Skip if we've seen this exact line before
-        if normalized in self.seen_lines:
-            return
+            # Skip if we've seen this exact line before
+            if normalized in self.seen_lines:
+                continue
 
-        # New line! Add to seen set
-        self.seen_lines.add(normalized)
+            # New line! Add to seen set
+            self.seen_lines.add(normalized)
 
-        # Maintain history buffer
-        self.last_lines.append(normalized)
-        if len(self.last_lines) > self.max_history:
-            # Remove oldest line from seen set
-            old_line = self.last_lines.pop(0)
-            # Keep in seen_lines to prevent re-logging old content
+            # Maintain history buffer
+            self.last_lines.append(normalized)
+            if len(self.last_lines) > self.max_history:
+                old_line = self.last_lines.pop(0)
 
-        # Write with timestamp
-        timestamp = datetime.now().strftime('%H:%M:%S')
-        self.logfile.write(f"[{timestamp}] {clean.strip()}\n")
+            # Write with timestamp
+            timestamp = datetime.now().strftime('%H:%M:%S')
+            self.logfile.write(f"[{timestamp}] {line.strip()}\n")
+
         self.logfile.flush()
 
     def flush(self):
