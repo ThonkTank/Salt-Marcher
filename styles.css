@@ -2876,3 +2876,23 @@
     background-color: var(--interactive-accent-hover);
     border-color: var(--interactive-accent-hover);
 }
+
+/* ============================================================================
+   Inbox StatusBar Widget
+   ============================================================================ */
+
+.sm-inbox-statusbar {
+    cursor: pointer;
+    padding: 0 8px;
+    transition: all 0.2s ease;
+}
+
+.sm-inbox-statusbar:hover {
+    background-color: var(--background-modifier-hover);
+    border-radius: 4px;
+}
+
+.sm-inbox-statusbar--has-unread {
+    font-weight: 600;
+    color: var(--interactive-accent);
+}

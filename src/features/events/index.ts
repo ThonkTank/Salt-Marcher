@@ -27,4 +27,6 @@ export {
 
 export { TimelineView, VIEW_TYPE_TIMELINE, openTimelineView } from "./timeline-view";
 
+export { InboxStatusBar, createInboxStatusBar } from "./inbox-status-bar";
+
 export * from "./hooks";

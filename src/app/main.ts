@@ -13,6 +13,7 @@ import { registerIPCCommands } from "./ipc-commands";
 export default class SaltMarcherPlugin extends Plugin {
     private terrainBootstrap?: TerrainBootstrapHandle;
     private ipcServer?: IPCServer;
+    private inboxStatusBar?: import("../features/events").InboxStatusBar;
 
     async onload() {
         // Initialize logger FIRST to capture all startup logs
@@ -281,10 +282,24 @@ export default class SaltMarcherPlugin extends Plugin {
 
         // Dev tool command removed - use devkit/utilities/conversions/convert-references.mjs instead
 
+        // Setup Inbox StatusBar Widget
+        try {
+            const { createInboxStatusBar, globalEventHistoryStore } = await import('../features/events');
+            const statusBarItem = this.addStatusBarItem();
+            this.inboxStatusBar = createInboxStatusBar(this.app, globalEventHistoryStore, statusBarItem);
+            logger.log('[inbox-status-bar] Widget registered');
+        } catch (error) {
+            logger.error('[inbox-status-bar] Failed to setup widget', error);
+        }
+
     }
 
     async onunload() {
         logger.log('Plugin unloading...');
+
+        // Cleanup Inbox StatusBar Widget
+        this.inboxStatusBar?.destroy();
+        this.inboxStatusBar = undefined;
 
         // Stop IPC server
         this.ipcServer?.stop();
