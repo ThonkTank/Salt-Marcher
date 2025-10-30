@@ -407,7 +407,14 @@ function compareTimestampParts(
 /**
  * Hook descriptors shared across events and phenomena
  */
-export type HookType = 'webhook' | 'script' | 'cartographer_event';
+export type HookType =
+  | 'webhook'
+  | 'script'
+  | 'cartographer_event'
+  | 'notification'
+  | 'weather_update'
+  | 'faction_update'
+  | 'location_update';
 
 export interface HookDescriptor {
   readonly id: string;

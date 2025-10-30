@@ -315,28 +315,9 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Aktueller Fokus:** Phase 3 abgeschlossen ✅ | Tests: 291/293 grün (99.3%)
+**Status:** Phase 4.1 ✅ | Tests: 299/301 (99.3%) | **Next:** Phase 4.2 Action Handlers
 
-### Phase 0-2 ✅
-Tags/Schemas, Store-Platform (49→0 failures), Encounter System (Travel→Combat E2E, Random Generator)
-
-### Phase 3.1-3.3 – Locations ✅
-- **3.1:** Location CRUD (9 types, CreateSpec, Serializer)
-- **3.2:** Tree View mit Hierarchy (Breadcrumb, 17 tests)
-- **3.3:** Map POI Markers (location-marker-store, SVG layer, 19 tests)
-
----
-
-### Phase 3.4 – Dungeons ✅
-**3.4.1-3.4.3 Basics** ✅ Grid, Rooms, Doors, Features, Navigation, +23 tests
-**3.4.4 Tokens** ✅ Create/Place/Select/Delete/Edit komplett, 9 Tests, persists to frontmatter
-
----
-
-### Phase 4-6 ⏳
-Event Engine (Kalender, Automations), Loot Generator (Tags), Audio (Playlists), Release
-
-## 🧪 Test-Suite Status
-
-✅ 291/293 passing (99.3%) | 49→0 Failures | Coverage: Core ~90%, Domain ~85%, Encounter ~80%, Dungeons ~80%
-Kategorien: Encounter (22), Almanac (12), Cartographer (25), Library (18), Dungeons (23), Domain (45), Integration (32)
+**Phase 0-3 ✅** Tags/Schemas, Stores, Encounter (Travel→Combat), Locations (CRUD/Tree/Markers), Dungeons (Grid/Rooms/Tokens)
+**Phase 4.1 ✅** Hook Executor (Handler Registry, Notification/Weather), ExecutingHookGateway, +8 Tests
+**Phase 4.2-4 ⏳** Action Handlers (Faction/Location), Timeline/Inbox Views, Integration Tests
+**Phase 5-6 ⏳** Loot Generator (Tags, XP-scaling), Audio (Playlists, Fade), Release
