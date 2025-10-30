@@ -41,3 +41,8 @@ coverage/
 
 # DevKit CLI symlink
 devkit-cli
+
+# Auto-continue script state
+.auto-continue-state
+auto-continue-*.log
+test-*.log

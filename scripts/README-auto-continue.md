@@ -1,91 +1,204 @@
-# Claude Code Auto-Continue Script
+# Claude Code Auto-Continue Script (Python)
 
-Automatisches Fortsetzungs-Skript für Claude Code Sessions mit intelligenter Rate-Limit-Erkennung und Sleep-Prevention.
+Automatisches Fortsetzungs-Skript für Claude Code Sessions mit intelligenter Rate-Limit-Erkennung und rotierenden Arbeits-Phasen.
 
 **Features:**
+- ✅ **Drei rotierende Prompts** für optimale Entwicklungszyklen (A → B → C → A → ...)
+- ✅ **Automatische Permission-Genehmigung** (beantwortet Erlaubnis-Prompts)
 - ✅ Automatische Fortsetzung bei Inaktivität (konfigurierbar)
 - ✅ Rate-Limit-Erkennung mit automatischer Quota-Reset-Wartezeit
-- ✅ Sleep-Prevention (Laptop bleibt wach)
 - ✅ Automatischer Neustart nach Quota-Reset
-- ✅ Regelmäßige Status-Updates während Wartezeiten
+- ✅ **Lock-Mechanismus** verhindert multiple Instanzen
+- ✅ **Sauberes Error-Handling** mit graceful shutdown
 - ✅ Sicherheits-Limits (max-iterations)
 
-## Funktionsweise
+## Technologie
 
-Das Skript:
-1. Startet Claude Code in einer `expect`-kontrollierten Session
-2. Sendet initial den Fortsetzungsprompt
-3. Überwacht die Ausgabe auf Inaktivität **und Rate-Limits**
-4. Sendet automatisch den nächsten Prompt nach konfigurierbarer Idle-Zeit
-5. **Erkennt Rate-Limit-Nachrichten automatisch** und extrahiert Quota-Reset-Zeit
-6. **Pausiert bis zum nächsten Kontingent** und startet dann automatisch neu
-7. **Verhindert Sleep-Modus** des Laptops während der Session
-8. Wiederholt bis Abbruch oder Maximum erreicht
+**Python 3 mit pexpect** - Keine fragilen Bash/expect-Mischungen mehr!
+- Robustes Process-Handling
+- Klarer, wartbarer Code
+- Proper Exception-Handling
+- Keine Fork-Bomb-Gefahr
 
 ## Voraussetzungen
 
 ```bash
-# Fedora/RHEL
-sudo dnf install expect
+# Python 3 (meist vorinstalliert)
+python3 --version
 
-# Ubuntu/Debian
-sudo apt install expect
+# pexpect installieren (falls nicht vorhanden)
+pip install pexpect
 ```
+
+## Funktionsweise
+
+Das Skript:
+1. Startet Claude Code in einer `pexpect`-kontrollierten Session
+2. **Aktives Output-Reading**: Nutzt `read_nonblocking()` um Output-Stream kontinuierlich zu lesen
+3. **ANSI-Filterung**: Filtert Terminal-Control-Codes um echten Output von UI-Updates zu unterscheiden
+4. **Rotiert durch drei spezialisierte Prompts** (A → B → C → A → ...)
+5. Überwacht die Ausgabe auf Inaktivität **und Rate-Limits**
+6. Sendet automatisch den nächsten Prompt nach konfigurierbarer Idle-Zeit (nach >5 Zeichen echtem Output)
+7. **Erkennt Rate-Limit-Nachrichten automatisch** und extrahiert Quota-Reset-Zeit
+8. **Pausiert bis zum nächsten Kontingent** und startet dann automatisch neu
+9. Wiederholt bis Abbruch oder Maximum erreicht
+
+## Prompt-Rotation
+
+Das Skript nutzt drei spezialisierte Prompts in einem kontinuierlichen Zyklus:
+
+### Phase A: Review & Roadmap Verification
+**Zweck:** Projekt-Status überprüfen und Roadmap aktualisieren
+**Model:** Opus (bevorzugt) oder Sonnet (Fallback)
+**Aufgaben:**
+- Implementation auf Konformität mit Zielen/Arbeitsweisen prüfen
+- Roadmap ergänzen mit konkreten nächsten Schritten
+- Sicherstellen dass Roadmap vollständig und aktuell ist
+
+### Phase B: Implementation
+**Zweck:** Roadmap-Schritte implementieren
+**Model:** Sonnet
+**Aufgaben:**
+- Nächste Roadmap-Schritte umsetzen
+- Sauberen, wartbaren Code schreiben (DRY-Prinzip)
+- Tests ausführen und Fortschritt committen
+
+### Phase C: Documentation & Cleanup
+**Zweck:** Dokumentation aktualisieren und aufräumen
+**Model:** Sonnet
+**Aufgaben:**
+- CLAUDE.md aktualisieren
+- Code-Qualität prüfen
+- Aufräumen und optimieren
+
+**State-Persistenz:** Der aktuelle Prompt-Status wird in `.auto-continue-state` gespeichert und bleibt über Sessions erhalten.
 
 ## Verwendung
 
-### Standard (unbegrenzte Iterations, 180s Timeout = 3 Minuten)
+### Standard (unbegrenzte Iterationen, 180s Timeout = 3 Minuten)
 ```bash
-./scripts/auto-continue-claude.sh
+./scripts/auto-continue.py
 ```
 
-### Mit Custom Timeout (z.B. 300 Sekunden = 5 Minuten)
+### Mit Custom Timeout (z.B. 60 Sekunden = 1 Minute)
 ```bash
-./scripts/auto-continue-claude.sh --timeout 300
+./scripts/auto-continue.py --timeout 60
 ```
 
-### Begrenzte Iterations (z.B. 5 Auto-Continues)
+### Begrenzte Iterationen (z.B. 5 Auto-Continues)
 ```bash
-./scripts/auto-continue-claude.sh --max-iterations 5
-```
-
-### Debug-Modus
-```bash
-./scripts/auto-continue-claude.sh --debug
+./scripts/auto-continue.py --max-iterations 5
 ```
 
 ### Quota-Wait deaktivieren (nicht empfohlen)
 ```bash
-./scripts/auto-continue-claude.sh --no-quota-wait
+./scripts/auto-continue.py --no-quota-wait
 ```
 
 ### Kombiniert
 ```bash
-./scripts/auto-continue-claude.sh --timeout 90 --max-iterations 10 --debug
+./scripts/auto-continue.py --timeout 90 --max-iterations 10
 ```
+
+### Mit Custom Config
+```bash
+./scripts/auto-continue.py --config my-config.json
+```
+
+## Konfiguration
+
+Die Konfiguration erfolgt über `auto-continue-config.json`:
+
+```json
+{
+  "timeout": 180,
+  "max_iterations": -1,
+  "enable_quota_wait": true,
+  "prompts": {
+    "A": { "name": "...", "text": "..." },
+    "B": { "name": "...", "text": "..." },
+    "C": { "name": "...", "text": "..." }
+  },
+  "permission_patterns": [
+    "Do you want to proceed",
+    "❯.*1\\..*Yes",
+    ...
+  ],
+  "rate_limit_pattern": "Your limit will reset at ([0-9]+)(am|pm)"
+}
+```
+
+**Anpassbare Felder:**
+- `timeout`: Inaktivitäts-Timeout in Sekunden
+- `max_iterations`: Maximum Auto-Continues (-1 = unbegrenzt)
+- `enable_quota_wait`: Rate-Limit-Wartezeit aktivieren
+- `prompts`: Prompt-Texte und Model-Präferenzen
+- `permission_patterns`: Regex-Pattern für Permission-Erkennung
+- `rate_limit_pattern`: Regex-Pattern für Rate-Limit-Erkennung
 
 ## Automatische Rate-Limit-Erkennung
 
 Das Skript erkennt automatisch wenn Claude ein Rate-Limit erreicht und extrahiert die Quota-Reset-Zeit:
 
-**Erkannte Muster:**
-- `"available at 9:00 AM"`
-- `"try again at 3:30 PM"`
-- `"reset at 12:45 PM"`
-- `"limit until 6:15 AM"`
+**Claude's Rate-Limit Format:**
+```
+Claude usage limit reached. Your limit will reset at 1pm
+```
 
 **Verhalten bei Rate-Limit:**
 1. ⏳ Erkennt Rate-Limit-Nachricht
 2. 🕐 Extrahiert Reset-Zeit (AM/PM Format)
 3. ⏰ Berechnet Wartezeit bis zur Reset-Zeit
-4. 💤 Pausiert mit regelmäßigen Status-Updates
-5. ✓ Startet Claude automatisch nach Reset neu
+4. 💤 Pausiert bis zum Reset
+5. ✓ Startet Claude automatisch neu
 6. 🔄 Setzt Session nahtlos fort
 
-**Sleep-Prevention:**
-- Nutzt `systemd-inhibit` um Laptop wach zu halten
-- Verhindert: Idle-Sleep, Suspend, Lid-Switch
-- Automatisch deaktiviert wenn Skript beendet wird
+## Automatische Permission-Genehmigung
+
+Das Skript erkennt automatisch wenn Claude nach Erlaubnis für Befehle fragt und genehmigt diese automatisch:
+
+**Erkannte Permission-Prompts:**
+- `"Do you want to proceed?"`
+- `"❯ 1. Yes"`
+- `"Allow this command?"`
+- Alle Prompts mit nummerierten Optionen
+
+**Verhalten:**
+```
+[Claude Code fragt nach Erlaubnis]
+✓ PERMISSION DETECTED - Auto-approving
+Pattern: Do you want to proceed
+[Sendet "1" als Antwort]
+```
+
+## Lock-Mechanismus
+
+Das Skript verhindert automatisch dass mehrere Instanzen gleichzeitig laufen:
+
+```bash
+./scripts/auto-continue.py
+# Zweiter Versuch in anderem Terminal:
+# ⚠️  ERROR: Another instance is already running (PID: 12345)
+```
+
+**Lock-File Location:** `/tmp/auto-continue-claude.lock`
+
+**Manuelles Entsperren (falls nötig):**
+```bash
+rm /tmp/auto-continue-claude.lock
+```
+
+## State-Management
+
+Der Prompt-Status wird in `.auto-continue-state` gespeichert:
+
+```bash
+# Aktuellen Status anzeigen
+cat .auto-continue-state  # z.B. "B"
+
+# Manuell zurücksetzen zu Phase A
+echo "C" > .auto-continue-state
+```
 
 ## Sicherheit
 
@@ -95,30 +208,96 @@ Das Skript erkennt automatisch wenn Claude ein Rate-Limit erreicht und extrahier
 - Starte mit `--max-iterations 3` um das Verhalten zu testen
 - Überwache die erste Session aufmerksam
 - Nutze `--timeout 240` (4 Min) oder höher für sehr komplexe Aufgaben
-- Drücke `Ctrl+C` jederzeit zum Abbrechen
+- Drücke `Ctrl+C` jederzeit zum sauberen Abbruch
 
-## Anpassung des Prompts
-
-Der Fortsetzungsprompt steht in Zeile 44 des Skripts:
-```bash
-CONTINUATION_PROMPT="Lies dir die Arbeitsweisen..."
-```
-
-Bearbeite diese Zeile um den Prompt anzupassen.
+**Sicherheits-Features:**
+- Lock-File verhindert multiple Instanzen
+- Proper signal handling (SIGINT, SIGTERM)
+- Automatisches Cleanup bei Exit
+- Max-iterations Limit
 
 ## Troubleshooting
 
+**Problem: pexpect nicht gefunden**
+```bash
+pip install pexpect
+# oder
+pip3 install pexpect
+```
+
 **Problem: Script startet nicht**
-- Prüfe ob `expect` installiert ist: `which expect`
-- Prüfe Ausführungsrechte: `chmod +x scripts/auto-continue-claude.sh`
+```bash
+# Ausführungsrechte prüfen
+chmod +x scripts/auto-continue.py
+
+# Python-Version prüfen (min. 3.6)
+python3 --version
+```
+
+**Problem: "Another instance is running"**
+```bash
+# Lock-File entfernen
+rm /tmp/auto-continue-claude.lock
+```
 
 **Problem: Zu frühe Trigger**
-- Erhöhe Timeout: `--timeout 180`
+```bash
+# Erhöhe Timeout
+./scripts/auto-continue.py --timeout 300
+```
 
 **Problem: Keine Auto-Continues**
-- Aktiviere Debug: `--debug`
 - Prüfe ob Claude wirklich idle ist
+- Check `.auto-continue-state` file exists
+- Verify config file is valid JSON
 
-**Problem: Unendliche Loops**
-- Setze `--max-iterations 5`
-- Nutze `Ctrl+C` zum Abbruch
+**Problem: Permission-Dialoge werden nicht erkannt**
+- Prüfe `permission_patterns` in config
+- Erweitere Pattern-Liste falls nötig
+
+## Vergleich zur alten Bash-Lösung
+
+**Vorteile der Python-Lösung:**
+- ✅ Keine Fork-Bomb-Gefahr mehr
+- ✅ Sauberes Error-Handling
+- ✅ Einfacher zu debuggen
+- ✅ Besser wartbar
+- ✅ Keine Bash/expect-Mischung
+- ✅ Proper process management
+- ✅ Structured logging
+
+**Migration:**
+Die alte Bash-Version wurde entfernt. Alle Funktionalität ist in der Python-Version verfügbar.
+
+## Log-Output
+
+Das Script gibt strukturierte Logs aus:
+
+```
+============================================================
+Claude Code Auto-Continue (Python)
+============================================================
+Configuration:
+  Timeout: 180s
+  Max iterations: unlimited
+  Quota wait: True
+  ...
+
+[DEBUG] Starting Claude Code (iteration 1)...
+
+============================================================
+Phase: B - Implementation
+Model preference: sonnet
+============================================================
+
+✓ Prompt sent and state saved
+```
+
+## Weiterführende Anpassungen
+
+Für erweiterte Anpassungen kannst du:
+- Config-File duplizieren und anpassen
+- Prompt-Texte in config ändern
+- Permission-Patterns erweitern
+- Eigene Rate-Limit-Pattern hinzufügen
+- Python-Script für spezielle Anforderungen erweitern

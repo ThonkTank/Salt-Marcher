@@ -1,0 +1,30 @@
+{
+  "timeout": 180,
+  "max_iterations": -1,
+  "enable_quota_wait": true,
+  "prompts": {
+    "A": {
+      "name": "Review & Roadmap Verification",
+      "model_preference": "opus",
+      "text": "**Phase: Review & Roadmap Verification**\n\nLies dir die Arbeitsweisen, Ziele und die Roadmap in CLAUDE.md sorgfältig durch. Mache dich mit der bisherigen Implementation des Projekts vertraut.\n\n**Deine Aufgaben:**\n1. Überprüfe, dass die bisherige Implementation mit den definierten Zielen und Arbeitsweisen konform ist\n2. Ergänze die Roadmap falls nötig mit konkreten nächsten Schritten\n3. Stelle sicher, dass die Roadmap vollständig, aktuell und mit allen Zielen/Arbeitsweisen konform ist\n4. Formuliere die nächsten Arbeitsschritte präzise und umsetzbar\n\n**WICHTIG:**\n- Verändere NIEMALS die Beschreibung von Zielen und Arbeitsweisen in CLAUDE.md\n- Halte CLAUDE.md unter 40k Zeichen\n- Sei präzise und fokussiert in deiner Analyse\n- Output soll sauber und strukturiert sein"
+    },
+    "B": {
+      "name": "Implementation",
+      "model_preference": "sonnet",
+      "text": "**Phase: Implementation**\n\nFahre mit der Umsetzung der Roadmap fort. Arbeite systematisch und halte dich strikt an die definierten Ziele und Arbeitsweisen.\n\n**Deine Aufgaben:**\n1. Wähle die nächste anstehende Aufgabe aus der Roadmap\n2. Implementiere das Feature vollständig und robust\n3. Schreibe/aktualisiere Tests\n4. Dokumentiere wichtige Änderungen\n5. Erstelle einen Commit mit aussagekräftiger Message\n\n**WICHTIG:**\n- Halte dich an die Code-Quality-Standards aus CLAUDE.md\n- Teste deine Änderungen gründlich\n- Arbeite DRY (Don't Repeat Yourself)\n- Priorisiere langfristige Lösungen über Quick-Fixes"
+    },
+    "C": {
+      "name": "Documentation & Cleanup",
+      "model_preference": "sonnet",
+      "text": "**Phase: Documentation & Cleanup**\n\nÜberprüfe Dokumentation und Code-Qualität nach der Implementation.\n\n**Deine Aufgaben:**\n1. Aktualisiere CLAUDE.md falls nötig (Roadmap-Status, neue Features)\n2. Überprüfe Inline-Dokumentation und Kommentare\n3. Säubere auskommentierten Code\n4. Prüfe auf Code-Smells und Redundanzen\n5. Optimiere wo nötig\n\n**WICHTIG:**\n- Behalte CLAUDE.md unter 40k Zeichen\n- Fokussiere auf Wartbarkeit\n- Dokumentiere komplexe Logik\n- Entferne toten Code"
+    }
+  },
+  "permission_patterns": [
+    "Do you want to proceed",
+    "❯.*1\\..*Yes",
+    "Allow.*\\(1\\).*Yes",
+    "permission.*required",
+    "Choose an option:"
+  ],
+  "rate_limit_pattern": "Your limit will reset at ([0-9]+)(am|pm)"
+}
