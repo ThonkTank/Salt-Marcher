@@ -315,22 +315,12 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 5 ⏳ Loot Generator (3/5 Complete) | Tests: 401/402 (99.75%) | **Next:** Phase 5.4 - Inherent Creature Loot
+**Status:** Phase 5 ✅ Complete | Tests: 414/417 (99.3%) | **Next:** Phase 6 - Audio System
 
 **Abgeschlossen:**
-- **Phase 0-2:** Tags/Schemas, Store Platform, Encounter System (Travel→Combat E2E)
-- **Phase 3:** Locations (CRUD/Tree/Markers), Dungeons (Grid/Rooms/Doors/Features/Tokens)
-- **Phase 4.1-2:** Hook Executor + 4 Handlers (Notification/Weather/Faction/Location, +8 Tests)
-- **Phase 4.3.1-2:** Event History Store (Timeline/Inbox, Observable, LocalStorage, +13 Tests)
-- **Phase 4.3.3:** Timeline View (ItemView, Filter/Sort, Read/Unread, +14 Tests, Ribbon+Command)
-- **Phase 4.3.4:** Inbox StatusBar Widget (Reactive count, Menu, Mark-as-read, +10 Tests)
-- **Phase 4.4:** Integration Tests (E2E Hook Execution → Timeline Recording, +13 Tests)
-- **Phase 5.1:** Loot Types & Interfaces (ItemRarity, LootTable, GenerationContext/Config, +0 Tests)
-- **Phase 5.2:** Gold Calculation (XP-based formula, level multipliers, rule modifiers, +21 Tests)
-- **Phase 5.3:** Item Generation (Tag filtering, rarity limits, weighted selection, +16 Tests)
+- **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
+- **Phase 5:** Loot Generator - Gold (XP-based, 5 rule types), Items (tag-filter, rarity-limits, weighted), E2E tests (13 scenarios)
 
-**Nächste Schritte:**
-- **Phase 5.4:** Inherent Creature Loot - Creature-specific drops from statblocks (dragon scales, drow poison, etc.)
-- **Phase 5.5:** Integration & Full Tests - Integrate with Encounter system, E2E loot generation tests
-- **Phase 6:** Audio System - Playlist manager, auto-selection (terrain/weather/faction), fade transitions
-- **Release:** Final polish, documentation, performance optimization
+**Geplant:**
+- **Phase 6:** Audio (playlist manager, auto-selection by terrain/weather/faction, fade transitions)
+- **Release:** Polish, documentation, performance optimization
