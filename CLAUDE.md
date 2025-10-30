@@ -315,36 +315,10 @@ Ziele:
 
 ## Architektur-Roadmap
 
-### Roadmap Overview
+**Aktueller Fokus:** Phase 3 abgeschlossen ✅ | Tests: 291/293 grün (99.3%)
 
-| Phase | Status | Zielbild |
-|-------|--------|----------|
-| Phase 0-1 | ✅ Abgeschlossen | Tags, Schemas, Store-Platform |
-| Phase 2.1-2.7 | ✅ Abgeschlossen | Travel → Encounter → Combat E2E |
-| Phase 2.3.1 | ✅ Abgeschlossen | Faction Members Display |
-| Phase 2.6 | ✅ Abgeschlossen | Random Encounter Generator |
-| Phase 3.1 | ✅ Abgeschlossen | Location CRUD (Library) |
-| Phase 3.2-3.2.1 | ✅ Abgeschlossen | Tree View (Hierarchy) |
-| Phase 3.3-3.3.1 | ✅ Abgeschlossen | Map POI Markers + Editor |
-| Phase 3.4.1 | ✅ Abgeschlossen | Dungeon Data Model |
-| Phase 3.4.2 | ✅ Abgeschlossen | Grid Renderer (Canvas) |
-| Phase 3.4.3 | ✅ Abgeschlossen | Navigation & Interactivity |
-| **Phase 3.4.4** | ⏳ **NÄCHSTER SCHRITT** | **Token Management** |
-| Phase 3.4.5 | ⏳ Optional | FOW, LOS |
-| Phase 4-6 | ⏳ Geplant | Events, Loot, Audio |
-
-**Aktueller Fokus:** Phase 3.4.4 (Token Management) ← **NÄCHSTER SCHRITT**
-
-**Test-Suite:** 281/283 grün (99.3% pass rate) ✅ (+14 dungeon tests)
-
-### Phase 0-1 – Foundation ✅
-- **Phase 0:** Tag-Taxonomie (`docs/TAGS.md`), Schema-Validatoren (`src/domain/schemas.ts`)
-- **Phase 1:** Store-Platform (Readable/Writable/Persistent), Event-Bus, 49→0 Test-Failures
-  - Map/Almanac auf PersistentStores migriert
-  - Encounter nutzt Event-driven Pattern
-
-### Phase 2 – Encounter System ✅
-Territory Marking, Faction Context, Random Encounter Generator (22 tests), Combat Tracking (HP/Initiative), Faction Members Display. **Result:** Travel → Encounter → Combat E2E spielbar
+### Phase 0-2 ✅
+Tags/Schemas, Store-Platform (49→0 failures), Encounter System (Travel→Combat E2E, Random Generator)
 
 ### Phase 3.1-3.3 – Locations ✅
 - **3.1:** Location CRUD (9 types, CreateSpec, Serializer)
@@ -353,59 +327,16 @@ Territory Marking, Faction Context, Random Encounter Generator (22 tests), Comba
 
 ---
 
-### Phase 3.4 – Dungeons
-**Zielbild:** Grid-Karten, Token-Management, Raum-Features (T1/F1/G1/H1/S1), FOW, LOS
-
-#### Phase 3.4.1-3.4.3 – Dungeon Basics ✅
-- **3.4.1:** Data Model (grid_width/height, rooms[], doors, features), Serializer, 9 tests
-- **3.4.2:** Canvas Renderer (GridRenderer, 240 lines), Room/Door/Feature rendering, Controls
-- **3.4.3:** Navigation (Zoom/Pan, Click-highlight, Hover tooltips, Detail panel, Reset view), +14 tests
+### Phase 3.4 – Dungeons ✅
+**3.4.1-3.4.3 Basics** ✅ Grid, Rooms, Doors, Features, Navigation, +23 tests
+**3.4.4 Tokens** ✅ Create/Place/Select/Delete/Edit komplett, 9 Tests, persists to frontmatter
 
 ---
 
-#### Phase 3.4.4 - Token Management ✅ FUNKTIONAL | ⏳ Tests ausstehend
-**Scope:** Token-Placement für Player, NPCs, Monsters auf Dungeon-Grid
-
-**✅ Core Features Complete (Steps 1-4.3):**
-- DungeonToken interface, GridRenderer.renderTokens() (colored circles + labels)
-- TokenCreationModal → Click-to-place → Persist to frontmatter
-- Token selection (golden highlight), hover tooltips
-- Detail panel (emoji, type, position, color swatch, size)
-- Delete via button or Delete key → persists to file
-
-**⏳ Optional - Step 4.4: Edit Token** (~30min)
-- Reuse TokenCreationModal pre-filled with token data
-- Update token in-place + persist
-
-**⏳ Step 5: Tests** (~30min)
-- Unit tests: token rendering, placement, selection, deletion
-- Update GridRenderer tests with token cases
-
-#### Phase 3.4.5 - Advanced Features ⏳ Optional
-- FOW overlay, Sound radius, LOS calculations
-- **Estimated:** 4-6 hours
-
----
-
-### Phase 4-6 – Zukünftige Phasen
-
-- **Phase 4 – Event Engine:** Kalender-Events (Timeline/Inbox), Automations-Hooks, Wetter-Integration
-- **Phase 5 – Loot & Presets:** Loot-Generator (Tag-Filter), Calculator-Presets (Markdown-DSL), Magic Item Limits
-  - **Status XP Calculator:** ✅ Bereits in Phase 2.4 implementiert (xpByCr, EncounterXpRule, DND5E_XP_THRESHOLDS)
-- **Phase 6 – Audio & Release:** Audio-System (Playlists, Fade/Loop), UX-Finishing, Release-Doku
+### Phase 4-6 ⏳
+Event Engine (Kalender, Automations), Loot Generator (Tags), Audio (Playlists), Release
 
 ## 🧪 Test-Suite Status
 
-**Stats (Stand: 2025-10-29, nach Phase 3.4.3):**
-- ✅ 281/283 Tests passing (99.3% pass rate)
-- 🎯 49→0 Failures (100% Reduktion seit Phase 1 Start)
-- ⏭️ 2 Tests skipped (todo-governance, header-policy)
-- ⏱️ Test-Laufzeit: ~22s
-- ➕ +14 Dungeon Tests (GridRenderer: init, rendering, transforms, callbacks)
-
-**Key Kategorien:**
-- Encounter Generator (22), Almanac (12), Cartographer (25), Library (18), Dungeons (14)
-- Domain Logic (45), Integration (32), Store Architecture (28), Encounter (40)
-- **Coverage:** Core State ~90%, Domain ~85%, Encounter ~80%, Dungeons ~75%, UI ~40%
-
-**Known Gaps:** E2E Testing, Performance-Tests (>1000 entities), Coverage-Reports
+✅ 291/293 passing (99.3%) | 49→0 Failures | Coverage: Core ~90%, Domain ~85%, Encounter ~80%, Dungeons ~80%
+Kategorien: Encounter (22), Almanac (12), Cartographer (25), Library (18), Dungeons (23), Domain (45), Integration (32)

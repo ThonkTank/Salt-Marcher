@@ -93288,18 +93288,26 @@ init_frontmatter_utils();
 var import_obsidian40 = require("obsidian");
 init_types3();
 var TokenCreationModal = class extends import_obsidian40.Modal {
-  constructor(app, onSubmit) {
+  constructor(app, onSubmit, initialData) {
     super(app);
     this.onSubmit = onSubmit;
     this.tokenType = "player";
     this.tokenLabel = "";
     this.tokenColor = "";
     this.tokenSize = 1;
+    this.isEditMode = false;
+    if (initialData) {
+      this.isEditMode = true;
+      this.tokenType = initialData.type;
+      this.tokenLabel = initialData.label;
+      this.tokenColor = initialData.color || "";
+      this.tokenSize = initialData.size || 1;
+    }
   }
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
-    contentEl.createEl("h3", { text: "Create Token" });
+    contentEl.createEl("h3", { text: this.isEditMode ? "Edit Token" : "Create Token" });
     new import_obsidian40.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
       dropdown.addOption("player", "\u{1F9D9} Player").addOption("npc", "\u{1F642} NPC").addOption("monster", "\u{1F479} Monster").addOption("object", "\u{1F4E6} Object").setValue(this.tokenType).onChange((value) => {
         this.tokenType = value;
@@ -93309,13 +93317,13 @@ var TokenCreationModal = class extends import_obsidian40.Modal {
     });
     let labelInput;
     new import_obsidian40.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
-      text.setPlaceholder("Gandalf").onChange((value) => {
+      text.setPlaceholder("Gandalf").setValue(this.tokenLabel).onChange((value) => {
         this.tokenLabel = value.trim();
       });
       labelInput = text.inputEl;
     });
     new import_obsidian40.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
-      text.setPlaceholder(getDefaultTokenColor(this.tokenType)).onChange((value) => {
+      text.setPlaceholder(getDefaultTokenColor(this.tokenType)).setValue(this.tokenColor).onChange((value) => {
         this.tokenColor = value.trim();
         this.renderColorPreview();
       });
@@ -93347,7 +93355,7 @@ var TokenCreationModal = class extends import_obsidian40.Modal {
         this.close();
       });
     }).addButton((button) => {
-      button.setButtonText("Create Token").setCta().onClick(() => {
+      button.setButtonText(this.isEditMode ? "Update Token" : "Create Token").setCta().onClick(() => {
         this.submit();
       });
     });
@@ -93938,7 +93946,7 @@ ${body}`;
     const editBtn = actionsContainer.createEl("button", { text: "\u270F\uFE0F Edit", cls: "sm-dungeon-control" });
     editBtn.style.flex = "1";
     editBtn.addEventListener("click", () => {
-      logger2.info("[dungeon-view] Edit token (not yet implemented)", { token });
+      this.editToken(token);
     });
     this.detailPanel.style.display = "block";
   }
@@ -93969,6 +93977,47 @@ ${body}`;
       this.renderer.render(this.dungeon);
     }
     this.saveDungeonToFile();
+  }
+  /**
+   * Edit a token's properties
+   */
+  editToken(token) {
+    if (!this.dungeon || !isDungeonLocation(this.dungeon)) {
+      logger2.warn("[dungeon-view] Cannot edit token: invalid dungeon");
+      return;
+    }
+    const modal = new TokenCreationModal(
+      this.app,
+      (data) => {
+        const tokenIndex = this.dungeon.tokens?.findIndex((t) => t.id === token.id);
+        if (tokenIndex === void 0 || tokenIndex === -1) {
+          logger2.warn("[dungeon-view] Token not found for edit", { tokenId: token.id });
+          return;
+        }
+        const updatedToken = {
+          ...token,
+          type: data.type,
+          label: data.label,
+          color: data.color,
+          size: data.size
+        };
+        this.dungeon.tokens[tokenIndex] = updatedToken;
+        logger2.info("[dungeon-view] Token updated", { token: updatedToken });
+        this.selectedToken = updatedToken;
+        if (this.renderer) {
+          this.renderer.render(this.dungeon);
+        }
+        this.updateTokenDetail(updatedToken);
+        this.saveDungeonToFile();
+      },
+      {
+        type: token.type,
+        label: token.label,
+        color: token.color,
+        size: token.size
+      }
+    );
+    modal.open();
   }
   /**
    * Place a token at the specified grid coordinates

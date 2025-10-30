@@ -717,12 +717,11 @@ export class DungeonView extends ItemView {
             this.deleteToken(token.id);
         });
 
-        // Edit button (placeholder for Step 4.4)
+        // Edit button
         const editBtn = actionsContainer.createEl("button", { text: "✏️ Edit", cls: "sm-dungeon-control" });
         editBtn.style.flex = "1";
         editBtn.addEventListener("click", () => {
-            // TODO: Implement in Step 4.4
-            logger.info("[dungeon-view] Edit token (not yet implemented)", { token });
+            this.editToken(token);
         });
 
         // Show panel
@@ -771,6 +770,65 @@ export class DungeonView extends ItemView {
 
         // Persist changes to file
         this.saveDungeonToFile();
+    }
+
+    /**
+     * Edit a token's properties
+     */
+    private editToken(token: DungeonToken): void {
+        if (!this.dungeon || !isDungeonLocation(this.dungeon)) {
+            logger.warn("[dungeon-view] Cannot edit token: invalid dungeon");
+            return;
+        }
+
+        // Open modal with pre-filled data
+        const modal = new TokenCreationModal(
+            this.app,
+            (data) => {
+                // Find token in array
+                const tokenIndex = this.dungeon!.tokens?.findIndex((t) => t.id === token.id);
+
+                if (tokenIndex === undefined || tokenIndex === -1) {
+                    logger.warn("[dungeon-view] Token not found for edit", { tokenId: token.id });
+                    return;
+                }
+
+                // Update token properties (keep position and id)
+                const updatedToken: DungeonToken = {
+                    ...token,
+                    type: data.type,
+                    label: data.label,
+                    color: data.color,
+                    size: data.size,
+                };
+
+                this.dungeon!.tokens![tokenIndex] = updatedToken;
+
+                logger.info("[dungeon-view] Token updated", { token: updatedToken });
+
+                // Update selected token reference
+                this.selectedToken = updatedToken;
+
+                // Re-render to show updated token
+                if (this.renderer) {
+                    this.renderer.render(this.dungeon!);
+                }
+
+                // Update detail panel with new data
+                this.updateTokenDetail(updatedToken);
+
+                // Persist changes to file
+                this.saveDungeonToFile();
+            },
+            {
+                type: token.type,
+                label: token.label,
+                color: token.color,
+                size: token.size,
+            },
+        );
+
+        modal.open();
     }
 
     /**

@@ -13,25 +13,36 @@ export interface TokenCreationData {
 }
 
 /**
- * Modal for creating a new token
+ * Modal for creating or editing a token
  */
 export class TokenCreationModal extends Modal {
     private tokenType: TokenType = "player";
     private tokenLabel = "";
     private tokenColor = "";
     private tokenSize = 1.0;
+    private isEditMode = false;
 
     constructor(
         app: App,
         private onSubmit: (data: TokenCreationData) => void,
+        initialData?: TokenCreationData,
     ) {
         super(app);
+
+        // Pre-fill form if editing
+        if (initialData) {
+            this.isEditMode = true;
+            this.tokenType = initialData.type;
+            this.tokenLabel = initialData.label;
+            this.tokenColor = initialData.color || "";
+            this.tokenSize = initialData.size || 1.0;
+        }
     }
 
     onOpen(): void {
         const { contentEl } = this;
         contentEl.empty();
-        contentEl.createEl("h3", { text: "Create Token" });
+        contentEl.createEl("h3", { text: this.isEditMode ? "Edit Token" : "Create Token" });
 
         // Token type selector
         new Setting(contentEl)
@@ -60,6 +71,7 @@ export class TokenCreationModal extends Modal {
             .addText((text) => {
                 text
                     .setPlaceholder("Gandalf")
+                    .setValue(this.tokenLabel)
                     .onChange((value) => {
                         this.tokenLabel = value.trim();
                     });
@@ -74,6 +86,7 @@ export class TokenCreationModal extends Modal {
             .addText((text) => {
                 text
                     .setPlaceholder(getDefaultTokenColor(this.tokenType))
+                    .setValue(this.tokenColor)
                     .onChange((value) => {
                         this.tokenColor = value.trim();
                         this.renderColorPreview();
@@ -130,7 +143,7 @@ export class TokenCreationModal extends Modal {
             })
             .addButton((button) => {
                 button
-                    .setButtonText("Create Token")
+                    .setButtonText(this.isEditMode ? "Update Token" : "Create Token")
                     .setCta()
                     .onClick(() => {
                         this.submit();
