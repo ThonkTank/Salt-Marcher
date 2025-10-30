@@ -93,8 +93,8 @@ class AutoContinue:
         """Save current phase to state file"""
         self.state_file.write_text(phase)
 
-    def send_prompt(self, phase: str):
-        """Send continuation prompt to Claude"""
+    def get_prompt_text(self, phase: str) -> str:
+        """Get prompt text for a phase"""
         prompt_config = self.prompts[phase]
         prompt_text = prompt_config["text"]
         model_pref = prompt_config["model_preference"]
@@ -104,25 +104,12 @@ class AutoContinue:
         print(f"Model preference: {model_pref}")
         print(f"{'='*60}\n")
 
-        # Send prompt text
-        self.child.send(prompt_text)
-        time.sleep(0.5)
+        return prompt_text
 
-        # Send Enter to submit
-        self.child.send("\r")
-
-        # Save state
-        self.save_phase(phase)
-        print("✓ Prompt sent and state saved\n")
-
-    def handle_permission(self) -> bool:
+    def check_permission(self, output: str) -> bool:
         """Check if output contains permission request and auto-approve"""
-        if not self.child or not self.child.before:
+        if not self.child or not output:
             return False
-
-        output = self.child.before
-        if isinstance(output, bytes):
-            output = output.decode('utf-8', errors='ignore')
 
         for pattern in self.permission_patterns:
             if re.search(pattern, output, re.IGNORECASE):
@@ -176,27 +163,24 @@ class AutoContinue:
         print("✓ Quota reset - restarting Claude\n")
         return True
 
-    def start_claude(self):
-        """Start Claude Code process"""
+    def start_claude(self, prompt_text: Optional[str] = None):
+        """Start Claude Code process with optional initial prompt"""
         print(f"\n[DEBUG] Starting Claude Code (iteration {self.iteration + 1})...")
 
+        # Build command with prompt if provided
+        if prompt_text:
+            cmd = ["claude", prompt_text]
+        else:
+            cmd = ["claude"]
+
         self.child = pexpect.spawn(
-            "claude",
+            cmd[0],
+            args=cmd[1:] if len(cmd) > 1 else [],
             encoding='utf-8',
             timeout=self.timeout,
             maxread=50000
         )
         self.child.logfile_read = sys.stdout
-
-        # Wait for initial prompt
-        try:
-            self.child.expect(".*", timeout=3)
-        except pexpect.TIMEOUT:
-            pass
-
-        # Send initial prompt
-        phase = self.get_next_phase()
-        self.send_prompt(phase)
 
     def monitor_loop(self):
         """Main monitoring loop"""
@@ -230,16 +214,9 @@ class AutoContinue:
                         output_buffer += chunk
                         last_output_time = time.time()
 
-                        # Check for permission dialog
-                        for pattern in self.permission_patterns:
-                            if re.search(pattern, output_buffer, re.IGNORECASE):
-                                print(f"\n{'='*60}")
-                                print("✓ PERMISSION DETECTED - Auto-approving")
-                                print(f"Pattern: {pattern}")
-                                print(f"{'='*60}\n")
-                                self.child.sendline("1")
-                                output_buffer = ""
-                                break
+                        # Check for permission dialog in accumulated output
+                        if self.check_permission(output_buffer):
+                            output_buffer = ""  # Clear after handling permission
 
                 except pexpect.TIMEOUT:
                     # No output available right now
@@ -251,10 +228,14 @@ class AutoContinue:
 
                     # Check for rate limit before exit
                     if output_buffer and self.handle_rate_limit(output_buffer):
-                        # Restart after quota reset
+                        # Restart after quota reset with same prompt
+                        phase = self.get_next_phase()
+                        prompt_text = self.get_prompt_text(phase)
+                        self.save_phase(phase)
+
                         output_buffer = ""
                         last_output_time = time.time()
-                        self.start_claude()
+                        self.start_claude(prompt_text)
                         continue
 
                     # Normal exit
@@ -265,22 +246,33 @@ class AutoContinue:
                 if idle_time >= self.timeout:
                     # Check for rate limit
                     if output_buffer and self.handle_rate_limit(output_buffer):
-                        # Restart Claude after quota reset
+                        # Restart Claude after quota reset with same prompt
+                        phase = self.get_next_phase()
+                        prompt_text = self.get_prompt_text(phase)
+                        self.save_phase(phase)
+
                         self.child.close()
                         output_buffer = ""
                         last_output_time = time.time()
-                        self.start_claude()
+                        self.start_claude(prompt_text)
                         continue
 
-                    # Normal auto-continue
+                    # Normal auto-continue - restart with next prompt
                     self.iteration += 1
                     print(f"\n{'='*60}")
                     print(f"Auto-continue triggered (iteration {self.iteration})")
                     print(f"Idle time: {idle_time:.1f}s")
                     print(f"{'='*60}\n")
 
+                    # Close old Claude instance
+                    self.child.close()
+
+                    # Start new instance with next phase prompt
                     phase = self.get_next_phase()
-                    self.send_prompt(phase)
+                    prompt_text = self.get_prompt_text(phase)
+                    self.save_phase(phase)
+
+                    self.start_claude(prompt_text)
                     output_buffer = ""
                     last_output_time = time.time()
 
@@ -322,8 +314,11 @@ class AutoContinue:
             return 1
 
         try:
-            # Start Claude
-            self.start_claude()
+            # Start Claude with first prompt
+            phase = self.get_next_phase()
+            prompt_text = self.get_prompt_text(phase)
+            self.save_phase(phase)
+            self.start_claude(prompt_text)
 
             # Monitor loop
             self.monitor_loop()
