@@ -7,9 +7,11 @@ import type {
     LootGenerationResult,
     LootBundle,
     LootItem,
+    LootTable,
 } from "./types";
 import type { EncounterXpRule, EncounterRuleModifierType } from "../../workmodes/encounter/session-store";
 import { DND5E_XP_THRESHOLDS } from "../../workmodes/encounter/session-store";
+import { generateItems, calculateItemValue, EXAMPLE_LOOT_TABLES } from "./item-generator";
 
 /**
  * Generate loot bundle from encounter context
@@ -18,32 +20,42 @@ export function generateLoot(
     context: LootGenerationContext,
     config: LootGenerationConfig = {},
     rules: ReadonlyArray<EncounterXpRule> = [],
+    lootTables: ReadonlyArray<LootTable> = EXAMPLE_LOOT_TABLES,
 ): LootGenerationResult {
     const warnings: string[] = [];
 
     // Calculate gold
     const goldResult = calculateGold(context, rules, warnings);
 
-    // Calculate magic item budget (placeholder for now)
+    // Calculate magic item budget
     const itemBudget = calculateItemBudget(context, config);
 
-    // Generate items (placeholder for now)
-    const items: LootItem[] = [];
+    // Generate items
+    const items = generateItems(context, config, itemBudget, lootTables);
+
+    // Calculate item values
+    const itemValue = calculateItemValue(items);
+    const tradeGoodsValue = items
+        .filter((item) => item.type === "trade-good")
+        .reduce((sum, item) => sum + (item.value ?? 0) * item.quantity, 0);
+    const magicItemValue = items
+        .filter((item) => item.type === "magic-item")
+        .reduce((sum, item) => sum + (item.value ?? 0) * item.quantity, 0);
 
     // Build final bundle
     const bundle: LootBundle = {
         gold: Math.round(goldResult.finalGold),
         items: Object.freeze(items),
-        totalValue: Math.round(goldResult.finalGold), // + item values when implemented
+        totalValue: Math.round(goldResult.finalGold + itemValue),
     };
 
     const breakdown = {
         baseGold: goldResult.baseGold,
         goldModifiers: goldResult.modifiers,
         finalGold: goldResult.finalGold,
-        magicItemsGenerated: 0,
-        tradeGoodsValue: 0,
-        inherentLootValue: 0,
+        magicItemsGenerated: items.filter((item) => item.type === "magic-item").length,
+        tradeGoodsValue,
+        inherentLootValue: 0, // Will be implemented in Phase 5.4
     };
 
     return {

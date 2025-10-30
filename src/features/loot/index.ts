@@ -2,6 +2,7 @@
 // Loot generation feature exports
 
 export { generateLoot, formatGold, formatLootSummary } from "./loot-generator";
+export { generateItems, calculateItemValue, groupItemsByRarity, EXAMPLE_LOOT_TABLES } from "./item-generator";
 export type {
     ItemRarity,
     LootType,
