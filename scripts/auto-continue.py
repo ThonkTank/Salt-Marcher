@@ -43,13 +43,12 @@ class FilteredLogFile:
     """
     def __init__(self, logfile):
         self.logfile = logfile
-        # Track last N lines to prevent ANY repetition
-        self.seen_lines = set()  # All lines we've ever seen
-        self.last_lines = []  # Last 200 lines for context
-        self.max_history = 200
+        # Buffer for incremental diff detection
+        self.last_output = ""  # Last complete output we saw
+        self.seen_lines = set()  # Dedupe within incremental updates
 
     def write(self, data):
-        """Filter and write data to logfile - ONLY log new lines"""
+        """Filter and write data to logfile - only log incremental changes"""
         if not data:
             return
 
@@ -61,26 +60,32 @@ class FilteredLogFile:
         clean = clean.replace('\x1b[?2004h', '').replace('\x1b[?2004l', '')
         clean = clean.replace('\x1b[?1004h', '').replace('\x1b[?2026h', '').replace('\x1b[?2026l', '')
 
-        # Process each line separately (TUI sends full screen on re-render!)
-        for line in clean.split('\n'):
+        # Find only NEW content compared to last output
+        if self.last_output and clean.startswith(self.last_output):
+            # TUI re-rendered: old content + new content
+            # Extract only the delta
+            new_content = clean[len(self.last_output):]
+        else:
+            # Fresh output or complete refresh
+            new_content = clean
+
+        # Update buffer
+        self.last_output = clean
+
+        # Process only new lines
+        for line in new_content.split('\n'):
             # Skip empty or very short lines
             if not line.strip() or len(line.strip()) < 3:
                 continue
 
-            # Normalize (remove extra spaces, trim)
+            # Normalize
             normalized = ' '.join(line.split())
 
-            # Skip if we've seen this exact line before
+            # Final dedupe check (in case of weird edge cases)
             if normalized in self.seen_lines:
                 continue
 
-            # New line! Add to seen set
             self.seen_lines.add(normalized)
-
-            # Maintain history buffer
-            self.last_lines.append(normalized)
-            if len(self.last_lines) > self.max_history:
-                old_line = self.last_lines.pop(0)
 
             # Write with timestamp
             timestamp = datetime.now().strftime('%H:%M:%S')
