@@ -114,8 +114,11 @@ class AutoContinue:
         for pattern in self.permission_patterns:
             if re.search(pattern, output, re.IGNORECASE):
                 print(f"\n{'='*60}")
-                print("✓ PERMISSION DETECTED - Auto-approving")
-                print(f"Pattern: {pattern}")
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ✓ PERMISSION DETECTED - Auto-approving")
+                print(f"   Pattern matched: {pattern}")
+                # Show context (first 150 chars of output)
+                context = output[-150:].replace('\n', ' ')
+                print(f"   Context: ...{context}")
                 print(f"{'='*60}\n")
 
                 # Send "1" to approve
@@ -165,7 +168,12 @@ class AutoContinue:
 
     def start_claude(self, prompt_text: Optional[str] = None):
         """Start Claude Code process with optional initial prompt"""
-        print(f"\n[DEBUG] Starting Claude Code (iteration {self.iteration + 1})...")
+        print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Starting Claude Code (iteration {self.iteration + 1})...")
+
+        if prompt_text:
+            # Show first 100 chars of prompt
+            preview = prompt_text[:100].replace('\n', ' ')
+            print(f"   Prompt: {preview}...")
 
         # Build command with prompt if provided
         if prompt_text:
@@ -180,7 +188,9 @@ class AutoContinue:
             timeout=self.timeout,
             maxread=50000
         )
-        self.child.logfile_read = sys.stdout
+        # Don't log raw output (too much ANSI noise)
+        # self.child.logfile_read = sys.stdout
+        print(f"   Claude started, waiting for activity...")
 
     def monitor_loop(self):
         """Main monitoring loop"""
@@ -224,11 +234,12 @@ class AutoContinue:
 
                 except pexpect.EOF:
                     # Claude exited
-                    print("\n[DEBUG] Claude exited")
+                    print(f"\n[{datetime.now().strftime('%H:%M:%S')}] Claude exited")
 
                     # Check for rate limit before exit
                     if output_buffer and self.handle_rate_limit(output_buffer):
                         # Restart after quota reset with same prompt
+                        print(f"   Restarting after rate-limit wait...")
                         phase = self.get_next_phase()
                         prompt_text = self.get_prompt_text(phase)
                         self.save_phase(phase)
@@ -239,6 +250,7 @@ class AutoContinue:
                         continue
 
                     # Normal exit
+                    print(f"   Session ended normally.")
                     break
 
                 # Check if we've been idle for the full timeout
@@ -260,11 +272,12 @@ class AutoContinue:
                     # Normal auto-continue - restart with next prompt
                     self.iteration += 1
                     print(f"\n{'='*60}")
-                    print(f"Auto-continue triggered (iteration {self.iteration})")
-                    print(f"Idle time: {idle_time:.1f}s")
-                    print(f"{'='*60}\n")
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] Auto-continue triggered (iteration {self.iteration})")
+                    print(f"   Idle time: {idle_time:.1f}s")
+                    print(f"{'='*60}")
 
                     # Close old Claude instance
+                    print(f"   Closing previous Claude instance...")
                     self.child.close()
 
                     # Start new instance with next phase prompt
