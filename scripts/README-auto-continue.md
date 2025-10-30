@@ -45,31 +45,51 @@ Das Skript:
 
 ## Prompt-Rotation
 
-Das Skript nutzt drei spezialisierte Prompts in einem kontinuierlichen Zyklus:
+Das Skript nutzt drei spezialisierte Prompts mit klaren Rollen in einem kontinuierlichen Zyklus:
 
 ### Phase A: Review & Roadmap Verification
-**Zweck:** Projekt-Status überprüfen und Roadmap aktualisieren
+**Rolle:** Quality Auditor & Strategic Planner
 **Model:** Opus (bevorzugt) oder Sonnet (Fallback)
 **Aufgaben:**
-- Implementation auf Konformität mit Zielen/Arbeitsweisen prüfen
-- Roadmap ergänzen mit konkreten nächsten Schritten
-- Sicherstellen dass Roadmap vollständig und aktuell ist
+1. Implementation-Qualität verifizieren (Tests laufen, Code-Review)
+2. Probleme identifizieren (Bugs, fehlende Tests, unvollständige Features)
+3. TODOs in Roadmap aufnehmen (priorisiert: kritisch → Features → Verbesserungen)
+4. Roadmap aktualisieren (Status ✅/🔄/⏳, "Next" pointer setzen)
+
+**Constraints:**
+- ⛔ NIEMALS "Ziele" oder "Arbeitsweisen" in CLAUDE.md ändern (READ ONLY!)
+- ✅ NUR "Architektur-Roadmap" Sektion bearbeiten
+- 📏 CLAUDE.md unter 40k Zeichen halten
 
 ### Phase B: Implementation
-**Zweck:** Roadmap-Schritte implementieren
+**Rolle:** Senior Developer
 **Model:** Sonnet
 **Aufgaben:**
-- Nächste Roadmap-Schritte umsetzen
-- Sauberen, wartbaren Code schreiben (DRY-Prinzip)
-- Tests ausführen und Fortschritt committen
+1. Nächste Aufgabe aus Roadmap wählen (marked as "Next")
+2. Feature vollständig implementieren (DRY, simple > clever)
+3. Tests schreiben/aktualisieren (`npm run test:all` muss passen)
+4. Roadmap-Fortschritt aktualisieren (Task ✅, "Next" aktualisieren)
+5. Commit erstellen mit klarer Message
+
+**Constraints:**
+- ⛔ NIEMALS "Ziele" oder "Arbeitsweisen" ändern
+- ✅ NUR Roadmap-Status aktualisieren (keine neuen TODOs hinzufügen)
+- 🎯 Quality: DRY, langfristige Lösungen, Tests müssen passen
 
 ### Phase C: Documentation & Cleanup
-**Zweck:** Dokumentation aktualisieren und aufräumen
+**Rolle:** Technical Writer & Code Reviewer
 **Model:** Sonnet
 **Aufgaben:**
-- CLAUDE.md aktualisieren
-- Code-Qualität prüfen
-- Aufräumen und optimieren
+1. Implementationsdetails in /docs dokumentieren (API, Workflows, Beispiele)
+2. CLAUDE.md aufräumen (Roadmap, Verweise zu /docs hinzufügen)
+3. Code säubern (toten Code entfernen, Kommentare verbessern)
+4. Dokumentations-Genauigkeit verifizieren
+
+**Constraints:**
+- ⛔ NIEMALS "Ziele" oder "Arbeitsweisen" in CLAUDE.md ändern
+- ✅ NUR Roadmap aufräumen und /docs-Verweise hinzufügen
+- 📁 Struktur: CLAUDE.md = high-level (what/why), /docs = details (how)
+- 📏 CLAUDE.md unter 40k Zeichen (Details nach /docs auslagern)
 
 **State-Persistenz:** Der aktuelle Prompt-Status wird in `.auto-continue-state` gespeichert und bleibt über Sessions erhalten.
 
