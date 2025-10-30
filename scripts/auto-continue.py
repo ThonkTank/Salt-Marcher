@@ -25,6 +25,105 @@ except ImportError:
     sys.exit(1)
 
 
+class FilteredLogFile:
+    """
+    Intelligent log filter that captures Claude's responses while removing ANSI noise.
+
+    Filters out:
+    - ANSI escape codes
+    - UI rendering artifacts (progress bars, spinners)
+    - Repeated screen redraws
+    - Control sequences
+
+    Preserves:
+    - Claude's text responses
+    - Tool usage notifications
+    - Error messages
+    - Permission dialogs
+    """
+    def __init__(self, logfile):
+        self.logfile = logfile
+        self.last_line = ""
+        self.line_repeat_count = 0
+
+        # Patterns that indicate meaningful content
+        self.meaningful_patterns = [
+            r'^[●○■□▪▫►▸•]',  # Bullet points, markers
+            r'^\s*(I\'ll|I\'m|Let me|I will|I can|I need)',  # Claude's responses
+            r'^\s*(Sure|Okay|Yes|No|Right|Got it)',  # Acknowledgments
+            r'Tool:',  # Tool usage
+            r'Error:',  # Errors
+            r'Do you want',  # Permission dialogs
+            r'Choose an option',  # Prompts
+            r'⚠️|✓|❯',  # Important symbols
+            r'^\s*\d+\.',  # Numbered lists
+            r'^\s*-',  # Bullet lists
+        ]
+
+    def write(self, data):
+        """Filter and write data to logfile"""
+        if not data:
+            return
+
+        # Strip ANSI codes
+        clean = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', data)
+        clean = re.sub(r'\x1b\].*?\x07', '', clean)
+        clean = re.sub(r'\x1b\[.*?[\x40-\x7E]', '', clean)
+        clean = clean.replace('\x1b[?25l', '').replace('\x1b[?25h', '')
+        clean = clean.replace('\x1b[?2004h', '').replace('\x1b[?2004l', '')
+        clean = clean.replace('\x1b[?1004h', '').replace('\x1b[?2026h', '').replace('\x1b[?2026l', '')
+
+        # Skip if only whitespace
+        if not clean.strip():
+            return
+
+        # Skip very short lines (likely UI artifacts)
+        if len(clean.strip()) < 3:
+            return
+
+        # Detect repeated lines (UI redraws)
+        if clean.strip() == self.last_line.strip():
+            self.line_repeat_count += 1
+            # Skip if line repeats more than 2 times
+            if self.line_repeat_count > 2:
+                return
+        else:
+            self.line_repeat_count = 0
+            self.last_line = clean
+
+        # Check if line contains meaningful content
+        is_meaningful = any(re.search(pattern, clean, re.IGNORECASE)
+                           for pattern in self.meaningful_patterns)
+
+        # Skip lines that are just UI noise
+        if not is_meaningful:
+            # Skip progress indicators, spinners, etc.
+            if any(char in clean for char in ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']):
+                return
+            # Skip pure whitespace lines
+            if clean.strip() == '':
+                return
+
+        # Write with timestamp
+        timestamp = datetime.now().strftime('%H:%M:%S')
+
+        # Format multi-line content nicely
+        lines = clean.split('\n')
+        for i, line in enumerate(lines):
+            if line.strip():
+                if i == 0:
+                    self.logfile.write(f"[{timestamp}] {line}\n")
+                else:
+                    self.logfile.write(f"          {line}\n")
+
+        self.logfile.flush()
+
+    def flush(self):
+        """Flush the underlying logfile"""
+        if hasattr(self.logfile, 'flush'):
+            self.logfile.flush()
+
+
 class AutoContinue:
     def __init__(self, config_path: str, project_root: str):
         self.project_root = Path(project_root)
@@ -45,6 +144,11 @@ class AutoContinue:
         self.child: Optional[pexpect.spawn] = None
         self.iteration = 0
         self.running = True
+
+        # Setup filtered logging
+        self.log_file_path = self.project_root / "auto-continue-filtered.log"
+        self.log_file = open(self.log_file_path, 'a', buffering=1)
+        self.filtered_log = FilteredLogFile(self.log_file)
 
         # Setup signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -188,8 +292,10 @@ class AutoContinue:
             timeout=self.timeout,
             maxread=50000
         )
-        # Don't log raw output (too much ANSI noise)
-        # self.child.logfile_read = sys.stdout
+
+        # Attach filtered log to capture Claude's responses
+        self.child.logfile_read = self.filtered_log
+
         print(f"   Claude started, waiting for activity...")
 
     def monitor_loop(self):
@@ -299,6 +405,8 @@ class AutoContinue:
         """Cleanup resources"""
         if self.child and self.child.isalive():
             self.child.close()
+        if hasattr(self, 'log_file') and self.log_file:
+            self.log_file.close()
         self.release_lock()
 
     def run(self):
@@ -311,6 +419,7 @@ class AutoContinue:
         print(f"  Max iterations: {self.max_iterations if self.max_iterations != -1 else 'unlimited'}")
         print(f"  Quota wait: {self.enable_quota_wait}")
         print(f"  Project: {self.project_root}")
+        print(f"  Filtered log: {self.log_file_path}")
         print(f"\nPrompt Cycle: A → B → C → A → ...")
 
         for phase, prompt_config in self.prompts.items():
@@ -319,6 +428,7 @@ class AutoContinue:
         next_phase = self.get_next_phase()
         print(f"  Next prompt: Phase {next_phase}")
         print(f"\nPress Ctrl+C to stop at any time.")
+        print(f"To monitor Claude's responses: tail -f {self.log_file_path}")
         print("="*60)
         print()
 
