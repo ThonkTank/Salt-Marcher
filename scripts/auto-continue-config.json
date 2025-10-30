@@ -20,11 +20,12 @@
     }
   },
   "permission_patterns": [
-    "Do you want to proceed",
+    "Do you want",
     "❯.*1\\..*Yes",
     "Allow.*\\(1\\).*Yes",
     "permission.*required",
-    "Choose an option:"
+    "Choose an option:",
+    "allow all.*during this session"
   ],
   "rate_limit_pattern": "Your limit will reset at ([0-9]+)(am|pm)"
 }
