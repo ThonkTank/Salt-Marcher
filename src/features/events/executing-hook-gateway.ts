@@ -5,6 +5,9 @@ import type { CalendarEvent, PhenomenonOccurrence } from "../../workmodes/almana
 import type { HookDispatchGateway, HookDispatchContext } from "../../workmodes/almanac/data/calendar-state-gateway";
 import { HookExecutor } from "./hook-executor";
 import { NotificationHandler, WeatherHandler, FactionHandler, LocationHandler } from "./hooks";
+import { EventHistoryStore } from "./event-history-store";
+import { createTriggeredEventEntry, createTriggeredPhenomenonEntry } from "./event-history-types";
+import { getEventAnchorTimestamp } from "../../workmodes/almanac/domain";
 import { logger } from "../../app/plugin-logger";
 
 /**
@@ -12,9 +15,11 @@ import { logger } from "../../app/plugin-logger";
  */
 export class ExecutingHookGateway implements HookDispatchGateway {
     private executor: HookExecutor;
+    private historyStore: EventHistoryStore;
 
-    constructor(executor?: HookExecutor) {
+    constructor(executor?: HookExecutor, historyStore?: EventHistoryStore) {
         this.executor = executor || new HookExecutor();
+        this.historyStore = historyStore || new EventHistoryStore();
         this.registerDefaultHandlers();
     }
 
@@ -43,6 +48,28 @@ export class ExecutingHookGateway implements HookDispatchGateway {
             reason: context.reason,
         });
 
+        // Add events to history timeline
+        for (const event of events) {
+            const timestamp = getEventAnchorTimestamp(event) ?? event.date;
+            const entry = createTriggeredEventEntry(event, timestamp, {
+                scope: context.scope,
+                travelId: context.travelId,
+                reason: context.reason,
+            });
+            this.historyStore.addEvent(entry);
+        }
+
+        // Add phenomena to history timeline
+        for (const phenomenon of phenomena) {
+            const entry = createTriggeredPhenomenonEntry(phenomenon, {
+                scope: context.scope,
+                travelId: context.travelId,
+                reason: context.reason,
+            });
+            this.historyStore.addPhenomenon(entry);
+        }
+
+        // Execute hooks
         await this.executor.executeHooks(events, phenomena, {
             scope: context.scope,
             travelId: context.travelId,
@@ -55,5 +82,12 @@ export class ExecutingHookGateway implements HookDispatchGateway {
      */
     getExecutor(): HookExecutor {
         return this.executor;
+    }
+
+    /**
+     * Get the event history store (for testing/UI access)
+     */
+    getHistoryStore(): EventHistoryStore {
+        return this.historyStore;
     }
 }
