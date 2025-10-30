@@ -43,29 +43,13 @@ class FilteredLogFile:
     """
     def __init__(self, logfile):
         self.logfile = logfile
-        self.last_line = ""
-        self.line_repeat_count = 0
-
-        # Track tool calls to avoid logging redraws
-        self.seen_tool_calls = set()  # Track tool call signatures
-        self.current_tool_output = []  # Buffer for current tool output
-
-        # Patterns that indicate meaningful content
-        self.meaningful_patterns = [
-            r'^[●○■□▪▫►▸•]',  # Bullet points, markers
-            r'^\s*(I\'ll|I\'m|Let me|I will|I can|I need)',  # Claude's responses
-            r'^\s*(Sure|Okay|Yes|No|Right|Got it)',  # Acknowledgments
-            r'Tool:',  # Tool usage
-            r'Error:',  # Errors
-            r'Do you want',  # Permission dialogs
-            r'Choose an option',  # Prompts
-            r'⚠️|✓|❯',  # Important symbols
-            r'^\s*\d+\.',  # Numbered lists
-            r'^\s*-',  # Bullet lists
-        ]
+        # Track last N lines to prevent ANY repetition
+        self.seen_lines = set()  # All lines we've ever seen
+        self.last_lines = []  # Last 200 lines for context
+        self.max_history = 200
 
     def write(self, data):
-        """Filter and write data to logfile"""
+        """Filter and write data to logfile - ONLY log new lines"""
         if not data:
             return
 
@@ -77,75 +61,30 @@ class FilteredLogFile:
         clean = clean.replace('\x1b[?2004h', '').replace('\x1b[?2004l', '')
         clean = clean.replace('\x1b[?1004h', '').replace('\x1b[?2026h', '').replace('\x1b[?2026l', '')
 
-        # Skip if only whitespace
-        if not clean.strip():
+        # Skip if only whitespace or very short
+        if not clean.strip() or len(clean.strip()) < 3:
             return
 
-        # Skip very short lines (likely UI artifacts)
-        if len(clean.strip()) < 3:
+        # Normalize line (remove extra spaces, trim)
+        normalized = ' '.join(clean.split())
+
+        # Skip if we've seen this exact line before
+        if normalized in self.seen_lines:
             return
 
-        # Skip UI noise patterns
-        ui_noise_patterns = [
-            r'^[\s─]+$',  # Only lines/whitespace
-            r'Try ["\'].*["\']',  # "Try 'how do I log an error?'"
-            r'\? for shortcuts',  # UI hints
-            r'Thinking on \(tab to toggle\)',  # UI state
-            r'ctrl\+[a-z]',  # Keyboard shortcuts
-            r'^[✶✻✽✹✸✷✺]\s+Pondering',  # Spinner + "Pondering"
-            r'^[✶✻✽✹✸✷✺]\s+Sussing',  # Spinner + "Sussing"
-            r'^[·•]\s+Pondering',  # Bullet + "Pondering"
-            r'esc to interrupt',  # UI hints
-            r'^\s*\(esc to interrupt',  # UI hints with parens
-            r'⎿.*Running',  # Tool output "Running..." (intermediate state)
-        ]
+        # New line! Add to seen set
+        self.seen_lines.add(normalized)
 
-        for pattern in ui_noise_patterns:
-            if re.search(pattern, clean, re.IGNORECASE):
-                return
-
-        # Skip progress indicators, spinners
-        if any(char in clean for char in ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏', '✶', '✻', '✽', '✹']):
-            # Unless it's meaningful content WITH a spinner (like "● Read(...)")
-            if not any(re.search(pattern, clean, re.IGNORECASE) for pattern in self.meaningful_patterns):
-                return
-
-        # Track tool calls to avoid redraws
-        tool_call_match = re.match(r'^[●○]\s+(Read|Bash|Write|Edit|Grep|Glob|Task)\((.*?)\)', clean)
-        if tool_call_match:
-            tool_signature = f"{tool_call_match.group(1)}:{tool_call_match.group(2)[:50]}"
-            if tool_signature in self.seen_tool_calls:
-                # Already logged this tool call, skip redraw
-                return
-            self.seen_tool_calls.add(tool_signature)
-
-        # Create content hash to detect duplicate blocks
-        content_hash = hash(clean.strip())
-        if content_hash == hash(self.last_line.strip()):
-            return
-
-        self.last_line = clean
-
-        # Check if line contains meaningful content
-        is_meaningful = any(re.search(pattern, clean, re.IGNORECASE)
-                           for pattern in self.meaningful_patterns)
-
-        # Skip if not meaningful
-        if not is_meaningful:
-            return
+        # Maintain history buffer
+        self.last_lines.append(normalized)
+        if len(self.last_lines) > self.max_history:
+            # Remove oldest line from seen set
+            old_line = self.last_lines.pop(0)
+            # Keep in seen_lines to prevent re-logging old content
 
         # Write with timestamp
         timestamp = datetime.now().strftime('%H:%M:%S')
-
-        # Format multi-line content nicely
-        lines = clean.split('\n')
-        for i, line in enumerate(lines):
-            if line.strip():
-                if i == 0:
-                    self.logfile.write(f"[{timestamp}] {line}\n")
-                else:
-                    self.logfile.write(f"          {line}\n")
-
+        self.logfile.write(f"[{timestamp}] {clean.strip()}\n")
         self.logfile.flush()
 
     def flush(self):
