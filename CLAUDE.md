@@ -315,9 +315,9 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 4.1 ✅ | Tests: 299/301 (99.3%) | **Next:** Phase 4.2 Action Handlers
+**Status:** Phase 4.2 ✅ | Tests: 315/317 (99.4%) | **Next:** Phase 4.3 Timeline/Inbox Views
 
-**Phase 0-3 ✅** Tags/Schemas, Stores, Encounter (Travel→Combat), Locations (CRUD/Tree/Markers), Dungeons (Grid/Rooms/Tokens)
-**Phase 4.1 ✅** Hook Executor (Handler Registry, Notification/Weather), ExecutingHookGateway, +8 Tests
-**Phase 4.2-4 ⏳** Action Handlers (Faction/Location), Timeline/Inbox Views, Integration Tests
+**Phase 0-3 ✅** Tags/Schemas, Stores, Encounter, Locations, Dungeons (Grid/Rooms/Tokens)
+**Phase 4.1-2 ✅** Hook Executor + 4 Handlers (Notification/Weather/Faction/Location), +24 Tests
+**Phase 4.3-4 ⏳** Timeline/Inbox Views, Integration Tests
 **Phase 5-6 ⏳** Loot Generator (Tags, XP-scaling), Audio (Playlists, Fade), Release

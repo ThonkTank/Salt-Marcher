@@ -4,7 +4,7 @@
 import type { CalendarEvent, PhenomenonOccurrence } from "../../workmodes/almanac/domain";
 import type { HookDispatchGateway, HookDispatchContext } from "../../workmodes/almanac/data/calendar-state-gateway";
 import { HookExecutor } from "./hook-executor";
-import { NotificationHandler, WeatherHandler } from "./hooks";
+import { NotificationHandler, WeatherHandler, FactionHandler, LocationHandler } from "./hooks";
 import { logger } from "../../app/plugin-logger";
 
 /**
@@ -24,7 +24,8 @@ export class ExecutingHookGateway implements HookDispatchGateway {
     private registerDefaultHandlers(): void {
         this.executor.registerHandler(new NotificationHandler());
         this.executor.registerHandler(new WeatherHandler());
-        // TODO: Register FactionHandler, LocationHandler when implemented
+        this.executor.registerHandler(new FactionHandler());
+        this.executor.registerHandler(new LocationHandler());
     }
 
     /**
