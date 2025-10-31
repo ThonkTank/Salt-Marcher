@@ -405,15 +405,170 @@ console.log(`Generated ${result.events.length} important events`);
 - Expected to fail in CI
 - Test faction CRUD via IPC
 
+## Phase 8.5: Advanced Faction Features ✅
+
+**Status:** Complete - Enhanced faction capabilities with subfactions, dynamic relationships, economics, military, and diplomacy
+
+### Subfaction System ✅
+**Implementation:** `src/features/factions/subfactions.ts`
+- **Organizational Hierarchy**: Factions can have parent-child relationships
+- **Validation**: Prevents circular dependencies, validates parent existence
+- **Resource Inheritance**: Subfactions inherit percentage of parent resources (default 10%)
+- **Culture Inheritance**: Combines parent and subfaction culture tags (deduplicated)
+- **Hierarchy Traversal**: Get root parent, all subfactions, combined resources
+- **Resource Transfers**: Transfer resources from parent to subfaction with validation
+
+**Functions:**
+- `validateSubfactionHierarchy()` - Validates no cycles, parent exists
+- `inheritParentResources()` - Inherit resources at specified rate
+- `inheritCultureTags()` - Combine parent/subfaction cultures
+- `getSubfactions()` - Get direct children
+- `getRootParent()` - Traverse to root of hierarchy
+- `getHierarchy()` - Get entire tree (root + all descendants)
+- `getHierarchyResources()` - Sum resources across hierarchy
+- `transferResources()` - Move resources parent→subfaction
+
+**Tests:** 17 tests (hierarchy validation, inheritance, traversal, transfers)
+
+### Dynamic Relationships ✅
+**Implementation:** `src/features/factions/relationships.ts`
+- **Action-Based Changes**: Relationships shift based on faction actions (form alliance, raid, trade, etc.)
+- **Relationship Types**: Allied (60+), Trade (20-59), Neutral (-19 to 19), Rivalry (-20 to -59), Hostile (-60 to -100)
+- **Natural Decay**: Relationships drift toward neutral over time (configurable rate)
+- **Relationship Propagation**: "Enemy of my friend is my enemy" - allies share relationship changes
+- **Mutual Operations**: Improve/degrade relationships symmetrically
+
+**Action Impacts:**
+- Positive: `form_alliance` (+30), `trade_resources` (+10), `send_aid` (+20), `defend_ally` (+25)
+- Negative: `declare_war` (-50), `raid_target` (-40), `betray_treaty` (-60), `steal_resources` (-30)
+
+**Functions:**
+- `updateRelationshipByAction()` - Modify relationship based on action type
+- `applyRelationshipDecay()` - Drift toward neutral over time
+- `propagateRelationshipChange()` - Spread changes to allied factions
+- `improveMutualRelationship()` / `degradeMutualRelationship()` - Symmetric updates
+- `areFactionsAtWar()` / `areFactionsAllied()` - Relationship queries
+- `getHostileFactions()` / `getAlliedFactions()` - Filter by relationship value
+
+**Tests:** 17 tests (action impacts, decay, propagation, mutual operations)
+
+### Economic Simulation ✅
+**Implementation:** `src/features/factions/economics.ts`
+- **Market Pricing**: Dynamic prices based on supply/demand ratio
+- **Trade Routes**: Establish/suspend/sever/resume routes between factions
+- **Trade Income**: Generate profit from active trade routes (10% of route value)
+- **Market Operations**: Buy/sell resources with dynamic pricing
+- **Market Fluctuation**: Random supply/demand changes (simulates market volatility)
+
+**Market Model:**
+- Price calculation: `base_price * (demand / supply)`
+- Scarcity premium (supply = 0): `base_price * 10`
+- Fire sale (demand = 0): `base_price * 0.1`
+- Price floor: `base_price * 0.1`
+
+**Trade Routes:**
+- Status: `active`, `suspended`, `severed`
+- Active routes generate gold income per cycle
+- Severed routes cannot be resumed (permanent break)
+
+**Functions:**
+- `calculateMarketPrice()` - Compute price from supply/demand
+- `updateMarketPrices()` - Recalculate all faction markets
+- `processTradeRoute()` - Execute trade and generate profit
+- `establishTradeRoute()` / `suspendTradeRoute()` / `severTradeRoute()` / `resumeTradeRoute()`
+- `buyFromMarket()` / `sellToMarket()` - Market transactions
+- `simulateMarketFluctuation()` - Random supply/demand changes
+- `getTotalTradeIncome()` - Sum income from all active routes
+
+**Tests:** 20 tests (pricing, trade routes, market operations, fluctuations)
+
+### Military Simulation ✅
+**Implementation:** `src/features/factions/military.ts`
+- **Strength Calculation**: Quantity × Training × Morale × Equipment Quality
+- **Battle Simulation**: Attacker vs defender with defensive bonuses
+- **Siege Mechanics**: Longer duration, higher defender bonus, breakthrough/starvation outcomes
+- **Casualties**: Apply losses to faction members, remove depleted units
+- **Morale System**: Victory/defeat affects unit morale (clamped 0-100)
+- **Tactical AI**: Recommends attack/defend/retreat/flank/ambush based on terrain and strength
+
+**Battle Outcomes:**
+- Decisive victory (strength ratio > 1.5 or < 0.67): 10-50% casualties
+- Narrow victory (strength ratio 1.1-1.5 or 0.67-0.9): 25-40% casualties
+- Stalemate (strength ratio 0.9-1.1): 30% casualties both sides
+
+**Siege Mechanics:**
+- Duration < 10 days: Ongoing with attrition (2% attacker, 1% defender per day)
+- Breakthrough (ratio > 2.0 after 10+ days): Attacker victory, 30/60% casualties
+- Starved out (30+ days): Attacker victory, 10/40% casualties
+- Repelled (ratio < 0.8 after 10+ days): Defender victory, 40/20% casualties
+
+**Defensive Bonuses:**
+- Normal battle: 1.2x defender strength
+- Siege: 2.0x defender strength
+
+**Functions:**
+- `calculateMilitaryStrength()` - Compute total combat power
+- `convertMembersToMilitaryUnits()` - Transform faction members to combat units
+- `initiateMilitaryEngagement()` - Start battle/siege/raid
+- `simulateBattle()` - Resolve battle, determine victor and casualties
+- `resolveSiege()` - Resolve siege with time/attrition mechanics
+- `applyCasualties()` - Remove losses from faction members
+- `updateMorale()` - Adjust morale (victory/defeat impact)
+- `getTacticalDecision()` - AI decision (attack/defend/retreat/flank/ambush)
+
+**Tests:** 18 tests (strength calculation, battles, sieges, casualties, morale, tactical AI)
+
+### Diplomatic Events ✅
+**Implementation:** `src/features/factions/diplomacy.ts`
+- **Treaty Negotiation**: Propose treaties (alliance, non-aggression, trade, mutual defense, vassal)
+- **Acceptance Thresholds**: Relationship requirements vary by treaty type
+- **Treaty Violation**: Severe relationship penalty (-60) when treaties broken
+- **Treaty Lifecycle**: Active → Violated/Nullified/Expired
+- **Diplomatic Events**: Generate opportunities/warnings based on relationships
+- **Negotiation**: Terms adjusted based on relationship quality
+
+**Treaty Types & Thresholds:**
+- Alliance: 50+ (strong positive relationship required)
+- Mutual Defense: 40+
+- Trade Agreement: 20+
+- Non-Aggression: -20+ (can work even with slight hostility)
+- Vassal: 60+ (very strong relationship or defeat required)
+
+**Treaty Lifecycle:**
+- Propose → Accept/Reject based on relationship
+- Active → Track expiration, renewal
+- Violation → Permanent status change, relationship damage
+- Nullification → Mutual agreement to end (minor relationship penalty)
+
+**Diplomatic Events:**
+- Alliance Opportunity: High relationship (60+) without existing alliance
+- Betrayal Warning: Alliance at risk (relationship < 30)
+- Treaty Renewal: Approaching expiration date
+- Treaty Violation: Treaty broken despite agreement
+
+**Negotiation:**
+- Allied (50+): Accept generous terms
+- Neutral (0-50): Counter-offer at 70% of proposed value
+- Hostile (< 0): Demand 150% of proposed value
+
+**Functions:**
+- `proposeTreaty()` - Negotiate treaty based on relationship
+- `violateTreaty()` - Break treaty, severe relationship penalty
+- `nullifyTreaty()` - End treaty by mutual agreement
+- `checkTreatyExpiration()` / `renewTreaty()` - Manage treaty lifecycle
+- `getActiveTreaties()` / `getTreatiesWithFaction()` / `hasTreaty()` - Treaty queries
+- `generateDiplomaticEvent()` - Create opportunities/warnings
+- `negotiateTerms()` - Adjust terms based on relationship
+
+**Tests:** 20 tests (treaty negotiation, violation, lifecycle, events, negotiation)
+
 ## Future Enhancements
 
-### Phase 8.5+: Advanced Features
-- **Subfactions**: Organizational hierarchy (inquisition within kingdom)
+### Phase 8.6+: Advanced Features
 - **NPC Personalities**: Individual quirks, loyalties, secrets
-- **Dynamic Relationships**: Relations change based on actions
-- **Economic Simulation**: Supply/demand, trade routes, markets
-- **Military Simulation**: Battles, sieges, tactical AI
-- **Diplomatic Events**: Treaties, betrayals, negotiations
+- **Advanced Economic Simulation**: Production chains, resource consumption, trade goods catalog
+- **Advanced Military Simulation**: Unit veterancy, equipment degradation, supply lines
+- **Diplomatic Complexity**: Secret treaties, espionage, diplomatic incidents
 
 ### UI Polish
 - **Map Visualization**: Faction territories and influence zones (architecture ready)

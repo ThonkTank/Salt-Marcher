@@ -86,6 +86,98 @@ export interface FactionRelationship {
 }
 
 /**
+ * Trade route between factions
+ */
+export interface TradeRoute {
+  /** Name of the partner faction */
+  partner_faction: string;
+  /** Goods being traded */
+  goods: string[];
+  /** Value per cycle (in gold) */
+  value: number;
+  /** Route status */
+  status: "active" | "suspended" | "severed";
+  /** Path description */
+  route_description?: string;
+}
+
+/**
+ * Market data for economic simulation
+ */
+export interface MarketData {
+  /** Resource/good name */
+  resource: string;
+  /** Base price */
+  base_price: number;
+  /** Supply quantity */
+  supply: number;
+  /** Demand quantity */
+  demand: number;
+  /** Current market price (calculated from supply/demand) */
+  current_price?: number;
+}
+
+/**
+ * Military unit composition
+ */
+export interface MilitaryUnit {
+  /** Unit name */
+  name: string;
+  /** Quantity */
+  quantity: number;
+  /** Reference to creature statblock */
+  statblock_ref: string;
+  /** Training level (0-100) */
+  training: number;
+  /** Morale level (0-100) */
+  morale: number;
+  /** Equipment quality (0-100) */
+  equipment_quality: number;
+}
+
+/**
+ * Battle or siege event
+ */
+export interface MilitaryEngagement {
+  /** Engagement ID */
+  id: string;
+  /** Type of engagement */
+  type: "battle" | "siege" | "skirmish" | "raid";
+  /** Opposing faction */
+  opponent: string;
+  /** Location (hex or POI) */
+  location: string;
+  /** Start date */
+  started: string;
+  /** Status */
+  status: "ongoing" | "victory" | "defeat" | "retreat" | "stalemate";
+  /** Units committed */
+  committed_units: MilitaryUnit[];
+  /** Casualties */
+  casualties?: number;
+}
+
+/**
+ * Diplomatic treaty or agreement
+ */
+export interface DiplomaticTreaty {
+  /** Treaty ID */
+  id: string;
+  /** Type of treaty */
+  type: "alliance" | "non_aggression" | "trade_agreement" | "mutual_defense" | "vassal";
+  /** Partner faction(s) */
+  partners: string[];
+  /** Terms of the treaty */
+  terms: string;
+  /** Start date */
+  signed: string;
+  /** Expiration date (if temporary) */
+  expires?: string;
+  /** Status */
+  status: "active" | "violated" | "expired" | "nullified";
+}
+
+/**
  * Complete faction data structure
  */
 export interface FactionData {
@@ -107,4 +199,16 @@ export interface FactionData {
   relationships?: string;
   /** Faction members with position and job tracking */
   members?: FactionMember[];
+  /** Parent faction (for subfactions) */
+  parent_faction?: string;
+  /** Subfactions under this faction */
+  subfactions?: string[];
+  /** Trade routes */
+  trade_routes?: TradeRoute[];
+  /** Market data for economic simulation */
+  markets?: MarketData[];
+  /** Military engagements */
+  military_engagements?: MilitaryEngagement[];
+  /** Diplomatic treaties */
+  treaties?: DiplomaticTreaty[];
 }

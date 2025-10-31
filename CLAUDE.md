@@ -312,7 +312,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 8.4 ✅ Complete (Full Faction Integration) | Tests: 599/600 (99.8%) | **Next:** Phase 8.5 (Advanced Faction Features)
+**Status:** Phase 8.5 ✅ Complete (Advanced Faction Features) | Tests: 721/722 (99.9%) | **Next:** Phase 8.6 or UI Enhancements
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -343,33 +343,37 @@ Ziele:
   - Persistence: Simulation results applied and saved back to faction files
   - Event generation with dates for calendar inbox
   - Updated integration tests with full YAML structures
+- **Phase 8.5:** Advanced Faction Features ✅ - See [docs/faction-system.md](docs/faction-system.md)
+  - Subfaction system: Organizational hierarchy with resource/culture inheritance, validation
+  - Dynamic relationships: Action-based changes, natural decay, relationship propagation
+  - Economic simulation: Market pricing (supply/demand), trade routes, buy/sell operations
+  - Military simulation: Strength calculation, battles, sieges, casualties, morale, tactical AI
+  - Diplomatic events: Treaty negotiation/violation/lifecycle, diplomatic events, negotiation
+  - 92 new tests (Subfactions: 17, Relationships: 17, Economics: 20, Military: 18, Diplomacy: 20)
 
 **Geplant:**
-- **Phase 8.5 (Advanced Faction Features)**: Enhance faction capabilities
-  - Subfactions: Organizational hierarchy with inheritance
-  - Dynamic relationships: Relations change based on actions
-  - Economic simulation: Supply/demand, trade routes, markets
-  - Military simulation: Battles, sieges, tactical AI
-  - Diplomatic events: Treaties, betrayals, negotiations
+- **Phase 8.6 (Advanced Features)**: Further enhancements
+  - NPC personalities: Individual quirks, loyalties, secrets
+  - Advanced economics: Production chains, resource consumption, trade goods catalog
+  - Advanced military: Unit veterancy, equipment degradation, supply lines
+  - Diplomatic complexity: Secret treaties, espionage, diplomatic incidents
 
 **Technische Schulden:**
 - 21 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 
 **Test-Status:**
-- Unit tests: 599/600 passing (99.8%) ✅
+- Unit tests: 721/722 passing (99.9%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 24/24 (serialization: 10, generation: 14)
-  - Faction tests: 85/85 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15)
+  - Faction tests: 177/177 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Subfactions: 17, Relationships: 17, Economics: 20, Military: 18, Diplomacy: 20)
   - Event handlers: Faction/location hook tests
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 8.5 (Advanced Faction Features)**: Enhance faction capabilities with advanced features
-   - Implement subfactions with organizational hierarchy
-   - Add dynamic relationship changes based on faction actions
-   - Build economic simulation (supply/demand, trade routes)
-   - Develop military simulation (battles, sieges)
-   - Create diplomatic event system (treaties, betrayals)
+1. **Phase 8.6 (Advanced Features)** OR **UI Enhancements**:
+   - Option A: Continue faction system enhancements (NPC personalities, advanced economics/military, espionage)
+   - Option B: Build UI for Phase 8 features (faction territories on map, relationship graph, resource dashboard)
+   - Option C: Move to next major feature (Orte system, Dungeon crawling, etc.)
