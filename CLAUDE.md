@@ -314,7 +314,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 9.1.2 ✅ Complete (Inspector Building Display) | Tests: 959/961 (99.8%) | **Next:** Phase 9.2B or Phase 10
+**Status:** Phase 9.2B ✅ Complete (Building Management UI) | Tests: 960/961 (99.9%) | **Next:** Phase 9.2C or Phase 10
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -402,12 +402,27 @@ Ziele:
   - Async location file loading with graceful error handling
   - Uses existing frontmatter utilities and type guards
   - No new tests (follows existing proven patterns)
+- **Phase 9.2B:** Building Management UI ✅ - See [docs/faction-system.md#phase-92b-building-management-ui-](docs/faction-system.md#phase-92b-building-management-ui-)
+  - Building management modal with CRUD operations for building state
+  - Edit building condition (slider with live production rate calculation)
+  - Edit maintenance overdue status
+  - View/edit current worker count (validated against template max)
+  - View allowed jobs and building bonuses
+  - View/remove active jobs
+  - View period production output
+  - Save changes via Obsidian's processFrontMatter API
+  - "Manage Building" button in cartographer inspector
+  - No new tests (follows proven Obsidian Modal pattern)
 
 **Geplant:**
-- **Phase 9.2B (Future - Building Management UI)**: Full building/worker management
-  - Building management modal: Edit building states, assign workers, view production
-  - Worker assignment UI: Drag-and-drop interface for assigning faction members to buildings
-  - Production tracking visualization: Charts and progress indicators
+- **Phase 9.2C (Future - Worker Assignment UI)**: Drag-and-drop worker assignment
+  - Load available faction members from vault
+  - Drag-and-drop interface for assigning members to buildings
+  - Visual worker roster with faction context
+- **Phase 9.2D (Future - Production Visualization)**: Charts and progress indicators
+  - Production rate charts over time
+  - Worker efficiency visualization
+  - Resource consumption/production graphs
 - **Phase 10 (Future)**: Next major feature
   - Option A: Dungeon crawling system (grid-based tactical encounters)
   - Option B: Advanced place hierarchy (Stadt → Viertel → Gebäude → Raum)
@@ -420,7 +435,7 @@ Ziele:
 - Phase 9.1.2 completed: Removed "Building & worker details: Coming soon" placeholder
 
 **Test-Status:**
-- Unit tests: 959/961 passing (99.8%) ✅
+- Unit tests: 960/961 passing (99.9%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 26/26 (serialization: 10, generation: 14, Phase 8.8: 2)
@@ -431,11 +446,12 @@ Ziele:
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 9.2B (Building Management UI)** - Complete building/worker management UI:
-   - Building management modal with full CRUD operations
-   - Worker assignment interface (drag-and-drop faction members to jobs)
-   - Production tracking and visualization
+1. **Phase 9.2C (Worker Assignment UI)** - Drag-and-drop worker assignment:
+   - Faction member discovery: Load available members from vault files
+   - Worker assignment UI: Drag-and-drop interface in building modal
+   - Visual roster showing member names, roles, current assignments
+   - Validation: Check job permissions, building capacity
 2. **Phase 10** - Next major feature:
    - Option A: Dungeon crawling system (grid-based tactical encounters using existing dungeon types)
    - Option B: Weather and regional climate system (per-region weather affecting travel/encounters)
-   - Option C: Advanced phase hierarchy (Stadt → Viertel → Gebäude → Raum navigation)
+   - Option C: Advanced place hierarchy (Stadt → Viertel → Gebäude → Raum navigation)

@@ -375,15 +375,15 @@ function validateTerrainSchema(next) {
   }
   return validated;
 }
-function applyTerrainSchema(map) {
+function applyTerrainSchema(map2) {
   const mergedColors = { ...DEFAULT_TERRAIN_COLORS, ...Object.fromEntries(
-    Object.entries(map).map(([name, value]) => [name, value.color])
+    Object.entries(map2).map(([name, value]) => [name, value.color])
   ) };
   const mergedSpeeds = { ...DEFAULT_TERRAIN_SPEEDS, ...Object.fromEntries(
-    Object.entries(map).map(([name, value]) => [name, value.speed])
+    Object.entries(map2).map(([name, value]) => [name, value.speed])
   ) };
-  mergedColors[""] = map[""]?.color ?? "transparent";
-  mergedSpeeds[""] = map[""]?.speed ?? 1;
+  mergedColors[""] = map2[""]?.color ?? "transparent";
+  mergedSpeeds[""] = map2[""]?.speed ?? 1;
   for (const key of Object.keys(TERRAIN_COLORS)) {
     if (!(key in mergedColors)) delete TERRAIN_COLORS[key];
   }
@@ -1046,7 +1046,7 @@ function writable(initialValue, options) {
   const get = () => {
     return value;
   };
-  const set = (newValue) => {
+  const set2 = (newValue) => {
     if (value === newValue) return;
     const previousValue = value;
     value = newValue;
@@ -1054,13 +1054,13 @@ function writable(initialValue, options) {
   };
   const update = (updater) => {
     const newValue = updater(value);
-    set(newValue);
+    set2(newValue);
   };
   log("initialized", { value: initialValue });
   return {
     subscribe,
     get,
-    set,
+    set: set2,
     update
   };
 }
@@ -1879,9 +1879,9 @@ async function adoptLegacyTile(app, mapFile, file, folderPath, folderPrefix, cac
       return null;
     }
     await app.fileManager.renameFile(file, desiredPath);
-    const renamed = app.vault.getAbstractFileByPath(desiredPath);
-    if (renamed && renamed instanceof import_obsidian5.TFile) {
-      file = renamed;
+    const renamed2 = app.vault.getAbstractFileByPath(desiredPath);
+    if (renamed2 && renamed2 instanceof import_obsidian5.TFile) {
+      file = renamed2;
     }
   }
   const ensured = await ensureTileSchema(app, mapFile, file, coord, cached);
@@ -2216,9 +2216,9 @@ var init_bootstrap = __esm({
 });
 
 // src/features/maps/rendering/scene/surface.ts
-function detectContext(canvas, type) {
+function detectContext(canvas, type2) {
   try {
-    const ctx = canvas.getContext(type);
+    const ctx = canvas.getContext(type2);
     return ctx != null;
   } catch {
     return false;
@@ -2347,8 +2347,8 @@ function normalizeCoord2(coord) {
   if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
   return { r, c };
 }
-function normalizeString(str) {
-  return typeof str === "string" ? str.trim() : "";
+function normalizeString(str2) {
+  return typeof str2 === "string" ? str2.trim() : "";
 }
 function keyFromCoord3(coord) {
   return `${coord.r}:${coord.c}`;
@@ -2372,6 +2372,195 @@ var init_location_marker_store = __esm({
       "Festung": "\u{1F3F0}"
     };
     markerRegistry = /* @__PURE__ */ new WeakMap();
+  }
+});
+
+// src/features/maps/state/location-influence-store.ts
+function getLocationInfluenceStore(app, mapFile, options = {}) {
+  let storesByApp = influenceRegistry.get(app);
+  if (!storesByApp) {
+    storesByApp = /* @__PURE__ */ new Map();
+    influenceRegistry.set(app, storesByApp);
+  }
+  const mapPath = (0, import_obsidian9.normalizePath)(mapFile.path);
+  let store = storesByApp.get(mapPath);
+  if (!store) {
+    store = createLocationInfluenceStore(mapPath, options);
+    storesByApp.set(mapPath, store);
+  }
+  return store;
+}
+function createLocationInfluenceStore(mapPath, options) {
+  const storeName = `map-location-influence:${mapPath}`;
+  const state = writable(createEmptyState3(mapPath), {
+    name: storeName,
+    debug: false
+  });
+  getStoreManager().register(storeName, state);
+  const resolveColor = (ownerName, ownerType, palette) => {
+    const normalized = `${ownerType}:${ownerName.trim()}`;
+    if (!normalized) return palette.get("") ?? FALLBACK_COLOR3;
+    const existing = palette.get(normalized);
+    if (existing) return existing;
+    const custom = options.resolveColor?.(ownerName, ownerType, palette);
+    if (custom && typeof custom === "string") {
+      const value = custom.trim() || FALLBACK_COLOR3;
+      palette.set(normalized, value);
+      return value;
+    }
+    const colors = options.palette ?? DEFAULT_INFLUENCE_COLORS;
+    const hash = hashString(normalized);
+    const color = colors[hash % colors.length];
+    palette.set(normalized, color);
+    return color;
+  };
+  const setAssignments = (assignments) => {
+    const snapshot = state.get();
+    const nextEntries = /* @__PURE__ */ new Map();
+    const nextPalette = new Map(snapshot.palette);
+    const seen = /* @__PURE__ */ new Set();
+    for (const assignment of assignments) {
+      if (!assignment) continue;
+      const coord = normalizeCoord3(assignment.coord);
+      if (!coord) continue;
+      const locationName = normalizeString2(assignment.locationName);
+      if (!locationName) continue;
+      const key = keyFromCoord4(coord);
+      if (seen.has(key)) continue;
+      const overrideColor = normalizeColor2(assignment.color);
+      const ownerType = assignment.ownerType || "none";
+      const ownerName = assignment.ownerName || locationName;
+      const color = overrideColor ?? resolveColor(ownerName, ownerType, nextPalette);
+      if (overrideColor) {
+        const paletteKey = `${ownerType}:${ownerName}`;
+        nextPalette.set(paletteKey, color);
+      }
+      const entry = {
+        ...assignment,
+        coord,
+        locationName,
+        color,
+        key
+      };
+      nextEntries.set(key, entry);
+      seen.add(key);
+    }
+    state.set({
+      mapPath,
+      loaded: true,
+      entries: nextEntries,
+      palette: nextPalette,
+      version: Date.now()
+    });
+  };
+  const clear = () => {
+    state.set(createEmptyState3(mapPath));
+  };
+  const get = (coord) => {
+    const snapshot = state.get();
+    const normalized = normalizeCoord3(coord);
+    if (!normalized) return null;
+    return snapshot.entries.get(keyFromCoord4(normalized)) ?? null;
+  };
+  const list = () => {
+    const snapshot = state.get();
+    return Array.from(snapshot.entries.values());
+  };
+  const getColorForOwner = (ownerName, ownerType) => {
+    const snapshot = state.get();
+    const paletteKey = `${ownerType}:${ownerName.trim()}`;
+    const palette = new Map(snapshot.palette);
+    const color = palette.get(paletteKey) ?? resolveColor(ownerName, ownerType, palette);
+    if (!snapshot.palette.has(paletteKey)) {
+      state.update((current) => {
+        const nextPalette = new Map(current.palette);
+        nextPalette.set(paletteKey, color);
+        return {
+          ...current,
+          palette: nextPalette,
+          version: Date.now()
+        };
+      });
+    }
+    return color;
+  };
+  return {
+    state,
+    setAssignments,
+    clear,
+    get,
+    list,
+    getColorForOwner
+  };
+}
+function createEmptyState3(mapPath) {
+  return {
+    mapPath,
+    loaded: false,
+    entries: /* @__PURE__ */ new Map(),
+    palette: /* @__PURE__ */ new Map(),
+    version: Date.now()
+  };
+}
+function normalizeCoord3(coord) {
+  if (!coord) return null;
+  const r = Number(coord.r);
+  const c = Number(coord.c);
+  if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+  return { r, c };
+}
+function normalizeString2(str2) {
+  return typeof str2 === "string" ? str2.trim() : "";
+}
+function keyFromCoord4(coord) {
+  return `${coord.r}:${coord.c}`;
+}
+function normalizeColor2(color) {
+  if (!color) return null;
+  const trimmed = color.trim();
+  if (!trimmed) return null;
+  return trimmed;
+}
+function hashString(str2) {
+  let hash = 0;
+  for (let i = 0; i < str2.length; i++) {
+    const char = str2.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+var import_obsidian9, FALLBACK_COLOR3, influenceRegistry, DEFAULT_INFLUENCE_COLORS;
+var init_location_influence_store = __esm({
+  "src/features/maps/state/location-influence-store.ts"() {
+    "use strict";
+    import_obsidian9 = require("obsidian");
+    init_state();
+    init_store_manager();
+    FALLBACK_COLOR3 = "#9E9E9E";
+    influenceRegistry = /* @__PURE__ */ new WeakMap();
+    DEFAULT_INFLUENCE_COLORS = [
+      "#FF6B6B",
+      // Red
+      "#4ECDC4",
+      // Teal
+      "#FFE66D",
+      // Yellow
+      "#A8E6CF",
+      // Mint
+      "#FFD3B6",
+      // Peach
+      "#FFAAA5",
+      // Coral
+      "#98D8C8",
+      // Seafoam
+      "#C7CEEA",
+      // Lavender
+      "#B8E0D2",
+      // Sage
+      "#EAC4D5"
+      // Pink
+    ];
   }
 });
 
@@ -2445,6 +2634,38 @@ async function renderHexMap(app, host, mapFile, opts) {
   };
   const overlayUnsubscribe = overlayStore.state.subscribe(applyOverlay);
   applyOverlay(overlayStore.state.get());
+  const influenceStore = getLocationInfluenceStore(app, mapFile);
+  let influenceKeys = /* @__PURE__ */ new Set();
+  const applyInfluence = (state) => {
+    const entries = state.loaded ? Array.from(state.entries.values()) : [];
+    const ensureCoords = entries.map((entry) => entry.coord);
+    scene.ensurePolys(ensureCoords);
+    const nextKeys = /* @__PURE__ */ new Set();
+    for (const entry of entries) {
+      const key = `${entry.coord.r},${entry.coord.c}`;
+      nextKeys.add(key);
+      scene.setOverlay(entry.coord, {
+        color: entry.color,
+        // Store location data in dataset for inspector access
+        factionId: `location:${entry.locationName}`,
+        factionName: `${entry.locationName} (${entry.strength}%)`,
+        fillOpacity: INFLUENCE_FILL_OPACITY,
+        strokeWidth: INFLUENCE_STROKE_WIDTH
+      });
+    }
+    for (const key of influenceKeys) {
+      if (nextKeys.has(key)) continue;
+      const [r, c] = key.split(",").map(Number);
+      const coord = { r, c };
+      const hasFactionOverlay = overlayStore.get(coord);
+      if (!hasFactionOverlay) {
+        scene.setOverlay(coord, null);
+      }
+    }
+    influenceKeys = nextKeys;
+  };
+  const influenceUnsubscribe = influenceStore.state.subscribe(applyInfluence);
+  applyInfluence(influenceStore.state.get());
   const markerStore = getLocationMarkerStore(app, mapFile);
   const markerLayer = createMarkerLayer(scene.contentG, radius, base, padding);
   let markerKeys = /* @__PURE__ */ new Set();
@@ -2474,6 +2695,8 @@ async function renderHexMap(app, host, mapFile, opts) {
   const cleanup = () => {
     markerUnsubscribe();
     markerKeys.clear();
+    influenceUnsubscribe();
+    influenceKeys.clear();
     overlayUnsubscribe();
     overlayKeys.clear();
     legendHost.remove();
@@ -2600,7 +2823,7 @@ function createMarkerLayer(contentG, radius, base, padding) {
     clearMarker
   };
 }
-var OVERLAY_STROKE_WIDTH, OVERLAY_FILL_OPACITY, MARKER_FONT_SIZE, SVG_NS2, DEFAULT_PADDING, CAMERA_OPTIONS;
+var OVERLAY_STROKE_WIDTH, OVERLAY_FILL_OPACITY, INFLUENCE_FILL_OPACITY, INFLUENCE_STROKE_WIDTH, MARKER_FONT_SIZE, SVG_NS2, DEFAULT_PADDING, CAMERA_OPTIONS;
 var init_hex_render = __esm({
   "src/features/maps/rendering/hex-render.ts"() {
     "use strict";
@@ -2615,8 +2838,11 @@ var init_hex_render = __esm({
     init_interaction_delegate();
     init_faction_overlay_store();
     init_location_marker_store();
+    init_location_influence_store();
     OVERLAY_STROKE_WIDTH = "3";
     OVERLAY_FILL_OPACITY = "0.55";
+    INFLUENCE_FILL_OPACITY = "0.35";
+    INFLUENCE_STROKE_WIDTH = "2";
     MARKER_FONT_SIZE = "24px";
     SVG_NS2 = "http://www.w3.org/2000/svg";
     DEFAULT_PADDING = 12;
@@ -2626,9 +2852,9 @@ var init_hex_render = __esm({
 
 // src/features/maps/state/region-store.ts
 async function ensureRegionsFile(app) {
-  const path = (0, import_obsidian9.normalizePath)(REGIONS_FILE);
+  const path = (0, import_obsidian10.normalizePath)(REGIONS_FILE);
   const existing = app.vault.getAbstractFileByPath(path);
-  if (existing instanceof import_obsidian9.TFile) {
+  if (existing instanceof import_obsidian10.TFile) {
     return existing;
   }
   const dir = path.split("/").slice(0, -1).join("/");
@@ -2753,7 +2979,7 @@ function createRegionStore(app, options) {
       dirty = false;
     },
     isDirty: () => dirty,
-    getStorageKey: () => (0, import_obsidian9.normalizePath)(REGIONS_FILE)
+    getStorageKey: () => (0, import_obsidian10.normalizePath)(REGIONS_FILE)
   };
   getStoreManager().register("map-regions", persistent2);
   const ensureLoaded = async () => {
@@ -2789,7 +3015,7 @@ function createRegionStore(app, options) {
     triggerRegionEvent(app);
   };
   const watch = (onChange) => {
-    const targetPath = (0, import_obsidian9.normalizePath)(REGIONS_FILE);
+    const targetPath = (0, import_obsidian10.normalizePath)(REGIONS_FILE);
     const update = async (reason) => {
       try {
         if (reason === "delete") {
@@ -2797,7 +3023,7 @@ function createRegionStore(app, options) {
             "Regions store detected deletion; attempting automatic recreation."
           );
           await ensureRegionsFile(app);
-          new import_obsidian9.Notice("Regions.md wurde neu erstellt.");
+          new import_obsidian10.Notice("Regions.md wurde neu erstellt.");
         }
         await refresh();
         await onChange?.();
@@ -2810,8 +3036,8 @@ function createRegionStore(app, options) {
       }
     };
     const maybeUpdate = (reason, file) => {
-      if (!(file instanceof import_obsidian9.TFile)) return;
-      if ((0, import_obsidian9.normalizePath)(file.path) !== targetPath) return;
+      if (!(file instanceof import_obsidian10.TFile)) return;
+      if ((0, import_obsidian10.normalizePath)(file.path) !== targetPath) return;
       void update(reason);
     };
     const refs = ["modify", "delete"].map(
@@ -2860,11 +3086,11 @@ function resetRegionStore(app) {
   store.state.set(createInitialState());
   storeRegistry.delete(app);
 }
-var import_obsidian9, REGIONS_FILE, BLOCK_RE, storeRegistry;
+var import_obsidian10, REGIONS_FILE, BLOCK_RE, storeRegistry;
 var init_region_store = __esm({
   "src/features/maps/state/region-store.ts"() {
     "use strict";
-    import_obsidian9 = require("obsidian");
+    import_obsidian10 = require("obsidian");
     init_state();
     init_store_manager();
     init_plugin_logger();
@@ -2876,20 +3102,20 @@ var init_region_store = __esm({
 
 // src/features/maps/data/map-store-registry.ts
 function getRegistry(app) {
-  let set = MAP_STORE_REGISTRY.get(app);
-  if (!set) {
-    set = /* @__PURE__ */ new Set();
-    MAP_STORE_REGISTRY.set(app, set);
+  let set2 = MAP_STORE_REGISTRY.get(app);
+  if (!set2) {
+    set2 = /* @__PURE__ */ new Set();
+    MAP_STORE_REGISTRY.set(app, set2);
   }
-  return set;
+  return set2;
 }
 function registerMapStores(app, mapFile) {
   getRegistry(app).add(mapFile.path);
 }
 function unregisterMapStores(app, mapFile) {
-  const set = MAP_STORE_REGISTRY.get(app);
-  if (set) {
-    set.delete(mapFile.path);
+  const set2 = MAP_STORE_REGISTRY.get(app);
+  if (set2) {
+    set2.delete(mapFile.path);
   }
   resetTileStore(app, mapFile);
   resetRegionStore(app);
@@ -2992,7 +3218,7 @@ function applyMapButtonStyle(button) {
 async function promptMapSelection(app, onSelect, options) {
   const files = await getAllMapFiles(app);
   if (!files.length) {
-    new import_obsidian10.Notice(options?.emptyMessage ?? "No maps available.");
+    new import_obsidian11.Notice(options?.emptyMessage ?? "No maps available.");
     return;
   }
   new MapSelectModal(app, files, async (file) => {
@@ -3002,15 +3228,15 @@ async function promptMapSelection(app, onSelect, options) {
 function promptCreateMap(app, onCreate, options) {
   new NameInputModal(app, async (name) => {
     const file = await createHexMapFile(app, name);
-    new import_obsidian10.Notice(options?.successMessage ?? "Map created.");
+    new import_obsidian11.Notice(options?.successMessage ?? "Map created.");
     await onCreate(file);
   }).open();
 }
-var import_obsidian10;
+var import_obsidian11;
 var init_map_workflows = __esm({
   "src/ui/maps/workflows/map-workflows.ts"() {
     "use strict";
-    import_obsidian10 = require("obsidian");
+    import_obsidian11 = require("obsidian");
     init_map_repository();
     init_map_list();
     init_options();
@@ -3131,15 +3357,15 @@ function reportEditorToolIssue(payload) {
   const dedupeKey = `${stage}:${toolId}`;
   if (!noticedIssues.has(dedupeKey)) {
     noticedIssues.add(dedupeKey);
-    new import_obsidian14.Notice(userMessage);
+    new import_obsidian15.Notice(userMessage);
   }
   return userMessage;
 }
-var import_obsidian14, noticedIssues, TOOL_STAGE_MESSAGES;
+var import_obsidian15, noticedIssues, TOOL_STAGE_MESSAGES;
 var init_editor_telemetry = __esm({
   "src/workmodes/cartographer/editor/editor-telemetry.ts"() {
     "use strict";
-    import_obsidian14 = require("obsidian");
+    import_obsidian15 = require("obsidian");
     init_plugin_logger();
     noticedIssues = /* @__PURE__ */ new Set();
     TOOL_STAGE_MESSAGES = {
@@ -3564,15 +3790,15 @@ async function listVaultPresets(app, entityType) {
     return [];
   }
   const folder = app.vault.getAbstractFileByPath(entityConfig.directory);
-  if (!folder || !(folder instanceof import_obsidian15.TFolder)) {
+  if (!folder || !(folder instanceof import_obsidian16.TFolder)) {
     return [];
   }
   const files = [];
   const collectFiles = (currentFolder) => {
     for (const child of currentFolder.children) {
-      if (child instanceof import_obsidian15.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian16.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian15.TFolder) {
+      } else if (child instanceof import_obsidian16.TFolder) {
         collectFiles(child);
       }
     }
@@ -3591,22 +3817,22 @@ function watchVaultPresets(app, entityType, onChange) {
     onChange();
   };
   const createRef = app.vault.on("create", (file) => {
-    if (file instanceof import_obsidian15.TFile && file.path.startsWith(entityConfig.directory)) {
+    if (file instanceof import_obsidian16.TFile && file.path.startsWith(entityConfig.directory)) {
       notify();
     }
   });
   const deleteRef = app.vault.on("delete", (file) => {
-    if (file instanceof import_obsidian15.TFile && file.path.startsWith(entityConfig.directory)) {
+    if (file instanceof import_obsidian16.TFile && file.path.startsWith(entityConfig.directory)) {
       notify();
     }
   });
   const renameRef = app.vault.on("rename", (file, oldPath) => {
-    if (file instanceof import_obsidian15.TFile && (file.path.startsWith(entityConfig.directory) || oldPath.startsWith(entityConfig.directory))) {
+    if (file instanceof import_obsidian16.TFile && (file.path.startsWith(entityConfig.directory) || oldPath.startsWith(entityConfig.directory))) {
       notify();
     }
   });
   const modifyRef = app.vault.on("modify", (file) => {
-    if (file instanceof import_obsidian15.TFile && file.path.startsWith(entityConfig.directory)) {
+    if (file instanceof import_obsidian16.TFile && file.path.startsWith(entityConfig.directory)) {
       notify();
     }
   });
@@ -3617,11 +3843,11 @@ function watchVaultPresets(app, entityType, onChange) {
     app.vault.offref(modifyRef);
   };
 }
-var import_obsidian15;
+var import_obsidian16;
 var init_vault_preset_loader = __esm({
   "Presets/lib/vault-preset-loader.ts"() {
     "use strict";
-    import_obsidian15 = require("obsidian");
+    import_obsidian16 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
   }
@@ -3739,10 +3965,10 @@ var init_data_sources = __esm({
       };
     });
     loadPlaylistEntry = createEntryLoader((fm2) => {
-      const type = typeof fm2.type === "string" && (fm2.type === "ambience" || fm2.type === "music") ? fm2.type : "ambience";
+      const type2 = typeof fm2.type === "string" && (fm2.type === "ambience" || fm2.type === "music") ? fm2.type : "ambience";
       const tracks = Array.isArray(fm2.tracks) ? fm2.tracks : [];
       return {
-        type,
+        type: type2,
         track_count: tracks.length,
         terrain_tags: extractTokenValues(fm2.terrain_tags),
         weather_tags: extractTokenValues(fm2.weather_tags),
@@ -4406,7 +4632,7 @@ function mountBrushPanel(root, ctx) {
   }
   refreshManageCommandAvailability();
   const fillOptions = async (reason) => {
-    const seq = ++fillSeq;
+    const seq2 = ++fillSeq;
     setPanelDisabled(true);
     applyInlineHint({
       text: reason === "initial" ? "Loading regions\u2026" : "Refreshing regions\u2026",
@@ -4418,7 +4644,7 @@ function mountBrushPanel(root, ctx) {
       regions = await loadRegions2(ctx.app);
     } catch (err) {
       logger2.error("[terrain-brush] failed to load regions", err);
-      if (seq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+      if (seq2 === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
         regionControl?.setOptions([]);
         state.region = "";
         state.terrain = "";
@@ -4430,12 +4656,12 @@ function mountBrushPanel(root, ctx) {
       }
       return;
     } finally {
-      if (seq === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
+      if (seq2 === fillSeq && !disposed && !ctx.getAbortSignal()?.aborted) {
         setPanelDisabled(false);
         refreshManageCommandAvailability();
       }
     }
-    if (disposed || ctx.getAbortSignal()?.aborted || seq !== fillSeq) {
+    if (disposed || ctx.getAbortSignal()?.aborted || seq2 !== fillSeq) {
       return;
     }
     regionControl?.setOptions([
@@ -5449,23 +5675,23 @@ var init_grid_layout_manager = __esm({
         );
         const gap = 16;
         const minPairWidth = labelWidth + gap + maxControlWidth;
-        let pairs = Math.floor(availableWidth / minPairWidth);
-        pairs = Math.max(1, Math.min(pairs, 3));
+        let pairs2 = Math.floor(availableWidth / minPairWidth);
+        pairs2 = Math.max(1, Math.min(pairs2, 3));
         const hasFixedWidths = normalFields.some(
           (f) => FieldWidthCalculator.calculate(f).hasFixedWidth
         );
-        if (hasFixedWidths && pairs > 1) {
+        if (hasFixedWidths && pairs2 > 1) {
           const safeWidth = (labelWidth + gap + maxControlWidth) * 1.1;
-          pairs = Math.floor(availableWidth / safeWidth);
-          pairs = Math.max(1, Math.min(pairs, 3));
+          pairs2 = Math.floor(availableWidth / safeWidth);
+          pairs2 = Math.max(1, Math.min(pairs2, 3));
         }
-        this.currentPairs = pairs;
-        const columns = pairs === 1 ? "max-content 1fr" : `repeat(${pairs}, max-content 1fr)`;
+        this.currentPairs = pairs2;
+        const columns = pairs2 === 1 ? "max-content 1fr" : `repeat(${pairs2}, max-content 1fr)`;
         logger2.log("[GridLayoutManager] Layout calculated:", {
           labelWidth,
           maxControlWidth,
           minPairWidth,
-          pairs,
+          pairs: pairs2,
           columns,
           isMultiColumn: this.isMultiColumn
         });
@@ -5749,8 +5975,8 @@ function renderModularTokenFieldCore(options) {
         return "\u2610";
       }
     }
-    const str = String(value2);
-    return fieldDef.unit ? `${str}${fieldDef.unit}` : str;
+    const str2 = String(value2);
+    return fieldDef.unit ? `${str2}${fieldDef.unit}` : str2;
   };
   const renderChips = () => {
     chipsContainer.empty();
@@ -6092,13 +6318,13 @@ function renderColorCore(options) {
       type: "color"
     }
   });
-  const normalizeColor2 = (val) => {
+  const normalizeColor3 = (val) => {
     if (typeof val === "string" && /^#[0-9a-fA-F]{6}$/.test(val)) {
       return val;
     }
     return "#000000";
   };
-  const initialValue = normalizeColor2(value);
+  const initialValue = normalizeColor3(value);
   input.value = initialValue;
   input.addEventListener("input", () => {
     onChange(input.value);
@@ -6109,7 +6335,7 @@ function renderColorCore(options) {
   return {
     focus: () => input.focus(),
     update: (newValue) => {
-      const next = normalizeColor2(newValue);
+      const next = normalizeColor3(newValue);
       if (input.value !== next) {
         input.value = next;
       }
@@ -6364,12 +6590,12 @@ function renderRepeatingEntryManagerCore(options) {
 function renderTokenFieldCore(options) {
   return renderModularTokenFieldCore(options);
 }
-function createRendererWrapper(type, coreRenderer, options) {
+function createRendererWrapper(type2, coreRenderer, options) {
   return {
-    supports: (spec) => spec.type === type,
+    supports: (spec) => spec.type === type2,
     render: (args) => {
       const { container, spec, values, onChange } = args;
-      const setting = new import_obsidian16.Setting(container);
+      const setting = new import_obsidian17.Setting(container);
       if (spec.label) {
         setting.setName(spec.label);
       }
@@ -6394,11 +6620,11 @@ function createRendererWrapper(type, coreRenderer, options) {
     }
   };
 }
-var import_obsidian16;
+var import_obsidian17;
 var init_field_rendering_core = __esm({
   "src/features/data-manager/fields/field-rendering-core.ts"() {
     "use strict";
-    import_obsidian16 = require("obsidian");
+    import_obsidian17 = require("obsidian");
     init_plugin_logger();
     init_width_utils();
     init_token_field_core_new();
@@ -6643,7 +6869,7 @@ function renderEntryCard(options) {
     parent,
     context,
     className,
-    type,
+    type: type2,
     badge,
     nameBoxClassName,
     renderName,
@@ -6655,7 +6881,7 @@ function renderEntryCard(options) {
   } = options;
   const classes = /* @__PURE__ */ new Set(["sm-cc-entry-card"]);
   for (const cls of toArray(className)) classes.add(cls);
-  const resolvedType = typeof type === "function" ? type(context) : type;
+  const resolvedType = typeof type2 === "function" ? type2(context) : type2;
   if (resolvedType) classes.add(`sm-cc-entry-card--type-${resolvedType}`);
   const card = parent.createDiv({ cls: Array.from(classes).join(" ") });
   if (dataset) {
@@ -6705,7 +6931,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian17.setIcon)(moveUpBtn, "chevron-up");
+    (0, import_obsidian18.setIcon)(moveUpBtn, "chevron-up");
     moveUpBtn.addEventListener("click", moveUpHandler);
   }
   if (includeMoveButtons && moveDownHandler) {
@@ -6720,7 +6946,7 @@ function renderEntryCard(options) {
       cls: "sm-cc-entry-move-btn",
       attr: attributes
     });
-    (0, import_obsidian17.setIcon)(moveDownBtn, "chevron-down");
+    (0, import_obsidian18.setIcon)(moveDownBtn, "chevron-down");
     moveDownBtn.addEventListener("click", moveDownHandler);
   }
   const deleteHandler = resolvedActions.remove ?? context.remove;
@@ -6760,11 +6986,11 @@ function renderEntryCard(options) {
   renderBody(card, context);
   return slots;
 }
-var import_obsidian17;
+var import_obsidian18;
 var init_entry_card = __esm({
   "src/features/data-manager/storage/entry-card.ts"() {
     "use strict";
-    import_obsidian17 = require("obsidian");
+    import_obsidian18 = require("obsidian");
   }
 });
 
@@ -7386,7 +7612,7 @@ function renderFieldControl(container, spec, initial, onChange, formData) {
   }
   if (spec.type === "autocomplete") {
     const autocompleteSpec = spec;
-    const { load, renderSuggestion, onSelect, minQueryLength = 2 } = autocompleteSpec.config;
+    const { load: load2, renderSuggestion, onSelect, minQueryLength = 2 } = autocompleteSpec.config;
     const input = controlContainer.createEl("input", {
       cls: "sm-cc-input sm-cc-autocomplete-input",
       attr: { type: "text", placeholder: spec.placeholder ?? "Search..." }
@@ -7403,7 +7629,7 @@ function renderFieldControl(container, spec, initial, onChange, formData) {
         hideSuggestions();
         return;
       }
-      const items = await Promise.resolve(load(query));
+      const items = await Promise.resolve(load2(query));
       if (items.length === 0) {
         hideSuggestions();
         return;
@@ -7756,11 +7982,11 @@ var init_renderer_checkbox = __esm({
 });
 
 // src/features/data-manager/fields/renderer-select.ts
-var import_obsidian18, selectFieldRenderer;
+var import_obsidian19, selectFieldRenderer;
 var init_renderer_select = __esm({
   "src/features/data-manager/fields/renderer-select.ts"() {
     "use strict";
-    import_obsidian18 = require("obsidian");
+    import_obsidian19 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_select_enhancement();
@@ -7769,7 +7995,7 @@ var init_renderer_select = __esm({
       supports: (spec) => spec.type === "select",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian18.Setting(container).setName(spec.label);
+        const setting = new import_obsidian19.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -7855,11 +8081,11 @@ var init_renderer_color = __esm({
 });
 
 // src/features/data-manager/fields/renderer-tokens.ts
-var import_obsidian19, tokenFieldRenderer;
+var import_obsidian20, tokenFieldRenderer;
 var init_renderer_tokens = __esm({
   "src/features/data-manager/fields/renderer-tokens.ts"() {
     "use strict";
-    import_obsidian19 = require("obsidian");
+    import_obsidian20 = require("obsidian");
     init_modal_utils();
     init_field_rendering_core();
     init_plugin_logger();
@@ -7870,7 +8096,7 @@ var init_renderer_tokens = __esm({
       render: (args) => {
         const { container, spec, values, onChange } = args;
         const tokenSpec = spec;
-        const setting = new import_obsidian19.Setting(container).setName(spec.label);
+        const setting = new import_obsidian20.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         setting.settingEl.addClass("sm-cc-setting--wide");
         setting.settingEl.addClass("sm-cc-setting--token-editor");
@@ -7967,11 +8193,11 @@ var init_renderer_heading = __esm({
 });
 
 // src/features/data-manager/fields/renderer-composite.ts
-var import_obsidian20, compositeFieldRenderer;
+var import_obsidian21, compositeFieldRenderer;
 var init_renderer_composite = __esm({
   "src/features/data-manager/fields/renderer-composite.ts"() {
     "use strict";
-    import_obsidian20 = require("obsidian");
+    import_obsidian21 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_field_rendering_core();
@@ -7979,7 +8205,7 @@ var init_renderer_composite = __esm({
       supports: (spec) => spec.type === "composite",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian20.Setting(container).setName(spec.label);
+        const setting = new import_obsidian21.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -8012,18 +8238,18 @@ var init_renderer_composite = __esm({
 });
 
 // src/features/data-manager/fields/renderer-autocomplete.ts
-var import_obsidian21, autocompleteFieldRenderer;
+var import_obsidian22, autocompleteFieldRenderer;
 var init_renderer_autocomplete = __esm({
   "src/features/data-manager/fields/renderer-autocomplete.ts"() {
     "use strict";
-    import_obsidian21 = require("obsidian");
+    import_obsidian22 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     autocompleteFieldRenderer = {
       supports: (spec) => spec.type === "autocomplete",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian21.Setting(container).setName(spec.label);
+        const setting = new import_obsidian22.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -8031,7 +8257,7 @@ var init_renderer_autocomplete = __esm({
         const validation = createValidationControls(setting);
         const initial = resolveInitialValue(spec, values);
         const autocompleteSpec = spec;
-        const { load, renderSuggestion, onSelect, minQueryLength = 2 } = autocompleteSpec.config;
+        const { load: load2, renderSuggestion, onSelect, minQueryLength = 2 } = autocompleteSpec.config;
         const input = setting.controlEl.createEl("input", {
           cls: "sm-cc-input sm-cc-autocomplete-input",
           attr: { type: "text", placeholder: spec.placeholder ?? "Search..." }
@@ -8048,7 +8274,7 @@ var init_renderer_autocomplete = __esm({
             hideSuggestions();
             return;
           }
-          const items = await Promise.resolve(load(query));
+          const items = await Promise.resolve(load2(query));
           if (items.length === 0) {
             hideSuggestions();
             return;
@@ -8117,11 +8343,11 @@ var init_renderer_autocomplete = __esm({
 });
 
 // src/features/data-manager/fields/renderer-repeating.ts
-var import_obsidian22, repeatingFieldRenderer;
+var import_obsidian23, repeatingFieldRenderer;
 var init_renderer_repeating = __esm({
   "src/features/data-manager/fields/renderer-repeating.ts"() {
     "use strict";
-    import_obsidian22 = require("obsidian");
+    import_obsidian23 = require("obsidian");
     init_modal_utils();
     init_field_utils();
     init_repeating_width_sync();
@@ -8133,7 +8359,7 @@ var init_renderer_repeating = __esm({
       supports: (spec) => spec.type === "repeating",
       render: (args) => {
         const { container, spec, values, onChange } = args;
-        const setting = new import_obsidian22.Setting(container).setName(spec.label);
+        const setting = new import_obsidian23.Setting(container).setName(spec.label);
         setting.settingEl.addClass("sm-cc-setting");
         if (spec.help) {
           setting.setDesc(spec.help);
@@ -8489,17 +8715,17 @@ function applyTemplate(template, replacements) {
   });
 }
 function collectReplacements(values, preserveCase = false) {
-  const map = {};
+  const map2 = {};
   for (const [key, raw] of Object.entries(values)) {
     if (raw == null) continue;
-    map[key] = typeof raw === "string" ? raw : String(raw);
+    map2[key] = typeof raw === "string" ? raw : String(raw);
   }
   if (values.name) {
     const nameStr = String(values.name);
-    map.slug = preserveCase ? preserveCaseSlugify(nameStr) : slugify(nameStr);
-    map.name = nameStr;
+    map2.slug = preserveCase ? preserveCaseSlugify(nameStr) : slugify(nameStr);
+    map2.name = nameStr;
   }
-  return map;
+  return map2;
 }
 function resolveTargetPath(storage, values) {
   const preserveCase = storage.preserveCase ?? false;
@@ -8513,11 +8739,11 @@ function resolveTargetPath(storage, values) {
   const extension = storage.format === "md-frontmatter" || storage.format === "codeblock" ? "md" : storage.format === "json" ? "json" : "yaml";
   const target = ensureExtension(templatePath, extension);
   if (storage.directory) {
-    const sanitizedDir = (0, import_obsidian23.normalizePath)(storage.directory);
+    const sanitizedDir = (0, import_obsidian24.normalizePath)(storage.directory);
     const fileName = target.split("/").pop() ?? target;
-    return (0, import_obsidian23.normalizePath)(`${sanitizedDir}/${fileName}`);
+    return (0, import_obsidian24.normalizePath)(`${sanitizedDir}/${fileName}`);
   }
-  return (0, import_obsidian23.normalizePath)(target);
+  return (0, import_obsidian24.normalizePath)(target);
 }
 function buildFrontmatter(values, storage) {
   const frontmatter = {};
@@ -8563,7 +8789,7 @@ function buildMarkdownBody(values, storage) {
 function serializeMarkdown(storage, values, path) {
   const frontmatter = buildFrontmatter(values, storage);
   const body = buildMarkdownBody(values, storage);
-  const fm2 = (0, import_obsidian23.stringifyYaml)(frontmatter ?? {});
+  const fm2 = (0, import_obsidian24.stringifyYaml)(frontmatter ?? {});
   const content = [`---`, fm2.trimEnd(), `---`, "", body.trimEnd()].join("\n").trimEnd() + "\n";
   return { path, content, metadata: { frontmatter, format: storage.format } };
 }
@@ -8572,7 +8798,7 @@ function serializeJson(values, path) {
   return { path, content, metadata: { format: "json" } };
 }
 function serializeYaml(values, path) {
-  const content = (0, import_obsidian23.stringifyYaml)(values ?? {}) + "\n";
+  const content = (0, import_obsidian24.stringifyYaml)(values ?? {}) + "\n";
   return { path, content, metadata: { format: "yaml" } };
 }
 function serializeCodeblock(storage, values, path) {
@@ -8610,7 +8836,7 @@ function ensureFolder2(app, path) {
   parts.pop();
   const folder = parts.join("/");
   if (!folder) return Promise.resolve();
-  const normalized = (0, import_obsidian23.normalizePath)(folder);
+  const normalized = (0, import_obsidian24.normalizePath)(folder);
   const existing = app.vault.getAbstractFileByPath(normalized);
   if (existing) return Promise.resolve();
   return app.vault.createFolder(normalized).catch(() => {
@@ -8636,7 +8862,7 @@ async function persistSerializedPayload(app, storage, payload) {
     const blockRegex = new RegExp(`^\\s*${fence}${language}(?:\\s|$)[\\s\\S]*?${fence}`, "im");
     const normalizedBlock = content.trim();
     const blockWithNewline = normalizedBlock.endsWith("\\n") ? normalizedBlock : `${normalizedBlock}\\n`;
-    if (existing instanceof import_obsidian23.TFile) {
+    if (existing instanceof import_obsidian24.TFile) {
       const current = await app.vault.read(existing);
       const trimmedCurrent = current.trimEnd();
       const replacement = blockWithNewline.trimEnd();
@@ -8649,7 +8875,7 @@ async function persistSerializedPayload(app, storage, payload) {
       file = await app.vault.create(payload.path, initial.endsWith("\\n") ? initial : `${initial}\\n`);
     }
   } else {
-    if (existing instanceof import_obsidian23.TFile) {
+    if (existing instanceof import_obsidian24.TFile) {
       await app.vault.modify(existing, content);
       file = existing;
     } else {
@@ -8660,11 +8886,11 @@ async function persistSerializedPayload(app, storage, payload) {
   await storage.hooks?.afterWrite?.(result);
   return result;
 }
-var import_obsidian23;
+var import_obsidian24;
 var init_storage = __esm({
   "src/features/data-manager/storage/storage.ts"() {
     "use strict";
-    import_obsidian23 = require("obsidian");
+    import_obsidian24 = require("obsidian");
   }
 });
 
@@ -8840,11 +9066,11 @@ var init_modal_validator = __esm({
        */
       validateSchema(transformed, fieldErrors) {
         const summary = [];
-        const schema = this.spec.schema.safeParse(transformed);
-        if (!schema.success) {
-          const issues = extractSchemaIssues(schema.error);
+        const schema2 = this.spec.schema.safeParse(transformed);
+        if (!schema2.success) {
+          const issues = extractSchemaIssues(schema2.error);
           if (issues.length === 0) {
-            summary.push(String(schema.error));
+            summary.push(String(schema2.error));
           }
           for (const issue of issues) {
             const target = issue.path?.[0];
@@ -9267,11 +9493,11 @@ var init_modal_navigation = __esm({
 });
 
 // src/features/data-manager/modal/modal.ts
-var import_obsidian24, CreateModal;
+var import_obsidian25, CreateModal;
 var init_modal = __esm({
   "src/features/data-manager/modal/modal.ts"() {
     "use strict";
-    import_obsidian24 = require("obsidian");
+    import_obsidian25 = require("obsidian");
     init_grid_layout_manager();
     init_label_width_sync();
     init_register_renderers();
@@ -9283,7 +9509,7 @@ var init_modal = __esm({
     init_modal_utils();
     init_plugin_logger();
     registerAllFieldRenderers();
-    CreateModal = class extends import_obsidian24.Modal {
+    CreateModal = class extends import_obsidian25.Modal {
       constructor(app, spec, options, resolve) {
         super(app);
         this.completion = null;
@@ -9403,7 +9629,7 @@ var init_modal = __esm({
         this.fieldManager.updateVisibility();
       }
       buildActionButtons(container) {
-        const buttons = new import_obsidian24.Setting(container);
+        const buttons = new import_obsidian25.Setting(container);
         buttons.addButton((btn) => {
           this.cancelButton = btn;
           btn.setButtonText(this.spec.ui?.cancelLabel || "Abbrechen").onClick(() => {
@@ -9485,7 +9711,7 @@ var init_modal = __esm({
       }
       handleSubmissionError(error) {
         const message = error instanceof Error ? error.message : String(error ?? "Unbekannter Fehler");
-        new import_obsidian24.Notice(`Fehler beim Speichern: ${message}`);
+        new import_obsidian25.Notice(`Fehler beim Speichern: ${message}`);
       }
       lockBackgroundPointer() {
         const bg = document.querySelector(".modal-bg");
@@ -10317,15 +10543,15 @@ var init_ui = __esm({
 });
 
 // src/features/data-manager/browse/tabbed-browse-view.ts
-var import_obsidian25, TabbedBrowseView;
+var import_obsidian26, TabbedBrowseView;
 var init_tabbed_browse_view = __esm({
   "src/features/data-manager/browse/tabbed-browse-view.ts"() {
     "use strict";
-    import_obsidian25 = require("obsidian");
+    import_obsidian26 = require("obsidian");
     init_generic_list_renderer();
     init_watcher_hub();
     init_ui();
-    TabbedBrowseView = class extends import_obsidian25.ItemView {
+    TabbedBrowseView = class extends import_obsidian26.ItemView {
       constructor(leaf) {
         super(leaf);
         this.queries = /* @__PURE__ */ new Map();
@@ -11350,9 +11576,9 @@ function renderAttackEffect(container, entry, ctx) {
     cls: "sm-cc-compact-select",
     value: entry["attack.type"] || "melee"
   });
-  ["melee", "ranged"].forEach((type) => {
-    const opt = typeSelect.createEl("option", { value: type, text: type });
-    if (type === entry["attack.type"]) opt.selected = true;
+  ["melee", "ranged"].forEach((type2) => {
+    const opt = typeSelect.createEl("option", { value: type2, text: type2 });
+    if (type2 === entry["attack.type"]) opt.selected = true;
   });
   typeSelect.addEventListener("change", () => {
     entry["attack.type"] = typeSelect.value;
@@ -11474,11 +11700,11 @@ function renderMultiattackEffect(container, entry, ctx) {
     text: "+ Angriff"
   });
 }
-var import_obsidian26, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
+var import_obsidian27, creatureSchema, basicInfoFields, combatStatsFields, movementFields, abilitiesFields, skillsFields, sensesLanguagesFields, resistancesFields, equipmentFields, spellcastingFields, entriesFields, creatureSpec;
 var init_create_spec = __esm({
   "src/workmodes/library/creatures/create-spec.ts"() {
     "use strict";
-    import_obsidian26 = require("obsidian");
+    import_obsidian27 = require("obsidian");
     init_serializer();
     init_debug_logger();
     init_constants();
@@ -12485,14 +12711,14 @@ var init_create_spec = __esm({
                   cls: "sm-cc-entry-toggle",
                   attr: { "aria-expanded": "true", "aria-label": "Toggle entry" }
                 });
-                (0, import_obsidian26.setIcon)(toggle, "chevron-down");
+                (0, import_obsidian27.setIcon)(toggle, "chevron-down");
                 head.prepend(toggle);
                 toggle.addEventListener("click", (e) => {
                   e.stopPropagation();
                   const isExpanded = toggle.getAttribute("aria-expanded") === "true";
                   toggle.setAttribute("aria-expanded", String(!isExpanded));
                   slots.card.toggleClass("is-collapsed", isExpanded);
-                  (0, import_obsidian26.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
+                  (0, import_obsidian27.setIcon)(toggle, isExpanded ? "chevron-right" : "chevron-down");
                 });
               }
             };
@@ -12695,14 +12921,14 @@ var init_create_spec = __esm({
             const oldSpeeds = fm2.speeds;
             const newSpeeds = [];
             const speedTypes = ["walk", "burrow", "climb", "fly", "swim"];
-            for (const type of speedTypes) {
-              if (oldSpeeds[type]?.distance) {
+            for (const type2 of speedTypes) {
+              if (oldSpeeds[type2]?.distance) {
                 const entry = {
-                  type,
-                  value: stripUnit(oldSpeeds[type].distance)
+                  type: type2,
+                  value: stripUnit(oldSpeeds[type2].distance)
                   // Strip unit
                 };
-                if (type === "fly" && oldSpeeds[type].hover === true) {
+                if (type2 === "fly" && oldSpeeds[type2].hover === true) {
                   entry.hover = true;
                 }
                 newSpeeds.push(entry);
@@ -14047,9 +14273,9 @@ var init_create_spec4 = __esm({
         label: "Type",
         type: "select",
         required: true,
-        options: EQUIPMENT_TYPES.map((type) => ({
-          value: type,
-          label: type.charAt(0).toUpperCase() + type.slice(1)
+        options: EQUIPMENT_TYPES.map((type2) => ({
+          value: type2,
+          label: type2.charAt(0).toUpperCase() + type2.slice(1)
         })),
         default: "weapon"
       },
@@ -15260,7 +15486,7 @@ var init_calendars = __esm({
 });
 
 // src/workmodes/library/factions/constants.ts
-var FACTION_INFLUENCE_TAGS, FACTION_CULTURE_TAGS, FACTION_GOAL_TAGS, FACTION_MEMBER_ROLES, FACTION_MEMBER_STATUSES;
+var FACTION_INFLUENCE_TAGS, FACTION_CULTURE_TAGS, FACTION_GOAL_TAGS, FACTION_MEMBER_ROLES, FACTION_MEMBER_STATUSES, FACTION_JOB_TYPES, FACTION_POSITION_TYPES, FACTION_RELATIONSHIP_TYPES, FACTION_RESOURCE_TYPES;
 var init_constants8 = __esm({
   "src/workmodes/library/factions/constants.ts"() {
     "use strict";
@@ -15308,7 +15534,13 @@ var init_constants8 = __esm({
       "Spy",
       "Champion",
       "Agent",
-      "Quartermaster"
+      "Quartermaster",
+      "Scout",
+      "Guard",
+      "Worker",
+      "Crafter",
+      "Mage",
+      "Cleric"
     ];
     FACTION_MEMBER_STATUSES = [
       "Active",
@@ -15316,6 +15548,36 @@ var init_constants8 = __esm({
       "Missing",
       "Deceased",
       "Retired"
+    ];
+    FACTION_JOB_TYPES = [
+      "crafting",
+      "gathering",
+      "training",
+      "summoning",
+      "guard",
+      "patrol",
+      "research"
+    ];
+    FACTION_POSITION_TYPES = [
+      "hex",
+      "poi",
+      "expedition",
+      "unassigned"
+    ];
+    FACTION_RELATIONSHIP_TYPES = [
+      "allied",
+      "neutral",
+      "hostile",
+      "trade",
+      "rivalry",
+      "vassal"
+    ];
+    FACTION_RESOURCE_TYPES = [
+      "gold",
+      "food",
+      "equipment",
+      "magic",
+      "influence"
     ];
   }
 });
@@ -15326,6 +15588,57 @@ function formatTagList(values) {
   const items = values.map((entry) => typeof entry === "object" && entry ? entry.value : void 0).filter((value) => typeof value === "string" && value.trim().length > 0);
   return items.length > 0 ? items.join(", ") : "\u2014";
 }
+function formatResources(resources) {
+  if (!resources || Object.keys(resources).length === 0) return "\u2014";
+  const lines = [];
+  for (const [key, value] of Object.entries(resources)) {
+    if (value !== void 0) {
+      lines.push(`- **${key}**: ${value}`);
+    }
+  }
+  return lines.length > 0 ? lines.join("\n") : "\u2014";
+}
+function formatRelationship(rel) {
+  const parts = [];
+  parts.push(`**${rel.faction_name}**`);
+  const value = rel.value >= 0 ? `+${rel.value}` : `${rel.value}`;
+  parts.push(`(${value})`);
+  if (rel.type) {
+    parts.push(`[${rel.type}]`);
+  }
+  if (rel.notes) {
+    parts.push(`\u2014 ${rel.notes}`);
+  }
+  return parts.join(" ");
+}
+function formatPosition(member) {
+  if (!member.position || member.position.type === "unassigned") return null;
+  const pos = member.position;
+  switch (pos.type) {
+    case "hex":
+      if (pos.coords) {
+        return `Hex (${pos.coords.q}, ${pos.coords.r}, ${pos.coords.s})`;
+      }
+      return "Hex";
+    case "poi":
+      return pos.location_name || "POI";
+    case "expedition":
+      return pos.route ? `Expedition: ${pos.route}` : "Expedition";
+    default:
+      return null;
+  }
+}
+function formatJob(member) {
+  if (!member.job || !member.job.type) return null;
+  const parts = [member.job.type];
+  if (member.job.building) {
+    parts.push(`at ${member.job.building}`);
+  }
+  if (member.job.progress !== void 0) {
+    parts.push(`(${member.job.progress}%)`);
+  }
+  return parts.join(" ");
+}
 function formatMember(member) {
   const parts = [];
   const name = member.name?.trim();
@@ -15333,17 +15646,28 @@ function formatMember(member) {
     parts.push(`**${name}**`);
   }
   const details = [];
+  if (!member.is_named && member.quantity && member.quantity > 1) {
+    details.push(`\xD7${member.quantity}`);
+  }
+  if (member.statblock_ref) {
+    details.push(`[${member.statblock_ref}]`);
+  }
   if (member.role) {
     details.push(member.role);
   }
   if (member.status) {
     details.push(member.status);
   }
-  if (member.is_named !== void 0) {
-    details.push(member.is_named ? "Named" : "Anonymous");
-  }
   if (details.length > 0) {
     parts.push(`(${details.join(" \xB7 ")})`);
+  }
+  const position = formatPosition(member);
+  if (position) {
+    parts.push(`\u{1F4CD} ${position}`);
+  }
+  const job = formatJob(member);
+  if (job) {
+    parts.push(`\u{1F4BC} ${job}`);
   }
   if (member.notes) {
     parts.push(`\u2014 ${member.notes}`);
@@ -15369,19 +15693,31 @@ function factionToMarkdown(data) {
     lines.push("## Summary");
     lines.push(data.summary);
   }
-  if (data.assets) {
+  if (data.resources && Object.keys(data.resources).length > 0) {
+    lines.push("");
+    lines.push("## Resources");
+    lines.push(formatResources(data.resources));
+  } else if (data.assets) {
     lines.push("");
     lines.push("## Assets & Resources");
     lines.push(data.assets);
   }
-  if (data.relationships) {
+  if (data.faction_relationships && data.faction_relationships.length > 0) {
+    lines.push("");
+    lines.push("## Faction Relationships");
+    lines.push("");
+    for (const rel of data.faction_relationships) {
+      if (!rel || !rel.faction_name) continue;
+      lines.push(`- ${formatRelationship(rel)}`);
+    }
+  } else if (data.relationships) {
     lines.push("");
     lines.push("## Relationships");
     lines.push(data.relationships);
   }
   if (data.members && data.members.length > 0) {
     lines.push("");
-    lines.push("## Notable Members");
+    lines.push("## Members & Units");
     lines.push("");
     for (const member of data.members) {
       if (!member || !member.name) continue;
@@ -15562,26 +15898,111 @@ var init_create_spec8 = __esm({
       },
       {
         id: "relationships",
-        label: "Beziehungen",
+        label: "Beziehungen (Legacy)",
         type: "textarea",
         placeholder: "Wichtige B\xFCndnisse, Rivalit\xE4ten oder Verpflichtungen\u2026",
-        description: "Politische oder pers\xF6nliche Beziehungen zu anderen Fraktionen"
+        description: "Freitext-Beziehungen (Legacy-Feld)",
+        visibleIf: (values) => Boolean(values.relationships)
       },
       {
-        id: "members",
-        label: "Mitglieder",
+        id: "resources",
+        label: "Ressourcen",
         type: "repeating",
-        description: "Wichtige Ansprechpartner, Agenten oder Funktionstr\xE4ger",
+        description: "Strukturiertes Ressourcen-Tracking (Gold, Food, Equipment, etc.)",
         config: {
           insertPosition: "end",
           synchronizeWidths: true
         },
         itemTemplate: {
+          type: {
+            type: "select",
+            label: "Typ",
+            options: FACTION_RESOURCE_TYPES.map((type2) => ({ value: type2, label: type2 })),
+            required: true
+          },
+          amount: {
+            type: "number-stepper",
+            label: "Menge",
+            min: 0,
+            max: 999999,
+            default: 0
+          }
+        },
+        default: []
+      },
+      {
+        id: "faction_relationships",
+        label: "Fraktionsbeziehungen",
+        type: "repeating",
+        description: "Strukturierte Beziehungen zu anderen Fraktionen",
+        config: {
+          insertPosition: "end",
+          synchronizeWidths: true
+        },
+        itemTemplate: {
+          faction_name: {
+            type: "text",
+            label: "Fraktion",
+            placeholder: "Name der anderen Fraktion",
+            required: true
+          },
+          value: {
+            type: "number-stepper",
+            label: "Wert",
+            min: -100,
+            max: 100,
+            default: 0,
+            help: "-100 (feindlich) bis +100 (verb\xFCndet)"
+          },
+          type: {
+            type: "select",
+            label: "Typ",
+            options: FACTION_RELATIONSHIP_TYPES.map((type2) => ({ value: type2, label: type2 }))
+          },
+          notes: {
+            type: "textarea",
+            label: "Notizen",
+            placeholder: "Details zur Beziehung\u2026"
+          }
+        },
+        default: []
+      },
+      {
+        id: "members",
+        label: "Mitglieder & Einheiten",
+        type: "repeating",
+        description: "Benannte NSCs oder Einheitentypen mit Positions- und Job-Tracking",
+        config: {
+          insertPosition: "end",
+          synchronizeWidths: false
+        },
+        itemTemplate: {
           name: {
             type: "text",
-            label: "Name",
-            placeholder: "Agent Thorne",
+            label: "Name / Einheit",
+            placeholder: "Captain Thorne / Goblin Warrior",
             required: true
+          },
+          is_named: {
+            type: "toggle",
+            label: "Benannter NSC",
+            default: true,
+            help: "Benannte NSCs vs. Einheitentypen mit Menge"
+          },
+          quantity: {
+            type: "number-stepper",
+            label: "Anzahl",
+            min: 1,
+            max: 9999,
+            default: 1,
+            visibleIf: (data) => !data.is_named,
+            help: "Nur f\xFCr Einheitentypen (nicht benannte NSCs)"
+          },
+          statblock_ref: {
+            type: "text",
+            label: "Statblock-Referenz",
+            placeholder: "Goblin / Guard",
+            help: "Name des Creature-Statblocks aus der Library"
           },
           role: {
             type: "text",
@@ -15596,10 +16017,63 @@ var init_create_spec8 = __esm({
             label: "Status",
             options: FACTION_MEMBER_STATUSES.map((status) => ({ value: status, label: status }))
           },
-          is_named: {
-            type: "toggle",
-            label: "Benannter NSC",
-            default: true
+          "position.type": {
+            type: "select",
+            label: "Position-Typ",
+            options: FACTION_POSITION_TYPES.map((type2) => ({ value: type2, label: type2 })),
+            default: "unassigned"
+          },
+          "position.location_name": {
+            type: "text",
+            label: "Ort",
+            placeholder: "Camp Alpha / Zitadelle",
+            visibleIf: (data) => data["position.type"] === "poi"
+          },
+          "position.coords.q": {
+            type: "number-stepper",
+            label: "Hex Q",
+            min: -100,
+            max: 100,
+            visibleIf: (data) => data["position.type"] === "hex"
+          },
+          "position.coords.r": {
+            type: "number-stepper",
+            label: "Hex R",
+            min: -100,
+            max: 100,
+            visibleIf: (data) => data["position.type"] === "hex"
+          },
+          "position.coords.s": {
+            type: "number-stepper",
+            label: "Hex S",
+            min: -100,
+            max: 100,
+            visibleIf: (data) => data["position.type"] === "hex"
+          },
+          "position.route": {
+            type: "text",
+            label: "Expeditionsroute",
+            placeholder: "Norden via Wald",
+            visibleIf: (data) => data["position.type"] === "expedition"
+          },
+          "job.type": {
+            type: "select",
+            label: "Job-Typ",
+            options: FACTION_JOB_TYPES.map((type2) => ({ value: type2, label: type2 }))
+          },
+          "job.building": {
+            type: "text",
+            label: "Geb\xE4ude",
+            placeholder: "Schmiede / Wachturm",
+            visibleIf: (data) => Boolean(data["job.type"])
+          },
+          "job.progress": {
+            type: "number-stepper",
+            label: "Fortschritt %",
+            min: 0,
+            max: 100,
+            default: 0,
+            visibleIf: (data) => Boolean(data["job.type"])
           },
           notes: {
             type: "textarea",
@@ -15632,6 +16106,8 @@ var init_create_spec8 = __esm({
           "summary",
           "assets",
           "relationships",
+          "resources",
+          "faction_relationships",
           "members"
         ],
         bodyTemplate: (data) => factionToMarkdown(data)
@@ -15722,8 +16198,8 @@ var init_constants9 = __esm({
 });
 
 // src/workmodes/library/locations/types.ts
-function getFeatureTypePrefix(type) {
-  switch (type) {
+function getFeatureTypePrefix(type2) {
+  switch (type2) {
     case "secret":
       return "G";
     case "trap":
@@ -15736,8 +16212,8 @@ function getFeatureTypePrefix(type) {
       return "F";
   }
 }
-function getFeatureTypeLabel(type) {
-  switch (type) {
+function getFeatureTypeLabel(type2) {
+  switch (type2) {
     case "secret":
       return "Secret";
     case "trap":
@@ -15752,8 +16228,8 @@ function getFeatureTypeLabel(type) {
       return "Other";
   }
 }
-function getDefaultTokenColor(type) {
-  switch (type) {
+function getDefaultTokenColor(type2) {
+  switch (type2) {
     case "player":
       return "#4a90e2";
     case "npc":
@@ -15767,9 +16243,209 @@ function getDefaultTokenColor(type) {
 function isDungeonLocation(data) {
   return data.type === "Dungeon" && typeof data.grid_width === "number" && typeof data.grid_height === "number";
 }
+function isBuildingLocation(data) {
+  return data.type === "Geb\xE4ude" && typeof data.building_production === "object" && data.building_production !== null;
+}
 var init_types3 = __esm({
   "src/workmodes/library/locations/types.ts"() {
     "use strict";
+  }
+});
+
+// src/features/locations/building-production.ts
+function calculateProductionRate(buildingType, condition, maintenanceOverdue) {
+  const template = BUILDING_TEMPLATES[buildingType];
+  if (!template) return 0;
+  let rate = template.productionMultiplier;
+  const conditionMultiplier = 0.5 + condition / 200;
+  rate *= conditionMultiplier;
+  const maintenancePenalty = Math.min(0.5, maintenanceOverdue * 0.05);
+  rate *= 1 - maintenancePenalty;
+  return Math.max(0.1, rate);
+}
+function calculateMaintenanceCost(buildingType) {
+  const template = BUILDING_TEMPLATES[buildingType];
+  return template?.maintenanceCost || {};
+}
+function getBuildingBonuses(buildingType) {
+  const template = BUILDING_TEMPLATES[buildingType];
+  return template?.bonuses || {};
+}
+function repairBuilding(production, goldSpent, equipmentSpent) {
+  const repairAmount = (goldSpent + equipmentSpent * 0.5) * 10;
+  const oldCondition = production.condition;
+  production.condition = Math.min(100, production.condition + repairAmount);
+  if (production.condition >= 90) {
+    production.maintenanceOverdue = 0;
+  }
+  return production.condition - oldCondition;
+}
+var BUILDING_TEMPLATES;
+var init_building_production = __esm({
+  "src/features/locations/building-production.ts"() {
+    "use strict";
+    BUILDING_TEMPLATES = {
+      // Military buildings
+      barracks: {
+        name: "Barracks",
+        category: "military",
+        description: "Training facility for military units",
+        allowedJobs: ["training", "guard"],
+        maxWorkers: 20,
+        productionMultiplier: 1,
+        maintenanceCost: { gold: 5, food: 10 },
+        bonuses: { trainingSpeed: 1.2 }
+      },
+      armory: {
+        name: "Armory",
+        category: "military",
+        description: "Storage and maintenance for military equipment",
+        allowedJobs: ["crafting", "guard"],
+        maxWorkers: 10,
+        productionMultiplier: 1.1,
+        maintenanceCost: { gold: 8, equipment: 5 },
+        bonuses: { qualityBonus: 0.15 }
+      },
+      training_grounds: {
+        name: "Training Grounds",
+        category: "military",
+        description: "Large open area for combat training and drills",
+        allowedJobs: ["training", "patrol"],
+        maxWorkers: 30,
+        productionMultiplier: 1.2,
+        maintenanceCost: { gold: 3, food: 15 },
+        bonuses: { trainingSpeed: 1.5 }
+      },
+      // Economic buildings
+      smithy: {
+        name: "Smithy",
+        category: "economic",
+        description: "Workshop for metalworking and equipment crafting",
+        allowedJobs: ["crafting"],
+        maxWorkers: 5,
+        productionMultiplier: 1.3,
+        maintenanceCost: { gold: 10, equipment: 8 },
+        bonuses: { qualityBonus: 0.25 }
+      },
+      workshop: {
+        name: "Workshop",
+        category: "economic",
+        description: "General crafting facility for tools and goods",
+        allowedJobs: ["crafting", "gathering"],
+        maxWorkers: 8,
+        productionMultiplier: 1,
+        maintenanceCost: { gold: 5, equipment: 3 }
+      },
+      market: {
+        name: "Market",
+        category: "economic",
+        description: "Trading hub for goods and resources",
+        allowedJobs: ["gathering"],
+        maxWorkers: 15,
+        productionMultiplier: 1.2,
+        maintenanceCost: { gold: 8 }
+      },
+      // Magical buildings
+      mage_tower: {
+        name: "Mage Tower",
+        category: "magical",
+        description: "Arcane research and spellcasting facility",
+        allowedJobs: ["research", "crafting", "summoning"],
+        maxWorkers: 6,
+        productionMultiplier: 1.4,
+        maintenanceCost: { gold: 15, magic: 10 },
+        bonuses: { qualityBonus: 0.3, researchBonus: 0.4 }
+      },
+      shrine: {
+        name: "Shrine",
+        category: "magical",
+        description: "Sacred place for divine magic and healing",
+        allowedJobs: ["summoning", "research"],
+        maxWorkers: 8,
+        productionMultiplier: 1.2,
+        maintenanceCost: { gold: 10, magic: 5 },
+        bonuses: { researchBonus: 0.25 }
+      },
+      ritual_circle: {
+        name: "Ritual Circle",
+        category: "magical",
+        description: "Outdoor ceremonial site for powerful rituals",
+        allowedJobs: ["summoning", "research"],
+        maxWorkers: 4,
+        productionMultiplier: 1.5,
+        maintenanceCost: { gold: 5, magic: 15 },
+        bonuses: { qualityBonus: 0.2 }
+      },
+      // Research buildings
+      library: {
+        name: "Library",
+        category: "research",
+        description: "Repository of knowledge and study",
+        allowedJobs: ["research"],
+        maxWorkers: 12,
+        productionMultiplier: 1.3,
+        maintenanceCost: { gold: 12 },
+        bonuses: { researchBonus: 0.5 }
+      },
+      laboratory: {
+        name: "Laboratory",
+        category: "research",
+        description: "Scientific experimentation facility",
+        allowedJobs: ["research", "crafting"],
+        maxWorkers: 6,
+        productionMultiplier: 1.4,
+        maintenanceCost: { gold: 18, magic: 8 },
+        bonuses: { researchBonus: 0.45, qualityBonus: 0.2 }
+      },
+      // Logistic buildings
+      warehouse: {
+        name: "Warehouse",
+        category: "logistic",
+        description: "Storage facility for resources and goods",
+        allowedJobs: ["gathering", "guard"],
+        maxWorkers: 10,
+        productionMultiplier: 1,
+        maintenanceCost: { gold: 3 }
+      },
+      stable: {
+        name: "Stable",
+        category: "logistic",
+        description: "Housing for mounts and beasts of burden",
+        allowedJobs: ["gathering", "training"],
+        maxWorkers: 8,
+        productionMultiplier: 1,
+        maintenanceCost: { gold: 5, food: 20 }
+      },
+      granary: {
+        name: "Granary",
+        category: "logistic",
+        description: "Food storage and preservation facility",
+        allowedJobs: ["gathering", "guard"],
+        maxWorkers: 6,
+        productionMultiplier: 1.1,
+        maintenanceCost: { gold: 4 }
+      },
+      // Residential buildings
+      inn: {
+        name: "Inn",
+        category: "residential",
+        description: "Lodging for travelers and workers",
+        allowedJobs: ["gathering"],
+        maxWorkers: 12,
+        productionMultiplier: 1,
+        maintenanceCost: { gold: 6, food: 15 }
+      },
+      palace: {
+        name: "Palace",
+        category: "residential",
+        description: "Grand residence for leadership",
+        allowedJobs: ["guard", "research"],
+        maxWorkers: 25,
+        productionMultiplier: 1.3,
+        maintenanceCost: { gold: 30, food: 20 },
+        bonuses: { researchBonus: 0.2 }
+      }
+    };
   }
 });
 
@@ -15804,6 +16480,36 @@ function locationToMarkdown(data) {
     lines.push("");
     lines.push("## Description");
     lines.push(data.description);
+  }
+  if (isBuildingLocation(data)) {
+    lines.push("");
+    lines.push("## Building Production");
+    const production = data.building_production;
+    const template = BUILDING_TEMPLATES[production.buildingType];
+    if (template) {
+      lines.push(`- **Building Type:** ${template.name}`);
+      lines.push(`- **Category:** ${template.category}`);
+      lines.push(`- **Condition:** ${production.condition}%`);
+      lines.push(`- **Maintenance Overdue:** ${production.maintenanceOverdue} days`);
+      lines.push(`- **Workers:** ${production.currentWorkers}/${template.maxWorkers}`);
+      if (production.activeJobs.length > 0) {
+        lines.push("");
+        lines.push("**Active Jobs:**");
+        for (const job of production.activeJobs) {
+          lines.push(`- ${job.workerName}: ${job.jobType} (${job.progress}%)`);
+        }
+      }
+      const hasProduction = Object.values(production.periodProduction).some((v) => v && v > 0);
+      if (hasProduction) {
+        lines.push("");
+        lines.push("**Period Production:**");
+        if (production.periodProduction.gold) lines.push(`- Gold: ${production.periodProduction.gold}`);
+        if (production.periodProduction.food) lines.push(`- Food: ${production.periodProduction.food}`);
+        if (production.periodProduction.equipment) lines.push(`- Equipment: ${production.periodProduction.equipment}`);
+        if (production.periodProduction.magic) lines.push(`- Magic: ${production.periodProduction.magic}`);
+        if (production.periodProduction.influence) lines.push(`- Influence: ${production.periodProduction.influence}`);
+      }
+    }
   }
   if (isDungeonLocation(data) && data.rooms && data.rooms.length > 0) {
     lines.push("");
@@ -15888,6 +16594,7 @@ var init_serializer9 = __esm({
     "use strict";
     init_constants9();
     init_types3();
+    init_building_production();
   }
 });
 
@@ -15898,6 +16605,7 @@ var init_create_spec9 = __esm({
     "use strict";
     init_constants9();
     init_serializer9();
+    init_building_production();
     locationSchema = {
       parse: (data) => data,
       safeParse: (data) => {
@@ -15932,7 +16640,7 @@ var init_create_spec9 = __esm({
         label: "Typ",
         type: "select",
         required: true,
-        options: LOCATION_TYPES.map((type) => ({ value: type, label: type })),
+        options: LOCATION_TYPES.map((type2) => ({ value: type2, label: type2 })),
         default: "Geb\xE4ude",
         description: "Art des Ortes"
       },
@@ -15954,9 +16662,9 @@ var init_create_spec9 = __esm({
         id: "owner_type",
         label: "Besitzertyp",
         type: "select",
-        options: OWNER_TYPES.map((type) => ({
-          value: type,
-          label: OWNER_TYPE_LABELS[type]
+        options: OWNER_TYPES.map((type2) => ({
+          value: type2,
+          label: OWNER_TYPE_LABELS[type2]
         })),
         default: "none",
         description: "Wer besitzt oder kontrolliert diesen Ort?"
@@ -16028,6 +16736,60 @@ var init_create_spec9 = __esm({
         description: "Gr\xF6\xDFe einer Rasterzelle in Pixeln (Standard: 40)",
         visibleIf: (values) => values.type === "Dungeon",
         dependsOn: ["type"]
+      },
+      // Building-specific fields (only visible when type === "Gebäude")
+      {
+        id: "building_production.buildingType",
+        label: "Geb\xE4udetyp",
+        type: "select",
+        required: false,
+        options: Object.keys(BUILDING_TEMPLATES).map((key) => ({
+          value: key,
+          label: BUILDING_TEMPLATES[key].name
+        })),
+        placeholder: "W\xE4hle einen Geb\xE4udetyp",
+        description: "Art des Geb\xE4udes (bestimmt erlaubte Jobs und Produktion)",
+        visibleIf: (values) => values.type === "Geb\xE4ude",
+        dependsOn: ["type"]
+      },
+      {
+        id: "building_production.condition",
+        label: "Zustand",
+        type: "number-stepper",
+        min: 0,
+        max: 100,
+        step: 1,
+        default: 100,
+        placeholder: "100",
+        description: "Geb\xE4udezustand (0-100%, beeinflusst Produktionsrate)",
+        visibleIf: (values) => values.type === "Geb\xE4ude" && !!values.building_production?.buildingType,
+        dependsOn: ["type", "building_production.buildingType"]
+      },
+      {
+        id: "building_production.maintenanceOverdue",
+        label: "Wartung \xFCberf\xE4llig",
+        type: "number-stepper",
+        min: 0,
+        max: 365,
+        step: 1,
+        default: 0,
+        placeholder: "0",
+        description: "Tage seit f\xE4lliger Wartung (reduziert Produktionsrate um -5%/Tag, max -50%)",
+        visibleIf: (values) => values.type === "Geb\xE4ude" && !!values.building_production?.buildingType,
+        dependsOn: ["type", "building_production.buildingType"]
+      },
+      {
+        id: "building_production.currentWorkers",
+        label: "Aktuelle Arbeiter",
+        type: "number-stepper",
+        min: 0,
+        max: 100,
+        step: 1,
+        default: 0,
+        placeholder: "0",
+        description: "Anzahl der zugewiesenen Arbeiter (max. durch Geb\xE4udetyp begrenzt)",
+        visibleIf: (values) => values.type === "Geb\xE4ude" && !!values.building_production?.buildingType,
+        dependsOn: ["type", "building_production.buildingType"]
       }
     ];
     locationSpec = {
@@ -16055,7 +16817,8 @@ var init_create_spec9 = __esm({
           "grid_height",
           "cell_size",
           "rooms",
-          "tokens"
+          "tokens",
+          "building_production"
         ],
         bodyTemplate: (data) => locationToMarkdown(data)
       },
@@ -16094,6 +16857,18 @@ var init_create_spec9 = __esm({
             getValue: (entry) => {
               if (!entry.grid_size) return null;
               return `\u2B1A ${entry.grid_size}`;
+            }
+          },
+          {
+            id: "building_status",
+            cls: "sm-cc-item__meta sm-cc-item__building-status",
+            getValue: (entry) => {
+              if (entry.type !== "Geb\xE4ude" || !entry.building_production) return null;
+              const prod = entry.building_production;
+              const template = BUILDING_TEMPLATES[prod.buildingType];
+              if (!template) return null;
+              const conditionIcon = prod.condition >= 80 ? "\u{1F7E2}" : prod.condition >= 40 ? "\u{1F7E1}" : "\u{1F534}";
+              return `${conditionIcon} ${template.name} (${prod.condition}%) \u2022 ${prod.currentWorkers}/${template.maxWorkers} workers`;
             }
           }
         ],
@@ -16312,6 +17087,7 @@ var init_locations = __esm({
   "src/workmodes/library/locations/index.ts"() {
     "use strict";
     init_create_spec9();
+    init_types3();
     init_serializer9();
     init_tree_builder();
     init_tree_view();
@@ -17382,9 +18158,9 @@ var init_registry = __esm({
 
 // src/features/maps/state/terrain-store.ts
 async function ensureTerrainFile(app) {
-  const path = (0, import_obsidian27.normalizePath)(TERRAIN_FILE);
+  const path = (0, import_obsidian28.normalizePath)(TERRAIN_FILE);
   const existing = app.vault.getAbstractFileByPath(path);
-  if (existing instanceof import_obsidian27.TFile) {
+  if (existing instanceof import_obsidian28.TFile) {
     return existing;
   }
   const dir = path.split("/").slice(0, -1).join("/");
@@ -17411,7 +18187,7 @@ async function ensureTerrainFile(app) {
 function parseTerrainBlock(md) {
   const match = md.match(BLOCK_RE2);
   if (!match) return {};
-  const map = {};
+  const map2 = {};
   for (const raw of match[1].split(/\r?\n/)) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
@@ -17423,15 +18199,15 @@ function parseTerrainBlock(md) {
     const color = parsed[4].trim();
     const speedValue = parsed[5] !== void 0 ? parseFloat(parsed[5]) : 1;
     const speed = Number.isFinite(speedValue) ? speedValue : 1;
-    map[name] = { color, speed };
+    map2[name] = { color, speed };
   }
-  if (!map[""]) {
-    map[""] = { color: "transparent", speed: 1 };
+  if (!map2[""]) {
+    map2[""] = { color: "transparent", speed: 1 };
   }
-  return map;
+  return map2;
 }
-function stringifyTerrainBlock(map) {
-  const entries = Object.entries(map);
+function stringifyTerrainBlock(map2) {
+  const entries = Object.entries(map2);
   entries.sort(([a], [b]) => a === "" ? -1 : b === "" ? 1 : a.localeCompare(b));
   const lines = entries.map(([key, value]) => `${key || ":"}: ${value.color}, speed: ${value.speed}`);
   return ["```terrain", ...lines, "```"].join("\n");
@@ -17441,10 +18217,10 @@ async function readTerrainsFromDisk(app) {
   const content = await app.vault.read(file);
   return parseTerrainBlock(content);
 }
-async function writeTerrainsToDisk(app, map) {
+async function writeTerrainsToDisk(app, map2) {
   const file = await ensureTerrainFile(app);
   const content = await app.vault.read(file);
-  const block = stringifyTerrainBlock(map);
+  const block = stringifyTerrainBlock(map2);
   const updated = content.match(BLOCK_RE2) ? content.replace(BLOCK_RE2, block) : `${content}
 
 ${block}
@@ -17500,7 +18276,7 @@ function createTerrainStore(app, options) {
       dirty = false;
     },
     isDirty: () => dirty,
-    getStorageKey: () => (0, import_obsidian27.normalizePath)(TERRAIN_FILE)
+    getStorageKey: () => (0, import_obsidian28.normalizePath)(TERRAIN_FILE)
   };
   getStoreManager().register("map-terrains", persistent2);
   const ensureLoaded = async () => {
@@ -17562,8 +18338,8 @@ function createTerrainStore(app, options) {
       }
     };
     const maybeUpdate = (reason, file) => {
-      if (!(file instanceof import_obsidian27.TFile)) return;
-      if ((0, import_obsidian27.normalizePath)(file.path) !== (0, import_obsidian27.normalizePath)(TERRAIN_FILE)) return;
+      if (!(file instanceof import_obsidian28.TFile)) return;
+      if ((0, import_obsidian28.normalizePath)(file.path) !== (0, import_obsidian28.normalizePath)(TERRAIN_FILE)) return;
       void update(reason);
     };
     const refs = ["modify", "delete"].map(
@@ -17604,19 +18380,19 @@ async function loadTerrains(app) {
   const store = getTerrainStore(app);
   return await store.getTerrains();
 }
-async function saveTerrains(app, map) {
+async function saveTerrains(app, map2) {
   const store = getTerrainStore(app);
-  await store.saveTerrains(map);
+  await store.saveTerrains(map2);
 }
 function watchTerrains(app, options) {
   const store = getTerrainStore(app, typeof options === "object" ? options.storeOptions : void 0);
   return store.watch(options);
 }
-var import_obsidian27, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
+var import_obsidian28, TERRAIN_FILE, BLOCK_RE2, storeRegistry2;
 var init_terrain_store = __esm({
   "src/features/maps/state/terrain-store.ts"() {
     "use strict";
-    import_obsidian27 = require("obsidian");
+    import_obsidian28 = require("obsidian");
     init_state();
     init_store_manager();
     init_plugin_logger();
@@ -17656,7 +18432,7 @@ var init_terrain_repository = __esm({
 
 // src/workmodes/library/core/sources.ts
 async function ensureDir(app, dir) {
-  const normalizedDir = (0, import_obsidian28.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian29.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -17677,11 +18453,11 @@ function describeLibrarySource(source) {
   if (!spec) throw new Error(`Unknown library source: ${source}`);
   return spec.description;
 }
-var import_obsidian28, ensureCreatureDir, ensureSpellDir, ensureItemDir, ensureEquipmentDir, ensureFactionDir, ensureCalendarDir, SOURCE_MAP, LIBRARY_SOURCE_IDS;
+var import_obsidian29, ensureCreatureDir, ensureSpellDir, ensureItemDir, ensureEquipmentDir, ensureFactionDir, ensureCalendarDir, SOURCE_MAP, LIBRARY_SOURCE_IDS;
 var init_sources = __esm({
   "src/workmodes/library/core/sources.ts"() {
     "use strict";
-    import_obsidian28 = require("obsidian");
+    import_obsidian29 = require("obsidian");
     init_terrain_repository();
     init_region_repository();
     init_entity_registry();
@@ -17929,6 +18705,270 @@ var init_view = __esm({
   }
 });
 
+// src/workmodes/cartographer/building-management-modal.ts
+var import_obsidian30, BuildingManagementModal;
+var init_building_management_modal = __esm({
+  "src/workmodes/cartographer/building-management-modal.ts"() {
+    "use strict";
+    import_obsidian30 = require("obsidian");
+    init_building_production();
+    init_plugin_logger();
+    BuildingManagementModal = class extends import_obsidian30.Modal {
+      constructor(app, options) {
+        super(app);
+        this.availableWorkers = [];
+        this.unsavedChanges = false;
+        this.options = options;
+        this.production = JSON.parse(JSON.stringify(
+          options.locationData.building_production
+        ));
+      }
+      async onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.addClass("sm-building-management-modal");
+        const title = contentEl.createEl("h2", {
+          text: `Manage Building: ${this.options.locationData.name}`
+        });
+        title.style.marginBottom = "1em";
+        const template = BUILDING_TEMPLATES[this.production.buildingType];
+        if (!template) {
+          new import_obsidian30.Notice("Invalid building type");
+          this.close();
+          return;
+        }
+        this.availableWorkers = [];
+        this.renderBuildingStatus(contentEl, template);
+        this.renderWorkerManagement(contentEl, template);
+        this.renderProductionTracking(contentEl, template);
+        this.renderActionButtons(contentEl);
+      }
+      renderBuildingStatus(container, template) {
+        const section = container.createDiv({ cls: "sm-building-section" });
+        section.style.marginBottom = "1.5em";
+        const header = section.createEl("h3", { text: "Building Status" });
+        header.style.marginBottom = "0.5em";
+        const infoDiv = section.createDiv({ cls: "sm-building-info" });
+        infoDiv.style.marginBottom = "1em";
+        infoDiv.createDiv({ text: `Type: ${template.name}` });
+        infoDiv.createDiv({ text: `Category: ${template.category}` });
+        infoDiv.createDiv({ text: `Max Workers: ${template.maxWorkers}` });
+        new import_obsidian30.Setting(section).setName("Condition").setDesc(`Current: ${this.production.condition}% | Production Rate: ${(calculateProductionRate(this.production.buildingType, this.production.condition, this.production.maintenanceOverdue) * 100).toFixed(0)}%`).addSlider(
+          (slider) => slider.setLimits(0, 100, 1).setValue(this.production.condition).onChange((value) => {
+            this.production.condition = value;
+            this.unsavedChanges = true;
+            const productionRate = calculateProductionRate(
+              this.production.buildingType,
+              this.production.condition,
+              this.production.maintenanceOverdue
+            );
+            slider.sliderEl.parentElement?.querySelector(".setting-item-description")?.setText(
+              `Current: ${value}% | Production Rate: ${(productionRate * 100).toFixed(0)}%`
+            );
+          })
+        );
+        new import_obsidian30.Setting(section).setName("Maintenance Overdue").setDesc("Days since last maintenance").addText(
+          (text) => text.setValue(String(this.production.maintenanceOverdue)).onChange((value) => {
+            const days = parseInt(value) || 0;
+            this.production.maintenanceOverdue = Math.max(0, days);
+            this.unsavedChanges = true;
+          })
+        );
+        const repairSetting = new import_obsidian30.Setting(section).setName("Repair Building").setDesc("Spend resources to improve condition").addButton(
+          (btn) => btn.setButtonText("Repair (+10 condition)").onClick(() => {
+            const repairAmount = repairBuilding(this.production, 1, 0.5);
+            new import_obsidian30.Notice(`Repaired building: +${repairAmount.toFixed(0)} condition`);
+            this.unsavedChanges = true;
+            this.refresh();
+          })
+        );
+        const maintenance = calculateMaintenanceCost(this.production.buildingType);
+        const maintenanceText = Object.entries(maintenance).filter(([, value]) => value && value > 0).map(([key, value]) => `${key}: ${value}`).join(", ");
+        if (maintenanceText) {
+          const maintenanceDiv = section.createDiv({ cls: "sm-maintenance-cost" });
+          maintenanceDiv.style.fontSize = "0.9em";
+          maintenanceDiv.style.color = "var(--text-muted)";
+          maintenanceDiv.style.marginTop = "0.5em";
+          maintenanceDiv.setText(`Daily maintenance: ${maintenanceText}`);
+        }
+        const bonuses = getBuildingBonuses(this.production.buildingType);
+        if (bonuses && Object.keys(bonuses).length > 0) {
+          const bonusDiv = section.createDiv({ cls: "sm-building-bonuses" });
+          bonusDiv.style.marginTop = "0.5em";
+          bonusDiv.style.padding = "0.5em";
+          bonusDiv.style.background = "var(--background-secondary)";
+          bonusDiv.style.borderRadius = "4px";
+          bonusDiv.createEl("div", {
+            text: "Building Bonuses:",
+            cls: "sm-bonus-header"
+          }).style.fontWeight = "600";
+          if (bonuses.qualityBonus) {
+            bonusDiv.createDiv({
+              text: `\u2728 Quality: +${(bonuses.qualityBonus * 100).toFixed(0)}%`
+            });
+          }
+          if (bonuses.trainingSpeed) {
+            bonusDiv.createDiv({
+              text: `\u26A1 Training Speed: ${(bonuses.trainingSpeed * 100).toFixed(0)}%`
+            });
+          }
+          if (bonuses.researchBonus) {
+            bonusDiv.createDiv({
+              text: `\u{1F4DA} Research: +${(bonuses.researchBonus * 100).toFixed(0)}%`
+            });
+          }
+        }
+      }
+      renderWorkerManagement(container, template) {
+        const section = container.createDiv({ cls: "sm-worker-section" });
+        section.style.marginBottom = "1.5em";
+        const header = section.createEl("h3", { text: "Worker Management" });
+        header.style.marginBottom = "0.5em";
+        new import_obsidian30.Setting(section).setName("Current Workers").setDesc(`Assigned: ${this.production.currentWorkers}/${template.maxWorkers}`).addText(
+          (text) => text.setValue(String(this.production.currentWorkers)).onChange((value) => {
+            const workers = parseInt(value) || 0;
+            this.production.currentWorkers = Math.max(0, Math.min(template.maxWorkers, workers));
+            this.unsavedChanges = true;
+            text.inputEl.parentElement?.querySelector(".setting-item-description")?.setText(
+              `Assigned: ${this.production.currentWorkers}/${template.maxWorkers}`
+            );
+          })
+        );
+        const jobsDiv = section.createDiv({ cls: "sm-allowed-jobs" });
+        jobsDiv.style.marginTop = "0.5em";
+        jobsDiv.style.padding = "0.5em";
+        jobsDiv.style.background = "var(--background-secondary)";
+        jobsDiv.style.borderRadius = "4px";
+        jobsDiv.createEl("div", {
+          text: "Allowed Jobs:",
+          cls: "sm-jobs-header"
+        }).style.fontWeight = "600";
+        template.allowedJobs.forEach((job) => {
+          jobsDiv.createDiv({ text: `\u2022 ${job}` });
+        });
+        const placeholderDiv = section.createDiv({ cls: "sm-worker-placeholder" });
+        placeholderDiv.style.marginTop = "1em";
+        placeholderDiv.style.padding = "1em";
+        placeholderDiv.style.background = "var(--background-secondary)";
+        placeholderDiv.style.borderRadius = "4px";
+        placeholderDiv.style.border = "1px dashed var(--background-modifier-border)";
+        placeholderDiv.style.textAlign = "center";
+        placeholderDiv.style.color = "var(--text-muted)";
+        placeholderDiv.setText("Worker assignment UI: Coming in future update");
+        placeholderDiv.createDiv({ text: "(Drag faction members here to assign as workers)" }).style.fontSize = "0.85em";
+      }
+      renderProductionTracking(container, template) {
+        const section = container.createDiv({ cls: "sm-production-section" });
+        section.style.marginBottom = "1.5em";
+        const header = section.createEl("h3", { text: "Production Tracking" });
+        header.style.marginBottom = "0.5em";
+        if (this.production.activeJobs && this.production.activeJobs.length > 0) {
+          const jobsHeader = section.createEl("h4", { text: "Active Jobs" });
+          jobsHeader.style.fontSize = "0.95em";
+          jobsHeader.style.marginTop = "0.5em";
+          jobsHeader.style.marginBottom = "0.5em";
+          const jobsList = section.createDiv({ cls: "sm-active-jobs-list" });
+          this.production.activeJobs.forEach((job, index) => {
+            const jobDiv = jobsList.createDiv({ cls: "sm-job-item" });
+            jobDiv.style.padding = "0.5em";
+            jobDiv.style.marginBottom = "0.5em";
+            jobDiv.style.background = "var(--background-secondary)";
+            jobDiv.style.borderRadius = "4px";
+            jobDiv.createDiv({ text: `${job.workerName} - ${job.jobType}` }).style.fontWeight = "600";
+            jobDiv.createDiv({ text: `Progress: ${job.progress}%` });
+            if (job.startedAt) {
+              jobDiv.createDiv({ text: `Started: ${job.startedAt}` }).style.fontSize = "0.85em";
+            }
+            const removeBtn = jobDiv.createEl("button", { text: "Remove" });
+            removeBtn.style.marginTop = "0.5em";
+            removeBtn.onclick = () => {
+              this.production.activeJobs.splice(index, 1);
+              this.unsavedChanges = true;
+              this.refresh();
+            };
+          });
+        } else {
+          const noJobsDiv = section.createDiv({ cls: "sm-no-jobs" });
+          noJobsDiv.style.padding = "1em";
+          noJobsDiv.style.background = "var(--background-secondary)";
+          noJobsDiv.style.borderRadius = "4px";
+          noJobsDiv.style.textAlign = "center";
+          noJobsDiv.style.color = "var(--text-muted)";
+          noJobsDiv.setText("No active jobs");
+        }
+        if (this.production.periodProduction && Object.keys(this.production.periodProduction).length > 0) {
+          const prodHeader = section.createEl("h4", { text: "Period Production" });
+          prodHeader.style.fontSize = "0.95em";
+          prodHeader.style.marginTop = "1em";
+          prodHeader.style.marginBottom = "0.5em";
+          const prodDiv = section.createDiv({ cls: "sm-period-production" });
+          prodDiv.style.padding = "0.5em";
+          prodDiv.style.background = "var(--background-secondary)";
+          prodDiv.style.borderRadius = "4px";
+          Object.entries(this.production.periodProduction).filter(([, value]) => value && value > 0).forEach(([resource, amount]) => {
+            prodDiv.createDiv({ text: `${resource}: ${amount}` });
+          });
+        }
+      }
+      renderActionButtons(container) {
+        const buttonContainer = container.createDiv({ cls: "sm-button-container" });
+        buttonContainer.style.display = "flex";
+        buttonContainer.style.gap = "0.5em";
+        buttonContainer.style.justifyContent = "flex-end";
+        buttonContainer.style.marginTop = "1.5em";
+        buttonContainer.style.paddingTop = "1em";
+        buttonContainer.style.borderTop = "1px solid var(--background-modifier-border)";
+        const cancelBtn = buttonContainer.createEl("button", { text: "Cancel" });
+        cancelBtn.onclick = () => {
+          if (this.unsavedChanges) {
+            const confirmed = confirm("You have unsaved changes. Are you sure you want to cancel?");
+            if (!confirmed) return;
+          }
+          this.close();
+        };
+        const saveBtn = buttonContainer.createEl("button", { text: "Save Changes", cls: "mod-cta" });
+        saveBtn.onclick = async () => {
+          await this.saveChanges();
+        };
+      }
+      async saveChanges() {
+        try {
+          await this.app.fileManager.processFrontMatter(
+            this.options.locationFile,
+            (frontmatter) => {
+              frontmatter.building_production = this.production;
+            }
+          );
+          logger2.info("[building-management] Saved building changes", {
+            location: this.options.locationData.name,
+            buildingType: this.production.buildingType,
+            condition: this.production.condition,
+            workers: this.production.currentWorkers
+          });
+          new import_obsidian30.Notice("Building changes saved");
+          if (this.options.onSave) {
+            const updatedData = { ...this.options.locationData };
+            updatedData.building_production = this.production;
+            this.options.onSave(updatedData);
+          }
+          this.unsavedChanges = false;
+          this.close();
+        } catch (error) {
+          logger2.error("[building-management] Failed to save building changes", { error });
+          new import_obsidian30.Notice("Failed to save changes. Check console for details.");
+        }
+      }
+      refresh() {
+        this.onOpen();
+      }
+      onClose() {
+        const { contentEl } = this;
+        contentEl.empty();
+      }
+    };
+  }
+});
+
 // src/workmodes/cartographer/modes/inspector.ts
 var inspector_exports = {};
 __export(inspector_exports, {
@@ -18044,27 +19084,126 @@ function createInspectorMode() {
       }
       const markerStore = getLocationMarkerStore(ctx.app, file);
       const marker = markerStore.get(state.selection);
-      if (marker) {
-        const header = ui.locationInfo.createEl("h4", { text: "\u{1F4CD} Location" });
+      const influenceStore = getLocationInfluenceStore(ctx.app, file);
+      const influence = influenceStore.get(state.selection);
+      if (marker || influence) {
+        const header = ui.locationInfo.createEl("h4", { text: "\u{1F4CD} Location Info" });
         header.style.marginTop = "0";
         header.style.marginBottom = "8px";
-        const infoDiv = ui.locationInfo.createDiv({ cls: "sm-location-marker-info" });
-        infoDiv.createDiv({ text: `${marker.displayIcon} ${marker.locationName}`, cls: "sm-location-name" });
-        infoDiv.createDiv({ text: `Type: ${marker.locationType}`, cls: "sm-location-type" });
-        if (marker.parent) {
-          infoDiv.createDiv({ text: `Parent: ${marker.parent}`, cls: "sm-location-parent" });
+        if (marker) {
+          const infoDiv = ui.locationInfo.createDiv({ cls: "sm-location-marker-info" });
+          infoDiv.createDiv({ text: `${marker.displayIcon} ${marker.locationName}`, cls: "sm-location-name" });
+          infoDiv.createDiv({ text: `Type: ${marker.locationType}`, cls: "sm-location-type" });
+          if (marker.parent) {
+            infoDiv.createDiv({ text: `Parent: ${marker.parent}`, cls: "sm-location-parent" });
+          }
+          if (marker.ownerName) {
+            const ownerLabel = marker.ownerType === "faction" ? "Faction" : marker.ownerType === "npc" ? "Owner (NPC)" : "Owner";
+            infoDiv.createDiv({ text: `${ownerLabel}: ${marker.ownerName}`, cls: "sm-location-owner" });
+          }
+          const openBtn = ui.locationInfo.createEl("button", { text: "Open in Library" });
+          openBtn.style.marginTop = "8px";
+          openBtn.addEventListener("click", async () => {
+            const leaf = ctx.app.workspace.getLeaf(false);
+            await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
+            ctx.app.workspace.revealLeaf(leaf);
+          });
         }
-        if (marker.ownerName) {
-          const ownerLabel = marker.ownerType === "faction" ? "Faction" : marker.ownerType === "npc" ? "Owner (NPC)" : "Owner";
-          infoDiv.createDiv({ text: `${ownerLabel}: ${marker.ownerName}`, cls: "sm-location-owner" });
+        if (influence) {
+          const influenceDiv = ui.locationInfo.createDiv({ cls: "sm-location-influence-info" });
+          influenceDiv.style.marginTop = marker ? "12px" : "0";
+          influenceDiv.style.padding = "8px";
+          influenceDiv.style.background = "var(--background-secondary)";
+          influenceDiv.style.borderRadius = "4px";
+          const influenceHeader = influenceDiv.createEl("div", {
+            text: `Influence Area: ${influence.locationName}`,
+            cls: "sm-influence-header"
+          });
+          influenceHeader.style.fontWeight = "600";
+          influenceHeader.style.marginBottom = "4px";
+          influenceDiv.createDiv({
+            text: `Strength: ${Math.round(influence.strength)}%`,
+            cls: "sm-influence-strength"
+          });
+          if (influence.ownerName) {
+            const ownerLabel = influence.ownerType === "faction" ? "Faction" : influence.ownerType === "npc" ? "NPC" : "Owner";
+            influenceDiv.createDiv({
+              text: `${ownerLabel}: ${influence.ownerName}`,
+              cls: "sm-influence-owner"
+            });
+          }
+          const locationPath = `SaltMarcher/Locations/${influence.locationName}.md`;
+          const locationFile = lifecycle.ctx?.app.vault.getAbstractFileByPath(locationPath);
+          if (locationFile && "extension" in locationFile) {
+            (async () => {
+              try {
+                const fm2 = await readFrontmatter(lifecycle.ctx.app, locationFile);
+                const locationData = fm2;
+                if (isBuildingLocation(locationData)) {
+                  const prod = locationData.building_production;
+                  const template = BUILDING_TEMPLATES[prod.buildingType];
+                  if (template) {
+                    const buildingDiv = influenceDiv.createDiv({ cls: "sm-building-details" });
+                    buildingDiv.style.marginTop = "8px";
+                    buildingDiv.style.paddingTop = "8px";
+                    buildingDiv.style.borderTop = "1px solid var(--background-modifier-border)";
+                    const buildingHeader = buildingDiv.createEl("div", {
+                      text: "Building Details",
+                      cls: "sm-building-header"
+                    });
+                    buildingHeader.style.fontWeight = "600";
+                    buildingHeader.style.marginBottom = "4px";
+                    const conditionIcon = prod.condition >= 80 ? "\u{1F7E2}" : prod.condition >= 40 ? "\u{1F7E1}" : "\u{1F534}";
+                    buildingDiv.createDiv({
+                      text: `${conditionIcon} ${template.name} (${prod.condition}% condition)`,
+                      cls: "sm-building-type"
+                    });
+                    buildingDiv.createDiv({
+                      text: `Workers: ${prod.currentWorkers}/${template.maxWorkers}`,
+                      cls: "sm-building-workers"
+                    });
+                    if (prod.maintenanceOverdue > 0) {
+                      const maintenanceDiv = buildingDiv.createDiv({
+                        text: `\u26A0\uFE0F Maintenance overdue: ${prod.maintenanceOverdue} days`,
+                        cls: "sm-building-maintenance"
+                      });
+                      maintenanceDiv.style.color = "var(--text-warning)";
+                    }
+                    if (prod.activeJobs && prod.activeJobs.length > 0) {
+                      const jobsDiv = buildingDiv.createDiv({ cls: "sm-building-jobs" });
+                      jobsDiv.style.marginTop = "4px";
+                      jobsDiv.createEl("div", {
+                        text: `Active Jobs: ${prod.activeJobs.length}`,
+                        cls: "sm-jobs-header"
+                      }).style.fontSize = "0.9em";
+                    }
+                    const manageButton = buildingDiv.createEl("button", {
+                      text: "Manage Building",
+                      cls: "sm-manage-building-btn"
+                    });
+                    manageButton.style.marginTop = "8px";
+                    manageButton.style.width = "100%";
+                    manageButton.onclick = () => {
+                      const modal = new BuildingManagementModal(lifecycle.ctx.app, {
+                        locationFile,
+                        locationData,
+                        onSave: (updatedData) => {
+                          logger2.info("[cartographer:inspector] Building updated, refreshing display");
+                        }
+                      });
+                      modal.open();
+                    };
+                  }
+                }
+              } catch (error) {
+                logger2.warn("[cartographer:inspector] Failed to load building details", {
+                  locationName: influence.locationName,
+                  error
+                });
+              }
+            })();
+          }
         }
-        const openBtn = ui.locationInfo.createEl("button", { text: "Open in Library" });
-        openBtn.style.marginTop = "8px";
-        openBtn.addEventListener("click", async () => {
-          const leaf = ctx.app.workspace.getLeaf(false);
-          await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
-          ctx.app.workspace.revealLeaf(leaf);
-        });
       }
     }
     updateMessage();
@@ -18245,6 +19384,11 @@ var init_inspector = __esm({
     init_form_builder();
     init_location_marker_store();
     init_view();
+    init_location_influence_store();
+    init_frontmatter_utils();
+    init_types3();
+    init_building_production();
+    init_building_management_modal();
   }
 });
 
@@ -19748,18 +20892,18 @@ var init_presenter = __esm({
         }
         return next;
       }
-      static normaliseRuleModifierValue(type, value) {
-        if (type === "flat" || type === "flatPerAverageLevel" || type === "flatPerTotalLevel") {
+      static normaliseRuleModifierValue(type2, value) {
+        if (type2 === "flat" || type2 === "flatPerAverageLevel" || type2 === "flatPerTotalLevel") {
           return sanitizeNumber(value);
         }
         return clampPercentage(sanitizeNumber(value));
       }
-      static normaliseRuleModifierRange(type, min, max, fallback) {
-        const sanitizedFallback = _EncounterPresenter.normaliseRuleModifierValue(type, fallback);
+      static normaliseRuleModifierRange(type2, min, max, fallback) {
+        const sanitizedFallback = _EncounterPresenter.normaliseRuleModifierValue(type2, fallback);
         const hasMin = min !== null && min !== void 0;
         const hasMax = max !== null && max !== void 0;
-        const sanitizedMin = hasMin ? _EncounterPresenter.normaliseRuleModifierValue(type, min) : sanitizedFallback;
-        const sanitizedMax = hasMax ? _EncounterPresenter.normaliseRuleModifierValue(type, max) : sanitizedFallback;
+        const sanitizedMin = hasMin ? _EncounterPresenter.normaliseRuleModifierValue(type2, min) : sanitizedFallback;
+        const sanitizedMax = hasMax ? _EncounterPresenter.normaliseRuleModifierValue(type2, max) : sanitizedFallback;
         if (sanitizedMin > sanitizedMax) {
           return { min: sanitizedMax, max: sanitizedMin };
         }
@@ -19771,13 +20915,13 @@ var init_presenter = __esm({
 
 // src/workmodes/encounter/rule-presets.ts
 async function ensureEncounterRulePresetDir(app) {
-  const normalized = (0, import_obsidian31.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const normalized = (0, import_obsidian33.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
   let file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian31.TFolder) return file;
+  if (file instanceof import_obsidian33.TFolder) return file;
   await app.vault.createFolder(normalized).catch(() => {
   });
   file = app.vault.getAbstractFileByPath(normalized);
-  if (file instanceof import_obsidian31.TFolder) return file;
+  if (file instanceof import_obsidian33.TFolder) return file;
   throw new Error(`Could not ensure encounter preset directory: ${normalized}`);
 }
 async function listEncounterRulePresets(app) {
@@ -19785,8 +20929,8 @@ async function listEncounterRulePresets(app) {
   const files = [];
   const walk = (folder) => {
     for (const child of folder.children) {
-      if (child instanceof import_obsidian31.TFolder) walk(child);
-      else if (child instanceof import_obsidian31.TFile && child.extension === "md") files.push(child);
+      if (child instanceof import_obsidian33.TFolder) walk(child);
+      else if (child instanceof import_obsidian33.TFile && child.extension === "md") files.push(child);
     }
   };
   walk(dir);
@@ -19814,18 +20958,18 @@ async function saveEncounterRulePreset(app, doc, options = {}) {
   const dir = await ensureEncounterRulePresetDir(app);
   if (options.path) {
     const existing = app.vault.getAbstractFileByPath(options.path);
-    if (existing instanceof import_obsidian31.TFile) {
+    if (existing instanceof import_obsidian33.TFile) {
       await app.vault.modify(existing, content);
       return existing;
     }
   }
   const baseName = sanitizeFileName2(sanitizedName, DEFAULT_PRESET_NAME);
   let fileName = `${baseName}.md`;
-  let targetPath = (0, import_obsidian31.normalizePath)(`${dir.path}/${fileName}`);
+  let targetPath = (0, import_obsidian33.normalizePath)(`${dir.path}/${fileName}`);
   let counter = 2;
   while (app.vault.getAbstractFileByPath(targetPath)) {
     fileName = `${baseName} (${counter}).md`;
-    targetPath = (0, import_obsidian31.normalizePath)(`${dir.path}/${fileName}`);
+    targetPath = (0, import_obsidian33.normalizePath)(`${dir.path}/${fileName}`);
     counter += 1;
   }
   const file = await app.vault.create(targetPath, content);
@@ -19932,17 +21076,17 @@ function createRuleId() {
   return `rule-${Date.now().toString(36)}-${random}`;
 }
 function isEncounterPresetFile(file) {
-  if (!(file instanceof import_obsidian31.TFile)) return false;
+  if (!(file instanceof import_obsidian33.TFile)) return false;
   if (file.extension !== "md") return false;
-  const normalized = (0, import_obsidian31.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+  const normalized = (0, import_obsidian33.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
   const base = `${normalized}/`;
   return file.path === normalized || file.path.startsWith(base);
 }
-var import_obsidian31, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
+var import_obsidian33, ENCOUNTER_RULE_PRESET_DIR, DEFAULT_PRESET_NAME, MODIFIER_TYPES, PRESET_SCOPE_GOLD, PRESET_SCOPE_XP;
 var init_rule_presets = __esm({
   "src/workmodes/encounter/rule-presets.ts"() {
     "use strict";
-    import_obsidian31 = require("obsidian");
+    import_obsidian33 = require("obsidian");
     ENCOUNTER_RULE_PRESET_DIR = "SaltMarcher/EncounterPresets";
     DEFAULT_PRESET_NAME = "Encounter Rule Preset";
     MODIFIER_TYPES = /* @__PURE__ */ new Set([
@@ -20044,14 +21188,14 @@ var init_session_view = __esm({
 // src/workmodes/encounter/creature-list.ts
 function parseCR2(crString) {
   if (!crString) return 0;
-  const str = crString.trim();
-  if (str.includes("/")) {
-    const [num2, denom] = str.split("/").map((s) => Number(s.trim()));
+  const str2 = crString.trim();
+  if (str2.includes("/")) {
+    const [num2, denom] = str2.split("/").map((s) => Number(s.trim()));
     if (Number.isFinite(num2) && Number.isFinite(denom) && denom !== 0) {
       return num2 / denom;
     }
   }
-  const num = Number(str);
+  const num = Number(str2);
   return Number.isFinite(num) ? num : 0;
 }
 function formatCR2(cr) {
@@ -20656,11 +21800,11 @@ function createId(prefix) {
   const random = Math.random().toString(36).slice(2, 8);
   return `${prefix}-${Date.now().toString(36)}-${random}`;
 }
-var import_obsidian32, EncounterWorkspaceView, ConfirmReplaceModal, numberFormatter;
+var import_obsidian34, EncounterWorkspaceView, ConfirmReplaceModal, numberFormatter;
 var init_workspace_view = __esm({
   "src/workmodes/encounter/workspace-view.ts"() {
     "use strict";
-    import_obsidian32 = require("obsidian");
+    import_obsidian34 = require("obsidian");
     init_modals();
     init_plugin_logger();
     init_rule_presets();
@@ -20923,10 +22067,10 @@ var init_workspace_view = __esm({
       }
       registerPresetWatcher() {
         this.detachPresetWatcher?.();
-        const baseDir = (0, import_obsidian32.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
+        const baseDir = (0, import_obsidian34.normalizePath)(ENCOUNTER_RULE_PRESET_DIR);
         const prefix = `${baseDir}/`;
         const handler = (file) => {
-          if (file instanceof import_obsidian32.TFile) {
+          if (file instanceof import_obsidian34.TFile) {
             if (isEncounterPresetFile(file)) {
               this.schedulePresetRefresh();
             }
@@ -21014,11 +22158,11 @@ var init_workspace_view = __esm({
         const presenter = this.presenter;
         const selected = this.getSelectedPreset();
         if (!presenter) {
-          new import_obsidian32.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          new import_obsidian34.Notice("Encounter-Presenter nicht verf\xFCgbar.");
           return;
         }
         if (!selected) {
-          new import_obsidian32.Notice("Bitte ein Preset ausw\xE4hlen.");
+          new import_obsidian34.Notice("Bitte ein Preset ausw\xE4hlen.");
           return;
         }
         try {
@@ -21036,16 +22180,16 @@ var init_workspace_view = __esm({
           if (typeof preset.encounterXp === "number" && Number.isFinite(preset.encounterXp)) {
             presenter.setEncounterXp(preset.encounterXp);
           }
-          new import_obsidian32.Notice(`Preset "${preset.name}" geladen.`);
+          new import_obsidian34.Notice(`Preset "${preset.name}" geladen.`);
         } catch (error) {
           logger2.error("[encounter] failed to load preset", error);
-          new import_obsidian32.Notice("Preset konnte nicht geladen werden.");
+          new import_obsidian34.Notice("Preset konnte nicht geladen werden.");
         }
       }
       async handleSavePreset() {
         const presenter = this.presenter;
         if (!presenter) {
-          new import_obsidian32.Notice("Encounter-Presenter nicht verf\xFCgbar.");
+          new import_obsidian34.Notice("Encounter-Presenter nicht verf\xFCgbar.");
           return;
         }
         const selected = this.getSelectedPreset();
@@ -21065,14 +22209,14 @@ var init_workspace_view = __esm({
                   path: selected && selected.name === (name || fallbackName) ? selected.file.path : void 0
                 }
               );
-              new import_obsidian32.Notice(`Preset "${name || fallbackName}" gespeichert.`);
+              new import_obsidian34.Notice(`Preset "${name || fallbackName}" gespeichert.`);
               await this.refreshPresetOptions();
               if (this.presetSelectEl && this.presetSelectEl.isConnected) {
                 this.presetSelectEl.value = file.path;
               }
             } catch (error) {
               logger2.error("[encounter] failed to save preset", error);
-              new import_obsidian32.Notice("Preset konnte nicht gespeichert werden.");
+              new import_obsidian34.Notice("Preset konnte nicht gespeichert werden.");
             }
             this.syncPresetControlsState();
           },
@@ -21088,21 +22232,21 @@ var init_workspace_view = __esm({
       async handleDeletePreset() {
         const selected = this.getSelectedPreset();
         if (!selected) {
-          new import_obsidian32.Notice("Bitte ein Preset ausw\xE4hlen.");
+          new import_obsidian34.Notice("Bitte ein Preset ausw\xE4hlen.");
           return;
         }
         const confirmed = window.confirm(`Preset "${selected.name}" l\xF6schen?`);
         if (!confirmed) return;
         try {
           await deleteEncounterRulePreset(this.app, selected.file);
-          new import_obsidian32.Notice(`Preset "${selected.name}" gel\xF6scht.`);
+          new import_obsidian34.Notice(`Preset "${selected.name}" gel\xF6scht.`);
           await this.refreshPresetOptions();
           if (this.presetSelectEl && this.presetSelectEl.isConnected) {
             this.presetSelectEl.value = "";
           }
         } catch (error) {
           logger2.error("[encounter] failed to delete preset", error);
-          new import_obsidian32.Notice("Preset konnte nicht gel\xF6scht werden.");
+          new import_obsidian34.Notice("Preset konnte nicht gel\xF6scht werden.");
         }
         this.syncPresetControlsState();
       }
@@ -21811,13 +22955,13 @@ var init_workspace_view = __esm({
               return sum + (xpByCr[c.cr] ?? 0) * c.count;
             }, 0);
             const totalCreatureCount = result.creatures.reduce((sum, c) => sum + c.count, 0);
-            new import_obsidian32.Notice(`\u2705 Generated encounter: ${totalCreatureCount} creatures, ${totalXP} XP`);
+            new import_obsidian34.Notice(`\u2705 Generated encounter: ${totalCreatureCount} creatures, ${totalXP} XP`);
           } else {
-            new import_obsidian32.Notice(`\u274C ${result.error}`);
+            new import_obsidian34.Notice(`\u274C ${result.error}`);
           }
         } catch (err) {
           logger2.error("[workspace-view] Generate encounter failed", err);
-          new import_obsidian32.Notice(`\u274C Failed to generate encounter: ${err instanceof Error ? err.message : "Unknown error"}`);
+          new import_obsidian34.Notice(`\u274C Failed to generate encounter: ${err instanceof Error ? err.message : "Unknown error"}`);
         } finally {
           this.creatureList?.setGenerateButtonState(false);
         }
@@ -21897,7 +23041,7 @@ var init_workspace_view = __esm({
         }
       }
     };
-    ConfirmReplaceModal = class extends import_obsidian32.Modal {
+    ConfirmReplaceModal = class extends import_obsidian34.Modal {
       constructor(app, creatureCount, onConfirm) {
         super(app);
         this.creatureCount = creatureCount;
@@ -21962,16 +23106,16 @@ async function openEncounter(app) {
   await leaf.setViewState({ type: VIEW_ENCOUNTER, active: true });
   app.workspace.revealLeaf(leaf);
 }
-var import_obsidian33, VIEW_ENCOUNTER, EncounterView;
+var import_obsidian35, VIEW_ENCOUNTER, EncounterView;
 var init_view2 = __esm({
   "src/workmodes/encounter/view.ts"() {
     "use strict";
-    import_obsidian33 = require("obsidian");
+    import_obsidian35 = require("obsidian");
     init_presenter();
     init_workspace_view();
     init_layout();
     VIEW_ENCOUNTER = "salt-encounter";
-    EncounterView = class extends import_obsidian33.ItemView {
+    EncounterView = class extends import_obsidian35.ItemView {
       constructor(leaf) {
         super(leaf);
         this.presenter = null;
@@ -22730,11 +23874,15 @@ function createStore() {
     currentTile: null,
     playing: false,
     tempo: 1,
-    clockHours: 0
+    clockHours: 0,
+    partyLevel: 1,
+    // default party level
+    partySize: 4
+    // default party size
   };
   const subs = /* @__PURE__ */ new Set();
   const get = () => state;
-  const set = (patch) => {
+  const set2 = (patch) => {
     state = { ...state, ...patch };
     emit();
   };
@@ -22750,7 +23898,7 @@ function createStore() {
   const emit = () => {
     for (const fn of subs) fn(state);
   };
-  return { get, set, replace, subscribe, emit };
+  return { get, set: set2, replace, subscribe, emit };
 }
 var init_state_store = __esm({
   "src/workmodes/session-runner/travel/domain/state.store.ts"() {
@@ -23264,9 +24412,9 @@ var init_cartographer_gateway = __esm({
           void listener(snapshot);
         }
         return () => {
-          const set = this.panelListeners.get(key);
-          set?.delete(listener);
-          if (set && set.size === 0) {
+          const set2 = this.panelListeners.get(key);
+          set2?.delete(listener);
+          if (set2 && set2.size === 0) {
             this.panelListeners.delete(key);
           }
         };
@@ -23368,7 +24516,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
     text: "Start"
   });
-  (0, import_obsidian35.setIcon)(playBtn, "play");
+  (0, import_obsidian37.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -23379,7 +24527,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
     text: "Stopp"
   });
-  (0, import_obsidian35.setIcon)(stopBtn, "square");
+  (0, import_obsidian37.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -23390,7 +24538,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
     text: "Reset"
   });
-  (0, import_obsidian35.setIcon)(resetBtn, "rotate-ccw");
+  (0, import_obsidian37.setIcon)(resetBtn, "rotate-ccw");
   applyMapButtonStyle(resetBtn);
   resetBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -23401,7 +24549,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--encounter",
     text: "Random Encounter"
   });
-  (0, import_obsidian35.setIcon)(encounterBtn, "swords");
+  (0, import_obsidian37.setIcon)(encounterBtn, "swords");
   applyMapButtonStyle(encounterBtn);
   encounterBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -23452,11 +24600,11 @@ function createPlaybackControls(host, callbacks) {
     setTempo
   };
 }
-var import_obsidian35;
+var import_obsidian37;
 var init_controls = __esm({
   "src/workmodes/session-runner/travel/ui/controls.ts"() {
     "use strict";
-    import_obsidian35 = require("obsidian");
+    import_obsidian37 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -23716,7 +24864,7 @@ function bindContextMenu(routeLayerEl, logic) {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    const menu = new import_obsidian36.Menu();
+    const menu = new import_obsidian38.Menu();
     if (allowDelete) {
       menu.addItem(
         (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
@@ -23736,11 +24884,11 @@ function bindContextMenu(routeLayerEl, logic) {
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
-var import_obsidian36;
+var import_obsidian38;
 var init_context_menu_controller = __esm({
   "src/workmodes/session-runner/travel/ui/context-menu.controller.ts"() {
     "use strict";
-    import_obsidian36 = require("obsidian");
+    import_obsidian38 = require("obsidian");
   }
 });
 
@@ -23872,7 +25020,7 @@ function loadEncounterModule() {
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
     logger2.error("[session-runner] failed to load encounter module", err);
-    new import_obsidian37.Notice("Encounter-Modul konnte nicht geladen werden.");
+    new import_obsidian39.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
 }
@@ -23891,7 +25039,7 @@ async function openEncounter2(app, context) {
   const issue = describeEncounterContextIssue(context);
   if (issue) {
     logger2.warn(`[session-runner] ${issue.log}`, context);
-    new import_obsidian37.Notice(issue.message);
+    new import_obsidian39.Notice(issue.message);
   } else if (context) {
     try {
       const event = await createEncounterEventFromTravel(app, context);
@@ -23943,11 +25091,11 @@ async function publishManualEncounter(app, context, options = {}) {
     logger2.error("[session-runner] failed to publish manual encounter", err);
   }
 }
-var import_obsidian37, encounterModule;
+var import_obsidian39, encounterModule;
 var init_encounter_gateway = __esm({
   "src/workmodes/session-runner/view/controllers/encounter-gateway.ts"() {
     "use strict";
-    import_obsidian37 = require("obsidian");
+    import_obsidian39 = require("obsidian");
     init_session_store();
     init_plugin_logger();
     init_event_builder();
@@ -24487,8 +25635,8 @@ function selectPlaylist(playlists, context) {
     context
   };
 }
-function filterPlaylistsByType(playlists, type) {
-  return playlists.filter((playlist) => playlist.type === type);
+function filterPlaylistsByType(playlists, type2) {
+  return playlists.filter((playlist) => playlist.type === type2);
 }
 var init_auto_selection = __esm({
   "src/features/audio/auto-selection.ts"() {
@@ -24686,7 +25834,7 @@ function createAudioPanel(host, callbacks) {
     destroy
   };
 }
-function createPlayerPanel(host, label, type, state, callbacks) {
+function createPlayerPanel(host, label, type2, state, callbacks) {
   const section = host.createDiv({ cls: "sm-audio-player" });
   const sectionHeader = section.createDiv({ cls: "sm-audio-player__header" });
   sectionHeader.createEl("h4", { text: label, cls: "sm-audio-player__label" });
@@ -24699,7 +25847,7 @@ function createPlayerPanel(host, label, type, state, callbacks) {
   playlistSelect.addEventListener("change", () => {
     const selectedId = playlistSelect.value;
     if (selectedId) {
-      callbacks.onPlaylistSelect(selectedId, type);
+      callbacks.onPlaylistSelect(selectedId, type2);
     }
   });
   const trackInfo = section.createDiv({ cls: "sm-audio-player__track-info" });
@@ -24716,7 +25864,7 @@ function createPlayerPanel(host, label, type, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--play",
     attr: { title: "Play" }
   });
-  (0, import_obsidian38.setIcon)(playBtn, "play");
+  (0, import_obsidian40.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -24728,7 +25876,7 @@ function createPlayerPanel(host, label, type, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--pause",
     attr: { title: "Pause" }
   });
-  (0, import_obsidian38.setIcon)(pauseBtn, "pause");
+  (0, import_obsidian40.setIcon)(pauseBtn, "pause");
   applyMapButtonStyle(pauseBtn);
   pauseBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -24740,7 +25888,7 @@ function createPlayerPanel(host, label, type, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--prev",
     attr: { title: "Previous" }
   });
-  (0, import_obsidian38.setIcon)(prevBtn, "skip-back");
+  (0, import_obsidian40.setIcon)(prevBtn, "skip-back");
   applyMapButtonStyle(prevBtn);
   prevBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -24752,7 +25900,7 @@ function createPlayerPanel(host, label, type, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--next",
     attr: { title: "Next" }
   });
-  (0, import_obsidian38.setIcon)(nextBtn, "skip-forward");
+  (0, import_obsidian40.setIcon)(nextBtn, "skip-forward");
   applyMapButtonStyle(nextBtn);
   nextBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -24764,7 +25912,7 @@ function createPlayerPanel(host, label, type, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--stop",
     attr: { title: "Stop" }
   });
-  (0, import_obsidian38.setIcon)(stopBtn, "square");
+  (0, import_obsidian40.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -24790,7 +25938,7 @@ function createPlayerPanel(host, label, type, state, callbacks) {
     if (state.player) {
       state.player.setGlobalVolume(volume);
     }
-    callbacks.onVolumeChange(volume, type);
+    callbacks.onVolumeChange(volume, type2);
   });
   const toggleRow = section.createDiv({ cls: "sm-audio-player__row" });
   const shuffleBtn = toggleRow.createEl("button", {
@@ -24875,11 +26023,11 @@ function createPlayerPanel(host, label, type, state, callbacks) {
     destroy
   };
 }
-var import_obsidian38;
+var import_obsidian40;
 var init_audio_panel = __esm({
   "src/workmodes/session-runner/components/audio-panel.ts"() {
     "use strict";
-    import_obsidian38 = require("obsidian");
+    import_obsidian40 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -24895,17 +26043,19 @@ async function createAudioController(options) {
   let currentMusicPlaylist = null;
   let ambienceVolume = 0.7;
   let musicVolume = 0.7;
+  let previousMusicPlaylist = null;
+  let inCombat = false;
   const panel = createAudioPanel(host, {
-    onPlaylistSelect: (playlistId, type) => {
+    onPlaylistSelect: (playlistId, type2) => {
       const playlist = availablePlaylists.find((p) => p.name === playlistId);
       if (!playlist) {
         logger2.warn("[AudioController] Playlist not found", { playlistId });
         return;
       }
-      void loadPlaylist(playlist, type);
+      void loadPlaylist(playlist, type2);
     },
-    onVolumeChange: (volume, type) => {
-      if (type === "ambience") {
+    onVolumeChange: (volume, type2) => {
+      if (type2 === "ambience") {
         ambienceVolume = volume;
       } else {
         musicVolume = volume;
@@ -24950,7 +26100,7 @@ async function createAudioController(options) {
   }
   function frontmatterToPlaylist(fm2) {
     const name = typeof fm2.name === "string" ? fm2.name : null;
-    const type = typeof fm2.type === "string" && (fm2.type === "ambience" || fm2.type === "music") ? fm2.type : "ambience";
+    const type2 = typeof fm2.type === "string" && (fm2.type === "ambience" || fm2.type === "music") ? fm2.type : "ambience";
     const tracks = Array.isArray(fm2.tracks) ? fm2.tracks : [];
     if (!name) {
       return null;
@@ -24973,7 +26123,7 @@ async function createAudioController(options) {
     return {
       name,
       display_name: typeof fm2.display_name === "string" ? fm2.display_name : void 0,
-      type,
+      type: type2,
       description: typeof fm2.description === "string" ? fm2.description : void 0,
       terrain_tags: extractTokens(fm2.terrain_tags),
       weather_tags: extractTokens(fm2.weather_tags),
@@ -24987,14 +26137,14 @@ async function createAudioController(options) {
       tracks
     };
   }
-  async function loadPlaylist(playlist, type) {
+  async function loadPlaylist(playlist, type2) {
     try {
-      const player = type === "ambience" ? ambiencePlayer : musicPlayer;
+      const player = type2 === "ambience" ? ambiencePlayer : musicPlayer;
       if (!player) {
-        logger2.warn("[AudioController] No player available", { type });
+        logger2.warn("[AudioController] No player available", { type: type2 });
         return;
       }
-      if (type === "ambience") {
+      if (type2 === "ambience") {
         currentAmbiencePlaylist = playlist;
       } else {
         currentMusicPlaylist = playlist;
@@ -25005,7 +26155,7 @@ async function createAudioController(options) {
       }
       await player.play();
       logger2.info("[AudioController] Loaded playlist", {
-        type,
+        type: type2,
         playlist: playlist.name,
         tracks: playlist.tracks.length
       });
@@ -25050,6 +26200,63 @@ async function createAudioController(options) {
       logger2.error("[AudioController] Auto-selection failed", { error });
     }
   }
+  async function switchToCombatMusic() {
+    if (inCombat) {
+      logger2.debug("[AudioController] Already in combat, skipping music switch");
+      return;
+    }
+    try {
+      previousMusicPlaylist = currentMusicPlaylist;
+      inCombat = true;
+      const musicPlaylists = filterPlaylistsByType(availablePlaylists, "music");
+      const combatContext = {
+        ...currentContext,
+        situation: ["combat"]
+        // Override situation to combat
+      };
+      const combatResult = selectPlaylist(musicPlaylists, combatContext);
+      if (combatResult.playlist) {
+        await loadPlaylist(combatResult.playlist, "music");
+        logger2.info("[AudioController] Switched to combat music", {
+          playlist: combatResult.playlist.name,
+          score: combatResult.score
+        });
+      } else {
+        logger2.warn("[AudioController] No combat music found");
+      }
+    } catch (error) {
+      logger2.error("[AudioController] Failed to switch to combat music", { error });
+    }
+  }
+  async function restorePreviousMusic() {
+    if (!inCombat) {
+      logger2.debug("[AudioController] Not in combat, skipping restore");
+      return;
+    }
+    try {
+      inCombat = false;
+      if (previousMusicPlaylist) {
+        await loadPlaylist(previousMusicPlaylist, "music");
+        logger2.info("[AudioController] Restored previous music", {
+          playlist: previousMusicPlaylist.name
+        });
+      } else {
+        if (currentContext) {
+          const musicPlaylists = filterPlaylistsByType(availablePlaylists, "music");
+          const musicResult = selectPlaylist(musicPlaylists, currentContext);
+          if (musicResult.playlist) {
+            await loadPlaylist(musicResult.playlist, "music");
+            logger2.info("[AudioController] Auto-selected music after combat", {
+              playlist: musicResult.playlist.name
+            });
+          }
+        }
+      }
+      previousMusicPlaylist = null;
+    } catch (error) {
+      logger2.error("[AudioController] Failed to restore previous music", { error });
+    }
+  }
   function dispose() {
     try {
       if (ambiencePlayer) {
@@ -25071,6 +26278,8 @@ async function createAudioController(options) {
   return {
     panel,
     updateContext,
+    switchToCombatMusic,
+    restorePreviousMusic,
     dispose
   };
 }
@@ -25160,6 +26369,2694 @@ var init_types7 = __esm({
   }
 });
 
+// node_modules/js-yaml/dist/js-yaml.mjs
+function isNothing(subject) {
+  return typeof subject === "undefined" || subject === null;
+}
+function isObject(subject) {
+  return typeof subject === "object" && subject !== null;
+}
+function toArray2(sequence) {
+  if (Array.isArray(sequence)) return sequence;
+  else if (isNothing(sequence)) return [];
+  return [sequence];
+}
+function extend(target, source) {
+  var index, length, key, sourceKeys;
+  if (source) {
+    sourceKeys = Object.keys(source);
+    for (index = 0, length = sourceKeys.length; index < length; index += 1) {
+      key = sourceKeys[index];
+      target[key] = source[key];
+    }
+  }
+  return target;
+}
+function repeat(string, count) {
+  var result = "", cycle;
+  for (cycle = 0; cycle < count; cycle += 1) {
+    result += string;
+  }
+  return result;
+}
+function isNegativeZero(number) {
+  return number === 0 && Number.NEGATIVE_INFINITY === 1 / number;
+}
+function formatError(exception2, compact) {
+  var where = "", message = exception2.reason || "(unknown reason)";
+  if (!exception2.mark) return message;
+  if (exception2.mark.name) {
+    where += 'in "' + exception2.mark.name + '" ';
+  }
+  where += "(" + (exception2.mark.line + 1) + ":" + (exception2.mark.column + 1) + ")";
+  if (!compact && exception2.mark.snippet) {
+    where += "\n\n" + exception2.mark.snippet;
+  }
+  return message + " " + where;
+}
+function YAMLException$1(reason, mark) {
+  Error.call(this);
+  this.name = "YAMLException";
+  this.reason = reason;
+  this.mark = mark;
+  this.message = formatError(this, false);
+  if (Error.captureStackTrace) {
+    Error.captureStackTrace(this, this.constructor);
+  } else {
+    this.stack = new Error().stack || "";
+  }
+}
+function getLine(buffer, lineStart, lineEnd, position, maxLineLength) {
+  var head = "";
+  var tail = "";
+  var maxHalfLength = Math.floor(maxLineLength / 2) - 1;
+  if (position - lineStart > maxHalfLength) {
+    head = " ... ";
+    lineStart = position - maxHalfLength + head.length;
+  }
+  if (lineEnd - position > maxHalfLength) {
+    tail = " ...";
+    lineEnd = position + maxHalfLength - tail.length;
+  }
+  return {
+    str: head + buffer.slice(lineStart, lineEnd).replace(/\t/g, "\u2192") + tail,
+    pos: position - lineStart + head.length
+    // relative position
+  };
+}
+function padStart(string, max) {
+  return common.repeat(" ", max - string.length) + string;
+}
+function makeSnippet(mark, options) {
+  options = Object.create(options || null);
+  if (!mark.buffer) return null;
+  if (!options.maxLength) options.maxLength = 79;
+  if (typeof options.indent !== "number") options.indent = 1;
+  if (typeof options.linesBefore !== "number") options.linesBefore = 3;
+  if (typeof options.linesAfter !== "number") options.linesAfter = 2;
+  var re = /\r?\n|\r|\0/g;
+  var lineStarts = [0];
+  var lineEnds = [];
+  var match;
+  var foundLineNo = -1;
+  while (match = re.exec(mark.buffer)) {
+    lineEnds.push(match.index);
+    lineStarts.push(match.index + match[0].length);
+    if (mark.position <= match.index && foundLineNo < 0) {
+      foundLineNo = lineStarts.length - 2;
+    }
+  }
+  if (foundLineNo < 0) foundLineNo = lineStarts.length - 1;
+  var result = "", i, line;
+  var lineNoLength = Math.min(mark.line + options.linesAfter, lineEnds.length).toString().length;
+  var maxLineLength = options.maxLength - (options.indent + lineNoLength + 3);
+  for (i = 1; i <= options.linesBefore; i++) {
+    if (foundLineNo - i < 0) break;
+    line = getLine(
+      mark.buffer,
+      lineStarts[foundLineNo - i],
+      lineEnds[foundLineNo - i],
+      mark.position - (lineStarts[foundLineNo] - lineStarts[foundLineNo - i]),
+      maxLineLength
+    );
+    result = common.repeat(" ", options.indent) + padStart((mark.line - i + 1).toString(), lineNoLength) + " | " + line.str + "\n" + result;
+  }
+  line = getLine(mark.buffer, lineStarts[foundLineNo], lineEnds[foundLineNo], mark.position, maxLineLength);
+  result += common.repeat(" ", options.indent) + padStart((mark.line + 1).toString(), lineNoLength) + " | " + line.str + "\n";
+  result += common.repeat("-", options.indent + lineNoLength + 3 + line.pos) + "^\n";
+  for (i = 1; i <= options.linesAfter; i++) {
+    if (foundLineNo + i >= lineEnds.length) break;
+    line = getLine(
+      mark.buffer,
+      lineStarts[foundLineNo + i],
+      lineEnds[foundLineNo + i],
+      mark.position - (lineStarts[foundLineNo] - lineStarts[foundLineNo + i]),
+      maxLineLength
+    );
+    result += common.repeat(" ", options.indent) + padStart((mark.line + i + 1).toString(), lineNoLength) + " | " + line.str + "\n";
+  }
+  return result.replace(/\n$/, "");
+}
+function compileStyleAliases(map2) {
+  var result = {};
+  if (map2 !== null) {
+    Object.keys(map2).forEach(function(style) {
+      map2[style].forEach(function(alias) {
+        result[String(alias)] = style;
+      });
+    });
+  }
+  return result;
+}
+function Type$1(tag, options) {
+  options = options || {};
+  Object.keys(options).forEach(function(name) {
+    if (TYPE_CONSTRUCTOR_OPTIONS.indexOf(name) === -1) {
+      throw new exception('Unknown option "' + name + '" is met in definition of "' + tag + '" YAML type.');
+    }
+  });
+  this.options = options;
+  this.tag = tag;
+  this.kind = options["kind"] || null;
+  this.resolve = options["resolve"] || function() {
+    return true;
+  };
+  this.construct = options["construct"] || function(data) {
+    return data;
+  };
+  this.instanceOf = options["instanceOf"] || null;
+  this.predicate = options["predicate"] || null;
+  this.represent = options["represent"] || null;
+  this.representName = options["representName"] || null;
+  this.defaultStyle = options["defaultStyle"] || null;
+  this.multi = options["multi"] || false;
+  this.styleAliases = compileStyleAliases(options["styleAliases"] || null);
+  if (YAML_NODE_KINDS.indexOf(this.kind) === -1) {
+    throw new exception('Unknown kind "' + this.kind + '" is specified for "' + tag + '" YAML type.');
+  }
+}
+function compileList(schema2, name) {
+  var result = [];
+  schema2[name].forEach(function(currentType) {
+    var newIndex = result.length;
+    result.forEach(function(previousType, previousIndex) {
+      if (previousType.tag === currentType.tag && previousType.kind === currentType.kind && previousType.multi === currentType.multi) {
+        newIndex = previousIndex;
+      }
+    });
+    result[newIndex] = currentType;
+  });
+  return result;
+}
+function compileMap() {
+  var result = {
+    scalar: {},
+    sequence: {},
+    mapping: {},
+    fallback: {},
+    multi: {
+      scalar: [],
+      sequence: [],
+      mapping: [],
+      fallback: []
+    }
+  }, index, length;
+  function collectType(type2) {
+    if (type2.multi) {
+      result.multi[type2.kind].push(type2);
+      result.multi["fallback"].push(type2);
+    } else {
+      result[type2.kind][type2.tag] = result["fallback"][type2.tag] = type2;
+    }
+  }
+  for (index = 0, length = arguments.length; index < length; index += 1) {
+    arguments[index].forEach(collectType);
+  }
+  return result;
+}
+function Schema$1(definition) {
+  return this.extend(definition);
+}
+function resolveYamlNull(data) {
+  if (data === null) return true;
+  var max = data.length;
+  return max === 1 && data === "~" || max === 4 && (data === "null" || data === "Null" || data === "NULL");
+}
+function constructYamlNull() {
+  return null;
+}
+function isNull(object) {
+  return object === null;
+}
+function resolveYamlBoolean(data) {
+  if (data === null) return false;
+  var max = data.length;
+  return max === 4 && (data === "true" || data === "True" || data === "TRUE") || max === 5 && (data === "false" || data === "False" || data === "FALSE");
+}
+function constructYamlBoolean(data) {
+  return data === "true" || data === "True" || data === "TRUE";
+}
+function isBoolean(object) {
+  return Object.prototype.toString.call(object) === "[object Boolean]";
+}
+function isHexCode(c) {
+  return 48 <= c && c <= 57 || 65 <= c && c <= 70 || 97 <= c && c <= 102;
+}
+function isOctCode(c) {
+  return 48 <= c && c <= 55;
+}
+function isDecCode(c) {
+  return 48 <= c && c <= 57;
+}
+function resolveYamlInteger(data) {
+  if (data === null) return false;
+  var max = data.length, index = 0, hasDigits = false, ch;
+  if (!max) return false;
+  ch = data[index];
+  if (ch === "-" || ch === "+") {
+    ch = data[++index];
+  }
+  if (ch === "0") {
+    if (index + 1 === max) return true;
+    ch = data[++index];
+    if (ch === "b") {
+      index++;
+      for (; index < max; index++) {
+        ch = data[index];
+        if (ch === "_") continue;
+        if (ch !== "0" && ch !== "1") return false;
+        hasDigits = true;
+      }
+      return hasDigits && ch !== "_";
+    }
+    if (ch === "x") {
+      index++;
+      for (; index < max; index++) {
+        ch = data[index];
+        if (ch === "_") continue;
+        if (!isHexCode(data.charCodeAt(index))) return false;
+        hasDigits = true;
+      }
+      return hasDigits && ch !== "_";
+    }
+    if (ch === "o") {
+      index++;
+      for (; index < max; index++) {
+        ch = data[index];
+        if (ch === "_") continue;
+        if (!isOctCode(data.charCodeAt(index))) return false;
+        hasDigits = true;
+      }
+      return hasDigits && ch !== "_";
+    }
+  }
+  if (ch === "_") return false;
+  for (; index < max; index++) {
+    ch = data[index];
+    if (ch === "_") continue;
+    if (!isDecCode(data.charCodeAt(index))) {
+      return false;
+    }
+    hasDigits = true;
+  }
+  if (!hasDigits || ch === "_") return false;
+  return true;
+}
+function constructYamlInteger(data) {
+  var value = data, sign = 1, ch;
+  if (value.indexOf("_") !== -1) {
+    value = value.replace(/_/g, "");
+  }
+  ch = value[0];
+  if (ch === "-" || ch === "+") {
+    if (ch === "-") sign = -1;
+    value = value.slice(1);
+    ch = value[0];
+  }
+  if (value === "0") return 0;
+  if (ch === "0") {
+    if (value[1] === "b") return sign * parseInt(value.slice(2), 2);
+    if (value[1] === "x") return sign * parseInt(value.slice(2), 16);
+    if (value[1] === "o") return sign * parseInt(value.slice(2), 8);
+  }
+  return sign * parseInt(value, 10);
+}
+function isInteger(object) {
+  return Object.prototype.toString.call(object) === "[object Number]" && (object % 1 === 0 && !common.isNegativeZero(object));
+}
+function resolveYamlFloat(data) {
+  if (data === null) return false;
+  if (!YAML_FLOAT_PATTERN.test(data) || // Quick hack to not allow integers end with `_`
+  // Probably should update regexp & check speed
+  data[data.length - 1] === "_") {
+    return false;
+  }
+  return true;
+}
+function constructYamlFloat(data) {
+  var value, sign;
+  value = data.replace(/_/g, "").toLowerCase();
+  sign = value[0] === "-" ? -1 : 1;
+  if ("+-".indexOf(value[0]) >= 0) {
+    value = value.slice(1);
+  }
+  if (value === ".inf") {
+    return sign === 1 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+  } else if (value === ".nan") {
+    return NaN;
+  }
+  return sign * parseFloat(value, 10);
+}
+function representYamlFloat(object, style) {
+  var res;
+  if (isNaN(object)) {
+    switch (style) {
+      case "lowercase":
+        return ".nan";
+      case "uppercase":
+        return ".NAN";
+      case "camelcase":
+        return ".NaN";
+    }
+  } else if (Number.POSITIVE_INFINITY === object) {
+    switch (style) {
+      case "lowercase":
+        return ".inf";
+      case "uppercase":
+        return ".INF";
+      case "camelcase":
+        return ".Inf";
+    }
+  } else if (Number.NEGATIVE_INFINITY === object) {
+    switch (style) {
+      case "lowercase":
+        return "-.inf";
+      case "uppercase":
+        return "-.INF";
+      case "camelcase":
+        return "-.Inf";
+    }
+  } else if (common.isNegativeZero(object)) {
+    return "-0.0";
+  }
+  res = object.toString(10);
+  return SCIENTIFIC_WITHOUT_DOT.test(res) ? res.replace("e", ".e") : res;
+}
+function isFloat(object) {
+  return Object.prototype.toString.call(object) === "[object Number]" && (object % 1 !== 0 || common.isNegativeZero(object));
+}
+function resolveYamlTimestamp(data) {
+  if (data === null) return false;
+  if (YAML_DATE_REGEXP.exec(data) !== null) return true;
+  if (YAML_TIMESTAMP_REGEXP.exec(data) !== null) return true;
+  return false;
+}
+function constructYamlTimestamp(data) {
+  var match, year, month, day, hour, minute, second, fraction = 0, delta = null, tz_hour, tz_minute, date;
+  match = YAML_DATE_REGEXP.exec(data);
+  if (match === null) match = YAML_TIMESTAMP_REGEXP.exec(data);
+  if (match === null) throw new Error("Date resolve error");
+  year = +match[1];
+  month = +match[2] - 1;
+  day = +match[3];
+  if (!match[4]) {
+    return new Date(Date.UTC(year, month, day));
+  }
+  hour = +match[4];
+  minute = +match[5];
+  second = +match[6];
+  if (match[7]) {
+    fraction = match[7].slice(0, 3);
+    while (fraction.length < 3) {
+      fraction += "0";
+    }
+    fraction = +fraction;
+  }
+  if (match[9]) {
+    tz_hour = +match[10];
+    tz_minute = +(match[11] || 0);
+    delta = (tz_hour * 60 + tz_minute) * 6e4;
+    if (match[9] === "-") delta = -delta;
+  }
+  date = new Date(Date.UTC(year, month, day, hour, minute, second, fraction));
+  if (delta) date.setTime(date.getTime() - delta);
+  return date;
+}
+function representYamlTimestamp(object) {
+  return object.toISOString();
+}
+function resolveYamlMerge(data) {
+  return data === "<<" || data === null;
+}
+function resolveYamlBinary(data) {
+  if (data === null) return false;
+  var code, idx, bitlen = 0, max = data.length, map2 = BASE64_MAP;
+  for (idx = 0; idx < max; idx++) {
+    code = map2.indexOf(data.charAt(idx));
+    if (code > 64) continue;
+    if (code < 0) return false;
+    bitlen += 6;
+  }
+  return bitlen % 8 === 0;
+}
+function constructYamlBinary(data) {
+  var idx, tailbits, input = data.replace(/[\r\n=]/g, ""), max = input.length, map2 = BASE64_MAP, bits = 0, result = [];
+  for (idx = 0; idx < max; idx++) {
+    if (idx % 4 === 0 && idx) {
+      result.push(bits >> 16 & 255);
+      result.push(bits >> 8 & 255);
+      result.push(bits & 255);
+    }
+    bits = bits << 6 | map2.indexOf(input.charAt(idx));
+  }
+  tailbits = max % 4 * 6;
+  if (tailbits === 0) {
+    result.push(bits >> 16 & 255);
+    result.push(bits >> 8 & 255);
+    result.push(bits & 255);
+  } else if (tailbits === 18) {
+    result.push(bits >> 10 & 255);
+    result.push(bits >> 2 & 255);
+  } else if (tailbits === 12) {
+    result.push(bits >> 4 & 255);
+  }
+  return new Uint8Array(result);
+}
+function representYamlBinary(object) {
+  var result = "", bits = 0, idx, tail, max = object.length, map2 = BASE64_MAP;
+  for (idx = 0; idx < max; idx++) {
+    if (idx % 3 === 0 && idx) {
+      result += map2[bits >> 18 & 63];
+      result += map2[bits >> 12 & 63];
+      result += map2[bits >> 6 & 63];
+      result += map2[bits & 63];
+    }
+    bits = (bits << 8) + object[idx];
+  }
+  tail = max % 3;
+  if (tail === 0) {
+    result += map2[bits >> 18 & 63];
+    result += map2[bits >> 12 & 63];
+    result += map2[bits >> 6 & 63];
+    result += map2[bits & 63];
+  } else if (tail === 2) {
+    result += map2[bits >> 10 & 63];
+    result += map2[bits >> 4 & 63];
+    result += map2[bits << 2 & 63];
+    result += map2[64];
+  } else if (tail === 1) {
+    result += map2[bits >> 2 & 63];
+    result += map2[bits << 4 & 63];
+    result += map2[64];
+    result += map2[64];
+  }
+  return result;
+}
+function isBinary(obj) {
+  return Object.prototype.toString.call(obj) === "[object Uint8Array]";
+}
+function resolveYamlOmap(data) {
+  if (data === null) return true;
+  var objectKeys = [], index, length, pair, pairKey, pairHasKey, object = data;
+  for (index = 0, length = object.length; index < length; index += 1) {
+    pair = object[index];
+    pairHasKey = false;
+    if (_toString$2.call(pair) !== "[object Object]") return false;
+    for (pairKey in pair) {
+      if (_hasOwnProperty$3.call(pair, pairKey)) {
+        if (!pairHasKey) pairHasKey = true;
+        else return false;
+      }
+    }
+    if (!pairHasKey) return false;
+    if (objectKeys.indexOf(pairKey) === -1) objectKeys.push(pairKey);
+    else return false;
+  }
+  return true;
+}
+function constructYamlOmap(data) {
+  return data !== null ? data : [];
+}
+function resolveYamlPairs(data) {
+  if (data === null) return true;
+  var index, length, pair, keys, result, object = data;
+  result = new Array(object.length);
+  for (index = 0, length = object.length; index < length; index += 1) {
+    pair = object[index];
+    if (_toString$1.call(pair) !== "[object Object]") return false;
+    keys = Object.keys(pair);
+    if (keys.length !== 1) return false;
+    result[index] = [keys[0], pair[keys[0]]];
+  }
+  return true;
+}
+function constructYamlPairs(data) {
+  if (data === null) return [];
+  var index, length, pair, keys, result, object = data;
+  result = new Array(object.length);
+  for (index = 0, length = object.length; index < length; index += 1) {
+    pair = object[index];
+    keys = Object.keys(pair);
+    result[index] = [keys[0], pair[keys[0]]];
+  }
+  return result;
+}
+function resolveYamlSet(data) {
+  if (data === null) return true;
+  var key, object = data;
+  for (key in object) {
+    if (_hasOwnProperty$2.call(object, key)) {
+      if (object[key] !== null) return false;
+    }
+  }
+  return true;
+}
+function constructYamlSet(data) {
+  return data !== null ? data : {};
+}
+function _class(obj) {
+  return Object.prototype.toString.call(obj);
+}
+function is_EOL(c) {
+  return c === 10 || c === 13;
+}
+function is_WHITE_SPACE(c) {
+  return c === 9 || c === 32;
+}
+function is_WS_OR_EOL(c) {
+  return c === 9 || c === 32 || c === 10 || c === 13;
+}
+function is_FLOW_INDICATOR(c) {
+  return c === 44 || c === 91 || c === 93 || c === 123 || c === 125;
+}
+function fromHexCode(c) {
+  var lc;
+  if (48 <= c && c <= 57) {
+    return c - 48;
+  }
+  lc = c | 32;
+  if (97 <= lc && lc <= 102) {
+    return lc - 97 + 10;
+  }
+  return -1;
+}
+function escapedHexLen(c) {
+  if (c === 120) {
+    return 2;
+  }
+  if (c === 117) {
+    return 4;
+  }
+  if (c === 85) {
+    return 8;
+  }
+  return 0;
+}
+function fromDecimalCode(c) {
+  if (48 <= c && c <= 57) {
+    return c - 48;
+  }
+  return -1;
+}
+function simpleEscapeSequence(c) {
+  return c === 48 ? "\0" : c === 97 ? "\x07" : c === 98 ? "\b" : c === 116 ? "	" : c === 9 ? "	" : c === 110 ? "\n" : c === 118 ? "\v" : c === 102 ? "\f" : c === 114 ? "\r" : c === 101 ? "\x1B" : c === 32 ? " " : c === 34 ? '"' : c === 47 ? "/" : c === 92 ? "\\" : c === 78 ? "\x85" : c === 95 ? "\xA0" : c === 76 ? "\u2028" : c === 80 ? "\u2029" : "";
+}
+function charFromCodepoint(c) {
+  if (c <= 65535) {
+    return String.fromCharCode(c);
+  }
+  return String.fromCharCode(
+    (c - 65536 >> 10) + 55296,
+    (c - 65536 & 1023) + 56320
+  );
+}
+function State$1(input, options) {
+  this.input = input;
+  this.filename = options["filename"] || null;
+  this.schema = options["schema"] || _default;
+  this.onWarning = options["onWarning"] || null;
+  this.legacy = options["legacy"] || false;
+  this.json = options["json"] || false;
+  this.listener = options["listener"] || null;
+  this.implicitTypes = this.schema.compiledImplicit;
+  this.typeMap = this.schema.compiledTypeMap;
+  this.length = input.length;
+  this.position = 0;
+  this.line = 0;
+  this.lineStart = 0;
+  this.lineIndent = 0;
+  this.firstTabInLine = -1;
+  this.documents = [];
+}
+function generateError(state, message) {
+  var mark = {
+    name: state.filename,
+    buffer: state.input.slice(0, -1),
+    // omit trailing \0
+    position: state.position,
+    line: state.line,
+    column: state.position - state.lineStart
+  };
+  mark.snippet = snippet(mark);
+  return new exception(message, mark);
+}
+function throwError(state, message) {
+  throw generateError(state, message);
+}
+function throwWarning(state, message) {
+  if (state.onWarning) {
+    state.onWarning.call(null, generateError(state, message));
+  }
+}
+function captureSegment(state, start, end, checkJson) {
+  var _position, _length, _character, _result;
+  if (start < end) {
+    _result = state.input.slice(start, end);
+    if (checkJson) {
+      for (_position = 0, _length = _result.length; _position < _length; _position += 1) {
+        _character = _result.charCodeAt(_position);
+        if (!(_character === 9 || 32 <= _character && _character <= 1114111)) {
+          throwError(state, "expected valid JSON character");
+        }
+      }
+    } else if (PATTERN_NON_PRINTABLE.test(_result)) {
+      throwError(state, "the stream contains non-printable characters");
+    }
+    state.result += _result;
+  }
+}
+function mergeMappings(state, destination, source, overridableKeys) {
+  var sourceKeys, key, index, quantity;
+  if (!common.isObject(source)) {
+    throwError(state, "cannot merge mappings; the provided source object is unacceptable");
+  }
+  sourceKeys = Object.keys(source);
+  for (index = 0, quantity = sourceKeys.length; index < quantity; index += 1) {
+    key = sourceKeys[index];
+    if (!_hasOwnProperty$1.call(destination, key)) {
+      destination[key] = source[key];
+      overridableKeys[key] = true;
+    }
+  }
+}
+function storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, valueNode, startLine, startLineStart, startPos) {
+  var index, quantity;
+  if (Array.isArray(keyNode)) {
+    keyNode = Array.prototype.slice.call(keyNode);
+    for (index = 0, quantity = keyNode.length; index < quantity; index += 1) {
+      if (Array.isArray(keyNode[index])) {
+        throwError(state, "nested arrays are not supported inside keys");
+      }
+      if (typeof keyNode === "object" && _class(keyNode[index]) === "[object Object]") {
+        keyNode[index] = "[object Object]";
+      }
+    }
+  }
+  if (typeof keyNode === "object" && _class(keyNode) === "[object Object]") {
+    keyNode = "[object Object]";
+  }
+  keyNode = String(keyNode);
+  if (_result === null) {
+    _result = {};
+  }
+  if (keyTag === "tag:yaml.org,2002:merge") {
+    if (Array.isArray(valueNode)) {
+      for (index = 0, quantity = valueNode.length; index < quantity; index += 1) {
+        mergeMappings(state, _result, valueNode[index], overridableKeys);
+      }
+    } else {
+      mergeMappings(state, _result, valueNode, overridableKeys);
+    }
+  } else {
+    if (!state.json && !_hasOwnProperty$1.call(overridableKeys, keyNode) && _hasOwnProperty$1.call(_result, keyNode)) {
+      state.line = startLine || state.line;
+      state.lineStart = startLineStart || state.lineStart;
+      state.position = startPos || state.position;
+      throwError(state, "duplicated mapping key");
+    }
+    if (keyNode === "__proto__") {
+      Object.defineProperty(_result, keyNode, {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: valueNode
+      });
+    } else {
+      _result[keyNode] = valueNode;
+    }
+    delete overridableKeys[keyNode];
+  }
+  return _result;
+}
+function readLineBreak(state) {
+  var ch;
+  ch = state.input.charCodeAt(state.position);
+  if (ch === 10) {
+    state.position++;
+  } else if (ch === 13) {
+    state.position++;
+    if (state.input.charCodeAt(state.position) === 10) {
+      state.position++;
+    }
+  } else {
+    throwError(state, "a line break is expected");
+  }
+  state.line += 1;
+  state.lineStart = state.position;
+  state.firstTabInLine = -1;
+}
+function skipSeparationSpace(state, allowComments, checkIndent) {
+  var lineBreaks = 0, ch = state.input.charCodeAt(state.position);
+  while (ch !== 0) {
+    while (is_WHITE_SPACE(ch)) {
+      if (ch === 9 && state.firstTabInLine === -1) {
+        state.firstTabInLine = state.position;
+      }
+      ch = state.input.charCodeAt(++state.position);
+    }
+    if (allowComments && ch === 35) {
+      do {
+        ch = state.input.charCodeAt(++state.position);
+      } while (ch !== 10 && ch !== 13 && ch !== 0);
+    }
+    if (is_EOL(ch)) {
+      readLineBreak(state);
+      ch = state.input.charCodeAt(state.position);
+      lineBreaks++;
+      state.lineIndent = 0;
+      while (ch === 32) {
+        state.lineIndent++;
+        ch = state.input.charCodeAt(++state.position);
+      }
+    } else {
+      break;
+    }
+  }
+  if (checkIndent !== -1 && lineBreaks !== 0 && state.lineIndent < checkIndent) {
+    throwWarning(state, "deficient indentation");
+  }
+  return lineBreaks;
+}
+function testDocumentSeparator(state) {
+  var _position = state.position, ch;
+  ch = state.input.charCodeAt(_position);
+  if ((ch === 45 || ch === 46) && ch === state.input.charCodeAt(_position + 1) && ch === state.input.charCodeAt(_position + 2)) {
+    _position += 3;
+    ch = state.input.charCodeAt(_position);
+    if (ch === 0 || is_WS_OR_EOL(ch)) {
+      return true;
+    }
+  }
+  return false;
+}
+function writeFoldedLines(state, count) {
+  if (count === 1) {
+    state.result += " ";
+  } else if (count > 1) {
+    state.result += common.repeat("\n", count - 1);
+  }
+}
+function readPlainScalar(state, nodeIndent, withinFlowCollection) {
+  var preceding, following, captureStart, captureEnd, hasPendingContent, _line, _lineStart, _lineIndent, _kind = state.kind, _result = state.result, ch;
+  ch = state.input.charCodeAt(state.position);
+  if (is_WS_OR_EOL(ch) || is_FLOW_INDICATOR(ch) || ch === 35 || ch === 38 || ch === 42 || ch === 33 || ch === 124 || ch === 62 || ch === 39 || ch === 34 || ch === 37 || ch === 64 || ch === 96) {
+    return false;
+  }
+  if (ch === 63 || ch === 45) {
+    following = state.input.charCodeAt(state.position + 1);
+    if (is_WS_OR_EOL(following) || withinFlowCollection && is_FLOW_INDICATOR(following)) {
+      return false;
+    }
+  }
+  state.kind = "scalar";
+  state.result = "";
+  captureStart = captureEnd = state.position;
+  hasPendingContent = false;
+  while (ch !== 0) {
+    if (ch === 58) {
+      following = state.input.charCodeAt(state.position + 1);
+      if (is_WS_OR_EOL(following) || withinFlowCollection && is_FLOW_INDICATOR(following)) {
+        break;
+      }
+    } else if (ch === 35) {
+      preceding = state.input.charCodeAt(state.position - 1);
+      if (is_WS_OR_EOL(preceding)) {
+        break;
+      }
+    } else if (state.position === state.lineStart && testDocumentSeparator(state) || withinFlowCollection && is_FLOW_INDICATOR(ch)) {
+      break;
+    } else if (is_EOL(ch)) {
+      _line = state.line;
+      _lineStart = state.lineStart;
+      _lineIndent = state.lineIndent;
+      skipSeparationSpace(state, false, -1);
+      if (state.lineIndent >= nodeIndent) {
+        hasPendingContent = true;
+        ch = state.input.charCodeAt(state.position);
+        continue;
+      } else {
+        state.position = captureEnd;
+        state.line = _line;
+        state.lineStart = _lineStart;
+        state.lineIndent = _lineIndent;
+        break;
+      }
+    }
+    if (hasPendingContent) {
+      captureSegment(state, captureStart, captureEnd, false);
+      writeFoldedLines(state, state.line - _line);
+      captureStart = captureEnd = state.position;
+      hasPendingContent = false;
+    }
+    if (!is_WHITE_SPACE(ch)) {
+      captureEnd = state.position + 1;
+    }
+    ch = state.input.charCodeAt(++state.position);
+  }
+  captureSegment(state, captureStart, captureEnd, false);
+  if (state.result) {
+    return true;
+  }
+  state.kind = _kind;
+  state.result = _result;
+  return false;
+}
+function readSingleQuotedScalar(state, nodeIndent) {
+  var ch, captureStart, captureEnd;
+  ch = state.input.charCodeAt(state.position);
+  if (ch !== 39) {
+    return false;
+  }
+  state.kind = "scalar";
+  state.result = "";
+  state.position++;
+  captureStart = captureEnd = state.position;
+  while ((ch = state.input.charCodeAt(state.position)) !== 0) {
+    if (ch === 39) {
+      captureSegment(state, captureStart, state.position, true);
+      ch = state.input.charCodeAt(++state.position);
+      if (ch === 39) {
+        captureStart = state.position;
+        state.position++;
+        captureEnd = state.position;
+      } else {
+        return true;
+      }
+    } else if (is_EOL(ch)) {
+      captureSegment(state, captureStart, captureEnd, true);
+      writeFoldedLines(state, skipSeparationSpace(state, false, nodeIndent));
+      captureStart = captureEnd = state.position;
+    } else if (state.position === state.lineStart && testDocumentSeparator(state)) {
+      throwError(state, "unexpected end of the document within a single quoted scalar");
+    } else {
+      state.position++;
+      captureEnd = state.position;
+    }
+  }
+  throwError(state, "unexpected end of the stream within a single quoted scalar");
+}
+function readDoubleQuotedScalar(state, nodeIndent) {
+  var captureStart, captureEnd, hexLength, hexResult, tmp, ch;
+  ch = state.input.charCodeAt(state.position);
+  if (ch !== 34) {
+    return false;
+  }
+  state.kind = "scalar";
+  state.result = "";
+  state.position++;
+  captureStart = captureEnd = state.position;
+  while ((ch = state.input.charCodeAt(state.position)) !== 0) {
+    if (ch === 34) {
+      captureSegment(state, captureStart, state.position, true);
+      state.position++;
+      return true;
+    } else if (ch === 92) {
+      captureSegment(state, captureStart, state.position, true);
+      ch = state.input.charCodeAt(++state.position);
+      if (is_EOL(ch)) {
+        skipSeparationSpace(state, false, nodeIndent);
+      } else if (ch < 256 && simpleEscapeCheck[ch]) {
+        state.result += simpleEscapeMap[ch];
+        state.position++;
+      } else if ((tmp = escapedHexLen(ch)) > 0) {
+        hexLength = tmp;
+        hexResult = 0;
+        for (; hexLength > 0; hexLength--) {
+          ch = state.input.charCodeAt(++state.position);
+          if ((tmp = fromHexCode(ch)) >= 0) {
+            hexResult = (hexResult << 4) + tmp;
+          } else {
+            throwError(state, "expected hexadecimal character");
+          }
+        }
+        state.result += charFromCodepoint(hexResult);
+        state.position++;
+      } else {
+        throwError(state, "unknown escape sequence");
+      }
+      captureStart = captureEnd = state.position;
+    } else if (is_EOL(ch)) {
+      captureSegment(state, captureStart, captureEnd, true);
+      writeFoldedLines(state, skipSeparationSpace(state, false, nodeIndent));
+      captureStart = captureEnd = state.position;
+    } else if (state.position === state.lineStart && testDocumentSeparator(state)) {
+      throwError(state, "unexpected end of the document within a double quoted scalar");
+    } else {
+      state.position++;
+      captureEnd = state.position;
+    }
+  }
+  throwError(state, "unexpected end of the stream within a double quoted scalar");
+}
+function readFlowCollection(state, nodeIndent) {
+  var readNext = true, _line, _lineStart, _pos, _tag = state.tag, _result, _anchor = state.anchor, following, terminator, isPair, isExplicitPair, isMapping, overridableKeys = /* @__PURE__ */ Object.create(null), keyNode, keyTag, valueNode, ch;
+  ch = state.input.charCodeAt(state.position);
+  if (ch === 91) {
+    terminator = 93;
+    isMapping = false;
+    _result = [];
+  } else if (ch === 123) {
+    terminator = 125;
+    isMapping = true;
+    _result = {};
+  } else {
+    return false;
+  }
+  if (state.anchor !== null) {
+    state.anchorMap[state.anchor] = _result;
+  }
+  ch = state.input.charCodeAt(++state.position);
+  while (ch !== 0) {
+    skipSeparationSpace(state, true, nodeIndent);
+    ch = state.input.charCodeAt(state.position);
+    if (ch === terminator) {
+      state.position++;
+      state.tag = _tag;
+      state.anchor = _anchor;
+      state.kind = isMapping ? "mapping" : "sequence";
+      state.result = _result;
+      return true;
+    } else if (!readNext) {
+      throwError(state, "missed comma between flow collection entries");
+    } else if (ch === 44) {
+      throwError(state, "expected the node content, but found ','");
+    }
+    keyTag = keyNode = valueNode = null;
+    isPair = isExplicitPair = false;
+    if (ch === 63) {
+      following = state.input.charCodeAt(state.position + 1);
+      if (is_WS_OR_EOL(following)) {
+        isPair = isExplicitPair = true;
+        state.position++;
+        skipSeparationSpace(state, true, nodeIndent);
+      }
+    }
+    _line = state.line;
+    _lineStart = state.lineStart;
+    _pos = state.position;
+    composeNode(state, nodeIndent, CONTEXT_FLOW_IN, false, true);
+    keyTag = state.tag;
+    keyNode = state.result;
+    skipSeparationSpace(state, true, nodeIndent);
+    ch = state.input.charCodeAt(state.position);
+    if ((isExplicitPair || state.line === _line) && ch === 58) {
+      isPair = true;
+      ch = state.input.charCodeAt(++state.position);
+      skipSeparationSpace(state, true, nodeIndent);
+      composeNode(state, nodeIndent, CONTEXT_FLOW_IN, false, true);
+      valueNode = state.result;
+    }
+    if (isMapping) {
+      storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, valueNode, _line, _lineStart, _pos);
+    } else if (isPair) {
+      _result.push(storeMappingPair(state, null, overridableKeys, keyTag, keyNode, valueNode, _line, _lineStart, _pos));
+    } else {
+      _result.push(keyNode);
+    }
+    skipSeparationSpace(state, true, nodeIndent);
+    ch = state.input.charCodeAt(state.position);
+    if (ch === 44) {
+      readNext = true;
+      ch = state.input.charCodeAt(++state.position);
+    } else {
+      readNext = false;
+    }
+  }
+  throwError(state, "unexpected end of the stream within a flow collection");
+}
+function readBlockScalar(state, nodeIndent) {
+  var captureStart, folding, chomping = CHOMPING_CLIP, didReadContent = false, detectedIndent = false, textIndent = nodeIndent, emptyLines = 0, atMoreIndented = false, tmp, ch;
+  ch = state.input.charCodeAt(state.position);
+  if (ch === 124) {
+    folding = false;
+  } else if (ch === 62) {
+    folding = true;
+  } else {
+    return false;
+  }
+  state.kind = "scalar";
+  state.result = "";
+  while (ch !== 0) {
+    ch = state.input.charCodeAt(++state.position);
+    if (ch === 43 || ch === 45) {
+      if (CHOMPING_CLIP === chomping) {
+        chomping = ch === 43 ? CHOMPING_KEEP : CHOMPING_STRIP;
+      } else {
+        throwError(state, "repeat of a chomping mode identifier");
+      }
+    } else if ((tmp = fromDecimalCode(ch)) >= 0) {
+      if (tmp === 0) {
+        throwError(state, "bad explicit indentation width of a block scalar; it cannot be less than one");
+      } else if (!detectedIndent) {
+        textIndent = nodeIndent + tmp - 1;
+        detectedIndent = true;
+      } else {
+        throwError(state, "repeat of an indentation width identifier");
+      }
+    } else {
+      break;
+    }
+  }
+  if (is_WHITE_SPACE(ch)) {
+    do {
+      ch = state.input.charCodeAt(++state.position);
+    } while (is_WHITE_SPACE(ch));
+    if (ch === 35) {
+      do {
+        ch = state.input.charCodeAt(++state.position);
+      } while (!is_EOL(ch) && ch !== 0);
+    }
+  }
+  while (ch !== 0) {
+    readLineBreak(state);
+    state.lineIndent = 0;
+    ch = state.input.charCodeAt(state.position);
+    while ((!detectedIndent || state.lineIndent < textIndent) && ch === 32) {
+      state.lineIndent++;
+      ch = state.input.charCodeAt(++state.position);
+    }
+    if (!detectedIndent && state.lineIndent > textIndent) {
+      textIndent = state.lineIndent;
+    }
+    if (is_EOL(ch)) {
+      emptyLines++;
+      continue;
+    }
+    if (state.lineIndent < textIndent) {
+      if (chomping === CHOMPING_KEEP) {
+        state.result += common.repeat("\n", didReadContent ? 1 + emptyLines : emptyLines);
+      } else if (chomping === CHOMPING_CLIP) {
+        if (didReadContent) {
+          state.result += "\n";
+        }
+      }
+      break;
+    }
+    if (folding) {
+      if (is_WHITE_SPACE(ch)) {
+        atMoreIndented = true;
+        state.result += common.repeat("\n", didReadContent ? 1 + emptyLines : emptyLines);
+      } else if (atMoreIndented) {
+        atMoreIndented = false;
+        state.result += common.repeat("\n", emptyLines + 1);
+      } else if (emptyLines === 0) {
+        if (didReadContent) {
+          state.result += " ";
+        }
+      } else {
+        state.result += common.repeat("\n", emptyLines);
+      }
+    } else {
+      state.result += common.repeat("\n", didReadContent ? 1 + emptyLines : emptyLines);
+    }
+    didReadContent = true;
+    detectedIndent = true;
+    emptyLines = 0;
+    captureStart = state.position;
+    while (!is_EOL(ch) && ch !== 0) {
+      ch = state.input.charCodeAt(++state.position);
+    }
+    captureSegment(state, captureStart, state.position, false);
+  }
+  return true;
+}
+function readBlockSequence(state, nodeIndent) {
+  var _line, _tag = state.tag, _anchor = state.anchor, _result = [], following, detected = false, ch;
+  if (state.firstTabInLine !== -1) return false;
+  if (state.anchor !== null) {
+    state.anchorMap[state.anchor] = _result;
+  }
+  ch = state.input.charCodeAt(state.position);
+  while (ch !== 0) {
+    if (state.firstTabInLine !== -1) {
+      state.position = state.firstTabInLine;
+      throwError(state, "tab characters must not be used in indentation");
+    }
+    if (ch !== 45) {
+      break;
+    }
+    following = state.input.charCodeAt(state.position + 1);
+    if (!is_WS_OR_EOL(following)) {
+      break;
+    }
+    detected = true;
+    state.position++;
+    if (skipSeparationSpace(state, true, -1)) {
+      if (state.lineIndent <= nodeIndent) {
+        _result.push(null);
+        ch = state.input.charCodeAt(state.position);
+        continue;
+      }
+    }
+    _line = state.line;
+    composeNode(state, nodeIndent, CONTEXT_BLOCK_IN, false, true);
+    _result.push(state.result);
+    skipSeparationSpace(state, true, -1);
+    ch = state.input.charCodeAt(state.position);
+    if ((state.line === _line || state.lineIndent > nodeIndent) && ch !== 0) {
+      throwError(state, "bad indentation of a sequence entry");
+    } else if (state.lineIndent < nodeIndent) {
+      break;
+    }
+  }
+  if (detected) {
+    state.tag = _tag;
+    state.anchor = _anchor;
+    state.kind = "sequence";
+    state.result = _result;
+    return true;
+  }
+  return false;
+}
+function readBlockMapping(state, nodeIndent, flowIndent) {
+  var following, allowCompact, _line, _keyLine, _keyLineStart, _keyPos, _tag = state.tag, _anchor = state.anchor, _result = {}, overridableKeys = /* @__PURE__ */ Object.create(null), keyTag = null, keyNode = null, valueNode = null, atExplicitKey = false, detected = false, ch;
+  if (state.firstTabInLine !== -1) return false;
+  if (state.anchor !== null) {
+    state.anchorMap[state.anchor] = _result;
+  }
+  ch = state.input.charCodeAt(state.position);
+  while (ch !== 0) {
+    if (!atExplicitKey && state.firstTabInLine !== -1) {
+      state.position = state.firstTabInLine;
+      throwError(state, "tab characters must not be used in indentation");
+    }
+    following = state.input.charCodeAt(state.position + 1);
+    _line = state.line;
+    if ((ch === 63 || ch === 58) && is_WS_OR_EOL(following)) {
+      if (ch === 63) {
+        if (atExplicitKey) {
+          storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, null, _keyLine, _keyLineStart, _keyPos);
+          keyTag = keyNode = valueNode = null;
+        }
+        detected = true;
+        atExplicitKey = true;
+        allowCompact = true;
+      } else if (atExplicitKey) {
+        atExplicitKey = false;
+        allowCompact = true;
+      } else {
+        throwError(state, "incomplete explicit mapping pair; a key node is missed; or followed by a non-tabulated empty line");
+      }
+      state.position += 1;
+      ch = following;
+    } else {
+      _keyLine = state.line;
+      _keyLineStart = state.lineStart;
+      _keyPos = state.position;
+      if (!composeNode(state, flowIndent, CONTEXT_FLOW_OUT, false, true)) {
+        break;
+      }
+      if (state.line === _line) {
+        ch = state.input.charCodeAt(state.position);
+        while (is_WHITE_SPACE(ch)) {
+          ch = state.input.charCodeAt(++state.position);
+        }
+        if (ch === 58) {
+          ch = state.input.charCodeAt(++state.position);
+          if (!is_WS_OR_EOL(ch)) {
+            throwError(state, "a whitespace character is expected after the key-value separator within a block mapping");
+          }
+          if (atExplicitKey) {
+            storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, null, _keyLine, _keyLineStart, _keyPos);
+            keyTag = keyNode = valueNode = null;
+          }
+          detected = true;
+          atExplicitKey = false;
+          allowCompact = false;
+          keyTag = state.tag;
+          keyNode = state.result;
+        } else if (detected) {
+          throwError(state, "can not read an implicit mapping pair; a colon is missed");
+        } else {
+          state.tag = _tag;
+          state.anchor = _anchor;
+          return true;
+        }
+      } else if (detected) {
+        throwError(state, "can not read a block mapping entry; a multiline key may not be an implicit key");
+      } else {
+        state.tag = _tag;
+        state.anchor = _anchor;
+        return true;
+      }
+    }
+    if (state.line === _line || state.lineIndent > nodeIndent) {
+      if (atExplicitKey) {
+        _keyLine = state.line;
+        _keyLineStart = state.lineStart;
+        _keyPos = state.position;
+      }
+      if (composeNode(state, nodeIndent, CONTEXT_BLOCK_OUT, true, allowCompact)) {
+        if (atExplicitKey) {
+          keyNode = state.result;
+        } else {
+          valueNode = state.result;
+        }
+      }
+      if (!atExplicitKey) {
+        storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, valueNode, _keyLine, _keyLineStart, _keyPos);
+        keyTag = keyNode = valueNode = null;
+      }
+      skipSeparationSpace(state, true, -1);
+      ch = state.input.charCodeAt(state.position);
+    }
+    if ((state.line === _line || state.lineIndent > nodeIndent) && ch !== 0) {
+      throwError(state, "bad indentation of a mapping entry");
+    } else if (state.lineIndent < nodeIndent) {
+      break;
+    }
+  }
+  if (atExplicitKey) {
+    storeMappingPair(state, _result, overridableKeys, keyTag, keyNode, null, _keyLine, _keyLineStart, _keyPos);
+  }
+  if (detected) {
+    state.tag = _tag;
+    state.anchor = _anchor;
+    state.kind = "mapping";
+    state.result = _result;
+  }
+  return detected;
+}
+function readTagProperty(state) {
+  var _position, isVerbatim = false, isNamed = false, tagHandle, tagName, ch;
+  ch = state.input.charCodeAt(state.position);
+  if (ch !== 33) return false;
+  if (state.tag !== null) {
+    throwError(state, "duplication of a tag property");
+  }
+  ch = state.input.charCodeAt(++state.position);
+  if (ch === 60) {
+    isVerbatim = true;
+    ch = state.input.charCodeAt(++state.position);
+  } else if (ch === 33) {
+    isNamed = true;
+    tagHandle = "!!";
+    ch = state.input.charCodeAt(++state.position);
+  } else {
+    tagHandle = "!";
+  }
+  _position = state.position;
+  if (isVerbatim) {
+    do {
+      ch = state.input.charCodeAt(++state.position);
+    } while (ch !== 0 && ch !== 62);
+    if (state.position < state.length) {
+      tagName = state.input.slice(_position, state.position);
+      ch = state.input.charCodeAt(++state.position);
+    } else {
+      throwError(state, "unexpected end of the stream within a verbatim tag");
+    }
+  } else {
+    while (ch !== 0 && !is_WS_OR_EOL(ch)) {
+      if (ch === 33) {
+        if (!isNamed) {
+          tagHandle = state.input.slice(_position - 1, state.position + 1);
+          if (!PATTERN_TAG_HANDLE.test(tagHandle)) {
+            throwError(state, "named tag handle cannot contain such characters");
+          }
+          isNamed = true;
+          _position = state.position + 1;
+        } else {
+          throwError(state, "tag suffix cannot contain exclamation marks");
+        }
+      }
+      ch = state.input.charCodeAt(++state.position);
+    }
+    tagName = state.input.slice(_position, state.position);
+    if (PATTERN_FLOW_INDICATORS.test(tagName)) {
+      throwError(state, "tag suffix cannot contain flow indicator characters");
+    }
+  }
+  if (tagName && !PATTERN_TAG_URI.test(tagName)) {
+    throwError(state, "tag name cannot contain such characters: " + tagName);
+  }
+  try {
+    tagName = decodeURIComponent(tagName);
+  } catch (err) {
+    throwError(state, "tag name is malformed: " + tagName);
+  }
+  if (isVerbatim) {
+    state.tag = tagName;
+  } else if (_hasOwnProperty$1.call(state.tagMap, tagHandle)) {
+    state.tag = state.tagMap[tagHandle] + tagName;
+  } else if (tagHandle === "!") {
+    state.tag = "!" + tagName;
+  } else if (tagHandle === "!!") {
+    state.tag = "tag:yaml.org,2002:" + tagName;
+  } else {
+    throwError(state, 'undeclared tag handle "' + tagHandle + '"');
+  }
+  return true;
+}
+function readAnchorProperty(state) {
+  var _position, ch;
+  ch = state.input.charCodeAt(state.position);
+  if (ch !== 38) return false;
+  if (state.anchor !== null) {
+    throwError(state, "duplication of an anchor property");
+  }
+  ch = state.input.charCodeAt(++state.position);
+  _position = state.position;
+  while (ch !== 0 && !is_WS_OR_EOL(ch) && !is_FLOW_INDICATOR(ch)) {
+    ch = state.input.charCodeAt(++state.position);
+  }
+  if (state.position === _position) {
+    throwError(state, "name of an anchor node must contain at least one character");
+  }
+  state.anchor = state.input.slice(_position, state.position);
+  return true;
+}
+function readAlias(state) {
+  var _position, alias, ch;
+  ch = state.input.charCodeAt(state.position);
+  if (ch !== 42) return false;
+  ch = state.input.charCodeAt(++state.position);
+  _position = state.position;
+  while (ch !== 0 && !is_WS_OR_EOL(ch) && !is_FLOW_INDICATOR(ch)) {
+    ch = state.input.charCodeAt(++state.position);
+  }
+  if (state.position === _position) {
+    throwError(state, "name of an alias node must contain at least one character");
+  }
+  alias = state.input.slice(_position, state.position);
+  if (!_hasOwnProperty$1.call(state.anchorMap, alias)) {
+    throwError(state, 'unidentified alias "' + alias + '"');
+  }
+  state.result = state.anchorMap[alias];
+  skipSeparationSpace(state, true, -1);
+  return true;
+}
+function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact) {
+  var allowBlockStyles, allowBlockScalars, allowBlockCollections, indentStatus = 1, atNewLine = false, hasContent = false, typeIndex, typeQuantity, typeList, type2, flowIndent, blockIndent;
+  if (state.listener !== null) {
+    state.listener("open", state);
+  }
+  state.tag = null;
+  state.anchor = null;
+  state.kind = null;
+  state.result = null;
+  allowBlockStyles = allowBlockScalars = allowBlockCollections = CONTEXT_BLOCK_OUT === nodeContext || CONTEXT_BLOCK_IN === nodeContext;
+  if (allowToSeek) {
+    if (skipSeparationSpace(state, true, -1)) {
+      atNewLine = true;
+      if (state.lineIndent > parentIndent) {
+        indentStatus = 1;
+      } else if (state.lineIndent === parentIndent) {
+        indentStatus = 0;
+      } else if (state.lineIndent < parentIndent) {
+        indentStatus = -1;
+      }
+    }
+  }
+  if (indentStatus === 1) {
+    while (readTagProperty(state) || readAnchorProperty(state)) {
+      if (skipSeparationSpace(state, true, -1)) {
+        atNewLine = true;
+        allowBlockCollections = allowBlockStyles;
+        if (state.lineIndent > parentIndent) {
+          indentStatus = 1;
+        } else if (state.lineIndent === parentIndent) {
+          indentStatus = 0;
+        } else if (state.lineIndent < parentIndent) {
+          indentStatus = -1;
+        }
+      } else {
+        allowBlockCollections = false;
+      }
+    }
+  }
+  if (allowBlockCollections) {
+    allowBlockCollections = atNewLine || allowCompact;
+  }
+  if (indentStatus === 1 || CONTEXT_BLOCK_OUT === nodeContext) {
+    if (CONTEXT_FLOW_IN === nodeContext || CONTEXT_FLOW_OUT === nodeContext) {
+      flowIndent = parentIndent;
+    } else {
+      flowIndent = parentIndent + 1;
+    }
+    blockIndent = state.position - state.lineStart;
+    if (indentStatus === 1) {
+      if (allowBlockCollections && (readBlockSequence(state, blockIndent) || readBlockMapping(state, blockIndent, flowIndent)) || readFlowCollection(state, flowIndent)) {
+        hasContent = true;
+      } else {
+        if (allowBlockScalars && readBlockScalar(state, flowIndent) || readSingleQuotedScalar(state, flowIndent) || readDoubleQuotedScalar(state, flowIndent)) {
+          hasContent = true;
+        } else if (readAlias(state)) {
+          hasContent = true;
+          if (state.tag !== null || state.anchor !== null) {
+            throwError(state, "alias node should not have any properties");
+          }
+        } else if (readPlainScalar(state, flowIndent, CONTEXT_FLOW_IN === nodeContext)) {
+          hasContent = true;
+          if (state.tag === null) {
+            state.tag = "?";
+          }
+        }
+        if (state.anchor !== null) {
+          state.anchorMap[state.anchor] = state.result;
+        }
+      }
+    } else if (indentStatus === 0) {
+      hasContent = allowBlockCollections && readBlockSequence(state, blockIndent);
+    }
+  }
+  if (state.tag === null) {
+    if (state.anchor !== null) {
+      state.anchorMap[state.anchor] = state.result;
+    }
+  } else if (state.tag === "?") {
+    if (state.result !== null && state.kind !== "scalar") {
+      throwError(state, 'unacceptable node kind for !<?> tag; it should be "scalar", not "' + state.kind + '"');
+    }
+    for (typeIndex = 0, typeQuantity = state.implicitTypes.length; typeIndex < typeQuantity; typeIndex += 1) {
+      type2 = state.implicitTypes[typeIndex];
+      if (type2.resolve(state.result)) {
+        state.result = type2.construct(state.result);
+        state.tag = type2.tag;
+        if (state.anchor !== null) {
+          state.anchorMap[state.anchor] = state.result;
+        }
+        break;
+      }
+    }
+  } else if (state.tag !== "!") {
+    if (_hasOwnProperty$1.call(state.typeMap[state.kind || "fallback"], state.tag)) {
+      type2 = state.typeMap[state.kind || "fallback"][state.tag];
+    } else {
+      type2 = null;
+      typeList = state.typeMap.multi[state.kind || "fallback"];
+      for (typeIndex = 0, typeQuantity = typeList.length; typeIndex < typeQuantity; typeIndex += 1) {
+        if (state.tag.slice(0, typeList[typeIndex].tag.length) === typeList[typeIndex].tag) {
+          type2 = typeList[typeIndex];
+          break;
+        }
+      }
+    }
+    if (!type2) {
+      throwError(state, "unknown tag !<" + state.tag + ">");
+    }
+    if (state.result !== null && type2.kind !== state.kind) {
+      throwError(state, "unacceptable node kind for !<" + state.tag + '> tag; it should be "' + type2.kind + '", not "' + state.kind + '"');
+    }
+    if (!type2.resolve(state.result, state.tag)) {
+      throwError(state, "cannot resolve a node with !<" + state.tag + "> explicit tag");
+    } else {
+      state.result = type2.construct(state.result, state.tag);
+      if (state.anchor !== null) {
+        state.anchorMap[state.anchor] = state.result;
+      }
+    }
+  }
+  if (state.listener !== null) {
+    state.listener("close", state);
+  }
+  return state.tag !== null || state.anchor !== null || hasContent;
+}
+function readDocument(state) {
+  var documentStart = state.position, _position, directiveName, directiveArgs, hasDirectives = false, ch;
+  state.version = null;
+  state.checkLineBreaks = state.legacy;
+  state.tagMap = /* @__PURE__ */ Object.create(null);
+  state.anchorMap = /* @__PURE__ */ Object.create(null);
+  while ((ch = state.input.charCodeAt(state.position)) !== 0) {
+    skipSeparationSpace(state, true, -1);
+    ch = state.input.charCodeAt(state.position);
+    if (state.lineIndent > 0 || ch !== 37) {
+      break;
+    }
+    hasDirectives = true;
+    ch = state.input.charCodeAt(++state.position);
+    _position = state.position;
+    while (ch !== 0 && !is_WS_OR_EOL(ch)) {
+      ch = state.input.charCodeAt(++state.position);
+    }
+    directiveName = state.input.slice(_position, state.position);
+    directiveArgs = [];
+    if (directiveName.length < 1) {
+      throwError(state, "directive name must not be less than one character in length");
+    }
+    while (ch !== 0) {
+      while (is_WHITE_SPACE(ch)) {
+        ch = state.input.charCodeAt(++state.position);
+      }
+      if (ch === 35) {
+        do {
+          ch = state.input.charCodeAt(++state.position);
+        } while (ch !== 0 && !is_EOL(ch));
+        break;
+      }
+      if (is_EOL(ch)) break;
+      _position = state.position;
+      while (ch !== 0 && !is_WS_OR_EOL(ch)) {
+        ch = state.input.charCodeAt(++state.position);
+      }
+      directiveArgs.push(state.input.slice(_position, state.position));
+    }
+    if (ch !== 0) readLineBreak(state);
+    if (_hasOwnProperty$1.call(directiveHandlers, directiveName)) {
+      directiveHandlers[directiveName](state, directiveName, directiveArgs);
+    } else {
+      throwWarning(state, 'unknown document directive "' + directiveName + '"');
+    }
+  }
+  skipSeparationSpace(state, true, -1);
+  if (state.lineIndent === 0 && state.input.charCodeAt(state.position) === 45 && state.input.charCodeAt(state.position + 1) === 45 && state.input.charCodeAt(state.position + 2) === 45) {
+    state.position += 3;
+    skipSeparationSpace(state, true, -1);
+  } else if (hasDirectives) {
+    throwError(state, "directives end mark is expected");
+  }
+  composeNode(state, state.lineIndent - 1, CONTEXT_BLOCK_OUT, false, true);
+  skipSeparationSpace(state, true, -1);
+  if (state.checkLineBreaks && PATTERN_NON_ASCII_LINE_BREAKS.test(state.input.slice(documentStart, state.position))) {
+    throwWarning(state, "non-ASCII line breaks are interpreted as content");
+  }
+  state.documents.push(state.result);
+  if (state.position === state.lineStart && testDocumentSeparator(state)) {
+    if (state.input.charCodeAt(state.position) === 46) {
+      state.position += 3;
+      skipSeparationSpace(state, true, -1);
+    }
+    return;
+  }
+  if (state.position < state.length - 1) {
+    throwError(state, "end of the stream or a document separator is expected");
+  } else {
+    return;
+  }
+}
+function loadDocuments(input, options) {
+  input = String(input);
+  options = options || {};
+  if (input.length !== 0) {
+    if (input.charCodeAt(input.length - 1) !== 10 && input.charCodeAt(input.length - 1) !== 13) {
+      input += "\n";
+    }
+    if (input.charCodeAt(0) === 65279) {
+      input = input.slice(1);
+    }
+  }
+  var state = new State$1(input, options);
+  var nullpos = input.indexOf("\0");
+  if (nullpos !== -1) {
+    state.position = nullpos;
+    throwError(state, "null byte is not allowed in input");
+  }
+  state.input += "\0";
+  while (state.input.charCodeAt(state.position) === 32) {
+    state.lineIndent += 1;
+    state.position += 1;
+  }
+  while (state.position < state.length - 1) {
+    readDocument(state);
+  }
+  return state.documents;
+}
+function loadAll$1(input, iterator, options) {
+  if (iterator !== null && typeof iterator === "object" && typeof options === "undefined") {
+    options = iterator;
+    iterator = null;
+  }
+  var documents = loadDocuments(input, options);
+  if (typeof iterator !== "function") {
+    return documents;
+  }
+  for (var index = 0, length = documents.length; index < length; index += 1) {
+    iterator(documents[index]);
+  }
+}
+function load$1(input, options) {
+  var documents = loadDocuments(input, options);
+  if (documents.length === 0) {
+    return void 0;
+  } else if (documents.length === 1) {
+    return documents[0];
+  }
+  throw new exception("expected a single document in the stream, but found more");
+}
+function compileStyleMap(schema2, map2) {
+  var result, keys, index, length, tag, style, type2;
+  if (map2 === null) return {};
+  result = {};
+  keys = Object.keys(map2);
+  for (index = 0, length = keys.length; index < length; index += 1) {
+    tag = keys[index];
+    style = String(map2[tag]);
+    if (tag.slice(0, 2) === "!!") {
+      tag = "tag:yaml.org,2002:" + tag.slice(2);
+    }
+    type2 = schema2.compiledTypeMap["fallback"][tag];
+    if (type2 && _hasOwnProperty.call(type2.styleAliases, style)) {
+      style = type2.styleAliases[style];
+    }
+    result[tag] = style;
+  }
+  return result;
+}
+function encodeHex(character) {
+  var string, handle, length;
+  string = character.toString(16).toUpperCase();
+  if (character <= 255) {
+    handle = "x";
+    length = 2;
+  } else if (character <= 65535) {
+    handle = "u";
+    length = 4;
+  } else if (character <= 4294967295) {
+    handle = "U";
+    length = 8;
+  } else {
+    throw new exception("code point within a string may not be greater than 0xFFFFFFFF");
+  }
+  return "\\" + handle + common.repeat("0", length - string.length) + string;
+}
+function State(options) {
+  this.schema = options["schema"] || _default;
+  this.indent = Math.max(1, options["indent"] || 2);
+  this.noArrayIndent = options["noArrayIndent"] || false;
+  this.skipInvalid = options["skipInvalid"] || false;
+  this.flowLevel = common.isNothing(options["flowLevel"]) ? -1 : options["flowLevel"];
+  this.styleMap = compileStyleMap(this.schema, options["styles"] || null);
+  this.sortKeys = options["sortKeys"] || false;
+  this.lineWidth = options["lineWidth"] || 80;
+  this.noRefs = options["noRefs"] || false;
+  this.noCompatMode = options["noCompatMode"] || false;
+  this.condenseFlow = options["condenseFlow"] || false;
+  this.quotingType = options["quotingType"] === '"' ? QUOTING_TYPE_DOUBLE : QUOTING_TYPE_SINGLE;
+  this.forceQuotes = options["forceQuotes"] || false;
+  this.replacer = typeof options["replacer"] === "function" ? options["replacer"] : null;
+  this.implicitTypes = this.schema.compiledImplicit;
+  this.explicitTypes = this.schema.compiledExplicit;
+  this.tag = null;
+  this.result = "";
+  this.duplicates = [];
+  this.usedDuplicates = null;
+}
+function indentString(string, spaces) {
+  var ind = common.repeat(" ", spaces), position = 0, next = -1, result = "", line, length = string.length;
+  while (position < length) {
+    next = string.indexOf("\n", position);
+    if (next === -1) {
+      line = string.slice(position);
+      position = length;
+    } else {
+      line = string.slice(position, next + 1);
+      position = next + 1;
+    }
+    if (line.length && line !== "\n") result += ind;
+    result += line;
+  }
+  return result;
+}
+function generateNextLine(state, level) {
+  return "\n" + common.repeat(" ", state.indent * level);
+}
+function testImplicitResolving(state, str2) {
+  var index, length, type2;
+  for (index = 0, length = state.implicitTypes.length; index < length; index += 1) {
+    type2 = state.implicitTypes[index];
+    if (type2.resolve(str2)) {
+      return true;
+    }
+  }
+  return false;
+}
+function isWhitespace(c) {
+  return c === CHAR_SPACE || c === CHAR_TAB;
+}
+function isPrintable(c) {
+  return 32 <= c && c <= 126 || 161 <= c && c <= 55295 && c !== 8232 && c !== 8233 || 57344 <= c && c <= 65533 && c !== CHAR_BOM || 65536 <= c && c <= 1114111;
+}
+function isNsCharOrWhitespace(c) {
+  return isPrintable(c) && c !== CHAR_BOM && c !== CHAR_CARRIAGE_RETURN && c !== CHAR_LINE_FEED;
+}
+function isPlainSafe(c, prev, inblock) {
+  var cIsNsCharOrWhitespace = isNsCharOrWhitespace(c);
+  var cIsNsChar = cIsNsCharOrWhitespace && !isWhitespace(c);
+  return (
+    // ns-plain-safe
+    (inblock ? (
+      // c = flow-in
+      cIsNsCharOrWhitespace
+    ) : cIsNsCharOrWhitespace && c !== CHAR_COMMA && c !== CHAR_LEFT_SQUARE_BRACKET && c !== CHAR_RIGHT_SQUARE_BRACKET && c !== CHAR_LEFT_CURLY_BRACKET && c !== CHAR_RIGHT_CURLY_BRACKET) && c !== CHAR_SHARP && !(prev === CHAR_COLON && !cIsNsChar) || isNsCharOrWhitespace(prev) && !isWhitespace(prev) && c === CHAR_SHARP || prev === CHAR_COLON && cIsNsChar
+  );
+}
+function isPlainSafeFirst(c) {
+  return isPrintable(c) && c !== CHAR_BOM && !isWhitespace(c) && c !== CHAR_MINUS && c !== CHAR_QUESTION && c !== CHAR_COLON && c !== CHAR_COMMA && c !== CHAR_LEFT_SQUARE_BRACKET && c !== CHAR_RIGHT_SQUARE_BRACKET && c !== CHAR_LEFT_CURLY_BRACKET && c !== CHAR_RIGHT_CURLY_BRACKET && c !== CHAR_SHARP && c !== CHAR_AMPERSAND && c !== CHAR_ASTERISK && c !== CHAR_EXCLAMATION && c !== CHAR_VERTICAL_LINE && c !== CHAR_EQUALS && c !== CHAR_GREATER_THAN && c !== CHAR_SINGLE_QUOTE && c !== CHAR_DOUBLE_QUOTE && c !== CHAR_PERCENT && c !== CHAR_COMMERCIAL_AT && c !== CHAR_GRAVE_ACCENT;
+}
+function isPlainSafeLast(c) {
+  return !isWhitespace(c) && c !== CHAR_COLON;
+}
+function codePointAt(string, pos) {
+  var first = string.charCodeAt(pos), second;
+  if (first >= 55296 && first <= 56319 && pos + 1 < string.length) {
+    second = string.charCodeAt(pos + 1);
+    if (second >= 56320 && second <= 57343) {
+      return (first - 55296) * 1024 + second - 56320 + 65536;
+    }
+  }
+  return first;
+}
+function needIndentIndicator(string) {
+  var leadingSpaceRe = /^\n* /;
+  return leadingSpaceRe.test(string);
+}
+function chooseScalarStyle(string, singleLineOnly, indentPerLevel, lineWidth, testAmbiguousType, quotingType, forceQuotes, inblock) {
+  var i;
+  var char = 0;
+  var prevChar = null;
+  var hasLineBreak = false;
+  var hasFoldableLine = false;
+  var shouldTrackWidth = lineWidth !== -1;
+  var previousLineBreak = -1;
+  var plain = isPlainSafeFirst(codePointAt(string, 0)) && isPlainSafeLast(codePointAt(string, string.length - 1));
+  if (singleLineOnly || forceQuotes) {
+    for (i = 0; i < string.length; char >= 65536 ? i += 2 : i++) {
+      char = codePointAt(string, i);
+      if (!isPrintable(char)) {
+        return STYLE_DOUBLE;
+      }
+      plain = plain && isPlainSafe(char, prevChar, inblock);
+      prevChar = char;
+    }
+  } else {
+    for (i = 0; i < string.length; char >= 65536 ? i += 2 : i++) {
+      char = codePointAt(string, i);
+      if (char === CHAR_LINE_FEED) {
+        hasLineBreak = true;
+        if (shouldTrackWidth) {
+          hasFoldableLine = hasFoldableLine || // Foldable line = too long, and not more-indented.
+          i - previousLineBreak - 1 > lineWidth && string[previousLineBreak + 1] !== " ";
+          previousLineBreak = i;
+        }
+      } else if (!isPrintable(char)) {
+        return STYLE_DOUBLE;
+      }
+      plain = plain && isPlainSafe(char, prevChar, inblock);
+      prevChar = char;
+    }
+    hasFoldableLine = hasFoldableLine || shouldTrackWidth && (i - previousLineBreak - 1 > lineWidth && string[previousLineBreak + 1] !== " ");
+  }
+  if (!hasLineBreak && !hasFoldableLine) {
+    if (plain && !forceQuotes && !testAmbiguousType(string)) {
+      return STYLE_PLAIN;
+    }
+    return quotingType === QUOTING_TYPE_DOUBLE ? STYLE_DOUBLE : STYLE_SINGLE;
+  }
+  if (indentPerLevel > 9 && needIndentIndicator(string)) {
+    return STYLE_DOUBLE;
+  }
+  if (!forceQuotes) {
+    return hasFoldableLine ? STYLE_FOLDED : STYLE_LITERAL;
+  }
+  return quotingType === QUOTING_TYPE_DOUBLE ? STYLE_DOUBLE : STYLE_SINGLE;
+}
+function writeScalar(state, string, level, iskey, inblock) {
+  state.dump = function() {
+    if (string.length === 0) {
+      return state.quotingType === QUOTING_TYPE_DOUBLE ? '""' : "''";
+    }
+    if (!state.noCompatMode) {
+      if (DEPRECATED_BOOLEANS_SYNTAX.indexOf(string) !== -1 || DEPRECATED_BASE60_SYNTAX.test(string)) {
+        return state.quotingType === QUOTING_TYPE_DOUBLE ? '"' + string + '"' : "'" + string + "'";
+      }
+    }
+    var indent = state.indent * Math.max(1, level);
+    var lineWidth = state.lineWidth === -1 ? -1 : Math.max(Math.min(state.lineWidth, 40), state.lineWidth - indent);
+    var singleLineOnly = iskey || state.flowLevel > -1 && level >= state.flowLevel;
+    function testAmbiguity(string2) {
+      return testImplicitResolving(state, string2);
+    }
+    switch (chooseScalarStyle(
+      string,
+      singleLineOnly,
+      state.indent,
+      lineWidth,
+      testAmbiguity,
+      state.quotingType,
+      state.forceQuotes && !iskey,
+      inblock
+    )) {
+      case STYLE_PLAIN:
+        return string;
+      case STYLE_SINGLE:
+        return "'" + string.replace(/'/g, "''") + "'";
+      case STYLE_LITERAL:
+        return "|" + blockHeader(string, state.indent) + dropEndingNewline(indentString(string, indent));
+      case STYLE_FOLDED:
+        return ">" + blockHeader(string, state.indent) + dropEndingNewline(indentString(foldString(string, lineWidth), indent));
+      case STYLE_DOUBLE:
+        return '"' + escapeString(string) + '"';
+      default:
+        throw new exception("impossible error: invalid scalar style");
+    }
+  }();
+}
+function blockHeader(string, indentPerLevel) {
+  var indentIndicator = needIndentIndicator(string) ? String(indentPerLevel) : "";
+  var clip = string[string.length - 1] === "\n";
+  var keep = clip && (string[string.length - 2] === "\n" || string === "\n");
+  var chomp = keep ? "+" : clip ? "" : "-";
+  return indentIndicator + chomp + "\n";
+}
+function dropEndingNewline(string) {
+  return string[string.length - 1] === "\n" ? string.slice(0, -1) : string;
+}
+function foldString(string, width) {
+  var lineRe = /(\n+)([^\n]*)/g;
+  var result = function() {
+    var nextLF = string.indexOf("\n");
+    nextLF = nextLF !== -1 ? nextLF : string.length;
+    lineRe.lastIndex = nextLF;
+    return foldLine(string.slice(0, nextLF), width);
+  }();
+  var prevMoreIndented = string[0] === "\n" || string[0] === " ";
+  var moreIndented;
+  var match;
+  while (match = lineRe.exec(string)) {
+    var prefix = match[1], line = match[2];
+    moreIndented = line[0] === " ";
+    result += prefix + (!prevMoreIndented && !moreIndented && line !== "" ? "\n" : "") + foldLine(line, width);
+    prevMoreIndented = moreIndented;
+  }
+  return result;
+}
+function foldLine(line, width) {
+  if (line === "" || line[0] === " ") return line;
+  var breakRe = / [^ ]/g;
+  var match;
+  var start = 0, end, curr = 0, next = 0;
+  var result = "";
+  while (match = breakRe.exec(line)) {
+    next = match.index;
+    if (next - start > width) {
+      end = curr > start ? curr : next;
+      result += "\n" + line.slice(start, end);
+      start = end + 1;
+    }
+    curr = next;
+  }
+  result += "\n";
+  if (line.length - start > width && curr > start) {
+    result += line.slice(start, curr) + "\n" + line.slice(curr + 1);
+  } else {
+    result += line.slice(start);
+  }
+  return result.slice(1);
+}
+function escapeString(string) {
+  var result = "";
+  var char = 0;
+  var escapeSeq;
+  for (var i = 0; i < string.length; char >= 65536 ? i += 2 : i++) {
+    char = codePointAt(string, i);
+    escapeSeq = ESCAPE_SEQUENCES[char];
+    if (!escapeSeq && isPrintable(char)) {
+      result += string[i];
+      if (char >= 65536) result += string[i + 1];
+    } else {
+      result += escapeSeq || encodeHex(char);
+    }
+  }
+  return result;
+}
+function writeFlowSequence(state, level, object) {
+  var _result = "", _tag = state.tag, index, length, value;
+  for (index = 0, length = object.length; index < length; index += 1) {
+    value = object[index];
+    if (state.replacer) {
+      value = state.replacer.call(object, String(index), value);
+    }
+    if (writeNode(state, level, value, false, false) || typeof value === "undefined" && writeNode(state, level, null, false, false)) {
+      if (_result !== "") _result += "," + (!state.condenseFlow ? " " : "");
+      _result += state.dump;
+    }
+  }
+  state.tag = _tag;
+  state.dump = "[" + _result + "]";
+}
+function writeBlockSequence(state, level, object, compact) {
+  var _result = "", _tag = state.tag, index, length, value;
+  for (index = 0, length = object.length; index < length; index += 1) {
+    value = object[index];
+    if (state.replacer) {
+      value = state.replacer.call(object, String(index), value);
+    }
+    if (writeNode(state, level + 1, value, true, true, false, true) || typeof value === "undefined" && writeNode(state, level + 1, null, true, true, false, true)) {
+      if (!compact || _result !== "") {
+        _result += generateNextLine(state, level);
+      }
+      if (state.dump && CHAR_LINE_FEED === state.dump.charCodeAt(0)) {
+        _result += "-";
+      } else {
+        _result += "- ";
+      }
+      _result += state.dump;
+    }
+  }
+  state.tag = _tag;
+  state.dump = _result || "[]";
+}
+function writeFlowMapping(state, level, object) {
+  var _result = "", _tag = state.tag, objectKeyList = Object.keys(object), index, length, objectKey, objectValue, pairBuffer;
+  for (index = 0, length = objectKeyList.length; index < length; index += 1) {
+    pairBuffer = "";
+    if (_result !== "") pairBuffer += ", ";
+    if (state.condenseFlow) pairBuffer += '"';
+    objectKey = objectKeyList[index];
+    objectValue = object[objectKey];
+    if (state.replacer) {
+      objectValue = state.replacer.call(object, objectKey, objectValue);
+    }
+    if (!writeNode(state, level, objectKey, false, false)) {
+      continue;
+    }
+    if (state.dump.length > 1024) pairBuffer += "? ";
+    pairBuffer += state.dump + (state.condenseFlow ? '"' : "") + ":" + (state.condenseFlow ? "" : " ");
+    if (!writeNode(state, level, objectValue, false, false)) {
+      continue;
+    }
+    pairBuffer += state.dump;
+    _result += pairBuffer;
+  }
+  state.tag = _tag;
+  state.dump = "{" + _result + "}";
+}
+function writeBlockMapping(state, level, object, compact) {
+  var _result = "", _tag = state.tag, objectKeyList = Object.keys(object), index, length, objectKey, objectValue, explicitPair, pairBuffer;
+  if (state.sortKeys === true) {
+    objectKeyList.sort();
+  } else if (typeof state.sortKeys === "function") {
+    objectKeyList.sort(state.sortKeys);
+  } else if (state.sortKeys) {
+    throw new exception("sortKeys must be a boolean or a function");
+  }
+  for (index = 0, length = objectKeyList.length; index < length; index += 1) {
+    pairBuffer = "";
+    if (!compact || _result !== "") {
+      pairBuffer += generateNextLine(state, level);
+    }
+    objectKey = objectKeyList[index];
+    objectValue = object[objectKey];
+    if (state.replacer) {
+      objectValue = state.replacer.call(object, objectKey, objectValue);
+    }
+    if (!writeNode(state, level + 1, objectKey, true, true, true)) {
+      continue;
+    }
+    explicitPair = state.tag !== null && state.tag !== "?" || state.dump && state.dump.length > 1024;
+    if (explicitPair) {
+      if (state.dump && CHAR_LINE_FEED === state.dump.charCodeAt(0)) {
+        pairBuffer += "?";
+      } else {
+        pairBuffer += "? ";
+      }
+    }
+    pairBuffer += state.dump;
+    if (explicitPair) {
+      pairBuffer += generateNextLine(state, level);
+    }
+    if (!writeNode(state, level + 1, objectValue, true, explicitPair)) {
+      continue;
+    }
+    if (state.dump && CHAR_LINE_FEED === state.dump.charCodeAt(0)) {
+      pairBuffer += ":";
+    } else {
+      pairBuffer += ": ";
+    }
+    pairBuffer += state.dump;
+    _result += pairBuffer;
+  }
+  state.tag = _tag;
+  state.dump = _result || "{}";
+}
+function detectType(state, object, explicit) {
+  var _result, typeList, index, length, type2, style;
+  typeList = explicit ? state.explicitTypes : state.implicitTypes;
+  for (index = 0, length = typeList.length; index < length; index += 1) {
+    type2 = typeList[index];
+    if ((type2.instanceOf || type2.predicate) && (!type2.instanceOf || typeof object === "object" && object instanceof type2.instanceOf) && (!type2.predicate || type2.predicate(object))) {
+      if (explicit) {
+        if (type2.multi && type2.representName) {
+          state.tag = type2.representName(object);
+        } else {
+          state.tag = type2.tag;
+        }
+      } else {
+        state.tag = "?";
+      }
+      if (type2.represent) {
+        style = state.styleMap[type2.tag] || type2.defaultStyle;
+        if (_toString.call(type2.represent) === "[object Function]") {
+          _result = type2.represent(object, style);
+        } else if (_hasOwnProperty.call(type2.represent, style)) {
+          _result = type2.represent[style](object, style);
+        } else {
+          throw new exception("!<" + type2.tag + '> tag resolver accepts not "' + style + '" style');
+        }
+        state.dump = _result;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+function writeNode(state, level, object, block, compact, iskey, isblockseq) {
+  state.tag = null;
+  state.dump = object;
+  if (!detectType(state, object, false)) {
+    detectType(state, object, true);
+  }
+  var type2 = _toString.call(state.dump);
+  var inblock = block;
+  var tagStr;
+  if (block) {
+    block = state.flowLevel < 0 || state.flowLevel > level;
+  }
+  var objectOrArray = type2 === "[object Object]" || type2 === "[object Array]", duplicateIndex, duplicate;
+  if (objectOrArray) {
+    duplicateIndex = state.duplicates.indexOf(object);
+    duplicate = duplicateIndex !== -1;
+  }
+  if (state.tag !== null && state.tag !== "?" || duplicate || state.indent !== 2 && level > 0) {
+    compact = false;
+  }
+  if (duplicate && state.usedDuplicates[duplicateIndex]) {
+    state.dump = "*ref_" + duplicateIndex;
+  } else {
+    if (objectOrArray && duplicate && !state.usedDuplicates[duplicateIndex]) {
+      state.usedDuplicates[duplicateIndex] = true;
+    }
+    if (type2 === "[object Object]") {
+      if (block && Object.keys(state.dump).length !== 0) {
+        writeBlockMapping(state, level, state.dump, compact);
+        if (duplicate) {
+          state.dump = "&ref_" + duplicateIndex + state.dump;
+        }
+      } else {
+        writeFlowMapping(state, level, state.dump);
+        if (duplicate) {
+          state.dump = "&ref_" + duplicateIndex + " " + state.dump;
+        }
+      }
+    } else if (type2 === "[object Array]") {
+      if (block && state.dump.length !== 0) {
+        if (state.noArrayIndent && !isblockseq && level > 0) {
+          writeBlockSequence(state, level - 1, state.dump, compact);
+        } else {
+          writeBlockSequence(state, level, state.dump, compact);
+        }
+        if (duplicate) {
+          state.dump = "&ref_" + duplicateIndex + state.dump;
+        }
+      } else {
+        writeFlowSequence(state, level, state.dump);
+        if (duplicate) {
+          state.dump = "&ref_" + duplicateIndex + " " + state.dump;
+        }
+      }
+    } else if (type2 === "[object String]") {
+      if (state.tag !== "?") {
+        writeScalar(state, state.dump, level, iskey, inblock);
+      }
+    } else if (type2 === "[object Undefined]") {
+      return false;
+    } else {
+      if (state.skipInvalid) return false;
+      throw new exception("unacceptable kind of an object to dump " + type2);
+    }
+    if (state.tag !== null && state.tag !== "?") {
+      tagStr = encodeURI(
+        state.tag[0] === "!" ? state.tag.slice(1) : state.tag
+      ).replace(/!/g, "%21");
+      if (state.tag[0] === "!") {
+        tagStr = "!" + tagStr;
+      } else if (tagStr.slice(0, 18) === "tag:yaml.org,2002:") {
+        tagStr = "!!" + tagStr.slice(18);
+      } else {
+        tagStr = "!<" + tagStr + ">";
+      }
+      state.dump = tagStr + " " + state.dump;
+    }
+  }
+  return true;
+}
+function getDuplicateReferences(object, state) {
+  var objects = [], duplicatesIndexes = [], index, length;
+  inspectNode(object, objects, duplicatesIndexes);
+  for (index = 0, length = duplicatesIndexes.length; index < length; index += 1) {
+    state.duplicates.push(objects[duplicatesIndexes[index]]);
+  }
+  state.usedDuplicates = new Array(length);
+}
+function inspectNode(object, objects, duplicatesIndexes) {
+  var objectKeyList, index, length;
+  if (object !== null && typeof object === "object") {
+    index = objects.indexOf(object);
+    if (index !== -1) {
+      if (duplicatesIndexes.indexOf(index) === -1) {
+        duplicatesIndexes.push(index);
+      }
+    } else {
+      objects.push(object);
+      if (Array.isArray(object)) {
+        for (index = 0, length = object.length; index < length; index += 1) {
+          inspectNode(object[index], objects, duplicatesIndexes);
+        }
+      } else {
+        objectKeyList = Object.keys(object);
+        for (index = 0, length = objectKeyList.length; index < length; index += 1) {
+          inspectNode(object[objectKeyList[index]], objects, duplicatesIndexes);
+        }
+      }
+    }
+  }
+}
+function dump$1(input, options) {
+  options = options || {};
+  var state = new State(options);
+  if (!state.noRefs) getDuplicateReferences(input, state);
+  var value = input;
+  if (state.replacer) {
+    value = state.replacer.call({ "": value }, "", value);
+  }
+  if (writeNode(state, 0, value, true, true)) return state.dump + "\n";
+  return "";
+}
+function renamed(from, to) {
+  return function() {
+    throw new Error("Function yaml." + from + " is removed in js-yaml 4. Use yaml." + to + " instead, which is now safe by default.");
+  };
+}
+var isNothing_1, isObject_1, toArray_1, repeat_1, isNegativeZero_1, extend_1, common, exception, snippet, TYPE_CONSTRUCTOR_OPTIONS, YAML_NODE_KINDS, type, schema, str, seq, map, failsafe, _null, bool, int, YAML_FLOAT_PATTERN, SCIENTIFIC_WITHOUT_DOT, float, json, core, YAML_DATE_REGEXP, YAML_TIMESTAMP_REGEXP, timestamp, merge, BASE64_MAP, binary, _hasOwnProperty$3, _toString$2, omap, _toString$1, pairs, _hasOwnProperty$2, set, _default, _hasOwnProperty$1, CONTEXT_FLOW_IN, CONTEXT_FLOW_OUT, CONTEXT_BLOCK_IN, CONTEXT_BLOCK_OUT, CHOMPING_CLIP, CHOMPING_STRIP, CHOMPING_KEEP, PATTERN_NON_PRINTABLE, PATTERN_NON_ASCII_LINE_BREAKS, PATTERN_FLOW_INDICATORS, PATTERN_TAG_HANDLE, PATTERN_TAG_URI, simpleEscapeCheck, simpleEscapeMap, i, directiveHandlers, loadAll_1, load_1, loader, _toString, _hasOwnProperty, CHAR_BOM, CHAR_TAB, CHAR_LINE_FEED, CHAR_CARRIAGE_RETURN, CHAR_SPACE, CHAR_EXCLAMATION, CHAR_DOUBLE_QUOTE, CHAR_SHARP, CHAR_PERCENT, CHAR_AMPERSAND, CHAR_SINGLE_QUOTE, CHAR_ASTERISK, CHAR_COMMA, CHAR_MINUS, CHAR_COLON, CHAR_EQUALS, CHAR_GREATER_THAN, CHAR_QUESTION, CHAR_COMMERCIAL_AT, CHAR_LEFT_SQUARE_BRACKET, CHAR_RIGHT_SQUARE_BRACKET, CHAR_GRAVE_ACCENT, CHAR_LEFT_CURLY_BRACKET, CHAR_VERTICAL_LINE, CHAR_RIGHT_CURLY_BRACKET, ESCAPE_SEQUENCES, DEPRECATED_BOOLEANS_SYNTAX, DEPRECATED_BASE60_SYNTAX, QUOTING_TYPE_SINGLE, QUOTING_TYPE_DOUBLE, STYLE_PLAIN, STYLE_SINGLE, STYLE_LITERAL, STYLE_FOLDED, STYLE_DOUBLE, dump_1, dumper, load, loadAll, dump, safeLoad, safeLoadAll, safeDump;
+var init_js_yaml = __esm({
+  "node_modules/js-yaml/dist/js-yaml.mjs"() {
+    "use strict";
+    isNothing_1 = isNothing;
+    isObject_1 = isObject;
+    toArray_1 = toArray2;
+    repeat_1 = repeat;
+    isNegativeZero_1 = isNegativeZero;
+    extend_1 = extend;
+    common = {
+      isNothing: isNothing_1,
+      isObject: isObject_1,
+      toArray: toArray_1,
+      repeat: repeat_1,
+      isNegativeZero: isNegativeZero_1,
+      extend: extend_1
+    };
+    YAMLException$1.prototype = Object.create(Error.prototype);
+    YAMLException$1.prototype.constructor = YAMLException$1;
+    YAMLException$1.prototype.toString = function toString(compact) {
+      return this.name + ": " + formatError(this, compact);
+    };
+    exception = YAMLException$1;
+    snippet = makeSnippet;
+    TYPE_CONSTRUCTOR_OPTIONS = [
+      "kind",
+      "multi",
+      "resolve",
+      "construct",
+      "instanceOf",
+      "predicate",
+      "represent",
+      "representName",
+      "defaultStyle",
+      "styleAliases"
+    ];
+    YAML_NODE_KINDS = [
+      "scalar",
+      "sequence",
+      "mapping"
+    ];
+    type = Type$1;
+    Schema$1.prototype.extend = function extend2(definition) {
+      var implicit = [];
+      var explicit = [];
+      if (definition instanceof type) {
+        explicit.push(definition);
+      } else if (Array.isArray(definition)) {
+        explicit = explicit.concat(definition);
+      } else if (definition && (Array.isArray(definition.implicit) || Array.isArray(definition.explicit))) {
+        if (definition.implicit) implicit = implicit.concat(definition.implicit);
+        if (definition.explicit) explicit = explicit.concat(definition.explicit);
+      } else {
+        throw new exception("Schema.extend argument should be a Type, [ Type ], or a schema definition ({ implicit: [...], explicit: [...] })");
+      }
+      implicit.forEach(function(type$1) {
+        if (!(type$1 instanceof type)) {
+          throw new exception("Specified list of YAML types (or a single Type object) contains a non-Type object.");
+        }
+        if (type$1.loadKind && type$1.loadKind !== "scalar") {
+          throw new exception("There is a non-scalar type in the implicit list of a schema. Implicit resolving of such types is not supported.");
+        }
+        if (type$1.multi) {
+          throw new exception("There is a multi type in the implicit list of a schema. Multi tags can only be listed as explicit.");
+        }
+      });
+      explicit.forEach(function(type$1) {
+        if (!(type$1 instanceof type)) {
+          throw new exception("Specified list of YAML types (or a single Type object) contains a non-Type object.");
+        }
+      });
+      var result = Object.create(Schema$1.prototype);
+      result.implicit = (this.implicit || []).concat(implicit);
+      result.explicit = (this.explicit || []).concat(explicit);
+      result.compiledImplicit = compileList(result, "implicit");
+      result.compiledExplicit = compileList(result, "explicit");
+      result.compiledTypeMap = compileMap(result.compiledImplicit, result.compiledExplicit);
+      return result;
+    };
+    schema = Schema$1;
+    str = new type("tag:yaml.org,2002:str", {
+      kind: "scalar",
+      construct: function(data) {
+        return data !== null ? data : "";
+      }
+    });
+    seq = new type("tag:yaml.org,2002:seq", {
+      kind: "sequence",
+      construct: function(data) {
+        return data !== null ? data : [];
+      }
+    });
+    map = new type("tag:yaml.org,2002:map", {
+      kind: "mapping",
+      construct: function(data) {
+        return data !== null ? data : {};
+      }
+    });
+    failsafe = new schema({
+      explicit: [
+        str,
+        seq,
+        map
+      ]
+    });
+    _null = new type("tag:yaml.org,2002:null", {
+      kind: "scalar",
+      resolve: resolveYamlNull,
+      construct: constructYamlNull,
+      predicate: isNull,
+      represent: {
+        canonical: function() {
+          return "~";
+        },
+        lowercase: function() {
+          return "null";
+        },
+        uppercase: function() {
+          return "NULL";
+        },
+        camelcase: function() {
+          return "Null";
+        },
+        empty: function() {
+          return "";
+        }
+      },
+      defaultStyle: "lowercase"
+    });
+    bool = new type("tag:yaml.org,2002:bool", {
+      kind: "scalar",
+      resolve: resolveYamlBoolean,
+      construct: constructYamlBoolean,
+      predicate: isBoolean,
+      represent: {
+        lowercase: function(object) {
+          return object ? "true" : "false";
+        },
+        uppercase: function(object) {
+          return object ? "TRUE" : "FALSE";
+        },
+        camelcase: function(object) {
+          return object ? "True" : "False";
+        }
+      },
+      defaultStyle: "lowercase"
+    });
+    int = new type("tag:yaml.org,2002:int", {
+      kind: "scalar",
+      resolve: resolveYamlInteger,
+      construct: constructYamlInteger,
+      predicate: isInteger,
+      represent: {
+        binary: function(obj) {
+          return obj >= 0 ? "0b" + obj.toString(2) : "-0b" + obj.toString(2).slice(1);
+        },
+        octal: function(obj) {
+          return obj >= 0 ? "0o" + obj.toString(8) : "-0o" + obj.toString(8).slice(1);
+        },
+        decimal: function(obj) {
+          return obj.toString(10);
+        },
+        /* eslint-disable max-len */
+        hexadecimal: function(obj) {
+          return obj >= 0 ? "0x" + obj.toString(16).toUpperCase() : "-0x" + obj.toString(16).toUpperCase().slice(1);
+        }
+      },
+      defaultStyle: "decimal",
+      styleAliases: {
+        binary: [2, "bin"],
+        octal: [8, "oct"],
+        decimal: [10, "dec"],
+        hexadecimal: [16, "hex"]
+      }
+    });
+    YAML_FLOAT_PATTERN = new RegExp(
+      // 2.5e4, 2.5 and integers
+      "^(?:[-+]?(?:[0-9][0-9_]*)(?:\\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|\\.[0-9_]+(?:[eE][-+]?[0-9]+)?|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"
+    );
+    SCIENTIFIC_WITHOUT_DOT = /^[-+]?[0-9]+e/;
+    float = new type("tag:yaml.org,2002:float", {
+      kind: "scalar",
+      resolve: resolveYamlFloat,
+      construct: constructYamlFloat,
+      predicate: isFloat,
+      represent: representYamlFloat,
+      defaultStyle: "lowercase"
+    });
+    json = failsafe.extend({
+      implicit: [
+        _null,
+        bool,
+        int,
+        float
+      ]
+    });
+    core = json;
+    YAML_DATE_REGEXP = new RegExp(
+      "^([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])$"
+    );
+    YAML_TIMESTAMP_REGEXP = new RegExp(
+      "^([0-9][0-9][0-9][0-9])-([0-9][0-9]?)-([0-9][0-9]?)(?:[Tt]|[ \\t]+)([0-9][0-9]?):([0-9][0-9]):([0-9][0-9])(?:\\.([0-9]*))?(?:[ \\t]*(Z|([-+])([0-9][0-9]?)(?::([0-9][0-9]))?))?$"
+    );
+    timestamp = new type("tag:yaml.org,2002:timestamp", {
+      kind: "scalar",
+      resolve: resolveYamlTimestamp,
+      construct: constructYamlTimestamp,
+      instanceOf: Date,
+      represent: representYamlTimestamp
+    });
+    merge = new type("tag:yaml.org,2002:merge", {
+      kind: "scalar",
+      resolve: resolveYamlMerge
+    });
+    BASE64_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r";
+    binary = new type("tag:yaml.org,2002:binary", {
+      kind: "scalar",
+      resolve: resolveYamlBinary,
+      construct: constructYamlBinary,
+      predicate: isBinary,
+      represent: representYamlBinary
+    });
+    _hasOwnProperty$3 = Object.prototype.hasOwnProperty;
+    _toString$2 = Object.prototype.toString;
+    omap = new type("tag:yaml.org,2002:omap", {
+      kind: "sequence",
+      resolve: resolveYamlOmap,
+      construct: constructYamlOmap
+    });
+    _toString$1 = Object.prototype.toString;
+    pairs = new type("tag:yaml.org,2002:pairs", {
+      kind: "sequence",
+      resolve: resolveYamlPairs,
+      construct: constructYamlPairs
+    });
+    _hasOwnProperty$2 = Object.prototype.hasOwnProperty;
+    set = new type("tag:yaml.org,2002:set", {
+      kind: "mapping",
+      resolve: resolveYamlSet,
+      construct: constructYamlSet
+    });
+    _default = core.extend({
+      implicit: [
+        timestamp,
+        merge
+      ],
+      explicit: [
+        binary,
+        omap,
+        pairs,
+        set
+      ]
+    });
+    _hasOwnProperty$1 = Object.prototype.hasOwnProperty;
+    CONTEXT_FLOW_IN = 1;
+    CONTEXT_FLOW_OUT = 2;
+    CONTEXT_BLOCK_IN = 3;
+    CONTEXT_BLOCK_OUT = 4;
+    CHOMPING_CLIP = 1;
+    CHOMPING_STRIP = 2;
+    CHOMPING_KEEP = 3;
+    PATTERN_NON_PRINTABLE = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/;
+    PATTERN_NON_ASCII_LINE_BREAKS = /[\x85\u2028\u2029]/;
+    PATTERN_FLOW_INDICATORS = /[,\[\]\{\}]/;
+    PATTERN_TAG_HANDLE = /^(?:!|!!|![a-z\-]+!)$/i;
+    PATTERN_TAG_URI = /^(?:!|[^,\[\]\{\}])(?:%[0-9a-f]{2}|[0-9a-z\-#;\/\?:@&=\+\$,_\.!~\*'\(\)\[\]])*$/i;
+    simpleEscapeCheck = new Array(256);
+    simpleEscapeMap = new Array(256);
+    for (i = 0; i < 256; i++) {
+      simpleEscapeCheck[i] = simpleEscapeSequence(i) ? 1 : 0;
+      simpleEscapeMap[i] = simpleEscapeSequence(i);
+    }
+    directiveHandlers = {
+      YAML: function handleYamlDirective(state, name, args) {
+        var match, major, minor;
+        if (state.version !== null) {
+          throwError(state, "duplication of %YAML directive");
+        }
+        if (args.length !== 1) {
+          throwError(state, "YAML directive accepts exactly one argument");
+        }
+        match = /^([0-9]+)\.([0-9]+)$/.exec(args[0]);
+        if (match === null) {
+          throwError(state, "ill-formed argument of the YAML directive");
+        }
+        major = parseInt(match[1], 10);
+        minor = parseInt(match[2], 10);
+        if (major !== 1) {
+          throwError(state, "unacceptable YAML version of the document");
+        }
+        state.version = args[0];
+        state.checkLineBreaks = minor < 2;
+        if (minor !== 1 && minor !== 2) {
+          throwWarning(state, "unsupported YAML version of the document");
+        }
+      },
+      TAG: function handleTagDirective(state, name, args) {
+        var handle, prefix;
+        if (args.length !== 2) {
+          throwError(state, "TAG directive accepts exactly two arguments");
+        }
+        handle = args[0];
+        prefix = args[1];
+        if (!PATTERN_TAG_HANDLE.test(handle)) {
+          throwError(state, "ill-formed tag handle (first argument) of the TAG directive");
+        }
+        if (_hasOwnProperty$1.call(state.tagMap, handle)) {
+          throwError(state, 'there is a previously declared suffix for "' + handle + '" tag handle');
+        }
+        if (!PATTERN_TAG_URI.test(prefix)) {
+          throwError(state, "ill-formed tag prefix (second argument) of the TAG directive");
+        }
+        try {
+          prefix = decodeURIComponent(prefix);
+        } catch (err) {
+          throwError(state, "tag prefix is malformed: " + prefix);
+        }
+        state.tagMap[handle] = prefix;
+      }
+    };
+    loadAll_1 = loadAll$1;
+    load_1 = load$1;
+    loader = {
+      loadAll: loadAll_1,
+      load: load_1
+    };
+    _toString = Object.prototype.toString;
+    _hasOwnProperty = Object.prototype.hasOwnProperty;
+    CHAR_BOM = 65279;
+    CHAR_TAB = 9;
+    CHAR_LINE_FEED = 10;
+    CHAR_CARRIAGE_RETURN = 13;
+    CHAR_SPACE = 32;
+    CHAR_EXCLAMATION = 33;
+    CHAR_DOUBLE_QUOTE = 34;
+    CHAR_SHARP = 35;
+    CHAR_PERCENT = 37;
+    CHAR_AMPERSAND = 38;
+    CHAR_SINGLE_QUOTE = 39;
+    CHAR_ASTERISK = 42;
+    CHAR_COMMA = 44;
+    CHAR_MINUS = 45;
+    CHAR_COLON = 58;
+    CHAR_EQUALS = 61;
+    CHAR_GREATER_THAN = 62;
+    CHAR_QUESTION = 63;
+    CHAR_COMMERCIAL_AT = 64;
+    CHAR_LEFT_SQUARE_BRACKET = 91;
+    CHAR_RIGHT_SQUARE_BRACKET = 93;
+    CHAR_GRAVE_ACCENT = 96;
+    CHAR_LEFT_CURLY_BRACKET = 123;
+    CHAR_VERTICAL_LINE = 124;
+    CHAR_RIGHT_CURLY_BRACKET = 125;
+    ESCAPE_SEQUENCES = {};
+    ESCAPE_SEQUENCES[0] = "\\0";
+    ESCAPE_SEQUENCES[7] = "\\a";
+    ESCAPE_SEQUENCES[8] = "\\b";
+    ESCAPE_SEQUENCES[9] = "\\t";
+    ESCAPE_SEQUENCES[10] = "\\n";
+    ESCAPE_SEQUENCES[11] = "\\v";
+    ESCAPE_SEQUENCES[12] = "\\f";
+    ESCAPE_SEQUENCES[13] = "\\r";
+    ESCAPE_SEQUENCES[27] = "\\e";
+    ESCAPE_SEQUENCES[34] = '\\"';
+    ESCAPE_SEQUENCES[92] = "\\\\";
+    ESCAPE_SEQUENCES[133] = "\\N";
+    ESCAPE_SEQUENCES[160] = "\\_";
+    ESCAPE_SEQUENCES[8232] = "\\L";
+    ESCAPE_SEQUENCES[8233] = "\\P";
+    DEPRECATED_BOOLEANS_SYNTAX = [
+      "y",
+      "Y",
+      "yes",
+      "Yes",
+      "YES",
+      "on",
+      "On",
+      "ON",
+      "n",
+      "N",
+      "no",
+      "No",
+      "NO",
+      "off",
+      "Off",
+      "OFF"
+    ];
+    DEPRECATED_BASE60_SYNTAX = /^[-+]?[0-9_]+(?::[0-9_]+)+(?:\.[0-9_]*)?$/;
+    QUOTING_TYPE_SINGLE = 1;
+    QUOTING_TYPE_DOUBLE = 2;
+    STYLE_PLAIN = 1;
+    STYLE_SINGLE = 2;
+    STYLE_LITERAL = 3;
+    STYLE_FOLDED = 4;
+    STYLE_DOUBLE = 5;
+    dump_1 = dump$1;
+    dumper = {
+      dump: dump_1
+    };
+    load = loader.load;
+    loadAll = loader.loadAll;
+    dump = dumper.dump;
+    safeLoad = renamed("safeLoad", "load");
+    safeLoadAll = renamed("safeLoadAll", "loadAll");
+    safeDump = renamed("safeDump", "dump");
+  }
+});
+
+// src/features/factions/faction-simulation.ts
+var init_faction_simulation = __esm({
+  "src/features/factions/faction-simulation.ts"() {
+    "use strict";
+    init_plugin_logger();
+  }
+});
+
+// src/features/factions/faction-integration.ts
+async function getFactionMembersAtHex(app, hexCoord) {
+  const results = [];
+  try {
+    const factions = await loadAllFactions(app);
+    for (const faction of factions) {
+      const membersAtHex = (faction.members || []).filter((member) => {
+        if (!member.position || member.position.type !== "hex") return false;
+        const pos = member.position.coords;
+        if (!pos) return false;
+        return pos.q === hexCoord.q && pos.r === hexCoord.r && pos.s === hexCoord.s;
+      });
+      if (membersAtHex.length > 0) {
+        results.push({ faction, members: membersAtHex });
+      }
+    }
+  } catch (error) {
+    logger2.error("[faction-integration] Error loading faction members at hex", {
+      hexCoord,
+      error: error.message
+    });
+  }
+  return results;
+}
+async function loadAllFactions(app) {
+  const factions = [];
+  try {
+    const files = app.vault.getMarkdownFiles();
+    const factionFiles = files.filter(
+      (f) => f.path.startsWith("SaltMarcher/Factions/") && !f.path.includes("Presets")
+    );
+    for (const file of factionFiles) {
+      try {
+        const content = await app.vault.read(file);
+        const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+        if (!fmMatch) continue;
+        const fm2 = fmMatch[1];
+        if (!fm2.includes("smType: faction")) continue;
+        const parsed = load(fm2);
+        if (!parsed || typeof parsed !== "object") continue;
+        if (!parsed.name || typeof parsed.name !== "string") {
+          logger2.warn("[faction-integration] Faction missing name field", {
+            file: file.path
+          });
+          continue;
+        }
+        const faction = {
+          name: parsed.name,
+          motto: parsed.motto,
+          headquarters: parsed.headquarters,
+          territory: parsed.territory,
+          influence_tags: parsed.influence_tags,
+          culture_tags: parsed.culture_tags,
+          goal_tags: parsed.goal_tags,
+          summary: parsed.summary,
+          resources: parsed.resources,
+          faction_relationships: parsed.faction_relationships,
+          members: parsed.members
+        };
+        factions.push(faction);
+      } catch (error) {
+        logger2.warn("[faction-integration] Error loading faction file", {
+          file: file.path,
+          error: error.message
+        });
+      }
+    }
+    try {
+      logger2.debug("[faction-integration] Loaded factions", {
+        count: factions.length,
+        factions: factions.map((f) => f.name)
+      });
+    } catch {
+    }
+  } catch (error) {
+    logger2.error("[faction-integration] Error loading factions", {
+      error: error.message
+    });
+  }
+  return factions;
+}
+var init_faction_integration = __esm({
+  "src/features/factions/faction-integration.ts"() {
+    "use strict";
+    init_js_yaml();
+    init_faction_simulation();
+    init_serializer8();
+    init_plugin_logger();
+    init_hex_geom();
+  }
+});
+
 // src/features/encounters/encounter-generator.ts
 async function generateEncounter(app, tables, context) {
   const warnings = [];
@@ -25177,6 +29074,10 @@ async function generateEncounter(app, tables, context) {
   }
   const quantity = rollQuantity(selectedEntry.quantity || "1");
   const combatants = spawnCombatants(creatures, quantity, context, warnings);
+  if (context.hexCoords) {
+    const factionCombatants = await loadFactionMembersAtHex(app, context.hexCoords, warnings);
+    combatants.push(...factionCombatants);
+  }
   const { totalXp, adjustedXp, difficulty } = calculateEncounterDifficulty(
     combatants,
     context
@@ -25353,12 +29254,51 @@ function getEncounterMultiplier(monsterCount) {
   }
   return 1;
 }
+async function loadFactionMembersAtHex(app, hexCoords, warnings) {
+  const combatants = [];
+  try {
+    const factionMembers = await getFactionMembersAtHex(app, hexCoords);
+    for (const { faction, members } of factionMembers) {
+      for (const member of members) {
+        if (!member.statblock_ref) {
+          warnings.push(`Faction member "${member.name}" from ${faction.name} has no statblock reference`);
+          continue;
+        }
+        const creatureData = await loadCreaturesFromLibrary(app, [member.statblock_ref], warnings);
+        if (creatureData.length === 0) {
+          continue;
+        }
+        const creature = creatureData[0];
+        const quantity = member.quantity || 1;
+        for (let i = 0; i < quantity; i++) {
+          const maxHp = parseInt(creature.hp, 10) || 10;
+          const ac = parseInt(creature.ac, 10) || 10;
+          const initiative = Math.floor(Math.random() * 20) + 1;
+          combatants.push({
+            name: member.is_named ? member.name : `${member.name} ${i + 1}`,
+            cr: creature.cr,
+            initiative,
+            currentHp: maxHp,
+            maxHp,
+            ac,
+            creatureFile: creature.file,
+            id: `faction_${faction.name}_${member.name}_${Date.now()}_${i}`
+          });
+        }
+      }
+    }
+  } catch (error) {
+    warnings.push(`Failed to load faction members at hex: ${error.message}`);
+  }
+  return combatants;
+}
 var init_encounter_generator = __esm({
   "src/features/encounters/encounter-generator.ts"() {
     "use strict";
     init_types7();
     init_auto_selection();
     init_serializer11();
+    init_faction_integration();
   }
 });
 
@@ -25433,7 +29373,7 @@ function createInitiativeTracker(host, callbacks) {
         text: `AC ${combatant.ac}`
       });
       const removeBtn = item.createDiv({ cls: "sm-initiative-tracker__remove" });
-      (0, import_obsidian39.setIcon)(removeBtn, "x");
+      (0, import_obsidian41.setIcon)(removeBtn, "x");
       removeBtn.addEventListener("click", () => {
         if (confirm(`Remove ${combatant.name} from encounter?`)) {
           callbacks.onRemoveCombatant(combatant.id);
@@ -25451,11 +29391,11 @@ function createInitiativeTracker(host, callbacks) {
     destroy
   };
 }
-var import_obsidian39;
+var import_obsidian41;
 var init_initiative_tracker = __esm({
   "src/workmodes/session-runner/components/initiative-tracker.ts"() {
     "use strict";
-    import_obsidian39 = require("obsidian");
+    import_obsidian41 = require("obsidian");
   }
 });
 
@@ -25488,12 +29428,12 @@ async function createEncounterController(options) {
       logger2.info("[EncounterController] Loaded encounter tables", { count: tables.length });
     } catch (err) {
       logger2.error("[EncounterController] Failed to load encounter tables", err);
-      new import_obsidian40.Notice("Failed to load encounter tables");
+      new import_obsidian42.Notice("Failed to load encounter tables");
     }
   }
   async function generateRandomEncounter2(context) {
     if (encounterTables.length === 0) {
-      new import_obsidian40.Notice("No encounter tables available. Create some in the Library!");
+      new import_obsidian42.Notice("No encounter tables available. Create some in the Library!");
       logger2.warn("[EncounterController] Cannot generate encounter: no tables loaded");
       return;
     }
@@ -25512,9 +29452,9 @@ async function createEncounterController(options) {
       activeTurnIndex = 0;
       if (encounter.warnings.length > 0) {
         logger2.warn("[EncounterController] Encounter generation warnings", { warnings: encounter.warnings });
-        new import_obsidian40.Notice(`Encounter generated with warnings: ${encounter.warnings.join(", ")}`);
+        new import_obsidian42.Notice(`Encounter generated with warnings: ${encounter.warnings.join(", ")}`);
       } else {
-        new import_obsidian40.Notice(`${encounter.difficulty.toUpperCase()} encounter: ${encounter.combatants.length} combatants (${encounter.adjustedXP} XP)`);
+        new import_obsidian42.Notice(`${encounter.difficulty.toUpperCase()} encounter: ${encounter.combatants.length} combatants (${encounter.adjustedXP} XP)`);
       }
       renderInitiativeTracker();
       if (onCombatStart) {
@@ -25522,7 +29462,7 @@ async function createEncounterController(options) {
       }
     } catch (err) {
       logger2.error("[EncounterController] Failed to generate encounter", err);
-      new import_obsidian40.Notice("Failed to generate encounter. Check console for details.");
+      new import_obsidian42.Notice("Failed to generate encounter. Check console for details.");
     }
   }
   function renderInitiativeTracker() {
@@ -25591,7 +29531,7 @@ async function createEncounterController(options) {
     const allDefeated = combatants.every((c) => c.currentHp <= 0);
     if (allDefeated && combatants.length > 0) {
       logger2.info("[EncounterController] Combat ended - all combatants defeated");
-      new import_obsidian40.Notice("Combat ended! All enemies defeated.");
+      new import_obsidian42.Notice("Combat ended! All enemies defeated.");
       if (currentEncounter && onLootRequested) {
         void onLootRequested(currentEncounter);
       }
@@ -25622,11 +29562,11 @@ async function createEncounterController(options) {
     dispose
   };
 }
-var import_obsidian40;
+var import_obsidian42;
 var init_encounter_controller = __esm({
   "src/workmodes/session-runner/components/encounter-controller.ts"() {
     "use strict";
-    import_obsidian40 = require("obsidian");
+    import_obsidian42 = require("obsidian");
     init_plugin_logger();
     init_encounter_generator();
     init_data_sources();
@@ -25643,13 +29583,60 @@ async function buildEncounterContext(app, mapFile, state, partyLevel = 1, partyS
     partyLevel,
     partySize
   });
-  const terrainTags = ["forest"];
+  let terrainTags = [];
+  let factionTags = [];
+  if (mapFile && currentCoord) {
+    try {
+      const tileData = await loadTile(app, mapFile, currentCoord);
+      if (tileData) {
+        if (tileData.terrain) {
+          const terrainTag = tileData.terrain.toLowerCase().trim();
+          if (terrainTag) {
+            terrainTags.push(terrainTag);
+          }
+        }
+        if (tileData.faction) {
+          const factionTag = tileData.faction.toLowerCase().trim();
+          if (factionTag) {
+            factionTags.push(factionTag);
+          }
+        }
+        logger2.debug("[EncounterContextBuilder] Extracted hex data", {
+          terrain: tileData.terrain,
+          faction: tileData.faction,
+          region: tileData.region
+        });
+      }
+    } catch (err) {
+      logger2.warn("[EncounterContextBuilder] Failed to load tile data", { err });
+    }
+  }
+  if (terrainTags.length === 0) {
+    terrainTags = ["any"];
+  }
   const weatherTags = ["clear"];
   const timeTags = ["day"];
-  const factionTags = [];
   const situationTags = ["wandering"];
+  let hexCoords;
+  if (currentCoord && mapFile) {
+    try {
+      const col = currentCoord.c;
+      const row = currentCoord.r;
+      const q = col - Math.floor((row - (row & 1)) / 2);
+      const r = row;
+      const s = -q - r;
+      hexCoords = { q, r, s };
+      logger2.debug("[EncounterContextBuilder] Converted hex coordinates", {
+        oddr: currentCoord,
+        cube: hexCoords
+      });
+    } catch (err) {
+      logger2.warn("[EncounterContextBuilder] Failed to convert hex coordinates", { err });
+    }
+  }
   logger2.debug("[EncounterContextBuilder] Context built", {
-    tags: { terrain: terrainTags, weather: weatherTags, time: timeTags, faction: factionTags, situation: situationTags }
+    tags: { terrain: terrainTags, weather: weatherTags, time: timeTags, faction: factionTags, situation: situationTags },
+    hexCoords
   });
   return {
     partyLevel,
@@ -25660,13 +29647,385 @@ async function buildEncounterContext(app, mapFile, state, partyLevel = 1, partyS
       time: timeTags,
       faction: factionTags,
       situation: situationTags
-    }
+    },
+    hexCoords
   };
 }
 var init_encounter_context_builder = __esm({
   "src/workmodes/session-runner/util/encounter-context-builder.ts"() {
     "use strict";
     init_plugin_logger();
+    init_tile_repository();
+  }
+});
+
+// src/features/loot/item-generator.ts
+function generateItems(context, config, itemBudget, lootTables) {
+  if (!config.enableMagicItems || itemBudget <= 0) {
+    return [];
+  }
+  const items = [];
+  const { partyLevel, tags = [], excludeTags = [] } = context;
+  const maxItems = config.maxMagicItemsPerEncounter ?? 3;
+  const availableEntries = filterLootEntries(lootTables, tags, excludeTags, partyLevel, config);
+  if (availableEntries.length === 0) {
+    return [];
+  }
+  let remainingBudget = itemBudget;
+  let attempts = 0;
+  const maxAttempts = maxItems * 3;
+  while (items.length < maxItems && remainingBudget > 0 && attempts < maxAttempts) {
+    attempts++;
+    const entry = selectWeightedRandom(availableEntries);
+    if (!entry) {
+      break;
+    }
+    const quantity = rollQuantity2(entry.quantityRange);
+    const item = {
+      type: entry.item.type,
+      name: entry.item.name,
+      quantity,
+      value: entry.item.value,
+      rarity: entry.item.rarity,
+      description: entry.item.description,
+      tags: entry.item.tags
+    };
+    items.push(item);
+    if (entry.item.value) {
+      remainingBudget -= entry.item.value * quantity;
+    }
+  }
+  return items;
+}
+function filterLootEntries(lootTables, tags, excludeTags, partyLevel, config) {
+  const rarityLimits = config.rarityLevelLimits ?? DEFAULT_RARITY_LIMITS;
+  const filtered = [];
+  for (const table of lootTables) {
+    if (tags.length > 0 && table.tags && table.tags.length > 0) {
+      const hasMatchingTag = table.tags.some((tag) => tags.includes(tag));
+      if (!hasMatchingTag) {
+        continue;
+      }
+    }
+    for (const entry of table.entries) {
+      if (entry.item.rarity) {
+        const minLevel = rarityLimits[entry.item.rarity];
+        if (partyLevel < minLevel) {
+          continue;
+        }
+      }
+      if (entry.item.tags && excludeTags.length > 0) {
+        const hasExcludedTag = entry.item.tags.some((tag) => excludeTags.includes(tag));
+        if (hasExcludedTag) {
+          continue;
+        }
+      }
+      filtered.push(entry);
+    }
+  }
+  return filtered;
+}
+function selectWeightedRandom(entries) {
+  if (entries.length === 0) {
+    return null;
+  }
+  const totalWeight = entries.reduce((sum, entry) => sum + entry.weight, 0);
+  if (totalWeight <= 0) {
+    return null;
+  }
+  const roll = Math.random() * totalWeight;
+  let accumulator = 0;
+  for (const entry of entries) {
+    accumulator += entry.weight;
+    if (roll < accumulator) {
+      return entry;
+    }
+  }
+  return entries[entries.length - 1] ?? null;
+}
+function rollQuantity2(range) {
+  if (range.max <= range.min) {
+    return range.min;
+  }
+  return Math.floor(range.min + Math.random() * (range.max - range.min + 1));
+}
+function calculateItemValue(items) {
+  return items.reduce((total, item) => {
+    return total + (item.value ?? 0) * item.quantity;
+  }, 0);
+}
+var DEFAULT_RARITY_LIMITS, EXAMPLE_LOOT_TABLES;
+var init_item_generator = __esm({
+  "src/features/loot/item-generator.ts"() {
+    "use strict";
+    DEFAULT_RARITY_LIMITS = {
+      common: 1,
+      uncommon: 1,
+      rare: 5,
+      "very-rare": 11,
+      legendary: 17,
+      artifact: 20
+    };
+    EXAMPLE_LOOT_TABLES = [
+      {
+        id: "potions-common",
+        name: "Common Potions",
+        category: "consumables",
+        entries: [
+          {
+            weight: 10,
+            item: {
+              type: "consumable",
+              name: "Potion of Healing",
+              value: 50,
+              rarity: "common",
+              description: "Heals 2d4+2 HP",
+              tags: ["healing", "potion"]
+            },
+            quantityRange: { min: 1, max: 3 }
+          },
+          {
+            weight: 5,
+            item: {
+              type: "consumable",
+              name: "Potion of Climbing",
+              value: 50,
+              rarity: "common",
+              description: "Gain climbing speed for 1 hour",
+              tags: ["potion", "utility"]
+            },
+            quantityRange: { min: 1, max: 1 }
+          }
+        ],
+        tags: ["dungeon", "forest", "mountain"]
+      },
+      {
+        id: "scrolls-uncommon",
+        name: "Uncommon Scrolls",
+        category: "consumables",
+        entries: [
+          {
+            weight: 8,
+            item: {
+              type: "consumable",
+              name: "Spell Scroll (Level 1)",
+              value: 100,
+              rarity: "common",
+              description: "Contains a 1st-level spell",
+              tags: ["scroll", "magic"]
+            },
+            quantityRange: { min: 1, max: 2 }
+          },
+          {
+            weight: 4,
+            item: {
+              type: "consumable",
+              name: "Spell Scroll (Level 2)",
+              value: 200,
+              rarity: "uncommon",
+              description: "Contains a 2nd-level spell",
+              tags: ["scroll", "magic"]
+            },
+            quantityRange: { min: 1, max: 1 }
+          }
+        ],
+        tags: ["wizard", "library", "temple"]
+      },
+      {
+        id: "gems-trade",
+        name: "Precious Gems",
+        category: "trade-goods",
+        entries: [
+          {
+            weight: 20,
+            item: {
+              type: "trade-good",
+              name: "Small Gem",
+              value: 10,
+              description: "Small semi-precious stone",
+              tags: ["gem", "trade"]
+            },
+            quantityRange: { min: 1, max: 5 }
+          },
+          {
+            weight: 10,
+            item: {
+              type: "trade-good",
+              name: "Large Gem",
+              value: 50,
+              description: "Large precious stone",
+              tags: ["gem", "trade"]
+            },
+            quantityRange: { min: 1, max: 3 }
+          },
+          {
+            weight: 5,
+            item: {
+              type: "trade-good",
+              name: "Rare Gem",
+              value: 100,
+              description: "Rare and valuable gemstone",
+              tags: ["gem", "trade", "valuable"]
+            },
+            quantityRange: { min: 1, max: 2 }
+          }
+        ],
+        tags: ["dragon", "treasure", "noble"]
+      }
+    ];
+  }
+});
+
+// src/features/loot/loot-generator.ts
+var loot_generator_exports = {};
+__export(loot_generator_exports, {
+  formatGold: () => formatGold,
+  formatLootSummary: () => formatLootSummary,
+  generateLoot: () => generateLoot
+});
+function generateLoot(context, config = {}, rules = [], lootTables = EXAMPLE_LOOT_TABLES) {
+  const warnings = [];
+  const goldResult = calculateGold(context, rules, warnings);
+  const itemBudget = calculateItemBudget(context, config);
+  const items = generateItems(context, config, itemBudget, lootTables);
+  const itemValue = calculateItemValue(items);
+  const tradeGoodsValue = items.filter((item) => item.type === "trade-good").reduce((sum, item) => sum + (item.value ?? 0) * item.quantity, 0);
+  const magicItemValue = items.filter((item) => item.type === "magic-item").reduce((sum, item) => sum + (item.value ?? 0) * item.quantity, 0);
+  const bundle = {
+    gold: Math.round(goldResult.finalGold),
+    items: Object.freeze(items),
+    totalValue: Math.round(goldResult.finalGold + itemValue)
+  };
+  const breakdown = {
+    baseGold: goldResult.baseGold,
+    goldModifiers: goldResult.modifiers,
+    finalGold: goldResult.finalGold,
+    magicItemsGenerated: items.filter((item) => item.type === "magic-item").length,
+    tradeGoodsValue,
+    inherentLootValue: 0
+    // Will be implemented in Phase 5.4
+  };
+  return {
+    bundle,
+    breakdown,
+    warnings: warnings.length > 0 ? Object.freeze(warnings) : void 0
+  };
+}
+function calculateGold(context, rules, warnings) {
+  const { encounterXp, partyLevel, partySize, goldModifier = 1 } = context;
+  const baseMultiplier = getGoldBaseMultiplier2(partyLevel);
+  const baseGold = encounterXp * baseMultiplier * goldModifier;
+  let runningGold = baseGold;
+  let totalModifiers = 0;
+  for (const rule of rules) {
+    if (rule.scope !== "gold" || !rule.enabled) {
+      continue;
+    }
+    if (partySize === 0) {
+      warnings.push(`Gold rule "${rule.title}" ignored because no party members are present.`);
+      continue;
+    }
+    const delta = applyGoldRule(rule, runningGold, context, warnings);
+    totalModifiers += delta;
+    runningGold += delta;
+  }
+  return {
+    baseGold,
+    modifiers: totalModifiers,
+    finalGold: baseGold + totalModifiers
+  };
+}
+function getGoldBaseMultiplier2(averageLevel) {
+  if (averageLevel >= 17) {
+    return 3.2;
+  }
+  if (averageLevel >= 11) {
+    return 1.6;
+  }
+  if (averageLevel >= 5) {
+    return 0.415;
+  }
+  if (averageLevel > 0) {
+    return 0.475;
+  }
+  return 0;
+}
+function applyGoldRule(rule, runningGold, context, warnings) {
+  const { partyLevel, partySize } = context;
+  const totalLevels = partyLevel * partySize;
+  switch (rule.modifierType) {
+    case "flat": {
+      return rule.modifierValue;
+    }
+    case "flatPerAverageLevel": {
+      return rule.modifierValue * partyLevel;
+    }
+    case "flatPerTotalLevel": {
+      return rule.modifierValue * totalLevels;
+    }
+    case "percentTotal": {
+      return runningGold * (rule.modifierValue / 100);
+    }
+    case "percentNextLevel": {
+      const xpToNext = calculateXpToNextLevel2(partyLevel);
+      if (xpToNext === null) {
+        warnings.push(`Party level ${partyLevel} has no next-level XP threshold; "${rule.title}" ignored.`);
+        return 0;
+      }
+      const aggregateXpToNext = xpToNext * partySize;
+      return aggregateXpToNext * rule.modifierValue / 100;
+    }
+    default: {
+      warnings.push(`Unknown modifier type "${rule.modifierType}" in rule "${rule.title}".`);
+      return 0;
+    }
+  }
+}
+function calculateXpToNextLevel2(level) {
+  const sanitizedLevel = Math.max(1, Math.floor(level));
+  if (sanitizedLevel >= 20) {
+    return null;
+  }
+  const currentThreshold = DND5E_XP_THRESHOLDS[sanitizedLevel];
+  const nextThreshold = DND5E_XP_THRESHOLDS[sanitizedLevel + 1];
+  if (typeof currentThreshold !== "number" || typeof nextThreshold !== "number") {
+    return null;
+  }
+  return nextThreshold - currentThreshold;
+}
+function calculateItemBudget(context, config) {
+  if (!config.enableMagicItems) {
+    return 0;
+  }
+  const { encounterXp, itemBudgetModifier = 1 } = context;
+  return encounterXp * 0.1 * itemBudgetModifier;
+}
+function formatGold(gold) {
+  const rounded = Math.round(gold);
+  if (rounded === 0) {
+    return "0 gp";
+  }
+  return `${rounded.toLocaleString("en-US")} gp`;
+}
+function formatLootSummary(bundle) {
+  const parts = [];
+  if (bundle.gold > 0) {
+    parts.push(formatGold(bundle.gold));
+  }
+  if (bundle.items.length > 0) {
+    const itemCount = bundle.items.reduce((sum, item) => sum + item.quantity, 0);
+    parts.push(`${itemCount} item${itemCount !== 1 ? "s" : ""}`);
+  }
+  if (parts.length === 0) {
+    return "No loot";
+  }
+  return parts.join(", ");
+}
+var init_loot_generator = __esm({
+  "src/features/loot/loot-generator.ts"() {
+    "use strict";
+    init_session_store();
+    init_item_generator();
   }
 });
 
@@ -25909,14 +30268,13 @@ function createSessionRunnerExperience() {
         onRandomEncounter: async () => {
           if (isAborted() || !logic) return;
           try {
+            const state = logic.getState();
             const context = await buildEncounterContext(
               ctx.app,
               ctx.getFile(),
-              logic.getState(),
-              1,
-              // TODO: Get from party settings
-              4
-              // TODO: Get from party settings
+              state,
+              state.partyLevel ?? 1,
+              state.partySize ?? 4
             );
             if (encounterController) {
               await encounterController.generateRandomEncounter(context);
@@ -25947,19 +30305,53 @@ function createSessionRunnerExperience() {
           host: ctx.sidebarHost,
           onCombatStart: () => {
             if (audioController) {
+              void audioController.switchToCombatMusic();
               logger2.info("[session-runner] Combat started - switching to combat music");
             }
           },
           onCombatEnd: () => {
             if (audioController) {
+              void audioController.restorePreviousMusic();
               logger2.info("[session-runner] Combat ended - restoring music");
             }
           },
           onLootRequested: async (encounter) => {
-            logger2.info("[session-runner] Loot requested for encounter", {
-              totalXP: encounter.totalXP,
-              combatantCount: encounter.combatants.length
-            });
+            if (isAborted() || !logic) return;
+            try {
+              const state = logic.getState();
+              const currentCoord = state.currentTile ?? state.tokenRC ?? null;
+              const { generateLoot: generateLoot2 } = await Promise.resolve().then(() => (init_loot_generator(), loot_generator_exports));
+              let tags = [];
+              if (ctx.getFile() && currentCoord) {
+                try {
+                  const { loadTile: loadTile2 } = await Promise.resolve().then(() => (init_tile_repository(), tile_repository_exports));
+                  const tileData = await loadTile2(ctx.app, ctx.getFile(), currentCoord);
+                  if (tileData) {
+                    if (tileData.terrain) tags.push(tileData.terrain.toLowerCase());
+                    if (tileData.faction) tags.push(tileData.faction.toLowerCase());
+                  }
+                } catch (err) {
+                  logger2.warn("[session-runner] Failed to load tile for loot context", { err });
+                }
+              }
+              const lootResult = generateLoot2({
+                partyLevel: state.partyLevel ?? 1,
+                partySize: state.partySize ?? 4,
+                encounterXp: encounter.totalXP,
+                tags: tags.length > 0 ? tags : void 0
+              });
+              logger2.info("[session-runner] Loot generated", {
+                gold: lootResult.bundle.gold,
+                itemCount: lootResult.bundle.items.length,
+                totalValue: lootResult.bundle.totalValue,
+                warnings: lootResult.warnings
+              });
+              const { Notice: Notice16 } = await import("obsidian");
+              const itemSummary = lootResult.bundle.items.length > 0 ? `, ${lootResult.bundle.items.length} items` : "";
+              new Notice16(`Loot: ${lootResult.bundle.gold} gold${itemSummary} (${lootResult.bundle.totalValue} total value)`);
+            } catch (err) {
+              logger2.error("[session-runner] Failed to generate loot", err);
+            }
           }
         });
         logger2.info("[session-runner] Encounter controller initialized");
@@ -26171,8 +30563,8 @@ var init_hook_executor = __esm({
         this.handlers.set(handler.type, handler);
         logger2.info("[hook-executor] Registered hook handler", { type: handler.type });
       }
-      get(type) {
-        return this.handlers.get(type);
+      get(type2) {
+        return this.handlers.get(type2);
       }
       getAll() {
         return Array.from(this.handlers.values());
@@ -26473,7 +30865,7 @@ function isTriggeredPhenomenon(entry) {
 function generateUniqueId(prefix) {
   return `${prefix}-${Date.now()}-${idCounter++}`;
 }
-function createTriggeredEventEntry(event, timestamp, context) {
+function createTriggeredEventEntry(event, timestamp2, context) {
   return {
     id: generateUniqueId(`evt-${event.id}`),
     eventId: event.id,
@@ -26481,7 +30873,7 @@ function createTriggeredEventEntry(event, timestamp, context) {
     eventType: event.kind,
     title: event.title,
     category: event.category,
-    timestamp,
+    timestamp: timestamp2,
     triggeredAt: /* @__PURE__ */ new Date(),
     scope: context.scope,
     travelId: context.travelId,
@@ -26835,8 +31227,8 @@ var init_executing_hook_gateway = __esm({
           reason: context.reason
         });
         for (const event of events) {
-          const timestamp = getEventAnchorTimestamp(event) ?? event.date;
-          const entry = createTriggeredEventEntry(event, timestamp, {
+          const timestamp2 = getEventAnchorTimestamp(event) ?? event.date;
+          const entry = createTriggeredEventEntry(event, timestamp2, {
             scope: context.scope,
             travelId: context.travelId,
             reason: context.reason
@@ -26874,8 +31266,8 @@ var init_executing_hook_gateway = __esm({
 });
 
 // src/features/events/timeline-view.ts
-function formatTimestamp2(timestamp) {
-  return `${timestamp.year}-${timestamp.monthId}-${String(timestamp.day).padStart(2, "0")}`;
+function formatTimestamp2(timestamp2) {
+  return `${timestamp2.year}-${timestamp2.monthId}-${String(timestamp2.day).padStart(2, "0")}`;
 }
 function formatDate(date) {
   return date.toLocaleString();
@@ -26894,16 +31286,16 @@ async function openTimelineView(app, store) {
   });
   workspace.revealLeaf(leaf);
 }
-var import_obsidian45, VIEW_TYPE_TIMELINE, TimelineView;
+var import_obsidian47, VIEW_TYPE_TIMELINE, TimelineView;
 var init_timeline_view = __esm({
   "src/features/events/timeline-view.ts"() {
     "use strict";
-    import_obsidian45 = require("obsidian");
+    import_obsidian47 = require("obsidian");
     init_event_history_types();
     init_ui();
     init_plugin_logger();
     VIEW_TYPE_TIMELINE = "event-timeline-view";
-    TimelineView = class extends import_obsidian45.ItemView {
+    TimelineView = class extends import_obsidian47.ItemView {
       constructor(leaf, store) {
         super(leaf);
         // Current filter/sort state
@@ -27357,7 +31749,7 @@ async function openLibraryModal(app, kind, entityName) {
     const files = await listVaultPresets(app, kind);
     logger2.log(`[LibraryModal] Found ${files.length} files for ${kind}`);
     logger2.log(`[LibraryModal] Looking for entity: ${entityName}`);
-    const normalizeForMatch = (str) => str.toLowerCase().replace(/[-\s]/g, "");
+    const normalizeForMatch = (str2) => str2.toLowerCase().replace(/[-\s]/g, "");
     const normalizedSearchName = normalizeForMatch(entityName);
     for (const file of files) {
       const cache = app.metadataCache.getFileCache(file);
@@ -93217,7 +97609,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian47.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian49.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -93230,7 +97622,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian47.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian49.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -93248,7 +97640,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian47.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian49.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -93264,7 +97656,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian47.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian49.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -93290,19 +97682,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian47.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian49.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger2.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger2.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian47.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian49.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger2.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger2.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian47.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian49.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -93314,7 +97706,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian47.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian49.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -93331,7 +97723,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian47.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian49.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -93431,11 +97823,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, playlists, all`);
   }
 }
-var import_obsidian47, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, ensurePlaylistDir, PRESET_FILES;
+var import_obsidian49, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, ensurePlaylistDir, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian47 = require("obsidian");
+    import_obsidian49 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -93463,16 +97855,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian48.TFolder)) {
+  if (!(folder instanceof import_obsidian50.TFolder)) {
     logger2.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian48.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian50.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian48.TFolder) {
+      } else if (child instanceof import_obsidian50.TFolder) {
         collectFiles(child);
       }
     }
@@ -93509,7 +97901,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian48.TFile) {
+  if (existingFile instanceof import_obsidian50.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -93577,7 +97969,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian48.TFile) {
+  if (existingFile instanceof import_obsidian50.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -93599,11 +97991,11 @@ async function generateAllIndexes(app) {
   ]);
   logger2.log("[Index] All indexes generated successfully");
 }
-var import_obsidian48, SALTMARCHER_DIR;
+var import_obsidian50, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian48 = require("obsidian");
+    import_obsidian50 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -95298,7 +99690,7 @@ var init_event_bus = __esm({
        */
       clear() {
         this.subscriptions.clear();
-        this.topicIndex.forEach((set) => set.clear());
+        this.topicIndex.forEach((set2) => set2.clear());
         this.eventQueue = [];
         logger2.info("[EventBus] Cleared all subscriptions");
       }
@@ -95462,12 +99854,12 @@ function determineStoreType(isPersistent, isWritable) {
 function createPreview(value) {
   if (typeof value === "undefined") return void 0;
   try {
-    const json = JSON.stringify(value);
-    if (!json) return void 0;
-    if (json.length <= MAX_PREVIEW_LENGTH) {
-      return json;
+    const json2 = JSON.stringify(value);
+    if (!json2) return void 0;
+    if (json2.length <= MAX_PREVIEW_LENGTH) {
+      return json2;
     }
-    return `${json.slice(0, MAX_PREVIEW_LENGTH - 1)}\u2026`;
+    return `${json2.slice(0, MAX_PREVIEW_LENGTH - 1)}\u2026`;
   } catch (error) {
     return `[unserializable: ${error instanceof Error ? error.message : typeof value}]`;
   }
@@ -95583,14 +99975,14 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian49 = require("obsidian");
+var import_obsidian51 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
-var import_obsidian30 = require("obsidian");
+var import_obsidian32 = require("obsidian");
 
 // src/workmodes/cartographer/controller.ts
-var import_obsidian29 = require("obsidian");
+var import_obsidian31 = require("obsidian");
 init_options();
 init_map_list();
 
@@ -95633,14 +100025,14 @@ async function createMapLayer(app, host, mapFile, opts) {
 }
 
 // src/ui/maps/workflows/map-manager.ts
-var import_obsidian12 = require("obsidian");
+var import_obsidian13 = require("obsidian");
 init_plugin_logger();
 init_map_workflows();
 
 // src/ui/maps/components/confirm-delete-modal.ts
-var import_obsidian11 = require("obsidian");
+var import_obsidian12 = require("obsidian");
 init_plugin_logger();
-var ConfirmDeleteModal = class extends import_obsidian11.Modal {
+var ConfirmDeleteModal = class extends import_obsidian12.Modal {
   constructor(app, mapFile, onConfirm) {
     super(app);
     this.mapFile = mapFile;
@@ -95663,7 +100055,7 @@ var ConfirmDeleteModal = class extends import_obsidian11.Modal {
     const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
     const cancelBtn = btnRow.createEl("button", { text: "Cancel" });
     const confirmBtn = btnRow.createEl("button", { text: "Delete" });
-    (0, import_obsidian11.setIcon)(confirmBtn, "trash");
+    (0, import_obsidian12.setIcon)(confirmBtn, "trash");
     confirmBtn.classList.add("mod-warning");
     confirmBtn.disabled = true;
     input.addEventListener("input", () => {
@@ -95674,10 +100066,10 @@ var ConfirmDeleteModal = class extends import_obsidian11.Modal {
       confirmBtn.disabled = true;
       try {
         await this.onConfirm();
-        new import_obsidian11.Notice("Map deleted.");
+        new import_obsidian12.Notice("Map deleted.");
       } catch (e) {
         logger2.error(e);
-        new import_obsidian11.Notice("Deleting map failed.");
+        new import_obsidian12.Notice("Deleting map failed.");
       } finally {
         this.close();
       }
@@ -95734,7 +100126,7 @@ function createMapManager(app, options = {}) {
   const deleteCurrent = () => {
     const target = current;
     if (!target) {
-      new import_obsidian12.Notice(notices.missingSelection);
+      new import_obsidian13.Notice(notices.missingSelection);
       return;
     }
     new ConfirmDeleteModal(app, target, async () => {
@@ -95745,7 +100137,7 @@ function createMapManager(app, options = {}) {
         }
       } catch (error) {
         logger2.error(MAP_MANAGER_COPY.logs.deleteFailed, error);
-        new import_obsidian12.Notice(notices.deleteFailed);
+        new import_obsidian13.Notice(notices.deleteFailed);
       }
     }).open();
   };
@@ -95762,7 +100154,7 @@ function createMapManager(app, options = {}) {
 init_plugin_logger();
 
 // src/ui/maps/components/map-header.ts
-var import_obsidian13 = require("obsidian");
+var import_obsidian14 = require("obsidian");
 init_map_workflows();
 init_search_dropdown();
 
@@ -95819,7 +100211,7 @@ function createMapHeader(app, host, options) {
     titleRightSlot.style.display = "none";
   }
   const openBtn = row1.createEl("button", { text: labels.open, attr: { type: "button" } });
-  (0, import_obsidian13.setIcon)(openBtn, "folder-open");
+  (0, import_obsidian14.setIcon)(openBtn, "folder-open");
   applyMapButtonStyle(openBtn);
   openBtn.onclick = () => {
     if (destroyed) return;
@@ -95830,7 +100222,7 @@ function createMapHeader(app, host, options) {
     });
   };
   const createBtn = row1.createEl("button", { text: labels.create, attr: { type: "button" } });
-  (0, import_obsidian13.setIcon)(createBtn, "plus");
+  (0, import_obsidian14.setIcon)(createBtn, "plus");
   applyMapButtonStyle(createBtn);
   createBtn.onclick = () => {
     if (destroyed) return;
@@ -95842,12 +100234,12 @@ function createMapHeader(app, host, options) {
   };
   const deleteBtn = options.onDelete ? row1.createEl("button", { text: labels.delete, attr: { type: "button", "aria-label": labels.delete } }) : null;
   if (deleteBtn) {
-    (0, import_obsidian13.setIcon)(deleteBtn, "trash");
+    (0, import_obsidian14.setIcon)(deleteBtn, "trash");
     applyMapButtonStyle(deleteBtn);
     deleteBtn.onclick = () => {
       if (destroyed) return;
       if (!currentFile) {
-        new import_obsidian13.Notice(notices.missingFile);
+        new import_obsidian14.Notice(notices.missingFile);
         return;
       }
       void options.onDelete?.(currentFile);
@@ -95883,7 +100275,7 @@ function createMapHeader(app, host, options) {
     const file = currentFile;
     if (!file) {
       await options.onSave?.(mode, null);
-      new import_obsidian13.Notice(notices.missingFile);
+      new import_obsidian14.Notice(notices.missingFile);
       return;
     }
     try {
@@ -95892,10 +100284,10 @@ function createMapHeader(app, host, options) {
         if (mode === "save") await saveMap(app, file);
         else await saveMapAs(app, file);
       }
-      new import_obsidian13.Notice(notices.saveSuccess);
+      new import_obsidian14.Notice(notices.saveSuccess);
     } catch (err) {
       logger2.error("[map-header] save failed", err);
-      new import_obsidian13.Notice(notices.saveError);
+      new import_obsidian14.Notice(notices.saveError);
     }
   };
   function setFileLabel(file) {
@@ -96197,18 +100589,18 @@ var CartographerController = class {
           mode: await descriptor.load()
         }))
       ).then((entries) => {
-        const map = /* @__PURE__ */ new Map();
+        const map2 = /* @__PURE__ */ new Map();
         this.shellModes = entries.map(({ mode }) => {
-          map.set(mode.id, mode);
+          map2.set(mode.id, mode);
           return { id: mode.id, label: mode.label };
         });
         this.view?.setModes(this.shellModes, this.activeModeId);
         this.view?.setOverlay(null);
-        return map;
+        return map2;
       }).catch((error) => {
         logger2.error("[cartographer] failed to load modes", error);
         this.view?.setOverlay(MODE_PROVISION_OVERLAY_MESSAGE);
-        new import_obsidian29.Notice(MODE_PROVISION_NOTICE_MESSAGE);
+        new import_obsidian31.Notice(MODE_PROVISION_NOTICE_MESSAGE);
         this.modeLoad = void 0;
         throw error;
       });
@@ -96483,7 +100875,7 @@ function renderModeSelect(slot, initialModes, onChange) {
 // src/workmodes/cartographer/index.ts
 var VIEW_TYPE_CARTOGRAPHER = "cartographer-view";
 var VIEW_CARTOGRAPHER = VIEW_TYPE_CARTOGRAPHER;
-var CartographerView = class extends import_obsidian30.ItemView {
+var CartographerView = class extends import_obsidian32.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -96546,11 +100938,11 @@ init_view2();
 init_view();
 
 // src/workmodes/almanac/index.ts
-var import_obsidian34 = require("obsidian");
+var import_obsidian36 = require("obsidian");
 init_ui();
 var VIEW_TYPE_ALMANAC = "almanac-view";
 var VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
-var AlmanacView = class extends import_obsidian34.ItemView {
+var AlmanacView = class extends import_obsidian36.ItemView {
   constructor(leaf) {
     super(leaf);
   }
@@ -96603,10 +100995,10 @@ async function openAlmanac(app) {
 }
 
 // src/workmodes/session-runner/index.ts
-var import_obsidian42 = require("obsidian");
+var import_obsidian44 = require("obsidian");
 
 // src/workmodes/session-runner/controller.ts
-var import_obsidian41 = require("obsidian");
+var import_obsidian43 = require("obsidian");
 init_options();
 init_map_list();
 init_plugin_logger();
@@ -96696,7 +101088,7 @@ var SessionRunnerController = class {
     } catch (error) {
       logger2.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
-      new import_obsidian41.Notice(EXPERIENCE_NOTICE_MESSAGE);
+      new import_obsidian43.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
     if (this.mapManager) {
       await this.mapManager.setFile(initialFile);
@@ -96907,7 +101299,7 @@ function createSessionRunnerView(options) {
 // src/workmodes/session-runner/index.ts
 var VIEW_TYPE_SESSION_RUNNER = "session-runner-view";
 var VIEW_SESSION_RUNNER = VIEW_TYPE_SESSION_RUNNER;
-var SessionRunnerView = class extends import_obsidian42.ItemView {
+var SessionRunnerView = class extends import_obsidian44.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -96960,7 +101352,7 @@ async function openSessionRunner(app, file) {
 }
 
 // src/workmodes/library/locations/dungeon-view.ts
-var import_obsidian44 = require("obsidian");
+var import_obsidian46 = require("obsidian");
 
 // src/features/dungeons/rendering/grid-renderer.ts
 init_types3();
@@ -97560,9 +101952,9 @@ init_plugin_logger();
 init_frontmatter_utils();
 
 // src/features/dungeons/ui/token-creation-modal.ts
-var import_obsidian43 = require("obsidian");
+var import_obsidian45 = require("obsidian");
 init_types3();
-var TokenCreationModal = class extends import_obsidian43.Modal {
+var TokenCreationModal = class extends import_obsidian45.Modal {
   constructor(app, onSubmit, initialData) {
     super(app);
     this.onSubmit = onSubmit;
@@ -97583,7 +101975,7 @@ var TokenCreationModal = class extends import_obsidian43.Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.createEl("h3", { text: this.isEditMode ? "Edit Token" : "Create Token" });
-    new import_obsidian43.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
+    new import_obsidian45.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
       dropdown.addOption("player", "\u{1F9D9} Player").addOption("npc", "\u{1F642} NPC").addOption("monster", "\u{1F479} Monster").addOption("object", "\u{1F4E6} Object").setValue(this.tokenType).onChange((value) => {
         this.tokenType = value;
         this.tokenColor = getDefaultTokenColor(this.tokenType);
@@ -97591,13 +101983,13 @@ var TokenCreationModal = class extends import_obsidian43.Modal {
       });
     });
     let labelInput;
-    new import_obsidian43.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
+    new import_obsidian45.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
       text.setPlaceholder("Gandalf").setValue(this.tokenLabel).onChange((value) => {
         this.tokenLabel = value.trim();
       });
       labelInput = text.inputEl;
     });
-    new import_obsidian43.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
+    new import_obsidian45.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
       text.setPlaceholder(getDefaultTokenColor(this.tokenType)).setValue(this.tokenColor).onChange((value) => {
         this.tokenColor = value.trim();
         this.renderColorPreview();
@@ -97620,12 +102012,12 @@ var TokenCreationModal = class extends import_obsidian43.Modal {
     contentEl._colorPreview = colorPreview;
     this.tokenColor = getDefaultTokenColor(this.tokenType);
     this.renderColorPreview();
-    new import_obsidian43.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
+    new import_obsidian45.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
       slider.setLimits(0.5, 2, 0.1).setValue(this.tokenSize).setDynamicTooltip().onChange((value) => {
         this.tokenSize = value;
       });
     });
-    new import_obsidian43.Setting(contentEl).addButton((button) => {
+    new import_obsidian45.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => {
         this.close();
       });
@@ -97663,7 +102055,7 @@ var TokenCreationModal = class extends import_obsidian43.Modal {
 
 // src/workmodes/library/locations/dungeon-view.ts
 var VIEW_TYPE_DUNGEON = "salt-dungeon-view";
-var DungeonView = class extends import_obsidian44.ItemView {
+var DungeonView = class extends import_obsidian46.ItemView {
   // Currently selected token
   constructor(leaf) {
     super(leaf);
@@ -97939,8 +102331,8 @@ ${feature.description}`;
   /**
    * Get icon for feature type
    */
-  getFeatureIcon(type) {
-    switch (type) {
+  getFeatureIcon(type2) {
+    switch (type2) {
       case "secret":
         return "\u{1F50D}";
       case "trap":
@@ -102139,7 +106531,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian46 = require("obsidian");
+var import_obsidian48 = require("obsidian");
 init_plugin_logger();
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
@@ -102149,7 +106541,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian46.Notice(userMessage);
+  new import_obsidian48.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -102204,8 +106596,8 @@ function createTerrainBootstrap(app, config = {}) {
     let watchError;
     try {
       await deps.ensureTerrainFile(app);
-      const map = await deps.loadTerrains(app);
-      deps.setTerrains(map);
+      const map2 = await deps.loadTerrains(app);
+      deps.setTerrains(map2);
     } catch (error) {
       primeError = error;
       deps.logger.error?.("Failed to prime terrain palette from vault", { error });
@@ -102460,7 +106852,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian49.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian51.Plugin {
   async onload() {
     await logger2.init(this.app);
     logger2.log("Plugin loading...");
@@ -102716,3 +107108,8 @@ var SaltMarcherPlugin = class extends import_obsidian49.Plugin {
     document.getElementById("hex-css")?.remove();
   }
 };
+/*! Bundled license information:
+
+js-yaml/dist/js-yaml.mjs:
+  (*! js-yaml 4.1.0 https://github.com/nodeca/js-yaml @license MIT *)
+*/

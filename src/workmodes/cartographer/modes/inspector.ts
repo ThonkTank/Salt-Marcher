@@ -28,6 +28,7 @@ import { readFrontmatter } from "../../../features/data-manager/browse/frontmatt
 import type { LocationData } from "../../library/locations/types";
 import { isBuildingLocation } from "../../library/locations/types";
 import { BUILDING_TEMPLATES } from "../../../features/locations/building-production";
+import { BuildingManagementModal } from "../building-management-modal";
 
 type InspectorUI = {
     panel: HTMLElement | null;
@@ -294,6 +295,26 @@ export function createInspectorMode(): CartographerMode {
                                                 cls: "sm-jobs-header"
                                             }).style.fontSize = "0.9em";
                                         }
+
+                                        // Manage Building button (Phase 9.2B)
+                                        const manageButton = buildingDiv.createEl("button", {
+                                            text: "Manage Building",
+                                            cls: "sm-manage-building-btn"
+                                        });
+                                        manageButton.style.marginTop = "8px";
+                                        manageButton.style.width = "100%";
+                                        manageButton.onclick = () => {
+                                            const modal = new BuildingManagementModal(lifecycle.ctx!.app, {
+                                                locationFile: locationFile as TFile,
+                                                locationData,
+                                                onSave: (updatedData) => {
+                                                    // Refresh the inspector panel with updated data
+                                                    logger.info('[cartographer:inspector] Building updated, refreshing display');
+                                                    // The inspection will be re-triggered by the next hex selection
+                                                }
+                                            });
+                                            modal.open();
+                                        };
                                     }
                                 }
                             } catch (error) {
