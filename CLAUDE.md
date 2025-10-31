@@ -315,7 +315,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 10.1 ✅ Complete | Tests: 1019/1020 (99.9%) ⚠️ | **Next:** Phase 10.2 - Weather Calendar Integration
+**Status:** Phase 10.2 ✅ Complete | Tests: 1039/1039 (100%) ✅ | **Next:** Phase 10.3 - Weather Encounter & Audio Integration
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -441,11 +441,21 @@ Ziele:
   - Fixed test issues: svelte/store mock, temperature ranges, probabilistic test reliability ✅
   - 19 weather tests passing (100%)
 
+- **Phase 10.2:** Weather Calendar Integration ✅ - See [docs/weather-system.md#phase-102](docs/weather-system.md#phase-102)
+  - WeatherSimulationHook interface for decoupled calendar integration ✅
+  - Automatic weather simulation on day advancement ✅
+  - Day-of-year calculation for seasonal transitions ✅
+  - ISO date string formatting (YYYY-MM-DD) ✅
+  - Non-blocking error handling (weather failures don't break time) ✅
+  - 32 new tests for weather-calendar integration (100% pass rate) ✅
+  - Hex/region integration: Scans all map files for hexes with tiles ✅
+  - Climate loading: Extracts climate tags from region metadata ✅
+  - Climate mapping: Maps climate tags to climate templates (Arctic/Desert/Tropical/Mountain/Coastal/Temperate) ✅
+  - Coordinate conversion: odd-r → cube coordinates for weather storage ✅
+  - Fallback: Generates placeholder 3x3 grid when no maps exist ✅
+  - Note: Weather event persistence to calendar inbox intentionally skipped (weather is transient state)
+
 **Geplant:**
-- **Phase 10.2:** Weather Calendar Integration
-  - Daily weather update hook
-  - Seasonal adjustment logic
-  - Weather event persistence (optional)
 - **Phase 10.3:** Weather Encounter & Audio Integration
   - Update encounter-context-builder with weather extraction
   - Update audio context-extractor with weather
@@ -497,41 +507,56 @@ None currently! All blocking issues resolved. ✅
    - Workers assignable regardless of building job compatibility
    - Need: Validate worker.job ∈ buildingTemplate.allowedJobs
    - Location: worker-assignment-modal.ts validation logic
-8. **[MEDIUM] Phase 10.2 Weather Integration Incomplete** - Placeholder hex generation only
-   - weather-simulation-hook-factory.ts generates weather for 3x3 grid only
-   - TODOs: Get active hexes from map/session runner, load region climate from hex metadata
-   - Need: Integration with actual map hexes and region climates
-   - Location: src/workmodes/almanac/data/weather-simulation-hook-factory.ts:51-53
 
 **LOW (Nice-to-have, Verbesserungen):**
-9. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
-10. **[LOW] Header Policy Cleanup** - Remove deprecated AGENTS.md check from header-policy.test.ts
-11. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
-12. **[LOW] 22 Feature TODOs** - Intentional placeholders for future work (weather extraction, time-of-day, UI improvements)
+8. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
+9. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
+10. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
+   - Currently assumes creature files are in standard location
+   - Need: Get actual file path from vault lookup or repository
+   - Location: src/workmodes/encounter/presenter.ts:442
+11. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
+   - No escape key to close, no tab navigation between sections
+   - Drag-and-drop only, no keyboard alternative for worker assignment
+   - Location: src/workmodes/cartographer/building-management-modal.ts
+12. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
+   - Worker loading shows no spinner/placeholder while loading factions
+   - Save operation has no loading indicator during vault writes
+   - Location: building-management-modal.ts:86-133 (loadAvailableWorkers), :618-653 (saveChanges)
+13. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
+   - After saving building changes, inspector panel shows stale data
+   - onSave callback logs but doesn't refresh display
+   - Location: inspector.ts:310-314
+14. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
+   - Progress bars show data but no hover tooltips or click interactions
+   - No way to see historical trends or detailed breakdowns
+   - Location: src/features/locations/production-visualization.ts
+15. **[LOW] 22 Feature TODOs** - Intentional placeholders for future work (weather extraction, time-of-day, UI improvements)
 
 **Test-Status:**
-- Unit tests: 1019/1020 passing (99.9%) ⚠️
+- Unit tests: 1039/1039 passing (100%) ✅
   - Audio tests: 57/57 ✅
   - Playlist tests: 17/17 ✅
   - Encounter tests: 26/26 ✅
-  - Faction tests: 389/389 ✅ (Phase 8.6/8.7 flaky tests fixed with larger sample sizes)
+  - Faction tests: 391/391 ✅ (fixed 2 flaky probabilistic tests)
   - Location tests: 118/118 ✅
-  - Building/Production tests: 22/22 ✅ (Phase 9.2D)
-  - Weather tests: 19/19 ✅ (Phase 10.1 - all blocking issues resolved)
-  - 1 skipped: header-policy AGENTS.md check (deprecated, marked for cleanup)
+  - Building/Production tests: 22/22 ✅
+  - Weather tests: 20/20 ✅ (Phase 10.2 complete)
+  - Weather calendar integration: 32/32 ✅
+  - Header policy: 1/1 ✅ (AGENTS.md check removed)
 - Integration tests: 6 require live Obsidian (expected, documented limitation)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 10.2** - Weather Calendar Integration (no blockers, ready to start) ✅
-   - Daily weather update hook
-   - Seasonal adjustment logic
-   - Weather event persistence (optional)
-2. **[HIGH] Fix Broken User Features** - Core functionality unusable
+1. **[HIGH] Fix Broken User Features** - Core functionality unusable
    - Encounter edit workflow (investigate why editor requires random encounter trigger)
    - Almanac frontend implementation (month/week/timeline views, event editors)
    - Library tabs (Location/Playlist/EncounterTable specs + serializers)
-3. **[MEDIUM] Complete Partial Features** - Working but incomplete
+2. **[MEDIUM] Complete Partial Features** - Working but incomplete
    - POI placement UI in Cartographer (location system ready, needs UI mode)
    - Cartographer Brush debugging (investigate error messages)
    - Building repair resource costs (deduct from faction resources)
    - Worker assignment validation (enforce allowed jobs)
+3. **[PLANNED] Phase 10.3: Weather Encounter & Audio Integration** - Next planned phase
+   - Update encounter-context-builder with weather extraction
+   - Update audio context-extractor with weather
+   - Weather tag mapping to tag vocabulary

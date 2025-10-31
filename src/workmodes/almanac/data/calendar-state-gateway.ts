@@ -575,7 +575,7 @@ abstract class BaseCalendarStateGateway implements CalendarStateGateway {
     if (this.factionSimulationHook && unit === "day" && amount > 0) {
       try {
         // Convert timestamp to YYYY-MM-DD format
-        const currentDate = this.timestampToDateString(result.timestamp);
+        const currentDate = await this.timestampToDateString(result.timestamp);
         const factionEvents = await this.factionSimulationHook.runSimulation(amount, currentDate);
 
         // TODO: Add faction events to calendar inbox
@@ -597,8 +597,8 @@ abstract class BaseCalendarStateGateway implements CalendarStateGateway {
     if (this.weatherSimulationHook && unit === "day") {
       try {
         // Calculate day of year from timestamp
-        const dayOfYear = this.timestampToDayOfYear(result.timestamp);
-        const currentDate = this.timestampToDateString(result.timestamp);
+        const dayOfYear = await this.timestampToDayOfYear(result.timestamp);
+        const currentDate = await this.timestampToDateString(result.timestamp);
         await this.weatherSimulationHook.runSimulation(dayOfYear, currentDate);
         // Weather updates don't generate calendar events (transient state only)
       } catch (error) {
@@ -619,9 +619,14 @@ abstract class BaseCalendarStateGateway implements CalendarStateGateway {
    * Convert calendar timestamp to YYYY-MM-DD date string
    * (Phase 8.9: Helper for faction simulation)
    */
-  private timestampToDateString(timestamp: CalendarTimestamp): string {
+  private async timestampToDateString(timestamp: CalendarTimestamp): Promise<string> {
     const year = String(timestamp.year).padStart(4, "0");
-    const month = String(timestamp.month).padStart(2, "0");
+
+    // Get calendar to resolve monthId to month number
+    const calendar = await this.calendarRepo.getCalendar(timestamp.calendarId);
+    const monthIndex = calendar ? calendar.months.findIndex(m => m.id === timestamp.monthId) : -1;
+    const month = monthIndex >= 0 ? String(monthIndex + 1).padStart(2, "0") : "01";
+
     const day = String(timestamp.day).padStart(2, "0");
     return `${year}-${month}-${day}`;
   }
@@ -630,14 +635,30 @@ abstract class BaseCalendarStateGateway implements CalendarStateGateway {
    * Convert calendar timestamp to day of year (1-365)
    * (Phase 10.2: Helper for weather simulation)
    *
-   * Simplified calculation assuming 12 months of 30 days each (360-day year)
-   * For more complex calendars, this would need calendar-specific logic
+   * Calculates based on actual calendar month lengths.
+   * For calendars with more than 365 days, wraps values to 1-365 range.
    */
-  private timestampToDayOfYear(timestamp: CalendarTimestamp): number {
-    // Simple approximation: month * 30 + day
-    // This works for standard calendars and gives reasonable seasonal variation
-    const dayOfYear = (timestamp.month - 1) * 30 + timestamp.day;
+  private async timestampToDayOfYear(timestamp: CalendarTimestamp): Promise<number> {
+    // Get calendar to calculate day of year based on actual month lengths
+    const calendar = await this.calendarRepo.getCalendar(timestamp.calendarId);
+    if (!calendar) {
+      // Fallback: simple approximation
+      return Math.max(1, Math.min(365, timestamp.day));
+    }
+
+    // Sum days from all previous months
+    const monthIndex = calendar.months.findIndex(m => m.id === timestamp.monthId);
+    if (monthIndex < 0) {
+      return Math.max(1, Math.min(365, timestamp.day));
+    }
+
+    let dayOfYear = timestamp.day;
+    for (let i = 0; i < monthIndex; i++) {
+      dayOfYear += calendar.months[i].length;
+    }
+
     // Clamp to 1-365 range to match weather generator expectations
+    // (for calendars with >365 days, this provides reasonable seasonal mapping)
     return Math.max(1, Math.min(365, dayOfYear));
   }
 
@@ -946,8 +967,10 @@ export class InMemoryStateGateway extends BaseCalendarStateGateway {
     eventRepo: EventRepository,
     phenomenonRepo: PhenomenonRepository,
     hookDispatcher?: HookDispatchGateway,
+    factionSimulationHook?: FactionSimulationHook,
+    weatherSimulationHook?: WeatherSimulationHook,
   ) {
-    super(calendarRepo, eventRepo, phenomenonRepo, hookDispatcher);
+    super(calendarRepo, eventRepo, phenomenonRepo, hookDispatcher, factionSimulationHook, weatherSimulationHook);
   }
 
   protected get persistenceDebounceMs(): number {
@@ -978,8 +1001,9 @@ export class VaultCalendarStateGateway extends BaseCalendarStateGateway {
     vault: VaultLike,
     hookDispatcher?: HookDispatchGateway,
     factionSimulationHook?: FactionSimulationHook,
+    weatherSimulationHook?: WeatherSimulationHook,
   ) {
-    super(calendarRepo, eventRepo, phenomenonRepo, hookDispatcher, factionSimulationHook);
+    super(calendarRepo, eventRepo, phenomenonRepo, hookDispatcher, factionSimulationHook, weatherSimulationHook);
     this.jsonStore = new JsonStore<GatewayStoreData>(vault, {
       path: "SaltMarcher/Almanac/state.json",
       currentVersion: "1.0.0",

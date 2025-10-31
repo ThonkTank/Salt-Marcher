@@ -159,11 +159,12 @@ describe("Phase 8.6: NPC Personalities", () => {
                 ambition: 40,
             };
 
-            // Should have moderate risk (increased sample size for reliability)
-            const results = Array.from({ length: 30 }, () => isLikelyToBetray(personality));
+            // Should have ~50% risk with trust=15 (increased sample size for reliability)
+            const results = Array.from({ length: 100 }, () => isLikelyToBetray(personality));
             const betrayals = results.filter((b) => b).length;
 
-            expect(betrayals).toBeGreaterThan(8); // >25% should betray with trust=15
+            expect(betrayals).toBeGreaterThan(35); // >35% should betray with trust=15 (expected ~50%, allow margin)
+            expect(betrayals).toBeLessThan(65); // <65% (sanity check)
         });
 
         it("high betrayal risk with disloyal secret", () => {

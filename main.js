@@ -18707,6 +18707,263 @@ var init_view = __esm({
   }
 });
 
+// src/features/locations/production-visualization.ts
+function createProgressBar(percentage, options = {}) {
+  const {
+    label,
+    color = "var(--interactive-accent)",
+    height = "20px",
+    showPercentage = true
+  } = options;
+  const container = document.createElement("div");
+  container.style.marginBottom = "0.5em";
+  if (label) {
+    const labelEl = document.createElement("div");
+    labelEl.style.fontSize = "0.85em";
+    labelEl.style.marginBottom = "0.25em";
+    labelEl.style.display = "flex";
+    labelEl.style.justifyContent = "space-between";
+    labelEl.style.alignItems = "center";
+    const labelText = document.createElement("span");
+    labelText.textContent = label;
+    labelEl.appendChild(labelText);
+    if (showPercentage) {
+      const percentText = document.createElement("span");
+      percentText.textContent = `${percentage.toFixed(0)}%`;
+      percentText.style.fontWeight = "600";
+      labelEl.appendChild(percentText);
+    }
+    container.appendChild(labelEl);
+  }
+  const track = document.createElement("div");
+  track.style.width = "100%";
+  track.style.height = height;
+  track.style.background = "var(--background-modifier-border)";
+  track.style.borderRadius = "4px";
+  track.style.overflow = "hidden";
+  track.style.position = "relative";
+  container.appendChild(track);
+  const fill = document.createElement("div");
+  fill.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+  fill.style.height = "100%";
+  fill.style.background = color;
+  fill.style.transition = "width 0.3s ease";
+  track.appendChild(fill);
+  return container;
+}
+function getConditionColor(condition) {
+  if (condition >= 75) return "var(--color-green)";
+  if (condition >= 50) return "var(--color-yellow)";
+  if (condition >= 25) return "var(--color-orange)";
+  return "var(--color-red)";
+}
+function createProductionRateVisualization(production) {
+  const container = document.createElement("div");
+  container.className = "sm-production-rate-viz";
+  container.style.padding = "0.75em";
+  container.style.background = "var(--background-secondary)";
+  container.style.borderRadius = "4px";
+  container.style.marginBottom = "1em";
+  const header = document.createElement("h4");
+  header.textContent = "Production Rate";
+  header.style.fontSize = "0.95em";
+  header.style.marginBottom = "0.75em";
+  header.style.marginTop = "0";
+  container.appendChild(header);
+  const productionRate = calculateProductionRate(
+    production.buildingType,
+    production.condition,
+    production.maintenanceOverdue
+  );
+  const productionPercentage = productionRate * 100;
+  const conditionBar = createProgressBar(production.condition, {
+    label: "Building Condition",
+    color: getConditionColor(production.condition),
+    showPercentage: true
+  });
+  container.appendChild(conditionBar);
+  const rateColor = productionPercentage >= 75 ? "var(--color-green)" : productionPercentage >= 50 ? "var(--color-yellow)" : productionPercentage >= 25 ? "var(--color-orange)" : "var(--color-red)";
+  const rateBar = createProgressBar(productionPercentage, {
+    label: "Effective Production Rate",
+    color: rateColor,
+    showPercentage: true
+  });
+  container.appendChild(rateBar);
+  if (production.maintenanceOverdue > 0) {
+    const warningDiv = document.createElement("div");
+    warningDiv.style.marginTop = "0.5em";
+    warningDiv.style.padding = "0.5em";
+    warningDiv.style.background = "var(--background-modifier-error)";
+    warningDiv.style.borderRadius = "4px";
+    warningDiv.style.fontSize = "0.85em";
+    warningDiv.style.display = "flex";
+    warningDiv.style.alignItems = "center";
+    warningDiv.style.gap = "0.5em";
+    const icon = document.createElement("span");
+    icon.textContent = "\u26A0\uFE0F";
+    warningDiv.appendChild(icon);
+    const text = document.createElement("span");
+    text.textContent = `Maintenance ${production.maintenanceOverdue} days overdue (-${((1 - productionRate) * 100).toFixed(0)}% production)`;
+    warningDiv.appendChild(text);
+    container.appendChild(warningDiv);
+  }
+  return container;
+}
+function createWorkerEfficiencyVisualization(production) {
+  const container = document.createElement("div");
+  container.className = "sm-worker-efficiency-viz";
+  container.style.padding = "0.75em";
+  container.style.background = "var(--background-secondary)";
+  container.style.borderRadius = "4px";
+  container.style.marginBottom = "1em";
+  const header = document.createElement("h4");
+  header.textContent = "Worker Efficiency";
+  header.style.fontSize = "0.95em";
+  header.style.marginBottom = "0.75em";
+  header.style.marginTop = "0";
+  container.appendChild(header);
+  const template = BUILDING_TEMPLATES[production.buildingType];
+  if (!template) {
+    const errorDiv = document.createElement("div");
+    errorDiv.textContent = "Unknown building type";
+    container.appendChild(errorDiv);
+    return container;
+  }
+  const capacityPercentage = production.currentWorkers / template.maxWorkers * 100;
+  const capacityColor = capacityPercentage >= 100 ? "var(--color-green)" : capacityPercentage >= 75 ? "var(--color-yellow)" : capacityPercentage >= 50 ? "var(--color-orange)" : "var(--color-red)";
+  const capacityBar = createProgressBar(capacityPercentage, {
+    label: `Workers (${production.currentWorkers}/${template.maxWorkers})`,
+    color: capacityColor,
+    showPercentage: true
+  });
+  container.appendChild(capacityBar);
+  const breakdownDiv = document.createElement("div");
+  breakdownDiv.style.marginTop = "0.75em";
+  breakdownDiv.style.fontSize = "0.85em";
+  breakdownDiv.style.display = "grid";
+  breakdownDiv.style.gridTemplateColumns = "1fr 1fr";
+  breakdownDiv.style.gap = "0.5em";
+  container.appendChild(breakdownDiv);
+  const workerInfo = document.createElement("div");
+  workerInfo.style.padding = "0.5em";
+  workerInfo.style.background = "var(--background-primary)";
+  workerInfo.style.borderRadius = "4px";
+  const workerLabel = document.createElement("div");
+  workerLabel.textContent = "Active Workers";
+  workerLabel.style.color = "var(--text-muted)";
+  workerInfo.appendChild(workerLabel);
+  const workerCount = document.createElement("div");
+  workerCount.textContent = production.currentWorkers.toString();
+  workerCount.style.fontWeight = "600";
+  workerInfo.appendChild(workerCount);
+  breakdownDiv.appendChild(workerInfo);
+  const jobsInfo = document.createElement("div");
+  jobsInfo.style.padding = "0.5em";
+  jobsInfo.style.background = "var(--background-primary)";
+  jobsInfo.style.borderRadius = "4px";
+  const jobsLabel = document.createElement("div");
+  jobsLabel.textContent = "Active Jobs";
+  jobsLabel.style.color = "var(--text-muted)";
+  jobsInfo.appendChild(jobsLabel);
+  const jobsCount = document.createElement("div");
+  jobsCount.textContent = (production.activeJobs?.length || 0).toString();
+  jobsCount.style.fontWeight = "600";
+  jobsInfo.appendChild(jobsCount);
+  breakdownDiv.appendChild(jobsInfo);
+  if (capacityPercentage < 50) {
+    const warningDiv = document.createElement("div");
+    warningDiv.style.marginTop = "0.5em";
+    warningDiv.style.padding = "0.5em";
+    warningDiv.style.background = "var(--background-modifier-error)";
+    warningDiv.style.borderRadius = "4px";
+    warningDiv.style.fontSize = "0.85em";
+    warningDiv.style.display = "flex";
+    warningDiv.style.alignItems = "center";
+    warningDiv.style.gap = "0.5em";
+    const icon = document.createElement("span");
+    icon.textContent = "\u26A0\uFE0F";
+    warningDiv.appendChild(icon);
+    const text = document.createElement("span");
+    text.textContent = `Low staffing - Building operating at ${capacityPercentage.toFixed(0)}% capacity`;
+    warningDiv.appendChild(text);
+    container.appendChild(warningDiv);
+  }
+  return container;
+}
+function createResourceVisualization(production) {
+  const container = document.createElement("div");
+  container.className = "sm-resource-viz";
+  container.style.padding = "0.75em";
+  container.style.background = "var(--background-secondary)";
+  container.style.borderRadius = "4px";
+  container.style.marginBottom = "1em";
+  const header = document.createElement("h4");
+  header.textContent = "Resource Flow";
+  header.style.fontSize = "0.95em";
+  header.style.marginBottom = "0.75em";
+  header.style.marginTop = "0";
+  container.appendChild(header);
+  if (!production.periodProduction || Object.keys(production.periodProduction).length === 0) {
+    const noDataDiv = document.createElement("div");
+    noDataDiv.style.textAlign = "center";
+    noDataDiv.style.color = "var(--text-muted)";
+    noDataDiv.style.padding = "1em 0";
+    noDataDiv.textContent = "No production data for this period";
+    container.appendChild(noDataDiv);
+    return container;
+  }
+  const template = BUILDING_TEMPLATES[production.buildingType];
+  if (!template) {
+    const errorDiv = document.createElement("div");
+    errorDiv.textContent = "Unknown building type";
+    container.appendChild(errorDiv);
+    return container;
+  }
+  const productionRate = calculateProductionRate(
+    production.buildingType,
+    production.condition,
+    production.maintenanceOverdue
+  );
+  const resourcesDiv = document.createElement("div");
+  resourcesDiv.style.display = "flex";
+  resourcesDiv.style.flexDirection = "column";
+  resourcesDiv.style.gap = "0.5em";
+  container.appendChild(resourcesDiv);
+  Object.entries(production.periodProduction).forEach(([resource, amount]) => {
+    if (!amount || amount <= 0) return;
+    const estimatedMax = productionRate > 0 ? amount / productionRate : amount;
+    const percentage = amount / estimatedMax * 100;
+    const resourceBar = createProgressBar(percentage, {
+      label: `${resource}: ${amount}`,
+      color: "var(--interactive-accent)",
+      showPercentage: false
+    });
+    resourcesDiv.appendChild(resourceBar);
+  });
+  const efficiencyNote = document.createElement("div");
+  efficiencyNote.style.marginTop = "0.75em";
+  efficiencyNote.style.fontSize = "0.85em";
+  efficiencyNote.style.color = "var(--text-muted)";
+  efficiencyNote.style.fontStyle = "italic";
+  efficiencyNote.textContent = `Currently operating at ${(productionRate * 100).toFixed(0)}% efficiency`;
+  container.appendChild(efficiencyNote);
+  return container;
+}
+function createProductionDashboard(production) {
+  const dashboard = document.createElement("div");
+  dashboard.className = "sm-production-dashboard";
+  dashboard.appendChild(createProductionRateVisualization(production));
+  dashboard.appendChild(createWorkerEfficiencyVisualization(production));
+  dashboard.appendChild(createResourceVisualization(production));
+  return dashboard;
+}
+var init_production_visualization = __esm({
+  "src/features/locations/production-visualization.ts"() {
+    "use strict";
+    init_building_production();
+  }
+});
+
 // node_modules/js-yaml/dist/js-yaml.mjs
 function isNothing(subject) {
   return typeof subject === "undefined" || subject === null;
@@ -21302,6 +21559,7 @@ var init_building_management_modal = __esm({
     "use strict";
     import_obsidian30 = require("obsidian");
     init_building_production();
+    init_production_visualization();
     init_plugin_logger();
     init_js_yaml();
     BuildingManagementModal = class extends import_obsidian30.Modal {
@@ -21665,20 +21923,28 @@ var init_building_management_modal = __esm({
       renderProductionTracking(container, template) {
         const section = container.createDiv({ cls: "sm-production-section" });
         section.style.marginBottom = "1.5em";
-        const header = section.createEl("h3", { text: "Production Tracking" });
+        const header = section.createEl("h3", { text: "Production Tracking & Analytics" });
         header.style.marginBottom = "0.5em";
+        const dashboard = createProductionDashboard(this.production);
+        section.appendChild(dashboard);
         if (this.production.activeJobs && this.production.activeJobs.length > 0) {
-          const jobsHeader = section.createEl("h4", { text: "Active Jobs" });
+          const jobsSection = section.createDiv({ cls: "sm-active-jobs-section" });
+          jobsSection.style.marginTop = "1.5em";
+          jobsSection.style.padding = "0.75em";
+          jobsSection.style.background = "var(--background-secondary)";
+          jobsSection.style.borderRadius = "4px";
+          const jobsHeader = jobsSection.createEl("h4", { text: "Active Jobs" });
           jobsHeader.style.fontSize = "0.95em";
-          jobsHeader.style.marginTop = "0.5em";
+          jobsHeader.style.marginTop = "0";
           jobsHeader.style.marginBottom = "0.5em";
-          const jobsList = section.createDiv({ cls: "sm-active-jobs-list" });
+          const jobsList = jobsSection.createDiv({ cls: "sm-active-jobs-list" });
           this.production.activeJobs.forEach((job, index) => {
             const jobDiv = jobsList.createDiv({ cls: "sm-job-item" });
             jobDiv.style.padding = "0.5em";
             jobDiv.style.marginBottom = "0.5em";
-            jobDiv.style.background = "var(--background-secondary)";
+            jobDiv.style.background = "var(--background-primary)";
             jobDiv.style.borderRadius = "4px";
+            jobDiv.style.border = "1px solid var(--background-modifier-border)";
             jobDiv.createDiv({ text: `${job.workerName} - ${job.jobType}` }).style.fontWeight = "600";
             jobDiv.createDiv({ text: `Progress: ${job.progress}%` });
             if (job.startedAt) {
@@ -21686,32 +21952,12 @@ var init_building_management_modal = __esm({
             }
             const removeBtn = jobDiv.createEl("button", { text: "Remove" });
             removeBtn.style.marginTop = "0.5em";
+            removeBtn.style.fontSize = "0.8em";
             removeBtn.onclick = () => {
               this.production.activeJobs.splice(index, 1);
               this.unsavedChanges = true;
               this.refresh();
             };
-          });
-        } else {
-          const noJobsDiv = section.createDiv({ cls: "sm-no-jobs" });
-          noJobsDiv.style.padding = "1em";
-          noJobsDiv.style.background = "var(--background-secondary)";
-          noJobsDiv.style.borderRadius = "4px";
-          noJobsDiv.style.textAlign = "center";
-          noJobsDiv.style.color = "var(--text-muted)";
-          noJobsDiv.setText("No active jobs");
-        }
-        if (this.production.periodProduction && Object.keys(this.production.periodProduction).length > 0) {
-          const prodHeader = section.createEl("h4", { text: "Period Production" });
-          prodHeader.style.fontSize = "0.95em";
-          prodHeader.style.marginTop = "1em";
-          prodHeader.style.marginBottom = "0.5em";
-          const prodDiv = section.createDiv({ cls: "sm-period-production" });
-          prodDiv.style.padding = "0.5em";
-          prodDiv.style.background = "var(--background-secondary)";
-          prodDiv.style.borderRadius = "4px";
-          Object.entries(this.production.periodProduction).filter(([, value]) => value && value > 0).forEach(([resource, amount]) => {
-            prodDiv.createDiv({ text: `${resource}: ${amount}` });
           });
         }
       }
