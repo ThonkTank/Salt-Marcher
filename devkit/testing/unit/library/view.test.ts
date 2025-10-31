@@ -159,6 +159,7 @@ describe("LibraryView copy", () => {
             LIBRARY_COPY.modes.factions,
             LIBRARY_COPY.modes.calendars,
             LIBRARY_COPY.modes.locations,
+            LIBRARY_COPY.modes.playlists,
         ]);
 
         const search = root.querySelector("input[type=\"text\"]");

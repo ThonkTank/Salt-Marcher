@@ -23,8 +23,7 @@ grep -i "error" CONSOLE_LOG.txt       # Find errors
 ```
 
 **Essential Reading:**
-- [devkit/QUICK_REFERENCE.md](devkit/QUICK_REFERENCE.md) - Command cheat sheet ⭐
-- [devkit/FEATURES_V3.md](devkit/FEATURES_V3.md) - Available tools & workflows
+- [devkit/README.md](devkit/README.md) - DevKit command reference & workflows ⭐
 - [docs/TESTING.md](docs/TESTING.md) - Testing guide
 
 ## 🔧 Common Workflows
@@ -60,7 +59,7 @@ npm run test:all                     # All tests (run before committing!) ⭐
 ./devkit validate                    # UI validation
 ```
 
-**Full command reference**: [devkit/docs/COMMAND_REFERENCE.md](devkit/docs/COMMAND_REFERENCE.md)
+**Full command reference**: [devkit/README.md](devkit/README.md)
 
 ## 📁 Architecture - Where Things Live
 
@@ -187,20 +186,20 @@ grep "\[init:" CONSOLE_LOG.txt
 ## 📚 Documentation Map
 
 **For Quick Tasks** (what to do):
-- [devkit/QUICK_REFERENCE.md](devkit/QUICK_REFERENCE.md) - Command cheat sheet
+- [devkit/README.md](devkit/README.md) - DevKit command cheat sheet
 
 **For Understanding Systems** (how things work):
 - [docs/storage-formats.md](docs/storage-formats.md) - Entity storage & CreateSpec
 - [docs/PRESETS.md](docs/PRESETS.md) - Preset bundling/import system
 - [docs/TESTING.md](docs/TESTING.md) - Testing guide
+- [docs/audio-system.md](docs/audio-system.md) - Audio/playlist system architecture (Phase 6)
+- [docs/TAGS.md](docs/TAGS.md) - Tag vocabularies across all entity types
 
 **For DevKit Features** (available tools):
-- [devkit/FEATURES_V3.md](devkit/FEATURES_V3.md) - v3.0 capabilities overview
-- [devkit/docs/COMMAND_REFERENCE.md](devkit/docs/COMMAND_REFERENCE.md) - Complete API
-- [devkit/docs/GETTING_STARTED.md](devkit/docs/GETTING_STARTED.md) - First-time setup
+- [devkit/README.md](devkit/README.md) - Complete CLI reference & features
 
 **For Troubleshooting**:
-- [devkit/docs/TROUBLESHOOTING.md](devkit/docs/TROUBLESHOOTING.md) - Common problems
+- [devkit/README.md](devkit/README.md) - DevKit troubleshooting section
 - CONSOLE_LOG.txt - Live debugging logs
 
 ## 🎯 Development Principles
@@ -315,39 +314,38 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 6.1 ✅ Complete | Tests: 432/434 (99.5%) | **Next:** Phase 6.2 - Playlist Manager UI
+**Status:** Phase 6.2 ✅ Complete | Tests: 432/434 (99.5%) | **Next:** Phase 6.3 - Audio Player Core
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
 - **Phase 5:** Loot Generator - Gold (XP-based, 5 rule types), Items (tag-filter, rarity-limits, weighted), E2E tests (13 scenarios)
-- **Phase 6.1:** Playlist Entity - CreateSpec with tag fields, library registration, CRUD operations, tests (20 tests)
+- **Phase 6.1:** Playlist Entity - CreateSpec with tag fields, library registration, CRUD operations, tests (17 tests)
+- **Phase 6.2:** Playlist Manager UI - Library tab integration, auto-generated CRUD from CreateSpec
 
-**Phase 6: Audio System** (🔄 In Progress)
+**Phase 6: Audio System** (🔄 In Progress) - [Details: docs/audio-system.md](docs/audio-system.md)
 - **Phase 6.1:** Playlist Entity ✅
-  - ✅ Data types & serializer (types.ts, serializer.ts, constants.ts)
-  - ✅ CreateSpec with tag fields (terrain/weather/time/faction/situation)
-  - ✅ Library registration & CRUD operations
-  - ✅ Tests (serialization, CRUD, validation)
-- **Phase 6.2:** Playlist Manager UI
-  - ⏳ Track list editor (add/remove/reorder tracks)
-  - ⏳ Playback controls (shuffle, loop, crossfade config)
-  - ⏳ Tag selection UI (multi-select for all tag types)
-  - ⏳ Integration with Library browse view
-- **Phase 6.3:** Audio Player Core
-  - ⏳ Track player service (play/pause/skip/stop)
-  - ⏳ Crossfade transitions
-  - ⏳ Volume control per track & global
-  - ⏳ Shuffle & loop logic
-- **Phase 6.4:** Auto-Selection System
-  - ⏳ Context-based playlist filter (current terrain/weather/time/faction/situation)
-  - ⏳ Session Runner integration (auto-switch on context change)
-  - ⏳ Quick-switch UI (manual override)
-  - ⏳ E2E tests (filter logic, context updates)
+  - Data types, serializer, CreateSpec with 5 tag types (terrain/weather/time/faction/situation)
+  - Library registration & CRUD operations
+  - 17 serialization tests
+- **Phase 6.2:** Playlist Manager UI ✅
+  - Library tab integration (added "playlists" to view.ts)
+  - Track list editor (auto-generated from "list" field type in CreateSpec)
+  - Tag selection UI (auto-generated from "tokens" field type for 5 tag categories)
+  - Playback controls (auto-generated from "checkbox" and "number-stepper" fields)
+  - Full CRUD operations through Library browse view
+- **Phase 6.3:** Audio Player Core ⏳
+  - Track player service, crossfade, volume control, shuffle/loop
+- **Phase 6.4:** Auto-Selection System ⏳
+  - Context-based filtering, Session Runner integration, E2E tests
 
 **Known Issues:**
 - 2 tests intentionally skipped (deprecated TODO.md governance, AGENTS.md policy)
-- Auto-continue scripts moved to `.auto-continue/` (cleanup old `scripts/` refs if needed)
 - Playlist sample file uses old schema format (needs migration to new serializer format)
+
+**Cleanup TODOs:**
+- Add `.auto-continue/` to `.gitignore` (scripts moved from `scripts/`)
+- Commit `docs/audio-system.md` (currently untracked)
+- Finalize cleanup of deleted scripts in `scripts/` directory
 
 **Release Prep:**
 - Polish UI/UX
