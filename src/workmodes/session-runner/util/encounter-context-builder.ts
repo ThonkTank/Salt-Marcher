@@ -11,6 +11,7 @@ import { logger } from "../../../app/plugin-logger";
 import { loadTile } from "../../../features/maps/data/tile-repository";
 import { weatherStore } from "../../../features/weather/weather-store";
 import { mapWeatherTypeToTags } from "../../../features/weather/weather-tag-mapper";
+import { oddrToAxial, axialToCube } from "../../../features/maps/rendering/core/hex-geom";
 
 /**
  * Build encounter context from current hex position
@@ -84,13 +85,7 @@ export async function buildEncounterContext(
 	if (currentCoord && mapFile) {
 		try {
 			// Convert odd-r coordinates to cube coordinates
-			// oddr to cube: q = col - (row - (row&1)) / 2, r = row, s = -q - r
-			const col = currentCoord.c;
-			const row = currentCoord.r;
-			const q = col - Math.floor((row - (row & 1)) / 2);
-			const r = row;
-			const s = -q - r;
-			hexCoords = { q, r, s };
+			hexCoords = axialToCube(oddrToAxial({ r: currentCoord.r, c: currentCoord.c }));
 
 			logger.debug("[EncounterContextBuilder] Converted hex coordinates", {
 				oddr: currentCoord,

@@ -399,6 +399,19 @@ export class BuildingManagementModal extends Modal {
         card.style.cursor = "grab";
         card.draggable = true;
 
+        // Check job compatibility for available workers
+        const template = BUILDING_TEMPLATES[this.production.buildingType];
+        const workerJobType = worker.member.job?.type;
+        const isJobCompatible = !workerJobType || (template && template.allowedJobs.includes(workerJobType));
+
+        // Visual indicator for incompatible jobs (available pool only)
+        if (pool === "available" && !isJobCompatible) {
+            card.style.opacity = "0.5";
+            card.style.border = "1px solid var(--text-error)";
+            card.style.cursor = "not-allowed";
+            card.draggable = false;
+        }
+
         // Worker info
         const nameDiv = card.createDiv();
         nameDiv.style.fontWeight = "600";
@@ -409,6 +422,26 @@ export class BuildingManagementModal extends Modal {
         infoDiv.style.fontSize = "0.85em";
         infoDiv.style.color = "var(--text-muted)";
         infoDiv.setText(`${worker.faction.name}${worker.member.role ? ` • ${worker.member.role}` : ""}`);
+
+        // Show job type if present
+        if (workerJobType) {
+            const jobDiv = card.createDiv();
+            jobDiv.style.fontSize = "0.75em";
+            jobDiv.style.marginTop = "0.25em";
+            jobDiv.style.padding = "0.15em 0.35em";
+            jobDiv.style.borderRadius = "3px";
+            jobDiv.style.display = "inline-block";
+
+            if (pool === "available" && !isJobCompatible) {
+                jobDiv.style.background = "var(--background-modifier-error)";
+                jobDiv.style.color = "var(--text-error)";
+                jobDiv.setText(`⚠️ Job: ${workerJobType} (incompatible)`);
+            } else {
+                jobDiv.style.background = "var(--background-modifier-success)";
+                jobDiv.style.color = "var(--text-success)";
+                jobDiv.setText(`Job: ${workerJobType}`);
+            }
+        }
 
         // Drag and drop handlers
         card.ondragstart = (e) => {
@@ -493,6 +526,24 @@ export class BuildingManagementModal extends Modal {
         const worker = this.availableWorkers[availableIndex];
         if (!worker) return;
 
+        // Validate job compatibility
+        const workerJobType = worker.member.job?.type;
+        if (workerJobType && !template.allowedJobs.includes(workerJobType)) {
+            const allowedJobsStr = template.allowedJobs.join(', ');
+            new Notice(
+                `Cannot assign worker: ${worker.member.name} has job type "${workerJobType}" ` +
+                `but this building only allows: ${allowedJobsStr}`,
+                5000 // Show for 5 seconds
+            );
+            logger.warn('[building-management] Job validation failed', {
+                member: worker.member.name,
+                memberJob: workerJobType,
+                buildingType: this.production.buildingType,
+                allowedJobs: template.allowedJobs
+            });
+            return;
+        }
+
         // Move from available to assigned
         this.availableWorkers.splice(availableIndex, 1);
         this.assignedWorkers.push(worker);
@@ -504,6 +555,7 @@ export class BuildingManagementModal extends Modal {
         logger.debug('[building-management] Assigned worker', {
             member: worker.member.name,
             faction: worker.faction.name,
+            jobType: workerJobType,
             totalWorkers: this.assignedWorkers.length
         });
     }

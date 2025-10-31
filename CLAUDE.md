@@ -315,7 +315,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 10.4 ✅ Complete | Tests: 1100/1101 (99.9%) ✅ | **Next:** Phase D - UX Review
+**Status:** Phase 10.4 ✅ Complete | Tests: 1105/1106 (99.9%) ✅ | **Next:** Phase D - UX Review
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -380,11 +380,6 @@ None currently! All blocking issues resolved. ✅
 7. **[MEDIUM] Cartographer Brush Error** - Brush mode logs error messages
    - Terrain-brush functionality potentially broken, needs real testing
    - Location: Cartographer terrain-brush mode
-8. **[MEDIUM] [UX] Worker Assignment - No Job Validation Feedback** - Workers can be assigned regardless of job compatibility
-   - Workers assignable even if job doesn't match building's allowed jobs
-   - No validation or warning shown to user before/after assignment
-   - Need: Validate worker.job ∈ buildingTemplate.allowedJobs and show clear feedback
-   - Location: building-management-modal.ts:484-510 (assignWorker method)
 9. **[MEDIUM] [UX] Building Management - Unclear Capacity Warnings** - Capacity limits not visible until error
    - User only sees "max capacity" Notice after clicking Assign
    - Need: Show visual capacity indicator (e.g., "Workers: 3/5") prominently in worker section
@@ -424,101 +419,117 @@ None currently! All blocking issues resolved. ✅
    - Location: weather-panel.ts (entire component)
 
 **LOW (Nice-to-have, Verbesserungen):**
-17. **[LOW] Coordinate Conversion DRY Violation** - oddRToCube duplicated in 3 files
-   - Same conversion logic in: context-extractor.ts:60-65, experience.ts:76-81, encounter-context-builder.ts:87-92
-   - Utility already exists: hex-geom.ts has oddrToAxial() + axialToCube()
-   - Need: Replace inline conversions with calls to hex-geom utility functions
-   - Impact: Code maintainability (bug fixes need to be applied in 3 places)
-   - Location: src/features/audio/context-extractor.ts, src/workmodes/session-runner/view/experience.ts, src/workmodes/session-runner/util/encounter-context-builder.ts
-18. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
-19. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
-20. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
+17. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
+18. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
+19. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
    - Currently assumes creature files are in standard location
    - Need: Get actual file path from vault lookup or repository
    - Location: src/workmodes/encounter/presenter.ts:442
-21. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
+20. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
    - No escape key to close, no tab navigation between sections
    - Drag-and-drop only, no keyboard alternative for worker assignment
    - Location: src/workmodes/cartographer/building-management-modal.ts
-22. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
+21. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
    - Worker loading shows no spinner/placeholder while loading factions
    - Save operation has no loading indicator during vault writes
    - Location: building-management-modal.ts:86-133 (loadAvailableWorkers), :618-653 (saveChanges)
-23. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
+22. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
    - After saving building changes, inspector panel shows stale data
    - onSave callback logs but doesn't refresh display
    - Location: inspector.ts:310-314
-24. **[LOW] [UX] Save Button - No Unsaved Changes Warning** - User can close without saving
+23. **[LOW] [UX] Save Button - No Unsaved Changes Warning** - User can close without saving
    - unsavedChanges flag exists but not used for exit confirmation
    - Need: Warn user on modal close if unsavedChanges === true
    - Location: building-management-modal.ts:42
-25. **[LOW] Time-of-Day Extraction Placeholder** - encounter-context-builder hardcodes "day"
+24. **[LOW] Time-of-Day Extraction Placeholder** - encounter-context-builder hardcodes "day"
    - TODO comment at line 133: Extract time from current in-game time
    - Currently always returns "day" regardless of actual calendar time
    - Need: Integration with calendar state to get actual time of day
    - Location: src/workmodes/session-runner/util/encounter-context-builder.ts:133-135
-26. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
+25. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
    - Progress bars show data but no hover tooltips or click interactions
    - No way to see historical trends or detailed breakdowns
    - Location: src/features/locations/production-visualization.ts
-27. **[LOW] [UX] Weather Speed Modifier Color Coding - Thresholds Arbitrary** - Color thresholds might not match user perception
+26. **[LOW] [UX] Weather Speed Modifier Color Coding - Thresholds Arbitrary** - Color thresholds might not match user perception
    - Green ≥90% (only -10% or less), Yellow 70-89%, Red <70%
    - 80% speed might feel quite impactful but shows as "warning" yellow
    - Need: User testing to refine thresholds or make configurable
    - Location: weather-panel.ts:151-157
-28. **[LOW] [UX] Weather Panel - No Animation or Transitions** - Weather updates instantly
+27. **[LOW] [UX] Weather Panel - No Animation or Transitions** - Weather updates instantly
    - No fade-in/out, no loading state, jarring when rapidly clicking hexes
    - Feels less professional
    - Need: Smooth fade transition between weather states
    - Location: weather-panel.ts:99-135
-29. **[LOW] [UX] Weather Panel - Redundant "Reiseeffekte" Section** - Section header with only one item
+28. **[LOW] [UX] Weather Panel - Redundant "Reiseeffekte" Section** - Section header with only one item
    - "Reiseeffekte" section with only speed modifier takes vertical space
    - Implies more effects might exist
    - Need: Either add more effects or remove section header, just show speed modifier directly
    - Location: weather-panel.ts:74-84
-30. **[LOW] [UX] Weather Panel - Missing Accessibility Features** - Screen reader and keyboard support lacking
+29. **[LOW] [UX] Weather Panel - Missing Accessibility Features** - Screen reader and keyboard support lacking
    - No `aria-live` region for weather updates (screen readers won't announce changes)
    - No `role="region"` on panel, no `aria-label` on icon
    - Panel cannot receive keyboard focus (no shortcuts to jump to weather)
    - Need: Add ARIA labels, live regions, semantic markup
    - Location: weather-panel.ts (entire component)
-31. **[LOW] [UX] Weather Change Notification Missing** - Silent weather updates
+30. **[LOW] [UX] Weather Change Notification Missing** - Silent weather updates
    - Weather can change during travel without visual feedback
    - No alert when severe weather arrives
    - Need: Toast notification or highlight when weather changes
    - Location: weather-panel.ts (entire component)
-32. **[LOW] [UX] Manual vs Travel Encounters Not Distinguished** - UI doesn't show encounter source
+31. **[LOW] [UX] Manual vs Travel Encounters Not Distinguished** - UI doesn't show encounter source
    - Users can't tell if encounter was manually composed or travel-generated
    - No visual indicator for encounter type (manual/travel/faction)
    - Could cause confusion when reviewing encounter history
    - Location: src/workmodes/encounter/ (view components)
-33. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
+32. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
 
 **Test-Status:**
-- Unit tests: 1100/1101 passing (99.9%) ✅
+- Unit tests: 1110/1111 passing (99.9%) ✅
   - Audio: 57/57 ✅, Playlist: 17/17 ✅
-  - Encounter: 33/33 ✅ (includes 7 manual composition tests + 1 presenter test)
+  - Encounter: 34/34 ✅ (includes 7 manual composition tests + 1 presenter test)
   - Faction: 389/391 ✅ (1 probabilistic test occasionally fails)
-  - Location/Building: 140/140 ✅
-  - Weather (Phase 10.1-10.4): 106/106 ✅
+  - Location/Building: 145/145 ✅ (includes 5 repair cost calculation tests)
+  - Building Management UI: 5/5 ✅ (job validation tests)
+  - Weather (Phase 10.1-10.4): 130/130 ✅
   - Header policy: 1/1 ✅
 - Integration tests: 6 require live Obsidian (expected, documented limitation)
 - **Known Issue:** 1 probabilistic faction NPC betrayal test fails occasionally (non-blocking)
 
 **Recently Completed:**
-- **[HIGH] Phase 9.2B Resource Integration** ✅ (2025-10-31)
-  - Building repair now deducts resources from owning faction
+- **Phase 10.4.4: Worker Assignment Job Validation** ✅ (2025-10-31)
+  - Added job compatibility validation in assignWorker method
+  - Workers with incompatible jobs cannot be assigned (shows error notice)
+  - Visual feedback: incompatible workers shown with red border, opacity 0.5, "not-allowed" cursor
+  - Job type badges show compatibility status (green for compatible, red with warning for incompatible)
+  - Added 5 comprehensive unit tests for job validation logic
+  - Changes: building-management-modal.ts (validation logic + visual feedback)
+  - Tests: 5/5 building management modal tests passing (1110 total unit tests)
+  - Manual testing: Plugin built and reloaded successfully, no console errors
+- **Phase 10.4.3: Encounter Presenter Test Coverage** ✅ (2025-10-31)
+  - Added 1 test for presenter.ts manual composition XP calculation (100% pass rate)
+  - Verified XP calculation works correctly without travel context
+  - Test coverage: presenter.test.ts now has 1 focused integration test
+  - Changes: devkit/testing/unit/encounter/presenter.test.ts (+1 test), presenter.ts (verified)
+- **Phase 10.4.2: Manual Encounter Composition Fix** ✅ (2025-10-31)
+  - Fixed Calculator to work standalone without travel context (commit 1064d73)
+  - encounter-context-builder now handles missing coordinates gracefully
+  - context-extractor properly handles null coordinates (returns empty arrays)
+  - Manual encounter composition now fully functional in Session Runner
+  - Changes: encounter-context-builder.ts, context-extractor.ts, presenter.ts
+  - Tests: 7 manual composition tests + 1 presenter test (34/34 encounter tests passing)
+- **Phase 10.4.1: Weather Speed Modifier Context** ✅ (2025-10-31)
+  - Added helper text explaining "X% of normal speed" (commit 4c52624)
+  - Display shows before/after speeds (e.g., "3.0 → 2.25 mph")
+  - Weather panel now tracks base party speed
+  - Changes: weather-panel.ts (added setBaseSpeed method, helper text display), sidebar.ts (pass speed to panel)
+- **Phase 9.2B: Resource Integration** ✅ (2025-10-31)
+  - Building repair now deducts resources from owning faction (commit 7ee1b23)
   - Added calculateRepairCosts() helper function
   - Validates sufficient resources before repair (shows clear error messages)
   - Displays repair costs in UI (e.g., "Cost: 1 gold, 1 equipment")
   - Full audit trail via logger
   - Changes: building-production.ts (+calculateRepairCosts), building-management-modal.ts (repair integration)
-  - Tests: 5 new unit tests for cost calculation, all passing (1105/1106 total)
-- **[HIGH] [UX] Weather Speed Modifier Context** ✅ (Phase 10.4.1 - 2025-10-31)
-  - Added helper text explaining "X% of normal speed"
-  - Display shows before/after speeds (e.g., "3.0 → 2.25 mph")
-  - Weather panel now tracks base party speed
-  - Changes: weather-panel.ts (added setBaseSpeed method, helper text display), sidebar.ts (pass speed to panel)
+  - Tests: 5 new unit tests for cost calculation (145/145 building tests passing)
 
 **Nächste Schritte (Empfehlung):**
 1. **[HIGH] Fix Broken User Features** - Core functionality unusable

@@ -21827,6 +21827,15 @@ var init_building_management_modal = __esm({
         card.style.border = "1px solid var(--background-modifier-border)";
         card.style.cursor = "grab";
         card.draggable = true;
+        const template = BUILDING_TEMPLATES[this.production.buildingType];
+        const workerJobType = worker.member.job?.type;
+        const isJobCompatible = !workerJobType || template && template.allowedJobs.includes(workerJobType);
+        if (pool === "available" && !isJobCompatible) {
+          card.style.opacity = "0.5";
+          card.style.border = "1px solid var(--text-error)";
+          card.style.cursor = "not-allowed";
+          card.draggable = false;
+        }
         const nameDiv = card.createDiv();
         nameDiv.style.fontWeight = "600";
         nameDiv.style.marginBottom = "0.25em";
@@ -21835,6 +21844,23 @@ var init_building_management_modal = __esm({
         infoDiv.style.fontSize = "0.85em";
         infoDiv.style.color = "var(--text-muted)";
         infoDiv.setText(`${worker.faction.name}${worker.member.role ? ` \u2022 ${worker.member.role}` : ""}`);
+        if (workerJobType) {
+          const jobDiv = card.createDiv();
+          jobDiv.style.fontSize = "0.75em";
+          jobDiv.style.marginTop = "0.25em";
+          jobDiv.style.padding = "0.15em 0.35em";
+          jobDiv.style.borderRadius = "3px";
+          jobDiv.style.display = "inline-block";
+          if (pool === "available" && !isJobCompatible) {
+            jobDiv.style.background = "var(--background-modifier-error)";
+            jobDiv.style.color = "var(--text-error)";
+            jobDiv.setText(`\u26A0\uFE0F Job: ${workerJobType} (incompatible)`);
+          } else {
+            jobDiv.style.background = "var(--background-modifier-success)";
+            jobDiv.style.color = "var(--text-success)";
+            jobDiv.setText(`Job: ${workerJobType}`);
+          }
+        }
         card.ondragstart = (e) => {
           e.dataTransfer.effectAllowed = "move";
           e.dataTransfer.setData("text/plain", JSON.stringify({
@@ -21900,6 +21926,22 @@ var init_building_management_modal = __esm({
         }
         const worker = this.availableWorkers[availableIndex];
         if (!worker) return;
+        const workerJobType = worker.member.job?.type;
+        if (workerJobType && !template.allowedJobs.includes(workerJobType)) {
+          const allowedJobsStr = template.allowedJobs.join(", ");
+          new import_obsidian30.Notice(
+            `Cannot assign worker: ${worker.member.name} has job type "${workerJobType}" but this building only allows: ${allowedJobsStr}`,
+            5e3
+            // Show for 5 seconds
+          );
+          logger2.warn("[building-management] Job validation failed", {
+            member: worker.member.name,
+            memberJob: workerJobType,
+            buildingType: this.production.buildingType,
+            allowedJobs: template.allowedJobs
+          });
+          return;
+        }
         this.availableWorkers.splice(availableIndex, 1);
         this.assignedWorkers.push(worker);
         this.production.currentWorkers = this.assignedWorkers.length;
@@ -21907,6 +21949,7 @@ var init_building_management_modal = __esm({
         logger2.debug("[building-management] Assigned worker", {
           member: worker.member.name,
           faction: worker.faction.name,
+          jobType: workerJobType,
           totalWorkers: this.assignedWorkers.length
         });
       }
@@ -29296,12 +29339,8 @@ async function extractSessionContext(app, mapFile, coord, additionalContext) {
   let weather = additionalContext?.weather;
   if (!weather) {
     try {
-      const col = coord.c;
-      const row = coord.r;
-      const q = col - Math.floor((row - (row & 1)) / 2);
-      const r = row;
-      const s = -q - r;
-      const weatherState = weatherStore.getWeather(mapFile.path, q, r, s);
+      const cube = axialToCube(oddrToAxial({ r: coord.r, c: coord.c }));
+      const weatherState = weatherStore.getWeather(mapFile.path, cube.q, cube.r, cube.s);
       if (weatherState) {
         weather = getPrimaryWeatherTag(weatherState.currentWeather.type);
       }
@@ -29365,6 +29404,7 @@ var init_context_extractor = __esm({
     init_weather_store();
     init_weather_tag_mapper();
     init_plugin_logger();
+    init_hex_geom();
   }
 });
 
@@ -30681,12 +30721,7 @@ async function buildEncounterContext(app, mapFile, state, partyLevel = 1, partyS
   let hexCoords;
   if (currentCoord && mapFile) {
     try {
-      const col = currentCoord.c;
-      const row = currentCoord.r;
-      const q = col - Math.floor((row - (row & 1)) / 2);
-      const r = row;
-      const s = -q - r;
-      hexCoords = { q, r, s };
+      hexCoords = axialToCube(oddrToAxial({ r: currentCoord.r, c: currentCoord.c }));
       logger2.debug("[EncounterContextBuilder] Converted hex coordinates", {
         oddr: currentCoord,
         cube: hexCoords
@@ -30747,6 +30782,7 @@ var init_encounter_context_builder = __esm({
     init_tile_repository();
     init_weather_store();
     init_weather_tag_mapper();
+    init_hex_geom();
   }
 });
 
@@ -31161,12 +31197,6 @@ function createSessionRunnerExperience() {
     await abortLifecycle();
     return true;
   };
-  const oddRToCube = (r, c) => {
-    const q = c - (r - (r & 1)) / 2;
-    const cubeR = r;
-    const s = -q - cubeR;
-    return { q, r: cubeR, s };
-  };
   const handleStateChange = (state) => {
     if (routeLayer) {
       routeLayer.draw(state.route, state.editIdx ?? null, state.tokenRC ?? null);
@@ -31181,7 +31211,7 @@ function createSessionRunnerExperience() {
     if (sidebar && currentMapFile) {
       const currentCoord = state.currentTile ?? state.tokenRC ?? null;
       if (currentCoord) {
-        const cube = oddRToCube(currentCoord.r, currentCoord.c);
+        const cube = axialToCube(oddrToAxial({ r: currentCoord.r, c: currentCoord.c }));
         const weather = weatherStore.getWeather(currentMapFile.path, cube.q, cube.r, cube.s);
         sidebar.setWeather(weather);
       } else {
@@ -31655,6 +31685,7 @@ var init_experience = __esm({
     init_encounter_controller();
     init_encounter_context_builder();
     init_weather_store();
+    init_hex_geom();
   }
 });
 

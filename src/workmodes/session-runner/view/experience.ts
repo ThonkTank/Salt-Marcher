@@ -26,6 +26,7 @@ import { createAudioController, type AudioControllerHandle } from "../components
 import { createEncounterController, type EncounterControllerHandle } from "../components/encounter-controller";
 import { buildEncounterContext } from "../util/encounter-context-builder";
 import { weatherStore } from "../../../features/weather/weather-store";
+import { oddrToAxial, axialToCube } from "../../../features/maps/rendering/core/hex-geom";
 
 export function createSessionRunnerExperience(): SessionRunnerExperience {
     let sidebar: Sidebar | null = null;
@@ -70,16 +71,6 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
         return true;
     };
 
-    /**
-     * Convert odd-r coordinates to cube coordinates for weather lookup
-     */
-    const oddRToCube = (r: number, c: number): { q: number; r: number; s: number } => {
-        const q = c - (r - (r & 1)) / 2;
-        const cubeR = r;
-        const s = -q - cubeR;
-        return { q, r: cubeR, s };
-    };
-
     const handleStateChange = (state: LogicStateSnapshot) => {
         if (routeLayer) {
             routeLayer.draw(state.route, state.editIdx ?? null, state.tokenRC ?? null);
@@ -98,7 +89,7 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
         if (sidebar && currentMapFile) {
             const currentCoord = state.currentTile ?? state.tokenRC ?? null;
             if (currentCoord) {
-                const cube = oddRToCube(currentCoord.r, currentCoord.c);
+                const cube = axialToCube(oddrToAxial({ r: currentCoord.r, c: currentCoord.c }));
                 const weather = weatherStore.getWeather(currentMapFile.path, cube.q, cube.r, cube.s);
                 sidebar.setWeather(weather);
             } else {

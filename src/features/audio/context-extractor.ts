@@ -11,6 +11,7 @@ import { loadTile, type TileData } from "../maps/data/tile-repository";
 import { weatherStore } from "../weather/weather-store";
 import { getPrimaryWeatherTag } from "../weather/weather-tag-mapper";
 import { logger } from "../../app/plugin-logger";
+import { oddrToAxial, axialToCube } from "../maps/rendering/core/hex-geom";
 
 /**
  * Extract session context from current hex
@@ -58,13 +59,9 @@ export async function extractSessionContext(
 	if (!weather) {
 		try {
 			// Convert odd-r coordinates to cube coordinates for weather lookup
-			const col = coord.c;
-			const row = coord.r;
-			const q = col - Math.floor((row - (row & 1)) / 2);
-			const r = row;
-			const s = -q - r;
+			const cube = axialToCube(oddrToAxial({ r: coord.r, c: coord.c }));
 
-			const weatherState = weatherStore.getWeather(mapFile.path, q, r, s);
+			const weatherState = weatherStore.getWeather(mapFile.path, cube.q, cube.r, cube.s);
 			if (weatherState) {
 				weather = getPrimaryWeatherTag(weatherState.currentWeather.type);
 			}

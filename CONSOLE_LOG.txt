@@ -1,9 +1,9 @@
-[2025-10-31T20:00:08.924Z] LOG: ================================================================================
-[2025-10-31T20:00:08.928Z] LOG: Salt Marcher Plugin Logger - Session Start
-[2025-10-31T20:00:08.928Z] LOG: Timestamp: 2025-10-31T20:00:08.928Z
-[2025-10-31T20:00:08.928Z] LOG: ================================================================================
-[2025-10-31T20:00:08.928Z] LOG: Plugin loading...
-[2025-10-31T20:00:08.928Z] LOG: [DebugLogger] Config loaded: {
+[2025-10-31T20:31:44.905Z] LOG: ================================================================================
+[2025-10-31T20:31:44.909Z] LOG: Salt Marcher Plugin Logger - Session Start
+[2025-10-31T20:31:44.909Z] LOG: Timestamp: 2025-10-31T20:31:44.909Z
+[2025-10-31T20:31:44.909Z] LOG: ================================================================================
+[2025-10-31T20:31:44.909Z] LOG: Plugin loading...
+[2025-10-31T20:31:44.910Z] LOG: [DebugLogger] Config loaded: {
   "enabled": true,
   "logAll": true,
   "logFields": [
@@ -13,44 +13,44 @@
     "*"
   ]
 }
-[2025-10-31T20:00:08.932Z] LOG: [Index] Generating all library indexes...
-[2025-10-31T20:00:08.938Z] LOG: [Index] All indexes generated successfully
-[2025-10-31T20:00:08.941Z] LOG: [IPC] Registered command: reload-plugin
-[2025-10-31T20:00:08.941Z] LOG: [IPC] Registered command: edit-creature
-[2025-10-31T20:00:08.941Z] LOG: [IPC] Registered command: edit-spell
-[2025-10-31T20:00:08.941Z] LOG: [IPC] Registered command: edit-item
-[2025-10-31T20:00:08.941Z] LOG: [IPC] Registered command: edit-equipment
-[2025-10-31T20:00:08.941Z] LOG: [IPC] Registered command: get-logs
-[2025-10-31T20:00:08.941Z] LOG: [IPC] Registered command: import-presets
-[2025-10-31T20:00:08.941Z] LOG: [IPC] Registered command: regenerate-indexes
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: navigate-to-section
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: click-element
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: set-input-value
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: add-token
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: toggle-save-checkbox
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: get-ability-values
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: validate-grid-layout
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: debug-stepper-styles
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: validate-ui
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: measure-ui
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: validate-ui-rule
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: validate-ui-config
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: start-test
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: end-test
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: log-marker
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: set-debug-config
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: get-debug-config
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: get-test-logs
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: assert-log-contains
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: get-field-state
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: dump-field-states
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: get-modal-data
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: dump-dom
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: inspect-ui
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: state-list
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Registered command: state-inspect
-[2025-10-31T20:00:08.942Z] LOG: [IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, dump-dom, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains, get-field-state, dump-field-states, get-modal-data
-[2025-10-31T20:00:08.952Z] ERROR: [session-runner] failed to start experience Cannot find module 'svelte/store'
+[2025-10-31T20:31:44.913Z] LOG: [Index] Generating all library indexes...
+[2025-10-31T20:31:44.919Z] LOG: [Index] All indexes generated successfully
+[2025-10-31T20:31:44.922Z] LOG: [IPC] Registered command: reload-plugin
+[2025-10-31T20:31:44.922Z] LOG: [IPC] Registered command: edit-creature
+[2025-10-31T20:31:44.922Z] LOG: [IPC] Registered command: edit-spell
+[2025-10-31T20:31:44.922Z] LOG: [IPC] Registered command: edit-item
+[2025-10-31T20:31:44.922Z] LOG: [IPC] Registered command: edit-equipment
+[2025-10-31T20:31:44.922Z] LOG: [IPC] Registered command: get-logs
+[2025-10-31T20:31:44.922Z] LOG: [IPC] Registered command: import-presets
+[2025-10-31T20:31:44.922Z] LOG: [IPC] Registered command: regenerate-indexes
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: navigate-to-section
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: click-element
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: set-input-value
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: add-token
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: toggle-save-checkbox
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: get-ability-values
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: validate-grid-layout
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: debug-stepper-styles
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: validate-ui
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: measure-ui
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: validate-ui-rule
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: validate-ui-config
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: start-test
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: end-test
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: log-marker
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: set-debug-config
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: get-debug-config
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: get-test-logs
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: assert-log-contains
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: get-field-state
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: dump-field-states
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: get-modal-data
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: dump-dom
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: inspect-ui
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: state-list
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Registered command: state-inspect
+[2025-10-31T20:31:44.923Z] LOG: [IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, dump-dom, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains, get-field-state, dump-field-states, get-modal-data
+[2025-10-31T20:31:44.932Z] ERROR: [session-runner] failed to start experience Cannot find module 'svelte/store'
 Require stack:
 - electron/js2c/renderer_init
 Error: Cannot find module 'svelte/store'
@@ -66,22 +66,22 @@ Require stack:
     at TracingChannel.traceSync (node:diagnostics_channel:322:14)
     at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)
     at Module.require (node:internal/modules/cjs/loader:1452:12)
-[2025-10-31T20:00:08.957Z] LOG: [IPC] Server started on /home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/ipc.sock
-[2025-10-31T20:00:08.957Z] LOG: [IPC] Server ready - production commands: reload-plugin, edit-creature, edit-spell, edit-item, edit-equipment, get-logs
-[2025-10-31T20:00:08.961Z] LOG: Plugin presets already imported (marker exists)
-[2025-10-31T20:00:08.962Z] LOG: Spell presets already imported (marker exists)
-[2025-10-31T20:00:08.962Z] LOG: Item presets already imported (marker exists)
-[2025-10-31T20:00:08.963Z] LOG: Equipment presets already imported (marker exists)
-[2025-10-31T20:00:08.963Z] LOG: Terrain presets already imported (marker exists)
-[2025-10-31T20:00:08.964Z] LOG: Region presets already imported (marker exists)
-[2025-10-31T20:00:08.965Z] LOG: Calendar presets already imported (marker exists)
-[2025-10-31T20:00:08.965Z] LOG: Playlist presets already imported (marker exists)
-[2025-10-31T20:00:08.966Z] INFO: [StoreManager] Registered store "map-terrains" (persistent)
-[2025-10-31T20:00:08.968Z] INFO: [inbox-status-bar] Display updated {
+[2025-10-31T20:31:44.936Z] LOG: [IPC] Server started on /home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/ipc.sock
+[2025-10-31T20:31:44.937Z] LOG: [IPC] Server ready - production commands: reload-plugin, edit-creature, edit-spell, edit-item, edit-equipment, get-logs
+[2025-10-31T20:31:44.945Z] LOG: Plugin presets already imported (marker exists)
+[2025-10-31T20:31:44.947Z] LOG: Spell presets already imported (marker exists)
+[2025-10-31T20:31:44.948Z] LOG: Item presets already imported (marker exists)
+[2025-10-31T20:31:44.950Z] LOG: Equipment presets already imported (marker exists)
+[2025-10-31T20:31:44.950Z] LOG: Terrain presets already imported (marker exists)
+[2025-10-31T20:31:44.953Z] LOG: Region presets already imported (marker exists)
+[2025-10-31T20:31:44.954Z] LOG: Calendar presets already imported (marker exists)
+[2025-10-31T20:31:44.956Z] LOG: Playlist presets already imported (marker exists)
+[2025-10-31T20:31:44.957Z] INFO: [StoreManager] Registered store "map-terrains" (persistent)
+[2025-10-31T20:31:44.961Z] INFO: [inbox-status-bar] Display updated {
   "count": 0
 }
-[2025-10-31T20:00:08.968Z] INFO: [inbox-status-bar] Display updated {
+[2025-10-31T20:31:44.961Z] INFO: [inbox-status-bar] Display updated {
   "count": 0
 }
-[2025-10-31T20:00:08.968Z] INFO: [inbox-status-bar] Subscribed to inbox updates
-[2025-10-31T20:00:08.968Z] LOG: [inbox-status-bar] Widget registered
+[2025-10-31T20:31:44.961Z] INFO: [inbox-status-bar] Subscribed to inbox updates
+[2025-10-31T20:31:44.961Z] LOG: [inbox-status-bar] Widget registered
