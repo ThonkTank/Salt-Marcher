@@ -197,6 +197,7 @@ grep "\[init:" CONSOLE_LOG.txt
 - [docs/faction-system.md](docs/faction-system.md) - Faction entities, AI, locations, influence (Phase 8-9.1)
 - [docs/PHASE_9_1_UI_INTEGRATION.md](docs/PHASE_9_1_UI_INTEGRATION.md) - Cartographer UI architecture (detailed)
 - [docs/PHASE_9_1_QUICK_REFERENCE.md](docs/PHASE_9_1_QUICK_REFERENCE.md) - File locations & patterns (quick ref)
+- [docs/weather-system.md](docs/weather-system.md) - Weather generation, climate templates, integration (Phase 10)
 - [docs/TAGS.md](docs/TAGS.md) - Tag vocabularies across all entity types
 
 **For DevKit Features** (available tools):
@@ -496,12 +497,17 @@ None currently! All blocking issues resolved. ✅
    - Workers assignable regardless of building job compatibility
    - Need: Validate worker.job ∈ buildingTemplate.allowedJobs
    - Location: worker-assignment-modal.ts validation logic
+8. **[MEDIUM] Phase 10.2 Weather Integration Incomplete** - Placeholder hex generation only
+   - weather-simulation-hook-factory.ts generates weather for 3x3 grid only
+   - TODOs: Get active hexes from map/session runner, load region climate from hex metadata
+   - Need: Integration with actual map hexes and region climates
+   - Location: src/workmodes/almanac/data/weather-simulation-hook-factory.ts:51-53
 
 **LOW (Nice-to-have, Verbesserungen):**
-8. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
-9. **[LOW] Header Policy Cleanup** - Remove deprecated AGENTS.md check from header-policy.test.ts
-10. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
-11. **[LOW] 22 Feature TODOs** - Intentional placeholders for future work (weather extraction, time-of-day, UI improvements)
+9. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
+10. **[LOW] Header Policy Cleanup** - Remove deprecated AGENTS.md check from header-policy.test.ts
+11. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
+12. **[LOW] 22 Feature TODOs** - Intentional placeholders for future work (weather extraction, time-of-day, UI improvements)
 
 **Test-Status:**
 - Unit tests: 1019/1020 passing (99.9%) ⚠️

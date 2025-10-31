@@ -121,6 +121,27 @@ export interface FactionSimulationHook {
   ): Promise<Array<{ title: string; description: string; importance: number; date: string }>>;
 }
 
+/**
+ * Weather Simulation Hook (Phase 10.2)
+ *
+ * Callback interface for triggering weather updates when calendar time advances.
+ * This allows the weather system to generate procedural weather without tight coupling
+ * to the calendar gateway.
+ */
+export interface WeatherSimulationHook {
+  /**
+   * Run weather simulation for the current day
+   *
+   * @param dayOfYear - Day of year (1-365) for seasonal weather patterns
+   * @param currentDate - Current calendar date in YYYY-MM-DD format
+   * @returns Empty array (weather doesn't generate calendar events)
+   */
+  runSimulation(
+    dayOfYear: number,
+    currentDate: string,
+  ): Promise<Array<{ title: string; description: string; importance: number; date: string }>>;
+}
+
 export interface TravelLeafPreferencesSnapshot {
   readonly visible: boolean;
   readonly mode: TravelCalendarMode;
@@ -288,6 +309,7 @@ abstract class BaseCalendarStateGateway implements CalendarStateGateway {
     protected readonly phenomenonRepo: PhenomenonRepository,
     protected readonly hookDispatcher?: HookDispatchGateway,
     protected readonly factionSimulationHook?: FactionSimulationHook,
+    protected readonly weatherSimulationHook?: WeatherSimulationHook,
   ) {}
 
   async loadSnapshot(options?: { readonly travelId?: string | null }): Promise<CalendarStateSnapshot> {
@@ -571,6 +593,20 @@ abstract class BaseCalendarStateGateway implements CalendarStateGateway {
       }
     }
 
+    // Phase 10.2: Run weather simulation when time advances by days
+    if (this.weatherSimulationHook && unit === "day") {
+      try {
+        // Calculate day of year from timestamp
+        const dayOfYear = this.timestampToDayOfYear(result.timestamp);
+        const currentDate = this.timestampToDateString(result.timestamp);
+        await this.weatherSimulationHook.runSimulation(dayOfYear, currentDate);
+        // Weather updates don't generate calendar events (transient state only)
+      } catch (error) {
+        // Don't fail the time advancement if weather simulation fails
+        // Weather errors are non-critical
+      }
+    }
+
     return {
       timestamp: result.timestamp,
       triggeredEvents: relevantEvents,
@@ -588,6 +624,21 @@ abstract class BaseCalendarStateGateway implements CalendarStateGateway {
     const month = String(timestamp.month).padStart(2, "0");
     const day = String(timestamp.day).padStart(2, "0");
     return `${year}-${month}-${day}`;
+  }
+
+  /**
+   * Convert calendar timestamp to day of year (1-365)
+   * (Phase 10.2: Helper for weather simulation)
+   *
+   * Simplified calculation assuming 12 months of 30 days each (360-day year)
+   * For more complex calendars, this would need calendar-specific logic
+   */
+  private timestampToDayOfYear(timestamp: CalendarTimestamp): number {
+    // Simple approximation: month * 30 + day
+    // This works for standard calendars and gives reasonable seasonal variation
+    const dayOfYear = (timestamp.month - 1) * 30 + timestamp.day;
+    // Clamp to 1-365 range to match weather generator expectations
+    return Math.max(1, Math.min(365, dayOfYear));
   }
 
   async loadPreferences(): Promise<AlmanacPreferencesSnapshot> {

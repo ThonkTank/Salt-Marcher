@@ -74,10 +74,11 @@ class WeatherStore {
 	 */
 	getWeather(mapPath: string, q: number, r: number, s: number): WeatherState | null {
 		let result: WeatherState | null = null;
-		this.store.subscribe((state) => {
+		const unsubscribe = this.store.subscribe((state) => {
 			const key = createHexKey(mapPath, q, r, s);
 			result = state.weatherByHex.get(key) ?? null;
-		})();
+		});
+		unsubscribe();
 		return result;
 	}
 
