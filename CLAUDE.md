@@ -314,7 +314,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 9.2B ✅ Complete (Building Management UI) | Tests: 960/961 (99.9%) | **Next:** Phase 9.2C or Phase 10
+**Status:** Phase 9.2C ✅ Complete (Worker Assignment UI) | Tests: 960/961 (99.9%) | **Next:** Phase 9.2D or Phase 10
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -413,12 +413,17 @@ Ziele:
   - Save changes via Obsidian's processFrontMatter API
   - "Manage Building" button in cartographer inspector
   - No new tests (follows proven Obsidian Modal pattern)
+- **Phase 9.2C:** Worker Assignment UI ✅
+  - Load available faction members from vault (filters by location and job status)
+  - Drag-and-drop interface for assigning/unassigning workers
+  - Visual worker roster showing assigned and available members
+  - Worker cards display name, faction, and role
+  - Capacity validation (max workers per building)
+  - Worker position and job updates persisted to faction files
+  - Assign/unassign buttons for quick access
+  - No new tests (follows proven modal patterns)
 
 **Geplant:**
-- **Phase 9.2C (Future - Worker Assignment UI)**: Drag-and-drop worker assignment
-  - Load available faction members from vault
-  - Drag-and-drop interface for assigning members to buildings
-  - Visual worker roster with faction context
 - **Phase 9.2D (Future - Production Visualization)**: Charts and progress indicators
   - Production rate charts over time
   - Worker efficiency visualization
@@ -429,10 +434,17 @@ Ziele:
   - Option C: Weather and regional climate system
 
 **Technische Schulden:**
-- 20 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
+- 22 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation, modal interactions) - intentional placeholders
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 - TODO in calendar-state-gateway.ts: Add faction events to calendar inbox (requires event repository access)
-- Phase 9.1.2 completed: Removed "Building & worker details: Coming soon" placeholder
+- Location, playlist und encounter tables not actually implemented as functioning tabs in library
+- Cartographer Brush sends error message, needs real testing
+- No POI integration in cartographer, User can't access the feature
+- Can't edit enounter unless random encounter is triggered first. Unusable.
+- Almanac still lacks frontend for calendar
+- faction betrayal detection not working reliably
+- header-policy AGENTS.md check still not removed
+- 6 Integration tests still open despite Obsidian running and avalible for testing
 
 **Test-Status:**
 - Unit tests: 960/961 passing (99.9%) ✅
@@ -446,11 +458,10 @@ Ziele:
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 9.2C (Worker Assignment UI)** - Drag-and-drop worker assignment:
-   - Faction member discovery: Load available members from vault files
-   - Worker assignment UI: Drag-and-drop interface in building modal
-   - Visual roster showing member names, roles, current assignments
-   - Validation: Check job permissions, building capacity
+1. **Phase 9.2D (Production Visualization)** - Charts and progress indicators:
+   - Production rate charts over time
+   - Worker efficiency visualization
+   - Resource consumption/production graphs
 2. **Phase 10** - Next major feature:
    - Option A: Dungeon crawling system (grid-based tactical encounters using existing dungeon types)
    - Option B: Weather and regional climate system (per-region weather affecting travel/encounters)

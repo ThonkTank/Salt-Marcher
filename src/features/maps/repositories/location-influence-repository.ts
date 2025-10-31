@@ -18,6 +18,7 @@ import {
 } from "../../locations/location-influence";
 import type { LocationInfluenceAssignment } from "../state/location-influence-store";
 import { parseFrontmatter } from "../../../services/fm-parser";
+import { logger } from "../../../app/plugin-logger";
 
 /**
  * Load all locations from the vault and calculate their influence areas
@@ -61,11 +62,11 @@ export async function loadLocationInfluences(
                     });
                 }
             } catch (error) {
-                console.warn(`[LocationInfluence] Failed to process ${file.path}:`, error);
+                logger.warn('[location-influence] Failed to process file', { path: file.path, error });
             }
         }
     } catch (error) {
-        console.error("[LocationInfluence] Failed to load locations:", error);
+        logger.error('[location-influence] Failed to load locations', { error });
     }
 
     return assignments;
@@ -100,7 +101,7 @@ async function loadLocationFromFile(app: App, file: TFile): Promise<LocationData
 
         return location;
     } catch (error) {
-        console.warn(`[LocationInfluence] Failed to parse ${file.path}:`, error);
+        logger.warn('[location-influence] Failed to parse location file', { path: file.path, error });
         return null;
     }
 }

@@ -9,7 +9,7 @@
 
 import { App, Modal, Notice, Setting, TFile } from "obsidian";
 import type { LocationData, BuildingProduction } from "../../workmodes/library/locations/types";
-import type { FactionMember } from "../../workmodes/library/factions/types";
+import type { FactionMember, FactionData } from "../../workmodes/library/factions/types";
 import {
     BUILDING_TEMPLATES,
     calculateProductionRate,
@@ -19,6 +19,7 @@ import {
 } from "../../features/locations/building-production";
 import { readFrontmatter } from "../../features/data-manager/browse/frontmatter-utils";
 import { logger } from "../../app/plugin-logger";
+import * as yaml from "js-yaml";
 
 interface BuildingManagementModalOptions {
     /** Location file to manage */
@@ -35,7 +36,8 @@ interface BuildingManagementModalOptions {
 export class BuildingManagementModal extends Modal {
     private options: BuildingManagementModalOptions;
     private production: BuildingProduction;
-    private availableWorkers: FactionMember[] = [];
+    private availableWorkers: Array<{ faction: FactionData; member: FactionMember }> = [];
+    private assignedWorkers: Array<{ faction: FactionData; member: FactionMember }> = [];
     private unsavedChanges = false;
 
     constructor(app: App, options: BuildingManagementModalOptions) {
@@ -67,15 +69,108 @@ export class BuildingManagementModal extends Modal {
             return;
         }
 
-        // Load available workers from factions (TODO: implement faction member lookup)
-        // For now, this is a placeholder
-        this.availableWorkers = [];
+        // Load available workers from factions
+        await this.loadAvailableWorkers();
 
         // Create sections
         this.renderBuildingStatus(contentEl, template);
         this.renderWorkerManagement(contentEl, template);
         this.renderProductionTracking(contentEl, template);
         this.renderActionButtons(contentEl);
+    }
+
+    /**
+     * Load available faction members that can work at this building
+     */
+    private async loadAvailableWorkers() {
+        try {
+            // Load all factions from the vault
+            const factions = await this.loadAllFactions();
+
+            // Get building template to check allowed jobs
+            const template = BUILDING_TEMPLATES[this.production.buildingType];
+            if (!template) return;
+
+            // Filter members by:
+            // 1. At the same location (POI) as this building
+            // 2. Unassigned or assigned to this building
+            // 3. Not already doing a job (unless it's at this building)
+            const locationName = this.options.locationData.name;
+
+            for (const faction of factions) {
+                if (!faction.members) continue;
+
+                for (const member of faction.members) {
+                    // Check if member is at this location
+                    const isAtLocation = member.position?.type === "poi" &&
+                                       member.position?.location_name === locationName;
+                    const isUnassigned = !member.position || member.position.type === "unassigned";
+
+                    if (!isAtLocation && !isUnassigned) continue;
+
+                    // Check if member already has a job at this building
+                    const hasJobHere = member.job?.building === locationName;
+
+                    if (hasJobHere) {
+                        // Already assigned to this building
+                        this.assignedWorkers.push({ faction, member });
+                    } else if (!member.job) {
+                        // Available for assignment
+                        this.availableWorkers.push({ faction, member });
+                    }
+                }
+            }
+
+            logger.debug('[building-management] Loaded workers', {
+                available: this.availableWorkers.length,
+                assigned: this.assignedWorkers.length,
+            });
+        } catch (error) {
+            logger.error('[building-management] Failed to load workers', { error });
+            new Notice("Failed to load faction members");
+        }
+    }
+
+    /**
+     * Load all factions from vault
+     */
+    private async loadAllFactions(): Promise<FactionData[]> {
+        const factions: FactionData[] = [];
+
+        try {
+            const files = this.app.vault.getMarkdownFiles();
+            const factionFiles = files.filter(f =>
+                f.path.startsWith("SaltMarcher/Factions/") &&
+                !f.path.includes("Presets")
+            );
+
+            for (const file of factionFiles) {
+                try {
+                    const content = await this.app.vault.read(file);
+                    const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+                    if (!fmMatch) continue;
+
+                    const fm = fmMatch[1];
+                    if (!fm.includes("smType: faction")) continue;
+
+                    const parsed = yaml.load(fm) as any;
+                    if (!parsed || typeof parsed !== "object") continue;
+
+                    if (!parsed.name || typeof parsed.name !== "string") continue;
+
+                    factions.push(parsed as FactionData);
+                } catch (error) {
+                    logger.warn('[building-management] Error loading faction file', {
+                        file: file.path,
+                        error
+                    });
+                }
+            }
+        } catch (error) {
+            logger.error('[building-management] Failed to load factions', { error });
+        }
+
+        return factions;
     }
 
     private renderBuildingStatus(container: HTMLElement, template: typeof BUILDING_TEMPLATES[string]) {
@@ -231,19 +326,208 @@ export class BuildingManagementModal extends Modal {
             jobsDiv.createDiv({ text: `• ${job}` });
         });
 
-        // TODO: Worker assignment UI will be implemented in a future iteration
-        // This would show a list of available faction members and allow drag-and-drop assignment
-        const placeholderDiv = section.createDiv({ cls: "sm-worker-placeholder" });
-        placeholderDiv.style.marginTop = "1em";
-        placeholderDiv.style.padding = "1em";
-        placeholderDiv.style.background = "var(--background-secondary)";
-        placeholderDiv.style.borderRadius = "4px";
-        placeholderDiv.style.border = "1px dashed var(--background-modifier-border)";
-        placeholderDiv.style.textAlign = "center";
-        placeholderDiv.style.color = "var(--text-muted)";
-        placeholderDiv.setText("Worker assignment UI: Coming in future update");
-        placeholderDiv.createDiv({ text: "(Drag faction members here to assign as workers)" })
-            .style.fontSize = "0.85em";
+        // Assigned workers list
+        const assignedHeader = section.createEl("h4", { text: "Assigned Workers" });
+        assignedHeader.style.fontSize = "0.95em";
+        assignedHeader.style.marginTop = "1em";
+        assignedHeader.style.marginBottom = "0.5em";
+
+        const assignedDiv = section.createDiv({ cls: "sm-assigned-workers" });
+        assignedDiv.style.minHeight = "80px";
+        assignedDiv.style.padding = "0.5em";
+        assignedDiv.style.background = "var(--background-secondary)";
+        assignedDiv.style.borderRadius = "4px";
+        assignedDiv.style.border = "1px dashed var(--background-modifier-border)";
+
+        if (this.assignedWorkers.length === 0) {
+            const emptyDiv = assignedDiv.createDiv();
+            emptyDiv.style.textAlign = "center";
+            emptyDiv.style.color = "var(--text-muted)";
+            emptyDiv.style.padding = "1.5em 0";
+            emptyDiv.setText("No workers assigned");
+        } else {
+            this.assignedWorkers.forEach((worker, idx) => {
+                const workerCard = this.createWorkerCard(worker, "assigned", idx);
+                assignedDiv.appendChild(workerCard);
+            });
+        }
+
+        // Available workers list
+        const availableHeader = section.createEl("h4", { text: "Available Workers" });
+        availableHeader.style.fontSize = "0.95em";
+        availableHeader.style.marginTop = "1em";
+        availableHeader.style.marginBottom = "0.5em";
+
+        const availableDiv = section.createDiv({ cls: "sm-available-workers" });
+        availableDiv.style.minHeight = "80px";
+        availableDiv.style.maxHeight = "200px";
+        availableDiv.style.overflowY = "auto";
+        availableDiv.style.padding = "0.5em";
+        availableDiv.style.background = "var(--background-secondary)";
+        availableDiv.style.borderRadius = "4px";
+        availableDiv.style.border = "1px dashed var(--background-modifier-border)";
+
+        if (this.availableWorkers.length === 0) {
+            const emptyDiv = availableDiv.createDiv();
+            emptyDiv.style.textAlign = "center";
+            emptyDiv.style.color = "var(--text-muted)";
+            emptyDiv.style.padding = "1.5em 0";
+            emptyDiv.setText("No available workers at this location");
+        } else {
+            this.availableWorkers.forEach((worker, idx) => {
+                const workerCard = this.createWorkerCard(worker, "available", idx);
+                availableDiv.appendChild(workerCard);
+            });
+        }
+    }
+
+    /**
+     * Create a draggable worker card
+     */
+    private createWorkerCard(
+        worker: { faction: FactionData; member: FactionMember },
+        pool: "available" | "assigned",
+        index: number
+    ): HTMLElement {
+        const card = document.createElement("div");
+        card.className = "sm-worker-card";
+        card.style.padding = "0.5em";
+        card.style.marginBottom = "0.5em";
+        card.style.background = "var(--background-primary)";
+        card.style.borderRadius = "4px";
+        card.style.border = "1px solid var(--background-modifier-border)";
+        card.style.cursor = "grab";
+        card.draggable = true;
+
+        // Worker info
+        const nameDiv = card.createDiv();
+        nameDiv.style.fontWeight = "600";
+        nameDiv.style.marginBottom = "0.25em";
+        nameDiv.setText(worker.member.name);
+
+        const infoDiv = card.createDiv();
+        infoDiv.style.fontSize = "0.85em";
+        infoDiv.style.color = "var(--text-muted)";
+        infoDiv.setText(`${worker.faction.name}${worker.member.role ? ` • ${worker.member.role}` : ""}`);
+
+        // Drag and drop handlers
+        card.ondragstart = (e) => {
+            e.dataTransfer!.effectAllowed = "move";
+            e.dataTransfer!.setData("text/plain", JSON.stringify({
+                pool,
+                index,
+                factionName: worker.faction.name,
+                memberName: worker.member.name
+            }));
+            card.style.opacity = "0.5";
+        };
+
+        card.ondragend = () => {
+            card.style.opacity = "1";
+        };
+
+        // Make assigned worker cards drop targets to swap or unassign
+        if (pool === "assigned") {
+            card.ondragover = (e) => {
+                e.preventDefault();
+                card.style.background = "var(--interactive-accent)";
+            };
+
+            card.ondragleave = () => {
+                card.style.background = "var(--background-primary)";
+            };
+
+            card.ondrop = (e) => {
+                e.preventDefault();
+                card.style.background = "var(--background-primary)";
+
+                const data = JSON.parse(e.dataTransfer!.getData("text/plain"));
+                if (data.pool === "available") {
+                    // Assign worker
+                    this.assignWorker(data.index);
+                    this.refresh();
+                }
+            };
+        }
+
+        // Click to unassign (for assigned workers)
+        if (pool === "assigned") {
+            const unassignBtn = card.createEl("button", { text: "Unassign" });
+            unassignBtn.style.marginTop = "0.5em";
+            unassignBtn.style.fontSize = "0.8em";
+            unassignBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.unassignWorker(index);
+                this.refresh();
+            };
+        }
+
+        // Click to assign (for available workers)
+        if (pool === "available") {
+            const assignBtn = card.createEl("button", { text: "Assign" });
+            assignBtn.style.marginTop = "0.5em";
+            assignBtn.style.fontSize = "0.8em";
+            assignBtn.onclick = (e) => {
+                e.stopPropagation();
+                this.assignWorker(index);
+                this.refresh();
+            };
+        }
+
+        return card;
+    }
+
+    /**
+     * Assign a worker from available pool to this building
+     */
+    private assignWorker(availableIndex: number) {
+        const template = BUILDING_TEMPLATES[this.production.buildingType];
+        if (!template) return;
+
+        // Check capacity
+        if (this.assignedWorkers.length >= template.maxWorkers) {
+            new Notice(`Building is at max capacity (${template.maxWorkers} workers)`);
+            return;
+        }
+
+        const worker = this.availableWorkers[availableIndex];
+        if (!worker) return;
+
+        // Move from available to assigned
+        this.availableWorkers.splice(availableIndex, 1);
+        this.assignedWorkers.push(worker);
+
+        // Update production worker count
+        this.production.currentWorkers = this.assignedWorkers.length;
+        this.unsavedChanges = true;
+
+        logger.debug('[building-management] Assigned worker', {
+            member: worker.member.name,
+            faction: worker.faction.name,
+            totalWorkers: this.assignedWorkers.length
+        });
+    }
+
+    /**
+     * Unassign a worker from this building back to available pool
+     */
+    private unassignWorker(assignedIndex: number) {
+        const worker = this.assignedWorkers[assignedIndex];
+        if (!worker) return;
+
+        // Move from assigned back to available
+        this.assignedWorkers.splice(assignedIndex, 1);
+        this.availableWorkers.push(worker);
+
+        // Update production worker count
+        this.production.currentWorkers = this.assignedWorkers.length;
+        this.unsavedChanges = true;
+
+        logger.debug('[building-management] Unassigned worker', {
+            member: worker.member.name,
+            faction: worker.faction.name,
+            totalWorkers: this.assignedWorkers.length
+        });
     }
 
     private renderProductionTracking(container: HTMLElement, template: typeof BUILDING_TEMPLATES[string]) {
@@ -347,14 +631,16 @@ export class BuildingManagementModal extends Modal {
 
     private async saveChanges() {
         try {
-            // Use Obsidian's processFrontMatter API to update building_production field
+            // 1. Update building production in location file
             await this.app.fileManager.processFrontMatter(
                 this.options.locationFile,
                 (frontmatter) => {
-                    // Update the building_production field
                     frontmatter.building_production = this.production;
                 }
             );
+
+            // 2. Update faction files to reflect worker assignments
+            await this.saveFactionWorkerAssignments();
 
             logger.info('[building-management] Saved building changes', {
                 location: this.options.locationData.name,
@@ -367,7 +653,6 @@ export class BuildingManagementModal extends Modal {
 
             // Callback for parent components
             if (this.options.onSave) {
-                // Update the locationData with new production state
                 const updatedData = { ...this.options.locationData };
                 updatedData.building_production = this.production;
                 this.options.onSave(updatedData);
@@ -379,6 +664,102 @@ export class BuildingManagementModal extends Modal {
             logger.error('[building-management] Failed to save building changes', { error });
             new Notice("Failed to save changes. Check console for details.");
         }
+    }
+
+    /**
+     * Update faction files to reflect worker position and job assignments
+     */
+    private async saveFactionWorkerAssignments() {
+        const locationName = this.options.locationData.name;
+
+        // Group assigned workers by faction
+        const workersByFaction = new Map<string, FactionMember[]>();
+        for (const { faction, member } of this.assignedWorkers) {
+            if (!workersByFaction.has(faction.name)) {
+                workersByFaction.set(faction.name, []);
+            }
+            workersByFaction.get(faction.name)!.push(member);
+        }
+
+        // Update each faction file
+        for (const [factionName, members] of workersByFaction.entries()) {
+            try {
+                const factionFile = await this.findFactionFile(factionName);
+                if (!factionFile) {
+                    logger.warn('[building-management] Faction file not found', { factionName });
+                    continue;
+                }
+
+                const content = await this.app.vault.read(factionFile);
+                const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+                if (!fmMatch) continue;
+
+                const parsed = yaml.load(fmMatch[1]) as FactionData;
+                if (!parsed.members) parsed.members = [];
+
+                // Update members that are assigned to this building
+                for (const assignedMember of members) {
+                    const member = parsed.members.find(m => m.name === assignedMember.name);
+                    if (member) {
+                        // Update position to POI
+                        member.position = {
+                            type: "poi",
+                            location_name: locationName
+                        };
+                        // Set building reference for job
+                        if (!member.job) {
+                            member.job = {
+                                type: "guard", // Default job type
+                                building: locationName,
+                                progress: 0
+                            };
+                        } else {
+                            member.job.building = locationName;
+                        }
+                    }
+                }
+
+                // Serialize and save
+                const yamlStr = yaml.dump(parsed, { lineWidth: -1, noRefs: true });
+                const body = content.split(/\n---\n/)[1] || "";
+                const newContent = `---\n${yamlStr}---\n${body}`;
+                await this.app.vault.modify(factionFile, newContent);
+
+                logger.debug('[building-management] Updated faction file', {
+                    faction: factionName,
+                    workers: members.length
+                });
+            } catch (error) {
+                logger.error('[building-management] Failed to update faction', {
+                    faction: factionName,
+                    error
+                });
+            }
+        }
+    }
+
+    /**
+     * Find faction file by name
+     */
+    private async findFactionFile(factionName: string): Promise<TFile | null> {
+        const files = this.app.vault.getMarkdownFiles();
+        const factionFiles = files.filter(f =>
+            f.path.startsWith("SaltMarcher/Factions/") &&
+            !f.path.includes("Presets")
+        );
+
+        for (const file of factionFiles) {
+            const content = await this.app.vault.read(file);
+            const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+            if (!fmMatch) continue;
+
+            const parsed = yaml.load(fmMatch[1]) as any;
+            if (parsed && parsed.name === factionName) {
+                return file;
+            }
+        }
+
+        return null;
     }
 
     private refresh() {

@@ -3,6 +3,7 @@
 
 import type { App, TFile } from "obsidian";
 import type { CreateSpec, LoaderSpec } from "../types";
+import { logger } from "../../../app/plugin-logger";
 
 /**
  * Generischer Frontmatter-Loader.
@@ -37,7 +38,7 @@ export async function loadFromFrontmatter<TDraft extends Record<string, unknown>
                 data[fieldId] = fm[fieldId];
                 // Debug logging for token fields
                 if (fieldId === 'pb' || fieldId === 'initiative' || fieldId === 'passivesList' || fieldId === 'sensesList' || fieldId === 'languagesList') {
-                    console.log(`[auto-loader] Loading ${fieldId}:`, JSON.stringify(fm[fieldId], null, 2));
+                    logger.debug('[auto-loader] Loading token field', { fieldId, value: fm[fieldId] });
                 }
             }
         }

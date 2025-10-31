@@ -715,8 +715,7 @@ function renderAttackEntry(container: HTMLElement, entry: Record<string, unknown
     text: "+ Damage"
   });
   addDamageBtn.addEventListener("click", () => {
-    // This would open a small modal to add damage
-    console.log("Add damage clicked");
+    // TODO: Open modal to add damage entry
   });
 }
 
@@ -805,7 +804,7 @@ function renderMultiattackEntry(container: HTMLElement, entry: Record<string, un
     text: "Edit"
   });
   editBtn.addEventListener("click", () => {
-    console.log("Edit multiattack");
+    // TODO: Open modal to edit multiattack entry
   });
 }
 
@@ -928,8 +927,7 @@ function renderSpellcastingEntry(container: HTMLElement, entry: Record<string, u
       text: "+ Zauber"
     });
     addSpellBtn.addEventListener("click", () => {
-      // This would open a modal to add spells
-      console.log("Add spell to list", index);
+      // TODO: Open modal to add spells to list
     });
   });
 
@@ -2002,7 +2000,7 @@ const entriesFields: AnyFieldSpec[] = [
                 text: label
               });
               btn.addEventListener("click", () => {
-                console.log(`Add effect: ${label}`);
+                // TODO: Add effect to action
               });
             });
 

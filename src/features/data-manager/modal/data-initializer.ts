@@ -3,6 +3,7 @@
 
 import { deepClone, resolveDefaults } from "./modal-utils";
 import type { AnyFieldSpec, CreateSpec } from "../types";
+import { logger } from "../../../app/plugin-logger";
 
 /**
  * Named draft interface (minimal requirement for data initialization)
@@ -119,18 +120,20 @@ export class DataInitializer<TDraft extends NamedDraft> {
     if (preset && typeof preset === "object") {
       // Debug logging for pb and initiative
       if ('pb' in preset || 'initiative' in preset) {
-        console.log('[data-initializer] Preset data contains pb:', (preset as any).pb);
-        console.log('[data-initializer] Preset data contains initiative:', (preset as any).initiative);
+        logger.debug('[data-initializer] Preset contains numeric fields', {
+          pb: (preset as any).pb,
+          initiative: (preset as any).initiative
+        });
       }
       // Debug logging for token fields
       if ('passivesList' in preset) {
-        console.log('[data-initializer] Preset passivesList:', JSON.stringify((preset as any).passivesList, null, 2));
+        logger.debug('[data-initializer] Preset passivesList', { passivesList: (preset as any).passivesList });
       }
       if ('languagesList' in preset) {
-        console.log('[data-initializer] Preset languagesList:', JSON.stringify((preset as any).languagesList, null, 2));
+        logger.debug('[data-initializer] Preset languagesList', { languagesList: (preset as any).languagesList });
       }
       if ('sensesList' in preset) {
-        console.log('[data-initializer] Preset sensesList:', JSON.stringify((preset as any).sensesList, null, 2));
+        logger.debug('[data-initializer] Preset sensesList', { sensesList: (preset as any).sensesList });
       }
       return { ...data, ...(preset as Partial<TDraft>) };
     }
