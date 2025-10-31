@@ -26,6 +26,8 @@ import { createAudioPanel, type AudioPanelHandle } from "./audio-panel";
 export type AudioControllerHandle = {
 	readonly panel: AudioPanelHandle;
 	updateContext(file: TFile | null, coord: { r: number; c: number } | null): Promise<void>;
+	switchToCombatMusic(): Promise<void>;
+	restorePreviousMusic(): Promise<void>;
 	dispose(): void;
 };
 
@@ -50,6 +52,10 @@ export async function createAudioController(options: AudioControllerOptions): Pr
 	// Volume settings (persist across sessions)
 	let ambienceVolume = 0.7;
 	let musicVolume = 0.7;
+
+	// Combat music state
+	let previousMusicPlaylist: PlaylistData | null = null;
+	let inCombat = false;
 
 	// Create panel
 	const panel = createAudioPanel(host, {
@@ -277,6 +283,81 @@ export async function createAudioController(options: AudioControllerOptions): Pr
 	}
 
 	/**
+	 * Switch to combat music
+	 */
+	async function switchToCombatMusic(): Promise<void> {
+		if (inCombat) {
+			logger.debug("[AudioController] Already in combat, skipping music switch");
+			return;
+		}
+
+		try {
+			// Save current music playlist
+			previousMusicPlaylist = currentMusicPlaylist;
+			inCombat = true;
+
+			// Filter to combat music
+			const musicPlaylists = filterPlaylistsByType(availablePlaylists, "music");
+			const combatContext: SessionContext = {
+				...currentContext,
+				situation: ["combat"], // Override situation to combat
+			};
+
+			const combatResult = selectPlaylist(musicPlaylists, combatContext);
+
+			if (combatResult.playlist) {
+				await loadPlaylist(combatResult.playlist, "music");
+				logger.info("[AudioController] Switched to combat music", {
+					playlist: combatResult.playlist.name,
+					score: combatResult.score,
+				});
+			} else {
+				logger.warn("[AudioController] No combat music found");
+			}
+		} catch (error) {
+			logger.error("[AudioController] Failed to switch to combat music", { error });
+		}
+	}
+
+	/**
+	 * Restore previous music after combat
+	 */
+	async function restorePreviousMusic(): Promise<void> {
+		if (!inCombat) {
+			logger.debug("[AudioController] Not in combat, skipping restore");
+			return;
+		}
+
+		try {
+			inCombat = false;
+
+			if (previousMusicPlaylist) {
+				await loadPlaylist(previousMusicPlaylist, "music");
+				logger.info("[AudioController] Restored previous music", {
+					playlist: previousMusicPlaylist.name,
+				});
+			} else {
+				// Re-run auto-selection based on current context
+				if (currentContext) {
+					const musicPlaylists = filterPlaylistsByType(availablePlaylists, "music");
+					const musicResult = selectPlaylist(musicPlaylists, currentContext);
+
+					if (musicResult.playlist) {
+						await loadPlaylist(musicResult.playlist, "music");
+						logger.info("[AudioController] Auto-selected music after combat", {
+							playlist: musicResult.playlist.name,
+						});
+					}
+				}
+			}
+
+			previousMusicPlaylist = null;
+		} catch (error) {
+			logger.error("[AudioController] Failed to restore previous music", { error });
+		}
+	}
+
+	/**
 	 * Dispose of audio controller and cleanup resources
 	 */
 	function dispose(): void {
@@ -301,6 +382,8 @@ export async function createAudioController(options: AudioControllerOptions): Pr
 	return {
 		panel,
 		updateContext,
+		switchToCombatMusic,
+		restorePreviousMusic,
 		dispose,
 	};
 }

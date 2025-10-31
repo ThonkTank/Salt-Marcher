@@ -13,4 +13,6 @@ export type LogicStateSnapshot = {
     playing: boolean;
     tempo?: number;            // playback tempo (hours per real second)
     clockHours?: number;       // accumulated in-game hours since start
+    partyLevel?: number;       // Party average level for encounters (default: 1)
+    partySize?: number;        // Party size for encounters (default: 4)
 };

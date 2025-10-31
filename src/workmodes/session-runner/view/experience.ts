@@ -291,12 +291,13 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
                 onRandomEncounter: async () => {
                     if (isAborted() || !logic) return;
                     try {
+                        const state = logic.getState();
                         const context = await buildEncounterContext(
                             ctx.app,
                             ctx.getFile(),
-                            logic.getState(),
-                            1, // TODO: Get from party settings
-                            4, // TODO: Get from party settings
+                            state,
+                            state.partyLevel ?? 1,
+                            state.partySize ?? 4,
                         );
                         if (encounterController) {
                             await encounterController.generateRandomEncounter(context);
@@ -334,24 +335,67 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
                     onCombatStart: () => {
                         // Switch to combat music
                         if (audioController) {
-                            // TODO: Trigger combat music auto-selection
+                            void audioController.switchToCombatMusic();
                             logger.info("[session-runner] Combat started - switching to combat music");
                         }
                     },
                     onCombatEnd: () => {
                         // Restore previous music
                         if (audioController) {
-                            // TODO: Restore previous playlist
+                            void audioController.restorePreviousMusic();
                             logger.info("[session-runner] Combat ended - restoring music");
                         }
                     },
                     onLootRequested: async (encounter) => {
-                        // Generate loot
-                        // TODO: Call loot generator
-                        logger.info("[session-runner] Loot requested for encounter", {
-                            totalXP: encounter.totalXP,
-                            combatantCount: encounter.combatants.length,
-                        });
+                        // Generate loot using Phase 5 loot generator
+                        if (isAborted() || !logic) return;
+
+                        try {
+                            const state = logic.getState();
+                            const currentCoord = state.currentTile ?? state.tokenRC ?? null;
+
+                            // Build loot context from encounter
+                            const { generateLoot } = await import("../../../features/loot/loot-generator");
+
+                            // Extract tags from hex data for loot filtering
+                            let tags: string[] = [];
+                            if (ctx.getFile() && currentCoord) {
+                                try {
+                                    const { loadTile } = await import("../../../features/maps/data/tile-repository");
+                                    const tileData = await loadTile(ctx.app, ctx.getFile()!, currentCoord);
+                                    if (tileData) {
+                                        if (tileData.terrain) tags.push(tileData.terrain.toLowerCase());
+                                        if (tileData.faction) tags.push(tileData.faction.toLowerCase());
+                                    }
+                                } catch (err) {
+                                    logger.warn("[session-runner] Failed to load tile for loot context", { err });
+                                }
+                            }
+
+                            const lootResult = generateLoot({
+                                partyLevel: state.partyLevel ?? 1,
+                                partySize: state.partySize ?? 4,
+                                encounterXp: encounter.totalXP,
+                                tags: tags.length > 0 ? tags : undefined,
+                            });
+
+                            logger.info("[session-runner] Loot generated", {
+                                gold: lootResult.bundle.gold,
+                                itemCount: lootResult.bundle.items.length,
+                                totalValue: lootResult.bundle.totalValue,
+                                warnings: lootResult.warnings,
+                            });
+
+                            // TODO: Display loot in UI
+                            // For now, show a notice with the results
+                            const { Notice } = await import("obsidian");
+                            const itemSummary = lootResult.bundle.items.length > 0
+                                ? `, ${lootResult.bundle.items.length} items`
+                                : "";
+                            new Notice(`Loot: ${lootResult.bundle.gold} gold${itemSummary} (${lootResult.bundle.totalValue} total value)`);
+                        } catch (err) {
+                            logger.error("[session-runner] Failed to generate loot", err);
+                        }
                     },
                 });
                 logger.info("[session-runner] Encounter controller initialized");

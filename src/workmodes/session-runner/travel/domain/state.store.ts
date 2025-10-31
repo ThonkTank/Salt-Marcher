@@ -20,6 +20,8 @@ export function createStore(): Store {
         playing: false,
         tempo: 1,
         clockHours: 0,
+        partyLevel: 1, // default party level
+        partySize: 4,  // default party size
     };
 
     const subs = new Set<(s: LogicStateSnapshot) => void>();

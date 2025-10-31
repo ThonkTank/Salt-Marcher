@@ -8,6 +8,7 @@ import type { App, TFile } from "obsidian";
 import type { EncounterGenerationContext } from "../../../features/encounters/encounter-generator";
 import type { LogicStateSnapshot } from "../travel/domain/types";
 import { logger } from "../../../app/plugin-logger";
+import { loadTile } from "../../../features/maps/data/tile-repository";
 
 /**
  * Build encounter context from current hex position
@@ -36,14 +37,56 @@ export async function buildEncounterContext(
 		partySize,
 	});
 
-	// TODO: Extract terrain from hex data
-	// For now, use placeholder tags
-	// Future: Load hex data from map file and extract terrain/region/weather
-	const terrainTags: string[] = ["forest"]; // Placeholder
+	// Extract terrain and faction from hex data
+	let terrainTags: string[] = [];
+	let factionTags: string[] = [];
+
+	if (mapFile && currentCoord) {
+		try {
+			const tileData = await loadTile(app, mapFile, currentCoord);
+			if (tileData) {
+				// Extract terrain tag (normalize to lowercase for matching)
+				if (tileData.terrain) {
+					const terrainTag = tileData.terrain.toLowerCase().trim();
+					if (terrainTag) {
+						terrainTags.push(terrainTag);
+					}
+				}
+
+				// Extract faction tag
+				if (tileData.faction) {
+					const factionTag = tileData.faction.toLowerCase().trim();
+					if (factionTag) {
+						factionTags.push(factionTag);
+					}
+				}
+
+				logger.debug("[EncounterContextBuilder] Extracted hex data", {
+					terrain: tileData.terrain,
+					faction: tileData.faction,
+					region: tileData.region,
+				});
+			}
+		} catch (err) {
+			logger.warn("[EncounterContextBuilder] Failed to load tile data", { err });
+		}
+	}
+
+	// Fallback to default if no terrain extracted
+	if (terrainTags.length === 0) {
+		terrainTags = ["any"];
+	}
+
+	// TODO: Extract weather from current weather simulation
+	// For now, use placeholder
 	const weatherTags: string[] = ["clear"]; // Placeholder
+
+	// TODO: Extract time from current in-game time
+	// For now, use placeholder
 	const timeTags: string[] = ["day"]; // Placeholder
-	const factionTags: string[] = []; // Placeholder
-	const situationTags: string[] = ["wandering"]; // Placeholder
+
+	// Default situation for random encounters during travel
+	const situationTags: string[] = ["wandering"];
 
 	logger.debug("[EncounterContextBuilder] Context built", {
 		tags: { terrain: terrainTags, weather: weatherTags, time: timeTags, faction: factionTags, situation: situationTags },

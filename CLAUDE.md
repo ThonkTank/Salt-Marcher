@@ -311,39 +311,29 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 7 ✅ Complete (Core) | Tests: 514/515 (99.8%) | **Next:** Phase 7.5 (Session Runner Integration)
+**Status:** Phase 7.6 ✅ Complete | Tests: 514/515 (99.8%) | **Next:** Phase 8 (Factions & NPCs)
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
 - **Phase 5:** Loot Generator - Gold (XP-based, 5 rule types), Items (tag-filter, rarity-limits, weighted), E2E tests (13 scenarios)
-- **Phase 6:** Audio System ✅ (Details: [docs/audio-system.md](docs/audio-system.md))
-  - Phase 6.1: Playlist Entity - CreateSpec with 5 tag types, serializer, 17 tests ✅
-  - Phase 6.2: Playlist Manager UI - Library integration, auto-generated CRUD ✅
-  - Phase 6.3: Audio Player Core - HTMLAudioElement playback, crossfade, volume, shuffle/loop, 33 tests ✅
-  - Phase 6.4: Auto-Selection System - Context-based filtering, scoring algorithm, 24 tests ✅
-  - Phase 6.5: Session Runner UI Integration - Audio panel, dual players, auto-selection, lifecycle management ✅
-  - Phase 6.6: Audio Polish - 6 sample playlists bundled (Forest/Mountain/Dungeon ambience, Combat/Exploration/Rest music), placeholder paths, auto-import ✅
-  - File locations: src/features/audio/, src/workmodes/library/playlists/, Presets/Playlists/
-- **Cleanup:** Removed deprecated governance test files ✅
+- **Phase 6:** Audio System ✅ | **Details**: [docs/audio-system.md](docs/audio-system.md)
+  - Complete: Playlist entity, auto-selection, Session Runner integration, sample playlists
+  - Files: src/features/audio/, src/workmodes/library/playlists/, Presets/Playlists/
+- **Phase 7:** Random Encounters ✅ | **Details**: [docs/random-encounters.md](docs/random-encounters.md)
+  - Complete: Encounter tables, generation engine, CR balancing (D&D 5e DMG p.82), initiative tracker
+  - Session Runner: Random encounter button, context builder, controller, loot/audio hooks
+  - Files: src/features/encounters/, src/workmodes/library/encounter-tables/
+- **Phase 7.6:** Encounter Polish ✅
+  - Hex data extraction: Terrain/faction from tiles used in encounter context
+  - Party settings: Added partyLevel/partySize to travel state (default: level 1, size 4)
+  - Loot integration: Full integration with Phase 5 loot generator, tag-based filtering
+  - Audio integration: Combat music auto-switching with playlist restoration
+  - Files: src/workmodes/session-runner/util/encounter-context-builder.ts, src/workmodes/session-runner/components/audio-controller.ts
 
 **Geplant:**
-- **Phase 7:** Random Encounters ✅ Complete | **Details**: [docs/random-encounters.md](docs/random-encounters.md)
-  - Phase 7.0: Core Systems ✅
-    - Encounter table entity (weighted entries, CR ranges, tag-based filtering) ✅
-    - Generation engine (table selection, dice rolling, creature loading) ✅
-    - CR balancing system (D&D 5e DMG p.82 - XP thresholds, multipliers) ✅
-    - Initiative tracker UI (HP tracking, active turn, defeat state) ✅
-    - 24 comprehensive tests (serialization + generation algorithm) ✅
-  - Phase 7.5: Session Runner Integration ✅ Complete
-    - Random Encounter button in Session Runner UI ✅
-    - Encounter context builder (terrain/weather/time from hex) ✅
-    - Encounter controller (manages lifecycle, state, UI) ✅
-    - Loot generator hooks (placeholder for Phase 5 integration) ✅
-    - Audio hooks (placeholder for combat music switching) ✅
-    - Initiative tracker in Session Runner sidebar ✅
 
 **Technische Schulden:**
-- 15 TODO comments for future features (factions, weather, locations) - intentional placeholders, not blockers
+- 13 TODO comments for future features (weather extraction, time-of-day, encounter table UI) - intentional placeholders
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 
 **Test-Status:**
@@ -355,10 +345,9 @@ Ziele:
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 7.6 (Encounter Polish)**: Enhance encounter system
-   - Extract real terrain/weather/time from hex data (currently placeholder)
-   - Implement party settings (level, size) in Session Runner
-   - Complete loot generator integration (call Phase 5 generateLoot)
-   - Complete audio integration (auto-switch to combat playlists)
-   - Add encounter table creation UI in Library
-2. **Phase 8 (Factions & NPCs)**: Begin faction system implementation (see Ziele section)
+1. **Phase 8 (Factions & NPCs)**: Begin faction system implementation (see Ziele section)
+   - Create faction entity type (members, goals, culture, relationships)
+   - Implement NPC generation from faction templates
+   - Add position tracking for faction members (camps, expeditions)
+   - Build job system (crafting, resource gathering, training)
+   - Implement camp/POI creation on map
