@@ -8,13 +8,15 @@
 import type { App, TFile } from "obsidian";
 import type { SessionContext } from "./auto-selection-types";
 import { loadTile, type TileData } from "../maps/data/tile-repository";
+import { weatherStore } from "../weather/weather-store";
+import { getPrimaryWeatherTag } from "../weather/weather-tag-mapper";
 
 /**
  * Extract session context from current hex
  *
  * @param app - Obsidian app instance
  * @param mapFile - Current map file
- * @param coord - Current hex coordinate
+ * @param coord - Current hex coordinate (odd-r format)
  * @param additionalContext - Additional context not derived from hex (weather, time, situation)
  * @returns Session context for playlist auto-selection
  */
@@ -50,9 +52,29 @@ export async function extractSessionContext(
 		}
 	}
 
+	// Extract weather from weather store if not provided in additionalContext
+	let weather = additionalContext?.weather;
+	if (!weather) {
+		try {
+			// Convert odd-r coordinates to cube coordinates for weather lookup
+			const col = coord.c;
+			const row = coord.r;
+			const q = col - Math.floor((row - (row & 1)) / 2);
+			const r = row;
+			const s = -q - r;
+
+			const weatherState = weatherStore.getWeather(mapFile.path, q, r, s);
+			if (weatherState) {
+				weather = getPrimaryWeatherTag(weatherState.currentWeather.type);
+			}
+		} catch (error) {
+			console.warn(`[ContextExtractor] Failed to extract weather for hex ${coord.r},${coord.c}:`, error);
+		}
+	}
+
 	return {
 		terrain,
-		weather: additionalContext?.weather,
+		weather,
 		timeOfDay: additionalContext?.timeOfDay,
 		factions: factions.length > 0 ? factions : undefined,
 		situation: additionalContext?.situation,

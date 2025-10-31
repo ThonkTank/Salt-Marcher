@@ -9,6 +9,8 @@ import type { EncounterGenerationContext } from "../../../features/encounters/en
 import type { LogicStateSnapshot } from "../travel/domain/types";
 import { logger } from "../../../app/plugin-logger";
 import { loadTile } from "../../../features/maps/data/tile-repository";
+import { weatherStore } from "../../../features/weather/weather-store";
+import { mapWeatherTypeToTags } from "../../../features/weather/weather-tag-mapper";
 
 /**
  * Build encounter context from current hex position
@@ -77,17 +79,6 @@ export async function buildEncounterContext(
 		terrainTags = ["any"];
 	}
 
-	// TODO: Extract weather from current weather simulation
-	// For now, use placeholder
-	const weatherTags: string[] = ["clear"]; // Placeholder
-
-	// TODO: Extract time from current in-game time
-	// For now, use placeholder
-	const timeTags: string[] = ["day"]; // Placeholder
-
-	// Default situation for random encounters during travel
-	const situationTags: string[] = ["wandering"];
-
 	// Phase 8.8: Convert current hex to cube coordinates for faction lookup
 	let hexCoords: { q: number; r: number; s: number } | undefined;
 	if (currentCoord && mapFile) {
@@ -109,6 +100,42 @@ export async function buildEncounterContext(
 			logger.warn("[EncounterContextBuilder] Failed to convert hex coordinates", { err });
 		}
 	}
+
+	// Extract weather from weather store if hex coordinates available
+	let weatherTags: string[] = ["clear"]; // Default fallback
+	if (hexCoords && mapFile) {
+		try {
+			const weatherState = weatherStore.getWeather(
+				mapFile.path,
+				hexCoords.q,
+				hexCoords.r,
+				hexCoords.s,
+			);
+
+			if (weatherState) {
+				weatherTags = mapWeatherTypeToTags(weatherState.currentWeather.type);
+				logger.debug("[EncounterContextBuilder] Extracted weather from store", {
+					weatherType: weatherState.currentWeather.type,
+					tags: weatherTags,
+					temperature: weatherState.temperature,
+					severity: weatherState.currentWeather.severity,
+				});
+			} else {
+				logger.debug("[EncounterContextBuilder] No weather data for hex, using default", {
+					hexCoords,
+				});
+			}
+		} catch (err) {
+			logger.warn("[EncounterContextBuilder] Failed to extract weather from store", { err });
+		}
+	}
+
+	// TODO: Extract time from current in-game time
+	// For now, use placeholder
+	const timeTags: string[] = ["day"]; // Placeholder
+
+	// Default situation for random encounters during travel
+	const situationTags: string[] = ["wandering"];
 
 	logger.debug("[EncounterContextBuilder] Context built", {
 		tags: { terrain: terrainTags, weather: weatherTags, time: timeTags, faction: factionTags, situation: situationTags },

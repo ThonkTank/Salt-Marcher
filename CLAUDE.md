@@ -315,7 +315,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 10.2 ✅ Complete | Tests: 1039/1039 (100%) ✅ | **Next:** Phase 10.3 - Weather Encounter & Audio Integration
+**Status:** Phase 10.3 ✅ Complete | Tests: 1070/1070 (100%) ✅ | **Next:** Phase 10.4 - Weather Session Runner UI
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -455,11 +455,14 @@ Ziele:
   - Fallback: Generates placeholder 3x3 grid when no maps exist ✅
   - Note: Weather event persistence to calendar inbox intentionally skipped (weather is transient state)
 
+- **Phase 10.3:** Weather Encounter & Audio Integration ✅ - See [docs/weather-system.md](docs/weather-system.md#phase-103)
+  - Weather tag mapper utility: Maps WeatherType to TAGS.md vocabulary ✅
+  - Encounter context builder: Extracts weather from store, converts to tags ✅
+  - Audio context extractor: Queries weather store for hex, returns primary tag ✅
+  - Coordinate conversion: odd-r → cube for weather lookups ✅
+  - Integration tests: 31 new tests (weather tag mapping: 15, encounter context: 7, audio context: 9) ✅
+
 **Geplant:**
-- **Phase 10.3:** Weather Encounter & Audio Integration
-  - Update encounter-context-builder with weather extraction
-  - Update audio context-extractor with weather
-  - Weather tag mapping to tag vocabulary
 - **Phase 10.4:** Weather Session Runner UI
   - Weather panel component
   - Weather icon system
@@ -534,15 +537,18 @@ None currently! All blocking issues resolved. ✅
 15. **[LOW] 22 Feature TODOs** - Intentional placeholders for future work (weather extraction, time-of-day, UI improvements)
 
 **Test-Status:**
-- Unit tests: 1039/1039 passing (100%) ✅
+- Unit tests: 1070/1070 passing (100%) ✅
   - Audio tests: 57/57 ✅
   - Playlist tests: 17/17 ✅
   - Encounter tests: 26/26 ✅
   - Faction tests: 391/391 ✅ (fixed 2 flaky probabilistic tests)
   - Location tests: 118/118 ✅
   - Building/Production tests: 22/22 ✅
-  - Weather tests: 20/20 ✅ (Phase 10.2 complete)
-  - Weather calendar integration: 32/32 ✅
+  - Weather tests: 20/20 ✅ (Phase 10.1 complete)
+  - Weather calendar integration: 32/32 ✅ (Phase 10.2 complete)
+  - Weather tag mapper: 15/15 ✅ (Phase 10.3 complete)
+  - Weather encounter integration: 7/7 ✅ (Phase 10.3 complete)
+  - Weather audio integration: 9/9 ✅ (Phase 10.3 complete)
   - Header policy: 1/1 ✅ (AGENTS.md check removed)
 - Integration tests: 6 require live Obsidian (expected, documented limitation)
 
