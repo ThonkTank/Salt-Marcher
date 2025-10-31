@@ -322,154 +322,24 @@ Ziele:
 - **Phase 5:** Loot Generator - Gold (XP-based, 5 rule types), Items (tag-filter, rarity-limits, weighted), E2E tests (13 scenarios)
 - **Phase 6:** Audio System ✅ - See [docs/audio-system.md](docs/audio-system.md)
 - **Phase 7:** Random Encounters ✅ - See [docs/random-encounters.md](docs/random-encounters.md)
-- **Phase 8.1:** Faction System Foundation ✅ - See [docs/faction-system.md](docs/faction-system.md)
-  - Member system with position tracking (hex/POI/expedition/unassigned)
-  - Job system (crafting, gathering, training, summoning, guard, patrol, research)
-  - Structured resources (gold, food, equipment, magic, influence)
-  - Faction relationships with numeric values (-100 to +100)
-- **Phase 8.2:** Faction AI & Simulation ✅ - See [docs/faction-system.md](docs/faction-system.md)
-  - Decision-making AI: 14 decision types with priority weighting and goal evaluation
-  - NPC generation: 6 culture templates, procedural names/profiles, personality traits
-  - Simulation engine: Resource production/consumption, job processing, expedition events
-  - Plot hook generation: 6 hook categories from decisions, events, and relationships
-  - 70 new tests (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23)
-- **Phase 8.3:** Faction Integration & Automation (Stub Implementation) ✅ - See [docs/faction-system.md](docs/faction-system.md)
-  - Integration helper functions: `getFactionMembersAtHex`, `getAllFactionCamps`, `runDailyFactionSimulation`
-  - Architectural stubs with clear TODO markers for full implementation
-  - 15 new integration tests demonstrating expected behavior
-  - Foundation ready for encounter/calendar/map integration
-- **Phase 8.4:** Full Faction Integration ✅ - See [docs/faction-system.md](docs/faction-system.md)
-  - Full YAML parsing using js-yaml library (parses members, resources, relationships)
-  - Coordinate system conversion: cube {q,r,s} → axial {q,r} → oddr {r,c}
-  - POI→coordinate lookup via callback function pattern
-  - Calendar date integration (ISO date string, elapsed days)
-  - Persistence: Simulation results applied and saved back to faction files
-  - Event generation with dates for calendar inbox
-  - Updated integration tests with full YAML structures
-- **Phase 8.5:** Advanced Faction Features ✅ - See [docs/faction-system.md](docs/faction-system.md)
-  - Subfaction system: Organizational hierarchy with resource/culture inheritance, validation
-  - Dynamic relationships: Action-based changes, natural decay, relationship propagation
-  - Economic simulation: Market pricing (supply/demand), trade routes, buy/sell operations
-  - Military simulation: Strength calculation, battles, sieges, casualties, morale, tactical AI
-  - Diplomatic events: Treaty negotiation/violation/lifecycle, diplomatic events, negotiation
-  - 122 new tests (Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20)
-- **Phase 8.6:** Advanced Faction Features ✅ - See [docs/faction-system.md](docs/faction-system.md)
-  - NPC Personality System: Procedural quirks (35+ templates), multi-layered loyalties, secrets, trust/ambition (0-100), betrayal detection
-  - Advanced Economics: Production chains (6 templates), daily resource consumption, trade goods catalog (20+ items with categories/tags)
-  - Advanced Military: Veterancy system (0-100, up to +50% bonus), equipment degradation/repair, supply lines with raid risk
-  - Advanced Diplomacy: Secret treaties, espionage operations (5 types), diplomatic incidents (5 types), intelligence gathering
-  - 69 new tests (NPC Personalities: 18, Advanced Features: 51)
-- **Phase 8.7:** Further Advanced Features ✅ - See [docs/faction-system.md](docs/faction-system.md)
-  - Complex NPC Networks: Dynamic relationship graphs (-100 to +100), cluster detection, cross-faction diplomacy influence, event generation (love triangles, betrayals, feuds)
-  - Economic Markets: Regional markets with supply/demand pricing, market events (shortage/surplus/panic), price history/trends, economic cycles (4 phases), investment analysis
-  - Advanced Supply Chains: Multi-step production dependencies, critical path analysis, bottleneck detection, parallelization optimization, chain events
-  - Intelligence Networks: Persistent spy networks with agents/safe houses, intelligence gathering (5 types), counter-intelligence, false intel, covert operations
-  - 85 new tests (NPC Networks: 25, Economic Markets: 22, Supply Chains: 18, Intelligence Networks: 20)
-- **Phase 8.8:** Integration with Existing Systems ✅ - See [docs/random-encounters.md](docs/random-encounters.md#phase-88-faction-encounter-integration-)
-  - Faction Encounter Integration: Faction members at hexes automatically included in random encounters
-  - Coordinate conversion: odd-r → cube coordinates for faction lookup
-  - Named NPCs and unit types spawn as combatants with proper stats
-  - 2 new tests for hex coordinate integration
-- **Phase 8.9:** Calendar Integration ✅ - See [docs/faction-system.md](docs/faction-system.md#phase-89-calendar-integration-)
-  - FactionSimulationHook interface for decoupled integration
-  - Automatic faction simulation on calendar day advancement
-  - Factory function to wire up App instance with hook
-  - Non-blocking error handling (simulation failures don't break time advancement)
-  - 14 new tests for calendar-faction integration
-- **Phase 9:** Location Integration & Influence System ✅ - See [docs/faction-system.md](docs/faction-system.md#phase-9-location-integration--influence-system-)
-  - Location influence areas: 9 location types with radius/strength/decay configs
-  - Coordinate parsing: odd-r and axial formats, hex distance calculations
-  - Building production: 16 building templates across 6 categories
-  - Job permissions, worker capacity, production rates, maintenance costs
-  - Building bonuses: quality (+15-30%), training speed (+20-50%), research (+20-50%)
-  - Building degradation and repair system (condition, maintenance overdue)
-  - Location-faction integration: bidirectional ownership, worker management, validation
-  - 68 new tests (influence: 25, buildings: 43)
-- **Phase 9.1:** UI Integration ✅ - See [docs/faction-system.md#phase-91-ui-integration-](docs/faction-system.md#phase-91-ui-integration-)
-  - Location influence overlays on cartographer map with color-coded strength
-  - Inspector panel shows location influence info (strength, owner, type)
-  - Reactive store pattern for map overlay updates
-  - 17 new tests for location-influence-store
-- **Phase 9.2:** Building Management Data Model ✅ - See [docs/faction-system.md#phase-92-building-management-data-model-](docs/faction-system.md#phase-92-building-management-data-model-)
-  - Extended LocationData with building_production field (BuildingProduction interface)
-  - Location create-spec with building fields (type, condition, maintenance, workers)
-  - Browse view enhancement with building status badges (color-coded condition)
-  - Serialization support for building production in markdown
-  - Type guard isBuildingLocation() for type-safe checks
-  - 11 new tests for type guards and serialization (100% pass rate)
-- **Phase 9.1.2:** Inspector Building Display ✅ - See [docs/PHASE_9_1_UI_INTEGRATION.md#phase-912-building--worker-information-display-](docs/PHASE_9_1_UI_INTEGRATION.md#phase-912-building--worker-information-display-)
-  - Cartographer inspector shows building details for locations with influence
-  - Displays building type, condition (color-coded 🟢🟡🔴), worker count, maintenance status
-  - Async location file loading with graceful error handling
-  - Uses existing frontmatter utilities and type guards
-  - No new tests (follows existing proven patterns)
-- **Phase 9.2B:** Building Management UI ✅ - See [docs/faction-system.md#phase-92b-building-management-ui-](docs/faction-system.md#phase-92b-building-management-ui-)
-  - Building management modal with CRUD operations for building state
-  - Edit building condition (slider with live production rate calculation)
-  - Edit maintenance overdue status
-  - View/edit current worker count (validated against template max)
-  - View allowed jobs and building bonuses
-  - View/remove active jobs
-  - View period production output
-  - Save changes via Obsidian's processFrontMatter API
-  - "Manage Building" button in cartographer inspector
-  - No new tests (follows proven Obsidian Modal pattern)
-- **Phase 9.2C:** Worker Assignment UI ✅ - See [docs/faction-system.md#phase-92c-worker-assignment-ui-](docs/faction-system.md#phase-92c-worker-assignment-ui-)
-  - Load available faction members from vault (filters by location and job status)
-  - Drag-and-drop interface for assigning/unassigning workers
-  - Visual worker roster showing assigned and available members
-  - Worker cards display name, faction, and role
-  - Capacity validation (max workers per building)
-  - Worker position and job updates persisted to faction files
-  - Assign/unassign buttons for quick access
-  - No new tests (follows proven modal patterns)
-- **Phase 9.2D:** Production Visualization ✅ - See [docs/faction-system.md#phase-92d-production-visualization-](docs/faction-system.md#phase-92d-production-visualization-)
-  - Production rate visualization with color-coded condition bars
-  - Worker efficiency indicators with capacity warnings
-  - Resource flow visualization with progress bars
-  - Unified production dashboard combining all metrics
-  - Pure HTML/CSS implementation (no external chart libraries)
-  - 22 new tests for visualization components (100% pass rate)
-- **Phase 10.1:** Weather System Core ✅ - See [docs/weather-system.md](docs/weather-system.md)
-  - Weather state types and interfaces (WeatherState, WeatherCondition, ClimateTemplate) ✅
-  - 6 climate templates: Arctic, Temperate, Tropical, Desert, Mountain, Coastal ✅
-  - Procedural weather generator with Markov chain transitions ✅
-  - Seeded RNG for deterministic generation ✅
-  - Temperature, wind, precipitation, visibility calculations ✅
-  - Season-aware weather probabilities and transitions ✅
-  - Weather store with reactive hex-based state management ✅
-  - Fixed test issues: svelte/store mock, temperature ranges, probabilistic test reliability ✅
-  - 19 weather tests passing (100%)
-
-- **Phase 10.2:** Weather Calendar Integration ✅ - See [docs/weather-system.md#phase-102](docs/weather-system.md#phase-102)
-  - WeatherSimulationHook interface for decoupled calendar integration ✅
-  - Automatic weather simulation on day advancement ✅
-  - Day-of-year calculation for seasonal transitions ✅
-  - ISO date string formatting (YYYY-MM-DD) ✅
-  - Non-blocking error handling (weather failures don't break time) ✅
-  - 32 new tests for weather-calendar integration (100% pass rate) ✅
-  - Hex/region integration: Scans all map files for hexes with tiles ✅
-  - Climate loading: Extracts climate tags from region metadata ✅
-  - Climate mapping: Maps climate tags to climate templates (Arctic/Desert/Tropical/Mountain/Coastal/Temperate) ✅
-  - Coordinate conversion: odd-r → cube coordinates for weather storage ✅
-  - Fallback: Generates placeholder 3x3 grid when no maps exist ✅
-  - Note: Weather event persistence to calendar inbox intentionally skipped (weather is transient state)
-
-- **Phase 10.3:** Weather Encounter & Audio Integration ✅ - See [docs/weather-system.md](docs/weather-system.md#phase-103)
-  - Weather tag mapper utility: Maps WeatherType to TAGS.md vocabulary ✅
-  - Encounter context builder: Extracts weather from store, converts to tags ✅
-  - Audio context extractor: Queries weather store for hex, returns primary tag ✅
-  - Coordinate conversion: odd-r → cube for weather lookups ✅
-  - Integration tests: 31 new tests (weather tag mapping: 15, encounter context: 7, audio context: 9) ✅
-
-- **Phase 10.4:** Weather Session Runner UI ✅ - See [docs/weather-system.md](docs/weather-system.md#phase-104)
-  - Weather panel component with icon, conditions, and gameplay effects ✅
-  - Weather icon system with Lucide icons and German labels ✅
-  - Movement speed modifiers (snow: -50%, storm: -40%, rain: -25%, etc.) ✅
-  - Sidebar integration with reactive weather updates ✅
-  - Session Runner integration with coordinate conversion ✅
-  - Styling with color-coded severity indicators ✅
-  - 24 new tests (icon mapping, labels, speed modifiers, formatting) ✅
+- **Phase 8.1-8.9:** Faction System Complete ✅ - See [docs/faction-system.md](docs/faction-system.md)
+  - Member tracking, jobs, resources, relationships, AI decisions, NPC generation
+  - Economic/military/diplomatic simulation with markets, battles, treaties, espionage
+  - NPC personalities, supply chains, intelligence networks
+  - Calendar & encounter integration, automatic simulation on day advancement
+  - 390+ tests covering all faction subsystems
+- **Phase 9-9.2D:** Location & Building System Complete ✅ - See [docs/faction-system.md](docs/faction-system.md)
+  - Location influence overlays with 9 location types, radius/strength/decay configs
+  - Building production system: 16 templates, job permissions, production rates
+  - Cartographer UI: inspector display, building management modal, worker assignment (drag-drop)
+  - Production visualization with efficiency indicators and resource flow
+  - 118+ tests for location/building systems
+- **Phase 10.1-10.4:** Weather System Complete ✅ - See [docs/weather-system.md](docs/weather-system.md)
+  - 6 climate templates with Markov chain weather generation (seeded RNG, seasonal transitions)
+  - Reactive weather store (hex-indexed), calendar integration (auto-simulation on day advance)
+  - Encounter & audio integration (weather tags, context extraction, coordinate conversion)
+  - Session Runner UI: weather panel, icons, movement speed modifiers (-50% to 0%)
+  - 106 tests (weather core: 19, calendar: 32, encounter/audio: 31, UI: 24) - 100% pass rate
 
 **Geplant:**
 - **Phase 10.5:** Advanced Weather Features (Future)
@@ -483,10 +353,6 @@ Ziele:
 None currently! All blocking issues resolved. ✅
 
 **HIGH (Feature fehlt oder stark beeinträchtigt):**
-1. **[HIGH] Encounter Edit Workflow Broken** - Cannot edit encounters unless random encounter triggered first
-   - User cannot use feature without workaround
-   - Needs investigation: Why is editor bound to random encounter trigger?
-   - Location: encounter-gateway.ts or encounter view initialization
 2. **[HIGH] Almanac Frontend Missing** - Calendar has no UI, completely unusable
    - Backend fully implemented (Phase 8.9 ✅)
    - Goal specifies "Monats-, Wochen-, Timeline-Modus" but none exist
@@ -501,17 +367,29 @@ None currently! All blocking issues resolved. ✅
    - Goal: "Tabs für Kreaturen, Zauber, Items, Equipment, Terrains, Regionen und Kalender"
    - Need: Create specs + serializers for Location, Playlist, EncounterTable entities
    - Location: src/workmodes/library/registry.ts
+5. **[HIGH] [UX] Weather Speed Modifier - No Context or Explanation** - Speed modifier confusing
+   - Shows "75%" without explaining what it means (75% of normal? 75% slower?)
+   - User doesn't know if modifier is already applied to party speed
+   - No indication how to calculate actual travel speed impact
+   - Need: Helper text "Movement speed reduced to 75% of normal" + before/after display (e.g., "3.0 → 2.25 mph")
+   - Location: weather-panel.ts:140-158
+6. **[HIGH] [UX] Weather Panel - No Interactivity** - Completely passive display
+   - Users cannot click/hover for more details or forecasts
+   - No way to preview weather for adjacent hexes (travel planning impossible)
+   - No weather history log (can't check "did it rain yesterday?")
+   - Need: Forecast view, weather history, hex preview on hover, detailed explanations
+   - Location: weather-panel.ts (entire component)
 
 **MEDIUM (Feature unvollständig aber teilweise nutzbar):**
-5. **[MEDIUM] POI Integration Missing** - Cannot place location markers on map
+7. **[MEDIUM] POI Integration Missing** - Cannot place location markers on map
    - Goal: "Ortsmarker (Städte, Landmarken)" in Cartographer
    - Phase 9 Location system fully implemented but no UI access
    - Need: Cartographer mode for placing/editing location markers
    - Location: Cartographer brush/inspector modes
-6. **[MEDIUM] Cartographer Brush Error** - Brush mode logs error messages
+8. **[MEDIUM] Cartographer Brush Error** - Brush mode logs error messages
    - Terrain-brush functionality potentially broken, needs real testing
    - Location: Cartographer terrain-brush mode
-7. **[HIGH] [UX] Worker Assignment - No Job Validation Feedback** - Workers can be assigned regardless of job compatibility
+9. **[HIGH] [UX] Worker Assignment - No Job Validation Feedback** - Workers can be assigned regardless of job compatibility
    - Workers assignable even if job doesn't match building's allowed jobs
    - No validation or warning shown to user before/after assignment
    - Need: Validate worker.job ∈ buildingTemplate.allowedJobs and show clear feedback
@@ -532,82 +410,104 @@ None currently! All blocking issues resolved. ✅
    - Shows "75%" but unclear what this percentage represents
    - Need: Show actual values (e.g., "7.5 Gold/day at 75% efficiency")
    - Location: production-visualization.ts
-12. **[MEDIUM] Cartographer Brush Error** - Brush mode logs error messages
-   - Terrain-brush functionality potentially broken, needs real testing
-   - Location: Cartographer terrain-brush mode
+12. **[MEDIUM] [UX] Weather Panel - Placeholder State Unclear** - "Kein Wetter verfügbar" doesn't explain why
+   - Could mean: no map loaded, weather not initialized, hex has no data, or calendar not running
+   - User doesn't know if feature is broken or if action needed
+   - Need: Specific messages for each scenario ("Select a hex", "Load a map", "Weather unavailable for this hex")
+   - Location: weather-panel.ts:86-95
+13. **[MEDIUM] [UX] Weather Details - Categorical Values Lack Precision** - Some values show categories instead of numbers
+   - Precipitation: "Mäßiger Niederschlag" (what mm/h?), Visibility: "Gut" (how many meters?)
+   - Players wanting precise values for calculations can't get them
+   - Need: Show both category and exact value: "Mäßiger Niederschlag (5 mm/h)" or add tooltip
+   - Location: weather-icons.ts:117-133
+14. **[MEDIUM] [UX] Weather Icon - No Severity Indication** - Icon shows type but not severity
+   - "Regen" icon looks same for light drizzle and torrential downpour
+   - Only text label shows severity, less scannable UI
+   - Need: Visual severity indicator (icon size, color, badge, or animation)
+   - Location: weather-panel.ts:118-124
 
 **LOW (Nice-to-have, Verbesserungen):**
-13. **[LOW] Test Suite Unhandled Error** - 1 unhandled error during test run
+15. **[LOW] Test Suite Unhandled Error** - 1 unhandled error during test run
    - All 1070 tests pass, but Vitest reports 1 unhandled error
    - Non-blocking, doesn't cause test failures
    - Need: Investigate source and add proper error handling
    - Location: Run `npm test` and check error details
-14. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
-15. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
-16. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
+16. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
+17. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
+18. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
    - Currently assumes creature files are in standard location
    - Need: Get actual file path from vault lookup or repository
    - Location: src/workmodes/encounter/presenter.ts:442
-17. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
+19. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
    - No escape key to close, no tab navigation between sections
    - Drag-and-drop only, no keyboard alternative for worker assignment
    - Location: src/workmodes/cartographer/building-management-modal.ts
-18. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
+20. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
    - Worker loading shows no spinner/placeholder while loading factions
    - Save operation has no loading indicator during vault writes
    - Location: building-management-modal.ts:86-133 (loadAvailableWorkers), :618-653 (saveChanges)
-19. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
+21. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
    - After saving building changes, inspector panel shows stale data
    - onSave callback logs but doesn't refresh display
    - Location: inspector.ts:310-314
-20. **[LOW] [UX] Save Button - No Unsaved Changes Warning** - User can close without saving
+22. **[LOW] [UX] Save Button - No Unsaved Changes Warning** - User can close without saving
    - unsavedChanges flag exists but not used for exit confirmation
    - Need: Warn user on modal close if unsavedChanges === true
    - Location: building-management-modal.ts:42
-21. **[LOW] console.warn Usage in context-extractor.ts** - Should use logger instead
-   - Lines 39, 71 use console.warn instead of plugin-logger
-   - Inconsistent with logging standards (other files use logger)
-   - Location: src/features/audio/context-extractor.ts:39, :71
-22. **[LOW] Time-of-Day Extraction Placeholder** - encounter-context-builder hardcodes "day"
+23. **[LOW] Time-of-Day Extraction Placeholder** - encounter-context-builder hardcodes "day"
    - TODO comment at line 133: Extract time from current in-game time
    - Currently always returns "day" regardless of actual calendar time
    - Need: Integration with calendar state to get actual time of day
    - Location: src/workmodes/session-runner/util/encounter-context-builder.ts:133-135
-23. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
+24. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
    - Progress bars show data but no hover tooltips or click interactions
    - No way to see historical trends or detailed breakdowns
    - Location: src/features/locations/production-visualization.ts
-24. **[LOW] Coordinate Conversion Logic Duplication** - DRY violation
+25. **[LOW] [UX] Weather Speed Modifier Color Coding - Thresholds Arbitrary** - Color thresholds might not match user perception
+   - Green ≥90% (only -10% or less), Yellow 70-89%, Red <70%
+   - 80% speed might feel quite impactful but shows as "warning" yellow
+   - Need: User testing to refine thresholds or make configurable
+   - Location: weather-panel.ts:151-157
+26. **[LOW] [UX] Weather Panel - No Animation or Transitions** - Weather updates instantly
+   - No fade-in/out, no loading state, jarring when rapidly clicking hexes
+   - Feels less professional
+   - Need: Smooth fade transition between weather states
+   - Location: weather-panel.ts:99-135
+27. **[LOW] [UX] Weather Panel - Redundant "Reiseeffekte" Section** - Section header with only one item
+   - "Reiseeffekte" section with only speed modifier takes vertical space
+   - Implies more effects might exist
+   - Need: Either add more effects or remove section header, just show speed modifier directly
+   - Location: weather-panel.ts:74-84
+28. **[LOW] [UX] Weather Panel - Missing Accessibility Features** - Screen reader and keyboard support lacking
+   - No `aria-live` region for weather updates (screen readers won't announce changes)
+   - No `role="region"` on panel, no `aria-label` on icon
+   - Panel cannot receive keyboard focus (no shortcuts to jump to weather)
+   - Need: Add ARIA labels, live regions, semantic markup
+   - Location: weather-panel.ts (entire component)
+29. **[LOW] Coordinate Conversion Logic Duplication** - DRY violation
    - Same odd-r → cube conversion logic duplicated in 2+ files
-   - Found in: context-extractor.ts:59-64, encounter-context-builder.ts:87-93
+   - Found in: context-extractor.ts:59-64, encounter-context-builder.ts:87-93, experience.ts:76-81
    - Should: Extract to shared utility function (e.g., src/features/maps/coordinate-utils.ts)
-   - Impact: Low (only 2 locations, but violates DRY principle)
-25. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
+   - Impact: Low (only 3 locations, but violates DRY principle)
+30. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
 
 **Test-Status:**
-- Unit tests: 1094/1095 passing (99.9%) ⚠️ 1 probabilistic test failure
-  - Audio tests: 57/57 ✅
-  - Playlist tests: 17/17 ✅
-  - Encounter tests: 26/26 ✅
-  - Faction tests: 390/391 ✅ (1 probabilistic test fails occasionally)
-  - Location tests: 118/118 ✅
-  - Building/Production tests: 22/22 ✅
-  - Weather tests: 20/20 ✅ (Phase 10.1 complete)
-  - Weather calendar integration: 32/32 ✅ (Phase 10.2 complete)
-  - Weather tag mapper: 15/15 ✅ (Phase 10.3 complete)
-  - Weather encounter integration: 7/7 ✅ (Phase 10.3 complete)
-  - Weather audio integration: 9/9 ✅ (Phase 10.3 complete)
-  - Weather UI tests: 24/24 ✅ (Phase 10.4 complete)
+- Unit tests: 1100/1101 passing (99.9%) ✅
+  - Audio: 57/57 ✅, Playlist: 17/17 ✅, Encounter: 33/33 ✅ (+7 manual composition tests)
+  - Faction: 390/391 ✅ (1 probabilistic test occasionally fails)
+  - Location/Building: 140/140 ✅
+  - Weather (Phase 10.1-10.4): 106/106 ✅ (Phase 10.4 complete!)
   - Header policy: 1/1 ✅
 - Integration tests: 6 require live Obsidian (expected, documented limitation)
 - **Known Issue:** 1 probabilistic faction NPC betrayal test fails occasionally (non-blocking)
 
 **Nächste Schritte (Empfehlung):**
 1. **[HIGH] Fix Broken User Features** - Core functionality unusable
-   - Encounter edit workflow (investigate why editor requires random encounter trigger)
    - Almanac frontend implementation (month/week/timeline views, event editors)
    - Library tabs (Location/Playlist/EncounterTable specs + serializers)
    - **[UX] Worker assignment job validation** (workers assigned to incompatible buildings, no feedback)
+   - **[UX] Weather speed modifier explanation** (users confused by "75%" display, need context)
+   - **[UX] Weather panel interactivity** (passive display, add forecast/history/hover previews)
 2. **[MEDIUM] Complete Partial Features** - Working but incomplete
    - POI placement UI in Cartographer (location system ready, needs UI mode)
    - Cartographer Brush debugging (investigate error messages)
@@ -616,8 +516,10 @@ None currently! All blocking issues resolved. ✅
    - **[UX] Condition impact clarity** (users don't understand what condition affects)
    - **[UX] Drag-and-drop affordance** (workers don't look draggable)
    - **[UX] Production units display** (shows % without context)
-3. **[PLANNED] Phase 10.4: Weather Session Runner UI** - Next planned phase
-   - Weather panel component
-   - Weather icon system
-   - Travel movement modifiers
-   - Visual polish and testing
+   - **[UX] Weather placeholder messages** (unclear why "Kein Wetter verfügbar")
+   - **[UX] Weather detail precision** (categorical values lack exact numbers)
+   - **[UX] Weather icon severity** (icon doesn't show severity visually)
+3. **[PLANNED] Phase 10.5: Advanced Weather Features** - Future enhancements
+   - Weather forecasting (predict next 3 days)
+   - Extreme weather events (hurricanes, blizzards)
+   - Player-controlled weather (Control Weather spell)

@@ -78,4 +78,145 @@ describe("EncounterPresenter", () => {
         expect(state.session?.status).toBe("resolved");
         expect(state.session?.resolvedAt).toBe("2024-06-01T11:15:00.000Z");
     });
+
+    describe("manual encounter composition", () => {
+        it("creates default manual session when adding creature without session", () => {
+            const now = vi.fn(() => "2024-06-01T10:00:00.000Z");
+            const presenter = new EncounterPresenter(null, { now });
+
+            // Initially no session
+            expect(presenter.getState().session).toBeNull();
+
+            // Add a creature
+            presenter.addCreature({
+                id: "creature-1",
+                name: "Goblin",
+                count: 3,
+                cr: 0.25,
+                source: "library",
+                statblockPath: "SaltMarcher/Creatures/Goblin.md",
+            });
+
+            // Session should now exist with manual source
+            const state = presenter.getState();
+            expect(state.session).not.toBeNull();
+            expect(state.session?.event.source).toBe("manual");
+            expect(state.session?.event.triggeredAt).toBe("2024-06-01T10:00:00.000Z");
+            expect(state.session?.event.coord).toBeNull();
+            expect(state.session?.creatures).toHaveLength(1);
+            expect(state.session?.creatures[0].name).toBe("Goblin");
+            expect(state.session?.creatures[0].count).toBe(3);
+        });
+
+        it("adds multiple creatures to manual session", () => {
+            const presenter = new EncounterPresenter();
+
+            presenter.addCreature({
+                id: "creature-1",
+                name: "Goblin",
+                count: 3,
+                cr: 0.25,
+                source: "library",
+                statblockPath: "SaltMarcher/Creatures/Goblin.md",
+            });
+
+            presenter.addCreature({
+                id: "creature-2",
+                name: "Hobgoblin",
+                count: 1,
+                cr: 1,
+                source: "library",
+                statblockPath: "SaltMarcher/Creatures/Hobgoblin.md",
+            });
+
+            const state = presenter.getState();
+            expect(state.session?.creatures).toHaveLength(2);
+            expect(state.session?.creatures[0].name).toBe("Goblin");
+            expect(state.session?.creatures[1].name).toBe("Hobgoblin");
+        });
+
+        it("increments count when adding same creature twice", () => {
+            const presenter = new EncounterPresenter();
+
+            presenter.addCreature({
+                id: "creature-1",
+                name: "Goblin",
+                count: 3,
+                cr: 0.25,
+                source: "library",
+                statblockPath: "SaltMarcher/Creatures/Goblin.md",
+            });
+
+            presenter.addCreature({
+                id: "creature-1",
+                name: "Goblin",
+                count: 2,
+                cr: 0.25,
+                source: "library",
+                statblockPath: "SaltMarcher/Creatures/Goblin.md",
+            });
+
+            const state = presenter.getState();
+            expect(state.session?.creatures).toHaveLength(1);
+            expect(state.session?.creatures[0].count).toBe(5);
+        });
+
+        it("can remove creatures from manual session", () => {
+            const presenter = new EncounterPresenter();
+
+            presenter.addCreature({
+                id: "creature-1",
+                name: "Goblin",
+                count: 3,
+                cr: 0.25,
+                source: "library",
+                statblockPath: "SaltMarcher/Creatures/Goblin.md",
+            });
+
+            presenter.removeCreature("creature-1");
+
+            const state = presenter.getState();
+            expect(state.session?.creatures).toHaveLength(0);
+        });
+
+        it("can update creature count in manual session", () => {
+            const presenter = new EncounterPresenter();
+
+            presenter.addCreature({
+                id: "creature-1",
+                name: "Goblin",
+                count: 3,
+                cr: 0.25,
+                source: "library",
+                statblockPath: "SaltMarcher/Creatures/Goblin.md",
+            });
+
+            presenter.updateCreature("creature-1", { count: 5 });
+
+            const state = presenter.getState();
+            expect(state.session?.creatures[0].count).toBe(5);
+        });
+
+        it("manual session persists through view lifecycle", () => {
+            const presenter = new EncounterPresenter();
+
+            presenter.addCreature({
+                id: "creature-1",
+                name: "Goblin",
+                count: 3,
+                cr: 0.25,
+                source: "library",
+                statblockPath: "SaltMarcher/Creatures/Goblin.md",
+            });
+
+            // Simulate persisting and restoring
+            const persisted = presenter.getState();
+            const restored = new EncounterPresenter(persisted);
+            const state = restored.getState();
+
+            expect(state.session?.event.source).toBe("manual");
+            expect(state.session?.creatures).toHaveLength(1);
+            expect(state.session?.creatures[0].name).toBe("Goblin");
+        });
+    });
 });

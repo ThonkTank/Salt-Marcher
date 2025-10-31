@@ -10,6 +10,7 @@ import type { SessionContext } from "./auto-selection-types";
 import { loadTile, type TileData } from "../maps/data/tile-repository";
 import { weatherStore } from "../weather/weather-store";
 import { getPrimaryWeatherTag } from "../weather/weather-tag-mapper";
+import { logger } from "../../app/plugin-logger";
 
 /**
  * Extract session context from current hex
@@ -36,7 +37,7 @@ export async function extractSessionContext(
 		tileData = await loadTile(app, mapFile, coord);
 	} catch (error) {
 		// If tile can't be loaded, continue with null data
-		console.warn(`[ContextExtractor] Failed to load tile at ${coord.r},${coord.c}:`, error);
+		logger.warn(`[ContextExtractor] Failed to load tile at ${coord.r},${coord.c}:`, error);
 	}
 
 	// Extract terrain from tile
@@ -68,7 +69,7 @@ export async function extractSessionContext(
 				weather = getPrimaryWeatherTag(weatherState.currentWeather.type);
 			}
 		} catch (error) {
-			console.warn(`[ContextExtractor] Failed to extract weather for hex ${coord.r},${coord.c}:`, error);
+			logger.warn(`[ContextExtractor] Failed to extract weather for hex ${coord.r},${coord.c}:`, error);
 		}
 	}
 

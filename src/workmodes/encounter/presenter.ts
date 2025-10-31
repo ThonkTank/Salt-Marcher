@@ -178,8 +178,16 @@ export class EncounterPresenter {
     }
 
     addCreature(creature: EncounterCreature) {
-        const session = this.persisted.session;
-        if (!session) return;
+        // Create a default manual session if none exists
+        let session = this.persisted.session;
+        if (!session) {
+            session = this.createDefaultManualSession();
+            this.persisted = {
+                ...this.persisted,
+                session,
+            };
+        }
+
         const sanitized: EncounterCreature = {
             ...creature,
             count: Math.max(1, Math.floor(creature.count)),
@@ -281,9 +289,14 @@ export class EncounterPresenter {
         app: import("obsidian").App,
         clearExisting: boolean = false
     ): Promise<{ success: true; creatures: EncounterCreature[] } | { success: false; error: string }> {
-        const session = this.persisted.session;
+        // Create a default manual session if none exists
+        let session = this.persisted.session;
         if (!session) {
-            return { success: false, error: "No active encounter session" };
+            session = this.createDefaultManualSession();
+            this.persisted = {
+                ...this.persisted,
+                session,
+            };
         }
 
         try {
@@ -819,6 +832,26 @@ export class EncounterPresenter {
         for (const listener of [...this.listeners]) {
             listener(this.viewState);
         }
+    }
+
+    /**
+     * Creates a default manual session for encounters composed without a travel context.
+     * This allows users to open the Calculator directly and manually add creatures.
+     */
+    private createDefaultManualSession(): EncounterSessionState {
+        const event: EncounterEvent = {
+            id: `manual-${Date.now()}`,
+            source: "manual",
+            triggeredAt: this.deps.now(),
+            coord: null,
+        };
+        return {
+            event,
+            notes: "",
+            status: "pending",
+            creatures: [],
+            combat: null,
+        };
     }
 
     private static normalise(initial?: EncounterPersistedState | null): EncounterPersistedState {

@@ -23298,8 +23298,14 @@ var init_presenter = __esm({
         this.emit();
       }
       addCreature(creature) {
-        const session = this.persisted.session;
-        if (!session) return;
+        let session = this.persisted.session;
+        if (!session) {
+          session = this.createDefaultManualSession();
+          this.persisted = {
+            ...this.persisted,
+            session
+          };
+        }
         const sanitized = {
           ...creature,
           count: Math.max(1, Math.floor(creature.count)),
@@ -23414,9 +23420,13 @@ var init_presenter = __esm({
        * @returns Generated creatures or error
        */
       async generateEncounter(difficulty, app, clearExisting = false) {
-        const session = this.persisted.session;
+        let session = this.persisted.session;
         if (!session) {
-          return { success: false, error: "No active encounter session" };
+          session = this.createDefaultManualSession();
+          this.persisted = {
+            ...this.persisted,
+            session
+          };
         }
         try {
           const { generateRandomEncounter: generateRandomEncounter2 } = await Promise.resolve().then(() => (init_generator(), generator_exports));
@@ -23857,6 +23867,25 @@ var init_presenter = __esm({
         for (const listener of [...this.listeners]) {
           listener(this.viewState);
         }
+      }
+      /**
+       * Creates a default manual session for encounters composed without a travel context.
+       * This allows users to open the Calculator directly and manually add creatures.
+       */
+      createDefaultManualSession() {
+        const event = {
+          id: `manual-${Date.now()}`,
+          source: "manual",
+          triggeredAt: this.deps.now(),
+          coord: null
+        };
+        return {
+          event,
+          notes: "",
+          status: "pending",
+          creatures: [],
+          combat: null
+        };
       }
       static normalise(initial) {
         return {
@@ -29164,7 +29193,7 @@ async function extractSessionContext(app, mapFile, coord, additionalContext) {
   try {
     tileData = await loadTile(app, mapFile, coord);
   } catch (error) {
-    console.warn(`[ContextExtractor] Failed to load tile at ${coord.r},${coord.c}:`, error);
+    logger2.warn(`[ContextExtractor] Failed to load tile at ${coord.r},${coord.c}:`, error);
   }
   const terrain = tileData?.terrain ? normalizeTerrain(tileData.terrain) : void 0;
   const factions = [];
@@ -29187,7 +29216,7 @@ async function extractSessionContext(app, mapFile, coord, additionalContext) {
         weather = getPrimaryWeatherTag(weatherState.currentWeather.type);
       }
     } catch (error) {
-      console.warn(`[ContextExtractor] Failed to extract weather for hex ${coord.r},${coord.c}:`, error);
+      logger2.warn(`[ContextExtractor] Failed to extract weather for hex ${coord.r},${coord.c}:`, error);
     }
   }
   return {
@@ -29245,6 +29274,7 @@ var init_context_extractor = __esm({
     init_tile_repository();
     init_weather_store();
     init_weather_tag_mapper();
+    init_plugin_logger();
   }
 });
 
