@@ -312,7 +312,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 8.5 ✅ Complete (Advanced Faction Features) | Tests: 721/722 (99.9%) | **Next:** Phase 8.6 or UI Enhancements
+**Status:** Phase 8.6 ✅ Complete (Advanced Faction Features) | Tests: 761/762 (99.9%) | **Next:** Phase 8.7 or UI Enhancements
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -349,31 +349,36 @@ Ziele:
   - Economic simulation: Market pricing (supply/demand), trade routes, buy/sell operations
   - Military simulation: Strength calculation, battles, sieges, casualties, morale, tactical AI
   - Diplomatic events: Treaty negotiation/violation/lifecycle, diplomatic events, negotiation
-  - 92 new tests (Subfactions: 17, Relationships: 17, Economics: 20, Military: 18, Diplomacy: 20)
+  - 122 new tests (Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20)
+- **Phase 8.6:** Advanced Faction Features ✅ - See [docs/faction-system.md](docs/faction-system.md)
+  - NPC Personality System: Procedural quirks (35+ templates), multi-layered loyalties, secrets, trust/ambition (0-100), betrayal detection
+  - Advanced Economics: Production chains (6 templates), daily resource consumption, trade goods catalog (20+ items with categories/tags)
+  - Advanced Military: Veterancy system (0-100, up to +50% bonus), equipment degradation/repair, supply lines with raid risk
+  - Advanced Diplomacy: Secret treaties, espionage operations (5 types), diplomatic incidents (5 types), intelligence gathering
+  - 69 new tests (NPC Personalities: 18, Advanced Features: 51)
 
 **Geplant:**
-- **Phase 8.6 (Advanced Features)**: Further enhancements
-  - NPC personalities: Individual quirks, loyalties, secrets
-  - Advanced economics: Production chains, resource consumption, trade goods catalog
-  - Advanced military: Unit veterancy, equipment degradation, supply lines
-  - Diplomatic complexity: Secret treaties, espionage, diplomatic incidents
+- **Phase 8.7 (Further Advanced Features)**: Extended simulation depth
+  - Complex NPC Networks: Dynamic relationship graphs between NPCs
+  - Economic Markets: Real-time market simulation with price fluctuations
+  - Advanced Supply Chains: Multi-step production dependencies
+  - Intelligence Networks: Persistent spy networks and counter-intelligence
 
 **Technische Schulden:**
 - 21 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 
 **Test-Status:**
-- Unit tests: 721/722 passing (99.9%) ✅
+- Unit tests: 761/762 passing (99.9%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 24/24 (serialization: 10, generation: 14)
-  - Faction tests: 177/177 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Subfactions: 17, Relationships: 17, Economics: 20, Military: 18, Diplomacy: 20)
-  - Event handlers: Faction/location hook tests
+  - Faction tests: 289/289 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69)
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 8.6 (Advanced Features)** OR **UI Enhancements**:
-   - Option A: Continue faction system enhancements (NPC personalities, advanced economics/military, espionage)
-   - Option B: Build UI for Phase 8 features (faction territories on map, relationship graph, resource dashboard)
+1. **Phase 8.7 (Further Advanced Features)** OR **UI Enhancements**:
+   - Option A: Continue faction system depth (NPC networks, economic markets, intelligence networks)
+   - Option B: Build UI for Phase 8 features (faction territories on map, relationship graph, resource dashboard, personality viewer)
    - Option C: Move to next major feature (Orte system, Dungeon crawling, etc.)

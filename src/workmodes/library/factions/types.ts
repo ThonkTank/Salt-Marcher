@@ -30,6 +30,22 @@ export interface FactionJob {
 }
 
 /**
+ * NPC Personality traits (Phase 8.6)
+ */
+export interface NPCPersonality {
+  /** Personality quirks (e.g., "Always quotes poetry", "Afraid of heights") */
+  quirks?: string[];
+  /** Loyalties to other NPCs, factions, or ideals */
+  loyalties?: string[];
+  /** Hidden secrets or agendas */
+  secrets?: string[];
+  /** Trust level toward faction (0-100) */
+  trust?: number;
+  /** Ambition level (0-100) - likelihood of seeking advancement */
+  ambition?: number;
+}
+
+/**
  * Faction member: can be a named NPC or a unit type with quantity
  */
 export interface FactionMember {
@@ -51,6 +67,12 @@ export interface FactionMember {
   job?: FactionJob;
   /** Additional notes */
   notes?: string;
+  /** Personality traits (for named NPCs) - Phase 8.6 */
+  personality?: NPCPersonality;
+  /** Unit veterancy (for military units) - Phase 8.6 */
+  veterancy?: number; // 0-100, affects combat effectiveness
+  /** Equipment condition (for military units) - Phase 8.6 */
+  equipment_condition?: number; // 0-100, degrades over time
 }
 
 /**
@@ -118,6 +140,58 @@ export interface MarketData {
 }
 
 /**
+ * Production chain - converts inputs to outputs over time (Phase 8.6)
+ */
+export interface ProductionChain {
+  /** Chain ID */
+  id: string;
+  /** Name of production chain (e.g., "Weapon Forging", "Bread Baking") */
+  name: string;
+  /** Input resources required */
+  inputs: Record<string, number>;
+  /** Output resources produced */
+  outputs: Record<string, number>;
+  /** Time required (in days) */
+  duration: number;
+  /** Current progress (0-100%) */
+  progress?: number;
+  /** Building required */
+  required_building?: string;
+  /** Workers assigned */
+  workers?: number;
+}
+
+/**
+ * Trade good catalog entry (Phase 8.6)
+ */
+export interface TradeGood {
+  /** Good name */
+  name: string;
+  /** Category (food, equipment, luxury, raw materials, etc.) */
+  category: string;
+  /** Base value in gold */
+  base_value: number;
+  /** Weight (for transport capacity) */
+  weight: number;
+  /** Rarity (common, uncommon, rare, etc.) */
+  rarity: string;
+  /** Tags for filtering */
+  tags?: string[];
+}
+
+/**
+ * Resource consumption rate (Phase 8.6)
+ */
+export interface ResourceConsumption {
+  /** Resource name */
+  resource: string;
+  /** Amount consumed per day */
+  rate: number;
+  /** Reason for consumption */
+  reason: string;
+}
+
+/**
  * Military unit composition
  */
 export interface MilitaryUnit {
@@ -158,6 +232,26 @@ export interface MilitaryEngagement {
 }
 
 /**
+ * Supply line for military logistics (Phase 8.6)
+ */
+export interface SupplyLine {
+  /** Supply line ID */
+  id: string;
+  /** Origin location (hex or POI) */
+  origin: string;
+  /** Destination location (hex or POI) */
+  destination: string;
+  /** Resource being transported */
+  resource: string;
+  /** Amount per cycle */
+  amount: number;
+  /** Status */
+  status: "active" | "disrupted" | "severed";
+  /** Security level (affects raid risk) */
+  security: number;
+}
+
+/**
  * Diplomatic treaty or agreement
  */
 export interface DiplomaticTreaty {
@@ -175,6 +269,50 @@ export interface DiplomaticTreaty {
   expires?: string;
   /** Status */
   status: "active" | "violated" | "expired" | "nullified";
+  /** Secret treaty (hidden from other factions) - Phase 8.6 */
+  is_secret?: boolean;
+}
+
+/**
+ * Espionage operation (Phase 8.6)
+ */
+export interface EspionageOperation {
+  /** Operation ID */
+  id: string;
+  /** Target faction */
+  target: string;
+  /** Operation type */
+  type: "infiltrate" | "sabotage" | "steal_secrets" | "assassinate" | "counter_intel";
+  /** Assigned agent */
+  agent?: string;
+  /** Start date */
+  started: string;
+  /** Status */
+  status: "planning" | "active" | "success" | "failure" | "discovered";
+  /** Success chance (0-100%) */
+  success_chance?: number;
+  /** Resources spent */
+  cost?: number;
+}
+
+/**
+ * Diplomatic incident (Phase 8.6)
+ */
+export interface DiplomaticIncident {
+  /** Incident ID */
+  id: string;
+  /** Incident type */
+  type: "border_dispute" | "trade_disagreement" | "spy_discovered" | "insult" | "treaty_breach";
+  /** Involved factions */
+  factions: string[];
+  /** Date occurred */
+  date: string;
+  /** Relationship impact */
+  relationship_impact: number;
+  /** Resolution status */
+  status: "unresolved" | "negotiating" | "resolved" | "escalated";
+  /** Description */
+  description: string;
 }
 
 /**
@@ -211,4 +349,16 @@ export interface FactionData {
   military_engagements?: MilitaryEngagement[];
   /** Diplomatic treaties */
   treaties?: DiplomaticTreaty[];
+  /** Production chains (Phase 8.6) */
+  production_chains?: ProductionChain[];
+  /** Trade goods catalog (Phase 8.6) */
+  trade_goods?: TradeGood[];
+  /** Resource consumption rates (Phase 8.6) */
+  resource_consumption?: ResourceConsumption[];
+  /** Supply lines for military logistics (Phase 8.6) */
+  supply_lines?: SupplyLine[];
+  /** Espionage operations (Phase 8.6) */
+  espionage_operations?: EspionageOperation[];
+  /** Diplomatic incidents (Phase 8.6) */
+  diplomatic_incidents?: DiplomaticIncident[];
 }

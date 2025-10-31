@@ -1,11 +1,12 @@
 /**
- * NPC Name Generator
+ * NPC Name & Personality Generator
  *
- * Generates procedural NPC names and profiles from culture, species, and faction templates.
+ * Generates procedural NPC names, profiles, and personalities from culture, species, and faction templates.
  * Merges cultural influences with faction characteristics for unique characters.
+ * Phase 8.6: Enhanced with quirks, loyalties, secrets, trust, and ambition.
  */
 
-import type { FactionData } from "../../workmodes/library/factions/types";
+import type { FactionData, NPCPersonality } from "../../workmodes/library/factions/types";
 
 /**
  * Name templates organized by culture
@@ -340,4 +341,332 @@ export function generateFactionNPCs(
     }
 
     return npcs;
+}
+
+// ============================================================================
+// Phase 8.6: NPC Personality System
+// ============================================================================
+
+/**
+ * Quirk templates organized by archetype
+ */
+const QUIRK_TEMPLATES = {
+    speech: [
+        "Always quotes poetry",
+        "Speaks in third person",
+        "Has a nervous stutter",
+        "Uses elaborate metaphors",
+        "Punctuates sentences with proverbs",
+        "Rhymes unintentionally",
+        "Whispers dramatically",
+    ],
+    habits: [
+        "Constantly polishes weapons",
+        "Fidgets with jewelry",
+        "Collects strange trinkets",
+        "Writes everything in a journal",
+        "Hums ancient battle hymns",
+        "Chews on herbs",
+        "Counts things obsessively",
+    ],
+    beliefs: [
+        "Superstitious about omens",
+        "Believes animals can talk",
+        "Trusts only written contracts",
+        "Fears magical items",
+        "Convinced they're cursed",
+        "Prays before every meal",
+        "Refuses to work on holy days",
+    ],
+    phobias: [
+        "Afraid of heights",
+        "Dislikes underground spaces",
+        "Uncomfortable around magic",
+        "Paranoid about poison",
+        "Nervous around authority",
+        "Avoids water",
+        "Scared of the dark",
+    ],
+    social: [
+        "Tells bad jokes constantly",
+        "Name-drops important contacts",
+        "Brags about past victories",
+        "Apologizes for everything",
+        "Questions every order",
+        "Flirts inappropriately",
+        "Always late to meetings",
+    ],
+};
+
+/**
+ * Loyalty templates organized by target type
+ */
+const LOYALTY_TEMPLATES = {
+    faction: [
+        "Unwavering loyalty to {faction}",
+        "Would die for {faction}'s cause",
+        "Believes {faction} is the only hope",
+        "Devoted to {faction}'s ideals",
+    ],
+    individual: [
+        "Owes life debt to {name}",
+        "Secretly loves {name}",
+        "Protects {name} at all costs",
+        "Mentored by {name}",
+        "Sworn brother/sister to {name}",
+    ],
+    ideal: [
+        "Loyal to honor above all",
+        "Dedicated to justice",
+        "Serves only the greater good",
+        "Believes in freedom for all",
+        "Faithful to ancient traditions",
+        "Committed to knowledge",
+    ],
+    conditional: [
+        "Loyal only while paid well",
+        "Serves out of fear",
+        "Stays for personal gain",
+        "Loyalty fades without victories",
+    ],
+};
+
+/**
+ * Secret templates organized by severity
+ */
+const SECRET_TEMPLATES = {
+    dark: [
+        "Murdered an innocent person",
+        "Betrayed a previous faction",
+        "Secretly worships a dark god",
+        "Guilty of war crimes",
+        "Has killed a fellow member",
+    ],
+    dangerous: [
+        "Planning to overthrow leadership",
+        "Spying for an enemy faction",
+        "Hiding a criminal past",
+        "Knows faction's darkest secret",
+        "Stole from the faction treasury",
+    ],
+    personal: [
+        "Has a hidden family",
+        "Suffers from an addiction",
+        "Hiding noble heritage",
+        "Failed an important mission",
+        "Secretly doubts the cause",
+    ],
+    ambitions: [
+        "Plans to seize power someday",
+        "Wants to replace current leader",
+        "Seeks to create a splinter faction",
+        "Collecting leverage on rivals",
+        "Building a secret network",
+    ],
+};
+
+/**
+ * Generate complete NPC personality
+ */
+export function generateNPCPersonality(
+    faction: FactionData,
+    role: string,
+    otherNPCs?: string[],
+): NPCPersonality {
+    const quirks = generateQuirks(role);
+    const loyalties = generateLoyalties(faction, role, otherNPCs);
+    const secrets = generateSecrets(role);
+    const trust = generateTrustLevel(faction, role);
+    const ambition = generateAmbitionLevel(role);
+
+    return {
+        quirks,
+        loyalties,
+        secrets,
+        trust,
+        ambition,
+    };
+}
+
+/**
+ * Generate quirks based on role
+ */
+function generateQuirks(role: string): string[] {
+    const quirks: string[] = [];
+    const numQuirks = Math.random() < 0.5 ? 1 : 2;
+
+    const categories = Object.keys(QUIRK_TEMPLATES) as Array<keyof typeof QUIRK_TEMPLATES>;
+
+    for (let i = 0; i < numQuirks; i++) {
+        const category = randomElement(categories);
+        const quirk = randomElement(QUIRK_TEMPLATES[category]);
+        if (!quirks.includes(quirk)) {
+            quirks.push(quirk);
+        }
+    }
+
+    return quirks;
+}
+
+/**
+ * Generate loyalties based on faction, role, and other NPCs
+ */
+function generateLoyalties(
+    faction: FactionData,
+    role: string,
+    otherNPCs?: string[],
+): string[] {
+    const loyalties: string[] = [];
+
+    // Leaders always have strong faction loyalty
+    if (role === "Leader") {
+        const template = randomElement(LOYALTY_TEMPLATES.faction);
+        loyalties.push(template.replace("{faction}", faction.name));
+    } else {
+        // 70% chance of faction loyalty for non-leaders
+        if (Math.random() < 0.7) {
+            const template = randomElement(LOYALTY_TEMPLATES.faction);
+            loyalties.push(template.replace("{faction}", faction.name));
+        }
+    }
+
+    // 40% chance of individual loyalty (to another NPC)
+    if (otherNPCs && otherNPCs.length > 0 && Math.random() < 0.4) {
+        const target = randomElement(otherNPCs);
+        const template = randomElement(LOYALTY_TEMPLATES.individual);
+        loyalties.push(template.replace("{name}", target));
+    }
+
+    // 30% chance of ideological loyalty
+    if (Math.random() < 0.3) {
+        loyalties.push(randomElement(LOYALTY_TEMPLATES.ideal));
+    }
+
+    // 20% chance of conditional loyalty (may indicate potential betrayal)
+    if (Math.random() < 0.2) {
+        loyalties.push(randomElement(LOYALTY_TEMPLATES.conditional));
+    }
+
+    return loyalties;
+}
+
+/**
+ * Generate secrets based on role
+ */
+function generateSecrets(role: string): string[] {
+    const secrets: string[] = [];
+
+    // Leaders and ambitious roles more likely to have secrets
+    const secretChance = role === "Leader" ? 0.6 : 0.4;
+
+    if (Math.random() < secretChance) {
+        const categories = Object.keys(SECRET_TEMPLATES) as Array<keyof typeof SECRET_TEMPLATES>;
+        const category = randomElement(categories);
+        secrets.push(randomElement(SECRET_TEMPLATES[category]));
+    }
+
+    return secrets;
+}
+
+/**
+ * Generate trust level toward faction (0-100)
+ */
+function generateTrustLevel(faction: FactionData, role: string): number {
+    // Base trust depends on role
+    let baseTrust = 50;
+
+    if (role === "Leader") {
+        baseTrust = 80; // Leaders typically highly trusted
+    } else if (role === "Guard" || role === "Warrior") {
+        baseTrust = 70; // Military roles generally trusted
+    } else if (role === "Scout") {
+        baseTrust = 60; // Scouts operate independently
+    }
+
+    // Add some randomness
+    const variance = Math.floor(Math.random() * 30) - 15; // -15 to +15
+    return Math.max(0, Math.min(100, baseTrust + variance));
+}
+
+/**
+ * Generate ambition level (0-100)
+ */
+function generateAmbitionLevel(role: string): number {
+    // Base ambition depends on role
+    let baseAmbition = 50;
+
+    if (role === "Leader") {
+        baseAmbition = 70; // Leaders often ambitious
+    } else if (role === "Warrior" || role === "Scout") {
+        baseAmbition = 60; // Combat roles seek glory
+    } else if (role === "Worker") {
+        baseAmbition = 30; // Workers typically content
+    }
+
+    // Add randomness
+    const variance = Math.floor(Math.random() * 40) - 20; // -20 to +20
+    return Math.max(0, Math.min(100, baseAmbition + variance));
+}
+
+/**
+ * Update NPC loyalty based on events
+ */
+export function updateNPCLoyalty(
+    personality: NPCPersonality,
+    change: number,
+    reason?: string,
+): NPCPersonality {
+    const newTrust = Math.max(0, Math.min(100, (personality.trust || 50) + change));
+
+    // If trust drops significantly, may add disloyal secret
+    if (newTrust < 30 && (personality.secrets?.length || 0) === 0) {
+        personality.secrets = personality.secrets || [];
+        personality.secrets.push(randomElement(SECRET_TEMPLATES.dangerous));
+    }
+
+    personality.trust = newTrust;
+
+    // Add loyalty note if reason provided
+    if (reason && change !== 0) {
+        personality.loyalties = personality.loyalties || [];
+        if (change > 0) {
+            personality.loyalties.push(`Grateful for: ${reason}`);
+        } else {
+            personality.loyalties.push(`Resentful about: ${reason}`);
+        }
+    }
+
+    return personality;
+}
+
+/**
+ * Check if NPC is likely to betray faction
+ */
+export function isLikelyToBetray(personality: NPCPersonality): boolean {
+    const trust = personality.trust || 50;
+    const ambition = personality.ambition || 50;
+
+    // Low trust + high ambition = betrayal risk
+    if (trust < 30 && ambition > 70) {
+        return Math.random() < 0.7; // 70% chance
+    }
+
+    // Very low trust alone is risky
+    if (trust < 20) {
+        return Math.random() < 0.5; // 50% chance
+    }
+
+    // Check for disloyal secrets
+    const hasDisloyalSecret = personality.secrets?.some(
+        (s) =>
+            s.includes("overthrow") ||
+            s.includes("spying") ||
+            s.includes("seize power"),
+    );
+
+    if (hasDisloyalSecret) {
+        return Math.random() < 0.6; // 60% chance
+    }
+
+    return false;
 }

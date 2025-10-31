@@ -392,14 +392,22 @@ console.log(`Generated ${result.events.length} important events`);
 
 ## Testing
 
-**Unit Tests:** 599/600 passing (99.8%)
+**Unit Tests:** 761/762 passing (99.9%)
 - Faction AI: 13 tests (decision evaluation, goal weights, resource management)
 - Faction Simulation: 17 tests (job processing, resource production/consumption, expedition events)
 - NPC Generator: 17 tests (name generation, profile creation, culture templates)
 - Plot Hooks: 23 tests (decision hooks, event hooks, relationship hooks)
-- **Faction Integration: 15 tests** (encounter/map/calendar integration helpers)
-- Faction/Location Handlers: Event hook integration tests
+- Faction Integration: 15 tests (encounter/map/calendar integration helpers)
+- Event Handlers: 16 tests (faction/location hook integration)
+- Subfactions: 28 tests (hierarchy validation, inheritance, traversal, transfers)
+- Relationships: 30 tests (action impacts, decay, propagation, queries)
+- Economics: 22 tests (pricing, trade routes, market operations)
+- Military: 22 tests (strength, battles, sieges, casualties, morale, tactical AI)
+- Diplomacy: 20 tests (treaties, violation, lifecycle, events)
+- Phase 8.6 NPC Personalities: 18 tests (quirks, loyalties, secrets, trust, betrayal)
+- Phase 8.6 Advanced Features: 51 tests (NPC personalities, economics, military, diplomacy)
 - CreateSpec contract validation
+- **Total Faction Tests: 289**
 
 **Integration Tests:** 6 tests (require live Obsidian)
 - Expected to fail in CI
@@ -428,7 +436,7 @@ console.log(`Generated ${result.events.length} important events`);
 - `getHierarchyResources()` - Sum resources across hierarchy
 - `transferResources()` - Move resources parent→subfaction
 
-**Tests:** 17 tests (hierarchy validation, inheritance, traversal, transfers)
+**Tests:** 28 tests (hierarchy validation, inheritance, traversal, transfers, resource management)
 
 ### Dynamic Relationships ✅
 **Implementation:** `src/features/factions/relationships.ts`
@@ -450,7 +458,7 @@ console.log(`Generated ${result.events.length} important events`);
 - `areFactionsAtWar()` / `areFactionsAllied()` - Relationship queries
 - `getHostileFactions()` / `getAlliedFactions()` - Filter by relationship value
 
-**Tests:** 17 tests (action impacts, decay, propagation, mutual operations)
+**Tests:** 30 tests (action impacts, decay, propagation, mutual operations, relationship queries)
 
 ### Economic Simulation ✅
 **Implementation:** `src/features/factions/economics.ts`
@@ -480,7 +488,7 @@ console.log(`Generated ${result.events.length} important events`);
 - `simulateMarketFluctuation()` - Random supply/demand changes
 - `getTotalTradeIncome()` - Sum income from all active routes
 
-**Tests:** 20 tests (pricing, trade routes, market operations, fluctuations)
+**Tests:** 22 tests (pricing, trade routes, market operations, fluctuations, supply/demand)
 
 ### Military Simulation ✅
 **Implementation:** `src/features/factions/military.ts`
@@ -516,7 +524,7 @@ console.log(`Generated ${result.events.length} important events`);
 - `updateMorale()` - Adjust morale (victory/defeat impact)
 - `getTacticalDecision()` - AI decision (attack/defend/retreat/flank/ambush)
 
-**Tests:** 18 tests (strength calculation, battles, sieges, casualties, morale, tactical AI)
+**Tests:** 22 tests (strength calculation, battles, sieges, casualties, morale, tactical AI, unit conversion)
 
 ### Diplomatic Events ✅
 **Implementation:** `src/features/factions/diplomacy.ts`
@@ -562,13 +570,91 @@ console.log(`Generated ${result.events.length} important events`);
 
 **Tests:** 20 tests (treaty negotiation, violation, lifecycle, events, negotiation)
 
+## Phase 8.6: Advanced Faction Features ✅
+
+**Status:** Complete - Advanced NPC personalities, economics, military, and diplomacy systems
+
+### NPC Personality System ✅
+**Implementation:** `npc-generator.ts` (enhanced)
+- **Quirks**: Procedurally generated character traits (speech patterns, habits, beliefs, phobias, social behaviors)
+- **Loyalties**: Multi-layered loyalty system (faction, individual, ideological, conditional)
+- **Secrets**: Hidden agendas and secrets (dark, dangerous, personal, ambitions)
+- **Trust & Ambition**: Numeric tracking (0-100) affects betrayal risk
+- **Dynamic Updates**: `updateNPCLoyalty()` adjusts trust based on events
+- **Betrayal Detection**: `isLikelyToBetray()` calculates risk from trust/ambition/secrets
+
+**Functions:**
+- `generateNPCPersonality()` - Create complete personality profile
+- `updateNPCLoyalty()` - Modify trust/loyalty based on events
+- `isLikelyToBetray()` - Calculate betrayal probability
+
+**Tests:** 18 tests (personality generation, loyalty updates, betrayal risk)
+
+### Advanced Economics ✅
+**Implementation:** `advanced-economics.ts`
+- **Production Chains**: Input/output resource conversion over time (7 templates: weapons, armor, food, potions, scrolls)
+- **Resource Consumption**: Daily consumption tracking (members, production, military operations)
+- **Trade Goods Catalog**: 20+ trade goods with categories, values, weights, rarity, tags
+- **Worker Bonuses**: Production speed increases with assigned workers
+- **Consumption Tracking**: Automatic calculation and application
+
+**Production Chain Templates:**
+- `weapon_forging`, `armor_crafting`, `bread_baking`, `ale_brewing`, `potion_brewing`, `scroll_scribing`
+
+**Functions:**
+- `startProductionChain()` / `processProductionChains()` - Production management
+- `calculateDailyConsumption()` / `applyDailyConsumption()` - Resource tracking
+- `getTradeGoodsByCategory()` / `generateTradeInventory()` - Trade goods management
+
+**Tests:** 17 tests (production chains, consumption, trade goods)
+
+### Advanced Military ✅
+**Implementation:** `advanced-military.ts`
+- **Veterancy System**: Units gain experience (0-100), up to +50% effectiveness bonus
+- **Equipment Degradation**: Combat degrades equipment (0-100% condition)
+- **Equipment Repair**: Resource-based repair system (costs equipment + gold)
+- **Supply Lines**: Logistics system with security levels and raid risk
+- **Military Effectiveness**: Combined veterancy + equipment calculation
+- **Battle Experience**: Victory/defeat awards veterancy to survivors
+
+**Veterancy Levels:** Green → Trained → Experienced → Veteran → Elite
+
+**Functions:**
+- `gainVeterancy()` / `calculateVeterancyBonus()` / `getVeterancyLevel()` - Veterancy system
+- `degradeEquipment()` / `repairEquipment()` / `calculateEquipmentEffectiveness()` - Equipment management
+- `establishSupplyLine()` / `processSupplyLines()` / `repairSupplyLine()` - Supply logistics
+- `calculateMilitaryEffectiveness()` - Combined effectiveness calculation
+
+**Tests:** 16 tests (veterancy, equipment, supply lines, effectiveness)
+
+### Advanced Diplomacy ✅
+**Implementation:** `advanced-diplomacy.ts`
+- **Secret Treaties**: Hidden agreements (is_secret flag)
+- **Espionage Operations**: 5 operation types (infiltrate, sabotage, steal_secrets, assassinate, counter_intel)
+- **Success Calculation**: Based on faction influence/magic resources
+- **Discovery Risk**: 10% base chance operations are discovered
+- **Diplomatic Incidents**: 5 incident types (border_dispute, trade_disagreement, spy_discovered, insult, treaty_breach)
+- **Incident Resolution**: Negotiation reduces impact, escalation doubles it
+- **Intelligence Gathering**: Reveal secrets, resource levels, military strength
+- **Misinformation**: Plant false intelligence (can backfire)
+
+**Espionage Outcomes:** Success, Failure, or Discovered
+
+**Functions:**
+- `createSecretTreaty()` / `isSecretTreaty()` / `revealSecretTreaty()` - Secret agreements
+- `launchEspionageOperation()` / `resolveEspionageOperation()` / `counterEspionage()` - Spy operations
+- `createDiplomaticIncident()` / `resolveDiplomaticIncident()` - Incident management
+- `gatherIntelligence()` / `plantFalseIntelligence()` - Intelligence operations
+
+**Tests:** 15 tests (secret treaties, espionage, incidents, intelligence)
+
 ## Future Enhancements
 
-### Phase 8.6+: Advanced Features
-- **NPC Personalities**: Individual quirks, loyalties, secrets
-- **Advanced Economic Simulation**: Production chains, resource consumption, trade goods catalog
-- **Advanced Military Simulation**: Unit veterancy, equipment degradation, supply lines
-- **Diplomatic Complexity**: Secret treaties, espionage, diplomatic incidents
+### Phase 8.7+: Further Advanced Features
+- **Complex NPC Networks**: Dynamic relationship graphs between NPCs
+- **Economic Markets**: Real-time market simulation with price fluctuations
+- **Advanced Supply Chains**: Multi-step production dependencies
+- **Intelligence Networks**: Persistent spy networks and counter-intelligence
 
 ### UI Polish
 - **Map Visualization**: Faction territories and influence zones (architecture ready)
