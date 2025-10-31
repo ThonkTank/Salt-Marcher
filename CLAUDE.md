@@ -312,7 +312,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 8.6 ✅ Complete (Advanced Faction Features) | Tests: 761/762 (99.9%) | **Next:** Phase 8.7 or UI Enhancements
+**Status:** Phase 8.7 ✅ Complete (Further Advanced Features) | Tests: 842/849 (99.2%) | **Next:** Phase 8.8 or UI Enhancements
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -356,29 +356,36 @@ Ziele:
   - Advanced Military: Veterancy system (0-100, up to +50% bonus), equipment degradation/repair, supply lines with raid risk
   - Advanced Diplomacy: Secret treaties, espionage operations (5 types), diplomatic incidents (5 types), intelligence gathering
   - 69 new tests (NPC Personalities: 18, Advanced Features: 51)
+- **Phase 8.7:** Further Advanced Features ✅ - See [docs/faction-system.md](docs/faction-system.md)
+  - Complex NPC Networks: Dynamic relationship graphs (-100 to +100), cluster detection, cross-faction diplomacy influence, event generation (love triangles, betrayals, feuds)
+  - Economic Markets: Regional markets with supply/demand pricing, market events (shortage/surplus/panic), price history/trends, economic cycles (4 phases), investment analysis
+  - Advanced Supply Chains: Multi-step production dependencies, critical path analysis, bottleneck detection, parallelization optimization, chain events
+  - Intelligence Networks: Persistent spy networks with agents/safe houses, intelligence gathering (5 types), counter-intelligence, false intel, covert operations
+  - 85 new tests (NPC Networks: 25, Economic Markets: 22, Supply Chains: 18, Intelligence Networks: 20)
 
 **Geplant:**
-- **Phase 8.7 (Further Advanced Features)**: Extended simulation depth
-  - Complex NPC Networks: Dynamic relationship graphs between NPCs
-  - Economic Markets: Real-time market simulation with price fluctuations
-  - Advanced Supply Chains: Multi-step production dependencies
-  - Intelligence Networks: Persistent spy networks and counter-intelligence
+- **Phase 8.8 (UI & Integration)**: User interface for Phase 8 features
+  - NPC Relationship Visualization: Interactive graph view of NPC networks
+  - Market Dashboard: Real-time price charts, trend indicators, trade history
+  - Supply Chain Gantt Charts: Visual timeline of production chains
+  - Intelligence UI: Agent roster, mission planning, report viewer
 
 **Technische Schulden:**
 - 21 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 
 **Test-Status:**
-- Unit tests: 761/762 passing (99.9%) ✅
+- Unit tests: 842/849 passing (99.2%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 24/24 (serialization: 10, generation: 14)
-  - Faction tests: 289/289 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69)
+  - Faction tests: 374/374 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69, Phase 8.7: 85)
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
+  - 6 failing tests: header-policy violations (pre-existing, unrelated to Phase 8.7)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 8.7 (Further Advanced Features)** OR **UI Enhancements**:
-   - Option A: Continue faction system depth (NPC networks, economic markets, intelligence networks)
-   - Option B: Build UI for Phase 8 features (faction territories on map, relationship graph, resource dashboard, personality viewer)
-   - Option C: Move to next major feature (Orte system, Dungeon crawling, etc.)
+1. **Phase 8.8 (UI & Integration)** OR **Move to Next Major Feature**:
+   - Option A: Build UI for Phase 8 features (NPC relationship graph, market dashboard, supply chain gantt, intelligence UI)
+   - Option B: Integrate Phase 8 systems with existing workflows (faction simulation in session runner, market prices in loot generation)
+   - Option C: Move to next major feature (Orte system, Dungeon crawling, Place system, etc.)

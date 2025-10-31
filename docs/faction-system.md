@@ -648,13 +648,98 @@ console.log(`Generated ${result.events.length} important events`);
 
 **Tests:** 15 tests (secret treaties, espionage, incidents, intelligence)
 
+## Phase 8.7: Further Advanced Features ✅
+
+**Status:** Complete - Extended simulation depth with NPC networks, economic markets, supply chains, and intelligence
+
+### Complex NPC Networks ✅
+**Implementation:** `src/features/factions/npc-networks.ts`
+- **Relationship Management**: Create/update relationships between NPCs with types (friend, rival, mentor, enemy, etc.)
+- **Relationship Strength**: -100 to +100 scale with history tracking and shared secrets
+- **Network Analysis**: Calculate influence, find mutual friends, degrees of separation
+- **Cluster Detection**: Identify closely connected NPC groups (cabals, friendship circles, conspiracies)
+- **Cross-Faction Effects**: Track relationships spanning factions, calculate diplomacy influence
+- **Event Generation**: Love triangles, betrayals, secret exposure, alliances forming, feuds escalating
+
+**Functions:**
+- `createNPCRelationship()` / `updateRelationshipStrength()` / `shareSecret()` - Relationship management
+- `getFriends()` / `getEnemies()` / `calculateNPCInfluence()` - Network queries
+- `findMutualFriends()` / `calculateSeparation()` - Social graph analysis
+- `detectClusters()` - Cluster identification with cohesion calculation
+- `findCrossFactionRelationships()` / `calculateDiplomacyInfluence()` - Cross-faction effects
+- `generateNetworkEvents()` - Plot hook generation from network dynamics
+
+**Tests:** 25 tests (relationship management, network analysis, cross-faction effects)
+
+### Economic Markets ✅
+**Implementation:** `src/features/factions/economic-markets.ts`
+- **Regional Markets**: Track multiple goods with supply/demand/price dynamics
+- **Dynamic Pricing**: Prices calculated from supply/demand ratio with scarcity/surplus effects
+- **Market Events**: Shortage, surplus, speculation, panic, boom, embargo, innovation
+- **Trading Operations**: Buy/sell orders that affect market prices
+- **Price History**: Track 30-day price history with trend detection (rising/falling/stable)
+- **Economic Cycles**: 4-phase cycles (expansion/peak/contraction/trough) affecting markets
+- **Market Intelligence**: Analyze for buy/sell opportunities, predict future prices
+
+**Functions:**
+- `createRegionalMarket()` / `updateMarketPrices()` / `simulateMarketTick()` - Market management
+- `createMarketEvent()` / `generateRandomMarketEvent()` - Event generation
+- `executeBuyOrder()` / `executeSellOrder()` - Trading operations
+- `trackPriceHistory()` / `getPriceStatistics()` / `predictPrice()` - Price analysis
+- `advanceEconomicCycle()` / `applyEconomicCycleEffects()` - Cycle management
+- `analyzeMarket()` - Investment recommendations
+
+**Tests:** 22 tests (market management, events, trading, price history, cycles, intelligence)
+
+### Advanced Supply Chains ✅
+**Implementation:** `src/features/factions/supply-chains.ts`
+- **Multi-Step Chains**: Production chains with dependencies (outputs → inputs)
+- **Chain Templates**: Pre-defined sequences (master weaponsmith, feast preparation, arcane research)
+- **Dependency Tracking**: Nodes blocked until dependencies complete
+- **Critical Path Analysis**: Identify longest dependency chain, estimate completion time
+- **Bottleneck Detection**: Find nodes with most dependents
+- **Parallelization**: Identify nodes that can execute in parallel, optimize execution
+- **Chain Events**: Delays, failures, accelerations, quality boosts, resource shortages
+- **Resource Planning**: Calculate total requirements, check faction can start chain
+
+**Functions:**
+- `createSupplyChain()` / `createCustomSupplyChain()` - Chain creation
+- `processSupplyChain()` / `cancelSupplyChain()` - Execution management
+- `getCriticalPath()` / `estimateCompletionTime()` / `findBottlenecks()` - Analysis
+- `calculateTotalRequirements()` / `canStartChain()` - Resource planning
+- `findParallelNodes()` / `optimizeChain()` - Parallelization
+- `generateSupplyChainEvent()` / `getChainReport()` - Events and reporting
+
+**Tests:** 18 tests (chain creation, execution, dependency analysis, parallelization)
+
+### Intelligence Networks ✅
+**Implementation:** `src/features/factions/intelligence-networks.ts`
+- **Network Structure**: Agents (spy/informant/assassin/saboteur/analyst), safe houses, intelligence reports
+- **Agent Management**: Recruit agents with skills/loyalty/cover identities
+- **Intelligence Gathering**: Assign agents to gather intel (military/economic/political/social/technological)
+- **Report Generation**: Generate reports with reliability based on agent skill/loyalty
+- **Counter-Intelligence**: Detect enemy agents, interrogate captured agents, turn agents
+- **False Intelligence**: Plant false reports in enemy networks
+- **Network Analysis**: Analyze threat levels, identify opportunities/warnings, calculate effectiveness
+- **Covert Operations**: Execute infiltration/sabotage/assassination/theft/rescue missions
+
+**Functions:**
+- `createIntelligenceNetwork()` / `recruitAgent()` / `establishSafeHouse()` - Network management
+- `assignIntelligenceGathering()` / `generateIntelligenceReport()` - Intelligence operations
+- `detectEnemyAgents()` / `interrogateAgent()` / `plantFalseIntelligence()` - Counter-intel
+- `analyzeIntelligence()` / `calculateNetworkEffectiveness()` - Analysis
+- `updateNetworkSecurity()` / `executeCovertOperation()` - Operations and security
+
+**Tests:** 20 tests (network management, intelligence ops, counter-intelligence, network analysis, covert ops)
+
 ## Future Enhancements
 
-### Phase 8.7+: Further Advanced Features
-- **Complex NPC Networks**: Dynamic relationship graphs between NPCs
-- **Economic Markets**: Real-time market simulation with price fluctuations
-- **Advanced Supply Chains**: Multi-step production dependencies
-- **Intelligence Networks**: Persistent spy networks and counter-intelligence
+### Phase 8.8+: Further Extensions
+- **NPC Relationship Visualization**: Interactive graph view of NPC networks
+- **Market Dashboard**: Real-time price charts, trend indicators, trade history
+- **Supply Chain Gantt Charts**: Visual timeline of production chains
+- **Intelligence UI**: Agent roster, mission planning, report viewer
+- **Campaign-Wide Economics**: Inter-faction trade networks, resource flows
 
 ### UI Polish
 - **Map Visualization**: Faction territories and influence zones (architecture ready)
