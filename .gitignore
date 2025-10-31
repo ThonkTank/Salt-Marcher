@@ -36,6 +36,9 @@ coverage/
 # Vitest
 .vitest/
 
+# Integration test results
+devkit/testing/integration/results/
+
 # Debug configuration (local only)
 .claude/debug.json
 

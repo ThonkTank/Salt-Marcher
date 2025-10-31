@@ -3654,7 +3654,7 @@ function extractTokenValues(raw) {
   }
   return result;
 }
-var loadCreatureEntry, loadSpellEntry, loadItemEntry, loadEquipmentEntry, loadTerrainEntry, loadRegionEntry, loadFactionEntry, loadCalendarEntry, loadLocationEntry, loadPlaylistEntry, LIBRARY_DATA_SOURCES;
+var loadCreatureEntry, loadSpellEntry, loadItemEntry, loadEquipmentEntry, loadTerrainEntry, loadRegionEntry, loadFactionEntry, loadCalendarEntry, loadLocationEntry, loadPlaylistEntry, loadEncounterTableEntry, LIBRARY_DATA_SOURCES;
 var init_data_sources = __esm({
   "src/workmodes/library/storage/data-sources.ts"() {
     "use strict";
@@ -3751,6 +3751,22 @@ var init_data_sources = __esm({
         situation_tags: extractTokenValues(fm2.situation_tags)
       };
     });
+    loadEncounterTableEntry = createEntryLoader((fm2) => {
+      const entries = Array.isArray(fm2.entries) ? fm2.entries : [];
+      const crRange = fm2.crRange && typeof fm2.crRange === "object" ? {
+        min: typeof fm2.crRange.min === "number" ? fm2.crRange.min : void 0,
+        max: typeof fm2.crRange.max === "number" ? fm2.crRange.max : void 0
+      } : void 0;
+      return {
+        entry_count: entries.length,
+        terrain_tags: extractTokenValues(fm2.terrain_tags),
+        weather_tags: extractTokenValues(fm2.weather_tags),
+        time_of_day_tags: extractTokenValues(fm2.time_of_day_tags),
+        faction_tags: extractTokenValues(fm2.faction_tags),
+        situation_tags: extractTokenValues(fm2.situation_tags),
+        crRange
+      };
+    });
     LIBRARY_DATA_SOURCES = {
       creatures: {
         id: "creatures",
@@ -3811,6 +3827,12 @@ var init_data_sources = __esm({
         list: (app) => listVaultPresets(app, "playlists"),
         watch: (app, onChange) => watchVaultPresets(app, "playlists", onChange),
         load: loadPlaylistEntry
+      },
+      "encounter-tables": {
+        id: "encounter-tables",
+        list: (app) => listVaultPresets(app, "encounter-tables"),
+        watch: (app, onChange) => watchVaultPresets(app, "encounter-tables", onChange),
+        load: loadEncounterTableEntry
       }
     };
   }
@@ -5378,10 +5400,10 @@ var init_grid_layout_manager = __esm({
     init_layout_utils();
     init_plugin_logger();
     GridLayoutManager = class {
-      constructor(container, fields7) {
+      constructor(container, fields8) {
         this.currentPairs = 1;
         this.container = container;
-        this.fields = fields7;
+        this.fields = fields8;
         this.observer = new ResizeObserver(() => this.recalculate());
         this.observer.observe(container);
         this.recalculate();
@@ -5632,7 +5654,7 @@ var init_field_renderer_registry = __esm({
 function renderModularTokenFieldCore(options) {
   const {
     container,
-    fields: fields7,
+    fields: fields8,
     primaryField,
     value = [],
     chipTemplate,
@@ -5643,7 +5665,7 @@ function renderModularTokenFieldCore(options) {
     onTokenFieldChange
   } = options;
   const tokens = Array.isArray(value) ? [...value] : [];
-  const primaryFieldDef = fields7.find((f) => f.id === primaryField);
+  const primaryFieldDef = fields8.find((f) => f.id === primaryField);
   if (!primaryFieldDef) {
     throw new Error(`Primary field "${primaryField}" not found in fields config`);
   }
@@ -5745,7 +5767,7 @@ function renderModularTokenFieldCore(options) {
           chip.createSpan({ text: JSON.stringify(token), cls: "sm-cc-chip__text" });
         }
       } else {
-        for (const fieldDef of fields7) {
+        for (const fieldDef of fields8) {
           if (!fieldDef.displayInChip) continue;
           if (fieldDef.visibleIf && !fieldDef.visibleIf(token)) continue;
           const segment = chip.createSpan({
@@ -5894,7 +5916,7 @@ function renderModularTokenFieldCore(options) {
     if (getInitialValue) {
       newToken = getInitialValue(formData, inputValue);
     } else {
-      for (const fieldDef of fields7) {
+      for (const fieldDef of fields8) {
         if (fieldDef.id === primaryField) {
           newToken[fieldDef.id] = inputValue;
         } else if (fieldDef.default !== void 0) {
@@ -6415,9 +6437,9 @@ function resolveDefaults(spec, name) {
   const fromSpec = typeof spec.defaults === "function" ? spec.defaults({ presetName: name }) : spec.defaults;
   return fromSpec ? { ...fromSpec } : {};
 }
-function orderFields(fields7, ids) {
-  if (!ids || ids.length === 0) return fields7;
-  const lookup = new Map(fields7.map((field) => [field.id, field]));
+function orderFields(fields8, ids) {
+  if (!ids || ids.length === 0) return fields8;
+  const lookup = new Map(fields8.map((field) => [field.id, field]));
   const ordered = [];
   for (const id of ids) {
     const entry = lookup.get(id);
@@ -6959,8 +6981,8 @@ var init_repeating_width_sync = __esm({
         const groups = /* @__PURE__ */ new Map();
         const items = this.container.querySelectorAll(".sm-cc-repeating-item");
         items.forEach((item) => {
-          const fields7 = item.querySelectorAll(".sm-cc-repeating-field:not(.is-hidden)");
-          fields7.forEach((field) => {
+          const fields8 = item.querySelectorAll(".sm-cc-repeating-field:not(.is-hidden)");
+          fields8.forEach((field) => {
             const fieldId = field.dataset.fieldId;
             if (!fieldId) return;
             const label = field.querySelector(".sm-cc-field-label");
@@ -8705,8 +8727,8 @@ var init_modal_validator = __esm({
     init_modal_utils();
     init_plugin_logger();
     DefaultFieldTransformer = class {
-      constructor(fields7) {
-        this.fields = fields7;
+      constructor(fields8) {
+        this.fields = fields8;
       }
       /**
        * Apply all field transforms to data.
@@ -8871,8 +8893,8 @@ var init_field_manager = __esm({
     init_modal_utils();
     init_plugin_logger();
     FieldManager = class {
-      constructor(fields7, getData, onChange, widthSynchronizers) {
-        this.fields = fields7;
+      constructor(fields8, getData, onChange, widthSynchronizers) {
+        this.fields = fields8;
         this.getData = getData;
         this.onChange = onChange;
         this.widthSynchronizers = widthSynchronizers;
@@ -16802,6 +16824,512 @@ var init_playlists = __esm({
   }
 });
 
+// src/workmodes/library/encounter-tables/types.ts
+var init_types5 = __esm({
+  "src/workmodes/library/encounter-tables/types.ts"() {
+    "use strict";
+  }
+});
+
+// src/workmodes/library/encounter-tables/constants.ts
+var TERRAIN_TAGS2, WEATHER_TAGS2, TIME_OF_DAY_TAGS2, FACTION_TAGS2, SITUATION_TAGS2, DEFAULT_ENTRY_WEIGHT;
+var init_constants11 = __esm({
+  "src/workmodes/library/encounter-tables/constants.ts"() {
+    "use strict";
+    TERRAIN_TAGS2 = [
+      "Forest",
+      "Mountain",
+      "Desert",
+      "Swamp",
+      "Coastal",
+      "Ocean",
+      "Arctic",
+      "Cave",
+      "Underground",
+      "Urban",
+      "Ruins",
+      "Plains",
+      "Hills",
+      "Jungle",
+      "Volcanic"
+    ];
+    WEATHER_TAGS2 = [
+      "Clear",
+      "Cloudy",
+      "Rain",
+      "Storm",
+      "Snow",
+      "Fog",
+      "Wind",
+      "Hot",
+      "Cold"
+    ];
+    TIME_OF_DAY_TAGS2 = [
+      "Dawn",
+      "Morning",
+      "Noon",
+      "Afternoon",
+      "Dusk",
+      "Evening",
+      "Night",
+      "Midnight"
+    ];
+    FACTION_TAGS2 = [
+      "Friendly",
+      "Neutral",
+      "Hostile",
+      "Undead",
+      "Fey",
+      "Fiend",
+      "Celestial",
+      "Elemental",
+      "Dragon",
+      "Giant",
+      "Humanoid",
+      "Beast"
+    ];
+    SITUATION_TAGS2 = [
+      "Exploration",
+      "Combat",
+      "Social",
+      "Stealth",
+      "Chase",
+      "Rest",
+      "Tension",
+      "Mystery",
+      "Horror",
+      "Celebration",
+      "Travel",
+      "Dungeon",
+      "Boss",
+      "Victory",
+      "Defeat"
+    ];
+    DEFAULT_ENTRY_WEIGHT = 1;
+  }
+});
+
+// src/workmodes/library/encounter-tables/serializer.ts
+function encounterTableToMarkdown(data) {
+  const lines = [];
+  lines.push(`# ${data.display_name || data.name}`);
+  lines.push("");
+  if (data.description) {
+    lines.push(data.description);
+    lines.push("");
+  }
+  if (data.crRange) {
+    const { min, max } = data.crRange;
+    const minStr = min !== void 0 ? formatCR(min) : "\u2014";
+    const maxStr = max !== void 0 ? formatCR(max) : "\u2014";
+    lines.push(`**CR Range:** ${minStr} to ${maxStr}`);
+    lines.push("");
+  }
+  const tagSections = [];
+  if (data.terrain_tags && data.terrain_tags.length > 0) {
+    tagSections.push(`**Terrain:** ${data.terrain_tags.map((t) => t.value).join(", ")}`);
+  }
+  if (data.weather_tags && data.weather_tags.length > 0) {
+    tagSections.push(`**Weather:** ${data.weather_tags.map((t) => t.value).join(", ")}`);
+  }
+  if (data.time_of_day_tags && data.time_of_day_tags.length > 0) {
+    tagSections.push(`**Time:** ${data.time_of_day_tags.map((t) => t.value).join(", ")}`);
+  }
+  if (data.faction_tags && data.faction_tags.length > 0) {
+    tagSections.push(`**Faction:** ${data.faction_tags.map((t) => t.value).join(", ")}`);
+  }
+  if (data.situation_tags && data.situation_tags.length > 0) {
+    tagSections.push(`**Situation:** ${data.situation_tags.map((t) => t.value).join(", ")}`);
+  }
+  if (tagSections.length > 0) {
+    lines.push(...tagSections);
+    lines.push("");
+  }
+  if (data.entries && data.entries.length > 0) {
+    lines.push("## Encounter Entries");
+    lines.push("");
+    lines.push("| Weight | Creatures | Quantity | Description |");
+    lines.push("|--------|-----------|----------|-------------|");
+    for (const entry of data.entries) {
+      const weight = entry.weight || 1;
+      const creatures = entry.creatures.join(", ");
+      const quantity = entry.quantity || "1";
+      const desc = entry.description || "\u2014";
+      lines.push(`| ${weight} | ${creatures} | ${quantity} | ${desc} |`);
+    }
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+function formatCR(cr) {
+  if (cr === 0.125) return "1/8";
+  if (cr === 0.25) return "1/4";
+  if (cr === 0.5) return "1/2";
+  return cr.toString();
+}
+var init_serializer11 = __esm({
+  "src/workmodes/library/encounter-tables/serializer.ts"() {
+    "use strict";
+  }
+});
+
+// src/workmodes/library/encounter-tables/create-spec.ts
+function formatCRDisplay(cr) {
+  if (cr === 0.125) return "1/8";
+  if (cr === 0.25) return "1/4";
+  if (cr === 0.5) return "1/2";
+  return cr.toString();
+}
+var encounterTableSchema, fields7, encounterTableSpec;
+var init_create_spec11 = __esm({
+  "src/workmodes/library/encounter-tables/create-spec.ts"() {
+    "use strict";
+    init_serializer11();
+    init_constants11();
+    encounterTableSchema = {
+      parse: (data) => data,
+      safeParse: (data) => {
+        try {
+          const table = data;
+          if (!table.name || typeof table.name !== "string" || table.name.trim().length === 0) {
+            return {
+              success: false,
+              error: new Error("Name is required")
+            };
+          }
+          if (!Array.isArray(table.entries)) {
+            return {
+              success: false,
+              error: new Error("Entries must be an array")
+            };
+          }
+          if (table.entries.length === 0) {
+            return {
+              success: false,
+              error: new Error("At least one encounter entry is required")
+            };
+          }
+          if (table.crRange) {
+            const { min, max } = table.crRange;
+            if (min !== void 0 && (typeof min !== "number" || min < 0)) {
+              return {
+                success: false,
+                error: new Error("CR min must be a non-negative number")
+              };
+            }
+            if (max !== void 0 && (typeof max !== "number" || max < 0)) {
+              return {
+                success: false,
+                error: new Error("CR max must be a non-negative number")
+              };
+            }
+            if (min !== void 0 && max !== void 0 && min > max) {
+              return {
+                success: false,
+                error: new Error("CR min cannot exceed CR max")
+              };
+            }
+          }
+          return { success: true, data: table };
+        } catch (error) {
+          return { success: false, error };
+        }
+      }
+    };
+    fields7 = [
+      {
+        id: "name",
+        label: "Name",
+        type: "text",
+        required: true,
+        placeholder: "Forest Encounters",
+        description: "Internal name for the encounter table (used for file path)"
+      },
+      {
+        id: "display_name",
+        label: "Display Name",
+        type: "text",
+        placeholder: "Random Forest Encounters",
+        description: "Human-readable name shown in UI (defaults to name if not set)"
+      },
+      {
+        id: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Encounters for dense forest hexes...",
+        description: "Optional description of the encounter table's purpose and context"
+      },
+      // Tag fields for automatic selection (matches playlist pattern)
+      {
+        id: "terrain_tags",
+        label: "Terrain Tags",
+        type: "tokens",
+        config: {
+          fields: [
+            {
+              id: "value",
+              type: "select",
+              displayInChip: true,
+              editable: true,
+              suggestions: TERRAIN_TAGS2.map((tag) => ({ key: tag, label: tag })),
+              placeholder: "Terrain ausw\xE4hlen..."
+            }
+          ],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Terrain types this table applies to (Forest, Mountain, etc.)"
+      },
+      {
+        id: "weather_tags",
+        label: "Weather Tags",
+        type: "tokens",
+        config: {
+          fields: [
+            {
+              id: "value",
+              type: "select",
+              displayInChip: true,
+              editable: true,
+              suggestions: WEATHER_TAGS2.map((tag) => ({ key: tag, label: tag })),
+              placeholder: "Weather ausw\xE4hlen..."
+            }
+          ],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Weather conditions this table applies to (Clear, Rain, etc.)"
+      },
+      {
+        id: "time_of_day_tags",
+        label: "Time of Day Tags",
+        type: "tokens",
+        config: {
+          fields: [
+            {
+              id: "value",
+              type: "select",
+              displayInChip: true,
+              editable: true,
+              suggestions: TIME_OF_DAY_TAGS2.map((tag) => ({ key: tag, label: tag })),
+              placeholder: "Time ausw\xE4hlen..."
+            }
+          ],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Time of day this table applies to (Dawn, Night, etc.)"
+      },
+      {
+        id: "faction_tags",
+        label: "Faction Tags",
+        type: "tokens",
+        config: {
+          fields: [
+            {
+              id: "value",
+              type: "select",
+              displayInChip: true,
+              editable: true,
+              suggestions: FACTION_TAGS2.map((tag) => ({ key: tag, label: tag })),
+              placeholder: "Faction ausw\xE4hlen..."
+            }
+          ],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Faction types this table applies to (Hostile, Undead, etc.)"
+      },
+      {
+        id: "situation_tags",
+        label: "Situation Tags",
+        type: "tokens",
+        config: {
+          fields: [
+            {
+              id: "value",
+              type: "select",
+              displayInChip: true,
+              editable: true,
+              suggestions: SITUATION_TAGS2.map((tag) => ({ key: tag, label: tag })),
+              placeholder: "Situation ausw\xE4hlen..."
+            }
+          ],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Situations this table applies to (Exploration, Combat, etc.)"
+      },
+      // CR Range
+      {
+        id: "crRange",
+        label: "CR Range (Optional)",
+        type: "group",
+        config: {
+          fields: [
+            {
+              id: "min",
+              label: "Minimum CR",
+              type: "number-stepper",
+              min: 0,
+              max: 30,
+              step: 0.125,
+              placeholder: "0",
+              description: "Minimum challenge rating (e.g. 0.125 = 1/8, 0.5 = 1/2)"
+            },
+            {
+              id: "max",
+              label: "Maximum CR",
+              type: "number-stepper",
+              min: 0,
+              max: 30,
+              step: 0.125,
+              placeholder: "30",
+              description: "Maximum challenge rating"
+            }
+          ]
+        },
+        description: "CR range filter for creatures in this table"
+      },
+      // Encounter Entries
+      {
+        id: "entries",
+        label: "Encounter Entries",
+        type: "list",
+        config: {
+          fields: [
+            {
+              id: "weight",
+              label: "Weight",
+              type: "number-stepper",
+              required: true,
+              min: 1,
+              max: 100,
+              step: 1,
+              default: DEFAULT_ENTRY_WEIGHT,
+              description: "Probability weight (higher = more likely)"
+            },
+            {
+              id: "creatures",
+              label: "Creatures",
+              type: "tokens",
+              required: true,
+              config: {
+                fields: [
+                  {
+                    id: "value",
+                    type: "text",
+                    displayInChip: true,
+                    editable: true,
+                    placeholder: "Creature name..."
+                  }
+                ],
+                primaryField: "value"
+              },
+              description: "Creature names from Library (will be resolved at generation time)"
+            },
+            {
+              id: "quantity",
+              label: "Quantity",
+              type: "text",
+              placeholder: "1d4",
+              description: "Dice formula or number (e.g. '1d4', '2', '1d6+2')"
+            },
+            {
+              id: "description",
+              label: "Description",
+              type: "textarea",
+              placeholder: "Optional flavor text...",
+              description: "Optional description or context for this entry"
+            }
+          ],
+          itemLabel: (item) => {
+            const creatures = Array.isArray(item.creatures) ? item.creatures.map((c) => typeof c === "string" ? c : c.value).join(", ") : "No creatures";
+            const weight = item.weight || 1;
+            return `[${weight}] ${creatures}`;
+          }
+        },
+        default: [],
+        description: "Weighted encounter entries (roll to select)"
+      }
+    ];
+    encounterTableSpec = {
+      kind: "encounter-table",
+      title: "Encounter Table erstellen",
+      subtitle: "Neue zuf\xE4llige Begegnungstabelle",
+      schema: encounterTableSchema,
+      fields: fields7,
+      storage: {
+        format: "md-frontmatter",
+        pathTemplate: "SaltMarcher/EncounterTables/{name}.md",
+        filenameFrom: "name",
+        directory: "SaltMarcher/EncounterTables",
+        frontmatter: [
+          "name",
+          "display_name",
+          "description",
+          "terrain_tags",
+          "weather_tags",
+          "time_of_day_tags",
+          "faction_tags",
+          "situation_tags",
+          "crRange",
+          "entries"
+        ],
+        bodyTemplate: (data) => encounterTableToMarkdown(data)
+      },
+      ui: {
+        submitLabel: "Table erstellen",
+        cancelLabel: "Abbrechen",
+        enableNavigation: false
+      },
+      browse: {
+        metadata: [
+          {
+            id: "entry_count",
+            cls: "sm-cc-item__cr",
+            getValue: (entry) => `${entry.entry_count || 0} entries`
+          },
+          {
+            id: "cr_range",
+            cls: "sm-cc-item__type",
+            getValue: (entry) => {
+              if (!entry.crRange) return "All CRs";
+              const min = entry.crRange.min !== void 0 ? formatCRDisplay(entry.crRange.min) : "\u2014";
+              const max = entry.crRange.max !== void 0 ? formatCRDisplay(entry.crRange.max) : "\u2014";
+              return `CR ${min}-${max}`;
+            }
+          }
+        ],
+        filters: [
+          { id: "terrain_tags", field: "terrain_tags", label: "Terrain", type: "array" },
+          { id: "weather_tags", field: "weather_tags", label: "Weather", type: "array" },
+          { id: "time_of_day_tags", field: "time_of_day_tags", label: "Time", type: "array" },
+          { id: "faction_tags", field: "faction_tags", label: "Faction", type: "array" },
+          { id: "situation_tags", field: "situation_tags", label: "Situation", type: "array" }
+        ],
+        sorts: [
+          { id: "name", label: "Name", field: "name" },
+          { id: "entry_count", label: "Entry Count", field: "entry_count" }
+        ],
+        search: ["name", "display_name", "description"]
+      },
+      loader: {}
+    };
+  }
+});
+
+// src/workmodes/library/encounter-tables/index.ts
+var init_encounter_tables = __esm({
+  "src/workmodes/library/encounter-tables/index.ts"() {
+    "use strict";
+    init_types5();
+    init_constants11();
+    init_serializer11();
+    init_create_spec11();
+  }
+});
+
 // src/workmodes/library/registry.ts
 function getCreateSpec(entity) {
   return LIBRARY_CREATE_SPECS[entity];
@@ -16821,6 +17349,7 @@ var init_registry = __esm({
     init_factions();
     init_locations();
     init_playlists();
+    init_encounter_tables();
     LIBRARY_CREATE_SPECS = {
       creatures: creatureSpec,
       spells: spellSpec,
@@ -16831,7 +17360,8 @@ var init_registry = __esm({
       factions: factionSpec,
       calendars: calendarSpec,
       locations: locationSpec,
-      playlists: playlistSpec
+      playlists: playlistSpec,
+      "encounter-tables": encounterTableSpec
     };
     LIBRARY_VIEW_CONFIGS = {
       ...generateViewConfigs(LIBRARY_CREATE_SPECS)
@@ -17337,14 +17867,15 @@ var init_view = __esm({
         factions: "Factions",
         calendars: "Calendars",
         locations: "Locations",
-        playlists: "Playlists"
+        playlists: "Playlists",
+        "encounter-tables": "Encounter Tables"
       },
       sources: {
         prefix: "Source: "
       }
     };
     VIEW_LIBRARY = "salt-library";
-    LIBRARY_MODES = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars", "locations", "playlists"];
+    LIBRARY_MODES = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars", "locations", "playlists", "encounter-tables"];
     _LibraryView = class _LibraryView extends TabbedBrowseView {
       get config() {
         return _LibraryView.LIBRARY_CONFIG;
@@ -19515,7 +20046,7 @@ function parseCR(crString) {
   const num = Number(str);
   return Number.isFinite(num) ? num : 0;
 }
-function formatCR(cr) {
+function formatCR2(cr) {
   if (cr === 0.125) return "1/8";
   if (cr === 0.25) return "1/4";
   if (cr === 0.5) return "1/2";
@@ -19652,7 +20183,7 @@ var init_creature_list = __esm({
           nameEl.setText(member.name);
           const badge = nameEl.createSpan({ cls: "sm-faction-member-badge", text: "Faction Member" });
           const metaEl = row.createDiv({ cls: "sm-encounter-creature-meta" });
-          metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR(member.cr)}` });
+          metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR2(member.cr)}` });
           if (member.type) {
             metaEl.createSpan({ cls: "sm-encounter-creature-type", text: member.type });
           }
@@ -19720,7 +20251,7 @@ var init_creature_list = __esm({
           const nameEl = row.createDiv({ cls: "sm-encounter-creature-name" });
           nameEl.setText(creature.name);
           const metaEl = row.createDiv({ cls: "sm-encounter-creature-meta" });
-          metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR(creature.cr)}` });
+          metaEl.createSpan({ cls: "sm-encounter-creature-cr", text: `CR ${formatCR2(creature.cr)}` });
           if (creature.type) {
             metaEl.createSpan({ cls: "sm-encounter-creature-type", text: creature.type });
           }
@@ -19739,7 +20270,7 @@ var init_creature_list = __esm({
 });
 
 // src/workmodes/encounter/composition-view.ts
-function formatCR2(cr) {
+function formatCR3(cr) {
   if (cr === 0.125) return "1/8";
   if (cr === 0.25) return "1/4";
   if (cr === 0.5) return "1/2";
@@ -19778,7 +20309,7 @@ var init_composition_view = __esm({
           const nameEl = row.createDiv({ cls: "sm-encounter-composition-name" });
           nameEl.setText(creature.name);
           const metaEl = row.createDiv({ cls: "sm-encounter-composition-meta" });
-          metaEl.createSpan({ cls: "sm-encounter-composition-cr", text: `CR ${formatCR2(creature.cr)}` });
+          metaEl.createSpan({ cls: "sm-encounter-composition-cr", text: `CR ${formatCR3(creature.cr)}` });
           const countField = row.createDiv({ cls: "sm-encounter-composition-count" });
           countField.createEl("label", {
             attr: { for: `creature-count-${creature.id}` },
@@ -23863,7 +24394,7 @@ var init_audio_player = __esm({
 });
 
 // src/features/audio/types.ts
-var init_types5 = __esm({
+var init_types6 = __esm({
   "src/features/audio/types.ts"() {
     "use strict";
   }
@@ -24019,7 +24550,7 @@ var init_context_extractor = __esm({
 var init_audio = __esm({
   "src/features/audio/index.ts"() {
     "use strict";
-    init_types5();
+    init_types6();
     init_audio_player();
     init_auto_selection_types();
     init_auto_selection();
@@ -93687,7 +94218,7 @@ async function dumpFieldStates(app, args) {
     throw new Error("No create modal is open");
   }
   const fieldContainers = modal.querySelectorAll("[data-field-id]");
-  const fields7 = [];
+  const fields8 = [];
   for (const container of Array.from(fieldContainers)) {
     const fieldId = container.getAttribute("data-field-id");
     if (!fieldId) continue;
@@ -93706,14 +94237,14 @@ async function dumpFieldStates(app, args) {
       field.chips = chips.map((chip) => chip.textContent?.trim());
       field.chipCount = chips.length;
     }
-    fields7.push(field);
+    fields8.push(field);
   }
   const result = {
     modalType: modalType || "unknown",
-    fieldCount: fields7.length,
-    fields: fields7
+    fieldCount: fields8.length,
+    fields: fields8
   };
-  logger2.log(`[IPC-CMD] Dumped ${fields7.length} fields`);
+  logger2.log(`[IPC-CMD] Dumped ${fields8.length} fields`);
   return result;
 }
 async function getModalData(app, args) {

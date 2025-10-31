@@ -16,6 +16,7 @@ import { calendarSpec } from "./calendars";
 import { factionSpec } from "./factions";
 import { locationSpec } from "./locations";
 import { playlistSpec } from "./playlists";
+import { encounterTableSpec } from "./encounter-tables";
 
 // ============================================================================
 // Types
@@ -39,6 +40,7 @@ export const LIBRARY_CREATE_SPECS: Record<LibraryEntity, CreateSpec<any> | null>
     calendars: calendarSpec,
     locations: locationSpec,
     playlists: playlistSpec,
+    "encounter-tables": encounterTableSpec,
 };
 
 /**

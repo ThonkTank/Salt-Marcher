@@ -5,7 +5,7 @@ import type { BaseEntry, DataSource } from "../../../features/data-manager";
 import { readFrontmatter } from "../../../features/data-manager/browse/frontmatter-utils";
 import { listVaultPresets, watchVaultPresets } from "../../../../Presets/lib/vault-preset-loader";
 
-export type FilterableLibraryMode = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "factions" | "calendars" | "locations" | "playlists";
+export type FilterableLibraryMode = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "factions" | "calendars" | "locations" | "playlists" | "encounter-tables";
 
 export interface CreatureEntryMeta {
     readonly type?: string;
@@ -71,6 +71,19 @@ export interface PlaylistEntryMeta {
     readonly situation_tags?: string[];
 }
 
+export interface EncounterTableEntryMeta {
+    readonly entry_count: number;
+    readonly terrain_tags?: string[];
+    readonly weather_tags?: string[];
+    readonly time_of_day_tags?: string[];
+    readonly faction_tags?: string[];
+    readonly situation_tags?: string[];
+    readonly crRange?: {
+        min?: number;
+        max?: number;
+    };
+}
+
 export interface LibraryEntryMetaMap {
     creatures: CreatureEntryMeta;
     spells: SpellEntryMeta;
@@ -82,6 +95,7 @@ export interface LibraryEntryMetaMap {
     calendars: CalendarEntryMeta;
     locations: LocationEntryMeta;
     playlists: PlaylistEntryMeta;
+    "encounter-tables": EncounterTableEntryMeta;
 }
 
 export type LibraryEntry<M extends FilterableLibraryMode> = BaseEntry & LibraryEntryMetaMap[M];
@@ -239,6 +253,27 @@ const loadPlaylistEntry = createEntryLoader<"playlists">(fm => {
     };
 });
 
+const loadEncounterTableEntry = createEntryLoader<"encounter-tables">(fm => {
+    const entries = Array.isArray(fm.entries) ? fm.entries : [];
+
+    const crRange = fm.crRange && typeof fm.crRange === "object"
+        ? {
+            min: typeof (fm.crRange as any).min === "number" ? (fm.crRange as any).min : undefined,
+            max: typeof (fm.crRange as any).max === "number" ? (fm.crRange as any).max : undefined,
+        }
+        : undefined;
+
+    return {
+        entry_count: entries.length,
+        terrain_tags: extractTokenValues(fm.terrain_tags),
+        weather_tags: extractTokenValues(fm.weather_tags),
+        time_of_day_tags: extractTokenValues(fm.time_of_day_tags),
+        faction_tags: extractTokenValues(fm.faction_tags),
+        situation_tags: extractTokenValues(fm.situation_tags),
+        crRange,
+    };
+});
+
 export const LIBRARY_DATA_SOURCES: LibraryDataSourceMap = {
     creatures: {
         id: "creatures",
@@ -299,5 +334,11 @@ export const LIBRARY_DATA_SOURCES: LibraryDataSourceMap = {
         list: (app) => listVaultPresets(app, "playlists"),
         watch: (app, onChange) => watchVaultPresets(app, "playlists", onChange),
         load: loadPlaylistEntry,
+    },
+    "encounter-tables": {
+        id: "encounter-tables",
+        list: (app) => listVaultPresets(app, "encounter-tables"),
+        watch: (app, onChange) => watchVaultPresets(app, "encounter-tables", onChange),
+        load: loadEncounterTableEntry,
     },
 };

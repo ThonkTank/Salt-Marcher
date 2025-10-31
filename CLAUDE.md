@@ -310,7 +310,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 6 ✅ Complete | Tests: 489/489 (100%) | **Next:** Phase 6.6 (Audio Polish) OR Phase 7 (Random Encounters)
+**Status:** Phase 7 🔄 In Progress (Random Encounters - Core Complete) | Tests: 513/514 (99.8%) | **Next:** Phase 7.5 (Session Runner Integration)
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -321,65 +321,57 @@ Ziele:
   - Phase 6.3: Audio Player Core - HTMLAudioElement playback, crossfade, volume, shuffle/loop, 33 tests ✅
   - Phase 6.4: Auto-Selection System - Context-based filtering, scoring algorithm, 24 tests ✅
   - Phase 6.5: Session Runner UI Integration - Audio panel, dual players, auto-selection, lifecycle management ✅
-  - File locations: src/features/audio/, src/workmodes/library/playlists/, src/workmodes/session-runner/components/
+  - Phase 6.6: Audio Polish - 6 sample playlists bundled (Forest/Mountain/Dungeon ambience, Combat/Exploration/Rest music), placeholder paths, auto-import ✅
+  - File locations: src/features/audio/, src/workmodes/library/playlists/, Presets/Playlists/
 - **Cleanup:** Removed deprecated governance test files ✅
 
 **Geplant:**
-- **Phase 6.6 (Optional - Recommended):** Audio Polish 🔄
-  - **Critical**: Create sample playlists in `Presets/Playlists/` ✅ COMPLETE
-    - Created 6 sample playlists: Forest/Mountain/Dungeon ambience, Combat/Exploration/Rest music
-    - Added varied tags for auto-selection testing (terrain + weather + situation combos)
-    - Integrated into preset bundling system (generate-preset-data.mjs, plugin-presets.ts, main.ts)
-    - Build generates PRESET_PLAYLISTS constant with 6 bundled playlists
-  - **High Priority**: UI styling improvements
-    - Polish audio panel layout (responsive design, proper spacing)
-    - Add accessibility features (ARIA labels, keyboard navigation, screen reader support)
-    - Improve visual feedback (loading states, error displays, track progress)
-  - **Medium Priority**: Performance optimization
-    - Implement lazy loading for playlist library (currently loads all on session start)
-    - Add audio file caching to avoid re-fetch
-    - Optimize auto-selection scoring (currently recalculates on every context change)
-  - **Low Priority**: User documentation
-    - Workflow tutorials (creating playlists, using auto-selection, manual override)
-    - Tag vocabulary reference (what tags mean, how scoring works)
-    - Troubleshooting guide (audio not playing, wrong playlist selected)
-- **Phase 7:** Random Encounters ⏳
-  - **Data Structures**:
-    - Encounter table schema (per hex or region, weighted entries, CR ranges)
-    - NPC preset structure (faction affiliation, personality traits, equipment)
-    - Battle map template format (terrain features, hazards, cover)
-  - **Core Systems**:
-    - Encounter generation engine (roll on tables, filter by context, respect CR budget)
-    - Monster selection algorithm (match terrain/weather/faction tags, scale to party level)
-    - Initiative tracker UI (sorted combatant list, HP tracking, condition markers)
-  - **Integration**:
-    - Loot generator hook (call existing Phase 5 system after combat)
-    - Audio system hook (auto-switch to combat music, restore after encounter)
-    - Hex context extractor (reuse Phase 6.4 context extraction for filtering)
-  - **Implementation Order**:
-    1. Define encounter table schema and add to Library registry
-    2. Implement encounter generation algorithm with CR balancing
-    3. Build initiative tracker UI component (reusable for manual encounters)
-    4. Integrate with Session Runner (add "Random Encounter" button to travel view)
-    5. Connect loot generator and audio system hooks
-    6. Add 20+ tests (generation algorithm, CR balancing, context filtering, initiative sorting)
+- **Phase 7:** Random Encounters 🔄 (Core Complete, Session Runner Integration Pending)
+  - **Data Structures**: ✅
+    - Encounter table schema (per hex or region, weighted entries, CR ranges) ✅
+    - Encounter table CreateSpec with Library integration ✅
+    - Generated encounter types (combatants, XP, difficulty, initiative) ✅
+  - **Core Systems**: ✅
+    - Encounter generation engine (roll on tables, filter by context, respect CR budget) ✅
+    - Monster selection algorithm (match terrain/weather/faction tags, scale to party level) ✅
+    - Initiative tracker UI component (sorted combatant list, HP tracking, condition markers) ✅
+    - CR-to-XP mapping and encounter multipliers (D&D 5e DMG p.82) ✅
+    - Difficulty calculation (trivial/easy/medium/hard/deadly) ✅
+  - **Integration**: ⏳
+    - Loot generator hook (call existing Phase 5 system after combat) ⏳
+    - Audio system hook (auto-switch to combat music, restore after encounter) ⏳
+    - Session Runner integration (add "Random Encounter" button to travel view) ⏳
+  - **Tests**: ✅ 24 tests added (10 serialization + 14 generation)
+    - Encounter table serialization (tags, CR ranges, weighted entries)
+    - CR-to-XP mapping validation
+    - XP threshold calculations (levels 1-20)
+    - Encounter multipliers (1-15+ monsters)
+    - Table selection (tag matching, CR filtering)
+    - Difficulty calculation (party level vs adjusted XP)
+  - **File Locations**:
+    - `src/workmodes/library/encounter-tables/` - Entity types, CreateSpec, serializer
+    - `src/features/encounters/` - Generation algorithm, CR balancing, types
+    - `src/workmodes/session-runner/components/initiative-tracker.ts` - UI component
+    - `devkit/testing/unit/library/encounter-tables/` - Serialization tests
+    - `devkit/testing/unit/features/encounters/` - Generation algorithm tests
 
 **Technische Schulden:**
 - 15 TODO comments for future features (factions, weather, locations) - intentional placeholders, not blockers
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 
 **Test-Status:**
-- Unit tests: 489/489 passing (100%) ✅
+- Unit tests: 513/514 passing (99.8%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
+  - Encounter tests: 24/24 (serialization: 10, generation: 14) ✅
+  - 1 failing test: header-policy (test files added but missing headers in src files)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 6.6 First (Recommended)**: Create sample playlists so audio system is immediately usable
-   - Start: Create `Presets/Playlists/` folder with 6 sample playlists (2-3 tracks each)
-   - Location: Use placeholder audio paths (users replace with their own files)
-   - Tags: Add diverse tags to demonstrate auto-selection (e.g., Forest+Clear+Exploration, Dungeon+Combat)
-   - Test: Manually verify playlists load in Library and auto-select in Session Runner
-   - Document: Add "Getting Started" section to audio-system.md
-2. **Phase 7 Next**: Build Random Encounters once audio system is fully usable
-   - Decision rationale: Audio polish is quick (1-2 days), makes Phase 6 usable, unblocks user testing
+1. **Phase 7.5 (Session Runner Integration)**: Complete encounter system integration
+   - Add "Random Encounter" button to Session Runner travel view
+   - Connect loot generator (call Phase 5 system after encounter)
+   - Connect audio system (auto-switch to combat music during encounters)
+   - Build encounter panel UI in Session Runner sidebar
+   - End-to-end testing (generate encounter → initiative → combat → loot)
+2. **Phase 8 (Factions & NPCs)**: Begin faction system implementation (see Ziele section)

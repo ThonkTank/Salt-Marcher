@@ -160,6 +160,7 @@ describe("LibraryView copy", () => {
             LIBRARY_COPY.modes.calendars,
             LIBRARY_COPY.modes.locations,
             LIBRARY_COPY.modes.playlists,
+            LIBRARY_COPY.modes["encounter-tables"],
         ]);
 
         const search = root.querySelector("input[type=\"text\"]");

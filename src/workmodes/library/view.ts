@@ -28,6 +28,7 @@ export const LIBRARY_COPY = {
         calendars: "Calendars",
         locations: "Locations",
         playlists: "Playlists",
+        "encounter-tables": "Encounter Tables",
     },
     sources: {
         prefix: "Source: ",
@@ -38,7 +39,7 @@ type ModeCopy = typeof LIBRARY_COPY.modes;
 
 export const VIEW_LIBRARY = "salt-library";
 
-const LIBRARY_MODES: Mode[] = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars", "locations", "playlists"];
+const LIBRARY_MODES: Mode[] = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars", "locations", "playlists", "encounter-tables"];
 
 /**
  * Library view: Tab-based browser for all game entities.

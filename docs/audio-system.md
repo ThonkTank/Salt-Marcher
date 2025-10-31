@@ -1,6 +1,6 @@
 # Audio System
 
-**Status**: Phase 6.5 Complete ✅
+**Status**: Phase 6.6 Complete ✅ (Sample Playlists Bundled)
 
 ## Overview
 
@@ -435,10 +435,16 @@ Playlists/                            # User playlists (not in repo)
 - **State Management**: Reactive UI updates via AudioPlayer status subscriptions
 - **Auto-Switch**: Automatically crossfades to new playlist when hex context changes
 
-### Preset System
+### Preset System (Phase 6.6) ✅
 - **Sample Playlists**: `Presets/Playlists/` (bundled with plugin)
+- **6 Presets Included**:
+  - **Ambience**: Forest (Forest/Jungle + Clear/Cloudy + Exploration/Rest), Mountain (Mountain/Hills + Clear/Cloudy + Exploration), Dungeon (Cave/Underground/Ruins + Any weather + Exploration/Tension/Mystery)
+  - **Music**: Combat (Combat + any terrain), Exploration (Exploration/Travel + any terrain), Rest (Rest/Social + any location)
+- **Varied Tags**: Each preset demonstrates different tag combinations for auto-selection testing
+- **Placeholder Paths**: Audio file paths use `Audio/{type}/{file}.mp3` format - users replace with their own files
 - **Import**: Auto-import on plugin load (if `Playlists/` folder missing)
 - **User Override**: Users can modify/delete imported playlists
+- **Build Integration**: Presets bundled via `generate-preset-data.mjs` → `preset-data.ts` → `main.js`
 
 ## Future Enhancements
 
@@ -452,9 +458,29 @@ Playlists/                            # User playlists (not in repo)
 - **Playlist Chaining**: Sequence multiple playlists (intro → loop → outro)
 - **Context Hooks**: Custom logic for playlist selection (e.g., boss music on HP < 50%)
 
+## Getting Started
+
+**Quick Start** (after installing plugin):
+
+1. **Plugin auto-imports 6 sample playlists** to `Playlists/` folder on first load
+2. **Replace placeholder audio paths** in each playlist:
+   - Open Library → Playlists tab
+   - Edit each playlist and update `Audio/{type}/{file}.mp3` paths to point to your own audio files
+3. **Open Session Runner** → Audio panel appears automatically
+4. **Move around map** → Playlists auto-switch based on terrain/weather/situation tags
+5. **Manual override** → Use dropdown to force specific playlist
+
+**Sample Playlists Included**:
+- Forest Ambience (Forest/Jungle terrain + Exploration/Rest)
+- Mountain Ambience (Mountain/Hills + Exploration)
+- Dungeon Ambience (Cave/Underground/Ruins + Tension/Mystery)
+- Combat Music (Combat situation)
+- Exploration Music (Exploration/Travel)
+- Rest Music (Rest/Social)
+
 ## Known Issues
 
-- No sample playlists bundled yet (planned for Phase 6.6)
+- **Audio paths are placeholders** - Users must replace with their own audio files (no bundled audio due to size/licensing)
 - UI styling needs polish (responsiveness, accessibility)
 - No streaming support (YouTube, Spotify) - future enhancement
 
