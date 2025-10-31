@@ -23,6 +23,7 @@ import {
 } from "../../../ui/components/form-builder";
 import { getLocationMarkerStore } from "../../../features/maps/state/location-marker-store";
 import { VIEW_LIBRARY } from "../../library/view";
+import { getLocationInfluenceStore } from "../../../features/maps/state/location-influence-store";
 
 type InspectorUI = {
     panel: HTMLElement | null;
@@ -158,41 +159,89 @@ export function createInspectorMode(): CartographerMode {
         ui.note?.setValue(data?.note ?? "");
         ui.note?.setDisabled(false);
 
-        // Load location marker info
+        // Load location marker info (Phase 9.1 enhanced)
         if (ui.locationInfo) {
             // Clear existing content
             while (ui.locationInfo.firstChild) {
                 ui.locationInfo.removeChild(ui.locationInfo.firstChild);
             }
+
             const markerStore = getLocationMarkerStore(ctx.app, file);
             const marker = markerStore.get(state.selection);
 
-            if (marker) {
-                const header = ui.locationInfo.createEl("h4", { text: "📍 Location" });
+            // Also check for location influence at this hex
+            const influenceStore = getLocationInfluenceStore(ctx.app, file);
+            const influence = influenceStore.get(state.selection);
+
+            if (marker || influence) {
+                const header = ui.locationInfo.createEl("h4", { text: "📍 Location Info" });
                 header.style.marginTop = "0";
                 header.style.marginBottom = "8px";
 
-                const infoDiv = ui.locationInfo.createDiv({ cls: "sm-location-marker-info" });
-                infoDiv.createDiv({ text: `${marker.displayIcon} ${marker.locationName}`, cls: "sm-location-name" });
-                infoDiv.createDiv({ text: `Type: ${marker.locationType}`, cls: "sm-location-type" });
+                // Display marker info if present
+                if (marker) {
+                    const infoDiv = ui.locationInfo.createDiv({ cls: "sm-location-marker-info" });
+                    infoDiv.createDiv({ text: `${marker.displayIcon} ${marker.locationName}`, cls: "sm-location-name" });
+                    infoDiv.createDiv({ text: `Type: ${marker.locationType}`, cls: "sm-location-type" });
 
-                if (marker.parent) {
-                    infoDiv.createDiv({ text: `Parent: ${marker.parent}`, cls: "sm-location-parent" });
+                    if (marker.parent) {
+                        infoDiv.createDiv({ text: `Parent: ${marker.parent}`, cls: "sm-location-parent" });
+                    }
+
+                    if (marker.ownerName) {
+                        const ownerLabel = marker.ownerType === "faction" ? "Faction" : marker.ownerType === "npc" ? "Owner (NPC)" : "Owner";
+                        infoDiv.createDiv({ text: `${ownerLabel}: ${marker.ownerName}`, cls: "sm-location-owner" });
+                    }
+
+                    const openBtn = ui.locationInfo.createEl("button", { text: "Open in Library" });
+                    openBtn.style.marginTop = "8px";
+                    openBtn.addEventListener("click", async () => {
+                        const leaf = ctx.app.workspace.getLeaf(false);
+                        await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
+                        ctx.app.workspace.revealLeaf(leaf);
+                        // TODO: Navigate to specific location and open it
+                    });
                 }
 
-                if (marker.ownerName) {
-                    const ownerLabel = marker.ownerType === "faction" ? "Faction" : marker.ownerType === "npc" ? "Owner (NPC)" : "Owner";
-                    infoDiv.createDiv({ text: `${ownerLabel}: ${marker.ownerName}`, cls: "sm-location-owner" });
-                }
+                // Display influence info if present (Phase 9.1)
+                if (influence) {
+                    const influenceDiv = ui.locationInfo.createDiv({ cls: "sm-location-influence-info" });
+                    influenceDiv.style.marginTop = marker ? "12px" : "0";
+                    influenceDiv.style.padding = "8px";
+                    influenceDiv.style.background = "var(--background-secondary)";
+                    influenceDiv.style.borderRadius = "4px";
 
-                const openBtn = ui.locationInfo.createEl("button", { text: "Open in Library" });
-                openBtn.style.marginTop = "8px";
-                openBtn.addEventListener("click", async () => {
-                    const leaf = ctx.app.workspace.getLeaf(false);
-                    await leaf.setViewState({ type: VIEW_LIBRARY, active: true });
-                    ctx.app.workspace.revealLeaf(leaf);
-                    // TODO: Navigate to specific location and open it
-                });
+                    const influenceHeader = influenceDiv.createEl("div", {
+                        text: `Influence Area: ${influence.locationName}`,
+                        cls: "sm-influence-header"
+                    });
+                    influenceHeader.style.fontWeight = "600";
+                    influenceHeader.style.marginBottom = "4px";
+
+                    influenceDiv.createDiv({
+                        text: `Strength: ${Math.round(influence.strength)}%`,
+                        cls: "sm-influence-strength"
+                    });
+
+                    if (influence.ownerName) {
+                        const ownerLabel = influence.ownerType === "faction" ? "Faction" : influence.ownerType === "npc" ? "NPC" : "Owner";
+                        influenceDiv.createDiv({
+                            text: `${ownerLabel}: ${influence.ownerName}`,
+                            cls: "sm-influence-owner"
+                        });
+                    }
+
+                    // TODO Phase 9.1.2: Add building and worker information
+                    // This would require loading the full location data from the vault
+                    // For now, we show a placeholder
+                    const detailsNote = influenceDiv.createDiv({
+                        text: "Building & worker details: Coming soon",
+                        cls: "sm-influence-note"
+                    });
+                    detailsNote.style.fontSize = "0.9em";
+                    detailsNote.style.color = "var(--text-muted)";
+                    detailsNote.style.marginTop = "4px";
+                }
             }
         }
 

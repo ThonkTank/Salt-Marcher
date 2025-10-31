@@ -16,9 +16,13 @@ import { getFactionOverlayStore, type FactionOverlayEntry } from "../state/facti
 import type { FactionOverlayState } from "../state/faction-overlay-store";
 import { getLocationMarkerStore, type LocationMarkerEntry } from "../state/location-marker-store";
 import type { LocationMarkerState } from "../state/location-marker-store";
+import { getLocationInfluenceStore, type LocationInfluenceEntry } from "../state/location-influence-store";
+import type { LocationInfluenceState } from "../state/location-influence-store";
 
 const OVERLAY_STROKE_WIDTH = "3";
 const OVERLAY_FILL_OPACITY = "0.55";
+const INFLUENCE_FILL_OPACITY = "0.35"; // Lower opacity for location influence
+const INFLUENCE_STROKE_WIDTH = "2";
 const MARKER_FONT_SIZE = "24px";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -127,6 +131,50 @@ export async function renderHexMap(
     const overlayUnsubscribe = overlayStore.state.subscribe(applyOverlay);
     applyOverlay(overlayStore.state.get());
 
+    // Location Influence Overlays (Phase 9.1)
+    const influenceStore = getLocationInfluenceStore(app, mapFile);
+    let influenceKeys = new Set<string>();
+
+    const applyInfluence = (state: LocationInfluenceState) => {
+        const entries = state.loaded ? Array.from(state.entries.values()) : [];
+        const ensureCoords = entries.map((entry) => entry.coord);
+        scene.ensurePolys(ensureCoords);
+
+        const nextKeys = new Set<string>();
+        for (const entry of entries) {
+            const key = `${entry.coord.r},${entry.coord.c}`;
+            nextKeys.add(key);
+
+            // Use setOverlay with location-specific styling
+            // Location influence uses lower opacity to layer under faction overlays
+            scene.setOverlay(entry.coord, {
+                color: entry.color,
+                // Store location data in dataset for inspector access
+                factionId: `location:${entry.locationName}`,
+                factionName: `${entry.locationName} (${entry.strength}%)`,
+                fillOpacity: INFLUENCE_FILL_OPACITY,
+                strokeWidth: INFLUENCE_STROKE_WIDTH,
+            });
+        }
+
+        // Clear removed influences
+        for (const key of influenceKeys) {
+            if (nextKeys.has(key)) continue;
+            const [r, c] = key.split(",").map(Number);
+            // Only clear if not covered by faction overlay
+            const coord = { r, c };
+            const hasFactionOverlay = overlayStore.get(coord);
+            if (!hasFactionOverlay) {
+                scene.setOverlay(coord, null);
+            }
+        }
+
+        influenceKeys = nextKeys;
+    };
+
+    const influenceUnsubscribe = influenceStore.state.subscribe(applyInfluence);
+    applyInfluence(influenceStore.state.get());
+
     // Location Markers
     const markerStore = getLocationMarkerStore(app, mapFile);
     const markerLayer = createMarkerLayer(scene.contentG, radius, base, padding);
@@ -164,6 +212,8 @@ export async function renderHexMap(
     const cleanup = () => {
         markerUnsubscribe();
         markerKeys.clear();
+        influenceUnsubscribe();
+        influenceKeys.clear();
         overlayUnsubscribe();
         overlayKeys.clear();
         legendHost.remove();

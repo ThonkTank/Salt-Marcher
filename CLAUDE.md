@@ -312,7 +312,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 9 ✅ Complete (Location Integration) | Tests: 931/933 (99.8%) | **Next:** Phase 9.1 (UI Integration) or Phase 10
+**Status:** Phase 9.1 ✅ Complete (UI Integration) | Tests: 948/950 (99.8%) | **Next:** Phase 9.2 or Phase 10
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -382,12 +382,19 @@ Ziele:
   - Building degradation and repair system (condition, maintenance overdue)
   - Location-faction integration: bidirectional ownership, worker management, validation
   - 68 new tests (influence: 25, buildings: 43)
+- **Phase 9.1:** UI Integration ✅
+  - Location influence store: Reactive store for map overlays showing location influence
+  - Location influence repository: Load location data and calculate influenced hexes
+  - Map influence overlays: Location influence areas displayed on cartographer with color-coded strength
+  - Inspector enhancement: Shows location influence info (strength, owner, type)
+  - Hex-render integration: Location influences rendered as semi-transparent overlays below faction overlays
+  - 17 new tests for location-influence-store (assignment, retrieval, color management)
 
 **Geplant:**
-- **Phase 9.1 (Future - UI Integration)**: Connect Phase 9 features to UI
-  - Map influence overlays: Display faction/location influence areas on cartographer
-  - Building management UI: Edit building states, assign workers, view production
-  - Location markers: Enhanced markers showing owner, workers, production status
+- **Phase 9.2 (Future - Building Management UI)**: Full building/worker management
+  - Building management modal: Edit building states, assign workers, view production
+  - Location markers enhancement: Show owner, workers, production status on map
+  - Worker assignment UI: Drag-and-drop interface for assigning faction members to buildings
 - **Phase 10 (Future)**: Next major feature
   - Option A: Dungeon crawling system (grid-based tactical encounters)
   - Option B: Advanced place hierarchy (Stadt → Viertel → Gebäude → Raum)
@@ -399,21 +406,21 @@ Ziele:
 - TODO in calendar-state-gateway.ts: Add faction events to calendar inbox (requires event repository access)
 
 **Test-Status:**
-- Unit tests: 931/933 passing (99.8%) ✅
+- Unit tests: 948/950 passing (99.8%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 26/26 (serialization: 10, generation: 14, Phase 8.8: 2)
   - Faction tests: 388/388 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69, Phase 8.7: 85, Phase 8.9: 14)
-  - Location tests: 68/68 (Phase 9 - Influence: 25, Buildings: 43)
+  - Location tests: 85/85 (Phase 9: 68 - Influence: 25, Buildings: 43; Phase 9.1: 17 - UI store tests)
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
   - 1 failing test: header-policy new file detection (expected for new files)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 9.1 (UI Integration)** - Connect Phase 9 features to UI:
-   - Map influence overlays (display faction/location influence areas on cartographer)
-   - Building management UI (edit building states, assign workers, view production)
-   - Location markers enhancement (show owner, workers, production status)
+1. **Phase 9.2 (Building Management UI)** - Complete building/worker management UI:
+   - Building management modal with full CRUD operations
+   - Worker assignment interface (drag-and-drop faction members to jobs)
+   - Production tracking and visualization
 2. **Phase 10** - Next major feature:
    - Option A: Dungeon crawling system (grid-based tactical encounters using existing dungeon types)
    - Option B: Weather and regional climate system (per-region weather affecting travel/encounters)
