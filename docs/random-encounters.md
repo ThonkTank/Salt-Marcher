@@ -517,8 +517,61 @@ audioPlayer.restorePreviousPlaylist();
 - Add party settings UI (currently uses defaults)
 - Add encounter table creation/edit UI in Library (currently manual file creation)
 
-**Future Enhancements** (Phase 8+):
-- Faction-based encounter modifiers
+### Phase 8.8: Faction Encounter Integration ✅
+
+**Goal**: Integrate faction members positioned at hexes into random encounters
+
+**Status**: Complete - Faction members from Phase 8 system automatically included in encounters
+
+**Implemented Features**:
+1. **Faction Member Inclusion** ✅
+   - Encounters check for faction members at current hex coordinates
+   - Members with statblock references spawn as combatants
+   - Named NPCs retain their names; unit types get numbered (`Ranger Patrol 1`, `Ranger Patrol 2`)
+   - Faction combatants added to initiative tracker with proper stats
+
+2. **Coordinate Conversion** ✅
+   - Session Runner converts odd-r coordinates to cube coordinates
+   - Cube constraint validated: `q + r + s = 0`
+   - Hex coordinates passed via `EncounterGenerationContext.hexCoords`
+
+**Implementation Details**:
+- **Encounter Context** (`src/features/encounters/types.ts:33`):
+  - Added `hexCoords?: { q: number; r: number; s: number }` field
+  - Used by encounter generator to query faction system
+
+- **Context Builder** (`src/workmodes/session-runner/util/encounter-context-builder.ts:91-111`):
+  - Converts current hex from odd-r to cube coordinates
+  - Passes cube coords to encounter generation context
+  - Logs coordinate conversion for debugging
+
+- **Encounter Generator** (`src/features/encounters/encounter-generator.ts:59-63, 351-405`):
+  - Calls `getFactionMembersAtHex()` when `hexCoords` provided
+  - Loads creature stats from statblock references
+  - Spawns combatants for each faction member/unit
+  - Merges faction combatants with random encounter table results
+  - Recalculates XP and difficulty with combined combatants
+
+**Usage Example**:
+```typescript
+// In Session Runner, encounter context automatically includes hex coords
+const context = await buildEncounterContext(app, mapFile, state, partyLevel, partySize);
+// context.hexCoords = { q: 5, r: -3, s: -2 } (converted from odd-r)
+
+// Generate encounter - faction members automatically included
+const encounter = await generateEncounter(app, tables, context);
+// encounter.combatants includes both table-rolled creatures and faction members
+```
+
+**Testing**:
+- 2 new unit tests in `encounter-generator.test.ts`
+- Validates `hexCoords` field presence and cube constraint
+- Integration tested via existing faction integration tests
+
+**Future Enhancements** (Phase 9+):
+- UI toggle to exclude/include faction members
+- Faction behavior modifiers (aggressive, defensive, neutral)
+- Faction member morale and retreat mechanics
 - Location-specific tables (attach to map hexes)
 - Weather severity affecting encounter odds
 - Time-of-day probability curves

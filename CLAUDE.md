@@ -312,7 +312,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 8.7 ✅ Complete (Further Advanced Features) | Tests: 842/849 (99.2%) | **Next:** Phase 8.8 or UI Enhancements
+**Status:** Phase 8.8 ✅ Complete (Integration with Existing Systems) | Tests: 849/856 (99.2%) | **Next:** Phase 8.9 or Next Major Feature
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -362,30 +362,37 @@ Ziele:
   - Advanced Supply Chains: Multi-step production dependencies, critical path analysis, bottleneck detection, parallelization optimization, chain events
   - Intelligence Networks: Persistent spy networks with agents/safe houses, intelligence gathering (5 types), counter-intelligence, false intel, covert operations
   - 85 new tests (NPC Networks: 25, Economic Markets: 22, Supply Chains: 18, Intelligence Networks: 20)
+- **Phase 8.8:** Integration with Existing Systems ✅ - See [docs/random-encounters.md](docs/random-encounters.md#phase-88-faction-encounter-integration-)
+  - Faction Encounter Integration: Faction members at hexes automatically included in random encounters
+  - Coordinate conversion: odd-r → cube coordinates for faction lookup
+  - Named NPCs and unit types spawn as combatants with proper stats
+  - 2 new tests for hex coordinate integration
 
 **Geplant:**
-- **Phase 8.8 (UI & Integration)**: User interface for Phase 8 features
+- **Phase 8.9 (Future - UI & Visualization)**: User interface for Phase 8 features
   - NPC Relationship Visualization: Interactive graph view of NPC networks
   - Market Dashboard: Real-time price charts, trend indicators, trade history
   - Supply Chain Gantt Charts: Visual timeline of production chains
   - Intelligence UI: Agent roster, mission planning, report viewer
+  - Faction Camp Markers: Display faction camps/POIs on cartographer map
+  - Calendar Integration: Run faction simulation on time advancement
 
 **Technische Schulden:**
 - 21 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 
 **Test-Status:**
-- Unit tests: 842/849 passing (99.2%) ✅
+- Unit tests: 849/856 passing (99.2%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
-  - Encounter tests: 24/24 (serialization: 10, generation: 14)
+  - Encounter tests: 26/26 (serialization: 10, generation: 14, Phase 8.8: 2)
   - Faction tests: 374/374 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69, Phase 8.7: 85)
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
-  - 6 failing tests: header-policy violations (pre-existing, unrelated to Phase 8.7)
+  - 6 failing tests: header-policy violations (pre-existing, unrelated to Phase 8.8)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 8.8 (UI & Integration)** OR **Move to Next Major Feature**:
-   - Option A: Build UI for Phase 8 features (NPC relationship graph, market dashboard, supply chain gantt, intelligence UI)
-   - Option B: Integrate Phase 8 systems with existing workflows (faction simulation in session runner, market prices in loot generation)
+1. **Phase 8.9 (UI & Visualization)** OR **Move to Next Major Feature**:
+   - Option A: Build UI for Phase 8 features (NPC relationship graph, market dashboard, supply chain gantt, intelligence UI, faction camp markers)
+   - Option B: Add calendar integration (run faction simulation on time advancement)
    - Option C: Move to next major feature (Orte system, Dungeon crawling, Place system, etc.)

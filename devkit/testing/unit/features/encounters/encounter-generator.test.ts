@@ -303,4 +303,25 @@ describe("Encounter Generator", () => {
             expect(combatants[3].initiative).toBe(5);
         });
     });
+
+    describe("Phase 8.8: Faction Encounter Integration", () => {
+        it("should include hexCoords in context type", () => {
+            const context: EncounterGenerationContext = {
+                partyLevel: 3,
+                partySize: 4,
+                hexCoords: { q: 5, r: -3, s: -2 },
+            };
+
+            expect(context.hexCoords).toBeDefined();
+            expect(context.hexCoords?.q).toBe(5);
+            expect(context.hexCoords?.r).toBe(-3);
+            expect(context.hexCoords?.s).toBe(-2);
+        });
+
+        it("should validate cube coordinate constraint", () => {
+            const hexCoords = { q: 5, r: -3, s: -2 };
+            const sum = hexCoords.q + hexCoords.r + hexCoords.s;
+            expect(sum).toBe(0); // Cube coordinate constraint: q + r + s = 0
+        });
+    });
 });

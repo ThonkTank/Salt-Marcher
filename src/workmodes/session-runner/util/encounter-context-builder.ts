@@ -88,8 +88,31 @@ export async function buildEncounterContext(
 	// Default situation for random encounters during travel
 	const situationTags: string[] = ["wandering"];
 
+	// Phase 8.8: Convert current hex to cube coordinates for faction lookup
+	let hexCoords: { q: number; r: number; s: number } | undefined;
+	if (currentCoord && mapFile) {
+		try {
+			// Convert odd-r coordinates to cube coordinates
+			// oddr to cube: q = col - (row - (row&1)) / 2, r = row, s = -q - r
+			const col = currentCoord.c;
+			const row = currentCoord.r;
+			const q = col - Math.floor((row - (row & 1)) / 2);
+			const r = row;
+			const s = -q - r;
+			hexCoords = { q, r, s };
+
+			logger.debug("[EncounterContextBuilder] Converted hex coordinates", {
+				oddr: currentCoord,
+				cube: hexCoords,
+			});
+		} catch (err) {
+			logger.warn("[EncounterContextBuilder] Failed to convert hex coordinates", { err });
+		}
+	}
+
 	logger.debug("[EncounterContextBuilder] Context built", {
 		tags: { terrain: terrainTags, weather: weatherTags, time: timeTags, faction: factionTags, situation: situationTags },
+		hexCoords,
 	});
 
 	return {
@@ -102,5 +125,6 @@ export async function buildEncounterContext(
 			faction: factionTags,
 			situation: situationTags,
 		},
+		hexCoords,
 	};
 }

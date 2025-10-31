@@ -343,6 +343,29 @@ export function executeSellOrder(
 // ============================================================================
 
 /**
+ * Calculate price trend from history
+ */
+export function calculatePriceTrend(history: PriceHistory): "rising" | "falling" | "stable" {
+    if (history.prices.length < 7) {
+        return "stable";
+    }
+
+    const recentPrices = history.prices.slice(-7);
+    const firstPrice = recentPrices[0].price;
+    const lastPrice = recentPrices[recentPrices.length - 1].price;
+
+    const change = (lastPrice - firstPrice) / firstPrice;
+
+    if (change > 0.1) {
+        return "rising";
+    } else if (change < -0.1) {
+        return "falling";
+    } else {
+        return "stable";
+    }
+}
+
+/**
  * Track price over time
  */
 export function trackPriceHistory(
@@ -363,21 +386,7 @@ export function trackPriceHistory(
     }
 
     // Calculate trend
-    if (history.prices.length >= 7) {
-        const recentPrices = history.prices.slice(-7);
-        const firstPrice = recentPrices[0].price;
-        const lastPrice = recentPrices[recentPrices.length - 1].price;
-
-        const change = (lastPrice - firstPrice) / firstPrice;
-
-        if (change > 0.1) {
-            history.trend = "rising";
-        } else if (change < -0.1) {
-            history.trend = "falling";
-        } else {
-            history.trend = "stable";
-        }
-    }
+    history.trend = calculatePriceTrend(history);
 }
 
 /**

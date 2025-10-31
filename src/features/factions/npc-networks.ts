@@ -76,7 +76,6 @@ export function createNPCRelationship(
         type,
         strength: Math.max(-100, Math.min(100, strength)),
         history: [],
-        shared_secrets: [],
         last_interaction: new Date().toISOString().split("T")[0],
     };
 
@@ -141,7 +140,9 @@ export function shareSecret(
         return { success: false, error: "Relationship not strong enough to share secrets" };
     }
 
-    relationship.shared_secrets = relationship.shared_secrets || [];
+    if (!relationship.shared_secrets) {
+        relationship.shared_secrets = [];
+    }
     relationship.shared_secrets.push(secret);
 
     // Sharing secrets strengthens relationship

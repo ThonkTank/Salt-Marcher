@@ -28,6 +28,9 @@ export type EncounterGenerationContext = {
         min?: number;
         max?: number;
     };
+
+    /** Current hex coordinates (for faction member lookup) */
+    hexCoords?: { q: number; r: number; s: number };
 };
 
 /**

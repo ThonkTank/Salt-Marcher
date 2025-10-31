@@ -20,6 +20,7 @@ import {
 } from "./types";
 import { calculatePlaylistScore } from "../audio/auto-selection";
 import { parseCR } from "../../workmodes/library/encounter-tables/serializer";
+import { getFactionMembersAtHex } from "../factions/faction-integration";
 
 /**
  * Generate random encounter from encounter table
@@ -54,6 +55,12 @@ export async function generateEncounter(
 
     // Select creatures matching CR range and spawn combatants
     const combatants = spawnCombatants(creatures, quantity, context, warnings);
+
+    // Phase 8.8: Add faction members present at hex
+    if (context.hexCoords) {
+        const factionCombatants = await loadFactionMembersAtHex(app, context.hexCoords, warnings);
+        combatants.push(...factionCombatants);
+    }
 
     // Calculate XP and difficulty
     const { totalXp, adjustedXp, difficulty } = calculateEncounterDifficulty(
@@ -339,4 +346,60 @@ function getEncounterMultiplier(monsterCount: number): number {
         }
     }
     return 1.0;
+}
+
+/**
+ * Load faction members present at hex and convert to combatants (Phase 8.8)
+ */
+async function loadFactionMembersAtHex(
+    app: App,
+    hexCoords: { q: number; r: number; s: number },
+    warnings: string[],
+): Promise<EncounterCombatant[]> {
+    const combatants: EncounterCombatant[] = [];
+
+    try {
+        const factionMembers = await getFactionMembersAtHex(app, hexCoords);
+
+        for (const { faction, members } of factionMembers) {
+            for (const member of members) {
+                // Only add members with statblock references
+                if (!member.statblock_ref) {
+                    warnings.push(`Faction member "${member.name}" from ${faction.name} has no statblock reference`);
+                    continue;
+                }
+
+                // Load creature data from statblock reference
+                const creatureData = await loadCreaturesFromLibrary(app, [member.statblock_ref], warnings);
+                if (creatureData.length === 0) {
+                    continue;
+                }
+
+                const creature = creatureData[0];
+                const quantity = member.quantity || 1;
+
+                // Spawn combatants for this faction member
+                for (let i = 0; i < quantity; i++) {
+                    const maxHp = parseInt(creature.hp, 10) || 10;
+                    const ac = parseInt(creature.ac, 10) || 10;
+                    const initiative = Math.floor(Math.random() * 20) + 1;
+
+                    combatants.push({
+                        name: member.is_named ? member.name : `${member.name} ${i + 1}`,
+                        cr: creature.cr,
+                        initiative,
+                        currentHp: maxHp,
+                        maxHp,
+                        ac,
+                        creatureFile: creature.file,
+                        id: `faction_${faction.name}_${member.name}_${Date.now()}_${i}`,
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        warnings.push(`Failed to load faction members at hex: ${error.message}`);
+    }
+
+    return combatants;
 }
