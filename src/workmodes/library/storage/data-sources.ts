@@ -5,7 +5,7 @@ import type { BaseEntry, DataSource } from "../../../features/data-manager";
 import { readFrontmatter } from "../../../features/data-manager/browse/frontmatter-utils";
 import { listVaultPresets, watchVaultPresets } from "../../../../Presets/lib/vault-preset-loader";
 
-export type FilterableLibraryMode = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "factions" | "calendars" | "locations";
+export type FilterableLibraryMode = "creatures" | "spells" | "items" | "equipment" | "terrains" | "regions" | "factions" | "calendars" | "locations" | "playlists";
 
 export interface CreatureEntryMeta {
     readonly type?: string;
@@ -61,6 +61,16 @@ export interface LocationEntryMeta {
     readonly grid_size?: string; // For dungeons: "30×20"
 }
 
+export interface PlaylistEntryMeta {
+    readonly type: "ambience" | "music";
+    readonly track_count: number;
+    readonly terrain_tags?: string[];
+    readonly weather_tags?: string[];
+    readonly time_of_day_tags?: string[];
+    readonly faction_tags?: string[];
+    readonly situation_tags?: string[];
+}
+
 export interface LibraryEntryMetaMap {
     creatures: CreatureEntryMeta;
     spells: SpellEntryMeta;
@@ -71,6 +81,7 @@ export interface LibraryEntryMetaMap {
     factions: FactionEntryMeta;
     calendars: CalendarEntryMeta;
     locations: LocationEntryMeta;
+    playlists: PlaylistEntryMeta;
 }
 
 export type LibraryEntry<M extends FilterableLibraryMode> = BaseEntry & LibraryEntryMetaMap[M];
@@ -210,6 +221,24 @@ const loadLocationEntry = createEntryLoader<"locations">(fm => {
     };
 });
 
+const loadPlaylistEntry = createEntryLoader<"playlists">(fm => {
+    const type = typeof fm.type === "string" && (fm.type === "ambience" || fm.type === "music")
+        ? fm.type
+        : "ambience";
+
+    const tracks = Array.isArray(fm.tracks) ? fm.tracks : [];
+
+    return {
+        type,
+        track_count: tracks.length,
+        terrain_tags: extractTokenValues(fm.terrain_tags),
+        weather_tags: extractTokenValues(fm.weather_tags),
+        time_of_day_tags: extractTokenValues(fm.time_of_day_tags),
+        faction_tags: extractTokenValues(fm.faction_tags),
+        situation_tags: extractTokenValues(fm.situation_tags),
+    };
+});
+
 export const LIBRARY_DATA_SOURCES: LibraryDataSourceMap = {
     creatures: {
         id: "creatures",
@@ -264,5 +293,11 @@ export const LIBRARY_DATA_SOURCES: LibraryDataSourceMap = {
         list: (app) => listVaultPresets(app, "locations"),
         watch: (app, onChange) => watchVaultPresets(app, "locations", onChange),
         load: loadLocationEntry,
+    },
+    playlists: {
+        id: "playlists",
+        list: (app) => listVaultPresets(app, "playlists"),
+        watch: (app, onChange) => watchVaultPresets(app, "playlists", onChange),
+        load: loadPlaylistEntry,
     },
 };

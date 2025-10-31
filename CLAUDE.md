@@ -315,12 +315,41 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 5 ✅ Complete | Tests: 414/417 (99.3%) | **Next:** Phase 6 - Audio System
+**Status:** Phase 6.1 ✅ Complete | Tests: 432/434 (99.5%) | **Next:** Phase 6.2 - Playlist Manager UI
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
 - **Phase 5:** Loot Generator - Gold (XP-based, 5 rule types), Items (tag-filter, rarity-limits, weighted), E2E tests (13 scenarios)
+- **Phase 6.1:** Playlist Entity - CreateSpec with tag fields, library registration, CRUD operations, tests (20 tests)
 
-**Geplant:**
-- **Phase 6:** Audio (playlist manager, auto-selection by terrain/weather/faction, fade transitions)
-- **Release:** Polish, documentation, performance optimization
+**Phase 6: Audio System** (🔄 In Progress)
+- **Phase 6.1:** Playlist Entity ✅
+  - ✅ Data types & serializer (types.ts, serializer.ts, constants.ts)
+  - ✅ CreateSpec with tag fields (terrain/weather/time/faction/situation)
+  - ✅ Library registration & CRUD operations
+  - ✅ Tests (serialization, CRUD, validation)
+- **Phase 6.2:** Playlist Manager UI
+  - ⏳ Track list editor (add/remove/reorder tracks)
+  - ⏳ Playback controls (shuffle, loop, crossfade config)
+  - ⏳ Tag selection UI (multi-select for all tag types)
+  - ⏳ Integration with Library browse view
+- **Phase 6.3:** Audio Player Core
+  - ⏳ Track player service (play/pause/skip/stop)
+  - ⏳ Crossfade transitions
+  - ⏳ Volume control per track & global
+  - ⏳ Shuffle & loop logic
+- **Phase 6.4:** Auto-Selection System
+  - ⏳ Context-based playlist filter (current terrain/weather/time/faction/situation)
+  - ⏳ Session Runner integration (auto-switch on context change)
+  - ⏳ Quick-switch UI (manual override)
+  - ⏳ E2E tests (filter logic, context updates)
+
+**Known Issues:**
+- 2 tests intentionally skipped (deprecated TODO.md governance, AGENTS.md policy)
+- Auto-continue scripts moved to `.auto-continue/` (cleanup old `scripts/` refs if needed)
+- Playlist sample file uses old schema format (needs migration to new serializer format)
+
+**Release Prep:**
+- Polish UI/UX
+- Performance optimization
+- Documentation completion (user-facing & technical)
