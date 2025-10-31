@@ -3646,7 +3646,7 @@ function extractTokenValues(raw) {
   }
   return result;
 }
-var loadCreatureEntry, loadSpellEntry, loadItemEntry, loadEquipmentEntry, loadTerrainEntry, loadRegionEntry, loadFactionEntry, loadCalendarEntry, loadLocationEntry, LIBRARY_DATA_SOURCES;
+var loadCreatureEntry, loadSpellEntry, loadItemEntry, loadEquipmentEntry, loadTerrainEntry, loadRegionEntry, loadFactionEntry, loadCalendarEntry, loadLocationEntry, loadPlaylistEntry, LIBRARY_DATA_SOURCES;
 var init_data_sources = __esm({
   "src/workmodes/library/storage/data-sources.ts"() {
     "use strict";
@@ -3730,6 +3730,19 @@ var init_data_sources = __esm({
         grid_size: gridSize
       };
     });
+    loadPlaylistEntry = createEntryLoader((fm2) => {
+      const type = typeof fm2.type === "string" && (fm2.type === "ambience" || fm2.type === "music") ? fm2.type : "ambience";
+      const tracks = Array.isArray(fm2.tracks) ? fm2.tracks : [];
+      return {
+        type,
+        track_count: tracks.length,
+        terrain_tags: extractTokenValues(fm2.terrain_tags),
+        weather_tags: extractTokenValues(fm2.weather_tags),
+        time_of_day_tags: extractTokenValues(fm2.time_of_day_tags),
+        faction_tags: extractTokenValues(fm2.faction_tags),
+        situation_tags: extractTokenValues(fm2.situation_tags)
+      };
+    });
     LIBRARY_DATA_SOURCES = {
       creatures: {
         id: "creatures",
@@ -3784,6 +3797,12 @@ var init_data_sources = __esm({
         list: (app) => listVaultPresets(app, "locations"),
         watch: (app, onChange) => watchVaultPresets(app, "locations", onChange),
         load: loadLocationEntry
+      },
+      playlists: {
+        id: "playlists",
+        list: (app) => listVaultPresets(app, "playlists"),
+        watch: (app, onChange) => watchVaultPresets(app, "playlists", onChange),
+        load: loadPlaylistEntry
       }
     };
   }
@@ -5351,10 +5370,10 @@ var init_grid_layout_manager = __esm({
     init_layout_utils();
     init_plugin_logger();
     GridLayoutManager = class {
-      constructor(container, fields6) {
+      constructor(container, fields7) {
         this.currentPairs = 1;
         this.container = container;
-        this.fields = fields6;
+        this.fields = fields7;
         this.observer = new ResizeObserver(() => this.recalculate());
         this.observer.observe(container);
         this.recalculate();
@@ -5605,7 +5624,7 @@ var init_field_renderer_registry = __esm({
 function renderModularTokenFieldCore(options) {
   const {
     container,
-    fields: fields6,
+    fields: fields7,
     primaryField,
     value = [],
     chipTemplate,
@@ -5616,7 +5635,7 @@ function renderModularTokenFieldCore(options) {
     onTokenFieldChange
   } = options;
   const tokens = Array.isArray(value) ? [...value] : [];
-  const primaryFieldDef = fields6.find((f) => f.id === primaryField);
+  const primaryFieldDef = fields7.find((f) => f.id === primaryField);
   if (!primaryFieldDef) {
     throw new Error(`Primary field "${primaryField}" not found in fields config`);
   }
@@ -5718,7 +5737,7 @@ function renderModularTokenFieldCore(options) {
           chip.createSpan({ text: JSON.stringify(token), cls: "sm-cc-chip__text" });
         }
       } else {
-        for (const fieldDef of fields6) {
+        for (const fieldDef of fields7) {
           if (!fieldDef.displayInChip) continue;
           if (fieldDef.visibleIf && !fieldDef.visibleIf(token)) continue;
           const segment = chip.createSpan({
@@ -5867,7 +5886,7 @@ function renderModularTokenFieldCore(options) {
     if (getInitialValue) {
       newToken = getInitialValue(formData, inputValue);
     } else {
-      for (const fieldDef of fields6) {
+      for (const fieldDef of fields7) {
         if (fieldDef.id === primaryField) {
           newToken[fieldDef.id] = inputValue;
         } else if (fieldDef.default !== void 0) {
@@ -6388,9 +6407,9 @@ function resolveDefaults(spec, name) {
   const fromSpec = typeof spec.defaults === "function" ? spec.defaults({ presetName: name }) : spec.defaults;
   return fromSpec ? { ...fromSpec } : {};
 }
-function orderFields(fields6, ids) {
-  if (!ids || ids.length === 0) return fields6;
-  const lookup = new Map(fields6.map((field) => [field.id, field]));
+function orderFields(fields7, ids) {
+  if (!ids || ids.length === 0) return fields7;
+  const lookup = new Map(fields7.map((field) => [field.id, field]));
   const ordered = [];
   for (const id of ids) {
     const entry = lookup.get(id);
@@ -6932,8 +6951,8 @@ var init_repeating_width_sync = __esm({
         const groups = /* @__PURE__ */ new Map();
         const items = this.container.querySelectorAll(".sm-cc-repeating-item");
         items.forEach((item) => {
-          const fields6 = item.querySelectorAll(".sm-cc-repeating-field:not(.is-hidden)");
-          fields6.forEach((field) => {
+          const fields7 = item.querySelectorAll(".sm-cc-repeating-field:not(.is-hidden)");
+          fields7.forEach((field) => {
             const fieldId = field.dataset.fieldId;
             if (!fieldId) return;
             const label = field.querySelector(".sm-cc-field-label");
@@ -8678,8 +8697,8 @@ var init_modal_validator = __esm({
     init_modal_utils();
     init_plugin_logger();
     DefaultFieldTransformer = class {
-      constructor(fields6) {
-        this.fields = fields6;
+      constructor(fields7) {
+        this.fields = fields7;
       }
       /**
        * Apply all field transforms to data.
@@ -8844,8 +8863,8 @@ var init_field_manager = __esm({
     init_modal_utils();
     init_plugin_logger();
     FieldManager = class {
-      constructor(fields6, getData, onChange, widthSynchronizers) {
-        this.fields = fields6;
+      constructor(fields7, getData, onChange, widthSynchronizers) {
+        this.fields = fields7;
         this.getData = getData;
         this.onChange = onChange;
         this.widthSynchronizers = widthSynchronizers;
@@ -16270,6 +16289,511 @@ var init_locations = __esm({
   }
 });
 
+// src/workmodes/library/playlists/types.ts
+var init_types4 = __esm({
+  "src/workmodes/library/playlists/types.ts"() {
+    "use strict";
+  }
+});
+
+// src/workmodes/library/playlists/constants.ts
+var PLAYLIST_TYPES, TERRAIN_TAGS, WEATHER_TAGS, TIME_OF_DAY_TAGS, FACTION_TAGS, SITUATION_TAGS, DEFAULT_CROSSFADE_DURATION, DEFAULT_VOLUME;
+var init_constants10 = __esm({
+  "src/workmodes/library/playlists/constants.ts"() {
+    "use strict";
+    PLAYLIST_TYPES = [
+      { value: "ambience", label: "Ambience" },
+      { value: "music", label: "Music" }
+    ];
+    TERRAIN_TAGS = [
+      "Forest",
+      "Mountain",
+      "Desert",
+      "Swamp",
+      "Coastal",
+      "Ocean",
+      "Arctic",
+      "Cave",
+      "Underground",
+      "Urban",
+      "Ruins",
+      "Plains",
+      "Hills",
+      "Jungle",
+      "Volcanic"
+    ];
+    WEATHER_TAGS = [
+      "Clear",
+      "Cloudy",
+      "Rain",
+      "Storm",
+      "Snow",
+      "Fog",
+      "Wind",
+      "Hot",
+      "Cold"
+    ];
+    TIME_OF_DAY_TAGS = [
+      "Dawn",
+      "Morning",
+      "Noon",
+      "Afternoon",
+      "Dusk",
+      "Evening",
+      "Night",
+      "Midnight"
+    ];
+    FACTION_TAGS = [
+      "Friendly",
+      "Neutral",
+      "Hostile",
+      "Undead",
+      "Fey",
+      "Fiend",
+      "Celestial",
+      "Elemental",
+      "Dragon",
+      "Giant",
+      "Humanoid",
+      "Beast"
+    ];
+    SITUATION_TAGS = [
+      "Exploration",
+      "Combat",
+      "Social",
+      "Stealth",
+      "Chase",
+      "Rest",
+      "Tension",
+      "Mystery",
+      "Horror",
+      "Celebration",
+      "Travel",
+      "Dungeon",
+      "Boss",
+      "Victory",
+      "Defeat"
+    ];
+    DEFAULT_CROSSFADE_DURATION = 2;
+    DEFAULT_VOLUME = 0.7;
+  }
+});
+
+// src/workmodes/library/playlists/serializer.ts
+function playlistToMarkdown(data) {
+  const lines = [];
+  lines.push(`# ${data.display_name || data.name || "Unnamed Playlist"}`);
+  lines.push("");
+  if (data.description) {
+    lines.push(data.description);
+    lines.push("");
+  }
+  lines.push(`**Type:** ${data.type}`);
+  lines.push(`**Tracks:** ${data.tracks?.length || 0}`);
+  lines.push("");
+  const hasTags = data.terrain_tags && data.terrain_tags.length > 0 || data.weather_tags && data.weather_tags.length > 0 || data.time_of_day_tags && data.time_of_day_tags.length > 0 || data.faction_tags && data.faction_tags.length > 0 || data.situation_tags && data.situation_tags.length > 0;
+  if (hasTags) {
+    lines.push("## Tags");
+    lines.push("");
+    if (data.terrain_tags && data.terrain_tags.length > 0) {
+      lines.push(`**Terrain:** ${data.terrain_tags.map((t) => t.value).join(", ")}`);
+    }
+    if (data.weather_tags && data.weather_tags.length > 0) {
+      lines.push(`**Weather:** ${data.weather_tags.map((t) => t.value).join(", ")}`);
+    }
+    if (data.time_of_day_tags && data.time_of_day_tags.length > 0) {
+      lines.push(`**Time of Day:** ${data.time_of_day_tags.map((t) => t.value).join(", ")}`);
+    }
+    if (data.faction_tags && data.faction_tags.length > 0) {
+      lines.push(`**Faction:** ${data.faction_tags.map((t) => t.value).join(", ")}`);
+    }
+    if (data.situation_tags && data.situation_tags.length > 0) {
+      lines.push(`**Situation:** ${data.situation_tags.map((t) => t.value).join(", ")}`);
+    }
+    lines.push("");
+  }
+  lines.push("## Playback");
+  lines.push("");
+  lines.push(`**Shuffle:** ${data.shuffle ? "Yes" : "No"}`);
+  lines.push(`**Loop:** ${data.loop ? "Yes" : "No"}`);
+  if (data.crossfade_duration !== void 0) {
+    lines.push(`**Crossfade:** ${data.crossfade_duration}s`);
+  }
+  if (data.default_volume !== void 0) {
+    lines.push(`**Volume:** ${Math.round(data.default_volume * 100)}%`);
+  }
+  lines.push("");
+  if (data.tracks && data.tracks.length > 0) {
+    lines.push("## Tracks");
+    lines.push("");
+    data.tracks.forEach((track, index) => {
+      lines.push(`${index + 1}. **${track.name}**`);
+      lines.push(`   - Source: \`${track.source}\``);
+      if (track.duration) {
+        const minutes = Math.floor(track.duration / 60);
+        const seconds = Math.round(track.duration % 60);
+        lines.push(`   - Duration: ${minutes}:${seconds.toString().padStart(2, "0")}`);
+      }
+      if (track.volume !== void 0) {
+        lines.push(`   - Volume: ${Math.round(track.volume * 100)}%`);
+      }
+      lines.push("");
+    });
+  }
+  return lines.join("\n");
+}
+var init_serializer10 = __esm({
+  "src/workmodes/library/playlists/serializer.ts"() {
+    "use strict";
+  }
+});
+
+// src/workmodes/library/playlists/create-spec.ts
+var playlistSchema, fields6, playlistSpec;
+var init_create_spec10 = __esm({
+  "src/workmodes/library/playlists/create-spec.ts"() {
+    "use strict";
+    init_serializer10();
+    init_constants10();
+    playlistSchema = {
+      parse: (data) => data,
+      safeParse: (data) => {
+        try {
+          const playlist = data;
+          if (!playlist.name || typeof playlist.name !== "string" || playlist.name.trim().length === 0) {
+            return {
+              success: false,
+              error: new Error("Name is required")
+            };
+          }
+          if (!playlist.type || !["ambience", "music"].includes(playlist.type)) {
+            return {
+              success: false,
+              error: new Error("Type must be 'ambience' or 'music'")
+            };
+          }
+          if (!Array.isArray(playlist.tracks)) {
+            return {
+              success: false,
+              error: new Error("Tracks must be an array")
+            };
+          }
+          if (playlist.default_volume !== void 0) {
+            if (typeof playlist.default_volume !== "number" || playlist.default_volume < 0 || playlist.default_volume > 1) {
+              return {
+                success: false,
+                error: new Error("Default volume must be between 0.0 and 1.0")
+              };
+            }
+          }
+          if (playlist.crossfade_duration !== void 0) {
+            if (typeof playlist.crossfade_duration !== "number" || playlist.crossfade_duration < 0) {
+              return {
+                success: false,
+                error: new Error("Crossfade duration must be non-negative")
+              };
+            }
+          }
+          return { success: true, data: playlist };
+        } catch (error) {
+          return { success: false, error };
+        }
+      }
+    };
+    fields6 = [
+      {
+        id: "name",
+        label: "Name",
+        type: "text",
+        required: true,
+        placeholder: "Forest Ambience",
+        description: "Internal name for the playlist (used for file path)"
+      },
+      {
+        id: "display_name",
+        label: "Display Name",
+        type: "text",
+        placeholder: "Mystical Forest Sounds",
+        description: "Human-readable name shown in UI (defaults to name if not set)"
+      },
+      {
+        id: "type",
+        label: "Type",
+        type: "select",
+        required: true,
+        options: PLAYLIST_TYPES.map((t) => ({ value: t.value, label: t.label })),
+        default: "ambience",
+        description: "Playlist type: ambience (background sounds) or music (tracks with melody)"
+      },
+      {
+        id: "description",
+        label: "Description",
+        type: "textarea",
+        placeholder: "A collection of atmospheric forest sounds...",
+        description: "Optional description of the playlist's mood and content"
+      },
+      // Tag fields for automatic selection
+      {
+        id: "terrain_tags",
+        label: "Terrain Tags",
+        type: "tokens",
+        config: {
+          fields: [
+            {
+              id: "value",
+              type: "select",
+              displayInChip: true,
+              editable: true,
+              suggestions: TERRAIN_TAGS.map((tag) => ({ key: tag, label: tag })),
+              placeholder: "Terrain ausw\xE4hlen..."
+            }
+          ],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Terrain types this playlist matches (Forest, Mountain, etc.)"
+      },
+      {
+        id: "weather_tags",
+        label: "Weather Tags",
+        type: "tokens",
+        config: {
+          fields: [
+            {
+              id: "value",
+              type: "select",
+              displayInChip: true,
+              editable: true,
+              suggestions: WEATHER_TAGS.map((tag) => ({ key: tag, label: tag })),
+              placeholder: "Weather ausw\xE4hlen..."
+            }
+          ],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Weather conditions this playlist matches (Clear, Rain, Storm, etc.)"
+      },
+      {
+        id: "time_of_day_tags",
+        label: "Time of Day Tags",
+        type: "tokens",
+        config: {
+          fields: [
+            {
+              id: "value",
+              type: "select",
+              displayInChip: true,
+              editable: true,
+              suggestions: TIME_OF_DAY_TAGS.map((tag) => ({ key: tag, label: tag })),
+              placeholder: "Time ausw\xE4hlen..."
+            }
+          ],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Time of day this playlist matches (Dawn, Night, etc.)"
+      },
+      {
+        id: "faction_tags",
+        label: "Faction Tags",
+        type: "tokens",
+        config: {
+          fields: [
+            {
+              id: "value",
+              type: "select",
+              displayInChip: true,
+              editable: true,
+              suggestions: FACTION_TAGS.map((tag) => ({ key: tag, label: tag })),
+              placeholder: "Faction ausw\xE4hlen..."
+            }
+          ],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Faction types this playlist matches (Friendly, Hostile, Undead, etc.)"
+      },
+      {
+        id: "situation_tags",
+        label: "Situation Tags",
+        type: "tokens",
+        config: {
+          fields: [
+            {
+              id: "value",
+              type: "select",
+              displayInChip: true,
+              editable: true,
+              suggestions: SITUATION_TAGS.map((tag) => ({ key: tag, label: tag })),
+              placeholder: "Situation ausw\xE4hlen..."
+            }
+          ],
+          primaryField: "value"
+        },
+        default: [],
+        description: "Situations this playlist matches (Combat, Exploration, Stealth, etc.)"
+      },
+      // Playback settings
+      {
+        id: "shuffle",
+        label: "Shuffle",
+        type: "checkbox",
+        default: false,
+        description: "Randomize track order during playback"
+      },
+      {
+        id: "loop",
+        label: "Loop",
+        type: "checkbox",
+        default: true,
+        description: "Restart playlist after last track finishes"
+      },
+      {
+        id: "crossfade_duration",
+        label: "Crossfade Duration (seconds)",
+        type: "number-stepper",
+        min: 0,
+        max: 10,
+        step: 0.5,
+        default: DEFAULT_CROSSFADE_DURATION,
+        description: "Seconds to fade between tracks (0 = no crossfade)"
+      },
+      {
+        id: "default_volume",
+        label: "Default Volume",
+        type: "number-stepper",
+        min: 0,
+        max: 1,
+        step: 0.05,
+        default: DEFAULT_VOLUME,
+        description: "Default volume level (0.0 = muted, 1.0 = full volume)"
+      },
+      // Tracks list
+      {
+        id: "tracks",
+        label: "Tracks",
+        type: "list",
+        config: {
+          fields: [
+            {
+              id: "name",
+              label: "Track Name",
+              type: "text",
+              required: true,
+              placeholder: "Wind Through Trees"
+            },
+            {
+              id: "source",
+              label: "Source Path",
+              type: "text",
+              required: true,
+              placeholder: "Audio/forest_ambience.mp3",
+              description: "File path relative to vault root or external URL"
+            },
+            {
+              id: "duration",
+              label: "Duration (seconds)",
+              type: "number-stepper",
+              min: 0,
+              step: 1,
+              placeholder: "180",
+              description: "Track length in seconds (optional, for display)"
+            },
+            {
+              id: "volume",
+              label: "Track Volume",
+              type: "number-stepper",
+              min: 0,
+              max: 1,
+              step: 0.05,
+              placeholder: "1.0",
+              description: "Volume multiplier for this track (0.0 - 1.0)"
+            }
+          ],
+          itemLabel: (item) => item.name || "Unnamed Track"
+        },
+        default: [],
+        description: "Audio tracks in this playlist"
+      }
+    ];
+    playlistSpec = {
+      kind: "playlist",
+      title: "Playlist erstellen",
+      subtitle: "Neue Audio-Playlist f\xFCr Session Runner",
+      schema: playlistSchema,
+      fields: fields6,
+      storage: {
+        format: "md-frontmatter",
+        pathTemplate: "SaltMarcher/Playlists/{name}.md",
+        filenameFrom: "name",
+        directory: "SaltMarcher/Playlists",
+        frontmatter: [
+          "name",
+          "display_name",
+          "type",
+          "description",
+          "terrain_tags",
+          "weather_tags",
+          "time_of_day_tags",
+          "faction_tags",
+          "situation_tags",
+          "shuffle",
+          "loop",
+          "crossfade_duration",
+          "default_volume",
+          "tracks"
+        ],
+        bodyTemplate: (data) => playlistToMarkdown(data)
+      },
+      ui: {
+        submitLabel: "Playlist erstellen",
+        cancelLabel: "Abbrechen",
+        enableNavigation: false
+      },
+      browse: {
+        metadata: [
+          {
+            id: "type",
+            cls: "sm-cc-item__type",
+            getValue: (entry) => entry.type || "Unknown"
+          },
+          {
+            id: "track_count",
+            cls: "sm-cc-item__cr",
+            getValue: (entry) => `${entry.track_count || 0} tracks`
+          }
+        ],
+        filters: [
+          { id: "type", field: "type", label: "Type", type: "string" },
+          { id: "terrain_tags", field: "terrain_tags", label: "Terrain", type: "array" },
+          { id: "weather_tags", field: "weather_tags", label: "Weather", type: "array" },
+          { id: "time_of_day_tags", field: "time_of_day_tags", label: "Time", type: "array" },
+          { id: "faction_tags", field: "faction_tags", label: "Faction", type: "array" },
+          { id: "situation_tags", field: "situation_tags", label: "Situation", type: "array" }
+        ],
+        sorts: [
+          { id: "name", label: "Name", field: "name" },
+          { id: "type", label: "Type", field: "type" },
+          { id: "track_count", label: "Track Count", field: "track_count" }
+        ],
+        search: ["name", "display_name", "description", "type"]
+      },
+      loader: {}
+    };
+  }
+});
+
+// src/workmodes/library/playlists/index.ts
+var init_playlists = __esm({
+  "src/workmodes/library/playlists/index.ts"() {
+    "use strict";
+    init_types4();
+    init_constants10();
+    init_serializer10();
+    init_create_spec10();
+  }
+});
+
 // src/workmodes/library/registry.ts
 function getCreateSpec(entity) {
   return LIBRARY_CREATE_SPECS[entity];
@@ -16288,6 +16812,7 @@ var init_registry = __esm({
     init_calendars();
     init_factions();
     init_locations();
+    init_playlists();
     LIBRARY_CREATE_SPECS = {
       creatures: creatureSpec,
       spells: spellSpec,
@@ -16297,7 +16822,8 @@ var init_registry = __esm({
       regions: regionSpec,
       factions: factionSpec,
       calendars: calendarSpec,
-      locations: locationSpec
+      locations: locationSpec,
+      playlists: playlistSpec
     };
     LIBRARY_VIEW_CONFIGS = {
       ...generateViewConfigs(LIBRARY_CREATE_SPECS)
@@ -16802,14 +17328,15 @@ var init_view = __esm({
         regions: "Regions",
         factions: "Factions",
         calendars: "Calendars",
-        locations: "Locations"
+        locations: "Locations",
+        playlists: "Playlists"
       },
       sources: {
         prefix: "Source: "
       }
     };
     VIEW_LIBRARY = "salt-library";
-    LIBRARY_MODES = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars", "locations"];
+    LIBRARY_MODES = ["creatures", "spells", "items", "equipment", "terrains", "regions", "factions", "calendars", "locations", "playlists"];
     _LibraryView = class _LibraryView extends TabbedBrowseView {
       get config() {
         return _LibraryView.LIBRARY_CONFIG;
@@ -24384,7 +24911,7 @@ var init_inbox_status_bar = __esm({
           this.statusBarItem.setText(`\u{1F4EC} Inbox (${count})`);
           this.statusBarItem.addClass("sm-inbox-statusbar--has-unread");
         }
-        logger2.debug("[inbox-status-bar] Display updated", { count });
+        logger2.info("[inbox-status-bar] Display updated", { count });
       }
       /**
        * Open the inbox menu at cursor position
@@ -91788,7 +92315,7 @@ async function dumpFieldStates(app, args) {
     throw new Error("No create modal is open");
   }
   const fieldContainers = modal.querySelectorAll("[data-field-id]");
-  const fields6 = [];
+  const fields7 = [];
   for (const container of Array.from(fieldContainers)) {
     const fieldId = container.getAttribute("data-field-id");
     if (!fieldId) continue;
@@ -91807,14 +92334,14 @@ async function dumpFieldStates(app, args) {
       field.chips = chips.map((chip) => chip.textContent?.trim());
       field.chipCount = chips.length;
     }
-    fields6.push(field);
+    fields7.push(field);
   }
   const result = {
     modalType: modalType || "unknown",
-    fieldCount: fields6.length,
-    fields: fields6
+    fieldCount: fields7.length,
+    fields: fields7
   };
-  logger2.log(`[IPC-CMD] Dumped ${fields6.length} fields`);
+  logger2.log(`[IPC-CMD] Dumped ${fields7.length} fields`);
   return result;
 }
 async function getModalData(app, args) {

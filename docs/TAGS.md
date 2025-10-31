@@ -116,16 +116,100 @@ Siehe Terrains biome tags
 
 > Datenbasis: `Presets/Regions/**/` (noch zu implementieren)
 
+## Audio / Playlists
+
+### Terrain Tags
+| Tag         | Beschreibung              |
+|-------------|---------------------------|
+| Forest      | Wald                      |
+| Mountain    | Gebirge                   |
+| Desert      | Wüste                     |
+| Swamp       | Sumpf                     |
+| Coastal     | Küstengebiet              |
+| Ocean       | Ozean/Meer                |
+| Arctic      | Arktis/Tundra             |
+| Cave        | Höhlen                    |
+| Underground | Untergrund/Dungeon        |
+| Urban       | Städtisch                 |
+| Ruins       | Ruinen                    |
+| Plains      | Ebenen/Grasland           |
+| Hills       | Hügelland                 |
+| Jungle      | Dschungel                 |
+| Volcanic    | Vulkanisch                |
+
+### Weather Tags
+| Tag     | Beschreibung        |
+|---------|---------------------|
+| Clear   | Klarer Himmel       |
+| Cloudy  | Bewölkt             |
+| Rain    | Regen               |
+| Storm   | Sturm/Gewitter      |
+| Snow    | Schnee              |
+| Fog     | Nebel               |
+| Wind    | Windig              |
+| Hot     | Heiß                |
+| Cold    | Kalt                |
+
+### Time of Day Tags
+| Tag       | Beschreibung    |
+|-----------|-----------------|
+| Dawn      | Morgengrauen    |
+| Morning   | Morgen          |
+| Noon      | Mittag          |
+| Afternoon | Nachmittag      |
+| Dusk      | Abenddämmerung  |
+| Evening   | Abend           |
+| Night     | Nacht           |
+| Midnight  | Mitternacht     |
+
+### Faction Tags
+| Tag       | Beschreibung           |
+|-----------|------------------------|
+| Friendly  | Freundlich             |
+| Neutral   | Neutral                |
+| Hostile   | Feindlich              |
+| Undead    | Untote                 |
+| Fey       | Feen/Fey               |
+| Fiend     | Teufel/Dämonen         |
+| Celestial | Himmlische Wesen       |
+| Elemental | Elementare             |
+| Dragon    | Drachen                |
+| Giant     | Riesen                 |
+| Humanoid  | Humanoide              |
+| Beast     | Bestien/Tiere          |
+
+### Situation Tags
+| Tag         | Beschreibung       |
+|-------------|--------------------|
+| Exploration | Erkundung          |
+| Combat      | Kampf              |
+| Social      | Soziale Interaktion|
+| Stealth     | Schleichen         |
+| Chase       | Verfolgungsjagd    |
+| Rest        | Rast/Pause         |
+| Tension     | Spannung           |
+| Mystery     | Geheimnis/Rätsel   |
+| Horror      | Horror/Schrecken   |
+| Celebration | Feier/Fest         |
+| Travel      | Reise              |
+| Dungeon     | Dungeon-Erkundung  |
+| Boss        | Bosskampf          |
+| Victory     | Sieg               |
+| Defeat      | Niederlage         |
+
+> Datenbasis: `Presets/Playlists/**/` (`terrain_tags`, `weather_tags`, `time_of_day_tags`, `faction_tags`, `situation_tags` Frontmatter)
+> Details: [docs/audio-system.md](./audio-system.md)
+
 ## Noch zu definieren
-- Fraktionen (Kultur, Agenda, Gefahrenstufe) – siehe `src/domain/schemas.ts`
-- Orte (Typ, Infrastruktur, Stimmung) – siehe `src/domain/schemas.ts`
-- Dungeons (Themen, Gefahren, Rätsel) – siehe `src/domain/schemas.ts`
-- Loot (Material, Herkunft, Nutzung) – siehe `src/domain/schemas.ts`
-- Audio (Stimmung, Terrain, Tageszeit) – siehe `src/domain/schemas.ts`
+- Fraktionen (Kultur, Agenda, Gefahrenstufe)
+- Orte (Typ, Infrastruktur, Stimmung)
+- Dungeons (Themen, Gefahren, Rätsel)
+- Loot (Material, Herkunft, Nutzung)
 
 ## ToDo
 - ✅ Tags für Items definiert und implementiert
 - ✅ Tags für Equipment/Terrains/Regions definiert
+- ✅ Tags für Audio/Playlists definiert und implementiert (Phase 6.1)
 - ⏳ Equipment/Terrains/Regions CreateSpecs um Tag-Felder erweitern
 - ⏳ Automatisierte Konsistenzprüfung erweitern (`devkit lint tags`)
-- ⏳ Tag-Felder für neue Entitäten (Fraktionen, Orte, Dungeons, Loot, Audio) definieren
+- ⏳ Tag-Felder für neue Entitäten (Fraktionen, Orte, Dungeons, Loot) definieren

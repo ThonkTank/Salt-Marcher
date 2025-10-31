@@ -69,7 +69,17 @@
       "Bash(tee:*)",
       "Bash(timeout 15 ./devkit/core/cli/devkit debug:*)",
       "Bash(./devkit/core/cli/legacy-obsidian-cli.mjs:*)",
-      "Bash(while read f)"
+      "Bash(while read f)",
+      "Bash(timeout 90 ./scripts/auto-continue-claude.sh:*)",
+      "Bash(timeout 60 ./scripts/auto-continue-claude.sh:*)",
+      "Bash(bash -c \"source /home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/scripts/auto-continue-claude.sh; get_next_prompt\")",
+      "Bash(timeout 60 ./scripts/auto-continue.py:*)",
+      "Bash(timeout 120 ./scripts/auto-continue.py:*)",
+      "Bash(git fsck:*)",
+      "Bash(timeout 120 ./scripts/auto-continue-monitor.py:*)",
+      "Bash(pkill:*)",
+      "Bash(top:*)",
+      "Bash(timeout 60 ./.auto-continue/auto-continue-v2.py:*)"
     ],
     "deny": [],
     "ask": []

@@ -46,3 +46,6 @@ devkit-cli
 .auto-continue-state
 auto-continue-*.log
 test-*.log
+
+# Auto-continue directory (scripts moved here from scripts/)
+.auto-continue/

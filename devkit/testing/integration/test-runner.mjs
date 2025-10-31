@@ -51,7 +51,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const VAULT_PATH = path.resolve(__dirname, '../../../..');
 const SOCKET_PATH = path.join(VAULT_PATH, '.obsidian/plugins/salt-marcher/ipc.sock');
-const TEST_CASES_DIR = path.join(__dirname, 'test-cases');
+const TEST_CASES_DIR = path.join(__dirname, 'cases');
 const TEST_RESULTS_DIR = path.join(__dirname, 'results');
 const TIMEOUT = 120000; // 120 seconds
 
@@ -408,8 +408,8 @@ async function main() {
     console.log('Usage: test-runner.mjs <test-file-or-pattern> [options]');
     console.log('');
     console.log('Arguments:');
-    console.log('  <test-file>    Path to YAML test file (relative to test-cases/)');
-    console.log('  all            Run all test files in test-cases/');
+    console.log('  <test-file>    Path to YAML test file (relative to cases/)');
+    console.log('  all            Run all test files in cases/');
     console.log('');
     console.log('Options:');
     console.log('  --save         Save test results to disk (always on)');
@@ -427,7 +427,7 @@ async function main() {
   let testFiles = [];
 
   if (testPattern === 'all') {
-    // Run all YAML files in test-cases/
+    // Run all YAML files in cases/
     const files = await fs.readdir(TEST_CASES_DIR);
     testFiles = files
       .filter(f => f.endsWith('.yaml') || f.endsWith('.yml'))
