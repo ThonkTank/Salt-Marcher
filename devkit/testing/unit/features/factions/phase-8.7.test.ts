@@ -1,12 +1,11 @@
-/**
- * Phase 8.7 Tests: Further Advanced Features
- *
- * Comprehensive tests for Phase 8.7 faction system features including:
- * - Complex NPC Networks: Relationship graphs, cluster detection, cross-faction diplomacy
- * - Economic Markets: Supply/demand pricing, market events, price trends, economic cycles
- * - Advanced Supply Chains: Multi-step production, dependency tracking, parallelization
- * - Intelligence Networks: Spy operations, counter-intelligence, covert missions
- */
+// devkit/testing/unit/features/factions/phase-8.7.test.ts
+// Phase 8.7 Tests: Further Advanced Features
+//
+// Comprehensive tests for Phase 8.7 faction system features including:
+// - Complex NPC Networks: Relationship graphs, cluster detection, cross-faction diplomacy
+// - Economic Markets: Supply/demand pricing, market events, price trends, economic cycles
+// - Advanced Supply Chains: Multi-step production, dependency tracking, parallelization
+// - Intelligence Networks: Spy operations, counter-intelligence, covert missions
 
 import { describe, it, expect, beforeEach } from "vitest";
 import type { FactionData } from "../../../../../src/workmodes/library/factions/types";

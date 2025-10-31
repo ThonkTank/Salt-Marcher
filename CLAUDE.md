@@ -312,7 +312,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 8.8 ✅ Complete (Integration with Existing Systems) | Tests: 849/856 (99.2%) | **Next:** Phase 8.9 or Next Major Feature
+**Status:** Phase 8.9 ✅ Complete (Calendar Integration) | Tests: 863/865 (99.8%) | **Next:** Phase 8.10 or Next Major Feature
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -367,32 +367,37 @@ Ziele:
   - Coordinate conversion: odd-r → cube coordinates for faction lookup
   - Named NPCs and unit types spawn as combatants with proper stats
   - 2 new tests for hex coordinate integration
+- **Phase 8.9:** Calendar Integration ✅
+  - FactionSimulationHook interface for decoupled integration
+  - Automatic faction simulation on calendar day advancement
+  - Factory function to wire up App instance with hook
+  - Non-blocking error handling (simulation failures don't break time advancement)
+  - 14 new tests for calendar-faction integration
 
 **Geplant:**
-- **Phase 8.9 (Future - UI & Visualization)**: User interface for Phase 8 features
+- **Phase 8.10 (Future - UI & Visualization)**: User interface for Phase 8 features
   - NPC Relationship Visualization: Interactive graph view of NPC networks
   - Market Dashboard: Real-time price charts, trend indicators, trade history
   - Supply Chain Gantt Charts: Visual timeline of production chains
   - Intelligence UI: Agent roster, mission planning, report viewer
   - Faction Camp Markers: Display faction camps/POIs on cartographer map
-  - Calendar Integration: Run faction simulation on time advancement
 
 **Technische Schulden:**
 - 21 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
+- TODO in calendar-state-gateway.ts: Add faction events to calendar inbox (requires event repository access)
 
 **Test-Status:**
-- Unit tests: 849/856 passing (99.2%) ✅
+- Unit tests: 863/865 passing (99.8%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 26/26 (serialization: 10, generation: 14, Phase 8.8: 2)
-  - Faction tests: 374/374 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69, Phase 8.7: 85)
+  - Faction tests: 388/388 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69, Phase 8.7: 85, Phase 8.9: 14)
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
-  - 6 failing tests: header-policy violations (pre-existing, unrelated to Phase 8.8)
+  - 1 failing test: header-policy new file detection (expected for new files)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 8.9 (UI & Visualization)** OR **Move to Next Major Feature**:
+1. **Phase 8.10 (UI & Visualization)** OR **Move to Next Major Feature**:
    - Option A: Build UI for Phase 8 features (NPC relationship graph, market dashboard, supply chain gantt, intelligence UI, faction camp markers)
-   - Option B: Add calendar integration (run faction simulation on time advancement)
-   - Option C: Move to next major feature (Orte system, Dungeon crawling, Place system, etc.)
+   - Option B: Move to next major feature (Orte system, Dungeon crawling, Place system, etc.)
