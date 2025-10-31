@@ -1,9 +1,8 @@
-/**
- * Calendar-Faction Integration Tests (Phase 8.9)
- *
- * Tests the integration between calendar time advancement and faction simulation.
- * Verifies that faction simulation runs automatically when calendar advances by days.
- */
+// devkit/testing/unit/features/factions/calendar-integration.test.ts
+// Calendar-Faction Integration Tests (Phase 8.9)
+//
+// Tests the integration between calendar time advancement and faction simulation.
+// Verifies that faction simulation runs automatically when calendar advances by days.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { FactionSimulationHook } from "../../../../../src/workmodes/almanac/data/calendar-state-gateway";

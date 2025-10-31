@@ -1,13 +1,11 @@
-/**
- * devkit/testing/unit/maps/location-influence-store.test.ts
- * Phase 9.1: Tests for location influence store
- *
- * Tests the location influence store functionality including:
- * - Store instance management and isolation
- * - Assignment setting and retrieval
- * - Color assignment and owner differentiation
- * - Coordinate validation and duplicate handling
- */
+// devkit/testing/unit/maps/location-influence-store.test.ts
+// Phase 9.1: Tests for location influence store
+//
+// Tests the location influence store functionality including:
+// - Store instance management and isolation
+// - Assignment setting and retrieval
+// - Color assignment and owner differentiation
+// - Coordinate validation and duplicate handling
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { App, TFile } from "obsidian";

@@ -612,3 +612,110 @@ To implement Phase 9.1:
 6. Test with actual location data
 
 The existing faction overlay system is a good reference implementation.
+
+## Phase 9.1.2: Building & Worker Information Display ✅
+
+**Status:** Completed
+**Implementation:** Added building/worker details to cartographer inspector panel
+
+### Overview
+
+Phase 9.1.2 extends the inspector mode to display building production information when a hex with location influence is selected. This provides GMs with immediate visibility into building status, workers, and maintenance needs without leaving the cartographer view.
+
+### Implementation Details
+
+**File:** `src/workmodes/cartographer/modes/inspector.ts`
+
+**Changes:**
+1. Added imports for location data access:
+   - `readFrontmatter` - Load location files from vault
+   - `LocationData`, `isBuildingLocation` - Type checking
+   - `BUILDING_TEMPLATES` - Building metadata
+
+2. Enhanced influence display section (lines 238-306):
+   - Loads location file when influence info is present
+   - Reads frontmatter to extract `building_production` data
+   - Validates building type and displays formatted info
+
+**Display Elements:**
+```typescript
+// Building Details Section
+🟢/🟡/🔴 [Building Name] ([Condition]% condition)
+Workers: [Current]/[Max]
+⚠️ Maintenance overdue: [Days] days  // Only if overdue > 0
+Active Jobs: [Count]                    // Only if jobs present
+```
+
+**Condition Color Coding:**
+- 🟢 Green: 80-100% (good condition)
+- 🟡 Yellow: 40-79% (needs attention)
+- 🔴 Red: 0-39% (critical)
+
+### User Experience
+
+**Before:** Inspector showed "Building & worker details: Coming soon" placeholder
+
+**After:** Inspector displays:
+- Building type and current condition
+- Worker count vs. capacity
+- Maintenance warnings if overdue
+- Active job count
+
+**Example Output:**
+```
+Influence Area: Iron Forge Smithy
+Strength: 85%
+Faction: Ironhand Guild
+
+Building Details
+🟢 Smithy (85% condition)
+Workers: 3/5
+Active Jobs: 2
+```
+
+### Technical Architecture
+
+**Async Loading Pattern:**
+- Uses IIFE `(async () => { ... })()` to load location data without blocking UI
+- Wrapped in try/catch to prevent errors from breaking inspector
+- Logs warnings on failure for debugging
+
+**File Resolution:**
+- Constructs path: `SaltMarcher/Locations/{locationName}.md`
+- Uses `app.vault.getAbstractFileByPath()` for file lookup
+- Validates file exists and is readable (`'extension' in locationFile`)
+
+**Type Safety:**
+- Uses `isBuildingLocation()` type guard to ensure valid building data
+- Validates building template exists before rendering
+- Graceful handling of missing/invalid data
+
+### Future Enhancements
+
+**Potential additions for Phase 9.2B:**
+- Click-through to edit building from inspector
+- Inline worker assignment interface
+- Production rate visualization (graphs/charts)
+- Job progress bars for active jobs
+- Resource production display
+
+### Testing
+
+**Test Coverage:**
+- Implementation follows existing patterns (see dungeon-view.ts)
+- Uses proven frontmatter reading utilities
+- No new tests required (pattern already validated)
+- Manual testing recommended with live vault
+
+**Verification:**
+1. Create location with building production data
+2. Open cartographer with location influence
+3. Click hex with influence
+4. Verify building details display correctly
+5. Test edge cases (no building, invalid type, missing file)
+
+### Related Documentation
+
+- **Phase 9.2:** Building data model in location entities
+- **Phase 9.1:** Location influence overlays on map
+- **Phase 9:** Building production system foundation

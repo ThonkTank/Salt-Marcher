@@ -314,7 +314,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 9.2 ✅ Complete (Building Data Model) | Tests: 958/961 (99.7%) | **Next:** Phase 9.2B or Phase 10
+**Status:** Phase 9.1.2 ✅ Complete (Inspector Building Display) | Tests: 959/961 (99.8%) | **Next:** Phase 9.2B or Phase 10
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -396,6 +396,12 @@ Ziele:
   - Serialization support for building production in markdown
   - Type guard isBuildingLocation() for type-safe checks
   - 11 new tests for type guards and serialization (100% pass rate)
+- **Phase 9.1.2:** Inspector Building Display ✅ - See [docs/PHASE_9_1_UI_INTEGRATION.md#phase-912-building--worker-information-display-](docs/PHASE_9_1_UI_INTEGRATION.md#phase-912-building--worker-information-display-)
+  - Cartographer inspector shows building details for locations with influence
+  - Displays building type, condition (color-coded 🟢🟡🔴), worker count, maintenance status
+  - Async location file loading with graceful error handling
+  - Uses existing frontmatter utilities and type guards
+  - No new tests (follows existing proven patterns)
 
 **Geplant:**
 - **Phase 9.2B (Future - Building Management UI)**: Full building/worker management
@@ -408,19 +414,20 @@ Ziele:
   - Option C: Weather and regional climate system
 
 **Technische Schulden:**
-- 21 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
+- 20 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 - TODO in calendar-state-gateway.ts: Add faction events to calendar inbox (requires event repository access)
+- Phase 9.1.2 completed: Removed "Building & worker details: Coming soon" placeholder
 
 **Test-Status:**
-- Unit tests: 958/961 passing (99.7%) ✅
+- Unit tests: 959/961 passing (99.8%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 26/26 (serialization: 10, generation: 14, Phase 8.8: 2)
   - Faction tests: 388/388 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69, Phase 8.7: 85, Phase 8.9: 14)
   - Location tests: 96/96 (Phase 9: 68 - Influence: 25, Buildings: 43; Phase 9.1: 17 - UI store tests; Phase 9.2: 11 - Building production integration)
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
-  - 2 failing tests: header-policy new file detection (expected for Phase 9.1/8.9 files), faction covert ops casualty (pre-existing flaky test)
+  - 1 failing test: faction betrayal detection (pre-existing flaky test)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**

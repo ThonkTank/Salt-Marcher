@@ -24,6 +24,10 @@ import {
 import { getLocationMarkerStore } from "../../../features/maps/state/location-marker-store";
 import { VIEW_LIBRARY } from "../../library/view";
 import { getLocationInfluenceStore } from "../../../features/maps/state/location-influence-store";
+import { readFrontmatter } from "../../../features/data-manager/browse/frontmatter-utils";
+import type { LocationData } from "../../library/locations/types";
+import { isBuildingLocation } from "../../library/locations/types";
+import { BUILDING_TEMPLATES } from "../../../features/locations/building-production";
 
 type InspectorUI = {
     panel: HTMLElement | null;
@@ -231,16 +235,75 @@ export function createInspectorMode(): CartographerMode {
                         });
                     }
 
-                    // TODO Phase 9.1.2: Add building and worker information
-                    // This would require loading the full location data from the vault
-                    // For now, we show a placeholder
-                    const detailsNote = influenceDiv.createDiv({
-                        text: "Building & worker details: Coming soon",
-                        cls: "sm-influence-note"
-                    });
-                    detailsNote.style.fontSize = "0.9em";
-                    detailsNote.style.color = "var(--text-muted)";
-                    detailsNote.style.marginTop = "4px";
+                    // Phase 9.1.2: Load and display building/worker information
+                    const locationPath = `SaltMarcher/Locations/${influence.locationName}.md`;
+                    const locationFile = lifecycle.ctx?.app.vault.getAbstractFileByPath(locationPath);
+
+                    if (locationFile && 'extension' in locationFile) {
+                        // Async load location data - wrap in try/catch to avoid breaking UI
+                        (async () => {
+                            try {
+                                const fm = await readFrontmatter(lifecycle.ctx!.app, locationFile as TFile);
+                                const locationData = fm as unknown as LocationData;
+
+                                if (isBuildingLocation(locationData)) {
+                                    const prod = locationData.building_production;
+                                    const template = BUILDING_TEMPLATES[prod.buildingType];
+
+                                    if (template) {
+                                        const buildingDiv = influenceDiv.createDiv({ cls: "sm-building-details" });
+                                        buildingDiv.style.marginTop = "8px";
+                                        buildingDiv.style.paddingTop = "8px";
+                                        buildingDiv.style.borderTop = "1px solid var(--background-modifier-border)";
+
+                                        const buildingHeader = buildingDiv.createEl("div", {
+                                            text: "Building Details",
+                                            cls: "sm-building-header"
+                                        });
+                                        buildingHeader.style.fontWeight = "600";
+                                        buildingHeader.style.marginBottom = "4px";
+
+                                        // Building type and condition
+                                        const conditionIcon = prod.condition >= 80 ? "🟢" : prod.condition >= 40 ? "🟡" : "🔴";
+                                        buildingDiv.createDiv({
+                                            text: `${conditionIcon} ${template.name} (${prod.condition}% condition)`,
+                                            cls: "sm-building-type"
+                                        });
+
+                                        // Workers
+                                        buildingDiv.createDiv({
+                                            text: `Workers: ${prod.currentWorkers}/${template.maxWorkers}`,
+                                            cls: "sm-building-workers"
+                                        });
+
+                                        // Maintenance status
+                                        if (prod.maintenanceOverdue > 0) {
+                                            const maintenanceDiv = buildingDiv.createDiv({
+                                                text: `⚠️ Maintenance overdue: ${prod.maintenanceOverdue} days`,
+                                                cls: "sm-building-maintenance"
+                                            });
+                                            maintenanceDiv.style.color = "var(--text-warning)";
+                                        }
+
+                                        // Active jobs
+                                        if (prod.activeJobs && prod.activeJobs.length > 0) {
+                                            const jobsDiv = buildingDiv.createDiv({ cls: "sm-building-jobs" });
+                                            jobsDiv.style.marginTop = "4px";
+                                            jobsDiv.createEl("div", {
+                                                text: `Active Jobs: ${prod.activeJobs.length}`,
+                                                cls: "sm-jobs-header"
+                                            }).style.fontSize = "0.9em";
+                                        }
+                                    }
+                                }
+                            } catch (error) {
+                                logger.warn('[cartographer:inspector] Failed to load building details', {
+                                    locationName: influence.locationName,
+                                    error
+                                });
+                            }
+                        })();
+                    }
                 }
             }
         }
