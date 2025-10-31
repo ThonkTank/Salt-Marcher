@@ -1,9 +1,8 @@
-/**
- * Tests for Faction Integration (Phase 8.3)
- *
- * These tests verify the integration helper functions that connect
- * faction system with encounters, calendar, and map visualization.
- */
+// Tests for Faction Integration (Phase 8.4)
+//
+// These tests verify the integration helper functions that connect
+// faction system with encounters, calendar, and map visualization.
+// Phase 8.4 includes full YAML parsing, coordinate conversion, and persistence.
 
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { getFactionMembersAtHex, getAllFactionCamps, runDailyFactionSimulation } from "../../../../../src/features/factions/faction-integration";
@@ -23,6 +22,13 @@ const createMockApp = (factionFiles: Array<{ path: string; content: string }> = 
                 const found = factionFiles.find(f => f.path === file.path);
                 if (!found) throw new Error("File not found");
                 return found.content;
+            }),
+            modify: vi.fn(async (file: any, content: string) => {
+                // Mock persistence - in real implementation this writes to disk
+                const found = factionFiles.find(f => f.path === file.path);
+                if (found) {
+                    found.content = content;
+                }
             }),
         },
     } as any;
@@ -50,8 +56,6 @@ smType: faction
     });
 
     it("filters members by hex coordinates", async () => {
-        // Note: This test demonstrates the architecture even though current implementation
-        // can't parse member positions from YAML (marked as TODO)
         const app = createMockApp([
             {
                 path: "SaltMarcher/Factions/TestFaction.md",
@@ -62,16 +66,21 @@ members:
   - name: Scout Alpha
     position:
       type: hex
-      coords: {q: 5, r: -3, s: -2}
+      coords:
+        q: 5
+        r: -3
+        s: -2
 ---`,
             },
         ]);
 
         const result = await getFactionMembersAtHex(app, { q: 5, r: -3, s: -2 });
 
-        // Current implementation returns empty due to TODO: Parse members from YAML
-        // When full YAML parsing is implemented, this should return faction with members
-        expect(result).toEqual([]);
+        // Phase 8.4: Full YAML parsing implemented
+        expect(result).toHaveLength(1);
+        expect(result[0].faction.name).toBe("Test Faction");
+        expect(result[0].members).toHaveLength(1);
+        expect(result[0].members[0].name).toBe("Scout Alpha");
     });
 
     it("handles errors gracefully", async () => {
@@ -117,24 +126,46 @@ smType: faction
         expect(result).toEqual([]);
     });
 
-    it("identifies camps from faction member positions (architecture test)", async () => {
-        // This test demonstrates the expected architecture
-        // Current implementation logs camps but returns empty due to coordinate conversion TODO
+    it("identifies camps from hex positions with coordinate conversion", async () => {
         const app = createMockApp([
             {
                 path: "SaltMarcher/Factions/TestFaction.md",
                 content: `---
 name: Test Faction
 smType: faction
+members:
+  - name: Guard Unit Alpha
+    quantity: 5
+    position:
+      type: hex
+      coords:
+        q: 5
+        r: -3
+        s: -2
+  - name: Guard Unit Beta
+    quantity: 4
+    position:
+      type: hex
+      coords:
+        q: 5
+        r: -3
+        s: -2
 ---`,
             },
         ]);
 
         const result = await getAllFactionCamps(app);
 
-        // Current implementation returns empty due to TODO: coordinate conversion
-        // When coordinate conversion is implemented, this should return location markers
-        expect(result).toEqual([]);
+        // Phase 8.4: Coordinate conversion implemented
+        // Camp created because totalMembers (5+4=9) >= 3
+        expect(result).toHaveLength(1);
+        expect(result[0].locationName).toBe("Test Faction Camp");
+        expect(result[0].locationType).toBe("Camp");
+        expect(result[0].ownerType).toBe("faction");
+        expect(result[0].ownerName).toBe("Test Faction");
+        // Coordinate should be converted from cube to oddr
+        expect(result[0].coord).toHaveProperty("r");
+        expect(result[0].coord).toHaveProperty("c");
     });
 });
 

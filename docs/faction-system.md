@@ -1,6 +1,6 @@
 # Faction System
 
-**Phase 8.2 Complete** - AI decision-making, simulation engine, NPC generation, and plot hooks
+**Phase 8.4 Complete** - Full integration with encounters, calendar, and map visualization
 
 ## Overview
 
@@ -305,48 +305,90 @@ Named NPCs don't have quantity - they're unique individuals.
 ### Integration Points ✅
 **Implementation:** `faction-integration.ts`
 
-Three integration helper functions provide architectural stubs with TODO markers for full implementation:
+Three integration helper functions provided architectural foundation:
 
 1. **`getFactionMembersAtHex(app, hexCoord)`** - Encounter Integration
    - Returns faction members present at a hex coordinate
    - Used by encounter generator to add faction NPCs to encounters
-   - TODO: Requires full YAML parsing for member positions
+   - Phase 8.3: Stub with TODO markers
 
-2. **`getAllFactionCamps(app)`** - Map Visualization
+2. **`getAllFactionCamps(app, poiLookup?)`** - Map Visualization
    - Returns location markers for faction camps/territories
    - Used by cartographer to display faction presence
-   - TODO: Requires coordinate conversion (cube→axial) and location lookup
+   - Phase 8.3: Stub with TODO markers
 
-3. **`runDailyFactionSimulation(app)`** - Calendar Integration
+3. **`runDailyFactionSimulation(app, calendarDate?, elapsedDays?)`** - Calendar Integration
    - Runs simulation for all factions when time advances
    - Returns important events for calendar inbox
-   - TODO: Requires calendar timestamp integration and result persistence
+   - Phase 8.3: Stub with TODO markers
 
-### Architecture Notes
-- **Stub Implementation**: Functions demonstrate correct integration architecture
-- **Full YAML Parsing**: Currently only parses faction names from frontmatter
-- **Coordinate Conversion**: Hex {q,r,s} → axial {r,c} conversion not yet implemented
-- **Location Lookup**: POI name → coordinate resolution not yet implemented
-- **Event Persistence**: Simulation results not yet saved back to faction files
+## Phase 8.4: Full Faction Integration ✅
+
+**Files:**
+- `src/features/factions/faction-integration.ts` - Completed integration implementation
+- `devkit/testing/unit/features/factions/faction-integration.test.ts` - Updated tests (15 tests)
+
+### Full Implementation ✅
+
+All TODO markers from Phase 8.3 have been implemented:
+
+1. **Full YAML Parsing** ✅
+   - Uses `js-yaml` library for complete frontmatter parsing
+   - Deserializes members, resources, relationships, positions, jobs
+   - Validates required fields and handles malformed data gracefully
+
+2. **Coordinate System Conversion** ✅
+   - Cube {q,r,s} → Axial {q,r} → Odd-R {r,c}
+   - Validates cube constraint (q+r+s = 0)
+   - Inline `axialToOddr` function to avoid circular dependencies
+
+3. **POI→Coordinate Lookup** ✅
+   - Callback function pattern: `poiLookup?: (poiName: string) => Coord | null`
+   - Integrates with location marker store
+   - Gracefully handles missing POIs
+
+4. **Calendar Integration** ✅
+   - Accepts ISO date string (`YYYY-MM-DD`) and elapsed days
+   - Passes to simulation tick for date-aware processing
+   - Events include date field for timeline integration
+
+5. **Persistence** ✅
+   - Applies resource changes (additive deltas)
+   - Removes/adds members based on simulation results
+   - Clears completed jobs from member assignments
+   - Serializes to YAML + Markdown using `factionToMarkdown`
+   - Writes back to faction files atomically
 
 ### Usage Examples
 
 ```typescript
-// Encounter integration - check for faction members at encounter location
+// Encounter integration - get faction members at specific hex
 const factionMembers = await getFactionMembersAtHex(app, { q: 5, r: -3, s: -2 });
 for (const { faction, members } of factionMembers) {
   console.log(`${faction.name} has ${members.length} members at this hex`);
+  // Use members in random encounter generation
 }
 
 // Map visualization - display all faction camps
-const camps = await getAllFactionCamps(app);
+const camps = await getAllFactionCamps(app, (poiName) => {
+  const marker = locationMarkerStore.getByLocationName(poiName);
+  return marker?.coord;
+});
 locationMarkerStore.setMarkers(camps);
 
-// Calendar integration - run daily simulation
-const result = await runDailyFactionSimulation(app);
+// Calendar integration - run daily simulation with date
+const result = await runDailyFactionSimulation(app, "1492-03-15", 1);
 console.log(`Simulated ${result.factionsProcessed} factions`);
-// Add result.events to calendar inbox
+console.log(`Generated ${result.events.length} important events`);
+// Add result.events to calendar inbox with dates
 ```
+
+### Architecture Benefits
+
+- **Decoupled**: Functions accept callbacks for external dependencies (POI lookup)
+- **Flexible**: Calendar date and elapsed days are optional parameters
+- **Safe**: Wrapped logger calls in try-catch for test compatibility
+- **Complete**: Full YAML round-trip (parse → modify → serialize → save)
 
 ## Testing
 
@@ -364,13 +406,6 @@ console.log(`Simulated ${result.factionsProcessed} factions`);
 - Test faction CRUD via IPC
 
 ## Future Enhancements
-
-### Phase 8.4+: Full Integration Implementation
-- **YAML Parsing**: Complete faction data deserialization
-- **Coordinate Systems**: Cube→axial conversion, POI→coordinate lookup
-- **Calendar Math**: Proper timestamp calculations, elapsed time
-- **Result Persistence**: Save simulation changes back to faction files
-- **Event Inbox**: Push faction events to calendar timeline
 
 ### Phase 8.5+: Advanced Features
 - **Subfactions**: Organizational hierarchy (inquisition within kingdom)

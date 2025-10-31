@@ -312,7 +312,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 8.3 ✅ Complete (Faction Integration Stubs) | Tests: 599/600 (99.8%) | **Next:** Phase 8.4 (Full Integration Implementation)
+**Status:** Phase 8.4 ✅ Complete (Full Faction Integration) | Tests: 599/600 (99.8%) | **Next:** Phase 8.5 (Advanced Faction Features)
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -335,19 +335,25 @@ Ziele:
   - Architectural stubs with clear TODO markers for full implementation
   - 15 new integration tests demonstrating expected behavior
   - Foundation ready for encounter/calendar/map integration
+- **Phase 8.4:** Full Faction Integration ✅ - See [docs/faction-system.md](docs/faction-system.md)
+  - Full YAML parsing using js-yaml library (parses members, resources, relationships)
+  - Coordinate system conversion: cube {q,r,s} → axial {q,r} → oddr {r,c}
+  - POI→coordinate lookup via callback function pattern
+  - Calendar date integration (ISO date string, elapsed days)
+  - Persistence: Simulation results applied and saved back to faction files
+  - Event generation with dates for calendar inbox
+  - Updated integration tests with full YAML structures
 
 **Geplant:**
-- **Phase 8.4 (Full Faction Integration)**: Complete the integration stubs
-  - Full YAML parsing for faction data (members, resources, relationships)
-  - Coordinate system conversion (cube {q,r,s} → axial {r,c})
-  - POI location lookup for coordinate resolution
-  - Calendar timestamp calculations and elapsed time
-  - Persistence: Save simulation results back to faction files
-  - Event inbox: Push faction events to calendar timeline
+- **Phase 8.5 (Advanced Faction Features)**: Enhance faction capabilities
+  - Subfactions: Organizational hierarchy with inheritance
+  - Dynamic relationships: Relations change based on actions
+  - Economic simulation: Supply/demand, trade routes, markets
+  - Military simulation: Battles, sieges, tactical AI
+  - Diplomatic events: Treaties, betrayals, negotiations
 
 **Technische Schulden:**
 - 21 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
-- Phase 8.3 stub TODOs: YAML parsing, coordinate conversion, location lookup, event persistence
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 
 **Test-Status:**
@@ -361,9 +367,9 @@ Ziele:
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 8.4 (Full Faction Integration)**: Implement the TODO markers from Phase 8.3
-   - Complete YAML parsing using yaml library
-   - Implement coordinate conversion utilities
-   - Add POI→coordinate lookup system
-   - Integrate simulation with calendar time advance
-   - Persist simulation changes to faction files
+1. **Phase 8.5 (Advanced Faction Features)**: Enhance faction capabilities with advanced features
+   - Implement subfactions with organizational hierarchy
+   - Add dynamic relationship changes based on faction actions
+   - Build economic simulation (supply/demand, trade routes)
+   - Develop military simulation (battles, sieges)
+   - Create diplomatic event system (treaties, betrayals)
