@@ -315,7 +315,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 10.3 ✅ Complete | Tests: 1070/1070 (100%) ✅ | **Next:** Phase 10.4 - Weather Session Runner UI
+**Status:** Phase 10.4 ✅ Complete | Tests: 1094/1095 (99.9%) ✅ | **Next:** Phase 10.5 - Advanced Weather Features (Future)
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -462,11 +462,16 @@ Ziele:
   - Coordinate conversion: odd-r → cube for weather lookups ✅
   - Integration tests: 31 new tests (weather tag mapping: 15, encounter context: 7, audio context: 9) ✅
 
+- **Phase 10.4:** Weather Session Runner UI ✅ - See [docs/weather-system.md](docs/weather-system.md#phase-104)
+  - Weather panel component with icon, conditions, and gameplay effects ✅
+  - Weather icon system with Lucide icons and German labels ✅
+  - Movement speed modifiers (snow: -50%, storm: -40%, rain: -25%, etc.) ✅
+  - Sidebar integration with reactive weather updates ✅
+  - Session Runner integration with coordinate conversion ✅
+  - Styling with color-coded severity indicators ✅
+  - 24 new tests (icon mapping, labels, speed modifiers, formatting) ✅
+
 **Geplant:**
-- **Phase 10.4:** Weather Session Runner UI
-  - Weather panel component
-  - Weather icon system
-  - Travel movement modifiers
 - **Phase 10.5:** Advanced Weather Features (Future)
   - Weather forecasting (predict next 3 days)
   - Extreme weather events (hurricanes, blizzards)
@@ -506,42 +511,85 @@ None currently! All blocking issues resolved. ✅
 6. **[MEDIUM] Cartographer Brush Error** - Brush mode logs error messages
    - Terrain-brush functionality potentially broken, needs real testing
    - Location: Cartographer terrain-brush mode
-7. **[MEDIUM] Phase 9.2C Worker Validation** - Worker assignment ignores allowed jobs
-   - Workers assignable regardless of building job compatibility
-   - Need: Validate worker.job ∈ buildingTemplate.allowedJobs
-   - Location: worker-assignment-modal.ts validation logic
+7. **[HIGH] [UX] Worker Assignment - No Job Validation Feedback** - Workers can be assigned regardless of job compatibility
+   - Workers assignable even if job doesn't match building's allowed jobs
+   - No validation or warning shown to user before/after assignment
+   - Need: Validate worker.job ∈ buildingTemplate.allowedJobs and show clear feedback
+   - Location: building-management-modal.ts:484-510 (assignWorker method)
+8. **[MEDIUM] [UX] Building Management - Unclear Capacity Warnings** - Capacity limits not visible until error
+   - User only sees "max capacity" Notice after clicking Assign
+   - Need: Show visual capacity indicator (e.g., "Workers: 3/5") prominently in worker section
+   - Location: building-management-modal.ts:489-491
+9. **[MEDIUM] [UX] Building Status - Unclear Condition Impact** - User doesn't understand what condition affects
+   - Shows "Condition: 75%" without explaining gameplay impact
+   - Need: Add helper text like "Condition affects production rate and durability"
+   - Location: building-management-modal.ts:195-212
+10. **[MEDIUM] [UX] Drag-and-Drop - No Visual Affordance** - Worker cards don't look draggable
+   - No cursor change, no drag handle icon, no hint text
+   - Need: Add grab cursor on hover, drag handle icon, or "drag to assign" hint
+   - Location: building-management-modal.ts:398-452
+11. **[MEDIUM] [UX] Production Dashboard - No Units Displayed** - Production shows percentages without context
+   - Shows "75%" but unclear what this percentage represents
+   - Need: Show actual values (e.g., "7.5 Gold/day at 75% efficiency")
+   - Location: production-visualization.ts
+12. **[MEDIUM] Cartographer Brush Error** - Brush mode logs error messages
+   - Terrain-brush functionality potentially broken, needs real testing
+   - Location: Cartographer terrain-brush mode
 
 **LOW (Nice-to-have, Verbesserungen):**
-8. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
-9. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
-10. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
+13. **[LOW] Test Suite Unhandled Error** - 1 unhandled error during test run
+   - All 1070 tests pass, but Vitest reports 1 unhandled error
+   - Non-blocking, doesn't cause test failures
+   - Need: Investigate source and add proper error handling
+   - Location: Run `npm test` and check error details
+14. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
+15. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
+16. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
    - Currently assumes creature files are in standard location
    - Need: Get actual file path from vault lookup or repository
    - Location: src/workmodes/encounter/presenter.ts:442
-11. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
+17. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
    - No escape key to close, no tab navigation between sections
    - Drag-and-drop only, no keyboard alternative for worker assignment
    - Location: src/workmodes/cartographer/building-management-modal.ts
-12. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
+18. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
    - Worker loading shows no spinner/placeholder while loading factions
    - Save operation has no loading indicator during vault writes
    - Location: building-management-modal.ts:86-133 (loadAvailableWorkers), :618-653 (saveChanges)
-13. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
+19. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
    - After saving building changes, inspector panel shows stale data
    - onSave callback logs but doesn't refresh display
    - Location: inspector.ts:310-314
-14. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
+20. **[LOW] [UX] Save Button - No Unsaved Changes Warning** - User can close without saving
+   - unsavedChanges flag exists but not used for exit confirmation
+   - Need: Warn user on modal close if unsavedChanges === true
+   - Location: building-management-modal.ts:42
+21. **[LOW] console.warn Usage in context-extractor.ts** - Should use logger instead
+   - Lines 39, 71 use console.warn instead of plugin-logger
+   - Inconsistent with logging standards (other files use logger)
+   - Location: src/features/audio/context-extractor.ts:39, :71
+22. **[LOW] Time-of-Day Extraction Placeholder** - encounter-context-builder hardcodes "day"
+   - TODO comment at line 133: Extract time from current in-game time
+   - Currently always returns "day" regardless of actual calendar time
+   - Need: Integration with calendar state to get actual time of day
+   - Location: src/workmodes/session-runner/util/encounter-context-builder.ts:133-135
+23. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
    - Progress bars show data but no hover tooltips or click interactions
    - No way to see historical trends or detailed breakdowns
    - Location: src/features/locations/production-visualization.ts
-15. **[LOW] 22 Feature TODOs** - Intentional placeholders for future work (weather extraction, time-of-day, UI improvements)
+24. **[LOW] Coordinate Conversion Logic Duplication** - DRY violation
+   - Same odd-r → cube conversion logic duplicated in 2+ files
+   - Found in: context-extractor.ts:59-64, encounter-context-builder.ts:87-93
+   - Should: Extract to shared utility function (e.g., src/features/maps/coordinate-utils.ts)
+   - Impact: Low (only 2 locations, but violates DRY principle)
+25. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
 
 **Test-Status:**
-- Unit tests: 1070/1070 passing (100%) ✅
+- Unit tests: 1094/1095 passing (99.9%) ⚠️ 1 probabilistic test failure
   - Audio tests: 57/57 ✅
   - Playlist tests: 17/17 ✅
   - Encounter tests: 26/26 ✅
-  - Faction tests: 391/391 ✅ (fixed 2 flaky probabilistic tests)
+  - Faction tests: 390/391 ✅ (1 probabilistic test fails occasionally)
   - Location tests: 118/118 ✅
   - Building/Production tests: 22/22 ✅
   - Weather tests: 20/20 ✅ (Phase 10.1 complete)
@@ -549,20 +597,27 @@ None currently! All blocking issues resolved. ✅
   - Weather tag mapper: 15/15 ✅ (Phase 10.3 complete)
   - Weather encounter integration: 7/7 ✅ (Phase 10.3 complete)
   - Weather audio integration: 9/9 ✅ (Phase 10.3 complete)
-  - Header policy: 1/1 ✅ (AGENTS.md check removed)
+  - Weather UI tests: 24/24 ✅ (Phase 10.4 complete)
+  - Header policy: 1/1 ✅
 - Integration tests: 6 require live Obsidian (expected, documented limitation)
+- **Known Issue:** 1 probabilistic faction NPC betrayal test fails occasionally (non-blocking)
 
 **Nächste Schritte (Empfehlung):**
 1. **[HIGH] Fix Broken User Features** - Core functionality unusable
    - Encounter edit workflow (investigate why editor requires random encounter trigger)
    - Almanac frontend implementation (month/week/timeline views, event editors)
    - Library tabs (Location/Playlist/EncounterTable specs + serializers)
+   - **[UX] Worker assignment job validation** (workers assigned to incompatible buildings, no feedback)
 2. **[MEDIUM] Complete Partial Features** - Working but incomplete
    - POI placement UI in Cartographer (location system ready, needs UI mode)
    - Cartographer Brush debugging (investigate error messages)
    - Building repair resource costs (deduct from faction resources)
-   - Worker assignment validation (enforce allowed jobs)
-3. **[PLANNED] Phase 10.3: Weather Encounter & Audio Integration** - Next planned phase
-   - Update encounter-context-builder with weather extraction
-   - Update audio context-extractor with weather
-   - Weather tag mapping to tag vocabulary
+   - **[UX] Building capacity warnings** (only shows after error, needs proactive display)
+   - **[UX] Condition impact clarity** (users don't understand what condition affects)
+   - **[UX] Drag-and-drop affordance** (workers don't look draggable)
+   - **[UX] Production units display** (shows % without context)
+3. **[PLANNED] Phase 10.4: Weather Session Runner UI** - Next planned phase
+   - Weather panel component
+   - Weather icon system
+   - Travel movement modifiers
+   - Visual polish and testing

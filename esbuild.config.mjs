@@ -42,6 +42,7 @@ await esbuild.build({
             "codemirror",
             "@codemirror/state",
             "@codemirror/view",
+            "svelte/store",
             // Node.js built-ins (available in Electron/Obsidian)
             "net",
             "fs",

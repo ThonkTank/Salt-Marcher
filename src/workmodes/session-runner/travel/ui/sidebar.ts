@@ -3,6 +3,9 @@
 import type { TravelPanelSnapshot } from "../../../almanac/mode/cartographer-gateway";
 import { TravelCalendarLeaf, type TravelAdvancePayload } from "../../../almanac/mode/travel";
 import type { TravelCalendarMode } from "../../../almanac/mode/contracts";
+import type { WeatherState } from "../../../../features/weather/types";
+import { createWeatherPanel } from "./weather-panel";
+
 export type Sidebar = {
     root: HTMLElement;
     controlsHost: HTMLElement;
@@ -10,6 +13,7 @@ export type Sidebar = {
     setTile(rc: { r: number; c: number } | null): void;
     setSpeed(v: number): void;
     setTravelPanel(panel: TravelPanelSnapshot | null): void;
+    setWeather(weather: WeatherState | null): void;
     onSpeedChange(fn: (v: number) => void): void;
     setTravelHandlers(handlers: {
         onAdvance?: (payload: TravelAdvancePayload) => void;
@@ -43,6 +47,10 @@ export function createSidebar(host: HTMLElement): Sidebar {
         cls: "sm-cartographer__travel-input",
         attr: { step: "0.1", min: "0.1", value: "1" },
     }) as HTMLInputElement;
+
+    // Weather panel
+    const weatherPanelHost = root.createDiv({ cls: "sm-cartographer__travel-weather" });
+    const weatherPanel = createWeatherPanel(weatherPanelHost);
 
     const leafHost = root.createDiv({ cls: "sm-cartographer__travel-leaf" });
     let travelHandlers: {
@@ -92,6 +100,9 @@ export function createSidebar(host: HTMLElement): Sidebar {
         travelLeaf.setVisible(Boolean(panel));
         travelLeaf.setLoading(false);
     };
+    const setWeather = (weather: WeatherState | null) => {
+        weatherPanel.setWeather(weather);
+    };
     const setTitle = (title: string) => {
         if (title && title.trim().length > 0) {
             host.dataset.mapTitle = title;
@@ -107,6 +118,7 @@ export function createSidebar(host: HTMLElement): Sidebar {
         setTile,
         setSpeed,
         setTravelPanel,
+        setWeather,
         onSpeedChange: (fn) => (onChange = fn),
         setTravelHandlers: (handlers) => {
             travelHandlers = {
@@ -118,6 +130,7 @@ export function createSidebar(host: HTMLElement): Sidebar {
             };
         },
         destroy: () => {
+            weatherPanel.destroy();
             travelLeaf.destroy();
             host.empty();
             host.classList.remove("sm-cartographer__sidebar--travel");

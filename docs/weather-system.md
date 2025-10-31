@@ -250,11 +250,60 @@ interface WeatherZone {
 - Tests: devkit/testing/tests/unit/workmodes/session-runner/encounter-context-weather.test.ts
 - Tests: devkit/testing/tests/unit/features/audio/context-extractor-weather.test.ts
 
-### Phase 10.4: Session Runner UI
-1. Weather panel component
-2. Weather icon system
-3. Travel movement modifiers
-4. Visual polish and testing
+### Phase 10.4: Session Runner UI ✅
+**Status:** Complete
+
+**Implementation:**
+1. Weather panel component (src/workmodes/session-runner/travel/ui/weather-panel.ts) ✅
+   - Displays current weather conditions with icon, type, and severity
+   - Shows temperature, wind speed, precipitation, and visibility
+   - Displays movement speed modifier with color coding
+   - Gracefully handles missing weather data (placeholder state)
+2. Weather icon system (src/features/weather/weather-icons.ts) ✅
+   - Maps WeatherType to Lucide icon names
+   - German UI labels for weather types
+   - Severity labels (Minimal/Leicht/Mäßig/Stark/Extrem)
+   - Formatting utilities for temperature, wind, precipitation, visibility
+3. Travel movement modifiers ✅
+   - Weather-based speed penalties (snow: -50%, storm: -40%, rain: -25%, etc.)
+   - Speed modifier calculation based on weather type and severity
+   - Visual feedback (color-coded: green=good, yellow=warning, red=bad)
+   - Integrated into sidebar display
+4. Sidebar integration (src/workmodes/session-runner/travel/ui/sidebar.ts) ✅
+   - Weather panel added to travel sidebar
+   - Reactive updates on hex coordinate changes
+   - Weather lookup from weather store using odd-r → cube conversion
+   - Cleanup on destroy
+5. Session Runner integration (src/workmodes/session-runner/view/experience.ts) ✅
+   - Weather updates in handleStateChange on tile movement
+   - Coordinate conversion: odd-r → cube for weather store lookup
+   - Weather panel reset on UI reset
+6. Styling (styles.css) ✅
+   - Responsive weather panel layout
+   - Color-coded severity indicators
+   - Grid-based details display
+   - Consistent with plugin design system
+7. Unit tests (24 tests, 100% pass rate) ✅
+   - Icon mapping coverage
+   - Label localization
+   - Severity classification
+   - Speed modifier calculations
+   - Formatting functions
+
+**Key Features:**
+- Seamless integration with existing Session Runner UI
+- Reactive weather updates as player moves
+- Movement penalties affect gameplay
+- German UI strings for consistency
+- Graceful degradation when weather unavailable
+
+**Location:**
+- Weather panel: src/workmodes/session-runner/travel/ui/weather-panel.ts
+- Icon utilities: src/features/weather/weather-icons.ts
+- Sidebar integration: src/workmodes/session-runner/travel/ui/sidebar.ts
+- Session Runner: src/workmodes/session-runner/view/experience.ts
+- Styles: styles.css (.sm-weather-panel)
+- Tests: devkit/testing/unit/features/weather/weather-icons.test.ts
 
 ### Phase 10.5: Advanced Features (Future)
 - Weather forecasting (predict next 3 days)
@@ -347,10 +396,10 @@ No migration needed - weather is new feature with no existing data.
 
 - [x] Weather tags correctly passed to encounters (Phase 10.3) ✅
 - [x] Audio playlists change with weather (Phase 10.3) ✅
-- [ ] Session Runner displays current weather (Phase 10.4)
+- [x] Session Runner displays current weather (Phase 10.4) ✅
 - [x] Weather transitions feel natural (not random) ✅
 - [x] Performance: < 10ms per weather update ✅
-- [x] Test coverage: > 90% (Phase 10.1-10.3: 100%) ✅
+- [x] Test coverage: > 90% (Phase 10.1-10.4: 100%) ✅
 
 ## References
 

@@ -26707,6 +26707,192 @@ var init_travel = __esm({
   }
 });
 
+// src/features/weather/weather-icons.ts
+function getWeatherIcon(weatherType) {
+  return WEATHER_ICONS[weatherType];
+}
+function getWeatherLabel(weatherType) {
+  return WEATHER_LABELS[weatherType];
+}
+function getSeverityLabel(severity) {
+  if (severity >= 0.8) return "Extrem";
+  if (severity >= 0.6) return "Stark";
+  if (severity >= 0.4) return "M\xE4\xDFig";
+  if (severity >= 0.2) return "Leicht";
+  return "Minimal";
+}
+function getWeatherSpeedModifier(weatherType, severity) {
+  switch (weatherType) {
+    case "snow":
+      return 1 - severity * 0.5;
+    case "storm":
+      return 1 - severity * 0.4;
+    case "rain":
+      return 1 - severity * 0.25;
+    case "fog":
+      return 1 - severity * 0.3;
+    case "wind":
+      return 1 - severity * 0.2;
+    case "hot":
+      return 1 - severity * 0.2;
+    case "cold":
+      return 1 - severity * 0.25;
+    case "clear":
+    case "cloudy":
+    default:
+      return 1;
+  }
+}
+function formatTemperature(celsius) {
+  return `${Math.round(celsius)}\xB0C`;
+}
+function formatWindSpeed(kmh) {
+  return `${Math.round(kmh)} km/h`;
+}
+function formatPrecipitation(mmPerHour) {
+  if (mmPerHour < 0.1) return "Kein Niederschlag";
+  if (mmPerHour < 2.5) return "Leichter Niederschlag";
+  if (mmPerHour < 10) return "M\xE4\xDFiger Niederschlag";
+  return "Starker Niederschlag";
+}
+function formatVisibility(meters) {
+  if (meters >= 1e4) return "Ausgezeichnet";
+  if (meters >= 5e3) return "Gut";
+  if (meters >= 1e3) return "M\xE4\xDFig";
+  if (meters >= 200) return "Schlecht";
+  return "Sehr schlecht";
+}
+var WEATHER_ICONS, WEATHER_LABELS;
+var init_weather_icons = __esm({
+  "src/features/weather/weather-icons.ts"() {
+    "use strict";
+    WEATHER_ICONS = {
+      clear: "sun",
+      cloudy: "cloud",
+      rain: "cloud-drizzle",
+      storm: "cloud-lightning",
+      snow: "cloud-snow",
+      fog: "cloud-fog",
+      wind: "wind",
+      hot: "thermometer-sun",
+      cold: "thermometer-snowflake"
+    };
+    WEATHER_LABELS = {
+      clear: "Klar",
+      cloudy: "Bew\xF6lkt",
+      rain: "Regen",
+      storm: "Sturm",
+      snow: "Schnee",
+      fog: "Nebel",
+      wind: "Windig",
+      hot: "Hei\xDF",
+      cold: "Kalt"
+    };
+  }
+});
+
+// src/workmodes/session-runner/travel/ui/weather-panel.ts
+function createWeatherPanel(host) {
+  const root = host.createDiv({ cls: "sm-weather-panel" });
+  const header = root.createDiv({ cls: "sm-weather-panel__header" });
+  header.createSpan({ cls: "sm-weather-panel__title", text: "Wetter" });
+  const mainDisplay = root.createDiv({ cls: "sm-weather-panel__main" });
+  const iconContainer = mainDisplay.createDiv({ cls: "sm-weather-panel__icon-container" });
+  const weatherIcon = iconContainer.createDiv({ cls: "sm-weather-panel__icon" });
+  const infoContainer = mainDisplay.createDiv({ cls: "sm-weather-panel__info" });
+  const weatherTypeLabel = infoContainer.createDiv({ cls: "sm-weather-panel__weather-type" });
+  const severityLabel = infoContainer.createDiv({ cls: "sm-weather-panel__severity" });
+  const details = root.createDiv({ cls: "sm-weather-panel__details" });
+  const tempRow = details.createDiv({ cls: "sm-weather-panel__detail-row" });
+  tempRow.createSpan({ cls: "sm-weather-panel__detail-label", text: "Temperatur" });
+  const tempValue = tempRow.createSpan({ cls: "sm-weather-panel__detail-value" });
+  const windRow = details.createDiv({ cls: "sm-weather-panel__detail-row" });
+  windRow.createSpan({ cls: "sm-weather-panel__detail-label", text: "Wind" });
+  const windValue = windRow.createSpan({ cls: "sm-weather-panel__detail-value" });
+  const precipRow = details.createDiv({ cls: "sm-weather-panel__detail-row" });
+  precipRow.createSpan({ cls: "sm-weather-panel__detail-label", text: "Niederschlag" });
+  const precipValue = precipRow.createSpan({ cls: "sm-weather-panel__detail-value" });
+  const visRow = details.createDiv({ cls: "sm-weather-panel__detail-row" });
+  visRow.createSpan({ cls: "sm-weather-panel__detail-label", text: "Sicht" });
+  const visValue = visRow.createSpan({ cls: "sm-weather-panel__detail-value" });
+  const effects = root.createDiv({ cls: "sm-weather-panel__effects" });
+  const effectsTitle = effects.createDiv({
+    cls: "sm-weather-panel__effects-title",
+    text: "Reiseeffekte"
+  });
+  const speedModifierRow = effects.createDiv({ cls: "sm-weather-panel__effect-row" });
+  speedModifierRow.createSpan({ cls: "sm-weather-panel__effect-label", text: "Geschwindigkeit" });
+  const speedModifierValue = speedModifierRow.createSpan({
+    cls: "sm-weather-panel__effect-value"
+  });
+  const placeholder = root.createDiv({
+    cls: "sm-weather-panel__placeholder",
+    text: "Kein Wetter verf\xFCgbar"
+  });
+  placeholder.style.display = "block";
+  mainDisplay.style.display = "none";
+  details.style.display = "none";
+  effects.style.display = "none";
+  const setWeather = (weather) => {
+    if (!weather) {
+      placeholder.style.display = "block";
+      mainDisplay.style.display = "none";
+      details.style.display = "none";
+      effects.style.display = "none";
+      return;
+    }
+    placeholder.style.display = "none";
+    mainDisplay.style.display = "flex";
+    details.style.display = "block";
+    effects.style.display = "block";
+    const { currentWeather, temperature, windSpeed, precipitation, visibility } = weather;
+    weatherIcon.empty();
+    const iconName = getWeatherIcon(currentWeather.type);
+    (0, import_obsidian37.setIcon)(weatherIcon, iconName);
+    weatherTypeLabel.textContent = getWeatherLabel(currentWeather.type);
+    severityLabel.textContent = getSeverityLabel(currentWeather.severity);
+    tempValue.textContent = formatTemperature(temperature);
+    windValue.textContent = formatWindSpeed(windSpeed);
+    precipValue.textContent = formatPrecipitation(precipitation);
+    visValue.textContent = formatVisibility(visibility);
+    const modifier = getWeatherSpeedModifier(currentWeather.type, currentWeather.severity);
+    setSpeedModifier(modifier);
+  };
+  const setSpeedModifier = (modifier) => {
+    const percentage = Math.round(modifier * 100);
+    speedModifierValue.textContent = `${percentage}%`;
+    speedModifierValue.classList.remove(
+      "sm-weather-panel__effect-value--good",
+      "sm-weather-panel__effect-value--warning",
+      "sm-weather-panel__effect-value--bad"
+    );
+    if (modifier >= 0.9) {
+      speedModifierValue.classList.add("sm-weather-panel__effect-value--good");
+    } else if (modifier >= 0.7) {
+      speedModifierValue.classList.add("sm-weather-panel__effect-value--warning");
+    } else {
+      speedModifierValue.classList.add("sm-weather-panel__effect-value--bad");
+    }
+  };
+  const destroy = () => {
+    root.remove();
+  };
+  return {
+    root,
+    setWeather,
+    setSpeedModifier,
+    destroy
+  };
+}
+var import_obsidian37;
+var init_weather_panel = __esm({
+  "src/workmodes/session-runner/travel/ui/weather-panel.ts"() {
+    "use strict";
+    import_obsidian37 = require("obsidian");
+    init_weather_icons();
+  }
+});
+
 // src/workmodes/session-runner/travel/ui/sidebar.ts
 function createSidebar(host) {
   host.empty();
@@ -26726,6 +26912,8 @@ function createSidebar(host) {
     cls: "sm-cartographer__travel-input",
     attr: { step: "0.1", min: "0.1", value: "1" }
   });
+  const weatherPanelHost = root.createDiv({ cls: "sm-cartographer__travel-weather" });
+  const weatherPanel = createWeatherPanel(weatherPanelHost);
   const leafHost = root.createDiv({ cls: "sm-cartographer__travel-leaf" });
   let travelHandlers = {
     onAdvance: () => {
@@ -26772,6 +26960,9 @@ function createSidebar(host) {
     travelLeaf.setVisible(Boolean(panel));
     travelLeaf.setLoading(false);
   };
+  const setWeather = (weather) => {
+    weatherPanel.setWeather(weather);
+  };
   const setTitle = (title) => {
     if (title && title.trim().length > 0) {
       host.dataset.mapTitle = title;
@@ -26786,6 +26977,7 @@ function createSidebar(host) {
     setTile,
     setSpeed,
     setTravelPanel,
+    setWeather,
     onSpeedChange: (fn) => onChange = fn,
     setTravelHandlers: (handlers) => {
       travelHandlers = {
@@ -26797,6 +26989,7 @@ function createSidebar(host) {
       };
     },
     destroy: () => {
+      weatherPanel.destroy();
       travelLeaf.destroy();
       host.empty();
       host.classList.remove("sm-cartographer__sidebar--travel");
@@ -26808,6 +27001,7 @@ var init_sidebar = __esm({
   "src/workmodes/session-runner/travel/ui/sidebar.ts"() {
     "use strict";
     init_travel();
+    init_weather_panel();
   }
 });
 
@@ -27648,7 +27842,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
     text: "Start"
   });
-  (0, import_obsidian37.setIcon)(playBtn, "play");
+  (0, import_obsidian38.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -27659,7 +27853,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
     text: "Stopp"
   });
-  (0, import_obsidian37.setIcon)(stopBtn, "square");
+  (0, import_obsidian38.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -27670,7 +27864,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
     text: "Reset"
   });
-  (0, import_obsidian37.setIcon)(resetBtn, "rotate-ccw");
+  (0, import_obsidian38.setIcon)(resetBtn, "rotate-ccw");
   applyMapButtonStyle(resetBtn);
   resetBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -27681,7 +27875,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--encounter",
     text: "Random Encounter"
   });
-  (0, import_obsidian37.setIcon)(encounterBtn, "swords");
+  (0, import_obsidian38.setIcon)(encounterBtn, "swords");
   applyMapButtonStyle(encounterBtn);
   encounterBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -27732,11 +27926,11 @@ function createPlaybackControls(host, callbacks) {
     setTempo
   };
 }
-var import_obsidian37;
+var import_obsidian38;
 var init_controls = __esm({
   "src/workmodes/session-runner/travel/ui/controls.ts"() {
     "use strict";
-    import_obsidian37 = require("obsidian");
+    import_obsidian38 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -27996,7 +28190,7 @@ function bindContextMenu(routeLayerEl, logic) {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    const menu = new import_obsidian38.Menu();
+    const menu = new import_obsidian39.Menu();
     if (allowDelete) {
       menu.addItem(
         (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
@@ -28016,11 +28210,11 @@ function bindContextMenu(routeLayerEl, logic) {
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
-var import_obsidian38;
+var import_obsidian39;
 var init_context_menu_controller = __esm({
   "src/workmodes/session-runner/travel/ui/context-menu.controller.ts"() {
     "use strict";
-    import_obsidian38 = require("obsidian");
+    import_obsidian39 = require("obsidian");
   }
 });
 
@@ -28152,7 +28346,7 @@ function loadEncounterModule() {
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
     logger2.error("[session-runner] failed to load encounter module", err);
-    new import_obsidian39.Notice("Encounter-Modul konnte nicht geladen werden.");
+    new import_obsidian40.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
 }
@@ -28171,7 +28365,7 @@ async function openEncounter2(app, context) {
   const issue = describeEncounterContextIssue(context);
   if (issue) {
     logger2.warn(`[session-runner] ${issue.log}`, context);
-    new import_obsidian39.Notice(issue.message);
+    new import_obsidian40.Notice(issue.message);
   } else if (context) {
     try {
       const event = await createEncounterEventFromTravel(app, context);
@@ -28223,11 +28417,11 @@ async function publishManualEncounter(app, context, options = {}) {
     logger2.error("[session-runner] failed to publish manual encounter", err);
   }
 }
-var import_obsidian39, encounterModule;
+var import_obsidian40, encounterModule;
 var init_encounter_gateway = __esm({
   "src/workmodes/session-runner/view/controllers/encounter-gateway.ts"() {
     "use strict";
-    import_obsidian39 = require("obsidian");
+    import_obsidian40 = require("obsidian");
     init_session_store();
     init_plugin_logger();
     init_event_builder();
@@ -28776,6 +28970,194 @@ var init_auto_selection = __esm({
   }
 });
 
+// src/features/weather/weather-store.ts
+function createHexKey(mapPath, q, r, s) {
+  return `${mapPath}:${q}:${r}:${s}`;
+}
+function parseHexKey(key) {
+  const parts = key.split(":");
+  if (parts.length !== 4) return null;
+  const [mapPath, qStr, rStr, sStr] = parts;
+  const q = parseInt(qStr, 10);
+  const r = parseInt(rStr, 10);
+  const s = parseInt(sStr, 10);
+  if (isNaN(q) || isNaN(r) || isNaN(s)) return null;
+  return { mapPath, q, r, s };
+}
+function createInitialState3() {
+  return {
+    weatherByHex: /* @__PURE__ */ new Map(),
+    activeMapPath: null
+  };
+}
+var import_store2, WeatherStore, weatherStore;
+var init_weather_store = __esm({
+  "src/features/weather/weather-store.ts"() {
+    "use strict";
+    import_store2 = require("svelte/store");
+    WeatherStore = class {
+      constructor() {
+        this.store = (0, import_store2.writable)(createInitialState3());
+      }
+      /**
+       * Set weather for a specific hex
+       */
+      setWeather(mapPath, weather) {
+        this.store.update((state) => {
+          const key = createHexKey(mapPath, weather.hexCoord.q, weather.hexCoord.r, weather.hexCoord.s);
+          state.weatherByHex.set(key, { ...weather });
+          return state;
+        });
+      }
+      /**
+       * Get weather for a specific hex (synchronous read from store)
+       */
+      getWeather(mapPath, q, r, s) {
+        let result = null;
+        const unsubscribe = this.store.subscribe((state) => {
+          const key = createHexKey(mapPath, q, r, s);
+          result = state.weatherByHex.get(key) ?? null;
+        });
+        unsubscribe();
+        return result;
+      }
+      /**
+       * Set multiple weather states at once (batch update)
+       */
+      setWeatherBatch(mapPath, weatherStates) {
+        this.store.update((state) => {
+          for (const weather of weatherStates) {
+            const key = createHexKey(mapPath, weather.hexCoord.q, weather.hexCoord.r, weather.hexCoord.s);
+            state.weatherByHex.set(key, { ...weather });
+          }
+          return state;
+        });
+      }
+      /**
+       * Clear all weather for a specific map
+       */
+      clearMap(mapPath) {
+        this.store.update((state) => {
+          const keysToRemove = [];
+          for (const key of state.weatherByHex.keys()) {
+            const parsed = parseHexKey(key);
+            if (parsed && parsed.mapPath === mapPath) {
+              keysToRemove.push(key);
+            }
+          }
+          for (const key of keysToRemove) {
+            state.weatherByHex.delete(key);
+          }
+          return state;
+        });
+      }
+      /**
+       * Clear all weather data
+       */
+      clearAll() {
+        this.store.set(createInitialState3());
+      }
+      /**
+       * Set active map path (for filtering)
+       */
+      setActiveMap(mapPath) {
+        this.store.update((state) => {
+          state.activeMapPath = mapPath;
+          return state;
+        });
+      }
+      /**
+       * Get all weather states for the active map
+       */
+      getActiveMapWeather() {
+        return (0, import_store2.derived)(this.store, ($state) => {
+          if (!$state.activeMapPath) return [];
+          const results = [];
+          for (const [key, weather] of $state.weatherByHex.entries()) {
+            const parsed = parseHexKey(key);
+            if (parsed && parsed.mapPath === $state.activeMapPath) {
+              results.push(weather);
+            }
+          }
+          return results;
+        });
+      }
+      /**
+       * Subscribe to store updates
+       */
+      subscribe(callback) {
+        return this.store.subscribe(callback);
+      }
+      /**
+       * Get read-only derived store for a specific hex
+       */
+      getHexWeather(mapPath, q, r, s) {
+        return (0, import_store2.derived)(this.store, ($state) => {
+          const key = createHexKey(mapPath, q, r, s);
+          return $state.weatherByHex.get(key) ?? null;
+        });
+      }
+      /**
+       * Prune old weather data (remove hexes not updated in N days)
+       * Used to prevent memory bloat on large maps
+       */
+      pruneOldWeather(maxAgeDays = 30) {
+        const cutoffDate = /* @__PURE__ */ new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - maxAgeDays);
+        const cutoffTimestamp = cutoffDate.toISOString();
+        this.store.update((state) => {
+          const keysToRemove = [];
+          for (const [key, weather] of state.weatherByHex.entries()) {
+            if (weather.lastUpdate < cutoffTimestamp) {
+              keysToRemove.push(key);
+            }
+          }
+          for (const key of keysToRemove) {
+            state.weatherByHex.delete(key);
+          }
+          return state;
+        });
+      }
+    };
+    weatherStore = new WeatherStore();
+  }
+});
+
+// src/features/weather/weather-tag-mapper.ts
+function mapWeatherTypeToTags(weatherType) {
+  switch (weatherType) {
+    case "clear":
+      return ["clear"];
+    case "cloudy":
+      return ["cloudy"];
+    case "rain":
+      return ["rain"];
+    case "storm":
+      return ["storm", "rain", "wind"];
+    case "snow":
+      return ["snow"];
+    case "fog":
+      return ["fog"];
+    case "wind":
+      return ["wind"];
+    case "hot":
+      return ["hot"];
+    case "cold":
+      return ["cold"];
+    default:
+      return ["clear"];
+  }
+}
+function getPrimaryWeatherTag(weatherType) {
+  const tags = mapWeatherTypeToTags(weatherType);
+  return tags[0] ?? "clear";
+}
+var init_weather_tag_mapper = __esm({
+  "src/features/weather/weather-tag-mapper.ts"() {
+    "use strict";
+  }
+});
+
 // src/features/audio/context-extractor.ts
 async function extractSessionContext(app, mapFile, coord, additionalContext) {
   let tileData = null;
@@ -28792,9 +29174,25 @@ async function extractSessionContext(app, mapFile, coord, additionalContext) {
       factions.push(normalizedFaction);
     }
   }
+  let weather = additionalContext?.weather;
+  if (!weather) {
+    try {
+      const col = coord.c;
+      const row = coord.r;
+      const q = col - Math.floor((row - (row & 1)) / 2);
+      const r = row;
+      const s = -q - r;
+      const weatherState = weatherStore.getWeather(mapFile.path, q, r, s);
+      if (weatherState) {
+        weather = getPrimaryWeatherTag(weatherState.currentWeather.type);
+      }
+    } catch (error) {
+      console.warn(`[ContextExtractor] Failed to extract weather for hex ${coord.r},${coord.c}:`, error);
+    }
+  }
   return {
     terrain,
-    weather: additionalContext?.weather,
+    weather,
     timeOfDay: additionalContext?.timeOfDay,
     factions: factions.length > 0 ? factions : void 0,
     situation: additionalContext?.situation
@@ -28845,6 +29243,8 @@ var init_context_extractor = __esm({
   "src/features/audio/context-extractor.ts"() {
     "use strict";
     init_tile_repository();
+    init_weather_store();
+    init_weather_tag_mapper();
   }
 });
 
@@ -28996,7 +29396,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--play",
     attr: { title: "Play" }
   });
-  (0, import_obsidian40.setIcon)(playBtn, "play");
+  (0, import_obsidian41.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29008,7 +29408,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--pause",
     attr: { title: "Pause" }
   });
-  (0, import_obsidian40.setIcon)(pauseBtn, "pause");
+  (0, import_obsidian41.setIcon)(pauseBtn, "pause");
   applyMapButtonStyle(pauseBtn);
   pauseBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29020,7 +29420,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--prev",
     attr: { title: "Previous" }
   });
-  (0, import_obsidian40.setIcon)(prevBtn, "skip-back");
+  (0, import_obsidian41.setIcon)(prevBtn, "skip-back");
   applyMapButtonStyle(prevBtn);
   prevBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29032,7 +29432,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--next",
     attr: { title: "Next" }
   });
-  (0, import_obsidian40.setIcon)(nextBtn, "skip-forward");
+  (0, import_obsidian41.setIcon)(nextBtn, "skip-forward");
   applyMapButtonStyle(nextBtn);
   nextBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29044,7 +29444,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--stop",
     attr: { title: "Stop" }
   });
-  (0, import_obsidian40.setIcon)(stopBtn, "square");
+  (0, import_obsidian41.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29155,11 +29555,11 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     destroy
   };
 }
-var import_obsidian40;
+var import_obsidian41;
 var init_audio_panel = __esm({
   "src/workmodes/session-runner/components/audio-panel.ts"() {
     "use strict";
-    import_obsidian40 = require("obsidian");
+    import_obsidian41 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -29917,7 +30317,7 @@ function createInitiativeTracker(host, callbacks) {
         text: `AC ${combatant.ac}`
       });
       const removeBtn = item.createDiv({ cls: "sm-initiative-tracker__remove" });
-      (0, import_obsidian41.setIcon)(removeBtn, "x");
+      (0, import_obsidian42.setIcon)(removeBtn, "x");
       removeBtn.addEventListener("click", () => {
         if (confirm(`Remove ${combatant.name} from encounter?`)) {
           callbacks.onRemoveCombatant(combatant.id);
@@ -29935,11 +30335,11 @@ function createInitiativeTracker(host, callbacks) {
     destroy
   };
 }
-var import_obsidian41;
+var import_obsidian42;
 var init_initiative_tracker = __esm({
   "src/workmodes/session-runner/components/initiative-tracker.ts"() {
     "use strict";
-    import_obsidian41 = require("obsidian");
+    import_obsidian42 = require("obsidian");
   }
 });
 
@@ -29972,12 +30372,12 @@ async function createEncounterController(options) {
       logger2.info("[EncounterController] Loaded encounter tables", { count: tables.length });
     } catch (err) {
       logger2.error("[EncounterController] Failed to load encounter tables", err);
-      new import_obsidian42.Notice("Failed to load encounter tables");
+      new import_obsidian43.Notice("Failed to load encounter tables");
     }
   }
   async function generateRandomEncounter2(context) {
     if (encounterTables.length === 0) {
-      new import_obsidian42.Notice("No encounter tables available. Create some in the Library!");
+      new import_obsidian43.Notice("No encounter tables available. Create some in the Library!");
       logger2.warn("[EncounterController] Cannot generate encounter: no tables loaded");
       return;
     }
@@ -29996,9 +30396,9 @@ async function createEncounterController(options) {
       activeTurnIndex = 0;
       if (encounter.warnings.length > 0) {
         logger2.warn("[EncounterController] Encounter generation warnings", { warnings: encounter.warnings });
-        new import_obsidian42.Notice(`Encounter generated with warnings: ${encounter.warnings.join(", ")}`);
+        new import_obsidian43.Notice(`Encounter generated with warnings: ${encounter.warnings.join(", ")}`);
       } else {
-        new import_obsidian42.Notice(`${encounter.difficulty.toUpperCase()} encounter: ${encounter.combatants.length} combatants (${encounter.adjustedXP} XP)`);
+        new import_obsidian43.Notice(`${encounter.difficulty.toUpperCase()} encounter: ${encounter.combatants.length} combatants (${encounter.adjustedXP} XP)`);
       }
       renderInitiativeTracker();
       if (onCombatStart) {
@@ -30006,7 +30406,7 @@ async function createEncounterController(options) {
       }
     } catch (err) {
       logger2.error("[EncounterController] Failed to generate encounter", err);
-      new import_obsidian42.Notice("Failed to generate encounter. Check console for details.");
+      new import_obsidian43.Notice("Failed to generate encounter. Check console for details.");
     }
   }
   function renderInitiativeTracker() {
@@ -30075,7 +30475,7 @@ async function createEncounterController(options) {
     const allDefeated = combatants.every((c) => c.currentHp <= 0);
     if (allDefeated && combatants.length > 0) {
       logger2.info("[EncounterController] Combat ended - all combatants defeated");
-      new import_obsidian42.Notice("Combat ended! All enemies defeated.");
+      new import_obsidian43.Notice("Combat ended! All enemies defeated.");
       if (currentEncounter && onLootRequested) {
         void onLootRequested(currentEncounter);
       }
@@ -30106,11 +30506,11 @@ async function createEncounterController(options) {
     dispose
   };
 }
-var import_obsidian42;
+var import_obsidian43;
 var init_encounter_controller = __esm({
   "src/workmodes/session-runner/components/encounter-controller.ts"() {
     "use strict";
-    import_obsidian42 = require("obsidian");
+    import_obsidian43 = require("obsidian");
     init_plugin_logger();
     init_encounter_generator();
     init_data_sources();
@@ -30158,9 +30558,6 @@ async function buildEncounterContext(app, mapFile, state, partyLevel = 1, partyS
   if (terrainTags.length === 0) {
     terrainTags = ["any"];
   }
-  const weatherTags = ["clear"];
-  const timeTags = ["day"];
-  const situationTags = ["wandering"];
   let hexCoords;
   if (currentCoord && mapFile) {
     try {
@@ -30178,6 +30575,34 @@ async function buildEncounterContext(app, mapFile, state, partyLevel = 1, partyS
       logger2.warn("[EncounterContextBuilder] Failed to convert hex coordinates", { err });
     }
   }
+  let weatherTags = ["clear"];
+  if (hexCoords && mapFile) {
+    try {
+      const weatherState = weatherStore.getWeather(
+        mapFile.path,
+        hexCoords.q,
+        hexCoords.r,
+        hexCoords.s
+      );
+      if (weatherState) {
+        weatherTags = mapWeatherTypeToTags(weatherState.currentWeather.type);
+        logger2.debug("[EncounterContextBuilder] Extracted weather from store", {
+          weatherType: weatherState.currentWeather.type,
+          tags: weatherTags,
+          temperature: weatherState.temperature,
+          severity: weatherState.currentWeather.severity
+        });
+      } else {
+        logger2.debug("[EncounterContextBuilder] No weather data for hex, using default", {
+          hexCoords
+        });
+      }
+    } catch (err) {
+      logger2.warn("[EncounterContextBuilder] Failed to extract weather from store", { err });
+    }
+  }
+  const timeTags = ["day"];
+  const situationTags = ["wandering"];
   logger2.debug("[EncounterContextBuilder] Context built", {
     tags: { terrain: terrainTags, weather: weatherTags, time: timeTags, faction: factionTags, situation: situationTags },
     hexCoords
@@ -30200,6 +30625,8 @@ var init_encounter_context_builder = __esm({
     "use strict";
     init_plugin_logger();
     init_tile_repository();
+    init_weather_store();
+    init_weather_tag_mapper();
   }
 });
 
@@ -30614,6 +31041,12 @@ function createSessionRunnerExperience() {
     await abortLifecycle();
     return true;
   };
+  const oddRToCube = (r, c) => {
+    const q = c - (r - (r & 1)) / 2;
+    const cubeR = r;
+    const s = -q - cubeR;
+    return { q, r: cubeR, s };
+  };
   const handleStateChange = (state) => {
     if (routeLayer) {
       routeLayer.draw(state.route, state.editIdx ?? null, state.tokenRC ?? null);
@@ -30625,11 +31058,22 @@ function createSessionRunnerExperience() {
       const currentCoord = state.currentTile ?? state.tokenRC ?? null;
       void audioController.updateContext(currentMapFile, currentCoord);
     }
+    if (sidebar && currentMapFile) {
+      const currentCoord = state.currentTile ?? state.tokenRC ?? null;
+      if (currentCoord) {
+        const cube = oddRToCube(currentCoord.r, currentCoord.c);
+        const weather = weatherStore.getWeather(currentMapFile.path, cube.q, cube.r, cube.s);
+        sidebar.setWeather(weather);
+      } else {
+        sidebar.setWeather(null);
+      }
+    }
   };
   const resetUi = () => {
     sidebar?.setTile(null);
     sidebar?.setSpeed(1);
     sidebar?.setTravelPanel(null);
+    sidebar?.setWeather(null);
     playback.reset();
   };
   const detachPanelSubscription = () => {
@@ -31090,6 +31534,7 @@ var init_experience = __esm({
     init_audio_controller();
     init_encounter_controller();
     init_encounter_context_builder();
+    init_weather_store();
   }
 });
 
@@ -31830,16 +32275,16 @@ async function openTimelineView(app, store) {
   });
   workspace.revealLeaf(leaf);
 }
-var import_obsidian47, VIEW_TYPE_TIMELINE, TimelineView;
+var import_obsidian48, VIEW_TYPE_TIMELINE, TimelineView;
 var init_timeline_view = __esm({
   "src/features/events/timeline-view.ts"() {
     "use strict";
-    import_obsidian47 = require("obsidian");
+    import_obsidian48 = require("obsidian");
     init_event_history_types();
     init_ui();
     init_plugin_logger();
     VIEW_TYPE_TIMELINE = "event-timeline-view";
-    TimelineView = class extends import_obsidian47.ItemView {
+    TimelineView = class extends import_obsidian48.ItemView {
       constructor(leaf, store) {
         super(leaf);
         // Current filter/sort state
@@ -98153,7 +98598,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian49.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian50.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -98166,7 +98611,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian49.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian50.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -98184,7 +98629,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian49.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian50.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -98200,7 +98645,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian49.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian50.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -98226,19 +98671,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian49.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian50.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger2.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger2.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian49.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian50.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger2.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger2.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian49.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian50.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -98250,7 +98695,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian49.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian50.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -98267,7 +98712,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian49.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian50.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -98367,11 +98812,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, playlists, all`);
   }
 }
-var import_obsidian49, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, ensurePlaylistDir, PRESET_FILES;
+var import_obsidian50, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, ensurePlaylistDir, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian49 = require("obsidian");
+    import_obsidian50 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -98399,16 +98844,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian50.TFolder)) {
+  if (!(folder instanceof import_obsidian51.TFolder)) {
     logger2.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian50.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian51.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian50.TFolder) {
+      } else if (child instanceof import_obsidian51.TFolder) {
         collectFiles(child);
       }
     }
@@ -98445,7 +98890,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian50.TFile) {
+  if (existingFile instanceof import_obsidian51.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -98513,7 +98958,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian50.TFile) {
+  if (existingFile instanceof import_obsidian51.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -98535,11 +98980,11 @@ async function generateAllIndexes(app) {
   ]);
   logger2.log("[Index] All indexes generated successfully");
 }
-var import_obsidian50, SALTMARCHER_DIR;
+var import_obsidian51, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian50 = require("obsidian");
+    import_obsidian51 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -100519,7 +100964,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian51 = require("obsidian");
+var import_obsidian52 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
@@ -101539,10 +101984,10 @@ async function openAlmanac(app) {
 }
 
 // src/workmodes/session-runner/index.ts
-var import_obsidian44 = require("obsidian");
+var import_obsidian45 = require("obsidian");
 
 // src/workmodes/session-runner/controller.ts
-var import_obsidian43 = require("obsidian");
+var import_obsidian44 = require("obsidian");
 init_options();
 init_map_list();
 init_plugin_logger();
@@ -101632,7 +102077,7 @@ var SessionRunnerController = class {
     } catch (error) {
       logger2.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
-      new import_obsidian43.Notice(EXPERIENCE_NOTICE_MESSAGE);
+      new import_obsidian44.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
     if (this.mapManager) {
       await this.mapManager.setFile(initialFile);
@@ -101843,7 +102288,7 @@ function createSessionRunnerView(options) {
 // src/workmodes/session-runner/index.ts
 var VIEW_TYPE_SESSION_RUNNER = "session-runner-view";
 var VIEW_SESSION_RUNNER = VIEW_TYPE_SESSION_RUNNER;
-var SessionRunnerView = class extends import_obsidian44.ItemView {
+var SessionRunnerView = class extends import_obsidian45.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -101896,7 +102341,7 @@ async function openSessionRunner(app, file) {
 }
 
 // src/workmodes/library/locations/dungeon-view.ts
-var import_obsidian46 = require("obsidian");
+var import_obsidian47 = require("obsidian");
 
 // src/features/dungeons/rendering/grid-renderer.ts
 init_types3();
@@ -102496,9 +102941,9 @@ init_plugin_logger();
 init_frontmatter_utils();
 
 // src/features/dungeons/ui/token-creation-modal.ts
-var import_obsidian45 = require("obsidian");
+var import_obsidian46 = require("obsidian");
 init_types3();
-var TokenCreationModal = class extends import_obsidian45.Modal {
+var TokenCreationModal = class extends import_obsidian46.Modal {
   constructor(app, onSubmit, initialData) {
     super(app);
     this.onSubmit = onSubmit;
@@ -102519,7 +102964,7 @@ var TokenCreationModal = class extends import_obsidian45.Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.createEl("h3", { text: this.isEditMode ? "Edit Token" : "Create Token" });
-    new import_obsidian45.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
+    new import_obsidian46.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
       dropdown.addOption("player", "\u{1F9D9} Player").addOption("npc", "\u{1F642} NPC").addOption("monster", "\u{1F479} Monster").addOption("object", "\u{1F4E6} Object").setValue(this.tokenType).onChange((value) => {
         this.tokenType = value;
         this.tokenColor = getDefaultTokenColor(this.tokenType);
@@ -102527,13 +102972,13 @@ var TokenCreationModal = class extends import_obsidian45.Modal {
       });
     });
     let labelInput;
-    new import_obsidian45.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
+    new import_obsidian46.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
       text.setPlaceholder("Gandalf").setValue(this.tokenLabel).onChange((value) => {
         this.tokenLabel = value.trim();
       });
       labelInput = text.inputEl;
     });
-    new import_obsidian45.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
+    new import_obsidian46.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
       text.setPlaceholder(getDefaultTokenColor(this.tokenType)).setValue(this.tokenColor).onChange((value) => {
         this.tokenColor = value.trim();
         this.renderColorPreview();
@@ -102556,12 +103001,12 @@ var TokenCreationModal = class extends import_obsidian45.Modal {
     contentEl._colorPreview = colorPreview;
     this.tokenColor = getDefaultTokenColor(this.tokenType);
     this.renderColorPreview();
-    new import_obsidian45.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
+    new import_obsidian46.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
       slider.setLimits(0.5, 2, 0.1).setValue(this.tokenSize).setDynamicTooltip().onChange((value) => {
         this.tokenSize = value;
       });
     });
-    new import_obsidian45.Setting(contentEl).addButton((button) => {
+    new import_obsidian46.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => {
         this.close();
       });
@@ -102599,7 +103044,7 @@ var TokenCreationModal = class extends import_obsidian45.Modal {
 
 // src/workmodes/library/locations/dungeon-view.ts
 var VIEW_TYPE_DUNGEON = "salt-dungeon-view";
-var DungeonView = class extends import_obsidian46.ItemView {
+var DungeonView = class extends import_obsidian47.ItemView {
   // Currently selected token
   constructor(leaf) {
     super(leaf);
@@ -107075,7 +107520,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian48 = require("obsidian");
+var import_obsidian49 = require("obsidian");
 init_plugin_logger();
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
@@ -107085,7 +107530,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian48.Notice(userMessage);
+  new import_obsidian49.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -107396,7 +107841,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian51.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian52.Plugin {
   async onload() {
     await logger2.init(this.app);
     logger2.log("Plugin loading...");
