@@ -310,7 +310,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 6.5 ✅ Complete | Tests: 489/491 (99.6%) | **Next:** TBD
+**Status:** Phase 6 ✅ Complete | Tests: 489/489 (100%) | **Next:** Phase 7 (Random Encounters) or Phase 6.6 (Audio Polish)
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -320,21 +320,32 @@ Ziele:
   - Phase 6.2: Playlist Manager UI - Library integration, auto-generated CRUD ✅
   - Phase 6.3: Audio Player Core - HTMLAudioElement playback, crossfade, volume, shuffle/loop, 33 tests ✅
   - Phase 6.4: Auto-Selection System - Context-based filtering, scoring algorithm, 24 tests ✅
-  - Phase 6.5: Session Runner UI Integration - Audio panel, dual players (ambience/music), context-aware auto-selection ✅
+  - Phase 6.5: Session Runner UI Integration - Audio panel, dual players, auto-selection, lifecycle management ✅
   - File locations: src/features/audio/, src/workmodes/library/playlists/, src/workmodes/session-runner/components/
+- **Cleanup:** Removed deprecated governance test files ✅
+
+**Geplant:**
+- **Phase 6.6 (Optional):** Audio Polish
+  - Sample playlists in Presets/Playlists/
+  - UI styling (responsive design, accessibility)
+  - Performance optimization (lazy loading, caching)
+  - User documentation (workflow tutorials)
+- **Phase 7:** Random Encounters
+  - Encounter generation from hex context (terrain, weather, factions)
+  - Monster selection from Library (CR-appropriate, tag-filtered)
+  - Initiative tracking with creature stat blocks
+  - Loot generation integration
+  - Terrain features for battle map
 
 **Technische Schulden:**
-- Two deprecated governance test files can be removed (todo-governance.test.ts, header-policy.test.ts - lines with .skip)
 - Minor TODOs exist for future features (factions, weather, locations) - intentional placeholders, not blockers
 
 **Test-Status:**
-- Unit tests: 489/491 passing (99.6%) ✅
+- Unit tests: 489/489 passing (100%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
-- 2 intentionally skipped: deprecated governance tests (safe to remove)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI)
 
-**Release Prep:**
-- Polish UI/UX
-- Performance optimization
-- Documentation completion (user-facing & technical)
+**Nächste Schritte (Priorität):**
+1. **Phase 7 Planning**: Define Random Encounter requirements, data structures, algorithms
+2. **OR Phase 6.6**: Polish audio system (sample playlists, UI styling, docs)

@@ -1,6 +1,6 @@
 # Audio System
 
-**Status**: Phase 6.4 Complete ✅ | Phase 6.5 In Progress
+**Status**: Phase 6.5 Complete ✅
 
 ## Overview
 
@@ -405,12 +405,35 @@ Playlists/                            # User playlists (not in repo)
 - **Filters**: Type, tags (terrain/weather/time/faction/situation)
 - **Sorts**: Name, display name, type
 
-### Session Runner (Phase 6.5)
-- **Context Provider**: Current hex terrain, weather, time, present factions, situation (via `extractSessionContext`)
-- **Auto-Selection**: Filter playlists by context tags (via `selectPlaylist`)
-- **UI Integration**: Audio panel with player controls and playlist list
-- **State Management**: Current playlist, track, playback state
-- **Auto-Switch**: Crossfade to new playlist when context changes (terrain/weather/time transitions)
+### Phase 6.5: Session Runner UI Integration ✅
+
+**Goal**: Integrate audio system into Session Runner with automatic context-aware playlist switching
+
+**Status**: Complete - Full UI integration with dual players and auto-selection
+
+**Location**: `src/workmodes/session-runner/components/`
+
+**Components**:
+- `audio-panel.ts` - UI component with dual players (ambience + music)
+- `audio-controller.ts` - Lifecycle management, context extraction, auto-selection
+- Integration in `view/experience.ts` - Session Runner lifecycle hooks
+
+**Features**:
+- **Dual Players**: Independent ambience and music players with separate controls
+- **Auto-Selection**: Automatic playlist switching based on hex context (terrain, weather, time, faction, situation)
+- **Manual Override**: Dropdown to manually select playlists (overrides auto-selection)
+- **Playback Controls**: Play/pause, skip next/previous, stop, volume slider, shuffle/loop toggles
+- **Real-time Display**: Current track, progress bar, elapsed/total time
+- **Context Visualization**: Tag display showing active terrain, weather, time, faction, situation
+- **Volume Persistence**: Settings saved across sessions
+- **Lifecycle Management**: Proper initialization and cleanup in Session Runner
+
+**Implementation Details**:
+- **Context Extraction**: Uses `extractSessionContext` to get terrain, weather, time, factions from current hex
+- **Auto-Selection**: `selectPlaylist` scores playlists by matching tags, selects highest score
+- **Playlist Loading**: Loads all playlists from vault with frontmatter parsing
+- **State Management**: Reactive UI updates via AudioPlayer status subscriptions
+- **Auto-Switch**: Automatically crossfades to new playlist when hex context changes
 
 ### Preset System
 - **Sample Playlists**: `Presets/Playlists/` (bundled with plugin)
@@ -431,8 +454,9 @@ Playlists/                            # User playlists (not in repo)
 
 ## Known Issues
 
-- No UI integration yet (Phase 6.5 - Session Runner audio panel)
-- No sample playlists bundled yet (pending Phase 6.5 completion)
+- No sample playlists bundled yet (planned for Phase 6.6)
+- UI styling needs polish (responsiveness, accessibility)
+- No streaming support (YouTube, Spotify) - future enhancement
 
 ## Related Documentation
 
