@@ -79,7 +79,8 @@
       "Bash(timeout 120 ./scripts/auto-continue-monitor.py:*)",
       "Bash(pkill:*)",
       "Bash(top:*)",
-      "Bash(timeout 60 ./.auto-continue/auto-continue-v2.py:*)"
+      "Bash(timeout 60 ./.auto-continue/auto-continue-v2.py:*)",
+      "Bash(systemd-inhibit:*)"
     ],
     "deny": [],
     "ask": []

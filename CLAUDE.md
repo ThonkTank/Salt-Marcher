@@ -194,6 +194,7 @@ grep "\[init:" CONSOLE_LOG.txt
 - [docs/TESTING.md](docs/TESTING.md) - Testing guide
 - [docs/audio-system.md](docs/audio-system.md) - Audio/playlist system architecture (Phase 6)
 - [docs/random-encounters.md](docs/random-encounters.md) - Random encounter generation & CR balancing (Phase 7)
+- [docs/faction-system.md](docs/faction-system.md) - Faction entities, position tracking, job system (Phase 8)
 - [docs/TAGS.md](docs/TAGS.md) - Tag vocabularies across all entity types
 
 **For DevKit Features** (available tools):
@@ -311,59 +312,50 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 8.1 ✅ Complete (Foundation) | Tests: 514/515 (99.8%) | **Next:** Phase 8.2 (AI & Simulation)
+**Status:** Phase 8.2 ✅ Complete (AI & Simulation) | Tests: 584/585 (99.8%) | **Next:** Phase 8.3 (Faction Integration)
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
 - **Phase 5:** Loot Generator - Gold (XP-based, 5 rule types), Items (tag-filter, rarity-limits, weighted), E2E tests (13 scenarios)
-- **Phase 6:** Audio System ✅ | **Details**: [docs/audio-system.md](docs/audio-system.md)
-  - Complete: Playlist entity, auto-selection, Session Runner integration, sample playlists
-  - Files: src/features/audio/, src/workmodes/library/playlists/, Presets/Playlists/
-- **Phase 7:** Random Encounters ✅ | **Details**: [docs/random-encounters.md](docs/random-encounters.md)
-  - Complete: Encounter tables, generation engine, CR balancing (D&D 5e DMG p.82), initiative tracker
-  - Session Runner: Random encounter button, context builder, controller, loot/audio hooks
-  - Files: src/features/encounters/, src/workmodes/library/encounter-tables/
-- **Phase 7.6:** Encounter Polish ✅
-  - Hex data extraction: Terrain/faction from tiles via `loadTile()` repository
-  - Party settings: Added partyLevel/partySize to travel state (defaults: level 1, size 4)
-  - Loot integration: Full integration with Phase 5 loot generator (tag-based filtering)
-  - Audio integration: Combat music auto-switching with seamless playlist restoration
-  - 3 intentional TODOs: weather/time extraction from live simulations, loot UI display
-  - See [docs/random-encounters.md](docs/random-encounters.md) Phase 7.6 section for details
-- **Phase 8.1:** Faction System Foundation ✅
-  - Extended faction types: Position tracking, job system, quantity management
-  - Member system: Named NPCs + unit types with statblock references
-  - Structured resources: Gold, food, equipment, magic, influence tracking
-  - Structured relationships: Faction-to-faction relations with values (-100 to +100)
-  - Position tracking: Hex coords, POI names, expeditions, unassigned
-  - Job system: Crafting, gathering, training, summoning, guard, patrol, research
-  - Files: src/workmodes/library/factions/, Presets/Factions/The-Emerald-Enclave.md
+- **Phase 6:** Audio System ✅ - See [docs/audio-system.md](docs/audio-system.md)
+- **Phase 7:** Random Encounters ✅ - See [docs/random-encounters.md](docs/random-encounters.md)
+- **Phase 8.1:** Faction System Foundation ✅ - See [docs/faction-system.md](docs/faction-system.md)
+  - Member system with position tracking (hex/POI/expedition/unassigned)
+  - Job system (crafting, gathering, training, summoning, guard, patrol, research)
+  - Structured resources (gold, food, equipment, magic, influence)
+  - Faction relationships with numeric values (-100 to +100)
+- **Phase 8.2:** Faction AI & Simulation ✅ - See [docs/faction-system.md](docs/faction-system.md)
+  - Decision-making AI: 14 decision types with priority weighting and goal evaluation
+  - NPC generation: 6 culture templates, procedural names/profiles, personality traits
+  - Simulation engine: Resource production/consumption, job processing, expedition events
+  - Plot hook generation: 6 hook categories from decisions, events, and relationships
+  - 70 new tests (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23)
 
 **Geplant:**
-- **Phase 8.2 (Factions - AI & Simulation)**: Implement faction AI and background simulation
-  - Decision-making AI: Goal pursuit, resource management, conflict resolution
-  - NPC generation: Procedural names from culture/species/faction templates
-  - Camp/POI creation: Automatic faction base creation on map with influence zones
-  - Continuous simulation: Resource production, unit training, expedition movement
-  - Event generation: Plot hooks, conflicts, alliances emerge from simulation
+- **Phase 8.3 (Factions - Integration & Automation)**: Connect faction systems to gameplay
+  - Automatic camp/POI creation: Factions establish bases on map with influence zones
+  - Calendar integration: Simulation runs on time advance, generates timeline events
+  - Encounter integration: Faction members appear in random encounters based on position
+  - UI integration: Faction events in calendar inbox, map visualization of territories
 
 **Technische Schulden:**
-- 13 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI) - intentional placeholders
+- 21 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 
 **Test-Status:**
-- Unit tests: 514/515 passing (99.8%) ✅
+- Unit tests: 584/585 passing (99.8%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 24/24 (serialization: 10, generation: 14)
-  - Faction tests: Included in event handlers (faction/location updates)
+  - Faction tests: 70/70 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23)
+  - Event handlers: Faction/location hook tests
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 8.2 (Factions - AI & Simulation)**: Implement faction intelligence and simulation
-   - Create decision-making AI system for goal pursuit
-   - Build NPC name generator using culture/species/faction templates
-   - Implement automatic camp/POI creation with influence zone visualization
-   - Add background simulation engine (resource production, training, expeditions)
-   - Generate plot hooks and conflicts from faction interactions
+1. **Phase 8.3 (Factions - Integration & Automation)**: Connect faction systems to gameplay
+   - Implement automatic camp/POI creation when factions establish territory
+   - Hook faction simulation into calendar time advance
+   - Generate random encounters with faction members based on position tracking
+   - Add faction events to calendar inbox with proper notifications
+   - Visualize faction territories and influence zones on cartographer map
