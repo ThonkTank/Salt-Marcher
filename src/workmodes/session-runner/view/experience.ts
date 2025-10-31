@@ -23,6 +23,8 @@ import {
 } from "./controllers/encounter-gateway";
 import { createEncounterSync } from "../travel/infra/encounter-sync";
 import { createAudioController, type AudioControllerHandle } from "../components/audio-controller";
+import { createEncounterController, type EncounterControllerHandle } from "../components/encounter-controller";
+import { buildEncounterContext } from "../util/encounter-context-builder";
 
 export function createSessionRunnerExperience(): SessionRunnerExperience {
     let sidebar: Sidebar | null = null;
@@ -40,6 +42,7 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
     let encounterSync: ReturnType<typeof createEncounterSync> | null = null;
     let bridgeTravelId: string | null = null;
     let audioController: AudioControllerHandle | null = null;
+    let encounterController: EncounterControllerHandle | null = null;
     let currentMapFile: ReturnType<SessionRunnerLifecycleContext["getFile"]> = null;
 
     const runBridge = (
@@ -174,6 +177,10 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
             audioController.dispose();
             audioController = null;
         }
+        if (encounterController) {
+            encounterController.dispose();
+            encounterController = null;
+        }
         detachSidebar();
         releaseTerrainEvent();
         removeTravelClass();
@@ -281,6 +288,23 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
                 pause: () => (isAborted() ? undefined : logic?.pause()),
                 reset: () => (isAborted() ? undefined : logic?.reset()),
                 setTempo: (value) => (isAborted() ? undefined : logic?.setTempo?.(value)),
+                onRandomEncounter: async () => {
+                    if (isAborted() || !logic) return;
+                    try {
+                        const context = await buildEncounterContext(
+                            ctx.app,
+                            ctx.getFile(),
+                            logic.getState(),
+                            1, // TODO: Get from party settings
+                            4, // TODO: Get from party settings
+                        );
+                        if (encounterController) {
+                            await encounterController.generateRandomEncounter(context);
+                        }
+                    } catch (err) {
+                        logger.error("[session-runner] Random encounter generation failed", err);
+                    }
+                },
             });
 
             if (await bailIfAborted()) {
@@ -296,6 +320,43 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
                 logger.info("[session-runner] Audio controller initialized");
             } catch (error) {
                 logger.error("[session-runner] Failed to initialize audio controller", error);
+            }
+
+            if (await bailIfAborted()) {
+                return;
+            }
+
+            // Initialize encounter controller
+            try {
+                encounterController = await createEncounterController({
+                    app: ctx.app,
+                    host: ctx.sidebarHost,
+                    onCombatStart: () => {
+                        // Switch to combat music
+                        if (audioController) {
+                            // TODO: Trigger combat music auto-selection
+                            logger.info("[session-runner] Combat started - switching to combat music");
+                        }
+                    },
+                    onCombatEnd: () => {
+                        // Restore previous music
+                        if (audioController) {
+                            // TODO: Restore previous playlist
+                            logger.info("[session-runner] Combat ended - restoring music");
+                        }
+                    },
+                    onLootRequested: async (encounter) => {
+                        // Generate loot
+                        // TODO: Call loot generator
+                        logger.info("[session-runner] Loot requested for encounter", {
+                            totalXP: encounter.totalXP,
+                            combatantCount: encounter.combatants.length,
+                        });
+                    },
+                });
+                logger.info("[session-runner] Encounter controller initialized");
+            } catch (error) {
+                logger.error("[session-runner] Failed to initialize encounter controller", error);
             }
 
             if (await bailIfAborted()) {

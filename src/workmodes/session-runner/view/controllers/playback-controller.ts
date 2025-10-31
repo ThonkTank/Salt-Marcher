@@ -12,6 +12,7 @@ export interface PlaybackDriver {
     pause(): Promise<void> | void;
     reset(): Promise<void> | void;
     setTempo?(value: number): void;
+    onRandomEncounter?(): Promise<void> | void;
 }
 
 export class TravelPlaybackController {
@@ -24,6 +25,7 @@ export class TravelPlaybackController {
             onStop: () => void driver.pause(),
             onReset: () => void driver.reset(),
             onTempoChange: (value) => driver.setTempo?.(value),
+            onRandomEncounter: () => void driver.onRandomEncounter?.(),
         });
         this.reset();
     }

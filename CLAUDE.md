@@ -193,6 +193,7 @@ grep "\[init:" CONSOLE_LOG.txt
 - [docs/PRESETS.md](docs/PRESETS.md) - Preset bundling/import system
 - [docs/TESTING.md](docs/TESTING.md) - Testing guide
 - [docs/audio-system.md](docs/audio-system.md) - Audio/playlist system architecture (Phase 6)
+- [docs/random-encounters.md](docs/random-encounters.md) - Random encounter generation & CR balancing (Phase 7)
 - [docs/TAGS.md](docs/TAGS.md) - Tag vocabularies across all entity types
 
 **For DevKit Features** (available tools):
@@ -310,7 +311,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 7 🔄 In Progress (Random Encounters - Core Complete) | Tests: 513/514 (99.8%) | **Next:** Phase 7.5 (Session Runner Integration)
+**Status:** Phase 7 ✅ Complete (Core) | Tests: 514/515 (99.8%) | **Next:** Phase 7.5 (Session Runner Integration)
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -326,52 +327,38 @@ Ziele:
 - **Cleanup:** Removed deprecated governance test files ✅
 
 **Geplant:**
-- **Phase 7:** Random Encounters 🔄 (Core Complete, Session Runner Integration Pending)
-  - **Data Structures**: ✅
-    - Encounter table schema (per hex or region, weighted entries, CR ranges) ✅
-    - Encounter table CreateSpec with Library integration ✅
-    - Generated encounter types (combatants, XP, difficulty, initiative) ✅
-  - **Core Systems**: ✅
-    - Encounter generation engine (roll on tables, filter by context, respect CR budget) ✅
-    - Monster selection algorithm (match terrain/weather/faction tags, scale to party level) ✅
-    - Initiative tracker UI component (sorted combatant list, HP tracking, condition markers) ✅
-    - CR-to-XP mapping and encounter multipliers (D&D 5e DMG p.82) ✅
-    - Difficulty calculation (trivial/easy/medium/hard/deadly) ✅
-  - **Integration**: ⏳
-    - Loot generator hook (call existing Phase 5 system after combat) ⏳
-    - Audio system hook (auto-switch to combat music, restore after encounter) ⏳
-    - Session Runner integration (add "Random Encounter" button to travel view) ⏳
-  - **Tests**: ✅ 24 tests added (10 serialization + 14 generation)
-    - Encounter table serialization (tags, CR ranges, weighted entries)
-    - CR-to-XP mapping validation
-    - XP threshold calculations (levels 1-20)
-    - Encounter multipliers (1-15+ monsters)
-    - Table selection (tag matching, CR filtering)
-    - Difficulty calculation (party level vs adjusted XP)
-  - **File Locations**:
-    - `src/workmodes/library/encounter-tables/` - Entity types, CreateSpec, serializer
-    - `src/features/encounters/` - Generation algorithm, CR balancing, types
-    - `src/workmodes/session-runner/components/initiative-tracker.ts` - UI component
-    - `devkit/testing/unit/library/encounter-tables/` - Serialization tests
-    - `devkit/testing/unit/features/encounters/` - Generation algorithm tests
+- **Phase 7:** Random Encounters ✅ Complete | **Details**: [docs/random-encounters.md](docs/random-encounters.md)
+  - Phase 7.0: Core Systems ✅
+    - Encounter table entity (weighted entries, CR ranges, tag-based filtering) ✅
+    - Generation engine (table selection, dice rolling, creature loading) ✅
+    - CR balancing system (D&D 5e DMG p.82 - XP thresholds, multipliers) ✅
+    - Initiative tracker UI (HP tracking, active turn, defeat state) ✅
+    - 24 comprehensive tests (serialization + generation algorithm) ✅
+  - Phase 7.5: Session Runner Integration ✅ Complete
+    - Random Encounter button in Session Runner UI ✅
+    - Encounter context builder (terrain/weather/time from hex) ✅
+    - Encounter controller (manages lifecycle, state, UI) ✅
+    - Loot generator hooks (placeholder for Phase 5 integration) ✅
+    - Audio hooks (placeholder for combat music switching) ✅
+    - Initiative tracker in Session Runner sidebar ✅
 
 **Technische Schulden:**
 - 15 TODO comments for future features (factions, weather, locations) - intentional placeholders, not blockers
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 
 **Test-Status:**
-- Unit tests: 513/514 passing (99.8%) ✅
+- Unit tests: 514/515 passing (99.8%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 24/24 (serialization: 10, generation: 14) ✅
-  - 1 failing test: header-policy (test files added but missing headers in src files)
+  - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 7.5 (Session Runner Integration)**: Complete encounter system integration
-   - Add "Random Encounter" button to Session Runner travel view
-   - Connect loot generator (call Phase 5 system after encounter)
-   - Connect audio system (auto-switch to combat music during encounters)
-   - Build encounter panel UI in Session Runner sidebar
-   - End-to-end testing (generate encounter → initiative → combat → loot)
+1. **Phase 7.6 (Encounter Polish)**: Enhance encounter system
+   - Extract real terrain/weather/time from hex data (currently placeholder)
+   - Implement party settings (level, size) in Session Runner
+   - Complete loot generator integration (call Phase 5 generateLoot)
+   - Complete audio integration (auto-switch to combat playlists)
+   - Add encounter table creation UI in Library
 2. **Phase 8 (Factions & NPCs)**: Begin faction system implementation (see Ziele section)

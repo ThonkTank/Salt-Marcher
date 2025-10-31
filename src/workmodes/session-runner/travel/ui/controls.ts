@@ -10,6 +10,7 @@ export type PlaybackControlsCallbacks = {
     onStop: () => void | Promise<void>;
     onReset: () => void | Promise<void>;
     onTempoChange?: (tempo: number) => void | Promise<void>;
+    onRandomEncounter?: () => void | Promise<void>;
 };
 
 export type PlaybackControlsHandle = {
@@ -62,6 +63,19 @@ export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackCon
         void callbacks.onReset?.();
     });
 
+    // Random Encounter button
+    const encounterBtn = root.createEl("button", {
+        cls: "sm-cartographer__travel-button sm-cartographer__travel-button--encounter",
+        text: "Random Encounter",
+    });
+    setIcon(encounterBtn, "swords");
+    applyMapButtonStyle(encounterBtn);
+    encounterBtn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        if (encounterBtn.disabled) return;
+        void callbacks.onRandomEncounter?.();
+    });
+
     // Tempo slider (x0.1 .. x10)
     const tempoWrap = root.createDiv({ cls: "sm-cartographer__travel-tempo" });
     const tempoLabel = tempoWrap.createSpan({ text: "x1.0" });
@@ -81,6 +95,7 @@ export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackCon
         playBtn.disabled = state.playing || !hasRoute;
         stopBtn.disabled = !state.playing;
         resetBtn.disabled = !hasRoute && !state.playing;
+        encounterBtn.disabled = !hasRoute; // Only enable if route exists
     };
 
     setState({ playing: false, route: [] });
@@ -100,6 +115,7 @@ export function createPlaybackControls(host: HTMLElement, callbacks: PlaybackCon
         playBtn.replaceWith();
         stopBtn.replaceWith();
         resetBtn.replaceWith();
+        encounterBtn.replaceWith();
         root.remove();
     };
 

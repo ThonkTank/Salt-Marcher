@@ -1,8 +1,5 @@
-/**
- * Encounter Table Serializer Tests
- *
- * Validates encounter table serialization to Markdown format.
- */
+// devkit/testing/unit/library/encounter-tables/encounter-table-serializer.test.ts
+// Tests for encounter table serialization to Markdown format
 
 import { describe, it, expect } from "vitest";
 import { encounterTableToMarkdown, parseCR } from "../../../../../src/workmodes/library/encounter-tables/serializer";

@@ -1,8 +1,5 @@
-/**
- * Encounter Generator Tests
- *
- * Validates encounter generation algorithm, CR balancing, and table selection.
- */
+// devkit/testing/unit/features/encounters/encounter-generator.test.ts
+// Tests for encounter generation algorithm, CR balancing, and table selection
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { App } from "obsidian";
