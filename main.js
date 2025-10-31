@@ -23440,6 +23440,1091 @@ var init_encounter_sync = __esm({
   }
 });
 
+// src/features/audio/audio-player.ts
+function createAudioPlayer() {
+  let playlist = null;
+  let currentTrackIndex = -1;
+  let playbackState = "idle";
+  let globalVolume = 0.7;
+  let shuffle = false;
+  let loop = false;
+  let crossfadeDuration = 2;
+  let primaryAudio = null;
+  let secondaryAudio = null;
+  let currentAudio = null;
+  let shuffleOrder = [];
+  const statusSubscribers = [];
+  let crossfadeStartTime = null;
+  let crossfadeInterval = null;
+  function initializeAudioElements() {
+    if (!primaryAudio) {
+      primaryAudio = new Audio();
+      primaryAudio.addEventListener("ended", handleTrackEnded);
+      primaryAudio.addEventListener("timeupdate", handleTimeUpdate);
+      primaryAudio.addEventListener("loadedmetadata", handleMetadataLoaded);
+      primaryAudio.addEventListener("error", handleAudioError);
+    }
+    if (!secondaryAudio) {
+      secondaryAudio = new Audio();
+      secondaryAudio.addEventListener("ended", handleTrackEnded);
+      secondaryAudio.addEventListener("timeupdate", handleTimeUpdate);
+      secondaryAudio.addEventListener("loadedmetadata", handleMetadataLoaded);
+      secondaryAudio.addEventListener("error", handleAudioError);
+    }
+    currentAudio = primaryAudio;
+  }
+  function handleTrackEnded() {
+    if (playbackState === "crossfading") return;
+    advanceToNextTrack().catch((error) => {
+      logger2.error("[AudioPlayer] Failed to advance to next track", { error });
+    });
+  }
+  function handleTimeUpdate() {
+    if (!currentAudio || playbackState === "idle" || playbackState === "stopped") return;
+    notifyStatusChange();
+  }
+  function handleMetadataLoaded() {
+    notifyStatusChange();
+  }
+  function handleAudioError(event) {
+    const audio = event.target;
+    logger2.error("[AudioPlayer] Audio error", {
+      src: audio.src,
+      error: audio.error?.message
+    });
+    advanceToNextTrack().catch((error) => {
+      logger2.error("[AudioPlayer] Failed to recover from audio error", { error });
+    });
+  }
+  async function advanceToNextTrack() {
+    if (!playlist) return;
+    const nextIndex = getNextTrackIndex();
+    if (nextIndex === -1) {
+      stopPlayback();
+      return;
+    }
+    await skipToTrackInternal(nextIndex);
+  }
+  function getNextTrackIndex() {
+    if (!playlist) return -1;
+    if (shuffle) {
+      const currentOrderIndex = shuffleOrder.indexOf(currentTrackIndex);
+      const nextOrderIndex = currentOrderIndex + 1;
+      if (nextOrderIndex >= shuffleOrder.length) {
+        if (loop) {
+          generateShuffleOrder();
+          return shuffleOrder[0];
+        }
+        return -1;
+      }
+      return shuffleOrder[nextOrderIndex];
+    } else {
+      const nextIndex = currentTrackIndex + 1;
+      if (nextIndex >= playlist.tracks.length) {
+        if (loop) {
+          return 0;
+        }
+        return -1;
+      }
+      return nextIndex;
+    }
+  }
+  function getPreviousTrackIndex() {
+    if (!playlist) return -1;
+    if (shuffle) {
+      const currentOrderIndex = shuffleOrder.indexOf(currentTrackIndex);
+      const prevOrderIndex = currentOrderIndex - 1;
+      if (prevOrderIndex < 0) {
+        if (loop) {
+          return shuffleOrder[shuffleOrder.length - 1];
+        }
+        return -1;
+      }
+      return shuffleOrder[prevOrderIndex];
+    } else {
+      const prevIndex = currentTrackIndex - 1;
+      if (prevIndex < 0) {
+        if (loop) {
+          return playlist.tracks.length - 1;
+        }
+        return -1;
+      }
+      return prevIndex;
+    }
+  }
+  function generateShuffleOrder() {
+    if (!playlist) return;
+    shuffleOrder = Array.from({ length: playlist.tracks.length }, (_, i) => i);
+    for (let i = shuffleOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffleOrder[i], shuffleOrder[j]] = [shuffleOrder[j], shuffleOrder[i]];
+    }
+  }
+  function loadTrack(audio, track) {
+    audio.src = track.source;
+    audio.load();
+    const trackVolume = track.volume ?? playlist?.default_volume ?? 0.7;
+    audio.volume = Math.max(0, Math.min(1, trackVolume * globalVolume));
+  }
+  async function startCrossfade(nextTrackIndex) {
+    if (!playlist || !currentAudio) return;
+    const nextTrack = playlist.tracks[nextTrackIndex];
+    if (!nextTrack) return;
+    const nextAudio = currentAudio === primaryAudio ? secondaryAudio : primaryAudio;
+    loadTrack(nextAudio, nextTrack);
+    await new Promise((resolve) => {
+      const handler = () => {
+        nextAudio.removeEventListener("loadedmetadata", handler);
+        resolve();
+      };
+      nextAudio.addEventListener("loadedmetadata", handler);
+    });
+    nextAudio.volume = 0;
+    await nextAudio.play();
+    playbackState = "crossfading";
+    crossfadeStartTime = Date.now();
+    const fadeSteps = Math.ceil(crossfadeDuration * 60);
+    const fadeInterval = crossfadeDuration * 1e3 / fadeSteps;
+    crossfadeInterval = window.setInterval(() => {
+      if (!crossfadeStartTime) return;
+      const elapsed = (Date.now() - crossfadeStartTime) / 1e3;
+      const progress = Math.min(1, elapsed / crossfadeDuration);
+      const oldVolume = (1 - progress) * (currentAudio?.volume ?? 0);
+      const newVolume = progress * (nextTrack.volume ?? playlist?.default_volume ?? 0.7) * globalVolume;
+      if (currentAudio) currentAudio.volume = Math.max(0, Math.min(1, oldVolume));
+      nextAudio.volume = Math.max(0, Math.min(1, newVolume));
+      if (progress >= 1) {
+        completeCrossfade(nextAudio, nextTrackIndex);
+      }
+    }, fadeInterval);
+    notifyStatusChange();
+  }
+  function completeCrossfade(nextAudio, nextTrackIndex) {
+    if (crossfadeInterval !== null) {
+      window.clearInterval(crossfadeInterval);
+      crossfadeInterval = null;
+    }
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    currentAudio = nextAudio;
+    currentTrackIndex = nextTrackIndex;
+    playbackState = "playing";
+    crossfadeStartTime = null;
+    notifyStatusChange();
+  }
+  function getCurrentTrack() {
+    if (!playlist || currentTrackIndex < 0 || !currentAudio) return null;
+    const track = playlist.tracks[currentTrackIndex];
+    if (!track) return null;
+    const trackVolume = track.volume ?? playlist.default_volume ?? 0.7;
+    return {
+      track,
+      index: currentTrackIndex,
+      position: currentAudio.currentTime,
+      duration: track.duration ?? currentAudio.duration,
+      effectiveVolume: trackVolume * globalVolume
+    };
+  }
+  function getStatus() {
+    return {
+      state: playbackState,
+      currentTrack: getCurrentTrack(),
+      playlist,
+      globalVolume,
+      shuffle,
+      loop,
+      crossfadeDuration
+    };
+  }
+  function notifyStatusChange() {
+    const status = getStatus();
+    statusSubscribers.forEach((callback) => {
+      try {
+        callback(status);
+      } catch (error) {
+        logger2.error("[AudioPlayer] Status callback error", { error });
+      }
+    });
+  }
+  function stopPlayback() {
+    if (crossfadeInterval !== null) {
+      window.clearInterval(crossfadeInterval);
+      crossfadeInterval = null;
+    }
+    if (primaryAudio) {
+      primaryAudio.pause();
+      primaryAudio.currentTime = 0;
+      primaryAudio.src = "";
+    }
+    if (secondaryAudio) {
+      secondaryAudio.pause();
+      secondaryAudio.currentTime = 0;
+      secondaryAudio.src = "";
+    }
+    currentAudio = primaryAudio;
+    currentTrackIndex = -1;
+    if (playlist && playlist.tracks.length > 0) {
+      playbackState = "stopped";
+    } else {
+      playbackState = "idle";
+    }
+    crossfadeStartTime = null;
+    notifyStatusChange();
+  }
+  async function skipToTrackInternal(index) {
+    if (!playlist || index < 0 || index >= playlist.tracks.length) {
+      logger2.error("[AudioPlayer] Invalid track index", { index });
+      return;
+    }
+    const wasPlaying = playbackState === "playing" || playbackState === "crossfading";
+    if (crossfadeInterval !== null) {
+      window.clearInterval(crossfadeInterval);
+      crossfadeInterval = null;
+    }
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    currentTrackIndex = index;
+    playbackState = wasPlaying ? "playing" : "stopped";
+    if (wasPlaying) {
+      initializeAudioElements();
+      const track = playlist.tracks[index];
+      loadTrack(currentAudio, track);
+      await currentAudio.play();
+    }
+    notifyStatusChange();
+  }
+  const api = {
+    loadPlaylist(newPlaylist) {
+      logger2.info("[AudioPlayer] Loading playlist", { name: newPlaylist.name });
+      stopPlayback();
+      playlist = newPlaylist;
+      shuffle = newPlaylist.shuffle ?? false;
+      loop = newPlaylist.loop ?? false;
+      crossfadeDuration = newPlaylist.crossfade_duration ?? 2;
+      if (shuffle) {
+        generateShuffleOrder();
+      }
+      notifyStatusChange();
+    },
+    async play() {
+      if (!playlist || playlist.tracks.length === 0) {
+        logger2.warn("[AudioPlayer] Cannot play: no playlist loaded");
+        return;
+      }
+      initializeAudioElements();
+      if (playbackState === "paused" && currentAudio) {
+        await currentAudio.play();
+        playbackState = "playing";
+        notifyStatusChange();
+        return;
+      }
+      if (currentTrackIndex < 0) {
+        currentTrackIndex = shuffle ? shuffleOrder[0] : 0;
+      }
+      const track = playlist.tracks[currentTrackIndex];
+      if (!track) {
+        logger2.error("[AudioPlayer] Invalid track index", { currentTrackIndex });
+        return;
+      }
+      loadTrack(currentAudio, track);
+      await currentAudio.play();
+      playbackState = "playing";
+      notifyStatusChange();
+    },
+    pause() {
+      if (playbackState === "playing" && currentAudio) {
+        currentAudio.pause();
+        playbackState = "paused";
+        notifyStatusChange();
+      }
+    },
+    stop() {
+      stopPlayback();
+    },
+    async skipNext() {
+      if (!playlist) return;
+      const nextIndex = getNextTrackIndex();
+      if (nextIndex === -1) {
+        stopPlayback();
+        return;
+      }
+      if (playbackState === "playing" && crossfadeDuration > 0) {
+        await startCrossfade(nextIndex);
+      } else {
+        await skipToTrackInternal(nextIndex);
+      }
+    },
+    async skipPrevious() {
+      if (!playlist) return;
+      if (currentAudio && currentAudio.currentTime > 3) {
+        currentAudio.currentTime = 0;
+        notifyStatusChange();
+        return;
+      }
+      const prevIndex = getPreviousTrackIndex();
+      if (prevIndex === -1) {
+        if (currentAudio) {
+          currentAudio.currentTime = 0;
+          notifyStatusChange();
+        }
+        return;
+      }
+      await skipToTrackInternal(prevIndex);
+    },
+    async skipToTrack(index) {
+      await skipToTrackInternal(index);
+    },
+    setGlobalVolume(volume) {
+      globalVolume = Math.max(0, Math.min(1, volume));
+      if (currentAudio && playlist && currentTrackIndex >= 0) {
+        const track = playlist.tracks[currentTrackIndex];
+        const trackVolume = track?.volume ?? playlist.default_volume ?? 0.7;
+        currentAudio.volume = Math.max(0, Math.min(1, trackVolume * globalVolume));
+      }
+      notifyStatusChange();
+    },
+    toggleShuffle() {
+      shuffle = !shuffle;
+      if (shuffle) {
+        generateShuffleOrder();
+      }
+      logger2.info("[AudioPlayer] Shuffle toggled", { shuffle });
+      notifyStatusChange();
+    },
+    toggleLoop() {
+      loop = !loop;
+      logger2.info("[AudioPlayer] Loop toggled", { loop });
+      notifyStatusChange();
+    },
+    setCrossfadeDuration(seconds) {
+      crossfadeDuration = Math.max(0, Math.min(10, seconds));
+      logger2.info("[AudioPlayer] Crossfade duration set", { crossfadeDuration });
+      notifyStatusChange();
+    },
+    seek(position) {
+      if (currentAudio) {
+        currentAudio.currentTime = Math.max(0, Math.min(currentAudio.duration, position));
+        notifyStatusChange();
+      }
+    },
+    getStatus,
+    onStatusChange(callback) {
+      statusSubscribers.push(callback);
+      return () => {
+        const index = statusSubscribers.indexOf(callback);
+        if (index >= 0) {
+          statusSubscribers.splice(index, 1);
+        }
+      };
+    },
+    dispose() {
+      logger2.info("[AudioPlayer] Disposing");
+      stopPlayback();
+      if (primaryAudio) {
+        primaryAudio.removeEventListener("ended", handleTrackEnded);
+        primaryAudio.removeEventListener("timeupdate", handleTimeUpdate);
+        primaryAudio.removeEventListener("loadedmetadata", handleMetadataLoaded);
+        primaryAudio.removeEventListener("error", handleAudioError);
+        primaryAudio.src = "";
+        primaryAudio = null;
+      }
+      if (secondaryAudio) {
+        secondaryAudio.removeEventListener("ended", handleTrackEnded);
+        secondaryAudio.removeEventListener("timeupdate", handleTimeUpdate);
+        secondaryAudio.removeEventListener("loadedmetadata", handleMetadataLoaded);
+        secondaryAudio.removeEventListener("error", handleAudioError);
+        secondaryAudio.src = "";
+        secondaryAudio = null;
+      }
+      currentAudio = null;
+      playlist = null;
+      statusSubscribers.length = 0;
+    }
+  };
+  return api;
+}
+var init_audio_player = __esm({
+  "src/features/audio/audio-player.ts"() {
+    "use strict";
+    init_plugin_logger();
+  }
+});
+
+// src/features/audio/types.ts
+var init_types5 = __esm({
+  "src/features/audio/types.ts"() {
+    "use strict";
+  }
+});
+
+// src/features/audio/auto-selection-types.ts
+var init_auto_selection_types = __esm({
+  "src/features/audio/auto-selection-types.ts"() {
+    "use strict";
+  }
+});
+
+// src/features/audio/auto-selection.ts
+function calculatePlaylistScore(playlist, context) {
+  const matchedCategories = [];
+  let matchedTagCount = 0;
+  const hasMatchingTag = (tags, contextValue) => {
+    if (!tags || !contextValue) return false;
+    return tags.some((tag) => tag.value === contextValue);
+  };
+  const hasMatchingTagInArray = (tags, contextValues) => {
+    if (!tags || !contextValues) return 0;
+    let matches = 0;
+    for (const tag of tags) {
+      if (contextValues.includes(tag.value)) {
+        matches++;
+      }
+    }
+    return matches;
+  };
+  if (hasMatchingTag(playlist.terrain_tags, context.terrain)) {
+    matchedCategories.push("terrain");
+    matchedTagCount++;
+  }
+  if (hasMatchingTag(playlist.weather_tags, context.weather)) {
+    matchedCategories.push("weather");
+    matchedTagCount++;
+  }
+  if (hasMatchingTag(playlist.time_of_day_tags, context.timeOfDay)) {
+    matchedCategories.push("timeOfDay");
+    matchedTagCount++;
+  }
+  const factionMatches = hasMatchingTagInArray(playlist.faction_tags, context.factions);
+  if (factionMatches > 0) {
+    matchedCategories.push("faction");
+    matchedTagCount += factionMatches;
+  }
+  if (hasMatchingTag(playlist.situation_tags, context.situation)) {
+    matchedCategories.push("situation");
+    matchedTagCount++;
+  }
+  const score = matchedCategories.length + matchedTagCount * 0.5;
+  return {
+    playlistName: playlist.name,
+    score,
+    matchedCategories,
+    matchedTagCount
+  };
+}
+function selectPlaylist(playlists, context) {
+  const matches = playlists.map((playlist) => calculatePlaylistScore(playlist, context));
+  matches.sort((a, b) => b.score - a.score);
+  const selected = matches.length > 0 && matches[0].score > 0 ? matches[0] : null;
+  const alternatives = selected ? matches.slice(1) : matches;
+  return {
+    selected,
+    alternatives,
+    context
+  };
+}
+function filterPlaylistsByType(playlists, type) {
+  return playlists.filter((playlist) => playlist.type === type);
+}
+var init_auto_selection = __esm({
+  "src/features/audio/auto-selection.ts"() {
+    "use strict";
+  }
+});
+
+// src/features/audio/context-extractor.ts
+async function extractSessionContext(app, mapFile, coord, additionalContext) {
+  let tileData = null;
+  try {
+    tileData = await loadTile(app, mapFile, coord);
+  } catch (error) {
+    console.warn(`[ContextExtractor] Failed to load tile at ${coord.r},${coord.c}:`, error);
+  }
+  const terrain = tileData?.terrain ? normalizeTerrain(tileData.terrain) : void 0;
+  const factions = [];
+  if (tileData?.faction) {
+    const normalizedFaction = normalizeFaction(tileData.faction);
+    if (normalizedFaction) {
+      factions.push(normalizedFaction);
+    }
+  }
+  return {
+    terrain,
+    weather: additionalContext?.weather,
+    timeOfDay: additionalContext?.timeOfDay,
+    factions: factions.length > 0 ? factions : void 0,
+    situation: additionalContext?.situation
+  };
+}
+function normalizeTerrain(terrain) {
+  const normalized = terrain.trim();
+  const terrainTags = [
+    "Forest",
+    "Mountain",
+    "Desert",
+    "Swamp",
+    "Coastal",
+    "Ocean",
+    "Arctic",
+    "Cave",
+    "Underground",
+    "Urban",
+    "Ruins",
+    "Plains",
+    "Hills",
+    "Jungle",
+    "Volcanic"
+  ];
+  const match = terrainTags.find((tag) => tag.toLowerCase() === normalized.toLowerCase());
+  return match;
+}
+function normalizeFaction(faction) {
+  const normalized = faction.trim();
+  const factionTags = [
+    "Friendly",
+    "Neutral",
+    "Hostile",
+    "Undead",
+    "Fey",
+    "Fiend",
+    "Celestial",
+    "Elemental",
+    "Dragon",
+    "Giant",
+    "Humanoid",
+    "Beast"
+  ];
+  const match = factionTags.find((tag) => tag.toLowerCase() === normalized.toLowerCase());
+  return match;
+}
+var init_context_extractor = __esm({
+  "src/features/audio/context-extractor.ts"() {
+    "use strict";
+    init_tile_repository();
+  }
+});
+
+// src/features/audio/index.ts
+var init_audio = __esm({
+  "src/features/audio/index.ts"() {
+    "use strict";
+    init_types5();
+    init_audio_player();
+    init_auto_selection_types();
+    init_auto_selection();
+    init_context_extractor();
+  }
+});
+
+// src/workmodes/session-runner/components/audio-panel.ts
+function createAudioPanel(host, callbacks) {
+  const root = host.createDiv({ cls: "sm-audio-panel" });
+  const header = root.createDiv({ cls: "sm-audio-panel__header" });
+  header.createEl("h3", { text: "Audio", cls: "sm-audio-panel__title" });
+  const contextDisplay = root.createDiv({ cls: "sm-audio-panel__context" });
+  const contextTags = contextDisplay.createDiv({ cls: "sm-audio-panel__context-tags" });
+  const ambienceSection = root.createDiv({ cls: "sm-audio-panel__section" });
+  const ambienceState = {
+    player: null,
+    statusUnsubscribe: null,
+    currentPlaylist: null
+  };
+  const ambienceControls = createPlayerPanel(
+    ambienceSection,
+    "Ambience",
+    "ambience",
+    ambienceState,
+    callbacks
+  );
+  const musicSection = root.createDiv({ cls: "sm-audio-panel__section" });
+  const musicState = {
+    player: null,
+    statusUnsubscribe: null,
+    currentPlaylist: null
+  };
+  const musicControls = createPlayerPanel(musicSection, "Music", "music", musicState, callbacks);
+  let availableAmbience = [];
+  let availableMusic = [];
+  const setPlaylists = (ambience, music) => {
+    availableAmbience = ambience;
+    availableMusic = music;
+    ambienceControls.updatePlaylistDropdown(ambience);
+    musicControls.updatePlaylistDropdown(music);
+  };
+  const setContext = (context) => {
+    if (!context) {
+      contextTags.empty();
+      contextTags.createSpan({ text: "No context", cls: "sm-audio-panel__context-tag--empty" });
+      return;
+    }
+    contextTags.empty();
+    const addTag = (value, category) => {
+      const tag = contextTags.createSpan({
+        cls: `sm-audio-panel__context-tag sm-audio-panel__context-tag--${category}`,
+        text: value
+      });
+      tag.title = category;
+    };
+    if (context.terrain) addTag(context.terrain, "terrain");
+    if (context.weather) addTag(context.weather, "weather");
+    if (context.timeOfDay) addTag(context.timeOfDay, "time");
+    if (context.situation) addTag(context.situation, "situation");
+    if (context.factions && context.factions.length > 0) {
+      context.factions.forEach((f) => addTag(f, "faction"));
+    }
+    if (contextTags.childElementCount === 0) {
+      contextTags.createSpan({ text: "No tags", cls: "sm-audio-panel__context-tag--empty" });
+    }
+  };
+  const setAmbiencePlayer = (player) => {
+    if (ambienceState.statusUnsubscribe) {
+      ambienceState.statusUnsubscribe();
+      ambienceState.statusUnsubscribe = null;
+    }
+    ambienceState.player = player;
+    if (player) {
+      ambienceState.statusUnsubscribe = player.onStatusChange((status) => {
+        ambienceControls.updateStatus(status);
+      });
+      ambienceControls.updateStatus(player.getStatus());
+    } else {
+      ambienceControls.updateStatus(null);
+    }
+  };
+  const setMusicPlayer = (player) => {
+    if (musicState.statusUnsubscribe) {
+      musicState.statusUnsubscribe();
+      musicState.statusUnsubscribe = null;
+    }
+    musicState.player = player;
+    if (player) {
+      musicState.statusUnsubscribe = player.onStatusChange((status) => {
+        musicControls.updateStatus(status);
+      });
+      musicControls.updateStatus(player.getStatus());
+    } else {
+      musicControls.updateStatus(null);
+    }
+  };
+  const destroy = () => {
+    if (ambienceState.statusUnsubscribe) ambienceState.statusUnsubscribe();
+    if (musicState.statusUnsubscribe) musicState.statusUnsubscribe();
+    ambienceControls.destroy();
+    musicControls.destroy();
+    root.remove();
+  };
+  return {
+    root,
+    setPlaylists,
+    setContext,
+    setAmbiencePlayer,
+    setMusicPlayer,
+    destroy
+  };
+}
+function createPlayerPanel(host, label, type, state, callbacks) {
+  const section = host.createDiv({ cls: "sm-audio-player" });
+  const sectionHeader = section.createDiv({ cls: "sm-audio-player__header" });
+  sectionHeader.createEl("h4", { text: label, cls: "sm-audio-player__label" });
+  const playlistRow = section.createDiv({ cls: "sm-audio-player__row" });
+  playlistRow.createSpan({ text: "Playlist:", cls: "sm-audio-player__label-small" });
+  const playlistSelect = playlistRow.createEl("select", {
+    cls: "sm-audio-player__dropdown"
+  });
+  playlistSelect.createEl("option", { value: "", text: "\u2014 Select playlist \u2014" });
+  playlistSelect.addEventListener("change", () => {
+    const selectedId = playlistSelect.value;
+    if (selectedId) {
+      callbacks.onPlaylistSelect(selectedId, type);
+    }
+  });
+  const trackInfo = section.createDiv({ cls: "sm-audio-player__track-info" });
+  const trackName = trackInfo.createDiv({ cls: "sm-audio-player__track-name", text: "\u2014" });
+  const trackProgress = trackInfo.createDiv({ cls: "sm-audio-player__track-progress" });
+  const progressBar = trackProgress.createDiv({ cls: "sm-audio-player__progress-bar" });
+  const progressFill = progressBar.createDiv({ cls: "sm-audio-player__progress-fill" });
+  const progressTime = trackProgress.createDiv({
+    cls: "sm-audio-player__progress-time",
+    text: "0:00 / 0:00"
+  });
+  const controls = section.createDiv({ cls: "sm-audio-player__controls" });
+  const playBtn = controls.createEl("button", {
+    cls: "sm-audio-player__button sm-audio-player__button--play",
+    attr: { title: "Play" }
+  });
+  (0, import_obsidian38.setIcon)(playBtn, "play");
+  applyMapButtonStyle(playBtn);
+  playBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (state.player && !playBtn.disabled) {
+      void state.player.play();
+    }
+  });
+  const pauseBtn = controls.createEl("button", {
+    cls: "sm-audio-player__button sm-audio-player__button--pause",
+    attr: { title: "Pause" }
+  });
+  (0, import_obsidian38.setIcon)(pauseBtn, "pause");
+  applyMapButtonStyle(pauseBtn);
+  pauseBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (state.player && !pauseBtn.disabled) {
+      state.player.pause();
+    }
+  });
+  const prevBtn = controls.createEl("button", {
+    cls: "sm-audio-player__button sm-audio-player__button--prev",
+    attr: { title: "Previous" }
+  });
+  (0, import_obsidian38.setIcon)(prevBtn, "skip-back");
+  applyMapButtonStyle(prevBtn);
+  prevBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (state.player && !prevBtn.disabled) {
+      void state.player.skipPrevious();
+    }
+  });
+  const nextBtn = controls.createEl("button", {
+    cls: "sm-audio-player__button sm-audio-player__button--next",
+    attr: { title: "Next" }
+  });
+  (0, import_obsidian38.setIcon)(nextBtn, "skip-forward");
+  applyMapButtonStyle(nextBtn);
+  nextBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (state.player && !nextBtn.disabled) {
+      void state.player.skipNext();
+    }
+  });
+  const stopBtn = controls.createEl("button", {
+    cls: "sm-audio-player__button sm-audio-player__button--stop",
+    attr: { title: "Stop" }
+  });
+  (0, import_obsidian38.setIcon)(stopBtn, "square");
+  applyMapButtonStyle(stopBtn);
+  stopBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (state.player && !stopBtn.disabled) {
+      state.player.stop();
+    }
+  });
+  const volumeRow = section.createDiv({ cls: "sm-audio-player__row" });
+  volumeRow.createSpan({ text: "Volume:", cls: "sm-audio-player__label-small" });
+  const volumeInput = volumeRow.createEl("input", {
+    type: "range",
+    cls: "sm-audio-player__volume-slider",
+    attr: { min: "0", max: "100", step: "1" }
+  });
+  volumeInput.value = "70";
+  const volumeLabel = volumeRow.createSpan({
+    text: "70%",
+    cls: "sm-audio-player__volume-label"
+  });
+  volumeInput.addEventListener("input", () => {
+    const volume = parseInt(volumeInput.value, 10) / 100;
+    volumeLabel.setText(`${volumeInput.value}%`);
+    if (state.player) {
+      state.player.setGlobalVolume(volume);
+    }
+    callbacks.onVolumeChange(volume, type);
+  });
+  const toggleRow = section.createDiv({ cls: "sm-audio-player__row" });
+  const shuffleBtn = toggleRow.createEl("button", {
+    cls: "sm-audio-player__toggle",
+    text: "Shuffle"
+  });
+  applyMapButtonStyle(shuffleBtn);
+  shuffleBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (state.player) {
+      state.player.toggleShuffle();
+    }
+  });
+  const loopBtn = toggleRow.createEl("button", {
+    cls: "sm-audio-player__toggle",
+    text: "Loop"
+  });
+  applyMapButtonStyle(loopBtn);
+  loopBtn.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    if (state.player) {
+      state.player.toggleLoop();
+    }
+  });
+  const updateStatus = (status) => {
+    if (!status || !status.currentTrack) {
+      trackName.setText("\u2014");
+      progressTime.setText("0:00 / 0:00");
+      progressFill.style.width = "0%";
+      playBtn.disabled = true;
+      pauseBtn.disabled = true;
+      prevBtn.disabled = true;
+      nextBtn.disabled = true;
+      stopBtn.disabled = true;
+      shuffleBtn.classList.remove("is-active");
+      loopBtn.classList.remove("is-active");
+      return;
+    }
+    trackName.setText(status.currentTrack.name || "Unknown Track");
+    const position = status.position || 0;
+    const duration = status.currentTrack.duration || 0;
+    const percent = duration > 0 ? position / duration * 100 : 0;
+    progressFill.style.width = `${percent}%`;
+    const formatTime = (seconds) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, "0")}`;
+    };
+    progressTime.setText(`${formatTime(position)} / ${formatTime(duration)}`);
+    const isPlaying = status.state === "playing";
+    const isStopped = status.state === "stopped" || status.state === "idle";
+    const hasTrack = Boolean(status.currentTrack);
+    playBtn.disabled = isPlaying || !hasTrack;
+    pauseBtn.disabled = !isPlaying;
+    prevBtn.disabled = isStopped || !hasTrack;
+    nextBtn.disabled = isStopped || !hasTrack;
+    stopBtn.disabled = isStopped;
+    shuffleBtn.classList.toggle("is-active", status.shuffle);
+    loopBtn.classList.toggle("is-active", status.loop);
+    const vol = Math.round((status.globalVolume ?? 0.7) * 100);
+    volumeInput.value = String(vol);
+    volumeLabel.setText(`${vol}%`);
+  };
+  const updatePlaylistDropdown = (playlists) => {
+    while (playlistSelect.options.length > 1) {
+      playlistSelect.remove(1);
+    }
+    playlists.forEach((playlist) => {
+      const option = playlistSelect.createEl("option", {
+        value: playlist.name,
+        text: playlist.display_name || playlist.name
+      });
+    });
+  };
+  const destroy = () => {
+    section.remove();
+  };
+  updateStatus(null);
+  return {
+    updateStatus,
+    updatePlaylistDropdown,
+    destroy
+  };
+}
+var import_obsidian38;
+var init_audio_panel = __esm({
+  "src/workmodes/session-runner/components/audio-panel.ts"() {
+    "use strict";
+    import_obsidian38 = require("obsidian");
+    init_map_workflows();
+  }
+});
+
+// src/workmodes/session-runner/components/audio-controller.ts
+async function createAudioController(options) {
+  const { app, host } = options;
+  let ambiencePlayer = null;
+  let musicPlayer = null;
+  let availablePlaylists = [];
+  let currentContext = null;
+  let currentAmbiencePlaylist = null;
+  let currentMusicPlaylist = null;
+  let ambienceVolume = 0.7;
+  let musicVolume = 0.7;
+  const panel = createAudioPanel(host, {
+    onPlaylistSelect: (playlistId, type) => {
+      const playlist = availablePlaylists.find((p) => p.name === playlistId);
+      if (!playlist) {
+        logger2.warn("[AudioController] Playlist not found", { playlistId });
+        return;
+      }
+      void loadPlaylist(playlist, type);
+    },
+    onVolumeChange: (volume, type) => {
+      if (type === "ambience") {
+        ambienceVolume = volume;
+      } else {
+        musicVolume = volume;
+      }
+    }
+  });
+  ambiencePlayer = createAudioPlayer();
+  musicPlayer = createAudioPlayer();
+  ambiencePlayer.setGlobalVolume(ambienceVolume);
+  musicPlayer.setGlobalVolume(musicVolume);
+  panel.setAmbiencePlayer(ambiencePlayer);
+  panel.setMusicPlayer(musicPlayer);
+  await loadPlaylists();
+  async function loadPlaylists() {
+    try {
+      const dataSource = LIBRARY_DATA_SOURCES.playlists;
+      const files = await dataSource.list(app);
+      const playlists = [];
+      for (const file of files) {
+        try {
+          const fm2 = await readFrontmatter(app, file);
+          const playlist = frontmatterToPlaylist(fm2);
+          if (playlist) {
+            playlists.push(playlist);
+          }
+        } catch (error) {
+          logger2.error("[AudioController] Failed to load playlist", { file: file.path, error });
+        }
+      }
+      availablePlaylists = playlists;
+      const ambience = filterPlaylistsByType(playlists, "ambience");
+      const music = filterPlaylistsByType(playlists, "music");
+      panel.setPlaylists(ambience, music);
+      logger2.info("[AudioController] Loaded playlists", {
+        total: playlists.length,
+        ambience: ambience.length,
+        music: music.length
+      });
+    } catch (error) {
+      logger2.error("[AudioController] Failed to load playlists", { error });
+    }
+  }
+  function frontmatterToPlaylist(fm2) {
+    const name = typeof fm2.name === "string" ? fm2.name : null;
+    const type = typeof fm2.type === "string" && (fm2.type === "ambience" || fm2.type === "music") ? fm2.type : "ambience";
+    const tracks = Array.isArray(fm2.tracks) ? fm2.tracks : [];
+    if (!name) {
+      return null;
+    }
+    const extractTokens = (raw) => {
+      if (!Array.isArray(raw)) return [];
+      return raw.map((entry) => {
+        if (typeof entry === "string" && entry.trim()) {
+          return { value: entry.trim() };
+        }
+        if (entry && typeof entry === "object") {
+          const value = entry.value;
+          if (typeof value === "string" && value.trim()) {
+            return { value: value.trim() };
+          }
+        }
+        return null;
+      }).filter((v) => v !== null);
+    };
+    return {
+      name,
+      display_name: typeof fm2.display_name === "string" ? fm2.display_name : void 0,
+      type,
+      description: typeof fm2.description === "string" ? fm2.description : void 0,
+      terrain_tags: extractTokens(fm2.terrain_tags),
+      weather_tags: extractTokens(fm2.weather_tags),
+      time_of_day_tags: extractTokens(fm2.time_of_day_tags),
+      faction_tags: extractTokens(fm2.faction_tags),
+      situation_tags: extractTokens(fm2.situation_tags),
+      shuffle: typeof fm2.shuffle === "boolean" ? fm2.shuffle : void 0,
+      loop: typeof fm2.loop === "boolean" ? fm2.loop : void 0,
+      crossfade_duration: typeof fm2.crossfade_duration === "number" ? fm2.crossfade_duration : void 0,
+      default_volume: typeof fm2.default_volume === "number" ? fm2.default_volume : void 0,
+      tracks
+    };
+  }
+  async function loadPlaylist(playlist, type) {
+    try {
+      const player = type === "ambience" ? ambiencePlayer : musicPlayer;
+      if (!player) {
+        logger2.warn("[AudioController] No player available", { type });
+        return;
+      }
+      if (type === "ambience") {
+        currentAmbiencePlaylist = playlist;
+      } else {
+        currentMusicPlaylist = playlist;
+      }
+      player.loadPlaylist(playlist);
+      if (playlist.default_volume !== void 0) {
+        player.setGlobalVolume(playlist.default_volume);
+      }
+      await player.play();
+      logger2.info("[AudioController] Loaded playlist", {
+        type,
+        playlist: playlist.name,
+        tracks: playlist.tracks.length
+      });
+    } catch (error) {
+      logger2.error("[AudioController] Failed to load playlist", { playlist: playlist.name, error });
+    }
+  }
+  async function updateContext(file, coord) {
+    try {
+      if (!file || !coord) {
+        currentContext = null;
+        panel.setContext(null);
+        return;
+      }
+      const context = await extractSessionContext(app, file, coord);
+      currentContext = context;
+      panel.setContext(context);
+      await autoSelectPlaylists(context);
+    } catch (error) {
+      logger2.error("[AudioController] Failed to update context", { error });
+    }
+  }
+  async function autoSelectPlaylists(context) {
+    try {
+      const ambiencePlaylists = filterPlaylistsByType(availablePlaylists, "ambience");
+      const musicPlaylists = filterPlaylistsByType(availablePlaylists, "music");
+      const ambienceResult = selectPlaylist(ambiencePlaylists, context);
+      const musicResult = selectPlaylist(musicPlaylists, context);
+      if (ambienceResult.playlist && ambienceResult.playlist.name !== currentAmbiencePlaylist?.name) {
+        await loadPlaylist(ambienceResult.playlist, "ambience");
+      }
+      if (musicResult.playlist && musicResult.playlist.name !== currentMusicPlaylist?.name) {
+        await loadPlaylist(musicResult.playlist, "music");
+      }
+      logger2.info("[AudioController] Auto-selected playlists", {
+        ambience: ambienceResult.playlist?.name ?? "none",
+        ambienceScore: ambienceResult.score,
+        music: musicResult.playlist?.name ?? "none",
+        musicScore: musicResult.score
+      });
+    } catch (error) {
+      logger2.error("[AudioController] Auto-selection failed", { error });
+    }
+  }
+  function dispose() {
+    try {
+      if (ambiencePlayer) {
+        ambiencePlayer.stop();
+        ambiencePlayer.dispose();
+        ambiencePlayer = null;
+      }
+      if (musicPlayer) {
+        musicPlayer.stop();
+        musicPlayer.dispose();
+        musicPlayer = null;
+      }
+      panel.destroy();
+      logger2.info("[AudioController] Disposed");
+    } catch (error) {
+      logger2.error("[AudioController] Disposal failed", { error });
+    }
+  }
+  return {
+    panel,
+    updateContext,
+    dispose
+  };
+}
+var init_audio_controller = __esm({
+  "src/workmodes/session-runner/components/audio-controller.ts"() {
+    "use strict";
+    init_audio_player();
+    init_audio();
+    init_data_sources();
+    init_frontmatter_utils();
+    init_plugin_logger();
+    init_audio_panel();
+  }
+});
+
 // src/workmodes/session-runner/view/experience.ts
 var experience_exports = {};
 __export(experience_exports, {
@@ -23460,6 +24545,8 @@ function createSessionRunnerExperience() {
   let lifecycleSignal = null;
   let encounterSync = null;
   let bridgeTravelId = null;
+  let audioController = null;
+  let currentMapFile = null;
   const runBridge = (label, fn) => {
     const bridge = getCartographerBridge();
     if (!bridge) {
@@ -23485,6 +24572,10 @@ function createSessionRunnerExperience() {
     sidebar?.setTile(state.currentTile ?? state.tokenRC ?? null);
     sidebar?.setSpeed(state.tokenSpeed);
     playback.sync(state);
+    if (audioController) {
+      const currentCoord = state.currentTile ?? state.tokenRC ?? null;
+      void audioController.updateContext(currentMapFile, currentCoord);
+    }
   };
   const resetUi = () => {
     sidebar?.setTile(null);
@@ -23566,6 +24657,10 @@ function createSessionRunnerExperience() {
     disposeFile();
     resetUi();
     playback.dispose();
+    if (audioController) {
+      audioController.dispose();
+      audioController = null;
+    }
     detachSidebar();
     releaseTerrainEvent();
     removeTravelClass();
@@ -23665,6 +24760,18 @@ function createSessionRunnerExperience() {
       if (await bailIfAborted()) {
         return;
       }
+      try {
+        audioController = await createAudioController({
+          app: ctx.app,
+          host: ctx.sidebarHost
+        });
+        logger2.info("[session-runner] Audio controller initialized");
+      } catch (error) {
+        logger2.error("[session-runner] Failed to initialize audio controller", error);
+      }
+      if (await bailIfAborted()) {
+        return;
+      }
       resetUi();
     },
     async onExit(ctx) {
@@ -23678,6 +24785,7 @@ function createSessionRunnerExperience() {
       disposeFile();
       sidebar?.setTitle?.(file?.basename ?? "");
       resetUi();
+      currentMapFile = file;
       if (await bailIfAborted()) {
         return;
       }
@@ -23846,6 +24954,7 @@ var init_experience = __esm({
     init_plugin_logger();
     init_encounter_gateway();
     init_encounter_sync();
+    init_audio_controller();
   }
 });
 
@@ -24586,16 +25695,16 @@ async function openTimelineView(app, store) {
   });
   workspace.revealLeaf(leaf);
 }
-var import_obsidian42, VIEW_TYPE_TIMELINE, TimelineView;
+var import_obsidian43, VIEW_TYPE_TIMELINE, TimelineView;
 var init_timeline_view = __esm({
   "src/features/events/timeline-view.ts"() {
     "use strict";
-    import_obsidian42 = require("obsidian");
+    import_obsidian43 = require("obsidian");
     init_event_history_types();
     init_ui();
     init_plugin_logger();
     VIEW_TYPE_TIMELINE = "event-timeline-view";
-    TimelineView = class extends import_obsidian42.ItemView {
+    TimelineView = class extends import_obsidian43.ItemView {
       constructor(leaf, store) {
         super(leaf);
         // Current filter/sort state
@@ -90665,7 +91774,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian44.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian45.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -90678,7 +91787,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian44.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian45.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -90696,7 +91805,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian44.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian45.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -90712,7 +91821,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian44.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian45.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -90738,19 +91847,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian44.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian45.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger2.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger2.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian44.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian45.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger2.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger2.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian44.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian45.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -90762,7 +91871,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian44.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian45.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -90779,7 +91888,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian44.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian45.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -90869,11 +91978,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, all`);
   }
 }
-var import_obsidian44, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
+var import_obsidian45, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian44 = require("obsidian");
+    import_obsidian45 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -90900,16 +92009,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian45.TFolder)) {
+  if (!(folder instanceof import_obsidian46.TFolder)) {
     logger2.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian45.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian46.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian45.TFolder) {
+      } else if (child instanceof import_obsidian46.TFolder) {
         collectFiles(child);
       }
     }
@@ -90946,7 +92055,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian45.TFile) {
+  if (existingFile instanceof import_obsidian46.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -91014,7 +92123,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian45.TFile) {
+  if (existingFile instanceof import_obsidian46.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -91036,11 +92145,11 @@ async function generateAllIndexes(app) {
   ]);
   logger2.log("[Index] All indexes generated successfully");
 }
-var import_obsidian45, SALTMARCHER_DIR;
+var import_obsidian46, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian45 = require("obsidian");
+    import_obsidian46 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -93020,7 +94129,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian46 = require("obsidian");
+var import_obsidian47 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
@@ -94040,10 +95149,10 @@ async function openAlmanac(app) {
 }
 
 // src/workmodes/session-runner/index.ts
-var import_obsidian39 = require("obsidian");
+var import_obsidian40 = require("obsidian");
 
 // src/workmodes/session-runner/controller.ts
-var import_obsidian38 = require("obsidian");
+var import_obsidian39 = require("obsidian");
 init_options();
 init_map_list();
 init_plugin_logger();
@@ -94133,7 +95242,7 @@ var SessionRunnerController = class {
     } catch (error) {
       logger2.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
-      new import_obsidian38.Notice(EXPERIENCE_NOTICE_MESSAGE);
+      new import_obsidian39.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
     if (this.mapManager) {
       await this.mapManager.setFile(initialFile);
@@ -94344,7 +95453,7 @@ function createSessionRunnerView(options) {
 // src/workmodes/session-runner/index.ts
 var VIEW_TYPE_SESSION_RUNNER = "session-runner-view";
 var VIEW_SESSION_RUNNER = VIEW_TYPE_SESSION_RUNNER;
-var SessionRunnerView = class extends import_obsidian39.ItemView {
+var SessionRunnerView = class extends import_obsidian40.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -94397,7 +95506,7 @@ async function openSessionRunner(app, file) {
 }
 
 // src/workmodes/library/locations/dungeon-view.ts
-var import_obsidian41 = require("obsidian");
+var import_obsidian42 = require("obsidian");
 
 // src/features/dungeons/rendering/grid-renderer.ts
 init_types3();
@@ -94997,9 +96106,9 @@ init_plugin_logger();
 init_frontmatter_utils();
 
 // src/features/dungeons/ui/token-creation-modal.ts
-var import_obsidian40 = require("obsidian");
+var import_obsidian41 = require("obsidian");
 init_types3();
-var TokenCreationModal = class extends import_obsidian40.Modal {
+var TokenCreationModal = class extends import_obsidian41.Modal {
   constructor(app, onSubmit, initialData) {
     super(app);
     this.onSubmit = onSubmit;
@@ -95020,7 +96129,7 @@ var TokenCreationModal = class extends import_obsidian40.Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.createEl("h3", { text: this.isEditMode ? "Edit Token" : "Create Token" });
-    new import_obsidian40.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
+    new import_obsidian41.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
       dropdown.addOption("player", "\u{1F9D9} Player").addOption("npc", "\u{1F642} NPC").addOption("monster", "\u{1F479} Monster").addOption("object", "\u{1F4E6} Object").setValue(this.tokenType).onChange((value) => {
         this.tokenType = value;
         this.tokenColor = getDefaultTokenColor(this.tokenType);
@@ -95028,13 +96137,13 @@ var TokenCreationModal = class extends import_obsidian40.Modal {
       });
     });
     let labelInput;
-    new import_obsidian40.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
+    new import_obsidian41.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
       text.setPlaceholder("Gandalf").setValue(this.tokenLabel).onChange((value) => {
         this.tokenLabel = value.trim();
       });
       labelInput = text.inputEl;
     });
-    new import_obsidian40.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
+    new import_obsidian41.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
       text.setPlaceholder(getDefaultTokenColor(this.tokenType)).setValue(this.tokenColor).onChange((value) => {
         this.tokenColor = value.trim();
         this.renderColorPreview();
@@ -95057,12 +96166,12 @@ var TokenCreationModal = class extends import_obsidian40.Modal {
     contentEl._colorPreview = colorPreview;
     this.tokenColor = getDefaultTokenColor(this.tokenType);
     this.renderColorPreview();
-    new import_obsidian40.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
+    new import_obsidian41.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
       slider.setLimits(0.5, 2, 0.1).setValue(this.tokenSize).setDynamicTooltip().onChange((value) => {
         this.tokenSize = value;
       });
     });
-    new import_obsidian40.Setting(contentEl).addButton((button) => {
+    new import_obsidian41.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => {
         this.close();
       });
@@ -95100,7 +96209,7 @@ var TokenCreationModal = class extends import_obsidian40.Modal {
 
 // src/workmodes/library/locations/dungeon-view.ts
 var VIEW_TYPE_DUNGEON = "salt-dungeon-view";
-var DungeonView = class extends import_obsidian41.ItemView {
+var DungeonView = class extends import_obsidian42.ItemView {
   // Currently selected token
   constructor(leaf) {
     super(leaf);
@@ -99576,7 +100685,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian43 = require("obsidian");
+var import_obsidian44 = require("obsidian");
 init_plugin_logger();
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
@@ -99586,7 +100695,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian43.Notice(userMessage);
+  new import_obsidian44.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -99897,7 +101006,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian46.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian47.Plugin {
   async onload() {
     await logger2.init(this.app);
     logger2.log("Plugin loading...");

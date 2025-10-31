@@ -1,0 +1,11 @@
+{
+  "testName": "Complete creature creation flow",
+  "testId": "test_1761905847619_2d48dcd2",
+  "testPath": "/home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/devkit/testing/integration/cases/creature-creation-full-flow.yaml",
+  "startTime": 1761905847620,
+  "steps": [],
+  "success": false,
+  "error": "Plugin IPC server not running. Is the plugin loaded in Obsidian?",
+  "endTime": 1761905847622,
+  "totalDuration": 2
+}

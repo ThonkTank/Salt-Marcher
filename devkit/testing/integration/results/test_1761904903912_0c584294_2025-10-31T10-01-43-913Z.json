@@ -1,0 +1,11 @@
+{
+  "testName": "Save proficiency toggle test",
+  "testId": "test_1761904903912_0c584294",
+  "testPath": "/home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/devkit/testing/integration/cases/save-proficiency-toggle.yaml",
+  "startTime": 1761904903912,
+  "steps": [],
+  "success": false,
+  "error": "Plugin IPC server not running. Is the plugin loaded in Obsidian?",
+  "endTime": 1761904903913,
+  "totalDuration": 1
+}

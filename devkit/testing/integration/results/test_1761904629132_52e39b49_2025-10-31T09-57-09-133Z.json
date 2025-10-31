@@ -1,0 +1,11 @@
+{
+  "testName": "Debug configuration test",
+  "testId": "test_1761904629132_52e39b49",
+  "testPath": "/home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/devkit/testing/integration/cases/debug-config-test.yaml",
+  "startTime": 1761904629132,
+  "steps": [],
+  "success": false,
+  "error": "Plugin IPC server not running. Is the plugin loaded in Obsidian?",
+  "endTime": 1761904629132,
+  "totalDuration": 0
+}

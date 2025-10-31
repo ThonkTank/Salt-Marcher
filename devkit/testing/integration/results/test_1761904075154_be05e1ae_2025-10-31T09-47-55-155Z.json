@@ -1,0 +1,11 @@
+{
+  "testName": "Log marker test",
+  "testId": "test_1761904075154_be05e1ae",
+  "testPath": "/home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/devkit/testing/integration/cases/log-marker-test.yaml",
+  "startTime": 1761904075154,
+  "steps": [],
+  "success": false,
+  "error": "Plugin IPC server not running. Is the plugin loaded in Obsidian?",
+  "endTime": 1761904075155,
+  "totalDuration": 1
+}

@@ -1,0 +1,11 @@
+{
+  "testName": "Edit existing creature",
+  "testId": "test_1761906180393_8a495dcf",
+  "testPath": "/home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/devkit/testing/integration/cases/creature-edit-existing.yaml",
+  "startTime": 1761906180393,
+  "steps": [],
+  "success": false,
+  "error": "Plugin IPC server not running. Is the plugin loaded in Obsidian?",
+  "endTime": 1761906180394,
+  "totalDuration": 1
+}

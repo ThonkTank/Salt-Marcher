@@ -310,32 +310,29 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 6.4 ✅ Complete | Tests: 489/491 (99.6%) | **Next:** Phase 6.5 - Session Runner UI Integration
+**Status:** Phase 6.5 ✅ Complete | Tests: 489/491 (99.6%) | **Next:** TBD
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
 - **Phase 5:** Loot Generator - Gold (XP-based, 5 rule types), Items (tag-filter, rarity-limits, weighted), E2E tests (13 scenarios)
-- **Phase 6.1-6.4:** Audio System Foundation ✅ (Details: [docs/audio-system.md](docs/audio-system.md))
+- **Phase 6:** Audio System ✅ (Details: [docs/audio-system.md](docs/audio-system.md))
   - Phase 6.1: Playlist Entity - CreateSpec with 5 tag types, serializer, 17 tests ✅
   - Phase 6.2: Playlist Manager UI - Library integration, auto-generated CRUD ✅
   - Phase 6.3: Audio Player Core - HTMLAudioElement playback, crossfade, volume, shuffle/loop, 33 tests ✅
   - Phase 6.4: Auto-Selection System - Context-based filtering, scoring algorithm, 24 tests ✅
-  - File locations: src/features/audio/, src/workmodes/library/playlists/
-
-**Phase 6: Audio System** (🔄 In Progress) - [Full details: docs/audio-system.md](docs/audio-system.md)
-- **Phase 6.5:** Session Runner UI Integration ⏳ (Next)
-  - Audio panel in Session Runner sidebar
-  - Auto-selection on context change (terrain/weather/time transitions)
-  - Quick-switch UI (manual playlist override)
-  - Playback controls integration
+  - Phase 6.5: Session Runner UI Integration - Audio panel, dual players (ambience/music), context-aware auto-selection ✅
+  - File locations: src/features/audio/, src/workmodes/library/playlists/, src/workmodes/session-runner/components/
 
 **Technische Schulden:**
-- None currently identified
+- Two deprecated governance test files can be removed (todo-governance.test.ts, header-policy.test.ts - lines with .skip)
+- Minor TODOs exist for future features (factions, weather, locations) - intentional placeholders, not blockers
 
 **Test-Status:**
 - Unit tests: 489/491 passing (99.6%) ✅
-- 2 intentionally skipped: deprecated TODO.md governance, AGENTS.md policy (safe to remove)
-- Integration tests: Require live plugin instance (expected to fail in CI)
+  - Audio tests: 57/57 (player: 33, auto-selection: 24)
+  - Playlist tests: 17/17 (serialization)
+- 2 intentionally skipped: deprecated governance tests (safe to remove)
+- Integration tests: 6 tests require live Obsidian instance (expected to fail in CI)
 
 **Release Prep:**
 - Polish UI/UX

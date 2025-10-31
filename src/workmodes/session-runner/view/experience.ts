@@ -22,6 +22,7 @@ import {
     publishManualEncounter,
 } from "./controllers/encounter-gateway";
 import { createEncounterSync } from "../travel/infra/encounter-sync";
+import { createAudioController, type AudioControllerHandle } from "../components/audio-controller";
 
 export function createSessionRunnerExperience(): SessionRunnerExperience {
     let sidebar: Sidebar | null = null;
@@ -38,6 +39,8 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
     let lifecycleSignal: AbortSignal | null = null;
     let encounterSync: ReturnType<typeof createEncounterSync> | null = null;
     let bridgeTravelId: string | null = null;
+    let audioController: AudioControllerHandle | null = null;
+    let currentMapFile: ReturnType<SessionRunnerLifecycleContext["getFile"]> = null;
 
     const runBridge = (
         label: string,
@@ -70,6 +73,12 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
         sidebar?.setTile(state.currentTile ?? state.tokenRC ?? null);
         sidebar?.setSpeed(state.tokenSpeed);
         playback.sync(state);
+
+        // Update audio context when tile changes
+        if (audioController) {
+            const currentCoord = state.currentTile ?? state.tokenRC ?? null;
+            void audioController.updateContext(currentMapFile, currentCoord);
+        }
     };
 
     const resetUi = () => {
@@ -161,6 +170,10 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
         disposeFile();
         resetUi();
         playback.dispose();
+        if (audioController) {
+            audioController.dispose();
+            audioController = null;
+        }
         detachSidebar();
         releaseTerrainEvent();
         removeTravelClass();
@@ -274,6 +287,21 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
                 return;
             }
 
+            // Initialize audio controller
+            try {
+                audioController = await createAudioController({
+                    app: ctx.app,
+                    host: ctx.sidebarHost,
+                });
+                logger.info("[session-runner] Audio controller initialized");
+            } catch (error) {
+                logger.error("[session-runner] Failed to initialize audio controller", error);
+            }
+
+            if (await bailIfAborted()) {
+                return;
+            }
+
             resetUi();
         },
         async onExit(ctx: SessionRunnerLifecycleContext) {
@@ -288,6 +316,9 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
             disposeFile();
             sidebar?.setTitle?.(file?.basename ?? "");
             resetUi();
+
+            // Update current map file for audio context
+            currentMapFile = file;
 
             if (await bailIfAborted()) {
                 return;

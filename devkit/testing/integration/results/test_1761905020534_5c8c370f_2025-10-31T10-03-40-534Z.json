@@ -1,0 +1,11 @@
+{
+  "testName": "Spell creation flow",
+  "testId": "test_1761905020534_5c8c370f",
+  "testPath": "/home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/devkit/testing/integration/cases/spell-creation-flow.yaml",
+  "startTime": 1761905020534,
+  "steps": [],
+  "success": false,
+  "error": "Plugin IPC server not running. Is the plugin loaded in Obsidian?",
+  "endTime": 1761905020534,
+  "totalDuration": 0
+}
