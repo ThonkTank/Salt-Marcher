@@ -412,6 +412,24 @@ export function degradeBuilding(production: BuildingProduction, days: number): v
 }
 
 /**
+ * Calculate repair costs for a building
+ * Returns the gold and equipment needed to repair by the specified amount
+ */
+export function calculateRepairCosts(
+  currentCondition: number,
+  repairAmount: number
+): { gold: number; equipment: number } {
+  // Repair formula: 1 gold + 0.5 equipment = 10 condition points
+  // Default repair amount of 10 condition points costs 1 gold + 0.5 equipment
+  const costMultiplier = repairAmount / 10;
+
+  return {
+    gold: Math.ceil(1 * costMultiplier),
+    equipment: Math.ceil(0.5 * costMultiplier)
+  };
+}
+
+/**
  * Repair building condition
  */
 export function repairBuilding(

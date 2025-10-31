@@ -359,10 +359,6 @@ None currently! All blocking issues resolved. ✅
    - Goal specifies "Monats-, Wochen-, Timeline-Modus" but none exist
    - Need: Month/week/timeline views, event editor, astronomical cycles UI
    - Location: src/workmodes/almanac/ (missing view components)
-3. **[HIGH] Phase 9.2B Resource Integration** - Building repair ignores resource costs
-   - Currently: Repair is free, no faction resource deduction
-   - Need: Deduct gold/materials from faction resources on repair
-   - Location: building-management-modal.ts:234 (TODO comment)
 4. **[HIGH] Library Tabs Missing** - Location, Playlist, Encounter Tables non-functional
    - Tabs exist in UI but no browse views implemented
    - Goal: "Tabs für Kreaturen, Zauber, Items, Equipment, Terrains, Regionen und Kalender"
@@ -510,6 +506,14 @@ None currently! All blocking issues resolved. ✅
 - **Known Issue:** 1 probabilistic faction NPC betrayal test fails occasionally (non-blocking)
 
 **Recently Completed:**
+- **[HIGH] Phase 9.2B Resource Integration** ✅ (2025-10-31)
+  - Building repair now deducts resources from owning faction
+  - Added calculateRepairCosts() helper function
+  - Validates sufficient resources before repair (shows clear error messages)
+  - Displays repair costs in UI (e.g., "Cost: 1 gold, 1 equipment")
+  - Full audit trail via logger
+  - Changes: building-production.ts (+calculateRepairCosts), building-management-modal.ts (repair integration)
+  - Tests: 5 new unit tests for cost calculation, all passing (1105/1106 total)
 - **[HIGH] [UX] Weather Speed Modifier Context** ✅ (Phase 10.4.1 - 2025-10-31)
   - Added helper text explaining "X% of normal speed"
   - Display shows before/after speeds (e.g., "3.0 → 2.25 mph")
@@ -525,7 +529,6 @@ None currently! All blocking issues resolved. ✅
 2. **[MEDIUM] Complete Partial Features** - Working but incomplete
    - POI placement UI in Cartographer (location system ready, needs UI mode)
    - Cartographer Brush debugging (investigate error messages)
-   - Building repair resource costs (deduct from faction resources)
    - **[UX] Building capacity warnings** (only shows after error, needs proactive display)
    - **[UX] Condition impact clarity** (users don't understand what condition affects)
    - **[UX] Drag-and-drop affordance** (workers don't look draggable)

@@ -15,6 +15,7 @@ import {
   getBuildingType,
   initializeBuildingProduction,
   degradeBuilding,
+  calculateRepairCosts,
   repairBuilding,
 } from "../../../../../src/features/locations/building-production";
 
@@ -359,6 +360,49 @@ describe("Building Production - Degradation", () => {
     degradeBuilding(production, 3);
 
     expect(production.maintenanceOverdue).toBe(5);
+  });
+});
+
+describe("Building Production - Repair Costs", () => {
+  it("calculates correct costs for default 10 condition repair", () => {
+    const costs = calculateRepairCosts(50, 10);
+
+    expect(costs.gold).toBe(1);
+    expect(costs.equipment).toBe(1); // 0.5 rounded up
+  });
+
+  it("calculates correct costs for larger repairs", () => {
+    const costs = calculateRepairCosts(30, 20);
+
+    expect(costs.gold).toBe(2);
+    expect(costs.equipment).toBe(1);
+  });
+
+  it("calculates correct costs for small repairs", () => {
+    const costs = calculateRepairCosts(95, 5);
+
+    expect(costs.gold).toBe(1); // 0.5 rounded up
+    expect(costs.equipment).toBe(1); // 0.25 rounded up
+  });
+
+  it("scales costs linearly with repair amount", () => {
+    const costs1 = calculateRepairCosts(50, 10);
+    const costs2 = calculateRepairCosts(50, 30);
+
+    // 30 is 3x 10, so costs should be 3x (or slightly less due to rounding)
+    // costs1: gold=1, equipment=1
+    // costs2: gold=3, equipment=2 (since 0.5 * 3 = 1.5 rounds to 2)
+    expect(costs2.gold).toBe(3);
+    expect(costs2.equipment).toBe(2);
+  });
+
+  it("rounds up fractional costs", () => {
+    // Small repair that would cost 0.3 gold, 0.15 equipment
+    const costs = calculateRepairCosts(95, 3);
+
+    // Should round up to at least 1
+    expect(costs.gold).toBeGreaterThanOrEqual(1);
+    expect(costs.equipment).toBeGreaterThanOrEqual(1);
   });
 });
 

@@ -296,6 +296,7 @@ interface WeatherZone {
 - Movement penalties affect gameplay
 - German UI strings for consistency
 - Graceful degradation when weather unavailable
+- Contextual speed display showing before/after speeds (Phase 10.4.1)
 
 **Location:**
 - Weather panel: src/workmodes/session-runner/travel/ui/weather-panel.ts
@@ -304,6 +305,13 @@ interface WeatherZone {
 - Session Runner: src/workmodes/session-runner/view/experience.ts
 - Styles: styles.css (.sm-weather-panel)
 - Tests: devkit/testing/unit/features/weather/weather-icons.test.ts
+
+**Phase 10.4.1 Update (2025-10-31):**
+- Added contextual speed modifier display
+- Shows before/after speeds (e.g., "3.0 → 2.25 mph")
+- Helper text explains percentage meaning
+- Weather panel tracks base party speed via `setBaseSpeed()` method
+- Resolves UX issue: users now understand weather's effect on travel
 
 ### Phase 10.5: Advanced Features (Future)
 - Weather forecasting (predict next 3 days)

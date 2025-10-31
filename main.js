@@ -16273,6 +16273,13 @@ function getBuildingBonuses(buildingType) {
   const template = BUILDING_TEMPLATES[buildingType];
   return template?.bonuses || {};
 }
+function calculateRepairCosts(currentCondition, repairAmount) {
+  const costMultiplier = repairAmount / 10;
+  return {
+    gold: Math.ceil(1 * costMultiplier),
+    equipment: Math.ceil(0.5 * costMultiplier)
+  };
+}
 function repairBuilding(production, goldSpent, equipmentSpent) {
   const repairAmount = (goldSpent + equipmentSpent * 0.5) * 10;
   const oldCondition = production.condition;
@@ -21689,12 +21696,11 @@ var init_building_management_modal = __esm({
             this.unsavedChanges = true;
           })
         );
-        const repairSetting = new import_obsidian30.Setting(section).setName("Repair Building").setDesc("Spend resources to improve condition").addButton(
-          (btn) => btn.setButtonText("Repair (+10 condition)").onClick(() => {
-            const repairAmount = repairBuilding(this.production, 1, 0.5);
-            new import_obsidian30.Notice(`Repaired building: +${repairAmount.toFixed(0)} condition`);
-            this.unsavedChanges = true;
-            this.refresh();
+        const repairAmount = 10;
+        const repairCosts = calculateRepairCosts(this.production.condition, repairAmount);
+        const repairSetting = new import_obsidian30.Setting(section).setName("Repair Building").setDesc(`Cost: ${repairCosts.gold} gold, ${repairCosts.equipment} equipment`).addButton(
+          (btn) => btn.setButtonText(`Repair (+${repairAmount} condition)`).onClick(async () => {
+            await this.repairBuilding(repairCosts.gold, repairCosts.equipment, repairAmount);
           })
         );
         const maintenance = calculateMaintenanceCost(this.production.buildingType);
@@ -21981,6 +21987,64 @@ var init_building_management_modal = __esm({
         saveBtn.onclick = async () => {
           await this.saveChanges();
         };
+      }
+      /**
+       * Repair building and deduct resources from owning faction
+       */
+      async repairBuilding(goldCost, equipmentCost, conditionIncrease) {
+        try {
+          if (this.options.locationData.owner_type !== "faction" || !this.options.locationData.owner_name) {
+            new import_obsidian30.Notice("Building has no owning faction. Cannot deduct repair costs.");
+            return;
+          }
+          const factionName = this.options.locationData.owner_name;
+          const factionFile = await this.findFactionFile(factionName);
+          if (!factionFile) {
+            new import_obsidian30.Notice(`Faction "${factionName}" not found.`);
+            return;
+          }
+          const content = await this.app.vault.read(factionFile);
+          const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+          if (!fmMatch) {
+            new import_obsidian30.Notice(`Invalid faction file format for "${factionName}".`);
+            return;
+          }
+          const faction = load(fmMatch[1]);
+          if (!faction.resources) {
+            faction.resources = {};
+          }
+          const currentGold = faction.resources.gold || 0;
+          const currentEquipment = faction.resources.equipment || 0;
+          if (currentGold < goldCost || currentEquipment < equipmentCost) {
+            new import_obsidian30.Notice(
+              `Insufficient resources. Faction has ${currentGold} gold (need ${goldCost}) and ${currentEquipment} equipment (need ${equipmentCost}).`
+            );
+            return;
+          }
+          faction.resources.gold = currentGold - goldCost;
+          faction.resources.equipment = currentEquipment - equipmentCost;
+          const updatedFrontmatter = dump(faction);
+          const updatedContent = `---
+${updatedFrontmatter}---${content.substring(fmMatch[0].length)}`;
+          await this.app.vault.modify(factionFile, updatedContent);
+          const actualRepair = repairBuilding(this.production, goldCost, equipmentCost);
+          logger2.info("[building-management] Building repaired", {
+            location: this.options.locationData.name,
+            faction: factionName,
+            goldSpent: goldCost,
+            equipmentSpent: equipmentCost,
+            conditionIncrease: actualRepair,
+            newCondition: this.production.condition
+          });
+          new import_obsidian30.Notice(
+            `Repaired building: +${actualRepair.toFixed(0)} condition (now ${this.production.condition}%). Spent ${goldCost} gold and ${equipmentCost} equipment.`
+          );
+          this.unsavedChanges = true;
+          this.refresh();
+        } catch (error) {
+          logger2.error("[building-management] Failed to repair building", { error });
+          new import_obsidian30.Notice("Failed to repair building. Check console for details.");
+        }
       }
       async saveChanges() {
         try {

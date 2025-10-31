@@ -15,6 +15,7 @@ import {
     calculateProductionRate,
     calculateMaintenanceCost,
     getBuildingBonuses,
+    calculateRepairCosts,
     repairBuilding
 } from "../../features/locations/building-production";
 import { createProductionDashboard } from "../../features/locations/production-visualization";
@@ -225,17 +226,15 @@ export class BuildingManagementModal extends Modal {
             );
 
         // Repair button
+        const repairAmount = 10;
+        const repairCosts = calculateRepairCosts(this.production.condition, repairAmount);
         const repairSetting = new Setting(section)
             .setName("Repair Building")
-            .setDesc("Spend resources to improve condition")
+            .setDesc(`Cost: ${repairCosts.gold} gold, ${repairCosts.equipment} equipment`)
             .addButton(btn => btn
-                .setButtonText("Repair (+10 condition)")
-                .onClick(() => {
-                    // TODO: Integrate with faction resources
-                    const repairAmount = repairBuilding(this.production, 1, 0.5);
-                    new Notice(`Repaired building: +${repairAmount.toFixed(0)} condition`);
-                    this.unsavedChanges = true;
-                    this.refresh();
+                .setButtonText(`Repair (+${repairAmount} condition)`)
+                .onClick(async () => {
+                    await this.repairBuilding(repairCosts.gold, repairCosts.equipment, repairAmount);
                 })
             );
 
@@ -613,6 +612,84 @@ export class BuildingManagementModal extends Modal {
         saveBtn.onclick = async () => {
             await this.saveChanges();
         };
+    }
+
+    /**
+     * Repair building and deduct resources from owning faction
+     */
+    private async repairBuilding(goldCost: number, equipmentCost: number, conditionIncrease: number) {
+        try {
+            // 1. Check if location has an owning faction
+            if (this.options.locationData.owner_type !== "faction" || !this.options.locationData.owner_name) {
+                new Notice("Building has no owning faction. Cannot deduct repair costs.");
+                return;
+            }
+
+            const factionName = this.options.locationData.owner_name;
+
+            // 2. Find and load faction file
+            const factionFile = await this.findFactionFile(factionName);
+            if (!factionFile) {
+                new Notice(`Faction "${factionName}" not found.`);
+                return;
+            }
+
+            const content = await this.app.vault.read(factionFile);
+            const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+            if (!fmMatch) {
+                new Notice(`Invalid faction file format for "${factionName}".`);
+                return;
+            }
+
+            const faction = yaml.load(fmMatch[1]) as FactionData;
+
+            // 3. Ensure faction has resources
+            if (!faction.resources) {
+                faction.resources = {};
+            }
+
+            // 4. Check if faction has enough resources
+            const currentGold = faction.resources.gold || 0;
+            const currentEquipment = faction.resources.equipment || 0;
+
+            if (currentGold < goldCost || currentEquipment < equipmentCost) {
+                new Notice(
+                    `Insufficient resources. Faction has ${currentGold} gold (need ${goldCost}) and ${currentEquipment} equipment (need ${equipmentCost}).`
+                );
+                return;
+            }
+
+            // 5. Deduct resources from faction
+            faction.resources.gold = currentGold - goldCost;
+            faction.resources.equipment = currentEquipment - equipmentCost;
+
+            // 6. Save updated faction file
+            const updatedFrontmatter = yaml.dump(faction);
+            const updatedContent = `---\n${updatedFrontmatter}---${content.substring(fmMatch[0].length)}`;
+            await this.app.vault.modify(factionFile, updatedContent);
+
+            // 7. Apply repair to building
+            const actualRepair = repairBuilding(this.production, goldCost, equipmentCost);
+
+            logger.info('[building-management] Building repaired', {
+                location: this.options.locationData.name,
+                faction: factionName,
+                goldSpent: goldCost,
+                equipmentSpent: equipmentCost,
+                conditionIncrease: actualRepair,
+                newCondition: this.production.condition
+            });
+
+            new Notice(
+                `Repaired building: +${actualRepair.toFixed(0)} condition (now ${this.production.condition}%). Spent ${goldCost} gold and ${equipmentCost} equipment.`
+            );
+
+            this.unsavedChanges = true;
+            this.refresh();
+        } catch (error) {
+            logger.error('[building-management] Failed to repair building', { error });
+            new Notice("Failed to repair building. Check console for details.");
+        }
     }
 
     private async saveChanges() {
