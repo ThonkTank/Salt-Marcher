@@ -10,6 +10,8 @@ describe("EventHistoryStore", () => {
     let store: EventHistoryStore;
 
     beforeEach(() => {
+        // Clear localStorage before each test
+        localStorage.clear();
         // Use unique storage key for each test
         store = new EventHistoryStore(`test-${Date.now()}`);
     });
