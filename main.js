@@ -26823,6 +26823,8 @@ var init_weather_icons = __esm({
 // src/workmodes/session-runner/travel/ui/weather-panel.ts
 function createWeatherPanel(host) {
   const root = host.createDiv({ cls: "sm-weather-panel" });
+  let lastModifier = 1;
+  let baseSpeed;
   const header = root.createDiv({ cls: "sm-weather-panel__header" });
   header.createSpan({ cls: "sm-weather-panel__title", text: "Wetter" });
   const mainDisplay = root.createDiv({ cls: "sm-weather-panel__main" });
@@ -26853,6 +26855,10 @@ function createWeatherPanel(host) {
   speedModifierRow.createSpan({ cls: "sm-weather-panel__effect-label", text: "Geschwindigkeit" });
   const speedModifierValue = speedModifierRow.createSpan({
     cls: "sm-weather-panel__effect-value"
+  });
+  const speedHelperRow = effects.createDiv({ cls: "sm-weather-panel__effect-helper" });
+  const speedHelperText = speedHelperRow.createSpan({
+    cls: "sm-weather-panel__effect-helper-text"
   });
   const placeholder = root.createDiv({
     cls: "sm-weather-panel__placeholder",
@@ -26885,9 +26891,14 @@ function createWeatherPanel(host) {
     precipValue.textContent = formatPrecipitation(precipitation);
     visValue.textContent = formatVisibility(visibility);
     const modifier = getWeatherSpeedModifier(currentWeather.type, currentWeather.severity);
-    setSpeedModifier(modifier);
+    lastModifier = modifier;
+    setSpeedModifier(modifier, baseSpeed);
   };
-  const setSpeedModifier = (modifier) => {
+  const setSpeedModifier = (modifier, speed) => {
+    lastModifier = modifier;
+    if (speed !== void 0) {
+      baseSpeed = speed;
+    }
     const percentage = Math.round(modifier * 100);
     speedModifierValue.textContent = `${percentage}%`;
     speedModifierValue.classList.remove(
@@ -26902,6 +26913,18 @@ function createWeatherPanel(host) {
     } else {
       speedModifierValue.classList.add("sm-weather-panel__effect-value--bad");
     }
+    if (baseSpeed !== void 0 && baseSpeed > 0) {
+      const modifiedSpeed = baseSpeed * modifier;
+      speedHelperText.textContent = `Bewegung reduziert auf ${percentage}% der normalen Geschwindigkeit (${baseSpeed.toFixed(1)} \u2192 ${modifiedSpeed.toFixed(1)} mph)`;
+      speedHelperRow.style.display = "block";
+    } else {
+      speedHelperText.textContent = `Bewegungsgeschwindigkeit auf ${percentage}% der normalen Geschwindigkeit reduziert`;
+      speedHelperRow.style.display = "block";
+    }
+  };
+  const setBaseSpeed = (speed) => {
+    baseSpeed = speed;
+    setSpeedModifier(lastModifier, speed);
   };
   const destroy = () => {
     root.remove();
@@ -26910,6 +26933,7 @@ function createWeatherPanel(host) {
     root,
     setWeather,
     setSpeedModifier,
+    setBaseSpeed,
     destroy
   };
 }
@@ -26975,6 +26999,7 @@ function createSidebar(host) {
     const v = parseFloat(speedInput.value);
     const val = Number.isFinite(v) && v > 0 ? v : 1;
     speedInput.value = String(val);
+    weatherPanel.setBaseSpeed(val);
     onChange(val);
   };
   const setTile = (rc) => {
@@ -26983,6 +27008,7 @@ function createSidebar(host) {
   const setSpeed = (v) => {
     const next = String(v);
     if (speedInput.value !== next) speedInput.value = next;
+    weatherPanel.setBaseSpeed(v);
   };
   const setTravelPanel = (panel) => {
     travelLeaf.setPanel(panel);

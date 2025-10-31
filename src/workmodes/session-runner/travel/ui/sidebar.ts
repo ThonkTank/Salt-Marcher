@@ -81,10 +81,13 @@ export function createSidebar(host: HTMLElement): Sidebar {
     });
 
     let onChange: (v: number) => void = () => {};
+
     speedInput.onchange = () => {
         const v = parseFloat(speedInput.value);
         const val = Number.isFinite(v) && v > 0 ? v : 1;
         speedInput.value = String(val);
+        // Update weather panel with new base speed
+        weatherPanel.setBaseSpeed(val);
         onChange(val);
     };
 
@@ -94,6 +97,8 @@ export function createSidebar(host: HTMLElement): Sidebar {
     const setSpeed = (v: number) => {
         const next = String(v);
         if (speedInput.value !== next) speedInput.value = next;
+        // Update weather panel with new base speed
+        weatherPanel.setBaseSpeed(v);
     };
     const setTravelPanel = (panel: TravelPanelSnapshot | null) => {
         travelLeaf.setPanel(panel);

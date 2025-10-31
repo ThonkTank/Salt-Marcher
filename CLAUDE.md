@@ -315,7 +315,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 10.4 ✅ Complete | Tests: 1094/1095 (99.9%) ✅ | **Next:** Phase 10.5 - Advanced Weather Features (Future)
+**Status:** Phase 10.4 ✅ Complete | Tests: 1100/1101 (99.9%) ✅ | **Next:** Phase D - UX Review
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -339,7 +339,8 @@ Ziele:
   - Reactive weather store (hex-indexed), calendar integration (auto-simulation on day advance)
   - Encounter & audio integration (weather tags, context extraction, coordinate conversion)
   - Session Runner UI: weather panel, icons, movement speed modifiers (-50% to 0%)
-  - 106 tests (weather core: 19, calendar: 32, encounter/audio: 31, UI: 24) - 100% pass rate
+  - Manual encounter composition fix: Calculator now works standalone without travel context
+  - 147 tests (weather: 106, encounter: 33, manual composition: 7, presenter: 1) - 100% pass rate
 
 **Geplant:**
 - **Phase 10.5:** Advanced Weather Features (Future)
@@ -367,13 +368,7 @@ None currently! All blocking issues resolved. ✅
    - Goal: "Tabs für Kreaturen, Zauber, Items, Equipment, Terrains, Regionen und Kalender"
    - Need: Create specs + serializers for Location, Playlist, EncounterTable entities
    - Location: src/workmodes/library/registry.ts
-5. **[HIGH] [UX] Weather Speed Modifier - No Context or Explanation** - Speed modifier confusing
-   - Shows "75%" without explaining what it means (75% of normal? 75% slower?)
-   - User doesn't know if modifier is already applied to party speed
-   - No indication how to calculate actual travel speed impact
-   - Need: Helper text "Movement speed reduced to 75% of normal" + before/after display (e.g., "3.0 → 2.25 mph")
-   - Location: weather-panel.ts:140-158
-6. **[HIGH] [UX] Weather Panel - No Interactivity** - Completely passive display
+5. **[HIGH] [UX] Weather Panel - No Interactivity** - Completely passive display
    - Users cannot click/hover for more details or forecasts
    - No way to preview weather for adjacent hexes (travel planning impossible)
    - No weather history log (can't check "did it rain yesterday?")
@@ -381,132 +376,151 @@ None currently! All blocking issues resolved. ✅
    - Location: weather-panel.ts (entire component)
 
 **MEDIUM (Feature unvollständig aber teilweise nutzbar):**
-7. **[MEDIUM] POI Integration Missing** - Cannot place location markers on map
+6. **[MEDIUM] POI Integration Missing** - Cannot place location markers on map
    - Goal: "Ortsmarker (Städte, Landmarken)" in Cartographer
    - Phase 9 Location system fully implemented but no UI access
    - Need: Cartographer mode for placing/editing location markers
    - Location: Cartographer brush/inspector modes
-8. **[MEDIUM] Cartographer Brush Error** - Brush mode logs error messages
+7. **[MEDIUM] Cartographer Brush Error** - Brush mode logs error messages
    - Terrain-brush functionality potentially broken, needs real testing
    - Location: Cartographer terrain-brush mode
-9. **[HIGH] [UX] Worker Assignment - No Job Validation Feedback** - Workers can be assigned regardless of job compatibility
+8. **[MEDIUM] [UX] Worker Assignment - No Job Validation Feedback** - Workers can be assigned regardless of job compatibility
    - Workers assignable even if job doesn't match building's allowed jobs
    - No validation or warning shown to user before/after assignment
    - Need: Validate worker.job ∈ buildingTemplate.allowedJobs and show clear feedback
    - Location: building-management-modal.ts:484-510 (assignWorker method)
-8. **[MEDIUM] [UX] Building Management - Unclear Capacity Warnings** - Capacity limits not visible until error
+9. **[MEDIUM] [UX] Building Management - Unclear Capacity Warnings** - Capacity limits not visible until error
    - User only sees "max capacity" Notice after clicking Assign
    - Need: Show visual capacity indicator (e.g., "Workers: 3/5") prominently in worker section
    - Location: building-management-modal.ts:489-491
-9. **[MEDIUM] [UX] Building Status - Unclear Condition Impact** - User doesn't understand what condition affects
+10. **[MEDIUM] [UX] Building Status - Unclear Condition Impact** - User doesn't understand what condition affects
    - Shows "Condition: 75%" without explaining gameplay impact
    - Need: Add helper text like "Condition affects production rate and durability"
    - Location: building-management-modal.ts:195-212
-10. **[MEDIUM] [UX] Drag-and-Drop - No Visual Affordance** - Worker cards don't look draggable
+11. **[MEDIUM] [UX] Drag-and-Drop - No Visual Affordance** - Worker cards don't look draggable
    - No cursor change, no drag handle icon, no hint text
    - Need: Add grab cursor on hover, drag handle icon, or "drag to assign" hint
    - Location: building-management-modal.ts:398-452
-11. **[MEDIUM] [UX] Production Dashboard - No Units Displayed** - Production shows percentages without context
+12. **[MEDIUM] [UX] Production Dashboard - No Units Displayed** - Production shows percentages without context
    - Shows "75%" but unclear what this percentage represents
    - Need: Show actual values (e.g., "7.5 Gold/day at 75% efficiency")
    - Location: production-visualization.ts
-12. **[MEDIUM] [UX] Weather Panel - Placeholder State Unclear** - "Kein Wetter verfügbar" doesn't explain why
+13. **[MEDIUM] [UX] Weather Panel - Placeholder State Unclear** - "Kein Wetter verfügbar" doesn't explain why
    - Could mean: no map loaded, weather not initialized, hex has no data, or calendar not running
    - User doesn't know if feature is broken or if action needed
    - Need: Specific messages for each scenario ("Select a hex", "Load a map", "Weather unavailable for this hex")
    - Location: weather-panel.ts:86-95
-13. **[MEDIUM] [UX] Weather Details - Categorical Values Lack Precision** - Some values show categories instead of numbers
+14. **[MEDIUM] [UX] Weather Details - Categorical Values Lack Precision** - Some values show categories instead of numbers
    - Precipitation: "Mäßiger Niederschlag" (what mm/h?), Visibility: "Gut" (how many meters?)
    - Players wanting precise values for calculations can't get them
    - Need: Show both category and exact value: "Mäßiger Niederschlag (5 mm/h)" or add tooltip
    - Location: weather-icons.ts:117-133
-14. **[MEDIUM] [UX] Weather Icon - No Severity Indication** - Icon shows type but not severity
+15. **[MEDIUM] [UX] Weather Icon - No Severity Indication** - Icon shows type but not severity
    - "Regen" icon looks same for light drizzle and torrential downpour
    - Only text label shows severity, less scannable UI
    - Need: Visual severity indicator (icon size, color, badge, or animation)
    - Location: weather-panel.ts:118-124
+16. **[MEDIUM] [UX] Weather Update Timing Not Visible** - Users don't know when weather will change
+   - No indication of how long current weather lasts
+   - No "next update in X hours" display
+   - Critical for multi-day travel planning
+   - Need: Show weather duration/next change time
+   - Location: weather-panel.ts (entire component)
 
 **LOW (Nice-to-have, Verbesserungen):**
-15. **[LOW] Test Suite Unhandled Error** - 1 unhandled error during test run
-   - All 1070 tests pass, but Vitest reports 1 unhandled error
-   - Non-blocking, doesn't cause test failures
-   - Need: Investigate source and add proper error handling
-   - Location: Run `npm test` and check error details
-16. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
-17. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
-18. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
+17. **[LOW] Coordinate Conversion DRY Violation** - oddRToCube duplicated in 3 files
+   - Same conversion logic in: context-extractor.ts:60-65, experience.ts:76-81, encounter-context-builder.ts:87-92
+   - Utility already exists: hex-geom.ts has oddrToAxial() + axialToCube()
+   - Need: Replace inline conversions with calls to hex-geom utility functions
+   - Impact: Code maintainability (bug fixes need to be applied in 3 places)
+   - Location: src/features/audio/context-extractor.ts, src/workmodes/session-runner/view/experience.ts, src/workmodes/session-runner/util/encounter-context-builder.ts
+18. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
+19. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
+20. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
    - Currently assumes creature files are in standard location
    - Need: Get actual file path from vault lookup or repository
    - Location: src/workmodes/encounter/presenter.ts:442
-19. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
+21. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
    - No escape key to close, no tab navigation between sections
    - Drag-and-drop only, no keyboard alternative for worker assignment
    - Location: src/workmodes/cartographer/building-management-modal.ts
-20. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
+22. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
    - Worker loading shows no spinner/placeholder while loading factions
    - Save operation has no loading indicator during vault writes
    - Location: building-management-modal.ts:86-133 (loadAvailableWorkers), :618-653 (saveChanges)
-21. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
+23. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
    - After saving building changes, inspector panel shows stale data
    - onSave callback logs but doesn't refresh display
    - Location: inspector.ts:310-314
-22. **[LOW] [UX] Save Button - No Unsaved Changes Warning** - User can close without saving
+24. **[LOW] [UX] Save Button - No Unsaved Changes Warning** - User can close without saving
    - unsavedChanges flag exists but not used for exit confirmation
    - Need: Warn user on modal close if unsavedChanges === true
    - Location: building-management-modal.ts:42
-23. **[LOW] Time-of-Day Extraction Placeholder** - encounter-context-builder hardcodes "day"
+25. **[LOW] Time-of-Day Extraction Placeholder** - encounter-context-builder hardcodes "day"
    - TODO comment at line 133: Extract time from current in-game time
    - Currently always returns "day" regardless of actual calendar time
    - Need: Integration with calendar state to get actual time of day
    - Location: src/workmodes/session-runner/util/encounter-context-builder.ts:133-135
-24. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
+26. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
    - Progress bars show data but no hover tooltips or click interactions
    - No way to see historical trends or detailed breakdowns
    - Location: src/features/locations/production-visualization.ts
-25. **[LOW] [UX] Weather Speed Modifier Color Coding - Thresholds Arbitrary** - Color thresholds might not match user perception
+27. **[LOW] [UX] Weather Speed Modifier Color Coding - Thresholds Arbitrary** - Color thresholds might not match user perception
    - Green ≥90% (only -10% or less), Yellow 70-89%, Red <70%
    - 80% speed might feel quite impactful but shows as "warning" yellow
    - Need: User testing to refine thresholds or make configurable
    - Location: weather-panel.ts:151-157
-26. **[LOW] [UX] Weather Panel - No Animation or Transitions** - Weather updates instantly
+28. **[LOW] [UX] Weather Panel - No Animation or Transitions** - Weather updates instantly
    - No fade-in/out, no loading state, jarring when rapidly clicking hexes
    - Feels less professional
    - Need: Smooth fade transition between weather states
    - Location: weather-panel.ts:99-135
-27. **[LOW] [UX] Weather Panel - Redundant "Reiseeffekte" Section** - Section header with only one item
+29. **[LOW] [UX] Weather Panel - Redundant "Reiseeffekte" Section** - Section header with only one item
    - "Reiseeffekte" section with only speed modifier takes vertical space
    - Implies more effects might exist
    - Need: Either add more effects or remove section header, just show speed modifier directly
    - Location: weather-panel.ts:74-84
-28. **[LOW] [UX] Weather Panel - Missing Accessibility Features** - Screen reader and keyboard support lacking
+30. **[LOW] [UX] Weather Panel - Missing Accessibility Features** - Screen reader and keyboard support lacking
    - No `aria-live` region for weather updates (screen readers won't announce changes)
    - No `role="region"` on panel, no `aria-label` on icon
    - Panel cannot receive keyboard focus (no shortcuts to jump to weather)
    - Need: Add ARIA labels, live regions, semantic markup
    - Location: weather-panel.ts (entire component)
-29. **[LOW] Coordinate Conversion Logic Duplication** - DRY violation
-   - Same odd-r → cube conversion logic duplicated in 2+ files
-   - Found in: context-extractor.ts:59-64, encounter-context-builder.ts:87-93, experience.ts:76-81
-   - Should: Extract to shared utility function (e.g., src/features/maps/coordinate-utils.ts)
-   - Impact: Low (only 3 locations, but violates DRY principle)
-30. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
+31. **[LOW] [UX] Weather Change Notification Missing** - Silent weather updates
+   - Weather can change during travel without visual feedback
+   - No alert when severe weather arrives
+   - Need: Toast notification or highlight when weather changes
+   - Location: weather-panel.ts (entire component)
+32. **[LOW] [UX] Manual vs Travel Encounters Not Distinguished** - UI doesn't show encounter source
+   - Users can't tell if encounter was manually composed or travel-generated
+   - No visual indicator for encounter type (manual/travel/faction)
+   - Could cause confusion when reviewing encounter history
+   - Location: src/workmodes/encounter/ (view components)
+33. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
 
 **Test-Status:**
 - Unit tests: 1100/1101 passing (99.9%) ✅
-  - Audio: 57/57 ✅, Playlist: 17/17 ✅, Encounter: 33/33 ✅ (+7 manual composition tests)
-  - Faction: 390/391 ✅ (1 probabilistic test occasionally fails)
+  - Audio: 57/57 ✅, Playlist: 17/17 ✅
+  - Encounter: 33/33 ✅ (includes 7 manual composition tests + 1 presenter test)
+  - Faction: 389/391 ✅ (1 probabilistic test occasionally fails)
   - Location/Building: 140/140 ✅
-  - Weather (Phase 10.1-10.4): 106/106 ✅ (Phase 10.4 complete!)
+  - Weather (Phase 10.1-10.4): 106/106 ✅
   - Header policy: 1/1 ✅
 - Integration tests: 6 require live Obsidian (expected, documented limitation)
 - **Known Issue:** 1 probabilistic faction NPC betrayal test fails occasionally (non-blocking)
+
+**Recently Completed:**
+- **[HIGH] [UX] Weather Speed Modifier Context** ✅ (Phase 10.4.1 - 2025-10-31)
+  - Added helper text explaining "X% of normal speed"
+  - Display shows before/after speeds (e.g., "3.0 → 2.25 mph")
+  - Weather panel now tracks base party speed
+  - Changes: weather-panel.ts (added setBaseSpeed method, helper text display), sidebar.ts (pass speed to panel)
 
 **Nächste Schritte (Empfehlung):**
 1. **[HIGH] Fix Broken User Features** - Core functionality unusable
    - Almanac frontend implementation (month/week/timeline views, event editors)
    - Library tabs (Location/Playlist/EncounterTable specs + serializers)
    - **[UX] Worker assignment job validation** (workers assigned to incompatible buildings, no feedback)
-   - **[UX] Weather speed modifier explanation** (users confused by "75%" display, need context)
    - **[UX] Weather panel interactivity** (passive display, add forecast/history/hover previews)
 2. **[MEDIUM] Complete Partial Features** - Working but incomplete
    - POI placement UI in Cartographer (location system ready, needs UI mode)
@@ -519,6 +533,7 @@ None currently! All blocking issues resolved. ✅
    - **[UX] Weather placeholder messages** (unclear why "Kein Wetter verfügbar")
    - **[UX] Weather detail precision** (categorical values lack exact numbers)
    - **[UX] Weather icon severity** (icon doesn't show severity visually)
+   - **[UX] Weather update timing** (no indication when weather will change)
 3. **[PLANNED] Phase 10.5: Advanced Weather Features** - Future enhancements
    - Weather forecasting (predict next 3 days)
    - Extreme weather events (hurricanes, blizzards)

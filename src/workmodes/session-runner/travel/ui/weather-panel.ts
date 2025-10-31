@@ -26,8 +26,10 @@ export interface WeatherPanel {
 	root: HTMLElement;
 	/** Update weather display */
 	setWeather(weather: WeatherState | null): void;
-	/** Update movement speed modifier display */
-	setSpeedModifier(modifier: number): void;
+	/** Update movement speed modifier display with base speed for context */
+	setSpeedModifier(modifier: number, baseSpeed?: number): void;
+	/** Update base speed for modifier calculations (uses last modifier) */
+	setBaseSpeed(speed: number): void;
 	/** Destroy panel */
 	destroy(): void;
 }
@@ -37,6 +39,10 @@ export interface WeatherPanel {
  */
 export function createWeatherPanel(host: HTMLElement): WeatherPanel {
 	const root = host.createDiv({ cls: "sm-weather-panel" });
+
+	// State
+	let lastModifier = 1;
+	let baseSpeed: number | undefined;
 
 	// Header
 	const header = root.createDiv({ cls: "sm-weather-panel__header" });
@@ -81,6 +87,12 @@ export function createWeatherPanel(host: HTMLElement): WeatherPanel {
 	speedModifierRow.createSpan({ cls: "sm-weather-panel__effect-label", text: "Geschwindigkeit" });
 	const speedModifierValue = speedModifierRow.createSpan({
 		cls: "sm-weather-panel__effect-value",
+	});
+
+	// Helper text to explain the modifier
+	const speedHelperRow = effects.createDiv({ cls: "sm-weather-panel__effect-helper" });
+	const speedHelperText = speedHelperRow.createSpan({
+		cls: "sm-weather-panel__effect-helper-text",
 	});
 
 	// Placeholder state
@@ -131,13 +143,19 @@ export function createWeatherPanel(host: HTMLElement): WeatherPanel {
 
 		// Update speed modifier
 		const modifier = getWeatherSpeedModifier(currentWeather.type, currentWeather.severity);
-		setSpeedModifier(modifier);
+		lastModifier = modifier;
+		setSpeedModifier(modifier, baseSpeed);
 	};
 
 	/**
 	 * Update movement speed modifier display
 	 */
-	const setSpeedModifier = (modifier: number) => {
+	const setSpeedModifier = (modifier: number, speed?: number) => {
+		lastModifier = modifier;
+		if (speed !== undefined) {
+			baseSpeed = speed;
+		}
+
 		const percentage = Math.round(modifier * 100);
 		speedModifierValue.textContent = `${percentage}%`;
 
@@ -155,6 +173,28 @@ export function createWeatherPanel(host: HTMLElement): WeatherPanel {
 		} else {
 			speedModifierValue.classList.add("sm-weather-panel__effect-value--bad");
 		}
+
+		// Show helper text with before/after speeds if base speed is available
+		if (baseSpeed !== undefined && baseSpeed > 0) {
+			const modifiedSpeed = baseSpeed * modifier;
+			speedHelperText.textContent =
+				`Bewegung reduziert auf ${percentage}% der normalen Geschwindigkeit` +
+				` (${baseSpeed.toFixed(1)} → ${modifiedSpeed.toFixed(1)} mph)`;
+			speedHelperRow.style.display = "block";
+		} else {
+			// No base speed available, just show generic explanation
+			speedHelperText.textContent =
+				`Bewegungsgeschwindigkeit auf ${percentage}% der normalen Geschwindigkeit reduziert`;
+			speedHelperRow.style.display = "block";
+		}
+	};
+
+	/**
+	 * Update base speed (refreshes display with last modifier)
+	 */
+	const setBaseSpeed = (speed: number) => {
+		baseSpeed = speed;
+		setSpeedModifier(lastModifier, speed);
 	};
 
 	/**
@@ -168,6 +208,7 @@ export function createWeatherPanel(host: HTMLElement): WeatherPanel {
 		root,
 		setWeather,
 		setSpeedModifier,
+		setBaseSpeed,
 		destroy,
 	};
 }
