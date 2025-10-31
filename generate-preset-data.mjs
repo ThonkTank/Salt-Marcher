@@ -16,6 +16,7 @@ const EQUIPMENT_PRESETS_DIR = path.join(__dirname, 'Presets', 'Equipment');
 const TERRAINS_PRESETS_DIR = path.join(__dirname, 'Presets', 'Terrains');
 const REGIONS_PRESETS_DIR = path.join(__dirname, 'Presets', 'Regions');
 const CALENDARS_PRESETS_DIR = path.join(__dirname, 'Presets', 'Calendars');
+const PLAYLISTS_PRESETS_DIR = path.join(__dirname, 'Presets', 'Playlists');
 const OUTPUT_FILE = path.join(__dirname, 'Presets', 'lib', 'preset-data.ts');
 
 /**
@@ -159,7 +160,13 @@ function generatePresetModule() {
         : {};
     const calendarCount = Object.keys(calendarFiles).length;
 
-    console.log(`Found ${creatureCount} creature presets, ${spellCount} spell presets, ${itemCount} item presets, ${equipmentCount} equipment presets, ${terrainCount} terrain presets, ${regionCount} region presets, and ${calendarCount} calendar presets`);
+    // Get playlist files
+    const playlistFiles = fs.existsSync(PLAYLISTS_PRESETS_DIR)
+        ? getMarkdownFiles(PLAYLISTS_PRESETS_DIR)
+        : {};
+    const playlistCount = Object.keys(playlistFiles).length;
+
+    console.log(`Found ${creatureCount} creature presets, ${spellCount} spell presets, ${itemCount} item presets, ${equipmentCount} equipment presets, ${terrainCount} terrain presets, ${regionCount} region presets, ${calendarCount} calendar presets, and ${playlistCount} playlist presets`);
 
     // Generate the TypeScript module
     let moduleContent = '// Auto-generated file - DO NOT EDIT\n';
@@ -172,7 +179,8 @@ function generatePresetModule() {
     moduleContent += formatPresetMap('PRESET_EQUIPMENT', equipmentFiles);
     moduleContent += formatPresetMap('PRESET_TERRAINS', terrainFiles);
     moduleContent += formatPresetMap('PRESET_REGIONS', regionFiles);
-    moduleContent += formatPresetMap('PRESET_CALENDARS', calendarFiles, true);
+    moduleContent += formatPresetMap('PRESET_CALENDARS', calendarFiles);
+    moduleContent += formatPresetMap('PRESET_PLAYLISTS', playlistFiles, true);
 
     // Ensure output directory exists
     const outputDir = path.dirname(OUTPUT_FILE);
@@ -183,7 +191,7 @@ function generatePresetModule() {
     // Write the module
     fs.writeFileSync(OUTPUT_FILE, moduleContent);
 
-    console.log(`Generated preset module with ${creatureCount} creatures, ${spellCount} spells, ${itemCount} items, ${equipmentCount} equipment, ${terrainCount} terrains, ${regionCount} regions, and ${calendarCount} calendars at ${OUTPUT_FILE}`);
+    console.log(`Generated preset module with ${creatureCount} creatures, ${spellCount} spells, ${itemCount} items, ${equipmentCount} equipment, ${terrainCount} terrains, ${regionCount} regions, ${calendarCount} calendars, and ${playlistCount} playlists at ${OUTPUT_FILE}`);
 }
 
 // Run the generator

@@ -21,6 +21,7 @@ const ensureEquipmentDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.equipmen
 const ensureTerrainDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.terrains.directory);
 const ensureRegionDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.regions.directory);
 const ensureCalendarDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.calendars.directory);
+const ensurePlaylistDir = (app: App) => ensureDir(app, ENTITY_REGISTRY.playlists.directory);
 
 // Define the preset files structure
 // This will be populated at build time with actual preset files
@@ -304,6 +305,20 @@ export async function shouldImportCalendarPresets(app: App): Promise<boolean> {
 }
 
 /**
+ * Import playlist presets from bundled plugin files to vault
+ */
+export async function importPlaylistPresets(app: App): Promise<void> {
+    return importPresetsForDir(app, ENTITY_REGISTRY.playlists.directory, "PRESET_PLAYLISTS", "playlist", ensurePlaylistDir);
+}
+
+/**
+ * Check if playlist presets should be imported (first time setup)
+ */
+export async function shouldImportPlaylistPresets(app: App): Promise<boolean> {
+    return shouldImportPresetsForDir(app, ENTITY_REGISTRY.playlists.directory, ".plugin-playlists-imported", "Playlist presets", ensurePlaylistDir);
+}
+
+/**
  * Import presets for a specific category with optional force flag
  * Used by IPC commands for re-importing presets
  */
@@ -339,6 +354,10 @@ export async function importPresetsByCategory(app: App, category: string, force 
             await importPresetsForDir(app, ENTITY_REGISTRY.calendars.directory, "PRESET_CALENDARS", "calendar", ensureCalendarDir, force);
             return { imported: 0, category: "calendars" };
 
+        case "playlists":
+            await importPresetsForDir(app, ENTITY_REGISTRY.playlists.directory, "PRESET_PLAYLISTS", "playlist", ensurePlaylistDir, force);
+            return { imported: 0, category: "playlists" };
+
         case "all":
             await importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir, force);
             await importPresetsForDir(app, ENTITY_REGISTRY.spells.directory, "PRESET_SPELLS", "spell", ensureSpellDir, force);
@@ -347,9 +366,10 @@ export async function importPresetsByCategory(app: App, category: string, force 
             await importPresetsForDir(app, ENTITY_REGISTRY.terrains.directory, "PRESET_TERRAINS", "terrain", ensureTerrainDir, force);
             await importPresetsForDir(app, ENTITY_REGISTRY.regions.directory, "PRESET_REGIONS", "region", ensureRegionDir, force);
             await importPresetsForDir(app, ENTITY_REGISTRY.calendars.directory, "PRESET_CALENDARS", "calendar", ensureCalendarDir, force);
+            await importPresetsForDir(app, ENTITY_REGISTRY.playlists.directory, "PRESET_PLAYLISTS", "playlist", ensurePlaylistDir, force);
             return { imported: 0, category: "all" };
 
         default:
-            throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, all`);
+            throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, playlists, all`);
     }
 }

@@ -65552,3 +65552,245 @@ The epoch (reference point) for this calendar is set to **January 1, 2024**.
 This is a simplified version of the Gregorian calendar. Leap years are not currently implemented in this version.
 `,
 };
+
+export const PRESET_PLAYLISTS: { [key: string]: string } = {
+  "Combat-Music.md": `---
+name: Combat-Music
+display_name: Combat Music
+type: music
+description: Intense battle music for combat encounters
+terrain_tags: []
+weather_tags: []
+time_of_day_tags: []
+faction_tags:
+  - value: Hostile
+situation_tags:
+  - value: Combat
+  - value: Chase
+  - value: Tension
+shuffle: true
+loop: true
+crossfade_duration: 1
+default_volume: 0.7
+tracks:
+  - name: Battle Theme
+    source: Audio/music/combat/battle-01.mp3
+    duration: 180
+    volume: 1.0
+  - name: Fight or Flight
+    source: Audio/music/combat/battle-02.mp3
+    duration: 200
+    volume: 0.9
+  - name: Clash of Steel
+    source: Audio/music/combat/battle-03.mp3
+    duration: 190
+    volume: 1.0
+smType: playlist
+---
+
+# Combat Music
+
+High-energy battle music that intensifies combat encounters and chase scenes.
+`,
+  "Dungeon-Ambience.md": `---
+name: Dungeon-Ambience
+display_name: Dungeon Ambience
+type: ambience
+description: Dripping water and distant echoes in underground chambers
+terrain_tags:
+  - value: Cave
+  - value: Underground
+  - value: Ruins
+weather_tags: []
+time_of_day_tags: []
+situation_tags:
+  - value: Exploration
+  - value: Tension
+  - value: Dungeon
+shuffle: false
+loop: true
+crossfade_duration: 2
+default_volume: 0.55
+tracks:
+  - name: Water Drips
+    source: Audio/dungeon/drips.mp3
+    duration: 200
+    volume: 0.7
+  - name: Stone Echoes
+    source: Audio/dungeon/echoes.mp3
+    duration: 240
+    volume: 0.5
+  - name: Distant Growls
+    source: Audio/dungeon/growls.mp3
+    duration: 180
+    volume: 0.4
+smType: playlist
+---
+
+# Dungeon Ambience
+
+Dark, atmospheric dungeon sounds perfect for underground exploration and tense moments.
+`,
+  "Exploration-Music.md": `---
+name: Exploration-Music
+display_name: Exploration Music
+type: music
+description: Melodic background music for adventuring and discovery
+terrain_tags:
+  - value: Forest
+  - value: Plains
+  - value: Mountain
+weather_tags:
+  - value: Clear
+  - value: Cloudy
+time_of_day_tags:
+  - value: Morning
+  - value: Afternoon
+  - value: Noon
+situation_tags:
+  - value: Exploration
+  - value: Travel
+shuffle: true
+loop: true
+crossfade_duration: 2
+default_volume: 0.6
+tracks:
+  - name: Journey Begins
+    source: Audio/music/exploration/explore-01.mp3
+    duration: 220
+    volume: 0.9
+  - name: Over the Hills
+    source: Audio/music/exploration/explore-02.mp3
+    duration: 240
+    volume: 0.85
+  - name: Wanderer's Path
+    source: Audio/music/exploration/explore-03.mp3
+    duration: 210
+    volume: 0.9
+smType: playlist
+---
+
+# Exploration Music
+
+Inspiring music for outdoor exploration and travel across varied terrain.
+`,
+  "Forest-Ambience.md": `---
+name: Forest-Ambience
+display_name: Forest Ambience
+type: ambience
+description: Peaceful forest sounds with birds and rustling leaves
+terrain_tags:
+  - value: Forest
+  - value: Jungle
+weather_tags:
+  - value: Clear
+  - value: Cloudy
+situation_tags:
+  - value: Exploration
+  - value: Rest
+shuffle: false
+loop: true
+crossfade_duration: 3
+default_volume: 0.6
+tracks:
+  - name: Birds Chirping
+    source: Audio/forest/birds.mp3
+    duration: 180
+    volume: 0.8
+  - name: Wind Through Trees
+    source: Audio/forest/wind.mp3
+    duration: 240
+    volume: 0.6
+  - name: Creek Flowing
+    source: Audio/forest/creek.mp3
+    duration: 200
+    volume: 0.7
+smType: playlist
+---
+
+# Forest Ambience
+
+Ambient forest sounds perfect for exploration and rest scenes in woodland environments.
+`,
+  "Mountain-Ambience.md": `---
+name: Mountain-Ambience
+display_name: Mountain Ambience
+type: ambience
+description: Wind and echoes across mountain peaks
+terrain_tags:
+  - value: Mountain
+  - value: Hills
+weather_tags:
+  - value: Clear
+  - value: Wind
+  - value: Cold
+situation_tags:
+  - value: Exploration
+  - value: Travel
+shuffle: false
+loop: true
+crossfade_duration: 3
+default_volume: 0.65
+tracks:
+  - name: Mountain Wind
+    source: Audio/mountain/wind.mp3
+    duration: 220
+    volume: 0.75
+  - name: Distant Eagle Cry
+    source: Audio/mountain/eagle.mp3
+    duration: 180
+    volume: 0.5
+  - name: Rock Echoes
+    source: Audio/mountain/echoes.mp3
+    duration: 190
+    volume: 0.6
+smType: playlist
+---
+
+# Mountain Ambience
+
+Atmospheric mountain sounds with wind and distant wildlife, ideal for high-altitude exploration.
+`,
+  "Rest-Music.md": `---
+name: Rest-Music
+display_name: Rest Music
+type: music
+description: Calm, peaceful music for rest and social scenes
+terrain_tags:
+  - value: Urban
+weather_tags: []
+time_of_day_tags:
+  - value: Evening
+  - value: Night
+faction_tags:
+  - value: Friendly
+  - value: Neutral
+situation_tags:
+  - value: Rest
+  - value: Social
+  - value: Celebration
+shuffle: false
+loop: true
+crossfade_duration: 3
+default_volume: 0.5
+tracks:
+  - name: Tavern Hearth
+    source: Audio/music/rest/tavern-01.mp3
+    duration: 180
+    volume: 0.8
+  - name: Peaceful Night
+    source: Audio/music/rest/calm-01.mp3
+    duration: 220
+    volume: 0.7
+  - name: Gentle Lullaby
+    source: Audio/music/rest/lullaby-01.mp3
+    duration: 200
+    volume: 0.6
+smType: playlist
+---
+
+# Rest Music
+
+Soothing music for tavern scenes, camp rests, and friendly social interactions.
+`,
+};

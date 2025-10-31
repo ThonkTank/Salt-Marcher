@@ -95,6 +95,14 @@ export const ENTITY_REGISTRY = {
         singular: "calendar",
         plural: "calendars",
     },
+    playlists: {
+        id: "playlists",
+        displayName: "Playlists",
+        directory: "SaltMarcher/Playlists",
+        defaultBaseName: "Playlist",
+        singular: "playlist",
+        plural: "playlists",
+    },
 } as const;
 
 // Type helpers

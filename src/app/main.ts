@@ -154,6 +154,16 @@ export default class SaltMarcherPlugin extends Plugin {
             logger.error("Failed to import calendar presets:", err);
         }
 
+        // Import playlist presets from plugin on first load
+        try {
+            const { shouldImportPlaylistPresets, importPlaylistPresets } = await import('../../Presets/lib/plugin-presets');
+            if (await shouldImportPlaylistPresets(this.app)) {
+                await importPlaylistPresets(this.app);
+            }
+        } catch (err) {
+            logger.error("Failed to import playlist presets:", err);
+        }
+
         // Watch library directories and regenerate indexes on changes
         try {
             const {
