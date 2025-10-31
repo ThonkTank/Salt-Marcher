@@ -296,11 +296,66 @@ Named NPCs don't have quantity - they're unique individuals.
 
 ## Testing
 
-**Unit Tests:** 584/585 passing (99.8%)
+## Phase 8.3: Integration & Automation (Stub Implementation) ✅
+
+**Files:**
+- `src/features/factions/faction-integration.ts` - Integration helper functions
+- `devkit/testing/unit/features/factions/faction-integration.test.ts` - Integration tests (15 tests)
+
+### Integration Points ✅
+**Implementation:** `faction-integration.ts`
+
+Three integration helper functions provide architectural stubs with TODO markers for full implementation:
+
+1. **`getFactionMembersAtHex(app, hexCoord)`** - Encounter Integration
+   - Returns faction members present at a hex coordinate
+   - Used by encounter generator to add faction NPCs to encounters
+   - TODO: Requires full YAML parsing for member positions
+
+2. **`getAllFactionCamps(app)`** - Map Visualization
+   - Returns location markers for faction camps/territories
+   - Used by cartographer to display faction presence
+   - TODO: Requires coordinate conversion (cube→axial) and location lookup
+
+3. **`runDailyFactionSimulation(app)`** - Calendar Integration
+   - Runs simulation for all factions when time advances
+   - Returns important events for calendar inbox
+   - TODO: Requires calendar timestamp integration and result persistence
+
+### Architecture Notes
+- **Stub Implementation**: Functions demonstrate correct integration architecture
+- **Full YAML Parsing**: Currently only parses faction names from frontmatter
+- **Coordinate Conversion**: Hex {q,r,s} → axial {r,c} conversion not yet implemented
+- **Location Lookup**: POI name → coordinate resolution not yet implemented
+- **Event Persistence**: Simulation results not yet saved back to faction files
+
+### Usage Examples
+
+```typescript
+// Encounter integration - check for faction members at encounter location
+const factionMembers = await getFactionMembersAtHex(app, { q: 5, r: -3, s: -2 });
+for (const { faction, members } of factionMembers) {
+  console.log(`${faction.name} has ${members.length} members at this hex`);
+}
+
+// Map visualization - display all faction camps
+const camps = await getAllFactionCamps(app);
+locationMarkerStore.setMarkers(camps);
+
+// Calendar integration - run daily simulation
+const result = await runDailyFactionSimulation(app);
+console.log(`Simulated ${result.factionsProcessed} factions`);
+// Add result.events to calendar inbox
+```
+
+## Testing
+
+**Unit Tests:** 599/600 passing (99.8%)
 - Faction AI: 13 tests (decision evaluation, goal weights, resource management)
 - Faction Simulation: 17 tests (job processing, resource production/consumption, expedition events)
 - NPC Generator: 17 tests (name generation, profile creation, culture templates)
 - Plot Hooks: 23 tests (decision hooks, event hooks, relationship hooks)
+- **Faction Integration: 15 tests** (encounter/map/calendar integration helpers)
 - Faction/Location Handlers: Event hook integration tests
 - CreateSpec contract validation
 
@@ -310,7 +365,14 @@ Named NPCs don't have quantity - they're unique individuals.
 
 ## Future Enhancements
 
-### Phase 8.3+: Advanced Features
+### Phase 8.4+: Full Integration Implementation
+- **YAML Parsing**: Complete faction data deserialization
+- **Coordinate Systems**: Cube→axial conversion, POI→coordinate lookup
+- **Calendar Math**: Proper timestamp calculations, elapsed time
+- **Result Persistence**: Save simulation changes back to faction files
+- **Event Inbox**: Push faction events to calendar timeline
+
+### Phase 8.5+: Advanced Features
 - **Subfactions**: Organizational hierarchy (inquisition within kingdom)
 - **NPC Personalities**: Individual quirks, loyalties, secrets
 - **Dynamic Relationships**: Relations change based on actions
@@ -319,7 +381,7 @@ Named NPCs don't have quantity - they're unique individuals.
 - **Diplomatic Events**: Treaties, betrayals, negotiations
 
 ### UI Polish
-- **Map Visualization**: Faction territories and influence zones
+- **Map Visualization**: Faction territories and influence zones (architecture ready)
 - **Relationship Graph**: Visual network of faction relations
 - **Resource Dashboard**: At-a-glance faction economy
 - **Expedition Timeline**: Visual track of unit movements

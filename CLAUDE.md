@@ -312,7 +312,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 8.2 ✅ Complete (AI & Simulation) | Tests: 584/585 (99.8%) | **Next:** Phase 8.3 (Faction Integration)
+**Status:** Phase 8.3 ✅ Complete (Faction Integration Stubs) | Tests: 599/600 (99.8%) | **Next:** Phase 8.4 (Full Integration Implementation)
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -330,32 +330,40 @@ Ziele:
   - Simulation engine: Resource production/consumption, job processing, expedition events
   - Plot hook generation: 6 hook categories from decisions, events, and relationships
   - 70 new tests (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23)
+- **Phase 8.3:** Faction Integration & Automation (Stub Implementation) ✅ - See [docs/faction-system.md](docs/faction-system.md)
+  - Integration helper functions: `getFactionMembersAtHex`, `getAllFactionCamps`, `runDailyFactionSimulation`
+  - Architectural stubs with clear TODO markers for full implementation
+  - 15 new integration tests demonstrating expected behavior
+  - Foundation ready for encounter/calendar/map integration
 
 **Geplant:**
-- **Phase 8.3 (Factions - Integration & Automation)**: Connect faction systems to gameplay
-  - Automatic camp/POI creation: Factions establish bases on map with influence zones
-  - Calendar integration: Simulation runs on time advance, generates timeline events
-  - Encounter integration: Faction members appear in random encounters based on position
-  - UI integration: Faction events in calendar inbox, map visualization of territories
+- **Phase 8.4 (Full Faction Integration)**: Complete the integration stubs
+  - Full YAML parsing for faction data (members, resources, relationships)
+  - Coordinate system conversion (cube {q,r,s} → axial {r,c})
+  - POI location lookup for coordinate resolution
+  - Calendar timestamp calculations and elapsed time
+  - Persistence: Save simulation results back to faction files
+  - Event inbox: Push faction events to calendar timeline
 
 **Technische Schulden:**
 - 21 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
+- Phase 8.3 stub TODOs: YAML parsing, coordinate conversion, location lookup, event persistence
 - Integration tests require manual Obsidian instance (6 tests, expected to fail in CI)
 
 **Test-Status:**
-- Unit tests: 584/585 passing (99.8%) ✅
+- Unit tests: 599/600 passing (99.8%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 24/24 (serialization: 10, generation: 14)
-  - Faction tests: 70/70 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23)
+  - Faction tests: 85/85 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15)
   - Event handlers: Faction/location hook tests
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 8.3 (Factions - Integration & Automation)**: Connect faction systems to gameplay
-   - Implement automatic camp/POI creation when factions establish territory
-   - Hook faction simulation into calendar time advance
-   - Generate random encounters with faction members based on position tracking
-   - Add faction events to calendar inbox with proper notifications
-   - Visualize faction territories and influence zones on cartographer map
+1. **Phase 8.4 (Full Faction Integration)**: Implement the TODO markers from Phase 8.3
+   - Complete YAML parsing using yaml library
+   - Implement coordinate conversion utilities
+   - Add POI→coordinate lookup system
+   - Integrate simulation with calendar time advance
+   - Persist simulation changes to faction files
