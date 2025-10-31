@@ -15,6 +15,7 @@ export default defineConfig({
     resolve: {
         alias: {
             obsidian: resolvePath("./devkit/testing/unit/mocks/obsidian.ts"),
+            "svelte/store": resolvePath("./devkit/testing/unit/mocks/svelte-store.ts"),
             "@": resolvePath("./src"),
             "src": resolvePath("./src"),
         },

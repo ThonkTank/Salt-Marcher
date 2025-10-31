@@ -80,12 +80,14 @@ describe("Phase 8.6: NPC Personalities", () => {
         const loyal = { trust: 80, ambition: 30 };
         const disloyal = { trust: 15, ambition: 85 };
 
-        // Run multiple times due to randomness
-        const loyalResults = Array.from({ length: 5 }, () => isLikelyToBetray(loyal));
-        const disloyalResults = Array.from({ length: 5 }, () => isLikelyToBetray(disloyal));
+        // Run multiple times due to randomness (increased sample size for reliability)
+        const loyalResults = Array.from({ length: 20 }, () => isLikelyToBetray(loyal));
+        const disloyalResults = Array.from({ length: 20 }, () => isLikelyToBetray(disloyal));
 
-        expect(loyalResults.filter(b => b).length).toBeLessThan(3);
-        expect(disloyalResults.filter(b => b).length).toBeGreaterThan(2);
+        // Loyal NPCs should betray <40% of the time
+        expect(loyalResults.filter(b => b).length).toBeLessThan(8);
+        // Disloyal NPCs should betray >50% of the time (relaxed threshold due to RNG variance)
+        expect(disloyalResults.filter(b => b).length).toBeGreaterThan(10);
     });
 });
 

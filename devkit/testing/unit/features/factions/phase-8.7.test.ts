@@ -1189,14 +1189,20 @@ describe("Intelligence Networks - Covert Operations", () => {
     it("causes casualties on failed operations", () => {
         const agentIds = network.agents.map((a) => a.id);
 
-        // Low skill agents vs high difficulty
+        // Low skill agents vs high difficulty (run multiple attempts to ensure at least one failure)
         network.agents.forEach((a) => (a.skill = 10));
 
-        const result = executeCovertOperation(network, agentIds, "assassination", 90);
-
-        if (!result.success) {
-            expect(result.casualties.length + result.burned.length).toBeGreaterThan(0);
+        let foundFailureWithCasualties = false;
+        for (let i = 0; i < 10; i++) {
+            const result = executeCovertOperation(network, agentIds, "assassination", 90);
+            if (!result.success && (result.casualties.length + result.burned.length) > 0) {
+                foundFailureWithCasualties = true;
+                break;
+            }
         }
+
+        // With 10 attempts at skill 10 vs difficulty 90, we should see at least one failure with casualties
+        expect(foundFailureWithCasualties).toBe(true);
     });
 
     it("gains intelligence on successful operations", () => {
