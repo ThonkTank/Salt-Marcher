@@ -312,7 +312,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 8.9 ✅ Complete (Calendar Integration) | Tests: 863/865 (99.8%) | **Next:** Phase 8.10 or Next Major Feature
+**Status:** Phase 9 ✅ Complete (Location Integration) | Tests: 931/933 (99.8%) | **Next:** Phase 9.1 (UI Integration) or Phase 10
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -367,20 +367,31 @@ Ziele:
   - Coordinate conversion: odd-r → cube coordinates for faction lookup
   - Named NPCs and unit types spawn as combatants with proper stats
   - 2 new tests for hex coordinate integration
-- **Phase 8.9:** Calendar Integration ✅
+- **Phase 8.9:** Calendar Integration ✅ - See [docs/faction-system.md](docs/faction-system.md#phase-89-calendar-integration-)
   - FactionSimulationHook interface for decoupled integration
   - Automatic faction simulation on calendar day advancement
   - Factory function to wire up App instance with hook
   - Non-blocking error handling (simulation failures don't break time advancement)
   - 14 new tests for calendar-faction integration
+- **Phase 9:** Location Integration & Influence System ✅ - See [docs/faction-system.md](docs/faction-system.md#phase-9-location-integration--influence-system-)
+  - Location influence areas: 9 location types with radius/strength/decay configs
+  - Coordinate parsing: odd-r and axial formats, hex distance calculations
+  - Building production: 16 building templates across 6 categories
+  - Job permissions, worker capacity, production rates, maintenance costs
+  - Building bonuses: quality (+15-30%), training speed (+20-50%), research (+20-50%)
+  - Building degradation and repair system (condition, maintenance overdue)
+  - Location-faction integration: bidirectional ownership, worker management, validation
+  - 68 new tests (influence: 25, buildings: 43)
 
 **Geplant:**
-- **Phase 8.10 (Future - UI & Visualization)**: User interface for Phase 8 features
-  - NPC Relationship Visualization: Interactive graph view of NPC networks
-  - Market Dashboard: Real-time price charts, trend indicators, trade history
-  - Supply Chain Gantt Charts: Visual timeline of production chains
-  - Intelligence UI: Agent roster, mission planning, report viewer
-  - Faction Camp Markers: Display faction camps/POIs on cartographer map
+- **Phase 9.1 (Future - UI Integration)**: Connect Phase 9 features to UI
+  - Map influence overlays: Display faction/location influence areas on cartographer
+  - Building management UI: Edit building states, assign workers, view production
+  - Location markers: Enhanced markers showing owner, workers, production status
+- **Phase 10 (Future)**: Next major feature
+  - Option A: Dungeon crawling system (grid-based tactical encounters)
+  - Option B: Advanced place hierarchy (Stadt → Viertel → Gebäude → Raum)
+  - Option C: Weather and regional climate system
 
 **Technische Schulden:**
 - 21 TODO comments for future features (weather extraction, time-of-day, encounter table UI, loot UI, notification UI, zoom towards mouse, resource calculation) - intentional placeholders
@@ -388,16 +399,22 @@ Ziele:
 - TODO in calendar-state-gateway.ts: Add faction events to calendar inbox (requires event repository access)
 
 **Test-Status:**
-- Unit tests: 863/865 passing (99.8%) ✅
+- Unit tests: 931/933 passing (99.8%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 26/26 (serialization: 10, generation: 14, Phase 8.8: 2)
   - Faction tests: 388/388 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69, Phase 8.7: 85, Phase 8.9: 14)
+  - Location tests: 68/68 (Phase 9 - Influence: 25, Buildings: 43)
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
   - 1 failing test: header-policy new file detection (expected for new files)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 8.10 (UI & Visualization)** OR **Move to Next Major Feature**:
-   - Option A: Build UI for Phase 8 features (NPC relationship graph, market dashboard, supply chain gantt, intelligence UI, faction camp markers)
-   - Option B: Move to next major feature (Orte system, Dungeon crawling, Place system, etc.)
+1. **Phase 9.1 (UI Integration)** - Connect Phase 9 features to UI:
+   - Map influence overlays (display faction/location influence areas on cartographer)
+   - Building management UI (edit building states, assign workers, view production)
+   - Location markers enhancement (show owner, workers, production status)
+2. **Phase 10** - Next major feature:
+   - Option A: Dungeon crawling system (grid-based tactical encounters using existing dungeon types)
+   - Option B: Weather and regional climate system (per-region weather affecting travel/encounters)
+   - Option C: Advanced phase hierarchy (Stadt → Viertel → Gebäude → Raum navigation)

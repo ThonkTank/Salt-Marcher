@@ -1,6 +1,6 @@
 # Faction System
 
-**Phase 8.4 Complete** - Full integration with encounters, calendar, and map visualization
+**Phase 8.9 Complete** - Calendar integration with automatic faction simulation on time advancement
 
 ## Overview
 
@@ -392,7 +392,7 @@ console.log(`Generated ${result.events.length} important events`);
 
 ## Testing
 
-**Unit Tests:** 761/762 passing (99.9%)
+**Unit Tests:** 863/865 passing (99.8%)
 - Faction AI: 13 tests (decision evaluation, goal weights, resource management)
 - Faction Simulation: 17 tests (job processing, resource production/consumption, expedition events)
 - NPC Generator: 17 tests (name generation, profile creation, culture templates)
@@ -406,8 +406,13 @@ console.log(`Generated ${result.events.length} important events`);
 - Diplomacy: 20 tests (treaties, violation, lifecycle, events)
 - Phase 8.6 NPC Personalities: 18 tests (quirks, loyalties, secrets, trust, betrayal)
 - Phase 8.6 Advanced Features: 51 tests (NPC personalities, economics, military, diplomacy)
+- Phase 8.7 NPC Networks: 25 tests (relationship management, network analysis)
+- Phase 8.7 Economic Markets: 22 tests (market management, events, trading, price history)
+- Phase 8.7 Supply Chains: 18 tests (chain creation, execution, dependency analysis)
+- Phase 8.7 Intelligence Networks: 20 tests (network management, intelligence ops, counter-intel)
+- Phase 8.9 Calendar Integration: 14 tests (interface contract, timing, error handling, date validation)
 - CreateSpec contract validation
-- **Total Faction Tests: 289**
+- **Total Faction Tests: 388**
 
 **Integration Tests:** 6 tests (require live Obsidian)
 - Expected to fail in CI
@@ -732,9 +737,261 @@ console.log(`Generated ${result.events.length} important events`);
 
 **Tests:** 20 tests (network management, intelligence ops, counter-intelligence, network analysis, covert ops)
 
+## Phase 8.9: Calendar Integration ✅
+
+**Status:** Complete - Automatic faction simulation on calendar time advancement
+
+**Goal**: Seamlessly integrate faction simulation with calendar time advancement
+
+### Architecture ✅
+
+**Files:**
+- `src/workmodes/almanac/data/calendar-state-gateway.ts` - Added FactionSimulationHook interface
+- `src/workmodes/almanac/data/faction-simulation-hook-factory.ts` - Factory for creating hook with App instance
+- `devkit/testing/unit/features/factions/calendar-integration.test.ts` - Integration tests (14 tests)
+
+### FactionSimulationHook Interface ✅
+
+**Implementation:** `calendar-state-gateway.ts:110-121`
+
+```typescript
+interface FactionSimulationHook {
+  /**
+   * Run faction simulation when calendar time advances by days
+   * @param elapsedDays - Number of days elapsed
+   * @param currentDate - Current date in ISO format (YYYY-MM-DD)
+   * @returns Array of important faction events to add to calendar inbox
+   */
+  runSimulation(elapsedDays: number, currentDate: string): Promise<FactionSimulationEvent[]>;
+}
+```
+
+**Key Features:**
+- **Decoupled Design**: Calendar gateway doesn't directly depend on faction system
+- **Optional Integration**: Hook is optional parameter in gateway constructor
+- **Dependency Injection**: Factory pattern wires up App instance
+- **Non-blocking Error Handling**: Simulation failures don't break time advancement
+
+### Gateway Integration ✅
+
+**Implementation:** `calendar-state-gateway.ts:552-572`
+
+**Behavior:**
+- Hook called ONLY when `unit === "day"` (not hours/minutes)
+- Passes elapsed days and current date (converted from CalendarTimestamp)
+- Events returned by hook are logged for future inbox integration
+- Errors caught and logged - don't break time advancement
+
+**Helper Function:**
+```typescript
+function timestampToDateString(timestamp: CalendarTimestamp): string {
+  // Converts { year, month, day } → "YYYY-MM-DD"
+}
+```
+
+### Factory Implementation ✅
+
+**Implementation:** `faction-simulation-hook-factory.ts`
+
+**Usage:**
+```typescript
+import { createFactionSimulationHook } from "./faction-simulation-hook-factory";
+
+const factionHook = createFactionSimulationHook(app);
+const gateway = new VaultCalendarStateGateway(
+  calendarRepo,
+  eventRepo,
+  phenomenonRepo,
+  vault,
+  hookDispatcher,
+  factionHook  // Optional parameter
+);
+```
+
+**Features:**
+- Calls `runDailyFactionSimulation()` from `faction-integration.ts`
+- Logs simulation progress (factions processed, events generated)
+- Returns empty array on error (non-critical)
+- Warns if simulation generates warnings
+
+### Test Coverage ✅
+
+**Tests:** 14 new tests in `calendar-integration.test.ts`
+
+**Coverage:**
+- Interface contract validation (3 tests)
+  - Method signature and return type
+  - Parameter passing correctness
+- Simulation timing (3 tests)
+  - Only runs for day-based advancement
+  - Handles multiple days elapsed
+  - Handles single day elapsed
+- Event importance filtering (2 tests)
+  - Returns high-importance events (≥4)
+  - Filters low-importance events
+- Error handling (2 tests)
+  - Non-blocking error recovery
+  - Returns empty array on failure
+- Date format validation (2 tests)
+  - ISO format (YYYY-MM-DD)
+  - Date matches elapsed days
+- Integration behavior (2 tests)
+  - Multiple factions simulated
+  - Events have correct structure
+
+### Integration Pattern ✅
+
+**Design Goals:**
+1. **Decoupled**: Calendar doesn't import faction code directly
+2. **Optional**: Hook can be omitted for testing or if faction system disabled
+3. **Flexible**: Factory pattern allows different implementations
+4. **Robust**: Errors don't break time advancement
+5. **Extensible**: Hook pattern can be used for other systems (weather, economics, etc.)
+
+**Example Flow:**
+```
+User advances calendar by 3 days
+  → CalendarStateGateway.advanceTimeBy(3, "day")
+    → timestampToDateString() converts timestamp to "1492-03-18"
+    → factionHook?.runSimulation(3, "1492-03-18")
+      → runDailyFactionSimulation(app, "1492-03-18", 3)
+        → Load all faction files
+        → Run simulation tick for each faction
+        → Generate important events (importance ≥ 4)
+        → Persist changes back to faction files
+      → Return events array
+    → Log events (TODO: Add to calendar inbox)
+    → Continue time advancement
+```
+
+### Future Enhancements
+
+**TODO:** Add faction events to calendar inbox (requires event repository access)
+- Currently events are generated and logged but not persisted
+- Need to wire up event repository to gateway
+- Filter by importance level (≥4 for inbox)
+
+## Phase 9: Location Integration & Influence System ✅
+
+**Status:** Complete - Locations integrate with factions, influence areas, and production
+
+**Goal**: Connect locations with faction system for bidirectional ownership, influence projection, and building production
+
+### Location Influence Areas ✅
+
+**Implementation:** `src/features/locations/location-influence.ts`
+- **Coordinate Parsing**: Parse location coordinates (odd-r "12,34" or axial "q:5,r:10" formats)
+- **Influence Calculation**: Each location type projects influence area (radius, strength, decay)
+- **Area Templates**: Pre-defined configs by type (Stadt: 8 hex/90 strength, Dorf: 5 hex/70 strength, etc.)
+- **Hex Mapping**: Calculate influence strength at any hex, get all influenced hexes
+- **Area Merging**: Combine overlapping areas (strongest wins), track all sources
+- **Location Lookup**: Find all locations influencing a specific hex
+
+**Influence Configs:**
+- **Stadt (City)**: 8 hex radius, 90 strength, 0.15 decay
+- **Dorf (Village)**: 5 hex radius, 70 strength, 0.20 decay
+- **Festung (Fortress)**: 7 hex radius, 85 strength, 0.17 decay
+- **Dungeon**: 4 hex radius, 80 strength, 0.20 decay
+- **Camp**: 3 hex radius, 60 strength, 0.25 decay
+- **Landmark**: 6 hex radius, 60 strength, 0.18 decay
+- **Weiler (Hamlet)**: 3 hex radius, 50 strength, 0.25 decay
+- **Gebäude (Building)**: 1 hex radius, 40 strength, 0.30 decay
+- **Ruine (Ruin)**: 4 hex radius, 50 strength, 0.22 decay
+
+**Functions:**
+- `parseCoordinates()` / `calculateInfluenceArea()` - Area creation
+- `getInfluenceStrengthAt()` / `getInfluencedHexes()` - Strength calculation
+- `mergeInfluenceAreas()` / `getInfluencingLocations()` - Area combination and lookup
+
+**Tests:** 25 tests (coordinate parsing: 5, area calculation: 6, strength: 4, hexes: 3, merging: 3, lookup: 4)
+
+### Building Production System ✅
+
+**Implementation:** `src/features/locations/building-production.ts`
+- **Building Templates**: 16 pre-defined building types across 6 categories
+- **Job Permissions**: Each building allows specific job types (crafting, training, research, etc.)
+- **Worker Capacity**: Max workers per building (smithy: 5, barracks: 20, palace: 25, etc.)
+- **Production Rate**: Multiplier affected by condition (0-100) and maintenance overdue
+- **Maintenance Costs**: Daily gold/food/equipment/magic costs per building
+- **Building Bonuses**: Quality (+15-30%), training speed (+20-50%), research bonus (+20-50%)
+- **Degradation**: Buildings lose 1 condition/day, track maintenance overdue
+- **Repair**: Spend gold/equipment to restore condition, reset overdue counter
+
+**Building Categories:**
+- **Military** (barracks, armory, training_grounds): Training, guard, patrol
+- **Economic** (smithy, workshop, market): Crafting, gathering
+- **Magical** (mage_tower, shrine, ritual_circle): Research, summoning, crafting
+- **Research** (library, laboratory): Research, crafting
+- **Logistic** (warehouse, stable, granary): Gathering, storage, guard
+- **Residential** (inn, palace): Lodging, leadership
+
+**Building Detection:**
+- Keyword-based matching (English + German)
+- Examples: "Eisenschmiede" → smithy, "Barracks Ost" → barracks
+- Extensible keyword list for each building type
+
+**Functions:**
+- `canPerformJob()` / `hasWorkerCapacity()` - Permission checks
+- `calculateProductionRate()` / `calculateMaintenanceCost()` - Economics
+- `getBuildingBonuses()` / `isBuildingLocation()` / `getBuildingType()` - Detection
+- `initializeBuildingProduction()` / `degradeBuilding()` / `repairBuilding()` - Lifecycle
+
+**Tests:** 43 tests (templates: 5, permissions: 3, capacity: 4, production rate: 6, costs: 4, bonuses: 3, identification: 3, detection: 4, initialization: 3, degradation: 4, repair: 4)
+
+### Location-Faction Integration ✅
+
+**Implementation:** `src/features/locations/location-faction-integration.ts`
+- **Bidirectional Linking**: Locations reference owners (faction/NPC), factions reference POIs
+- **Ownership Queries**: Get all locations owned by faction/NPC
+- **Worker Management**: Assign/remove faction members to/from locations
+- **Job Validation**: Check location supports job type, has worker capacity
+- **Production Calculation**: Calculate resource output from all workers at location
+- **Building Bonuses**: Apply quality/training/research bonuses to production
+- **Activity Summary**: Get overview of faction activities across all owned locations
+- **Consistency Validation**: Check location references exist, owners match, jobs valid
+
+**Integration Points:**
+- Faction members at POI positions reference location names
+- Jobs performed in buildings reference building name
+- Production output added to faction resources
+- Validation ensures data integrity between factions and locations
+
+**Functions:**
+- `getFactionLocations()` / `getNPCLocations()` / `getMembersAtLocation()` - Queries
+- `locationSupportsJob()` / `locationHasCapacity()` - Validation
+- `assignMemberToLocation()` / `removeMemberFromLocation()` - Worker management
+- `calculateLocationProduction()` / `applyBuildingBonuses()` - Production
+- `getFactionLocationSummary()` / `validateLocationReferences()` - Reporting
+
+**No integration tests yet** - Would require full faction and location data structures
+
+### Architecture Patterns ✅
+
+**Coordinate System:**
+- Supports both odd-r (row/col) and axial (q,r) coordinates
+- Converts to cube coordinates (q,r,s) for distance calculations
+- Hex distance: `(|q1-q2| + |r1-r2| + |s1-s2|) / 2`
+
+**Influence Decay:**
+- Linear decay from center to edge of radius
+- Decay rate controls how quickly strength drops off
+- No influence beyond radius
+
+**Building Lifecycle:**
+- Initialize at 100% condition
+- Degrade 1 point/day without maintenance
+- Repair with gold + equipment (1 gold + 0.5 equipment = 10 condition)
+- Production rate penalty: condition (50-100%), maintenance (-5%/day overdue, max -50%)
+- Minimum production: 10% even in worst condition
+
+**Integration Safety:**
+- Validation functions catch missing locations, wrong owners, invalid jobs
+- Production calculation handles missing buildings gracefully
+- Bidirectional queries maintain consistency between factions and locations
+
 ## Future Enhancements
 
-### Phase 8.8+: Further Extensions
+### Phase 8.10+: UI & Visualization
 - **NPC Relationship Visualization**: Interactive graph view of NPC networks
 - **Market Dashboard**: Real-time price charts, trend indicators, trade history
 - **Supply Chain Gantt Charts**: Visual timeline of production chains
