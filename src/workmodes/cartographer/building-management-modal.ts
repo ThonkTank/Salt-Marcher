@@ -17,6 +17,7 @@ import {
     getBuildingBonuses,
     repairBuilding
 } from "../../features/locations/building-production";
+import { createProductionDashboard } from "../../features/locations/production-visualization";
 import { readFrontmatter } from "../../features/data-manager/browse/frontmatter-utils";
 import { logger } from "../../app/plugin-logger";
 import * as yaml from "js-yaml";
@@ -535,24 +536,35 @@ export class BuildingManagementModal extends Modal {
         section.style.marginBottom = "1.5em";
 
         // Section header
-        const header = section.createEl("h3", { text: "Production Tracking" });
+        const header = section.createEl("h3", { text: "Production Tracking & Analytics" });
         header.style.marginBottom = "0.5em";
 
-        // Active jobs list
+        // === Phase 9.2D: Production Visualization Dashboard ===
+        const dashboard = createProductionDashboard(this.production);
+        section.appendChild(dashboard);
+
+        // Active jobs list (keep existing functionality)
         if (this.production.activeJobs && this.production.activeJobs.length > 0) {
-            const jobsHeader = section.createEl("h4", { text: "Active Jobs" });
+            const jobsSection = section.createDiv({ cls: "sm-active-jobs-section" });
+            jobsSection.style.marginTop = "1.5em";
+            jobsSection.style.padding = "0.75em";
+            jobsSection.style.background = "var(--background-secondary)";
+            jobsSection.style.borderRadius = "4px";
+
+            const jobsHeader = jobsSection.createEl("h4", { text: "Active Jobs" });
             jobsHeader.style.fontSize = "0.95em";
-            jobsHeader.style.marginTop = "0.5em";
+            jobsHeader.style.marginTop = "0";
             jobsHeader.style.marginBottom = "0.5em";
 
-            const jobsList = section.createDiv({ cls: "sm-active-jobs-list" });
+            const jobsList = jobsSection.createDiv({ cls: "sm-active-jobs-list" });
 
             this.production.activeJobs.forEach((job, index) => {
                 const jobDiv = jobsList.createDiv({ cls: "sm-job-item" });
                 jobDiv.style.padding = "0.5em";
                 jobDiv.style.marginBottom = "0.5em";
-                jobDiv.style.background = "var(--background-secondary)";
+                jobDiv.style.background = "var(--background-primary)";
                 jobDiv.style.borderRadius = "4px";
+                jobDiv.style.border = "1px solid var(--background-modifier-border)";
 
                 jobDiv.createDiv({ text: `${job.workerName} - ${job.jobType}` })
                     .style.fontWeight = "600";
@@ -567,39 +579,13 @@ export class BuildingManagementModal extends Modal {
                 // Remove job button
                 const removeBtn = jobDiv.createEl("button", { text: "Remove" });
                 removeBtn.style.marginTop = "0.5em";
+                removeBtn.style.fontSize = "0.8em";
                 removeBtn.onclick = () => {
                     this.production.activeJobs.splice(index, 1);
                     this.unsavedChanges = true;
                     this.refresh();
                 };
             });
-        } else {
-            const noJobsDiv = section.createDiv({ cls: "sm-no-jobs" });
-            noJobsDiv.style.padding = "1em";
-            noJobsDiv.style.background = "var(--background-secondary)";
-            noJobsDiv.style.borderRadius = "4px";
-            noJobsDiv.style.textAlign = "center";
-            noJobsDiv.style.color = "var(--text-muted)";
-            noJobsDiv.setText("No active jobs");
-        }
-
-        // Period production display
-        if (this.production.periodProduction && Object.keys(this.production.periodProduction).length > 0) {
-            const prodHeader = section.createEl("h4", { text: "Period Production" });
-            prodHeader.style.fontSize = "0.95em";
-            prodHeader.style.marginTop = "1em";
-            prodHeader.style.marginBottom = "0.5em";
-
-            const prodDiv = section.createDiv({ cls: "sm-period-production" });
-            prodDiv.style.padding = "0.5em";
-            prodDiv.style.background = "var(--background-secondary)";
-            prodDiv.style.borderRadius = "4px";
-
-            Object.entries(this.production.periodProduction)
-                .filter(([, value]) => value && value > 0)
-                .forEach(([resource, amount]) => {
-                    prodDiv.createDiv({ text: `${resource}: ${amount}` });
-                });
         }
     }
 

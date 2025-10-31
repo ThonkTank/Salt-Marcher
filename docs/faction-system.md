@@ -1364,7 +1364,6 @@ await this.app.fileManager.processFrontMatter(
 - No code duplication
 
 **Future Extensions:**
-- Phase 9.2C: Drag-and-drop worker assignment UI
 - Phase 9.2D: Production charts and visualizations
 - Phase 9.2E: Integration with faction resource pools
 - Phase 9.2F: Job creation interface
@@ -1378,10 +1377,662 @@ await this.app.fileManager.processFrontMatter(
 - Repair button doesn't consume resources (placeholder)
 
 **Planned Improvements:**
-- Worker assignment from faction member list (Phase 9.2C)
-- Resource consumption validation
-- Production rate preview calculations
-- Job creation/assignment interface
+- Resource consumption validation (Phase 9.2E)
+- Production rate preview calculations (Phase 9.2D)
+- Job creation/assignment interface (Phase 9.2F)
+
+## Phase 9.2C: Worker Assignment UI ✅
+
+**Status:** Complete - Drag-and-drop worker assignment with faction member loading
+
+**Goal**: Enable intuitive assignment of faction members to buildings through visual drag-and-drop interface with persistence
+
+### Worker Loading System ✅
+
+**Implementation:** `BuildingManagementModal.loadAvailableWorkers()`
+- **Vault Scanning**: Load all faction files from `SaltMarcher/Factions/` directory
+- **Member Filtering**: Filter members by location (POI) and job status
+- **Position Matching**: Check if member is at building location or unassigned
+- **Job Detection**: Separate assigned workers (job at this building) from available workers
+- **YAML Parsing**: Use js-yaml to parse faction frontmatter
+
+**Filter Logic:**
+```typescript
+// Member is eligible if:
+// 1. At the same location (POI) as this building
+const isAtLocation = member.position?.type === "poi" &&
+                    member.position?.location_name === locationName;
+// 2. OR unassigned (no position set)
+const isUnassigned = !member.position || member.position.type === "unassigned";
+
+// Categorize:
+// - Already has job at this building → assignedWorkers
+// - No job at all → availableWorkers
+```
+
+**Data Flow:**
+1. Modal opens → `loadAvailableWorkers()` called
+2. Scan vault for faction files
+3. Parse YAML frontmatter for each faction
+4. Extract members array and filter by location/status
+5. Populate `assignedWorkers` and `availableWorkers` arrays
+
+### UI Components ✅
+
+**Implementation:** `BuildingManagementModal.renderWorkerManagement()`
+
+**Assigned Workers Section:**
+- Draggable worker cards with name, faction, role
+- Visual "drop zone" with dashed border
+- Unassign button on each card (quick removal)
+- Empty state message: "No workers assigned"
+- Min height 80px for consistent spacing
+
+**Available Workers Section:**
+- Scrollable list (max height 200px) with overflow handling
+- Draggable worker cards (same styling as assigned)
+- Assign button on each card (click alternative to drag)
+- Empty state message: "No available workers at this location"
+- Filtered to show only members at this POI
+
+**Worker Cards:**
+- Name in bold (fontWeight: 600)
+- Faction name and role in muted text (fontSize: 0.85em)
+- Draggable attribute enabled
+- Cursor: grab for better UX feedback
+- Button actions for non-drag interactions
+
+**Visual Styling:**
+```css
+background: var(--background-primary)
+border: 1px solid var(--background-modifier-border)
+padding: 0.5em
+borderRadius: 4px
+cursor: grab
+```
+
+### Drag-and-Drop Implementation ✅
+
+**Drag Events:**
+```typescript
+card.ondragstart = (e) => {
+    e.dataTransfer!.effectAllowed = "move";
+    e.dataTransfer!.setData("text/plain", JSON.stringify({
+        pool,           // "available" or "assigned"
+        index,          // Array index
+        factionName,
+        memberName
+    }));
+    card.style.opacity = "0.5";  // Visual feedback
+};
+
+card.ondragend = () => {
+    card.style.opacity = "1";     // Restore
+};
+```
+
+**Drop Target (Assigned Workers Section):**
+```typescript
+card.ondragover = (e) => {
+    e.preventDefault();
+    card.style.background = "var(--interactive-accent)";  // Highlight
+};
+
+card.ondrop = (e) => {
+    e.preventDefault();
+    const data = JSON.parse(e.dataTransfer!.getData("text/plain"));
+    if (data.pool === "available") {
+        this.assignWorker(data.index);
+        this.refresh();
+    }
+};
+```
+
+**Button Alternative:**
+- Assign button: Click to move from available → assigned
+- Unassign button: Click to move from assigned → available
+- Same logic as drag-and-drop but simpler interaction
+
+### Worker Assignment Logic ✅
+
+**Implementation:** `BuildingManagementModal.assignWorker()`
+
+**Capacity Validation:**
+```typescript
+if (this.assignedWorkers.length >= template.maxWorkers) {
+    new Notice(`Building is at max capacity (${template.maxWorkers} workers)`);
+    return;
+}
+```
+
+**Assignment Process:**
+1. Check capacity against building template max
+2. Remove worker from `availableWorkers` array
+3. Add worker to `assignedWorkers` array
+4. Update `production.currentWorkers` count
+5. Set `unsavedChanges = true`
+6. Log assignment (debug level)
+
+**Unassignment Process:**
+1. Remove worker from `assignedWorkers` array
+2. Add worker back to `availableWorkers` array
+3. Update `production.currentWorkers` count
+4. Set `unsavedChanges = true`
+5. Log unassignment (debug level)
+
+**State Tracking:**
+- `unsavedChanges` flag prevents data loss on accidental close
+- Worker arrays manipulated directly (no async operations)
+- Immediate UI refresh after each change
+
+### Persistence Layer ✅
+
+**Implementation:** `BuildingManagementModal.saveFactionWorkerAssignments()`
+
+**Save Process:**
+1. Save building production to location file (processFrontMatter)
+2. Group assigned workers by faction
+3. Find faction file for each faction
+4. Update member position and job fields
+5. Serialize YAML back to frontmatter
+6. Write modified content to vault
+
+**Member Updates:**
+```typescript
+// Set position to POI
+member.position = {
+    type: "poi",
+    location_name: locationName
+};
+
+// Set or update job reference
+if (!member.job) {
+    member.job = {
+        type: "guard",          // Default job type
+        building: locationName,
+        progress: 0
+    };
+} else {
+    member.job.building = locationName;
+}
+```
+
+**Faction File Lookup:**
+```typescript
+private async findFactionFile(factionName: string): Promise<TFile | null> {
+    const files = this.app.vault.getMarkdownFiles();
+    const factionFiles = files.filter(f =>
+        f.path.startsWith("SaltMarcher/Factions/") &&
+        !f.path.includes("Presets")
+    );
+    // Parse YAML and match by name
+}
+```
+
+**YAML Serialization:**
+```typescript
+const yamlStr = yaml.dump(parsed, { lineWidth: -1, noRefs: true });
+const body = content.split(/\n---\n/)[1] || "";
+const newContent = `---\n${yamlStr}---\n${body}`;
+await this.app.vault.modify(factionFile, newContent);
+```
+
+### User Experience ✅
+
+**Workflow:**
+1. User opens building management modal from inspector
+2. Modal loads available faction members at this location
+3. Available workers appear in scrollable list
+4. User drags worker from available to assigned section (OR clicks "Assign" button)
+5. Worker moves between sections immediately
+6. User can unassign workers by clicking "Unassign" button (OR dragging back)
+7. User clicks "Save Changes"
+8. Location file updated with new worker count
+9. Faction files updated with member positions and jobs
+10. Modal closes, changes persisted
+
+**Safety Features:**
+- Capacity validation prevents over-assignment
+- Unsaved changes warning on cancel
+- Error handling with user notices
+- Debug logging for troubleshooting
+- Graceful fallback if faction file not found
+
+---
+
+## Phase 9.2D: Production Visualization ✅
+
+**Goal:** Add visual progress indicators and charts for production tracking in the Building Management UI
+
+**Status:** Complete (October 2025)
+
+**Test Coverage:** 22 new tests (100% pass rate)
+
+### Overview
+
+Phase 9.2D enhances the Building Management Modal with visual analytics for production efficiency, worker utilization, and resource output. Instead of static text displays, users now see color-coded progress bars and real-time efficiency indicators.
+
+**Design Decision:** Uses pure HTML/CSS visualizations (no external charting libraries) to:
+- Keep bundle size small (critical for Obsidian plugins)
+- Maintain simplicity (follows "Simple > Clever" principle)
+- Avoid external dependencies
+- Ensure fast rendering
+
+### Implementation Files
+
+**Core Visualization Module:**
+- `src/features/locations/production-visualization.ts` - Reusable visualization utilities
+
+**Integration:**
+- `src/workmodes/cartographer/building-management-modal.ts` - Updated to use visualization dashboard
+
+**Tests:**
+- `devkit/testing/unit/features/locations/production-visualization.test.ts` - 22 tests
+
+### Visualization Components
+
+#### 1. Production Rate Visualization
+
+**Purpose:** Show how condition and maintenance affect production efficiency
+
+**Components:**
+- **Condition Bar:** Visual indicator of building health (0-100%)
+  - Green (≥75%): Excellent condition
+  - Yellow (50-74%): Good condition
+  - Orange (25-49%): Fair condition
+  - Red (<25%): Poor condition
+- **Effective Production Rate Bar:** Overall efficiency after all modifiers
+- **Maintenance Warning:** Alert when maintenance is overdue
+
+**Implementation:** `createProductionRateVisualization()`
+
+```typescript
+const productionRate = calculateProductionRate(
+    production.buildingType,
+    production.condition,
+    production.maintenanceOverdue
+);
+
+// Color-coded based on condition
+const conditionColor = getConditionColor(production.condition);
+
+// Shows maintenance impact
+if (production.maintenanceOverdue > 0) {
+    // Display warning with penalty percentage
+}
+```
+
+**Visual Example:**
+```
+Production Rate
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Building Condition         80%
+[████████████████░░░░]
+
+Effective Production Rate  80%
+[████████████████░░░░]
+```
+
+#### 2. Worker Efficiency Visualization
+
+**Purpose:** Track worker capacity utilization and staffing levels
+
+**Components:**
+- **Worker Capacity Bar:** Current vs maximum workers
+  - Green (100%): Fully staffed
+  - Yellow (75-99%): Mostly staffed
+  - Orange (50-74%): Understaffed
+  - Red (<50%): Critically understaffed
+- **Efficiency Breakdown:**
+  - Active Workers count
+  - Active Jobs count
+- **Low Staffing Warning:** Alert when capacity < 50%
+
+**Implementation:** `createWorkerEfficiencyVisualization()`
+
+```typescript
+const template = BUILDING_TEMPLATES[production.buildingType];
+const capacityPercentage = (production.currentWorkers / template.maxWorkers) * 100;
+
+// Breakdown grid
+Active Workers: 3
+Active Jobs: 2
+```
+
+**Visual Example:**
+```
+Worker Efficiency
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Workers (3/4)             75%
+[███████████████░░░░░]
+
+┌─────────────┬─────────────┐
+│Active Workers│Active Jobs   │
+│      3      │      2      │
+└─────────────┴─────────────┘
+```
+
+#### 3. Resource Flow Visualization
+
+**Purpose:** Display resource production with visual bars
+
+**Components:**
+- **Resource Bars:** One per resource type (equipment, gold, food, etc.)
+  - Shows current production amount
+  - Bar length represents production relative to potential max
+- **Efficiency Note:** Current operating efficiency percentage
+- **No Data Message:** When no production data available
+
+**Implementation:** `createResourceVisualization()`
+
+```typescript
+// Estimate max potential based on current rate
+const estimatedMax = productionRate > 0 ? amount / productionRate : amount;
+const percentage = (amount / estimatedMax) * 100;
+
+// Filter out zero/negative resources
+Object.entries(production.periodProduction)
+    .filter(([, value]) => value && value > 0)
+```
+
+**Visual Example:**
+```
+Resource Flow
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+equipment: 10
+[██████████████████]
+
+gold: 50
+[████████████████████]
+
+Currently operating at 80% efficiency
+```
+
+### Production Dashboard
+
+**Purpose:** Unified view combining all three visualizations
+
+**Implementation:** `createProductionDashboard()`
+
+Combines:
+1. Production Rate Visualization
+2. Worker Efficiency Visualization
+3. Resource Flow Visualization
+
+**Usage in Modal:**
+```typescript
+private renderProductionTracking(container: HTMLElement, template) {
+    const section = container.createDiv({ cls: "sm-production-section" });
+
+    // Phase 9.2D: Production Visualization Dashboard
+    const dashboard = createProductionDashboard(this.production);
+    section.appendChild(dashboard);
+
+    // ... existing active jobs list
+}
+```
+
+### Helper Functions
+
+#### `createProgressBar()`
+
+**Purpose:** Reusable horizontal progress bar component
+
+**Parameters:**
+- `percentage`: Value to display (0-100)
+- `options`:
+  - `label`: Optional text label
+  - `color`: CSS color (default: `var(--interactive-accent)`)
+  - `height`: Bar height (default: `"20px"`)
+  - `showPercentage`: Show percentage text (default: `true`)
+
+**Features:**
+- Auto-clamps percentage to 0-100 range
+- Smooth CSS transitions (0.3s ease)
+- Responsive layout with flex spacing
+- Obsidian theme variable integration
+
+**Implementation:**
+```typescript
+const fill = track.createDiv();
+fill.style.width = `${Math.min(100, Math.max(0, percentage))}%`;
+fill.style.transition = "width 0.3s ease";
+fill.style.background = color;
+```
+
+#### `getConditionColor()`
+
+**Purpose:** Map condition value to color variable
+
+**Returns:**
+- `var(--color-green)`: ≥75%
+- `var(--color-yellow)`: 50-74%
+- `var(--color-orange)`: 25-49%
+- `var(--color-red)`: <25%
+
+**Usage:**
+```typescript
+const color = getConditionColor(production.condition);
+const bar = createProgressBar(production.condition, { color });
+```
+
+### User Experience
+
+**Before Phase 9.2D:**
+```
+Period Production
+equipment: 10
+gold: 50
+```
+
+**After Phase 9.2D:**
+```
+Production Tracking & Analytics
+
+Production Rate
+Building Condition         80%  [████████████████░░░░]
+Effective Production Rate  80%  [████████████████░░░░]
+
+Worker Efficiency
+Workers (3/4)             75%  [███████████████░░░░░]
+Active Workers: 3  |  Active Jobs: 2
+
+Resource Flow
+equipment: 10  [██████████████████]
+gold: 50       [████████████████████]
+Currently operating at 80% efficiency
+```
+
+**Benefits:**
+- Instant visual feedback on building health
+- Clear capacity warnings for understaffing
+- Production efficiency at a glance
+- Color-coded status indicators
+- No need to calculate percentages mentally
+
+### Testing
+
+**Test Coverage:** 22 tests across 6 test suites
+
+**Test Suites:**
+
+1. **createProgressBar** (4 tests)
+   - Correct percentage display
+   - Clamping to 0-100 range
+   - Show/hide percentage option
+   - Custom color application
+
+2. **getConditionColor** (4 tests)
+   - Green for excellent (≥75)
+   - Yellow for good (50-74)
+   - Orange for fair (25-49)
+   - Red for poor (<25)
+
+3. **createProductionRateVisualization** (3 tests)
+   - Creates with condition bar
+   - Shows maintenance warning when overdue
+   - Hides warning when current
+
+4. **createWorkerEfficiencyVisualization** (5 tests)
+   - Creates efficiency visualization
+   - Shows capacity percentage correctly
+   - Shows low staffing warning (<50%)
+   - Hides warning when ≥50%
+   - Displays active jobs count
+
+5. **createResourceVisualization** (4 tests)
+   - Creates with production data
+   - Shows "no data" message when empty
+   - Shows efficiency note
+   - Filters zero/negative resources
+
+6. **createProductionDashboard** (4 tests)
+   - Combines all visualizations
+   - Contains production rate viz
+   - Contains worker efficiency viz
+   - Contains resource viz
+
+**Test Results:** All 22 tests passing (100%)
+
+### Technical Details
+
+**DOM Manipulation:**
+- Uses native `document.createElement()` (no frameworks)
+- JSDOM for test environment
+- Style properties set via `.style` API
+
+**CSS Variables Used:**
+```typescript
+// Colors
+--color-green
+--color-yellow
+--color-orange
+--color-red
+--interactive-accent
+
+// Backgrounds
+--background-primary
+--background-secondary
+--background-modifier-border
+--background-modifier-error
+
+// Text
+--text-muted
+```
+
+**Performance:**
+- Lightweight: No external dependencies
+- Fast rendering: Direct DOM manipulation
+- Memory efficient: Elements cleaned up on modal close
+- No async operations: Synchronous rendering
+
+### Future Enhancements (Potential)
+
+**Not implemented (out of scope for 9.2D):**
+- Historical time-series charts (would require data storage layer)
+- Interactive tooltips on hover
+- Animated transitions for value changes
+- Export charts as images
+- Customizable chart colors/themes
+
+**Rationale:** Phase 9.2D focuses on **current state visualization** using simple, maintainable code. Time-series charting would require:
+1. Historical data storage (new data model)
+2. Chart library dependency (bundle size increase)
+3. More complex UI (harder to maintain)
+
+Current implementation delivers immediate value without architectural complexity.
+
+**Visual Feedback:**
+- Drag opacity change (0.5 during drag)
+- Drop zone highlight (interactive-accent color)
+- Empty state messages for clarity
+- Immediate UI updates on assignment/unassignment
+
+### Architecture Patterns ✅
+
+**Vault-Based Data Loading:**
+- No hardcoded faction data
+- Dynamically loads from vault files
+- Respects vault structure conventions
+- Filters by folder path and frontmatter type
+
+**State Management:**
+- Local arrays for assigned/available workers
+- Clone production data to prevent mutations
+- Single source of truth per modal instance
+- Unsaved changes flag for data loss prevention
+
+**YAML Handling:**
+- js-yaml library for parsing and serialization
+- Preserves body content (split at frontmatter delimiter)
+- lineWidth: -1 prevents line wrapping
+- noRefs: true prevents YAML anchors/aliases
+
+**Modal Patterns:**
+- Follows Obsidian Modal conventions
+- onOpen/onClose lifecycle
+- processFrontMatter for location updates
+- Direct vault.modify for faction updates
+
+### Tests ✅
+
+**Status:** No new tests required
+- Follows proven modal patterns from Phase 9.2B
+- Reuses existing vault API patterns
+- YAML parsing/serialization tested in other features
+- Integration testing requires live Obsidian instance
+
+**Manual Testing:**
+- Build succeeds without TypeScript errors
+- All existing tests pass (960/961 passing)
+- Worker drag-and-drop tested in development vault
+- Faction file persistence verified manually
+
+### Known Limitations ✅
+
+**Current Implementation:**
+- Default job type "guard" assigned to all workers
+- No job type selection during assignment
+- No validation of job type vs building allowed jobs
+- No real-time production calculation preview
+
+**Future Improvements:**
+- Job type selector during assignment (Phase 9.2F)
+- Validation: Only allow jobs in building's allowedJobs list
+- Production preview: Show expected output with current workers
+- Worker skill/experience tracking
+
+### Architecture Decisions ✅
+
+**Why Drag-and-Drop:**
+- Intuitive visual interface for spatial task (moving workers)
+- Familiar interaction pattern from other applications
+- Reduces clicks vs dropdown selection
+- Provides immediate visual feedback
+
+**Why Button Alternative:**
+- Accessibility for non-mouse users
+- Fallback for drag gesture failures
+- Faster for single assignments
+- Consistent with Obsidian UI patterns
+
+**Why Separate Arrays:**
+- Clear separation of assigned vs available
+- Efficient filtering during save
+- Simple state management
+- No complex queries during render
+
+**Why Default Job Type:**
+- Simplifies initial implementation
+- Ensures valid state (job always set)
+- User can change later via faction file
+- Future UI will allow job selection
+
+**DRY Principles:**
+- Reuses BuildingProduction interface (Phase 9.2)
+- Reuses BUILDING_TEMPLATES for metadata (Phase 9)
+- Reuses js-yaml library (faction system)
+- No code duplication from Phase 9.2B
 
 ## Future Enhancements
 

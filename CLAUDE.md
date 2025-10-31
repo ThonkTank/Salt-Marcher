@@ -314,7 +314,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 9.2C ✅ Complete (Worker Assignment UI) | Tests: 960/961 (99.9%) | **Next:** Phase 9.2D or Phase 10
+**Status:** Phase 9.2D ✅ Complete (Production Visualization) | Tests: 982/983 (99.9%) | **Next:** Phase 10
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -413,7 +413,7 @@ Ziele:
   - Save changes via Obsidian's processFrontMatter API
   - "Manage Building" button in cartographer inspector
   - No new tests (follows proven Obsidian Modal pattern)
-- **Phase 9.2C:** Worker Assignment UI ✅
+- **Phase 9.2C:** Worker Assignment UI ✅ - See [docs/faction-system.md#phase-92c-worker-assignment-ui-](docs/faction-system.md#phase-92c-worker-assignment-ui-)
   - Load available faction members from vault (filters by location and job status)
   - Drag-and-drop interface for assigning/unassigning workers
   - Visual worker roster showing assigned and available members
@@ -422,12 +422,15 @@ Ziele:
   - Worker position and job updates persisted to faction files
   - Assign/unassign buttons for quick access
   - No new tests (follows proven modal patterns)
+- **Phase 9.2D:** Production Visualization ✅ - See [docs/faction-system.md#phase-92d-production-visualization-](docs/faction-system.md#phase-92d-production-visualization-)
+  - Production rate visualization with color-coded condition bars
+  - Worker efficiency indicators with capacity warnings
+  - Resource flow visualization with progress bars
+  - Unified production dashboard combining all metrics
+  - Pure HTML/CSS implementation (no external chart libraries)
+  - 22 new tests for visualization components (100% pass rate)
 
 **Geplant:**
-- **Phase 9.2D (Future - Production Visualization)**: Charts and progress indicators
-  - Production rate charts over time
-  - Worker efficiency visualization
-  - Resource consumption/production graphs
 - **Phase 10 (Future)**: Next major feature
   - Option A: Dungeon crawling system (grid-based tactical encounters)
   - Option B: Advanced place hierarchy (Stadt → Viertel → Gebäude → Raum)
@@ -447,22 +450,18 @@ Ziele:
 - 6 Integration tests still open despite Obsidian running and avalible for testing
 
 **Test-Status:**
-- Unit tests: 960/961 passing (99.9%) ✅
+- Unit tests: 982/983 passing (99.9%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 26/26 (serialization: 10, generation: 14, Phase 8.8: 2)
   - Faction tests: 388/388 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69, Phase 8.7: 85, Phase 8.9: 14)
-  - Location tests: 96/96 (Phase 9: 68 - Influence: 25, Buildings: 43; Phase 9.1: 17 - UI store tests; Phase 9.2: 11 - Building production integration)
+  - Location tests: 118/118 (Phase 9: 68 - Influence: 25, Buildings: 43; Phase 9.1: 17 - UI store tests; Phase 9.2: 11 - Building production integration; Phase 9.2D: 22 - Production visualization)
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
   - 1 failing test: faction betrayal detection (pre-existing flaky test)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 9.2D (Production Visualization)** - Charts and progress indicators:
-   - Production rate charts over time
-   - Worker efficiency visualization
-   - Resource consumption/production graphs
-2. **Phase 10** - Next major feature:
+1. **Phase 10** - Next major feature:
    - Option A: Dungeon crawling system (grid-based tactical encounters using existing dungeon types)
    - Option B: Weather and regional climate system (per-region weather affecting travel/encounters)
    - Option C: Advanced place hierarchy (Stadt → Viertel → Gebäude → Raum navigation)
