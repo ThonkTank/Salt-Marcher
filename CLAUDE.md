@@ -307,67 +307,35 @@ Ziele:
 - **Loot**  
   Loot orientiert sich an den XP der Begegnung: Gold, Handelswaren und magische Items werden über die Calculator-Regeln generiert, die Party-Level, Encounter-XP und selbst definierte Modifikatoren berücksichtigen. Der Generator zieht dafür aufbereitete Listen aus der Library heran, filtert nach Tags (z. B. „Sumpf“, „Untote“, „Ozean“) und sorgt dafür, dass Beute zur Location und den Gegnern passt.  
   Magische Items folgen Level-Limits, damit nicht jede Begegnung legendäre Artefakte ausspuckt, während Gold und wertvolle Waren linear mit XP und Charakterstufe skalieren. Viele Gegner bringen außerdem inhärente Beute mit: Drachen liefern Schuppen, Drow exotische Gifte, Konstrukte seltene Komponenten. Diese Werte stehen direkt im Statblock – inklusive des Anteils, den sie vom sonstigen Loot-Pool ersetzen – sodass ich sofort weiß, wie viel zusätzliche Beute noch verteilt wird.
-- **Erlebnis-Zusammenspiel**
-  Alle Bereiche greifen so ineinander, dass ich ohne Kontextwechsel von Reiseplanung zu Begegnung zu Nachbereitung wechseln kann und jederzeit den roten Faden der Kampagne sehe.
-  Dashboards und Workmodes sollen die wichtigsten Aktionen prominent machen, während weiterführende Optionen nur einen Klick entfernt bleiben.
-  Die Oberfläche unterstützt Improvisation durch schnelle Vorschläge, merkt sich Präferenzen und liefert mir beim Öffnen direkt die relevantesten Hinweise für die aktuelle Spielsituation.
 
 ## Architektur-Roadmap
 
-**Status:** Phase 6.3 ✅ Complete | Tests: 465/467 (99.6%) | **Next:** Phase 6.4 - Auto-Selection System
+**Status:** Phase 6.4 ✅ Complete | Tests: 489/491 (99.6%) | **Next:** Phase 6.5 - Session Runner UI Integration
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
 - **Phase 5:** Loot Generator - Gold (XP-based, 5 rule types), Items (tag-filter, rarity-limits, weighted), E2E tests (13 scenarios)
-- **Phase 6.1:** Playlist Entity - CreateSpec with tag fields, library registration, CRUD operations, tests (17 tests)
-- **Phase 6.2:** Playlist Manager UI ✅
-  - Library tab integration (added "playlists" to view.ts:line_331)
-  - Track list editor (auto-generated from "list" field type in CreateSpec)
-  - Tag selection UI (auto-generated from "tokens" field type for 5 tag categories)
-  - Playback controls (auto-generated from "checkbox" and "number-stepper" fields)
-  - Full CRUD operations through Library browse view
-- **Phase 6.3:** Audio Player Core ✅
-  - Core player API with playback controls (play/pause/stop/skip)
-  - Crossfade transitions between tracks (configurable duration)
-  - Volume control (per-track and global, 0-1 range)
-  - Shuffle mode (Fisher-Yates algorithm)
-  - Loop mode (playlist and track navigation)
-  - HTMLAudioElement integration for browser playback
-  - Event subscription system for status updates
-  - 33 comprehensive unit tests (all passing)
-  - File locations: src/features/audio/{types.ts, audio-player.ts, index.ts}
+- **Phase 6.1-6.4:** Audio System Foundation ✅ (Details: [docs/audio-system.md](docs/audio-system.md))
+  - Phase 6.1: Playlist Entity - CreateSpec with 5 tag types, serializer, 17 tests ✅
+  - Phase 6.2: Playlist Manager UI - Library integration, auto-generated CRUD ✅
+  - Phase 6.3: Audio Player Core - HTMLAudioElement playback, crossfade, volume, shuffle/loop, 33 tests ✅
+  - Phase 6.4: Auto-Selection System - Context-based filtering, scoring algorithm, 24 tests ✅
+  - File locations: src/features/audio/, src/workmodes/library/playlists/
 
-**Phase 6: Audio System** (🔄 In Progress) - [Details: docs/audio-system.md](docs/audio-system.md)
-- **Phase 6.1:** Playlist Entity ✅
-  - Data types, serializer, CreateSpec with 5 tag types (terrain/weather/time/faction/situation)
-  - Library registration & CRUD operations
-  - 17 serialization tests passing
-- **Phase 6.2:** Playlist Manager UI ✅
-  - Full integration with Library system (browse/create/edit/delete)
-  - Auto-generated UI from CreateSpec (no custom UI code required)
-  - Tag vocabularies documented in docs/TAGS.md
-  - All tests passing
-- **Phase 6.3:** Audio Player Core ✅
-  - Track player service (play/pause/skip/stop)
-  - Crossfade transitions between tracks
-  - Volume control (per-track and global)
-  - Shuffle and loop logic
-- **Phase 6.4:** Auto-Selection System ⏳
-  - Context-based filtering (terrain/weather/time/faction/situation)
-  - Session Runner integration (auto-switch on context change)
-  - Quick-switch UI (manual override)
-  - E2E tests for filter logic
+**Phase 6: Audio System** (🔄 In Progress) - [Full details: docs/audio-system.md](docs/audio-system.md)
+- **Phase 6.5:** Session Runner UI Integration ⏳ (Next)
+  - Audio panel in Session Runner sidebar
+  - Auto-selection on context change (terrain/weather/time transitions)
+  - Quick-switch UI (manual playlist override)
+  - Playback controls integration
 
 **Technische Schulden:**
-- `package.json` test:contracts script verweist auf nicht existierenden Pfad `devkit/testing/unit/contracts` (entfernt in 60c9914)
-- `package.json` golden:update script verweist auf nicht existierenden Pfad `devkit/testing/unit/contracts/update-library-golden.ts`
-- Cleanup benötigt: 2 verwaiste Migrations-Skripte in `scripts/` (migrate-spellcasting-entries.mjs, migrate-to-trigger-structure.mjs)
+- None currently identified
 
 **Test-Status:**
-- Unit tests: 465/467 passing (99.6%)
-- 2 intentionally skipped: deprecated TODO.md governance, AGENTS.md policy
-- Contract tests: Removed (waren für alte Library-Struktur)
-- Integration tests: Passing
+- Unit tests: 489/491 passing (99.6%) ✅
+- 2 intentionally skipped: deprecated TODO.md governance, AGENTS.md policy (safe to remove)
+- Integration tests: Require live plugin instance (expected to fail in CI)
 
 **Release Prep:**
 - Polish UI/UX

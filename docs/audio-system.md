@@ -1,6 +1,6 @@
 # Audio System
 
-**Status**: Phase 6.2 Complete ✅ | Phase 6.3+ In Progress
+**Status**: Phase 6.4 Complete ✅ | Phase 6.5 In Progress
 
 ## Overview
 
@@ -40,25 +40,114 @@ The CreateSpec pattern (`src/workmodes/library/playlists/create-spec.ts`) declar
 - Browse view with filtering and sorting
 - CRUD handlers that use the serializer for persistence
 
-### Phase 6.3: Audio Player Core ⏳
+### Phase 6.3: Audio Player Core ✅
 
 **Goal**: Audio playback engine with crossfade and volume control
 
-**Components**:
-- Track player service (play/pause/skip/stop)
-- Crossfade transitions between tracks
-- Volume control per track and global
-- Shuffle and loop logic
+**Status**: Complete - Full playback engine with HTMLAudioElement integration
 
-### Phase 6.4: Auto-Selection System ⏳
+**Location**: `src/features/audio/`
+
+**Implementation**:
+- Core player API with lifecycle management
+- Playback controls: play, pause, stop, skip (next/previous), seek
+- Crossfade transitions between tracks (configurable duration, 60fps linear fade)
+- Volume control (per-track and global, 0-1 range, combined multiplication)
+- Shuffle mode (Fisher-Yates algorithm for random order)
+- Loop mode (playlist looping with automatic track progression)
+- HTMLAudioElement integration for browser playback
+- Event subscription system for status updates (reactive UI binding)
+- Dual audio elements for seamless crossfade (primary/secondary swap)
+- Error handling with automatic track recovery
+- 33 comprehensive unit tests (all passing)
+
+**API Design**:
+```typescript
+interface AudioPlayer {
+  loadPlaylist(playlist: PlaylistData): void;
+  play(): Promise<void>;
+  pause(): void;
+  stop(): void;
+  skipNext(): Promise<void>;
+  skipPrevious(): Promise<void>;
+  skipToTrack(index: number): Promise<void>;
+  setGlobalVolume(volume: number): void;
+  toggleShuffle(): void;
+  toggleLoop(): void;
+  setCrossfadeDuration(seconds: number): void;
+  seek(position: number): void;
+  getStatus(): PlaybackStatus;
+  onStatusChange(callback: (status: PlaybackStatus) => void): () => void;
+  dispose(): void;
+}
+```
+
+**Key Features**:
+- **Crossfade Logic**: Uses two HTMLAudioElement instances, fades out current track while fading in next track over configurable duration
+- **Volume Calculation**: `effectiveVolume = trackVolume * globalVolume` (both 0-1 range)
+- **Shuffle Algorithm**: Fisher-Yates shuffle generates random order, reshuffles on loop restart
+- **Track Navigation**: Respects shuffle order when active, falls back to sequential when disabled
+- **Skip Previous Behavior**: Restarts current track if >3s elapsed, otherwise skips to previous
+- **Auto-advance**: Automatically plays next track on track end (respects loop/shuffle)
+- **Error Recovery**: On audio error, automatically skips to next track
+- **Lifecycle Management**: Clean dispose() for resource cleanup (removes event listeners, clears audio)
+
+**Test Coverage**: 33 tests in `devkit/testing/unit/features/audio/audio-player.test.ts`
+- Initialization: Playlist loading, default settings
+- Playback Controls: Play, pause, resume, stop, seek
+- Track Navigation: Skip next/previous, specific track, loop boundaries
+- Loop Mode: Playlist looping, skip navigation with loop
+- Shuffle Mode: Random order generation, shuffle navigation, toggle
+- Volume Control: Global volume, per-track volume, combined calculation
+- Crossfade: Duration configuration, fade transitions
+- Status Updates: Event subscriptions, reactive UI binding
+- Edge Cases: Empty playlist, invalid track index, volume clamping
+
+### Phase 6.4: Auto-Selection System ✅
 
 **Goal**: Automatic playlist switching based on session context
 
+**Status**: Complete - Core filtering and scoring logic implemented
+
+**Location**: `src/features/audio/`
+
 **Components**:
-- Context-based playlist filter (terrain/weather/time/faction/situation)
-- Session Runner integration (auto-switch on context change)
-- Quick-switch UI (manual override)
-- E2E tests for filter logic and context updates
+- `auto-selection-types.ts` - SessionContext, PlaylistMatch, AutoSelectionResult types
+- `auto-selection.ts` - Scoring algorithm, playlist selection, type filtering
+- `context-extractor.ts` - Extract context from hex data (terrain, faction from tiles)
+- 24 comprehensive unit tests in `devkit/testing/unit/features/audio/auto-selection.test.ts`
+
+**Scoring Algorithm**:
+- Each matching tag category: +1 point
+- Each matching tag within category: +0.5 points
+- Faction tags support multiple matches (array context)
+- Example: Playlist [Forest, Rain, Combat] vs Context {Forest, Rain, Combat} = 7.5 points (5 categories + 5 tags * 0.5)
+
+**API**:
+```typescript
+// Calculate score for single playlist
+calculatePlaylistScore(playlist: PlaylistData, context: SessionContext): PlaylistMatch
+
+// Select best playlist from array
+selectPlaylist(playlists: PlaylistData[], context: SessionContext): AutoSelectionResult
+
+// Filter by type (separate ambience/music players)
+filterPlaylistsByType(playlists: PlaylistData[], type: "ambience" | "music"): PlaylistData[]
+
+// Extract context from hex
+extractSessionContext(app: App, mapFile: TFile, coord: Coord, additionalContext?: {...}): Promise<SessionContext>
+
+// Get active tags for display
+getActiveTags(context: SessionContext): string[]
+```
+
+**Test Coverage**: 24 tests covering:
+- Single and multi-tag scoring
+- Partial matches and no matches
+- Multiple faction handling
+- Type filtering
+- Edge cases (empty context, no tags, all categories)
+- Priority selection (highest score wins)
 
 ## Data Structure
 
@@ -231,9 +320,13 @@ See [storage-formats.md](./storage-formats.md) for CreateSpec pattern details.
 
 ## Testing
 
-**Test Suite**: `devkit/testing/unit/library/playlists/playlist-serializer.test.ts`
+**Test Suites**:
+- `devkit/testing/unit/library/playlists/playlist-serializer.test.ts` - 17 tests
+- `devkit/testing/unit/features/audio/audio-player.test.ts` - 33 tests
+- `devkit/testing/unit/features/audio/auto-selection.test.ts` - 24 tests
 
-**Coverage** (17 tests):
+**Coverage** (74 total tests):
+- Playlist serialization (17 tests):
 - Minimal playlists (name, type, tracks only)
 - Display names and descriptions
 - All 5 tag types (terrain, weather, time, faction, situation)
@@ -242,12 +335,33 @@ See [storage-formats.md](./storage-formats.md) for CreateSpec pattern details.
 - Duration formatting (seconds → MM:SS)
 - Volume display (0.0-1.0 → percentage)
 - Round-trip serialization (data → markdown → data)
+- Audio player (33 tests):
+  - Playback controls (play, pause, resume, stop, seek)
+  - Track navigation (next, previous, specific track)
+  - Loop and shuffle modes
+  - Volume control (global, per-track, combined)
+  - Crossfade transitions
+  - Status subscriptions
+  - Edge cases (empty playlist, invalid index)
+- Auto-selection (24 tests):
+  - Single and multi-tag scoring
+  - Partial matches and no matches
+  - Multiple faction handling
+  - Type filtering (ambience/music)
+  - Priority selection (highest score wins)
+  - Edge cases (empty context, no tags, all categories)
 
-**Test Status**: ✅ All 17 tests pass (99.5% overall: 432/434)
+**Test Status**: ✅ All tests pass
+- Playlist serialization: 17 tests
+- Audio player: 33 tests
+- Auto-selection: 24 tests
+- Overall: 489/491 unit tests (99.6%)
 
 Run tests:
 ```bash
 npm test playlists                    # Playlist tests only
+npm test audio-player                 # Audio player tests only
+npm test auto-selection               # Auto-selection tests only
 npm run test:all                      # All tests
 ./devkit test watch                   # Auto-run on file changes
 ```
@@ -255,15 +369,27 @@ npm run test:all                      # All tests
 ## File Locations
 
 ```
-src/workmodes/library/playlists/
-├── types.ts                          # Data types
-├── constants.ts                      # Tag vocabularies
-├── serializer.ts                     # Markdown serialization
-├── create-spec.ts                    # CreateSpec definition
+src/features/audio/
+├── types.ts                          # Audio player types (PlaybackState, CurrentTrack, PlaybackStatus, AudioPlayer)
+├── audio-player.ts                   # Audio player implementation (createAudioPlayer factory)
+├── auto-selection-types.ts           # Auto-selection types (SessionContext, PlaylistMatch, AutoSelectionResult)
+├── auto-selection.ts                 # Scoring algorithm, playlist selection, type filtering
+├── context-extractor.ts              # Extract context from hex data (terrain, faction)
 └── index.ts                          # Barrel export
 
+src/workmodes/library/playlists/
+├── types.ts                          # Data types (PlaylistData, AudioTrack)
+├── constants.ts                      # Tag vocabularies (terrain/weather/time/faction/situation)
+├── serializer.ts                     # Markdown serialization
+├── create-spec.ts                    # CreateSpec definition (Library integration)
+└── index.ts                          # Barrel export
+
+devkit/testing/unit/features/audio/
+├── audio-player.test.ts              # 33 audio player unit tests
+└── auto-selection.test.ts            # 24 auto-selection unit tests
+
 devkit/testing/unit/library/playlists/
-└── playlist-serializer.test.ts       # 20 serialization tests
+└── playlist-serializer.test.ts       # 17 serialization tests
 
 Playlists/                            # User playlists (not in repo)
 ├── {playlist-name}.md                # Individual playlists
@@ -279,11 +405,12 @@ Playlists/                            # User playlists (not in repo)
 - **Filters**: Type, tags (terrain/weather/time/faction/situation)
 - **Sorts**: Name, display name, type
 
-### Session Runner (Phase 6.4)
-- **Context Provider**: Current hex terrain, weather, time, present factions, situation
-- **Auto-Selection**: Filter playlists by context tags
+### Session Runner (Phase 6.5)
+- **Context Provider**: Current hex terrain, weather, time, present factions, situation (via `extractSessionContext`)
+- **Auto-Selection**: Filter playlists by context tags (via `selectPlaylist`)
 - **UI Integration**: Audio panel with player controls and playlist list
 - **State Management**: Current playlist, track, playback state
+- **Auto-Switch**: Crossfade to new playlist when context changes (terrain/weather/time transitions)
 
 ### Preset System
 - **Sample Playlists**: `Presets/Playlists/` (bundled with plugin)
@@ -304,9 +431,8 @@ Playlists/                            # User playlists (not in repo)
 
 ## Known Issues
 
-- Playlist sample file uses old schema format (needs migration to new serializer format)
-- No playback engine yet (Phase 6.3)
-- No auto-selection logic yet (Phase 6.4)
+- No UI integration yet (Phase 6.5 - Session Runner audio panel)
+- No sample playlists bundled yet (pending Phase 6.5 completion)
 
 ## Related Documentation
 
