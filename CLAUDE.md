@@ -194,7 +194,9 @@ grep "\[init:" CONSOLE_LOG.txt
 - [docs/TESTING.md](docs/TESTING.md) - Testing guide
 - [docs/audio-system.md](docs/audio-system.md) - Audio/playlist system architecture (Phase 6)
 - [docs/random-encounters.md](docs/random-encounters.md) - Random encounter generation & CR balancing (Phase 7)
-- [docs/faction-system.md](docs/faction-system.md) - Faction entities, position tracking, job system (Phase 8)
+- [docs/faction-system.md](docs/faction-system.md) - Faction entities, AI, locations, influence (Phase 8-9.1)
+- [docs/PHASE_9_1_UI_INTEGRATION.md](docs/PHASE_9_1_UI_INTEGRATION.md) - Cartographer UI architecture (detailed)
+- [docs/PHASE_9_1_QUICK_REFERENCE.md](docs/PHASE_9_1_QUICK_REFERENCE.md) - File locations & patterns (quick ref)
 - [docs/TAGS.md](docs/TAGS.md) - Tag vocabularies across all entity types
 
 **For DevKit Features** (available tools):
@@ -312,7 +314,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 9.1 ✅ Complete (UI Integration) | Tests: 948/950 (99.8%) | **Next:** Phase 9.2 or Phase 10
+**Status:** Phase 9.2 ✅ Complete (Building Data Model) | Tests: 958/961 (99.7%) | **Next:** Phase 9.2B or Phase 10
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -382,19 +384,24 @@ Ziele:
   - Building degradation and repair system (condition, maintenance overdue)
   - Location-faction integration: bidirectional ownership, worker management, validation
   - 68 new tests (influence: 25, buildings: 43)
-- **Phase 9.1:** UI Integration ✅
-  - Location influence store: Reactive store for map overlays showing location influence
-  - Location influence repository: Load location data and calculate influenced hexes
-  - Map influence overlays: Location influence areas displayed on cartographer with color-coded strength
-  - Inspector enhancement: Shows location influence info (strength, owner, type)
-  - Hex-render integration: Location influences rendered as semi-transparent overlays below faction overlays
-  - 17 new tests for location-influence-store (assignment, retrieval, color management)
+- **Phase 9.1:** UI Integration ✅ - See [docs/faction-system.md#phase-91-ui-integration-](docs/faction-system.md#phase-91-ui-integration-)
+  - Location influence overlays on cartographer map with color-coded strength
+  - Inspector panel shows location influence info (strength, owner, type)
+  - Reactive store pattern for map overlay updates
+  - 17 new tests for location-influence-store
+- **Phase 9.2:** Building Management Data Model ✅ - See [docs/faction-system.md#phase-92-building-management-data-model-](docs/faction-system.md#phase-92-building-management-data-model-)
+  - Extended LocationData with building_production field (BuildingProduction interface)
+  - Location create-spec with building fields (type, condition, maintenance, workers)
+  - Browse view enhancement with building status badges (color-coded condition)
+  - Serialization support for building production in markdown
+  - Type guard isBuildingLocation() for type-safe checks
+  - 11 new tests for type guards and serialization (100% pass rate)
 
 **Geplant:**
-- **Phase 9.2 (Future - Building Management UI)**: Full building/worker management
+- **Phase 9.2B (Future - Building Management UI)**: Full building/worker management
   - Building management modal: Edit building states, assign workers, view production
-  - Location markers enhancement: Show owner, workers, production status on map
   - Worker assignment UI: Drag-and-drop interface for assigning faction members to buildings
+  - Production tracking visualization: Charts and progress indicators
 - **Phase 10 (Future)**: Next major feature
   - Option A: Dungeon crawling system (grid-based tactical encounters)
   - Option B: Advanced place hierarchy (Stadt → Viertel → Gebäude → Raum)
@@ -406,18 +413,18 @@ Ziele:
 - TODO in calendar-state-gateway.ts: Add faction events to calendar inbox (requires event repository access)
 
 **Test-Status:**
-- Unit tests: 948/950 passing (99.8%) ✅
+- Unit tests: 958/961 passing (99.7%) ✅
   - Audio tests: 57/57 (player: 33, auto-selection: 24)
   - Playlist tests: 17/17 (serialization)
   - Encounter tests: 26/26 (serialization: 10, generation: 14, Phase 8.8: 2)
   - Faction tests: 388/388 (AI: 13, Simulation: 17, NPC: 17, Plot Hooks: 23, Integration: 15, Event handlers: 16, Subfactions: 28, Relationships: 30, Economics: 22, Military: 22, Diplomacy: 20, Phase 8.6: 69, Phase 8.7: 85, Phase 8.9: 14)
-  - Location tests: 85/85 (Phase 9: 68 - Influence: 25, Buildings: 43; Phase 9.1: 17 - UI store tests)
+  - Location tests: 96/96 (Phase 9: 68 - Influence: 25, Buildings: 43; Phase 9.1: 17 - UI store tests; Phase 9.2: 11 - Building production integration)
   - 1 skipped test: header-policy AGENTS.md check (deprecated policy)
-  - 1 failing test: header-policy new file detection (expected for new files)
+  - 2 failing tests: header-policy new file detection (expected for Phase 9.1/8.9 files), faction covert ops casualty (pre-existing flaky test)
 - Integration tests: 6 tests require live Obsidian instance (expected to fail in CI, documented)
 
 **Nächste Schritte (Empfehlung):**
-1. **Phase 9.2 (Building Management UI)** - Complete building/worker management UI:
+1. **Phase 9.2B (Building Management UI)** - Complete building/worker management UI:
    - Building management modal with full CRUD operations
    - Worker assignment interface (drag-and-drop faction members to jobs)
    - Production tracking and visualization

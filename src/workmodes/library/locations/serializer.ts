@@ -3,7 +3,8 @@
 
 import type { LocationData, DungeonRoom, DungeonDoor, DungeonFeature, DungeonToken } from "./types";
 import { OWNER_TYPE_LABELS } from "./constants";
-import { getFeatureTypePrefix, getFeatureTypeLabel, isDungeonLocation } from "./types";
+import { getFeatureTypePrefix, getFeatureTypeLabel, isDungeonLocation, isBuildingLocation } from "./types";
+import { BUILDING_TEMPLATES } from "../../../features/locations/building-production";
 
 export function locationToMarkdown(data: LocationData): string {
     const lines: string[] = [];
@@ -46,6 +47,41 @@ export function locationToMarkdown(data: LocationData): string {
         lines.push("");
         lines.push("## Description");
         lines.push(data.description);
+    }
+
+    // Building-specific: Production Status section
+    if (isBuildingLocation(data)) {
+        lines.push("");
+        lines.push("## Building Production");
+        const production = data.building_production;
+        const template = BUILDING_TEMPLATES[production.buildingType];
+
+        if (template) {
+            lines.push(`- **Building Type:** ${template.name}`);
+            lines.push(`- **Category:** ${template.category}`);
+            lines.push(`- **Condition:** ${production.condition}%`);
+            lines.push(`- **Maintenance Overdue:** ${production.maintenanceOverdue} days`);
+            lines.push(`- **Workers:** ${production.currentWorkers}/${template.maxWorkers}`);
+
+            if (production.activeJobs.length > 0) {
+                lines.push("");
+                lines.push("**Active Jobs:**");
+                for (const job of production.activeJobs) {
+                    lines.push(`- ${job.workerName}: ${job.jobType} (${job.progress}%)`);
+                }
+            }
+
+            const hasProduction = Object.values(production.periodProduction).some(v => v && v > 0);
+            if (hasProduction) {
+                lines.push("");
+                lines.push("**Period Production:**");
+                if (production.periodProduction.gold) lines.push(`- Gold: ${production.periodProduction.gold}`);
+                if (production.periodProduction.food) lines.push(`- Food: ${production.periodProduction.food}`);
+                if (production.periodProduction.equipment) lines.push(`- Equipment: ${production.periodProduction.equipment}`);
+                if (production.periodProduction.magic) lines.push(`- Magic: ${production.periodProduction.magic}`);
+                if (production.periodProduction.influence) lines.push(`- Influence: ${production.periodProduction.influence}`);
+            }
+        }
     }
 
     // Dungeon-specific: Rooms section

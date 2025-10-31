@@ -3,6 +3,7 @@
 
 export { locationSpec } from "./create-spec";
 export type { LocationData, LocationType, OwnerType } from "./types";
+export { isDungeonLocation, isBuildingLocation } from "./types";
 export { locationToMarkdown } from "./serializer";
 export { buildLocationTree, flattenTree, findNodeByName, buildBreadcrumbs } from "./tree-builder";
 export type { LocationTreeNode } from "./tree-builder";

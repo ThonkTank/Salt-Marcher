@@ -1,6 +1,8 @@
 // src/workmodes/library/locations/types.ts
 // Type definitions for location entities
 
+import type { BuildingProduction } from "../../../features/locations/building-production";
+
 export type LocationType =
     | "Stadt"
     | "Dorf"
@@ -30,6 +32,8 @@ export interface LocationData {
     cell_size?: number; // Grid cell size in pixels (default: 40)
     rooms?: DungeonRoom[];
     tokens?: DungeonToken[]; // Tokens placed on the grid
+    // Building-specific fields (only used when type === "Gebäude")
+    building_production?: BuildingProduction;
 }
 
 // Dungeon-specific types
@@ -136,7 +140,11 @@ export function getDefaultTokenColor(type: TokenType): string {
     }
 }
 
-// Type guard
+// Type guards
 export function isDungeonLocation(data: LocationData): data is LocationData & Required<Pick<LocationData, 'grid_width' | 'grid_height'>> {
     return data.type === "Dungeon" && typeof data.grid_width === "number" && typeof data.grid_height === "number";
+}
+
+export function isBuildingLocation(data: LocationData): data is LocationData & Required<Pick<LocationData, 'building_production'>> {
+    return data.type === "Gebäude" && typeof data.building_production === "object" && data.building_production !== null;
 }

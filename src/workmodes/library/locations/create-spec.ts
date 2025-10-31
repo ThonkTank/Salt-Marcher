@@ -5,6 +5,7 @@ import type { CreateSpec, AnyFieldSpec, DataSchema } from "../../../features/dat
 import type { LocationData, LocationType, OwnerType } from "./types";
 import { LOCATION_TYPES, OWNER_TYPES, OWNER_TYPE_LABELS } from "./constants";
 import { locationToMarkdown } from "./serializer";
+import { BUILDING_TEMPLATES } from "../../../features/locations/building-production";
 
 // ============================================================================
 // SCHEMA
@@ -150,6 +151,60 @@ const fields: AnyFieldSpec[] = [
         visibleIf: (values) => values.type === "Dungeon",
         dependsOn: ["type"],
     },
+    // Building-specific fields (only visible when type === "Gebäude")
+    {
+        id: "building_production.buildingType",
+        label: "Gebäudetyp",
+        type: "select",
+        required: false,
+        options: Object.keys(BUILDING_TEMPLATES).map(key => ({
+            value: key,
+            label: BUILDING_TEMPLATES[key].name,
+        })),
+        placeholder: "Wähle einen Gebäudetyp",
+        description: "Art des Gebäudes (bestimmt erlaubte Jobs und Produktion)",
+        visibleIf: (values) => values.type === "Gebäude",
+        dependsOn: ["type"],
+    },
+    {
+        id: "building_production.condition",
+        label: "Zustand",
+        type: "number-stepper",
+        min: 0,
+        max: 100,
+        step: 1,
+        default: 100,
+        placeholder: "100",
+        description: "Gebäudezustand (0-100%, beeinflusst Produktionsrate)",
+        visibleIf: (values) => values.type === "Gebäude" && !!values.building_production?.buildingType,
+        dependsOn: ["type", "building_production.buildingType"],
+    },
+    {
+        id: "building_production.maintenanceOverdue",
+        label: "Wartung überfällig",
+        type: "number-stepper",
+        min: 0,
+        max: 365,
+        step: 1,
+        default: 0,
+        placeholder: "0",
+        description: "Tage seit fälliger Wartung (reduziert Produktionsrate um -5%/Tag, max -50%)",
+        visibleIf: (values) => values.type === "Gebäude" && !!values.building_production?.buildingType,
+        dependsOn: ["type", "building_production.buildingType"],
+    },
+    {
+        id: "building_production.currentWorkers",
+        label: "Aktuelle Arbeiter",
+        type: "number-stepper",
+        min: 0,
+        max: 100,
+        step: 1,
+        default: 0,
+        placeholder: "0",
+        description: "Anzahl der zugewiesenen Arbeiter (max. durch Gebäudetyp begrenzt)",
+        visibleIf: (values) => values.type === "Gebäude" && !!values.building_production?.buildingType,
+        dependsOn: ["type", "building_production.buildingType"],
+    },
 ];
 
 // ============================================================================
@@ -182,6 +237,7 @@ export const locationSpec: CreateSpec<LocationData> = {
             "cell_size",
             "rooms",
             "tokens",
+            "building_production",
         ],
         bodyTemplate: (data) => locationToMarkdown(data as LocationData),
     },
@@ -220,6 +276,22 @@ export const locationSpec: CreateSpec<LocationData> = {
                 getValue: (entry) => {
                     if (!entry.grid_size) return null;
                     return `⬚ ${entry.grid_size}`;
+                },
+            },
+            {
+                id: "building_status",
+                cls: "sm-cc-item__meta sm-cc-item__building-status",
+                getValue: (entry) => {
+                    if (entry.type !== "Gebäude" || !entry.building_production) return null;
+
+                    const prod = entry.building_production;
+                    const template = BUILDING_TEMPLATES[prod.buildingType];
+                    if (!template) return null;
+
+                    // Condition indicator: 🟢 80-100%, 🟡 40-79%, 🔴 0-39%
+                    const conditionIcon = prod.condition >= 80 ? "🟢" : prod.condition >= 40 ? "🟡" : "🔴";
+
+                    return `${conditionIcon} ${template.name} (${prod.condition}%) • ${prod.currentWorkers}/${template.maxWorkers} workers`;
                 },
             },
         ],

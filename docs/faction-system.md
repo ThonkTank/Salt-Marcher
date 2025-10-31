@@ -989,6 +989,243 @@ User advances calendar by 3 days
 - Production calculation handles missing buildings gracefully
 - Bidirectional queries maintain consistency between factions and locations
 
+## Phase 9.1: UI Integration ✅
+
+**Status:** Complete - Location influence visualization on cartographer map
+
+**Goal**: Display location influence areas on map, enhance inspector with location details
+
+See detailed UI architecture in [PHASE_9_1_UI_INTEGRATION.md](PHASE_9_1_UI_INTEGRATION.md) and [PHASE_9_1_QUICK_REFERENCE.md](PHASE_9_1_QUICK_REFERENCE.md)
+
+### Location Influence Store ✅
+
+**Implementation:** `src/features/maps/state/location-influence-store.ts`
+- **Reactive Store**: WritableStore pattern with subscription-based updates
+- **Assignment Management**: Set/get/list influenced hexes with metadata
+- **Color Palette**: Automatic color assignment per location with owner differentiation
+- **Owner Types**: faction/npc/none categorization for visual styling
+- **Coordinate Validation**: TileCoord (odd-r) format with duplicate handling
+
+**Interface:**
+```typescript
+export interface LocationInfluenceAssignment {
+    coord: TileCoord;              // { r, c }
+    locationId: string;
+    locationName: string;
+    locationType: LocationType;
+    strength: number;              // 0-100
+    ownerType?: "faction" | "npc" | "none";
+    ownerName?: string;
+    color?: string;                // Override color
+}
+
+export interface LocationInfluenceStore {
+    state: WritableStore<LocationInfluenceState>;
+    setAssignments(assignments: readonly LocationInfluenceAssignment[]): void;
+    clear(): void;
+    get(coord: TileCoord): LocationInfluenceEntry | null;
+    list(): LocationInfluenceEntry[];
+    getColorForOwner(ownerName: string, ownerType: string): string;
+}
+```
+
+**Tests:** 17 tests (store instances: 4, assignment: 3, retrieval: 3, color management: 4, validation: 3)
+
+### Location Influence Repository ✅
+
+**Implementation:** `src/features/maps/repositories/location-influence-repository.ts`
+- **Data Loading**: Load location markdown files from vault
+- **Influence Calculation**: Calculate influenced hexes using Phase 9 backend system
+- **Coordinate Conversion**: Cube coordinates → odd-r (TileCoord) format
+- **Assignment Generation**: Transform location data → influence assignments for store
+- **Spatial Filtering**: TODO - Filter by map bounds (performance optimization)
+
+**Functions:**
+- `loadLocationInfluenceForMap()` - Main entry point, returns assignments array
+- Internal helpers for parsing, coordinate conversion, influence calculation
+
+**Integration:** Called during cartographer initialization to populate influence store
+
+### Map Rendering Integration ✅
+
+**Implementation:** `src/features/maps/rendering/hex-render.ts`
+- **Store Subscription**: Subscribe to location-influence-store updates
+- **Overlay Rendering**: Render influences as semi-transparent overlays below faction overlays
+- **Visual Styling**: Lower opacity than faction overlays (0.35 vs 0.55)
+- **Cleanup**: Unsubscribe on destroy, proper lifecycle management
+
+**Changes:**
+- Lines 16-17: Import location influence store
+- Lines 146-175: Subscribe and apply location influence overlays
+- Lines 436-439: Cleanup subscription
+
+### Inspector Enhancement ✅
+
+**Implementation:** `src/workmodes/cartographer/modes/inspector.ts`
+- **Location Influence Display**: Show influence info when hex is selected
+- **Metadata Panel**: Display strength, owner, location type
+- **Visual Styling**: Background color, borders for info sections
+- **Future Placeholder**: TODO marker for building/worker details (Phase 9.2)
+
+**Changes:**
+- Lines 171-205: Location influence info section
+- Line 234: TODO for Phase 9.2 building details
+
+### Visual Design ✅
+
+**Influence Overlays:**
+- Semi-transparent colored areas (fillOpacity: 0.35)
+- Thin stroke (strokeWidth: 2) vs faction overlays (strokeWidth: 3)
+- Rendered below faction overlays (z-ordering)
+- Color consistency per owner
+
+**Inspector Panel:**
+- Sectioned layout with headers
+- Background: `var(--background-secondary)`
+- Border: `var(--background-modifier-border)`
+- Clear visual hierarchy
+
+### Architecture Patterns ✅
+
+**Store Pattern:**
+- Follows faction-overlay-store.ts pattern exactly
+- WeakMap registry per App instance
+- Map cache per map file path
+- Reactive writable stores with subscriptions
+
+**Rendering Pattern:**
+- Separate concerns: scene (polygons), overlays, stores
+- Dataset attributes for state tracking
+- CSS variables for theming
+- Cleanup subscriptions in destroy()
+
+**Integration Pattern:**
+- Repository loads vault data
+- Store manages reactive state
+- Renderer subscribes and updates visuals
+- Inspector queries stores for display
+
+## Phase 9.2: Building Management Data Model ✅
+
+**Status:** Complete - Building production state integrated into LocationData
+
+**Goal**: Extend location entities with building production state for tracking workers, condition, and production
+
+### LocationData Extension ✅
+
+**Implementation:** `src/workmodes/library/locations/types.ts`
+- **BuildingProduction Field**: Optional `building_production` field added to LocationData
+- **Type Guard**: `isBuildingLocation()` helper for type-safe building checks
+- **Type Safety**: Conditional field (only present when type === "Gebäude")
+
+**BuildingProduction Interface:**
+```typescript
+interface BuildingProduction {
+    buildingType: string;           // Template key (smithy, barracks, etc.)
+    currentWorkers: number;         // Assigned workers count
+    activeJobs: Array<{            // Jobs in progress
+        workerName: string;
+        jobType: BuildingJobType;
+        progress: number;          // 0-100
+        startedAt?: string;
+        estimatedCompletion?: string;
+    }>;
+    periodProduction: {            // Resources produced
+        gold?: number;
+        food?: number;
+        equipment?: number;
+        magic?: number;
+        influence?: number;
+    };
+    condition: number;             // 0-100% building state
+    maintenanceOverdue: number;    // Days since maintenance
+}
+```
+
+### UI Integration ✅
+
+**Create-Spec Fields:** `src/workmodes/library/locations/create-spec.ts`
+- **Building Type Selector**: Dropdown with all BUILDING_TEMPLATES (conditionally visible)
+- **Condition**: Number stepper (0-100%, affects production rate)
+- **Maintenance Overdue**: Number stepper (days, -5%/day penalty)
+- **Current Workers**: Number stepper (max limited by building template)
+- **Conditional Visibility**: Fields only show when type === "Gebäude" and building type selected
+
+**Browse View Enhancement:**
+- **Building Status Badge**: Shows condition, building type, and worker count
+- **Color-Coded Indicators**: 🟢 (80-100%), 🟡 (40-79%), 🔴 (0-39%)
+- **Worker Display**: `currentWorkers/maxWorkers` format
+- **Example**: `🟢 Smithy (85%) • 3/5 workers`
+
+### Serialization ✅
+
+**Markdown Output:** `src/workmodes/library/locations/serializer.ts`
+- **Building Production Section**: Dedicated section in location markdown
+- **Template Info**: Building name, category
+- **State Display**: Condition, maintenance overdue, worker count
+- **Active Jobs List**: Worker name, job type, progress percentage
+- **Period Production**: Resource output breakdown
+
+**Example Output:**
+```markdown
+## Building Production
+- **Building Type:** Smithy
+- **Category:** economic
+- **Condition:** 85%
+- **Maintenance Overdue:** 2 days
+- **Workers:** 3/5
+
+**Active Jobs:**
+- Thorin Ironforge: crafting (75%)
+
+**Period Production:**
+- Equipment: 5
+- Gold: 10
+```
+
+### Storage Format ✅
+
+**Frontmatter:** `building_production` added to storage configuration
+- Full BuildingProduction object serialized in YAML frontmatter
+- Handles nested activeJobs array and periodProduction object
+- Gracefully handles missing/null values
+
+### Tests ✅
+
+**Test Coverage:** `devkit/testing/unit/library/locations-building-production.test.ts`
+- **Type Guard Tests**: 4 tests for `isBuildingLocation()` validation
+- **Serialization Tests**: 5 tests for markdown output correctness
+- **Type Integration**: 2 tests for LocationData compatibility
+- **Total**: 11 new tests, all passing (100%)
+
+**Test Scenarios:**
+- Building location detection (with/without production data)
+- Non-building location handling
+- Null/missing production data
+- Complete production state serialization
+- Partial production data (no jobs, partial resources)
+- Invalid building types
+- Type compatibility checks
+
+### Architecture Decisions ✅
+
+**Simplicity Focus:**
+- Data model only (no complex UI interactions yet)
+- Leverages existing CreateSpec pattern for automatic UI generation
+- Conditional field visibility via `visibleIf`/`dependsOn`
+- Type-safe with dedicated type guard
+
+**DRY Principles:**
+- Reuses BuildingProduction interface from Phase 9
+- Adapts existing location serializer pattern
+- Extends proven CreateSpec field patterns
+- No code duplication
+
+**Future Extensions:**
+- Phase 9.2B: Full building management modal with CRUD
+- Phase 9.2C: Drag-and-drop worker assignment
+- Phase 9.2D: Production visualization and charts
+
 ## Future Enhancements
 
 ### Phase 8.10+: UI & Visualization
