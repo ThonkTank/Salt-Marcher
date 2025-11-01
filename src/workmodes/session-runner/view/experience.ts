@@ -26,6 +26,7 @@ import { createAudioController, type AudioControllerHandle } from "../components
 import { createEncounterController, type EncounterControllerHandle } from "../components/encounter-controller";
 import { buildEncounterContext } from "../util/encounter-context-builder";
 import { weatherStore } from "../../../features/weather/weather-store";
+import { generateForecast } from "../../../features/weather/weather-forecaster";
 import { oddrToAxial, axialToCube } from "../../../features/maps/rendering/core/hex-geom";
 
 export function createSessionRunnerExperience(): SessionRunnerExperience {
@@ -92,8 +93,29 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
                 const cube = axialToCube(oddrToAxial({ r: currentCoord.r, c: currentCoord.c }));
                 const weather = weatherStore.getWeather(currentMapFile.path, cube.q, cube.r, cube.s);
                 sidebar.setWeather(weather);
+
+                // Update history
+                const history = weatherStore.getWeatherHistory(currentMapFile.path, cube.q, cube.r, cube.s);
+                sidebar.setWeatherHistory(history);
+
+                // Generate forecast if weather is available
+                if (weather) {
+                    const forecast = generateForecast({
+                        hexCoord: { q: cube.q, r: cube.r, s: cube.s },
+                        climate: weather.climate,
+                        season: weather.season,
+                        currentWeather: weather,
+                        currentDate: weather.lastUpdate,
+                        daysAhead: 3,
+                    });
+                    sidebar.setWeatherForecast(forecast);
+                } else {
+                    sidebar.setWeatherForecast([]);
+                }
             } else {
                 sidebar.setWeather(null);
+                sidebar.setWeatherHistory([]);
+                sidebar.setWeatherForecast([]);
             }
         }
     };
@@ -103,6 +125,8 @@ export function createSessionRunnerExperience(): SessionRunnerExperience {
         sidebar?.setSpeed(1);
         sidebar?.setTravelPanel(null);
         sidebar?.setWeather(null);
+        sidebar?.setWeatherHistory([]);
+        sidebar?.setWeatherForecast([]);
         playback.reset();
     };
 

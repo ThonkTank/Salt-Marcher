@@ -9,11 +9,35 @@ import { writable, derived, type Readable } from "svelte/store";
 import type { WeatherState } from "./types";
 
 /**
+ * Weather history entry (one snapshot)
+ */
+export interface WeatherHistoryEntry {
+	/** Weather state at this time */
+	weather: WeatherState;
+	/** Game date (ISO string) */
+	date: string;
+}
+
+/**
+ * Weather forecast entry (predicted future state)
+ */
+export interface WeatherForecast {
+	/** Forecasted weather state */
+	weather: WeatherState;
+	/** Target game date (ISO string) */
+	date: string;
+	/** Confidence level (0-1, 1=certain, 0=very uncertain) */
+	confidence: number;
+}
+
+/**
  * Store state structure
  */
 interface WeatherStoreState {
 	/** Weather indexed by "mapPath:q:r:s" */
 	weatherByHex: Map<string, WeatherState>;
+	/** Weather history indexed by "mapPath:q:r:s" (last 7 days) */
+	historyByHex: Map<string, WeatherHistoryEntry[]>;
 	/** Currently active map path (for filtering) */
 	activeMapPath: string | null;
 }
@@ -48,6 +72,7 @@ function parseHexKey(key: string): { mapPath: string; q: number; r: number; s: n
 function createInitialState(): WeatherStoreState {
 	return {
 		weatherByHex: new Map(),
+		historyByHex: new Map(),
 		activeMapPath: null,
 	};
 }
@@ -60,13 +85,42 @@ class WeatherStore {
 
 	/**
 	 * Set weather for a specific hex
+	 * Automatically archives previous weather to history
 	 */
 	setWeather(mapPath: string, weather: WeatherState): void {
 		this.store.update((state) => {
 			const key = createHexKey(mapPath, weather.hexCoord.q, weather.hexCoord.r, weather.hexCoord.s);
+
+			// Archive current weather to history before updating
+			const currentWeather = state.weatherByHex.get(key);
+			if (currentWeather) {
+				this.addToHistory(state, key, currentWeather);
+			}
+
 			state.weatherByHex.set(key, { ...weather });
 			return state;
 		});
+	}
+
+	/**
+	 * Add weather entry to history (internal helper)
+	 * Maintains max 7 days of history per hex
+	 */
+	private addToHistory(state: WeatherStoreState, key: string, weather: WeatherState): void {
+		let history = state.historyByHex.get(key) ?? [];
+
+		// Add new entry
+		history.push({
+			weather: { ...weather },
+			date: weather.lastUpdate,
+		});
+
+		// Keep only last 7 entries
+		if (history.length > 7) {
+			history = history.slice(-7);
+		}
+
+		state.historyByHex.set(key, history);
 	}
 
 	/**
@@ -80,6 +134,20 @@ class WeatherStore {
 		});
 		unsubscribe();
 		return result;
+	}
+
+	/**
+	 * Get weather history for a specific hex (last 7 days)
+	 * Returns array sorted oldest to newest
+	 */
+	getWeatherHistory(mapPath: string, q: number, r: number, s: number): WeatherHistoryEntry[] {
+		let result: WeatherHistoryEntry[] = [];
+		const unsubscribe = this.store.subscribe((state) => {
+			const key = createHexKey(mapPath, q, r, s);
+			result = state.historyByHex.get(key) ?? [];
+		});
+		unsubscribe();
+		return [...result]; // Return copy to prevent external mutation
 	}
 
 	/**
@@ -109,6 +177,7 @@ class WeatherStore {
 			}
 			for (const key of keysToRemove) {
 				state.weatherByHex.delete(key);
+				state.historyByHex.delete(key); // Also clear history
 			}
 			return state;
 		});

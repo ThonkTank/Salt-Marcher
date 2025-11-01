@@ -251,7 +251,13 @@ interface WeatherZone {
 - Tests: devkit/testing/tests/unit/features/audio/context-extractor-weather.test.ts
 
 ### Phase 10.4: Session Runner UI ✅
-**Status:** Complete
+**Status:** Complete (2025-10-31) - 4 sub-phases completed
+
+**Sub-Phases:**
+- **Phase 10.4.1:** Weather Speed Modifier Context ✅ (contextual speed display, before/after speeds)
+- **Phase 10.4.2:** Manual Encounter Composition Fix ✅ (Calculator works without travel context)
+- **Phase 10.4.3:** Encounter Presenter Test Coverage ✅ (integration test for XP calculation)
+- **Phase 10.4.4:** Worker Assignment Job Validation ✅ (job compatibility validation for buildings)
 
 **Implementation:**
 1. Weather panel component (src/workmodes/session-runner/travel/ui/weather-panel.ts) ✅
@@ -306,12 +312,40 @@ interface WeatherZone {
 - Styles: styles.css (.sm-weather-panel)
 - Tests: devkit/testing/unit/features/weather/weather-icons.test.ts
 
-**Phase 10.4.1 Update (2025-10-31):**
+**Phase 10.4 Completion Summary (2025-10-31):**
+
+**Phase 10.4.1: Weather Speed Modifier Context** ✅
 - Added contextual speed modifier display
 - Shows before/after speeds (e.g., "3.0 → 2.25 mph")
 - Helper text explains percentage meaning
 - Weather panel tracks base party speed via `setBaseSpeed()` method
 - Resolves UX issue: users now understand weather's effect on travel
+- Location: weather-panel.ts:177-189
+
+**Phase 10.4.2: Manual Encounter Composition Fix** ✅
+- Fixed Calculator to work without travel context
+- Manual encounter composition no longer requires active travel
+- Calculator accepts optional context via additionalContext parameter
+- Enables ad-hoc encounter creation from Library
+- Test coverage: 7 new tests for manual composition scenarios
+- Location: src/workmodes/encounter/presenter.ts
+
+**Phase 10.4.3: Encounter Presenter Test Coverage** ✅
+- Added integration test for XP calculation flow
+- Verifies presenter correctly calculates XP from faction members
+- Tests CR parsing (fractional and integer values)
+- Ensures creature lookup from library works
+- Location: devkit/testing/unit/encounter/presenter.test.ts
+
+**Phase 10.4.4: Worker Assignment Job Validation** ✅
+- Added job compatibility validation for building workers
+- Validates job type against building's allowed jobs
+- Validates job permission based on member role
+- Clear error messages (e.g., "Dieses Gebäude unterstützt keinen crafting-Job")
+- Visual feedback with Notice UI
+- Prevents invalid worker assignments before save
+- Test coverage: 5 new validation tests
+- Location: building-management-modal.ts:489-525, devkit/testing/unit/cartographer/building-management-modal.test.ts
 
 ### Phase 10.5: Advanced Features (Future)
 - Weather forecasting (predict next 3 days)

@@ -2,11 +2,12 @@
  * Weather Panel UI Component
  *
  * Displays current weather conditions in the Session Runner sidebar.
- * Shows weather icon, conditions, and gameplay effects.
+ * Shows weather icon, conditions, gameplay effects, history, and forecast.
+ * Interactive features: expandable history/forecast, hover details.
  */
 
 import { setIcon } from "obsidian";
-import type { WeatherState } from "../../../../features/weather/types";
+import type { WeatherState, ClimateTemplate, Season } from "../../../../features/weather/types";
 import {
 	getWeatherIcon,
 	getWeatherLabel,
@@ -17,6 +18,8 @@ import {
 	formatPrecipitation,
 	formatVisibility,
 } from "../../../../features/weather/weather-icons";
+import type { WeatherHistoryEntry, WeatherForecast } from "../../../../features/weather/weather-store";
+import { getConfidenceLabel } from "../../../../features/weather/weather-forecaster";
 
 /**
  * Weather panel interface
@@ -30,6 +33,12 @@ export interface WeatherPanel {
 	setSpeedModifier(modifier: number, baseSpeed?: number): void;
 	/** Update base speed for modifier calculations (uses last modifier) */
 	setBaseSpeed(speed: number): void;
+	/** Set weather history (last 7 days) */
+	setHistory(history: WeatherHistoryEntry[]): void;
+	/** Set weather forecast (next 3 days) */
+	setForecast(forecast: WeatherForecast[]): void;
+	/** Set placeholder error message */
+	setPlaceholder(message: string): void;
 	/** Destroy panel */
 	destroy(): void;
 }
@@ -95,15 +104,49 @@ export function createWeatherPanel(host: HTMLElement): WeatherPanel {
 		cls: "sm-weather-panel__effect-helper-text",
 	});
 
+	// History section (expandable)
+	const historySection = root.createDiv({ cls: "sm-weather-panel__history-section" });
+	const historyHeader = historySection.createDiv({ cls: "sm-weather-panel__section-header" });
+	historyHeader.createSpan({ cls: "sm-weather-panel__section-title", text: "Geschichte" });
+	const historyToggle = historyHeader.createSpan({ cls: "sm-weather-panel__toggle", text: "▶" });
+	const historyContent = historySection.createDiv({ cls: "sm-weather-panel__history-content" });
+	historyContent.style.display = "none";
+
+	// Forecast section (expandable)
+	const forecastSection = root.createDiv({ cls: "sm-weather-panel__forecast-section" });
+	const forecastHeader = forecastSection.createDiv({ cls: "sm-weather-panel__section-header" });
+	forecastHeader.createSpan({ cls: "sm-weather-panel__section-title", text: "Vorhersage" });
+	const forecastToggle = forecastHeader.createSpan({ cls: "sm-weather-panel__toggle", text: "▶" });
+	const forecastContent = forecastSection.createDiv({ cls: "sm-weather-panel__forecast-content" });
+	forecastContent.style.display = "none";
+
 	// Placeholder state
 	const placeholder = root.createDiv({
 		cls: "sm-weather-panel__placeholder",
-		text: "Kein Wetter verfügbar",
+		text: "Wähle ein Hex aus, um das Wetter zu sehen",
 	});
 	placeholder.style.display = "block";
 	mainDisplay.style.display = "none";
 	details.style.display = "none";
 	effects.style.display = "none";
+	historySection.style.display = "none";
+	forecastSection.style.display = "none";
+
+	// Toggle handlers
+	let historyExpanded = false;
+	let forecastExpanded = false;
+
+	historyHeader.onclick = () => {
+		historyExpanded = !historyExpanded;
+		historyContent.style.display = historyExpanded ? "block" : "none";
+		historyToggle.textContent = historyExpanded ? "▼" : "▶";
+	};
+
+	forecastHeader.onclick = () => {
+		forecastExpanded = !forecastExpanded;
+		forecastContent.style.display = forecastExpanded ? "block" : "none";
+		forecastToggle.textContent = forecastExpanded ? "▼" : "▶";
+	};
 
 	/**
 	 * Update weather display
@@ -115,6 +158,8 @@ export function createWeatherPanel(host: HTMLElement): WeatherPanel {
 			mainDisplay.style.display = "none";
 			details.style.display = "none";
 			effects.style.display = "none";
+			historySection.style.display = "none";
+			forecastSection.style.display = "none";
 			return;
 		}
 
@@ -123,6 +168,8 @@ export function createWeatherPanel(host: HTMLElement): WeatherPanel {
 		mainDisplay.style.display = "flex";
 		details.style.display = "block";
 		effects.style.display = "block";
+		historySection.style.display = "block";
+		forecastSection.style.display = "block";
 
 		const { currentWeather, temperature, windSpeed, precipitation, visibility } = weather;
 
@@ -198,6 +245,99 @@ export function createWeatherPanel(host: HTMLElement): WeatherPanel {
 	};
 
 	/**
+	 * Set weather history (last 7 days)
+	 */
+	const setHistory = (history: WeatherHistoryEntry[]) => {
+		historyContent.empty();
+
+		if (history.length === 0) {
+			historyContent.createSpan({
+				cls: "sm-weather-panel__empty-message",
+				text: "Keine Verlaufsdaten verfügbar",
+			});
+			return;
+		}
+
+		// Display history entries (most recent first)
+		const reversed = [...history].reverse();
+		for (const entry of reversed) {
+			const entryEl = historyContent.createDiv({ cls: "sm-weather-panel__history-entry" });
+
+			// Date
+			const date = new Date(entry.date);
+			const dateStr = date.toLocaleDateString("de-DE", {
+				day: "2-digit",
+				month: "2-digit",
+				year: "numeric",
+			});
+			entryEl.createSpan({ cls: "sm-weather-panel__history-date", text: dateStr });
+
+			// Weather icon and label
+			const iconEl = entryEl.createSpan({ cls: "sm-weather-panel__history-icon" });
+			setIcon(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
+
+			const labelEl = entryEl.createSpan({ cls: "sm-weather-panel__history-label" });
+			labelEl.textContent = `${getWeatherLabel(entry.weather.currentWeather.type)} (${formatTemperature(entry.weather.temperature)})`;
+		}
+	};
+
+	/**
+	 * Set weather forecast (next 3 days)
+	 */
+	const setForecast = (forecast: WeatherForecast[]) => {
+		forecastContent.empty();
+
+		if (forecast.length === 0) {
+			forecastContent.createSpan({
+				cls: "sm-weather-panel__empty-message",
+				text: "Keine Vorhersage verfügbar",
+			});
+			return;
+		}
+
+		// Display forecast entries
+		for (const entry of forecast) {
+			const entryEl = forecastContent.createDiv({ cls: "sm-weather-panel__forecast-entry" });
+
+			// Date
+			const date = new Date(entry.date);
+			const dateStr = date.toLocaleDateString("de-DE", {
+				weekday: "short",
+				day: "2-digit",
+				month: "2-digit",
+			});
+			entryEl.createSpan({ cls: "sm-weather-panel__forecast-date", text: dateStr });
+
+			// Weather icon and label
+			const iconEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-icon" });
+			setIcon(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
+
+			const labelEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-label" });
+			labelEl.textContent = `${getWeatherLabel(entry.weather.currentWeather.type)} (${formatTemperature(entry.weather.temperature)})`;
+
+			// Confidence indicator
+			const confidenceEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-confidence" });
+			confidenceEl.textContent = getConfidenceLabel(entry.confidence);
+
+			// Color code by confidence
+			if (entry.confidence >= 0.7) {
+				confidenceEl.classList.add("sm-weather-panel__forecast-confidence--high");
+			} else if (entry.confidence >= 0.5) {
+				confidenceEl.classList.add("sm-weather-panel__forecast-confidence--medium");
+			} else {
+				confidenceEl.classList.add("sm-weather-panel__forecast-confidence--low");
+			}
+		}
+	};
+
+	/**
+	 * Set placeholder error message
+	 */
+	const setPlaceholder = (message: string) => {
+		placeholder.textContent = message;
+	};
+
+	/**
 	 * Destroy panel
 	 */
 	const destroy = () => {
@@ -209,6 +349,9 @@ export function createWeatherPanel(host: HTMLElement): WeatherPanel {
 		setWeather,
 		setSpeedModifier,
 		setBaseSpeed,
+		setHistory,
+		setForecast,
+		setPlaceholder,
 		destroy,
 	};
 }

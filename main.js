@@ -26927,6 +26927,218 @@ var init_weather_icons = __esm({
   }
 });
 
+// src/features/weather/weather-generator.ts
+function seededRandom2(seed) {
+  let state = seed;
+  return () => {
+    state = state + 1831565813 | 0;
+    let t = Math.imul(state ^ state >>> 15, 1 | state);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function selectWeatherType(probabilities, random) {
+  const roll = random();
+  let cumulative = 0;
+  for (const [type2, probability] of Object.entries(probabilities)) {
+    cumulative += probability;
+    if (roll <= cumulative) {
+      return type2;
+    }
+  }
+  return "clear";
+}
+function getTransitionProbability(from, to) {
+  const transitions = {
+    clear: { clear: 0.5, cloudy: 0.3, hot: 0.15, wind: 0.05 },
+    cloudy: { cloudy: 0.3, clear: 0.2, rain: 0.2, fog: 0.15, wind: 0.1, storm: 0.05 },
+    rain: { rain: 0.4, cloudy: 0.3, storm: 0.15, clear: 0.1, fog: 0.05 },
+    storm: { storm: 0.3, rain: 0.3, cloudy: 0.2, wind: 0.1, clear: 0.1 },
+    snow: { snow: 0.5, cold: 0.2, cloudy: 0.15, wind: 0.1, clear: 0.05 },
+    fog: { fog: 0.4, cloudy: 0.3, clear: 0.2, rain: 0.1 },
+    wind: { wind: 0.4, cloudy: 0.25, clear: 0.2, storm: 0.1, fog: 0.05 },
+    hot: { hot: 0.5, clear: 0.3, cloudy: 0.15, wind: 0.05 },
+    cold: { cold: 0.5, snow: 0.2, cloudy: 0.15, clear: 0.1, wind: 0.05 }
+  };
+  return transitions[from]?.[to] ?? 0.01;
+}
+function applyMarkovTransition(climateProbabilities, previousWeather, transitionWeight) {
+  const blended = {};
+  for (const type2 of Object.keys(climateProbabilities)) {
+    const climateProb = climateProbabilities[type2];
+    const transitionProb = getTransitionProbability(previousWeather, type2);
+    blended[type2] = climateProb * (1 - transitionWeight) + transitionProb * transitionWeight;
+  }
+  const total = Object.values(blended).reduce((sum, val) => sum + val, 0);
+  for (const type2 of Object.keys(blended)) {
+    blended[type2] /= total;
+  }
+  return blended;
+}
+function calculateTemperature(climate, season, dayOfYear, random) {
+  const { baseTemperature, seasonalVariation } = climate;
+  const yearProgress = dayOfYear / 365;
+  const seasonalOffset = Math.sin(yearProgress * 2 * Math.PI - Math.PI / 2) * seasonalVariation;
+  const baseTemp = (baseTemperature.min + baseTemperature.max) / 2;
+  const dailyVariation = (random() - 0.5) * 10;
+  return baseTemp + seasonalOffset + dailyVariation;
+}
+function calculateSeverity(weatherType, random) {
+  const severityRanges = {
+    clear: { min: 0, max: 0.2 },
+    cloudy: { min: 0.2, max: 0.4 },
+    rain: { min: 0.3, max: 0.6 },
+    storm: { min: 0.7, max: 1 },
+    snow: { min: 0.3, max: 0.7 },
+    fog: { min: 0.3, max: 0.6 },
+    wind: { min: 0.4, max: 0.8 },
+    hot: { min: 0.5, max: 0.9 },
+    cold: { min: 0.5, max: 0.9 }
+  };
+  const range = severityRanges[weatherType];
+  return range.min + random() * (range.max - range.min);
+}
+function calculateDuration(climate, random) {
+  const { transitionSpeed } = climate;
+  return transitionSpeed * (0.5 + random() * 1);
+}
+function calculateWindSpeed(weatherType, severity, random) {
+  const baseWindSpeeds = {
+    clear: 5,
+    cloudy: 10,
+    rain: 20,
+    storm: 50,
+    snow: 15,
+    fog: 5,
+    wind: 40,
+    hot: 10,
+    cold: 15
+  };
+  const base = baseWindSpeeds[weatherType];
+  const variation = base * severity * random();
+  return Math.max(0, base + variation);
+}
+function calculatePrecipitation(weatherType, severity) {
+  if (weatherType === "rain") {
+    return severity * 10;
+  }
+  if (weatherType === "storm") {
+    return 5 + severity * 20;
+  }
+  if (weatherType === "snow") {
+    return severity * 5;
+  }
+  return 0;
+}
+function calculateVisibility(weatherType, severity) {
+  const baseVisibility = 1e4;
+  const visibilityMultipliers = {
+    clear: 1,
+    cloudy: 0.9,
+    rain: 0.5,
+    storm: 0.3,
+    snow: 0.4,
+    fog: 0.2,
+    wind: 0.8,
+    hot: 0.95,
+    cold: 0.95
+  };
+  const multiplier = visibilityMultipliers[weatherType];
+  return baseVisibility * multiplier * (1 - severity * 0.5);
+}
+function generateWeather(options) {
+  const { climate, season, previousWeather, dayOfYear, seed } = options;
+  const random = seededRandom2(seed ?? dayOfYear);
+  const climateProbabilities = climate.weatherProbabilities[season];
+  let finalProbabilities = climateProbabilities;
+  if (previousWeather) {
+    const transitionWeight = 0.4;
+    finalProbabilities = applyMarkovTransition(
+      climateProbabilities,
+      previousWeather.type,
+      transitionWeight
+    );
+  }
+  const weatherType = selectWeatherType(finalProbabilities, random);
+  const severity = calculateSeverity(weatherType, random);
+  const duration = calculateDuration(climate, random);
+  const temperature = calculateTemperature(climate, season, dayOfYear, random);
+  const windSpeed = calculateWindSpeed(weatherType, severity, random);
+  const precipitation = calculatePrecipitation(weatherType, severity);
+  const visibility = calculateVisibility(weatherType, severity);
+  const hexCoord = { q: 0, r: 0, s: 0 };
+  return {
+    hexCoord,
+    currentWeather: {
+      type: weatherType,
+      severity,
+      duration
+    },
+    temperature,
+    windSpeed,
+    precipitation,
+    visibility,
+    lastUpdate: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+var init_weather_generator = __esm({
+  "src/features/weather/weather-generator.ts"() {
+    "use strict";
+  }
+});
+
+// src/features/weather/weather-forecaster.ts
+function generateForecast(options) {
+  const {
+    hexCoord,
+    climate,
+    season,
+    currentWeather,
+    currentDate,
+    daysAhead = 3
+  } = options;
+  const forecasts = [];
+  let previousWeather = currentWeather;
+  const startDate = new Date(currentDate);
+  const baseSeed = hexCoord.q * 1e3 + hexCoord.r * 100 + hexCoord.s;
+  for (let day = 1; day <= daysAhead; day++) {
+    const forecastDate = new Date(startDate);
+    forecastDate.setDate(forecastDate.getDate() + day);
+    const forecastDateStr = forecastDate.toISOString();
+    const dayOfYear = Math.floor(
+      (forecastDate.getTime() - new Date(forecastDate.getFullYear(), 0, 0).getTime()) / (1e3 * 60 * 60 * 24)
+    );
+    const forecastedWeather = generateWeather({
+      climate,
+      season,
+      previousWeather: previousWeather.currentWeather,
+      dayOfYear,
+      seed: baseSeed + day
+    });
+    forecastedWeather.hexCoord = { ...hexCoord };
+    const confidence = Math.max(0.3, 1 - (day - 1) * 0.2);
+    forecasts.push({
+      weather: forecastedWeather,
+      date: forecastDateStr,
+      confidence
+    });
+    previousWeather = forecastedWeather;
+  }
+  return forecasts;
+}
+function getConfidenceLabel(confidence) {
+  if (confidence >= 0.8) return "Sehr sicher";
+  if (confidence >= 0.6) return "Wahrscheinlich";
+  if (confidence >= 0.4) return "M\xF6glich";
+  return "Unsicher";
+}
+var init_weather_forecaster = __esm({
+  "src/features/weather/weather-forecaster.ts"() {
+    "use strict";
+    init_weather_generator();
+  }
+});
+
 // src/workmodes/session-runner/travel/ui/weather-panel.ts
 function createWeatherPanel(host) {
   const root = host.createDiv({ cls: "sm-weather-panel" });
@@ -26967,26 +27179,56 @@ function createWeatherPanel(host) {
   const speedHelperText = speedHelperRow.createSpan({
     cls: "sm-weather-panel__effect-helper-text"
   });
+  const historySection = root.createDiv({ cls: "sm-weather-panel__history-section" });
+  const historyHeader = historySection.createDiv({ cls: "sm-weather-panel__section-header" });
+  historyHeader.createSpan({ cls: "sm-weather-panel__section-title", text: "Geschichte" });
+  const historyToggle = historyHeader.createSpan({ cls: "sm-weather-panel__toggle", text: "\u25B6" });
+  const historyContent = historySection.createDiv({ cls: "sm-weather-panel__history-content" });
+  historyContent.style.display = "none";
+  const forecastSection = root.createDiv({ cls: "sm-weather-panel__forecast-section" });
+  const forecastHeader = forecastSection.createDiv({ cls: "sm-weather-panel__section-header" });
+  forecastHeader.createSpan({ cls: "sm-weather-panel__section-title", text: "Vorhersage" });
+  const forecastToggle = forecastHeader.createSpan({ cls: "sm-weather-panel__toggle", text: "\u25B6" });
+  const forecastContent = forecastSection.createDiv({ cls: "sm-weather-panel__forecast-content" });
+  forecastContent.style.display = "none";
   const placeholder = root.createDiv({
     cls: "sm-weather-panel__placeholder",
-    text: "Kein Wetter verf\xFCgbar"
+    text: "W\xE4hle ein Hex aus, um das Wetter zu sehen"
   });
   placeholder.style.display = "block";
   mainDisplay.style.display = "none";
   details.style.display = "none";
   effects.style.display = "none";
+  historySection.style.display = "none";
+  forecastSection.style.display = "none";
+  let historyExpanded = false;
+  let forecastExpanded = false;
+  historyHeader.onclick = () => {
+    historyExpanded = !historyExpanded;
+    historyContent.style.display = historyExpanded ? "block" : "none";
+    historyToggle.textContent = historyExpanded ? "\u25BC" : "\u25B6";
+  };
+  forecastHeader.onclick = () => {
+    forecastExpanded = !forecastExpanded;
+    forecastContent.style.display = forecastExpanded ? "block" : "none";
+    forecastToggle.textContent = forecastExpanded ? "\u25BC" : "\u25B6";
+  };
   const setWeather = (weather) => {
     if (!weather) {
       placeholder.style.display = "block";
       mainDisplay.style.display = "none";
       details.style.display = "none";
       effects.style.display = "none";
+      historySection.style.display = "none";
+      forecastSection.style.display = "none";
       return;
     }
     placeholder.style.display = "none";
     mainDisplay.style.display = "flex";
     details.style.display = "block";
     effects.style.display = "block";
+    historySection.style.display = "block";
+    forecastSection.style.display = "block";
     const { currentWeather, temperature, windSpeed, precipitation, visibility } = weather;
     weatherIcon.empty();
     const iconName = getWeatherIcon(currentWeather.type);
@@ -27033,6 +27275,67 @@ function createWeatherPanel(host) {
     baseSpeed = speed;
     setSpeedModifier(lastModifier, speed);
   };
+  const setHistory = (history) => {
+    historyContent.empty();
+    if (history.length === 0) {
+      historyContent.createSpan({
+        cls: "sm-weather-panel__empty-message",
+        text: "Keine Verlaufsdaten verf\xFCgbar"
+      });
+      return;
+    }
+    const reversed = [...history].reverse();
+    for (const entry of reversed) {
+      const entryEl = historyContent.createDiv({ cls: "sm-weather-panel__history-entry" });
+      const date = new Date(entry.date);
+      const dateStr = date.toLocaleDateString("de-DE", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      });
+      entryEl.createSpan({ cls: "sm-weather-panel__history-date", text: dateStr });
+      const iconEl = entryEl.createSpan({ cls: "sm-weather-panel__history-icon" });
+      (0, import_obsidian37.setIcon)(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
+      const labelEl = entryEl.createSpan({ cls: "sm-weather-panel__history-label" });
+      labelEl.textContent = `${getWeatherLabel(entry.weather.currentWeather.type)} (${formatTemperature(entry.weather.temperature)})`;
+    }
+  };
+  const setForecast = (forecast) => {
+    forecastContent.empty();
+    if (forecast.length === 0) {
+      forecastContent.createSpan({
+        cls: "sm-weather-panel__empty-message",
+        text: "Keine Vorhersage verf\xFCgbar"
+      });
+      return;
+    }
+    for (const entry of forecast) {
+      const entryEl = forecastContent.createDiv({ cls: "sm-weather-panel__forecast-entry" });
+      const date = new Date(entry.date);
+      const dateStr = date.toLocaleDateString("de-DE", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit"
+      });
+      entryEl.createSpan({ cls: "sm-weather-panel__forecast-date", text: dateStr });
+      const iconEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-icon" });
+      (0, import_obsidian37.setIcon)(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
+      const labelEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-label" });
+      labelEl.textContent = `${getWeatherLabel(entry.weather.currentWeather.type)} (${formatTemperature(entry.weather.temperature)})`;
+      const confidenceEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-confidence" });
+      confidenceEl.textContent = getConfidenceLabel(entry.confidence);
+      if (entry.confidence >= 0.7) {
+        confidenceEl.classList.add("sm-weather-panel__forecast-confidence--high");
+      } else if (entry.confidence >= 0.5) {
+        confidenceEl.classList.add("sm-weather-panel__forecast-confidence--medium");
+      } else {
+        confidenceEl.classList.add("sm-weather-panel__forecast-confidence--low");
+      }
+    }
+  };
+  const setPlaceholder = (message) => {
+    placeholder.textContent = message;
+  };
   const destroy = () => {
     root.remove();
   };
@@ -27041,6 +27344,9 @@ function createWeatherPanel(host) {
     setWeather,
     setSpeedModifier,
     setBaseSpeed,
+    setHistory,
+    setForecast,
+    setPlaceholder,
     destroy
   };
 }
@@ -27050,6 +27356,7 @@ var init_weather_panel = __esm({
     "use strict";
     import_obsidian37 = require("obsidian");
     init_weather_icons();
+    init_weather_forecaster();
   }
 });
 
@@ -27125,6 +27432,12 @@ function createSidebar(host) {
   const setWeather = (weather) => {
     weatherPanel.setWeather(weather);
   };
+  const setWeatherHistory = (history) => {
+    weatherPanel.setHistory(history);
+  };
+  const setWeatherForecast = (forecast) => {
+    weatherPanel.setForecast(forecast);
+  };
   const setTitle = (title) => {
     if (title && title.trim().length > 0) {
       host.dataset.mapTitle = title;
@@ -27140,6 +27453,8 @@ function createSidebar(host) {
     setSpeed,
     setTravelPanel,
     setWeather,
+    setWeatherHistory,
+    setWeatherForecast,
     onSpeedChange: (fn) => onChange = fn,
     setTravelHandlers: (handlers) => {
       travelHandlers = {
@@ -29149,6 +29464,7 @@ function parseHexKey(key) {
 function createInitialState3() {
   return {
     weatherByHex: /* @__PURE__ */ new Map(),
+    historyByHex: /* @__PURE__ */ new Map(),
     activeMapPath: null
   };
 }
@@ -29163,13 +29479,33 @@ var init_weather_store = __esm({
       }
       /**
        * Set weather for a specific hex
+       * Automatically archives previous weather to history
        */
       setWeather(mapPath, weather) {
         this.store.update((state) => {
           const key = createHexKey(mapPath, weather.hexCoord.q, weather.hexCoord.r, weather.hexCoord.s);
+          const currentWeather = state.weatherByHex.get(key);
+          if (currentWeather) {
+            this.addToHistory(state, key, currentWeather);
+          }
           state.weatherByHex.set(key, { ...weather });
           return state;
         });
+      }
+      /**
+       * Add weather entry to history (internal helper)
+       * Maintains max 7 days of history per hex
+       */
+      addToHistory(state, key, weather) {
+        let history = state.historyByHex.get(key) ?? [];
+        history.push({
+          weather: { ...weather },
+          date: weather.lastUpdate
+        });
+        if (history.length > 7) {
+          history = history.slice(-7);
+        }
+        state.historyByHex.set(key, history);
       }
       /**
        * Get weather for a specific hex (synchronous read from store)
@@ -29182,6 +29518,19 @@ var init_weather_store = __esm({
         });
         unsubscribe();
         return result;
+      }
+      /**
+       * Get weather history for a specific hex (last 7 days)
+       * Returns array sorted oldest to newest
+       */
+      getWeatherHistory(mapPath, q, r, s) {
+        let result = [];
+        const unsubscribe = this.store.subscribe((state) => {
+          const key = createHexKey(mapPath, q, r, s);
+          result = state.historyByHex.get(key) ?? [];
+        });
+        unsubscribe();
+        return [...result];
       }
       /**
        * Set multiple weather states at once (batch update)
@@ -29209,6 +29558,7 @@ var init_weather_store = __esm({
           }
           for (const key of keysToRemove) {
             state.weatherByHex.delete(key);
+            state.historyByHex.delete(key);
           }
           return state;
         });
@@ -31214,8 +31564,25 @@ function createSessionRunnerExperience() {
         const cube = axialToCube(oddrToAxial({ r: currentCoord.r, c: currentCoord.c }));
         const weather = weatherStore.getWeather(currentMapFile.path, cube.q, cube.r, cube.s);
         sidebar.setWeather(weather);
+        const history = weatherStore.getWeatherHistory(currentMapFile.path, cube.q, cube.r, cube.s);
+        sidebar.setWeatherHistory(history);
+        if (weather) {
+          const forecast = generateForecast({
+            hexCoord: { q: cube.q, r: cube.r, s: cube.s },
+            climate: weather.climate,
+            season: weather.season,
+            currentWeather: weather,
+            currentDate: weather.lastUpdate,
+            daysAhead: 3
+          });
+          sidebar.setWeatherForecast(forecast);
+        } else {
+          sidebar.setWeatherForecast([]);
+        }
       } else {
         sidebar.setWeather(null);
+        sidebar.setWeatherHistory([]);
+        sidebar.setWeatherForecast([]);
       }
     }
   };
@@ -31224,6 +31591,8 @@ function createSessionRunnerExperience() {
     sidebar?.setSpeed(1);
     sidebar?.setTravelPanel(null);
     sidebar?.setWeather(null);
+    sidebar?.setWeatherHistory([]);
+    sidebar?.setWeatherForecast([]);
     playback.reset();
   };
   const detachPanelSubscription = () => {
@@ -31685,6 +32054,7 @@ var init_experience = __esm({
     init_encounter_controller();
     init_encounter_context_builder();
     init_weather_store();
+    init_weather_forecaster();
     init_hex_geom();
   }
 });

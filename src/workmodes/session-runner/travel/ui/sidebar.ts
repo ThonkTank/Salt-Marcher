@@ -4,6 +4,7 @@ import type { TravelPanelSnapshot } from "../../../almanac/mode/cartographer-gat
 import { TravelCalendarLeaf, type TravelAdvancePayload } from "../../../almanac/mode/travel";
 import type { TravelCalendarMode } from "../../../almanac/mode/contracts";
 import type { WeatherState } from "../../../../features/weather/types";
+import type { WeatherHistoryEntry, WeatherForecast } from "../../../../features/weather/weather-store";
 import { createWeatherPanel } from "./weather-panel";
 
 export type Sidebar = {
@@ -14,6 +15,8 @@ export type Sidebar = {
     setSpeed(v: number): void;
     setTravelPanel(panel: TravelPanelSnapshot | null): void;
     setWeather(weather: WeatherState | null): void;
+    setWeatherHistory(history: WeatherHistoryEntry[]): void;
+    setWeatherForecast(forecast: WeatherForecast[]): void;
     onSpeedChange(fn: (v: number) => void): void;
     setTravelHandlers(handlers: {
         onAdvance?: (payload: TravelAdvancePayload) => void;
@@ -108,6 +111,12 @@ export function createSidebar(host: HTMLElement): Sidebar {
     const setWeather = (weather: WeatherState | null) => {
         weatherPanel.setWeather(weather);
     };
+    const setWeatherHistory = (history: WeatherHistoryEntry[]) => {
+        weatherPanel.setHistory(history);
+    };
+    const setWeatherForecast = (forecast: WeatherForecast[]) => {
+        weatherPanel.setForecast(forecast);
+    };
     const setTitle = (title: string) => {
         if (title && title.trim().length > 0) {
             host.dataset.mapTitle = title;
@@ -124,6 +133,8 @@ export function createSidebar(host: HTMLElement): Sidebar {
         setSpeed,
         setTravelPanel,
         setWeather,
+        setWeatherHistory,
+        setWeatherForecast,
         onSpeedChange: (fn) => (onChange = fn),
         setTravelHandlers: (handlers) => {
             travelHandlers = {
