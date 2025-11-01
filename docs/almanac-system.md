@@ -1,6 +1,6 @@
 # Almanac System Documentation
 
-**Status:** Phase 12.1-12.4 Complete (MVP + Month View) | Phase 13 Planned (Full Implementation)
+**Status:** Phase 13 Priority 1-2 Complete (Vault Integration + Event Editor) | Priority 3-7 Planned
 **Last Updated:** Nov 1, 2025
 
 ## Overview
@@ -11,7 +11,8 @@ The Almanac is a calendar management workmode that tracks campaign time, schedul
 - **Time Controls**: Advance/rewind time by day, hour, or minute increments
 - **Event Scheduling**: Create and manage calendar events and phenomena
 - **Multiple Calendar Views**: Toggle between list view (upcoming events) and month grid view with event indicators
-- **Simulation Integration**: Automatically triggers faction actions, weather updates, and other time-based systems when calendar advances (planned)
+- **Vault Persistence**: Calendar schema loaded from vault, time advances persist automatically to almanac state file
+- **Simulation Integration**: Automatically triggers faction actions, weather updates, and other time-based systems when calendar advances (hooks defined, integration planned)
 
 ## Architecture
 
@@ -25,8 +26,10 @@ src/workmodes/almanac/
 │   └── __tests__/              # Domain logic tests
 ├── data/                        # Data layer (state management, persistence)
 │   ├── calendar-state-gateway.ts        # Vault persistence and simulation hook coordination
+│   ├── repositories.ts                  # Vault repositories (calendar, event, phenomenon)
 │   ├── faction-simulation-hook-factory.ts
 │   └── weather-simulation-hook-factory.ts
+├── gateway-factory.ts           # Factory for creating vault-backed gateway
 ├── view/                        # UI components
 │   ├── almanac-mvp.ts          # MVP integration (mock data, component orchestration, view switching)
 │   ├── almanac-time-display.ts # Time display and advance controls
@@ -80,20 +83,23 @@ Triggers re-render of time display and events list
 (Future) Simulation hooks execute (faction AI, weather, etc.)
 ```
 
-**Current Implementation (Phase 12.1-12.4 MVP + Month View):**
-- Mock data only (hardcoded Gregorian calendar)
+**Current Implementation (Phase 13 Priority 1):**
+- Vault data integration complete via CalendarStateGateway
+- Calendar schema loaded from `SaltMarcher/Calendars/` (auto-selects first if no default)
+- Time advances persist to `SaltMarcher/Almanac/state.json`
+- Event/phenomenon data loaded from vault
 - Two calendar views: list (upcoming 7 days) and month grid with event indicators
 - View switching buttons to toggle between views
 - Month grid shows day cells with event count badges
-- No vault persistence
-- No simulation hooks triggered
-- Pure UI demonstration
+- Simulation hooks defined but not yet triggered (Phase 13+)
 
-**Future Implementation (Phase 13+):**
-- Vault integration via calendar-state-gateway.ts
-- Automatic simulation trigger when calendar advances
-- Event persistence and editing
-- Hook execution for scheduled events
+**Future Implementation (Phase 13 Priority 3-7):**
+- Week/timeline calendar views
+- Month navigation controls (prev/next month)
+- Astronomical cycles UI
+- Event inbox with priority sorting
+- Search functionality
+- Automatic simulation trigger when calendar advances (hook execution)
 
 ### Event Scheduling
 
@@ -115,19 +121,25 @@ When calendar reaches event timestamp:
   - Notification shown (if enabled)
 ```
 
-## Current Limitations (MVP - Phase 12.1-12.4)
+## Current Limitations (Phase 13 Priority 1)
 
-### Hardcoded Mock Data
-- Uses inline Gregorian calendar definition (almanac-mvp.ts:42-71)
-- No vault data loading or saving
-- Empty events/phenomena arrays
-- **Why:** Deferred vault integration to focus on UI functionality first
+### Vault Data Integration Complete
+- ✅ Calendar schema loaded from `SaltMarcher/Calendars/*.md`
+- ✅ Time advances persist to `SaltMarcher/Almanac/state.json`
+- ✅ Event/phenomenon data loaded from vault repositories
+- ✅ Gateway factory pattern for dependency injection (gateway-factory.ts)
 
-### Placeholder Event Editor
-- Modal shows "Coming Soon" notice only (event-editor-modal.ts)
-- Cannot create or edit events in UI
-- onSave callback exists but has no effect
-- **Why:** Event editing is complex feature requiring form validation, recurrence UI, tag management
+### Event Editor (Phase 13 Priority 2 Complete)
+- ✅ Full event editor modal implementation (event-editor-modal.ts)
+- ✅ Create and edit events in UI with comprehensive form
+- ✅ Basic fields: title, description, category, tags, priority
+- ✅ Timestamp selection: year, month, day, hour, minute
+- ✅ All-day event toggle
+- ✅ Single vs recurring event type selection
+- ✅ Recurrence patterns: Annual, Monthly, Weekly, Custom
+- ✅ Form validation (required fields, date/time bounds checking)
+- ✅ Save callback integration with almanac MVP
+- 📋 Future: Bounds/end dates for recurring events, duration fields
 
 ### Limited Calendar Grid Views
 - **Implemented:** List view (upcoming 7 days) and month grid view with event indicators
@@ -262,19 +274,30 @@ const handleAdvanceMinute = createAdvanceHandler("minute");
 
 **Purpose:** Bridge between Almanac UI and vault/simulation systems
 
-**Current Status:** Partially implemented
-- Event/phenomenon persistence functions exist
+**Current Status (Phase 13 Priority 1):** ✅ Connected to UI
+- Vault persistence fully functional
+- Time advances automatically persisted via `advanceTimeBy(amount, unit)`
+- Calendar schema loaded on initialization
+- Event/phenomenon repositories integrated
 - Simulation hook interfaces defined (FactionSimulationHook, WeatherSimulationHook)
-- **Not Connected to UI Yet** - MVP uses mock data only
+- **Simulation hooks not yet executed** - interface defined, implementation planned
 
 **Key Functions:**
 ```typescript
-loadCalendarSchema(vault: Vault, path: string): Promise<CalendarSchema>
-loadCalendarState(vault: Vault, path: string): Promise<{ currentTime: CalendarTimestamp; events: CalendarEvent[]; phenomena: PhenomenonOccurrence[] }>
-saveCalendarState(vault: Vault, path: string, state: { currentTime: CalendarTimestamp; events: CalendarEvent[]; phenomena: PhenomenonOccurrence[] }): Promise<void>
+loadSnapshot(): Promise<AlmanacSnapshot>  // Loads complete calendar state
+advanceTimeBy(amount: number, unit: TimeUnit): Promise<{ timestamp: CalendarTimestamp }>
 ```
 
-**TODO (Phase 13):** Connect gateway to almanac-mvp.ts to replace mock data
+**Gateway Factory:**
+- `createAlmanacGateway(app: App): CalendarStateGateway` (gateway-factory.ts)
+- Creates vault-backed repositories and wires them to gateway
+- Used by Almanac view on initialization (index.ts:75-76)
+
+**Data Persistence:**
+- Calendar schemas: `SaltMarcher/Calendars/*.md`
+- Almanac state: `SaltMarcher/Almanac/state.json` (current time, active calendar)
+- Events: Loaded via VaultEventRepository
+- Phenomena: Loaded via VaultAlmanacRepository
 
 ### Faction System Integration
 

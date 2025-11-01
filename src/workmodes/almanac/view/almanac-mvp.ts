@@ -159,6 +159,8 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement, gateway
         onEventClick: (event) => {
             logger.info("[almanac-mvp] Event clicked", { eventId: event.id });
             openEventEditor(app, {
+                schema: activeCalendar,
+                currentTime: currentTimestamp,
                 event,
                 onSave: (updatedEvent) => {
                     logger.info("[almanac-mvp] Event updated", { eventId: updatedEvent.id });
@@ -182,6 +184,8 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement, gateway
         onEventClick: (event) => {
             logger.info("[almanac-mvp] Event clicked in month view", { eventId: event.id });
             openEventEditor(app, {
+                schema: activeCalendar,
+                currentTime: currentTimestamp,
                 event,
                 onSave: (updatedEvent) => {
                     logger.info("[almanac-mvp] Event updated", { eventId: updatedEvent.id });
@@ -200,7 +204,7 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement, gateway
     futureNotice.createEl("h4", { text: "Coming Soon" });
     const featureList = futureNotice.createEl("ul");
     featureList.createEl("li", { text: "Week/Timeline calendar views" });
-    featureList.createEl("li", { text: "Full event editor (currently placeholder)" });
+    featureList.createEl("li", { text: "Month navigation (prev/next month buttons)" });
     featureList.createEl("li", { text: "Astronomical cycles visualization" });
     featureList.createEl("li", { text: "Event inbox with priority sorting" });
     featureList.createEl("li", { text: "Search functionality" });
