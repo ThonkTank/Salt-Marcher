@@ -315,7 +315,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase 11.1 ✅ Complete (Weather Interactivity) | Tests: 1116/1117 (99.9%) ✅ | **Next:** Phase B - Implementation
+**Status:** Phase A ✅ Complete (Quality Audit) | Tests: 1116/1117 (99.9%) ✅ | **Next:** Phase B - Implementation
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -354,6 +354,15 @@ Ziele:
   - Automatic updates when hex changes (integrated with weather store and forecaster)
   - Improved placeholder messages ("Wähle ein Hex aus, um das Wetter zu sehen")
   - 6 new passing tests covering history, forecast, toggles, and empty states
+- **Phase 12.1:** Almanac MVP ✅ - Basic functional Almanac view (Nov 1, 2025)
+  - Replaced placeholder UI with functional MVP components
+  - Current calendar time display with mock Gregorian calendar
+  - Time advance controls (day/hour/minute forward/backward)
+  - Upcoming events list (7-day view, supports events & phenomena)
+  - MVP notice informing users of planned features (month/week/timeline views, event editor)
+  - 8 new passing tests for time display and events list components
+  - Tests: 1124/1125 passing (99.9%) ✅
+  - **Note**: Uses hardcoded mock data for MVP - vault integration deferred to Phase 12.2
 
 **Geplant:**
 - **Phase 10.5:** Advanced Weather Features (Future)
@@ -367,11 +376,11 @@ Ziele:
 None currently! All blocking issues resolved. ✅
 
 **HIGH (Feature fehlt oder stark beeinträchtigt):**
-2. **[HIGH] Almanac Frontend Missing** - Calendar has no UI, completely unusable
-   - Backend fully implemented (Phase 8.9 ✅)
-   - Goal specifies "Monats-, Wochen-, Timeline-Modus" but none exist
-   - Need: Month/week/timeline views, event editor, astronomical cycles UI
-   - Location: src/workmodes/almanac/ (missing view components)
+2. **[MEDIUM → HIGH] Almanac Full UI Missing** - MVP implemented, full calendar views needed ⚠️
+   - Phase 12.1 MVP completed ✅ - basic time display, upcoming events, advance controls
+   - Still missing: Month/week/timeline calendar grid views, event editor modal, astronomical cycles UI, vault data integration
+   - Current: Uses hardcoded mock calendar data
+   - Location: src/workmodes/almanac/view/ (partial implementation)
 4. **[HIGH] Library Tabs Missing** - Location, Playlist, Encounter Tables non-functional
    - Tabs exist in UI but no browse views implemented
    - Goal: "Tabs für Kreaturen, Zauber, Items, Equipment, Terrains, Regionen und Kalender"
@@ -495,32 +504,34 @@ None currently! All blocking issues resolved. ✅
 34. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
 
 **Test-Status:**
-- Unit tests: 1116/1117 passing (99.9%) ✅
+- Unit tests: 1124/1125 passing (99.9%) ✅
   - Audio: 57/57 ✅, Playlist: 17/17 ✅
   - Encounter: 34/34 ✅ (includes 7 manual composition tests + 1 presenter test)
   - Faction: 389/391 ✅ (1 probabilistic test occasionally fails)
   - Location/Building: 145/145 ✅ (includes 5 repair cost + 5 job validation tests)
   - Weather (Phase 10.1-10.4 + 11.1): 136/136 ✅ (includes 6 interactivity tests)
+  - **Almanac MVP (Phase 12.1): 8/8 ✅** (time display + events list components)
   - Header policy: 1/1 ✅
 - Integration tests: 6 require live Obsidian (expected, documented limitation)
 - **Known Issue:** 1 probabilistic faction NPC betrayal test fails occasionally (non-blocking)
 
 **Recently Completed:**
+- **Phase 12.1:** Almanac MVP ✅ (Nov 1, 2025 - basic functional view, 8 tests passing)
+- **Phase A:** Quality Audit Complete ✅ (Nov 1, 2025 - tests passing, no new issues, roadmap updated)
 - **Phase 11.1:** Weather Panel Interactivity ✅ (Nov 1, 2025 - history/forecast display, improved messages)
 - **Phase C:** Documentation Review Complete ✅ (Nov 1, 2025 - weather-system.md verified, roadmap accurate)
 - **Phase D:** UX Review Complete ✅ (Phase 9.2B-10.4 validated, no new critical issues)
-- **Phase 10.4:** Weather Session Runner UI Complete ✅ (4 sub-phases, 147 tests passing)
-  - 10.4.1: Weather speed modifier context (4c52624)
-  - 10.4.2: Manual encounter composition fix (1064d73)
-  - 10.4.3: Encounter presenter test coverage
-  - 10.4.4: Job validation with visual feedback (99a6789)
-- **Phase 9.2B:** Building repair resource integration (7ee1b23)
 
 **Nächste Schritte (Empfehlung):**
-1. **[HIGH] Fix Broken User Features** - Core functionality unusable
-   - Almanac frontend implementation (month/week/timeline views, event editors)
-   - Library tabs (Location/Playlist/EncounterTable specs + serializers)
-2. **[MEDIUM] Complete Partial Features** - Working but incomplete
+1. **[HIGH] Complete Almanac Full Implementation** - MVP functional, missing advanced features
+   - Month/week/timeline calendar grid views with event visualization
+   - Event editor modal (create/edit events and phenomena)
+   - Astronomical cycles UI (moon phases, eclipses, etc.)
+   - Vault data integration (replace hardcoded mock data with calendar-state-gateway)
+   - Event inbox with priority sorting
+2. **[HIGH] Library Tabs Missing** - Core functionality unusable
+   - Location, Playlist, EncounterTable specs + serializers needed
+3. **[MEDIUM] Complete Partial Features** - Working but incomplete
    - POI placement UI in Cartographer (location system ready, needs UI mode)
    - Cartographer Brush debugging (investigate error messages)
    - **[UX] Building capacity warnings** (only shows after error, needs proactive display)

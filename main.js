@@ -20,15 +20,15 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+var __toESM = (mod2, isNodeMode, target) => (target = mod2 != null ? __create(__getProtoOf(mod2)) : {}, __copyProps(
   // If the importer is in node compatibility mode or this is not an ESM
   // file that has been converted to a CommonJS file using a Babel-
   // compatible transform (i.e. "__esModule" has not been set), then set
   // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
+  isNodeMode || !mod2 || !mod2.__esModule ? __defProp(target, "default", { value: mod2, enumerable: true }) : target,
+  mod2
 ));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var __toCommonJS = (mod2) => __copyProps(__defProp({}, "__esModule", { value: true }), mod2);
 
 // src/app/plugin-logger.ts
 var import_obsidian, LOG_FILE_PATH, PluginLogger, logger2;
@@ -11897,13 +11897,13 @@ var init_create_spec = __esm({
               config: {
                 compute: (data) => {
                   const score = data.score || 10;
-                  const mod = Math.floor((score - 10) / 2);
-                  return mod;
+                  const mod2 = Math.floor((score - 10) / 2);
+                  return mod2;
                 },
                 prefix: (data) => {
                   const score = data.score || 10;
-                  const mod = Math.floor((score - 10) / 2);
-                  return mod >= 0 ? "+" : "";
+                  const mod2 = Math.floor((score - 10) / 2);
+                  return mod2 >= 0 ? "+" : "";
                 },
                 maxTokens: 3
                 // Format: +/-XX (e.g., "+5", "-1")
@@ -26436,6 +26436,43 @@ var init_view2 = __esm({
 });
 
 // src/workmodes/almanac/domain/index.ts
+function getTotalDaysInYear(schema2) {
+  return schema2.months.reduce((sum, month) => sum + month.length, 0);
+}
+function getMonthById(schema2, monthId) {
+  return schema2.months.find((month) => month.id === monthId) ?? null;
+}
+function getMonthIndex(schema2, monthId) {
+  return schema2.months.findIndex((month) => month.id === monthId);
+}
+function getTimeDefinition(schema2) {
+  return {
+    ...DEFAULT_TIME_DEFINITION,
+    ...schema2.hoursPerDay !== void 0 ? { hoursPerDay: schema2.hoursPerDay } : {},
+    ...schema2.minutesPerHour !== void 0 ? { minutesPerHour: schema2.minutesPerHour } : {},
+    ...schema2.secondsPerMinute !== void 0 ? { secondsPerMinute: schema2.secondsPerMinute } : {},
+    ...schema2.minuteStep !== void 0 ? { minuteStep: schema2.minuteStep } : {}
+  };
+}
+function createDayTimestamp(calendarId, year, monthId, day) {
+  return { calendarId, year, monthId, day, precision: "day" };
+}
+function createHourTimestamp(calendarId, year, monthId, day, hour) {
+  return { calendarId, year, monthId, day, hour, precision: "hour" };
+}
+function createMinuteTimestamp(calendarId, year, monthId, day, hour, minute) {
+  return { calendarId, year, monthId, day, hour, minute, precision: "minute" };
+}
+function compareTimestampsWithSchema(schema2, a, b) {
+  return compareTimestampParts(a, b, (left, right) => {
+    const aIndex = getMonthIndex(schema2, left);
+    const bIndex = getMonthIndex(schema2, right);
+    if (aIndex === -1 || bIndex === -1) {
+      return left.localeCompare(right);
+    }
+    return aIndex - bIndex;
+  });
+}
 function formatTimestamp(ts, monthName) {
   const month = monthName ?? ts.monthId;
   if (ts.precision === "day") {
@@ -26449,6 +26486,294 @@ function formatTimestamp(ts, monthName) {
   const minute = String(ts.minute ?? 0).padStart(2, "0");
   return `Year ${ts.year}, Day ${ts.day} of ${month}, ${hour}:${minute}`;
 }
+function getMonthLength(schema2, monthId) {
+  const month = getMonthById(schema2, monthId);
+  return month?.length ?? null;
+}
+function getDayOfYear(schema2, timestamp2) {
+  const monthIndex = getMonthIndex(schema2, timestamp2.monthId);
+  if (monthIndex === -1) {
+    throw new Error(`Month with id ${timestamp2.monthId} not found in schema ${schema2.id}`);
+  }
+  let days = 0;
+  for (let index = 0; index < monthIndex; index++) {
+    days += schema2.months[index].length;
+  }
+  return days + timestamp2.day;
+}
+function resolveMonthAndDayByDayOfYear(schema2, dayOfYear) {
+  if (dayOfYear < 1 || dayOfYear > getTotalDaysInYear(schema2)) {
+    throw new RangeError(`Day-of-year ${dayOfYear} is out of range for schema ${schema2.id}`);
+  }
+  let remaining = dayOfYear;
+  for (const month of schema2.months) {
+    if (remaining <= month.length) {
+      return { monthId: month.id, day: remaining };
+    }
+    remaining -= month.length;
+  }
+  throw new RangeError(`Unable to resolve day-of-year ${dayOfYear} for schema ${schema2.id}`);
+}
+function createTimestampFromDayOfYear(schema2, calendarId, year, dayOfYear) {
+  const { monthId, day } = resolveMonthAndDayByDayOfYear(schema2, dayOfYear);
+  return createDayTimestamp(calendarId, year, monthId, day);
+}
+function timestampToAbsoluteDay(schema2, timestamp2) {
+  const daysPerYear = getTotalDaysInYear(schema2);
+  const dayOfYearIndex = getDayOfYear(schema2, timestamp2) - 1;
+  const yearOffset = timestamp2.year - schema2.epoch.year;
+  return yearOffset * daysPerYear + dayOfYearIndex;
+}
+function absoluteDayToTimestamp(schema2, calendarId, absoluteDay) {
+  const daysPerYear = getTotalDaysInYear(schema2);
+  let yearOffset = Math.floor(absoluteDay / daysPerYear);
+  let dayOfYearIndex = absoluteDay - yearOffset * daysPerYear;
+  if (dayOfYearIndex < 0) {
+    dayOfYearIndex += daysPerYear;
+    yearOffset -= 1;
+  }
+  const targetYear = schema2.epoch.year + yearOffset;
+  return createTimestampFromDayOfYear(schema2, calendarId, targetYear, dayOfYearIndex + 1);
+}
+function clampDayToMonth(schema2, monthId, day) {
+  const monthLength = getMonthLength(schema2, monthId);
+  if (monthLength === null) {
+    throw new Error(`Month with id ${monthId} not found in schema ${schema2.id}`);
+  }
+  if (day < 1) return 1;
+  if (day > monthLength) return monthLength;
+  return day;
+}
+function mod(value, divisor) {
+  return (value % divisor + divisor) % divisor;
+}
+function advanceTime(schema2, current, amount, unit) {
+  if (unit === "day") {
+    return advanceByDays(schema2, current, amount);
+  }
+  if (unit === "hour") {
+    return advanceByHours(schema2, current, amount);
+  }
+  return advanceByMinutes(schema2, current, amount);
+}
+function advanceByDays(schema2, current, days) {
+  if (days === 0) {
+    return { timestamp: current, normalized: false };
+  }
+  const startDay = timestampToAbsoluteDay(schema2, current);
+  const targetDay = startDay + days;
+  const base = absoluteDayToTimestamp(schema2, current.calendarId, targetDay);
+  const timestamp2 = rebuildTimestamp(base, current);
+  return { timestamp: timestamp2, normalized: base.year !== current.year };
+}
+function advanceByHours(schema2, current, hours) {
+  if (hours === 0) {
+    return { timestamp: rebuildTimestamp(current, current), normalized: false };
+  }
+  const { hoursPerDay } = getTimeDefinition(schema2);
+  const currentHour = current.hour ?? 0;
+  const totalHours = currentHour + hours;
+  const wrappedHour = mod(totalHours, hoursPerDay);
+  const dayShift = (totalHours - wrappedHour) / hoursPerDay;
+  const baseDay = advanceByDays(schema2, current, dayShift);
+  const timestamp2 = current.minute !== void 0 ? createMinuteTimestamp(
+    current.calendarId,
+    baseDay.timestamp.year,
+    baseDay.timestamp.monthId,
+    baseDay.timestamp.day,
+    wrappedHour,
+    current.minute
+  ) : createHourTimestamp(
+    current.calendarId,
+    baseDay.timestamp.year,
+    baseDay.timestamp.monthId,
+    baseDay.timestamp.day,
+    wrappedHour
+  );
+  const normalized = dayShift !== 0 || baseDay.normalized;
+  return {
+    timestamp: timestamp2,
+    normalized,
+    carriedDays: dayShift !== 0 ? dayShift : void 0,
+    carriedHours: hours
+  };
+}
+function advanceByMinutes(schema2, current, minutes) {
+  if (minutes === 0) {
+    return { timestamp: rebuildTimestamp(current, current), normalized: false };
+  }
+  const { hoursPerDay, minutesPerHour } = getTimeDefinition(schema2);
+  const minutesPerDay = hoursPerDay * minutesPerHour;
+  const startDay = timestampToAbsoluteDay(schema2, current);
+  const originalHour = current.hour ?? 0;
+  const startMinuteOfDay = originalHour * minutesPerHour + (current.minute ?? 0);
+  let totalMinutes = startDay * minutesPerDay + startMinuteOfDay + minutes;
+  let dayIndex = Math.floor(totalMinutes / minutesPerDay);
+  let minuteOfDay = totalMinutes - dayIndex * minutesPerDay;
+  if (minuteOfDay < 0) {
+    minuteOfDay += minutesPerDay;
+    dayIndex -= 1;
+  }
+  const hour = Math.floor(minuteOfDay / minutesPerHour);
+  const minute = minuteOfDay - hour * minutesPerHour;
+  const baseDay = absoluteDayToTimestamp(schema2, current.calendarId, dayIndex);
+  const timestamp2 = createMinuteTimestamp(
+    current.calendarId,
+    baseDay.year,
+    baseDay.monthId,
+    baseDay.day,
+    hour,
+    minute
+  );
+  const normalized = hour !== originalHour || dayIndex !== startDay;
+  return { timestamp: timestamp2, normalized };
+}
+function rebuildTimestamp(base, template) {
+  if (template.minute !== void 0) {
+    return createMinuteTimestamp(
+      template.calendarId,
+      base.year,
+      base.monthId,
+      base.day,
+      template.hour ?? 0,
+      template.minute
+    );
+  }
+  if (template.hour !== void 0) {
+    return createHourTimestamp(template.calendarId, base.year, base.monthId, base.day, template.hour);
+  }
+  return createDayTimestamp(template.calendarId, base.year, base.monthId, base.day);
+}
+function compareTimestampParts(a, b, compareMonth) {
+  if (a.year !== b.year) {
+    return a.year - b.year;
+  }
+  if (a.monthId !== b.monthId) {
+    const monthComparison = compareMonth(a.monthId, b.monthId);
+    if (monthComparison !== 0) {
+      return monthComparison;
+    }
+  }
+  if (a.day !== b.day) {
+    return a.day - b.day;
+  }
+  const hourA = a.hour ?? 0;
+  const hourB = b.hour ?? 0;
+  if (hourA !== hourB) {
+    return hourA - hourB;
+  }
+  const minuteA = a.minute ?? 0;
+  const minuteB = b.minute ?? 0;
+  return minuteA - minuteB;
+}
+function sortHooksByPriority(hooks) {
+  return [...hooks].sort((a, b) => {
+    const priorityA = a.priority ?? 0;
+    const priorityB = b.priority ?? 0;
+    if (priorityA !== priorityB) {
+      return priorityB - priorityA;
+    }
+    return a.id.localeCompare(b.id);
+  });
+}
+function calculateNextOccurrence(schema2, calendarId, rule, start, options = {}, services = {}) {
+  const includeStart = options.includeStart ?? false;
+  switch (rule.type) {
+    case "annual":
+    case "annual_offset":
+      return resolveNextAnnualOccurrence(schema2, calendarId, rule, start, includeStart);
+    case "monthly_position":
+      return resolveNextMonthlyOccurrence(schema2, calendarId, rule, start, includeStart);
+    case "weekly_dayIndex":
+      return resolveNextWeeklyOccurrence(schema2, calendarId, rule, start, includeStart);
+    case "astronomical":
+      return resolveNextAstronomicalOccurrence(schema2, calendarId, rule, start, options, services);
+    case "custom":
+      throw new UnsupportedRepeatRuleError(rule.type);
+    default: {
+      const _never = rule;
+      return _never;
+    }
+  }
+}
+function calculateOccurrencesInRange(schema2, calendarId, rule, rangeStart, rangeEnd, options = {}, services = {}) {
+  const limit = options.limit ?? 12;
+  if (limit <= 0) return [];
+  const compare = compareTimestampsWithSchema(schema2, rangeStart, rangeEnd);
+  const [start, end] = compare <= 0 ? [rangeStart, rangeEnd] : [rangeEnd, rangeStart];
+  if (rule.type === "astronomical") {
+    return resolveAstronomicalRange(schema2, calendarId, rule, start, end, options, services).slice(0, limit);
+  }
+  const occurrences = [];
+  let cursor = calculateNextOccurrence(schema2, calendarId, rule, start, options, services);
+  while (cursor && occurrences.length < limit && compareTimestampsWithSchema(schema2, cursor, end) <= 0) {
+    occurrences.push(cursor);
+    cursor = calculateNextOccurrence(schema2, calendarId, rule, cursor, { includeStart: false }, services);
+    if (cursor && occurrences.length > 0) {
+      const prev = occurrences[occurrences.length - 1];
+      if (compareTimestampsWithSchema(schema2, cursor, prev) === 0) {
+        break;
+      }
+    }
+  }
+  return occurrences;
+}
+function resolveNextAnnualOccurrence(schema2, calendarId, rule, start, includeStart) {
+  const totalDays = getTotalDaysInYear(schema2);
+  if (totalDays <= 0) {
+    throw new InvalidRepeatRuleError(`Calendar schema ${schema2.id} has no days configured.`);
+  }
+  const zeroBased = ((rule.offsetDayOfYear - 1) % totalDays + totalDays) % totalDays;
+  const normalisedOffset = zeroBased + 1;
+  const candidateCurrentYear = createTimestampFromDayOfYear(schema2, calendarId, start.year, normalisedOffset);
+  const comparison = compareTimestampsWithSchema(schema2, candidateCurrentYear, start);
+  if (comparison > 0 || comparison === 0 && includeStart) {
+    return candidateCurrentYear;
+  }
+  return createTimestampFromDayOfYear(schema2, calendarId, start.year + 1, normalisedOffset);
+}
+function resolveNextMonthlyOccurrence(schema2, calendarId, rule, start, includeStart) {
+  const monthLength = clampDayToMonth(schema2, rule.monthId, rule.day);
+  const initialCandidate = createDayTimestamp(calendarId, start.year, rule.monthId, monthLength);
+  const comparison = compareTimestampsWithSchema(schema2, initialCandidate, start);
+  if (comparison > 0 || comparison === 0 && includeStart) {
+    return initialCandidate;
+  }
+  return createDayTimestamp(calendarId, start.year + 1, rule.monthId, monthLength);
+}
+function resolveNextWeeklyOccurrence(schema2, calendarId, rule, start, includeStart) {
+  const daysPerWeek = schema2.daysPerWeek;
+  if (rule.dayIndex < 0 || rule.dayIndex >= daysPerWeek) {
+    throw new InvalidRepeatRuleError(`dayIndex ${rule.dayIndex} is out of range for schema ${schema2.id}`);
+  }
+  const interval = Math.max(1, rule.interval ?? 1);
+  const absoluteStart = timestampToAbsoluteDay(schema2, start);
+  const currentDayIndex = mod(absoluteStart, daysPerWeek);
+  let delta = mod(rule.dayIndex - currentDayIndex, daysPerWeek);
+  if (delta === 0 && !includeStart) {
+    delta = daysPerWeek * interval;
+  }
+  const intervalDays = daysPerWeek * interval;
+  if (delta % daysPerWeek !== 0 && interval > 1) {
+    delta += mod(intervalDays - delta % intervalDays, intervalDays);
+  }
+  const candidateAbsolute = absoluteStart + delta;
+  return absoluteDayToTimestamp(schema2, calendarId, candidateAbsolute);
+}
+function resolveNextAstronomicalOccurrence(schema2, calendarId, rule, start, options, services) {
+  const calculator = services.astronomicalCalculator;
+  if (!calculator) {
+    throw new UnsupportedRepeatRuleError(rule.type);
+  }
+  return calculator.resolveNextOccurrence(schema2, calendarId, rule, start, options);
+}
+function resolveAstronomicalRange(schema2, calendarId, rule, rangeStart, rangeEnd, options, services) {
+  const calculator = services.astronomicalCalculator;
+  if (!calculator) {
+    throw new UnsupportedRepeatRuleError(rule.type);
+  }
+  return calculator.resolveOccurrencesInRange(schema2, calendarId, rule, rangeStart, rangeEnd, options);
+}
 function isSingleEvent(event) {
   return event.kind === "single";
 }
@@ -26458,9 +26783,518 @@ function getEventAnchorTimestamp(event) {
   }
   return event.bounds?.start ?? event.date ?? null;
 }
+function computeEventOccurrencesInRange(event, schema2, calendarId, rangeStart, rangeEnd, options = {}) {
+  if (isSingleEvent(event)) {
+    const occurrences = [];
+    const inRange = isTimestampInRange(schema2, event.date, rangeStart, rangeEnd, options.includeStart ?? false);
+    if (inRange) {
+      occurrences.push(buildSingleEventOccurrence(event, schema2));
+    }
+    return occurrences;
+  }
+  const effectiveStart = resolveRecurringSearchStart(event, schema2, rangeStart);
+  if (!effectiveStart) {
+    return [];
+  }
+  const { services, ...ruleOptions } = options;
+  const baseOccurrences = calculateOccurrencesInRange(
+    schema2,
+    calendarId,
+    event.rule,
+    effectiveStart,
+    rangeEnd,
+    ruleOptions,
+    services
+  );
+  return baseOccurrences.filter((timestamp2) => isWithinBounds(event.bounds, schema2, timestamp2)).map((timestamp2) => buildRecurringEventOccurrence(event, schema2, calendarId, timestamp2));
+}
+function buildSingleEventOccurrence(event, schema2) {
+  const { start, end, durationMinutes } = resolveSingleEventWindow(event, schema2);
+  const hooks = event.hooks ? sortHooksByPriority(event.hooks) : [];
+  return {
+    eventId: event.id,
+    calendarId: event.calendarId,
+    eventType: "single",
+    title: event.title,
+    category: event.category,
+    start,
+    end,
+    durationMinutes,
+    allDay: event.allDay,
+    priority: event.priority ?? 0,
+    hooks,
+    source: event
+  };
+}
+function buildRecurringEventOccurrence(event, schema2, calendarId, baseTimestamp) {
+  const { start, end, durationMinutes } = applyRecurringTimePolicy(event, schema2, calendarId, baseTimestamp);
+  const hooks = event.hooks ? sortHooksByPriority(event.hooks) : [];
+  return {
+    eventId: event.id,
+    calendarId,
+    eventType: "recurring",
+    title: event.title,
+    category: event.category,
+    start,
+    end,
+    durationMinutes,
+    allDay: event.timePolicy === "all_day",
+    priority: event.priority ?? 0,
+    hooks,
+    source: event
+  };
+}
+function resolveSingleEventWindow(event, schema2) {
+  const { minutesPerHour, hoursPerDay } = getTimeDefinition(schema2);
+  const minutesPerDay = hoursPerDay * minutesPerHour;
+  const base = event.date;
+  const start = event.allDay ? base : createMinuteTimestamp(
+    base.calendarId,
+    base.year,
+    base.monthId,
+    base.day,
+    event.startTime?.hour ?? base.hour ?? 0,
+    event.startTime?.minute ?? base.minute ?? 0
+  );
+  const requestedDuration = event.endTime ? Math.max(
+    event.durationMinutes ?? 0,
+    calculateDurationFromTimes(event.startTime, event.endTime, minutesPerHour, hoursPerDay)
+  ) : event.durationMinutes ?? 0;
+  const duration = resolveDuration(requestedDuration, event.allDay ? minutesPerDay : 0);
+  return createWindow(schema2, start, duration);
+}
+function applyRecurringTimePolicy(event, schema2, calendarId, baseTimestamp) {
+  const { minutesPerHour, hoursPerDay } = getTimeDefinition(schema2);
+  const minutesPerDay = hoursPerDay * minutesPerHour;
+  switch (event.timePolicy) {
+    case "all_day":
+      return createWindow(schema2, baseTimestamp, resolveDuration(event.durationMinutes, minutesPerDay));
+    case "fixed": {
+      const start = createMinuteTimestamp(
+        calendarId,
+        baseTimestamp.year,
+        baseTimestamp.monthId,
+        baseTimestamp.day,
+        event.startTime?.hour ?? 0,
+        event.startTime?.minute ?? 0
+      );
+      return createWindow(schema2, start, resolveDuration(event.durationMinutes, 0));
+    }
+    case "offset": {
+      const start = advanceTime(schema2, baseTimestamp, event.offsetMinutes ?? 0, "minute").timestamp;
+      return createWindow(schema2, start, resolveDuration(event.durationMinutes, 0));
+    }
+    default: {
+      const _never = event.timePolicy;
+      return _never;
+    }
+  }
+}
+function calculateDurationFromTimes(startTime, endTime, minutesPerHour, hoursPerDay) {
+  const startMinutes = timeOfDayToMinutes(startTime ?? { hour: 0, minute: 0 }, minutesPerHour);
+  const endMinutes = timeOfDayToMinutes(endTime, minutesPerHour);
+  const dailyMinutes = hoursPerDay * minutesPerHour;
+  const raw = endMinutes - startMinutes;
+  if (raw <= 0) {
+    return dailyMinutes + raw;
+  }
+  return raw;
+}
+function timeOfDayToMinutes(time, minutesPerHour) {
+  return time.hour * minutesPerHour + (time.minute ?? 0);
+}
+function isTimestampInRange(schema2, timestamp2, start, end, includeStart) {
+  const [rangeStart, rangeEnd] = compareTimestampsWithSchema(schema2, start, end) <= 0 ? [start, end] : [end, start];
+  const afterStart = compareTimestampsWithSchema(schema2, timestamp2, rangeStart);
+  const beforeEnd = compareTimestampsWithSchema(schema2, timestamp2, rangeEnd);
+  const startOk = includeStart ? afterStart >= 0 : afterStart > 0;
+  return startOk && beforeEnd <= 0;
+}
+function resolveRecurringSearchStart(event, schema2, start) {
+  const boundsStart = event.bounds?.start;
+  if (!boundsStart) {
+    return start;
+  }
+  const comparison = compareTimestampsWithSchema(schema2, start, boundsStart);
+  if (comparison >= 0) {
+    return start;
+  }
+  return boundsStart;
+}
+function isWithinBounds(bounds, schema2, timestamp2) {
+  if (!bounds) {
+    return true;
+  }
+  if (bounds.start && compareTimestampsWithSchema(schema2, timestamp2, bounds.start) < 0) {
+    return false;
+  }
+  if (bounds.end && compareTimestampsWithSchema(schema2, timestamp2, bounds.end) > 0) {
+    return false;
+  }
+  return true;
+}
+function resolveDuration(durationMinutes, fallback) {
+  if (durationMinutes === void 0 || durationMinutes <= 0) {
+    return fallback;
+  }
+  return durationMinutes;
+}
+function createWindow(schema2, start, durationMinutes) {
+  const duration = Math.max(0, durationMinutes);
+  if (duration === 0) {
+    return { start, end: start, durationMinutes: 0 };
+  }
+  const end = advanceTime(schema2, start, duration, "minute").timestamp;
+  return { start, end, durationMinutes: duration };
+}
+var DEFAULT_TIME_DEFINITION, UnsupportedRepeatRuleError, InvalidRepeatRuleError;
 var init_domain = __esm({
   "src/workmodes/almanac/domain/index.ts"() {
     "use strict";
+    DEFAULT_TIME_DEFINITION = {
+      hoursPerDay: 24,
+      minutesPerHour: 60,
+      secondsPerMinute: 60,
+      minuteStep: 1
+    };
+    UnsupportedRepeatRuleError = class extends Error {
+      constructor(ruleType) {
+        super(`Repeat rule type "${ruleType}" is not supported yet.`);
+        this.name = "UnsupportedRepeatRuleError";
+      }
+    };
+    InvalidRepeatRuleError = class extends Error {
+      constructor(message) {
+        super(message);
+        this.name = "InvalidRepeatRuleError";
+      }
+    };
+  }
+});
+
+// src/workmodes/almanac/view/almanac-time-display.ts
+function createAlmanacTimeDisplay(options) {
+  const root = document.createElement("div");
+  root.classList.add("sm-almanac-time-display");
+  const timeDisplay = document.createElement("div");
+  timeDisplay.classList.add("sm-almanac-time-display__current");
+  const timeLabel = document.createElement("div");
+  timeLabel.classList.add("sm-almanac-time-display__label");
+  timeLabel.textContent = "Current Time";
+  timeDisplay.appendChild(timeLabel);
+  const timeValue = document.createElement("div");
+  timeValue.classList.add("sm-almanac-time-display__value");
+  updateTimeValue(timeValue, options.currentTimestamp, options.schema);
+  timeDisplay.appendChild(timeValue);
+  root.appendChild(timeDisplay);
+  const controls = document.createElement("div");
+  controls.classList.add("sm-almanac-time-display__controls");
+  const createControl = (label, onClickForward, onClickBackward) => {
+    const group = document.createElement("div");
+    group.classList.add("sm-almanac-time-display__control-group");
+    const controlLabel = document.createElement("span");
+    controlLabel.classList.add("sm-almanac-time-display__control-label");
+    controlLabel.textContent = label;
+    group.appendChild(controlLabel);
+    const backwardBtn = document.createElement("button");
+    backwardBtn.type = "button";
+    backwardBtn.classList.add("sm-almanac-time-display__control-btn");
+    backwardBtn.textContent = "\u2212";
+    backwardBtn.addEventListener("click", onClickBackward);
+    group.appendChild(backwardBtn);
+    const forwardBtn = document.createElement("button");
+    forwardBtn.type = "button";
+    forwardBtn.classList.add("sm-almanac-time-display__control-btn");
+    forwardBtn.textContent = "+";
+    forwardBtn.addEventListener("click", onClickForward);
+    group.appendChild(forwardBtn);
+    controls.appendChild(group);
+  };
+  createControl(
+    "Day",
+    () => options.onAdvanceDay(1),
+    () => options.onAdvanceDay(-1)
+  );
+  createControl(
+    "Hour",
+    () => options.onAdvanceHour(1),
+    () => options.onAdvanceHour(-1)
+  );
+  createControl(
+    "Minute",
+    () => options.onAdvanceMinute(10),
+    () => options.onAdvanceMinute(-10)
+  );
+  root.appendChild(controls);
+  function updateTimeValue(element, timestamp2, schema2) {
+    if (!timestamp2 || !schema2) {
+      element.textContent = "No active calendar";
+      element.classList.add("is-empty");
+      return;
+    }
+    element.classList.remove("is-empty");
+    const monthName = schema2.months.find((m) => m.id === timestamp2.monthId)?.name;
+    element.textContent = formatTimestamp(timestamp2, monthName);
+  }
+  return {
+    root,
+    update(timestamp2, schema2) {
+      updateTimeValue(timeValue, timestamp2, schema2);
+    },
+    destroy() {
+      root.replaceChildren();
+    }
+  };
+}
+var init_almanac_time_display = __esm({
+  "src/workmodes/almanac/view/almanac-time-display.ts"() {
+    "use strict";
+    init_domain();
+  }
+});
+
+// src/workmodes/almanac/view/upcoming-events-list.ts
+function createUpcomingEventsList(options) {
+  const root = document.createElement("div");
+  root.classList.add("sm-almanac-upcoming-events");
+  const header = document.createElement("div");
+  header.classList.add("sm-almanac-upcoming-events__header");
+  header.textContent = "Upcoming Events (Next 7 Days)";
+  root.appendChild(header);
+  const list = document.createElement("ul");
+  list.classList.add("sm-almanac-upcoming-events__list");
+  root.appendChild(list);
+  function updateList(events, phenomena, schema2, currentTimestamp) {
+    list.replaceChildren();
+    if (!schema2 || !currentTimestamp) {
+      const emptyItem = document.createElement("li");
+      emptyItem.classList.add("sm-almanac-upcoming-events__item", "is-empty");
+      emptyItem.textContent = "No active calendar";
+      list.appendChild(emptyItem);
+      return;
+    }
+    const rangeEnd = advanceTime(schema2, currentTimestamp, 7, "day").timestamp;
+    const occurrences = [];
+    for (const event of events) {
+      const eventOccurrences = computeEventOccurrencesInRange(
+        event,
+        schema2,
+        event.calendarId,
+        currentTimestamp,
+        rangeEnd,
+        { includeStart: true, limit: 10 }
+      );
+      for (const occurrence of eventOccurrences) {
+        occurrences.push({
+          type: "event",
+          timestamp: occurrence.start,
+          title: occurrence.title,
+          category: occurrence.category,
+          id: occurrence.eventId,
+          source: event
+        });
+      }
+    }
+    for (const phenomenon of phenomena) {
+      occurrences.push({
+        type: "phenomenon",
+        timestamp: phenomenon.timestamp,
+        title: phenomenon.name,
+        category: phenomenon.category,
+        id: phenomenon.phenomenonId
+      });
+    }
+    occurrences.sort((a, b) => {
+      const timestampA = a.timestamp;
+      const timestampB = b.timestamp;
+      if (timestampA.year !== timestampB.year) {
+        return timestampA.year - timestampB.year;
+      }
+      const monthA = schema2.months.findIndex((m) => m.id === timestampA.monthId);
+      const monthB = schema2.months.findIndex((m) => m.id === timestampB.monthId);
+      if (monthA !== monthB) {
+        return monthA - monthB;
+      }
+      if (timestampA.day !== timestampB.day) {
+        return timestampA.day - timestampB.day;
+      }
+      const hourA = timestampA.hour ?? 0;
+      const hourB = timestampB.hour ?? 0;
+      if (hourA !== hourB) {
+        return hourA - hourB;
+      }
+      const minuteA = timestampA.minute ?? 0;
+      const minuteB = timestampB.minute ?? 0;
+      return minuteA - minuteB;
+    });
+    if (occurrences.length === 0) {
+      const emptyItem = document.createElement("li");
+      emptyItem.classList.add("sm-almanac-upcoming-events__item", "is-empty");
+      emptyItem.textContent = "No upcoming events";
+      list.appendChild(emptyItem);
+      return;
+    }
+    for (const occurrence of occurrences) {
+      const item = document.createElement("li");
+      item.classList.add("sm-almanac-upcoming-events__item");
+      item.dataset.type = occurrence.type;
+      if (occurrence.category) {
+        item.dataset.category = occurrence.category;
+      }
+      const monthName = schema2.months.find((m) => m.id === occurrence.timestamp.monthId)?.name;
+      const timestampText = formatTimestamp(occurrence.timestamp, monthName);
+      const timestampSpan = document.createElement("span");
+      timestampSpan.classList.add("sm-almanac-upcoming-events__timestamp");
+      timestampSpan.textContent = timestampText;
+      item.appendChild(timestampSpan);
+      const titleSpan = document.createElement("span");
+      titleSpan.classList.add("sm-almanac-upcoming-events__title");
+      titleSpan.textContent = occurrence.title;
+      item.appendChild(titleSpan);
+      const typeSpan = document.createElement("span");
+      typeSpan.classList.add("sm-almanac-upcoming-events__type");
+      typeSpan.textContent = occurrence.type === "event" ? "Event" : "Phenomenon";
+      item.appendChild(typeSpan);
+      if (occurrence.type === "event" && occurrence.source && options.onEventClick) {
+        item.classList.add("is-clickable");
+        item.addEventListener("click", () => {
+          if (occurrence.source) {
+            options.onEventClick?.(occurrence.source);
+          }
+        });
+      }
+      list.appendChild(item);
+    }
+  }
+  updateList(options.events, options.phenomena, options.schema, options.currentTimestamp);
+  return {
+    root,
+    update: updateList,
+    destroy() {
+      list.replaceChildren();
+      root.replaceChildren();
+    }
+  };
+}
+var init_upcoming_events_list = __esm({
+  "src/workmodes/almanac/view/upcoming-events-list.ts"() {
+    "use strict";
+    init_domain();
+  }
+});
+
+// src/workmodes/almanac/view/almanac-mvp.ts
+var almanac_mvp_exports = {};
+__export(almanac_mvp_exports, {
+  renderAlmanacMVP: () => renderAlmanacMVP
+});
+async function renderAlmanacMVP(app, container) {
+  logger2.info("[almanac-mvp] Rendering Almanac MVP");
+  const root = container.createDiv({ cls: "sm-almanac-mvp" });
+  const notice = root.createDiv({ cls: "sm-almanac-mvp__notice" });
+  notice.createEl("h3", { text: "Almanac MVP" });
+  notice.createEl("p", {
+    text: "This is a minimal viable implementation. Full calendar views (month/week/timeline) and event editor are planned for future updates."
+  });
+  const mockSchema = {
+    id: "gregorian-standard",
+    name: "Gregorian Calendar",
+    description: "Standard Gregorian calendar for testing",
+    daysPerWeek: 7,
+    months: [
+      { id: "jan", name: "January", length: 31 },
+      { id: "feb", name: "February", length: 28 },
+      { id: "mar", name: "March", length: 31 },
+      { id: "apr", name: "April", length: 30 },
+      { id: "may", name: "May", length: 31 },
+      { id: "jun", name: "June", length: 30 },
+      { id: "jul", name: "July", length: 31 },
+      { id: "aug", name: "August", length: 31 },
+      { id: "sep", name: "September", length: 30 },
+      { id: "oct", name: "October", length: 31 },
+      { id: "nov", name: "November", length: 30 },
+      { id: "dec", name: "December", length: 31 }
+    ],
+    hoursPerDay: 24,
+    minutesPerHour: 60,
+    secondsPerMinute: 60,
+    minuteStep: 1,
+    epoch: {
+      year: 1,
+      monthId: "jan",
+      day: 1
+    },
+    schemaVersion: "1.0.0"
+  };
+  let currentTimestamp = {
+    calendarId: "gregorian-standard",
+    year: 2025,
+    monthId: "jan",
+    day: 1,
+    hour: 12,
+    minute: 0,
+    precision: "minute"
+  };
+  const mockEvents = [];
+  const mockPhenomena = [];
+  let timeDisplay = null;
+  let eventsList = null;
+  function handleAdvanceDay(amount) {
+    logger2.info("[almanac-mvp] Advancing time by days", { amount });
+    const result = advanceTime(mockSchema, currentTimestamp, amount, "day");
+    currentTimestamp = result.timestamp;
+    timeDisplay?.update(currentTimestamp, mockSchema);
+    eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+  }
+  function handleAdvanceHour(amount) {
+    logger2.info("[almanac-mvp] Advancing time by hours", { amount });
+    const result = advanceTime(mockSchema, currentTimestamp, amount, "hour");
+    currentTimestamp = result.timestamp;
+    timeDisplay?.update(currentTimestamp, mockSchema);
+    eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+  }
+  function handleAdvanceMinute(amount) {
+    logger2.info("[almanac-mvp] Advancing time by minutes", { amount });
+    const result = advanceTime(mockSchema, currentTimestamp, amount, "minute");
+    currentTimestamp = result.timestamp;
+    timeDisplay?.update(currentTimestamp, mockSchema);
+    eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+  }
+  timeDisplay = createAlmanacTimeDisplay({
+    currentTimestamp,
+    schema: mockSchema,
+    onAdvanceDay: handleAdvanceDay,
+    onAdvanceHour: handleAdvanceHour,
+    onAdvanceMinute: handleAdvanceMinute
+  });
+  root.appendChild(timeDisplay.root);
+  eventsList = createUpcomingEventsList({
+    events: mockEvents,
+    phenomena: mockPhenomena,
+    schema: mockSchema,
+    currentTimestamp,
+    onEventClick: (event) => {
+      logger2.info("[almanac-mvp] Event clicked", { eventId: event.id });
+    }
+  });
+  root.appendChild(eventsList.root);
+  const futureNotice = root.createDiv({ cls: "sm-almanac-mvp__future-notice" });
+  futureNotice.createEl("h4", { text: "Coming Soon" });
+  const featureList = futureNotice.createEl("ul");
+  featureList.createEl("li", { text: "Month/Week/Timeline calendar views" });
+  featureList.createEl("li", { text: "Event and phenomenon editor" });
+  featureList.createEl("li", { text: "Astronomical cycles visualization" });
+  featureList.createEl("li", { text: "Event inbox with priority sorting" });
+  featureList.createEl("li", { text: "Integration with vault calendar data" });
+  logger2.info("[almanac-mvp] Almanac MVP rendered successfully");
+}
+var init_almanac_mvp = __esm({
+  "src/workmodes/almanac/view/almanac-mvp.ts"() {
+    "use strict";
+    init_almanac_time_display();
+    init_upcoming_events_list();
+    init_domain();
+    init_plugin_logger();
   }
 });
 
@@ -28837,8 +29671,8 @@ function preloadEncounterModule() {
   void ensureEncounterModule();
 }
 async function openEncounter2(app, context) {
-  const mod = await ensureEncounterModule();
-  if (!mod) return false;
+  const mod2 = await ensureEncounterModule();
+  if (!mod2) return false;
   const issue = describeEncounterContextIssue(context);
   if (issue) {
     logger2.warn(`[session-runner] ${issue.log}`, context);
@@ -28853,8 +29687,8 @@ async function openEncounter2(app, context) {
       logger2.error("[session-runner] failed to publish encounter payload", err);
     }
   }
-  const leaf = mod.getCenterLeaf(app);
-  await leaf.setViewState({ type: mod.VIEW_ENCOUNTER, active: true });
+  const leaf = mod2.getCenterLeaf(app);
+  await leaf.setViewState({ type: mod2.VIEW_ENCOUNTER, active: true });
   app.workspace.revealLeaf(leaf);
   return true;
 }
@@ -102472,19 +103306,19 @@ var AlmanacView = class extends import_obsidian36.ItemView {
     this.header = createWorkmodeHeader(content, {
       title: "Almanac",
       search: {
-        placeholder: "Search the almanac\u2026",
+        placeholder: "Search events\u2026",
         disabled: true
+        // Will enable when search is implemented
       },
       action: {
-        label: "Add entry",
+        label: "Add event",
         disabled: true
+        // Will enable when event editor is implemented
       }
     });
-    const placeholder = content.createDiv({ cls: "almanac-placeholder" });
-    placeholder.createEl("h2", { text: "Almanac front-end removed" });
-    placeholder.createEl("p", {
-      text: "The Almanac's interactive interface has been removed. Existing calendar data remains available for other modules."
-    });
+    const mainContent = content.createDiv({ cls: "sm-almanac__content" });
+    const { renderAlmanacMVP: renderAlmanacMVP2 } = await Promise.resolve().then(() => (init_almanac_mvp(), almanac_mvp_exports));
+    await renderAlmanacMVP2(this.app, mainContent);
   }
   async onClose() {
     this.header?.destroy();

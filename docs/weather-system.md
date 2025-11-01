@@ -347,11 +347,61 @@ interface WeatherZone {
 - Test coverage: 5 new validation tests
 - Location: building-management-modal.ts:489-525, devkit/testing/unit/cartographer/building-management-modal.test.ts
 
+### Phase 11.1: Weather Panel Interactivity ✅
+**Status:** Complete (2025-11-01)
+
+**Implementation:**
+1. Weather history display (src/features/weather/weather-store.ts) ✅
+   - Stores last 7 days of weather per hex
+   - Automatically archives weather on state updates
+   - Exposes getWeatherHistory() for UI consumption
+2. Weather forecaster (src/features/weather/weather-forecaster.ts) ✅
+   - Generates 3-day forecasts using weather generator
+   - Confidence levels decrease over time (day 1: 90%, day 2: 70%, day 3: 50%)
+   - Deterministic forecasting (same seed → same forecast)
+   - Confidence labels in German (Sehr sicher/Wahrscheinlich/Möglich/Unsicher)
+3. Weather panel UI (src/workmodes/session-runner/travel/ui/weather-panel.ts) ✅
+   - Expandable history section (last 7 days, reverse chronological)
+   - Expandable forecast section (next 3 days with confidence)
+   - Toggle icons (▶/▼) for expand/collapse
+   - Empty states ("Keine Verlaufsdaten verfügbar", "Keine Vorhersage verfügbar")
+   - Improved placeholder message ("Wähle ein Hex aus, um das Wetter zu sehen")
+4. Session Runner integration (src/workmodes/session-runner/view/experience.ts) ✅
+   - Auto-fetch history/forecast on hex change
+   - Weather panel updates automatically when player moves
+   - Sidebar methods: setWeatherHistory(), setWeatherForecast()
+5. Unit tests (6 tests, 100% pass rate) ✅
+   - History display and toggle
+   - Forecast display and toggle
+   - Empty state handling
+   - Weather panel integration
+
+**Key Features:**
+- Provides gameplay-critical information (plan multi-day travel)
+- Confidence visualization (color-coded: high=green, medium=yellow, low=red)
+- Automatic updates as player moves across hexes
+- German UI strings consistent with plugin conventions
+- Graceful degradation (empty states for no data)
+
+**Location:**
+- Weather store: src/features/weather/weather-store.ts:122-179
+- Forecaster: src/features/weather/weather-forecaster.ts
+- Weather panel: src/workmodes/session-runner/travel/ui/weather-panel.ts:36-240
+- Session Runner: src/workmodes/session-runner/view/experience.ts:377-400
+- Sidebar: src/workmodes/session-runner/travel/ui/sidebar.ts:102-118
+- Tests: devkit/testing/tests/unit/workmodes/session-runner/weather-panel-interactivity.test.ts
+
+**Resolves:**
+- [HIGH] #5 - Weather Panel No Interactivity
+- Users can now see historical weather trends
+- Users can plan ahead with 3-day forecasts
+- Weather changes are trackable over time
+
 ### Phase 10.5: Advanced Features (Future)
-- Weather forecasting (predict next 3 days)
-- Extreme weather events (hurricanes, blizzards)
+- Extreme weather events (hurricanes, blizzards, typhoons)
 - Player-controlled weather (Control Weather spell integration)
-- Weather-based random events (flash floods, heatwaves)
+- Weather-based random events (flash floods, heatwaves, droughts)
+- Weather zone visualization on map (show storm fronts, fog banks)
 
 ## Design Decisions
 

@@ -41,20 +41,20 @@ export class AlmanacView extends ItemView {
         this.header = createWorkmodeHeader(content, {
             title: "Almanac",
             search: {
-                placeholder: "Search the almanac…",
-                disabled: true,
+                placeholder: "Search events…",
+                disabled: true, // Will enable when search is implemented
             },
             action: {
-                label: "Add entry",
-                disabled: true,
+                label: "Add event",
+                disabled: true, // Will enable when event editor is implemented
             },
         });
 
-        const placeholder = content.createDiv({ cls: "almanac-placeholder" });
-        placeholder.createEl("h2", { text: "Almanac front-end removed" });
-        placeholder.createEl("p", {
-            text: "The Almanac's interactive interface has been removed. Existing calendar data remains available for other modules.",
-        });
+        const mainContent = content.createDiv({ cls: "sm-almanac__content" });
+
+        // Import and render MVP components dynamically
+        const { renderAlmanacMVP } = await import("./view/almanac-mvp");
+        await renderAlmanacMVP(this.app, mainContent);
     }
 
     async onClose(): Promise<void> {
