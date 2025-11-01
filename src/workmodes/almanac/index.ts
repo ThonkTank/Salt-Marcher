@@ -71,9 +71,13 @@ export class AlmanacView extends ItemView {
 
         const mainContent = content.createDiv({ cls: "sm-almanac__content" });
 
+        // Initialize gateway for vault integration
+        const { createAlmanacGateway } = await import("./gateway-factory");
+        const gateway = createAlmanacGateway(this.app);
+
         // Import and render MVP components dynamically
         const { renderAlmanacMVP } = await import("./view/almanac-mvp");
-        await renderAlmanacMVP(this.app, mainContent);
+        await renderAlmanacMVP(this.app, mainContent, gateway);
     }
 
     async onClose(): Promise<void> {

@@ -1083,6 +1083,46 @@ var init_persistent_store = __esm({
 });
 
 // src/services/state/adapters/json-store-adapter.ts
+function createJsonStorePersistentAdapter(options) {
+  const { backend, initialValue, storageKey, ...storeOptions } = options;
+  const internal = writable(initialValue, storeOptions);
+  let dirty = false;
+  const subscribe = internal.subscribe;
+  const get = internal.get;
+  const set2 = (value) => {
+    internal.set(value);
+    dirty = true;
+  };
+  const update = (updater) => {
+    internal.update((currentValue) => {
+      const nextValue = updater(currentValue);
+      dirty = true;
+      return nextValue;
+    });
+  };
+  const load2 = async () => {
+    const value = await backend.read();
+    internal.set(value);
+    dirty = false;
+  };
+  const save = async () => {
+    const value = internal.get();
+    await backend.update(() => value);
+    dirty = false;
+  };
+  const isDirty = () => dirty;
+  const getStorageKey = () => storageKey;
+  return {
+    subscribe,
+    get,
+    set: set2,
+    update,
+    load: load2,
+    save,
+    isDirty,
+    getStorageKey
+  };
+}
 var init_json_store_adapter = __esm({
   "src/services/state/adapters/json-store-adapter.ts"() {
     "use strict";
@@ -26982,6 +27022,99 @@ function isWithinBounds(bounds, schema2, timestamp2) {
   }
   return true;
 }
+function isPhenomenonVisibleForCalendar(phenomenon, calendarId) {
+  if (phenomenon.visibility === "all_calendars") {
+    return true;
+  }
+  return phenomenon.appliesToCalendarIds.includes(calendarId);
+}
+function computeNextPhenomenonOccurrence(phenomenon, schema2, calendarId, start, options = {}) {
+  const { services, ...ruleOptions } = options;
+  const baseTimestamp = calculateNextOccurrence(
+    schema2,
+    calendarId,
+    phenomenon.rule,
+    start,
+    ruleOptions,
+    services
+  );
+  if (!baseTimestamp) {
+    return null;
+  }
+  return buildPhenomenonOccurrence(phenomenon, schema2, calendarId, baseTimestamp);
+}
+function computePhenomenonOccurrencesInRange(phenomenon, schema2, calendarId, rangeStart, rangeEnd, options = {}) {
+  const { services, ...ruleOptions } = options;
+  const baseOccurrences = calculateOccurrencesInRange(
+    schema2,
+    calendarId,
+    phenomenon.rule,
+    rangeStart,
+    rangeEnd,
+    ruleOptions,
+    services
+  );
+  return baseOccurrences.map((timestamp2) => buildPhenomenonOccurrence(phenomenon, schema2, calendarId, timestamp2));
+}
+function buildPhenomenonOccurrence(phenomenon, schema2, calendarId, baseTimestamp) {
+  const { start, end, durationMinutes } = applyPhenomenonTimePolicy(phenomenon, schema2, calendarId, baseTimestamp);
+  return {
+    phenomenonId: phenomenon.id,
+    name: phenomenon.name,
+    calendarId,
+    timestamp: start,
+    endTimestamp: end,
+    category: phenomenon.category,
+    priority: phenomenon.priority ?? 0,
+    durationMinutes,
+    hooks: sortHooksByPriority(phenomenon.hooks ?? []),
+    effects: phenomenon.effects ?? []
+  };
+}
+function applyPhenomenonTimePolicy(phenomenon, schema2, calendarId, baseTimestamp) {
+  const { hoursPerDay, minutesPerHour } = getTimeDefinition(schema2);
+  const minutesPerDay = hoursPerDay * minutesPerHour;
+  switch (phenomenon.timePolicy) {
+    case "all_day":
+      return createWindow(
+        schema2,
+        baseTimestamp,
+        resolveDuration(phenomenon.durationMinutes, minutesPerDay)
+      );
+    case "fixed": {
+      const startTime = clampTimeOfDay(phenomenon.startTime, hoursPerDay, minutesPerHour);
+      const start = createMinuteTimestamp(
+        calendarId,
+        baseTimestamp.year,
+        baseTimestamp.monthId,
+        baseTimestamp.day,
+        startTime.hour,
+        startTime.minute
+      );
+      return createWindow(schema2, start, resolveDuration(phenomenon.durationMinutes, 0));
+    }
+    case "offset": {
+      const start = advanceTime(schema2, baseTimestamp, phenomenon.offsetMinutes ?? 0, "minute").timestamp;
+      return createWindow(schema2, start, resolveDuration(phenomenon.durationMinutes, 0));
+    }
+    default:
+      throw new UnsupportedTimePolicyError(phenomenon.timePolicy);
+  }
+}
+function clampTimeOfDay(time, hoursPerDay, minutesPerHour) {
+  const safeHour = clamp(time?.hour, 0, Math.max(0, hoursPerDay - 1));
+  const safeMinute = clamp(time?.minute, 0, Math.max(0, minutesPerHour - 1));
+  return { hour: safeHour, minute: safeMinute };
+}
+function clamp(value, min, max) {
+  if (value === void 0 || Number.isNaN(value)) return min;
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
+}
+function sortOccurrencesByTimestamp(schema2, occurrences) {
+  return [...occurrences].sort((a, b) => compareTimestampsWithSchema(schema2, a.timestamp, b.timestamp));
+}
 function resolveDuration(durationMinutes, fallback) {
   if (durationMinutes === void 0 || durationMinutes <= 0) {
     return fallback;
@@ -26996,7 +27129,7 @@ function createWindow(schema2, start, durationMinutes) {
   const end = advanceTime(schema2, start, duration, "minute").timestamp;
   return { start, end, durationMinutes: duration };
 }
-var DEFAULT_TIME_DEFINITION, UnsupportedRepeatRuleError, InvalidRepeatRuleError;
+var DEFAULT_TIME_DEFINITION, UnsupportedRepeatRuleError, InvalidRepeatRuleError, UnsupportedTimePolicyError;
 var init_domain = __esm({
   "src/workmodes/almanac/domain/index.ts"() {
     "use strict";
@@ -27018,6 +27151,1611 @@ var init_domain = __esm({
         this.name = "InvalidRepeatRuleError";
       }
     };
+    UnsupportedTimePolicyError = class extends Error {
+      constructor(policy) {
+        super(`Phenomenon time policy "${policy}" is not supported yet.`);
+        this.name = "UnsupportedTimePolicyError";
+      }
+    };
+  }
+});
+
+// src/app/integration-telemetry.ts
+function reportIntegrationIssue(payload) {
+  const { integrationId, operation, error, userMessage } = payload;
+  const logPrefix = `[salt-marcher] integration(${integrationId}) ${operation} failed`;
+  logger2.error(logPrefix, error);
+  const dedupeKey = `${integrationId}:${operation}`;
+  if (notifiedOperations.has(dedupeKey)) return;
+  notifiedOperations.add(dedupeKey);
+  new import_obsidian37.Notice(userMessage);
+}
+var import_obsidian37, notifiedOperations;
+var init_integration_telemetry = __esm({
+  "src/app/integration-telemetry.ts"() {
+    "use strict";
+    import_obsidian37 = require("obsidian");
+    init_plugin_logger();
+    notifiedOperations = /* @__PURE__ */ new Set();
+  }
+});
+
+// src/workmodes/almanac/telemetry.ts
+function reportAlmanacGatewayIssue(payload) {
+  const { operation, scope, code, error } = payload;
+  const userMessage = payload.userMessage ?? DEFAULT_USER_MESSAGES[code];
+  const logContext = { scope, code, ...payload.context ?? {} };
+  logger2.error(`[almanac] ${operation} failed`, logContext, error);
+  if (code === "io_error") {
+    reportIntegrationIssue({
+      integrationId: ALMANAC_INTEGRATION_ID,
+      operation: "prime-dataset",
+      error,
+      userMessage
+    });
+  }
+}
+var ALMANAC_INTEGRATION_ID, DEFAULT_USER_MESSAGES;
+var init_telemetry = __esm({
+  "src/workmodes/almanac/telemetry.ts"() {
+    "use strict";
+    init_integration_telemetry();
+    init_plugin_logger();
+    ALMANAC_INTEGRATION_ID = "obsidian:almanac-view";
+    DEFAULT_USER_MESSAGES = {
+      io_error: "The Almanac data store is currently unavailable. Please check the developer console for details.",
+      validation_error: "The Almanac input could not be validated. Please review the provided data and try again.",
+      conflict: "The Almanac detected a conflicting calendar configuration.",
+      phenomenon_conflict: "The phenomenon cannot be linked because it conflicts with existing calendar rules."
+    };
+  }
+});
+
+// src/workmodes/almanac/data/json-store.ts
+function serialise(payload) {
+  return `${JSON.stringify(payload, null, 2)}
+`;
+}
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+var import_obsidian38, JsonStore;
+var init_json_store = __esm({
+  "src/workmodes/almanac/data/json-store.ts"() {
+    "use strict";
+    import_obsidian38 = require("obsidian");
+    init_plugin_logger();
+    JsonStore = class {
+      constructor(vault, config) {
+        this.vault = vault;
+        this.config = config;
+        this.normalizedPath = (0, import_obsidian38.normalizePath)(config.path);
+      }
+      async read() {
+        const payload = await this.ensurePayload();
+        return clone(payload.data);
+      }
+      async update(updater) {
+        const payload = await this.ensurePayload();
+        const draft = clone(payload.data);
+        const result = updater(draft);
+        const nextData = result !== void 0 ? result : draft;
+        const nextPayload = { version: this.config.currentVersion, data: clone(nextData) };
+        await this.writePayload(nextPayload);
+        return clone(nextData);
+      }
+      async ensurePayload() {
+        const file = await this.ensureFile();
+        const raw = await this.vault.read(file);
+        if (!raw.trim()) {
+          const fallback = { version: this.config.currentVersion, data: this.config.initialData() };
+          await this.writePayload(fallback);
+          return fallback;
+        }
+        try {
+          const parsed = JSON.parse(raw);
+          const normalized = this.normalisePayload(parsed);
+          if (normalized.version !== this.config.currentVersion) {
+            const migrated = this.applyMigrations(normalized);
+            if (migrated.version !== this.config.currentVersion) {
+              const coerced = {
+                version: this.config.currentVersion,
+                data: migrated.data ?? this.config.initialData()
+              };
+              await this.writePayload(coerced);
+              return coerced;
+            }
+            await this.writePayload(migrated);
+            return migrated;
+          }
+          return normalized;
+        } catch (error) {
+          logger2.warn(`[salt-marcher] Failed to parse ${this.normalizedPath}, resetting file`, error);
+          const fallback = { version: this.config.currentVersion, data: this.config.initialData() };
+          await this.writePayload(fallback);
+          return fallback;
+        }
+      }
+      applyMigrations(payload) {
+        const migrations = this.config.migrations ?? {};
+        let current = payload;
+        const visited = /* @__PURE__ */ new Set();
+        while (current.version !== this.config.currentVersion) {
+          if (visited.has(current.version)) {
+            break;
+          }
+          visited.add(current.version);
+          const migrate = migrations[current.version];
+          if (!migrate) {
+            break;
+          }
+          current = migrate(current);
+        }
+        return current;
+      }
+      normalisePayload(payload) {
+        if (!payload || typeof payload !== "object") {
+          return { version: "0.0.0", data: this.config.initialData() };
+        }
+        const version = typeof payload.version === "string" && payload.version ? payload.version : "0.0.0";
+        const data = payload.data ?? this.config.initialData();
+        return { version, data };
+      }
+      async ensureFile() {
+        const existing = this.vault.getAbstractFileByPath(this.normalizedPath);
+        if (existing instanceof import_obsidian38.TFile) {
+          return existing;
+        }
+        await this.ensureParentFolder(this.normalizedPath);
+        const payload = { version: this.config.currentVersion, data: this.config.initialData() };
+        return this.vault.create(this.normalizedPath, serialise(payload));
+      }
+      async ensureParentFolder(path) {
+        const segments = path.split("/").slice(0, -1);
+        let current = "";
+        for (const segment of segments) {
+          current = current ? `${current}/${segment}` : segment;
+          const normalised = (0, import_obsidian38.normalizePath)(current);
+          if (this.vault.getAbstractFileByPath(normalised)) {
+            continue;
+          }
+          try {
+            await this.vault.createFolder(normalised);
+          } catch (error) {
+            if (this.vault.getAbstractFileByPath(normalised)) {
+              continue;
+            }
+            throw error;
+          }
+        }
+      }
+      async writePayload(payload) {
+        const file = await this.ensureFile();
+        await this.vault.modify(file, serialise(payload));
+      }
+    };
+  }
+});
+
+// src/workmodes/almanac/data/calendar-state-gateway.ts
+function createGatewayValidationError(message, context) {
+  return new CalendarGatewayError("validation_error", message, context);
+}
+function createGatewayIoError(message, context) {
+  return new CalendarGatewayError("io_error", message, context);
+}
+function createInitialGatewayState() {
+  return {
+    scopes: /* @__PURE__ */ new Map([[GLOBAL_SCOPE, { activeCalendarId: null, currentTimestamp: null }]]),
+    preferences: {},
+    travelLeaf: /* @__PURE__ */ new Map()
+  };
+}
+function ensureScope(state, travelId) {
+  const key = travelId ?? GLOBAL_SCOPE;
+  let scope = state.scopes.get(key);
+  if (!scope) {
+    scope = { activeCalendarId: null, currentTimestamp: null };
+    state.scopes.set(key, scope);
+  }
+  return scope;
+}
+function cloneTimestamp(timestamp2) {
+  return timestamp2 ? { ...timestamp2 } : null;
+}
+function clonePreferences(preferences) {
+  const base = preferences ?? {};
+  return {
+    ...base,
+    eventsFilters: base.eventsFilters ? {
+      categories: [...base.eventsFilters.categories ?? []],
+      calendarIds: [...base.eventsFilters.calendarIds ?? []]
+    } : void 0
+  };
+}
+function normaliseStore(data) {
+  const state = createInitialGatewayState();
+  if (!data) {
+    return state;
+  }
+  state.scopes.clear();
+  const records = data.scopes ?? {};
+  for (const [key, payload] of Object.entries(records)) {
+    state.scopes.set(key, {
+      activeCalendarId: payload?.activeCalendarId ?? null,
+      currentTimestamp: payload?.currentTimestamp ? { ...payload.currentTimestamp } : null
+    });
+  }
+  if (!state.scopes.has(GLOBAL_SCOPE)) {
+    state.scopes.set(GLOBAL_SCOPE, { activeCalendarId: null, currentTimestamp: null });
+  }
+  state.preferences = clonePreferences(data.preferences);
+  state.travelLeaf.clear();
+  for (const [key, value] of Object.entries(data.travelLeaf ?? {})) {
+    state.travelLeaf.set(key, { ...value });
+  }
+  return state;
+}
+function serialiseState(state) {
+  const scopes = {};
+  for (const [key, value] of state.scopes.entries()) {
+    scopes[key] = {
+      activeCalendarId: value.activeCalendarId,
+      currentTimestamp: cloneTimestamp(value.currentTimestamp)
+    };
+  }
+  return {
+    scopes,
+    preferences: clonePreferences(state.preferences),
+    travelLeaf: Object.fromEntries(Array.from(state.travelLeaf.entries()).map(([key, value]) => [key, { ...value }]))
+  };
+}
+function createInitialStore() {
+  return { scopes: { [GLOBAL_SCOPE]: { activeCalendarId: null, currentTimestamp: null } }, preferences: {}, travelLeaf: {} };
+}
+var CalendarGatewayError, GLOBAL_SCOPE, BaseCalendarStateGateway, VaultCalendarStateGateway;
+var init_calendar_state_gateway = __esm({
+  "src/workmodes/almanac/data/calendar-state-gateway.ts"() {
+    "use strict";
+    init_domain();
+    init_telemetry();
+    init_json_store();
+    init_state();
+    init_store_manager();
+    CalendarGatewayError = class extends Error {
+      constructor(code, message, context) {
+        super(message);
+        this.name = "CalendarGatewayError";
+        this.code = code;
+        this.context = context;
+      }
+    };
+    GLOBAL_SCOPE = "__global__";
+    BaseCalendarStateGateway = class {
+      constructor(calendarRepo, eventRepo, phenomenonRepo, hookDispatcher, factionSimulationHook, weatherSimulationHook) {
+        this.calendarRepo = calendarRepo;
+        this.eventRepo = eventRepo;
+        this.phenomenonRepo = phenomenonRepo;
+        this.hookDispatcher = hookDispatcher;
+        this.factionSimulationHook = factionSimulationHook;
+        this.weatherSimulationHook = weatherSimulationHook;
+        this.state = createInitialGatewayState();
+        this.pendingMutations = [];
+        this.pendingFlushPromise = null;
+        this.pendingFlushResolve = null;
+        this.pendingFlushReject = null;
+        this.pendingFlushTimer = null;
+        this.activeFlush = null;
+      }
+      async loadSnapshot(options) {
+        await this.ensureReady();
+        const travelId = options?.travelId ?? null;
+        const scope = ensureScope(this.state, travelId);
+        const effective = await this.resolveEffectiveCalendar(travelId);
+        const travelDefaultCalendarId = travelId ? await this.calendarRepo.getTravelDefault(travelId) : null;
+        if (!effective?.calendar) {
+          return {
+            activeCalendar: null,
+            currentTimestamp: null,
+            upcomingEvents: [],
+            upcomingPhenomena: [],
+            defaultCalendarId: effective?.isGlobalDefault ? effective.calendarId ?? null : null,
+            travelDefaultCalendarId,
+            isGlobalDefault: effective?.isGlobalDefault ?? false,
+            wasAutoSelected: effective?.wasAutoSelected ?? false
+          };
+        }
+        const activeCalendarId = scope.activeCalendarId ?? effective.calendar.id;
+        const activeCalendar = await this.calendarRepo.getCalendar(activeCalendarId);
+        if (!activeCalendar) {
+          return {
+            activeCalendar: null,
+            currentTimestamp: null,
+            upcomingEvents: [],
+            upcomingPhenomena: [],
+            defaultCalendarId: effective.isGlobalDefault ? effective.calendar.id : null,
+            travelDefaultCalendarId,
+            isGlobalDefault: effective.isGlobalDefault,
+            wasAutoSelected: effective.wasAutoSelected
+          };
+        }
+        const upcomingEvents = await this.resolveUpcomingEvents(activeCalendar, scope.currentTimestamp);
+        const visiblePhenomena = await this.listVisiblePhenomena(activeCalendar);
+        const upcomingPhenomena = this.computeUpcomingPhenomenaForCalendar(
+          activeCalendar,
+          visiblePhenomena,
+          scope.currentTimestamp
+        );
+        return {
+          activeCalendar,
+          currentTimestamp: cloneTimestamp(scope.currentTimestamp),
+          upcomingEvents,
+          upcomingPhenomena,
+          defaultCalendarId: effective.isGlobalDefault ? effective.calendar.id : null,
+          travelDefaultCalendarId,
+          isGlobalDefault: effective.isGlobalDefault,
+          wasAutoSelected: effective.wasAutoSelected
+        };
+      }
+      async setActiveCalendar(calendarId, options) {
+        await this.ensureReady();
+        const calendar = await this.calendarRepo.getCalendar(calendarId);
+        if (!calendar) {
+          const error = createGatewayValidationError(`Calendar with ID ${calendarId} not found`, {
+            calendarId,
+            travelId: options?.travelId ?? null
+          });
+          reportAlmanacGatewayIssue({
+            operation: "calendar.gateway.setActiveCalendar",
+            scope: options?.travelId ? "travel" : "calendar",
+            code: error.code,
+            error,
+            context: error.context
+          });
+          throw error;
+        }
+        await this.mutateState((state) => {
+          const scope = ensureScope(state, options?.travelId ?? null);
+          scope.activeCalendarId = calendarId;
+          if (options?.initialTimestamp) {
+            scope.currentTimestamp = { ...options.initialTimestamp };
+            return;
+          }
+          if (scope.currentTimestamp && scope.currentTimestamp.calendarId === calendarId) {
+            return;
+          }
+          const firstMonth = calendar.months[0] ?? getMonthById(calendar, calendar.epoch.monthId);
+          scope.currentTimestamp = createDayTimestamp(
+            calendar.id,
+            calendar.epoch.year,
+            firstMonth?.id ?? calendar.epoch.monthId,
+            calendar.epoch.day
+          );
+        });
+      }
+      async setDefaultCalendar(calendarId, options) {
+        const scope = options?.scope ?? "global";
+        if (scope === "travel") {
+          const travelId = options?.travelId;
+          if (!travelId) {
+            const error = createGatewayValidationError("Travel ID required when persisting travel default", {
+              calendarId
+            });
+            reportAlmanacGatewayIssue({
+              operation: "calendar.gateway.setDefaultCalendar",
+              scope: "travel",
+              code: error.code,
+              error,
+              context: error.context
+            });
+            throw error;
+          }
+          await this.calendarRepo.setDefault({ calendarId, scope: "travel", travelId });
+          return;
+        }
+        await this.calendarRepo.setDefault({ calendarId, scope: "global" });
+      }
+      async setCurrentTimestamp(timestamp2, options) {
+        await this.ensureReady();
+        await this.mutateState((state) => {
+          const scope = ensureScope(state, options?.travelId ?? null);
+          if (!scope.activeCalendarId) {
+            const error = createGatewayValidationError("No active calendar set", {
+              travelId: options?.travelId ?? null
+            });
+            reportAlmanacGatewayIssue({
+              operation: "calendar.gateway.setCurrentTimestamp",
+              scope: options?.travelId ? "travel" : "calendar",
+              code: error.code,
+              error,
+              context: error.context
+            });
+            throw error;
+          }
+          if (timestamp2.calendarId !== scope.activeCalendarId) {
+            const error = createGatewayValidationError("Timestamp calendar does not match active calendar", {
+              travelId: options?.travelId ?? null,
+              calendarId: timestamp2.calendarId,
+              activeCalendarId: scope.activeCalendarId
+            });
+            reportAlmanacGatewayIssue({
+              operation: "calendar.gateway.setCurrentTimestamp",
+              scope: options?.travelId ? "travel" : "calendar",
+              code: error.code,
+              error,
+              context: error.context
+            });
+            throw error;
+          }
+          scope.currentTimestamp = { ...timestamp2 };
+        });
+      }
+      async advanceTimeBy(amount, unit, options) {
+        await this.ensureReady();
+        const travelId = options?.travelId ?? null;
+        const scope = ensureScope(this.state, travelId);
+        if (!scope.activeCalendarId || !scope.currentTimestamp) {
+          const error = createGatewayValidationError("No active calendar or current timestamp set", {
+            travelId,
+            activeCalendarId: scope.activeCalendarId
+          });
+          reportAlmanacGatewayIssue({
+            operation: "calendar.gateway.advanceTimeBy",
+            scope: travelId ? "travel" : "calendar",
+            code: error.code,
+            error,
+            context: error.context
+          });
+          throw error;
+        }
+        const calendar = await this.calendarRepo.getCalendar(scope.activeCalendarId);
+        if (!calendar) {
+          const error = createGatewayValidationError(`Calendar ${scope.activeCalendarId} not found`, {
+            travelId,
+            calendarId: scope.activeCalendarId
+          });
+          reportAlmanacGatewayIssue({
+            operation: "calendar.gateway.advanceTimeBy",
+            scope: travelId ? "travel" : "calendar",
+            code: error.code,
+            error,
+            context: error.context
+          });
+          throw error;
+        }
+        const visiblePhenomena = await this.listVisiblePhenomena(calendar);
+        const previousTimestamp = { ...scope.currentTimestamp };
+        const result = advanceTime(calendar, previousTimestamp, amount, unit);
+        const [triggeredEvents, triggeredPhenomena] = await Promise.all([
+          this.getEventsBetween(calendar, previousTimestamp, result.timestamp),
+          Promise.resolve(
+            this.computeTriggeredPhenomenaBetween(calendar, visiblePhenomena, previousTimestamp, result.timestamp)
+          )
+        ]);
+        const relevantEvents = triggeredEvents.filter(
+          (event) => compareTimestampsWithSchema(
+            calendar,
+            getEventAnchorTimestamp(event) ?? event.date,
+            previousTimestamp
+          ) > 0
+        );
+        const upcomingPhenomena = this.computeUpcomingPhenomenaForCalendar(
+          calendar,
+          visiblePhenomena,
+          result.timestamp
+        );
+        await this.mutateState((state) => {
+          const scoped = ensureScope(state, travelId);
+          scoped.currentTimestamp = { ...result.timestamp };
+        });
+        if (this.hookDispatcher && (relevantEvents.length > 0 || triggeredPhenomena.length > 0)) {
+          try {
+            await this.hookDispatcher.dispatchHooks(relevantEvents, triggeredPhenomena, {
+              scope: travelId ? "travel" : "global",
+              travelId,
+              reason: "advance",
+              ...options?.hookContext
+            });
+          } catch (error) {
+            const causeMessage = error instanceof Error && error.message ? `: ${error.message}` : "";
+            const gatewayError = new CalendarGatewayError("io_error", `Failed to dispatch hooks for time advance${causeMessage}`, {
+              travelId,
+              scope: travelId ? "travel" : "global"
+            });
+            reportAlmanacGatewayIssue({
+              operation: "calendar.gateway.advanceTimeBy",
+              scope: travelId ? "travel" : "calendar",
+              code: gatewayError.code,
+              error,
+              context: gatewayError.context
+            });
+            throw gatewayError;
+          }
+        }
+        if (this.factionSimulationHook && unit === "day" && amount > 0) {
+          try {
+            const currentDate = await this.timestampToDateString(result.timestamp);
+            const factionEvents = await this.factionSimulationHook.runSimulation(amount, currentDate);
+            if (factionEvents.length > 0) {
+            }
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+          }
+        }
+        if (this.weatherSimulationHook && unit === "day") {
+          try {
+            const dayOfYear = await this.timestampToDayOfYear(result.timestamp);
+            const currentDate = await this.timestampToDateString(result.timestamp);
+            await this.weatherSimulationHook.runSimulation(dayOfYear, currentDate);
+          } catch (error) {
+          }
+        }
+        return {
+          timestamp: result.timestamp,
+          triggeredEvents: relevantEvents,
+          triggeredPhenomena,
+          upcomingPhenomena
+        };
+      }
+      /**
+       * Convert calendar timestamp to YYYY-MM-DD date string
+       * (Phase 8.9: Helper for faction simulation)
+       */
+      async timestampToDateString(timestamp2) {
+        const year = String(timestamp2.year).padStart(4, "0");
+        const calendar = await this.calendarRepo.getCalendar(timestamp2.calendarId);
+        const monthIndex = calendar ? calendar.months.findIndex((m) => m.id === timestamp2.monthId) : -1;
+        const month = monthIndex >= 0 ? String(monthIndex + 1).padStart(2, "0") : "01";
+        const day = String(timestamp2.day).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+      /**
+       * Convert calendar timestamp to day of year (1-365)
+       * (Phase 10.2: Helper for weather simulation)
+       *
+       * Calculates based on actual calendar month lengths.
+       * For calendars with more than 365 days, wraps values to 1-365 range.
+       */
+      async timestampToDayOfYear(timestamp2) {
+        const calendar = await this.calendarRepo.getCalendar(timestamp2.calendarId);
+        if (!calendar) {
+          return Math.max(1, Math.min(365, timestamp2.day));
+        }
+        const monthIndex = calendar.months.findIndex((m) => m.id === timestamp2.monthId);
+        if (monthIndex < 0) {
+          return Math.max(1, Math.min(365, timestamp2.day));
+        }
+        let dayOfYear = timestamp2.day;
+        for (let i = 0; i < monthIndex; i++) {
+          dayOfYear += calendar.months[i].length;
+        }
+        return Math.max(1, Math.min(365, dayOfYear));
+      }
+      async loadPreferences() {
+        await this.ensureReady();
+        return clonePreferences(this.state.preferences);
+      }
+      async savePreferences(partial) {
+        await this.mutateState((state) => {
+          const next = {
+            ...state.preferences,
+            ...partial
+          };
+          if (partial.eventsFilters) {
+            next.eventsFilters = {
+              categories: [...partial.eventsFilters.categories ?? []],
+              calendarIds: [...partial.eventsFilters.calendarIds ?? []]
+            };
+          }
+          state.preferences = next;
+        }, { debounce: true });
+      }
+      getCurrentTimestamp(options) {
+        const scope = ensureScope(this.state, options?.travelId ?? null);
+        return cloneTimestamp(scope.currentTimestamp);
+      }
+      getActiveCalendarId(options) {
+        const scope = ensureScope(this.state, options?.travelId ?? null);
+        return scope.activeCalendarId;
+      }
+      async getTravelLeafPreferences(travelId) {
+        await this.ensureReady();
+        const prefs = this.state.travelLeaf.get(travelId);
+        return prefs ? { ...prefs } : null;
+      }
+      async saveTravelLeafPreferences(travelId, prefs) {
+        await this.mutateState((state) => {
+          state.travelLeaf.set(travelId, { ...prefs });
+        }, { debounce: true });
+      }
+      async flushPendingPersistence() {
+        await this.ensureReady();
+        await this.flushDebouncedPersist();
+      }
+      get persistenceDebounceMs() {
+        return 25;
+      }
+      async mutateState(mutator, options) {
+        await this.ensureReady();
+        if (options?.debounce && this.persistenceDebounceMs > 0) {
+          return this.enqueueDebouncedPersist(mutator);
+        }
+        await this.flushDebouncedPersist();
+        await this.commitMutations([mutator]);
+      }
+      enqueueDebouncedPersist(mutator) {
+        this.pendingMutations.push(mutator);
+        if (!this.pendingFlushPromise) {
+          this.pendingFlushPromise = new Promise((resolve, reject) => {
+            this.pendingFlushResolve = resolve;
+            this.pendingFlushReject = reject;
+          });
+        }
+        if (this.pendingFlushTimer) {
+          clearTimeout(this.pendingFlushTimer);
+        }
+        this.pendingFlushTimer = setTimeout(() => {
+          void this.flushDebouncedPersist();
+        }, this.persistenceDebounceMs);
+        return this.pendingFlushPromise;
+      }
+      async flushDebouncedPersist() {
+        if (this.pendingFlushTimer) {
+          clearTimeout(this.pendingFlushTimer);
+          this.pendingFlushTimer = null;
+        }
+        if (this.activeFlush) {
+          await this.activeFlush;
+          return;
+        }
+        if (this.pendingMutations.length === 0) {
+          if (this.pendingFlushPromise) {
+            this.pendingFlushResolve?.();
+            this.pendingFlushPromise = null;
+            this.pendingFlushResolve = null;
+            this.pendingFlushReject = null;
+          }
+          return;
+        }
+        const mutations = this.pendingMutations;
+        this.pendingMutations = [];
+        const resolve = this.pendingFlushResolve;
+        const reject = this.pendingFlushReject;
+        this.pendingFlushPromise = null;
+        this.pendingFlushResolve = null;
+        this.pendingFlushReject = null;
+        const flushOperation = this.commitMutations(mutations).then(() => {
+          resolve?.();
+        }).catch((error) => {
+          reject?.(error);
+          throw error;
+        }).finally(() => {
+          this.activeFlush = null;
+          if (this.pendingMutations.length > 0) {
+            void this.flushDebouncedPersist();
+          }
+        });
+        this.activeFlush = flushOperation;
+        await flushOperation;
+      }
+      async commitMutations(mutations) {
+        if (!mutations.length) {
+          return;
+        }
+        await this.commitState(mutations);
+      }
+      async resolveUpcomingEvents(calendar, from) {
+        if (!from) {
+          return [];
+        }
+        if (typeof this.eventRepo.getUpcomingEvents === "function") {
+          return this.eventRepo.getUpcomingEvents(calendar.id, calendar, from, 5);
+        }
+        const events = await this.eventRepo.listEvents(calendar.id);
+        return events.filter(
+          (event) => compareTimestampsWithSchema(calendar, getEventAnchorTimestamp(event) ?? event.date, from) >= 0
+        ).slice(0, 5);
+      }
+      async getEventsBetween(calendar, start, end) {
+        if (typeof this.eventRepo.getEventsInRange === "function") {
+          return this.eventRepo.getEventsInRange(calendar.id, calendar, start, end);
+        }
+        const events = await this.eventRepo.listEvents(calendar.id);
+        const [rangeStart, rangeEnd] = compareTimestampsWithSchema(calendar, start, end) <= 0 ? [start, end] : [end, start];
+        return events.filter((event) => {
+          const anchor = getEventAnchorTimestamp(event) ?? event.date;
+          const afterStart = compareTimestampsWithSchema(calendar, anchor, rangeStart) >= 0;
+          const beforeEnd = compareTimestampsWithSchema(calendar, anchor, rangeEnd) <= 0;
+          return afterStart && beforeEnd;
+        });
+      }
+      async resolveEffectiveCalendar(travelId) {
+        if (travelId) {
+          const travelDefaultId = await this.calendarRepo.getTravelDefault(travelId);
+          if (travelDefaultId) {
+            const travelCalendar = await this.calendarRepo.getCalendar(travelDefaultId);
+            if (travelCalendar) {
+              return {
+                calendar: travelCalendar,
+                calendarId: travelDefaultId,
+                isGlobalDefault: false,
+                wasAutoSelected: false
+              };
+            }
+          }
+        }
+        const globalDefault = await this.calendarRepo.getGlobalDefault();
+        if (globalDefault) {
+          const calendar = await this.calendarRepo.getCalendar(globalDefault);
+          if (calendar) {
+            return {
+              calendar,
+              calendarId: globalDefault,
+              isGlobalDefault: true,
+              wasAutoSelected: false
+            };
+          }
+        }
+        const calendars = await this.calendarRepo.listCalendars();
+        if (calendars.length > 0) {
+          return {
+            calendar: calendars[0],
+            calendarId: calendars[0].id,
+            isGlobalDefault: false,
+            wasAutoSelected: true
+          };
+        }
+        return null;
+      }
+      async listVisiblePhenomena(calendar) {
+        const phenomena = await this.phenomenonRepo.listPhenomena();
+        return phenomena.filter((phenomenon) => isPhenomenonVisibleForCalendar(phenomenon, calendar.id));
+      }
+      computeUpcomingPhenomenaForCalendar(calendar, phenomena, from, limit = 5) {
+        if (phenomena.length === 0) {
+          return [];
+        }
+        const anchor = from ?? createDayTimestamp(calendar.id, calendar.epoch.year, calendar.epoch.monthId, calendar.epoch.day);
+        const occurrences = [];
+        for (const phenomenon of phenomena) {
+          try {
+            const occurrence = computeNextPhenomenonOccurrence(
+              phenomenon,
+              calendar,
+              calendar.id,
+              anchor,
+              { includeStart: true }
+            );
+            if (occurrence) {
+              occurrences.push(occurrence);
+            }
+          } catch {
+            continue;
+          }
+        }
+        return sortOccurrencesByTimestamp(calendar, occurrences).slice(0, limit);
+      }
+      computeTriggeredPhenomenaBetween(calendar, phenomena, start, end) {
+        if (phenomena.length === 0) {
+          return [];
+        }
+        const occurrences = [];
+        for (const phenomenon of phenomena) {
+          try {
+            const result = computePhenomenonOccurrencesInRange(
+              phenomenon,
+              calendar,
+              calendar.id,
+              start,
+              end
+            );
+            occurrences.push(...result);
+          } catch {
+            continue;
+          }
+        }
+        return sortOccurrencesByTimestamp(calendar, occurrences);
+      }
+    };
+    VaultCalendarStateGateway = class extends BaseCalendarStateGateway {
+      constructor(calendarRepo, eventRepo, phenomenonRepo, vault, hookDispatcher, factionSimulationHook, weatherSimulationHook) {
+        super(calendarRepo, eventRepo, phenomenonRepo, hookDispatcher, factionSimulationHook, weatherSimulationHook);
+        this.ready = null;
+        this.initialised = false;
+        this.jsonStore = new JsonStore(vault, {
+          path: "SaltMarcher/Almanac/state.json",
+          currentVersion: "1.0.0",
+          initialData: () => createInitialStore()
+        });
+        this.persistence = createJsonStorePersistentAdapter({
+          backend: this.jsonStore,
+          initialValue: createInitialStore(),
+          storageKey: "SaltMarcher/Almanac/state.json",
+          name: "almanac-calendar-state"
+        });
+        getStoreManager().register("almanac-calendar-state", this.persistence);
+      }
+      async ensureReady() {
+        if (this.initialised) {
+          return;
+        }
+        if (!this.ready) {
+          this.ready = this.persistence.load().then(() => {
+            const hydrated = normaliseStore(this.persistence.get());
+            this.applyHydratedState(hydrated);
+            this.initialised = true;
+          }).catch((error) => {
+            const gatewayError = createGatewayIoError("Failed to load calendar state store");
+            reportAlmanacGatewayIssue({
+              operation: "calendar.gateway.bootstrap",
+              scope: "calendar",
+              code: gatewayError.code,
+              error,
+              context: gatewayError.context
+            });
+            this.initialised = true;
+          });
+        }
+        await this.ready;
+      }
+      async commitState(mutations) {
+        for (const mutate of mutations) {
+          mutate(this.state);
+        }
+        try {
+          const payload = serialiseState(this.state);
+          this.persistence.set(payload);
+          await this.persistence.save();
+        } catch (error) {
+          const gatewayError = createGatewayIoError("Failed to persist calendar state");
+          reportAlmanacGatewayIssue({
+            operation: "calendar.gateway.persistState",
+            scope: "calendar",
+            code: gatewayError.code,
+            error,
+            context: gatewayError.context
+          });
+          throw gatewayError;
+        }
+      }
+      applyHydratedState(source) {
+        this.state.scopes.clear();
+        for (const [key, value] of source.scopes.entries()) {
+          this.state.scopes.set(key, {
+            activeCalendarId: value.activeCalendarId,
+            currentTimestamp: cloneTimestamp(value.currentTimestamp)
+          });
+        }
+        if (!this.state.scopes.has(GLOBAL_SCOPE)) {
+          this.state.scopes.set(GLOBAL_SCOPE, { activeCalendarId: null, currentTimestamp: null });
+        }
+        this.state.preferences = clonePreferences(source.preferences);
+        this.state.travelLeaf.clear();
+        for (const [key, value] of source.travelLeaf.entries()) {
+          this.state.travelLeaf.set(key, { ...value });
+        }
+      }
+    };
+  }
+});
+
+// src/workmodes/almanac/data/repositories.ts
+function matchesPhenomenonFilters(phenomenon, filters, options = {}) {
+  if (filters.categories?.length && !filters.categories.includes(phenomenon.category)) {
+    return false;
+  }
+  if (!filters.calendarIds?.length) {
+    return true;
+  }
+  if (phenomenon.visibility === "all_calendars" && !options.resolveVisibleCalendars) {
+    return true;
+  }
+  const calendars = options.resolveVisibleCalendars?.(phenomenon) ?? phenomenon.appliesToCalendarIds;
+  if (phenomenon.visibility === "all_calendars" && calendars.length === 0) {
+    return true;
+  }
+  return calendars.some((calendarId) => filters.calendarIds.includes(calendarId));
+}
+function sortPhenomenonSummaries(entries, sort, options = {}) {
+  const copy = [...entries];
+  copy.sort((a, b) => {
+    if (sort === "priority_desc") {
+      return b.phenomenon.priority - a.phenomenon.priority || a.summary.name.localeCompare(b.summary.name);
+    }
+    if (sort === "category_asc") {
+      return a.summary.category.localeCompare(b.summary.category) || a.summary.name.localeCompare(b.summary.name);
+    }
+    const tieBreak = options.tieBreaker?.(a, b) ?? 0;
+    if (tieBreak !== 0) {
+      return tieBreak;
+    }
+    return a.summary.name.localeCompare(b.summary.name);
+  });
+  return copy;
+}
+function paginatePhenomena(entries, pagination, defaultLimit = PHENOMENON_PAGE_SIZE) {
+  const offset = pagination?.cursor ? Number.parseInt(pagination.cursor, 10) || 0 : 0;
+  const limit = pagination?.limit ?? defaultLimit;
+  const slice = entries.slice(offset, offset + limit);
+  const nextOffset = offset + slice.length;
+  const nextCursor = nextOffset < entries.length ? String(nextOffset) : void 0;
+  return { items: slice, nextCursor };
+}
+function findDuplicateCalendarIds(links) {
+  const seen = /* @__PURE__ */ new Set();
+  const duplicates = /* @__PURE__ */ new Set();
+  for (const link of links) {
+    if (seen.has(link.calendarId)) {
+      duplicates.add(link.calendarId);
+    }
+    seen.add(link.calendarId);
+  }
+  return [...duplicates];
+}
+function createInitialState3() {
+  return {
+    calendars: [],
+    defaults: { global: null, travel: {} },
+    eventsByCalendar: {},
+    phenomena: [],
+    preferences: {
+      defaultCalendarId: null,
+      travelDefaultCalendarId: null,
+      travelMode: "local"
+    },
+    travelLeaf: {}
+  };
+}
+function sanitiseDefaults(defaults) {
+  const travel = {};
+  for (const [travelId, calendarId] of Object.entries(defaults.travel)) {
+    if (calendarId !== null) {
+      travel[travelId] = calendarId;
+    }
+  }
+  return { global: defaults.global, travel };
+}
+function computeDefaultTravelIds(defaults, calendarId) {
+  return Object.entries(defaults.travel).filter(([, linkedId]) => linkedId === calendarId).map(([travelId]) => travelId);
+}
+function decorateCalendar(calendar, defaults) {
+  return {
+    ...calendar,
+    isDefaultGlobal: defaults.global === calendar.id,
+    defaultTravelIds: computeDefaultTravelIds(defaults, calendar.id)
+  };
+}
+function ensureCalendar(state, id) {
+  const calendar = state.calendars.find((entry) => entry.id === id);
+  if (!calendar) {
+    throw new Error(`Calendar with ID ${id} not found`);
+  }
+  return calendar;
+}
+function listCalendars(state) {
+  return state.calendars.map((calendar) => decorateCalendar(calendar, state.defaults));
+}
+function getCalendar(state, id) {
+  const calendar = state.calendars.find((entry) => entry.id === id);
+  if (!calendar) {
+    return null;
+  }
+  return decorateCalendar(calendar, state.defaults);
+}
+function applyCalendarCreation(state, input) {
+  if (state.calendars.some((calendar) => calendar.id === input.id)) {
+    throw new Error(`Calendar with ID ${input.id} already exists`);
+  }
+  state.calendars.push({ ...input });
+  if (input.isDefaultGlobal) {
+    state.defaults.global = input.id;
+  }
+}
+function applyCalendarUpdate(state, id, updates) {
+  const index = state.calendars.findIndex((calendar) => calendar.id === id);
+  if (index === -1) {
+    throw new Error(`Calendar with ID ${id} not found`);
+  }
+  state.calendars[index] = { ...state.calendars[index], ...updates };
+  if (updates.isDefaultGlobal === true) {
+    state.defaults.global = id;
+  } else if (updates.isDefaultGlobal === false && state.defaults.global === id) {
+    state.defaults.global = null;
+  }
+}
+function applyCalendarDeletion(state, id) {
+  const index = state.calendars.findIndex((calendar) => calendar.id === id);
+  if (index === -1) {
+    throw new Error(`Calendar with ID ${id} not found`);
+  }
+  state.calendars.splice(index, 1);
+  delete state.eventsByCalendar[id];
+  if (state.defaults.global === id) {
+    state.defaults.global = null;
+  }
+  for (const [travelId, calendarId] of Object.entries(state.defaults.travel)) {
+    if (calendarId === id) {
+      delete state.defaults.travel[travelId];
+    }
+  }
+}
+function applyCalendarDefault(state, update) {
+  ensureCalendar(state, update.calendarId);
+  if (update.scope === "global") {
+    state.defaults.global = update.calendarId;
+    return;
+  }
+  if (!update.travelId) {
+    throw new Error("Travel ID required for travel scope");
+  }
+  state.defaults.travel[update.travelId] = update.calendarId;
+}
+function clearTravelDefault(state, travelId) {
+  state.defaults.travel[travelId] = null;
+}
+function listEvents(state, calendarId) {
+  ensureCalendar(state, calendarId);
+  return (state.eventsByCalendar[calendarId] ?? []).map((event) => ({ ...event }));
+}
+function findEventLocation(state, id) {
+  for (const [calendarId, events] of Object.entries(state.eventsByCalendar)) {
+    const index = events.findIndex((event) => event.id === id);
+    if (index !== -1) {
+      return { calendarId, index };
+    }
+  }
+  return null;
+}
+function applyEventCreation(state, event) {
+  ensureCalendar(state, event.calendarId);
+  if (findEventLocation(state, event.id)) {
+    throw new Error(`Event with ID ${event.id} already exists`);
+  }
+  const events = state.eventsByCalendar[event.calendarId] ?? [];
+  events.push({ ...event });
+  state.eventsByCalendar[event.calendarId] = events;
+}
+function applyEventUpdate(state, id, updates) {
+  const location = findEventLocation(state, id);
+  if (!location) {
+    throw new Error(`Event with ID ${id} not found`);
+  }
+  const current = state.eventsByCalendar[location.calendarId][location.index];
+  const next = { ...current, ...updates };
+  ensureCalendar(state, next.calendarId);
+  if (next.calendarId !== location.calendarId) {
+    const previousEvents = state.eventsByCalendar[location.calendarId] ?? [];
+    previousEvents.splice(location.index, 1);
+    const target = state.eventsByCalendar[next.calendarId] ?? [];
+    target.push(next);
+    state.eventsByCalendar[location.calendarId] = previousEvents;
+    state.eventsByCalendar[next.calendarId] = target;
+    return;
+  }
+  state.eventsByCalendar[location.calendarId][location.index] = next;
+}
+function applyEventDeletion(state, id) {
+  const location = findEventLocation(state, id);
+  if (!location) {
+    throw new Error(`Event with ID ${id} not found`);
+  }
+  const events = state.eventsByCalendar[location.calendarId] ?? [];
+  events.splice(location.index, 1);
+  state.eventsByCalendar[location.calendarId] = events;
+}
+function applyPhenomenonUpsert(state, draft) {
+  const existingIndex = state.phenomena.findIndex((entry) => entry.id === draft.id);
+  if (existingIndex === -1) {
+    const newEntry = { ...draft };
+    state.phenomena.push(newEntry);
+    return newEntry;
+  }
+  state.phenomena[existingIndex] = { ...state.phenomena[existingIndex], ...draft };
+  return state.phenomena[existingIndex];
+}
+function applyPhenomenonDeletion(state, id) {
+  const next = state.phenomena.filter((entry) => entry.id !== id);
+  if (next.length === state.phenomena.length) {
+    throw new AlmanacRepositoryError("validation_error", `Phenomenon ${id} not found`);
+  }
+  state.phenomena = next;
+}
+function listPhenomenaRaw(state) {
+  return state.phenomena.map((phenomenon) => ({ ...phenomenon }));
+}
+function listPhenomenaBatch(state, calendars, input) {
+  const calendarMap = new Map(calendars.map((calendar) => [calendar.id, calendar]));
+  const allCalendarIds = Array.from(calendarMap.keys());
+  const visible = state.phenomena.filter(
+    (phenomenon) => matchesPhenomenonFilters(phenomenon, input.filters, {
+      resolveVisibleCalendars: (current) => current.visibility === "all_calendars" ? allCalendarIds : current.appliesToCalendarIds
+    })
+  );
+  const summaries = visible.map((phenomenon) => ({
+    phenomenon,
+    summary: buildPhenomenonSummary(phenomenon, calendars)
+  }));
+  const sorted = sortPhenomenonSummaries(summaries, input.sort, {
+    tieBreaker: compareSummariesByNextOccurrence
+  });
+  const { items, nextCursor } = paginatePhenomena(sorted, input.pagination);
+  return {
+    items: items.map((entry) => entry.summary),
+    pagination: {
+      cursor: nextCursor,
+      hasMore: Boolean(nextCursor)
+    },
+    generatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function buildPhenomenonSummary(phenomenon, calendars) {
+  const nextOccurrence = computeNextOccurrenceAcrossCalendars(phenomenon, calendars);
+  const linkedCalendars = phenomenon.visibility === "all_calendars" ? calendars.map((calendar) => calendar.id) : phenomenon.appliesToCalendarIds;
+  return {
+    id: phenomenon.id,
+    name: phenomenon.name,
+    category: phenomenon.category,
+    nextOccurrence,
+    linkedCalendars,
+    badge: phenomenon.tags?.[0]
+  };
+}
+function computeNextOccurrenceAcrossCalendars(phenomenon, calendars) {
+  const candidates = [];
+  for (const calendar of calendars) {
+    if (!isPhenomenonVisibleForCalendar(phenomenon, calendar.id)) {
+      continue;
+    }
+    const start = createDayTimestamp(
+      calendar.id,
+      calendar.epoch.year,
+      calendar.epoch.monthId,
+      calendar.epoch.day
+    );
+    const occurrence = computeNextPhenomenonOccurrence(phenomenon, calendar, calendar.id, start);
+    if (!occurrence) {
+      continue;
+    }
+    candidates.push({
+      calendar,
+      occurrence: {
+        calendarId: occurrence.calendarId,
+        occurrence: occurrence.timestamp,
+        timeLabel: formatTimestamp(
+          occurrence.timestamp,
+          calendar.months.find((month) => month.id === occurrence.timestamp.monthId)?.name
+        )
+      }
+    });
+  }
+  candidates.sort((a, b) => compareOccurrencesWithSchema(a, b));
+  return candidates[0]?.occurrence;
+}
+function compareSummariesByNextOccurrence(a, b) {
+  const aTime = a.summary.nextOccurrence?.occurrence;
+  const bTime = b.summary.nextOccurrence?.occurrence;
+  if (!aTime && !bTime) {
+    return 0;
+  }
+  if (!aTime) {
+    return 1;
+  }
+  if (!bTime) {
+    return -1;
+  }
+  return compareTimestampTuples(aTime, bTime);
+}
+function compareTimestampTuples(a, b) {
+  if (a.year !== b.year) {
+    return a.year - b.year;
+  }
+  if (a.monthId !== b.monthId) {
+    return a.monthId.localeCompare(b.monthId);
+  }
+  if (a.day !== b.day) {
+    return a.day - b.day;
+  }
+  if ((a.hour ?? 0) !== (b.hour ?? 0)) {
+    return (a.hour ?? 0) - (b.hour ?? 0);
+  }
+  return (a.minute ?? 0) - (b.minute ?? 0);
+}
+function compareOccurrencesWithSchema(a, b) {
+  const first = a.occurrence.occurrence;
+  const second = b.occurrence.occurrence;
+  if (first.calendarId === second.calendarId) {
+    return compareTimestampsWithSchema(a.calendar, first, second);
+  }
+  return compareTimestampTuples(first, second);
+}
+function buildHooksFromLinks(links, phenomenon) {
+  const existing = phenomenon.hooks ?? [];
+  const linkedHooks = links.filter((link) => Boolean(link.hook)).map((link) => ({ ...link.hook, priority: link.priority }));
+  if (linkedHooks.length === 0) {
+    return existing;
+  }
+  return linkedHooks;
+}
+function classifyWithPattern(pattern) {
+  return (error) => error instanceof Error && pattern.test(error.message) ? "validation_error" : "io_error";
+}
+function classifyPhenomenonError(error) {
+  if (error instanceof AlmanacRepositoryError) {
+    return error.code;
+  }
+  if (error instanceof Error && /not found|disappeared/i.test(error.message)) {
+    return "validation_error";
+  }
+  return "io_error";
+}
+var AlmanacRepositoryError, PHENOMENON_PAGE_SIZE, STORE_VERSION, STORE_PATH, VaultStore, VaultRepositoryBase, VaultCalendarRepository, VaultEventRepository, VaultAlmanacRepository;
+var init_repositories = __esm({
+  "src/workmodes/almanac/data/repositories.ts"() {
+    "use strict";
+    init_domain();
+    init_telemetry();
+    init_json_store();
+    AlmanacRepositoryError = class extends Error {
+      constructor(code, message, details) {
+        super(message);
+        this.scope = "phenomenon";
+        this.name = "AlmanacRepositoryError";
+        this.code = code;
+        this.details = details;
+      }
+    };
+    PHENOMENON_PAGE_SIZE = 25;
+    STORE_VERSION = "2.0.0";
+    STORE_PATH = "SaltMarcher/Almanac/data.json";
+    VaultStore = class {
+      constructor(vault) {
+        this.store = new JsonStore(vault, {
+          path: STORE_PATH,
+          currentVersion: STORE_VERSION,
+          initialData: createInitialState3
+        });
+      }
+      async read() {
+        return this.store.read();
+      }
+      async update(mutator) {
+        return this.store.update((draft) => {
+          mutator(draft);
+          return draft;
+        });
+      }
+    };
+    VaultRepositoryBase = class {
+      constructor(store, report) {
+        this.store = store;
+        this.report = report;
+      }
+      async mutate(meta, mutator) {
+        try {
+          await this.store.update((state) => {
+            mutator(state);
+          });
+        } catch (error) {
+          this.report({
+            operation: meta.operation,
+            scope: meta.scope,
+            code: meta.classify(error),
+            error,
+            context: meta.context ?? {}
+          });
+          throw error;
+        }
+      }
+      async read(selector) {
+        const state = await this.store.read();
+        return selector(state);
+      }
+    };
+    VaultCalendarRepository = class extends VaultRepositoryBase {
+      constructor(vault, report = reportAlmanacGatewayIssue) {
+        super(new VaultStore(vault), report);
+      }
+      async listCalendars() {
+        return this.read((state) => listCalendars(state));
+      }
+      async getCalendar(id) {
+        return this.read((state) => getCalendar(state, id));
+      }
+      async createCalendar(input) {
+        await this.mutate(
+          {
+            operation: "calendar.repository.createCalendar",
+            scope: "calendar",
+            context: { calendarId: input.id },
+            classify: classifyWithPattern(/already exists|not found|required/i)
+          },
+          (state) => applyCalendarCreation(state, input)
+        );
+      }
+      async updateCalendar(id, input) {
+        await this.mutate(
+          {
+            operation: "calendar.repository.updateCalendar",
+            scope: "calendar",
+            context: { calendarId: id },
+            classify: classifyWithPattern(/already exists|not found|required/i)
+          },
+          (state) => applyCalendarUpdate(state, id, input)
+        );
+      }
+      async deleteCalendar(id) {
+        await this.mutate(
+          {
+            operation: "calendar.repository.deleteCalendar",
+            scope: "calendar",
+            context: { calendarId: id },
+            classify: classifyWithPattern(/already exists|not found|required/i)
+          },
+          (state) => applyCalendarDeletion(state, id)
+        );
+      }
+      async setDefault(input) {
+        await this.mutate(
+          {
+            operation: "calendar.repository.setDefault",
+            scope: input.scope === "travel" ? "travel" : "default",
+            context: { calendarId: input.calendarId, travelId: input.travelId ?? null },
+            classify: classifyWithPattern(/already exists|not found|required/i)
+          },
+          (state) => applyCalendarDefault(state, input)
+        );
+      }
+      async getDefaults() {
+        return this.read((state) => sanitiseDefaults(state.defaults));
+      }
+      async getGlobalDefault() {
+        return this.read((state) => state.defaults.global);
+      }
+      async getTravelDefault(travelId) {
+        return this.read((state) => state.defaults.travel[travelId] ?? null);
+      }
+      async clearTravelDefault(travelId) {
+        await this.mutate(
+          {
+            operation: "calendar.repository.clearTravelDefault",
+            scope: "travel",
+            context: { travelId },
+            classify: classifyWithPattern(/already exists|not found|required/i)
+          },
+          (state) => clearTravelDefault(state, travelId)
+        );
+      }
+      get internalStore() {
+        return this.store;
+      }
+    };
+    VaultEventRepository = class extends VaultRepositoryBase {
+      constructor(calendars, calendarRepository, report = reportAlmanacGatewayIssue) {
+        super(calendarRepository.internalStore, report);
+        this.calendars = calendars;
+      }
+      async listEvents(calendarId, range) {
+        const schema2 = await this.requireCalendar(calendarId);
+        const events = await this.read((state) => listEvents(state, calendarId));
+        if (!range) {
+          return events;
+        }
+        const [start, end] = compareTimestampsWithSchema(schema2, range.start, range.end) <= 0 ? [range.start, range.end] : [range.end, range.start];
+        return events.filter((event) => {
+          const anchor = getEventAnchorTimestamp(event) ?? event.date;
+          const afterStart = compareTimestampsWithSchema(schema2, anchor, start) >= 0;
+          const beforeEnd = compareTimestampsWithSchema(schema2, anchor, end) <= 0;
+          return afterStart && beforeEnd;
+        });
+      }
+      async listUpcoming(calendarId, limit) {
+        const schema2 = await this.requireCalendar(calendarId);
+        const events = await this.read((state) => listEvents(state, calendarId));
+        return [...events].sort((a, b) => {
+          const aAnchor = getEventAnchorTimestamp(a) ?? a.date;
+          const bAnchor = getEventAnchorTimestamp(b) ?? b.date;
+          return compareTimestampsWithSchema(schema2, aAnchor, bAnchor);
+        }).slice(0, limit);
+      }
+      async createEvent(event) {
+        await this.mutate(
+          {
+            operation: "event.repository.createEvent",
+            scope: "event",
+            context: { calendarId: event.calendarId, eventId: event.id },
+            classify: classifyWithPattern(/already exists|not found/i)
+          },
+          (state) => applyEventCreation(state, event)
+        );
+      }
+      async updateEvent(id, updates) {
+        await this.mutate(
+          {
+            operation: "event.repository.updateEvent",
+            scope: "event",
+            context: { eventId: id },
+            classify: classifyWithPattern(/already exists|not found/i)
+          },
+          (state) => applyEventUpdate(state, id, updates)
+        );
+      }
+      async deleteEvent(id) {
+        await this.mutate(
+          {
+            operation: "event.repository.deleteEvent",
+            scope: "event",
+            context: { eventId: id },
+            classify: classifyWithPattern(/already exists|not found/i)
+          },
+          (state) => applyEventDeletion(state, id)
+        );
+      }
+      async getEventsInRange(calendarId, schema2, start, end) {
+        return this.listEvents(calendarId, { calendarId, start, end });
+      }
+      async getUpcomingEvents(calendarId, schema2, from, limit) {
+        const events = await this.listEvents(calendarId);
+        return events.filter((event) => {
+          const anchor = getEventAnchorTimestamp(event) ?? event.date;
+          return compareTimestampsWithSchema(schema2, anchor, from) >= 0;
+        }).slice(0, limit);
+      }
+      async requireCalendar(calendarId) {
+        const calendar = await this.calendars.getCalendar(calendarId);
+        if (!calendar) {
+          throw new Error(`Calendar with ID ${calendarId} not found`);
+        }
+        return calendar;
+      }
+    };
+    VaultAlmanacRepository = class extends VaultRepositoryBase {
+      constructor(calendars, calendarRepository, report = reportAlmanacGatewayIssue) {
+        super(calendarRepository.internalStore, report);
+        this.calendars = calendars;
+      }
+      async listPhenomena(input) {
+        if (!input) {
+          return this.read((state) => listPhenomenaRaw(state));
+        }
+        const calendars = await this.calendars.listCalendars();
+        return this.read((state) => listPhenomenaBatch(state, calendars, input));
+      }
+      async getPhenomenon(id) {
+        return this.read((state) => state.phenomena.find((entry) => entry.id === id) ?? null);
+      }
+      async upsertPhenomenon(draft) {
+        await this.mutate(
+          {
+            operation: "phenomenon.repository.upsert",
+            scope: "phenomenon",
+            context: { phenomenonId: draft.id },
+            classify: classifyPhenomenonError
+          },
+          (state) => {
+            applyPhenomenonUpsert(state, draft);
+          }
+        );
+        const stored = await this.getPhenomenon(draft.id);
+        if (!stored) {
+          throw new AlmanacRepositoryError("validation_error", `Phenomenon ${draft.id} disappeared during upsert`);
+        }
+        return stored;
+      }
+      async deletePhenomenon(id) {
+        await this.mutate(
+          {
+            operation: "phenomenon.repository.delete",
+            scope: "phenomenon",
+            context: { phenomenonId: id },
+            classify: classifyPhenomenonError
+          },
+          (state) => applyPhenomenonDeletion(state, id)
+        );
+      }
+      async updateLinks(update) {
+        const calendars = await this.calendars.listCalendars();
+        const calendarSet = new Set(calendars.map((calendar) => calendar.id));
+        const phenomenon = await this.getPhenomenon(update.phenomenonId);
+        if (!phenomenon) {
+          throw new AlmanacRepositoryError("validation_error", `Phenomenon ${update.phenomenonId} not found`);
+        }
+        const duplicates = findDuplicateCalendarIds(update.calendarLinks);
+        if (duplicates.length > 0) {
+          throw new AlmanacRepositoryError("phenomenon_conflict", "Calendar links contain duplicates", {
+            duplicates
+          });
+        }
+        for (const link of update.calendarLinks) {
+          if (!calendarSet.has(link.calendarId)) {
+            throw new AlmanacRepositoryError("validation_error", `Calendar ${link.calendarId} not found`, {
+              calendarId: link.calendarId
+            });
+          }
+        }
+        if (phenomenon.rule.type === "astronomical") {
+          const hasReference = Boolean(phenomenon.rule.referenceCalendarId);
+          const hasHookReference = update.calendarLinks.some(
+            (link) => link.hook && typeof link.hook.config?.referenceCalendarId === "string"
+          );
+          if (!hasReference && !hasHookReference) {
+            throw new AlmanacRepositoryError(
+              "astronomy_source_missing",
+              "Astronomical phenomena require a reference calendar"
+            );
+          }
+        }
+        await this.mutate(
+          {
+            operation: "phenomenon.repository.updateLinks",
+            scope: "phenomenon",
+            context: { phenomenonId: update.phenomenonId },
+            classify: classifyPhenomenonError
+          },
+          (state) => {
+            const next = applyPhenomenonUpsert(state, phenomenon);
+            const appliesToCalendarIds = update.calendarLinks.map((link) => link.calendarId);
+            const visibility = appliesToCalendarIds.length === 0 ? "all_calendars" : "selected";
+            next.appliesToCalendarIds = appliesToCalendarIds;
+            next.visibility = visibility;
+            next.hooks = buildHooksFromLinks(update.calendarLinks, next);
+            next.priority = update.calendarLinks.reduce((max, link) => Math.max(max, link.priority), next.priority);
+          }
+        );
+        const stored = await this.getPhenomenon(update.phenomenonId);
+        if (!stored) {
+          throw new AlmanacRepositoryError(
+            "validation_error",
+            `Phenomenon ${update.phenomenonId} disappeared during update`
+          );
+        }
+        return stored;
+      }
+      async listTemplates() {
+        return this.read(
+          (state) => state.phenomena.filter((phenomenon) => phenomenon.template).map((phenomenon) => ({
+            id: phenomenon.id,
+            name: phenomenon.name,
+            category: phenomenon.category,
+            rule: phenomenon.rule,
+            effects: phenomenon.effects
+          }))
+        );
+      }
+    };
+  }
+});
+
+// src/workmodes/almanac/gateway-factory.ts
+var gateway_factory_exports = {};
+__export(gateway_factory_exports, {
+  createAlmanacGateway: () => createAlmanacGateway
+});
+function createAlmanacGateway(app) {
+  logger2.info("[almanac-gateway] Creating vault-backed gateway");
+  const calendarRepo = new VaultCalendarRepository(app.vault);
+  const eventRepo = new VaultEventRepository(calendarRepo, calendarRepo);
+  const phenomenonRepo = new VaultAlmanacRepository(calendarRepo, calendarRepo);
+  const gateway = new VaultCalendarStateGateway(
+    calendarRepo,
+    eventRepo,
+    phenomenonRepo,
+    app.vault,
+    void 0,
+    // No hook dispatcher yet (Phase 13+)
+    void 0,
+    // No faction simulation hook yet (Phase 13+)
+    void 0
+    // No weather simulation hook yet (Phase 13+)
+  );
+  logger2.info("[almanac-gateway] Gateway created successfully");
+  return gateway;
+}
+var init_gateway_factory = __esm({
+  "src/workmodes/almanac/gateway-factory.ts"() {
+    "use strict";
+    init_calendar_state_gateway();
+    init_repositories();
+    init_plugin_logger();
   }
 });
 
@@ -27403,85 +29141,66 @@ var almanac_mvp_exports = {};
 __export(almanac_mvp_exports, {
   renderAlmanacMVP: () => renderAlmanacMVP
 });
-async function renderAlmanacMVP(app, container) {
-  logger2.info("[almanac-mvp] Rendering Almanac MVP");
+async function renderAlmanacMVP(app, container, gateway) {
+  logger2.info("[almanac-mvp] Rendering Almanac MVP with vault integration");
   const root = container.createDiv({ cls: "sm-almanac-mvp" });
-  const notice = root.createDiv({ cls: "sm-almanac-mvp__notice" });
-  notice.createEl("h3", { text: "Almanac MVP" });
-  notice.createEl("p", {
-    text: "This is a minimal viable implementation. Full calendar views (month/week/timeline) and event editor are planned for future updates."
-  });
-  const mockSchema = {
-    id: "gregorian-standard",
-    name: "Gregorian Calendar",
-    description: "Standard Gregorian calendar for testing",
-    daysPerWeek: 7,
-    months: [
-      { id: "jan", name: "January", length: 31 },
-      { id: "feb", name: "February", length: 28 },
-      { id: "mar", name: "March", length: 31 },
-      { id: "apr", name: "April", length: 30 },
-      { id: "may", name: "May", length: 31 },
-      { id: "jun", name: "June", length: 30 },
-      { id: "jul", name: "July", length: 31 },
-      { id: "aug", name: "August", length: 31 },
-      { id: "sep", name: "September", length: 30 },
-      { id: "oct", name: "October", length: 31 },
-      { id: "nov", name: "November", length: 30 },
-      { id: "dec", name: "December", length: 31 }
-    ],
-    hoursPerDay: 24,
-    minutesPerHour: 60,
-    secondsPerMinute: 60,
-    minuteStep: 1,
-    epoch: {
-      year: 1,
-      monthId: "jan",
-      day: 1
-    },
-    schemaVersion: "1.0.0"
-  };
-  let currentTimestamp = {
-    calendarId: "gregorian-standard",
-    year: 2025,
-    monthId: "jan",
-    day: 1,
-    hour: 12,
-    minute: 0,
-    precision: "minute"
-  };
-  const mockEvents = [];
-  const mockPhenomena = [];
+  const snapshot = await gateway.loadSnapshot();
+  if (!snapshot.activeCalendar || !snapshot.currentTimestamp) {
+    const setupNotice = root.createDiv({ cls: "sm-almanac-mvp__setup-notice" });
+    setupNotice.createEl("h3", { text: "Calendar Setup Required" });
+    setupNotice.createEl("p", {
+      text: "No calendar is configured. Please create a calendar in the Library or import a calendar preset first."
+    });
+    logger2.warn("[almanac-mvp] No active calendar or current timestamp available");
+    return;
+  }
+  const activeCalendar = snapshot.activeCalendar;
+  let currentTimestamp = snapshot.currentTimestamp;
   let timeDisplay = null;
   let eventsList = null;
   let monthView = null;
   let currentView = "list";
   function updateAllViews() {
-    timeDisplay?.update(currentTimestamp, mockSchema);
-    eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
-    monthView?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+    timeDisplay?.update(currentTimestamp, activeCalendar);
+    eventsList?.update(snapshot.upcomingEvents, snapshot.upcomingPhenomena, activeCalendar, currentTimestamp);
+    monthView?.update(snapshot.upcomingEvents, snapshot.upcomingPhenomena, activeCalendar, currentTimestamp);
   }
-  function handleAdvanceDay(amount) {
+  async function handleAdvanceDay(amount) {
     logger2.info("[almanac-mvp] Advancing time by days", { amount });
-    const result = advanceTime(mockSchema, currentTimestamp, amount, "day");
-    currentTimestamp = result.timestamp;
-    updateAllViews();
+    try {
+      const result = await gateway.advanceTimeBy(amount, "day");
+      currentTimestamp = result.timestamp;
+      updateAllViews();
+    } catch (error) {
+      logger2.error("[almanac-mvp] Failed to advance time by days", { error, amount });
+      new import_obsidian39.Notice("Failed to advance time. Check console for details.");
+    }
   }
-  function handleAdvanceHour(amount) {
+  async function handleAdvanceHour(amount) {
     logger2.info("[almanac-mvp] Advancing time by hours", { amount });
-    const result = advanceTime(mockSchema, currentTimestamp, amount, "hour");
-    currentTimestamp = result.timestamp;
-    updateAllViews();
+    try {
+      const result = await gateway.advanceTimeBy(amount, "hour");
+      currentTimestamp = result.timestamp;
+      updateAllViews();
+    } catch (error) {
+      logger2.error("[almanac-mvp] Failed to advance time by hours", { error, amount });
+      new import_obsidian39.Notice("Failed to advance time. Check console for details.");
+    }
   }
-  function handleAdvanceMinute(amount) {
+  async function handleAdvanceMinute(amount) {
     logger2.info("[almanac-mvp] Advancing time by minutes", { amount });
-    const result = advanceTime(mockSchema, currentTimestamp, amount, "minute");
-    currentTimestamp = result.timestamp;
-    updateAllViews();
+    try {
+      const result = await gateway.advanceTimeBy(amount, "minute");
+      currentTimestamp = result.timestamp;
+      updateAllViews();
+    } catch (error) {
+      logger2.error("[almanac-mvp] Failed to advance time by minutes", { error, amount });
+      new import_obsidian39.Notice("Failed to advance time. Check console for details.");
+    }
   }
   timeDisplay = createAlmanacTimeDisplay({
     currentTimestamp,
-    schema: mockSchema,
+    schema: activeCalendar,
     onAdvanceDay: handleAdvanceDay,
     onAdvanceHour: handleAdvanceHour,
     onAdvanceMinute: handleAdvanceMinute
@@ -27516,9 +29235,9 @@ async function renderAlmanacMVP(app, container) {
   listViewBtn.addEventListener("click", () => switchView("list"));
   monthViewBtn.addEventListener("click", () => switchView("month"));
   eventsList = createUpcomingEventsList({
-    events: mockEvents,
-    phenomena: mockPhenomena,
-    schema: mockSchema,
+    events: snapshot.upcomingEvents,
+    phenomena: snapshot.upcomingPhenomena,
+    schema: activeCalendar,
     currentTimestamp,
     onEventClick: (event) => {
       logger2.info("[almanac-mvp] Event clicked", { eventId: event.id });
@@ -27526,15 +29245,15 @@ async function renderAlmanacMVP(app, container) {
         event,
         onSave: (updatedEvent) => {
           logger2.info("[almanac-mvp] Event updated", { eventId: updatedEvent.id });
-          new import_obsidian37.Notice("Event updated successfully");
+          new import_obsidian39.Notice("Event updated successfully");
         }
       });
     }
   });
   monthView = createMonthViewCalendar({
-    events: mockEvents,
-    phenomena: mockPhenomena,
-    schema: mockSchema,
+    events: snapshot.upcomingEvents,
+    phenomena: snapshot.upcomingPhenomena,
+    schema: activeCalendar,
     currentTimestamp,
     onDayClick: (timestamp2) => {
       logger2.info("[almanac-mvp] Day clicked", { timestamp: timestamp2 });
@@ -27545,7 +29264,7 @@ async function renderAlmanacMVP(app, container) {
         event,
         onSave: (updatedEvent) => {
           logger2.info("[almanac-mvp] Event updated", { eventId: updatedEvent.id });
-          new import_obsidian37.Notice("Event updated successfully");
+          new import_obsidian39.Notice("Event updated successfully");
         }
       });
     }
@@ -27555,21 +29274,20 @@ async function renderAlmanacMVP(app, container) {
   futureNotice.createEl("h4", { text: "Coming Soon" });
   const featureList = futureNotice.createEl("ul");
   featureList.createEl("li", { text: "Week/Timeline calendar views" });
-  featureList.createEl("li", { text: "Event and phenomenon editor" });
+  featureList.createEl("li", { text: "Full event editor (currently placeholder)" });
   featureList.createEl("li", { text: "Astronomical cycles visualization" });
   featureList.createEl("li", { text: "Event inbox with priority sorting" });
-  featureList.createEl("li", { text: "Integration with vault calendar data" });
-  logger2.info("[almanac-mvp] Almanac MVP rendered successfully with month view");
+  featureList.createEl("li", { text: "Search functionality" });
+  logger2.info("[almanac-mvp] Almanac MVP rendered successfully with vault integration");
 }
-var import_obsidian37;
+var import_obsidian39;
 var init_almanac_mvp = __esm({
   "src/workmodes/almanac/view/almanac-mvp.ts"() {
     "use strict";
-    import_obsidian37 = require("obsidian");
+    import_obsidian39 = require("obsidian");
     init_almanac_time_display();
     init_upcoming_events_list();
     init_month_view_calendar();
-    init_domain();
     init_plugin_logger();
     init_event_editor_modal();
   }
@@ -28343,7 +30061,7 @@ function createWeatherPanel(host) {
     const { currentWeather, temperature, windSpeed, precipitation, visibility } = weather;
     weatherIcon.empty();
     const iconName = getWeatherIcon(currentWeather.type);
-    (0, import_obsidian39.setIcon)(weatherIcon, iconName);
+    (0, import_obsidian41.setIcon)(weatherIcon, iconName);
     weatherTypeLabel.textContent = getWeatherLabel(currentWeather.type);
     severityLabel.textContent = getSeverityLabel(currentWeather.severity);
     tempValue.textContent = formatTemperature(temperature);
@@ -28406,7 +30124,7 @@ function createWeatherPanel(host) {
       });
       entryEl.createSpan({ cls: "sm-weather-panel__history-date", text: dateStr });
       const iconEl = entryEl.createSpan({ cls: "sm-weather-panel__history-icon" });
-      (0, import_obsidian39.setIcon)(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
+      (0, import_obsidian41.setIcon)(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
       const labelEl = entryEl.createSpan({ cls: "sm-weather-panel__history-label" });
       labelEl.textContent = `${getWeatherLabel(entry.weather.currentWeather.type)} (${formatTemperature(entry.weather.temperature)})`;
     }
@@ -28430,7 +30148,7 @@ function createWeatherPanel(host) {
       });
       entryEl.createSpan({ cls: "sm-weather-panel__forecast-date", text: dateStr });
       const iconEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-icon" });
-      (0, import_obsidian39.setIcon)(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
+      (0, import_obsidian41.setIcon)(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
       const labelEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-label" });
       labelEl.textContent = `${getWeatherLabel(entry.weather.currentWeather.type)} (${formatTemperature(entry.weather.temperature)})`;
       const confidenceEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-confidence" });
@@ -28461,11 +30179,11 @@ function createWeatherPanel(host) {
     destroy
   };
 }
-var import_obsidian39;
+var import_obsidian41;
 var init_weather_panel = __esm({
   "src/workmodes/session-runner/travel/ui/weather-panel.ts"() {
     "use strict";
-    import_obsidian39 = require("obsidian");
+    import_obsidian41 = require("obsidian");
     init_weather_icons();
     init_weather_forecaster();
   }
@@ -29430,7 +31148,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
     text: "Start"
   });
-  (0, import_obsidian40.setIcon)(playBtn, "play");
+  (0, import_obsidian42.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29441,7 +31159,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
     text: "Stopp"
   });
-  (0, import_obsidian40.setIcon)(stopBtn, "square");
+  (0, import_obsidian42.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29452,7 +31170,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
     text: "Reset"
   });
-  (0, import_obsidian40.setIcon)(resetBtn, "rotate-ccw");
+  (0, import_obsidian42.setIcon)(resetBtn, "rotate-ccw");
   applyMapButtonStyle(resetBtn);
   resetBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29463,7 +31181,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--encounter",
     text: "Random Encounter"
   });
-  (0, import_obsidian40.setIcon)(encounterBtn, "swords");
+  (0, import_obsidian42.setIcon)(encounterBtn, "swords");
   applyMapButtonStyle(encounterBtn);
   encounterBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29514,11 +31232,11 @@ function createPlaybackControls(host, callbacks) {
     setTempo
   };
 }
-var import_obsidian40;
+var import_obsidian42;
 var init_controls = __esm({
   "src/workmodes/session-runner/travel/ui/controls.ts"() {
     "use strict";
-    import_obsidian40 = require("obsidian");
+    import_obsidian42 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -29778,7 +31496,7 @@ function bindContextMenu(routeLayerEl, logic) {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    const menu = new import_obsidian41.Menu();
+    const menu = new import_obsidian43.Menu();
     if (allowDelete) {
       menu.addItem(
         (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
@@ -29798,11 +31516,11 @@ function bindContextMenu(routeLayerEl, logic) {
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
-var import_obsidian41;
+var import_obsidian43;
 var init_context_menu_controller = __esm({
   "src/workmodes/session-runner/travel/ui/context-menu.controller.ts"() {
     "use strict";
-    import_obsidian41 = require("obsidian");
+    import_obsidian43 = require("obsidian");
   }
 });
 
@@ -29934,7 +31652,7 @@ function loadEncounterModule() {
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
     logger2.error("[session-runner] failed to load encounter module", err);
-    new import_obsidian42.Notice("Encounter-Modul konnte nicht geladen werden.");
+    new import_obsidian44.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
 }
@@ -29953,7 +31671,7 @@ async function openEncounter2(app, context) {
   const issue = describeEncounterContextIssue(context);
   if (issue) {
     logger2.warn(`[session-runner] ${issue.log}`, context);
-    new import_obsidian42.Notice(issue.message);
+    new import_obsidian44.Notice(issue.message);
   } else if (context) {
     try {
       const event = await createEncounterEventFromTravel(app, context);
@@ -30005,11 +31723,11 @@ async function publishManualEncounter(app, context, options = {}) {
     logger2.error("[session-runner] failed to publish manual encounter", err);
   }
 }
-var import_obsidian42, encounterModule;
+var import_obsidian44, encounterModule;
 var init_encounter_gateway = __esm({
   "src/workmodes/session-runner/view/controllers/encounter-gateway.ts"() {
     "use strict";
-    import_obsidian42 = require("obsidian");
+    import_obsidian44 = require("obsidian");
     init_session_store();
     init_plugin_logger();
     init_event_builder();
@@ -30572,7 +32290,7 @@ function parseHexKey(key) {
   if (isNaN(q) || isNaN(r) || isNaN(s)) return null;
   return { mapPath, q, r, s };
 }
-function createInitialState3() {
+function createInitialState4() {
   return {
     weatherByHex: /* @__PURE__ */ new Map(),
     historyByHex: /* @__PURE__ */ new Map(),
@@ -30586,7 +32304,7 @@ var init_weather_store = __esm({
     import_store2 = require("svelte/store");
     WeatherStore = class {
       constructor() {
-        this.store = (0, import_store2.writable)(createInitialState3());
+        this.store = (0, import_store2.writable)(createInitialState4());
       }
       /**
        * Set weather for a specific hex
@@ -30678,7 +32396,7 @@ var init_weather_store = __esm({
        * Clear all weather data
        */
       clearAll() {
-        this.store.set(createInitialState3());
+        this.store.set(createInitialState4());
       }
       /**
        * Set active map path (for filtering)
@@ -31017,7 +32735,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--play",
     attr: { title: "Play" }
   });
-  (0, import_obsidian43.setIcon)(playBtn, "play");
+  (0, import_obsidian45.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -31029,7 +32747,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--pause",
     attr: { title: "Pause" }
   });
-  (0, import_obsidian43.setIcon)(pauseBtn, "pause");
+  (0, import_obsidian45.setIcon)(pauseBtn, "pause");
   applyMapButtonStyle(pauseBtn);
   pauseBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -31041,7 +32759,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--prev",
     attr: { title: "Previous" }
   });
-  (0, import_obsidian43.setIcon)(prevBtn, "skip-back");
+  (0, import_obsidian45.setIcon)(prevBtn, "skip-back");
   applyMapButtonStyle(prevBtn);
   prevBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -31053,7 +32771,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--next",
     attr: { title: "Next" }
   });
-  (0, import_obsidian43.setIcon)(nextBtn, "skip-forward");
+  (0, import_obsidian45.setIcon)(nextBtn, "skip-forward");
   applyMapButtonStyle(nextBtn);
   nextBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -31065,7 +32783,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--stop",
     attr: { title: "Stop" }
   });
-  (0, import_obsidian43.setIcon)(stopBtn, "square");
+  (0, import_obsidian45.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -31176,11 +32894,11 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     destroy
   };
 }
-var import_obsidian43;
+var import_obsidian45;
 var init_audio_panel = __esm({
   "src/workmodes/session-runner/components/audio-panel.ts"() {
     "use strict";
-    import_obsidian43 = require("obsidian");
+    import_obsidian45 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -31938,7 +33656,7 @@ function createInitiativeTracker(host, callbacks) {
         text: `AC ${combatant.ac}`
       });
       const removeBtn = item.createDiv({ cls: "sm-initiative-tracker__remove" });
-      (0, import_obsidian44.setIcon)(removeBtn, "x");
+      (0, import_obsidian46.setIcon)(removeBtn, "x");
       removeBtn.addEventListener("click", () => {
         if (confirm(`Remove ${combatant.name} from encounter?`)) {
           callbacks.onRemoveCombatant(combatant.id);
@@ -31956,11 +33674,11 @@ function createInitiativeTracker(host, callbacks) {
     destroy
   };
 }
-var import_obsidian44;
+var import_obsidian46;
 var init_initiative_tracker = __esm({
   "src/workmodes/session-runner/components/initiative-tracker.ts"() {
     "use strict";
-    import_obsidian44 = require("obsidian");
+    import_obsidian46 = require("obsidian");
   }
 });
 
@@ -31993,12 +33711,12 @@ async function createEncounterController(options) {
       logger2.info("[EncounterController] Loaded encounter tables", { count: tables.length });
     } catch (err) {
       logger2.error("[EncounterController] Failed to load encounter tables", err);
-      new import_obsidian45.Notice("Failed to load encounter tables");
+      new import_obsidian47.Notice("Failed to load encounter tables");
     }
   }
   async function generateRandomEncounter2(context) {
     if (encounterTables.length === 0) {
-      new import_obsidian45.Notice("No encounter tables available. Create some in the Library!");
+      new import_obsidian47.Notice("No encounter tables available. Create some in the Library!");
       logger2.warn("[EncounterController] Cannot generate encounter: no tables loaded");
       return;
     }
@@ -32017,9 +33735,9 @@ async function createEncounterController(options) {
       activeTurnIndex = 0;
       if (encounter.warnings.length > 0) {
         logger2.warn("[EncounterController] Encounter generation warnings", { warnings: encounter.warnings });
-        new import_obsidian45.Notice(`Encounter generated with warnings: ${encounter.warnings.join(", ")}`);
+        new import_obsidian47.Notice(`Encounter generated with warnings: ${encounter.warnings.join(", ")}`);
       } else {
-        new import_obsidian45.Notice(`${encounter.difficulty.toUpperCase()} encounter: ${encounter.combatants.length} combatants (${encounter.adjustedXP} XP)`);
+        new import_obsidian47.Notice(`${encounter.difficulty.toUpperCase()} encounter: ${encounter.combatants.length} combatants (${encounter.adjustedXP} XP)`);
       }
       renderInitiativeTracker();
       if (onCombatStart) {
@@ -32027,7 +33745,7 @@ async function createEncounterController(options) {
       }
     } catch (err) {
       logger2.error("[EncounterController] Failed to generate encounter", err);
-      new import_obsidian45.Notice("Failed to generate encounter. Check console for details.");
+      new import_obsidian47.Notice("Failed to generate encounter. Check console for details.");
     }
   }
   function renderInitiativeTracker() {
@@ -32096,7 +33814,7 @@ async function createEncounterController(options) {
     const allDefeated = combatants.every((c) => c.currentHp <= 0);
     if (allDefeated && combatants.length > 0) {
       logger2.info("[EncounterController] Combat ended - all combatants defeated");
-      new import_obsidian45.Notice("Combat ended! All enemies defeated.");
+      new import_obsidian47.Notice("Combat ended! All enemies defeated.");
       if (currentEncounter && onLootRequested) {
         void onLootRequested(currentEncounter);
       }
@@ -32127,11 +33845,11 @@ async function createEncounterController(options) {
     dispose
   };
 }
-var import_obsidian45;
+var import_obsidian47;
 var init_encounter_controller = __esm({
   "src/workmodes/session-runner/components/encounter-controller.ts"() {
     "use strict";
-    import_obsidian45 = require("obsidian");
+    import_obsidian47 = require("obsidian");
     init_plugin_logger();
     init_encounter_generator();
     init_data_sources();
@@ -33907,16 +35625,16 @@ async function openTimelineView(app, store) {
   });
   workspace.revealLeaf(leaf);
 }
-var import_obsidian50, VIEW_TYPE_TIMELINE, TimelineView;
+var import_obsidian52, VIEW_TYPE_TIMELINE, TimelineView;
 var init_timeline_view = __esm({
   "src/features/events/timeline-view.ts"() {
     "use strict";
-    import_obsidian50 = require("obsidian");
+    import_obsidian52 = require("obsidian");
     init_event_history_types();
     init_ui();
     init_plugin_logger();
     VIEW_TYPE_TIMELINE = "event-timeline-view";
-    TimelineView = class extends import_obsidian50.ItemView {
+    TimelineView = class extends import_obsidian52.ItemView {
       constructor(leaf, store) {
         super(leaf);
         // Current filter/sort state
@@ -100230,7 +101948,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian52.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian53.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -100243,7 +101961,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian52.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian53.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -100261,7 +101979,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian52.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian53.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -100277,7 +101995,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian52.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian53.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -100303,19 +102021,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian52.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian53.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger2.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger2.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian52.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian53.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger2.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger2.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian52.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian53.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -100327,7 +102045,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian52.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian53.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -100344,7 +102062,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian52.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian53.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -100444,11 +102162,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, playlists, all`);
   }
 }
-var import_obsidian52, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, ensurePlaylistDir, PRESET_FILES;
+var import_obsidian53, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, ensurePlaylistDir, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian52 = require("obsidian");
+    import_obsidian53 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -100476,16 +102194,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian53.TFolder)) {
+  if (!(folder instanceof import_obsidian54.TFolder)) {
     logger2.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian53.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian54.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian53.TFolder) {
+      } else if (child instanceof import_obsidian54.TFolder) {
         collectFiles(child);
       }
     }
@@ -100522,7 +102240,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian53.TFile) {
+  if (existingFile instanceof import_obsidian54.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -100590,7 +102308,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian53.TFile) {
+  if (existingFile instanceof import_obsidian54.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -100612,11 +102330,11 @@ async function generateAllIndexes(app) {
   ]);
   logger2.log("[Index] All indexes generated successfully");
 }
-var import_obsidian53, SALTMARCHER_DIR;
+var import_obsidian54, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian53 = require("obsidian");
+    import_obsidian54 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -102596,7 +104314,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian54 = require("obsidian");
+var import_obsidian55 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
@@ -103559,13 +105277,13 @@ init_view2();
 init_view();
 
 // src/workmodes/almanac/index.ts
-var import_obsidian38 = require("obsidian");
+var import_obsidian40 = require("obsidian");
 init_ui();
 init_event_editor_modal();
 init_plugin_logger();
 var VIEW_TYPE_ALMANAC = "almanac-view";
 var VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
-var AlmanacView = class extends import_obsidian38.ItemView {
+var AlmanacView = class extends import_obsidian40.ItemView {
   constructor(leaf) {
     super(leaf);
   }
@@ -103590,7 +105308,7 @@ var AlmanacView = class extends import_obsidian38.ItemView {
         onChange: (query) => {
           logger2.info("[almanac] Search query changed", { query });
           if (query.trim()) {
-            new import_obsidian38.Notice("Event search coming soon in a future update");
+            new import_obsidian40.Notice("Event search coming soon in a future update");
           }
         }
       },
@@ -103602,15 +105320,17 @@ var AlmanacView = class extends import_obsidian38.ItemView {
           openEventEditor(this.app, {
             onSave: (event) => {
               logger2.info("[almanac] Event saved", { eventId: event.id });
-              new import_obsidian38.Notice("Event saved successfully");
+              new import_obsidian40.Notice("Event saved successfully");
             }
           });
         }
       }
     });
     const mainContent = content.createDiv({ cls: "sm-almanac__content" });
+    const { createAlmanacGateway: createAlmanacGateway2 } = await Promise.resolve().then(() => (init_gateway_factory(), gateway_factory_exports));
+    const gateway = createAlmanacGateway2(this.app);
     const { renderAlmanacMVP: renderAlmanacMVP2 } = await Promise.resolve().then(() => (init_almanac_mvp(), almanac_mvp_exports));
-    await renderAlmanacMVP2(this.app, mainContent);
+    await renderAlmanacMVP2(this.app, mainContent, gateway);
   }
   async onClose() {
     this.header?.destroy();
@@ -103631,10 +105351,10 @@ async function openAlmanac(app) {
 }
 
 // src/workmodes/session-runner/index.ts
-var import_obsidian47 = require("obsidian");
+var import_obsidian49 = require("obsidian");
 
 // src/workmodes/session-runner/controller.ts
-var import_obsidian46 = require("obsidian");
+var import_obsidian48 = require("obsidian");
 init_options();
 init_map_list();
 init_plugin_logger();
@@ -103724,7 +105444,7 @@ var SessionRunnerController = class {
     } catch (error) {
       logger2.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
-      new import_obsidian46.Notice(EXPERIENCE_NOTICE_MESSAGE);
+      new import_obsidian48.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
     if (this.mapManager) {
       await this.mapManager.setFile(initialFile);
@@ -103935,7 +105655,7 @@ function createSessionRunnerView(options) {
 // src/workmodes/session-runner/index.ts
 var VIEW_TYPE_SESSION_RUNNER = "session-runner-view";
 var VIEW_SESSION_RUNNER = VIEW_TYPE_SESSION_RUNNER;
-var SessionRunnerView = class extends import_obsidian47.ItemView {
+var SessionRunnerView = class extends import_obsidian49.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -103988,7 +105708,7 @@ async function openSessionRunner(app, file) {
 }
 
 // src/workmodes/library/locations/dungeon-view.ts
-var import_obsidian49 = require("obsidian");
+var import_obsidian51 = require("obsidian");
 
 // src/features/dungeons/rendering/grid-renderer.ts
 init_types3();
@@ -104588,9 +106308,9 @@ init_plugin_logger();
 init_frontmatter_utils();
 
 // src/features/dungeons/ui/token-creation-modal.ts
-var import_obsidian48 = require("obsidian");
+var import_obsidian50 = require("obsidian");
 init_types3();
-var TokenCreationModal = class extends import_obsidian48.Modal {
+var TokenCreationModal = class extends import_obsidian50.Modal {
   constructor(app, onSubmit, initialData) {
     super(app);
     this.onSubmit = onSubmit;
@@ -104611,7 +106331,7 @@ var TokenCreationModal = class extends import_obsidian48.Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.createEl("h3", { text: this.isEditMode ? "Edit Token" : "Create Token" });
-    new import_obsidian48.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
+    new import_obsidian50.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
       dropdown.addOption("player", "\u{1F9D9} Player").addOption("npc", "\u{1F642} NPC").addOption("monster", "\u{1F479} Monster").addOption("object", "\u{1F4E6} Object").setValue(this.tokenType).onChange((value) => {
         this.tokenType = value;
         this.tokenColor = getDefaultTokenColor(this.tokenType);
@@ -104619,13 +106339,13 @@ var TokenCreationModal = class extends import_obsidian48.Modal {
       });
     });
     let labelInput;
-    new import_obsidian48.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
+    new import_obsidian50.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
       text.setPlaceholder("Gandalf").setValue(this.tokenLabel).onChange((value) => {
         this.tokenLabel = value.trim();
       });
       labelInput = text.inputEl;
     });
-    new import_obsidian48.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
+    new import_obsidian50.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
       text.setPlaceholder(getDefaultTokenColor(this.tokenType)).setValue(this.tokenColor).onChange((value) => {
         this.tokenColor = value.trim();
         this.renderColorPreview();
@@ -104648,12 +106368,12 @@ var TokenCreationModal = class extends import_obsidian48.Modal {
     contentEl._colorPreview = colorPreview;
     this.tokenColor = getDefaultTokenColor(this.tokenType);
     this.renderColorPreview();
-    new import_obsidian48.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
+    new import_obsidian50.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
       slider.setLimits(0.5, 2, 0.1).setValue(this.tokenSize).setDynamicTooltip().onChange((value) => {
         this.tokenSize = value;
       });
     });
-    new import_obsidian48.Setting(contentEl).addButton((button) => {
+    new import_obsidian50.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => {
         this.close();
       });
@@ -104691,7 +106411,7 @@ var TokenCreationModal = class extends import_obsidian48.Modal {
 
 // src/workmodes/library/locations/dungeon-view.ts
 var VIEW_TYPE_DUNGEON = "salt-dungeon-view";
-var DungeonView = class extends import_obsidian49.ItemView {
+var DungeonView = class extends import_obsidian51.ItemView {
   // Currently selected token
   constructor(leaf) {
     super(leaf);
@@ -109166,19 +110886,8 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 };
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
-// src/app/integration-telemetry.ts
-var import_obsidian51 = require("obsidian");
-init_plugin_logger();
-var notifiedOperations = /* @__PURE__ */ new Set();
-function reportIntegrationIssue(payload) {
-  const { integrationId, operation, error, userMessage } = payload;
-  const logPrefix = `[salt-marcher] integration(${integrationId}) ${operation} failed`;
-  logger2.error(logPrefix, error);
-  const dedupeKey = `${integrationId}:${operation}`;
-  if (notifiedOperations.has(dedupeKey)) return;
-  notifiedOperations.add(dedupeKey);
-  new import_obsidian51.Notice(userMessage);
-}
+// src/app/main.ts
+init_integration_telemetry();
 
 // src/app/bootstrap-services.ts
 init_plugin_logger();
@@ -109488,7 +111197,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian54.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian55.Plugin {
   async onload() {
     await logger2.init(this.app);
     logger2.log("Plugin loading...");

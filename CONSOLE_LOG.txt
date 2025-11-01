@@ -1,9 +1,9 @@
-[2025-11-01T11:29:13.661Z] LOG: ================================================================================
-[2025-11-01T11:29:13.665Z] LOG: Salt Marcher Plugin Logger - Session Start
-[2025-11-01T11:29:13.665Z] LOG: Timestamp: 2025-11-01T11:29:13.665Z
-[2025-11-01T11:29:13.665Z] LOG: ================================================================================
-[2025-11-01T11:29:13.665Z] LOG: Plugin loading...
-[2025-11-01T11:29:13.666Z] LOG: [DebugLogger] Config loaded: {
+[2025-11-01T11:48:10.639Z] LOG: ================================================================================
+[2025-11-01T11:48:10.642Z] LOG: Salt Marcher Plugin Logger - Session Start
+[2025-11-01T11:48:10.642Z] LOG: Timestamp: 2025-11-01T11:48:10.642Z
+[2025-11-01T11:48:10.642Z] LOG: ================================================================================
+[2025-11-01T11:48:10.642Z] LOG: Plugin loading...
+[2025-11-01T11:48:10.643Z] LOG: [DebugLogger] Config loaded: {
   "enabled": true,
   "logAll": true,
   "logFields": [
@@ -13,59 +13,59 @@
     "*"
   ]
 }
-[2025-11-01T11:29:13.667Z] LOG: [Index] Generating all library indexes...
-[2025-11-01T11:29:13.672Z] LOG: [Index] All indexes generated successfully
-[2025-11-01T11:29:13.673Z] LOG: [IPC] Registered command: reload-plugin
-[2025-11-01T11:29:13.673Z] LOG: [IPC] Registered command: edit-creature
-[2025-11-01T11:29:13.673Z] LOG: [IPC] Registered command: edit-spell
-[2025-11-01T11:29:13.673Z] LOG: [IPC] Registered command: edit-item
-[2025-11-01T11:29:13.673Z] LOG: [IPC] Registered command: edit-equipment
-[2025-11-01T11:29:13.673Z] LOG: [IPC] Registered command: get-logs
-[2025-11-01T11:29:13.673Z] LOG: [IPC] Registered command: import-presets
-[2025-11-01T11:29:13.673Z] LOG: [IPC] Registered command: regenerate-indexes
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: navigate-to-section
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: click-element
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: set-input-value
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: add-token
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: toggle-save-checkbox
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: get-ability-values
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: validate-grid-layout
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: debug-stepper-styles
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: validate-ui
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: measure-ui
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: validate-ui-rule
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: validate-ui-config
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: start-test
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: end-test
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: log-marker
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: set-debug-config
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: get-debug-config
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: get-test-logs
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: assert-log-contains
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: get-field-state
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: dump-field-states
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: get-modal-data
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: dump-dom
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: inspect-ui
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: state-list
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Registered command: state-inspect
-[2025-11-01T11:29:13.674Z] LOG: [IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, dump-dom, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains, get-field-state, dump-field-states, get-modal-data
-[2025-11-01T11:29:13.675Z] LOG: [IPC] Server started on /home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/ipc.sock
-[2025-11-01T11:29:13.675Z] LOG: [IPC] Server ready - production commands: reload-plugin, edit-creature, edit-spell, edit-item, edit-equipment, get-logs
-[2025-11-01T11:29:13.687Z] LOG: Plugin presets already imported (marker exists)
-[2025-11-01T11:29:13.688Z] LOG: Spell presets already imported (marker exists)
-[2025-11-01T11:29:13.688Z] LOG: Item presets already imported (marker exists)
-[2025-11-01T11:29:13.689Z] LOG: Equipment presets already imported (marker exists)
-[2025-11-01T11:29:13.689Z] LOG: Terrain presets already imported (marker exists)
-[2025-11-01T11:29:13.690Z] LOG: Region presets already imported (marker exists)
-[2025-11-01T11:29:13.690Z] LOG: Calendar presets already imported (marker exists)
-[2025-11-01T11:29:13.691Z] LOG: Playlist presets already imported (marker exists)
-[2025-11-01T11:29:13.692Z] INFO: [StoreManager] Registered store "map-terrains" (persistent)
-[2025-11-01T11:29:13.694Z] INFO: [inbox-status-bar] Display updated {
+[2025-11-01T11:48:10.645Z] LOG: [Index] Generating all library indexes...
+[2025-11-01T11:48:10.651Z] LOG: [Index] All indexes generated successfully
+[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: reload-plugin
+[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: edit-creature
+[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: edit-spell
+[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: edit-item
+[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: edit-equipment
+[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: get-logs
+[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: import-presets
+[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: regenerate-indexes
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: navigate-to-section
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: click-element
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: set-input-value
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: add-token
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: toggle-save-checkbox
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: get-ability-values
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: validate-grid-layout
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: debug-stepper-styles
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: validate-ui
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: measure-ui
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: validate-ui-rule
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: validate-ui-config
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: start-test
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: end-test
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: log-marker
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: set-debug-config
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: get-debug-config
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: get-test-logs
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: assert-log-contains
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: get-field-state
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: dump-field-states
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: get-modal-data
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: dump-dom
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: inspect-ui
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: state-list
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: state-inspect
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, dump-dom, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains, get-field-state, dump-field-states, get-modal-data
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Server started on /home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/ipc.sock
+[2025-11-01T11:48:10.653Z] LOG: [IPC] Server ready - production commands: reload-plugin, edit-creature, edit-spell, edit-item, edit-equipment, get-logs
+[2025-11-01T11:48:10.657Z] LOG: Plugin presets already imported (marker exists)
+[2025-11-01T11:48:10.657Z] LOG: Spell presets already imported (marker exists)
+[2025-11-01T11:48:10.658Z] LOG: Item presets already imported (marker exists)
+[2025-11-01T11:48:10.658Z] LOG: Equipment presets already imported (marker exists)
+[2025-11-01T11:48:10.659Z] LOG: Terrain presets already imported (marker exists)
+[2025-11-01T11:48:10.659Z] LOG: Region presets already imported (marker exists)
+[2025-11-01T11:48:10.660Z] LOG: Calendar presets already imported (marker exists)
+[2025-11-01T11:48:10.660Z] LOG: Playlist presets already imported (marker exists)
+[2025-11-01T11:48:10.661Z] INFO: [StoreManager] Registered store "map-terrains" (persistent)
+[2025-11-01T11:48:10.664Z] INFO: [inbox-status-bar] Display updated {
   "count": 0
 }
-[2025-11-01T11:29:13.694Z] INFO: [inbox-status-bar] Display updated {
+[2025-11-01T11:48:10.664Z] INFO: [inbox-status-bar] Display updated {
   "count": 0
 }
-[2025-11-01T11:29:13.694Z] INFO: [inbox-status-bar] Subscribed to inbox updates
-[2025-11-01T11:29:13.694Z] LOG: [inbox-status-bar] Widget registered
+[2025-11-01T11:48:10.664Z] INFO: [inbox-status-bar] Subscribed to inbox updates
+[2025-11-01T11:48:10.664Z] LOG: [inbox-status-bar] Widget registered

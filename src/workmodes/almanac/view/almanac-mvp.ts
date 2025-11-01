@@ -7,7 +7,7 @@ import { createAlmanacTimeDisplay, type AlmanacTimeDisplayHandle } from "./alman
 import { createUpcomingEventsList, type UpcomingEventsListHandle } from "./upcoming-events-list";
 import { createMonthViewCalendar, type MonthViewCalendarHandle } from "./month-view-calendar";
 import type { CalendarEvent, CalendarSchema, CalendarTimestamp } from "../domain";
-import { advanceTime } from "../domain";
+import type { CalendarStateGateway } from "../data/calendar-state-gateway";
 import { logger } from "../../../app/plugin-logger";
 import { openEventEditor } from "./event-editor-modal";
 
@@ -18,71 +18,40 @@ import { openEventEditor } from "./event-editor-modal";
  * - Current calendar time display
  * - Time advance controls (day/hour/minute)
  * - Upcoming events list (next 7 days)
+ * - Month calendar grid with event indicators
+ *
+ * Phase 13 Implementation:
+ * - Vault data integration via CalendarStateGateway
+ * - Automatic persistence of time advances
+ * - Load calendar schema and events from vault
  *
  * Future enhancements (deferred to later phases):
- * - Month/week/timeline calendar views
- * - Event editor modal
+ * - Week/timeline calendar views
+ * - Full event editor modal
  * - Astronomical cycles UI
  * - Event inbox
  */
-export async function renderAlmanacMVP(app: App, container: HTMLElement): Promise<void> {
-    logger.info("[almanac-mvp] Rendering Almanac MVP");
+export async function renderAlmanacMVP(app: App, container: HTMLElement, gateway: CalendarStateGateway): Promise<void> {
+    logger.info("[almanac-mvp] Rendering Almanac MVP with vault integration");
 
     const root = container.createDiv({ cls: "sm-almanac-mvp" });
 
-    // Phase notice - inform users this is MVP
-    const notice = root.createDiv({ cls: "sm-almanac-mvp__notice" });
-    notice.createEl("h3", { text: "Almanac MVP" });
-    notice.createEl("p", {
-        text: "This is a minimal viable implementation. Full calendar views (month/week/timeline) and event editor are planned for future updates.",
-    });
+    // Load calendar state from vault via gateway
+    const snapshot = await gateway.loadSnapshot();
 
-    // Load calendar state (using hardcoded defaults for MVP)
-    // In future, this will load from vault
-    const mockSchema: CalendarSchema = {
-        id: "gregorian-standard",
-        name: "Gregorian Calendar",
-        description: "Standard Gregorian calendar for testing",
-        daysPerWeek: 7,
-        months: [
-            { id: "jan", name: "January", length: 31 },
-            { id: "feb", name: "February", length: 28 },
-            { id: "mar", name: "March", length: 31 },
-            { id: "apr", name: "April", length: 30 },
-            { id: "may", name: "May", length: 31 },
-            { id: "jun", name: "June", length: 30 },
-            { id: "jul", name: "July", length: 31 },
-            { id: "aug", name: "August", length: 31 },
-            { id: "sep", name: "September", length: 30 },
-            { id: "oct", name: "October", length: 31 },
-            { id: "nov", name: "November", length: 30 },
-            { id: "dec", name: "December", length: 31 },
-        ],
-        hoursPerDay: 24,
-        minutesPerHour: 60,
-        secondsPerMinute: 60,
-        minuteStep: 1,
-        epoch: {
-            year: 1,
-            monthId: "jan",
-            day: 1,
-        },
-        schemaVersion: "1.0.0",
-    };
+    if (!snapshot.activeCalendar || !snapshot.currentTimestamp) {
+        // No calendar configured - show setup notice
+        const setupNotice = root.createDiv({ cls: "sm-almanac-mvp__setup-notice" });
+        setupNotice.createEl("h3", { text: "Calendar Setup Required" });
+        setupNotice.createEl("p", {
+            text: "No calendar is configured. Please create a calendar in the Library or import a calendar preset first.",
+        });
+        logger.warn("[almanac-mvp] No active calendar or current timestamp available");
+        return;
+    }
 
-    // Start at a reasonable default
-    let currentTimestamp: CalendarTimestamp = {
-        calendarId: "gregorian-standard",
-        year: 2025,
-        monthId: "jan",
-        day: 1,
-        hour: 12,
-        minute: 0,
-        precision: "minute",
-    };
-
-    const mockEvents: CalendarEvent[] = [];
-    const mockPhenomena: any[] = [];
+    const activeCalendar = snapshot.activeCalendar as CalendarSchema;
+    let currentTimestamp = snapshot.currentTimestamp;
 
     let timeDisplay: AlmanacTimeDisplayHandle | null = null;
     let eventsList: UpcomingEventsListHandle | null = null;
@@ -90,36 +59,51 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement): Promis
     let currentView: "list" | "month" = "list";
 
     function updateAllViews(): void {
-        timeDisplay?.update(currentTimestamp, mockSchema);
-        eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
-        monthView?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+        timeDisplay?.update(currentTimestamp, activeCalendar);
+        eventsList?.update(snapshot.upcomingEvents as CalendarEvent[], snapshot.upcomingPhenomena, activeCalendar, currentTimestamp);
+        monthView?.update(snapshot.upcomingEvents as CalendarEvent[], snapshot.upcomingPhenomena, activeCalendar, currentTimestamp);
     }
 
-    function handleAdvanceDay(amount: number): void {
+    async function handleAdvanceDay(amount: number): Promise<void> {
         logger.info("[almanac-mvp] Advancing time by days", { amount });
-        const result = advanceTime(mockSchema, currentTimestamp, amount, "day");
-        currentTimestamp = result.timestamp;
-        updateAllViews();
+        try {
+            const result = await gateway.advanceTimeBy(amount, "day");
+            currentTimestamp = result.timestamp;
+            updateAllViews();
+        } catch (error) {
+            logger.error("[almanac-mvp] Failed to advance time by days", { error, amount });
+            new Notice("Failed to advance time. Check console for details.");
+        }
     }
 
-    function handleAdvanceHour(amount: number): void {
+    async function handleAdvanceHour(amount: number): Promise<void> {
         logger.info("[almanac-mvp] Advancing time by hours", { amount });
-        const result = advanceTime(mockSchema, currentTimestamp, amount, "hour");
-        currentTimestamp = result.timestamp;
-        updateAllViews();
+        try {
+            const result = await gateway.advanceTimeBy(amount, "hour");
+            currentTimestamp = result.timestamp;
+            updateAllViews();
+        } catch (error) {
+            logger.error("[almanac-mvp] Failed to advance time by hours", { error, amount });
+            new Notice("Failed to advance time. Check console for details.");
+        }
     }
 
-    function handleAdvanceMinute(amount: number): void {
+    async function handleAdvanceMinute(amount: number): Promise<void> {
         logger.info("[almanac-mvp] Advancing time by minutes", { amount });
-        const result = advanceTime(mockSchema, currentTimestamp, amount, "minute");
-        currentTimestamp = result.timestamp;
-        updateAllViews();
+        try {
+            const result = await gateway.advanceTimeBy(amount, "minute");
+            currentTimestamp = result.timestamp;
+            updateAllViews();
+        } catch (error) {
+            logger.error("[almanac-mvp] Failed to advance time by minutes", { error, amount });
+            new Notice("Failed to advance time. Check console for details.");
+        }
     }
 
     // Render time display
     timeDisplay = createAlmanacTimeDisplay({
         currentTimestamp,
-        schema: mockSchema,
+        schema: activeCalendar,
         onAdvanceDay: handleAdvanceDay,
         onAdvanceHour: handleAdvanceHour,
         onAdvanceMinute: handleAdvanceMinute,
@@ -168,9 +152,9 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement): Promis
 
     // Render upcoming events list
     eventsList = createUpcomingEventsList({
-        events: mockEvents,
-        phenomena: mockPhenomena,
-        schema: mockSchema,
+        events: snapshot.upcomingEvents as CalendarEvent[],
+        phenomena: snapshot.upcomingPhenomena,
+        schema: activeCalendar,
         currentTimestamp,
         onEventClick: (event) => {
             logger.info("[almanac-mvp] Event clicked", { eventId: event.id });
@@ -187,9 +171,9 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement): Promis
 
     // Render month view
     monthView = createMonthViewCalendar({
-        events: mockEvents,
-        phenomena: mockPhenomena,
-        schema: mockSchema,
+        events: snapshot.upcomingEvents as CalendarEvent[],
+        phenomena: snapshot.upcomingPhenomena,
+        schema: activeCalendar,
         currentTimestamp,
         onDayClick: (timestamp) => {
             logger.info("[almanac-mvp] Day clicked", { timestamp });
@@ -216,10 +200,10 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement): Promis
     futureNotice.createEl("h4", { text: "Coming Soon" });
     const featureList = futureNotice.createEl("ul");
     featureList.createEl("li", { text: "Week/Timeline calendar views" });
-    featureList.createEl("li", { text: "Event and phenomenon editor" });
+    featureList.createEl("li", { text: "Full event editor (currently placeholder)" });
     featureList.createEl("li", { text: "Astronomical cycles visualization" });
     featureList.createEl("li", { text: "Event inbox with priority sorting" });
-    featureList.createEl("li", { text: "Integration with vault calendar data" });
+    featureList.createEl("li", { text: "Search functionality" });
 
-    logger.info("[almanac-mvp] Almanac MVP rendered successfully with month view");
+    logger.info("[almanac-mvp] Almanac MVP rendered successfully with vault integration");
 }

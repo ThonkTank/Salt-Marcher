@@ -314,9 +314,25 @@ grep "\[init:" CONSOLE_LOG.txt
   Loot orientiert sich an den XP der Begegnung: Gold, Handelswaren und magische Items werden über die Calculator-Regeln generiert, die Party-Level, Encounter-XP und selbst definierte Modifikatoren berücksichtigen. Der Generator zieht dafür aufbereitete Listen aus der Library heran, filtert nach Tags (z. B. „Sumpf“, „Untote“, „Ozean“) und sorgt dafür, dass Beute zur Location und den Gegnern passt.  
   Magische Items folgen Level-Limits, damit nicht jede Begegnung legendäre Artefakte ausspuckt, während Gold und wertvolle Waren linear mit XP und Charakterstufe skalieren. Viele Gegner bringen außerdem inhärente Beute mit: Drachen liefern Schuppen, Drow exotische Gifte, Konstrukte seltene Komponenten. Diese Werte stehen direkt im Statblock – inklusive des Anteils, den sie vom sonstigen Loot-Pool ersetzen – sodass ich sofort weiß, wie viel zusätzliche Beute noch verteilt wird.
 
+## 📊 Priority Definitions (Standard für Auto-Continue System)
+
+Diese Prioritätsdefinitionen gelten einheitlich für alle Auto-Continue Phasen (A, B, C, D):
+
+- **CRITICAL**: Feature komplett kaputt oder unbrauchbar, blockiert Kernfunktionalität, verhindert Plugin-Start oder verursacht Abstürze
+  - Beispiel: "TypeError verhindert das Laden aller Kreaturen"
+
+- **HIGH**: Wichtiges Feature fehlt oder ist stark beeinträchtigt, beeinflusst User-Workflow erheblich, verwirrende UX die zu häufigen Fehlern führt
+  - Beispiel: "Weather Panel zeigt falsche Daten an"
+
+- **MEDIUM**: Feature unvollständig aber teilweise nutzbar, suboptimale UX die zu viele Schritte erfordert, nicht-blockierende Bugs oder Inkonsistenzen, DevKit-Erweiterungen
+  - Beispiel: "Building Capacity Warnung zeigt sich erst nach Fehler"
+
+- **LOW**: Nice-to-have Verbesserungen, Code-Refactoring oder Cleanup, kleine Politur oder Konsistenz-Fixes
+  - Beispiel: "Hover-Tooltips zu Production Charts hinzufügen"
+
 ## Architektur-Roadmap
 
-**Status:** Phase D ✅ Complete (UX Review - 4th Run) | Tests: 1124/1125 (99.9%) ⚠️ | **Next:** Phase B - Implementation
+**Status:** Phase 13 🔄 In Progress (Almanac Vault Integration - Priority 1 Complete) | Tests: 1130/1131 (99.9%) ⚠️ | **Next:** Phase B - Continue Phase 13 Implementation
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -333,7 +349,11 @@ grep "\[init:" CONSOLE_LOG.txt
 - **Phase 12.2:** Almanac MVP Interactivity ✅ - Fixed minute increment, event editor modal placeholder
 - **Phase 12.3:** Library Tabs Verification ✅ - All tabs implemented (locations: 134 tests, playlists: 17, encounter-tables: 10)
 - **Phase 12.4:** Month View Calendar ✅ - Grid layout, event indicators, view switching (6 new tests)
-- **Phase A (4th Run):** Quality Audit Complete ✅ - 1 test failing, next phase: D
+- **Phase A (4th Run):** Quality Audit Complete ✅ (Nov 1, 2025 - One test failing, code duplication found)
+- **Phase C (5th Run):** Documentation Review Complete ✅ (Nov 1, 2025 - Phase 12.4 documentation updated, roadmap revised)
+- **Phase A (5th Run):** Quality Audit Complete ✅ (Nov 1, 2025 - Tests 1130/1131 passing, no system errors, 27 [UX] tasks identified)
+- **Phase D (5th Run):** UX Review Complete ✅ (Nov 1, 2025 - Verified Phases 11.1 and 12.1-12.4, all UX issues already documented)
+- **Phase 13 Priority 1:** Vault Data Integration ✅ (Nov 1, 2025 - Almanac MVP now loads/persists calendar state from vault)
 
 **Geplant:**
 - **Phase 10.5:** Advanced Weather Features (Future)
@@ -347,13 +367,19 @@ grep "\[init:" CONSOLE_LOG.txt
 None currently! All blocking issues resolved. ✅
 
 **HIGH (Feature fehlt oder stark beeinträchtigt):**
-2. **[MEDIUM → HIGH] Almanac Full UI Missing** - MVP + Month View implemented, additional views needed ⚠️
-   - Phase 12.1 MVP completed ✅ - basic time display, upcoming events, advance controls
-   - Phase 12.2 completed ✅ - event editor modal placeholder, search/add button handlers, minute increment fix
-   - **Phase 12.4 Month View completed ✅** - Month calendar grid with event indicators, view switching
-   - Still missing: Week/timeline calendar grid views, full event editor implementation, astronomical cycles UI, vault data integration
-   - Current: Uses hardcoded mock calendar data, event editor shows "Coming Soon" placeholder
-   - Location: src/workmodes/almanac/view/ (partial implementation)
+2. **[HIGH] Almanac Full Implementation Missing** - MVP + Month View + Vault Integration functional, additional features needed ⚠️
+   - ✅ Phase 12.1-12.4 MVP Complete - basic time display, upcoming events, advance controls, month grid view with event indicators, view switching
+   - ✅ Phase 13 Priority 1 Complete - vault data integration (loads calendar from vault, persists time advances)
+   - Still missing (Phase 13 Priority 2-7):
+     - Full event editor implementation (replace placeholder modal)
+     - Week/timeline calendar grid views with event visualization
+     - Month navigation controls (prev/next month buttons)
+     - Astronomical cycles UI (moon phases, eclipses, etc.)
+     - Event inbox with priority sorting
+     - Search functionality implementation
+   - Current: Loads calendar from SaltMarcher/Calendars/, persists state to SaltMarcher/Almanac/state.json, event editor shows "Coming Soon" placeholder
+   - Location: src/workmodes/almanac/view/ (partial implementation), src/workmodes/almanac/data/ (vault integration complete)
+   - See: [docs/almanac-system.md](docs/almanac-system.md) for detailed status
 
 **MEDIUM (Feature unvollständig aber teilweise nutzbar):**
 4. **[MEDIUM] POI Integration Missing** - Cannot place location markers on map
@@ -486,10 +512,10 @@ None currently! All blocking issues resolved. ✅
    - Location: src/workmodes/encounter/ (view components)
 33. **[LOW] Almanac Time Handler Duplication** - Three nearly-identical time advance handlers
    - handleAdvanceDay, handleAdvanceHour, handleAdvanceMinute differ only by unit parameter
-   - Each contains identical logic for logging, advanceTime call, and UI updates
+   - Each contains identical logic for logging, advanceTime call, and updateAllViews()
    - Impact: Minimal - only 3 handlers, works correctly, easy to maintain
    - Suggested fix: Extract to higher-order function createAdvanceHandler(unit)
-   - Location: src/workmodes/almanac/view/almanac-mvp.ts:89-111
+   - Location: src/workmodes/almanac/view/almanac-mvp.ts:98-117
    - See docs/almanac-system.md "Code Duplication" section for detailed fix
 34. **[LOW] Almanac MVP - No Loading States** - Async operations will lack feedback (Phase 13)
    - Future vault integration will load calendar schema/events asynchronously
@@ -497,6 +523,11 @@ None currently! All blocking issues resolved. ✅
    - Need: Add loading spinner when loading calendar from vault
    - Location: src/workmodes/almanac/view/almanac-mvp.ts (future vault integration)
 35. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
+36. **[LOW] Old Preset Format Warning** - 5 files use old format with "ability:" prefix
+   - DevKit doctor reports 5 creature presets use old format
+   - Non-blocking: Plugin functions correctly with both formats
+   - Fix: Run `node devkit/utilities/conversions/convert-references.mjs`
+   - Location: Presets/Creatures/ (5 files identified by DevKit doctor)
 
 **Test-Status:**
 - Unit tests: 1130/1131 passing (99.9%) ⚠️
@@ -505,31 +536,35 @@ None currently! All blocking issues resolved. ✅
   - Faction: 389/390 ⚠️ (1 probabilistic test occasionally fails - non-blocking)
   - Location/Building: 145/145 ✅ (includes 5 repair cost + 5 job validation tests)
   - Weather (Phase 10.1-10.4 + 11.1): 136/136 ✅ (includes 6 interactivity tests)
-  - **Almanac MVP + Month View (Phase 12.1-12.4): 14/14 ✅** (time display, events list, month grid, view switching)
+  - **Almanac MVP + Month View (Phase 12.1-12.4): 14/14 ✅** (time display, events list, month grid with event indicators, view switching)
   - **Library Entities (Phase 12.3): 161/161 ✅** (locations: 134, playlists: 17, encounter-tables: 10)
   - Header policy: 1/1 ✅
 - Integration tests: 6 require live Obsidian (expected, documented limitation)
 - **Known Issue:** 1 probabilistic faction NPC betrayal test fails occasionally (non-blocking)
 
 **Recently Completed:**
-- **Phase 12.4:** Month View Calendar ✅ (Nov 1, 2025 - Grid layout, event indicators, view switching)
-- **Phase D (4th Run):** UX Review Complete ✅ (Nov 1, 2025 - Phases 11.1, 12.1-12.2 validated; all UX issues already documented; next phase: B)
-- **Phase A (4th Run):** Quality Audit Complete ✅ (Nov 1, 2025 - One test failing, code duplication found)
-- **Phase C (4th Run):** Documentation Review Complete ✅ (Nov 1, 2025 - Created docs/almanac-system.md, identified technical debt)
-- **Phase 12.3:** Library Tabs Verification ✅ (Nov 1, 2025 - Resolved roadmap documentation error)
-- **Phase D (3rd Run):** UX Review Complete ✅ (Nov 1, 2025 - Phase 12.2 validated, no new issues found)
-- **Phase 12.2:** Almanac MVP Interactivity ✅ (Nov 1, 2025)
-- **Phase 12.1:** Almanac MVP ✅ (Nov 1, 2025)
+- **Phase 13 Priority 1:** Vault Data Integration ✅ (Nov 1, 2025 - Almanac MVP integrated with CalendarStateGateway)
+  - Created gateway factory (src/workmodes/almanac/gateway-factory.ts)
+  - Modified almanac-mvp.ts to accept CalendarStateGateway parameter
+  - Time advances now persist to SaltMarcher/Almanac/state.json
+  - Calendar data loaded from SaltMarcher/Almanac/data.json
+  - Auto-selects first calendar if no default set
+  - Tests: 1130/1131 passing (99.9%), Build: SUCCESS, CONSOLE_LOG: No errors
+- **Phase A (5th Run):** Quality Audit Complete ✅ (Nov 1, 2025 - Tests 1130/1131 passing, identified old preset format issue in DevKit doctor)
+- **Phase C (5th Run):** Documentation Review Complete ✅ (Nov 1, 2025 - Phase 12.4 documentation updated, almanac-system.md reflects month view implementation)
+- **Phase 12.4:** Month View Calendar ✅ (Nov 1, 2025 - Grid layout, event indicators, view switching, 6 new tests)
+- **Phase D (4th Run):** UX Review Complete ✅ (Nov 1, 2025 - Phases 11.1, 12.1-12.2 validated)
 
 **Nächste Schritte (Empfehlung):**
-1. **[HIGH] Complete Almanac Full Implementation** - MVP + Month View functional, missing advanced features
-   - Week/timeline calendar grid views with event visualization
-   - Full event editor implementation (replace placeholder modal with actual editor)
-   - Astronomical cycles UI (moon phases, eclipses, etc.)
-   - Vault data integration (replace hardcoded mock data with calendar-state-gateway)
-   - Event inbox with priority sorting
-   - Search functionality implementation (replace placeholder notice)
-   - Month navigation controls (prev/next month buttons)
+1. **[HIGH] Phase 13: Continue Almanac Full Implementation** - MVP + Month View + Vault Integration complete, continue with remaining priorities
+   - **Priority 1:** ✅ COMPLETE - Vault data integration (loads calendar schema/events/phenomena, persists time advances)
+   - **Priority 2:** Full event editor implementation (replace placeholder modal with actual editor)
+   - **Priority 3:** Week/timeline calendar grid views with event visualization
+   - **Priority 4:** Month navigation controls (prev/next month buttons)
+   - **Priority 5:** Astronomical cycles UI (moon phases, eclipses, etc.)
+   - **Priority 6:** Event inbox with priority sorting
+   - **Priority 7:** Search functionality implementation (replace placeholder notice)
+   - See [docs/almanac-system.md](docs/almanac-system.md) for technical details
 2. **[MEDIUM] Complete Partial Features** - Working but incomplete
    - POI placement UI in Cartographer (location system ready, needs UI mode)
    - Cartographer Brush debugging (investigate error messages)

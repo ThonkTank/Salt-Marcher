@@ -1,6 +1,6 @@
 # Almanac System Documentation
 
-**Status:** Phase 12.1-12.2 Complete (MVP) | Phase 13 Planned (Full Implementation)
+**Status:** Phase 12.1-12.4 Complete (MVP + Month View) | Phase 13 Planned (Full Implementation)
 **Last Updated:** Nov 1, 2025
 
 ## Overview
@@ -10,7 +10,8 @@ The Almanac is a calendar management workmode that tracks campaign time, schedul
 - **Current Time Display**: Shows campaign calendar timestamp with precise minute-level tracking
 - **Time Controls**: Advance/rewind time by day, hour, or minute increments
 - **Event Scheduling**: Create and manage calendar events and phenomena
-- **Simulation Integration**: Automatically triggers faction actions, weather updates, and other time-based systems when calendar advances
+- **Multiple Calendar Views**: Toggle between list view (upcoming events) and month grid view with event indicators
+- **Simulation Integration**: Automatically triggers faction actions, weather updates, and other time-based systems when calendar advances (planned)
 
 ## Architecture
 
@@ -27,9 +28,10 @@ src/workmodes/almanac/
 │   ├── faction-simulation-hook-factory.ts
 │   └── weather-simulation-hook-factory.ts
 ├── view/                        # UI components
-│   ├── almanac-mvp.ts          # MVP integration (mock data, component orchestration)
+│   ├── almanac-mvp.ts          # MVP integration (mock data, component orchestration, view switching)
 │   ├── almanac-time-display.ts # Time display and advance controls
-│   ├── upcoming-events-list.ts # 7-day event preview
+│   ├── upcoming-events-list.ts # 7-day event preview (list view)
+│   ├── month-view-calendar.ts  # Month calendar grid with event indicators
 │   └── event-editor-modal.ts   # Event creation/editing (placeholder)
 └── index.ts                     # Obsidian ItemView registration
 ```
@@ -78,8 +80,11 @@ Triggers re-render of time display and events list
 (Future) Simulation hooks execute (faction AI, weather, etc.)
 ```
 
-**Current Implementation (Phase 12.1-12.2 MVP):**
+**Current Implementation (Phase 12.1-12.4 MVP + Month View):**
 - Mock data only (hardcoded Gregorian calendar)
+- Two calendar views: list (upcoming 7 days) and month grid with event indicators
+- View switching buttons to toggle between views
+- Month grid shows day cells with event count badges
 - No vault persistence
 - No simulation hooks triggered
 - Pure UI demonstration
@@ -110,10 +115,10 @@ When calendar reaches event timestamp:
   - Notification shown (if enabled)
 ```
 
-## Current Limitations (MVP - Phase 12.1-12.2)
+## Current Limitations (MVP - Phase 12.1-12.4)
 
 ### Hardcoded Mock Data
-- Uses inline Gregorian calendar definition (almanac-mvp.ts:41-70)
+- Uses inline Gregorian calendar definition (almanac-mvp.ts:42-71)
 - No vault data loading or saving
 - Empty events/phenomena arrays
 - **Why:** Deferred vault integration to focus on UI functionality first
@@ -124,10 +129,11 @@ When calendar reaches event timestamp:
 - onSave callback exists but has no effect
 - **Why:** Event editing is complex feature requiring form validation, recurrence UI, tag management
 
-### No Calendar Grid Views
-- Only "upcoming events" list view (next 7 days linear)
-- Missing: Month calendar grid, week view, timeline view
-- **Why:** Grid rendering is complex, MVP prioritized time controls + event list
+### Limited Calendar Grid Views
+- **Implemented:** List view (upcoming 7 days) and month grid view with event indicators
+- **Missing:** Week view, timeline view
+- Month grid has simplified weekday calculation (assumes month starts Monday for MVP)
+- No month navigation (prev/next month buttons) - always shows current month
 
 ### No Simulation Integration
 - Time advances don't trigger faction AI, weather updates, etc.
@@ -308,13 +314,19 @@ saveCalendarState(vault: Vault, path: string, state: { currentTime: CalendarTime
 
 ## Testing Strategy
 
-### Unit Tests (8 tests - 100% passing)
+### Unit Tests (14 tests - 100% passing)
 
 **File:** `devkit/testing/unit/apps/almanac/almanac-mvp.test.ts`
 
 **Coverage:**
 - Time display component rendering and updates
 - Upcoming events list rendering (empty state, with events, sorting)
+- Month view calendar grid rendering
+  - Day cells with event indicators
+  - Current day highlighting
+  - Proper grid layout (weeks)
+  - Event/phenomenon counting
+- View switching between list and month views
 - Event click handler invocation
 - Component lifecycle (creation, update, destruction)
 
@@ -348,17 +360,19 @@ expect(mockOnEventClick).toHaveBeenCalledWith(expect.objectContaining({ id: "tes
 ## Known Issues
 
 ### [LOW] Code Duplication in Time Handlers
-- **Location:** almanac-mvp.ts:89-111
+- **Location:** almanac-mvp.ts:98-117
 - **Impact:** Minimal - only 3 handlers, easy to maintain
 - **Fix:** Extract to higher-order function (see "Code Duplication" section above)
+- **Note:** Handlers now call `updateAllViews()` helper (line 92-96) to update all views simultaneously
 
 ### [LOW] Missing Keyboard Shortcuts
 - **Location:** All Almanac UI components
 - **Impact:** Mouse-only interaction
 - **Suggested Fix:** Add keyboard listeners for common actions:
-  - Arrow keys: Navigate event list
+  - Arrow keys: Navigate event list / Navigate month days
   - Space/Enter: Activate focused item
   - Ctrl+Plus/Minus: Advance time
+  - Tab: Switch between list/month views
   - Escape: Close modal
 
 ### [LOW] No Loading States
@@ -369,9 +383,10 @@ expect(mockOnEventClick).toHaveBeenCalledWith(expect.objectContaining({ id: "tes
 ## Future Enhancements (Phase 13+)
 
 ### Full Calendar Views
-- **Month View:** Grid layout with clickable days, event indicators
-- **Week View:** 7-day horizontal layout with hourly slots
-- **Timeline View:** Chronological list with date separators
+- **Month View:** ✅ **Implemented** - Grid layout with clickable days, event indicators
+  - Future enhancements: Month navigation (prev/next), proper weekday calculation, click-to-add events
+- **Week View:** 7-day horizontal layout with hourly slots (planned)
+- **Timeline View:** Chronological list with date separators (planned)
 
 ### Event Editor Implementation
 - **Form Fields:**
@@ -432,6 +447,10 @@ expect(mockOnEventClick).toHaveBeenCalledWith(expect.objectContaining({ id: "tes
 - Returns: UpcomingEventsListHandle
 - Options: events, phenomena, schema, currentTimestamp, onEventClick
 
+**createMonthViewCalendar(options)**
+- Returns: MonthViewCalendarHandle
+- Options: events, phenomena, schema, currentTimestamp, onDayClick, onEventClick
+
 **openEventEditor(app, options)**
 - Opens modal (no return value)
 - Options: event (optional), onSave (callback)
@@ -440,9 +459,10 @@ expect(mockOnEventClick).toHaveBeenCalledWith(expect.objectContaining({ id: "tes
 
 **Core Implementation:**
 - Domain logic: `src/workmodes/almanac/domain/index.ts` (500+ lines)
-- MVP UI: `src/workmodes/almanac/view/almanac-mvp.ts` (155 lines)
+- MVP UI: `src/workmodes/almanac/view/almanac-mvp.ts` (225 lines)
 - Time display: `src/workmodes/almanac/view/almanac-time-display.ts` (127 lines)
 - Events list: `src/workmodes/almanac/view/upcoming-events-list.ts` (196 lines)
+- Month view: `src/workmodes/almanac/view/month-view-calendar.ts` (248 lines)
 - Event editor: `src/workmodes/almanac/view/event-editor-modal.ts` (86 lines)
 
 **Data Layer:**
@@ -451,7 +471,7 @@ expect(mockOnEventClick).toHaveBeenCalledWith(expect.objectContaining({ id: "tes
 - Weather hook: `src/workmodes/almanac/data/weather-simulation-hook-factory.ts`
 
 **Tests:**
-- MVP tests: `devkit/testing/unit/apps/almanac/almanac-mvp.test.ts` (240 lines, 8 tests)
+- MVP tests: `devkit/testing/unit/apps/almanac/almanac-mvp.test.ts` (405 lines, 14 tests)
 - Domain tests: `src/workmodes/almanac/domain/__tests__/` (24+ tests)
 
 **Documentation:**
