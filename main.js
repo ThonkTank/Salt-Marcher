@@ -26476,7 +26476,7 @@ var init_view2 = __esm({
 });
 
 // src/workmodes/almanac/view/event-editor-modal.ts
-function openEventEditor(app, options = {}) {
+function openEventEditor(app, options) {
   const modal = new EventEditorModal(app, options);
   modal.open();
 }
@@ -26487,9 +26487,48 @@ var init_event_editor_modal = __esm({
     import_obsidian36 = require("obsidian");
     init_plugin_logger();
     EventEditorModal = class extends import_obsidian36.Modal {
-      constructor(app, options = {}) {
+      constructor(app, options) {
         super(app);
+        // UI components for dynamic updates
+        this.timeFieldsContainer = null;
+        this.recurrenceContainer = null;
         this.options = options;
+        const existingEvent = options.event;
+        const currentTime = options.currentTime;
+        this.formData = {
+          id: existingEvent?.id ?? `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          title: existingEvent?.title ?? "",
+          description: existingEvent?.description ?? "",
+          category: existingEvent?.category ?? "",
+          tags: existingEvent?.tags ? [...existingEvent.tags] : [],
+          priority: existingEvent?.priority ?? 0,
+          eventKind: existingEvent?.kind ?? "single",
+          year: existingEvent?.date.year ?? currentTime.year,
+          monthId: existingEvent?.date.monthId ?? currentTime.monthId,
+          day: existingEvent?.date.day ?? currentTime.day,
+          hour: existingEvent?.date.hour ?? currentTime.hour ?? 0,
+          minute: existingEvent?.date.minute ?? currentTime.minute ?? 0,
+          allDay: existingEvent?.allDay ?? true,
+          recurrenceType: this.inferRecurrenceType(existingEvent),
+          weeklyInterval: 1,
+          dayIndex: 0
+        };
+      }
+      inferRecurrenceType(event) {
+        if (!event || event.kind === "single") return "annual";
+        const rule = event.rule;
+        switch (rule.type) {
+          case "annual":
+          case "annual_offset":
+            return "annual";
+          case "monthly_position":
+            return "monthly_position";
+          case "weekly_dayIndex":
+            return "weekly_dayIndex";
+          case "custom":
+          default:
+            return "custom";
+        }
       }
       onOpen() {
         const { contentEl } = this;
@@ -26498,23 +26537,276 @@ var init_event_editor_modal = __esm({
         const isEditMode = !!this.options.event;
         const title = isEditMode ? "Edit Event" : "Create Event";
         contentEl.createEl("h2", { text: title });
-        const notice = contentEl.createDiv({ cls: "sm-almanac-event-editor__notice" });
-        notice.createEl("h3", { text: "Coming Soon" });
-        notice.createEl("p", {
-          text: "The event editor is currently under development. Full event creation and editing functionality will be available in a future update."
+        this.renderBasicFields(contentEl);
+        this.renderEventKindToggle(contentEl);
+        this.renderTimestampFields(contentEl);
+        this.renderRecurrenceFields(contentEl);
+        this.renderActionButtons(contentEl);
+      }
+      renderBasicFields(container) {
+        const section = container.createDiv({ cls: "sm-event-editor__section" });
+        section.createEl("h3", { text: "Event Details" });
+        new import_obsidian36.Setting(section).setName("Title").setDesc("Name of the event").addText((text) => text.setPlaceholder("Festival of the Moon").setValue(this.formData.title).onChange((value) => {
+          this.formData.title = value;
+        }));
+        new import_obsidian36.Setting(section).setName("Description").setDesc("Optional description or notes").addTextArea((text) => {
+          text.setPlaceholder("Annual celebration of the autumn moon...").setValue(this.formData.description).onChange((value) => {
+            this.formData.description = value;
+          });
+          text.inputEl.rows = 4;
+          text.inputEl.style.width = "100%";
         });
-        const futureFeatures = notice.createDiv({ cls: "sm-almanac-event-editor__features" });
-        futureFeatures.createEl("h4", { text: "Planned Features:" });
-        const featureList = futureFeatures.createEl("ul");
-        featureList.createEl("li", { text: "Event title, description, and category" });
-        featureList.createEl("li", { text: "Precise timestamp selection (date and time)" });
-        featureList.createEl("li", { text: "Recurrence patterns (daily, weekly, monthly, yearly)" });
-        featureList.createEl("li", { text: "Tags for organization and filtering" });
-        featureList.createEl("li", { text: "Integration with faction goals and calendar hooks" });
-        const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
-        const closeBtn = btnRow.createEl("button", { text: "Close" });
-        closeBtn.addEventListener("click", () => this.close());
-        logger2.info("[almanac] Event editor modal opened", { isEditMode });
+        new import_obsidian36.Setting(section).setName("Category").setDesc("Event category for organization").addText((text) => text.setPlaceholder("Festival, Meeting, Combat, etc.").setValue(this.formData.category).onChange((value) => {
+          this.formData.category = value;
+        }));
+        new import_obsidian36.Setting(section).setName("Tags").setDesc("Comma-separated tags").addText((text) => text.setPlaceholder("festival, moon, autumn").setValue(this.formData.tags.join(", ")).onChange((value) => {
+          this.formData.tags = value.split(",").map((t) => t.trim()).filter((t) => t.length > 0);
+        }));
+        new import_obsidian36.Setting(section).setName("Priority").setDesc("Higher numbers = higher priority (0-10)").addText((text) => text.setPlaceholder("0").setValue(String(this.formData.priority)).onChange((value) => {
+          const num = parseInt(value, 10);
+          if (!isNaN(num)) {
+            this.formData.priority = Math.max(0, Math.min(10, num));
+          }
+        }));
+      }
+      renderEventKindToggle(container) {
+        const section = container.createDiv({ cls: "sm-event-editor__section" });
+        section.createEl("h3", { text: "Event Type" });
+        new import_obsidian36.Setting(section).setName("Event Type").setDesc("Single occurrence or recurring event").addDropdown((dropdown) => dropdown.addOption("single", "Single Event").addOption("recurring", "Recurring Event").setValue(this.formData.eventKind).onChange((value) => {
+          this.formData.eventKind = value;
+          this.updateRecurrenceVisibility();
+        }));
+      }
+      renderTimestampFields(container) {
+        const section = container.createDiv({ cls: "sm-event-editor__section" });
+        section.createEl("h3", { text: "Date & Time" });
+        this.timeFieldsContainer = section;
+        new import_obsidian36.Setting(section).setName("All-Day Event").setDesc("Event lasts entire day without specific time").addToggle((toggle) => toggle.setValue(this.formData.allDay).onChange((value) => {
+          this.formData.allDay = value;
+          this.updateTimeFieldsVisibility();
+        }));
+        new import_obsidian36.Setting(section).setName("Year").addText((text) => text.setPlaceholder(String(this.options.currentTime.year)).setValue(String(this.formData.year)).onChange((value) => {
+          const num = parseInt(value, 10);
+          if (!isNaN(num)) {
+            this.formData.year = num;
+          }
+        }));
+        new import_obsidian36.Setting(section).setName("Month").addDropdown((dropdown) => {
+          for (const month of this.options.schema.months) {
+            dropdown.addOption(month.id, month.name);
+          }
+          dropdown.setValue(this.formData.monthId);
+          dropdown.onChange((value) => {
+            this.formData.monthId = value;
+          });
+        });
+        new import_obsidian36.Setting(section).setName("Day").addText((text) => text.setPlaceholder("1").setValue(String(this.formData.day)).onChange((value) => {
+          const num = parseInt(value, 10);
+          if (!isNaN(num)) {
+            this.formData.day = Math.max(1, num);
+          }
+        }));
+        const timeContainer = section.createDiv({ cls: "sm-event-editor__time-fields" });
+        const hourSetting = new import_obsidian36.Setting(timeContainer).setName("Hour").addText((text) => text.setPlaceholder("0").setValue(String(this.formData.hour)).onChange((value) => {
+          const num = parseInt(value, 10);
+          if (!isNaN(num)) {
+            this.formData.hour = Math.max(0, Math.min(23, num));
+          }
+        }));
+        const minuteSetting = new import_obsidian36.Setting(timeContainer).setName("Minute").addText((text) => text.setPlaceholder("0").setValue(String(this.formData.minute)).onChange((value) => {
+          const num = parseInt(value, 10);
+          if (!isNaN(num)) {
+            this.formData.minute = Math.max(0, Math.min(59, num));
+          }
+        }));
+        timeContainer._hourSetting = hourSetting;
+        timeContainer._minuteSetting = minuteSetting;
+        this.updateTimeFieldsVisibility();
+      }
+      renderRecurrenceFields(container) {
+        const section = container.createDiv({ cls: "sm-event-editor__section sm-event-editor__recurrence" });
+        section.createEl("h3", { text: "Recurrence Pattern" });
+        this.recurrenceContainer = section;
+        new import_obsidian36.Setting(section).setName("Recurrence Type").setDesc("How often the event repeats").addDropdown((dropdown) => dropdown.addOption("annual", "Annual (Every Year)").addOption("monthly_position", "Monthly (Same Day Each Month)").addOption("weekly_dayIndex", "Weekly (Every N Weeks)").addOption("custom", "Custom").setValue(this.formData.recurrenceType).onChange((value) => {
+          this.formData.recurrenceType = value;
+          this.updateRecurrenceOptions();
+        }));
+        const weeklyContainer = section.createDiv({ cls: "sm-event-editor__weekly-options" });
+        new import_obsidian36.Setting(weeklyContainer).setName("Repeat Every N Weeks").addText((text) => text.setPlaceholder("1").setValue(String(this.formData.weeklyInterval)).onChange((value) => {
+          const num = parseInt(value, 10);
+          if (!isNaN(num) && num > 0) {
+            this.formData.weeklyInterval = num;
+          }
+        }));
+        new import_obsidian36.Setting(weeklyContainer).setName("Day of Week").setDesc("0 = first day of week, 1 = second, etc.").addText((text) => text.setPlaceholder("0").setValue(String(this.formData.dayIndex)).onChange((value) => {
+          const num = parseInt(value, 10);
+          if (!isNaN(num) && num >= 0) {
+            this.formData.dayIndex = num;
+          }
+        }));
+        section._weeklyContainer = weeklyContainer;
+        this.updateRecurrenceVisibility();
+        this.updateRecurrenceOptions();
+      }
+      renderActionButtons(container) {
+        const btnRow = container.createDiv({ cls: "modal-button-container" });
+        const saveBtn = btnRow.createEl("button", {
+          text: this.options.event ? "Update Event" : "Create Event",
+          cls: "mod-cta"
+        });
+        saveBtn.addEventListener("click", () => this.handleSave());
+        const cancelBtn = btnRow.createEl("button", { text: "Cancel" });
+        cancelBtn.addEventListener("click", () => this.close());
+      }
+      updateTimeFieldsVisibility() {
+        if (!this.timeFieldsContainer) return;
+        const timeContainer = this.timeFieldsContainer.querySelector(".sm-event-editor__time-fields");
+        if (!timeContainer) return;
+        const display = this.formData.allDay ? "none" : "block";
+        timeContainer.style.display = display;
+      }
+      updateRecurrenceVisibility() {
+        if (!this.recurrenceContainer) return;
+        const display = this.formData.eventKind === "recurring" ? "block" : "none";
+        this.recurrenceContainer.style.display = display;
+      }
+      updateRecurrenceOptions() {
+        if (!this.recurrenceContainer) return;
+        const weeklyContainer = this.recurrenceContainer._weeklyContainer;
+        if (!weeklyContainer) return;
+        const display = this.formData.recurrenceType === "weekly_dayIndex" ? "block" : "none";
+        weeklyContainer.style.display = display;
+      }
+      validateForm() {
+        if (!this.formData.title.trim()) {
+          return "Event title is required";
+        }
+        const monthObj = this.options.schema.months.find((m) => m.id === this.formData.monthId);
+        if (!monthObj) {
+          return "Invalid month selected";
+        }
+        if (this.formData.day < 1 || this.formData.day > monthObj.length) {
+          return `Day must be between 1 and ${monthObj.length} for ${monthObj.name}`;
+        }
+        if (!this.formData.allDay) {
+          if (this.formData.hour < 0 || this.formData.hour >= (this.options.schema.hoursPerDay ?? 24)) {
+            return `Hour must be between 0 and ${(this.options.schema.hoursPerDay ?? 24) - 1}`;
+          }
+          if (this.formData.minute < 0 || this.formData.minute >= (this.options.schema.minutesPerHour ?? 60)) {
+            return `Minute must be between 0 and ${(this.options.schema.minutesPerHour ?? 60) - 1}`;
+          }
+        }
+        return null;
+      }
+      buildEventObject() {
+        const timestamp2 = {
+          calendarId: this.options.schema.id,
+          year: this.formData.year,
+          monthId: this.formData.monthId,
+          day: this.formData.day,
+          hour: this.formData.allDay ? void 0 : this.formData.hour,
+          minute: this.formData.allDay ? void 0 : this.formData.minute,
+          precision: this.formData.allDay ? "day" : "minute"
+        };
+        const baseEvent = {
+          id: this.formData.id,
+          calendarId: this.options.schema.id,
+          title: this.formData.title.trim(),
+          description: this.formData.description.trim() || void 0,
+          category: this.formData.category.trim() || void 0,
+          tags: this.formData.tags.length > 0 ? this.formData.tags : void 0,
+          priority: this.formData.priority,
+          date: timestamp2,
+          allDay: this.formData.allDay
+        };
+        if (this.formData.eventKind === "single") {
+          return {
+            ...baseEvent,
+            kind: "single",
+            timePrecision: timestamp2.precision,
+            startTime: this.formData.allDay ? void 0 : {
+              hour: this.formData.hour,
+              minute: this.formData.minute
+            }
+          };
+        } else {
+          let rule;
+          switch (this.formData.recurrenceType) {
+            case "annual":
+              const dayOfYear = this.calculateDayOfYear(timestamp2);
+              rule = {
+                type: "annual_offset",
+                offsetDayOfYear: dayOfYear
+              };
+              break;
+            case "monthly_position":
+              rule = {
+                type: "monthly_position",
+                monthId: this.formData.monthId,
+                day: this.formData.day
+              };
+              break;
+            case "weekly_dayIndex":
+              rule = {
+                type: "weekly_dayIndex",
+                dayIndex: this.formData.dayIndex,
+                interval: this.formData.weeklyInterval
+              };
+              break;
+            case "custom":
+            default:
+              rule = {
+                type: "custom",
+                customRuleId: "user-defined"
+              };
+              break;
+          }
+          return {
+            ...baseEvent,
+            kind: "recurring",
+            rule,
+            timePolicy: this.formData.allDay ? "all_day" : "fixed",
+            startTime: this.formData.allDay ? void 0 : {
+              hour: this.formData.hour,
+              minute: this.formData.minute
+            }
+          };
+        }
+      }
+      calculateDayOfYear(timestamp2) {
+        let dayOfYear = 0;
+        const schema2 = this.options.schema;
+        for (const month of schema2.months) {
+          if (month.id === timestamp2.monthId) {
+            dayOfYear += timestamp2.day;
+            break;
+          }
+          dayOfYear += month.length;
+        }
+        return dayOfYear;
+      }
+      handleSave() {
+        const error = this.validateForm();
+        if (error) {
+          new import_obsidian36.Notice(error);
+          return;
+        }
+        try {
+          const event = this.buildEventObject();
+          logger2.info("[almanac] Event saved", {
+            eventId: event.id,
+            kind: event.kind,
+            title: event.title
+          });
+          if (this.options.onSave) {
+            this.options.onSave(event);
+          }
+          new import_obsidian36.Notice(`Event "${event.title}" ${this.options.event ? "updated" : "created"}`);
+          this.close();
+        } catch (error2) {
+          logger2.error("[almanac] Failed to save event", { error: error2 });
+          new import_obsidian36.Notice("Failed to save event. Check console for details.");
+        }
       }
       onClose() {
         this.contentEl.removeClass("sm-almanac-event-editor");
@@ -29242,6 +29534,8 @@ async function renderAlmanacMVP(app, container, gateway) {
     onEventClick: (event) => {
       logger2.info("[almanac-mvp] Event clicked", { eventId: event.id });
       openEventEditor(app, {
+        schema: activeCalendar,
+        currentTime: currentTimestamp,
         event,
         onSave: (updatedEvent) => {
           logger2.info("[almanac-mvp] Event updated", { eventId: updatedEvent.id });
@@ -29261,6 +29555,8 @@ async function renderAlmanacMVP(app, container, gateway) {
     onEventClick: (event) => {
       logger2.info("[almanac-mvp] Event clicked in month view", { eventId: event.id });
       openEventEditor(app, {
+        schema: activeCalendar,
+        currentTime: currentTimestamp,
         event,
         onSave: (updatedEvent) => {
           logger2.info("[almanac-mvp] Event updated", { eventId: updatedEvent.id });
@@ -29274,7 +29570,7 @@ async function renderAlmanacMVP(app, container, gateway) {
   futureNotice.createEl("h4", { text: "Coming Soon" });
   const featureList = futureNotice.createEl("ul");
   featureList.createEl("li", { text: "Week/Timeline calendar views" });
-  featureList.createEl("li", { text: "Full event editor (currently placeholder)" });
+  featureList.createEl("li", { text: "Month navigation (prev/next month buttons)" });
   featureList.createEl("li", { text: "Astronomical cycles visualization" });
   featureList.createEl("li", { text: "Event inbox with priority sorting" });
   featureList.createEl("li", { text: "Search functionality" });
@@ -34682,9 +34978,9 @@ function createSessionRunnerExperience() {
                 totalValue: lootResult.bundle.totalValue,
                 warnings: lootResult.warnings
               });
-              const { Notice: Notice18 } = await import("obsidian");
+              const { Notice: Notice19 } = await import("obsidian");
               const itemSummary = lootResult.bundle.items.length > 0 ? `, ${lootResult.bundle.items.length} items` : "";
-              new Notice18(`Loot: ${lootResult.bundle.gold} gold${itemSummary} (${lootResult.bundle.totalValue} total value)`);
+              new Notice19(`Loot: ${lootResult.bundle.gold} gold${itemSummary} (${lootResult.bundle.totalValue} total value)`);
             } catch (err) {
               logger2.error("[session-runner] Failed to generate loot", err);
             }

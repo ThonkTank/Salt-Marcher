@@ -80,7 +80,8 @@
       "Bash(pkill:*)",
       "Bash(top:*)",
       "Bash(timeout 60 ./.auto-continue/auto-continue-v2.py:*)",
-      "Bash(systemd-inhibit:*)"
+      "Bash(systemd-inhibit:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

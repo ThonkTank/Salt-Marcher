@@ -486,7 +486,7 @@ expect(mockOnEventClick).toHaveBeenCalledWith(expect.objectContaining({ id: "tes
 - Time display: `src/workmodes/almanac/view/almanac-time-display.ts` (127 lines)
 - Events list: `src/workmodes/almanac/view/upcoming-events-list.ts` (196 lines)
 - Month view: `src/workmodes/almanac/view/month-view-calendar.ts` (248 lines)
-- Event editor: `src/workmodes/almanac/view/event-editor-modal.ts` (86 lines)
+- Event editor: `src/workmodes/almanac/view/event-editor-modal.ts` (560 lines)
 
 **Data Layer:**
 - State gateway: `src/workmodes/almanac/data/calendar-state-gateway.ts` (400+ lines)
@@ -495,6 +495,7 @@ expect(mockOnEventClick).toHaveBeenCalledWith(expect.objectContaining({ id: "tes
 
 **Tests:**
 - MVP tests: `devkit/testing/unit/apps/almanac/almanac-mvp.test.ts` (405 lines, 14 tests)
+- Event editor tests: `devkit/testing/unit/apps/almanac/event-editor.test.ts` (375 lines, 18 tests)
 - Domain tests: `src/workmodes/almanac/domain/__tests__/` (24+ tests)
 
 **Documentation:**

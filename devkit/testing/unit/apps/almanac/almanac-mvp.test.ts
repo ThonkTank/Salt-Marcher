@@ -5,6 +5,8 @@ import { describe, it, expect, vi } from "vitest";
 import { createAlmanacTimeDisplay } from "../../../../../src/workmodes/almanac/view/almanac-time-display";
 import { createUpcomingEventsList } from "../../../../../src/workmodes/almanac/view/upcoming-events-list";
 import { createMonthViewCalendar } from "../../../../../src/workmodes/almanac/view/month-view-calendar";
+import { createWeekViewCalendar } from "../../../../../src/workmodes/almanac/view/week-view-calendar";
+import { createTimelineViewCalendar } from "../../../../../src/workmodes/almanac/view/timeline-view-calendar";
 import type { CalendarSchema, CalendarTimestamp } from "../../../../../src/workmodes/almanac/domain";
 
 const mockSchema: CalendarSchema = {
@@ -399,6 +401,117 @@ describe("MonthViewCalendar", () => {
         const header = handle.root.querySelector(".sm-almanac-month-view__month-title");
         expect(header?.textContent).toContain("February");
         expect(header?.textContent).toContain("2025");
+
+        handle.destroy();
+    });
+});
+
+describe("WeekViewCalendar - Integration", () => {
+    it("renders week view grid", () => {
+        const handle = createWeekViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp,
+        });
+
+        expect(handle.root).toBeTruthy();
+        expect(handle.root.classList.contains("sm-almanac-week-view")).toBe(true);
+
+        const dayColumns = handle.root.querySelectorAll(".sm-almanac-week-view__day-column");
+        expect(dayColumns.length).toBe(7);
+
+        handle.destroy();
+    });
+
+    it("shows current day highlight", () => {
+        const handle = createWeekViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp,
+        });
+
+        const currentDayColumn = handle.root.querySelector(".sm-almanac-week-view__day-column.is-current-day");
+        expect(currentDayColumn).toBeTruthy();
+
+        handle.destroy();
+    });
+
+    it("updates when timestamp changes", () => {
+        const handle = createWeekViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp,
+        });
+
+        const newTimestamp: CalendarTimestamp = {
+            ...mockTimestamp,
+            day: 20,
+        };
+
+        handle.update([], [], mockSchema, newTimestamp);
+
+        const weekTitle = handle.root.querySelector(".sm-almanac-week-view__week-title");
+        expect(weekTitle?.textContent).toContain("Week:");
+
+        handle.destroy();
+    });
+});
+
+describe("TimelineViewCalendar - Integration", () => {
+    it("renders timeline view", () => {
+        const handle = createTimelineViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp,
+            daysAhead: 30,
+        });
+
+        expect(handle.root).toBeTruthy();
+        expect(handle.root.classList.contains("sm-almanac-timeline-view")).toBe(true);
+
+        const title = handle.root.querySelector(".sm-almanac-timeline-view__title");
+        expect(title?.textContent).toBe("Timeline (Next 30 days)");
+
+        handle.destroy();
+    });
+
+    it("shows empty message when no events", () => {
+        const handle = createTimelineViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp,
+            daysAhead: 1,
+        });
+
+        const emptyMessage = handle.root.querySelector(".sm-almanac-timeline-view__empty");
+        expect(emptyMessage).toBeTruthy();
+
+        handle.destroy();
+    });
+
+    it("updates when timestamp changes", () => {
+        const handle = createTimelineViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp,
+            daysAhead: 30,
+        });
+
+        const newTimestamp: CalendarTimestamp = {
+            ...mockTimestamp,
+            day: 20,
+        };
+
+        handle.update([], [], mockSchema, newTimestamp);
+
+        const title = handle.root.querySelector(".sm-almanac-timeline-view__title");
+        expect(title).toBeTruthy();
 
         handle.destroy();
     });

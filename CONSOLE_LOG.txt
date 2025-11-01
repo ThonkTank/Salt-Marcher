@@ -1,9 +1,9 @@
-[2025-11-01T11:48:10.639Z] LOG: ================================================================================
-[2025-11-01T11:48:10.642Z] LOG: Salt Marcher Plugin Logger - Session Start
-[2025-11-01T11:48:10.642Z] LOG: Timestamp: 2025-11-01T11:48:10.642Z
-[2025-11-01T11:48:10.642Z] LOG: ================================================================================
-[2025-11-01T11:48:10.642Z] LOG: Plugin loading...
-[2025-11-01T11:48:10.643Z] LOG: [DebugLogger] Config loaded: {
+[2025-11-01T13:40:29.070Z] LOG: ================================================================================
+[2025-11-01T13:40:29.070Z] LOG: Salt Marcher Plugin Logger - Session Start
+[2025-11-01T13:40:29.071Z] LOG: Timestamp: 2025-11-01T13:40:29.071Z
+[2025-11-01T13:40:29.071Z] LOG: ================================================================================
+[2025-11-01T13:40:29.072Z] LOG: Plugin loading...
+[2025-11-01T13:40:29.101Z] LOG: [DebugLogger] Config loaded: {
   "enabled": true,
   "logAll": true,
   "logFields": [
@@ -13,59 +13,146 @@
     "*"
   ]
 }
-[2025-11-01T11:48:10.645Z] LOG: [Index] Generating all library indexes...
-[2025-11-01T11:48:10.651Z] LOG: [Index] All indexes generated successfully
-[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: reload-plugin
-[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: edit-creature
-[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: edit-spell
-[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: edit-item
-[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: edit-equipment
-[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: get-logs
-[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: import-presets
-[2025-11-01T11:48:10.652Z] LOG: [IPC] Registered command: regenerate-indexes
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: navigate-to-section
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: click-element
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: set-input-value
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: add-token
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: toggle-save-checkbox
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: get-ability-values
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: validate-grid-layout
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: debug-stepper-styles
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: validate-ui
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: measure-ui
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: validate-ui-rule
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: validate-ui-config
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: start-test
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: end-test
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: log-marker
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: set-debug-config
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: get-debug-config
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: get-test-logs
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: assert-log-contains
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: get-field-state
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: dump-field-states
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: get-modal-data
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: dump-dom
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: inspect-ui
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: state-list
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Registered command: state-inspect
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, dump-dom, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains, get-field-state, dump-field-states, get-modal-data
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Server started on /home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/ipc.sock
-[2025-11-01T11:48:10.653Z] LOG: [IPC] Server ready - production commands: reload-plugin, edit-creature, edit-spell, edit-item, edit-equipment, get-logs
-[2025-11-01T11:48:10.657Z] LOG: Plugin presets already imported (marker exists)
-[2025-11-01T11:48:10.657Z] LOG: Spell presets already imported (marker exists)
-[2025-11-01T11:48:10.658Z] LOG: Item presets already imported (marker exists)
-[2025-11-01T11:48:10.658Z] LOG: Equipment presets already imported (marker exists)
-[2025-11-01T11:48:10.659Z] LOG: Terrain presets already imported (marker exists)
-[2025-11-01T11:48:10.659Z] LOG: Region presets already imported (marker exists)
-[2025-11-01T11:48:10.660Z] LOG: Calendar presets already imported (marker exists)
-[2025-11-01T11:48:10.660Z] LOG: Playlist presets already imported (marker exists)
-[2025-11-01T11:48:10.661Z] INFO: [StoreManager] Registered store "map-terrains" (persistent)
-[2025-11-01T11:48:10.664Z] INFO: [inbox-status-bar] Display updated {
+[2025-11-01T13:40:29.118Z] LOG: [Index] Generating all library indexes...
+[2025-11-01T13:40:29.169Z] LOG: [Index] All indexes generated successfully
+[2025-11-01T13:40:29.171Z] LOG: [IPC] Registered command: reload-plugin
+[2025-11-01T13:40:29.171Z] LOG: [IPC] Registered command: edit-creature
+[2025-11-01T13:40:29.171Z] LOG: [IPC] Registered command: edit-spell
+[2025-11-01T13:40:29.171Z] LOG: [IPC] Registered command: edit-item
+[2025-11-01T13:40:29.172Z] LOG: [IPC] Registered command: edit-equipment
+[2025-11-01T13:40:29.172Z] LOG: [IPC] Registered command: get-logs
+[2025-11-01T13:40:29.172Z] LOG: [IPC] Registered command: import-presets
+[2025-11-01T13:40:29.172Z] LOG: [IPC] Registered command: regenerate-indexes
+[2025-11-01T13:40:29.172Z] LOG: [IPC] Registered command: navigate-to-section
+[2025-11-01T13:40:29.172Z] LOG: [IPC] Registered command: click-element
+[2025-11-01T13:40:29.172Z] LOG: [IPC] Registered command: set-input-value
+[2025-11-01T13:40:29.172Z] LOG: [IPC] Registered command: add-token
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: toggle-save-checkbox
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: get-ability-values
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: validate-grid-layout
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: debug-stepper-styles
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: validate-ui
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: measure-ui
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: validate-ui-rule
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: validate-ui-config
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: start-test
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: end-test
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: log-marker
+[2025-11-01T13:40:29.173Z] LOG: [IPC] Registered command: set-debug-config
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Registered command: get-debug-config
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Registered command: get-test-logs
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Registered command: assert-log-contains
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Registered command: get-field-state
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Registered command: dump-field-states
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Registered command: get-modal-data
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Registered command: dump-dom
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Registered command: inspect-ui
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Registered command: state-list
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Registered command: state-inspect
+[2025-11-01T13:40:29.174Z] LOG: [IPC] Dev commands loaded - available: measure-ui, validate-ui-rule, validate-ui-config, dump-dom, navigate-to-section, validate-grid-layout, debug-stepper-styles, validate-ui, start-test, end-test, log-marker, set-debug-config, get-debug-config, get-test-logs, assert-log-contains, get-field-state, dump-field-states, get-modal-data
+[2025-11-01T13:40:29.175Z] LOG: [IPC] Server started on /home/aaron/ObsVaults/DnD/.obsidian/plugins/salt-marcher/ipc.sock
+[2025-11-01T13:40:29.175Z] LOG: [IPC] Server ready - production commands: reload-plugin, edit-creature, edit-spell, edit-item, edit-equipment, get-logs
+[2025-11-01T13:40:29.197Z] LOG: Plugin presets already imported (marker exists)
+[2025-11-01T13:40:29.200Z] LOG: Spell presets already imported (marker exists)
+[2025-11-01T13:40:29.202Z] LOG: Item presets already imported (marker exists)
+[2025-11-01T13:40:29.205Z] LOG: Equipment presets already imported (marker exists)
+[2025-11-01T13:40:29.208Z] LOG: Terrain presets already imported (marker exists)
+[2025-11-01T13:40:29.213Z] LOG: Region presets already imported (marker exists)
+[2025-11-01T13:40:29.215Z] LOG: Calendar presets already imported (marker exists)
+[2025-11-01T13:40:29.219Z] LOG: Playlist presets already imported (marker exists)
+[2025-11-01T13:40:29.220Z] INFO: [StoreManager] Registered store "map-terrains" (persistent)
+[2025-11-01T13:40:29.233Z] INFO: [inbox-status-bar] Display updated {
   "count": 0
 }
-[2025-11-01T11:48:10.664Z] INFO: [inbox-status-bar] Display updated {
+[2025-11-01T13:40:29.233Z] INFO: [inbox-status-bar] Display updated {
   "count": 0
 }
-[2025-11-01T11:48:10.664Z] INFO: [inbox-status-bar] Subscribed to inbox updates
-[2025-11-01T11:48:10.664Z] LOG: [inbox-status-bar] Widget registered
+[2025-11-01T13:40:29.233Z] INFO: [inbox-status-bar] Subscribed to inbox updates
+[2025-11-01T13:40:29.233Z] LOG: [inbox-status-bar] Widget registered
+[2025-11-01T13:40:30.923Z] ERROR: [session-runner] failed to start experience Cannot find module 'svelte/store'
+Require stack:
+- electron/js2c/renderer_init
+Error: Cannot find module 'svelte/store'
+Require stack:
+- electron/js2c/renderer_init
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1372:15)
+    at a._resolveFilename (node:electron/js2c/renderer_init:2:2719)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1028:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1033:22)
+    at Module._load (node:internal/modules/cjs/loader:1182:37)
+    at c._load (node:electron/js2c/node_init:2:17993)
+    at s._load (node:electron/js2c/renderer_init:2:31794)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)
+    at Module.require (node:internal/modules/cjs/loader:1452:12)
+[2025-11-01T13:40:32.018Z] INFO: [StoreManager] Registered store "map-regions" (persistent)
+[2025-11-01T13:40:33.576Z] LOG: [library:creatures] Found 329 files
+[2025-11-01T13:40:33.581Z] LOG: [library:creatures] Loaded 329 entries
+[2025-11-01T13:40:33.593Z] LOG: [library:creatures] Rendering 329 entries (filtered from 329 total)
+[2025-11-01T13:40:34.801Z] INFO: [almanac-gateway] Creating vault-backed gateway
+[2025-11-01T13:40:34.803Z] INFO: [StoreManager] Registered store "almanac-calendar-state" (persistent)
+[2025-11-01T13:40:34.803Z] INFO: [almanac-gateway] Gateway created successfully
+[2025-11-01T13:40:34.804Z] INFO: [almanac-mvp] Rendering Almanac MVP with vault integration
+[2025-11-01T13:40:34.891Z] WARN: [almanac-mvp] No active calendar or current timestamp available
+[2025-11-01T13:40:36.006Z] LOG: [Layout] Center leaf resolved: [object Object]
+[2025-11-01T13:40:39.348Z] INFO: [almanac-gateway] Creating vault-backed gateway
+[2025-11-01T13:40:39.349Z] WARN: [StoreManager] Store "almanac-calendar-state" already registered, replacing
+[2025-11-01T13:40:39.349Z] INFO: [StoreManager] Registered store "almanac-calendar-state" (persistent)
+[2025-11-01T13:40:39.349Z] INFO: [almanac-gateway] Gateway created successfully
+[2025-11-01T13:40:39.349Z] INFO: [almanac-mvp] Rendering Almanac MVP with vault integration
+[2025-11-01T13:40:39.365Z] WARN: [almanac-mvp] No active calendar or current timestamp available
+[2025-11-01T13:40:48.846Z] INFO: [almanac] Opening event editor for new event
+[2025-11-01T13:41:02.012Z] ERROR: [encounter] xp listener failed Cannot read properties of undefined (reading 'regionName')
+TypeError: Cannot read properties of undefined (reading 'regionName')
+    at EncounterSessionView.render (plugin:salt-marcher:24458:30)
+    at EncounterWorkspaceView.render (plugin:salt-marcher:25169:28)
+    at eval (plugin:salt-marcher:26451:31)
+    at _EncounterPresenter.emit (plugin:salt-marcher:24015:11)
+    at _EncounterPresenter.applyXpState (plugin:salt-marcher:24010:14)
+    at eval (plugin:salt-marcher:23380:74)
+    at emitEncounterXpState (plugin:salt-marcher:22711:7)
+    at updateEncounterXpState (plugin:salt-marcher:22762:10)
+    at addPartyMember (plugin:salt-marcher:22770:10)
+    at _EncounterPresenter.addPartyMember (plugin:salt-marcher:23918:9)
+[2025-11-01T13:41:04.200Z] ERROR: [encounter] xp listener failed Cannot read properties of undefined (reading 'regionName')
+TypeError: Cannot read properties of undefined (reading 'regionName')
+    at EncounterSessionView.render (plugin:salt-marcher:24458:30)
+    at EncounterWorkspaceView.render (plugin:salt-marcher:25169:28)
+    at eval (plugin:salt-marcher:26451:31)
+    at _EncounterPresenter.emit (plugin:salt-marcher:24015:11)
+    at _EncounterPresenter.applyXpState (plugin:salt-marcher:24010:14)
+    at eval (plugin:salt-marcher:23380:74)
+    at emitEncounterXpState (plugin:salt-marcher:22711:7)
+    at updateEncounterXpState (plugin:salt-marcher:22762:10)
+    at addPartyMember (plugin:salt-marcher:22770:10)
+    at _EncounterPresenter.addPartyMember (plugin:salt-marcher:23918:9)
+[2025-11-01T13:41:05.265Z] ERROR: [encounter] xp listener failed Cannot read properties of undefined (reading 'regionName')
+TypeError: Cannot read properties of undefined (reading 'regionName')
+    at EncounterSessionView.render (plugin:salt-marcher:24458:30)
+    at EncounterWorkspaceView.render (plugin:salt-marcher:25169:28)
+    at eval (plugin:salt-marcher:26451:31)
+    at _EncounterPresenter.emit (plugin:salt-marcher:24015:11)
+    at _EncounterPresenter.applyXpState (plugin:salt-marcher:24010:14)
+    at eval (plugin:salt-marcher:23380:74)
+    at emitEncounterXpState (plugin:salt-marcher:22711:7)
+    at updateEncounterXpState (plugin:salt-marcher:22762:10)
+    at addPartyMember (plugin:salt-marcher:22770:10)
+    at _EncounterPresenter.addPartyMember (plugin:salt-marcher:23918:9)
+[2025-11-01T13:41:05.888Z] ERROR: [encounter] xp listener failed Cannot read properties of undefined (reading 'regionName')
+TypeError: Cannot read properties of undefined (reading 'regionName')
+    at EncounterSessionView.render (plugin:salt-marcher:24458:30)
+    at EncounterWorkspaceView.render (plugin:salt-marcher:25169:28)
+    at eval (plugin:salt-marcher:26451:31)
+    at _EncounterPresenter.emit (plugin:salt-marcher:24015:11)
+    at _EncounterPresenter.applyXpState (plugin:salt-marcher:24010:14)
+    at eval (plugin:salt-marcher:23380:74)
+    at emitEncounterXpState (plugin:salt-marcher:22711:7)
+    at updateEncounterXpState (plugin:salt-marcher:22762:10)
+    at addPartyMember (plugin:salt-marcher:22770:10)
+    at _EncounterPresenter.addPartyMember (plugin:salt-marcher:23918:9)
+[2025-11-01T13:41:08.373Z] INFO: [generator] Starting encounter generation {
+  "partyLevel": 1,
+  "partySize": 4,
+  "difficulty": "medium",
+  "availableCreatures": 329
+}
