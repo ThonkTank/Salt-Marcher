@@ -91,9 +91,9 @@ export function createAlmanacTimeDisplay(
         () => options.onAdvanceHour(-1),
     );
     createControl(
-        "Minute",
-        () => options.onAdvanceMinute(10),
-        () => options.onAdvanceMinute(-10),
+        "Minute (±1)",
+        () => options.onAdvanceMinute(1),
+        () => options.onAdvanceMinute(-1),
     );
 
     root.appendChild(controls);

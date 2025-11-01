@@ -8,8 +8,10 @@
  */
 
 import type { App } from "obsidian";
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, WorkspaceLeaf, Notice } from "obsidian";
 import { createWorkmodeHeader, type WorkmodeHeaderHandle } from "../../ui";
+import { openEventEditor } from "./view/event-editor-modal";
+import { logger } from "../../app/plugin-logger";
 
 export const VIEW_TYPE_ALMANAC = "almanac-view";
 export const VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
@@ -42,11 +44,28 @@ export class AlmanacView extends ItemView {
             title: "Almanac",
             search: {
                 placeholder: "Search events…",
-                disabled: true, // Will enable when search is implemented
+                disabled: false,
+                onChange: (query: string) => {
+                    logger.info("[almanac] Search query changed", { query });
+                    // MVP: Show placeholder notice
+                    if (query.trim()) {
+                        new Notice("Event search coming soon in a future update");
+                    }
+                },
             },
             action: {
                 label: "Add event",
-                disabled: true, // Will enable when event editor is implemented
+                disabled: false,
+                onClick: () => {
+                    logger.info("[almanac] Opening event editor for new event");
+                    openEventEditor(this.app, {
+                        onSave: (event) => {
+                            logger.info("[almanac] Event saved", { eventId: event.id });
+                            new Notice("Event saved successfully");
+                            // Future: Refresh event list
+                        },
+                    });
+                },
             },
         });
 

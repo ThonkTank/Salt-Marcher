@@ -26435,6 +26435,55 @@ var init_view2 = __esm({
   }
 });
 
+// src/workmodes/almanac/view/event-editor-modal.ts
+function openEventEditor(app, options = {}) {
+  const modal = new EventEditorModal(app, options);
+  modal.open();
+}
+var import_obsidian36, EventEditorModal;
+var init_event_editor_modal = __esm({
+  "src/workmodes/almanac/view/event-editor-modal.ts"() {
+    "use strict";
+    import_obsidian36 = require("obsidian");
+    init_plugin_logger();
+    EventEditorModal = class extends import_obsidian36.Modal {
+      constructor(app, options = {}) {
+        super(app);
+        this.options = options;
+      }
+      onOpen() {
+        const { contentEl } = this;
+        contentEl.empty();
+        contentEl.addClass("sm-almanac-event-editor");
+        const isEditMode = !!this.options.event;
+        const title = isEditMode ? "Edit Event" : "Create Event";
+        contentEl.createEl("h2", { text: title });
+        const notice = contentEl.createDiv({ cls: "sm-almanac-event-editor__notice" });
+        notice.createEl("h3", { text: "Coming Soon" });
+        notice.createEl("p", {
+          text: "The event editor is currently under development. Full event creation and editing functionality will be available in a future update."
+        });
+        const futureFeatures = notice.createDiv({ cls: "sm-almanac-event-editor__features" });
+        futureFeatures.createEl("h4", { text: "Planned Features:" });
+        const featureList = futureFeatures.createEl("ul");
+        featureList.createEl("li", { text: "Event title, description, and category" });
+        featureList.createEl("li", { text: "Precise timestamp selection (date and time)" });
+        featureList.createEl("li", { text: "Recurrence patterns (daily, weekly, monthly, yearly)" });
+        featureList.createEl("li", { text: "Tags for organization and filtering" });
+        featureList.createEl("li", { text: "Integration with faction goals and calendar hooks" });
+        const btnRow = contentEl.createDiv({ cls: "modal-button-container" });
+        const closeBtn = btnRow.createEl("button", { text: "Close" });
+        closeBtn.addEventListener("click", () => this.close());
+        logger2.info("[almanac] Event editor modal opened", { isEditMode });
+      }
+      onClose() {
+        this.contentEl.removeClass("sm-almanac-event-editor");
+        this.contentEl.empty();
+      }
+    };
+  }
+});
+
 // src/workmodes/almanac/domain/index.ts
 function getTotalDaysInYear(schema2) {
   return schema2.months.reduce((sum, month) => sum + month.length, 0);
@@ -27021,9 +27070,9 @@ function createAlmanacTimeDisplay(options) {
     () => options.onAdvanceHour(-1)
   );
   createControl(
-    "Minute",
-    () => options.onAdvanceMinute(10),
-    () => options.onAdvanceMinute(-10)
+    "Minute (\xB11)",
+    () => options.onAdvanceMinute(1),
+    () => options.onAdvanceMinute(-1)
   );
   root.appendChild(controls);
   function updateTimeValue(element, timestamp2, schema2) {
@@ -27275,6 +27324,13 @@ async function renderAlmanacMVP(app, container) {
     currentTimestamp,
     onEventClick: (event) => {
       logger2.info("[almanac-mvp] Event clicked", { eventId: event.id });
+      openEventEditor(app, {
+        event,
+        onSave: (updatedEvent) => {
+          logger2.info("[almanac-mvp] Event updated", { eventId: updatedEvent.id });
+          new import_obsidian37.Notice("Event updated successfully");
+        }
+      });
     }
   });
   root.appendChild(eventsList.root);
@@ -27288,13 +27344,16 @@ async function renderAlmanacMVP(app, container) {
   featureList.createEl("li", { text: "Integration with vault calendar data" });
   logger2.info("[almanac-mvp] Almanac MVP rendered successfully");
 }
+var import_obsidian37;
 var init_almanac_mvp = __esm({
   "src/workmodes/almanac/view/almanac-mvp.ts"() {
     "use strict";
+    import_obsidian37 = require("obsidian");
     init_almanac_time_display();
     init_upcoming_events_list();
     init_domain();
     init_plugin_logger();
+    init_event_editor_modal();
   }
 });
 
@@ -28066,7 +28125,7 @@ function createWeatherPanel(host) {
     const { currentWeather, temperature, windSpeed, precipitation, visibility } = weather;
     weatherIcon.empty();
     const iconName = getWeatherIcon(currentWeather.type);
-    (0, import_obsidian37.setIcon)(weatherIcon, iconName);
+    (0, import_obsidian39.setIcon)(weatherIcon, iconName);
     weatherTypeLabel.textContent = getWeatherLabel(currentWeather.type);
     severityLabel.textContent = getSeverityLabel(currentWeather.severity);
     tempValue.textContent = formatTemperature(temperature);
@@ -28129,7 +28188,7 @@ function createWeatherPanel(host) {
       });
       entryEl.createSpan({ cls: "sm-weather-panel__history-date", text: dateStr });
       const iconEl = entryEl.createSpan({ cls: "sm-weather-panel__history-icon" });
-      (0, import_obsidian37.setIcon)(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
+      (0, import_obsidian39.setIcon)(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
       const labelEl = entryEl.createSpan({ cls: "sm-weather-panel__history-label" });
       labelEl.textContent = `${getWeatherLabel(entry.weather.currentWeather.type)} (${formatTemperature(entry.weather.temperature)})`;
     }
@@ -28153,7 +28212,7 @@ function createWeatherPanel(host) {
       });
       entryEl.createSpan({ cls: "sm-weather-panel__forecast-date", text: dateStr });
       const iconEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-icon" });
-      (0, import_obsidian37.setIcon)(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
+      (0, import_obsidian39.setIcon)(iconEl, getWeatherIcon(entry.weather.currentWeather.type));
       const labelEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-label" });
       labelEl.textContent = `${getWeatherLabel(entry.weather.currentWeather.type)} (${formatTemperature(entry.weather.temperature)})`;
       const confidenceEl = entryEl.createSpan({ cls: "sm-weather-panel__forecast-confidence" });
@@ -28184,11 +28243,11 @@ function createWeatherPanel(host) {
     destroy
   };
 }
-var import_obsidian37;
+var import_obsidian39;
 var init_weather_panel = __esm({
   "src/workmodes/session-runner/travel/ui/weather-panel.ts"() {
     "use strict";
-    import_obsidian37 = require("obsidian");
+    import_obsidian39 = require("obsidian");
     init_weather_icons();
     init_weather_forecaster();
   }
@@ -29153,7 +29212,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--play",
     text: "Start"
   });
-  (0, import_obsidian38.setIcon)(playBtn, "play");
+  (0, import_obsidian40.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29164,7 +29223,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--stop",
     text: "Stopp"
   });
-  (0, import_obsidian38.setIcon)(stopBtn, "square");
+  (0, import_obsidian40.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29175,7 +29234,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--reset",
     text: "Reset"
   });
-  (0, import_obsidian38.setIcon)(resetBtn, "rotate-ccw");
+  (0, import_obsidian40.setIcon)(resetBtn, "rotate-ccw");
   applyMapButtonStyle(resetBtn);
   resetBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29186,7 +29245,7 @@ function createPlaybackControls(host, callbacks) {
     cls: "sm-cartographer__travel-button sm-cartographer__travel-button--encounter",
     text: "Random Encounter"
   });
-  (0, import_obsidian38.setIcon)(encounterBtn, "swords");
+  (0, import_obsidian40.setIcon)(encounterBtn, "swords");
   applyMapButtonStyle(encounterBtn);
   encounterBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -29237,11 +29296,11 @@ function createPlaybackControls(host, callbacks) {
     setTempo
   };
 }
-var import_obsidian38;
+var import_obsidian40;
 var init_controls = __esm({
   "src/workmodes/session-runner/travel/ui/controls.ts"() {
     "use strict";
-    import_obsidian38 = require("obsidian");
+    import_obsidian40 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -29501,7 +29560,7 @@ function bindContextMenu(routeLayerEl, logic) {
     }
     ev.preventDefault();
     ev.stopPropagation();
-    const menu = new import_obsidian39.Menu();
+    const menu = new import_obsidian41.Menu();
     if (allowDelete) {
       menu.addItem(
         (item) => item.setTitle("Wegpunkt entfernen").setIcon("trash").onClick(() => {
@@ -29521,11 +29580,11 @@ function bindContextMenu(routeLayerEl, logic) {
   routeLayerEl.addEventListener("contextmenu", onContextMenu, { capture: true });
   return () => routeLayerEl.removeEventListener("contextmenu", onContextMenu, { capture: true });
 }
-var import_obsidian39;
+var import_obsidian41;
 var init_context_menu_controller = __esm({
   "src/workmodes/session-runner/travel/ui/context-menu.controller.ts"() {
     "use strict";
-    import_obsidian39 = require("obsidian");
+    import_obsidian41 = require("obsidian");
   }
 });
 
@@ -29657,7 +29716,7 @@ function loadEncounterModule() {
     VIEW_ENCOUNTER: encounter.VIEW_ENCOUNTER
   })).catch((err) => {
     logger2.error("[session-runner] failed to load encounter module", err);
-    new import_obsidian40.Notice("Encounter-Modul konnte nicht geladen werden.");
+    new import_obsidian42.Notice("Encounter-Modul konnte nicht geladen werden.");
     return null;
   });
 }
@@ -29676,7 +29735,7 @@ async function openEncounter2(app, context) {
   const issue = describeEncounterContextIssue(context);
   if (issue) {
     logger2.warn(`[session-runner] ${issue.log}`, context);
-    new import_obsidian40.Notice(issue.message);
+    new import_obsidian42.Notice(issue.message);
   } else if (context) {
     try {
       const event = await createEncounterEventFromTravel(app, context);
@@ -29728,11 +29787,11 @@ async function publishManualEncounter(app, context, options = {}) {
     logger2.error("[session-runner] failed to publish manual encounter", err);
   }
 }
-var import_obsidian40, encounterModule;
+var import_obsidian42, encounterModule;
 var init_encounter_gateway = __esm({
   "src/workmodes/session-runner/view/controllers/encounter-gateway.ts"() {
     "use strict";
-    import_obsidian40 = require("obsidian");
+    import_obsidian42 = require("obsidian");
     init_session_store();
     init_plugin_logger();
     init_event_builder();
@@ -30740,7 +30799,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--play",
     attr: { title: "Play" }
   });
-  (0, import_obsidian41.setIcon)(playBtn, "play");
+  (0, import_obsidian43.setIcon)(playBtn, "play");
   applyMapButtonStyle(playBtn);
   playBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -30752,7 +30811,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--pause",
     attr: { title: "Pause" }
   });
-  (0, import_obsidian41.setIcon)(pauseBtn, "pause");
+  (0, import_obsidian43.setIcon)(pauseBtn, "pause");
   applyMapButtonStyle(pauseBtn);
   pauseBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -30764,7 +30823,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--prev",
     attr: { title: "Previous" }
   });
-  (0, import_obsidian41.setIcon)(prevBtn, "skip-back");
+  (0, import_obsidian43.setIcon)(prevBtn, "skip-back");
   applyMapButtonStyle(prevBtn);
   prevBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -30776,7 +30835,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--next",
     attr: { title: "Next" }
   });
-  (0, import_obsidian41.setIcon)(nextBtn, "skip-forward");
+  (0, import_obsidian43.setIcon)(nextBtn, "skip-forward");
   applyMapButtonStyle(nextBtn);
   nextBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -30788,7 +30847,7 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     cls: "sm-audio-player__button sm-audio-player__button--stop",
     attr: { title: "Stop" }
   });
-  (0, import_obsidian41.setIcon)(stopBtn, "square");
+  (0, import_obsidian43.setIcon)(stopBtn, "square");
   applyMapButtonStyle(stopBtn);
   stopBtn.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -30899,11 +30958,11 @@ function createPlayerPanel(host, label, type2, state, callbacks) {
     destroy
   };
 }
-var import_obsidian41;
+var import_obsidian43;
 var init_audio_panel = __esm({
   "src/workmodes/session-runner/components/audio-panel.ts"() {
     "use strict";
-    import_obsidian41 = require("obsidian");
+    import_obsidian43 = require("obsidian");
     init_map_workflows();
   }
 });
@@ -31661,7 +31720,7 @@ function createInitiativeTracker(host, callbacks) {
         text: `AC ${combatant.ac}`
       });
       const removeBtn = item.createDiv({ cls: "sm-initiative-tracker__remove" });
-      (0, import_obsidian42.setIcon)(removeBtn, "x");
+      (0, import_obsidian44.setIcon)(removeBtn, "x");
       removeBtn.addEventListener("click", () => {
         if (confirm(`Remove ${combatant.name} from encounter?`)) {
           callbacks.onRemoveCombatant(combatant.id);
@@ -31679,11 +31738,11 @@ function createInitiativeTracker(host, callbacks) {
     destroy
   };
 }
-var import_obsidian42;
+var import_obsidian44;
 var init_initiative_tracker = __esm({
   "src/workmodes/session-runner/components/initiative-tracker.ts"() {
     "use strict";
-    import_obsidian42 = require("obsidian");
+    import_obsidian44 = require("obsidian");
   }
 });
 
@@ -31716,12 +31775,12 @@ async function createEncounterController(options) {
       logger2.info("[EncounterController] Loaded encounter tables", { count: tables.length });
     } catch (err) {
       logger2.error("[EncounterController] Failed to load encounter tables", err);
-      new import_obsidian43.Notice("Failed to load encounter tables");
+      new import_obsidian45.Notice("Failed to load encounter tables");
     }
   }
   async function generateRandomEncounter2(context) {
     if (encounterTables.length === 0) {
-      new import_obsidian43.Notice("No encounter tables available. Create some in the Library!");
+      new import_obsidian45.Notice("No encounter tables available. Create some in the Library!");
       logger2.warn("[EncounterController] Cannot generate encounter: no tables loaded");
       return;
     }
@@ -31740,9 +31799,9 @@ async function createEncounterController(options) {
       activeTurnIndex = 0;
       if (encounter.warnings.length > 0) {
         logger2.warn("[EncounterController] Encounter generation warnings", { warnings: encounter.warnings });
-        new import_obsidian43.Notice(`Encounter generated with warnings: ${encounter.warnings.join(", ")}`);
+        new import_obsidian45.Notice(`Encounter generated with warnings: ${encounter.warnings.join(", ")}`);
       } else {
-        new import_obsidian43.Notice(`${encounter.difficulty.toUpperCase()} encounter: ${encounter.combatants.length} combatants (${encounter.adjustedXP} XP)`);
+        new import_obsidian45.Notice(`${encounter.difficulty.toUpperCase()} encounter: ${encounter.combatants.length} combatants (${encounter.adjustedXP} XP)`);
       }
       renderInitiativeTracker();
       if (onCombatStart) {
@@ -31750,7 +31809,7 @@ async function createEncounterController(options) {
       }
     } catch (err) {
       logger2.error("[EncounterController] Failed to generate encounter", err);
-      new import_obsidian43.Notice("Failed to generate encounter. Check console for details.");
+      new import_obsidian45.Notice("Failed to generate encounter. Check console for details.");
     }
   }
   function renderInitiativeTracker() {
@@ -31819,7 +31878,7 @@ async function createEncounterController(options) {
     const allDefeated = combatants.every((c) => c.currentHp <= 0);
     if (allDefeated && combatants.length > 0) {
       logger2.info("[EncounterController] Combat ended - all combatants defeated");
-      new import_obsidian43.Notice("Combat ended! All enemies defeated.");
+      new import_obsidian45.Notice("Combat ended! All enemies defeated.");
       if (currentEncounter && onLootRequested) {
         void onLootRequested(currentEncounter);
       }
@@ -31850,11 +31909,11 @@ async function createEncounterController(options) {
     dispose
   };
 }
-var import_obsidian43;
+var import_obsidian45;
 var init_encounter_controller = __esm({
   "src/workmodes/session-runner/components/encounter-controller.ts"() {
     "use strict";
-    import_obsidian43 = require("obsidian");
+    import_obsidian45 = require("obsidian");
     init_plugin_logger();
     init_encounter_generator();
     init_data_sources();
@@ -32687,9 +32746,9 @@ function createSessionRunnerExperience() {
                 totalValue: lootResult.bundle.totalValue,
                 warnings: lootResult.warnings
               });
-              const { Notice: Notice16 } = await import("obsidian");
+              const { Notice: Notice18 } = await import("obsidian");
               const itemSummary = lootResult.bundle.items.length > 0 ? `, ${lootResult.bundle.items.length} items` : "";
-              new Notice16(`Loot: ${lootResult.bundle.gold} gold${itemSummary} (${lootResult.bundle.totalValue} total value)`);
+              new Notice18(`Loot: ${lootResult.bundle.gold} gold${itemSummary} (${lootResult.bundle.totalValue} total value)`);
             } catch (err) {
               logger2.error("[session-runner] Failed to generate loot", err);
             }
@@ -33630,16 +33689,16 @@ async function openTimelineView(app, store) {
   });
   workspace.revealLeaf(leaf);
 }
-var import_obsidian48, VIEW_TYPE_TIMELINE, TimelineView;
+var import_obsidian50, VIEW_TYPE_TIMELINE, TimelineView;
 var init_timeline_view = __esm({
   "src/features/events/timeline-view.ts"() {
     "use strict";
-    import_obsidian48 = require("obsidian");
+    import_obsidian50 = require("obsidian");
     init_event_history_types();
     init_ui();
     init_plugin_logger();
     VIEW_TYPE_TIMELINE = "event-timeline-view";
-    TimelineView = class extends import_obsidian48.ItemView {
+    TimelineView = class extends import_obsidian50.ItemView {
       constructor(leaf, store) {
         super(leaf);
         // Current filter/sort state
@@ -99953,7 +100012,7 @@ __export(plugin_presets_exports, {
   shouldImportTerrainPresets: () => shouldImportTerrainPresets
 });
 async function ensureDir2(app, dir) {
-  const normalizedDir = (0, import_obsidian50.normalizePath)(dir);
+  const normalizedDir = (0, import_obsidian52.normalizePath)(dir);
   const folder = app.vault.getAbstractFileByPath(normalizedDir);
   if (!folder) {
     await app.vault.createFolder(normalizedDir).catch(() => {
@@ -99966,7 +100025,7 @@ function registerPreset(fileName, content) {
 async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, force = false) {
   try {
     await ensureDir3(app);
-    const normalizedDir = (0, import_obsidian50.normalizePath)(dir);
+    const normalizedDir = (0, import_obsidian52.normalizePath)(dir);
     const presetModule = await Promise.resolve().then(() => (init_preset_data(), preset_data_exports));
     const rawPresetFiles = presetModule[presetKey] || {};
     const presetEntries = Object.entries(rawPresetFiles).map(([fileName, content]) => [
@@ -99984,7 +100043,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       const existing = await app.vault.adapter.list(normalizedDir);
       const prefix = `${normalizedDir}/`;
       existing.files.forEach((file) => {
-        const normalizedFile = (0, import_obsidian50.normalizePath)(file);
+        const normalizedFile = (0, import_obsidian52.normalizePath)(file);
         if (normalizedFile.startsWith(prefix)) {
           const relativePath = normalizedFile.slice(prefix.length);
           if (relativePath) {
@@ -100000,7 +100059,7 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
     const ensuredFolders = /* @__PURE__ */ new Set([normalizedDir]);
     for (const [fileName, content] of presetEntries) {
       const loweredName = fileName.toLowerCase();
-      const targetPath = (0, import_obsidian50.normalizePath)(`${normalizedDir}/${fileName}`);
+      const targetPath = (0, import_obsidian52.normalizePath)(`${normalizedDir}/${fileName}`);
       const existingPath = existingFiles.get(loweredName);
       try {
         await ensureParentFolders(app, normalizedDir, fileName, ensuredFolders);
@@ -100026,19 +100085,19 @@ async function importPresetsForDir(app, dir, presetKey, typeName, ensureDir3, fo
       }
     }
     if (importedCount > 0) {
-      new import_obsidian50.Notice(`Imported ${importedCount} ${typeName} presets`);
+      new import_obsidian52.Notice(`Imported ${importedCount} ${typeName} presets`);
       logger2.log(`${typeName} import complete: ${importedCount} imported, ${skippedCount} skipped, ${errorCount} errors`);
     } else if (skippedCount > 0) {
       logger2.log(`All ${skippedCount} ${typeName} presets already exist`);
     } else if (errorCount > 0) {
-      new import_obsidian50.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian52.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   } catch (err) {
     logger2.error(`Failed to import ${typeName} presets:`, err);
     if (err instanceof Error && err.message.includes("Cannot find module")) {
       logger2.log(`No ${typeName} preset data found - skipping import`);
     } else {
-      new import_obsidian50.Notice(`Failed to import ${typeName} presets. Check console for details.`);
+      new import_obsidian52.Notice(`Failed to import ${typeName} presets. Check console for details.`);
     }
   }
 }
@@ -100050,7 +100109,7 @@ async function ensureParentFolders(app, baseDir, relativePath, ensured) {
   parts.pop();
   let current = baseDir;
   for (const part of parts) {
-    current = (0, import_obsidian50.normalizePath)(`${current}/${part}`);
+    current = (0, import_obsidian52.normalizePath)(`${current}/${part}`);
     if (ensured.has(current)) continue;
     ensured.add(current);
     if (!app.vault.getAbstractFileByPath(current)) {
@@ -100067,7 +100126,7 @@ async function importPluginPresets(app) {
   return importPresetsForDir(app, ENTITY_REGISTRY.creatures.directory, "PRESET_CREATURES", "creature", ensureCreatureDir2);
 }
 async function shouldImportPresetsForDir(app, dir, markerName, label, ensureDir3) {
-  const markerPath = (0, import_obsidian50.normalizePath)(`${dir}/${markerName}`);
+  const markerPath = (0, import_obsidian52.normalizePath)(`${dir}/${markerName}`);
   const markerFile = app.vault.getAbstractFileByPath(markerPath);
   if (markerFile) {
     return false;
@@ -100167,11 +100226,11 @@ async function importPresetsByCategory(app, category, force = false) {
       throw new Error(`Unknown preset category: ${category}. Valid categories: creatures, spells, items, equipment, terrains, regions, calendars, playlists, all`);
   }
 }
-var import_obsidian50, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, ensurePlaylistDir, PRESET_FILES;
+var import_obsidian52, ensureCreatureDir2, ensureSpellDir2, ensureItemDir2, ensureEquipmentDir2, ensureTerrainDir, ensureRegionDir, ensureCalendarDir2, ensurePlaylistDir, PRESET_FILES;
 var init_plugin_presets = __esm({
   "Presets/lib/plugin-presets.ts"() {
     "use strict";
-    import_obsidian50 = require("obsidian");
+    import_obsidian52 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     ensureCreatureDir2 = (app) => ensureDir2(app, ENTITY_REGISTRY.creatures.directory);
@@ -100199,16 +100258,16 @@ __export(index_files_exports, {
 });
 async function createIndexFile(app, filePath, title, description, directory) {
   const folder = app.vault.getAbstractFileByPath(directory);
-  if (!(folder instanceof import_obsidian51.TFolder)) {
+  if (!(folder instanceof import_obsidian53.TFolder)) {
     logger2.log(`[Index] Directory ${directory} not found, skipping index generation`);
     return;
   }
   const files = [];
   const collectFiles = (folder2) => {
     for (const child of folder2.children) {
-      if (child instanceof import_obsidian51.TFile && child.extension === "md") {
+      if (child instanceof import_obsidian53.TFile && child.extension === "md") {
         files.push(child);
-      } else if (child instanceof import_obsidian51.TFolder) {
+      } else if (child instanceof import_obsidian53.TFolder) {
         collectFiles(child);
       }
     }
@@ -100245,7 +100304,7 @@ async function createIndexFile(app, filePath, title, description, directory) {
   }
   const content = lines.join("\n");
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian51.TFile) {
+  if (existingFile instanceof import_obsidian53.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -100313,7 +100372,7 @@ async function generateLibraryHub(app) {
   const content = lines.join("\n");
   const filePath = `${SALTMARCHER_DIR}/Library.md`;
   const existingFile = app.vault.getAbstractFileByPath(filePath);
-  if (existingFile instanceof import_obsidian51.TFile) {
+  if (existingFile instanceof import_obsidian53.TFile) {
     await app.vault.modify(existingFile, content);
   } else {
     await app.vault.create(filePath, content);
@@ -100335,11 +100394,11 @@ async function generateAllIndexes(app) {
   ]);
   logger2.log("[Index] All indexes generated successfully");
 }
-var import_obsidian51, SALTMARCHER_DIR;
+var import_obsidian53, SALTMARCHER_DIR;
 var init_index_files = __esm({
   "src/workmodes/library/core/index-files.ts"() {
     "use strict";
-    import_obsidian51 = require("obsidian");
+    import_obsidian53 = require("obsidian");
     init_entity_registry();
     init_plugin_logger();
     SALTMARCHER_DIR = "SaltMarcher";
@@ -102319,7 +102378,7 @@ __export(main_exports, {
   default: () => SaltMarcherPlugin
 });
 module.exports = __toCommonJS(main_exports);
-var import_obsidian52 = require("obsidian");
+var import_obsidian54 = require("obsidian");
 init_plugin_logger();
 
 // src/workmodes/cartographer/index.ts
@@ -103282,11 +103341,13 @@ init_view2();
 init_view();
 
 // src/workmodes/almanac/index.ts
-var import_obsidian36 = require("obsidian");
+var import_obsidian38 = require("obsidian");
 init_ui();
+init_event_editor_modal();
+init_plugin_logger();
 var VIEW_TYPE_ALMANAC = "almanac-view";
 var VIEW_ALMANAC = VIEW_TYPE_ALMANAC;
-var AlmanacView = class extends import_obsidian36.ItemView {
+var AlmanacView = class extends import_obsidian38.ItemView {
   constructor(leaf) {
     super(leaf);
   }
@@ -103307,13 +103368,26 @@ var AlmanacView = class extends import_obsidian36.ItemView {
       title: "Almanac",
       search: {
         placeholder: "Search events\u2026",
-        disabled: true
-        // Will enable when search is implemented
+        disabled: false,
+        onChange: (query) => {
+          logger2.info("[almanac] Search query changed", { query });
+          if (query.trim()) {
+            new import_obsidian38.Notice("Event search coming soon in a future update");
+          }
+        }
       },
       action: {
         label: "Add event",
-        disabled: true
-        // Will enable when event editor is implemented
+        disabled: false,
+        onClick: () => {
+          logger2.info("[almanac] Opening event editor for new event");
+          openEventEditor(this.app, {
+            onSave: (event) => {
+              logger2.info("[almanac] Event saved", { eventId: event.id });
+              new import_obsidian38.Notice("Event saved successfully");
+            }
+          });
+        }
       }
     });
     const mainContent = content.createDiv({ cls: "sm-almanac__content" });
@@ -103339,10 +103413,10 @@ async function openAlmanac(app) {
 }
 
 // src/workmodes/session-runner/index.ts
-var import_obsidian45 = require("obsidian");
+var import_obsidian47 = require("obsidian");
 
 // src/workmodes/session-runner/controller.ts
-var import_obsidian44 = require("obsidian");
+var import_obsidian46 = require("obsidian");
 init_options();
 init_map_list();
 init_plugin_logger();
@@ -103432,7 +103506,7 @@ var SessionRunnerController = class {
     } catch (error) {
       logger2.error("[session-runner] failed to start experience", error);
       this.view?.setOverlay(EXPERIENCE_OVERLAY_MESSAGE);
-      new import_obsidian44.Notice(EXPERIENCE_NOTICE_MESSAGE);
+      new import_obsidian46.Notice(EXPERIENCE_NOTICE_MESSAGE);
     }
     if (this.mapManager) {
       await this.mapManager.setFile(initialFile);
@@ -103643,7 +103717,7 @@ function createSessionRunnerView(options) {
 // src/workmodes/session-runner/index.ts
 var VIEW_TYPE_SESSION_RUNNER = "session-runner-view";
 var VIEW_SESSION_RUNNER = VIEW_TYPE_SESSION_RUNNER;
-var SessionRunnerView = class extends import_obsidian45.ItemView {
+var SessionRunnerView = class extends import_obsidian47.ItemView {
   constructor(leaf) {
     super(leaf);
     this.hostEl = null;
@@ -103696,7 +103770,7 @@ async function openSessionRunner(app, file) {
 }
 
 // src/workmodes/library/locations/dungeon-view.ts
-var import_obsidian47 = require("obsidian");
+var import_obsidian49 = require("obsidian");
 
 // src/features/dungeons/rendering/grid-renderer.ts
 init_types3();
@@ -104296,9 +104370,9 @@ init_plugin_logger();
 init_frontmatter_utils();
 
 // src/features/dungeons/ui/token-creation-modal.ts
-var import_obsidian46 = require("obsidian");
+var import_obsidian48 = require("obsidian");
 init_types3();
-var TokenCreationModal = class extends import_obsidian46.Modal {
+var TokenCreationModal = class extends import_obsidian48.Modal {
   constructor(app, onSubmit, initialData) {
     super(app);
     this.onSubmit = onSubmit;
@@ -104319,7 +104393,7 @@ var TokenCreationModal = class extends import_obsidian46.Modal {
     const { contentEl } = this;
     contentEl.empty();
     contentEl.createEl("h3", { text: this.isEditMode ? "Edit Token" : "Create Token" });
-    new import_obsidian46.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
+    new import_obsidian48.Setting(contentEl).setName("Token Type").setDesc("Select the type of token to create").addDropdown((dropdown) => {
       dropdown.addOption("player", "\u{1F9D9} Player").addOption("npc", "\u{1F642} NPC").addOption("monster", "\u{1F479} Monster").addOption("object", "\u{1F4E6} Object").setValue(this.tokenType).onChange((value) => {
         this.tokenType = value;
         this.tokenColor = getDefaultTokenColor(this.tokenType);
@@ -104327,13 +104401,13 @@ var TokenCreationModal = class extends import_obsidian46.Modal {
       });
     });
     let labelInput;
-    new import_obsidian46.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
+    new import_obsidian48.Setting(contentEl).setName("Label").setDesc("Display name for the token").addText((text) => {
       text.setPlaceholder("Gandalf").setValue(this.tokenLabel).onChange((value) => {
         this.tokenLabel = value.trim();
       });
       labelInput = text.inputEl;
     });
-    new import_obsidian46.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
+    new import_obsidian48.Setting(contentEl).setName("Color (Optional)").setDesc("Custom color in hex format (e.g., #ff0000). Leave empty for default.").addText((text) => {
       text.setPlaceholder(getDefaultTokenColor(this.tokenType)).setValue(this.tokenColor).onChange((value) => {
         this.tokenColor = value.trim();
         this.renderColorPreview();
@@ -104356,12 +104430,12 @@ var TokenCreationModal = class extends import_obsidian46.Modal {
     contentEl._colorPreview = colorPreview;
     this.tokenColor = getDefaultTokenColor(this.tokenType);
     this.renderColorPreview();
-    new import_obsidian46.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
+    new import_obsidian48.Setting(contentEl).setName("Size").setDesc("Token size multiplier (0.5 = small, 1.0 = normal, 2.0 = large)").addSlider((slider) => {
       slider.setLimits(0.5, 2, 0.1).setValue(this.tokenSize).setDynamicTooltip().onChange((value) => {
         this.tokenSize = value;
       });
     });
-    new import_obsidian46.Setting(contentEl).addButton((button) => {
+    new import_obsidian48.Setting(contentEl).addButton((button) => {
       button.setButtonText("Cancel").onClick(() => {
         this.close();
       });
@@ -104399,7 +104473,7 @@ var TokenCreationModal = class extends import_obsidian46.Modal {
 
 // src/workmodes/library/locations/dungeon-view.ts
 var VIEW_TYPE_DUNGEON = "salt-dungeon-view";
-var DungeonView = class extends import_obsidian47.ItemView {
+var DungeonView = class extends import_obsidian49.ItemView {
   // Currently selected token
   constructor(leaf) {
     super(leaf);
@@ -108875,7 +108949,7 @@ var HEX_PLUGIN_CSS_SECTIONS = {
 var HEX_PLUGIN_CSS = Object.values(HEX_PLUGIN_CSS_SECTIONS).join("\n\n");
 
 // src/app/integration-telemetry.ts
-var import_obsidian49 = require("obsidian");
+var import_obsidian51 = require("obsidian");
 init_plugin_logger();
 var notifiedOperations = /* @__PURE__ */ new Set();
 function reportIntegrationIssue(payload) {
@@ -108885,7 +108959,7 @@ function reportIntegrationIssue(payload) {
   const dedupeKey = `${integrationId}:${operation}`;
   if (notifiedOperations.has(dedupeKey)) return;
   notifiedOperations.add(dedupeKey);
-  new import_obsidian49.Notice(userMessage);
+  new import_obsidian51.Notice(userMessage);
 }
 
 // src/app/bootstrap-services.ts
@@ -109196,7 +109270,7 @@ function registerIPCCommands(server, plugin) {
 }
 
 // src/app/main.ts
-var SaltMarcherPlugin = class extends import_obsidian52.Plugin {
+var SaltMarcherPlugin = class extends import_obsidian54.Plugin {
   async onload() {
     await logger2.init(this.app);
     logger2.log("Plugin loading...");

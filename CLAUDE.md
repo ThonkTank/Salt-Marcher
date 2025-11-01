@@ -315,7 +315,7 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase A ✅ Complete (Quality Audit) | Tests: 1116/1117 (99.9%) ✅ | **Next:** Phase B - Implementation
+**Status:** Phase D ✅ Complete (UX Review - 2nd Run) | Tests: 1124/1125 (99.9%) ✅ | **Next:** Phase B - Implementation
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
@@ -341,13 +341,14 @@ Ziele:
   - Session Runner UI: weather panel, icons, movement speed modifiers (-50% to 0%)
   - Manual encounter composition fix: Calculator now works standalone without travel context
   - 147 tests (weather: 106, encounter: 33, manual composition: 7, presenter: 1) - 100% pass rate
-- **Phase D:** UX Review Complete ✅
-  - Reviewed weather panel, building management modal, production visualization, encounter presenter
-  - All recent UI changes (Phase 9.2B-10.4) are solid implementations with good UX foundations
-  - No new critical issues found - existing [UX] roadmap items remain valid and correctly prioritized
-  - Verified 16 existing UX tasks against actual implementation - all accurate
-  - Key findings: Job validation clear, drag-and-drop intuitive, color coding effective
-  - Gaps confirmed: Weather interactivity (#5 HIGH), building capacity warnings (#9-12 MEDIUM), accessibility (#22, #31 LOW)
+- **Phase D (1st Run):** UX Review Complete ✅ (Phase 9.2B-10.4 validated, no new critical issues)
+- **Phase D (2nd Run):** UX Review Complete ✅ (Nov 1, 2025 - Almanac MVP + Weather Interactivity validated)
+  - Reviewed: Almanac MVP (12.1), Weather panel interactivity (11.1), Job validation (99a6789)
+  - **Corrected:** Item #11 is INCORRECT - drag-and-drop HAS cursor affordance (cursor:grab since a57b32b)
+  - **New UX issues:** 6 found (1 HIGH, 3 MEDIUM, 2 LOW) - see updated roadmap below
+  - Key findings: Almanac MVP functional but limited (no editing), minute increment confusing (+10 not +1)
+  - Weather history/forecast hidden by default (discoverability issue), no keyboard support across features
+  - Building worker assignment remains excellent UX ✅ (validation clear, visual feedback strong)
 - **Phase 11.1:** Weather Panel Interactivity ✅ - See implementation below
   - Weather history display (last 7 days, expandable section with dates and conditions)
   - Weather forecast display (next 3 days with confidence levels, expandable section)
@@ -381,48 +382,53 @@ None currently! All blocking issues resolved. ✅
    - Still missing: Month/week/timeline calendar grid views, event editor modal, astronomical cycles UI, vault data integration
    - Current: Uses hardcoded mock calendar data
    - Location: src/workmodes/almanac/view/ (partial implementation)
-4. **[HIGH] Library Tabs Missing** - Location, Playlist, Encounter Tables non-functional
+3. **[HIGH] Library Tabs Missing** - Location, Playlist, Encounter Tables non-functional
    - Tabs exist in UI but no browse views implemented
    - Goal: "Tabs für Kreaturen, Zauber, Items, Equipment, Terrains, Regionen und Kalender"
    - Need: Create specs + serializers for Location, Playlist, EncounterTable entities
    - Location: src/workmodes/library/registry.ts
 
 **MEDIUM (Feature unvollständig aber teilweise nutzbar):**
-6. **[MEDIUM] POI Integration Missing** - Cannot place location markers on map
+4. **[MEDIUM] POI Integration Missing** - Cannot place location markers on map
    - Goal: "Ortsmarker (Städte, Landmarken)" in Cartographer
    - Phase 9 Location system fully implemented but no UI access
    - Need: Cartographer mode for placing/editing location markers
    - Location: Cartographer brush/inspector modes
-7. **[MEDIUM] Cartographer Brush Error** - Brush mode logs error messages
+5. **[MEDIUM] Cartographer Brush Error** - Brush mode logs error messages
    - Terrain-brush functionality potentially broken, needs real testing
    - Location: Cartographer terrain-brush mode
-9. **[MEDIUM] [UX] Building Management - Unclear Capacity Warnings** - Capacity limits not visible until error
+6. **[MEDIUM] [UX] Almanac - No Keyboard Shortcuts** - All interactions require mouse
+   - No keyboard shortcuts for common actions (advance time, navigate events)
+   - Arrow keys don't navigate event list, Space/Enter don't activate
+   - Location: src/workmodes/almanac/view/ (all components)
+7. **[MEDIUM] [UX] Weather History/Forecast - Collapsed by Default** - Users might miss these features
+   - History and forecast sections hidden on load (line 132-133)
+   - No visual cue that content is collapsible (no ▶ icon on headers)
+   - Users need to discover collapse functionality by trial
+   - Location: src/workmodes/session-runner/travel/ui/weather-panel.ts:132-133
+8. **[MEDIUM] [UX] Building Management - Unclear Capacity Warnings** - Capacity limits not visible until error
    - User only sees "max capacity" Notice after clicking Assign
    - Need: Show visual capacity indicator (e.g., "Workers: 3/5") prominently in worker section
    - Location: building-management-modal.ts:489-491
-10. **[MEDIUM] [UX] Building Status - Unclear Condition Impact** - User doesn't understand what condition affects
+9. **[MEDIUM] [UX] Building Status - Unclear Condition Impact** - User doesn't understand what condition affects
    - Shows "Condition: 75%" without explaining gameplay impact
    - Need: Add helper text like "Condition affects production rate and durability"
    - Location: building-management-modal.ts:195-212
-11. **[MEDIUM] [UX] Drag-and-Drop - No Visual Affordance** - Worker cards don't look draggable
-   - No cursor change, no drag handle icon, no hint text
-   - Need: Add grab cursor on hover, drag handle icon, or "drag to assign" hint
-   - Location: building-management-modal.ts:398-452
-12. **[MEDIUM] [UX] Production Dashboard - No Units Displayed** - Production shows percentages without context
+10. **[MEDIUM] [UX] Production Dashboard - No Units Displayed** - Production shows percentages without context
    - Shows "75%" but unclear what this percentage represents
    - Need: Show actual values (e.g., "7.5 Gold/day at 75% efficiency")
    - Location: production-visualization.ts
-14. **[MEDIUM] [UX] Weather Details - Categorical Values Lack Precision** - Some values show categories instead of numbers
+11. **[MEDIUM] [UX] Weather Details - Categorical Values Lack Precision** - Some values show categories instead of numbers
    - Precipitation: "Mäßiger Niederschlag" (what mm/h?), Visibility: "Gut" (how many meters?)
    - Players wanting precise values for calculations can't get them
    - Need: Show both category and exact value: "Mäßiger Niederschlag (5 mm/h)" or add tooltip
    - Location: weather-icons.ts:117-133
-15. **[MEDIUM] [UX] Weather Icon - No Severity Indication** - Icon shows type but not severity
+12. **[MEDIUM] [UX] Weather Icon - No Severity Indication** - Icon shows type but not severity
    - "Regen" icon looks same for light drizzle and torrential downpour
    - Only text label shows severity, less scannable UI
    - Need: Visual severity indicator (icon size, color, badge, or animation)
    - Location: weather-panel.ts:118-124
-16. **[MEDIUM] [UX] Weather Update Timing Not Visible** - Users don't know when weather will change
+13. **[MEDIUM] [UX] Weather Update Timing Not Visible** - Users don't know when weather will change
    - No indication of how long current weather lasts
    - No "next update in X hours" display
    - Critical for multi-day travel planning
@@ -430,78 +436,88 @@ None currently! All blocking issues resolved. ✅
    - Location: weather-panel.ts (entire component)
 
 **LOW (Nice-to-have, Verbesserungen):**
-17. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
-18. **[LOW] Building Modal Refactoring** - Large file size (889 lines)
+14. **[LOW] [UX] Almanac Events List - No Filtering/Sorting** - All events shown without organization
+   - No way to filter by category (Event vs Phenomenon)
+   - No sorting options (by date, type, priority)
+   - Large event lists would be overwhelming
+   - Location: src/workmodes/almanac/view/upcoming-events-list.ts
+15. **[LOW] [UX] Weather History Display - No Visual Trend** - Just a list of past conditions
+   - Shows 7 days of weather but no visual indication of trends
+   - No icons or color coding for quick scanning
+   - Hard to spot patterns (e.g., "it's been raining all week")
+   - Location: src/workmodes/session-runner/travel/ui/weather-panel.ts:248-281
+16. **[LOW] Phase 9.2 Error Handling** - Building management modal lacks comprehensive error handling
+17. **[LOW] Building Modal Refactoring** - Large file size (889 lines)
    - Single file handles all building management UI
    - Could benefit from component extraction (worker cards, production dashboard)
    - Impact: Maintainability concern, but works fine
    - Location: src/workmodes/cartographer/building-management-modal.ts
-19. **[LOW] Weather Panel - Hardcoded German Strings** - Not using translator.ts
+18. **[LOW] Weather Panel - Hardcoded German Strings** - Not using translator.ts
    - Weather panel uses German UI text directly (e.g., "Wetter", "Temperatur", "Reiseeffekte")
    - Inconsistent with translator.ts system used elsewhere (though German strings are per codebase convention)
    - Location: src/workmodes/session-runner/travel/ui/weather-panel.ts
-20. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
-21. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
+19. **[LOW] Calendar Inbox Integration** - calendar-state-gateway.ts TODO: Add faction events to calendar inbox
+20. **[LOW] Encounter Presenter Path Resolution** - presenter.ts:442 uses hardcoded path `SaltMarcher/Creatures/${creature.name}.md`
    - Currently assumes creature files are in standard location
    - Need: Get actual file path from vault lookup or repository
    - Location: src/workmodes/encounter/presenter.ts:442
-22. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
+21. **[LOW] [UX] Building Management Modal - No Keyboard Support** - Modal lacks keyboard navigation
    - No escape key to close, no tab navigation between sections
    - Drag-and-drop only, no keyboard alternative for worker assignment
    - Location: src/workmodes/cartographer/building-management-modal.ts
-23. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
+22. **[LOW] [UX] Building Management Modal - No Loading States** - Async operations lack feedback
    - Worker loading shows no spinner/placeholder while loading factions
    - Save operation has no loading indicator during vault writes
    - Location: building-management-modal.ts:86-133 (loadAvailableWorkers), :618-653 (saveChanges)
-24. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
+23. **[LOW] [UX] Building Management Refresh - Inspector Doesn't Auto-Update** - User must re-select hex
    - After saving building changes, inspector panel shows stale data
    - onSave callback logs but doesn't refresh display
    - Location: inspector.ts:310-314
-25. **[LOW] [UX] Save Button - No Unsaved Changes Warning** - User can close without saving
+24. **[LOW] [UX] Save Button - No Unsaved Changes Warning** - User can close without saving
    - unsavedChanges flag exists but not used for exit confirmation
    - Need: Warn user on modal close if unsavedChanges === true
    - Location: building-management-modal.ts:42
-26. **[LOW] Time-of-Day Extraction Placeholder** - encounter-context-builder hardcodes "day"
+25. **[LOW] Time-of-Day Extraction Placeholder** - encounter-context-builder hardcodes "day"
    - TODO comment at line 133: Extract time from current in-game time
    - Currently always returns "day" regardless of actual calendar time
    - Need: Integration with calendar state to get actual time of day
    - Location: src/workmodes/session-runner/util/encounter-context-builder.ts:133-135
-27. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
+26. **[LOW] [UX] Production Visualization - No Interactivity** - Charts are static displays
    - Progress bars show data but no hover tooltips or click interactions
    - No way to see historical trends or detailed breakdowns
    - Location: src/features/locations/production-visualization.ts
-28. **[LOW] [UX] Weather Speed Modifier Color Coding - Thresholds Arbitrary** - Color thresholds might not match user perception
+27. **[LOW] [UX] Weather Speed Modifier Color Coding - Thresholds Arbitrary** - Color thresholds might not match user perception
    - Green ≥90% (only -10% or less), Yellow 70-89%, Red <70%
    - 80% speed might feel quite impactful but shows as "warning" yellow
    - Need: User testing to refine thresholds or make configurable
    - Location: weather-panel.ts:151-157
-29. **[LOW] [UX] Weather Panel - No Animation or Transitions** - Weather updates instantly
+28. **[LOW] [UX] Weather Panel - No Animation or Transitions** - Weather updates instantly
    - No fade-in/out, no loading state, jarring when rapidly clicking hexes
    - Feels less professional
    - Need: Smooth fade transition between weather states
    - Location: weather-panel.ts:99-135
-30. **[LOW] [UX] Weather Panel - Redundant "Reiseeffekte" Section** - Section header with only one item
+29. **[LOW] [UX] Weather Panel - Redundant "Reiseeffekte" Section** - Section header with only one item
    - "Reiseeffekte" section with only speed modifier takes vertical space
    - Implies more effects might exist
    - Need: Either add more effects or remove section header, just show speed modifier directly
    - Location: weather-panel.ts:74-84
-31. **[LOW] [UX] Weather Panel - Missing Accessibility Features** - Screen reader and keyboard support lacking
+30. **[LOW] [UX] Weather Panel - Missing Accessibility Features** - Screen reader and keyboard support lacking
    - No `aria-live` region for weather updates (screen readers won't announce changes)
    - No `role="region"` on panel, no `aria-label` on icon
    - Panel cannot receive keyboard focus (no shortcuts to jump to weather)
    - Need: Add ARIA labels, live regions, semantic markup
    - Location: weather-panel.ts (entire component)
-32. **[LOW] [UX] Weather Change Notification Missing** - Silent weather updates
+31. **[LOW] [UX] Weather Change Notification Missing** - Silent weather updates
    - Weather can change during travel without visual feedback
    - No alert when severe weather arrives
    - Need: Toast notification or highlight when weather changes
    - Location: weather-panel.ts (entire component)
-33. **[LOW] [UX] Manual vs Travel Encounters Not Distinguished** - UI doesn't show encounter source
+32. **[LOW] [UX] Manual vs Travel Encounters Not Distinguished** - UI doesn't show encounter source
    - Users can't tell if encounter was manually composed or travel-generated
    - No visual indicator for encounter type (manual/travel/faction)
    - Could cause confusion when reviewing encounter history
    - Location: src/workmodes/encounter/ (view components)
-34. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
+33. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
 
 **Test-Status:**
 - Unit tests: 1124/1125 passing (99.9%) ✅
@@ -516,31 +532,41 @@ None currently! All blocking issues resolved. ✅
 - **Known Issue:** 1 probabilistic faction NPC betrayal test fails occasionally (non-blocking)
 
 **Recently Completed:**
+- **Phase 12.2:** Almanac MVP Interactivity ✅ (Nov 1, 2025 - enabled search/add buttons, event editor modal, minute increment fix)
+  - Fixed minute increment from ±10 to ±1 with clarifying label "Minute (±1)"
+  - Enabled search button with placeholder notice
+  - Enabled "Add event" button to open event editor modal
+  - Created event editor modal (placeholder implementation with "Coming Soon" UI)
+  - Event click handler now opens editor modal for editing
+  - All tests passing (1124/1124) ✅
+- **Phase D (2nd Run):** UX Review Complete ✅ (Nov 1, 2025 - Almanac MVP + Weather validated, 6 new UX issues found)
+- **Phase A (2nd Run):** Quality Audit Complete ✅ (Nov 1, 2025 - all recent work validated, 1124/1125 tests passing)
 - **Phase 12.1:** Almanac MVP ✅ (Nov 1, 2025 - basic functional view, 8 tests passing)
-- **Phase A:** Quality Audit Complete ✅ (Nov 1, 2025 - tests passing, no new issues, roadmap updated)
 - **Phase 11.1:** Weather Panel Interactivity ✅ (Nov 1, 2025 - history/forecast display, improved messages)
 - **Phase C:** Documentation Review Complete ✅ (Nov 1, 2025 - weather-system.md verified, roadmap accurate)
-- **Phase D:** UX Review Complete ✅ (Phase 9.2B-10.4 validated, no new critical issues)
+- **Phase D (1st Run):** UX Review Complete ✅ (Phase 9.2B-10.4 validated, no new critical issues)
 
 **Nächste Schritte (Empfehlung):**
 1. **[HIGH] Complete Almanac Full Implementation** - MVP functional, missing advanced features
    - Month/week/timeline calendar grid views with event visualization
-   - Event editor modal (create/edit events and phenomena)
+   - Full event editor implementation (replace placeholder modal with actual editor)
    - Astronomical cycles UI (moon phases, eclipses, etc.)
    - Vault data integration (replace hardcoded mock data with calendar-state-gateway)
    - Event inbox with priority sorting
+   - Search functionality implementation (replace placeholder notice)
 2. **[HIGH] Library Tabs Missing** - Core functionality unusable
    - Location, Playlist, EncounterTable specs + serializers needed
 3. **[MEDIUM] Complete Partial Features** - Working but incomplete
    - POI placement UI in Cartographer (location system ready, needs UI mode)
    - Cartographer Brush debugging (investigate error messages)
+   - Almanac keyboard shortcuts (arrow nav, time advance hotkeys)
+   - Weather history/forecast discoverability (expand by default or add ▶ icons)
    - **[UX] Building capacity warnings** (only shows after error, needs proactive display)
    - **[UX] Condition impact clarity** (users don't understand what condition affects)
-   - **[UX] Drag-and-drop affordance** (workers don't look draggable)
    - **[UX] Production units display** (shows % without context)
    - **[UX] Weather detail precision** (categorical values lack exact numbers)
    - **[UX] Weather icon severity** (icon doesn't show severity visually)
    - **[UX] Weather update timing** (no indication when weather will change)
-3. **[PLANNED] Phase 10.5: Advanced Weather Features** - Future enhancements
+4. **[PLANNED] Phase 10.5: Advanced Weather Features** - Future enhancements
    - Extreme weather events (hurricanes, blizzards)
    - Player-controlled weather (Control Weather spell)

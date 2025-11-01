@@ -108,10 +108,10 @@ describe("AlmanacTimeDisplay", () => {
 
         // Minute backward (-), minute forward (+)
         buttons[4].click();
-        expect(onAdvanceMinute).toHaveBeenCalledWith(-10);
+        expect(onAdvanceMinute).toHaveBeenCalledWith(-1);
 
         buttons[5].click();
-        expect(onAdvanceMinute).toHaveBeenCalledWith(10);
+        expect(onAdvanceMinute).toHaveBeenCalledWith(1);
 
         handle.destroy();
     });

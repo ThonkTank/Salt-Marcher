@@ -2,11 +2,13 @@
 // MVP implementation of Almanac view - provides basic calendar time management and upcoming events
 
 import type { App } from "obsidian";
+import { Notice } from "obsidian";
 import { createAlmanacTimeDisplay, type AlmanacTimeDisplayHandle } from "./almanac-time-display";
 import { createUpcomingEventsList, type UpcomingEventsListHandle } from "./upcoming-events-list";
 import type { CalendarEvent, CalendarSchema, CalendarTimestamp } from "../domain";
 import { advanceTime } from "../domain";
 import { logger } from "../../../app/plugin-logger";
+import { openEventEditor } from "./event-editor-modal";
 
 /**
  * Almanac MVP Renderer
@@ -126,7 +128,14 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement): Promis
         currentTimestamp,
         onEventClick: (event) => {
             logger.info("[almanac-mvp] Event clicked", { eventId: event.id });
-            // Future: Open event editor modal
+            openEventEditor(app, {
+                event,
+                onSave: (updatedEvent) => {
+                    logger.info("[almanac-mvp] Event updated", { eventId: updatedEvent.id });
+                    new Notice("Event updated successfully");
+                    // Future: Refresh event list with updated data
+                },
+            });
         },
     });
     root.appendChild(eventsList.root);
