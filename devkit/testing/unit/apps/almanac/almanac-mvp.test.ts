@@ -4,6 +4,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createAlmanacTimeDisplay } from "../../../../../src/workmodes/almanac/view/almanac-time-display";
 import { createUpcomingEventsList } from "../../../../../src/workmodes/almanac/view/upcoming-events-list";
+import { createMonthViewCalendar } from "../../../../../src/workmodes/almanac/view/month-view-calendar";
 import type { CalendarSchema, CalendarTimestamp } from "../../../../../src/workmodes/almanac/domain";
 
 const mockSchema: CalendarSchema = {
@@ -234,6 +235,170 @@ describe("UpcomingEventsList", () => {
         items = handle.root.querySelectorAll(".sm-almanac-upcoming-events__item");
         expect(items.length).toBe(1);
         expect(items[0].textContent).toContain("New Phenomenon");
+
+        handle.destroy();
+    });
+});
+
+describe("MonthViewCalendar", () => {
+    it("renders month view grid", () => {
+        const handle = createMonthViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp,
+        });
+
+        expect(handle.root).toBeTruthy();
+        expect(handle.root.classList.contains("sm-almanac-month-view")).toBe(true);
+
+        // Check header shows month and year
+        const header = handle.root.querySelector(".sm-almanac-month-view__month-title");
+        expect(header?.textContent).toContain("January");
+        expect(header?.textContent).toContain("2025");
+
+        // Check weekday header
+        const weekdayHeader = handle.root.querySelector(".sm-almanac-month-view__weekday-header");
+        expect(weekdayHeader).toBeTruthy();
+
+        // Check day cells are rendered (should have 31 days for January + padding)
+        const dayCells = handle.root.querySelectorAll(".sm-almanac-month-view__day");
+        expect(dayCells.length).toBeGreaterThan(0);
+
+        handle.destroy();
+    });
+
+    it("shows empty state when no calendar", () => {
+        const handle = createMonthViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: null,
+            currentTimestamp: null,
+        });
+
+        const emptyMessage = handle.root.querySelector(".sm-almanac-month-view__empty");
+        expect(emptyMessage?.textContent).toBe("No active calendar");
+
+        handle.destroy();
+    });
+
+    it("highlights current day", () => {
+        const handle = createMonthViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp, // day 15
+        });
+
+        const dayCells = handle.root.querySelectorAll(".sm-almanac-month-view__day");
+
+        // Find the cell with day number 15
+        let currentDayCell: Element | null = null;
+        for (const cell of dayCells) {
+            const dayNumber = cell.querySelector(".sm-almanac-month-view__day-number");
+            if (dayNumber?.textContent === "15") {
+                currentDayCell = cell;
+                break;
+            }
+        }
+
+        expect(currentDayCell).toBeTruthy();
+        expect(currentDayCell?.classList.contains("is-current-day")).toBe(true);
+
+        handle.destroy();
+    });
+
+    it("calls onDayClick when day clicked", () => {
+        const onDayClick = vi.fn();
+
+        const handle = createMonthViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp,
+            onDayClick,
+        });
+
+        // Find clickable day cell
+        const dayCells = handle.root.querySelectorAll(".sm-almanac-month-view__day.is-clickable");
+        expect(dayCells.length).toBeGreaterThan(0);
+
+        // Click first valid day cell
+        (dayCells[0] as HTMLElement).click();
+
+        expect(onDayClick).toHaveBeenCalledWith(
+            expect.objectContaining({
+                calendarId: "test-calendar",
+                year: 2025,
+                monthId: "jan",
+            })
+        );
+
+        handle.destroy();
+    });
+
+    it("shows event indicators on days with events", () => {
+        const mockEvent = {
+            id: "test-event",
+            kind: "single" as const,
+            title: "Test Event",
+            calendarId: "test-calendar",
+            date: mockTimestamp, // day 15
+            allDay: false,
+            timePrecision: "minute" as const,
+            startTime: { hour: 14, minute: 30 },
+            category: "meeting",
+            tags: [],
+            priority: 0,
+            description: "",
+        };
+
+        const handle = createMonthViewCalendar({
+            events: [mockEvent],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp,
+        });
+
+        // Find day 15 cell
+        const dayCells = handle.root.querySelectorAll(".sm-almanac-month-view__day");
+        let day15Cell: Element | null = null;
+        for (const cell of dayCells) {
+            const dayNumber = cell.querySelector(".sm-almanac-month-view__day-number");
+            if (dayNumber?.textContent === "15") {
+                day15Cell = cell;
+                break;
+            }
+        }
+
+        expect(day15Cell).toBeTruthy();
+
+        // Check event indicator exists
+        const indicator = day15Cell?.querySelector(".sm-almanac-month-view__event-indicator");
+        expect(indicator).toBeTruthy();
+
+        handle.destroy();
+    });
+
+    it("updates grid when update called", () => {
+        const handle = createMonthViewCalendar({
+            events: [],
+            phenomena: [],
+            schema: mockSchema,
+            currentTimestamp: mockTimestamp,
+        });
+
+        // Update to February
+        const febTimestamp: CalendarTimestamp = {
+            ...mockTimestamp,
+            monthId: "feb",
+        };
+
+        handle.update([], [], mockSchema, febTimestamp);
+
+        const header = handle.root.querySelector(".sm-almanac-month-view__month-title");
+        expect(header?.textContent).toContain("February");
+        expect(header?.textContent).toContain("2025");
 
         handle.destroy();
     });

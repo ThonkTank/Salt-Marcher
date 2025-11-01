@@ -198,6 +198,7 @@ grep "\[init:" CONSOLE_LOG.txt
 - [docs/PHASE_9_1_UI_INTEGRATION.md](docs/PHASE_9_1_UI_INTEGRATION.md) - Cartographer UI architecture (detailed)
 - [docs/PHASE_9_1_QUICK_REFERENCE.md](docs/PHASE_9_1_QUICK_REFERENCE.md) - File locations & patterns (quick ref)
 - [docs/weather-system.md](docs/weather-system.md) - Weather generation, climate templates, integration (Phase 10)
+- [docs/almanac-system.md](docs/almanac-system.md) - Calendar management, time advancement, event scheduling (Phase 12)
 - [docs/TAGS.md](docs/TAGS.md) - Tag vocabularies across all entity types
 
 **For DevKit Features** (available tools):
@@ -207,7 +208,7 @@ grep "\[init:" CONSOLE_LOG.txt
 - [devkit/README.md](devkit/README.md) - DevKit troubleshooting section
 - CONSOLE_LOG.txt - Live debugging logs
 
-## 🎯 Development Principles
+## 🎯 Development Principles 🔒
 
 **Before changing code:**
 1. Understand the system fully (read relevant code & docs)
@@ -238,7 +239,7 @@ grep "\[init:" CONSOLE_LOG.txt
 - **Lifecycle Handles**: Services return cleanup functions
 - **Type-Safe Frontmatter**: `smType` field identifies entity types
 
-## ⚠️ Important Constraints
+## ⚠️ Important Constraints 🔒
 
 **Technical:**
 - Use Obsidian Vault API (not Node.js `fs`)
@@ -270,7 +271,7 @@ grep "\[init:" CONSOLE_LOG.txt
 - Suche stets nach Möglichkeiten das Plugin in Architektur, Code und Wartbarkeit zu verbessern
 - Versuche stets deine dev tools zu verbessern
 
-Ziele:
+## 🎯 Ziele 🔒
 - Salt Marcher soll Spielleitungen eine zentrale Oberfläche geben, in der Weltreise, Begegnungen und Stimmung nahtlos ineinander greifen und jede Aktion sofort spürbares Feedback liefert.
 - **Cartographer**
   Wenn ich den Cartographer öffne, sehe ich eine farbcodierte Hexkarte: jede Kachel repräsentiert Terrain und Region, und ihre Informationen liegen in eigenen Markdown-Dateien, bleiben aber bei Interaktionen im Editor. Über den Modus-Schalter wähle ich zwischen Pinsel und Inspector: Der Pinsel erlaubt mir, per Brush mehrere Hexes zu bearbeiten, während der Inspector in der Seitenleiste die Tile-Daten anzeigt, ohne Dateien aufzurufen.  
@@ -315,76 +316,24 @@ Ziele:
 
 ## Architektur-Roadmap
 
-**Status:** Phase A ✅ Complete (Quality Audit - 3rd Run) | Tests: 1124/1124 (100%) ✅ | **Next:** Phase 13 - Almanac Full Implementation
+**Status:** Phase D ✅ Complete (UX Review - 4th Run) | Tests: 1124/1125 (99.9%) ⚠️ | **Next:** Phase B - Implementation
 
 **Abgeschlossen:**
 - **Phase 0-4:** Tags/Schemas, Stores, Encounter (Travel→Combat E2E), Event Engine (Timeline/Inbox/Hooks)
 - **Phase 5:** Loot Generator - Gold (XP-based, 5 rule types), Items (tag-filter, rarity-limits, weighted), E2E tests (13 scenarios)
 - **Phase 6:** Audio System ✅ - See [docs/audio-system.md](docs/audio-system.md)
 - **Phase 7:** Random Encounters ✅ - See [docs/random-encounters.md](docs/random-encounters.md)
-- **Phase 8.1-8.9:** Faction System Complete ✅ - See [docs/faction-system.md](docs/faction-system.md)
-  - Member tracking, jobs, resources, relationships, AI decisions, NPC generation
-  - Economic/military/diplomatic simulation with markets, battles, treaties, espionage
-  - NPC personalities, supply chains, intelligence networks
-  - Calendar & encounter integration, automatic simulation on day advancement
-  - 390+ tests covering all faction subsystems
-- **Phase 9-9.2D:** Location & Building System Complete ✅ - See [docs/faction-system.md](docs/faction-system.md)
-  - Location influence overlays with 9 location types, radius/strength/decay configs
-  - Building production system: 16 templates, job permissions, production rates
-  - Cartographer UI: inspector display, building management modal, worker assignment (drag-drop)
-  - Production visualization with efficiency indicators and resource flow
-  - 118+ tests for location/building systems
-- **Phase 10.1-10.4:** Weather System Complete ✅ - See [docs/weather-system.md](docs/weather-system.md)
-  - 6 climate templates with Markov chain weather generation (seeded RNG, seasonal transitions)
-  - Reactive weather store (hex-indexed), calendar integration (auto-simulation on day advance)
-  - Encounter & audio integration (weather tags, context extraction, coordinate conversion)
-  - Session Runner UI: weather panel, icons, movement speed modifiers (-50% to 0%)
-  - Manual encounter composition fix: Calculator now works standalone without travel context
-  - 147 tests (weather: 106, encounter: 33, manual composition: 7, presenter: 1) - 100% pass rate
-- **Phase D (1st Run):** UX Review Complete ✅ (Phase 9.2B-10.4 validated, no new critical issues)
-- **Phase D (2nd Run):** UX Review Complete ✅ (Nov 1, 2025 - Almanac MVP + Weather Interactivity validated)
-  - Reviewed: Almanac MVP (12.1), Weather panel interactivity (11.1), Job validation (99a6789)
-  - **Corrected:** Item #11 is INCORRECT - drag-and-drop HAS cursor affordance (cursor:grab since a57b32b)
-  - **New UX issues:** 6 found (1 HIGH, 3 MEDIUM, 2 LOW) - see updated roadmap below
-  - Key findings: Almanac MVP functional but limited (no editing), minute increment confusing (+10 not +1)
-  - Weather history/forecast hidden by default (discoverability issue), no keyboard support across features
-  - Building worker assignment remains excellent UX ✅ (validation clear, visual feedback strong)
-- **Phase D (3rd Run):** UX Review Complete ✅ (Nov 1, 2025 - Phase 12.2 validated, all existing UX issues remain valid)
-  - Reviewed: Almanac MVP full implementation (12.1-12.2), Weather panel Phase 11.1, Building job validation
-  - **Minute increment issue RESOLVED**: Phase 12.2 fixed label to "Minute (±1)" - clear and correct ✅
-  - **No new UX issues found**: All issues discovered were already documented in existing roadmap
-  - Key findings: Recent implementations show good UX awareness (clear placeholders, proactive validation, intuitive controls)
-  - All existing [UX] items validated and remain accurate - no changes needed to roadmap
-  - Building job validation is excellent proactive UX: visual indicators before drag attempt, clear error messages
-- **Phase 11.1:** Weather Panel Interactivity ✅ - See implementation below
-  - Weather history display (last 7 days, expandable section with dates and conditions)
-  - Weather forecast display (next 3 days with confidence levels, expandable section)
-  - Automatic updates when hex changes (integrated with weather store and forecaster)
-  - Improved placeholder messages ("Wähle ein Hex aus, um das Wetter zu sehen")
-  - 6 new passing tests covering history, forecast, toggles, and empty states
-- **Phase 12.1:** Almanac MVP ✅ - Basic functional Almanac view (Nov 1, 2025)
-  - Replaced placeholder UI with functional MVP components
-  - Current calendar time display with mock Gregorian calendar
-  - Time advance controls (day/hour/minute forward/backward)
-  - Upcoming events list (7-day view, supports events & phenomena)
-  - MVP notice informing users of planned features (month/week/timeline views, event editor)
-  - 8 new passing tests for time display and events list components
-  - **Note**: Uses hardcoded mock data for MVP - vault integration deferred to later phases
-- **Phase 12.2:** Almanac MVP Interactivity ✅ (Nov 1, 2025)
-  - Fixed minute increment from ±10 to ±1 with clarifying label "Minute (±1)"
-  - Enabled search button with placeholder notice ("Event search coming soon")
-  - Enabled "Add event" button to open event editor modal
-  - Created event editor modal (placeholder implementation showing "Coming Soon")
-  - Event click handler now opens editor modal for editing
-  - All tests passing (1124/1124) ✅
-- **Phase 12.3:** Library Tabs Verification ✅ (Nov 1, 2025)
-  - **RESOLVED**: Item #3 "Library Tabs Missing" was INCORRECT - all three tabs are fully implemented
-  - Locations: Full CreateSpec (312 lines), serializer, data source, 134 passing tests ✅
-  - Playlists: Full CreateSpec (375 lines), serializer, data source, 17 passing tests ✅
-  - Encounter Tables: Full CreateSpec (388 lines), serializer, data source, 10 passing tests ✅
-  - All tabs registered in UI (view.ts:42), all features working (hierarchy, tags, weighted tables)
-  - Created test files to verify vault integration: Test-Tavern.md, Test-Forest-Encounters.md
-  - Comprehensive features: location trees, dungeon grids, building production, playlist tag filtering, CR-based encounter tables
+- **Phase 8.1-8.9:** Faction System Complete ✅ - See [docs/faction-system.md](docs/faction-system.md) (390+ tests)
+- **Phase 9-9.2D:** Location & Building System Complete ✅ - See [docs/faction-system.md](docs/faction-system.md) (118+ tests)
+- **Phase 10.1-10.4:** Weather System Complete ✅ - See [docs/weather-system.md](docs/weather-system.md) (147 tests)
+- **Phase D (1st-2nd Run):** UX Reviews Complete ✅ (multiple runs validated)
+- **Phase D (3rd Run):** UX Review Complete ✅ (Nov 1, 2025 - validated, no new issues)
+- **Phase 11.1:** Weather Panel Interactivity ✅ (6 tests)
+- **Phase 12.1:** Almanac MVP ✅ (8 tests) - Functional time display, events list, controls
+- **Phase 12.2:** Almanac MVP Interactivity ✅ - Fixed minute increment, event editor modal placeholder
+- **Phase 12.3:** Library Tabs Verification ✅ - All tabs implemented (locations: 134 tests, playlists: 17, encounter-tables: 10)
+- **Phase 12.4:** Month View Calendar ✅ - Grid layout, event indicators, view switching (6 new tests)
+- **Phase A (4th Run):** Quality Audit Complete ✅ - 1 test failing, next phase: D
 
 **Geplant:**
 - **Phase 10.5:** Advanced Weather Features (Future)
@@ -398,10 +347,11 @@ Ziele:
 None currently! All blocking issues resolved. ✅
 
 **HIGH (Feature fehlt oder stark beeinträchtigt):**
-2. **[MEDIUM → HIGH] Almanac Full UI Missing** - MVP implemented, full calendar views needed ⚠️
+2. **[MEDIUM → HIGH] Almanac Full UI Missing** - MVP + Month View implemented, additional views needed ⚠️
    - Phase 12.1 MVP completed ✅ - basic time display, upcoming events, advance controls
    - Phase 12.2 completed ✅ - event editor modal placeholder, search/add button handlers, minute increment fix
-   - Still missing: Month/week/timeline calendar grid views, full event editor implementation, astronomical cycles UI, vault data integration
+   - **Phase 12.4 Month View completed ✅** - Month calendar grid with event indicators, view switching
+   - Still missing: Week/timeline calendar grid views, full event editor implementation, astronomical cycles UI, vault data integration
    - Current: Uses hardcoded mock calendar data, event editor shows "Coming Soon" placeholder
    - Location: src/workmodes/almanac/view/ (partial implementation)
 
@@ -534,39 +484,52 @@ None currently! All blocking issues resolved. ✅
    - No visual indicator for encounter type (manual/travel/faction)
    - Could cause confusion when reviewing encounter history
    - Location: src/workmodes/encounter/ (view components)
-33. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
+33. **[LOW] Almanac Time Handler Duplication** - Three nearly-identical time advance handlers
+   - handleAdvanceDay, handleAdvanceHour, handleAdvanceMinute differ only by unit parameter
+   - Each contains identical logic for logging, advanceTime call, and UI updates
+   - Impact: Minimal - only 3 handlers, works correctly, easy to maintain
+   - Suggested fix: Extract to higher-order function createAdvanceHandler(unit)
+   - Location: src/workmodes/almanac/view/almanac-mvp.ts:89-111
+   - See docs/almanac-system.md "Code Duplication" section for detailed fix
+34. **[LOW] Almanac MVP - No Loading States** - Async operations will lack feedback (Phase 13)
+   - Future vault integration will load calendar schema/events asynchronously
+   - Currently uses synchronous mock data (no issue yet)
+   - Need: Add loading spinner when loading calendar from vault
+   - Location: src/workmodes/almanac/view/almanac-mvp.ts (future vault integration)
+35. **[LOW] Feature TODOs** - Intentional placeholders for future work (UI improvements, advanced features)
 
 **Test-Status:**
-- Unit tests: 1124/1124 passing (100%) ✅
+- Unit tests: 1130/1131 passing (99.9%) ⚠️
   - Audio: 57/57 ✅, Playlist: 17/17 ✅
   - Encounter: 34/34 ✅ (includes 7 manual composition tests + 1 presenter test)
-  - Faction: 389/391 ✅ (1 probabilistic test occasionally fails)
+  - Faction: 389/390 ⚠️ (1 probabilistic test occasionally fails - non-blocking)
   - Location/Building: 145/145 ✅ (includes 5 repair cost + 5 job validation tests)
   - Weather (Phase 10.1-10.4 + 11.1): 136/136 ✅ (includes 6 interactivity tests)
-  - **Almanac MVP (Phase 12.1-12.2): 8/8 ✅** (time display, events list, editor modal placeholder)
+  - **Almanac MVP + Month View (Phase 12.1-12.4): 14/14 ✅** (time display, events list, month grid, view switching)
   - **Library Entities (Phase 12.3): 161/161 ✅** (locations: 134, playlists: 17, encounter-tables: 10)
   - Header policy: 1/1 ✅
 - Integration tests: 6 require live Obsidian (expected, documented limitation)
 - **Known Issue:** 1 probabilistic faction NPC betrayal test fails occasionally (non-blocking)
 
 **Recently Completed:**
+- **Phase 12.4:** Month View Calendar ✅ (Nov 1, 2025 - Grid layout, event indicators, view switching)
+- **Phase D (4th Run):** UX Review Complete ✅ (Nov 1, 2025 - Phases 11.1, 12.1-12.2 validated; all UX issues already documented; next phase: B)
+- **Phase A (4th Run):** Quality Audit Complete ✅ (Nov 1, 2025 - One test failing, code duplication found)
+- **Phase C (4th Run):** Documentation Review Complete ✅ (Nov 1, 2025 - Created docs/almanac-system.md, identified technical debt)
 - **Phase 12.3:** Library Tabs Verification ✅ (Nov 1, 2025 - Resolved roadmap documentation error)
 - **Phase D (3rd Run):** UX Review Complete ✅ (Nov 1, 2025 - Phase 12.2 validated, no new issues found)
-- **Phase A (3rd Run):** Quality Audit Complete ✅ (Nov 1, 2025 - Phase 12.2 validated, all tests passing)
-- **Phase C (3rd Run):** Documentation Review Complete ✅ (Nov 1, 2025 - Phase 12.2 validated, roadmap updated)
 - **Phase 12.2:** Almanac MVP Interactivity ✅ (Nov 1, 2025)
-- **Phase D (2nd Run):** UX Review Complete ✅ (Nov 1, 2025)
 - **Phase 12.1:** Almanac MVP ✅ (Nov 1, 2025)
-- **Phase 11.1:** Weather Panel Interactivity ✅ (Nov 1, 2025)
 
 **Nächste Schritte (Empfehlung):**
-1. **[HIGH] Complete Almanac Full Implementation** - MVP functional, missing advanced features
-   - Month/week/timeline calendar grid views with event visualization
+1. **[HIGH] Complete Almanac Full Implementation** - MVP + Month View functional, missing advanced features
+   - Week/timeline calendar grid views with event visualization
    - Full event editor implementation (replace placeholder modal with actual editor)
    - Astronomical cycles UI (moon phases, eclipses, etc.)
    - Vault data integration (replace hardcoded mock data with calendar-state-gateway)
    - Event inbox with priority sorting
    - Search functionality implementation (replace placeholder notice)
+   - Month navigation controls (prev/next month buttons)
 2. **[MEDIUM] Complete Partial Features** - Working but incomplete
    - POI placement UI in Cartographer (location system ready, needs UI mode)
    - Cartographer Brush debugging (investigate error messages)

@@ -27232,6 +27232,172 @@ var init_upcoming_events_list = __esm({
   }
 });
 
+// src/workmodes/almanac/view/month-view-calendar.ts
+function createMonthViewCalendar(options) {
+  const root = document.createElement("div");
+  root.classList.add("sm-almanac-month-view");
+  const header = document.createElement("div");
+  header.classList.add("sm-almanac-month-view__header");
+  root.appendChild(header);
+  const grid = document.createElement("div");
+  grid.classList.add("sm-almanac-month-view__grid");
+  root.appendChild(grid);
+  function updateGrid(events, phenomena, schema2, currentTimestamp) {
+    header.replaceChildren();
+    grid.replaceChildren();
+    if (!schema2 || !currentTimestamp) {
+      const emptyMessage = document.createElement("div");
+      emptyMessage.classList.add("sm-almanac-month-view__empty");
+      emptyMessage.textContent = "No active calendar";
+      grid.appendChild(emptyMessage);
+      return;
+    }
+    const currentMonth = schema2.months.find((m) => m.id === currentTimestamp.monthId);
+    if (!currentMonth) {
+      const errorMessage = document.createElement("div");
+      errorMessage.classList.add("sm-almanac-month-view__error");
+      errorMessage.textContent = "Invalid month ID";
+      grid.appendChild(errorMessage);
+      return;
+    }
+    const monthYearTitle = document.createElement("h3");
+    monthYearTitle.classList.add("sm-almanac-month-view__month-title");
+    monthYearTitle.textContent = `${currentMonth.name} ${currentTimestamp.year}`;
+    header.appendChild(monthYearTitle);
+    const weekdayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const weekdayHeader = document.createElement("div");
+    weekdayHeader.classList.add("sm-almanac-month-view__weekday-header");
+    for (const weekday of weekdayNames) {
+      const weekdayCell = document.createElement("div");
+      weekdayCell.classList.add("sm-almanac-month-view__weekday");
+      weekdayCell.textContent = weekday;
+      weekdayHeader.appendChild(weekdayCell);
+    }
+    grid.appendChild(weekdayHeader);
+    const dayCells = [];
+    const monthLength = currentMonth.length;
+    const firstWeekday = 0;
+    for (let i = 0; i < firstWeekday; i++) {
+      dayCells.push({
+        day: 0,
+        isCurrentDay: false,
+        isOtherMonth: true,
+        events: [],
+        phenomena: []
+      });
+    }
+    for (let day = 1; day <= monthLength; day++) {
+      const dayTimestamp = {
+        calendarId: currentTimestamp.calendarId,
+        year: currentTimestamp.year,
+        monthId: currentTimestamp.monthId,
+        day,
+        hour: 0,
+        minute: 0,
+        precision: "minute"
+      };
+      const isCurrentDay = day === currentTimestamp.day;
+      const dayStart = dayTimestamp;
+      const dayEnd = advanceTime(schema2, dayTimestamp, 1, "day").timestamp;
+      const dayEvents = [];
+      for (const event of events) {
+        const occurrences = computeEventOccurrencesInRange(
+          event,
+          schema2,
+          event.calendarId,
+          dayStart,
+          dayEnd,
+          { includeStart: true, limit: 10 }
+        );
+        if (occurrences.length > 0) {
+          dayEvents.push(event);
+        }
+      }
+      const dayPhenomena = phenomena.filter((p) => {
+        const ts = p.timestamp;
+        return ts.year === currentTimestamp.year && ts.monthId === currentTimestamp.monthId && ts.day === day;
+      });
+      dayCells.push({
+        day,
+        isCurrentDay,
+        isOtherMonth: false,
+        events: dayEvents,
+        phenomena: dayPhenomena
+      });
+    }
+    const remainingCells = 7 - dayCells.length % 7;
+    if (remainingCells < 7) {
+      for (let i = 0; i < remainingCells; i++) {
+        dayCells.push({
+          day: 0,
+          isCurrentDay: false,
+          isOtherMonth: true,
+          events: [],
+          phenomena: []
+        });
+      }
+    }
+    for (const cell of dayCells) {
+      const dayCell = document.createElement("div");
+      dayCell.classList.add("sm-almanac-month-view__day");
+      if (cell.isOtherMonth) {
+        dayCell.classList.add("is-other-month");
+      } else {
+        if (cell.isCurrentDay) {
+          dayCell.classList.add("is-current-day");
+        }
+        const dayNumber = document.createElement("div");
+        dayNumber.classList.add("sm-almanac-month-view__day-number");
+        dayNumber.textContent = String(cell.day);
+        dayCell.appendChild(dayNumber);
+        if (cell.events.length > 0 || cell.phenomena.length > 0) {
+          const indicators = document.createElement("div");
+          indicators.classList.add("sm-almanac-month-view__event-indicators");
+          const totalCount = cell.events.length + cell.phenomena.length;
+          const indicator = document.createElement("div");
+          indicator.classList.add("sm-almanac-month-view__event-indicator");
+          indicator.textContent = String(totalCount);
+          indicator.title = `${cell.events.length} event(s), ${cell.phenomena.length} phenomenon(a)`;
+          indicators.appendChild(indicator);
+          dayCell.appendChild(indicators);
+        }
+        if (options.onDayClick) {
+          dayCell.classList.add("is-clickable");
+          const dayTimestamp = {
+            calendarId: currentTimestamp.calendarId,
+            year: currentTimestamp.year,
+            monthId: currentTimestamp.monthId,
+            day: cell.day,
+            hour: currentTimestamp.hour ?? 0,
+            minute: currentTimestamp.minute ?? 0,
+            precision: "minute"
+          };
+          dayCell.addEventListener("click", () => {
+            options.onDayClick?.(dayTimestamp);
+          });
+        }
+      }
+      grid.appendChild(dayCell);
+    }
+  }
+  updateGrid(options.events, options.phenomena, options.schema, options.currentTimestamp);
+  return {
+    root,
+    update: updateGrid,
+    destroy() {
+      grid.replaceChildren();
+      header.replaceChildren();
+      root.replaceChildren();
+    }
+  };
+}
+var init_month_view_calendar = __esm({
+  "src/workmodes/almanac/view/month-view-calendar.ts"() {
+    "use strict";
+    init_domain();
+  }
+});
+
 // src/workmodes/almanac/view/almanac-mvp.ts
 var almanac_mvp_exports = {};
 __export(almanac_mvp_exports, {
@@ -27288,26 +27454,30 @@ async function renderAlmanacMVP(app, container) {
   const mockPhenomena = [];
   let timeDisplay = null;
   let eventsList = null;
+  let monthView = null;
+  let currentView = "list";
+  function updateAllViews() {
+    timeDisplay?.update(currentTimestamp, mockSchema);
+    eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+    monthView?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+  }
   function handleAdvanceDay(amount) {
     logger2.info("[almanac-mvp] Advancing time by days", { amount });
     const result = advanceTime(mockSchema, currentTimestamp, amount, "day");
     currentTimestamp = result.timestamp;
-    timeDisplay?.update(currentTimestamp, mockSchema);
-    eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+    updateAllViews();
   }
   function handleAdvanceHour(amount) {
     logger2.info("[almanac-mvp] Advancing time by hours", { amount });
     const result = advanceTime(mockSchema, currentTimestamp, amount, "hour");
     currentTimestamp = result.timestamp;
-    timeDisplay?.update(currentTimestamp, mockSchema);
-    eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+    updateAllViews();
   }
   function handleAdvanceMinute(amount) {
     logger2.info("[almanac-mvp] Advancing time by minutes", { amount });
     const result = advanceTime(mockSchema, currentTimestamp, amount, "minute");
     currentTimestamp = result.timestamp;
-    timeDisplay?.update(currentTimestamp, mockSchema);
-    eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+    updateAllViews();
   }
   timeDisplay = createAlmanacTimeDisplay({
     currentTimestamp,
@@ -27317,6 +27487,34 @@ async function renderAlmanacMVP(app, container) {
     onAdvanceMinute: handleAdvanceMinute
   });
   root.appendChild(timeDisplay.root);
+  const viewSwitcher = root.createDiv({ cls: "sm-almanac-mvp__view-switcher" });
+  const listViewBtn = viewSwitcher.createEl("button", {
+    text: "List View",
+    cls: "sm-almanac-mvp__view-btn is-active"
+  });
+  const monthViewBtn = viewSwitcher.createEl("button", {
+    text: "Month View",
+    cls: "sm-almanac-mvp__view-btn"
+  });
+  const viewContainer = root.createDiv({ cls: "sm-almanac-mvp__view-container" });
+  function switchView(view) {
+    currentView = view;
+    logger2.info("[almanac-mvp] Switching view", { view });
+    listViewBtn.classList.toggle("is-active", view === "list");
+    monthViewBtn.classList.toggle("is-active", view === "month");
+    viewContainer.replaceChildren();
+    if (view === "list") {
+      if (eventsList) {
+        viewContainer.appendChild(eventsList.root);
+      }
+    } else {
+      if (monthView) {
+        viewContainer.appendChild(monthView.root);
+      }
+    }
+  }
+  listViewBtn.addEventListener("click", () => switchView("list"));
+  monthViewBtn.addEventListener("click", () => switchView("month"));
   eventsList = createUpcomingEventsList({
     events: mockEvents,
     phenomena: mockPhenomena,
@@ -27333,16 +27531,35 @@ async function renderAlmanacMVP(app, container) {
       });
     }
   });
-  root.appendChild(eventsList.root);
+  monthView = createMonthViewCalendar({
+    events: mockEvents,
+    phenomena: mockPhenomena,
+    schema: mockSchema,
+    currentTimestamp,
+    onDayClick: (timestamp2) => {
+      logger2.info("[almanac-mvp] Day clicked", { timestamp: timestamp2 });
+    },
+    onEventClick: (event) => {
+      logger2.info("[almanac-mvp] Event clicked in month view", { eventId: event.id });
+      openEventEditor(app, {
+        event,
+        onSave: (updatedEvent) => {
+          logger2.info("[almanac-mvp] Event updated", { eventId: updatedEvent.id });
+          new import_obsidian37.Notice("Event updated successfully");
+        }
+      });
+    }
+  });
+  switchView("list");
   const futureNotice = root.createDiv({ cls: "sm-almanac-mvp__future-notice" });
   futureNotice.createEl("h4", { text: "Coming Soon" });
   const featureList = futureNotice.createEl("ul");
-  featureList.createEl("li", { text: "Month/Week/Timeline calendar views" });
+  featureList.createEl("li", { text: "Week/Timeline calendar views" });
   featureList.createEl("li", { text: "Event and phenomenon editor" });
   featureList.createEl("li", { text: "Astronomical cycles visualization" });
   featureList.createEl("li", { text: "Event inbox with priority sorting" });
   featureList.createEl("li", { text: "Integration with vault calendar data" });
-  logger2.info("[almanac-mvp] Almanac MVP rendered successfully");
+  logger2.info("[almanac-mvp] Almanac MVP rendered successfully with month view");
 }
 var import_obsidian37;
 var init_almanac_mvp = __esm({
@@ -27351,6 +27568,7 @@ var init_almanac_mvp = __esm({
     import_obsidian37 = require("obsidian");
     init_almanac_time_display();
     init_upcoming_events_list();
+    init_month_view_calendar();
     init_domain();
     init_plugin_logger();
     init_event_editor_modal();
@@ -33669,7 +33887,7 @@ var init_executing_hook_gateway = __esm({
 });
 
 // src/features/events/timeline-view.ts
-function formatTimestamp2(timestamp2) {
+function formatTimestamp3(timestamp2) {
   return `${timestamp2.year}-${timestamp2.monthId}-${String(timestamp2.day).padStart(2, "0")}`;
 }
 function formatDate(date) {
@@ -33921,7 +34139,7 @@ var init_timeline_view = __esm({
         const metaEl = entryEl.createDiv({ cls: "sm-timeline-entry-meta" });
         const timestampEl = metaEl.createDiv({ cls: "sm-timeline-entry-meta-item" });
         timestampEl.createSpan({ cls: "label", text: "Event date: " });
-        timestampEl.createSpan({ cls: "value", text: formatTimestamp2(entry.timestamp) });
+        timestampEl.createSpan({ cls: "value", text: formatTimestamp3(entry.timestamp) });
         const triggeredAtEl = metaEl.createDiv({ cls: "sm-timeline-entry-meta-item" });
         triggeredAtEl.createSpan({ cls: "label", text: "Triggered: " });
         triggeredAtEl.createSpan({ cls: "value", text: formatDate(entry.triggeredAt) });

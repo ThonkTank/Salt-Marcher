@@ -5,6 +5,7 @@ import type { App } from "obsidian";
 import { Notice } from "obsidian";
 import { createAlmanacTimeDisplay, type AlmanacTimeDisplayHandle } from "./almanac-time-display";
 import { createUpcomingEventsList, type UpcomingEventsListHandle } from "./upcoming-events-list";
+import { createMonthViewCalendar, type MonthViewCalendarHandle } from "./month-view-calendar";
 import type { CalendarEvent, CalendarSchema, CalendarTimestamp } from "../domain";
 import { advanceTime } from "../domain";
 import { logger } from "../../../app/plugin-logger";
@@ -85,29 +86,34 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement): Promis
 
     let timeDisplay: AlmanacTimeDisplayHandle | null = null;
     let eventsList: UpcomingEventsListHandle | null = null;
+    let monthView: MonthViewCalendarHandle | null = null;
+    let currentView: "list" | "month" = "list";
+
+    function updateAllViews(): void {
+        timeDisplay?.update(currentTimestamp, mockSchema);
+        eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+        monthView?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+    }
 
     function handleAdvanceDay(amount: number): void {
         logger.info("[almanac-mvp] Advancing time by days", { amount });
         const result = advanceTime(mockSchema, currentTimestamp, amount, "day");
         currentTimestamp = result.timestamp;
-        timeDisplay?.update(currentTimestamp, mockSchema);
-        eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+        updateAllViews();
     }
 
     function handleAdvanceHour(amount: number): void {
         logger.info("[almanac-mvp] Advancing time by hours", { amount });
         const result = advanceTime(mockSchema, currentTimestamp, amount, "hour");
         currentTimestamp = result.timestamp;
-        timeDisplay?.update(currentTimestamp, mockSchema);
-        eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+        updateAllViews();
     }
 
     function handleAdvanceMinute(amount: number): void {
         logger.info("[almanac-mvp] Advancing time by minutes", { amount });
         const result = advanceTime(mockSchema, currentTimestamp, amount, "minute");
         currentTimestamp = result.timestamp;
-        timeDisplay?.update(currentTimestamp, mockSchema);
-        eventsList?.update(mockEvents, mockPhenomena, mockSchema, currentTimestamp);
+        updateAllViews();
     }
 
     // Render time display
@@ -119,6 +125,46 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement): Promis
         onAdvanceMinute: handleAdvanceMinute,
     });
     root.appendChild(timeDisplay.root);
+
+    // View switcher
+    const viewSwitcher = root.createDiv({ cls: "sm-almanac-mvp__view-switcher" });
+    const listViewBtn = viewSwitcher.createEl("button", {
+        text: "List View",
+        cls: "sm-almanac-mvp__view-btn is-active",
+    });
+    const monthViewBtn = viewSwitcher.createEl("button", {
+        text: "Month View",
+        cls: "sm-almanac-mvp__view-btn",
+    });
+
+    const viewContainer = root.createDiv({ cls: "sm-almanac-mvp__view-container" });
+
+    function switchView(view: "list" | "month"): void {
+        currentView = view;
+        logger.info("[almanac-mvp] Switching view", { view });
+
+        // Update button states
+        listViewBtn.classList.toggle("is-active", view === "list");
+        monthViewBtn.classList.toggle("is-active", view === "month");
+
+        // Clear container
+        viewContainer.replaceChildren();
+
+        if (view === "list") {
+            // Render list view
+            if (eventsList) {
+                viewContainer.appendChild(eventsList.root);
+            }
+        } else {
+            // Render month view
+            if (monthView) {
+                viewContainer.appendChild(monthView.root);
+            }
+        }
+    }
+
+    listViewBtn.addEventListener("click", () => switchView("list"));
+    monthViewBtn.addEventListener("click", () => switchView("month"));
 
     // Render upcoming events list
     eventsList = createUpcomingEventsList({
@@ -138,17 +184,42 @@ export async function renderAlmanacMVP(app: App, container: HTMLElement): Promis
             });
         },
     });
-    root.appendChild(eventsList.root);
+
+    // Render month view
+    monthView = createMonthViewCalendar({
+        events: mockEvents,
+        phenomena: mockPhenomena,
+        schema: mockSchema,
+        currentTimestamp,
+        onDayClick: (timestamp) => {
+            logger.info("[almanac-mvp] Day clicked", { timestamp });
+            // Future: Jump to day in timeline view or show day events
+        },
+        onEventClick: (event) => {
+            logger.info("[almanac-mvp] Event clicked in month view", { eventId: event.id });
+            openEventEditor(app, {
+                event,
+                onSave: (updatedEvent) => {
+                    logger.info("[almanac-mvp] Event updated", { eventId: updatedEvent.id });
+                    new Notice("Event updated successfully");
+                    // Future: Refresh views with updated data
+                },
+            });
+        },
+    });
+
+    // Initialize with list view
+    switchView("list");
 
     // Future integration notice
     const futureNotice = root.createDiv({ cls: "sm-almanac-mvp__future-notice" });
     futureNotice.createEl("h4", { text: "Coming Soon" });
     const featureList = futureNotice.createEl("ul");
-    featureList.createEl("li", { text: "Month/Week/Timeline calendar views" });
+    featureList.createEl("li", { text: "Week/Timeline calendar views" });
     featureList.createEl("li", { text: "Event and phenomenon editor" });
     featureList.createEl("li", { text: "Astronomical cycles visualization" });
     featureList.createEl("li", { text: "Event inbox with priority sorting" });
     featureList.createEl("li", { text: "Integration with vault calendar data" });
 
-    logger.info("[almanac-mvp] Almanac MVP rendered successfully");
+    logger.info("[almanac-mvp] Almanac MVP rendered successfully with month view");
 }
