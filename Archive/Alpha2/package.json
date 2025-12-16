@@ -1,0 +1,24 @@
+{
+    "name": "salt-marcher-monorepo",
+    "version": "0.1.0",
+    "description": "D&D world-building Obsidian plugin ecosystem",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "presets": "node scripts/generate-creatures.mjs",
+        "dev": "npm run presets && node esbuild.config.mjs",
+        "dev:core": "node esbuild.config.mjs --plugin=core",
+        "build": "npm run presets && node esbuild.config.mjs production",
+        "build:core": "node esbuild.config.mjs production --plugin=core",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.2",
+        "esbuild": "^0.24.0",
+        "js-yaml": "^4.1.1",
+        "obsidian": "^1.7.2",
+        "typescript": "^5.7.2",
+        "vitest": "^2.1.8"
+    }
+}

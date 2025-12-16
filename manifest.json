@@ -1,0 +1,9 @@
+{
+  "id": "salt-marcher",
+  "name": "Salt Marcher",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "D&D world-building tool with hex map editor, travel system, and session management.",
+  "author": "Aaron",
+  "isDesktopOnly": false
+}

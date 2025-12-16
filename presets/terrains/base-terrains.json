@@ -1,0 +1,68 @@
+{
+  "$schema": "../../src/core/schemas/terrain.ts",
+  "description": "Base terrain definitions for Travel-Minimal. Movement costs from Travel-System.md.",
+  "terrains": [
+    {
+      "id": "road",
+      "name": "Road",
+      "movementCost": 1.0,
+      "color": "#8B7355",
+      "description": "Well-maintained road. Normal travel speed."
+    },
+    {
+      "id": "plains",
+      "name": "Plains",
+      "movementCost": 0.9,
+      "color": "#90B050",
+      "description": "Open grassland. Slightly slower than roads."
+    },
+    {
+      "id": "forest",
+      "name": "Forest",
+      "movementCost": 0.6,
+      "color": "#228B22",
+      "description": "Dense woodland. Significantly slower travel.",
+      "blocksMounted": true
+    },
+    {
+      "id": "hills",
+      "name": "Hills",
+      "movementCost": 0.7,
+      "color": "#A0A050",
+      "description": "Rolling terrain with elevation changes."
+    },
+    {
+      "id": "mountains",
+      "name": "Mountains",
+      "movementCost": 0.4,
+      "color": "#808080",
+      "description": "Steep mountain terrain. Very slow, foot only.",
+      "blocksMounted": true,
+      "blocksCarriage": true
+    },
+    {
+      "id": "swamp",
+      "name": "Swamp",
+      "movementCost": 0.5,
+      "color": "#6B8E6B",
+      "description": "Boggy wetland. Difficult terrain, foot only.",
+      "blocksMounted": true,
+      "blocksCarriage": true
+    },
+    {
+      "id": "desert",
+      "name": "Desert",
+      "movementCost": 0.7,
+      "color": "#EDC9AF",
+      "description": "Arid sandy terrain. Heat and sand slow travel."
+    },
+    {
+      "id": "water",
+      "name": "Water",
+      "movementCost": 1.0,
+      "color": "#4169E1",
+      "description": "Deep water. Requires a boat to cross.",
+      "requiresBoat": true
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "logLevel": "info",
+  "modules": {
+    "tile-cache": "warn",
+    "tile-repository": "warn",
+    "hex-coords": "warn",
+    "map-store": "info",
+    "map-rendering": "info",
+    "cartographer": "info",
+    "session-runner": "info"
+  },
+  "categories": {
+    "hexagon": false,
+    "batch": false,
+    "init": false,
+    "store": false,
+    "render": false
+  }
+}

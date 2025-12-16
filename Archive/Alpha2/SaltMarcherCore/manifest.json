@@ -1,0 +1,9 @@
+{
+	"id": "salt-marcher-core",
+	"name": "Salt Marcher Core",
+	"version": "1.0.0",
+	"minAppVersion": "1.0.0",
+	"description": "Core framework for Salt Marcher ecosystem - Session Runner and Library",
+	"author": "Aaron",
+	"isDesktopOnly": false
+}

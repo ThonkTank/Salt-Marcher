@@ -1,0 +1,203 @@
+/**
+ * Shared workmode UI styles
+ * Tab navigation and split-view layouts
+ */
+
+/* ==================== Tab Navigation ==================== */
+
+.sm-tab-nav {
+    display: flex;
+    gap: 4px;
+    padding: 8px;
+    border-bottom: 1px solid var(--background-modifier-border);
+    background: var(--background-primary);
+}
+
+.sm-tab-nav__button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.sm-tab-nav__button:hover:not(.is-disabled) {
+    background: var(--background-modifier-hover);
+    color: var(--text-normal);
+}
+
+.sm-tab-nav__button.is-active {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+}
+
+.sm-tab-nav__button.is-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.sm-tab-nav__button:focus-visible {
+    outline: 2px solid var(--interactive-accent);
+    outline-offset: 2px;
+}
+
+.sm-tab-nav__icon {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+}
+
+.sm-tab-nav__label {
+    white-space: nowrap;
+}
+
+.sm-tab-nav__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 9px;
+    background: var(--background-modifier-error);
+    color: var(--text-on-accent);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.sm-tab-nav__button.is-active .sm-tab-nav__badge {
+    background: var(--text-on-accent);
+    color: var(--interactive-accent);
+}
+
+/* Responsive: Icon-only on narrow screens */
+@media (max-width: 520px) {
+    .sm-tab-nav {
+        gap: 2px;
+        padding: 4px;
+    }
+
+    .sm-tab-nav__button {
+        padding: 8px;
+    }
+
+    .sm-tab-nav__label {
+        display: none;
+    }
+
+    .sm-tab-nav__icon {
+        font-size: 18px;
+    }
+}
+
+/* ==================== Split View Container ==================== */
+
+.sm-split-view {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.sm-split-view[data-orientation="horizontal"] {
+    flex-direction: column;
+}
+
+.sm-split-view[data-orientation="vertical"] {
+    flex-direction: row;
+}
+
+.sm-split-view__upper {
+    flex-shrink: 0;
+    overflow: auto;
+}
+
+.sm-split-view__lower {
+    flex: 1;
+    overflow: auto;
+}
+
+.sm-split-view__resizer {
+    flex-shrink: 0;
+    background: var(--background-modifier-border);
+    cursor: ns-resize;
+    transition: background 0.15s ease;
+    z-index: 10;
+}
+
+.sm-split-view__resizer[data-orientation="horizontal"] {
+    height: 4px;
+    width: 100%;
+}
+
+.sm-split-view__resizer[data-orientation="vertical"] {
+    width: 4px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+.sm-split-view__resizer:hover {
+    background: var(--interactive-accent);
+}
+
+.sm-split-view.is-resizing {
+    user-select: none;
+}
+
+.sm-split-view.is-resizing .sm-split-view__resizer {
+    background: var(--interactive-accent);
+}
+
+/* ==================== Mode Renderer States ==================== */
+
+.sm-mode-empty,
+.sm-mode-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.sm-mode-error {
+    color: var(--text-error);
+}
+
+/* ==================== Almanac-specific styles ==================== */
+
+.almanac-split-layout {
+    height: 100%;
+}
+
+.almanac-calendar-view {
+    padding: 16px;
+    background: var(--background-secondary);
+    border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.almanac-content-tabs {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.almanac-content-tabs__header {
+    flex-shrink: 0;
+}
+
+.almanac-content-tabs__body {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+}

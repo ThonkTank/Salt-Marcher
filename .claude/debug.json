@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "logAll": true,
+  "logFields": [
+    "*"
+  ],
+  "logCategories": [
+    "*"
+  ]
+}

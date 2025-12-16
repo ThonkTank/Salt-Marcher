@@ -1,0 +1,334 @@
+/**
+ * Travel Controls Component Styles
+ * Consolidated styling for Session Runner travel control panel.
+ *
+ * Design: Streamlined layout with unified button styling
+ * - Primary Controls: Timestamp → Playback (32px buttons) → Time Controls (32px buttons)
+ * - Advanced Settings: Collapsible section (Tempo, Speed) - collapsed by default
+ */
+
+/* ═════════════════════════════════════════════════════════════════
+   Main Container (DEPRECATED - moved to .sm-panel-card__body)
+   ═══════════════════════════════════════════════════════════════ */
+
+/*
+ * NOTE: The .sm-travel-controls wrapper class has been removed to simplify
+ * panel nesting. Flex layout is now handled by .sm-panel-card__body in
+ * session-runner.css. This reduces nesting from:
+ *   Card > Body > Controls Wrapper > Sections
+ * to:
+ *   Card > Body > Sections
+ *
+ * Keeping this rule temporarily for backwards compatibility, but it should
+ * not be actively used. Remove after confirming no side effects.
+ */
+.sm-travel-controls {
+  /* Deprecated - flex layout moved to .sm-panel-card__body */
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Section Containers (REMOVED - simplified nesting)
+   ═══════════════════════════════════════════════════════════════ */
+
+/*
+ * Section wrappers have been removed to simplify panel nesting.
+ * Content now lives directly in the card body, reducing hierarchy from:
+ *   Card > Body > Section > Content
+ * to:
+ *   Card > Body > Content
+ *
+ * Visual grouping is maintained through dividers and spacing utilities.
+ */
+
+/* ═════════════════════════════════════════════════════════════════
+   Section Dividers
+   ═══════════════════════════════════════════════════════════════ */
+
+.sm-travel-controls__divider {
+  height: 1px;
+  background: var(--sm-color-border, var(--background-modifier-border));
+  margin: 2px 0;
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Playback Controls Row
+   ═══════════════════════════════════════════════════════════════ */
+
+.sm-travel-controls__playback-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Unified Button Styling (All 32px height)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base button styling - unified 32px height for all buttons */
+.sm-travel-controls__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 var(--sm-space-sm, 8px);
+  border: 1px solid var(--sm-color-border, var(--background-modifier-border));
+  border-radius: var(--sm-cartographer-border-radius-xs, 3px);
+  background: var(--sm-color-bg-primary, var(--background-primary));
+  color: var(--sm-color-text-primary, var(--text-normal));
+  font-size: var(--sm-font-size-sm, 13px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sm-travel-controls__button:hover {
+  background: var(--sm-color-bg-primary-hover, var(--background-modifier-hover));
+  border-color: var(--sm-color-accent, var(--interactive-accent));
+}
+
+.sm-travel-controls__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sm-travel-controls__button .svg-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Primary accent for Play button */
+.sm-travel-controls__button--primary {
+  background: var(--sm-color-accent, var(--interactive-accent));
+  color: var(--sm-color-text-on-accent, var(--text-on-accent));
+  border-color: var(--sm-color-accent, var(--interactive-accent));
+}
+
+.sm-travel-controls__button--primary:hover {
+  background: var(--sm-color-accent-hover, var(--interactive-accent-hover));
+  border-color: var(--sm-color-accent-hover, var(--interactive-accent-hover));
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Tempo Slider Row
+   ═══════════════════════════════════════════════════════════════ */
+
+.sm-travel-controls__tempo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sm-space-sm, 8px);
+}
+
+.sm-travel-controls__tempo-label {
+  font-size: var(--sm-font-size-sm, 13px);
+  color: var(--sm-color-text-secondary, var(--text-muted));
+  min-width: 70px;
+  white-space: nowrap;
+}
+
+.sm-travel-controls__tempo-slider {
+  flex: 1;
+  min-width: 100px;
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Speed Input Row
+   ═══════════════════════════════════════════════════════════════ */
+
+.sm-travel-controls__speed-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sm-space-xs, 4px);
+}
+
+.sm-travel-controls__speed-label {
+  font-size: var(--sm-font-size-sm, 13px);
+  color: var(--sm-color-text-primary, var(--text-normal));
+  white-space: nowrap;
+}
+
+.sm-travel-controls__speed-input {
+  width: 60px;
+  padding: 2px 6px;
+  font-size: var(--sm-font-size-sm, 13px);
+  border: 1px solid var(--sm-color-border, var(--background-modifier-border));
+  border-radius: var(--sm-cartographer-border-radius-xs, 3px);
+  background: var(--sm-color-bg-primary, var(--background-primary));
+  color: var(--sm-color-text-primary, var(--text-normal));
+}
+
+.sm-travel-controls__speed-input:focus {
+  outline: none;
+  border-color: var(--sm-color-accent, var(--interactive-accent));
+}
+
+.sm-travel-controls__speed-unit {
+  font-size: var(--sm-font-size-sm, 13px);
+  color: var(--sm-color-text-secondary, var(--text-muted));
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Advanced Settings - Collapsible Section
+   ═══════════════════════════════════════════════════════════════ */
+
+.sm-travel-controls__advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sm-space-xs, 4px);
+  width: 100%;
+  height: 32px;
+  padding: 0 var(--sm-space-sm, 8px);
+  border: none;
+  border-radius: var(--sm-cartographer-border-radius-xs, 3px);
+  background: transparent;
+  color: var(--sm-color-text-secondary, var(--text-muted));
+  font-size: var(--sm-font-size-sm, 13px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.sm-travel-controls__advanced-toggle:hover {
+  background: var(--sm-color-bg-primary-hover, var(--background-modifier-hover));
+  color: var(--sm-color-text-primary, var(--text-normal));
+}
+
+.sm-travel-controls__advanced-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.sm-travel-controls__advanced-chevron .svg-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.sm-travel-controls__advanced-label {
+  flex: 1;
+  font-weight: var(--sm-font-weight-medium, 500);
+}
+
+.sm-travel-controls__advanced-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sm-space-xs, 4px);
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+  max-height: 350px;
+  opacity: 1;
+  margin-top: 2px;
+}
+
+.sm-travel-controls__advanced-content--collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Inline Travel Duration Display (within Playback Row)
+   ═══════════════════════════════════════════════════════════════ */
+
+.sm-travel-controls__travel-duration-inline {
+  margin-left: auto;
+  font-size: var(--sm-font-size-sm, 13px);
+  font-weight: var(--sm-font-weight-semibold, 600);
+  color: var(--sm-color-accent, var(--interactive-accent));
+  white-space: nowrap;
+  padding: 0 var(--sm-space-xs, 4px);
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Speed Calculation Info Section (DEPRECATED - moved to Current Hex Card)
+   ═══════════════════════════════════════════════════════════════ */
+
+.sm-travel-controls__speed-calc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sm-space-xs, 4px);
+  margin-top: var(--sm-space-sm, 8px);
+  padding-top: var(--sm-space-sm, 8px);
+  border-top: 1px solid var(--sm-color-border, var(--background-modifier-border));
+}
+
+.sm-travel-controls__speed-calc-title {
+  font-size: var(--sm-font-size-xs, 11px);
+  font-weight: var(--sm-font-weight-medium, 500);
+  color: var(--sm-color-text-secondary, var(--text-muted));
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.sm-travel-controls__speed-calc-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sm-travel-controls__speed-calc-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--sm-space-sm, 8px);
+  align-items: center;
+  padding: 2px 4px;
+  font-size: var(--sm-font-size-sm, 13px);
+  border-radius: var(--sm-cartographer-border-radius-xs, 3px);
+}
+
+.sm-travel-controls__speed-calc-row:hover {
+  background: var(--sm-color-bg-primary-hover, var(--background-modifier-hover));
+}
+
+.sm-travel-controls__speed-calc-label {
+  color: var(--sm-color-text-secondary, var(--text-muted));
+  white-space: nowrap;
+}
+
+.sm-travel-controls__speed-calc-value {
+  color: var(--sm-color-text-primary, var(--text-normal));
+  font-weight: var(--sm-font-weight-medium, 500);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Result row highlight */
+.sm-travel-controls__speed-calc-row--result {
+  margin-top: 2px;
+  padding: 4px;
+  background: var(--sm-color-bg-primary-hover, var(--background-modifier-hover));
+  border: 1px solid var(--sm-color-border, var(--background-modifier-border));
+}
+
+.sm-travel-controls__speed-calc-row--result .sm-travel-controls__speed-calc-label {
+  color: var(--sm-color-text-primary, var(--text-normal));
+  font-weight: var(--sm-font-weight-semibold, 600);
+}
+
+.sm-travel-controls__speed-calc-row--result .sm-travel-controls__speed-calc-value {
+  color: var(--sm-color-accent, var(--interactive-accent));
+  font-weight: var(--sm-font-weight-semibold, 600);
+}
+
+/* ═════════════════════════════════════════════════════════════════
+   Responsive Adjustments
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Ensure playback row wraps gracefully on narrow panels */
+@media (max-width: 280px) {
+  .sm-travel-controls__playback-row {
+    justify-content: center;
+  }
+
+  .sm-travel-controls__button {
+    min-width: 28px;
+    padding: 0 var(--sm-space-xs, 4px);
+  }
+}
