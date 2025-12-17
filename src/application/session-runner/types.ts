@@ -11,6 +11,7 @@ import type {
   WeatherState,
   EncounterInstance,
 } from '@core/schemas';
+import type { Route, TravelStatus } from '@/features/travel/types';
 
 // ============================================================================
 // View Types
@@ -56,7 +57,7 @@ export interface HeaderState {
  */
 export interface TravelSectionState {
   /** Current travel status */
-  status: 'idle' | 'planning' | 'traveling' | 'paused';
+  status: 'idle' | 'planning' | 'traveling' | 'paused' | 'arrived';
   /** Travel speed in miles/day */
   speed: number;
   /** Current terrain name at party position */
@@ -150,6 +151,16 @@ export interface RenderState {
   /** Zoom level */
   zoom: number;
 
+  // === Travel Planning ===
+  /** Whether travel planning mode is active (click to add waypoints) */
+  travelMode: boolean;
+  /** Waypoints being planned (before route calculation) */
+  planningWaypoints: HexCoordinate[];
+  /** Active route (after planning or during travel) */
+  activeRoute: Route | null;
+  /** Current travel status from travel feature */
+  travelStatus: TravelStatus;
+
   // === Weather & Encounter (for data access) ===
   /** Current weather state */
   currentWeather: WeatherState | null;
@@ -184,6 +195,12 @@ export function createInitialRenderState(): RenderState {
     selectedTile: null,
     cameraOffset: { x: 0, y: 0 },
     zoom: 1.0,
+
+    // Travel Planning
+    travelMode: false,
+    planningWaypoints: [],
+    activeRoute: null,
+    travelStatus: 'idle',
 
     // Weather & Encounter
     currentWeather: null,
@@ -228,6 +245,7 @@ export type RenderHint =
   | 'hover' // Hover state changed
   | 'camera' // Camera/zoom changed
   | 'selection' // Selection changed
+  | 'route' // Route/waypoints changed
   | 'header' // Header state changed
   | 'sidebar'; // Sidebar state changed
 

@@ -75,6 +75,52 @@ Prüfe: Gibt es aktive Quests mit offenen Encounter-Slots?
 - Keine komplexe Filter-Logik nötig
 - Flexibel für spontane Story-Anpassungen
 
+### Quest-Assignment UI (Post-Combat)
+
+Der Assignment-Dialog erscheint als **Phase 2 im Post-Combat Resolution Flow** (siehe [Combat-System.md](Combat-System.md#post-combat-resolution)).
+
+**UI-Elemente:**
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  📜 QUEST-ZUWEISUNG                                        │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  Quest-XP Pool: 270 XP (60% von 450)                       │
+│                                                            │
+│  Quest-Suche: [________________🔍]                         │
+│                                                            │
+│  Aktive Quests:                                            │
+│  ┌──────────────────────────────────────────────────────┐ │
+│  │ ○ "Goblin-Höhle säubern"                             │ │
+│  │   +270 XP zum Quest-Pool (aktuell: 150 XP)           │ │
+│  ├──────────────────────────────────────────────────────┤ │
+│  │ ○ "Straßen sichern"                                  │ │
+│  │   +270 XP zum Quest-Pool (aktuell: 0 XP)             │ │
+│  ├──────────────────────────────────────────────────────┤ │
+│  │ ● Keiner Quest zuweisen                              │ │
+│  │   Quest-Pool XP verfallen (270 XP)                   │ │
+│  └──────────────────────────────────────────────────────┘ │
+│                                                            │
+│  [Zuweisen →]                            [Überspringen ✗] │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Quest-Suche:** Filtert nicht-abgeschlossene Quests nach Name. Keine automatische Slot-Matching - GM wählt manuell.
+
+**Voraussetzungen für Anzeige:**
+- Mind. 1 nicht-abgeschlossene Quest existiert
+- Combat wurde mit beliebigem Outcome beendet
+
+**Wenn keine Quests:** Phase wird übersprungen, Quest-Pool XP (60%) verfallen automatisch.
+
+**Auswahl-Logik:**
+1. GM sucht Quest per Suchfeld
+2. GM wählt Quest ODER "Keiner Quest zuweisen"
+3. Bei Zuweisung: `quest:xp-accumulated` Event mit 60% XP
+
+**Bei Überspringen:** Gleich wie "Keiner Quest zuweisen" - 60% XP verfallen.
+
 ---
 
 ## XP-Verteilung
@@ -156,6 +202,30 @@ Pro Quest konfigurierbar:
 | **Random Encounter Loot** | Loot bei Random Encounters waehrend aktiver Quest |
 | **Quest-Abgabe Rewards** | Belohnung bei Quest-Abschluss (Items inkl. Gold, Reputation) |
 | **Verteilter Loot** | An Locations platzierter Loot (Treasure Chests, etc.) |
+
+### Budget-Integration
+
+Quest-Rewards interagieren mit dem globalen Loot-Budget:
+
+```
+Quest mit definiertem Reward (z.B. 500g)
+    ↓
+Encounter innerhalb dieser Quest:
+    → Quest-Reward-Anteil wird vom Budget reserviert
+    → Encounter-Loot entsprechend reduziert
+    ↓
+Quest-Abschluss:
+    → Quest-Reward wird ausgezahlt
+    → Budget wird belastet
+```
+
+**Beispiel:**
+- Quest "Goblin-Hoehle" hat 500g Reward und 3 Encounters
+- Pro Encounter ~167g vom Budget reserviert
+- Encounter-Loot entsprechend geringer (kann 0 sein)
+- Bei Quest-Abschluss: 500g Reward
+
+→ Details: [Loot-Feature.md](Loot-Feature.md#budget-verteilung)
 
 ### Reward-Platzierung
 

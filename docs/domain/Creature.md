@@ -65,6 +65,7 @@ interface CreatureDefinition {
 
   // Loot-System
   lootTags: string[];                     // ["humanoid", "poor", "tribal"]
+  defaultLoot?: DefaultLootEntry[];       // Garantiertes/wahrscheinliches Loot
 
   // D&D 5e Statblock (komplett)
   abilities: AbilityScores;
@@ -105,7 +106,50 @@ interface SpeedBlock {
   climb?: number;
   burrow?: number;
 }
+
+// Loot-System (NEU)
+interface DefaultLootEntry {
+  itemId: EntityId<'item'>;
+  chance: number;                  // 0.0-1.0 (1.0 = garantiert)
+  quantity?: number | [min: number, max: number];
+}
 ```
+
+### DefaultLoot
+
+Creatures koennen garantiertes oder wahrscheinliches Loot haben.
+
+```typescript
+// Wolf: Pelz garantiert, Zaehne 30%
+const wolf: CreatureDefinition = {
+  // ... Basis-Stats ...
+  lootTags: ['beast'],
+  defaultLoot: [
+    { itemId: 'wolf-pelt', chance: 1.0 },
+    { itemId: 'wolf-fang', chance: 0.3, quantity: [1, 2] }
+  ]
+};
+
+// Ritter: Volle Ausruestung
+const knight: CreatureDefinition = {
+  // ... Basis-Stats ...
+  lootTags: ['humanoid', 'wealthy'],
+  defaultLoot: [
+    { itemId: 'longsword', chance: 1.0 },
+    { itemId: 'plate-armor', chance: 1.0 },
+    { itemId: 'gold-piece', chance: 1.0, quantity: [10, 50] }
+  ]
+};
+```
+
+**Verarbeitung bei Encounter:**
+
+1. Fuer jede Creature: defaultLoot wuerfeln (`Math.random() < entry.chance`)
+2. Soft-Cap pruefen: Bei hohen Budget-Schulden teure Items weglassen
+3. Items der Creature zuweisen (kann im Kampf genutzt werden)
+4. Budget belasten
+
+→ Details: [Loot-Feature.md](../features/Loot-Feature.md#creature-default-loot)
 
 ### CreaturePreferences
 

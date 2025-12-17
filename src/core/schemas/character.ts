@@ -11,6 +11,7 @@
 
 import { z } from 'zod';
 import { entityIdSchema, timestampSchema } from './common';
+import { inventorySlotSchema } from './item';
 
 // ============================================================================
 // Character Schema
@@ -54,11 +55,11 @@ export const characterSchema = z.object({
   strength: z.number().int().min(1).max(30),
 
   /**
-   * Inventory slots.
-   * MVP: Empty array, full inventory system is post-MVP.
+   * Inventory slots with typed items.
+   * Each slot references an item by ID with quantity.
    * @see docs/features/Inventory-System.md
    */
-  inventory: z.array(z.unknown()).default([]),
+  inventory: z.array(inventorySlotSchema).default([]),
 
   /** Creation timestamp */
   createdAt: timestampSchema.optional(),

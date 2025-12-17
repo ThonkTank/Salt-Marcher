@@ -35,8 +35,10 @@ idle → planning → traveling ↔ paused → arrived
 ### Basis-Formel
 
 ```
-Effektive Geschwindigkeit = Basis-Speed × Terrain-Faktor × Weather-Faktor
+Effektive Geschwindigkeit = Basis-Speed × Terrain-Faktor × Weather-Faktor × Pfad-Multiplikator
 ```
+
+**Hinweis:** Der Pfad-Multiplikator ist ein Post-MVP Feature. Siehe [Pfad-Modifikation](#pfad-modifikation-post-mvp) weiter unten.
 
 ### Transport-Modi
 
@@ -84,6 +86,54 @@ function getTerrainFactor(tile: OverworldTile): number {
 | `snow` | 0.7 |
 | `blizzard` | 0.3 |
 | `fog` | 0.8 |
+
+### Pfad-Modifikation (Post-MVP)
+
+Pfade (Strassen, Fluesse, etc.) modifizieren die Geschwindigkeit wenn die Bewegung **entlang** des Pfades verlaeuft:
+
+```typescript
+function getPathMultiplier(
+  fromTile: OverworldTile,
+  toTile: OverworldTile,
+  transport: TransportMode
+): number {
+  // Suche Pfad der beide Tiles verbindet
+  const pathInfo = fromTile.paths.find(p =>
+    p.connections.to?.equals(toTile.coordinate)
+  );
+
+  if (!pathInfo) return 1.0;  // Kein Pfad = kein Modifier
+
+  const path = getPath(pathInfo.pathId);
+
+  // Barrieren pruefen
+  if (path.movement.blocksMovement) {
+    throw new TravelError('PATH_BLOCKED');
+  }
+  if (path.movement.requiresTransport &&
+      !path.movement.requiresTransport.includes(transport)) {
+    throw new TravelError('TRANSPORT_REQUIRED');
+  }
+
+  // Multiplikator bestimmen (transport-spezifisch oder default)
+  return path.movement.transportModifiers?.[transport]
+    ?? path.movement.defaultModifier;
+}
+```
+
+**Wichtig:** Der Pfad-Multiplikator gilt nur wenn die Bewegung **entlang** des Pfades verlaeuft, nicht quer dazu.
+
+**Beispiele:**
+
+| Situation | Terrain | Pfad | Multiplikator |
+|-----------|---------|------|---------------|
+| Strasse durch Sumpf (entlang) | 0.5 | 1.3 | 1.3 |
+| Strasse durch Sumpf (quer) | 0.5 | - | 1.0 |
+| Fluss mit Boot | 1.0 | 1.5 (boat) | 1.5 |
+| Fluss ohne Boot | 1.0 | blocked | Fehler |
+| Klippe | - | blocked | Fehler |
+
+> Details: [Path.md](../domain/Path.md)
 
 ---
 
@@ -293,9 +343,12 @@ eventBus.publish({
 | Animierte Reise | ✓ | | Token-Bewegung |
 | Encounter-Checks | ✓ | | Pro Stunde (am Stundenanfang) |
 | Pause/Resume | ✓ | | State-Machine |
+| **Pfad-Integration** | | ✓ | Direktionsabhaengiger Speed |
+| **Pfad-Barrieren** | | ✓ | blocksMovement, requiresTransport |
+| **Pfad-Stroemung** | | mittel | Flussabwaerts schneller |
 | Resource-Tracking (Rationen) | | mittel | Character-Integration |
 | Dungeon-Exploration | | niedrig | Separates System |
 
 ---
 
-*Siehe auch: [Map.md](../domain/Map.md) | [Inventory-System.md](Inventory-System.md) (Encumbrance) | [Weather-System.md](Weather-System.md) | [Encounter-System.md](Encounter-System.md)*
+*Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Inventory-System.md](Inventory-System.md) (Encumbrance) | [Weather-System.md](Weather-System.md) | [Encounter-System.md](Encounter-System.md)*

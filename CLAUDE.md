@@ -335,6 +335,7 @@ Konsultiere diese Tabelle und lies die zugeordneten Docs **VOR** dem Code.
 | **Location/POI** | POI.md, Map-Navigation.md, Map.md | Travel, Quest, Encounter |
 | **Item** | Item.md, EntityRegistry.md | Inventory, Loot, Shop |
 | **Terrain** | Terrain.md, Map.md | Map-Feature, Weather, Travel |
+| **Path** | Path.md, Map.md, Map-Navigation.md | Map-Feature, Travel (post-MVP) |
 | **Shop** | Shop.md, NPC-System.md, Item.md | Library |
 | **Journal** | Journal.md, Time-System.md | SessionRunner, Almanac |
 | **Map (Entity)** | Map.md, Map-Navigation.md, Terrain.md | Map-Feature, Cartographer |
@@ -362,6 +363,9 @@ Konsultiere diese Tabelle und lies die zugeordneten Docs **VOR** dem Code.
 | **Testing** | Testing.md, Conventions.md |
 | **Architektur-Fragen** | Features.md, Data-Flow.md, Project-Structure.md, Application.md |
 | **Layer-Grenzen** | Features.md, Application.md, Infrastructure.md |
+| **Implementierungsstand** | Development-Roadmap.md |
+| **Begriffe/Glossar** | Glossary.md |
+| **Typische Workflows** | Example-Workflows.md |
 
 ### Immer lesen
 

@@ -273,3 +273,23 @@ export {
   IMMEDIATE_XP_PERCENT,
   QUEST_POOL_XP_PERCENT,
 } from './quest';
+
+// Item schemas
+export {
+  itemCategorySchema,
+  type ItemCategory,
+  raritySchema,
+  type Rarity,
+  itemSchema,
+  type Item,
+  inventorySlotSchema,
+  type InventorySlot,
+  CURRENCY_RATES,
+  COIN_WEIGHT,
+  CURRENCY_IDS,
+  type CurrencyId,
+  isStackable,
+  isCurrency,
+  calculateTotalValue,
+  calculateTotalWeight,
+} from './item';

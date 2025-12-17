@@ -68,6 +68,7 @@ type EntityType =
   | 'track';       // Audio-Tracks mit Mood-Tags (→ docs/features/Audio-System.md)
 
 // Post-MVP Entity-Typen
+// | 'path'        // Lineare Features (Strassen, Fluesse, etc.) - Post-MVP
 // | 'spell'       // D&D Beyond-level Character Management
 // | 'playlist'    // Manuelle Musik-Kontrolle
 
@@ -151,6 +152,8 @@ type EntityTypeMap = {
   worldevent: WorldEvent;
   // Audio
   track: Track;                     // Audio-Tracks mit Mood-Tags
+  // Post-MVP:
+  // path: PathDefinition;          // Lineare Features (→ docs/domain/Path.md)
 };
 
 type Entity<T extends EntityType> = EntityTypeMap[T];
@@ -380,6 +383,9 @@ Vault/
         ├── terrain/               # Custom Terrain-Definitionen
         │   ├── fungal-wastes.json
         │   └── crystal-plains.json
+        ├── path/                  # Post-MVP: Lineare Features
+        │   ├── old-trade-road.json
+        │   └── silver-river.json
         ├── quest/                 # Quest-Definitionen
         │   └── clear-goblin-cave.json
         ├── encounter/             # Encounter-Templates
@@ -784,7 +790,8 @@ Aktuelles Wetter
 | Pessimistisches Speichern | ✓ | | Sofort bei Aenderung |
 | In-Memory-Indizes | | niedrig | Performance-Optimierung |
 | Schema-Migration | | niedrig | Automatische Updates |
+| **path Entity-Typ** | | ✓ | Lineare Features (→ docs/domain/Path.md) |
 
 ---
 
-*Siehe auch: [Features.md](Features.md) | [Infrastructure.md](Infrastructure.md) | [Core.md](Core.md)*
+*Siehe auch: [Features.md](Features.md) | [Infrastructure.md](Infrastructure.md) | [Core.md](Core.md) | [Path.md](../domain/Path.md)*

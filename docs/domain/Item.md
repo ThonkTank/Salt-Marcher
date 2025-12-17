@@ -44,7 +44,7 @@ interface Item {
   tags: string[];              // Fuer Loot-Matching: ["martial", "iron", "tribal"]
 
   // === Wert ===
-  value: number;               // GP, fuer Loot-Generierung und Handel
+  value: number;               // GP - wird fuer Budget-Tracking, Loot-Generierung und Handel verwendet
   rarity?: Rarity;             // common, uncommon, rare, etc.
 
   // === Spezial-Flags ===
@@ -270,8 +270,12 @@ interface InventorySlot {
 
 Das Loot-Feature verwendet Items fuer:
 - **Tag-Matching:** Creature/Faction Tags werden mit Item Tags verglichen
-- **Wert-Budgetierung:** Encounter-XP bestimmt Loot-Wert, Items werden bis Budget ausgewaehlt
+- **Budget-Tracking:** `value` belastet das globale Loot-Budget
+- **defaultLoot:** Creature-spezifisches Loot (Ritter → Schwert)
+- **Soft-Cap:** Teure Items werden bei Budget-Schulden uebersprungen
 - **Rarity-Filter:** Optionale Einschraenkung auf bestimmte Rarities
+
+→ Details: [Loot-Feature.md](../features/Loot-Feature.md)
 
 ```typescript
 // Loot-Generierung

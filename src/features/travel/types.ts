@@ -66,6 +66,13 @@ export interface TravelFeaturePort {
   planRoute(destination: HexCoordinate): Result<Route, AppError>;
 
   /**
+   * Plan a route through multiple user-specified waypoints.
+   * Calculates path from current position through all waypoints.
+   * @param waypoints - Array of waypoints (not including start position)
+   */
+  planRouteWithWaypoints(waypoints: HexCoordinate[]): Result<Route, AppError>;
+
+  /**
    * Start traveling along the planned route.
    * Only valid when status is 'planning'.
    */

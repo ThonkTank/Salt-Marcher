@@ -34,6 +34,8 @@ export {
   type VaultCalendarAdapterDeps,
   // In-memory adapters (testing/development)
   createTerrainRegistry,
+  createItemRegistry,
+  type ItemStoragePort,
   createMapAdapter,
   TEST_MAP_ID,
   createPartyAdapter,

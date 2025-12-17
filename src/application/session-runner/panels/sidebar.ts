@@ -12,12 +12,16 @@ import type { RenderState, SidebarState, QuestSectionState } from '../types';
 
 export interface SidebarPanelCallbacks {
   // Travel
-  /** Plan a route (placeholder) */
-  onPlanRoute: () => void;
-  /** Start travel (placeholder) */
+  /** Toggle travel planning mode (click on map to add waypoints) */
+  onToggleTravelMode: () => void;
+  /** Start travel along planned route */
   onStartTravel: () => void;
-  /** Pause travel (placeholder) */
+  /** Pause travel */
   onPauseTravel: () => void;
+  /** Resume paused travel */
+  onResumeTravel: () => void;
+  /** Cancel travel (stop and clear route) */
+  onCancelTravel: () => void;
 
   // Actions
   /** Generate a random encounter */
@@ -81,20 +85,50 @@ export function createSidebarPanel(
     margin-bottom: 8px;
   `;
 
+  // Waypoint count display (shows during planning)
+  const waypointCount = document.createElement('div');
+  waypointCount.className = 'waypoint-count';
+  waypointCount.style.cssText = `
+    font-size: 11px;
+    color: var(--text-accent);
+    margin-bottom: 6px;
+    display: none;
+  `;
+
   const travelButtons = document.createElement('div');
   travelButtons.style.cssText = `
     display: flex;
+    flex-direction: column;
     gap: 4px;
   `;
 
-  const planBtn = createButton('Plan', callbacks.onPlanRoute, true);
-  const startBtn = createButton('Start', callbacks.onStartTravel, true);
+  // Row 1: Plan/Cancel Plan + Start
+  const row1 = document.createElement('div');
+  row1.style.cssText = 'display: flex; gap: 4px;';
 
-  travelButtons.appendChild(planBtn);
-  travelButtons.appendChild(startBtn);
+  const planBtn = createButton('Plan', callbacks.onToggleTravelMode);
+  const startBtn = createButton('Start', callbacks.onStartTravel, true);
+  startBtn.style.display = 'none'; // Hidden until waypoints exist
+
+  row1.appendChild(planBtn);
+  row1.appendChild(startBtn);
+
+  // Row 2: Pause/Resume + Cancel (shown during travel)
+  const row2 = document.createElement('div');
+  row2.style.cssText = 'display: none; gap: 4px;';
+
+  const pauseResumeBtn = createButton('Pause', callbacks.onPauseTravel);
+  const cancelBtn = createButton('Cancel', callbacks.onCancelTravel);
+
+  row2.appendChild(pauseResumeBtn);
+  row2.appendChild(cancelBtn);
+
+  travelButtons.appendChild(row1);
+  travelButtons.appendChild(row2);
 
   travelContent.appendChild(travelStatus);
   travelContent.appendChild(travelSpeed);
+  travelContent.appendChild(waypointCount);
   travelContent.appendChild(travelButtons);
   sidebar.appendChild(travelSection);
 
@@ -209,15 +243,22 @@ export function createSidebarPanel(
     return btn;
   }
 
-  function updateTravelSection(travel: SidebarState['travel']): void {
-    // Status
+  function updateTravelSection(state: RenderState): void {
+    const { travelMode, planningWaypoints, travelStatus: status } = state;
+    const travel = state.sidebar.travel;
+
+    // Status display
     const statusMap: Record<string, string> = {
       idle: '⏸️ Idle',
       planning: '📍 Planning...',
       traveling: '🚶 Traveling...',
       paused: '⏸️ Paused',
+      arrived: '🏁 Arrived',
     };
-    travelStatus.textContent = `Status: ${statusMap[travel.status] || travel.status}`;
+
+    // Use travelMode for planning state, otherwise use travel feature status
+    const displayStatus = travelMode ? 'planning' : status;
+    travelStatus.textContent = `Status: ${statusMap[displayStatus] || displayStatus}`;
 
     // Speed
     travelSpeed.textContent = `Speed: ${travel.speed} mi/day`;
@@ -225,13 +266,50 @@ export function createSidebarPanel(
       travelSpeed.textContent += ` • ${travel.currentTerrain}`;
     }
 
-    // Buttons based on status
-    planBtn.disabled = travel.status !== 'idle';
-    startBtn.disabled = travel.status !== 'idle';
-    planBtn.style.opacity = planBtn.disabled ? '0.5' : '1';
-    startBtn.style.opacity = startBtn.disabled ? '0.5' : '1';
-    planBtn.style.cursor = planBtn.disabled ? 'not-allowed' : 'pointer';
-    startBtn.style.cursor = startBtn.disabled ? 'not-allowed' : 'pointer';
+    // Waypoint count (visible during planning)
+    if (travelMode && planningWaypoints.length > 0) {
+      waypointCount.style.display = 'block';
+      waypointCount.textContent = `📍 ${planningWaypoints.length} waypoint${planningWaypoints.length > 1 ? 's' : ''} set`;
+    } else {
+      waypointCount.style.display = 'none';
+    }
+
+    // Button visibility based on travel state
+    const isIdle = (status === 'idle' || status === 'arrived') && !travelMode;
+    const isPlanning = travelMode;
+    const isTraveling = status === 'traveling';
+    const isPaused = status === 'paused';
+
+    // Row 1: Plan + Start (visible when idle or planning)
+    row1.style.display = (isIdle || isPlanning) ? 'flex' : 'none';
+
+    // Plan button: toggles between "Plan" and "Cancel Plan"
+    planBtn.textContent = travelMode ? 'Cancel Plan' : 'Plan';
+    updateButtonState(planBtn, status === 'idle' || status === 'arrived' || travelMode);
+
+    // Start button: visible when planning with waypoints
+    startBtn.style.display = isPlanning ? 'flex' : 'none';
+    updateButtonState(startBtn, planningWaypoints.length > 0);
+
+    // Row 2: Pause/Resume + Cancel (visible when traveling or paused)
+    row2.style.display = (isTraveling || isPaused) ? 'flex' : 'none';
+
+    // Pause/Resume button
+    if (isTraveling) {
+      pauseResumeBtn.textContent = 'Pause';
+      pauseResumeBtn.onclick = callbacks.onPauseTravel;
+    } else if (isPaused) {
+      pauseResumeBtn.textContent = 'Resume';
+      pauseResumeBtn.onclick = callbacks.onResumeTravel;
+    }
+    updateButtonState(pauseResumeBtn, true);
+    updateButtonState(cancelBtn, true);
+  }
+
+  function updateButtonState(btn: HTMLButtonElement, enabled: boolean): void {
+    btn.disabled = !enabled;
+    btn.style.opacity = enabled ? '1' : '0.5';
+    btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
   }
 
   function updateActionsSection(actions: SidebarState['actions']): void {
@@ -344,7 +422,7 @@ export function createSidebarPanel(
 
   return {
     update(state: RenderState): void {
-      updateTravelSection(state.sidebar.travel);
+      updateTravelSection(state);
       updateQuestSection(state.sidebar.quest);
       updateActionsSection(state.sidebar.actions);
     },

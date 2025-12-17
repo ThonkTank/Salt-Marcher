@@ -41,6 +41,9 @@ export {
 // Terrain (always in-memory, preset data)
 export { createTerrainRegistry } from './terrain-registry';
 
+// Items (always in-memory, preset data)
+export { createItemRegistry, type ItemStoragePort } from './item-registry';
+
 // In-memory adapters for testing
 export { createMapAdapter, TEST_MAP_ID } from './map-adapter';
 export { createPartyAdapter, DEFAULT_PARTY_ID } from './party-adapter';

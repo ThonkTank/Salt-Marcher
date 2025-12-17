@@ -52,18 +52,19 @@ Der Cartographer ist der zentrale Map-Editor mit kontextabhaengigen Tools je nac
 
 ### Tool-Legende
 
-| Icon | Tool | Map-Typ |
-|------|------|---------|
-| 🖌️ | Terrain-Brush | Overland |
-| ⛰️ | Elevation-Brush | Overland |
-| 🌡️ | Climate-Brush | Overland |
-| 🌲 | Feature-Brush | Overland |
-| 📍 | Location-Marker | Overland |
-| 👁️ | Inspector | Alle |
-| 🧱 | Wall-Tool | Dungeon |
-| 🚪 | Door-Tool | Dungeon |
-| ⚠️ | Trap-Tool | Dungeon |
-| 🎯 | Token-Placer | Dungeon |
+| Icon | Tool | Map-Typ | Status |
+|------|------|---------|--------|
+| 🖌️ | Terrain-Brush | Overland | MVP |
+| ⛰️ | Elevation-Brush | Overland | MVP |
+| 🌡️ | Climate-Brush | Overland | Post-MVP |
+| 🌲 | Feature-Brush | Overland | MVP |
+| 🛤️ | Path-Tool | Overland | Post-MVP |
+| 📍 | Location-Marker | Overland | MVP |
+| 👁️ | Inspector | Alle | MVP |
+| 🧱 | Wall-Tool | Dungeon | MVP |
+| 🚪 | Door-Tool | Dungeon | MVP |
+| ⚠️ | Trap-Tool | Dungeon | Post-MVP |
+| 🎯 | Token-Placer | Dungeon | MVP |
 
 ---
 
@@ -248,6 +249,68 @@ Platziert Terrain-Features (Waelder, Ruinen, etc.).
 │                                      │
 └──────────────────────────────────────┘
 ```
+
+**Hinweis:** Die "Roads" Kategorie platziert nur Icons/Marker. Fuer durchgehende lineare Pfade mit mechanischen Auswirkungen siehe [Path-Tool](#path-tool-overland-post-mvp).
+
+### Path-Tool (Overland) (Post-MVP)
+
+Zeichnet lineare Features (Strassen, Fluesse, Schluchten, Klippen) zwischen Hex-Zentren.
+
+```
+┌──────────────────────────────────────┐
+│  🛤️ PATH TOOL                        │
+├──────────────────────────────────────┤
+│                                      │
+│  Path Type                           │
+│  ───────────────────────────────────│
+│  ┌──────┐ ┌──────┐ ┌──────┐        │
+│  │ ═══  │ │ ~~~  │ │ ///  │        │
+│  │ Road │ │River │ │Ravine│        │
+│  └──────┘ └──────┘ └──────┘        │
+│  ┌──────┐ ┌──────┐                  │
+│  │ ▲▲▲  │ │ ---  │                  │
+│  │Cliff │ │Trail │                  │
+│  └──────┘ └──────┘                  │
+│                                      │
+│  Mode                                │
+│  ───────────────────────────────────│
+│  [● Draw] [○ Extend] [○ Delete]     │
+│                                      │
+│  Properties (selected path)          │
+│  ───────────────────────────────────│
+│  Name: [________________]            │
+│  Speed Modifier: [====●====] 1.3    │
+│                                      │
+│  ☐ Blocks Movement (barrier)         │
+│  ☐ Requires Transport: [Boot ▼]     │
+│                                      │
+│  Encounter                           │
+│  ───────────────────────────────────│
+│  ☐ Custom Creature Pool              │
+│  [+ Add Creature...]                 │
+│                                      │
+│  [+ Custom Path Type...]             │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+**Interaktionen:**
+
+| Aktion | Funktion |
+|--------|----------|
+| Click + Drag | Pfad zeichnen (Hex-zu-Hex Verbindungen) |
+| Click auf Pfad-Endpunkt | Pfad verlaengern |
+| Right-Click auf Pfad | Pfad loeschen |
+| Inspector | Pfad-Details bearbeiten |
+
+**Rendering:**
+
+Pfade werden als Linien zwischen Hex-Zentren gezeichnet:
+- Terrain wird zuerst gerendert
+- Pfade werden ueber dem Terrain gezeichnet
+- POIs und Party-Token werden zuletzt gerendert
+
+> Schema-Details: [Path.md](../domain/Path.md)
 
 ### Location-Marker (Overland)
 
@@ -626,6 +689,7 @@ type OverlandTool =
   | 'elevation-brush'
   | 'climate-brush'
   | 'feature-brush'
+  | 'path-tool'        // Post-MVP: Lineare Features
   | 'location-marker'
   | 'inspector';
 
@@ -650,6 +714,7 @@ type ToolType = OverlandTool | DungeonTool;
 | Elevation-Brush (Gradient) | | mittel | Erweitert |
 | Climate-Brush | | mittel | Override-System |
 | Feature-Brush | ✓ | | POI-Platzierung |
+| **Path-Tool** | | ✓ | Lineare Features |
 | Location-Marker | ✓ | | Entity-Verknuepfung |
 | Inspector | ✓ | | Tile-Details |
 | Wall-Tool | ✓ | | Dungeon-Kern |
@@ -661,4 +726,4 @@ type ToolType = OverlandTool | DungeonTool;
 
 ---
 
-*Siehe auch: [Map.md](../domain/Map.md) | [Dungeon-System.md](../features/Dungeon-System.md) | [Terrain.md](../domain/Terrain.md)*
+*Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Dungeon-System.md](../features/Dungeon-System.md) | [Terrain.md](../domain/Terrain.md)*

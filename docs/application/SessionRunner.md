@@ -143,7 +143,7 @@ Kompakte Controls fuer haeufig benoetigte Aktionen.
 |---------|----------|
 | Status | `Idle`, `Planning`, `Traveling`, `Paused` |
 | Speed | Aktuelle Reisegeschwindigkeit |
-| `[Plan]` | Startet Route-Planung auf Map |
+| `[🗺️ Plan]` | Toggle Travel-Modus (Waypoint-Planung auf Map ein/aus) |
 | `[Start]` / `[Pause]` | Reise starten/pausieren |
 
 Bei aktiver Reise:
@@ -204,11 +204,24 @@ Das zentrale Element - zeigt die aktive Karte mit Party-Position.
 
 | Aktion | Effekt |
 |--------|--------|
-| Klick auf Tile | Zeigt Location-Info in DetailView |
-| Rechtsklick | Kontext-Menu (Set Waypoint, Teleport, Info) |
-| Drag | Pan |
-| Scroll | Zoom |
+| **Kamera-Steuerung** | |
+| Mittlere Maustaste (halten) | Karte verschieben (Pan) |
+| Mittlere Maustaste (scrollen) | Zoom In/Out |
+| **Im Travel-Modus (aktiv)** | |
+| Linksklick auf Tile | Waypoint setzen |
+| Linksklick + Halten | Waypoint/Party-Token verschieben |
+| Linksklick auf Route | Neuen Waypoint zwischen bestehenden einfuegen |
+| Rechtsklick auf Waypoint | Waypoint loeschen |
+| **Ohne Travel-Modus** | |
+| Linksklick auf Tile | Zeigt Location-Info in DetailView |
 | Doppelklick auf POI | Oeffnet Location-Tab in DetailView |
+
+**Routen-Anzeige im Travel-Modus:**
+
+Zwischen gesetzten Waypoints wird eine Route als Linie angezeigt:
+- Route verbindet Party-Token → Waypoint 1 → Waypoint 2 → ... → Ziel
+- Route aktualisiert sich dynamisch beim Verschieben von Waypoints/Token
+- Klick auf die Route fuegt einen neuen Waypoint an dieser Stelle ein
 
 ---
 
@@ -217,11 +230,20 @@ Das zentrale Element - zeigt die aktive Karte mit Party-Position.
 ### Flow: Reise starten
 
 ```
-User klickt [Plan] in Quick-Controls
+User klickt [🗺️ Plan] in Quick-Controls
     │
     ▼
-Map-Panel wechselt in Planning-Mode
-    │ (Waypoints per Klick setzen)
+Travel-Modus wird aktiviert (Toggle)
+    │
+    ▼
+Map-Panel zeigt Route-Overlay
+    │
+    ├── Linksklick auf Tile: Waypoint setzen
+    ├── Linksklick + Halten: Waypoint/Party-Token verschieben
+    ├── Linksklick auf Route: Waypoint einfuegen
+    ├── Rechtsklick auf Waypoint: Waypoint loeschen
+    └── Route wird zwischen Waypoints angezeigt
+    │
     ▼
 User klickt [Start] in Quick-Controls
     │

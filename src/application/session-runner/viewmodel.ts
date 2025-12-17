@@ -15,10 +15,13 @@ import type {
   PartyLoadedPayload,
   TimeStateChangedPayload,
   TravelPositionChangedPayload,
+  TravelStateChangedPayload,
+  TravelRoutePlannedPayload,
+  TravelCompletedPayload,
 } from '@core/events/domain-events';
 import type { MapFeaturePort } from '@/features/map';
 import type { PartyFeaturePort } from '@/features/party';
-import type { TravelFeaturePort } from '@/features/travel';
+import type { TravelFeaturePort, TravelState, Route } from '@/features/travel';
 import type { TimeFeaturePort } from '@/features/time';
 import type { WeatherFeaturePort } from '@/features/weather';
 import type { EncounterFeaturePort } from '@/features/encounter';
@@ -72,6 +75,15 @@ export interface SessionRunnerViewModel {
   // Header Interactions
   onTimeAdvance(hours: number): void;
   onToggleSidebar(): void;
+
+  // Travel Planning
+  toggleTravelMode(): void;
+  addWaypoint(coord: HexCoordinate): void;
+  clearWaypoints(): void;
+  startPlannedTravel(): void;
+  pauseTravel(): void;
+  resumeTravel(): void;
+  cancelTravel(): void;
 
   // Cleanup
   dispose(): void;
@@ -161,12 +173,15 @@ export function createSessionRunnerViewModel(
             questId: progress.questId,
             name: defValue?.name ?? progress.questId,
             status: progress.status as 'discovered' | 'active' | 'completed' | 'failed',
-            objectives: Array.from(progress.objectiveProgress.values()).map(obj => ({
-              description: obj.objectiveId, // TODO: Get from definition
-              current: obj.currentCount,
-              target: obj.targetCount,
-              completed: obj.completed,
-            })),
+            objectives: Array.from(progress.objectiveProgress.values()).map(obj => {
+              const objectiveDef = defValue?.objectives?.find(o => o.id === obj.objectiveId);
+              return {
+                description: objectiveDef?.description ?? obj.objectiveId,
+                current: obj.currentCount,
+                target: obj.targetCount,
+                completed: obj.completed,
+              };
+            }),
             accumulatedXP: progress.accumulatedXP,
             hasDeadline: !!progress.deadlineAt,
           };
@@ -191,10 +206,17 @@ export function createSessionRunnerViewModel(
         timeSegment,
         weatherSummary,
       },
+      // Travel state from feature
+      travelStatus: travelFeature.getStatus(),
+      activeRoute: (() => {
+        const route = travelFeature.getRoute();
+        return isSome(route) ? route.value : null;
+      })(),
+
       // Sidebar state
       sidebar: {
         travel: {
-          status: 'idle', // TODO: Get from travel feature when implemented
+          status: travelFeature.getStatus(),
           speed: getBaseSpeed(transport),
           currentTerrain,
         },
@@ -355,6 +377,59 @@ export function createSessionRunnerViewModel(
       )
     );
 
+    // Travel state changed - update travel status and route
+    eventSubscriptions.push(
+      eventBus.subscribe<TravelStateChangedPayload>(
+        EventTypes.TRAVEL_STATE_CHANGED,
+        (event) => {
+          const travelState = event.payload.state as TravelState;
+          updateState(
+            {
+              travelStatus: travelState.status,
+              activeRoute: travelState.route,
+            },
+            ['route', 'sidebar']
+          );
+        }
+      )
+    );
+
+    // Travel route planned - update route display
+    eventSubscriptions.push(
+      eventBus.subscribe<TravelRoutePlannedPayload>(
+        EventTypes.TRAVEL_ROUTE_PLANNED,
+        (event) => {
+          const route = event.payload.route as Route;
+          // Exit travel planning mode, show planned route
+          updateState(
+            {
+              travelMode: false,
+              planningWaypoints: [],
+              activeRoute: route,
+              travelStatus: 'planning',
+            },
+            ['route', 'sidebar']
+          );
+        }
+      )
+    );
+
+    // Travel completed - clear route
+    eventSubscriptions.push(
+      eventBus.subscribe<TravelCompletedPayload>(
+        EventTypes.TRAVEL_COMPLETED,
+        () => {
+          updateState(
+            {
+              activeRoute: null,
+              travelStatus: 'idle',
+            },
+            ['route', 'sidebar']
+          );
+        }
+      )
+    );
+
   }
 
   // Set up event handlers immediately if eventBus is provided
@@ -407,7 +482,23 @@ export function createSessionRunnerViewModel(
     },
 
     onTileClick(coord: HexCoordinate): void {
-      // Check if we can move there
+      // If in travel planning mode, add waypoint
+      if (state.travelMode) {
+        // Check if the tile is valid for planning
+        if (!mapFeature.isValidCoordinate(coord)) {
+          return;
+        }
+
+        // Add waypoint
+        const newWaypoints = [...state.planningWaypoints, coord];
+        updateState(
+          { planningWaypoints: newWaypoints },
+          ['route']
+        );
+        return;
+      }
+
+      // Normal mode: try to move to adjacent hex or select tile
       if (!travelFeature.canMoveTo(coord)) {
         // Just select the tile for info
         updateState({ selectedTile: coord }, ['selection']);
@@ -500,6 +591,112 @@ export function createSessionRunnerViewModel(
         { sidebarCollapsed: !state.sidebarCollapsed },
         ['sidebar']
       );
+    },
+
+    // =========================================================================
+    // Travel Planning Methods
+    // =========================================================================
+
+    toggleTravelMode(): void {
+      if (state.travelMode) {
+        // Exit travel mode, clear waypoints
+        updateState(
+          {
+            travelMode: false,
+            planningWaypoints: [],
+          },
+          ['route', 'sidebar']
+        );
+      } else {
+        // Enter travel mode (only if idle)
+        if (travelFeature.getStatus() === 'idle') {
+          updateState(
+            {
+              travelMode: true,
+              planningWaypoints: [],
+            },
+            ['route', 'sidebar']
+          );
+        }
+      }
+    },
+
+    addWaypoint(coord: HexCoordinate): void {
+      if (!state.travelMode) return;
+      if (!mapFeature.isValidCoordinate(coord)) return;
+
+      const newWaypoints = [...state.planningWaypoints, coord];
+      updateState(
+        { planningWaypoints: newWaypoints },
+        ['route']
+      );
+    },
+
+    clearWaypoints(): void {
+      updateState(
+        { planningWaypoints: [] },
+        ['route']
+      );
+    },
+
+    startPlannedTravel(): void {
+      // Need at least one waypoint
+      if (state.planningWaypoints.length === 0) {
+        notificationService.warn('Set at least one waypoint first');
+        return;
+      }
+
+      // Plan the route through all waypoints
+      const result = travelFeature.planRouteWithWaypoints(state.planningWaypoints);
+
+      if (!isOk(result)) {
+        notificationService.errorFromResult(result.error);
+        return;
+      }
+
+      // Start traveling (route is now planned)
+      const startResult = travelFeature.startTravel();
+      if (!isOk(startResult)) {
+        notificationService.errorFromResult(startResult.error);
+        return;
+      }
+
+      // State update happens via event handlers
+    },
+
+    pauseTravel(): void {
+      const result = travelFeature.pauseTravel('user');
+      if (!isOk(result)) {
+        notificationService.errorFromResult(result.error);
+      }
+    },
+
+    resumeTravel(): void {
+      const result = travelFeature.resumeTravel();
+      if (!isOk(result)) {
+        notificationService.errorFromResult(result.error);
+      }
+    },
+
+    cancelTravel(): void {
+      // Cancel both planning mode and active travel
+      if (state.travelMode) {
+        updateState(
+          {
+            travelMode: false,
+            planningWaypoints: [],
+          },
+          ['route', 'sidebar']
+        );
+      }
+
+      const status = travelFeature.getStatus();
+      if (status === 'planning' || status === 'traveling' || status === 'paused') {
+        const result = travelFeature.cancelTravel();
+        if (!isOk(result)) {
+          notificationService.errorFromResult(result.error);
+        }
+      }
     },
 
     dispose(): void {

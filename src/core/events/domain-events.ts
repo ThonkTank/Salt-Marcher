@@ -22,6 +22,11 @@ import type {
   CombatEffect,
   CombatOutcome,
 } from '../schemas';
+import type {
+  LootContext,
+  GeneratedLoot,
+  SelectedItem,
+} from '@/features/loot/types';
 
 // ============================================================================
 // Domain Event Interface
@@ -298,6 +303,12 @@ export const EventTypes = {
   ENTITY_DELETED: 'entity:deleted',
   ENTITY_DELETE_FAILED: 'entity:delete-failed',
   ENTITY_SAVE_FAILED: 'entity:save-failed',
+
+  // -------------------------------------------------------------------------
+  // inventory:* Events (2)
+  // -------------------------------------------------------------------------
+  INVENTORY_CHANGED: 'inventory:changed',
+  INVENTORY_ENCUMBRANCE_CHANGED: 'inventory:encumbrance-changed',
 
   // -------------------------------------------------------------------------
   // town:* Events (2)
@@ -888,31 +899,32 @@ export interface PoiTreasureLootedPayload {
 
 export interface LootGenerateRequestedPayload {
   encounterId: string;
-  context: unknown; // LootContext
+  context: LootContext;
 }
 
 export interface LootDistributeRequestedPayload {
   encounterId: string;
-  selectedItems: unknown[]; // SelectedItem[]
+  selectedItems: readonly SelectedItem[];
 }
 
 export interface LootStateChangedPayload {
-  state: unknown; // LootState
+  /** Current loot state - post-MVP when loot tracking is added */
+  state: unknown;
 }
 
 export interface LootGeneratedPayload {
   encounterId: string;
-  loot: unknown; // GeneratedLoot
+  loot: GeneratedLoot;
 }
 
 export interface LootAdjustedPayload {
   encounterId: string;
-  adjustedLoot: unknown; // GeneratedLoot
+  adjustedLoot: GeneratedLoot;
 }
 
 export interface LootDistributedPayload {
   encounterId: string;
-  items: unknown[]; // SelectedItem[]
+  items: readonly SelectedItem[];
   recipients: string[];
 }
 
@@ -1135,6 +1147,23 @@ export interface EntitySaveFailedPayload {
   id: string;
   reason: 'validation_failed' | 'storage_error';
   details?: string;
+}
+
+// ---------------------------------------------------------------------------
+// inventory:* Payloads
+// ---------------------------------------------------------------------------
+
+export interface InventoryChangedPayload {
+  characterId: string;
+  action: 'add' | 'remove' | 'update';
+  itemId: string;
+  quantity: number;
+}
+
+export interface InventoryEncumbranceChangedPayload {
+  characterId: string;
+  previousLevel: 'light' | 'encumbered' | 'heavily' | 'over_capacity';
+  newLevel: 'light' | 'encumbered' | 'heavily' | 'over_capacity';
 }
 
 // ---------------------------------------------------------------------------
@@ -1379,6 +1408,10 @@ export interface EventPayloadMap {
   [EventTypes.ENTITY_DELETED]: EntityDeletedPayload;
   [EventTypes.ENTITY_DELETE_FAILED]: EntityDeleteFailedPayload;
   [EventTypes.ENTITY_SAVE_FAILED]: EntitySaveFailedPayload;
+
+  // inventory:*
+  [EventTypes.INVENTORY_CHANGED]: InventoryChangedPayload;
+  [EventTypes.INVENTORY_ENCUMBRANCE_CHANGED]: InventoryEncumbranceChangedPayload;
 
   // town:*
   [EventTypes.TOWN_NAVIGATE_REQUESTED]: TownNavigateRequestedPayload;

@@ -16,4 +16,4 @@ export { createInitialPartyState } from './types';
 export { createPartyStore, type PartyStore } from './party-store';
 
 // Service
-export { createPartyService, type PartyServiceDeps } from './party-service';
+export { createPartyService, type PartyServiceDeps, type ItemLookupFn } from './party-service';

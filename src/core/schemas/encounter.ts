@@ -328,6 +328,27 @@ export const encounterInstanceSchema = z.object({
   /** XP awarded (calculated at resolution) */
   xpAwarded: z.number().int().nonnegative().optional(),
 
+  // === Loot (generated at encounter creation) ===
+
+  /**
+   * Generated loot for this encounter.
+   * Created at encounter generation (not combat end) so creatures can use items.
+   * @see docs/features/Loot-Feature.md
+   */
+  loot: z
+    .object({
+      /** Selected items with quantities (includes currency) */
+      items: z.array(
+        z.object({
+          itemId: entityIdSchema('item'),
+          quantity: z.number().int().positive(),
+        })
+      ),
+      /** Total loot value in GP */
+      totalValue: z.number().nonnegative(),
+    })
+    .optional(),
+
   // === Location Context ===
 
   /** Map where encounter occurred */

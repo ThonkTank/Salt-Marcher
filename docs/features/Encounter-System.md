@@ -71,6 +71,37 @@ Verbleibende Kreaturen erhalten Gewichtungen:
 
 Kreaturen mit Gesamt-Gewicht unter der Minimum-Schwelle werden ausgeschlossen.
 
+### Pfad-basierte Creature-Pools (Post-MVP)
+
+Pfade (Strassen, Fluesse, etc.) koennen zusaetzliche Kreaturen zum Eligibility-Pool hinzufuegen:
+
+```typescript
+function getEligibleCreatures(tile: OverworldTile): WeightedCreature[] {
+  // 1. Terrain-basierte Kreaturen
+  const terrain = getTerrain(tile.terrain);
+  let creatures = terrain.nativeCreatures.map(toWeighted);
+
+  // 2. Pfad-basierte Kreaturen (Post-MVP)
+  for (const pathInfo of tile.paths) {
+    const path = getPath(pathInfo.pathId);
+    if (path.encounterModifier?.creaturePool) {
+      const pathCreatures = path.encounterModifier.creaturePool.map(toWeighted);
+      creatures.push(...pathCreatures);
+    }
+  }
+
+  // 3. Filter + Gewichtung wie gehabt
+  return applyFiltersAndWeights(creatures);
+}
+```
+
+**Beispiele:**
+- Strasse: +Banditen, +Haendler → mehr Social-Encounters
+- Fluss: +Wasserkreaturen, +Flussnymphen
+- Schlucht: +Hoehlenkreaturen
+
+> Details: [Path.md](../domain/Path.md)
+
 ### Kein CR-Filter
 
 **Wichtig:** CR beeinflusst die Kreatur-Auswahl NICHT. Die Welt existiert unabhaengig von der Party. Ein Drache in der Gegend kann erscheinen - das CR bestimmt nur den Encounter-Typ (passing statt combat wenn nicht gewinnbar).
@@ -278,7 +309,7 @@ interface EncounterInstance {
   definitionId: EntityId<'encounter'>;
   type: EncounterType;
 
-  npcs: NPC[];
+  creatures: EncounterCreature[];   // Creatures mit zugewiesenen Items
   leadNPC: NPC;
 
   activity: string;
@@ -286,9 +317,45 @@ interface EncounterInstance {
 
   status: 'pending' | 'active' | 'resolved';
   outcome?: EncounterOutcome;
+
+  // Loot wird bei Generierung erstellt, nicht bei Combat-Ende
+  loot: GeneratedLoot;
+
+  // Optional: Encounter hat Hoard (Boss, Lager, etc.)
+  hoard?: Hoard;
+}
+
+interface EncounterCreature {
+  creatureId: EntityId<'creature'>;
+  npcId?: EntityId<'npc'>;         // Falls persistierter NPC
+  count: number;
+  loot: Item[];                    // Zugewiesene Items die Creature nutzen kann
+}
+
+interface GeneratedLoot {
+  items: SelectedItem[];           // Enthält auch Currency-Items (Gold)
+  totalValue: number;
+}
+
+interface Hoard {
+  id: string;
+  source: { type: 'encounter'; encounterId: string };
+  items: GeneratedLoot;
+  budgetValue: number;
+  status: 'hidden' | 'discovered' | 'looted';
 }
 ```
 
+**Loot bei Generierung:**
+- Loot wird bei `encounter:generated` erstellt, nicht bei Combat-Ende
+- **defaultLoot** der Creatures wird gewuerfelt (Chance-System)
+- **Soft-Cap** greift bei hohen Budget-Schulden
+- Creatures erhalten Items aus dem Loot-Pool zugewiesen
+- Diese Items sind im Combat-Tracker sichtbar (Gegner können sie nutzen)
+- Bei Post-Combat Resolution wird Loot verteilt, nicht generiert
+- Optional: **Hoard** bei Boss/Lager Encounters (akkumuliertes Budget)
+
+→ Loot-Generierung Details: [Loot-Feature.md](Loot-Feature.md)
 → NPC-Schema: [NPC-System.md](../domain/NPC-System.md)
 → Creature-Schemas: [Creature.md](../domain/Creature.md)
 
@@ -419,8 +486,9 @@ NPCs werden **bei Encounter-Instanziierung** erstellt, nicht bei Definition:
 | NPC-Instanziierung + Persistierung | ✓ | |
 | 40/60 XP Split | ✓ | |
 | Environmental/Location | | ✓ |
+| **Pfad-basierte Creature-Pools** | | ✓ |
 | Multi-Gruppen-Encounters | | niedrig |
 
 ---
 
-*Siehe auch: [Encounter-Balancing.md](Encounter-Balancing.md) | [NPC-System.md](../domain/NPC-System.md) | [Combat-System.md](Combat-System.md) | [Quest-System.md](Quest-System.md)*
+*Siehe auch: [Encounter-Balancing.md](Encounter-Balancing.md) | [NPC-System.md](../domain/NPC-System.md) | [Path.md](../domain/Path.md) | [Combat-System.md](Combat-System.md) | [Quest-System.md](Quest-System.md)*

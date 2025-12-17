@@ -47,6 +47,8 @@ export {
   type CombatEffectRemovedPayload,
   // Time payloads
   type TimeAdvanceRequestedPayload,
+  // Loot payloads
+  type LootGeneratedPayload,
 } from './domain-events';
 
 export {

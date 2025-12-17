@@ -1,30 +1,431 @@
 # Loot-Feature
 
-> **Lies auch:** [Item](../domain/Item.md), [Encounter-System](Encounter-System.md)
-> **Wird benoetigt von:** Quest
+> **Lies auch:** [Item](../domain/Item.md), [Encounter-System](Encounter-System.md), [Quest-System](Quest-System.md), [Creature](../domain/Creature.md)
+> **Wird benoetigt von:** Quest, Encounter, Combat
 
-Automatische Loot-Generierung basierend auf Encounter-XP und Faction/Creature-Tags.
+Loot-Generierung mit Background-Budget-Tracking, Creature-spezifischem Loot und dynamischer Verteilung.
 
-**Design-Philosophie:** Loot wird automatisch generiert aber GM-kontrolliert praesentiert. Das System schlaegt passende Items vor, der GM entscheidet final.
+**Design-Philosophie:** Das System trackt ein Budget basierend auf DMG-Empfehlungen und verteilt Loot dynamisch ueber Encounters, Quests und Hoards. Creatures haben garantiertes Loot (Ritter → Schwert), das System balanciert automatisch. Der GM behält Kontrolle ueber Treasure-Platzierung und kann jederzeit eingreifen.
 
 ---
 
 ## Uebersicht
 
-Das Loot-Feature generiert Beute nach Encounters:
+Das Loot-System besteht aus drei Kern-Komponenten:
 
 ```
-Encounter beendet
-    │
-    ├── Encounter-XP → Loot-Wert berechnen
-    │
-    ├── Faction/Creature Loot-Tags → Item-Pool filtern
-    │
-    ├── Items aus Pool auswaehlen (bis Wert erreicht)
-    │
-    └── GM sieht Vorschlag im Tile Content Panel
-        └── [Anpassen] [Verteilen]
+┌─────────────────────────────────────────────────────────────────┐
+│  1. BACKGROUND BUDGET TRACKING                                  │
+│     XP-Gewinne → Gold-Budget (DMG-basiert)                      │
+│     Trackt: accumulated, distributed, balance, debt             │
+├─────────────────────────────────────────────────────────────────┤
+│  2. CREATURE DEFAULT-LOOT                                       │
+│     Ritter → Schwert + Ruestung (garantiert/wahrscheinlich)     │
+│     Wolf → Pelz (100%), Zaehne (30%)                            │
+├─────────────────────────────────────────────────────────────────┤
+│  3. VERTEILUNGSKANAELE                                          │
+│     ├── Encounter-Loot (10-50%, ∅ 20%)                          │
+│     ├── Quest-Rewards (reserviert)                              │
+│     └── Hoards (akkumuliert, bei Entdeckung)                    │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### Loot-Generierung bei Encounter
+
+Loot wird **bei Encounter-Generierung** erstellt, nicht bei Combat-Ende:
+
+```
+encounter:generate-requested
+    │
+    ├── Creatures auswählen
+    │
+    ├── Loot-Generierung
+    │   ├── defaultLoot wuerfeln (Chance-System)
+    │   ├── Soft-Cap pruefen (Budget-Schulden?)
+    │   ├── Tag-basiertes Loot fuer Rest-Budget
+    │   └── Optional: Hoard hinzufuegen
+    │
+    └── encounter:generated { encounter, loot, hoard? }
+            │
+            ▼
+    Creatures TRAGEN ihre Items (Waffen, Traenke)
+            │
+            ▼
+    Nach Combat: Loot verteilen (nicht generieren)
+```
+
+**Warum bei Generierung?**
+- Gegner können ihre Items im Kampf verwenden (Heiltränke, Waffen)
+- Realistischeres Looting: "Was der Goblin hatte, kann er auch benutzen"
+- Creatures mit teurer Ausruestung belasten das Budget sofort
+
+**Architektur-Konsequenz:**
+- `EncounterInstance` enthält `loot: GeneratedLoot` + optional `hoard: Hoard`
+- Creatures haben `loot: Item[]` - ihre zugewiesenen Items
+- Loot-State ist Teil des Encounter-State
+- Budget-State ist global (Party-weit)
+
+---
+
+## Background Budget Tracking
+
+Das System trackt ein Gold-Budget basierend auf DMG-Empfehlungen.
+
+### LootBudgetState
+
+```typescript
+interface LootBudgetState {
+  // Akkumuliertes Budget aus XP-Gewinnen
+  accumulated: number;        // Gold-Wert
+
+  // Bereits ausgegebenes Loot
+  distributed: number;        // Gold-Wert
+
+  // Aktueller Stand (kann negativ sein!)
+  balance: number;            // accumulated - distributed
+
+  // Schulden aus teurem defaultLoot
+  debt: number;               // Wird ueber Zeit abgebaut
+}
+```
+
+### DMG Gold/Level Tabelle
+
+PC Wealth (Gold) pro Level nach DMG & XGE - **exkl. Magic Items**:
+
+| Level | Gold (gerundet) | Differenz zum Vorlevel |
+|-------|-----------------|------------------------|
+| 1 | Starting Gear | - |
+| 2 | 100g | 100g |
+| 3 | 200g | 100g |
+| 4 | 400g | 200g |
+| 5 | 700g | 300g |
+| 6 | 3,000g | 2,300g |
+| 7 | 5,400g | 2,400g |
+| 8 | 8,600g | 3,200g |
+| 9 | 12,000g | 3,400g |
+| 10 | 17,000g | 5,000g |
+| 11 | 21,000g | 4,000g |
+| 12 | 30,000g | 9,000g |
+| 13 | 39,000g | 9,000g |
+| 14 | 57,000g | 18,000g |
+| 15 | 75,000g | 18,000g |
+| 16 | 103,000g | 28,000g |
+| 17 | 130,000g | 27,000g |
+| 18 | 214,000g | 84,000g |
+| 19 | 383,000g | 169,000g |
+| 20 | 552,000g | 169,000g |
+
+### Budget-Berechnung
+
+```typescript
+// Gold pro XP berechnen
+// Beispiel Level 5→6: 2300g Gold / 7500 XP = ~0.31 Gold/XP
+// Vereinfacht: konstanter Faktor, anpassbar
+
+const GOLD_PER_XP = 0.5;  // Konfigurierbarer Faktor
+
+function updateBudget(xpGained: number): void {
+  const goldToAdd = xpGained * GOLD_PER_XP;
+  budget.accumulated += goldToAdd;
+  budget.balance = budget.accumulated - budget.distributed;
+}
+```
+
+---
+
+## Budget-Verteilung
+
+Das Budget wird dynamisch auf drei Kanaele verteilt:
+
+```
+XP gewonnen
+    ↓
+Budget += XP × GOLD_PER_XP
+    ↓
+┌─────────────────────────────────────────┐
+│  Verteilungskanaele                     │
+├─────────────────────────────────────────┤
+│  1. Quest-Rewards (reserviert)          │
+│     → Quest-definierte Rewards werden   │
+│       vom Budget VORHER abgezogen       │
+│                                         │
+│  2. Encounter-Loot (direkt)             │
+│     → 10-50% vom REST (∅ 20%)           │
+│     → Bei Quest-Encounter: REDUZIERT    │
+│                                         │
+│  3. Hoards (akkumuliert)                │
+│     → Rest sammelt sich an              │
+│     → Bei Hoard-Entdeckung ausgegeben   │
+└─────────────────────────────────────────┘
+```
+
+### Quest-Encounter Reduktion
+
+Wenn ein Encounter Teil einer Quest mit definiertem Reward ist:
+- Quest-Reward "verbraucht" Budget fuer diesen Encounter
+- Encounter-Loot wird entsprechend reduziert (kann 0 sein)
+
+```typescript
+function calculateEncounterLoot(encounter: Encounter, quest?: Quest): number {
+  const baseLootPercent = 0.1 + Math.random() * 0.4;  // 10-50%
+  let availableBudget = budget.balance;
+
+  if (quest?.hasDefinedRewards) {
+    // Quest-Reward anteilig abziehen
+    const questRewardPerEncounter = quest.totalRewardValue / quest.encounterCount;
+    availableBudget -= questRewardPerEncounter;
+  }
+
+  return Math.max(0, availableBudget * baseLootPercent);
+}
+```
+
+| Encounter-Typ | Budget-Anteil |
+|---------------|---------------|
+| Random (ohne Quest) | 10-50% (∅ 20%) |
+| Quest-Encounter (mit Reward) | Reduziert um Quest-Anteil |
+| Quest-Encounter (ohne Reward) | 10-50% (∅ 20%) |
+
+---
+
+## Schulden-System und Soft-Cap
+
+### Schulden entstehen wenn:
+- Creature mit teurem defaultLoot erscheint (Ritter mit Plattenruestung)
+- defaultLoot-Wert > verfuegbares Budget
+
+### Verhalten:
+
+```typescript
+function processDefaultLoot(creature: Creature, budget: LootBudgetState): Item[] {
+  const items: Item[] = [];
+
+  for (const entry of creature.defaultLoot ?? []) {
+    // Chance wuerfeln
+    if (Math.random() > entry.chance) continue;
+
+    const item = getItem(entry.itemId);
+
+    // Soft-Cap: Item weglassen wenn Budget stark negativ
+    if (budget.balance < -1000 && item.value > 100) {
+      // Teures Item ueberspringen bei hohen Schulden
+      continue;
+    }
+
+    items.push(item);
+    budget.distributed += item.value;
+    budget.balance -= item.value;
+
+    if (budget.balance < 0) {
+      budget.debt += Math.abs(budget.balance);
+    }
+  }
+
+  return items;
+}
+```
+
+### Schulden-Abbau:
+- Naechste Encounters/Hoards geben weniger Loot
+- Schulden werden ueber Zeit automatisch ausgeglichen
+- GM wird gewarnt wenn Balance stark negativ (< -500g)
+
+### Soft-Cap Verhalten:
+
+| MVP | Post-MVP |
+|-----|----------|
+| Teures Item wird weggelassen | Item-Downgrade (Platte → Kette) |
+
+---
+
+## Hoards
+
+Hoards sind Loot-Sammlungen die akkumuliertes Budget enthalten und bei Entdeckung ausgegeben werden.
+
+### Hoard-Schema
+
+```typescript
+interface Hoard {
+  id: string;
+
+  // Quelle
+  source:
+    | { type: 'encounter'; encounterId: string }
+    | { type: 'location'; markerId: string }
+    | { type: 'quest'; questId: string };
+
+  // Inhalt
+  items: GeneratedLoot;
+
+  // Budget-Tracking
+  budgetValue: number;        // Wieviel vom Budget abgezogen
+
+  // Status
+  status: 'hidden' | 'discovered' | 'looted';
+}
+```
+
+### Hoard-Quellen
+
+| Quelle | Beschreibung |
+|--------|--------------|
+| **Encounter** | Boss-Monster, Lager, etc. haben Hoard dabei |
+| **Location** | Treasure-Marker in der Welt (Hoehle, Truhe) |
+| **Quest** | Quest-Reward als Hoard platziert |
+
+### Hoard-Generierung
+
+```typescript
+function generateHoard(budgetToSpend: number, constraints?: HoardConstraints): Hoard {
+  // Items aus Pool auswaehlen bis Budget erreicht
+  const items = selectItemsForBudget(budgetToSpend, constraints?.tags);
+
+  return {
+    id: generateId(),
+    source: constraints?.source ?? { type: 'location', markerId: '' },
+    items: { items, totalValue: budgetToSpend },
+    budgetValue: budgetToSpend,
+    status: 'hidden'
+  };
+}
+```
+
+### Hoard bei Encounter
+
+Bestimmte Encounter-Typen koennen Hoards enthalten:
+
+| Encounter-Typ | Hoard-Wahrscheinlichkeit |
+|---------------|-------------------------|
+| Boss-Combat | Hoch (70%+) |
+| Lager/Camp | Mittel (40%) |
+| Normale Patrouille | Niedrig (10%) |
+| Passing/Trace | Keine |
+
+---
+
+## Treasure-Markers
+
+GM kann potentielle Treasure-Verstecke auf der Map markieren.
+
+### TreasureMarker-Schema
+
+```typescript
+interface TreasureMarker {
+  id: string;
+  position: HexCoordinate;
+  mapId: EntityId<'map'>;
+
+  // Befuellung
+  fillMode: 'manual' | 'auto';
+
+  // Bei auto: Constraints fuer Generierung
+  constraints?: {
+    minValue?: number;
+    maxValue?: number;
+    tags?: string[];           // Item-Tags fuer Filterung
+  };
+
+  // Generierter Hoard (bei Entdeckung)
+  hoardId?: string;
+
+  // GM-Notizen
+  description?: string;
+}
+```
+
+### Workflow
+
+```
+1. GM platziert Marker auf Map (Hoehle, Truhe, etc.)
+   ↓
+2. GM waehlt: manual oder auto-fill
+   ↓
+3. Bei Entdeckung durch Party:
+   ├── manual: GM fuellt manuell
+   └── auto: System generiert Hoard aus akkumuliertem Budget
+   ↓
+4. Loot-Verteilung wie gewohnt
+```
+
+### Auto-Fill Logik
+
+```typescript
+function triggerMarker(marker: TreasureMarker): Hoard {
+  if (marker.fillMode === 'manual') {
+    // GM muss manuell befuellen
+    return showManualFillDialog(marker);
+  }
+
+  // Auto-fill aus akkumuliertem Budget
+  const budgetToSpend = calculateAutoFillBudget(marker.constraints);
+  const hoard = generateHoard(budgetToSpend, {
+    tags: marker.constraints?.tags,
+    source: { type: 'location', markerId: marker.id }
+  });
+
+  marker.hoardId = hoard.id;
+  budget.distributed += budgetToSpend;
+  budget.balance -= budgetToSpend;
+
+  return hoard;
+}
+```
+
+---
+
+## Creature Default-Loot
+
+Creatures koennen garantiertes oder wahrscheinliches Loot haben.
+
+→ Schema-Definition: [Creature.md](../domain/Creature.md#defaultloot)
+
+### DefaultLootEntry
+
+```typescript
+interface DefaultLootEntry {
+  itemId: EntityId<'item'>;
+  chance: number;                  // 0.0-1.0 (1.0 = garantiert)
+  quantity?: number | [min: number, max: number];
+}
+```
+
+### Beispiele
+
+```typescript
+// Wolf: Pelz garantiert, Zaehne 30%
+const wolf = {
+  defaultLoot: [
+    { itemId: 'wolf-pelt', chance: 1.0 },
+    { itemId: 'wolf-fang', chance: 0.3, quantity: [1, 2] }
+  ]
+};
+
+// Ritter: Volle Ausruestung
+const knight = {
+  defaultLoot: [
+    { itemId: 'longsword', chance: 1.0 },
+    { itemId: 'plate-armor', chance: 1.0 },     // Soft-Cap kann greifen!
+    { itemId: 'gold-piece', chance: 1.0, quantity: [10, 50] }
+  ]
+};
+```
+
+### Verarbeitung
+
+1. Fuer jede Creature im Encounter: defaultLoot wuerfeln
+2. Chance-Roll: `Math.random() < entry.chance`
+3. Soft-Cap pruefen: Bei hohen Schulden teure Items weglassen
+4. Items der Creature zuweisen (kann im Kampf genutzt werden)
+5. Budget belasten
+
+---
+
+## Tag-basiertes Loot (Ergaenzung)
+
+Zusaetzlich zu defaultLoot wird Tag-basiertes Loot fuer das Rest-Budget generiert.
+
+> **Hinweis:** Dieser Abschnitt beschreibt das bestehende Tag-Matching-System. Es ergaenzt defaultLoot, ersetzt es nicht.
 
 ---
 
@@ -393,6 +794,8 @@ Bei Verteilung:
 ## Events
 
 ```typescript
+// === Loot-Events (existierend) ===
+
 // Loot generiert (nach Encounter)
 'loot:generated': {
   encounterId: string;
@@ -411,7 +814,49 @@ Bei Verteilung:
   items: SelectedItem[];  // Enthaelt auch Currency-Items
   recipients: EntityId<'character'>[];
 }
+
+// === Budget-Events (NEU) ===
+
+// Budget aktualisiert
+'loot:budget-updated': {
+  balance: number;
+  debt: number;
+  change: number;
+  source: 'encounter' | 'quest' | 'hoard' | 'manual' | 'xp-gain';
+}
+
+// === Hoard-Events (NEU) ===
+
+// Hoard entdeckt
+'loot:hoard-discovered': {
+  hoardId: string;
+  source: HoardSource;
+  items: GeneratedLoot;
+}
+
+// Hoard gelooted
+'loot:hoard-looted': {
+  hoardId: string;
+  recipients: EntityId<'character'>[];
+}
+
+// === Treasure-Marker Events (NEU) ===
+
+// Marker erstellt
+'loot:marker-created': {
+  markerId: string;
+  position: HexCoordinate;
+  mapId: EntityId<'map'>;
+}
+
+// Marker ausgeloest (Party hat entdeckt)
+'loot:marker-triggered': {
+  markerId: string;
+  hoardId: string;
+}
 ```
+
+→ Vollstaendige Event-Definitionen: [Events-Catalog.md](../architecture/Events-Catalog.md)
 
 ---
 
@@ -491,16 +936,22 @@ Bei Magic Items hat der GM **immer** das letzte Wort:
 
 | Komponente | MVP | Post-MVP | Notiz |
 |------------|:---:|:--------:|-------|
-| Loot-Wert-Berechnung | ✓ | | XP-basiert |
+| **Budget-Tracking** | ✓ | | XP → Gold, Balance, Debt |
+| **Creature defaultLoot** | ✓ | | Inline, mit Chance-System |
+| **Schulden-System** | ✓ | | Budget kann negativ werden |
+| **Soft-Cap (Item weglassen)** | ✓ | | Teures Item ueberspringen |
 | Basis Loot-Tags | ✓ | | Feste Liste |
 | Item-Auswahl nach Tags | ✓ | | Einfache Auswahl |
 | Gold-Generierung | ✓ | | Als Auffueller |
 | GM-Preview | ✓ | | Im Tile Content Panel |
 | Loot-Anpassung durch GM | ✓ | | Items entfernen/aendern |
+| **Hoards** | | hoch | Encounter/Location-gebunden |
+| **Treasure-Markers** | | mittel | GM-platziert, auto-fill |
+| Soft-Cap (Item-Downgrade) | | mittel | Platte → Kette |
 | Rarity-System | | mittel | Magische Items |
-| Loot-Tables | | niedrig | Pro Creature/Faction |
+| Faction defaultLoot | | niedrig | Post-MVP |
 | Automatische Verteilung | | niedrig | Party-Inventar-Integration |
 
 ---
 
-*Siehe auch: [Encounter-System.md](Encounter-System.md) | [Item.md](../domain/Item.md) | [Character.md](../domain/Character.md)*
+*Siehe auch: [Encounter-System.md](Encounter-System.md) | [Item.md](../domain/Item.md) | [Character.md](../domain/Character.md) | [Creature.md](../domain/Creature.md) | [Quest-System.md](Quest-System.md)*

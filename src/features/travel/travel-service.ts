@@ -382,6 +382,28 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
   // ===========================================================================
 
   /**
+   * Get base speed in mph for current transport mode.
+   *
+   * For 'foot' transport: Uses party's effective speed (after encumbrance)
+   * converted from feet to mph (30 ft = 3 mph).
+   *
+   * For other transports: Uses standard transport speeds.
+   */
+  function getBaseSpeed(): number {
+    const transport = partyFeature.getActiveTransport();
+
+    if (transport === 'foot') {
+      // Use character speed (feet) converted to mph
+      // D&D: 30 feet walking speed ≈ 3 mph
+      const effectiveSpeedFeet = partyFeature.getEffectivePartySpeed();
+      return effectiveSpeedFeet / 10;
+    }
+
+    // For mounted, carriage, boat - use transport base speeds
+    return TRANSPORT_BASE_SPEEDS[transport];
+  }
+
+  /**
    * Check if a hex is traversable with current transport.
    */
   function isTraversable(coord: HexCoordinate): boolean {
@@ -392,8 +414,7 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
    * Calculate time cost for a single hex transition.
    */
   function calculateSegmentTime(target: HexCoordinate): number {
-    const transport = partyFeature.getActiveTransport();
-    const baseSpeed = TRANSPORT_BASE_SPEEDS[transport];
+    const baseSpeed = getBaseSpeed();
     const movementCost = mapFeature.getMovementCost(target);
     const weatherFactor = getWeatherSpeedFactor();
     return calculateHexTraversalTime(baseSpeed, movementCost, weatherFactor);
@@ -534,9 +555,9 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     const travResult = validateTraversable(target);
     if (!travResult.ok) return travResult;
 
-    // Calculate time cost (including weather factor)
+    // Calculate time cost (including weather factor and encumbrance for foot travel)
     const transport = partyFeature.getActiveTransport();
-    const baseSpeed = TRANSPORT_BASE_SPEEDS[transport];
+    const baseSpeed = getBaseSpeed();
     const movementCost = mapFeature.getMovementCost(target);
     const weatherFactor = getWeatherSpeedFactor();
     const timeCostHours = calculateHexTraversalTime(
@@ -716,6 +737,119 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     return ok(route);
   }
 
+  /**
+   * Plan a route through multiple user-specified waypoints.
+   * This differs from planRouteInternal in that it:
+   * 1. Takes an array of waypoints (not including start)
+   * 2. Finds paths between each consecutive pair
+   * 3. Stores user waypoints in Route.waypoints (for UI visualization)
+   */
+  function planRouteWithWaypointsInternal(
+    userWaypoints: HexCoordinate[],
+    correlationId?: string
+  ): Result<Route, AppError> {
+    // Validate we have at least one waypoint
+    if (userWaypoints.length === 0) {
+      return err(
+        createError('NO_WAYPOINTS', 'At least one waypoint is required')
+      );
+    }
+
+    // Can only plan from idle state
+    if (store.getStatus() !== 'idle') {
+      return err(
+        createError(
+          'INVALID_STATE',
+          `Cannot plan route while in '${store.getStatus()}' state`
+        )
+      );
+    }
+
+    // Get current position
+    const posResult = getPartyPosition();
+    if (!posResult.ok) return posResult;
+    const start = posResult.value;
+
+    // Validate all waypoints are traversable
+    for (const waypoint of userWaypoints) {
+      const travResult = validateTraversable(waypoint);
+      if (!travResult.ok) {
+        return err(
+          createError(
+            'INVALID_WAYPOINT',
+            `Waypoint (${waypoint.q},${waypoint.r}) is not traversable: ${travResult.error.message}`
+          )
+        );
+      }
+    }
+
+    // Build complete path through all waypoints
+    const allUserWaypoints = [start, ...userWaypoints];
+    const completePath: HexCoordinate[] = [start];
+
+    for (let i = 0; i < allUserWaypoints.length - 1; i++) {
+      const segmentStart = allUserWaypoints[i];
+      const segmentEnd = allUserWaypoints[i + 1];
+
+      // Find path for this segment
+      const pathSegment = findPathGreedy(segmentStart, segmentEnd);
+      if (!pathSegment) {
+        return err(
+          createError(
+            'NO_PATH',
+            `No traversable path from (${segmentStart.q},${segmentStart.r}) to (${segmentEnd.q},${segmentEnd.r})`
+          )
+        );
+      }
+
+      // Add path segment (skip first point as it's already in completePath)
+      for (let j = 1; j < pathSegment.length; j++) {
+        completePath.push(pathSegment[j]);
+      }
+    }
+
+    // Build route segments from complete path
+    const transport = partyFeature.getActiveTransport();
+    const segments: RouteSegment[] = [];
+    let totalHours = 0;
+
+    for (let i = 0; i < completePath.length - 1; i++) {
+      const from = completePath[i];
+      const to = completePath[i + 1];
+      const timeCostHours = calculateSegmentTime(to);
+      const terrainId = getTerrainIdAt(to);
+
+      segments.push({
+        from,
+        to,
+        terrainId,
+        timeCostHours,
+      });
+
+      totalHours += timeCostHours;
+    }
+
+    const totalMinutes = Math.round(totalHours * 60);
+    const durationHours = Math.floor(totalMinutes / 60);
+    const durationMinutes = totalMinutes % 60;
+
+    // Create route with user waypoints (for visualization) and all segments
+    const route: Route = {
+      id: generateRouteId(),
+      waypoints: allUserWaypoints, // User-specified waypoints for UI
+      transport,
+      segments, // All hex-to-hex transitions
+      totalDuration: { hours: durationHours, minutes: durationMinutes },
+    };
+
+    // Update state
+    store.setPlanning(route);
+    publishStateChanged(correlationId);
+    publishRoutePlanned(route, correlationId);
+
+    return ok(route);
+  }
+
   function startTravelInternal(correlationId?: string): Result<void, AppError> {
     // Can only start from planning state
     if (store.getStatus() !== 'planning') {
@@ -885,9 +1019,8 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
       const travResult = validateTraversable(target);
       if (!travResult.ok) return travResult;
 
-      // Calculate time (including weather factor)
-      const transport = partyFeature.getActiveTransport();
-      const baseSpeed = TRANSPORT_BASE_SPEEDS[transport];
+      // Calculate time (including weather factor and encumbrance for foot travel)
+      const baseSpeed = getBaseSpeed();
       const movementCost = mapFeature.getMovementCost(target);
       const weatherFactor = getWeatherSpeedFactor();
 
@@ -926,6 +1059,10 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
     planRoute(destination: HexCoordinate): Result<Route, AppError> {
       return planRouteInternal(destination);
+    },
+
+    planRouteWithWaypoints(waypoints: HexCoordinate[]): Result<Route, AppError> {
+      return planRouteWithWaypointsInternal(waypoints);
     },
 
     startTravel(): Result<void, AppError> {

@@ -89,9 +89,20 @@ export interface PartyFeaturePort {
   /**
    * Get the party's travel speed (slowest member).
    * Returns 30 (default human speed) if no members loaded.
+   * Does NOT account for encumbrance.
    * @see docs/features/Character-System.md
    */
   getPartySpeed(): number;
+
+  /**
+   * Get the party's effective travel speed after encumbrance.
+   * This is the actual speed used for travel calculations.
+   * Takes into account each character's inventory weight.
+   *
+   * @returns Effective speed in feet (slowest character after encumbrance)
+   * @see docs/features/Inventory-System.md
+   */
+  getEffectivePartySpeed(): number;
 
   /**
    * Get the party size (number of members).

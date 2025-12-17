@@ -255,6 +255,41 @@ Party-Verwaltung und Position.
 
 ---
 
+## inventory:*
+
+Inventar-Verwaltung und Encumbrance.
+
+### Implementierungs-Status
+
+| Event | Status | Seit |
+|-------|--------|------|
+| `inventory:changed` | ✅ | 9b |
+| `inventory:encumbrance-changed` | ✅ | 9b |
+
+```typescript
+// State-Changes
+'inventory:changed': {
+  characterId: string;
+  action: 'add' | 'remove' | 'update';
+  itemId: string;
+  quantity: number;
+}
+
+'inventory:encumbrance-changed': {
+  characterId: string;
+  previousLevel: EncumbranceLevel;  // 'light' | 'encumbered' | 'heavily' | 'over_capacity'
+  newLevel: EncumbranceLevel;
+}
+```
+
+**Architektur-Hinweis:**
+- Inventory-Feature ist stateless (operiert auf Character-Objekten)
+- Encumbrance-Berechnung nach D&D 5e Variant Rules
+- Party-Integration via `getEffectivePartySpeed()` (Character.speed - Encumbrance-Reduction)
+- Travel-Integration: foot-Transport verwendet Character-Speed statt fixem Transport-Speed
+
+---
+
 ## map:*
 
 Map-Verwaltung und Navigation.
@@ -443,7 +478,23 @@ Zufalls- und geplante Begegnungen.
   encounterId: string;
   outcome: EncounterOutcome;
   xpAwarded: number;
-  loot?: LootResult;
+
+  // Post-Combat Resolution Details
+  xpDistribution: {
+    immediate: number;            // 40% - sofort vergeben
+    questPool: number;            // 60% - in Quest oder verfallen
+    gmModifierPercent?: number;   // GM-Anpassung (-50% bis +100%)
+    questAssigned?: {
+      questId: EntityId<'quest'>;
+      slotId: string;
+    };
+  };
+
+  loot?: {
+    distributed: boolean;         // false wenn übersprungen
+    items?: SelectedItem[];
+    recipients?: EntityId<'character'>[];
+  };
 }
 ```
 
@@ -759,6 +810,52 @@ POI-Verwaltung (Points of Interest).
 
 ---
 
+## path:* (Post-MVP)
+
+Lineare Features (Strassen, Fluesse, Schluchten, Klippen).
+
+> **Status:** Post-MVP Feature - alle Events noch nicht implementiert.
+
+```typescript
+// Requests
+'path:create-requested': {
+  path: PathDefinition;
+}
+
+'path:update-requested': {
+  pathId: EntityId<'path'>;
+  changes: Partial<PathDefinition>;
+}
+
+'path:delete-requested': {
+  pathId: EntityId<'path'>;
+}
+
+// Lifecycle
+'path:created': {
+  path: PathDefinition;
+}
+
+'path:updated': {
+  pathId: EntityId<'path'>;
+  path: PathDefinition;
+}
+
+'path:deleted': {
+  pathId: EntityId<'path'>;
+}
+
+// State-Sync
+'path:state-changed': {
+  mapId: EntityId<'map'>;
+  paths: PathDefinition[];
+}
+```
+
+> Schema-Details: [Path.md](../domain/Path.md)
+
+---
+
 ## loot:*
 
 Loot-Generierung und -Verteilung.
@@ -798,13 +895,68 @@ Loot-Generierung und -Verteilung.
   items: SelectedItem[];  // Enthaelt auch Currency-Items (Goldmuenzen, etc.)
   recipients: EntityId<'character'>[];
 }
+
+// === Budget-Events (NEU) ===
+
+'loot:budget-updated': {
+  balance: number;           // Aktueller Stand (kann negativ sein)
+  debt: number;              // Schulden aus teurem defaultLoot
+  change: number;            // Aenderung
+  source: 'encounter' | 'quest' | 'hoard' | 'manual' | 'xp-gain';
+}
+
+// === Hoard-Events (NEU) ===
+
+'loot:hoard-discovered': {
+  hoardId: string;
+  source: HoardSource;       // { type: 'encounter' | 'location' | 'quest', ... }
+  items: GeneratedLoot;
+}
+
+'loot:hoard-looted': {
+  hoardId: string;
+  recipients: EntityId<'character'>[];
+}
+
+// === Treasure-Marker Events (NEU) ===
+
+'loot:marker-created': {
+  markerId: string;
+  position: HexCoordinate;
+  mapId: EntityId<'map'>;
+}
+
+'loot:marker-triggered': {
+  markerId: string;
+  hoardId: string;           // Generierter Hoard bei Entdeckung
+}
 ```
+
+> **Schema-Details:** [Loot-Feature.md](../features/Loot-Feature.md)
 
 ---
 
 ## quest:*
 
 Quest-Verwaltung.
+
+### Implementierungs-Status
+
+| Event | Status | Seit |
+|-------|--------|------|
+| `quest:activate-requested` | ✅ | 8 |
+| `quest:complete-objective-requested` | ✅ | 8 |
+| `quest:fail-requested` | ✅ | 8 |
+| `quest:assign-encounter-requested` | ✅ | 8 |
+| `quest:state-changed` | ✅ | 8 |
+| `quest:discovered` | ✅ | 8 |
+| `quest:activated` | ✅ | 8 |
+| `quest:objective-completed` | ✅ | 8 |
+| `quest:xp-accumulated` | ✅ | 8 |
+| `quest:completed` | ✅ | 8 |
+| `quest:failed` | ✅ | 8 |
+| `quest:slot-assignment-available` | ✅ | 8 |
+| `quest:encounter-assigned` | ✅ | 8 |
 
 ```typescript
 // Requests
@@ -820,6 +972,13 @@ Quest-Verwaltung.
 'quest:fail-requested': {
   questId: EntityId<'quest'>;
   reason: string;
+}
+
+'quest:assign-encounter-requested': {
+  questId: EntityId<'quest'>;
+  slotId: string;
+  encounterId: string;
+  encounterXP: number;
 }
 
 // State-Changes
@@ -858,6 +1017,25 @@ Quest-Verwaltung.
 'quest:failed': {
   questId: EntityId<'quest'>;
   reason: 'deadline' | 'npc_dead' | 'manual';
+}
+
+// Slot-Assignment (40/60 XP-Split)
+'quest:slot-assignment-available': {
+  encounterId: string;
+  encounterXP: number;
+  openSlots: Array<{
+    questId: EntityId<'quest'>;
+    questName: string;
+    slotId: string;
+    slotDescription: string;
+  }>;
+}
+
+'quest:encounter-assigned': {
+  questId: EntityId<'quest'>;
+  slotId: string;
+  encounterId: string;
+  xpAdded: number;  // 60% der Encounter-XP
 }
 ```
 

@@ -207,21 +207,28 @@ export class SessionRunnerView extends ItemView {
     });
 
     return {
-      onPlanRoute: () => {
-        // Placeholder for route planning
-        console.log('Plan route clicked');
+      // Travel Planning
+      onToggleTravelMode: () => {
+        this.viewModel?.toggleTravelMode();
       },
 
       onStartTravel: () => {
-        // Placeholder for starting travel
-        console.log('Start travel clicked');
+        this.viewModel?.startPlannedTravel();
       },
 
       onPauseTravel: () => {
-        // Placeholder for pausing travel
-        console.log('Pause travel clicked');
+        this.viewModel?.pauseTravel();
       },
 
+      onResumeTravel: () => {
+        this.viewModel?.resumeTravel();
+      },
+
+      onCancelTravel: () => {
+        this.viewModel?.cancelTravel();
+      },
+
+      // Actions
       onGenerateEncounter: () => {
         const partyPosition = this.viewModel?.getState().partyPosition;
         if (!partyPosition) return;

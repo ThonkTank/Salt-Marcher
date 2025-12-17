@@ -585,6 +585,76 @@ combat:completed
 
 ---
 
+## Post-Combat Resolution
+
+Nach `combat:end-requested` startet der Resolution-Flow im DetailView (Combat-Tab).
+
+### Event-Sequenz
+
+```
+GM klickt [End Combat]
+    │
+    ▼
+combat:end-requested { outcome }
+    │
+    ├── Combat-Feature: XP berechnen, Zeit addieren
+    │
+    ▼
+combat:completed { xpAwarded, roundsTotal, outcome }
+    │
+    ▼
+DetailView wechselt zu Resolution-Modus
+    │
+    ├── Phase 1: XP-Summary (automatisch angezeigt)
+    │   ├── GM passt XP an (+/-%)
+    │   └── User: [Weiter] oder [Ueberspringen]
+    │
+    ├── Phase 2: Quest-Zuweisung (nur bei aktiven Quests)
+    │   └── User waehlt Quest oder ueberspringt
+    │       └── quest:xp-accumulated { questId, amount }
+    │
+    └── Phase 3: Loot-Verteilung
+        └── User verteilt Loot oder ueberspringt
+            └── loot:distributed { items, recipients }
+    │
+    ▼
+encounter:resolved { encounterId, outcome, xpAwarded }
+```
+
+### XP-Berechnung
+
+XP wird automatisch gleichmaessig auf Party-Mitglieder verteilt. GM kann Gesamt-XP anpassen:
+
+```typescript
+// GM kann Prozent-Modifier setzen (-50% bis +100% empfohlen)
+const baseXP = calculateEncounterXP(defeatedCreatures);
+const adjustedXP = Math.floor(baseXP * (1 + gmModifierPercent / 100));
+const xpPerCharacter = Math.floor(adjustedXP / partySize);
+
+// 40/60 Split bei Quest-Encounter
+const immediateXP = Math.floor(adjustedXP * 0.4);    // Sofort vergeben
+const questPoolXP = Math.floor(adjustedXP * 0.6);    // In Quest-Pool oder verfallen
+
+// Typische Anpassungen:
+// -10%: Encounter war einfacher als erwartet
+// +25%: Besonders clevere Taktik belohnen
+// +50%: Story-relevanter Encounter
+```
+
+### Ueberspringen-Verhalten
+
+| Phase | Bei Ueberspringen |
+|-------|-------------------|
+| XP-Summary | XP wird trotzdem vergeben (Basis-XP ohne Anpassung) |
+| Quest-Zuweisung | Quest-Pool XP (60%) verfallen |
+| Loot-Verteilung | Loot verfaellt |
+
+**Prinzip:** GM hat volle Kontrolle. System zeigt Optionen, GM entscheidet durch Ueberspringen/Bestaetigen.
+
+→ UI-Details: [DetailView.md](../application/DetailView.md#post-combat-resolution)
+
+---
+
 ## Was NICHT automatisiert wird
 
 | Aspekt | Grund |

@@ -24,6 +24,7 @@ import {
   type MapLoadedPayload,
   type TravelPositionChangedPayload,
   type CombatCompletedPayload,
+  type LootGeneratedPayload,
 } from '@core/events';
 import { now, type EntityId } from '@core/types';
 import type {
@@ -41,6 +42,8 @@ import { MAX_REROLL_ATTEMPTS } from '@core/schemas';
 import type { MapFeaturePort } from '../map';
 import type { PartyFeaturePort } from '../party';
 import type { TimeFeaturePort } from '../time';
+import type { LootFeaturePort } from '../loot';
+import type { ItemStoragePort } from '@/infrastructure/vault/item-registry';
 import type { EncounterFeaturePort, GenerationContext, FactionWeight } from './types';
 import type { EncounterStore } from './encounter-store';
 import {
@@ -81,6 +84,10 @@ export interface EncounterServiceDeps {
   factions: readonly Faction[];
   /** Existing NPCs for reuse (optional) */
   existingNpcs?: readonly NPC[];
+  /** Loot service for generating encounter loot */
+  lootService: LootFeaturePort;
+  /** Item registry for loot generation */
+  itemRegistry: ItemStoragePort;
 }
 
 // ============================================================================
@@ -102,6 +109,8 @@ export function createEncounterService(
     creatures,
     factions,
     existingNpcs = [],
+    lootService,
+    itemRegistry,
   } = deps;
 
   const subscriptions: Unsubscribe[] = [];
@@ -346,12 +355,34 @@ export function createEncounterService(
     );
   }
 
+  /**
+   * Publish loot generated event.
+   */
+  function publishLootGenerated(
+    encounterId: string,
+    loot: LootGeneratedPayload['loot'],
+    correlationId?: string
+  ): void {
+    eventBus.publish(
+      createEvent(
+        EventTypes.LOOT_GENERATED,
+        { encounterId, loot },
+        {
+          correlationId: correlationId ?? newCorrelationId(),
+          timestamp: now(),
+          source: 'encounter-feature',
+        }
+      )
+    );
+  }
+
   // --------------------------------------------------------------------------
   // Core Generation Pipeline
   // --------------------------------------------------------------------------
 
   /**
-   * Execute the 5-step encounter generation pipeline.
+   * Execute the 6-step encounter generation pipeline.
+   * Step 6 generates loot based on creature XP and loot tags.
    */
   function executeGenerationPipeline(
     context: GenerationContext,
@@ -439,6 +470,26 @@ export function createEncounterService(
       encounter.leadNpc = createEncounterLeadNpc(npcResult.npc, !npcResult.isNew);
     }
 
+    // Step 6: Generate loot
+    const encounterXP = calculateEncounterXP([selectedCreature]);
+    const lootTags = lootService.mergeLootTags([selectedCreature]);
+    const availableItems = itemRegistry.getAll();
+    const lootResult = lootService.generateLoot(
+      { totalXP: encounterXP, lootTags },
+      availableItems
+    );
+
+    if (lootResult.ok) {
+      // Convert GeneratedLoot to EncounterInstance loot format
+      encounter.loot = {
+        items: lootResult.value.items.map((si) => ({
+          itemId: si.item.id,
+          quantity: si.quantity,
+        })),
+        totalValue: lootResult.value.totalValue,
+      };
+    }
+
     // Set map context
     const mapOption = mapFeature.getCurrentMap();
     if (isSome(mapOption)) {
@@ -450,6 +501,19 @@ export function createEncounterService(
 
     // Publish events
     publishEncounterGenerated(encounter, correlationId);
+
+    // Publish loot:generated if loot was created
+    if (encounter.loot && lootResult.ok) {
+      publishLootGenerated(
+        encounter.id,
+        {
+          items: lootResult.value.items,
+          totalValue: lootResult.value.totalValue,
+        },
+        correlationId
+      );
+    }
+
     publishStateChanged(correlationId);
 
     return ok(encounter);

@@ -26,8 +26,9 @@ import {
   now,
   EventTypes,
 } from '@core/index';
-import type { Party, HexCoordinate, TransportMode, Character } from '@core/schemas';
+import type { Party, HexCoordinate, TransportMode, Character, Item } from '@core/schemas';
 import { calculatePartyLevel, calculatePartySpeed } from '@core/schemas';
+import type { EntityId } from '@core/index';
 import type { PartyFeaturePort, PartyStoragePort, CharacterStoragePort } from './types';
 import type { PartyStore } from './party-store';
 import type {
@@ -37,23 +38,31 @@ import type {
   PartyLoadedPayload,
   PartyLoadRequestedPayload,
 } from '@core/events/domain-events';
+import { calculateEffectiveSpeed, calculateEncumbrance } from '@/features/inventory';
 
 // ============================================================================
 // Party Service
 // ============================================================================
+
+/**
+ * Item lookup function type.
+ * Used for encumbrance calculation.
+ */
+export type ItemLookupFn = (id: EntityId<'item'>) => Item | undefined;
 
 export interface PartyServiceDeps {
   store: PartyStore;
   storage: PartyStoragePort;
   characterStorage?: CharacterStoragePort; // Optional - for member management
   eventBus?: EventBus; // Optional during migration
+  itemLookup?: ItemLookupFn; // Optional - for encumbrance calculation
 }
 
 /**
  * Create the party service (implements PartyFeaturePort).
  */
 export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
-  const { store, storage, characterStorage, eventBus } = deps;
+  const { store, storage, characterStorage, eventBus, itemLookup } = deps;
 
   // Track subscriptions for cleanup
   const subscriptions: Unsubscribe[] = [];
@@ -245,6 +254,29 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
     getPartySpeed(): number {
       const members = store.getState().loadedMembers;
       return calculatePartySpeed(members);
+    },
+
+    getEffectivePartySpeed(): number {
+      const members = store.getState().loadedMembers;
+
+      // If no members, return default speed
+      if (members.length === 0) {
+        return 30; // Default human speed
+      }
+
+      // If no item lookup function, fall back to base speed
+      if (!itemLookup) {
+        return calculatePartySpeed(members);
+      }
+
+      // Calculate effective speed for each member (base speed - encumbrance reduction)
+      const effectiveSpeeds = members.map((character) => {
+        const encumbrance = calculateEncumbrance(character, itemLookup);
+        return calculateEffectiveSpeed(character.speed, encumbrance.level);
+      });
+
+      // Return slowest member's effective speed
+      return Math.min(...effectiveSpeeds);
     },
 
     getPartySize(): number {

@@ -7,8 +7,9 @@
 
 import { Plugin } from 'obsidian';
 import type { EventBus } from '@core/index';
-import { createEventBus, isSome } from '@core/index';
-import type { CreatureDefinition, Faction, QuestDefinition } from '@core/schemas';
+import { createEventBus, isSome, EventTypes, createEvent, newCorrelationId, now } from '@core/index';
+import type { QuestSlotAssignmentAvailablePayload, QuestAssignEncounterRequestedPayload } from '@core/events/domain-events';
+import type { CreatureDefinition, Faction, QuestDefinition, Item } from '@core/schemas';
 
 // Infrastructure
 import {
@@ -25,8 +26,9 @@ import {
   createVaultPartyAdapter,
   createVaultTimeAdapter,
   createVaultCalendarAdapter,
-  // In-memory adapters (terrain stays in-memory as preset data)
+  // In-memory adapters (terrain/items stay in-memory as preset data)
   createTerrainRegistry,
+  createItemRegistry,
   // Constants for default IDs (used until proper map/party selection UI)
   TEST_MAP_ID,
   DEFAULT_PARTY_ID,
@@ -40,8 +42,17 @@ import { createTimeStore, createTimeService, type TimeFeaturePort } from './feat
 import { createWeatherStore, createWeatherService, type WeatherFeaturePort } from './features/weather';
 import { createEncounterStore, createEncounterService, type EncounterFeaturePort } from './features/encounter';
 import { createCombatService, type CombatFeaturePort } from './features/combat';
-import { createQuestService, type QuestFeaturePort } from './features/quest';
+import { createQuestService, type QuestFeaturePort, type SerializableQuestState } from './features/quest';
+import { createLootService } from './features/loot';
 import { addDuration, diffInHours } from './features/time';
+
+// ============================================================================
+// Plugin Data (Resumable State)
+// ============================================================================
+
+interface SaltMarcherPluginData {
+  questState?: SerializableQuestState;
+}
 
 // Application
 import {
@@ -52,7 +63,7 @@ import {
   VIEW_TYPE_DETAIL_VIEW,
   DetailView,
 } from './application/detail-view';
-import { createNotificationService, type NotificationService } from './application/shared';
+import { createNotificationService, showSlotAssignmentDialog, type NotificationService } from './application/shared';
 
 // Presets (for bootstrap)
 import testOverworldPreset from '../presets/maps/test-overworld.json';
@@ -61,6 +72,7 @@ import gregorianCalendarPreset from '../presets/almanac/gregorian.json';
 import creaturesPreset from '../presets/creatures/base-creatures.json';
 import factionsPreset from '../presets/factions/base-factions.json';
 import questsPreset from '../presets/quests/demo-quests.json';
+import itemsPreset from '../presets/items/base-items.json';
 
 // ============================================================================
 // Bootstrap Fixtures
@@ -233,6 +245,12 @@ export default class SaltMarcherPlugin extends Plugin {
     // Terrain stays in-memory (preset data, not user-created)
     const terrainStorage = createTerrainRegistry();
 
+    // Items stay in-memory (preset data for encumbrance calculation)
+    const itemRegistry = createItemRegistry(itemsPreset as unknown as Item[]);
+
+    // Loot service (stateless, uses itemRegistry)
+    const lootService = createLootService();
+
     // =========================================================================
     // Bootstrap: Notification Service
     // =========================================================================
@@ -252,12 +270,13 @@ export default class SaltMarcherPlugin extends Plugin {
       eventBus: this.eventBus,
     });
 
-    // Party Feature
+    // Party Feature (with itemLookup for encumbrance calculation)
     const partyStore = createPartyStore();
     this.partyFeature = createPartyService({
       store: partyStore,
       storage: partyStorage,
       eventBus: this.eventBus,
+      itemLookup: (id) => itemRegistry.lookup(id),
     });
 
     // Time Feature
@@ -295,6 +314,8 @@ export default class SaltMarcherPlugin extends Plugin {
       eventBus: this.eventBus,
       creatures: creaturesPreset as unknown as CreatureDefinition[],
       factions: factionsPreset as unknown as Faction[],
+      lootService,
+      itemRegistry,
     });
 
     // Combat Feature (integrates with Encounter)
@@ -325,6 +346,14 @@ export default class SaltMarcherPlugin extends Plugin {
         return diffInHours(b, a, calendarOpt.value) > 0;
       },
     });
+
+    // Initialize Quest Feature and restore state from plugin data
+    await this.questFeature.initialize();
+    const pluginData = await this.loadData() as SaltMarcherPluginData | null;
+    if (pluginData?.questState) {
+      this.questFeature.restoreState(pluginData.questState);
+      console.log('Salt Marcher: Restored quest state from plugin data');
+    }
 
     // Travel Feature (now with Weather)
     this.travelFeature = createTravelService({
@@ -440,6 +469,45 @@ export default class SaltMarcherPlugin extends Plugin {
       })
     );
 
+    // Show Slot Assignment Dialog when quest slots are available
+    this.eventUnsubscribers.push(
+      this.eventBus.subscribe<QuestSlotAssignmentAvailablePayload>(
+        EventTypes.QUEST_SLOT_ASSIGNMENT_AVAILABLE,
+        async (event) => {
+          const { encounterId, encounterXP, openSlots } = event.payload;
+
+          // Only show if there are actually open slots
+          if (openSlots.length === 0) return;
+
+          const result = await showSlotAssignmentDialog(this.app, {
+            encounterId,
+            encounterXP,
+            openSlots,
+          });
+
+          if (result.assigned && result.questId && result.slotId) {
+            // Publish quest:assign-encounter-requested event
+            this.eventBus?.publish(
+              createEvent<QuestAssignEncounterRequestedPayload>(
+                EventTypes.QUEST_ASSIGN_ENCOUNTER_REQUESTED,
+                {
+                  questId: result.questId,
+                  slotId: result.slotId,
+                  encounterId,
+                  encounterXP,
+                },
+                {
+                  correlationId: newCorrelationId(),
+                  timestamp: now(),
+                  source: 'slot-assignment-dialog',
+                }
+              )
+            );
+          }
+        }
+      )
+    );
+
     console.log('Salt Marcher: Plugin loaded!');
   }
 
@@ -463,6 +531,14 @@ export default class SaltMarcherPlugin extends Plugin {
       if (!saveResult.ok) {
         console.error('Salt Marcher: Failed to save time on unload:', saveResult.error);
       }
+    }
+
+    // Save quest state to plugin data (Resumable)
+    if (this.questFeature) {
+      const questState = this.questFeature.getResumableState();
+      const existingData = await this.loadData() as SaltMarcherPluginData | null;
+      await this.saveData({ ...existingData, questState });
+      console.log('Salt Marcher: Saved quest state to plugin data');
     }
 
     // Unsubscribe from auto-open events

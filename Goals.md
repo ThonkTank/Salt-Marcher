@@ -186,6 +186,7 @@ Grid-basierte Dungeon-Maps mit Simulation:
 
 | Entity | Beschreibung |
 |--------|--------------|
+| `path` | Lineare Map-Features (Strassen, Fluesse, Schluchten, Klippen) |
 | `spell` | Zauber-Definitionen (D&D Beyond-level Character Management) |
 | `playlist` | Manuelle Musik-Playlists (MVP nutzt dynamische Track-Auswahl) |
 

@@ -27,6 +27,9 @@ const HEX_SIZE = 30;
 /** Party token radius */
 const PARTY_TOKEN_RADIUS = 12;
 
+/** Waypoint marker size */
+const WAYPOINT_MARKER_SIZE = 8;
+
 /** Colors */
 const COLORS = {
   grid: '#444444',
@@ -36,6 +39,14 @@ const COLORS = {
   partyTokenBorder: '#FFFFFF',
   movableHighlight: 'rgba(0, 255, 0, 0.2)',
   background: '#1a1a1a',
+  // Route planning
+  planningRoute: '#3b82f6', // Blue for planning
+  planningRouteWidth: 3,
+  activeRoute: '#22c55e', // Green for active
+  activeRouteWidth: 4,
+  waypointFill: '#ffffff',
+  waypointBorder: '#3b82f6',
+  waypointActiveBorder: '#22c55e',
 };
 
 // ============================================================================
@@ -169,6 +180,9 @@ export function createMapCanvas(
       renderTile(tile, state, movableTiles);
     }
 
+    // Render route and waypoints (between tiles and party token)
+    renderRoute(state);
+
     // Render party token
     if (state.partyPosition) {
       renderPartyToken(state.partyPosition);
@@ -251,6 +265,96 @@ export function createMapCanvas(
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('P', pixel.x, pixel.y);
+  }
+
+  /**
+   * Render route lines and waypoint markers.
+   */
+  function renderRoute(state: RenderState): void {
+    const { travelMode, planningWaypoints, activeRoute, partyPosition } = state;
+
+    // Planning mode: draw line from party to planned waypoints
+    if (travelMode && planningWaypoints.length > 0 && partyPosition) {
+      const allPoints = [partyPosition, ...planningWaypoints];
+      drawRouteLine(allPoints, COLORS.planningRoute, COLORS.planningRouteWidth);
+      drawWaypointMarkers(planningWaypoints, COLORS.waypointBorder);
+    }
+
+    // Active route: draw the planned/active route
+    if (activeRoute && activeRoute.waypoints.length > 1) {
+      drawRouteLine(activeRoute.waypoints, COLORS.activeRoute, COLORS.activeRouteWidth);
+      // Draw waypoint markers (skip first = start position)
+      drawWaypointMarkers(activeRoute.waypoints.slice(1), COLORS.waypointActiveBorder);
+    }
+  }
+
+  /**
+   * Draw a line connecting waypoints.
+   */
+  function drawRouteLine(
+    waypoints: HexCoordinate[],
+    color: string,
+    lineWidth: number
+  ): void {
+    if (waypoints.length < 2) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const firstPixel = axialToPixel(waypoints[0], HEX_SIZE);
+    ctx.moveTo(firstPixel.x, firstPixel.y);
+
+    for (let i = 1; i < waypoints.length; i++) {
+      const pixel = axialToPixel(waypoints[i], HEX_SIZE);
+      ctx.lineTo(pixel.x, pixel.y);
+    }
+
+    ctx.stroke();
+  }
+
+  /**
+   * Draw waypoint markers.
+   */
+  function drawWaypointMarkers(
+    waypoints: HexCoordinate[],
+    borderColor: string
+  ): void {
+    for (let i = 0; i < waypoints.length; i++) {
+      const waypoint = waypoints[i];
+      const pixel = axialToPixel(waypoint, HEX_SIZE);
+      const isDestination = i === waypoints.length - 1;
+
+      // Draw diamond for intermediate, circle for destination
+      ctx.beginPath();
+      if (isDestination) {
+        // Circle for destination
+        ctx.arc(pixel.x, pixel.y, WAYPOINT_MARKER_SIZE, 0, Math.PI * 2);
+      } else {
+        // Diamond for intermediate waypoints
+        const s = WAYPOINT_MARKER_SIZE;
+        ctx.moveTo(pixel.x, pixel.y - s);
+        ctx.lineTo(pixel.x + s, pixel.y);
+        ctx.lineTo(pixel.x, pixel.y + s);
+        ctx.lineTo(pixel.x - s, pixel.y);
+        ctx.closePath();
+      }
+
+      ctx.fillStyle = COLORS.waypointFill;
+      ctx.fill();
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw waypoint number
+      ctx.fillStyle = borderColor;
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(i + 1), pixel.x, pixel.y);
+    }
   }
 
   // =========================================================================
