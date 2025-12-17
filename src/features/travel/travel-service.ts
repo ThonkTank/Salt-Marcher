@@ -48,6 +48,11 @@ import type {
 import { calculateHexTraversalTime, createInitialTravelState } from './types';
 import { createTravelStore } from './travel-store';
 import { addDuration as addDurationToTime } from '../time/time-utils';
+import {
+  calculateEncounterChance,
+  rollEncounter,
+  DEFAULT_POPULATION,
+} from '../encounter/encounter-chance';
 import type {
   TimeAdvanceRequestedPayload,
   TravelPositionChangedPayload,
@@ -96,6 +101,171 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
   // Create state store for state machine
   const store = createTravelStore();
+
+  // ===========================================================================
+  // Travel Loop (automatic segment-by-segment movement)
+  // ===========================================================================
+
+  let travelLoopTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  const TRAVEL_LOOP_DELAY_MS = 100; // Short delay for responsiveness
+
+  /**
+   * Start the automatic travel loop.
+   * The loop advances segments until route complete, paused, or encounter.
+   */
+  function startTravelLoop(correlationId?: string): void {
+    if (travelLoopTimeoutId !== null) return; // Already running
+
+    function tick() {
+      if (store.getStatus() !== 'traveling') {
+        travelLoopTimeoutId = null;
+        return;
+      }
+
+      const result = processNextTravelTick(correlationId);
+
+      if (result.shouldContinue) {
+        travelLoopTimeoutId = setTimeout(tick, TRAVEL_LOOP_DELAY_MS);
+      } else {
+        travelLoopTimeoutId = null;
+      }
+    }
+
+    tick();
+  }
+
+  /**
+   * Stop the travel loop (for pause, cancel, or dispose).
+   */
+  function stopTravelLoop(): void {
+    if (travelLoopTimeoutId !== null) {
+      clearTimeout(travelLoopTimeoutId);
+      travelLoopTimeoutId = null;
+    }
+  }
+
+  /**
+   * Process one tick of the travel loop (advance one segment).
+   * Returns whether the loop should continue.
+   */
+  function processNextTravelTick(
+    correlationId?: string
+  ): { shouldContinue: boolean } {
+    const state = store.getState();
+    const { route, currentSegmentIndex, hourProgress } = state;
+
+    if (!route || currentSegmentIndex >= route.segments.length) {
+      // Route complete
+      finalizeTravelInternal(correlationId);
+      return { shouldContinue: false };
+    }
+
+    const segment = route.segments[currentSegmentIndex];
+    const timeCostHours = segment.timeCostHours;
+
+    // Calculate hour boundaries for encounter checks
+    const previousHourProgress = hourProgress;
+    const newTotalProgress = previousHourProgress + timeCostHours;
+    const hoursCrossed =
+      Math.floor(newTotalProgress) - Math.floor(previousHourProgress);
+
+    // Encounter checks for each full hour crossed
+    for (let i = 0; i < hoursCrossed; i++) {
+      const encounterTriggered = checkForEncounter(segment.to, correlationId);
+      if (encounterTriggered) {
+        // Travel will be paused by encounter:generated event handler
+        return { shouldContinue: false };
+      }
+    }
+
+    // Execute segment move (position + time)
+    const moveResult = executeMove(segment.to, correlationId);
+    if (!moveResult.ok) {
+      return { shouldContinue: false };
+    }
+
+    // Update hour progress
+    store.setHourProgress(newTotalProgress % 1);
+    store.incrementTotalHours(timeCostHours);
+
+    // Advance to next segment
+    const hasMore = store.advanceToNextSegment();
+
+    if (!hasMore) {
+      finalizeTravelInternal(correlationId);
+      return { shouldContinue: false };
+    }
+
+    return { shouldContinue: true };
+  }
+
+  /**
+   * Finalize travel (route complete).
+   */
+  function finalizeTravelInternal(correlationId?: string): void {
+    const state = store.getState();
+    const route = state.route;
+
+    if (route) {
+      store.setArrived();
+      publishStateChanged(correlationId);
+      publishTravelCompleted(
+        route.waypoints[route.waypoints.length - 1],
+        route.totalDuration,
+        correlationId
+      );
+    }
+  }
+
+  /**
+   * Check for encounter at position (called at hour boundaries).
+   * Returns true if encounter was triggered.
+   */
+  function checkForEncounter(
+    position: HexCoordinate,
+    correlationId?: string
+  ): boolean {
+    if (!eventBus) return false;
+
+    // Get population from map tile
+    const population = getPopulationAt(position);
+
+    // Calculate chance for 1 hour
+    const chance = calculateEncounterChance(1, population);
+
+    // Roll for encounter
+    if (!rollEncounter(chance)) {
+      return false;
+    }
+
+    // Generate encounter (will pause travel via existing event handler)
+    eventBus.publish(
+      createEvent(
+        EventTypes.ENCOUNTER_GENERATE_REQUESTED,
+        {
+          position,
+          trigger: 'travel' as const,
+        },
+        {
+          correlationId: correlationId ?? newCorrelationId(),
+          timestamp: now(),
+          source: 'travel-feature',
+        }
+      )
+    );
+
+    return true;
+  }
+
+  /**
+   * Get population at a hex coordinate for encounter chance calculation.
+   * TODO: Integrate with faction presence when available (post-MVP).
+   */
+  function getPopulationAt(_position: HexCoordinate): number {
+    // MVP: Use default population (50 = normal density)
+    // Post-MVP: Derive from tile.factionPresence
+    return DEFAULT_POPULATION;
+  }
 
   // ===========================================================================
   // Event Publishing Helpers
@@ -868,8 +1038,15 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
     // Transition to traveling
     store.setTraveling();
+
+    // Initialize hour tracking for encounter checks
+    store.resetTravelProgress();
+
     publishStateChanged(correlationId);
     publishTravelStarted(route, correlationId);
+
+    // Start automatic segment movement
+    startTravelLoop(correlationId);
 
     return ok(undefined);
   }
@@ -878,6 +1055,9 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     reason: PauseReason,
     correlationId?: string
   ): Result<void, AppError> {
+    // Stop the travel loop first
+    stopTravelLoop();
+
     // Can only pause from traveling state
     if (store.getStatus() !== 'traveling') {
       return err(
@@ -922,10 +1102,16 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     publishStateChanged(correlationId);
     publishTravelResumed(position, correlationId);
 
+    // Restart automatic segment movement
+    startTravelLoop(correlationId);
+
     return ok(undefined);
   }
 
   function cancelTravelInternal(correlationId?: string): Result<void, AppError> {
+    // Stop the travel loop first
+    stopTravelLoop();
+
     const status = store.getStatus();
 
     // Can cancel from planning, traveling, or paused
@@ -1090,6 +1276,9 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     // =========================================================================
 
     dispose(): void {
+      // Stop travel loop to prevent orphan timeouts
+      stopTravelLoop();
+
       // Clean up all EventBus subscriptions
       for (const unsubscribe of subscriptions) {
         unsubscribe();

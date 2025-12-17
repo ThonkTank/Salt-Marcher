@@ -211,6 +211,12 @@ export interface TravelState {
 
   /** Reason if paused */
   pauseReason: PauseReason | null;
+
+  /** Accumulated time within current hour for encounter checks (0.0 - 1.0) */
+  hourProgress: number;
+
+  /** Total hours traveled on this route */
+  totalHoursTraveled: number;
 }
 
 /**
@@ -223,6 +229,8 @@ export function createInitialTravelState(): TravelState {
     currentSegmentIndex: 0,
     segmentProgress: 0,
     pauseReason: null,
+    hourProgress: 0,
+    totalHoursTraveled: 0,
   };
 }
 

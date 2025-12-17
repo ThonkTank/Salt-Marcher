@@ -10,7 +10,7 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 
 | Feature | Aspekte |
 |---------|---------|
-| Travel | Nachbar-Bewegung, State-Machine, Multi-Hex-Routen (Greedy), Weather-Speed-Faktor, Encumbrance-Speed-Faktor, Wegpunkt-UI, Routen-Visualisierung |
+| Travel | Nachbar-Bewegung, State-Machine, Multi-Hex-Routen (Greedy), Weather-Speed-Faktor, Encumbrance-Speed-Faktor, Wegpunkt-UI, Routen-Visualisierung, Auto-Segment-Bewegung, Stunden-Encounter-Checks (12.5%), Auto-Pause bei Encounter |
 | Weather | Terrain-basierte Generierung, Travel-Speed-Modifier, Persistenz |
 | Encounter | 4 Typen, State-Machine, 6-Step Pipeline (inkl. Loot), NPC-Generator, Travel-Integration, XP-Berechnung |
 | Combat | Initiative-Tracker, HP-Management, 14 Conditions, Concentration, Time-Integration, XP aus Creatures |
@@ -25,39 +25,35 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 
 ## 🔄 Aktiver Sprint
 
-_Phase 10 abgeschlossen. Bereit fuer naechste Phase._
+_Phase 11 in Arbeit._
 
-### Phase 10: Travel UI mit Wegpunkten
+### Phase 11: Automatische Segment-Bewegung
 
 **User Story:**
-> Als GM moechte ich auf der Map mehrere Wegpunkte setzen koennen, damit die Party einer geplanten Route folgt und ich die Reise visuell verfolgen kann.
+> Als GM moechte ich nach Klick auf "Start" die Party automatisch entlang der Route reisen sehen, mit Zeit-Fortschritt und Encounter-Checks, damit ich die Reise nicht manuell Hex fuer Hex durchfuehren muss.
 
-**Scope:**
-- [x] Travel-Mode Toggle im UI
-- [x] Wegpunkt-Platzierung per Klick auf Map
-- [x] Wegpunkt-Visualisierung (Marker auf Map)
-- [x] Routen-Visualisierung (Linie zwischen Wegpunkten)
-- [x] Sidebar Travel-Buttons funktional ([Plan], [Start], [Cancel])
-- [x] Travel-Status aus Feature-State
-- [x] Event-Integration (travel:* Events → UI Updates)
+**Scope (siehe [Travel-System.md](../features/Travel-System.md)):**
+- [ ] Travel-Loop Mechanismus (setTimeout-basiert)
+- [ ] Segment-fuer-Segment Bewegung nach `startTravel()`
+- [ ] Zeit-Integration via `time:advance-requested` pro Segment
+- [ ] Encounter-Checks am Stunden-Anfang (12.5% Basis-Chance)
+- [ ] Auto-Pause bei Encounter
+- [ ] Pause/Resume funktioniert mit Travel-Loop
+- [ ] Cancel stoppt Travel-Loop
 
 **Implementierungs-Fortschritt:**
 
 | Komponente | Status | Anmerkung |
 |------------|--------|-----------|
-| TravelFeaturePort | ✅ | planRouteWithWaypoints() hinzugefuegt |
-| travel-service.ts | ✅ | Multi-Waypoint Routing implementiert |
-| SessionRunner types.ts | ✅ | travelMode, planningWaypoints, activeRoute State |
-| viewmodel.ts | ✅ | Event-Subscriptions + Travel-Methoden |
-| map-canvas.ts | ✅ | Route-Rendering Layer |
-| sidebar.ts | ✅ | Travel-Buttons verdrahtet |
-| view.ts | ✅ | Callbacks an ViewModel gebunden |
+| types.ts | ⬜ | TravelState erweitern (hourProgress, totalHoursTraveled) |
+| travel-store.ts | ⬜ | Stunden-Tracking Methoden |
+| travel-service.ts | ⬜ | Travel-Loop, Encounter-Check, SM-Integration |
 
 **Nicht im Scope:**
-- Wegpunkt-Drag&Drop
-- Wegpunkt per Rechtsklick loeschen
-- Reise-Animation (Token-Bewegung)
+- Token-Animation auf Map (smooth movement)
 - Route-Preview mit ETA vor Start
+- Wegpunkt Drag&Drop
+- UI Progress-Anzeige (12.4 / 48 mi)
 
 ---
 

@@ -77,53 +77,83 @@ Die DetailView zeigt **kontextbezogene Details**, die nicht staendig sichtbar se
 
 ### Encounter-Tab
 
-Zeigt Encounter-Preview und Generierungs-Optionen.
+Encounter-Builder zum Erstellen, Bearbeiten und Starten von Encounters.
+
+**Konzept:** Der Tab ist ein Builder, in den sowohl gespeicherte als auch generierte Encounters geladen werden. Der GM kann Kreaturen/NPCs hinzufuegen, entfernen und die Encounter-Details bearbeiten.
 
 ```
-┌────────────────────────────────────┐
-│  ⚔️ ENCOUNTER                      │
-├────────────────────────────────────┤
-│                                    │
-│  ─────── Aktiver Encounter ─────── │
-│                                    │
-│  Type: Combat                      │
-│  Creatures:                        │
-│  • Goblin Boss (CR 1)              │
-│  • Goblin ×3 (CR 1/4)              │
-│                                    │
-│  Context:                          │
-│  "Patrolling the forest road"      │
-│                                    │
-│  Difficulty: Medium (450 XP)       │
-│                                    │
-│  ┌──────────────────────────────┐  │
-│  │ [Start Combat] [Dismiss]     │  │
-│  │ [Regenerate]                 │  │
-│  └──────────────────────────────┘  │
-│                                    │
-│  ─────── Oder Neu Generieren ───── │
-│                                    │
-│  [🎲 Random] [📋 From Quest]       │
-│  [✏️ Custom]                       │
-│                                    │
-│  ─────── Historie ───────────────  │
-│                                    │
-│  Last: Goblin Patrol (resolved)    │
-│        → 200 XP awarded            │
-│                                    │
-└────────────────────────────────────┘
+┌────────────────────────────────────────┐
+│  ENCOUNTER                              │
+├────────────────────────────────────────┤
+│  [🔍 Gespeicherte Encounter suchen... ] │  ← Laedt in Builder
+├────────────────────────────────────────┤
+│                                         │
+│  Name: [Goblin Hinterhalt____________]  │
+│                                         │
+│  ─────── Kreaturen/NPCs ─────────────  │
+│                                         │
+│  [🔍 Kreatur/NPC suchen...         ]   │
+│                                         │
+│  • Goblin Boss (CR 1)         [×]      │
+│  • Goblin ×3 (CR 1/4)         [×]      │
+│  • Griknak (NPC, Goblin)      [×]      │
+│                                         │
+│  ─────── Kontext ────────────────────  │
+│                                         │
+│  Activity: [Patroullieren_____________] │
+│  Goal:     [Reisende ausrauben________] │
+│                                         │
+│  ─────── Encounter-Wertung ──────────  │
+│                                         │
+│  Gesamt-XP: 450 XP                      │
+│  Difficulty: ████░ Medium               │
+│  Tages-Budget: 45% verbraucht           │
+│             (450/1000 XP)               │
+│                                         │
+│  ─────────────────────────────────────  │
+│                                         │
+│  [💾 Speichern] [⚔️ Combat starten]    │
+│                                         │
+└────────────────────────────────────────┘
 ```
 
 **Interaktionen:**
 
-| Button | Aktion |
-|--------|--------|
-| `[Start Combat]` | Startet Combat, wechselt zu Combat-Tab |
-| `[Dismiss]` | Verwirft Encounter ohne Konsequenzen |
-| `[Regenerate]` | Generiert neuen Encounter |
-| `[🎲 Random]` | Generiert zufaelligen Encounter |
-| `[📋 From Quest]` | Zeigt Quest-Encounter-Slots |
-| `[✏️ Custom]` | Oeffnet Custom-Encounter-Editor |
+| Element | Aktion |
+|---------|--------|
+| Encounter-Suche | Autocomplete fuer gespeicherte EncounterDefinitions, laedt in Builder |
+| Kreatur/NPC-Suche | Autocomplete fuer CreatureDefinitions + Named NPCs aus Registry |
+| `[×]` Button | Entfernt Kreatur/NPC aus Builder |
+| Name-Feld | Encounter-Name (fuer Speichern) |
+| Activity-Feld | Was tun die Kreaturen? (z.B. "Patroullieren") |
+| Goal-Feld | Was wollen die Kreaturen? (z.B. "Reisende ausrauben") |
+| `[💾 Speichern]` | Speichert als EncounterDefinition im Vault |
+| `[⚔️ Combat starten]` | Startet Combat mit aktuellen Kreaturen, wechselt zu Combat-Tab |
+
+**Encounter-Wertung (Live-Berechnung):**
+
+| Anzeige | Berechnung |
+|---------|------------|
+| Gesamt-XP | Summe aller Creature-XP mit Gruppen-Multiplikator |
+| Difficulty | Easy/Medium/Hard/Deadly basierend auf Party-Level |
+| Tages-Budget | Prozent des Daily-XP-Budgets (siehe Encounter-Balancing.md) |
+
+→ XP-Budget Details: [Encounter-Balancing.md](../features/Encounter-Balancing.md#xp-budget)
+
+**Quellen fuer Kreaturen:**
+
+| Quelle | Beschreibung |
+|--------|--------------|
+| CreatureDefinitions | Templates aus dem Vault (Goblin, Wolf, etc.) |
+| Named NPCs | Persistierte NPCs aus NPC-Registry (Griknak, Eldara, etc.) |
+
+**Builder-Befuellung:**
+
+| Trigger | Verhalten |
+|---------|-----------|
+| `encounter:generated` Event | Builder wird mit generiertem Encounter befuellt |
+| Gespeichertes Encounter laden | Builder wird mit EncounterDefinition befuellt |
+| Manuell | User fuegt Kreaturen einzeln hinzu |
 
 ### Combat-Tab
 
@@ -519,8 +549,33 @@ interface DetailViewState {
 type TabId = 'encounter' | 'combat' | 'shop' | 'location' | 'quest' | 'journal';
 
 interface EncounterTabState {
-  currentEncounter: EncounterInstance | null;
-  history: EncounterSummary[];
+  // Builder-State
+  builderName: string;
+  builderActivity: string;              // Was tun die Kreaturen?
+  builderGoal: string;                  // Was wollen die Kreaturen?
+  builderCreatures: BuilderCreature[];
+
+  // Berechnete Werte (live)
+  totalXP: number;
+  difficulty: 'easy' | 'medium' | 'hard' | 'deadly';
+  dailyBudgetUsed: number;              // Bereits verbraucht heute
+  dailyBudgetTotal: number;             // Tages-Budget der Party
+
+  // Suche
+  savedEncounterQuery: string;
+  creatureQuery: string;
+
+  // Quelle (fuer Save-Logik: Update vs Create)
+  sourceEncounterId: EntityId<'encounter'> | null;
+}
+
+interface BuilderCreature {
+  type: 'creature' | 'npc';
+  entityId: EntityId<'creature'> | EntityId<'npc'>;
+  name: string;
+  cr: number;
+  xp: number;
+  count: number;
 }
 
 interface CombatTabState {
@@ -590,16 +645,74 @@ const subscriptions = [
 
 ## Interaktions-Flows
 
-### Flow: Encounter zu Combat
+### Flow: Gespeichertes Encounter laden
 
 ```
-DetailView zeigt Encounter-Tab (nach encounter:generated)
+User tippt in Encounter-Suche
     │
     ▼
-User klickt [Start Combat]
+Autocomplete zeigt passende EncounterDefinitions aus Vault
     │
     ▼
-ViewModel: eventBus.publish('combat:start-requested', { encounterId })
+User waehlt Encounter aus
+    │
+    ▼
+Builder wird mit Encounter-Daten befuellt:
+├── Name, Activity, Goal
+├── Kreaturen-Liste
+└── sourceEncounterId wird gesetzt
+    │
+    ▼
+Difficulty + Budget werden neu berechnet
+```
+
+### Flow: Neues Encounter im Builder erstellen
+
+```
+User sucht Kreatur/NPC in Kreatur-Suche
+    │
+    ▼
+Autocomplete zeigt CreatureDefinitions + Named NPCs
+    │
+    ▼
+User waehlt aus (+ Button oder Enter)
+    │
+    ▼
+Kreatur wird zu builderCreatures hinzugefuegt
+    │
+    ▼
+Difficulty + Budget werden live neu berechnet
+```
+
+### Flow: Random Encounter → Builder
+
+```
+encounter:generated Event (aus Travel oder SessionRunner)
+    │
+    ▼
+DetailView oeffnet Encounter-Tab
+    │
+    ▼
+Builder wird mit generiertem Encounter befuellt:
+├── Name aus Encounter-Type
+├── Activity + Goal aus Generierung
+├── Kreaturen aus EncounterInstance
+└── sourceEncounterId = null (neu, nicht gespeichert)
+    │
+    ▼
+User kann modifizieren, speichern oder Combat starten
+```
+
+### Flow: Builder → Combat
+
+```
+User klickt [Combat starten]
+    │
+    ▼
+ViewModel erstellt CombatParticipant[] aus builderCreatures
+    │
+    ▼
+ViewModel: eventBus.publish('combat:start-requested', { participants })
     │
     ▼
 Combat-Feature startet Combat
@@ -609,6 +722,24 @@ combat:started Event
     │
     ▼
 DetailView wechselt automatisch zu Combat-Tab
+```
+
+### Flow: Builder → Speichern
+
+```
+User klickt [Speichern]
+    │
+    ▼
+ViewModel erstellt EncounterDefinition aus Builder-State:
+├── name, activity, goal
+├── creatureSlots aus builderCreatures
+└── id aus sourceEncounterId oder neu generiert
+    │
+    ▼
+ViewModel: entityRegistry.save('encounter', definition)
+    │
+    ▼
+sourceEncounterId wird gesetzt (fuer Update bei erneutem Speichern)
 ```
 
 ### Flow: Combat beenden

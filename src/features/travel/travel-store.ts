@@ -46,6 +46,8 @@ export function createTravelStore() {
         currentSegmentIndex: 0,
         segmentProgress: 0,
         pauseReason: null,
+        hourProgress: 0,
+        totalHoursTraveled: 0,
       };
     },
 
@@ -150,6 +152,42 @@ export function createTravelStore() {
       state = {
         ...state,
         segmentProgress: Math.min(1, Math.max(0, progress)),
+      };
+    },
+
+    // =========================================================================
+    // Hour Tracking (for encounter checks)
+    // =========================================================================
+
+    /**
+     * Set hour progress (0.0 - 1.0).
+     * Used to track when a full hour boundary is crossed for encounter checks.
+     */
+    setHourProgress(progress: number): void {
+      state = {
+        ...state,
+        hourProgress: progress,
+      };
+    },
+
+    /**
+     * Add hours to total traveled time.
+     */
+    incrementTotalHours(hours: number): void {
+      state = {
+        ...state,
+        totalHoursTraveled: state.totalHoursTraveled + hours,
+      };
+    },
+
+    /**
+     * Reset hour tracking (when starting a new travel).
+     */
+    resetTravelProgress(): void {
+      state = {
+        ...state,
+        hourProgress: 0,
+        totalHoursTraveled: 0,
       };
     },
 
