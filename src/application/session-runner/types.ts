@@ -62,6 +62,8 @@ export interface TravelSectionState {
   speed: number;
   /** Current terrain name at party position */
   currentTerrain: string | null;
+  /** Estimated time of arrival (during planning/traveling) */
+  eta: ETAInfo | null;
 }
 
 /**
@@ -156,10 +158,14 @@ export interface RenderState {
   travelMode: boolean;
   /** Waypoints being planned (before route calculation) */
   planningWaypoints: HexCoordinate[];
+  /** Preview path showing actual calculated route (all hexes) */
+  previewPath: HexCoordinate[] | null;
   /** Active route (after planning or during travel) */
   activeRoute: Route | null;
   /** Current travel status from travel feature */
   travelStatus: TravelStatus;
+  /** Token animation state (for smooth movement) */
+  tokenAnimation: TokenAnimationState | null;
 
   // === Weather & Encounter (for data access) ===
   /** Current weather state */
@@ -199,8 +205,10 @@ export function createInitialRenderState(): RenderState {
     // Travel Planning
     travelMode: false,
     planningWaypoints: [],
+    previewPath: null,
     activeRoute: null,
     travelStatus: 'idle',
+    tokenAnimation: null,
 
     // Weather & Encounter
     currentWeather: null,
@@ -217,6 +225,7 @@ export function createInitialRenderState(): RenderState {
         status: 'idle',
         speed: 24, // Default: 24 mi/day on foot
         currentTerrain: null,
+        eta: null,
       },
       quest: {
         activeQuests: [],
@@ -268,4 +277,38 @@ export interface TravelInfo {
   to: HexCoordinate;
   timeCostHours: number;
   terrainName: string;
+}
+
+// ============================================================================
+// Token Animation
+// ============================================================================
+
+/**
+ * State for animating party token movement between hexes.
+ */
+export interface TokenAnimationState {
+  /** Starting hex */
+  fromHex: HexCoordinate;
+  /** Destination hex */
+  toHex: HexCoordinate;
+  /** Animation progress (0.0 - 1.0) */
+  progress: number;
+  /** Animation start timestamp */
+  startTime: number;
+  /** Animation duration in milliseconds */
+  durationMs: number;
+}
+
+// ============================================================================
+// ETA Display
+// ============================================================================
+
+/**
+ * Estimated time of arrival info.
+ */
+export interface ETAInfo {
+  /** Total estimated duration */
+  totalDuration: { hours: number; minutes: number };
+  /** Formatted display string (e.g. "~2h 30m") */
+  display: string;
 }

@@ -17,6 +17,7 @@ import type {
   TravelPositionChangedPayload,
   TravelStateChangedPayload,
   TravelRoutePlannedPayload,
+  TravelStartedPayload,
   TravelCompletedPayload,
 } from '@core/events/domain-events';
 import type { MapFeaturePort } from '@/features/map';
@@ -32,6 +33,8 @@ import type {
   RenderHint,
   RenderCallback,
   TravelInfo,
+  TokenAnimationState,
+  ETAInfo,
 } from './types';
 import { createInitialRenderState } from './types';
 
@@ -219,6 +222,7 @@ export function createSessionRunnerViewModel(
           status: travelFeature.getStatus(),
           speed: getBaseSpeed(transport),
           currentTerrain,
+          eta: calculateETA(),
         },
         quest: {
           activeQuests,
@@ -255,6 +259,50 @@ export function createSessionRunnerViewModel(
       case 'foot':
       default: return 24;
     }
+  }
+
+  // Helper: Format duration for ETA display
+  function formatETA(hours: number, minutes: number): string {
+    if (hours === 0 && minutes === 0) return '< 1m';
+    const parts = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    return `~${parts.join(' ')}`;
+  }
+
+  // Helper: Calculate ETA from current state
+  function calculateETA(): ETAInfo | null {
+    const travelStatus = travelFeature.getStatus();
+
+    // Get active route for traveling/paused/planning states
+    if (travelStatus === 'traveling' || travelStatus === 'paused' || travelStatus === 'planning') {
+      const routeOpt = travelFeature.getRoute();
+      if (isSome(routeOpt)) {
+        const route = routeOpt.value;
+        const duration = route.totalDuration;
+        const hours = duration.hours ?? 0;
+        const minutes = duration.minutes ?? 0;
+        return {
+          totalDuration: { hours, minutes },
+          display: formatETA(hours, minutes),
+        };
+      }
+    }
+
+    // For preview path during planning (before route is created)
+    if (state.travelMode && state.previewPath && state.previewPath.length > 1) {
+      // Estimate: ~2 hours per hex (rough average)
+      const hexCount = state.previewPath.length - 1;
+      const estimatedHours = hexCount * 2;
+      const hours = Math.floor(estimatedHours);
+      const minutes = Math.round((estimatedHours - hours) * 60);
+      return {
+        totalDuration: { hours, minutes },
+        display: formatETA(hours, minutes),
+      };
+    }
+
+    return null;
   }
 
   // =========================================================================
@@ -319,7 +367,7 @@ export function createSessionRunnerViewModel(
       )
     );
 
-    // Travel position changed - update travel info and position
+    // Travel position changed - update travel info and position with animation
     eventSubscriptions.push(
       eventBus.subscribe<TravelPositionChangedPayload>(
         EventTypes.TRAVEL_POSITION_CHANGED,
@@ -337,9 +385,24 @@ export function createSessionRunnerViewModel(
             terrainName,
           };
 
-          // Sync all features since travel affects time too
+          // Start token animation
+          const ANIMATION_DURATION_MS = 80;
+          const tokenAnimation: TokenAnimationState = {
+            fromHex: from,
+            toHex: position,
+            progress: 0,
+            startTime: performance.now(),
+            durationMs: ANIMATION_DURATION_MS,
+          };
+
+          // Sync features and start animation
           syncFromFeatures();
-          notify(['party']);
+          updateState({ tokenAnimation }, ['party']);
+
+          // Clear animation after duration
+          setTimeout(() => {
+            updateState({ tokenAnimation: null }, ['party']);
+          }, ANIMATION_DURATION_MS + 10);
         }
       )
     );
@@ -394,19 +457,36 @@ export function createSessionRunnerViewModel(
       )
     );
 
-    // Travel route planned - update route display
+    // Travel route planned - update route display (keep travelMode for Start button)
     eventSubscriptions.push(
       eventBus.subscribe<TravelRoutePlannedPayload>(
         EventTypes.TRAVEL_ROUTE_PLANNED,
         (event) => {
           const route = event.payload.route as Route;
-          // Exit travel planning mode, show planned route
+          // Keep travelMode and planningWaypoints until travel actually starts
+          updateState(
+            {
+              activeRoute: route,
+              travelStatus: 'planning',
+            },
+            ['route', 'sidebar']
+          );
+        }
+      )
+    );
+
+    // Travel started - clear planning state
+    eventSubscriptions.push(
+      eventBus.subscribe<TravelStartedPayload>(
+        EventTypes.TRAVEL_STARTED,
+        () => {
+          // Now clear planning state since travel has begun
           updateState(
             {
               travelMode: false,
               planningWaypoints: [],
-              activeRoute: route,
-              travelStatus: 'planning',
+              previewPath: null,
+              travelStatus: 'traveling',
             },
             ['route', 'sidebar']
           );
@@ -489,10 +569,11 @@ export function createSessionRunnerViewModel(
           return;
         }
 
-        // Add waypoint
+        // Add waypoint and calculate preview path
         const newWaypoints = [...state.planningWaypoints, coord];
+        const previewPath = travelFeature.calculatePreviewPath(newWaypoints);
         updateState(
-          { planningWaypoints: newWaypoints },
+          { planningWaypoints: newWaypoints, previewPath },
           ['route']
         );
         return;
@@ -599,11 +680,12 @@ export function createSessionRunnerViewModel(
 
     toggleTravelMode(): void {
       if (state.travelMode) {
-        // Exit travel mode, clear waypoints
+        // Exit travel mode, clear waypoints and preview
         updateState(
           {
             travelMode: false,
             planningWaypoints: [],
+            previewPath: null,
           },
           ['route', 'sidebar']
         );
@@ -614,6 +696,7 @@ export function createSessionRunnerViewModel(
             {
               travelMode: true,
               planningWaypoints: [],
+              previewPath: null,
             },
             ['route', 'sidebar']
           );
@@ -626,15 +709,16 @@ export function createSessionRunnerViewModel(
       if (!mapFeature.isValidCoordinate(coord)) return;
 
       const newWaypoints = [...state.planningWaypoints, coord];
+      const previewPath = travelFeature.calculatePreviewPath(newWaypoints);
       updateState(
-        { planningWaypoints: newWaypoints },
+        { planningWaypoints: newWaypoints, previewPath },
         ['route']
       );
     },
 
     clearWaypoints(): void {
       updateState(
-        { planningWaypoints: [] },
+        { planningWaypoints: [], previewPath: null },
         ['route']
       );
     },
@@ -685,6 +769,7 @@ export function createSessionRunnerViewModel(
           {
             travelMode: false,
             planningWaypoints: [],
+            previewPath: null,
           },
           ['route', 'sidebar']
         );

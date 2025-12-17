@@ -88,6 +88,7 @@ export function createMapCanvas(
   let currentState: RenderState | null = null;
   let isDragging = false;
   let lastMousePos = { x: 0, y: 0 };
+  let animationFrameId: number | null = null;
 
   // =========================================================================
   // Resize Handling
@@ -155,6 +156,21 @@ export function createMapCanvas(
   function render(state: RenderState, _hints: RenderHint[]): void {
     currentState = state;
 
+    // Cancel any existing animation frame
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+
+    renderFrame(state);
+
+    // Start animation loop if token animation is active
+    if (state.tokenAnimation) {
+      startAnimationLoop();
+    }
+  }
+
+  function renderFrame(state: RenderState): void {
     const rect = canvas.getBoundingClientRect();
     const width = rect.width;
     const height = rect.height;
@@ -185,10 +201,32 @@ export function createMapCanvas(
 
     // Render party token
     if (state.partyPosition) {
-      renderPartyToken(state.partyPosition);
+      renderPartyToken(state.partyPosition, state);
     }
 
     ctx.restore();
+  }
+
+  function startAnimationLoop(): void {
+    function animationTick() {
+      if (!currentState || !currentState.tokenAnimation) {
+        animationFrameId = null;
+        return;
+      }
+
+      // Check if animation is still in progress
+      const elapsed = performance.now() - currentState.tokenAnimation.startTime;
+      if (elapsed >= currentState.tokenAnimation.durationMs) {
+        animationFrameId = null;
+        return;
+      }
+
+      // Re-render frame
+      renderFrame(currentState);
+      animationFrameId = requestAnimationFrame(animationTick);
+    }
+
+    animationFrameId = requestAnimationFrame(animationTick);
   }
 
   function renderTile(
@@ -247,8 +285,27 @@ export function createMapCanvas(
     }
   }
 
-  function renderPartyToken(position: HexCoordinate): void {
-    const pixel = axialToPixel(position, HEX_SIZE);
+  function renderPartyToken(position: HexCoordinate, state: RenderState): void {
+    const { tokenAnimation } = state;
+    let pixel: { x: number; y: number };
+
+    // Interpolate position if animation is active
+    if (tokenAnimation) {
+      const elapsed = performance.now() - tokenAnimation.startTime;
+      const rawProgress = Math.min(1, elapsed / tokenAnimation.durationMs);
+      // Ease-out: 1 - (1 - t)^2
+      const eased = 1 - Math.pow(1 - rawProgress, 2);
+
+      const fromPixel = axialToPixel(tokenAnimation.fromHex, HEX_SIZE);
+      const toPixel = axialToPixel(tokenAnimation.toHex, HEX_SIZE);
+
+      pixel = {
+        x: fromPixel.x + (toPixel.x - fromPixel.x) * eased,
+        y: fromPixel.y + (toPixel.y - fromPixel.y) * eased,
+      };
+    } else {
+      pixel = axialToPixel(position, HEX_SIZE);
+    }
 
     // Token circle
     ctx.beginPath();
@@ -271,12 +328,19 @@ export function createMapCanvas(
    * Render route lines and waypoint markers.
    */
   function renderRoute(state: RenderState): void {
-    const { travelMode, planningWaypoints, activeRoute, partyPosition } = state;
+    const { travelMode, planningWaypoints, previewPath, activeRoute, partyPosition } = state;
 
-    // Planning mode: draw line from party to planned waypoints
+    // Planning mode: draw calculated path (previewPath) or fallback to straight lines
     if (travelMode && planningWaypoints.length > 0 && partyPosition) {
-      const allPoints = [partyPosition, ...planningWaypoints];
-      drawRouteLine(allPoints, COLORS.planningRoute, COLORS.planningRouteWidth);
+      // Use previewPath if available (shows actual pathfinding result)
+      if (previewPath && previewPath.length > 1) {
+        drawRouteLine(previewPath, COLORS.planningRoute, COLORS.planningRouteWidth);
+      } else {
+        // Fallback to straight lines if no path calculated yet
+        const allPoints = [partyPosition, ...planningWaypoints];
+        drawRouteLine(allPoints, COLORS.planningRoute, COLORS.planningRouteWidth);
+      }
+      // Always show user-specified waypoint markers
       drawWaypointMarkers(planningWaypoints, COLORS.waypointBorder);
     }
 
@@ -449,6 +513,11 @@ export function createMapCanvas(
     render,
     resize,
     dispose(): void {
+      // Cancel any pending animation
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
       canvas.removeEventListener('mousedown', onMouseDown);
       canvas.removeEventListener('mouseup', onMouseUp);
       canvas.removeEventListener('mousemove', onMouseMove);

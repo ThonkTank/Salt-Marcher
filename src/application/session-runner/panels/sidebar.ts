@@ -95,6 +95,16 @@ export function createSidebarPanel(
     display: none;
   `;
 
+  // ETA display (shows during planning/traveling)
+  const etaDisplay = document.createElement('div');
+  etaDisplay.className = 'eta-display';
+  etaDisplay.style.cssText = `
+    font-size: 11px;
+    color: var(--text-success);
+    margin-bottom: 6px;
+    display: none;
+  `;
+
   const travelButtons = document.createElement('div');
   travelButtons.style.cssText = `
     display: flex;
@@ -129,6 +139,7 @@ export function createSidebarPanel(
   travelContent.appendChild(travelStatus);
   travelContent.appendChild(travelSpeed);
   travelContent.appendChild(waypointCount);
+  travelContent.appendChild(etaDisplay);
   travelContent.appendChild(travelButtons);
   sidebar.appendChild(travelSection);
 
@@ -276,7 +287,7 @@ export function createSidebarPanel(
 
     // Button visibility based on travel state
     const isIdle = (status === 'idle' || status === 'arrived') && !travelMode;
-    const isPlanning = travelMode;
+    const isPlanning = travelMode || status === 'planning'; // Also check status for route-ready state
     const isTraveling = status === 'traveling';
     const isPaused = status === 'paused';
 
@@ -287,9 +298,10 @@ export function createSidebarPanel(
     planBtn.textContent = travelMode ? 'Cancel Plan' : 'Plan';
     updateButtonState(planBtn, status === 'idle' || status === 'arrived' || travelMode);
 
-    // Start button: visible when planning with waypoints
+    // Start button: visible when planning with waypoints OR route is ready
+    const canStart = (travelMode && planningWaypoints.length > 0) || status === 'planning';
     startBtn.style.display = isPlanning ? 'flex' : 'none';
-    updateButtonState(startBtn, planningWaypoints.length > 0);
+    updateButtonState(startBtn, canStart);
 
     // Row 2: Pause/Resume + Cancel (visible when traveling or paused)
     row2.style.display = (isTraveling || isPaused) ? 'flex' : 'none';
@@ -304,6 +316,14 @@ export function createSidebarPanel(
     }
     updateButtonState(pauseResumeBtn, true);
     updateButtonState(cancelBtn, true);
+
+    // ETA display (visible during planning, traveling, or paused)
+    if (travel.eta && (isPlanning || isTraveling || isPaused)) {
+      etaDisplay.textContent = `⏱️ ETA: ${travel.eta.display}`;
+      etaDisplay.style.display = 'block';
+    } else {
+      etaDisplay.style.display = 'none';
+    }
   }
 
   function updateButtonState(btn: HTMLButtonElement, enabled: boolean): void {

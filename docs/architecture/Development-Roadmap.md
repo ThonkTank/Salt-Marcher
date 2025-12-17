@@ -10,7 +10,7 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 
 | Feature | Aspekte |
 |---------|---------|
-| Travel | Nachbar-Bewegung, State-Machine, Multi-Hex-Routen (Greedy), Weather-Speed-Faktor, Encumbrance-Speed-Faktor, Wegpunkt-UI, Routen-Visualisierung, Auto-Segment-Bewegung, Stunden-Encounter-Checks (12.5%), Auto-Pause bei Encounter |
+| Travel | Nachbar-Bewegung, State-Machine, Multi-Hex-Routen (Greedy), Weather-Speed-Faktor, Encumbrance-Speed-Faktor, Wegpunkt-UI, Routen-Visualisierung, Auto-Segment-Bewegung, Stunden-Encounter-Checks (12.5%), Auto-Pause bei Encounter, Token-Animation, Path-Preview (Greedy), ETA-Anzeige |
 | Weather | Terrain-basierte Generierung, Travel-Speed-Modifier, Persistenz |
 | Encounter | 4 Typen, State-Machine, 6-Step Pipeline (inkl. Loot), NPC-Generator, Travel-Integration, XP-Berechnung |
 | Combat | Initiative-Tracker, HP-Management, 14 Conditions, Concentration, Time-Integration, XP aus Creatures |
@@ -25,93 +25,43 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 
 ## 🔄 Aktiver Sprint
 
-_Phase 11 in Arbeit._
 
-### Phase 11: Automatische Segment-Bewegung
+## ⬜ Backlog
 
-**User Story:**
-> Als GM moechte ich nach Klick auf "Start" die Party automatisch entlang der Route reisen sehen, mit Zeit-Fortschritt und Encounter-Checks, damit ich die Reise nicht manuell Hex fuer Hex durchfuehren muss.
-
-**Scope (siehe [Travel-System.md](../features/Travel-System.md)):**
-- [ ] Travel-Loop Mechanismus (setTimeout-basiert)
-- [ ] Segment-fuer-Segment Bewegung nach `startTravel()`
-- [ ] Zeit-Integration via `time:advance-requested` pro Segment
-- [ ] Encounter-Checks am Stunden-Anfang (12.5% Basis-Chance)
-- [ ] Auto-Pause bei Encounter
-- [ ] Pause/Resume funktioniert mit Travel-Loop
-- [ ] Cancel stoppt Travel-Loop
-
-**Implementierungs-Fortschritt:**
-
-| Komponente | Status | Anmerkung |
-|------------|--------|-----------|
-| types.ts | ⬜ | TravelState erweitern (hourProgress, totalHoursTraveled) |
-| travel-store.ts | ⬜ | Stunden-Tracking Methoden |
-| travel-service.ts | ⬜ | Travel-Loop, Encounter-Check, SM-Integration |
-
-**Nicht im Scope:**
-- Token-Animation auf Map (smooth movement)
-- Route-Preview mit ETA vor Start
-- Wegpunkt Drag&Drop
-- UI Progress-Anzeige (12.4 / 48 mi)
-
----
-
-## 🎯 Nächste Phasen
-
-| Option | Scope |
-|--------|-------|
-| **Loot-System** | Budget-Tracking, Creature-defaultLoot, Hoards → [Loot-Feature.md](../features/Loot-Feature.md) |
-| **Cartographer** | Map-Editor zum Erstellen eigener Maps |
-| **Audio-Feature** | Context-basierte Soundscapes (Terrain, Weather, Time) |
-| **Encounter-Feature** | Volle Encounter-Kontext-Nutzung, Typ-Variation, mehrere Kreaturen |
-
----
-
-## Backlog
-
-### Offen (⬜)
-
-| Bereich | Aspekt | Referenz |
-|---------|--------|----------|
-| Travel | Animation (Token-Bewegung) | [Travel-System.md](../features/Travel-System.md) |
-| Travel | Route-Preview mit ETA | [Travel-System.md](../features/Travel-System.md) |
-| Travel | Wegpunkt Drag&Drop | [Travel-System.md](../features/Travel-System.md) |
-| Weather | Weather-Events (Blizzard etc.) | [Weather-System.md](../features/Weather-System.md) |
-| Weather | GM Override | [Weather-System.md](../features/Weather-System.md) |
-| Weather | UI-Anzeige | [Weather-System.md](../features/Weather-System.md) |
-| Encounter | Weather im Context | [Encounter-System.md](../features/Encounter-System.md) |
-| Encounter | Faction-Territory Population | [Encounter-System.md](../features/Encounter-System.md) |
-| Combat | Death Saves UI | [Combat-System.md](../features/Combat-System.md) |
-| Quest | Quest-Editor | [Quest-System.md](../features/Quest-System.md) |
-| Party | XP-Verteilung System | [Character-System.md](../features/Character-System.md) |
-| Party | Character-UI | [Character-System.md](../features/Character-System.md) |
-| Inventory | Equipped-Items (AC/Damage) | [Inventory-System.md](../features/Inventory-System.md) |
-| Inventory | Inventory-UI | [Inventory-System.md](../features/Inventory-System.md) |
-| Inventory | Automatischer Rationen-Abzug | [Inventory-System.md](../features/Inventory-System.md) |
-| Map | Multi-Map-Navigation | [Map-Feature.md](../features/Map-Feature.md) |
-| Map | Cartographer (Editor) | [Cartographer.md](../application/Cartographer.md) |
-| UI | Debug-Panel | [SessionRunner.md](../application/SessionRunner.md) |
-| UI | Transport-Wechsel UI | [SessionRunner.md](../application/SessionRunner.md) |
-| UI | Audio Quick-Controls | [SessionRunner.md](../application/SessionRunner.md) |
-| Time | Calendar-Wechsel | [Time-System.md](../features/Time-System.md) |
-| Events | Siehe Status-Spalten | [Events-Catalog.md](Events-Catalog.md) |
-
-### Bewusst ausgelassen (🚫)
-
-| Bereich | Aspekt | Grund |
-|---------|--------|-------|
-| Travel | A* Pathfinding | Greedy reicht fuer MVP |
-| Encounter | Multi-Gruppen-Encounters | Komplexitaet |
-| Combat | Grid-Positioning | Theater of the Mind |
-| Combat | Legendary/Lair Actions | Komplexitaet |
-| Quest | Reputation-Rewards | Komplexitaet |
-| Quest | Hidden Objectives | Komplexitaet |
-| Loot | Hoard-System | Komplexitaet |
-| Loot | Budget-Tracking ueber Zeit | Komplexitaet |
-| Loot | GM-Override | Post-MVP |
-| Loot | Loot-UI | Post-MVP (nur Service-Layer) |
-| Loot | Creature defaultLoot | Komplexitaet |
+| Bereich | Aspekt | Prio | MVP? | Referenz |
+|---------|--------|:----:|:----:|----------|
+| Travel | nachbarbewegung entfernen | - | - | [Travel-System.md](../features/Travel-System.md) |
+| Travel | Wegpunkt Drag&Drop | - | - | [Travel-System.md](../features/Travel-System.md) |
+| Travel | A* Pathfinding | - | Nein | [Travel-System.md](../features/Travel-System.md) |
+| Weather | Weather-Events (Blizzard etc.) | mittel | Nein | [Weather-System.md](../features/Weather-System.md) |
+| Weather | GM Override | - | - | [Weather-System.md](../features/Weather-System.md) |
+| Weather | UI-Anzeige | - | - | [Weather-System.md](../features/Weather-System.md) |
+| Encounter | Weather im Context | - | - | [Encounter-System.md](../features/Encounter-System.md) |
+| Encounter | Faction-Territory Population | - | - | [Encounter-System.md](../features/Encounter-System.md) |
+| Encounter | Multi-Gruppen-Encounters | niedrig | Nein | [Encounter-System.md](../features/Encounter-System.md) |
+| Combat | Death Saves UI | - | Nein | [Combat-System.md](../features/Combat-System.md) |
+| Combat | Grid-Positioning | mittel | Nein | [Combat-System.md](../features/Combat-System.md) |
+| Combat | Legendary/Lair Actions | niedrig | Nein | [Combat-System.md](../features/Combat-System.md) |
+| Quest | Quest-Editor | mittel | Nein | [Quest-System.md](../features/Quest-System.md) |
+| Quest | Reputation-Rewards | - | Nein | [Quest-System.md](../features/Quest-System.md) |
+| Quest | Hidden Objectives | - | Nein | [Quest-System.md](../features/Quest-System.md) |
+| Party | XP-Verteilung System | - | - | [Character-System.md](../features/Character-System.md) |
+| Party | Character-UI | - | - | [Character-System.md](../features/Character-System.md) |
+| Inventory | Equipped-Items (AC/Damage) | niedrig | Nein | [Inventory-System.md](../features/Inventory-System.md) |
+| Inventory | Inventory-UI | - | - | [Inventory-System.md](../features/Inventory-System.md) |
+| Inventory | Automatischer Rationen-Abzug | mittel | Ja | [Inventory-System.md](../features/Inventory-System.md) |
+| Map | Multi-Map-Navigation | - | Nein | [Map-Feature.md](../features/Map-Feature.md) |
+| Map | Cartographer (Editor) | - | Teilw. | [Cartographer.md](../application/Cartographer.md) |
+| UI | Debug-Panel | - | - | [SessionRunner.md](../application/SessionRunner.md) |
+| UI | Transport-Wechsel UI | - | - | [SessionRunner.md](../application/SessionRunner.md) |
+| UI | Audio Quick-Controls | - | Ja | [SessionRunner.md](../application/SessionRunner.md) |
+| Time | Calendar-Wechsel | niedrig | Nein | [Time-System.md](../features/Time-System.md) |
+| Events | Siehe Status-Spalten | - | - | [Events-Catalog.md](Events-Catalog.md) |
+| Loot | Hoard-System | hoch | Nein | [Loot-Feature.md](../features/Loot-Feature.md) |
+| Loot | Budget-Tracking ueber Zeit | - | - | [Loot-Feature.md](../features/Loot-Feature.md) |
+| Loot | GM-Override | - | Nein | [Loot-Feature.md](../features/Loot-Feature.md) |
+| Loot | Loot-UI | - | Nein | [Loot-Feature.md](../features/Loot-Feature.md) |
+| Loot | Creature defaultLoot | - | Ja | [Loot-Feature.md](../features/Loot-Feature.md) |
 
 ---
 

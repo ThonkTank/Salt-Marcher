@@ -102,6 +102,18 @@ export interface TravelFeaturePort {
   advanceSegment(): Result<TravelResult | null, AppError>;
 
   // ===========================================================================
+  // Preview (UI Support)
+  // ===========================================================================
+
+  /**
+   * Calculate preview path for UI display.
+   * Returns the actual calculated path using pathfinding algorithm.
+   * @param waypoints - User-specified waypoints (not including current position)
+   * @returns Full path coordinates or null if invalid
+   */
+  calculatePreviewPath(waypoints: HexCoordinate[]): HexCoordinate[] | null;
+
+  // ===========================================================================
   // Lifecycle
   // ===========================================================================
 

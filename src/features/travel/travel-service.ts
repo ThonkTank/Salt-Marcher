@@ -1272,6 +1272,41 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     },
 
     // =========================================================================
+    // Preview (UI Support)
+    // =========================================================================
+
+    calculatePreviewPath(userWaypoints: HexCoordinate[]): HexCoordinate[] | null {
+      if (userWaypoints.length === 0) return null;
+
+      // Get current position
+      const posResult = getPartyPosition();
+      if (!posResult.ok) return null;
+      const start = posResult.value;
+
+      // Build complete path through all waypoints
+      const allWaypoints = [start, ...userWaypoints];
+      const completePath: HexCoordinate[] = [start];
+
+      for (let i = 0; i < allWaypoints.length - 1; i++) {
+        const segmentStart = allWaypoints[i];
+        const segmentEnd = allWaypoints[i + 1];
+
+        // Find path for this segment using greedy pathfinding
+        const pathSegment = findPathGreedy(segmentStart, segmentEnd);
+        if (!pathSegment) {
+          return null; // No valid path
+        }
+
+        // Add path segment (skip first point as it's already in completePath)
+        for (let j = 1; j < pathSegment.length; j++) {
+          completePath.push(pathSegment[j]);
+        }
+      }
+
+      return completePath;
+    },
+
+    // =========================================================================
     // Lifecycle
     // =========================================================================
 
