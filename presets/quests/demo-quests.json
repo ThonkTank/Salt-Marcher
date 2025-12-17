@@ -1,0 +1,113 @@
+[
+  {
+    "id": "quest-001",
+    "name": "Clear the Goblin Cave",
+    "description": "Local merchants complain about goblin raids. Find their hideout and deal with the threat.",
+    "level": {
+      "min": 1,
+      "max": 3
+    },
+    "objectives": [
+      {
+        "id": "obj-001",
+        "type": "kill",
+        "description": "Defeat goblins",
+        "targetCount": 6
+      },
+      {
+        "id": "obj-002",
+        "type": "located",
+        "description": "Find the goblin cave",
+        "targetLocationType": "cave"
+      }
+    ],
+    "encounters": [
+      {
+        "id": "slot-001",
+        "type": "required",
+        "description": "Goblin patrol (3-4 goblins)"
+      },
+      {
+        "id": "slot-002",
+        "type": "required",
+        "description": "Cave entrance guards (2 goblins, 1 hobgoblin)"
+      },
+      {
+        "id": "slot-003",
+        "type": "optional",
+        "description": "Goblin boss with minions"
+      }
+    ],
+    "rewards": [
+      {
+        "type": "gold",
+        "amount": 100,
+        "quantumPlacement": false
+      }
+    ],
+    "deadline": {
+      "days": 7
+    },
+    "prerequisites": [],
+    "tags": ["combat", "dungeon", "goblin"]
+  },
+  {
+    "id": "quest-002",
+    "name": "The Missing Merchant",
+    "description": "A merchant's caravan has gone missing on the road to Riverdale. Investigate what happened.",
+    "level": {
+      "min": 2,
+      "max": 4
+    },
+    "objectives": [
+      {
+        "id": "obj-001",
+        "type": "located",
+        "description": "Find the merchant's caravan",
+        "targetLocationType": "road"
+      },
+      {
+        "id": "obj-002",
+        "type": "talk",
+        "description": "Speak with survivors or witnesses",
+        "targetNpcId": null
+      },
+      {
+        "id": "obj-003",
+        "type": "escort",
+        "description": "Escort the merchant back to town",
+        "targetNpcId": null
+      }
+    ],
+    "encounters": [
+      {
+        "id": "slot-001",
+        "type": "required",
+        "description": "Bandit ambush site"
+      },
+      {
+        "id": "slot-002",
+        "type": "optional",
+        "description": "Bandit camp"
+      }
+    ],
+    "rewards": [
+      {
+        "type": "gold",
+        "amount": 150,
+        "quantumPlacement": false
+      },
+      {
+        "type": "item",
+        "itemId": "potion-healing",
+        "amount": 2,
+        "quantumPlacement": true
+      }
+    ],
+    "deadline": {
+      "days": 5
+    },
+    "prerequisites": [],
+    "tags": ["investigation", "social", "rescue"]
+  }
+]

@@ -94,6 +94,7 @@ export class SessionRunnerView extends ItemView {
       eventBus: this.deps.eventBus,
       weatherFeature: this.deps.weatherFeature,
       encounterFeature: this.deps.encounterFeature,
+      questFeature: this.deps.questFeature,
     });
 
     // === Header ===

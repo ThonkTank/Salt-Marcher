@@ -22,6 +22,7 @@ import type { TravelFeaturePort } from '@/features/travel';
 import type { TimeFeaturePort } from '@/features/time';
 import type { WeatherFeaturePort } from '@/features/weather';
 import type { EncounterFeaturePort } from '@/features/encounter';
+import type { QuestFeaturePort } from '@/features/quest';
 import type { NotificationService } from '@/application/shared';
 import type {
   RenderState,
@@ -44,6 +45,7 @@ export interface SessionRunnerViewModelDeps {
   eventBus?: EventBus; // Optional during migration
   weatherFeature?: WeatherFeaturePort; // Optional for debug
   encounterFeature?: EncounterFeaturePort; // Optional for debug
+  questFeature?: QuestFeaturePort; // Optional for quest panel
 }
 
 // ============================================================================
@@ -90,6 +92,7 @@ export function createSessionRunnerViewModel(
     eventBus,
     weatherFeature,
     encounterFeature,
+    questFeature,
   } = deps;
 
   // Internal state
@@ -149,6 +152,30 @@ export function createSessionRunnerViewModel(
       };
     }
 
+    // Build quest section state
+    const activeQuests = questFeature
+      ? questFeature.getActiveQuests().map(progress => {
+          const definition = questFeature.getQuestDefinition(progress.questId);
+          const defValue = isSome(definition) ? definition.value : null;
+          return {
+            questId: progress.questId,
+            name: defValue?.name ?? progress.questId,
+            status: progress.status as 'discovered' | 'active' | 'completed' | 'failed',
+            objectives: Array.from(progress.objectiveProgress.values()).map(obj => ({
+              description: obj.objectiveId, // TODO: Get from definition
+              current: obj.currentCount,
+              target: obj.targetCount,
+              completed: obj.completed,
+            })),
+            accumulatedXP: progress.accumulatedXP,
+            hasDeadline: !!progress.deadlineAt,
+          };
+        })
+      : [];
+    const discoveredQuestCount = questFeature
+      ? questFeature.getDiscoveredQuests().length
+      : 0;
+
     state = {
       ...state,
       map: isSome(map) ? map.value : null,
@@ -170,6 +197,10 @@ export function createSessionRunnerViewModel(
           status: 'idle', // TODO: Get from travel feature when implemented
           speed: getBaseSpeed(transport),
           currentTerrain,
+        },
+        quest: {
+          activeQuests,
+          discoveredQuestCount,
         },
         actions: {
           canGenerateEncounter: !!partyPos,

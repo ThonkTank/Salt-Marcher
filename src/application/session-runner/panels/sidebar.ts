@@ -4,7 +4,7 @@
  * Displays Travel, Audio, Party, and Actions sections.
  */
 
-import type { RenderState, SidebarState } from '../types';
+import type { RenderState, SidebarState, QuestSectionState } from '../types';
 
 // ============================================================================
 // Sidebar Panel Callbacks
@@ -117,6 +117,11 @@ export function createSidebarPanel(
     </div>
   `;
   sidebar.appendChild(partySection);
+
+  // === Quest Section ===
+  const questSection = createSection('📜 QUESTS');
+  const questContent = questSection.querySelector('.section-content') as HTMLElement;
+  sidebar.appendChild(questSection);
 
   // === Actions Section ===
   const actionsSection = createSection('⚔️ ACTIONS');
@@ -239,6 +244,100 @@ export function createSidebarPanel(
     teleportBtn.style.cursor = teleportBtn.disabled ? 'not-allowed' : 'pointer';
   }
 
+  function updateQuestSection(quest: QuestSectionState): void {
+    // Clear existing content
+    questContent.innerHTML = '';
+
+    // Show discovered quests count if any
+    if (quest.discoveredQuestCount > 0) {
+      const discoveredBadge = document.createElement('div');
+      discoveredBadge.style.cssText = `
+        font-size: 11px;
+        color: var(--text-accent);
+        margin-bottom: 8px;
+        padding: 4px 8px;
+        background: var(--background-modifier-message);
+        border-radius: 4px;
+      `;
+      discoveredBadge.textContent = `${quest.discoveredQuestCount} new quest${quest.discoveredQuestCount > 1 ? 's' : ''} available`;
+      questContent.appendChild(discoveredBadge);
+    }
+
+    // Show active quests
+    if (quest.activeQuests.length === 0) {
+      const emptyMessage = document.createElement('div');
+      emptyMessage.style.cssText = `
+        font-size: 12px;
+        color: var(--text-faint);
+        font-style: italic;
+      `;
+      emptyMessage.textContent = 'No active quests';
+      questContent.appendChild(emptyMessage);
+      return;
+    }
+
+    // Render each active quest
+    for (const questItem of quest.activeQuests) {
+      const questEl = document.createElement('div');
+      questEl.style.cssText = `
+        margin-bottom: 8px;
+        padding: 6px;
+        background: var(--background-modifier-hover);
+        border-radius: 4px;
+        border-left: 3px solid var(--text-accent);
+      `;
+
+      // Quest name
+      const nameEl = document.createElement('div');
+      nameEl.style.cssText = `
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-normal);
+        margin-bottom: 4px;
+      `;
+      nameEl.textContent = questItem.name;
+      questEl.appendChild(nameEl);
+
+      // Objectives (compact)
+      const objectivesEl = document.createElement('div');
+      objectivesEl.style.cssText = `
+        font-size: 11px;
+        color: var(--text-muted);
+      `;
+
+      const completedCount = questItem.objectives.filter(o => o.completed).length;
+      const totalCount = questItem.objectives.length;
+      objectivesEl.textContent = `Objectives: ${completedCount}/${totalCount}`;
+      questEl.appendChild(objectivesEl);
+
+      // XP Pool (if any)
+      if (questItem.accumulatedXP > 0) {
+        const xpEl = document.createElement('div');
+        xpEl.style.cssText = `
+          font-size: 11px;
+          color: var(--text-success);
+          margin-top: 2px;
+        `;
+        xpEl.textContent = `XP Pool: ${questItem.accumulatedXP}`;
+        questEl.appendChild(xpEl);
+      }
+
+      // Deadline indicator
+      if (questItem.hasDeadline) {
+        const deadlineEl = document.createElement('span');
+        deadlineEl.style.cssText = `
+          font-size: 10px;
+          color: var(--text-warning);
+          margin-left: 4px;
+        `;
+        deadlineEl.textContent = '⏰';
+        nameEl.appendChild(deadlineEl);
+      }
+
+      questContent.appendChild(questEl);
+    }
+  }
+
   // =========================================================================
   // Public API
   // =========================================================================
@@ -246,6 +345,7 @@ export function createSidebarPanel(
   return {
     update(state: RenderState): void {
       updateTravelSection(state.sidebar.travel);
+      updateQuestSection(state.sidebar.quest);
       updateActionsSection(state.sidebar.actions);
     },
 

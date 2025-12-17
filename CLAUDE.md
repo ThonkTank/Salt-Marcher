@@ -1,6 +1,6 @@
-# CLAUDE.md
+# CLAUDE.md - Arbeitsanweisungen für Salt Marcher
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Dieses Dokument definiert, wie Claude Code mit diesem Repository arbeitet.
 
 ## Projekt-Kontext (PFLICHT - vor JEDER Aufgabe)
 
@@ -25,6 +25,8 @@ Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 **Bei Diskrepanzen:** Wenn Code von der Dokumentation abweicht und diese Abweichung nicht in der Roadmap als "Nicht im Scope" oder "Backlog" vermerkt ist → Code an Dokumentation anpassen, nicht umgekehrt. Die Docs sind die Spezifikation.
 
 **Bei Unklarheiten:** Wenn die Dokumentation unklar oder widersprüchlich ist → AskUserQuestion nutzen. Aber **nur** wenn die relevanten Docs (laut Feature-Routing-Tabelle) gründlich gelesen wurden. Fragen, deren Antwort in der Doku steht, sind Zeitverschwendung.
+
+**Bei Teil-Implementierungen:** Ehrlich mit `TODO`, `FIXME`, `HACK` Kommentaren markieren. Lieber Stub + TODO als versteckte Halb-Implementierung, die niemandem auffällt. Das macht den Ist-Zustand im Code selbst transparent.
 
 ## Bei Implementierungsaufgaben
 
@@ -88,71 +90,7 @@ CLAUDE.md Phase 1 (Dokumentation lesen) hat **Vorrang** vor dem Plan-Mode-Workfl
 
 3. **Arbeite die Leseliste ab** - Markiere jeden Todo als `completed` nach dem Lesen
 
-### Feature-Routing (Pflicht-Docs nach Task)
-
-Konsultiere diese Tabelle und lies die zugeordneten Docs **VOR** dem Code.
-
-#### Features (Backend)
-
-| Task | Pflicht-Docs | Wird gelesen von |
-|------|--------------|------------------|
-| **Time/Calendar** | Time-System.md, Journal.md, Events-Catalog.md | Travel, Weather, Audio, Encounter |
-| **Travel** | Travel-System.md, Map-Feature.md, Time-System.md, Weather-System.md | SessionRunner |
-| **Weather** | Weather-System.md, Time-System.md, Terrain.md | Travel, Audio, Encounter |
-| **Encounter** | Encounter-System.md, Encounter-Balancing.md, NPC-System.md | Travel, Quest, Combat |
-| **Combat** | Combat-System.md, Encounter-System.md, Character-System.md | SessionRunner |
-| **Quest** | Quest-System.md, Quest.md, Encounter-System.md, Loot-Feature.md | SessionRunner |
-| **Audio** | Audio-System.md, Time-System.md, Weather-System.md | SessionRunner |
-| **Loot** | Loot-Feature.md, Item.md, Encounter-System.md | Quest |
-| **Map (Feature)** | Map-Feature.md, Map.md, Terrain.md, Map-Navigation.md | Travel, Weather, Cartographer |
-| **Dungeon** | Dungeon-System.md, Map-Feature.md, Combat-System.md | SessionRunner |
-| **Party/Character** | Character-System.md, Inventory-System.md, Item.md | Travel, Combat, SessionRunner |
-| **Inventory** | Inventory-System.md, Item.md, Character-System.md | Party, Shop, Loot |
-
-#### Domain-Entities
-
-| Task | Pflicht-Docs | Wird gelesen von |
-|------|--------------|------------------|
-| **Creature/Monster** | Creature.md, EntityRegistry.md | Encounter, Combat, NPC |
-| **NPC** | NPC-System.md, Creature.md, Faction.md | Encounter, Quest, Shop |
-| **Faction** | Faction.md, NPC-System.md, POI.md | NPC, Encounter |
-| **Location/POI** | POI.md, Map-Navigation.md, Map.md | Travel, Quest, Encounter |
-| **Item** | Item.md, EntityRegistry.md | Inventory, Loot, Shop |
-| **Terrain** | Terrain.md, Map.md | Map-Feature, Weather, Travel |
-| **Shop** | Shop.md, NPC-System.md, Item.md | Library |
-| **Journal** | Journal.md, Time-System.md | SessionRunner, Almanac |
-| **Map (Entity)** | Map.md, Map-Navigation.md, Terrain.md | Map-Feature, Cartographer |
-| **Quest (Entity)** | Quest.md, Quest-System.md | Quest-Feature |
-
-#### Application Layer (UI)
-
-| Task | Pflicht-Docs | Konsumiert |
-|------|--------------|------------|
-| **SessionRunner** | SessionRunner.md, Application.md, Data-Flow.md | Map, Travel, Time, Weather, Audio, Party |
-| **DetailView** | DetailView.md, Application.md, Combat-System.md, Encounter-System.md | Encounter, Combat, Shop |
-| **Cartographer** | Cartographer.md, Map-Feature.md, Map.md, Terrain.md | Map |
-| **Library** | Library.md, EntityRegistry.md, Application.md | Alle Entities |
-| **Almanac** | Time-System.md, Journal.md, SessionRunner.md | Time, WorldEvents |
-
-#### Architektur/Infrastruktur
-
-| Task | Pflicht-Docs |
-|------|--------------|
-| **Neues Feature anlegen** | Features.md, EventBus.md, Events-Catalog.md, Conventions.md |
-| **Event hinzufügen** | Events-Catalog.md, EventBus.md |
-| **Neuer Entity-Typ** | EntityRegistry.md, Core.md, Infrastructure.md |
-| **Vault/Storage** | Infrastructure.md, Core.md |
-| **Error-Handling** | Error-Handling.md, Conventions.md |
-| **Testing** | Testing.md, Conventions.md |
-| **Architektur-Fragen** | Features.md, Data-Flow.md, Project-Structure.md, Application.md |
-| **Layer-Grenzen** | Features.md, Application.md, Infrastructure.md |
-
-#### Immer lesen
-
-Diese Docs sind bei JEDER Implementierungsaufgabe Pflicht:
-- **Conventions.md** - Code-Standards
-- **Error-Handling.md** - Fehlerbehandlung
-- **Events-Catalog.md** - Wenn Events involviert
+→ **Feature-Routing-Tabelle:** Siehe [Anhang am Ende](#anhang-feature-routing-tabelle)
 
 ### Phase 2: Erst jetzt Code erkunden
 
@@ -173,13 +111,13 @@ Nach Abschluss von Phase 1 darfst du:
 
 **Plan-Datei prüfen:** Falls eine Plan-Datei existiert (`.claude/plans/`), enthält sie geklärte Entscheidungen aus vorherigen Planungs-Sessions.
 
-## Project Overview
+## Projekt-Übersicht
 
 Salt Marcher is a D&D 5e world-building and session management tool built as an Obsidian plugin. It includes hex map editing, travel simulation, encounter generation, weather systems, and combat tracking.
 
-**Current Status:** Active development. Core infrastructure complete (128 tests), Travel-Minimal slice partially implemented. See [Development-Roadmap.md](docs/architecture/Development-Roadmap.md) for current progress. The `Archive/` directory contains previous Alpha implementations for reference only.
+**Aktueller Status:** Siehe [Development-Roadmap.md](docs/architecture/Development-Roadmap.md) für den Implementierungsstand. Das `Archive/`-Verzeichnis enthält frühere Alpha-Implementierungen nur als Referenz.
 
-## Build Commands
+## Build-Kommandos
 
 ```bash
 npm run dev         # Watch mode development (builds to Obsidian plugin folder)
@@ -195,7 +133,7 @@ Build output: Configured in `esbuild.config.mjs` → Obsidian vault plugins fold
 
 **ESLint:** Uses `import-x/no-cycle: error` to enforce no cyclic dependencies between modules.
 
-## Project Structure
+## Projektstruktur
 
 ```
 src/                   # Source code
@@ -214,7 +152,7 @@ Archive/               # Previous Alpha implementations - reference only
 Goals.md               # Start here: high-level vision and feature overview (German)
 ```
 
-## Architecture
+## Architektur
 
 ### Layer Architecture
 
@@ -253,7 +191,7 @@ Core: Schemas, Types, Events, Utils (shared across all layers)
 @/*        → src/*
 ```
 
-## Main Workmodes
+## Haupt-Arbeitsmodi
 
 | Workmode | Purpose |
 |----------|---------|
@@ -262,11 +200,11 @@ Core: Schemas, Types, Events, Utils (shared across all layers)
 | Almanac | Calendar and timeline management |
 | Library | CRUD for all entities (creatures, items, spells, locations, etc.) |
 
-## Entity Types
+## Entity-Typen
 
 EntityRegistry manages 18 types: `creature`, `character`, `npc`, `faction`, `item`, `spell`, `terrain`, `location`, `maplink`, `map`, `track`, `quest`, `encounter`, `calendar`, `journal`, `worldevent`, `culture`, `shop`
 
-## State Categories
+## State-Kategorien
 
 | Category | Storage | On Reload |
 |----------|---------|-----------|
@@ -274,7 +212,7 @@ EntityRegistry manages 18 types: `creature`, `character`, `npc`, `faction`, `ite
 | Session | Memory | Reset to defaults |
 | Resumable | Plugin data | Optional restore |
 
-## Code Conventions
+## Code-Konventionen
 
 ### Import Order
 1. External packages (`obsidian`, `zod`)
@@ -347,13 +285,13 @@ Alpha-Code (Archive/) so wenig wie möglich referenzieren. Die 15k Zeilen Dokume
 
 Ohne definierten Sprint keine Implementierung.
 
-## Debug Logging
+## Debug-Logging
 
 1. Copy `.claude/debug.json.example` to `.claude/debug.json`
 2. Reload plugin in Obsidian
 3. View logs: `tail -f CONSOLE_LOG.txt`
 
-## Documentation Reference
+## Dokumentations-Referenz
 
 - **Goals.md**: Start here—vision, features, entity types, architecture diagram
 - **docs/architecture/Conventions.md**: Coding standards, error handling, patterns
@@ -362,4 +300,72 @@ Ohne definierten Sprint keine Implementierung.
 - **docs/domain/**: Entity type documentation (Map, Quest, Journal, NPC, Faction, etc.)
 - **docs/application/**: UI documentation with wireframes (SessionRunner, DetailView)
 
-All documentation is in German.
+Alle Dokumentation ist auf Deutsch.
+
+---
+
+## Anhang: Feature-Routing-Tabelle
+
+Konsultiere diese Tabelle und lies die zugeordneten Docs **VOR** dem Code.
+
+### Features (Backend)
+
+| Task | Pflicht-Docs | Wird gelesen von |
+|------|--------------|------------------|
+| **Time/Calendar** | Time-System.md, Journal.md, Events-Catalog.md | Travel, Weather, Audio, Encounter |
+| **Travel** | Travel-System.md, Map-Feature.md, Time-System.md, Weather-System.md | SessionRunner |
+| **Weather** | Weather-System.md, Time-System.md, Terrain.md | Travel, Audio, Encounter |
+| **Encounter** | Encounter-System.md, Encounter-Balancing.md, NPC-System.md | Travel, Quest, Combat |
+| **Combat** | Combat-System.md, Encounter-System.md, Character-System.md | SessionRunner |
+| **Quest** | Quest-System.md, Quest.md, Encounter-System.md, Loot-Feature.md | SessionRunner |
+| **Audio** | Audio-System.md, Time-System.md, Weather-System.md | SessionRunner |
+| **Loot** | Loot-Feature.md, Item.md, Encounter-System.md | Quest |
+| **Map (Feature)** | Map-Feature.md, Map.md, Terrain.md, Map-Navigation.md | Travel, Weather, Cartographer |
+| **Dungeon** | Dungeon-System.md, Map-Feature.md, Combat-System.md | SessionRunner |
+| **Party/Character** | Character-System.md, Inventory-System.md, Item.md | Travel, Combat, SessionRunner |
+| **Inventory** | Inventory-System.md, Item.md, Character-System.md | Party, Shop, Loot |
+
+### Domain-Entities
+
+| Task | Pflicht-Docs | Wird gelesen von |
+|------|--------------|------------------|
+| **Creature/Monster** | Creature.md, EntityRegistry.md | Encounter, Combat, NPC |
+| **NPC** | NPC-System.md, Creature.md, Faction.md | Encounter, Quest, Shop |
+| **Faction** | Faction.md, NPC-System.md, POI.md | NPC, Encounter |
+| **Location/POI** | POI.md, Map-Navigation.md, Map.md | Travel, Quest, Encounter |
+| **Item** | Item.md, EntityRegistry.md | Inventory, Loot, Shop |
+| **Terrain** | Terrain.md, Map.md | Map-Feature, Weather, Travel |
+| **Shop** | Shop.md, NPC-System.md, Item.md | Library |
+| **Journal** | Journal.md, Time-System.md | SessionRunner, Almanac |
+| **Map (Entity)** | Map.md, Map-Navigation.md, Terrain.md | Map-Feature, Cartographer |
+| **Quest (Entity)** | Quest.md, Quest-System.md | Quest-Feature |
+
+### Application Layer (UI)
+
+| Task | Pflicht-Docs | Konsumiert |
+|------|--------------|------------|
+| **SessionRunner** | SessionRunner.md, Application.md, Data-Flow.md | Map, Travel, Time, Weather, Audio, Party |
+| **DetailView** | DetailView.md, Application.md, Combat-System.md, Encounter-System.md | Encounter, Combat, Shop |
+| **Cartographer** | Cartographer.md, Map-Feature.md, Map.md, Terrain.md | Map |
+| **Library** | Library.md, EntityRegistry.md, Application.md | Alle Entities |
+| **Almanac** | Time-System.md, Journal.md, SessionRunner.md | Time, WorldEvents |
+
+### Architektur/Infrastruktur
+
+| Task | Pflicht-Docs |
+|------|--------------|
+| **Neues Feature anlegen** | Features.md, EventBus.md, Events-Catalog.md, Conventions.md |
+| **Event hinzufügen** | Events-Catalog.md, EventBus.md |
+| **Neuer Entity-Typ** | EntityRegistry.md, Core.md, Infrastructure.md |
+| **Vault/Storage** | Infrastructure.md, Core.md |
+| **Error-Handling** | Error-Handling.md, Conventions.md |
+| **Testing** | Testing.md, Conventions.md |
+| **Architektur-Fragen** | Features.md, Data-Flow.md, Project-Structure.md, Application.md |
+| **Layer-Grenzen** | Features.md, Application.md, Infrastructure.md |
+
+### Immer lesen
+
+Diese Docs sind bei JEDER Implementierungsaufgabe Pflicht:
+- **Conventions.md** - Code-Standards
+- **Error-Handling.md** - Fehlerbehandlung
+- **Events-Catalog.md** - Wenn Events involviert

@@ -80,8 +80,21 @@ interface OverworldTile {
   pois: EntityId<'poi'>[];              // POIs auf diesem Tile
   encounterZone?: EncounterZone;        // Encounter-Konfiguration
 
+  // Lineare Features (Post-MVP)
+  paths: TilePathInfo[];                 // Pfade die durch dieses Tile verlaufen
+                                         // Bidirektional synchronisiert mit PathDefinition.waypoints
+
   // Metadaten
   notes?: string;
+}
+
+// Post-MVP: Pfad-Informationen pro Tile
+interface TilePathInfo {
+  pathId: EntityId<'path'>;
+  connections: {
+    from: HexCoordinate | null;          // Vorheriges Tile im Pfad (null wenn Start)
+    to: HexCoordinate | null;            // Naechstes Tile im Pfad (null wenn Ende)
+  };
 }
 
 interface EncounterZone {
@@ -478,7 +491,10 @@ Travel-Feature operiert nur auf Overworld-Maps:
 | TownMap Schema | | mittel | Strassen-Netzwerk |
 | Town Rendering | | mittel | Strassen + Buildings |
 | Multi-Level Dungeons (3D) | | niedrig | Z-Koordinate |
+| **Lineare Features (Pfade)** | | ✓ | Strassen, Fluesse, Schluchten, Klippen |
+| Path Rendering | | ✓ | Linien zwischen Hex-Zentren |
+| Path-Travel-Integration | | ✓ | Direktionsabhaengiger Speed |
 
 ---
 
-*Siehe auch: [Map.md](../domain/Map.md) | [Travel-System.md](Travel-System.md) | [Dungeon-System.md](Dungeon-System.md) | [POI.md](../domain/POI.md) | [Map-Navigation.md](../domain/Map-Navigation.md)*
+*Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Travel-System.md](Travel-System.md) | [Dungeon-System.md](Dungeon-System.md) | [POI.md](../domain/POI.md) | [Map-Navigation.md](../domain/Map-Navigation.md)*

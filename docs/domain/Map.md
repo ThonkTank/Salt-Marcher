@@ -1,6 +1,6 @@
 # Map
 
-> **Lies auch:** [Terrain](Terrain.md), [Map-Navigation](Map-Navigation.md)
+> **Lies auch:** [Terrain](Terrain.md), [Map-Navigation](Map-Navigation.md), [Path](Path.md)
 > **Wird benoetigt von:** Map-Feature, Cartographer
 
 Single Source of Truth fuer Map-Entity-Definitionen und Map-Typen.

@@ -74,11 +74,46 @@ export interface ActionsSectionState {
 }
 
 /**
+ * Quest progress display item.
+ */
+export interface QuestProgressDisplay {
+  /** Quest ID */
+  questId: string;
+  /** Quest name */
+  name: string;
+  /** Quest status */
+  status: 'discovered' | 'active' | 'completed' | 'failed';
+  /** Objectives (simplified for display) */
+  objectives: Array<{
+    description: string;
+    current: number;
+    target: number;
+    completed: boolean;
+  }>;
+  /** Accumulated XP in quest pool */
+  accumulatedXP: number;
+  /** Has deadline? */
+  hasDeadline: boolean;
+}
+
+/**
+ * Quest section state.
+ */
+export interface QuestSectionState {
+  /** Active quests with progress */
+  activeQuests: QuestProgressDisplay[];
+  /** Discovered but not accepted quests */
+  discoveredQuestCount: number;
+}
+
+/**
  * State for sidebar panel (Quick Controls).
  */
 export interface SidebarState {
   /** Travel section */
   travel: TravelSectionState;
+  /** Quest section */
+  quest: QuestSectionState;
   /** Actions section */
   actions: ActionsSectionState;
 }
@@ -165,6 +200,10 @@ export function createInitialRenderState(): RenderState {
         status: 'idle',
         speed: 24, // Default: 24 mi/day on foot
         currentTerrain: null,
+      },
+      quest: {
+        activeQuests: [],
+        discoveredQuestCount: 0,
       },
       actions: {
         canGenerateEncounter: false,

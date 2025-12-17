@@ -8,7 +8,7 @@
 import { Plugin } from 'obsidian';
 import type { EventBus } from '@core/index';
 import { createEventBus, isSome } from '@core/index';
-import type { CreatureDefinition, Faction } from '@core/schemas';
+import type { CreatureDefinition, Faction, QuestDefinition } from '@core/schemas';
 
 // Infrastructure
 import {
@@ -40,6 +40,8 @@ import { createTimeStore, createTimeService, type TimeFeaturePort } from './feat
 import { createWeatherStore, createWeatherService, type WeatherFeaturePort } from './features/weather';
 import { createEncounterStore, createEncounterService, type EncounterFeaturePort } from './features/encounter';
 import { createCombatService, type CombatFeaturePort } from './features/combat';
+import { createQuestService, type QuestFeaturePort } from './features/quest';
+import { addDuration, diffInHours } from './features/time';
 
 // Application
 import {
@@ -58,6 +60,7 @@ import demoPartyPreset from '../presets/parties/demo-party.json';
 import gregorianCalendarPreset from '../presets/almanac/gregorian.json';
 import creaturesPreset from '../presets/creatures/base-creatures.json';
 import factionsPreset from '../presets/factions/base-factions.json';
+import questsPreset from '../presets/quests/demo-quests.json';
 
 // ============================================================================
 // Bootstrap Fixtures
@@ -123,6 +126,7 @@ export default class SaltMarcherPlugin extends Plugin {
   private weatherFeature?: WeatherFeaturePort;
   private encounterFeature?: EncounterFeaturePort;
   private combatFeature?: CombatFeaturePort;
+  private questFeature?: QuestFeaturePort;
   private notificationService?: NotificationService;
   private eventUnsubscribers: Array<() => void> = [];
 
@@ -298,6 +302,30 @@ export default class SaltMarcherPlugin extends Plugin {
       eventBus: this.eventBus,
     });
 
+    // Quest Feature (depends on Time for deadline, EventBus for encounter integration)
+    this.questFeature = createQuestService({
+      eventBus: this.eventBus,
+      questDefinitions: questsPreset as unknown as QuestDefinition[],
+      getCurrentTime: () => this.timeFeature!.getCurrentTime(),
+      addDurationToTime: (time, duration) => {
+        const calendarOpt = this.timeFeature!.getActiveCalendar();
+        if (!isSome(calendarOpt)) {
+          // Fallback: just return time unchanged if no calendar loaded
+          return time;
+        }
+        return addDuration(time, duration, calendarOpt.value);
+      },
+      isAfter: (a, b) => {
+        const calendarOpt = this.timeFeature!.getActiveCalendar();
+        if (!isSome(calendarOpt)) {
+          // Fallback: simple comparison
+          return a.year > b.year || (a.year === b.year && a.month > b.month) ||
+                 (a.year === b.year && a.month === b.month && a.day > b.day);
+        }
+        return diffInHours(b, a, calendarOpt.value) > 0;
+      },
+    });
+
     // Travel Feature (now with Weather)
     this.travelFeature = createTravelService({
       mapFeature: this.mapFeature,
@@ -320,6 +348,7 @@ export default class SaltMarcherPlugin extends Plugin {
         timeFeature: this.timeFeature!,
         weatherFeature: this.weatherFeature,
         encounterFeature: this.encounterFeature,
+        questFeature: this.questFeature,
         terrainStorage,
         notificationService: this.notificationService!,
         eventBus: this.eventBus!,
@@ -388,6 +417,7 @@ export default class SaltMarcherPlugin extends Plugin {
         console.log('Weather:', this.weatherFeature?.getCurrentWeather());
         console.log('Encounter:', this.encounterFeature?.getCurrentEncounter());
         console.log('Combat:', this.combatFeature?.getState());
+        console.log('Quest:', this.questFeature?.getActiveQuests());
         console.groupEnd();
       },
     });
@@ -441,6 +471,7 @@ export default class SaltMarcherPlugin extends Plugin {
 
     // Dispose features (clean up EventBus subscriptions)
     this.travelFeature?.dispose();
+    this.questFeature?.dispose();
     this.combatFeature?.dispose();
     this.encounterFeature?.dispose();
     this.weatherFeature?.dispose();

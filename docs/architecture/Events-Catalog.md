@@ -99,20 +99,20 @@ Reise-System fuer Hex-Overland-Maps.
 |-------|--------|------|-----------|
 | `travel:move-requested` | ✅ | 2.5 | MVP-spezifisch (Nachbar-Hex) |
 | `travel:position-changed` | ✅ | 2.5 | |
-| `travel:plan-requested` | ❌ | - | Full Travel Workflow |
-| `travel:start-requested` | ❌ | - | Full Travel Workflow |
-| `travel:pause-requested` | ❌ | - | Full Travel Workflow |
-| `travel:resume-requested` | ❌ | - | Full Travel Workflow |
-| `travel:cancel-requested` | ❌ | - | Full Travel Workflow |
-| `travel:state-changed` | ❌ | - | Full Travel Workflow |
-| `travel:route-planned` | ❌ | - | Full Travel Workflow |
-| `travel:started` | ❌ | - | Full Travel Workflow |
-| `travel:paused` | ❌ | - | Full Travel Workflow |
-| `travel:resumed` | ❌ | - | Full Travel Workflow |
-| `travel:completed` | ❌ | - | Full Travel Workflow |
-| `travel:failed` | ❌ | - | Full Travel Workflow |
+| `travel:plan-requested` | ✅ | 7 | State-Machine implementiert |
+| `travel:start-requested` | ✅ | 7 | State-Machine implementiert |
+| `travel:pause-requested` | ✅ | 7 | State-Machine implementiert |
+| `travel:resume-requested` | ✅ | 7 | State-Machine implementiert |
+| `travel:cancel-requested` | ✅ | 7 | State-Machine implementiert |
+| `travel:state-changed` | ✅ | 7 | State-Machine implementiert |
+| `travel:route-planned` | ✅ | 7 | State-Machine implementiert |
+| `travel:started` | ✅ | 7 | State-Machine implementiert |
+| `travel:paused` | ✅ | 7 | State-Machine implementiert |
+| `travel:resumed` | ✅ | 7 | State-Machine implementiert |
+| `travel:completed` | ✅ | 7 | State-Machine implementiert |
+| `travel:failed` | ✅ | 7 | State-Machine implementiert |
 
-> **Hinweis:** `travel:move-requested` ist ein MVP-Event für direkte Nachbar-Hex-Bewegung. Der vollständige Travel-Workflow (Routing, Pause/Resume) ist für eine spätere Phase geplant.
+> **Hinweis:** Travel State-Machine wurde in Phase 7 (Blocker-Sprint) implementiert. UI-Animation für Reise-Fortschritt ist noch Post-MVP.
 
 ```typescript
 // Requests

@@ -245,10 +245,12 @@ export const EventTypes = {
   LOOT_DISTRIBUTED: 'loot:distributed',
 
   // -------------------------------------------------------------------------
-  // quest:* Events (10)
+  // quest:* Events (14)
   // -------------------------------------------------------------------------
+  QUEST_DISCOVER_REQUESTED: 'quest:discover-requested',
   QUEST_ACTIVATE_REQUESTED: 'quest:activate-requested',
   QUEST_COMPLETE_OBJECTIVE_REQUESTED: 'quest:complete-objective-requested',
+  QUEST_ASSIGN_ENCOUNTER_REQUESTED: 'quest:assign-encounter-requested',
   QUEST_FAIL_REQUESTED: 'quest:fail-requested',
   QUEST_STATE_CHANGED: 'quest:state-changed',
   QUEST_DISCOVERED: 'quest:discovered',
@@ -257,6 +259,8 @@ export const EventTypes = {
   QUEST_XP_ACCUMULATED: 'quest:xp-accumulated',
   QUEST_COMPLETED: 'quest:completed',
   QUEST_FAILED: 'quest:failed',
+  QUEST_SLOT_ASSIGNMENT_AVAILABLE: 'quest:slot-assignment-available',
+  QUEST_ENCOUNTER_ASSIGNED: 'quest:encounter-assigned',
 
   // -------------------------------------------------------------------------
   // environment:* Events (8)
@@ -916,6 +920,10 @@ export interface LootDistributedPayload {
 // quest:* Payloads
 // ---------------------------------------------------------------------------
 
+export interface QuestDiscoverRequestedPayload {
+  questId: string;
+}
+
 export interface QuestActivateRequestedPayload {
   questId: string;
 }
@@ -923,6 +931,13 @@ export interface QuestActivateRequestedPayload {
 export interface QuestCompleteObjectiveRequestedPayload {
   questId: string;
   objectiveId: string;
+}
+
+export interface QuestAssignEncounterRequestedPayload {
+  questId: string;
+  slotId: string;
+  encounterId: string;
+  encounterXP: number;
 }
 
 export interface QuestFailRequestedPayload {
@@ -962,7 +977,25 @@ export interface QuestCompletedPayload {
 
 export interface QuestFailedPayload {
   questId: string;
-  reason: 'deadline' | 'npc_dead' | 'manual';
+  reason: 'deadline' | 'condition-violated' | 'abandoned';
+}
+
+export interface QuestSlotAssignmentAvailablePayload {
+  encounterId: string;
+  encounterXP: number;
+  openSlots: Array<{
+    questId: string;
+    questName: string;
+    slotId: string;
+    slotDescription: string;
+  }>;
+}
+
+export interface QuestEncounterAssignedPayload {
+  questId: string;
+  slotId: string;
+  encounterId: string;
+  xpAccumulated: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -1301,8 +1334,10 @@ export interface EventPayloadMap {
   [EventTypes.LOOT_DISTRIBUTED]: LootDistributedPayload;
 
   // quest:*
+  [EventTypes.QUEST_DISCOVER_REQUESTED]: QuestDiscoverRequestedPayload;
   [EventTypes.QUEST_ACTIVATE_REQUESTED]: QuestActivateRequestedPayload;
   [EventTypes.QUEST_COMPLETE_OBJECTIVE_REQUESTED]: QuestCompleteObjectiveRequestedPayload;
+  [EventTypes.QUEST_ASSIGN_ENCOUNTER_REQUESTED]: QuestAssignEncounterRequestedPayload;
   [EventTypes.QUEST_FAIL_REQUESTED]: QuestFailRequestedPayload;
   [EventTypes.QUEST_STATE_CHANGED]: QuestStateChangedPayload;
   [EventTypes.QUEST_DISCOVERED]: QuestDiscoveredPayload;
@@ -1311,6 +1346,8 @@ export interface EventPayloadMap {
   [EventTypes.QUEST_XP_ACCUMULATED]: QuestXpAccumulatedPayload;
   [EventTypes.QUEST_COMPLETED]: QuestCompletedPayload;
   [EventTypes.QUEST_FAILED]: QuestFailedPayload;
+  [EventTypes.QUEST_SLOT_ASSIGNMENT_AVAILABLE]: QuestSlotAssignmentAvailablePayload;
+  [EventTypes.QUEST_ENCOUNTER_ASSIGNED]: QuestEncounterAssignedPayload;
 
   // environment:*
   [EventTypes.ENVIRONMENT_WEATHER_OVERRIDE_REQUESTED]: EnvironmentWeatherOverrideRequestedPayload;

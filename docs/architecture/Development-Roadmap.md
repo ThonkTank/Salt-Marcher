@@ -20,6 +20,7 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 | 5 | Combat-Feature | ✅ | Initiative-Tracker, HP-Management, Conditions, Encounter-Integration |
 | 6 | Frontend-Refactoring | ✅ | SessionRunner Layout (Header+Sidebar+Map), DetailView (Encounter+Combat Tabs) |
 | 7 | Blocker-Sprint | ✅ | Character-Schema, Party Members, Combat XP, Travel State-Machine |
+| 8 | Quest-System | 🔄 | Quest State-Machine, 40/60 XP-Split, Encounter-Slot-Zuweisung |
 
 ---
 
@@ -144,21 +145,44 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 
 ## 🔄 Aktiver Sprint
 
-**Feature:** —
+**Feature:** Quest-System (Phase 8)
 
-**User Story:** —
+**User Story:** Als GM möchte ich Quest-Encounter 40/60 aufteilen können, sodass Spieler beim Quest-Abschluss einen XP-Bonus erhalten.
 
 **Scope:**
-- [ ] ...
+- [x] Core-Schemas: QuestDefinition, QuestObjective, QuestEncounterSlot, QuestReward
+- [x] Event-Payloads: 4 neue Quest-Events in domain-events.ts
+- [x] Feature-Grundgerüst: types.ts, quest-store.ts, quest-xp.ts, quest-service.ts
+- [x] Service-Implementation: Event-Subscriptions (encounter:resolved, time:state-changed)
+- [ ] main.ts Integration: Quest-Feature wiring
+- [ ] SessionRunner: Quest-Panel in Sidebar, Slot-Assignment Dialog
+- [ ] Resumable State: Plugin-Data Persistenz
+- [ ] Quest-Presets: Beispiel-Quests
 
 **Nicht im Scope:**
-- ❌ ...
+- ❌ Quest-Editor in Library (Post-MVP)
+- ❌ Loot-System (separate Phase)
+- ❌ Inventory-System (Blocker für Loot)
+- ❌ Reputation-Rewards (Post-MVP)
+- ❌ Hidden Objectives (Post-MVP)
 
 **Akzeptanzkriterien:**
-- [ ] ...
+- [x] Quest kann discovered → active → completed durchlaufen
+- [x] Encounter-Zuweisung akkumuliert 60% XP im Quest-Pool
+- [x] Quest-Completion zahlt akkumuliertes XP aus via party:xp-gained
+- [x] Deadline überschritten → Quest automatisch failed
+- [ ] SessionRunner zeigt aktive Quests mit Progress
+- [ ] Slot-Assignment-Dialog erscheint bei Encounter-Ende
+- [ ] State überlebt Plugin-Reload (Resumable)
+- [x] Events-Catalog.md Travel-Events als ✅ markiert
+- [x] Build + TypeCheck erfolgreich
 
 **Fokus-Dateien:**
-- ...
+- src/core/schemas/quest.ts (NEU ✅)
+- src/core/events/domain-events.ts (erweitert ✅)
+- src/features/quest/ (NEU ✅)
+- src/main.ts (Integration pending)
+- src/application/session-runner/sidebar.ts (UI pending)
 
 ---
 
@@ -167,8 +191,8 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 | Option | Scope |
 |--------|-------|
 | **Cartographer** | Map-Editor zum Erstellen eigener Maps |
-| **Travel-Vollständig** | State-Machine, Routing, Pause/Resume |
-| **Quest-System** | 40/60 XP-Split, Objectives, Loot |
+| **Loot-System** | Item-Drops, Treasure-Tables, Inventory-Integration |
+| **Audio-Feature** | Context-basierte Soundscapes (Terrain, Weather, Time) |
 
 ---
 
