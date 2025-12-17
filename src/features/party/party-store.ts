@@ -1,10 +1,11 @@
 /**
  * Party Feature store.
  *
- * Manages the current party state including position and transport.
+ * Manages the current party state including position, transport, and members.
  */
 
-import type { Party, HexCoordinate, TransportMode } from '@core/schemas';
+import type { CharacterId } from '@core/index';
+import type { Party, HexCoordinate, TransportMode, Character } from '@core/schemas';
 import type { PartyState } from './types';
 import { createInitialPartyState } from './types';
 
@@ -32,6 +33,7 @@ export function createPartyStore() {
     setCurrentParty(party: Party | null): void {
       state = {
         currentParty: party,
+        loadedMembers: [],
         isDirty: false,
       };
     },
@@ -83,6 +85,52 @@ export function createPartyStore() {
      */
     clear(): void {
       state = createInitialPartyState();
+    },
+
+    // =========================================================================
+    // Member Management
+    // =========================================================================
+
+    /**
+     * Set loaded member characters.
+     */
+    setLoadedMembers(members: Character[]): void {
+      state = {
+        ...state,
+        loadedMembers: members,
+      };
+    },
+
+    /**
+     * Add a member to the party (updates party.members array).
+     */
+    addMember(characterId: CharacterId): void {
+      if (!state.currentParty) return;
+
+      state = {
+        ...state,
+        currentParty: {
+          ...state.currentParty,
+          members: [...state.currentParty.members, characterId],
+        },
+        isDirty: true,
+      };
+    },
+
+    /**
+     * Remove a member from the party (updates party.members array).
+     */
+    removeMember(characterId: CharacterId): void {
+      if (!state.currentParty) return;
+
+      state = {
+        ...state,
+        currentParty: {
+          ...state.currentParty,
+          members: state.currentParty.members.filter((id) => id !== characterId),
+        },
+        isDirty: true,
+      };
     },
   };
 }

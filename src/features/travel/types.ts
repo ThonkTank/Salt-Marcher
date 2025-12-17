@@ -1,20 +1,28 @@
 /**
  * Travel Feature types and interfaces.
  *
- * Travel-Minimal: Simple hex-to-hex movement with time cost.
+ * Travel supports:
+ * - Single hex-to-hex movement (moveToNeighbor)
+ * - Multi-hex routes with state machine (planRoute, startTravel, pause, resume)
+ *
+ * State Machine: idle → planning → traveling ↔ paused → arrived
  */
 
-import type { Result, AppError } from '@core/index';
-import type { HexCoordinate, TransportMode } from '@core/schemas';
+import type { Result, AppError, Option } from '@core/index';
+import type { HexCoordinate, TransportMode, Duration } from '@core/schemas';
 
 // ============================================================================
 // Travel Feature Port
 // ============================================================================
 
 /**
- * Public interface for the Travel Feature (Minimal).
+ * Public interface for the Travel Feature.
  */
 export interface TravelFeaturePort {
+  // ===========================================================================
+  // Single-Hex Movement (Minimal)
+  // ===========================================================================
+
   /**
    * Move party to an adjacent hex.
    * Returns the time cost in hours.
@@ -32,6 +40,64 @@ export interface TravelFeaturePort {
    */
   canMoveTo(target: HexCoordinate): boolean;
 
+  // ===========================================================================
+  // State Machine (Multi-Hex Routes)
+  // ===========================================================================
+
+  /**
+   * Get current travel state.
+   */
+  getState(): Readonly<TravelState>;
+
+  /**
+   * Get current travel status.
+   */
+  getStatus(): TravelStatus;
+
+  /**
+   * Get current route (if planning or traveling).
+   */
+  getRoute(): Option<Readonly<Route>>;
+
+  /**
+   * Plan a route from current position to destination.
+   * Uses greedy neighbor selection (MVP pathfinding).
+   */
+  planRoute(destination: HexCoordinate): Result<Route, AppError>;
+
+  /**
+   * Start traveling along the planned route.
+   * Only valid when status is 'planning'.
+   */
+  startTravel(): Result<void, AppError>;
+
+  /**
+   * Pause current travel.
+   * Only valid when status is 'traveling'.
+   */
+  pauseTravel(reason: PauseReason): Result<void, AppError>;
+
+  /**
+   * Resume paused travel.
+   * Only valid when status is 'paused'.
+   */
+  resumeTravel(): Result<void, AppError>;
+
+  /**
+   * Cancel current travel/planning and reset to idle.
+   */
+  cancelTravel(): Result<void, AppError>;
+
+  /**
+   * Advance travel by one segment (called by time progression).
+   * Only valid when status is 'traveling'.
+   */
+  advanceSegment(): Result<TravelResult | null, AppError>;
+
+  // ===========================================================================
+  // Lifecycle
+  // ===========================================================================
+
   /**
    * Clean up subscriptions and resources.
    */
@@ -43,7 +109,7 @@ export interface TravelFeaturePort {
 // ============================================================================
 
 /**
- * Result of a successful travel move.
+ * Result of a successful travel move (single hex).
  */
 export interface TravelResult {
   /** Starting position */
@@ -60,6 +126,97 @@ export interface TravelResult {
 
   /** Terrain at destination */
   terrainId: string;
+}
+
+// ============================================================================
+// Travel State Machine
+// ============================================================================
+
+/**
+ * Travel status for state machine.
+ *
+ * Transitions:
+ * - idle → planning (planRoute)
+ * - planning → traveling (startTravel) | idle (cancel)
+ * - traveling → paused (pause) | arrived (completed)
+ * - paused → traveling (resume) | idle (cancel)
+ * - arrived → idle (reset)
+ */
+export type TravelStatus = 'idle' | 'planning' | 'traveling' | 'paused' | 'arrived';
+
+/**
+ * Reason why travel was paused.
+ */
+export type PauseReason = 'user' | 'encounter' | 'obstacle';
+
+/**
+ * Single segment of a route (one hex transition).
+ */
+export interface RouteSegment {
+  /** Starting hex */
+  from: HexCoordinate;
+
+  /** Destination hex */
+  to: HexCoordinate;
+
+  /** Terrain at destination */
+  terrainId: string;
+
+  /** Time cost in hours */
+  timeCostHours: number;
+}
+
+/**
+ * Planned route for multi-hex travel.
+ */
+export interface Route {
+  /** Unique route ID */
+  id: string;
+
+  /** All waypoints (including start and end) */
+  waypoints: HexCoordinate[];
+
+  /** Transport mode for this route */
+  transport: TransportMode;
+
+  /** Individual segments */
+  segments: RouteSegment[];
+
+  /** Total estimated duration */
+  totalDuration: Duration;
+}
+
+/**
+ * Travel state managed by the state machine.
+ */
+export interface TravelState {
+  /** Current status */
+  status: TravelStatus;
+
+  /** Active route (if planning or traveling) */
+  route: Route | null;
+
+  /** Current segment index (0-based) */
+  currentSegmentIndex: number;
+
+  /** Progress within current segment (0.0 - 1.0) */
+  segmentProgress: number;
+
+  /** Reason if paused */
+  pauseReason: PauseReason | null;
+}
+
+/**
+ * Create initial idle travel state.
+ */
+export function createInitialTravelState(): TravelState {
+  return {
+    status: 'idle',
+    route: null,
+    currentSegmentIndex: 0,
+    segmentProgress: 0,
+    pauseReason: null,
+  };
 }
 
 // ============================================================================

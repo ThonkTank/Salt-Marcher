@@ -60,20 +60,16 @@ export function getXpForCr(cr: number): number {
 
 /**
  * Calculate total XP for defeated creatures.
+ * Uses the CR stored directly on the participant.
  */
-export function calculateCombatXp(
-  participants: CombatParticipant[],
-  creatureLookup: (entityId: string) => { cr: number } | undefined
-): number {
+export function calculateCombatXp(participants: readonly CombatParticipant[]): number {
   let totalXp = 0;
 
   for (const participant of participants) {
     // Only count defeated creatures (not PCs)
     if (participant.type === 'creature' && participant.currentHp <= 0) {
-      const creature = creatureLookup(participant.entityId);
-      if (creature) {
-        totalXp += getXpForCr(creature.cr);
-      }
+      const cr = participant.cr ?? 0;
+      totalXp += getXpForCr(cr);
     }
   }
 
@@ -142,6 +138,7 @@ export function createParticipantFromCreature(
     })),
     effects: [],
     concentratingOn: instance.concentrationSpell,
+    cr: definition.cr,
   };
 }
 

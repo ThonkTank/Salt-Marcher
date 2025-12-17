@@ -40,6 +40,7 @@ import {
   calculateConcentrationDc,
   needsConcentrationCheck,
   calculateCombatDuration,
+  calculateCombatXp,
   generateCombatId,
   getStartOfTurnEffects,
   getEndOfTurnEffects,
@@ -323,12 +324,18 @@ export function createCombatService(deps: CombatServiceDeps): CombatFeaturePort 
       });
     }
 
+    // Calculate XP (only for victory or negotiated outcomes)
+    const xpAwarded =
+      outcome === 'victory' || outcome === 'negotiated'
+        ? calculateCombatXp(state.participants)
+        : 0;
+
     // Calculate result
     const result: CombatResult = {
       combatId: state.combatId!,
       outcome,
       durationRounds: state.roundNumber,
-      xpAwarded: 0, // TODO: Calculate from defeated creatures
+      xpAwarded,
       encounterId: state.encounterId,
     };
 

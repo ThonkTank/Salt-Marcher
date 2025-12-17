@@ -2,11 +2,11 @@
  * Party Feature types and interfaces.
  */
 
-import type { Result, AppError, PartyId, Option } from '@core/index';
-import type { Party, HexCoordinate, TransportMode } from '@core/schemas';
+import type { Result, AppError, PartyId, Option, CharacterId } from '@core/index';
+import type { Party, HexCoordinate, TransportMode, Character } from '@core/schemas';
 
 // ============================================================================
-// Storage Port
+// Storage Ports
 // ============================================================================
 
 /**
@@ -25,6 +25,27 @@ export interface PartyStoragePort {
 
   /** Check if a party exists */
   exists(id: PartyId): Promise<boolean>;
+}
+
+/**
+ * Storage port interface for character persistence.
+ * Implemented by VaultAdapter in Infrastructure layer.
+ */
+export interface CharacterStoragePort {
+  /** Load a character by ID */
+  load(id: CharacterId): Promise<Result<Character, AppError>>;
+
+  /** Save a character */
+  save(character: Character): Promise<Result<void, AppError>>;
+
+  /** Load multiple characters by IDs */
+  loadMany(ids: readonly CharacterId[]): Promise<Result<readonly Character[], AppError>>;
+
+  /** List all character IDs */
+  listIds(): Promise<Result<CharacterId[], AppError>>;
+
+  /** Check if a character exists */
+  exists(id: CharacterId): Promise<boolean>;
 }
 
 // ============================================================================
@@ -50,6 +71,33 @@ export interface PartyFeaturePort {
   /** Get available transport modes */
   getAvailableTransports(): readonly TransportMode[];
 
+  // === Member Queries ===
+
+  /**
+   * Get all loaded party members (characters).
+   * Returns None if no party is loaded.
+   */
+  getMembers(): Option<readonly Character[]>;
+
+  /**
+   * Get the average level of party members.
+   * Returns 1 if no members loaded.
+   * @see docs/features/Character-System.md
+   */
+  getPartyLevel(): number;
+
+  /**
+   * Get the party's travel speed (slowest member).
+   * Returns 30 (default human speed) if no members loaded.
+   * @see docs/features/Character-System.md
+   */
+  getPartySpeed(): number;
+
+  /**
+   * Get the party size (number of members).
+   */
+  getPartySize(): number;
+
   // === Party Operations ===
 
   /** Load a party by ID */
@@ -66,6 +114,25 @@ export interface PartyFeaturePort {
 
   /** Unload the current party */
   unloadParty(): void;
+
+  // === Member Operations ===
+
+  /**
+   * Add a character to the party.
+   * Loads the character from storage and adds to members list.
+   */
+  addMember(characterId: CharacterId): Promise<Result<void, AppError>>;
+
+  /**
+   * Remove a character from the party.
+   */
+  removeMember(characterId: CharacterId): Result<void, AppError>;
+
+  /**
+   * Reload all party members from storage.
+   * Useful after character data changes.
+   */
+  reloadMembers(): Promise<Result<void, AppError>>;
 
   // === Lifecycle ===
 
@@ -84,6 +151,9 @@ export interface PartyState {
   /** Currently loaded party */
   currentParty: Party | null;
 
+  /** Loaded character data for party members */
+  loadedMembers: Character[];
+
   /** Flag indicating unsaved changes */
   isDirty: boolean;
 }
@@ -94,6 +164,7 @@ export interface PartyState {
 export function createInitialPartyState(): PartyState {
   return {
     currentParty: null,
+    loadedMembers: [],
     isDirty: false,
   };
 }

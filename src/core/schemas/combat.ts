@@ -216,6 +216,9 @@ export const combatParticipantSchema = z.object({
 
   /** Spell being concentrated on (if any) */
   concentratingOn: z.string().optional(),
+
+  /** Challenge Rating (only for creatures, used for XP calculation) */
+  cr: z.number().optional(),
 });
 
 export type CombatParticipant = z.infer<typeof combatParticipantSchema>;

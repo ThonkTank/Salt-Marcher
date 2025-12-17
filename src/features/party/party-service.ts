@@ -10,6 +10,7 @@ import type {
   Result,
   AppError,
   PartyId,
+  CharacterId,
   Option,
   EventBus,
   Unsubscribe,
@@ -25,8 +26,9 @@ import {
   now,
   EventTypes,
 } from '@core/index';
-import type { Party, HexCoordinate, TransportMode } from '@core/schemas';
-import type { PartyFeaturePort, PartyStoragePort } from './types';
+import type { Party, HexCoordinate, TransportMode, Character } from '@core/schemas';
+import { calculatePartyLevel, calculatePartySpeed } from '@core/schemas';
+import type { PartyFeaturePort, PartyStoragePort, CharacterStoragePort } from './types';
 import type { PartyStore } from './party-store';
 import type {
   PartyStateChangedPayload,
@@ -43,6 +45,7 @@ import type {
 export interface PartyServiceDeps {
   store: PartyStore;
   storage: PartyStoragePort;
+  characterStorage?: CharacterStoragePort; // Optional - for member management
   eventBus?: EventBus; // Optional during migration
 }
 
@@ -50,10 +53,40 @@ export interface PartyServiceDeps {
  * Create the party service (implements PartyFeaturePort).
  */
 export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
-  const { store, storage, eventBus } = deps;
+  const { store, storage, characterStorage, eventBus } = deps;
 
   // Track subscriptions for cleanup
   const subscriptions: Unsubscribe[] = [];
+
+  // ===========================================================================
+  // Member Loading Helper
+  // ===========================================================================
+
+  /**
+   * Load all characters for the current party's member IDs.
+   * Updates store.loadedMembers with the loaded characters.
+   */
+  async function loadMembersFromStorage(): Promise<Result<readonly Character[], AppError>> {
+    const party = store.getState().currentParty;
+    if (!party || party.members.length === 0) {
+      store.setLoadedMembers([]);
+      return ok([]);
+    }
+
+    if (!characterStorage) {
+      // No character storage - return empty array
+      store.setLoadedMembers([]);
+      return ok([]);
+    }
+
+    const result = await characterStorage.loadMany(party.members as CharacterId[]);
+    if (!result.ok) {
+      return result;
+    }
+
+    store.setLoadedMembers([...result.value]);
+    return ok(result.value);
+  }
 
   // ===========================================================================
   // Event Publishing Helpers
@@ -195,6 +228,30 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
     },
 
     // =========================================================================
+    // Member Queries
+    // =========================================================================
+
+    getMembers(): Option<readonly Character[]> {
+      const party = store.getState().currentParty;
+      if (!party) return none();
+      return some(store.getState().loadedMembers);
+    },
+
+    getPartyLevel(): number {
+      const members = store.getState().loadedMembers;
+      return calculatePartyLevel(members);
+    },
+
+    getPartySpeed(): number {
+      const members = store.getState().loadedMembers;
+      return calculatePartySpeed(members);
+    },
+
+    getPartySize(): number {
+      return store.getState().loadedMembers.length;
+    },
+
+    // =========================================================================
     // Party Operations
     // =========================================================================
 
@@ -206,6 +263,9 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
       }
 
       store.setCurrentParty(result.value);
+
+      // Load party members (async, non-blocking)
+      await loadMembersFromStorage();
 
       // Publish events
       publishLoaded(result.value);
@@ -269,6 +329,75 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
     unloadParty(): void {
       store.clear();
       publishStateChanged();
+    },
+
+    // =========================================================================
+    // Member Operations
+    // =========================================================================
+
+    async addMember(characterId: CharacterId): Promise<Result<void, AppError>> {
+      const party = store.getState().currentParty;
+
+      if (!party) {
+        return err(createError('NO_PARTY', 'No party loaded'));
+      }
+
+      if (!characterStorage) {
+        return err(createError('NO_CHARACTER_STORAGE', 'Character storage not available'));
+      }
+
+      // Check if already a member
+      if (party.members.includes(characterId)) {
+        return err(createError('ALREADY_MEMBER', `Character ${characterId} is already a party member`));
+      }
+
+      // Load the character to verify it exists
+      const charResult = await characterStorage.load(characterId);
+      if (!charResult.ok) {
+        return err(createError('CHARACTER_NOT_FOUND', `Character ${characterId} not found`));
+      }
+
+      // Add to party members list
+      store.addMember(characterId);
+
+      // Add to loaded members
+      const members = [...store.getState().loadedMembers, charResult.value];
+      store.setLoadedMembers(members);
+
+      publishStateChanged();
+      return ok(undefined);
+    },
+
+    removeMember(characterId: CharacterId): Result<void, AppError> {
+      const party = store.getState().currentParty;
+
+      if (!party) {
+        return err(createError('NO_PARTY', 'No party loaded'));
+      }
+
+      // Check if is a member
+      if (!party.members.includes(characterId)) {
+        return err(createError('NOT_MEMBER', `Character ${characterId} is not a party member`));
+      }
+
+      // Remove from party members list
+      store.removeMember(characterId);
+
+      // Remove from loaded members
+      const members = store.getState().loadedMembers.filter((c) => c.id !== characterId);
+      store.setLoadedMembers(members);
+
+      publishStateChanged();
+      return ok(undefined);
+    },
+
+    async reloadMembers(): Promise<Result<void, AppError>> {
+      const result = await loadMembersFromStorage();
+      if (!result.ok) {
+        return err(result.error);
+      }
+      publishStateChanged();
+      return ok(undefined);
     },
 
     // =========================================================================

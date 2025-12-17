@@ -122,12 +122,12 @@ export function createEncounterService(
 
   /**
    * Get party level for encounter scaling.
+   * Delegates to PartyFeature which calculates average level from members.
    */
   function getPartyLevel(): number | undefined {
     const party = partyFeature.getCurrentParty();
     if (isNone(party)) return undefined;
-    // TODO: Calculate actual party level from members
-    return 1;
+    return partyFeature.getPartyLevel();
   }
 
   /**

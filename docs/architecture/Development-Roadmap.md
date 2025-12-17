@@ -19,6 +19,7 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 | 4c | Travel-Integration | ✅ | Encounter-Checks während Reisen (12.5%/h) |
 | 5 | Combat-Feature | ✅ | Initiative-Tracker, HP-Management, Conditions, Encounter-Integration |
 | 6 | Frontend-Refactoring | ✅ | SessionRunner Layout (Header+Sidebar+Map), DetailView (Encounter+Combat Tabs) |
+| 7 | Blocker-Sprint | ✅ | Character-Schema, Party Members, Combat XP, Travel State-Machine |
 
 ---
 
@@ -124,6 +125,21 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 
 **Nicht im Scope:** Debug-Panel, Audio/Party Quick-Controls (nur Platzhalter), Travel State-Machine
 
+### Phase 7: Blocker-Sprint
+
+**Scope:** Kritische Lücken beheben, bevor Quest-System implementiert wird
+
+**Geliefert:**
+- **Character-Schema:** Neues `characterSchema` (level, hp, ac, speed, strength), Party-Member-Management
+- **Party-Feature:** `getMembers()`, `getPartyLevel()`, `getPartySpeed()`, `addMember()`, `removeMember()`
+- **Encounter:** `getPartyLevel()` nutzt jetzt echte Character-Daten statt hardcoded `return 1`
+- **Combat XP:** `endCombat()` berechnet XP aus besiegten Creatures (CR→XP Tabelle)
+- **Travel State-Machine:** `idle → planning → traveling ↔ paused → arrived`
+- **Pathfinding:** Greedy Neighbor-Selection für Multi-Hex-Routen
+- **Presets:** Demo-Characters (Thorin, Elara, Brynn, Sera - Level 5 Party)
+
+**Nicht im Scope:** Inventory-System, Encumbrance, 40/60 XP-Split (→ Quest), Travel-Animation, A* Pathfinding
+
 ---
 
 ## 🔄 Aktiver Sprint
@@ -160,11 +176,11 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 
 | Bereich | Offen | Referenz |
 |---------|-------|----------|
-| Encounter | EncounterContext erweitern (tile statt position+terrainId), FactionPresence im Context, **Weather im GenerationContext wird ignoriert** (encounter-service.ts:623), PartyState statt partyLevel | [Encounter-System.md](../features/Encounter-System.md) |
-| Travel | State-Machine, Routing, Pause/Resume, Animation | [Travel-System.md](../features/Travel-System.md) |
+| Encounter | EncounterContext erweitern (tile statt position+terrainId), FactionPresence im Context, **Weather im GenerationContext wird ignoriert** (encounter-service.ts:623) | [Encounter-System.md](../features/Encounter-System.md) |
+| Travel | Animation, UI für Routen-Vorschau | [Travel-System.md](../features/Travel-System.md) |
 | Weather | Weather-Events, GM Override, UI-Anzeige | [Weather-System.md](../features/Weather-System.md) |
 | Time | Calendar-Wechsel, EntityRegistry-Integration | [Time-System.md](../features/Time-System.md) |
-| Party | Member-Management, XP-System | [Character-System.md](../features/Character-System.md) |
+| Party | XP-System (Party-Level-Verteilung), Character-UI im Party-Manager | [Character-System.md](../features/Character-System.md) |
 | Map | Multi-Map-Navigation, Cartographer | [Map-Feature.md](../features/Map-Feature.md) |
 | UI | Transport-Wechsel, Debug-Panel | [SessionRunner.md](../application/SessionRunner.md) |
 | Events | Siehe Status-Spalten | [Events-Catalog.md](Events-Catalog.md) |
@@ -228,7 +244,7 @@ Bei fehlenden oder unklaren Schemas: User fragen.
    - Neue entdeckte Lücken hinzufügen
    - Referenz-Links prüfen
 
-### Bei neuer Phase
+### Beim planen neuer Phase
 
 1. Phase zur Übersichts-Tabelle hinzufügen (Status: 🔄)
 2. "Aktueller Fokus" Sektion aktualisieren mit:

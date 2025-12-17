@@ -11,14 +11,20 @@ import type {
   AppError,
   EventBus,
   Unsubscribe,
+  Option,
 } from '@core/index';
 import {
   ok,
   err,
   createError,
   hexAdjacent,
+  hexDistance,
+  hexNeighbors,
+  hexEquals,
   isNone,
   isSome,
+  some,
+  none,
   createEvent,
   newCorrelationId,
   now,
@@ -30,12 +36,33 @@ import type { MapFeaturePort } from '../map';
 import type { PartyFeaturePort } from '../party';
 import type { TimeFeaturePort } from '../time';
 import type { WeatherFeaturePort } from '../weather';
-import type { TravelFeaturePort, TravelResult } from './types';
-import { calculateHexTraversalTime } from './types';
+import type {
+  TravelFeaturePort,
+  TravelResult,
+  TravelState,
+  TravelStatus,
+  Route,
+  RouteSegment,
+  PauseReason,
+} from './types';
+import { calculateHexTraversalTime, createInitialTravelState } from './types';
+import { createTravelStore } from './travel-store';
+import { addDuration as addDurationToTime } from '../time/time-utils';
 import type {
   TimeAdvanceRequestedPayload,
   TravelPositionChangedPayload,
   TravelMoveRequestedPayload,
+  TravelPlanRequestedPayload,
+  TravelStartRequestedPayload,
+  TravelPauseRequestedPayload,
+  TravelResumeRequestedPayload,
+  TravelCancelRequestedPayload,
+  TravelStateChangedPayload,
+  TravelRoutePlannedPayload,
+  TravelStartedPayload,
+  TravelPausedPayload,
+  TravelResumedPayload,
+  TravelCompletedPayload,
 } from '@core/events/domain-events';
 
 // ============================================================================
@@ -51,6 +78,13 @@ export interface TravelServiceDeps {
 }
 
 /**
+ * Generate a unique route ID.
+ */
+function generateRouteId(): string {
+  return `route-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
  * Create the travel service (implements TravelFeaturePort).
  */
 export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort {
@@ -59,6 +93,9 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
   // Track subscriptions for cleanup
   const subscriptions: Unsubscribe[] = [];
+
+  // Create state store for state machine
+  const store = createTravelStore();
 
   // ===========================================================================
   // Event Publishing Helpers
@@ -112,6 +149,129 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
     eventBus.publish(
       createEvent(EventTypes.TRAVEL_POSITION_CHANGED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'travel-feature',
+      })
+    );
+  }
+
+  function publishStateChanged(correlationId?: string): void {
+    if (!eventBus) return;
+
+    const payload: TravelStateChangedPayload = {
+      state: store.getState(),
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.TRAVEL_STATE_CHANGED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'travel-feature',
+      })
+    );
+  }
+
+  function publishRoutePlanned(route: Route, correlationId?: string): void {
+    if (!eventBus) return;
+
+    const payload: TravelRoutePlannedPayload = {
+      routeId: route.id,
+      route,
+      estimatedDuration: route.totalDuration,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.TRAVEL_ROUTE_PLANNED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'travel-feature',
+      })
+    );
+  }
+
+  function publishTravelStarted(route: Route, correlationId?: string): void {
+    if (!eventBus) return;
+
+    const currentTime = timeFeature.getCurrentTime();
+    const calendar = timeFeature.getActiveCalendar();
+
+    // Calculate estimated arrival time
+    let arrivalTime = currentTime;
+    if (isSome(calendar)) {
+      arrivalTime = addDurationToTime(currentTime, route.totalDuration, calendar.value);
+    }
+
+    const payload: TravelStartedPayload = {
+      routeId: route.id,
+      from: route.waypoints[0],
+      to: route.waypoints[route.waypoints.length - 1],
+      estimatedArrival: arrivalTime,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.TRAVEL_STARTED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'travel-feature',
+      })
+    );
+  }
+
+  function publishTravelPaused(
+    position: HexCoordinate,
+    reason: PauseReason,
+    correlationId?: string
+  ): void {
+    if (!eventBus) return;
+
+    const payload: TravelPausedPayload = {
+      position,
+      reason,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.TRAVEL_PAUSED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'travel-feature',
+      })
+    );
+  }
+
+  function publishTravelResumed(
+    position: HexCoordinate,
+    correlationId?: string
+  ): void {
+    if (!eventBus) return;
+
+    const payload: TravelResumedPayload = {
+      position,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.TRAVEL_RESUMED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'travel-feature',
+      })
+    );
+  }
+
+  function publishTravelCompleted(
+    destination: HexCoordinate,
+    totalDuration: Duration,
+    correlationId?: string
+  ): void {
+    if (!eventBus) return;
+
+    const payload: TravelCompletedPayload = {
+      destination,
+      totalDuration,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.TRAVEL_COMPLETED, payload, {
         correlationId: correlationId ?? newCorrelationId(),
         timestamp: now(),
         source: 'travel-feature',
@@ -217,6 +377,143 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     return ok(undefined);
   }
 
+  // ===========================================================================
+  // Pathfinding (Greedy MVP)
+  // ===========================================================================
+
+  /**
+   * Check if a hex is traversable with current transport.
+   */
+  function isTraversable(coord: HexCoordinate): boolean {
+    return validateTraversable(coord).ok;
+  }
+
+  /**
+   * Calculate time cost for a single hex transition.
+   */
+  function calculateSegmentTime(target: HexCoordinate): number {
+    const transport = partyFeature.getActiveTransport();
+    const baseSpeed = TRANSPORT_BASE_SPEEDS[transport];
+    const movementCost = mapFeature.getMovementCost(target);
+    const weatherFactor = getWeatherSpeedFactor();
+    return calculateHexTraversalTime(baseSpeed, movementCost, weatherFactor);
+  }
+
+  /**
+   * Get terrain ID for a hex.
+   */
+  function getTerrainIdAt(coord: HexCoordinate): string {
+    const tile = mapFeature.getTile(coord);
+    return isSome(tile) ? String(tile.value.terrain) : 'unknown';
+  }
+
+  /**
+   * Find path from start to destination using greedy neighbor selection.
+   * MVP pathfinding: always pick the traversable neighbor closest to destination.
+   *
+   * @param start - Starting position
+   * @param destination - Target position
+   * @returns Array of waypoints including start and destination, or null if no path
+   */
+  function findPathGreedy(
+    start: HexCoordinate,
+    destination: HexCoordinate
+  ): HexCoordinate[] | null {
+    // Already at destination
+    if (hexEquals(start, destination)) {
+      return [start];
+    }
+
+    const path: HexCoordinate[] = [start];
+    let current = start;
+    const visited = new Set<string>();
+    visited.add(`${current.q},${current.r}`);
+
+    const maxIterations = 100; // Prevent infinite loops
+    let iterations = 0;
+
+    while (!hexEquals(current, destination) && iterations < maxIterations) {
+      iterations++;
+
+      // Get all neighbors
+      const neighbors = hexNeighbors(current);
+
+      // Find the best traversable neighbor (closest to destination)
+      let bestNeighbor: HexCoordinate | null = null;
+      let bestDistance = Infinity;
+
+      for (const neighbor of neighbors) {
+        const key = `${neighbor.q},${neighbor.r}`;
+        if (visited.has(key)) continue;
+        if (!isTraversable(neighbor)) continue;
+
+        const dist = hexDistance(neighbor, destination);
+        if (dist < bestDistance) {
+          bestDistance = dist;
+          bestNeighbor = neighbor;
+        }
+      }
+
+      // No valid neighbor found - path blocked
+      if (!bestNeighbor) {
+        return null;
+      }
+
+      // Move to best neighbor
+      path.push(bestNeighbor);
+      visited.add(`${bestNeighbor.q},${bestNeighbor.r}`);
+      current = bestNeighbor;
+    }
+
+    // Check if we reached the destination
+    if (!hexEquals(current, destination)) {
+      return null;
+    }
+
+    return path;
+  }
+
+  /**
+   * Build a Route from waypoints.
+   */
+  function buildRoute(waypoints: HexCoordinate[]): Route {
+    const transport = partyFeature.getActiveTransport();
+    const segments: RouteSegment[] = [];
+    let totalHours = 0;
+
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const from = waypoints[i];
+      const to = waypoints[i + 1];
+      const timeCostHours = calculateSegmentTime(to);
+      const terrainId = getTerrainIdAt(to);
+
+      segments.push({
+        from,
+        to,
+        terrainId,
+        timeCostHours,
+      });
+
+      totalHours += timeCostHours;
+    }
+
+    const totalMinutes = Math.round(totalHours * 60);
+    const durationHours = Math.floor(totalMinutes / 60);
+    const durationMinutes = totalMinutes % 60;
+
+    return {
+      id: generateRouteId(),
+      waypoints,
+      transport,
+      segments,
+      totalDuration: { hours: durationHours, minutes: durationMinutes },
+    };
+  }
+
+  // ===========================================================================
+  // Move Operations
+  // ===========================================================================
+
   /**
    * Execute the actual move operation.
    */
@@ -279,7 +576,7 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
   function setupEventHandlers(): void {
     if (!eventBus) return;
 
-    // Handle travel:move-requested
+    // Handle travel:move-requested (single hex)
     subscriptions.push(
       eventBus.subscribe<TravelMoveRequestedPayload>(
         EventTypes.TRAVEL_MOVE_REQUESTED,
@@ -293,12 +590,283 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
         }
       )
     );
+
+    // Handle travel:plan-requested (multi-hex route)
+    subscriptions.push(
+      eventBus.subscribe<TravelPlanRequestedPayload>(
+        EventTypes.TRAVEL_PLAN_REQUESTED,
+        (event) => {
+          const { to } = event.payload;
+          const correlationId = event.correlationId;
+
+          // Plan the route
+          const result = planRouteInternal(to, correlationId);
+          if (!result.ok) {
+            // Could publish travel:failed here
+            console.warn('Route planning failed:', result.error);
+          }
+        }
+      )
+    );
+
+    // Handle travel:start-requested
+    subscriptions.push(
+      eventBus.subscribe<TravelStartRequestedPayload>(
+        EventTypes.TRAVEL_START_REQUESTED,
+        (event) => {
+          const correlationId = event.correlationId;
+          startTravelInternal(correlationId);
+        }
+      )
+    );
+
+    // Handle travel:pause-requested
+    subscriptions.push(
+      eventBus.subscribe<TravelPauseRequestedPayload>(
+        EventTypes.TRAVEL_PAUSE_REQUESTED,
+        (event) => {
+          const { reason } = event.payload;
+          const correlationId = event.correlationId;
+          pauseTravelInternal(reason, correlationId);
+        }
+      )
+    );
+
+    // Handle travel:resume-requested
+    subscriptions.push(
+      eventBus.subscribe<TravelResumeRequestedPayload>(
+        EventTypes.TRAVEL_RESUME_REQUESTED,
+        (event) => {
+          const correlationId = event.correlationId;
+          resumeTravelInternal(correlationId);
+        }
+      )
+    );
+
+    // Handle travel:cancel-requested
+    subscriptions.push(
+      eventBus.subscribe<TravelCancelRequestedPayload>(
+        EventTypes.TRAVEL_CANCEL_REQUESTED,
+        (event) => {
+          const correlationId = event.correlationId;
+          cancelTravelInternal(correlationId);
+        }
+      )
+    );
+
+    // Auto-pause on encounter:generated
+    subscriptions.push(
+      eventBus.subscribe(
+        EventTypes.ENCOUNTER_GENERATED,
+        (event) => {
+          if (store.getStatus() === 'traveling') {
+            pauseTravelInternal('encounter', event.correlationId);
+          }
+        }
+      )
+    );
+  }
+
+  // ===========================================================================
+  // State Machine Operations (Internal)
+  // ===========================================================================
+
+  function planRouteInternal(
+    destination: HexCoordinate,
+    correlationId?: string
+  ): Result<Route, AppError> {
+    // Can only plan from idle state
+    if (store.getStatus() !== 'idle') {
+      return err(
+        createError(
+          'INVALID_STATE',
+          `Cannot plan route while in '${store.getStatus()}' state`
+        )
+      );
+    }
+
+    // Get current position
+    const posResult = getPartyPosition();
+    if (!posResult.ok) return posResult;
+    const start = posResult.value;
+
+    // Validate destination is traversable
+    const travResult = validateTraversable(destination);
+    if (!travResult.ok) return travResult;
+
+    // Find path
+    const waypoints = findPathGreedy(start, destination);
+    if (!waypoints) {
+      return err(
+        createError(
+          'NO_PATH',
+          `No traversable path from (${start.q},${start.r}) to (${destination.q},${destination.r})`
+        )
+      );
+    }
+
+    // Build route
+    const route = buildRoute(waypoints);
+
+    // Update state
+    store.setPlanning(route);
+    publishStateChanged(correlationId);
+    publishRoutePlanned(route, correlationId);
+
+    return ok(route);
+  }
+
+  function startTravelInternal(correlationId?: string): Result<void, AppError> {
+    // Can only start from planning state
+    if (store.getStatus() !== 'planning') {
+      return err(
+        createError(
+          'INVALID_STATE',
+          `Cannot start travel while in '${store.getStatus()}' state`
+        )
+      );
+    }
+
+    const route = store.getState().route;
+    if (!route) {
+      return err(createError('NO_ROUTE', 'No route planned'));
+    }
+
+    // Transition to traveling
+    store.setTraveling();
+    publishStateChanged(correlationId);
+    publishTravelStarted(route, correlationId);
+
+    return ok(undefined);
+  }
+
+  function pauseTravelInternal(
+    reason: PauseReason,
+    correlationId?: string
+  ): Result<void, AppError> {
+    // Can only pause from traveling state
+    if (store.getStatus() !== 'traveling') {
+      return err(
+        createError(
+          'INVALID_STATE',
+          `Cannot pause while in '${store.getStatus()}' state`
+        )
+      );
+    }
+
+    // Get current position
+    const posResult = getPartyPosition();
+    if (!posResult.ok) return posResult;
+    const position = posResult.value;
+
+    // Transition to paused
+    store.setPaused(reason);
+    publishStateChanged(correlationId);
+    publishTravelPaused(position, reason, correlationId);
+
+    return ok(undefined);
+  }
+
+  function resumeTravelInternal(correlationId?: string): Result<void, AppError> {
+    // Can only resume from paused state
+    if (store.getStatus() !== 'paused') {
+      return err(
+        createError(
+          'INVALID_STATE',
+          `Cannot resume while in '${store.getStatus()}' state`
+        )
+      );
+    }
+
+    // Get current position
+    const posResult = getPartyPosition();
+    if (!posResult.ok) return posResult;
+    const position = posResult.value;
+
+    // Transition to traveling
+    store.setResumed();
+    publishStateChanged(correlationId);
+    publishTravelResumed(position, correlationId);
+
+    return ok(undefined);
+  }
+
+  function cancelTravelInternal(correlationId?: string): Result<void, AppError> {
+    const status = store.getStatus();
+
+    // Can cancel from planning, traveling, or paused
+    if (status === 'idle' || status === 'arrived') {
+      return err(
+        createError(
+          'INVALID_STATE',
+          `Cannot cancel while in '${status}' state`
+        )
+      );
+    }
+
+    // Reset to idle
+    store.setIdle();
+    publishStateChanged(correlationId);
+
+    return ok(undefined);
+  }
+
+  function advanceSegmentInternal(
+    correlationId?: string
+  ): Result<TravelResult | null, AppError> {
+    // Can only advance while traveling
+    if (store.getStatus() !== 'traveling') {
+      return err(
+        createError(
+          'INVALID_STATE',
+          `Cannot advance segment while in '${store.getStatus()}' state`
+        )
+      );
+    }
+
+    const state = store.getState();
+    const route = state.route;
+    if (!route) {
+      return err(createError('NO_ROUTE', 'No route active'));
+    }
+
+    const segmentIndex = state.currentSegmentIndex;
+    if (segmentIndex >= route.segments.length) {
+      // Already at end
+      return ok(null);
+    }
+
+    const segment = route.segments[segmentIndex];
+
+    // Execute move for this segment
+    const moveResult = executeMove(segment.to, correlationId);
+    if (!moveResult.ok) return moveResult;
+
+    // Check if there are more segments
+    const hasMore = store.advanceToNextSegment();
+
+    if (!hasMore) {
+      // Route complete
+      store.setArrived();
+      publishStateChanged(correlationId);
+      publishTravelCompleted(
+        route.waypoints[route.waypoints.length - 1],
+        route.totalDuration,
+        correlationId
+      );
+    }
+
+    return ok(moveResult.value);
   }
 
   // Set up event handlers immediately if eventBus is provided
   setupEventHandlers();
 
   return {
+    // =========================================================================
+    // Single-Hex Movement (Minimal)
+    // =========================================================================
+
     moveToNeighbor(target: HexCoordinate): Result<TravelResult, AppError> {
       return executeMove(target);
     },
@@ -340,6 +908,47 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     },
 
     // =========================================================================
+    // State Machine (Multi-Hex Routes)
+    // =========================================================================
+
+    getState(): Readonly<TravelState> {
+      return store.getState();
+    },
+
+    getStatus(): TravelStatus {
+      return store.getStatus();
+    },
+
+    getRoute(): Option<Readonly<Route>> {
+      const route = store.getState().route;
+      return route ? some(route) : none();
+    },
+
+    planRoute(destination: HexCoordinate): Result<Route, AppError> {
+      return planRouteInternal(destination);
+    },
+
+    startTravel(): Result<void, AppError> {
+      return startTravelInternal();
+    },
+
+    pauseTravel(reason: PauseReason): Result<void, AppError> {
+      return pauseTravelInternal(reason);
+    },
+
+    resumeTravel(): Result<void, AppError> {
+      return resumeTravelInternal();
+    },
+
+    cancelTravel(): Result<void, AppError> {
+      return cancelTravelInternal();
+    },
+
+    advanceSegment(): Result<TravelResult | null, AppError> {
+      return advanceSegmentInternal();
+    },
+
+    // =========================================================================
     // Lifecycle
     // =========================================================================
 
@@ -349,6 +958,7 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
         unsubscribe();
       }
       subscriptions.length = 0;
+      store.clear();
     },
   };
 }

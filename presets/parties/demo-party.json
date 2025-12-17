@@ -1,13 +1,18 @@
 {
   "$schema": "../../src/core/schemas/party.ts",
-  "description": "Demo party for Travel-Minimal testing. Positioned at map center.",
+  "description": "Demo party for testing. A level 5 adventuring party.",
   "id": "demo-party-001",
-  "name": "Demo Party",
+  "name": "The Adventurers",
   "currentMapId": "test-overworld-001",
   "position": { "q": 5, "r": 5 },
   "activeTransport": "foot",
   "availableTransports": ["foot", "mounted"],
-  "members": [],
+  "members": [
+    "char-thorin-001",
+    "char-elara-001",
+    "char-brynn-001",
+    "char-sera-001"
+  ],
   "createdAt": 1702745600000,
   "updatedAt": 1702745600000
 }

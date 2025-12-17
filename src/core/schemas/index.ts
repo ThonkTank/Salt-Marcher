@@ -193,6 +193,15 @@ export {
   BASE_ENCOUNTER_CHANCE,
 } from './encounter';
 
+// Character schemas
+export {
+  characterSchema,
+  type Character,
+  calculatePartyLevel,
+  calculatePartySpeed,
+  calculateTotalPartyHp,
+} from './character';
+
 // Combat schemas
 export {
   abilityKeySchema,
