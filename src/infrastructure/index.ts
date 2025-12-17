@@ -28,6 +28,10 @@ export {
   type VaultMapAdapterDeps,
   createVaultPartyAdapter,
   type VaultPartyAdapterDeps,
+  createVaultTimeAdapter,
+  type VaultTimeAdapterDeps,
+  createVaultCalendarAdapter,
+  type VaultCalendarAdapterDeps,
   // In-memory adapters (testing/development)
   createTerrainRegistry,
   createMapAdapter,

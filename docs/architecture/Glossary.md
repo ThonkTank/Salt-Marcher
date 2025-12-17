@@ -1,5 +1,7 @@
 # Glossary
 
+> **Wird benoetigt von:** Bei Begriffsfragen
+
 Zentrale Begriffsdefinitionen fuer SaltMarcher.
 
 ---

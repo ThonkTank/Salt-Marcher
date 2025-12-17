@@ -76,6 +76,11 @@ export interface MapFeaturePort {
 
   /** Unload the current map */
   unloadMap(): void;
+
+  // === Lifecycle ===
+
+  /** Clean up subscriptions and resources */
+  dispose(): void;
 }
 
 // ============================================================================

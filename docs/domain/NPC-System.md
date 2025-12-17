@@ -1,5 +1,8 @@
 # NPC-System
 
+> **Lies auch:** [Creature](Creature.md), [Faction](Faction.md)
+> **Wird benoetigt von:** Encounter, Quest, Shop
+
 Verwaltung von NPCs: Auswahl existierender NPCs, Generierung neuer NPCs, Persistierung.
 
 **Design-Philosophie:** Das Plugin automatisiert Mechanik (Generierung, Matching, Status). Der GM macht die kreative Arbeit (was die Party weiss, Beziehungen, Story). Encounter-Historie wird ueber Journal-Entries im Almanac abgebildet, nicht im NPC-Schema.

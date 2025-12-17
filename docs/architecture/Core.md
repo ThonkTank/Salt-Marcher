@@ -1,5 +1,7 @@
 # Core Layer
 
+> **Wird benoetigt von:** Features, Infrastructure
+
 Gemeinsame Grundlagen für alle Layer: Typen, Schemas, Events.
 
 **Pfad:** `src/core/`

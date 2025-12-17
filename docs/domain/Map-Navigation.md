@@ -1,5 +1,8 @@
 # Map-Navigation
 
+> **Lies auch:** [Map](Map.md), [POI](POI.md)
+> **Wird benoetigt von:** Travel, Map-Feature
+
 Navigation zwischen Maps via EntrancePOIs.
 
 **Design-Philosophie:** Map-Navigation ist GM-gesteuert, nicht automatisch. EntrancePOIs verbinden Maps - der GM entscheidet wann die Party eine Sub-Map betritt.

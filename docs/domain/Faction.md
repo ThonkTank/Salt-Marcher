@@ -1,5 +1,8 @@
 # Faction
 
+> **Lies auch:** [NPC-System](NPC-System.md), [POI](POI.md)
+> **Wird benoetigt von:** Encounter
+
 Fraktionen mit eingebetteter Kultur und Territory-System.
 
 **Design-Philosophie:** Factions sind die zentrale Organisationseinheit fuer NPCs, Kreaturen und Territorien. Kultur ist direkt in Factions eingebettet - keine separate Culture-Entity. Sub-Fraktionen erben und ueberschreiben Kultur-Eigenschaften.
@@ -189,65 +192,70 @@ Praesenz wird projiziert basierend auf:
 └── Distanz zum naechsten POI
 ```
 
-### Praesenz-Berechnung
+### Praesenz-Datenstruktur
 
 ```typescript
 interface FactionPresence {
   factionId: EntityId<'faction'>;
   strength: number;               // 0.0 - 1.0
 }
+```
 
-function calculatePresenceAtTile(
+### Praesenz-Vorberechnung (Cartographer)
+
+FactionPresence wird im **Cartographer vorberechnet** und auf Tiles gespeichert:
+
+1. GM platziert Faction-kontrollierte POIs auf der Map
+2. Cartographer berechnet Praesenz-Radius basierend auf Faction-Staerke
+3. Ergebnis wird auf `OverworldTile.factionPresence[]` gespeichert
+
+**Berechnungslogik:**
+
+```typescript
+// Wird im Cartographer ausgefuehrt, nicht zur Runtime
+function calculatePresenceForTile(
   tile: HexCoordinate,
-  factions: Faction[],
-  pois: POI[]
-): FactionPresence[] {
-  const presences: FactionPresence[] = [];
+  faction: Faction,
+  factionPOIs: POI[]
+): number {
+  if (factionPOIs.length === 0) return 0;
 
-  for (const faction of factions) {
-    // POIs dieser Fraktion finden
-    const factionPOIs = pois.filter(
-      poi => faction.controlledPOIs.includes(poi.id)
-    );
+  // Distanz zum naechsten POI
+  const minDistance = Math.min(
+    ...factionPOIs.map(poi => hexDistance(tile, poi.position))
+  );
 
-    if (factionPOIs.length === 0) continue;
+  // Staerke berechnen (Summe aller Creature-Counts)
+  const totalStrength = faction.creatures.reduce(
+    (sum, group) => sum + group.count,
+    0
+  );
 
-    // Distanz zum naechsten POI
-    const minDistance = Math.min(
-      ...factionPOIs.map(poi => hexDistance(tile, poi.position))
-    );
+  // Reichweite basiert auf Staerke
+  const maxRange = Math.sqrt(totalStrength) * 2;
+  if (minDistance > maxRange) return 0;
 
-    // Staerke berechnen (Summe aller Creature-Counts)
-    const totalStrength = faction.creatures.reduce(
-      (sum, group) => sum + group.count,
-      0
-    );
-
-    // Praesenz = Staerke / Distanz (mit Falloff)
-    const maxRange = Math.sqrt(totalStrength) * 2;  // Reichweite basiert auf Staerke
-    if (minDistance <= maxRange) {
-      const presence = (totalStrength / (minDistance + 1)) / totalStrength;
-      presences.push({
-        factionId: faction.id,
-        strength: Math.min(1.0, presence)
-      });
-    }
-  }
-
-  return presences;
+  // Praesenz mit Distanz-Falloff
+  return Math.min(1.0, (totalStrength / (minDistance + 1)) / totalStrength);
 }
 ```
 
+> **Verweis:** Siehe [Map-Feature.md](../features/Map-Feature.md) fuer OverworldTile-Schema
+
 ### Encounter-Integration
 
-Bei Encounter-Generierung wird die Fraktions-Praesenz beruecksichtigt:
+Bei Encounter-Generierung wird die vorberechnete Praesenz vom Tile gelesen:
 
 ```typescript
+// Praesenz ist bereits auf dem Tile gespeichert
+function getFactionsAtTile(tile: OverworldTile): FactionPresence[] {
+  return tile.factionPresence ?? [];
+}
+
 function selectEncounterFaction(
-  tile: HexCoordinate,
-  context: EncounterContext
+  tile: OverworldTile
 ): EntityId<'faction'> | null {
-  const presences = calculatePresenceAtTile(tile, allFactions, allPOIs);
+  const presences = getFactionsAtTile(tile);
 
   if (presences.length === 0) return null;
 
@@ -496,4 +504,4 @@ function rollQuirk(culture: ResolvedCulture): string | undefined {
 
 ---
 
-*Siehe auch: [NPC.md](NPC.md) | [POI.md](POI.md) | [Encounter-Feature.md](../features/Encounter-Feature.md)*
+*Siehe auch: [NPC.md](NPC.md) | [POI.md](POI.md) | [Encounter-System.md](../features/Encounter-System.md)*

@@ -1,5 +1,8 @@
 # Creature
 
+> **Lies auch:** [EntityRegistry](../architecture/EntityRegistry.md)
+> **Wird benoetigt von:** Encounter, Combat, NPC-System
+
 Single Source of Truth fuer Creature-Definitionen und die Drei-Stufen-Hierarchie.
 
 **Design-Philosophie:** CreatureDefinition ist ein wiederverwendbares Template. Instanzen entstehen zur Runtime (Combat) oder als persistente NPCs.
@@ -231,7 +234,7 @@ Creature-Selection basiert auf:
    - `creature.preferences.terrain` fuer Feinsteuerung
    - Fraktions-Praesenz multipliziert Gewichtung
 
-→ Details: [Encounter-Feature.md](../features/Encounter-Feature.md)
+→ Details: [Encounter-System.md](../features/Encounter-System.md)
 
 ### Combat-Feature
 
@@ -297,4 +300,4 @@ Vault/SaltMarcher/data/
 
 ---
 
-*Siehe auch: [NPC-System.md](NPC-System.md) | [Encounter-Feature.md](../features/Encounter-Feature.md) | [Terrain.md](Terrain.md) | [EntityRegistry.md](../architecture/EntityRegistry.md)*
+*Siehe auch: [NPC-System.md](NPC-System.md) | [Encounter-System.md](../features/Encounter-System.md) | [Terrain.md](Terrain.md) | [EntityRegistry.md](../architecture/EntityRegistry.md)*

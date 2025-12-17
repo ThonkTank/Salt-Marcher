@@ -1,5 +1,8 @@
 # Journal
 
+> **Lies auch:** [Time-System](../features/Time-System.md)
+> **Wird benoetigt von:** SessionRunner, Almanac
+
 Single Source of Truth fuer Session-Journal und automatische Event-Protokollierung.
 
 **Design-Philosophie:** Das Journal ist die persistente Aufzeichnung aller Session-relevanten Ereignisse. Es kombiniert automatisch generierte Eintraege (Encounters, Quests, Reisen) mit manuellen GM/Spieler-Notizen.
@@ -304,4 +307,4 @@ function getPinnedEntries(): JournalEntry[];
 
 ---
 
-*Siehe auch: [Quest.md](Quest.md) | [Time-System.md](../features/Time-System.md) | [Encounter-Feature.md](../features/Encounter-Feature.md)*
+*Siehe auch: [Quest.md](Quest.md) | [Time-System.md](../features/Time-System.md) | [Encounter-System.md](../features/Encounter-System.md)*

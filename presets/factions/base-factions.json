@@ -1,0 +1,259 @@
+[
+  {
+    "id": "base-humanoids",
+    "name": "Humanoids",
+    "culture": {
+      "naming": {
+        "patterns": ["{root}"]
+      },
+      "personality": {
+        "common": [
+          { "trait": "social", "weight": 0.7 }
+        ]
+      }
+    },
+    "creatures": [],
+    "controlledPOIs": [],
+    "description": "Base faction for all humanoid creatures."
+  },
+  {
+    "id": "base-goblins",
+    "name": "Goblins",
+    "parentId": "base-humanoids",
+    "culture": {
+      "naming": {
+        "patterns": ["{prefix}{root}", "{root}{suffix}"],
+        "prefixes": ["Grik", "Snag", "Muk", "Zit", "Bok", "Nix"],
+        "roots": ["nak", "gob", "rik", "snik", "zak", "tok"],
+        "suffixes": ["le", "ik", "az", "uz", "ob"]
+      },
+      "personality": {
+        "common": [
+          { "trait": "cunning", "weight": 0.7 },
+          { "trait": "cowardly", "weight": 0.6 },
+          { "trait": "greedy", "weight": 0.8 }
+        ],
+        "rare": [
+          { "trait": "brave", "weight": 0.1 }
+        ]
+      },
+      "quirks": [
+        { "quirk": "nervous_laugh", "weight": 0.3, "description": "Kichert nervoes bei Gefahr" },
+        { "quirk": "hoards_shiny", "weight": 0.4, "description": "Sammelt glaenzende Objekte" },
+        { "quirk": "talks_to_self", "weight": 0.2, "description": "Fuehrt Selbstgespraeche" }
+      ],
+      "values": {
+        "priorities": ["survival", "loot", "pleasing_boss"],
+        "taboos": ["direct_confrontation", "sharing_treasure"],
+        "greetings": ["Was willst du?", "Nicht toeten!"]
+      },
+      "speech": {
+        "dialect": "broken",
+        "commonPhrases": ["Nicht toeten!", "Hab Schatz!", "Boss sagt..."],
+        "accent": "hoch, schnell, nervoes"
+      }
+    },
+    "creatures": [
+      { "creatureId": "goblin", "count": 50 }
+    ],
+    "controlledPOIs": [],
+    "description": "Goblin tribes that infest caves and ruins."
+  },
+  {
+    "id": "base-orcs",
+    "name": "Orcs",
+    "parentId": "base-humanoids",
+    "culture": {
+      "naming": {
+        "patterns": ["{root}", "{prefix}{root}"],
+        "prefixes": ["Grom", "Mog", "Durg", "Thok"],
+        "roots": ["bash", "skull", "axe", "blood", "gore", "fang"],
+        "titles": ["der Starke", "Schaedelbrecher", "Bluthand"]
+      },
+      "personality": {
+        "common": [
+          { "trait": "aggressive", "weight": 0.9 },
+          { "trait": "proud", "weight": 0.6 },
+          { "trait": "brutal", "weight": 0.7 }
+        ],
+        "rare": [
+          { "trait": "cunning", "weight": 0.2 }
+        ]
+      },
+      "quirks": [
+        { "quirk": "battle_scars", "weight": 0.6, "description": "Zeigt stolz Kampfnarben" },
+        { "quirk": "trophy_collector", "weight": 0.4, "description": "Traegt Feindtrophaeen" }
+      ],
+      "values": {
+        "priorities": ["strength", "conquest", "glory"],
+        "taboos": ["cowardice", "weakness"],
+        "greetings": ["Zeig deine Staerke!", "Was willst du, Schwachling?"]
+      },
+      "speech": {
+        "dialect": "rough",
+        "commonPhrases": ["Gruumsh sieht alles!", "Blut fuer den Stamm!"],
+        "accent": "tief, guttural"
+      }
+    },
+    "creatures": [
+      { "creatureId": "orc", "count": 30 }
+    ],
+    "controlledPOIs": [],
+    "description": "Savage orc warbands."
+  },
+  {
+    "id": "base-kobolds",
+    "name": "Kobolds",
+    "parentId": "base-humanoids",
+    "culture": {
+      "naming": {
+        "patterns": ["{root}{suffix}", "{prefix}{root}"],
+        "prefixes": ["Mee", "Kip", "Dak", "Pik"],
+        "roots": ["po", "tek", "rix", "urd", "sniv"],
+        "suffixes": ["po", "ix", "ak", "ok"]
+      },
+      "personality": {
+        "common": [
+          { "trait": "cowardly", "weight": 0.8 },
+          { "trait": "crafty", "weight": 0.7 },
+          { "trait": "pack-minded", "weight": 0.9 }
+        ],
+        "rare": [
+          { "trait": "brave", "weight": 0.05 }
+        ]
+      },
+      "quirks": [
+        { "quirk": "trap_obsessed", "weight": 0.5, "description": "Redet staendig ueber Fallen" },
+        { "quirk": "dragon_worship", "weight": 0.6, "description": "Betet Drachen an" }
+      ],
+      "values": {
+        "priorities": ["dragons", "traps", "survival"],
+        "taboos": ["fighting_alone", "disrespecting_dragons"],
+        "greetings": ["Herr/Herrin! Kobolds dienen!"]
+      },
+      "speech": {
+        "dialect": "squeaky",
+        "commonPhrases": ["Fuer den Drachen!", "Nicht in die Falle treten!"],
+        "accent": "hoch, piepsig"
+      }
+    },
+    "creatures": [
+      { "creatureId": "kobold", "count": 80 }
+    ],
+    "controlledPOIs": [],
+    "description": "Kobold warrens that worship dragons."
+  },
+  {
+    "id": "base-beasts",
+    "name": "Wild Beasts",
+    "culture": {
+      "naming": {
+        "patterns": ["{root}"],
+        "roots": ["Alpha", "Fang", "Shadow", "Grey", "Blood"]
+      }
+    },
+    "creatures": [
+      { "creatureId": "wolf", "count": 100 },
+      { "creatureId": "dire-wolf", "count": 20 }
+    ],
+    "controlledPOIs": [],
+    "description": "Wild animals and beasts."
+  },
+  {
+    "id": "base-undead",
+    "name": "Undead",
+    "culture": {
+      "naming": {
+        "patterns": ["{root}"],
+        "roots": ["Bone", "Death", "Hollow", "Wither"]
+      }
+    },
+    "creatures": [
+      { "creatureId": "skeleton", "count": 50 }
+    ],
+    "controlledPOIs": [],
+    "description": "Mindless undead creatures."
+  },
+  {
+    "id": "base-bandits",
+    "name": "Bandits",
+    "parentId": "base-humanoids",
+    "culture": {
+      "naming": {
+        "patterns": ["{root}", "{root} {title}"],
+        "roots": ["Jack", "Bill", "Tom", "Mick", "Red", "Black"],
+        "titles": ["der Schnelle", "Messerhand", "Einauge", "der Geier"]
+      },
+      "personality": {
+        "common": [
+          { "trait": "greedy", "weight": 0.9 },
+          { "trait": "opportunistic", "weight": 0.8 },
+          { "trait": "suspicious", "weight": 0.6 }
+        ],
+        "rare": [
+          { "trait": "honorable", "weight": 0.1 }
+        ]
+      },
+      "quirks": [
+        { "quirk": "counts_coins", "weight": 0.4, "description": "Zaehlt staendig Muenzen" },
+        { "quirk": "paranoid", "weight": 0.3, "description": "Schaut sich staendig um" }
+      ],
+      "values": {
+        "priorities": ["gold", "easy_marks", "loyalty_to_gang"],
+        "taboos": ["betraying_gang"],
+        "greetings": ["Geld oder Leben!"]
+      },
+      "speech": {
+        "dialect": "street",
+        "commonPhrases": ["Das ist unser Revier!", "Leere deine Taschen!"],
+        "accent": "rau, direkt"
+      }
+    },
+    "creatures": [
+      { "creatureId": "bandit", "count": 20 }
+    ],
+    "controlledPOIs": [],
+    "description": "Bandit gangs that prey on travelers."
+  },
+  {
+    "id": "base-civilized",
+    "name": "Civilized Folk",
+    "parentId": "base-humanoids",
+    "culture": {
+      "naming": {
+        "patterns": ["{root}", "{root} {title}"],
+        "roots": ["Hans", "Peter", "Maria", "Anna", "Wilhelm", "Elsa"],
+        "titles": ["der Baecker", "die Weberin", "der Schmied", "die Heilerin"]
+      },
+      "personality": {
+        "common": [
+          { "trait": "helpful", "weight": 0.6 },
+          { "trait": "cautious", "weight": 0.5 },
+          { "trait": "curious", "weight": 0.4 }
+        ],
+        "rare": [
+          { "trait": "hostile", "weight": 0.1 }
+        ]
+      },
+      "quirks": [
+        { "quirk": "gossip", "weight": 0.5, "description": "Kennt alle Geruechte" },
+        { "quirk": "suspicious_of_strangers", "weight": 0.3, "description": "Misstraut Fremden" }
+      ],
+      "values": {
+        "priorities": ["family", "community", "trade"],
+        "taboos": ["violence", "theft"],
+        "greetings": ["Guten Tag!", "Was darf es sein?"]
+      },
+      "speech": {
+        "dialect": "common",
+        "commonPhrases": ["Wie kann ich helfen?", "Das kostet extra!"],
+        "accent": "regional"
+      }
+    },
+    "creatures": [
+      { "creatureId": "commoner", "count": 200 }
+    ],
+    "controlledPOIs": [],
+    "description": "Common folk in towns and villages."
+  }
+]

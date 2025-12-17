@@ -1,5 +1,8 @@
 # Quest-System
 
+> **Lies auch:** [Quest](../domain/Quest.md), [Encounter-System](Encounter-System.md), [Loot-Feature](Loot-Feature.md)
+> **Wird benoetigt von:** SessionRunner
+
 Objektiv-basierte Quests mit automatischer XP-Berechnung und 40/60-Split.
 
 **Design-Philosophie:** Der 40/60-Split ist ein **non-negotiable MVP-Feature**. Er verhindert XP-Grinding und motiviert Quest-Completion.
@@ -304,4 +307,4 @@ interface QuestSettings {
 
 ---
 
-*Siehe auch: [Quest.md](../domain/Quest.md) | [Journal.md](../domain/Journal.md) | [Encounter-Types.md](Encounter-Types.md) | [Encounter-Balancing.md](Encounter-Balancing.md) | [Combat-System.md](Combat-System.md)*
+*Siehe auch: [Quest.md](../domain/Quest.md) | [Journal.md](../domain/Journal.md) | [Encounter-System.md](Encounter-System.md) | [Encounter-Balancing.md](Encounter-Balancing.md) | [Combat-System.md](Combat-System.md)*

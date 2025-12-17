@@ -1,83 +1,83 @@
 # SessionRunner
 
-Die zentrale Spielansicht waehrend einer D&D-Session.
+> **Lies auch:** [Application](../architecture/Application.md), [Data-Flow](../architecture/Data-Flow.md), [DetailView](DetailView.md)
+> **Konsumiert:** Map, Travel, Time, Weather, Audio, Party
+
+Die zentrale Spielansicht waehrend einer D&D-Session. Zeigt die Karte und Quick-Controls fuer schnellen GM-Zugriff.
 
 **Pfad:** `src/application/session-runner/`
+
+**Companion View:** [DetailView](DetailView.md) (rechtes Leaf) fuer kontextbezogene Details wie Encounter, Combat, Shop.
 
 ---
 
 ## Uebersicht
 
-Der SessionRunner ist die Hauptansicht fuer den aktiven Spielbetrieb. Er kombiniert alle Session-relevanten Features in einer kohaerenten UI:
+Der SessionRunner ist die Hauptansicht fuer den aktiven Spielbetrieb. Er fokussiert auf **schnellen Zugriff** zu haeufig benoetigten Controls:
 
 | Bereich | Funktion |
 |---------|----------|
-| **Map-Panel** | Karten-Anzeige mit Party-Token und Overlay |
-| **Travel-Controls** | Routen-Planung und Reise-Steuerung |
-| **Context-Panel** | Aktuelle Location, Wetter, Party-Status |
-| **Time-Panel** | Kalender, Uhrzeit, Time-Controls |
-| **Encounter-Panel** | Encounter-Generierung und Combat |
-| **Audio-Panel** | Musik und Ambience |
+| **Header** | Zeit, Quick-Advance, Weather-Status |
+| **Quick-Controls** | Travel, Audio, Party-Status, Actions |
+| **Map-Panel** | Karten-Anzeige mit Party-Token und Overlays |
+
+Kontextbezogene Detail-Ansichten (Encounter, Combat, Shop, Quest-Details, Journal) werden in der separaten [DetailView](DetailView.md) angezeigt.
 
 ---
 
 ## Layout-Wireframe
 
-### Standard-Layout (Desktop)
+### Vertikaler Split (Quick-Controls links, Map rechts)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  [≡] SessionRunner          │ ⏮ ▶ ⏭ │ 📅 15. Mirtul, Jahr 1492 │ ⚙️     │
-├─────────────────────────────┴─────────┴──────────────────────────┴──────────┤
+│  [≡] SessionRunner    │ 📅 15. Mirtul, 14:30 │ ⏮ ▶ ⏭ │ ☀️ Clear    │ ⚙️  │
+├───────────────────────┴──────────────────────┴─────────┴─────────────┴──────┤
 │                                                                              │
-│  ┌─────────────────────────────────────────────┐  ┌────────────────────────┐│
-│  │                                             │  │  📍 CONTEXT            ││
-│  │                                             │  ├────────────────────────┤│
-│  │                                             │  │  Location: Silverwood  ││
-│  │                                             │  │  Terrain: Forest       ││
-│  │                 MAP PANEL                   │  │  Elevation: 450m       ││
-│  │                                             │  │                        ││
-│  │            [Hex-Grid mit Party]             │  │  ☀️ Weather             ││
-│  │                                             │  │  Clear, 18°C           ││
-│  │                    🎯                       │  │  Wind: Light NW        ││
-│  │                                             │  │                        ││
-│  │                                             │  │  👥 Party              ││
-│  │                                             │  │  Speed: 24 mi/day      ││
-│  │                                             │  │  Food: 12 days         ││
-│  ├─────────────────────────────────────────────┤  │  Encumbrance: Normal   ││
-│  │  🚶 TRAVEL CONTROLS                         │  └────────────────────────┤│
-│  │  [Plan Route] [Start] [Pause] [Fast-Fwd]   │  ┌────────────────────────┐│
-│  │  ───●─────────────────── 4.2 hrs           │  │  ⚔️ ENCOUNTER          ││
-│  │  Distance: 12 mi │ ETA: Sunset             │  │  [Generate] [Roll]     ││
-│  └─────────────────────────────────────────────┘  │                        ││
-│                                                    │  No active encounter   ││
-│  ┌──────────────────────┐  ┌───────────────────┐  │                        ││
-│  │  🎵 AUDIO            │  │  📜 QUEST LOG     │  └────────────────────────┤│
-│  │  Music: Tavern Night │  │  • Goblin Cave    │  ┌────────────────────────┐│
-│  │  Ambience: Forest    │  │    2/4 objectives │  │  📖 JOURNAL            ││
-│  │  [⏸] [⏭] [🔊───]    │  │  • Missing Ring   │  │  Last: Arrived at...   ││
-│  └──────────────────────┘  └───────────────────┘  │  [+ Note] [View All]   ││
-│                                                    └────────────────────────┘│
+│  ┌────────────────┐  ┌────────────────────────────────────────────────────┐ │
+│  │ QUICK CONTROLS │  │                                                    │ │
+│  ├────────────────┤  │                                                    │ │
+│  │                │  │                                                    │ │
+│  │ 🚶 TRAVEL      │  │                                                    │ │
+│  │ ─────────────  │  │                                                    │ │
+│  │ Status: Idle   │  │                                                    │ │
+│  │ Speed: 24 mi/d │  │                    MAP PANEL                       │ │
+│  │ [Plan] [Start] │  │                  (maximiert)                       │ │
+│  │                │  │                                                    │ │
+│  │ 🎵 AUDIO       │  │              [Hex-Grid mit Party]                  │ │
+│  │ ─────────────  │  │                                                    │ │
+│  │ ♪ Tavern Night │  │                      🎯                            │ │
+│  │ [⏸] [⏭] [🔊]  │  │                                                    │ │
+│  │                │  │                                                    │ │
+│  │ 👥 PARTY       │  │                                                    │ │
+│  │ ─────────────  │  │                                                    │ │
+│  │ 4 PCs • All OK │  │                                                    │ │
+│  │ [Manage →]     │  │                                                    │ │
+│  │                │  │                                                    │ │
+│  │ ⚔️ ACTIONS     │  │                                                    │ │
+│  │ ─────────────  │  │                                                    │ │
+│  │ [🎲 Encounter] │  │  [Overlays: ☐Weather ☑️Territory ☐Factions]        │ │
+│  │ [📍 Teleport]  │  │                                                    │ │
+│  │                │  │                                                    │ │
+│  └────────────────┘  └────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Collapsed Sidebar
+### Collapsed Quick-Controls
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  [≡]  │ ⏮ ▶ ⏭ │ 📅 15. Mirtul │ ⚙️                                        │
-├───────┴─────────┴───────────────┴───────────────────────────────────────────┤
+│  [≡] SessionRunner    │ 📅 15. Mirtul, 14:30 │ ⏮ ▶ ⏭ │ ☀️ Clear    │ ⚙️  │
+├───────────────────────┴──────────────────────┴─────────┴─────────────┴──────┤
 │                                                                              │
-│  ┌────────────────────────────────────────────────────────────┐  ┌────────┐ │
-│  │                                                            │  │  [📍]  │ │
-│  │                                                            │  │  [☀️]  │ │
-│  │                                                            │  │  [👥]  │ │
-│  │                       MAP PANEL                            │  │  [⚔️]  │ │
-│  │                   (Maximierte Ansicht)                     │  │  [📜]  │ │
-│  │                                                            │  │  [🎵]  │ │
-│  │                                                            │  │  [📖]  │ │
-│  │                                                            │  └────────┘ │
-│  └────────────────────────────────────────────────────────────┘             │
+│  ┌────┐  ┌──────────────────────────────────────────────────────────────┐   │
+│  │[🚶]│  │                                                              │   │
+│  │[🎵]│  │                                                              │   │
+│  │[👥]│  │                      MAP PANEL                               │   │
+│  │[⚔️]│  │                   (Maximierte Ansicht)                       │   │
+│  │    │  │                                                              │   │
+│  │    │  │                                                              │   │
+│  └────┘  └──────────────────────────────────────────────────────────────┘   │
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -86,268 +86,129 @@ Der SessionRunner ist die Hauptansicht fuer den aktiven Spielbetrieb. Er kombini
 
 ## Panel-Beschreibungen
 
+### Header
+
+Kompakte Anzeige von Zeit und Wetter mit Quick-Controls.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  [≡] SessionRunner    │ 📅 15. Mirtul, 14:30 │ ⏮ ▶ ⏭ │ ☀️ Clear    │ ⚙️  │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+| Element | Funktion |
+|---------|----------|
+| `[≡]` | Menu (Quick-Controls ein/ausblenden) |
+| `📅 15. Mirtul, 14:30` | Aktuelles Datum/Zeit (Klick → Jump-to-Date) |
+| `⏮ ▶ ⏭` | Time-Advance (-1h, Play/Pause, +1h) |
+| `☀️ Clear` | Wetter-Status (Klick → Weather-Details in DetailView) |
+| `⚙️` | Settings |
+
+### Quick-Controls (Sidebar links)
+
+Kompakte Controls fuer haeufig benoetigte Aktionen.
+
+```
+┌────────────────┐
+│ QUICK CONTROLS │
+├────────────────┤
+│                │
+│ 🚶 TRAVEL      │
+│ ─────────────  │
+│ Status: Idle   │
+│ Speed: 24 mi/d │
+│ [Plan] [Start] │
+│                │
+│ 🎵 AUDIO       │
+│ ─────────────  │
+│ ♪ Tavern Night │
+│ [⏸] [⏭] [🔊]  │
+│                │
+│ 👥 PARTY       │
+│ ─────────────  │
+│ 4 PCs • All OK │
+│ [Manage →]     │
+│                │
+│ ⚔️ ACTIONS     │
+│ ─────────────  │
+│ [🎲 Encounter] │
+│ [📍 Teleport]  │
+│                │
+└────────────────┘
+```
+
+#### Travel-Sektion
+
+| Element | Funktion |
+|---------|----------|
+| Status | `Idle`, `Planning`, `Traveling`, `Paused` |
+| Speed | Aktuelle Reisegeschwindigkeit |
+| `[Plan]` | Startet Route-Planung auf Map |
+| `[Start]` / `[Pause]` | Reise starten/pausieren |
+
+Bei aktiver Reise:
+```
+│ 🚶 TRAVEL      │
+│ ─────────────  │
+│ Traveling...   │
+│ 12.4 / 48 mi   │
+│ ETA: 18:30     │
+│ [Pause] [Stop] │
+```
+
+#### Audio-Sektion
+
+| Element | Funktion |
+|---------|----------|
+| Track-Name | Aktueller Music-Track |
+| `[⏸]` | Play/Pause |
+| `[⏭]` | Skip to next |
+| `[🔊]` | Volume (Klick → Slider) |
+
+#### Party-Sektion
+
+| Element | Funktion |
+|---------|----------|
+| Status | Anzahl PCs, Health-Summary |
+| `[Manage →]` | Oeffnet Party-Management (Modal oder DetailView) |
+
+Health-Summary: `All OK`, `1 Wounded`, `2 Critical`, etc.
+
+#### Actions-Sektion
+
+| Element | Funktion |
+|---------|----------|
+| `[🎲 Encounter]` | Generiert Encounter (oeffnet DetailView) |
+| `[📍 Teleport]` | Teleport-Modus (Klick auf Map) |
+
 ### Map-Panel
 
 Das zentrale Element - zeigt die aktive Karte mit Party-Position.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Map: Silverwood Region                        [🔍+] [🔍-]  │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│     ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡                                    │
-│    ⬡ 🌲 🌲 ⛰️ ⛰️ 🌲 🌲 ⬡                                   │
-│     ⬡ 🌲 🏠 🌲 🌲 🌲 ⬡ ⬡                                    │
-│    ⬡ 🌲 🌲 🎯 🌲 🌲 ⬡ ⬡       🎯 = Party Position          │
-│     ⬡ 🌊 🌊 🌲 🌲 ⬡ ⬡ ⬡       🏠 = Location (POI)          │
-│    ⬡ ⬡ 🌊 🌊 🌲 ⬡ ⬡ ⬡        ⛰️ = Mountain                 │
-│     ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡                                       │
-│                                                             │
-│  [Overlays: ☐Wetter ☑️Territory ☐Encounter-Zones]           │
-└─────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│                                                                │
+│     ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡                                       │
+│    ⬡ 🌲 🌲 ⛰️ ⛰️ 🌲 🌲 ⬡                                      │
+│     ⬡ 🌲 🏠 🌲 🌲 🌲 ⬡ ⬡          🎯 = Party Position         │
+│    ⬡ 🌲 🌲 🎯 🌲 🌲 ⬡ ⬡          🏠 = Location (POI)         │
+│     ⬡ 🌊 🌊 🌲 🌲 ⬡ ⬡ ⬡          ⛰️ = Mountain                │
+│    ⬡ ⬡ 🌊 🌊 🌲 ⬡ ⬡ ⬡                                        │
+│     ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡                                         │
+│                                                                │
+│  [Overlays: ☐Weather ☑️Territory ☐Factions] [🔍+] [🔍-]        │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 **Interaktionen:**
-- Klick auf Tile → Context-Panel aktualisiert
-- Rechtsklick → Kontext-Menu (Set Waypoint, Teleport, Info)
-- Drag → Pan
-- Scroll → Zoom
 
-### Travel-Controls
-
-Steuerung fuer Overland-Travel.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  🚶 TRAVEL                                                  │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Route: Silverwood → Dragon's Rest (3 waypoints)            │
-│                                                             │
-│  ╭────────●────────────────────────────────────╮            │
-│  │        ↑                                    │            │
-│  │     Current                              End│            │
-│  ╰─────────────────────────────────────────────╯            │
-│  Progress: 12.4 / 48 miles (26%)                            │
-│                                                             │
-│  ┌─────────────────────────────────────────────┐            │
-│  │  [📍 Plan]  [▶ Start]  [⏸ Pause]  [⏩ x2]  │            │
-│  └─────────────────────────────────────────────┘            │
-│                                                             │
-│  Next Check: 2.3 hours │ Arrival: Tomorrow, Midday          │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**States:**
-- `idle` - Keine aktive Route
-- `planning` - Route wird geplant (Waypoints setzen)
-- `traveling` - Reise aktiv (Animation)
-- `paused` - Reise pausiert
-- `encounter` - Encounter unterbrochen Reise
-
-### Context-Panel
-
-Zeigt Kontext zur aktuellen Party-Position.
-
-```
-┌────────────────────────────┐
-│  📍 CONTEXT                │
-├────────────────────────────┤
-│                            │
-│  Location                  │
-│  ─────────────────────────│
-│  Silverwood (Forest)       │
-│  Hex: (12, 8)              │
-│  Elevation: 450m           │
-│                            │
-│  ☀️ Weather                │
-│  ─────────────────────────│
-│  Clear Skies               │
-│  Temp: 18°C (comfortable)  │
-│  Wind: 8 mph NW            │
-│  Humidity: 45%             │
-│                            │
-│  Effects:                  │
-│  • Normal visibility       │
-│  • No travel penalty       │
-│                            │
-│  👥 Party Status           │
-│  ─────────────────────────│
-│  Speed: 24 mi/day          │
-│  Mode: On Foot             │
-│  Encumbrance: Normal       │
-│  Rations: 12 days          │
-│  Water: 8 days             │
-│                            │
-│  [Manage Party →]          │
-└────────────────────────────┘
-```
-
-### Time-Panel (Header)
-
-Kompakte Zeit-Anzeige im Header mit Quick-Controls.
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  ⏮  ▶  ⏭  │  📅 15. Mirtul, Jahr 1492 DR  │  🕐 14:30 (Day)     │
-├──────────────────────────────────────────────────────────────────┤
-│  Buttons:                                                        │
-│  ⏮ = -1 hour    ▶ = Resume/Pause travel    ⏭ = +1 hour         │
-│                                                                  │
-│  Klick auf Datum → Jump-to-Date Dialog                          │
-│  Klick auf Uhrzeit → Time-Segment-Auswahl (Dawn/Morning/...)    │
-└──────────────────────────────────────────────────────────────────┘
-```
-
-### Encounter-Panel
-
-Encounter-Generierung und aktiver Combat.
-
-```
-┌────────────────────────────┐         ┌────────────────────────────┐
-│  ⚔️ ENCOUNTER              │         │  ⚔️ ACTIVE COMBAT          │
-├────────────────────────────┤         ├────────────────────────────┤
-│                            │         │                            │
-│  No active encounter       │   →     │  Round 3                   │
-│                            │         │                            │
-│  ┌──────────────────────┐  │         │  Initiative:               │
-│  │  [🎲 Generate]       │  │         │  ─────────────────────────│
-│  │  [📋 From Quest]     │  │         │  ▶ 18: Goblin Boss        │
-│  │  [✏️ Custom]         │  │         │    15: Ragnar (Player)     │
-│  └──────────────────────┘  │         │    12: Goblin 1            │
-│                            │         │    10: Elara (Player)      │
-│  Last: Goblin Patrol       │         │     8: Goblin 2 💀         │
-│  (resolved - 200 XP)       │         │                            │
-│                            │         │  [Damage] [Heal] [Cond.]   │
-│                            │         │  [Next Turn] [End Combat]  │
-└────────────────────────────┘         └────────────────────────────┘
-```
-
-### Audio-Panel
-
-Musik und Ambience-Steuerung.
-
-```
-┌──────────────────────────────────────┐
-│  🎵 AUDIO                            │
-├──────────────────────────────────────┤
-│                                      │
-│  Music                               │
-│  ───────────────────────────────────│
-│  ♪ Tavern Night (Medieval)           │
-│  [⏸] [⏭ Skip] [🔊────●──] 70%       │
-│                                      │
-│  Ambience                            │
-│  ───────────────────────────────────│
-│  🌲 Forest Day                       │
-│  [⏸] [🔊──●────] 40%                │
-│                                      │
-│  Mode: [Auto ●] [Manual ○]           │
-│  Auto-selects based on context       │
-└──────────────────────────────────────┘
-```
-
-### Quest-Log (Mini)
-
-Kompakte Quest-Uebersicht.
-
-```
-┌───────────────────────────────────┐
-│  📜 ACTIVE QUESTS                 │
-├───────────────────────────────────┤
-│                                   │
-│  ● Goblin Cave            [2/4]  │
-│    └ Next: Find entrance          │
-│                                   │
-│  ● The Missing Ring       [1/3]  │
-│    └ Next: Talk to jeweler        │
-│                                   │
-│  ○ Dragon's Hoard (hidden)       │
-│                                   │
-│  [View All Quests →]              │
-└───────────────────────────────────┘
-```
-
-### Journal (Mini)
-
-Letzte Eintraege und Quick-Note.
-
-```
-┌────────────────────────────┐
-│  📖 JOURNAL                │
-├────────────────────────────┤
-│                            │
-│  Recent:                   │
-│  • 14:20 - Arrived at      │
-│    Silverwood              │
-│  • 12:00 - Weather changed │
-│    to Clear                │
-│  • 10:30 - Encounter:      │
-│    Wolf Pack (resolved)    │
-│                            │
-│  [+ Quick Note]            │
-│  [View Full Journal →]     │
-└────────────────────────────┘
-```
-
-### Shop-Panel
-
-Interaktion mit Haendlern (Kaufen/Verkaufen).
-
-```
-┌─────────────────────────────────────────────────────┐
-│  🏪 Blacksmith's Forge                              │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Search: [____________________] [Filter: All ▼]    │
-│                                                     │
-│  ───────────────────────────────────────────────── │
-│  🗡️ Longsword                   15 gp    [Buy]     │
-│  🛡️ Shield                      10 gp    [Buy]     │
-│  ⚔️ Greatsword                  50 gp    [Buy]     │
-│  🥋 Chain Mail                  75 gp    [Buy]     │
-│  🥋 Plate Armor (out of stock)  ---      [---]     │
-│  ───────────────────────────────────────────────── │
-│                                                     │
-│  [Load More...]                    Showing 5/23    │
-│                                                     │
-├─────────────────────────────────────────────────────┤
-│  💰 Party Gold: 250 gp                              │
-│  [Sell Items...]                                    │
-└─────────────────────────────────────────────────────┘
-```
-
-**Interaktionen:**
-- `[Buy]` → Item wird dem Party-Inventar hinzugefuegt, Gold abgezogen
-- `[Sell Items...]` → Oeffnet Party-Inventar mit Verkaufs-Optionen
-- Filter: Nach Item-Typ (Weapons, Armor, Potions, etc.)
-
-**Verkaufs-Modus:**
-
-```
-┌─────────────────────────────────────────────────────┐
-│  🏪 Sell to Blacksmith's Forge                      │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Party Inventory:                                   │
-│  ───────────────────────────────────────────────── │
-│  🗡️ Rusty Sword                  2 gp    [Sell]    │
-│  🛡️ Cracked Shield               1 gp    [Sell]    │
-│  📦 Goblin Trinkets              5 sp    [Sell]    │
-│  ───────────────────────────────────────────────── │
-│                                                     │
-├─────────────────────────────────────────────────────┤
-│  💰 Party Gold: 250 gp                              │
-│  [Back to Shop]                                     │
-└─────────────────────────────────────────────────────┘
-```
-
-**Shop-Oeffnung:**
-- Automatisch wenn Party Location mit Shop betritt
-- Manuell via Location-Context-Menu
-- GM kann Shop jederzeit oeffnen
-
-→ Entity-Schema: [Shop.md](../domain/Shop.md)
+| Aktion | Effekt |
+|--------|--------|
+| Klick auf Tile | Zeigt Location-Info in DetailView |
+| Rechtsklick | Kontext-Menu (Set Waypoint, Teleport, Info) |
+| Drag | Pan |
+| Scroll | Zoom |
+| Doppelklick auf POI | Oeffnet Location-Tab in DetailView |
 
 ---
 
@@ -356,13 +217,13 @@ Interaktion mit Haendlern (Kaufen/Verkaufen).
 ### Flow: Reise starten
 
 ```
-User klickt [Plan Route]
+User klickt [Plan] in Quick-Controls
     │
     ▼
 Map-Panel wechselt in Planning-Mode
     │ (Waypoints per Klick setzen)
     ▼
-User klickt [Start]
+User klickt [Start] in Quick-Controls
     │
     ▼
 ViewModel: eventBus.publish('travel:start-requested')
@@ -371,20 +232,23 @@ ViewModel: eventBus.publish('travel:start-requested')
 Travel-Feature startet Animation
     │
     ├── Time-Feature: Zeit wird vorgerueckt
-    ├── Weather-Feature: Wetter aktualisiert
-    └── Context-Panel: Location aktualisiert
+    ├── Weather-Feature: Wetter aktualisiert (Header)
+    └── Quick-Controls: Travel-Status aktualisiert
     │
     ▼
 Bei Encounter-Check erfolgreich:
     │
     ▼
-Travel pausiert, Encounter-Panel zeigt Preview
+Travel pausiert → encounter:generated Event
+    │
+    ▼
+DetailView oeffnet automatisch Encounter-Tab
 ```
 
-### Flow: Encounter starten
+### Flow: Encounter generieren (manuell)
 
 ```
-User klickt [Generate] im Encounter-Panel
+User klickt [🎲 Encounter] in Quick-Controls
     │
     ▼
 ViewModel: eventBus.publish('encounter:generate-requested')
@@ -397,36 +261,57 @@ Encounter-Feature generiert basierend auf:
     └── Zeit (Tag/Nacht)
     │
     ▼
-Encounter-Preview wird angezeigt
+encounter:generated Event
     │
     ▼
-User klickt [Start Combat]
+DetailView oeffnet automatisch Encounter-Tab
     │
     ▼
-Encounter-Panel wechselt zu Combat-Mode
-Combat-Feature uebernimmt
+User sieht Preview in DetailView
+    │
+    ▼
+User klickt [Start Combat] in DetailView
+    │
+    ▼
+combat:started Event → DetailView wechselt zu Combat-Tab
 ```
 
 ### Flow: Zeit manuell aendern
 
 ```
-User klickt auf Zeit im Header
+User klickt ⏭ im Header
     │
     ▼
-Time-Segment-Dropdown erscheint
-    │
-    ▼
-User waehlt "Evening"
-    │
-    ▼
-ViewModel: eventBus.publish('time:advance-requested')
+ViewModel: eventBus.publish('time:advance-requested', { hours: 1 })
     │
     ▼
 Time-Feature rueckt Zeit vor
     │
     ├── Weather-Feature: Wetter-Update
-    ├── Audio-Feature: Track-Wechsel (Evening-Mood)
-    └── Context-Panel: Day-Cycle aktualisiert
+    ├── Audio-Feature: Track-Wechsel (falls Mood-Change)
+    └── Header: Zeit + Weather aktualisiert
+```
+
+### Flow: Location-Details anzeigen
+
+```
+User klickt auf Tile in Map-Panel
+    │
+    ▼
+ViewModel: selectedTile = clickedTile
+    │
+    ▼
+eventBus.publish('ui:tile-selected', { coordinate })
+    │
+    ▼
+DetailView oeffnet Location-Tab (falls nicht bereits offen)
+    │
+    ▼
+Location-Tab zeigt Tile-Details:
+    ├── Terrain, Elevation
+    ├── POIs auf diesem Tile
+    ├── Fraktions-Praesenz
+    └── NPCs (falls bekannt)
 ```
 
 ---
@@ -452,22 +337,24 @@ interface SessionRunnerState {
   daySegment: DaySegment;
 
   // Weather
-  currentWeather: Weather;
-
-  // Encounter
-  activeEncounter: Encounter | null;
-  combatState: CombatState | null;
+  currentWeather: WeatherSummary;     // Kompakt fuer Header
 
   // Audio
   currentMusic: Track | null;
   currentAmbience: Track | null;
   audioMode: 'auto' | 'manual';
 
+  // Party (kompakt)
+  partySize: number;
+  partyHealthSummary: HealthSummary;
+
   // UI
-  sidebarCollapsed: boolean;
-  activePanels: PanelId[];
+  quickControlsCollapsed: boolean;
+  selectedTile: HexCoordinate | null;
 }
 ```
+
+**Hinweis:** Encounter- und Combat-State werden in [DetailView](DetailView.md) verwaltet.
 
 ### Event-Subscriptions
 
@@ -478,12 +365,9 @@ const subscriptions = [
   'travel:position-changed',
   'time:state-changed',
   'weather:state-changed',
-  'encounter:generated',
-  'encounter:resolved',
-  'combat:state-changed',
   'audio:track-changed',
   'map:loaded',
-  'quest:objective-completed'
+  'party:state-changed'
 ];
 ```
 
@@ -495,12 +379,12 @@ const subscriptions = [
 |----------|--------|
 | `Space` | Travel: Start/Pause |
 | `Escape` | Cancel aktuelle Aktion |
-| `T` | Travel-Panel fokussieren |
-| `E` | Encounter generieren |
-| `J` | Quick-Note oeffnen |
+| `T` | Travel-Sektion fokussieren |
+| `E` | Encounter generieren (oeffnet DetailView) |
 | `1-6` | Time-Segment springen |
 | `+`/`-` | Zoom In/Out |
 | `Arrow Keys` | Pan Map |
+| `[` / `]` | Quick-Controls ein/ausblenden |
 
 ---
 
@@ -509,18 +393,14 @@ const subscriptions = [
 | Komponente | MVP | Post-MVP | Notiz |
 |------------|:---:|:--------:|-------|
 | Map-Panel mit Party-Token | ✓ | | Kern-Ansicht |
-| Travel-Controls (basic) | ✓ | | Route + Start/Pause |
-| Context-Panel (Location) | ✓ | | Aktuelle Tile-Info |
-| Time-Header | ✓ | | Datum/Uhrzeit |
-| Weather-Anzeige | ✓ | | Im Context-Panel |
-| Encounter-Panel (Generate) | ✓ | | Basis-Generierung |
-| Combat-Integration | ✓ | | Initiative-Tracker |
-| Audio-Panel | ✓ | | Auto-Selection |
-| Shop-Panel | ✓ | | Kaufen/Verkaufen |
-| Quest-Log Mini | | mittel | Kompakt-Ansicht |
-| Journal Mini | | mittel | Quick-Note |
-| Collapsed Sidebar | | niedrig | Responsive UI |
+| Quick-Controls Sidebar | ✓ | | Travel, Audio, Party, Actions |
+| Header (Time, Weather) | ✓ | | Kompakte Info-Anzeige |
+| Travel-Sektion | ✓ | | Plan/Start/Pause |
+| Audio-Sektion | ✓ | | Play/Pause/Skip |
+| Party-Sektion | ✓ | | Status + Manage-Link |
+| Actions-Sektion | ✓ | | Encounter-Button |
+| Collapsed Quick-Controls | | mittel | Responsive UI |
 
 ---
 
-*Siehe auch: [Application.md](../architecture/Application.md) | [Travel-System.md](../features/Travel-System.md) | [Combat-System.md](../features/Combat-System.md) | [Weather-System.md](../features/Weather-System.md)*
+*Siehe auch: [DetailView.md](DetailView.md) | [Application.md](../architecture/Application.md) | [Travel-System.md](../features/Travel-System.md) | [Weather-System.md](../features/Weather-System.md)*

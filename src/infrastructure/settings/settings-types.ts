@@ -37,6 +37,18 @@ export interface SettingsService {
   getPartiesPath(): string;
 
   /**
+   * Get the resolved path for time state storage.
+   * Returns: `{basePath}/time`
+   */
+  getTimePath(): string;
+
+  /**
+   * Get the resolved path for almanac (calendar) storage.
+   * Returns: `{basePath}/almanac`
+   */
+  getAlmanacPath(): string;
+
+  /**
    * Subscribe to settings changes.
    * Returns unsubscribe function.
    */

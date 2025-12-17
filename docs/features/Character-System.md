@@ -1,5 +1,8 @@
 # Character-System
 
+> **Lies auch:** [Inventory-System](Inventory-System.md), [Item](../domain/Item.md)
+> **Wird benoetigt von:** Travel, Combat, Party
+
 Verwaltung von Player Characters (PCs): Schema, Tracking, Integration mit anderen Systemen.
 
 **Design-Philosophie:** PCs haben spezifische Daten die NPCs nicht haben (HP-Tracking, Inventory). Das MVP-Schema fokussiert sich auf das, was fuer Encounter-Balancing und Travel-Berechnung benoetigt wird.

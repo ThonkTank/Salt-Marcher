@@ -1,5 +1,8 @@
 # Library
 
+> **Lies auch:** [EntityRegistry](../architecture/EntityRegistry.md), [Application](../architecture/Application.md)
+> **Konsumiert:** Alle Entities
+
 Die zentrale Datenverwaltung fuer alle Entity-Typen.
 
 **Pfad:** `src/application/library/`

@@ -1,5 +1,8 @@
 # Map-Feature
 
+> **Lies auch:** [Map](../domain/Map.md), [Terrain](../domain/Terrain.md), [Map-Navigation](../domain/Map-Navigation.md)
+> **Wird benoetigt von:** Travel, Weather, Cartographer, Dungeon
+
 Single Source of Truth fuer Map-Typen, Map-Content und Multi-Map-Verhalten.
 
 **Design-Philosophie:** Maps sind der Container fuer alle ortsgebundenen Daten. Jeder Map-Typ hat seinen eigenen Content-Typ - kein Unified Schema, da Verhalten fundamental unterschiedlich ist.

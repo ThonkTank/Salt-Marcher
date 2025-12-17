@@ -1,5 +1,8 @@
 # Testing
 
+> **Lies auch:** [Conventions](Conventions.md)
+> **Wird benoetigt von:** Tests schreiben
+
 Test-Patterns pro Layer und Mock-Strategien.
 
 ---

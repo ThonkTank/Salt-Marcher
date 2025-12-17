@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { entityIdSchema } from './common';
+import { terrainWeatherRangesSchema } from './weather';
 
 // ============================================================================
 // Terrain Definition Schema
@@ -53,6 +54,13 @@ export const terrainDefinitionSchema = z.object({
 
   /** Whether carriage travel is blocked */
   blocksCarriage: z.boolean().optional(),
+
+  /**
+   * Weather ranges for this terrain type.
+   * Used by Weather-System for terrain-based weather generation.
+   * Optional - defaults to plains-like values if not specified.
+   */
+  weatherRanges: terrainWeatherRangesSchema.optional(),
 });
 
 /** Inferred type from schema */

@@ -1,5 +1,8 @@
 # Cartographer
 
+> **Lies auch:** [Map-Feature](../features/Map-Feature.md), [Map](../domain/Map.md), [Terrain](../domain/Terrain.md)
+> **Konsumiert:** Map
+
 Der Karten-Editor fuer Hex-Overland und Grid-Dungeon Maps.
 
 **Pfad:** `src/application/cartographer/`

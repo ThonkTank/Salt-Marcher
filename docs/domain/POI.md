@@ -1,5 +1,8 @@
 # POI (Point of Interest)
 
+> **Lies auch:** [Map-Navigation](Map-Navigation.md), [Map](Map.md)
+> **Wird benoetigt von:** Travel, Quest
+
 Unified System fuer allen Tile-Content: Eingaenge, Fallen, Schaetze, Landmarken und Objekte.
 
 **Design-Philosophie:** POIs sind das einheitliche System fuer alles, was auf einem Map-Tile platziert werden kann. Jeder POI-Typ hat type-spezifische Eigenschaften. NPCs sind KEINE POIs - sie werden separat verwaltet.

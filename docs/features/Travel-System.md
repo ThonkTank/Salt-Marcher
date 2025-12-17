@@ -1,5 +1,8 @@
 # Travel-System
 
+> **Lies auch:** [Map-Feature](Map-Feature.md), [Time-System](Time-System.md), [Weather-System](Weather-System.md)
+> **Wird benoetigt von:** SessionRunner
+
 Detaillierte Spezifikation des Reisesystems.
 
 ---
@@ -154,7 +157,7 @@ Terrain, Wetter und Tageszeit beeinflussen die **Kreatur-Auswahl**, nicht die En
 | Tageszeit | Nein | Ja (Filter) |
 | Population | **Ja** | Nein |
 
-→ Details zur Kreatur-Auswahl: [Encounter-Feature.md](Encounter-Feature.md#creature-selection)
+→ Details zur Kreatur-Auswahl: [Encounter-System.md](Encounter-System.md#kreatur-auswahl)
 
 ---
 
@@ -295,4 +298,4 @@ eventBus.publish({
 
 ---
 
-*Siehe auch: [Map.md](../domain/Map.md) | [Inventory-System.md](Inventory-System.md) (Encumbrance) | [Weather-System.md](Weather-System.md) | [Encounter-Types.md](Encounter-Types.md)*
+*Siehe auch: [Map.md](../domain/Map.md) | [Inventory-System.md](Inventory-System.md) (Encumbrance) | [Weather-System.md](Weather-System.md) | [Encounter-System.md](Encounter-System.md)*

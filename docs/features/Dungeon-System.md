@@ -1,5 +1,8 @@
 # Dungeon-System
 
+> **Lies auch:** [Map-Feature](Map-Feature.md), [Combat-System](Combat-System.md)
+> **Wird benoetigt von:** SessionRunner
+
 Grid-basierte Dungeon Maps mit Fog of War, Lichtquellen und automatischen Triggern.
 
 **Design-Philosophie:** Dungeon Maps sind ein integriertes, einheitliches Notiz-Tool fuer den GM mit Simulation von Sichtbarkeit, Sound und automatischen Triggern.
@@ -330,4 +333,4 @@ Dungeon-Maps werden im Cartographer erstellt (kein separates Tool):
 
 ---
 
-*Siehe auch: [Cartographer.md](../application/Cartographer.md) (Map-Editor) | [Travel-System.md](Travel-System.md) (fuer Overworld-Navigation) | [Combat-System.md](Combat-System.md) | [Encounter-Types.md](Encounter-Types.md)*
+*Siehe auch: [Cartographer.md](../application/Cartographer.md) (Map-Editor) | [Travel-System.md](Travel-System.md) (fuer Overworld-Navigation) | [Combat-System.md](Combat-System.md) | [Encounter-System.md](Encounter-System.md)*

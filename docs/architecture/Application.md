@@ -1,5 +1,8 @@
 # Application Layer
 
+> **Lies auch:** [Features](Features.md), [Data-Flow](Data-Flow.md)
+> **Wird benoetigt von:** SessionRunner, Library, Cartographer
+
 UI-Komponenten und deren State-Management via MVVM Pattern.
 
 **Pfad:** `src/application/`
@@ -56,6 +59,57 @@ Jeder ToolView hat **eine** View und **ein** ViewModel (1:1 Beziehung).
 │  └─────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## View-Architektur: SessionRunner + DetailView
+
+Das Session-Management nutzt zwei Views, die parallel arbeiten:
+
+| View | Position | Zweck |
+|------|----------|-------|
+| **SessionRunner** | Center Leaf | Map + Quick-Controls für schnellen GM-Zugriff |
+| **DetailView** | Right Leaf | Kontextbezogene Detail-Ansichten (Encounter, Combat, Shop, etc.) |
+
+```
+┌────────────────────────────────────┬─────────────────────┐
+│  SessionRunner (Center)            │  DetailView (Right) │
+│  ┌──────┬───────────────────────┐  │  ┌───────────────┐  │
+│  │Quick │                       │  │  │ Tab-Nav       │  │
+│  │Ctrl  │       MAP             │  │  ├───────────────┤  │
+│  │      │                       │  │  │               │  │
+│  │Travel│                       │  │  │ Tab-Inhalt    │  │
+│  │Audio │                       │  │  │ (Encounter,   │  │
+│  │Party │                       │  │  │  Combat, etc.)│  │
+│  │Action│                       │  │  │               │  │
+│  └──────┴───────────────────────┘  │  └───────────────┘  │
+└────────────────────────────────────┴─────────────────────┘
+```
+
+### View-Kommunikation
+
+Die Views kommunizieren **ausschließlich via EventBus** - keine direkten Referenzen:
+
+```typescript
+// SessionRunner: Encounter generieren
+this.eventBus.publish(createEvent('encounter:generate-requested', { position, terrainId }));
+
+// DetailView: Auto-Open bei Event
+this.eventBus.subscribe('encounter:generated', () => {
+  this.setActiveTab('encounter');
+});
+```
+
+### Auto-Open Verhalten (DetailView)
+
+| Event | Aktion |
+|-------|--------|
+| `encounter:generated` | Wechsle zu Encounter-Tab |
+| `combat:started` | Wechsle zu Combat-Tab |
+
+**Priorität:** Combat > Encounter > andere Tabs (Combat unterbricht nie laufende Anzeige außer Encounter).
+
+**Details:** [SessionRunner.md](../application/SessionRunner.md) | [DetailView.md](../application/DetailView.md)
 
 ---
 

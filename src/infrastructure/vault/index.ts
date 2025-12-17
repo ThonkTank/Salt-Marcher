@@ -24,6 +24,16 @@ export {
   type VaultPartyAdapterDeps,
 } from './vault-party-adapter';
 
+export {
+  createVaultTimeAdapter,
+  type VaultTimeAdapterDeps,
+} from './vault-time-adapter';
+
+export {
+  createVaultCalendarAdapter,
+  type VaultCalendarAdapterDeps,
+} from './vault-calendar-adapter';
+
 // ============================================================================
 // In-Memory Adapters (Testing/Development)
 // ============================================================================

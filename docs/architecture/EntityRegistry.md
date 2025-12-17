@@ -1,5 +1,8 @@
 # EntityRegistry
 
+> **Lies auch:** [Core](Core.md)
+> **Wird benoetigt von:** Alle Entities
+
 Zentrale Speicherung und Verwaltung aller persistenten Entities.
 
 **Design-Philosophie:** EntityRegistry ist das einzige System fuer persistente Entity-Definitionen. Features nutzen es fuer Templates, Configs und persistente Daten. Feature-spezifische Runtime-Daten (z.B. Map-Tiles) gehen ueber StoragePorts.
@@ -227,7 +230,7 @@ interface CreatureRef {
 
 > **Wichtig:** Ein NPC referenziert eine CreatureDefinition fuer seine Spielwerte. Die Persoenlichkeit und Geschichte sind NPC-spezifisch. Der `type` in CreatureRef wird fuer NPC-Matching bei Encounters benoetigt.
 
-→ Detaillierte Dokumentation: [Encounter-Feature.md](../features/Encounter-Feature.md#npc-instanziierung)
+→ Detaillierte Dokumentation: [Encounter-System.md](../features/Encounter-System.md#npc-instanziierung)
 
 ---
 
@@ -343,7 +346,7 @@ interface CreatureSlot {
 
 > **NPC-Instanziierung:** NPCs werden erst bei Trigger generiert, nicht bei Definition. Encounter-Templates sind wiederverwendbar.
 
-→ Detaillierte Dokumentation: [Encounter-Feature.md](../features/Encounter-Feature.md)
+→ Detaillierte Dokumentation: [Encounter-System.md](../features/Encounter-System.md)
 
 ---
 

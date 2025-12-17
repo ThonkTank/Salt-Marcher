@@ -1,0 +1,13 @@
+{
+  "$schema": "../../src/core/schemas/party.ts",
+  "description": "Demo party for Travel-Minimal testing. Positioned at map center.",
+  "id": "demo-party-001",
+  "name": "Demo Party",
+  "currentMapId": "test-overworld-001",
+  "position": { "q": 5, "r": 5 },
+  "activeTransport": "foot",
+  "availableTransports": ["foot", "mounted"],
+  "members": [],
+  "createdAt": 1702745600000,
+  "updatedAt": 1702745600000
+}

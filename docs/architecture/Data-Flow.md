@@ -1,5 +1,8 @@
 # Data-Flow
 
+> **Lies auch:** [Features](Features.md), [EventBus](EventBus.md)
+> **Wird benoetigt von:** Application
+
 Diagramme und Beschreibungen wie Daten zwischen Features fliessen.
 
 ---

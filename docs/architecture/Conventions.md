@@ -1,5 +1,7 @@
 # Conventions
 
+> **Wird benoetigt von:** Alle Implementierungen
+
 Allgemeine Konventionen für die SaltMarcher-Entwicklung.
 
 ---

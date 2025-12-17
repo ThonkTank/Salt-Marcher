@@ -1,5 +1,8 @@
 # Terrain
 
+> **Lies auch:** [Map](Map.md)
+> **Wird benoetigt von:** Map-Feature, Weather, Travel
+
 Single Source of Truth fuer Terrain-Definitionen und Custom Terrains.
 
 **Design-Philosophie:** Terrains sind konfigurierbar, nicht hardcoded. User koennen eigene Terrains erstellen. Default-Terrains werden als Presets mitgeliefert.
@@ -228,7 +231,7 @@ function getEligibleCreatures(terrainId: EntityId<'terrain'>): CreatureDefinitio
 }
 ```
 
-→ Details: [Encounter-Feature.md](../features/Encounter-Feature.md)
+→ Details: [Encounter-System.md](../features/Encounter-System.md)
 
 ---
 

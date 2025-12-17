@@ -107,6 +107,10 @@ export {
   createEvent,
   newCorrelationId,
   createEventBus,
+  EventTypes,
+  type EventType,
+  type EventPayloadMap,
+  TimeoutError,
 } from './events';
 
 // Utils

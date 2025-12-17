@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createEventBus, type EventBus } from './event-bus';
 import { createEvent, newCorrelationId } from './domain-events';
+import { TimeoutError } from './timeout-error';
 import { now } from '../types';
 
 describe('EventBus', () => {
@@ -10,7 +11,7 @@ describe('EventBus', () => {
     bus = createEventBus();
   });
 
-  function createTestEvent(type: string, payload: unknown = {}) {
+  function createTestEvent<T = unknown>(type: string, payload: T = {} as T) {
     return createEvent(type, payload, {
       correlationId: newCorrelationId(),
       timestamp: now(),
@@ -224,6 +225,187 @@ describe('EventBus', () => {
       );
 
       expect(receivedIds).toEqual([correlationId, correlationId]);
+    });
+  });
+
+  describe('request', () => {
+    it('resolves with response event matching correlationId', async () => {
+      // Simulate a responder
+      bus.subscribe('test:request', (event) => {
+        // Respond with same correlationId
+        bus.publish(
+          createEvent(
+            'test:response',
+            { result: 'success' },
+            {
+              correlationId: event.correlationId,
+              timestamp: now(),
+              source: 'responder',
+            }
+          )
+        );
+      });
+
+      const requestEvent = createTestEvent('test:request', { query: 'hello' });
+      const response = await bus.request<{ query: string }, { result: string }>(
+        requestEvent,
+        'test:response',
+        1000
+      );
+
+      expect(response.payload.result).toBe('success');
+      expect(response.correlationId).toBe(requestEvent.correlationId);
+    });
+
+    it('rejects with TimeoutError when no response arrives', async () => {
+      const requestEvent = createTestEvent('test:request', { query: 'hello' });
+
+      await expect(
+        bus.request(requestEvent, 'test:response', 50) // 50ms timeout
+      ).rejects.toThrow(TimeoutError);
+    });
+
+    it('includes timeout duration in TimeoutError', async () => {
+      const requestEvent = createTestEvent('test:request', {});
+
+      try {
+        await bus.request(requestEvent, 'test:response', 50);
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(TimeoutError);
+        expect((error as TimeoutError).timeoutMs).toBe(50);
+        expect((error as TimeoutError).message).toContain('test:request');
+        expect((error as TimeoutError).message).toContain('test:response');
+      }
+    });
+
+    it('ignores response events with different correlationId', async () => {
+      // Set up a responder that responds with WRONG correlationId
+      bus.subscribe('test:request', () => {
+        bus.publish(
+          createEvent(
+            'test:response',
+            { result: 'wrong' },
+            {
+              correlationId: newCorrelationId(), // Different correlationId!
+              timestamp: now(),
+              source: 'responder',
+            }
+          )
+        );
+      });
+
+      const requestEvent = createTestEvent('test:request', {});
+
+      // Should timeout because the response has wrong correlationId
+      await expect(
+        bus.request(requestEvent, 'test:response', 50)
+      ).rejects.toThrow(TimeoutError);
+    });
+
+    it('accepts first matching response and ignores subsequent ones', async () => {
+      const callOrder: string[] = [];
+
+      // Responder that sends multiple responses
+      bus.subscribe('test:request', (event) => {
+        // First response
+        bus.publish(
+          createEvent(
+            'test:response',
+            { result: 'first' },
+            {
+              correlationId: event.correlationId,
+              timestamp: now(),
+              source: 'responder',
+            }
+          )
+        );
+        callOrder.push('first-sent');
+
+        // Second response (should be ignored)
+        setTimeout(() => {
+          bus.publish(
+            createEvent(
+              'test:response',
+              { result: 'second' },
+              {
+                correlationId: event.correlationId,
+                timestamp: now(),
+                source: 'responder',
+              }
+            )
+          );
+          callOrder.push('second-sent');
+        }, 10);
+      });
+
+      const requestEvent = createTestEvent('test:request', {});
+      const response = await bus.request<unknown, { result: string }>(
+        requestEvent,
+        'test:response',
+        1000
+      );
+
+      expect(response.payload.result).toBe('first');
+
+      // Wait for second response to be sent
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(callOrder).toContain('second-sent');
+    });
+
+    it('cleans up subscription after receiving response', async () => {
+      bus.subscribe('test:request', (event) => {
+        bus.publish(
+          createEvent(
+            'test:response',
+            {},
+            {
+              correlationId: event.correlationId,
+              timestamp: now(),
+              source: 'responder',
+            }
+          )
+        );
+      });
+
+      const initialCount = bus.subscriberCount('test:response');
+      const requestEvent = createTestEvent('test:request', {});
+
+      await bus.request(requestEvent, 'test:response', 1000);
+
+      // Subscription should be cleaned up
+      expect(bus.subscriberCount('test:response')).toBe(initialCount);
+    });
+
+    it('cleans up subscription after timeout', async () => {
+      const initialCount = bus.subscriberCount('test:response');
+      const requestEvent = createTestEvent('test:request', {});
+
+      try {
+        await bus.request(requestEvent, 'test:response', 50);
+      } catch {
+        // Expected timeout
+      }
+
+      // Subscription should be cleaned up
+      expect(bus.subscriberCount('test:response')).toBe(initialCount);
+    });
+
+    it('uses default timeout of 5000ms', async () => {
+      vi.useFakeTimers();
+
+      const requestEvent = createTestEvent('test:request', {});
+      const promise = bus.request(requestEvent, 'test:response');
+
+      // Advance time by 4999ms - should not reject yet
+      vi.advanceTimersByTime(4999);
+
+      // Advance remaining 2ms - now should reject
+      vi.advanceTimersByTime(2);
+
+      await expect(promise).rejects.toThrow(TimeoutError);
+
+      vi.useRealTimers();
     });
   });
 });

@@ -6,7 +6,14 @@
 
 // Types
 export { VIEW_TYPE_SESSION_RUNNER } from './types';
-export type { RenderState, RenderHint, TravelInfo } from './types';
+export type {
+  RenderState,
+  RenderHint,
+  TravelInfo,
+  HeaderState,
+  SidebarState,
+  WeatherSummary,
+} from './types';
 
 // ViewModel
 export {
@@ -25,7 +32,9 @@ export {
 // Panels (for testing/customization)
 export {
   createMapCanvas,
-  createControlsPanel,
+  createHeaderPanel,
+  createSidebarPanel,
   type MapCanvasPanel,
-  type ControlsPanel,
+  type HeaderPanel,
+  type SidebarPanel,
 } from './panels';

@@ -8,7 +8,7 @@
 
 /**
  * All supported entity types for the EntityRegistry pattern.
- * MVP: 17 types (15 core + track + party)
+ * MVP: 18 types (15 core + poi + track + party)
  */
 export type EntityType =
   | 'creature'
@@ -18,6 +18,7 @@ export type EntityType =
   | 'item'
   | 'map'
   | 'location'
+  | 'poi' // Points of Interest (used in Faction territory, NPC location)
   | 'maplink'
   | 'terrain'
   | 'quest'
@@ -104,6 +105,7 @@ export type FactionId = EntityId<'faction'>;
 export type ItemId = EntityId<'item'>;
 export type MapId = EntityId<'map'>;
 export type LocationId = EntityId<'location'>;
+export type PoiId = EntityId<'poi'>;
 export type MaplinkId = EntityId<'maplink'>;
 export type TerrainId = EntityId<'terrain'>;
 export type QuestId = EntityId<'quest'>;

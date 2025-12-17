@@ -1,5 +1,8 @@
 # Inventory-System
 
+> **Lies auch:** [Item](../domain/Item.md), [Character-System](Character-System.md)
+> **Wird benoetigt von:** Party, Shop, Loot
+
 Verwaltung von Character-Inventaren: Items, Gewicht, Encumbrance, Rationen.
 
 **Design-Philosophie:** Automatisiere strikt algorithmische Regeln, bei denen der GM keine Kreativitaet aufwenden muss - nur mentale Energie zum Merken.

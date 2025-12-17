@@ -1,5 +1,8 @@
 # Events-Catalog
 
+> **Lies auch:** [EventBus](EventBus.md)
+> **Wird benoetigt von:** Alle Features mit Events
+
 **Single Source of Truth** fuer alle Domain-Events in SaltMarcher.
 
 > **WICHTIG:** Jedes Event MUSS hier definiert sein. Feature-Docs referenzieren nur - sie definieren keine neuen Events.
@@ -24,6 +27,19 @@
 ## time:*
 
 Zeit-Verwaltung und Kalender.
+
+### Implementierungs-Status
+
+| Event | Status | Seit |
+|-------|--------|------|
+| `time:advance-requested` | ✅ | 2.5 |
+| `time:set-requested` | ✅ | 2.5 |
+| `time:set-calendar-requested` | ❌ | - |
+| `time:state-changed` | ✅ | 2.5 |
+| `time:segment-changed` | ✅ | 2.5 |
+| `time:day-changed` | ✅ | 2.5 |
+| `time:calendar-changed` | ❌ | - |
+| `time:calendar-change-failed` | ❌ | - |
 
 ```typescript
 // Requests
@@ -76,6 +92,27 @@ Zeit-Verwaltung und Kalender.
 ## travel:*
 
 Reise-System fuer Hex-Overland-Maps.
+
+### Implementierungs-Status
+
+| Event | Status | Seit | Anmerkung |
+|-------|--------|------|-----------|
+| `travel:move-requested` | ✅ | 2.5 | MVP-spezifisch (Nachbar-Hex) |
+| `travel:position-changed` | ✅ | 2.5 | |
+| `travel:plan-requested` | ❌ | - | Full Travel Workflow |
+| `travel:start-requested` | ❌ | - | Full Travel Workflow |
+| `travel:pause-requested` | ❌ | - | Full Travel Workflow |
+| `travel:resume-requested` | ❌ | - | Full Travel Workflow |
+| `travel:cancel-requested` | ❌ | - | Full Travel Workflow |
+| `travel:state-changed` | ❌ | - | Full Travel Workflow |
+| `travel:route-planned` | ❌ | - | Full Travel Workflow |
+| `travel:started` | ❌ | - | Full Travel Workflow |
+| `travel:paused` | ❌ | - | Full Travel Workflow |
+| `travel:resumed` | ❌ | - | Full Travel Workflow |
+| `travel:completed` | ❌ | - | Full Travel Workflow |
+| `travel:failed` | ❌ | - | Full Travel Workflow |
+
+> **Hinweis:** `travel:move-requested` ist ein MVP-Event für direkte Nachbar-Hex-Bewegung. Der vollständige Travel-Workflow (Routing, Pause/Resume) ist für eine spätere Phase geplant.
 
 ```typescript
 // Requests
@@ -149,6 +186,23 @@ Reise-System fuer Hex-Overland-Maps.
 
 Party-Verwaltung und Position.
 
+### Implementierungs-Status
+
+| Event | Status | Seit | Anmerkung |
+|-------|--------|------|-----------|
+| `party:load-requested` | ✅ | 2.5 | |
+| `party:loaded` | ✅ | 2.5 | |
+| `party:state-changed` | ✅ | 2.5 | |
+| `party:position-changed` | ✅ | 2.5 | |
+| `party:transport-changed` | ✅ | 2.5 | |
+| `party:update-requested` | ❌ | - | Member-Management |
+| `party:add-member-requested` | ❌ | - | Member-Management |
+| `party:remove-member-requested` | ❌ | - | Member-Management |
+| `party:members-changed` | ❌ | - | Member-Management |
+| `party:member-added` | ❌ | - | Member-Management |
+| `party:member-removed` | ❌ | - | Member-Management |
+| `party:xp-gained` | ❌ | - | XP-System |
+
 ```typescript
 // Requests
 'party:update-requested': {
@@ -204,6 +258,24 @@ Party-Verwaltung und Position.
 ## map:*
 
 Map-Verwaltung und Navigation.
+
+### Implementierungs-Status
+
+| Event | Status | Seit | Anmerkung |
+|-------|--------|------|-----------|
+| `map:load-requested` | ✅ | 2.5 | |
+| `map:loaded` | ✅ | 2.5 | |
+| `map:load-failed` | ✅ | 2.5 | |
+| `map:state-changed` | ✅ | 2.5 | |
+| `map:unloaded` | ✅ | 2.5 | |
+| `map:navigate-requested` | ❌ | - | Multi-Map-Navigation |
+| `map:back-requested` | ❌ | - | Navigation-Stack |
+| `map:saved` | ❌ | - | |
+| `map:navigated` | ❌ | - | Multi-Map-Navigation |
+| `map:created` | ❌ | - | CRUD via Library/Cartographer |
+| `map:updated` | ❌ | - | CRUD via Library/Cartographer |
+| `map:deleted` | ❌ | - | CRUD via Library/Cartographer |
+| `map:tile-updated` | ❌ | - | Cartographer |
 
 ```typescript
 // Requests
@@ -310,11 +382,25 @@ Editor-spezifische Events fuer den Hex-Map-Editor.
 
 Zufalls- und geplante Begegnungen.
 
+### Implementierungs-Status
+
+| Event | Status | Seit |
+|-------|--------|------|
+| `encounter:generate-requested` | ✅ | 4b |
+| `encounter:start-requested` | ✅ | 4b |
+| `encounter:dismiss-requested` | ✅ | 4b |
+| `encounter:resolve-requested` | ✅ | 4b |
+| `encounter:state-changed` | ✅ | 4b |
+| `encounter:generated` | ✅ | 4b |
+| `encounter:started` | ✅ | 4b |
+| `encounter:dismissed` | ✅ | 4b |
+| `encounter:resolved` | ✅ | 4b |
+
 ```typescript
 // Requests
 'encounter:generate-requested': {
-  trigger: 'time-based' | 'manual' | 'location';
-  context: EncounterContext;
+  position: HexCoordinate;  // Service builds full context from this
+  trigger: 'time-based' | 'manual' | 'location' | 'travel';
 }
 
 'encounter:start-requested': {
@@ -333,7 +419,8 @@ Zufalls- und geplante Begegnungen.
 
 // State-Changes
 'encounter:state-changed': {
-  state: EncounterState;
+  currentEncounter: EncounterInstance | null;
+  historyLength: number;
 }
 
 // Lifecycle
@@ -365,6 +452,35 @@ Zufalls- und geplante Begegnungen.
 ## combat:*
 
 Initiative-Tracker und Combat-Management.
+
+### Implementierungs-Status
+
+| Event | Status | Seit | Anmerkung |
+|-------|--------|------|-----------|
+| `combat:start-requested` | ✅ | 5 | |
+| `combat:next-turn-requested` | ✅ | 5 | |
+| `combat:end-requested` | ✅ | 5 | |
+| `combat:apply-damage-requested` | ✅ | 5 | |
+| `combat:apply-healing-requested` | ✅ | 5 | |
+| `combat:add-condition-requested` | ✅ | 5 | |
+| `combat:remove-condition-requested` | ✅ | 5 | |
+| `combat:update-initiative-requested` | ✅ | 5 | |
+| `combat:state-changed` | ✅ | 5 | |
+| `combat:participant-hp-changed` | ✅ | 5 | |
+| `combat:turn-changed` | ✅ | 5 | |
+| `combat:condition-changed` | ✅ | 5 | |
+| `combat:condition-added` | ✅ | 5 | |
+| `combat:condition-removed` | ✅ | 5 | |
+| `combat:started` | ✅ | 5 | |
+| `combat:completed` | ✅ | 5 | |
+| `combat:character-downed` | ✅ | 5 | |
+| `combat:character-stabilized` | ❌ | - | Post-MVP |
+| `combat:character-died` | ❌ | - | Post-MVP |
+| `combat:death-save-recorded` | ❌ | - | Post-MVP |
+| `combat:concentration-check-required` | ✅ | 5 | |
+| `combat:concentration-broken` | ✅ | 5 | |
+| `combat:effect-added` | ✅ | 5 | |
+| `combat:effect-removed` | ✅ | 5 | |
 
 ```typescript
 // Requests

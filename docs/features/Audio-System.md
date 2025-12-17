@@ -1,5 +1,8 @@
 # Audio-System
 
+> **Lies auch:** [Time-System](Time-System.md), [Weather-System](Weather-System.md)
+> **Wird benoetigt von:** SessionRunner
+
 Kontextbasierte Hintergrundmusik und Umgebungsgeraeusche.
 
 **Design-Philosophie:** Audio unterstuetzt die Atmosphaere automatisch basierend auf dem aktuellen Kontext (Location, Wetter, Tageszeit, Combat-Status). Songs werden dynamisch ueber Mood-Tags ausgewaehlt - keine Playlists noetig.

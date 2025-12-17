@@ -1,5 +1,8 @@
 # Item
 
+> **Lies auch:** [EntityRegistry](../architecture/EntityRegistry.md)
+> **Wird benoetigt von:** Inventory, Loot, Shop
+
 Unified Item-Schema fuer Inventar, Loot und Equipment.
 
 **Design-Philosophie:** Items sind die Single Source of Truth fuer alle physischen Gegenstaende. Inventory-System und Loot-Feature referenzieren dieses Schema - es gibt keine separaten Item-Definitionen.

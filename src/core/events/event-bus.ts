@@ -4,6 +4,7 @@
  */
 
 import type { DomainEvent } from './domain-events';
+import { TimeoutError } from './timeout-error';
 
 // ============================================================================
 // Types
@@ -50,6 +51,31 @@ export interface EventBus {
    * Useful for testing and cleanup.
    */
   clear(): void;
+
+  /**
+   * Request/Response pattern: Send a request event and wait for a response.
+   * Matches response by correlationId.
+   *
+   * @param requestEvent The request event to publish
+   * @param responseType The event type to wait for (e.g., 'encounter:generated')
+   * @param timeoutMs Maximum time to wait (default: 5000ms)
+   * @returns Promise that resolves with the response event
+   * @throws TimeoutError if no matching response arrives within timeout
+   *
+   * @example
+   * ```typescript
+   * const response = await eventBus.request(
+   *   createEvent('encounter:generate-requested', { terrainId, partyLevel }),
+   *   'encounter:generated',
+   *   5000
+   * );
+   * ```
+   */
+  request<TReq, TRes>(
+    requestEvent: DomainEvent<TReq>,
+    responseType: string,
+    timeoutMs?: number
+  ): Promise<DomainEvent<TRes>>;
 }
 
 // ============================================================================
@@ -122,6 +148,54 @@ export function createEventBus(): EventBus {
     clear(): void {
       handlers.clear();
       globalHandlers.clear();
+    },
+
+    request<TReq, TRes>(
+      requestEvent: DomainEvent<TReq>,
+      responseType: string,
+      timeoutMs: number = 5000
+    ): Promise<DomainEvent<TRes>> {
+      return new Promise((resolve, reject) => {
+        let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+        let unsubscribe: Unsubscribe | undefined;
+
+        const cleanup = () => {
+          if (timeoutHandle) {
+            clearTimeout(timeoutHandle);
+            timeoutHandle = undefined;
+          }
+          if (unsubscribe) {
+            unsubscribe();
+            unsubscribe = undefined;
+          }
+        };
+
+        // Subscribe to response events
+        unsubscribe = this.subscribe<TRes>(
+          responseType,
+          (event: DomainEvent<TRes>) => {
+            // Only accept responses with matching correlationId
+            if (event.correlationId === requestEvent.correlationId) {
+              cleanup();
+              resolve(event);
+            }
+          }
+        );
+
+        // Set up timeout
+        timeoutHandle = setTimeout(() => {
+          cleanup();
+          reject(
+            new TimeoutError(
+              `Request ${requestEvent.type} timed out waiting for ${responseType}`,
+              timeoutMs
+            )
+          );
+        }, timeoutMs);
+
+        // Publish the request event
+        this.publish(requestEvent);
+      });
     },
   };
 }

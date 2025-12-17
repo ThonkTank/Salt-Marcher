@@ -1,5 +1,8 @@
 # Event Bus
 
+> **Lies auch:** [Core](Core.md)
+> **Wird benoetigt von:** Features, Events-Catalog
+
 Zentraler Kommunikationskanal für Cross-Component Kommunikation.
 
 **Pfad:** `@core/events/event-bus.ts`

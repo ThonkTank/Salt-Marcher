@@ -1,5 +1,7 @@
 # Projektstruktur
 
+> **Wird benoetigt von:** Neue Dateien anlegen
+
 Dieses Dokument definiert die Zielstruktur des `src/`-Verzeichnisses.
 
 ---

@@ -1,5 +1,8 @@
 # Shop
 
+> **Lies auch:** [NPC-System](NPC-System.md), [Item](Item.md)
+> **Wird benoetigt von:** Library
+
 Single Source of Truth fuer Shop-Entity-Definitionen.
 
 **Design-Philosophie:** Shops sind Haendler mit einem Inventar. Die Definition erfolgt in der Library, die Interaktion (Kaufen/Verkaufen) im SessionRunner.

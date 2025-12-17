@@ -70,6 +70,14 @@ export function createSettingsService(
       return `${settings.basePath}/parties`;
     },
 
+    getTimePath(): string {
+      return `${settings.basePath}/time`;
+    },
+
+    getAlmanacPath(): string {
+      return `${settings.basePath}/almanac`;
+    },
+
     subscribe(listener: (settings: PluginSettings) => void): () => void {
       listeners.add(listener);
       return () => listeners.delete(listener);

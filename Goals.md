@@ -14,19 +14,22 @@ SaltMarcher ist ein integriertes Werkzeug für Game Masters, das alle Aspekte ei
 
 ## Feature-Übersicht
 
-### SessionRunner (Hauptansicht)
+### SessionRunner + DetailView (Hauptansicht)
 
-Die zentrale Spielansicht während einer Session:
+Zwei parallele Views für Session-Management:
 
-- **Karten-Container** - Verschiedene Map-Typen (Hex, Town, Grid)
-- **Travel-Tool** - Party-Token, Routen-Planung, animierte Reisen
-- **Kalender** - Aktuelles Datum/Zeit, Events, Journal
-- **Wetter** - Dynamisches Wetter mit mechanischen Auswirkungen
-- **Encounter** - Begegnungssystem mit Preview und Balancing
-- **Audio** - Automatische Musik und Ambience
-- **Party-Tracker** - HP, AC, Conditions, Inventar
+**SessionRunner (Center Leaf):**
+- **Map-Panel** - Hex/Town/Grid mit Party-Token, Routen, Overlays
+- **Quick-Controls** - Travel, Audio, Party-Status, Aktionen
+- **Header** - Zeit, Wetter-Status, Quick-Advance
 
-→ **Details:** [SessionRunner.md](docs/application/SessionRunner.md), [Travel-System.md](docs/features/Travel-System.md), [Weather-System.md](docs/features/Weather-System.md)
+**DetailView (Right Leaf):**
+- **Encounter** - Preview, Generierung, Quest-Encounters
+- **Combat** - Initiative-Tracker, HP, Conditions
+- **Shop** - Händler-Interface
+- **Location/Quest/Journal** - Kontextbezogene Details
+
+→ **Details:** [SessionRunner.md](docs/application/SessionRunner.md), [DetailView.md](docs/application/DetailView.md)
 
 ### Cartographer (Map-Editor)
 
@@ -100,7 +103,7 @@ Hex-basierte Overland-Navigation mit automatischem Zeit-Tracking. Die Party bewe
 | Environmental | Naturgefahren, Terrain-Herausforderungen |
 | Location | Interessante Orte zum Erkunden |
 
-→ **Details:** [Encounter-Types.md](docs/features/Encounter-Types.md), [Encounter-Balancing.md](docs/features/Encounter-Balancing.md)
+→ **Details:** [Encounter-System.md](docs/features/Encounter-System.md), [Encounter-Balancing.md](docs/features/Encounter-Balancing.md)
 
 ### Weather
 
@@ -368,7 +371,8 @@ Goals.md enthält **nicht**:
 
 | Dokument | Inhalt |
 |----------|--------|
-| [SessionRunner.md](docs/application/SessionRunner.md) | Hauptansicht, Panels, Workflows |
+| [SessionRunner.md](docs/application/SessionRunner.md) | Hauptansicht (Center), Quick-Controls, Map |
+| [DetailView.md](docs/application/DetailView.md) | Detail-Ansichten (Right), Encounter, Combat, Shop |
 | [Cartographer.md](docs/application/Cartographer.md) | Map-Editor, Tools, Layer |
 | [Library.md](docs/application/Library.md) | Entity-CRUD, Views |
 
@@ -377,11 +381,10 @@ Goals.md enthält **nicht**:
 | Dokument | Inhalt |
 |----------|--------|
 | [Map-Feature.md](docs/features/Map-Feature.md) | Map-Typen, Multi-Map-Verhalten |
-| [Encounter-Feature.md](docs/features/Encounter-Feature.md) | Typen, Balancing, NPC-Instanziierung |
+| [Encounter-System.md](docs/features/Encounter-System.md) | Pipeline, Typen, Algorithmus |
+| [Encounter-Balancing.md](docs/features/Encounter-Balancing.md) | XP-Budget, CR, Difficulty |
 | [Travel-System.md](docs/features/Travel-System.md) | Hex-Navigation, Speed-Berechnung |
 | [Weather-System.md](docs/features/Weather-System.md) | Wetter-Generierung, Events |
-| [Encounter-Types.md](docs/features/Encounter-Types.md) | 6 Encounter-Typen |
-| [Encounter-Balancing.md](docs/features/Encounter-Balancing.md) | CR-Berechnung, Gewichtung |
 | [Quest-System.md](docs/features/Quest-System.md) | Objectives, 40/60 XP-Split |
 | [Combat-System.md](docs/features/Combat-System.md) | Initiative, Conditions |
 | [Audio-System.md](docs/features/Audio-System.md) | Track-Tags, Mood-Matching |

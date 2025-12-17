@@ -31,6 +31,11 @@ export interface TravelFeaturePort {
    * Check if a move to target is valid (adjacent and traversable).
    */
   canMoveTo(target: HexCoordinate): boolean;
+
+  /**
+   * Clean up subscriptions and resources.
+   */
+  dispose(): void;
 }
 
 // ============================================================================
@@ -75,13 +80,19 @@ export const HEX_SIZE_MILES = 6;
 
 /**
  * Calculate time to traverse one hex in hours.
+ *
+ * @param transportBaseSpeedMph - Base speed of transport mode (mph)
+ * @param terrainMovementCost - Terrain movement cost multiplier (0-1)
+ * @param weatherSpeedFactor - Weather speed factor multiplier (0-1), default 1.0
  */
 export function calculateHexTraversalTime(
   transportBaseSpeedMph: number,
-  terrainMovementCost: number
+  terrainMovementCost: number,
+  weatherSpeedFactor: number = 1.0
 ): number {
-  // Effective speed = base speed * terrain factor
-  const effectiveSpeed = transportBaseSpeedMph * terrainMovementCost;
+  // Effective speed = base speed * terrain factor * weather factor
+  const effectiveSpeed =
+    transportBaseSpeedMph * terrainMovementCost * weatherSpeedFactor;
 
   // Time = distance / speed
   return HEX_SIZE_MILES / effectiveSpeed;

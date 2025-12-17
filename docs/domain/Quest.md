@@ -1,5 +1,8 @@
 # Quest
 
+> **Lies auch:** [Quest-System](../features/Quest-System.md)
+> **Wird benoetigt von:** Quest-Feature
+
 Single Source of Truth fuer Quest-Entity-Definitionen.
 
 **Design-Philosophie:** Quests sind strukturierte Story-Einheiten mit messbaren Objectives. Sie verbinden NPCs, Locations, Encounters und Rewards zu einer kohaerenten Spieler-Erfahrung.
@@ -367,4 +370,4 @@ function getQuestsWithOpenSlots(): QuestDefinition[];
 
 ---
 
-*Siehe auch: [Quest-System.md](../features/Quest-System.md) | [NPC-System.md](NPC-System.md) | [Encounter-Feature.md](../features/Encounter-Feature.md) | [Journal.md](Journal.md)*
+*Siehe auch: [Quest-System.md](../features/Quest-System.md) | [NPC-System.md](NPC-System.md) | [Encounter-System.md](../features/Encounter-System.md) | [Journal.md](Journal.md)*

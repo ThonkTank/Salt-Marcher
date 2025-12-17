@@ -1,5 +1,8 @@
 # Time-System
 
+> **Lies auch:** [Journal](../domain/Journal.md), [Events-Catalog](../architecture/Events-Catalog.md)
+> **Wird benoetigt von:** Travel, Weather, Audio, Encounter
+
 Backend-Feature fuer Kalender und Zeit-Verwaltung.
 
 **Design-Philosophie:** Time ist ein Backend-Feature. Almanac ist das Frontend (User-facing ToolView). Andere Features (Travel, Weather) importieren Time, nicht Almanac.

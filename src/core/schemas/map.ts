@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { entityIdSchema, timestampSchema } from './common';
+import { weatherStateSchema } from './weather';
 import type { HexCoord } from '../utils/hex-math';
 
 // ============================================================================
@@ -104,6 +105,13 @@ export const overworldMapSchema = z.object({
 
   /** Last update timestamp */
   updatedAt: timestampSchema.optional(),
+
+  /**
+   * Current weather state for this map.
+   * Persisted to ensure session continuity.
+   * From Weather-System.md lines 237-248.
+   */
+  currentWeather: weatherStateSchema.optional(),
 });
 
 /**

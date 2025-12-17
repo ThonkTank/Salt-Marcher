@@ -1,5 +1,8 @@
 # Map
 
+> **Lies auch:** [Terrain](Terrain.md), [Map-Navigation](Map-Navigation.md)
+> **Wird benoetigt von:** Map-Feature, Cartographer
+
 Single Source of Truth fuer Map-Entity-Definitionen und Map-Typen.
 
 **Design-Philosophie:** Maps sind der Container fuer alle ortsgebundenen Daten. Die Entity-Definition ist typ-agnostisch - spezifisches Verhalten wird in den Feature-Docs beschrieben.
@@ -120,7 +123,7 @@ Encounters werden tile-basiert generiert:
 - EncounterZone definiert Creature-Pool und Chance
 - Fraktions-Praesenz modifiziert Encounter-Typ
 
-→ Details: [Encounter-Feature.md](../features/Encounter-Feature.md)
+→ Details: [Encounter-System.md](../features/Encounter-System.md)
 
 ---
 

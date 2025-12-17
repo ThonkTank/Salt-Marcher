@@ -1,5 +1,8 @@
 # Combat-System
 
+> **Lies auch:** [Encounter-System](Encounter-System.md), [Character-System](Character-System.md)
+> **Wird benoetigt von:** SessionRunner, Dungeon
+
 Initiative-Tracker und Condition-Management fuer D&D Kaempfe.
 
 **Design-Philosophie:** Combat wird am Tisch ausgewuerfelt. Der Combat Tracker automatisiert nur das Merken - nicht das Spielen.
@@ -630,4 +633,4 @@ Bei Plugin-Reload kann der aktive Combat wiederhergestellt werden:
 
 ---
 
-*Siehe auch: [Character-System.md](Character-System.md) | [Encounter-Balancing.md](Encounter-Balancing.md) | [Encounter-Types.md](Encounter-Types.md)*
+*Siehe auch: [Character-System.md](Character-System.md) | [Encounter-Balancing.md](Encounter-Balancing.md) | [Encounter-System.md](Encounter-System.md)*

@@ -11,6 +11,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 
+## Soll vs. Ist (Dokumentation vs. Implementierung)
+
+| Quelle | Beschreibt |
+|--------|------------|
+| `docs/features/`, `docs/domain/` | **Zielzustand** - Was das Feature können soll (Spezifikation) |
+| `Development-Roadmap.md` | **Istzustand** - Was bereits implementiert ist |
+| Roadmap → "Nicht im Scope" | Bewusste Lücken dieser Phase |
+| Roadmap → "Backlog" | Alle bekannten Lücken zwischen Soll und Ist |
+
+**Wichtig:** Feature-Docs beschreiben das vollständige Feature, auch wenn nur Teile davon implementiert sind. Prüfe die Roadmap für den tatsächlichen Implementierungsstand.
+
+**Bei Diskrepanzen:** Wenn Code von der Dokumentation abweicht und diese Abweichung nicht in der Roadmap als "Nicht im Scope" oder "Backlog" vermerkt ist → Code an Dokumentation anpassen, nicht umgekehrt. Die Docs sind die Spezifikation.
+
+**Bei Unklarheiten:** Wenn die Dokumentation unklar oder widersprüchlich ist → AskUserQuestion nutzen. Aber **nur** wenn die relevanten Docs (laut Feature-Routing-Tabelle) gründlich gelesen wurden. Fragen, deren Antwort in der Doku steht, sind Zeitverschwendung.
+
 ## Bei Implementierungsaufgaben
 
 ### Wann Leseliste erstellen?
@@ -52,23 +67,92 @@ CLAUDE.md Phase 1 (Dokumentation lesen) hat **Vorrang** vor dem Plan-Mode-Workfl
    - [Goals.md](Goals.md) - Zentraler Einstieg
    - [Development-Roadmap.md](docs/architecture/Development-Roadmap.md) - Aktueller Task
 
-2. **Erstelle eine Leseliste (mindestens 7 Docs) mit dem TodoWrite-Tool:**
+2. **Erstelle eine Leseliste mit dem TodoWrite-Tool:**
+
+   1. Konsultiere die **Feature-Routing-Tabelle** unten
+   2. Notiere alle Pflicht-Docs für deinen Task
+   3. Füge hinzu: Conventions.md + Error-Handling.md
+   4. Bei Events: + Events-Catalog.md
 
    ```
    Leseliste für [Task-Name]:
-   - [ ] Feature-Doc: docs/features/XXX.md         (1)
-   - [ ] Layer-Doc: docs/architecture/XXX.md       (1)
-   - [ ] Weitere: ...                              (3+)
-   - [ ] Conventions.md                            (1)
-   - [ ] Error-Handling.md                         (1)
-   ────────────────────────────────────────────────
-   Total: mindestens 7 Docs
+   - [ ] [Pflicht-Doc 1 aus Routing-Tabelle]
+   - [ ] [Pflicht-Doc 2 aus Routing-Tabelle]
+   - [ ] ...
+   - [ ] Conventions.md
+   - [ ] Error-Handling.md
    ```
 
-   ❌ FALSCH: Nur 4-5 Docs auflisten, kein TodoWrite
-   ✅ RICHTIG: TodoWrite mit 1 Feature + 1 Layer + 3 Weitere + 2 Pflicht = 7+
+   ❌ FALSCH: Docs raten ohne Routing-Tabelle
+   ✅ RICHTIG: Routing-Tabelle → Pflicht-Docs → TodoWrite
 
 3. **Arbeite die Leseliste ab** - Markiere jeden Todo als `completed` nach dem Lesen
+
+### Feature-Routing (Pflicht-Docs nach Task)
+
+Konsultiere diese Tabelle und lies die zugeordneten Docs **VOR** dem Code.
+
+#### Features (Backend)
+
+| Task | Pflicht-Docs | Wird gelesen von |
+|------|--------------|------------------|
+| **Time/Calendar** | Time-System.md, Journal.md, Events-Catalog.md | Travel, Weather, Audio, Encounter |
+| **Travel** | Travel-System.md, Map-Feature.md, Time-System.md, Weather-System.md | SessionRunner |
+| **Weather** | Weather-System.md, Time-System.md, Terrain.md | Travel, Audio, Encounter |
+| **Encounter** | Encounter-System.md, Encounter-Balancing.md, NPC-System.md | Travel, Quest, Combat |
+| **Combat** | Combat-System.md, Encounter-System.md, Character-System.md | SessionRunner |
+| **Quest** | Quest-System.md, Quest.md, Encounter-System.md, Loot-Feature.md | SessionRunner |
+| **Audio** | Audio-System.md, Time-System.md, Weather-System.md | SessionRunner |
+| **Loot** | Loot-Feature.md, Item.md, Encounter-System.md | Quest |
+| **Map (Feature)** | Map-Feature.md, Map.md, Terrain.md, Map-Navigation.md | Travel, Weather, Cartographer |
+| **Dungeon** | Dungeon-System.md, Map-Feature.md, Combat-System.md | SessionRunner |
+| **Party/Character** | Character-System.md, Inventory-System.md, Item.md | Travel, Combat, SessionRunner |
+| **Inventory** | Inventory-System.md, Item.md, Character-System.md | Party, Shop, Loot |
+
+#### Domain-Entities
+
+| Task | Pflicht-Docs | Wird gelesen von |
+|------|--------------|------------------|
+| **Creature/Monster** | Creature.md, EntityRegistry.md | Encounter, Combat, NPC |
+| **NPC** | NPC-System.md, Creature.md, Faction.md | Encounter, Quest, Shop |
+| **Faction** | Faction.md, NPC-System.md, POI.md | NPC, Encounter |
+| **Location/POI** | POI.md, Map-Navigation.md, Map.md | Travel, Quest, Encounter |
+| **Item** | Item.md, EntityRegistry.md | Inventory, Loot, Shop |
+| **Terrain** | Terrain.md, Map.md | Map-Feature, Weather, Travel |
+| **Shop** | Shop.md, NPC-System.md, Item.md | Library |
+| **Journal** | Journal.md, Time-System.md | SessionRunner, Almanac |
+| **Map (Entity)** | Map.md, Map-Navigation.md, Terrain.md | Map-Feature, Cartographer |
+| **Quest (Entity)** | Quest.md, Quest-System.md | Quest-Feature |
+
+#### Application Layer (UI)
+
+| Task | Pflicht-Docs | Konsumiert |
+|------|--------------|------------|
+| **SessionRunner** | SessionRunner.md, Application.md, Data-Flow.md | Map, Travel, Time, Weather, Audio, Party |
+| **DetailView** | DetailView.md, Application.md, Combat-System.md, Encounter-System.md | Encounter, Combat, Shop |
+| **Cartographer** | Cartographer.md, Map-Feature.md, Map.md, Terrain.md | Map |
+| **Library** | Library.md, EntityRegistry.md, Application.md | Alle Entities |
+| **Almanac** | Time-System.md, Journal.md, SessionRunner.md | Time, WorldEvents |
+
+#### Architektur/Infrastruktur
+
+| Task | Pflicht-Docs |
+|------|--------------|
+| **Neues Feature anlegen** | Features.md, EventBus.md, Events-Catalog.md, Conventions.md |
+| **Event hinzufügen** | Events-Catalog.md, EventBus.md |
+| **Neuer Entity-Typ** | EntityRegistry.md, Core.md, Infrastructure.md |
+| **Vault/Storage** | Infrastructure.md, Core.md |
+| **Error-Handling** | Error-Handling.md, Conventions.md |
+| **Testing** | Testing.md, Conventions.md |
+| **Architektur-Fragen** | Features.md, Data-Flow.md, Project-Structure.md, Application.md |
+| **Layer-Grenzen** | Features.md, Application.md, Infrastructure.md |
+
+#### Immer lesen
+
+Diese Docs sind bei JEDER Implementierungsaufgabe Pflicht:
+- **Conventions.md** - Code-Standards
+- **Error-Handling.md** - Fehlerbehandlung
+- **Events-Catalog.md** - Wenn Events involviert
 
 ### Phase 2: Erst jetzt Code erkunden
 
@@ -253,6 +337,16 @@ Pro logische Einheit committen:
 ### Alpha-Code Referenz
 Alpha-Code (Archive/) so wenig wie möglich referenzieren. Die 15k Zeilen Dokumentation in `docs/` sind die Wahrheit, nicht der alte Code.
 
+### Sprint-Pflicht (Plan-Mode)
+
+**STOPP.** Bevor du ExitPlanMode aufrufst:
+
+1. Development-Roadmap.md → "Aktiver Sprint" Sektion ausfüllen
+2. Feature komplett definieren (ganz oder gar nicht)
+3. "Nicht im Scope" explizit benennen
+
+Ohne definierten Sprint keine Implementierung.
+
 ## Debug Logging
 
 1. Copy `.claude/debug.json.example` to `.claude/debug.json`
@@ -266,6 +360,6 @@ Alpha-Code (Archive/) so wenig wie möglich referenzieren. Die 15k Zeilen Dokume
 - **docs/architecture/Events-Catalog.md**: Single source of truth for all domain events
 - **docs/features/**: Detailed feature specifications
 - **docs/domain/**: Entity type documentation (Map, Quest, Journal, NPC, Faction, etc.)
-- **docs/application/**: UI documentation with wireframes (SessionRunner)
+- **docs/application/**: UI documentation with wireframes (SessionRunner, DetailView)
 
 All documentation is in German.

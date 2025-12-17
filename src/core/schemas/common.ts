@@ -47,6 +47,7 @@ export const entityTypeSchema = z.enum([
   'item',
   'map',
   'location',
+  'poi', // Alias for location, used in Faction/NPC schemas
   'maplink',
   'terrain',
   'quest',

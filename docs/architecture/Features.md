@@ -1,5 +1,8 @@
 # Feature Layer
 
+> **Lies auch:** [Core](Core.md), [EventBus](EventBus.md)
+> **Wird benoetigt von:** Alle Features
+
 Jedes Feature ist eine selbstständige Einheit mit State, Business Logic und StoragePort.
 
 **Pfad:** `src/features/`

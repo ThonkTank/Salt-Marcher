@@ -1,5 +1,8 @@
 # Weather-System
 
+> **Lies auch:** [Time-System](Time-System.md), [Terrain](../domain/Terrain.md)
+> **Wird benoetigt von:** Travel, Audio, Encounter
+
 Detaillierte Spezifikation des Wettersystems.
 
 ---

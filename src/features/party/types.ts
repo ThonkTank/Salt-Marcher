@@ -66,6 +66,11 @@ export interface PartyFeaturePort {
 
   /** Unload the current party */
   unloadParty(): void;
+
+  // === Lifecycle ===
+
+  /** Clean up subscriptions and resources */
+  dispose(): void;
 }
 
 // ============================================================================

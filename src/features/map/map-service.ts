@@ -2,6 +2,8 @@
  * Map Feature service.
  *
  * Provides map operations: loading, tile queries, terrain lookups.
+ * Publishes map:loaded, map:load-failed, map:state-changed events.
+ * Handles map:load-requested command events.
  * Implements MapFeaturePort interface.
  */
 
@@ -10,6 +12,8 @@ import type {
   AppError,
   MapId,
   Option,
+  EventBus,
+  Unsubscribe,
 } from '@core/index';
 import {
   ok,
@@ -17,9 +21,12 @@ import {
   some,
   none,
   isNone,
-  isSome,
   createError,
   coordToKey,
+  createEvent,
+  newCorrelationId,
+  now,
+  EventTypes,
 } from '@core/index';
 import type {
   OverworldMap,
@@ -33,6 +40,13 @@ import type {
   TerrainStoragePort,
 } from './types';
 import type { MapStore } from './map-store';
+import type {
+  MapLoadedPayload,
+  MapLoadFailedPayload,
+  MapStateChangedPayload,
+  MapUnloadedPayload,
+  MapLoadRequestedPayload,
+} from '@core/events/domain-events';
 
 // ============================================================================
 // Default Movement Cost
@@ -49,13 +63,140 @@ export interface MapServiceDeps {
   store: MapStore;
   mapStorage: MapStoragePort;
   terrainStorage: TerrainStoragePort;
+  eventBus?: EventBus; // Optional during migration
 }
 
 /**
  * Create the map service (implements MapFeaturePort).
  */
 export function createMapService(deps: MapServiceDeps): MapFeaturePort {
-  const { store, mapStorage, terrainStorage } = deps;
+  const { store, mapStorage, terrainStorage, eventBus } = deps;
+
+  // Track subscriptions for cleanup
+  const subscriptions: Unsubscribe[] = [];
+
+  // ===========================================================================
+  // Event Publishing Helpers
+  // ===========================================================================
+
+  function publishLoaded(map: OverworldMap, correlationId?: string): void {
+    if (!eventBus) return;
+
+    const payload: MapLoadedPayload = {
+      mapId: map.id,
+      mapType: 'hex', // OverworldMap is always hex type
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.MAP_LOADED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'map-feature',
+      })
+    );
+  }
+
+  function publishLoadFailed(
+    mapId: string,
+    error: AppError,
+    correlationId?: string
+  ): void {
+    if (!eventBus) return;
+
+    const payload: MapLoadFailedPayload = {
+      mapId,
+      reason: error.message,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.MAP_LOAD_FAILED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'map-feature',
+      })
+    );
+  }
+
+  function publishStateChanged(correlationId?: string): void {
+    if (!eventBus) return;
+
+    const state = store.getState();
+    const payload: MapStateChangedPayload = {
+      state,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.MAP_STATE_CHANGED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'map-feature',
+      })
+    );
+  }
+
+  function publishUnloaded(mapId: string, correlationId?: string): void {
+    if (!eventBus) return;
+
+    const payload: MapUnloadedPayload = {
+      mapId,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.MAP_UNLOADED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'map-feature',
+      })
+    );
+  }
+
+  // ===========================================================================
+  // Event Handlers
+  // ===========================================================================
+
+  function setupEventHandlers(): void {
+    if (!eventBus) return;
+
+    // Handle map:load-requested
+    subscriptions.push(
+      eventBus.subscribe<MapLoadRequestedPayload>(
+        EventTypes.MAP_LOAD_REQUESTED,
+        async (event) => {
+          const { mapId } = event.payload;
+          const correlationId = event.correlationId;
+
+          const result = await mapStorage.load(mapId as MapId);
+
+          if (!result.ok) {
+            publishLoadFailed(mapId, result.error, correlationId);
+            return;
+          }
+
+          const map = result.value;
+
+          // Validate map type
+          if (map.type !== 'overworld') {
+            const error = createError(
+              'INVALID_MAP_TYPE',
+              `Expected overworld map, got ${map.type}`
+            );
+            publishLoadFailed(mapId, error, correlationId);
+            return;
+          }
+
+          // Update store
+          store.setCurrentMap(map);
+
+          // Publish events
+          publishLoaded(map, correlationId);
+          publishStateChanged(correlationId);
+        }
+      )
+    );
+  }
+
+  // Set up event handlers immediately if eventBus is provided
+  setupEventHandlers();
 
   return {
     // =========================================================================
@@ -114,6 +255,8 @@ export function createMapService(deps: MapServiceDeps): MapFeaturePort {
       const result = await mapStorage.load(id);
 
       if (!result.ok) {
+        // Publish load failed event
+        publishLoadFailed(id, result.error);
         return result;
       }
 
@@ -121,22 +264,47 @@ export function createMapService(deps: MapServiceDeps): MapFeaturePort {
 
       // Validate map type
       if (map.type !== 'overworld') {
-        return err(
-          createError(
-            'INVALID_MAP_TYPE',
-            `Expected overworld map, got ${map.type}`
-          )
+        const error = createError(
+          'INVALID_MAP_TYPE',
+          `Expected overworld map, got ${map.type}`
         );
+        publishLoadFailed(id, error);
+        return err(error);
       }
 
       // Update store
       store.setCurrentMap(map);
 
+      // Publish events
+      publishLoaded(map);
+      publishStateChanged();
+
       return ok(map);
     },
 
     unloadMap(): void {
+      const currentMap = store.getState().currentMap;
+      const mapId = currentMap?.id;
+
       store.clear();
+
+      // Publish events
+      if (mapId) {
+        publishUnloaded(mapId);
+      }
+      publishStateChanged();
+    },
+
+    // =========================================================================
+    // Lifecycle
+    // =========================================================================
+
+    dispose(): void {
+      // Clean up all EventBus subscriptions
+      for (const unsubscribe of subscriptions) {
+        unsubscribe();
+      }
+      subscriptions.length = 0;
     },
   };
 }

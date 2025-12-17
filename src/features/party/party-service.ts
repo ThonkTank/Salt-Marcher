@@ -2,14 +2,39 @@
  * Party Feature service.
  *
  * Provides party operations: loading, position updates, transport management.
+ * Publishes party:position-changed, party:state-changed, party:transport-changed events.
  * Implements PartyFeaturePort interface.
  */
 
-import type { Result, AppError, PartyId, Option } from '@core/index';
-import { ok, err, some, none, createError } from '@core/index';
+import type {
+  Result,
+  AppError,
+  PartyId,
+  Option,
+  EventBus,
+  Unsubscribe,
+} from '@core/index';
+import {
+  ok,
+  err,
+  some,
+  none,
+  createError,
+  createEvent,
+  newCorrelationId,
+  now,
+  EventTypes,
+} from '@core/index';
 import type { Party, HexCoordinate, TransportMode } from '@core/schemas';
 import type { PartyFeaturePort, PartyStoragePort } from './types';
 import type { PartyStore } from './party-store';
+import type {
+  PartyStateChangedPayload,
+  PartyPositionChangedPayload,
+  PartyTransportChangedPayload,
+  PartyLoadedPayload,
+  PartyLoadRequestedPayload,
+} from '@core/events/domain-events';
 
 // ============================================================================
 // Party Service
@@ -18,13 +43,131 @@ import type { PartyStore } from './party-store';
 export interface PartyServiceDeps {
   store: PartyStore;
   storage: PartyStoragePort;
+  eventBus?: EventBus; // Optional during migration
 }
 
 /**
  * Create the party service (implements PartyFeaturePort).
  */
 export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
-  const { store, storage } = deps;
+  const { store, storage, eventBus } = deps;
+
+  // Track subscriptions for cleanup
+  const subscriptions: Unsubscribe[] = [];
+
+  // ===========================================================================
+  // Event Publishing Helpers
+  // ===========================================================================
+
+  function publishPositionChanged(
+    previousPosition: HexCoordinate,
+    newPosition: HexCoordinate,
+    source: 'travel' | 'teleport' | 'manual' = 'manual',
+    correlationId?: string
+  ): void {
+    if (!eventBus) return;
+
+    const payload: PartyPositionChangedPayload = {
+      previousPosition,
+      newPosition,
+      source,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.PARTY_POSITION_CHANGED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'party-feature',
+      })
+    );
+  }
+
+  function publishStateChanged(correlationId?: string): void {
+    if (!eventBus) return;
+
+    const state = store.getState();
+    const payload: PartyStateChangedPayload = {
+      state,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.PARTY_STATE_CHANGED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'party-feature',
+      })
+    );
+  }
+
+  function publishTransportChanged(
+    previousTransport: TransportMode,
+    newTransport: TransportMode,
+    correlationId?: string
+  ): void {
+    if (!eventBus) return;
+
+    const payload: PartyTransportChangedPayload = {
+      previousTransport,
+      newTransport,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.PARTY_TRANSPORT_CHANGED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'party-feature',
+      })
+    );
+  }
+
+  function publishLoaded(party: Party, correlationId?: string): void {
+    if (!eventBus) return;
+
+    const state = store.getState();
+    const payload: PartyLoadedPayload = {
+      partyId: party.id,
+      state,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.PARTY_LOADED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'party-feature',
+      })
+    );
+  }
+
+  // ===========================================================================
+  // Event Handlers
+  // ===========================================================================
+
+  function setupEventHandlers(): void {
+    if (!eventBus) return;
+
+    // Handle party:load-requested
+    subscriptions.push(
+      eventBus.subscribe<PartyLoadRequestedPayload>(
+        EventTypes.PARTY_LOAD_REQUESTED,
+        async (event) => {
+          const { partyId } = event.payload;
+          const correlationId = event.correlationId;
+
+          const result = await storage.load(partyId as PartyId);
+
+          if (result.ok) {
+            store.setCurrentParty(result.value);
+            publishLoaded(result.value, correlationId);
+            publishStateChanged(correlationId);
+          }
+          // Note: Error handling via party:load-failed would go here
+        }
+      )
+    );
+  }
+
+  // Set up event handlers immediately if eventBus is provided
+  setupEventHandlers();
 
   return {
     // =========================================================================
@@ -63,11 +206,22 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
       }
 
       store.setCurrentParty(result.value);
+
+      // Publish events
+      publishLoaded(result.value);
+      publishStateChanged();
+
       return ok(result.value);
     },
 
     setPosition(coord: HexCoordinate): void {
+      const previousPosition = store.getState().currentParty?.position;
       store.setPosition(coord);
+
+      // Publish position changed event
+      if (previousPosition) {
+        publishPositionChanged(previousPosition, coord);
+      }
     },
 
     setActiveTransport(mode: TransportMode): Result<void, AppError> {
@@ -87,7 +241,12 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
         );
       }
 
+      const previousTransport = party.activeTransport;
       store.setActiveTransport(mode);
+
+      // Publish transport changed event
+      publishTransportChanged(previousTransport, mode);
+
       return ok(undefined);
     },
 
@@ -109,6 +268,19 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
 
     unloadParty(): void {
       store.clear();
+      publishStateChanged();
+    },
+
+    // =========================================================================
+    // Lifecycle
+    // =========================================================================
+
+    dispose(): void {
+      // Clean up all EventBus subscriptions
+      for (const unsubscribe of subscriptions) {
+        unsubscribe();
+      }
+      subscriptions.length = 0;
     },
   };
 }

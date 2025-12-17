@@ -1,5 +1,8 @@
 # Loot-Feature
 
+> **Lies auch:** [Item](../domain/Item.md), [Encounter-System](Encounter-System.md)
+> **Wird benoetigt von:** Quest
+
 Automatische Loot-Generierung basierend auf Encounter-XP und Faction/Creature-Tags.
 
 **Design-Philosophie:** Loot wird automatisch generiert aber GM-kontrolliert praesentiert. Das System schlaegt passende Items vor, der GM entscheidet final.
@@ -500,4 +503,4 @@ Bei Magic Items hat der GM **immer** das letzte Wort:
 
 ---
 
-*Siehe auch: [Encounter-Feature.md](Encounter-Feature.md) | [Item.md](../domain/Item.md) | [Character.md](../domain/Character.md)*
+*Siehe auch: [Encounter-System.md](Encounter-System.md) | [Item.md](../domain/Item.md) | [Character.md](../domain/Character.md)*

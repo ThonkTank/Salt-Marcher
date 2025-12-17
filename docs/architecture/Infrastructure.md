@@ -1,5 +1,8 @@
 # Infrastructure Layer
 
+> **Lies auch:** [Core](Core.md), [Features](Features.md)
+> **Wird benoetigt von:** Vault, Rendering
+
 Implementiert Feature-StoragePorts für konkrete externe Systeme.
 
 **Pfad:** `src/infrastructure/`
