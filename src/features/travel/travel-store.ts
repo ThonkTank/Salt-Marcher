@@ -99,22 +99,7 @@ export function createTravelStore() {
     },
 
     /**
-     * Transition to arrived state.
-     * Requires current status to be 'traveling'.
-     */
-    setArrived(): boolean {
-      if (state.status !== 'traveling') {
-        return false;
-      }
-      state = {
-        ...state,
-        status: 'arrived',
-      };
-      return true;
-    },
-
-    /**
-     * Reset to idle state.
+     * Reset to idle state (also used on travel completion).
      */
     setIdle(): void {
       state = createInitialTravelState();

@@ -542,9 +542,7 @@ Initiative-Tracker und Combat-Management.
 
 'combat:next-turn-requested': {}
 
-'combat:end-requested': {
-  outcome: 'victory' | 'defeat' | 'fled' | 'negotiated';
-}
+'combat:end-requested': {}  // GM regelt Details in Resolution-UI
 
 'combat:apply-damage-requested': {
   participantId: string;
@@ -606,9 +604,8 @@ Initiative-Tracker und Combat-Management.
 
 'combat:completed': {             // War: combat:ended
   combatId: string;
-  outcome: 'victory' | 'defeat' | 'fled' | 'negotiated';
   duration: number;
-  xpAwarded: number;
+  xpAwarded: number;  // Immer berechnet, GM passt in Resolution-UI an
 }
 
 // Character-spezifisch

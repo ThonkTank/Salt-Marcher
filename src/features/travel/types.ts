@@ -5,7 +5,7 @@
  * - Single hex-to-hex movement (moveToNeighbor)
  * - Multi-hex routes with state machine (planRoute, startTravel, pause, resume)
  *
- * State Machine: idle → planning → traveling ↔ paused → arrived
+ * State Machine: idle → planning → traveling ↔ paused → idle (on completion)
  */
 
 import type { Result, AppError, Option } from '@core/index';
@@ -39,6 +39,12 @@ export interface TravelFeaturePort {
    * Check if a move to target is valid (adjacent and traversable).
    */
   canMoveTo(target: HexCoordinate): boolean;
+
+  /**
+   * Check if a hex is traversable with current transport.
+   * Does NOT check adjacency - use for waypoint validation.
+   */
+  isTraversable(coord: HexCoordinate): boolean;
 
   // ===========================================================================
   // State Machine (Multi-Hex Routes)
@@ -113,6 +119,14 @@ export interface TravelFeaturePort {
    */
   calculatePreviewPath(waypoints: HexCoordinate[]): HexCoordinate[] | null;
 
+  /**
+   * Calculate estimated duration for a preview path.
+   * Uses actual terrain/weather factors for accurate ETA.
+   * @param waypoints - User-specified waypoints (not including current position)
+   * @returns Estimated duration or null if invalid path
+   */
+  calculatePreviewETA(waypoints: HexCoordinate[]): Duration | null;
+
   // ===========================================================================
   // Lifecycle
   // ===========================================================================
@@ -157,11 +171,10 @@ export interface TravelResult {
  * Transitions:
  * - idle → planning (planRoute)
  * - planning → traveling (startTravel) | idle (cancel)
- * - traveling → paused (pause) | arrived (completed)
+ * - traveling → paused (pause) | idle (completed)
  * - paused → traveling (resume) | idle (cancel)
- * - arrived → idle (reset)
  */
-export type TravelStatus = 'idle' | 'planning' | 'traveling' | 'paused' | 'arrived';
+export type TravelStatus = 'idle' | 'planning' | 'traveling' | 'paused';
 
 /**
  * Reason why travel was paused.

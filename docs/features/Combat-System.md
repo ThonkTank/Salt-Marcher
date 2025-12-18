@@ -595,12 +595,12 @@ Nach `combat:end-requested` startet der Resolution-Flow im DetailView (Combat-Ta
 GM klickt [End Combat]
     │
     ▼
-combat:end-requested { outcome }
+combat:end-requested {}
     │
     ├── Combat-Feature: XP berechnen, Zeit addieren
     │
     ▼
-combat:completed { xpAwarded, roundsTotal, outcome }
+combat:completed { xpAwarded, roundsTotal }
     │
     ▼
 DetailView wechselt zu Resolution-Modus
@@ -618,7 +618,7 @@ DetailView wechselt zu Resolution-Modus
             └── loot:distributed { items, recipients }
     │
     ▼
-encounter:resolved { encounterId, outcome, xpAwarded }
+encounter:resolved { encounterId, xpAwarded }
 ```
 
 ### XP-Berechnung

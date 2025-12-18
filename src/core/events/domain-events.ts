@@ -20,7 +20,6 @@ import type {
   Condition,
   ConditionType,
   CombatEffect,
-  CombatOutcome,
 } from '../schemas';
 import type {
   LootContext,
@@ -652,7 +651,7 @@ export interface CombatNextTurnRequestedPayload {
 }
 
 export interface CombatEndRequestedPayload {
-  outcome: CombatOutcome;
+  // Empty - GM handles all resolution details in Resolution-UI
 }
 
 export interface CombatApplyDamageRequestedPayload {
@@ -718,7 +717,6 @@ export interface CombatStartedPayload {
 
 export interface CombatCompletedPayload {
   combatId: string;
-  outcome: CombatOutcome;
   duration: number;
   xpAwarded: number;
 }

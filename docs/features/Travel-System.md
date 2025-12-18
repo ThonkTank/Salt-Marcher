@@ -25,8 +25,11 @@ Das Travel-Feature ist **spezifisch fuer Hex-Overland-Maps** (Weltreisen):
 ## State-Machine
 
 ```
-idle → planning → traveling ↔ paused → arrived
+idle → planning → traveling ↔ paused → idle (on completion)
 ```
+
+> **Note:** Nach Reise-Abschluss wird direkt auf `idle` zurueckgesetzt.
+> Das `travel:completed` Event signalisiert die Ankunft.
 
 ---
 

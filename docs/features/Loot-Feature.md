@@ -119,14 +119,41 @@ PC Wealth (Gold) pro Level nach DMG & XGE - **exkl. Magic Items**:
 ### Budget-Berechnung
 
 ```typescript
-// Gold pro XP berechnen
-// Beispiel Level 5→6: 2300g Gold / 7500 XP = ~0.31 Gold/XP
-// Vereinfacht: konstanter Faktor, anpassbar
+// Gold pro XP basierend auf Party-Level (DMG-Tabelle: Gold-Differenz / XP-Differenz)
+function getGoldPerXP(partyLevel: number): number {
+  // Berechnet aus DMG Gold-by-Level und XP-Progression
+  // Level 1-4: Tier 1 (niedriger Ratio)
+  // Level 5-10: Tier 2
+  // Level 11-16: Tier 3 (steigend)
+  // Level 17-20: Tier 4 (sehr hoch)
+  const GOLD_PER_XP_BY_LEVEL: Record<number, number> = {
+    1: 0.33,  // 100g / 300 XP
+    2: 0.17,  // 100g / 600 XP
+    3: 0.11,  // 200g / 1,800 XP
+    4: 0.08,  // 300g / 3,800 XP
+    5: 0.31,  // 2,300g / 7,500 XP
+    6: 0.27,  // 2,400g / 9,000 XP
+    7: 0.29,  // 3,200g / 11,000 XP
+    8: 0.24,  // 3,400g / 14,000 XP
+    9: 0.31,  // 5,000g / 16,000 XP
+    10: 0.19, // 4,000g / 21,000 XP
+    11: 0.60, // 9,000g / 15,000 XP
+    12: 0.45, // 9,000g / 20,000 XP
+    13: 0.90, // 18,000g / 20,000 XP
+    14: 0.72, // 18,000g / 25,000 XP
+    15: 0.93, // 28,000g / 30,000 XP
+    16: 0.90, // 27,000g / 30,000 XP
+    17: 2.10, // 84,000g / 40,000 XP
+    18: 4.23, // 169,000g / 40,000 XP
+    19: 3.38, // 169,000g / 50,000 XP
+    20: 3.38  // Kein weiterer Level-Up
+  };
+  return GOLD_PER_XP_BY_LEVEL[Math.min(20, Math.max(1, partyLevel))] ?? 0.5;
+}
 
-const GOLD_PER_XP = 0.5;  // Konfigurierbarer Faktor
-
-function updateBudget(xpGained: number): void {
-  const goldToAdd = xpGained * GOLD_PER_XP;
+function updateBudget(xpGained: number, partyLevel: number): void {
+  const goldPerXP = getGoldPerXP(partyLevel);
+  const goldToAdd = xpGained * goldPerXP;
   budget.accumulated += goldToAdd;
   budget.balance = budget.accumulated - budget.distributed;
 }

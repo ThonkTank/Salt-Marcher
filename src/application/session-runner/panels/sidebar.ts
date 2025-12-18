@@ -241,15 +241,16 @@ export function createSidebarPanel(
       flex: 1;
     `;
 
-    if (!disabled) {
-      btn.addEventListener('mouseenter', () => {
+    // IMMER Event-Listener hinzufügen - disabled-Attribut verhindert native Klicks
+    btn.addEventListener('mouseenter', () => {
+      if (!btn.disabled) {
         btn.style.background = 'var(--interactive-hover)';
-      });
-      btn.addEventListener('mouseleave', () => {
-        btn.style.background = 'var(--interactive-normal)';
-      });
-      btn.addEventListener('click', onClick);
-    }
+      }
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.background = 'var(--interactive-normal)';
+    });
+    btn.addEventListener('click', onClick);
 
     return btn;
   }
@@ -264,7 +265,6 @@ export function createSidebarPanel(
       planning: '📍 Planning...',
       traveling: '🚶 Traveling...',
       paused: '⏸️ Paused',
-      arrived: '🏁 Arrived',
     };
 
     // Use travelMode for planning state, otherwise use travel feature status
@@ -286,7 +286,7 @@ export function createSidebarPanel(
     }
 
     // Button visibility based on travel state
-    const isIdle = (status === 'idle' || status === 'arrived') && !travelMode;
+    const isIdle = status === 'idle' && !travelMode;
     const isPlanning = travelMode || status === 'planning'; // Also check status for route-ready state
     const isTraveling = status === 'traveling';
     const isPaused = status === 'paused';
@@ -296,7 +296,7 @@ export function createSidebarPanel(
 
     // Plan button: toggles between "Plan" and "Cancel Plan"
     planBtn.textContent = travelMode ? 'Cancel Plan' : 'Plan';
-    updateButtonState(planBtn, status === 'idle' || status === 'arrived' || travelMode);
+    updateButtonState(planBtn, status === 'idle' || travelMode);
 
     // Start button: visible when planning with waypoints OR route is ready
     const canStart = (travelMode && planningWaypoints.length > 0) || status === 'planning';
@@ -318,8 +318,10 @@ export function createSidebarPanel(
     updateButtonState(cancelBtn, true);
 
     // ETA display (visible during planning, traveling, or paused)
-    if (travel.eta && (isPlanning || isTraveling || isPaused)) {
-      etaDisplay.textContent = `⏱️ ETA: ${travel.eta.display}`;
+    // Use previewETA during planning, otherwise travel.eta
+    const etaToShow = state.previewETA || travel.eta;
+    if (etaToShow && (isPlanning || isTraveling || isPaused)) {
+      etaDisplay.textContent = `⏱️ ETA: ${etaToShow.display}`;
       etaDisplay.style.display = 'block';
     } else {
       etaDisplay.style.display = 'none';

@@ -53,7 +53,7 @@ Event-Namen folgen einem konsistenten Pattern basierend auf ihrer Kategorie:
 | Kategorie | Pattern | Beispiele |
 |-----------|---------|-----------|
 | **Command** | `namespace:verb-noun-requested` | `map:load-requested`, `travel:start-requested`, `encounter:generate-requested` |
-| **Domain** | `namespace:past-participle` | `map:loaded`, `combat:started`, `encounter:generated`, `travel:arrived` |
+| **Domain** | `namespace:past-participle` | `map:loaded`, `combat:started`, `encounter:generated`, `travel:completed` |
 | **State-Sync** | `namespace:state-changed` | `travel:state-changed`, `party:state-changed`, `map:state-changed` |
 | **Failure** | `namespace:action-failed` | `map:load-failed`, `encounter:generate-failed`, `travel:failed` |
 

@@ -290,16 +290,16 @@ export function createSessionRunnerViewModel(
     }
 
     // For preview path during planning (before route is created)
-    if (state.travelMode && state.previewPath && state.previewPath.length > 1) {
-      // Estimate: ~2 hours per hex (rough average)
-      const hexCount = state.previewPath.length - 1;
-      const estimatedHours = hexCount * 2;
-      const hours = Math.floor(estimatedHours);
-      const minutes = Math.round((estimatedHours - hours) * 60);
-      return {
-        totalDuration: { hours, minutes },
-        display: formatETA(hours, minutes),
-      };
+    if (state.travelMode && state.planningWaypoints && state.planningWaypoints.length > 0) {
+      const eta = travelFeature.calculatePreviewETA(state.planningWaypoints);
+      if (eta) {
+        const hours = eta.hours ?? 0;
+        const minutes = eta.minutes ?? 0;
+        return {
+          totalDuration: { hours, minutes },
+          display: formatETA(hours, minutes),
+        };
+      }
     }
 
     return null;
@@ -485,7 +485,6 @@ export function createSessionRunnerViewModel(
             {
               travelMode: false,
               planningWaypoints: [],
-              previewPath: null,
               travelStatus: 'traveling',
             },
             ['route', 'sidebar']
@@ -494,7 +493,7 @@ export function createSessionRunnerViewModel(
       )
     );
 
-    // Travel completed - clear route
+    // Travel completed - clear route and preview
     eventSubscriptions.push(
       eventBus.subscribe<TravelCompletedPayload>(
         EventTypes.TRAVEL_COMPLETED,
@@ -502,6 +501,8 @@ export function createSessionRunnerViewModel(
           updateState(
             {
               activeRoute: null,
+              previewPath: null,
+              previewETA: null,
               travelStatus: 'idle',
             },
             ['route', 'sidebar']
@@ -569,12 +570,25 @@ export function createSessionRunnerViewModel(
           return;
         }
 
-        // Add waypoint and calculate preview path
+        // Check if tile is traversable with current transport
+        if (!travelFeature.isTraversable(coord)) {
+          notificationService.warn('This terrain cannot be traversed');
+          return;
+        }
+
+        // Add waypoint and calculate preview path + ETA
         const newWaypoints = [...state.planningWaypoints, coord];
         const previewPath = travelFeature.calculatePreviewPath(newWaypoints);
+        const etaDuration = travelFeature.calculatePreviewETA(newWaypoints);
+        const previewETA: ETAInfo | null = etaDuration
+          ? {
+              totalDuration: { hours: etaDuration.hours ?? 0, minutes: etaDuration.minutes ?? 0 },
+              display: formatETA(etaDuration.hours ?? 0, etaDuration.minutes ?? 0),
+            }
+          : null;
         updateState(
-          { planningWaypoints: newWaypoints, previewPath },
-          ['route']
+          { planningWaypoints: newWaypoints, previewPath, previewETA },
+          ['route', 'sidebar']
         );
         return;
       }
@@ -710,16 +724,23 @@ export function createSessionRunnerViewModel(
 
       const newWaypoints = [...state.planningWaypoints, coord];
       const previewPath = travelFeature.calculatePreviewPath(newWaypoints);
+      const etaDuration = travelFeature.calculatePreviewETA(newWaypoints);
+      const previewETA: ETAInfo | null = etaDuration
+        ? {
+            totalDuration: { hours: etaDuration.hours ?? 0, minutes: etaDuration.minutes ?? 0 },
+            display: formatETA(etaDuration.hours ?? 0, etaDuration.minutes ?? 0),
+          }
+        : null;
       updateState(
-        { planningWaypoints: newWaypoints, previewPath },
-        ['route']
+        { planningWaypoints: newWaypoints, previewPath, previewETA },
+        ['route', 'sidebar']
       );
     },
 
     clearWaypoints(): void {
       updateState(
-        { planningWaypoints: [], previewPath: null },
-        ['route']
+        { planningWaypoints: [], previewPath: null, previewETA: null },
+        ['route', 'sidebar']
       );
     },
 

@@ -235,13 +235,6 @@ export const combatStatusSchema = z.enum(['idle', 'active']);
 export type CombatStatus = z.infer<typeof combatStatusSchema>;
 
 /**
- * Combat outcome when combat ends.
- */
-export const combatOutcomeSchema = z.enum(['victory', 'defeat', 'fled', 'negotiated']);
-
-export type CombatOutcome = z.infer<typeof combatOutcomeSchema>;
-
-/**
  * Main combat state.
  */
 export const combatStateSchema = z.object({

@@ -5,7 +5,7 @@
  * Migrated from SessionRunner combat-panel.ts with CSS adjustments for DetailView.
  */
 
-import type { CombatState, CombatParticipant, ConditionType, CombatOutcome } from '@core/schemas';
+import type { CombatState, CombatParticipant, ConditionType } from '@core/schemas';
 import { CONDITION_REMINDERS } from '@core/schemas';
 import type { DetailViewState } from '../types';
 
@@ -15,7 +15,7 @@ import type { DetailViewState } from '../types';
 
 export interface CombatTabCallbacks {
   onNextTurn(): void;
-  onEndCombat(outcome: CombatOutcome): void;
+  onEndCombat(): void;
   onApplyDamage(participantId: string, amount: number): void;
   onApplyHealing(participantId: string, amount: number): void;
   onAddCondition(participantId: string, condition: ConditionType): void;
@@ -108,10 +108,7 @@ export function createCombatTab(
     nextTurnBtn.style.flex = '1';
 
     const endBtn = createButton('🏁 End Combat', () => {
-      const outcome = prompt('Combat outcome: victory, defeat, fled, negotiated');
-      if (outcome === 'victory' || outcome === 'defeat' || outcome === 'fled' || outcome === 'negotiated') {
-        callbacks.onEndCombat(outcome);
-      }
+      callbacks.onEndCombat();
     });
     endBtn.style.flex = '1';
     endBtn.style.background = 'var(--background-modifier-border)';

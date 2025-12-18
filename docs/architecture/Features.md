@@ -204,7 +204,7 @@ Encounter-Trigger:
 
 ```typescript
 // 1. Status-Enum
-type TravelStatus = 'idle' | 'planning' | 'traveling' | 'paused' | 'arrived';
+type TravelStatus = 'idle' | 'planning' | 'traveling' | 'paused';
 
 // 2. State-Type
 interface TravelState {

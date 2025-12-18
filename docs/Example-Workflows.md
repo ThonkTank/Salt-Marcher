@@ -106,7 +106,7 @@ travel:start-requested
         │   └── encounter:resolved
         │       └── travel:resumed
         │
-        └── travel:arrived
+        └── travel:completed
             └── party:position-changed
 ```
 

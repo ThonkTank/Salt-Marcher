@@ -9,7 +9,7 @@ import { ItemView, type WorkspaceLeaf } from 'obsidian';
 import type { EventBus } from '@core/index';
 import type { EncounterFeaturePort } from '@/features/encounter';
 import type { CombatFeaturePort } from '@/features/combat';
-import type { ConditionType, CombatOutcome } from '@core/schemas';
+import type { ConditionType } from '@core/schemas';
 import { EventTypes, createEvent, newCorrelationId } from '@core/events';
 import { now } from '@core/types';
 import { VIEW_TYPE_DETAIL_VIEW, type TabId } from './types';
@@ -276,11 +276,11 @@ export class DetailView extends ItemView {
           createEvent(EventTypes.COMBAT_NEXT_TURN_REQUESTED, {}, this.eventOptions())
         );
       },
-      onEndCombat: (outcome: CombatOutcome) => {
+      onEndCombat: () => {
         this.deps.eventBus.publish(
           createEvent(
             EventTypes.COMBAT_END_REQUESTED,
-            { outcome },
+            {},
             this.eventOptions()
           )
         );

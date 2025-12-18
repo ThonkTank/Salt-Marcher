@@ -22,7 +22,6 @@ import {
   type EncounterDismissRequestedPayload,
   type EncounterResolveRequestedPayload,
   type MapLoadedPayload,
-  type TravelPositionChangedPayload,
   type CombatCompletedPayload,
   type LootGeneratedPayload,
 } from '@core/events';
@@ -36,7 +35,6 @@ import type {
   GameDateTime,
   EncounterType,
   CombatParticipant,
-  CombatOutcome,
 } from '@core/schemas';
 import { MAX_REROLL_ATTEMPTS } from '@core/schemas';
 import type { MapFeaturePort } from '../map';
@@ -59,11 +57,6 @@ import {
   selectOrGenerateNpc,
   createEncounterLeadNpc,
 } from './npc-generator';
-import {
-  calculateEncounterChance,
-  rollEncounter,
-  DEFAULT_POPULATION,
-} from './encounter-chance';
 
 // ============================================================================
 // Encounter Service Dependencies
@@ -227,19 +220,11 @@ export function createEncounterService(
   }
 
   /**
-   * Map combat outcome to encounter outcome.
+   * Get default encounter outcome for completed combat.
+   * GM adjusts actual outcome in Resolution-UI if needed.
    */
-  function mapCombatOutcomeToEncounter(combatOutcome: CombatOutcome): EncounterOutcome {
-    switch (combatOutcome) {
-      case 'victory':
-        return 'victory';
-      case 'defeat':
-        return 'defeat';
-      case 'fled':
-        return 'fled';
-      case 'negotiated':
-        return 'negotiated';
-    }
+  function getDefaultCombatEncounterOutcome(): EncounterOutcome {
+    return 'victory';
   }
 
   // --------------------------------------------------------------------------
@@ -746,7 +731,7 @@ export function createEncounterService(
             encounter.state === 'active' &&
             encounter.type === 'combat'
           ) {
-            const encounterOutcome = mapCombatOutcomeToEncounter(event.payload.outcome);
+            const encounterOutcome = getDefaultCombatEncounterOutcome();
             resolveEncounterInternal(encounter.id, encounterOutcome, event.correlationId);
           }
         }
@@ -761,44 +746,9 @@ export function createEncounterService(
       })
     );
 
-    // Handle travel position changes (encounter checks during travel)
-    subscriptions.push(
-      eventBus.subscribe<TravelPositionChangedPayload>(
-        EventTypes.TRAVEL_POSITION_CHANGED,
-        (event) => {
-          const { position, timeCostHours, terrainId } = event.payload;
-
-          // Skip if encounter already pending/active
-          const currentState = store.getState();
-          if (currentState.currentEncounter) {
-            return;
-          }
-
-          // Calculate encounter chance based on travel time
-          // MVP: Use default population (50) since faction presence not yet implemented
-          const population = DEFAULT_POPULATION;
-          const chance = calculateEncounterChance(timeCostHours, population);
-
-          // Roll for encounter
-          if (!rollEncounter(chance)) {
-            return;
-          }
-
-          // Build generation context from travel position
-          const context: GenerationContext = {
-            position,
-            terrainId,
-            timeSegment: timeFeature.getTimeSegment(),
-            weather: undefined, // Full weather not needed for generation
-            partyLevel: getPartyLevel(),
-            trigger: 'travel',
-          };
-
-          // Generate the encounter
-          executeGenerationPipeline(context, event.correlationId);
-        }
-      )
-    );
+    // NOTE: Travel encounter checks are handled by travel-service.ts at hour boundaries
+    // via checkForEncounter() which publishes ENCOUNTER_GENERATE_REQUESTED.
+    // See: Travel-System.md:232-239 and Encounter-System.md:385-395
   }
 
   // Initialize event handlers

@@ -21,7 +21,7 @@ Journal
 ├── Auto-generierte Eintraege
 │   ├── Quest-Events (discovered, completed, failed)
 │   ├── Encounter-Events (started, resolved)
-│   ├── Travel-Events (arrived, departed)
+│   ├── Travel-Events (completed, departed)
 │   ├── Time-Events (significant time passed)
 │   └── World-Events (weather change, faction event)
 │
@@ -107,7 +107,7 @@ interface JournalEntityRef {
 | `quest:failed` | `quest` | "Quest fehlgeschlagen: {name}" | GM-Aktion |
 | `encounter:started` | `encounter` | "Kampf: {creatures}" | System |
 | `encounter:resolved` | `encounter` | "Kampf beendet: {outcome}" | System |
-| `travel:arrived` | `travel` | "Ankunft: {location}" | System |
+| `travel:completed` | `travel` | "Ankunft: {location}" | System |
 | `travel:departed` | `travel` | "Aufbruch von: {location}" | System |
 | `weather:changed` | `worldevent` | "Wetterwechsel: {newWeather}" | System |
 | `faction:poi-claimed` | `worldevent` | "{faction} uebernimmt {poi}" | System |

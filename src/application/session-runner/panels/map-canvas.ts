@@ -326,29 +326,24 @@ export function createMapCanvas(
 
   /**
    * Render route lines and waypoint markers.
+   * Uses previewPath for both planning and active routes (just changes color).
    */
   function renderRoute(state: RenderState): void {
-    const { travelMode, planningWaypoints, previewPath, activeRoute, partyPosition } = state;
+    const { planningWaypoints, previewPath, activeRoute } = state;
 
-    // Planning mode: draw calculated path (previewPath) or fallback to straight lines
-    if (travelMode && planningWaypoints.length > 0 && partyPosition) {
-      // Use previewPath if available (shows actual pathfinding result)
-      if (previewPath && previewPath.length > 1) {
-        drawRouteLine(previewPath, COLORS.planningRoute, COLORS.planningRouteWidth);
-      } else {
-        // Fallback to straight lines if no path calculated yet
-        const allPoints = [partyPosition, ...planningWaypoints];
-        drawRouteLine(allPoints, COLORS.planningRoute, COLORS.planningRouteWidth);
-      }
-      // Always show user-specified waypoint markers
-      drawWaypointMarkers(planningWaypoints, COLORS.waypointBorder);
+    // Draw route line (previewPath works for both planning and active)
+    if (previewPath && previewPath.length > 1) {
+      const isActive = activeRoute !== null;
+      const color = isActive ? COLORS.activeRoute : COLORS.planningRoute;
+      const width = isActive ? COLORS.activeRouteWidth : COLORS.planningRouteWidth;
+      drawRouteLine(previewPath, color, width);
     }
 
-    // Active route: draw the planned/active route
-    if (activeRoute && activeRoute.waypoints.length > 1) {
-      drawRouteLine(activeRoute.waypoints, COLORS.activeRoute, COLORS.activeRouteWidth);
-      // Draw waypoint markers (skip first = start position)
+    // Waypoint markers
+    if (activeRoute) {
       drawWaypointMarkers(activeRoute.waypoints.slice(1), COLORS.waypointActiveBorder);
+    } else if (planningWaypoints.length > 0) {
+      drawWaypointMarkers(planningWaypoints, COLORS.waypointBorder);
     }
   }
 

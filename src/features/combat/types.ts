@@ -8,7 +8,6 @@ import type { Result, AppError, EntityId } from '@core/types';
 import type {
   CombatState,
   CombatParticipant,
-  CombatOutcome,
   Condition,
   ConditionType,
   CombatEffect,
@@ -66,9 +65,9 @@ export interface CombatFeaturePort {
   ): Result<void, AppError>;
 
   /**
-   * End combat with outcome.
+   * End combat. GM handles resolution details in Resolution-UI.
    */
-  endCombat(outcome: CombatOutcome): Result<CombatResult, AppError>;
+  endCombat(): Result<CombatResult, AppError>;
 
   /**
    * Advance to next turn.
@@ -141,8 +140,6 @@ export interface InternalCombatState extends CombatState {
 export interface CombatResult {
   /** Combat session ID */
   combatId: string;
-  /** Final outcome */
-  outcome: CombatOutcome;
   /** Duration in rounds */
   durationRounds: number;
   /** Total XP to award (calculated from defeated creatures) */

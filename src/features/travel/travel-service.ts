@@ -170,12 +170,16 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
       Math.floor(newTotalProgress) - Math.floor(previousHourProgress);
 
     // Encounter checks for each full hour crossed
+    // Note: checkForEncounter publishes ENCOUNTER_GENERATE_REQUESTED, but encounter
+    // generation may fail silently (no eligible creatures, missing tile, etc.).
+    // We check the actual status instead of trusting the return value.
     for (let i = 0; i < hoursCrossed; i++) {
-      const encounterTriggered = checkForEncounter(segment.to, correlationId);
-      if (encounterTriggered) {
-        // Travel will be paused by encounter:generated event handler
-        return { shouldContinue: false };
-      }
+      checkForEncounter(segment.to, correlationId);
+    }
+    // If encounter was successfully generated, status will be 'paused'
+    // (EventBus is synchronous, so pause happens before this check)
+    if (store.getStatus() !== 'traveling') {
+      return { shouldContinue: false };
     }
 
     // Execute segment move (position + time)
@@ -207,7 +211,7 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     const route = state.route;
 
     if (route) {
-      store.setArrived();
+      store.setIdle();
       publishStateChanged(correlationId);
       publishTravelCompleted(
         route.waypoints[route.waypoints.length - 1],
@@ -856,6 +860,19 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
         }
       )
     );
+
+    // Auto-resume on encounter:dismissed (if paused due to encounter)
+    subscriptions.push(
+      eventBus.subscribe(
+        EventTypes.ENCOUNTER_DISMISSED,
+        (event) => {
+          const state = store.getState();
+          if (state.status === 'paused' && state.pauseReason === 'encounter') {
+            resumeTravelInternal(event.correlationId);
+          }
+        }
+      )
+    );
   }
 
   // ===========================================================================
@@ -1112,15 +1129,10 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     // Stop the travel loop first
     stopTravelLoop();
 
-    const status = store.getStatus();
-
     // Can cancel from planning, traveling, or paused
-    if (status === 'idle' || status === 'arrived') {
+    if (store.getStatus() === 'idle') {
       return err(
-        createError(
-          'INVALID_STATE',
-          `Cannot cancel while in '${status}' state`
-        )
+        createError('INVALID_STATE', 'Cannot cancel while in idle state')
       );
     }
 
@@ -1167,7 +1179,7 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
     if (!hasMore) {
       // Route complete
-      store.setArrived();
+      store.setIdle();
       publishStateChanged(correlationId);
       publishTravelCompleted(
         route.waypoints[route.waypoints.length - 1],
@@ -1224,6 +1236,10 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
       const travResult = validateTraversable(target);
       return travResult.ok;
+    },
+
+    isTraversable(coord: HexCoordinate): boolean {
+      return validateTraversable(coord).ok;
     },
 
     // =========================================================================
@@ -1304,6 +1320,22 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
       }
 
       return completePath;
+    },
+
+    calculatePreviewETA(userWaypoints: HexCoordinate[]): Duration | null {
+      const path = this.calculatePreviewPath(userWaypoints);
+      if (!path || path.length < 2) return null;
+
+      let totalHours = 0;
+      for (let i = 1; i < path.length; i++) {
+        totalHours += calculateSegmentTime(path[i]);
+      }
+
+      const totalMinutes = Math.round(totalHours * 60);
+      return {
+        hours: Math.floor(totalMinutes / 60),
+        minutes: totalMinutes % 60,
+      };
     },
 
     // =========================================================================

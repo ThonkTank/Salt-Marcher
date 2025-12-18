@@ -228,8 +228,6 @@ export {
   type CombatParticipant,
   combatStatusSchema,
   type CombatStatus,
-  combatOutcomeSchema,
-  type CombatOutcome,
   combatStateSchema,
   type CombatState,
   CONDITION_REMINDERS,

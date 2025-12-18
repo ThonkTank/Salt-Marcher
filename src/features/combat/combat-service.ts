@@ -23,7 +23,6 @@ import {
 import type {
   CombatState,
   CombatParticipant,
-  CombatOutcome,
   Condition,
   ConditionType,
   CombatEffect,
@@ -163,7 +162,6 @@ export function createCombatService(deps: CombatServiceDeps): CombatFeaturePort 
         EventTypes.COMBAT_COMPLETED,
         {
           combatId: result.combatId,
-          outcome: result.outcome,
           duration: result.durationRounds,
           xpAwarded: result.xpAwarded,
         },
@@ -204,15 +202,20 @@ export function createCombatService(deps: CombatServiceDeps): CombatFeaturePort 
         EventTypes.COMBAT_START_REQUESTED,
         (event) => {
           const { participants, fromEncounter } = event.payload;
-          startCombat(participants, fromEncounter);
+          const result = startCombat(participants, fromEncounter);
+
+          if (!result.ok) {
+            console.error('[combat-service] Failed to start combat:', result.error);
+            // TODO (Post-MVP): Publish combat:start-failed event
+          }
         }
       )
     );
 
     // Handle combat end request
     subscriptions.push(
-      eventBus.subscribe<CombatEndRequestedPayload>(EventTypes.COMBAT_END_REQUESTED, (event) => {
-        endCombat(event.payload.outcome);
+      eventBus.subscribe<CombatEndRequestedPayload>(EventTypes.COMBAT_END_REQUESTED, () => {
+        endCombat();
       })
     );
 
@@ -314,7 +317,7 @@ export function createCombatService(deps: CombatServiceDeps): CombatFeaturePort 
     return ok(undefined);
   }
 
-  function endCombat(outcome: CombatOutcome): Result<CombatResult, AppError> {
+  function endCombat(): Result<CombatResult, AppError> {
     const state = store.getState();
 
     if (state.status !== 'active') {
@@ -324,16 +327,12 @@ export function createCombatService(deps: CombatServiceDeps): CombatFeaturePort 
       });
     }
 
-    // Calculate XP (only for victory or negotiated outcomes)
-    const xpAwarded =
-      outcome === 'victory' || outcome === 'negotiated'
-        ? calculateCombatXp(state.participants)
-        : 0;
+    // Calculate XP - GM adjusts in Resolution-UI if needed
+    const xpAwarded = calculateCombatXp(state.participants);
 
     // Calculate result
     const result: CombatResult = {
       combatId: state.combatId!,
-      outcome,
       durationRounds: state.roundNumber,
       xpAwarded,
       encounterId: state.encounterId,

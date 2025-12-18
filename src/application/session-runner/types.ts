@@ -57,7 +57,7 @@ export interface HeaderState {
  */
 export interface TravelSectionState {
   /** Current travel status */
-  status: 'idle' | 'planning' | 'traveling' | 'paused' | 'arrived';
+  status: 'idle' | 'planning' | 'traveling' | 'paused';
   /** Travel speed in miles/day */
   speed: number;
   /** Current terrain name at party position */
@@ -160,6 +160,8 @@ export interface RenderState {
   planningWaypoints: HexCoordinate[];
   /** Preview path showing actual calculated route (all hexes) */
   previewPath: HexCoordinate[] | null;
+  /** Preview ETA during planning (before route is created) */
+  previewETA: ETAInfo | null;
   /** Active route (after planning or during travel) */
   activeRoute: Route | null;
   /** Current travel status from travel feature */
@@ -206,6 +208,7 @@ export function createInitialRenderState(): RenderState {
     travelMode: false,
     planningWaypoints: [],
     previewPath: null,
+    previewETA: null,
     activeRoute: null,
     travelStatus: 'idle',
     tokenAnimation: null,

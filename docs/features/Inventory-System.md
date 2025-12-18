@@ -126,7 +126,7 @@ Over:      > 210 lb      (Keine Reise)
 Nach jeder Reise wird der Rationen-Verbrauch berechnet:
 
 ```
-travel:arrived
+travel:completed
     │
     ├── Berechne: Tage unterwegs × Party-Groesse = benoetigte Rationen
     │
