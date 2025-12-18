@@ -10,9 +10,9 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 
 | Feature | Aspekte |
 |---------|---------|
-| Travel | Nachbar-Bewegung, State-Machine, Multi-Hex-Routen (Greedy), Terrain-Speed-Faktor, Weather-Speed-Faktor, Encumbrance-Speed-Faktor, Wegpunkt-UI, Routen-Visualisierung, Auto-Segment-Bewegung, Stunden-Encounter-Checks (12.5%), Auto-Pause bei Encounter, Token-Animation, Path-Preview (Greedy), ETA-Anzeige |
+| Travel | Nachbar-Bewegung, State-Machine, Multi-Hex-Routen (Greedy), Terrain-Speed-Faktor, Weather-Speed-Faktor, Encumbrance-Speed-Faktor, Wegpunkt-UI, Routen-Visualisierung, Auto-Segment-Bewegung, Stunden-Encounter-Checks (12.5%), Auto-Pause bei Encounter, Zeit-basierte Token-Animation (1min/Tick), Path-Preview (Greedy), ETA-Anzeige |
 | Weather | Terrain-basierte Generierung, Travel-Speed-Modifier, Persistenz |
-| Encounter | 4 Typen, State-Machine, 6-Step Pipeline (inkl. Loot), NPC-Generator, Travel-Integration, XP-Berechnung |
+| Encounter | 4 Typen, State-Machine, 6-Step Pipeline (inkl. Loot), NPC-Generator, Travel-Integration, XP-Berechnung, CR-Vergleich, Difficulty-System, XP-Budget, Gruppen-Multiplikatoren, Daily-XP-Tracking, Multi-Creature Combat |
 | Combat | Initiative-Tracker, HP-Management, 14 Conditions, Concentration, Time-Integration, XP aus Creatures |
 | Quest | State-Machine, 40/60 XP-Split, Encounter-Slot-Zuweisung, Resumable State |
 | Party | Character-Schema, Party-Member-Management, getPartyLevel/Speed |
@@ -25,73 +25,60 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 
 ## 🔄 Aktiver Sprint
 
-_Phase 13 abgeschlossen._
-
-### Phase 13: Travel/Combat Bugfixes
+### ✅ Phase 14: Encounter Balancing + Multi-Creature Encounters (ABGESCHLOSSEN)
 
 **User Story:**
-> Als GM moechte ich stabile Travel- und Combat-Workflows, damit Sessions nicht durch State-Fehler unterbrochen werden.
+> Als GM moechte ich ausgeglichene Multi-Creature-Encounters, damit Combat-Begegnungen zur Party-Staerke passen und die D&D 5e Balancing-Regeln korrekt angewendet werden.
 
-**Scope (siehe Backlog #1, #2, #14):**
-- [x] Combat Event-Handler Error-Handling (gefixt)
-- [x] Travel encounter:dismissed Handler (gefixt)
-- [x] ETA-Berechnung dynamisch (gefixt)
-- [x] Bug #1: Path-Preview auf Map (gefixt)
-- [x] Bug #2: ETA wird bei Planung angezeigt (gefixt)
-- [x] Plan-Button nach Reise nicht klickbar (gefixt)
-- [x] Reise stoppt ohne Grund / Multi-Encounter (gefixt)
-- [x] Bug #14: "End Combat" Button nicht klickbar (gefixt)
+**Implementiert:**
+- [x] CR-Vergleich (trivial/manageable/deadly/impossible) - `compareCR()`
+- [x] Difficulty-Wuerfel (Easy/Medium/Hard/Deadly) - `rollDifficulty()`
+- [x] XP-Budget D&D 5e - `calculateXPBudget()`
+- [x] Gruppen-Multiplikatoren - `getGroupMultiplier()`, `calculateEffectiveXP()`
+- [x] Daily-XP-Budget-Tracking - `DailyXPTracker`, Reset bei Tageswechsel
+- [x] Combat-Befuellung (Companion-Selection) - `selectCompanions()`
+- [x] Typ-Ableitung (CR-basierte Wahrscheinlichkeits-Matrix) - `deriveEncounterType()` erweitert
+- [x] Schema-Erweiterung - `EncounterInstance.difficulty`, `xpBudget`, `effectiveXP`
+- [x] Service-Integration - Pipeline nutzt Balancing fuer Combat-Encounters
 
-**Implementierungs-Fortschritt:**
+**Nicht im Scope (bewusst ausgeklammert):**
+- Fraktions-Territorium-Gewichtung (#11 teilweise) - Faction-Feature noch nicht implementiert
+- Weather-Integration (#25) - Post-MVP
+- Social/Trace/Passing erweiterte Befuellung (#24) - nur Combat-Fokus
+- Multi-Gruppen-Encounters (#29) - Post-MVP
 
-| Komponente | Status | Anmerkung |
-|------------|--------|-----------|
-| Combat Event-Handler Error-Handling | ✅ Fertig | `combat-service.ts:207-212` |
-| Encounter-Dismiss Handler | ✅ Fertig | `travel-service.ts:860-871` |
-| ETA-Berechnung (Preview) | ✅ Fertig | `types.ts`, `travel-service.ts`, `viewmodel.ts` |
-| Path-Preview Diskrepanz | ✅ Fertig | `viewmodel.ts:488`, `map-canvas.ts:330-348` |
-| ETA bei Planung | ✅ Fertig | `types.ts:previewETA`, `viewmodel.ts`, `sidebar.ts:323` |
-| Preview nach Reise löschen | ✅ Fertig | `viewmodel.ts` TRAVEL_COMPLETED Handler |
-| Plan/Start-Button nach Reise | ✅ Fertig | 'arrived' Status komplett entfernt - direkt auf 'idle' |
-| Duplikate Encounter-Checks | ✅ Fertig | `encounter-service.ts` - Handler entfernt (siehe Doku) |
-| End Combat Button | ✅ Fertig | CombatOutcome vereinfacht, prompt() entfernt |
+---
 
-**Nicht im Scope:**
-- A* Pathfinding (Backlog #5)
-- combat:start-failed Event (Post-MVP)
-- Neue Tests (manuelle Tests reichen)
+_Bereit fuer naechste Phase._
 
 ## ⬜ Backlog
 
 | # | Bereich | Aspekt | Prio | MVP? | Deps | Referenz |
 |--:|---------|--------|:----:|:----:|------|----------|
-| 3 | Travel | Nachbarbewegung entfernen | hoch | Ja | - | [Travel-System.md](../features/Travel-System.md) |
+| 1 | **BUG** | Uhr im SessionRunner nur bei Stunden-/Segment-Ende aktualisiert | hoch | Ja | - | [Travel-System.md](../features/Travel-System.md) |
+| 2 | **BUG** | Random Encounter setzt Party auf letztes Hex zurueck, Segment-Progress verloren | hoch | Ja | - | [Travel-System.md](../features/Travel-System.md) |
+| 3 | **BUG** | Mehrere Kreaturen gleicher Art werden im Encounter-Panel einzeln aufgelistet statt gruppiert mit Anzahl | niedrig | Nein | - | [DetailView.md](../application/DetailView.md) |
 | 4 | Travel | Wegpunkt/Token Drag&Drop | mittel | Ja | - | [Travel-System.md](../features/Travel-System.md) |
 | 5 | Travel | A* Pathfinding | niedrig | Nein | - | [Travel-System.md](../features/Travel-System.md) |
 | 6 | Travel | Pfad-Integration (Strassen, Fluesse) | niedrig | Nein | #5 | [Travel-System.md](../features/Travel-System.md) |
 | 7 | Travel | Pfad-Barrieren (blocksMovement) | niedrig | Nein | #6 | [Travel-System.md](../features/Travel-System.md) |
+| 7b | Travel | Animations-Geschwindigkeit Slider (GM-Einstellung) | niedrig | Nein | - | [SessionRunner.md](../application/SessionRunner.md) |
 | 8 | Weather | Weather-Events (Blizzard etc.) | mittel | Nein | - | [Weather-System.md](../features/Weather-System.md) |
 | 9 | Weather | GM Override | mittel | Ja | - | [Weather-System.md](../features/Weather-System.md) |
 | 10 | Weather | UI-Anzeige | hoch | Ja | - | [Weather-System.md](../features/Weather-System.md) |
-| 11 | Encounter | Tile-Eligibility (Filter + Gewichtung) | hoch | Ja | - | [Encounter-System.md](../features/Encounter-System.md) |
+| 11 | Encounter | Tile-Eligibility (Filter + Gewichtung) | hoch | Ja | #76* | [Encounter-System.md](../features/Encounter-System.md) |
 | 12 | Encounter | Kreatur-Auswahl (gewichtete Zufallsauswahl) | hoch | Ja | #11 | [Encounter-System.md](../features/Encounter-System.md) |
-| 13 | Encounter | Typ-Ableitung (Disposition + Faction + CR) | hoch | Ja | #12 | [Encounter-System.md](../features/Encounter-System.md) |
-| 14 | Encounter | Variety-Validation (Monotonie-Vermeidung) | mittel | Ja | #13 | [Encounter-System.md](../features/Encounter-System.md) |
-| 15 | Encounter | 4 Typen (Combat/Social/Passing/Trace) | hoch | Ja | #13 | [Encounter-System.md](../features/Encounter-System.md) |
+| 13b | Encounter | Typ-Ableitung (Faction-Relation Matrix) | mittel | Ja | #76 | [Encounter-System.md](../features/Encounter-System.md) |
+| 14 | Encounter | Variety-Validation (Monotonie-Vermeidung) | mittel | Ja | - | [Encounter-System.md](../features/Encounter-System.md) |
+| 15 | Encounter | 4 Typen (Combat/Social/Passing/Trace) | hoch | Ja | - | [Encounter-System.md](../features/Encounter-System.md) |
 | 16 | Encounter | NPC-Instanziierung bei Encounter | hoch | Ja | #15 | [Encounter-System.md](../features/Encounter-System.md) |
 | 17 | Encounter | CreatureSlot-Varianten (Concrete, Typed, Budget) | mittel | Ja | - | [Encounter-System.md](../features/Encounter-System.md) |
-| 18 | Encounter | CR-Vergleich (trivial/manageable/deadly/impossible) | hoch | Ja | - | [Encounter-Balancing.md](../features/Encounter-Balancing.md) |
-| 19 | Encounter | Difficulty-Wuerfel (Easy/Medium/Hard/Deadly) | hoch | Ja | #18 | [Encounter-Balancing.md](../features/Encounter-Balancing.md) |
-| 20 | Encounter | XP-Budget D&D 5e | hoch | Ja | #19 | [Encounter-Balancing.md](../features/Encounter-Balancing.md) |
-| 21 | Encounter | Gruppen-Multiplikatoren | hoch | Ja | #20 | [Encounter-Balancing.md](../features/Encounter-Balancing.md) |
-| 22 | Encounter | Daily-XP-Tracking (Budget-Reset bei Long Rest) | mittel | Ja | #20 | [Encounter-Balancing.md](../features/Encounter-Balancing.md) |
-| 23 | Encounter | Combat-Befuellung (Companion-Selection) | hoch | Ja | #21 | [Encounter-Balancing.md](../features/Encounter-Balancing.md) |
 | 24 | Encounter | Social/Trace/Passing Befuellung (vereinfacht) | mittel | Ja | #15 | [Encounter-Balancing.md](../features/Encounter-Balancing.md) |
 | 25 | Encounter | Weather im Context | mittel | Ja | #11 | [Encounter-System.md](../features/Encounter-System.md) |
 | 26 | Encounter | Environmental/Location Typen | mittel | Nein | #15 | [Encounter-System.md](../features/Encounter-System.md) |
 | 27 | Encounter | Pfad-basierte Creature-Pools | mittel | Nein | #11 | [Encounter-System.md](../features/Encounter-System.md) |
-| 28 | Encounter | Faction-Territory Population | mittel | Nein | #11 | [Encounter-System.md](../features/Encounter-System.md) |
-| 29 | Encounter | Multi-Gruppen-Encounters | niedrig | Nein | #23 | [Encounter-System.md](../features/Encounter-System.md) |
+| 28 | Encounter | Faction-Territory Population | mittel | Nein | #11, #76 | [Encounter-System.md](../features/Encounter-System.md) |
+| 29 | Encounter | Multi-Gruppen-Encounters | niedrig | Nein | - | [Encounter-System.md](../features/Encounter-System.md) |
 | 31 | Combat | Death Saves UI | niedrig | Nein | - | [Combat-System.md](../features/Combat-System.md) |
 | 32 | Combat | Grid-Positioning | mittel | Nein | - | [Combat-System.md](../features/Combat-System.md) |
 | 33 | Combat | Legendary/Lair Actions | niedrig | Nein | - | [Combat-System.md](../features/Combat-System.md) |
@@ -271,6 +258,23 @@ _Phase 13 abgeschlossen._
 | 207 | Combat | Lair Actions (separat) | niedrig | Nein | #33 | [Combat-System.md](../features/Combat-System.md) |
 | 208 | Combat | Reaction-Tracking | niedrig | Nein | - | [Combat-System.md](../features/Combat-System.md) |
 | 209 | Combat | Spell Slot Tracking | niedrig | Nein | - | [Combat-System.md](../features/Combat-System.md) |
+| 210 | Map | Visibility-System (Overlay) | mittel | Nein | - | [Map-Feature.md](../features/Map-Feature.md) |
+| 211 | Map | Sichtweiten-Berechnung (Wurzel-Formel) | mittel | Nein | #210 | [Map-Feature.md](../features/Map-Feature.md) |
+| 212 | Map | Sicht-Blockierung (Line-of-Sight) | mittel | Nein | #211 | [Map-Feature.md](../features/Map-Feature.md) |
+| 213 | Map | Weather-Visibility-Modifier | mittel | Nein | #210 | [Weather-System.md](../features/Weather-System.md) |
+| 214 | Map | Time-Visibility-Modifier (Tageszeit) | mittel | Nein | #210 | [Time-System.md](../features/Time-System.md) |
+| 215 | POI | Height-Feld fuer Fernsicht | mittel | Nein | #210 | [POI.md](../domain/POI.md) |
+| 216 | Party | Character-Sinne (senses) Schema | mittel | Nein | - | [Character-System.md](../features/Character-System.md) |
+| 217 | Party | Darkvision Nacht-Modifier-Bypass | mittel | Nein | #214, #216 | [Character-System.md](../features/Character-System.md) |
+| 218 | Party | Erweiterte Sinne (Blindsight, Tremorsense, TrueSight) | niedrig | Nein | #216 | [Character-System.md](../features/Character-System.md) |
+| 219 | Creature | Creature-Sinne (senses) Schema | mittel | Nein | - | [Creature.md](../domain/Creature.md) |
+| 220 | Encounter | Creature-Sichtweite fuer Encounter-Trigger | niedrig | Nein | #219 | [Encounter-System.md](../features/Encounter-System.md) |
+| 221 | Map | Visibility Performance-Caching | niedrig | Nein | #210 | [Map-Feature.md](../features/Map-Feature.md) |
+| 222 | UI | Visibility-Toggle im Map-Panel | mittel | Nein | #210 | [SessionRunner.md](../application/SessionRunner.md) |
+| 223 | POI | glowsAtNight-Feld fuer nachtleuchtende POIs | mittel | Nein | #214 | [POI.md](../domain/POI.md) |
+| 224 | UI | Sichtbare POIs hervorheben (Glow/Umrandung) | mittel | Nein | #210 | [Map-Feature.md](../features/Map-Feature.md) |
+
+**Deps-Legende:** `#N*` = Teilweise Dependency (Basis-Funktionalitaet ohne, vollstaendige Implementierung mit Dependency)
 
 ---
 
@@ -304,7 +308,7 @@ Bei fehlenden oder unklaren Schemas: User fragen.
    - Neue Aspekte zur Feature-Zeile hinzufuegen
 
 2. **Backlog pflegen:**
-   - Implementierte Items aus "Offen" entfernen
+   - Implementierte Items aus dem Backlog entfernen
    - Neue entdeckte Luecken hinzufuegen
 
 3. **Event-Status aktualisieren:**

@@ -56,7 +56,7 @@ Kontextbezogene Detail-Ansichten (Encounter, Combat, Shop, Quest-Details, Journa
 │  │                │  │                                                    │ │
 │  │ ⚔️ ACTIONS     │  │                                                    │ │
 │  │ ─────────────  │  │                                                    │ │
-│  │ [🎲 Encounter] │  │  [Overlays: ☐Weather ☑️Territory ☐Factions]        │ │
+│  │ [🎲 Encounter] │  │  [Overlays: ☐Weather ☑️Territory ☐Factions ☐👁️]    │ │
 │  │ [📍 Teleport]  │  │                                                    │ │
 │  │                │  │                                                    │ │
 │  └────────────────┘  └────────────────────────────────────────────────────┘ │
@@ -154,7 +154,24 @@ Bei aktiver Reise:
 │ 12.4 / 48 mi   │
 │ ETA: 18:30     │
 │ [Pause] [Stop] │
+│                │
+│ Anim: ━━━○━━━━ │
 ```
+
+#### Animations-Geschwindigkeit Slider (Post-MVP)
+
+| Element | Funktion |
+|---------|----------|
+| Slider | Steuert die Geschwindigkeit der Travel-Animation |
+| Range | 0.5x bis 10x (Default: 1x) |
+| Persistenz | Session-only (nicht persistiert) |
+
+**Verhalten:**
+- Aendert die `TRAVEL_LOOP_DELAY_MS` zur Laufzeit
+- 1x = 1 Tick pro 100ms (Standard)
+- 0.5x = 1 Tick pro 200ms (langsamer, fuer RP/Immersion)
+- 10x = 1 Tick pro 10ms (schneller, fuer lange Strecken)
+- Aenderung waehrend aktiver Reise hat sofortigen Effekt
 
 #### Audio-Sektion
 
@@ -196,7 +213,7 @@ Das zentrale Element - zeigt die aktive Karte mit Party-Position.
 │    ⬡ ⬡ 🌊 🌊 🌲 ⬡ ⬡ ⬡                                        │
 │     ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡ ⬡                                         │
 │                                                                │
-│  [Overlays: ☐Weather ☑️Territory ☐Factions] [🔍+] [🔍-]        │
+│  [Overlays: ☐Weather ☑️Territory ☐Factions ☐👁️] [🔍+] [🔍-]   │
 └────────────────────────────────────────────────────────────────┘
 ```
 
@@ -222,6 +239,31 @@ Zwischen gesetzten Waypoints wird eine Route als Linie angezeigt:
 - Route verbindet Party-Token → Waypoint 1 → Waypoint 2 → ... → Ziel
 - Route aktualisiert sich dynamisch beim Verschieben von Waypoints/Token
 - Klick auf die Route fuegt einen neuen Waypoint an dieser Stelle ein
+
+### Visibility-Toggle (Post-MVP)
+
+Toggle-Button fuer Sichtweiten-Overlay im Overlays-Bereich:
+
+| Element | Beschreibung |
+|---------|--------------|
+| Icon | 👁️ (Auge) |
+| Tooltip | "Sichtweite anzeigen" |
+| State | Session-only (nicht persistiert) |
+
+**Overlay-Verhalten:**
+- Nicht-sichtbare Tiles: Halbtransparentes graues Overlay
+- Sichtbare Tiles: Kein Overlay (normal sichtbar)
+- Sichtbare POIs: Hervorgehoben (Glow-Effekt oder Umrandung)
+- Nachtleuchtende POIs: Bei Nacht mit Lichtschein-Effekt
+
+**Design-Prinzip:** Sichtbare POIs werden hervorgehoben, statt nicht-sichtbare extra abzudunkeln (die liegen bereits unter dem grauen Overlay).
+
+**Invalidierung:** Overlay wird neu berechnet bei:
+- Party bewegt sich
+- Zeit aendert sich (Segment-Wechsel)
+- Wetter aendert sich
+
+→ **Visibility-System:** [Map-Feature.md](../features/Map-Feature.md#visibility-system)
 
 ---
 
@@ -422,6 +464,8 @@ const subscriptions = [
 | Party-Sektion | ✓ | | Status + Manage-Link |
 | Actions-Sektion | ✓ | | Encounter-Button |
 | Collapsed Quick-Controls | | mittel | Responsive UI |
+| **Visibility-Toggle** | | mittel | Sichtweiten-Overlay |
+| **Animations-Geschwindigkeit** | | niedrig | Slider fuer Travel-Animation |
 
 ---
 

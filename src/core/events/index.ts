@@ -47,6 +47,7 @@ export {
   type CombatEffectRemovedPayload,
   // Time payloads
   type TimeAdvanceRequestedPayload,
+  type TimeDayChangedPayload,
   // Loot payloads
   type LootGeneratedPayload,
 } from './domain-events';
@@ -55,6 +56,8 @@ export {
   type EventBus,
   type EventHandler,
   type Unsubscribe,
+  type PublishOptions,
+  type SubscribeOptions,
   createEventBus,
 } from './event-bus';
 

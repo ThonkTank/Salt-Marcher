@@ -154,13 +154,133 @@ export function selectWeightedCreature(
 // ============================================================================
 
 /**
- * Derive encounter type from creature disposition and party level.
+ * CR comparison result - determines if combat is viable.
+ * @see docs/features/Encounter-Balancing.md#cr-vergleich
+ */
+export type CRComparison = 'trivial' | 'manageable' | 'deadly' | 'impossible';
+
+/**
+ * Compare creature CR to party level.
  *
- * Rules:
- * - hostile + CR <= party level * 2 → combat
- * - hostile + CR > party level * 2 → passing (not winnable)
- * - neutral → social (80%) or passing (20%)
- * - friendly → social
+ * @param creatureCR - The creature's Challenge Rating
+ * @param partyLevel - Average party level
+ * @returns CRComparison result
+ *
+ * Thresholds:
+ * - trivial: CR < 0.25 * partyLevel (no real threat)
+ * - manageable: CR <= 1.5 * partyLevel (fair fight)
+ * - deadly: CR <= 3.0 * partyLevel (very dangerous but possible)
+ * - impossible: CR > 3.0 * partyLevel (party cannot win)
+ */
+export function compareCR(
+  creatureCR: number,
+  partyLevel: number
+): CRComparison {
+  const effectiveLevel = Math.max(partyLevel, 1);
+  const ratio = creatureCR / effectiveLevel;
+
+  if (ratio < 0.25) return 'trivial';
+  if (ratio <= 1.5) return 'manageable';
+  if (ratio <= 3.0) return 'deadly';
+  return 'impossible';
+}
+
+/**
+ * Encounter difficulty levels for XP budget calculation.
+ * @see docs/features/Encounter-Balancing.md#difficulty-bestimmung
+ */
+export type EncounterDifficulty = 'easy' | 'medium' | 'hard' | 'deadly';
+
+/**
+ * Roll encounter difficulty based on D&D 5e distribution.
+ *
+ * Distribution:
+ * - Easy: 12.5%
+ * - Medium: 50%
+ * - Hard: 25%
+ * - Deadly: 12.5%
+ */
+export function rollDifficulty(): EncounterDifficulty {
+  const roll = Math.random();
+  if (roll < 0.125) return 'easy';
+  if (roll < 0.625) return 'medium'; // 0.125 + 0.5
+  if (roll < 0.875) return 'hard'; // 0.625 + 0.25
+  return 'deadly';
+}
+
+/**
+ * Type derivation probability matrix.
+ * Maps disposition + CR comparison to encounter type probabilities.
+ */
+interface TypeProbabilities {
+  combat: number;
+  social: number;
+  passing: number;
+  trace: number;
+}
+
+/**
+ * Get encounter type probability matrix.
+ * @see docs/features/Encounter-System.md#wahrscheinlichkeits-matrix
+ */
+function getTypeProbabilities(
+  disposition: 'hostile' | 'neutral' | 'friendly',
+  crComparison: CRComparison
+): TypeProbabilities {
+  // Hostile creatures
+  if (disposition === 'hostile') {
+    switch (crComparison) {
+      case 'trivial':
+        // Triviale Bedrohung → meist trace (verlassenes Lager)
+        return { combat: 0.05, social: 0.05, passing: 0.20, trace: 0.70 };
+      case 'manageable':
+        // Fairer Kampf möglich
+        return { combat: 0.70, social: 0.10, passing: 0.15, trace: 0.05 };
+      case 'deadly':
+        // Gefährlich aber möglich
+        return { combat: 0.50, social: 0.05, passing: 0.35, trace: 0.10 };
+      case 'impossible':
+        // Übermächtig → passing (Drache am Horizont)
+        return { combat: 0.05, social: 0.05, passing: 0.70, trace: 0.20 };
+    }
+  }
+
+  // Neutral creatures
+  if (disposition === 'neutral') {
+    return { combat: 0.10, social: 0.50, passing: 0.25, trace: 0.15 };
+  }
+
+  // Friendly creatures
+  return { combat: 0.00, social: 0.70, passing: 0.20, trace: 0.10 };
+}
+
+/**
+ * Select encounter type based on probability matrix.
+ */
+function selectTypeFromProbabilities(probs: TypeProbabilities): EncounterType {
+  const roll = Math.random();
+  let cumulative = 0;
+
+  cumulative += probs.combat;
+  if (roll < cumulative) return 'combat';
+
+  cumulative += probs.social;
+  if (roll < cumulative) return 'social';
+
+  cumulative += probs.passing;
+  if (roll < cumulative) return 'passing';
+
+  return 'trace';
+}
+
+/**
+ * Derive encounter type from creature disposition and CR comparison.
+ *
+ * Uses probability matrix based on:
+ * - Creature disposition (hostile/neutral/friendly)
+ * - CR comparison result (trivial/manageable/deadly/impossible)
+ *
+ * @see docs/features/Encounter-System.md#typ-ableitung
  */
 export function deriveEncounterType(
   creature: CreatureDefinition,
@@ -169,32 +289,17 @@ export function deriveEncounterType(
   const { disposition, cr } = creature;
   const effectivePartyLevel = partyLevel ?? 1;
 
-  switch (disposition) {
-    case 'hostile': {
-      // Check if encounter is winnable
-      const maxCombatCR = effectivePartyLevel * CR_COMBAT_THRESHOLD_FACTOR;
-      if (cr <= maxCombatCR) {
-        return { type: 'combat', reason: 'hostile_winnable' };
-      } else {
-        return { type: 'passing', reason: 'hostile_too_strong' };
-      }
-    }
+  // Calculate CR comparison
+  const crComparison = compareCR(cr, effectivePartyLevel);
 
-    case 'neutral': {
-      // 80% social, 20% passing
-      if (Math.random() < 0.8) {
-        return { type: 'social', reason: 'neutral_interaction' };
-      } else {
-        return { type: 'passing', reason: 'neutral_no_interaction' };
-      }
-    }
+  // Get probability matrix and select type
+  const probs = getTypeProbabilities(disposition, crComparison);
+  const type = selectTypeFromProbabilities(probs);
 
-    case 'friendly':
-      return { type: 'social', reason: 'friendly' };
+  // Build reason string
+  const reason = `${disposition}_${crComparison}`;
 
-    default:
-      return { type: 'social', reason: 'unknown_disposition' };
-  }
+  return { type, reason, crComparison };
 }
 
 // ============================================================================
@@ -352,7 +457,79 @@ export function populateEncounter(
 }
 
 // ============================================================================
-// XP Calculation
+// XP Budget Calculation
+// ============================================================================
+
+/**
+ * XP multipliers per difficulty level (per party member per level).
+ * @see docs/features/Encounter-Balancing.md#xp-budget-berechnung
+ */
+const XP_DIFFICULTY_MULTIPLIERS: Record<EncounterDifficulty, number> = {
+  easy: 25,
+  medium: 50,
+  hard: 75,
+  deadly: 100,
+};
+
+/**
+ * Calculate XP budget for an encounter based on party composition and difficulty.
+ *
+ * Formula: Sum of (member level × difficulty multiplier) for all party members.
+ *
+ * @param partyMembers - Array of party members with their levels
+ * @param difficulty - The encounter difficulty level
+ * @returns Total XP budget for the encounter
+ *
+ * @example
+ * // 4 level-5 characters, medium difficulty
+ * calculateXPBudget([{level: 5}, {level: 5}, {level: 5}, {level: 5}], 'medium')
+ * // Returns: 4 × 5 × 50 = 1000 XP
+ */
+export function calculateXPBudget(
+  partyMembers: readonly { level: number }[],
+  difficulty: EncounterDifficulty
+): number {
+  const multiplier = XP_DIFFICULTY_MULTIPLIERS[difficulty];
+  return partyMembers.reduce((sum, member) => sum + member.level * multiplier, 0);
+}
+
+// ============================================================================
+// Group Multipliers
+// ============================================================================
+
+/**
+ * Get the encounter multiplier based on creature count.
+ * D&D 5e uses this to adjust effective XP for action economy.
+ *
+ * @see docs/features/Encounter-Balancing.md#gruppen-multiplikatoren
+ */
+export function getGroupMultiplier(creatureCount: number): number {
+  if (creatureCount <= 0) return 0;
+  if (creatureCount === 1) return 1.0;
+  if (creatureCount === 2) return 1.5;
+  if (creatureCount <= 6) return 2.0;
+  if (creatureCount <= 10) return 2.5;
+  if (creatureCount <= 14) return 3.0;
+  return 4.0;
+}
+
+/**
+ * Calculate effective XP for an encounter (base XP × group multiplier).
+ * Used to compare against XP budget when building encounters.
+ *
+ * @param creatures - Array of creatures with their XP values
+ * @returns Effective XP including group multiplier
+ */
+export function calculateEffectiveXP(
+  creatures: readonly { xp: number }[]
+): number {
+  if (creatures.length === 0) return 0;
+  const baseXP = creatures.reduce((sum, c) => sum + c.xp, 0);
+  return Math.floor(baseXP * getGroupMultiplier(creatures.length));
+}
+
+// ============================================================================
+// XP Calculation (CR to XP conversion)
 // ============================================================================
 
 /**
@@ -402,4 +579,127 @@ export function calculateEncounterXP(
   return creatures.reduce((sum, creature) => {
     return sum + calculateCreatureXP(creature.cr);
   }, 0);
+}
+
+// ============================================================================
+// Companion Selection (Multi-Creature Encounters)
+// ============================================================================
+
+/**
+ * Result of companion selection for multi-creature encounters.
+ */
+export interface CompanionSelectionResult {
+  /** All creatures including lead and companions */
+  creatures: readonly CreatureDefinition[];
+
+  /** Raw total XP (sum of individual creature XP) */
+  totalXP: number;
+
+  /** Effective XP including group multiplier */
+  effectiveXP: number;
+}
+
+/**
+ * Budget tolerance factor for companion selection.
+ * Allows slight overshoot to avoid leaving too much budget unused.
+ */
+const BUDGET_TOLERANCE = 1.1; // 10% tolerance
+
+/**
+ * Maximum companions to add (to prevent huge groups).
+ */
+const MAX_COMPANIONS = 7;
+
+/**
+ * Select companion creatures to fill an XP budget.
+ *
+ * Uses a greedy algorithm:
+ * 1. Start with lead creature
+ * 2. Filter eligible companions (CR <= lead CR)
+ * 3. Repeatedly select random companion until budget exhausted
+ *
+ * @param lead - The lead creature for this encounter
+ * @param budget - Total XP budget to fill
+ * @param eligibleCreatures - Creatures that can be selected as companions
+ * @returns Selected creatures with XP totals
+ *
+ * @see docs/features/Encounter-Balancing.md#companion-selection
+ */
+export function selectCompanions(
+  lead: CreatureDefinition,
+  budget: number,
+  eligibleCreatures: readonly CreatureDefinition[]
+): CompanionSelectionResult {
+  const leadXP = calculateCreatureXP(lead.cr);
+  const creatures: CreatureDefinition[] = [lead];
+  let totalXP = leadXP;
+
+  // All eligible creatures can be companions - budget logic handles selection
+  const potentialCompanions = [...eligibleCreatures];
+
+  // If no companions available or budget already exceeded, return just lead
+  if (potentialCompanions.length === 0) {
+    return {
+      creatures,
+      totalXP,
+      effectiveXP: calculateEffectiveXP([{ xp: leadXP }]),
+    };
+  }
+
+  // Greedy selection: add companions while budget allows
+  let attempts = 0;
+  const maxAttempts = potentialCompanions.length * 2; // Prevent infinite loop
+
+  while (
+    creatures.length <= MAX_COMPANIONS &&
+    attempts < maxAttempts
+  ) {
+    attempts++;
+
+    // Select a random companion (weighted selection would be better, but simple random for MVP)
+    const randomIndex = Math.floor(Math.random() * potentialCompanions.length);
+    const candidate = potentialCompanions[randomIndex];
+    const candidateXP = calculateCreatureXP(candidate.cr);
+
+    // Calculate what effective XP would be with this companion
+    const newCreatures = [...creatures, candidate];
+    const newTotalXP = totalXP + candidateXP;
+    const newEffectiveXP = calculateEffectiveXP(
+      newCreatures.map((c) => ({ xp: calculateCreatureXP(c.cr) }))
+    );
+
+    // Check if adding this companion would exceed budget tolerance
+    if (newEffectiveXP > budget * BUDGET_TOLERANCE) {
+      // Try smaller creatures first before giving up
+      const smallerCompanions = potentialCompanions.filter(
+        (c) => calculateCreatureXP(c.cr) < candidateXP
+      );
+
+      if (smallerCompanions.length === 0) {
+        // No smaller companions available, we're done
+        break;
+      }
+      // Continue loop to try again (will pick random, might get smaller)
+      continue;
+    }
+
+    // Add the companion
+    creatures.push(candidate);
+    totalXP = newTotalXP;
+
+    // If we're at or over budget, stop
+    if (newEffectiveXP >= budget * 0.9) {
+      break;
+    }
+  }
+
+  const effectiveXP = calculateEffectiveXP(
+    creatures.map((c) => ({ xp: calculateCreatureXP(c.cr) }))
+  );
+
+  return {
+    creatures,
+    totalXP,
+    effectiveXP,
+  };
 }

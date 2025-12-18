@@ -122,6 +122,38 @@ export interface GenerationContext {
 // ============================================================================
 
 /**
+ * Tracks daily XP budget usage for encounter balancing.
+ * Resets on Long Rest or new game day.
+ *
+ * @see docs/features/Encounter-Balancing.md#daily-xp-budget
+ */
+export interface DailyXPTracker {
+  /** Game day number (for reset detection) */
+  dayNumber: number;
+
+  /** Total daily XP budget based on party level */
+  budgetTotal: number;
+
+  /** XP already used today */
+  budgetUsed: number;
+
+  /** Number of combat encounters today */
+  combatEncountersToday: number;
+}
+
+/**
+ * Create initial daily XP tracker.
+ */
+export function createInitialDailyXPTracker(): DailyXPTracker {
+  return {
+    dayNumber: 0,
+    budgetTotal: 0,
+    budgetUsed: 0,
+    combatEncountersToday: 0,
+  };
+}
+
+/**
  * Internal state for the Encounter Feature.
  */
 export interface InternalEncounterState {
@@ -136,6 +168,9 @@ export interface InternalEncounterState {
 
   /** Map ID for context */
   activeMapId: string | null;
+
+  /** Daily XP budget tracking for encounter balancing */
+  dailyXP: DailyXPTracker;
 }
 
 /**
@@ -147,6 +182,7 @@ export function createInitialEncounterState(): InternalEncounterState {
     history: [],
     recentCreatureTypes: [],
     activeMapId: null,
+    dailyXP: createInitialDailyXPTracker(),
   };
 }
 
@@ -169,6 +205,12 @@ export interface CreatureSelectionResult {
 }
 
 /**
+ * CR comparison categories for encounter balancing.
+ * Re-exported from encounter-utils for use in types.
+ */
+export type CRComparisonCategory = 'trivial' | 'manageable' | 'deadly' | 'impossible';
+
+/**
  * Result of type derivation step.
  */
 export interface TypeDerivationResult {
@@ -177,6 +219,9 @@ export interface TypeDerivationResult {
 
   /** Reason for derivation (for debugging/logging) */
   reason: string;
+
+  /** CR comparison result used in type derivation */
+  crComparison: CRComparisonCategory;
 }
 
 /**

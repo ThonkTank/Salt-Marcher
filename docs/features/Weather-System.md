@@ -220,6 +220,47 @@ Environment Feature
 | **Travel** | `environment:weather-changed` | Speed-Faktor neu berechnen |
 | **Encounter** | `environment:weather-changed` | Kreatur-Praeferenzen beruecksichtigen |
 | **UI** | `environment:state-changed` | Weather-Widget aktualisieren |
+| **Visibility** | `environment:weather-changed` | Sichtweiten-Overlay aktualisieren |
+
+---
+
+## Sichtweiten-Einfluss (Post-MVP)
+
+Wetter beeinflusst die Overland-Sichtweite im Visibility-System.
+
+### Visibility-Modifier
+
+| Niederschlag | Modifier | Notiz |
+|--------------|----------|-------|
+| `none`, `drizzle` | 100% | Volle Sicht |
+| `rain`, `snow` | 75% | Leicht eingeschraenkt |
+| `heavy_rain` | 50% | Deutlich eingeschraenkt |
+| `blizzard` | 25% | Stark eingeschraenkt |
+| `fog` | 25% | Stark eingeschraenkt |
+| `dense_fog` | 10% | Fast blind |
+
+### Berechnung
+
+Der Visibility-Modifier wird **multiplikativ** mit dem Tageszeit-Modifier kombiniert:
+
+```
+Effektive Sichtweite = Basis × Hoehen-Bonus × Weather-Modifier × Time-Modifier
+```
+
+**Beispiel:** Basis 2 Hex, leichter Regen (75%), Nacht (10%) → 0.15 Hex (nur aktuelles Tile)
+
+### Weather-Event-Sichtweite
+
+Weather-Events haben starken Einfluss auf Sichtweite:
+
+| Event | Visibility-Modifier |
+|-------|---------------------|
+| `blizzard` | 10% |
+| `thunderstorm` | 50% |
+| `dense_fog` | 10% |
+| `dust_storm` | 10% |
+
+→ Visibility-System: [Map-Feature.md](Map-Feature.md#visibility-system)
 
 ---
 
@@ -407,6 +448,7 @@ Party betritt Dungeon um 10:00 bei Regen
 | Audio-Integration | | mittel | Mood-Matching |
 | Sub-Map Weather | ✓ | | Kein Weather in Dungeons |
 | Background Weather Tick | ✓ | | Overworld laeuft weiter |
+| **Visibility-Modifier** | | mittel | Sichtweiten-Reduktion |
 
 ---
 

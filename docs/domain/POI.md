@@ -53,6 +53,10 @@ interface BasePOI {
   name?: string;                   // Anzeigename (optional bei manchen Typen)
   icon?: string;                   // Icon fuer Map-Darstellung
   visible: boolean;                // Fuer Spieler sichtbar? (false = GM-only)
+
+  // Fernsicht (Post-MVP)
+  height?: number;                 // Hoehe fuer Visibility-Berechnung
+  glowsAtNight?: boolean;          // Leuchtet bei Nacht (Staedte, Leuchtfeuer)
 }
 
 type Coordinate = HexCoordinate | GridCoordinate;
@@ -279,6 +283,47 @@ const poiIcons: Record<POIType, string> = {
 | `treasure` | Auf Map gezeigt | GM-only |
 | `object` | Auf Map gezeigt | GM-only |
 
+### Height-Feld (Post-MVP)
+
+Optionales Feld fuer POI-Hoehe. Ermoeglicht Sichtbarkeit ueber Tile-Grenze hinaus im Visibility-System.
+
+**Berechnung:** POI ist sichtbar wenn:
+- POI-Tile ist in Party-Sichtweite, ODER
+- POI-height > Blockierungs-Elevation zwischen Party und POI
+
+| POI-Typ | Typische Height | Beispiel |
+|---------|-----------------|----------|
+| Wachturm | 3-5 | Grenzposten |
+| Leuchtturm | 5-8 | Hafenfeuer |
+| Berggipfel | 6-10 | Markanter Gipfel |
+| Ruine | 2-3 | Zerfallene Festung |
+| Rauchsaeule | 4-6 | Lagerfeuer, Vulkan |
+
+**Implementierungs-Hinweis:** Height wird nur fuer Overworld-Map-POIs verwendet.
+
+→ Visibility-System: [Map-Feature.md](../features/Map-Feature.md#visibility-system)
+
+### Nachtleuchtende POIs (`glowsAtNight`) (Post-MVP)
+
+POIs mit `glowsAtNight: true` sind bei Nacht auch ausserhalb der normalen Sichtweite sichtbar:
+
+| POI-Typ | Typisches glowsAtNight | Grund |
+|---------|------------------------|-------|
+| Stadt/Dorf | true | Fackeln, Laternen |
+| Leuchtturm | true | Leuchtfeuer |
+| Kampierendes Heer | true | Lagerfeuer |
+| Taverne (isoliert) | true | Fensterbeleuchtung |
+| Vulkan | true | Gluehendes Magma |
+| Dungeon-Eingang | false | Meist unbeleuchtet |
+| Ruine | false | Verlassen |
+
+**Mechanik:**
+- Bei Nacht: `glowsAtNight` POIs ignorieren den Nacht-Modifier (10%)
+- Weather-Modifier gilt weiterhin (Nebel verdeckt auch Lichter)
+- Height-Berechnung gilt weiterhin (Licht hinter Berg nicht sichtbar)
+
+→ Visibility-System: [Map-Feature.md](../features/Map-Feature.md#visibility-system)
+
 ---
 
 ## Faction-Territory
@@ -465,6 +510,8 @@ const treasureChest: TreasurePOI = {
 | TreasurePOI | | mittel | Dungeon-System |
 | ObjectPOI | | niedrig | Interaktive Objekte |
 | Custom POI-Icons | | niedrig | User-definierte Icons |
+| **Height-Feld** | | mittel | Fernsicht im Visibility-System |
+| **glowsAtNight-Feld** | | mittel | Nachtleuchtende POIs |
 
 ---
 

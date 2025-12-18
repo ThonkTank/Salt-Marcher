@@ -48,6 +48,8 @@ export function createTravelStore() {
         pauseReason: null,
         hourProgress: 0,
         totalHoursTraveled: 0,
+        minutesElapsedSegment: 0,
+        lastEncounterCheckHour: 0,
       };
     },
 
@@ -126,6 +128,7 @@ export function createTravelStore() {
         ...state,
         currentSegmentIndex: nextIndex,
         segmentProgress: 0,
+        minutesElapsedSegment: 0,
       };
       return true;
     },
@@ -173,6 +176,42 @@ export function createTravelStore() {
         ...state,
         hourProgress: 0,
         totalHoursTraveled: 0,
+        minutesElapsedSegment: 0,
+        lastEncounterCheckHour: 0,
+      };
+    },
+
+    // =========================================================================
+    // Time-based Animation (Phase 14)
+    // =========================================================================
+
+    /**
+     * Advance elapsed minutes in current segment.
+     * Also updates segmentProgress based on segment duration.
+     * @param minutes - Minutes to add
+     * @param segmentDurationMinutes - Total duration of current segment in minutes
+     */
+    advanceMinutesElapsed(minutes: number, segmentDurationMinutes: number): void {
+      const newMinutes = state.minutesElapsedSegment + minutes;
+      const newProgress = segmentDurationMinutes > 0
+        ? Math.min(1, newMinutes / segmentDurationMinutes)
+        : 1;
+
+      state = {
+        ...state,
+        minutesElapsedSegment: newMinutes,
+        segmentProgress: newProgress,
+      };
+    },
+
+    /**
+     * Set the hour number of the last encounter check.
+     * Used to track when we've crossed into a new hour for encounter checks.
+     */
+    setLastEncounterCheckHour(hour: number): void {
+      state = {
+        ...state,
+        lastEncounterCheckHour: hour,
       };
     },
 

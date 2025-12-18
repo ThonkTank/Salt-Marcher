@@ -107,6 +107,15 @@ interface SpeedBlock {
   burrow?: number;
 }
 
+// Sinne (fuer Encounter-Trigger und Visibility)
+interface Senses {
+  passivePerception: number;   // Fuer Stealth-Checks
+  darkvision?: number;         // Range in Feet (60, 120, etc.)
+  blindsight?: number;         // Range in Feet
+  tremorsense?: number;        // Range in Feet
+  trueSight?: number;          // Range in Feet
+}
+
 // Loot-System (NEU)
 interface DefaultLootEntry {
   itemId: EntityId<'item'>;
@@ -312,6 +321,40 @@ function createCombatCreature(definition: CreatureDefinition): Creature {
 
 ---
 
+## Sinne (Post-MVP)
+
+Sinnes-Faehigkeiten fuer Kreaturen (NPCs, Monster).
+
+### Verwendung
+
+| Verwendung | Beschreibung |
+|------------|--------------|
+| **Encounter-Trigger** | Creature-Sichtweite bestimmt wann Party entdeckt wird |
+| **Passive Perception** | Fuer Stealth-Checks der Party |
+| **NPC-Patrouillen** | Erkennung der Party bei Annaeherung |
+
+### Creature-Sicht vs Party-Sicht
+
+| Aspekt | Party | Creature |
+|--------|-------|----------|
+| **Overlay** | Grau (nicht sichtbar) | Nicht visualisiert |
+| **Verwendung** | GM-Tool | Encounter-Trigger |
+| **Berechnung** | Auf Klick/Bewegung | Bei Party-Annaeherung |
+
+### Sinn-Typen
+
+| Sinn | Effekt |
+|------|--------|
+| **Passive Perception** | Basis-DC fuer Stealth-Checks |
+| **Darkvision** | Erkennt Party auch bei Nacht |
+| **Blindsight** | Ignoriert Sicht-Modifier |
+| **Tremorsense** | Erkennt Bewegung unabhaengig von Sicht |
+| **True Sight** | Sieht durch Unsichtbarkeit |
+
+→ **Visibility-System:** [Map-Feature.md](../features/Map-Feature.md#visibility-system)
+
+---
+
 ## Storage
 
 ```
@@ -341,6 +384,7 @@ Vault/SaltMarcher/data/
 | Auto-Sync mit Terrain | ✓ | | Bidirektionale Konsistenz |
 | Vollstaendiger Statblock | | mittel | Alle D&D 5e Felder |
 | Legendary Actions | | niedrig | Fuer Boss-Monster |
+| **Sinne fuer Encounter-Trigger** | | mittel | Creature-Sichtweite |
 
 ---
 

@@ -24,6 +24,7 @@ import {
   type MapLoadedPayload,
   type CombatCompletedPayload,
   type LootGeneratedPayload,
+  type TimeDayChangedPayload,
 } from '@core/events';
 import { now, type EntityId } from '@core/types';
 import type {
@@ -35,6 +36,7 @@ import type {
   GameDateTime,
   EncounterType,
   CombatParticipant,
+  EncounterDifficultyValue,
 } from '@core/schemas';
 import { MAX_REROLL_ATTEMPTS } from '@core/schemas';
 import type { MapFeaturePort } from '../map';
@@ -51,6 +53,12 @@ import {
   validateVariety,
   populateEncounter,
   calculateEncounterXP,
+  rollDifficulty,
+  calculateXPBudget,
+  selectCompanions,
+  calculateCreatureXP,
+  calculateEffectiveXP,
+  createCreatureInstance,
 } from './encounter-utils';
 import {
   resolveFactionCulture,
@@ -130,6 +138,19 @@ export function createEncounterService(
     const party = partyFeature.getCurrentParty();
     if (isNone(party)) return undefined;
     return partyFeature.getPartyLevel();
+  }
+
+  /**
+   * Get party members for XP budget calculation.
+   * Returns array of objects with level for each member.
+   */
+  function getPartyMembersForBudget(): readonly { level: number }[] {
+    const members = partyFeature.getMembers();
+    if (isNone(members) || members.value.length === 0) {
+      // Fallback: assume 4 level-1 characters
+      return [{ level: 1 }, { level: 1 }, { level: 1 }, { level: 1 }];
+    }
+    return members.value.map((m) => ({ level: m.level }));
   }
 
   /**
@@ -233,6 +254,7 @@ export function createEncounterService(
 
   /**
    * Publish encounter generated event.
+   * Sticky: Late-joining Views receive this to know there's a pending encounter.
    */
   function publishEncounterGenerated(
     encounter: EncounterInstance,
@@ -247,17 +269,22 @@ export function createEncounterService(
           timestamp: now(),
           source: 'encounter-feature',
         }
-      )
+      ),
+      { sticky: true }
     );
   }
 
   /**
    * Publish encounter started event.
+   * Clears encounter:generated sticky since encounter is no longer pending.
    */
   function publishEncounterStarted(
     encounter: EncounterInstance,
     correlationId?: string
   ): void {
+    // Clear sticky since encounter is now active
+    eventBus.clearSticky(EventTypes.ENCOUNTER_GENERATED);
+
     eventBus.publish(
       createEvent(
         EventTypes.ENCOUNTER_STARTED,
@@ -277,12 +304,16 @@ export function createEncounterService(
 
   /**
    * Publish encounter dismissed event.
+   * Clears encounter:generated sticky since encounter is no longer pending.
    */
   function publishEncounterDismissed(
     encounterId: string,
     reason?: string,
     correlationId?: string
   ): void {
+    // Clear sticky since encounter is dismissed
+    eventBus.clearSticky(EventTypes.ENCOUNTER_GENERATED);
+
     eventBus.publish(
       createEvent(
         EventTypes.ENCOUNTER_DISMISSED,
@@ -429,7 +460,7 @@ export function createEncounterService(
       return err(createError('GENERATION_FAILED', 'Failed to generate encounter'));
     }
 
-    // Step 5: Encounter population
+    // Step 5: Encounter population with balancing
     const currentTime = getCurrentTime();
     const encounter = populateEncounter(
       selectedCreature,
@@ -441,8 +472,43 @@ export function createEncounterService(
     // Track creature type for variety
     store.trackCreatureType(selectedCreature.id);
 
-    // Add NPC if social encounter
-    if (encounterType === 'social' || encounterType === 'combat') {
+    // Combat encounters: Apply D&D 5e balancing and multi-creature selection
+    let allCreatures: CreatureDefinition[] = [selectedCreature];
+    let difficulty: EncounterDifficultyValue | undefined;
+    let xpBudget: number | undefined;
+    let effectiveXP: number | undefined;
+
+    if (encounterType === 'combat') {
+      // Check if daily XP budget is exhausted - if so, 50% chance to downgrade to trace
+      if (store.isDailyBudgetExhausted() && Math.random() < 0.5) {
+        encounter.type = 'trace';
+        // Update description for trace type
+        encounter.description = `You find signs of recent ${selectedCreature.name} activity - fresh tracks and markings.`;
+      } else {
+        // Roll difficulty and calculate XP budget
+        difficulty = rollDifficulty();
+        const partyMembers = getPartyMembersForBudget();
+        xpBudget = calculateXPBudget(partyMembers, difficulty);
+
+        // Select companions to fill budget
+        const companionResult = selectCompanions(selectedCreature, xpBudget, eligible);
+        allCreatures = [...companionResult.creatures];
+        effectiveXP = companionResult.effectiveXP;
+
+        // Create creature instances for all creatures
+        encounter.creatures = allCreatures.map((c, index) =>
+          createCreatureInstance(c, index)
+        );
+
+        // Set balancing info on encounter
+        encounter.difficulty = difficulty;
+        encounter.xpBudget = xpBudget;
+        encounter.effectiveXP = effectiveXP;
+      }
+    }
+
+    // Add NPC if social or combat encounter
+    if (encounter.type === 'social' || encounter.type === 'combat') {
       const culture = resolveFactionCulture(selectedFaction, factionMap);
       const npcResult = selectOrGenerateNpc(
         selectedCreature,
@@ -455,9 +521,9 @@ export function createEncounterService(
       encounter.leadNpc = createEncounterLeadNpc(npcResult.npc, !npcResult.isNew);
     }
 
-    // Step 6: Generate loot
-    const encounterXP = calculateEncounterXP([selectedCreature]);
-    const lootTags = lootService.mergeLootTags([selectedCreature]);
+    // Step 6: Generate loot (based on all creatures)
+    const encounterXP = calculateEncounterXP(allCreatures);
+    const lootTags = lootService.mergeLootTags(allCreatures);
     const availableItems = itemRegistry.getAll();
     const lootResult = lootService.generateLoot(
       { totalXP: encounterXP, lootTags },
@@ -622,6 +688,13 @@ export function createEncounterService(
         .filter((c): c is CreatureDefinition => c !== undefined);
 
       xpAwarded = calculateEncounterXP(creatureDefs);
+
+      // Track daily XP for combat encounters
+      if (encounter.type === 'combat') {
+        // Use effective XP if available (includes group multiplier), else base XP
+        const xpToTrack = encounter.effectiveXP ?? xpAwarded;
+        store.trackCombatXP(xpToTrack);
+      }
     }
 
     // Update encounter
@@ -653,6 +726,12 @@ export function createEncounterService(
       eventBus.subscribe<EncounterGenerateRequestedPayload>(
         EventTypes.ENCOUNTER_GENERATE_REQUESTED,
         (event) => {
+          // Guard: Skip generation if encounter already pending/active
+          const currentEncounter = store.getState().currentEncounter;
+          if (currentEncounter && currentEncounter.state !== 'resolved') {
+            return; // Already have pending/active encounter
+          }
+
           // Service builds context from minimal payload (as per Encounter-System.md)
           const { position, trigger } = event.payload;
 
@@ -744,6 +823,23 @@ export function createEncounterService(
         store.setActiveMap(event.payload.mapId);
         publishStateChanged(event.correlationId);
       })
+    );
+
+    // Reset daily XP budget on day change
+    subscriptions.push(
+      eventBus.subscribe<TimeDayChangedPayload>(
+        EventTypes.TIME_DAY_CHANGED,
+        (event) => {
+          // Calculate new daily budget based on party composition
+          // Daily budget = 6-8 medium encounters worth of XP
+          // Using 6 medium encounters as baseline
+          const partyMembers = getPartyMembersForBudget();
+          const mediumBudget = calculateXPBudget(partyMembers, 'medium');
+          const dailyBudget = mediumBudget * 6;
+
+          store.resetDailyXP(event.payload.newDay, dailyBudget);
+        }
+      )
     );
 
     // NOTE: Travel encounter checks are handled by travel-service.ts at hour boundaries

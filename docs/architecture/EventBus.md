@@ -485,4 +485,127 @@ time:state-changed
 
 ---
 
+## Sticky Events
+
+### Konzept
+
+Sticky Events speichern das letzte Event eines Typs und liefern es sofort an neue Subscriber. Dies löst das **Late-Subscriber-Problem**: Wenn eine View erst nach einem Event erstellt wird, erhält sie trotzdem den aktuellen Kontext.
+
+**Bekanntes Pattern aus:**
+- RxJS: `BehaviorSubject` / `ReplaySubject(1)`
+- Android: `LiveData`
+- Vue: `ref()` mit immediate watchers
+
+### Wann Sticky Events verwenden?
+
+| Szenario | Sticky? | Begründung |
+|----------|:-------:|------------|
+| UI-Kontext Events (`*:started`, `*:generated`) | ✓ | Views müssen wissen welcher Tab/Modus aktiv ist |
+| State-Sync Events (`*:state-changed`) | ✗ | State wird direkt von Features abgefragt |
+| Einmalige Notifications | ✗ | Sollten nicht wiederholt werden |
+| Command Events (`*-requested`) | ✗ | Commands sind einmalige Aktionen |
+
+### Sticky Event-Typen
+
+Folgende Events sind sticky (definiert in Events-Catalog.md):
+
+| Event | Sticky | Cleared by | Consumer | Grund |
+|-------|:------:|------------|----------|-------|
+| `map:loaded` | ✓ | `map:unloaded` | SessionRunner | Map-Kontext für späte Views |
+| `party:loaded` | ✓ | — | SessionRunner | Party-State für späte Views |
+| `travel:started` | ✓ | `travel:completed`, `travel:failed` | SessionRunner | Travel-Modus aktiv |
+| `travel:paused` | ✓ | `travel:resumed`, `travel:completed` | SessionRunner | Pause-Grund (encounter, user) |
+| `encounter:generated` | ✓ | `encounter:started`, `encounter:dismissed` | DetailView | Encounter-Tab öffnen |
+| `combat:started` | ✓ | `combat:completed` | DetailView | Combat-Tab öffnen |
+| `audio:track-changed` | ✓ | (überschrieben) | Audio-Panel | Aktueller Track |
+
+**NICHT sticky** (mit Begründung):
+
+| Kategorie | Beispiele | Grund |
+|-----------|-----------|-------|
+| `*:state-changed` | `travel:state-changed` | State wird direkt von Features abgefragt |
+| `*-requested` | `combat:start-requested` | Commands sind einmalige Aktionen |
+| `*:completed` | `travel:completed` | Lifecycle-Ende nicht wiederholen |
+| `*:failed` | `travel:failed` | Fehler nicht wiederholen |
+| Position-Events | `travel:position-changed` | Kontinuierliche Updates |
+| Turn-Events | `combat:turn-changed` | Nur aktueller Turn relevant |
+
+### API
+
+```typescript
+// Publish mit sticky Option
+eventBus.publish(event, { sticky: true });
+
+// Subscribe - erhält sofort das letzte sticky Event (falls vorhanden)
+const unsub = eventBus.subscribe('combat:started', handler, { replay: true });
+
+// Sticky Event manuell löschen (z.B. nach combat:completed)
+eventBus.clearSticky('combat:started');
+```
+
+### Lifecycle
+
+```
+1. Feature publiziert sticky Event
+   → Event wird normal an alle Subscriber geliefert
+   → Event wird im stickyEvents-Cache gespeichert
+
+2. Neue View subscribt mit replay: true
+   → Subscriber erhält sofort das gecachte Event
+   → Danach normale Event-Verarbeitung
+
+3. Feature publiziert Gegenteil-Event (z.B. combat:completed)
+   → Sticky Event wird aus Cache gelöscht
+   → Neue Subscriber erhalten kein altes Event
+```
+
+### Sticky-Clearing-Regeln
+
+| Sticky Event | Cleared by |
+|--------------|------------|
+| `map:loaded` | `map:unloaded` |
+| `travel:started` | `travel:completed`, `travel:failed` |
+| `travel:paused` | `travel:resumed`, `travel:completed` |
+| `encounter:generated` | `encounter:started`, `encounter:dismissed` |
+| `combat:started` | `combat:completed` |
+
+### Implementierungshinweise
+
+**Feature-Code (Publish):**
+
+```typescript
+// Sticky Event publishen
+function publishCombatStarted(combatId: string, participants: CombatParticipant[]): void {
+  eventBus.publish(
+    createEvent(EventTypes.COMBAT_STARTED, { combatId, participants }, eventOptions()),
+    { sticky: true }
+  );
+}
+
+// Sticky Event clearen bei Workflow-Ende
+function publishCombatCompleted(result: CombatResult): void {
+  eventBus.clearSticky(EventTypes.COMBAT_STARTED);
+  eventBus.publish(createEvent(EventTypes.COMBAT_COMPLETED, result, eventOptions()));
+}
+```
+
+**ViewModel-Code (Subscribe):**
+
+```typescript
+// Mit replay für Late-Subscriber
+eventSubscriptions.push(
+  eventBus.subscribe(
+    EventTypes.COMBAT_STARTED,
+    () => {
+      syncFromFeatures();
+      state = { ...state, activeTab: 'combat' };
+      notify(['full']);
+    },
+    { replay: true }  // Erhält sticky Event sofort
+  )
+);
+```
+
+---
+
 *Siehe auch: [Features.md](Features.md) | [Application.md](Application.md) | [Events-Catalog.md](Events-Catalog.md)*

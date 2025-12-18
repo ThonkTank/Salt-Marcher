@@ -440,18 +440,35 @@ export function createSessionRunnerViewModel(
       )
     );
 
-    // Travel state changed - update travel status and route
+    // Travel state changed - update travel status, route, and token animation
     eventSubscriptions.push(
       eventBus.subscribe<TravelStateChangedPayload>(
         EventTypes.TRAVEL_STATE_CHANGED,
         (event) => {
           const travelState = event.payload.state as TravelState;
+
+          // Update token animation during travel based on segmentProgress
+          let tokenAnimation: TokenAnimationState | null = null;
+          if (travelState.status === 'traveling' && travelState.route) {
+            const segment = travelState.route.segments[travelState.currentSegmentIndex];
+            if (segment) {
+              tokenAnimation = {
+                fromHex: segment.from,
+                toHex: segment.to,
+                progress: travelState.segmentProgress,
+                startTime: 0, // Not used for direct progress
+                durationMs: 0, // Not used for direct progress
+              };
+            }
+          }
+
           updateState(
             {
               travelStatus: travelState.status,
               activeRoute: travelState.route,
+              tokenAnimation,
             },
-            ['route', 'sidebar']
+            ['route', 'sidebar', 'party']
           );
         }
       )
@@ -593,48 +610,8 @@ export function createSessionRunnerViewModel(
         return;
       }
 
-      // Normal mode: try to move to adjacent hex or select tile
-      if (!travelFeature.canMoveTo(coord)) {
-        // Just select the tile for info
-        updateState({ selectedTile: coord }, ['selection']);
-        return;
-      }
-
-      // Try to move
-      const result = travelFeature.moveToNeighbor(coord);
-
-      if (isOk(result)) {
-        const travel = result.value;
-
-        // Get terrain name for display
-        const terrain = mapFeature.getTerrainAt(coord);
-        const terrainName = isSome(terrain) ? terrain.value.name : 'Unknown';
-
-        lastTravel = {
-          from: travel.from,
-          to: travel.to,
-          timeCostHours: travel.timeCostHours,
-          terrainName,
-        };
-
-        // Update state
-        syncFromFeatures();
-        notify(['party', 'selection']);
-
-        // Persist party position and time state
-        partyFeature.saveParty().then(saveResult => {
-          if (!saveResult.ok) {
-            notificationService.errorFromResult(saveResult.error);
-          }
-        });
-        timeFeature.saveTime().then(saveResult => {
-          if (!saveResult.ok) {
-            console.warn('Failed to save time:', saveResult.error);
-          }
-        });
-      } else {
-        notificationService.errorFromResult(result.error);
-      }
+      // Normal mode: just select the tile for info
+      updateState({ selectedTile: coord }, ['selection']);
     },
 
     onTileHover(coord: HexCoordinate | null): void {

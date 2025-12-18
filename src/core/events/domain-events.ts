@@ -102,14 +102,13 @@ export const EventTypes = {
   TIME_CALENDAR_CHANGE_FAILED: 'time:calendar-change-failed',
 
   // -------------------------------------------------------------------------
-  // travel:* Events (14)
+  // travel:* Events (13)
   // -------------------------------------------------------------------------
   TRAVEL_PLAN_REQUESTED: 'travel:plan-requested',
   TRAVEL_START_REQUESTED: 'travel:start-requested',
   TRAVEL_PAUSE_REQUESTED: 'travel:pause-requested',
   TRAVEL_RESUME_REQUESTED: 'travel:resume-requested',
   TRAVEL_CANCEL_REQUESTED: 'travel:cancel-requested',
-  TRAVEL_MOVE_REQUESTED: 'travel:move-requested',
   TRAVEL_STATE_CHANGED: 'travel:state-changed',
   TRAVEL_POSITION_CHANGED: 'travel:position-changed',
   TRAVEL_ROUTE_PLANNED: 'travel:route-planned',
@@ -401,10 +400,6 @@ export interface TravelResumeRequestedPayload {
 
 export interface TravelCancelRequestedPayload {
   // empty
-}
-
-export interface TravelMoveRequestedPayload {
-  target: HexCoordinate;
 }
 
 export interface TravelStateChangedPayload {
@@ -1239,7 +1234,6 @@ export interface EventPayloadMap {
   [EventTypes.TRAVEL_PAUSE_REQUESTED]: TravelPauseRequestedPayload;
   [EventTypes.TRAVEL_RESUME_REQUESTED]: TravelResumeRequestedPayload;
   [EventTypes.TRAVEL_CANCEL_REQUESTED]: TravelCancelRequestedPayload;
-  [EventTypes.TRAVEL_MOVE_REQUESTED]: TravelMoveRequestedPayload;
   [EventTypes.TRAVEL_STATE_CHANGED]: TravelStateChangedPayload;
   [EventTypes.TRAVEL_POSITION_CHANGED]: TravelPositionChangedPayload;
   [EventTypes.TRAVEL_ROUTE_PLANNED]: TravelRoutePlannedPayload;

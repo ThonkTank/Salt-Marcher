@@ -8,9 +8,10 @@
  */
 
 import type { EncounterInstance } from '@core/schemas';
-import type { InternalEncounterState } from './types';
+import type { InternalEncounterState, DailyXPTracker } from './types';
 import {
   createInitialEncounterState,
+  createInitialDailyXPTracker,
   MAX_HISTORY_SIZE,
 } from './types';
 import { VARIETY_HISTORY_SIZE } from '@core/schemas';
@@ -57,6 +58,32 @@ export interface EncounterStore {
    * Clear all state.
    */
   clear(): void;
+
+  // === Daily XP Tracking ===
+
+  /**
+   * Get current daily XP tracker state.
+   */
+  getDailyXP(): Readonly<DailyXPTracker>;
+
+  /**
+   * Track XP usage from a combat encounter.
+   * Increments budgetUsed and combatEncountersToday.
+   */
+  trackCombatXP(xp: number): void;
+
+  /**
+   * Reset daily XP tracker (e.g., on Long Rest or new day).
+   * @param dayNumber - The new game day number
+   * @param budget - The new daily XP budget
+   */
+  resetDailyXP(dayNumber: number, budget: number): void;
+
+  /**
+   * Check if daily XP budget is exhausted (>75% used).
+   * Used to influence encounter type derivation.
+   */
+  isDailyBudgetExhausted(): boolean;
 }
 
 // ============================================================================
@@ -129,6 +156,41 @@ export function createEncounterStore(): EncounterStore {
 
     clear(): void {
       state = createInitialEncounterState();
+    },
+
+    // === Daily XP Tracking ===
+
+    getDailyXP(): Readonly<DailyXPTracker> {
+      return state.dailyXP;
+    },
+
+    trackCombatXP(xp: number): void {
+      state = {
+        ...state,
+        dailyXP: {
+          ...state.dailyXP,
+          budgetUsed: state.dailyXP.budgetUsed + xp,
+          combatEncountersToday: state.dailyXP.combatEncountersToday + 1,
+        },
+      };
+    },
+
+    resetDailyXP(dayNumber: number, budget: number): void {
+      state = {
+        ...state,
+        dailyXP: {
+          dayNumber,
+          budgetTotal: budget,
+          budgetUsed: 0,
+          combatEncountersToday: 0,
+        },
+      };
+    },
+
+    isDailyBudgetExhausted(): boolean {
+      const { budgetTotal, budgetUsed } = state.dailyXP;
+      if (budgetTotal <= 0) return false;
+      return budgetUsed >= budgetTotal * 0.75;
     },
   };
 }

@@ -161,6 +161,156 @@ describe('EventBus', () => {
       expect(handler).not.toHaveBeenCalled();
       expect(bus.subscriberCount('test:event')).toBe(0);
     });
+
+    it('also clears sticky events', () => {
+      const event = createTestEvent('test:started', { id: '1' });
+      bus.publish(event, { sticky: true });
+
+      bus.clear();
+
+      // Late subscriber should not receive cleared sticky event
+      const handler = vi.fn();
+      bus.subscribe('test:started', handler, { replay: true });
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sticky events', () => {
+    it('stores sticky event', () => {
+      const event = createTestEvent('test:started', { id: '1' });
+
+      bus.publish(event, { sticky: true });
+
+      // Verify by subscribing with replay
+      const handler = vi.fn();
+      bus.subscribe('test:started', handler, { replay: true });
+
+      expect(handler).toHaveBeenCalledWith(event);
+    });
+
+    it('replays sticky event to late subscriber', () => {
+      const event = createTestEvent('test:started', { id: '1' });
+
+      // Publish first
+      bus.publish(event, { sticky: true });
+
+      // Subscribe later with replay
+      const handler = vi.fn();
+      bus.subscribe('test:started', handler, { replay: true });
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(event);
+    });
+
+    it('does not replay without replay option', () => {
+      bus.publish(createTestEvent('test:started', {}), { sticky: true });
+
+      const handler = vi.fn();
+      bus.subscribe('test:started', handler); // No replay option
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('clears sticky event with clearSticky', () => {
+      bus.publish(createTestEvent('test:started', {}), { sticky: true });
+
+      bus.clearSticky('test:started');
+
+      const handler = vi.fn();
+      bus.subscribe('test:started', handler, { replay: true });
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('still delivers new events after replay', () => {
+      const event1 = createTestEvent('test:event', { id: '1' });
+      const event2 = createTestEvent('test:event', { id: '2' });
+
+      bus.publish(event1, { sticky: true });
+
+      const handler = vi.fn();
+      bus.subscribe('test:event', handler, { replay: true });
+
+      bus.publish(event2);
+
+      expect(handler).toHaveBeenCalledTimes(2);
+      expect(handler).toHaveBeenNthCalledWith(1, event1);
+      expect(handler).toHaveBeenNthCalledWith(2, event2);
+    });
+
+    it('overwrites previous sticky event of same type', () => {
+      const event1 = createTestEvent('test:started', { id: '1' });
+      const event2 = createTestEvent('test:started', { id: '2' });
+
+      bus.publish(event1, { sticky: true });
+      bus.publish(event2, { sticky: true });
+
+      const handler = vi.fn();
+      bus.subscribe('test:started', handler, { replay: true });
+
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(event2);
+    });
+
+    it('does not replay for different event type', () => {
+      bus.publish(createTestEvent('test:started', {}), { sticky: true });
+
+      const handler = vi.fn();
+      bus.subscribe('test:other', handler, { replay: true });
+
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('handles replay handler errors gracefully', () => {
+      const errorHandler = vi.fn(() => {
+        throw new Error('Replay error');
+      });
+
+      bus.publish(createTestEvent('test:started', {}), { sticky: true });
+
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Should not throw
+      bus.subscribe('test:started', errorHandler, { replay: true });
+
+      expect(errorHandler).toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+
+    it('supports multiple sticky event types', () => {
+      const combatEvent = createTestEvent('combat:started', { combatId: 'c1' });
+      const encounterEvent = createTestEvent('encounter:generated', { encounterId: 'e1' });
+
+      bus.publish(combatEvent, { sticky: true });
+      bus.publish(encounterEvent, { sticky: true });
+
+      const combatHandler = vi.fn();
+      const encounterHandler = vi.fn();
+
+      bus.subscribe('combat:started', combatHandler, { replay: true });
+      bus.subscribe('encounter:generated', encounterHandler, { replay: true });
+
+      expect(combatHandler).toHaveBeenCalledWith(combatEvent);
+      expect(encounterHandler).toHaveBeenCalledWith(encounterEvent);
+    });
+
+    it('clearSticky only clears specified event type', () => {
+      bus.publish(createTestEvent('combat:started', {}), { sticky: true });
+      bus.publish(createTestEvent('encounter:generated', {}), { sticky: true });
+
+      bus.clearSticky('combat:started');
+
+      const combatHandler = vi.fn();
+      const encounterHandler = vi.fn();
+
+      bus.subscribe('combat:started', combatHandler, { replay: true });
+      bus.subscribe('encounter:generated', encounterHandler, { replay: true });
+
+      expect(combatHandler).not.toHaveBeenCalled();
+      expect(encounterHandler).toHaveBeenCalled();
+    });
   });
 
   describe('error handling', () => {

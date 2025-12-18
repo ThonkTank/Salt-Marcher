@@ -108,6 +108,7 @@ export function createDetailViewModel(
 
   function setupEventHandlers(): void {
     // Encounter generated - auto-open encounter tab
+    // replay: true ensures late-joining Views receive the sticky event
     eventSubscriptions.push(
       eventBus.subscribe(
         EventTypes.ENCOUNTER_GENERATED,
@@ -118,7 +119,8 @@ export function createDetailViewModel(
             state = { ...state, activeTab: 'encounter' };
           }
           notify(['full']);
-        }
+        },
+        { replay: true }
       )
     );
 
@@ -134,6 +136,7 @@ export function createDetailViewModel(
     );
 
     // Combat started - auto-open combat tab (highest priority)
+    // replay: true ensures late-joining Views receive the sticky event
     eventSubscriptions.push(
       eventBus.subscribe(
         EventTypes.COMBAT_STARTED,
@@ -141,7 +144,8 @@ export function createDetailViewModel(
           syncFromFeatures();
           state = { ...state, activeTab: 'combat' };
           notify(['full']);
-        }
+        },
+        { replay: true }
       )
     );
 

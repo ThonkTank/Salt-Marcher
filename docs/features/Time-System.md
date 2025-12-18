@@ -357,6 +357,56 @@ Diese Features reagieren auf `time:state-changed`:
 | Audio | Context-Update (timeOfDay) |
 | WorldEvents | Events pruefen, Timeline aktualisieren |
 | Encounter | Reset taeglicher Encounter-Limits |
+| **Visibility** | Sichtweiten-Overlay aktualisieren |
+
+---
+
+## Sichtweiten-Einfluss (Post-MVP)
+
+Tageszeit beeinflusst die Overland-Sichtweite im Visibility-System.
+
+### Visibility-Modifier pro Segment
+
+| Segment | Modifier | Notiz |
+|---------|----------|-------|
+| `dawn` | 50% | Morgendaemmerung |
+| `morning` | 100% | Volle Sicht |
+| `midday` | 100% | Volle Sicht |
+| `afternoon` | 100% | Volle Sicht |
+| `dusk` | 50% | Abenddaemmerung |
+| `night` | 10% | Minimale Sicht (ohne Darkvision) |
+
+### Berechnung
+
+Der Time-Modifier wird **multiplikativ** mit dem Weather-Modifier kombiniert:
+
+```
+Effektive Sichtweite = Basis × Hoehen-Bonus × Weather-Modifier × Time-Modifier
+```
+
+**Beispiel:** Basis 2 Hex, klar (100%), Nacht (10%) → 0.2 Hex (nur aktuelles Tile)
+
+### Segment-Wechsel
+
+Bei `time:segment-changed` wird das Visibility-Overlay automatisch aktualisiert:
+
+```
+time:segment-changed { previousSegment: 'dusk', newSegment: 'night' }
+    │
+    └── Visibility Feature:
+        - Neuen Time-Modifier (10%) berechnen
+        - visibleTiles neu berechnen
+        - Overlay neu rendern
+```
+
+### Darkvision
+
+Charaktere mit Darkvision negieren den Nacht-Modifier:
+- Mit Darkvision: Night-Modifier = 100%
+- Dawn/Dusk bleiben 50% (Daemmerung ≠ Dunkelheit)
+
+→ Character-Sinne: [Character-System.md](Character-System.md#sinne)
+→ Visibility-System: [Map-Feature.md](Map-Feature.md#visibility-system)
 
 ---
 
@@ -498,6 +548,7 @@ type JournalEntryType =
 | time:set | Mittel | Ja |
 | time:set-calendar | Niedrig | Nein |
 | Zeit-Konvertierung | Niedrig | Nein |
+| **Visibility-Modifier** | Mittel | Nein |
 
 ---
 

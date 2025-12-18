@@ -278,6 +278,19 @@ export type EncounterDefinition = z.infer<typeof encounterDefinitionSchema>;
 // ============================================================================
 
 /**
+ * Encounter difficulty levels (D&D 5e).
+ * Used for XP budget calculation.
+ */
+export const encounterDifficultySchema = z.enum([
+  'easy',
+  'medium',
+  'hard',
+  'deadly',
+]);
+
+export type EncounterDifficultyValue = z.infer<typeof encounterDifficultySchema>;
+
+/**
  * Runtime encounter instance (in feature state, not persisted).
  */
 export const encounterInstanceSchema = z.object({
@@ -292,6 +305,17 @@ export const encounterInstanceSchema = z.object({
 
   /** Current state */
   state: encounterStateValueSchema,
+
+  // === Balancing (Combat encounters) ===
+
+  /** Rolled difficulty level for this encounter */
+  difficulty: encounterDifficultySchema.optional(),
+
+  /** XP budget used for encounter generation */
+  xpBudget: z.number().int().nonnegative().optional(),
+
+  /** Effective XP (including group multiplier) */
+  effectiveXP: z.number().int().nonnegative().optional(),
 
   // === Creatures ===
 

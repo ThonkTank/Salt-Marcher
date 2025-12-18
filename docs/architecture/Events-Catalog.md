@@ -13,14 +13,18 @@
 
 ## Konvention (Zusammenfassung)
 
-| Kategorie | Pattern | Beispiel |
-|-----------|---------|----------|
-| **Requests** | `{domain}:{action}-requested` | `travel:start-requested` |
-| **State-Changes** | `{domain}:{subject}-changed` | `time:state-changed` |
-| **Lifecycle-Completion** | `{domain}:{action}-completed` | `travel:completed` |
-| **Lifecycle-Failure** | `{domain}:{action}-failed` | `travel:failed` |
-| **Data-Loaded** | `{domain}:loaded` | `map:loaded` |
-| **Data-Saved** | `{domain}:saved` | `entity:saved` |
+| Kategorie | Pattern | Beispiel | Sticky |
+|-----------|---------|----------|:------:|
+| **Requests** | `{domain}:{action}-requested` | `travel:start-requested` | ✗ |
+| **State-Changes** | `{domain}:{subject}-changed` | `time:state-changed` | ✗ |
+| **Lifecycle-Start** | `{domain}:started` | `combat:started` | ✓* |
+| **Lifecycle-Completion** | `{domain}:{action}-completed` | `travel:completed` | ✗ |
+| **Lifecycle-Failure** | `{domain}:{action}-failed` | `travel:failed` | ✗ |
+| **Generated** | `{domain}:generated` | `encounter:generated` | ✓* |
+| **Data-Loaded** | `{domain}:loaded` | `map:loaded` | ✓* |
+| **Data-Saved** | `{domain}:saved` | `entity:saved` | ✗ |
+
+*Nur für UI-relevante Events. Siehe [EventBus.md](EventBus.md#sticky-events) für Details.
 
 ---
 
@@ -97,7 +101,6 @@ Reise-System fuer Hex-Overland-Maps.
 
 | Event | Status | Seit | Anmerkung |
 |-------|--------|------|-----------|
-| `travel:move-requested` | ✅ | 2.5 | MVP-spezifisch (Nachbar-Hex) |
 | `travel:position-changed` | ✅ | 2.5 | |
 | `travel:plan-requested` | ✅ | 7 | State-Machine implementiert |
 | `travel:start-requested` | ✅ | 7 | State-Machine implementiert |
@@ -158,11 +161,13 @@ Reise-System fuer Hex-Overland-Maps.
   to: HexCoordinate;
   estimatedArrival: GameDateTime;
 }
+// Sticky: true - Clears: travel:completed, travel:failed
 
 'travel:paused': {
   position: HexCoordinate;
   reason: 'user' | 'encounter' | 'obstacle';
 }
+// Sticky: true - Clears: travel:resumed, travel:completed
 
 'travel:resumed': {
   position: HexCoordinate;
@@ -238,6 +243,9 @@ Party-Verwaltung und Position.
 }
 
 // Lifecycle
+'party:loaded': {}
+// Sticky: true - kein Clear-Event (bleibt bis Reload)
+
 'party:member-added': {
   characterId: EntityId<'character'>;
 }
@@ -335,6 +343,7 @@ Map-Verwaltung und Navigation.
   mapId: EntityId<'map'>;
   mapType: 'hex' | 'town' | 'grid';
 }
+// Sticky: true - Clears: map:unloaded
 
 'map:unloaded': {
   mapId: EntityId<'map'>;
@@ -462,6 +471,7 @@ Zufalls- und geplante Begegnungen.
 'encounter:generated': {
   encounter: EncounterInstance;
 }
+// Sticky: true - Clears: encounter:started, encounter:dismissed
 
 'encounter:started': {
   encounterId: string;
@@ -601,6 +611,7 @@ Initiative-Tracker und Combat-Management.
   combatId: string;
   initiativeOrder: CombatParticipant[];
 }
+// Sticky: true - Clears: combat:completed
 
 'combat:completed': {             // War: combat:ended
   combatId: string;
@@ -1138,6 +1149,7 @@ Audio-Steuerung (Hybrid Feature).
   newTrack: string;
   reason: 'context-change' | 'track-ended' | 'user-skip' | 'user-override';
 }
+// Sticky: true - überschrieben durch nächsten Track-Wechsel
 
 'audio:paused': {
   layer: 'music' | 'ambiance' | 'all';

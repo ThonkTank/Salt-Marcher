@@ -1,9 +1,7 @@
 /**
  * Travel Feature types and interfaces.
  *
- * Travel supports:
- * - Single hex-to-hex movement (moveToNeighbor)
- * - Multi-hex routes with state machine (planRoute, startTravel, pause, resume)
+ * Travel supports multi-hex routes with state machine (planRoute, startTravel, pause, resume).
  *
  * State Machine: idle → planning → traveling ↔ paused → idle (on completion)
  */
@@ -20,29 +18,12 @@ import type { HexCoordinate, TransportMode, Duration } from '@core/schemas';
  */
 export interface TravelFeaturePort {
   // ===========================================================================
-  // Single-Hex Movement (Minimal)
+  // Traversability Check
   // ===========================================================================
 
   /**
-   * Move party to an adjacent hex.
-   * Returns the time cost in hours.
-   */
-  moveToNeighbor(target: HexCoordinate): Result<TravelResult, AppError>;
-
-  /**
-   * Calculate time cost to move to a target hex.
-   * Does not perform the move.
-   */
-  calculateTimeCost(target: HexCoordinate): Result<number, AppError>;
-
-  /**
-   * Check if a move to target is valid (adjacent and traversable).
-   */
-  canMoveTo(target: HexCoordinate): boolean;
-
-  /**
    * Check if a hex is traversable with current transport.
-   * Does NOT check adjacency - use for waypoint validation.
+   * Use for waypoint validation during route planning.
    */
   isTraversable(coord: HexCoordinate): boolean;
 
@@ -242,6 +223,12 @@ export interface TravelState {
 
   /** Total hours traveled on this route */
   totalHoursTraveled: number;
+
+  /** Elapsed minutes in current segment (for time-based animation) */
+  minutesElapsedSegment: number;
+
+  /** Hour number when last encounter check occurred (0-based from travel start) */
+  lastEncounterCheckHour: number;
 }
 
 /**
@@ -256,6 +243,8 @@ export function createInitialTravelState(): TravelState {
     pauseReason: null,
     hourProgress: 0,
     totalHoursTraveled: 0,
+    minutesElapsedSegment: 0,
+    lastEncounterCheckHour: 0,
   };
 }
 

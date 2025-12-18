@@ -1,7 +1,7 @@
 /**
  * Travel Feature service.
  *
- * Provides minimal travel operations: move to neighbor hex with time cost.
+ * Provides multi-hex route travel with state machine.
  * Uses EventBus for time:advance-requested and travel:position-changed.
  * Implements TravelFeaturePort interface.
  */
@@ -56,7 +56,6 @@ import {
 import type {
   TimeAdvanceRequestedPayload,
   TravelPositionChangedPayload,
-  TravelMoveRequestedPayload,
   TravelPlanRequestedPayload,
   TravelStartRequestedPayload,
   TravelPauseRequestedPayload,
@@ -108,6 +107,7 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
   let travelLoopTimeoutId: ReturnType<typeof setTimeout> | null = null;
   const TRAVEL_LOOP_DELAY_MS = 100; // Short delay for responsiveness
+  const MINUTES_PER_TICK = 1; // 1 minute per tick for time-based animation
 
   /**
    * Start the automatic travel loop.
@@ -145,14 +145,16 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
   }
 
   /**
-   * Process one tick of the travel loop (advance one segment).
+   * Process one tick of the travel loop (advance time by 1 minute).
+   * Time-based animation: token moves smoothly, position changes at segment end.
+   * Encounter checks happen at hour boundaries.
    * Returns whether the loop should continue.
    */
   function processNextTravelTick(
     correlationId?: string
   ): { shouldContinue: boolean } {
     const state = store.getState();
-    const { route, currentSegmentIndex, hourProgress } = state;
+    const { route, currentSegmentIndex, minutesElapsedSegment, totalHoursTraveled, lastEncounterCheckHour } = state;
 
     if (!route || currentSegmentIndex >= route.segments.length) {
       // Route complete
@@ -161,44 +163,63 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     }
 
     const segment = route.segments[currentSegmentIndex];
-    const timeCostHours = segment.timeCostHours;
+    const segmentDurationMinutes = segment.timeCostHours * 60;
 
-    // Calculate hour boundaries for encounter checks
-    const previousHourProgress = hourProgress;
-    const newTotalProgress = previousHourProgress + timeCostHours;
-    const hoursCrossed =
-      Math.floor(newTotalProgress) - Math.floor(previousHourProgress);
+    // 1. Advance time by 1 minute
+    store.advanceMinutesElapsed(MINUTES_PER_TICK, segmentDurationMinutes);
 
-    // Encounter checks for each full hour crossed
-    // Note: checkForEncounter publishes ENCOUNTER_GENERATE_REQUESTED, but encounter
-    // generation may fail silently (no eligible creatures, missing tile, etc.).
-    // We check the actual status instead of trusting the return value.
-    for (let i = 0; i < hoursCrossed; i++) {
+    // Get updated state after time advance
+    const updatedState = store.getState();
+    const newMinutesSegment = updatedState.minutesElapsedSegment;
+
+    // 2. Calculate total minutes traveled for encounter checks
+    // totalHoursTraveled contains completed segments, add current segment progress
+    const totalMinutesTraveled = totalHoursTraveled * 60 + newMinutesSegment;
+    const currentHour = Math.floor(totalMinutesTraveled / 60);
+
+    // 3. Encounter check at hour boundary
+    if (currentHour > lastEncounterCheckHour) {
+      store.setLastEncounterCheckHour(currentHour);
       checkForEncounter(segment.to, correlationId);
-    }
-    // If encounter was successfully generated, status will be 'paused'
-    // (EventBus is synchronous, so pause happens before this check)
-    if (store.getStatus() !== 'traveling') {
-      return { shouldContinue: false };
-    }
 
-    // Execute segment move (position + time)
-    const moveResult = executeMove(segment.to, correlationId);
-    if (!moveResult.ok) {
-      return { shouldContinue: false };
+      // If encounter was generated, travel is paused
+      if (store.getStatus() !== 'traveling') {
+        return { shouldContinue: false };
+      }
     }
 
-    // Update hour progress
-    store.setHourProgress(newTotalProgress % 1);
-    store.incrementTotalHours(timeCostHours);
+    // 4. Advance game time (1 minute)
+    publishTimeAdvance(0, MINUTES_PER_TICK, correlationId);
 
-    // Advance to next segment
-    const hasMore = store.advanceToNextSegment();
+    // 5. Check if segment is complete
+    if (newMinutesSegment >= segmentDurationMinutes) {
+      // Move party to segment destination
+      partyFeature.setPosition(segment.to);
 
-    if (!hasMore) {
-      finalizeTravelInternal(correlationId);
-      return { shouldContinue: false };
+      // Publish position changed event
+      const terrainId = getTerrainIdAt(segment.to);
+      publishPositionChanged(
+        segment.from,
+        segment.to,
+        segment.timeCostHours,
+        terrainId,
+        correlationId
+      );
+
+      // Update total hours traveled
+      store.incrementTotalHours(segment.timeCostHours);
+
+      // Advance to next segment
+      const hasMore = store.advanceToNextSegment();
+
+      if (!hasMore) {
+        finalizeTravelInternal(correlationId);
+        return { shouldContinue: false };
+      }
     }
+
+    // Publish state changed for UI animation updates
+    publishStateChanged(correlationId);
 
     return { shouldContinue: true };
   }
@@ -771,21 +792,6 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
   function setupEventHandlers(): void {
     if (!eventBus) return;
 
-    // Handle travel:move-requested (single hex)
-    subscriptions.push(
-      eventBus.subscribe<TravelMoveRequestedPayload>(
-        EventTypes.TRAVEL_MOVE_REQUESTED,
-        (event) => {
-          const { target } = event.payload;
-          const correlationId = event.correlationId;
-
-          // Execute the move - result handling is internal
-          // In a full implementation, we'd publish success/failure events
-          executeMove(target, correlationId);
-        }
-      )
-    );
-
     // Handle travel:plan-requested (multi-hex route)
     subscriptions.push(
       eventBus.subscribe<TravelPlanRequestedPayload>(
@@ -1196,47 +1202,8 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
   return {
     // =========================================================================
-    // Single-Hex Movement (Minimal)
+    // Traversability Check
     // =========================================================================
-
-    moveToNeighbor(target: HexCoordinate): Result<TravelResult, AppError> {
-      return executeMove(target);
-    },
-
-    calculateTimeCost(target: HexCoordinate): Result<number, AppError> {
-      // Get current position
-      const posResult = getPartyPosition();
-      if (!posResult.ok) return posResult;
-      const current = posResult.value;
-
-      // Validate adjacency
-      const adjResult = validateAdjacent(current, target);
-      if (!adjResult.ok) return adjResult;
-
-      // Validate traversable
-      const travResult = validateTraversable(target);
-      if (!travResult.ok) return travResult;
-
-      // Calculate time (including weather factor and encumbrance for foot travel)
-      const baseSpeed = getBaseSpeed();
-      const movementCost = mapFeature.getMovementCost(target);
-      const weatherFactor = getWeatherSpeedFactor();
-
-      return ok(
-        calculateHexTraversalTime(baseSpeed, movementCost, weatherFactor)
-      );
-    },
-
-    canMoveTo(target: HexCoordinate): boolean {
-      const posResult = getPartyPosition();
-      if (!posResult.ok) return false;
-
-      const adjResult = validateAdjacent(posResult.value, target);
-      if (!adjResult.ok) return false;
-
-      const travResult = validateTraversable(target);
-      return travResult.ok;
-    },
 
     isTraversable(coord: HexCoordinate): boolean {
       return validateTraversable(coord).ok;

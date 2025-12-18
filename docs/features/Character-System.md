@@ -64,6 +64,16 @@ interface Character {
 
   // === Inventory ===
   inventory: InventorySlot[]; // Siehe Inventory-System.md
+
+  // === Sinne (Post-MVP) ===
+  senses?: CharacterSenses;
+}
+
+interface CharacterSenses {
+  darkvision?: number;       // Range in Feet (60, 120, etc.) - 0 = keine
+  blindsight?: number;       // Range in Feet
+  tremorsense?: number;      // Range in Feet
+  trueSight?: number;        // Range in Feet
 }
 ```
 
@@ -305,6 +315,44 @@ Formular-Felder:
 | AC | Number | > 0 |
 | Speed | Number | > 0, Vielfaches von 5 |
 | Strength | Number | 1-30 |
+
+---
+
+## Sinne (Post-MVP)
+
+Optionale Sinnes-Faehigkeiten fuer Charaktere. Diese beeinflussen das Overland-Visibility-System.
+
+### Sinn-Typen
+
+| Sinn | Typische Werte | Effekt |
+|------|----------------|--------|
+| **Darkvision** | 60, 120 | Nacht-Modifier ignoriert (100% statt 10%) |
+| **Blindsight** | 10, 30, 60 | Alle Modifier ignoriert bis Range |
+| **Tremorsense** | 30, 60 | Erkennt Bewegung, unabhaengig von Sicht |
+| **True Sight** | 30, 120 | Sieht durch magische Dunkelheit |
+
+### Beste Sicht der Party
+
+**Regel:** Der beste Wert in der Party wird verwendet.
+
+```typescript
+function getBestPartySense(
+  characters: Character[],
+  senseType: keyof CharacterSenses
+): number {
+  return characters.reduce((best, char) => {
+    const value = char.senses?.[senseType] ?? 0;
+    return Math.max(best, value);
+  }, 0);
+}
+```
+
+**Wichtig:**
+- Fuer jeden Sinn gilt: Hoechster Wert in Party wird verwendet
+- Sinne stacken NICHT untereinander (Blindsight 60ft + Darkvision 120ft ≠ 180ft)
+- Jeder Sinn wirkt in seinem eigenen Range-Bereich
+
+→ **Visibility-System:** [Map-Feature.md](Map-Feature.md#visibility-system)
 
 ---
 

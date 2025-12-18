@@ -401,6 +401,141 @@ Overworld-Map "Westeros"
 
 ---
 
+## Visibility System (Post-MVP)
+
+Overland-Sichtweiten-Visualisierung fuer Hex-Maps. Ermoeglicht dem GM zu sehen, welche Tiles die Party sehen kann.
+
+### Konzept
+
+- **Overlay:** Halbtransparentes graues Overlay ueber nicht-sichtbare Tiles (merkbar aber nicht blockierend)
+- **Basis-Sichtweite:** 1 Hex bei flachem Terrain (3 Meilen = Erdkruemmungs-Limit)
+- **Hoehenbonus:** Wurzel-Formel - hoehere Standpunkte erhoehen Sichtweite
+- **Blockierung:** Lineare Interpolation - Sichtlinie durch Zwischentiles geprueft
+- **Umwelt-Modifier:** Wetter und Tageszeit reduzieren Sicht (multiplikativ)
+
+### Sichtweiten-Berechnung
+
+```
+Effektive Sichtweite = Basis × Hoehen-Bonus × Wetter-Modifier × Tageszeit-Modifier
+Hoehen-Bonus: +floor(sqrt(elevation / referenzhoehe)) Hexes
+```
+
+| Party-Elevation | Bonus | Gesamt-Sicht |
+|-----------------|-------|--------------|
+| 0 (Ebene) | 0 | 1 Hex |
+| 1 (Huegel) | 1 | 2 Hexes |
+| 4 (Berg) | 2 | 3 Hexes |
+| 9 (Hoher Berg) | 3 | 4 Hexes |
+
+### Sicht-Blockierung (Line-of-Sight)
+
+Fuer jedes Ziel-Hex wird eine Sichtlinie gezogen:
+1. Berechne alle Hexes auf der Linie (via Hex-Linienalgorithmus)
+2. Fuer jedes Zwischen-Hex: Interpoliere erwartete Hoehe auf der Sichtlinie
+3. Wenn Zwischen-Hex-Elevation > interpolierte Hoehe → Sicht blockiert
+
+```
+Party (Elev 2) -------- Berg (Elev 5) -------- Ziel (Elev 1)
+                 ↑ Sichtlinie schneidet Berg → blockiert
+```
+
+### Umwelt-Modifier
+
+**Wetter:** → Details: [Weather-System.md](Weather-System.md#sichtweiten-einfluss)
+
+| Wetter-Zustand | Modifier |
+|----------------|----------|
+| Klar/Bewoelkt | 100% |
+| Leichter Regen/Schnee | 75% |
+| Starker Regen/Schnee | 50% |
+| Nebel | 25% |
+| Dichter Nebel/Blizzard | 10% |
+
+**Tageszeit:** → Details: [Time-System.md](Time-System.md#sichtweiten-einfluss)
+
+| Segment | Modifier |
+|---------|----------|
+| Dawn/Dusk | 50% |
+| Morning/Midday/Afternoon | 100% |
+| Night | 10% |
+
+### Party-Faehigkeiten (Sinne)
+
+Beste Sicht in der Party gilt. Verschiedene Sinne stacken nicht.
+
+| Sinn | Effekt |
+|------|--------|
+| **Darkvision** | Nacht-Modifier = 100% (statt 10%) |
+| **Blindsight** | Ignoriert alle Modifier bis Range |
+| **Tremorsense** | Erkennt Bewegung in Range, unabhaengig von Sicht |
+| **True Sight** | Ignoriert magische Dunkelheit |
+
+→ Character-Sinne: [Character-System.md](Character-System.md#sinne)
+→ Creature-Sinne: [Creature.md](../domain/Creature.md#sinne)
+
+### Creature-Sichtweite
+
+Kreaturen haben eigene Sichtweite fuer:
+- Encounter-Trigger (Party wird entdeckt)
+- NPC-Patrouillen
+- Stealth-Mechaniken
+
+→ Details: [Creature.md](../domain/Creature.md#sinne)
+
+### POI-Fernsicht
+
+POIs mit `height`-Feld koennen ueber ihr Tile hinaus sichtbar sein (z.B. Tuerme, Leuchtfeuer).
+
+**Berechnung:** POI sichtbar wenn:
+- POI-Tile ist sichtbar, ODER
+- POI-height > Blockierungs-Elevation zwischen Party und POI, ODER
+- POI.glowsAtNight && Nacht-Segment (ignoriert Nacht-Modifier)
+
+**Nachtleuchtende POIs:** POIs mit `glowsAtNight: true` ignorieren den Nacht-Modifier (10%), aber nicht den Weather-Modifier. Typische Beispiele: Staedte, Leuchttuerme, kampierende Heere.
+
+→ Details: [POI.md](../domain/POI.md#height-feld)
+
+### Performance-Optimierung
+
+Sichtberechnung ist rechenintensiv. Optimierungen:
+
+1. **Lazy Calculation:** Nur berechnen wenn Overlay aktiv
+2. **Caching:** Sichtfeld cachen, invalidieren bei Party-Bewegung, Segment-Wechsel, Wetter-Aenderung
+3. **Inkrementelle Updates:** Bei Bewegung nur Rand-Tiles neu berechnen
+4. **Range-Limit:** Performance-Cap fuer maximale Berechnungsdistanz
+
+```typescript
+interface VisibilityCache {
+  partyPosition: HexCoordinate;
+  timeSegment: TimeSegment;
+  weatherModifier: number;
+  visibleTiles: Set<HexCoordinate>;
+  timestamp: number;
+}
+```
+
+### Overlay-Visualisierung
+
+| Element | Darstellung |
+|---------|-------------|
+| Nicht-sichtbare Tiles | Halbtransparentes graues Overlay |
+| Sichtbare Tiles | Kein Overlay (normal sichtbar) |
+| Sichtbare POIs | Hervorgehoben (Glow-Effekt oder Umrandung) |
+| Nachtleuchtende POIs | Bei Nacht mit Lichtschein-Effekt |
+
+**Design-Prinzip:** Sichtbare POIs werden hervorgehoben, statt nicht-sichtbare extra abzudunkeln (die liegen bereits unter dem grauen Overlay).
+
+### UI
+
+Toggle-Button im Map-Panel (SessionRunner):
+- Icon: Auge/Fernglas
+- Tooltip: "Sichtweite anzeigen"
+- State: Session-only (nicht persistiert)
+
+→ Details: [SessionRunner.md](../application/SessionRunner.md#visibility-toggle)
+
+---
+
 ## Events
 
 ```typescript
@@ -494,6 +629,14 @@ Travel-Feature operiert nur auf Overworld-Maps:
 | **Lineare Features (Pfade)** | | ✓ | Strassen, Fluesse, Schluchten, Klippen |
 | Path Rendering | | ✓ | Linien zwischen Hex-Zentren |
 | Path-Travel-Integration | | ✓ | Direktionsabhaengiger Speed |
+| **Visibility System** | | mittel | Sichtweiten-Overlay |
+| Visibility Berechnung | | mittel | Wurzel-Formel + Line-of-Sight |
+| Weather-Visibility-Modifier | | mittel | Wetter reduziert Sicht |
+| Time-Visibility-Modifier | | mittel | Tageszeit reduziert Sicht |
+| POI-Fernsicht | | mittel | Height-Feld fuer POIs |
+| POI glowsAtNight | | mittel | Nachtleuchtende POIs |
+| POI-Hervorhebung | | mittel | Sichtbare POIs hervorheben |
+| Visibility-Toggle UI | | mittel | Button im Map-Panel |
 
 ---
 

@@ -170,6 +170,8 @@ export {
   type EncounterStateValue,
   encounterOutcomeSchema,
   type EncounterOutcome,
+  encounterDifficultySchema,
+  type EncounterDifficultyValue,
   concreteCreatureSlotSchema,
   type ConcreteCreatureSlot,
   typedCreatureSlotSchema,

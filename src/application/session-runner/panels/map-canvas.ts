@@ -9,7 +9,6 @@ import {
   axialToPixel,
   hexCorners,
   pixelToAxial,
-  hexNeighbors,
   hexEquals,
   isSome,
 } from '@core/index';
@@ -37,7 +36,6 @@ const COLORS = {
   selected: 'rgba(255, 255, 0, 0.4)',
   partyToken: '#FF6600',
   partyTokenBorder: '#FFFFFF',
-  movableHighlight: 'rgba(0, 255, 0, 0.2)',
   background: '#1a1a1a',
   // Route planning
   planningRoute: '#3b82f6', // Blue for planning
@@ -186,14 +184,9 @@ export function createMapCanvas(
     ctx.translate(width / 2 + state.cameraOffset.x, height / 2 + state.cameraOffset.y);
     ctx.scale(state.zoom, state.zoom);
 
-    // Get movable tiles for highlighting
-    const movableTiles = state.partyPosition
-      ? hexNeighbors(state.partyPosition)
-      : [];
-
     // Render tiles
     for (const tile of state.map.tiles) {
-      renderTile(tile, state, movableTiles);
+      renderTile(tile, state);
     }
 
     // Render route and waypoints (between tiles and party token)
@@ -231,8 +224,7 @@ export function createMapCanvas(
 
   function renderTile(
     tile: OverworldTile,
-    state: RenderState,
-    movableTiles: HexCoordinate[]
+    state: RenderState
   ): void {
     const pixel = axialToPixel(tile.coordinate, HEX_SIZE);
     const corners = hexCorners(pixel, HEX_SIZE);
@@ -256,15 +248,6 @@ export function createMapCanvas(
     ctx.strokeStyle = COLORS.grid;
     ctx.lineWidth = 1;
     ctx.stroke();
-
-    // Movable highlight
-    const isMovable = movableTiles.some((m) =>
-      hexEquals(m, tile.coordinate)
-    );
-    if (isMovable) {
-      ctx.fillStyle = COLORS.movableHighlight;
-      ctx.fill();
-    }
 
     // Hover highlight
     if (
@@ -291,8 +274,17 @@ export function createMapCanvas(
 
     // Interpolate position if animation is active
     if (tokenAnimation) {
-      const elapsed = performance.now() - tokenAnimation.startTime;
-      const rawProgress = Math.min(1, elapsed / tokenAnimation.durationMs);
+      // Use direct progress if available (time-based travel), otherwise calculate from time
+      let rawProgress: number;
+      if (tokenAnimation.progress > 0 || tokenAnimation.durationMs === 0) {
+        // Direct progress from travel state (new time-based animation)
+        rawProgress = tokenAnimation.progress;
+      } else {
+        // Time-based animation (legacy for position changes)
+        const elapsed = performance.now() - tokenAnimation.startTime;
+        rawProgress = Math.min(1, elapsed / tokenAnimation.durationMs);
+      }
+
       // Ease-out: 1 - (1 - t)^2
       const eased = 1 - Math.pow(1 - rawProgress, 2);
 

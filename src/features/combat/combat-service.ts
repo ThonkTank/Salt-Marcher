@@ -149,13 +149,18 @@ export function createCombatService(deps: CombatServiceDeps): CombatFeaturePort 
   function publishCombatStarted(combatId: string, initiativeOrder: CombatParticipant[]): void {
     if (!eventBus) return;
 
+    // Sticky: Late-joining Views receive this to know combat is active
     eventBus.publish(
-      createEvent(EventTypes.COMBAT_STARTED, { combatId, initiativeOrder }, eventOptions())
+      createEvent(EventTypes.COMBAT_STARTED, { combatId, initiativeOrder }, eventOptions()),
+      { sticky: true }
     );
   }
 
   function publishCombatCompleted(result: CombatResult): void {
     if (!eventBus) return;
+
+    // Clear sticky since combat is no longer active
+    eventBus.clearSticky(EventTypes.COMBAT_STARTED);
 
     eventBus.publish(
       createEvent(
