@@ -184,7 +184,8 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     // 3. Encounter check at hour boundary
     if (currentHour > lastEncounterCheckHour) {
       store.setLastEncounterCheckHour(currentHour);
-      checkForEncounter(segment.to, correlationId);
+      // Party ist noch im Start-Hex des aktuellen Segments (Bug b4 fix)
+      checkForEncounter(segment.from, correlationId);
 
       // If encounter was generated, travel is paused
       if (store.getStatus() !== 'traveling') {
