@@ -457,3 +457,30 @@ describe('VaultMapAdapter', () => {
 ---
 
 *Siehe auch: [Features.md](Features.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 2922a | Vault-Struktur: maps/ + parties/ Verzeichnisse | hoch | Ja | - | Infrastructure.md#vault-struktur |
+| 2922b | Vault-Struktur: data/ Unterverzeichnisse für EntityRegistry | hoch | Ja | Entity-Adapter | Infrastructure.md#vault-struktur |
+| 2922c | Vault-Struktur: audio/ Verzeichnis | mittel | Nein | Audio-Feature | Infrastructure.md#vault-struktur |
+| 2923 | Shared Vault-Utilities: JSON parse/serialize Helpers | hoch | Ja | #2700, #2702 | Infrastructure.md#adapter-pattern, Core.md#result-option-types, Error-Handling.md#io-errors-infrastructure |
+| 2924 | VaultMapAdapter Implementation (MapStoragePort) | hoch | Ja | #2923, #2700, #2802 | Infrastructure.md#adapter-pattern, Infrastructure.md#beispiel, Map-Feature.md#map-schemas, Features.md#storageport-pattern |
+| 2925 | VaultTimeAdapter Implementation (TimeStoragePort) | hoch | Ja | #2923, #2700, #2802 | Infrastructure.md#adapter-pattern, Time-System.md#schemas, Features.md#storageport-pattern |
+| 2926 | VaultPartyAdapter Implementation (PartyStoragePort) | hoch | Ja | #2923, #2700, #2802 | Infrastructure.md#adapter-pattern, Infrastructure.md#vault-struktur, Features.md#storageport-pattern |
+| 2927 | PresetPort Interface: get(), list(), search() für Plugin-Bundled Data | hoch | Ja | #2701, #2703 | Infrastructure.md#presetport-plugin-bundled-data, Infrastructure.md#phase-1-nur-plugin-bundled, Core.md#option-t, EntityRegistry.md#entity-type-mapping |
+| 2928 | Preset Index: Re-Exports aller bundled Presets (creatures, terrains, items) | hoch | Ja | - | Infrastructure.md#build-prozess, EntityRegistry.md#entity-type-mapping |
+| 2929 | PresetAdapter Implementation: Phase 1 nur Plugin-Bundled (readonly) | hoch | Ja | #2927, #2928, #2701 | Infrastructure.md#phase-1-nur-plugin-bundled, Core.md#option-t |
+| 2930 | File-Watcher Registration für EntityRegistry (SaltMarcher/data/{entityType}/*.json) | mittel | Nein | #2802, #2805 | Infrastructure.md#file-watcher-integration, EntityRegistry.md#invalidierung-via-file-watcher, EntityRegistry.md#caching-strategy |
+| 2931 | File-Watcher Registration für Map-Tiles (SaltMarcher/maps/{mapId}/tiles.json) | mittel | Nein | #2924, #2805 | Infrastructure.md#file-watcher-integration, Map-Feature.md#map-schemas |
+| 2932 | ResumableStateEnvelope Schema: version, savedAt, featureName, data | mittel | Ja | #2702 | Infrastructure.md#resumable-state-schema, Core.md#timestamp, Features.md#resumable-pattern |
+| 2933 | ResumableFeature Interface: serialize(), restore(), resumeEnabled | mittel | Ja | #2932 | Infrastructure.md#resumable-state-schema, Features.md#resumable-pattern, Features.md#state-ownership--persistence |
+| 2934 | Resumable State Version-Mismatch Handling: Console-Warning und State verwerfen | mittel | Ja | #2932, #2933 | Infrastructure.md#resumable-state-schema, Features.md#resumable-pattern |
+| 2935 | Travel ResumableState: routeInProgress, currentTileIndex, partyId | mittel | Ja | #2933, #2702 | Infrastructure.md#resumable-state-schema, Travel-System.md#state-machine, Features.md#resumable-pattern |
+| 2936 | MockVault Utility für Integration-Tests (createMockVault mit file map) | mittel | Nein | #2700 | Infrastructure.md#testing, Infrastructure.md#pattern-integration-tests-mit-mockvault, Core.md#result-option-types |
+| 2937 | Test Fixtures: devkit/testing/fixtures/ Verzeichnis mit Beispiel-Daten | mittel | Nein | - | Infrastructure.md#testing, Infrastructure.md#test-utilities |
+| 2938 | VaultMapAdapter Integration-Tests mit MockVault | mittel | Nein | #2924, #2936 | Infrastructure.md#pattern-integration-tests-mit-mockvault, Infrastructure.md#test-utilities |
+| 2939 | Pessimistic Save-First Strategie: Alle Adapter speichern erst, dann State ändern | hoch | Ja | #2923, #2700 | Infrastructure.md#state-persistenz, Infrastructure.md#persistence-strategy-pessimistic-save-first, Features.md#persistence-strategy-pessimistic-save-first, EntityRegistry.md#persistence-timing |
+| 2940 | Error-Handling in Adapters: MAP_NOT_FOUND, PARSE_FAILED, SAVE_FAILED | hoch | Ja | #2923, #2700, #2809 | Infrastructure.md#fehlerbehandlung, Error-Handling.md#io-errors-infrastructure, Error-Handling.md#zwischen-layers, EntityRegistry.md#error-handling |
+| 2941 | HybridPresetPort Interface für Phase 2: getSource(), exportToVault() (Post-MVP) | niedrig | Nein | #2929, #2700 | Infrastructure.md#phase-2-hybrid-spaeter, Core.md#result-option-types |
