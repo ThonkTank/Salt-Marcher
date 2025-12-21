@@ -537,6 +537,124 @@ type JournalEntryType =
 
 ---
 
+## Resting
+
+Short/Long Rest mit Stunden-basiertem Loop und Encounter-Unterbrechung.
+
+### State Machine
+
+```
+idle ─────────────────────────────────────────────────────────────┐
+  │                                                                │
+  │ rest:short-rest-requested / rest:long-rest-requested          │
+  ▼                                                                │
+resting ──────────────────────────────────────────────────────────┤
+  │   │                                                            │
+  │   │ Pro Stunde (Normal) / Tag (Gritty): Encounter-Check       │
+  │   │                                                            │
+  │   ├── Kein Encounter → Zeit +1h → weiter                      │
+  │   │                                                            │
+  │   └── Encounter! → rest:paused Event                          │
+  │       │                                                        │
+  │       ▼                                                        │
+  │     paused ────────────────────────────────────────────────────┤
+  │       │                                                        │
+  │       ├── rest:resume-requested → zurueck zu resting           │
+  │       └── rest:restart-requested → hoursCompleted = 0, resting │
+  │                                                                │
+  │ Alle Stunden abgeschlossen                                     │
+  ▼                                                                │
+rest:*-completed Event ────────────────────────────────────────────┘
+```
+
+### Rest-Typen
+
+| Typ | Dauer (Normal) | Dauer (Gritty Realism) | Encounter-Checks |
+|-----|---------------|------------------------|------------------|
+| Short Rest | 1 Stunde | 1 Tag (24h) | 1 Check |
+| Long Rest | 8 Stunden | 1 Woche (7 Tage) | bis zu 8 Checks |
+
+### Gritty Realism Option
+
+GM kann in den Optionen "Gritty Realism" aktivieren:
+
+```typescript
+interface RestSettings {
+  grittyRealism: boolean;  // default: false
+}
+
+function getRestDuration(type: 'short' | 'long', settings: RestSettings): Duration {
+  if (settings.grittyRealism) {
+    return type === 'short'
+      ? { days: 1 }           // 24 Stunden
+      : { days: 7 };          // 1 Woche
+  } else {
+    return type === 'short'
+      ? { hours: 1 }          // 1 Stunde
+      : { hours: 8 };         // 8 Stunden
+  }
+}
+```
+
+### Encounter-Unterbrechung
+
+```typescript
+interface RestState {
+  status: 'idle' | 'resting' | 'paused';
+  type?: 'short' | 'long';
+  hoursCompleted: number;
+  hoursRemaining: number;
+  interruptionCount: number;
+}
+```
+
+Bei Encounter-Check:
+
+```
+rest:*-requested
+    │
+    ▼
+Pro Stunde:
+    │
+    ├── Encounter-Check (wie Travel, ~1h auf Karte verbracht)
+    │
+    ├── Kein Encounter:
+    │   └── Zeit +1h → time:advance-requested { hours: 1, reason: 'rest' }
+    │
+    └── Encounter generiert:
+        │
+        ├── rest:paused Event
+        ├── encounter:generated Event
+        │
+        ▼
+        Nach Encounter-Resolution:
+            │
+            ▼
+        GM-Modal: "Rast fortsetzen?" / "Rast neustarten?"
+            │
+            ├── Fortsetzen → rest:resume-requested
+            │   └── Verbleibende Stunden weiterlaufen
+            │
+            └── Neustarten → rest:restart-requested
+                └── hoursCompleted = 0, Loop neu beginnen
+```
+
+### Rest-Abschluss
+
+Bei Abschluss wird `rest:*-completed` gepubliziert. Andere Features reagieren:
+
+| Feature | Event | Reaktion |
+|---------|-------|----------|
+| Encounter | `rest:long-rest-completed` | budgetUsed = 0 (XP-Budget Reset) |
+| (Post-MVP) Character | `rest:*-completed` | HP-Recovery, Spell-Slots, Feature-Recovery |
+| Journal | `rest:*-completed` | JournalEntry erstellen (type: 'rest') |
+
+### Events (Referenz)
+
+Vollstaendige Event-Definitionen: [Events-Catalog.md#rest](../architecture/Events-Catalog.md#rest)
+
+---
+
 ## Prioritaet
 
 | Komponente | Prioritaet | MVP |
@@ -546,6 +664,9 @@ type JournalEntryType =
 | CalendarDefinition | Hoch | Ja |
 | time:advance | Hoch | Ja |
 | time:set | Mittel | Ja |
+| **Rest State Machine** | Hoch | Ja |
+| **Rest-Completed Events** | Hoch | Ja |
+| **Gritty Realism Option** | Mittel | Ja |
 | time:set-calendar | Niedrig | Nein |
 | Zeit-Konvertierung | Niedrig | Nein |
 | **Visibility-Modifier** | Mittel | Nein |

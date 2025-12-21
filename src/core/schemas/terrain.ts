@@ -1,8 +1,9 @@
 /**
  * Terrain schema definitions.
  *
- * TerrainDefinition defines terrain types with movement costs and rendering properties.
- * Used by Map-Feature for tile terrain lookup and Travel-Feature for speed calculation.
+ * TerrainDefinition defines terrain types with movement costs, encounter modifiers,
+ * and rendering properties. Used by Map-Feature for tile terrain lookup,
+ * Travel-Feature for speed calculation, and Encounter-Feature for creature selection.
  */
 
 import { z } from 'zod';
@@ -24,6 +25,10 @@ export const terrainDefinitionSchema = z.object({
   /** Display name (e.g., "Plains", "Dense Forest") */
   name: z.string().min(1),
 
+  // -------------------------------------------------------------------------
+  // Movement Mechanics
+  // -------------------------------------------------------------------------
+
   /**
    * Movement cost multiplier.
    * 1.0 = normal speed, 0.5 = half speed, 2.0 = double speed.
@@ -40,12 +45,6 @@ export const terrainDefinitionSchema = z.object({
    */
   movementCost: z.number().positive(),
 
-  /** Hex fill color for map rendering (CSS color string) */
-  color: z.string().min(1),
-
-  /** Optional description for tooltips */
-  description: z.string().optional(),
-
   /** Whether this terrain requires a boat to traverse */
   requiresBoat: z.boolean().optional(),
 
@@ -55,12 +54,55 @@ export const terrainDefinitionSchema = z.object({
   /** Whether carriage travel is blocked */
   blocksCarriage: z.boolean().optional(),
 
+  // -------------------------------------------------------------------------
+  // Encounter System
+  // -------------------------------------------------------------------------
+
+  /**
+   * Encounter chance multiplier for this terrain.
+   * 1.0 = normal, <1.0 = fewer encounters, >1.0 = more encounters.
+   *
+   * Default values from Terrain.md:
+   * - road: 0.5
+   * - plains: 1.0
+   * - forest: 1.2
+   * - hills: 1.0
+   * - mountains: 0.8
+   * - swamp: 1.5
+   * - desert: 0.7
+   * - water: 0.5
+   */
+  encounterModifier: z.number().positive().default(1.0),
+
+  /**
+   * Creatures native to this terrain.
+   * Used by Encounter-System for creature selection.
+   * Bidirectionally synced with creature.terrainAffinities.
+   */
+  nativeCreatures: z.array(entityIdSchema('creature')).default([]),
+
+  // -------------------------------------------------------------------------
+  // Weather
+  // -------------------------------------------------------------------------
+
   /**
    * Weather ranges for this terrain type.
    * Used by Weather-System for terrain-based weather generation.
-   * Optional - defaults to plains-like values if not specified.
    */
-  weatherRanges: terrainWeatherRangesSchema.optional(),
+  weatherRanges: terrainWeatherRangesSchema,
+
+  // -------------------------------------------------------------------------
+  // Visual Presentation
+  // -------------------------------------------------------------------------
+
+  /** Hex fill color for map rendering (CSS color string) */
+  displayColor: z.string().min(1),
+
+  /** Optional icon reference for UI display */
+  icon: z.string().optional(),
+
+  /** Optional description for tooltips */
+  description: z.string().optional(),
 });
 
 /** Inferred type from schema */

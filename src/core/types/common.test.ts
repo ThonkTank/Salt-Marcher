@@ -12,7 +12,7 @@ import {
   type CreatureId,
 } from './common';
 
-describe('Common Types', () => {
+describe('[#2702, #2705] Common Types', () => {
   describe('createEntityId', () => {
     it('creates a valid UUID string', () => {
       const id = createEntityId<'map'>();

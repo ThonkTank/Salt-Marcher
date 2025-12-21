@@ -67,8 +67,15 @@ interface OverworldMap extends BaseMap {
   tiles: Map<HexCoordinate, OverworldTile>;
 
   // Globale Overlays
-  weatherOverlay?: WeatherOverlay;
-  factionOverlay?: FactionOverlay;
+  factionOverlay?: FactionOverlay;   // Vorberechnete Territory-Grenzen
+}
+
+// Vorberechnete Territory-Grenzen fuer Rendering
+interface FactionOverlay {
+  territories: Array<{
+    factionId: EntityId<'faction'>;
+    boundary: HexCoordinate[];       // Polygon der Aussengrenze
+  }>;
 }
 
 interface OverworldTile {
@@ -79,6 +86,7 @@ interface OverworldTile {
   // Content
   pois: EntityId<'poi'>[];              // POIs auf diesem Tile
   encounterZone?: EncounterZone;        // Encounter-Konfiguration
+  factionPresence: FactionPresence[];   // Fraktions-Praesenz (fuer Encounter-Auswahl)
 
   // Lineare Features (Post-MVP)
   paths: TilePathInfo[];                 // Pfade die durch dieses Tile verlaufen

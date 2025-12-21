@@ -4,7 +4,7 @@ import { createEvent, newCorrelationId } from './domain-events';
 import { TimeoutError } from './timeout-error';
 import { now } from '../types';
 
-describe('EventBus', () => {
+describe('[#2719, #2720, #2721, #2722] EventBus', () => {
   let bus: EventBus;
 
   beforeEach(() => {
@@ -560,7 +560,7 @@ describe('EventBus', () => {
   });
 });
 
-describe('domain-events', () => {
+describe('[#2706, #2726] domain-events', () => {
   describe('createEvent', () => {
     it('creates event with all required fields', () => {
       const event = createEvent('test:event', { value: 42 }, {

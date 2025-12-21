@@ -74,6 +74,24 @@ export const characterSchema = z.object({
 export type Character = z.output<typeof characterSchema>;
 
 // ============================================================================
+// Encounter Balancing
+// ============================================================================
+
+/**
+ * Input for Encounter balancing calculations.
+ * @see docs/features/Character-System.md#encounter-balancing
+ * @see docs/features/Encounter-Balancing.md
+ */
+export interface EncounterBalancingInput {
+  /** Average party level (rounded) */
+  partyLevel: number;
+  /** Number of characters in party */
+  partySize: number;
+  /** Sum of all maxHp values */
+  totalPartyHp: number;
+}
+
+// ============================================================================
 // Character Helpers
 // ============================================================================
 
@@ -111,4 +129,21 @@ export function calculatePartySpeed(characters: readonly Character[]): number {
  */
 export function calculateTotalPartyHp(characters: readonly Character[]): number {
   return characters.reduce((acc, c) => acc + c.maxHp, 0);
+}
+
+/**
+ * Calculate encounter balancing input from party characters.
+ *
+ * @param characters - Array of party characters
+ * @returns EncounterBalancingInput with partyLevel, partySize, totalPartyHp
+ * @see docs/features/Character-System.md#encounter-balancing
+ */
+export function getBalancingInput(
+  characters: readonly Character[]
+): EncounterBalancingInput {
+  return {
+    partyLevel: calculatePartyLevel(characters),
+    partySize: characters.length,
+    totalPartyHp: calculateTotalPartyHp(characters),
+  };
 }

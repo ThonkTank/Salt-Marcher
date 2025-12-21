@@ -231,7 +231,7 @@ export function createMapCanvas(
 
     // Get terrain color
     const terrain = terrainStorage.get(tile.terrain);
-    const color = isSome(terrain) ? terrain.value.color : '#808080';
+    const color = isSome(terrain) ? terrain.value.displayColor : '#808080';
 
     // Draw hex fill
     ctx.beginPath();

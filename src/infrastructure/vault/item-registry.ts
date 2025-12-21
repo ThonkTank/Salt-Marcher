@@ -6,9 +6,8 @@
  */
 
 import type { EntityId, Option } from '@core/index';
-import { some, none, toEntityId } from '@core/index';
+import { some, none } from '@core/index';
 import type { Item } from '@core/schemas';
-import { COIN_WEIGHT } from '@core/schemas';
 
 // ============================================================================
 // Item Storage Port
@@ -30,77 +29,18 @@ export interface ItemStoragePort {
 }
 
 // ============================================================================
-// Default Items (Currency)
-// ============================================================================
-
-/**
- * Built-in currency items.
- * Always available even without presets.
- */
-const CURRENCY_ITEMS: Item[] = [
-  {
-    id: toEntityId<'item'>('copper-piece'),
-    name: 'Copper Piece',
-    weight: COIN_WEIGHT,
-    category: 'currency',
-    tags: ['currency', 'coin'],
-    value: 0.01,
-    stackable: true,
-    description: 'A copper coin. 100 cp = 1 gp.',
-  },
-  {
-    id: toEntityId<'item'>('silver-piece'),
-    name: 'Silver Piece',
-    weight: COIN_WEIGHT,
-    category: 'currency',
-    tags: ['currency', 'coin'],
-    value: 0.1,
-    stackable: true,
-    description: 'A silver coin. 10 sp = 1 gp.',
-  },
-  {
-    id: toEntityId<'item'>('gold-piece'),
-    name: 'Gold Piece',
-    weight: COIN_WEIGHT,
-    category: 'currency',
-    tags: ['currency', 'coin'],
-    value: 1,
-    stackable: true,
-    description: 'A gold coin. Standard currency.',
-  },
-  {
-    id: toEntityId<'item'>('platinum-piece'),
-    name: 'Platinum Piece',
-    weight: COIN_WEIGHT,
-    category: 'currency',
-    tags: ['currency', 'coin'],
-    value: 10,
-    stackable: true,
-    description: 'A platinum coin. 1 pp = 10 gp.',
-  },
-];
-
-// ============================================================================
 // Item Registry
 // ============================================================================
 
 /**
- * Create an item registry.
- * Optionally accepts additional item definitions to merge with defaults.
+ * Create an item registry from preset items.
+ * All items (including currency) come from presets/items/base-items.json.
  */
-export function createItemRegistry(
-  additionalItems: Item[] = []
-): ItemStoragePort {
-  // Build lookup map
+export function createItemRegistry(items: Item[] = []): ItemStoragePort {
+  // Build lookup map from preset items
   const itemMap = new Map<string, Item>();
 
-  // Add default currency items
-  for (const item of CURRENCY_ITEMS) {
-    itemMap.set(String(item.id), item);
-  }
-
-  // Add additional items (can override defaults)
-  for (const item of additionalItems) {
+  for (const item of items) {
     itemMap.set(String(item.id), item);
   }
 

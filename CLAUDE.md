@@ -16,19 +16,58 @@ Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 | Quelle | Beschreibt |
 |--------|------------|
 | `docs/features/`, `docs/domain/` | **Zielzustand** - Was das Feature können soll (Spezifikation) |
-| `Development-Roadmap.md` | **Istzustand** - Was bereits implementiert ist |
-| Roadmap → "Nicht im Scope" | Bewusste Lücken dieser Phase |
-| Roadmap → "Backlog" | Alle bekannten Lücken zwischen Soll und Ist |
+| `Development-Roadmap.md` → Tasks | **Istzustand** - Status-Spalte zeigt Implementierungsstand |
+| Tasks mit ⬜ | Noch nicht implementiert |
+| Tasks mit ✅ | Implementiert und funktionsfähig |
+| Tasks mit ⚠️ | Implementiert aber nicht funktionsfähig |
+| Tasks mit 🔶 | Funktionsfähig aber nicht spezifikations-konform |
 
-**Wichtig:** Feature-Docs beschreiben das vollständige Feature, auch wenn nur Teile davon implementiert sind. Prüfe die Roadmap für den tatsächlichen Implementierungsstand.
+**Wichtig:** Feature-Docs beschreiben das vollständige Feature, auch wenn nur Teile implementiert sind. Die Tasks-Liste mit Status-Spalte zeigt den tatsächlichen Stand.
 
-**Bei Diskrepanzen:** Wenn Code von der Dokumentation abweicht und diese Abweichung nicht in der Roadmap als "Nicht im Scope" oder "Backlog" vermerkt ist → Code an Dokumentation anpassen, nicht umgekehrt. Die Docs sind die Spezifikation.
+**Bei Diskrepanzen:** Code ↔ Dokumentation → Code an Dokumentation anpassen. Die Docs sind die Spezifikation.
 
 **Bei Unklarheiten:** Wenn die Dokumentation unklar oder widersprüchlich ist → AskUserQuestion nutzen. Aber **nur** wenn die relevanten Docs (laut Feature-Routing-Tabelle) gründlich gelesen wurden. Fragen, deren Antwort in der Doku steht, sind Zeitverschwendung.
 
-**Bei Teil-Implementierungen:** Ehrlich mit `TODO`, `FIXME`, `HACK` Kommentaren markieren. Lieber Stub + TODO als versteckte Halb-Implementierung, die niemandem auffällt. Das macht den Ist-Zustand im Code selbst transparent.
+**Bei Teil-Implementierungen:** `TODO`, `FIXME`, `HACK` Kommentare im Code + Task in #Xa/#Xb aufteilen in der Roadmap.
 
 ## Bei Implementierungsaufgaben
+
+### Task-zentrierter Workflow
+
+**Jede Implementierung beginnt mit einer Task aus der Roadmap.**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. TASK IDENTIFIZIEREN                                      │
+│    → Roadmap → Tasks-Liste → Task #N finden oder anlegen    │
+├─────────────────────────────────────────────────────────────┤
+│ 2. SPEC LESEN                                               │
+│    → Spec-Spalte der Task folgen (z.B. Travel-System.md#...)│
+├─────────────────────────────────────────────────────────────┤
+│ 3. IMP.-SPALTE PRÜFEN                                       │
+│    → Welche Dateien sind betroffen? [neu] oder [ändern]?    │
+├─────────────────────────────────────────────────────────────┤
+│ 4. IMPLEMENTIEREN                                           │
+│    → Code schreiben, testen                                 │
+├─────────────────────────────────────────────────────────────┤
+│ 5. ROADMAP UPDATEN                                          │
+│    → Status ✅, Imp.-Verweise aktualisieren                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Task-Existenz-Prüfung (PFLICHT)
+
+**STOPP. Bevor du Code schreibst:**
+
+1. Gibt es bereits eine Task (#N) für diese Arbeit?
+   - **Ja** → Task-Nummer notieren, Spec-Spalte folgen
+   - **Nein** → Task anlegen mit `[neu]`/`[ändern]` in Imp.-Spalte
+
+2. Ist die Imp.-Spalte ausgefüllt?
+   - **Ja** → Diese Dateien als Einstiegspunkt nutzen
+   - **Nein** → Imp.-Spalte mit erwarteten Dateien befüllen
+
+**Keine Implementierung ohne Task-Referenz.**
 
 ### Wann Leseliste erstellen?
 
@@ -51,15 +90,48 @@ Die 15k+ Zeilen Dokumentation enthalten Architektur-Entscheidungen, die nicht im
 
 **Die Leseliste ist kein Ritual - sie verhindert Rückfragen und Fehler.**
 
+**WARNUNG:** Die Spec-Spalte ist nur ein Shortcut, kein Ersatz für die Feature-Routing-Tabelle. Wer nur die Spec-Spalte liest, übersieht kritische Abhängigkeiten.
+
+### Leseliste-Format (mit Task-Referenz)
+
+**PFLICHT: Mindestens 3 Architektur-Docs + alle Feature-Docs**
+
+```
+Leseliste für Task #N: [Beschreibung]
+
+ARCHITEKTUR (wie):
+- [ ] Conventions.md
+- [ ] Error-Handling.md
+- [ ] Events-Catalog.md (wenn Events involviert)
+- [ ] [1-2 weitere aus Architektur-Baseline, z.B. Features.md, Data-Flow.md]
+
+FEATURE (was):
+- [ ] [Alle Docs aus Feature-Routing-Tabelle]
+- [ ] Imp.-Spalte prüfen: [Dateien die betroffen sind]
+```
+
+**Reihenfolge:**
+1. Architektur-Baseline konsultieren → mindestens 3 Docs wählen
+2. Feature-Routing-Tabelle konsultieren → ALLE Pflicht-Docs der Zeile notieren
+3. Spec-Spalte der Task als **Shortcut** nutzen (Anker-Link führt zur relevanten Sektion)
+
+❌ FALSCH: Nur Feature-Docs lesen, Architektur-Baseline ignorieren
+✅ RICHTIG: Architektur-Baseline (3+) → Feature-Routing-Tabelle → Spec-Spalte als Einstieg
+
 ### Interaktion mit Plan-Mode
 
-CLAUDE.md Phase 1 (Dokumentation lesen) hat **Vorrang** vor dem Plan-Mode-Workflow.
+CLAUDE.md Workflow hat **Vorrang** vor dem Plan-Mode-Workflow.
 
 **Reihenfolge im Plan-Mode:**
 1. Goals.md + Development-Roadmap.md lesen
-2. Leseliste mit TodoWrite erstellen (≥7 Docs)
-3. Leseliste abarbeiten
-4. DANN erst Explore-Agents starten
+2. Existierende Task(s) identifizieren (anlegen erst nach ExitPlanMode)
+3. **Feature-Routing-Tabelle konsultieren** → ALLE Pflicht-Docs notieren
+4. Leseliste mit TodoWrite erstellen (**≥5 Docs**, inkl. Task-Referenz falls vorhanden)
+5. Leseliste abarbeiten (jeden Doc mit Read-Tool lesen)
+6. DANN erst Explore-Agents starten
+7. Nach ExitPlanMode: Fehlende Tasks in Roadmap anlegen
+
+**Keine Abkürzungen:** Auch im Plan-Mode müssen alle Pflicht-Docs aus der Routing-Tabelle gelesen werden.
 
 ### Phase 1: Dokumentation lesen (KEINE Tools außer Read)
 
@@ -67,45 +139,45 @@ CLAUDE.md Phase 1 (Dokumentation lesen) hat **Vorrang** vor dem Plan-Mode-Workfl
 
 1. **Lies mit dem Read-Tool:**
    - [Goals.md](Goals.md) - Zentraler Einstieg
-   - [Development-Roadmap.md](docs/architecture/Development-Roadmap.md) - Aktueller Task
+   - [Development-Roadmap.md](docs/architecture/Development-Roadmap.md) - Task identifizieren
 
-2. **Erstelle eine Leseliste mit dem TodoWrite-Tool:**
+2. **Konsultiere die Architektur-Baseline** (siehe [Anhang](#architektur-baseline-immer-lesen)):
+   - Wähle mindestens 3 relevante Architektur-Docs
+   - Layer-Docs (Features.md, Application.md) sind fast immer relevant
+   - Bei Events: EventBus.md, Data-Flow.md
 
-   1. Konsultiere die **Feature-Routing-Tabelle** unten
-   2. Notiere alle Pflicht-Docs für deinen Task
-   3. Füge hinzu: Conventions.md + Error-Handling.md
-   4. Bei Events: + Events-Catalog.md
+3. **Konsultiere die Feature-Routing-Tabelle** (siehe [Anhang](#features-backend)):
+   - Finde die Zeile, die zu deiner Task passt
+   - Notiere **ALLE** Pflicht-Docs aus der "Pflicht-Docs" Spalte
+   - Die Spec-Spalte der Task ist ein **Shortcut** (Anker-Link zur relevanten Sektion)
 
-   ```
-   Leseliste für [Task-Name]:
-   - [ ] [Pflicht-Doc 1 aus Routing-Tabelle]
-   - [ ] [Pflicht-Doc 2 aus Routing-Tabelle]
-   - [ ] ...
-   - [ ] Conventions.md
-   - [ ] Error-Handling.md
-   ```
+4. **Erstelle Leseliste mit TodoWrite:**
+   - ARCHITEKTUR: Conventions.md + Error-Handling.md + 1-2 aus Baseline
+   - FEATURE: ALLE Docs aus Routing-Tabelle
+   - **Mindestens 3 Architektur-Docs + alle Feature-Docs**
 
-   ❌ FALSCH: Docs raten ohne Routing-Tabelle
-   ✅ RICHTIG: Routing-Tabelle → Pflicht-Docs → TodoWrite
+5. **Arbeite die Leseliste ab** - Markiere jeden Todo als `completed` nach dem Lesen
 
-3. **Arbeite die Leseliste ab** - Markiere jeden Todo als `completed` nach dem Lesen
+❌ FALSCH: Nur Feature-Docs lesen, Architektur-Baseline ignorieren
+✅ RICHTIG: Architektur-Baseline (3+) → Feature-Routing-Tabelle → Spec-Spalte als Einstieg
 
-→ **Feature-Routing-Tabelle:** Siehe [Anhang am Ende](#anhang-feature-routing-tabelle)
+### Phase 2: Code erkunden und implementieren
 
-### Phase 2: Erst jetzt Code erkunden
+Nach Abschluss von Phase 1:
 
-Nach Abschluss von Phase 1 darfst du:
-- Task/Explore-Agenten verwenden
-- Code durchsuchen
-- Implementieren
+1. **Imp.-Spalte als Einstiegspunkt:**
+   - Prüfe welche Dateien in der Imp.-Spalte stehen
+   - `[neu]` → Datei muss erstellt werden
+   - `[ändern]` → Datei muss modifiziert werden
+   - Keine Markierung → Datei existiert bereits
+
+2. **Implementieren:**
+   - Task/Explore-Agenten verwenden
+   - Code schreiben und testen
+
+3. **Roadmap updaten** (siehe PFLICHT: Roadmap-Updates)
 
 **Keine Rückfragen stellen**, die in den gelesenen Dokumenten bereits beantwortet sind.
-
-→ **Bei offenen Fragen:**
-
-1. Zuerst `docs/` mit Grep/Glob durchsuchen
-2. Relevante Feature-Docs lesen (`docs/features/`, `docs/domain/`)
-3. Nur wenn die Dokumentation keine Antwort gibt: User fragen
 
 **Die 15K+ Zeilen Dokumentation sind die primäre Wissensquelle.** Fragen, deren Antwort in der Doku steht, verschwenden Zeit.
 
@@ -132,6 +204,75 @@ npx vitest run -t "test name pattern"  # Run tests matching pattern
 Build output: Configured in `esbuild.config.mjs` → Obsidian vault plugins folder
 
 **ESLint:** Uses `import-x/no-cycle: error` to enforce no cyclic dependencies between modules.
+
+## Dev-Tools
+
+### Task-Priorisierung
+
+```bash
+node scripts/prioritize-tasks.mjs                     # Top 10 aller Tasks/Bugs
+node scripts/prioritize-tasks.mjs travel              # Keyword-Filter
+node scripts/prioritize-tasks.mjs -n 5 --mvp          # Top 5 MVP-Tasks
+node scripts/prioritize-tasks.mjs --status partial    # Nur 🔶 Status
+node scripts/prioritize-tasks.mjs --prio hoch -n 0    # Alle hoch-prio
+node scripts/prioritize-tasks.mjs --json quest        # JSON-Ausgabe
+node scripts/prioritize-tasks.mjs -q travel           # Quiet: nur Tabelle
+node scripts/prioritize-tasks.mjs bug --include-blocked  # Alle Bugs anzeigen
+node scripts/prioritize-tasks.mjs --help              # Alle Optionen
+```
+
+Zeigt priorisierte Tasks und Bugs aus der Development-Roadmap.md.
+
+**Bug-Unterstützung:**
+- Bugs werden mit `bN` IDs angezeigt (z.B. `b1`, `b4`)
+- Bug-Status-Propagation: Tasks die von Bugs referenziert werden → Status ⚠️
+- Bugs sind implizit MVP=Ja und blockiert (wegen offener Deps)
+
+**Filter-Optionen:**
+- `-s, --status <status>` - Status-Filter (🔶, ⚠️, ⬜ oder: done, partial, broken, open)
+- `--mvp` / `--no-mvp` - Nur MVP bzw. Nicht-MVP Tasks
+- `-p, --prio <prio>` - Prioritäts-Filter (hoch, mittel, niedrig)
+- `--include-done` - Auch ✅ Tasks anzeigen
+- `--include-blocked` - Auch blockierte Tasks/Bugs anzeigen
+
+**Output-Optionen:**
+- `-n, --limit <N>` - Anzahl Ergebnisse (default: 10, 0 = alle)
+- `--json` - JSON statt Tabelle
+- `-q, --quiet` - Nur Tabelle, keine Statistiken
+
+**Sortierkriterien:**
+1. Status: 🔶 > ⚠️ > ⬜
+2. MVP: Ja > Nein
+3. Prio: hoch > mittel > niedrig
+4. RefCount: Tasks/Bugs, von denen viele abhängen
+5. Nummer: Niedriger = höhere Priorität
+
+### Task-Lookup
+
+```bash
+node scripts/task-lookup.mjs 428                  # Task #428 Details
+node scripts/task-lookup.mjs b4                   # Bug b4 Details
+node scripts/task-lookup.mjs 428 --deps           # + Dependencies
+node scripts/task-lookup.mjs 428 --dependents     # + Tasks/Bugs die davon abhängen
+node scripts/task-lookup.mjs b4 --deps            # Bug-Dependencies (referenzierte Tasks)
+node scripts/task-lookup.mjs 12 --dependents      # Zeigt auch Bugs die #12 referenzieren
+node scripts/task-lookup.mjs 428 -a               # Beides
+node scripts/task-lookup.mjs 428 --tree           # Dependency-Baum
+node scripts/task-lookup.mjs 428 --tree --depth 5 # Tieferer Baum
+node scripts/task-lookup.mjs 428 --json           # JSON-Ausgabe
+node scripts/task-lookup.mjs --help               # Alle Optionen
+```
+
+Zeigt Details zu einer Task oder Bug und ihre Abhängigkeiten.
+
+**Optionen:**
+- `-d, --deps` - Voraussetzungen: Tasks/Bugs die erst erledigt sein müssen
+- `-D, --dependents` - Blockiert: Tasks/Bugs die auf dieses Item warten
+- `-a, --all` - Beides anzeigen
+- `-t, --tree` - Rekursiver Dependency-Baum
+- `--depth <N>` - Baum-Tiefe (default: 3)
+- `--json` - JSON-Ausgabe
+- `-q, --quiet` - Kompakte Ausgabe
 
 ## Projektstruktur
 
@@ -272,6 +413,117 @@ Pro logische Einheit committen:
 
 **Kurzregel:** Öffentliche API oder Architektur → Fragen. Sonst autonom.
 
+## Test-Strategie
+
+| Komponente | Stabilität | Test-Ansatz |
+|------------|------------|-------------|
+| Core | Hoch | 136 Unit-Tests (inkl. EventBus request()) |
+| Features (Iteration) | Niedrig | Manuelles Testen |
+| Features (Fertig) | Hoch | Automatisierte Tests nachziehen |
+
+**Kriterium "Test-Ready":** User gibt Freigabe ("Feature ist fertig")
+
+### Schema-Definitionen
+
+| Ort | Inhalt |
+|-----|--------|
+| `docs/architecture/EntityRegistry.md` | Entity-Interfaces |
+| `docs/architecture/Core.md` | Basis-Types (Result, Option, EntityId) |
+| Feature-Docs | Feature-spezifische Typen |
+
+Bei fehlenden oder unklaren Schemas: User fragen.
+
+## Dokumentations-Workflow
+
+### PFLICHT: Roadmap-Updates
+
+**Nach jeder Implementierung MUSS die Roadmap aktualisiert werden.**
+
+**TRIGGER → AKTION (automatisch, ohne Aufforderung)**
+
+| Trigger | Pflicht-Aktion |
+|---------|----------------|
+| Task-Implementierung abgeschlossen | Status auf ✅ setzen, Imp.-Spalte mit `Datei:Funktion` befüllen |
+| Implementierung funktioniert nicht | Status auf ⚠️ setzen, Problem in Beschreibung notieren |
+| Implementierung weicht von Spec ab | Status auf 🔶 setzen, Abweichung in Beschreibung notieren |
+| Nur Teil einer Task erledigt | Task in #Xa (✅) und #Xb (⬜) aufteilen |
+| Bug behoben | Bug-Zeile aus der Bugs-Tabelle **löschen** |
+| Neuer Bug entdeckt | Bug zur Bugs-Tabelle hinzufügen |
+| Neue Task identifiziert | Task mit ⬜ Status hinzufügen, Imp.-Spalte mit `[neu]`/`[ändern]` markieren |
+
+Diese Tabelle ist die einzige Quelle der Wahrheit für Roadmap-Updates. Keine Ausnahmen.
+
+### Imp.-Spalte Format
+
+```
+datei.ts:funktionName()           ← existiert bereits
+datei.ts:funktionName() [neu]     ← muss noch erstellt werden
+datei.ts:funktionName() [ändern]  ← muss noch geändert werden
+```
+
+Nach Abschluss: `[neu]` und `[ändern]` Markierungen **entfernen**.
+
+### Spec-Spalte Format
+
+Verweise auf Spezifikationen sollten **wenn möglich auf spezifische Überschriften** zeigen:
+
+| Format | Beispiel | Verwendung |
+|--------|----------|------------|
+| `Datei.md#überschrift` | `Travel-System.md#state-machine` | Bevorzugt - spezifischer Anker |
+| `Datei.md` | `Travel-System.md` | Fallback - wenn keine passende Überschrift existiert |
+
+**Anker-Konvention:**
+- Überschriften werden zu Ankern: Kleinbuchstaben, Leerzeichen → Bindestriche, Umlaute → ae/oe/ue
+- Beispiel: "### Transport-Modi" → `#transport-modi`
+- Beispiel: "### Tagesreise-Berechnung" → `#tagesreise-berechnung`
+
+### Beispiel: Task-Lifecycle
+
+**Neue Task:**
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|:------:|---------|--------------|:----:|:----:|------|------|------|
+| 100 | ⬜ | Travel | Wegpunkt-Drag&Drop | hoch | Ja | - | Travel-System.md | `TravelPanel.svelte:handleDrag()` [neu] |
+
+**Nach Implementierung:**
+| 100 | ✅ | Travel | Wegpunkt-Drag&Drop | hoch | Ja | - | Travel-System.md | `TravelPanel.svelte:handleDrag()` |
+
+**Teil-Implementierung:**
+| 100a | ✅ | Travel | Wegpunkt-Drag&Drop: Drag-Logik | hoch | Ja | - | Travel-System.md | `TravelPanel.svelte:handleDrag()` |
+| 100b | ⬜ | Travel | Wegpunkt-Drag&Drop: Drop-Validierung | hoch | Ja | #100a | Travel-System.md | `TravelPanel.svelte:validateDrop()` [neu] |
+
+### Beim Planen neuer Phase
+
+1. "Aktiver Sprint" Sektion mit Template befüllen (siehe unten)
+2. Tasks aus der Task-Liste auswählen und in den Sprint aufnehmen
+
+### Aktiver-Sprint Template
+
+```markdown
+## 🔄 Aktiver Sprint
+
+### Phase [N]: [Name]
+
+**User Story:**
+> Als [Rolle] möchte ich [Feature], damit [Nutzen].
+
+**Tasks:**
+- [ ] #X: [Beschreibung]
+- [ ] #Y: [Beschreibung]
+- [ ] ...
+
+**Nicht im Scope:**
+- Ausgeschlossenes Feature 1
+- Ausgeschlossenes Feature 2
+```
+
+### Prinzipien
+
+| Dokument | Enthält |
+|----------|---------|
+| **Roadmap** | Tasks-Liste + Bugs + Aktiver Sprint |
+| **Events-Catalog.md** | Event-Definitionen + Implementierungs-Status |
+| **Feature-Docs** | Spezifikation (Ziel-Zustand) |
+
 ### Alpha-Code Referenz
 Alpha-Code (Archive/) so wenig wie möglich referenzieren. Die 15k Zeilen Dokumentation in `docs/` sind die Wahrheit, nicht der alte Code.
 
@@ -280,8 +532,8 @@ Alpha-Code (Archive/) so wenig wie möglich referenzieren. Die 15k Zeilen Dokume
 **STOPP.** Bevor du ExitPlanMode aufrufst:
 
 1. Development-Roadmap.md → "Aktiver Sprint" Sektion ausfüllen
-2. Feature komplett definieren (ganz oder gar nicht)
-3. "Nicht im Scope" explizit benennen
+2. Tasks aus der Tasks-Liste auswählen und referenzieren (#N)
+3. Explizit benennen, welche Tasks **nicht** im Sprint sind
 
 Ohne definierten Sprint keine Implementierung.
 
@@ -305,6 +557,21 @@ Alle Dokumentation ist auf Deutsch.
 ---
 
 ## Anhang: Feature-Routing-Tabelle
+
+### Architektur-Baseline (IMMER lesen)
+
+Bei JEDER Implementierung müssen **zusätzlich** zu den Feature-Docs diese Architektur-Docs gelesen werden:
+
+| Kategorie | Docs | Wann relevant |
+|-----------|------|---------------|
+| Layer-Verständnis | Features.md, Application.md, Infrastructure.md | Immer |
+| Datenfluss | Data-Flow.md, EventBus.md | Bei State-Änderungen, Cross-Feature-Kommunikation |
+| Typen/Schemas | Core.md, EntityRegistry.md | Bei neuen Types, Interfaces, Entities |
+| Struktur | Project-Structure.md | Bei neuen Dateien/Modulen |
+
+**Leseliste-Minimum:** Mindestens 3 Architektur-Docs + alle Feature-Docs aus Routing-Tabelle
+
+---
 
 Konsultiere diese Tabelle und lies die zugeordneten Docs **VOR** dem Code.
 
@@ -370,6 +637,17 @@ Konsultiere diese Tabelle und lies die zugeordneten Docs **VOR** dem Code.
 ### Immer lesen
 
 Diese Docs sind bei JEDER Implementierungsaufgabe Pflicht:
+
+**Kern-Konventionen:**
 - **Conventions.md** - Code-Standards
 - **Error-Handling.md** - Fehlerbehandlung
 - **Events-Catalog.md** - Wenn Events involviert
+
+**Architektur-Verständnis (mindestens 3 wählen):**
+- **Features.md** - Layer-Architektur, Feature-Struktur
+- **Application.md** - UI-Layer, ViewModels, Workmodes
+- **Data-Flow.md** - Wie Daten zwischen Layern fließen
+- **EventBus.md** - Event-basierte Kommunikation, Request/Response
+- **Infrastructure.md** - Vault-Adapter, Storage-Ports
+- **Core.md** - Basis-Types (Result, Option, EntityId)
+- **Project-Structure.md** - Verzeichnisstruktur, wo was hingehört

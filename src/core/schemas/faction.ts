@@ -176,6 +176,9 @@ export const factionSchema = z.object({
   /** POIs controlled by this faction (for territory calculation) */
   controlledPOIs: z.array(entityIdSchema('poi')).default([]),
 
+  /** Display color for territory overlay (hex format, e.g., "#4169E1") */
+  displayColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color format'),
+
   /** Description for GM reference */
   description: z.string().optional(),
 

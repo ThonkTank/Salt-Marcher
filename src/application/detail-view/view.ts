@@ -233,6 +233,7 @@ export class DetailView extends ItemView {
 
   private createEncounterCallbacks() {
     return {
+      // Encounter actions
       onStartEncounter: (encounterId: string) => {
         this.deps.eventBus.publish(
           createEvent(
@@ -265,6 +266,30 @@ export class DetailView extends ItemView {
             )
           );
         }
+      },
+
+      // Builder actions (#2408/#2409)
+      onNameChange: (name: string) => {
+        this.viewModel?.setBuilderName(name);
+      },
+      onActivityChange: (activity: string) => {
+        this.viewModel?.setBuilderActivity(activity);
+      },
+      onGoalChange: (goal: string) => {
+        this.viewModel?.setBuilderGoal(goal);
+      },
+      onRemoveCreature: (index: number) => {
+        this.viewModel?.removeCreatureFromBuilder(index);
+      },
+      onCreatureCountChange: (index: number, count: number) => {
+        this.viewModel?.updateCreatureCount(index, count);
+      },
+      onSaveEncounter: () => {
+        // Placeholder for #2417
+        console.log('[DetailView] Save encounter - not yet implemented (#2417)');
+      },
+      onClearBuilder: () => {
+        this.viewModel?.clearBuilder();
       },
     };
   }

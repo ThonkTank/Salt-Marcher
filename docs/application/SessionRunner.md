@@ -1,7 +1,7 @@
 # SessionRunner
 
 > **Lies auch:** [Application](../architecture/Application.md), [Data-Flow](../architecture/Data-Flow.md), [DetailView](DetailView.md)
-> **Konsumiert:** Map, Travel, Time, Weather, Audio, Party
+> **Konsumiert:** Map, Travel, Time, Weather, Audio, Party, Quest
 
 Die zentrale Spielansicht waehrend einer D&D-Session. Zeigt die Karte und Quick-Controls fuer schnellen GM-Zugriff.
 
@@ -18,7 +18,7 @@ Der SessionRunner ist die Hauptansicht fuer den aktiven Spielbetrieb. Er fokussi
 | Bereich | Funktion |
 |---------|----------|
 | **Header** | Zeit, Quick-Advance, Weather-Status |
-| **Quick-Controls** | Travel, Audio, Party-Status, Actions |
+| **Quick-Controls** | Travel, Audio, Party-Status, Quests, Actions |
 | **Map-Panel** | Karten-Anzeige mit Party-Token und Overlays |
 
 Kontextbezogene Detail-Ansichten (Encounter, Combat, Shop, Quest-Details, Journal) werden in der separaten [DetailView](DetailView.md) angezeigt.
@@ -54,10 +54,16 @@ Kontextbezogene Detail-Ansichten (Encounter, Combat, Shop, Quest-Details, Journa
 │  │ 4 PCs • All OK │  │                                                    │ │
 │  │ [Manage →]     │  │                                                    │ │
 │  │                │  │                                                    │ │
+│  │ 📜 QUESTS      │  │                                                    │ │
+│  │ ─────────────  │  │                                                    │ │
+│  │ [All ▼] 2 aktiv│  │                                                    │ │
+│  │ ☐ Goblins (2/3)│  │                                                    │ │
+│  │ [Details →]    │  │                                                    │ │
+│  │                │  │                                                    │ │
 │  │ ⚔️ ACTIONS     │  │                                                    │ │
 │  │ ─────────────  │  │                                                    │ │
-│  │ [🎲 Encounter] │  │  [Overlays: ☐Weather ☑️Territory ☐Factions ☐👁️]    │ │
-│  │ [📍 Teleport]  │  │                                                    │ │
+│  │ [🛏️ Rest]      │  │  [Overlays: ☐Weather ☑️Territory ☐Factions ☐👁️]    │ │
+│  │                │  │                                                    │ │
 │  │                │  │                                                    │ │
 │  └────────────────┘  └────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -74,8 +80,8 @@ Kontextbezogene Detail-Ansichten (Encounter, Combat, Shop, Quest-Details, Journa
 │  │[🚶]│  │                                                              │   │
 │  │[🎵]│  │                                                              │   │
 │  │[👥]│  │                      MAP PANEL                               │   │
-│  │[⚔️]│  │                   (Maximierte Ansicht)                       │   │
-│  │    │  │                                                              │   │
+│  │[📜]│  │                   (Maximierte Ansicht)                       │   │
+│  │[⚔️]│  │                                                              │   │
 │  │    │  │                                                              │   │
 │  └────┘  └──────────────────────────────────────────────────────────────┘   │
 │                                                                              │
@@ -129,10 +135,15 @@ Kompakte Controls fuer haeufig benoetigte Aktionen.
 │ 4 PCs • All OK │
 │ [Manage →]     │
 │                │
+│ 📜 QUESTS      │
+│ ─────────────  │
+│ [All ▼] 2 aktiv│
+│ ☐ Goblins (2/3)│
+│ [Details →]    │
+│                │
 │ ⚔️ ACTIONS     │
 │ ─────────────  │
-│ [🎲 Encounter] │
-│ [📍 Teleport]  │
+│ [🛏️ Rest]      │
 │                │
 └────────────────┘
 ```
@@ -191,12 +202,75 @@ Bei aktiver Reise:
 
 Health-Summary: `All OK`, `1 Wounded`, `2 Critical`, etc.
 
+#### Quest-Sektion
+
+| Element | Funktion |
+|---------|----------|
+| Status-Dropdown | Filtert nach `All`, `Active`, `Discovered`, `Completed`, `Failed` |
+| Quest-Liste | Zeigt Quests basierend auf Filter |
+| Objectives | Checkboxen zum Abhaken (Todo-Stil) |
+| Quick-Actions | `[Activate]`, `[Complete]`, `[Fail]` je nach Quest-Status |
+| `[Details →]` | Oeffnet Quest-Tab in DetailView (Post-MVP) |
+
+Quest-Anzeige bei aktiver Quest:
+```
+│ 📜 QUESTS                    │
+│ ─────────────────────────────│
+│ [Status: All ▼]              │
+│                              │
+│ "Goblin-Hoehle saeubern"     │
+│   ☐ Goblins toeten (3/5)     │
+│   ☑ Anfuehrer finden         │
+│   XP Pool: 360 | ⏰ 3 Tage   │
+│   [Complete] [Fail]          │
+│                              │
+│ "Haendler eskortieren"       │
+│   Status: Discovered         │
+│   [Activate]                 │
+```
+
 #### Actions-Sektion
 
 | Element | Funktion |
 |---------|----------|
-| `[🎲 Encounter]` | Generiert Encounter (oeffnet DetailView) |
-| `[📍 Teleport]` | Teleport-Modus (Klick auf Map) |
+| `[🛏️ Rest]` | Short/Long Rest (oeffnet Rest-Modal) |
+
+**Rest-Modal:**
+
+```
+┌─────────────────────────────┐
+│ 🛏️ REST                     │
+├─────────────────────────────┤
+│ ○ Short Rest (1 Stunde)     │
+│   → HD ausgeben, Features   │
+│                             │
+│ ○ Long Rest (8 Stunden)     │
+│   → Volle HP, Spell-Slots   │
+│                             │
+│ [Abbrechen]     [Bestätigen]│
+└─────────────────────────────┘
+```
+
+- Short Rest: 1h Zeit vorrücken, HD-Ausgabe ermöglichen
+- Long Rest: 8h Zeit vorrücken, HP-Recovery, XP-Budget-Reset
+
+**Gritty Realism (Optional):**
+
+In den Optionen kann der GM "Gritty Realism" aktivieren:
+
+| Modus | Short Rest | Long Rest |
+|-------|------------|-----------|
+| Normal | 1 Stunde | 8 Stunden |
+| Gritty Realism | 1 Tag (24h) | 1 Woche (7 Tage) |
+
+Bei Gritty Realism werden die Encounter-Checks entsprechend angepasst (1x pro Tag statt 1x pro Stunde).
+
+**Encounter-Check während Rest:**
+- Jede Stunde: Encounter-Check (wie Travel)
+- Bei Encounter: Rest pausiert, Encounter wird gespielt
+- Nach Resolution: GM-Modal bietet "Fortsetzen" oder "Neustarten"
+
+**Encounter-Generierung:** Erfolgt über DetailView → Encounter-Tab → `[🎲 Generate]` Button.
 
 ### Map-Panel
 
@@ -309,36 +383,57 @@ Travel pausiert → encounter:generated Event
 DetailView oeffnet automatisch Encounter-Tab
 ```
 
-### Flow: Encounter generieren (manuell)
+### Flow: Rast starten
 
 ```
-User klickt [🎲 Encounter] in Quick-Controls
+User klickt [Rest] in Quick-Controls
     │
     ▼
-ViewModel: eventBus.publish('encounter:generate-requested')
+Rest-Modal oeffnet: Short/Long Rest waehlen
     │
     ▼
-Encounter-Feature generiert basierend auf:
-    ├── Aktuelle Location (Terrain, EncounterZone)
-    ├── Aktives Wetter
-    ├── Fraktions-Praesenz
-    └── Zeit (Tag/Nacht)
+User waehlt Rest-Typ und bestaetigt
     │
     ▼
-encounter:generated Event
+ViewModel: eventBus.publish('rest:short-rest-requested' oder 'rest:long-rest-requested')
     │
     ▼
-DetailView oeffnet automatisch Encounter-Tab
+Rest-Feature startet Stunden-Loop:
+    │
+    ├── Pro Stunde: Encounter-Check (wie Travel)
+    │   │
+    │   ├── Kein Encounter → Zeit +1h → naechste Stunde
+    │   │
+    │   └── Encounter! → rest:paused Event
+    │       │
+    │       ▼
+    │       DetailView zeigt Encounter-Tab
+    │       │
+    │       ▼
+    │       Nach Encounter-Resolution:
+    │       │
+    │       ▼
+    │       GM-Modal: "Rast fortsetzen?" / "Rast neustarten?"
+    │           │
+    │           ├── Fortsetzen → rest:resume-requested
+    │           └── Neustarten → rest:restart-requested
     │
     ▼
-User sieht Preview in DetailView
+Alle Stunden abgeschlossen
     │
     ▼
-User klickt [Start Combat] in DetailView
+rest:*-completed Event
     │
     ▼
-combat:started Event → DetailView wechselt zu Combat-Tab
+Rest-Completed-Modal (GM gibt HP manuell ein)
 ```
+
+### Flow: Encounter generieren (manuell)
+
+**Hinweis:** Die manuelle Encounter-Generierung erfolgt ueber DetailView → Encounter-Tab → Generate-Button.
+
+→ Siehe [DetailView.md#encounter-tab](DetailView.md#encounter-tab)
+
 
 ### Flow: Zeit manuell aendern
 
@@ -457,12 +552,13 @@ const subscriptions = [
 | Komponente | MVP | Post-MVP | Notiz |
 |------------|:---:|:--------:|-------|
 | Map-Panel mit Party-Token | ✓ | | Kern-Ansicht |
-| Quick-Controls Sidebar | ✓ | | Travel, Audio, Party, Actions |
+| Quick-Controls Sidebar | ✓ | | Travel, Audio, Party, Quests, Actions |
 | Header (Time, Weather) | ✓ | | Kompakte Info-Anzeige |
 | Travel-Sektion | ✓ | | Plan/Start/Pause |
 | Audio-Sektion | ✓ | | Play/Pause/Skip |
 | Party-Sektion | ✓ | | Status + Manage-Link |
-| Actions-Sektion | ✓ | | Encounter-Button |
+| Quest-Sektion | ✓ | | Status-Filter, Objectives, Quick-Actions |
+| Actions-Sektion | ✓ | | Rest-Button (Short/Long Rest, Gritty Realism Option) |
 | Collapsed Quick-Controls | | mittel | Responsive UI |
 | **Visibility-Toggle** | | mittel | Sichtweiten-Overlay |
 | **Animations-Geschwindigkeit** | | niedrig | Slider fuer Travel-Animation |

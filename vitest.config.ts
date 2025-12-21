@@ -7,5 +7,9 @@ export default defineConfig({
       '**/Alpha1/**',
       '**/Alpha2/**',
     ],
+    reporters: [
+      'default',
+      './scripts/test-reporter.mjs',
+    ],
   },
 });

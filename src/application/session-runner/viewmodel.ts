@@ -5,7 +5,7 @@
  * Manages render state and handles user interactions.
  */
 
-import type { MapId, PartyId, EventBus, Unsubscribe } from '@core/index';
+import type { MapId, PartyId, EventBus, Unsubscribe, EntityId } from '@core/index';
 import { isOk, isSome, EventTypes } from '@core/index';
 import type { HexCoordinate } from '@core/schemas';
 import type {
@@ -35,6 +35,7 @@ import type {
   TravelInfo,
   TokenAnimationState,
   ETAInfo,
+  QuestStatusFilter,
 } from './types';
 import { createInitialRenderState } from './types';
 
@@ -87,6 +88,13 @@ export interface SessionRunnerViewModel {
   pauseTravel(): void;
   resumeTravel(): void;
   cancelTravel(): void;
+
+  // Quest Panel
+  onStatusFilterChange(filter: QuestStatusFilter): void;
+  onActivateQuest(questId: string): void;
+  onCompleteQuest(questId: string): void;
+  onFailQuest(questId: string): void;
+  onToggleObjective(questId: string, objectiveId: string): void;
 
   // Cleanup
   dispose(): void;
@@ -168,31 +176,64 @@ export function createSessionRunnerViewModel(
     }
 
     // Build quest section state
-    const activeQuests = questFeature
-      ? questFeature.getActiveQuests().map(progress => {
-          const definition = questFeature.getQuestDefinition(progress.questId);
-          const defValue = isSome(definition) ? definition.value : null;
+    const buildQuestDisplay = (progress: { questId: EntityId<'quest'>; status: string; objectiveProgress: Map<string, { objectiveId: string; currentCount: number; targetCount: number; completed: boolean }>; accumulatedXP: number; deadlineAt?: unknown }) => {
+      const definition = questFeature?.getQuestDefinition(progress.questId);
+      const defValue = definition && isSome(definition) ? definition.value : null;
+      return {
+        questId: progress.questId,
+        name: defValue?.name ?? progress.questId,
+        status: progress.status as 'discovered' | 'active' | 'completed' | 'failed',
+        objectives: Array.from(progress.objectiveProgress.values()).map(obj => {
+          const objectiveDef = defValue?.objectives?.find(o => o.id === obj.objectiveId);
           return {
-            questId: progress.questId,
-            name: defValue?.name ?? progress.questId,
-            status: progress.status as 'discovered' | 'active' | 'completed' | 'failed',
-            objectives: Array.from(progress.objectiveProgress.values()).map(obj => {
-              const objectiveDef = defValue?.objectives?.find(o => o.id === obj.objectiveId);
-              return {
-                description: objectiveDef?.description ?? obj.objectiveId,
-                current: obj.currentCount,
-                target: obj.targetCount,
-                completed: obj.completed,
-              };
-            }),
-            accumulatedXP: progress.accumulatedXP,
-            hasDeadline: !!progress.deadlineAt,
+            objectiveId: obj.objectiveId,
+            description: objectiveDef?.description ?? obj.objectiveId,
+            current: obj.currentCount,
+            target: obj.targetCount,
+            completed: obj.completed,
           };
-        })
+        }),
+        accumulatedXP: progress.accumulatedXP,
+        hasDeadline: !!progress.deadlineAt,
+        deadlineDisplay: progress.deadlineAt ? formatDeadline(progress.deadlineAt) : undefined,
+        questGiver: defValue?.questGiver,
+      };
+    };
+
+    // Get all quests for the allQuests list
+    const allQuests = questFeature
+      ? [
+          ...questFeature.getActiveQuests().map(buildQuestDisplay),
+          ...questFeature.getDiscoveredQuests().map(questId => {
+            const progress = questFeature.getQuestProgress(questId);
+            if (isSome(progress)) {
+              return buildQuestDisplay(progress.value);
+            }
+            // Fallback for discovered-only quests without progress
+            const definition = questFeature.getQuestDefinition(questId);
+            const defValue = isSome(definition) ? definition.value : null;
+            return {
+              questId,
+              name: defValue?.name ?? questId,
+              status: 'discovered' as const,
+              objectives: [],
+              accumulatedXP: 0,
+              hasDeadline: false,
+              questGiver: defValue?.questGiver,
+            };
+          }),
+        ]
+      : [];
+
+    const activeQuests = questFeature
+      ? questFeature.getActiveQuests().map(buildQuestDisplay)
       : [];
     const discoveredQuestCount = questFeature
       ? questFeature.getDiscoveredQuests().length
       : 0;
+
+    // Get current status filter from state (preserve it during sync)
+    const currentStatusFilter = state.sidebar.quest.statusFilter;
 
     state = {
       ...state,
@@ -226,6 +267,8 @@ export function createSessionRunnerViewModel(
         },
         quest: {
           activeQuests,
+          allQuests,
+          statusFilter: currentStatusFilter,
           discoveredQuestCount,
         },
         actions: {
@@ -259,6 +302,13 @@ export function createSessionRunnerViewModel(
       case 'foot':
       default: return 24;
     }
+  }
+
+  // Helper: Format deadline for display
+  function formatDeadline(_deadline: unknown): string {
+    // TODO: Calculate remaining time from current game time
+    // For now, return a placeholder
+    return 'Deadline aktiv';
   }
 
   // Helper: Format duration for ETA display
@@ -780,6 +830,97 @@ export function createSessionRunnerViewModel(
           notificationService.errorFromResult(result.error);
         }
       }
+    },
+
+    // =========================================================================
+    // Quest Panel Methods
+    // =========================================================================
+
+    onStatusFilterChange(filter: QuestStatusFilter): void {
+      // Update filter in state and re-render sidebar
+      state = {
+        ...state,
+        sidebar: {
+          ...state.sidebar,
+          quest: {
+            ...state.sidebar.quest,
+            statusFilter: filter,
+          },
+        },
+      };
+      notify(['sidebar']);
+    },
+
+    onActivateQuest(questId: string): void {
+      if (!questFeature) {
+        notificationService.warn('Quest feature not available');
+        return;
+      }
+
+      const result = questFeature.activateQuest(questId as EntityId<'quest'>);
+      if (!isOk(result)) {
+        notificationService.errorFromResult(result.error);
+        return;
+      }
+
+      // Sync and notify
+      syncFromFeatures();
+      notify(['sidebar']);
+    },
+
+    onCompleteQuest(questId: string): void {
+      if (!questFeature) {
+        notificationService.warn('Quest feature not available');
+        return;
+      }
+
+      const result = questFeature.completeQuest(questId as EntityId<'quest'>);
+      if (!isOk(result)) {
+        notificationService.errorFromResult(result.error);
+        return;
+      }
+
+      // Show completion notification
+      notificationService.info('Quest completed!');
+
+      // Sync and notify
+      syncFromFeatures();
+      notify(['sidebar']);
+    },
+
+    onFailQuest(questId: string): void {
+      if (!questFeature) {
+        notificationService.warn('Quest feature not available');
+        return;
+      }
+
+      const result = questFeature.failQuest(questId as EntityId<'quest'>, 'abandoned');
+      if (!isOk(result)) {
+        notificationService.errorFromResult(result.error);
+        return;
+      }
+
+      // Sync and notify
+      syncFromFeatures();
+      notify(['sidebar']);
+    },
+
+    onToggleObjective(questId: string, objectiveId: string): void {
+      if (!questFeature) {
+        notificationService.warn('Quest feature not available');
+        return;
+      }
+
+      // Complete the objective (toggle to completed)
+      const result = questFeature.completeObjective(questId as EntityId<'quest'>, objectiveId);
+      if (!isOk(result)) {
+        notificationService.errorFromResult(result.error);
+        return;
+      }
+
+      // Sync and notify
+      syncFromFeatures();
+      notify(['sidebar']);
     },
 
     dispose(): void {

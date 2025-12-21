@@ -13,7 +13,7 @@ import {
   type Option,
 } from './option';
 
-describe('Option', () => {
+describe('#2701 Option', () => {
   describe('constructors', () => {
     it('some creates Some Option', () => {
       const option = some(42);

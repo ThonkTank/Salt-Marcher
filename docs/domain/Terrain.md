@@ -15,11 +15,11 @@ TerrainDefinition beschreibt alle Eigenschaften eines Terrains:
 
 ```
 TerrainDefinition
-├── Bewegungs-Mechaniken (movementCost)
+├── Bewegungs-Mechaniken (movementCost, Transport-Einschraenkungen)
 ├── Encounter-Modifikatoren
 ├── Klima-Einfluss (climateProfile)
 ├── Native Creatures (bidirektional sync)
-└── Visuelle Darstellung (color, icon)
+└── Visuelle Darstellung (displayColor, icon)
 ```
 
 ---
@@ -35,6 +35,11 @@ interface TerrainDefinition {
 
   // Bewegungs-Mechaniken
   movementCost: number;                   // 1.0 = normal, 2.0 = difficult terrain
+
+  // Transport-Einschraenkungen (Travel-System)
+  requiresBoat?: boolean;                 // z.B. water
+  blocksMounted?: boolean;                // z.B. forest, mountains
+  blocksCarriage?: boolean;               // z.B. mountains, swamp
 
   // Encounter-System
   encounterModifier: number;              // Multiplikator fuer Encounter-Chance
@@ -79,18 +84,18 @@ interface WeatherRange {
 
 Mitgelieferte Terrain-Presets:
 
-| Terrain | movementCost | encounterModifier | Temperatur | Wind | Niederschlag |
-|---------|--------------|-------------------|------------|------|--------------|
-| `road` | 1.0 | 0.5 | -5/15/35 | 5/20/60 | 10/30/70 |
-| `plains` | 0.9 | 1.0 | -5/15/35 | 5/20/60 | 10/30/70 |
-| `forest` | 0.6 | 1.2 | 0/15/30 | 0/10/30 | 20/40/70 |
-| `hills` | 0.7 | 1.0 | -10/10/30 | 10/30/50 | 15/35/65 |
-| `mountains` | 0.4 | 0.8 | -20/0/20 | 20/50/100 | 20/50/80 |
-| `swamp` | 0.5 | 1.5 | 5/20/35 | 0/10/30 | 40/60/90 |
-| `desert` | 0.7 | 0.7 | 0/35/50 | 5/15/80 | 0/5/20 |
-| `water` | 1.0* | 0.5 | 5/18/30 | 10/30/80 | 20/40/70 |
+| Terrain | movementCost | encounterMod | Transport | Temperatur | Wind | Niederschlag |
+|---------|--------------|--------------|-----------|------------|------|--------------|
+| `road` | 1.0 | 0.5 | - | -5/15/35 | 5/20/60 | 10/30/70 |
+| `plains` | 0.9 | 1.0 | - | -5/15/35 | 5/20/60 | 10/30/70 |
+| `forest` | 0.6 | 1.2 | blocksMounted | 0/15/30 | 0/10/30 | 20/40/70 |
+| `hills` | 0.7 | 1.0 | - | -10/10/30 | 10/30/50 | 15/35/65 |
+| `mountains` | 0.4 | 0.8 | blocksMounted, blocksCarriage | -20/0/20 | 20/50/100 | 20/50/80 |
+| `swamp` | 0.5 | 1.5 | blocksMounted, blocksCarriage | 5/20/35 | 0/10/30 | 40/60/90 |
+| `desert` | 0.7 | 0.7 | - | 0/35/50 | 5/15/80 | 0/5/20 |
+| `water` | 1.0 | 0.5 | requiresBoat | 5/18/30 | 10/30/80 | 20/40/70 |
 
-*Water erfordert Boot - siehe Transport-Modi in [Travel-System.md](../features/Travel-System.md)
+→ Details zu Transport-Modi: [Travel-System.md](../features/Travel-System.md)
 
 ---
 

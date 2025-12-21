@@ -112,7 +112,7 @@ Encounter-Builder zum Erstellen, Bearbeiten und Starten von Encounters.
 │                                         │
 │  ─────────────────────────────────────  │
 │                                         │
-│  [💾 Speichern] [⚔️ Combat starten]    │
+│  [🎲 Generate] [💾 Speichern] [⚔️ Combat starten]    │
 │                                         │
 └────────────────────────────────────────┘
 ```
@@ -121,6 +121,7 @@ Encounter-Builder zum Erstellen, Bearbeiten und Starten von Encounters.
 
 | Element | Aktion |
 |---------|--------|
+| `[🎲 Generate]` | Generiert Random Encounter basierend auf aktuellem Kontext (Terrain, Zeit, Wetter, Fraktion) |
 | Encounter-Suche | Autocomplete fuer gespeicherte EncounterDefinitions, laedt in Builder |
 | Kreatur/NPC-Suche | Autocomplete fuer CreatureDefinitions + Named NPCs aus Registry |
 | `[×]` Button | Entfernt Kreatur/NPC aus Builder |

@@ -12,7 +12,7 @@ import {
   type Result,
 } from './result';
 
-describe('Result', () => {
+describe('#2700 Result', () => {
   describe('constructors', () => {
     it('ok creates success Result', () => {
       const result = ok(42);

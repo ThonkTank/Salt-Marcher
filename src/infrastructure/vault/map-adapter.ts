@@ -45,6 +45,7 @@ function createTestOverworldMap(): OverworldMap {
         coordinate,
         terrain: toEntityId<'terrain'>(terrain),
         pois: [],
+        factionPresence: [],
       });
     }
   }

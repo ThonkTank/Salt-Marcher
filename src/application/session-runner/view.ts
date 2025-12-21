@@ -249,6 +249,27 @@ export class SessionRunnerView extends ItemView {
         // Placeholder for teleport mode
         console.log('Teleport clicked');
       },
+
+      // Quest Management
+      onQuestStatusFilterChange: (filter) => {
+        this.viewModel?.onStatusFilterChange(filter);
+      },
+
+      onActivateQuest: (questId) => {
+        this.viewModel?.onActivateQuest(questId);
+      },
+
+      onCompleteQuest: (questId) => {
+        this.viewModel?.onCompleteQuest(questId);
+      },
+
+      onFailQuest: (questId) => {
+        this.viewModel?.onFailQuest(questId);
+      },
+
+      onToggleObjective: (questId, objectiveId) => {
+        this.viewModel?.onToggleObjective(questId, objectiveId);
+      },
     };
   }
 }

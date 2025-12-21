@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { entityIdSchema, timestampSchema } from './common';
 import { weatherStateSchema } from './weather';
+import { factionPresenceSchema } from './faction';
 import type { HexCoord } from '../utils/hex-math';
 
 // ============================================================================
@@ -32,6 +33,87 @@ export const mapTypeSchema = z.enum(['overworld', 'town', 'dungeon']);
 export type MapType = z.infer<typeof mapTypeSchema>;
 
 // ============================================================================
+// Base Map Schema
+// ============================================================================
+
+/**
+ * Base schema for all map types.
+ * Shared fields for OverworldMap, TownMap, DungeonMap.
+ * From Map-Feature.md#basis-map
+ */
+export const baseMapSchema = z.object({
+  /** Unique map identifier */
+  id: entityIdSchema('map'),
+
+  /** Map name */
+  name: z.string().min(1),
+
+  /** Map type discriminator */
+  type: mapTypeSchema,
+
+  /** Default spawn point for parties entering this map */
+  defaultSpawnPoint: hexCoordSchema.optional(),
+
+  /** Optional description */
+  description: z.string().optional(),
+
+  /** GM notes */
+  gmNotes: z.string().optional(),
+});
+
+export type BaseMap = z.infer<typeof baseMapSchema>;
+
+// ============================================================================
+// Encounter Zone Schema
+// ============================================================================
+
+/**
+ * Encounter zone configuration for a tile.
+ * From Map-Feature.md#encounterzone
+ */
+export const encounterZoneSchema = z.object({
+  /** Chance of encounter (0.0 - 1.0) */
+  encounterChance: z.number().min(0).max(1),
+
+  /** Creature pool for random encounters */
+  creaturePool: z.array(entityIdSchema('creature')),
+
+  /** Optional faction controlling this zone */
+  factionId: entityIdSchema('faction').optional(),
+});
+
+export type EncounterZone = z.infer<typeof encounterZoneSchema>;
+
+// ============================================================================
+// Faction Overlay Schema
+// ============================================================================
+
+/**
+ * Precomputed territory boundary for a faction.
+ * From Faction.md - used for territory visualization.
+ */
+export const factionTerritorySchema = z.object({
+  /** Faction this territory belongs to */
+  factionId: entityIdSchema('faction'),
+
+  /** Polygon boundary as hex coordinates */
+  boundary: z.array(hexCoordSchema),
+});
+
+export type FactionTerritory = z.infer<typeof factionTerritorySchema>;
+
+/**
+ * Faction overlay containing precomputed territory boundaries.
+ * Boundaries are calculated in Cartographer and stored for rendering performance.
+ */
+export const factionOverlaySchema = z.object({
+  /** Precomputed territory boundaries per faction */
+  territories: z.array(factionTerritorySchema),
+});
+
+export type FactionOverlay = z.infer<typeof factionOverlaySchema>;
+
+// ============================================================================
 // Overworld Tile Schema
 // ============================================================================
 
@@ -49,7 +131,13 @@ export const overworldTileSchema = z.object({
   elevation: z.number().optional(),
 
   /** POIs located on this tile */
-  pois: z.array(entityIdSchema('location')).default([]),
+  pois: z.array(entityIdSchema('poi')).default([]),
+
+  /** Optional encounter zone configuration */
+  encounterZone: encounterZoneSchema.optional(),
+
+  /** Faction presence at this tile (for encounter selection) */
+  factionPresence: z.array(factionPresenceSchema).default([]),
 
   /** Optional GM notes for this tile */
   notes: z.string().optional(),
@@ -67,52 +155,47 @@ export type OverworldTile = z.output<typeof overworldTileSchema>;
 
 /**
  * Schema for an overworld (hex) map.
+ * Extends BaseMap with overworld-specific fields.
  * This is the primary map type for Travel-Minimal.
  */
-export const overworldMapSchema = z.object({
-  /** Unique map identifier */
-  id: entityIdSchema('map'),
+export const overworldMapSchema = baseMapSchema
+  .omit({ type: true }) // Remove generic type to override with literal
+  .extend({
+    /** Map type discriminator - overworld specific */
+    type: z.literal('overworld'),
 
-  /** Map name */
-  name: z.string().min(1),
+    /** Grid dimensions (width x height in tiles) */
+    dimensions: z.object({
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+    }),
 
-  /** Map type discriminator */
-  type: z.literal('overworld'),
+    /**
+     * Tiles stored as array (serialization-friendly).
+     * Convert to Map<string, OverworldTile> using coordToKey() for fast lookup.
+     */
+    tiles: z.array(overworldTileSchema),
 
-  /** Grid dimensions (width x height in tiles) */
-  dimensions: z.object({
-    width: z.number().int().positive(),
-    height: z.number().int().positive(),
-  }),
+    /** Creation timestamp */
+    createdAt: timestampSchema.optional(),
 
-  /**
-   * Tiles stored as array (serialization-friendly).
-   * Convert to Map<string, OverworldTile> using coordToKey() for fast lookup.
-   */
-  tiles: z.array(overworldTileSchema),
+    /** Last update timestamp */
+    updatedAt: timestampSchema.optional(),
 
-  /** Default spawn point for parties entering this map */
-  defaultSpawnPoint: hexCoordSchema.optional(),
+    /**
+     * Current weather state for this map.
+     * Persisted to ensure session continuity.
+     * From Weather-System.md lines 237-248.
+     */
+    currentWeather: weatherStateSchema.optional(),
 
-  /** Optional description */
-  description: z.string().optional(),
-
-  /** GM notes */
-  gmNotes: z.string().optional(),
-
-  /** Creation timestamp */
-  createdAt: timestampSchema.optional(),
-
-  /** Last update timestamp */
-  updatedAt: timestampSchema.optional(),
-
-  /**
-   * Current weather state for this map.
-   * Persisted to ensure session continuity.
-   * From Weather-System.md lines 237-248.
-   */
-  currentWeather: weatherStateSchema.optional(),
-});
+    /**
+     * Precomputed faction territory boundaries.
+     * Calculated in Cartographer based on controlledPOIs.
+     * From Faction.md - used for territory overlay rendering.
+     */
+    factionOverlay: factionOverlaySchema.optional(),
+  });
 
 /**
  * OverworldMap type - uses z.output to get the type AFTER parsing

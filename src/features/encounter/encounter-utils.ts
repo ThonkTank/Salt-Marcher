@@ -24,6 +24,11 @@ import {
   VARIETY_REROLL_WINDOW,
   CR_COMBAT_THRESHOLD_FACTOR,
 } from '@core/schemas';
+import {
+  calculateXP,
+  getEncounterMultiplier,
+  calculateEffectiveXP,
+} from '@core/utils';
 import type {
   GenerationContext,
   CreatureSelectionResult,
@@ -494,92 +499,23 @@ export function calculateXPBudget(
 }
 
 // ============================================================================
-// Group Multipliers
+// XP Calculation (uses @core/utils/creature-utils)
 // ============================================================================
-
-/**
- * Get the encounter multiplier based on creature count.
- * D&D 5e uses this to adjust effective XP for action economy.
- *
- * @see docs/features/Encounter-Balancing.md#gruppen-multiplikatoren
- */
-export function getGroupMultiplier(creatureCount: number): number {
-  if (creatureCount <= 0) return 0;
-  if (creatureCount === 1) return 1.0;
-  if (creatureCount === 2) return 1.5;
-  if (creatureCount <= 6) return 2.0;
-  if (creatureCount <= 10) return 2.5;
-  if (creatureCount <= 14) return 3.0;
-  return 4.0;
-}
-
-/**
- * Calculate effective XP for an encounter (base XP × group multiplier).
- * Used to compare against XP budget when building encounters.
- *
- * @param creatures - Array of creatures with their XP values
- * @returns Effective XP including group multiplier
- */
-export function calculateEffectiveXP(
-  creatures: readonly { xp: number }[]
-): number {
-  if (creatures.length === 0) return 0;
-  const baseXP = creatures.reduce((sum, c) => sum + c.xp, 0);
-  return Math.floor(baseXP * getGroupMultiplier(creatures.length));
-}
-
-// ============================================================================
-// XP Calculation (CR to XP conversion)
-// ============================================================================
-
-/**
- * CR to XP conversion table (D&D 5e).
- */
-const CR_XP_TABLE: Record<number, number> = {
-  0: 10,
-  0.125: 25,
-  0.25: 50,
-  0.5: 100,
-  1: 200,
-  2: 450,
-  3: 700,
-  4: 1100,
-  5: 1800,
-  6: 2300,
-  7: 2900,
-  8: 3900,
-  9: 5000,
-  10: 5900,
-};
-
-/**
- * Calculate XP reward for defeating a creature.
- */
-export function calculateCreatureXP(cr: number): number {
-  // Direct lookup
-  if (cr in CR_XP_TABLE) {
-    return CR_XP_TABLE[cr];
-  }
-
-  // Interpolate for higher CRs
-  if (cr > 10) {
-    return Math.floor(5900 + (cr - 10) * 1000);
-  }
-
-  // Fallback
-  return 10;
-}
 
 /**
  * Calculate total XP for an encounter.
+ * Uses calculateXP from @core/utils for individual creature XP.
  */
 export function calculateEncounterXP(
   creatures: readonly CreatureDefinition[]
 ): number {
   return creatures.reduce((sum, creature) => {
-    return sum + calculateCreatureXP(creature.cr);
+    return sum + calculateXP(creature.cr);
   }, 0);
 }
+
+// Re-export for backwards compatibility
+export { calculateXP as calculateCreatureXP, getEncounterMultiplier as getGroupMultiplier, calculateEffectiveXP } from '@core/utils';
 
 // ============================================================================
 // Companion Selection (Multi-Creature Encounters)
@@ -630,7 +566,7 @@ export function selectCompanions(
   budget: number,
   eligibleCreatures: readonly CreatureDefinition[]
 ): CompanionSelectionResult {
-  const leadXP = calculateCreatureXP(lead.cr);
+  const leadXP = calculateXP(lead.cr);
   const creatures: CreatureDefinition[] = [lead];
   let totalXP = leadXP;
 
@@ -659,20 +595,20 @@ export function selectCompanions(
     // Select a random companion (weighted selection would be better, but simple random for MVP)
     const randomIndex = Math.floor(Math.random() * potentialCompanions.length);
     const candidate = potentialCompanions[randomIndex];
-    const candidateXP = calculateCreatureXP(candidate.cr);
+    const candidateXP = calculateXP(candidate.cr);
 
     // Calculate what effective XP would be with this companion
     const newCreatures = [...creatures, candidate];
     const newTotalXP = totalXP + candidateXP;
     const newEffectiveXP = calculateEffectiveXP(
-      newCreatures.map((c) => ({ xp: calculateCreatureXP(c.cr) }))
+      newCreatures.map((c) => ({ xp: calculateXP(c.cr) }))
     );
 
     // Check if adding this companion would exceed budget tolerance
     if (newEffectiveXP > budget * BUDGET_TOLERANCE) {
       // Try smaller creatures first before giving up
       const smallerCompanions = potentialCompanions.filter(
-        (c) => calculateCreatureXP(c.cr) < candidateXP
+        (c) => calculateXP(c.cr) < candidateXP
       );
 
       if (smallerCompanions.length === 0) {
@@ -694,7 +630,7 @@ export function selectCompanions(
   }
 
   const effectiveXP = calculateEffectiveXP(
-    creatures.map((c) => ({ xp: calculateCreatureXP(c.cr) }))
+    creatures.map((c) => ({ xp: calculateXP(c.cr) }))
   );
 
   return {

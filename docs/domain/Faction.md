@@ -46,6 +46,9 @@ interface Faction {
   // Territory via POIs
   controlledPOIs: EntityId<'poi'>[];
 
+  // Visualisierung
+  displayColor: string;              // Hex-Farbe fuer Territory-Overlay, z.B. "#4169E1"
+
   // Metadaten
   description?: string;
   gmNotes?: string;

@@ -7,7 +7,7 @@ import {
   appErrorSchema,
 } from './common';
 
-describe('Schemas', () => {
+describe('#2702 Schemas', () => {
   describe('entityIdSchema', () => {
     it('validates non-empty strings', () => {
       const schema = entityIdSchema('map');

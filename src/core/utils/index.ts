@@ -30,3 +30,57 @@ export {
   hexHorizontalSpacing,
   hexVerticalSpacing,
 } from './hex-math';
+
+// Creature Utils
+export {
+  CR_XP_TABLE,
+  FRACTIONAL_CR_VALUES,
+  parseCR,
+  isValidCRRange,
+  calculateXP,
+  calculateCreatureXP,
+  getEncounterMultiplier,
+  getGroupMultiplier,
+  calculateEffectiveXP,
+} from './creature-utils';
+
+// Inventory Utils
+export {
+  GOLD_PIECE_ID,
+  type InventoryErrorCode,
+  type InventoryError,
+  findSlotIndex,
+  hasItem,
+  getItemQuantity,
+  addItemToCharacter,
+  removeItemFromCharacter,
+  addGoldToCharacter,
+  removeGoldFromCharacter,
+  transferItem,
+  sumInventoryWeight,
+  countRations,
+  consumeRations,
+} from './inventory-utils';
+
+// Loot Utils
+export {
+  type SelectedItem,
+  type MagicItemTracking,
+  EMPTY_MAGIC_ITEM_TRACKING,
+  distributeCurrencyEvenly,
+  distributeToCharacter,
+  quickAssign,
+  trackMagicItemReceived,
+  getMagicItemTracking,
+  getTotalMagicItemsReceived,
+} from './loot-utils';
+
+// Time Math Utils
+export {
+  getTimeSegment,
+  getTimeOfDay,
+  addDuration,
+  diffInHours,
+  getCurrentSeason,
+  getMoonPhase,
+} from './time-math';

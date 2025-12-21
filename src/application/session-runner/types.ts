@@ -77,6 +77,22 @@ export interface ActionsSectionState {
 }
 
 /**
+ * Objective display item for quest panel.
+ */
+export interface ObjectiveDisplay {
+  /** Unique objective ID (for toggling) */
+  objectiveId: string;
+  /** Human-readable description */
+  description: string;
+  /** Current progress count */
+  current: number;
+  /** Target count to complete */
+  target: number;
+  /** Whether objective is completed */
+  completed: boolean;
+}
+
+/**
  * Quest progress display item.
  */
 export interface QuestProgressDisplay {
@@ -87,25 +103,33 @@ export interface QuestProgressDisplay {
   /** Quest status */
   status: 'discovered' | 'active' | 'completed' | 'failed';
   /** Objectives (simplified for display) */
-  objectives: Array<{
-    description: string;
-    current: number;
-    target: number;
-    completed: boolean;
-  }>;
+  objectives: ObjectiveDisplay[];
   /** Accumulated XP in quest pool */
   accumulatedXP: number;
   /** Has deadline? */
   hasDeadline: boolean;
+  /** Deadline info (if applicable) */
+  deadlineDisplay?: string;
+  /** Quest giver NPC name (if set) */
+  questGiver?: string;
 }
+
+/**
+ * Quest status filter options.
+ */
+export type QuestStatusFilter = 'all' | 'discovered' | 'active' | 'completed' | 'failed';
 
 /**
  * Quest section state.
  */
 export interface QuestSectionState {
-  /** Active quests with progress */
+  /** Active quests with progress (legacy - kept for compatibility) */
   activeQuests: QuestProgressDisplay[];
-  /** Discovered but not accepted quests */
+  /** All known quests (for filtering) */
+  allQuests: QuestProgressDisplay[];
+  /** Current status filter */
+  statusFilter: QuestStatusFilter;
+  /** Discovered but not accepted quests count */
   discoveredQuestCount: number;
 }
 
@@ -232,6 +256,8 @@ export function createInitialRenderState(): RenderState {
       },
       quest: {
         activeQuests: [],
+        allQuests: [],
+        statusFilter: 'all',
         discoveredQuestCount: 0,
       },
       actions: {

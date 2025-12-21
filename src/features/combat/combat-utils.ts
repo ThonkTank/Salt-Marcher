@@ -6,56 +6,21 @@
 
 import type { CombatParticipant, CombatEffect, CreatureInstance, CreatureDefinition } from '@core/schemas';
 import { SECONDS_PER_ROUND } from '@core/schemas';
+import { calculateXP, CR_XP_TABLE } from '@core/utils';
 
 // ============================================================================
-// XP Calculation
+// XP Calculation (uses @core/utils/creature-utils)
 // ============================================================================
 
-/**
- * D&D 5e CR to XP mapping.
- */
-export const CR_TO_XP: Record<number, number> = {
-  0: 10,
-  0.125: 25,
-  0.25: 50,
-  0.5: 100,
-  1: 200,
-  2: 450,
-  3: 700,
-  4: 1100,
-  5: 1800,
-  6: 2300,
-  7: 2900,
-  8: 3900,
-  9: 5000,
-  10: 5900,
-  11: 7200,
-  12: 8400,
-  13: 10000,
-  14: 11500,
-  15: 13000,
-  16: 15000,
-  17: 18000,
-  18: 20000,
-  19: 22000,
-  20: 25000,
-  21: 33000,
-  22: 41000,
-  23: 50000,
-  24: 62000,
-  25: 75000,
-  26: 90000,
-  27: 105000,
-  28: 120000,
-  29: 135000,
-  30: 155000,
-};
+// Re-export for backwards compatibility
+export { CR_XP_TABLE as CR_TO_XP };
 
 /**
  * Get XP value for a creature by CR.
+ * @deprecated Use calculateXP from @core/utils instead
  */
 export function getXpForCr(cr: number): number {
-  return CR_TO_XP[cr] ?? 0;
+  return calculateXP(cr);
 }
 
 /**
@@ -69,7 +34,7 @@ export function calculateCombatXp(participants: readonly CombatParticipant[]): n
     // Only count defeated creatures (not PCs)
     if (participant.type === 'creature' && participant.currentHp <= 0) {
       const cr = participant.cr ?? 0;
-      totalXp += getXpForCr(cr);
+      totalXp += calculateXP(cr);
     }
   }
 
@@ -109,6 +74,27 @@ export function calculateCombatDuration(rounds: number): { hours: number; minute
   return {
     hours: Math.floor(totalMinutes / 60),
     minutes: totalMinutes % 60,
+  };
+}
+
+// ============================================================================
+// Creature Instance Creation
+// ============================================================================
+
+/**
+ * Create a creature runtime instance from a definition.
+ * Used when spawning creatures for combat.
+ *
+ * @see docs/domain/Creature.md#combat-feature
+ */
+export function createCombatCreature(definition: CreatureDefinition): CreatureInstance {
+  return {
+    instanceId: `${definition.id}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    definitionId: definition.id,
+    currentHp: definition.maxHp,
+    tempHp: 0,
+    conditions: [],
+    hasActed: false,
   };
 }
 

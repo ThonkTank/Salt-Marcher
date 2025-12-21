@@ -14,6 +14,7 @@
     },
     "creatures": [],
     "controlledPOIs": [],
+    "displayColor": "#808080",
     "description": "Base faction for all humanoid creatures."
   },
   {
@@ -57,6 +58,7 @@
       { "creatureId": "goblin", "count": 50 }
     ],
     "controlledPOIs": [],
+    "displayColor": "#2E8B57",
     "description": "Goblin tribes that infest caves and ruins."
   },
   {
@@ -99,6 +101,7 @@
       { "creatureId": "orc", "count": 30 }
     ],
     "controlledPOIs": [],
+    "displayColor": "#8B0000",
     "description": "Savage orc warbands."
   },
   {
@@ -141,6 +144,7 @@
       { "creatureId": "kobold", "count": 80 }
     ],
     "controlledPOIs": [],
+    "displayColor": "#B8860B",
     "description": "Kobold warrens that worship dragons."
   },
   {
@@ -157,6 +161,7 @@
       { "creatureId": "dire-wolf", "count": 20 }
     ],
     "controlledPOIs": [],
+    "displayColor": "#556B2F",
     "description": "Wild animals and beasts."
   },
   {
@@ -172,6 +177,7 @@
       { "creatureId": "skeleton", "count": 50 }
     ],
     "controlledPOIs": [],
+    "displayColor": "#4B0082",
     "description": "Mindless undead creatures."
   },
   {
@@ -213,6 +219,7 @@
       { "creatureId": "bandit", "count": 20 }
     ],
     "controlledPOIs": [],
+    "displayColor": "#8B4513",
     "description": "Bandit gangs that prey on travelers."
   },
   {
@@ -254,6 +261,7 @@
       { "creatureId": "commoner", "count": 200 }
     ],
     "controlledPOIs": [],
+    "displayColor": "#4682B4",
     "description": "Common folk in towns and villages."
   }
 ]

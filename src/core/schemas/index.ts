@@ -293,3 +293,15 @@ export {
   calculateTotalValue,
   calculateTotalWeight,
 } from './item';
+
+// Journal schemas
+export {
+  journalCategorySchema,
+  type JournalCategory,
+  journalSourceSchema,
+  type JournalSource,
+  journalEntityRefSchema,
+  type JournalEntityRef,
+  journalEntrySchema,
+  type JournalEntry,
+} from './journal';

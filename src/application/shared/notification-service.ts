@@ -12,14 +12,35 @@ import type { AppError } from '@core/types/common';
 // Types
 // ============================================================================
 
+/** Notification severity level */
+export type NotificationType = 'info' | 'warning' | 'error';
+
+/** Action button for notifications (Post-MVP: not yet implemented) */
+export interface NotificationAction {
+  label: string;
+  action: () => void;
+}
+
+/** Structured notification with title, message, and optional actions */
+export interface Notification {
+  type: NotificationType;
+  title: string;
+  message: string;
+  duration?: number; // ms, undefined = type-based default
+  actions?: NotificationAction[]; // Post-MVP: accepted but ignored
+}
+
 export interface NotificationService {
-  /** Show info message (3s duration) */
+  /** Show structured notification (primary API per spec) */
+  show(notification: Notification): void;
+
+  /** Show info message (3s duration) - convenience method */
   info(message: string): void;
 
-  /** Show warning message (5s duration) */
+  /** Show warning message (5s duration) - convenience method */
   warn(message: string): void;
 
-  /** Show error message (8s duration) */
+  /** Show error message (8s duration) - convenience method */
   error(message: string): void;
 
   /** Format and show AppError as user-friendly message */
@@ -64,6 +85,24 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 // ============================================================================
+// Constants
+// ============================================================================
+
+/** Default durations per notification type (in ms) */
+const DEFAULT_DURATIONS: Record<NotificationType, number> = {
+  info: 3000,
+  warning: 5000,
+  error: 8000,
+};
+
+/** Prefixes per notification type for visual distinction */
+const PREFIXES: Record<NotificationType, string> = {
+  info: '',
+  warning: '⚠️ ',
+  error: '❌ ',
+};
+
+// ============================================================================
 // Implementation
 // ============================================================================
 
@@ -87,16 +126,31 @@ function formatErrorForUser(error: AppError): string {
  */
 export function createNotificationService(): NotificationService {
   return {
+    show(notification: Notification): void {
+      const duration = notification.duration ?? DEFAULT_DURATIONS[notification.type];
+      const prefix = PREFIXES[notification.type];
+
+      // Multiline format: Title\nMessage (if title present)
+      const text = notification.title
+        ? `${prefix}${notification.title}\n${notification.message}`
+        : `${prefix}${notification.message}`;
+
+      new Notice(text, duration);
+
+      // actions[] are accepted but ignored (Post-MVP)
+      // TODO #2917b: Custom Modal for notifications with actions
+    },
+
     info(message: string): void {
-      new Notice(message, 3000);
+      this.show({ type: 'info', title: '', message });
     },
 
     warn(message: string): void {
-      new Notice(`⚠️ ${message}`, 5000);
+      this.show({ type: 'warning', title: '', message });
     },
 
     error(message: string): void {
-      new Notice(`❌ ${message}`, 8000);
+      this.show({ type: 'error', title: '', message });
     },
 
     errorFromResult(error: AppError): void {

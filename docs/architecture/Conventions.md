@@ -247,7 +247,17 @@ async function initializeFeatures() {
     }
   }
 }
+
+// Erweiterte Notifications mit Title/Duration: show() API nutzen
+notificationService.show({
+  type: 'error',
+  title: 'NPC nicht verfuegbar',
+  message: `${npcName} ist bereits tot.`,
+  duration: 10000  // Optional: 10s statt Default
+});
 ```
+
+> **Hinweis:** Fuer einfache Meldungen reichen `info()`, `warn()`, `error()`. Fuer Notifications mit separatem Title oder custom Duration: `show()` verwenden. → Details: [Error-Handling.md#notification-service](Error-Handling.md#notification-service)
 
 ---
 
