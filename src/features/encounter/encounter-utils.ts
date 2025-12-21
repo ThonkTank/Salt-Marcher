@@ -29,6 +29,7 @@ import {
   getEncounterMultiplier,
   calculateEffectiveXP,
 } from '@core/utils';
+import { createCombatCreature } from '@/features/combat';
 import type {
   GenerationContext,
   CreatureSelectionResult,
@@ -344,19 +345,18 @@ export function generateEncounterId(): string {
 }
 
 /**
- * Create a creature instance from a definition.
+ * Create a creature instance from a definition with index-based ID.
+ * Uses createCombatCreature internally and overrides the instanceId
+ * with an index-based ID for encounter grouping.
  */
 export function createCreatureInstance(
   definition: CreatureDefinition,
   index: number
 ): CreatureInstance {
+  const instance = createCombatCreature(definition);
   return {
+    ...instance,
     instanceId: `${definition.id}-${index}-${Math.random().toString(36).substring(2, 7)}`,
-    definitionId: definition.id,
-    currentHp: definition.maxHp,
-    tempHp: 0,
-    conditions: [],
-    hasActed: false,
   };
 }
 
