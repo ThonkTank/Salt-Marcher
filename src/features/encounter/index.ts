@@ -53,7 +53,7 @@ export {
   resolveFactionCulture,
   generateNpcName,
   generatePersonality,
-  generateQuirk,
+  rollQuirkFromCulture,
   generatePersonalGoal,
   selectOrGenerateNpc,
   generateNewNpc,

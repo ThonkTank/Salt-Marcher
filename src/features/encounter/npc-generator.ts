@@ -224,14 +224,14 @@ export function generatePersonality(
 }
 
 /**
- * Optionally select a quirk from culture.
- * 50% chance to have a quirk.
+ * Roll a quirk from resolved culture.
+ * 30% chance to have a quirk.
  */
-export function generateQuirk(
+export function rollQuirkFromCulture(
   culture: ResolvedCulture
 ): string | undefined {
   if (culture.quirks.length === 0) return undefined;
-  if (Math.random() > 0.5) return undefined;
+  if (Math.random() > 0.3) return undefined;
 
   // Weighted selection
   const totalWeight = culture.quirks.reduce((sum, q) => sum + q.weight, 0);
@@ -363,7 +363,7 @@ export function generateNewNpc(
 ): NPC {
   const name = generateNpcName(culture);
   const personality = generatePersonality(culture);
-  const quirk = generateQuirk(culture);
+  const quirk = rollQuirkFromCulture(culture);
   const personalGoal = generatePersonalGoal(culture);
 
   return {

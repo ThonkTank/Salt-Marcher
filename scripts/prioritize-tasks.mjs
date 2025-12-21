@@ -139,14 +139,53 @@ ZYKLEN-ERKENNUNG:
 }
 
 /**
+ * Parst eine Task-ID (z.B. "428", "428b", "2917a")
+ * Gibt String zurück für alphanumerische IDs, Zahl für reine Ziffern
+ */
+function parseTaskId(raw) {
+  const trimmed = raw.trim();
+  // Alphanumerische ID (z.B. "428b", "2917a")
+  if (/^\d+[a-z]$/i.test(trimmed)) {
+    return trimmed.toLowerCase();  // Normalisieren zu lowercase
+  }
+  // Reine Zahl
+  const num = parseInt(trimmed, 10);
+  return isNaN(num) ? null : num;
+}
+
+/**
+ * Parst Dependencies aus einem String
+ * Unterstützt: #123, #428b, b4
+ */
+function parseDeps(depsRaw) {
+  if (depsRaw === '-') return [];
+
+  const deps = [];
+  // Match: #123, #428b, #2917a, b4
+  const matches = depsRaw.matchAll(/#(\d+[a-z]?)|b(\d+)/gi);
+
+  for (const match of matches) {
+    if (match[1]) {
+      // Task-ID: kann Zahl oder alphanumerisch sein
+      deps.push(parseTaskId(match[1]));
+    } else if (match[2]) {
+      // Bug-ID: z.B. "b4"
+      deps.push(`b${match[2]}`);
+    }
+  }
+
+  return deps.filter(d => d !== null);
+}
+
+/**
  * Parst eine Task-Zeile aus der Markdown-Tabelle
  */
 function parseTaskLine(line) {
   const cells = line.split('|').map(c => c.trim()).filter(Boolean);
   if (cells.length < 7) return null;
 
-  const number = parseInt(cells[0], 10);
-  if (isNaN(number)) return null;
+  const number = parseTaskId(cells[0]);
+  if (number === null) return null;
 
   const status = cells[1];
   const bereich = cells[2];
@@ -155,10 +194,7 @@ function parseTaskLine(line) {
   const mvp = cells[5];
   const depsRaw = cells[6];
 
-  // Deps können Task-IDs (#N) oder Bug-IDs (bN) sein
-  const deps = depsRaw === '-'
-    ? []
-    : depsRaw.match(/#(\d+)|b(\d+)/g)?.map(d => d.startsWith('#') ? parseInt(d.slice(1), 10) : d) ?? [];
+  const deps = parseDeps(depsRaw);
 
   return { number, status, bereich, beschreibung, prio, mvp, deps, isBug: false };
 }
@@ -179,10 +215,7 @@ function parseBugLine(line) {
   const prio = cells[2];
   const depsRaw = cells[3];
 
-  // Deps können Task-IDs (#N) oder Bug-IDs (bN) sein
-  const deps = depsRaw === '-'
-    ? []
-    : depsRaw.match(/#(\d+)|b(\d+)/g)?.map(d => d.startsWith('#') ? parseInt(d.slice(1), 10) : d) ?? [];
+  const deps = parseDeps(depsRaw);
 
   return {
     number,
@@ -249,6 +282,16 @@ function parseRoadmap(content) {
  * @param {Array} items - Alle Tasks und Bugs
  * @returns {Array} - Liste von deduplizierten Zyklen (jeder Zyklus = Array von IDs)
  */
+/**
+ * Prüft ob eine ID eine Task-ID ist (Zahl oder alphanumerisch wie "428b")
+ * im Gegensatz zu einer Bug-ID (String wie "b4")
+ */
+function isTaskId(id) {
+  if (typeof id === 'number') return true;
+  if (typeof id === 'string' && !id.startsWith('b')) return true;
+  return false;
+}
+
 function findCycles(items) {
   // Dependency-Graph aufbauen (ID → Array<Dependency-IDs>)
   // Bugs werden komplett ignoriert - sie zeigen "broken" an, blockieren aber nicht
@@ -259,8 +302,8 @@ function findCycles(items) {
     // Bugs überspringen - nur Tasks analysieren
     if (item.isBug) continue;
 
-    // Nur Task-Deps (Zahlen), keine Bug-Deps (Strings wie 'b4')
-    const taskDeps = item.deps.filter(dep => typeof dep === 'number');
+    // Task-Deps: Zahlen oder alphanumerische Strings (aber keine Bug-IDs wie 'b4')
+    const taskDeps = item.deps.filter(isTaskId);
     graph.set(item.number, taskDeps);
     allIds.add(item.number);
   }
@@ -331,13 +374,25 @@ function normalizeCycle(cycle) {
 }
 
 /**
+ * Formatiert eine Task-/Bug-ID für Ausgabe
+ * - Zahlen: #428
+ * - Alphanumerische Task-IDs: #428b
+ * - Bug-IDs: b4 (ohne #)
+ */
+function formatId(id) {
+  if (typeof id === 'number') return `#${id}`;
+  if (typeof id === 'string' && id.startsWith('b')) return id;  // Bug-ID
+  return `#${id}`;  // Alphanumerische Task-ID
+}
+
+/**
  * Entfernt doppelte Zyklen (gleiche Zyklen in verschiedener Rotation)
  */
 function deduplicateCycles(cycles) {
   const seen = new Set();
   return cycles.filter(cycle => {
     const normalized = normalizeCycle(cycle);
-    const key = normalized.map(id => typeof id === 'string' ? id : `#${id}`).join('→');
+    const key = normalized.map(formatId).join('→');
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -366,8 +421,8 @@ function propagateBugStatus(tasks, bugs) {
 
   for (const bug of bugs) {
     for (const dep of bug.deps) {
-      // Nur Task-IDs (Zahlen), keine Bug-IDs
-      if (typeof dep === 'number') {
+      // Nur Task-IDs (Zahlen oder alphanumerisch), keine Bug-IDs
+      if (isTaskId(dep)) {
         const task = taskMap.get(dep);
         if (task && task.status === '✅') {
           task.status = '⚠️';
@@ -464,7 +519,7 @@ function formatTable(items, refCounts) {
     t.beschreibung.length > 45 ? t.beschreibung.slice(0, 42) + '...' : t.beschreibung,
     t.prio,
     t.mvp,
-    t.deps.length ? t.deps.map(d => typeof d === 'string' ? d : `#${d}`).join(', ') : '-',
+    t.deps.length ? t.deps.map(formatId).join(', ') : '-',
     String(refCounts.get(t.number) || 0)
   ]);
 
@@ -493,7 +548,7 @@ function formatJson(tasks, refCounts, cycles) {
 
   // Zyklen formatieren: IDs zu lesbaren Strings
   const formattedCycles = cycles.map(cycle =>
-    cycle.map(id => typeof id === 'string' ? id : `#${id}`)
+    cycle.map(formatId)
   );
 
   const output = {
@@ -550,7 +605,7 @@ function main() {
   if (cycles.length > 0) {
     console.warn('\n⚠️  WARNUNG: Zirkuläre Dependencies gefunden!\n');
     for (const cycle of cycles) {
-      const formatted = cycle.map(id => typeof id === 'string' ? id : `#${id}`);
+      const formatted = cycle.map(formatId);
       console.warn(`   ${formatted.join(' → ')}`);
     }
     console.warn('\nDiese Tasks/Bugs können niemals "nicht blockiert" werden.\n');

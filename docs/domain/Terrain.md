@@ -242,21 +242,30 @@ function getEligibleCreatures(terrainId: EntityId<'terrain'>): CreatureDefinitio
 
 ## Storage
 
+### Phase 1: Plugin-Bundled Presets (MVP)
+
+Basis-Terrains werden im Plugin gebundelt und zur Build-Zeit importiert:
+
+```
+presets/
+└── terrains/
+    └── base-terrains.json      # 8 Basis-Terrains (road, plains, etc.)
+```
+
+**Implementation:** `src/infrastructure/vault/terrain-registry.ts` laedt JSON via esbuild Import.
+
+### Phase 2: User Custom Terrains (Post-MVP)
+
+User-erstellte Terrains werden im Vault gespeichert:
+
 ```
 Vault/SaltMarcher/data/
 └── terrain/
-    ├── _bundled/               # Mitgelieferte Default-Terrains
-    │   ├── road.json
-    │   ├── plains.json
-    │   ├── forest.json
-    │   ├── hills.json
-    │   ├── mountains.json
-    │   ├── swamp.json
-    │   ├── desert.json
-    │   └── water.json
-    └── user/                   # User-erstellte Custom-Terrains
-        └── fey-forest.json
+    └── fey-forest.json         # User-erstellte Custom-Terrains
 ```
+
+Bundled Presets und User Terrains werden zur Laufzeit gemerged.
+User-Terrains koennen Bundled-Terrains ueberschreiben (gleiche ID).
 
 ---
 

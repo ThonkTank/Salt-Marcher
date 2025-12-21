@@ -27,6 +27,57 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROADMAP_PATH = join(__dirname, '..', 'docs', 'architecture', 'Development-Roadmap.md');
 
 /**
+ * Parst eine Task-ID (z.B. "428", "428b", "2917a")
+ * Gibt String zurück für alphanumerische IDs, Zahl für reine Ziffern
+ */
+function parseTaskId(raw) {
+  const trimmed = raw.trim();
+  // Alphanumerische ID (z.B. "428b", "2917a")
+  if (/^\d+[a-z]$/i.test(trimmed)) {
+    return trimmed.toLowerCase();  // Normalisieren zu lowercase
+  }
+  // Reine Zahl
+  const num = parseInt(trimmed, 10);
+  return isNaN(num) ? null : num;
+}
+
+/**
+ * Parst Dependencies aus einem String
+ * Unterstützt: #123, #428b, b4
+ */
+function parseDeps(depsRaw) {
+  if (depsRaw === '-') return [];
+
+  const deps = [];
+  // Match: #123, #428b, #2917a, b4
+  const matches = depsRaw.matchAll(/#(\d+[a-z]?)|b(\d+)/gi);
+
+  for (const match of matches) {
+    if (match[1]) {
+      // Task-ID: kann Zahl oder alphanumerisch sein
+      deps.push(parseTaskId(match[1]));
+    } else if (match[2]) {
+      // Bug-ID: z.B. "b4"
+      deps.push(`b${match[2]}`);
+    }
+  }
+
+  return deps.filter(d => d !== null);
+}
+
+/**
+ * Formatiert eine Task-/Bug-ID für Ausgabe
+ * - Zahlen: #428
+ * - Alphanumerische Task-IDs: #428b
+ * - Bug-IDs: b4 (ohne #)
+ */
+function formatId(id) {
+  if (typeof id === 'number') return `#${id}`;
+  if (typeof id === 'string' && id.startsWith('b')) return id;  // Bug-ID
+  return `#${id}`;  // Alphanumerische Task-ID
+}
+
+/**
  * Parst Command-Line-Argumente
  */
 function parseArgs(argv) {
@@ -76,12 +127,12 @@ function parseArgs(argv) {
     } else if (arg === '-n' || arg === '--limit') {
       opts.limit = parseInt(argv[++i], 10) || 20;
     } else if (!arg.startsWith('-')) {
-      // Bug-ID (z.B. 'b4') oder Task-Nummer
+      // Bug-ID (z.B. 'b4') oder Task-ID (z.B. '428', '428b')
       if (arg.match(/^b\d+$/)) {
         opts.itemId = arg;
       } else {
-        const num = parseInt(arg, 10);
-        if (!isNaN(num)) opts.itemId = num;
+        const parsed = parseTaskId(arg);
+        if (parsed !== null) opts.itemId = parsed;
       }
     }
   }
@@ -101,7 +152,7 @@ USAGE:
   node scripts/task-lookup.mjs -s <KEYWORD> [OPTIONS]
 
 ARGUMENTE:
-  <ID>                    Task-Nummer (z.B. 428) oder Bug-ID (z.B. b4)
+  <ID>                    Task-ID (z.B. 428, 428b) oder Bug-ID (z.B. b4)
 
 SUCHE:
   -s, --search <KEYWORD>  Suche in Bereich, Beschreibung und Spec
@@ -121,6 +172,7 @@ OPTIONEN:
 
 BEISPIELE:
   node scripts/task-lookup.mjs 428                  # Task #428 Details
+  node scripts/task-lookup.mjs 428b                 # Task #428b Details
   node scripts/task-lookup.mjs b4                   # Bug b4 Details
   node scripts/task-lookup.mjs 428 --deps           # + Voraussetzungen
   node scripts/task-lookup.mjs 428 --dependents     # + was darauf wartet
@@ -143,14 +195,12 @@ function parseTaskLine(line) {
   const cells = line.split('|').map(c => c.trim()).filter(Boolean);
   if (cells.length < 9) return null;
 
-  const number = parseInt(cells[0], 10);
-  if (isNaN(number)) return null;
+  // Task-ID kann alphanumerisch sein (z.B. "428b")
+  const number = parseTaskId(cells[0]);
+  if (number === null) return null;
 
   const depsRaw = cells[6];
-  // Deps können Task-IDs (#N) oder Bug-IDs (bN) sein
-  const deps = depsRaw === '-'
-    ? []
-    : (depsRaw.match(/#(\d+)|b(\d+)/g)?.map(d => d.startsWith('#') ? parseInt(d.slice(1), 10) : d) ?? []);
+  const deps = parseDeps(depsRaw);
 
   return {
     number,
@@ -182,11 +232,7 @@ function parseBugLine(line) {
   const beschreibung = cells[1];
   const prio = cells[2];
   const depsRaw = cells[3];
-
-  // Deps können Task-IDs (#N) oder Bug-IDs (bN) sein
-  const deps = depsRaw === '-'
-    ? []
-    : (depsRaw.match(/#(\d+)|b(\d+)/g)?.map(d => d.startsWith('#') ? parseInt(d.slice(1), 10) : d) ?? []);
+  const deps = parseDeps(depsRaw);
 
   return {
     number,
@@ -287,8 +333,7 @@ function findDepsRecursive(itemId, itemMap, depth, maxDepth, visited = new Set()
 
   const item = itemMap.get(itemId);
   if (!item) {
-    const label = typeof itemId === 'string' ? itemId : `#${itemId}`;
-    return { number: itemId, status: '?', missing: true, children: [], label };
+    return { number: itemId, status: '?', missing: true, children: [], label: formatId(itemId) };
   }
 
   const children = item.deps.map(dep =>
@@ -308,10 +353,10 @@ function findDepsRecursive(itemId, itemMap, depth, maxDepth, visited = new Set()
  * Formatiert ein Item (Task oder Bug)
  */
 function formatItem(item, opts) {
-  const idLabel = item.isBug ? `Bug ${item.number}` : `Task #${item.number}`;
+  const idLabel = item.isBug ? `Bug ${item.number}` : `Task ${formatId(item.number)}`;
 
   if (opts.quiet) {
-    return `${item.isBug ? item.number : '#' + item.number} [${item.status}] ${item.bereich}: ${item.beschreibung}`;
+    return `${formatId(item.number)} [${item.status}] ${item.bereich}: ${item.beschreibung}`;
   }
 
   const lines = [
@@ -356,7 +401,7 @@ function formatItemList(items, title) {
 
   const headers = ['#', 'Status', 'Bereich', 'Beschreibung', 'Prio'];
   const rows = items.map(t => [
-    String(t.number),
+    formatId(t.number),
     t.status,
     t.bereich.length > 15 ? t.bereich.slice(0, 12) + '...' : t.bereich,
     t.beschreibung.length > 40 ? t.beschreibung.slice(0, 37) + '...' : t.beschreibung,
@@ -385,8 +430,8 @@ function formatTree(node, prefix = '', isLast = true) {
   const connector = isLast ? '└── ' : '├── ';
   const extension = isLast ? '    ' : '│   ';
 
-  // ID-Label: Bug-IDs ohne #, Task-IDs mit #
-  const idLabel = typeof node.number === 'string' ? node.number : `#${node.number}`;
+  // ID-Label mit formatId für einheitliche Formatierung
+  const idLabel = formatId(node.number);
 
   let line = prefix + connector;
   if (node.missing) {
@@ -529,8 +574,7 @@ function main() {
   const item = itemMap.get(opts.itemId);
 
   if (!item) {
-    const label = typeof opts.itemId === 'string' ? opts.itemId : `#${opts.itemId}`;
-    console.error(`Fehler: ${label} nicht gefunden.`);
+    console.error(`Fehler: ${formatId(opts.itemId)} nicht gefunden.`);
     process.exit(1);
   }
 
