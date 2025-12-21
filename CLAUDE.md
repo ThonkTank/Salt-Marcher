@@ -254,8 +254,6 @@ node scripts/task-lookup.mjs 428                  # Task #428 Details
 node scripts/task-lookup.mjs b4                   # Bug b4 Details
 node scripts/task-lookup.mjs 428 --deps           # + Dependencies
 node scripts/task-lookup.mjs 428 --dependents     # + Tasks/Bugs die davon abhängen
-node scripts/task-lookup.mjs b4 --deps            # Bug-Dependencies (referenzierte Tasks)
-node scripts/task-lookup.mjs 12 --dependents      # Zeigt auch Bugs die #12 referenzieren
 node scripts/task-lookup.mjs 428 -a               # Beides
 node scripts/task-lookup.mjs 428 --tree           # Dependency-Baum
 node scripts/task-lookup.mjs 428 --tree --depth 5 # Tieferer Baum
@@ -265,6 +263,15 @@ node scripts/task-lookup.mjs --help               # Alle Optionen
 
 Zeigt Details zu einer Task oder Bug und ihre Abhängigkeiten.
 
+**Suche nach Keyword:**
+```bash
+node scripts/task-lookup.mjs -s Travel            # Suche in Bereich/Beschreibung/Spec
+node scripts/task-lookup.mjs -b Combat            # Nur im Bereich suchen
+node scripts/task-lookup.mjs --spec Weather       # Nur in der Spec-Spalte suchen
+node scripts/task-lookup.mjs -s Encounter -n 10   # Max 10 Ergebnisse
+node scripts/task-lookup.mjs -s Quest --json      # JSON-Ausgabe
+```
+
 **Optionen:**
 - `-d, --deps` - Voraussetzungen: Tasks/Bugs die erst erledigt sein müssen
 - `-D, --dependents` - Blockiert: Tasks/Bugs die auf dieses Item warten
@@ -273,6 +280,12 @@ Zeigt Details zu einer Task oder Bug und ihre Abhängigkeiten.
 - `--depth <N>` - Baum-Tiefe (default: 3)
 - `--json` - JSON-Ausgabe
 - `-q, --quiet` - Kompakte Ausgabe
+
+**Such-Optionen:**
+- `-s, --search <KEYWORD>` - Suche in Bereich, Beschreibung und Spec
+- `-b, --bereich <KEYWORD>` - Suche nur im Bereich
+- `--spec <KEYWORD>` - Suche nur in der Spec-Spalte
+- `-n, --limit <N>` - Max. Ergebnisse (default: 20, 0 = alle)
 
 ## Projektstruktur
 

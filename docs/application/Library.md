@@ -378,4 +378,38 @@ const entityConfig = entityRegistry.getConfig(activeTab);
 
 ---
 
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 2600 | Library View Component (Hauptcontainer) | hoch | Ja | #2599, #2801 | Library.md#layout-wireframe, Application.md#mvvm-pattern |
+| 2601 | Library ViewModel mit State-Management | hoch | Ja | #2600, #2800 | Library.md#state-management, Application.md#mvvm-pattern, Application.md#viewmodel-feature-kommunikation |
+| 2602 | Tab-Navigation Component (Entity-Type Switcher) | hoch | Ja | #2600, #2601 | Library.md#tab-navigation, EntityRegistry.md#entity-type-mapping, Application.md#mvvm-pattern |
+| 2603 | Browse-View Component (List Mode) | hoch | Ja | #2599, #2600, #2601, #2621 | Library.md#browse-view, Library.md#view-modi, Application.md#mvvm-pattern |
+| 2604 | Search-Funktion (Global Text Search) | hoch | Ja | #2603, #2621 | Library.md#filter-controls, EntityRegistry.md#querying |
+| 2605 | Quick-Filters Component (Entity-spezifisch) | hoch | Ja | #2603, #2621 | Library.md#filter-controls, Library.md#browse-view, EntityRegistry.md#querying |
+| 2606 | Sort Controls (Name, CR, Rarity, etc.) | hoch | Ja | #2603, #2621 | Library.md#filter-controls, Library.md#state-management |
+| 2607 | Entity-Cards Component (Kompakte Info-Anzeige) | hoch | Ja | #1200, #2603 | Library.md#entity-cards, Library.md#browse-view |
+| 2608 | Create-Modal Component (Generisch aus create-spec) | hoch | Ja | #1600, #2601, #2603 | Library.md#create-edit-modal, EntityRegistry.md#port-interface, Application.md#viewmodel-feature-kommunikation |
+| 2609 | Edit-Modal Component (Generisch aus create-spec) | hoch | Ja | #2601, #2603 | Library.md#create-edit-modal, EntityRegistry.md#port-interface, Application.md#viewmodel-feature-kommunikation |
+| 2610 | Modal-Section Navigation (Multi-Step Forms) | hoch | Ja | #1500, #2603, #2608, #2609 | Library.md#modal-navigation, Library.md#create-edit-modal |
+| 2611 | Validation Display (Section-Level Feedback) | hoch | Ja | #2603, #2610 | Library.md#modal-navigation, EntityRegistry.md#validierung, Error-Handling.md |
+| 2612 | Delete Confirmation Dialog | hoch | Ja | #2601, #2607, #2608, #2609, #2610, #2611, #2621 | Library.md#entity-cards, EntityRegistry.md#entity-deletion-cascades, Application.md#viewmodel-feature-kommunikation |
+| 2613 | Duplicate-Funktion ([📋] Button) | mittel | Ja | #2601, #2621 | Library.md#entity-cards, EntityRegistry.md#port-interface |
+| 2614 | Grid-View Mode (Alternative zu List) | niedrig | Nein | #2603, #2613 | Library.md#view-modi, Library.md#state-management |
+| 2615 | Tree-View Mode (Für Locations Hierarchie) | mittel | Nein | #2603, #2614, #2617 | Library.md#view-modi, POI.md#schema, POI.md#map-navigation |
+| 2616 | Bulk-Actions (Multi-Select + Batch Operations) | niedrig | Nein | #2603, #2613 | Library.md#state-management, EntityRegistry.md#port-interface |
+| 2617 | Import/Export Funktionalität | niedrig | Nein | #2601, #2616, #2803 | Library.md#state-management, EntityRegistry.md#storage |
+| 2618 | Creature-Tab spezifische Filter (CR, Type, Habitat) | hoch | Ja | #2605, #2613, #2621, #2802 | Library.md#filter-controls, Creature.md#schema, Creature.md#creaturedefinition |
+| 2619 | Item-Tab spezifische Filter (Rarity, Category, Magic) | hoch | Ja | #2605, #2612, #2810 | Library.md#filter-controls, Item.md#schema, Item.md#kategorie-details |
+| 2620 | Spell-Tab spezifische Filter (Level, School, Class) | hoch | Ja | #2603, #2605, #2621 | Library.md#filter-controls, EntityRegistry.md#entity-type-mapping |
+| 2621 | Location-Tab spezifische Filter (Type, Region) | hoch | Ja | #2605, #2800, #2801, #2802 | Library.md#filter-controls, POI.md#poi-typen, POI.md#basepoi |
+| 2622 | Entity-Count Display in Tabs | hoch | Ja | #2602, #2621, #2800, #2801 | Library.md#tab-navigation, EntityRegistry.md#port-interface |
+| 2623 | Overflow-Menu für Tabs (bei > 8 Entity-Types) | mittel | Ja | #2602, #2603 | Library.md#tab-navigation, Library.md#entity-tabs |
+| 2624 | Keyboard Shortcuts (Ctrl+N, Ctrl+F, Ctrl+D, 1-9) | mittel | Nein | #1500, #2601, #2603 | Library.md#keyboard-shortcuts, Application.md#mvvm-pattern |
+| 2625 | Pagination Controls (Load More) | hoch | Ja | #2603, #2621 | Library.md#browse-view, Library.md#state-management |
+| 2626 | Save & New Button (Create-Modal) | mittel | Ja | #2608, #2621, #2802 | Library.md#create-edit-modal, EntityRegistry.md#port-interface |
+
+---
+
 *Siehe auch: [data-manager](../architecture/Data-Manager.md) | [EntityRegistry](../architecture/EntityRegistry.md)*

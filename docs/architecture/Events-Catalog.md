@@ -1369,3 +1369,10 @@ Bei der Implementation auf neue Naming-Konvention achten:
 ---
 
 *Siehe auch: [EventBus.md](EventBus.md) | [Features.md](Features.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 950 | rest:* Events im Events-Catalog definieren | hoch | Ja | - | Events-Catalog.md#rest, EventBus.md, Time-System.md, Character-System.md, Encounter-System.md |
+| 951 | rest:* Event-Typen in Core definieren | hoch | Ja | #950 | Events-Catalog.md#rest, Core.md, EventBus.md |

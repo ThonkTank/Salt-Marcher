@@ -516,3 +516,25 @@ const treasureChest: TreasurePOI = {
 ---
 
 *Siehe auch: [Map-Navigation.md](Map-Navigation.md) | [Faction.md](Faction.md) | [Map-Feature.md](../features/Map-Feature.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1500 | BasePOI Interface mit gemeinsamen Eigenschaften (id, mapId, position, name, icon, visible) | hoch | Ja | - | POI.md#basepoi, EntityRegistry.md#entity-type-mapping |
+| 1501 | EntrancePOI Schema (linkedMapId, spawnPosition, description) | hoch | Ja | #1500 | POI.md#entrancepoi, Map-Navigation.md#bidirektionale-links |
+| 1502 | LandmarkPOI Schema (description, gmNotes) | hoch | Ja | #1500 | POI.md#landmarkpoi |
+| 1503 | POI Union Type (entrance \| trap \| treasure \| landmark \| object) | hoch | Ja | #1500, #1501, #1502, #1504, #1505, #1506 | POI.md#poi-union-type, EntityRegistry.md#entity-type-mapping |
+| 1504 | TrapPOI Schema (dc, damage, triggered, detected, effect) | mittel | Nein | #1500 | POI.md#trappoi, Map-Feature.md#dungeontile |
+| 1505 | TreasurePOI Schema (items, locked, lockDC, looted, trapId) | mittel | Nein | #1500, #1504, #2600 | POI.md#treasurepoi, Item.md#schema |
+| 1506 | ObjectPOI Schema (interactable, description) | niedrig | Nein | #1500 | POI.md#objectpoi |
+| 1507 | POI CRUD Events (create/update/delete-requested + created/updated/deleted) | hoch | Ja | #1503, #1516 | POI.md#events, Events-Catalog.md#poi, EventBus.md |
+| 1508 | POI Interaction Events (trap-triggered, trap-detected, treasure-looted) | mittel | Nein | #1504, #1505, #1507, #1516 | POI.md#events, Events-Catalog.md#poi, Dungeon-System.md |
+| 1509 | POI Query Functions (getPOIsOnMap, getPOIsAtTile, getEntrancesOnMap, getHiddenTraps) | hoch | Ja | #1503, #1516 | POI.md#queries, EntityRegistry.md#port-interface |
+| 1510 | POI Feature/Orchestrator mit CRUD-Logik | hoch | Ja | #1503, #1507, #1509, #1516 | POI.md, Features.md#feature-struktur, EntityRegistry.md#port-interface |
+| 1511 | Map-Navigation via EntrancePOI (map:navigate-requested Event) | hoch | Ja | #1501, #1507, #820, #1900 | POI.md#map-navigation, Map-Navigation.md#navigation-events, Map-Feature.md#events |
+| 1512 | Tile Content Panel Integration: POIs des aktuellen Party-Tiles anzeigen | hoch | Ja | #1509, #1510, #1511, #2300 | POI.md#tile-content-panel, SessionRunner.md#tile-content-panel, Map-Navigation.md#travel-state-bei-map-wechsel |
+| 1513 | POI Icon Rendering auf Map (Icon-Mapping nach POI-Typ) | hoch | Ja | #1503, #1509, #802, #804 | POI.md#map-darstellung, Map-Feature.md#overworld-rendering |
+| 1514 | Height-Feld für POI-Fernsicht (Sichtbarkeit über Tile-Grenze) | mittel | Nein | #1500, #851, #843 | POI.md#height-feld-post-mvp, Map-Feature.md#poi-fernsicht, Map-Feature.md#visibility-system-post-mvp |
+| 1515 | glowsAtNight-Feld für nachtleuchtende POIs | mittel | Nein | #1500, #852, #843 | POI.md#nachtleuchtende-pois-glowsatnight-post-mvp, Map-Feature.md#poi-fernsicht, Map-Feature.md#visibility-system-post-mvp |
+| 1516 | POI in EntityRegistry registrieren (EntityType 'poi') | hoch | Ja | #1503 | POI.md#schema, EntityRegistry.md#port-interface, EntityRegistry.md#entity-type-mapping |

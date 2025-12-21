@@ -609,3 +609,16 @@ eventSubscriptions.push(
 ---
 
 *Siehe auch: [Features.md](Features.md) | [Application.md](Application.md) | [Events-Catalog.md](Events-Catalog.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 2719 | EventBus Interface mit publish(), subscribe(), subscribeAll(), clear() | hoch | Ja | - | EventBus.md#kommunikationsfluss, Core.md#event-struktur, Features.md#kommunikation |
+| 2720 | Request/Response API: request() Methode mit correlationId-Matching | hoch | Ja | #2719 | EventBus.md#async-patterns, EventBus.md#requestresponse-für-workflows, Core.md#correlationid-regeln |
+| 2721 | TimeoutError Klasse für request() Timeouts | hoch | Ja | #2720 | EventBus.md#timeout-verhalten, EventBus.md#async-patterns |
+| 2722 | Sticky Events: publish({sticky}), subscribe({replay}), clearSticky() | hoch | Ja | #2719 | EventBus.md#sticky-events, EventBus.md#lifecycle, Events-Catalog.md#konvention-zusammenfassung |
+| 2723 | EventTypes Konstanten-Objekt (Single Source of Truth für Event-Namen) | hoch | Ja | #2706 | EventBus.md#type-safe-events, EventBus.md#event-naming-konvention, Events-Catalog.md, Core.md#event-struktur |
+| 2724 | Event Payload Interfaces für alle Event-Typen | hoch | Ja | #2723 | EventBus.md#type-safe-events, Events-Catalog.md, Core.md#domainevent-interface |
+| 2725 | EventPayloadMap für type-safe Event-Handling | hoch | Ja | #2723, #2724 | EventBus.md#type-safe-events, Core.md#event-struktur |
+| 2726 | Event Factory Functions: createEvent(), newCorrelationId() | hoch | Ja | #2706, #2723 | EventBus.md#events-publizieren, Core.md#correlationid-regeln, Features.md#event-flow |

@@ -649,3 +649,36 @@ Travel-Feature operiert nur auf Overworld-Maps:
 ---
 
 *Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Travel-System.md](Travel-System.md) | [Dungeon-System.md](Dungeon-System.md) | [POI.md](../domain/POI.md) | [Map-Navigation.md](../domain/Map-Navigation.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 800 | BaseMap Schema (id, name, type, defaultSpawnPoint, metadaten) | hoch | Ja | - | Map-Feature.md#basis-map, Map.md#basemap |
+| 802 | OverworldTile Schema (coordinate, terrain, elevation, pois, encounterZone, factionPresence) | hoch | Ja | #801, #1700 | Map-Feature.md#overworldmap, Travel-System.md#speed-berechnung |
+| 804 | Overworld Rendering (Hex-Grid mit Terrain-Farben) | hoch | Ja | #801, #803, #1700 | Map-Feature.md#overworld-rendering, Application.md#rendering-sharedrendering |
+| 806 | DungeonMap Schema (dimensions mit levels, tiles, rooms, partyPosition) | hoch | Ja | #800 | Map-Feature.md#dungeonmap, Dungeon-System.md#dungeonmap |
+| 808 | DungeonTile Schema (type, roomId, traps, creatures, treasure, lighting, explored) | hoch | Ja | #806, #807, #1504 | Map-Feature.md#dungeontile, Dungeon-System.md#dungeontile |
+| 810 | Trap Schema (id, dc, damage, triggered, visible) | hoch | Ja | #808 | Map-Feature.md#dungeontile, Dungeon-System.md#dungeontilecontent |
+| 812 | Dungeon Rendering: Grid + Fog of War + Lighting | hoch | Ja | #806, #808 | Map-Feature.md#dungeon-rendering, Dungeon-System.md#rendering |
+| 814 | map:loaded Event publizieren | hoch | Ja | #813, #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md |
+| 816 | map:created Event publizieren | hoch | Ja | #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md |
+| 818 | map:deleted Event publizieren | hoch | Ja | #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md |
+| 820 | map:navigate-requested Handler | hoch | Ja | #800, #1500 | Map-Feature.md#events, Map-Navigation.md#navigation-events |
+| 825 | Single Map Active: Nur aktive Map im Speicher | hoch | Ja | #813, #824 | Map-Feature.md#memory-management |
+| 827 | Wetter auf Town-Maps: Erbt von Parent-Tile | hoch | Ja | #830, #820, #110 | Map-Feature.md#wetter-auf-sub-maps, Weather-System.md#multi-map-weather |
+| 829 | State-Persistenz bei Map-Wechsel: Position, Zeit, Wetter | hoch | Ja | #821, #826, #900 | Map-Feature.md#state-persistenz-bei-map-wechsel, Map-Navigation.md |
+| 831 | Street Schema (id, name, path, width) | mittel | Nein | #830 | Map-Feature.md#townmap |
+| 832 | Intersection Schema (id, position, connectedStreets) | mittel | Nein | #830 | Map-Feature.md#townmap |
+| 834 | BuildingType Type (tavern, shop, temple, etc.) | mittel | Nein | #833 | Map-Feature.md#townmap |
+| 836 | Town Navigation: Strassen-basiertes Travel | mittel | Nein | #830, #837 | Map-Feature.md#town-strassen-navigation |
+| 838 | town:route-calculated Event | mittel | Nein | #837 | Map-Feature.md#town-strassen-navigation, Events-Catalog.md |
+| 839 | Multi-Level Dungeons: Z-Koordinate nutzen | niedrig | Nein | #807, #812 | Map-Feature.md#dungeonmap, Dungeon-System.md#multi-level-navigation |
+| 841 | Path Rendering: Linien zwischen Hex-Zentren | mittel | Nein | #840, #804, #1800 | Map-Feature.md#path-rendering, Path.md#rendering |
+| 843 | Visibility System: Sichtweiten-Overlay | mittel | Nein | #804, #844, #802 | Map-Feature.md#visibility-system-post-mvp |
+| 845 | Höhenbonus: Wurzel-Formel für erhöhte Sichtweite | mittel | Nein | #844, #843 | Map-Feature.md#sichtweiten-berechnung |
+| 847 | Weather-Visibility-Modifier: Wetter reduziert Sicht | mittel | Nein | #843, #110 | Map-Feature.md#umwelt-modifier, Weather-System.md#sichtweiten-einfluss-post-mvp |
+| 849 | Party-Fähigkeiten Sicht: Darkvision, Blindsight, etc. | mittel | Nein | #843, #600, #519 | Map-Feature.md#party-faehigkeiten-sinne, Character-System.md#sinne-post-mvp |
+| 851 | POI-Fernsicht: Height-Feld für POIs | mittel | Nein | #843, #1514 | Map-Feature.md#poi-fernsicht, POI.md#height-feld-post-mvp |
+| 853 | POI-Hervorhebung: Sichtbare POIs hervorheben | mittel | Nein | #843, #804, #1513 | Map-Feature.md#overlay-visualisierung, POI.md#map-darstellung |
+| 855 | Visibility-Toggle UI: Button im Map-Panel | mittel | Nein | #843, #2310 | Map-Feature.md#ui, SessionRunner.md#visibility-toggle-post-mvp |

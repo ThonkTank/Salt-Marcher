@@ -118,10 +118,7 @@ export function createParticipantFromCreature(
     initiative,
     maxHp: definition.maxHp,
     currentHp: instance.currentHp,
-    conditions: instance.conditions.map((type) => ({
-      type: type as import('@core/schemas').ConditionType,
-      reminder: '',
-    })),
+    conditions: [...instance.conditions],
     effects: [],
     concentratingOn: instance.concentrationSpell,
     cr: definition.cr,

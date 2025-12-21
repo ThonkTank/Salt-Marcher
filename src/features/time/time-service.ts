@@ -160,13 +160,14 @@ export function createTimeService(deps: TimeServiceDeps): TimeFeaturePort {
 
   /**
    * Handle time:advance-requested command event.
+   * Uses Pessimistic Save-First: persists before updating state.
    */
   function setupEventHandlers(): void {
     // Handle advance time requests
     subscriptions.push(
       eventBus.subscribe<TimeAdvanceRequestedPayload>(
         EventTypes.TIME_ADVANCE_REQUESTED,
-        (event) => {
+        async (event) => {
           const { duration, reason } = event.payload;
           const correlationId = event.correlationId;
 
@@ -187,9 +188,22 @@ export function createTimeService(deps: TimeServiceDeps): TimeFeaturePort {
 
           // Calculate new time
           const newTime = addDuration(previousTime, duration, calendar);
-          store.setTime(newTime);
 
-          // Publish state changed event with same correlationId
+          // 1. Pessimistic Save-First: persist before updating state
+          const saveResult = await storage.save({
+            currentTime: newTime,
+            activeCalendarId: state.activeCalendarId,
+          });
+          if (!saveResult.ok) {
+            console.warn('Time: Failed to save time state', saveResult.error);
+            return; // State remains unchanged on error
+          }
+
+          // 2. Update state after successful save
+          store.setTime(newTime);
+          store.markSaved();
+
+          // 3. Publish events with same correlationId
           publishStateChanged(previousTime, newTime, duration, correlationId);
 
           // Check for segment change
@@ -213,7 +227,7 @@ export function createTimeService(deps: TimeServiceDeps): TimeFeaturePort {
     subscriptions.push(
       eventBus.subscribe<TimeSetRequestedPayload>(
         EventTypes.TIME_SET_REQUESTED,
-        (event) => {
+        async (event) => {
           const { newDateTime: time } = event.payload;
           const correlationId = event.correlationId;
 
@@ -221,9 +235,22 @@ export function createTimeService(deps: TimeServiceDeps): TimeFeaturePort {
           const calendar = state.cachedCalendar;
 
           const previousTime = state.currentTime;
-          store.setTime(time);
 
-          // Publish state changed event (no duration for direct set)
+          // 1. Pessimistic Save-First: persist before updating state
+          const saveResult = await storage.save({
+            currentTime: time,
+            activeCalendarId: state.activeCalendarId,
+          });
+          if (!saveResult.ok) {
+            console.warn('Time: Failed to save time state', saveResult.error);
+            return; // State remains unchanged on error
+          }
+
+          // 2. Update state after successful save
+          store.setTime(time);
+          store.markSaved();
+
+          // 3. Publish events (no duration for direct set)
           publishStateChanged(previousTime, time, undefined, correlationId);
 
           // Check for segment change if calendar is loaded
@@ -286,13 +313,12 @@ export function createTimeService(deps: TimeServiceDeps): TimeFeaturePort {
     // Time Operations
     // =========================================================================
 
-    advanceTime(duration: Duration): void {
+    async advanceTime(duration: Duration): Promise<Result<void, AppError>> {
       const state = store.getState();
       const calendar = state.cachedCalendar;
 
       if (!calendar) {
-        console.warn('Time: Cannot advance time without loaded calendar');
-        return;
+        return err(createError('NO_CALENDAR', 'Cannot advance time without loaded calendar'));
       }
 
       const previousTime = state.currentTime;
@@ -301,9 +327,21 @@ export function createTimeService(deps: TimeServiceDeps): TimeFeaturePort {
 
       // Calculate new time
       const newTime = addDuration(previousTime, duration, calendar);
-      store.setTime(newTime);
 
-      // Publish state changed event
+      // 1. Pessimistic Save-First: persist before updating state
+      const saveResult = await storage.save({
+        currentTime: newTime,
+        activeCalendarId: state.activeCalendarId,
+      });
+      if (!saveResult.ok) {
+        return saveResult; // State remains unchanged on error
+      }
+
+      // 2. Update state after successful save
+      store.setTime(newTime);
+      store.markSaved();
+
+      // 3. Publish events
       publishStateChanged(previousTime, newTime, duration);
 
       // Check for segment change
@@ -316,16 +354,30 @@ export function createTimeService(deps: TimeServiceDeps): TimeFeaturePort {
       if (previousDay !== newTime.day || previousTime.month !== newTime.month) {
         publishDayChanged(previousDay, newTime.day);
       }
+
+      return ok(undefined);
     },
 
-    setTime(time: GameDateTime): void {
+    async setTime(time: GameDateTime): Promise<Result<void, AppError>> {
       const state = store.getState();
       const calendar = state.cachedCalendar;
 
       const previousTime = state.currentTime;
-      store.setTime(time);
 
-      // Publish state changed event (no duration for direct set)
+      // 1. Pessimistic Save-First: persist before updating state
+      const saveResult = await storage.save({
+        currentTime: time,
+        activeCalendarId: state.activeCalendarId,
+      });
+      if (!saveResult.ok) {
+        return saveResult; // State remains unchanged on error
+      }
+
+      // 2. Update state after successful save
+      store.setTime(time);
+      store.markSaved();
+
+      // 3. Publish events
       publishStateChanged(previousTime, time);
 
       // Check for segment change if calendar is loaded
@@ -336,6 +388,8 @@ export function createTimeService(deps: TimeServiceDeps): TimeFeaturePort {
           publishSegmentChanged(previousSegment, newSegment);
         }
       }
+
+      return ok(undefined);
     },
 
     // =========================================================================

@@ -726,4 +726,42 @@ type ToolType = OverlandTool | DungeonTool;
 
 ---
 
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 2500 | Cartographer View Component (Hauptcontainer) | hoch | Ja | - | Cartographer.md#layout-wireframe, Application.md#workmodes |
+| 2501 | Cartographer ViewModel mit State-Management | hoch | Ja | #2500 | Cartographer.md#state-management, Application.md#viewmodels |
+| 2502 | Tool-Palette Component (Kontextabhängig Map-Typ) | hoch | Ja | #2501 | Cartographer.md#tool-panels, Cartographer.md#tool-legende |
+| 2503 | Terrain-Brush Tool (Terrain malen) | hoch | Ja | #1700, #2501, #2502 | Cartographer.md#terrain-brush-overland, Terrain.md#schema, Map-Feature.md#overworldtile |
+| 2504 | Elevation-Brush Tool (Paint Mode) | hoch | Ja | #802, #2501, #2502 | Cartographer.md#elevation-brush-overland, Map-Feature.md#overworldtile |
+| 2505 | Elevation-Brush Tool (Gradient Mode) | mittel | Nein | #2501, #2504 | Cartographer.md#elevation-brush-overland |
+| 2506 | Elevation-Brush Tool (Smooth Mode) | mittel | Nein | #2501, #2504 | Cartographer.md#elevation-brush-overland |
+| 2507 | Climate-Brush Tool (Temperature/Precipitation/Wind Override) | mittel | Nein | #110, #2500, #2502 | Cartographer.md#climate-brush-overland, Weather-System.md#tile-basierte-wetter-ranges, Terrain.md#climateprofile |
+| 2508 | Feature-Brush Tool (Natural/Ruins/Roads Platzierung) | hoch | Ja | #802, #2502, #2507 | Cartographer.md#feature-brush-overland, Map-Feature.md#overworldtile |
+| 2509 | Path-Tool (Lineare Features: Roads, Rivers, Cliffs, Ravines) | mittel | Nein | #1800, #1820, #2502, #2507 | Cartographer.md#path-tool-overland-post-mvp, Path.md#schema, Path.md#pathdisplaystyle, Map-Feature.md#path-rendering |
+| 2510 | Location-Marker Tool (POI-Platzierung) | hoch | Ja | #1500, #1510, #2502, #2507 | Cartographer.md#location-marker-overland, POI.md#basepoi, POI.md#poi-typen, Map-Feature.md#overworldtile |
+| 2511 | Inspector Tool (Tile-Details anzeigen/bearbeiten) | hoch | Ja | #802, #1509, #2500, #2502 | Cartographer.md#inspector-alle-map-typen, Map-Feature.md#overworldtile, POI.md#queries |
+| 2512 | Wall-Tool (Dungeon: Wände zeichnen) | hoch | Ja | #806, #808, #2502, #2511 | Cartographer.md#wall-tool-dungeon, Dungeon-System.md#dungeontile, Map-Feature.md#dungeonmap |
+| 2513 | Door-Tool (Dungeon: Türen platzieren) | hoch | Ja | #808, #2502, #2511 | Cartographer.md#door-tool-dungeon, Dungeon-System.md#dungeontile, Map-Feature.md#dungeontile |
+| 2514 | Trap-Tool (Dungeon: Fallen platzieren) | mittel | Nein | #810, #1504, #2502, #2511 | Cartographer.md#trap-tool-dungeon, Dungeon-System.md#dungeontilecontent, Map-Feature.md#dungeontile, POI.md#trappoi |
+| 2515 | Token-Placer Tool (Dungeon: Creatures/Objects/Light) | hoch | Ja | #808, #1200, #2502, #2511 | Cartographer.md#token-placer-dungeon, Dungeon-System.md#dungeontile, Creature.md#schema, Map-Feature.md#dungeontile |
+| 2516 | Layer-Control Component (Visibility/Lock für Layers) | hoch | Ja | #2500, #2501, #2502 | Cartographer.md#layer-control, Cartographer.md#state-management |
+| 2517 | Map-Canvas Component (Rendering Hex/Grid) | hoch | Ja | #801, #806, #2500, #2516 | Cartographer.md#layout-wireframe, Map-Feature.md#rendering, Map-Feature.md#overworld-rendering, Map-Feature.md#dungeon-rendering |
+| 2518 | Camera Controls (Pan/Zoom) | hoch | Ja | #2516, #2517 | Cartographer.md#keyboard-shortcuts, Cartographer.md#state-management |
+| 2519 | Brush-Size Controls (1-5, Kontext pro Tool) | hoch | Ja | #2503, #2504, #2507, #2508, #2516 | Cartographer.md#terrain-brush-overland, Cartographer.md#elevation-brush-overland, Cartographer.md#climate-brush-overland, Cartographer.md#feature-brush-overland |
+| 2520 | Brush-Shape Controls (Circle/Line/Fill) | hoch | Ja | #2503, #2516 | Cartographer.md#terrain-brush-overland |
+| 2521 | Undo/Redo Funktionalität | hoch | Ja | #2501, #2516 | Cartographer.md#state-management, Cartographer.md#keyboard-shortcuts |
+| 2522 | Auto-Elevation Option (Terrain-abhängige Höhe) | mittel | Nein | #1700, #2500, #2502, #2503, #2504 | Cartographer.md#terrain-brush-overland, Terrain.md#schema |
+| 2523 | Preview Mode (Änderungen vor Apply anzeigen) | niedrig | Nein | #2503, #2504, #2507, #2508, #2522 | Cartographer.md#terrain-brush-overland |
+| 2524 | Terrain Custom Type Creator | mittel | Nein | #1700, #1707, #2503, #2522 | Cartographer.md#terrain-brush-overland, Terrain.md#custom-terrains-mvp, Terrain.md#schema |
+| 2525 | Path Properties Editor (Speed, Barrier, Transport-Requirement) | mittel | Nein | #1800, #1802, #2509, #2522 | Cartographer.md#path-tool-overland-post-mvp, Path.md#pathmovement, Path.md#pathencountermodifier |
+| 2526 | Path Custom Type Creator | mittel | Nein | #1800, #2509, #2522 | Cartographer.md#path-tool-overland-post-mvp, Path.md#schema, Path.md#default-presets |
+| 2527 | Location Editor Modal (On-Place Integration) | hoch | Ja | #1501, #1502, #2510, #2522 | Cartographer.md#location-marker-overland, POI.md#entrancepoi, POI.md#landmarkpoi, Map-Navigation.md#bidirektionale-links |
+| 2528 | Keyboard Shortcuts (1-6 Tools, Brush-Size, Undo/Redo) | mittel | Nein | #2500, #2501, #2502, #2521 | Cartographer.md#keyboard-shortcuts, Cartographer.md#state-management |
+| 2529 | Map-Type-Switch (Overland ↔ Dungeon Tool-Palette) | hoch | Ja | #801, #806, #2502, #2528 | Cartographer.md#tool-panels, Map-Feature.md#overworldmap, Map-Feature.md#dungeonmap |
+| 2530 | Grid-View Toggle (Hex/Grid anzeigen/verstecken) | hoch | Ja | #2516, #2528 | Cartographer.md#layer-control, Cartographer.md#state-management |
+
+---
+
 *Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Dungeon-System.md](../features/Dungeon-System.md) | [Terrain.md](../domain/Terrain.md)*

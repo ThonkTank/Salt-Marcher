@@ -795,3 +795,25 @@ Aktuelles Wetter
 ---
 
 *Siehe auch: [Features.md](Features.md) | [Infrastructure.md](Infrastructure.md) | [Core.md](Core.md) | [Path.md](../domain/Path.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1417 | Faction EntityRegistry Integration: 'faction' als Entity-Typ | hoch | Ja | #1400 | EntityRegistry.md#entity-type-mapping, Faction.md#schema |
+| 1516 | POI EntityRegistry Integration: 'location'/'poi' als Entity-Typ (bereits vorhanden) | hoch | Ja | #1503 | POI.md#schema, EntityRegistry.md#port-interface, EntityRegistry.md#entity-type-mapping |
+| 2800 | EntityRegistryPort Interface (get, getAll, query, save, delete, exists, count) | hoch | Ja | #2703 | EntityRegistry.md#port-interface, Core.md#branded-types |
+| 2801 | EntityTypeMap mit allen 14 MVP Entity-Typen (creature, character, npc, faction, item, map, poi, terrain, quest, encounter, shop, calendar, journal, worldevent, track) | hoch | Ja | #2703, #2800 | EntityRegistry.md#entity-type-mapping, Core.md#entitytype-union |
+| 2802 | VaultEntityRegistryAdapter Implementation (JSON-File-basiert mit Vault/{plugin}/data/{entityType}/{id}.json) | hoch | Ja | #2800, #2801 | EntityRegistry.md#storage, Infrastructure.md#adapter-pattern |
+| 2803 | Zod-Validierung bei save() mit getSchemaForType() | hoch | Ja | #2802 | EntityRegistry.md#validierung, Core.md#zod-schemas |
+| 2804 | Predicate-basierte query() Methode (Lineare Suche für MVP) | hoch | Ja | #2802 | EntityRegistry.md#querying |
+| 2805 | Unbounded In-Memory Cache mit Map pro EntityType | hoch | Ja | #2802 | EntityRegistry.md#caching-strategy |
+| 2806 | Lazy Loading: Cache-Population bei erstem Zugriff auf Entity-Typ | hoch | Ja | #2805 | EntityRegistry.md#caching-strategy |
+| 2807 | File-Watcher Invalidierung bei modify/delete Events | hoch | Ja | #2805 | EntityRegistry.md#caching-strategy, Infrastructure.md#file-watcher-integration |
+| 2808 | Pessimistisches Speichern (sofort bei save(), erst Vault dann Cache) | hoch | Ja | #2802, #2805 | EntityRegistry.md#persistence-timing, Infrastructure.md#state-persistenz |
+| 2809 | Error Handling: ValidationError, NotFoundError, IOError Klassen | hoch | Ja | #2803 | EntityRegistry.md#error-handling, Error-Handling.md |
+| 2810 | Entity-Deletion Cascades: Referenz-Prüfung und Soft-Cascade Bereinigung | mittel | Ja | #2802 | EntityRegistry.md#entity-deletion-cascades |
+| 2811 | Constructor Injection: Features erhalten EntityRegistryPort via Constructor | hoch | Ja | #2800, #2802 | EntityRegistry.md#bootstrapping, Features.md#feature-communication |
+| 2815 | CreatureDefinition vs Creature vs NPC Hierarchie dokumentieren und implementieren | hoch | Ja | #2801 | EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc, Creature.md, NPC-System.md |
+| 2817 | In-Memory-Indizes für häufige Queries (Post-MVP Performance-Optimierung) | niedrig | Nein | #2804 | EntityRegistry.md#querying |
+| 2818 | Schema-Migration System für automatische Updates (Post-MVP) | niedrig | Nein | #2803 | EntityRegistry.md#validierung |

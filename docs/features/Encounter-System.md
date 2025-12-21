@@ -492,3 +492,26 @@ NPCs werden **bei Encounter-Instanziierung** erstellt, nicht bei Definition:
 ---
 
 *Siehe auch: [Encounter-Balancing.md](Encounter-Balancing.md) | [NPC-System.md](../domain/NPC-System.md) | [Path.md](../domain/Path.md) | [Combat-System.md](Combat-System.md) | [Quest-System.md](Quest-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 200 | Terrain-Filter: Kreatur.terrainAffinities vs aktuelles Terrain | hoch | Ja | #801, #1202 | Encounter-System.md#tile-eligibility, Creature.md#terrain-affinitaet-und-auto-sync, Map-Feature.md#overworld-tiles |
+| 202 | Fraktionspräsenz-Gewichtung: Fraktion kontrolliert Tile → ×2.0-5.0 | hoch | Ja | #200, #201, #1410, #1411 | Encounter-System.md#tile-eligibility, Faction.md#encounter-integration |
+| 204 | Wetter-Gewichtung: Kreatur.preferredWeather matched → ×1.5 | hoch | Ja | #110, #200, #201, #1207 | Encounter-System.md#tile-eligibility, Weather-System.md#weather-state, Creature.md#creaturepreferences |
+| 206 | Gewichtete Zufallsauswahl aus eligible Creatures | hoch | Ja | #200, #202, #204 | Encounter-System.md#kreatur-auswahl |
+| 207 | Typ-Ableitung: Disposition + Faction-Relation + CR-Balancing → Encounter-Typ | hoch | Ja | #206, #235, #1400 | Encounter-System.md#typ-ableitung, Encounter-Balancing.md#cr-vergleich, Faction.md#schema |
+| 209 | EncounterHistory-Tracking (letzte 3-5 Encounters, typeDistribution) | hoch | Ja | - | Encounter-System.md#variety-validation |
+| 211 | CreatureSlot-Union: ConcreteCreatureSlot, TypedCreatureSlot, BudgetCreatureSlot | hoch | Ja | #1200, #1300 | Encounter-System.md#creatureslot-varianten, Creature.md#schema, NPC-System.md#npc-schema |
+| 213 | EncounterInstance-Schema mit creatures, leadNPC, status, outcome, loot, hoard | hoch | Ja | #211, #212, #714, #730 | Encounter-System.md#schemas, Loot-Feature.md#loot-generierung-bei-encounter |
+| 215 | encounter:generate-requested Handler (einheitlicher Einstiegspunkt) | hoch | Ja | #200-#207, #209, #801, #910, #110 | Encounter-System.md#aktivierungs-flow, Travel-System.md#encounter-checks-waehrend-reisen |
+| 217 | encounter:start-requested Handler | hoch | Ja | #213, #214 | Encounter-System.md#events |
+| 219 | encounter:resolve-requested Handler | hoch | Ja | #213, #214 | Encounter-System.md#events |
+| 221 | encounter:started Event publizieren | hoch | Ja | #217 | Encounter-System.md#events, Combat-System.md#event-flow |
+| 223 | encounter:resolved Event publizieren mit xpAwarded | hoch | Ja | #219, #233 | Encounter-System.md#events, Combat-System.md#post-combat-resolution |
+| 225 | Combat-Typ: combat:start-requested triggern | hoch | Ja | #221, #300, #321 | Encounter-System.md#integration, Combat-System.md#combat-flow |
+| 227 | Passing-Typ: Sofortige Beschreibung anzeigen | hoch | Ja | #221, #249 | Encounter-System.md#typ-spezifisches-verhalten, Encounter-Balancing.md#passing |
+| 229 | Environmental-Typ: Umwelt-Herausforderungen | mittel | Nein | #213, #214 | Encounter-System.md#encounter-typen |
+| 231 | NPC-Instanziierung: Bei Encounter suchen/erstellen mit Faction-Kultur | hoch | Ja | #220, #1307, #1314, #1318, #1405, #2001, #2101 | Encounter-System.md#integration, NPC-System.md#lead-npc-auswahl, Faction.md#kultur-vererbung |
+| 233 | 40/60 XP Split: 40% sofort bei Encounter-Ende | hoch | Ja | #223, #408, #410, #2401 | Encounter-System.md#integration, Quest-System.md#xp-verteilung, Combat-System.md#xp-berechnung |

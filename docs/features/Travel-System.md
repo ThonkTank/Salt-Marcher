@@ -355,3 +355,19 @@ eventBus.publish({
 ---
 
 *Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Inventory-System.md](Inventory-System.md) (Encumbrance) | [Weather-System.md](Weather-System.md) | [Encounter-System.md](Encounter-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1 | State-Machine: idle → planning → traveling ↔ paused → idle | hoch | Ja | - | Travel-System.md#state-machine, Events-Catalog.md#travel |
+| 3 | Speed-Berechnung: Basis-Speed × Terrain-Faktor × Weather-Faktor | hoch | Ja | - | Travel-System.md#speed-berechnung, Character-System.md#travel-system |
+| 5 | Terrain-Faktoren aus TerrainDefinition.movementCost lesen | hoch | Ja | #3, #1700 | Travel-System.md#terrain-faktoren, Terrain.md#verwendung-in-anderen-features, Map-Feature.md#overworld-rendering |
+| 7 | Zeit-Integration via time:advance-requested | hoch | Ja | #1, #908 | Travel-System.md#tagesreise-berechnung, Time-System.md#zeit-operationen, Events-Catalog.md#time |
+| 9 | Encounter-Checks pro Stunde (12.5% Basis-Chance) | hoch | Ja | #1, #7, #215 | Travel-System.md#encounter-checks-waehrend-reisen, Encounter-System.md#aktivierungs-flow, Map-Feature.md#overworld-tiles |
+| 11 | Pause/Resume Funktionalität | hoch | Ja | #1 | Travel-System.md#state-machine, Events-Catalog.md#travel |
+| 12 | Event-Flow: travel:plan-requested → route-planned → start-requested → started → position-changed → completed | hoch | Ja | #1, #2 | Travel-System.md#event-flow, Events-Catalog.md#travel, SessionRunner.md#travel-integration |
+| 14 | Transport-Invariante: activeTransport muss in availableTransports sein | hoch | Ja | #4 | Travel-System.md#transport-mode-invarianten, Character-System.md#character-schema |
+| 16 | Fehlerbehandlung: travel:failed - Fehler nur geloggt, keine Events publiziert | hoch | Ja | #15 | Travel-System.md#transport-mode-invarianten, Error-Handling.md, Events-Catalog.md#travel |
+| 18 | Pfad-Barrieren: blocksMovement und requiresTransport | mittel | Nein | #17, #1800, #1802, #1811 | Travel-System.md#pfad-modifikation-post-mvp, Path.md#pathmovement, Path.md#travel-system |
+| 20 | Resource-Tracking: Rationen-Verbrauch bei Reisen | mittel | Nein | #7, #605, #608 | Travel-System.md#dungeon-exploration, Inventory-System.md#rationen, Character-System.md#character-schema |

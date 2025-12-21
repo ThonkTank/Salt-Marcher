@@ -816,4 +816,62 @@ Shop-Tab zeigt Haendler-Inventar
 
 ---
 
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 2400 | DetailView View Component (Hauptcontainer mit Tab-Navigation) | hoch | Ja | - | DetailView.md#layout-wireframe |
+| 2401 | DetailView ViewModel mit State-Management | hoch | Ja | #2400 | DetailView.md#state-synchronisation, Application.md#viewmodel-pattern |
+| 2402 | Tab-Management (activeTab State, setActiveTab) | hoch | Ja | #2401 | DetailView.md#tab-management |
+| 2403 | Idle-State Placeholder (Hinweis wenn kein Tab aktiv) | mittel | Ja | #2400 | DetailView.md#idle-state |
+| 2404 | Auto-Open Verhalten für Encounter-Tab (encounter:generated) | hoch | Ja | #2401, #220 | DetailView.md#auto-open-verhalten, Encounter-System.md#events, Events-Catalog.md#encounter |
+| 2405 | Auto-Open Verhalten für Combat-Tab (combat:started) | hoch | Ja | #2401, #322 | DetailView.md#auto-open-verhalten, Combat-System.md#combat-flow, Events-Catalog.md#combat |
+| 2406 | Auto-Open Verhalten für Location-Tab (ui:tile-selected, optional) | niedrig | Nein | #2401, #2448 | DetailView.md#auto-open-verhalten |
+| 2407 | Tab-Priorität System (Combat > Encounter > Rest) | mittel | Ja | #2402 | DetailView.md#auto-open-verhalten |
+| 2408 | Encounter-Tab Component (Container) | hoch | Ja | #2400, #2409 | DetailView.md#encounter-tab |
+| 2409 | Encounter-Builder State (Name, Activity, Goal, Creatures) | hoch | Ja | #2401 | DetailView.md#encounter-tab, Encounter-System.md#schemas |
+| 2410 | Encounter-Suche (Autocomplete für gespeicherte EncounterDefinitions) | mittel | Ja | #2408, #2409 | DetailView.md#encounter-tab, Encounter-System.md#schemas |
+| 2411 | Kreatur/NPC-Suche (Autocomplete für CreatureDefinitions + Named NPCs) | hoch | Ja | #2408, #2409 | DetailView.md#encounter-tab, Creature.md#schema, NPC-System.md#npc-schema |
+| 2412 | Kreatur/NPC hinzufügen zum Builder | hoch | Ja | #2409, #2411 | DetailView.md#encounter-tab, DetailView.md#flow-neues-encounter-im-builder-erstellen |
+| 2413 | Kreatur/NPC entfernen aus Builder ([×] Button) | mittel | Ja | #2409, #2412 | DetailView.md#encounter-tab |
+| 2414 | Encounter-Wertung Live-Berechnung (Gesamt-XP, Difficulty, Daily-Budget) | hoch | Ja | #2409, #1400 | DetailView.md#encounter-tab, Encounter-Balancing.md#xp-budget, Encounter-Balancing.md#cr-vergleich |
+| 2415 | Encounter-Builder befüllen aus encounter:generated Event | hoch | Ja | #2404, #2409 | DetailView.md#encounter-tab, DetailView.md#flow-random-encounter-builder, Encounter-System.md#events |
+| 2416 | Encounter-Builder befüllen aus gespeichertem Encounter | mittel | Ja | #2409, #2410 | DetailView.md#flow-gespeichertes-encounter-laden, Encounter-System.md#schemas |
+| 2417 | Encounter-Speichern Funktion (Create/Update) | mittel | Ja | #2409 | DetailView.md#flow-builder-speichern, Encounter-System.md#schemas |
+| 2418 | Combat-Start aus Encounter-Builder | hoch | Ja | #2409, #321 | DetailView.md#flow-builder-combat, Combat-System.md#combat-flow, Encounter-System.md#integration |
+| 2419 | Combat-Tab Component (Container) | hoch | Ja | #2400, #305 | DetailView.md#combat-tab, Combat-System.md#schemas |
+| 2420 | Combat-Tab ViewModel (Initiative-Liste, HP-Tracking) | hoch | Ja | #2401, #2419 | DetailView.md#combat-tab, DetailView.md#state-synchronisation, Combat-System.md#combatstate |
+| 2421 | Initiative-Tracker Display (Sortierte Liste mit aktuellem Turn) | hoch | Ja | #2419, #2420 | DetailView.md#combat-tab, Combat-System.md#sortierung, Combat-System.md#initiative-layout |
+| 2422 | HP-Management Controls (Damage/Heal Dialogs) | hoch | Ja | #308, #309, #2420, #2421 | DetailView.md#combat-tab, Combat-System.md#damage-heal |
+| 2423 | Condition-Management (Add/Remove Conditions) | hoch | Ja | #312, #313, #2420, #2421 | DetailView.md#combat-tab, Combat-System.md#conditions |
+| 2424 | Turn-Wechsel Handler (Next Turn Button) | hoch | Ja | #319, #2419, #2420 | DetailView.md#combat-tab, Combat-System.md#combat-flow, Combat-System.md#automatische-effekte |
+| 2425 | Start-of-Turn Effects Display | hoch | Ja | #2419, #2424 | DetailView.md#combat-tab, Combat-System.md#start-of-turn |
+| 2426 | End-of-Turn Effects Display | hoch | Ja | #2419, #2424 | DetailView.md#combat-tab, Combat-System.md#end-of-turn |
+| 2427 | Combat-Ende Handler (End Combat Button) | hoch | Ja | #323, #2419, #2420 | DetailView.md#flow-combat-beenden, Combat-System.md#combat-flow |
+| 2428 | Post-Combat Resolution: XP-Summary Phase | hoch | Ja | #338, #339, #340, #2419, #2427 | DetailView.md#post-combat-resolution, Combat-System.md#post-combat-resolution, Combat-System.md#xp-berechnung |
+| 2429 | Post-Combat Resolution: GM-Anpassung XP (%-Modifier) | hoch | Ja | #2419, #2428 | DetailView.md#post-combat-resolution, Combat-System.md#xp-berechnung |
+| 2430 | Post-Combat Resolution: Quest-Zuweisung Phase | hoch | Ja | #408, #409, #2420, #2427, #2428 | DetailView.md#post-combat-resolution, Quest-System.md#quest-assignment-ui-post-combat, Quest-System.md#40-60-split-mechanik, Combat-System.md#post-combat-resolution |
+| 2431 | Post-Combat Resolution: Loot-Verteilung Phase | hoch | Ja | #2420, #2428, #2801, #2802 | DetailView.md#post-combat-resolution, Loot-Feature.md#verteilen-einheitliches-loot-modal, Loot-Feature.md#loot-generierung-bei-encounter, Combat-System.md#post-combat-resolution |
+| 2432 | Shop-Tab Component (Buy/Sell Interface) | hoch | Ja | #2400, #2419, #2431 | DetailView.md#shop-tab, Shop.md#verwendung |
+| 2433 | Shop-Tab ViewModel (Shop-State, Inventory) | hoch | Ja | #2432 | DetailView.md#shop-tab, DetailView.md#state-synchronisation, Shop.md#schema |
+| 2434 | Shop-Item Browse mit Search/Filter | hoch | Ja | #2432, #2433 | DetailView.md#shop-tab, Shop.md#queries |
+| 2435 | Buy-Transaktion Handler | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events |
+| 2436 | Sell-Transaktion Handler | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events |
+| 2437 | Location-Tab Component (Tile/POI Details) | hoch | Ja | #2400, #2436 | DetailView.md#location-tab, POI.md#tile-content-panel |
+| 2438 | Location-Tab ViewModel (Tile-Data) | hoch | Ja | #2436, #2437 | DetailView.md#location-tab, DetailView.md#state-synchronisation, POI.md#queries |
+| 2439 | Terrain/Elevation/Climate Display | hoch | Ja | #2431, #2432, #2434, #2436, #2438 | DetailView.md#location-tab, Terrain.md#schema, Weather-System.md#weather-state |
+| 2440 | POIs auf Tile anzeigen | hoch | Ja | #2431, #2432, #2438 | DetailView.md#location-tab, POI.md#tile-content-panel, POI.md#queries |
+| 2441 | Fraktionspräsenz Display | hoch | Ja | #2431, #2435, #2437, #2438 | DetailView.md#location-tab, Faction.md#praesenz-datenstruktur, Faction.md#encounter-integration |
+| 2442 | Bekannte NPCs Display | hoch | Ja | #2400, #2438 | DetailView.md#location-tab, NPC-System.md#npc-schema, NPC-System.md#mvp-fraktions-basierte-location |
+| 2443 | Quest-Tab Component (Quest-Details) | mittel | Nein | #2400, #2401 | DetailView.md#quest-tab, Quest.md#schema |
+| 2444 | Quest-Tab ViewModel (Quest-State) | mittel | Nein | #2442, #2443 | DetailView.md#quest-tab, DetailView.md#state-synchronisation, Quest-System.md#quest-progress-runtime-state |
+| 2445 | Objective-Tracker Display (Checkboxen) | mittel | Nein | #2442, #2443, #2444 | DetailView.md#quest-tab, Quest-System.md#quest-schema-entityregistry, Quest.md#questobjective |
+| 2446 | Quest-Actions (Complete/Fail/Abandon) | mittel | Nein | #2442, #2443, #2444 | DetailView.md#quest-tab, Quest-System.md#quest-state-machine, Quest.md#events |
+| 2447 | Journal-Tab Component (Event-Historie) | mittel | Nein | #2400, #2444 | DetailView.md#journal-tab, Journal.md#schema |
+| 2448 | Journal-Tab ViewModel (Entry-Liste, Filter) | mittel | Nein | #2400, #2447 | DetailView.md#journal-tab, DetailView.md#state-synchronisation, Journal.md#queries |
+| 2449 | Journal-Filter Controls (Date, Category, Tags) | mittel | Nein | #2401, #2448 | DetailView.md#journal-tab, Journal.md#schema |
+| 2450 | Quick Note Entry | mittel | Nein | #2448, #2449 | DetailView.md#journal-tab, Journal.md#journalentry |
+
+---
+
 *Siehe auch: [SessionRunner.md](SessionRunner.md) | [Combat-System.md](../features/Combat-System.md) | [Encounter-System.md](../features/Encounter-System.md) | [Shop.md](../domain/Shop.md)*

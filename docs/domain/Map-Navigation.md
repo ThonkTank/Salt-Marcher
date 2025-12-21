@@ -211,3 +211,17 @@ Jeder Map-Typ hat sein eigenes Bewegungssystem - Details in den jeweiligen Featu
 ---
 
 *Siehe auch: [POI.md](POI.md) | [Map-Feature.md](../features/Map-Feature.md) | [Travel-System.md](../features/Travel-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1900 | Map-Navigation Event Handler: map:navigate-requested verarbeiten | hoch | Ja | #1511, #1, #820 | Map-Navigation.md#navigation-events, POI.md#map-navigation, Map-Feature.md#events, Events-Catalog.md#map |
+| 1901 | Map-Navigation: Travel-State Validierung (nur möglich wenn idle/planning) | hoch | Ja | #1900, #1 | Map-Navigation.md#travel-state-bei-map-wechsel, Travel-System.md#state-machine |
+| 1902 | Spawn-Position Logik: spawnPosition, bidirektionaler Link oder defaultSpawnPoint | hoch | Ja | #1900, #1501, #801, #800 | Map-Navigation.md#spawn-position-bestimmung, POI.md#entrancepoi, Map.md#basemap, Map-Feature.md#basis-map |
+| 1903 | Map-Navigation: Mehrere Eingänge - GM wählt aus Liste im Navigation-Dialog | mittel | Nein | #1902, #1512, #1509 | Map-Navigation.md#spawn-position-bestimmung, Map-Navigation.md#multi-poi-tiles, POI.md#queries |
+| 1904 | Journal-Entry automatisch erstellen bei Map-Navigation (arrival event) | hoch | Ja | #1900, #2207, #2200, #901 | Map-Navigation.md#journal-entries-fuer-tracking, Journal.md#auto-generierung, Time-System.md#zeit-operationen |
+| 1905 | map:navigated Event publizieren nach erfolgreicher Navigation | hoch | Ja | #1900 | Map-Navigation.md#navigation-events, Map-Feature.md#events, Events-Catalog.md#map |
+| 1906 | Betreten-Button UI-Validierung: disabled mit Tooltip wenn Travel aktiv | hoch | Ja | #1901, #1512 | Map-Navigation.md#travel-state-bei-map-wechsel, POI.md#tile-content-panel, SessionRunner.md#travel-integration |
+| 1907 | Exit-POI Handling: Party navigiert zu Exit-Tile und verlässt Map | hoch | Ja | #1900, #1501 | Map-Navigation.md#navigation-via-exit-poi, POI.md#entrancepoi, Map-Navigation.md#position-nach-rueckkehr |
+| 1908 | Bidirektionale Links: Beide EntrancePOIs verweisen aufeinander via linkedMapId + spawnPosition | hoch | Ja | #1501, #1510 | Map-Navigation.md#bidirektionale-links, POI.md#bidirektionale-links, POI.md#entrancepoi |

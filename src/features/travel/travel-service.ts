@@ -120,13 +120,13 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
   function startTravelLoop(correlationId?: string): void {
     if (travelLoopTimeoutId !== null) return; // Already running
 
-    function tick() {
+    async function tick() {
       if (store.getStatus() !== 'traveling') {
         travelLoopTimeoutId = null;
         return;
       }
 
-      const result = processNextTravelTick(correlationId);
+      const result = await processNextTravelTick(correlationId);
 
       if (result.shouldContinue) {
         travelLoopTimeoutId = setTimeout(tick, TRAVEL_LOOP_DELAY_MS);
@@ -154,9 +154,9 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
    * Encounter checks happen at hour boundaries.
    * Returns whether the loop should continue.
    */
-  function processNextTravelTick(
+  async function processNextTravelTick(
     correlationId?: string
-  ): { shouldContinue: boolean } {
+  ): Promise<{ shouldContinue: boolean }> {
     const state = store.getState();
     const { route, currentSegmentIndex, minutesElapsedSegment, totalHoursTraveled, lastEncounterCheckHour } = state;
 
@@ -197,8 +197,13 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
     // 5. Check if segment is complete
     if (newMinutesSegment >= segmentDurationMinutes) {
-      // Move party to segment destination
-      partyFeature.setPosition(segment.to);
+      // Move party to segment destination (Pessimistic Save-First)
+      const positionResult = await partyFeature.setPosition(segment.to);
+      if (!positionResult.ok) {
+        // Save failed - stop travel to prevent state inconsistency
+        console.warn('Travel: Failed to save party position', positionResult.error);
+        return { shouldContinue: false };
+      }
 
       // Publish position changed event
       const terrainId = getTerrainIdAt(segment.to);
@@ -306,8 +311,12 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     correlationId?: string
   ): void {
     if (!eventBus) {
-      // Fallback to direct call during migration
-      timeFeature.advanceTime({ hours, minutes });
+      // Fallback to direct call during migration (fire-and-forget)
+      void timeFeature.advanceTime({ hours, minutes }).then((result) => {
+        if (!result.ok) {
+          console.warn('Travel: Failed to advance time', result.error);
+        }
+      });
       return;
     }
 
@@ -736,11 +745,12 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
   /**
    * Execute the actual move operation.
+   * Uses Pessimistic Save-First for party position.
    */
-  function executeMove(
+  async function executeMove(
     target: HexCoordinate,
     correlationId?: string
-  ): Result<TravelResult, AppError> {
+  ): Promise<Result<TravelResult, AppError>> {
     // Get current position
     const posResult = getPartyPosition();
     if (!posResult.ok) return posResult;
@@ -769,8 +779,11 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     const tile = mapFeature.getTile(target);
     const terrainId = isSome(tile) ? String(tile.value.terrain) : 'unknown';
 
-    // Move party
-    partyFeature.setPosition(target);
+    // Move party (Pessimistic Save-First)
+    const positionResult = await partyFeature.setPosition(target);
+    if (!positionResult.ok) {
+      return positionResult; // Save failed - return error
+    }
 
     // Advance game time based on travel duration (via EventBus)
     const hours = Math.floor(timeCostHours);
@@ -1174,9 +1187,9 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     return ok(undefined);
   }
 
-  function advanceSegmentInternal(
+  async function advanceSegmentInternal(
     correlationId?: string
-  ): Result<TravelResult | null, AppError> {
+  ): Promise<Result<TravelResult | null, AppError>> {
     // Can only advance while traveling
     if (store.getStatus() !== 'traveling') {
       return err(
@@ -1201,8 +1214,8 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
 
     const segment = route.segments[segmentIndex];
 
-    // Execute move for this segment
-    const moveResult = executeMove(segment.to, correlationId);
+    // Execute move for this segment (async with Pessimistic Save-First)
+    const moveResult = await executeMove(segment.to, correlationId);
     if (!moveResult.ok) return moveResult;
 
     // Check if there are more segments
@@ -1275,7 +1288,7 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
       return cancelTravelInternal();
     },
 
-    advanceSegment(): Result<TravelResult | null, AppError> {
+    async advanceSegment(): Promise<Result<TravelResult | null, AppError>> {
       return advanceSegmentInternal();
     },
 

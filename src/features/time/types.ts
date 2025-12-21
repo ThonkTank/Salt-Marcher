@@ -84,11 +84,17 @@ export interface TimeFeaturePort {
 
   // === Time Operations ===
 
-  /** Advance time by a duration. Publishes time:state-changed event. */
-  advanceTime(duration: Duration): void;
+  /**
+   * Advance time by a duration. Publishes time:state-changed event.
+   * Uses Pessimistic Save-First: persists before updating state.
+   */
+  advanceTime(duration: Duration): Promise<Result<void, AppError>>;
 
-  /** Set time to a specific datetime. Publishes time:state-changed event. */
-  setTime(time: GameDateTime): void;
+  /**
+   * Set time to a specific datetime. Publishes time:state-changed event.
+   * Uses Pessimistic Save-First: persists before updating state.
+   */
+  setTime(time: GameDateTime): Promise<Result<void, AppError>>;
 
   // === Persistence ===
 

@@ -85,8 +85,9 @@ export interface TravelFeaturePort {
   /**
    * Advance travel by one segment (called by time progression).
    * Only valid when status is 'traveling'.
+   * Uses Pessimistic Save-First for party position.
    */
-  advanceSegment(): Result<TravelResult | null, AppError>;
+  advanceSegment(): Promise<Result<TravelResult | null, AppError>>;
 
   // ===========================================================================
   // Preview (UI Support)

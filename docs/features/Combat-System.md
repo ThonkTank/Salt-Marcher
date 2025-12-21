@@ -704,3 +704,35 @@ Bei Plugin-Reload kann der aktive Combat wiederhergestellt werden:
 ---
 
 *Siehe auch: [Character-System.md](Character-System.md) | [Encounter-Balancing.md](Encounter-Balancing.md) | [Encounter-System.md](Encounter-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 300 | CombatState Interface implementieren | hoch | Ja | - | Combat-System.md#schemas |
+| 302 | ConditionType + CONDITION_REMINDERS implementieren | hoch | Ja | - | Combat-System.md#conditions |
+| 304 | AbilityKey Type definieren | hoch | Ja | - | Combat-System.md#combateffect, Character-System.md#character-schema |
+| 305 | Combat State Machine: idle → active → idle | hoch | Ja | #300 | Combat-System.md#combat-flow |
+| 307 | sortByInitiative(): Höherer Wert zuerst, Tie-breaker | hoch | Ja | #301 | Combat-System.md#sortierung, Character-System.md#combat-tracker |
+| 309 | applyHealing(): HP erhöhen (max: maxHp) | hoch | Ja | #301 | Combat-System.md#damage-heal, Character-System.md#hp-tracking |
+| 311 | Character-Downed Event bei HP = 0 | hoch | Ja | #308 | Combat-System.md#death-saves, Character-System.md#hp-tracking |
+| 313 | Condition entfernen (removeCondition) | hoch | Ja | #302 | Combat-System.md#conditions |
+| 315 | CombatEffect hinzufügen (addEffect) | hoch | Ja | #303 | Combat-System.md#combateffect |
+| 317 | processTurnStart(): Start-of-Turn Effekte sammeln | hoch | Ja | #315 | Combat-System.md#start-of-turn |
+| 319 | nextTurn(): Zum nächsten Participant wechseln | hoch | Ja | #307 | Combat-System.md#combat-flow |
+| 321 | combat:start-requested Handler implementieren | hoch | Ja | #305, #225 | Combat-System.md#combat-flow, Encounter-System.md#integration |
+| 323 | combat:end-requested Handler implementieren | hoch | Ja | #305 | Combat-System.md#combat-flow |
+| 324 | combat:completed Event publizieren mit xpAwarded, roundsTotal | hoch | Ja | #323 | Combat-System.md#events, Combat-System.md#post-combat-resolution |
+| 326 | combat:participant-hp-changed Event publizieren | hoch | Ja | #308, #309 | Combat-System.md#events, Character-System.md#hp-tracking |
+| 328 | combat:character-stabilized Event publizieren | hoch | Ja | #327 | Combat-System.md#events, Combat-System.md#death-saves |
+| 330 | combat:concentration-check-required Event publizieren | hoch | Ja | #310 | Combat-System.md#damage-heal |
+| 332 | combat:effect-added Event publizieren | hoch | Ja | #315 | Combat-System.md#events |
+| 334 | combat:condition-added Event publizieren | hoch | Ja | #312 | Combat-System.md#events |
+| 336 | calculateCombatDuration(): roundNumber × 6 Sekunden | hoch | Ja | #324 | Combat-System.md#zeit-berechnung, Time-System.md#zeit-operationen |
+| 338 | XP-Berechnung: Basis-XP aus besiegten Kreaturen | hoch | Ja | #324 | Combat-System.md#xp-berechnung, Encounter-System.md#typ-spezifisches-verhalten |
+| 340 | 40/60 XP-Split: 40% sofort, 60% Quest-Pool | hoch | Ja | #338 | Combat-System.md#xp-berechnung, Quest-System.md#xp-verteilung |
+| 341 | quest:xp-accumulated Event bei Quest-Zuweisung | hoch | Ja | #340, #412, #2430, #2435, #2441 | Combat-System.md#post-combat-resolution, Quest-System.md#quest-assignment-ui, DetailView.md#post-combat-resolution |
+| 343 | encounter:resolved Event nach Resolution-Flow | hoch | Ja | #223, #338, #2431, #2441 | Combat-System.md#post-combat-resolution, Encounter-System.md#events, DetailView.md#post-combat-resolution |
+| 345 | Grid-Positioning: Positionierung auf Battle-Map | mittel | Nein | - | Combat-System.md#post-mvp-erweiterungen |
+| 347 | Lair Actions: Automatische Trigger | niedrig | Nein | - | Combat-System.md#post-mvp-erweiterungen |
+| 349 | Spell Slot Tracking: Automatische Reduktion | niedrig | Nein | - | Combat-System.md#post-mvp-erweiterungen, Character-System.md#post-mvp-erweiterungen |

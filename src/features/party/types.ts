@@ -114,11 +114,17 @@ export interface PartyFeaturePort {
   /** Load a party by ID */
   loadParty(id: PartyId): Promise<Result<Party, AppError>>;
 
-  /** Move party to a new position */
-  setPosition(coord: HexCoordinate): void;
+  /**
+   * Move party to a new position.
+   * Uses Pessimistic Save-First: persists before updating state.
+   */
+  setPosition(coord: HexCoordinate): Promise<Result<void, AppError>>;
 
-  /** Set the active transport mode */
-  setActiveTransport(mode: TransportMode): Result<void, AppError>;
+  /**
+   * Set the active transport mode.
+   * Uses Pessimistic Save-First: persists before updating state.
+   */
+  setActiveTransport(mode: TransportMode): Promise<Result<void, AppError>>;
 
   /** Save current party state to storage */
   saveParty(): Promise<Result<void, AppError>>;
@@ -136,8 +142,9 @@ export interface PartyFeaturePort {
 
   /**
    * Remove a character from the party.
+   * Uses Pessimistic Save-First: persists before updating state.
    */
-  removeMember(characterId: CharacterId): Result<void, AppError>;
+  removeMember(characterId: CharacterId): Promise<Result<void, AppError>>;
 
   /**
    * Reload all party members from storage.

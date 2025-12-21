@@ -955,3 +955,24 @@ describe('TravelOrchestrator', () => {
 ---
 
 *Siehe auch: [EventBus.md](EventBus.md) | [Infrastructure.md](Infrastructure.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 2900 | EconomyFeaturePort Interface mit getState() (Post-MVP) | niedrig | Nein | - | Features.md#economy-feature-post-mvp, Features.md#primary-features, Shop.md#prioritaet |
+| 2901 | EconomyState: transactionLog, shopStock, restockTimers (Post-MVP) | niedrig | Nein | #2900 | Features.md#economy-feature-post-mvp, Shop.md#shopinventoryentry |
+| 2902 | economy:transaction-completed Event (Post-MVP) | niedrig | Nein | #2900 | Features.md#economy-feature-post-mvp, Events-Catalog.md#event-naming-konvention, EventBus.md#event-naming-konvention |
+| 2903 | economy:transaction-failed Event mit Compensation Pattern (Post-MVP) | niedrig | Nein | #2900 | Features.md#compensation-pattern, Events-Catalog.md#event-naming-konvention, Error-Handling.md#event-fehlerbehandlung |
+| 2904 | EconomyOrchestrator: Automatische Transaktionen + Stock-Verwaltung (Post-MVP) | niedrig | Nein | #2901, #2902, #2903 | Features.md#economy-feature-post-mvp, Features.md#state-machine-pattern, Shop.md#preis-berechnung |
+| 2905 | FactionsFeaturePort Interface mit getState() | hoch | Ja | #1400 | Features.md#factions-feature, Features.md#primary-features, Faction.md#schema |
+| 2906 | FactionsState: relations, reputation, plannedActions | hoch | Ja | #2905, #1403 | Features.md#factions-feature, Faction.md#schema, Faction.md#events |
+| 2907 | faction:relation-changed Event | hoch | Ja | #2905 | Features.md#factions-feature, Events-Catalog.md#faction, EventBus.md#event-naming-konvention |
+| 2908 | faction:action-triggered Event | hoch | Ja | #2905 | Features.md#factions-feature, Events-Catalog.md#faction, EventBus.md#event-naming-konvention |
+| 2909 | FactionsOrchestrator: Relation-Tracking + Reputation-System | hoch | Ja | #2906, #2907, #2908, #1401 | Features.md#factions-feature, Features.md#state-machine-pattern, Faction.md#kultur-vererbung |
+| 2910 | Compensation Pattern: travel:failed Event bei Fehler publizieren | hoch | Ja | - | Features.md#compensation-pattern, Events-Catalog.md#travel, Error-Handling.md#event-fehlerbehandlung, Travel-System.md#fehlerbehandlung |
+| 2911 | Compensation Pattern: encounter:failed Event bei Fehler publizieren | hoch | Ja | - | Features.md#compensation-pattern, Events-Catalog.md#encounter, Error-Handling.md#event-fehlerbehandlung, Encounter-System.md#events |
+| 2912 | Compensation Pattern: combat:failed Event bei Fehler publizieren | mittel | Ja | - | Features.md#compensation-pattern, Events-Catalog.md#combat, Error-Handling.md#event-fehlerbehandlung, Combat-System.md#events |
+| 2913 | Compensation Pattern: map:load-failed Event bei Fehler publizieren | hoch | Ja | - | Features.md#compensation-pattern, Events-Catalog.md#map, Error-Handling.md#event-fehlerbehandlung, Map-Feature.md#events |
+| 2914 | Compensation Pattern: entity:save-failed Event bei Fehler publizieren | hoch | Ja | - | Features.md#compensation-pattern, Features.md#entityregistry-pattern, EntityRegistry.md, EventBus.md#event-naming-konvention, Events-Catalog.md |
+| 2915 | Compensation Pattern: Alle *-failed Events müssen correlationId übernehmen | hoch | Ja | #2910-#2914 | Features.md#compensation-pattern, EventBus.md#event-struktur-pflichtfelder, Error-Handling.md#event-fehlerbehandlung |

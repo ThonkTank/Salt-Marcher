@@ -444,3 +444,32 @@ NPCs koennen in der Library bearbeitet werden:
 ---
 
 *Siehe auch: [Faction.md](Faction.md) | [Character-System.md](../features/Character-System.md) | [Encounter-Balancing.md](../features/Encounter-Balancing.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1300 | NPC-Schema Interface: id, name, creature, factionId, personality, status | hoch | Ja | #1400, #2703 | NPC-System.md#npc-schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc, Core.md#branded-types |
+| 1301 | PersonalityTraits Interface: primary + secondary Traits | hoch | Ja | #1300 | NPC-System.md#npc-schema |
+| 1302 | CreatureRef Interface: type + id Verweis auf Creature-Template | hoch | Ja | #1300, #1200 | NPC-System.md#npc-schema, Creature.md#schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc |
+| 1303 | NPC Tracking-Felder: firstEncounter, lastEncounter, encounterCount | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#npc-lifecycle |
+| 1304 | NPC Status-Enum: alive, dead (Vereinfacht für MVP) | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#status-uebergaenge |
+| 1305 | Optional currentPOI-Feld: Explizite NPC-Platzierung | mittel | Nein | #1300, #1500 | NPC-System.md#mvp-niedrige-prio-explizite-npc-location, POI.md#schema |
+| 1306 | NPCMatchCriteria Interface: creatureType + factionId | hoch | Ja | #1300, #1400 | NPC-System.md#match-kriterien, Creature.md#schema, Faction.md#schema |
+| 1307 | findMatchingNPC(): Suche existierende NPCs nach Kriterien | hoch | Ja | #1306, #2800, #2804 | NPC-System.md#match-kriterien, EntityRegistry.md#querying |
+| 1308 | calculateMatchScore(): Scoring-System (Wiedersehen +15, kürzlich -30) | hoch | Ja | #1307, #1303 | NPC-System.md#match-kriterien, NPC-System.md#npc-lifecycle |
+| 1309 | resolveFactionCulture(): Kultur aus Faction-Hierarchie auflösen | hoch | Ja | #1400, #1401, #1405 | NPC-System.md#npc-generierung, Faction.md#kultur-vererbung, Faction.md#aufloesung |
+| 1310 | generateNameFromCulture(): Namen aus Kultur-Daten generieren | hoch | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#name-generieren |
+| 1311 | rollPersonalityFromCulture(): Persönlichkeits-Traits würfeln | hoch | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#persoenlichkeit-wuerfeln |
+| 1312 | rollQuirkFromCulture(): Quirk mit 30% Chance generieren | mittel | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#quirk-wuerfeln |
+| 1313 | selectPersonalGoal(): Persönliches Ziel basierend auf Kontext | mittel | Ja | #1200 | NPC-System.md#npc-generierung, Creature.md#schema, Encounter-System.md#schemas |
+| 1314 | generateNewNPC(): Haupt-Generierungs-Funktion mit Persistierung | hoch | Ja | #1300-1313, #2800, #2802 | NPC-System.md#npc-generierung, EntityRegistry.md#port-interface |
+| 1315 | EntityRegistry Integration: NPC als Entity-Typ registrieren | hoch | Ja | #1300, #2800, #2801 | NPC-System.md#npc-generierung, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#storage |
+| 1316 | updateNPCAfterEncounter(): Tracking-Felder aktualisieren | hoch | Ja | #213, #214, #1303, #1304, #2800 | NPC-System.md#encounter-nachbereitung, Encounter-System.md#schemas |
+| 1317 | NPC Status-Transition: Status auf 'dead' setzen bei npcKilled | hoch | Ja | #1304, #1316 | NPC-System.md#encounter-nachbereitung, NPC-System.md#status-uebergaenge |
+| 1318 | selectOrGenerateLeadNPC(): Integration mit Encounter-System | hoch | Ja | #1307, #1314, #1200, #213 | NPC-System.md#lead-npc-auswahl, Encounter-System.md#npc-instanziierung, Encounter-System.md#schemas |
+| 1319 | resolveMultiGroupNPCs(): Lead-NPC für jede Gruppe in Multi-Group-Encounters | mittel | Nein | #213, #252, #1318 | NPC-System.md#multi-gruppen-encounters, Encounter-System.md#schemas |
+| 1320 | findEligibleNPCs(): NPCs nach Faction-Territory filtern | hoch | Ja | #1400, #1409, #1410, #2804 | NPC-System.md#mvp-fraktions-basierte-location, Faction.md#encounter-integration, EntityRegistry.md#querying |
+| 1321 | findNPCsAtTile(): Kombination explizite + Faction-basierte Location | mittel | Nein | #1305, #1320, #1500 | NPC-System.md#mvp-niedrige-prio-explizite-npc-location, POI.md#schema, Faction.md#encounter-integration |
+| 1322 | NPC Library-View: CRUD-Interface für NPC-Bearbeitung | mittel | Ja | #1300, #2800, #2802 | NPC-System.md#npc-bearbeitung-library, EntityRegistry.md#port-interface |
+| 1323 | Encounter-Preview UI: NPC-Details mit Wiederkehr-Indikator | mittel | Ja | #213, #1318, #2415 | NPC-System.md#encounter-preview, Encounter-System.md#schemas |

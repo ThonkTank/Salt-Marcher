@@ -278,3 +278,24 @@ Vault/SaltMarcher/data/
 ---
 
 *Siehe auch: [Creature.md](Creature.md) | [Travel-System.md](../features/Travel-System.md) | [Weather-System.md](../features/Weather-System.md) | [EntityRegistry.md](../architecture/EntityRegistry.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1700 | TerrainDefinition Schema (id, name, movementCost, encounterModifier, nativeCreatures, weatherRanges, displayColor, icon, description, Transport-Einschraenkungen) - climateProfile in #1701 | hoch | Ja | - | Terrain.md#schema, EntityRegistry.md#entity-types |
+| 1701 | ClimateProfile Schema (temperatureModifier, humidityModifier, windExposure) | hoch | Ja | #1700 | Terrain.md#schema, Weather-System.md#tile-basierte-wetter-ranges |
+| 1702 | TerrainWeatherRanges und WeatherRange Schema (temperature, wind, precipitation mit min/average/max) | hoch | Ja | #1700 | Terrain.md#schema, Weather-System.md#tile-basierte-wetter-ranges |
+| 1703 | Default-Terrain Presets (road, plains, forest, hills, mountains, swamp, desert, water) | hoch | Ja | #1700, #1702 | Terrain.md#default-terrains |
+| 1704 | Creature-Terrain Auto-Sync: onCreatureTerrainChanged Handler | hoch | Ja | #1700, #1706, #1202 | Terrain.md#auto-sync-mechanismus, Creature.md#auto-sync-verhalten |
+| 1705 | Creature-Terrain Auto-Sync: onTerrainNativeCreaturesChanged Handler | hoch | Ja | #1704, #1706 | Terrain.md#auto-sync-mechanismus, Creature.md#auto-sync-verhalten |
+| 1706 | Bidirektionale Konsistenz: creature.terrainAffinities ↔ terrain.nativeCreatures | hoch | Ja | #1202, #1212, #1213, #1700, #1701, #1704, #1705 | Terrain.md#bidirektionale-beziehung, Creature.md#bidirektionale-beziehung |
+| 1707 | Custom Terrains: User-erstellte Terrain-Definitionen unterstützen | hoch | Ja | #1700, #1711 | Terrain.md#custom-terrains-mvp, Terrain.md#verwendung-auf-map |
+| 1708 | EntityRegistry Integration: 'terrain' als Entity-Typ | hoch | Ja | - | Terrain.md#schema, EntityRegistry.md#entity-types |
+| 1709 | Terrain CRUD Events (terrain:created, terrain:updated, terrain:deleted) | hoch | Ja | #1708, #1711 | Terrain.md, Events-Catalog.md |
+| 1710 | Terrain Storage: Bundled Presets vs User Custom Terrains | hoch | Ja | #1700, #1703, #1711 | Terrain.md#storage, Infrastructure.md |
+| 1711 | Terrain Feature/Orchestrator mit CRUD-Logik | hoch | Ja | #1700, #1709, #1710 | Terrain.md, Features.md |
+| 1712 | movementCost Integration in Travel-System | hoch | Ja | #1700 | Terrain.md#travel-system, Travel-System.md#speed-berechnung |
+| 1713 | weatherRanges Integration in Weather-System | hoch | Ja | #1702, #1701 | Terrain.md#weather-system, Weather-System.md#tile-basierte-wetter-ranges |
+| 1714 | nativeCreatures Integration in Encounter-System | hoch | Ja | #1706 | Terrain.md#encounter-system, Encounter-System.md#tile-eligibility |
+| 1715 | Terrain Icons für visuelle Darstellung | niedrig | Nein | #1700 | Terrain.md#prioritaet |

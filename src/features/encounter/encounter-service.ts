@@ -209,10 +209,7 @@ export function createEncounterService(
         initiative: 0, // GM enters initiative manually
         maxHp: creatureDef?.maxHp ?? 10,
         currentHp: ci.currentHp,
-        conditions: ci.conditions.map((type) => ({
-          type: type as import('@core/schemas').ConditionType,
-          reminder: '',
-        })),
+        conditions: [...ci.conditions],
         effects: [],
         concentratingOn: ci.concentrationSpell,
       };

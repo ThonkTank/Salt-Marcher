@@ -9,6 +9,7 @@
 
 import { z } from 'zod';
 import { entityIdSchema, timeSegmentSchema } from './common';
+import { conditionSchema } from './combat';
 
 // ============================================================================
 // Sub-Schemas
@@ -195,8 +196,8 @@ export const creatureInstanceSchema = z.object({
   /** Temporary hit points */
   tempHp: z.number().int().nonnegative().default(0),
 
-  /** Active conditions */
-  conditions: z.array(z.string()).default([]),
+  /** Active conditions (full Condition objects per spec) */
+  conditions: z.array(conditionSchema).default([]),
 
   // === Combat State ===
 

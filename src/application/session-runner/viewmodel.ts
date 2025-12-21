@@ -7,6 +7,7 @@
 
 import type { MapId, PartyId, EventBus, Unsubscribe, EntityId } from '@core/index';
 import { isOk, isSome, EventTypes } from '@core/index';
+import { calculateHealthSummary, createEmptyHealthSummary } from '@core/utils';
 import type { HexCoordinate } from '@core/schemas';
 import type {
   MapLoadedPayload,
@@ -265,6 +266,7 @@ export function createSessionRunnerViewModel(
           currentTerrain,
           eta: calculateETA(),
         },
+        party: buildPartyState(),
         quest: {
           activeQuests,
           allQuests,
@@ -276,6 +278,23 @@ export function createSessionRunnerViewModel(
           canTeleport: isSome(map),
         },
       },
+    };
+  }
+
+  // Helper: Build party section state
+  function buildPartyState(): { size: number; healthSummary: ReturnType<typeof createEmptyHealthSummary> } {
+    const membersOpt = partyFeature.getMembers();
+    if (!isSome(membersOpt) || membersOpt.value.length === 0) {
+      return {
+        size: 0,
+        healthSummary: createEmptyHealthSummary(),
+      };
+    }
+
+    const members = membersOpt.value;
+    return {
+      size: members.length,
+      healthSummary: calculateHealthSummary(members),
     };
   }
 
@@ -692,20 +711,18 @@ export function createSessionRunnerViewModel(
       updateState({ zoom: newZoom }, ['camera']);
     },
 
-    onTimeAdvance(hours: number): void {
-      // Advance time by the specified hours
-      timeFeature.advanceTime({ hours: Math.abs(hours), minutes: 0 });
+    async onTimeAdvance(hours: number): Promise<void> {
+      // Advance time by the specified hours (Pessimistic Save-First - already persists)
+      const result = await timeFeature.advanceTime({ hours: Math.abs(hours), minutes: 0 });
+
+      if (!result.ok) {
+        console.warn('Failed to advance time:', result.error);
+        return;
+      }
 
       // Sync and notify
       syncFromFeatures();
       notify(['full', 'header']);
-
-      // Persist time
-      timeFeature.saveTime().then(saveResult => {
-        if (!saveResult.ok) {
-          console.warn('Failed to save time:', saveResult.error);
-        }
-      });
     },
 
     onToggleSidebar(): void {

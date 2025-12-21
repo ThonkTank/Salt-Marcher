@@ -369,3 +369,23 @@ function getBestPartySense(
 ---
 
 *Siehe auch: [NPC-System.md](../domain/NPC-System.md) | [Inventory-System.md](Inventory-System.md) | [Combat-System.md](Combat-System.md) | [Encounter-Balancing.md](Encounter-Balancing.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 500 | Character-Interface: id, name, level, class, maxHp, currentHp, ac, speed, strength, inventory | hoch | Ja | #1603 | Character-System.md#character-schema, EntityRegistry.md |
+| 502 | EncounterBalancingInput-Interface: partyLevel, partySize, totalPartyHp | hoch | Ja | #500 | Character-System.md#encounter-balancing, Encounter-Balancing.md#combat-befuellung |
+| 504 | getPartySpeed(characters): Math.min(...characters.map(c => c.speed)) | hoch | Ja | #500 | Character-System.md#travel-system, Travel-System.md#speed-berechnung |
+| 506 | character:hp-changed Event definieren: characterId, previousHp, currentHp, reason | hoch | Ja | #500 | Character-System.md#hp-tracking, Events-Catalog.md, Combat-System.md#hp-tracking |
+| 508 | character:downed Event definieren: characterId | hoch | Ja | #506, #507 | Character-System.md#hp-tracking, Events-Catalog.md, Combat-System.md#hp-tracking |
+| 509 | character:downed Handler: Bei currentHp <= 0 automatisch publizieren | hoch | Ja | #308, #508 | Character-System.md#hp-tracking, Combat-System.md#hp-tracking |
+| 511 | character:level-changed Handler: Level-Update, Encounter-Balancing-Recalc | hoch | Ja | #237, #502, #503, #510 | Character-System.md#level-up, Events-Catalog.md, Encounter-Balancing.md#xp-budget |
+| 513 | party:member-removed Event + Handler: Combat/Travel/Encounter Sync | hoch | Ja | #300, #500, #502, #503 | Character-System.md#session-state-synchronization, Events-Catalog.md#party, Combat-System.md, Travel-System.md |
+| 515 | Party Manager View: Character-Liste mit HP, AC, Speed, Encumbrance | hoch | Ja | #500, #603 | Character-System.md#party-manager, Inventory-System.md#encumbrance |
+| 516 | Character-Bearbeitungs-Formular: Name, Level, Class, Max HP, Current HP, AC, Speed, Strength | hoch | Ja | #515 | Character-System.md#character-bearbeitung |
+| 518 | Character Edit/Delete Buttons in Party Manager | hoch | Ja | #516 | Character-System.md#gm-interface |
+| 519 | CharacterSenses-Interface: darkvision, blindsight, tremorsense, trueSight | mittel | Nein | #500 | Character-System.md#sinne-post-mvp, Map-Feature.md#visibility-system |
+| 521 | Ability Scores: STR, DEX, CON, INT, WIS, CHA im Character-Schema | mittel | Nein | #500 | Character-System.md#post-mvp-erweiterungen |
+| 523 | Class Features: Automatische Reminder | niedrig | Nein | #521 | Character-System.md#post-mvp-erweiterungen, Combat-System.md |
+| 525 | D&D Beyond Sync: Import von Character-Daten | niedrig | Nein | #521 | Character-System.md#post-mvp-erweiterungen |

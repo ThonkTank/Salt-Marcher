@@ -308,3 +308,37 @@ function getPinnedEntries(): JournalEntry[];
 ---
 
 *Siehe auch: [Quest.md](Quest.md) | [Time-System.md](../features/Time-System.md) | [Encounter-System.md](../features/Encounter-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 2200 | JournalEntry Schema implementieren (id, timestamp, category, source, content, relatedEntities) | hoch | Ja | #901 | Journal.md#schema, ../architecture/EntityRegistry.md |
+| 2201 | JournalCategory Enum (quest, encounter, travel, discovery, worldevent, session, note) | hoch | Ja | #2200 | Journal.md#schema |
+| 2202 | JournalSource Enum (auto, gm, player) | hoch | Ja | #2200 | Journal.md#schema |
+| 2203 | JournalEntityRef Schema (entityType, entityId, displayName) | hoch | Ja | #2200 | Journal.md#schema, ../architecture/EntityRegistry.md |
+| 2204 | Session Schema (id, name, startTime, endTime, summary, stats) | mittel | Nein | #901, #902 | Journal.md#session-management, ../features/Time-System.md#schemas |
+| 2205 | Auto-Generierung: Quest-Events zu Journal-Einträgen (discovered, activated, completed, failed) | hoch | Ja | #414, #415, #417, #418, #901, #907, #2200, #2201, #2209 | Journal.md#auto-generierung, Journal.md#event-zu-journal-mapping, ../domain/Quest.md#events, ../features/Quest-System.md |
+| 2206 | Auto-Generierung: Encounter-Events zu Journal-Einträgen (started, resolved) | hoch | Ja | #221, #223, #901, #907, #2200, #2201, #2209 | Journal.md#auto-generierung, Journal.md#event-zu-journal-mapping, ../features/Encounter-System.md#events |
+| 2207 | Auto-Generierung: Travel-Events zu Journal-Einträgen (completed, departed) | mittel | Nein | #12, #901, #907, #2200, #2201, #2209 | Journal.md#auto-generierung, Journal.md#event-zu-journal-mapping, ../features/Travel-System.md#event-flow |
+| 2208 | Auto-Generierung: WorldEvent-Events zu Journal-Einträgen (weather-changed, faction-poi-claimed) | niedrig | Nein | #110, #901, #907, #1414, #2200, #2201, #2209 | Journal.md#auto-generierung, Journal.md#event-zu-journal-mapping, ../features/Weather-System.md#event-flow, ../domain/Faction.md#events |
+| 2209 | Event-zu-Journal Mapping Tabelle implementieren (getJournalTemplate) | hoch | Ja | #2200, #2201, #901 | Journal.md#event-zu-journal-mapping, Journal.md#generierungs-logik |
+| 2210 | JournalSettings Schema (autoLog-Optionen, encounterDetailLevel) | niedrig | Nein | #2200 | Journal.md#konfigurations-optionen |
+| 2211 | encounterDetailLevel Konfiguration (minimal, standard, detailed) | niedrig | Nein | #2210 | Journal.md#konfigurations-optionen |
+| 2212 | Manuelle Notizen: GM Quick-Note Funktion | hoch | Ja | #2200, #2228 | Journal.md#prioritaet, Journal.md#uebersicht, ../application/SessionRunner.md |
+| 2213 | Entity-Linking: Clickable References in Journal-Einträgen | hoch | Ja | #2203, #2226 | Journal.md#prioritaet, Journal.md#verwendung-in-anderen-features, ../application/DetailView.md |
+| 2214 | Session-Management: Session starten/beenden Workflow | mittel | Nein | #2204, #2228, #901 | Journal.md#session-workflow, Journal.md#session-management |
+| 2215 | Session Stats Tracking (encountersCompleted, questsProgressed, distanceTraveled, inGameTimeElapsed) | mittel | Nein | #2204, #2214, #901 | Journal.md#session-management, ../features/Time-System.md#schemas |
+| 2216 | journal:entry-created Event publizieren | hoch | Ja | #2200, #2228 | Journal.md#events, ../architecture/Events-Catalog.md#journal |
+| 2217 | journal:entry-updated Event publizieren | hoch | Ja | #2200, #2228 | Journal.md#events, ../architecture/Events-Catalog.md#journal |
+| 2218 | journal:entry-deleted Event publizieren | hoch | Ja | #2200, #2228 | Journal.md#events, ../architecture/Events-Catalog.md#journal |
+| 2219 | journal:session-started Event publizieren | mittel | Nein | #2214 | Journal.md#events, ../architecture/Events-Catalog.md#journal |
+| 2220 | journal:session-ended Event publizieren | mittel | Nein | #2214 | Journal.md#events, ../architecture/Events-Catalog.md#journal |
+| 2221 | Query: getEntriesBySession(sessionId) | hoch | Ja | #2200, #2228 | Journal.md#queries |
+| 2222 | Query: getEntriesByCategory(category) | hoch | Ja | #2200, #2201, #2228 | Journal.md#queries |
+| 2223 | Query: getEntriesForEntity(entityType, entityId) | hoch | Ja | #2200, #2203, #2228 | Journal.md#queries, Journal.md#entity-beziehungen |
+| 2224 | Query: getEntriesInRange(from, to) - Zeitraum-basierte Abfrage | hoch | Ja | #2200, #901, #2228 | Journal.md#queries, ../features/Time-System.md#schemas |
+| 2225 | Query: getPinnedEntries() | mittel | Nein | #2200, #2228 | Journal.md#queries |
+| 2226 | Journal-Panel UI im SessionRunner (Quick Note Button, filterbare Liste) | hoch | Ja | #2212, #2213, #2221, #2222, #2223, #2224, #2225, #2228 | Journal.md#sessionrunner, ../application/SessionRunner.md#journal-integration |
+| 2227 | Timeline-View in Almanac (chronologische Ansicht, Filter nach Kategorie/Tags) | mittel | Nein | #2221, #2222, #2223, #2224, #2225 | Journal.md#almanac, ../features/Time-System.md |
+| 2228 | Journal Feature/Orchestrator mit CRUD-Logik | hoch | Ja | #2200, #2201, #2202, #2203, #2216, #2217, #2218 | Journal.md, ../architecture/Features.md |

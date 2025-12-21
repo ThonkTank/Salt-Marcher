@@ -84,3 +84,55 @@ export {
   getCurrentSeason,
   getMoonPhase,
 } from './time-math';
+
+// Encounter Utils
+export {
+  // Types
+  type CRComparison,
+  type EncounterDifficulty,
+  type CreatureSelectionResult,
+  type TypeDerivationResult,
+  type VarietyValidationResult,
+  type CreatureWeight,
+  type FactionWeight,
+  type CompanionSelectionResult,
+
+  // Step 1: Tile-Eligibility
+  filterEligibleCreatures,
+
+  // Step 2: Weighted Selection
+  calculateCreatureWeight,
+  selectWeightedCreature,
+
+  // Step 3: Type Derivation
+  compareCR,
+  rollDifficulty,
+  deriveEncounterType,
+
+  // Step 4: Variety Validation
+  validateVariety,
+
+  // Helper Functions
+  generateEncounterId,
+  generateActivity,
+  generateGoal,
+  generateDescription,
+
+  // XP Functions
+  calculateXPBudget,
+  calculateEncounterXP,
+  selectCompanions,
+
+  // Trigger & Slot Resolution
+  checkTriggers,
+  resolveCreatureSlots,
+} from './encounter-utils';
+
+// Party Utils
+export {
+  type HealthCategory,
+  type HealthSummary,
+  getHealthCategory,
+  calculateHealthSummary,
+  createEmptyHealthSummary,
+} from './party-utils';

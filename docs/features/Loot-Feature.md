@@ -984,37 +984,37 @@ Bei Magic Items hat der GM **immer** das letzte Wort:
 | # | Beschreibung | Prio | MVP? | Deps | Referenzen |
 |--:|--------------|:----:|:----:|------|------------|
 | 700 | LootBudgetState Interface (accumulated, distributed, balance, debt) | hoch | Ja | - | Loot-Feature.md#lootbudgetstate |
-| 702 | getGoldPerXP(partyLevel) Funktion | hoch | Ja | #700 | Loot-Feature.md#budget-berechnung |
-| 703 | updateBudget(xpGained, partyLevel) Funktion | hoch | Ja | #700, #702, #233 | Loot-Feature.md#budget-berechnung, Quest-System.md#xp-verteilung |
-| 705 | processDefaultLoot(creature, budget) mit Chance-System | hoch | Ja | #700, #1206, #215 | Loot-Feature.md#schulden-system-und-soft-cap, Creature.md#defaultloot, Encounter-System.md#encounter-instance |
-| 707 | Soft-Cap: Teures Item weglassen bei hohen Schulden (balance < -1000) | hoch | Ja | #705 | Loot-Feature.md#schulden-system-und-soft-cap |
-| 709 | GM-Warnung wenn Balance stark negativ (< -500g) | hoch | Ja | #700, #707 | Loot-Feature.md#schulden-system-und-soft-cap |
-| 710 | calculateEncounterLoot(encounter, quest?) mit Quest-Reduktion | hoch | Ja | #700, #433 | Loot-Feature.md#quest-encounter-reduktion, Quest-System.md#budget-integration |
+| 702 | getGoldPerXP(partyLevel) Funktion | hoch | Ja | #700, #701 | Loot-Feature.md#budget-berechnung |
+| 703 | updateBudget(xpGained, partyLevel) Funktion | hoch | Ja | #233, #518, #700, #702 | Loot-Feature.md#budget-berechnung, Quest-System.md#xp-verteilung |
+| 705 | processDefaultLoot(creature, budget) mit Chance-System | hoch | Ja | #215, #700, #1205, #1206 | Loot-Feature.md#schulden-system-und-soft-cap, Creature.md#defaultloot, Encounter-System.md#encounter-instance |
+| 707 | Soft-Cap: Teures Item weglassen bei hohen Schulden (balance < -1000) | hoch | Ja | #705, #706 | Loot-Feature.md#schulden-system-und-soft-cap |
+| 709 | GM-Warnung wenn Balance stark negativ (< -500g) | hoch | Ja | #700, #706, #707 | Loot-Feature.md#schulden-system-und-soft-cap |
+| 710 | calculateEncounterLoot(encounter, quest?) mit Quest-Reduktion | hoch | Ja | #433, #500, #700 | Loot-Feature.md#quest-encounter-reduktion, Quest-System.md#budget-integration |
 | 712 | LOOT_MULTIPLIER Konstante (0.5 Gold/XP) | hoch | Ja | - | Loot-Feature.md#grundkonzept |
 | 714 | GeneratedLoot Interface (items, totalValue) | hoch | Ja | #1600 | Loot-Feature.md#generierung, Item.md#schema |
 | 716 | ScoredItem Interface (item, score) | hoch | Ja | #1600 | Loot-Feature.md#generierung, Item.md#schema |
-| 718 | selectWeightedItem(scoredItems, maxValue) Funktion | hoch | Ja | #716 | Loot-Feature.md#item-auswahl-gewichtete-wahrscheinlichkeit |
-| 719 | generateLoot(encounter, lootTags, availableItems) Funktion | hoch | Ja | #712, #714, #716, #718, #1607 | Loot-Feature.md#generierung, Item.md#queries |
+| 718 | selectWeightedItem(scoredItems, maxValue) Funktion | hoch | Ja | #716, #717 | Loot-Feature.md#item-auswahl-gewichtete-wahrscheinlichkeit |
+| 719 | generateLoot(encounter, lootTags, availableItems) Funktion | hoch | Ja | #712, #713, #714, #715, #716, #717, #718, #1607 | Loot-Feature.md#generierung, Item.md#queries |
 | 721 | Basis-Tags definieren (currency, weapons, armor, consumables, magic, supplies) | hoch | Ja | - | Loot-Feature.md#loot-tags, Item.md#tags |
 | 723 | Loot-Vorschau im Tile Content Panel | hoch | Ja | #719, #215 | Loot-Feature.md#gm-interface, Encounter-System.md#encounter-instance |
 | 725 | GM kann Gold-Menge ändern | hoch | Ja | #723 | Loot-Feature.md#anpassen |
 | 726 | GM kann zusätzliche Items manuell hinzufügen | hoch | Ja | #723, #1600 | Loot-Feature.md#anpassen, Item.md#schema |
-| 728 | loot:adjusted Event publizieren | hoch | Ja | #725, #726 | Loot-Feature.md#events, Events-Catalog.md |
+| 728 | loot:adjusted Event publizieren | hoch | Ja | #724, #725, #726 | Loot-Feature.md#events, Events-Catalog.md |
 | 730 | Hoard Interface (id, source, items, budgetValue, status) | hoch | Nein | #714 | Loot-Feature.md#hoard-schema |
-| 732 | generateHoard(budgetToSpend, constraints) Funktion | hoch | Nein | #730, #719 | Loot-Feature.md#hoard-generierung |
+| 732 | generateHoard(budgetToSpend, constraints) Funktion | hoch | Nein | #719, #730, #731 | Loot-Feature.md#hoard-generierung |
 | 733 | Hoard-Wahrscheinlichkeit nach Encounter-Typ (Boss 70%, Lager 40%, Patrouille 10%) | hoch | Nein | #732, #215 | Loot-Feature.md#hoard-bei-encounter, Encounter-System.md#typ-spezifisches-verhalten |
-| 735 | loot:hoard-looted Event | hoch | Nein | #730 | Loot-Feature.md#events, Events-Catalog.md |
+| 735 | loot:hoard-looted Event | hoch | Nein | #730, #734 | Loot-Feature.md#events, Events-Catalog.md |
 | 737 | TreasureMarker Interface (id, position, mapId, fillMode, constraints, hoardId) | mittel | Nein | - | Loot-Feature.md#treasuremarker-schema |
 | 739 | triggerMarker(marker) bei Party-Entdeckung | mittel | Nein | #737, #732 | Loot-Feature.md#auto-fill-logik |
-| 741 | loot:marker-created Event | mittel | Nein | #737 | Loot-Feature.md#events, Events-Catalog.md |
+| 741 | loot:marker-created Event | mittel | Nein | #737, #738 | Loot-Feature.md#events, Events-Catalog.md |
 | 743 | MagicItemTracking Interface (characterId, level, receivedItems pro Rarity) | mittel | Nein | #1600, #1602 | Loot-Feature.md#dmg-basiertes-tracking, Item.md#schema, Character-System.md#character-schema |
-| 745 | shouldOfferMagicItem(character, tracking) Funktion | mittel | Nein | #743 | Loot-Feature.md#dmg-basiertes-tracking |
-| 747 | trackMagicItemReceived(item, partySize) Utility | mittel | Nein | #743, #1602 | Loot-Feature.md#magic-item-tracking-pro-charakter, Item.md#schema |
+| 745 | shouldOfferMagicItem(character, tracking) Funktion | mittel | Nein | #743, #744 | Loot-Feature.md#dmg-basiertes-tracking |
+| 747 | trackMagicItemReceived(item, partySize) Utility | mittel | Nein | #743, #746, #1602 | Loot-Feature.md#magic-item-tracking-pro-charakter, Item.md#schema |
 | 749 | Item-Downgrade statt Weglassen (Platte → Kette) | mittel | Nein | #707, #1600 | Loot-Feature.md#soft-cap-verhalten, Item.md#kategorie-details |
-| 750 | Einheitliches Loot-Modal mit Currency/Items/Magic Items Sektionen | mittel | Nein | #723 | Loot-Feature.md#verteilen-einheitliches-loot-modal |
-| 752 | Inkrement-Konfiguration für [-][+] Buttons | mittel | Nein | #750 | Loot-Feature.md#currency-eingabemethoden-auto-sync |
+| 750 | Einheitliches Loot-Modal mit Currency/Items/Magic Items Sektionen | mittel | Nein | #600, #723 | Loot-Feature.md#verteilen-einheitliches-loot-modal |
+| 752 | Inkrement-Konfiguration für [-][+] Buttons | mittel | Nein | #750, #751 | Loot-Feature.md#currency-eingabemethoden-auto-sync |
 | 754 | Items-Sektion mit Dropdown-Zuweisung an Charaktere | mittel | Nein | #750 | Loot-Feature.md#verteilen-einheitliches-loot-modal |
 | 756 | [Reroll] Button pro Sektion | mittel | Nein | #750, #719, #732 | Loot-Feature.md#verteilen-einheitliches-loot-modal |
-| 757 | distributeCurrencyEvenly(characterIds, totalAmount) Utility | mittel | Nein | #750 | Loot-Feature.md#auto-sync-verhalten |
+| 757 | distributeCurrencyEvenly(characterIds, totalAmount) Utility | mittel | Nein | #750, #753 | Loot-Feature.md#auto-sync-verhalten |
 | 759 | quickAssign(characterId, item, quantity) Utility | mittel | Nein | #754 | Loot-Feature.md#utilities, Inventory-System.md |
-| 761 | Automatische Loot-Verteilung an Party-Inventar | niedrig | Nein | #759 | Loot-Feature.md#gm-interface, Inventory-System.md |
+| 761 | Automatische Loot-Verteilung an Party-Inventar | niedrig | Nein | #600, #729, #759 | Loot-Feature.md#gm-interface, Inventory-System.md |

@@ -674,3 +674,21 @@ Vollstaendige Event-Definitionen: [Events-Catalog.md#rest](../architecture/Event
 ---
 
 *Siehe auch: [Weather-System.md](Weather-System.md) | [Travel-System.md](Travel-System.md) | [Audio-System.md](Audio-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 900 | TimeState Interface (currentTime, activeCalendarId) | hoch | Ja | - | Time-System.md#schemas |
+| 901 | GameDateTime Interface (year, month, day, hour, minute, computed fields) | hoch | Ja | #900 | Time-System.md#schemas |
+| 903 | CalendarDefinition Schema (months, weekdays, seasons, timeSegments) | hoch | Ja | - | Time-System.md#schemas, ../architecture/EntityRegistry.md |
+| 905 | CalendarSeason Interface (name, months) | hoch | Ja | #903 | Time-System.md#schemas |
+| 906 | TimeSegment Type ('dawn', 'morning', 'midday', 'afternoon', 'dusk', 'night') | hoch | Ja | - | Time-System.md#schemas |
+| 908 | time:set-requested Handler | hoch | Ja | #900, #901 | Time-System.md#zeit-operationen, ../architecture/Events-Catalog.md#time |
+| 910 | time:segment-changed Event publizieren | hoch | Ja | #909 | Time-System.md#events, ../architecture/Events-Catalog.md#time |
+| 912 | getTimeSegment() Funktion mit Wrap-Around-Logik | hoch | Ja | #906 | Time-System.md#time-segment-berechnung |
+| 914 | time:set-calendar-requested Handler | niedrig | Nein | #903 | Time-System.md#zeit-operationen, ../architecture/Events-Catalog.md#time |
+| 916 | time:calendar-change-failed Event publizieren | niedrig | Nein | #914 | Time-System.md#events, ../architecture/Events-Catalog.md#time |
+| 918 | Visibility-Modifier pro TimeSegment (dawn 50%, night 10%, etc.) | mittel | Nein | #906, #843, #848 | Time-System.md#sichtweiten-einfluss-post-mvp, Map-Feature.md#visibility-system |
+| 952 | RestState Interface (status, type, hoursCompleted, hoursRemaining, interruptionCount) | hoch | Ja | #951 | Time-System.md#resting |
+| 954 | Rest-Service (Stunden-Loop mit Encounter-Checks) | hoch | Ja | #953, #215 | Time-System.md#resting, Encounter-System.md, ../architecture/Events-Catalog.md#rest |

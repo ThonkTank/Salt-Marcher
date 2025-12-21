@@ -248,3 +248,31 @@ function calculateSellPrice(shop: ShopDefinition, itemId: EntityId<'item'>): num
 ---
 
 *Siehe auch: [Item.md](Item.md) | [Location.md](Location.md) | [SessionRunner.md](../application/SessionRunner.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 2100 | ShopDefinition Schema (id, name, type, locationId, inventory, priceModifier, sellModifier, description, gmNotes) | mittel | Nein | #1600, #2703 | Shop.md#schema, EntityRegistry.md#entity-type-mapping, Core.md#branded-types |
+| 2101 | ShopType Enum (general, blacksmith, alchemist, magic, tavern, stable, custom) | mittel | Nein | #2100 | Shop.md#schema |
+| 2102 | ShopInventoryEntry Schema (itemId, price, quantity, available) | mittel | Nein | #2100, #1600 | Shop.md#shopinventoryentry, Item.md#schema |
+| 2103 | Currency Type (cp, sp, ep, gp, pp) | mittel | Nein | #2102, #1600 | Shop.md#shopinventoryentry, Item.md#currency-category-currency, Inventory-System.md#waehrungs-items |
+| 2104 | Shop EntityRegistry Integration: 'shop' als Entity-Typ | mittel | Nein | #2100, #2800, #2801 | Shop.md#schema, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#neue-entity-typen-mvp |
+| 2105 | Shop CRUD Events (shop:created, shop:updated, shop:deleted) | mittel | Nein | #2100, #2104 | Shop.md#events, Events-Catalog.md |
+| 2106 | Shop Interaction Events (shop:opened, shop:item-purchased, shop:item-sold, shop:closed) | mittel | Nein | #2105 | Shop.md#events, Events-Catalog.md, SessionRunner.md |
+| 2107 | getShop Query-Funktion (lädt Shop nach ID) | mittel | Nein | #2100, #2104, #2800 | Shop.md#queries, EntityRegistry.md#port-interface |
+| 2108 | getShopsByLocation Query-Funktion | mittel | Nein | #2100, #2104, #2800, #2804, #1516 | Shop.md#queries, EntityRegistry.md#querying, POI.md#schema |
+| 2109 | getShopsByType Query-Funktion | mittel | Nein | #2100, #2104, #2800, #2804 | Shop.md#queries, EntityRegistry.md#querying |
+| 2110 | getShopInventory Query-Funktion mit aufgelösten Items (ResolvedInventoryEntry) | mittel | Nein | #2107, #1600, #1607 | Shop.md#queries, Item.md#queries |
+| 2111 | calculateBuyPrice Funktion (Entry-Preis oder Item-Base-Preis + Shop-Modifikator) | mittel | Nein | #2102, #1600 | Shop.md#preis-berechnung, Item.md#schema |
+| 2112 | calculateSellPrice Funktion (Item-Base-Preis * sellModifier, default 0.5) | mittel | Nein | #2111, #1600 | Shop.md#preis-berechnung, Item.md#schema |
+| 2113 | Shop Feature/Orchestrator mit CRUD-Logik | mittel | Nein | #2100, #2105, #2107, #2800 | Shop.md#verwendung, EntityRegistry.md#bootstrapping, Features.md |
+| 2114 | Shop-Panel UI im SessionRunner (Inventar durchsuchen, filtern) | mittel | Nein | #2113, #2110, #2106 | Shop.md#verwendung, SessionRunner.md, DetailView.md |
+| 2115 | Kauf-Funktion: Items kaufen, Party-Gold abziehen, shop:item-purchased Event | mittel | Nein | #2114, #2111, #612, #615, #500 | Shop.md#verwendung, Inventory-System.md#shop-integration-mvp, Character-System.md#character-schema |
+| 2116 | Verkauf-Funktion: Items verkaufen, Party-Gold erhöhen, shop:item-sold Event | mittel | Nein | #2114, #2112, #613, #614, #500 | Shop.md#verwendung, Inventory-System.md#shop-integration-mvp, Character-System.md#character-schema |
+| 2117 | GM-Verfügbarkeits-Anpassung UI (quantity und available togglen) | niedrig | Nein | #2114, #2113 | Shop.md#verwendung, SessionRunner.md |
+| 2118 | Library CRUD UI: Shop erstellen, bearbeiten, löschen | mittel | Nein | #2113, #2105 | Shop.md#verwendung, Library.md |
+| 2119 | Library Shop-Inventar Editor: Items aus Library wählen, Preise festlegen | mittel | Nein | #2118, #1600, #1607 | Shop.md#verwendung, Library.md, Item.md#queries |
+| 2120 | Location-Zuordnung UI in Library (optional) | niedrig | Nein | #2118, #1516 | Shop.md#verwendung, Library.md, POI.md#schema |
+| 2121 | Dynamisches Restock-System (restockDays, restockQuantity) Post-MVP | niedrig | Nein | #2102, #2113 | Shop.md#shopinventoryentry, Time-System.md |
+| 2122 | NPC-Händler Integration (Character als Shop-Betreiber) Post-MVP | niedrig | Nein | #1300, #1315, #2001, #2100 | Shop.md#prioritaet, NPC-System.md#npc-schema, EntityRegistry.md#neue-entity-typen-mvp |

@@ -565,4 +565,54 @@ const subscriptions = [
 
 ---
 
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 955 | Rest-Button in SessionRunner Actions-Sektion | hoch | Ja | #951 | SessionRunner.md#actions-sektion, Time-System.md#resting |
+| 956 | Rest-Start-Modal (Short/Long wählen, Gritty Realism Option) | hoch | Ja | #955 | SessionRunner.md#actions-sektion, Time-System.md#rest-typen |
+| 957 | Rest-Resolution-Modal (Fortsetzen/Neustarten nach Encounter) | hoch | Ja | #954 | SessionRunner.md#actions-sektion, Time-System.md#encounter-unterbrechung |
+| 958 | Rest-Completed-Modal (Info + manuelle HP-Eingabe für GM) | hoch | Ja | #954 | SessionRunner.md#actions-sektion, Time-System.md#rest-abschluss, Character-System.md |
+| 2300 | SessionRunner View Component (Hauptcontainer) | hoch | Ja | - | SessionRunner.md#uebersicht, Application.md#mvvm-pattern |
+| 2301 | SessionRunner ViewModel mit State-Management | hoch | Ja | #2300 | SessionRunner.md#viewmodel-state, Application.md#mvvm-pattern, Data-Flow.md |
+| 2302 | Header Component (Zeit, Weather, Time-Advance Controls) | hoch | Ja | #2300 | SessionRunner.md#header, Time-System.md, Weather-System.md |
+| 2303 | Quick-Controls Sidebar Container | hoch | Ja | #2300 | SessionRunner.md#quick-controls-sidebar-links, Application.md |
+| 2304 | Travel Section Component (Status, Speed, Plan/Start/Pause) | hoch | Ja | #2303, #1 | SessionRunner.md#travel-sektion, Travel-System.md#state-machine |
+| 2305 | Travel Animation Display (Progress Bar, ETA) | hoch | Ja | #2304, #8 | SessionRunner.md#travel-sektion, Travel-System.md |
+| 2306 | Audio Section Component (Track-Name, Play/Pause/Skip/Volume) | hoch | Ja | #1100, #1110, #1111, #1500, #2303 | SessionRunner.md#audio-sektion, Audio-System.md |
+| 2307 | Party Section Component (Party-Size, Health-Summary, Manage-Button) | hoch | Ja | #500, #502, #503, #1100, #2303 | SessionRunner.md#party-sektion, Character-System.md |
+| 2308 | Actions Section Component (nur Rest-Button, Encounter/Teleport entfernt) | hoch | Ja | #2303, #955 | SessionRunner.md#actions-sektion, Time-System.md#resting |
+| 2309 | Map Panel Component (Hauptansicht mit Hex-Grid und Party-Token) | hoch | Ja | #2300 | SessionRunner.md#map-panel, Map-Feature.md |
+| 2310 | Map Overlays Controls (Weather, Territory, Factions, Visibility) | hoch | Ja | #2309, #1300, #1400 | SessionRunner.md#map-panel, Weather-System.md, Map-Feature.md |
+| 2311 | Camera Controls (Pan mit MMB, Zoom mit Scroll) | hoch | Ja | #2309 | SessionRunner.md#map-panel, Map-Feature.md |
+| 2312 | Travel-Modus Interaktionen (Waypoint setzen/verschieben/löschen) | hoch | Ja | #2309, #2 | SessionRunner.md#map-panel, Travel-System.md |
+| 2313 | Route-Anzeige im Travel-Modus (Linie zwischen Waypoints) | hoch | Ja | #2312 | SessionRunner.md#map-panel, Travel-System.md |
+| 2314 | Tile-Klick Handler (Location-Info in DetailView) | hoch | Ja | #2309 | SessionRunner.md#map-panel, DetailView.md#location-tab, Map-Feature.md |
+| 2315 | Event Subscriptions: travel:state-changed | hoch | Ja | #2301 | SessionRunner.md#event-subscriptions, Travel-System.md#events, Data-Flow.md |
+| 2316 | Event Subscriptions: travel:position-changed | hoch | Ja | #2301 | SessionRunner.md#event-subscriptions, Travel-System.md#events, Data-Flow.md |
+| 2317 | Event Subscriptions: time:state-changed | hoch | Ja | #2301 | SessionRunner.md#event-subscriptions, Time-System.md#events, Data-Flow.md |
+| 2318 | Event Subscriptions: weather:state-changed | hoch | Ja | #2301 | SessionRunner.md#event-subscriptions, Weather-System.md#weather-events, Data-Flow.md |
+| 2319 | Event Subscriptions: audio:track-changed | hoch | Ja | #1112, #1500, #2301 | SessionRunner.md#event-subscriptions, Audio-System.md, Data-Flow.md |
+| 2320 | Event Subscriptions: map:loaded | hoch | Ja | #2301 | SessionRunner.md#event-subscriptions, Map-Feature.md, Data-Flow.md |
+| 2321 | Event Subscriptions: party:state-changed | hoch | Ja | #2301 | SessionRunner.md#event-subscriptions, Character-System.md, Data-Flow.md |
+| 2322 | Time-Advance Controls (⏮ -1h, ▶ Play/Pause, ⏭ +1h) | hoch | Ja | #2302 | SessionRunner.md#header, Time-System.md#zeit-operationen |
+| 2323 | Jump-to-Date Dialog (Klick auf Zeit im Header) | mittel | Nein | #2302, #900 | SessionRunner.md#header, Time-System.md#zeit-operationen |
+| 2324 | Weather-Status Display im Header (Klick → DetailView Weather-Tab) | hoch | Ja | #2302, #1300 | SessionRunner.md#header, Weather-System.md, DetailView.md |
+| 2325 | Keyboard Shortcuts: Space (Travel Start/Pause) | mittel | Nein | #2301 | SessionRunner.md#keyboard-shortcuts, Travel-System.md#state-machine |
+| 2326 | Keyboard Shortcuts: T (Travel-Sektion fokussieren) | mittel | Nein | #2301 | SessionRunner.md#keyboard-shortcuts, SessionRunner.md#travel-sektion |
+| 2327 | Keyboard Shortcuts: E (Encounter generieren) | mittel | Nein | #2301 | SessionRunner.md#keyboard-shortcuts, DetailView.md#encounter-tab |
+| 2328 | Keyboard Shortcuts: 1-6 (Time-Segment springen) | mittel | Nein | #2301 | SessionRunner.md#keyboard-shortcuts, Time-System.md#time-segment-berechnung |
+| 2329 | Keyboard Shortcuts: +/- (Zoom In/Out) | mittel | Nein | #2301 | SessionRunner.md#keyboard-shortcuts, SessionRunner.md#map-panel |
+| 2330 | Keyboard Shortcuts: Arrow Keys (Pan Map) | mittel | Nein | #2301 | SessionRunner.md#keyboard-shortcuts, SessionRunner.md#map-panel |
+| 2331 | Keyboard Shortcuts: [ / ] (Quick-Controls ein/ausblenden) | mittel | Nein | #2301 | SessionRunner.md#keyboard-shortcuts, SessionRunner.md#collapsed-quick-controls |
+| 2332 | Collapsed Quick-Controls Modus (Icon-only Sidebar) | mittel | Nein | #2303 | SessionRunner.md#collapsed-quick-controls, Application.md |
+| 2333 | Visibility-Toggle im Overlays-Bereich (Sichtweiten-Overlay) | mittel | Nein | #2310, #1000 | SessionRunner.md#visibility-toggle-post-mvp, Map-Feature.md#visibility-system, Time-System.md#sichtweiten-einfluss-post-mvp |
+| 2334 | Animations-Geschwindigkeit Slider (0.5x - 10x) | niedrig | Nein | #2304 | SessionRunner.md#animations-geschwindigkeit-slider-post-mvp, Travel-System.md |
+| 2335 | Travel-Plan-Button Toggle (Aktiviert/Deaktiviert Travel-Modus) | hoch | Ja | #2304 | SessionRunner.md#travel-sektion, Travel-System.md#state-machine |
+| 2338 | Party-Manage-Button (Öffnet Party-Management Modal/DetailView) | mittel | Nein | #2307 | SessionRunner.md#party-sektion, Character-System.md |
+| 2339 | Health-Summary Berechnung (All OK, X Wounded, X Critical) | hoch | Ja | #500, #1100, #2307 | SessionRunner.md#party-sektion, Character-System.md |
+| 2340 | Audio Volume Slider (Klick auf 🔊 im Audio-Section) | mittel | Nein | #1104, #1500, #2306 | SessionRunner.md#audio-sektion, Audio-System.md |
+
+---
+
 *Siehe auch: [DetailView.md](DetailView.md) | [Application.md](../architecture/Application.md) | [Travel-System.md](../features/Travel-System.md) | [Weather-System.md](../features/Weather-System.md)*

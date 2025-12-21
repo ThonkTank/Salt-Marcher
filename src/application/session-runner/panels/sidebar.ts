@@ -4,7 +4,7 @@
  * Displays Travel, Audio, Party, and Actions sections.
  */
 
-import type { RenderState, SidebarState, QuestSectionState, QuestStatusFilter, QuestProgressDisplay } from '../types';
+import type { RenderState, SidebarState, QuestSectionState, QuestStatusFilter, QuestProgressDisplay, PartySectionState } from '../types';
 
 // ============================================================================
 // Sidebar Panel Callbacks
@@ -22,6 +22,10 @@ export interface SidebarPanelCallbacks {
   onResumeTravel: () => void;
   /** Cancel travel (stop and clear route) */
   onCancelTravel: () => void;
+
+  // Party
+  /** Open party management (shows "Coming soon" notification) */
+  onManageParty: () => void;
 
   // Actions
   /** Generate a random encounter */
@@ -165,14 +169,37 @@ export function createSidebarPanel(
   `;
   sidebar.appendChild(audioSection);
 
-  // === Party Section (Placeholder) ===
+  // === Party Section ===
   const partySection = createSection('👥 PARTY');
   const partyContent = partySection.querySelector('.section-content') as HTMLElement;
-  partyContent.innerHTML = `
-    <div style="font-size: 12px; color: var(--text-faint); font-style: italic;">
-      Coming soon...
-    </div>
+
+  // Party status row (size + health)
+  const partyStatus = document.createElement('div');
+  partyStatus.className = 'party-status';
+  partyStatus.style.cssText = `
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
   `;
+
+  const partySizeEl = document.createElement('span');
+  partySizeEl.className = 'party-size';
+
+  const healthSummaryEl = document.createElement('span');
+  healthSummaryEl.className = 'health-summary';
+
+  partyStatus.appendChild(partySizeEl);
+  partyStatus.appendChild(healthSummaryEl);
+  partyContent.appendChild(partyStatus);
+
+  // Manage button
+  const manageBtn = createButton('Manage →', callbacks.onManageParty);
+  manageBtn.style.width = '100%';
+  partyContent.appendChild(manageBtn);
+
   sidebar.appendChild(partySection);
 
   // === Quest Section ===
@@ -601,6 +628,30 @@ export function createSidebarPanel(
     return questEl;
   }
 
+  function updatePartySection(party: PartySectionState): void {
+    // Update party size
+    const sizeText = party.size === 0
+      ? 'No Party'
+      : party.size === 1
+        ? '1 PC'
+        : `${party.size} PCs`;
+    partySizeEl.textContent = sizeText;
+
+    // Update health summary with color
+    healthSummaryEl.textContent = party.healthSummary.display;
+
+    // Color based on worst status
+    if (party.healthSummary.down > 0) {
+      healthSummaryEl.style.color = 'var(--text-error)';
+    } else if (party.healthSummary.critical > 0) {
+      healthSummaryEl.style.color = 'var(--text-warning)';
+    } else if (party.healthSummary.wounded > 0) {
+      healthSummaryEl.style.color = 'var(--text-muted)';
+    } else {
+      healthSummaryEl.style.color = 'var(--text-success)';
+    }
+  }
+
   function createSmallButton(
     label: string,
     onClick: () => void,
@@ -635,6 +686,7 @@ export function createSidebarPanel(
   return {
     update(state: RenderState): void {
       updateTravelSection(state);
+      updatePartySection(state.sidebar.party);
       updateQuestSection(state.sidebar.quest);
       updateActionsSection(state.sidebar.actions);
     },

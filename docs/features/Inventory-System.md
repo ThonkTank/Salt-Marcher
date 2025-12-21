@@ -438,3 +438,33 @@ const encumbranceOrder = {
 ---
 
 *Siehe auch: [Item.md](../domain/Item.md) | [Character-System.md](Character-System.md) | [Travel-System.md](Travel-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 600 | InventorySlot Interface implementieren (itemId, quantity, equipped) | hoch | Ja | #1603 | Inventory-System.md#schemas, Item.md#verwendung-in-anderen-features |
+| 601 | calculateEncumbrance Funktion: basierend auf Gewicht und Stärke | hoch | Ja | #600, #602, #500 | Inventory-System.md#encumbrance, Character-System.md#travel-system |
+| 602 | sumInventoryWeight Funktion: Σ(item.weight × quantity) | hoch | Ja | #600, #1600 | Inventory-System.md#encumbrance |
+| 603 | getEffectiveSpeed mit Encumbrance-Reduktion | hoch | Ja | #500, #601, #602 | Inventory-System.md#travel-integration, Travel-System.md#speed-berechnung, Character-System.md#travel-system |
+| 604 | Encumbrance-Schwellenwerte: 33%/66%/100% Kapazität | mittel | Ja | #601 | Inventory-System.md#encumbrance |
+| 605 | checkRations Funktion: required, available, shortage berechnen | mittel | Ja | #606, #500 | Inventory-System.md#rationen, Travel-System.md |
+| 606 | countRations Funktion: Zähle Items mit isRation Flag | mittel | Ja | #600, #1600 | Inventory-System.md#rationen, Item.md#kategorie-details |
+| 607 | Rationen-Mangel-Dialog UI: Optionen bei shortage > 0 | mittel | Ja | #605, #606 | Inventory-System.md#mangel-handling |
+| 608 | consumeRations Funktion: Automatischer Abzug aus Inventaren | mittel | Ja | #606, #607, #612, #613 | Inventory-System.md#automatischer-abzug, Travel-System.md |
+| 609 | Travel-Integration: calculateEffectivePartySpeed mit Encumbrance | hoch | Ja | #500, #603, #607 | Inventory-System.md#travel-integration, Travel-System.md#speed-berechnung |
+| 610 | Currency-Items vordefinieren: Kupfer, Silber, Gold, Platin | hoch | Ja | #1608 | Inventory-System.md#waehrungs-items, Item.md#currency-category-currency |
+| 611 | removeItemFromCharacter Utility-Funktion | mittel | Ja | #600, #610 | Inventory-System.md#gm-quick-actions |
+| 612 | addItemToCharacter Utility-Funktion | mittel | Ja | #600 | Inventory-System.md#gm-quick-actions, Loot-Feature.md |
+| 613 | removeGoldFromCharacter Convenience-Funktion | mittel | Ja | #600, #610, #611 | Inventory-System.md#gm-quick-actions, Shop.md#verwendung |
+| 614 | addGoldToCharacter Convenience-Funktion | mittel | Ja | #610, #612 | Inventory-System.md#gm-quick-actions, Shop.md#verwendung |
+| 615 | quickBuy Funktion mit Preis-Override und Modifier | mittel | Ja | #610, #612, #613, #2111 | Inventory-System.md#shop-integration-mvp, Shop.md#preis-berechnung |
+| 616 | transferItem zwischen Charakteren | mittel | Ja | #611, #612, #613 | Inventory-System.md#gm-quick-actions |
+| 617 | removeEmptySlot Funktion: Slot entfernen wenn quantity === 0 | mittel | Ja | #600, #612, #614 | Inventory-System.md#automatischer-abzug |
+| 618 | quickSell Funktion mit Preis-Override und Modifier | mittel | Ja | #611, #613, #614, #615, #2112 | Inventory-System.md#shop-integration-mvp, Shop.md#preis-berechnung |
+| 619 | getEffectiveSpeed: over_capacity → Speed = 0 | mittel | Ja | #603 | Inventory-System.md#travel-integration, Travel-System.md#speed-berechnung |
+| 620 | over_capacity verhindert Reise (Speed = 0) | mittel | Ja | #619 | Inventory-System.md#travel-integration, Travel-System.md#transport-modi |
+| 621 | inventory:changed Event definieren: characterId, action, itemId, quantity | hoch | Ja | #600 | Inventory-System.md#events, Events-Catalog.md |
+| 622 | inventory:rations-consumed Event Handler implementieren | mittel | Ja | #608, #621 | Inventory-System.md#events, Events-Catalog.md |
+| 623 | inventory:encumbrance-changed Event Handler | mittel | Ja | #601, #603, #621 | Inventory-System.md#events, Events-Catalog.md, Travel-System.md |
+| 624 | Inventory-Ansicht im Party Manager UI | mittel | Ja | #600, #601, #602 | Inventory-System.md#gm-interface, Character-System.md#party-manager |

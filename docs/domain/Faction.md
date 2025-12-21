@@ -508,3 +508,25 @@ function rollQuirk(culture: ResolvedCulture): string | undefined {
 ---
 
 *Siehe auch: [NPC.md](NPC.md) | [POI.md](POI.md) | [Encounter-System.md](../features/Encounter-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1400 | Faction-Schema (id, name, parentId, culture, creatures, controlledPOIs, displayColor) | hoch | Ja | - | [Faction.md#schema](#schema) |
+| 1401 | CultureData-Schema (naming, personality, quirks, values, speech) | hoch | Ja | #1400 | [Faction.md#culturedata](#culturedata) |
+| 1402 | FactionCreatureGroup-Schema (creatureId, count) | hoch | Ja | #1400, #1200 | [Faction.md#schema](#schema), [Creature.md#schema](Creature.md#schema) |
+| 1403 | FactionPresence-Schema (factionId, strength) für Tile-Speicherung | hoch | Ja | #1400, #802 | [Faction.md#praesenz-datenstruktur](#praesenz-datenstruktur), [Map-Feature.md#overworldmap](../features/Map-Feature.md#overworldmap) |
+| 1404 | WeightedTrait und WeightedQuirk Schemas | mittel | Ja | #1401 | [Faction.md#culturedata](#culturedata) |
+| 1405 | resolveFactionCulture(): Hierarchie von Wurzel zu Blatt auflösen | hoch | Ja | #1400, #1401 | [Faction.md#kultur-vererbung](#kultur-vererbung), [NPC-System.md#npc-generierung](NPC-System.md#npc-generierung) |
+| 1406 | mergeCultureData(): Kultur-Eigenschaften mergen mit Vererbungsregeln | hoch | Ja | #1405 | [Faction.md#merge-regeln](#merge-regeln), [Faction.md#kultur-vererbung](#kultur-vererbung) |
+| 1407 | mergeWeightedTraits(): Helper für Trait-Merging mit Gewichtung | mittel | Ja | #1406 | [Faction.md#merge-regeln](#merge-regeln) |
+| 1408 | mergeWeightedQuirks(): Helper für Quirk-Merging | mittel | Ja | #1406 | [Faction.md#merge-regeln](#merge-regeln) |
+| 1409 | calculatePresenceForTile(): Präsenz-Vorberechnung im Cartographer | hoch | Ja | #1403, #1500, #802 | [Faction.md#praesenz-vorberechnung-cartographer](#praesenz-vorberechnung-cartographer), [POI.md#basepoi](POI.md#basepoi), [Map-Feature.md#overworldtile](../features/Map-Feature.md#overworldmap) |
+| 1410 | getFactionsAtTile(): Vorberechnete Präsenz vom Tile lesen | hoch | Ja | #801, #802, #1409 | [Faction.md#encounter-integration](#encounter-integration), [Map-Feature.md#overworldtile](../features/Map-Feature.md#overworldmap) |
+| 1411 | selectEncounterFaction(): Gewichtete Faction-Auswahl basierend auf Präsenz | hoch | Ja | #1410, #202 | [Faction.md#encounter-integration](#encounter-integration), [Encounter-System.md#tile-eligibility](../features/Encounter-System.md#tile-eligibility) |
+| 1412 | Bundled Basis-Fraktionen: Humanoids, Goblins, Orcs, Undead, etc. | hoch | Ja | #1400, #1401 | [Faction.md#bundled-basis-fraktionen](#bundled-basis-fraktionen) |
+| 1413 | Faction Events: create/update/delete-requested und Lifecycle-Events | mittel | Ja | #1400 | [Faction.md#events](#events) |
+| 1414 | Faction Territory Events: poi-claimed, poi-lost | niedrig | Nein | #1413, #1500 | [Faction.md#events](#events), [POI.md#basepoi](POI.md#basepoi) |
+| 1415 | Faction Library-View: CRUD-Interface für Faction-Bearbeitung | mittel | Ja | #1400, #1416, #2800 | [Faction.md#schema](#schema), [Library.md#tab-navigation](../application/Library.md#tab-navigation) |
+| 1416 | Faction-Feature: FactionOrchestrator mit CRUD-Logik | mittel | Ja | #1400, #1413 | [Faction.md#schema](#schema), [Faction.md#events](#events) |

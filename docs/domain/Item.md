@@ -370,3 +370,18 @@ function getItemsUpToRarity(maxRarity: Rarity): Item[] {
 ---
 
 *Siehe auch: [Inventory-System.md](../features/Inventory-System.md) | [Loot-Feature.md](../features/Loot-Feature.md) | [Character-System.md](../features/Character-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1600 | Item Schema mit allen Feldern (id, name, weight, category, tags, value, rarity, isRation, stackable, damage, armorClass, properties, description) | hoch | Ja | - | Item.md#schema, EntityRegistry.md#entity-type-mapping |
+| 1601 | ItemCategory Type (weapon, armor, shield, consumable, gear, treasure, currency) | hoch | Ja | #1600 | Item.md#schema |
+| 1602 | Rarity Type (common, uncommon, rare, very_rare, legendary, artifact) | hoch | Ja | #1600 | Item.md#schema, Loot-Feature.md#magische-items |
+| 1603 | InventorySlot Schema (itemId, quantity, equipped) | hoch | Ja | #1600 | Item.md#verwendung-in-anderen-features, Inventory-System.md#schemas |
+| 1604 | Helper-Funktionen (isStackable, isCurrency, calculateTotalValue, calculateTotalWeight) | hoch | Ja | #1600 | Item.md#schema, Inventory-System.md#encumbrance |
+| 1605 | EntityRegistry Integration: 'item' als Entity-Typ (bereits vorhanden) | hoch | Ja | #1600, #2801 | Item.md, EntityRegistry.md#entity-type-mapping |
+| 1606 | Item CRUD Events (item:created, item:updated, item:deleted) | hoch | Ja | #1600 | Item.md#events, Events-Catalog.md |
+| 1607 | Item Query Functions (getItemsByTags, getItemsByCategory, getItemsUpToRarity) | hoch | Ja | #1600, #1605, #2804 | Item.md#queries, EntityRegistry.md#querying, Loot-Feature.md#item-auswahl-gewichtete-wahrscheinlichkeit |
+| 1608 | Standard D&D Currency Items als Preset (copper-piece, silver-piece, gold-piece, platinum-piece) | hoch | Ja | #1600 | Item.md#currency-category-currency, Inventory-System.md#waehrungs-items |
+| 1609 | Item Feature/Orchestrator mit CRUD-Logik | hoch | Ja | #1600, #1606 | Item.md, Inventory-System.md#gm-quick-actions |

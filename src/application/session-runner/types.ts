@@ -12,6 +12,7 @@ import type {
   EncounterInstance,
 } from '@core/schemas';
 import type { Route, TravelStatus } from '@/features/travel/types';
+import type { HealthSummary } from '@core/utils';
 
 // ============================================================================
 // View Types
@@ -134,11 +135,24 @@ export interface QuestSectionState {
 }
 
 /**
+ * Party section state.
+ * @see docs/application/SessionRunner.md#party-sektion
+ */
+export interface PartySectionState {
+  /** Number of party members */
+  size: number;
+  /** Health summary for all members */
+  healthSummary: HealthSummary;
+}
+
+/**
  * State for sidebar panel (Quick Controls).
  */
 export interface SidebarState {
   /** Travel section */
   travel: TravelSectionState;
+  /** Party section */
+  party: PartySectionState;
   /** Quest section */
   quest: QuestSectionState;
   /** Actions section */
@@ -253,6 +267,16 @@ export function createInitialRenderState(): RenderState {
         speed: 24, // Default: 24 mi/day on foot
         currentTerrain: null,
         eta: null,
+      },
+      party: {
+        size: 0,
+        healthSummary: {
+          ok: 0,
+          wounded: 0,
+          critical: 0,
+          down: 0,
+          display: 'No Party',
+        },
       },
       quest: {
         activeQuests: [],

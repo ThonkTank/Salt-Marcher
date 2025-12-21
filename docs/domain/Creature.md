@@ -389,3 +389,32 @@ Vault/SaltMarcher/data/
 ---
 
 *Siehe auch: [NPC-System.md](NPC-System.md) | [Encounter-System.md](../features/Encounter-System.md) | [Terrain.md](Terrain.md) | [EntityRegistry.md](../architecture/EntityRegistry.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1200 | CreatureDefinition Schema: Vollständiges Interface implementieren | hoch | Ja | #2703 | Creature.md#schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc |
+| 1201 | Basis-Statistiken: CR, HP, AC, Size | hoch | Ja | #1200 | Creature.md#creaturedefinition |
+| 1202 | terrainAffinities: Array von Terrain-IDs | hoch | Ja | #1200, #1700 | Creature.md#creaturedefinition, Terrain.md#schema |
+| 1203 | activeTime: TimeSegment-Array (dawn, day, dusk, night) | hoch | Ja | #1200 | Creature.md#creaturedefinition, Encounter-System.md#tile-eligibility |
+| 1204 | lootTags: String-Array für Loot-System | hoch | Ja | #1200 | Creature.md#creaturedefinition, Loot-Feature.md#loot-tags |
+| 1205 | DefaultLootEntry Interface: itemId, chance, quantity | hoch | Ja | #1200, #1600 | Creature.md#defaultloot, Item.md#schema |
+| 1206 | defaultLoot Array: Garantiertes/wahrscheinliches Loot | hoch | Ja | #1205 | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot |
+| 1207 | CreaturePreferences Interface: Gewichtungs-Modifikatoren | hoch | Ja | #1200 | Creature.md#creaturepreferences, Encounter-System.md#tile-eligibility |
+| 1208 | AbilityScores Interface: STR, DEX, CON, INT, WIS, CHA | hoch | Ja | #1200 | Creature.md#creaturedefinition, Combat-System.md#schemas |
+| 1209 | SpeedBlock Interface: walk, fly, swim, climb, burrow | hoch | Ja | #1200 | Creature.md#creaturedefinition |
+| 1210 | Senses Interface: passivePerception, darkvision, blindsight, etc. | mittel | Nein | #1200 | Creature.md#creaturedefinition, Creature.md#sinne-post-mvp |
+| 1211 | Creature Runtime Interface: instanceId, currentHp, tempHp, conditions | hoch | Ja | #1200 | Creature.md#creature-runtime, Combat-System.md#schemas |
+| 1212 | Auto-Sync: creature.terrainAffinities → terrain.nativeCreatures | hoch | Ja | #1202, #1700, #1706, #1704 | Creature.md#auto-sync-verhalten, Terrain.md#auto-sync-mechanismus |
+| 1213 | Auto-Sync: terrain.nativeCreatures → creature.terrainAffinities | hoch | Ja | #1202, #1700, #1706, #1705 | Creature.md#auto-sync-verhalten, Terrain.md#auto-sync-mechanismus |
+| 1214 | Encounter Integration: filterEligibleCreatures() | hoch | Ja | #1202, #1203, #200 | Creature.md#encounter-feature, Encounter-System.md#tile-eligibility |
+| 1215 | Combat Integration: createCombatCreature() Factory | hoch | Ja | #1211, #300 | Creature.md#combat-feature, Combat-System.md#schemas |
+| 1216 | Loot Integration: defaultLoot Processing bei Encounter | hoch | Ja | #1206, #705, #215 | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot, Encounter-System.md#schemas |
+| 1217 | Storage: creature/ und npc/ Verzeichnisse | hoch | Ja | #1200, #1300, #2802 | Creature.md#storage, EntityRegistry.md#storage, NPC-System.md#npc-schema |
+| 1218 | Bundled Creatures: Mitgelieferte Basis-Kreaturen (_bundled/) | mittel | Ja | #1217 | Creature.md#storage |
+| 1219 | Vollständiger D&D 5e Statblock: Skills, Saves, Resistances, etc. | mittel | Nein | #1200 | Creature.md#creaturedefinition |
+| 1220 | Actions Interface: Attack, Spellcasting, Special Abilities | mittel | Nein | #1200 | Creature.md#creaturedefinition |
+| 1221 | Legendary Actions Interface: Legendary Actions für Boss-Monster | niedrig | Nein | #1200, #1220 | Creature.md#creaturedefinition, Combat-System.md#post-mvp-erweiterungen |
+| 1222 | Sinne-System: Encounter-Trigger basierend auf Sichtweite | mittel | Nein | #1210, #1214 | Creature.md#sinne-post-mvp, Encounter-System.md#tile-eligibility |
+| 1223 | Passive Perception für Stealth-Checks | mittel | Nein | #1210, #1222 | Creature.md#sinn-typen |

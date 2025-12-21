@@ -270,3 +270,17 @@ interface GroupRelation {
 ---
 
 *Siehe auch: [Encounter-System.md](Encounter-System.md) | [Combat-System.md](Combat-System.md) | [NPC-System.md](../domain/NPC-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 235 | CRComparison Type: trivial, manageable, deadly, impossible | hoch | Ja | - | Encounter-Balancing.md#cr-vergleich, Encounter-System.md#typ-ableitung |
+| 237 | EncounterDifficulty Type: Easy, Medium, Hard, Deadly | hoch | Ja | - | Encounter-Balancing.md#difficulty-bestimmung, Encounter-System.md#5-step-pipeline |
+| 239 | calculateXPBudget: Party-Size × Level × Difficulty-Faktor | hoch | Ja | #237, #502, #1001 | Encounter-Balancing.md#xp-budget, Character-System.md#encounter-balancing |
+| 241 | DailyXPTracker Interface: date, budgetTotal, budgetUsed, encountersToday | hoch | Ja | #910 | Encounter-Balancing.md#daily-xp-budget-tracking, Time-System.md#gamedate |
+| 243 | Erschöpftes Budget Effekt: <25% → 50% Combat→Trace, =0% → keine Combat | hoch | Ja | #241, #242 | Encounter-Balancing.md#effekt-auf-generierung, Encounter-System.md#typ-ableitung |
+| 245 | fillCombatEncounter: Lead + Companions + XP-Berechnung | hoch | Ja | #238, #239, #244, #1200, #1300, #231 | Encounter-Balancing.md#combat-befuellung, Encounter-System.md#encounter-befuellung, Creature.md#schema, NPC-System.md#lead-npc-auswahl |
+| 247 | SocialEncounter Interface: leadNPC, disposition, possibleOutcomes, trade? | hoch | Ja | #213, #231, #1300 | Encounter-Balancing.md#social, Encounter-System.md#typ-spezifisches-verhalten, NPC-System.md#lead-npc-auswahl |
+| 249 | PassingEncounter Interface: creature, activity, distance, awareness | hoch | Ja | #213, #1200 | Encounter-Balancing.md#passing, Encounter-System.md#typ-spezifisches-verhalten, Creature.md#schema |
+| 251 | Multi-Gruppen-Trigger: Variety-Adjustment, Location-based, Random Chance | niedrig | Nein | #210, #250, #1319 | Encounter-Balancing.md#multi-gruppen-encounters, Encounter-System.md#variety-validation, NPC-System.md#multi-gruppen-encounters |

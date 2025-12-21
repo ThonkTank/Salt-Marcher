@@ -514,3 +514,32 @@ const shadowRavine: PathDefinition = {
 ---
 
 *Siehe auch: [Map.md](Map.md) | [Terrain.md](Terrain.md) | [Travel-System.md](../features/Travel-System.md) | [Encounter-System.md](../features/Encounter-System.md) | [Cartographer.md](../application/Cartographer.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1800 | PathDefinition Schema (id, mapId, pathType, name, waypoints, movement, encounterModifier, displayStyle) | hoch | Nein | - | Path.md#schema, Map.md#entity-beziehungen |
+| 1801 | PathType Enum (road, river, ravine, cliff, trail) | hoch | Nein | #1800 | Path.md#schema |
+| 1802 | PathMovement Schema (defaultModifier, transportModifiers, blocksMovement, requiresTransport) | hoch | Nein | #1800 | Path.md#pathmovement, Travel-System.md#pfad-modifikation-post-mvp |
+| 1803 | PathEncounterModifier Schema (creaturePool, chanceModifier) | hoch | Nein | #1800, #1200 | Path.md#pathencountermodifier, Encounter-System.md#pfad-basierte-creature-pools-post-mvp, Creature.md#schema |
+| 1804 | PathDisplayStyle Schema (color, width, pattern, icon) | hoch | Nein | #1800 | Path.md#pathdisplaystyle |
+| 1805 | TilePathInfo Schema (pathId, connections) | hoch | Nein | #1800, #801 | Path.md#tilepathinfo, Map.md#schema, Map-Feature.md#overworldtile |
+| 1806 | PathDirectionality Schema (enabled, forwardSpeedModifier, backwardSpeedModifier) Post-MVP | niedrig | Nein | #1800 | Path.md#pathdirectionality-post-mvp |
+| 1807 | PathEnvironmentModifier Schema (lightingOverride, weatherModifier) Post-MVP | niedrig | Nein | #1800, #110 | Path.md#pathenvironmentmodifier-post-mvp, Weather-System.md#weather-state |
+| 1808 | Default-Presets für 5 PathTypes (road, trail, river, ravine, cliff) | hoch | Nein | #1800, #1801, #1802, #1803, #1804 | Path.md#default-presets |
+| 1809 | Bidirektionale Tile-Synchronisation: onPathWaypointsChanged Handler | hoch | Nein | #1800, #1805, #1810, #1820, #801 | Path.md#bidirektionale-tile-synchronisation, Map-Feature.md#overworldtile |
+| 1810 | OverworldTile.paths[] Integration (TilePathInfo Array im Tile Schema) | hoch | Nein | #1805, #801, #840 | Path.md#beziehung, Map.md#schema, Map-Feature.md#overworldtile |
+| 1811 | calculatePathModifier Funktion für Travel-System | hoch | Nein | #1802, #1810, #1817, #1820, #3, #5 | Path.md#travel-system, Travel-System.md#pfad-modifikation-post-mvp, Travel-System.md#speed-berechnung |
+| 1812 | PATH_BLOCKED und TRANSPORT_REQUIRED Error-Codes für Barrieren | hoch | Nein | #1811 | Path.md#travel-system, Travel-System.md#pfad-modifikation-post-mvp, Error-Handling.md |
+| 1813 | Travel Speed-Formel mit Pfad-Multiplikator erweitern | hoch | Nein | #1811, #3, #5 | Path.md#travel-system, Travel-System.md#speed-berechnung, Travel-System.md#pfad-modifikation-post-mvp |
+| 1814 | getEligibleCreatures mit Path-Creature-Pool Integration | hoch | Nein | #1803, #1810, #1817, #1820, #200, #1714 | Path.md#encounter-system, Encounter-System.md#pfad-basierte-creature-pools-post-mvp, Encounter-System.md#tile-eligibility, Terrain.md#verwendung-in-anderen-features |
+| 1815 | Path CRUD Events (create/update/delete-requested + created/updated/deleted) | hoch | Nein | #1800 | Path.md#events, Events-Catalog.md#path-post-mvp |
+| 1816 | path:state-changed Event für Map-Sync | hoch | Nein | #1815, #813 | Path.md#events, Events-Catalog.md#path-post-mvp, Map-Feature.md#events |
+| 1817 | getPathsOnMap Query-Funktion | hoch | Nein | #1800, #1820, #1821, #2804 | Path.md#queries, EntityRegistry.md#querying |
+| 1818 | getPathsAtTile Query-Funktion | hoch | Nein | #1800, #1810, #1820, #1821, #2804 | Path.md#queries, EntityRegistry.md#querying |
+| 1819 | getPathBetween Query-Funktion (findet Pfad zwischen zwei Tiles) | hoch | Nein | #1818, #1820, #1821 | Path.md#queries |
+| 1820 | Path Feature/Orchestrator mit CRUD-Logik | hoch | Nein | #1800, #1815, #1821 | Path.md, Features.md#feature-communication, EventBus.md |
+| 1821 | Path EntityRegistry Integration: 'path' als Entity-Typ | hoch | Nein | #1800, #2800, #2801 | Path.md, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#neue-entity-typen-mvp |
+| 1822 | Cartographer Path-Tool: UI zum Zeichnen von Pfaden auf Map | mittel | Nein | #1800, #1820, #1821, #2509 | Path.md, Cartographer.md#path-tool-overland-post-mvp, Cartographer.md#state-management |
+| 1823 | Cartographer: Path-Properties Panel für Pfad-Bearbeitung | mittel | Nein | #1822, #1820, #1821, #2525, #2526 | Path.md, Cartographer.md#path-tool-overland-post-mvp |

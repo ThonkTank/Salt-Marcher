@@ -334,3 +334,27 @@ Dungeon-Maps werden im Cartographer erstellt (kein separates Tool):
 ---
 
 *Siehe auch: [Cartographer.md](../application/Cartographer.md) (Map-Editor) | [Travel-System.md](Travel-System.md) (fuer Overworld-Navigation) | [Combat-System.md](Combat-System.md) | [Encounter-System.md](Encounter-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 1000 | Automatische Trap-Detection (Passive Perception >= Trap DC → "Falle entdeckt!") | hoch | Ja | #810, #500, #1210 | Dungeon-System.md#automatische-trigger, Character-System.md#character-schema, Map-Feature.md#dungeonmap |
+| 1002 | Tür-Prompt bei Bewegung ("Tür. Öffnen?") | hoch | Ja | #808 | Dungeon-System.md#automatische-trigger, Map-Feature.md#dungeontile |
+| 1004 | Fog of War Update bei Party-Bewegung | hoch | Ja | #812, #1025 | Dungeon-System.md#simulation, Map-Feature.md#dungeontile |
+| 1005 | Secret-Door Automatischer Passive Perception Check | hoch | Ja | #808, #500, #1210 | Dungeon-System.md#geheime-bereiche, Character-System.md#character-schema, Map-Feature.md#dungeontile |
+| 1007 | GM-Override: Secret als entdeckt markieren | hoch | Ja | #1005 | Dungeon-System.md#geheime-bereiche |
+| 1008 | Monster-Tokens auf Grid platzieren (alle Encounters vorplatziert) | hoch | Ja | #811 | Dungeon-System.md#dungeon-encounters, Cartographer.md#token-placer-dungeon, Encounter-System.md#creatureslot-varianten |
+| 1010 | Token zu aktivem Encounter hinzufügen | hoch | Ja | #1009, #217 | Dungeon-System.md#dungeon-encounters, Encounter-System.md#state-machine, Combat-System.md#combat-flow |
+| 1011 | Lichtquellen-Radien (Torch 20/40, Lantern 30/60, Light 20/40, Darkvision 60) | hoch | Ja | #808 | Dungeon-System.md#licht, Dungeon-System.md#lichtquellen-tracking, Character-System.md#sinne-post-mvp |
+| 1013 | Character-Inventar Lichtquellen-Tracking (Reichweite, Brenndauer) | hoch | Ja | #1011, #600, #612 | Dungeon-System.md#lichtquellen-tracking, Inventory-System.md#inventoryslot, Time-System.md#zeit-operationen |
+| 1015 | Bewegungs-Zeit basierend auf Character-Speed (5-foot Tiles / 6 Sekunden) | hoch | Ja | #806, #504 | Dungeon-System.md#zeit-tracking, Character-System.md#travel-system, Time-System.md#advance-zeit-voranschreiten |
+| 1017 | GM View Toggle (sieht alles) | hoch | Ja | #812 | Dungeon-System.md#gm-interface, Cartographer.md#layer-control |
+| 1018 | Player View Toggle (nur Explored sichtbar) | hoch | Ja | #812, #1017 | Dungeon-System.md#gm-interface, Dungeon-System.md#fog-of-war, Cartographer.md#layer-control |
+| 1020 | GM-definierte Raum-Grenzen beim Zeichnen | hoch | Ja | #809 | Dungeon-System.md#raum-definition, Map-Feature.md#dungeonroom, Cartographer.md#dungeon-tools |
+| 1022 | Raum-Klick zeigt Inhaltsübersicht | hoch | Ja | #809 | Dungeon-System.md#gm-interface, Map-Feature.md#dungeonroom |
+| 1024 | DetailView zeigt Fallen, Truhen, GM-Notizen | hoch | Ja | #1023 | Dungeon-System.md#gm-interface, Map-Feature.md#dungeontilecontent, DetailView.md |
+| 1026 | Wand-Blockierung für Sichtlinien | hoch | Ja | #1025 | Dungeon-System.md#sicht-line-of-sight, Map-Feature.md#dungeontile |
+| 1030 | Sound-Propagation Overlay (was Spieler hören können) | niedrig | Nein | #809 | Dungeon-System.md#sound, Dungeon-System.md#sound-propagation |
+| 1032 | Raum-zu-Raum Sound-Visualisierung | niedrig | Nein | #1030 | Dungeon-System.md#sound, Map-Feature.md#dungeonroom |
+| 1036 | Treppen/Leitern/Schächte als spezielle Tiles | niedrig | Nein | #1035, #808 | Dungeon-System.md#multi-level-navigation, Map-Feature.md#dungeontile, Map-Feature.md#gridcoordinate |

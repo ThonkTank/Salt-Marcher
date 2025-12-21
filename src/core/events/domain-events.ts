@@ -20,6 +20,7 @@ import type {
   Condition,
   ConditionType,
   CombatEffect,
+  Faction,
 } from '../schemas';
 import type {
   LootContext,
@@ -802,43 +803,52 @@ export interface WorldEventsUpcomingPayload {
 // ---------------------------------------------------------------------------
 
 export interface FactionCreateRequestedPayload {
-  faction: unknown; // Faction
+  faction: Faction;
 }
 
 export interface FactionUpdateRequestedPayload {
-  factionId: string;
-  changes: Record<string, unknown>;
+  factionId: EntityId<'faction'>;
+  changes: Partial<Faction>;
 }
 
 export interface FactionDeleteRequestedPayload {
-  factionId: string;
+  factionId: EntityId<'faction'>;
+}
+
+/**
+ * Faction state for state-changed events.
+ * Minimal definition until FactionOrchestrator (#1416) is implemented.
+ */
+export interface FactionState {
+  factions: readonly Faction[];
+  selectedFactionId?: EntityId<'faction'>;
 }
 
 export interface FactionStateChangedPayload {
-  state: unknown; // FactionState
+  state: FactionState;
 }
 
 export interface FactionCreatedPayload {
-  faction: unknown; // Faction
+  faction: Faction;
 }
 
 export interface FactionUpdatedPayload {
-  factionId: string;
-  faction: unknown; // Faction
+  factionId: EntityId<'faction'>;
+  faction: Faction;
 }
 
 export interface FactionDeletedPayload {
-  factionId: string;
+  factionId: EntityId<'faction'>;
 }
 
 export interface FactionPoiClaimedPayload {
-  factionId: string;
-  poiId: string;
+  factionId: EntityId<'faction'>;
+  poiId: EntityId<'poi'>;
 }
 
 export interface FactionPoiLostPayload {
-  factionId: string;
-  poiId: string;
+  factionId: EntityId<'faction'>;
+  poiId: EntityId<'poi'>;
 }
 
 // ---------------------------------------------------------------------------

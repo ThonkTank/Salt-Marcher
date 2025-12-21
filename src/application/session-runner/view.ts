@@ -250,6 +250,12 @@ export class SessionRunnerView extends ItemView {
         console.log('Teleport clicked');
       },
 
+      // Party Management
+      onManageParty: () => {
+        // Show "Coming soon" notification
+        this.deps.notificationService.info('Party Management coming soon!');
+      },
+
       // Quest Management
       onQuestStatusFilterChange: (filter) => {
         this.viewModel?.onStatusFilterChange(filter);

@@ -453,3 +453,29 @@ Party betritt Dungeon um 10:00 bei Regen
 ---
 
 *Siehe auch: [Time-System.md](Time-System.md) | [Travel-System.md](Travel-System.md) | [Audio-System.md](Audio-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 101 | WeatherParams: Basis-Parameter-Interface (Temperatur, Wind, Niederschlag) | hoch | Ja | - | Weather-System.md#parameter |
+| 102 | Temperatur-Kategorisierung (freezing, cold, cool, mild, warm, hot) mit mechanischen Effekten | hoch | Ja | #101 | Weather-System.md#temperatur |
+| 103 | Wind-Kategorisierung (calm, light, moderate, strong, gale) mit mechanischen Effekten | hoch | Ja | #101 | Weather-System.md#wind |
+| 104 | Niederschlag-Kategorisierung (none, drizzle, rain, heavy_rain, snow, blizzard, fog) | hoch | Ja | #101 | Weather-System.md#niederschlag |
+| 105 | TerrainWeatherRanges Schema (temperature, wind, precipitation mit min/average/max) | hoch | Ja | #101, #1702 | Weather-System.md#range-schema, Terrain.md#schema |
+| 106 | Weather-Generierung aus Ranges (Gaussian-ähnliche Verteilung) | hoch | Ja | #105 | Weather-System.md#generierungs-mechanik |
+| 107 | Area-Averaging: Wetter als gewichteter Durchschnitt in Radius (5 Tiles) | hoch | Ja | #106, #802 | Weather-System.md#area-averaging |
+| 108 | Time-Segment-Modifikatoren (6 Segmente mit Temperatur-Offset) | hoch | Ja | #101, #906, #912 | Weather-System.md#time-segment-berechnung, Time-System.md#time-segment-berechnung |
+| 109 | Transition-Logik: Gradueller Wetter-Übergang zwischen Segmenten | hoch | Ja | #101, #108 | Weather-System.md#uebergangs-logik |
+| 110 | Event-Flow: time:segment-changed → environment:weather-changed | hoch | Ja | #109, #910 | Weather-System.md#event-flow, Events-Catalog.md#environment |
+| 111 | Weather-Persistierung: currentWeather als Map Property | hoch | Ja | #101, #110, #800, #801 | Weather-System.md#current-weather-als-map-property, Map-Feature.md#overworldmap |
+| 112 | Multi-Map Weather: Indoor-Maps haben kein Wetter | hoch | Ja | #111, #806 | Weather-System.md#map-typ-regeln, Map-Feature.md#wetter-auf-sub-maps |
+| 113 | Stadt-Maps erben Wetter vom Overworld-Tile | hoch | Ja | #111, #112, #827 | Weather-System.md#map-typ-regeln, Map-Feature.md#wetter-auf-sub-maps |
+| 114 | Background Weather Tick: Overworld-Weather läuft im Hintergrund | hoch | Ja | #111, #910 | Weather-System.md#background-weather |
+| 115 | Weather-Events: Blizzard, Thunderstorm, Heatwave, Dense Fog, Dust Storm | mittel | Nein | #102, #103, #104, #110 | Weather-System.md#weather-events |
+| 116 | Audio-Integration: Ambiance-Sounds bei weather-changed anpassen | mittel | Nein | #110, #1107, #1115 | Weather-System.md#consumer-features, Audio-System.md#context-updates |
+| 117 | Travel-Integration: Speed-Faktor bei weather-changed neu berechnen | hoch | Ja | #3, #104, #110 | Weather-System.md#consumer-features, Travel-System.md#weather-faktoren |
+| 118 | Terrain-Einfluss auf Nachbar-Tiles (mountains blockiert Wind, etc.) | niedrig | Nein | #107, #1700 | Weather-System.md#terrain-einfluss-nice-to-have, Terrain.md |
+| 119 | GM Weather Override: Manuelle Wetter-Überschreibung | mittel | Nein | #111 | Weather-System.md#gm-weather-override |
+| 120 | Weather-Historie: Signifikante Änderungen in Almanac EventJournal speichern | niedrig | Nein | #111, #2208 | Weather-System.md#weather-historie-in-almanac |
+| 121 | Visibility-Modifier: Wetter reduziert Sichtweite (multiplikativ) | mittel | Nein | #104, #120, #843, #847, #2208 | Weather-System.md#sichtweiten-einfluss-post-mvp, Map-Feature.md#umwelt-modifier |

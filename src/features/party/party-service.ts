@@ -340,17 +340,33 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
       return ok(result.value);
     },
 
-    setPosition(coord: HexCoordinate): void {
-      const previousPosition = store.getState().currentParty?.position;
-      store.setPosition(coord);
+    async setPosition(coord: HexCoordinate): Promise<Result<void, AppError>> {
+      const party = store.getState().currentParty;
 
-      // Publish position changed event
-      if (previousPosition) {
-        publishPositionChanged(previousPosition, coord);
+      if (!party) {
+        return err(createError('NO_PARTY', 'No party loaded'));
       }
+
+      const previousPosition = party.position;
+      const updatedParty = { ...party, position: coord };
+
+      // 1. Pessimistic Save-First: persist before updating state
+      const saveResult = await storage.save(updatedParty);
+      if (!saveResult.ok) {
+        return saveResult; // State remains unchanged on error
+      }
+
+      // 2. Update state after successful save
+      store.setPosition(coord);
+      store.markSaved();
+
+      // 3. Publish events
+      publishPositionChanged(previousPosition, coord);
+
+      return ok(undefined);
     },
 
-    setActiveTransport(mode: TransportMode): Result<void, AppError> {
+    async setActiveTransport(mode: TransportMode): Promise<Result<void, AppError>> {
       const party = store.getState().currentParty;
 
       if (!party) {
@@ -368,9 +384,19 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
       }
 
       const previousTransport = party.activeTransport;
-      store.setActiveTransport(mode);
+      const updatedParty = { ...party, activeTransport: mode };
 
-      // Publish transport changed event
+      // 1. Pessimistic Save-First: persist before updating state
+      const saveResult = await storage.save(updatedParty);
+      if (!saveResult.ok) {
+        return saveResult; // State remains unchanged on error
+      }
+
+      // 2. Update state after successful save
+      store.setActiveTransport(mode);
+      store.markSaved();
+
+      // 3. Publish events
       publishTransportChanged(previousTransport, mode);
 
       return ok(undefined);
@@ -423,19 +449,31 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
         return err(createError('CHARACTER_NOT_FOUND', `Character ${characterId} not found`));
       }
 
-      // Add to party members list
-      store.addMember(characterId);
+      // Prepare updated party
+      const updatedParty = {
+        ...party,
+        members: [...party.members, characterId],
+      };
 
-      // Add to loaded members
+      // 1. Pessimistic Save-First: persist before updating state
+      const saveResult = await storage.save(updatedParty);
+      if (!saveResult.ok) {
+        return saveResult; // State remains unchanged on error
+      }
+
+      // 2. Update state after successful save
+      store.addMember(characterId);
       const members = [...store.getState().loadedMembers, charResult.value];
       store.setLoadedMembers(members);
+      store.markSaved();
 
+      // 3. Publish events
       publishStateChanged();
       publishMemberAdded(characterId);
       return ok(undefined);
     },
 
-    removeMember(characterId: CharacterId): Result<void, AppError> {
+    async removeMember(characterId: CharacterId): Promise<Result<void, AppError>> {
       const party = store.getState().currentParty;
 
       if (!party) {
@@ -447,13 +485,25 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
         return err(createError('NOT_MEMBER', `Character ${characterId} is not a party member`));
       }
 
-      // Remove from party members list
-      store.removeMember(characterId);
+      // Prepare updated party
+      const updatedParty = {
+        ...party,
+        members: party.members.filter((id) => id !== characterId),
+      };
 
-      // Remove from loaded members
+      // 1. Pessimistic Save-First: persist before updating state
+      const saveResult = await storage.save(updatedParty);
+      if (!saveResult.ok) {
+        return saveResult; // State remains unchanged on error
+      }
+
+      // 2. Update state after successful save
+      store.removeMember(characterId);
       const members = store.getState().loadedMembers.filter((c) => c.id !== characterId);
       store.setLoadedMembers(members);
+      store.markSaved();
 
+      // 3. Publish events
       publishStateChanged();
       publishMemberRemoved(characterId);
       return ok(undefined);

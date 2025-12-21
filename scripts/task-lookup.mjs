@@ -3,6 +3,7 @@
  * Task-Lookup-Skript
  *
  * Zeigt Details zu einer Task und optional ihre Dependencies/Dependents.
+ * Kann auch nach Keyword in Bereich, Beschreibung oder Spec suchen.
  *
  * Ausführung:
  *   node scripts/task-lookup.mjs 428                # Task #428 anzeigen
@@ -11,6 +12,11 @@
  *   node scripts/task-lookup.mjs 428 -a             # Beides (all)
  *   node scripts/task-lookup.mjs 428 --tree         # Dependency-Baum
  *   node scripts/task-lookup.mjs 428 --json         # JSON-Ausgabe
+ *
+ * Suche:
+ *   node scripts/task-lookup.mjs -s Travel          # Suche in Bereich/Beschreibung/Spec
+ *   node scripts/task-lookup.mjs --bereich Combat   # Nur im Bereich suchen
+ *   node scripts/task-lookup.mjs --spec Weather     # Nur in der Spec-Spalte suchen
  */
 
 import { readFileSync } from 'fs';
@@ -32,7 +38,12 @@ function parseArgs(argv) {
     treeDepth: 3,
     json: false,
     quiet: false,
-    help: false
+    help: false,
+    // Such-Optionen
+    search: null,      // Suche in allen Feldern
+    bereich: null,     // Suche nur im Bereich
+    spec: null,        // Suche nur in Spec
+    limit: 20          // Max. Ergebnisse bei Suche
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -56,6 +67,14 @@ function parseArgs(argv) {
       opts.json = true;
     } else if (arg === '-q' || arg === '--quiet') {
       opts.quiet = true;
+    } else if (arg === '-s' || arg === '--search') {
+      opts.search = argv[++i];
+    } else if (arg === '--bereich' || arg === '-b') {
+      opts.bereich = argv[++i];
+    } else if (arg === '--spec') {
+      opts.spec = argv[++i];
+    } else if (arg === '-n' || arg === '--limit') {
+      opts.limit = parseInt(argv[++i], 10) || 20;
     } else if (!arg.startsWith('-')) {
       // Bug-ID (z.B. 'b4') oder Task-Nummer
       if (arg.match(/^b\d+$/)) {
@@ -79,9 +98,16 @@ Task-Lookup-Skript
 
 USAGE:
   node scripts/task-lookup.mjs <ID> [OPTIONS]
+  node scripts/task-lookup.mjs -s <KEYWORD> [OPTIONS]
 
 ARGUMENTE:
   <ID>                    Task-Nummer (z.B. 428) oder Bug-ID (z.B. b4)
+
+SUCHE:
+  -s, --search <KEYWORD>  Suche in Bereich, Beschreibung und Spec
+  -b, --bereich <KEYWORD> Suche nur im Bereich
+      --spec <KEYWORD>    Suche nur in der Spec-Spalte
+  -n, --limit <N>         Max. Ergebnisse bei Suche (default: 20)
 
 OPTIONEN:
   -d, --deps              Voraussetzungen: Tasks/Bugs die erst erledigt sein müssen
@@ -98,11 +124,15 @@ BEISPIELE:
   node scripts/task-lookup.mjs b4                   # Bug b4 Details
   node scripts/task-lookup.mjs 428 --deps           # + Voraussetzungen
   node scripts/task-lookup.mjs 428 --dependents     # + was darauf wartet
-  node scripts/task-lookup.mjs b4 --deps            # Bug-Dependencies (referenzierte Tasks)
-  node scripts/task-lookup.mjs 12 --dependents      # Zeigt auch Bugs die #12 referenzieren
   node scripts/task-lookup.mjs 428 -a               # Vollständige Analyse
   node scripts/task-lookup.mjs 428 --tree           # Dependency-Baum
   node scripts/task-lookup.mjs 428 --json           # Als JSON
+
+  # Suche:
+  node scripts/task-lookup.mjs -s Travel            # Suche 'Travel' überall
+  node scripts/task-lookup.mjs -b Combat            # Nur Bereich = Combat
+  node scripts/task-lookup.mjs --spec Weather       # Nur in Spec-Spalte
+  node scripts/task-lookup.mjs -s Encounter -n 10   # Max 10 Ergebnisse
 `);
 }
 
@@ -223,6 +253,29 @@ function parseRoadmap(content) {
  */
 function findDependents(itemId, allItems) {
   return allItems.filter(t => t.deps.includes(itemId));
+}
+
+/**
+ * Sucht Items nach Keyword
+ */
+function searchItems(items, opts) {
+  const keyword = (opts.search || opts.bereich || opts.spec || '').toLowerCase();
+  if (!keyword) return [];
+
+  return items.filter(item => {
+    if (opts.bereich) {
+      return item.bereich.toLowerCase().includes(keyword);
+    }
+    if (opts.spec) {
+      return item.spec.toLowerCase().includes(keyword);
+    }
+    // Suche in allen Feldern
+    return (
+      item.bereich.toLowerCase().includes(keyword) ||
+      item.beschreibung.toLowerCase().includes(keyword) ||
+      item.spec.toLowerCase().includes(keyword)
+    );
+  });
 }
 
 /**
@@ -404,6 +457,26 @@ function formatJson(item, deps, dependents, tree) {
   console.log(JSON.stringify(output, null, 2));
 }
 
+/**
+ * Formatiert Suchergebnisse als JSON
+ */
+function formatSearchJson(results, keyword, searchType) {
+  console.log(JSON.stringify({
+    search: { keyword, type: searchType },
+    count: results.length,
+    results: results.map(t => ({
+      number: t.number,
+      status: t.status,
+      bereich: t.bereich,
+      beschreibung: t.beschreibung,
+      prio: t.prio,
+      mvp: t.mvp,
+      spec: t.spec,
+      isBug: t.isBug
+    }))
+  }, null, 2));
+}
+
 // Hauptprogramm
 function main() {
   const opts = parseArgs(process.argv.slice(2));
@@ -413,16 +486,45 @@ function main() {
     return;
   }
 
-  if (opts.itemId === null) {
-    console.error('Fehler: Task-Nummer oder Bug-ID erforderlich.\n');
-    console.error('Usage: node scripts/task-lookup.mjs <ID> [OPTIONS]');
-    console.error('       node scripts/task-lookup.mjs --help');
-    process.exit(1);
-  }
-
   const content = readFileSync(ROADMAP_PATH, 'utf-8');
   const allItems = parseRoadmap(content);
   const itemMap = new Map(allItems.map(t => [t.number, t]));
+
+  // Such-Modus
+  const isSearchMode = opts.search || opts.bereich || opts.spec;
+  if (isSearchMode) {
+    const keyword = opts.search || opts.bereich || opts.spec;
+    const searchType = opts.bereich ? 'bereich' : opts.spec ? 'spec' : 'all';
+    let results = searchItems(allItems, opts);
+
+    // Limit anwenden
+    if (opts.limit > 0 && results.length > opts.limit) {
+      results = results.slice(0, opts.limit);
+    }
+
+    if (opts.json) {
+      formatSearchJson(results, keyword, searchType);
+    } else {
+      const searchLabel = opts.bereich ? `Bereich="${keyword}"` :
+                          opts.spec ? `Spec="${keyword}"` :
+                          `"${keyword}"`;
+      console.log(formatItemList(results, `Suchergebnisse für ${searchLabel}`));
+
+      if (!opts.quiet && results.length === opts.limit) {
+        console.log(`\n(Limit: ${opts.limit} - nutze -n 0 für alle)`);
+      }
+    }
+    return;
+  }
+
+  // Item-Modus
+  if (opts.itemId === null) {
+    console.error('Fehler: Task-Nummer, Bug-ID oder Suche erforderlich.\n');
+    console.error('Usage: node scripts/task-lookup.mjs <ID> [OPTIONS]');
+    console.error('       node scripts/task-lookup.mjs -s <KEYWORD>');
+    console.error('       node scripts/task-lookup.mjs --help');
+    process.exit(1);
+  }
 
   const item = itemMap.get(opts.itemId);
 

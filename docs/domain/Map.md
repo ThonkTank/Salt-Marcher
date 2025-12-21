@@ -193,3 +193,26 @@ function getActiveMap(): BaseMap | null;
 ---
 
 *Siehe auch: [Map-Feature.md](../features/Map-Feature.md) | [Map-Navigation.md](Map-Navigation.md) | [POI.md](POI.md) | [Travel-System.md](../features/Travel-System.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 822 | getMap(mapId): Result<BaseMap, AppError> | hoch | Ja | #800 | Map.md#queries, Map-Feature.md#events, EntityRegistry.md#port-interface |
+| 823 | getMapsByType(type): BaseMap[] | hoch | Ja | #800 | Map.md#queries, Map-Feature.md#map-schemas |
+| 824 | getActiveMap(): BaseMap \| null | hoch | Ja | #800, #813 | Map.md#queries, Map-Feature.md#memory-management |
+| 801 | OverworldMap Schema (dimensions, tiles, factionOverlay) | hoch | Ja | #800 | Map.md#schema, Map-Feature.md#overworldmap, Travel-System.md#scope-hex-overland |
+| 803 | HexCoordinate Type (q, r für axial) | hoch | Ja | #802 | Map.md#schema, Map-Feature.md#overworldmap, Travel-System.md |
+| 813 | map:load-requested Event Handler | hoch | Ja | #800 | Map.md#events, Map-Feature.md#events, Events-Catalog.md |
+| 821 | map:updated Event Handler | hoch | Ja | #800, #813, #820 | Map.md#events, Map-Feature.md#events, Events-Catalog.md |
+| 826 | map:tile-updated Event publizieren | hoch | Ja | #800, #802, #821, #900 | Map.md#events, Map-Feature.md#events, Events-Catalog.md |
+| 807 | GridCoordinate Type (x, y, z für 3D Grid) | hoch | Ja | #806 | Map.md#schema, Map-Feature.md#dungeonmap, Dungeon-System.md |
+| 830 | TownMap Schema (streets, intersections, buildings, npcs) | mittel | Nein | #800 | Map.md#schema, Map-Feature.md#townmap |
+| 833 | Building Schema (id, name, position, type, linkedMapId, npcs) | mittel | Nein | #830 | Map.md#schema, Map-Feature.md#townmap |
+| 837 | town:navigate-requested Event Handler | mittel | Nein | #820, #830, #836 | Map.md#events, Map-Feature.md#town-strassen-navigation |
+| 840 | TilePathInfo Schema (pathId, connections mit from/to) | mittel | Nein | #802, #1800 | Map.md#schema, Map-Feature.md#overworldtile, Path.md |
+| 844 | Sichtweiten-Berechnung: Basis-Sichtweite 1 Hex bei flachem Terrain | mittel | Nein | #801, #802, #843 | Map.md, Map-Feature.md#sichtweiten-berechnung |
+| 848 | Time-Visibility-Modifier: Tageszeit reduziert Sicht | mittel | Nein | #843, #900 | Map.md, Map-Feature.md#umwelt-modifier, Time-System.md#sichtweiten-einfluss-post-mvp |
+| 850 | Creature-Sichtweite für Encounter-Trigger | mittel | Nein | #200, #843, #1202 | Map.md, Map-Feature.md#creature-sichtweite, Creature.md#sinne-post-mvp |
+| 852 | POI glowsAtNight Mechanik: Ignoriert Nacht-Modifier | mittel | Nein | #843, #851, #1515 | Map.md, Map-Feature.md#poi-fernsicht, POI.md#nachtleuchtende-pois-glowsatnight-post-mvp |
+| 854 | Visibility Cache: partyPosition, timeSegment, weatherModifier, visibleTiles, timestamp | mittel | Nein | #843 | Map.md, Map-Feature.md#performance-optimierung |
