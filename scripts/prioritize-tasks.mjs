@@ -129,6 +129,12 @@ SORTIERKRITERIEN:
   3. Prio: hoch > mittel > niedrig
   4. RefCount: Tasks, von denen viele andere abhängen
   5. Task-Nummer: Niedrigere = älter = höhere Priorität
+
+ZYKLEN-ERKENNUNG:
+  Das Skript warnt automatisch bei zirkulären Dependencies (z.B. #100 → #101 → #100).
+  Betroffene Tasks können niemals "nicht blockiert" werden.
+  Die Warnung erscheint auch im --quiet Modus.
+  Bei --json werden Zyklen im "cycles" Feld ausgegeben.
 `);
 }
 
@@ -234,6 +240,108 @@ function parseRoadmap(content) {
     }
   }
   return { tasks, bugs };
+}
+
+/**
+ * Findet alle zirkulären Dependencies im Dependency-Graph
+ * Verwendet DFS mit Rekursions-Stack zur Zyklen-Erkennung
+ *
+ * @param {Array} items - Alle Tasks und Bugs
+ * @returns {Array} - Liste von deduplizierten Zyklen (jeder Zyklus = Array von IDs)
+ */
+function findCycles(items) {
+  // Dependency-Graph aufbauen (ID → Array<Dependency-IDs>)
+  // Bugs werden komplett ignoriert - sie zeigen "broken" an, blockieren aber nicht
+  const graph = new Map();
+  const allIds = new Set();
+
+  for (const item of items) {
+    // Bugs überspringen - nur Tasks analysieren
+    if (item.isBug) continue;
+
+    // Nur Task-Deps (Zahlen), keine Bug-Deps (Strings wie 'b4')
+    const taskDeps = item.deps.filter(dep => typeof dep === 'number');
+    graph.set(item.number, taskDeps);
+    allIds.add(item.number);
+  }
+
+  const cycles = [];
+  const globalVisited = new Set();
+
+  /**
+   * DFS von einem Startknoten aus - findet alle Zyklen die diesen Knoten enthalten
+   */
+  function dfs(node, path, pathSet) {
+    if (pathSet.has(node)) {
+      // Zyklus gefunden - extrahiere den Zyklus aus dem Pfad
+      const cycleStart = path.indexOf(node);
+      if (cycleStart !== -1) {
+        cycles.push([...path.slice(cycleStart), node]);
+      }
+      return;
+    }
+
+    // Nur Knoten besuchen die im Graph existieren
+    if (!allIds.has(node)) return;
+
+    pathSet.add(node);
+    path.push(node);
+
+    const deps = graph.get(node) || [];
+    for (const dep of deps) {
+      dfs(dep, path, pathSet);
+    }
+
+    path.pop();
+    pathSet.delete(node);
+  }
+
+  // Von jedem Knoten aus suchen
+  for (const id of allIds) {
+    dfs(id, [], new Set());
+  }
+
+  return deduplicateCycles(cycles);
+}
+
+/**
+ * Normalisiert einen Zyklus für Vergleichbarkeit
+ * Rotiert so dass das "kleinste" Element zuerst kommt
+ */
+function normalizeCycle(cycle) {
+  // Entferne das letzte Element (Duplikat vom ersten)
+  const c = cycle.slice(0, -1);
+  if (c.length === 0) return c;
+
+  // Finde den Index des "kleinsten" Elements (Zahlen vor Strings, dann numerisch/alphabetisch)
+  let minIdx = 0;
+  for (let i = 1; i < c.length; i++) {
+    const curr = c[i];
+    const min = c[minIdx];
+
+    // Zahlen sind "kleiner" als Strings (Bug-IDs)
+    if (typeof curr === 'number' && typeof min === 'string') {
+      minIdx = i;
+    } else if (typeof curr === typeof min) {
+      if (curr < min) minIdx = i;
+    }
+  }
+
+  return [...c.slice(minIdx), ...c.slice(0, minIdx)];
+}
+
+/**
+ * Entfernt doppelte Zyklen (gleiche Zyklen in verschiedener Rotation)
+ */
+function deduplicateCycles(cycles) {
+  const seen = new Set();
+  return cycles.filter(cycle => {
+    const normalized = normalizeCycle(cycle);
+    const key = normalized.map(id => typeof id === 'string' ? id : `#${id}`).join('→');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
@@ -377,11 +485,22 @@ function formatTable(items, refCounts) {
 /**
  * Formatiert JSON-Ausgabe
  */
-function formatJson(tasks, refCounts) {
-  const output = tasks.map(t => ({
+function formatJson(tasks, refCounts, cycles) {
+  const items = tasks.map(t => ({
     ...t,
     refCount: refCounts.get(t.number) || 0
   }));
+
+  // Zyklen formatieren: IDs zu lesbaren Strings
+  const formattedCycles = cycles.map(cycle =>
+    cycle.map(id => typeof id === 'string' ? id : `#${id}`)
+  );
+
+  const output = {
+    items,
+    cycles: formattedCycles
+  };
+
   console.log(JSON.stringify(output, null, 2));
 }
 
@@ -426,6 +545,17 @@ function main() {
   const statusMap = new Map(allItems.map(t => [t.number, t.status]));
   const refCounts = calculateRefCounts(allItems);
 
+  // Zirkuläre Dependencies prüfen (Warnung erscheint auch im quiet-Mode!)
+  const cycles = findCycles(allItems);
+  if (cycles.length > 0) {
+    console.warn('\n⚠️  WARNUNG: Zirkuläre Dependencies gefunden!\n');
+    for (const cycle of cycles) {
+      const formatted = cycle.map(id => typeof id === 'string' ? id : `#${id}`);
+      console.warn(`   ${formatted.join(' → ')}`);
+    }
+    console.warn('\nDiese Tasks/Bugs können niemals "nicht blockiert" werden.\n');
+  }
+
   if (!opts.quiet) {
     console.log(`Gefunden: ${tasks.length} Tasks, ${bugs.length} Bugs`);
 
@@ -463,7 +593,7 @@ function main() {
 
   // Ausgabe
   if (opts.json) {
-    formatJson(results, refCounts);
+    formatJson(results, refCounts, cycles);
   } else {
     if (!opts.quiet) {
       const taskCount = results.filter(r => !r.isBug).length;
