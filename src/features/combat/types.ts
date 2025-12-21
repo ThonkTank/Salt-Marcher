@@ -167,6 +167,8 @@ export interface ConcentrationCheckRequired {
 export interface CombatServiceDeps {
   /** EventBus for cross-feature communication */
   eventBus?: import('@core/events').EventBus;
+  /** Party feature for character lookups (optional - for party member events) */
+  partyFeature?: import('@/features/party').PartyFeaturePort;
 }
 
 // ============================================================================

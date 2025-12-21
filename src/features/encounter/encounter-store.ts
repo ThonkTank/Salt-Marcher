@@ -80,6 +80,13 @@ export interface EncounterStore {
   resetDailyXP(dayNumber: number, budget: number): void;
 
   /**
+   * Update daily budget without resetting progress.
+   * Used when party composition changes mid-day.
+   * @param budget - The new daily XP budget
+   */
+  updateDailyBudget(budget: number): void;
+
+  /**
    * Check if daily XP budget is exhausted (>75% used).
    * Used to influence encounter type derivation.
    */
@@ -183,6 +190,16 @@ export function createEncounterStore(): EncounterStore {
           budgetTotal: budget,
           budgetUsed: 0,
           combatEncountersToday: 0,
+        },
+      };
+    },
+
+    updateDailyBudget(budget: number): void {
+      state = {
+        ...state,
+        dailyXP: {
+          ...state.dailyXP,
+          budgetTotal: budget,
         },
       };
     },

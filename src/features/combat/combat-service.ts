@@ -21,6 +21,10 @@ import {
   type TimeAdvanceRequestedPayload,
 } from '@core/events';
 import type {
+  PartyMemberAddedPayload,
+  PartyMemberRemovedPayload,
+} from '@core/events/domain-events';
+import type {
   CombatState,
   CombatParticipant,
   Condition,
@@ -53,7 +57,7 @@ import {
  * Create combat service.
  */
 export function createCombatService(deps: CombatServiceDeps): CombatFeaturePort {
-  const { eventBus } = deps;
+  const { eventBus, partyFeature } = deps;
   const store: CombatStore = createCombatStore();
   const subscriptions: Unsubscribe[] = [];
 
@@ -279,6 +283,56 @@ export function createCombatService(deps: CombatServiceDeps): CombatFeaturePort 
           updateInitiative(event.payload.participantId, event.payload.initiative);
         }
       )
+    );
+
+    // Handle party member added - add to combat if active
+    subscriptions.push(
+      eventBus.subscribe<PartyMemberAddedPayload>(EventTypes.PARTY_MEMBER_ADDED, (event) => {
+        const state = store.getState();
+        if (state.status !== 'active') return;
+        if (!partyFeature) return;
+
+        // Get character data from party
+        const membersOpt = partyFeature.getMembers();
+        if (!('some' in membersOpt)) return;
+
+        const character = membersOpt.value.find((c) => c.id === event.payload.characterId);
+        if (!character) return;
+
+        // Check if already a participant
+        if (state.participants.some((p) => p.entityId === event.payload.characterId)) return;
+
+        // Create participant from character
+        const participant: CombatParticipant = {
+          id: `char-${event.payload.characterId}`,
+          type: 'character',
+          entityId: event.payload.characterId,
+          name: character.name,
+          initiative: 0, // GM sets initiative manually
+          maxHp: character.maxHp,
+          currentHp: character.currentHp,
+          conditions: [],
+          effects: [],
+        };
+
+        store.addParticipant(participant);
+        publishStateChanged();
+      })
+    );
+
+    // Handle party member removed - remove from combat if active
+    subscriptions.push(
+      eventBus.subscribe<PartyMemberRemovedPayload>(EventTypes.PARTY_MEMBER_REMOVED, (event) => {
+        const state = store.getState();
+        if (state.status !== 'active') return;
+
+        // Find participant by entityId
+        const participant = state.participants.find((p) => p.entityId === event.payload.characterId);
+        if (!participant) return;
+
+        store.removeParticipant(participant.id);
+        publishStateChanged();
+      })
     );
   }
 

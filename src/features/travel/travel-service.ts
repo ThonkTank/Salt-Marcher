@@ -48,6 +48,10 @@ import type {
 import { calculateHexTraversalTime, createInitialTravelState } from './types';
 import { createTravelStore } from './travel-store';
 import { addDuration as addDurationToTime } from '../time/time-utils';
+import type {
+  PartyMemberAddedPayload,
+  PartyMemberRemovedPayload,
+} from '@core/events/domain-events';
 import {
   calculateEncounterChance,
   rollEncounter,
@@ -878,6 +882,27 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
           }
         }
       )
+    );
+
+    // Handle party member changes - recalculate speed/ETA if traveling
+    subscriptions.push(
+      eventBus.subscribe<PartyMemberAddedPayload>(EventTypes.PARTY_MEMBER_ADDED, (event) => {
+        const status = store.getStatus();
+        if (status === 'traveling' || status === 'paused' || status === 'planning') {
+          // Speed changed, notify UI to recalculate ETA
+          publishStateChanged(event.correlationId);
+        }
+      })
+    );
+
+    subscriptions.push(
+      eventBus.subscribe<PartyMemberRemovedPayload>(EventTypes.PARTY_MEMBER_REMOVED, (event) => {
+        const status = store.getStatus();
+        if (status === 'traveling' || status === 'paused' || status === 'planning') {
+          // Speed/capacity changed, notify UI to recalculate ETA
+          publishStateChanged(event.correlationId);
+        }
+      })
     );
   }
 

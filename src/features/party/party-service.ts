@@ -37,6 +37,8 @@ import type {
   PartyTransportChangedPayload,
   PartyLoadedPayload,
   PartyLoadRequestedPayload,
+  PartyMemberAddedPayload,
+  PartyMemberRemovedPayload,
 } from '@core/events/domain-events';
 import { calculateEffectiveSpeed, calculateEncumbrance } from '@/features/inventory';
 
@@ -173,6 +175,38 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
 
     eventBus.publish(
       createEvent(EventTypes.PARTY_LOADED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'party-feature',
+      })
+    );
+  }
+
+  function publishMemberAdded(characterId: CharacterId, correlationId?: string): void {
+    if (!eventBus) return;
+
+    const payload: PartyMemberAddedPayload = {
+      characterId,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.PARTY_MEMBER_ADDED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'party-feature',
+      })
+    );
+  }
+
+  function publishMemberRemoved(characterId: CharacterId, correlationId?: string): void {
+    if (!eventBus) return;
+
+    const payload: PartyMemberRemovedPayload = {
+      characterId,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.PARTY_MEMBER_REMOVED, payload, {
         correlationId: correlationId ?? newCorrelationId(),
         timestamp: now(),
         source: 'party-feature',
@@ -397,6 +431,7 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
       store.setLoadedMembers(members);
 
       publishStateChanged();
+      publishMemberAdded(characterId);
       return ok(undefined);
     },
 
@@ -420,6 +455,7 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
       store.setLoadedMembers(members);
 
       publishStateChanged();
+      publishMemberRemoved(characterId);
       return ok(undefined);
     },
 

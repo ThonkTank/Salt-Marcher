@@ -26,6 +26,10 @@ import {
   type LootGeneratedPayload,
   type TimeDayChangedPayload,
 } from '@core/events';
+import type {
+  PartyMemberAddedPayload,
+  PartyMemberRemovedPayload,
+} from '@core/events/domain-events';
 import { now, type EntityId } from '@core/types';
 import type {
   EncounterInstance,
@@ -845,6 +849,29 @@ export function createEncounterService(
     // NOTE: Travel encounter checks are handled by travel-service.ts at hour boundaries
     // via checkForEncounter() which publishes ENCOUNTER_GENERATE_REQUESTED.
     // See: Travel-System.md:232-239 and Encounter-System.md:385-395
+
+    // Handle party member changes - recalculate daily budget
+    // (Party composition affects XP budget calculation)
+    const recalculateDailyBudget = (): void => {
+      const partyMembers = getPartyMembersForBudget();
+      const mediumBudget = calculateXPBudget(partyMembers, 'medium');
+      const dailyBudget = mediumBudget * 6;
+      store.updateDailyBudget(dailyBudget);
+    };
+
+    subscriptions.push(
+      eventBus.subscribe<PartyMemberAddedPayload>(EventTypes.PARTY_MEMBER_ADDED, () => {
+        recalculateDailyBudget();
+        publishStateChanged();
+      })
+    );
+
+    subscriptions.push(
+      eventBus.subscribe<PartyMemberRemovedPayload>(EventTypes.PARTY_MEMBER_REMOVED, () => {
+        recalculateDailyBudget();
+        publishStateChanged();
+      })
+    );
   }
 
   // Initialize event handlers

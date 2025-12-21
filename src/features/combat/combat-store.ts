@@ -62,6 +62,12 @@ export interface CombatStore {
 
   /** Decrement condition durations at end of turn */
   decrementConditionDurations(participantId: string): Condition[];
+
+  /** Add participant to combat (for late-joiners) */
+  addParticipant(participant: CombatParticipant): void;
+
+  /** Remove participant from combat */
+  removeParticipant(participantId: string): void;
 }
 
 // ============================================================================
@@ -249,6 +255,49 @@ export function createCombatStore(): CombatStore {
       }));
 
       return expired;
+    },
+
+    addParticipant(participant: CombatParticipant): void {
+      if (state.status !== 'active') return;
+
+      // Check if participant already exists
+      if (state.participants.some((p) => p.id === participant.id)) return;
+
+      // Add participant and re-sort by initiative
+      const newParticipants = [...state.participants, participant].sort(
+        (a, b) => b.initiative - a.initiative
+      );
+
+      state = {
+        ...state,
+        participants: newParticipants,
+        initiativeOrder: newParticipants.map((p) => p.id),
+      };
+    },
+
+    removeParticipant(participantId: string): void {
+      if (state.status !== 'active') return;
+
+      const index = state.participants.findIndex((p) => p.id === participantId);
+      if (index === -1) return;
+
+      const newParticipants = state.participants.filter((p) => p.id !== participantId);
+      const newInitiativeOrder = state.initiativeOrder.filter((id) => id !== participantId);
+
+      // Adjust currentTurnIndex if needed
+      let newTurnIndex = state.currentTurnIndex;
+      if (index < state.currentTurnIndex) {
+        newTurnIndex = Math.max(0, newTurnIndex - 1);
+      } else if (newTurnIndex >= newInitiativeOrder.length) {
+        newTurnIndex = 0;
+      }
+
+      state = {
+        ...state,
+        participants: newParticipants,
+        initiativeOrder: newInitiativeOrder,
+        currentTurnIndex: newTurnIndex,
+      };
     },
   };
 }

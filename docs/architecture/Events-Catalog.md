@@ -93,6 +93,88 @@ Zeit-Verwaltung und Kalender.
 
 ---
 
+## rest:*
+
+Short/Long Rest mit Encounter-Checks und Gritty Realism Option.
+
+### Implementierungs-Status
+
+| Event | Status | Seit |
+|-------|--------|------|
+| `rest:short-rest-requested` | ❌ | - |
+| `rest:long-rest-requested` | ❌ | - |
+| `rest:resume-requested` | ❌ | - |
+| `rest:restart-requested` | ❌ | - |
+| `rest:state-changed` | ❌ | - |
+| `rest:started` | ❌ | - |
+| `rest:paused` | ❌ | - |
+| `rest:resumed` | ❌ | - |
+| `rest:short-rest-completed` | ❌ | - |
+| `rest:long-rest-completed` | ❌ | - |
+
+```typescript
+// Requests
+'rest:short-rest-requested': {
+  location?: HexCoordinate;
+}
+
+'rest:long-rest-requested': {
+  location?: HexCoordinate;
+}
+
+'rest:resume-requested': {}      // Nach Encounter: Rast fortsetzen
+
+'rest:restart-requested': {}     // Nach Encounter: Rast neustarten
+
+// State-Changes
+'rest:state-changed': {
+  state: 'idle' | 'resting' | 'paused';
+  type?: 'short' | 'long';
+  hoursCompleted: number;
+  hoursRemaining: number;
+}
+
+// Lifecycle
+'rest:started': {
+  type: 'short' | 'long';
+  location?: HexCoordinate;
+}
+// Sticky: true - Clears: rest:*-completed
+
+'rest:paused': {
+  reason: 'encounter';
+  hoursCompleted: number;
+}
+
+'rest:resumed': {
+  hoursRemaining: number;
+}
+
+'rest:short-rest-completed': {
+  duration: Duration;
+  location?: HexCoordinate;
+  wasInterrupted: boolean;
+}
+
+'rest:long-rest-completed': {
+  duration: Duration;
+  location?: HexCoordinate;
+  wasInterrupted: boolean;
+  interruptionCount: number;   // Wie oft unterbrochen
+}
+```
+
+**Gritty Realism:**
+
+| Modus | Short Rest | Long Rest |
+|-------|------------|-----------|
+| Normal | 1 Stunde | 8 Stunden |
+| Gritty Realism | 1 Tag (24h) | 1 Woche (7 Tage) |
+
+GM kann in den Optionen "Gritty Realism" aktivieren. Encounter-Checks werden entsprechend angepasst.
+
+---
+
 ## travel:*
 
 Reise-System fuer Hex-Overland-Maps.
@@ -204,8 +286,8 @@ Party-Verwaltung und Position.
 | `party:add-member-requested` | ❌ | - | Member-Management |
 | `party:remove-member-requested` | ❌ | - | Member-Management |
 | `party:members-changed` | ❌ | - | Member-Management |
-| `party:member-added` | ❌ | - | Member-Management |
-| `party:member-removed` | ❌ | - | Member-Management |
+| `party:member-added` | ✅ | 15 | Member-Management |
+| `party:member-removed` | ✅ | 15 | Member-Management |
 | `party:xp-gained` | ❌ | - | XP-System |
 
 ```typescript
