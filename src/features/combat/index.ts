@@ -14,6 +14,7 @@ export { createCombatService } from './combat-service';
 export {
   calculateConcentrationDc,
   calculateCombatDuration,
+  createCombatCreature,
   createParticipantFromCreature,
   createParticipantFromCharacter,
   getXpForCr,
