@@ -280,7 +280,7 @@ interface GroupRelation {
 | 239 | calculateXPBudget: Party-Size × Level × Difficulty-Faktor | hoch | Ja | #237, #502, #1001 | Encounter-Balancing.md#xp-budget, Character-System.md#encounter-balancing |
 | 241 | DailyXPTracker Interface: date, budgetTotal, budgetUsed, encountersToday | hoch | Ja | #910 | Encounter-Balancing.md#daily-xp-budget-tracking, Time-System.md#gamedate |
 | 243 | Erschöpftes Budget Effekt: <25% → 50% Combat→Trace, =0% → keine Combat | hoch | Ja | #241, #242 | Encounter-Balancing.md#effekt-auf-generierung, Encounter-System.md#typ-ableitung |
-| 245 | fillCombatEncounter: Lead + Companions + XP-Berechnung | hoch | Ja | #231, #238, #239, #244, #1200, #1300, b5 | Encounter-Balancing.md#combat-befuellung, Encounter-System.md#encounter-befuellung, Creature.md#schema, NPC-System.md#lead-npc-auswahl |
+| 245 | fillCombatEncounter: Lead + Companions + XP-Berechnung | hoch | Ja | #231, #238, #239, #244, #1200, #1300 | Encounter-Balancing.md#combat-befuellung, Encounter-System.md#encounter-befuellung, Creature.md#schema, NPC-System.md#lead-npc-auswahl |
 | 247 | SocialEncounter Interface: leadNPC, disposition, possibleOutcomes, trade? | hoch | Ja | #213, #231, #1300 | Encounter-Balancing.md#social, Encounter-System.md#typ-spezifisches-verhalten, NPC-System.md#lead-npc-auswahl |
 | 249 | PassingEncounter Interface: creature, activity, distance, awareness | hoch | Ja | #213, #1200 | Encounter-Balancing.md#passing, Encounter-System.md#typ-spezifisches-verhalten, Creature.md#schema |
 | 251 | Multi-Gruppen-Trigger: Variety-Adjustment, Location-based, Random Chance | niedrig | Nein | #210, #250, #1319 | Encounter-Balancing.md#multi-gruppen-encounters, Encounter-System.md#variety-validation, NPC-System.md#multi-gruppen-encounters |
