@@ -47,3 +47,12 @@ export { createItemRegistry, type ItemStoragePort } from './item-registry';
 // In-memory adapters for testing
 export { createMapAdapter, TEST_MAP_ID } from './map-adapter';
 export { createPartyAdapter, DEFAULT_PARTY_ID } from './party-adapter';
+
+// ============================================================================
+// EntityRegistry Adapter
+// ============================================================================
+
+export {
+  createVaultEntityRegistryAdapter,
+  preloadEntityTypes,
+} from './entity-registry.adapter';

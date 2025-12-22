@@ -78,7 +78,6 @@ export interface SessionRunnerViewModel {
   onZoom(delta: number): void;
 
   // Header Interactions
-  onTimeAdvance(hours: number): void;
   onToggleSidebar(): void;
 
   // Travel Planning
@@ -424,14 +423,13 @@ export function createSessionRunnerViewModel(
       )
     );
 
-    // Time state changed - update time display
+    // Time state changed - update time display (including header clock)
     eventSubscriptions.push(
       eventBus.subscribe<TimeStateChangedPayload>(
         EventTypes.TIME_STATE_CHANGED,
-        (event) => {
-          const { currentTime } = event.payload;
-          const timeSegment = timeFeature.getTimeSegment();
-          updateState({ currentTime, timeSegment }, ['full']);
+        () => {
+          syncFromFeatures();
+          notify(['header']);
         }
       )
     );
@@ -709,20 +707,6 @@ export function createSessionRunnerViewModel(
     onZoom(delta: number): void {
       const newZoom = Math.max(0.25, Math.min(4, state.zoom + delta));
       updateState({ zoom: newZoom }, ['camera']);
-    },
-
-    async onTimeAdvance(hours: number): Promise<void> {
-      // Advance time by the specified hours (Pessimistic Save-First - already persists)
-      const result = await timeFeature.advanceTime({ hours: Math.abs(hours), minutes: 0 });
-
-      if (!result.ok) {
-        console.warn('Failed to advance time:', result.error);
-        return;
-      }
-
-      // Sync and notify
-      syncFromFeatures();
-      notify(['full', 'header']);
     },
 
     onToggleSidebar(): void {

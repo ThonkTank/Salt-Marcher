@@ -7,9 +7,16 @@ Dieses Dokument definiert, wie Claude Code mit diesem Repository arbeitet.
 **STOPP.** Bevor du irgendetwas tust:
 
 1. **[Goals.md](Goals.md) lesen** - Vision, Features, Entity-Typen, Architektur
-2. Die Dokumentations-Referenz am Ende von Goals.md zeigt, wo Details stehen
+2. **Task-Skripte nutzen** - Die Roadmap ist zu groß zum direkten Lesen:
+   ```bash
+   node scripts/prioritize-tasks.mjs         # Top-Tasks anzeigen
+   node scripts/task-lookup.mjs -s <keyword> # Nach Keyword suchen
+   node scripts/task-lookup.mjs <ID> --deps  # Task-Details + Dependencies
+   ```
 
 Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
+
+**⚠️ WICHTIG:** Die Development-Roadmap.md **NIEMALS** direkt lesen - nur über die Task-Skripte!
 
 ## Soll vs. Ist (Dokumentation vs. Implementierung)
 
@@ -21,6 +28,7 @@ Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 | Tasks mit ✅ | Implementiert und funktionsfähig |
 | Tasks mit ⚠️ | Implementiert aber nicht funktionsfähig |
 | Tasks mit 🔶 | Funktionsfähig aber nicht spezifikations-konform |
+| Tasks mit 🔒 | Von einem Agenten geclaimed (in Bearbeitung) |
 
 **Wichtig:** Feature-Docs beschreiben das vollständige Feature, auch wenn nur Teile implementiert sind. Die Tasks-Liste mit Status-Spalte zeigt den tatsächlichen Stand.
 
@@ -34,38 +42,47 @@ Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 
 ### Task-zentrierter Workflow
 
-**Jede Implementierung beginnt mit einer Task aus der Roadmap.**
+**Jede Implementierung beginnt mit einer Task - gefunden über die Task-Skripte.**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ 1. TASK IDENTIFIZIEREN                                      │
-│    → Roadmap → Tasks-Liste → Task #N finden oder anlegen    │
+│ 1. TASK FINDEN                                              │
+│    → node scripts/prioritize-tasks.mjs [keyword]            │
+│    → node scripts/task-lookup.mjs -s <keyword>              │
 ├─────────────────────────────────────────────────────────────┤
-│ 2. SPEC LESEN                                               │
-│    → Spec-Spalte der Task folgen (z.B. Travel-System.md#...)│
+│ 2. TASK SOFORT CLAIMEN ⚠️                                   │
+│    → node scripts/update-tasks.mjs <ID> --claim             │
+│    → Bei Fehler (bereits geclaimed): andere Task wählen!    │
 ├─────────────────────────────────────────────────────────────┤
-│ 3. IMP.-SPALTE PRÜFEN                                       │
-│    → Welche Dateien sind betroffen? [neu] oder [ändern]?    │
+│ 3. TASK DETAILS + DOCS LESEN                                │
+│    → node scripts/task-lookup.mjs <ID> --deps               │
+│    → Spec-Spalte → relevante Docs lesen                     │
 ├─────────────────────────────────────────────────────────────┤
 │ 4. IMPLEMENTIEREN                                           │
 │    → Code schreiben, testen                                 │
 ├─────────────────────────────────────────────────────────────┤
-│ 5. ROADMAP UPDATEN                                          │
-│    → Status ✅, Imp.-Verweise aktualisieren                 │
+│ 5. TASK ABSCHLIESSEN                                        │
+│    → node scripts/update-tasks.mjs <ID> --status ✅          │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**⚠️ CLAIM FIRST:** Claimen SOFORT nach Task-Auswahl - BEVOR Docs gelesen, geplant oder implementiert wird! Verhindert Doppelarbeit bei parallelen Agenten.
 
 ### Task-Existenz-Prüfung (PFLICHT)
 
 **STOPP. Bevor du Code schreibst:**
 
-1. Gibt es bereits eine Task (#N) für diese Arbeit?
-   - **Ja** → Task-Nummer notieren, Spec-Spalte folgen
-   - **Nein** → Task anlegen mit `[neu]`/`[ändern]` in Imp.-Spalte
+```bash
+# 1. Task suchen
+node scripts/task-lookup.mjs -s <keyword>
+node scripts/prioritize-tasks.mjs <keyword>
 
-2. Ist die Imp.-Spalte ausgefüllt?
-   - **Ja** → Diese Dateien als Einstiegspunkt nutzen
-   - **Nein** → Imp.-Spalte mit erwarteten Dateien befüllen
+# 2. Falls keine passende Task existiert → neue anlegen
+node scripts/update-tasks.mjs --add --bereich X --beschreibung "..." --prio mittel
+
+# 3. Task-Details abrufen (zeigt Spec, Imp, Deps)
+node scripts/task-lookup.mjs <ID> --deps
+```
 
 **Keine Implementierung ohne Task-Referenz.**
 
@@ -123,40 +140,64 @@ FEATURE (was):
 CLAUDE.md Workflow hat **Vorrang** vor dem Plan-Mode-Workflow.
 
 **Reihenfolge im Plan-Mode:**
-1. Goals.md + Development-Roadmap.md lesen
-2. Existierende Task(s) identifizieren (anlegen erst nach ExitPlanMode)
-3. **Feature-Routing-Tabelle konsultieren** → ALLE Pflicht-Docs notieren
-4. Leseliste mit TodoWrite erstellen (**≥5 Docs**, inkl. Task-Referenz falls vorhanden)
-5. Leseliste abarbeiten (jeden Doc mit Read-Tool lesen)
-6. DANN erst Explore-Agents starten
-7. Nach ExitPlanMode: Fehlende Tasks in Roadmap anlegen
+1. Goals.md lesen (einmal pro Session)
+2. Task mit Skript finden:
+   ```bash
+   node scripts/prioritize-tasks.mjs [keyword]  # oder
+   node scripts/task-lookup.mjs -s <keyword>
+   ```
+3. **⚠️ TASK SOFORT CLAIMEN** - VOR dem Weitermachen!
+   ```bash
+   node scripts/update-tasks.mjs <ID> --claim
+   ```
+   Bei Fehler: andere Task wählen (zurück zu Schritt 2)
+4. **Feature-Routing-Tabelle konsultieren** → ALLE Pflicht-Docs notieren
+5. Leseliste mit TodoWrite erstellen (**≥5 Docs**, inkl. Task-Referenz)
+6. Leseliste abarbeiten (jeden Doc mit Read-Tool lesen)
+7. DANN erst Explore-Agents starten
+8. ExitPlanMode → Implementieren → Status setzen
 
 **Keine Abkürzungen:** Auch im Plan-Mode müssen alle Pflicht-Docs aus der Routing-Tabelle gelesen werden.
 
-### Phase 1: Dokumentation lesen (KEINE Tools außer Read)
+### Phase 1: Task finden, claimen, Dokumentation lesen
 
 **STOPP. Bevor du Task-Agenten, Explore-Agenten oder andere Tools verwendest:**
 
-1. **Lies mit dem Read-Tool:**
-   - [Goals.md](Goals.md) - Zentraler Einstieg
-   - [Development-Roadmap.md](docs/architecture/Development-Roadmap.md) - Task identifizieren
+1. **Goals.md lesen** (einmal pro Session)
 
-2. **Konsultiere die Architektur-Baseline** (siehe [Anhang](#architektur-baseline-immer-lesen)):
+2. **Task mit Skript finden:**
+   ```bash
+   node scripts/prioritize-tasks.mjs         # Top-Tasks anzeigen
+   node scripts/task-lookup.mjs -s <keyword> # Nach Keyword suchen
+   ```
+
+3. **⚠️ TASK SOFORT CLAIMEN:**
+   ```bash
+   node scripts/update-tasks.mjs <ID> --claim
+   ```
+   Bei Fehler (bereits geclaimed): andere Task wählen (zurück zu Schritt 2)
+
+4. **Task-Details abrufen:**
+   ```bash
+   node scripts/task-lookup.mjs <ID> --deps  # Details + Dependencies
+   ```
+
+5. **Konsultiere die Architektur-Baseline** (siehe [Anhang](#architektur-baseline-immer-lesen)):
    - Wähle mindestens 3 relevante Architektur-Docs
    - Layer-Docs (Features.md, Application.md) sind fast immer relevant
    - Bei Events: EventBus.md, Data-Flow.md
 
-3. **Konsultiere die Feature-Routing-Tabelle** (siehe [Anhang](#features-backend)):
+6. **Konsultiere die Feature-Routing-Tabelle** (siehe [Anhang](#features-backend)):
    - Finde die Zeile, die zu deiner Task passt
    - Notiere **ALLE** Pflicht-Docs aus der "Pflicht-Docs" Spalte
    - Die Spec-Spalte der Task ist ein **Shortcut** (Anker-Link zur relevanten Sektion)
 
-4. **Erstelle Leseliste mit TodoWrite:**
+7. **Erstelle Leseliste mit TodoWrite:**
    - ARCHITEKTUR: Conventions.md + Error-Handling.md + 1-2 aus Baseline
    - FEATURE: ALLE Docs aus Routing-Tabelle
    - **Mindestens 3 Architektur-Docs + alle Feature-Docs**
 
-5. **Arbeite die Leseliste ab** - Markiere jeden Todo als `completed` nach dem Lesen
+8. **Arbeite die Leseliste ab** - Markiere jeden Todo als `completed` nach dem Lesen
 
 ❌ FALSCH: Nur Feature-Docs lesen, Architektur-Baseline ignorieren
 ✅ RICHTIG: Architektur-Baseline (3+) → Feature-Routing-Tabelle → Spec-Spalte als Einstieg
@@ -187,7 +228,7 @@ Nach Abschluss von Phase 1:
 
 Salt Marcher is a D&D 5e world-building and session management tool built as an Obsidian plugin. It includes hex map editing, travel simulation, encounter generation, weather systems, and combat tracking.
 
-**Aktueller Status:** Siehe [Development-Roadmap.md](docs/architecture/Development-Roadmap.md) für den Implementierungsstand. Das `Archive/`-Verzeichnis enthält frühere Alpha-Implementierungen nur als Referenz.
+**Aktueller Status:** Nutze `node scripts/prioritize-tasks.mjs` für den Implementierungsstand. Das `Archive/`-Verzeichnis enthält frühere Alpha-Implementierungen nur als Referenz.
 
 ## Build-Kommandos
 
@@ -229,11 +270,12 @@ Zeigt priorisierte Tasks und Bugs aus der Development-Roadmap.md.
 - Bugs sind implizit MVP=Ja und blockiert (wegen offener Deps)
 
 **Filter-Optionen:**
-- `-s, --status <status>` - Status-Filter (🔶, ⚠️, ⬜ oder: done, partial, broken, open)
+- `-s, --status <status>` - Status-Filter (🔶, ⚠️, ⬜, 🔒 oder: done, partial, broken, open, claimed)
 - `--mvp` / `--no-mvp` - Nur MVP bzw. Nicht-MVP Tasks
 - `-p, --prio <prio>` - Prioritäts-Filter (hoch, mittel, niedrig)
 - `--include-done` - Auch ✅ Tasks anzeigen
 - `--include-blocked` - Auch blockierte Tasks/Bugs anzeigen
+- `--include-claimed` - Auch 🔒 (geclaimed) Tasks anzeigen
 
 **Output-Optionen:**
 - `-n, --limit <N>` - Anzahl Ergebnisse (default: 10, 0 = alle)
@@ -241,8 +283,8 @@ Zeigt priorisierte Tasks und Bugs aus der Development-Roadmap.md.
 - `-q, --quiet` - Nur Tabelle, keine Statistiken
 
 **Sortierkriterien:**
-1. Status: 🔶 > ⚠️ > ⬜
-2. MVP: Ja > Nein
+1. MVP: Ja > Nein
+2. Status: 🔶 > ⚠️ > ⬜ > 🔒
 3. Prio: hoch > mittel > niedrig
 4. RefCount: Tasks/Bugs, von denen viele abhängen
 5. Nummer: Niedriger = höhere Priorität
@@ -286,6 +328,58 @@ node scripts/task-lookup.mjs -s Quest --json      # JSON-Ausgabe
 - `-b, --bereich <KEYWORD>` - Suche nur im Bereich
 - `--spec <KEYWORD>` - Suche nur in der Spec-Spalte
 - `-n, --limit <N>` - Max. Ergebnisse (default: 20, 0 = alle)
+
+### Task-Updates
+
+```bash
+# Status ändern
+node scripts/update-tasks.mjs 428 --status ✅
+
+# Dependencies ändern / entfernen
+node scripts/update-tasks.mjs 428 --deps "#100, #202"
+node scripts/update-tasks.mjs 428 --no-deps          # Entfernt alle Dependencies
+
+# Task claimen / freigeben / prüfen
+node scripts/update-tasks.mjs 428 --claim
+node scripts/update-tasks.mjs 428 --unclaim
+node scripts/update-tasks.mjs 428 --check-claim      # Claim-Status prüfen
+node scripts/update-tasks.mjs --whoami               # Zeigt eigene Agent-ID
+
+# Neue Task anlegen
+node scripts/update-tasks.mjs --add --bereich Travel --beschreibung "Neue Feature" --prio hoch
+node scripts/update-tasks.mjs --add --bereich Map --beschreibung "Fix" --mvp Ja --spec "Map.md#anchor"
+
+# Bug-Management
+node scripts/update-tasks.mjs --add-bug "Beschreibung" --prio hoch --deps "#428"
+node scripts/update-tasks.mjs --delete-bug b4
+
+# Task splitten
+node scripts/update-tasks.mjs 428 --split "Teil A fertig" "Teil B TODO"
+
+# Vorschau ohne Änderungen
+node scripts/update-tasks.mjs 428 --status ✅ --dry-run
+
+# Output-Optionen
+node scripts/update-tasks.mjs 428 --status ✅ --json   # JSON-Ausgabe
+node scripts/update-tasks.mjs 428 --status ✅ --quiet  # Minimale Ausgabe
+```
+
+**Automatisches Verhalten:**
+- **Multi-File-Sync**: Deps-Änderungen werden in alle Doc-Files synchronisiert
+- **Bug-Propagation**: Neue Bugs setzen referenzierte Tasks automatisch auf ⚠️
+- **Claim-Expire**: Claims verfallen nach 2 Stunden automatisch
+- **Status entfernt Claim**: Status-Änderung (außer auf 🔒) entfernt den Claim automatisch
+
+**Claiming-System:**
+- `🔒` Status markiert geclaime Tasks
+- Automatische Agent-ID (gespeichert in `.my-agent-id`)
+- `task-lookup.mjs` zeigt Owner-Warnung bei geclaimten Tasks
+
+**Optionen:**
+- `--dry-run, -n` - Nur Vorschau, keine Änderungen
+- `--json` - JSON-Ausgabe
+- `--quiet, -q` - Minimale Ausgabe
+- `--agent-id <id>` - Agent-ID explizit setzen (überschreibt `.my-agent-id`)
 
 ## Projektstruktur
 
@@ -466,6 +560,64 @@ Bei fehlenden oder unklaren Schemas: User fragen.
 
 Diese Tabelle ist die einzige Quelle der Wahrheit für Roadmap-Updates. Keine Ausnahmen.
 
+### PFLICHT: Task-Updates über Tool
+
+**STOPP.**
+- **Niemals** Development-Roadmap.md **direkt editieren** - nur über `update-tasks.mjs`
+- **Niemals** Development-Roadmap.md **direkt lesen** - nur über `task-lookup.mjs` / `prioritize-tasks.mjs`
+
+Alle Task-Änderungen MÜSSEN über das `update-tasks.mjs` Tool erfolgen:
+
+| Aktion | Kommando |
+|--------|----------|
+| Task claimen | `node scripts/update-tasks.mjs <ID> --claim` |
+| Claim freigeben | `node scripts/update-tasks.mjs <ID> --unclaim` |
+| Claim prüfen | `node scripts/update-tasks.mjs <ID> --check-claim` |
+| Status ändern | `node scripts/update-tasks.mjs <ID> --status ✅` |
+| Deps ändern | `node scripts/update-tasks.mjs <ID> --deps "#X, #Y"` |
+| Deps entfernen | `node scripts/update-tasks.mjs <ID> --no-deps` |
+| Neue Task | `node scripts/update-tasks.mjs --add --bereich X --beschreibung "..." [--prio X] [--mvp Ja] [--spec "..."]` |
+| Bug melden | `node scripts/update-tasks.mjs --add-bug "Beschreibung" [--prio hoch] [--deps "..."]` |
+| Bug löschen | `node scripts/update-tasks.mjs --delete-bug b4` |
+| Task splitten | `node scripts/update-tasks.mjs <ID> --split "Teil A" "Teil B"` |
+| Eigene ID anzeigen | `node scripts/update-tasks.mjs --whoami` |
+| Vorschau | Jedes Kommando mit `--dry-run` |
+
+**Workflow bei Task-Bearbeitung:**
+
+1. Task claimen: `node scripts/update-tasks.mjs 428 --claim`
+2. Implementieren
+3. Status setzen: `node scripts/update-tasks.mjs 428 --status ✅`
+
+**Bei geclaimten Tasks:**
+- `task-lookup.mjs` zeigt Owner an
+- Wenn DU der Owner bist → Weiterarbeiten
+- Wenn ANDERER Agent Owner → Andere Task wählen
+
+**Automatische Agent-ID:**
+- Jeder Agent bekommt beim ersten `--claim` eine eindeutige ID
+- ID wird in `.my-agent-id` gespeichert
+- `--whoami` zeigt deine ID an
+
+**Auto-Expire:** Claims verfallen nach 2 Stunden automatisch.
+
+### Multi-Agent-Setup
+
+**PFLICHT beim Session-Start:** Eindeutige Agent-ID setzen:
+
+```bash
+export CLAUDE_AGENT_ID="agent-$(openssl rand -hex 4)"
+```
+
+**Warum immer?** Ein Agent kann nicht wissen, ob andere Agenten gleichzeitig arbeiten. Die `.my-agent-id` Datei wird von allen Agenten auf derselben Maschine geteilt. Ohne eindeutige ID würden Claims nicht funktionieren.
+
+Die Agent-ID Fallback-Kette:
+1. `CLAUDE_AGENT_ID` Umgebungsvariable (höchste Priorität)
+2. `--agent-id <id>` CLI-Flag
+3. `.my-agent-id` Datei (niedrigste Priorität)
+
+**Annahme:** Immer davon ausgehen, dass andere Agenten simultan arbeiten könnten.
+
 ### Imp.-Spalte Format
 
 ```
@@ -643,7 +795,7 @@ Konsultiere diese Tabelle und lies die zugeordneten Docs **VOR** dem Code.
 | **Testing** | Testing.md, Conventions.md |
 | **Architektur-Fragen** | Features.md, Data-Flow.md, Project-Structure.md, Application.md |
 | **Layer-Grenzen** | Features.md, Application.md, Infrastructure.md |
-| **Implementierungsstand** | Development-Roadmap.md |
+| **Implementierungsstand** | `node scripts/prioritize-tasks.mjs` / `task-lookup.mjs` |
 | **Begriffe/Glossar** | Glossary.md |
 | **Typische Workflows** | Example-Workflows.md |
 

@@ -828,7 +828,7 @@ Shop-Tab zeigt Haendler-Inventar
 | 2405 | Auto-Open Verhalten für Combat-Tab (combat:started) | hoch | Ja | #2401, #322 | DetailView.md#auto-open-verhalten, Combat-System.md#combat-flow, Events-Catalog.md#combat |
 | 2406 | Auto-Open Verhalten für Location-Tab (ui:tile-selected, optional) | niedrig | Nein | #2401, #2448 | DetailView.md#auto-open-verhalten |
 | 2407 | Tab-Priorität System (Combat > Encounter > Rest) | mittel | Ja | #2402 | DetailView.md#auto-open-verhalten |
-| 2408 | Encounter-Tab Component (Container) | hoch | Ja | #2400, #2409 | DetailView.md#encounter-tab |
+| 2408 | Encounter-Tab Component (Container) | hoch | Ja | #2400, #2409, b5 | DetailView.md#encounter-tab |
 | 2409 | Encounter-Builder State (Name, Activity, Goal, Creatures) | hoch | Ja | #2401 | DetailView.md#encounter-tab, Encounter-System.md#schemas |
 | 2410 | Encounter-Suche (Autocomplete für gespeicherte EncounterDefinitions) | mittel | Ja | #2408, #2409 | DetailView.md#encounter-tab, Encounter-System.md#schemas |
 | 2411 | Kreatur/NPC-Suche (Autocomplete für CreatureDefinitions + Named NPCs) | hoch | Ja | #2408, #2409 | DetailView.md#encounter-tab, Creature.md#schema, NPC-System.md#npc-schema |

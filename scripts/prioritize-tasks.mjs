@@ -16,15 +16,15 @@
  *   node scripts/prioritize-tasks.mjs --help             # Hilfe anzeigen
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROADMAP_PATH = join(__dirname, '..', 'docs', 'architecture', 'Development-Roadmap.md');
 
-// Sortier-Prioritäten
-const STATUS_PRIORITY = { '🔶': 0, '⚠️': 1, '⬜': 2, '✅': 3 };
+// Sortier-Prioritäten (🔒 = claimed, niedriger als ⬜ aber höher als ✅)
+const STATUS_PRIORITY = { '🔶': 0, '⚠️': 1, '⬜': 2, '🔒': 3, '✅': 4 };
 const MVP_PRIORITY = { 'Ja': 0, 'Nein': 1 };
 const PRIO_PRIORITY = { 'hoch': 0, 'mittel': 1, 'niedrig': 2 };
 
@@ -33,8 +33,24 @@ const STATUS_ALIASES = {
   'done': '✅', 'fertig': '✅', 'complete': '✅',
   'partial': '🔶', 'nonconform': '🔶',
   'broken': '⚠️', 'warning': '⚠️',
-  'open': '⬜', 'todo': '⬜', 'offen': '⬜'
+  'open': '⬜', 'todo': '⬜', 'offen': '⬜',
+  'claimed': '🔒', 'locked': '🔒', 'wip': '🔒'
 };
+
+// Claims-Datei Pfad
+const CLAIMS_PATH = join(__dirname, '..', 'docs', 'architecture', '.task-claims.json');
+
+/**
+ * Lädt die Claims-Datei
+ */
+function loadClaims() {
+  try {
+    if (!existsSync(CLAIMS_PATH)) return {};
+    return JSON.parse(readFileSync(CLAIMS_PATH, 'utf-8')).claims || {};
+  } catch {
+    return {};
+  }
+}
 
 /**
  * Parst Command-Line-Argumente
@@ -48,6 +64,7 @@ function parseArgs(argv) {
     prio: null,        // null = alle
     includeDone: false,
     includeBlocked: false,
+    includeClaimed: false,
     json: false,
     quiet: false,
     help: false
@@ -74,6 +91,8 @@ function parseArgs(argv) {
       opts.includeDone = true;
     } else if (arg === '--include-blocked') {
       opts.includeBlocked = true;
+    } else if (arg === '--include-claimed') {
+      opts.includeClaimed = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '-q' || arg === '--quiet') {
@@ -108,6 +127,7 @@ FILTER-OPTIONEN:
   -p, --prio <prio>       Nur Tasks mit dieser Priorität (hoch, mittel, niedrig)
   --include-done          Auch ✅ Tasks anzeigen
   --include-blocked       Auch Tasks mit unerfüllten Dependencies anzeigen
+  --include-claimed       Auch 🔒 (geclaimed) Tasks anzeigen
 
 OUTPUT-OPTIONEN:
   -n, --limit <N>         Anzahl der Ergebnisse (default: 10, 0 = alle)
@@ -124,8 +144,8 @@ BEISPIELE:
   node scripts/prioritize-tasks.mjs --json travel       # JSON-Ausgabe für "travel"
 
 SORTIERKRITERIEN:
-  1. Status: 🔶 > ⚠️ > ⬜
-  2. MVP: Ja > Nein
+  1. MVP: Ja > Nein (alle MVP-Tasks vor allen post-MVP-Tasks)
+  2. Status: 🔶 > ⚠️ > ⬜
   3. Prio: hoch > mittel > niedrig
   4. RefCount: Tasks, von denen viele andere abhängen
   5. Task-Nummer: Niedrigere = älter = höhere Priorität
@@ -413,27 +433,6 @@ function calculateRefCounts(items) {
 }
 
 /**
- * Bug-Status-Propagation: Tasks die von Bugs referenziert werden → ⚠️
- * Und Bug-ID wird als Dependency hinzugefügt
- */
-function propagateBugStatus(tasks, bugs) {
-  const taskMap = new Map(tasks.map(t => [t.number, t]));
-
-  for (const bug of bugs) {
-    for (const dep of bug.deps) {
-      // Nur Task-IDs (Zahlen oder alphanumerisch), keine Bug-IDs
-      if (isTaskId(dep)) {
-        const task = taskMap.get(dep);
-        if (task && task.status === '✅') {
-          task.status = '⚠️';
-          task.deps.push(bug.number);  // z.B. 'b4'
-        }
-      }
-    }
-  }
-}
-
-/**
  * Prüft ob alle Dependencies erfüllt sind (Status = ✅)
  * Bug-Deps werden ignoriert - sie zeigen "broken" an, blockieren aber nicht
  */
@@ -453,11 +452,13 @@ function areDepsResolved(item, statusMap) {
  * Unterstützt gemischte IDs (Tasks: Zahlen, Bugs: Strings wie 'b4')
  */
 function compareItems(a, b, refCounts) {
-  const statusDiff = (STATUS_PRIORITY[a.status] ?? 99) - (STATUS_PRIORITY[b.status] ?? 99);
-  if (statusDiff !== 0) return statusDiff;
-
+  // 1. MVP zuerst - alle MVP-Tasks vor allen post-MVP-Tasks
   const mvpDiff = (MVP_PRIORITY[a.mvp] ?? 99) - (MVP_PRIORITY[b.mvp] ?? 99);
   if (mvpDiff !== 0) return mvpDiff;
+
+  // 2. Status innerhalb der MVP-Gruppe
+  const statusDiff = (STATUS_PRIORITY[a.status] ?? 99) - (STATUS_PRIORITY[b.status] ?? 99);
+  if (statusDiff !== 0) return statusDiff;
 
   const prioDiff = (PRIO_PRIORITY[a.prio] ?? 99) - (PRIO_PRIORITY[b.prio] ?? 99);
   if (prioDiff !== 0) return prioDiff;
@@ -483,6 +484,7 @@ function compareItems(a, b, refCounts) {
 function matchesFilters(task, opts, statusMap) {
   // Status-Filter
   if (!opts.includeDone && task.status === '✅') return false;
+  if (!opts.includeClaimed && task.status === '🔒') return false;
   if (opts.status && task.status !== opts.status) return false;
 
   // Dependency-Filter
@@ -571,6 +573,7 @@ function describeFilters(opts) {
   if (opts.keywords.length) parts.push(`Keywords="${opts.keywords.join('" ODER "')}"`);
   if (opts.includeDone) parts.push('+done');
   if (opts.includeBlocked) parts.push('+blocked');
+  if (opts.includeClaimed) parts.push('+claimed');
   return parts.length ? parts.join(', ') : 'keine';
 }
 
@@ -590,10 +593,8 @@ function main() {
   const content = readFileSync(ROADMAP_PATH, 'utf-8');
   const { tasks, bugs } = parseRoadmap(content);
 
-  // Bug-Status-Propagation: Tasks die von Bugs referenziert werden → ⚠️
-  propagateBugStatus(tasks, bugs);
-
   // Alle Items kombinieren
+  // Hinweis: Bug-Status-Propagation erfolgt automatisch bei --add-bug in update-tasks.mjs
   const allItems = [...tasks, ...bugs];
 
   // Status-Map für Dependency-Prüfung
@@ -615,7 +616,7 @@ function main() {
     console.log(`Gefunden: ${tasks.length} Tasks, ${bugs.length} Bugs`);
 
     // Status-Aufschlüsselung
-    const statusCounts = { '✅': 0, '🔶': 0, '⚠️': 0, '⬜': 0 };
+    const statusCounts = { '✅': 0, '🔶': 0, '⚠️': 0, '⬜': 0, '🔒': 0 };
     let blockedCount = 0;
     for (const item of allItems) {
       statusCounts[item.status] = (statusCounts[item.status] || 0) + 1;
@@ -623,7 +624,7 @@ function main() {
         blockedCount++;
       }
     }
-    console.log(`Status: ${statusCounts['✅']} ✅, ${statusCounts['🔶']} 🔶, ${statusCounts['⚠️']} ⚠️, ${statusCounts['⬜']} ⬜, ${blockedCount} ❌`);
+    console.log(`Status: ${statusCounts['✅']} ✅, ${statusCounts['🔶']} 🔶, ${statusCounts['⚠️']} ⚠️, ${statusCounts['⬜']} ⬜, ${statusCounts['🔒']} 🔒, ${blockedCount} ❌`);
 
     console.log(`Filter: ${describeFilters(opts)}`);
   }
@@ -660,8 +661,8 @@ function main() {
 
     if (!opts.quiet) {
       console.log('\n--- Sortierkriterien ---');
-      console.log('1. Status: 🔶 > ⚠️ > ⬜');
-      console.log('2. MVP: Ja > Nein');
+      console.log('1. MVP: Ja > Nein');
+      console.log('2. Status: 🔶 > ⚠️ > ⬜ > 🔒');
       console.log('3. Prio: hoch > mittel > niedrig');
       console.log('4. RefCount: Höher = wichtiger');
       console.log('5. Nummer: Niedriger = höhere Priorität');

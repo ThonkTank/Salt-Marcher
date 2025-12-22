@@ -386,7 +386,10 @@ export function createEncounterTab(
     const combatBtn = document.createElement('button');
     combatBtn.textContent = '⚔️ Combat starten';
     combatBtn.style.cssText = getButtonStyle('primary');
-    combatBtn.disabled = enc.builderCreatures.length === 0;
+    combatBtn.disabled = enc.builderCreatures.length === 0 || !enc.currentEncounter;
+    combatBtn.title = enc.currentEncounter
+      ? 'Startet Combat mit den aufgelisteten Kreaturen'
+      : 'Generiere zuerst einen Encounter';
     combatBtn.addEventListener('click', () => {
       const encounterId = enc.currentEncounter?.id ?? '';
       if (encounterId) {

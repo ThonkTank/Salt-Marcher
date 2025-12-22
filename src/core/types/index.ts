@@ -51,17 +51,17 @@ export {
   type FactionId,
   type ItemId,
   type MapId,
-  type LocationId,
+  type PoiId,
   type MaplinkId,
   type TerrainId,
   type QuestId,
   type EncounterId,
   type ShopId,
+  type PartyId,
   type CalendarId,
   type JournalId,
   type WorldeventId,
   type TrackId,
-  type PartyId,
   // Helper functions
   createEntityId,
   toEntityId,
@@ -69,3 +69,13 @@ export {
   toTimestamp,
   createError,
 } from './common';
+
+// EntityRegistry types
+export {
+  type EntityRegistryPort,
+  type EntityTypeMap,
+  type Entity,
+  ValidationError,
+  NotFoundError,
+  IOError,
+} from './entity-registry.port';

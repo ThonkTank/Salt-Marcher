@@ -13,10 +13,6 @@ import type { RenderState, HeaderState } from '../types';
 export interface HeaderPanelCallbacks {
   /** Toggle sidebar visibility */
   onMenuClick: () => void;
-  /** Advance time backward (-1h) */
-  onTimePrev: () => void;
-  /** Advance time forward (+1h) */
-  onTimeNext: () => void;
   /** Open settings (placeholder) */
   onSettingsClick: () => void;
 }
@@ -93,21 +89,7 @@ export function createHeaderPanel(
     color: var(--text-normal);
   `;
 
-  const timeControls = document.createElement('div');
-  timeControls.className = 'header-time-controls';
-  timeControls.style.cssText = `
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  `;
-
-  const timePrevBtn = createIconButton('◀', '-1 hour', callbacks.onTimePrev);
-  const timeNextBtn = createIconButton('▶', '+1 hour', callbacks.onTimeNext);
-  timeControls.appendChild(timePrevBtn);
-  timeControls.appendChild(timeNextBtn);
-
   centerSection.appendChild(dateTimeEl);
-  centerSection.appendChild(timeControls);
   header.appendChild(centerSection);
 
   // === Right Section ===

@@ -93,12 +93,48 @@ export const creaturePreferencesSchema = z.object({
 export type CreaturePreferences = z.infer<typeof creaturePreferencesSchema>;
 
 // ============================================================================
+// DefaultLoot Schema
+// ============================================================================
+
+/**
+ * Entry for default loot that a creature may drop.
+ * Used by Loot-Feature during encounter processing.
+ *
+ * @see docs/domain/Creature.md#defaultloot
+ */
+export const defaultLootEntrySchema = z.object({
+  /** Reference to the item */
+  itemId: entityIdSchema('item'),
+
+  /** Drop chance (0.0-1.0, where 1.0 = guaranteed) */
+  chance: z.number().min(0).max(1),
+
+  /** Quantity: fixed number or [min, max] range */
+  quantity: z
+    .union([
+      z.number().int().positive(),
+      z.tuple([z.number().int().positive(), z.number().int().positive()]),
+    ])
+    .optional(),
+});
+
+export type DefaultLootEntry = z.infer<typeof defaultLootEntrySchema>;
+
+// ============================================================================
 // CreatureDefinition Schema
 // ============================================================================
 
 /**
  * Schema for a creature definition (template/statblock).
  * This is a reusable template - runtime instances are created during Encounter/Combat.
+ *
+ * The Creature-Hierarchy:
+ * - CreatureDefinition: Template/Statblock (EntityRegistry)
+ * - Creature: Runtime instance during Encounter/Combat (not persisted)
+ * - NPC: Named persistent instance with personality (EntityRegistry)
+ *
+ * @see docs/domain/Creature.md
+ * @see docs/architecture/EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc
  */
 export const creatureDefinitionSchema = z.object({
   /** Unique creature identifier */
@@ -145,6 +181,9 @@ export const creatureDefinitionSchema = z.object({
   /** Tags for loot generation (e.g., ["humanoid", "poor", "tribal"]) */
   lootTags: z.array(z.string()).default([]),
 
+  /** Default loot that this creature may drop (guaranteed/probable items) */
+  defaultLoot: z.array(defaultLootEntrySchema).optional(),
+
   // === D&D 5e Statblock (MVP subset) ===
 
   /** Ability scores */
@@ -180,8 +219,13 @@ export type CreatureDefinition = z.infer<typeof creatureDefinitionSchema>;
 /**
  * Schema for a creature runtime instance during Encounter/Combat.
  * NOT stored in EntityRegistry - exists only in Feature state.
+ *
+ * This is distinct from CreatureDefinition (template) and NPC (persistent instance).
+ *
+ * @see docs/domain/Creature.md#creature-runtime
+ * @see docs/architecture/EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc
  */
-export const creatureInstanceSchema = z.object({
+export const creatureSchema = z.object({
   /** Unique runtime instance ID */
   instanceId: z.string().min(1),
 
@@ -211,7 +255,17 @@ export const creatureInstanceSchema = z.object({
   concentrationSpell: z.string().optional(),
 });
 
-export type CreatureInstance = z.infer<typeof creatureInstanceSchema>;
+export type Creature = z.infer<typeof creatureSchema>;
+
+/**
+ * @deprecated Use `creatureSchema` instead. Will be removed in next major version.
+ */
+export const creatureInstanceSchema = creatureSchema;
+
+/**
+ * @deprecated Use `Creature` instead. Will be removed in next major version.
+ */
+export type CreatureInstance = Creature;
 
 // ============================================================================
 // CreatureRef (for NPC linking)

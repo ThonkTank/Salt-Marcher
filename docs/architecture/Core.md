@@ -131,11 +131,11 @@ type Map = z.infer<typeof MapSchema>;
 Alle unterstützten Entity-Typen für das EntityRegistry-Pattern:
 
 ```typescript
-// MVP Entity-Typen (15)
+// MVP Entity-Typen (16)
 type EntityType =
-  | 'creature' | 'character' | 'npc' | 'faction' | 'item' | 'culture'
-  | 'map' | 'poi' | 'terrain'
-  | 'quest' | 'encounter' | 'shop'
+  | 'creature' | 'character' | 'npc' | 'faction' | 'item'
+  | 'map' | 'poi' | 'maplink' | 'terrain'
+  | 'quest' | 'encounter' | 'shop' | 'party'
   | 'calendar' | 'journal' | 'worldevent'
   | 'track';
 
@@ -159,17 +159,18 @@ type CharacterId = EntityId<'character'>;
 type NpcId = EntityId<'npc'>;
 type FactionId = EntityId<'faction'>;
 type ItemId = EntityId<'item'>;
-type CultureId = EntityId<'culture'>;
 
 // World Entities
 type MapId = EntityId<'map'>;
 type POIId = EntityId<'poi'>;
+type MaplinkId = EntityId<'maplink'>;
 type TerrainId = EntityId<'terrain'>;
 
 // Session Entities
 type QuestId = EntityId<'quest'>;
 type EncounterId = EntityId<'encounter'>;
 type ShopId = EntityId<'shop'>;
+type PartyId = EntityId<'party'>;
 
 // Time & Events
 type CalendarId = EntityId<'calendar'>;

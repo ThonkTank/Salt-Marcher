@@ -109,8 +109,13 @@ export {
   type SpeedBlock,
   creaturePreferencesSchema,
   type CreaturePreferences,
+  defaultLootEntrySchema,
+  type DefaultLootEntry,
   creatureDefinitionSchema,
   type CreatureDefinition,
+  creatureSchema,
+  type Creature,
+  // Deprecated aliases (for backwards compatibility)
   creatureInstanceSchema,
   type CreatureInstance,
   creatureRefSchema,
@@ -305,3 +310,13 @@ export {
   journalEntrySchema,
   type JournalEntry,
 } from './journal';
+
+// POI schemas
+export {
+  poiCoordinateSchema,
+  type PoiCoordinate,
+  poiTypeSchema,
+  type PoiType,
+  basePoiSchema,
+  type BasePOI,
+} from './poi';

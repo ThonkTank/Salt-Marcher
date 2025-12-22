@@ -37,7 +37,7 @@ export const timestampSchema: z.ZodType<Timestamp> = z
 // ============================================================================
 
 /**
- * Schema for EntityType union.
+ * Schema for EntityType union (16 MVP types).
  */
 export const entityTypeSchema = z.enum([
   'creature',
@@ -46,18 +46,17 @@ export const entityTypeSchema = z.enum([
   'faction',
   'item',
   'map',
-  'location',
-  'poi', // Alias for location, used in Faction/NPC schemas
+  'poi',
   'maplink',
   'terrain',
   'quest',
   'encounter',
   'shop',
+  'party',
   'calendar',
   'journal',
   'worldevent',
   'track',
-  'party',
 ]);
 
 // ============================================================================

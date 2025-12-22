@@ -8,7 +8,7 @@
 
 /**
  * All supported entity types for the EntityRegistry pattern.
- * MVP: 18 types (15 core + poi + track + party)
+ * MVP: 16 types
  */
 export type EntityType =
   | 'creature'
@@ -17,18 +17,17 @@ export type EntityType =
   | 'faction'
   | 'item'
   | 'map'
-  | 'location'
   | 'poi' // Points of Interest (used in Faction territory, NPC location)
   | 'maplink'
   | 'terrain'
   | 'quest'
   | 'encounter'
   | 'shop'
+  | 'party'
   | 'calendar'
   | 'journal'
   | 'worldevent'
-  | 'track'
-  | 'party';
+  | 'track';
 
 // ============================================================================
 // Branded Types
@@ -104,18 +103,17 @@ export type NpcId = EntityId<'npc'>;
 export type FactionId = EntityId<'faction'>;
 export type ItemId = EntityId<'item'>;
 export type MapId = EntityId<'map'>;
-export type LocationId = EntityId<'location'>;
 export type PoiId = EntityId<'poi'>;
 export type MaplinkId = EntityId<'maplink'>;
 export type TerrainId = EntityId<'terrain'>;
 export type QuestId = EntityId<'quest'>;
 export type EncounterId = EntityId<'encounter'>;
 export type ShopId = EntityId<'shop'>;
+export type PartyId = EntityId<'party'>;
 export type CalendarId = EntityId<'calendar'>;
 export type JournalId = EntityId<'journal'>;
 export type WorldeventId = EntityId<'worldevent'>;
 export type TrackId = EntityId<'track'>;
-export type PartyId = EntityId<'party'>;
 
 // ============================================================================
 // Helper Functions

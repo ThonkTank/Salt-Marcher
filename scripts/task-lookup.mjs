@@ -19,12 +19,58 @@
  *   node scripts/task-lookup.mjs --spec Weather     # Nur in der Spec-Spalte suchen
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync, writeFileSync } from 'fs';
+import { randomBytes } from 'crypto';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROADMAP_PATH = join(__dirname, '..', 'docs', 'architecture', 'Development-Roadmap.md');
+const CLAIMS_PATH = join(__dirname, '..', 'docs', 'architecture', '.task-claims.json');
+const AGENT_ID_PATH = join(__dirname, '..', '.my-agent-id');
+
+/**
+ * Lädt oder generiert die eigene Agent-ID aus Datei
+ */
+function getOrCreateAgentIdFromFile() {
+  try {
+    if (existsSync(AGENT_ID_PATH)) {
+      return readFileSync(AGENT_ID_PATH, 'utf-8').trim();
+    }
+    const id = 'agent-' + randomBytes(4).toString('hex');
+    writeFileSync(AGENT_ID_PATH, id);
+    return id;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Holt Agent-ID mit Fallback-Kette:
+ * 1. Umgebungsvariable CLAUDE_AGENT_ID (höchste Priorität)
+ * 2. Datei .my-agent-id (generiert bei Bedarf)
+ */
+function getAgentId() {
+  // 1. Umgebungsvariable (höchste Priorität)
+  if (process.env.CLAUDE_AGENT_ID) {
+    return process.env.CLAUDE_AGENT_ID;
+  }
+
+  // 2. Datei (Fallback)
+  return getOrCreateAgentIdFromFile();
+}
+
+/**
+ * Lädt die Claims-Datei
+ */
+function loadClaims() {
+  try {
+    if (!existsSync(CLAIMS_PATH)) return {};
+    return JSON.parse(readFileSync(CLAIMS_PATH, 'utf-8')).claims || {};
+  } catch {
+    return {};
+  }
+}
 
 /**
  * Parst eine Task-ID (z.B. "428", "428b", "2917a")
@@ -610,6 +656,34 @@ function main() {
 
     if (dependents) {
       console.log(formatItemList(dependents, 'Blockiert (wartet auf dieses Item)'));
+    }
+
+    // Claim-Warnung anzeigen
+    if (item.status === '🔒') {
+      const claims = loadClaims();
+      const claimKey = String(item.number);
+      const claim = claims[claimKey];
+
+      if (claim) {
+        const myId = getAgentId();
+        if (claim.owner === myId) {
+          console.log('\n✅ Diese Task ist von DIR geclaimed.');
+        } else {
+          console.warn(`\n⚠️  WARNUNG: Task ${formatId(item.number)} wird von ${claim.owner} bearbeitet!`);
+        }
+
+        // Expiry-Info
+        const expiry = new Date(new Date(claim.timestamp).getTime() + 2 * 60 * 60 * 1000);
+        const remaining = expiry.getTime() - Date.now();
+        if (remaining > 0) {
+          const mins = Math.floor(remaining / 60000);
+          const hours = Math.floor(mins / 60);
+          const remainingMins = mins % 60;
+          console.log(`   Claim läuft ab in: ${hours}h ${remainingMins}m`);
+        } else {
+          console.log('   Claim ist abgelaufen (wird beim nächsten update-tasks Aufruf entfernt)');
+        }
+      }
     }
   }
 }

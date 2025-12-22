@@ -399,8 +399,8 @@ Vault/SaltMarcher/data/
 | 1202 | terrainAffinities: Array von Terrain-IDs | hoch | Ja | #1200, #1700 | Creature.md#creaturedefinition, Terrain.md#schema |
 | 1203 | activeTime: TimeSegment-Array (dawn, day, dusk, night) | hoch | Ja | #1200 | Creature.md#creaturedefinition, Encounter-System.md#tile-eligibility |
 | 1204 | lootTags: String-Array für Loot-System | hoch | Ja | #1200 | Creature.md#creaturedefinition, Loot-Feature.md#loot-tags |
-| 1205 | DefaultLootEntry Interface: itemId, chance, quantity | hoch | Ja | #1200, #1600 | Creature.md#defaultloot, Item.md#schema |
-| 1206 | defaultLoot Array: Garantiertes/wahrscheinliches Loot | hoch | Ja | #1205 | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot |
+| 1205 | DefaultLootEntry Interface: itemId, chance, quantity | hoch | Ja | - | Creature.md#defaultloot, Item.md#schema |
+| 1206 | defaultLoot Array: Garantiertes/wahrscheinliches Loot | hoch | Ja | - | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot |
 | 1207 | CreaturePreferences Interface: Gewichtungs-Modifikatoren | hoch | Ja | #1200 | Creature.md#creaturepreferences, Encounter-System.md#tile-eligibility |
 | 1208 | AbilityScores Interface: STR, DEX, CON, INT, WIS, CHA | hoch | Ja | #1200 | Creature.md#creaturedefinition, Combat-System.md#schemas |
 | 1209 | SpeedBlock Interface: walk, fly, swim, climb, burrow | hoch | Ja | #1200 | Creature.md#creaturedefinition |

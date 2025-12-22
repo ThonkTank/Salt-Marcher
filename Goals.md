@@ -161,7 +161,7 @@ Grid-basierte Dungeon-Maps mit Simulation:
 
 ---
 
-## Entity-Typen (MVP: 15 Typen)
+## Entity-Typen (MVP: 16 Typen)
 
 | Entity | Beschreibung |
 |--------|--------------|
@@ -170,8 +170,8 @@ Grid-basierte Dungeon-Maps mit Simulation:
 | `npc` | Persistierte NPCs mit Persönlichkeit |
 | `item` | Ausrüstung und Gegenstände |
 | `faction` | Fraktionen (Culture embedded) |
-| `location` | POIs (Points of Interest) auf Maps |
-| `maplink` | Standalone Map-Links (ohne Location) |
+| `poi` | Points of Interest auf Maps |
+| `maplink` | Standalone Map-Links (ohne POI) |
 | `terrain` | Custom Terrain-Definitionen mit Mechaniken |
 | `track` | Audio-Tracks mit Mood-Tags (dynamisch ausgewählt) |
 | `quest` | Quest-Definitionen |
@@ -181,6 +181,7 @@ Grid-basierte Dungeon-Maps mit Simulation:
 | `map` | Karten (Hex, Town, Grid) |
 | `journal` | Automatische Ereignis-Historie |
 | `worldevent` | Geplante Kalender-Events |
+| `party` | Party-Daten (aktive Charaktere, Position) |
 
 **Post-MVP Entity-Typen:**
 

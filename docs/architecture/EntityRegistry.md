@@ -44,7 +44,7 @@ Zentrale Speicherung und Verwaltung aller persistenten Entities.
 ```typescript
 // @core/types/entity-registry.port.ts
 
-// MVP Entity-Typen (14)
+// MVP Entity-Typen (16)
 type EntityType =
   // Core Entities
   | 'creature'     // Monster/NPC-Statblocks (Templates, nicht Instanzen!)
@@ -55,11 +55,13 @@ type EntityType =
   // World Entities
   | 'map'          // Map-Definitionen
   | 'poi'          // Points of Interest (→ docs/domain/POI.md)
+  | 'maplink'      // Standalone Map-Links (ohne POI)
   | 'terrain'      // Custom Terrain-Definitionen mit Mechaniken
   // Session Entities
   | 'quest'        // Quest-Definitionen
   | 'encounter'    // Vordefinierte Encounter-Templates
   | 'shop'         // Haendler mit Inventar
+  | 'party'        // Party-Daten (aktive Charaktere, Position)
   // Time & Events
   | 'calendar'     // Kalender-Definitionen
   | 'journal'      // Journal-Entries (Arrivals, Events, etc.)
@@ -130,7 +132,7 @@ interface EntityRegistryPort {
 ## Entity-Type Mapping
 
 ```typescript
-// Type-safe Entity Mapping (14 MVP Types)
+// Type-safe Entity Mapping (16 MVP Types)
 type EntityTypeMap = {
   // Core Entities
   creature: CreatureDefinition;     // Template, NICHT Instanz
@@ -141,11 +143,13 @@ type EntityTypeMap = {
   // World Entities
   map: MapDefinition;
   poi: POI;                         // Points of Interest (alle Typen)
+  maplink: MapLink;                 // Standalone Map-Links (ohne POI)
   terrain: TerrainDefinition;       // Custom Terrains mit Mechaniken
   // Session Entities
   quest: Quest;
   encounter: EncounterDefinition;   // Vordefinierte Encounter-Templates
   shop: ShopDefinition;             // Haendler mit Inventar
+  party: Party;                     // Party-Daten (aktive Charaktere, Position)
   // Time & Events
   calendar: CalendarDefinition;
   journal: JournalEntry;
@@ -803,8 +807,8 @@ Aktuelles Wetter
 | 1417 | Faction EntityRegistry Integration: 'faction' als Entity-Typ | hoch | Ja | #1400 | EntityRegistry.md#entity-type-mapping, Faction.md#schema |
 | 1516 | POI EntityRegistry Integration: 'location'/'poi' als Entity-Typ (bereits vorhanden) | hoch | Ja | #1503 | POI.md#schema, EntityRegistry.md#port-interface, EntityRegistry.md#entity-type-mapping |
 | 2800 | EntityRegistryPort Interface (get, getAll, query, save, delete, exists, count) | hoch | Ja | #2703 | EntityRegistry.md#port-interface, Core.md#branded-types |
-| 2801 | EntityTypeMap mit allen 14 MVP Entity-Typen (creature, character, npc, faction, item, map, poi, terrain, quest, encounter, shop, calendar, journal, worldevent, track) | hoch | Ja | #2703, #2800 | EntityRegistry.md#entity-type-mapping, Core.md#entitytype-union |
-| 2802 | VaultEntityRegistryAdapter Implementation (JSON-File-basiert mit Vault/{plugin}/data/{entityType}/{id}.json) | hoch | Ja | #2800, #2801 | EntityRegistry.md#storage, Infrastructure.md#adapter-pattern |
+| 2801 | EntityTypeMap mit allen 14 MVP Entity-Typen (creature, character, npc, faction, item, map, poi, terrain, quest, encounter, shop, calendar, journal, worldevent, track) | hoch | Ja | - | EntityRegistry.md#entity-type-mapping, Core.md#entitytype-union |
+| 2802 | VaultEntityRegistryAdapter Implementation (JSON-File-basiert mit Vault/{plugin}/data/{entityType}/{id}.json) | hoch | Ja | - | EntityRegistry.md#storage, Infrastructure.md#adapter-pattern |
 | 2803 | Zod-Validierung bei save() mit getSchemaForType() | hoch | Ja | #2802 | EntityRegistry.md#validierung, Core.md#zod-schemas |
 | 2804 | Predicate-basierte query() Methode (Lineare Suche für MVP) | hoch | Ja | #2802 | EntityRegistry.md#querying |
 | 2805 | Unbounded In-Memory Cache mit Map pro EntityType | hoch | Ja | #2802 | EntityRegistry.md#caching-strategy |
@@ -814,6 +818,6 @@ Aktuelles Wetter
 | 2809 | Error Handling: ValidationError, NotFoundError, IOError Klassen | hoch | Ja | #2803 | EntityRegistry.md#error-handling, Error-Handling.md |
 | 2810 | Entity-Deletion Cascades: Referenz-Prüfung und Soft-Cascade Bereinigung | mittel | Ja | #2802 | EntityRegistry.md#entity-deletion-cascades |
 | 2811 | Constructor Injection: Features erhalten EntityRegistryPort via Constructor | hoch | Ja | #2800, #2802 | EntityRegistry.md#bootstrapping, Features.md#feature-communication |
-| 2815 | CreatureDefinition vs Creature vs NPC Hierarchie dokumentieren und implementieren | hoch | Ja | #2801 | EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc, Creature.md, NPC-System.md |
+| 2815 | CreatureDefinition vs Creature vs NPC Hierarchie dokumentieren und implementieren | hoch | Ja | - | EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc, Creature.md, NPC-System.md |
 | 2817 | In-Memory-Indizes für häufige Queries (Post-MVP Performance-Optimierung) | niedrig | Nein | #2804 | EntityRegistry.md#querying |
 | 2818 | Schema-Migration System für automatische Updates (Post-MVP) | niedrig | Nein | #2803 | EntityRegistry.md#validierung |

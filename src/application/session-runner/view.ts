@@ -179,14 +179,6 @@ export class SessionRunnerView extends ItemView {
         this.sidebarPanel?.setCollapsed(collapsed);
       },
 
-      onTimePrev: () => {
-        this.viewModel?.onTimeAdvance(-1);
-      },
-
-      onTimeNext: () => {
-        this.viewModel?.onTimeAdvance(1);
-      },
-
       onSettingsClick: () => {
         // Placeholder for settings
         console.log('Settings clicked');
