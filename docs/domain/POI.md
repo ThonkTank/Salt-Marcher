@@ -522,7 +522,7 @@ const treasureChest: TreasurePOI = {
 | # | Beschreibung | Prio | MVP? | Deps | Referenzen |
 |--:|--------------|:----:|:----:|------|------------|
 | 1500 | BasePOI Interface mit gemeinsamen Eigenschaften (id, mapId, position, name, icon, visible) | hoch | Ja | - | POI.md#basepoi, EntityRegistry.md#entity-type-mapping |
-| 1501 | EntrancePOI Schema (linkedMapId, spawnPosition, description) | hoch | Ja | #1500 | POI.md#entrancepoi, Map-Navigation.md#bidirektionale-links |
+| 1501 | EntrancePOI Schema (linkedMapId, spawnPosition, description) | hoch | Ja | - | POI.md#entrancepoi, Map-Navigation.md#bidirektionale-links |
 | 1502 | LandmarkPOI Schema (description, gmNotes) | hoch | Ja | #1500 | POI.md#landmarkpoi |
 | 1503 | POI Union Type (entrance \| trap \| treasure \| landmark \| object) | hoch | Ja | #1500, #1501, #1502, #1504, #1505, #1506 | POI.md#poi-union-type, EntityRegistry.md#entity-type-mapping |
 | 1504 | TrapPOI Schema (dc, damage, triggered, detected, effect) | mittel | Nein | #1500 | POI.md#trappoi, Map-Feature.md#dungeontile |

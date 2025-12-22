@@ -828,7 +828,7 @@ Shop-Tab zeigt Haendler-Inventar
 | 2405 | Auto-Open Verhalten für Combat-Tab (combat:started) | hoch | Ja | #2401, #322 | DetailView.md#auto-open-verhalten, Combat-System.md#combat-flow, Events-Catalog.md#combat |
 | 2406 | Auto-Open Verhalten für Location-Tab (ui:tile-selected, optional) | niedrig | Nein | #2401, #2448 | DetailView.md#auto-open-verhalten |
 | 2407 | Tab-Priorität System (Combat > Encounter > Rest) | mittel | Ja | #2402 | DetailView.md#auto-open-verhalten |
-| 2408 | Encounter-Tab Component (Container) | hoch | Ja | #2400, #2409 | DetailView.md#encounter-tab |
+| 2408 | Encounter-Tab Component (Container) | hoch | Ja | - | DetailView.md#encounter-tab |
 | 2409 | Encounter-Builder State (Name, Activity, Goal, Creatures) | hoch | Ja | #2401 | DetailView.md#encounter-tab, Encounter-System.md#schemas |
 | 2410 | Encounter-Suche (Autocomplete für gespeicherte EncounterDefinitions) | mittel | Ja | #2408, #2409 | DetailView.md#encounter-tab, Encounter-System.md#schemas |
 | 2411 | Kreatur/NPC-Suche (Autocomplete für CreatureDefinitions + Named NPCs) | hoch | Ja | #2408, #2409 | DetailView.md#encounter-tab, Creature.md#schema, NPC-System.md#npc-schema |
@@ -851,8 +851,8 @@ Shop-Tab zeigt Haendler-Inventar
 | 2428 | Post-Combat Resolution: XP-Summary Phase | hoch | Ja | #338, #339, #340, #2419, #2427 | DetailView.md#post-combat-resolution, Combat-System.md#post-combat-resolution, Combat-System.md#xp-berechnung |
 | 2429 | Post-Combat Resolution: GM-Anpassung XP (%-Modifier) | hoch | Ja | #2419, #2428 | DetailView.md#post-combat-resolution, Combat-System.md#xp-berechnung |
 | 2430 | Post-Combat Resolution: Quest-Zuweisung Phase | hoch | Ja | #408, #409, #2420, #2427, #2428 | DetailView.md#post-combat-resolution, Quest-System.md#quest-assignment-ui-post-combat, Quest-System.md#40-60-split-mechanik, Combat-System.md#post-combat-resolution |
-| 2431 | Post-Combat Resolution: Loot-Verteilung Phase | hoch | Ja | #2420, #2428, #2801, #2802 | DetailView.md#post-combat-resolution, Loot-Feature.md#verteilen-einheitliches-loot-modal, Loot-Feature.md#loot-generierung-bei-encounter, Combat-System.md#post-combat-resolution |
-| 2432 | Shop-Tab Component (Buy/Sell Interface) | hoch | Ja | #2400, #2419, #2431 | DetailView.md#shop-tab, Shop.md#verwendung |
+| 2431 | Post-Combat Resolution: Loot-Verteilung Phase | hoch | Ja | - | DetailView.md#post-combat-resolution, Loot-Feature.md#verteilen-einheitliches-loot-modal, Loot-Feature.md#loot-generierung-bei-encounter, Combat-System.md#post-combat-resolution |
+| 2432 | Shop-Tab Component (Buy/Sell Interface) | hoch | Ja | - | DetailView.md#shop-tab, Shop.md#verwendung |
 | 2433 | Shop-Tab ViewModel (Shop-State, Inventory) | hoch | Ja | #2432 | DetailView.md#shop-tab, DetailView.md#state-synchronisation, Shop.md#schema |
 | 2434 | Shop-Item Browse mit Search/Filter | hoch | Ja | #2432, #2433 | DetailView.md#shop-tab, Shop.md#queries |
 | 2435 | Buy-Transaktion Handler | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events |

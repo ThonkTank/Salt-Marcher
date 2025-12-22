@@ -11,6 +11,33 @@ import type { Result, AppError, EntityId } from '@core/index';
 import type { Item, CreatureDefinition } from '@core/schemas';
 
 // ============================================================================
+// Budget Tracking State
+// ============================================================================
+
+/**
+ * State for background budget tracking.
+ * Tracks accumulated gold budget from XP gains and distributed loot.
+ *
+ * The budget system ensures loot distribution follows DMG wealth guidelines.
+ * Balance can go negative when creatures have expensive defaultLoot.
+ *
+ * @see docs/features/Loot-Feature.md#lootbudgetstate
+ */
+export interface LootBudgetState {
+  /** Accumulated budget from XP gains (in GP) */
+  accumulated: number;
+
+  /** Already distributed loot value (in GP) */
+  distributed: number;
+
+  /** Current balance: accumulated - distributed (can be negative!) */
+  balance: number;
+
+  /** Debt from expensive defaultLoot exceeding budget */
+  debt: number;
+}
+
+// ============================================================================
 // Loot Context
 // ============================================================================
 

@@ -46,6 +46,8 @@ import type {
   MapStateChangedPayload,
   MapUnloadedPayload,
   MapLoadRequestedPayload,
+  MapNavigateRequestedPayload,
+  MapNavigatedPayload,
 } from '@core/events/domain-events';
 
 // ============================================================================
@@ -150,6 +152,29 @@ export function createMapService(deps: MapServiceDeps): MapFeaturePort {
     );
   }
 
+  function publishNavigated(
+    previousMapId: string,
+    newMapId: string,
+    spawnPosition: HexCoordinate,
+    correlationId?: string
+  ): void {
+    if (!eventBus) return;
+
+    const payload: MapNavigatedPayload = {
+      previousMapId,
+      newMapId,
+      spawnPosition,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.MAP_NAVIGATED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'map-feature',
+      })
+    );
+  }
+
   // ===========================================================================
   // Event Handlers
   // ===========================================================================
@@ -189,6 +214,68 @@ export function createMapService(deps: MapServiceDeps): MapFeaturePort {
 
           // Publish events
           publishLoaded(map, correlationId);
+          publishStateChanged(correlationId);
+        }
+      )
+    );
+
+    // Handle map:navigate-requested
+    subscriptions.push(
+      eventBus.subscribe<MapNavigateRequestedPayload>(
+        EventTypes.MAP_NAVIGATE_REQUESTED,
+        async (event) => {
+          const { targetMapId } = event.payload;
+          const correlationId = event.correlationId;
+
+          // 1. Remember current map ID
+          const currentMap = store.getState().currentMap;
+          const previousMapId = currentMap?.id ?? '';
+
+          // 2. Load target map
+          const result = await mapStorage.load(targetMapId as MapId);
+
+          if (!result.ok) {
+            publishLoadFailed(targetMapId, result.error, correlationId);
+            return;
+          }
+
+          const newMap = result.value;
+
+          // 3. Validate map type (currently only overworld supported)
+          if (newMap.type !== 'overworld') {
+            const error = createError(
+              'INVALID_MAP_TYPE',
+              `Expected overworld map, got ${newMap.type}`
+            );
+            publishLoadFailed(targetMapId, error, correlationId);
+            return;
+          }
+
+          // 4. Determine spawn position
+          // Fallback order:
+          // a) EntrancePOI spawnPosition (TODO: #1501 when implemented)
+          // b) Map defaultSpawnPoint
+          // c) {q: 0, r: 0} as fallback
+          let spawnPosition: HexCoordinate = { q: 0, r: 0 };
+
+          if (newMap.defaultSpawnPoint) {
+            spawnPosition = newMap.defaultSpawnPoint as HexCoordinate;
+          }
+
+          // TODO: EntrancePOI lookup when #1501 is implemented
+          // if (sourcePOIId) {
+          //   const poi = poiStorage.get(sourcePOIId);
+          //   if (poi && poi.type === 'entrance') {
+          //     spawnPosition = poi.spawnPosition;
+          //   }
+          // }
+
+          // 5. Update store
+          store.setCurrentMap(newMap);
+
+          // 6. Publish events (order matters!)
+          publishLoaded(newMap, correlationId);
+          publishNavigated(previousMapId, newMap.id, spawnPosition, correlationId);
           publishStateChanged(correlationId);
         }
       )

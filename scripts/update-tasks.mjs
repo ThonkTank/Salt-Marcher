@@ -14,7 +14,6 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'fs';
-import { randomBytes } from 'crypto';
 import { fileURLToPath } from 'url';
 import { dirname, join, basename } from 'path';
 
@@ -22,7 +21,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROADMAP_PATH = join(__dirname, '..', 'docs', 'architecture', 'Development-Roadmap.md');
 const DOCS_PATH = join(__dirname, '..', 'docs');
 const CLAIMS_PATH = join(__dirname, '..', 'docs', 'architecture', '.task-claims.json');
-const AGENT_ID_PATH = join(__dirname, '..', '.my-agent-id');
 
 const VALID_STATUSES = ['⬜', '✅', '⚠️', '🔶', '🔒'];
 const CLAIM_EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 Stunden
@@ -32,24 +30,13 @@ const CLAIM_EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 Stunden
 // ============================================================================
 
 /**
- * Holt Agent-ID aus Datei oder generiert neue
- */
-function getOrCreateAgentIdFromFile() {
-  if (existsSync(AGENT_ID_PATH)) {
-    return readFileSync(AGENT_ID_PATH, 'utf-8').trim();
-  }
-
-  // Neue ID generieren: agent-XXXXXXXX (8 hex chars)
-  const id = 'agent-' + randomBytes(4).toString('hex');
-  writeFileSync(AGENT_ID_PATH, id);
-  return id;
-}
-
-/**
  * Holt Agent-ID mit Fallback-Kette:
  * 1. Umgebungsvariable CLAUDE_AGENT_ID (höchste Priorität)
  * 2. CLI-Flag --agent-id
- * 3. Datei .my-agent-id (generiert bei Bedarf)
+ * 3. null (keine ID verfügbar - Claim-Operationen werden abgelehnt)
+ *
+ * WICHTIG: Kein Datei-Fallback mehr! Die .my-agent-id Datei wurde als
+ * geteilter State zwischen Agenten identifiziert und verursachte Race Conditions.
  */
 function getAgentId(cliAgentId = null) {
   // 1. Umgebungsvariable (höchste Priorität)
@@ -62,8 +49,8 @@ function getAgentId(cliAgentId = null) {
     return cliAgentId;
   }
 
-  // 3. Datei (Fallback, generiert bei Bedarf)
-  return getOrCreateAgentIdFromFile();
+  // 3. Keine ID verfügbar
+  return null;
 }
 
 // ============================================================================
@@ -216,20 +203,22 @@ function parseTaskLine(line) {
 
 /**
  * Parst eine Bug-Zeile aus der Markdown-Tabelle
+ * Format: | b# | Status | Beschreibung | Prio | Deps |
  */
 function parseBugLine(line) {
   const cells = line.split('|').map(c => c.trim()).filter(Boolean);
-  if (cells.length < 4) return null;
+  if (cells.length < 5) return null;
 
   const match = cells[0].match(/^b(\d+)$/);
   if (!match) return null;
 
   return {
     number: cells[0],
-    beschreibung: cells[1],
-    prio: cells[2],
-    depsRaw: cells[3],
-    deps: parseDeps(cells[3]),
+    status: cells[1],
+    beschreibung: cells[2],
+    prio: cells[3],
+    depsRaw: cells[4],
+    deps: parseDeps(cells[4]),
     isBug: true
   };
 }
@@ -310,6 +299,7 @@ function parseArgs(argv) {
     agentId: null,  // CLI-Flag für Agent-ID
     addBug: null,
     deleteBug: null,
+    resolveBug: null,
     beschreibung: null,
     bereich: null,
     prio: null,
@@ -348,6 +338,8 @@ function parseArgs(argv) {
       opts.addBug = argv[++i];
     } else if (arg === '--delete-bug') {
       opts.deleteBug = argv[++i];
+    } else if (arg === '--resolve-bug') {
+      opts.resolveBug = argv[++i];
     } else if (arg === '--beschreibung') {
       opts.beschreibung = argv[++i];
     } else if (arg === '--bereich') {
@@ -405,7 +397,8 @@ BUG-MANAGEMENT:
     --prio <prio>            Priorität (hoch, mittel, niedrig)
     --deps "<deps>"          Dependencies
   <bugId> --beschreibung     Bug-Beschreibung ändern
-  --delete-bug <bugId>       Bug löschen
+  --resolve-bug <bugId>      Bug als gelöst markieren (✅) - empfohlen
+  --delete-bug <bugId>       Bug unwiderruflich löschen (Warnung)
 
 NEUE TASK:
   --add                      Neue Task hinzufügen
@@ -424,10 +417,12 @@ SONSTIGES:
   --quiet, -q                Minimale Ausgabe
   -h, --help                 Diese Hilfe anzeigen
 
-AGENT-ID PRIORITÄT:
-  1. CLAUDE_AGENT_ID Umgebungsvariable (höchste)
+AGENT-ID (PFLICHT für Claims):
+  1. CLAUDE_AGENT_ID Umgebungsvariable (höchste Priorität)
   2. --agent-id CLI-Flag
-  3. .my-agent-id Datei (niedrigste)
+
+  WICHTIG: Ohne Agent-ID schlagen --claim und --unclaim fehl!
+  Beispiel: export CLAUDE_AGENT_ID="agent-$(openssl rand -hex 4)"
 
 BEISPIELE:
   node scripts/update-tasks.mjs 428 --status ✅
@@ -435,6 +430,7 @@ BEISPIELE:
   node scripts/update-tasks.mjs 428 --deps "#100, #202"
   node scripts/update-tasks.mjs 428 --no-deps
   node scripts/update-tasks.mjs --add-bug "Crash beim Laden" --prio hoch
+  node scripts/update-tasks.mjs --resolve-bug b1
   node scripts/update-tasks.mjs --add --bereich Travel --beschreibung "Neue Feature" --prio hoch
   node scripts/update-tasks.mjs 428 --split "UI fertig" "Backend TODO"
 `);
@@ -582,18 +578,21 @@ function updateRoadmapTaskLine(line, updates) {
  * Aktualisiert eine Bug-Zeile in der Roadmap
  */
 function updateRoadmapBugLine(line, updates) {
-  // Bug-Format: | b# | Beschreibung | Prio | Deps |
+  // Bug-Format: | b# | Status | Beschreibung | Prio | Deps |
   const cells = line.split('|');
-  if (cells.length < 5) return line;
+  if (cells.length < 6) return line;
 
+  if (updates.status !== undefined) {
+    cells[2] = ` ${updates.status} `;
+  }
   if (updates.beschreibung !== undefined) {
-    cells[2] = ` ${updates.beschreibung} `;
+    cells[3] = ` ${updates.beschreibung} `;
   }
   if (updates.prio !== undefined) {
-    cells[3] = ` ${updates.prio} `;
+    cells[4] = ` ${updates.prio} `;
   }
   if (updates.deps !== undefined) {
-    cells[4] = ` ${updates.deps} `;
+    cells[5] = ` ${updates.deps} `;
   }
 
   return cells.join('|');
@@ -655,6 +654,15 @@ function updateTask(taskId, updates, options) {
 
   // Claim-Management
   if (updates.claim) {
+    // Agent-ID ist PFLICHT für Claims
+    if (!myId) {
+      results.errors.push(
+        'Claim erfordert Agent-ID. Setze CLAUDE_AGENT_ID oder nutze --agent-id.\n' +
+        'Beispiel: export CLAUDE_AGENT_ID="agent-$(openssl rand -hex 4)"'
+      );
+      return results;
+    }
+
     const existingClaim = claims[taskId];
     if (existingClaim) {
       if (existingClaim.owner === myId) {
@@ -672,6 +680,15 @@ function updateTask(taskId, updates, options) {
   }
 
   if (updates.unclaim) {
+    // Agent-ID ist PFLICHT für Unclaim
+    if (!myId) {
+      results.errors.push(
+        'Unclaim erfordert Agent-ID. Setze CLAUDE_AGENT_ID oder nutze --agent-id.\n' +
+        'Beispiel: export CLAUDE_AGENT_ID="agent-$(openssl rand -hex 4)"'
+      );
+      return results;
+    }
+
     const existingClaim = claims[taskId];
     if (existingClaim) {
       if (existingClaim.owner === myId) {
@@ -967,6 +984,76 @@ function deleteBug(bugId, dryRun) {
 }
 
 /**
+ * Markiert einen Bug als gelöst (✅)
+ * - Setzt Bug-Status auf ✅
+ * - Entfernt Bug aus Task-Dependencies
+ * - Task-Status bleibt unverändert (Agent prüft manuell)
+ * - Synchronisiert Deps-Änderungen in allen Docs
+ */
+function resolveBug(bugId, dryRun) {
+  const content = readFileSync(ROADMAP_PATH, 'utf-8');
+  const roadmapData = parseRoadmapWithLineInfo(content);
+
+  const bug = roadmapData.bugs.find(b => b.number === bugId);
+  if (!bug) {
+    return { success: false, error: `Bug ${bugId} nicht gefunden` };
+  }
+
+  if (bug.status === '✅') {
+    return { success: false, error: `Bug ${bugId} ist bereits gelöst` };
+  }
+
+  const lines = [...roadmapData.lines];
+
+  // Bug-Status auf ✅ setzen
+  const updatedBugLine = updateRoadmapBugLine(bug.originalLine, { status: '✅' });
+  lines[bug.lineIndex] = updatedBugLine;
+
+  // Tasks finden, die diesen Bug in ihren Deps haben (Reverse-Lookup)
+  const affectedTasks = [];
+  for (const task of roadmapData.tasks) {
+    const refs = parseDeps(task.depsRaw);
+    if (refs.includes(bugId)) {
+      // Bug aus Deps entfernen
+      const newRefs = refs.filter(r => r !== bugId);
+      const newDeps = formatDeps(newRefs);
+
+      // Nur Deps ändern, Status bleibt unverändert (Agent prüft manuell)
+      const updatedLine = updateRoadmapTaskLine(task.originalLine, {
+        deps: newDeps
+      });
+
+      lines[task.lineIndex] = updatedLine;
+
+      affectedTasks.push({
+        taskId: task.number,
+        oldDeps: task.depsRaw,
+        newDeps,
+        status: task.status
+      });
+    }
+  }
+
+  if (!dryRun) {
+    writeFileSync(ROADMAP_PATH, lines.join('\n'));
+
+    // Multi-File-Sync für betroffene Tasks
+    for (const affected of affectedTasks) {
+      updateDocsForTask(affected.taskId, affected.newDeps, false);
+    }
+  }
+
+  return {
+    success: true,
+    bugId,
+    oldStatus: bug.status,
+    newStatus: '✅',
+    affectedTasks,
+    dryRun
+  };
+}
+
+/**
  * Splittet eine Task in zwei Teile
  */
 function splitTask(taskId, partADesc, partBDesc, dryRun) {
@@ -1156,13 +1243,17 @@ function main() {
   // Whoami
   if (opts.whoami) {
     const id = getAgentId(opts.agentId);
+    if (!id) {
+      console.error('❌ Keine Agent-ID gesetzt.\n');
+      console.error('Setze CLAUDE_AGENT_ID oder nutze --agent-id.');
+      console.error('Beispiel: export CLAUDE_AGENT_ID="agent-$(openssl rand -hex 4)"');
+      process.exit(1);
+    }
     console.log(`\nDeine Agent-ID: ${id}`);
     if (process.env.CLAUDE_AGENT_ID) {
       console.log(`   (Quelle: Umgebungsvariable CLAUDE_AGENT_ID)`);
     } else if (opts.agentId) {
       console.log(`   (Quelle: CLI-Flag --agent-id)`);
-    } else {
-      console.log(`   (Quelle: Datei .my-agent-id)`);
     }
     console.log('');
     return;
@@ -1192,14 +1283,43 @@ function main() {
     return;
   }
 
-  // Bug löschen
-  if (opts.deleteBug) {
-    const result = deleteBug(opts.deleteBug, opts.dryRun);
+  // Bug als gelöst markieren (empfohlen)
+  if (opts.resolveBug) {
+    const result = resolveBug(opts.resolveBug, opts.dryRun);
     if (result.success) {
       if (opts.json) {
         console.log(JSON.stringify(result, null, 2));
       } else if (!opts.quiet) {
-        console.log(`\n✅ Bug ${result.bugId} gelöscht.`);
+        console.log(`\n✅ Bug ${result.bugId} als gelöst markiert.`);
+        console.log(`   Status: ${result.oldStatus} → ${result.newStatus}`);
+        if (result.affectedTasks && result.affectedTasks.length > 0) {
+          console.log('\n📋 Betroffene Tasks (Bug aus Deps entfernt):');
+          for (const t of result.affectedTasks) {
+            console.log(`   #${t.taskId}: ${t.oldDeps} → ${t.newDeps}`);
+            console.log(`      ⚠️  Status ist noch ${t.status} - bitte manuell prüfen!`);
+          }
+        }
+        console.log('');
+      }
+    } else {
+      console.error(`\n❌ Fehler: ${result.error}\n`);
+    }
+    return;
+  }
+
+  // Bug löschen (mit Warnung)
+  if (opts.deleteBug) {
+    if (!opts.quiet && !opts.json) {
+      console.warn('\n⚠️  WARNUNG: Bug wird unwiderruflich gelöscht!');
+      console.warn('   Für Nachvollziehbarkeit besser --resolve-bug verwenden.\n');
+    }
+    const result = deleteBug(opts.deleteBug, opts.dryRun);
+    if (result.success) {
+      if (opts.json) {
+        result.warning = 'Bug unwiderruflich gelöscht. Für Nachvollziehbarkeit --resolve-bug verwenden.';
+        console.log(JSON.stringify(result, null, 2));
+      } else if (!opts.quiet) {
+        console.log(`✅ Bug ${result.bugId} gelöscht.`);
         if (result.affectedTasks && result.affectedTasks.length > 0) {
           console.log('\n📋 Betroffene Tasks (Bug aus Deps entfernt):');
           for (const t of result.affectedTasks) {

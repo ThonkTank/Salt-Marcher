@@ -88,3 +88,34 @@ export const basePoiSchema = z.object({
 
 /** Inferred BasePOI type */
 export type BasePOI = z.infer<typeof basePoiSchema>;
+
+// ============================================================================
+// EntrancePOI Schema
+// ============================================================================
+
+/**
+ * EntrancePOI - Connection to another map (dungeon entrance, portal, exit).
+ *
+ * From POI.md#entrancepoi:
+ * - linkedMapId: Target map to navigate to
+ * - spawnPosition: Where party spawns on target map
+ * - description: Optional description for the entrance
+ *
+ * Bidirectional links require two separate POIs - one on each map.
+ */
+export const entrancePoiSchema = basePoiSchema.extend({
+  /** POI type discriminator */
+  type: z.literal('entrance'),
+
+  /** Target map ID to navigate to */
+  linkedMapId: entityIdSchema('map'),
+
+  /** Spawn position on target map */
+  spawnPosition: poiCoordinateSchema,
+
+  /** Optional description */
+  description: z.string().optional(),
+});
+
+/** Inferred EntrancePOI type */
+export type EntrancePOI = z.infer<typeof entrancePoiSchema>;

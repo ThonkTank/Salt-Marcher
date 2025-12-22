@@ -563,7 +563,7 @@ const subscriptions = [
 | 2304 | Travel Section Component (Status, Speed, Plan/Start/Pause) | hoch | Ja | #2303, #1 | SessionRunner.md#travel-sektion, Travel-System.md#state-machine |
 | 2305 | Travel Animation Display (Progress Bar, ETA) | hoch | Ja | #2304, #8 | SessionRunner.md#travel-sektion, Travel-System.md |
 | 2306 | Audio Section Component (Track-Name, Play/Pause/Skip/Volume) | hoch | Ja | #1100, #1110, #1111, #1500, #2303 | SessionRunner.md#audio-sektion, Audio-System.md |
-| 2307 | Party Section Component (Party-Size, Health-Summary, Manage-Button) | hoch | Ja | #500, #502, #503, #1100, #2303 | SessionRunner.md#party-sektion, Character-System.md |
+| 2307 | Party Section Component (Party-Size, Health-Summary, Manage-Button) | hoch | Ja | - | SessionRunner.md#party-sektion, Character-System.md |
 | 2308 | Actions Section Component (nur Rest-Button, Encounter/Teleport entfernt) | hoch | Ja | #2303, #955 | SessionRunner.md#actions-sektion, Time-System.md#resting |
 | 2309 | Map Panel Component (Hauptansicht mit Hex-Grid und Party-Token) | hoch | Ja | #2300 | SessionRunner.md#map-panel, Map-Feature.md |
 | 2310 | Map Overlays Controls (Weather, Territory, Factions, Visibility) | hoch | Ja | #2309, #1300, #1400 | SessionRunner.md#map-panel, Weather-System.md, Map-Feature.md |
@@ -592,7 +592,7 @@ const subscriptions = [
 | 2334 | Animations-Geschwindigkeit Slider (0.5x - 10x) | niedrig | Nein | #2304 | SessionRunner.md#animations-geschwindigkeit-slider-post-mvp, Travel-System.md |
 | 2335 | Travel-Plan-Button Toggle (Aktiviert/Deaktiviert Travel-Modus) | hoch | Ja | #2304 | SessionRunner.md#travel-sektion, Travel-System.md#state-machine |
 | 2338 | Party-Manage-Button (Öffnet Party-Management Modal/DetailView) | mittel | Nein | #2307 | SessionRunner.md#party-sektion, Character-System.md |
-| 2339 | Health-Summary Berechnung (All OK, X Wounded, X Critical) | hoch | Ja | #500, #1100, #2307 | SessionRunner.md#party-sektion, Character-System.md |
+| 2339 | Health-Summary Berechnung (All OK, X Wounded, X Critical) | hoch | Ja | - | SessionRunner.md#party-sektion, Character-System.md |
 | 2340 | Audio Volume Slider (Klick auf 🔊 im Audio-Section) | mittel | Nein | #1104, #1500, #2306 | SessionRunner.md#audio-sektion, Audio-System.md |
 
 ---

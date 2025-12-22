@@ -54,5 +54,5 @@ export { createPartyAdapter, DEFAULT_PARTY_ID } from './party-adapter';
 
 export {
   createVaultEntityRegistryAdapter,
-  preloadEntityTypes,
+  createAndPreloadEntityRegistry,
 } from './entity-registry.adapter';

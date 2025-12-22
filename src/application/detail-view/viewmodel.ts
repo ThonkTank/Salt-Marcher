@@ -6,8 +6,10 @@
  */
 
 import type { EventBus, Unsubscribe } from '@core/index';
-import { isSome, EventTypes } from '@core/index';
+import { isSome, EventTypes, createEvent, newCorrelationId, now } from '@core/index';
+import type { CombatCompletedPayload } from '@core/events';
 import type { EncounterFeaturePort } from '@/features/encounter';
+import { groupCreaturesByDefinitionId } from '@/features/encounter';
 import type { CombatFeaturePort } from '@/features/combat';
 import type {
   DetailViewState,
@@ -16,9 +18,10 @@ import type {
   TabId,
   BuilderCreature,
   EncounterDifficulty,
+  ResolutionState,
 } from './types';
 import { createInitialDetailViewState } from './types';
-import type { EncounterInstance } from '@core/schemas';
+import type { EncounterInstance, CreatureDefinition } from '@core/schemas';
 
 // ============================================================================
 // ViewModel Dependencies
@@ -28,6 +31,9 @@ export interface DetailViewModelDeps {
   eventBus: EventBus;
   encounterFeature?: EncounterFeaturePort;
   combatFeature?: CombatFeaturePort;
+  /** Creature definitions for CR/XP lookup in encounter builder */
+  creatures?: readonly CreatureDefinition[];
+  // Note: LootFeaturePort will be added when loot generation is implemented (#2431 follow-up)
 }
 
 // ============================================================================
@@ -54,6 +60,20 @@ export interface DetailViewModel {
   updateCreatureCount(index: number, count: number): void;
   clearBuilder(): void;
 
+  // Resolution Commands (#2431)
+  /** Set GM XP modifier percent (-50 to +100) */
+  setGmModifierPercent(percent: number): void;
+  /** Select quest for 60% XP assignment (null = no quest) */
+  selectQuestForXP(questId: string | null): void;
+  /** Advance to next resolution phase */
+  advanceResolutionPhase(): void;
+  /** Skip current resolution phase */
+  skipResolutionPhase(): void;
+  /** Distribute loot to characters */
+  distributeLoot(distribution: Map<string, unknown[]>): void;
+  /** Complete resolution and publish events */
+  completeResolution(): void;
+
   // Cleanup
   dispose(): void;
 }
@@ -68,7 +88,7 @@ export interface DetailViewModel {
 export function createDetailViewModel(
   deps: DetailViewModelDeps
 ): DetailViewModel {
-  const { eventBus, encounterFeature, combatFeature } = deps;
+  const { eventBus, encounterFeature, combatFeature, creatures = [] } = deps;
 
   // Internal state
   let state: DetailViewState = createInitialDetailViewState();
@@ -93,6 +113,25 @@ export function createDetailViewModel(
   ): void {
     state = { ...state, ...partial };
     notify(hints);
+  }
+
+  /**
+   * Get next resolution phase.
+   * @see DetailView.md#post-combat-resolution
+   */
+  function getNextPhase(
+    current: ResolutionState['phase']
+  ): ResolutionState['phase'] {
+    switch (current) {
+      case 'xp':
+        return 'quest';
+      case 'quest':
+        return 'loot';
+      case 'loot':
+        return 'done';
+      case 'done':
+        return 'done';
+    }
   }
 
   function syncFromFeatures(): void {
@@ -120,34 +159,46 @@ export function createDetailViewModel(
   /**
    * Load an encounter instance into the builder.
    * Called when encounter:generated fires or when loading a saved encounter.
+   *
+   * Groups creatures by type using groupCreaturesByDefinitionId to fix b5:
+   * "Mehrere Kreaturen gleicher Art werden einzeln aufgelistet statt gruppiert"
    */
   function loadEncounterIntoBuilder(encounter: EncounterInstance): void {
-    // Convert creatures from encounter to builder format
-    const builderCreatures: BuilderCreature[] = encounter.creatures.map(creature => ({
+    // Group creatures by definition ID (fixes bug b5: creature grouping)
+    const grouped = groupCreaturesByDefinitionId(encounter.creatures, creatures);
+
+    // Convert grouped creatures to builder format
+    const builderCreatures: BuilderCreature[] = grouped.map(group => ({
       type: 'creature' as const,
-      entityId: creature.definitionId,
-      name: creature.definitionId.split(':')[1] ?? creature.definitionId,
-      cr: 0, // TODO: Get from creature definition when available
-      xp: 0, // TODO: Calculate from CR
-      count: 1,
+      entityId: group.definitionId,
+      name: group.name,
+      cr: group.cr,
+      xp: group.xpEach,
+      count: group.count,
     }));
 
-    // Calculate XP (placeholder - will be replaced by #2414)
-    const totalXP = encounter.xpAwarded ?? 0;
+    // Calculate total XP from grouped creatures (with proper CR-based XP)
+    const totalXP = grouped.reduce((sum, g) => sum + g.totalXp, 0);
+
+    // Get budget info from encounter if available
+    const dailyBudgetUsed = encounter.effectiveXP ?? totalXP;
+    const dailyBudgetTotal = encounter.xpBudget ?? 0;
 
     state = {
       ...state,
       encounter: {
         ...state.encounter,
         currentEncounter: encounter,
-        builderName: `${capitalizeFirst(encounter.type)} Encounter`,
-        builderActivity: '',
-        builderGoal: '',
+        builderName: encounter.description
+          ? `${capitalizeFirst(encounter.type)} Encounter`
+          : `${capitalizeFirst(encounter.type)} Encounter`,
+        builderActivity: encounter.activity ?? '',
+        builderGoal: encounter.goal ?? '',
         builderCreatures,
         totalXP,
         difficulty: calculateDifficulty(totalXP),
-        dailyBudgetUsed: 0, // TODO: Get from party feature
-        dailyBudgetTotal: 0, // TODO: Get from party feature
+        dailyBudgetUsed,
+        dailyBudgetTotal,
         savedEncounterQuery: '',
         creatureQuery: '',
         sourceEncounterId: null, // New encounter, not from saved
@@ -265,12 +316,31 @@ export function createDetailViewModel(
       )
     );
 
-    // Combat completed - stay on combat tab (show summary)
+    // Combat completed - initialize resolution state (#2431)
     eventSubscriptions.push(
-      eventBus.subscribe(
+      eventBus.subscribe<CombatCompletedPayload>(
         EventTypes.COMBAT_COMPLETED,
-        () => {
-          syncFromFeatures();
+        (event) => {
+          // Get XP from event payload
+          const baseXP = event.payload.xpAwarded;
+
+          // Initialize resolution state
+          state = {
+            ...state,
+            activeTab: 'combat',
+            combat: {
+              combatState: null, // Combat is ended
+              pendingEffects: [],
+              resolution: {
+                phase: 'xp',
+                baseXP,
+                gmModifierPercent: 0,
+                adjustedXP: baseXP,
+                selectedQuestId: null,
+                lootDistribution: new Map(),
+              },
+            },
+          };
           notify(['combat', 'full']);
         }
       )
@@ -351,6 +421,169 @@ export function createDetailViewModel(
         builderCreatures: [],
         sourceEncounterId: null,
       });
+    },
+
+    // =========================================================================
+    // Resolution Commands (#2431)
+    // =========================================================================
+
+    setGmModifierPercent(percent: number): void {
+      if (!state.combat.resolution) return;
+
+      const clampedPercent = Math.max(-50, Math.min(100, percent));
+      const adjustedXP = Math.floor(
+        state.combat.resolution.baseXP * (1 + clampedPercent / 100)
+      );
+
+      state = {
+        ...state,
+        combat: {
+          ...state.combat,
+          resolution: {
+            ...state.combat.resolution,
+            gmModifierPercent: clampedPercent,
+            adjustedXP,
+          },
+        },
+      };
+      notify(['combat']);
+    },
+
+    selectQuestForXP(questId: string | null): void {
+      if (!state.combat.resolution) return;
+
+      state = {
+        ...state,
+        combat: {
+          ...state.combat,
+          resolution: {
+            ...state.combat.resolution,
+            selectedQuestId: questId,
+          },
+        },
+      };
+      notify(['combat']);
+    },
+
+    advanceResolutionPhase(): void {
+      if (!state.combat.resolution) return;
+
+      const currentPhase = state.combat.resolution.phase;
+      const nextPhase = getNextPhase(currentPhase);
+
+      // Before phase change: publish events for completed phase
+      if (currentPhase === 'quest' && state.combat.resolution.selectedQuestId) {
+        const questPoolXP = Math.floor(state.combat.resolution.adjustedXP * 0.6);
+        eventBus.publish(
+          createEvent(
+            EventTypes.QUEST_XP_ACCUMULATED,
+            {
+              questId: state.combat.resolution.selectedQuestId,
+              amount: questPoolXP,
+            },
+            {
+              correlationId: newCorrelationId(),
+              timestamp: now(),
+              source: 'detail-view-viewmodel',
+            }
+          )
+        );
+      }
+
+      state = {
+        ...state,
+        combat: {
+          ...state.combat,
+          resolution: {
+            ...state.combat.resolution,
+            phase: nextPhase,
+          },
+        },
+      };
+      notify(['combat']);
+    },
+
+    skipResolutionPhase(): void {
+      if (!state.combat.resolution) return;
+
+      // Skip advances to next phase without triggering phase-specific events
+      const currentPhase = state.combat.resolution.phase;
+      const nextPhase = getNextPhase(currentPhase);
+
+      state = {
+        ...state,
+        combat: {
+          ...state.combat,
+          resolution: {
+            ...state.combat.resolution,
+            phase: nextPhase,
+          },
+        },
+      };
+      notify(['combat']);
+    },
+
+    distributeLoot(distribution: Map<string, unknown[]>): void {
+      if (!state.combat.resolution) return;
+
+      state = {
+        ...state,
+        combat: {
+          ...state.combat,
+          resolution: {
+            ...state.combat.resolution,
+            lootDistribution: distribution,
+          },
+        },
+      };
+      notify(['combat']);
+    },
+
+    completeResolution(): void {
+      if (!state.combat.resolution) return;
+
+      // Publish encounter:resolved event
+      eventBus.publish(
+        createEvent(
+          EventTypes.ENCOUNTER_RESOLVED,
+          {
+            xpAwarded: state.combat.resolution.adjustedXP,
+            questId: state.combat.resolution.selectedQuestId,
+          },
+          {
+            correlationId: newCorrelationId(),
+            timestamp: now(),
+            source: 'detail-view-viewmodel',
+          }
+        )
+      );
+
+      // Publish loot:distributed event if items were distributed
+      if (state.combat.resolution.lootDistribution.size > 0) {
+        eventBus.publish(
+          createEvent(
+            EventTypes.LOOT_DISTRIBUTED,
+            {
+              distribution: Object.fromEntries(state.combat.resolution.lootDistribution),
+            },
+            {
+              correlationId: newCorrelationId(),
+              timestamp: now(),
+              source: 'detail-view-viewmodel',
+            }
+          )
+        );
+      }
+
+      // Reset resolution state
+      state = {
+        ...state,
+        combat: {
+          ...state.combat,
+          resolution: null,
+        },
+      };
+      notify(['combat', 'full']);
     },
 
     dispose(): void {

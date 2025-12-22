@@ -403,7 +403,7 @@ const entityConfig = entityRegistry.getConfig(activeTab);
 | 2618 | Creature-Tab spezifische Filter (CR, Type, Habitat) | hoch | Ja | #2605, #2613, #2621, #2802 | Library.md#filter-controls, Creature.md#schema, Creature.md#creaturedefinition |
 | 2619 | Item-Tab spezifische Filter (Rarity, Category, Magic) | hoch | Ja | #2605, #2612, #2810 | Library.md#filter-controls, Item.md#schema, Item.md#kategorie-details |
 | 2620 | Spell-Tab spezifische Filter (Level, School, Class) | hoch | Ja | #2603, #2605, #2621 | Library.md#filter-controls, EntityRegistry.md#entity-type-mapping |
-| 2621 | Location-Tab spezifische Filter (Type, Region) | hoch | Ja | #2605, #2800, #2801, #2802 | Library.md#filter-controls, POI.md#poi-typen, POI.md#basepoi |
+| 2621 | Location-Tab spezifische Filter (Type, Region) | hoch | Ja | - | Library.md#filter-controls, POI.md#poi-typen, POI.md#basepoi |
 | 2622 | Entity-Count Display in Tabs | hoch | Ja | #2602, #2621, #2800, #2801 | Library.md#tab-navigation, EntityRegistry.md#port-interface |
 | 2623 | Overflow-Menu für Tabs (bei > 8 Entity-Types) | mittel | Ja | #2602, #2603 | Library.md#tab-navigation, Library.md#entity-tabs |
 | 2624 | Keyboard Shortcuts (Ctrl+N, Ctrl+F, Ctrl+D, 1-9) | mittel | Nein | #1500, #2601, #2603 | Library.md#keyboard-shortcuts, Application.md#mvvm-pattern |

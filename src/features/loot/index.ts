@@ -10,6 +10,7 @@
 
 // === Types ===
 export type {
+  LootBudgetState,
   LootContext,
   SelectedItem,
   GeneratedLoot,

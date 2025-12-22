@@ -391,7 +391,7 @@ interface QuestSettings {
 | 420 | quest:state-changed Event | hoch | Ja | #400 | Quest-System.md#quest-feature-state-machine, Quest.md#events, Events-Catalog.md#quest |
 | 421 | Subscription: encounter:resolved → Zeige UI-Prompt für Quest-Zuweisung | hoch | Ja | #411, #412, #223 | Quest-System.md#quest-encounter-beziehung, Encounter-System.md#events |
 | 423 | Subscription: entity:deleted → Check Quest-Invalidierung | hoch | Ja | #402 | Quest-System.md#quest-feature-state-machine, Events-Catalog.md#entity |
-| 428 | Quest-Panel im SessionRunner | hoch | Ja | #402, #425, #427, #428, #429, #430, #431, #2443, #2444, #2448 | Quest-System.md#ui-integration, SessionRunner.md#quest-panel, Quest.md#quest-management-im-session-runner |
+| 428 | Quest-Panel im SessionRunner | hoch | Ja | #402, #425, #427, b6 | Quest-System.md#ui-integration, SessionRunner.md#quest-panel, Quest.md#quest-management-im-session-runner |
 | 432 | lootDistribution Konfiguration in QuestDefinition | hoch | Ja | #402 | Quest-System.md#loot-verteilung, Quest.md#schema, Loot-Feature.md#budget-verteilung |
 | 433 | Budget-Integration: Quest-Rewards reservieren Loot-Budget | hoch | Ja | #406, #432, #710, #2801 | Quest-System.md#loot-verteilung, Loot-Feature.md#quest-encounter-reduktion |
 | 435 | Quantum-Encounter/Rewards Platzierung via UI | mittel | Nein | #405, #406, #428 | Quest-System.md#quantum-encounter-rewards-platzierung, Quest.md#questencounterslot, Quest.md#questreward |

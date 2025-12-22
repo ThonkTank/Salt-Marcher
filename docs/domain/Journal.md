@@ -341,4 +341,4 @@ function getPinnedEntries(): JournalEntry[];
 | 2225 | Query: getPinnedEntries() | mittel | Nein | #2200, #2228 | Journal.md#queries |
 | 2226 | Journal-Panel UI im SessionRunner (Quick Note Button, filterbare Liste) | hoch | Ja | #2212, #2213, #2221, #2222, #2223, #2224, #2225, #2228 | Journal.md#sessionrunner, ../application/SessionRunner.md#journal-integration |
 | 2227 | Timeline-View in Almanac (chronologische Ansicht, Filter nach Kategorie/Tags) | mittel | Nein | #2221, #2222, #2223, #2224, #2225 | Journal.md#almanac, ../features/Time-System.md |
-| 2228 | Journal Feature/Orchestrator mit CRUD-Logik | hoch | Ja | #2200, #2201, #2202, #2203, #2216, #2217, #2218 | Journal.md, ../architecture/Features.md |
+| 2228 | Journal Feature/Orchestrator mit CRUD-Logik | hoch | Ja | - | Journal.md, ../architecture/Features.md |

@@ -81,6 +81,7 @@ import {
   generateActivity,
   generateGoal,
   generateDescription,
+  calculateXP as calculateXPFromCR,
 } from '@core/utils';
 
 // ============================================================================
@@ -143,3 +144,81 @@ export function populateEncounter(
 
 // Re-export DEFAULT_ENCOUNTER_DESCRIPTION for backwards compatibility
 export { DEFAULT_ENCOUNTER_DESCRIPTION };
+
+// ============================================================================
+// Creature Grouping (for UI display)
+// ============================================================================
+
+/**
+ * Grouped creature info for UI display.
+ * Used to show "3× Goblin" instead of 3 separate goblin rows.
+ */
+export interface GroupedCreature {
+  /** Creature definition ID */
+  definitionId: string;
+  /** Display name from definition */
+  name: string;
+  /** Challenge Rating from definition */
+  cr: number;
+  /** XP per single creature */
+  xpEach: number;
+  /** Total XP (xpEach × count) */
+  totalXp: number;
+  /** Number of creatures of this type */
+  count: number;
+  /** Instance IDs for all creatures in this group */
+  instanceIds: string[];
+}
+
+/**
+ * Group creature instances by definition ID for display.
+ * Looks up CR and XP from creature definitions.
+ *
+ * @param instances - Runtime creature instances from an encounter
+ * @param definitions - Creature definitions for CR/XP lookup
+ * @returns Grouped creatures with aggregated counts
+ *
+ * @example
+ * // 3 goblins + 1 hobgoblin → 2 groups
+ * const grouped = groupCreaturesByDefinitionId(encounter.creatures, creatureDefs);
+ * // [{ name: "Goblin", count: 3, ... }, { name: "Hobgoblin", count: 1, ... }]
+ */
+export function groupCreaturesByDefinitionId(
+  instances: readonly CreatureInstance[],
+  definitions: readonly CreatureDefinition[]
+): GroupedCreature[] {
+  // Build a lookup map for definitions
+  const defMap = new Map(definitions.map((d) => [d.id, d]));
+
+  // Group instances by definition ID
+  const groups = new Map<string, GroupedCreature>();
+
+  for (const instance of instances) {
+    const defId = instance.definitionId;
+    const def = defMap.get(defId);
+
+    // Calculate XP from CR (use calculateXP from core)
+    const cr = def?.cr ?? 0;
+    const xpEach = calculateXPFromCR(cr);
+
+    if (groups.has(defId)) {
+      const group = groups.get(defId)!;
+      group.count += 1;
+      group.totalXp = group.xpEach * group.count;
+      group.instanceIds.push(instance.instanceId);
+    } else {
+      groups.set(defId, {
+        definitionId: defId,
+        name: def?.name ?? defId,
+        cr,
+        xpEach,
+        totalXp: xpEach,
+        count: 1,
+        instanceIds: [instance.instanceId],
+      });
+    }
+  }
+
+  return Array.from(groups.values());
+}
+

@@ -810,8 +810,8 @@ Aktuelles Wetter
 | 2801 | EntityTypeMap mit allen 14 MVP Entity-Typen (creature, character, npc, faction, item, map, poi, terrain, quest, encounter, shop, calendar, journal, worldevent, track) | hoch | Ja | - | EntityRegistry.md#entity-type-mapping, Core.md#entitytype-union |
 | 2802 | VaultEntityRegistryAdapter Implementation (JSON-File-basiert mit Vault/{plugin}/data/{entityType}/{id}.json) | hoch | Ja | - | EntityRegistry.md#storage, Infrastructure.md#adapter-pattern |
 | 2803 | Zod-Validierung bei save() mit getSchemaForType() | hoch | Ja | #2802 | EntityRegistry.md#validierung, Core.md#zod-schemas |
-| 2804 | Predicate-basierte query() Methode (Lineare Suche für MVP) | hoch | Ja | #2802 | EntityRegistry.md#querying |
-| 2805 | Unbounded In-Memory Cache mit Map pro EntityType | hoch | Ja | #2802 | EntityRegistry.md#caching-strategy |
+| 2804 | Predicate-basierte query() Methode (Lineare Suche für MVP) | hoch | Ja | - | EntityRegistry.md#querying |
+| 2805 | Unbounded In-Memory Cache mit Map pro EntityType | hoch | Ja | - | EntityRegistry.md#caching-strategy |
 | 2806 | Lazy Loading: Cache-Population bei erstem Zugriff auf Entity-Typ | hoch | Ja | #2805 | EntityRegistry.md#caching-strategy |
 | 2807 | File-Watcher Invalidierung bei modify/delete Events | hoch | Ja | #2805 | EntityRegistry.md#caching-strategy, Infrastructure.md#file-watcher-integration |
 | 2808 | Pessimistisches Speichern (sofort bei save(), erst Vault dann Cache) | hoch | Ja | #2802, #2805 | EntityRegistry.md#persistence-timing, Infrastructure.md#state-persistenz |

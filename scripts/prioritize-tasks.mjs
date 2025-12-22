@@ -65,6 +65,7 @@ function parseArgs(argv) {
     includeDone: false,
     includeBlocked: false,
     includeClaimed: false,
+    includeResolved: false,
     json: false,
     quiet: false,
     help: false
@@ -93,6 +94,8 @@ function parseArgs(argv) {
       opts.includeBlocked = true;
     } else if (arg === '--include-claimed') {
       opts.includeClaimed = true;
+    } else if (arg === '--include-resolved') {
+      opts.includeResolved = true;
     } else if (arg === '--json') {
       opts.json = true;
     } else if (arg === '-q' || arg === '--quiet') {
@@ -128,6 +131,7 @@ FILTER-OPTIONEN:
   --include-done          Auch ✅ Tasks anzeigen
   --include-blocked       Auch Tasks mit unerfüllten Dependencies anzeigen
   --include-claimed       Auch 🔒 (geclaimed) Tasks anzeigen
+  --include-resolved      Auch ✅ (gelöste) Bugs anzeigen
 
 OUTPUT-OPTIONEN:
   -n, --limit <N>         Anzahl der Ergebnisse (default: 10, 0 = alle)
@@ -221,25 +225,26 @@ function parseTaskLine(line) {
 
 /**
  * Parst eine Bug-Zeile aus der Markdown-Tabelle
- * Format: | b# | Beschreibung | Prio | Deps |
+ * Format: | b# | Status | Beschreibung | Prio | Deps |
  */
 function parseBugLine(line) {
   const cells = line.split('|').map(c => c.trim()).filter(Boolean);
-  if (cells.length < 4) return null;
+  if (cells.length < 5) return null;
 
   const match = cells[0].match(/^b(\d+)$/);
   if (!match) return null;
 
   const number = cells[0];  // z.B. "b1"
-  const beschreibung = cells[1];
-  const prio = cells[2];
-  const depsRaw = cells[3];
+  const status = cells[1];
+  const beschreibung = cells[2];
+  const prio = cells[3];
+  const depsRaw = cells[4];
 
   const deps = parseDeps(depsRaw);
 
   return {
     number,
-    status: '⬜',      // Bugs sind implizit offen
+    status,
     bereich: 'Bug',
     beschreibung,
     prio,
@@ -482,8 +487,11 @@ function compareItems(a, b, refCounts) {
  * Prüft ob Task den Filtern entspricht
  */
 function matchesFilters(task, opts, statusMap) {
-  // Status-Filter
-  if (!opts.includeDone && task.status === '✅') return false;
+  // Status-Filter: Tasks und Bugs separat behandeln
+  if (task.status === '✅') {
+    if (task.isBug && !opts.includeResolved) return false;
+    if (!task.isBug && !opts.includeDone) return false;
+  }
   if (!opts.includeClaimed && task.status === '🔒') return false;
   if (opts.status && task.status !== opts.status) return false;
 
@@ -574,6 +582,7 @@ function describeFilters(opts) {
   if (opts.includeDone) parts.push('+done');
   if (opts.includeBlocked) parts.push('+blocked');
   if (opts.includeClaimed) parts.push('+claimed');
+  if (opts.includeResolved) parts.push('+resolved');
   return parts.length ? parts.join(', ') : 'keine';
 }
 

@@ -31,6 +31,25 @@ export {
   type OverworldMap,
   tileKey,
   buildTileLookup,
+  // Dungeon map schemas (Task #806)
+  gridCoordSchema,
+  type GridCoordinate,
+  trapSchema,
+  type Trap,
+  tokenSchema,
+  type Token,
+  dungeonTileTypeSchema,
+  type DungeonTileType,
+  dungeonLightingSchema,
+  type DungeonLighting,
+  dungeonTileSchema,
+  type DungeonTile,
+  dungeonRoomSchema,
+  type DungeonRoom,
+  dungeonMapSchema,
+  type DungeonMap,
+  gridKey,
+  buildDungeonTileLookup,
 } from './map';
 
 // Party schemas
@@ -319,4 +338,6 @@ export {
   type PoiType,
   basePoiSchema,
   type BasePOI,
+  entrancePoiSchema,
+  type EntrancePOI,
 } from './poi';

@@ -629,13 +629,16 @@ export function createSidebarPanel(
   }
 
   function updatePartySection(party: PartySectionState): void {
-    // Update party size
+    // Update party size - with bullet separator for spec conformity
+    // Spec: "4 PCs • All OK" (SessionRunner.md#party-sektion)
     const sizeText = party.size === 0
       ? 'No Party'
       : party.size === 1
         ? '1 PC'
         : `${party.size} PCs`;
-    partySizeEl.textContent = sizeText;
+
+    // Bullet only when party exists (health summary is shown)
+    partySizeEl.textContent = party.size > 0 ? `${sizeText} •` : sizeText;
 
     // Update health summary with color
     healthSummaryEl.textContent = party.healthSummary.display;

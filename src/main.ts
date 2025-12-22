@@ -26,6 +26,7 @@ import {
   createVaultPartyAdapter,
   createVaultTimeAdapter,
   createVaultCalendarAdapter,
+  createAndPreloadEntityRegistry,
   // In-memory adapters (terrain/items stay in-memory as preset data)
   createTerrainRegistry,
   createItemRegistry,
@@ -33,6 +34,7 @@ import {
   TEST_MAP_ID,
   DEFAULT_PARTY_ID,
 } from './infrastructure';
+import type { EntityRegistryPort } from '@core/types/entity-registry.port';
 
 // Features
 import { createMapStore, createMapService, type MapFeaturePort } from './features/map';
@@ -63,6 +65,10 @@ import {
   VIEW_TYPE_DETAIL_VIEW,
   DetailView,
 } from './application/detail-view';
+import {
+  VIEW_TYPE_CARTOGRAPHER,
+  CartographerView,
+} from './application/cartographer';
 import { createNotificationService, showSlotAssignmentDialog, type NotificationService } from './application/shared';
 
 // Presets (for bootstrap)
@@ -131,6 +137,7 @@ async function bootstrapFixtures(
 export default class SaltMarcherPlugin extends Plugin {
   // Instance variables for features (needed for onunload persistence and cleanup)
   private eventBus?: EventBus;
+  private entityRegistry?: EntityRegistryPort;
   private mapFeature?: MapFeaturePort;
   private partyFeature?: PartyFeaturePort;
   private travelFeature?: TravelFeaturePort;
@@ -250,6 +257,32 @@ export default class SaltMarcherPlugin extends Plugin {
 
     // Loot service (stateless, uses itemRegistry)
     const lootService = createLootService();
+
+    // EntityRegistry - Preload all entity types for sync access
+    // Note: Features still use preset arrays for now; EntityRegistry integration is separate task
+    this.entityRegistry = await createAndPreloadEntityRegistry(
+      this.app.vault,
+      settingsService.getSettings().basePath,
+      [
+        'creature',
+        'npc',
+        'faction',
+        'quest',
+        'encounter',
+        'item',
+        'terrain',
+        'map',
+        'poi',
+        'calendar',
+        'journal',
+        'worldevent',
+        'track',
+        'shop',
+        'party',
+        'character',
+      ]
+    );
+    console.log('Salt Marcher: EntityRegistry preloaded');
 
     // =========================================================================
     // Bootstrap: Notification Service
@@ -395,12 +428,35 @@ export default class SaltMarcherPlugin extends Plugin {
       });
     });
 
+    // Cartographer - Map editor (opens in center leaf)
+    this.registerView(VIEW_TYPE_CARTOGRAPHER, (leaf) => {
+      return new CartographerView(leaf, {
+        defaultMapId: TEST_MAP_ID,
+        eventBus: this.eventBus!,
+        mapFeature: this.mapFeature!,
+        notificationService: this.notificationService!,
+      });
+    });
+
     // =========================================================================
     // UI: Ribbon Icon - Opens both views in correct layout
     // =========================================================================
 
     this.addRibbonIcon('map', 'Open Session Runner', async () => {
       await this.openSessionLayout();
+    });
+
+    this.addRibbonIcon('edit', 'Open Cartographer', async () => {
+      const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_CARTOGRAPHER);
+      if (existing.length > 0) {
+        this.app.workspace.revealLeaf(existing[0]);
+      } else {
+        const leaf = this.app.workspace.getLeaf('tab');
+        if (leaf) {
+          await leaf.setViewState({ type: VIEW_TYPE_CARTOGRAPHER, active: true });
+          this.app.workspace.revealLeaf(leaf);
+        }
+      }
     });
 
     // =========================================================================
@@ -428,6 +484,24 @@ export default class SaltMarcherPlugin extends Plugin {
           const leaf = this.app.workspace.getRightLeaf(false);
           if (leaf) {
             await leaf.setViewState({ type: VIEW_TYPE_DETAIL_VIEW, active: true });
+            this.app.workspace.revealLeaf(leaf);
+          }
+        }
+      },
+    });
+
+    // Open Cartographer (map editor)
+    this.addCommand({
+      id: 'open-cartographer',
+      name: 'Open Cartographer',
+      callback: async () => {
+        const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_CARTOGRAPHER);
+        if (existing.length > 0) {
+          this.app.workspace.revealLeaf(existing[0]);
+        } else {
+          const leaf = this.app.workspace.getLeaf('tab');
+          if (leaf) {
+            await leaf.setViewState({ type: VIEW_TYPE_CARTOGRAPHER, active: true });
             this.app.workspace.revealLeaf(leaf);
           }
         }

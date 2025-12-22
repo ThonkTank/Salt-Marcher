@@ -206,7 +206,7 @@ function getActiveMap(): BaseMap | null;
 | 813 | map:load-requested Event Handler | hoch | Ja | #800 | Map.md#events, Map-Feature.md#events, Events-Catalog.md |
 | 821 | map:updated Event Handler | hoch | Ja | #800, #813, #820 | Map.md#events, Map-Feature.md#events, Events-Catalog.md |
 | 826 | map:tile-updated Event publizieren | hoch | Ja | #800, #802, #821, #900 | Map.md#events, Map-Feature.md#events, Events-Catalog.md |
-| 807 | GridCoordinate Type (x, y, z für 3D Grid) | hoch | Ja | #806 | Map.md#schema, Map-Feature.md#dungeonmap, Dungeon-System.md |
+| 807 | GridCoordinate Type (x, y, z für 3D Grid) | hoch | Ja | - | Map.md#schema, Map-Feature.md#dungeonmap, Dungeon-System.md |
 | 830 | TownMap Schema (streets, intersections, buildings, npcs) | mittel | Nein | #800 | Map.md#schema, Map-Feature.md#townmap |
 | 833 | Building Schema (id, name, position, type, linkedMapId, npcs) | mittel | Nein | #830 | Map.md#schema, Map-Feature.md#townmap |
 | 837 | town:navigate-requested Event Handler | mittel | Nein | #820, #830, #836 | Map.md#events, Map-Feature.md#town-strassen-navigation |

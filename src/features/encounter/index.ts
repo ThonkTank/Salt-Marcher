@@ -46,6 +46,9 @@ export {
   generateDescription,
   calculateCreatureXP,
   calculateEncounterXP,
+  // Creature grouping for UI
+  groupCreaturesByDefinitionId,
+  type GroupedCreature,
 } from './encounter-utils';
 
 // NPC generation utilities (for testing/extension)

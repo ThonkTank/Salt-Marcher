@@ -145,19 +145,38 @@ export type Entity<T extends EntityType> = EntityTypeMap[T];
  */
 export interface EntityRegistryPort {
   /**
+   * Preload all entities of specified types into cache.
+   * MUST be called during plugin initialization before using sync methods.
+   *
+   * @param types - Entity types to preload
+   * @throws Never - errors are logged but don't prevent other types from loading
+   *
+   * @example
+   * ```typescript
+   * await entityRegistry.preload(['creature', 'npc', 'faction']);
+   * // Now sync methods work correctly
+   * const npcs = entityRegistry.getAll('npc');
+   * ```
+   */
+  preload(types: EntityType[]): Promise<void>;
+
+  /**
    * Get a single entity by type and ID.
    * @returns Entity or null if not found
+   * @throws Error if type was not preloaded
    */
   get<T extends EntityType>(type: T, id: EntityId<T>): Entity<T> | null;
 
   /**
    * Get all entities of a given type.
+   * @throws Error if type was not preloaded
    */
   getAll<T extends EntityType>(type: T): Entity<T>[];
 
   /**
    * Query entities with a predicate function.
    * Linear scan for MVP; indices can be added later.
+   * @throws Error if type was not preloaded
    */
   query<T extends EntityType>(
     type: T,

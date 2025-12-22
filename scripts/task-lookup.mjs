@@ -19,36 +19,21 @@
  *   node scripts/task-lookup.mjs --spec Weather     # Nur in der Spec-Spalte suchen
  */
 
-import { readFileSync, existsSync, writeFileSync } from 'fs';
-import { randomBytes } from 'crypto';
+import { readFileSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROADMAP_PATH = join(__dirname, '..', 'docs', 'architecture', 'Development-Roadmap.md');
 const CLAIMS_PATH = join(__dirname, '..', 'docs', 'architecture', '.task-claims.json');
-const AGENT_ID_PATH = join(__dirname, '..', '.my-agent-id');
-
-/**
- * Lädt oder generiert die eigene Agent-ID aus Datei
- */
-function getOrCreateAgentIdFromFile() {
-  try {
-    if (existsSync(AGENT_ID_PATH)) {
-      return readFileSync(AGENT_ID_PATH, 'utf-8').trim();
-    }
-    const id = 'agent-' + randomBytes(4).toString('hex');
-    writeFileSync(AGENT_ID_PATH, id);
-    return id;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Holt Agent-ID mit Fallback-Kette:
  * 1. Umgebungsvariable CLAUDE_AGENT_ID (höchste Priorität)
- * 2. Datei .my-agent-id (generiert bei Bedarf)
+ * 2. null (keine ID verfügbar)
+ *
+ * WICHTIG: Kein Datei-Fallback mehr! Die .my-agent-id Datei wurde als
+ * geteilter State zwischen Agenten identifiziert und verursachte Race Conditions.
  */
 function getAgentId() {
   // 1. Umgebungsvariable (höchste Priorität)
@@ -56,8 +41,8 @@ function getAgentId() {
     return process.env.CLAUDE_AGENT_ID;
   }
 
-  // 2. Datei (Fallback)
-  return getOrCreateAgentIdFromFile();
+  // 2. Keine ID verfügbar
+  return null;
 }
 
 /**
@@ -265,24 +250,25 @@ function parseTaskLine(line) {
 
 /**
  * Parst eine Bug-Zeile aus der Markdown-Tabelle
- * Format: | b# | Beschreibung | Prio | Deps |
+ * Format: | b# | Status | Beschreibung | Prio | Deps |
  */
 function parseBugLine(line) {
   const cells = line.split('|').map(c => c.trim()).filter(Boolean);
-  if (cells.length < 4) return null;
+  if (cells.length < 5) return null;
 
   const match = cells[0].match(/^b(\d+)$/);
   if (!match) return null;
 
   const number = cells[0];  // z.B. "b1"
-  const beschreibung = cells[1];
-  const prio = cells[2];
-  const depsRaw = cells[3];
+  const status = cells[1];
+  const beschreibung = cells[2];
+  const prio = cells[3];
+  const depsRaw = cells[4];
   const deps = parseDeps(depsRaw);
 
   return {
     number,
-    status: '⬜',      // Bugs sind implizit offen
+    status,
     bereich: 'Bug',
     beschreibung,
     prio,
@@ -666,10 +652,15 @@ function main() {
 
       if (claim) {
         const myId = getAgentId();
-        if (claim.owner === myId) {
+        // Nur "von DIR" anzeigen wenn wir eine eigene ID haben UND sie übereinstimmt
+        if (myId && claim.owner === myId) {
           console.log('\n✅ Diese Task ist von DIR geclaimed.');
-        } else {
+        } else if (myId) {
+          // Wir haben eine ID, aber sie stimmt nicht überein → Warnung
           console.warn(`\n⚠️  WARNUNG: Task ${formatId(item.number)} wird von ${claim.owner} bearbeitet!`);
+        } else {
+          // Keine eigene ID → können nicht prüfen ob "unsere"
+          console.warn(`\n⚠️  Task ist geclaimed von: ${claim.owner}`);
         }
 
         // Expiry-Info

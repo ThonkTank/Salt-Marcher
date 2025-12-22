@@ -211,36 +211,41 @@ export function createVaultEntityRegistryAdapter(
   // ============================================================================
 
   return {
+    async preload(types: EntityType[]): Promise<void> {
+      for (const type of types) {
+        await loadAllOfType(type);
+      }
+    },
+
     get<T extends EntityType>(type: T, id: EntityId<T>): Entity<T> | null {
       const typeCache = getTypeCache(type);
 
-      // Synchronous cache check
+      // Ensure type was preloaded
+      if (!loadedTypes.has(type)) {
+        throw new Error(
+          `EntityRegistry: Type '${type}' not preloaded. ` +
+            `Call preload(['${type}']) during initialization.`
+        );
+      }
+
+      // Return from cache or null if not found
       if (typeCache.has(id)) {
         return typeCache.get(id) as Entity<T>;
       }
 
-      // If type is fully loaded, entity doesn't exist
-      if (loadedTypes.has(type)) {
-        return null;
-      }
-
-      // Note: This is a synchronous interface but we need async loading.
-      // For MVP, we require getAll() to be called first to populate cache.
-      // Alternatively, caller should use async patterns.
       return null;
     },
 
     getAll<T extends EntityType>(type: T): Entity<T>[] {
-      const typeCache = getTypeCache(type);
-
-      // If type is not loaded, trigger async load (but return empty for now)
-      // This is a limitation of the sync interface - callers should await loadAll first
+      // Ensure type was preloaded
       if (!loadedTypes.has(type)) {
-        // Trigger load in background
-        loadAllOfType(type);
-        return [];
+        throw new Error(
+          `EntityRegistry: Type '${type}' not preloaded. ` +
+            `Call preload(['${type}']) during initialization.`
+        );
       }
 
+      const typeCache = getTypeCache(type);
       return Array.from(typeCache.values()) as Entity<T>[];
     },
 
@@ -248,6 +253,7 @@ export function createVaultEntityRegistryAdapter(
       type: T,
       predicate: (entity: Entity<T>) => boolean
     ): Entity<T>[] {
+      // getAll() will throw if not preloaded
       return this.getAll(type).filter(predicate);
     },
 
@@ -325,31 +331,34 @@ export function createVaultEntityRegistryAdapter(
 }
 
 // ============================================================================
-// Async Helpers (for use before sync operations)
+// Factory Helper
 // ============================================================================
 
 /**
- * Preload all entities of specified types into cache.
- * Call this during plugin initialization before using sync methods.
+ * Create and preload an EntityRegistry in one step.
+ * Convenience function for plugin initialization.
  *
- * @param adapter - The adapter (with internal loadAllOfType exposed)
+ * @param vault - Obsidian Vault instance
+ * @param basePath - Base path in vault (e.g., "SaltMarcher")
  * @param types - Entity types to preload
+ * @returns Promise resolving to initialized EntityRegistryPort
+ *
+ * @example
+ * ```typescript
+ * const entityRegistry = await createAndPreloadEntityRegistry(
+ *   app.vault,
+ *   'SaltMarcher',
+ *   ['creature', 'npc', 'faction', 'quest', 'item']
+ * );
+ * // Now all sync methods work correctly
+ * ```
  */
-export async function preloadEntityTypes(
+export async function createAndPreloadEntityRegistry(
   vault: Vault,
   basePath: string,
   types: EntityType[]
 ): Promise<EntityRegistryPort> {
   const adapter = createVaultEntityRegistryAdapter(vault, basePath);
-
-  // Force load all specified types by calling getAll
-  // This is a workaround for the sync/async mismatch
-  for (const type of types) {
-    adapter.getAll(type);
-  }
-
-  // Wait a tick for async loads to complete
-  await new Promise((resolve) => setTimeout(resolve, 100));
-
+  await adapter.preload(types);
   return adapter;
 }

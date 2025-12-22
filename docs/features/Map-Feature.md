@@ -657,14 +657,14 @@ Travel-Feature operiert nur auf Overworld-Maps:
 | 800 | BaseMap Schema (id, name, type, defaultSpawnPoint, metadaten) | hoch | Ja | - | Map-Feature.md#basis-map, Map.md#basemap |
 | 802 | OverworldTile Schema (coordinate, terrain, elevation, pois, encounterZone, factionPresence) | hoch | Ja | #801, #1700 | Map-Feature.md#overworldmap, Travel-System.md#speed-berechnung |
 | 804 | Overworld Rendering (Hex-Grid mit Terrain-Farben) | hoch | Ja | #801, #803, #1700 | Map-Feature.md#overworld-rendering, Application.md#rendering-sharedrendering |
-| 806 | DungeonMap Schema (dimensions mit levels, tiles, rooms, partyPosition) | hoch | Ja | #800 | Map-Feature.md#dungeonmap, Dungeon-System.md#dungeonmap |
+| 806 | DungeonMap Schema (dimensions mit levels, tiles, rooms, partyPosition) | hoch | Ja | - | Map-Feature.md#dungeonmap, Dungeon-System.md#dungeonmap |
 | 808 | DungeonTile Schema (type, roomId, traps, creatures, treasure, lighting, explored) | hoch | Ja | #806, #807, #1504 | Map-Feature.md#dungeontile, Dungeon-System.md#dungeontile |
 | 810 | Trap Schema (id, dc, damage, triggered, visible) | hoch | Ja | #808 | Map-Feature.md#dungeontile, Dungeon-System.md#dungeontilecontent |
 | 812 | Dungeon Rendering: Grid + Fog of War + Lighting | hoch | Ja | #806, #808 | Map-Feature.md#dungeon-rendering, Dungeon-System.md#rendering |
 | 814 | map:loaded Event publizieren | hoch | Ja | #813, #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md |
 | 816 | map:created Event publizieren | hoch | Ja | #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md |
 | 818 | map:deleted Event publizieren | hoch | Ja | #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md |
-| 820 | map:navigate-requested Handler | hoch | Ja | #800, #1500 | Map-Feature.md#events, Map-Navigation.md#navigation-events |
+| 820 | map:navigate-requested Handler | hoch | Ja | - | Map-Feature.md#events, Map-Navigation.md#navigation-events |
 | 825 | Single Map Active: Nur aktive Map im Speicher | hoch | Ja | #813, #824 | Map-Feature.md#memory-management |
 | 827 | Wetter auf Town-Maps: Erbt von Parent-Tile | hoch | Ja | #830, #820, #110 | Map-Feature.md#wetter-auf-sub-maps, Weather-System.md#multi-map-weather |
 | 829 | State-Persistenz bei Map-Wechsel: Position, Zeit, Wetter | hoch | Ja | #821, #826, #900 | Map-Feature.md#state-persistenz-bei-map-wechsel, Map-Navigation.md |

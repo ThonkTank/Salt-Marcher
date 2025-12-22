@@ -18,6 +18,63 @@ Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 
 **⚠️ WICHTIG:** Die Development-Roadmap.md **NIEMALS** direkt lesen - nur über die Task-Skripte!
 
+## ⚠️ CLAIM-FIRST REGEL (KEINE AUSNAHMEN)
+
+**STOPP.** Nach Task-Auswahl gilt:
+
+1. `node scripts/update-tasks.mjs <ID> --claim` ausführen
+2. NUR bei Erfolg: Weitermachen
+3. Bei Fehler: **ABBRUCH** - Task vergessen, nächste suchen
+   - ❌ KEINE Status-Prüfungen
+   - ❌ KEINE Analysen
+   - ❌ KEINE Wartezeit
+   - ❌ KEIN Nachdenken über "warum"
+
+**KEINE Aktionen vor dem Claim:**
+- ❌ Keine Docs lesen (außer Goals.md)
+- ❌ Keine Explore-Agents starten
+- ❌ Keine Plan-Agents starten
+- ❌ Kein Code schreiben
+- ❌ Keine Leseliste erstellen
+
+**Die einzigen erlaubten Schritte VOR dem Claim:**
+- ✅ Goals.md lesen (einmal pro Session)
+- ✅ Task mit Skript finden (`prioritize-tasks.mjs`, `task-lookup.mjs -s`)
+- ✅ Task-ID notieren
+
+**Schritt 2 (Claim) ist ein GATE.** Ohne erfolgreichen Claim kein Weitermachen.
+
+**⚠️ AUCH IM PLAN-MODE:** Das Claim-Script ist von der Plan-Mode-Restriktion "keine Änderungen" ausgenommen. Claim MUSS erfolgen, bevor Docs gelesen oder Agents gestartet werden. → Siehe [Plan-Mode Ausnahme](#%EF%B8%8F-plan-mode-ausnahme-claim-script)
+
+## ⛔ FREMDE CLAIMS = ABBRUCH
+
+**Eine Task mit Status 🔒 die dir nicht gehört ist TABU.**
+
+**ABBRUCH. SOFORT. OHNE NACHDENKEN.**
+
+Wenn `--claim` fehlschlägt oder `task-lookup.mjs` einen fremden Owner zeigt:
+
+1. **ABBRECHEN** - Diese Task existiert für dich nicht mehr
+2. **NÄCHSTE TASK** - `node scripts/prioritize-tasks.mjs` ausführen
+3. **WEITER** - Neue Task claimen
+
+**VERBOTENE AKTIONEN (führen zu Zeitverschwendung):**
+
+| Aktion | Warum verboten |
+|--------|----------------|
+| `task-lookup.mjs <ID>` nochmal | Status wird sich nicht ändern |
+| `--whoami` / `cat .my-agent-id` | Du weißt bereits dass es nicht deine ist |
+| `--check-claim` | Irrelevant - nicht deine Task |
+| Warten | Der andere Agent braucht 2h oder gibt auf |
+| "Warum geclaimed?" analysieren | Zeitverschwendung |
+| Bug-Details lesen | Nicht deine Baustelle |
+
+**Es gibt KEINE Ausnahmen. Es gibt KEINE Sonderfälle.**
+
+Der Claim-Mechanismus existiert genau dafür: Konflikte zu verhindern. Wenn eine Task geclaimed ist, arbeitet jemand daran. Ende der Geschichte.
+
+**Mentales Modell:** Eine geclaime Task ist wie eine verschlossene Tür. Du klopfst nicht, du wartest nicht, du analysierst nicht warum sie zu ist. Du gehst zur nächsten Tür.
+
 ## Soll vs. Ist (Dokumentation vs. Implementierung)
 
 | Quelle | Beschreibt |
@@ -52,7 +109,8 @@ Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 ├─────────────────────────────────────────────────────────────┤
 │ 2. TASK SOFORT CLAIMEN ⚠️                                   │
 │    → node scripts/update-tasks.mjs <ID> --claim             │
-│    → Bei Fehler (bereits geclaimed): andere Task wählen!    │
+│    → ✅ Erfolg: Weiter zu Schritt 3                         │
+│    → ❌ Fehler: ABBRUCH → Schritt 1 (KEINE weiteren Aktionen)│
 ├─────────────────────────────────────────────────────────────┤
 │ 3. TASK DETAILS + DOCS LESEN                                │
 │    → node scripts/task-lookup.mjs <ID> --deps               │
@@ -66,7 +124,7 @@ Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 └─────────────────────────────────────────────────────────────┘
 ```
 
-**⚠️ CLAIM FIRST:** Claimen SOFORT nach Task-Auswahl - BEVOR Docs gelesen, geplant oder implementiert wird! Verhindert Doppelarbeit bei parallelen Agenten.
+→ Siehe [CLAIM-FIRST REGEL](#%EF%B8%8F-claim-first-regel-keine-ausnahmen) für Details.
 
 ### Task-Existenz-Prüfung (PFLICHT)
 
@@ -139,72 +197,87 @@ FEATURE (was):
 
 CLAUDE.md Workflow hat **Vorrang** vor dem Plan-Mode-Workflow.
 
-**Reihenfolge im Plan-Mode:**
-1. Goals.md lesen (einmal pro Session)
-2. Task mit Skript finden:
-   ```bash
-   node scripts/prioritize-tasks.mjs [keyword]  # oder
-   node scripts/task-lookup.mjs -s <keyword>
-   ```
-3. **⚠️ TASK SOFORT CLAIMEN** - VOR dem Weitermachen!
-   ```bash
-   node scripts/update-tasks.mjs <ID> --claim
-   ```
-   Bei Fehler: andere Task wählen (zurück zu Schritt 2)
-4. **Feature-Routing-Tabelle konsultieren** → ALLE Pflicht-Docs notieren
-5. Leseliste mit TodoWrite erstellen (**≥5 Docs**, inkl. Task-Referenz)
-6. Leseliste abarbeiten (jeden Doc mit Read-Tool lesen)
-7. DANN erst Explore-Agents starten
-8. ExitPlanMode → Implementieren → Status setzen
+**Reihenfolge (strikt, keine Abweichungen):**
 
-**Keine Abkürzungen:** Auch im Plan-Mode müssen alle Pflicht-Docs aus der Routing-Tabelle gelesen werden.
+| Schritt | Aktion | Gate? |
+|:-------:|--------|:-----:|
+| 1 | Goals.md lesen | - |
+| 2 | Task mit Skript finden | - |
+| **3** | **🔒 CLAIM** (`--claim`) | **JA** |
+| 4 | Leseliste erstellen + abarbeiten | - |
+| 5 | Explore-Agents starten | - |
+| 6 | Plan schreiben | - |
+| 7 | ExitPlanMode | - |
+| 8 | Implementieren | - |
+| 9 | Status setzen (`--status ✅`) | - |
 
-### Phase 1: Task finden, claimen, Dokumentation lesen
+**Schritt 3 ist ein GATE:** Bei Claim-Fehler → zurück zu Schritt 2. Kein Weitermachen ohne erfolgreichen Claim.
 
-**STOPP. Bevor du Task-Agenten, Explore-Agenten oder andere Tools verwendest:**
+→ Siehe [CLAIM-FIRST REGEL](#%EF%B8%8F-claim-first-regel-keine-ausnahmen)
+
+### ⚠️ Plan-Mode Ausnahme: Claim-Script
+
+Das Claim-Script ist im Plan-Mode **erlaubt und PFLICHT**, obwohl es die Roadmap ändert:
+
+```bash
+node scripts/update-tasks.mjs <ID> --claim      # ERLAUBT im Plan-Mode
+node scripts/update-tasks.mjs <ID> --unclaim    # ERLAUBT im Plan-Mode
+node scripts/update-tasks.mjs <ID> --check-claim # ERLAUBT im Plan-Mode
+```
+
+**Begründung:**
+- Claim ist kein Code-Edit, sondern ein Koordinations-Mechanismus
+- Ohne Claim: Race Condition → mehrere Agenten planen/implementieren dieselbe Task
+- Der Claim ist atomar (nur Status → 🔒) und reversibel
+
+**Die Plan-Mode-Regel "keine Code-Änderungen" gilt NICHT für Claim-Operationen.**
+
+**Konsequenz:** Wenn ein Agent im Plan-Mode ist und noch keine Task geclaimed hat:
+1. Task suchen (readonly: `prioritize-tasks.mjs`, `task-lookup.mjs`)
+2. **SOFORT claimen** (Ausnahme von Plan-Mode-Restriktion)
+3. Erst dann: Docs lesen, Explore-Agents, Plan schreiben
+
+### Phase 1: Task finden und claimen
 
 1. **Goals.md lesen** (einmal pro Session)
 
-2. **Task mit Skript finden:**
+2. **Task finden:**
    ```bash
-   node scripts/prioritize-tasks.mjs         # Top-Tasks anzeigen
-   node scripts/task-lookup.mjs -s <keyword> # Nach Keyword suchen
+   node scripts/prioritize-tasks.mjs [keyword]
+   node scripts/task-lookup.mjs -s <keyword>
    ```
 
-3. **⚠️ TASK SOFORT CLAIMEN:**
+3. **🔒 CLAIM** (GATE):
    ```bash
    node scripts/update-tasks.mjs <ID> --claim
    ```
-   Bei Fehler (bereits geclaimed): andere Task wählen (zurück zu Schritt 2)
+   - ✅ Erfolg → Weiter zu Phase 2
+   - ❌ Fehler → **ABBRUCH dieser Task**
+     - Task vergessen (existiert nicht mehr für dich)
+     - Zurück zu Schritt 2 mit neuem Keyword
+     - KEINE weiteren Aktionen zur abgebrochenen Task
+
+→ Siehe [CLAIM-FIRST REGEL](#%EF%B8%8F-claim-first-regel-keine-ausnahmen) und [FREMDE CLAIMS = ABBRUCH](#-fremde-claims--abbruch)
+
+### Phase 2: Dokumentation lesen
+
+**Erst NACH erfolgreichem Claim:**
 
 4. **Task-Details abrufen:**
    ```bash
-   node scripts/task-lookup.mjs <ID> --deps  # Details + Dependencies
+   node scripts/task-lookup.mjs <ID> --deps
    ```
 
-5. **Konsultiere die Architektur-Baseline** (siehe [Anhang](#architektur-baseline-immer-lesen)):
-   - Wähle mindestens 3 relevante Architektur-Docs
-   - Layer-Docs (Features.md, Application.md) sind fast immer relevant
-   - Bei Events: EventBus.md, Data-Flow.md
+5. **Leseliste erstellen** (≥3 Architektur-Docs + alle Feature-Docs):
+   - Architektur-Baseline konsultieren → [Anhang](#architektur-baseline-immer-lesen)
+   - Feature-Routing-Tabelle konsultieren → [Anhang](#features-backend)
+   - Leseliste mit TodoWrite erstellen
 
-6. **Konsultiere die Feature-Routing-Tabelle** (siehe [Anhang](#features-backend)):
-   - Finde die Zeile, die zu deiner Task passt
-   - Notiere **ALLE** Pflicht-Docs aus der "Pflicht-Docs" Spalte
-   - Die Spec-Spalte der Task ist ein **Shortcut** (Anker-Link zur relevanten Sektion)
+6. **Leseliste abarbeiten** - Markiere jeden Todo als `completed` nach dem Lesen
 
-7. **Erstelle Leseliste mit TodoWrite:**
-   - ARCHITEKTUR: Conventions.md + Error-Handling.md + 1-2 aus Baseline
-   - FEATURE: ALLE Docs aus Routing-Tabelle
-   - **Mindestens 3 Architektur-Docs + alle Feature-Docs**
+### Phase 3: Code erkunden und implementieren
 
-8. **Arbeite die Leseliste ab** - Markiere jeden Todo als `completed` nach dem Lesen
-
-❌ FALSCH: Nur Feature-Docs lesen, Architektur-Baseline ignorieren
-✅ RICHTIG: Architektur-Baseline (3+) → Feature-Routing-Tabelle → Spec-Spalte als Einstieg
-
-### Phase 2: Code erkunden und implementieren
-
-Nach Abschluss von Phase 1:
+Nach Abschluss von Phase 2:
 
 1. **Imp.-Spalte als Einstiegspunkt:**
    - Prüfe welche Dateien in der Imp.-Spalte stehen
@@ -276,6 +349,7 @@ Zeigt priorisierte Tasks und Bugs aus der Development-Roadmap.md.
 - `--include-done` - Auch ✅ Tasks anzeigen
 - `--include-blocked` - Auch blockierte Tasks/Bugs anzeigen
 - `--include-claimed` - Auch 🔒 (geclaimed) Tasks anzeigen
+- `--include-resolved` - Auch ✅ (gelöste) Bugs anzeigen
 
 **Output-Optionen:**
 - `-n, --limit <N>` - Anzahl Ergebnisse (default: 10, 0 = alle)
@@ -554,7 +628,7 @@ Bei fehlenden oder unklaren Schemas: User fragen.
 | Implementierung funktioniert nicht | Status auf ⚠️ setzen, Problem in Beschreibung notieren |
 | Implementierung weicht von Spec ab | Status auf 🔶 setzen, Abweichung in Beschreibung notieren |
 | Nur Teil einer Task erledigt | Task in #Xa (✅) und #Xb (⬜) aufteilen |
-| Bug behoben | Bug-Zeile aus der Bugs-Tabelle **löschen** |
+| Bug behoben | Bug-Status auf ✅ setzen (`--resolve-bug`) |
 | Neuer Bug entdeckt | Bug zur Bugs-Tabelle hinzufügen |
 | Neue Task identifiziert | Task mit ⬜ Status hinzufügen, Imp.-Spalte mit `[neu]`/`[ändern]` markieren |
 
@@ -578,43 +652,40 @@ Alle Task-Änderungen MÜSSEN über das `update-tasks.mjs` Tool erfolgen:
 | Deps entfernen | `node scripts/update-tasks.mjs <ID> --no-deps` |
 | Neue Task | `node scripts/update-tasks.mjs --add --bereich X --beschreibung "..." [--prio X] [--mvp Ja] [--spec "..."]` |
 | Bug melden | `node scripts/update-tasks.mjs --add-bug "Beschreibung" [--prio hoch] [--deps "..."]` |
-| Bug löschen | `node scripts/update-tasks.mjs --delete-bug b4` |
+| Bug lösen | `node scripts/update-tasks.mjs --resolve-bug b4` |
+| Bug löschen | `node scripts/update-tasks.mjs --delete-bug b4` (Warnung, besser --resolve-bug) |
 | Task splitten | `node scripts/update-tasks.mjs <ID> --split "Teil A" "Teil B"` |
 | Eigene ID anzeigen | `node scripts/update-tasks.mjs --whoami` |
 | Vorschau | Jedes Kommando mit `--dry-run` |
 
-**Workflow bei Task-Bearbeitung:**
-
-1. Task claimen: `node scripts/update-tasks.mjs 428 --claim`
-2. Implementieren
-3. Status setzen: `node scripts/update-tasks.mjs 428 --status ✅`
+**Workflow:** Siehe [Phase 1](#phase-1-task-finden-und-claimen) und [CLAIM-FIRST REGEL](#%EF%B8%8F-claim-first-regel-keine-ausnahmen).
 
 **Bei geclaimten Tasks:**
 - `task-lookup.mjs` zeigt Owner an
 - Wenn DU der Owner bist → Weiterarbeiten
-- Wenn ANDERER Agent Owner → Andere Task wählen
-
-**Automatische Agent-ID:**
-- Jeder Agent bekommt beim ersten `--claim` eine eindeutige ID
-- ID wird in `.my-agent-id` gespeichert
-- `--whoami` zeigt deine ID an
+- Wenn ANDERER Agent Owner → **TASK IST TABU**
+  - ❌ KEINE weiteren Aktionen zu dieser Task
+  - ❌ KEIN Warten
+  - ❌ KEIN Analysieren
+  - → SOFORT `prioritize-tasks.mjs` für nächste Task
 
 **Auto-Expire:** Claims verfallen nach 2 Stunden automatisch.
 
 ### Multi-Agent-Setup
 
-**PFLICHT beim Session-Start:** Eindeutige Agent-ID setzen:
+**PFLICHT für Claims:** Agent-ID muss gesetzt sein:
 
 ```bash
 export CLAUDE_AGENT_ID="agent-$(openssl rand -hex 4)"
 ```
 
-**Warum immer?** Ein Agent kann nicht wissen, ob andere Agenten gleichzeitig arbeiten. Die `.my-agent-id` Datei wird von allen Agenten auf derselben Maschine geteilt. Ohne eindeutige ID würden Claims nicht funktionieren.
+**Ohne Agent-ID schlagen `--claim` und `--unclaim` mit Fehler fehl.**
 
-Die Agent-ID Fallback-Kette:
+Die Agent-ID Priorität:
 1. `CLAUDE_AGENT_ID` Umgebungsvariable (höchste Priorität)
 2. `--agent-id <id>` CLI-Flag
-3. `.my-agent-id` Datei (niedrigste Priorität)
+
+~~`.my-agent-id` Datei~~ → **ENTFERNT** (verursachte Race Conditions bei Multi-Agent-Setups)
 
 **Annahme:** Immer davon ausgehen, dass andere Agenten simultan arbeiten könnten.
 

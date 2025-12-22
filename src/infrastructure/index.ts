@@ -32,6 +32,9 @@ export {
   type VaultTimeAdapterDeps,
   createVaultCalendarAdapter,
   type VaultCalendarAdapterDeps,
+  // EntityRegistry
+  createVaultEntityRegistryAdapter,
+  createAndPreloadEntityRegistry,
   // In-memory adapters (testing/development)
   createTerrainRegistry,
   createItemRegistry,
