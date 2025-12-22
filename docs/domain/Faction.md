@@ -46,6 +46,9 @@ interface Faction {
   // Territory via POIs
   controlledPOIs: EntityId<'poi'>[];
 
+  // Encounter-Templates (optional)
+  encounterTemplates?: FactionEncounterTemplate[];
+
   // Visualisierung
   displayColor: string;              // Hex-Farbe fuer Territory-Overlay, z.B. "#4169E1"
 
@@ -57,6 +60,32 @@ interface Faction {
 interface FactionCreatureGroup {
   creatureId: EntityId<'creature'>;  // Creature-Template
   count: number;                      // Anzahl dieser Kreatur in der Fraktion
+}
+
+interface FactionEncounterTemplate {
+  id: string;
+  name: string;                      // "Spaeher-Trupp", "Armee-Division"
+  description?: string;
+
+  // Zusammensetzung
+  composition: TemplateCreatureSlot[];
+
+  // Wann wird dieses Template verwendet?
+  triggers?: {
+    minXPBudget?: number;            // Mindest-Budget fuer dieses Template
+    maxXPBudget?: number;            // Max-Budget
+    terrainTypes?: EntityId<'terrain'>[];
+    encounterTypes?: EncounterType[];
+  };
+
+  // Relative Wahrscheinlichkeit
+  weight: number;                    // 1.0 = normal, 0.1 = selten
+}
+
+interface TemplateCreatureSlot {
+  creatureId: EntityId<'creature'>;
+  count: number | { min: number; max: number };
+  role: 'leader' | 'elite' | 'regular' | 'support';
 }
 ```
 
@@ -268,6 +297,115 @@ function selectEncounterFaction(
   );
 }
 ```
+
+---
+
+## Encounter-Templates
+
+Fraktionen koennen vordefinierte Encounter-Zusammensetzungen definieren. Diese Templates werden bei Encounter-Generierung verwendet, wenn das Budget zum Template passt.
+
+### Template-Auswahl
+
+```typescript
+function selectMatchingTemplate(
+  templates: FactionEncounterTemplate[],
+  budget: number,
+  context: EncounterContext
+): FactionEncounterTemplate | undefined {
+  const matching = templates.filter(t => {
+    // Budget-Range pruefen
+    if (t.triggers?.minXPBudget && budget < t.triggers.minXPBudget) return false;
+    if (t.triggers?.maxXPBudget && budget > t.triggers.maxXPBudget) return false;
+
+    // Terrain pruefen
+    if (t.triggers?.terrainTypes && !t.triggers.terrainTypes.includes(context.terrain.id)) {
+      return false;
+    }
+
+    // Encounter-Typ pruefen
+    if (t.triggers?.encounterTypes && !t.triggers.encounterTypes.includes(context.encounterType)) {
+      return false;
+    }
+
+    return true;
+  });
+
+  if (matching.length === 0) return undefined;
+
+  // Gewichtete Zufallsauswahl
+  return weightedRandomSelect(matching.map(t => ({ value: t, weight: t.weight })));
+}
+```
+
+### Beispiel: Koenigliche Armee
+
+```typescript
+const ROYAL_ARMY: Faction = {
+  id: 'royal-army',
+  name: 'Koenigliche Armee',
+  // ... culture, creatures, etc. ...
+  encounterTemplates: [
+    {
+      id: 'scout-patrol',
+      name: 'Spaeher-Patrouille',
+      composition: [
+        { creatureId: 'scout', count: 2, role: 'regular' },
+      ],
+      triggers: { maxXPBudget: 200 },
+      weight: 1.0,
+    },
+    {
+      id: 'standard-patrol',
+      name: 'Standard-Patrouille',
+      composition: [
+        { creatureId: 'guard', count: { min: 4, max: 6 }, role: 'regular' },
+        { creatureId: 'veteran', count: 1, role: 'leader' },
+      ],
+      triggers: { minXPBudget: 200, maxXPBudget: 1000 },
+      weight: 1.0,
+    },
+    {
+      id: 'reinforced-patrol',
+      name: 'Verstaerkte Patrouille',
+      composition: [
+        { creatureId: 'guard', count: 10, role: 'regular' },
+        { creatureId: 'knight', count: 1, role: 'leader' },
+        { creatureId: 'war-horse', count: 1, role: 'support' },
+      ],
+      triggers: { minXPBudget: 1000, maxXPBudget: 3000 },
+      weight: 0.5,  // Seltener als Standard
+    },
+    {
+      id: 'army-division',
+      name: 'Armee-Division',
+      composition: [
+        { creatureId: 'guard', count: { min: 30, max: 50 }, role: 'regular' },
+        { creatureId: 'veteran', count: { min: 5, max: 10 }, role: 'elite' },
+        { creatureId: 'knight', count: { min: 2, max: 4 }, role: 'leader' },
+        { creatureId: 'priest', count: 1, role: 'support' },
+      ],
+      triggers: { minXPBudget: 5000 },
+      weight: 0.01,  // Sehr selten - Armeen sind ungewoehnlich
+    },
+  ],
+};
+```
+
+### Budget und Template-Wahrscheinlichkeit
+
+Templates werden mit exponentiell fallender Wahrscheinlichkeit ausgewaehlt:
+
+| Budget-Multiplikator | Wahrscheinlichkeit |
+|---------------------|-------------------|
+| 1× (Basis) | 50% |
+| 2× | 25% |
+| 4× | 12.5% |
+| 8× | 6.25% |
+| usw. | ... |
+
+**Wichtig:** Das Template-Budget muss nicht ausgeschoepft werden. Ein Social-Encounter kann ein "Armee-Division" Template verwenden, aber es werden nur die Leader-NPCs fuer das Gespraech relevant sein - die Armee ist im Hintergrund.
+
+→ Details zur Budget-Berechnung: [Encounter-Balancing.md](../features/Encounter-Balancing.md#avoidability-system)
 
 ---
 
@@ -513,7 +651,10 @@ function rollQuirk(culture: ResolvedCulture): string | undefined {
 
 | # | Beschreibung | Prio | MVP? | Deps | Referenzen |
 |--:|--------------|:----:|:----:|------|------------|
-| 1400 | Faction-Schema (id, name, parentId, culture, creatures, controlledPOIs, displayColor) | hoch | Ja | - | [Faction.md#schema](#schema) |
+| 1400 | Faction-Schema (id, name, parentId, culture, creatures, controlledPOIs, encounterTemplates, displayColor) | hoch | Ja | - | [Faction.md#schema](#schema) |
+| 1417 | FactionEncounterTemplate Schema (id, name, composition, triggers, weight) | hoch | Ja | #1400 | [Faction.md#schema](#schema), [Faction.md#encounter-templates](#encounter-templates) |
+| 1418 | TemplateCreatureSlot Schema (creatureId, count, role) | hoch | Ja | #1417 | [Faction.md#schema](#schema) |
+| 1419 | selectMatchingTemplate(): Budget + Context → Template-Auswahl | hoch | Ja | #1417, #1418 | [Faction.md#template-auswahl](#template-auswahl), [Encounter-Balancing.md#budget-auswahl](../features/Encounter-Balancing.md#budget-auswahl-mit-exponentieller-wahrscheinlichkeit) |
 | 1401 | CultureData-Schema (naming, personality, quirks, values, speech) | hoch | Ja | #1400 | [Faction.md#culturedata](#culturedata) |
 | 1402 | FactionCreatureGroup-Schema (creatureId, count) | hoch | Ja | #1400, #1200 | [Faction.md#schema](#schema), [Creature.md#schema](Creature.md#schema) |
 | 1403 | FactionPresence-Schema (factionId, strength) für Tile-Speicherung | hoch | Ja | #1400, #802 | [Faction.md#praesenz-datenstruktur](#praesenz-datenstruktur), [Map-Feature.md#overworldmap](../features/Map-Feature.md#overworldmap) |

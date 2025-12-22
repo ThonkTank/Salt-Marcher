@@ -272,10 +272,7 @@ export function createSessionRunnerViewModel(
           statusFilter: currentStatusFilter,
           discoveredQuestCount,
         },
-        actions: {
-          canGenerateEncounter: !!partyPos,
-          canTeleport: isSome(map),
-        },
+        actions: {},
       },
     };
   }

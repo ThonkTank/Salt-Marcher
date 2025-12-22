@@ -11,28 +11,7 @@
  * Bei fehlgeschlagenen Tests wird die entsprechende Task auf ⚠️ gesetzt.
  */
 
-import { readFileSync, writeFileSync } from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROADMAP_PATH = join(__dirname, '..', 'docs', 'architecture', 'Development-Roadmap.md');
-
-/**
- * Extrahiert Task-IDs aus einem Test-Namen
- * Unterstützt: "#428", "[#428, #429]", "#428, #429"
- */
-function extractTaskIds(name) {
-  const ids = [];
-  // Einzelne IDs: #428
-  const singleMatches = name.match(/#(\d+)/g);
-  if (singleMatches) {
-    for (const match of singleMatches) {
-      ids.push(parseInt(match.slice(1), 10));
-    }
-  }
-  return [...new Set(ids)]; // Duplikate entfernen
-}
+import { extractTaskIds, updateTaskStatusInRoadmap } from './task-utils.mjs';
 
 /**
  * Findet die oberste describe-Ebene eines Tests
@@ -44,51 +23,6 @@ function getTopLevelDescribe(task) {
     current = current.suite;
   }
   return current?.name || '';
-}
-
-/**
- * Aktualisiert den Status einer Task in der Roadmap
- */
-function updateTaskStatus(taskId, newStatus, errorMessage) {
-  const content = readFileSync(ROADMAP_PATH, 'utf-8');
-  const lines = content.split('\n');
-  let updated = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    // Task-Zeile finden: | 428 | ✅ | ...
-    const match = line.match(/^\|\s*(\d+)\s*\|\s*([⬜✅🔶⚠️])\s*\|/);
-    if (match && parseInt(match[1], 10) === taskId) {
-      const oldStatus = match[2];
-
-      // Nur updaten wenn nicht bereits ⚠️
-      if (oldStatus !== '⚠️') {
-        // Status ersetzen
-        lines[i] = line.replace(
-          /^\|(\s*\d+\s*)\|(\s*)[⬜✅🔶⚠️](\s*)\|/,
-          `|$1|$2⚠️$3|`
-        );
-
-        // Fehler in Beschreibung einfügen (wenn nicht bereits vorhanden)
-        if (errorMessage && !lines[i].includes('[TEST FAILED]')) {
-          // Finde die Beschreibungs-Spalte (4. Spalte) und füge Warnung hinzu
-          const cells = lines[i].split('|');
-          if (cells.length > 3) {
-            const desc = cells[3].trim();
-            cells[3] = ` [TEST FAILED] ${desc} `;
-            lines[i] = cells.join('|');
-          }
-        }
-        updated = true;
-      }
-      break;
-    }
-  }
-
-  if (updated) {
-    writeFileSync(ROADMAP_PATH, lines.join('\n'));
-  }
-  return updated;
 }
 
 /**
@@ -225,7 +159,7 @@ export default class TaskReporter {
     console.log('\n📝 Aktualisiere Development-Roadmap.md...\n');
 
     for (const [taskId, errors] of this.failedTaskIds) {
-      const updated = updateTaskStatus(taskId, '⚠️', errors[0]?.error);
+      const updated = updateTaskStatusInRoadmap(taskId, '⚠️', errors[0]?.error);
       if (updated) {
         console.log(`  ⚠️ Task #${taskId} auf Status ⚠️ gesetzt`);
       } else {

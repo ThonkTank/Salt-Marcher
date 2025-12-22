@@ -291,7 +291,6 @@ export function createCartographerViewModel(
           'terrain-brush',
           'elevation-brush',
           'climate-brush',
-          'feature-brush',
           'path-tool',
           'location-marker',
           'inspector',

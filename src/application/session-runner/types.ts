@@ -69,13 +69,9 @@ export interface TravelSectionState {
 
 /**
  * Actions section state.
+ * Currently empty - Rest button will be added in Task #2309.
  */
-export interface ActionsSectionState {
-  /** Whether encounter generation is available */
-  canGenerateEncounter: boolean;
-  /** Whether teleport is available */
-  canTeleport: boolean;
-}
+export type ActionsSectionState = Record<string, never>;
 
 /**
  * Objective display item for quest panel.
@@ -284,10 +280,7 @@ export function createInitialRenderState(): RenderState {
         statusFilter: 'all',
         discoveredQuestCount: 0,
       },
-      actions: {
-        canGenerateEncounter: false,
-        canTeleport: false,
-      },
+      actions: {},
     },
     sidebarCollapsed: false,
   };

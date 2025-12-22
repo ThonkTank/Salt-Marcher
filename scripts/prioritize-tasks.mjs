@@ -16,45 +16,20 @@
  *   node scripts/prioritize-tasks.mjs --help             # Hilfe anzeigen
  */
 
-import { readFileSync, existsSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { readFileSync, readdirSync, statSync } from 'fs';
+import { relative, join } from 'path';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROADMAP_PATH = join(__dirname, '..', 'docs', 'architecture', 'Development-Roadmap.md');
+import {
+  ROADMAP_PATH, DOCS_PATH, CLAIMS_PATH,
+  parseTaskId, formatId, isTaskId,
+  loadClaims, parseRoadmap,
+  STATUS_PRIORITY, MVP_PRIORITY, PRIO_PRIORITY, STATUS_ALIASES
+} from './task-utils.mjs';
 
-// Sortier-Prioritäten (🔒 = claimed, niedriger als ⬜ aber höher als ✅)
-const STATUS_PRIORITY = { '🔶': 0, '⚠️': 1, '⬜': 2, '🔒': 3, '✅': 4 };
-const MVP_PRIORITY = { 'Ja': 0, 'Nein': 1 };
-const PRIO_PRIORITY = { 'hoch': 0, 'mittel': 1, 'niedrig': 2 };
+// ============================================================================
+// CLI Argument Parsing
+// ============================================================================
 
-// Status-Aliase für CLI
-const STATUS_ALIASES = {
-  'done': '✅', 'fertig': '✅', 'complete': '✅',
-  'partial': '🔶', 'nonconform': '🔶',
-  'broken': '⚠️', 'warning': '⚠️',
-  'open': '⬜', 'todo': '⬜', 'offen': '⬜',
-  'claimed': '🔒', 'locked': '🔒', 'wip': '🔒'
-};
-
-// Claims-Datei Pfad
-const CLAIMS_PATH = join(__dirname, '..', 'docs', 'architecture', '.task-claims.json');
-
-/**
- * Lädt die Claims-Datei
- */
-function loadClaims() {
-  try {
-    if (!existsSync(CLAIMS_PATH)) return {};
-    return JSON.parse(readFileSync(CLAIMS_PATH, 'utf-8')).claims || {};
-  } catch {
-    return {};
-  }
-}
-
-/**
- * Parst Command-Line-Argumente
- */
 function parseArgs(argv) {
   const opts = {
     keywords: [],
@@ -109,9 +84,6 @@ function parseArgs(argv) {
   return opts;
 }
 
-/**
- * Zeigt Hilfe an
- */
 function showHelp() {
   console.log(`
 Task-Priorisierungs-Skript
@@ -154,194 +126,159 @@ SORTIERKRITERIEN:
   4. RefCount: Tasks, von denen viele andere abhängen
   5. Task-Nummer: Niedrigere = älter = höhere Priorität
 
-ZYKLEN-ERKENNUNG:
-  Das Skript warnt automatisch bei zirkulären Dependencies (z.B. #100 → #101 → #100).
-  Betroffene Tasks können niemals "nicht blockiert" werden.
-  Die Warnung erscheint auch im --quiet Modus.
-  Bei --json werden Zyklen im "cycles" Feld ausgegeben.
+INTEGRITÄTSPRÜFUNGEN:
+  Das Skript führt automatisch folgende Prüfungen durch:
+
+  1. Zyklen-Erkennung:
+     Warnt bei zirkulären Dependencies (z.B. #100 → #101 → #100).
+     Betroffene Tasks können niemals "nicht blockiert" werden.
+
+  2. Duplikat-Erkennung:
+     Warnt wenn dieselbe Task-ID mehrfach in der Roadmap vorkommt.
+
+  3. Verwaiste Referenzen:
+     Warnt wenn Docs Task-IDs referenzieren, die nicht in der Roadmap existieren.
+
+  Alle Warnungen erscheinen auch im --quiet Modus.
+  Bei --json werden sie in "cycles", "duplicates" und "orphanRefs" Feldern ausgegeben.
 `);
 }
 
-/**
- * Parst eine Task-ID (z.B. "428", "428b", "2917a")
- * Gibt String zurück für alphanumerische IDs, Zahl für reine Ziffern
- */
-function parseTaskId(raw) {
-  const trimmed = raw.trim();
-  // Alphanumerische ID (z.B. "428b", "2917a")
-  if (/^\d+[a-z]$/i.test(trimmed)) {
-    return trimmed.toLowerCase();  // Normalisieren zu lowercase
-  }
-  // Reine Zahl
-  const num = parseInt(trimmed, 10);
-  return isNaN(num) ? null : num;
-}
+// ============================================================================
+// Docs Scanning
+// ============================================================================
 
 /**
- * Parst Dependencies aus einem String
- * Unterstützt: #123, #428b, b4
+ * Sammelt rekursiv alle .md Dateien in einem Verzeichnis
  */
-function parseDeps(depsRaw) {
-  if (depsRaw === '-') return [];
-
-  const deps = [];
-  // Match: #123, #428b, #2917a, b4
-  const matches = depsRaw.matchAll(/#(\d+[a-z]?)|b(\d+)/gi);
-
-  for (const match of matches) {
-    if (match[1]) {
-      // Task-ID: kann Zahl oder alphanumerisch sein
-      deps.push(parseTaskId(match[1]));
-    } else if (match[2]) {
-      // Bug-ID: z.B. "b4"
-      deps.push(`b${match[2]}`);
+function collectMdFiles(dir, files = []) {
+  const entries = readdirSync(dir);
+  for (const entry of entries) {
+    const fullPath = join(dir, entry);
+    const stat = statSync(fullPath);
+    if (stat.isDirectory()) {
+      collectMdFiles(fullPath, files);
+    } else if (entry.endsWith('.md')) {
+      files.push(fullPath);
     }
   }
-
-  return deps.filter(d => d !== null);
+  return files;
 }
 
 /**
- * Parst eine Task-Zeile aus der Markdown-Tabelle
+ * Scannt alle Docs-Dateien nach Task-Referenzen
  */
-function parseTaskLine(line) {
-  const cells = line.split('|').map(c => c.trim()).filter(Boolean);
-  if (cells.length < 7) return null;
+function scanDocsForTaskRefs(docsPath) {
+  const results = [];
+  const mdFiles = collectMdFiles(docsPath);
 
-  const number = parseTaskId(cells[0]);
-  if (number === null) return null;
+  // Regex für Task-Referenzen: #123, #428b, #2917a (aber nicht in URLs oder Ankern)
+  const refRegex = /(?<![(\['"])#(\d{1,4}[a-z]?)(?![a-z\d-])/gi;
 
-  const status = cells[1];
-  const bereich = cells[2];
-  const beschreibung = cells[3];
-  const prio = cells[4];
-  const mvp = cells[5];
-  const depsRaw = cells[6];
+  for (const file of mdFiles) {
+    if (file === ROADMAP_PATH) continue;
 
-  const deps = parseDeps(depsRaw);
+    const content = readFileSync(file, 'utf-8');
+    const refs = new Set();
 
-  return { number, status, bereich, beschreibung, prio, mvp, deps, isBug: false };
-}
-
-/**
- * Parst eine Bug-Zeile aus der Markdown-Tabelle
- * Format: | b# | Status | Beschreibung | Prio | Deps |
- */
-function parseBugLine(line) {
-  const cells = line.split('|').map(c => c.trim()).filter(Boolean);
-  if (cells.length < 5) return null;
-
-  const match = cells[0].match(/^b(\d+)$/);
-  if (!match) return null;
-
-  const number = cells[0];  // z.B. "b1"
-  const status = cells[1];
-  const beschreibung = cells[2];
-  const prio = cells[3];
-  const depsRaw = cells[4];
-
-  const deps = parseDeps(depsRaw);
-
-  return {
-    number,
-    status,
-    bereich: 'Bug',
-    beschreibung,
-    prio,
-    mvp: 'Ja',         // Bugs sind immer MVP-relevant
-    deps,
-    isBug: true
-  };
-}
-
-/**
- * Parst die gesamte Roadmap-Datei (Tasks + Bugs)
- */
-function parseRoadmap(content) {
-  const lines = content.split('\n');
-  const tasks = [];
-  const bugs = [];
-  let inTaskTable = false;
-  let inBugTable = false;
-
-  for (const line of lines) {
-    // Task-Tabelle erkennen
-    if (line.includes('| # | Status |')) {
-      inTaskTable = true;
-      inBugTable = false;
-      continue;
-    }
-    // Bug-Tabelle erkennen
-    if (line.includes('| b# |')) {
-      inBugTable = true;
-      inTaskTable = false;
-      continue;
-    }
-    // Separator-Zeile überspringen
-    if ((inTaskTable || inBugTable) && line.match(/^\|[\s:-]+\|/)) continue;
-    // Tabelle beenden
-    if ((inTaskTable || inBugTable) && !line.startsWith('|')) {
-      if (line.trim() === '' || line.startsWith('#')) {
-        inTaskTable = false;
-        inBugTable = false;
+    let match;
+    while ((match = refRegex.exec(content)) !== null) {
+      const id = parseTaskId(match[1]);
+      if (id !== null) {
+        refs.add(id);
       }
-      continue;
     }
-    // Zeilen parsen
-    if (inTaskTable) {
-      const task = parseTaskLine(line);
-      if (task) tasks.push(task);
-    }
-    if (inBugTable) {
-      const bug = parseBugLine(line);
-      if (bug) bugs.push(bug);
+
+    if (refs.size > 0) {
+      results.push({
+        file: relative(join(docsPath, '..'), file),
+        refs
+      });
     }
   }
-  return { tasks, bugs };
+
+  return results;
+}
+
+/**
+ * Findet verwaiste Task-Referenzen
+ */
+function findOrphanRefs(docsRefs, roadmapIds) {
+  const orphans = [];
+
+  for (const { file, refs } of docsRefs) {
+    for (const id of refs) {
+      const normalizedId = typeof id === 'number' ? id : id;
+      if (!roadmapIds.has(normalizedId)) {
+        orphans.push({ file, id });
+      }
+    }
+  }
+
+  return orphans;
+}
+
+// ============================================================================
+// Integrity Checks
+// ============================================================================
+
+/**
+ * Findet doppelte Task-IDs in der Roadmap
+ */
+function findDuplicateIds(tasks, bugs) {
+  const seen = new Map();
+  const duplicates = [];
+
+  for (const task of tasks) {
+    const key = `task-${task.number}`;
+    if (seen.has(key)) {
+      seen.get(key).push(task);
+    } else {
+      seen.set(key, [task]);
+    }
+  }
+
+  for (const bug of bugs) {
+    const key = `bug-${bug.number}`;
+    if (seen.has(key)) {
+      seen.get(key).push(bug);
+    } else {
+      seen.set(key, [bug]);
+    }
+  }
+
+  for (const [, occurrences] of seen) {
+    if (occurrences.length > 1) {
+      duplicates.push({
+        id: occurrences[0].number,
+        isBug: occurrences[0].isBug,
+        occurrences
+      });
+    }
+  }
+
+  return duplicates;
 }
 
 /**
  * Findet alle zirkulären Dependencies im Dependency-Graph
- * Verwendet DFS mit Rekursions-Stack zur Zyklen-Erkennung
- *
- * @param {Array} items - Alle Tasks und Bugs
- * @returns {Array} - Liste von deduplizierten Zyklen (jeder Zyklus = Array von IDs)
  */
-/**
- * Prüft ob eine ID eine Task-ID ist (Zahl oder alphanumerisch wie "428b")
- * im Gegensatz zu einer Bug-ID (String wie "b4")
- */
-function isTaskId(id) {
-  if (typeof id === 'number') return true;
-  if (typeof id === 'string' && !id.startsWith('b')) return true;
-  return false;
-}
-
 function findCycles(items) {
-  // Dependency-Graph aufbauen (ID → Array<Dependency-IDs>)
-  // Bugs werden komplett ignoriert - sie zeigen "broken" an, blockieren aber nicht
   const graph = new Map();
   const allIds = new Set();
 
   for (const item of items) {
-    // Bugs überspringen - nur Tasks analysieren
     if (item.isBug) continue;
 
-    // Task-Deps: Zahlen oder alphanumerische Strings (aber keine Bug-IDs wie 'b4')
     const taskDeps = item.deps.filter(isTaskId);
     graph.set(item.number, taskDeps);
     allIds.add(item.number);
   }
 
   const cycles = [];
-  const globalVisited = new Set();
 
-  /**
-   * DFS von einem Startknoten aus - findet alle Zyklen die diesen Knoten enthalten
-   */
   function dfs(node, path, pathSet) {
     if (pathSet.has(node)) {
-      // Zyklus gefunden - extrahiere den Zyklus aus dem Pfad
       const cycleStart = path.indexOf(node);
       if (cycleStart !== -1) {
         cycles.push([...path.slice(cycleStart), node]);
@@ -349,7 +286,6 @@ function findCycles(items) {
       return;
     }
 
-    // Nur Knoten besuchen die im Graph existieren
     if (!allIds.has(node)) return;
 
     pathSet.add(node);
@@ -364,7 +300,6 @@ function findCycles(items) {
     pathSet.delete(node);
   }
 
-  // Von jedem Knoten aus suchen
   for (const id of allIds) {
     dfs(id, [], new Set());
   }
@@ -374,20 +309,16 @@ function findCycles(items) {
 
 /**
  * Normalisiert einen Zyklus für Vergleichbarkeit
- * Rotiert so dass das "kleinste" Element zuerst kommt
  */
 function normalizeCycle(cycle) {
-  // Entferne das letzte Element (Duplikat vom ersten)
   const c = cycle.slice(0, -1);
   if (c.length === 0) return c;
 
-  // Finde den Index des "kleinsten" Elements (Zahlen vor Strings, dann numerisch/alphabetisch)
   let minIdx = 0;
   for (let i = 1; i < c.length; i++) {
     const curr = c[i];
     const min = c[minIdx];
 
-    // Zahlen sind "kleiner" als Strings (Bug-IDs)
     if (typeof curr === 'number' && typeof min === 'string') {
       minIdx = i;
     } else if (typeof curr === typeof min) {
@@ -399,19 +330,7 @@ function normalizeCycle(cycle) {
 }
 
 /**
- * Formatiert eine Task-/Bug-ID für Ausgabe
- * - Zahlen: #428
- * - Alphanumerische Task-IDs: #428b
- * - Bug-IDs: b4 (ohne #)
- */
-function formatId(id) {
-  if (typeof id === 'number') return `#${id}`;
-  if (typeof id === 'string' && id.startsWith('b')) return id;  // Bug-ID
-  return `#${id}`;  // Alphanumerische Task-ID
-}
-
-/**
- * Entfernt doppelte Zyklen (gleiche Zyklen in verschiedener Rotation)
+ * Entfernt doppelte Zyklen
  */
 function deduplicateCycles(cycles) {
   const seen = new Set();
@@ -423,6 +342,10 @@ function deduplicateCycles(cycles) {
     return true;
   });
 }
+
+// ============================================================================
+// Sorting & Filtering
+// ============================================================================
 
 /**
  * Berechnet wie viele Items auf jede Task/Bug verweisen
@@ -438,12 +361,10 @@ function calculateRefCounts(items) {
 }
 
 /**
- * Prüft ob alle Dependencies erfüllt sind (Status = ✅)
- * Bug-Deps werden ignoriert - sie zeigen "broken" an, blockieren aber nicht
+ * Prüft ob alle Dependencies erfüllt sind
  */
 function areDepsResolved(item, statusMap) {
   return item.deps.every(dep => {
-    // Bug-Deps ignorieren - sie zeigen "broken" an, nicht "blockiert"
     if (typeof dep === 'string' && dep.startsWith('b')) {
       return true;
     }
@@ -454,14 +375,11 @@ function areDepsResolved(item, statusMap) {
 
 /**
  * Sortier-Vergleichsfunktion
- * Unterstützt gemischte IDs (Tasks: Zahlen, Bugs: Strings wie 'b4')
  */
 function compareItems(a, b, refCounts) {
-  // 1. MVP zuerst - alle MVP-Tasks vor allen post-MVP-Tasks
   const mvpDiff = (MVP_PRIORITY[a.mvp] ?? 99) - (MVP_PRIORITY[b.mvp] ?? 99);
   if (mvpDiff !== 0) return mvpDiff;
 
-  // 2. Status innerhalb der MVP-Gruppe
   const statusDiff = (STATUS_PRIORITY[a.status] ?? 99) - (STATUS_PRIORITY[b.status] ?? 99);
   if (statusDiff !== 0) return statusDiff;
 
@@ -473,11 +391,9 @@ function compareItems(a, b, refCounts) {
   const refDiff = refCountB - refCountA;
   if (refDiff !== 0) return refDiff;
 
-  // Nummer-Vergleich: Bugs (Strings) vs Tasks (Zahlen)
   const numA = typeof a.number === 'string' ? parseInt(a.number.slice(1), 10) : a.number;
   const numB = typeof b.number === 'string' ? parseInt(b.number.slice(1), 10) : b.number;
 
-  // Tasks vor Bugs bei gleicher Nummer
   if (a.isBug !== b.isBug) return a.isBug ? 1 : -1;
 
   return numA - numB;
@@ -487,7 +403,6 @@ function compareItems(a, b, refCounts) {
  * Prüft ob Task den Filtern entspricht
  */
 function matchesFilters(task, opts, statusMap) {
-  // Status-Filter: Tasks und Bugs separat behandeln
   if (task.status === '✅') {
     if (task.isBug && !opts.includeResolved) return false;
     if (!task.isBug && !opts.includeDone) return false;
@@ -495,17 +410,13 @@ function matchesFilters(task, opts, statusMap) {
   if (!opts.includeClaimed && task.status === '🔒') return false;
   if (opts.status && task.status !== opts.status) return false;
 
-  // Dependency-Filter
   if (!opts.includeBlocked && !areDepsResolved(task, statusMap)) return false;
 
-  // MVP-Filter
   if (opts.mvp === true && task.mvp !== 'Ja') return false;
   if (opts.mvp === false && task.mvp !== 'Nein') return false;
 
-  // Prio-Filter
   if (opts.prio && task.prio.toLowerCase() !== opts.prio) return false;
 
-  // Keyword-Filter
   if (opts.keywords.length > 0) {
     const searchText = `${task.bereich} ${task.beschreibung}`.toLowerCase();
     if (!opts.keywords.some(kw => searchText.includes(kw.toLowerCase()))) {
@@ -516,9 +427,10 @@ function matchesFilters(task, opts, statusMap) {
   return true;
 }
 
-/**
- * Formatiert die Ausgabe-Tabelle
- */
+// ============================================================================
+// Output Formatting
+// ============================================================================
+
 function formatTable(items, refCounts) {
   const headers = ['#', 'Status', 'Bereich', 'Beschreibung', 'Prio', 'MVP', 'Deps', 'Refs'];
 
@@ -547,31 +459,36 @@ function formatTable(items, refCounts) {
   }
 }
 
-/**
- * Formatiert JSON-Ausgabe
- */
-function formatJson(tasks, refCounts, cycles) {
+function formatJson(tasks, refCounts, cycles, duplicates, orphans) {
   const items = tasks.map(t => ({
     ...t,
     refCount: refCounts.get(t.number) || 0
   }));
 
-  // Zyklen formatieren: IDs zu lesbaren Strings
-  const formattedCycles = cycles.map(cycle =>
-    cycle.map(formatId)
-  );
+  const formattedCycles = cycles.map(cycle => cycle.map(formatId));
+
+  const formattedDuplicates = duplicates.map(({ id, occurrences }) => ({
+    id: formatId(id),
+    count: occurrences.length,
+    descriptions: occurrences.map(o => o.beschreibung)
+  }));
+
+  const orphansByFile = {};
+  for (const { file, id } of orphans) {
+    if (!orphansByFile[file]) orphansByFile[file] = [];
+    orphansByFile[file].push(formatId(id));
+  }
 
   const output = {
     items,
-    cycles: formattedCycles
+    cycles: formattedCycles,
+    duplicates: formattedDuplicates,
+    orphanRefs: orphansByFile
   };
 
   console.log(JSON.stringify(output, null, 2));
 }
 
-/**
- * Beschreibt aktive Filter
- */
 function describeFilters(opts) {
   const parts = [];
   if (opts.status) parts.push(`Status=${opts.status}`);
@@ -586,7 +503,10 @@ function describeFilters(opts) {
   return parts.length ? parts.join(', ') : 'keine';
 }
 
-// Hauptprogramm
+// ============================================================================
+// Main
+// ============================================================================
+
 function main() {
   const opts = parseArgs(process.argv.slice(2));
 
@@ -600,17 +520,13 @@ function main() {
   }
 
   const content = readFileSync(ROADMAP_PATH, 'utf-8');
-  const { tasks, bugs } = parseRoadmap(content);
+  const { tasks, bugs } = parseRoadmap(content, { separateBugs: true });
 
-  // Alle Items kombinieren
-  // Hinweis: Bug-Status-Propagation erfolgt automatisch bei --add-bug in update-tasks.mjs
   const allItems = [...tasks, ...bugs];
-
-  // Status-Map für Dependency-Prüfung
   const statusMap = new Map(allItems.map(t => [t.number, t.status]));
   const refCounts = calculateRefCounts(allItems);
 
-  // Zirkuläre Dependencies prüfen (Warnung erscheint auch im quiet-Mode!)
+  // Zirkuläre Dependencies prüfen
   const cycles = findCycles(allItems);
   if (cycles.length > 0) {
     console.warn('\n⚠️  WARNUNG: Zirkuläre Dependencies gefunden!\n');
@@ -621,10 +537,40 @@ function main() {
     console.warn('\nDiese Tasks/Bugs können niemals "nicht blockiert" werden.\n');
   }
 
+  // Doppelte Task-IDs prüfen
+  const duplicates = findDuplicateIds(tasks, bugs);
+  if (duplicates.length > 0) {
+    console.warn('\n⚠️  WARNUNG: Doppelte IDs in der Roadmap!\n');
+    for (const { id, occurrences } of duplicates) {
+      console.warn(`   ${formatId(id)} erscheint ${occurrences.length}x:`);
+      for (const occ of occurrences) {
+        console.warn(`      - "${occ.beschreibung.slice(0, 50)}${occ.beschreibung.length > 50 ? '...' : ''}"`);
+      }
+    }
+    console.warn('');
+  }
+
+  // Verwaiste Task-Referenzen prüfen
+  const roadmapIds = new Set(allItems.map(item => item.number));
+  const docsRefs = scanDocsForTaskRefs(DOCS_PATH);
+  const orphans = findOrphanRefs(docsRefs, roadmapIds);
+  if (orphans.length > 0) {
+    console.warn('\n⚠️  WARNUNG: Verwaiste Task-Referenzen in Docs!\n');
+    const byFile = new Map();
+    for (const { file, id } of orphans) {
+      if (!byFile.has(file)) byFile.set(file, []);
+      byFile.get(file).push(id);
+    }
+    for (const [file, ids] of byFile) {
+      console.warn(`   ${file}:`);
+      console.warn(`      ${ids.map(formatId).join(', ')}`);
+    }
+    console.warn('\nDiese IDs werden in Docs referenziert, existieren aber nicht in der Roadmap.\n');
+  }
+
   if (!opts.quiet) {
     console.log(`Gefunden: ${tasks.length} Tasks, ${bugs.length} Bugs`);
 
-    // Status-Aufschlüsselung
     const statusCounts = { '✅': 0, '🔶': 0, '⚠️': 0, '⬜': 0, '🔒': 0 };
     let blockedCount = 0;
     for (const item of allItems) {
@@ -638,7 +584,6 @@ function main() {
     console.log(`Filter: ${describeFilters(opts)}`);
   }
 
-  // Filtern
   const filtered = allItems.filter(t => matchesFilters(t, opts, statusMap));
 
   if (!opts.quiet) {
@@ -650,15 +595,12 @@ function main() {
     return;
   }
 
-  // Sortieren
   filtered.sort((a, b) => compareItems(a, b, refCounts));
 
-  // Limit anwenden
   const results = opts.limit > 0 ? filtered.slice(0, opts.limit) : filtered;
 
-  // Ausgabe
   if (opts.json) {
-    formatJson(results, refCounts, cycles);
+    formatJson(results, refCounts, cycles, duplicates, orphans);
   } else {
     if (!opts.quiet) {
       const taskCount = results.filter(r => !r.isBug).length;

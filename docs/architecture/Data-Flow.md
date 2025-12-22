@@ -371,3 +371,16 @@ Features reagieren auf Events anderer Features:
 ---
 
 *Siehe auch: [EventBus.md](EventBus.md) | [Features.md](Features.md) | [Application.md](Application.md)*
+
+## Tasks
+
+| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+|--:|--------------|:----:|:----:|------|------------|
+| 2301 | SessionRunner ViewModel mit State-Management | hoch | Ja | #2300 | [SessionRunner.md#viewmodel-state](../application/SessionRunner.md#viewmodel-state) |
+| 2315 | Event Subscriptions: travel:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
+| 2316 | Event Subscriptions: travel:position-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
+| 2317 | Event Subscriptions: time:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
+| 2318 | Event Subscriptions: weather:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
+| 2319 | Event Subscriptions: audio:track-changed | hoch | Ja | #1112, #1500, #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
+| 2320 | Event Subscriptions: map:loaded | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
+| 2321 | Event Subscriptions: party:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |

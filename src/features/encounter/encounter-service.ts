@@ -21,6 +21,7 @@ import {
   type EncounterStartRequestedPayload,
   type EncounterDismissRequestedPayload,
   type EncounterResolveRequestedPayload,
+  type EncounterFailedPayload,
   type MapLoadedPayload,
   type CombatCompletedPayload,
   type LootGeneratedPayload,
@@ -365,6 +366,28 @@ export function createEncounterService(
         },
         {
           correlationId: correlationId ?? newCorrelationId(),
+          timestamp: now(),
+          source: 'encounter-feature',
+        }
+      )
+    );
+  }
+
+  /**
+   * Publish encounter failed event (Compensation Pattern).
+   * Allows other features to react to generation failures.
+   */
+  function publishEncounterFailed(
+    reason: EncounterFailedPayload['reason'],
+    details: string | undefined,
+    correlationId: string
+  ): void {
+    eventBus.publish(
+      createEvent(
+        EventTypes.ENCOUNTER_FAILED,
+        { reason, details },
+        {
+          correlationId,
           timestamp: now(),
           source: 'encounter-feature',
         }
@@ -739,7 +762,12 @@ export function createEncounterService(
           // Get tile at position for terrain
           const tileOption = mapFeature.getTile(position);
           if (isNone(tileOption)) {
-            // No tile at position - silently fail (map not loaded or invalid coord)
+            // No tile at position - publish failed event (Compensation Pattern)
+            publishEncounterFailed(
+              'invalid_tile',
+              `No tile at position (${position.q}, ${position.r})`,
+              event.correlationId
+            );
             return;
           }
           const tile = tileOption.value;
@@ -754,7 +782,19 @@ export function createEncounterService(
             trigger,
           };
 
-          executeGenerationPipeline(context, event.correlationId);
+          // Execute pipeline and handle errors (Compensation Pattern)
+          const result = executeGenerationPipeline(context, event.correlationId);
+          if (!result.ok) {
+            // Map error codes to failure reasons
+            const reason: EncounterFailedPayload['reason'] =
+              result.error.code === 'NO_ELIGIBLE_CREATURES'
+                ? 'no_eligible_creatures'
+                : result.error.code === 'SELECTION_FAILED'
+                  ? 'selection_failed'
+                  : 'generation_failed';
+
+            publishEncounterFailed(reason, result.error.message, event.correlationId);
+          }
         }
       )
     );

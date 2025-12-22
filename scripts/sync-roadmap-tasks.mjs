@@ -13,13 +13,14 @@
  *   node scripts/sync-roadmap-tasks.mjs --roadmap-only # Nur Roadmap→Doc
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join, basename } from 'path';
+import { readFileSync, writeFileSync } from 'fs';
+import { basename } from 'path';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DOCS_PATH = join(__dirname, '..', 'docs');
-const ROADMAP_PATH = join(__dirname, '..', 'docs', 'architecture', 'Development-Roadmap.md');
+import {
+  ROADMAP_PATH, DOCS_PATH,
+  parseDeps, formatDeps,
+  findMarkdownFiles
+} from './task-utils.mjs';
 
 // ============================================================================
 // CLI Argument Parsing
@@ -88,23 +89,6 @@ BEISPIELE:
 // ============================================================================
 
 /**
- * Findet alle Markdown-Dateien rekursiv in einem Verzeichnis
- */
-function findMarkdownFiles(dir, files = []) {
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    const fullPath = join(dir, entry);
-    const stat = statSync(fullPath);
-    if (stat.isDirectory()) {
-      findMarkdownFiles(fullPath, files);
-    } else if (entry.endsWith('.md')) {
-      files.push(fullPath);
-    }
-  }
-  return files;
-}
-
-/**
  * Parst eine Task-Zeile aus einer Doc-Tasks-Tabelle
  * Format: | # | Beschreibung | Prio | MVP? | Deps | Referenzen |
  */
@@ -124,10 +108,8 @@ function parseDocTaskLine(line) {
   const depsRaw = cells[4];
   const referenzen = cells[5];
 
-  // Parse Deps (können #N, #Na, oder bN sein)
-  const deps = depsRaw === '-'
-    ? []
-    : (depsRaw.match(/#(\d+[a-z]?)|b(\d+)/g)?.map(d => d.startsWith('#') ? d.slice(1) : d) ?? []);
+  // Parse Deps using shared utility
+  const deps = parseDeps(depsRaw).map(d => String(d));
 
   return {
     number,
@@ -193,10 +175,8 @@ function parseRoadmapTaskLine(line) {
   const number = numberStr;  // Als String behalten
 
   const depsRaw = cells[6];
-  // Deps können #N, #Na, bN sein
-  const deps = depsRaw === '-'
-    ? []
-    : (depsRaw.match(/#(\d+[a-z]?)|b(\d+)/g)?.map(d => d.startsWith('#') ? d.slice(1) : d) ?? []);
+  // Parse Deps using shared utility
+  const deps = parseDeps(depsRaw).map(d => String(d));
 
   return {
     number,
@@ -402,19 +382,6 @@ function formatRefsForDoc(spec) {
   // Extrahiere Anzeigetext aus Markdown-Links
   const parts = normalizeRefs(spec);
   return parts.join(', ');
-}
-
-/**
- * Formatiert Deps für Ausgabe in Tabelle
- */
-function formatDeps(deps) {
-  if (deps.length === 0) return '-';
-  return deps.map(d => {
-    // Bug-IDs (wie 'b4') bekommen kein #, aber Task-IDs (auch mit Suffix) schon
-    if (typeof d === 'number') return `#${d}`;
-    if (/^\d+[a-z]?$/.test(String(d))) return `#${d}`;  // Task-Nummer mit optionalem Suffix
-    return d;  // Bug-IDs wie 'b4'
-  }).join(', ');
 }
 
 /**

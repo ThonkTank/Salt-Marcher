@@ -21,6 +21,7 @@ export {
   type EncounterStartedPayload,
   type EncounterDismissedPayload,
   type EncounterResolvedPayload,
+  type EncounterFailedPayload,
   // Travel payloads
   type TravelPositionChangedPayload,
   // Combat payloads

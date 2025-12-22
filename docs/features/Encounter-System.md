@@ -142,39 +142,264 @@ Der Encounter-Typ wird **deterministisch** aus drei Faktoren abgeleitet:
 | neutral | any | - | 10% | 50% | 25% | 15% |
 | friendly | friendly | - | 0% | 70% | 20% | 10% |
 
-→ CR-Vergleich Details: [Encounter-Balancing.md](Encounter-Balancing.md#cr-vergleich)
+→ Difficulty-Berechnung: [Encounter-Balancing.md](Encounter-Balancing.md#difficulty-berechnung)
+
+---
+
+## Perception-System
+
+Jedes Encounter hat eine initiale Distanz und Awareness-Info. Detection kann visuell, auditiv oder olfaktorisch erfolgen - basierend auf Terrain, Weather und Creature-Detection-Profile.
+
+### Multi-Sense Detection
+
+Encounters werden nicht nur gesehen, sondern koennen auch gehoert oder gerochen werden:
+
+| Sinn | Primaer-Faktor | Range-Basis |
+|------|----------------|-------------|
+| **visuell** | Terrain-Sichtweite × Weather-Modifier | `terrain.encounterVisibility` |
+| **auditiv** | Creature-Lautstaerke | `creature.detectionProfile.noiseLevel` |
+| **olfaktorisch** | Creature-Geruch | `creature.detectionProfile.scentStrength` |
+| **tremorsense** | Burrowing-Kreaturen | Party-Tremorsense |
+| **magisch** | Ethereal/Invisible | Party-True-Sight |
+
+→ Detection-Profile: [Creature.md](../domain/Creature.md#detection-profil)
+
+### calculateDetection()
+
+Die Haupt-Funktion fuer Encounter-Entdeckung beruecksichtigt alle Sinne:
+
+```typescript
+type DetectionMethod = 'visual' | 'auditory' | 'olfactory' | 'tremorsense' | 'magical';
+
+function calculateDetection(
+  creature: CreatureDefinition,
+  terrain: TerrainDefinition,
+  weather: WeatherState,
+  timeSegment: TimeSegment,
+  party: PartyState
+): { method: DetectionMethod; range: number } {
+  const profile = creature.detectionProfile;  // REQUIRED auf CreatureDefinition
+
+  // 1. Visuelle Basis-Range
+  const visualRange = calculateVisualRange(terrain, weather, timeSegment);
+  let bestRange = visualRange;
+  let bestMethod: DetectionMethod = 'visual';
+
+  // 2. Audio-Bonus fuer laute Kreaturen
+  if (profile.noiseLevel === 'loud' || profile.noiseLevel === 'deafening') {
+    const audioRange = calculateAudioRange(profile.noiseLevel, weather);
+    if (audioRange > bestRange) {
+      bestRange = audioRange;
+      bestMethod = 'auditory';
+    }
+  }
+
+  // 3. Geruchs-Bonus (nur bei starkem Geruch)
+  if (profile.scentStrength === 'strong' || profile.scentStrength === 'overwhelming') {
+    const scentRange = calculateScentRange(profile.scentStrength, weather);
+    if (scentRange > bestRange) {
+      bestRange = scentRange;
+      bestMethod = 'olfactory';
+    }
+  }
+
+  // 4. Stealth-Abilities reduzieren Range
+  if (profile.stealthAbilities?.length) {
+    bestRange = applyStealthAbilities(bestRange, profile.stealthAbilities, party);
+  }
+
+  return { method: bestMethod, range: bestRange };
+}
+```
+
+### Visuelle Range
+
+```typescript
+function calculateVisualRange(
+  terrain: TerrainDefinition,
+  weather: WeatherState,
+  timeSegment: TimeSegment
+): number {
+  const terrainBase = terrain.encounterVisibility;  // z.B. 300ft plains, 60ft forest
+  const weatherModifier = weather.visibilityModifier;  // 0.1-1.0 aus Weather-System
+  const timeModifier = getTimeVisibilityModifier(timeSegment);  // Tag=1.0, Nacht=0.3
+
+  return terrainBase * weatherModifier * timeModifier;
+}
+```
+
+### Audio-Range Tabelle
+
+| noiseLevel | Basis-Range | Bei Wind/Regen |
+|------------|-------------|----------------|
+| `silent` | 0ft | 0ft |
+| `quiet` | 30ft | 15ft |
+| `normal` | 60ft | 30ft |
+| `loud` | 200ft | 100ft |
+| `deafening` | 500ft | 250ft |
+
+**Hinweis:** Wind-Staerke reduziert generell - keine Windrichtungs-Berechnung.
+
+### Scent-Range Tabelle
+
+| scentStrength | Basis-Range | Bei starkem Wind/Regen |
+|---------------|-------------|------------------------|
+| `none` | 0ft | 0ft |
+| `faint` | 30ft | 0ft |
+| `moderate` | 60ft | 30ft |
+| `strong` | 150ft | 75ft |
+| `overwhelming` | 300ft | 150ft |
+
+### Stealth-Ability Effekte
+
+| Ability | Effekt auf Detection |
+|---------|----------------------|
+| `burrowing` | Visuell: 0ft, Audio: normal, nur Tremorsense entdeckt |
+| `invisibility` | Visuell: 0ft, andere Sinne normal |
+| `ethereal` | Alle: 0ft, nur True Sight entdeckt |
+| `shapechange` | Keine auto-Detection, muss manuell erkannt werden |
+| `mimicry` | Audio-Detection kann fehlgeleitet werden |
+| `ambusher` | Loest Ambush-Check aus (siehe unten) |
+
+### Distanz nach Encounter-Typ
+
+Nach Berechnung der Detection-Range wird die initiale Distanz typ-basiert angepasst:
+
+```typescript
+function calculateInitialDistance(
+  detectionRange: number,
+  encounterType: EncounterType
+): number {
+  switch (encounterType) {
+    case 'combat':
+      return Math.floor(detectionRange * randomBetween(0.3, 0.8));
+    case 'social':
+      return Math.floor(detectionRange * randomBetween(0.5, 1.0));
+    case 'passing':
+      return Math.floor(detectionRange * randomBetween(0.7, 1.0));
+    case 'trace':
+      return randomBetween(10, 30);  // Party stolpert drueber
+    default:
+      return detectionRange;
+  }
+}
+```
+
+→ Terrain-Sichtweiten: [Terrain.md](../domain/Terrain.md#default-terrains)
+→ Weather-Modifier: [Weather-System.md](Weather-System.md)
+
+### Ambush-Checks
+
+Ambush-Checks werden **NUR** durchgefuehrt wenn:
+1. Creature ein "ambusher"-Verhalten hat (Goblins, Assassine, Raubtiere)
+2. **ODER** Party aktiv im Stealth-Mode ist
+
+```typescript
+function checkAmbush(
+  encounter: BaseEncounterInstance,
+  party: PartyState,
+  creatureHasAmbushBehavior: boolean
+): EncounterPerception['ambush'] | undefined {
+
+  // Fall 1: Encounter versucht Ambush
+  if (creatureHasAmbushBehavior) {
+    const encounterStealth = rollGroupStealth(encounter.creatures);
+    const partyPassivePerception = Math.min(
+      ...party.members.map(m => 10 + m.wisdomModifier)
+    );
+    return {
+      attemptedBy: 'encounter',
+      stealthRoll: encounterStealth,
+      opposingPerception: partyPassivePerception,
+      surprised: encounterStealth > partyPassivePerception ? 'party' : 'none',
+    };
+  }
+
+  // Fall 2: Party versucht Ambush (nur wenn im Stealth-Mode)
+  if (party.stealthMode) {
+    const partyStealth = rollGroupStealth(party.members);
+    const encounterPassivePerception = Math.min(
+      ...encounter.creatures.map(c => getCreaturePassivePerception(c))
+    );
+    return {
+      attemptedBy: 'party',
+      stealthRoll: partyStealth,
+      opposingPerception: encounterPassivePerception,
+      surprised: partyStealth > encounterPassivePerception ? 'encounter' : 'none',
+    };
+  }
+
+  // Kein Ambush → normales Encounter
+  return undefined;
+}
+```
+
+**Normale Encounters** (Haendler, patrouillierende Wachen, Woelfe auf der Jagd) werden bei terrain-basierter Sichtweite entdeckt - ohne Stealth-Rolls.
 
 ---
 
 ## Variety-Validation
 
-Nach der Typ-Ableitung erfolgt Variety-Validation als separater Schritt. Das System verhindert Monotonie durch dynamische Typ-Anpassung wenn ein Typ ueberrepraesentiert ist.
+Nach der Typ-Ableitung erfolgt Variety-Validation als separater Schritt. Das System verhindert Monotonie durch **Matrix-Daempfung** (nicht hartes Filtern).
 
-### Tracking
+### Tracking mit exponentiellem Decay
 
 ```typescript
+interface EncounterHistoryEntry {
+  type: EncounterType;
+  timestamp: number;  // Game-Time oder Sequence-Number
+}
+
 interface EncounterHistory {
-  recentEncounters: RecentEncounter[];  // Letzte 3-5 Encounters
-  typeDistribution: Map<EncounterType, number>;
+  entries: EncounterHistoryEntry[];  // Unbegrenzt, aber nur letzte ~10 relevant
 }
 ```
 
 ### Algorithmus
 
-Das Variety-System ist ein **Filter**, keine hardcodierte Mapping-Tabelle:
+Das Variety-System **daempft** ueberrepraesentierte Typen, filtert sie aber **nicht** komplett aus:
 
-1. Pruefe ob Typ ueberrepraesentiert ist (2+ in letzten 3)
-2. Falls ja: Welche Typen sind mit dieser Kreatur/Situation moeglich?
-3. Filtere ueberrepraesentierte Typen raus
-4. Waehle passendsten aus den erlaubten
+```typescript
+function calculateTypeWeights(
+  history: EncounterHistory,
+  baseMatrix: TypeProbabilityMatrix
+): TypeProbabilityMatrix {
+  // Exponentieller Decay: neuestes = 1.0, dann 0.5, 0.25, 0.125...
+  const typeAccumulator: Record<EncounterType, number> = {
+    combat: 0, social: 0, passing: 0, trace: 0,
+    environmental: 0, location: 0,
+  };
+
+  // Letzte 10 Entries mit Decay gewichten
+  const recentEntries = history.entries.slice(-10).reverse();
+  recentEntries.forEach((entry, index) => {
+    const weight = Math.pow(0.5, index);  // 1.0, 0.5, 0.25, 0.125...
+    typeAccumulator[entry.type] += weight;
+  });
+
+  // Matrix anpassen (nicht ausfiltern!)
+  const adjusted = { ...baseMatrix };
+  for (const type of Object.keys(adjusted) as EncounterType[]) {
+    const overrepresentation = typeAccumulator[type];
+    if (overrepresentation > 1.5) {
+      // Daempfungsfaktor: 1 / (1 + overrepresentation)
+      adjusted[type] *= 1 / (1 + overrepresentation - 1.5);
+    }
+  }
+
+  return normalizeMatrix(adjusted);
+}
+```
+
+**Effekt:** Ueberrepraesentierte Typen werden unwahrscheinlicher, aber bleiben moeglich. Combat nach 3× Combat ist weiterhin moeglich, nur stark gedaempft.
 
 ### Beispiele
 
-| Initial | History | Anpassung | Narrativ |
-|---------|---------|-----------|----------|
-| Combat | Combat×3 | → Social | Goblins wollen verhandeln |
-| Trace | Trace×2 | → Combat | Altes Lager voller hungriger Woelfe |
-| Social | Social×2 | → Passing | NPC hat keine Zeit, eilt weiter |
+| Initial | History-Gewicht | Anpassung | Narrativ |
+|---------|-----------------|-----------|----------|
+| Combat 80% | combat: 1.75 | Combat ~30% | Goblins zoegoern, wollen evtl. verhandeln |
+| Trace 70% | trace: 1.5 | Trace ~50% | Spuren sind da, aber Woelfe auch in der Naehe |
+| Social 50% | social: 2.0 | Social ~20% | NPCs sind beschaeftigt |
 
 ---
 
@@ -302,38 +527,104 @@ interface EncounterDefinition {
 }
 ```
 
-### EncounterInstance
+### BaseEncounterInstance
+
+**ALLE Encounter-Typen** haben Creatures und Perception-Info:
 
 ```typescript
-interface EncounterInstance {
-  definitionId: EntityId<'encounter'>;
+interface BaseEncounterInstance {
+  id: string;
+  definitionId?: EntityId<'encounter'>;  // Optional bei Random-Generierung
   type: EncounterType;
 
-  creatures: EncounterCreature[];   // Creatures mit zugewiesenen Items
-  leadNPC: NPC;
+  // ALLE Encounter haben Creatures (auch Social, Trace, Passing)
+  creatures: EncounterCreature[];
+  leadNPC?: NPC;
 
+  // ALLE Encounter haben Distanz-Info
+  perception: EncounterPerception;
+
+  // Activity & Goal
   activity: string;
   goal: string;
 
+  // Status
   status: 'pending' | 'active' | 'resolved';
   outcome?: EncounterOutcome;
-
-  // Loot wird bei Generierung erstellt, nicht bei Combat-Ende
-  loot: GeneratedLoot;
-
-  // Optional: Encounter hat Hoard (Boss, Lager, etc.)
-  hoard?: Hoard;
 }
 
 interface EncounterCreature {
   creatureId: EntityId<'creature'>;
-  npcId?: EntityId<'npc'>;         // Falls persistierter NPC
+  npcId?: EntityId<'npc'>;              // Falls persistierter NPC
   count: number;
-  loot: Item[];                    // Zugewiesene Items die Creature nutzen kann
+  role?: 'leader' | 'guard' | 'scout' | 'civilian';  // Fuer Social-Kontext
+  loot?: Item[];                        // Zugewiesene Items
 }
 
+interface EncounterPerception {
+  // Wie wurde das Encounter entdeckt?
+  detectionMethod: 'visual' | 'auditory' | 'olfactory' | 'tremorsense' | 'magical';
+
+  initialDistance: number;              // In feet (terrain-basiert)
+  partyAware: boolean;                  // Hat Party das Encounter bemerkt?
+  encounterAware: boolean;              // Hat Encounter die Party bemerkt?
+
+  // Detection-Modifikatoren (fuer UI-Anzeige)
+  modifiers?: {
+    noiseBonus?: number;      // Laute Kreaturen erhoehen Entdeckungs-Range
+    scentBonus?: number;      // Starker Geruch erhoeht Range
+    stealthPenalty?: number;  // Stealth-Abilities reduzieren Range
+  };
+
+  // NUR wenn Encounter aktiv Ambush versucht (basierend auf Creature-Verhalten)
+  ambush?: {
+    attemptedBy: 'encounter' | 'party';
+    stealthRoll: number;
+    opposingPerception: number;
+    surprised: 'party' | 'encounter' | 'none';
+  };
+}
+```
+
+### Typ-spezifische Erweiterungen
+
+```typescript
+interface CombatEncounter extends BaseEncounterInstance {
+  type: 'combat';
+  difficulty: EncounterDifficultyResult;  // trivial/easy/medium/hard/deadly/impossible
+  adjustedXP: number;
+  loot: GeneratedLoot;
+  hoard?: Hoard;
+}
+
+interface SocialEncounter extends BaseEncounterInstance {
+  type: 'social';
+  disposition: number;               // -100 bis +100
+  possibleOutcomes: string[];
+  trade?: TradeGoods;
+  // creatures enthaelt z.B. Haendler + 2 Wachen
+}
+
+interface PassingEncounter extends BaseEncounterInstance {
+  type: 'passing';
+  // creatures enthaelt z.B. 5 Woelfe die einen Hirsch jagen
+}
+
+interface TraceEncounter extends BaseEncounterInstance {
+  type: 'trace';
+  age: 'fresh' | 'recent' | 'old';
+  clues: string[];
+  trackingDC: number;
+  inferredActivity: string;
+  // creatures enthaelt z.B. "3 Goblin-Jaeger" die hier waren
+}
+```
+
+### Loot-Schemas
+
+```typescript
 interface GeneratedLoot {
-  items: SelectedItem[];           // Enthält auch Currency-Items (Gold)
+  items: SelectedItem[];           // Enthaelt auch Currency-Items (Gold)
   totalValue: number;
 }
 
@@ -349,11 +640,9 @@ interface Hoard {
 **Loot bei Generierung:**
 - Loot wird bei `encounter:generated` erstellt, nicht bei Combat-Ende
 - **defaultLoot** der Creatures wird gewuerfelt (Chance-System)
-- **Soft-Cap** greift bei hohen Budget-Schulden
 - Creatures erhalten Items aus dem Loot-Pool zugewiesen
-- Diese Items sind im Combat-Tracker sichtbar (Gegner können sie nutzen)
 - Bei Post-Combat Resolution wird Loot verteilt, nicht generiert
-- Optional: **Hoard** bei Boss/Lager Encounters (akkumuliertes Budget)
+- Optional: **Hoard** bei Boss/Lager Encounters
 
 → Loot-Generierung Details: [Loot-Feature.md](Loot-Feature.md)
 → NPC-Schema: [NPC-System.md](../domain/NPC-System.md)
@@ -480,11 +769,17 @@ NPCs werden **bei Encounter-Instanziierung** erstellt, nicht bei Definition:
 | Komponente | MVP | Post-MVP |
 |------------|:---:|:--------:|
 | Tile-Eligibility (Filter + Gewichtung) | ✓ | |
-| Typ-Ableitung | ✓ | |
-| Variety-Validation | ✓ | |
-| Combat/Social/Passing/Trace | ✓ | |
+| Typ-Ableitung (mit D&D 5e XP Thresholds) | ✓ | |
+| Variety-Validation (exponentieller Decay) | ✓ | |
+| **Multi-Sense Detection** (visuell, auditiv, olfaktorisch) | ✓ | |
+| Perception-System (Terrain-Sichtweite × Weather-Modifier) | ✓ | |
+| Ambush-Checks (nur bei Ambusher-Verhalten) | ✓ | |
+| Alle Typen mit Creatures (Combat/Social/Passing/Trace) | ✓ | |
+| Avoidability-System + dynamisches Budget | ✓ | |
+| Faction-Encounter-Templates | ✓ | |
 | NPC-Instanziierung + Persistierung | ✓ | |
 | 40/60 XP Split | ✓ | |
+| Tremorsense/Magical Detection | | ✓ |
 | Environmental/Location | | ✓ |
 | **Pfad-basierte Creature-Pools** | | ✓ |
 | Multi-Gruppen-Encounters | | niedrig |
@@ -501,10 +796,18 @@ NPCs werden **bei Encounter-Instanziierung** erstellt, nicht bei Definition:
 | 202 | Fraktionspräsenz-Gewichtung: Fraktion kontrolliert Tile → ×2.0-5.0 | hoch | Ja | #200, #201, #1410, #1411 | Encounter-System.md#tile-eligibility, Faction.md#encounter-integration |
 | 204 | Wetter-Gewichtung: Kreatur.preferredWeather matched → ×1.5 | hoch | Ja | #110, #200, #201, #1207 | Encounter-System.md#tile-eligibility, Weather-System.md#weather-state, Creature.md#creaturepreferences |
 | 206 | Gewichtete Zufallsauswahl aus eligible Creatures | hoch | Ja | #200, #202, #204 | Encounter-System.md#kreatur-auswahl |
-| 207 | Typ-Ableitung: Disposition + Faction-Relation + CR-Balancing → Encounter-Typ | hoch | Ja | #206, #235, #1400 | Encounter-System.md#typ-ableitung, Encounter-Balancing.md#cr-vergleich, Faction.md#schema |
-| 209 | EncounterHistory-Tracking (letzte 3-5 Encounters, typeDistribution) | hoch | Ja | - | Encounter-System.md#variety-validation |
+| 207 | Typ-Ableitung: Disposition + Faction-Relation + D&D 5e Difficulty → Encounter-Typ | hoch | Ja | #206, #238, #1400 | Encounter-System.md#typ-ableitung, Encounter-Balancing.md#difficulty-berechnung, Faction.md#schema |
+| 208 | EncounterPerception Schema: detectionMethod, initialDistance, partyAware, encounterAware, modifiers, ambush | hoch | Ja | #2949, #2950, #2951, #2952 | Encounter-System.md#perception-system, Terrain.md#sichtweite-bei-encounter-generierung |
+| 2949 | CreatureDetectionProfile Schema (noiseLevel, scentStrength, stealthAbilities) - REQUIRED | hoch | Ja | #1200 | Creature.md#detection-profil |
+| 2950 | StealthAbility Type (burrowing, invisibility, ethereal, shapechange, mimicry, ambusher) | hoch | Ja | - | Creature.md#stealthability |
+| 2951 | calculateDetection(): Multi-Sense Perception (visual, auditory, olfactory) | hoch | Ja | #2949, #2950 | Encounter-System.md#calculatedetection |
+| 2952 | encounterVisibility statt visibilityRange (Konsolidierung mit Map-Feature) | hoch | Ja | #1700 | Terrain.md#sichtweite-bei-encounter-generierung |
+| 209 | EncounterHistory mit exponentiellem Decay (letzte ~10 Encounters) | hoch | Ja | - | Encounter-System.md#variety-validation |
+| 210 | calculateTypeWeights(): Matrix-Daempfung statt hartes Filtern | hoch | Ja | #209 | Encounter-System.md#algorithmus |
 | 211 | CreatureSlot-Union: ConcreteCreatureSlot, TypedCreatureSlot, BudgetCreatureSlot | hoch | Ja | #1200, #1300 | Encounter-System.md#creatureslot-varianten, Creature.md#schema, NPC-System.md#npc-schema |
-| 213 | EncounterInstance-Schema mit creatures, leadNPC, status, outcome, loot, hoard | hoch | Ja | #211, #212, #714, #730 | Encounter-System.md#schemas, Loot-Feature.md#loot-generierung-bei-encounter |
+| 212 | checkAmbush(): Ambush nur bei Ambusher-Verhalten oder Party-Stealth | hoch | Ja | #208 | Encounter-System.md#ambush-checks |
+| 213 | BaseEncounterInstance-Schema mit creatures, perception, status (fuer alle Typen) | hoch | Ja | #208, #211, #714 | Encounter-System.md#baseencounterinstance |
+| 214 | CombatEncounter/SocialEncounter/PassingEncounter/TraceEncounter Extensions | hoch | Ja | #213 | Encounter-System.md#typ-spezifische-erweiterungen |
 | 215 | encounter:generate-requested Handler (einheitlicher Einstiegspunkt) | hoch | Ja | #200-#207, #209, #801, #910, #110 | Encounter-System.md#aktivierungs-flow, Travel-System.md#encounter-checks-waehrend-reisen |
 | 217 | encounter:start-requested Handler | hoch | Ja | #213, #214 | Encounter-System.md#events |
 | 219 | encounter:resolve-requested Handler | hoch | Ja | #213, #214 | Encounter-System.md#events |

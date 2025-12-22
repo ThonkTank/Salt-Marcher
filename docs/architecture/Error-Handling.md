@@ -422,7 +422,7 @@ function handleEncounterError(error: EncounterError): void {
 |--:|--------------|:----:|:----:|------|------------|
 | 2916 | NotificationService Interface (show() Methode mit Notification-Typ) | hoch | Ja | - | Error-Handling.md#notification-service, Application.md#viewmodel--feature-kommunikation |
 | 2917a | Notification Type: type, title, message, duration + show() Methode | hoch | Ja | #2916 | Error-Handling.md#notification-service, Error-Handling.md#user-feedback |
-| 2917b | NotificationAction[] Support (Custom Modal für interaktive Actions) | mittel | Nein | #2916, #2917a, #2917 | Error-Handling.md#user-feedback, Error-Handling.md#recovery-strategien |
+| 2917b | NotificationAction[] Support (Custom Modal für interaktive Actions) | mittel | Nein | #2916, #2917a | Error-Handling.md#user-feedback, Error-Handling.md#recovery-strategien |
 | 2918 | NotificationService Obsidian Implementation (nutzt Notice API) | hoch | Ja | #2916, #2917a | Error-Handling.md#notification-service, Infrastructure.md |
 | 2919 | Error-Formatter Utilities: formatMapError, formatTravelError, etc. für User-Nachrichten | hoch | Ja | #2917a | Error-Handling.md#user-feedback, Error-Handling.md#error-kategorisierung-fuer-user |
 | 2920 | Structured Logging: LogEntry Type, Logger Interface (debug, info, warn, error) | niedrig | Nein | #2702 | Error-Handling.md#structured-logging, Error-Handling.md#log-levels, Core.md#branded-types |

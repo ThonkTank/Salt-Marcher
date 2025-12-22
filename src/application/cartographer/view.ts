@@ -19,8 +19,8 @@ import { createLayerControlPanel, type LayerControlPanel } from './panels';
 import {
   createInspectorToolPanel,
   type InspectorToolPanel,
-  createFeatureBrushToolPanel,
-  type FeatureBrushToolPanel,
+  createTokenPlacerPanel,
+  type TokenPlacerPanel,
 } from './tools';
 
 // ============================================================================
@@ -33,7 +33,7 @@ export class CartographerView extends ItemView {
   private unsubscribe: Unsubscribe | null = null;
   private layerPanel: LayerControlPanel | null = null;
   private inspectorPanel: InspectorToolPanel | null = null;
-  private featureBrushPanel: FeatureBrushToolPanel | null = null;
+  private tokenPlacerPanel: TokenPlacerPanel | null = null;
   private toolsContentEl: HTMLElement | null = null;
   private currentActiveTool: string | null = null;
 
@@ -127,11 +127,6 @@ export class CartographerView extends ItemView {
       this.inspectorPanel?.update(state);
     }
 
-    // Update Feature-Brush on tool option changes
-    if (hints.includes('tool') || hints.includes('full')) {
-      this.featureBrushPanel?.update(state);
-    }
-
     if (hints.includes('full')) {
       // Full re-render needed
       this.updatePlaceholders(state);
@@ -145,17 +140,20 @@ export class CartographerView extends ItemView {
   private updateToolPanel(state: CartographerState): void {
     // Skip if tool hasn't changed
     if (this.currentActiveTool === state.activeTool) {
+      // Still update the panel if it exists (for option changes)
+      this.inspectorPanel?.update(state);
+      this.tokenPlacerPanel?.update(state);
       return;
     }
 
-    // Dispose current tool panel
+    // Dispose current tool panels
     if (this.inspectorPanel) {
       this.inspectorPanel.dispose();
       this.inspectorPanel = null;
     }
-    if (this.featureBrushPanel) {
-      this.featureBrushPanel.dispose();
-      this.featureBrushPanel = null;
+    if (this.tokenPlacerPanel) {
+      this.tokenPlacerPanel.dispose();
+      this.tokenPlacerPanel = null;
     }
 
     // Mount new tool panel
@@ -189,30 +187,48 @@ export class CartographerView extends ItemView {
 
       // Initial update with current state
       this.inspectorPanel.update(state);
-    }
-
-    // Feature-Brush Tool Panel (#2522)
-    if (state.activeTool === 'feature-brush' && this.toolsContentEl) {
-      this.featureBrushPanel = createFeatureBrushToolPanel(
+    } else if (state.activeTool === 'token-placer' && this.toolsContentEl && this.deps.entityRegistry) {
+      this.tokenPlacerPanel = createTokenPlacerPanel(
         this.toolsContentEl,
         {
-          onCategoryChange: (category) => {
-            this.viewModel?.setToolOption('selectedFeatureCategory', category);
+          onTokenTypeChange: (type) => {
+            this.viewModel?.setToolOption('tokenType', type);
           },
-          onFeatureSelect: (featureType) => {
-            this.viewModel?.setToolOption('selectedFeatureType', featureType);
+          onCreatureSelect: (creatureId) => {
+            this.viewModel?.setToolOption('selectedCreatureId', creatureId);
           },
-          onDensityChange: (density) => {
-            this.viewModel?.setToolOption('featureDensity', density);
+          onCreatureSearch: () => {
+            // Search is handled internally by the panel
+          },
+          onSizeChange: (size) => {
+            this.viewModel?.setToolOption('selectedCreatureSize', size);
+          },
+          onObjectSelect: (objectType) => {
+            this.viewModel?.setToolOption('selectedObjectType', objectType);
+          },
+          onLightSourceChange: (source) => {
+            this.viewModel?.setToolOption('lightSource', source);
+          },
+          onLightRadiusChange: (radius) => {
+            this.viewModel?.setToolOption('lightRadius', radius);
+          },
+          onLightColorSelect: (color) => {
+            this.viewModel?.setToolOption('lightColor', color);
+          },
+          onFlickerToggle: (enabled) => {
+            this.viewModel?.setToolOption('lightFlicker', enabled);
+          },
+          onBrowseLibrary: () => {
+            this.deps.notificationService.info('Browse Library: Coming soon...');
           },
         },
         {
-          mapFeature: this.deps.mapFeature,
+          entityRegistry: this.deps.entityRegistry,
         }
       );
 
       // Initial update with current state
-      this.featureBrushPanel.update(state);
+      this.tokenPlacerPanel.update(state);
     }
 
     this.currentActiveTool = state.activeTool;
@@ -246,10 +262,10 @@ export class CartographerView extends ItemView {
       this.inspectorPanel = null;
     }
 
-    // Dispose Feature-Brush Tool Panel
-    if (this.featureBrushPanel) {
-      this.featureBrushPanel.dispose();
-      this.featureBrushPanel = null;
+    // Dispose Token-Placer Tool Panel
+    if (this.tokenPlacerPanel) {
+      this.tokenPlacerPanel.dispose();
+      this.tokenPlacerPanel = null;
     }
 
     // Dispose Layer-Control Panel

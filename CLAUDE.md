@@ -16,7 +16,20 @@ Dieses Dokument definiert, wie Claude Code mit diesem Repository arbeitet.
 
 Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 
-**⚠️ WICHTIG:** Die Development-Roadmap.md **NIEMALS** direkt lesen - nur über die Task-Skripte!
+**⛔ ABSOLUT VERBOTEN:**
+- Development-Roadmap.md **NIEMALS** direkt lesen (Read-Tool) - nur über CLI-Skripte!
+- Development-Roadmap.md **NIEMALS** manuell editieren (Edit-Tool) - nur über CLI-Skripte!
+
+**CLI-Tools für Tasks:**
+| Aktion | Befehl |
+|--------|--------|
+| Lesen | `node scripts/task-lookup.mjs <ID>` |
+| Suchen | `node scripts/task-lookup.mjs -s <keyword>` |
+| Priorisieren | `node scripts/prioritize-tasks.mjs` |
+| Status ändern | `node scripts/update-tasks.mjs <ID> --status ✅` |
+| Claimen | `node scripts/update-tasks.mjs <ID> --claim` |
+| Neue Task | `node scripts/update-tasks.mjs --add ...` |
+| Bug melden | `node scripts/update-tasks.mjs --add-bug "..."` |
 
 ## ⚠️ CLAIM-FIRST REGEL (KEINE AUSNAHMEN)
 
@@ -366,13 +379,12 @@ Zeigt priorisierte Tasks und Bugs aus der Development-Roadmap.md.
 ### Task-Lookup
 
 ```bash
-node scripts/task-lookup.mjs 428                  # Task #428 Details
+node scripts/task-lookup.mjs 428                  # Task #428 mit Dep-Trees
 node scripts/task-lookup.mjs b4                   # Bug b4 Details
-node scripts/task-lookup.mjs 428 --deps           # + Dependencies
-node scripts/task-lookup.mjs 428 --dependents     # + Tasks/Bugs die davon abhängen
-node scripts/task-lookup.mjs 428 -a               # Beides
-node scripts/task-lookup.mjs 428 --tree           # Dependency-Baum
-node scripts/task-lookup.mjs 428 --tree --depth 5 # Tieferer Baum
+node scripts/task-lookup.mjs 428 --no-tree        # Flache Listen
+node scripts/task-lookup.mjs 428 --no-deps        # Nur Dependents
+node scripts/task-lookup.mjs 428 --no-dependents  # Nur Dependencies
+node scripts/task-lookup.mjs 428 --depth 5        # Tieferer Baum (5 Ebenen)
 node scripts/task-lookup.mjs 428 --json           # JSON-Ausgabe
 node scripts/task-lookup.mjs --help               # Alle Optionen
 ```
@@ -388,12 +400,15 @@ node scripts/task-lookup.mjs -s Encounter -n 10   # Max 10 Ergebnisse
 node scripts/task-lookup.mjs -s Quest --json      # JSON-Ausgabe
 ```
 
-**Optionen:**
-- `-d, --deps` - Voraussetzungen: Tasks/Bugs die erst erledigt sein müssen
-- `-D, --dependents` - Blockiert: Tasks/Bugs die auf dieses Item warten
+**Optionen (Standard: deps + dependents + tree aktiviert):**
+- `-d, --deps` - Voraussetzungen anzeigen (Standard: an)
+- `-D, --dependents` - Blockierte Items anzeigen (Standard: an)
 - `-a, --all` - Beides anzeigen
-- `-t, --tree` - Rekursiver Dependency-Baum
-- `--depth <N>` - Baum-Tiefe (default: 3)
+- `-t, --tree` - Rekursiver Baum (Standard: an)
+- `--depth <N>` - Tiefe des Baums (default: 3)
+- `--no-deps` - Voraussetzungen ausblenden
+- `--no-dependents` - Blockierte Items ausblenden
+- `--no-tree` - Flache Liste statt Baum
 - `--json` - JSON-Ausgabe
 - `-q, --quiet` - Kompakte Ausgabe
 
@@ -634,11 +649,22 @@ Bei fehlenden oder unklaren Schemas: User fragen.
 
 Diese Tabelle ist die einzige Quelle der Wahrheit für Roadmap-Updates. Keine Ausnahmen.
 
-### PFLICHT: Task-Updates über Tool
+### ⛔ PFLICHT: Task-Updates NUR über CLI
 
-**STOPP.**
-- **Niemals** Development-Roadmap.md **direkt editieren** - nur über `update-tasks.mjs`
-- **Niemals** Development-Roadmap.md **direkt lesen** - nur über `task-lookup.mjs` / `prioritize-tasks.mjs`
+**ABSOLUTES VERBOT - KEINE AUSNAHMEN:**
+
+| Aktion | ❌ VERBOTEN | ✅ ERLAUBT |
+|--------|-------------|------------|
+| Task lesen | Read-Tool auf Roadmap | `task-lookup.mjs <ID>` |
+| Task suchen | Grep/Glob auf Roadmap | `task-lookup.mjs -s <keyword>` |
+| Status ändern | Edit-Tool auf Roadmap | `update-tasks.mjs <ID> --status X` |
+| Task anlegen | Edit-Tool auf Roadmap | `update-tasks.mjs --add ...` |
+| Bug melden | Edit-Tool auf Roadmap | `update-tasks.mjs --add-bug "..."` |
+
+**Warum?**
+- Multi-Agent-Konsistenz: Manuelle Edits erzeugen Race Conditions
+- Formatierung: CLI garantiert korrektes Tabellenformat
+- Claim-System: Nur CLI kann Claims korrekt setzen/prüfen
 
 Alle Task-Änderungen MÜSSEN über das `update-tasks.mjs` Tool erfolgen:
 

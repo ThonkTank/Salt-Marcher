@@ -67,6 +67,9 @@ interface CreatureDefinition {
   lootTags: string[];                     // ["humanoid", "poor", "tribal"]
   defaultLoot?: DefaultLootEntry[];       // Garantiertes/wahrscheinliches Loot
 
+  // Detection-Profil (REQUIRED fuer Encounter-System)
+  detectionProfile: CreatureDetectionProfile;
+
   // D&D 5e Statblock (komplett)
   abilities: AbilityScores;
   skills?: SkillProficiencies;
@@ -115,6 +118,24 @@ interface Senses {
   tremorsense?: number;        // Range in Feet
   trueSight?: number;          // Range in Feet
 }
+
+// Detection-Profil (REQUIRED - Kreatur kann ohne nicht erstellt werden)
+interface CreatureDetectionProfile {
+  // Wie leicht ist die Kreatur zu entdecken?
+  noiseLevel: 'silent' | 'quiet' | 'normal' | 'loud' | 'deafening';
+  scentStrength: 'none' | 'faint' | 'moderate' | 'strong' | 'overwhelming';
+
+  // Kann die Kreatur Wahrnehmung umgehen?
+  stealthAbilities?: StealthAbility[];
+}
+
+type StealthAbility =
+  | 'burrowing'      // Kann unter der Erde reisen
+  | 'invisibility'   // Kann unsichtbar werden
+  | 'ethereal'       // Auf anderer Ebene
+  | 'shapechange'    // Kann harmlose Form annehmen
+  | 'mimicry'        // Kann Gerausche imitieren
+  | 'ambusher';      // Hat Ambush-Verhalten
 
 // Loot-System (NEU)
 interface DefaultLootEntry {
@@ -355,6 +376,86 @@ Sinnes-Faehigkeiten fuer Kreaturen (NPCs, Monster).
 
 ---
 
+## Detection-Profil
+
+Das `detectionProfile` ist ein **REQUIRED** Feld auf jeder CreatureDefinition. Es bestimmt wie leicht die Kreatur von der Party entdeckt werden kann.
+
+### Noise Level
+
+Laute Kreaturen koennen aus groesserer Entfernung gehoert werden:
+
+| Noise Level | Basis-Range | Bei Wind/Regen | Beispiele |
+|-------------|-------------|----------------|-----------|
+| `silent` | 0ft | 0ft | Geister, Schleicher |
+| `quiet` | 30ft | 15ft | Katzen, Assassinen |
+| `normal` | 60ft | 30ft | Menschen, Woelfe |
+| `loud` | 200ft | 100ft | Orks, Baeren, Ruestungen |
+| `deafening` | 500ft | 250ft | Drachen, Riesen, Armeen |
+
+### Scent Strength
+
+Stark riechende Kreaturen koennen von Party-Mitgliedern mit gutem Geruchssinn oder unter speziellen Bedingungen entdeckt werden:
+
+| Scent Strength | Basis-Range | Bei starkem Wind/Regen | Beispiele |
+|----------------|-------------|------------------------|-----------|
+| `none` | 0ft | 0ft | Konstrukte, Geister |
+| `faint` | 30ft | 0ft | Elfen, Barden |
+| `moderate` | 60ft | 30ft | Menschen, Goblins |
+| `strong` | 150ft | 75ft | Trolle, Gnolls, Vieh |
+| `overwhelming` | 300ft | 150ft | Troglodyten, Otyughs, Aas |
+
+**Hinweis:** Keine Windrichtung - Wind-Staerke reduziert generell (wie bei Audio).
+
+### Stealth Abilities
+
+Spezielle Faehigkeiten die Entdeckung erschweren:
+
+| Ability | Effekt |
+|---------|--------|
+| `burrowing` | Visuell: 0ft, Audio: normal, Tremorsense kann entdecken |
+| `invisibility` | Visuell: 0ft, andere Sinne normal |
+| `ethereal` | Alle: 0ft, nur True Sight kann entdecken |
+| `shapechange` | Keine auto-Detection, muss manuell erkannt werden |
+| `mimicry` | Audio-Detection kann fehlgeleitet werden |
+| `ambusher` | Loest Ambush-Check aus (Stealth vs Passive Perception) |
+
+### Beispiele
+
+```typescript
+// Wolf - normal laut, starker Geruch, ambusher
+const wolf: CreatureDefinition = {
+  // ... Basis-Stats ...
+  detectionProfile: {
+    noiseLevel: 'normal',
+    scentStrength: 'strong',
+    stealthAbilities: ['ambusher']
+  }
+};
+
+// Geist - silent, kein Geruch, ethereal
+const ghost: CreatureDefinition = {
+  // ... Basis-Stats ...
+  detectionProfile: {
+    noiseLevel: 'silent',
+    scentStrength: 'none',
+    stealthAbilities: ['ethereal']
+  }
+};
+
+// Ork-Armee - sehr laut, stark riechend
+const orcWarband: CreatureDefinition = {
+  // ... Basis-Stats ...
+  detectionProfile: {
+    noiseLevel: 'deafening',
+    scentStrength: 'strong'
+  }
+};
+```
+
+→ **Multi-Sense Detection:** [Encounter-System.md](../features/Encounter-System.md#multi-sense-detection)
+
+---
+
 ## Storage
 
 ```
@@ -382,6 +483,7 @@ Vault/SaltMarcher/data/
 | preferences (Gewichtung) | ✓ | | Feinsteuerung |
 | lootTags | ✓ | | Loot-Integration |
 | Auto-Sync mit Terrain | ✓ | | Bidirektionale Konsistenz |
+| **detectionProfile (REQUIRED)** | ✓ | | Multi-Sense Detection |
 | Vollstaendiger Statblock | | mittel | Alle D&D 5e Felder |
 | Legendary Actions | | niedrig | Fuer Boss-Monster |
 | **Sinne fuer Encounter-Trigger** | | mittel | Creature-Sichtweite |

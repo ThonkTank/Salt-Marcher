@@ -8,7 +8,7 @@
 import { ItemView, type WorkspaceLeaf } from 'obsidian';
 import type { MapId, PartyId } from '@core/index';
 import type { TerrainStoragePort } from '@/features/map';
-import { EventTypes, createEvent, newCorrelationId } from '@core/events';
+import { newCorrelationId } from '@core/events';
 import { now } from '@core/types';
 import { VIEW_TYPE_SESSION_RUNNER } from './types';
 import {
@@ -218,28 +218,6 @@ export class SessionRunnerView extends ItemView {
 
       onCancelTravel: () => {
         this.viewModel?.cancelTravel();
-      },
-
-      // Actions
-      onGenerateEncounter: () => {
-        const partyPosition = this.viewModel?.getState().partyPosition;
-        if (!partyPosition) return;
-
-        eventBus?.publish(
-          createEvent(
-            EventTypes.ENCOUNTER_GENERATE_REQUESTED,
-            {
-              position: partyPosition,
-              trigger: 'manual' as const,
-            },
-            eventOptions()
-          )
-        );
-      },
-
-      onTeleport: () => {
-        // Placeholder for teleport mode
-        console.log('Teleport clicked');
       },
 
       // Party Management

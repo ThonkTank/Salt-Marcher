@@ -30,7 +30,6 @@ export type OverlandTool =
   | 'terrain-brush'
   | 'elevation-brush'
   | 'climate-brush'
-  | 'feature-brush'
   | 'path-tool'
   | 'location-marker'
   | 'inspector';
@@ -57,10 +56,15 @@ export type ToolType = OverlandTool | DungeonTool;
 export type BrushShape = 'circle' | 'line' | 'fill';
 
 /**
- * Feature category for feature-brush tool.
- * From Cartographer.md#feature-brush-overland
+ * Creature size categories (D&D 5e).
+ * T=Tiny, S=Small, M=Medium, L=Large, H=Huge, G=Gargantuan
  */
-export type FeatureCategory = 'natural' | 'ruins' | 'roads';
+export type CreatureSize = 'T' | 'S' | 'M' | 'L' | 'H' | 'G';
+
+/**
+ * Token type for Token-Placer tool.
+ */
+export type TokenPlacerType = 'creature' | 'object' | 'light';
 
 /**
  * Tool options that can be configured.
@@ -81,12 +85,24 @@ export interface ToolOptions {
   elevationValue?: number;
   /** Elevation strength (0-1) for elevation brush */
   elevationStrength?: number;
-  /** Selected feature category for feature-brush (natural, ruins, roads) */
-  selectedFeatureCategory?: FeatureCategory;
-  /** Selected feature type for feature-brush (e.g., 'forest', 'rocks', 'ruins') */
-  selectedFeatureType?: string;
-  /** Feature density for feature-brush (0.0 = sparse, 1.0 = dense) */
-  featureDensity?: number;
+
+  // Token-Placer specific options (Task #2558)
+  /** Token type category (creature, object, light) */
+  tokenType?: TokenPlacerType;
+  /** Selected creature ID for token placer */
+  selectedCreatureId?: EntityId<'creature'>;
+  /** Creature size override */
+  selectedCreatureSize?: CreatureSize;
+  /** Selected object type */
+  selectedObjectType?: string;
+  /** Light source type (torch, lantern, etc.) */
+  lightSource?: string;
+  /** Light radius in feet */
+  lightRadius?: number;
+  /** Light color (hex) */
+  lightColor?: string;
+  /** Light flicker effect enabled */
+  lightFlicker?: boolean;
 }
 
 // ============================================================================
@@ -253,6 +269,8 @@ export interface CartographerViewDeps {
   mapFeature: MapFeaturePort;
   /** Notification service for user feedback */
   notificationService: NotificationService;
+  /** Entity registry for creature/entity lookup (optional - for Token-Placer) */
+  entityRegistry?: import('@core/types/entity-registry.port').EntityRegistryPort;
 }
 
 /**

@@ -564,7 +564,7 @@ const subscriptions = [
 | 2305 | Travel Animation Display (Progress Bar, ETA) | hoch | Ja | #2304, #8 | SessionRunner.md#travel-sektion, Travel-System.md |
 | 2306 | Audio Section Component (Track-Name, Play/Pause/Skip/Volume) | hoch | Ja | #1100, #1110, #1111, #1500, #2303 | SessionRunner.md#audio-sektion, Audio-System.md |
 | 2307 | Party Section Component (Party-Size, Health-Summary, Manage-Button) | hoch | Ja | - | SessionRunner.md#party-sektion, Character-System.md |
-| 2308 | Actions Section Component (nur Rest-Button, Encounter/Teleport entfernt) | hoch | Ja | #2303, #955 | SessionRunner.md#actions-sektion, Time-System.md#resting |
+| 2308 | Actions Section Component (nur Rest-Button, Encounter/Teleport entfernt) | hoch | Ja | - | SessionRunner.md#actions-sektion, Time-System.md#resting |
 | 2309 | Map Panel Component (Hauptansicht mit Hex-Grid und Party-Token) | hoch | Ja | #2300 | SessionRunner.md#map-panel, Map-Feature.md |
 | 2310 | Map Overlays Controls (Weather, Territory, Factions, Visibility) | hoch | Ja | #2309, #1300, #1400 | SessionRunner.md#map-panel, Weather-System.md, Map-Feature.md |
 | 2311 | Camera Controls (Pan mit MMB, Zoom mit Scroll) | hoch | Ja | #2309 | SessionRunner.md#map-panel, Map-Feature.md |

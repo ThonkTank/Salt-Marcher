@@ -27,12 +27,6 @@ export interface SidebarPanelCallbacks {
   /** Open party management (shows "Coming soon" notification) */
   onManageParty: () => void;
 
-  // Actions
-  /** Generate a random encounter */
-  onGenerateEncounter: () => void;
-  /** Enter teleport mode (placeholder) */
-  onTeleport: () => void;
-
   // Quest
   /** Change quest status filter */
   onQuestStatusFilterChange: (filter: QuestStatusFilter) => void;
@@ -211,19 +205,15 @@ export function createSidebarPanel(
   const actionsSection = createSection('⚔️ ACTIONS');
   const actionsContent = actionsSection.querySelector('.section-content') as HTMLElement;
 
-  const actionsButtons = document.createElement('div');
-  actionsButtons.style.cssText = `
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+  // Placeholder until Rest button is implemented (Task #2309)
+  const placeholderText = document.createElement('div');
+  placeholderText.style.cssText = `
+    font-size: 12px;
+    color: var(--text-faint);
+    font-style: italic;
   `;
-
-  const encounterBtn = createButton('🎲 Encounter', callbacks.onGenerateEncounter);
-  const teleportBtn = createButton('📍 Teleport', callbacks.onTeleport, true);
-
-  actionsButtons.appendChild(encounterBtn);
-  actionsButtons.appendChild(teleportBtn);
-  actionsContent.appendChild(actionsButtons);
+  placeholderText.textContent = 'Coming soon...';
+  actionsContent.appendChild(placeholderText);
   sidebar.appendChild(actionsSection);
 
   // =========================================================================
@@ -371,16 +361,6 @@ export function createSidebarPanel(
     btn.disabled = !enabled;
     btn.style.opacity = enabled ? '1' : '0.5';
     btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
-  }
-
-  function updateActionsSection(actions: SidebarState['actions']): void {
-    encounterBtn.disabled = !actions.canGenerateEncounter;
-    teleportBtn.disabled = !actions.canTeleport;
-
-    encounterBtn.style.opacity = encounterBtn.disabled ? '0.5' : '1';
-    teleportBtn.style.opacity = teleportBtn.disabled ? '0.5' : '1';
-    encounterBtn.style.cursor = encounterBtn.disabled ? 'not-allowed' : 'pointer';
-    teleportBtn.style.cursor = teleportBtn.disabled ? 'not-allowed' : 'pointer';
   }
 
   function updateQuestSection(quest: QuestSectionState): void {
@@ -691,7 +671,7 @@ export function createSidebarPanel(
       updateTravelSection(state);
       updatePartySection(state.sidebar.party);
       updateQuestSection(state.sidebar.quest);
-      updateActionsSection(state.sidebar.actions);
+      // Actions section is static until Rest button is implemented (Task #2309)
     },
 
     setCollapsed(collapsed: boolean): void {

@@ -45,6 +45,9 @@ interface TerrainDefinition {
   encounterModifier: number;              // Multiplikator fuer Encounter-Chance
   nativeCreatures: EntityId<'creature'>[]; // Kreaturen die hier heimisch sind
 
+  // Encounter-Sichtweite (Basis-Wert in feet, wird mit Weather-Modifier multipliziert)
+  encounterVisibility: number;            // z.B. 300ft plains, 60ft forest
+
   // Klima-Einfluss
   climateProfile: ClimateProfile;
 
@@ -84,16 +87,31 @@ interface WeatherRange {
 
 Mitgelieferte Terrain-Presets:
 
-| Terrain | movementCost | encounterMod | Transport | Temperatur | Wind | Niederschlag |
-|---------|--------------|--------------|-----------|------------|------|--------------|
-| `road` | 1.0 | 0.5 | - | -5/15/35 | 5/20/60 | 10/30/70 |
-| `plains` | 0.9 | 1.0 | - | -5/15/35 | 5/20/60 | 10/30/70 |
-| `forest` | 0.6 | 1.2 | blocksMounted | 0/15/30 | 0/10/30 | 20/40/70 |
-| `hills` | 0.7 | 1.0 | - | -10/10/30 | 10/30/50 | 15/35/65 |
-| `mountains` | 0.4 | 0.8 | blocksMounted, blocksCarriage | -20/0/20 | 20/50/100 | 20/50/80 |
-| `swamp` | 0.5 | 1.5 | blocksMounted, blocksCarriage | 5/20/35 | 0/10/30 | 40/60/90 |
-| `desert` | 0.7 | 0.7 | - | 0/35/50 | 5/15/80 | 0/5/20 |
-| `water` | 1.0 | 0.5 | requiresBoat | 5/18/30 | 10/30/80 | 20/40/70 |
+| Terrain | movementCost | encounterMod | Transport | encounterVisibility |
+|---------|--------------|--------------|-----------|---------------------|
+| `road` | 1.0 | 0.5 | - | 300ft |
+| `plains` | 0.9 | 1.0 | - | 300ft |
+| `forest` | 0.6 | 1.2 | blocksMounted | 60ft |
+| `hills` | 0.7 | 1.0 | - | 150ft |
+| `mountains` | 0.4 | 0.8 | blocksMounted, blocksCarriage | 500ft |
+| `swamp` | 0.5 | 1.5 | blocksMounted, blocksCarriage | 90ft |
+| `desert` | 0.7 | 0.7 | - | 500ft |
+| `water` | 1.0 | 0.5 | requiresBoat | 300ft |
+
+**Hinweis:** `encounterVisibility` ist der Basis-Wert bei klarem Wetter. Dieser wird mit `weather.visibilityModifier` (0.1-1.0) multipliziert. Siehe [Weather-System.md](../features/Weather-System.md).
+
+**Wetter-Ranges (Temperatur/Wind/Niederschlag):**
+
+| Terrain | Temperatur | Wind | Niederschlag |
+|---------|------------|------|--------------|
+| `road` | -5/15/35 | 5/20/60 | 10/30/70 |
+| `plains` | -5/15/35 | 5/20/60 | 10/30/70 |
+| `forest` | 0/15/30 | 0/10/30 | 20/40/70 |
+| `hills` | -10/10/30 | 10/30/50 | 15/35/65 |
+| `mountains` | -20/0/20 | 20/50/100 | 20/50/80 |
+| `swamp` | 5/20/35 | 0/10/30 | 40/60/90 |
+| `desert` | 0/35/50 | 5/15/80 | 0/5/20 |
+| `water` | 5/18/30 | 10/30/80 | 20/40/70 |
 
 → Details zu Transport-Modi: [Travel-System.md](../features/Travel-System.md)
 
@@ -163,6 +181,7 @@ User koennen eigene Terrains erstellen:
   "name": "Feenwald",
   "movementCost": 0.7,
   "encounterModifier": 1.5,
+  "encounterVisibility": 45,
   "nativeCreatures": ["pixie", "dryad", "blink-dog"],
   "climateProfile": {
     "temperatureModifier": -5,
@@ -236,7 +255,52 @@ function getEligibleCreatures(terrainId: EntityId<'terrain'>): CreatureDefinitio
 }
 ```
 
-→ Details: [Encounter-System.md](../features/Encounter-System.md)
+### Sichtweite bei Encounter-Generierung
+
+Die `encounterVisibility` bestimmt die Basis-Distanz bei Encounter-Entdeckung. Der Wert wird mit Weather- und Time-Modifiern multipliziert:
+
+```typescript
+function calculateInitialDistance(
+  terrain: TerrainDefinition,
+  weather: WeatherState,
+  timeSegment: TimeSegment,
+  encounterType: EncounterType
+): number {
+  // Basis: Terrain-Sichtweite (z.B. 300ft plains, 60ft forest)
+  const terrainBase = terrain.encounterVisibility;
+
+  // Weather-Modifier (0.1-1.0, aus Weather-System)
+  const weatherModifier = weather.visibilityModifier;
+
+  // Tageszeit-Modifier (optional, aus Time-System)
+  const timeModifier = getTimeVisibilityModifier(timeSegment);
+
+  // Effektive Sichtweite
+  const effectiveRange = terrainBase * weatherModifier * timeModifier;
+
+  // Typ-basierte Modifikation
+  switch (encounterType) {
+    case 'combat':
+      // Combat beginnt oft naeher (Ambush, Patrouille)
+      return Math.floor(effectiveRange * randomBetween(0.3, 0.8));
+    case 'social':
+      // Social meist auf "Gespraechsdistanz"
+      return Math.floor(effectiveRange * randomBetween(0.5, 1.0));
+    case 'passing':
+      // Passing meist weiter weg
+      return Math.floor(effectiveRange * randomBetween(0.7, 1.0));
+    case 'trace':
+      // Trace = Party stolpert drueber
+      return randomBetween(10, 30);
+    default:
+      return effectiveRange;
+  }
+}
+```
+
+**Konsolidierung:** Dieses System nutzt den prozentualen `visibilityModifier` aus dem Weather-System (Map-Feature.md Referenz), statt eines binaeren `clear`/`obscured` Checks.
+
+→ Details: [Encounter-System.md](../features/Encounter-System.md) | [Weather-System.md](../features/Weather-System.md)
 
 ---
 
@@ -292,7 +356,9 @@ User-Terrains koennen Bundled-Terrains ueberschreiben (gleiche ID).
 
 | # | Beschreibung | Prio | MVP? | Deps | Referenzen |
 |--:|--------------|:----:|:----:|------|------------|
-| 1700 | TerrainDefinition Schema (id, name, movementCost, encounterModifier, nativeCreatures, weatherRanges, displayColor, icon, description, Transport-Einschraenkungen) - climateProfile in #1701 | hoch | Ja | - | Terrain.md#schema, EntityRegistry.md#entity-types |
+| 1700 | TerrainDefinition Schema (id, name, movementCost, encounterModifier, nativeCreatures, encounterVisibility, weatherRanges, displayColor, icon, description, Transport-Einschraenkungen) - climateProfile in #1701 | hoch | Ja | - | Terrain.md#schema, EntityRegistry.md#entity-types |
+| 2952 | encounterVisibility statt visibilityRange (Konsolidierung mit Map-Feature) | hoch | Ja | #1700 | Terrain.md#sichtweite-bei-encounter-generierung |
+| 1717 | calculateInitialDistance(): Terrain-basierte Sichtweite mit Weather-Modifier | hoch | Ja | #2952, #1700 | Terrain.md#sichtweite-bei-encounter-generierung, Encounter-System.md#perception |
 | 1701 | ClimateProfile Schema (temperatureModifier, humidityModifier, windExposure) | hoch | Ja | #1700 | Terrain.md#schema, Weather-System.md#tile-basierte-wetter-ranges |
 | 1702 | TerrainWeatherRanges und WeatherRange Schema (temperature, wind, precipitation mit min/average/max) | hoch | Ja | #1700 | Terrain.md#schema, Weather-System.md#tile-basierte-wetter-ranges |
 | 1703 | Default-Terrain Presets (road, plains, forest, hills, mountains, swamp, desert, water) | hoch | Ja | #1700, #1702 | Terrain.md#default-terrains |

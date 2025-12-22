@@ -13,275 +13,15 @@
  *   node scripts/update-tasks.mjs 428 --split "Teil A" "Teil B"
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join, basename } from 'path';
+import { readFileSync, writeFileSync } from 'fs';
+import { basename } from 'path';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROADMAP_PATH = join(__dirname, '..', 'docs', 'architecture', 'Development-Roadmap.md');
-const DOCS_PATH = join(__dirname, '..', 'docs');
-const CLAIMS_PATH = join(__dirname, '..', 'docs', 'architecture', '.task-claims.json');
-
-const VALID_STATUSES = ['⬜', '✅', '⚠️', '🔶', '🔒'];
-const CLAIM_EXPIRY_MS = 2 * 60 * 60 * 1000; // 2 Stunden
-
-// ============================================================================
-// Agent-ID Management
-// ============================================================================
-
-/**
- * Holt Agent-ID mit Fallback-Kette:
- * 1. Umgebungsvariable CLAUDE_AGENT_ID (höchste Priorität)
- * 2. CLI-Flag --agent-id
- * 3. null (keine ID verfügbar - Claim-Operationen werden abgelehnt)
- *
- * WICHTIG: Kein Datei-Fallback mehr! Die .my-agent-id Datei wurde als
- * geteilter State zwischen Agenten identifiziert und verursachte Race Conditions.
- */
-function getAgentId(cliAgentId = null) {
-  // 1. Umgebungsvariable (höchste Priorität)
-  if (process.env.CLAUDE_AGENT_ID) {
-    return process.env.CLAUDE_AGENT_ID;
-  }
-
-  // 2. CLI-Flag
-  if (cliAgentId) {
-    return cliAgentId;
-  }
-
-  // 3. Keine ID verfügbar
-  return null;
-}
-
-// ============================================================================
-// Claims Management
-// ============================================================================
-
-/**
- * Lädt Claims aus der JSON-Datei
- */
-function loadClaims() {
-  if (!existsSync(CLAIMS_PATH)) {
-    return {};
-  }
-  try {
-    const content = readFileSync(CLAIMS_PATH, 'utf-8');
-    const data = JSON.parse(content);
-    return data.claims || {};
-  } catch {
-    return {};
-  }
-}
-
-/**
- * Speichert Claims in die JSON-Datei
- */
-function saveClaims(claims) {
-  writeFileSync(CLAIMS_PATH, JSON.stringify({ claims }, null, 2));
-}
-
-/**
- * Prüft und entfernt abgelaufene Claims (>2h)
- */
-function checkClaimExpiry(claims) {
-  const now = Date.now();
-  const expired = [];
-
-  for (const [taskId, claim] of Object.entries(claims)) {
-    const claimTime = new Date(claim.timestamp).getTime();
-    if (now - claimTime > CLAIM_EXPIRY_MS) {
-      expired.push({ taskId, owner: claim.owner });
-      delete claims[taskId];
-    }
-  }
-
-  return expired;
-}
-
-/**
- * Formatiert verbleibende Zeit bis Claim-Ablauf
- */
-function formatTimeRemaining(timestamp) {
-  const claimTime = new Date(timestamp).getTime();
-  const expiresAt = claimTime + CLAIM_EXPIRY_MS;
-  const remaining = expiresAt - Date.now();
-
-  if (remaining <= 0) return 'abgelaufen';
-
-  const hours = Math.floor(remaining / (60 * 60 * 1000));
-  const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
-}
-
-// ============================================================================
-// Task-ID Parsing (wiederverwendbar)
-// ============================================================================
-
-/**
- * Parst eine Task-ID (z.B. "428", "428b", "2917a")
- */
-function parseTaskId(raw) {
-  const trimmed = String(raw).trim();
-  // Bug-ID (z.B. "b4")
-  if (/^b\d+$/.test(trimmed)) return trimmed;
-  // Alphanumerische ID (z.B. "428b")
-  if (/^\d+[a-z]$/i.test(trimmed)) return trimmed.toLowerCase();
-  // Reine Zahl
-  const num = parseInt(trimmed, 10);
-  return isNaN(num) ? null : num;
-}
-
-/**
- * Parst Dependencies aus einem String
- */
-function parseDeps(depsRaw) {
-  if (!depsRaw || depsRaw === '-') return [];
-
-  const deps = [];
-  const matches = depsRaw.matchAll(/#(\d+[a-z]?)|b(\d+)/gi);
-
-  for (const match of matches) {
-    if (match[1]) {
-      deps.push(parseTaskId(match[1]));
-    } else if (match[2]) {
-      deps.push(`b${match[2]}`);
-    }
-  }
-
-  return deps.filter(d => d !== null);
-}
-
-/**
- * Formatiert Dependencies für Ausgabe
- */
-function formatDeps(deps) {
-  if (!deps || deps.length === 0) return '-';
-  return deps.map(d => formatId(d)).join(', ');
-}
-
-/**
- * Formatiert eine Task-/Bug-ID für Ausgabe
- */
-function formatId(id) {
-  if (typeof id === 'number') return `#${id}`;
-  if (typeof id === 'string' && id.startsWith('b')) return id;
-  return `#${id}`;
-}
-
-// ============================================================================
-// Roadmap Parsing
-// ============================================================================
-
-/**
- * Parst eine Task-Zeile aus der Markdown-Tabelle
- */
-function parseTaskLine(line) {
-  const cells = line.split('|').map(c => c.trim()).filter(Boolean);
-  if (cells.length < 9) return null;
-
-  const number = parseTaskId(cells[0]);
-  if (number === null) return null;
-  // Bug-IDs werden in parseBugLine behandelt
-  if (typeof number === 'string' && number.startsWith('b')) return null;
-
-  return {
-    number,
-    status: cells[1],
-    bereich: cells[2],
-    beschreibung: cells[3],
-    prio: cells[4],
-    mvp: cells[5],
-    depsRaw: cells[6],
-    deps: parseDeps(cells[6]),
-    spec: cells[7],
-    imp: cells[8],
-    isBug: false
-  };
-}
-
-/**
- * Parst eine Bug-Zeile aus der Markdown-Tabelle
- * Format: | b# | Status | Beschreibung | Prio | Deps |
- */
-function parseBugLine(line) {
-  const cells = line.split('|').map(c => c.trim()).filter(Boolean);
-  if (cells.length < 5) return null;
-
-  const match = cells[0].match(/^b(\d+)$/);
-  if (!match) return null;
-
-  return {
-    number: cells[0],
-    status: cells[1],
-    beschreibung: cells[2],
-    prio: cells[3],
-    depsRaw: cells[4],
-    deps: parseDeps(cells[4]),
-    isBug: true
-  };
-}
-
-/**
- * Parst die Roadmap mit Zeilen-Tracking
- */
-function parseRoadmapWithLineInfo(content) {
-  const lines = content.split('\n');
-  const tasks = [];
-  const bugs = [];
-  let inTaskTable = false;
-  let inBugTable = false;
-  let taskTableStart = -1;
-  let bugTableStart = -1;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    if (line.includes('| # | Status |')) {
-      inTaskTable = true;
-      inBugTable = false;
-      taskTableStart = i;
-      continue;
-    }
-    if (line.includes('| b# |')) {
-      inBugTable = true;
-      inTaskTable = false;
-      bugTableStart = i;
-      continue;
-    }
-    if (line.match(/^\|[\s:-]+\|/)) continue;
-    if (!line.startsWith('|')) {
-      inTaskTable = false;
-      inBugTable = false;
-      continue;
-    }
-
-    if (inTaskTable) {
-      const task = parseTaskLine(line);
-      if (task) {
-        task.lineIndex = i;
-        task.originalLine = line;
-        tasks.push(task);
-      }
-    }
-    if (inBugTable) {
-      const bug = parseBugLine(line);
-      if (bug) {
-        bug.lineIndex = i;
-        bug.originalLine = line;
-        bugs.push(bug);
-      }
-    }
-  }
-
-  const itemMap = new Map([
-    ...tasks.map(t => [t.number, t]),
-    ...bugs.map(b => [b.number, b])
-  ]);
-
-  return { tasks, bugs, lines, itemMap, taskTableStart, bugTableStart };
-}
+import {
+  ROADMAP_PATH, DOCS_PATH, CLAIMS_PATH, CLAIM_EXPIRY_MS, VALID_STATUSES,
+  parseTaskId, parseDeps, formatId, formatDeps,
+  getAgentId, loadClaims, saveClaims, checkClaimExpiry, formatTimeRemaining,
+  parseRoadmap, findMarkdownFiles
+} from './task-utils.mjs';
 
 // ============================================================================
 // CLI Argument Parsing
@@ -300,11 +40,13 @@ function parseArgs(argv) {
     addBug: null,
     deleteBug: null,
     resolveBug: null,
+    deleteTask: null,
     beschreibung: null,
     bereich: null,
     prio: null,
     mvp: null,
     spec: null,
+    imp: null,
     split: null,
     add: false,
     dryRun: false,
@@ -340,6 +82,8 @@ function parseArgs(argv) {
       opts.deleteBug = argv[++i];
     } else if (arg === '--resolve-bug') {
       opts.resolveBug = argv[++i];
+    } else if (arg === '--delete-task') {
+      opts.deleteTask = argv[++i];
     } else if (arg === '--beschreibung') {
       opts.beschreibung = argv[++i];
     } else if (arg === '--bereich') {
@@ -350,12 +94,12 @@ function parseArgs(argv) {
       opts.mvp = argv[++i];
     } else if (arg === '--spec') {
       opts.spec = argv[++i];
+    } else if (arg === '--imp') {
+      opts.imp = argv[++i];
     } else if (arg === '--split') {
       opts.split = [argv[++i], argv[++i]];
     } else if (arg === '--add') {
       opts.add = true;
-    } else if (arg === '--bereich') {
-      opts.bereich = argv[++i];
     } else if (arg === '--dry-run' || arg === '-n') {
       opts.dryRun = true;
     } else if (arg === '--json') {
@@ -387,10 +131,18 @@ TASK-UPDATES:
   <ID> --status <symbol>     Status ändern (⬜, ✅, ⚠️, 🔶, 🔒)
   <ID> --deps "<deps>"       Dependencies setzen (z.B. "#100, #202, b4")
   <ID> --no-deps             Dependencies entfernen (setzt auf "-")
+  <ID> --beschreibung "..."  Beschreibung ändern
+  <ID> --bereich <bereich>   Bereich ändern (z.B. Travel, Map)
+  <ID> --prio <prio>         Priorität ändern (hoch, mittel, niedrig)
+  <ID> --mvp <Ja|Nein>       MVP-Status ändern
+  <ID> --spec "File.md#..."  Spec-Referenz ändern
+  <ID> --imp "file:func()"   Implementierungs-Details ändern
   <ID> --claim               Task claimen (generiert automatisch ID)
   <ID> --unclaim             Claim freigeben
   <ID> --check-claim         Claim-Status prüfen
   <ID> --split "A" "B"       Task in #Xa und #Xb splitten
+                             ⚠️  Zeigt Warnung wenn andere Tasks diese referenzieren
+  --delete-task <ID>         Task unwiderruflich löschen (mit Dep-Bereinigung)
 
 BUG-MANAGEMENT:
   --add-bug "Beschreibung"   Neuen Bug hinzufügen
@@ -429,36 +181,20 @@ BEISPIELE:
   node scripts/update-tasks.mjs 428 --claim
   node scripts/update-tasks.mjs 428 --deps "#100, #202"
   node scripts/update-tasks.mjs 428 --no-deps
+  node scripts/update-tasks.mjs 428 --beschreibung "Neue Beschreibung"
+  node scripts/update-tasks.mjs 428 --prio hoch --mvp Ja
+  node scripts/update-tasks.mjs 428 --imp "travel.ts:startTravel()"
   node scripts/update-tasks.mjs --add-bug "Crash beim Laden" --prio hoch
   node scripts/update-tasks.mjs --resolve-bug b1
   node scripts/update-tasks.mjs --add --bereich Travel --beschreibung "Neue Feature" --prio hoch
   node scripts/update-tasks.mjs 428 --split "UI fertig" "Backend TODO"
+  node scripts/update-tasks.mjs --delete-task 428
 `);
 }
 
 // ============================================================================
 // Multi-File Sync
 // ============================================================================
-
-/**
- * Findet alle Markdown-Dateien rekursiv
- */
-function findMarkdownFiles(dir) {
-  const files = [];
-
-  for (const entry of readdirSync(dir)) {
-    const fullPath = join(dir, entry);
-    const stat = statSync(fullPath);
-
-    if (stat.isDirectory()) {
-      files.push(...findMarkdownFiles(fullPath));
-    } else if (entry.endsWith('.md')) {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
-}
 
 /**
  * Findet alle Doc-Files die eine bestimmte Task enthalten
@@ -488,15 +224,27 @@ function findDocsContainingTask(taskId) {
 }
 
 /**
- * Aktualisiert eine Doc-File Task-Zeile (nur Deps)
+ * Aktualisiert eine Doc-File Task-Zeile
+ * @param {string} line - Die Zeile
+ * @param {Object|string} updates - Updates-Objekt oder (legacy) nur newDeps string
  */
-function updateDocTaskLine(line, newDeps) {
+function updateDocTaskLine(line, updates) {
   // Doc-Format: | # | Beschreibung | Prio | MVP? | Deps | Referenzen |
+  // cells[0]='' [1]=# [2]=Beschreibung [3]=Prio [4]=MVP [5]=Deps [6]=Referenzen [7]=''
   const cells = line.split('|');
   if (cells.length < 7) return line;
 
-  // cells[5] = Deps (1-indexed wegen führendem |)
-  cells[5] = ` ${newDeps} `;
+  // Legacy-Support: wenn updates ein String ist, ist es nur die Deps
+  if (typeof updates === 'string') {
+    cells[5] = ` ${updates} `;
+    return cells.join('|');
+  }
+
+  // Neue Felder updaten
+  if (updates.beschreibung !== undefined) cells[2] = ` ${updates.beschreibung} `;
+  if (updates.prio !== undefined) cells[3] = ` ${updates.prio} `;
+  if (updates.mvp !== undefined) cells[4] = ` ${updates.mvp} `;
+  if (updates.deps !== undefined) cells[5] = ` ${updates.deps} `;
 
   return cells.join('|');
 }
@@ -560,16 +308,18 @@ function updateDocsForTask(taskId, newDeps, dryRun) {
  */
 function updateRoadmapTaskLine(line, updates) {
   // Roadmap-Format: | # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+  // cells[0]='' [1]=# [2]=Status [3]=Bereich [4]=Beschreibung [5]=Prio [6]=MVP [7]=Deps [8]=Spec [9]=Imp [10]=''
   const cells = line.split('|');
   if (cells.length < 10) return line;
 
-  // cells[2] = Status, cells[7] = Deps
-  if (updates.status !== undefined) {
-    cells[2] = ` ${updates.status} `;
-  }
-  if (updates.deps !== undefined) {
-    cells[7] = ` ${updates.deps} `;
-  }
+  if (updates.status !== undefined) cells[2] = ` ${updates.status} `;
+  if (updates.bereich !== undefined) cells[3] = ` ${updates.bereich} `;
+  if (updates.beschreibung !== undefined) cells[4] = ` ${updates.beschreibung} `;
+  if (updates.prio !== undefined) cells[5] = ` ${updates.prio} `;
+  if (updates.mvp !== undefined) cells[6] = ` ${updates.mvp} `;
+  if (updates.deps !== undefined) cells[7] = ` ${updates.deps} `;
+  if (updates.spec !== undefined) cells[8] = ` ${updates.spec} `;
+  if (updates.imp !== undefined) cells[9] = ` ${updates.imp} `;
 
   return cells.join('|');
 }
@@ -616,7 +366,13 @@ function updateTask(taskId, updates, options) {
 
   // Roadmap laden
   const content = readFileSync(ROADMAP_PATH, 'utf-8');
-  const roadmapData = parseRoadmapWithLineInfo(content);
+  const roadmapData = parseRoadmap(content, {
+    separateBugs: true,
+    includeLineIndex: true,
+    includeOriginalLine: true,
+    returnLines: true,
+    returnItemMap: true
+  });
 
   // Task/Bug finden
   const item = roadmapData.itemMap.get(taskId);
@@ -726,8 +482,20 @@ function updateTask(taskId, updates, options) {
   if (updates.beschreibung) {
     updatePayload.beschreibung = updates.beschreibung;
   }
+  if (updates.bereich) {
+    updatePayload.bereich = updates.bereich;
+  }
   if (updates.prio) {
     updatePayload.prio = updates.prio;
+  }
+  if (updates.mvp) {
+    updatePayload.mvp = updates.mvp;
+  }
+  if (updates.spec) {
+    updatePayload.spec = updates.spec;
+  }
+  if (updates.imp) {
+    updatePayload.imp = updates.imp;
   }
 
   let newLine;
@@ -752,9 +520,15 @@ function updateTask(taskId, updates, options) {
     saveClaims(claims);
   }
 
-  // Doc-Files aktualisieren (nur bei Deps-Änderung)
-  if (updates.deps && !item.isBug) {
-    results.docs = updateDocsForTask(taskId, updates.deps, options.dryRun);
+  // Doc-Files aktualisieren (bei Änderung von Beschreibung, Prio, MVP oder Deps)
+  const docUpdates = {};
+  if (updates.beschreibung) docUpdates.beschreibung = updates.beschreibung;
+  if (updates.prio) docUpdates.prio = updates.prio;
+  if (updates.mvp) docUpdates.mvp = updates.mvp;
+  if (updates.deps) docUpdates.deps = updates.deps;
+
+  if (Object.keys(docUpdates).length > 0 && !item.isBug) {
+    results.docs = updateDocsForTask(taskId, docUpdates, options.dryRun);
   }
 
   results.success = true;
@@ -764,7 +538,7 @@ function updateTask(taskId, updates, options) {
 /**
  * Prüft Claim-Status einer Task
  */
-function checkClaimStatus(taskId, agentId = null) {
+function checkClaimStatusFn(taskId, agentId = null) {
   const claims = loadClaims();
   const myId = getAgentId(agentId);
   checkClaimExpiry(claims);
@@ -793,7 +567,12 @@ function checkClaimStatus(taskId, agentId = null) {
  */
 function addBug(beschreibung, prio, deps, dryRun) {
   const content = readFileSync(ROADMAP_PATH, 'utf-8');
-  const roadmapData = parseRoadmapWithLineInfo(content);
+  const roadmapData = parseRoadmap(content, {
+    separateBugs: true,
+    includeLineIndex: true,
+    includeOriginalLine: true,
+    returnLines: true
+  });
 
   // Nächste Bug-ID finden
   const maxId = Math.max(0, ...roadmapData.bugs.map(b => parseInt(b.number.slice(1), 10)));
@@ -807,13 +586,11 @@ function addBug(beschreibung, prio, deps, dryRun) {
   const lines = [...roadmapData.lines];
   let insertIndex = -1;
 
-  // Bug-Tabelle finden und Zeile einfügen
-  if (roadmapData.bugTableStart >= 0) {
-    const lastBug = roadmapData.bugs[roadmapData.bugs.length - 1];
-    if (lastBug) {
-      insertIndex = lastBug.lineIndex + 1;
-      lines.splice(insertIndex, 0, newLine);
-    }
+  // Bug-Tabelle finden und Zeile einfügen (nach dem letzten Bug)
+  const lastBug = roadmapData.bugs[roadmapData.bugs.length - 1];
+  if (lastBug) {
+    insertIndex = lastBug.lineIndex + 1;
+    lines.splice(insertIndex, 0, newLine);
   }
 
   // Referenzierte Tasks updaten (Bug-Propagation)
@@ -883,7 +660,11 @@ function addTask(options, dryRun = false) {
   }
 
   const content = readFileSync(ROADMAP_PATH, 'utf-8');
-  const roadmapData = parseRoadmapWithLineInfo(content);
+  const roadmapData = parseRoadmap(content, {
+    separateBugs: true,
+    includeLineIndex: true,
+    returnLines: true
+  });
 
   // Höchste Task-Nummer finden (nur numerische IDs, keine alphanumerischen wie "428b")
   const numericIds = roadmapData.tasks
@@ -920,6 +701,47 @@ function addTask(options, dryRun = false) {
 }
 
 /**
+ * Reverse-Lookup: Findet alle Tasks und Bugs, die eine ID in ihren Deps haben
+ * @param {string|number} targetId - Die gesuchte ID (z.B. "428", "b4")
+ * @param {Object} roadmapData - Geparstes Roadmap-Objekt
+ * @returns {Array<{id: string|number, type: 'task'|'bug', depsRaw: string}>}
+ */
+function findTasksReferencingId(targetId, roadmapData) {
+  const results = [];
+  const targetStr = String(targetId);
+
+  // Tasks durchsuchen
+  for (const task of roadmapData.tasks) {
+    const refs = parseDeps(task.depsRaw);
+    if (refs.some(r => String(r) === targetStr)) {
+      results.push({
+        id: task.number,
+        type: 'task',
+        depsRaw: task.depsRaw,
+        beschreibung: task.beschreibung,
+        lineIndex: task.lineIndex
+      });
+    }
+  }
+
+  // Bugs durchsuchen
+  for (const bug of roadmapData.bugs) {
+    const refs = parseDeps(bug.depsRaw);
+    if (refs.some(r => String(r) === targetStr)) {
+      results.push({
+        id: bug.number,
+        type: 'bug',
+        depsRaw: bug.depsRaw,
+        beschreibung: bug.beschreibung,
+        lineIndex: bug.lineIndex
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
  * Löscht einen Bug
  * Entfernt den Bug automatisch aus den Deps aller referenzierenden Tasks:
  * - Bug-ID aus Task-Deps entfernen
@@ -928,7 +750,12 @@ function addTask(options, dryRun = false) {
  */
 function deleteBug(bugId, dryRun) {
   const content = readFileSync(ROADMAP_PATH, 'utf-8');
-  const roadmapData = parseRoadmapWithLineInfo(content);
+  const roadmapData = parseRoadmap(content, {
+    separateBugs: true,
+    includeLineIndex: true,
+    includeOriginalLine: true,
+    returnLines: true
+  });
 
   const bug = roadmapData.bugs.find(b => b.number === bugId);
   if (!bug) {
@@ -992,7 +819,12 @@ function deleteBug(bugId, dryRun) {
  */
 function resolveBug(bugId, dryRun) {
   const content = readFileSync(ROADMAP_PATH, 'utf-8');
-  const roadmapData = parseRoadmapWithLineInfo(content);
+  const roadmapData = parseRoadmap(content, {
+    separateBugs: true,
+    includeLineIndex: true,
+    includeOriginalLine: true,
+    returnLines: true
+  });
 
   const bug = roadmapData.bugs.find(b => b.number === bugId);
   if (!bug) {
@@ -1054,11 +886,125 @@ function resolveBug(bugId, dryRun) {
 }
 
 /**
+ * Löscht eine Task
+ * Entfernt die Task automatisch aus den Deps aller referenzierenden Tasks/Bugs:
+ * - Task-ID aus Deps entfernen
+ * - Synchronisiert Deps-Änderungen in allen Docs
+ * - Löscht Task-Zeilen aus Doc-Dateien
+ */
+function deleteTask(taskId, dryRun) {
+  const content = readFileSync(ROADMAP_PATH, 'utf-8');
+  const roadmapData = parseRoadmap(content, {
+    separateBugs: true,
+    includeLineIndex: true,
+    includeOriginalLine: true,
+    returnLines: true,
+    returnItemMap: true
+  });
+
+  const task = roadmapData.itemMap.get(taskId);
+  if (!task || task.isBug) {
+    return { success: false, error: `Task ${formatId(taskId)} nicht gefunden` };
+  }
+
+  const lines = [...roadmapData.lines];
+  const taskIdStr = String(taskId);
+
+  // Reverse-Lookup: Alle Items finden, die diese Task referenzieren
+  const referencingItems = findTasksReferencingId(taskId, roadmapData);
+
+  // Deps in referenzierenden Items bereinigen
+  const affectedItems = [];
+  for (const item of referencingItems) {
+    const refs = parseDeps(item.depsRaw);
+    const newRefs = refs.filter(r => String(r) !== taskIdStr);
+    const newDeps = formatDeps(newRefs);
+
+    // Zeile updaten
+    const originalItem = item.type === 'bug'
+      ? roadmapData.bugs.find(b => b.number === item.id)
+      : roadmapData.tasks.find(t => t.number === item.id);
+
+    if (originalItem) {
+      const updatedLine = item.type === 'bug'
+        ? updateRoadmapBugLine(originalItem.originalLine, { deps: newDeps })
+        : updateRoadmapTaskLine(originalItem.originalLine, { deps: newDeps });
+
+      lines[item.lineIndex] = updatedLine;
+
+      affectedItems.push({
+        id: item.id,
+        type: item.type,
+        oldDeps: item.depsRaw,
+        newDeps
+      });
+    }
+  }
+
+  // Task-Zeile löschen (NACH Deps-Updates wegen Index-Stabilität)
+  lines.splice(task.lineIndex, 1);
+
+  // Doc-Files: Task-Zeilen finden und löschen
+  const docs = findDocsContainingTask(taskId);
+  const docResults = [];
+
+  if (!dryRun) {
+    writeFileSync(ROADMAP_PATH, lines.join('\n'));
+
+    // Multi-File-Sync für betroffene Items
+    for (const affected of affectedItems) {
+      if (affected.type === 'task') {
+        updateDocsForTask(affected.id, affected.newDeps, false);
+      }
+    }
+
+    // Task-Zeilen aus Doc-Files löschen
+    for (const doc of docs) {
+      const docLines = doc.content.split('\n');
+      const idStr = String(taskId);
+      let modified = false;
+
+      for (let i = docLines.length - 1; i >= 0; i--) {
+        const line = docLines[i];
+        const pattern = new RegExp(`^\\|\\s*${idStr}\\s*\\|`);
+
+        if (pattern.test(line)) {
+          docLines.splice(i, 1);
+          modified = true;
+        }
+      }
+
+      if (modified) {
+        writeFileSync(doc.path, docLines.join('\n'));
+        docResults.push({ file: doc.name, action: 'deleted' });
+      }
+    }
+  } else {
+    docResults.push(...docs.map(d => ({ file: d.name, action: 'would delete' })));
+  }
+
+  return {
+    success: true,
+    taskId,
+    deletedLine: task.originalLine,
+    affectedItems,
+    docs: docResults,
+    dryRun
+  };
+}
+
+/**
  * Splittet eine Task in zwei Teile
  */
 function splitTask(taskId, partADesc, partBDesc, dryRun) {
   const content = readFileSync(ROADMAP_PATH, 'utf-8');
-  const roadmapData = parseRoadmapWithLineInfo(content);
+  const roadmapData = parseRoadmap(content, {
+    separateBugs: true,
+    includeLineIndex: true,
+    includeOriginalLine: true,
+    returnLines: true,
+    returnItemMap: true
+  });
 
   const task = roadmapData.itemMap.get(taskId);
   if (!task || task.isBug) {
@@ -1071,8 +1017,6 @@ function splitTask(taskId, partADesc, partBDesc, dryRun) {
 
   // Neue Zeilen erstellen
   // | # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-  const cells = task.originalLine.split('|');
-
   const lineA = [
     '',
     ` ${idA} `,
@@ -1160,12 +1104,22 @@ function splitTask(taskId, partADesc, partBDesc, dryRun) {
     }
   }
 
+  // Reverse-Lookup: Finde alle Tasks/Bugs die diese Task referenzieren
+  // (für Warnung - Agent muss diese manuell auf #Xa oder #Xb umstellen)
+  const referencingItems = findTasksReferencingId(taskId, roadmapData);
+
   return {
     success: true,
     original: taskId,
     partA: { id: idA, line: lineA },
     partB: { id: idB, line: lineB },
-    docs: docResults
+    docs: docResults,
+    referencingItems: referencingItems.map(item => ({
+      id: item.id,
+      type: item.type,
+      beschreibung: item.beschreibung,
+      depsRaw: item.depsRaw
+    }))
   };
 }
 
@@ -1335,6 +1289,47 @@ function main() {
     return;
   }
 
+  // Task löschen (mit Warnung und automatischer Dep-Bereinigung)
+  if (opts.deleteTask) {
+    const taskId = parseTaskId(opts.deleteTask);
+    if (taskId === null) {
+      console.error(`\n❌ Ungültige Task-ID: ${opts.deleteTask}\n`);
+      process.exit(1);
+    }
+
+    if (!opts.quiet && !opts.json) {
+      console.warn('\n⚠️  WARNUNG: Task wird unwiderruflich gelöscht!');
+      console.warn('   Alle Referenzen auf diese Task werden automatisch bereinigt.\n');
+    }
+
+    const result = deleteTask(taskId, opts.dryRun);
+    if (result.success) {
+      if (opts.json) {
+        result.warning = 'Task unwiderruflich gelöscht. Deps automatisch bereinigt.';
+        console.log(JSON.stringify(result, null, 2));
+      } else if (!opts.quiet) {
+        console.log(`✅ Task ${formatId(result.taskId)} gelöscht.`);
+        if (result.affectedItems && result.affectedItems.length > 0) {
+          console.log('\n📋 Betroffene Items (Task aus Deps entfernt):');
+          for (const item of result.affectedItems) {
+            const prefix = item.type === 'bug' ? '' : '#';
+            console.log(`   ${prefix}${item.id}: ${item.oldDeps} → ${item.newDeps}`);
+          }
+        }
+        if (result.docs && result.docs.length > 0) {
+          console.log(`\n📄 Doc-Dateien aktualisiert: ${result.docs.length}`);
+          for (const doc of result.docs) {
+            console.log(`   - ${doc.file} (${doc.action})`);
+          }
+        }
+        console.log('');
+      }
+    } else {
+      console.error(`\n❌ Fehler: ${result.error}\n`);
+    }
+    return;
+  }
+
   // Task hinzufügen
   if (opts.add) {
     const result = addTask({
@@ -1362,7 +1357,7 @@ function main() {
 
   // Check Claim
   if (opts.checkClaim && opts.taskId) {
-    const status = checkClaimStatus(opts.taskId, opts.agentId);
+    const status = checkClaimStatusFn(opts.taskId, opts.agentId);
     if (opts.json) {
       console.log(JSON.stringify(status, null, 2));
     } else {
@@ -1393,6 +1388,17 @@ function main() {
         if (result.docs.length > 0) {
           console.log(`\n   Updated ${result.docs.length} doc file(s)`);
         }
+
+        // Warnung wenn andere Tasks diese referenzieren
+        if (result.referencingItems && result.referencingItems.length > 0) {
+          console.log(`\n⚠️  Folgende Tasks/Bugs referenzieren ${formatId(opts.taskId)}:`);
+          for (const item of result.referencingItems) {
+            const prefix = item.type === 'bug' ? '' : '#';
+            console.log(`   ${prefix}${item.id}: "${item.beschreibung}" → Deps: ${item.depsRaw}`);
+          }
+          console.log(`\n   Bitte manuell prüfen ob diese auf #${result.partA.id} oder #${result.partB.id} zeigen sollten.`);
+          console.log(`   Nutze: node scripts/update-tasks.mjs <ID> --deps "<neue deps>"`);
+        }
         console.log('');
       }
     } else {
@@ -1412,15 +1418,19 @@ function main() {
   // Task aktualisieren
   const updates = {};
   if (opts.status) updates.status = opts.status;
-  if (opts.deps !== undefined) updates.deps = opts.deps || '-';
+  if (opts.deps !== null && opts.deps !== undefined) updates.deps = opts.deps || '-';
   if (opts.claim) updates.claim = true;
   if (opts.unclaim) updates.unclaim = true;
   if (opts.beschreibung) updates.beschreibung = opts.beschreibung;
+  if (opts.bereich) updates.bereich = opts.bereich;
   if (opts.prio) updates.prio = opts.prio;
+  if (opts.mvp) updates.mvp = opts.mvp;
+  if (opts.spec) updates.spec = opts.spec;
+  if (opts.imp) updates.imp = opts.imp;
 
   if (Object.keys(updates).length === 0) {
     console.error('\n❌ Fehler: Keine Änderung angegeben.\n');
-    console.error('Nutze --status, --deps, --claim, --unclaim, etc.');
+    console.error('Nutze --status, --deps, --beschreibung, --bereich, --prio, --mvp, --spec, --imp, --claim, --unclaim, etc.');
     process.exit(1);
   }
 

@@ -989,7 +989,7 @@ Bei Magic Items hat der GM **immer** das letzte Wort:
 | 705 | processDefaultLoot(creature, budget) mit Chance-System | hoch | Ja | #215, #700, #1205, #1206 | Loot-Feature.md#schulden-system-und-soft-cap, Creature.md#defaultloot, Encounter-System.md#encounter-instance |
 | 707 | Soft-Cap: Teures Item weglassen bei hohen Schulden (balance < -1000) | hoch | Ja | #705, #706 | Loot-Feature.md#schulden-system-und-soft-cap |
 | 709 | GM-Warnung wenn Balance stark negativ (< -500g) | hoch | Ja | #700, #706, #707 | Loot-Feature.md#schulden-system-und-soft-cap |
-| 710 | calculateEncounterLoot(encounter, quest?) mit Quest-Reduktion | hoch | Ja | #433, #500, #700 | Loot-Feature.md#quest-encounter-reduktion, Quest-System.md#budget-integration |
+| 710 | calculateEncounterLoot(encounter, quest?) mit Quest-Reduktion | hoch | Ja | #500, #700, #702, #703 | Loot-Feature.md#quest-encounter-reduktion, Quest-System.md#budget-integration |
 | 712 | LOOT_MULTIPLIER Konstante (0.5 Gold/XP) | hoch | Ja | - | Loot-Feature.md#grundkonzept |
 | 714 | GeneratedLoot Interface (items, totalValue) | hoch | Ja | #1600 | Loot-Feature.md#generierung, Item.md#schema |
 | 716 | ScoredItem Interface (item, score) | hoch | Ja | #1600 | Loot-Feature.md#generierung, Item.md#schema |

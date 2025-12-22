@@ -17,7 +17,9 @@ export {
 } from './terrain-brush';
 
 export {
-  createFeatureBrushToolPanel,
-  type FeatureBrushToolPanel,
-  type FeatureBrushToolCallbacks,
-} from './feature-brush';
+  createTokenPlacerPanel,
+  type TokenPlacerPanel,
+  type TokenPlacerCallbacks,
+  type TokenPlacerDeps,
+  type TokenType,
+} from './token-placer';

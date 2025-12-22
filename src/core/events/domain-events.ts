@@ -171,6 +171,7 @@ export const EventTypes = {
   ENCOUNTER_STARTED: 'encounter:started',
   ENCOUNTER_DISMISSED: 'encounter:dismissed',
   ENCOUNTER_RESOLVED: 'encounter:resolved',
+  ENCOUNTER_FAILED: 'encounter:failed',
 
   // -------------------------------------------------------------------------
   // combat:* Events (23)
@@ -642,6 +643,11 @@ export interface EncounterResolvedPayload {
   outcome: EncounterOutcome;
   xpAwarded: number;
   loot?: unknown; // LootResult (defined in loot feature)
+}
+
+export interface EncounterFailedPayload {
+  reason: 'no_eligible_creatures' | 'selection_failed' | 'generation_failed' | 'invalid_tile';
+  details?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -1345,6 +1351,7 @@ export interface EventPayloadMap {
   [EventTypes.ENCOUNTER_STARTED]: EncounterStartedPayload;
   [EventTypes.ENCOUNTER_DISMISSED]: EncounterDismissedPayload;
   [EventTypes.ENCOUNTER_RESOLVED]: EncounterResolvedPayload;
+  [EventTypes.ENCOUNTER_FAILED]: EncounterFailedPayload;
 
   // combat:*
   [EventTypes.COMBAT_START_REQUESTED]: CombatStartRequestedPayload;

@@ -3,9 +3,9 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { ROADMAP_PATH, parseRoadmap } from './task-utils.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const roadmapPath = join(__dirname, '../docs/architecture/Development-Roadmap.md');
 
 // Architecture docs to process (excluding Development-Roadmap.md)
 const archDocs = [
@@ -24,49 +24,9 @@ const archDocs = [
   'Testing.md'
 ];
 
-// Parse the roadmap
-const roadmapContent = readFileSync(roadmapPath, 'utf-8');
-const lines = roadmapContent.split('\n');
-let inTasksTable = false;
-const tasks = [];
-
-for (let i = 0; i < lines.length; i++) {
-  const line = lines[i];
-
-  if (line.match(/^\|\s*#\s*\|\s*Status\s*\|/)) {
-    inTasksTable = true;
-    continue;
-  }
-
-  if (inTasksTable && line.match(/^\|[-:\s|]+\|$/)) {
-    continue;
-  }
-
-  if (inTasksTable && !line.startsWith('|')) {
-    inTasksTable = false;
-    continue;
-  }
-
-  if (inTasksTable && line.startsWith('|')) {
-    const parts = line.split('|').map(p => p.trim()).filter(p => p);
-
-    if (parts.length >= 9) {
-      const [num, status, bereich, beschreibung, prio, mvp, deps, spec, imp] = parts;
-
-      tasks.push({
-        num,
-        status,
-        bereich,
-        beschreibung,
-        prio,
-        mvp,
-        deps,
-        spec,
-        imp
-      });
-    }
-  }
-}
+// Parse the roadmap using shared parseRoadmap
+const roadmapContent = readFileSync(ROADMAP_PATH, 'utf-8');
+const { tasks } = parseRoadmap(roadmapContent, { separateBugs: true });
 
 // For each architecture doc, find tasks that reference it
 archDocs.forEach(docName => {
@@ -74,7 +34,7 @@ archDocs.forEach(docName => {
 
   // Find tasks that reference this doc in the Spec column
   const relevantTasks = tasks.filter(task => {
-    return task.spec.includes(docName);
+    return task.spec && task.spec.includes(docName);
   });
 
   if (relevantTasks.length === 0) {
@@ -113,7 +73,7 @@ archDocs.forEach(docName => {
       }
     }
 
-    tasksSection += `| ${task.num} | ${task.beschreibung} | ${task.prio} | ${task.mvp} | ${task.deps} | ${referenzen} |\n`;
+    tasksSection += `| ${task.number} | ${task.beschreibung} | ${task.prio} | ${task.mvp} | ${task.depsRaw} | ${referenzen} |\n`;
   });
 
   // Append to the end of the file

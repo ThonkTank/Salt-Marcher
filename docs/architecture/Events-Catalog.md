@@ -521,6 +521,7 @@ Zufalls- und geplante Begegnungen.
 | `encounter:started` | ✅ | 4b |
 | `encounter:dismissed` | ✅ | 4b |
 | `encounter:resolved` | ✅ | 4b |
+| `encounter:failed` | ✅ | 6 |
 
 ```typescript
 // Requests
@@ -588,6 +589,15 @@ Zufalls- und geplante Begegnungen.
     recipients?: EntityId<'character'>[];
   };
 }
+
+// Failure (Compensation Pattern)
+'encounter:failed': {
+  reason: 'no_eligible_creatures' | 'selection_failed' | 'generation_failed' | 'invalid_tile';
+  details?: string;
+}
+// Publiziert wenn Encounter-Generierung fehlschlägt.
+// Andere Features können reagieren und ggf. kompensieren.
+// correlationId wird vom Original-Request übernommen.
 ```
 
 ---
