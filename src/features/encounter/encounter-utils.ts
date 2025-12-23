@@ -14,9 +14,15 @@ import type {
   CreatureDefinition,
   EncounterType,
   EncounterInstance,
+  EncounterPerception,
+  DetectionMethod,
   GameDateTime,
   CreatureInstance,
+  Faction,
+  NoiseLevel,
+  ScentStrength,
 } from '@core/schemas';
+import { DEFAULT_DETECTION_PROFILE } from '@core/schemas';
 import { createCombatCreature } from '@/features/combat';
 import type { GenerationContext } from './types';
 import { DEFAULT_ENCOUNTER_DESCRIPTION } from './types';
@@ -30,12 +36,15 @@ export {
   // Types
   type CRComparison,
   type EncounterDifficulty,
+  type FactionRelation,
   type CreatureSelectionResult,
   type TypeDerivationResult,
   type VarietyValidationResult,
   type CreatureWeight,
   type FactionWeight,
   type CompanionSelectionResult,
+  type TypeProbabilityMatrix,
+  type EncounterHistoryEntry,
 
   // Step 1: Tile-Eligibility
   filterEligibleCreatures,
@@ -47,10 +56,14 @@ export {
   // Step 3: Type Derivation
   compareCR,
   rollDifficulty,
+  isWinnable,
   deriveEncounterType,
+  deriveEncounterTypeWithVariety,
 
-  // Step 4: Variety Validation
-  validateVariety,
+  // Step 4: Variety Validation (Type Dampening)
+  calculateTypeWeights,
+  createDefaultTypeMatrix,
+  normalizeMatrix,
 
   // Helper Functions
   generateEncounterId,
@@ -85,6 +98,149 @@ import {
 } from '@core/utils';
 
 // ============================================================================
+// Perception Constants (Task #213)
+// ============================================================================
+
+/**
+ * Noise level bonus for auditory detection.
+ * Higher values = easier to hear.
+ */
+export const NOISE_LEVEL_BONUS: Record<NoiseLevel, number> = {
+  silent: 0,
+  quiet: 2,
+  normal: 5,
+  loud: 10,
+  deafening: 15,
+};
+
+/**
+ * Scent strength bonus for olfactory detection.
+ * Higher values = easier to smell.
+ */
+export const SCENT_STRENGTH_BONUS: Record<ScentStrength, number> = {
+  none: 0,
+  faint: 2,
+  moderate: 5,
+  strong: 10,
+  overwhelming: 15,
+};
+
+/**
+ * Audio detection range by noise level (in feet).
+ * Used for determining if auditory detection is better than visual.
+ */
+export const AUDIO_DETECTION_RANGE: Record<NoiseLevel, number> = {
+  silent: 0,
+  quiet: 30,
+  normal: 60,
+  loud: 200,
+  deafening: 500,
+};
+
+/**
+ * Default visual detection range (in feet).
+ * Used when terrain visibility data is not available.
+ */
+export const DEFAULT_VISUAL_RANGE = 300;
+
+// ============================================================================
+// Perception Calculation Functions (Task #213)
+// ============================================================================
+
+/**
+ * Calculate initial perception data for an encounter.
+ * Determines detection method, distance, and awareness states.
+ *
+ * @param creature - The creature being encountered
+ * @param encounterType - Type of encounter (affects initial distance)
+ * @returns EncounterPerception data
+ *
+ * @see docs/features/Encounter-System.md#encounterperception
+ */
+export function calculateInitialPerception(
+  creature: CreatureDefinition,
+  encounterType: EncounterType
+): EncounterPerception {
+  const profile = creature.detectionProfile ?? DEFAULT_DETECTION_PROFILE;
+
+  // Determine best detection method
+  const visualRange = DEFAULT_VISUAL_RANGE;
+  const audioRange = AUDIO_DETECTION_RANGE[profile.noiseLevel];
+
+  let bestMethod: DetectionMethod = 'visual';
+  let bestRange = visualRange;
+
+  // Check if auditory detection is better
+  if (audioRange > visualRange) {
+    bestMethod = 'auditory';
+    bestRange = audioRange;
+  }
+
+  // Calculate initial distance based on encounter type
+  // Social encounters start closer (conversation distance)
+  // Passing encounters at mid-range (observing)
+  // Combat encounters at shorter range (detection led to confrontation)
+  // Trace encounters at close range (investigating evidence)
+  const initialDistance =
+    encounterType === 'social'
+      ? 60
+      : encounterType === 'passing'
+        ? Math.floor(bestRange * 0.5)
+        : encounterType === 'trace'
+          ? 30
+          : Math.floor(bestRange * 0.3); // combat
+
+  // Build modifiers object only if there are non-default values
+  const hasNonDefaultNoise = profile.noiseLevel !== 'normal';
+  const hasNonDefaultScent = profile.scentStrength !== 'faint';
+  const modifiers =
+    hasNonDefaultNoise || hasNonDefaultScent
+      ? {
+          noiseBonus: NOISE_LEVEL_BONUS[profile.noiseLevel],
+          scentBonus: SCENT_STRENGTH_BONUS[profile.scentStrength],
+        }
+      : undefined;
+
+  return {
+    detectionMethod: bestMethod,
+    initialDistance,
+    partyAware: true, // MVP: Party always aware
+    encounterAware: true, // MVP: Encounter always aware
+    modifiers,
+    // ambush: undefined for MVP (no ambush calculation yet)
+  };
+}
+
+/**
+ * Calculate disposition value based on creature and faction.
+ * Combines creature's default disposition with faction's party reputation.
+ *
+ * @param creature - The creature being encountered
+ * @param faction - The faction (if any) the creature belongs to
+ * @returns Disposition value from -100 (hostile) to +100 (friendly)
+ *
+ * @see docs/features/Encounter-System.md#disposition
+ */
+export function calculateDisposition(
+  creature: CreatureDefinition,
+  faction: Faction | null
+): number {
+  // Base disposition from creature template
+  const base =
+    creature.disposition === 'hostile'
+      ? -50
+      : creature.disposition === 'friendly'
+        ? 50
+        : 0; // neutral
+
+  // Faction modifier from party reputation
+  const factionMod = faction?.reputationWithParty ?? 0;
+
+  // Clamp to [-100, +100] range
+  return Math.max(-100, Math.min(100, base + factionMod));
+}
+
+// ============================================================================
 // Feature-Specific Functions (depend on other features)
 // ============================================================================
 
@@ -112,12 +268,20 @@ export function createCreatureInstance(
  *
  * NOTE: This function stays in the feature layer because it uses
  * createCreatureInstance which depends on @/features/combat.
+ *
+ * @param creature - The primary creature for this encounter
+ * @param type - Encounter type (combat, social, passing, trace)
+ * @param context - Generation context (position, terrain, time, etc.)
+ * @param currentTime - Current in-game time
+ * @param faction - Optional faction for disposition calculation
+ * @returns Complete EncounterInstance
  */
 export function populateEncounter(
   creature: CreatureDefinition,
   type: EncounterType,
   context: GenerationContext,
-  currentTime: GameDateTime
+  currentTime: GameDateTime,
+  faction?: Faction | null
 ): EncounterInstance {
   const activity = generateActivity(creature, context.timeSegment);
   const goal = generateGoal(creature);
@@ -126,6 +290,10 @@ export function populateEncounter(
   // Create creature instance(s)
   // For MVP: single creature per encounter
   const creatureInstance = createCreatureInstance(creature, 0);
+
+  // Calculate perception and disposition (Task #213)
+  const perception = calculateInitialPerception(creature, type);
+  const disposition = calculateDisposition(creature, faction ?? null);
 
   return {
     id: generateEncounterId(),
@@ -139,6 +307,8 @@ export function populateEncounter(
     mapId: undefined, // Will be set by service
     position: context.position,
     trigger: context.trigger,
+    perception,
+    disposition,
   };
 }
 

@@ -93,6 +93,91 @@ export const creaturePreferencesSchema = z.object({
 export type CreaturePreferences = z.infer<typeof creaturePreferencesSchema>;
 
 // ============================================================================
+// Detection Profile Schemas (Task #2950, #2949)
+// ============================================================================
+
+/**
+ * Stealth abilities that affect creature detection.
+ * Used by Encounter-System for perception calculations.
+ *
+ * @see docs/domain/Creature.md#stealthability
+ * @see docs/features/Encounter-System.md#stealth-ability-effekte
+ */
+export const stealthAbilitySchema = z.enum([
+  'burrowing', // Can travel underground - visual: 0ft, audio: normal
+  'invisibility', // Can become invisible - visual: 0ft
+  'ethereal', // On another plane - all senses: 0ft
+  'shapechange', // Can assume harmless form - no auto-detection
+  'mimicry', // Can imitate sounds - audio detection may mislead
+  'ambusher', // Has ambush behavior - triggers ambush check
+]);
+
+export type StealthAbility = z.infer<typeof stealthAbilitySchema>;
+
+/**
+ * Noise level for auditory detection.
+ * Determines base audio detection range.
+ *
+ * @see docs/features/Encounter-System.md#audio-range-tabelle
+ */
+export const noiseLevelSchema = z.enum([
+  'silent', // 0ft base range
+  'quiet', // 30ft base range
+  'normal', // 60ft base range
+  'loud', // 200ft base range
+  'deafening', // 500ft base range
+]);
+
+export type NoiseLevel = z.infer<typeof noiseLevelSchema>;
+
+/**
+ * Scent strength for olfactory detection.
+ * Determines base scent detection range.
+ *
+ * @see docs/features/Encounter-System.md#scent-range-tabelle
+ */
+export const scentStrengthSchema = z.enum([
+  'none', // 0ft base range
+  'faint', // 30ft base range (0ft in wind/rain)
+  'moderate', // 60ft base range
+  'strong', // 150ft base range
+  'overwhelming', // 300ft base range
+]);
+
+export type ScentStrength = z.infer<typeof scentStrengthSchema>;
+
+/**
+ * Detection profile for a creature.
+ * REQUIRED on CreatureDefinition for Encounter-System perception calculations.
+ *
+ * @see docs/domain/Creature.md#detection-profil
+ * @see docs/features/Encounter-System.md#calculatedetection
+ */
+export const creatureDetectionProfileSchema = z.object({
+  /** How loud is the creature? Affects auditory detection range. */
+  noiseLevel: noiseLevelSchema,
+
+  /** How strong is the creature's scent? Affects olfactory detection range. */
+  scentStrength: scentStrengthSchema,
+
+  /** Stealth abilities that can reduce or negate detection. */
+  stealthAbilities: z.array(stealthAbilitySchema).optional(),
+});
+
+export type CreatureDetectionProfile = z.infer<
+  typeof creatureDetectionProfileSchema
+>;
+
+/**
+ * Default detection profile for creatures without explicit profile.
+ * Used as fallback during migration period.
+ */
+export const DEFAULT_DETECTION_PROFILE: CreatureDetectionProfile = {
+  noiseLevel: 'normal',
+  scentStrength: 'faint',
+};
+
+// ============================================================================
 // DefaultLoot Schema
 // ============================================================================
 
@@ -175,6 +260,16 @@ export const creatureDefinitionSchema = z.object({
 
   /** Optional weight modifiers for fine-tuning (soft preferences) */
   preferences: creaturePreferencesSchema.optional(),
+
+  /**
+   * Detection profile for perception calculations.
+   * Determines how easily the creature can be detected (auditory, olfactory).
+   * Optional during migration - use DEFAULT_DETECTION_PROFILE as fallback.
+   *
+   * @see docs/domain/Creature.md#detection-profil
+   * @see docs/features/Encounter-System.md#calculatedetection
+   */
+  detectionProfile: creatureDetectionProfileSchema.optional(),
 
   // === Loot System ===
 

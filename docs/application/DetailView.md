@@ -82,39 +82,53 @@ Encounter-Builder zum Erstellen, Bearbeiten und Starten von Encounters.
 **Konzept:** Der Tab ist ein Builder, in den sowohl gespeicherte als auch generierte Encounters geladen werden. Der GM kann Kreaturen/NPCs hinzufuegen, entfernen und die Encounter-Details bearbeiten.
 
 ```
-┌────────────────────────────────────────┐
-│  ENCOUNTER                              │
-├────────────────────────────────────────┤
-│  [🔍 Gespeicherte Encounter suchen... ] │  ← Laedt in Builder
-├────────────────────────────────────────┤
-│                                         │
-│  Name: [Goblin Hinterhalt____________]  │
-│                                         │
-│  ─────── Kreaturen/NPCs ─────────────  │
-│                                         │
-│  [🔍 Kreatur/NPC suchen...         ]   │
-│                                         │
-│  • Goblin Boss (CR 1)         [×]      │
-│  • Goblin ×3 (CR 1/4)         [×]      │
-│  • Griknak (NPC, Goblin)      [×]      │
-│                                         │
-│  ─────── Kontext ────────────────────  │
-│                                         │
-│  Activity: [Patroullieren_____________] │
-│  Goal:     [Reisende ausrauben________] │
-│                                         │
-│  ─────── Encounter-Wertung ──────────  │
-│                                         │
-│  Gesamt-XP: 450 XP                      │
-│  Difficulty: ████░ Medium               │
-│  Tages-Budget: 45% verbraucht           │
-│             (450/1000 XP)               │
-│                                         │
-│  ─────────────────────────────────────  │
-│                                         │
-│  [🎲 Generate] [💾 Speichern] [⚔️ Combat starten]    │
-│                                         │
-└────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│  ENCOUNTER                                                  │
+├────────────────────────────────────────────────────────────┤
+│  [🔍 Gespeicherte Encounter suchen... ]                    │  ← Laedt in Builder
+├────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Name: [Goblin Hinterhalt__________________]               │
+│                                                             │
+│  ─────── Situation ────────────────────────────────────── │
+│                                                             │
+│  Activity: [Patroullieren_________________]                │
+│  Disposition: ████████░░ Neutral (20)                      │
+│                                                             │
+│  ─────── Detection ────────────────────────────────────── │
+│                                                             │
+│  Entdeckt: 👁️ Visuell, 180ft entfernt                      │
+│  Party bemerkt: ✓  |  Encounter bemerkt Party: ✓           │
+│                                                             │
+│  ─────── Lead NPC ─────────────────────────────────────── │
+│                                                             │
+│  Griknak der Hinkende                                      │
+│  ★ Wiederkehrender NPC (2 Begegnungen, zuletzt vor 5 Tagen)│
+│                                                             │
+│  Persoenlichkeit: misstrauisch, gierig                     │
+│  Quirk: Hinkt auf dem linken Bein                          │
+│  Ziel: Boss beeindrucken                                   │
+│                                                             │
+│  [Anderen NPC waehlen] [Neu generieren]                    │
+│                                                             │
+│  ─────── Kreaturen ────────────────────────────────────── │
+│                                                             │
+│  [🔍 Kreatur/NPC suchen...         ]                       │
+│                                                             │
+│  • Goblin Boss (CR 1)         [×]                          │
+│  • Goblin ×3 (CR 1/4)         [×]                          │
+│                                                             │
+│  ─────── Encounter-Wertung ────────────────────────────── │
+│                                                             │
+│  Gesamt-XP: 450 XP                                         │
+│  Difficulty: ████░ Medium                                  │
+│  Tages-Budget: 45% verbraucht (450/1000 XP)               │
+│                                                             │
+│  ─────────────────────────────────────────────────────────│
+│                                                             │
+│  [🎲 Generate] [💾 Speichern] [⚔️ Combat starten]          │
+│                                                             │
+└────────────────────────────────────────────────────────────┘
 ```
 
 **Interaktionen:**
@@ -123,13 +137,27 @@ Encounter-Builder zum Erstellen, Bearbeiten und Starten von Encounters.
 |---------|--------|
 | `[🎲 Generate]` | Generiert Random Encounter basierend auf aktuellem Kontext (Terrain, Zeit, Wetter, Fraktion) |
 | Encounter-Suche | Autocomplete fuer gespeicherte EncounterDefinitions, laedt in Builder |
+| Name-Feld | Encounter-Name (fuer Speichern) |
+| Activity-Feld | Was tut die Gruppe? (fuer alle Kreaturen, Kontext-basiert) |
+| Disposition-Anzeige | Balken + Wert (-100 bis +100), zeigt Grundeinstellung zur Party |
+| Detection-Anzeige | Readonly: Entdeckungsmethode, Distanz, beidseitige Awareness |
+| Lead NPC-Sektion | Zeigt Name, Persoenlichkeit, Quirk, persoenliches Ziel |
+| `[Anderen NPC waehlen]` | Dropdown zur Auswahl eines anderen NPCs aus der Kreaturen-Liste als Lead |
+| `[Neu generieren]` | Generiert neuen Lead-NPC mit neuer Persoenlichkeit/Quirk |
 | Kreatur/NPC-Suche | Autocomplete fuer CreatureDefinitions + Named NPCs aus Registry |
 | `[×]` Button | Entfernt Kreatur/NPC aus Builder |
-| Name-Feld | Encounter-Name (fuer Speichern) |
-| Activity-Feld | Was tun die Kreaturen? (z.B. "Patroullieren") |
-| Goal-Feld | Was wollen die Kreaturen? (z.B. "Reisende ausrauben") |
 | `[💾 Speichern]` | Speichert als EncounterDefinition im Vault |
 | `[⚔️ Combat starten]` | Startet Combat mit aktuellen Kreaturen, wechselt zu Combat-Tab |
+
+**Sektionen:**
+
+| Sektion | Inhalt | Quelle |
+|---------|--------|--------|
+| Situation | Activity + Disposition der Gruppe | BaseEncounterInstance |
+| Detection | Entdeckungsmethode, Distanz, Awareness | EncounterPerception |
+| Lead NPC | Persoenlichkeit, Quirk, Ziel, Wiederkehr-Info | NPC-System, NPC-Registry |
+| Kreaturen | Liste aller Encounter-Kreaturen (ohne Lead) | EncounterCreature[] |
+| Encounter-Wertung | XP, Difficulty, Budget | Encounter-Balancing |
 
 **Encounter-Wertung (Live-Berechnung):**
 
@@ -321,10 +349,120 @@ Nach `combat:completed` wechselt der Combat-Tab in den Resolution-Modus mit line
 | Quest-Zuweisung | Quest-Pool XP verfallen |
 | Loot-Verteilung | Loot verfaellt |
 
+**Phase 4: Faction Attrition (automatisch, Info-Banner)**
+
+Nach Combat-Aufloesung werden getoetete Kreaturen von ihrer Fraktion abgezogen:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  ⚔️ FRAKTIONS-UPDATE                                       │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  Die Bloodfang-Fraktion wurde geschwaecht:                 │
+│                                                            │
+│  Goblin-Krieger:  20 → 15  (-5)                           │
+│  Goblin-Boss:      3 →  2  (-1)                           │
+│                                                            │
+│  Gesamtstaerke:   -25%                                    │
+│  Status:          Aktiv                                    │
+│                                                            │
+│  ─────────────────────────────────────────────────────────│
+│  [Verstanden ✓]                                            │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Bei Status-Aenderung:**
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  ⚔️ FRAKTION AUSGELOESCHT                                  │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  Die Bloodfang-Fraktion wurde vernichtet!                  │
+│                                                            │
+│  Status: Aktiv → Ausgeloescht                              │
+│                                                            │
+│  Alle Praesenz auf der Map wurde entfernt.                │
+│                                                            │
+│  ─────────────────────────────────────────────────────────│
+│  [Verstanden ✓]                                            │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Automatisch:** Diese Phase erscheint nur wenn Kreaturen einer Fraktion getoetet wurden. Nicht-Fraktions-Kreaturen triggern keine Attrition.
+
+→ Details: [Faction.md](../domain/Faction.md#attrition-mechanik)
+
+**Phase 5: Entity Promotion (optional, nur bei nicht-zugeordneten Kreaturen)**
+
+Wenn im Encounter Kreaturen ohne Fraktions-Zuordnung waren, bietet das System an, sie zu persistieren:
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  🐉 ENTITY PROMOTION                                       │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  "Junger Roter Drache" als persistenten NPC anlegen?       │
+│                                                            │
+│  ┌──────────────────────────────────────────────────────┐ │
+│  │ Vorgeschlagener POI:                                 │ │
+│  │ 📍 Hoehle bei (12, 8)                                │ │
+│  │ [Map-Preview mit markiertem Hex]                     │ │
+│  └──────────────────────────────────────────────────────┘ │
+│                                                            │
+│  [ ] Hort erstellen (LootTable: Dragon Hoard)             │
+│                                                            │
+│  ─────────────────────────────────────────────────────────│
+│  [Bestaetigen ✓]  [Anpassen...]  [Ablehnen ✗]             │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Bei mehreren Kreaturen:**
+
+Wenn mehrere nicht-zugeordnete Kreaturen im Encounter waren, werden sie nacheinander angeboten:
+
+```
+Kreatur 1 von 3: "Junger Roter Drache"
+[ ] Alle ablehnen
+```
+
+**Anpassen-Dialog:**
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  🐉 NPC-DETAILS ANPASSEN                                   │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  Name:    [Scaldrath der Junge____________________]       │
+│  Traits:  [gierig______] [territorial___]                 │
+│                                                            │
+│  POI-Typ:     [Entrance (Hoehle)    ▼]                    │
+│  POI-Name:    [Scaldrath's Hort_________________]         │
+│  Position:    (12, 8) [Auf Map aendern...]                │
+│                                                            │
+│  LootTable:   [Dragon Hoard        ▼]                     │
+│  [ ] Fraktion erstellen (Ein-Kreatur-Fraktion)            │
+│                                                            │
+│  ─────────────────────────────────────────────────────────│
+│  [Speichern ✓]  [Zurueck ←]                               │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Ergebnis bei Bestaetigung:**
+1. NPC wird in der Library persistiert
+2. Optional: POI wird auf der Map erstellt
+3. Optional: LootContainer wird aus LootTable generiert
+4. Optional: Ein-Kreatur-Fraktion wird erstellt
+
+→ Details: [Faction.md](../domain/Faction.md#entity-promotion)
+→ Encounter-Integration: [Encounter-System.md](../features/Encounter-System.md#entity-promotion)
+
 **Events nach Resolution:**
 - `encounter:resolved` wird gefeuert
 - Wenn Quest zugewiesen: `quest:xp-accumulated`
 - Wenn Loot verteilt: `loot:distributed`
+- Wenn Attrition: `faction:attrition-applied`
+- Wenn Entity Promotion: `npc:created`, optional `poi:created`, `lootcontainer:created`
 
 → Details: [Combat-System.md](../features/Combat-System.md#post-combat-resolution)
 
@@ -552,9 +690,34 @@ type TabId = 'encounter' | 'combat' | 'shop' | 'location' | 'quest' | 'journal';
 interface EncounterTabState {
   // Builder-State
   builderName: string;
-  builderActivity: string;              // Was tun die Kreaturen?
-  builderGoal: string;                  // Was wollen die Kreaturen?
+  builderActivity: string;              // Was tut die Gruppe? (Gruppen-basiert)
   builderCreatures: BuilderCreature[];
+
+  // Situation (NEU: fuer alle Encounter-Typen)
+  disposition: number;                  // -100 bis +100, Grundeinstellung zur Party
+
+  // Detection (NEU: aus Perception-System)
+  detection: {
+    method: 'visual' | 'auditory' | 'olfactory' | 'tremorsense' | 'magical';
+    distance: number;                   // In feet
+    partyAware: boolean;                // Hat Party das Encounter bemerkt?
+    encounterAware: boolean;            // Hat Encounter die Party bemerkt?
+  } | null;
+
+  // Lead NPC (NEU: vollstaendige RP-Informationen)
+  leadNPC: {
+    npcId: EntityId<'npc'>;
+    name: string;
+    personality: {
+      primary: string;                  // z.B. "misstrauisch"
+      secondary?: string;               // z.B. "gierig"
+    };
+    quirk: string;                      // z.B. "Hinkt auf dem linken Bein"
+    personalGoal: string;               // z.B. "Boss beeindrucken"
+    isRecurring: boolean;               // Wiederkehrender NPC?
+    encounterCount: number;             // Anzahl Begegnungen
+    lastEncounter?: GameDateTime;       // Letzte Begegnung
+  } | null;
 
   // Berechnete Werte (live)
   totalXP: number;
@@ -818,59 +981,83 @@ Shop-Tab zeigt Haendler-Inventar
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 2400 | DetailView View Component (Hauptcontainer mit Tab-Navigation) | hoch | Ja | - | DetailView.md#layout-wireframe |
-| 2401 | DetailView ViewModel mit State-Management | hoch | Ja | #2400 | DetailView.md#state-synchronisation, Application.md#viewmodel-pattern |
-| 2402 | Tab-Management (activeTab State, setActiveTab) | hoch | Ja | #2401 | DetailView.md#tab-management |
-| 2403 | Idle-State Placeholder (Hinweis wenn kein Tab aktiv) | mittel | Ja | #2400 | DetailView.md#idle-state |
-| 2404 | Auto-Open Verhalten für Encounter-Tab (encounter:generated) | hoch | Ja | #2401, #220 | DetailView.md#auto-open-verhalten, Encounter-System.md#events, Events-Catalog.md#encounter |
-| 2405 | Auto-Open Verhalten für Combat-Tab (combat:started) | hoch | Ja | #2401, #322 | DetailView.md#auto-open-verhalten, Combat-System.md#combat-flow, Events-Catalog.md#combat |
-| 2406 | Auto-Open Verhalten für Location-Tab (ui:tile-selected, optional) | niedrig | Nein | #2401, #2448 | DetailView.md#auto-open-verhalten |
-| 2407 | Tab-Priorität System (Combat > Encounter > Rest) | mittel | Ja | #2402 | DetailView.md#auto-open-verhalten |
-| 2408 | Encounter-Tab Component (Container) | hoch | Ja | - | DetailView.md#encounter-tab |
-| 2409 | Encounter-Builder State (Name, Activity, Goal, Creatures) | hoch | Ja | #2401 | DetailView.md#encounter-tab, Encounter-System.md#schemas |
-| 2410 | Encounter-Suche (Autocomplete für gespeicherte EncounterDefinitions) | mittel | Ja | #2408, #2409 | DetailView.md#encounter-tab, Encounter-System.md#schemas |
-| 2411 | Kreatur/NPC-Suche (Autocomplete für CreatureDefinitions + Named NPCs) | hoch | Ja | #2408, #2409 | DetailView.md#encounter-tab, Creature.md#schema, NPC-System.md#npc-schema |
-| 2412 | Kreatur/NPC hinzufügen zum Builder | hoch | Ja | #2409, #2411 | DetailView.md#encounter-tab, DetailView.md#flow-neues-encounter-im-builder-erstellen |
-| 2413 | Kreatur/NPC entfernen aus Builder ([×] Button) | mittel | Ja | #2409, #2412 | DetailView.md#encounter-tab |
-| 2414 | Encounter-Wertung Live-Berechnung (Gesamt-XP, Difficulty, Daily-Budget) | hoch | Ja | #2409, #1400 | DetailView.md#encounter-tab, Encounter-Balancing.md#xp-budget, Encounter-Balancing.md#cr-vergleich |
-| 2415 | Encounter-Builder befüllen aus encounter:generated Event | hoch | Ja | #2404, #2409 | DetailView.md#encounter-tab, DetailView.md#flow-random-encounter-builder, Encounter-System.md#events |
-| 2416 | Encounter-Builder befüllen aus gespeichertem Encounter | mittel | Ja | #2409, #2410 | DetailView.md#flow-gespeichertes-encounter-laden, Encounter-System.md#schemas |
-| 2417 | Encounter-Speichern Funktion (Create/Update) | mittel | Ja | #2409 | DetailView.md#flow-builder-speichern, Encounter-System.md#schemas |
-| 2418 | Combat-Start aus Encounter-Builder | hoch | Ja | #2409, #321 | DetailView.md#flow-builder-combat, Combat-System.md#combat-flow, Encounter-System.md#integration |
-| 2419 | Combat-Tab Component (Container) | hoch | Ja | #2400, #305 | DetailView.md#combat-tab, Combat-System.md#schemas |
-| 2420 | Combat-Tab ViewModel (Initiative-Liste, HP-Tracking) | hoch | Ja | #2401, #2419 | DetailView.md#combat-tab, DetailView.md#state-synchronisation, Combat-System.md#combatstate |
-| 2421 | Initiative-Tracker Display (Sortierte Liste mit aktuellem Turn) | hoch | Ja | #2419, #2420 | DetailView.md#combat-tab, Combat-System.md#sortierung, Combat-System.md#initiative-layout |
-| 2422 | HP-Management Controls (Damage/Heal Dialogs) | hoch | Ja | #308, #309, #2420, #2421 | DetailView.md#combat-tab, Combat-System.md#damage-heal |
-| 2423 | Condition-Management (Add/Remove Conditions) | hoch | Ja | #312, #313, #2420, #2421 | DetailView.md#combat-tab, Combat-System.md#conditions |
-| 2424 | Turn-Wechsel Handler (Next Turn Button) | hoch | Ja | #319, #2419, #2420 | DetailView.md#combat-tab, Combat-System.md#combat-flow, Combat-System.md#automatische-effekte |
-| 2425 | Start-of-Turn Effects Display | hoch | Ja | #2419, #2424 | DetailView.md#combat-tab, Combat-System.md#start-of-turn |
-| 2426 | End-of-Turn Effects Display | hoch | Ja | #2419, #2424 | DetailView.md#combat-tab, Combat-System.md#end-of-turn |
-| 2427 | Combat-Ende Handler (End Combat Button) | hoch | Ja | #323, #2419, #2420 | DetailView.md#flow-combat-beenden, Combat-System.md#combat-flow |
-| 2428 | Post-Combat Resolution: XP-Summary Phase | hoch | Ja | #338, #339, #340, #2419, #2427 | DetailView.md#post-combat-resolution, Combat-System.md#post-combat-resolution, Combat-System.md#xp-berechnung |
-| 2429 | Post-Combat Resolution: GM-Anpassung XP (%-Modifier) | hoch | Ja | #2419, #2428 | DetailView.md#post-combat-resolution, Combat-System.md#xp-berechnung |
-| 2430 | Post-Combat Resolution: Quest-Zuweisung Phase | hoch | Ja | #408, #409, #2420, #2427, #2428 | DetailView.md#post-combat-resolution, Quest-System.md#quest-assignment-ui-post-combat, Quest-System.md#40-60-split-mechanik, Combat-System.md#post-combat-resolution |
-| 2431 | Post-Combat Resolution: Loot-Verteilung Phase | hoch | Ja | - | DetailView.md#post-combat-resolution, Loot-Feature.md#verteilen-einheitliches-loot-modal, Loot-Feature.md#loot-generierung-bei-encounter, Combat-System.md#post-combat-resolution |
-| 2432 | Shop-Tab Component (Buy/Sell Interface) | hoch | Ja | - | DetailView.md#shop-tab, Shop.md#verwendung |
-| 2433 | Shop-Tab ViewModel (Shop-State, Inventory) | hoch | Ja | #2432 | DetailView.md#shop-tab, DetailView.md#state-synchronisation, Shop.md#schema |
-| 2434 | Shop-Item Browse mit Search/Filter | hoch | Ja | #2432, #2433 | DetailView.md#shop-tab, Shop.md#queries |
-| 2435 | Buy-Transaktion Handler | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events |
-| 2436 | Sell-Transaktion Handler | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events |
-| 2437 | Location-Tab Component (Tile/POI Details) | hoch | Ja | #2400, #2436 | DetailView.md#location-tab, POI.md#tile-content-panel |
-| 2438 | Location-Tab ViewModel (Tile-Data) | hoch | Ja | #2436, #2437 | DetailView.md#location-tab, DetailView.md#state-synchronisation, POI.md#queries |
-| 2439 | Terrain/Elevation/Climate Display | hoch | Ja | #2431, #2432, #2434, #2436, #2438 | DetailView.md#location-tab, Terrain.md#schema, Weather-System.md#weather-state |
-| 2440 | POIs auf Tile anzeigen | hoch | Ja | #2431, #2432, #2438 | DetailView.md#location-tab, POI.md#tile-content-panel, POI.md#queries |
-| 2441 | Fraktionspräsenz Display | hoch | Ja | #2431, #2435, #2437, #2438 | DetailView.md#location-tab, Faction.md#praesenz-datenstruktur, Faction.md#encounter-integration |
-| 2442 | Bekannte NPCs Display | hoch | Ja | #2400, #2438 | DetailView.md#location-tab, NPC-System.md#npc-schema, NPC-System.md#mvp-fraktions-basierte-location |
-| 2443 | Quest-Tab Component (Quest-Details) | mittel | Nein | #2400, #2401 | DetailView.md#quest-tab, Quest.md#schema |
-| 2444 | Quest-Tab ViewModel (Quest-State) | mittel | Nein | #2442, #2443 | DetailView.md#quest-tab, DetailView.md#state-synchronisation, Quest-System.md#quest-progress-runtime-state |
-| 2445 | Objective-Tracker Display (Checkboxen) | mittel | Nein | #2442, #2443, #2444 | DetailView.md#quest-tab, Quest-System.md#quest-schema-entityregistry, Quest.md#questobjective |
-| 2446 | Quest-Actions (Complete/Fail/Abandon) | mittel | Nein | #2442, #2443, #2444 | DetailView.md#quest-tab, Quest-System.md#quest-state-machine, Quest.md#events |
-| 2447 | Journal-Tab Component (Event-Historie) | mittel | Nein | #2400, #2444 | DetailView.md#journal-tab, Journal.md#schema |
-| 2448 | Journal-Tab ViewModel (Entry-Liste, Filter) | mittel | Nein | #2400, #2447 | DetailView.md#journal-tab, DetailView.md#state-synchronisation, Journal.md#queries |
-| 2449 | Journal-Filter Controls (Date, Category, Tags) | mittel | Nein | #2401, #2448 | DetailView.md#journal-tab, Journal.md#schema |
-| 2450 | Quick Note Entry | mittel | Nein | #2448, #2449 | DetailView.md#journal-tab, Journal.md#journalentry |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 2400 | ✅ | Application/DetailView | DetailView View Component (Hauptcontainer mit Tab-Navigation) | hoch | Ja | - | DetailView.md#uebersicht | src/application/detail-view/view.ts |
+| 2401 | ✅ | Application/DetailView | DetailView ViewModel mit State-Management | hoch | Ja | #2400 | DetailView.md#state-synchronisation, Application.md#viewmodel-pattern | src/application/detail-view/viewmodel.ts |
+| 2402 | ✅ | Application/DetailView | Tab-Management (activeTab State, setActiveTab) | hoch | Ja | #2401 | DetailView.md#uebersicht | viewmodel.ts:setActiveTab(), types.ts:DetailViewState.activeTab |
+| 2403 | ✅ | Application/DetailView | Idle-State Placeholder (Hinweis wenn kein Tab aktiv) | mittel | Ja | #2400 | DetailView.md#idle-state-kein-tab-aktiv | view.ts:idleState (lines 113-123) |
+| 2404 | ✅ | Application/DetailView | Auto-Open Verhalten für Encounter-Tab (encounter:generated) | hoch | Ja | #220, #2401 | DetailView.md#auto-open-verhalten, Encounter-System.md#events, Events-Catalog.md#encounter | viewmodel.ts:ENCOUNTER_GENERATED handler (lines 110-125) |
+| 2405 | ✅ | Application/DetailView | Auto-Open Verhalten für Combat-Tab (combat:started) | hoch | Ja | #322, #2401 | DetailView.md#auto-open-verhalten, Combat-System.md#combat-flow, Events-Catalog.md#combat | viewmodel.ts:COMBAT_STARTED handler (lines 140-150) |
+| 2406 | ⛔ | Application/DetailView | Auto-Open Verhalten für Location-Tab (ui:tile-selected, optional) | niedrig | Nein | #2401, #2448 | DetailView.md#auto-open-verhalten | viewmodel.ts:setupEventHandlers() [ändern - UI_TILE_SELECTED handler] |
+| 2407 | ✅ | Application/DetailView | Tab-Priorität System (Combat > Encounter > Rest) | mittel | Ja | #2402 | DetailView.md#auto-open-verhalten | viewmodel.ts:ENCOUNTER_GENERATED handler (line 118 - prüft ob combat aktiv) |
+| 2408 | ✅ | Application/DetailView | Encounter-Tab Component (Container) | hoch | Ja | - | DetailView.md#encounter-tab | src/application/detail-view/panels/encounter-tab.ts:createEncounterTab() |
+| 2409 | 📋 | Application/DetailView | Encounter-Builder State (Name, Activity, Goal, Creatures) | hoch | Ja | #2401 | DetailView.md#encounter-tab, Encounter-System.md#schemas | types.ts:EncounterTabState, types.ts:BuilderCreature, viewmodel.ts:setBuilder*(), viewmodel.ts:*CreatureFromBuilder() |
+| 2410 | ⛔ | Application/DetailView | Encounter-Suche (Autocomplete für gespeicherte EncounterDefinitions) | mittel | Ja | #2408, #2409 | DetailView.md#encounter-tab, Encounter-System.md#schemas | encounter-tab.ts [ändern - Suche-Input + Autocomplete-Logic] |
+| 2411 | ⛔ | Application/DetailView | Kreatur/NPC-Suche (Autocomplete für CreatureDefinitions + Named NPCs) | hoch | Ja | #2408, #2409 | DetailView.md#encounter-tab, Creature.md#schema, NPC-System.md#npc-schema | encounter-tab.ts [ändern - Kreatur-Suche-Input + Autocomplete-Logic] |
+| 2412 | ⛔ | Application/DetailView | Kreatur/NPC hinzufügen zum Builder | hoch | Ja | #2409, #2411 | DetailView.md#encounter-tab, DetailView.md#flow-neues-encounter-im-builder-erstellen | encounter-tab.ts [ändern - onAddCreature callback], viewmodel.ts [ändern - addCreatureToBuilder()] |
+| 2413 | ⛔ | Application/DetailView | Kreatur/NPC entfernen aus Builder ([×] Button) | mittel | Ja | #2409, #2412 | DetailView.md#encounter-tab | encounter-tab.ts [ändern - Remove-Button], viewmodel.ts [ändern - removeCreatureFromBuilder()] |
+| 2414 | ⛔ | Application/DetailView | Encounter-Wertung Live-Berechnung (Gesamt-XP, Difficulty, Daily-Budget) | hoch | Ja | #2409, #1400 | DetailView.md#encounter-tab, Encounter-Balancing.md#xp-budget, Encounter-Balancing.md#cr-vergleich | viewmodel.ts [ändern - calculateEncounterRating()], nutzet Encounter-Balancing-Feature #1400 |
+| 2415 | ✅ | Application/DetailView | Encounter-Builder befüllen aus encounter:generated Event | hoch | Ja | #2404, #2409 | DetailView.md#encounter-tab, DetailView.md#flow-random-encounter-builder, Encounter-System.md#events | viewmodel.ts:loadEncounterIntoBuilder(), ENCOUNTER_GENERATED handler |
+| 2416 | ⛔ | Application/DetailView | Encounter-Builder befüllen aus gespeichertem Encounter | mittel | Ja | #2409, #2410 | DetailView.md#flow-gespeichertes-encounter-laden, Encounter-System.md#schemas | viewmodel.ts [ändern - loadEncounterDefinition()], encounter-tab.ts [ändern - onLoadEncounter callback] |
+| 2417 | ⛔ | Application/DetailView | Encounter speichern (💾 Button) | mittel | Ja | #2409 | DetailView.md#flow-builder-speichern, Encounter-System.md#schemas | encounter-tab.ts [ändern - Save-Button], viewmodel.ts [ändern - saveEncounterDefinition()], view.ts [ändern - onSaveEncounter callback] |
+| 2418 | ✅ | Application/DetailView | Combat starten aus Builder (⚔️ Button, publiziert combat:start-requested) | hoch | Ja | #321, #2409 | DetailView.md#flow-builder-combat, Combat-System.md#combat-flow, Encounter-System.md#integration | encounter-tab.ts:onStartEncounter → view.ts:EventTypes.ENCOUNTER_START_REQUESTED (lines 236-244) |
+| 2419 | ✅ | Application/DetailView | Combat-Tab Component (Container) | hoch | Ja | #305, #2400 | DetailView.md#combat-tab, Combat-System.md#schemas | src/application/detail-view/panels/combat-tab.ts |
+| 2420 | ✅ | Application/DetailView | Combat-Tab State (CombatState, PendingEffects, Resolution) | hoch | Ja | #2401, #2419 | DetailView.md#combat-tab, DetailView.md#state-synchronisation, Combat-System.md#combatstate | types.ts:CombatTabState, ResolutionState |
+| 2421 | ✅ | Application/DetailView | Initiative-Tracker Display (Liste mit Reihenfolge, aktiver Participant markiert) | hoch | Ja | #2419, #2420 | DetailView.md#combat-tab, Combat-System.md#sortierung, Combat-System.md#initiative-layout | combat-tab.ts:renderParticipant(), renderInitiativeList() |
+| 2422 | ✅ | Application/DetailView | HP-Bar Display pro Participant | hoch | Ja | #308, #309, #2420, #2421 | DetailView.md#combat-tab, Combat-System.md#damage-heal | combat-tab.ts:createHpBar() (lines 265-298) |
+| 2423 | ✅ | Application/DetailView | Conditions Display pro Participant (Icons + Labels) | hoch | Ja | #312, #313, #2420, #2421 | DetailView.md#combat-tab, Combat-System.md#conditions | combat-tab.ts:conditions rendering (lines 220-246) |
+| 2424 | ✅ | Application/DetailView | Damage Button + Dialog | hoch | Ja | #319, #2419, #2420 | DetailView.md#combat-tab, Combat-System.md#combat-flow, Combat-System.md#automatische-effekte | combat-tab.ts:damageBtn + view.ts:onApplyDamage callback (lines 288-295) |
+| 2425 | ✅ | Application/DetailView | Heal Button + Dialog | hoch | Ja | #2419, #2424 | DetailView.md#combat-tab, Combat-System.md#start-of-turn | combat-tab.ts:healBtn + view.ts:onApplyHealing callback (lines 297-305) |
+| 2426 | ✅ | Application/DetailView | Condition Button + Dropdown | hoch | Ja | #2419, #2424 | DetailView.md#combat-tab, Combat-System.md#end-of-turn | combat-tab.ts:conditionBtn + view.ts:onAddCondition/onRemoveCondition callbacks (lines 306-323) |
+| 2427 | ⬜ | Application/DetailView | Add Effect Button + Dialog (Custom Start/End-of-Turn Effects) | mittel | Nein | #323, #2419, #2420 | DetailView.md#flow-combat-beenden, Combat-System.md#combat-flow | combat-tab.ts [ändern - Effect-Button + Dialog], view.ts [ändern - onAddEffect callback] |
+| 2428 | ✅ | Application/DetailView | Next Turn Button (combat:next-turn-requested) | hoch | Ja | #338, #339, #340, #2419, #2427 | DetailView.md#post-combat-resolution, Combat-System.md#post-combat-resolution, Combat-System.md#xp-berechnung | combat-tab.ts:nextTurnBtn + view.ts:onNextTurn callback (lines 274-277) |
+| 2429 | ✅ | Application/DetailView | End Combat Button (combat:end-requested) | hoch | Ja | #2419, #2428 | DetailView.md#post-combat-resolution, Combat-System.md#xp-berechnung | combat-tab.ts:endBtn + view.ts:onEndCombat callback (lines 279-287) |
+| 2430 | ⛔ | Application/DetailView | Start-of-Turn Effect Display (Save-Prompt für Effekte wie Tasha's Caustic Brew) | mittel | Nein | #408, #409, #2420, #2427, #2428 | DetailView.md#post-combat-resolution, Quest-System.md#quest-assignment-ui-post-combat, Quest-System.md#40-60-split-mechanik, Combat-System.md#post-combat-resolution | combat-tab.ts [ändern - Turn-Wechsel-Dialog mit Pending-Effects], viewmodel.ts [ändern - getPendingEffects()] |
+| 2431 | ✅ | Application/DetailView | Post-Combat Resolution State-Management | hoch | Ja | - | DetailView.md#post-combat-resolution, Loot-Feature.md#verteilen-einheitliches-loot-modal, Loot-Feature.md#loot-generierung-bei-encounter, Combat-System.md#post-combat-resolution | types.ts:CombatTabState [ändern - Resolution-Felder hinzufügen], viewmodel.ts [ändern - Resolution-State-Management] |
+| 2432 | ⬜ | Application/DetailView | Post-Combat Phase 1: XP-Summary Display (Basis-XP, GM-Anpassung, Verteilung) | hoch | Ja | - | DetailView.md#shop-tab, Shop.md#verwendung | combat-tab.ts [neu - renderResolutionPanel:XpPhase] |
+| 2433 | ⛔ | Application/DetailView | Post-Combat Phase 1: GM-Anpassung Controls ([-] [%] [+] Schnellauswahl) | mittel | Ja | #2432 | DetailView.md#shop-tab, DetailView.md#state-synchronisation, Shop.md#schema | combat-tab.ts:XpPhase [ändern - GM-Modifier-Controls] |
+| 2434 | ⛔ | Application/DetailView | Post-Combat Phase 2: Quest-Zuweisung Display (Quest-Suche, Aktive Quests Radio-Liste) | hoch | Ja | #2432, #2433 | DetailView.md#shop-tab, Shop.md#queries | combat-tab.ts [neu - renderResolutionPanel:QuestPhase] |
+| 2435 | ⛔ | Application/DetailView | Post-Combat Phase 2: Quest-Pool XP Zuweisung (Quest auswählen, XP zuweisen) | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events | viewmodel.ts [ändern - assignXpToQuest()], view.ts [ändern - onAssignQuestXp callback] |
+| 2436 | ⛔ | Application/DetailView | Post-Combat Phase 3: Loot-Verteilung Display (Items + Gold) | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events | combat-tab.ts [neu - renderResolutionPanel:LootPhase] |
+| 2437 | ⛔ | Application/DetailView | Post-Combat Phase 3: Item-Verteilung (Dropdown pro Item → Character) | hoch | Ja | #2400, #2436 | DetailView.md#location-tab, POI.md#tile-content-panel | combat-tab.ts:LootPhase [ändern - Item-Dropdown-Controls] |
+| 2438 | ⛔ | Application/DetailView | Post-Combat Phase 3: Gold-Verteilung (Gleichmäßig verteilen + manuell anpassen) | mittel | Ja | #2436, #2437 | DetailView.md#location-tab, DetailView.md#state-synchronisation, POI.md#queries | combat-tab.ts:LootPhase [ändern - Gold-Distribution-Controls] |
+| 2439 | ⛔ | Application/DetailView | Post-Combat Resolution: Überspringen-Button pro Phase | mittel | Ja | #2431, #2432, #2434, #2436, #2438 | DetailView.md#location-tab, Terrain.md#schema, Weather-System.md#weather-state | combat-tab.ts:renderResolutionPanel [ändern - Skip-Button], viewmodel.ts [ändern - skipPhase()] |
+| 2440 | ⛔ | Application/DetailView | Post-Combat Resolution: Weiter-Button (Phase-Transition) | hoch | Ja | #2431, #2432, #2438 | DetailView.md#location-tab, POI.md#tile-content-panel, POI.md#queries | combat-tab.ts:renderResolutionPanel [ändern - Next-Button], viewmodel.ts [ändern - nextPhase()] |
+| 2441 | ⛔ | Application/DetailView | Post-Combat Resolution: Events publizieren (encounter:resolved, quest:xp-accumulated, loot:distributed) | hoch | Ja | #2431, #2435, #2437, #2438 | DetailView.md#location-tab, Faction.md#praesenz-datenstruktur, Faction.md#encounter-integration | viewmodel.ts [ändern - Resolution-Event-Publishing], view.ts [ändern - Event-Callbacks] |
+| 2442 | ⛔ | Application/DetailView | Shop-Tab Component (Container) | mittel | Ja | #2400, #2438 | DetailView.md#location-tab, NPC-System.md#npc-schema, NPC-System.md#mvp-fraktions-basierte-location | [neu] src/application/detail-view/panels/shop-tab.ts |
+| 2443 | ⬜ | Application/DetailView | Shop-Tab State (activeShop, searchQuery, filter, mode) | mittel | Ja | #2400, #2401 | DetailView.md#quest-tab, Quest.md#schema | types.ts:ShopTabState [neu], viewmodel.ts [ändern - Shop-State-Management] |
+| 2444 | ⛔ | Application/DetailView | Shop-Tab Buy-Mode (Item-Liste, Search, Filter, Buy-Button) | mittel | Ja | #2442, #2443 | DetailView.md#quest-tab, DetailView.md#state-synchronisation, Quest-System.md#quest-progress-runtime-state | shop-tab.ts [ändern - Buy-Mode-Rendering] |
+| 2445 | ⛔ | Application/DetailView | Shop-Tab Sell-Mode (Party-Inventory, Sell-Button) | mittel | Ja | #2442, #2443, #2444 | DetailView.md#quest-tab, Quest-System.md#quest-schema-entityregistry, Quest.md#questobjective | shop-tab.ts [ändern - Sell-Mode-Rendering] |
+| 2446 | ⛔ | Application/DetailView | Shop-Tab Mode Toggle (Buy/Sell wechseln) | niedrig | Nein | #2442, #2443, #2444 | DetailView.md#quest-tab, Quest-System.md#quest-state-machine, Quest.md#events | shop-tab.ts [ändern - Mode-Toggle-Button], viewmodel.ts [ändern - toggleShopMode()] |
+| 2447 | ⛔ | Application/DetailView | Shop-Tab Load More / Pagination | niedrig | Nein | #2400, #2444 | DetailView.md#journal-tab, Journal.md#schema | shop-tab.ts [ändern - Pagination-Controls] |
+| 2448 | ⛔ | Application/DetailView | Location-Tab Component (Container) | mittel | Ja | #2400, #2447 | DetailView.md#journal-tab, DetailView.md#state-synchronisation, Journal.md#queries | [neu] src/application/detail-view/panels/location-tab.ts |
+| 2449 | ⛔ | Application/DetailView | Location-Tab State (selectedTile, tileData) | mittel | Ja | #2401, #2448 | DetailView.md#journal-tab, Journal.md#schema | types.ts:LocationTabState [neu], viewmodel.ts [ändern - Location-State-Management] |
+| 2450 | ⛔ | Application/DetailView | Location-Tab Terrain Display (Type, Elevation, Movement Cost) | mittel | Ja | #2448, #2449 | DetailView.md#journal-tab, Journal.md#journalentry | location-tab.ts [ändern - Terrain-Rendering] |
+| 2429a | ✅ | Application/DetailView | Update Initiative Button (combat:update-initiative-requested) | mittel | Ja | #2419, #2428 | DetailView.md#post-combat-resolution, Combat-System.md#xp-berechnung | combat-tab.ts:initBtn + view.ts:onUpdateInitiative callback (lines 324-332) |
+| 2451 | ⛔ | Application/DetailView | Location-Tab Weather Display (aktuelles Wetter für Tile) | mittel | Ja | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - Weather-Rendering] |
+| 2452 | ⛔ | Application/DetailView | Location-Tab POI-Liste (POIs auf Tile mit Details-Link) | mittel | Ja | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - POI-List-Rendering] |
+| 2453 | ⛔ | Application/DetailView | Location-Tab Fraktions-Präsenz (Factions mit %-Werten) | niedrig | Nein | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - Faction-Rendering] |
+| 2454 | ⛔ | Application/DetailView | Location-Tab Bekannte NPCs (NPCs auf Tile) | niedrig | Nein | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - NPC-List-Rendering] |
+| 2455 | ⬜ | Application/DetailView | Quest-Tab Component (Container) | niedrig | Nein | #2400 | DetailView.md#quest-tab | [neu] src/application/detail-view/panels/quest-tab.ts |
+| 2456 | ⬜ | Application/DetailView | Quest-Tab State (selectedQuest) | niedrig | Nein | #2401 | DetailView.md#viewmodel-state | types.ts:QuestTabState [neu], viewmodel.ts [ändern - Quest-State-Management] |
+| 2457 | ⛔ | Application/DetailView | Quest-Tab Details Display (Status, Progress, Description, Objectives) | niedrig | Nein | #2455, #2456 | DetailView.md#quest-tab | quest-tab.ts [ändern - Quest-Details-Rendering] |
+| 2458 | ⛔ | Application/DetailView | Quest-Tab Encounters Display (Liste mit XP-Info, Start-Button) | niedrig | Nein | #2455, #2456 | DetailView.md#quest-tab | quest-tab.ts [ändern - Encounter-List-Rendering] |
+| 2459 | ⛔ | Application/DetailView | Quest-Tab Rewards Display (Gold, Quest-XP Pool, Reputation) | niedrig | Nein | #2455, #2456 | DetailView.md#quest-tab | quest-tab.ts [ändern - Rewards-Rendering] |
+| 2460 | ⛔ | Application/DetailView | Quest-Tab Complete/Abandon Buttons | niedrig | Nein | #2455 | DetailView.md#quest-tab | quest-tab.ts [ändern - Action-Buttons], viewmodel.ts [ändern - completeQuest()/abandonQuest()], view.ts [ändern - Quest-Callbacks] |
+| 2461 | ⬜ | Application/DetailView | Journal-Tab Component (Container) | niedrig | Nein | #2400 | DetailView.md#journal-tab | [neu] src/application/detail-view/panels/journal-tab.ts |
+| 2462 | ⬜ | Application/DetailView | Journal-Tab State (filter, entries) | niedrig | Nein | #2401 | DetailView.md#viewmodel-state | types.ts:JournalTabState [neu], viewmodel.ts [ändern - Journal-State-Management] |
+| 2463 | ⛔ | Application/DetailView | Journal-Tab Filter Controls (Type-Filter, Date-Filter) | niedrig | Nein | #2461, #2462 | DetailView.md#journal-tab | journal-tab.ts [ändern - Filter-Controls] |
+| 2464 | ⛔ | Application/DetailView | Journal-Tab Entry Display (Chronologisch gruppiert nach Tag) | niedrig | Nein | #2461, #2462 | DetailView.md#journal-tab | journal-tab.ts [ändern - Entry-Rendering] |
+| 2465 | ⛔ | Application/DetailView | Journal-Tab Quick Note Button | niedrig | Nein | #2461 | DetailView.md#journal-tab | journal-tab.ts [ändern - Quick-Note-Button], viewmodel.ts [ändern - addQuickNote()], view.ts [ändern - onAddQuickNote callback] |
+| 2466 | ⛔ | Application/DetailView | Journal-Tab Export Button | niedrig | Nein | #2461 | DetailView.md#journal-tab | journal-tab.ts [ändern - Export-Button], viewmodel.ts [ändern - exportJournal()] |
+| 2467 | ⬜ | Application/DetailView | Keyboard-Shortcuts (1-6 für Tab-Wechsel, Escape für Close) | niedrig | Nein | #2402 | DetailView.md#keyboard-shortcuts | view.ts [ändern - onKeyDown handler mit Tab-Switch-Logic] |
+| 2468 | ⬜ | Application/DetailView | Keyboard-Shortcuts Combat-spezifisch (N=Next Turn, D=Damage, H=Heal) | niedrig | Nein | #2419 | DetailView.md#keyboard-shortcuts | view.ts [ändern - onKeyDown handler mit Combat-Shortcuts], combat-tab.ts [ändern - keyboard event passthrough] |
+| 2469 | ✅ | Application/DetailView | Event-Subscriptions Setup (encounter:generated, combat:started, etc.) | hoch | Ja | #2401 | DetailView.md#event-subscriptions | viewmodel.ts:setupEventHandlers() (lines 109-173) |
+| 2470 | ⬜ | Application/DetailView | Generate-Button im Encounter-Tab (🎲, publiziert encounter:generate-requested) | hoch | Ja | #2408, #215 | DetailView.md#encounter-tab | encounter-tab.ts [ändern - Generate-Button + Handler] |
+| 2970 | ⛔ | Application/DetailView | Situation-Sektion im Encounter-Tab: Activity + Disposition Anzeige | hoch | Ja | #2409 | DetailView.md#encounter-tab | - |
+| 2971 | ⛔ | Application/DetailView | Detection-Sektion im Encounter-Tab: Methode, Distanz, Awareness | hoch | Ja | #2409, #208 | DetailView.md#encounter-tab | - |
+| 3021 | ⛔ | DetailView | Attrition-Feedback Banner nach Combat | niedrig | Nein | #3018 | DetailView.md#post-combat-resolution, Faction.md#ui-feedback | - |
 
 ---
 

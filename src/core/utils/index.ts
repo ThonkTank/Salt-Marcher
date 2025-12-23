@@ -90,12 +90,20 @@ export {
   // Types
   type CRComparison,
   type EncounterDifficulty,
+  type FactionRelation,
   type CreatureSelectionResult,
   type TypeDerivationResult,
   type VarietyValidationResult,
   type CreatureWeight,
   type FactionWeight,
   type CompanionSelectionResult,
+  type TypeProbabilityMatrix,
+  type EncounterHistoryEntry,
+  // Detection Types (Task #2951)
+  type DetectionMethod,
+  type DetectionResult,
+  type TerrainForDetection,
+  type WeatherForDetection,
 
   // Step 1: Tile-Eligibility
   filterEligibleCreatures,
@@ -107,10 +115,23 @@ export {
   // Step 3: Type Derivation
   compareCR,
   rollDifficulty,
+  isWinnable,
   deriveEncounterType,
+  deriveEncounterTypeWithVariety,
 
-  // Step 4: Variety Validation
-  validateVariety,
+  // Step 4: Variety Validation (Type Dampening)
+  calculateTypeWeights,
+  createDefaultTypeMatrix,
+  normalizeMatrix,
+
+  // Step 5: Multi-Sense Detection (Task #2951)
+  getTimeVisibilityModifier,
+  calculateVisualRange,
+  calculateAudioRange,
+  calculateScentRange,
+  applyStealthAbilities,
+  calculateDetection,
+  calculateInitialDistance,
 
   // Helper Functions
   generateEncounterId,

@@ -57,6 +57,9 @@ interface BasePOI {
   // Fernsicht (Post-MVP)
   height?: number;                 // Hoehe fuer Visibility-Berechnung
   glowsAtNight?: boolean;          // Leuchtet bei Nacht (Staedte, Leuchtfeuer)
+
+  // Loot-Referenz
+  lootContainers?: EntityId<'lootcontainer'>[];  // Container an diesem Ort
 }
 
 type Coordinate = HexCoordinate | GridCoordinate;
@@ -342,6 +345,107 @@ const bloodfangFaction: Faction = {
 
 ---
 
+## LootContainer-Referenz
+
+POIs koennen auf LootContainers verweisen. Dies trennt die Ort-Definition vom Loot-Inhalt:
+
+```typescript
+interface BasePOI {
+  // ... bestehende Felder
+  lootContainers?: EntityId<'lootcontainer'>[];  // Container an diesem Ort
+}
+```
+
+**Verwendung:**
+- TreasurePOI: Schatz-Inhalt als LootContainer
+- EntrancePOI (Hort): Drachen-Hort als LootContainer
+- LandmarkPOI: Versteckter Cache als LootContainer
+
+**Beispiel:**
+
+```typescript
+const dragonLair: EntrancePOI = {
+  id: 'dragon-lair-entrance',
+  type: 'entrance',
+  name: 'Hoehle des Roten Drachen',
+  mapId: 'overworld',
+  position: { q: 12, r: 8 },
+  linkedMapId: 'dungeon-dragon-lair',
+  spawnPosition: { q: 0, r: 0 },
+  visible: true,
+  lootContainers: ['lootcontainer-dragon-hoard']  // Hort liegt hier
+};
+```
+
+→ LootContainer-Details: [LootContainer.md](LootContainer.md)
+
+---
+
+## Automatische POI-Generierung
+
+Bei Entity Promotion (nach Encounters) kann das System automatisch POIs vorschlagen:
+
+### Trigger
+
+```typescript
+// Nach Encounter mit nicht-zugeordneter Kreatur
+function onEntityPromotion(
+  creature: CreatureInstance,
+  encounterPosition: HexCoordinate
+): POISuggestion {
+  // 1. POI-Typ basierend auf Kreatur-Art
+  const poiType = suggestPOIType(creature);
+
+  // 2. Position basierend auf Terrain-Praeferenz
+  const suggestedPosition = findSuitablePosition(
+    encounterPosition,
+    creature.terrainAffinities,
+    3  // Radius in Hexes
+  );
+
+  return {
+    type: poiType,
+    position: suggestedPosition,
+    name: `${creature.name}'s Versteck`,
+    linkedCreature: creature.id
+  };
+}
+```
+
+### POI-Typ-Vorschlaege
+
+| Kreatur-Typ | Vorgeschlagener POI | Beispiel |
+|-------------|---------------------|----------|
+| Drache | `entrance` (Hoehle) | Drachenhort |
+| Wolf/Baer | `entrance` (Bau) | Wolfsbau |
+| Banditen | `entrance` (Lager) | Raeuber-Versteck |
+| Einzelgaenger | `landmark` | Territoriums-Marker |
+| Untote | `entrance` (Gruft) | Verfluchte Gruft |
+
+### UI-Integration
+
+Der Promotion-Dialog zeigt den POI-Vorschlag:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ POI-Vorschlag                                               │
+├─────────────────────────────────────────────────────────────┤
+│ Typ: Entrance (Hoehle)                                      │
+│ Name: [Drachenhort         ]                                │
+│ Position: (12, 8) [Auf Map anzeigen]                        │
+│                                                             │
+│ [ ] Mit LootContainer erstellen                             │
+│     LootTable: [Dragon Hoard ▼]                             │
+│                                                             │
+│ [Erstellen] [Position aendern...] [Ueberspringen]           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+→ Entity Promotion: [Faction.md](Faction.md#entity-promotion)
+→ Encounter-Integration: [Encounter-System.md](../features/Encounter-System.md#entity-promotion)
+
+---
+
 ## Events
 
 ```typescript
@@ -512,6 +616,8 @@ const treasureChest: TreasurePOI = {
 | Custom POI-Icons | | niedrig | User-definierte Icons |
 | **Height-Feld** | | mittel | Fernsicht im Visibility-System |
 | **glowsAtNight-Feld** | | mittel | Nachtleuchtende POIs |
+| **lootContainers-Feld** | ✓ | | LootContainer-Referenzen |
+| **Automatische POI-Generierung** (Entity Promotion) | ✓ | | Bei Encounter-Promotion |
 
 ---
 
@@ -519,22 +625,23 @@ const treasureChest: TreasurePOI = {
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 1500 | BasePOI Interface mit gemeinsamen Eigenschaften (id, mapId, position, name, icon, visible) | hoch | Ja | - | POI.md#basepoi, EntityRegistry.md#entity-type-mapping |
-| 1501 | EntrancePOI Schema (linkedMapId, spawnPosition, description) | hoch | Ja | - | POI.md#entrancepoi, Map-Navigation.md#bidirektionale-links |
-| 1502 | LandmarkPOI Schema (description, gmNotes) | hoch | Ja | #1500 | POI.md#landmarkpoi |
-| 1503 | POI Union Type (entrance \| trap \| treasure \| landmark \| object) | hoch | Ja | #1500, #1501, #1502, #1504, #1505, #1506 | POI.md#poi-union-type, EntityRegistry.md#entity-type-mapping |
-| 1504 | TrapPOI Schema (dc, damage, triggered, detected, effect) | mittel | Nein | #1500 | POI.md#trappoi, Map-Feature.md#dungeontile |
-| 1505 | TreasurePOI Schema (items, locked, lockDC, looted, trapId) | mittel | Nein | #1500, #1504, #2600 | POI.md#treasurepoi, Item.md#schema |
-| 1506 | ObjectPOI Schema (interactable, description) | niedrig | Nein | #1500 | POI.md#objectpoi |
-| 1507 | POI CRUD Events (create/update/delete-requested + created/updated/deleted) | hoch | Ja | #1503, #1516 | POI.md#events, Events-Catalog.md#poi, EventBus.md |
-| 1508 | POI Interaction Events (trap-triggered, trap-detected, treasure-looted) | mittel | Nein | #1504, #1505, #1507, #1516 | POI.md#events, Events-Catalog.md#poi, Dungeon-System.md |
-| 1509 | POI Query Functions (getPOIsOnMap, getPOIsAtTile, getEntrancesOnMap, getHiddenTraps) | hoch | Ja | #1503, #1516 | POI.md#queries, EntityRegistry.md#port-interface |
-| 1510 | POI Feature/Orchestrator mit CRUD-Logik | hoch | Ja | #1503, #1507, #1509, #1516 | POI.md, Features.md#feature-struktur, EntityRegistry.md#port-interface |
-| 1511 | Map-Navigation via EntrancePOI (map:navigate-requested Event) | hoch | Ja | #1501, #1507, #820, #1900 | POI.md#map-navigation, Map-Navigation.md#navigation-events, Map-Feature.md#events |
-| 1512 | Tile Content Panel Integration: POIs des aktuellen Party-Tiles anzeigen | hoch | Ja | #1509, #1510, #1511, #2300 | POI.md#tile-content-panel, SessionRunner.md#tile-content-panel, Map-Navigation.md#travel-state-bei-map-wechsel |
-| 1513 | POI Icon Rendering auf Map (Icon-Mapping nach POI-Typ) | hoch | Ja | #1503, #1509, #802, #804 | POI.md#map-darstellung, Map-Feature.md#overworld-rendering |
-| 1514 | Height-Feld für POI-Fernsicht (Sichtbarkeit über Tile-Grenze) | mittel | Nein | #1500, #851, #843 | POI.md#height-feld-post-mvp, Map-Feature.md#poi-fernsicht, Map-Feature.md#visibility-system-post-mvp |
-| 1515 | glowsAtNight-Feld für nachtleuchtende POIs | mittel | Nein | #1500, #852, #843 | POI.md#nachtleuchtende-pois-glowsatnight-post-mvp, Map-Feature.md#poi-fernsicht, Map-Feature.md#visibility-system-post-mvp |
-| 1516 | POI in EntityRegistry registrieren (EntityType 'poi') | hoch | Ja | #1503 | POI.md#schema, EntityRegistry.md#port-interface, EntityRegistry.md#entity-type-mapping |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 1500 | ✅ | Location/POI | BasePOI Interface mit gemeinsamen Eigenschaften (id, mapId, position, name, icon, visible) | hoch | Ja | - | POI.md#basepoi, EntityRegistry.md#entity-type-mapping | [neu] src/core/schemas/poi.ts |
+| 1501 | ✅ | Location/POI | EntrancePOI Schema (linkedMapId, spawnPosition, description) | hoch | Ja | - | POI.md#entrancepoi, Map-Navigation.md#bidirektionale-links | [neu] src/core/schemas/poi.ts |
+| 1502 | ⬜ | Location/POI | LandmarkPOI Schema (description, gmNotes) | hoch | Ja | #1500 | POI.md#landmarkpoi | [neu] src/core/schemas/poi.ts |
+| 1503 | ⬜ | Location/POI | POI Union Type (EntrancePOI \ | TrapPOI \ | TreasurePOI \ | LandmarkPOI \ | object) | hoch |
+| 1504 | ⬜ | Location/POI | TrapPOI Schema (dc, damage, triggered, detected, effect) | mittel | Nein | #1500 | POI.md#trappoi, Map-Feature.md#dungeontile | [neu] src/core/schemas/poi.ts |
+| 1505 | ⛔ | Location/POI | TreasurePOI Schema (items, locked, lockDC, looted, trapId) | mittel | Nein | #1500, #1504, #2600 | POI.md#treasurepoi, Item.md#schema | [neu] src/core/schemas/poi.ts |
+| 1506 | ⬜ | Location/POI | ObjectPOI Schema (interactable, description) | niedrig | Nein | #1500 | POI.md#objectpoi | [neu] src/core/schemas/poi.ts |
+| 1507 | ⛔ | Location/POI | POI CRUD Events (create/update/delete-requested + created/updated/deleted) | hoch | Ja | #1503, #1516 | POI.md#events, Events-Catalog.md#poi, EventBus.md | src/core/events/domain-events.ts:230-235,848-872 (Events definiert, Payloads nutzen `poi: unknown` statt typisiert POI Union Type) |
+| 1508 | ⛔ | Location/POI | POI Interaction Events (trap-triggered, trap-detected, treasure-looted) | mittel | Nein | #1504, #1505, #1507, #1516 | POI.md#events, Events-Catalog.md#poi, Dungeon-System.md | src/core/events/domain-events.ts:236-238,874-887 (Events definiert, Payloads nutzen `string[]` statt `EntityId<'item'>[]` bzw. `string` statt `EntityId<'character'>`) |
+| 1509 | ⛔ | Location/POI | POI Query Functions (getPOIsOnMap, getPOIsAtTile, getEntrancesOnMap, getHiddenTraps) | hoch | Ja | #1503, #1516 | POI.md#queries, EntityRegistry.md#port-interface | [neu] src/features/poi/poi-queries.ts |
+| 1510 | ⛔ | Location/POI | POI Feature/Orchestrator mit CRUD-Logik | hoch | Ja | #1503, #1507, #1509, #1516 | POI.md, Features.md#feature-struktur, EntityRegistry.md#port-interface | [neu] src/features/poi/orchestrator.ts, [neu] src/features/poi/index.ts:createPoiOrchestrator() |
+| 1511 | ⛔ | Location/POI | Map-Navigation via EntrancePOI (map:navigate-requested Event) | hoch | Ja | #820, #1501, #1507 | POI.md#map-navigation, Map-Navigation.md#navigation-events, Map-Feature.md#events | src/core/events/domain-events.ts:141,515-518 (Event definiert mit sourcePOIId, aber nicht in map-service.ts implementiert) |
+| 1512 | ⛔ | Location/POI | Tile Content Panel Integration: POIs des aktuellen Party-Tiles anzeigen | hoch | Ja | #1509, #1510, #1511, #2300 | POI.md#tile-content-panel, SessionRunner.md#tile-content-panel, Map-Navigation.md#travel-state-bei-map-wechsel | [neu] src/application/session-runner/panels/TileContentPanel.ts |
+| 1513 | ⛔ | Location/POI | POI Icon Rendering auf Map (Icon-Mapping nach POI-Typ) | hoch | Ja | #802, #804, #1503, #1509 | POI.md#map-darstellung, Map-Feature.md#overworld-rendering | [ändern] src/application/session-runner/panels/map-canvas.ts:renderTile() |
+| 1514 | ⛔ | Location/POI | Height-Feld für POI-Fernsicht (Sichtbarkeit über Tile-Grenze) | mittel | Nein | #843, #1500 | POI.md#height-feld-post-mvp, Map-Feature.md#poi-fernsicht, Map-Feature.md#visibility-system-post-mvp | [neu] src/core/schemas/poi.ts |
+| 1515 | ⛔ | Location/POI | glowsAtNight-Feld für nachtleuchtende POIs | mittel | Nein | #843, #1500 | POI.md#nachtleuchtende-pois-glowsatnight-post-mvp, Map-Feature.md#poi-fernsicht, Map-Feature.md#visibility-system-post-mvp | [neu] src/core/schemas/poi.ts |
+| 1516 | ✅ | Location/POI | POI EntityRegistry Integration: 'location'/'poi' als Entity-Typ (bereits vorhanden) | hoch | Ja | #1503 | POI.md#schema, EntityRegistry.md#port-interface, EntityRegistry.md#entity-type-mapping | src/core/types/common.ts:20-21, src/core/schemas/common.ts:49-50 |
+| 3016 | ⛔ | POI | POI: lootContainers[] Referenz-Array | mittel | Ja | #1500, #3006 | POI.md#poi-referenz, LootContainer.md#poi-referenz | - |

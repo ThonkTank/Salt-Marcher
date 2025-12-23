@@ -4,17 +4,21 @@
  * Manages:
  * - Current encounter (pending/active)
  * - Encounter history (resolved)
- * - Recent creature types (for variety validation)
+ * - Encounter type history (for variety validation with exponential decay)
  */
 
-import type { EncounterInstance } from '@core/schemas';
-import type { InternalEncounterState, DailyXPTracker } from './types';
+import type { EncounterInstance, EncounterType } from '@core/schemas';
+import type {
+  InternalEncounterState,
+  DailyXPTracker,
+  EncounterHistoryEntry,
+} from './types';
 import {
   createInitialEncounterState,
   createInitialDailyXPTracker,
   MAX_HISTORY_SIZE,
+  VARIETY_TYPE_HISTORY_SIZE,
 } from './types';
-import { VARIETY_HISTORY_SIZE } from '@core/schemas';
 
 // ============================================================================
 // Encounter Store Interface
@@ -40,9 +44,10 @@ export interface EncounterStore {
   addToHistory(encounter: EncounterInstance): void;
 
   /**
-   * Track a creature type for variety validation.
+   * Track an encounter type for variety validation.
+   * Used by calculateTypeWeights() to dampen overrepresented types.
    */
-  trackCreatureType(creatureId: string): void;
+  trackEncounterType(type: EncounterType): void;
 
   /**
    * Set active map ID.
@@ -130,16 +135,26 @@ export function createEncounterStore(): EncounterStore {
       };
     },
 
-    trackCreatureType(creatureId: string): void {
-      // Keep recent types bounded (FIFO)
-      const newTypes = [creatureId, ...state.recentCreatureTypes].slice(
+    trackEncounterType(type: EncounterType): void {
+      // Increment sequence counter
+      const newSequence = state.encounterSequence + 1;
+
+      // Create new history entry
+      const entry: EncounterHistoryEntry = {
+        type,
+        sequence: newSequence,
+      };
+
+      // Keep history bounded (FIFO - newest first)
+      const newHistory = [entry, ...state.encounterTypeHistory].slice(
         0,
-        VARIETY_HISTORY_SIZE
+        VARIETY_TYPE_HISTORY_SIZE
       );
 
       state = {
         ...state,
-        recentCreatureTypes: newTypes,
+        encounterTypeHistory: newHistory,
+        encounterSequence: newSequence,
       };
     },
 

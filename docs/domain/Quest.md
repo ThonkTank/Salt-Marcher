@@ -374,31 +374,31 @@ function getQuestsWithOpenSlots(): QuestDefinition[];
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 401 | QuestStatus Type: unknown, discovered, active, completed, failed | hoch | Ja | #400 | Quest.md#quest-status, Quest-System.md#quest-state-machine |
-| 402 | QuestDefinition Schema im EntityRegistry | hoch | Ja | #2800, #2801 | Quest.md#questdefinition, Quest-System.md#quest-schema-entityregistry, EntityRegistry.md#entity-type-mapping |
-| 403 | QuestObjective Schema (kill, collect, visit, escort, deliver, talk, custom) | hoch | Ja | #402, #1200, #1300, #1500, #1600 | Quest.md#questobjective, Quest-System.md#quest-schema-entityregistry |
-| 404 | ObjectiveTarget Schema mit typ-abhängigen Feldern | hoch | Ja | #403, #1200, #1300, #1500, #1600 | Quest.md#questobjective, Creature.md#schema, NPC-System.md#npc-schema, POI.md#basepoi, Item.md#schema |
-| 405 | QuestEncounterSlot Schema (predefined-quantum, predefined-located, unspecified) | hoch | Ja | #402, #213 | Quest.md#questencounterslot, Quest-System.md#encounter-modi, Encounter-System.md#schemas |
-| 406 | QuestReward Schema (item, xp, reputation) mit Placement-Optionen | hoch | Ja | #402, #1400, #1600 | Quest.md#questreward, Quest-System.md#reward-platzierung, Faction.md#schema, Item.md#schema |
-| 414 | quest:discovered Event | hoch | Ja | #400, #401 | Quest.md#events, Quest-System.md#quest-feature-state-machine, Events-Catalog.md#quest |
-| 415 | quest:activated Event | hoch | Ja | #400, #401, #414 | Quest.md#events, Quest-System.md#quest-feature-state-machine, Events-Catalog.md#quest |
-| 416 | quest:objective-completed Event | hoch | Ja | #403, #415 | Quest.md#events, Quest-System.md#quest-feature-state-machine, Events-Catalog.md#quest |
-| 417 | quest:completed Event mit totalXP und rewards | hoch | Ja | #400, #401, #406, #415 | Quest.md#events, Quest-System.md#40-60-split-mechanik, Events-Catalog.md#quest |
-| 418 | quest:failed Event mit reason (deadline, condition-violated, abandoned) | hoch | Ja | #400, #401 | Quest.md#events, Quest-System.md#quest-state-machine, Events-Catalog.md#quest |
-| 419 | quest:encounter-assigned Event | hoch | Ja | #405, #408, #413, #421 | Quest.md#events, Quest-System.md#quest-assignment-ui-post-combat, Events-Catalog.md#quest, Encounter-System.md#integration |
-| 424 | getQuestDefinition(questId): Option<QuestDefinition> | hoch | Ja | #402, #2804 | Quest.md#queries, EntityRegistry.md#querying |
-| 425 | getQuestsByStatus(status): QuestDefinition[] | hoch | Ja | #400, #401, #428, #2804 | Quest.md#queries, EntityRegistry.md#querying |
-| 426 | getQuestsByGiver(npcId): QuestDefinition[] | hoch | Ja | #402, #1300, #2804 | Quest.md#queries, Quest.md#npc-als-quest-geber, NPC-System.md#npc-schema, EntityRegistry.md#querying |
-| 427 | getQuestsWithOpenSlots(): QuestDefinition[] | hoch | Ja | #405, #2804 | Quest.md#queries, Quest-System.md#quest-encounter-beziehung, EntityRegistry.md#querying |
-| 428b | Entity-Links in Quest-Panel (zu DetailView Tabs) | mittel | Nein | #402, #425, #427, #428, #429, #430, #431, #2443, #2444, #2448 | Quest.md#entity-beziehungen, Quest.md#reminder-system, DetailView.md#quest-tab |
-| 429 | Quest-Management: Status-Verwaltung (Discover, Activate, Complete, Fail) | hoch | Ja | #400, #401, #414, #415, #417, #418, #428 | Quest.md#quest-management-im-session-runner, Quest-System.md#ui-integration, SessionRunner.md#quest-panel |
-| 430 | Objective-Progress manuelles Tracking | hoch | Ja | #403, #416, #428 | Quest.md#quest-management-im-session-runner, Quest-System.md#ui-integration, SessionRunner.md#quest-panel |
-| 431 | Encounter-Slots Zuweisung UI | hoch | Ja | #405, #412, #428 | Quest.md#quest-management-im-session-runner, Quest-System.md#quest-assignment-ui-post-combat, SessionRunner.md#quest-panel |
-| 434 | QuestPrerequisite Schema (informativ, nicht automatisch) | mittel | Nein | #402, #1400, #1600 | Quest.md#questprerequisite, Quest-System.md#quest-schema-entityregistry, Faction.md#schema, Item.md#schema |
-| 437 | Hidden Objectives (Story-Feature) | niedrig | Nein | #403, #428 | Quest.md#questobjective, Quest.md#prioritaet, Quest-System.md#prioritaet |
-| 438 | Reputation-Rewards | mittel | Nein | #406, #1400 | Quest.md#questreward, Quest.md#prioritaet, Quest-System.md#prioritaet, Faction.md#schema |
-| 440 | Journal: Quest-Events automatisch loggen (discovered, activated, objective-completed, completed, failed) | hoch | Ja | #414, #415, #416, #417, #418, #2205, #2206 | Quest.md#journal, Journal.md#auto-generierung, Journal.md#event-zu-journal-mapping |
-| 441 | Reminder-System: Entity-Detail-Views zeigen verknüpfte Quests (NPC-Detail, POI-Detail, Item-Detail) | mittel | Nein | #402, #424, #2443 | Quest.md#reminder-system, Quest.md#entity-beziehungen, DetailView.md#quest-tab |
-| 442 | NPC.availableQuests Feld für Quest-Geber (informativ) | mittel | Nein | #402, #1300 | Quest.md#npc-als-quest-geber, NPC-System.md#npc-schema |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 401 | ✅ | Quest | QuestStatus Type: unknown, discovered, active, completed, failed | hoch | Ja | #400 | Quest.md#quest-status, Quest-System.md#quest-state-machine | quest.ts |
+| 402 | ✅ | Quest | QuestDefinition Schema im EntityRegistry | hoch | Ja | #2800, #2801 | Quest.md#questdefinition, Quest-System.md#quest-schema-entityregistry, EntityRegistry.md#entity-type-mapping | quest.ts |
+| 403 | ✅ | Quest | QuestObjective Schema (kill, collect, visit, escort, deliver, talk, custom) | hoch | Ja | #402, #1200, #1300, #1500, #1600 | Quest.md#questobjective, Quest-System.md#quest-schema-entityregistry | quest.ts |
+| 404 | ✅ | Quest | ObjectiveTarget Schema mit typ-abhängigen Feldern | hoch | Ja | #403, #1200, #1300, #1500, #1600 | Quest.md#questobjective, Creature.md#schema, NPC-System.md#npc-schema, POI.md#basepoi, Item.md#schema | quest.ts |
+| 405 | ✅ | Quest | QuestEncounterSlot Schema (predefined-quantum, predefined-located, unspecified) | hoch | Ja | #213, #402 | Quest.md#questencounterslot, Quest-System.md#encounter-modi, Encounter-System.md#schemas | quest.ts |
+| 406 | ✅ | Quest | QuestReward Schema (item, xp, reputation) mit Placement-Optionen | hoch | Ja | #402, #1400, #1600 | Quest.md#questreward, Quest-System.md#reward-platzierung, Faction.md#schema, Item.md#schema | quest.ts |
+| 414 | ✅ | Quest | quest:discovered Event | hoch | Ja | #400, #401 | Quest.md#events, Quest-System.md#quest-feature-state-machine, Events-Catalog.md#quest | quest-service.ts |
+| 415 | ✅ | Quest | quest:activated Event | hoch | Ja | #400, #401, #414 | Quest.md#events, Quest-System.md#quest-feature-state-machine, Events-Catalog.md#quest | quest-service.ts |
+| 416 | ✅ | Quest | quest:objective-completed Event | hoch | Ja | #403, #415 | Quest.md#events, Quest-System.md#quest-feature-state-machine, Events-Catalog.md#quest | quest-service.ts |
+| 417 | ✅ | Quest | quest:completed Event mit totalXP und rewards | hoch | Ja | #400, #401, #406, #415 | Quest.md#events, Quest-System.md#40-60-split-mechanik, Events-Catalog.md#quest | quest-service.ts |
+| 418 | ✅ | Quest | quest:failed Event mit reason (deadline, condition-violated, abandoned) | hoch | Ja | #400, #401 | Quest.md#events, Quest-System.md#quest-state-machine, Events-Catalog.md#quest | quest-service.ts |
+| 419 | ✅ | Quest | quest:encounter-assigned Event | hoch | Ja | #405, #408, #413, #421 | Quest.md#events, Quest-System.md#quest-assignment-ui-post-combat, Events-Catalog.md#quest, Encounter-System.md#integration | quest-service.ts |
+| 424 | ✅ | Quest | getQuestDefinition(questId): Option<QuestDefinition> | hoch | Ja | #402, #2804 | Quest.md#queries, EntityRegistry.md#querying | quest-service.ts, types.ts |
+| 425 | ⬜ | Quest | getQuestsByStatus(status): QuestDefinition[] | hoch | Ja | #400, #401, #2804 | Quest.md#queries, EntityRegistry.md#querying | quest-service.ts [neu - getQuestsByStatus() Query-Methode], benötigt Zugriff auf questDefinitions-Array |
+| 426 | ⬜ | Quest | getQuestsByGiver(npcId): QuestDefinition[] | hoch | Ja | #402, #1300, #2804 | Quest.md#queries, Quest.md#npc-als-quest-geber, NPC-System.md#npc-schema, EntityRegistry.md#querying | quest-service.ts [neu - getQuestsByGiver() Query-Methode], filtert questDefinitions nach questGiver-Feld |
+| 427 | ✅ | Quest | getQuestsWithOpenSlots(): QuestDefinition[] | hoch | Ja | #405, #2804 | Quest.md#queries, Quest-System.md#quest-encounter-beziehung, EntityRegistry.md#querying | quest-service.ts |
+| 428b | ⛔ | Quest | Entity-Links in Quest-Panel (zu DetailView Tabs) | mittel | Nein | #402, #425, #427, #428, #429, #430, #431, #2443, #2444, #2448 | Quest.md#entity-beziehungen, Quest.md#reminder-system, DetailView.md#quest-tab | sidebar.ts [ändern - Links zu DetailView für NPCs, POIs], benötigt Location-Tab #2448 |
+| 429 | ✅ | Quest | Quest-Management: Status-Verwaltung (Discover, Activate, Complete, Fail) | hoch | Ja | #400, #401, #414, #415, #417, #418, #428 | Quest.md#quest-management-im-session-runner, Quest-System.md#ui-integration, SessionRunner.md#quest-panel | quest-service.ts (discoverQuest, activateQuest, completeQuest, failQuest) |
+| 430 | ✅ | Quest | Objective-Progress manuelles Tracking | hoch | Ja | #403, #416, #428 | Quest.md#quest-management-im-session-runner, Quest-System.md#ui-integration, SessionRunner.md#quest-panel | quest-service.ts |
+| 431 | ✅ | Quest | Encounter-Slots Zuweisung UI | hoch | Ja | #405, #412, #428 | Quest.md#quest-management-im-session-runner, Quest-System.md#quest-assignment-ui-post-combat, SessionRunner.md#quest-panel | slot-assignment-dialog.ts |
+| 434 | ✅ | Quest | QuestPrerequisite Schema (informativ, nicht automatisch) | mittel | Nein | #402, #1400, #1600 | Quest.md#questprerequisite, Quest-System.md#quest-schema-entityregistry, Faction.md#schema, Item.md#schema | quest.ts |
+| 437 | ⛔ | Quest | Hidden Objectives (Story-Feature) | niedrig | Nein | #403, #428 | Quest.md#questobjective, Quest.md#prioritaet, Quest-System.md#prioritaet | quest.ts:questObjectiveSchema [nutzt bereits hidden-Feld], Quest-UI [ändern - hidden=true Objectives ausblenden], quest-service.ts [ändern - discoverObjective() Methode für Reveal-Mechanik] |
+| 438 | ⬜ | Quest | Reputation-Rewards | mittel | Nein | #406, #1400 | Quest.md#questreward, Quest.md#prioritaet, Quest-System.md#prioritaet, Faction.md#schema | quest.ts:reputationRewardSchema [existiert bereits], quest-service.ts:completeQuest() [ändern - Reputation-Rewards verarbeiten], Party/Faction-Integration [neu - Reputation-System] |
+| 440 | ⛔ | Quest | Journal: Quest-Events automatisch loggen (discovered, activated, objective-completed, completed, failed) | hoch | Ja | #414, #415, #416, #417, #418, #2205, #2206 | Quest.md#journal, Journal.md#auto-generierung, Journal.md#event-zu-journal-mapping | features/journal/journal-service.ts [neu oder ändern - Subscriptions für Quest-Events], Event-to-JournalEntry Mapping [neu] |
+| 441 | ⛔ | Quest | Reminder-System: Entity-Detail-Views zeigen verknüpfte Quests (NPC-Detail, POI-Detail, Item-Detail) | mittel | Nein | #402, #424, #2443 | Quest.md#reminder-system, Quest.md#entity-beziehungen, DetailView.md#quest-tab | application/library/entity-detail-view.ts [ändern - getRelatedQuests() Helper], quest-service.ts [neu - Query-Methoden für Entity-Quest-Verknüpfungen] |
+| 442 | ⬜ | Quest | NPC.availableQuests Feld für Quest-Geber (informativ) | mittel | Nein | #402, #1300 | Quest.md#npc-als-quest-geber, NPC-System.md#npc-schema | npc.ts:npcSchema [ändern - availableQuests-Feld hinzufügen], NPC-Detail-View [ändern - Quest-Links anzeigen] |

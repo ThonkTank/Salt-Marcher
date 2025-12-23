@@ -1,0 +1,22 @@
+┌─────────────────────────────────────────────────────────────────┐
+│                         LESELISTE                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  A) Architektur-Baseline (PFLICHT, min. 2):                     │
+│     → Conventions.md, Error-Handling.md                         │
+│     → Events-Catalog.md (falls Events involviert)               │
+│     → Weitere: Features.md, Data-Flow.md, EventBus.md           │
+│                                                                 │
+│  B) Feature-Docs (PFLICHT, alle für diesen Bereich):            │
+│     → workflow-texts.json > featureRouting konsultieren         │
+│     → ALLE Docs der Zeile lesen                                 │
+│                                                                 │
+│  C) Spec-Spalte der Task:                                       │
+│     → Spezifische Dokumentationsstellen mit Ankern              │
+│                                                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  VORGEHEN:                                                      │
+│  → TodoWrite mit allen Docs erstellen                           │
+│  → Jeden Doc lesen, Todo als completed markieren                │
+│  → ERST wenn alle completed: zurück zum Workflow                │
+└─────────────────────────────────────────────────────────────────┘

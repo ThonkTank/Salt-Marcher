@@ -65,7 +65,9 @@ interface CreatureDefinition {
 
   // Loot-System
   lootTags: string[];                     // ["humanoid", "poor", "tribal"]
-  defaultLoot?: DefaultLootEntry[];       // Garantiertes/wahrscheinliches Loot
+  defaultLoot?: DefaultLootEntry[];       // Garantiertes/wahrscheinliches Loot (Harvestable)
+  carriesLoot?: boolean;                  // Traegt Carried Loot? Default: true (humanoid), false (beast)
+  stashLocationHint?: string;             // Hinweis auf Hoard-Location, z.B. "Drachenhoehle"
 
   // Detection-Profil (REQUIRED fuer Encounter-System)
   detectionProfile: CreatureDetectionProfile;
@@ -181,6 +183,44 @@ const knight: CreatureDefinition = {
 
 → Details: [Loot-Feature.md](../features/Loot-Feature.md#creature-default-loot)
 
+### Loot-Kategorien
+
+Creatures haben drei verschiedene Loot-Quellen:
+
+| Kategorie | Feld | Beschreibung |
+|-----------|------|--------------|
+| **Carried** | `carriesLoot` | Was die Kreatur bei sich traegt (Muenzen, Waffen) |
+| **Harvestable** | `defaultLoot` | Vom Koerper gewinnbar (Schuppen, Pelz) |
+| **Stashed** | `stashLocationHint` | An einem anderen Ort (Hoard, Lager) |
+
+**carriesLoot:**
+
+| Kreatur-Typ | Default | Beispiel |
+|-------------|:-------:|----------|
+| Humanoid | `true` | Goblin, Bandit, Haendler |
+| Beast | `false` | Wolf, Baer, Drache |
+| Construct | `false` | Golem, Animated Armor |
+
+**stashLocationHint:**
+
+Freitext-Verweis auf einen Ort, an dem die Kreatur einen Hoard hat:
+
+```typescript
+const adultRedDragon: CreatureDefinition = {
+  name: "Adult Red Dragon",
+  lootTags: ["dragon", "hoard"],
+  carriesLoot: false,              // Traegt nichts bei sich
+  defaultLoot: [                   // Harvestable
+    { itemId: "dragon-scale", chance: 1.0, quantity: [10, 20] },
+    { itemId: "dragon-blood", chance: 1.0 },
+    { itemId: "dragon-heart", chance: 0.5 },
+  ],
+  stashLocationHint: "Hoehle im Feuerberg"  // Verweis auf Hoard
+};
+```
+
+→ Details: [Loot-Feature.md](../features/Loot-Feature.md#loot-kategorien)
+
 ### CreaturePreferences
 
 Optionale Gewichtungs-Modifikatoren fuer das Encounter-System:
@@ -290,6 +330,105 @@ Das System synchronisiert automatisch:
 ```
 
 **Vorteil:** GM muss nur eine Stelle editieren. System haelt beide Seiten konsistent.
+
+---
+
+## Design-Rollen (MCDM-basiert)
+
+Design-Rollen sind abgeleitete Tags, die bei der Creature-Erstellung aus dem Statblock automatisch bestimmt werden. Sie ermoeglichen **automatisiertes Encounter-Balancing**.
+
+### Rollen-Uebersicht
+
+| Rolle | Beschreibung | Ableitungs-Hinweise |
+|-------|--------------|---------------------|
+| **Ambusher** | Stealth + Surprise | Stealth prof, Sneak Attack |
+| **Artillery** | Fernkampf bevorzugt | Ranged > Melee, Range-Spells |
+| **Brute** | Hohe HP, hoher Schaden | HP ueber CR-Durchschnitt |
+| **Controller** | Debuffs, Crowd Control | AoE, Conditions, Forced Movement |
+| **Leader** | Kaempft mit Untergebenen | Buff-Auras, Command-Abilities |
+| **Minion** | Schwach, Horde-tauglich | CR < 1, keine Multiattack |
+| **Skirmisher** | Mobil, Hit-and-Run | Hohe Speed, Disengage |
+| **Soldier** | Hohe AC, Tank | AC ueber Durchschnitt |
+| **Solo** | Kaempft alleine | Legendary Actions |
+| **Support** | Buffs, Healing | Healing, Buff-Abilities |
+
+### Ableitung aus Statblock
+
+Die Rolle wird bei Creature-Erstellung automatisch abgeleitet und als Tag gespeichert:
+
+```typescript
+// Grobe Ableitungs-Logik (Details bei Implementierung)
+function deriveDesignRole(creature: CreatureDefinition): DesignRole {
+  // Solo: Hat Legendary Actions
+  if (creature.legendaryActions?.length > 0) return 'solo';
+
+  // Minion: Schwach, keine Multiattack
+  if (creature.cr < 1 && !hasMultiattack(creature)) return 'minion';
+
+  // Leader: Hat Buff-Auren oder Command-Abilities
+  if (hasBuffAbilities(creature)) return 'leader';
+
+  // Artillery: Mehr Ranged als Melee
+  if (prefersFernkampf(creature)) return 'artillery';
+
+  // Brute: HP ueber CR-Durchschnitt
+  if (creature.maxHp > getAverageHpForCr(creature.cr) * 1.2) return 'brute';
+
+  // Soldier: AC ueber Durchschnitt
+  if (creature.ac > getAverageAcForCr(creature.cr)) return 'soldier';
+
+  // Skirmisher: Hohe Speed oder Disengage
+  if (creature.speed.walk >= 40 || hasDisengage(creature)) return 'skirmisher';
+
+  // Controller: AoE oder Condition-Abilities
+  if (hasControlAbilities(creature)) return 'controller';
+
+  // Support: Healing oder Buff-Abilities
+  if (hasSupportAbilities(creature)) return 'support';
+
+  // Ambusher: Stealth-Proficiency oder Sneak Attack
+  if (hasStealthProficiency(creature) || hasSneakAttack(creature)) return 'ambusher';
+
+  // Fallback
+  return 'soldier';
+}
+```
+
+### Speicherung
+
+Die abgeleitete Rolle wird im `tags`-Array gespeichert:
+
+```typescript
+const goblin: CreatureDefinition = {
+  name: "Goblin",
+  tags: ["humanoid", "goblinoid", "minion"],  // ← Design-Rolle als Tag
+  // ...
+};
+
+const youngDragon: CreatureDefinition = {
+  name: "Young Red Dragon",
+  tags: ["dragon", "solo"],  // ← Design-Rolle als Tag
+  // ...
+};
+```
+
+### Verwendung in Encounter-Templates
+
+Encounter-Templates koennen Design-Rollen direkt als Slot-Anforderung nutzen:
+
+```typescript
+// Template fuer balancierten Kampf
+{
+  id: "balanced-combat",
+  roles: {
+    frontline: { count: { min: 1, max: 2 }, budgetPercent: 40, designRole: 'soldier' },
+    damage: { count: { min: 1, max: 2 }, budgetPercent: 40, designRole: 'artillery' },
+    support: { count: { min: 0, max: 1 }, budgetPercent: 20, designRole: 'support' }
+  }
+}
+```
+
+→ **Encounter-Templates:** [Encounter-System.md](../features/Encounter-System.md#encounter-templates)
 
 ---
 
@@ -419,6 +558,32 @@ Spezielle Faehigkeiten die Entdeckung erschweren:
 | `mimicry` | Audio-Detection kann fehlgeleitet werden |
 | `ambusher` | Loest Ambush-Check aus (Stealth vs Passive Perception) |
 
+### Stealth-Ability Prioritaet
+
+Bei mehreren StealthAbilities gilt die staerkste. Die Prioritaet ist:
+
+```typescript
+const STEALTH_PRIORITY: StealthAbility[] = [
+  'ethereal',      // 1. Hoechste - auf anderer Ebene
+  'invisibility',  // 2. Unsichtbar
+  'burrowing',     // 3. Unter der Erde
+  'shapechange',   // 4. Kann Form aendern
+  'mimicry',       // 5. Kann Gerausche imitieren
+  'ambusher',      // 6. Niedrigste - nur Ambush-Check
+];
+
+function getPrimaryStealthAbility(
+  abilities: StealthAbility[]
+): StealthAbility | undefined {
+  for (const ability of STEALTH_PRIORITY) {
+    if (abilities.includes(ability)) return ability;
+  }
+  return undefined;
+}
+```
+
+**Beispiel:** Eine Kreatur mit `['burrowing', 'invisibility']` wird als `invisibility` behandelt (staerker).
+
 ### Beispiele
 
 ```typescript
@@ -494,29 +659,34 @@ Vault/SaltMarcher/data/
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 1200 | CreatureDefinition Schema: Vollständiges Interface implementieren | hoch | Ja | #2703 | Creature.md#schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc |
-| 1201 | Basis-Statistiken: CR, HP, AC, Size | hoch | Ja | #1200 | Creature.md#creaturedefinition |
-| 1202 | terrainAffinities: Array von Terrain-IDs | hoch | Ja | #1200, #1700 | Creature.md#creaturedefinition, Terrain.md#schema |
-| 1203 | activeTime: TimeSegment-Array (dawn, day, dusk, night) | hoch | Ja | #1200 | Creature.md#creaturedefinition, Encounter-System.md#tile-eligibility |
-| 1204 | lootTags: String-Array für Loot-System | hoch | Ja | #1200 | Creature.md#creaturedefinition, Loot-Feature.md#loot-tags |
-| 1205 | DefaultLootEntry Interface: itemId, chance, quantity | hoch | Ja | - | Creature.md#defaultloot, Item.md#schema |
-| 1206 | defaultLoot Array: Garantiertes/wahrscheinliches Loot | hoch | Ja | - | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot |
-| 1207 | CreaturePreferences Interface: Gewichtungs-Modifikatoren | hoch | Ja | #1200 | Creature.md#creaturepreferences, Encounter-System.md#tile-eligibility |
-| 1208 | AbilityScores Interface: STR, DEX, CON, INT, WIS, CHA | hoch | Ja | #1200 | Creature.md#creaturedefinition, Combat-System.md#schemas |
-| 1209 | SpeedBlock Interface: walk, fly, swim, climb, burrow | hoch | Ja | #1200 | Creature.md#creaturedefinition |
-| 1210 | Senses Interface: passivePerception, darkvision, blindsight, etc. | mittel | Nein | #1200 | Creature.md#creaturedefinition, Creature.md#sinne-post-mvp |
-| 1211 | Creature Runtime Interface: instanceId, currentHp, tempHp, conditions | hoch | Ja | #1200 | Creature.md#creature-runtime, Combat-System.md#schemas |
-| 1212 | Auto-Sync: creature.terrainAffinities → terrain.nativeCreatures | hoch | Ja | #1202, #1700, #1706, #1704 | Creature.md#auto-sync-verhalten, Terrain.md#auto-sync-mechanismus |
-| 1213 | Auto-Sync: terrain.nativeCreatures → creature.terrainAffinities | hoch | Ja | #1202, #1700, #1706, #1705 | Creature.md#auto-sync-verhalten, Terrain.md#auto-sync-mechanismus |
-| 1214 | Encounter Integration: filterEligibleCreatures() | hoch | Ja | #1202, #1203, #200 | Creature.md#encounter-feature, Encounter-System.md#tile-eligibility |
-| 1215 | Combat Integration: createCombatCreature() Factory | hoch | Ja | #1211, #300 | Creature.md#combat-feature, Combat-System.md#schemas |
-| 1216 | Loot Integration: defaultLoot Processing bei Encounter | hoch | Ja | #1206, #705, #215 | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot, Encounter-System.md#schemas |
-| 1217 | Storage: creature/ und npc/ Verzeichnisse | hoch | Ja | #1200, #1300, #2802 | Creature.md#storage, EntityRegistry.md#storage, NPC-System.md#npc-schema |
-| 1218 | Bundled Creatures: Mitgelieferte Basis-Kreaturen (_bundled/) | mittel | Ja | #1217 | Creature.md#storage |
-| 1219 | Vollständiger D&D 5e Statblock: Skills, Saves, Resistances, etc. | mittel | Nein | #1200 | Creature.md#creaturedefinition |
-| 1220 | Actions Interface: Attack, Spellcasting, Special Abilities | mittel | Nein | #1200 | Creature.md#creaturedefinition |
-| 1221 | Legendary Actions Interface: Legendary Actions für Boss-Monster | niedrig | Nein | #1200, #1220 | Creature.md#creaturedefinition, Combat-System.md#post-mvp-erweiterungen |
-| 1222 | Sinne-System: Encounter-Trigger basierend auf Sichtweite | mittel | Nein | #1210, #1214 | Creature.md#sinne-post-mvp, Encounter-System.md#tile-eligibility |
-| 1223 | Passive Perception für Stealth-Checks | mittel | Nein | #1210, #1222 | Creature.md#sinn-typen |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 1200 | ⛔ | Creature | CreatureDefinition Schema: Vollständiges Interface implementieren | hoch | Ja | #2703, #2949, #2950 | Creature.md#schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc | src/core/schemas/creature.ts:creatureDefinitionSchema |
+| 1201 | ✅ | Creature | Basis-Statistiken: CR, HP, AC, Size | hoch | Ja | #1200 | Creature.md#creaturedefinition | src/core/schemas/creature.ts:creatureDefinitionSchema (Zeile 112-121) |
+| 1202 | ✅ | Creature | terrainAffinities: Array von Terrain-IDs | hoch | Ja | #1200, #1700 | Creature.md#creaturedefinition, Terrain.md#schema | src/core/schemas/creature.ts:creatureDefinitionSchema (Zeile 134) |
+| 1203 | ✅ | Creature | activeTime: TimeSegment-Array (dawn, day, dusk, night) | hoch | Ja | #1200 | Creature.md#creaturedefinition, Encounter-System.md#tile-eligibility | src/core/schemas/creature.ts:creatureDefinitionSchema (Zeile 137) |
+| 1204 | ✅ | Creature | lootTags: String-Array für Loot-System | hoch | Ja | #1200 | Creature.md#creaturedefinition, Loot-Feature.md#loot-tags | src/core/schemas/creature.ts:creatureDefinitionSchema (Zeile 145) |
+| 1205 | ✅ | Creature | DefaultLootEntry Interface: itemId, chance, quantity | hoch | Ja | - | Creature.md#defaultloot, Item.md#schema | [neu] src/core/schemas/creature.ts:defaultLootEntrySchema |
+| 1206 | ✅ | Creature | defaultLoot Array: Garantiertes/wahrscheinliches Loot | hoch | Ja | - | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot | [neu] src/core/schemas/creature.ts:creatureDefinitionSchema |
+| 1207 | ✅ | Creature | CreaturePreferences Interface: Gewichtungs-Modifikatoren | hoch | Ja | #1200 | Creature.md#creaturepreferences, Encounter-System.md#tile-eligibility | src/core/schemas/creature.ts:creaturePreferencesSchema (Zeile 73-92) |
+| 1208 | ✅ | Creature | AbilityScores Interface: STR, DEX, CON, INT, WIS, CHA | hoch | Ja | #1200 | Creature.md#creaturedefinition, Combat-System.md#schemas | src/core/schemas/creature.ts:abilityScoresSchema (Zeile 45-52) |
+| 1209 | ✅ | Creature | SpeedBlock Interface: walk, fly, swim, climb, burrow | hoch | Ja | #1200 | Creature.md#creaturedefinition | src/core/schemas/creature.ts:speedBlockSchema (Zeile 59-65) |
+| 1210 | ⛔ | Creature | Senses Interface: passivePerception, darkvision, blindsight, etc. | mittel | Nein | #1200 | Creature.md#creaturedefinition, Creature.md#sinne-post-mvp | [neu] src/core/schemas/creature.ts:sensesSchema |
+| 1211 | ✅ | Creature | Creature Runtime Interface: instanceId, currentHp, tempHp, conditions | hoch | Ja | #1200 | Creature.md#creature-runtime, Combat-System.md#schemas | src/core/schemas/creature.ts:creatureInstanceSchema (Zeile 183-211) |
+| 1212 | ⛔ | Creature | Auto-Sync: creature.terrainAffinities → terrain.nativeCreatures | hoch | Ja | #1202, #1700 | Creature.md#auto-sync-verhalten, Terrain.md#auto-sync-mechanismus | [neu] src/features/creature/auto-sync.ts:syncCreatureToTerrain() |
+| 1213 | ⛔ | Creature | Auto-Sync: terrain.nativeCreatures → creature.terrainAffinities | hoch | Ja | #1202, #1700 | Creature.md#auto-sync-verhalten, Terrain.md#auto-sync-mechanismus | [neu] src/features/creature/auto-sync.ts:syncTerrainToCreature() |
+| 1214 | ✅ | Creature | Encounter Integration: filterEligibleCreatures() | hoch | Ja | #200, #1202, #1203 | Creature.md#encounter-feature, Encounter-System.md#tile-eligibility | src/features/encounter/encounter-utils.ts:filterEligibleCreatures() (Zeile 45-61) |
+| 1215 | ✅ | Creature | Combat Integration: createCombatCreature() Factory | hoch | Ja | #300, #1211 | Creature.md#combat-feature, Combat-System.md#schemas | src/features/combat/combat-utils.ts:createCombatCreature() (Zeile 90-99), createParticipantFromCreature() (Zeile 108-125) |
+| 1216 | ⛔ | Creature | Loot Integration: defaultLoot Processing bei Encounter | hoch | Ja | #215, #705, #1206 | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot, Encounter-System.md#schemas | src/features/loot/loot-utils.ts:mergeLootTags() (Zeile 130-145 nutzt nur lootTags), [neu] src/features/loot/loot-utils.ts:processDefaultLoot() |
+| 1217 | ⛔ | Creature | Storage: creature/ und npc/ Verzeichnisse | hoch | Ja | #1200, #1300, #2802 | Creature.md#storage, EntityRegistry.md#storage, NPC-System.md#npc-schema | [neu] src/infrastructure/vault-entity-registry.adapter.ts (creature/npc-Verzeichnis-Setup) |
+| 1218 | ⛔ | Creature | Bundled Creatures: Mitgelieferte Basis-Kreaturen (_bundled/) | mittel | Ja | #1217 | Creature.md#storage | presets/creatures/base-creatures.json (8 creatures vorhanden, aber Vault-Integration fehlt) |
+| 1219 | ⛔ | Creature | Vollständiger D&D 5e Statblock: Skills, Saves, Resistances, etc. | mittel | Nein | #1200 | Creature.md#creaturedefinition | src/core/schemas/creature.ts:creatureDefinitionSchema (actions vorhanden Zeile 159, aber Skills/Saves/Resistances fehlen) [neu] skillProficienciesSchema, savingThrowProficienciesSchema, resistancesSchema |
+| 1220 | ⛔ | Creature | Actions Interface: Attack, Spellcasting, Special Abilities | mittel | Nein | #1200 | Creature.md#creaturedefinition | src/core/schemas/creature.ts:creatureDefinitionSchema (actions als string[] Zeile 159), [neu] actionSchema mit strukturiertem Interface |
+| 1221 | ⛔ | Creature | Legendary Actions Interface: Legendary Actions für Boss-Monster | niedrig | Nein | #1200, #1220 | Creature.md#creaturedefinition, Combat-System.md#post-mvp-erweiterungen | [neu] src/core/schemas/creature.ts:legendaryActionSchema, creatureDefinitionSchema erweitern |
+| 1222 | ⛔ | Creature | Sinne-System: Encounter-Trigger basierend auf Sichtweite | mittel | Nein | #1210, #1214 | Creature.md#sinne-post-mvp, Encounter-System.md#tile-eligibility | [neu] src/features/encounter/visibility.ts:checkCreatureVisibility() |
+| 1223 | ⛔ | Creature | Passive Perception für Stealth-Checks | mittel | Nein | #1210, #1222 | Creature.md#sinn-typen | [neu] src/features/encounter/visibility.ts:calculatePassivePerceptionDC() |
+| 2949 | ⛔ | Creature | CreatureDetectionProfile Schema (noiseLevel, scentStrength, stealthAbilities) - REQUIRED (auf spec-konformität prüfen) | hoch | Ja | #1200, #2950 | Creature.md#detectionprofile | schemas/creature.ts:creatureDetectionProfileSchema |
+| 2950 | 🔶 | Creature | StealthAbility Type (burrowing, invisibility, ethereal, shapechange, mimicry, ambusher) (auf spec-konformität prüfen) | hoch | Ja | - | Creature.md#stealthability | schemas/creature.ts:stealthAbilitySchema |
+| 2961 | ⛔ | Creature | Design-Rollen Ableitung: deriveDesignRole() aus Statblock | mittel | Ja | #1200 | Creature.md#design-rollen-mcdm-basiert | [neu] src/features/creature/design-role.ts:deriveDesignRole() |
+| 3003 | ⛔ | Creature | carriesLoot: boolean Feld (default humanoid=true, beast=false) | niedrig | Nein | #1200 | Creature.md#loot-kategorien | - |
+| 3004 | ⛔ | Creature | stashLocationHint: string Feld (Verweis auf Hoard-Location) | niedrig | Nein | #1200 | Creature.md#loot-kategorien | - |

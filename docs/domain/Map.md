@@ -122,8 +122,117 @@ Weather operiert map-global:
 Encounters werden tile-basiert generiert:
 - EncounterZone definiert Creature-Pool und Chance
 - Fraktions-Praesenz modifiziert Encounter-Typ
+- Danger-Zone bestimmt CR-Budget fuer automatische Generierung
 
 → Details: [Encounter-System.md](../features/Encounter-System.md)
+
+---
+
+## Danger-Zones und CR-Budget
+
+Tiles koennen eine Gefahrenstufe haben, die das CR-Budget fuer automatisch generierte Encounters bestimmt.
+
+### Danger-Zone Typen
+
+| Zone | CR-Budget | Beschreibung | Typische Verwendung |
+|------|-----------|--------------|---------------------|
+| `safe` | 5 | Sichere Gebiete | Staedte, Lager, Schutzgebiete |
+| `normal` | 15 | Standard-Wildnis | Waelder, Huegel, Strassen |
+| `dangerous` | 30 | Gefaehrliche Gebiete | Monster-Territorien, Grenzlaender |
+| `deadly` | 50 | Toedliche Gebiete | Drachen-Lande, verfluchte Zonen |
+
+### Schema-Erweiterung auf OverworldTile
+
+```typescript
+interface OverworldTile {
+  coordinate: HexCoordinate;
+  terrain: EntityId<'terrain'>;
+  elevation?: number;
+
+  // === Danger-Zone (NEU) ===
+  dangerZone?: DangerZone;        // default: 'normal'
+  crBudget?: number;              // Manueller Override (optional)
+  crSpent?: number;               // Summe aller factionPresence[].strength (CR-Werte)
+
+  // ... weitere Felder
+  factionPresence?: FactionPresence[];
+}
+
+type DangerZone = 'safe' | 'normal' | 'dangerous' | 'deadly';
+```
+
+### CR-Budget Berechnung
+
+Das CR-Budget eines Tiles bestimmt die maximale Staerke automatisch generierter Encounters.
+
+**Berechnung:**
+1. Basis-Budget aus `dangerZone` (siehe Tabelle oben)
+2. Override durch `crBudget` (falls gesetzt)
+3. Verbrauch durch Fraktionen: `crSpent = Σ(factionPresence[].strength)`
+
+**Hinweis:** `FactionPresence.strength` ist bereits die effektive CR-Summe der Fraktion auf diesem Tile (mit Distanz-Modifier). Siehe [Faction.md#praesenz-datenstruktur](Faction.md#praesenz-datenstruktur).
+
+```typescript
+function getAvailableCRBudget(tile: OverworldTile): number {
+  const baseBudget = tile.crBudget ?? DANGER_ZONE_BUDGET[tile.dangerZone ?? 'normal'];
+  const spent = tile.crSpent ?? 0;
+  return Math.max(0, baseBudget - spent);
+}
+
+const DANGER_ZONE_BUDGET: Record<DangerZone, number> = {
+  safe: 5,
+  normal: 15,
+  dangerous: 30,
+  deadly: 50
+};
+```
+
+### Verwendung bei Encounter-Generierung
+
+Das CR-Budget gilt **nur fuer automatisch generierte Encounters**:
+
+| Encounter-Typ | CR-Budget respektiert? |
+|---------------|------------------------|
+| Random Encounter (Travel) | Ja |
+| Fraktions-Encounter | Ja |
+| Manuell platziert (Cartographer) | Nein |
+| Quest-Encounter | Nein |
+
+**Begründung:** GM behaelt volle kreative Kontrolle. Das Budget verhindert nur "zufaellige Ueberbewoelkerung" - z.B. dass zufaellig ein Drache, Aboleth UND Terrasque in benachbarten Hexes erscheinen.
+
+### Cartographer-Integration
+
+Im Cartographer kann die Danger-Zone per Brush-Tool auf Tiles gemalt werden:
+
+```
+┌──────────────────────────────────────┐
+│  Danger-Zone Brush                   │
+│  ────────────────────────────────────│
+│  [🟢 Safe]  [🟡 Normal]              │
+│  [🟠 Dangerous]  [🔴 Deadly]         │
+│                                      │
+│  Brush-Size: [1 ▼]                   │
+└──────────────────────────────────────┘
+```
+
+→ Details: [Cartographer.md](../application/Cartographer.md#danger-zone-brush)
+
+### Tile-Inspector
+
+Der Inspector zeigt das CR-Budget:
+
+```
+┌──────────────────────────────────────┐
+│  Encounter Budget                    │
+│  ────────────────────────────────────│
+│  Danger Zone: [Normal ▼]             │
+│  CR Budget: 15                       │
+│  CR Spent: 3.5 (by factions)         │
+│  CR Available: 11.5                  │
+└──────────────────────────────────────┘
+```
+
+→ Details: [Cartographer.md](../application/Cartographer.md#inspector-panel)
 
 ---
 
@@ -187,6 +296,9 @@ function getActiveMap(): BaseMap | null;
 | OverworldMap | ✓ | | Primaerer Map-Typ |
 | Map-Loading/Unloading | ✓ | | Lifecycle |
 | Multi-Map Navigation | ✓ | | Via POI-Links |
+| DangerZone Typ auf OverworldTile | ✓ | | Tier-System (safe/normal/dangerous/deadly) |
+| CR-Budget Felder (crBudget, crSpent) | ✓ | | Encounter-Generierung |
+| Danger-Zone Brush im Cartographer | ✓ | | Tool zum Malen |
 | TownMap | | mittel | Strassen-basiert |
 | DungeonMap | | niedrig | Grid-basiert |
 
@@ -196,23 +308,26 @@ function getActiveMap(): BaseMap | null;
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 822 | getMap(mapId): Result<BaseMap, AppError> | hoch | Ja | #800 | Map.md#queries, Map-Feature.md#events, EntityRegistry.md#port-interface |
-| 823 | getMapsByType(type): BaseMap[] | hoch | Ja | #800 | Map.md#queries, Map-Feature.md#map-schemas |
-| 824 | getActiveMap(): BaseMap \| null | hoch | Ja | #800, #813 | Map.md#queries, Map-Feature.md#memory-management |
-| 801 | OverworldMap Schema (dimensions, tiles, factionOverlay) | hoch | Ja | #800 | Map.md#schema, Map-Feature.md#overworldmap, Travel-System.md#scope-hex-overland |
-| 803 | HexCoordinate Type (q, r für axial) | hoch | Ja | #802 | Map.md#schema, Map-Feature.md#overworldmap, Travel-System.md |
-| 813 | map:load-requested Event Handler | hoch | Ja | #800 | Map.md#events, Map-Feature.md#events, Events-Catalog.md |
-| 821 | map:updated Event Handler | hoch | Ja | #800, #813, #820 | Map.md#events, Map-Feature.md#events, Events-Catalog.md |
-| 826 | map:tile-updated Event publizieren | hoch | Ja | #800, #802, #821, #900 | Map.md#events, Map-Feature.md#events, Events-Catalog.md |
-| 807 | GridCoordinate Type (x, y, z für 3D Grid) | hoch | Ja | - | Map.md#schema, Map-Feature.md#dungeonmap, Dungeon-System.md |
-| 830 | TownMap Schema (streets, intersections, buildings, npcs) | mittel | Nein | #800 | Map.md#schema, Map-Feature.md#townmap |
-| 833 | Building Schema (id, name, position, type, linkedMapId, npcs) | mittel | Nein | #830 | Map.md#schema, Map-Feature.md#townmap |
-| 837 | town:navigate-requested Event Handler | mittel | Nein | #820, #830, #836 | Map.md#events, Map-Feature.md#town-strassen-navigation |
-| 840 | TilePathInfo Schema (pathId, connections mit from/to) | mittel | Nein | #802, #1800 | Map.md#schema, Map-Feature.md#overworldtile, Path.md |
-| 844 | Sichtweiten-Berechnung: Basis-Sichtweite 1 Hex bei flachem Terrain | mittel | Nein | #801, #802, #843 | Map.md, Map-Feature.md#sichtweiten-berechnung |
-| 848 | Time-Visibility-Modifier: Tageszeit reduziert Sicht | mittel | Nein | #843, #900 | Map.md, Map-Feature.md#umwelt-modifier, Time-System.md#sichtweiten-einfluss-post-mvp |
-| 850 | Creature-Sichtweite für Encounter-Trigger | mittel | Nein | #200, #843, #1202 | Map.md, Map-Feature.md#creature-sichtweite, Creature.md#sinne-post-mvp |
-| 852 | POI glowsAtNight Mechanik: Ignoriert Nacht-Modifier | mittel | Nein | #843, #851, #1515 | Map.md, Map-Feature.md#poi-fernsicht, POI.md#nachtleuchtende-pois-glowsatnight-post-mvp |
-| 854 | Visibility Cache: partyPosition, timeSegment, weatherModifier, visibleTiles, timestamp | mittel | Nein | #843 | Map.md, Map-Feature.md#performance-optimierung |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 822 | ✅ | Map | getMap(mapId): Result<BaseMap, AppError> | hoch | Ja | #800 | Map.md#queries, Map-Feature.md#events, EntityRegistry.md#port-interface | src/infrastructure/vault/map-adapter.ts:load() |
+| 823 | ✅ | Map | getMapsByType(type): BaseMap[] | hoch | Ja | #800 | Map.md#queries, Map-Feature.md#map-schemas | src/infrastructure/vault/map-adapter.ts:listIds() |
+| 824 | ✅ | Map | getActiveMap(): BaseMap \ | null | hoch | Ja | #800, #813 | [Map.md#queries](../domain/Map.md#queries) |
+| 801 | ✅ | Map | OverworldMap Schema (dimensions, tiles, overlays) | hoch | Ja | #800 | Map.md#schema, Map-Feature.md#overworldmap, Travel-System.md#scope-hex-overland | src/core/schemas/map.ts:overworldMapSchema |
+| 803 | ✅ | Map | EncounterZone Schema (encounterChance, creaturePool, factionId) | hoch | Ja | #802 | Map.md#schema, Map-Feature.md#overworldmap, Travel-System.md | src/core/schemas/map.ts:encounterZoneSchema |
+| 813 | ✅ | Map | map:load-requested Event Handler | hoch | Ja | #800 | Map.md#events, Map-Feature.md#events, Events-Catalog.md | src/features/map/map-service.ts:setupEventHandlers(), src/core/events/domain-events.ts:MAP_LOAD_REQUESTED |
+| 821 | ⬜ | Map | map:navigated Event publizieren | hoch | Ja | #800, #813, #820 | Map.md#events, Map-Feature.md#events, Events-Catalog.md | src/features/map/map-service.ts:publishNavigated() [neu], src/core/events/domain-events.ts:MAP_NAVIGATED |
+| 826 | ✅ | Map | Zeit auf Sub-Maps: Global unabhängig von Map | hoch | Ja | #800, #802, #821, #900 | Map.md#events, Map-Feature.md#events, Events-Catalog.md | time-feature (globales Time-System) |
+| 807 | ✅ | Map | GridCoordinate Schema (x, y, z für Multi-Level) | hoch | Ja | - | Map.md#schema, Map-Feature.md#dungeonmap, Dungeon-System.md | src/core/schemas/map.ts:gridCoordSchema [neu] |
+| 830 | ⬜ | Map | TownMap Schema (streets, intersections, buildings, npcs) | mittel | Nein | #800 | Map.md#schema, Map-Feature.md#townmap | src/core/schemas/map.ts:townMapSchema [neu] |
+| 833 | ⛔ | Map | Building Schema (id, name, position, type, linkedMapId, npcs) | mittel | Nein | #830 | Map.md#schema, Map-Feature.md#townmap | src/core/schemas/map.ts:buildingSchema [neu] |
+| 837 | ⛔ | Map | town:navigate-requested Event | mittel | Nein | #820, #830 | Map.md#events, Map-Feature.md#town-strassen-navigation | src/features/town/town-service.ts:setupEventHandlers() [neu], src/core/events/domain-events.ts:TOWN_NAVIGATE_REQUESTED |
+| 840 | ⛔ | Map | TilePathInfo Schema (pathId, connections) | mittel | Nein | #802, #1800 | Map.md#schema, Map-Feature.md#overworldtile, Path.md | src/core/schemas/map.ts:tilePathInfoSchema [neu] |
+| 844 | ⛔ | Map | Basis-Sichtweite: 1 Hex bei flachem Terrain | mittel | Nein | #801, #802, #843 | Map.md, Map-Feature.md#sichtweiten-berechnung | src/features/map/visibility-service.ts:calculateVisibility() [neu] |
+| 848 | ⛔ | Map | Time-Visibility-Modifier: Tageszeit reduziert Sicht | mittel | Nein | #843, #900 | Map.md, Map-Feature.md#umwelt-modifier, Time-System.md#sichtweiten-einfluss-post-mvp | src/features/map/visibility-service.ts:getTimeModifier() [neu] |
+| 850 | ⛔ | Map | Creature-Sichtweite für Encounter-Trigger | mittel | Nein | #200, #843, #1202 | Map.md, Map-Feature.md#creature-sichtweite, Creature.md#sinne-post-mvp | src/features/encounter/encounter-service.ts:checkCreatureVisibility() [neu] |
+| 852 | ⛔ | Map | POI glowsAtNight: Nachtleuchtende POIs | mittel | Nein | #843, #851, #1515 | Map.md, Map-Feature.md#poi-fernsicht, POI.md#nachtleuchtende-pois-glowsatnight-post-mvp | src/features/map/visibility-service.ts:checkNightGlow() [neu] |
+| 854 | ⛔ | Map | VisibilityCache für Performance | mittel | Nein | #843 | Map.md, Map-Feature.md#performance-optimierung | src/features/map/visibility-cache.ts [neu] |
+| 3010 | ⬜ | Map | DangerZone Typ auf OverworldTile (safe/normal/dangerous/deadly) | hoch | Ja | #802 | Map.md#danger-zones-und-cr-budget | - |
+| 3011 | ⛔ | Map | CR-Budget Felder (crBudget, crSpent) auf OverworldTile | hoch | Ja | #802, #3010 | Map.md#cr-budget-berechnung | - |
+| 3024 | ⛔ | Map | getAvailableCRBudget(): Budget minus crSpent berechnen | mittel | Ja | #3011 | Map.md#cr-budget-berechnung | - |

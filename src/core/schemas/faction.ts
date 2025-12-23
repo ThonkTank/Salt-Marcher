@@ -9,6 +9,7 @@
 
 import { z } from 'zod';
 import { entityIdSchema } from './common';
+import { encounterTemplateSchema, type EncounterTemplate } from './encounter';
 
 // ============================================================================
 // Culture Sub-Schemas
@@ -179,11 +180,25 @@ export const factionSchema = z.object({
   /** Display color for territory overlay (hex format, e.g., "#4169E1") */
   displayColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color format'),
 
+  /** Party reputation with this faction (-100 to +100, default 0) */
+  reputationWithParty: z.number().int().min(-100).max(100).default(0),
+
   /** Description for GM reference */
   description: z.string().optional(),
 
   /** GM notes */
   gmNotes: z.string().optional(),
+
+  /**
+   * Faction-specific encounter templates.
+   * These take priority over generic templates during encounter generation.
+   *
+   * Templates define composition patterns (e.g., "leader + minions", "patrol")
+   * specific to this faction's typical encounter structures.
+   *
+   * @see docs/features/Encounter-System.md#template-auswahl-hierarchie
+   */
+  encounterTemplates: z.array(encounterTemplateSchema).optional(),
 });
 
 export type Faction = z.infer<typeof factionSchema>;

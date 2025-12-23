@@ -358,16 +358,26 @@ eventBus.publish({
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 1 | State-Machine: idle → planning → traveling ↔ paused → idle | hoch | Ja | - | Travel-System.md#state-machine, Events-Catalog.md#travel |
-| 3 | Speed-Berechnung: Basis-Speed × Terrain-Faktor × Weather-Faktor | hoch | Ja | - | Travel-System.md#speed-berechnung, Character-System.md#travel-system |
-| 5 | Terrain-Faktoren aus TerrainDefinition.movementCost lesen | hoch | Ja | #3, #1700 | Travel-System.md#terrain-faktoren, Terrain.md#verwendung-in-anderen-features, Map-Feature.md#overworld-rendering |
-| 7 | Zeit-Integration via time:advance-requested | hoch | Ja | #1, #908 | Travel-System.md#tagesreise-berechnung, Time-System.md#zeit-operationen, Events-Catalog.md#time |
-| 9 | Encounter-Checks pro Stunde (12.5% Basis-Chance) | hoch | Ja | #1, #7, #215 | Travel-System.md#encounter-checks-waehrend-reisen, Encounter-System.md#aktivierungs-flow, Map-Feature.md#overworld-tiles |
-| 11 | Pause/Resume Funktionalität | hoch | Ja | #1 | Travel-System.md#state-machine, Events-Catalog.md#travel |
-| 12 | Event-Flow: travel:plan-requested → route-planned → start-requested → started → position-changed → completed | hoch | Ja | #1, #2 | Travel-System.md#event-flow, Events-Catalog.md#travel, SessionRunner.md#travel-integration |
-| 14 | Transport-Invariante: activeTransport muss in availableTransports sein | hoch | Ja | #4 | Travel-System.md#transport-mode-invarianten, Character-System.md#character-schema |
-| 16 | Fehlerbehandlung: travel:failed - Fehler nur geloggt, keine Events publiziert | hoch | Ja | #15 | Travel-System.md#transport-mode-invarianten, Error-Handling.md, Events-Catalog.md#travel |
-| 18 | Pfad-Barrieren: blocksMovement und requiresTransport | mittel | Nein | #17, #1800, #1802, #1811 | Travel-System.md#pfad-modifikation-post-mvp, Path.md#pathmovement, Path.md#travel-system |
-| 20 | Resource-Tracking: Rationen-Verbrauch bei Reisen | mittel | Nein | #7, #605, #608 | Travel-System.md#dungeon-exploration, Inventory-System.md#rationen, Character-System.md#character-schema |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 1 | ✅ | Travel | State-Machine: idle → planning → traveling ↔ paused → idle | hoch | Ja | - | Travel-System.md#state-machine, Events-Catalog.md#travel | travel-store.ts:setPlanning/setTraveling/setPaused/setResumed/setIdle |
+| 3 | ✅ | Travel | Speed-Berechnung: Basis-Speed × Terrain-Faktor × Weather-Faktor | hoch | Ja | - | Travel-System.md#speed-berechnung, Character-System.md#travel-system | types.ts:calculateHexTraversalTime, travel-service.ts:getBaseSpeed |
+| 5 | ✅ | Travel | Terrain-Faktoren aus TerrainDefinition.movementCost lesen | hoch | Ja | #3, #1700 | Travel-System.md#terrain-faktoren, Terrain.md#verwendung-in-anderen-features, Map-Feature.md#overworld-rendering | travel-service.ts:calculateSegmentTime (via mapFeature.getMovementCost) |
+| 7 | ✅ | Travel | Zeit-Integration via time:advance-requested | hoch | Ja | #1, #908 | Travel-System.md#tagesreise-berechnung, Time-System.md#zeit-operationen, Events-Catalog.md#time | travel-service.ts:publishTimeAdvance |
+| 9 | ✅ | Travel | Encounter-Checks pro Stunde (12.5% Basis-Chance) | hoch | Ja | #1, #7, #215 | Travel-System.md#encounter-checks-waehrend-reisen, Encounter-System.md#aktivierungs-flow, Map-Feature.md#overworld-tiles | travel-service.ts:checkForEncounter, encounter-chance.ts:calculateEncounterChance/rollEncounter |
+| 11 | ✅ | Travel | Pause/Resume Funktionalität | hoch | Ja | #1 | Travel-System.md#state-machine, Events-Catalog.md#travel | travel-service.ts:pauseTravelInternal/resumeTravelInternal, travel-store.ts:setPaused/setResumed |
+| 12 | ✅ | Travel | Event-Flow: travel:plan-requested → route-planned → start-requested → started → position-changed → completed | hoch | Ja | #1, #2 | Travel-System.md#event-flow, Events-Catalog.md#travel, SessionRunner.md#travel-integration | travel-service.ts:publishRoutePlanned/publishTravelStarted/publishPositionChanged/publishTravelCompleted/publishStateChanged |
+| 14 | ⬜ | Travel | Transport-Invariante: activeTransport muss in availableTransports sein | hoch | Ja | #4 | Travel-System.md#transport-mode-invarianten, Character-System.md#character-schema | travel-service.ts:validateTransportAvailable [neu], party-service.ts:setActiveTransport [ändern] |
+| 16 | ⛔ | Travel | Fehlerbehandlung: travel:failed - Fehler nur geloggt, keine Events publiziert | hoch | Ja | #15 | Travel-System.md#transport-mode-invarianten, Error-Handling.md, Events-Catalog.md#travel | travel-service.ts:publishTravelFailed [neu], setupEventHandlers [ändern] |
+| 18 | ⛔ | Travel | Pfad-Barrieren: blocksMovement und requiresTransport | mittel | Nein | #17, #1800, #1802, #1811 | Travel-System.md#pfad-modifikation-post-mvp, Path.md#pathmovement, Path.md#travel-system | travel-service.ts:getPathMultiplier [ändern], validateTraversable [ändern] |
+| 20 | ⛔ | Travel | Resource-Tracking: Rationen-Verbrauch bei Reisen | mittel | Nein | #7, #605, #608 | Travel-System.md#dungeon-exploration, Inventory-System.md#rationen, Character-System.md#character-schema | party-service.ts:consumeRations [neu], travel-service.ts:processNextTravelTick [ändern] |
+| 2 | ✅ | Travel | Route-Planung mit Waypoints und Pathfinding | hoch | Ja | #1 | Travel-System.md#prioritaet | travel-service.ts:planRouteInternal/planRouteWithWaypointsInternal/findPathGreedy/buildRoute |
+| 4 | ✅ | Travel | Transport-Modi: foot, mounted, carriage, boat mit Terrain-Restriktionen | hoch | Ja | #3 | Travel-System.md#transport-modi | schemas/party.ts:TRANSPORT_BASE_SPEEDS, travel-service.ts:validateTraversable |
+| 6 | ✅ | Travel | Weather-Faktoren anwenden (clear, rain, storm, etc.) | hoch | Ja | #3, #110 | Travel-System.md#weather-faktoren | travel-service.ts:getWeatherSpeedFactor |
+| 8 | ✅ | Travel | Animierte Token-Bewegung auf der Karte | hoch | Ja | #2 | Travel-System.md#prioritaet | travel-service.ts:processNextTravelTick, travel-store.ts:advanceMinutesElapsed |
+| 10 | ✅ | Travel | Population-Modifikator für Encounter-Chance | hoch | Ja | #9 | Travel-System.md#population-modifikator | encounter-chance.ts:getPopulationFactor, travel-service.ts:getPopulationAt |
+| 13 | ✅ | Travel | Position-Ownership: Party als Single Source of Truth | hoch | Ja | - | Travel-System.md#position-ownership | party-service.ts:setPosition (aufgerufen von travel-service.ts) |
+| 15 | ⛔ | Travel | Validation bei travel:plan-requested - Terrain OK, Transport-Invariante (#14) fehlt | hoch | Ja | #14 | Travel-System.md#validation-zeitpunkte | travel-service.ts:validateTraversable, planRouteInternal [ändern] |
+| 17 | ⬜ | Travel | Pfad-Integration: Direktionsabhängiger Speed-Multiplikator | mittel | Nein | #3 | Travel-System.md#pfad-modifikation-post-mvp | travel-service.ts:getPathMultiplier [neu], calculateSegmentTime [ändern] |
+| 19 | ⛔ | Travel | Pfad-Strömung: Flussabwärts schneller | niedrig | Nein | #17, #18 | Travel-System.md#pfad-modifikation-post-mvp | travel-service.ts:getPathMultiplier [ändern] |
+| 21 | ⛔ | Travel | Forced March: 10h/Tag mit Erschöpfungsrisiko | niedrig | Nein | #7, #20 | Travel-System.md#standard-reisestunden | party-service.ts:addExhaustion [neu], travel-service.ts:checkForcedMarch [neu] |

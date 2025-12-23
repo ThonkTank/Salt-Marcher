@@ -17,6 +17,7 @@ export type {
   NpcSelectionResult,
   FactionWeight,
   CreatureWeight,
+  EncounterHistoryEntry,
 } from './types';
 
 // Store
@@ -37,7 +38,9 @@ export {
   selectWeightedCreature,
   calculateCreatureWeight,
   deriveEncounterType,
-  validateVariety,
+  calculateTypeWeights,
+  createDefaultTypeMatrix,
+  normalizeMatrix,
   populateEncounter,
   generateEncounterId,
   createCreatureInstance,
@@ -49,6 +52,7 @@ export {
   // Creature grouping for UI
   groupCreaturesByDefinitionId,
   type GroupedCreature,
+  type TypeProbabilityMatrix,
 } from './encounter-utils';
 
 // NPC generation utilities (for testing/extension)
@@ -75,3 +79,24 @@ export {
   POPULATION_FACTORS,
   DEFAULT_POPULATION,
 } from './encounter-chance';
+
+// Template loader and registry
+export {
+  createEncounterTemplateRegistry,
+  getDefaultTemplateRegistry,
+  resetDefaultTemplateRegistry,
+  type EncounterTemplateRegistry,
+} from './template-loader';
+
+// Template matching (Task #2963)
+export {
+  matchTemplate,
+  matchFactionTemplates,
+  type TemplateMatchResult,
+  // Utilities for testing
+  calculateTemplateWeights,
+  selectWeightedTemplate,
+  HIGH_CR_TEMPLATE_IDS,
+  MID_CR_TEMPLATE_IDS,
+  LOW_CR_TEMPLATE_IDS,
+} from './template-matcher';

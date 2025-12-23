@@ -337,24 +337,38 @@ Dungeon-Maps werden im Cartographer erstellt (kein separates Tool):
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 1000 | Automatische Trap-Detection (Passive Perception >= Trap DC → "Falle entdeckt!") | hoch | Ja | #810, #500, #1210 | Dungeon-System.md#automatische-trigger, Character-System.md#character-schema, Map-Feature.md#dungeonmap |
-| 1002 | Tür-Prompt bei Bewegung ("Tür. Öffnen?") | hoch | Ja | #808 | Dungeon-System.md#automatische-trigger, Map-Feature.md#dungeontile |
-| 1004 | Fog of War Update bei Party-Bewegung | hoch | Ja | #812, #1025 | Dungeon-System.md#simulation, Map-Feature.md#dungeontile |
-| 1005 | Secret-Door Automatischer Passive Perception Check | hoch | Ja | #808, #500, #1210 | Dungeon-System.md#geheime-bereiche, Character-System.md#character-schema, Map-Feature.md#dungeontile |
-| 1007 | GM-Override: Secret als entdeckt markieren | hoch | Ja | #1005 | Dungeon-System.md#geheime-bereiche |
-| 1008 | Monster-Tokens auf Grid platzieren (alle Encounters vorplatziert) | hoch | Ja | #811 | Dungeon-System.md#dungeon-encounters, Cartographer.md#token-placer-dungeon, Encounter-System.md#creatureslot-varianten |
-| 1010 | Token zu aktivem Encounter hinzufügen | hoch | Ja | #1009, #217 | Dungeon-System.md#dungeon-encounters, Encounter-System.md#state-machine, Combat-System.md#combat-flow |
-| 1011 | Lichtquellen-Radien (Torch 20/40, Lantern 30/60, Light 20/40, Darkvision 60) | hoch | Ja | #808 | Dungeon-System.md#licht, Dungeon-System.md#lichtquellen-tracking, Character-System.md#sinne-post-mvp |
-| 1013 | Character-Inventar Lichtquellen-Tracking (Reichweite, Brenndauer) | hoch | Ja | #1011, #600, #612 | Dungeon-System.md#lichtquellen-tracking, Inventory-System.md#inventoryslot, Time-System.md#zeit-operationen |
-| 1015 | Bewegungs-Zeit basierend auf Character-Speed (5-foot Tiles / 6 Sekunden) | hoch | Ja | #806, #504 | Dungeon-System.md#zeit-tracking, Character-System.md#travel-system, Time-System.md#advance-zeit-voranschreiten |
-| 1017 | GM View Toggle (sieht alles) | hoch | Ja | #812 | Dungeon-System.md#gm-interface, Cartographer.md#layer-control |
-| 1018 | Player View Toggle (nur Explored sichtbar) | hoch | Ja | #812, #1017 | Dungeon-System.md#gm-interface, Dungeon-System.md#fog-of-war, Cartographer.md#layer-control |
-| 1020 | GM-definierte Raum-Grenzen beim Zeichnen | hoch | Ja | #809 | Dungeon-System.md#raum-definition, Map-Feature.md#dungeonroom, Cartographer.md#dungeon-tools |
-| 1022 | Raum-Klick zeigt Inhaltsübersicht | hoch | Ja | #809 | Dungeon-System.md#gm-interface, Map-Feature.md#dungeonroom |
-| 1024 | DetailView zeigt Fallen, Truhen, GM-Notizen | hoch | Ja | #1023 | Dungeon-System.md#gm-interface, Map-Feature.md#dungeontilecontent, DetailView.md |
-| 1026 | Wand-Blockierung für Sichtlinien | hoch | Ja | #1025 | Dungeon-System.md#sicht-line-of-sight, Map-Feature.md#dungeontile |
-| 1030 | Sound-Propagation Overlay (was Spieler hören können) | niedrig | Nein | #809 | Dungeon-System.md#sound, Dungeon-System.md#sound-propagation |
-| 1032 | Raum-zu-Raum Sound-Visualisierung | niedrig | Nein | #1030 | Dungeon-System.md#sound, Map-Feature.md#dungeonroom |
-| 1036 | Treppen/Leitern/Schächte als spezielle Tiles | niedrig | Nein | #1035, #808 | Dungeon-System.md#multi-level-navigation, Map-Feature.md#dungeontile, Map-Feature.md#gridcoordinate |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 1000 | ⛔ | Dungeon | Automatische Trap-Detection (Passive Perception >= Trap DC → "Falle entdeckt!") | hoch | Ja | #810, #500, #1210 | Dungeon-System.md#automatische-trigger, Character-System.md#character-schema, Map-Feature.md#dungeonmap | src/features/dungeon/trap-detection.ts:checkTrapDetection() [neu] |
+| 1002 | ⛔ | Dungeon | Tür-Prompt bei Bewegung ("Tür. Öffnen?") | hoch | Ja | #808 | Dungeon-System.md#automatische-trigger, Map-Feature.md#dungeontile | src/features/dungeon/movement-triggers.ts:checkDoorPrompt() [neu] |
+| 1004 | ⛔ | Dungeon | Fog of War Update bei Party-Bewegung | hoch | Ja | #812, #1025 | Dungeon-System.md#simulation, Map-Feature.md#dungeontile | src/features/dungeon/fog-of-war.ts:updateFogOfWar() [neu] |
+| 1005 | ⛔ | Dungeon | Secret-Door Automatischer Passive Perception Check | hoch | Ja | #808, #500, #1210 | Dungeon-System.md#geheime-bereiche, Character-System.md#character-schema, Map-Feature.md#dungeontile | src/features/dungeon/secret-detection.ts:checkSecretDoorDetection() [neu] |
+| 1007 | ⛔ | Dungeon | GM-Override: Secret als entdeckt markieren | hoch | Ja | #1005 | Dungeon-System.md#geheime-bereiche | src/features/dungeon/dungeon-service.ts:markSecretAsDiscovered() [neu] |
+| 1008 | ⛔ | Dungeon | Monster-Tokens auf Grid platzieren (alle Encounters vorplatziert) | hoch | Ja | #811 | Dungeon-System.md#dungeon-encounters, Cartographer.md#token-placer-dungeon, Encounter-System.md#creatureslot-varianten | src/features/dungeon/tokens.ts:placeToken() [neu] |
+| 1010 | ⛔ | Dungeon | Token zu aktivem Encounter hinzufügen | hoch | Ja | #1009, #217 | Dungeon-System.md#dungeon-encounters, Encounter-System.md#state-machine, Combat-System.md#combat-flow | src/features/dungeon/dungeon-service.ts:addCreaturesToEncounter() [neu] |
+| 1011 | ⛔ | Dungeon | Lichtquellen-Radien (Torch 20/40, Lantern 30/60, Light 20/40, Darkvision 60) | hoch | Ja | #808 | Dungeon-System.md#licht, Dungeon-System.md#lichtquellen-tracking, Character-System.md#sinne-post-mvp | src/features/dungeon/lighting.ts:LIGHT_SOURCE_RADII [neu] |
+| 1013 | ⛔ | Dungeon | Character-Inventar Lichtquellen-Tracking (Reichweite, Brenndauer) | hoch | Ja | #1011, #600, #612 | Dungeon-System.md#lichtquellen-tracking, Inventory-System.md#inventoryslot, Time-System.md#zeit-operationen | src/features/inventory/types.ts:LightSource [neu], src/features/dungeon/dungeon-service.ts:getActiveLightSources() [neu] |
+| 1015 | ⬜ | Dungeon | Bewegungs-Zeit basierend auf Character-Speed (5-foot Tiles / 6 Sekunden) | hoch | Ja | #806, #504 | Dungeon-System.md#zeit-tracking, Character-System.md#travel-system, Time-System.md#advance-zeit-voranschreiten | src/features/dungeon/movement.ts:calculateMovementTime() [neu] |
+| 1017 | ⛔ | Dungeon | GM View Toggle (sieht alles) | hoch | Ja | #812 | Dungeon-System.md#gm-interface, Cartographer.md#layer-control | src/features/dungeon/dungeon-service.ts:setViewMode() [neu], src/features/dungeon/types.ts:ViewMode [neu] |
+| 1018 | ⛔ | Dungeon | Player View Toggle (nur Explored sichtbar) | hoch | Ja | #812, #1017 | Dungeon-System.md#gm-interface, Dungeon-System.md#fog-of-war, Cartographer.md#layer-control | src/features/dungeon/dungeon-service.ts:setViewMode() [neu] |
+| 1020 | ⬜ | Dungeon | GM-definierte Raum-Grenzen beim Zeichnen | hoch | Ja | #809 | Dungeon-System.md#raum-definition, Map-Feature.md#dungeonroom, Cartographer.md#dungeon-tools | src/features/dungeon/rooms.ts:defineRoom() [neu] |
+| 1022 | ⬜ | Dungeon | Raum-Klick zeigt Inhaltsübersicht | hoch | Ja | #809 | Dungeon-System.md#gm-interface, Map-Feature.md#dungeonroom | src/features/dungeon/rooms.ts:getRoomSummary() [neu], src/application/views/RoomSummaryView.svelte [neu] |
+| 1024 | ⛔ | Dungeon | DetailView zeigt Fallen, Truhen, GM-Notizen | hoch | Ja | #1023 | Dungeon-System.md#gm-interface, Map-Feature.md#dungeontilecontent, DetailView.md | src/application/views/TileDetailView.svelte [neu] |
+| 1026 | ⛔ | Dungeon | Wand-Blockierung für Sichtlinien | hoch | Ja | #1025 | Dungeon-System.md#sicht-line-of-sight, Map-Feature.md#dungeontile | src/features/dungeon/line-of-sight.ts:isBlockedByWall() [neu] |
+| 1030 | ⬜ | Dungeon | Sound-Propagation Overlay (was Spieler hören können) | niedrig | Nein | #809 | Dungeon-System.md#sound, Dungeon-System.md#sound-propagation | src/features/dungeon/sound-propagation.ts:calculateSoundPropagation() [neu] |
+| 1032 | ⛔ | Dungeon | Raum-zu-Raum Sound-Visualisierung | niedrig | Nein | #1030 | Dungeon-System.md#sound, Map-Feature.md#dungeonroom | src/features/dungeon/sound-propagation.ts:visualizeSoundReach() [neu] |
+| 1036 | ⛔ | Dungeon | Treppen/Leitern/Schächte als spezielle Tiles | niedrig | Nein | #1035, #808 | Dungeon-System.md#multi-level-navigation, Map-Feature.md#dungeontile, Map-Feature.md#gridcoordinate | src/core/schemas/map.ts:dungeonTileSchema [ändern - type erweitern], src/features/dungeon/3d-grid.ts:LEVEL_TRANSITION_TILES [neu] |
+| 1001 | ⛔ | Dungeon | Trap-Auslösung bei Bewegung (Passive Perception < Trap DC) | hoch | Ja | #1000 | Dungeon-System.md#automatische-trigger | src/features/dungeon/trap-detection.ts:triggerTrap() [neu] |
+| 1003 | ⛔ | Dungeon | Creature-Encounter-Trigger bei Token-Kontakt | hoch | Ja | #811, #215, #217 | Dungeon-System.md#automatische-trigger | src/features/dungeon/movement-triggers.ts:checkTokenContact() [neu], src/features/dungeon/dungeon-service.ts:publishEncounterGenerateRequested() [neu] |
+| 1006 | ⛔ | Dungeon | GM-Popup bei Secret-Entdeckung | hoch | Ja | #1005 | Dungeon-System.md#geheime-bereiche | src/features/dungeon/dungeon-service.ts:publishSecretDiscovered() [neu] |
+| 1009 | ⛔ | Dungeon | Encounter-Start bei Token-Klick | hoch | Ja | #1008, #217 | Dungeon-System.md#dungeon-encounters | src/features/dungeon/tokens.ts:handleTokenClick() [neu], src/features/dungeon/dungeon-service.ts:publishEncounterStartRequested() [neu] |
+| 1012 | ⛔ | Dungeon | Lighting Overlay Visualisierung (dunkle Bereiche abgedunkelt) | hoch | Ja | #1011, #812 | Dungeon-System.md#lichtquellen-tracking | src/features/dungeon/lighting.ts:calculateLighting() [neu], src/application/shared/rendering/dungeon-renderer.ts:renderLightingOverlay() [neu] |
+| 1014 | ⛔ | Dungeon | Time-System Integration: Lichtquellen-Brenndauer tracken | mittel | Ja | #1013, #907 | Dungeon-System.md#lichtquellen-tracking | src/features/dungeon/dungeon-service.ts:handleTimeAdvance() [neu] (Event-Handler für time:advance-requested) |
+| 1016 | ⛔ | Dungeon | Time-System Update bei Dungeon-Bewegung | hoch | Ja | #1015, #907 | Dungeon-System.md#zeit-tracking | src/features/dungeon/movement.ts:updateTimeAfterMovement() [neu] (publiziert time:advance-requested) |
+| 1019 | ⬜ | Dungeon | Edit Mode Toggle | hoch | Ja | #806 | Dungeon-System.md#map-ansicht | src/features/dungeon/dungeon-service.ts:setEditMode() [neu] |
+| 1021 | ⛔ | Dungeon | Raum-Pinsel für nachträgliche Anpassung | hoch | Ja | #1020 | Dungeon-System.md#raum-definition | src/features/dungeon/rooms.ts:updateRoomBoundary() [neu] |
+| 1023 | ⛔ | Dungeon | Tile-Klick zeigt DetailView mit Inhalt | hoch | Ja | #808 | Dungeon-System.md#tile-detail-click | src/features/dungeon/dungeon-service.ts:getTileContents() [neu], src/application/views/TileDetailView.svelte [neu] |
+| 1025 | ⛔ | Dungeon | Line of Sight Berechnung | hoch | Ja | #808 | Dungeon-System.md#sicht-line-of-sight | src/features/dungeon/line-of-sight.ts:calculateLineOfSight() [neu] |
+| 1031 | ⛔ | Dungeon | Tür-Dämpfung (offen: 80%, geschlossen: 30%) | niedrig | Nein | #1030 | Dungeon-System.md#sound | src/features/dungeon/sound-propagation.ts:DOOR_DAMPENING_FACTORS [neu] |
+| 1035 | ⬜ | Dungeon | 3D-Grid Navigation (Balkone, Tunnel-Schrägen) | niedrig | Nein | #807 | Dungeon-System.md#multi-level-navigation | src/features/dungeon/3d-grid.ts:calculate3DPath() [neu] |
+| 1037 | ⛔ | Dungeon | Level-Wechsel bei Stair-Tile-Kontakt | niedrig | Nein | #1036 | Dungeon-System.md#multi-level-navigation | src/features/dungeon/movement-triggers.ts:handleLevelTransition() [neu] |

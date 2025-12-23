@@ -20,6 +20,42 @@ Der Cartographer ist der zentrale Map-Editor mit kontextabhaengigen Tools je nac
 
 ---
 
+## Empfohlener Workflow (Overland)
+
+Der typische Workflow fuer die Erstellung einer Overland-Karte:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  1. TERRAIN MALEN (grob)                                            │
+│     → Terrain-Brush: Vordefinierte Terrains platzieren              │
+│     → Grosse Brush-Size fuer schnelles Malen                        │
+│                                                                      │
+│  2. ÜBERGÄNGE SMOOTHEN                                              │
+│     → Smooth-Transitions-Tool: Elevation, Temp, Precipitation       │
+│     → Nur an Terrain-Grenzen, Weighted Average                      │
+│                                                                      │
+│  3. DETAIL-LAYER ANPASSEN                                           │
+│     → Elevation-Brush: Berge, Taeler, Klippen                       │
+│     → Climate-Brush: Lokale Overrides (kalter Sumpf, heisse Oase)  │
+│     → Location-Marker: POIs platzieren                              │
+│                                                                      │
+│  4. DERIVED-DATEN BERECHNEN (Button-Click)                          │
+│     → Calculate-Derived-Tool: Water, Wind Shadow, Forest, Desert   │
+│     → Preview → Apply                                               │
+│                                                                      │
+│  5. FEINSCHLIFF                                                     │
+│     → Inspector: Einzelne Tiles anpassen                            │
+│     → Path-Tool: Strassen, Fluesse (Post-MVP)                       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Vorteile:**
+- **Schnell:** Grobes Malen zuerst, Details spaeter
+- **Konsistent:** Automatische Berechnungen fuer realistische Klima-Effekte
+- **Reversibel:** TileClimateModifiers koennen jederzeit entfernt werden
+
+---
+
 ## Layout-Wireframe
 
 ### Standard-Layout
@@ -57,6 +93,9 @@ Der Cartographer ist der zentrale Map-Editor mit kontextabhaengigen Tools je nac
 | 🖌️ | Terrain-Brush | Overland | MVP |
 | ⛰️ | Elevation-Brush | Overland | MVP |
 | 🌡️ | Climate-Brush | Overland | Post-MVP |
+| ☠️ | Danger-Zone-Brush | Overland | MVP |
+| 🔄 | Smooth-Transitions | Overland | Post-MVP |
+| ⚡ | Calculate-Derived | Overland | Post-MVP |
 | 🛤️ | Path-Tool | Overland | Post-MVP |
 | 📍 | Location-Marker | Overland | MVP |
 | 👁️ | Inspector | Alle | MVP |
@@ -164,7 +203,9 @@ Kontrolliert Hoehenwerte fuer Terrain.
 
 ### Climate-Brush (Overland)
 
-Ueberschreibt berechnete Klimawerte lokal.
+Ueberschreibt berechnete Klimawerte lokal. Erstellt `TileClimateModifiers` auf Tile-Level.
+
+→ Schema: [Terrain.md#tileclimatemodifiers](../domain/Terrain.md#tileclimatemodifiers)
 
 ```
 ┌──────────────────────────────────────┐
@@ -173,7 +214,7 @@ Ueberschreibt berechnete Klimawerte lokal.
 │                                      │
 │  Layer                               │
 │  ───────────────────────────────────│
-│  [● Temp] [○ Precip] [○ Wind]       │
+│  [● Temp] [○ Precip] [○ Wind] [○ Fog]│
 │                                      │
 │  ─────────── Temperature ──────────│
 │                                      │
@@ -191,10 +232,12 @@ Ueberschreibt berechnete Klimawerte lokal.
 │                                      │
 │  ─────────── Wind ─────────────────│
 │                                      │
-│  Direction: [N] [NE] [●E] [SE]      │
-│             [S] [SW] [W] [NW]       │
+│  Exposure: [sheltered] [●normal] [exposed]│
 │                                      │
-│  Strength: [====●=====] Moderate    │
+│  ─────────── Fog ──────────────────│
+│                                      │
+│  Override: [=======●==] +25%        │
+│  Range: -50% to +100%               │
 │                                      │
 │  Brush                               │
 │  ───────────────────────────────────│
@@ -205,6 +248,195 @@ Ueberschreibt berechnete Klimawerte lokal.
 │                                      │
 └──────────────────────────────────────┘
 ```
+
+**Layer-Beschreibung:**
+
+| Layer | Parameter | Speicherung |
+|-------|-----------|-------------|
+| **Temp** | `temperatureModifier` | TileClimateModifiers |
+| **Precip** | `humidityModifier` | TileClimateModifiers |
+| **Wind** | `windExposure` | TileClimateModifiers |
+| **Fog** | `humidityModifier` (beeinflusst fogChance) | TileClimateModifiers |
+
+**Hinweis:** Fog und Precip teilen sich `humidityModifier` - erhoehte Humidity erhoeht sowohl Niederschlag als auch Nebel.
+
+### Danger-Zone-Brush (Overland)
+
+Setzt die Gefahrenstufe fuer automatische Encounter-Generierung. Die Danger-Zone bestimmt das CR-Budget eines Hexes.
+
+→ Schema: [Map.md#danger-zones-und-cr-budget](../domain/Map.md#danger-zones-und-cr-budget)
+
+```
+┌──────────────────────────────────────┐
+│  ☠️ DANGER ZONE                       │
+├──────────────────────────────────────┤
+│                                      │
+│  Zone-Stufe                          │
+│  ───────────────────────────────────│
+│  ┌──────┐ ┌──────┐                  │
+│  │ 🟢   │ │ 🟡   │                  │
+│  │ Safe │ │Normal│ ← default        │
+│  │ CR 5 │ │CR 15 │                  │
+│  └──────┘ └──────┘                  │
+│  ┌──────┐ ┌──────┐                  │
+│  │ 🟠   │ │ 🔴   │                  │
+│  │Danger│ │Deadly│                  │
+│  │CR 30 │ │CR 50 │                  │
+│  └──────┘ └──────┘                  │
+│                                      │
+│  Brush Size                          │
+│  ───────────────────────────────────│
+│  [1] [●2] [3] [4] [5]               │
+│                                      │
+│  Options                             │
+│  ───────────────────────────────────│
+│  ☐ Show Zone Overlay                │
+│  ☐ Show CR Budget                   │
+│                                      │
+│  [Clear Selection]                   │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+**Zone-Stufen:**
+
+| Zone | CR-Budget | Farbe | Typische Verwendung |
+|------|-----------|-------|---------------------|
+| **Safe** | 5 | Gruen | Staedte, Lager, Schutzgebiete |
+| **Normal** | 15 | Gelb | Standard-Wildnis (Default) |
+| **Dangerous** | 30 | Orange | Monster-Territorien, Grenzlaender |
+| **Deadly** | 50 | Rot | Drachen-Lande, verfluchte Zonen |
+
+**Overlay-Darstellung:**
+
+Wenn "Show Zone Overlay" aktiviert ist, werden Hexes entsprechend ihrer Danger-Zone eingefaerbt:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                                                     │
+│      🟢        🟡        🟡        🟠               │
+│   Safe      Normal    Normal    Danger             │
+│      🟡        🔴        🟠        🟠               │
+│   Normal    Deadly    Danger    Danger             │
+│                                                     │
+└─────────────────────────────────────────────────────┘
+```
+
+**CR-Budget-Anzeige:**
+
+Wenn "Show CR Budget" aktiviert ist, zeigt jedes Hex sein verfuegbares Budget:
+
+- Basis-Budget (aus Danger-Zone)
+- Verbrauch durch Fraktionen (crSpent)
+- Verfuegbares Budget (Differenz)
+
+→ Details: [Map.md](../domain/Map.md#cr-budget-berechnung)
+
+### Smooth-Transitions-Tool (Overland)
+
+Glaettet Uebergaenge an Terrain-Grenzen.
+
+```
+┌──────────────────────────────────────┐
+│  🔄 SMOOTH TRANSITIONS               │
+├──────────────────────────────────────┤
+│                                      │
+│  Layers                              │
+│  ───────────────────────────────────│
+│  ☑️ Elevation                        │
+│  ☑️ Temperature                      │
+│  ☑️ Humidity/Precipitation           │
+│  ☐ Wind Exposure                     │
+│                                      │
+│  Strength                            │
+│  ───────────────────────────────────│
+│  [====●=====] 50%                   │
+│                                      │
+│  Scope                               │
+│  ───────────────────────────────────│
+│  [● Selection] [○ All Borders]      │
+│                                      │
+│  [Apply to Selection] [Apply to All] │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+**Algorithmus:** Weighted Average an Terrain-Grenzen
+
+```typescript
+function smoothAtBorder(tile: Tile, neighbors: Tile[]): number {
+  let weightedSum = tile.value;
+  let totalWeight = 1;
+
+  for (const neighbor of neighbors) {
+    if (neighbor.terrain !== tile.terrain) {
+      const weight = 0.5;  // Nachbar-Gewicht
+      weightedSum += neighbor.value * weight;
+      totalWeight += weight;
+    }
+  }
+
+  return weightedSum / totalWeight;
+}
+```
+
+**Anwendung:**
+- Nur an **Terrain-Grenzen** (nicht mitten im Terrain)
+- Glaettet harte Uebergaenge (z.B. Wald -10°C → Wueste +40°C)
+- Ergebnis wird in `TileClimateModifiers` gespeichert
+
+### Calculate-Derived-Tool (Overland)
+
+Berechnet abgeleitete Klima-Werte aus Terrain-Einfluessen.
+
+→ Terrain-Einfluss-Werte: [Weather-System.md#terrain-einfluss](../features/Weather-System.md#terrain-einfluss-nice-to-have)
+
+```
+┌──────────────────────────────────────┐
+│  ⚡ CALCULATE DERIVED                │
+├──────────────────────────────────────┤
+│                                      │
+│  Effects                             │
+│  ───────────────────────────────────│
+│  ☑️ Water influence (temp, precip)   │
+│  ☑️ Mountain wind shadow             │
+│  ☑️ Forest humidity                  │
+│  ☑️ Desert heat radiation            │
+│  ☑️ Elevation → Temperature          │
+│                                      │
+│  Mode                                │
+│  ───────────────────────────────────│
+│  [● Preview] [○ Apply directly]     │
+│                                      │
+│  [Calculate]                         │
+│                                      │
+│  ─────────── Preview ───────────────│
+│                                      │
+│  Affected tiles: 127                 │
+│  Avg temp change: -2.3°C            │
+│  Avg precip change: +8%              │
+│                                      │
+│  [Apply Changes] [Discard]           │
+│                                      │
+└──────────────────────────────────────┘
+```
+
+**Berechnete Effekte:**
+
+| Effekt | Quelle | Radius | Auswirkung |
+|--------|--------|--------|------------|
+| Water influence | water Terrain | 2 Tiles | -3°C temp, +10% precip |
+| Mountain wind shadow | mountains | 3 Tiles | ×0.5 wind (Leeseite) |
+| Forest humidity | forest | 1 Tile | +15% humidity |
+| Desert heat | desert | 2 Tiles | +5°C temp, -20% precip |
+| Elevation→Temp | tile.elevation | - | -6.5°C / 1000m |
+
+**Persistierung:** Ergebnisse werden in `TileClimateModifiers` gespeichert. Urspruengliche Terrain-Werte bleiben unveraendert.
+
+**Workflow:**
+1. **Preview**: Zeigt betroffene Tiles und durchschnittliche Aenderungen
+2. **Apply**: Schreibt Ergebnisse in die Tiles
+3. **Rueckgaengig**: Tile.climateModifiers loeschen setzt auf Terrain-Default zurueck
 
 ### Path-Tool (Overland) (Post-MVP)
 
@@ -355,8 +587,43 @@ Zeigt Details zum ausgewaehlten Tile/Element.
 │  • Elven Council (75%)               │
 │  • Bandits (15%)                     │
 │                                      │
+│  Encounter Budget                    │
+│  ───────────────────────────────────│
+│  Danger Zone: [Normal ▼]            │
+│  CR Budget:   15                     │
+│  CR Spent:    3.5 (by factions)      │
+│  CR Available: 11.5                  │
+│  [Edit Zone...]                      │
+│                                      │
 └──────────────────────────────────────┘
 ```
+
+**Encounter Budget Details:**
+
+| Feld | Beschreibung |
+|------|--------------|
+| **Danger Zone** | Dropdown: Safe/Normal/Dangerous/Deadly |
+| **CR Budget** | Basis-Budget aus Danger-Zone (oder manueller Override) |
+| **CR Spent** | Berechnet aus: Σ(faction.strength × faction.presence) |
+| **CR Available** | Budget - Spent (fuer neue Encounters verfuegbar) |
+
+**Edit Zone Dialog:**
+
+```
+┌──────────────────────────────────────┐
+│  Edit Encounter Budget               │
+├──────────────────────────────────────┤
+│                                      │
+│  Danger Zone: [Normal ▼]            │
+│                                      │
+│  ☐ Manual CR Override               │
+│  CR Budget: [   15   ]              │
+│                                      │
+│  [Apply] [Cancel]                    │
+└──────────────────────────────────────┘
+```
+
+→ Details: [Map.md](../domain/Map.md#danger-zones-und-cr-budget)
 
 ---
 
@@ -665,6 +932,9 @@ type ToolType = OverlandTool | DungeonTool;
 | Elevation-Brush (Paint) | ✓ | | Basis-Hoehen |
 | Elevation-Brush (Gradient) | | mittel | Erweitert |
 | Climate-Brush | | mittel | Override-System |
+| **Danger-Zone-Brush** | ✓ | | CR-Budget fuer Encounter-Generierung |
+| Smooth-Transitions-Tool | | mittel | Terrain-Grenzen glätten |
+| Calculate-Derived-Tool | | mittel | Terrain-Einflüsse berechnen |
 | **Path-Tool** | | ✓ | Lineare Features |
 | Location-Marker | ✓ | | Entity-Verknuepfung |
 | Inspector | ✓ | | Tile-Details |
@@ -679,38 +949,96 @@ type ToolType = OverlandTool | DungeonTool;
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 2500 | Cartographer View Component (Hauptcontainer) | hoch | Ja | - | Cartographer.md#layout-wireframe, Application.md#workmodes |
-| 2501 | Cartographer ViewModel mit State-Management | hoch | Ja | - | Cartographer.md#state-management, Application.md#viewmodels |
-| 2502 | Tool-Palette Component (Kontextabhängig Map-Typ) | hoch | Ja | - | Cartographer.md#tool-panels, Cartographer.md#tool-legende |
-| 2503 | Terrain-Brush Tool (Terrain malen) | hoch | Ja | - | Cartographer.md#terrain-brush-overland, Terrain.md#schema, Map-Feature.md#overworldtile |
-| 2504 | Elevation-Brush Tool (Paint Mode) | hoch | Ja | - | Cartographer.md#elevation-brush-overland, Map-Feature.md#overworldtile |
-| 2505 | Elevation-Brush Tool (Gradient Mode) | mittel | Nein | - | Cartographer.md#elevation-brush-overland |
-| 2506 | Elevation-Brush Tool (Smooth Mode) | mittel | Nein | - | Cartographer.md#elevation-brush-overland |
-| 2507 | Climate-Brush Tool (Temperature/Precipitation/Wind Override) | mittel | Nein | - | Cartographer.md#climate-brush-overland, Weather-System.md#tile-basierte-wetter-ranges, Terrain.md#climateprofile |
-| 2509 | Path-Tool (Lineare Features: Roads, Rivers, Cliffs, Ravines) | mittel | Nein | #1800, #1820, #2502, #2507 | Cartographer.md#path-tool-overland-post-mvp, Path.md#schema, Path.md#pathdisplaystyle, Map-Feature.md#path-rendering |
-| 2510 | Location-Marker Tool (POI-Platzierung) | hoch | Ja | #1500, #1510, #2502, #2507 | Cartographer.md#location-marker-overland, POI.md#basepoi, POI.md#poi-typen, Map-Feature.md#overworldtile |
-| 2511 | Inspector Tool (Tile-Details anzeigen/bearbeiten) | hoch | Ja | #802, #1509, #2500, #2502 | Cartographer.md#inspector-alle-map-typen, Map-Feature.md#overworldtile, POI.md#queries |
-| 2512 | Wall-Tool (Dungeon: Wände zeichnen) | hoch | Ja | #806, #808, #2502, #2511 | Cartographer.md#wall-tool-dungeon, Dungeon-System.md#dungeontile, Map-Feature.md#dungeonmap |
-| 2513 | Door-Tool (Dungeon: Türen platzieren) | hoch | Ja | #808, #2502, #2511 | Cartographer.md#door-tool-dungeon, Dungeon-System.md#dungeontile, Map-Feature.md#dungeontile |
-| 2514 | Trap-Tool (Dungeon: Fallen platzieren) | mittel | Nein | #810, #1504, #2502, #2511 | Cartographer.md#trap-tool-dungeon, Dungeon-System.md#dungeontilecontent, Map-Feature.md#dungeontile, POI.md#trappoi |
-| 2515 | Token-Placer Tool (Dungeon: Creatures/Objects/Light) | hoch | Ja | #808, #1200, #2502, #2511 | Cartographer.md#token-placer-dungeon, Dungeon-System.md#dungeontile, Creature.md#schema, Map-Feature.md#dungeontile |
-| 2516 | Layer-Control Component (Visibility/Lock für Layers) | hoch | Ja | #2500, #2501, #2502 | Cartographer.md#layer-control, Cartographer.md#state-management |
-| 2517 | Map-Canvas Component (Rendering Hex/Grid) | hoch | Ja | #801, #806, #2500, #2516 | Cartographer.md#layout-wireframe, Map-Feature.md#rendering, Map-Feature.md#overworld-rendering, Map-Feature.md#dungeon-rendering |
-| 2518 | Camera Controls (Pan/Zoom) | hoch | Ja | #2516, #2517 | Cartographer.md#keyboard-shortcuts, Cartographer.md#state-management |
-| 2519 | Brush-Size Controls (1-5, Kontext pro Tool) | hoch | Ja | #2503, #2504, #2507, #2516 | Cartographer.md#terrain-brush-overland, Cartographer.md#elevation-brush-overland, Cartographer.md#climate-brush-overland |
-| 2520 | Brush-Shape Controls (Circle/Line/Fill) | hoch | Ja | #2503, #2516 | Cartographer.md#terrain-brush-overland |
-| 2521 | Undo/Redo Funktionalität | hoch | Ja | #2501, #2516 | Cartographer.md#state-management, Cartographer.md#keyboard-shortcuts |
-| 2522 | Auto-Elevation Option (Terrain-abhängige Höhe) | mittel | Nein | - | Cartographer.md#terrain-brush-overland, Terrain.md#schema |
-| 2523 | Preview Mode (Änderungen vor Apply anzeigen) | niedrig | Nein | #2503, #2504, #2507, #2522 | Cartographer.md#terrain-brush-overland |
-| 2524 | Terrain Custom Type Creator | mittel | Nein | #1700, #1707, #2503, #2522 | Cartographer.md#terrain-brush-overland, Terrain.md#custom-terrains-mvp, Terrain.md#schema |
-| 2525 | Path Properties Editor (Speed, Barrier, Transport-Requirement) | mittel | Nein | #1800, #1802, #2509, #2522 | Cartographer.md#path-tool-overland-post-mvp, Path.md#pathmovement, Path.md#pathencountermodifier |
-| 2526 | Path Custom Type Creator | mittel | Nein | #1800, #2509, #2522 | Cartographer.md#path-tool-overland-post-mvp, Path.md#schema, Path.md#default-presets |
-| 2527 | Location Editor Modal (On-Place Integration) | hoch | Ja | #1501, #1502, #2510, #2522 | Cartographer.md#location-marker-overland, POI.md#entrancepoi, POI.md#landmarkpoi, Map-Navigation.md#bidirektionale-links |
-| 2528 | Keyboard Shortcuts (1-6 Tools, Brush-Size, Undo/Redo) | mittel | Nein | #2500, #2501, #2502, #2521 | Cartographer.md#keyboard-shortcuts, Cartographer.md#state-management |
-| 2529 | Map-Type-Switch (Overland ↔ Dungeon Tool-Palette) | hoch | Ja | #801, #806, #2502, #2528 | Cartographer.md#tool-panels, Map-Feature.md#overworldmap, Map-Feature.md#dungeonmap |
-| 2530 | Grid-View Toggle (Hex/Grid anzeigen/verstecken) | hoch | Ja | #2516, #2528 | Cartographer.md#layer-control, Cartographer.md#state-management |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 2500 | ✅ | Application/Cartographer | Cartographer View Component (Hauptcontainer mit Tool-Sidebar + Canvas + Layer-Panel) | hoch | Ja | - | Cartographer.md#layout-wireframe, Application.md#workmodes | [neu] src/application/cartographer/view.ts |
+| 2501 | ✅ | Application/Cartographer | Cartographer ViewModel mit State-Management | hoch | Ja | - | Cartographer.md#state-management, Application.md#viewmodels | [neu] src/application/cartographer/viewmodel.ts |
+| 2502 | ✅ | Application/Cartographer | Tool-Wechsel State (activeTool, toolOptions) | hoch | Ja | - | Cartographer.md#tool-panels, Cartographer.md#tool-legende | viewmodel.ts:setActiveTool() |
+| 2503 | ✅ | Application/Cartographer | Map-Typ Erkennung (Overland vs Dungeon → passende Tool-Palette) | hoch | Ja | - | Cartographer.md#terrain-brush-overland, Terrain.md#schema, Map-Feature.md#overworldtile | viewmodel.ts:mapType switch |
+| 2504 | ✅ | Application/Cartographer | Camera State (Pan, Zoom) | hoch | Ja | - | Cartographer.md#elevation-brush-overland, Map-Feature.md#overworldtile | viewmodel.ts:camera |
+| 2505 | ✅ | Application/Cartographer | Selection State (selectedTiles, hoveredTile) | hoch | Ja | - | Cartographer.md#state-management | viewmodel.ts:selectedTiles |
+| 2506 | ✅ | Application/Cartographer | Undo/Redo Stack Implementation | hoch | Ja | - | Cartographer.md#state-management | viewmodel.ts:undoStack/redoStack |
+| 2507 | ✅ | Application/Cartographer | Terrain-Brush Tool Component (Overland) | hoch | Ja | - | Cartographer.md#climate-brush-overland, Weather-System.md#tile-basierte-wetter-ranges, Terrain.md#climateprofile | [neu] src/application/cartographer/tools/TerrainBrush.svelte |
+| 2509 | ⛔ | Application/Cartographer | Terrain-Brush Interaktionen (Click+Drag Paint, Right-Click Picker, Shift-Line) | hoch | Ja | #1800, #1820, #2502, #2507 | Cartographer.md#path-tool-overland-post-mvp, Path.md#schema, Path.md#pathdisplaystyle, Map-Feature.md#path-rendering | TerrainBrush.svelte:handleMouseDown/Drag |
+| 2510 | ⛔ | Application/Cartographer | Terrain-Brush Auto-Elevation Option | mittel | Nein | #1500, #1510, #2502, #2507 | Cartographer.md#location-marker-overland, POI.md#basepoi, POI.md#poi-typen, Map-Feature.md#overworldtile | TerrainBrushPanel.svelte:autoElevation toggle |
+| 2511 | ⛔ | Application/Cartographer | Elevation-Brush Tool Component (Overland) | hoch | Ja | #802, #1509, #2500, #2502 | Cartographer.md#inspector-alle-map-typen, Map-Feature.md#overworldtile, POI.md#queries | [neu] src/application/cartographer/tools/ElevationBrush.svelte |
+| 2512 | ⛔ | Application/Cartographer | Elevation-Brush Paint Mode (Direktes Setzen von Höhenwerten mit Presets) | hoch | Ja | #806, #808, #2502, #2511 | Cartographer.md#wall-tool-dungeon, Dungeon-System.md#dungeontile, Map-Feature.md#dungeonmap | ElevationBrush.svelte:paintMode |
+| 2513 | ⛔ | Application/Cartographer | Elevation-Brush Gradient Mode (Start/End Höhe, Falloff Linear/Smooth) | mittel | Nein | #808, #2502, #2511 | Cartographer.md#door-tool-dungeon, Dungeon-System.md#dungeontile, Map-Feature.md#dungeontile | ElevationBrush.svelte:gradientMode |
+| 2514 | ⛔ | Application/Cartographer | Elevation-Brush Smooth Mode (Iterations, Preserve Peaks) | mittel | Nein | #810, #1504, #2502, #2511 | Cartographer.md#trap-tool-dungeon, Dungeon-System.md#dungeontilecontent, Map-Feature.md#dungeontile, POI.md#trappoi | ElevationBrush.svelte:smoothMode |
+| 2515 | ⛔ | Application/Cartographer | Elevation-Brush Strength Slider | mittel | Ja | #808, #1200, #2502, #2511 | Cartographer.md#token-placer-dungeon, Dungeon-System.md#dungeontile, Creature.md#schema, Map-Feature.md#dungeontile | ElevationBrush.svelte:strength |
+| 2516 | ⬜ | Application/Cartographer | Climate-Brush Tool Component (Overland) | niedrig | Nein | #2500, #2501, #2502 | Cartographer.md#layer-control, Cartographer.md#state-management | [neu] src/application/cartographer/tools/ClimateBrush.svelte |
+| 2517 | ⛔ | Application/Cartographer | Climate-Brush Layer Selection (Temp/Precip/Wind) | niedrig | Nein | #801, #806, #2500, #2516 | Cartographer.md#layout-wireframe, Map-Feature.md#rendering, Map-Feature.md#overworld-rendering, Map-Feature.md#dungeon-rendering | ClimateBrush.svelte:activeLayer |
+| 2518 | ⛔ | Application/Cartographer | Climate-Brush Temperature Override (Additive/Absolute Mode) | niedrig | Nein | #2516, #2517 | Cartographer.md#keyboard-shortcuts, Cartographer.md#state-management | ClimateBrush.svelte:tempOverride |
+| 2519 | ⛔ | Application/Cartographer | Climate-Brush Precipitation Override | niedrig | Nein | #2503, #2504, #2507, #2516 | Cartographer.md#terrain-brush-overland, Cartographer.md#elevation-brush-overland, Cartographer.md#climate-brush-overland | ClimateBrush.svelte:precipOverride |
+| 2520 | ⛔ | Application/Cartographer | Climate-Brush Wind Override (Direction + Strength) | niedrig | Nein | #2503, #2516 | Cartographer.md#climate-brush-overland | ClimateBrush.svelte:windOverride |
+| 2521 | ⛔ | Application/Cartographer | Climate-Brush Falloff Control | niedrig | Nein | #2501, #2516 | Cartographer.md#state-management, Cartographer.md#keyboard-shortcuts | ClimateBrush.svelte:falloff |
+| 2522 | ⬜ | Application/Cartographer | Auto-Elevation Option (Terrain-abhängige Höhe) | mittel | Nein | - | Cartographer.md#terrain-brush-overland, Terrain.md#schema | TerrainBrush.svelte:autoElevation |
+| 2523 | ⛔ | Application/Cartographer | Preview Mode (Änderungen vor Apply anzeigen) | niedrig | Nein | #2503, #2504, #2507, #2522 | Cartographer.md#terrain-brush-overland | TerrainBrush.svelte:previewMode |
+| 2524 | ⛔ | Application/Cartographer | Terrain Custom Type Creator | mittel | Nein | #1700, #1707, #2503, #2522 | Cartographer.md#terrain-brush-overland, Terrain.md#custom-terrains-mvp, Terrain.md#schema | [neu] TerrainTypeCreator.svelte |
+| 2525 | ⛔ | Application/Cartographer | Path Properties Editor (Speed, Barrier, Transport-Requirement) | mittel | Nein | #1800, #1802, #2509, #2522 | Cartographer.md#path-tool-overland-post-mvp, Path.md#pathmovement, Path.md#pathencountermodifier | PathTool.svelte:propertiesEditor |
+| 2526 | ⛔ | Application/Cartographer | Path Custom Type Creator | mittel | Nein | #1800, #2509, #2522 | Cartographer.md#path-tool-overland-post-mvp, Path.md#schema, Path.md#default-presets | [neu] PathTypeCreator.svelte |
+| 2527 | ⛔ | Application/Cartographer | Location Editor Modal (On-Place Integration) | hoch | Ja | #1501, #1502, #2510, #2522 | Cartographer.md#location-marker-overland, POI.md#entrancepoi, POI.md#landmarkpoi, Map-Navigation.md#bidirektionale-links | [neu] LocationEditorModal.svelte |
+| 2528 | ⛔ | Application/Cartographer | Location-Marker Tool Component (Overland) | hoch | Ja | #2500, #2501, #2502, #2521 | Cartographer.md#keyboard-shortcuts, Cartographer.md#state-management | [neu] src/application/cartographer/tools/LocationMarker.svelte |
+| 2529 | ⛔ | Application/Cartographer | Location-Marker Type Selection (Settlement/Dungeon/Landmark/Custom) | hoch | Ja | #801, #806, #2502, #2528 | Cartographer.md#tool-panels, Map-Feature.md#overworldmap, Map-Feature.md#dungeonmap | LocationMarker.svelte:locationType |
+| 2530 | ⛔ | Application/Cartographer | Location-Marker Settlement Icons (Village, Town, City) | hoch | Ja | #2516, #2528 | Cartographer.md#layer-control, Cartographer.md#state-management | LocationMarker.svelte:settlementIcons |
+| 2508 | ⬜ | Application/Cartographer | Terrain-Brush Options Panel (Terrain-Auswahl Grid, Brush Size, Shape) | hoch | Ja | #802, #2502, #2507 | Cartographer.md#terrain-brush-overland, Map-Feature.md#overworldtile | [neu] src/application/cartographer/panels/TerrainBrushPanel.svelte |
+| 2531 | ⛔ | Application/Cartographer | Location-Marker Dungeon Icons (Cave, Ruins, Mine) | hoch | Ja | #2528 | Cartographer.md#location-marker-overland | LocationMarker.svelte:dungeonIcons |
+| 2532 | ⛔ | Application/Cartographer | Location-Marker Landmark Icons (Tree, Peak, Tower) | mittel | Ja | #2528 | Cartographer.md#location-marker-overland | LocationMarker.svelte:landmarkIcons |
+| 2533 | ⛔ | Application/Cartographer | Location-Marker On-Place Behavior (Open Editor vs Link Existing) | hoch | Ja | #2528 | Cartographer.md#location-marker-overland | LocationMarker.svelte:onPlace |
+| 2534 | ✅ | Application/Cartographer | Inspector Tool Component (Alle Map-Typen) | hoch | Ja | - | Cartographer.md#inspector-alle-map-typen | [neu] src/application/cartographer/tools/Inspector.svelte |
+| 2535 | ⬜ | Application/Cartographer | Inspector Terrain Display (Type, Movement Cost, Change Button) | hoch | Ja | #2534 | Cartographer.md#inspector-alle-map-typen | Inspector.svelte:terrainDisplay |
+| 2536 | ⬜ | Application/Cartographer | Inspector Elevation Display (Height, Slope, Edit Button) | hoch | Ja | #2534 | Cartographer.md#inspector-alle-map-typen | Inspector.svelte:elevationDisplay |
+| 2537 | ⬜ | Application/Cartographer | Inspector Climate Display (Base Temp, Override, Precipitation, Edit Button) | mittel | Nein | #2534 | Cartographer.md#inspector-alle-map-typen | Inspector.svelte:climateDisplay |
+| 2538 | ⬜ | Application/Cartographer | Inspector Features Display (Liste mit Add/Remove Buttons) | hoch | Ja | #2534 | Cartographer.md#inspector-alle-map-typen | Inspector.svelte:featuresDisplay |
+| 2539 | ⬜ | Application/Cartographer | Inspector Locations Display (POIs auf Tile mit Details-Link) | hoch | Ja | #2534 | Cartographer.md#inspector-alle-map-typen | Inspector.svelte:locationsDisplay |
+| 2540 | ⬜ | Application/Cartographer | Inspector Factions Display (Fraktions-Präsenz mit %-Werten) | niedrig | Nein | #2534 | Cartographer.md#inspector-alle-map-typen | Inspector.svelte:factionsDisplay |
+| 2541 | ⬜ | Application/Cartographer | Wall-Tool Component (Dungeon) | hoch | Ja | #2500, #2502, #2503 | Cartographer.md#wall-tool-dungeon | [neu] src/application/cartographer/tools/WallTool.svelte |
+| 2542 | ⛔ | Application/Cartographer | Wall-Tool Type Selection (Stone, Wood, Bars, Force, Illusion) | hoch | Ja | #2541 | Cartographer.md#wall-tool-dungeon | WallTool.svelte:wallType |
+| 2543 | ⛔ | Application/Cartographer | Wall-Tool Draw Mode (Line, Rectangle, Free) | hoch | Ja | #2541 | Cartographer.md#wall-tool-dungeon | WallTool.svelte:drawMode |
+| 2544 | ⛔ | Application/Cartographer | Wall-Tool Properties (HP, AC, Blocks Vision/Movement) | hoch | Ja | #2541 | Cartographer.md#wall-tool-dungeon | WallTool.svelte:wallProperties |
+| 2545 | ⛔ | Application/Cartographer | Wall-Tool Erase Mode | hoch | Ja | #2541 | Cartographer.md#wall-tool-dungeon | WallTool.svelte:eraseMode |
+| 2546 | ⬜ | Application/Cartographer | Door-Tool Component (Dungeon) | hoch | Ja | #2500, #2502, #2503 | Cartographer.md#door-tool-dungeon | [neu] src/application/cartographer/tools/DoorTool.svelte |
+| 2547 | ⛔ | Application/Cartographer | Door-Tool Type Selection (Simple, Double, Portcullis, Secret, Trapdoor) | hoch | Ja | #2546 | Cartographer.md#door-tool-dungeon | DoorTool.svelte:doorType |
+| 2548 | ⛔ | Application/Cartographer | Door-Tool State Selection (Closed, Open, Locked, Stuck, Barred) | hoch | Ja | #2546 | Cartographer.md#door-tool-dungeon | DoorTool.svelte:doorState |
+| 2549 | ⛔ | Application/Cartographer | Door-Tool Lock Properties (DC, Key, Locked Toggle) | hoch | Ja | #2546 | Cartographer.md#door-tool-dungeon | DoorTool.svelte:lockProperties |
+| 2550 | ⛔ | Application/Cartographer | Door-Tool HP/AC Properties | mittel | Ja | #2546 | Cartographer.md#door-tool-dungeon | DoorTool.svelte:doorProperties |
+| 2551 | ⬜ | Application/Cartographer | Trap-Tool Component (Dungeon) | niedrig | Nein | #2500, #2502, #2503 | Cartographer.md#trap-tool-dungeon | [neu] src/application/cartographer/tools/TrapTool.svelte |
+| 2552 | ⛔ | Application/Cartographer | Trap-Tool Type Selection (Pit, Poison, Magic, Arrow, Fire, Mechanical) | niedrig | Nein | #2551 | Cartographer.md#trap-tool-dungeon | TrapTool.svelte:trapType |
+| 2553 | ⛔ | Application/Cartographer | Trap-Tool Detection Properties (Perception DC, Investigation DC) | niedrig | Nein | #2551 | Cartographer.md#trap-tool-dungeon | TrapTool.svelte:detectionDC |
+| 2554 | ⛔ | Application/Cartographer | Trap-Tool Disarm Properties (DC, Tool Requirement) | niedrig | Nein | #2551 | Cartographer.md#trap-tool-dungeon | TrapTool.svelte:disarmProperties |
+| 2555 | ⛔ | Application/Cartographer | Trap-Tool Effect Properties (Damage, Save, Half-on-Save) | niedrig | Nein | #2551 | Cartographer.md#trap-tool-dungeon | TrapTool.svelte:effectProperties |
+| 2556 | ⛔ | Application/Cartographer | Trap-Tool Trigger Selection (Pressure Plate, Tripwire, Proximity, Manual) | niedrig | Nein | #2551 | Cartographer.md#trap-tool-dungeon | TrapTool.svelte:trapTrigger |
+| 2557 | ⛔ | Application/Cartographer | Trap-Tool Visibility Toggle (Hidden, Visible, GM Only) | niedrig | Nein | #2551 | Cartographer.md#trap-tool-dungeon | TrapTool.svelte:visibility |
+| 2558a | ✅ | Application/Cartographer | Token-Placer Panel Component (UI) | hoch | Ja | - | Cartographer.md#token-placer-dungeon | [neu] src/application/cartographer/tools/token-placer.ts |
+| 2558b | ⬜ | Application/Cartographer | EntityRegistryPort an CartographerView übergeben | hoch | Ja | #2558a | Cartographer.md#token-placer-dungeon | [neu] src/application/cartographer/tools/token-placer.ts |
+| 2559 | ⬜ | Application/Cartographer | Token-Placer Type Selection (Creature, Object, Light) | hoch | Ja | #2558 | Cartographer.md#token-placer-dungeon | token-placer.ts:tokenType |
+| 2560 | ⬜ | Application/Cartographer | Token-Placer Creature Search (mit Recent List und Library Browse) | hoch | Ja | #2558 | Cartographer.md#token-placer-dungeon | token-placer.ts:creatureSearch |
+| 2561 | ⬜ | Application/Cartographer | Token-Placer Size Selection (T/S/M/L/H/G) | hoch | Ja | #2558 | Cartographer.md#token-placer-dungeon | token-placer.ts:sizeSelection |
+| 2562 | ⬜ | Application/Cartographer | Token-Placer Object Icons (Chest, Chair, Bed, Books, Potions, Shelf) | mittel | Nein | #2558 | Cartographer.md#token-placer-dungeon | token-placer.ts:objectIcons |
+| 2563 | ⬜ | Application/Cartographer | Token-Placer Light Source (Source, Radius, Color, Flicker) | mittel | Nein | #2558 | Cartographer.md#token-placer-dungeon | token-placer.ts:lightSource |
+| 2564 | ✅ | Application/Cartographer | Layer-Control Panel Component | hoch | Ja | - | Cartographer.md#layer-control | [neu] src/application/cartographer/panels/LayerControl.svelte |
+| 2565 | ⬜ | Application/Cartographer | Layer-Control Overland Layers (Terrain, Elevation, Climate, Faction, Features, Locations, Grid) | hoch | Ja | #2564 | Cartographer.md#layer-control | LayerControl.svelte:overlandLayers |
+| 2566 | ⬜ | Application/Cartographer | Layer-Control Dungeon Layers (Walls, Doors, Traps, Tokens, Light Sources, Grid) | hoch | Ja | #2564 | Cartographer.md#layer-control | LayerControl.svelte:dungeonLayers |
+| 2567 | ⬜ | Application/Cartographer | Layer-Control Visibility Toggle (Eye Icon) | hoch | Ja | #2564 | Cartographer.md#layer-control | LayerControl.svelte:visibilityToggle |
+| 2568 | ⬜ | Application/Cartographer | Layer-Control Lock Toggle (Lock Icon) | mittel | Ja | #2564 | Cartographer.md#layer-control | LayerControl.svelte:lockToggle |
+| 2569 | ⬜ | Application/Cartographer | Layer-Control Opacity Slider | mittel | Nein | #2564 | Cartographer.md#layer-control | LayerControl.svelte:opacitySlider |
+| 2570 | ⬜ | Application/Cartographer | Layer-Control Show All / Hide All Buttons | niedrig | Nein | #2564 | Cartographer.md#layer-control | LayerControl.svelte:showHideAll |
+| 2571 | ⬜ | Application/Cartographer | Keyboard-Shortcuts Number Keys (1-6 für Tool-Wechsel) | mittel | Nein | #2502 | Cartographer.md#keyboard-shortcuts | viewmodel.ts:handleKeyPress |
+| 2572 | ⬜ | Application/Cartographer | Keyboard-Shortcuts Brush Size ([ / ] für -/+) | mittel | Nein | #2502 | Cartographer.md#keyboard-shortcuts | viewmodel.ts:handleKeyPress |
+| 2573 | ⬜ | Application/Cartographer | Keyboard-Shortcuts Tool Letters (B=Terrain, E=Elevation, C=Climate, F=Feature, L=Location, I=Inspector) | mittel | Nein | #2502 | Cartographer.md#keyboard-shortcuts | viewmodel.ts:handleKeyPress |
+| 2574 | ⬜ | Application/Cartographer | Keyboard-Shortcuts Undo/Redo (Ctrl+Z, Ctrl+Y) | hoch | Ja | #2506 | Cartographer.md#keyboard-shortcuts | viewmodel.ts:handleKeyPress |
+| 2575 | ⬜ | Application/Cartographer | Keyboard-Shortcuts Save (Ctrl+S) | hoch | Ja | #2500 | Cartographer.md#keyboard-shortcuts | viewmodel.ts:handleKeyPress |
+| 2576 | ⬜ | Application/Cartographer | Keyboard-Shortcuts Pan (Space Hold) | mittel | Ja | #2504 | Cartographer.md#keyboard-shortcuts | viewmodel.ts:handleKeyPress |
+| 2577 | ⬜ | Application/Cartographer | Keyboard-Shortcuts Zoom (Scroll) | hoch | Ja | #2504 | Cartographer.md#keyboard-shortcuts | view.ts:handleScroll |
+| 2578 | ⬜ | Application/Cartographer | Map Canvas Rendering Component (Hex/Grid View) | hoch | Ja | #2500 | Cartographer.md#layout-wireframe | [neu] src/application/cartographer/canvas/MapCanvas.svelte |
+| 2579 | ⬜ | Application/Cartographer | Tool Options Panel Container (Kontextabhängig je nach activeTool) | hoch | Ja | #2500, #2502 | Cartographer.md#layout-wireframe | [neu] src/application/cartographer/panels/ToolOptionsPanel.svelte |
+| 2580 | ⬜ | Application/Cartographer | Sidebar Collapse/Expand Toggle | mittel | Nein | #2501 | Cartographer.md#state-management | viewmodel.ts:sidebarCollapsed |
+| 2581 | ⬜ | Application/Cartographer | Inspector Open/Close Toggle | mittel | Nein | #2501 | Cartographer.md#state-management | viewmodel.ts:inspectorOpen |
+| 2989 | ⛔ | Cartographer | Climate-Brush: Fog-Override Layer hinzufügen | mittel | Nein | #2507, #2982 | Cartographer.md#climate-brush-overland | - |
+| 2990 | ⛔ | Cartographer | Smooth-Transitions-Tool (Toolbar-Button, Weighted Average an Terrain-Grenzen) | mittel | Nein | #2983 | Cartographer.md#smooth-transitions-tool-overland | - |
+| 2991 | ⛔ | Cartographer | Calculate-Derived-Tool (Toolbar-Button, Preview/Apply für Terrain-Einflüsse) | mittel | Nein | #2988, #2990 | Cartographer.md#calculate-derived-tool-overland | - |
+| 3012 | ⛔ | Cartographer | Danger-Zone Brush Tool (Safe/Normal/Dangerous/Deadly Marker) | hoch | Ja | #3010 | Cartographer.md#danger-zone-brush, Map.md#cartographer-integration | - |
+| 3013 | ⛔ | Cartographer | Inspector: CR-Budget Anzeige (Budget, Spent, Available) | mittel | Ja | #3011 | Cartographer.md#inspector-panel, Map.md#tile-inspector | - |
 
 ---
 

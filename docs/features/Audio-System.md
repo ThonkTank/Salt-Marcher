@@ -440,33 +440,33 @@ Wenn Auto-Switch deaktiviert oder GM manuell eingreift:
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 1100 | AudioLayer Interface: music + ambience mit HTMLAudioElement | hoch | Ja | - | Audio-System.md#audio-layers, Audio-System.md#playback |
-| 1101 | Track Entity Schema: id, title, filename, layer, tags, loop, lastPlayedAt | hoch | Ja | #2801 | Audio-System.md#schemas, EntityRegistry.md |
-| 1102 | MoodContext Interface: location, weather, timeOfDay, combatState | hoch | Ja | - | Audio-System.md#schemas, Features.md#audio-hybrid-feature |
-| 1103 | Basic Playback: playTrack() mit HTMLAudioElement | hoch | Ja | #1100, #1101 | Audio-System.md#playback |
-| 1104 | Volume Control: setVolume() pro Layer (0-100) | hoch | Ja | #1100 | Audio-System.md#gm-interface |
-| 1105 | Track-Ende Handler: Nächsten Track auswählen bei ended-Event | hoch | Ja | #1103, #1108 | Audio-System.md#track-ende-handling |
-| 1106 | Crossfade: Sanfte Übergänge zwischen Tracks (3s default) | hoch | Ja | #1103, #1104 | Audio-System.md#crossfade |
-| 1107 | Mood-Matching: calculateMatchScore() für Location + Combat | hoch | Ja | #1101, #1102 | Audio-System.md#mood-matching |
-| 1108 | MoodContext Aggregation: Sammelt Tags von Map, Time, Weather, Combat | hoch | Ja | #1102, #1107 | Audio-System.md#mood-matching, Features.md#audio-hybrid-feature |
-| 1109 | Manual Override: Track direkt wählen (umgeht Mood-Matching) | hoch | Ja | #1103 | Audio-System.md#gm-interface, Events-Catalog.md#audio |
-| 1110 | AudioState Interface: currentTrack per Layer, volume, isPlaying, context | hoch | Ja | #1100, #1102, #1103 | Features.md#audio-hybrid-feature |
-| 1111 | audio:state-changed Event publizieren | hoch | Ja | #1110 | Events-Catalog.md#audio |
-| 1112 | audio:track-changed Event publizieren (reason: context/ended/skip/override) | hoch | Ja | #1110 | Events-Catalog.md#audio, Audio-System.md#context-updates |
-| 1113 | Auto-Switch on Context: Track-Wechsel bei Context-Änderung | mittel | Nein | #1108, #909, #110, #12, #322, #324 | Audio-System.md#context-updates, Features.md#audio-hybrid-feature |
-| 1114 | time:state-changed Event Handler für timeOfDay-Update | mittel | Nein | #909, #1107, #1108, #1113 | Time-System.md, Events-Catalog.md#time |
-| 1115 | environment:weather-changed Event Handler für weather-Update | mittel | Nein | #110, #1102, #1108, #1113 | Weather-System.md, Events-Catalog.md#environment |
-| 1116 | party:position-changed Event Handler für location-Update | mittel | Nein | #1108, #12 | Events-Catalog.md#party |
-| 1117 | combat:started Event Handler für combatState='active' | mittel | Nein | #1108, #322 | Events-Catalog.md#combat |
-| 1118 | combat:completed Event Handler für combatState='idle' | mittel | Nein | #1108, #324 | Events-Catalog.md#combat |
-| 1119 | audio:pause-requested Event Handler | hoch | Ja | #1103 | Events-Catalog.md#audio |
-| 1120 | audio:resume-requested Event Handler | hoch | Ja | #1103 | Events-Catalog.md#audio |
-| 1121 | audio:skip-requested Event Handler | hoch | Ja | #1103, #1108 | Events-Catalog.md#audio |
-| 1122 | audio:set-volume-requested Event Handler | hoch | Ja | #1104 | Events-Catalog.md#audio |
-| 1123 | audio:override-track-requested Event Handler | hoch | Ja | #1109 | Events-Catalog.md#audio |
-| 1124 | Least-Recently-Played Tiebreaker bei gleich guten Matches | hoch | Ja | #1107, #1101 | Audio-System.md#mood-matching |
-| 1125 | Audio Settings: Music Volume, Ambience Volume, Crossfade, Auto-Switch | hoch | Ja | #1104, #1106, #1113 | Audio-System.md#settings |
-| 1126 | Track-Editor UI in Library für Tag-Management | mittel | Nein | #1101 | Audio-System.md#track-editor-library, Library.md |
-| 1127 | Audio Panel in SessionRunner mit Play/Pause/Skip/Volume | hoch | Ja | #1103, #1104, #1119, #1120, #1121 | SessionRunner.md#audio-sektion |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 1100 | ✅ | Audio | AudioLayer Interface: music + ambience mit HTMLAudioElement | hoch | Ja | - | Audio-System.md#audio-layers, Audio-System.md#playback | [neu] src/features/audio/types.ts:AudioLayer |
+| 1101 | ⬜ | Audio | Track Entity Schema: id, title, filename, layer, tags, loop | hoch | Ja | #2801 | Audio-System.md#schemas, EntityRegistry.md | [neu] src/core/schemas/track.ts |
+| 1102 | ✅ | Audio | MoodContext Interface: location, weather, timeOfDay, combatState | hoch | Ja | - | Audio-System.md#schemas, Features.md#audio-hybrid-feature | [neu] src/features/audio/types.ts:MoodContext, src/features/audio/types.ts:LocationType |
+| 1103 | ⛔ | Audio | Basic Playback: playTrack() mit HTML5 Audio API | hoch | Ja | #1100, #1101 | Audio-System.md#html5-audio | [neu] src/features/audio/playback.ts:playTrack() |
+| 1104 | ⬜ | Audio | Volume Control: setVolume() pro Layer (0-100) | hoch | Ja | #1100 | Audio-System.md#gm-interface | [neu] src/features/audio/playback.ts:setVolume() |
+| 1105 | ⛔ | Audio | Track-Ende Handler: Nächsten Track auswählen bei ended-Event | hoch | Ja | #1103, #1108 | Audio-System.md#track-ende-handling | [neu] src/features/audio/playback.ts:handleTrackEnded() |
+| 1106 | ⛔ | Audio | Crossfade: crossfade() mit konfigurierbarer Dauer | hoch | Ja | #1103, #1104 | Audio-System.md#crossfade | [neu] src/features/audio/playback.ts:crossfade() |
+| 1107 | ⛔ | Audio | Mood-Matching: calculateMatchScore() für Location + Combat | hoch | Ja | #1101, #1102 | Audio-System.md#automatische-track-auswahl | [neu] src/features/audio/mood-matching.ts:calculateMatchScore() |
+| 1108 | ⛔ | Audio | selectTrack(): Beste Match aus Kandidaten (LRP Tiebreaker) | hoch | Ja | #1102, #1107 | Audio-System.md#mood-matching, Features.md#audio-hybrid-feature | [neu] src/features/audio/mood-matching.ts:selectTrack(), src/features/audio/mood-matching.ts:findBestMatch() |
+| 1109 | ⛔ | Audio | Manual Override: Track direkt wählen (umgeht Mood-Matching) | hoch | Ja | #1103 | Audio-System.md#gm-interface, Events-Catalog.md#audio | [neu] src/features/audio/orchestrator.ts:overrideTrack() |
+| 1110 | ⛔ | Audio | Audio Events: play/pause/skip/volume-requested Handler | hoch | Ja | #1100, #1102, #1103 | Audio-System.md#events | [neu] src/features/audio/orchestrator.ts:setupEventHandlers(), [neu] src/features/audio/types.ts:AudioState |
+| 1111 | ⛔ | Audio | audio:state-changed Event publizieren | hoch | Ja | #1110 | Audio-System.md#events | [neu] src/features/audio/orchestrator.ts:publishStateChanged() |
+| 1112 | ⛔ | Audio | audio:track-changed Event publizieren (reason: context/ended/skip/override) | hoch | Ja | #1110 | Events-Catalog.md#audio, Audio-System.md#context-updates | [neu] src/features/audio/orchestrator.ts:publishTrackChanged() |
+| 1113 | ⛔ | Audio | Auto-Switch on Context: Track-Wechsel bei Context-Änderung | mittel | Nein | #1108, #909, #110, #12, #322, #324 | Audio-System.md#context-updates, Features.md#audio-hybrid-feature | [neu] src/features/audio/orchestrator.ts:handleContextChange(), [ändern] src/features/audio/orchestrator.ts:setupEventHandlers() |
+| 1114 | ⛔ | Audio | Weather-Matching: Ambience anpassen bei weather-changed | niedrig | Nein | #909, #1107, #1108, #1113 | Time-System.md, Events-Catalog.md#time | [neu] src/features/audio/mood-matching.ts |
+| 1115 | ⛔ | Audio | audio:context-changed Event Handler | mittel | Nein | #110, #1102, #1108, #1113 | Weather-System.md, Events-Catalog.md#environment | [neu] src/features/audio/orchestrator.ts:handleAudioContextChanged(), [ändern] src/features/audio/orchestrator.ts:setupEventHandlers() |
+| 1116 | ⬜ | - | party:position-changed Event Handler für location-Update | mittel | Nein | #1108, #12 | Events-Catalog.md#party | - |
+| 1117 | ⬜ | - | combat:started Event Handler für combatState='active' | mittel | Nein | #1108, #322 | Events-Catalog.md#combat | - |
+| 1118 | ⬜ | - | combat:completed Event Handler für combatState='idle' | mittel | Nein | #1108, #324 | Events-Catalog.md#combat | - |
+| 1119 | ⛔ | Audio | audio:pause-requested Event Handler | hoch | Ja | #1103 | Events-Catalog.md#audio | [neu] src/features/audio/orchestrator.ts:handlePauseRequested() |
+| 1120 | ⛔ | Audio | audio:resume-requested Event Handler | hoch | Ja | #1103 | Events-Catalog.md#audio | [neu] src/features/audio/orchestrator.ts:handleResumeRequested() |
+| 1121 | ⛔ | Audio | audio:skip-requested Event Handler | hoch | Ja | #1103, #1108 | Events-Catalog.md#audio | [neu] src/features/audio/orchestrator.ts:handleSkipRequested() |
+| 1122 | ⬜ | - | audio:set-volume-requested Event Handler | hoch | Ja | #1104 | Events-Catalog.md#audio | - |
+| 1123 | ⬜ | - | audio:override-track-requested Event Handler | hoch | Ja | #1109 | Events-Catalog.md#audio | - |
+| 1124 | ⬜ | - | Least-Recently-Played Tiebreaker bei gleich guten Matches | hoch | Ja | #1107, #1101 | Audio-System.md#mood-matching | - |
+| 1125 | ⬜ | - | Audio Settings: Music Volume, Ambience Volume, Crossfade, Auto-Switch | hoch | Ja | #1104, #1106, #1113 | Audio-System.md#settings | - |
+| 1126 | ⬜ | - | Track-Editor UI in Library für Tag-Management | mittel | Nein | #1101 | Audio-System.md#track-editor-library, Library.md | - |
+| 1127 | ⬜ | - | Audio Panel in SessionRunner mit Play/Pause/Skip/Volume | hoch | Ja | #1103, #1104, #1119, #1120, #1121 | SessionRunner.md#audio-sektion | - |

@@ -418,12 +418,12 @@ function handleEncounterError(error: EncounterError): void {
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 2916 | NotificationService Interface (show() Methode mit Notification-Typ) | hoch | Ja | - | Error-Handling.md#notification-service, Application.md#viewmodel--feature-kommunikation |
-| 2917a | Notification Type: type, title, message, duration + show() Methode | hoch | Ja | #2916 | Error-Handling.md#notification-service, Error-Handling.md#user-feedback |
-| 2917b | NotificationAction[] Support (Custom Modal für interaktive Actions) | mittel | Nein | #2916, #2917a | Error-Handling.md#user-feedback, Error-Handling.md#recovery-strategien |
-| 2918 | NotificationService Obsidian Implementation (nutzt Notice API) | hoch | Ja | #2916, #2917a | Error-Handling.md#notification-service, Infrastructure.md |
-| 2919 | Error-Formatter Utilities: formatMapError, formatTravelError, etc. für User-Nachrichten | hoch | Ja | #2917a | Error-Handling.md#user-feedback, Error-Handling.md#error-kategorisierung-fuer-user |
-| 2920 | Structured Logging: LogEntry Type, Logger Interface (debug, info, warn, error) | niedrig | Nein | #2702 | Error-Handling.md#structured-logging, Error-Handling.md#log-levels, Core.md#branded-types |
-| 2921 | Structured Logging: Console/File Logger Implementierung | niedrig | Nein | #2920 | Error-Handling.md#structured-logging, Error-Handling.md#wann-loggen |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 2916 | ✅ | Application | NotificationService Interface (show() Methode mit Notification-Typ) | hoch | Ja | - | Error-Handling.md#notification-service, Application.md#viewmodel--feature-kommunikation | src/application/shared/notification-service.ts:NotificationService (existiert - interface und implementation kombiniert) |
+| 2917a | ✅ | Application | Notification Type: type, title, message, duration + show() Methode | hoch | Ja | #2916 | Error-Handling.md#notification-service, Error-Handling.md#user-feedback | src/application/shared/notification-service.ts:Notification, NotificationType, NotificationAction, show() |
+| 2917b | ⬜ | Application | NotificationAction[] Support (Custom Modal für interaktive Actions) | mittel | Nein | #2916, #2917a | Error-Handling.md#user-feedback, Error-Handling.md#recovery-strategien | src/application/shared/notification-service.ts:show() [ändern] |
+| 2918 | ✅ | Application | NotificationService Obsidian Implementation (nutzt Notice API) | hoch | Ja | #2916, #2917a | Error-Handling.md#notification-service, Infrastructure.md | src/application/shared/notification-service.ts:createNotificationService() (existiert - nutzt Obsidian Notice) |
+| 2919 | ✅ | Application | Error-Formatter Utilities: formatMapError, formatTravelError, etc. für User-Nachrichten | hoch | Ja | #2917a | Error-Handling.md#user-feedback, Error-Handling.md#error-kategorisierung-fuer-user | src/application/shared/notification-service.ts:formatMapError(), formatTravelError(), formatTimeError(), formatWeatherError(), formatPartyError(), formatEncounterError(), formatCombatError(), formatQuestError() |
+| 2920 | ⬜ | Architecture | Structured Logging: LogEntry Type, Logger Interface (debug, info, warn, error) | niedrig | Nein | #2702 | Error-Handling.md#structured-logging, Error-Handling.md#log-levels, Core.md#branded-types | [neu] src/core/utils/logger.ts:LogEntry, Logger interface, LogLevel enum |
+| 2921 | ⛔ | Architecture | Structured Logging: Console/File Logger Implementierung | niedrig | Nein | #2920 | Error-Handling.md#structured-logging, Error-Handling.md#wann-loggen | [neu] src/infrastructure/console-logger.ts:createConsoleLogger(), createFileLogger() |

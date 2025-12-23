@@ -1,0 +1,13 @@
+{
+  "id": "pair",
+  "name": "Pair",
+  "description": "Zwei Kreaturen, oft Paarung oder Duo",
+  "compatibleTags": ["mated-pair", "duo", "bonded"],
+  "roles": {
+    "pair": {
+      "count": { "min": 2, "max": 2 },
+      "budgetPercent": 100,
+      "crConstraint": "any"
+    }
+  }
+}

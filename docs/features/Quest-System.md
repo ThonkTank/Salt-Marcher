@@ -381,18 +381,24 @@ interface QuestSettings {
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 400 | Quest State-Machine: unknown → discovered → active → completed/failed | hoch | Ja | - | Quest-System.md#quest-state-machine, Quest.md#quest-status |
-| 407 | QuestProgress Runtime-State (Resumable) | hoch | Ja | #400, #402 | Quest-System.md#quest-progress-runtime-state |
-| 408 | 40/60 XP Split: 40% sofort bei Encounter-Ende (NON-NEGOTIABLE) | hoch | Ja | #407, #417, #233 | Quest-System.md#40-60-split-mechanik, Encounter-System.md#integration, Combat-System.md#xp-berechnung |
-| 410 | Quest XP Auszahlung bei quest:completed | hoch | Ja | #409, #417 | Quest-System.md#40-60-split-mechanik, Quest.md#events |
-| 412 | Quest-Assignment UI im Post-Combat Resolution Flow | hoch | Ja | #411, #341, #343 | Quest-System.md#quest-assignment-ui-post-combat, Combat-System.md#post-combat-resolution, DetailView.md#post-combat-resolution |
-| 420 | quest:state-changed Event | hoch | Ja | #400 | Quest-System.md#quest-feature-state-machine, Quest.md#events, Events-Catalog.md#quest |
-| 421 | Subscription: encounter:resolved → Zeige UI-Prompt für Quest-Zuweisung | hoch | Ja | #411, #412, #223 | Quest-System.md#quest-encounter-beziehung, Encounter-System.md#events |
-| 423 | Subscription: entity:deleted → Check Quest-Invalidierung | hoch | Ja | #402 | Quest-System.md#quest-feature-state-machine, Events-Catalog.md#entity |
-| 428 | Quest-Panel im SessionRunner | hoch | Ja | #402, #425, #427, b6 | Quest-System.md#ui-integration, SessionRunner.md#quest-panel, Quest.md#quest-management-im-session-runner |
-| 432 | lootDistribution Konfiguration in QuestDefinition | hoch | Ja | #402 | Quest-System.md#loot-verteilung, Quest.md#schema, Loot-Feature.md#budget-verteilung |
-| 433 | Budget-Integration: Quest-Rewards reservieren Loot-Budget | hoch | Ja | #406, #432, #710, #2801 | Quest-System.md#loot-verteilung, Loot-Feature.md#quest-encounter-reduktion |
-| 435 | Quantum-Encounter/Rewards Platzierung via UI | mittel | Nein | #405, #406, #428 | Quest-System.md#quantum-encounter-rewards-platzierung, Quest.md#questencounterslot, Quest.md#questreward |
-| 439 | Quest-Editor in Library | mittel | Nein | #402 | Quest-System.md#prioritaet, Library.md#entity-crud
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 400 | ✅ | Quest | Quest State-Machine: unknown → discovered → active → completed/failed | hoch | Ja | - | Quest-System.md#quest-state-machine, Quest.md#quest-status | quest-service.ts |
+| 407 | ✅ | Quest | QuestProgress Runtime-State (Resumable) | hoch | Ja | #400, #402 | Quest-System.md#quest-progress-runtime-state | quest-store.ts, types.ts |
+| 408 | ✅ | Quest | 40/60 XP Split: 40% sofort bei Encounter-Ende (NON-NEGOTIABLE) | hoch | Ja | #407, #417 | Quest-System.md#40-60-split-mechanik, Encounter-System.md#integration, Combat-System.md#xp-berechnung | quest-xp.ts |
+| 410 | ✅ | Quest | Quest XP Auszahlung bei quest:completed | hoch | Ja | #409, #417 | Quest-System.md#40-60-split-mechanik, Quest.md#events | quest-service.ts |
+| 412 | ✅ | Quest | Quest-Assignment UI im Post-Combat Resolution Flow | hoch | Ja | #343, #411 | Quest-System.md#quest-assignment-ui-post-combat, Combat-System.md#post-combat-resolution, DetailView.md#post-combat-resolution | slot-assignment-dialog.ts |
+| 420 | ✅ | Quest | quest:state-changed Event | hoch | Ja | #400 | Quest-System.md#quest-feature-state-machine, Quest.md#events, Events-Catalog.md#quest | quest-service.ts |
+| 421 | ✅ | Quest | Subscription: encounter:resolved → Zeige UI-Prompt für Quest-Zuweisung | hoch | Ja | #223, #411, #412 | Quest-System.md#quest-encounter-beziehung, Encounter-System.md#events | quest-service.ts |
+| 423 | ⬜ | Quest | Subscription: entity:deleted → Check Quest-Invalidierung | hoch | Ja | #402 | Quest-System.md#quest-feature-state-machine, Events-Catalog.md#entity | quest-service.ts:setupEventHandlers() [neu - entity:deleted Subscription] |
+| 428 | ⛔ | Quest | Quest-Panel im SessionRunner | hoch | Ja | #402, #425, #427, b6 | Quest-System.md#ui-integration, SessionRunner.md#quest-panel, Quest.md#quest-management-im-session-runner | sidebar.ts, viewmodel.ts, types.ts |
+| 432 | ⬜ | Quest | lootDistribution Konfiguration in QuestDefinition | hoch | Ja | #402 | Quest-System.md#loot-verteilung, Quest.md#schema, Loot-Feature.md#budget-verteilung | quest.ts:questDefinitionSchema [ändern - lootDistribution-Feld hinzufügen], benötigt #2801 (Loot-Feature) |
+| 433 | ⛔ | Quest | Budget-Integration: Quest-Rewards reservieren Loot-Budget | hoch | Ja | #406, #432, #710, #2801 | Quest-System.md#loot-verteilung, Loot-Feature.md#quest-encounter-reduktion | features/loot/loot-service.ts [neu], quest-service.ts [ändern - Integration mit Loot-Budget-System] |
+| 435 | ⛔ | Quest | Quantum-Encounter/Rewards Platzierung via UI | mittel | Nein | #405, #406, #428 | Quest-System.md#quantum-encounter-rewards-platzierung, Quest.md#questencounterslot, Quest.md#questreward | Quest-Panel [neu - UI-Komponente für Quantum-Platzierung], quest-store.ts:placeReward() [nutzen], Map-Integration [neu] |
+| 439 | ⬜ | Quest | Quest-Editor in Library | mittel | Nein | #402 | Quest-System.md#prioritaet, Library.md#entity-crud | application/library/quest-editor.ts [neu - CRUD-UI für QuestDefinition], EntityRegistry-Integration [nutzen] |
+| 409 | ✅ | Quest | 60% XP zum Quest-Pool bei Quest-Encounter | hoch | Ja | #408 | Quest-System.md#4060-split-mechanik | quest-service.ts |
+| 411 | ✅ | Quest | UI-Prompt nach encounter:resolved für Quest-Zuweisung | hoch | Ja | #405 | Quest-System.md#encounter-slot-matching | quest-service.ts |
+| 413 | ✅ | Quest | quest:xp-accumulated Event bei Encounter-Zuweisung | hoch | Ja | #412 | Quest-System.md#quest-feature-state-machine | quest-service.ts |
+| 422 | ✅ | Quest | Subscription: time:state-changed → Check Quest-Deadlines | hoch | Ja | #400 | Quest-System.md#quest-feature-state-machine | quest-service.ts |
+| 428b | ⛔ | Quest | Entity-Links in Quest-Panel (zu DetailView Tabs) | mittel | Nein | #402, #425, #427, #428, #429, #430, #431, #2443, #2444, #2448 | Quest-System.md#ui-integration, SessionRunner.md#quest-panel, Quest.md#quest-management-im-session-runner | sidebar.ts [ändern - Links zu DetailView für NPCs, POIs], benötigt Location-Tab #2448 |
+| 436 | ⬜ | Quest | Konfigurierbare XP-Split Prozentsätze (Settings) | niedrig | Nein | #408 | Quest-System.md#4060-xp-split-konfiguration | quest-xp.ts [ändern - IMMEDIATE_XP_PERCENT/QUEST_POOL_XP_PERCENT von Settings lesen], Settings-Integration [neu], SettingsTab-Felder [neu] |

@@ -374,13 +374,13 @@ Features reagieren auf Events anderer Features:
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 2301 | SessionRunner ViewModel mit State-Management | hoch | Ja | #2300 | [SessionRunner.md#viewmodel-state](../application/SessionRunner.md#viewmodel-state) |
-| 2315 | Event Subscriptions: travel:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
-| 2316 | Event Subscriptions: travel:position-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
-| 2317 | Event Subscriptions: time:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
-| 2318 | Event Subscriptions: weather:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
-| 2319 | Event Subscriptions: audio:track-changed | hoch | Ja | #1112, #1500, #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
-| 2320 | Event Subscriptions: map:loaded | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
-| 2321 | Event Subscriptions: party:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Referenzen | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 2301 | ✅ | Application/SessionRunner | SessionRunner ViewModel mit State-Management | hoch | Ja | #2300 | [SessionRunner.md#viewmodel-state](../application/SessionRunner.md#viewmodel-state) | src/application/session-runner/viewmodel.ts:createSessionRunnerViewModel(), viewmodel.ts:SessionRunnerViewModel, types.ts:RenderState |
+| 2315 | ✅ | Application/SessionRunner | Event Subscriptions: travel:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) | src/application/session-runner/viewmodel.ts:setupEventHandlers() L443-475 |
+| 2316 | ✅ | Application/SessionRunner | Event Subscriptions: travel:position-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) | src/application/session-runner/viewmodel.ts:setupEventHandlers() L370-408 |
+| 2317 | ✅ | Application/SessionRunner | Event Subscriptions: time:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) | src/application/session-runner/viewmodel.ts:setupEventHandlers() L359-368 |
+| 2318 | ✅ | Application/SessionRunner | Event Subscriptions: weather:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) | src/application/session-runner/viewmodel.ts:setupEventHandlers() L410-419 |
+| 2319 | ⛔ | Application/SessionRunner | Event Subscriptions: audio:track-changed | hoch | Ja | #1112, #1500, #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) | src/application/session-runner/viewmodel.ts:setupEventHandlers() [ändern - audio subscription hinzufügen] |
+| 2320 | ✅ | Application/SessionRunner | Event Subscriptions: map:loaded | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) | src/application/session-runner/viewmodel.ts:setupEventHandlers() L316-324 |
+| 2321 | ✅ | Application/SessionRunner | Event Subscriptions: party:state-changed | hoch | Ja | #2301 | [SessionRunner.md#event-subscriptions](../application/SessionRunner.md#event-subscriptions) | src/application/session-runner/viewmodel.ts:setupEventHandlers() L347-356 |

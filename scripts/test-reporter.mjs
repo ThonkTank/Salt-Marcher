@@ -11,7 +11,8 @@
  * Bei fehlgeschlagenen Tests wird die entsprechende Task auf ⚠️ gesetzt.
  */
 
-import { extractTaskIds, updateTaskStatusInRoadmap } from './task-utils.mjs';
+import { extractTaskIds } from './core/table/parser.mjs';
+import { createFsTaskAdapter } from './adapters/fs-task-adapter.mjs';
 
 /**
  * Findet die oberste describe-Ebene eines Tests
@@ -158,12 +159,14 @@ export default class TaskReporter {
 
     console.log('\n📝 Aktualisiere Development-Roadmap.md...\n');
 
+    const taskAdapter = createFsTaskAdapter();
+
     for (const [taskId, errors] of this.failedTaskIds) {
-      const updated = updateTaskStatusInRoadmap(taskId, '⚠️', errors[0]?.error);
-      if (updated) {
+      const result = taskAdapter.updateStatus(taskId, '⚠️', errors[0]?.error);
+      if (result.ok) {
         console.log(`  ⚠️ Task #${taskId} auf Status ⚠️ gesetzt`);
       } else {
-        console.log(`  ℹ️ Task #${taskId} bereits auf ⚠️ oder nicht gefunden`);
+        console.log(`  ℹ️ Task #${taskId}: ${result.error?.message || 'nicht gefunden'}`);
       }
     }
   }

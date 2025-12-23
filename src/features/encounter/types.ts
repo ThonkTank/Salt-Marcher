@@ -22,7 +22,20 @@ import type {
   Faction,
   NPC,
   GameDateTime,
+  // Multi-Group types (Task #2992)
+  EncounterGroup,
+  EncounterGroupStatus,
+  NarrativeRole,
+  GroupRelation,
 } from '@core/schemas';
+
+// Re-export Multi-Group types for feature consumers
+export type {
+  EncounterGroup,
+  EncounterGroupStatus,
+  NarrativeRole,
+  GroupRelation,
+};
 
 // ============================================================================
 // Encounter Feature Port
@@ -46,9 +59,10 @@ export interface EncounterFeaturePort {
   getEncounterHistory(): readonly EncounterInstance[];
 
   /**
-   * Get recent creature types (for variety validation).
+   * Get encounter type history (for variety validation).
+   * Used by calculateTypeWeights() to dampen overrepresented types.
    */
-  getRecentCreatureTypes(): readonly string[];
+  getEncounterTypeHistory(): readonly EncounterHistoryEntry[];
 
   // === Commands ===
 
@@ -163,8 +177,11 @@ export interface InternalEncounterState {
   /** History of resolved encounters */
   history: EncounterInstance[];
 
-  /** Recent creature types for variety validation */
-  recentCreatureTypes: string[];
+  /** Encounter type history for variety validation (exponential decay dampening) */
+  encounterTypeHistory: EncounterHistoryEntry[];
+
+  /** Sequence counter for encounter type history */
+  encounterSequence: number;
 
   /** Map ID for context */
   activeMapId: string | null;
@@ -180,7 +197,8 @@ export function createInitialEncounterState(): InternalEncounterState {
   return {
     currentEncounter: null,
     history: [],
-    recentCreatureTypes: [],
+    encounterTypeHistory: [],
+    encounterSequence: 0,
     activeMapId: null,
     dailyXP: createInitialDailyXPTracker(),
   };
@@ -313,6 +331,30 @@ export type GoalCategory =
 export const MAX_HISTORY_SIZE = 50;
 
 /**
+ * Maximum encounter type history entries to keep for variety validation.
+ * Only the last ~10 are relevant for decay calculation, but we store more.
+ */
+export const VARIETY_TYPE_HISTORY_SIZE = 20;
+
+/**
  * Default description when none is generated.
  */
 export const DEFAULT_ENCOUNTER_DESCRIPTION = 'You encounter something unexpected.';
+
+// ============================================================================
+// Variety Validation Types
+// ============================================================================
+
+/**
+ * Entry in the encounter type history for variety validation.
+ * Tracks which encounter types have been generated recently.
+ *
+ * @see docs/features/Encounter-System.md#variety-validation
+ */
+export interface EncounterHistoryEntry {
+  /** The encounter type that was generated */
+  type: EncounterType;
+
+  /** Sequence number (increments with each encounter) */
+  sequence: number;
+}

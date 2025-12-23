@@ -83,6 +83,9 @@ interface OverworldTile {
   terrain: EntityId<'terrain'>;          // Referenz auf Terrain-Entity
   elevation?: number;
 
+  // Klima-Anpassungen (Tile-Level Overrides)
+  climateModifiers?: TileClimateModifiers;  // Optional - nur wenn vom GM ueberschrieben
+
   // Content
   pois: EntityId<'poi'>[];              // POIs auf diesem Tile
   encounterZone?: EncounterZone;        // Encounter-Konfiguration
@@ -94,6 +97,14 @@ interface OverworldTile {
 
   // Metadaten
   notes?: string;
+}
+
+// Tile-Level Klima-Anpassungen (ueberschreiben Terrain-Defaults)
+// → Details: [Terrain.md](../domain/Terrain.md#tileclimatemodifiers)
+interface TileClimateModifiers {
+  temperatureModifier?: number;     // Offset in °C
+  humidityModifier?: number;        // Offset in % - beeinflusst fog + precip
+  windExposure?: 'sheltered' | 'normal' | 'exposed';
 }
 
 // Post-MVP: Pfad-Informationen pro Tile
@@ -652,33 +663,44 @@ Travel-Feature operiert nur auf Overworld-Maps:
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 800 | BaseMap Schema (id, name, type, defaultSpawnPoint, metadaten) | hoch | Ja | - | Map-Feature.md#basis-map, Map.md#basemap |
-| 802 | OverworldTile Schema (coordinate, terrain, elevation, pois, encounterZone, factionPresence) | hoch | Ja | #801, #1700 | Map-Feature.md#overworldmap, Travel-System.md#speed-berechnung |
-| 804 | Overworld Rendering (Hex-Grid mit Terrain-Farben) | hoch | Ja | #801, #803, #1700 | Map-Feature.md#overworld-rendering, Application.md#rendering-sharedrendering |
-| 806 | DungeonMap Schema (dimensions mit levels, tiles, rooms, partyPosition) | hoch | Ja | - | Map-Feature.md#dungeonmap, Dungeon-System.md#dungeonmap |
-| 808 | DungeonTile Schema (type, roomId, traps, creatures, treasure, lighting, explored) | hoch | Ja | #806, #807, #1504 | Map-Feature.md#dungeontile, Dungeon-System.md#dungeontile |
-| 810 | Trap Schema (id, dc, damage, triggered, visible) | hoch | Ja | #808 | Map-Feature.md#dungeontile, Dungeon-System.md#dungeontilecontent |
-| 812 | Dungeon Rendering: Grid + Fog of War + Lighting | hoch | Ja | #806, #808 | Map-Feature.md#dungeon-rendering, Dungeon-System.md#rendering |
-| 814 | map:loaded Event publizieren | hoch | Ja | #813, #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md |
-| 816 | map:created Event publizieren | hoch | Ja | #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md |
-| 818 | map:deleted Event publizieren | hoch | Ja | #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md |
-| 820 | map:navigate-requested Handler | hoch | Ja | - | Map-Feature.md#events, Map-Navigation.md#navigation-events |
-| 825 | Single Map Active: Nur aktive Map im Speicher | hoch | Ja | #813, #824 | Map-Feature.md#memory-management |
-| 827 | Wetter auf Town-Maps: Erbt von Parent-Tile | hoch | Ja | #830, #820, #110 | Map-Feature.md#wetter-auf-sub-maps, Weather-System.md#multi-map-weather |
-| 829 | State-Persistenz bei Map-Wechsel: Position, Zeit, Wetter | hoch | Ja | #821, #826, #900 | Map-Feature.md#state-persistenz-bei-map-wechsel, Map-Navigation.md |
-| 831 | Street Schema (id, name, path, width) | mittel | Nein | #830 | Map-Feature.md#townmap |
-| 832 | Intersection Schema (id, position, connectedStreets) | mittel | Nein | #830 | Map-Feature.md#townmap |
-| 834 | BuildingType Type (tavern, shop, temple, etc.) | mittel | Nein | #833 | Map-Feature.md#townmap |
-| 836 | Town Navigation: Strassen-basiertes Travel | mittel | Nein | #830, #837 | Map-Feature.md#town-strassen-navigation |
-| 838 | town:route-calculated Event | mittel | Nein | #837 | Map-Feature.md#town-strassen-navigation, Events-Catalog.md |
-| 839 | Multi-Level Dungeons: Z-Koordinate nutzen | niedrig | Nein | #807, #812 | Map-Feature.md#dungeonmap, Dungeon-System.md#multi-level-navigation |
-| 841 | Path Rendering: Linien zwischen Hex-Zentren | mittel | Nein | #840, #804, #1800 | Map-Feature.md#path-rendering, Path.md#rendering |
-| 843 | Visibility System: Sichtweiten-Overlay | mittel | Nein | #804, #844, #802 | Map-Feature.md#visibility-system-post-mvp |
-| 845 | Höhenbonus: Wurzel-Formel für erhöhte Sichtweite | mittel | Nein | #844, #843 | Map-Feature.md#sichtweiten-berechnung |
-| 847 | Weather-Visibility-Modifier: Wetter reduziert Sicht | mittel | Nein | #843, #110 | Map-Feature.md#umwelt-modifier, Weather-System.md#sichtweiten-einfluss-post-mvp |
-| 849 | Party-Fähigkeiten Sicht: Darkvision, Blindsight, etc. | mittel | Nein | #843, #600, #519 | Map-Feature.md#party-faehigkeiten-sinne, Character-System.md#sinne-post-mvp |
-| 851 | POI-Fernsicht: Height-Feld für POIs | mittel | Nein | #843, #1514 | Map-Feature.md#poi-fernsicht, POI.md#height-feld-post-mvp |
-| 853 | POI-Hervorhebung: Sichtbare POIs hervorheben | mittel | Nein | #843, #804, #1513 | Map-Feature.md#overlay-visualisierung, POI.md#map-darstellung |
-| 855 | Visibility-Toggle UI: Button im Map-Panel | mittel | Nein | #843, #2310 | Map-Feature.md#ui, SessionRunner.md#visibility-toggle-post-mvp |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 800 | ✅ | Map | BaseMap Schema (id, name, type, defaultSpawnPoint, metadaten) | hoch | Ja | - | Map-Feature.md#basis-map, Map.md#basemap | src/core/schemas/map.ts:baseMapSchema |
+| 802 | ✅ | Map | OverworldTile Schema (coordinate, terrain, elevation, pois, encounterZone, factionPresence) | hoch | Ja | #801, #1700 | Map-Feature.md#overworldmap, Travel-System.md#speed-berechnung | src/core/schemas/map.ts:overworldTileSchema |
+| 804 | ⛔ | Map | Overworld Rendering (Hex-Grid mit Terrain-Farben) | hoch | Ja | #801, #803, #1700 | Map-Feature.md#overworld-rendering, Application.md#rendering-sharedrendering | src/application/session-runner/panels/map-canvas.ts:renderTile() (Location-Icons fehlen), src/application/shared/rendering/ [neu] |
+| 806 | ✅ | Map | DungeonMap Schema (dimensions mit levels, tiles, rooms, partyPosition) | hoch | Ja | - | Map-Feature.md#dungeonmap, Dungeon-System.md#dungeonmap | src/core/schemas/map.ts:dungeonMapSchema [neu] |
+| 808 | ⛔ | Map | DungeonTile Schema (type, roomId, traps, creatures, treasure, lighting, explored) | hoch | Ja | #806, #807, #1504 | Map-Feature.md#dungeontile, Dungeon-System.md#dungeontile | src/core/schemas/map.ts:dungeonTileSchema [neu] |
+| 810 | ⛔ | Map | Trap Schema (id, dc, damage, triggered, visible) | hoch | Ja | #808 | Map-Feature.md#dungeontile, Dungeon-System.md#dungeontilecontent | src/core/schemas/map.ts:trapSchema [neu] |
+| 812 | ⛔ | Map | Dungeon Rendering: Grid + Fog of War + Lighting | hoch | Ja | #806, #808 | Map-Feature.md#dungeon-rendering, Dungeon-System.md#rendering | src/application/shared/rendering/dungeon-renderer.ts [neu] |
+| 814 | ✅ | Map | map:loaded Event publizieren | hoch | Ja | #800, #813 | Map-Feature.md#events, Map.md#events, Events-Catalog.md | src/features/map/map-service.ts:publishLoaded(), src/core/events/domain-events.ts:MAP_LOADED |
+| 816 | ⬜ | Map | map:created Event publizieren | hoch | Ja | #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md | src/features/map/map-service.ts:publishCreated() [neu], src/core/events/domain-events.ts:MAP_CREATED |
+| 818 | ⬜ | Map | map:deleted Event publizieren | hoch | Ja | #800 | Map-Feature.md#events, Map.md#events, Events-Catalog.md | src/features/map/map-service.ts:publishDeleted() [neu], src/core/events/domain-events.ts:MAP_DELETED |
+| 820 | ✅ | Map | map:navigate-requested Handler | hoch | Ja | - | Map-Feature.md#events, Map-Navigation.md#navigation-events | src/features/map/map-service.ts:setupEventHandlers() [ändern], src/core/events/domain-events.ts:MAP_NAVIGATE_REQUESTED |
+| 825 | ✅ | Map | Single Map Active: Nur aktive Map im Speicher | hoch | Ja | #813, #824 | Map-Feature.md#memory-management | src/features/map/map-store.ts:setCurrentMap() |
+| 827 | ⛔ | Map | Wetter auf Town-Maps: Erbt von Parent-Tile | hoch | Ja | #830, #820, #110 | Map-Feature.md#wetter-auf-sub-maps, Weather-System.md#multi-map-weather | src/features/weather/weather-service.ts:getWeatherForMap() [neu] |
+| 829 | ⛔ | Map | State-Persistenz bei Map-Wechsel: Position, Zeit, Wetter | hoch | Ja | #821, #826, #900 | Map-Feature.md#state-persistenz-bei-map-wechsel, Map-Navigation.md | src/features/map/map-service.ts:navigateToMap() [neu] |
+| 831 | ⛔ | Map | Street Schema (id, name, path, width) | mittel | Nein | #830 | Map-Feature.md#townmap | src/core/schemas/map.ts:streetSchema [neu] |
+| 832 | ⛔ | Map | Intersection Schema (id, position, connectedStreets) | mittel | Nein | #830 | Map-Feature.md#townmap | src/core/schemas/map.ts:intersectionSchema [neu] |
+| 834 | ⛔ | Map | BuildingType Type (tavern, shop, temple, etc.) | mittel | Nein | #833 | Map-Feature.md#townmap | src/core/schemas/map.ts:buildingTypeSchema [neu] |
+| 836 | ⛔ | Map | Town Navigation: Strassen-basiertes Travel | mittel | Nein | #830, #837 | Map-Feature.md#town-strassen-navigation | src/features/town/town-service.ts [neu] |
+| 838 | ⛔ | Map | town:route-calculated Event | mittel | Nein | #837 | Map-Feature.md#town-strassen-navigation, Events-Catalog.md | src/features/town/town-service.ts:publishRouteCalculated() [neu], src/core/events/domain-events.ts:TOWN_ROUTE_CALCULATED |
+| 839 | ⛔ | Map | Multi-Level Dungeons: Z-Koordinate nutzen | niedrig | Nein | #807, #812 | Map-Feature.md#dungeonmap, Dungeon-System.md#multi-level-navigation | src/features/dungeon/dungeon-service.ts [ändern] |
+| 841 | ⛔ | Map | Path Rendering: Linien zwischen Hex-Zentren | mittel | Nein | #804, #840, #1800 | Map-Feature.md#path-rendering, Path.md#rendering | src/application/shared/rendering/path-renderer.ts [neu] |
+| 843 | ⛔ | Map | Visibility System: Sichtweiten-Overlay | mittel | Nein | #802, #804 | Map-Feature.md#visibility-system-post-mvp | src/features/map/visibility-service.ts [neu] |
+| 845 | ⛔ | Map | Höhenbonus: Wurzel-Formel für erhöhte Sichtweite | mittel | Nein | #843, #844 | Map-Feature.md#sichtweiten-berechnung | src/features/map/visibility-service.ts:calculateElevationBonus() [neu] |
+| 847 | ⛔ | Map | Weather-Visibility-Modifier: Wetter reduziert Sicht | mittel | Nein | #843, #110 | Map-Feature.md#umwelt-modifier, Weather-System.md#sichtweiten-einfluss-post-mvp | src/features/map/visibility-service.ts:getWeatherModifier() [neu] |
+| 849 | ⛔ | Map | Party-Fähigkeiten Sicht: Darkvision, Blindsight, etc. | mittel | Nein | #519, #600, #843 | Map-Feature.md#party-faehigkeiten-sinne, Character-System.md#sinne-post-mvp | src/features/map/visibility-service.ts:getPartySenses() [neu] |
+| 851 | ⛔ | Map | POI-Fernsicht: Height-Feld für POIs | mittel | Nein | #843, #1514 | Map-Feature.md#poi-fernsicht, POI.md#height-feld-post-mvp | src/features/map/visibility-service.ts:checkPOIVisibility() [neu] |
+| 853 | ⛔ | Map | POI-Hervorhebung: Sichtbare POIs hervorheben | mittel | Nein | #804, #843, #1513 | Map-Feature.md#overlay-visualisierung, POI.md#map-darstellung | src/application/shared/rendering/visibility-overlay.ts [neu] |
+| 855 | ⛔ | Map | Visibility-Toggle UI: Button im Map-Panel | mittel | Nein | #843, #2310 | Map-Feature.md#ui, SessionRunner.md#visibility-toggle-post-mvp | src/application/session-runner/panels/map-panel.ts [ändern] |
+| 805 | ✅ | Map | Location-Integration: POIs auf Tiles referenzieren | hoch | Ja | #802 | Map-Feature.md#overworldmap | src/core/schemas/map.ts:overworldTileSchema.pois |
+| 809 | ✅ | Map | DungeonRoom Schema (id, name, tiles, description, gmNotes) | hoch | Ja | - | Map-Feature.md#dungeonmap | src/core/schemas/map.ts:dungeonRoomSchema [neu] |
+| 811 | ⛔ | Map | Token Schema (id, creatureId, position, currentHp) | hoch | Ja | #808, #807 | Map-Feature.md#dungeonmap | src/core/schemas/map.ts:tokenSchema [neu] |
+| 815 | ✅ | Map | map:unloaded Event publizieren | hoch | Ja | #813 | Map-Feature.md#events | src/features/map/map-service.ts:publishUnloaded(), src/core/events/domain-events.ts:MAP_UNLOADED |
+| 817 | ⬜ | Map | map:updated Event publizieren | hoch | Ja | #800 | Map-Feature.md#events | src/features/map/map-service.ts:publishUpdated() [neu], src/core/events/domain-events.ts:MAP_UPDATED |
+| 819 | ⛔ | Map | map:tile-updated Event publizieren | hoch | Ja | #802, #808 | Map-Feature.md#events | src/features/map/map-service.ts:publishTileUpdated() [neu], src/core/events/domain-events.ts:MAP_TILE_UPDATED |
+| 828 | ⬜ | Map | Wetter auf Dungeon-Maps: Kein Wetter (Indoor) | hoch | Ja | #806, #110 | Map-Feature.md#wetter-auf-sub-maps | src/features/weather/weather-service.ts:getWeatherForMap() [ändern] |
+| 835 | ⛔ | Map | Town Rendering: Strassen + Buildings | mittel | Nein | #830 | Map-Feature.md#town-rendering | src/application/shared/rendering/town-renderer.ts [neu] |
+| 842 | ⛔ | Map | Path-Travel-Integration: Direktionsabhängiger Speed | mittel | Nein | #841, #400 | Map-Feature.md#prioritaet | src/features/travel/speed-calculator.ts [ändern] |
+| 846 | ⛔ | Map | Sicht-Blockierung: Line-of-Sight durch Zwischentiles | mittel | Nein | #844, #845 | Map-Feature.md#sicht-blockierung-line-of-sight | src/features/map/visibility-service.ts:checkLineOfSight() [neu] |
+| 2983 | ⛔ | Map | OverworldTile: climateModifiers?: TileClimateModifiers Feld hinzufügen | hoch | Ja | #2982, #802 | Map-Feature.md#overworldmap | - |

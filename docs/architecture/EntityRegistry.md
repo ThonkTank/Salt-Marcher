@@ -44,7 +44,7 @@ Zentrale Speicherung und Verwaltung aller persistenten Entities.
 ```typescript
 // @core/types/entity-registry.port.ts
 
-// MVP Entity-Typen (16)
+// MVP Entity-Typen (18)
 type EntityType =
   // Core Entities
   | 'creature'     // Monster/NPC-Statblocks (Templates, nicht Instanzen!)
@@ -67,7 +67,9 @@ type EntityType =
   | 'journal'      // Journal-Entries (Arrivals, Events, etc.)
   | 'worldevent'   // Scheduled World Events (Kalender-Events)
   // Audio
-  | 'track';       // Audio-Tracks mit Mood-Tags (→ docs/features/Audio-System.md)
+  | 'track'        // Audio-Tracks mit Mood-Tags (→ docs/features/Audio-System.md)
+  // Loot & Economy
+  | 'lootcontainer'; // Persistente Loot-Instanzen (→ docs/domain/LootContainer.md)
 
 // Post-MVP Entity-Typen
 // | 'path'        // Lineare Features (Strassen, Fluesse, etc.) - Post-MVP
@@ -132,7 +134,7 @@ interface EntityRegistryPort {
 ## Entity-Type Mapping
 
 ```typescript
-// Type-safe Entity Mapping (16 MVP Types)
+// Type-safe Entity Mapping (18 MVP Types)
 type EntityTypeMap = {
   // Core Entities
   creature: CreatureDefinition;     // Template, NICHT Instanz
@@ -156,6 +158,8 @@ type EntityTypeMap = {
   worldevent: WorldEvent;
   // Audio
   track: Track;                     // Audio-Tracks mit Mood-Tags
+  // Loot & Economy
+  lootcontainer: LootContainer;     // Persistente Loot-Instanzen (Truhen, Horte)
   // Post-MVP:
   // path: PathDefinition;          // Lineare Features (→ docs/domain/Path.md)
 };
@@ -355,6 +359,53 @@ interface CreatureSlot {
 
 → Detaillierte Dokumentation: [Encounter-System.md](../features/Encounter-System.md)
 
+### LootContainer (lootcontainer)
+
+Persistente Loot-Instanzen in der Welt - Schatzkisten, Drachenhorte, tote Abenteurer.
+
+```typescript
+interface LootContainer {
+  id: EntityId<'lootcontainer'>;
+  name: string;                           // "Alte Truhe", "Drachenhort", "Toter Abenteurer"
+
+  // Ort
+  locationRef: EntityId<'poi'>;           // Wo befindet sich der Container?
+
+  // Inhalt (direkt, kein Template)
+  goldAmount: number;                     // Konkreter Gold-Betrag
+  items: EntityId<'item'>[];              // Konkrete Item-Instanzen
+
+  // Status
+  status: 'pristine' | 'looted' | 'partially_looted';
+
+  // Optional: Sicherheit
+  locked?: boolean;
+  lockDC?: number;                        // DC zum Knacken
+  trapped?: boolean;
+  trapId?: EntityId<'poi'>;               // Verweis auf Trap-POI
+
+  // Metadaten
+  discoveredAt?: GameDateTime;
+  description?: string;
+  gmNotes?: string;
+}
+```
+
+**Verwendung:**
+- Bei Entity-Promotion: Drache wird NPC → Hort wird LootContainer
+- Manuell platziert: GM erstellt Schatzkiste in Library
+- Quest-Belohnungen: Quest verweist auf LootContainer
+- POI-Integration: POI kann mehrere LootContainer referenzieren
+
+**Status-Workflow:**
+```
+pristine → partially_looted → looted
+    │              │
+    └──────────────┴─→ (Party nimmt Teile oder alles)
+```
+
+→ Detaillierte Dokumentation: [LootContainer.md](../domain/LootContainer.md)
+
 ---
 
 ## Storage
@@ -404,8 +455,11 @@ Vault/
         │   └── tavern-theme.json
         ├── journal/               # Journal-Entries
         │   └── entry-001.json
-        └── worldevent/            # Scheduled Events
-            └── midwinter-festival.json
+        ├── worldevent/            # Scheduled Events
+        │   └── midwinter-festival.json
+        └── lootcontainer/         # Persistente Loot-Instanzen
+            ├── ancient-chest-001.json
+            └── dragon-lair-hoard.json
 ```
 
 ### Dateiformat
@@ -802,22 +856,25 @@ Aktuelles Wetter
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 1417 | Faction EntityRegistry Integration: 'faction' als Entity-Typ | hoch | Ja | #1400 | EntityRegistry.md#entity-type-mapping, Faction.md#schema |
-| 1516 | POI EntityRegistry Integration: 'location'/'poi' als Entity-Typ (bereits vorhanden) | hoch | Ja | #1503 | POI.md#schema, EntityRegistry.md#port-interface, EntityRegistry.md#entity-type-mapping |
-| 2800 | EntityRegistryPort Interface (get, getAll, query, save, delete, exists, count) | hoch | Ja | #2703 | EntityRegistry.md#port-interface, Core.md#branded-types |
-| 2801 | EntityTypeMap mit allen 14 MVP Entity-Typen (creature, character, npc, faction, item, map, poi, terrain, quest, encounter, shop, calendar, journal, worldevent, track) | hoch | Ja | - | EntityRegistry.md#entity-type-mapping, Core.md#entitytype-union |
-| 2802 | VaultEntityRegistryAdapter Implementation (JSON-File-basiert mit Vault/{plugin}/data/{entityType}/{id}.json) | hoch | Ja | - | EntityRegistry.md#storage, Infrastructure.md#adapter-pattern |
-| 2803 | Zod-Validierung bei save() mit getSchemaForType() | hoch | Ja | #2802 | EntityRegistry.md#validierung, Core.md#zod-schemas |
-| 2804 | Predicate-basierte query() Methode (Lineare Suche für MVP) | hoch | Ja | - | EntityRegistry.md#querying |
-| 2805 | Unbounded In-Memory Cache mit Map pro EntityType | hoch | Ja | - | EntityRegistry.md#caching-strategy |
-| 2806 | Lazy Loading: Cache-Population bei erstem Zugriff auf Entity-Typ | hoch | Ja | #2805 | EntityRegistry.md#caching-strategy |
-| 2807 | File-Watcher Invalidierung bei modify/delete Events | hoch | Ja | #2805 | EntityRegistry.md#caching-strategy, Infrastructure.md#file-watcher-integration |
-| 2808 | Pessimistisches Speichern (sofort bei save(), erst Vault dann Cache) | hoch | Ja | #2802, #2805 | EntityRegistry.md#persistence-timing, Infrastructure.md#state-persistenz |
-| 2809 | Error Handling: ValidationError, NotFoundError, IOError Klassen | hoch | Ja | #2803 | EntityRegistry.md#error-handling, Error-Handling.md |
-| 2810 | Entity-Deletion Cascades: Referenz-Prüfung und Soft-Cascade Bereinigung | mittel | Ja | #2802 | EntityRegistry.md#entity-deletion-cascades |
-| 2811 | Constructor Injection: Features erhalten EntityRegistryPort via Constructor | hoch | Ja | #2800, #2802 | EntityRegistry.md#bootstrapping, Features.md#feature-communication |
-| 2815 | CreatureDefinition vs Creature vs NPC Hierarchie dokumentieren und implementieren | hoch | Ja | - | EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc, Creature.md, NPC-System.md |
-| 2817 | In-Memory-Indizes für häufige Queries (Post-MVP Performance-Optimierung) | niedrig | Nein | #2804 | EntityRegistry.md#querying |
-| 2818 | Schema-Migration System für automatische Updates (Post-MVP) | niedrig | Nein | #2803 | EntityRegistry.md#validierung |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 1417 | ✅ | Faction | Faction EntityRegistry Integration: 'faction' als Entity-Typ | hoch | Ja | #1400 | EntityRegistry.md#entity-type-mapping, Faction.md#schema | src/core/schemas/common.ts:46 (EntityType enum enthält 'faction') |
+| 1516 | ✅ | Location/POI | POI EntityRegistry Integration: 'location'/'poi' als Entity-Typ (bereits vorhanden) | hoch | Ja | #1503 | POI.md#schema, EntityRegistry.md#port-interface, EntityRegistry.md#entity-type-mapping | src/core/types/common.ts:20-21, src/core/schemas/common.ts:49-50 |
+| 2800 | ✅ | Core/EntityRegistry | EntityRegistryPort Interface (get, getAll, query, save, delete, exists, count) | hoch | Ja | #2703 | EntityRegistry.md#port-interface, Core.md#branded-types | src/core/types/entity-registry.port.ts:EntityRegistryPort, Entity<T>, EntityTypeMap |
+| 2801 | ✅ | Core/EntityRegistry | EntityTypeMap mit allen 14 MVP Entity-Typen (creature, character, npc, faction, item, map, poi, terrain, quest, encounter, shop, calendar, journal, worldevent, track) | hoch | Ja | - | EntityRegistry.md#entity-type-mapping, Core.md#entitytype-union | src/core/types/common.ts:EntityType (18 Typen inkl. location, maplink, party), src/core/schemas/common.ts:entityTypeSchema - Mismatch: Spec sagt 14 MVP-Typen, Code hat 18 |
+| 2802 | ✅ | Core/EntityRegistry | VaultEntityRegistryAdapter Implementation (JSON-File-basiert mit Vault/{plugin}/data/{entityType}/{id}.json) | hoch | Ja | - | EntityRegistry.md#storage, Infrastructure.md#adapter-pattern | src/infrastructure/vault/entity-registry.adapter.ts:createVaultEntityRegistryAdapter(), EntityCache, loadEntityType(), saveEntity(), deleteEntity() |
+| 2803 | ⬜ | Core/EntityRegistry | Zod-Validierung bei save() mit getSchemaForType() | hoch | Ja | #2802 | EntityRegistry.md#validierung, Core.md#zod-schemas | src/infrastructure/vault/entity-registry.adapter.ts:save() [ändern], [neu] src/core/schemas/index.ts:getSchemaForType() - nutzt existierende Schemas aus src/core/schemas/ |
+| 2804 | ✅ | Core/EntityRegistry | Predicate-basierte query() Methode (Lineare Suche für MVP) | hoch | Ja | - | EntityRegistry.md#querying | src/infrastructure/vault/entity-registry.adapter.ts:query() |
+| 2805 | ✅ | Core/EntityRegistry | Unbounded In-Memory Cache mit Map pro EntityType | hoch | Ja | - | EntityRegistry.md#caching-strategy | src/infrastructure/vault/entity-registry.adapter.ts:EntityCache [neu - private interface], ensureCacheLoaded() [neu] |
+| 2806 | ⬜ | Core/EntityRegistry | Lazy Loading: Cache-Population bei erstem Zugriff auf Entity-Typ | hoch | Ja | #2805 | EntityRegistry.md#lifecycle | src/infrastructure/vault/entity-registry.adapter.ts:get() [ändern], getAll() [ändern] - beide rufen ensureCacheLoaded() auf |
+| 2807 | ⬜ | Core/EntityRegistry | File-Watcher Invalidierung bei modify/delete Events | hoch | Ja | #2805 | EntityRegistry.md#caching-strategy, Infrastructure.md#file-watcher-integration | src/infrastructure/vault/entity-registry.adapter.ts:registerFileWatcher() [neu], invalidateFromPath() [neu] - Obsidian vault.on('modify'/'delete') Events |
+| 2808 | ⬜ | Core/EntityRegistry | Pessimistisches Speichern (sofort bei save(), erst Vault dann Cache) | hoch | Ja | #2802, #2805 | EntityRegistry.md#persistence-timing, Infrastructure.md#state-persistenz | src/infrastructure/vault/entity-registry.adapter.ts:save() [ändern] - 1. Vault write, 2. Cache update, 3. Return Result |
+| 2809 | ⛔ | Core/EntityRegistry | Error Handling: ValidationError, NotFoundError, IOError Klassen | hoch | Ja | #2803 | EntityRegistry.md#error-handling, Error-Handling.md | [neu] src/core/types/entity-registry-errors.ts:ValidationError, NotFoundError, IOError (extends Error) |
+| 2810 | ⬜ | Core/EntityRegistry | Entity-Deletion Cascades: Referenz-Prüfung und Soft-Cascade Bereinigung | mittel | Ja | #2802 | EntityRegistry.md#entity-deletion-cascades | src/infrastructure/vault/entity-registry.adapter.ts:delete() [ändern], checkReferences() [neu], confirmDeletionDialog() [neu - UI-Integration], cascadeCleanup() [neu] |
+| 2811 | ⬜ | Core/EntityRegistry | Constructor Injection: Features erhalten EntityRegistryPort via Constructor | hoch | Ja | #2800, #2802 | EntityRegistry.md#bootstrapping, Features.md#feature-communication | src/main.ts:onload() [ändern - bootstrapFeatures()], Feature-Constructors [ändern - entityRegistry-Parameter hinzufügen] |
+| 2815 | ✅ | Core/EntityRegistry | CreatureDefinition vs Creature vs NPC Hierarchie dokumentieren und implementieren | hoch | Ja | - | EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc, Creature.md, NPC-System.md | src/core/schemas/creature.ts:CreatureDefinition (existiert), [neu] src/core/types/creature.ts:Creature (Runtime-Instanz - nicht in Registry), src/core/schemas/npc.ts:NPC (existiert mit CreatureRef) - Hierarchie ist implementiert aber nicht dokumentiert |
+| 2817 | ⬜ | Core/EntityRegistry | In-Memory-Indizes für häufige Queries (Post-MVP Performance-Optimierung) | niedrig | Nein | #2804 | EntityRegistry.md#prioritaet | [neu] src/infrastructure/vault/entity-registry.adapter.ts:buildIndices(), IndexConfig, queryWithIndex() |
+| 2818 | ⛔ | Core/EntityRegistry | Schema-Migration System für automatische Updates (Post-MVP) | niedrig | Nein | #2803 | EntityRegistry.md#keine-backwards-migration | [neu] src/infrastructure/vault/schema-migration.ts:MigrationRunner, Migration interface, migrationRegistry |
+| 2942 | ✅ | Core/EntityRegistry | EntityRegistry Bootstrap: preloadEntityTypes() in main.ts vor Feature-Init | hoch | Ja | - | EntityRegistry.md#bootstrapping | - |
+| 2943 | ⬜ | Core/EntityRegistry | save() auf Vault-Write warten (pessimistic save-first) | hoch | Ja | #2802 | EntityRegistry.md#persistence-timing | - |
+| 2944 | ⛔ | Core/EntityRegistry | save() I/O-Fehler an Caller propagieren | hoch | Ja | #2943 | EntityRegistry.md#error-handling | - |

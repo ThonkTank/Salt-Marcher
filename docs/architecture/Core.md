@@ -410,24 +410,24 @@ eventBus.subscribe('travel:start-requested', (event) => {
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 2700 | Result<T, E> Type und API (ok, err, isOk, isErr, unwrap, unwrapOr, map, mapErr) | hoch | Ja | - | Core.md#result-option-types, Error-Handling.md |
-| 2701 | Option<T> Type und API (some, none, isSome, isNone, getOrElse, fromNullable) | hoch | Ja | - | Core.md#result-option-types |
-| 2702 | Branded Types: EntityId<T>, Timestamp, TimeSegment | hoch | Ja | - | Core.md#branded-types, EntityRegistry.md#entity-type-mapping |
-| 2703 | Entity Type Union (creature, character, npc, faction, item, etc.) | hoch | Ja | - | Core.md#entitytype-union, EntityRegistry.md#port-interface |
-| 2704 | BaseEntity und TrackedEntity Interfaces | hoch | Ja | #2702 | Core.md#base-interfaces |
-| 2705 | Helper Functions (createEntityId, toEntityId, now, toTimestamp, entityIdSchema) | hoch | Ja | #2702 | Core.md#helpers |
-| 2706 | DomainEvent Interface mit correlationId | hoch | Ja | #2702 | Core.md#event-struktur, EventBus.md#event-struktur-pflichtfelder, Events-Catalog.md |
-| 2707 | hex-math Utils (hexDistance, coordToKey, hexNeighbors, hexesInRadius) | hoch | Ja | - | Core.md#utils, Map-Feature.md#hexagonal-grid |
-| 2708 | time-math Utils (addDuration, getTimeOfDay, getCurrentSeason, getMoonPhase) | hoch | Ja | #2702 | Core.md#utils, Time-System.md#zeit-operationen |
-| 2709 | creature-utils (parseCR, calculateXP, getEncounterMultiplier, isValidCRRange) | hoch | Ja | - | Core.md#entity-spezifische-utils, Creature.md#schema, Encounter-Balancing.md#xp-berechnung |
-| 2710 | item-utils (calculateStackWeight, canStack, getItemCategory) | hoch | Ja | - | Core.md#entity-spezifische-utils, Item.md#schema |
-| 2711 | npc-utils (calculateReactionModifier, getDisposition) | hoch | Ja | - | Core.md#entity-spezifische-utils, NPC-System.md#personality |
-| 2712 | faction-utils (calculateRelationChange, getStandingLabel) | hoch | Ja | - | Core.md#entity-spezifische-utils, Faction.md#reputation |
-| 2713 | terrain-utils (getMovementCost, getNativeCreatures, matchEncounterTerrain) | mittel | Ja | - | Core.md#entity-spezifische-utils, Terrain.md#movement-cost, Encounter-System.md#tile-eligibility |
-| 2714 | shop-utils (calculateBuyPrice, calculateSellPrice, getInventoryValue, quickBuy, quickSell) | mittel | Nein | - | Core.md#entity-spezifische-utils, Shop.md#preisberechnung |
-| 2715 | spell-utils (validateSpellSlot, getComponentsRequired, calculateSpellDC) | niedrig | Nein | - | Core.md#entity-spezifische-utils |
-| 2716 | inventory-utils (addItemToCharacter, removeItemFromCharacter, sumInventoryWeight, countRations, consumeRations) | hoch | Ja | - | Core.md#entity-spezifische-utils, Inventory-System.md#encumbrance, Character-System.md#inventory |
-| 2717 | loot-utils (distributeCurrencyEvenly, distributeToCharacter, quickAssign, trackMagicItemReceived) | hoch | Ja | - | Core.md#entity-spezifische-utils, Loot-Feature.md#verteilung |
-| 2718 | encounter-utils (resolveCreatureSlots, calculateEncounterXP, checkTriggers) | hoch | Ja | - | Core.md#entity-spezifische-utils, Encounter-System.md#5-step-pipeline, Encounter-Balancing.md#cr-balancing |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 2700 | ✅ | Core | Result<T, E> Type und API (ok, err, isOk, isErr, unwrap, unwrapOr, map, mapErr) | hoch | Ja | - | Core.md#result-option-types, Error-Handling.md | src/core/types/result.ts:ok(), err(), isOk(), isErr(), unwrap(), unwrapOr(), map(), mapErr(), flatMap() |
+| 2701 | ✅ | Core | Option<T> Type und API (some, none, isSome, isNone, getOrElse, fromNullable) | hoch | Ja | - | Core.md#resultoption-types | src/core/types/option.ts:some(), none(), isSome(), isNone(), getOrElse(), fromNullable(), unwrap(), map(), flatMap(), filter() |
+| 2702 | ✅ | [TEST FAILED] Core | Branded Types: EntityId<T>, Timestamp, TimeSegment | hoch | Ja | - | Core.md#branded-types, EntityRegistry.md#entity-type-mapping | src/core/types/common.ts:EntityId, Timestamp, TimeSegment, AppError |
+| 2703 | ✅ | Core | Entity Type Union (creature, character, npc, faction, item, etc.) | hoch | Ja | - | Core.md#entitytype-union, EntityRegistry.md#port-interface | src/core/types/common.ts:EntityType (18 types: creature, character, npc, faction, item, map, location, poi, maplink, terrain, quest, encounter, shop, calendar, journal, worldevent, track, party) |
+| 2704 | ✅ | Core | BaseEntity und TrackedEntity Interfaces | hoch | Ja | #2702 | Core.md#base-interfaces | src/core/types/common.ts:BaseEntity, TrackedEntity |
+| 2705 | ✅ | Core | Helper Functions (createEntityId, toEntityId, now, toTimestamp, entityIdSchema) | hoch | Ja | #2702 | Core.md#helpers | src/core/types/common.ts:createEntityId(), toEntityId(), now(), toTimestamp(), createError(); src/core/schemas/common.ts:entityIdSchema(), timestampSchema, entityTypeSchema, timeSegmentSchema, appErrorSchema |
+| 2706 | ✅ | Core | DomainEvent Interface mit correlationId | hoch | Ja | #2702 | Core.md#event-struktur, EventBus.md#event-struktur-pflichtfelder, Events-Catalog.md | src/core/events/domain-events.ts:DomainEvent, createEvent(), newCorrelationId() |
+| 2707 | ✅ | Core | hex-math Utils (hexDistance, coordToKey, hexNeighbors, hexesInRadius) | hoch | Ja | - | Core.md#utils, Map-Feature.md#hexagonal-grid | src/core/utils/hex-math.ts:hexDistance(), coordToKey(), hexNeighbors(), hexesInRadius(), hexRing(), hexAdjacent(), axialToPixel(), pixelToAxial() |
+| 2708 | ✅ | Core | time-math Utils (addDuration, getTimeOfDay, getCurrentSeason, getMoonPhase) | hoch | Ja | #2702 | Core.md#utils, Time-System.md#zeit-operationen | src/core/utils/time-math.ts:getTimeSegment(), getTimeOfDay(), addDuration(), diffInHours(), getCurrentSeason(), getMoonPhase() |
+| 2709 | ✅ | Core | creature-utils (parseCR, calculateXP, getEncounterMultiplier, isValidCRRange) | hoch | Ja | - | Core.md#entity-spezifische-utils, Creature.md#schema, Encounter-Balancing.md#xp-berechnung | src/core/utils/creature-utils.ts:parseCR(), calculateXP(), getEncounterMultiplier(), isValidCRRange(), calculateEffectiveXP() |
+| 2710 | ⬜ | Core | item-utils (calculateStackWeight, canStack, getItemCategory) | hoch | Ja | - | Core.md#entity-spezifische-utils, Item.md#schema | [neu] src/core/utils/item-utils.ts:calculateStackWeight(), canStack(), getItemCategory() |
+| 2711 | ⬜ | Core | npc-utils (calculateReactionModifier, getDisposition) | hoch | Ja | - | Core.md#entity-spezifische-utils, NPC-System.md#personality | [neu] src/core/utils/npc-utils.ts:calculateReactionModifier(), getDisposition() |
+| 2712 | ⬜ | Core | faction-utils (calculateRelationChange, getStandingLabel) | hoch | Ja | - | Core.md#entity-spezifische-utils, Faction.md#reputation | [neu] src/core/utils/faction-utils.ts:calculateRelationChange(), getStandingLabel() |
+| 2713 | ⬜ | Core | terrain-utils (getMovementCost, getNativeCreatures, matchEncounterTerrain) | mittel | Ja | - | Core.md#entity-spezifische-utils, Terrain.md#movement-cost, Encounter-System.md#tile-eligibility | [neu] src/core/utils/terrain-utils.ts:getMovementCost(), getNativeCreatures(), matchEncounterTerrain() |
+| 2714 | ⬜ | Core | shop-utils (calculateBuyPrice, calculateSellPrice, getInventoryValue, quickBuy, quickSell) | mittel | Nein | - | Core.md#entity-spezifische-utils, Shop.md#preisberechnung | [neu] src/core/utils/shop-utils.ts:calculateBuyPrice(), calculateSellPrice(), getInventoryValue(), quickBuy(), quickSell() |
+| 2715 | ⬜ | Core | spell-utils (validateSpellSlot, getComponentsRequired, calculateSpellDC) | niedrig | Nein | - | Core.md#post-mvp | [neu] src/core/utils/spell-utils.ts:validateSpellSlot(), getComponentsRequired(), calculateSpellDC() |
+| 2716 | ✅ | Core | inventory-utils (addItemToCharacter, removeItemFromCharacter, sumInventoryWeight, countRations, consumeRations) | hoch | Ja | - | Core.md#entity-spezifische-utils, Inventory-System.md#encumbrance, Character-System.md#inventory | src/core/utils/inventory-utils.ts:addItemToCharacter(), removeItemFromCharacter(), addGoldToCharacter(), removeGoldFromCharacter(), transferItem(), sumInventoryWeight(), countRations(), consumeRations() |
+| 2717 | ✅ | Core | loot-utils (distributeCurrencyEvenly, distributeToCharacter, quickAssign, trackMagicItemReceived) | hoch | Ja | - | Core.md#entity-spezifische-utils, Loot-Feature.md#verteilung | src/core/utils/loot-utils.ts:distributeCurrencyEvenly(), distributeToCharacter(), quickAssign(), trackMagicItemReceived(), getMagicItemTracking(), getTotalMagicItemsReceived() |
+| 2718 | ✅ | Core | encounter-utils (resolveCreatureSlots, calculateEncounterXP, checkTriggers) | hoch | Ja | - | Core.md#entity-spezifische-utils, Encounter-System.md#5-step-pipeline, Encounter-Balancing.md#cr-balancing | src/core/utils/encounter-utils.ts:resolveCreatureSlots(), calculateEncounterXP(), checkTriggers(), filterEligibleCreatures(), calculateCreatureWeight(), deriveEncounterType(), validateVariety(), selectCompanions() |

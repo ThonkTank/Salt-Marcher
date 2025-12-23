@@ -441,30 +441,31 @@ const encumbranceOrder = {
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 600 | InventorySlot Interface implementieren (itemId, quantity, equipped) | hoch | Ja | #1603 | Inventory-System.md#schemas, Item.md#verwendung-in-anderen-features |
-| 601 | calculateEncumbrance Funktion: basierend auf Gewicht und Stärke | hoch | Ja | #600, #602, #500 | Inventory-System.md#encumbrance, Character-System.md#travel-system |
-| 602 | sumInventoryWeight Funktion: Σ(item.weight × quantity) | hoch | Ja | #600, #1600 | Inventory-System.md#encumbrance |
-| 603 | getEffectiveSpeed mit Encumbrance-Reduktion | hoch | Ja | #500, #601, #602 | Inventory-System.md#travel-integration, Travel-System.md#speed-berechnung, Character-System.md#travel-system |
-| 604 | Encumbrance-Schwellenwerte: 33%/66%/100% Kapazität | mittel | Ja | #601 | Inventory-System.md#encumbrance |
-| 605 | checkRations Funktion: required, available, shortage berechnen | mittel | Ja | #606, #500 | Inventory-System.md#rationen, Travel-System.md |
-| 606 | countRations Funktion: Zähle Items mit isRation Flag | mittel | Ja | #600, #1600 | Inventory-System.md#rationen, Item.md#kategorie-details |
-| 607 | Rationen-Mangel-Dialog UI: Optionen bei shortage > 0 | mittel | Ja | #605, #606 | Inventory-System.md#mangel-handling |
-| 608 | consumeRations Funktion: Automatischer Abzug aus Inventaren | mittel | Ja | #606, #607, #612, #613 | Inventory-System.md#automatischer-abzug, Travel-System.md |
-| 609 | Travel-Integration: calculateEffectivePartySpeed mit Encumbrance | hoch | Ja | #500, #603, #607 | Inventory-System.md#travel-integration, Travel-System.md#speed-berechnung |
-| 610 | Currency-Items vordefinieren: Kupfer, Silber, Gold, Platin | hoch | Ja | #1608 | Inventory-System.md#waehrungs-items, Item.md#currency-category-currency |
-| 611 | removeItemFromCharacter Utility-Funktion | mittel | Ja | #600, #610 | Inventory-System.md#gm-quick-actions |
-| 612 | addItemToCharacter Utility-Funktion | mittel | Ja | #600 | Inventory-System.md#gm-quick-actions, Loot-Feature.md |
-| 613 | removeGoldFromCharacter Convenience-Funktion | mittel | Ja | #600, #610, #611 | Inventory-System.md#gm-quick-actions, Shop.md#verwendung |
-| 614 | addGoldToCharacter Convenience-Funktion | mittel | Ja | #610, #612 | Inventory-System.md#gm-quick-actions, Shop.md#verwendung |
-| 615 | quickBuy Funktion mit Preis-Override und Modifier | mittel | Ja | #610, #612, #613, #2111 | Inventory-System.md#shop-integration-mvp, Shop.md#preis-berechnung |
-| 616 | transferItem zwischen Charakteren | mittel | Ja | #611, #612, #613 | Inventory-System.md#gm-quick-actions |
-| 617 | removeEmptySlot Funktion: Slot entfernen wenn quantity === 0 | mittel | Ja | #600, #612, #614 | Inventory-System.md#automatischer-abzug |
-| 618 | quickSell Funktion mit Preis-Override und Modifier | mittel | Ja | #611, #613, #614, #615, #2112 | Inventory-System.md#shop-integration-mvp, Shop.md#preis-berechnung |
-| 619 | getEffectiveSpeed: over_capacity → Speed = 0 | mittel | Ja | #603 | Inventory-System.md#travel-integration, Travel-System.md#speed-berechnung |
-| 620 | over_capacity verhindert Reise (Speed = 0) | mittel | Ja | #619 | Inventory-System.md#travel-integration, Travel-System.md#transport-modi |
-| 621 | inventory:changed Event definieren: characterId, action, itemId, quantity | hoch | Ja | #600 | Inventory-System.md#events, Events-Catalog.md |
-| 622 | inventory:rations-consumed Event Handler implementieren | mittel | Ja | #608, #621 | Inventory-System.md#events, Events-Catalog.md |
-| 623 | inventory:encumbrance-changed Event Handler | mittel | Ja | #601, #603, #621 | Inventory-System.md#events, Events-Catalog.md, Travel-System.md |
-| 624 | Inventory-Ansicht im Party Manager UI | mittel | Ja | #600, #601, #602 | Inventory-System.md#gm-interface, Character-System.md#party-manager |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 600 | ✅ | Inventory | InventorySlot Interface implementieren (itemId, quantity, equipped) | hoch | Ja | #1603 | Inventory-System.md#schemas, Item.md#verwendung-in-anderen-features | src/core/schemas/item.ts:inventorySlotSchema |
+| 601 | ✅ | Inventory | EncumbranceLevel Type implementieren (light, encumbered, heavily, over_capacity) | hoch | Ja | #500, #600, #602 | Inventory-System.md#encumbrance, Character-System.md#travel-system | src/features/inventory/types.ts:EncumbranceLevel |
+| 602 | ✅ | Inventory | sumInventoryWeight Funktion: Σ(item.weight × quantity) | hoch | Ja | #600, #1600 | Inventory-System.md#berechnung | src/features/inventory/inventory-utils.ts:sumInventoryWeight() |
+| 603 | ✅ | Inventory | calculateEncumbrance Funktion: Gewicht vs Strength × 15 | mittel | Ja | #500, #601, #602 | Inventory-System.md#travel-integration, Travel-System.md#speed-berechnung, Character-System.md#travel-system | src/features/inventory/inventory-utils.ts:calculateEncumbrance() |
+| 604 | ✅ | Inventory | Encumbrance-Schwellenwerte: 33%/66%/100% Kapazität | mittel | Ja | #601 | Inventory-System.md#schwellenwerte | src/features/inventory/types.ts:ENCUMBRANCE_THRESHOLDS, src/features/inventory/types.ts:ENCUMBRANCE_SPEED_REDUCTIONS |
+| 605 | ⬜ | Inventory | RationCheck Interface implementieren (required, available, shortage) | mittel | Ja | #500, #606 | Inventory-System.md#rationen, Travel-System.md | src/features/inventory/types.ts:RationCheck [neu] |
+| 606 | ✅ | Inventory | countRations Funktion: Zähle Items mit isRation Flag | mittel | Ja | #600, #1600 | Inventory-System.md#rationen, Item.md#kategorie-details | src/features/inventory/inventory-utils.ts:countRationsInInventory(), src/features/inventory/inventory-service.ts:countRations() |
+| 607 | ⛔ | Inventory | checkRations Funktion: Party × Tage = benötigte Rationen | mittel | Ja | #605, #606 | Inventory-System.md#rationen-berechnung | src/features/inventory/inventory-utils.ts:checkRations() [neu] |
+| 608 | ⛔ | Inventory | consumeRations Funktion: Automatischer Abzug aus Inventaren | mittel | Ja | #606, #607, #612, #613 | Inventory-System.md#automatischer-abzug, Travel-System.md | src/features/inventory/inventory-service.ts:consumeRations() [neu] |
+| 609 | ⛔ | Inventory | Rationen-Mangel Dialog UI implementieren | mittel | Ja | #500, #603, #607 | Inventory-System.md#travel-integration, Travel-System.md#speed-berechnung | src/application/views/RationDialog.svelte [neu] |
+| 610 | ✅ | Inventory | Currency-Items vordefinieren: Kupfer, Silber, Gold, Platin | hoch | Ja | #1608 | Inventory-System.md#waehrungs-items, Item.md#currency-category-currency | presets/items/base-items.json |
+| 611 | ✅ | Inventory | Münzgewicht-Berechnung: 50 Münzen = 1 lb | hoch | Ja | #600, #610 | Inventory-System.md#waehrung | src/core/schemas/item.ts:COIN_WEIGHT |
+| 612 | ✅ | Inventory | addItemToCharacter Utility-Funktion | mittel | Ja | #600 | Inventory-System.md#gm-quick-actions, Loot-Feature.md | src/features/inventory/inventory-service.ts:addItem() |
+| 613 | ✅ | Inventory | removeItemFromCharacter Utility-Funktion | mittel | Ja | #600, #610, #611 | Inventory-System.md#gm-quick-actions, Shop.md#verwendung | src/features/inventory/inventory-service.ts:removeItem() |
+| 614 | ⬜ | Inventory | addGoldToCharacter Convenience-Funktion | mittel | Ja | #610, #612 | Inventory-System.md#gm-quick-actions, Shop.md#verwendung | src/features/inventory/inventory-service.ts:addGold() [neu] |
+| 615 | ⛔ | Inventory | removeGoldFromCharacter Convenience-Funktion | mittel | Ja | #610, #612, #613, #2111 | Inventory-System.md#shop-integration-mvp, Shop.md#preis-berechnung | src/features/inventory/inventory-service.ts:removeGold() [neu] |
+| 616 | ✅ | Inventory | transferItem zwischen Charakteren | mittel | Ja | #611, #612, #613 | Inventory-System.md#gm-quick-actions | src/features/inventory/inventory-service.ts:transferItem() |
+| 617 | ⛔ | Inventory | quickBuy Funktion mit Preis-Override und Modifier | mittel | Ja | #600, #612, #614 | Inventory-System.md#shop-integration-mvp | src/features/shop/shop-service.ts:quickBuy() [neu] |
+| 618 | ⛔ | Inventory | quickSell Funktion mit Preis-Override und Modifier | mittel | Ja | #611, #613, #614, #615, #2112 | Inventory-System.md#shop-integration-mvp, Shop.md#preis-berechnung | src/features/shop/shop-service.ts:quickSell() [neu] |
+| 619 | ⬜ | Inventory | calculateEffectivePartySpeed mit Encumbrance-Reduktion | mittel | Ja | #603 | Inventory-System.md#travel-integration, Travel-System.md#speed-berechnung | src/features/travel/travel-service.ts:calculateEffectivePartySpeed() [ändern] |
+| 620 | ⛔ | Inventory | over_capacity verhindert Reise (Speed = 0) | mittel | Ja | #619 | Inventory-System.md#travel-integration, Travel-System.md#transport-modi | src/features/travel/travel-service.ts:validateTravelStart() [ändern] |
+| 621 | ✅ | Inventory | inventory:changed Event Handler implementieren | hoch | Ja | #600 | Inventory-System.md#events, Events-Catalog.md | src/core/events/domain-events.ts:INVENTORY_CHANGED, src/core/events/domain-events.ts:InventoryChangedPayload |
+| 622 | ⛔ | Inventory | inventory:rations-consumed Event Handler implementieren | mittel | Ja | #608, #621 | Inventory-System.md#events, Events-Catalog.md | src/core/events/domain-events.ts:INVENTORY_RATIONS_CONSUMED [neu], src/core/events/domain-events.ts:InventoryRationsConsumedPayload [neu], src/features/inventory/inventory-service.ts [ändern] |
+| 623 | ✅ | Inventory | inventory:encumbrance-changed Event Handler implementieren | mittel | Ja | #601, #603, #621 | Inventory-System.md#events, Events-Catalog.md, Travel-System.md | src/core/events/domain-events.ts:INVENTORY_ENCUMBRANCE_CHANGED, src/core/events/domain-events.ts:InventoryEncumbranceChangedPayload |
+| 624 | ⬜ | Inventory | Inventory-Ansicht im Party Manager UI | mittel | Ja | #600, #601, #602 | Inventory-System.md#gm-interface, Character-System.md#party-manager | src/application/views/InventoryPanel.svelte [neu] |
+| 625 | ⛔ | Inventory | Equipped-Status Toggle für Waffen/Rüstung | niedrig | Nein | #624 | Inventory-System.md#prioritaet | src/application/views/InventoryPanel.svelte [ändern] |

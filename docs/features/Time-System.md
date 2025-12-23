@@ -677,18 +677,31 @@ Vollstaendige Event-Definitionen: [Events-Catalog.md#rest](../architecture/Event
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 900 | TimeState Interface (currentTime, activeCalendarId) | hoch | Ja | - | Time-System.md#schemas |
-| 901 | GameDateTime Interface (year, month, day, hour, minute, computed fields) | hoch | Ja | #900 | Time-System.md#schemas |
-| 903 | CalendarDefinition Schema (months, weekdays, seasons, timeSegments) | hoch | Ja | - | Time-System.md#schemas, ../architecture/EntityRegistry.md |
-| 905 | CalendarSeason Interface (name, months) | hoch | Ja | #903 | Time-System.md#schemas |
-| 906 | TimeSegment Type ('dawn', 'morning', 'midday', 'afternoon', 'dusk', 'night') | hoch | Ja | - | Time-System.md#schemas |
-| 908 | time:set-requested Handler | hoch | Ja | #900, #901 | Time-System.md#zeit-operationen, ../architecture/Events-Catalog.md#time |
-| 910 | time:segment-changed Event publizieren | hoch | Ja | #909 | Time-System.md#events, ../architecture/Events-Catalog.md#time |
-| 912 | getTimeSegment() Funktion mit Wrap-Around-Logik | hoch | Ja | #906 | Time-System.md#time-segment-berechnung |
-| 914 | time:set-calendar-requested Handler | niedrig | Nein | #903 | Time-System.md#zeit-operationen, ../architecture/Events-Catalog.md#time |
-| 916 | time:calendar-change-failed Event publizieren | niedrig | Nein | #914 | Time-System.md#events, ../architecture/Events-Catalog.md#time |
-| 918 | Visibility-Modifier pro TimeSegment (dawn 50%, night 10%, etc.) | mittel | Nein | #906, #843, #848 | Time-System.md#sichtweiten-einfluss-post-mvp, Map-Feature.md#visibility-system |
-| 952 | RestState Interface (status, type, hoursCompleted, hoursRemaining, interruptionCount) | hoch | Ja | #951 | Time-System.md#resting |
-| 954 | Rest-Service (Stunden-Loop mit Encounter-Checks) | hoch | Ja | #953, #215 | Time-System.md#resting, Encounter-System.md, ../architecture/Events-Catalog.md#rest |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 900 | ✅ | Time | TimeState Interface (currentTime, activeCalendarId) | hoch | Ja | - | Time-System.md#schemas | src/core/schemas/time.ts, src/features/time/types.ts, src/features/time/time-store.ts |
+| 901 | ✅ | Time | GameDateTime Interface (year, month, day, hour, minute, computed fields) | hoch | Ja | #900 | Time-System.md#gamedatetime | src/core/schemas/time.ts |
+| 903 | ✅ | Time | CalendarDefinition Schema (months, weekdays, seasons, timeSegments) | hoch | Ja | - | Time-System.md#schemas, ../architecture/EntityRegistry.md | src/core/schemas/time.ts |
+| 905 | ✅ | Time | CalendarSeason Interface (name, months) | hoch | Ja | #903 | Time-System.md#calendardefinition | src/core/schemas/time.ts |
+| 906 | ✅ | Time | TimeSegment Type ('dawn', 'morning', 'midday', 'afternoon', 'dusk', 'night') | hoch | Ja | - | Time-System.md#gamedatetime | src/core/schemas/time.ts, src/core/schemas/common.ts |
+| 908 | ✅ | Time | time:set-requested Handler | hoch | Ja | #900, #901 | Time-System.md#zeit-operationen, ../architecture/Events-Catalog.md#time | src/features/time/time-service.ts (setupEventHandlers L213-239) |
+| 910 | ✅ | Time | time:segment-changed Event publizieren | hoch | Ja | #909 | Time-System.md#events, ../architecture/Events-Catalog.md#time | src/features/time/time-service.ts (publishSegmentChanged), src/core/events/domain-events.ts |
+| 912 | ✅ | Time | getTimeSegment() Funktion mit Wrap-Around-Logik | hoch | Ja | #906 | Time-System.md#time-segment-berechnung | src/features/time/time-utils.ts (getTimeSegment, isInRange) |
+| 914 | ⬜ | Time | time:set-calendar-requested Handler | niedrig | Nein | #903 | Time-System.md#zeit-operationen, ../architecture/Events-Catalog.md#time | src/features/time/time-service.ts:setupEventHandlers() [ändern], src/features/time/time-service.ts:setCalendar() [neu] |
+| 916 | ⛔ | Time | time:calendar-change-failed Event publizieren | niedrig | Nein | #914 | Time-System.md#events, ../architecture/Events-Catalog.md#time | src/features/time/time-service.ts:publishCalendarChangeFailed() [neu], src/core/events/domain-events.ts |
+| 918 | ⛔ | Time | Visibility-Modifier pro TimeSegment (dawn 50%, night 10%, etc.) | mittel | Nein | #906, #843, #848 | Time-System.md#sichtweiten-einfluss-post-mvp, Map-Feature.md#visibility-system | src/features/map/visibility-utils.ts:getTimeModifier() [neu], src/features/map/visibility.ts:calculateVisibility() [ändern] |
+| 952 | ⛔ | Time | RestState Interface (status, type, hoursCompleted, hoursRemaining, interruptionCount) | hoch | Ja | #951 | Time-System.md#resting | src/core/schemas/time.ts [ändern] |
+| 954 | ⛔ | Time | Rest-Service (Stunden-Loop mit Encounter-Checks) | hoch | Ja | #953, #215 | Time-System.md#resting, Encounter-System.md, ../architecture/Events-Catalog.md#rest | src/features/time/rest-service.ts [neu] |
+| 902 | ✅ | Time | Duration Interface (years, months, days, hours, minutes) | hoch | Ja | - | Time-System.md#zeit-operationen | src/core/schemas/time.ts |
+| 904 | ✅ | Time | CalendarMonth Interface (name, days, season) | hoch | Ja | #903 | Time-System.md#calendardefinition | src/core/schemas/time.ts |
+| 907 | ✅ | Time | time:advance-requested Handler | hoch | Ja | #900, #902 | Time-System.md#advance-zeit-voranschreiten | src/features/time/time-service.ts (setupEventHandlers L164-210) |
+| 909 | ✅ | Time | time:state-changed Event publizieren | hoch | Ja | #907, #908 | Time-System.md#events | src/features/time/time-service.ts (publishStateChanged), src/core/events/domain-events.ts |
+| 911 | ✅ | Time | time:day-changed Event publizieren | hoch | Ja | #909 | Time-System.md#events | src/features/time/time-service.ts (publishDayChanged), src/core/events/domain-events.ts |
+| 913 | ✅ | Time | addDuration() Funktion für Zeit-Arithmetik | hoch | Ja | #901, #902 | Time-System.md#advance-zeit-voranschreiten | src/features/time/time-utils.ts (addDuration, normalizeTime) |
+| 915 | ⛔ | Time | time:calendar-changed Event publizieren | niedrig | Nein | #914 | Time-System.md#events | src/features/time/time-service.ts:publishCalendarChanged() [neu], src/core/events/domain-events.ts |
+| 917 | ⬜ | Time | convertTime() zwischen Kalendern | niedrig | Nein | #903 | Time-System.md#kalender-wechseln | src/features/time/time-utils.ts:convertTime() [neu] |
+| 919 | ⛔ | Time | Darkvision negiert Night-Modifier | mittel | Nein | #918, #849 | Time-System.md#darkvision | src/features/map/visibility-utils.ts:getTimeModifier() [ändern], src/features/party/types.ts:CharacterSenses [neu] |
+| 953 | ⛔ | Time | Rest-Store (State Machine: idle → resting → paused) | hoch | Ja | #952 | Time-System.md#resting | src/features/time/rest-store.ts [neu] |
+| 1114 | ⛔ | Audio | Weather-Matching: Ambience anpassen bei weather-changed | niedrig | Nein | #909, #1107, #1108, #1113 | Time-System.md, Events-Catalog.md#time | [neu] src/features/audio/mood-matching.ts |
+| 2964 | ⬜ | Time | getCurrentSeason(): Aktuelle Saison aus Datum + Kalender ableiten | hoch | Ja | #905 | Time-System.md#calendardefinition | - |
+| 2965 | ⬜ | Time | Celestial Events: Custom Mondphasen und Himmelsereignisse im Calendar-System | hoch | Ja | #903 | Time-System.md#calendardefinition | - |

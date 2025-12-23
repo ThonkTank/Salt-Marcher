@@ -9,6 +9,50 @@ Detaillierte Spezifikation des Wettersystems.
 
 ## Parameter
 
+### WeatherState
+
+```typescript
+interface WeatherState {
+  // Kern-Parameter
+  temperature: number;           // Aktuelle Temperatur in °C
+  wind: number;                  // Wind in km/h
+  windDirection: HexDirection;   // 6 Hex-kompatible Richtungen
+
+  // Niederschlag (getrennte Wahrscheinlichkeit und Intensitaet)
+  precipChance: number;          // 0-100: Wahrscheinlichkeit fuer Niederschlag
+  precipIntensity: number;       // 0-100: Staerke (drizzle → heavy_rain)
+  precipitationType: PrecipitationType; // Abgeleiteter Typ
+
+  // Nebel (separater Layer, kann mit Niederschlag kombiniert werden)
+  fogLevel: number;              // 0-1: Nebeldichte (0 = klar, 1 = dichter Nebel)
+
+  // Sichtweite (berechnet aus Niederschlag + Nebel)
+  visibilityModifier: number;    // 0.1-1.0 (fuer Encounter-System)
+
+  // Astronomische Faktoren (fuer Nacht-Sichtweite)
+  moonPhase: MoonPhase;          // Aus Kalender-System (custom Mondzyklen)
+  cloudCover: number;            // 0-1 (0 = klar, 1 = komplett bewoelkt)
+}
+
+type HexDirection = 'N' | 'NE' | 'SE' | 'S' | 'SW' | 'NW';
+
+// MoonPhase wird vom Kalender-System definiert (unterstuetzt custom Mondzyklen)
+type MoonPhase = string;  // z.B. 'new' | 'crescent' | 'half' | 'gibbous' | 'full'
+```
+
+**Niederschlag:** `precipChance` und `precipIntensity` sind getrennt - hohe Wahrscheinlichkeit bedeutet nicht automatisch starken Regen.
+
+**Nebel:** `fogLevel` ist ein separater Layer. Nebel kann mit Regen/Schnee kombiniert werden ("misty rain", "foggy snow").
+
+**Wind-Richtung:** 6 Richtungen passend zu Hex-Tile-Kanten. Ermoeglicht Terrain-Effekte wie "Berge blockieren Wind aus Richtung X".
+
+**moonPhase und cloudCover** werden fuer den dynamischen Time-Visibility-Modifier verwendet:
+- Vollmond bei klarem Himmel: Nacht-Sichtweite ~0.4 (statt 0.1)
+- Neumond bei Bewoelkung: Nacht-Sichtweite ~0.1
+- Mondphase kommt aus dem Kalender-System (unterstuetzt custom Mondzyklen und Celestial Events)
+
+→ Details: [Encounter-System.md](Encounter-System.md#dynamischer-time-modifier)
+
 ### Temperatur
 
 | Kategorie | Bereich (°C) | Mechanische Effekte |
@@ -40,7 +84,90 @@ Detaillierte Spezifikation des Wettersystems.
 | `heavy_rain` | 100m | Perception -5, schwieriges Terrain |
 | `snow` | 200m | Kaelte, langsamere Bewegung |
 | `blizzard` | 30m | Kaelte, stark reduzierte Bewegung |
-| `fog` | 50m | Nur Sichtweite |
+| `hail` | 200m | Schaden bei Exposition, gefaehrlich im Freien |
+
+**Hinweis:** `fog` ist kein Niederschlagstyp mehr, sondern ein separater Layer (`fogLevel`). Siehe [Nebel](#nebel).
+
+### precipitationType Ableitung
+
+Der Niederschlagstyp wird aus `precipChance`, `precipIntensity` und `temperature` abgeleitet:
+
+```typescript
+function derivePrecipitationType(
+  precipChance: number,
+  precipIntensity: number,
+  temperature: number,
+  seed: number
+): PrecipitationType {
+  const roll = seededRandom(seed)() * 100;
+  if (roll > precipChance) return 'none';
+
+  const isSnow = temperature < 2;  // °C Grenzwert
+  const isHailCondition = temperature >= 15 && precipIntensity > 70;
+
+  // Hagel bei Gewitter-Bedingungen (warm + hohe Intensitaet)
+  if (isHailCondition && seededRandom(seed + 1)() < 0.2) {
+    return 'hail';
+  }
+
+  // Niederschlagstyp nach Intensitaet
+  if (precipIntensity < 20) {
+    return isSnow ? 'snow' : 'drizzle';
+  } else if (precipIntensity < 60) {
+    return isSnow ? 'snow' : 'rain';
+  } else {
+    return isSnow ? 'blizzard' : 'heavy_rain';
+  }
+}
+```
+
+**Hagel-Bedingungen:**
+- Temperatur >= 15°C (warm/mild)
+- Intensitaet > 70% (schwerer Niederschlag)
+- 20% Chance dass es hagelt statt starker Regen
+
+### Nebel
+
+Nebel ist ein separater Layer und kann mit Niederschlag kombiniert werden.
+
+| fogLevel | Bezeichnung | Sichtweite | Effekte |
+|----------|-------------|------------|---------|
+| 0.0-0.2 | Klar | Normal | Keine |
+| 0.2-0.5 | Dunstig | 500m | Perception -1 |
+| 0.5-0.7 | Neblig | 100m | Perception -3 |
+| 0.7-0.9 | Dichter Nebel | 50m | Perception -5, leicht zu verlaufen |
+| 0.9-1.0 | Undurchdringlich | 10m | Fast blind, hohes Verirrungsrisiko |
+
+**Kombinationen:**
+- Nebel + Regen = "Misty Rain" (beide Sichtweiten-Modifier stapeln)
+- Nebel + Schnee = "Foggy Snow" (besonders gefaehrlich)
+
+### fogChance → fogLevel Transformation
+
+Die Terrain-Definition hat `fogChance` (0-100 Wahrscheinlichkeit), WeatherState hat `fogLevel` (0-1 Intensitaet).
+
+```typescript
+function generateFog(fogChance: number, seed: number): number {
+  const roll = seededRandom(seed)() * 100;  // 0-100
+
+  if (roll > fogChance) {
+    return 0;  // Kein Nebel
+  }
+
+  // Nebel vorhanden - Intensitaet basierend auf "wie weit unter der Chance"
+  const intensity = (fogChance - roll) / fogChance;
+  return intensity;  // 0-1
+}
+```
+
+**Beispiele:**
+| fogChance | Roll | Ergebnis |
+|-----------|------|----------|
+| 60 | 80 | 0 (kein Nebel - Roll > Chance) |
+| 60 | 30 | 0.5 (Nebel mit 50% Intensitaet) |
+| 60 | 10 | 0.83 (Nebel mit 83% Intensitaet) |
+
+**Interpretation:** Je "gluecklicher" der Wurf (weit unter fogChance), desto dichter der Nebel.
 
 ---
 
@@ -52,9 +179,11 @@ Jedes Terrain definiert charakteristische Wetter-Ranges als Kurve pro Parameter:
 
 ```typescript
 interface TerrainWeatherRanges {
-  temperature: WeatherRange;  // in °C
-  wind: WeatherRange;         // in km/h
-  precipitation: WeatherRange; // 0-100 (Wahrscheinlichkeit)
+  temperature: WeatherRange;   // in °C
+  wind: WeatherRange;          // in km/h
+  precipChance: WeatherRange;  // 0-100 (Wahrscheinlichkeit fuer Niederschlag)
+  precipIntensity: WeatherRange; // 0-100 (Staerke des Niederschlags)
+  fogChance: WeatherRange;     // 0-100 (Wahrscheinlichkeit fuer Nebel)
 }
 
 interface WeatherRange {
@@ -64,16 +193,25 @@ interface WeatherRange {
 }
 ```
 
+**Breaking Change:** `precipitation` wurde in `precipChance` und `precipIntensity` aufgeteilt. Bestehende Terrain-Definitionen muessen migriert werden.
+
 ### Terrain-Beispiele
 
-| Terrain | Temperatur (°C) | Wind (km/h) | Niederschlag (%) |
-|---------|-----------------|-------------|------------------|
-| `plains` | -5 / 15 / 35 | 5 / 20 / 60 | 10 / 30 / 70 |
-| `mountains` | -20 / 0 / 20 | 20 / 50 / 100 | 20 / 50 / 80 |
-| `desert` | 0 / 35 / 50 | 5 / 15 / 80 | 0 / 5 / 20 |
-| `swamp` | 5 / 20 / 35 | 0 / 10 / 30 | 40 / 60 / 90 |
-| `forest` | 0 / 15 / 30 | 0 / 10 / 30 | 20 / 40 / 70 |
-| `water` | 5 / 18 / 30 | 10 / 30 / 80 | 20 / 40 / 70 |
+| Terrain | Temperatur (°C) | Wind (km/h) | Precip-Chance (%) | Precip-Intensitaet (%) | Fog-Chance (%) |
+|---------|-----------------|-------------|-------------------|------------------------|----------------|
+| `plains` | -5 / 15 / 35 | 5 / 20 / 60 | 10 / 30 / 70 | 10 / 30 / 60 | 5 / 15 / 40 |
+| `mountains` | -20 / 0 / 20 | 20 / 50 / 100 | 20 / 50 / 80 | 20 / 50 / 80 | 10 / 30 / 60 |
+| `desert` | 0 / 35 / 50 | 5 / 15 / 80 | 0 / 5 / 20 | 5 / 20 / 50 | 0 / 5 / 20 |
+| `swamp` | 5 / 20 / 35 | 0 / 10 / 30 | 40 / 60 / 90 | 20 / 40 / 70 | 30 / 50 / 80 |
+| `forest` | 0 / 15 / 30 | 0 / 10 / 30 | 20 / 40 / 70 | 15 / 35 / 60 | 20 / 40 / 70 |
+| `water` | 5 / 18 / 30 | 10 / 30 / 80 | 20 / 40 / 70 | 20 / 40 / 70 | 15 / 30 / 50 |
+
+**Leseweise:** min / average / max
+
+**Interpretation:**
+- **Precip-Chance:** Wie oft es regnet/schneit (Suempfe: oft, Wuesten: selten)
+- **Precip-Intensitaet:** Wie stark es regnet wenn es regnet (unabhaengig von Chance)
+- **Fog-Chance:** Wahrscheinlichkeit fuer Nebel (Suempfe und Waelder: haeufig)
 
 ### Generierungs-Mechanik
 
@@ -115,6 +253,17 @@ Bestimmte Kombinationen triggern spezielle Events:
 
 Wetter wird nicht pro Tile berechnet (zu granular), sondern als Durchschnitt:
 
+### Berechnungs-Reihenfolge
+
+**Wichtig:** Tile-Modifiers werden **VOR** dem Area-Averaging angewendet. Das bedeutet:
+- Ein kalter Sumpf beeinflusst auch die Nachbar-Tiles
+- Terrain-Einflüsse propagieren in die Umgebung
+- Realistisches Wetter-Verhalten
+
+```
+Terrain-Basis → + Tile-Modifiers → Area-Averaging → + Time-Segment → Finales Wetter
+```
+
 ### Algorithmus
 
 ```typescript
@@ -122,17 +271,23 @@ function calculateWeather(centerTile: HexCoordinate, map: MapData): WeatherParam
   const RADIUS = 5;
   const tiles = getTilesInRadius(centerTile, RADIUS);
 
-  let weightedParams = { temp: 0, wind: 0, precip: 0 };
+  let weightedParams = { temp: 0, wind: 0, precip: 0, fog: 0 };
   let totalWeight = 0;
 
   for (const tile of tiles) {
     const distance = hexDistance(centerTile, tile);
     const weight = 1 / (distance + 1);  // Distanz-Gewichtung
 
-    const tileParams = getBaseTileWeather(tile, map);
+    // 1. Basis aus Terrain-Template
+    const baseParams = generateFromTerrainRanges(tile.terrain);
+
+    // 2. Tile-Modifiers anwenden (VOR Averaging!)
+    const tileParams = applyTileModifiers(baseParams, tile.climateModifiers);
+
     weightedParams.temp += tileParams.temp * weight;
     weightedParams.wind += tileParams.wind * weight;
     weightedParams.precip += tileParams.precip * weight;
+    weightedParams.fog += tileParams.fog * weight;
 
     totalWeight += weight;
   }
@@ -140,19 +295,90 @@ function calculateWeather(centerTile: HexCoordinate, map: MapData): WeatherParam
   return {
     temp: weightedParams.temp / totalWeight,
     wind: weightedParams.wind / totalWeight,
-    precip: weightedParams.precip / totalWeight
+    precip: weightedParams.precip / totalWeight,
+    fog: weightedParams.fog / totalWeight
+  };
+}
+
+function applyTileModifiers(
+  base: WeatherParams,
+  modifiers?: TileClimateModifiers
+): WeatherParams {
+  if (!modifiers) return base;
+
+  return {
+    temp: base.temp + (modifiers.temperatureModifier ?? 0),
+    wind: applyWindExposure(base.wind, modifiers.windExposure),
+    precip: base.precip + (modifiers.humidityModifier ?? 0),
+    fog: base.fog + (modifiers.humidityModifier ?? 0) * 0.5  // Humidity beeinflusst Fog
   };
 }
 ```
 
 ### Terrain-Einfluss (Nice-to-Have)
 
-| Terrain | Effekt |
-|---------|--------|
-| `mountains` | Blockiert Wind aus dieser Richtung, kaeltere Basis-Temperatur |
-| `water` | Mildert Temperatur-Extreme, erhoeht Niederschlags-Chance |
-| `desert` | Erhoeht Temperatur, reduziert Niederschlag |
-| `forest` | Reduziert Wind, erhoeht Feuchtigkeit |
+Terrains beeinflussen das Wetter benachbarter Tiles. Diese Werte werden bei "Calculate Derived" im Cartographer angewendet.
+
+#### Quantitative Werte
+
+```typescript
+const TERRAIN_INFLUENCE = {
+  water: {
+    radius: 2,           // Tiles Reichweite
+    tempModifier: -3,    // °C - mildert Extreme
+    precipModifier: +10, // % erhoehte Niederschlags-Chance
+  },
+  mountains: {
+    windShadowRadius: 3, // Tiles in Windrichtung
+    windReduction: 0.5,  // 50% weniger Wind im Windschatten
+    tempModifier: -2,    // °C pro Tile Naehe
+  },
+  forest: {
+    radius: 1,           // Tiles
+    windReduction: 0.7,  // 30% weniger Wind
+    humidityModifier: +15, // % mehr Feuchtigkeit (fog + precip)
+  },
+  desert: {
+    radius: 2,           // Tiles
+    tempModifier: +5,    // °C waermer
+    precipModifier: -20, // % weniger Niederschlag
+  },
+};
+```
+
+#### Effekt-Tabelle
+
+| Terrain | Radius | Temp | Wind | Precip/Fog |
+|---------|--------|------|------|------------|
+| `water` | 2 | -3°C | - | +10% |
+| `mountains` | 3 (Windschatten) | -2°C/Tile | ×0.5 | - |
+| `forest` | 1 | - | ×0.7 | +15% |
+| `desert` | 2 | +5°C | - | -20% |
+
+#### Stapelung
+
+Bei mehreren Terrain-Einfluessen: **Additiv mit Daempfung**
+
+```typescript
+function stackEffects(effects: number[]): number {
+  if (effects.length === 0) return 0;
+  if (effects.length === 1) return effects[0];
+
+  // Sortiere nach Staerke (staerkster zuerst)
+  const sorted = effects.sort((a, b) => Math.abs(b) - Math.abs(a));
+
+  let total = sorted[0];  // Staerkster Effekt 100%
+  for (let i = 1; i < sorted.length; i++) {
+    total += sorted[i] * 0.7;  // Weitere Effekte 70%
+  }
+  return total;
+}
+```
+
+**Beispiel:** Tile neben Wasser (-3°C) UND Wald (+0°C, aber +15% Humidity):
+- Temperatur: -3°C (nur Wasser-Effekt)
+- Humidity: +15% (nur Wald-Effekt)
+- Keine Stapelung noetig da unterschiedliche Parameter
 
 ---
 
@@ -188,6 +414,77 @@ function transitionWeather(current: WeatherState, target: WeatherParams): Weathe
 ```
 
 Niederschlag kann abrupt beginnen/enden (30% Chance pro Segment), aber Temperatur und Wind aendern sich graduell.
+
+---
+
+## Temperatur-Modifier
+
+Die finale Temperatur wird durch mehrere Modifier beeinflusst:
+
+```
+Finale Temperatur = Terrain-Basis + Time-Segment + Saison-Modifier + Elevation-Modifier
+```
+
+### Saison-Modifier
+
+Das Kalender-System liefert die aktuelle Saison. Weather wendet einen Temperatur-Offset an:
+
+| Saison | Temperatur-Offset | Beispiel (Plains avg 15°C) |
+|--------|-------------------|----------------------------|
+| Fruehling | 0°C | 15°C |
+| Sommer | +10°C | 25°C |
+| Herbst | -5°C | 10°C |
+| Winter | -15°C | 0°C |
+
+**Hinweis:** Der Offset wird auf alle drei Range-Werte (min/avg/max) angewendet:
+```
+Winter-Plains: min=-20, avg=0, max=20 (statt -5/15/35)
+```
+
+**Kalender-Abhaengigkeit:** Kalender-System muss Saison-Information bereitstellen. Bei custom Kalendern sind auch andere Saison-Definitionen moeglich.
+
+### Elevation-Modifier
+
+Hoehe beeinflusst die Temperatur nach dem atmosphaerischen Gradienten:
+
+```
+Temperatur-Offset = -6.5°C × (Elevation / 1000m)
+```
+
+| Elevation | Temperatur-Offset | Beispiel (Plains 15°C auf Meereshoehe) |
+|-----------|-------------------|----------------------------------------|
+| 0m (Meereshoehe) | 0°C | 15°C |
+| 500m | -3.25°C | 11.75°C |
+| 1000m | -6.5°C | 8.5°C |
+| 2000m | -13°C | 2°C |
+| 3000m | -19.5°C | -4.5°C |
+
+**Hinweis:** Elevation kommt aus den Tile-Daten. Der Modifier wird nach Terrain-Basis + Saison angewendet.
+
+### Berechnungs-Reihenfolge
+
+```typescript
+function calculateTemperature(
+  terrainRange: WeatherRange,
+  timeSegment: TimeSegment,
+  season: Season,
+  elevation: number
+): number {
+  // 1. Basis aus Terrain-Range generieren
+  const baseTemp = generateFromRange(terrainRange);
+
+  // 2. Time-Segment-Modifier
+  const timeModifier = SEGMENT_TEMPERATURE_MODIFIERS[timeSegment];
+
+  // 3. Saison-Modifier
+  const seasonModifier = SEASON_TEMPERATURE_MODIFIERS[season];
+
+  // 4. Elevation-Modifier
+  const elevationModifier = -6.5 * (elevation / 1000);
+
+  return baseTemp + timeModifier + seasonModifier + elevationModifier;
+}
+```
 
 ---
 
@@ -296,9 +593,13 @@ interface MapState {
 - Neu-Berechnung erfolgt NUR bei `time:state-changed` Event
 - Dies garantiert Session-Kontinuitaet: Wenn es beim Schliessen regnet, regnet es beim Oeffnen weiter
 
-### GM Weather Override
+### GM Weather Override (Session-Overrides)
 
 Der GM kann das generierte Wetter jederzeit manuell überschreiben.
+
+**Wichtig:** Dies ist fuer **temporaere Session-Overrides** gedacht (z.B. "Dramatischer Sturm fuer diesen Encounter"), NICHT fuer permanente Klima-Anpassungen bei der Karten-Erstellung.
+
+Fuer permanente Tile-spezifische Klima-Anpassungen → siehe [TileClimateModifiers](../domain/Terrain.md#tileclimatemodifiers) und Cartographer Climate-Brush.
 
 **Override-Schema:**
 
@@ -393,21 +694,44 @@ Unterschiedliche Map-Typen haben unterschiedliches Wetter-Verhalten:
 |---------|----------|--------|
 | **Overworld** | Ja | Eigene Generierung |
 | **Indoor** (Dungeon, Gebäude) | Nein | Kein Weather-System aktiv |
-| **Stadt** | Ja | **Erbt vom Overworld-Tile** auf dem sie liegt |
+| **Stadt** | Ja | **Erbt vom Parent-Tile** (ueber MapLink) |
 | **Andere World-Maps** | Ja | Eigene Generierung |
+
+### Position ueber MapLink
+
+Die Overworld-Position einer Sub-Map (Stadt, Dungeon) wird ueber den **MapLink** ermittelt:
+
+```typescript
+// MapLink verbindet Sub-Map-Ausgang mit Parent-Map-Tile
+interface MapLink {
+  sourceMapId: EntityId<'map'>;
+  sourcePosition: HexCoordinate;  // Position des Ausgangs auf der Sub-Map
+  targetMapId: EntityId<'map'>;   // Parent-Map
+  targetPosition: HexCoordinate;  // Position auf der Parent-Map
+}
+```
+
+**Vorteile:**
+- Kein separates `parentMapId` in MapState noetig
+- MapLink ist die einzige Quelle der Wahrheit fuer Map-Verbindungen
+- GM kann ueberschreiben (Teleporter, langer Tunnel zu anderem Hex)
 
 ### Implementierung
 
 ```typescript
-function getWeatherForMap(map: MapData, overworldPosition: HexCoordinate | null): WeatherState | null {
+function getWeatherForMap(
+  map: MapData,
+  mapLinkRegistry: MapLinkRegistry
+): WeatherState | null {
   switch (map.type) {
     case 'indoor':
       return null;  // Kein Wetter
 
     case 'town':
-      // Erbt von Overworld-Tile
-      if (!overworldPosition) return null;
-      return getOverworldWeather(overworldPosition);
+      // Finde Parent-Tile ueber MapLink
+      const parentLink = mapLinkRegistry.findParentLink(map.id);
+      if (!parentLink) return null;
+      return getOverworldWeather(parentLink.targetMapId, parentLink.targetPosition);
 
     case 'overworld':
     default:
@@ -416,23 +740,39 @@ function getWeatherForMap(map: MapData, overworldPosition: HexCoordinate | null)
 }
 ```
 
-### Background Weather
+### Background Weather Tick
 
-**Wichtig:** Overworld-Weather läuft **im Hintergrund weiter**, auch wenn eine Sub-Map aktiv ist.
+**Wichtig:** Das Parent-Tile der aktuellen Sub-Map tickt **im Hintergrund weiter**.
 
+```
+Party betritt Stadt um 10:00 bei Regen
+    │
+    ├── Stadt-Map zeigt Wetter vom Parent-Tile (Regen)
+    │
+    ├── Im Hintergrund: Parent-Tile Weather tickt weiter
+    │   ├── time:segment-changed → neues Wetter berechnen
+    │   └── Parent-Tile Weather wird aktualisiert
+    │
+    ├── Stadt-Map zeigt immer aktuelles Parent-Wetter
+    │
+    └── Party verlaesst Stadt um 14:00
+        └── Aktuelles Overworld-Weather ist bereits berechnet (evtl. Sonne)
+```
+
+**Dungeon-Sonderfall:**
 ```
 Party betritt Dungeon um 10:00 bei Regen
     │
-    ├── Dungeon-Map hat kein Weather
+    ├── Dungeon hat KEIN Wetter (Indoor)
     │
-    ├── Im Hintergrund: Overworld-Weather tickt weiter
-    │   └── time:segment-changed Events weiterhin verarbeitet
+    ├── Im Hintergrund: Parent-Tile Weather tickt weiter
+    │   └── Wetter wird fuer Rueckkehr vorbereitet
     │
-    └── Party verlässt Dungeon um 14:00
-        └── Aktuelles Overworld-Weather wird angezeigt (evtl. Sonne)
+    └── Party verlaesst Dungeon um 14:00
+        └── Aktuelles Overworld-Weather wird angezeigt
 ```
 
-**Begründung:** Spieler sollen nicht erwarten, dass das Wetter "eingefroren" ist während sie im Dungeon sind.
+**Begründung:** Die Sub-Map bezieht sich auf das Parent-Tile - das Wetter muss dort aktuell sein.
 
 ---
 
@@ -456,26 +796,43 @@ Party betritt Dungeon um 10:00 bei Regen
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 101 | WeatherParams: Basis-Parameter-Interface (Temperatur, Wind, Niederschlag) | hoch | Ja | - | Weather-System.md#parameter |
-| 102 | Temperatur-Kategorisierung (freezing, cold, cool, mild, warm, hot) mit mechanischen Effekten | hoch | Ja | #101 | Weather-System.md#temperatur |
-| 103 | Wind-Kategorisierung (calm, light, moderate, strong, gale) mit mechanischen Effekten | hoch | Ja | #101 | Weather-System.md#wind |
-| 104 | Niederschlag-Kategorisierung (none, drizzle, rain, heavy_rain, snow, blizzard, fog) | hoch | Ja | #101 | Weather-System.md#niederschlag |
-| 105 | TerrainWeatherRanges Schema (temperature, wind, precipitation mit min/average/max) | hoch | Ja | #101, #1702 | Weather-System.md#range-schema, Terrain.md#schema |
-| 106 | Weather-Generierung aus Ranges (Gaussian-ähnliche Verteilung) | hoch | Ja | #105 | Weather-System.md#generierungs-mechanik |
-| 107 | Area-Averaging: Wetter als gewichteter Durchschnitt in Radius (5 Tiles) | hoch | Ja | #106, #802 | Weather-System.md#area-averaging |
-| 108 | Time-Segment-Modifikatoren (6 Segmente mit Temperatur-Offset) | hoch | Ja | #101, #906, #912 | Weather-System.md#time-segment-berechnung, Time-System.md#time-segment-berechnung |
-| 109 | Transition-Logik: Gradueller Wetter-Übergang zwischen Segmenten | hoch | Ja | #101, #108 | Weather-System.md#uebergangs-logik |
-| 110 | Event-Flow: time:segment-changed → environment:weather-changed | hoch | Ja | #109, #910 | Weather-System.md#event-flow, Events-Catalog.md#environment |
-| 111 | Weather-Persistierung: currentWeather als Map Property | hoch | Ja | #101, #110, #800, #801 | Weather-System.md#current-weather-als-map-property, Map-Feature.md#overworldmap |
-| 112 | Multi-Map Weather: Indoor-Maps haben kein Wetter | hoch | Ja | #111, #806 | Weather-System.md#map-typ-regeln, Map-Feature.md#wetter-auf-sub-maps |
-| 113 | Stadt-Maps erben Wetter vom Overworld-Tile | hoch | Ja | #111, #112, #827 | Weather-System.md#map-typ-regeln, Map-Feature.md#wetter-auf-sub-maps |
-| 114 | Background Weather Tick: Overworld-Weather läuft im Hintergrund | hoch | Ja | #111, #910 | Weather-System.md#background-weather |
-| 115 | Weather-Events: Blizzard, Thunderstorm, Heatwave, Dense Fog, Dust Storm | mittel | Nein | #102, #103, #104, #110 | Weather-System.md#weather-events |
-| 116 | Audio-Integration: Ambiance-Sounds bei weather-changed anpassen | mittel | Nein | #110, #1107, #1115 | Weather-System.md#consumer-features, Audio-System.md#context-updates |
-| 117 | Travel-Integration: Speed-Faktor bei weather-changed neu berechnen | hoch | Ja | #3, #104, #110 | Weather-System.md#consumer-features, Travel-System.md#weather-faktoren |
-| 118 | Terrain-Einfluss auf Nachbar-Tiles (mountains blockiert Wind, etc.) | niedrig | Nein | #107, #1700 | Weather-System.md#terrain-einfluss-nice-to-have, Terrain.md |
-| 119 | GM Weather Override: Manuelle Wetter-Überschreibung | mittel | Nein | #111 | Weather-System.md#gm-weather-override |
-| 120 | Weather-Historie: Signifikante Änderungen in Almanac EventJournal speichern | niedrig | Nein | #111, #2208 | Weather-System.md#weather-historie-in-almanac |
-| 121 | Visibility-Modifier: Wetter reduziert Sichtweite (multiplikativ) | mittel | Nein | #104, #120, #843, #847, #2208 | Weather-System.md#sichtweiten-einfluss-post-mvp, Map-Feature.md#umwelt-modifier |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 101 | 🔶 | Weather | WeatherParams: Basis-Parameter-Interface (Temperatur, Wind, Niederschlag) | hoch | Ja | - | Weather-System.md#parameter | src/core/schemas/weather.ts:weatherParamsSchema, src/features/weather/types.ts:WeatherFeaturePort |
+| 102 | ✅ | Weather | Temperatur-Kategorisierung (freezing, cold, cool, mild, warm, hot) mit mechanischen Effekten | hoch | Ja | #101 | Weather-System.md#temperatur | src/core/schemas/weather.ts:temperatureCategorySchema+TEMPERATURE_THRESHOLDS, src/features/weather/weather-utils.ts:classifyTemperature() |
+| 103 | ✅ | Weather | Wind-Kategorisierung (calm, light, moderate, strong, gale) mit Effekten | hoch | Ja | #101 | Weather-System.md#wind | src/core/schemas/weather.ts:windCategorySchema+WIND_THRESHOLDS, src/features/weather/weather-utils.ts:classifyWind() |
+| 104 | ⛔ | Weather | Niederschlag-Kategorisierung (none, drizzle, rain, heavy_rain, snow, blizzard, fog) | hoch | Ja | #101 | Weather-System.md#niederschlag | src/core/schemas/weather.ts:precipitationTypeSchema+PRECIPITATION_THRESHOLDS, src/features/weather/weather-utils.ts:classifyPrecipitation() |
+| 105 | ⛔ | Weather | TerrainWeatherRanges: Terrain-basierte Wetter-Kurven (min/average/max) | hoch | Ja | #101, #1702 | Weather-System.md#range-schema, Terrain.md#schema | src/core/schemas/weather.ts:terrainWeatherRangesSchema+DEFAULT_WEATHER_RANGES, src/core/schemas/terrain.ts:TerrainDefinition.weatherRanges, presets/terrains/base-terrains.json |
+| 106 | ⛔ | Weather | Weather-Generierung aus Ranges (Gaussian-ähnliche Verteilung) | hoch | Ja | #105 | Weather-System.md#generierungs-mechanik | src/features/weather/weather-utils.ts:generateWeatherFromRanges()+generateFromRange() |
+| 107 | ✅ | Weather | Area-Averaging: Gewichteter Wetter-Durchschnitt über Hex-Nachbarn | hoch | Ja | #106, #802 | Weather-System.md#area-averaging | src/features/weather/weather-utils.ts:calculateAreaWeather(), src/features/weather/weather-service.ts:getTileWeatherRanges() |
+| 108 | ✅ | Weather | Time-Segment-Modifikatoren (6 Segmente mit Temperatur-Offset) | hoch | Ja | #101, #906, #912 | Weather-System.md#time-segment-berechnung, Time-System.md#time-segment-berechnung | src/core/schemas/weather.ts:SEGMENT_TEMPERATURE_MODIFIERS, src/features/weather/weather-utils.ts:generateWeatherFromRanges() |
+| 109 | ✅ | Weather | Übergangs-Logik: Gradueller Wetter-Wechsel (TRANSITION_SPEED=0.3) | hoch | Ja | #101, #108 | Weather-System.md#uebergangs-logik | src/features/weather/weather-utils.ts:transitionWeather(), src/features/weather/weather-service.ts:calculateNewWeather() |
+| 110 | ✅ | Weather | Event-Flow: time:segment-changed → environment:weather-changed | hoch | Ja | #109, #910 | Weather-System.md#event-flow, Events-Catalog.md#environment | src/features/weather/weather-service.ts:setupEventHandlers()+publishWeatherChanged() |
+| 111 | ✅ | Weather | Weather-Persistierung: currentWeather als Map Property | hoch | Ja | #101, #110, #800, #801 | Weather-System.md#current-weather-als-map-property, Map-Feature.md#overworldmap | src/core/schemas/map.ts:MapState.currentWeather, src/features/weather/weather-service.ts:initializeWeather() |
+| 112 | ✅ | Weather | Multi-Map Weather: Indoor-Maps haben kein Wetter | hoch | Ja | #111, #806 | Weather-System.md#map-typ-regeln, Map-Feature.md#wetter-auf-sub-maps | src/features/weather/weather-service.ts:initializeWeather() (map.type check) |
+| 113 | ⛔ | Weather | Multi-Map Weather: Stadt-Maps erben Wetter vom Overworld-Tile | hoch | Ja | #111, #112, #827 | Weather-System.md#map-typ-regeln, Map-Feature.md#wetter-auf-sub-maps | src/features/weather/weather-service.ts:getWeatherForMap() [neu] |
+| 114 | ⬜ | Weather | Background Weather Tick: Overworld-Weather läuft im Hintergrund | hoch | Ja | #111, #910 | Weather-System.md#background-weather | src/features/weather/weather-service.ts:setupEventHandlers() [ändern] |
+| 115 | ⛔ | Weather | Weather-Events: Blizzard, Thunderstorm, Heatwave, Dense Fog, Dust Storm | mittel | Nein | #102, #103, #104, #110 | Weather-System.md#weather-events | src/features/weather/weather-utils.ts:checkWeatherEvents() [neu], src/core/events/types.ts [ändern] |
+| 116 | ⛔ | Weather | Audio-Integration: Ambiance-Sounds bei weather-changed anpassen | mittel | Nein | #110, #1107, #1115 | Weather-System.md#consumer-features, Audio-System.md#context-updates | src/features/audio/orchestrator.ts [neu] |
+| 117a | ✅ | Weather | Travel-Integration: Speed-Faktor bei weather-changed neu berechnen | mittel | Nein | #3, #104, #110 | Weather-System.md#consumer-features, Travel-System.md#weather-faktoren | src/features/map/visibility.ts:getVisibilityModifier() [neu] |
+| 117b | ⬜ | Weather | Visibility-Integration: Sichtweiten-Modifier aus Niederschlag + fogLevel | mittel | Nein | #117a | Weather-System.md#consumer-features, Travel-System.md#weather-faktoren | src/features/map/visibility.ts:getVisibilityModifier() [neu] |
+| 118 | ⛔ | Weather | Terrain-Einfluss auf Nachbar-Tiles (mountains blockiert Wind, etc.) | niedrig | Nein | #107, #1700, #2953 | Weather-System.md#terrain-einfluss-nice-to-have, Terrain.md | src/features/weather/weather-utils.ts:calculateAreaWeather() [ändern] |
+| 119 | ⬜ | Weather | GM Weather Override: Manuelles Überschreiben des generierten Wetters | mittel | Nein | #111 | Weather-System.md#gm-weather-override | src/core/schemas/map.ts:MapState.weatherOverride [neu], src/features/weather/weather-service.ts:setWeatherOverride() [neu] |
+| 120 | ⛔ | Weather | Weather-Historie: Signifikante Änderungen in Almanac EventJournal speichern | niedrig | Nein | #111, #2208 | Weather-System.md#weather-historie-in-almanac | src/features/almanac/event-journal.ts [neu] |
+| 121 | ⛔ | Weather | Zeit-Rücksprung (Recall): Historisches Wetter wiederherstellen | niedrig | Nein | #104, #120, #843, #847, #2208 | Weather-System.md#sichtweiten-einfluss-post-mvp, Map-Feature.md#umwelt-modifier | src/features/weather/weather-service.ts:recallWeather() [neu] |
+| 1115 | ⛔ | Audio | audio:context-changed Event Handler | mittel | Nein | #110, #1102, #1108, #1113 | Weather-System.md, Events-Catalog.md#environment | [neu] src/features/audio/orchestrator.ts:handleAudioContextChanged(), [ändern] src/features/audio/orchestrator.ts:setupEventHandlers() |
+| 2953 | ⛔ | Weather | windDirection: 6 Hex-kompatible Richtungen (N, NE, SE, S, SW, NW) für Wind | hoch | Ja | #101 | Weather-System.md#weatherstate | - |
+| 2954 | ⛔ | Weather | Saison-Modifier: Temperatur-Offset basierend auf Kalender-Saison (Winter -15°C, Sommer +10°C) | hoch | Ja | #101, #905, #2964 | Weather-System.md#saison-modifier | - |
+| 2955 | ⛔ | Weather | Elevation-Modifier: Temperatur sinkt ~6.5°C pro 1000m Höhe (atmosphärischer Gradient) | hoch | Ja | #101, #802 | Weather-System.md#elevation-modifier | - |
+| 2956 | ⛔ | Weather | moonPhase: Mondphase aus Kalender-System ableiten (custom Mondzyklen unterstützen) | hoch | Ja | #2965 | Weather-System.md#weatherstate | - |
+| 2957 | ⛔ | Weather | cloudCover: Wolkenbedeckung aus precipChance ableiten (0-1) | hoch | Ja | #104 | Weather-System.md#weatherstate | - |
+| 2958 | ⛔ | Weather | fogLevel: Nebel als separater Layer (0-1), kombinierbar mit Niederschlag | hoch | Ja | #105 | Weather-System.md#nebel | - |
+| 2959 | ⛔ | Weather | visibilityModifier: Sichtweiten-Faktor (0.1-1.0) aus precipIntensity + fogLevel berechnen | hoch | Ja | #104, #2958 | Weather-System.md#weatherstate | - |
+| 2979 | ⛔ | Weather | WeatherParams: precipChance + precipIntensity statt einzelnem precipitation Parameter | hoch | Ja | #101 | Weather-System.md#precipitationtype-ableitung | - |
+| 2980 | ⛔ | Weather | WeatherState: fogLevel als separater Parameter (0-1) hinzufügen | hoch | Ja | #101 | Weather-System.md#fogchance--foglevel-transformation | - |
+| 2981 | ⛔ | Weather | PrecipitationType: fog entfernen, hail hinzufügen, Formel anpassen | hoch | Ja | #104 | Weather-System.md#niederschlag | - |
+| 2984 | ⛔ | Weather | generateFog(): fogChance → fogLevel Transformation implementieren | hoch | Ja | #2980 | Weather-System.md#fogchance--foglevel-transformation | - |
+| 2985 | ⛔ | Weather | derivePrecipitationType(): precipChance + precipIntensity + temp → Typ | hoch | Ja | #2979, #2981 | Weather-System.md#precipitationtype-ableitung | - |
+| 2986 | ⛔ | Weather | Area-Averaging: Tile-Modifiers VOR Averaging anwenden | hoch | Ja | #2983, #107 | Weather-System.md#berechnungs-reihenfolge | - |
+| 2987 | ⛔ | Weather | TERRAIN_INFLUENCE Konstanten (water, mountains, forest, desert) | mittel | Nein | #2986 | Weather-System.md#terrain-einfluss-nice-to-have | - |
+| 2988 | ⛔ | Weather | Terrain-Einfluss-Berechnung mit Stapelung (70% Dämpfung) | mittel | Nein | #2987 | Weather-System.md#stapelung | - |

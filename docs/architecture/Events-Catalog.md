@@ -1382,7 +1382,11 @@ Bei der Implementation auf neue Naming-Konvention achten:
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 950 | rest:* Events im Events-Catalog definieren | hoch | Ja | - | Events-Catalog.md#rest, EventBus.md, Time-System.md, Character-System.md, Encounter-System.md |
-| 951 | rest:* Event-Typen in Core definieren | hoch | Ja | #950 | Events-Catalog.md#rest, Core.md, EventBus.md |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 950 | ⬜ | Time | rest:* Events im Events-Catalog definieren | hoch | Ja | - | Events-Catalog.md#rest, EventBus.md, Time-System.md, Character-System.md, Encounter-System.md | docs/architecture/Events-Catalog.md (bereits dokumentiert) |
+| 951 | ⛔ | Time | rest:* Event-Typen in Core definieren | hoch | Ja | #950 | Events-Catalog.md#rest, Core.md, EventBus.md | src/core/events/types.ts [ändern] |
+| 1112 | ⛔ | Audio | audio:track-changed Event publizieren (reason: context/ended/skip/override) | hoch | Ja | #1110 | Events-Catalog.md#audio, Audio-System.md#context-updates | [neu] src/features/audio/orchestrator.ts:publishTrackChanged() |
+| 1119 | ⛔ | Audio | audio:pause-requested Event Handler | hoch | Ja | #1103 | Events-Catalog.md#audio | [neu] src/features/audio/orchestrator.ts:handlePauseRequested() |
+| 1120 | ⛔ | Audio | audio:resume-requested Event Handler | hoch | Ja | #1103 | Events-Catalog.md#audio | [neu] src/features/audio/orchestrator.ts:handleResumeRequested() |
+| 1121 | ⛔ | Audio | audio:skip-requested Event Handler | hoch | Ja | #1103, #1108 | Events-Catalog.md#audio | [neu] src/features/audio/orchestrator.ts:handleSkipRequested() |

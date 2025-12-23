@@ -391,30 +391,137 @@ Jedes Encounter hat eine **Aktivitaet** (was tun sie?) und ein **Ziel** (was wol
 
 Encounters mit mehreren NPC-Gruppen die miteinander interagieren.
 
+→ Schema & Details: [Encounter-System.md](Encounter-System.md#multi-group-encounters)
+
 ### Wann Multi-Gruppen?
 
-- **Variety-Adjustment:** System braucht Abwechslung
-- **Location-based:** Kreuzungen, Rastplaetze
-- **Random Chance:** ~20% Basis + 10% auf Strassen
+**Trigger-Logik (zwei kombinierte Mechanismen):**
+
+1. **Basischance:** ~15-20% bei jedem Encounter
+2. **Variety-Rescue:** Wenn Single-Group den Variety-Bedarf nicht erfuellt
+   - Beispiel: Variety will Social, aber Single-Group bietet nur Combat
+   - Zweite Gruppe hinzufuegen ermoeglicht anderen Encounter-Typ
+
+```typescript
+function shouldGenerateMultiGroup(
+  context: EncounterContext,
+  singleGroup: EncounterGroup,
+  varietyState: VarietyState
+): boolean {
+  if (Math.random() < 0.17) return true;  // Basischance
+
+  // Rescue: Single-Group erfuellt Variety nicht
+  const needed = varietyState.getNeededEncounterTypes();
+  const offered = singleGroup.getAvailableEncounterTypes();
+  return !needed.some(t => offered.includes(t));
+}
+```
+
+### Budget bei Multi-Gruppen
+
+Das Gesamt-Budget wird nach **narrativeRole** auf Gruppen verteilt:
+
+| narrativeRole | Budget-Anteil | Beispiel |
+|---------------|---------------|----------|
+| `threat` | 60-80% | Banditen, Monster, Angreifer |
+| `victim` | 15-30% | Gefangene, Bedrohte |
+| `neutral` | 20-40% | Haendler, Reisende |
+| `ally` | 0-10% | Hilfstruppen (zaehlen nicht gegen Party) |
+
+**Berechnung:**
+
+```typescript
+function distributeBudget(
+  totalBudget: number,
+  groups: Array<{groupId: string; narrativeRole: NarrativeRole}>
+): Map<string, number> {
+  const shares: Record<NarrativeRole, [number, number]> = {
+    threat:  [0.60, 0.80],
+    victim:  [0.15, 0.30],
+    neutral: [0.20, 0.40],
+    ally:    [0.00, 0.10]
+  };
+
+  // Hauptbedrohung bekommt groessten Anteil
+  const threatGroups = groups.filter(g => g.narrativeRole === 'threat');
+  const otherGroups = groups.filter(g => g.narrativeRole !== 'threat');
+
+  // Budget verteilen...
+}
+```
+
+**Beispiel:** Budget 2000 XP, "Banditenuberfall auf Haendler"
+
+| Gruppe | narrativeRole | Anteil | XP |
+|--------|---------------|--------|-----|
+| Banditen | threat | 70% | 1400 |
+| Haendler | victim | 30% | 600 |
+
+### Allies und Difficulty
+
+Gruppen mit `narrativeRole: 'ally'` werden bei der Difficulty-Berechnung zur Party-Stärke addiert - **aber nur wenn sie helfen können**.
+
+**Gruppen-Status:**
+
+Das `status`-Feld auf `EncounterGroup` bestimmt die physische Verfügbarkeit:
+
+| Status | Beschreibung | Kann helfen? |
+|--------|--------------|:------------:|
+| `free` | Frei und handlungsfähig | ✓ |
+| `captive` | Gefangen/gefesselt | ✗ |
+| `incapacitated` | Bewusstlos/paralysiert | ✗ |
+| `fleeing` | Auf der Flucht | ✗ |
+
+**Drei Bedingungen für Ally-Hilfe:**
+
+1. `status === 'free'` - Physisch in der Lage zu helfen
+2. `dispositionToParty > 0` - Will der Party helfen
+3. Mindestens eine Creature ohne `civilian`/`non-combatant` Tag - Kann kämpfen
+
+**Beispiele:**
+
+| Ally-Gruppe | Status | Disposition | Combatants? | Zählt? |
+|-------------|:------:|:-----------:|:-----------:|:------:|
+| Gefangene Händler | captive | +30 | Nein | ✗ |
+| Befreite Händler | free | +50 | Nein (civilian) | ✗ |
+| Befreite Söldner | free | +50 | Ja | ✓ |
+| Verbündete Patrouille | free | +80 | Ja | ✓ |
+| Feindliche Fraktion | free | -20 | Ja | ✗ |
+
+**Auswirkung auf Difficulty:**
+
+Helfende Allies erhöhen die effektiven Party-Thresholds:
+
+```typescript
+const effectiveThresholds = {
+  easy: party.easy + allyThresholds.easy,
+  medium: party.medium + allyThresholds.medium,
+  hard: party.hard + allyThresholds.hard,
+  deadly: party.deadly + allyThresholds.deadly,
+};
+```
+
+→ Details: [Encounter-System.md](Encounter-System.md#multi-group-difficulty-calculation)
 
 ### Gruppen-Relationen
 
 ```typescript
 interface GroupRelation {
-  groupA: string;
-  groupB: string;
-  relation: 'hostile' | 'neutral' | 'friendly' | 'trading' | 'fleeing';
-  context: string;
+  targetGroupId: string;
+  relation: 'hostile' | 'neutral' | 'friendly' | 'fleeing';
 }
 ```
 
+**Hinweis:** `context` wurde entfernt - der narrative Kontext ergibt sich aus Activity + Goal der Gruppen.
+
 ### Beispiel-Szenarien
 
-| Gruppen | Relation | Situation |
-|---------|----------|-----------|
-| Banditen + Haendler | hostile | Ueberfall |
-| Soldaten + Bauern | friendly | Eskorte |
-| Goblins + Woelfe | neutral | Umkreisen dieselbe Beute |
+| Gruppen | Relationen | Budget-Split | Situation |
+|---------|------------|--------------|-----------|
+| Banditen + Haendler | B→H: hostile, H→B: fleeing | 70/30 | Ueberfall |
+| Soldaten + Bauern | S→B: friendly, B→S: friendly | 60/40 | Eskorte |
+| Goblins + Woelfe | G→W: neutral, W→G: neutral | 50/50 | Umkreisen dieselbe Beute |
+| Orks + Gefangene | O→G: hostile, G→O: fleeing | 80/20 | Sklaventransport |
 
 ---
 
@@ -477,21 +584,23 @@ interface GroupRelation {
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 235 | XP_THRESHOLDS Konstante mit D&D 5e DMG Werten (Level 1-20) | hoch | Ja | - | Encounter-Balancing.md#dd-5e-xp-thresholds |
-| 236 | calculatePartyThresholds(): Summiert individuelle Schwellenwerte | hoch | Ja | #235, #502 | Encounter-Balancing.md#party-thresholds |
-| 237 | EncounterDifficultyResult Type: trivial, easy, medium, hard, deadly, impossible | hoch | Ja | - | Encounter-Balancing.md#encounter-difficulty |
-| 238 | calculateEncounterDifficulty(): Adjusted XP vs Party-Thresholds | hoch | Ja | #235, #236, #237 | Encounter-Balancing.md#encounter-difficulty |
-| 239 | getGroupMultiplier(): D&D 5e Gruppen-Multiplikatoren | hoch | Ja | - | Encounter-Balancing.md#gruppen-multiplikatoren |
-| 240 | calculateAdjustedXP(): Basis-XP × Gruppen-Multiplikator | hoch | Ja | #239 | Encounter-Balancing.md#gruppen-multiplikatoren |
-| 241 | AvoidabilityFactors Interface + calculateAvoidabilityMultiplier() | hoch | Ja | - | Encounter-Balancing.md#avoidability-system |
-| 242 | selectEncounterBudget(): Exponentiell fallende Wahrscheinlichkeit | hoch | Ja | #241 | Encounter-Balancing.md#budget-auswahl-mit-exponentieller-wahrscheinlichkeit |
-| 243 | DailyXPTracker Interface: date, budgetTotal, budgetUsed, encountersToday | hoch | Ja | #910 | Encounter-Balancing.md#daily-xp-budget-tracking |
-| 244 | calculateDailyBudget(): ~7× Medium-Threshold | hoch | Ja | #236, #243 | Encounter-Balancing.md#tages-budget-berechnung |
-| 245 | Erschoepftes Budget Effekt: <25% → 50% Combat→Trace, =0% → keine Combat | hoch | Ja | #243, #244 | Encounter-Balancing.md#effekt-auf-generierung |
-| 246 | fillCombatEncounter(): Creatures + Difficulty + Loot | hoch | Ja | #238, #240 | Encounter-Balancing.md#combat |
-| 247 | SocialEncounter Interface mit creatures[], disposition, trade | hoch | Ja | #213 | Encounter-Balancing.md#social |
-| 248 | TraceEncounter Interface mit creatures[], age, clues, trackingDC | hoch | Ja | #213 | Encounter-Balancing.md#trace |
-| 249 | PassingEncounter Interface mit creatures[], activity | hoch | Ja | #213 | Encounter-Balancing.md#passing |
-| 251 | Multi-Gruppen-Trigger: Variety-Adjustment, Location-based, Random Chance | niedrig | Nein | #210, #250, #1319 | Encounter-Balancing.md#multi-gruppen-encounters |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 235 | ✅ | Encounter | CRComparison Type: trivial, manageable, deadly, impossible | hoch | Ja | - | Encounter-Balancing.md#cr-vergleich, Encounter-System.md#typ-ableitung | encounter-utils.ts:CRComparison type definition |
+| 236 | ✅ | Encounter | compareCR Funktion: CR/Level Ratio → CRComparison | hoch | Ja | #235, #1001 | Encounter-Balancing.md#cr-vergleich | encounter-utils.ts:compareCR() |
+| 237 | ✅ | Encounter | EncounterDifficulty Type: Easy, Medium, Hard, Deadly | hoch | Ja | - | Encounter-Balancing.md#difficulty-bestimmung, Encounter-System.md#5-step-pipeline | schemas/encounter.ts:encounterDifficultySchema |
+| 238 | ✅ | Encounter | Difficulty-Würfel: 12.5% Easy, 50% Medium, 25% Hard, 12.5% Deadly | hoch | Ja | #237 | Encounter-Balancing.md#difficulty-bestimmung | encounter-utils.ts:rollDifficulty() |
+| 239 | ✅ | Encounter | calculateXPBudget: Party-Size × Level × Difficulty-Faktor | hoch | Ja | #237, #502, #1001 | Encounter-Balancing.md#xp-budget, Character-System.md#encounter-balancing | encounter-utils.ts:calculateXPBudget() |
+| 240 | ✅ | Encounter | Gruppen-Multiplikatoren: Anzahl Gegner → effektives XP | hoch | Ja | - | Encounter-Balancing.md#gruppen-multiplikatoren | encounter-utils.ts:getGroupMultiplier(), calculateEffectiveXP() |
+| 241 | ✅ | Encounter | DailyXPTracker Interface: date, budgetTotal, budgetUsed, encountersToday | hoch | Ja | #910 | Encounter-Balancing.md#daily-xp-budget-tracking, Time-System.md#gamedate | types.ts:DailyXPTracker, encounter-store.ts:getDailyXP() |
+| 242 | ⛔ | Encounter | Long Rest Budget-Reset: budgetUsed = 0 bei rest:long-rest-completed | hoch | Ja | #241, #954 | Encounter-Balancing.md#resting--budget-reset | encounter-service.ts:setupEventHandlers() [ändern - auf rest:long-rest-completed statt time:day-changed] |
+| 243 | ✅ | Encounter | Erschöpftes Budget Effekt: <25% → 50% Combat→Trace, =0% → keine Combat | hoch | Ja | #241, #242 | Encounter-Balancing.md#effekt-auf-generierung, Encounter-System.md#typ-ableitung | encounter-service.ts:executeGenerationPipeline(), encounter-store.ts:isDailyBudgetExhausted() |
+| 244 | ✅ | Encounter | selectCompanions: Lead + Budget-Rest → Begleiter-Kreaturen | hoch | Ja | #239, #240 | Encounter-Balancing.md#companion-selection | encounter-utils.ts:selectCompanions(), calculateCreatureXP() |
+| 245 | ✅ | Encounter | fillCombatEncounter: Lead + Companions + XP-Berechnung | hoch | Ja | - | Encounter-Balancing.md#combat-befuellung, Encounter-System.md#encounter-befuellung, Creature.md#schema, NPC-System.md#lead-npc-auswahl | encounter-service.ts:executeGenerationPipeline() (Combat branch) |
+| 246 | ✅ | Encounter | Activity & Goal Selection: Kreatur → mögliche Aktivitäten/Ziele | hoch | Ja | #910 | Encounter-Balancing.md#activity--goal-selection | encounter-utils.ts:generateActivity(), generateGoal() |
+| 247 | ⬜ | Encounter | SocialEncounter Interface: possibleOutcomes, trade (disposition jetzt in Base) | hoch | Ja | #213, #231, #1300 | Encounter-Balancing.md#social, Encounter-System.md#typ-spezifisches-verhalten, NPC-System.md#lead-npc-auswahl | schemas/encounter.ts [ändern], types.ts:SocialEncounter [neu] |
+| 248 | ⬜ | Encounter | TraceEncounter Interface: creature, inferredActivity, age, clues, trackingDC | hoch | Ja | #213 | Encounter-Balancing.md#trace | schemas/encounter.ts [ändern], types.ts:TraceEncounter [neu] |
+| 249 | ⛔ | Encounter | PassingEncounter Interface: creature, activity, distance, awareness | hoch | Ja | #213, #1200 | Encounter-Balancing.md#passing, Encounter-System.md#typ-spezifisches-verhalten, Creature.md#schema | schemas/encounter.ts [ändern], types.ts:PassingEncounter [neu] |
+| 251 | ⬜ | Encounter | Multi-Gruppen-Trigger: Variety-Adjustment, Location-based, Random Chance | niedrig | Nein | #210, #250 | Encounter-Balancing.md#multi-gruppen-encounters, Encounter-System.md#variety-validation, NPC-System.md#multi-gruppen-encounters | encounter-utils.ts:shouldGenerateMultiGroup() [neu] |
+| 250 | ✅ | Encounter | GroupRelation Interface: groupA, groupB, relation, context | hoch | Ja | #213 | Encounter-Balancing.md#gruppen-relationen | schemas/encounter.ts [ändern], types.ts:GroupRelation [neu] |
+| 252 | ⬜ | Encounter | Multi-Gruppen-Generierung: 2+ NPC-Gruppen mit Relationen | hoch | Ja | #245, #250 | Encounter-Balancing.md#multi-gruppen-encounters-post-mvp | encounter-utils.ts:generateMultiGroupEncounter() [neu] |

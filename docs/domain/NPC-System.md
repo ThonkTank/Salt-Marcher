@@ -49,7 +49,8 @@ interface NPC {
   // === Basis-Daten ===
   name: string;
   creature: CreatureRef;                // Verweis auf Kreatur-Template
-  factionId: EntityId<'faction'>;       // Jeder NPC gehoert zu einer Faction
+  factionId?: EntityId<'faction'>;      // Optional - wenn gesetzt: Kultur aus Faction
+                                         // Wenn nicht: Fallback auf Creature-Tags
 
   // === Persoenlichkeit (generiert aus Faction-Kultur) ===
   personality: PersonalityTraits;
@@ -125,7 +126,7 @@ function findEligibleNPCs(tile: HexCoordinate): NPC[] {
 }
 ```
 
-**Wichtig:** Jeder NPC muss einer Faction angehoeren. Faction-lose NPCs (Einsiedler, Wanderer) sind Post-MVP.
+**Hinweis:** `factionId` ist optional. Fraktionslose NPCs (wilde Tiere, Einsiedler) nutzen Creature-Tags als Fallback fuer die Generierung.
 
 ### MVP (niedrige Prio): Explizite NPC-Location
 
@@ -234,7 +235,8 @@ Wenn kein passender existierender NPC gefunden wird:
 ```typescript
 function generateNewNPC(
   creature: Creature,
-  context: EncounterContext
+  context: EncounterContext,
+  usedQuirks: Set<string>  // Tracking fuer Einzigartigkeit
 ): NPC {
   // Faction holen (required)
   const faction = entityRegistry.get('faction', creature.factionId);
@@ -248,13 +250,11 @@ function generateNewNPC(
   // Persoenlichkeit wuerfeln
   const personality = rollPersonalityFromCulture(culture);
 
-  // Quirk (30% Chance)
-  const quirk = Math.random() < 0.3
-    ? rollQuirkFromCulture(culture)
-    : undefined;
+  // Quirk (100% - jeder NPC bekommt einen, gefiltert nach Kreatur-Kompatibilitaet)
+  const quirk = rollQuirkFromCulture(culture, creature, usedQuirks);
 
-  // Persoenliches Ziel basierend auf Kreatur und Kontext
-  const personalGoal = selectPersonalGoal(creature, context);
+  // Persoenliches Ziel mit Pool-Hierarchie + Persoenlichkeits-Gewichtung
+  const personalGoal = selectPersonalGoal(creature, culture, personality, context);
 
   const npc: NPC = {
     id: createEntityId('npc'),
@@ -276,7 +276,43 @@ function generateNewNPC(
   return npc;
 }
 
-// Kultur-Aufloesung aus Faction-Hierarchie (siehe Faction.md)
+// Kultur-Aufloesung: Faction-Hierarchie oder Creature-Tags Fallback
+function resolveCultureForNPC(
+  creature: CreatureDefinition,
+  faction: Faction | null
+): ResolvedCulture {
+  if (faction) {
+    return resolveFactionCulture(faction);
+  }
+  // Fallback fuer fraktionslose Kreaturen
+  return buildCultureFromCreatureTags(creature);
+}
+
+function buildCultureFromCreatureTags(creature: CreatureDefinition): ResolvedCulture {
+  // Creature-Tags bestimmen Naming-Pattern und Basis-Personality
+  // z.B. tags: ['beast', 'predator'] → aggressive Personality, keine Sprache
+  const isBeast = creature.tags?.includes('beast');
+  const isPredator = creature.tags?.includes('predator');
+
+  return {
+    naming: {
+      patterns: ['{root}'],
+      roots: creature.names ?? [creature.type]  // Fallback auf Kreatur-Typ
+    },
+    personality: {
+      common: [
+        { trait: isPredator ? 'aggressive' : 'neutral', weight: 0.8 },
+        { trait: isBeast ? 'territorial' : 'cautious', weight: 0.6 }
+      ],
+      rare: [],
+      forbidden: isBeast ? ['social', 'cunning'] : []
+    },
+    quirks: creature.quirks ?? [],
+    values: { priorities: ['survival'], taboos: [] },
+    speech: isBeast ? undefined : { dialect: 'simple' }
+  };
+}
+
 function resolveFactionCulture(faction: Faction): ResolvedCulture {
   const chain: Faction[] = [];
   let current: Faction | null = faction;
@@ -294,6 +330,73 @@ function resolveFactionCulture(faction: Faction): ResolvedCulture {
     {} as ResolvedCulture
   );
 }
+```
+
+### Goal-Pool-Hierarchie
+
+Das persoenliche Ziel eines NPCs wird aus mehreren Quellen zusammengestellt:
+
+```
+Generischer Pool (alle Kreaturen)
+    ↓ erweitert durch
+Creature-Typ Pool (z.B. Wolf: find_food, protect_pack)
+    ↓ erweitert durch
+Fraktion Pool (z.B. Blutfang: please_blood_god, conquer)
+    ↓ gewichtet durch
+Persoenlichkeit (greedy → loot×2, cowardly → survive×2)
+```
+
+```typescript
+function selectPersonalGoal(
+  creature: CreatureDefinition,
+  culture: ResolvedCulture,
+  personality: PersonalityTraits,
+  context: EncounterContext
+): string {
+  // 1. Pools zusammenstellen
+  const genericPool = GENERIC_GOALS;                    // System-Default
+  const creaturePool = creature.goals ?? [];            // Creature-spezifisch
+  const culturePool = culture.goals ?? [];              // Fraktion-spezifisch
+
+  const combinedPool = [...genericPool, ...creaturePool, ...culturePool];
+
+  // 2. Persoenlichkeits-Gewichtung anwenden
+  const weighted = combinedPool.map(g => {
+    let weight = g.weight;
+
+    // Bonus fuer passende Persoenlichkeit
+    if (g.personalityBonus) {
+      for (const bonus of g.personalityBonus) {
+        if (personality.primary === bonus.trait || personality.secondary === bonus.trait) {
+          weight *= bonus.multiplier;
+        }
+      }
+    }
+
+    return { ...g, weight };
+  });
+
+  return weightedRandomSelect(weighted).goal;
+}
+```
+
+**Beispiel:** Ein Goblin mit `personality: { primary: 'greedy', secondary: 'cowardly' }`:
+- "loot" Goal hat `personalityBonus: [{ trait: 'greedy', multiplier: 2.0 }]` → Gewichtung verdoppelt
+- "help_others" Goal hat keine Bonus → normale Gewichtung (sehr unwahrscheinlich)
+
+### Quirk-Einzigartigkeit
+
+Quirks werden getrackt um Wiederholungen zu vermeiden:
+
+```typescript
+// Session-weites Tracking
+const usedQuirks = new Set<string>();
+
+// Bei NPC-Generierung
+const quirk = rollQuirkFromCulture(culture, creature, usedQuirks);
+// → usedQuirks wird um den ausgewaehlten Quirk erweitert
+
+// Bei erschoepftem Pool: Wiederholung erlaubt
 ```
 
 ---
@@ -343,6 +446,41 @@ function updateNPCAfterEncounter(
 
 ---
 
+## NPC-Detail-Stufen
+
+Bei Encounters werden NPCs mit unterschiedlicher Detailtiefe generiert:
+
+### Drei Stufen
+
+| Stufe | Details | Persistierung | Max pro Encounter |
+|-------|---------|---------------|-------------------|
+| **Lead-NPC** | Name, Personality (2 Traits), Quirk, Goal | Ja (EntityRegistry) | 1 pro Gruppe |
+| **Highlight-NPC** | Name, Personality (1 Trait) | Nein (session-only) | 1 pro Gruppe, max 3 gesamt |
+| **Anonym** | Nur Kreatur-Typ + Anzahl | Nein | Unbegrenzt |
+
+### PartialNPC Schema (Highlight-NPCs)
+
+```typescript
+interface PartialNPC {
+  name: string;
+  primaryTrait: string;       // Nur ein Personality-Trait
+  creatureType: string;       // Kreatur-Typ fuer Anzeige
+}
+```
+
+**Verwendung:** Highlight-NPCs geben Gruppen mehr Persoenlichkeit, ohne die NPC-Datenbank aufzublaehen. Sie werden nicht persistiert und existieren nur fuer die Dauer des Encounters.
+
+### Beispiel
+
+```
+Goblin-Patrouille (5 Goblins):
+├── Lead: Griknak der Hinkende (misstrauisch, gierig) - "will Boss beeindrucken"
+├── Highlight: Snaggle (nervoes)
+└── Anonym: Goblin-Krieger ×3
+```
+
+---
+
 ## Integration mit Encounters
 
 ### Lead-NPC Auswahl
@@ -381,22 +519,60 @@ function selectOrGenerateLeadNPC(
 
 ### Multi-Gruppen-Encounters
 
-Bei Multi-Gruppen-Encounters wird fuer jede Gruppe ein Lead-NPC bestimmt:
+Bei Multi-Gruppen-Encounters wird fuer **jede Gruppe** ein Lead-NPC bestimmt. Highlight-NPCs werden **global limitiert** (max 3 pro Encounter).
 
 ```typescript
 function resolveMultiGroupNPCs(
   encounter: MultiGroupEncounter,
   context: EncounterContext
 ): MultiGroupEncounter {
+  let totalHighlights = 0;
+  const MAX_HIGHLIGHTS = 3; // GLOBAL, nicht pro Gruppe!
+
   for (const group of encounter.groups) {
-    group.leadNPC = selectOrGenerateLeadNPC(
-      group.creatures[0],
-      context
-    );
+    // Lead-NPC: Immer einer pro Gruppe (wird persistiert)
+    group.leadNPC = selectOrGenerateLeadNPC(group.creatures[0], context);
+
+    // Highlight-NPC: Max 3 insgesamt ueber alle Gruppen
+    if (group.creatures.length > 1 && totalHighlights < MAX_HIGHLIGHTS) {
+      group.highlightNPCs = [generateHighlightNPC(group.creatures[1], context)];
+      totalHighlights++;
+    }
   }
   return encounter;
 }
 ```
+
+**Wichtig - NPC-Limits bei Multi-Gruppen:**
+
+| NPC-Typ | Limit | Persistiert? |
+|---------|-------|--------------|
+| Lead-NPC | 1 pro Gruppe | Ja |
+| Highlight-NPC | max 3 **GLOBAL** | Nein |
+| Anonym | Unbegrenzt | Nein |
+
+**Begruendung:** Der GM sollte nie mehr als ~3-4 benannte NPCs gleichzeitig tracken muessen. Bei 2 Gruppen mit je 1 Lead + 1 Highlight = 4 benannte NPCs (akzeptabel).
+
+**Beispiel bei 3 Gruppen:**
+```
+Gruppe 1: Banditen (5)
+├── Lead: Rotbart (persistiert)
+├── Highlight: Narbengesicht
+└── Anonym: ×3
+
+Gruppe 2: Gefangene (3)
+├── Lead: Meister Goldwein (persistiert)
+├── Highlight: Lena die Magd
+└── Anonym: ×1
+
+Gruppe 3: Woelfe (4)
+├── Lead: Silberfang (persistiert)
+└── Anonym: ×3  ← Kein Highlight mehr (Limit erreicht)
+
+Total: 3 Leads + 2 Highlights = 5 benannte NPCs
+```
+
+→ Details: [Encounter-System.md](../features/Encounter-System.md#multi-group-encounters)
 
 ---
 
@@ -447,29 +623,36 @@ NPCs koennen in der Library bearbeitet werden:
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 1300 | NPC-Schema Interface: id, name, creature, factionId, personality, status | hoch | Ja | #1400, #2703 | NPC-System.md#npc-schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc, Core.md#branded-types |
-| 1301 | PersonalityTraits Interface: primary + secondary Traits | hoch | Ja | #1300 | NPC-System.md#npc-schema |
-| 1302 | CreatureRef Interface: type + id Verweis auf Creature-Template | hoch | Ja | #1300, #1200 | NPC-System.md#npc-schema, Creature.md#schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc |
-| 1303 | NPC Tracking-Felder: firstEncounter, lastEncounter, encounterCount | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#npc-lifecycle |
-| 1304 | NPC Status-Enum: alive, dead (Vereinfacht für MVP) | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#status-uebergaenge |
-| 1305 | Optional currentPOI-Feld: Explizite NPC-Platzierung | mittel | Nein | #1300, #1500 | NPC-System.md#mvp-niedrige-prio-explizite-npc-location, POI.md#schema |
-| 1306 | NPCMatchCriteria Interface: creatureType + factionId | hoch | Ja | #1300, #1400 | NPC-System.md#match-kriterien, Creature.md#schema, Faction.md#schema |
-| 1307 | findMatchingNPC(): Suche existierende NPCs nach Kriterien | hoch | Ja | #1306, #2800, #2804 | NPC-System.md#match-kriterien, EntityRegistry.md#querying |
-| 1308 | calculateMatchScore(): Scoring-System (Wiedersehen +15, kürzlich -30) | hoch | Ja | #1307, #1303 | NPC-System.md#match-kriterien, NPC-System.md#npc-lifecycle |
-| 1309 | resolveFactionCulture(): Kultur aus Faction-Hierarchie auflösen | hoch | Ja | #1400, #1401, #1405 | NPC-System.md#npc-generierung, Faction.md#kultur-vererbung, Faction.md#aufloesung |
-| 1310 | generateNameFromCulture(): Namen aus Kultur-Daten generieren | hoch | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#name-generieren |
-| 1311 | rollPersonalityFromCulture(): Persönlichkeits-Traits würfeln | hoch | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#persoenlichkeit-wuerfeln |
-| 1312 | rollQuirkFromCulture(): Quirk mit 30% Chance generieren | mittel | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#quirk-wuerfeln |
-| 1313 | selectPersonalGoal(): Persönliches Ziel basierend auf Kontext | mittel | Ja | #1200 | NPC-System.md#npc-generierung, Creature.md#schema, Encounter-System.md#schemas |
-| 1314 | generateNewNPC(): Haupt-Generierungs-Funktion mit Persistierung | hoch | Ja | #1300-1313, #2800, #2802 | NPC-System.md#npc-generierung, EntityRegistry.md#port-interface |
-| 1315 | EntityRegistry Integration: NPC als Entity-Typ registrieren | hoch | Ja | #1300, #2800, #2801 | NPC-System.md#npc-generierung, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#storage |
-| 1316 | updateNPCAfterEncounter(): Tracking-Felder aktualisieren | hoch | Ja | #213, #214, #1303, #1304, #2800 | NPC-System.md#encounter-nachbereitung, Encounter-System.md#schemas |
-| 1317 | NPC Status-Transition: Status auf 'dead' setzen bei npcKilled | hoch | Ja | #1304, #1316 | NPC-System.md#encounter-nachbereitung, NPC-System.md#status-uebergaenge |
-| 1318 | selectOrGenerateLeadNPC(): Integration mit Encounter-System | hoch | Ja | #1307, #1314, #1200, #213 | NPC-System.md#lead-npc-auswahl, Encounter-System.md#npc-instanziierung, Encounter-System.md#schemas |
-| 1319 | resolveMultiGroupNPCs(): Lead-NPC für jede Gruppe in Multi-Group-Encounters | mittel | Nein | #213, #252, #1318 | NPC-System.md#multi-gruppen-encounters, Encounter-System.md#schemas |
-| 1320 | findEligibleNPCs(): NPCs nach Faction-Territory filtern | hoch | Ja | #1400, #1409, #1410, #2804 | NPC-System.md#mvp-fraktions-basierte-location, Faction.md#encounter-integration, EntityRegistry.md#querying |
-| 1321 | findNPCsAtTile(): Kombination explizite + Faction-basierte Location | mittel | Nein | #1305, #1320, #1500 | NPC-System.md#mvp-niedrige-prio-explizite-npc-location, POI.md#schema, Faction.md#encounter-integration |
-| 1322 | NPC Library-View: CRUD-Interface für NPC-Bearbeitung | mittel | Ja | #1300, #2800, #2802 | NPC-System.md#npc-bearbeitung-library, EntityRegistry.md#port-interface |
-| 1323 | Encounter-Preview UI: NPC-Details mit Wiederkehr-Indikator | mittel | Ja | #213, #1318, #2415 | NPC-System.md#encounter-preview, Encounter-System.md#schemas |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 1300 | ✅ | NPC | NPC-Schema Interface: id, name, creature, factionId, personality, status | hoch | Ja | #1400, #2703 | NPC-System.md#npc-schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc, Core.md#branded-types | src/core/schemas/npc.ts:52-103 |
+| 1301 | ✅ | NPC | PersonalityTraits Interface: primary + secondary Traits | hoch | Ja | #1300 | NPC-System.md#npc-schema | src/core/schemas/npc.ts:22-28 |
+| 1302 | ✅ | NPC | CreatureRef Interface: type + id Verweis auf Creature-Template | hoch | Ja | #1200, #1300 | NPC-System.md#npc-schema, Creature.md#schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc | src/core/schemas/creature.ts:222-230 (creatureRefSchema) |
+| 1303 | ✅ | NPC | NPC Tracking-Felder: firstEncounter, lastEncounter, encounterCount | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#npc-lifecycle | src/core/schemas/npc.ts:85-92 |
+| 1304 | ✅ | NPC | NPC Status-Enum: alive, dead (Vereinfacht für MVP) | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#status-uebergaenge | src/core/schemas/npc.ts:40-42 |
+| 1305 | ✅ | NPC | Optional currentPOI-Feld: Explizite NPC-Platzierung | mittel | Nein | #1300, #1500 | NPC-System.md#mvp-niedrige-prio-explizite-npc-location, POI.md#schema | src/core/schemas/npc.ts:97 |
+| 1306 | ✅ | NPC | NPCMatchCriteria Interface: creatureType + factionId | hoch | Ja | #1300, #1400 | NPC-System.md#match-kriterien, Creature.md#schema, Faction.md#schema | src/core/schemas/npc.ts:114-120 (im Schema statt types.ts) |
+| 1307 | ✅ | NPC | findMatchingNPC(): Suche existierende NPCs nach Kriterien | hoch | Ja | #1306, #2800, #2804 | NPC-System.md#match-kriterien, EntityRegistry.md#querying | Integriert in selectOrGenerateNpc (src/features/encounter/npc-generator.ts:320-353) |
+| 1308 | ✅ | NPC | calculateMatchScore(): Scoring-System (Wiedersehen +15, kürzlich -30) | hoch | Ja | #1303, #1307 | NPC-System.md#match-kriterien, NPC-System.md#npc-lifecycle | src/features/encounter/npc-generator.ts:277-301 (calculateNpcMatchScore) |
+| 1309 | ✅ | NPC | resolveFactionCulture(): Kultur aus Faction-Hierarchie auflösen | hoch | Ja | #1400, #1401, #1405 | NPC-System.md#npc-generierung, Faction.md#kultur-vererbung, Faction.md#aufloesung | src/features/encounter/npc-generator.ts:37-63 |
+| 1310 | ✅ | NPC | generateNameFromCulture(): Namen aus Kultur-Daten generieren | hoch | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#name-generieren | src/features/encounter/npc-generator.ts:127-167 (generateNpcName) |
+| 1311 | ✅ | NPC | rollPersonalityFromCulture(): Persönlichkeits-Traits würfeln | hoch | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#persoenlichkeit-wuerfeln | src/features/encounter/npc-generator.ts:200-224 (generatePersonality) |
+| 1312 | 🔶 | NPC | rollQuirkFromCulture(): Quirk generieren (100%, Kreatur-gefiltert, einzigartig) | mittel | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#quirk-wuerfeln | src/features/encounter/npc-generator.ts:230-249 (rollQuirkFromCulture) |
+| 1313 | ⛔ | NPC | selectPersonalGoal(): Goal mit Pool-Hierarchie + Persönlichkeits-Gewichtung | mittel | Ja | #1200 | NPC-System.md#npc-generierung, Creature.md#schema, Encounter-System.md#schemas | src/features/encounter/npc-generator.ts:254-267 (generatePersonalGoal) |
+| 1314 | ✅ | NPC | generateNewNPC(): Haupt-Generierungs-Funktion mit Persistierung | hoch | Ja | #1300, #2800, #2802 | NPC-System.md#npc-generierung, EntityRegistry.md#port-interface | src/features/encounter/npc-generator.ts:358-385 (generateNewNpc) |
+| 1315 | ✅ | NPC | EntityRegistry Integration: NPC als Entity-Typ registrieren | hoch | Ja | #1300, #2800, #2801 | NPC-System.md#npc-generierung, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#storage | src/core/schemas/common.ts:45 (EntityType enum) |
+| 1316 | ⬜ | NPC | updateNPCAfterEncounter(): Tracking-Felder aktualisieren | hoch | Ja | #213, #214, #1303, #1304, #2800 | NPC-System.md#encounter-nachbereitung, Encounter-System.md#schemas | [neu] src/features/npc/npc-service.ts:updateNpcAfterEncounter() |
+| 1317 | ⛔ | NPC | NPC Status-Transition: Status auf 'dead' setzen bei npcKilled | hoch | Ja | #1304, #1316 | NPC-System.md#encounter-nachbereitung, NPC-System.md#status-uebergaenge | src/features/npc/npc-service.ts:updateNpcAfterEncounter() [ändern] |
+| 1318 | ✅ | NPC | selectOrGenerateLeadNPC(): Integration mit Encounter-System | hoch | Ja | #213, #1200, #1307, #1314 | NPC-System.md#lead-npc-auswahl, Encounter-System.md#npc-instanziierung, Encounter-System.md#schemas | src/features/encounter/npc-generator.ts:320-353 (selectOrGenerateNpc), verwendet in encounter-service.ts:513-521 |
+| 1319 | ⛔ | NPC | resolveMultiGroupNPCs(): Lead-NPC für jede Gruppe in Multi-Group-Encounters | hoch | Ja | #213, #252, #1318 | NPC-System.md#multi-gruppen-encounters, Encounter-System.md#schemas | [neu] src/features/encounter/npc-generator.ts:resolveMultiGroupNPCs() |
+| 1320 | ⛔ | NPC | findEligibleNPCs(): NPCs nach Faction-Territory filtern | hoch | Ja | #1400, #1409, #1410, #2804 | NPC-System.md#mvp-fraktions-basierte-location, Faction.md#encounter-integration, EntityRegistry.md#querying | [neu] src/features/npc/npc-location.ts:findEligibleNpcs() |
+| 1321 | ⛔ | NPC | findNPCsAtTile(): Kombination explizite + Faction-basierte Location | mittel | Nein | #1305, #1320, #1500 | NPC-System.md#mvp-niedrige-prio-explizite-npc-location, POI.md#schema, Faction.md#encounter-integration | [neu] src/features/npc/npc-location.ts:findNpcsAtTile() |
+| 1322 | ⬜ | NPC | NPC Library-View: CRUD-Interface für NPC-Bearbeitung | mittel | Ja | #1300, #2800, #2802 | NPC-System.md#npc-bearbeitung-library, EntityRegistry.md#port-interface | [neu] src/application/views/library/NPCView.svelte |
+| 1323 | ⬜ | NPC | Lead-NPC UI-Sektion: Persönlichkeit, Quirk, Ziel, Wiederkehr-Indikator | mittel | Ja | #213, #1318, #2415 | NPC-System.md#encounter-preview, Encounter-System.md#schemas | [neu] src/application/components/encounter/EncounterPreview.svelte |
+| 2966 | ⛔ | NPC | Quirk-Kompatibilitäts-Filter: Kreatur-Tags prüfen (canSpeak, socialCreature) | hoch | Ja | #1312 | NPC-System.md#quirk-generierung | - |
+| 2967 | ⛔ | NPC | Quirk-Einzigartigkeit: Tracking verwendeter Quirks im Encounter | mittel | Ja | #1312 | NPC-System.md#quirk-einzigartigkeit | - |
+| 2968 | ⛔ | NPC | Goal-Pool-Hierarchie: Generisch → Creature → Fraktion → Persönlichkeit | hoch | Ja | #1313, #1401 | NPC-System.md#goal-pool-hierarchie | - |
+| 2972 | ⬜ | NPC | PartialNPC/HighlightNPC Schema (Name + primaryTrait, session-only) | hoch | Ja | #1300 | NPC-System.md#npc-detail-stufen | - |
+| 2973 | ⛔ | NPC | generateHighlightNPC(): Oberflächliche NPC-Generierung (Name + 1 Trait) | hoch | Ja | #2972 | NPC-System.md#npc-detail-stufen | - |
+| 2975 | ⛔ | NPC | Fallback-Generierung für fraktionslose Creatures (Creature-Tags statt Faction-Kultur) | mittel | Ja | #2978, #1314 | NPC-System.md#npc-generierung | - |
+| 2978 | ⬜ | NPC | NPC-Schema: factionId von required auf optional ändern | hoch | Ja | #1300 | NPC-System.md#npc-schema | - |

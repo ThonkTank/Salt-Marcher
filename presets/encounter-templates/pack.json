@@ -1,0 +1,13 @@
+{
+  "id": "pack",
+  "name": "Pack",
+  "description": "Rudel von 3-8 Kreaturen aehnlicher Staerke",
+  "compatibleTags": ["pack-hunter", "swarm", "herd"],
+  "roles": {
+    "pack": {
+      "count": { "min": 3, "max": 8 },
+      "budgetPercent": 100,
+      "crConstraint": "any"
+    }
+  }
+}

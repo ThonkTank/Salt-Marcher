@@ -110,6 +110,8 @@ Die Tab-Leiste zeigt alle verfuegbaren Entity-Typen.
 | Maps | `map` | 🗺️ | Karten (Overland, Dungeon) |
 | Playlists | `track` | 🎵 | Audio-Playlists |
 | Shops | `shop` | 🏪 | Haendler-Inventare |
+| LootTables | `loottable` | 💰 | Wiederverwendbare Loot-Definitionen |
+| LootContainers | `lootcontainer` | 📦 | Instanzen: Truhen, Horte, Leichen |
 
 ---
 
@@ -127,10 +129,12 @@ Die generische Listen-Ansicht mit Filter und Suche.
 │  ┌─────────────────────────────────────────────────────────────────────────┐│
 │  │ Quick Filters (Entity-spezifisch):                                       ││
 │  │                                                                          ││
-│  │ Creatures:  [All CR ▼] [All Types ▼] [All Habitats ▼]                   ││
-│  │ Items:      [All Rarity ▼] [All Categories ▼] [Magic Only ☐]            ││
-│  │ Spells:     [All Levels ▼] [All Schools ▼] [All Classes ▼]              ││
-│  │ Locations:  [All Types ▼] [All Regions ▼]                               ││
+│  │ Creatures:      [All CR ▼] [All Types ▼] [All Habitats ▼]              ││
+│  │ Items:          [All Rarity ▼] [All Categories ▼] [Magic Only ☐]       ││
+│  │ Spells:         [All Levels ▼] [All Schools ▼] [All Classes ▼]         ││
+│  │ Locations:      [All Types ▼] [All Regions ▼]                          ││
+│  │ LootTables:     [All Tags ▼] [Value Range ▼]                           ││
+│  │ LootContainers: [All POIs ▼] [Status ▼] (pristine/looted)              ││
 │  │                                                                          ││
 │  └─────────────────────────────────────────────────────────────────────────┘│
 │                                                                              │
@@ -183,6 +187,26 @@ Kompakte Karten mit Entity-spezifischen Informationen.
 │  Region: Elderwood Forest │ Population: ~200                              │
 │  Faction: Elven Council (dominant)                                        │
 │  Notable: Ancient Tree, Moonwell                                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+─────────── LootTable Card ───────────
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  💰 Dragon Hoard                               ~15000 GP │ [✏️] [📋] [🗑️] │
+│  ───────────────────────────────────────────────────────────────────────── │
+│  Tags: dragon, hoard, high-tier, treasure                                 │
+│  Gold: 5000-25000 GP │ Items: 4d6 gems, 2d4 magic                         │
+│  Verwendungen: 3 (in LootContainern)                                      │
+└────────────────────────────────────────────────────────────────────────────┘
+
+─────────── LootContainer Card ───────────
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│  📦 Hort von Scaldrath                          pristine │ [✏️] [📋] [🗑️] │
+│  ───────────────────────────────────────────────────────────────────────── │
+│  POI: Hoehle des Roten Drachen [→]                                        │
+│  Inhalt: 12,500 GP │ 8 Items                                              │
+│  Template: Dragon Hoard                                                    │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -380,35 +404,36 @@ const entityConfig = entityRegistry.getConfig(activeTab);
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 2600 | Library View Component (Hauptcontainer) | hoch | Ja | #2599, #2801 | Library.md#layout-wireframe, Application.md#mvvm-pattern |
-| 2601 | Library ViewModel mit State-Management | hoch | Ja | #2600, #2800 | Library.md#state-management, Application.md#mvvm-pattern, Application.md#viewmodel-feature-kommunikation |
-| 2602 | Tab-Navigation Component (Entity-Type Switcher) | hoch | Ja | #2600, #2601 | Library.md#tab-navigation, EntityRegistry.md#entity-type-mapping, Application.md#mvvm-pattern |
-| 2603 | Browse-View Component (List Mode) | hoch | Ja | #2599, #2600, #2601, #2621 | Library.md#browse-view, Library.md#view-modi, Application.md#mvvm-pattern |
-| 2604 | Search-Funktion (Global Text Search) | hoch | Ja | #2603, #2621 | Library.md#filter-controls, EntityRegistry.md#querying |
-| 2605 | Quick-Filters Component (Entity-spezifisch) | hoch | Ja | #2603, #2621 | Library.md#filter-controls, Library.md#browse-view, EntityRegistry.md#querying |
-| 2606 | Sort Controls (Name, CR, Rarity, etc.) | hoch | Ja | #2603, #2621 | Library.md#filter-controls, Library.md#state-management |
-| 2607 | Entity-Cards Component (Kompakte Info-Anzeige) | hoch | Ja | #1200, #2603 | Library.md#entity-cards, Library.md#browse-view |
-| 2608 | Create-Modal Component (Generisch aus create-spec) | hoch | Ja | #1600, #2601, #2603 | Library.md#create-edit-modal, EntityRegistry.md#port-interface, Application.md#viewmodel-feature-kommunikation |
-| 2609 | Edit-Modal Component (Generisch aus create-spec) | hoch | Ja | #2601, #2603 | Library.md#create-edit-modal, EntityRegistry.md#port-interface, Application.md#viewmodel-feature-kommunikation |
-| 2610 | Modal-Section Navigation (Multi-Step Forms) | hoch | Ja | #1500, #2603, #2608, #2609 | Library.md#modal-navigation, Library.md#create-edit-modal |
-| 2611 | Validation Display (Section-Level Feedback) | hoch | Ja | #2603, #2610 | Library.md#modal-navigation, EntityRegistry.md#validierung, Error-Handling.md |
-| 2612 | Delete Confirmation Dialog | hoch | Ja | #2601, #2607, #2608, #2609, #2610, #2611, #2621 | Library.md#entity-cards, EntityRegistry.md#entity-deletion-cascades, Application.md#viewmodel-feature-kommunikation |
-| 2613 | Duplicate-Funktion ([📋] Button) | mittel | Ja | #2601, #2621 | Library.md#entity-cards, EntityRegistry.md#port-interface |
-| 2614 | Grid-View Mode (Alternative zu List) | niedrig | Nein | #2603, #2613 | Library.md#view-modi, Library.md#state-management |
-| 2615 | Tree-View Mode (Für Locations Hierarchie) | mittel | Nein | #2603, #2614, #2617 | Library.md#view-modi, POI.md#schema, POI.md#map-navigation |
-| 2616 | Bulk-Actions (Multi-Select + Batch Operations) | niedrig | Nein | #2603, #2613 | Library.md#state-management, EntityRegistry.md#port-interface |
-| 2617 | Import/Export Funktionalität | niedrig | Nein | #2601, #2616, #2803 | Library.md#state-management, EntityRegistry.md#storage |
-| 2618 | Creature-Tab spezifische Filter (CR, Type, Habitat) | hoch | Ja | #2605, #2613, #2621, #2802 | Library.md#filter-controls, Creature.md#schema, Creature.md#creaturedefinition |
-| 2619 | Item-Tab spezifische Filter (Rarity, Category, Magic) | hoch | Ja | #2605, #2612, #2810 | Library.md#filter-controls, Item.md#schema, Item.md#kategorie-details |
-| 2620 | Spell-Tab spezifische Filter (Level, School, Class) | hoch | Ja | #2603, #2605, #2621 | Library.md#filter-controls, EntityRegistry.md#entity-type-mapping |
-| 2621 | Location-Tab spezifische Filter (Type, Region) | hoch | Ja | - | Library.md#filter-controls, POI.md#poi-typen, POI.md#basepoi |
-| 2622 | Entity-Count Display in Tabs | hoch | Ja | #2602, #2621, #2800, #2801 | Library.md#tab-navigation, EntityRegistry.md#port-interface |
-| 2623 | Overflow-Menu für Tabs (bei > 8 Entity-Types) | mittel | Ja | #2602, #2603 | Library.md#tab-navigation, Library.md#entity-tabs |
-| 2624 | Keyboard Shortcuts (Ctrl+N, Ctrl+F, Ctrl+D, 1-9) | mittel | Nein | #1500, #2601, #2603 | Library.md#keyboard-shortcuts, Application.md#mvvm-pattern |
-| 2625 | Pagination Controls (Load More) | hoch | Ja | #2603, #2621 | Library.md#browse-view, Library.md#state-management |
-| 2626 | Save & New Button (Create-Modal) | mittel | Ja | #2608, #2621, #2802 | Library.md#create-edit-modal, EntityRegistry.md#port-interface |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 2600 | ⛔ | Application/Library | Tab-Navigation Component mit Entity-Type Tabs | hoch | Ja | #2801, #2599 | Library.md#layout-wireframe, Application.md#mvvm-pattern | [neu] src/application/library/TabNavigation.svelte, [neu] src/application/library/types.ts:LibraryState |
+| 2601 | ⛔ | Application/Library | Entity-Tab Icons und Badges (Count Display) | hoch | Ja | #2600, #2800 | Library.md#state-management, Application.md#mvvm-pattern, Application.md#viewmodel-feature-kommunikation | [ändern] src/application/library/TabNavigation.svelte:renderTabs(), [nutzt] src/core/types/entity-registry.port.ts:EntityRegistryPort.count() |
+| 2602 | ⛔ | Application/Library | Tab Overflow-Menu fuer viele Entity-Typen | mittel | Nein | #2600, #2601 | Library.md#tab-navigation, EntityRegistry.md#entity-type-mapping, Application.md#mvvm-pattern | [ändern] src/application/library/TabNavigation.svelte:renderOverflowMenu() |
+| 2603 | ⛔ | Application/Library | Browse-View Component (List-Ansicht) | hoch | Ja | #2600, #2601, #2621 | Library.md#browse-view, Library.md#view-modi, Application.md#mvvm-pattern | [neu] src/application/library/BrowseView.svelte, [neu] src/application/library/components/EntityList.svelte |
+| 2604 | ⛔ | Application/Library | Search-Bar mit Echtzeit-Filterung | hoch | Ja | #2603, #2621 | Library.md#filter-controls, EntityRegistry.md#querying | [ändern] src/application/library/BrowseView.svelte:renderSearchBar(), [ändern] src/application/library/viewmodel.ts:filterEntities() |
+| 2605 | ⛔ | Application/Library | Quick Filters (Entity-spezifisch: CR, Type, Habitat, Rarity, etc.) | hoch | Ja | #2603 | Library.md#filter-controls, Library.md#browse-view, EntityRegistry.md#querying | [ändern] src/application/library/BrowseView.svelte:renderQuickFilters(), [ändern] src/application/library/viewmodel.ts:applyFilters() |
+| 2606 | ⛔ | Application/Library | Sort Controls (Name, CR, Type, Custom Fields) | hoch | Ja | #2603, #2621 | Library.md#filter-controls, Library.md#state-management | [ändern] src/application/library/BrowseView.svelte:renderSortControls(), [ändern] src/application/library/viewmodel.ts:sortEntities() |
+| 2607 | ⛔ | Application/Library | Entity-Card Component (Creature) | hoch | Ja | #2603, #1200 | Library.md#entity-cards, Library.md#browse-view | [neu] src/application/library/cards/CreatureCard.svelte, [nutzt] src/core/schemas/creature.ts:CreatureDefinition |
+| 2608 | ⛔ | Application/Library | Entity-Card Component (Item) | hoch | Ja | #1600, #2601, #2603 | Library.md#create-edit-modal, EntityRegistry.md#port-interface, Application.md#viewmodel-feature-kommunikation | [neu] src/application/library/cards/ItemCard.svelte, [nutzt] src/core/schemas/item.ts:Item |
+| 2609 | ⛔ | Application/Library | Entity-Card Component (Spell) | hoch | Ja | #2601, #2603 | Library.md#create-edit-modal, EntityRegistry.md#port-interface, Application.md#viewmodel-feature-kommunikation | [neu] src/application/library/cards/SpellCard.svelte, [neu] src/core/schemas/spell.ts:Spell (Post-MVP) |
+| 2610 | ⛔ | Application/Library | Entity-Card Component (Location) | hoch | Ja | #1500, #2603, #2608, #2609 | Library.md#modal-navigation, Library.md#create-edit-modal | [neu] src/application/library/cards/LocationCard.svelte, [nutzt] src/core/schemas/poi.ts:POI |
+| 2611 | ⛔ | Application/Library | Entity-Card Component (Generisch fuer andere Entity-Typen) | mittel | Ja | #2603, #2610 | Library.md#modal-navigation, EntityRegistry.md#validierung, Error-Handling.md | [neu] src/application/library/cards/GenericCard.svelte |
+| 2612 | ⛔ | Application/Library | Card-Actions (Edit, Duplicate, Delete Buttons) | hoch | Ja | #2601, #2607, #2608, #2609, #2610, #2611, #2621 | Library.md#entity-cards, EntityRegistry.md#entity-deletion-cascades, Application.md#viewmodel-feature-kommunikation | [ändern] src/application/library/cards/*.svelte:renderActions(), [nutzt] src/application/library/viewmodel.ts:editEntity(), deleteEntity(), duplicateEntity() |
+| 2613 | ⛔ | Application/Library | Create/Edit Modal Component (Generisch) | hoch | Ja | #2601, #2621 | Library.md#entity-cards, EntityRegistry.md#port-interface | [neu] src/application/library/EntityModal.svelte, [neu] src/application/library/components/ModalHeader.svelte |
+| 2614 | ⛔ | Application/Library | Modal Tab-Navigation (Basic Info, Stats, Abilities, etc.) | hoch | Ja | #2603, #2613 | Library.md#view-modi, Library.md#state-management | [ändern] src/application/library/EntityModal.svelte:renderTabs(), [neu] src/application/library/types.ts:ModalSection |
+| 2615 | ⛔ | Application/Library | Modal Section-States (Unbesucht, Valid, Invalid, Aktiv) | mittel | Ja | #2603, #2614, #2617 | Library.md#view-modi, POI.md#schema, POI.md#map-navigation | [ändern] src/application/library/EntityModal.svelte:updateSectionState(), [ändern] src/application/library/viewmodel.ts:validateSection() |
+| 2616 | ⛔ | Application/Library | Modal Form Generation aus create-spec.ts | hoch | Ja | #2603, #2613 | Library.md#state-management, EntityRegistry.md#port-interface | [ändern] src/application/library/EntityModal.svelte:renderForm(), [neu] src/application/library/form-generator.ts:generateFormFields() |
+| 2617 | ⛔ | Application/Library | Modal Validation (Required Fields, Type Checks) | hoch | Ja | #2601, #2616, #2803 | Library.md#state-management, EntityRegistry.md#storage | [ändern] src/application/library/EntityModal.svelte:validateForm(), [nutzt] Zod-Schemas via EntityRegistry |
+| 2618 | ⛔ | Application/Library | Modal Save Actions (Save, Save & New) | hoch | Ja | #2605, #2613, #2621, #2802 | Library.md#filter-controls, Creature.md#schema, Creature.md#creaturedefinition | [ändern] src/application/library/EntityModal.svelte:handleSave(), [nutzt] src/application/library/viewmodel.ts:saveEntity() |
+| 2619 | ⛔ | Application/Library | Delete Confirmation Dialog | hoch | Ja | #2605, #2612, #2810 | Library.md#filter-controls, Item.md#schema, Item.md#kategorie-details | [neu] src/application/library/DeleteConfirmDialog.svelte, [nutzt] EntityRegistry.delete() mit Referenz-Prüfung |
+| 2620 | ⛔ | Application/Library | Keyboard-Shortcuts (Ctrl+N, Ctrl+F, Enter, Delete, etc.) | mittel | Nein | #2603, #2605, #2621 | Library.md#filter-controls, EntityRegistry.md#entity-type-mapping | [ändern] src/application/library/viewmodel.ts:handleKeyPress(), [ändern] src/application/library/view.ts:registerDomEvent() |
+| 2621 | ✅ | Application/Library | LibraryViewModel State Management | hoch | Ja | - | Library.md#filter-controls, POI.md#poi-typen, POI.md#basepoi | [neu] src/application/library/viewmodel.ts, [neu] src/application/library/types.ts:LibraryState, [nutzt] EntityRegistryPort |
+| 2622 | ⛔ | Application/Library | EntityRegistry Integration (getConfig, createSpec, browseConfig) | hoch | Ja | #2602, #2621, #2800, #2801 | Library.md#tab-navigation, EntityRegistry.md#port-interface | [ändern] src/application/library/viewmodel.ts:loadEntities(), [nutzt] EntityRegistryPort.getAll(), query() |
+| 2623 | ⛔ | Application/Library | Grid-View Component (Alternative Ansicht) | niedrig | Nein | #2602, #2603 | Library.md#tab-navigation, Library.md#entity-tabs | [neu] src/application/library/GridView.svelte |
+| 2624 | ⛔ | Application/Library | Tree-View Component (Locations Hierarchie) | mittel | Nein | #1500, #2601, #2603 | Library.md#keyboard-shortcuts, Application.md#mvvm-pattern | [neu] src/application/library/TreeView.svelte, [nutzt] POI.parentId für Hierarchie |
+| 2625 | ⛔ | Application/Library | Bulk-Actions (Multi-Select und Batch-Delete) | niedrig | Nein | #2603, #2621 | Library.md#browse-view, Library.md#state-management | [ändern] src/application/library/BrowseView.svelte:renderBulkActions(), [ändern] src/application/library/viewmodel.ts:deleteMultiple() |
+| 2626 | ⛔ | Application/Library | Import/Export Funktionalitaet | niedrig | Nein | #2608, #2621, #2802 | Library.md#create-edit-modal, EntityRegistry.md#port-interface | [ändern] src/application/library/viewmodel.ts:exportEntities(), importEntities(), [nutzt] EntityRegistry save/delete |
+| 3009 | ⛔ | Library | LootContainer CRUD-Interface in Library | mittel | Ja | #3006, #2800 | Library.md#entity-tabs, LootContainer.md | - |
 
 ---
 

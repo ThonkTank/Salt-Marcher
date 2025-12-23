@@ -128,6 +128,17 @@ export {
   type SpeedBlock,
   creaturePreferencesSchema,
   type CreaturePreferences,
+  // Detection profile schemas (Task #2949, #2950)
+  stealthAbilitySchema,
+  type StealthAbility,
+  noiseLevelSchema,
+  type NoiseLevel,
+  scentStrengthSchema,
+  type ScentStrength,
+  creatureDetectionProfileSchema,
+  type CreatureDetectionProfile,
+  DEFAULT_DETECTION_PROFILE,
+  // Loot schemas
   defaultLootEntrySchema,
   type DefaultLootEntry,
   creatureDefinitionSchema,
@@ -208,15 +219,47 @@ export {
   type EncounterTriggers,
   encounterDefinitionSchema,
   type EncounterDefinition,
+  // Perception schemas (Task #213)
+  detectionMethodSchema,
+  type DetectionMethod,
+  encounterAmbushSchema,
+  type EncounterAmbush,
+  perceptionModifiersSchema,
+  type PerceptionModifiers,
+  encounterPerceptionSchema,
+  type EncounterPerception,
+  // Instance schema
   encounterInstanceSchema,
   type EncounterInstance,
   encounterContextSchema,
   type EncounterContext,
+  // Template schemas (Task #2962)
+  crConstraintSchema,
+  type CRConstraint,
+  designRoleSchema,
+  type DesignRole,
+  templateRoleSchema,
+  type TemplateRole,
+  encounterTemplateSchema,
+  type EncounterTemplate,
+  // Constants
   VARIETY_HISTORY_SIZE,
   VARIETY_REROLL_WINDOW,
   MAX_REROLL_ATTEMPTS,
   CR_COMBAT_THRESHOLD_FACTOR,
   BASE_ENCOUNTER_CHANCE,
+  // GroupRelation schemas (Task #250)
+  groupRelationTypeSchema,
+  type GroupRelationType,
+  groupRelationSchema,
+  type GroupRelation,
+  // EncounterGroup schemas (Task #2992)
+  encounterGroupStatusSchema,
+  type EncounterGroupStatus,
+  narrativeRoleSchema,
+  type NarrativeRole,
+  encounterGroupSchema,
+  type EncounterGroup,
 } from './encounter';
 
 // Character schemas

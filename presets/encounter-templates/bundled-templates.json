@@ -1,0 +1,104 @@
+{
+  "templates": [
+    {
+      "id": "solo",
+      "name": "Solo",
+      "description": "Einzelne maechtige Kreatur, kaempft alleine",
+      "compatibleTags": ["solitary", "apex-predator", "territorial"],
+      "roles": {
+        "main": {
+          "count": { "min": 1, "max": 1 },
+          "budgetPercent": 100,
+          "crConstraint": "highest",
+          "designRole": "solo"
+        }
+      }
+    },
+    {
+      "id": "pair",
+      "name": "Pair",
+      "description": "Zwei Kreaturen, oft Paarung oder Duo",
+      "compatibleTags": ["mated-pair", "duo", "bonded"],
+      "roles": {
+        "pair": {
+          "count": { "min": 2, "max": 2 },
+          "budgetPercent": 100,
+          "crConstraint": "any"
+        }
+      }
+    },
+    {
+      "id": "pack",
+      "name": "Pack",
+      "description": "Rudel von 3-8 Kreaturen aehnlicher Staerke",
+      "compatibleTags": ["pack-hunter", "swarm", "herd"],
+      "roles": {
+        "pack": {
+          "count": { "min": 3, "max": 8 },
+          "budgetPercent": 100,
+          "crConstraint": "any"
+        }
+      }
+    },
+    {
+      "id": "horde",
+      "name": "Horde",
+      "description": "Grosse Gruppe von 6-20 schwachen Kreaturen",
+      "compatibleTags": ["swarm", "horde", "legion"],
+      "roles": {
+        "minions": {
+          "count": { "min": 6, "max": 20 },
+          "budgetPercent": 100,
+          "crConstraint": "lowest",
+          "designRole": "minion"
+        }
+      }
+    },
+    {
+      "id": "leader-minions",
+      "name": "Leader + Minions",
+      "description": "Ein starker Anfuehrer mit mehreren schwachen Untergebenen",
+      "compatibleTags": ["organized", "tribal", "military", "hierarchical"],
+      "roles": {
+        "leader": {
+          "count": { "min": 1, "max": 1 },
+          "budgetPercent": 50,
+          "crConstraint": "highest",
+          "designRole": "leader"
+        },
+        "minions": {
+          "count": { "min": 2, "max": 6 },
+          "budgetPercent": 50,
+          "crConstraint": "lowest",
+          "designRole": "minion"
+        }
+      }
+    },
+    {
+      "id": "squad",
+      "name": "Squad",
+      "description": "Gemischte Gruppe von 3-6 Kreaturen mit verschiedenen Rollen",
+      "compatibleTags": ["military", "patrol", "organized", "adventuring-party"],
+      "roles": {
+        "frontline": {
+          "count": { "min": 1, "max": 2 },
+          "budgetPercent": 40,
+          "crConstraint": "any",
+          "designRole": "soldier"
+        },
+        "damage": {
+          "count": { "min": 1, "max": 2 },
+          "budgetPercent": 40,
+          "crConstraint": "any",
+          "designRole": "artillery"
+        },
+        "support": {
+          "count": { "min": 0, "max": 2 },
+          "budgetPercent": 20,
+          "crConstraint": "any",
+          "designRole": "support"
+        }
+      }
+    }
+  ]
+}

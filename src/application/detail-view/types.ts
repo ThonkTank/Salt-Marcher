@@ -2,7 +2,13 @@
  * DetailView types.
  */
 
-import type { EncounterInstance, CombatState, CombatEffect } from '@core/schemas';
+import type {
+  EncounterInstance,
+  CombatState,
+  CombatEffect,
+  EncounterLeadNpc,
+  DetectionMethod,
+} from '@core/schemas';
 
 // ============================================================================
 // View Types
@@ -40,6 +46,18 @@ export interface BuilderCreature {
 }
 
 /**
+ * Detection info for UI display.
+ * Simplified from EncounterPerception for the builder state.
+ * @see Encounter-System.md#encounterperception
+ */
+export interface DetectionInfo {
+  method: DetectionMethod;
+  distance: number;
+  partyAware: boolean;
+  encounterAware: boolean;
+}
+
+/**
  * Encounter tab state.
  * Includes both the current encounter and the builder state.
  * @see DetailView.md#encounter-tab
@@ -66,6 +84,15 @@ export interface EncounterTabState {
 
   // Source encounter ID (for update vs create logic)
   sourceEncounterId: string | null;
+
+  // Situation: Disposition toward party (-100 hostile to +100 friendly)
+  disposition: number;
+
+  // Detection info (how party and encounter detected each other)
+  detection: DetectionInfo | null;
+
+  // Lead NPC info (personality, quirk, goal for roleplay)
+  leadNPC: EncounterLeadNpc | null;
 }
 
 /**
@@ -140,6 +167,12 @@ export function createInitialDetailViewState(): DetailViewState {
       creatureQuery: '',
       // Source
       sourceEncounterId: null,
+      // Situation
+      disposition: 0,
+      // Detection
+      detection: null,
+      // Lead NPC
+      leadNPC: null,
     },
     combat: {
       combatState: null,

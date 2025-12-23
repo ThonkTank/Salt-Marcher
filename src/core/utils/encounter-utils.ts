@@ -16,8 +16,12 @@ import type {
   TimeSegment,
   CreatureSlot,
   EncounterTriggers,
+  NoiseLevel,
+  ScentStrength,
+  StealthAbility,
+  CreatureDetectionProfile,
 } from '@core/schemas';
-import { VARIETY_REROLL_WINDOW } from '@core/schemas';
+import { DEFAULT_DETECTION_PROFILE } from '@core/schemas/creature';
 import { calculateXP, calculateEffectiveXP } from './creature-utils';
 
 // ============================================================================
@@ -37,14 +41,50 @@ export type CRComparison = 'trivial' | 'manageable' | 'deadly' | 'impossible';
 export type EncounterDifficulty = 'easy' | 'medium' | 'hard' | 'deadly';
 
 /**
+ * Faction relation to party - derived from faction.reputationWithParty
+ * - hostile: reputation < -20
+ * - neutral: reputation >= -20 && <= +20
+ * - friendly: reputation > +20
+ *
+ * @see docs/features/Encounter-System.md#typ-ableitung
+ * @see docs/domain/Faction.md#party-reputation
+ */
+export type FactionRelation = 'hostile' | 'neutral' | 'friendly';
+
+/**
  * Type derivation probability matrix.
  * Maps disposition + CR comparison to encounter type probabilities.
  */
-interface TypeProbabilities {
+export interface TypeProbabilities {
   combat: number;
   social: number;
   passing: number;
   trace: number;
+}
+
+/**
+ * Encounter type probability matrix for variety dampening.
+ * All values should sum to 1.0 after normalization.
+ *
+ * Note: environmental and location are Post-MVP encounter types.
+ * When they are added to EncounterType schema, add them here too.
+ *
+ * @see docs/features/Encounter-System.md#variety-validation
+ */
+export interface TypeProbabilityMatrix {
+  combat: number;
+  social: number;
+  passing: number;
+  trace: number;
+}
+
+/**
+ * Entry in the encounter type history for variety validation.
+ * Matches the feature-level type but defined here for utils.
+ */
+export interface EncounterHistoryEntry {
+  type: EncounterType;
+  sequence: number;
 }
 
 /**
@@ -253,6 +293,24 @@ export function compareCR(
 }
 
 /**
+ * Determine if combat is winnable based on CR comparison.
+ *
+ * @param crComparison - The CR comparison result from compareCR()
+ * @returns true if the party can win the combat
+ *
+ * Winnable conditions:
+ * - trivial: false (no real combat, too weak → becomes trace/passing)
+ * - manageable: true (fair fight)
+ * - deadly: true (very dangerous but winnable)
+ * - impossible: false (party cannot win → becomes passing/trace)
+ *
+ * @see docs/features/Encounter-Balancing.md#winnable-logik
+ */
+export function isWinnable(crComparison: CRComparison): boolean {
+  return crComparison !== 'trivial' && crComparison !== 'impossible';
+}
+
+/**
  * Roll encounter difficulty based on D&D 5e distribution.
  *
  * Distribution:
@@ -271,43 +329,47 @@ export function rollDifficulty(): EncounterDifficulty {
 
 /**
  * Get encounter type probability matrix.
+ *
+ * Combines three factors to determine encounter type probabilities:
+ * 1. Creature disposition (hostile/neutral/friendly)
+ * 2. Faction relation to party (hostile/neutral/friendly)
+ * 3. Whether combat is winnable
+ *
+ * @see docs/features/Encounter-System.md#typ-ableitung
  * @see docs/features/Encounter-System.md#wahrscheinlichkeits-matrix
  */
-function getTypeProbabilities(
+export function getTypeProbabilities(
   disposition: 'hostile' | 'neutral' | 'friendly',
-  crComparison: CRComparison
+  factionRelation: FactionRelation,
+  winnable: boolean
 ): TypeProbabilities {
-  // Hostile creatures
+  // Hostile creatures - behavior depends on faction relation and winnability
   if (disposition === 'hostile') {
-    switch (crComparison) {
-      case 'trivial':
-        // Triviale Bedrohung → meist trace (verlassenes Lager)
-        return { combat: 0.05, social: 0.05, passing: 0.2, trace: 0.7 };
-      case 'manageable':
-        // Fairer Kampf möglich
-        return { combat: 0.7, social: 0.1, passing: 0.15, trace: 0.05 };
-      case 'deadly':
-        // Gefährlich aber möglich
-        return { combat: 0.5, social: 0.05, passing: 0.35, trace: 0.1 };
-      case 'impossible':
-        // Übermächtig → passing (Drache am Horizont)
-        return { combat: 0.05, social: 0.05, passing: 0.7, trace: 0.2 };
+    if (factionRelation === 'hostile') {
+      // Hostile creature + hostile faction → most aggressive
+      return winnable
+        ? { combat: 0.80, social: 0.05, passing: 0.10, trace: 0.05 }  // Spec: hostile+hostile+yes
+        : { combat: 0.05, social: 0.05, passing: 0.70, trace: 0.20 }; // Spec: hostile+hostile+no
     }
+    // Hostile creature + neutral/friendly faction → less aggressive
+    return winnable
+      ? { combat: 0.60, social: 0.10, passing: 0.20, trace: 0.10 }  // Spec: hostile+neutral+yes
+      : { combat: 0.05, social: 0.10, passing: 0.65, trace: 0.20 }; // Not in spec, interpolated
   }
 
-  // Neutral creatures
+  // Neutral creatures - faction relation doesn't change behavior much
   if (disposition === 'neutral') {
-    return { combat: 0.1, social: 0.5, passing: 0.25, trace: 0.15 };
+    return { combat: 0.10, social: 0.50, passing: 0.25, trace: 0.15 }; // Spec: neutral+any
   }
 
-  // Friendly creatures
-  return { combat: 0.0, social: 0.7, passing: 0.2, trace: 0.1 };
+  // Friendly creatures - never initiate combat
+  return { combat: 0.00, social: 0.70, passing: 0.20, trace: 0.10 }; // Spec: friendly+friendly
 }
 
 /**
  * Select encounter type based on probability matrix.
  */
-function selectTypeFromProbabilities(probs: TypeProbabilities): EncounterType {
+export function selectTypeFromProbabilities(probs: TypeProbabilities): EncounterType {
   const roll = Math.random();
   let cumulative = 0;
 
@@ -324,57 +386,214 @@ function selectTypeFromProbabilities(probs: TypeProbabilities): EncounterType {
 }
 
 /**
- * Derive encounter type from creature disposition and CR comparison.
+ * Derive encounter type from creature disposition, faction relation, and CR comparison.
  *
- * Uses probability matrix based on:
+ * Uses probability matrix based on three factors:
  * - Creature disposition (hostile/neutral/friendly)
- * - CR comparison result (trivial/manageable/deadly/impossible)
+ * - Faction relation to party (hostile/neutral/friendly)
+ * - CR comparison result → winnable (yes/no)
+ *
+ * @param creature - The creature definition to derive type for
+ * @param partyLevel - Average party level for CR comparison
+ * @param factionRelation - Faction's relationship to the party (defaults to 'neutral')
+ * @returns Type derivation result with selected type and reason
  *
  * @see docs/features/Encounter-System.md#typ-ableitung
  */
 export function deriveEncounterType(
   creature: CreatureDefinition,
-  partyLevel: number | undefined
+  partyLevel: number | undefined,
+  factionRelation: FactionRelation = 'neutral'
 ): TypeDerivationResult {
   const { disposition, cr } = creature;
   const effectivePartyLevel = partyLevel ?? 1;
 
-  // Calculate CR comparison
+  // Step 1: Calculate CR comparison
   const crComparison = compareCR(cr, effectivePartyLevel);
 
-  // Get probability matrix and select type
-  const probs = getTypeProbabilities(disposition, crComparison);
+  // Step 2: Determine if combat is winnable
+  const winnable = isWinnable(crComparison);
+
+  // Step 3: Get probability matrix using all 3 factors
+  const probs = getTypeProbabilities(disposition, factionRelation, winnable);
+
+  // Step 4: Select type from probabilities
   const type = selectTypeFromProbabilities(probs);
 
-  // Build reason string
-  const reason = `${disposition}_${crComparison}`;
+  // Build reason string with all factors
+  const reason = `${disposition}_${factionRelation}_${winnable ? 'winnable' : 'unwinnable'}`;
+
+  return { type, reason, crComparison };
+}
+
+/**
+ * Derive encounter type with variety dampening.
+ * Combines base type derivation with history-based probability adjustment.
+ *
+ * This function:
+ * 1. Gets base probability matrix from creature disposition, faction relation, and CR comparison
+ * 2. Applies exponential decay dampening based on recent encounter type history
+ * 3. Selects final type from the dampened probability matrix
+ *
+ * @param creature - The creature definition to derive type for
+ * @param partyLevel - Average party level for CR comparison
+ * @param typeHistory - Recent encounter type history (newest first)
+ * @param factionRelation - Faction's relationship to the party (defaults to 'neutral')
+ * @returns Type derivation result with dampened selection
+ *
+ * @see docs/features/Encounter-System.md#variety-validation
+ * @see docs/features/Encounter-System.md#typ-ableitung
+ */
+export function deriveEncounterTypeWithVariety(
+  creature: CreatureDefinition,
+  partyLevel: number | undefined,
+  typeHistory: readonly EncounterHistoryEntry[],
+  factionRelation: FactionRelation = 'neutral'
+): TypeDerivationResult {
+  const { disposition, cr } = creature;
+  const effectivePartyLevel = partyLevel ?? 1;
+
+  // Step 1: Calculate CR comparison
+  const crComparison = compareCR(cr, effectivePartyLevel);
+
+  // Step 2: Determine if combat is winnable
+  const winnable = isWinnable(crComparison);
+
+  // Step 3: Get base probability matrix using all 3 factors
+  const baseProbs = getTypeProbabilities(disposition, factionRelation, winnable);
+
+  // Step 4: Apply variety dampening
+  const dampenedMatrix = calculateTypeWeights(typeHistory, {
+    combat: baseProbs.combat,
+    social: baseProbs.social,
+    passing: baseProbs.passing,
+    trace: baseProbs.trace,
+  });
+
+  // Step 5: Select from dampened matrix
+  const type = selectTypeFromProbabilities({
+    combat: dampenedMatrix.combat,
+    social: dampenedMatrix.social,
+    passing: dampenedMatrix.passing,
+    trace: dampenedMatrix.trace,
+  });
+
+  // Include 'dampened' in reason to indicate variety adjustment was applied
+  const reason = typeHistory.length > 0
+    ? `${disposition}_${factionRelation}_${winnable ? 'winnable' : 'unwinnable'}_dampened`
+    : `${disposition}_${factionRelation}_${winnable ? 'winnable' : 'unwinnable'}`;
 
   return { type, reason, crComparison };
 }
 
 // ============================================================================
-// Step 4: Variety Validation
+// Step 4: Variety Validation (Type Dampening)
 // ============================================================================
 
 /**
- * Validate that the selected creature isn't too repetitive.
- * Returns valid=false if the creature type appeared too recently.
+ * Number of recent encounters to consider for variety dampening.
+ * Only the last 10 are relevant for decay calculation.
  */
-export function validateVariety(
-  creature: CreatureDefinition,
-  recentCreatureTypes: readonly string[]
-): VarietyValidationResult {
-  // Check recent history (within reroll window)
-  const recentWindow = recentCreatureTypes.slice(0, VARIETY_REROLL_WINDOW);
+const VARIETY_WINDOW_SIZE = 10;
 
-  if (recentWindow.includes(creature.id)) {
-    return {
-      valid: false,
-      rerollReason: `Creature type "${creature.name}" appeared in last ${VARIETY_REROLL_WINDOW} encounters`,
-    };
+/**
+ * Threshold above which type dampening kicks in.
+ * If accumulated weight > 1.5, the type is overrepresented.
+ */
+const OVERREPRESENTATION_THRESHOLD = 1.5;
+
+/**
+ * Create a default type probability matrix with equal weights.
+ */
+export function createDefaultTypeMatrix(): TypeProbabilityMatrix {
+  return {
+    combat: 0.25,
+    social: 0.25,
+    passing: 0.25,
+    trace: 0.25,
+  };
+}
+
+/**
+ * Normalize a probability matrix so all values sum to 1.0.
+ */
+export function normalizeMatrix(matrix: TypeProbabilityMatrix): TypeProbabilityMatrix {
+  const total = Object.values(matrix).reduce((sum, val) => sum + val, 0);
+  if (total <= 0) {
+    return createDefaultTypeMatrix();
   }
 
-  return { valid: true };
+  return {
+    combat: matrix.combat / total,
+    social: matrix.social / total,
+    passing: matrix.passing / total,
+    trace: matrix.trace / total,
+  };
+}
+
+/**
+ * Calculate type weights with exponential decay dampening.
+ *
+ * This function adjusts encounter type probabilities based on recent history
+ * to prevent monotony. Overrepresented types are dampened, not filtered.
+ *
+ * Algorithm:
+ * 1. Sum up type occurrences with exponential decay (1.0, 0.5, 0.25, 0.125...)
+ * 2. If a type's accumulated weight > 1.5, apply dampening factor
+ * 3. Dampening: probability *= 1 / (1 + overrepresentation - 1.5)
+ *
+ * @param history - Recent encounter type history (newest first)
+ * @param baseMatrix - Base probability matrix to adjust
+ * @returns Adjusted and normalized probability matrix
+ *
+ * @example
+ * // After 3 combat encounters in a row:
+ * // combat weight = 1.0 + 0.5 + 0.25 = 1.75
+ * // overrepresentation = 1.75 > 1.5, so dampen
+ * // combat probability *= 1 / (1 + 1.75 - 1.5) = 1/1.25 = 0.8
+ *
+ * @see docs/features/Encounter-System.md#variety-validation
+ */
+export function calculateTypeWeights(
+  history: readonly EncounterHistoryEntry[],
+  baseMatrix: TypeProbabilityMatrix
+): TypeProbabilityMatrix {
+  // Empty history = no adjustment needed
+  if (history.length === 0) {
+    return normalizeMatrix(baseMatrix);
+  }
+
+  // Accumulate type weights with exponential decay
+  const typeAccumulator: Record<EncounterType, number> = {
+    combat: 0,
+    social: 0,
+    passing: 0,
+    trace: 0,
+  };
+
+  // Get last N entries (already sorted newest-first)
+  const recentEntries = history.slice(0, VARIETY_WINDOW_SIZE);
+
+  // Apply exponential decay: newest = 1.0, then 0.5, 0.25, 0.125...
+  recentEntries.forEach((entry, index) => {
+    const weight = Math.pow(0.5, index);
+    typeAccumulator[entry.type] += weight;
+  });
+
+  // Adjust base matrix (dampen overrepresented types)
+  const adjusted: TypeProbabilityMatrix = { ...baseMatrix };
+
+  for (const type of Object.keys(adjusted) as EncounterType[]) {
+    const overrepresentation = typeAccumulator[type];
+    if (overrepresentation > OVERREPRESENTATION_THRESHOLD) {
+      // Dampening factor: 1 / (1 + overrepresentation - threshold)
+      const dampeningFactor = 1 / (1 + overrepresentation - OVERREPRESENTATION_THRESHOLD);
+      adjusted[type] *= dampeningFactor;
+    }
+  }
+
+  // Normalize to ensure probabilities sum to 1.0
+  return normalizeMatrix(adjusted);
 }
 
 // ============================================================================
@@ -793,4 +1012,361 @@ export function resolveCreatureSlots(
   }
 
   return result;
+}
+
+// ============================================================================
+// Multi-Sense Detection System (Task #2951)
+// ============================================================================
+
+/**
+ * Detection method - how the party detects an encounter.
+ * @see docs/features/Encounter-System.md#multi-sense-detection
+ */
+export type DetectionMethod =
+  | 'visual'
+  | 'auditory'
+  | 'olfactory'
+  | 'tremorsense'
+  | 'magical';
+
+/**
+ * Result of detection calculation.
+ */
+export interface DetectionResult {
+  /** How the encounter was detected */
+  method: DetectionMethod;
+  /** Detection range in feet */
+  range: number;
+}
+
+/**
+ * Minimal terrain interface for detection calculations.
+ * Full TerrainDefinition may have more fields.
+ */
+export interface TerrainForDetection {
+  /** Base visual encounter visibility in feet */
+  encounterVisibility: number;
+}
+
+/**
+ * Minimal weather interface for detection calculations.
+ * Full WeatherState may have more fields.
+ */
+export interface WeatherForDetection {
+  /** Visibility modifier (0.1 to 1.0) */
+  visibilityModifier: number;
+  /** Precipitation percentage (0-100) */
+  precipitation: number;
+  /** Wind strength (0-100) */
+  windStrength: number;
+  /** Cloud cover (0 to 1) */
+  cloudCover: number;
+  /** Moon phase for night visibility */
+  moonPhase?: 'new' | 'crescent' | 'half' | 'gibbous' | 'full';
+}
+
+/**
+ * Audio range lookup table.
+ * @see docs/features/Encounter-System.md#audio-range-tabelle
+ */
+const AUDIO_RANGE: Record<NoiseLevel, { base: number; reduced: number }> = {
+  silent: { base: 0, reduced: 0 },
+  quiet: { base: 30, reduced: 15 },
+  normal: { base: 60, reduced: 30 },
+  loud: { base: 200, reduced: 100 },
+  deafening: { base: 500, reduced: 250 },
+};
+
+/**
+ * Scent range lookup table.
+ * @see docs/features/Encounter-System.md#scent-range-tabelle
+ */
+const SCENT_RANGE: Record<ScentStrength, { base: number; reduced: number }> = {
+  none: { base: 0, reduced: 0 },
+  faint: { base: 30, reduced: 0 },
+  moderate: { base: 60, reduced: 30 },
+  strong: { base: 150, reduced: 75 },
+  overwhelming: { base: 300, reduced: 150 },
+};
+
+/**
+ * Base daylight visibility modifiers by time segment.
+ * @see docs/features/Encounter-System.md#dynamischer-time-modifier
+ */
+const BASE_DAYLIGHT: Record<TimeSegment, number> = {
+  dawn: 0.6,
+  morning: 1.0,
+  midday: 1.0,
+  afternoon: 1.0,
+  dusk: 0.6,
+  night: 0.1,
+};
+
+/**
+ * Moonlight bonus by moon phase.
+ */
+const MOONLIGHT_BONUS: Record<
+  NonNullable<WeatherForDetection['moonPhase']>,
+  number
+> = {
+  new: 0,
+  crescent: 0.05,
+  half: 0.15,
+  gibbous: 0.2,
+  full: 0.3,
+};
+
+/**
+ * Calculate time-based visibility modifier.
+ * Weather-dependent - moonlight and cloud cover affect night visibility.
+ *
+ * @param timeSegment - Current time of day
+ * @param weather - Current weather state
+ * @returns Visibility modifier (0.0 to 1.0)
+ *
+ * @see docs/features/Encounter-System.md#dynamischer-time-modifier
+ */
+export function getTimeVisibilityModifier(
+  timeSegment: TimeSegment,
+  weather: WeatherForDetection
+): number {
+  const baseDaylight = BASE_DAYLIGHT[timeSegment];
+  const moonlight =
+    weather.moonPhase !== undefined ? MOONLIGHT_BONUS[weather.moonPhase] : 0;
+  const cloudCover = weather.cloudCover;
+
+  // Night: Base + moonlight × (1 - cloudCover)
+  if (timeSegment === 'night') {
+    return baseDaylight + moonlight * (1 - cloudCover);
+  }
+
+  // Daytime (morning, midday, afternoon): Clouds reduce visibility by max 30%
+  if (
+    timeSegment === 'morning' ||
+    timeSegment === 'midday' ||
+    timeSegment === 'afternoon'
+  ) {
+    return baseDaylight * (1 - cloudCover * 0.3);
+  }
+
+  // Dawn/Dusk: Combination of both effects
+  return baseDaylight * (1 - cloudCover * 0.2) + moonlight * 0.5;
+}
+
+/**
+ * Calculate visual detection range.
+ *
+ * @param terrain - Terrain with encounterVisibility
+ * @param weather - Current weather state
+ * @param timeSegment - Current time of day
+ * @returns Visual range in feet
+ *
+ * @see docs/features/Encounter-System.md#visuelle-range
+ */
+export function calculateVisualRange(
+  terrain: TerrainForDetection,
+  weather: WeatherForDetection,
+  timeSegment: TimeSegment
+): number {
+  const terrainBase = terrain.encounterVisibility;
+  const weatherModifier = weather.visibilityModifier;
+  const timeModifier = getTimeVisibilityModifier(timeSegment, weather);
+
+  return Math.floor(terrainBase * weatherModifier * timeModifier);
+}
+
+/**
+ * Calculate audio detection range based on creature noise level.
+ *
+ * @param noiseLevel - Creature's noise level
+ * @param weather - Current weather state
+ * @returns Audio range in feet
+ *
+ * @see docs/features/Encounter-System.md#audio-range-tabelle
+ */
+export function calculateAudioRange(
+  noiseLevel: NoiseLevel,
+  weather: WeatherForDetection
+): number {
+  const ranges = AUDIO_RANGE[noiseLevel];
+
+  // Wind or rain reduces audio range (normalized 0-1 values)
+  const hasWindOrRain = weather.windStrength > 0.5 || weather.precipitation > 0.3;
+
+  return hasWindOrRain ? ranges.reduced : ranges.base;
+}
+
+/**
+ * Calculate scent detection range based on creature scent strength.
+ *
+ * @param scentStrength - Creature's scent strength
+ * @param weather - Current weather state
+ * @returns Scent range in feet
+ *
+ * @see docs/features/Encounter-System.md#scent-range-tabelle
+ */
+export function calculateScentRange(
+  scentStrength: ScentStrength,
+  weather: WeatherForDetection
+): number {
+  const ranges = SCENT_RANGE[scentStrength];
+
+  // Strong wind or rain reduces scent range (normalized 0-1 values)
+  const hasWindOrRain = weather.windStrength > 0.5 || weather.precipitation > 0.3;
+
+  return hasWindOrRain ? ranges.reduced : ranges.base;
+}
+
+/**
+ * Apply stealth ability effects to detection ranges.
+ *
+ * @param visualRange - Base visual range
+ * @param audioRange - Base audio range
+ * @param scentRange - Base scent range
+ * @param stealthAbilities - Creature's stealth abilities
+ * @returns Adjusted ranges
+ *
+ * @see docs/features/Encounter-System.md#stealth-ability-effekte
+ */
+export function applyStealthAbilities(
+  visualRange: number,
+  audioRange: number,
+  scentRange: number,
+  stealthAbilities: StealthAbility[] | undefined
+): { visual: number; audio: number; scent: number } {
+  if (!stealthAbilities || stealthAbilities.length === 0) {
+    return { visual: visualRange, audio: audioRange, scent: scentRange };
+  }
+
+  let visual = visualRange;
+  let audio = audioRange;
+  let scent = scentRange;
+
+  for (const ability of stealthAbilities) {
+    switch (ability) {
+      case 'burrowing':
+        // Can travel underground - visual: 0ft, audio: normal
+        visual = 0;
+        break;
+
+      case 'invisibility':
+        // Can become invisible - visual: 0ft
+        visual = 0;
+        break;
+
+      case 'ethereal':
+        // On another plane - all senses: 0ft
+        visual = 0;
+        audio = 0;
+        scent = 0;
+        break;
+
+      case 'shapechange':
+        // Can assume harmless form - no auto-detection change
+        // Detection still possible but creature appears harmless
+        break;
+
+      case 'mimicry':
+        // Can imitate sounds - audio detection may mislead
+        // Detection range unchanged, but type may be misleading
+        break;
+
+      case 'ambusher':
+        // Has ambush behavior - triggers ambush check (handled separately)
+        // Detection range unchanged
+        break;
+    }
+  }
+
+  return { visual, audio, scent };
+}
+
+/**
+ * Calculate how an encounter is detected and at what range.
+ * Considers visual, auditory, and olfactory senses.
+ * Returns the best (longest range) detection method.
+ *
+ * @param creatureOrProfile - Creature definition or detection profile directly
+ * @param terrain - Terrain with encounterVisibility
+ * @param weather - Current weather state
+ * @param timeSegment - Current time of day
+ * @returns Detection method and range
+ *
+ * @see docs/features/Encounter-System.md#calculatedetection
+ */
+export function calculateDetection(
+  creatureOrProfile: CreatureDefinition | CreatureDetectionProfile,
+  terrain: TerrainForDetection,
+  weather: WeatherForDetection,
+  timeSegment: TimeSegment
+): DetectionResult {
+  // Get detection profile - either directly passed or from creature
+  const profile: CreatureDetectionProfile =
+    'noiseLevel' in creatureOrProfile
+      ? creatureOrProfile
+      : (creatureOrProfile.detectionProfile ?? DEFAULT_DETECTION_PROFILE);
+
+  // 1. Calculate base ranges for each sense
+  const baseVisual = calculateVisualRange(terrain, weather, timeSegment);
+  const baseAudio = calculateAudioRange(profile.noiseLevel, weather);
+  const baseScent = calculateScentRange(profile.scentStrength, weather);
+
+  // 2. Apply stealth abilities
+  const adjusted = applyStealthAbilities(
+    baseVisual,
+    baseAudio,
+    baseScent,
+    profile.stealthAbilities
+  );
+
+  // 3. Find best detection method (longest range)
+  let bestMethod: DetectionMethod = 'visual';
+  let bestRange = adjusted.visual;
+
+  if (adjusted.audio > bestRange) {
+    bestRange = adjusted.audio;
+    bestMethod = 'auditory';
+  }
+
+  if (adjusted.scent > bestRange) {
+    bestRange = adjusted.scent;
+    bestMethod = 'olfactory';
+  }
+
+  return { method: bestMethod, range: bestRange };
+}
+
+/**
+ * Calculate initial encounter distance based on detection range and encounter type.
+ *
+ * @param detectionRange - Detection range in feet
+ * @param encounterType - Type of encounter
+ * @returns Initial distance in feet
+ *
+ * @see docs/features/Encounter-System.md#distanz-nach-encounter-typ
+ */
+export function calculateInitialDistance(
+  detectionRange: number,
+  encounterType: EncounterType
+): number {
+  switch (encounterType) {
+    case 'combat':
+      // 30-80% of detection range
+      return Math.floor(detectionRange * (0.3 + Math.random() * 0.5));
+
+    case 'social':
+      // 50-100% of detection range
+      return Math.floor(detectionRange * (0.5 + Math.random() * 0.5));
+
+    case 'passing':
+      // 70-100% of detection range (observed from afar)
+      return Math.floor(detectionRange * (0.7 + Math.random() * 0.3));
+
+    case 'trace':
+      // Party stumbles upon traces - fixed range
+      return Math.floor(10 + Math.random() * 20); // 10-30 feet
+
+    default:
+      return detectionRange;
+  }
 }

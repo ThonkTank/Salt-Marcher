@@ -19,9 +19,10 @@ import type {
   BuilderCreature,
   EncounterDifficulty,
   ResolutionState,
+  DetectionInfo,
 } from './types';
 import { createInitialDetailViewState } from './types';
-import type { EncounterInstance, CreatureDefinition } from '@core/schemas';
+import type { EncounterInstance, CreatureDefinition, EncounterLeadNpc } from '@core/schemas';
 
 // ============================================================================
 // ViewModel Dependencies
@@ -59,6 +60,11 @@ export interface DetailViewModel {
   removeCreatureFromBuilder(index: number): void;
   updateCreatureCount(index: number, count: number): void;
   clearBuilder(): void;
+
+  // Situation/Detection/Lead NPC Commands (#2409)
+  setDisposition(value: number): void;
+  setDetection(detection: DetectionInfo | null): void;
+  setLeadNPC(leadNPC: EncounterLeadNpc | null): void;
 
   // Resolution Commands (#2431)
   /** Set GM XP modifier percent (-50 to +100) */
@@ -184,6 +190,22 @@ export function createDetailViewModel(
     const dailyBudgetUsed = encounter.effectiveXP ?? totalXP;
     const dailyBudgetTotal = encounter.xpBudget ?? 0;
 
+    // Extract disposition (defaults to 0 = neutral)
+    const disposition = encounter.disposition ?? 0;
+
+    // Extract detection info from perception
+    const detection: DetectionInfo | null = encounter.perception
+      ? {
+          method: encounter.perception.detectionMethod,
+          distance: encounter.perception.initialDistance,
+          partyAware: encounter.perception.partyAware,
+          encounterAware: encounter.perception.encounterAware,
+        }
+      : null;
+
+    // Extract lead NPC
+    const leadNPC = encounter.leadNpc ?? null;
+
     state = {
       ...state,
       encounter: {
@@ -202,6 +224,10 @@ export function createDetailViewModel(
         savedEncounterQuery: '',
         creatureQuery: '',
         sourceEncounterId: null, // New encounter, not from saved
+        // Situation/Detection/LeadNPC (#2409)
+        disposition,
+        detection,
+        leadNPC,
       },
     };
   }
@@ -420,7 +446,28 @@ export function createDetailViewModel(
         builderGoal: '',
         builderCreatures: [],
         sourceEncounterId: null,
+        // Reset Situation/Detection/LeadNPC (#2409)
+        disposition: 0,
+        detection: null,
+        leadNPC: null,
       });
+    },
+
+    // =========================================================================
+    // Situation/Detection/Lead NPC Commands (#2409)
+    // =========================================================================
+
+    setDisposition(value: number): void {
+      // Clamp to valid range: -100 to +100
+      updateBuilderState({ disposition: Math.max(-100, Math.min(100, value)) });
+    },
+
+    setDetection(detection: DetectionInfo | null): void {
+      updateBuilderState({ detection });
+    },
+
+    setLeadNPC(leadNPC: EncounterLeadNpc | null): void {
+      updateBuilderState({ leadNPC });
     },
 
     // =========================================================================

@@ -37,6 +37,9 @@ interface Faction {
   name: string;
   parentId?: EntityId<'faction'>;  // Sub-Faction von...
 
+  // === Status (Dynamische Welt) ===
+  status: FactionStatus;             // active | dormant | extinct
+
   // Kultur direkt eingebettet (nicht referenziert)
   culture: CultureData;
 
@@ -52,10 +55,18 @@ interface Faction {
   // Visualisierung
   displayColor: string;              // Hex-Farbe fuer Territory-Overlay, z.B. "#4169E1"
 
+  // Party-Beziehung
+  reputationWithParty: number;       // -100 (Erzfeind) bis +100 (Verbündeter), default 0
+
   // Metadaten
   description?: string;
   gmNotes?: string;
 }
+
+type FactionStatus =
+  | 'active'    // Fraktion ist aktiv und kann in Encounters erscheinen
+  | 'dormant'   // Fraktion ist inaktiv (z.B. vertrieben), kann reaktiviert werden
+  | 'extinct';  // Fraktion ist ausgeloescht, erscheint nicht mehr
 
 interface FactionCreatureGroup {
   creatureId: EntityId<'creature'>;  // Creature-Template
@@ -114,6 +125,12 @@ interface CultureData {
   // === Quirks ===
   quirks?: WeightedQuirk[];
 
+  // === Activities (Gruppen-basiert) ===
+  activities?: WeightedActivity[];  // Pool fuer Gruppen-Activity
+
+  // === Goals (NPC-spezifisch) ===
+  goals?: WeightedGoal[];           // Pool fuer NPC-Goals
+
   // === Werte & Verhalten ===
   values?: {
     priorities?: string[];        // ["Ehre", "Familie", "Gold", ...]
@@ -138,6 +155,25 @@ interface WeightedQuirk {
   quirk: string;
   weight: number;
   description: string;            // GM-Beschreibung fuer RP
+  compatibleTags?: string[];      // Kreatur-Tags fuer Kompatibilitaet (z.B. ['canSpeak', 'socialCreature'])
+                                  // Wenn leer/undefined: fuer alle Kreaturen geeignet
+}
+
+interface WeightedActivity {
+  activity: string;               // z.B. "patrolling", "hunting", "resting"
+  weight: number;
+  description?: string;           // GM-Beschreibung
+  contextTags?: string[];         // Kontext-Filter (z.B. ['daytime', 'night', 'forest'])
+}
+
+interface WeightedGoal {
+  goal: string;                   // z.B. "loot", "protect_territory", "find_food"
+  weight: number;
+  description?: string;           // GM-Beschreibung
+  personalityBonus?: {            // Gewichtungs-Bonus bei passender Persoenlichkeit
+    trait: string;                // z.B. "greedy"
+    multiplier: number;           // z.B. 2.0 (verdoppelt Gewichtung)
+  }[];
 }
 ```
 
@@ -229,9 +265,11 @@ Praesenz wird projiziert basierend auf:
 ```typescript
 interface FactionPresence {
   factionId: EntityId<'faction'>;
-  strength: number;               // 0.0 - 1.0
+  strength: number;               // CR-Summe der Fraktion auf diesem Tile
 }
 ```
+
+**Wichtig:** `strength` ist die **effektive CR-Summe** der Fraktion auf diesem Tile, nicht ein normalisierter Wert. Beispiel: Eine Fraktion mit 15 Goblins (CR 1/4) und 2 Goblin-Bossen (CR 1) hat eine Basis-CR von `15×0.25 + 2×1 = 5.75`. Auf einem entfernten Tile sinkt dieser Wert durch den Distanz-Modifier.
 
 ### Praesenz-Vorberechnung (Cartographer)
 
@@ -241,36 +279,74 @@ FactionPresence wird im **Cartographer vorberechnet** und auf Tiles gespeichert:
 2. Cartographer berechnet Praesenz-Radius basierend auf Faction-Staerke
 3. Ergebnis wird auf `OverworldTile.factionPresence[]` gespeichert
 
-**Berechnungslogik:**
+**Berechnungslogik (CR-Verteilung):**
+
+Die Gesamt-CR einer Fraktion wird auf alle Tiles im Territorium **verteilt** (nicht kopiert). Tiles naeher am POI bekommen einen groesseren Anteil.
 
 ```typescript
 // Wird im Cartographer ausgefuehrt, nicht zur Runtime
-function calculatePresenceForTile(
-  tile: HexCoordinate,
+function distributePresenceToTiles(
   faction: Faction,
-  factionPOIs: POI[]
-): number {
-  if (factionPOIs.length === 0) return 0;
+  factionPOIs: POI[],
+  allTiles: OverworldTile[],
+  creatureRegistry: Map<EntityId<'creature'>, CreatureDefinition>
+): void {
+  if (factionPOIs.length === 0) return;
 
-  // Distanz zum naechsten POI
-  const minDistance = Math.min(
-    ...factionPOIs.map(poi => hexDistance(tile, poi.position))
-  );
+  // 1. CR-Summe berechnen: Σ(creature.cr × count)
+  const crTotal = faction.creatures.reduce((sum, group) => {
+    const creature = creatureRegistry.get(group.creatureId);
+    return sum + ((creature?.cr ?? 0) * group.count);
+  }, 0);
 
-  // Staerke berechnen (Summe aller Creature-Counts)
-  const totalStrength = faction.creatures.reduce(
-    (sum, group) => sum + group.count,
-    0
-  );
+  // 2. Maximale Reichweite berechnen
+  const maxRange = Math.sqrt(crTotal) * 2;
 
-  // Reichweite basiert auf Staerke
-  const maxRange = Math.sqrt(totalStrength) * 2;
-  if (minDistance > maxRange) return 0;
+  // 3. Alle Tiles im Territorium finden und Gewichte berechnen
+  const tilesWithWeights: Array<{ tile: OverworldTile; weight: number }> = [];
 
-  // Praesenz mit Distanz-Falloff
-  return Math.min(1.0, (totalStrength / (minDistance + 1)) / totalStrength);
+  for (const tile of allTiles) {
+    const minDistance = Math.min(
+      ...factionPOIs.map(poi => hexDistance(tile.coordinate, poi.position))
+    );
+
+    if (minDistance <= maxRange) {
+      // Gewicht: Je naeher am POI, desto hoeher (1/(d+1))
+      const weight = 1 / (minDistance + 1);
+      tilesWithWeights.push({ tile, weight });
+    }
+  }
+
+  // 4. Gewichte normalisieren (Summe = 1)
+  const totalWeight = tilesWithWeights.reduce((sum, tw) => sum + tw.weight, 0);
+
+  // 5. CR verteilen - jedes Tile bekommt seinen Anteil
+  for (const { tile, weight } of tilesWithWeights) {
+    const normalizedWeight = weight / totalWeight;
+    const presence = tile.factionPresence?.find(p => p.factionId === faction.id);
+    if (presence) {
+      presence.strength = crTotal * normalizedWeight;
+    }
+  }
 }
 ```
+
+**Wichtig:** Die Summe aller `factionPresence[].strength` ueber alle Tiles entspricht exakt der Gesamt-CR der Fraktion. Dies ist ein Budget-System, kein Kopier-System.
+
+**Beispiel (Blutfang-Goblins, 5.75 CR gesamt, 7 Tiles im Territorium):**
+
+| Tile | Distanz | Gewicht | Normalisiert | CR-Anteil |
+|------|---------|---------|--------------|-----------|
+| POI | 0 | 1.00 | 0.35 | 2.01 |
+| A | 1 | 0.50 | 0.175 | 1.01 |
+| B | 1 | 0.50 | 0.175 | 1.01 |
+| C | 2 | 0.33 | 0.115 | 0.66 |
+| D | 2 | 0.33 | 0.115 | 0.66 |
+| E | 3 | 0.25 | 0.035 | 0.20 |
+| F | 3 | 0.25 | 0.035 | 0.20 |
+| **Summe** | | **2.86** | **1.00** | **5.75** |
+
+Die Tabelle zeigt: POI-Tile bekommt den groessten Anteil (2.01 CR), entfernte Tiles bekommen weniger. Die Summe aller CR-Anteile ergibt exakt die Gesamt-CR (5.75)
 
 > **Verweis:** Siehe [Map-Feature.md](../features/Map-Feature.md) fuer OverworldTile-Schema
 
@@ -406,6 +482,331 @@ Templates werden mit exponentiell fallender Wahrscheinlichkeit ausgewaehlt:
 **Wichtig:** Das Template-Budget muss nicht ausgeschoepft werden. Ein Social-Encounter kann ein "Armee-Division" Template verwenden, aber es werden nur die Leader-NPCs fuer das Gespraech relevant sein - die Armee ist im Hintergrund.
 
 → Details zur Budget-Berechnung: [Encounter-Balancing.md](../features/Encounter-Balancing.md#avoidability-system)
+
+---
+
+## Faction-Status
+
+Das `status`-Feld trackt den Lebenszyklus einer Fraktion in der dynamischen Spielwelt.
+
+### Status-Werte
+
+| Status | Bedeutung | Encounter-Generierung | Kann reaktiviert werden? |
+|--------|-----------|----------------------|--------------------------|
+| `active` | Fraktion ist aktiv | Ja, normal | - |
+| `dormant` | Fraktion ist inaktiv/vertrieben | Nein | Ja, durch GM |
+| `extinct` | Fraktion ist ausgeloescht | Nein | Ja, durch GM (Wiederbelebung) |
+
+### Status-Uebergaenge
+
+```
+                    ┌─────────────────────────────────┐
+                    │                                 │
+                    ▼                                 │
+              ┌──────────┐                            │
+              │  active  │ ◄──── (initial/default)   │
+              └────┬─────┘                            │
+                   │                                  │
+        ┌──────────┼──────────┐                       │
+        │          │          │                       │
+        ▼          │          ▼                       │
+┌──────────┐       │    ┌──────────┐                  │
+│ dormant  │───────┴───►│ extinct  │                  │
+└────┬─────┘            └────┬─────┘                  │
+     │                       │                        │
+     │     (GM reaktiviert)  │                        │
+     └───────────────────────┴────────────────────────┘
+```
+
+### Automatische Status-Aenderungen
+
+| Trigger | Aktion |
+|---------|--------|
+| Alle `creature.count` = 0 nach Attrition | Status → `extinct` |
+| GM setzt manuell | Beliebiger Status-Wechsel |
+| GM fuegt neue Creatures hinzu bei `extinct` | Status → `active` (empfohlen) |
+
+**Hinweis:** Der Status `extinct` ist keine Loeschung. Die Fraktion bleibt im System erhalten - mit History, Reputation, und POI-Referenzen. Der GM kann sie jederzeit reaktivieren (z.B. "Die Blutfang-Goblins sind zurueckgekehrt!").
+
+### Encounter-Filter
+
+Bei der Encounter-Generierung werden nur `active` Fraktionen beruecksichtigt:
+
+```typescript
+function getActiveFactionsAtTile(tile: OverworldTile): FactionPresence[] {
+  return tile.factionPresence?.filter(presence => {
+    const faction = entityRegistry.get('faction', presence.factionId);
+    return faction?.status === 'active';
+  }) ?? [];
+}
+```
+
+---
+
+## Attrition-Mechanik
+
+Nach Combat-Encounters werden getoetete Kreaturen automatisch von der Fraktions-Staerke abgezogen. Dies ermoeglicht emergentes Gameplay: "Die Goblin-Bedrohung wurde eingedaemmt."
+
+### Ablauf
+
+```
+Combat endet
+    │
+    ├── Fuer jede getoetete Kreatur:
+    │   │
+    │   └── Wenn Kreatur zu einer Fraktion gehoert:
+    │       │
+    │       └── faction.creatures[creatureId].count -= 1
+    │
+    ├── Praesenz neu berechnen (Staerke hat sich geaendert)
+    │
+    └── Falls alle Counts = 0:
+        └── faction.status = 'extinct'
+```
+
+### Integration im Encounter-Service
+
+Der Hook-Punkt fuer Attrition ist nach der Combat-Resolution:
+
+```typescript
+// In encounter-service.ts nach Combat-Outcome
+function applyAttrition(
+  outcome: CombatOutcome,
+  factionId?: EntityId<'faction'>
+): void {
+  if (!factionId) return;
+
+  const faction = entityRegistry.get('faction', factionId);
+  if (!faction) return;
+
+  // Getoetete Kreaturen zaehlen
+  const casualties = outcome.defeatedCreatures ?? [];
+
+  for (const casualty of casualties) {
+    const group = faction.creatures.find(g => g.creatureId === casualty.creatureId);
+    if (group) {
+      group.count = Math.max(0, group.count - casualty.count);
+    }
+  }
+
+  // Status pruefen
+  const totalRemaining = faction.creatures.reduce((sum, g) => sum + g.count, 0);
+  if (totalRemaining === 0) {
+    faction.status = 'extinct';
+    eventBus.emit('faction:status-changed', {
+      factionId: faction.id,
+      previousStatus: 'active',
+      newStatus: 'extinct',
+      correlationId: generateCorrelationId()
+    });
+  }
+
+  // Fraktion speichern
+  entityRegistry.update('faction', faction);
+
+  // Praesenz-Neuberechnung triggern
+  eventBus.emit('faction:attrition-applied', {
+    factionId: faction.id,
+    casualties,
+    remainingStrength: totalRemaining,
+    correlationId: generateCorrelationId()
+  });
+}
+```
+
+### Praesenz-Neuberechnung
+
+Nach Attrition muss die Praesenz auf betroffenen Tiles neu berechnet werden:
+
+```typescript
+// Listener im Cartographer/Map-Feature
+eventBus.on('faction:attrition-applied', (payload) => {
+  const faction = entityRegistry.get('faction', payload.factionId);
+  if (!faction) return;
+
+  // Alle Tiles mit dieser Fraktion finden
+  const affectedTiles = findTilesWithFactionPresence(faction.id);
+
+  // Praesenz neu berechnen
+  for (const tile of affectedTiles) {
+    recalculatePresenceForTile(tile, faction);
+  }
+});
+```
+
+### UI-Feedback
+
+Nach Attrition zeigt die DetailView ein Feedback-Banner:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ⚔️ Combat abgeschlossen                                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  📉 Blutfang-Stamm geschwaeacht                            │
+│     Goblin Warriors: 20 → 15 (-5)                          │
+│     Goblin Shaman: 3 → 2 (-1)                              │
+│                                                             │
+│  💀 Falls extinct:                                          │
+│     "Der Blutfang-Stamm wurde ausgeloescht!"               │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+→ Details: [DetailView.md](../application/DetailView.md#post-combat-resolution)
+
+### Encounter ohne Fraktions-Zuordnung
+
+Nicht alle Encounter-Kreaturen gehoeren zu einer Fraktion:
+
+| Kreatur-Typ | Fraktions-Zuordnung | Attrition |
+|-------------|---------------------|-----------|
+| Fraktion-NPC | `creature.factionId` gesetzt | Ja |
+| Zufalls-Monster | Keine `factionId` | Nein |
+| Wild-Tiere | Keine `factionId` | Nein |
+| Promovierte Creature | Nach Promotion: `factionId` gesetzt | Ja |
+
+**Konsequenz:** Nur Begegnungen mit Fraktions-Kreaturen beeinflussen die Welt langfristig. Ein zufaellig generiertes Wolfsrudel reduziert keine Fraktions-Staerke.
+
+---
+
+## Entity Promotion
+
+Nach einem Encounter mit nicht-fraktions-gebundenen Kreaturen bietet das System die Moeglichkeit, diese als persistente Entities zu speichern.
+
+### Trigger
+
+Entity Promotion wird angeboten wenn:
+
+1. Encounter enthaelt Kreaturen **ohne** `factionId`
+2. Combat wurde abgeschlossen (nicht geflohen)
+
+**Nicht** angeboten wenn:
+- Alle Kreaturen bereits einer Fraktion angehoeren
+- Encounter wurde durch Flucht beendet
+
+### Promotion-Dialog
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  🐉 Kreatur persistieren?                                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  "Ancient Red Dragon" als persistenten NPC anlegen?         │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │ Name: [Scaldrath der Rote____________]                  ││
+│  │                                                         ││
+│  │ ☑ Hort-POI erstellen                                   ││
+│  │   Vorgeschlagener Ort: Berggipfel bei (12, 8)          ││
+│  │   [📍 Ort anpassen...]                                 ││
+│  │                                                         ││
+│  │ ☑ Neue Fraktion erstellen                              ││
+│  │   Name: [Scaldrath's Brut_____________]                ││
+│  │   Parent: [Dragons (Basis) ▼]                          ││
+│  └─────────────────────────────────────────────────────────┘│
+│                                                             │
+│  [Ueberspringen]                      [Persistieren]        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Ergebnis der Promotion
+
+Bei Bestaetigung werden erstellt:
+
+1. **NPC-Entity** mit den Encounter-Daten als Basis
+2. **POI** fuer den Hort/Aufenthaltsort (falls aktiviert)
+3. **LootContainer** am POI (falls Kreatur eine `defaultLootTable` hat)
+4. **Fraktion** (falls aktiviert, mit der Kreatur als einzigem Member)
+
+```typescript
+interface PromotionResult {
+  npc: NPC;
+  poi?: POI;
+  lootContainer?: LootContainer;
+  faction?: Faction;
+}
+
+function promoteCreature(
+  creature: EncounterCreature,
+  options: PromotionOptions
+): PromotionResult {
+  // NPC erstellen
+  const npc: NPC = {
+    id: generateId('npc'),
+    name: options.name,
+    creatureId: creature.creatureId,
+    factionId: options.createFaction ? generateId('faction') : undefined,
+    // ... weitere Felder aus creature uebernehmen
+  };
+
+  // POI erstellen (falls aktiviert)
+  let poi: POI | undefined;
+  if (options.createPOI) {
+    poi = {
+      id: generateId('poi'),
+      name: `Hort von ${options.name}`,
+      position: options.poiPosition,
+      type: 'lair',
+      // ...
+    };
+  }
+
+  // LootContainer erstellen (falls Kreatur LootTable hat)
+  let lootContainer: LootContainer | undefined;
+  if (poi && creature.defaultLootTable) {
+    lootContainer = instantiateLootTable(
+      creature.defaultLootTable,
+      poi.id,
+      `Hort von ${options.name}`
+    );
+  }
+
+  // Fraktion erstellen (falls aktiviert)
+  let faction: Faction | undefined;
+  if (options.createFaction) {
+    faction = {
+      id: npc.factionId!,
+      name: options.factionName,
+      parentId: options.factionParent,
+      status: 'active',
+      creatures: [{ creatureId: creature.creatureId, count: 1 }],
+      controlledPOIs: poi ? [poi.id] : [],
+      // ...
+    };
+  }
+
+  return { npc, poi, lootContainer, faction };
+}
+```
+
+### POI-Vorschlag
+
+Das System schlaegt einen Ort fuer den Hort basierend auf:
+
+1. **Encounter-Position** - In der Naehe des Kampfortes
+2. **Terrain-Praeferenz** - Basierend auf Kreatur-Tags (z.B. Dragon → Berge)
+3. **Freie Tiles** - Nicht bereits von anderen POIs belegt
+
+```typescript
+function suggestHoardLocation(
+  encounterPosition: HexCoordinate,
+  creature: EncounterCreature
+): HexCoordinate {
+  // Nahe Tiles finden
+  const nearbyTiles = getTilesInRadius(encounterPosition, 3);
+
+  // Nach Terrain-Praeferenz sortieren
+  const preferred = nearbyTiles.filter(tile =>
+    creature.preferredTerrain?.includes(tile.terrainId) ?? true
+  );
+
+  // Erstes freies Tile waehlen
+  return preferred.find(tile => !hasPOI(tile)) ?? encounterPosition;
+}
+```
+
+→ Details: [Encounter-System.md](../features/Encounter-System.md#entity-promotion)
 
 ---
 
@@ -581,12 +982,48 @@ function rollPersonality(culture: ResolvedCulture): PersonalityTraits {
 
 ### Quirk wuerfeln
 
+Jeder NPC bekommt einen Quirk - gefiltert nach Kreatur-Kompatibilitaet.
+
 ```typescript
-function rollQuirk(culture: ResolvedCulture): string | undefined {
-  if (Math.random() > 0.3) return undefined;  // 30% Chance
-  return weightedRandomSelect(culture.quirks ?? [])?.quirk;
+function rollQuirk(
+  culture: ResolvedCulture,
+  creature: CreatureDefinition,
+  usedQuirks: Set<string>
+): string {
+  const quirks = culture.quirks ?? [];
+
+  // 1. Nach Kreatur-Kompatibilitaet filtern
+  const compatible = quirks.filter(q => {
+    if (!q.compatibleTags || q.compatibleTags.length === 0) return true;
+    return q.compatibleTags.some(tag => creature.tags?.includes(tag));
+  });
+
+  // 2. Bereits verwendete Quirks ausschliessen (Einzigartigkeit)
+  const available = compatible.filter(q => !usedQuirks.has(q.quirk));
+
+  // 3. Fallback: Wenn alle Quirks verwendet, erlaube Wiederholung
+  const pool = available.length > 0 ? available : compatible;
+
+  if (pool.length === 0) {
+    return 'unremarkable';  // Fallback wenn kein Quirk definiert
+  }
+
+  const selected = weightedRandomSelect(pool);
+  usedQuirks.add(selected.quirk);
+  return selected.quirk;
 }
 ```
+
+**Quirk-Kompatibilitaet:**
+
+| Quirk-Typ | compatibleTags | Beispiel |
+|-----------|----------------|----------|
+| Sprachbasiert | `['canSpeak']` | "Redet schnell", "Stottert" |
+| Sozial | `['socialCreature']` | "Vermeidet Blickkontakt" |
+| Physisch | `[]` (alle) | "Hinkt", "Narbe im Gesicht" |
+| Verhaltensbasiert | `[]` (alle) | "Nervoes", "Aggressiv" |
+
+**Einzigartigkeit:** Bereits verwendete Quirks werden getrackt und bevorzugt nicht wiederverwendet. Bei erschoepftem Pool werden Wiederholungen erlaubt.
 
 ---
 
@@ -626,7 +1063,76 @@ function rollQuirk(culture: ResolvedCulture): string | undefined {
   factionId: EntityId<'faction'>;
   poiId: EntityId<'poi'>;
 }
+
+// Dynamische Welt Events
+'faction:attrition-applied': {
+  factionId: EntityId<'faction'>;
+  casualties: Array<{ creatureId: EntityId<'creature'>; count: number }>;
+  remainingStrength: number;
+  correlationId: string;
+}
+'faction:status-changed': {
+  factionId: EntityId<'faction'>;
+  previousStatus: FactionStatus;
+  newStatus: FactionStatus;
+  correlationId: string;
+}
 ```
+
+---
+
+## Party-Reputation
+
+Das `reputationWithParty` Feld trackt die Beziehung zwischen der Party und einer Fraktion. Der GM entscheidet bei Encounter-Abschluss, ob und wie sich die Reputation aendert.
+
+### Wertebereich
+
+| Wert | Bedeutung | Beispiel |
+|-----:|-----------|----------|
+| -100 | Erzfeind | Party hat Fraktionsanfuehrer getoetet |
+| -50 | Feindlich | Party hat wiederholt Fraktionsmitglieder angegriffen |
+| -20 | Misstrauisch | Party hat Handelsabkommen gebrochen |
+| 0 | Neutral | Kein Kontakt / Standard |
+| +20 | Freundlich | Party hat bei Aufgabe geholfen |
+| +50 | Verbuendet | Party hat Fraktion vor Bedrohung gerettet |
+| +100 | Vertrauenswuerdig | Langjaerige Zusammenarbeit, viele Gefallen |
+
+### Workflow bei Encounter-Abschluss
+
+```
+encounter:resolve-requested
+    │
+    ├── Encounter abschliessen (XP, Loot, etc.)
+    │
+    └── Falls Encounter NPCs mit factionId enthielt:
+        │
+        └── GM-Dialog: "Reputation mit [Fraktion] aendern?"
+            ├── [-20] [-10] [0] [+10] [+20] [Anderer Wert]
+            └── Optional: Notiz (z.B. "Haendler beschuetzt")
+```
+
+**Kein automatisches System** - der GM entscheidet was passiert. Das System bietet nur die Struktur zum Tracken.
+
+### UI-Konzept (Encounter-Resolution-Dialog)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Encounter abschliessen                                     │
+├─────────────────────────────────────────────────────────────┤
+│  Ausgang: [Sieg ▼]                                          │
+│                                                             │
+│  Reputation-Aenderungen:                                    │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │  Handelsgilde (aktuell: +10)                            ││
+│  │  Aenderung: [-20] [-10] [±0] [+10] [+20]  [__]          ││
+│  │  Notiz: [Haendler vor Banditen gerettet_______]         ││
+│  └─────────────────────────────────────────────────────────┘│
+│                                                             │
+│  [Abbrechen]                            [Abschliessen]      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+→ Integration: [DetailView.md](../application/DetailView.md#post-combat-resolution)
 
 ---
 
@@ -640,6 +1146,10 @@ function rollQuirk(culture: ResolvedCulture): string | undefined {
 | Bundled Basis-Fraktionen | ✓ | | Humanoids, Goblins, etc. |
 | POI-basiertes Territory | ✓ | | Einfaches Praesenz-System |
 | NPC-Integration | ✓ | | NPCs haben genau eine Faction |
+| FactionStatus (active/dormant/extinct) | ✓ | | Dynamische Welt |
+| Attrition-Mechanik | ✓ | | Creature-Counts nach Combat reduzieren |
+| Entity Promotion Dialog | | mittel | Nicht-Fraktion → persistente NPC |
+| Auto-POI bei Promotion | | mittel | Hort-Erstellung |
 | Dynamische Faction-Interaktionen | | niedrig | Automatisierte Konflikte |
 | Diplomatie-System | | niedrig | Allianzen, Feindschaften |
 
@@ -649,25 +1159,31 @@ function rollQuirk(culture: ResolvedCulture): string | undefined {
 
 ## Tasks
 
-| # | Beschreibung | Prio | MVP? | Deps | Referenzen |
-|--:|--------------|:----:|:----:|------|------------|
-| 1400 | Faction-Schema (id, name, parentId, culture, creatures, controlledPOIs, encounterTemplates, displayColor) | hoch | Ja | - | [Faction.md#schema](#schema) |
-| 1417 | FactionEncounterTemplate Schema (id, name, composition, triggers, weight) | hoch | Ja | #1400 | [Faction.md#schema](#schema), [Faction.md#encounter-templates](#encounter-templates) |
-| 1418 | TemplateCreatureSlot Schema (creatureId, count, role) | hoch | Ja | #1417 | [Faction.md#schema](#schema) |
-| 1419 | selectMatchingTemplate(): Budget + Context → Template-Auswahl | hoch | Ja | #1417, #1418 | [Faction.md#template-auswahl](#template-auswahl), [Encounter-Balancing.md#budget-auswahl](../features/Encounter-Balancing.md#budget-auswahl-mit-exponentieller-wahrscheinlichkeit) |
-| 1401 | CultureData-Schema (naming, personality, quirks, values, speech) | hoch | Ja | #1400 | [Faction.md#culturedata](#culturedata) |
-| 1402 | FactionCreatureGroup-Schema (creatureId, count) | hoch | Ja | #1400, #1200 | [Faction.md#schema](#schema), [Creature.md#schema](Creature.md#schema) |
-| 1403 | FactionPresence-Schema (factionId, strength) für Tile-Speicherung | hoch | Ja | #1400, #802 | [Faction.md#praesenz-datenstruktur](#praesenz-datenstruktur), [Map-Feature.md#overworldmap](../features/Map-Feature.md#overworldmap) |
-| 1404 | WeightedTrait und WeightedQuirk Schemas | mittel | Ja | #1401 | [Faction.md#culturedata](#culturedata) |
-| 1405 | resolveFactionCulture(): Hierarchie von Wurzel zu Blatt auflösen | hoch | Ja | #1400, #1401 | [Faction.md#kultur-vererbung](#kultur-vererbung), [NPC-System.md#npc-generierung](NPC-System.md#npc-generierung) |
-| 1406 | mergeCultureData(): Kultur-Eigenschaften mergen mit Vererbungsregeln | hoch | Ja | #1405 | [Faction.md#merge-regeln](#merge-regeln), [Faction.md#kultur-vererbung](#kultur-vererbung) |
-| 1407 | mergeWeightedTraits(): Helper für Trait-Merging mit Gewichtung | mittel | Ja | #1406 | [Faction.md#merge-regeln](#merge-regeln) |
-| 1408 | mergeWeightedQuirks(): Helper für Quirk-Merging | mittel | Ja | #1406 | [Faction.md#merge-regeln](#merge-regeln) |
-| 1409 | calculatePresenceForTile(): Präsenz-Vorberechnung im Cartographer | hoch | Ja | #1403, #1500, #802 | [Faction.md#praesenz-vorberechnung-cartographer](#praesenz-vorberechnung-cartographer), [POI.md#basepoi](POI.md#basepoi), [Map-Feature.md#overworldtile](../features/Map-Feature.md#overworldmap) |
-| 1410 | getFactionsAtTile(): Vorberechnete Präsenz vom Tile lesen | hoch | Ja | #801, #802, #1409 | [Faction.md#encounter-integration](#encounter-integration), [Map-Feature.md#overworldtile](../features/Map-Feature.md#overworldmap) |
-| 1411 | selectEncounterFaction(): Gewichtete Faction-Auswahl basierend auf Präsenz | hoch | Ja | #1410, #202 | [Faction.md#encounter-integration](#encounter-integration), [Encounter-System.md#tile-eligibility](../features/Encounter-System.md#tile-eligibility) |
-| 1412 | Bundled Basis-Fraktionen: Humanoids, Goblins, Orcs, Undead, etc. | hoch | Ja | #1400, #1401 | [Faction.md#bundled-basis-fraktionen](#bundled-basis-fraktionen) |
-| 1413 | Faction Events: create/update/delete-requested und Lifecycle-Events | mittel | Ja | #1400 | [Faction.md#events](#events) |
-| 1414 | Faction Territory Events: poi-claimed, poi-lost | niedrig | Nein | #1413, #1500 | [Faction.md#events](#events), [POI.md#basepoi](POI.md#basepoi) |
-| 1415 | Faction Library-View: CRUD-Interface für Faction-Bearbeitung | mittel | Ja | #1400, #1416, #2800 | [Faction.md#schema](#schema), [Library.md#tab-navigation](../application/Library.md#tab-navigation) |
-| 1416 | Faction-Feature: FactionOrchestrator mit CRUD-Logik | mittel | Ja | #1400, #1413 | [Faction.md#schema](#schema), [Faction.md#events](#events) |
+| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|--:|--:|--:|--:|--:|--:|--:|--:|
+| 1400 | ✅ | Faction | Faction-Schema (id, name, parentId, culture, creatures, controlledPOIs, displayColor) | hoch | Ja | - | Faction.md#schema | src/core/schemas/faction.ts:160-188 |
+| 1417 | ✅ | Faction | Faction EntityRegistry Integration: 'faction' als Entity-Typ | hoch | Ja | #1400 | [Faction.md#schema](#schema), [Faction.md#encounter-templates](#encounter-templates) | src/core/schemas/common.ts:46 (EntityType enum enthält 'faction') |
+| 1418 | ⬜ | - | TemplateCreatureSlot Schema (creatureId, count, role) | hoch | Ja | #1417 | [Faction.md#schema](#schema) | - |
+| 1419 | ⬜ | - | selectMatchingTemplate(): Budget + Context → Template-Auswahl | hoch | Ja | #1417, #1418 | [Faction.md#template-auswahl](#template-auswahl), [Encounter-Balancing.md#budget-auswahl](../features/Encounter-Balancing.md#budget-auswahl-mit-exponentieller-wahrscheinlichkeit) | - |
+| 1401 | ✅ | Faction | CultureData-Schema (naming, personality, quirks, values, speech) | hoch | Ja | #1400 | Faction.md#culturedata | src/core/schemas/faction.ts:116-133 |
+| 1402 | ✅ | Faction | FactionCreatureGroup-Schema (creatureId, count) | hoch | Ja | #1400, #1200 | [Faction.md#schema](#schema), [Creature.md#schema](Creature.md#schema) | src/core/schemas/faction.ts:142-150 |
+| 1403 | ✅ | Faction | FactionPresence-Schema (factionId, strength) für Tile-Speicherung | hoch | Ja | #1400, #802 | [Faction.md#praesenz-datenstruktur](#praesenz-datenstruktur), [Map-Feature.md#overworldmap](../features/Map-Feature.md#overworldmap) | src/core/schemas/faction.ts:227-232 |
+| 1404 | ✅ | Faction | WeightedTrait und WeightedQuirk Schemas | mittel | Ja | #1401 | Faction.md#culturedata | src/core/schemas/faction.ts:20-36 |
+| 1405 | ✅ | Faction | resolveFactionCulture(): Hierarchie von Wurzel zu Blatt auflösen | hoch | Ja | #1400, #1401 | [Faction.md#kultur-vererbung](#kultur-vererbung), [NPC-System.md#npc-generierung](NPC-System.md#npc-generierung) | src/features/encounter/npc-generator.ts:37-63 |
+| 1406 | ✅ | Faction | mergeCultureData(): Kultur-Eigenschaften mergen mit Vererbungsregeln | hoch | Ja | #1405 | [Faction.md#merge-regeln](#merge-regeln), [Faction.md#kultur-vererbung](#kultur-vererbung) | src/features/encounter/npc-generator.ts:69-100 (mergeCulture) |
+| 1407 | ✅ | Faction | mergeWeightedTraits(): Helper für Trait-Merging mit Gewichtung | mittel | Ja | #1406 | Faction.md#merge-regeln | Integriert in mergeCulture (src/features/encounter/npc-generator.ts:69-100) |
+| 1408 | ✅ | Faction | mergeWeightedQuirks(): Helper für Quirk-Merging | mittel | Ja | #1406 | Faction.md#merge-regeln | Integriert in mergeCulture (src/features/encounter/npc-generator.ts:69-100) |
+| 1409 | ⬜ | Faction | calculatePresenceForTile(): Präsenz-Vorberechnung im Cartographer | hoch | Ja | #1403, #1500, #802 | [Faction.md#praesenz-vorberechnung-cartographer](#praesenz-vorberechnung-cartographer), [POI.md#basepoi](POI.md#basepoi), [Map-Feature.md#overworldtile](../features/Map-Feature.md#overworldmap) | [neu] src/features/faction/faction-presence.ts:calculatePresenceForTile() |
+| 1410 | ⛔ | Faction | getFactionsAtTile(): Vorberechnete Präsenz vom Tile lesen | hoch | Ja | #801, #802, #1409 | [Faction.md#encounter-integration](#encounter-integration), [Map-Feature.md#overworldtile](../features/Map-Feature.md#overworldmap) | [neu] src/features/faction/faction-presence.ts:getFactionsAtTile() |
+| 1411 | ⛔ | Faction | selectEncounterFaction(): Gewichtete Faction-Auswahl basierend auf Präsenz | hoch | Ja | #202, #1410 | [Faction.md#encounter-integration](#encounter-integration), [Encounter-System.md#tile-eligibility](../features/Encounter-System.md#tile-eligibility) | [neu] src/features/faction/faction-presence.ts:selectEncounterFaction() |
+| 1412 | ✅ | Faction | Bundled Basis-Fraktionen: Humanoids, Goblins, Orcs, Undead, etc. | hoch | Ja | #1400, #1401 | Faction.md#bundled-basis-fraktionen | presets/factions/base-factions.json |
+| 1413 | ✅ | Faction | Faction Events: create/update/delete-requested und Lifecycle-Events | mittel | Ja | #1400 | Faction.md#events | src/core/events/domain-events.ts:FactionPayloads, FactionState |
+| 1414 | 🔶 | Faction | Faction Territory Events: poi-claimed, poi-lost | niedrig | Nein | #1413, #1500 | [Faction.md#events](#events), [POI.md#basepoi](POI.md#basepoi) | docs/architecture/Events-Catalog.md:756-764 (Events definiert, Implementierung fehlt) |
+| 1415 | ⛔ | Faction | Faction Library-View: CRUD-Interface für Faction-Bearbeitung | mittel | Ja | #1400, #1416, #2800 | [Faction.md#schema](#schema), [Library.md#tab-navigation](../application/Library.md#tab-navigation) | [neu] src/application/library/faction-view.svelte |
+| 1416 | ⬜ | Faction | Faction-Feature: FactionOrchestrator mit CRUD-Logik | mittel | Ja | #1400, #1413 | [Faction.md#schema](#schema), [Faction.md#events](#events) | [neu] src/features/faction/orchestrator.ts, [neu] src/features/faction/index.ts:createFactionOrchestrator() |
+| 2998 | ✅ | Faction | reputationWithParty: number (-100 bis +100) Feld | niedrig | Nein | #1400 | Faction.md#party-reputation | - |
+| 2999 | ⬜ | DetailView | Resolution Phase 4: Reputation-Aenderung UI | niedrig | Nein | #2998, #219 | Faction.md#party-reputation | - |
+| 3017 | ⛔ | Encounter | Auto-POI Vorschlag bei Entity Promotion | niedrig | Nein | #3015, #1500 | Faction.md#poi-vorschlag, Encounter-System.md#entity-promotion | - |
+| 3018 | ⬜ | Faction | Attrition-System: applyAttrition() nach Combat | hoch | Ja | #1400, #1402 | Faction.md#attrition-mechanik, Encounter-System.md#attrition-integration | - |
+| 3019 | ⛔ | Faction | Praesenz-Neuberechnung nach Attrition | mittel | Ja | #3018, #1409 | Faction.md#praesenz-neuberechnung | - |
+| 3020 | ⛔ | Faction | Auto-Status 'extinct' wenn alle Creature-Counts 0 | mittel | Ja | #3018 | Faction.md#automatische-status-aenderungen | - |

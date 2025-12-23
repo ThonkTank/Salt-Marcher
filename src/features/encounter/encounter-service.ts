@@ -49,13 +49,17 @@ import type { PartyFeaturePort } from '../party';
 import type { TimeFeaturePort } from '../time';
 import type { LootFeaturePort } from '../loot';
 import type { ItemStoragePort } from '@/infrastructure/vault/item-registry';
-import type { EncounterFeaturePort, GenerationContext, FactionWeight } from './types';
+import type {
+  EncounterFeaturePort,
+  GenerationContext,
+  FactionWeight,
+  EncounterHistoryEntry,
+} from './types';
 import type { EncounterStore } from './encounter-store';
 import {
   filterEligibleCreatures,
   selectWeightedCreature,
-  deriveEncounterType,
-  validateVariety,
+  deriveEncounterTypeWithVariety,
   populateEncounter,
   calculateEncounterXP,
   rollDifficulty,
@@ -64,6 +68,7 @@ import {
   calculateCreatureXP,
   calculateEffectiveXP,
   createCreatureInstance,
+  type FactionRelation,
 } from './encounter-utils';
 import {
   resolveFactionCulture,
@@ -186,6 +191,29 @@ export function createEncounterService(
     }
 
     return null;
+  }
+
+  /**
+   * Get faction relation to party from faction's reputationWithParty.
+   *
+   * @param faction - The faction to check
+   * @returns FactionRelation based on reputation thresholds
+   *
+   * Thresholds:
+   * - hostile: reputation < -20
+   * - neutral: reputation >= -20 && <= +20
+   * - friendly: reputation > +20
+   *
+   * @see docs/features/Encounter-System.md#typ-ableitung
+   * @see docs/domain/Faction.md#party-reputation
+   */
+  function getFactionRelation(faction: Faction | null): FactionRelation {
+    if (!faction) return 'neutral';
+
+    const rep = faction.reputationWithParty ?? 0;
+    if (rep < -20) return 'hostile';
+    if (rep > 20) return 'friendly';
+    return 'neutral';
   }
 
   // --------------------------------------------------------------------------
@@ -429,7 +457,6 @@ export function createEncounterService(
     correlationId?: string
   ): Result<EncounterInstance, AppError> {
     const { terrainId, timeSegment, weather, partyLevel } = context;
-    const recentTypes = store.getState().recentCreatureTypes;
     const factionWeights = getFactionWeights();
 
     // Step 1: Tile-Eligibility (terrain + time filter)
@@ -463,21 +490,26 @@ export function createEncounterService(
 
       const creature = selection.creature;
 
-      // Step 3: Type derivation
-      const typeResult = deriveEncounterType(creature, partyLevel);
+      // Resolve faction BEFORE type derivation (needed for faction relation)
+      const faction = resolveFaction(creature);
+      const factionRelation = getFactionRelation(faction);
+
+      // Step 3: Type derivation with variety dampening
+      // Uses encounter type history to dampen overrepresented types
+      // Faction relation affects type probabilities (hostile faction → more combat)
+      const typeHistory = store.getState().encounterTypeHistory;
+      const typeResult = deriveEncounterTypeWithVariety(
+        creature,
+        partyLevel,
+        typeHistory,
+        factionRelation
+      );
       encounterType = typeResult.type;
 
-      // Step 4: Variety validation
-      const varietyResult = validateVariety(creature, recentTypes);
-
-      if (varietyResult.valid || attempt === MAX_REROLL_ATTEMPTS - 1) {
-        // Accept this selection
-        selectedCreature = creature;
-        selectedFaction = resolveFaction(creature);
-        break;
-      }
-
-      // Try again if variety check failed
+      // Accept the selection (variety dampening already applied above)
+      selectedCreature = creature;
+      selectedFaction = faction;
+      break;
     }
 
     if (!selectedCreature || !selectedFaction) {
@@ -490,11 +522,12 @@ export function createEncounterService(
       selectedCreature,
       encounterType,
       context,
-      currentTime
+      currentTime,
+      selectedFaction // Task #213: pass faction for disposition calculation
     );
 
-    // Track creature type for variety
-    store.trackCreatureType(selectedCreature.id);
+    // Track encounter type for variety dampening (Task #209)
+    store.trackEncounterType(encounterType);
 
     // Combat encounters: Apply D&D 5e balancing and multi-creature selection
     let allCreatures: CreatureDefinition[] = [selectedCreature];
@@ -928,8 +961,8 @@ export function createEncounterService(
       return store.getState().history;
     },
 
-    getRecentCreatureTypes(): readonly string[] {
-      return store.getState().recentCreatureTypes;
+    getEncounterTypeHistory(): readonly EncounterHistoryEntry[] {
+      return store.getState().encounterTypeHistory;
     },
 
     generateEncounter(context: GenerationContext): Result<EncounterInstance, AppError> {
