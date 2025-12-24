@@ -12,7 +12,33 @@
  * @see DetailView.md#encounter-tab
  */
 
-import type { DetailViewState, BuilderCreature, EncounterDifficulty } from '../types';
+import type {
+  DetailViewState,
+  BuilderCreature,
+  EncounterDifficulty,
+  DetectionInfo,
+  DetectionMethod,
+} from '../types';
+
+// ============================================================================
+// Detection Method Display
+// ============================================================================
+
+const DETECTION_METHOD_ICONS: Record<DetectionMethod, string> = {
+  visual: '👁️',
+  auditory: '👂',
+  olfactory: '👃',
+  tremorsense: '📍',
+  magical: '✨',
+};
+
+const DETECTION_METHOD_LABELS: Record<DetectionMethod, string> = {
+  visual: 'Visuell',
+  auditory: 'Auditiv',
+  olfactory: 'Olfaktorisch',
+  tremorsense: 'Erschütterung',
+  magical: 'Magisch',
+};
 
 // ============================================================================
 // Types
@@ -32,6 +58,9 @@ export interface EncounterTabCallbacks {
   onCreatureCountChange(index: number, count: number): void;
   onSaveEncounter(): void;
   onClearBuilder(): void;
+
+  // Situation actions (#2970)
+  onDispositionChange(value: number): void;
 }
 
 export interface EncounterTab {
@@ -121,15 +150,27 @@ export function createEncounterTab(
       }
     }
 
-    // Context Section
+    // Situation Section (#2970)
     tabContent.appendChild(createSeparator());
-    const contextHeader = createSectionHeader('Kontext');
-    tabContent.appendChild(contextHeader);
+    const situationHeader = createSectionHeader('Situation');
+    tabContent.appendChild(situationHeader);
 
     const activityField = createTextField('Activity', enc.builderActivity, (value) => {
       callbacks.onActivityChange(value);
-    }, 'Was tun die Kreaturen?');
+    }, 'Was tut die Gruppe?');
     tabContent.appendChild(activityField);
+
+    const dispositionField = createDispositionField(enc.disposition, callbacks);
+    tabContent.appendChild(dispositionField);
+
+    // Detection Section (#2971)
+    const detectionSection = createDetectionSection(enc.detection);
+    tabContent.appendChild(detectionSection);
+
+    // Context Section (only Goal remains, Activity moved to Situation)
+    tabContent.appendChild(createSeparator());
+    const contextHeader = createSectionHeader('Kontext');
+    tabContent.appendChild(contextHeader);
 
     const goalField = createTextField('Goal', enc.builderGoal, (value) => {
       callbacks.onGoalChange(value);
@@ -476,6 +517,144 @@ export function createEncounterTab(
 
   function capitalizeFirst(str: string): string {
     return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+
+  // =========================================================================
+  // Disposition Helpers (#2970)
+  // =========================================================================
+
+  function createDispositionField(
+    value: number,
+    callbacks: EncounterTabCallbacks
+  ): HTMLElement {
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'margin-bottom: 12px;';
+
+    // Label
+    const label = document.createElement('label');
+    label.style.cssText = 'display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;';
+    label.textContent = 'Disposition';
+    wrapper.appendChild(label);
+
+    // Slider + Display Row
+    const row = document.createElement('div');
+    row.style.cssText = 'display: flex; align-items: center; gap: 8px;';
+
+    // Range Slider
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.min = '-100';
+    slider.max = '100';
+    slider.value = String(value);
+    slider.style.cssText = 'flex: 1;';
+    slider.addEventListener('input', (e) => {
+      callbacks.onDispositionChange(parseInt((e.target as HTMLInputElement).value));
+    });
+    row.appendChild(slider);
+
+    // Bar Display
+    const barDisplay = createDispositionBar(value);
+    row.appendChild(barDisplay);
+
+    // Text Label + Value
+    const textDisplay = document.createElement('span');
+    textDisplay.style.cssText = `font-weight: bold; min-width: 120px; color: ${getDispositionColor(value)};`;
+    textDisplay.textContent = `${getDispositionLabel(value)} (${value})`;
+    row.appendChild(textDisplay);
+
+    wrapper.appendChild(row);
+    return wrapper;
+  }
+
+  function createDispositionBar(value: number): HTMLElement {
+    const bar = document.createElement('span');
+    bar.style.cssText = 'font-family: monospace; min-width: 60px;';
+
+    // Normalize -100..+100 to 0..10 blocks
+    const normalized = Math.round((value + 100) / 20);
+    const filled = '\u2588'.repeat(normalized);
+    const empty = '\u2591'.repeat(10 - normalized);
+    bar.textContent = filled + empty;
+    bar.style.color = getDispositionColor(value);
+
+    return bar;
+  }
+
+  function getDispositionLabel(value: number): string {
+    if (value <= -50) return 'Feindlich';
+    if (value < 0) return 'Misstrauisch';
+    if (value === 0) return 'Neutral';
+    if (value <= 50) return 'Freundlich';
+    return 'Verbündet';
+  }
+
+  function getDispositionColor(value: number): string {
+    if (value <= -50) return 'var(--text-error)';
+    if (value < 0) return 'var(--text-warning)';
+    if (value === 0) return 'var(--text-muted)';
+    if (value <= 50) return 'var(--text-success)';
+    return 'var(--text-success)';
+  }
+
+  // =========================================================================
+  // Detection Section (#2971)
+  // =========================================================================
+
+  function createDetectionSection(detection: DetectionInfo | null): HTMLElement {
+    const section = document.createElement('div');
+    section.className = 'salt-marcher-detection-section';
+    section.style.cssText = 'margin-bottom: 12px;';
+
+    // Section Header
+    const header = createSectionHeader('Detection');
+    section.appendChild(header);
+
+    // Empty state
+    if (!detection) {
+      const emptyMsg = document.createElement('div');
+      emptyMsg.style.cssText = 'color: var(--text-muted); font-size: 11px; padding: 4px 0;';
+      emptyMsg.textContent = 'Keine Detection-Daten';
+      section.appendChild(emptyMsg);
+      return section;
+    }
+
+    // Detection content container
+    const content = document.createElement('div');
+    content.style.cssText = `
+      background: var(--background-secondary);
+      padding: 8px 12px;
+      border-radius: 4px;
+    `;
+
+    // Method + Distance line
+    const methodLine = document.createElement('div');
+    methodLine.className = 'detection-method';
+    methodLine.style.cssText = 'margin-bottom: 4px;';
+
+    const icon = DETECTION_METHOD_ICONS[detection.method];
+    const label = DETECTION_METHOD_LABELS[detection.method];
+    methodLine.textContent = `Entdeckt: ${icon} ${label}, ${detection.distance}ft entfernt`;
+    content.appendChild(methodLine);
+
+    // Awareness line
+    const awarenessLine = document.createElement('div');
+    awarenessLine.className = 'detection-awareness';
+    awarenessLine.style.cssText = 'font-size: 11px;';
+
+    const partyCheck = detection.partyAware ? '✓' : '✗';
+    const encounterCheck = detection.encounterAware ? '✓' : '✗';
+    const partyStyle = detection.partyAware ? 'color: var(--text-success);' : 'color: var(--text-muted);';
+    const encounterStyle = detection.encounterAware ? 'color: var(--text-success);' : 'color: var(--text-muted);';
+
+    awarenessLine.innerHTML = `
+      <span style="${partyStyle}">Party bemerkt: ${partyCheck}</span>
+      <span style="color: var(--text-muted);"> | </span>
+      <span style="${encounterStyle}">Encounter bemerkt Party: ${encounterCheck}</span>
+    `;
+    content.appendChild(awarenessLine);
+
+    section.appendChild(content);
+    return section;
   }
 
   // =========================================================================

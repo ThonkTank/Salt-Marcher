@@ -10,6 +10,7 @@
 import { z } from 'zod';
 import { entityIdSchema, timeSegmentSchema } from './common';
 import { conditionSchema } from './combat';
+import { weightedActivitySchema } from './encounter';
 
 // ============================================================================
 // Sub-Schemas
@@ -270,6 +271,14 @@ export const creatureDefinitionSchema = z.object({
    * @see docs/features/Encounter-System.md#calculatedetection
    */
   detectionProfile: creatureDetectionProfileSchema.optional(),
+
+  /**
+   * Creature-type-specific activities for encounter groups.
+   * Medium priority in the Activity-Pool-Hierarchy (below faction, above generic).
+   *
+   * @see docs/features/Encounter-System.md#activity-pool-hierarchie
+   */
+  activities: z.array(weightedActivitySchema).optional(),
 
   // === Loot System ===
 

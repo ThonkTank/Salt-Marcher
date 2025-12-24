@@ -6,12 +6,14 @@
  */
 
 import { ItemView, type WorkspaceLeaf } from 'obsidian';
-import type { EventBus } from '@core/index';
+import type { EventBus, CharacterId } from '@core/index';
+import type { EntityRegistryPort } from '@core/types/entity-registry.port';
 import type { EncounterFeaturePort } from '@/features/encounter';
 import type { CombatFeaturePort } from '@/features/combat';
-import type { ConditionType } from '@core/schemas';
+import type { PartyFeaturePort } from '@/features/party';
+import type { ConditionType, Character } from '@core/schemas';
 import { EventTypes, createEvent, newCorrelationId } from '@core/events';
-import { now } from '@core/types';
+import { now, isSome } from '@core/types';
 import { VIEW_TYPE_DETAIL_VIEW, type TabId } from './types';
 import {
   createDetailViewModel,
@@ -20,9 +22,12 @@ import {
 import {
   createCombatTab,
   createEncounterTab,
+  createPartyTab,
   type CombatTab,
   type EncounterTab,
+  type PartyTab,
 } from './panels';
+import { showCharacterSelectionDialog } from '@shared/dialogs';
 
 // ============================================================================
 // View Dependencies
@@ -32,6 +37,8 @@ export interface DetailViewDeps extends DetailViewModelDeps {
   eventBus: EventBus;
   encounterFeature?: EncounterFeaturePort;
   combatFeature?: CombatFeaturePort;
+  partyFeature?: PartyFeaturePort;
+  entityRegistry?: EntityRegistryPort;
 }
 
 // ============================================================================
@@ -51,6 +58,7 @@ export class DetailView extends ItemView {
   // Panels
   private encounterTabPanel: EncounterTab | null = null;
   private combatTabPanel: CombatTab | null = null;
+  private partyTabPanel: PartyTab | null = null;
 
   constructor(leaf: WorkspaceLeaf, deps: DetailViewDeps) {
     super(leaf);
@@ -88,6 +96,7 @@ export class DetailView extends ItemView {
       eventBus: this.deps.eventBus,
       encounterFeature: this.deps.encounterFeature,
       combatFeature: this.deps.combatFeature,
+      partyFeature: this.deps.partyFeature,
     });
 
     // Create tab navigation
@@ -133,6 +142,11 @@ export class DetailView extends ItemView {
       this.createCombatCallbacks()
     );
 
+    this.partyTabPanel = createPartyTab(
+      this.contentContainer,
+      this.createPartyCallbacks()
+    );
+
     // Subscribe to ViewModel updates
     this.unsubscribe = this.viewModel.subscribe((state) => {
       this.render(state);
@@ -143,6 +157,7 @@ export class DetailView extends ItemView {
     this.unsubscribe?.();
     this.encounterTabPanel?.dispose();
     this.combatTabPanel?.dispose();
+    this.partyTabPanel?.dispose();
     this.viewModel?.dispose();
 
     this.unsubscribe = null;
@@ -152,6 +167,7 @@ export class DetailView extends ItemView {
     this.idleState = null;
     this.encounterTabPanel = null;
     this.combatTabPanel = null;
+    this.partyTabPanel = null;
   }
 
   // =========================================================================
@@ -164,6 +180,7 @@ export class DetailView extends ItemView {
     const tabs: { id: TabId; label: string; icon: string }[] = [
       { id: 'encounter', label: 'Encounter', icon: '⚔️' },
       { id: 'combat', label: 'Combat', icon: '🗡️' },
+      { id: 'party', label: 'Party', icon: '👥' },
     ];
 
     for (const tab of tabs) {
@@ -217,6 +234,7 @@ export class DetailView extends ItemView {
     // Update panels
     this.encounterTabPanel?.update(state);
     this.combatTabPanel?.update(state);
+    this.partyTabPanel?.update(state);
   }
 
   // =========================================================================
@@ -253,9 +271,17 @@ export class DetailView extends ItemView {
         );
       },
       onRegenerateEncounter: () => {
-        // Get current party position from encounter if available
+        // Prefer current encounter position, fallback to party position (#2470)
         const state = this.viewModel?.getState();
-        const position = state?.encounter.currentEncounter?.position;
+        let position = state?.encounter.currentEncounter?.position;
+
+        // Fallback: Get party position from PartyFeature
+        if (!position && this.deps.partyFeature) {
+          const partyPos = this.deps.partyFeature.getPosition();
+          if (isSome(partyPos)) {
+            position = partyPos.value;
+          }
+        }
 
         if (position) {
           this.deps.eventBus.publish(
@@ -264,6 +290,10 @@ export class DetailView extends ItemView {
               { position, trigger: 'manual' as const },
               this.eventOptions()
             )
+          );
+        } else {
+          console.warn(
+            '[DetailView] Cannot generate encounter: No position available'
           );
         }
       },
@@ -290,6 +320,11 @@ export class DetailView extends ItemView {
       },
       onClearBuilder: () => {
         this.viewModel?.clearBuilder();
+      },
+
+      // Situation actions (#2970)
+      onDispositionChange: (value: number) => {
+        this.viewModel?.setDisposition(value);
       },
     };
   }
@@ -354,6 +389,73 @@ export class DetailView extends ItemView {
             this.eventOptions()
           )
         );
+      },
+    };
+  }
+
+  private createPartyCallbacks() {
+    return {
+      onHpChange: (characterId: string, delta: number) => {
+        // Placeholder for #3219 - HP-Eingabe Pattern
+        console.log(`[DetailView] HP change for ${characterId}: ${delta > 0 ? '+' : ''}${delta}`);
+      },
+      onRemoveMember: async (characterId: string) => {
+        if (!this.deps.partyFeature) {
+          console.warn('[DetailView] partyFeature not available');
+          return;
+        }
+        const result = await this.deps.partyFeature.removeMember(characterId as CharacterId);
+        if (!result.ok) {
+          console.error('[DetailView] Failed to remove member:', result.error);
+        }
+      },
+      onAddMember: async () => {
+        // #3222 - Add Button + Character-Auswahl-Dialog
+        if (!this.deps.entityRegistry || !this.deps.partyFeature) {
+          console.warn('[DetailView] entityRegistry or partyFeature not available');
+          return;
+        }
+
+        // 1. Get all characters from EntityRegistry
+        const allCharacters = this.deps.entityRegistry.getAll('character');
+
+        // 2. Get current party member IDs
+        const membersOption = this.deps.partyFeature.getMembers();
+        const currentMemberIds = isSome(membersOption)
+          ? membersOption.value.map(m => m.id)
+          : [];
+
+        // 3. Filter out characters already in party
+        const availableCharacters = allCharacters.filter(
+          (c: Character) => !currentMemberIds.includes(c.id)
+        );
+
+        // 4. Show character selection dialog
+        const result = await showCharacterSelectionDialog(this.app, {
+          availableCharacters: availableCharacters.map((c: Character) => ({
+            id: c.id,
+            name: c.name,
+            level: c.level,
+            class: c.class,
+          })),
+        });
+
+        // 5. Add selected character to party
+        if (result.selected && result.characterId) {
+          const addResult = await this.deps.partyFeature.addMember(
+            result.characterId as CharacterId
+          );
+          if (!addResult.ok) {
+            console.error('[DetailView] Failed to add member:', addResult.error);
+          }
+        }
+      },
+      onOpenInventory: (characterId: string) => {
+        // Placeholder for #3220 - Inventory Button + Dialog
+        console.log(`[DetailView] Open inventory for ${characterId} - not yet implemented (#3220)`);
+      },
+      onToggleExpanded: (characterId: string) => {
+        this.viewModel?.togglePartyMemberExpanded(characterId);
       },
     };
   }

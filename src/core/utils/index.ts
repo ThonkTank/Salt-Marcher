@@ -147,6 +147,14 @@ export {
   // Trigger & Slot Resolution
   checkTriggers,
   resolveCreatureSlots,
+
+  // Activity-Pool-Hierarchy (Task #2969)
+  GENERIC_ACTIVITIES,
+  type ActivityContext,
+  type PersonalityActivityModifiers,
+  matchesActivityContext,
+  getCreatureTypeActivities,
+  selectActivity,
 } from './encounter-utils';
 
 // Party Utils

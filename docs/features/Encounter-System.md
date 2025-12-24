@@ -814,39 +814,67 @@ interface EncounterPerception {
 }
 ```
 
-### Typ-spezifische Erweiterungen
+### Einheitliches EncounterInstance Schema
+
+Alle Encounter-Typen nutzen das gleiche `EncounterInstance` Schema. Typ-spezifische Felder sind optional:
 
 ```typescript
-interface CombatEncounter extends BaseEncounterInstance {
-  type: 'combat';
-  difficulty: EncounterDifficultyResult;  // trivial/easy/medium/hard/deadly/impossible
-  adjustedXP: number;
-  loot: GeneratedLoot;
+interface EncounterInstance {
+  // === Basis-Felder (alle Typen) ===
+  id: string;
+  type: 'combat' | 'social' | 'passing' | 'trace';
+  state: 'pending' | 'active' | 'resolved';
+  creatures: CreatureInstance[];
+  leadNpc?: EncounterLeadNpc;
+  activity?: string;
+  goal?: string;
+  description: string;
+  perception: EncounterPerception;
+  disposition: number;  // -100 bis +100
+
+  // === Combat-spezifisch ===
+  difficulty?: EncounterDifficultyResult;
+  xpBudget?: number;
+  effectiveXP?: number;
+  loot?: GeneratedLoot;
   hoard?: Hoard;
-}
 
-interface SocialEncounter extends BaseEncounterInstance {
-  type: 'social';
-  // disposition: Jetzt in BaseEncounterInstance (fuer alle Typen)
-  possibleOutcomes: string[];
-  trade?: TradeGoods;
-  // creatures enthaelt z.B. Haendler + 2 Wachen
-}
+  // === Trace-spezifisch ===
+  traceAge?: 'fresh' | 'recent' | 'old';  // Alter der Spuren
+  trackingDC?: number;                     // DC zum Verfolgen
 
-interface PassingEncounter extends BaseEncounterInstance {
-  type: 'passing';
-  // creatures enthaelt z.B. 5 Woelfe die einen Hirsch jagen
-}
-
-interface TraceEncounter extends BaseEncounterInstance {
-  type: 'trace';
-  age: 'fresh' | 'recent' | 'old';
-  clues: string[];
-  trackingDC: number;
-  inferredActivity: string;
-  // creatures enthaelt z.B. "3 Goblin-Jaeger" die hier waren
+  // === Timing & Resolution ===
+  generatedAt: GameDateTime;
+  resolvedAt?: GameDateTime;
+  outcome?: EncounterOutcome;
+  xpAwarded?: number;
 }
 ```
+
+**Typ-Verhalten:**
+- **combat**: `difficulty`, `loot`, `hoard` werden gesetzt
+- **social**: `leadNpc` ist immer vorhanden, Shop-Link via NPC-Owner (siehe unten)
+- **passing**: Nur Basis-Felder (`description`, `activity`, `perception`)
+- **trace**: `traceAge`, `trackingDC` werden gesetzt (GM leitet Details aus creatures/activity ab)
+
+### Shop-Integration bei Social-Encounters
+
+Bei Social-Encounters mit Haendlern erfolgt die Shop-Verknuepfung ueber den NPC-Owner:
+
+1. `ShopDefinition.npcOwnerId?: EntityId<'npc'>` verweist auf den Haendler-NPC
+2. Wenn `encounter.leadNpc` einen Shop besitzt, zeigt das UI einen Shop-Link
+3. **Kein separates `shopId`-Feld auf EncounterInstance noetig**
+
+```typescript
+// UI-Logik (nicht Schema)
+function getShopForEncounter(encounter: EncounterInstance): Option<ShopDefinition> {
+  if (!encounter.leadNpc) return None;
+  return shopRegistry.findByNpcOwner(encounter.leadNpc.npcId);
+}
+```
+
+→ Shop-Schema: [Shop.md](../domain/Shop.md)
+→ NPC-Haendler Integration: Task #2122
 
 ### Loot-Schemas
 
@@ -1510,56 +1538,70 @@ function suggestPOILocation(
 
 ## Tasks
 
-| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 200 | ✅ | Encounter | Terrain-Filter: Kreatur.terrainAffinities vs aktuelles Terrain | hoch | Ja | #801, #1202 | Encounter-System.md#tile-eligibility, Creature.md#terrain-affinitaet-und-auto-sync, Map-Feature.md#overworld-tiles | encounter-utils.ts:filterEligibleCreatures() |
-| 202 | ✅ | Encounter | Fraktionspräsenz-Gewichtung: Fraktion kontrolliert Tile → ×2.0-5.0 | hoch | Ja | #200, #201, #1410 | Encounter-System.md#tile-eligibility, Faction.md#encounter-integration | encounter-utils.ts:calculateCreatureWeight() |
-| 204 | ✅ | Encounter | Wetter-Gewichtung: Kreatur.preferredWeather matched → ×1.5 | hoch | Ja | #110, #200, #201, #1207 | Encounter-System.md#tile-eligibility, Weather-System.md#weather-state, Creature.md#creaturepreferences | encounter-utils.ts:calculateCreatureWeight() |
-| 206 | ✅ | Encounter | Gewichtete Zufallsauswahl aus eligible Creatures | hoch | Ja | #200, #202, #204 | Encounter-System.md#kreatur-auswahl | encounter-utils.ts:selectWeightedCreature() |
-| 207 | ✅ | Encounter | Typ-Ableitung: Disposition + Faction-Relation + CR-Balancing → Encounter-Typ | hoch | Ja | #206, #235, #1400 | Encounter-System.md#typ-ableitung, Encounter-Balancing.md#cr-vergleich, Faction.md#schema | encounter-utils.ts:deriveEncounterType() |
-| 208 | ✅ | Encounter | Wahrscheinlichkeits-Matrix implementieren (hostile/neutral/friendly × winnable) | hoch | Ja | #207, #2949, #2950, #2951, #2952 | Encounter-System.md#wahrscheinlichkeits-matrix | encounter-utils.ts:getTypeProbabilities() |
-| 2949 | ⛔ | Creature | CreatureDetectionProfile Schema (noiseLevel, scentStrength, stealthAbilities) - REQUIRED (auf spec-konformität prüfen) | hoch | Ja | #1200, #2950 | Creature.md#detection-profil | schemas/creature.ts:creatureDetectionProfileSchema |
-| 2950 | 🔶 | Creature | StealthAbility Type (burrowing, invisibility, ethereal, shapechange, mimicry, ambusher) (auf spec-konformität prüfen) | hoch | Ja | - | Creature.md#stealthability | schemas/creature.ts:stealthAbilitySchema |
-| 2951 | ⛔ | Encounter | calculateDetection(): Multi-Sense Perception (visual, auditory, olfactory) (auf spec-konformität prüfen) | hoch | Ja | #2949, #2950 | Encounter-System.md#multi-sense-detection | encounter-utils.ts:calculateDetection() |
-| 2952 | ⛔ | Terrain | encounterVisibility statt visibilityRange (Konsolidierung mit Map-Feature) | hoch | Ja | #1700 | Terrain.md#sichtweite-bei-encounter-generierung | - |
-| 209 | ✅ | Encounter | EncounterHistory-Tracking (letzte 3-5 Encounters, typeDistribution) | hoch | Ja | - | Encounter-System.md#variety-validation | encounter-store.ts:addToHistory(), types.ts:InternalEncounterState |
-| 210 | ✅ | Encounter | Variety-Algorithmus: Bei Überrepräsentation → Typ-Anpassung | hoch | Ja | #209 | Encounter-System.md#algorithmus | encounter-utils.ts:deriveEncounterTypeWithVariety(), encounter-service.ts:executeGenerationPipeline() |
-| 211 | ✅ | Encounter | CreatureSlot-Union: ConcreteCreatureSlot, TypedCreatureSlot, BudgetCreatureSlot | hoch | Ja | #1200, #1300 | Encounter-System.md#creatureslot-varianten, Creature.md#schema, NPC-System.md#npc-schema | schemas/encounter.ts:concreteCreatureSlotSchema, typedCreatureSlotSchema, budgetCreatureSlotSchema, creatureSlotSchema |
-| 212 | ✅ | Encounter | EncounterDefinition-Schema mit creatureSlots, triggers, loot | hoch | Ja | #211 | Encounter-System.md#encounterdefinition | schemas/encounter.ts:encounterDefinitionSchema, encounterTriggersSchema |
-| 213 | ✅ | Encounter | EncounterInstance-Schema mit creatures, leadNPC, status, outcome, loot, hoard | hoch | Ja | #208, #211, #714 | Encounter-System.md#schemas, Loot-Feature.md#loot-generierung-bei-encounter | schemas/encounter.ts:encounterInstanceSchema, schemas/creature.ts:creatureInstanceSchema, schemas/npc.ts:encounterLeadNpcSchema |
-| 214 | ✅ | Encounter | Encounter-State-Machine: pending → active → resolved | hoch | Ja | #213 | Encounter-System.md#state-machine | encounter-service.ts:startEncounterInternal(), resolveEncounterInternal(), dismissEncounterInternal(), encounter-store.ts:setCurrentEncounter(), addToHistory() |
-| 215 | ✅ | Encounter | encounter:generate-requested Handler (einheitlicher Einstiegspunkt) | hoch | Ja | #200, #209, #235, #801, #910, #110 | Encounter-System.md#aktivierungs-flow, Travel-System.md#encounter-checks-waehrend-reisen | encounter-service.ts:setupEventHandlers(), executeGenerationPipeline() |
-| 217 | ✅ | Encounter | encounter:start-requested Handler | hoch | Ja | #213, #214 | Encounter-System.md#events | encounter-service.ts:subscribeToEvents() |
-| 219 | ✅ | Encounter | encounter:resolve-requested Handler | hoch | Ja | #213, #214 | Encounter-System.md#events | encounter-service.ts:subscribeToEvents() |
-| 221 | ✅ | Encounter | encounter:started Event publizieren | hoch | Ja | #217 | Encounter-System.md#events, Combat-System.md#event-flow | encounter-service.ts:publishEncounterStarted(), events/types.ts:EncounterStartedPayload |
-| 223 | ✅ | Encounter | encounter:resolved Event publizieren mit xpAwarded | hoch | Ja | #219, #233 | Encounter-System.md#events, Combat-System.md#post-combat-resolution | encounter-service.ts:publishEncounterResolved(), events/types.ts:EncounterResolvedPayload |
-| 225 | ✅ | Encounter | Combat-Typ: combat:start-requested triggern | hoch | Ja | #221, #300 | Encounter-System.md#integration, Combat-System.md#combat-flow | encounter-service.ts:publishCombatStartRequested(), createCombatParticipantsFromEncounter() |
-| 227 | ✅ | Encounter | Passing-Typ: Sofortige Beschreibung anzeigen | hoch | Ja | #221, #249 | Encounter-System.md#typ-spezifisches-verhalten, Encounter-Balancing.md#passing | encounter-utils.ts:generateDescription() |
-| 229 | ⬜ | Encounter | Environmental-Typ: Umwelt-Herausforderungen | mittel | Nein | #213, #214 | Encounter-System.md#environmental--location-post-mvp | schemas/encounter.ts:encounterTypeSchema [ändern], encounter-utils.ts:deriveEncounterType() [ändern] |
-| 231 | ✅ | Encounter | NPC-Instanziierung: Bei Encounter suchen/erstellen mit Faction-Kultur | hoch | Ja | #220, #1307, #1314, #1318, #1405, #2001, #2101 | Encounter-System.md#integration, NPC-System.md#lead-npc-auswahl, Faction.md#kultur-vererbung | npc-generator.ts:selectOrGenerateNpc(), resolveFactionCulture(), calculateNpcMatchScore() |
-| 233 | ✅ | Encounter | 40/60 XP Split: 40% sofort bei Encounter-Ende | hoch | Ja | #408, #410, #2401 | Encounter-System.md#integration, Quest-System.md#xp-verteilung, Combat-System.md#xp-berechnung | encounter-service.ts:resolveEncounterInternal() (XP calculation) |
-| 201 | ✅ | Encounter | Tageszeit-Filter: Kreatur.activeTime vs aktuelles TimeSegment | hoch | Ja | #910 | Encounter-System.md#tile-eligibility | encounter-utils.ts:filterEligibleCreatures() |
-| 203 | ✅ | Encounter | Raritäts-Gewichtung: common ×1.0, uncommon ×0.3, rare ×0.05 | hoch | Ja | #200, #201 | Encounter-System.md#gewichtung-soft-factors | encounter-utils.ts:calculateCreatureWeight() |
-| 205 | ⛔ | Encounter | Pfad-basierte Creature-Pools: Pfade fügen Kreaturen zum Pool hinzu | mittel | Nein | #200, #1801 | Encounter-System.md#pfad-basierte-creature-pools-post-mvp | encounter-utils.ts:getEligibleCreatures() [neu] |
-| 216 | ✅ | Encounter | Context-Erstellung: Tile, TimeSegment, Weather, PartyLevel | hoch | Ja | #215, #801, #910, #1001 | Encounter-System.md#context-erstellung | encounter-service.ts:setupEventHandlers() (Context-Building in handler) |
-| 218 | ✅ | Encounter | encounter:dismiss-requested Handler | hoch | Ja | #214 | Encounter-System.md#events | encounter-service.ts:subscribeToEvents() |
-| 220 | ✅ | Encounter | encounter:generated Event publizieren | hoch | Ja | #215, #216 | Encounter-System.md#events | encounter-service.ts:publishEncounterGenerated(), events/types.ts:EncounterGeneratedPayload |
-| 222 | ✅ | Encounter | encounter:dismissed Event publizieren | hoch | Ja | #218 | Encounter-System.md#events | encounter-service.ts:publishEncounterDismissed(), events/types.ts:EncounterDismissedPayload |
-| 224 | ✅ | Encounter | encounter:state-changed Event publizieren | hoch | Ja | #214 | Encounter-System.md#events | encounter-service.ts:publishStateChanged(), events/types.ts:EncounterStateChangedPayload |
-| 226 | ✅ | Encounter | Social-Typ: NPC-Interaktion (manuell durch GM) | hoch | Ja | #221, #231 | Encounter-System.md#social | encounter-service.ts:startEncounterInternal() (type-specific handling) |
-| 228 | ✅ | Encounter | Trace-Typ: Investigation-Modus (manuell durch GM) | hoch | Ja | #221 | Encounter-System.md#trace | encounter-utils.ts:generateDescription() |
-| 230 | ⛔ | Encounter | Location-Typ: POI-Discovery | mittel | Nein | #214, #1901 | Encounter-System.md#environmental--location-post-mvp | schemas/encounter.ts:encounterTypeSchema [ändern], encounter-utils.ts:deriveEncounterType() [ändern] |
-| 232 | ✅ | Encounter | Lead-NPC Persistierung bei Encounter-Generierung | hoch | Ja | #231 | Encounter-System.md#npc-instanziierung | npc-generator.ts:generateNewNpc(), createEncounterLeadNpc(), encounter-service.ts:executeGenerationPipeline() |
-| 234 | ✅ | Encounter | 60% XP zu Quest-Reward-Pool bei Quest-Encounters | hoch | Ja | #233, #2401 | Encounter-System.md#xp-system | encounter-service.ts:resolveEncounterInternal() (Quest-Integration) [implementiert als Comment] |
-| 2960 | ⛔ | Encounter | Encounter-Befuellung Algorithmus: Template-Auswahl, Slot-Bestimmung, Budget-Aufteilung, Befuellung | hoch | Ja | #2962, #2963, #2961, #206, #211 | Encounter-System.md#encounter-befuellung | [neu] src/features/encounter/encounter-filler.ts:fillEncounter() |
-| 2962 | ✅ | Encounter | Generische Encounter-Templates aus presets/encounter-templates/ laden | mittel | Ja | - | Encounter-System.md#encounter-templates | [neu] src/features/encounter/template-loader.ts:loadEncounterTemplates() |
-| 2963 | 📋 | Encounter | Template-Matching Logik: Fraktion-Templates > Generische Templates, CR-basierte Wahrscheinlichkeit | hoch | Ja | #2962, #206 | Encounter-System.md#template-auswahl-hierarchie | [neu] src/features/encounter/template-matcher.ts:matchTemplate() |
-| 2969 | ⬜ | Encounter | Activity-Pool-Hierarchie: Generisch → Creature → Fraktion für Gruppen | hoch | Ja | #207, #1401 | Encounter-System.md#activity-generierung-gruppen-basiert | - |
-| 2974 | ⛔ | Encounter | EncounterGroup.highlightNPC Feld hinzufügen | hoch | Ja | #2972, #213 | Encounter-System.md#npc-detail-stufen-pro-encounter | - |
-| 2992 | ✅ | Encounter | EncounterGroup Interface: groupId, creatures, dispositionToParty, relationsToOthers, activity, goal, budgetShare, narrativeRole, status (free/captive/incapacitated/fleeing) | hoch | Ja | #213 | Encounter-System.md#encountergroup-schema | - |
-| 2993 | ⛔ | Encounter | Activity pro Gruppe: selectActivity() mit separater Activity/Goal für jede EncounterGroup | mittel | Nein | #252, #2992 | Encounter-System.md#activity-pro-gruppe | - |
-| 2995 | ⬜ | Encounter | EncounterGroup.status Feld (free/captive/incapacitated/fleeing) | mittel | Nein | #2992 | Encounter-System.md#multi-group-difficulty-calculation | - |
-| 2996 | ⛔ | Encounter | canAllyHelp(group): boolean Funktion | mittel | Nein | #2995 | Encounter-System.md#multi-group-difficulty-calculation | - |
-| 2997 | ⛔ | Encounter | calculateMultiGroupDifficulty() mit Ally-Thresholds | mittel | Nein | #2996 | Encounter-System.md#multi-group-difficulty-calculation | - |
-| 3014 | ⛔ | Encounter | CR-Budget-Check bei Encounter-Generierung | hoch | Ja | #3011, #1202 | Encounter-System.md#cr-budget-integration, Map.md#verwendung-bei-encounter-generierung | - |
-| 3015 | ⛔ | Encounter | Entity-Promotion Dialog nach Combat (nicht-zugeordnete Kreaturen) | mittel | Nein | #1200, #3006 | Encounter-System.md#entity-promotion, Faction.md#entity-promotion | - |
+| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+| 200 | ✅ | Encounter | - | Terrain-Filter: Kreatur.terrainAffinities vs aktuelles Terrain | hoch | Ja | #801, #1202 | Encounter-System.md#tile-eligibility, Creature.md#terrain-affinitaet-und-auto-sync, Map-Feature.md#overworld-tiles | encounter-utils.ts:filterEligibleCreatures() |
+| 202 | ✅ | Encounter | - | Fraktionspräsenz-Gewichtung: Fraktion kontrolliert Tile → ×2.0-5.0 | hoch | Ja | #200, #201, #1410 | Encounter-System.md#tile-eligibility, Faction.md#encounter-integration | encounter-utils.ts:calculateCreatureWeight() |
+| 204 | ✅ | Encounter | - | Wetter-Gewichtung: Kreatur.preferredWeather matched → ×1.5 | hoch | Ja | #110, #200, #201, #1207 | Encounter-System.md#tile-eligibility, Weather-System.md#weather-state, Creature.md#creaturepreferences | encounter-utils.ts:calculateCreatureWeight() |
+| 206 | ✅ | Encounter | - | Gewichtete Zufallsauswahl aus eligible Creatures | hoch | Ja | #200, #202, #204 | Encounter-System.md#kreatur-auswahl | encounter-utils.ts:selectWeightedCreature() |
+| 207 | ✅ | Encounter | - | Typ-Ableitung: Disposition + Faction-Relation + CR-Balancing → Encounter-Typ | hoch | Ja | #206, #235, #1400 | Encounter-System.md#typ-ableitung, Encounter-Balancing.md#cr-vergleich, Faction.md#schema | encounter-utils.ts:deriveEncounterType() |
+| 208 | ✅ | Encounter | - | Wahrscheinlichkeits-Matrix implementieren (hostile/neutral/friendly × winnable) | hoch | Ja | #207, #2949, #2950, #2951, #2952 | Encounter-System.md#wahrscheinlichkeits-matrix | encounter-utils.ts:getTypeProbabilities() |
+| 2949 | ⛔ | Creature | core | CreatureDetectionProfile Schema (noiseLevel, scentStrength, stealthAbilities) - REQUIRED auf CreatureDefinition | hoch | Ja | #1200 | Creature.md#detection-profil | schemas/creature.ts:creatureDetectionProfileSchema |
+| 2950 | ✅ | Creature | core | StealthAbility Type (burrowing, invisibility, ethereal, shapechange, mimicry, ambusher) | hoch | Ja | - | Creature.md#stealthability | schemas/creature.ts:stealthAbilitySchema |
+| 2951 | ⛔ | Encounter | features | calculateDetection(): Multi-Sense Perception mit visual/auditory/olfactory Detection-Methods | hoch | Ja | #2949, #2950 | Encounter-System.md#multi-sense-detection, Encounter-System.md#calculatedetection | encounter-utils.ts:calculateDetection() |
+| 2952 | ⛔ | Terrain | core | encounterVisibility Feld zu TerrainDefinition Schema hinzufügen (Basis-Sichtweite in feet, für Encounter-Entdeckung, variiert je nach Terrain: 60ft forest - 500ft mountains) | hoch | Ja | #1700 | Terrain.md#sichtweite-bei-encounter-generierung, Encounter-System.md#visuelle-range | - |
+| 209 | ✅ | Encounter | - | EncounterHistory-Tracking (letzte 3-5 Encounters, typeDistribution) | hoch | Ja | - | Encounter-System.md#variety-validation | encounter-store.ts:addToHistory(), types.ts:InternalEncounterState |
+| 210 | ✅ | Encounter | - | Variety-Algorithmus: Bei Überrepräsentation → Typ-Anpassung | hoch | Ja | #209 | Encounter-System.md#algorithmus | encounter-utils.ts:deriveEncounterTypeWithVariety(), encounter-service.ts:executeGenerationPipeline() |
+| 211 | ✅ | Encounter | - | CreatureSlot-Union: ConcreteCreatureSlot, TypedCreatureSlot, BudgetCreatureSlot | hoch | Ja | #1200, #1300 | Encounter-System.md#creatureslot-varianten, Creature.md#schema, NPC-System.md#npc-schema | schemas/encounter.ts:concreteCreatureSlotSchema, typedCreatureSlotSchema, budgetCreatureSlotSchema, creatureSlotSchema |
+| 212 | ✅ | Encounter | - | EncounterDefinition-Schema mit creatureSlots, triggers, loot | hoch | Ja | #211 | Encounter-System.md#encounterdefinition | schemas/encounter.ts:encounterDefinitionSchema, encounterTriggersSchema |
+| 213 | ✅ | Encounter | - | EncounterInstance-Schema mit creatures, leadNPC, status, outcome, loot, hoard | hoch | Ja | #208, #211, #714 | Encounter-System.md#schemas, Loot-Feature.md#loot-generierung-bei-encounter | schemas/encounter.ts:encounterInstanceSchema, schemas/creature.ts:creatureInstanceSchema, schemas/npc.ts:encounterLeadNpcSchema |
+| 214 | ✅ | Encounter | - | Encounter-State-Machine: pending → active → resolved | hoch | Ja | #213 | Encounter-System.md#state-machine | encounter-service.ts:startEncounterInternal(), resolveEncounterInternal(), dismissEncounterInternal(), encounter-store.ts:setCurrentEncounter(), addToHistory() |
+| 215 | ✅ | Encounter | - | encounter:generate-requested Handler (einheitlicher Einstiegspunkt) | hoch | Ja | #200, #209, #235, #801, #910, #110 | Encounter-System.md#aktivierungs-flow, Travel-System.md#encounter-checks-waehrend-reisen | encounter-service.ts:setupEventHandlers(), executeGenerationPipeline() |
+| 217 | ✅ | Encounter | - | encounter:start-requested Handler | hoch | Ja | #213, #214 | Encounter-System.md#events | encounter-service.ts:subscribeToEvents() |
+| 219 | ✅ | Encounter | - | encounter:resolve-requested Handler | hoch | Ja | #213, #214 | Encounter-System.md#events | encounter-service.ts:subscribeToEvents() |
+| 221 | ✅ | Encounter | - | encounter:started Event publizieren | hoch | Ja | #217 | Encounter-System.md#events, Combat-System.md#event-flow | encounter-service.ts:publishEncounterStarted(), events/types.ts:EncounterStartedPayload |
+| 223 | ✅ | Encounter | - | encounter:resolved Event publizieren mit xpAwarded | hoch | Ja | #219, #233 | Encounter-System.md#events, Combat-System.md#post-combat-resolution | encounter-service.ts:publishEncounterResolved(), events/types.ts:EncounterResolvedPayload |
+| 225 | ✅ | Encounter | - | Combat-Typ: combat:start-requested triggern | hoch | Ja | #221, #300 | Encounter-System.md#integration, Combat-System.md#combat-flow | encounter-service.ts:publishCombatStartRequested(), createCombatParticipantsFromEncounter() |
+| 227 | ✅ | Encounter | - | Passing-Typ: Sofortige Beschreibung anzeigen | hoch | Ja | #221 | Encounter-System.md#typ-spezifisches-verhalten, Encounter-Balancing.md#passing | encounter-utils.ts:generateDescription() |
+| 229 | ⬜ | Encounter | features | Environmental-Typ: Umwelt-Herausforderungen | mittel | Nein | #213, #214 | Encounter-System.md#environmental--location-post-mvp, Encounter-System.md#encounter-typen | schemas/encounter.ts:encounterTypeSchema [ändern], encounter-utils.ts:deriveEncounterType() [ändern] |
+| 231 | ✅ | Encounter | - | NPC-Instanziierung: Bei Encounter suchen/erstellen mit Faction-Kultur | hoch | Ja | #220, #1307, #1314, #1318, #1405, #2101 | Encounter-System.md#integration, NPC-System.md#lead-npc-auswahl, Faction.md#kultur-vererbung | npc-generator.ts:selectOrGenerateNpc(), resolveFactionCulture(), calculateNpcMatchScore() |
+| 233 | ✅ | Encounter | - | 40/60 XP Split: 40% sofort bei Encounter-Ende | hoch | Ja | #408, #410, #2401 | Encounter-System.md#integration, Quest-System.md#xp-verteilung, Combat-System.md#xp-berechnung | encounter-service.ts:resolveEncounterInternal() (XP calculation) |
+| 201 | ✅ | Encounter | - | Tageszeit-Filter: Kreatur.activeTime vs aktuelles TimeSegment | hoch | Ja | #910 | Encounter-System.md#tile-eligibility | encounter-utils.ts:filterEligibleCreatures() |
+| 203 | ✅ | Encounter | - | Raritäts-Gewichtung: common ×1.0, uncommon ×0.3, rare ×0.05 | hoch | Ja | #200, #201 | Encounter-System.md#gewichtung-soft-factors | encounter-utils.ts:calculateCreatureWeight() |
+| 216 | ✅ | Encounter | - | Context-Erstellung: Tile, TimeSegment, Weather, PartyLevel | hoch | Ja | #215, #801, #910, #1001 | Encounter-System.md#context-erstellung | encounter-service.ts:setupEventHandlers() (Context-Building in handler) |
+| 218 | ✅ | Encounter | - | encounter:dismiss-requested Handler | hoch | Ja | #214 | Encounter-System.md#events | encounter-service.ts:subscribeToEvents() |
+| 220 | ✅ | Encounter | - | encounter:generated Event publizieren | hoch | Ja | #215, #216 | Encounter-System.md#events | encounter-service.ts:publishEncounterGenerated(), events/types.ts:EncounterGeneratedPayload |
+| 222 | ✅ | Encounter | - | encounter:dismissed Event publizieren | hoch | Ja | #218 | Encounter-System.md#events | encounter-service.ts:publishEncounterDismissed(), events/types.ts:EncounterDismissedPayload |
+| 224 | ✅ | Encounter | - | encounter:state-changed Event publizieren | hoch | Ja | #214 | Encounter-System.md#events | encounter-service.ts:publishStateChanged(), events/types.ts:EncounterStateChangedPayload |
+| 226 | ✅ | Encounter | - | Social-Typ: NPC-Interaktion (manuell durch GM) | hoch | Ja | #221, #231 | Encounter-System.md#social | encounter-service.ts:startEncounterInternal() (type-specific handling) |
+| 228 | ✅ | Encounter | - | Trace-Typ: Investigation-Modus (manuell durch GM) | hoch | Ja | #221 | Encounter-System.md#trace | encounter-utils.ts:generateDescription() |
+| 230 | ⛔ | Encounter | features | Location-Typ: POI-Discovery | mittel | Nein | #214, #1901 | Encounter-System.md#environmental--location-post-mvp, Encounter-System.md#encounter-typen | schemas/encounter.ts:encounterTypeSchema [ändern], encounter-utils.ts:deriveEncounterType() [ändern] |
+| 232 | ✅ | Encounter | - | Lead-NPC Persistierung bei Encounter-Generierung | hoch | Ja | #231 | Encounter-System.md#npc-instanziierung | npc-generator.ts:generateNewNpc(), createEncounterLeadNpc(), encounter-service.ts:executeGenerationPipeline() |
+| 234 | ✅ | Encounter | - | 60% XP zu Quest-Reward-Pool bei Quest-Encounters | hoch | Ja | #233, #2401 | Encounter-System.md#xp-system | encounter-service.ts:resolveEncounterInternal() (Quest-Integration) [implementiert als Comment] |
+| 2960 | ⛔ | Encounter | features | Encounter-Befuellung: Template-Auswahl, Slot-Bestimmung, Budget-Aufteilung, Slot-Befuellung mit Faction/Tag-Matching | hoch | Ja | #2962, #2963, #2961, #206, #211 | Encounter-System.md#encounter-befuellung | [neu] src/features/encounter/encounter-filler.ts:fillEncounter() |
+| 2962 | ✅ | Encounter | - | Generische Encounter-Templates aus presets/encounter-templates/ laden | mittel | Ja | - | Encounter-System.md#encounter-templates | [neu] src/features/encounter/template-loader.ts:loadEncounterTemplates() |
+| 2963 | ✅ | Encounter | - | Template-Matching Logik: Fraktion-Templates > Generische Templates, CR-basierte Wahrscheinlichkeit | hoch | Ja | #2962, #206 | Encounter-System.md#template-auswahl-hierarchie | [neu] src/features/encounter/template-matcher.ts:matchTemplate() |
+| 2969 | ✅ | Encounter | features | Activity-Pool-Hierarchie: Generisch → Creature → Fraktion für Gruppen Deliverables: - [x] WeightedActivity Schema in encounter.ts - [x] CultureData.activities in faction.ts - [x] CreatureDefinition.activities in creature.ts - [x] GENERIC_ACTIVITIES Konstante - [x] selectActivity() mit Kontext-Filter + Personality-Gewichtung - [x] 18 Unit-Tests DoD: - [x] TypeScript kompiliert (außer existierende Fehler) - [x] ESLint ohne Zirkel-Fehler - [x] Alle 137 Tests bestanden | hoch | Ja | #207, #1401 | Encounter-System.md#activity-generierung-gruppen-basiert, Encounter-System.md#activity-pool-hierarchie | - |
+| 2974 | ⛔ | Encounter | core | EncounterGroup.highlightNPCs: NPC[] Feld (max 3 GLOBAL über alle Gruppen) | hoch | Ja | #2972, #213 | Encounter-System.md#npc-detail-stufen-pro-encounter, Encounter-System.md#npc-instanziierung | - |
+| 2992 | ✅ | Encounter | - | EncounterGroup Interface: groupId, creatures, dispositionToParty, relationsToOthers, activity, goal, budgetShare, narrativeRole, status (free/captive/incapacitated/fleeing) | hoch | Ja | #213 | Encounter-System.md#encountergroup-schema | - |
+| 2993 | ⛔ | Encounter | features | Activity pro Gruppe: selectActivity() mit separater Activity/Goal für jede EncounterGroup | mittel | Nein | #252, #2992 | Encounter-System.md#activity-pro-gruppe, Encounter-System.md#activity-generierung-gruppen-basiert | - |
+| 2995 | ⬜ | Encounter | core | EncounterGroup.status Feld (free/captive/incapacitated/fleeing) | mittel | Nein | #2992 | Encounter-System.md#encountergroup-schema, Encounter-System.md#multi-group-difficulty-calculation | - |
+| 2996 | ⛔ | Encounter | features | canAllyHelp(group): boolean Funktion | mittel | Nein | #2995 | Encounter-System.md#multi-group-difficulty-calculation, Encounter-System.md#ally-berechnung | - |
+| 2997 | ⛔ | Encounter | features | calculateMultiGroupDifficulty() mit Ally-Thresholds | mittel | Nein | #2996 | Encounter-System.md#multi-group-difficulty-calculation, Encounter-Balancing.md#xp-thresholds | - |
+| 3014 | ⛔ | Encounter | features | CR-Budget-Check bei Encounter-Generierung | hoch | Ja | #3011, #1202 | Encounter-System.md#cr-budget-check, Map.md#danger-zones-und-cr-budget | - |
+| 3015 | ⛔ | Encounter | application | Entity-Promotion Dialog nach Encounter (nicht-fraktions-gebundene Kreaturen → NPC + optional POI/Hoard) | mittel | Nein | #1200, #3006 | Encounter-System.md#entity-promotion, Faction.md#entity-promotion | - |
+| 3087 | ⬜ | Encounter | - | calculateVisualRange(): Terrain-Sichtweite × Weather-Modifier × Time-Modifier | hoch | --layer | #2951, #2952, #110 | Encounter-System.md#visuelle-range | - |
+| 3088 | ⬜ | Encounter | - | getTimeVisibilityModifier(): Dynamischer Time-Modifier mit Mondphasen und Wolken-Einfluss | hoch | --layer | #910, #110 | Encounter-System.md#dynamischer-time-modifier | - |
+| 3089 | ⬜ | Encounter | - | calculateAudioRange(): Noise-Level → Range mit Weather-Reduktion (Wind/Regen) | hoch | --layer | #2949, #110 | Encounter-System.md#audio-range-tabelle | - |
+| 3090 | ⬜ | Encounter | - | calculateInitialDistance(): Typ-basierte Distanz-Anpassung nach Detection-Range | hoch | --layer | #2951, #207 | Encounter-System.md#scent-range-tabelle | - |
+| 3090 | ⬜ | Encounter | - | applyStealthAbilities(): Range-Reduktion basierend auf StealthAbilities (burrowing, invisibility, etc.) | hoch | --layer | #2950, #2951 | Encounter-System.md#stealth-ability-effekte | - |
+| 3090 | ⬜ | Encounter | - | calculateInitialDistance(): Typ-basierte Distanz-Anpassung nach Detection-Range | hoch | --layer | #2951, #207 | Encounter-System.md#distanz-nach-encounter-typ | - |
+| 3091 | ⛔ | Encounter | - | checkAmbush(): Ambush-Check nur bei Ambusher-Verhalten oder Party-Stealth | hoch | --layer | #2950, #2951 | Encounter-System.md#ambush-checks | - |
+| 3092 | ⬜ | Encounter | - | calculateDisposition(): Faction-Disposition + Reputation + Personality + Context → -100 bis +100 | hoch | --layer | #207, #1401, #1300 | Encounter-System.md#disposition-generierung | - |
+| 3093 | ⬜ | Encounter | - | selectActivity(): Activity-Pool-Hierarchie (Generisch → Creature → Fraktion) mit Kontext-Filter | hoch | --layer | #2969, #1401 | Encounter-System.md#activity-generierung-gruppen-basiert | - |
+| 3094 | ⬜ | Encounter | - | shouldGenerateMultiGroup(): Trigger-Logik für Multi-Gruppen-Encounters (Basischance + Variety-Rescue) | mittel | Nein | #252, #210 | Encounter-System.md#trigger-logik | - |
+| 3096 | ⬜ | Encounter | - | checkCRBudget(): Prüfe verfügbares CR-Budget vs Encounter-CR (auto-generated only) | hoch | --layer | #3014, #215 | Encounter-System.md#cr-budget-check | - |
+| 3098 | ⬜ | Encounter | - | applyAttrition(): Reduziere Faction-Counts nach Combat (creaturesKilled → Faction-Update) | hoch | --layer | #219, #1402, #3018 | Encounter-System.md#attrition-integration | - |
+| 3100 | ⬜ | Encounter | - | shouldOfferPromotion(): Prüfe ob Encounter-Creature für Entity-Promotion geeignet (nicht-fraktions-gebunden) | mittel | Nein | #219, #3015 | Encounter-System.md#entity-promotion | - |
+| 3102 | ⬜ | Encounter | - | suggestPOILocation(): POI-Vorschlag basierend auf Terrain-Präferenzen (3-Hex-Radius) | mittel | Nein | #3015 | Encounter-System.md#poi-vorschlag-algorithmus | - |
+| 3104 | ⬜ | Encounter | - | Design-Rollen Support in Templates: designRole-Feld auf Template-Slots | mittel | Nein | #2962 | Encounter-System.md#design-rollen-mcdm-basiert, Encounter-System.md#rollen-in-templates | - |

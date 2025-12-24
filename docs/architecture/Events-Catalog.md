@@ -380,6 +380,46 @@ Inventar-Verwaltung und Encumbrance.
 
 ---
 
+## character:*
+
+Character-Management: HP-Tracking, Level-Changes, Zustandsänderungen.
+
+### Implementierungs-Status
+
+| Event | Status | Seit |
+|-------|--------|------|
+| `character:hp-changed` | ❌ | - |
+| `character:downed` | ❌ | - |
+| `character:level-changed` | ✅ | - |
+
+```typescript
+// State-Changes
+'character:hp-changed': {
+  characterId: EntityId<'character'>;
+  previousHp: number;
+  currentHp: number;
+  reason: 'damage' | 'heal' | 'rest' | 'manual';
+}
+
+'character:downed': {
+  characterId: EntityId<'character'>;
+}
+
+'character:level-changed': {
+  characterId: EntityId<'character'>;
+  previousLevel: number;
+  newLevel: number;
+}
+```
+
+**Architektur-Hinweis:**
+- `character:hp-changed` trackt alle HP-Änderungen mit Grund (damage, heal, rest, manual)
+- `character:downed` wird bei HP = 0 zusätzlich zu hp-changed gefeuert
+- Level-Changes triggern Encounter-Balancing-Neuberechnung
+- Nicht zu verwechseln mit `combat:participant-hp-changed` (Combat-spezifisch)
+
+---
+
 ## map:*
 
 Map-Verwaltung und Navigation.
@@ -1382,11 +1422,11 @@ Bei der Implementation auf neue Naming-Konvention achten:
 
 ## Tasks
 
-| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 950 | ⬜ | Time | rest:* Events im Events-Catalog definieren | hoch | Ja | - | Events-Catalog.md#rest, EventBus.md, Time-System.md, Character-System.md, Encounter-System.md | docs/architecture/Events-Catalog.md (bereits dokumentiert) |
-| 951 | ⛔ | Time | rest:* Event-Typen in Core definieren | hoch | Ja | #950 | Events-Catalog.md#rest, Core.md, EventBus.md | src/core/events/types.ts [ändern] |
-| 1112 | ⛔ | Audio | audio:track-changed Event publizieren (reason: context/ended/skip/override) | hoch | Ja | #1110 | Events-Catalog.md#audio, Audio-System.md#context-updates | [neu] src/features/audio/orchestrator.ts:publishTrackChanged() |
-| 1119 | ⛔ | Audio | audio:pause-requested Event Handler | hoch | Ja | #1103 | Events-Catalog.md#audio | [neu] src/features/audio/orchestrator.ts:handlePauseRequested() |
-| 1120 | ⛔ | Audio | audio:resume-requested Event Handler | hoch | Ja | #1103 | Events-Catalog.md#audio | [neu] src/features/audio/orchestrator.ts:handleResumeRequested() |
-| 1121 | ⛔ | Audio | audio:skip-requested Event Handler | hoch | Ja | #1103, #1108 | Events-Catalog.md#audio | [neu] src/features/audio/orchestrator.ts:handleSkipRequested() |
+| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+| 950 | ⬜ | Time | - | rest:* Events im Events-Catalog definieren | hoch | Ja | - | Events-Catalog.md#rest, EventBus.md, Time-System.md, Character-System.md, Encounter-System.md | docs/architecture/Events-Catalog.md (bereits dokumentiert) |
+| 951 | ⛔ | Time | - | rest:* Event-Typen in Core definieren | hoch | Ja | #950 | Events-Catalog.md#rest, Core.md, EventBus.md | src/core/events/types.ts [ändern] |
+| 1112 | ⛔ | Audio | features | audio:track-changed Event publizieren implementieren: Mit reason (context-change/track-ended/user-skip/user-override) | hoch | Ja | #1110 | Audio-System.md#events, Events-Catalog.md#audio, Audio-System.md#context-updates | [neu] src/features/audio/orchestrator.ts:publishTrackChanged() |
+| 1119 | ⛔ | Audio | - | audio:pause-requested Event Handler implementieren: Playback pausieren | hoch | Ja | #1103 | Audio-System.md#events, Events-Catalog.md#audio, Audio-System.md#gm-interface | [neu] src/features/audio/orchestrator.ts:handlePauseRequested() |
+| 1120 | ⛔ | Audio | features | audio:resume-requested Event Handler implementieren: Playback fortsetzen | hoch | Ja | #1103 | Audio-System.md#events, Events-Catalog.md#audio, Audio-System.md#gm-interface | [neu] src/features/audio/orchestrator.ts:handleResumeRequested() |
+| 1121 | ⛔ | Audio | features | audio:skip-requested Event Handler implementieren: Zum nächsten passenden Track springen | hoch | Ja | #1103, #1108 | Audio-System.md#events, Events-Catalog.md#audio, Audio-System.md#gm-interface | [neu] src/features/audio/orchestrator.ts:handleSkipRequested() |

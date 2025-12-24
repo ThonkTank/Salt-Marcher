@@ -10,6 +10,11 @@ import type {
   DetectionMethod,
 } from '@core/schemas';
 
+// Re-export for use in panel components
+export type { DetectionMethod };
+import type { EntityId } from '@core/types';
+import type { EncumbranceLevel } from '@/features/inventory';
+
 // ============================================================================
 // View Types
 // ============================================================================
@@ -21,8 +26,8 @@ export const VIEW_TYPE_DETAIL_VIEW = 'salt-marcher-detail-view';
 // Tab Types
 // ============================================================================
 
-/** Available tabs in DetailView (MVP: encounter + combat) */
-export type TabId = 'encounter' | 'combat';
+/** Available tabs in DetailView */
+export type TabId = 'encounter' | 'combat' | 'party';
 
 // ============================================================================
 // Tab State Types
@@ -107,6 +112,42 @@ export interface CombatTabState {
 }
 
 /**
+ * Character display info for Party Tab.
+ * Simplified view of character data for the member list.
+ * @see DetailView.md#party-tab
+ */
+export interface CharacterDisplay {
+  id: EntityId<'character'>;
+  name: string;
+  level: number;
+  class: string;
+  currentHp: number;
+  maxHp: number;
+  ac: number;
+  passivePerception: number;
+  speed: number;
+  encumbrance: EncumbranceLevel;
+  /** UI state: whether the member row is expanded */
+  expanded: boolean;
+}
+
+/**
+ * Party tab state.
+ * @see DetailView.md#party-tab
+ */
+export interface PartyTabState {
+  /** Party members for display */
+  members: CharacterDisplay[];
+  /** Aggregate party stats */
+  partyStats: {
+    memberCount: number;
+    averageLevel: number;
+    travelSpeed: number;
+    encumbranceStatus: EncumbranceLevel;
+  };
+}
+
+/**
  * Post-combat resolution state.
  * Tracks XP distribution, quest assignment, and loot.
  * @see DetailView.md#post-combat-resolution
@@ -142,6 +183,9 @@ export interface DetailViewState {
 
   /** Combat tab state */
   combat: CombatTabState;
+
+  /** Party tab state */
+  party: PartyTabState;
 }
 
 /**
@@ -178,6 +222,15 @@ export function createInitialDetailViewState(): DetailViewState {
       combatState: null,
       pendingEffects: [],
       resolution: null,
+    },
+    party: {
+      members: [],
+      partyStats: {
+        memberCount: 0,
+        averageLevel: 0,
+        travelSpeed: 0,
+        encumbranceStatus: 'light',
+      },
     },
   };
 }

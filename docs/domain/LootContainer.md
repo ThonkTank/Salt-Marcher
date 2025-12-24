@@ -473,12 +473,16 @@ function getValuableContainers(minValue: number): LootContainer[] {
 
 ## Implementierungs-Tasks
 
-| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|:------:|---------|--------------|:----:|:----:|------|------|------|
-| 3006 | ⬜ | LootContainer | LootContainer Entity-Typ + Zod-Schema (id, name, locationRef, goldAmount, items, status) | hoch | Ja | - | LootContainer.md#schema | - |
-| 3025 | ⛔ | Loot | takeItems(): Items aus LootContainer entnehmen + Status-Update | mittel | Ja | #3006 | LootContainer.md#status-aenderungen | - |
-| 3026 | ⛔ | Loot | takeGold(): Gold aus LootContainer entnehmen + Status-Update | mittel | Ja | #3006 | LootContainer.md#status-aenderungen | - |
-| 3027 | ⛔ | Loot | getLootContainersAtPOI(): LootContainers an einem POI abfragen | mittel | Ja | #3006, #1500 | LootContainer.md#queries | - |
-| 3028 | ⛔ | Loot | LootContainer Events: created, updated, looted, status-changed | mittel | Ja | #3006 | LootContainer.md#events | - |
-| 3030 | ⛔ | Encounter | createEncounterLootContainer(): Loot nach Combat aggregieren | mittel | Ja | #3006, #1200 | LootContainer.md#encounter-loot | - |
-| 3031 | ⛔ | DetailView | LootContainer Interaktions-UI (Aufschliessen, Falle, Nehmen) | mittel | Ja | #3006 | LootContainer.md#detailview-looting-ui, DetailView.md | - |
+| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+| 3006 | ⬜ | LootContainer | core | LootContainer Entity-Typ + Zod-Schema (id, name, locationRef, goldAmount, items[], status, locked, lockDC, trapped, trapRef, discoveredAt, lootedAt) | hoch | Ja | - | LootContainer.md#schema | - |
+| 3025 | ⛔ | Loot | features | takeItems(containerId, itemIds[]): Items aus LootContainer entnehmen, Status auto-update (pristine→partially_looted→looted) | mittel | Ja | #3006 | LootContainer.md#status-aenderungen | - |
+| 3026 | ⛔ | Loot | features | takeGold(containerId, amount): Gold aus LootContainer entnehmen, Status auto-update (pristine→partially_looted→looted) | mittel | Ja | #3006 | LootContainer.md#status-aenderungen | - |
+| 3027 | ⛔ | Loot | features | getLootContainersAtPOI(poiId): Query für LootContainers nach locationRef | mittel | Ja | #3006, #1500 | LootContainer.md#queries | - |
+| 3028 | ⛔ | Loot | core | LootContainer Events definieren: lootcontainer:created, lootcontainer:updated, lootcontainer:looted, lootcontainer:status-changed (mit correlationId) | mittel | Ja | #3006 | LootContainer.md#events | - |
+| 3030 | ⛔ | Encounter | features | createEncounterLootContainer(encounterId, locationRef): Aggregiere Gold + Items von allen Creatures nach Combat, erstelle LootContainer | mittel | Ja | #3006, #1200 | LootContainer.md#encounter-loot | - |
+| 3031 | ⛔ | DetailView | application | LootContainer Interaktions-UI in DetailView: Lock-Status anzeigen, Falle warnen, Alles nehmen, Items auswählen | mittel | Ja | #3006 | LootContainer.md#detailview-looting-ui, DetailView.md | - |
+| 3117 | ⬜ | Loot | features | createLootContainer(locationRef, budget, tags, name?): LootContainer via generateLoot() Budget-basiert erstellen | mittel | Ja | #3006, #3107 | LootContainer.md#via-generateloot-budget-basiert | - |
+| 3118 | ⬜ | Loot | features | getUnlootedContainers(): Query für LootContainers mit status=pristine | niedrig | Nein | #3006 | LootContainer.md#queries | - |
+| 3120 | ⬜ | Loot | features | getContainersByStatus(status): Query für LootContainers nach Status-Filter | niedrig | Nein | #3006 | LootContainer.md#queries | - |
+| 3122 | ⬜ | Loot | features | getValuableContainers(minValue): Query für LootContainers über Wert-Schwelle (goldAmount + Item-Values) | niedrig | Nein | #3006, #1607 | LootContainer.md#queries | - |

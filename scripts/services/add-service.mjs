@@ -25,26 +25,34 @@ export function createAddService(options = {}) {
      * Fügt eine neue Task hinzu
      */
     addTask(taskData, opts = {}) {
-      const { dryRun = false } = opts;
-      const { bereich, beschreibung, prio, mvp, deps, spec } = taskData;
+      const { dryRun = false, init = false } = opts;
+      const { domain, beschreibung, doc, prio, mvp, deps, spec } = taskData;
 
-      if (!bereich || !beschreibung) {
+      // --doc ist erforderlich für Tasks
+      if (!doc) {
         return err({
           code: TaskErrorCode.INVALID_FORMAT,
-          message: '--bereich und --beschreibung erforderlich'
+          message: '--doc erforderlich (z.B. --doc features/Travel-System.md)'
+        });
+      }
+
+      if (!domain || !beschreibung) {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: '--domain und --beschreibung erforderlich'
         });
       }
 
       // Adapter kümmert sich um ID-Generierung und Einfügen
       const result = taskAdapter.addTask({
-        bereich,
+        domain,
         beschreibung,
         prio: prio || 'mittel',
         mvp: mvp || 'Nein',
         deps: deps ? parseDeps(deps) : [],
         spec: spec || '-',
         isBug: false
-      }, { dryRun });
+      }, { dryRun, doc, init });
 
       if (!result.ok) {
         return result;
@@ -54,6 +62,7 @@ export function createAddService(options = {}) {
         success: true,
         taskId: result.value.newId,
         line: result.value.line,
+        doc: result.value.doc,
         dryRun
       });
     },
@@ -149,7 +158,9 @@ export function parseArgs(argv) {
   const opts = {
     type: null,
     beschreibung: null,
-    bereich: null,
+    domain: null,
+    doc: null,
+    init: false,
     prio: null,
     mvp: null,
     deps: null,
@@ -171,8 +182,12 @@ export function parseArgs(argv) {
       opts.type = 'bug';
     } else if (arg === '--beschreibung' || arg === '-m') {
       opts.beschreibung = argv[++i];
-    } else if (arg === '--bereich' || arg === '-b') {
-      opts.bereich = argv[++i];
+    } else if (arg === '--domain' || arg === '-b') {
+      opts.domain = argv[++i];
+    } else if (arg === '--doc') {
+      opts.doc = argv[++i];
+    } else if (arg === '--init') {
+      opts.init = true;
     } else if (arg === '--prio' || arg === '-p') {
       opts.prio = argv[++i];
     } else if (arg === '--mvp') {
@@ -201,13 +216,14 @@ export function execute(opts, service = null) {
 
   if (opts.type === 'task') {
     return addService.addTask({
-      bereich: opts.bereich,
+      domain: opts.domain,
       beschreibung: opts.beschreibung,
+      doc: opts.doc,
       prio: opts.prio,
       mvp: opts.mvp,
       deps: opts.deps,
       spec: opts.spec
-    }, { dryRun: opts.dryRun });
+    }, { dryRun: opts.dryRun, init: opts.init });
   } else if (opts.type === 'bug') {
     return addService.addBug(opts.beschreibung, {
       prio: opts.prio,
@@ -229,7 +245,7 @@ export function showHelp() {
 Add Command - Neue Task oder Bug erstellen
 
 USAGE:
-  node scripts/task.mjs add --task [OPTIONS]
+  node scripts/task.mjs add --task --doc <path> [OPTIONS]
   node scripts/task.mjs add --bug [OPTIONS]
 
 TYP (erforderlich):
@@ -237,7 +253,9 @@ TYP (erforderlich):
   --bug                  Neuen Bug erstellen
 
 OPTIONEN (Task):
-  -b, --bereich <name>   Bereich (z.B. Travel, Map) [erforderlich]
+  --doc <path>           Ziel-Dokument (relativ zu docs/) [erforderlich]
+  --init                 Erstellt Tabelle im Doc falls nicht vorhanden
+  -b, --domain <name>    Domain (z.B. Travel, Map) [erforderlich]
   -m, --beschreibung "." Beschreibung [erforderlich]
   -p, --prio <prio>      Priorität (hoch, mittel, niedrig) [default: mittel]
   --mvp <Ja|Nein>        MVP-Status [default: Nein]
@@ -256,9 +274,14 @@ ALLGEMEIN:
   -h, --help             Diese Hilfe anzeigen
 
 BEISPIELE:
-  node scripts/task.mjs add --task -b Travel -m "Neue Route implementieren"
-  node scripts/task.mjs add --task -b Map -m "Hex-Grid rendern" --prio hoch --mvp Ja
+  node scripts/task.mjs add --task --doc features/Travel-System.md -b Travel -m "Neue Route"
+  node scripts/task.mjs add --task --doc domain/Quest.md --init -b Quest -m "Quest-Log UI"
   node scripts/task.mjs add --bug -m "Login funktioniert nicht" --deps "#428"
+
+HINWEISE:
+  - Tasks werden immer sowohl in der Roadmap als auch im angegebenen Doc gespeichert
+  - Das Doc muss eine Task-Tabelle enthalten (oder --init verwenden)
+  - Bugs werden nur in der Roadmap gespeichert (kein --doc erforderlich)
 `;
 }
 

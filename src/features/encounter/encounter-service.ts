@@ -28,6 +28,7 @@ import {
   type TimeDayChangedPayload,
 } from '@core/events';
 import type {
+  CharacterLevelChangedPayload,
   PartyMemberAddedPayload,
   PartyMemberRemovedPayload,
 } from '@core/events/domain-events';
@@ -941,6 +942,17 @@ export function createEncounterService(
         recalculateDailyBudget();
         publishStateChanged();
       })
+    );
+
+    // Handle character level changes - recalculate daily XP budget
+    subscriptions.push(
+      eventBus.subscribe<CharacterLevelChangedPayload>(
+        EventTypes.CHARACTER_LEVEL_CHANGED,
+        () => {
+          recalculateDailyBudget();
+          publishStateChanged();
+        }
+      )
     );
   }
 

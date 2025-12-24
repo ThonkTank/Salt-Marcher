@@ -339,38 +339,29 @@ function fillCombatEncounter(
 
 ### Social
 
-```typescript
-interface SocialEncounter extends BaseEncounterInstance {
-  type: 'social';
-  disposition: number;              // -100 bis +100
-  possibleOutcomes: string[];
-  trade?: TradeGoods;
-  // creatures enthaelt z.B. Haendler + 2 Wachen
-}
-```
+Social-Encounters nutzen das einheitliche `EncounterInstance` Schema mit `type: 'social'`.
+- `leadNpc` ist immer vorhanden (Hauptansprechpartner)
+- `disposition` bestimmt die Grundhaltung (-100 bis +100)
+- Shop-Link erfolgt ueber NPC-Owner (kein separates Feld)
+
+→ Schema: [Encounter-System.md#einheitliches-encounterinstance-schema](Encounter-System.md#einheitliches-encounterinstance-schema)
+→ Shop-Integration: [Encounter-System.md#shop-integration-bei-social-encounters](Encounter-System.md#shop-integration-bei-social-encounters)
 
 ### Passing
 
-```typescript
-interface PassingEncounter extends BaseEncounterInstance {
-  type: 'passing';
-  activity: string;                 // "Woelfe jagen einen Hirsch"
-  // creatures enthaelt z.B. 5 Woelfe
-}
-```
+Passing-Encounters nutzen das einheitliche `EncounterInstance` Schema mit `type: 'passing'`.
+- Nur Basis-Felder: `description`, `activity`, `perception`
+- Beispiel: "5 Woelfe jagen einen Hirsch am Horizont"
 
 ### Trace
 
-```typescript
-interface TraceEncounter extends BaseEncounterInstance {
-  type: 'trace';
-  age: 'fresh' | 'recent' | 'old';
-  clues: string[];
-  trackingDC: number;
-  inferredActivity: string;
-  // creatures enthaelt z.B. "3 Goblin-Jaeger" die hier waren
-}
-```
+Trace-Encounters nutzen das einheitliche `EncounterInstance` Schema mit `type: 'trace'` plus optionale Felder:
+- `traceAge?: 'fresh' | 'recent' | 'old'` - Alter der Spuren
+- `trackingDC?: number` - DC zum Verfolgen
+
+Der GM leitet konkrete Spuren-Details (Fussabdruecke, Blutspuren etc.) selbst aus `creatures` und `activity` ab.
+
+→ Schema: [Encounter-System.md#einheitliches-encounterinstance-schema](Encounter-System.md#einheitliches-encounterinstance-schema)
 
 ---
 
@@ -584,23 +575,35 @@ interface GroupRelation {
 
 ## Tasks
 
-| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 235 | ✅ | Encounter | CRComparison Type: trivial, manageable, deadly, impossible | hoch | Ja | - | Encounter-Balancing.md#cr-vergleich, Encounter-System.md#typ-ableitung | encounter-utils.ts:CRComparison type definition |
-| 236 | ✅ | Encounter | compareCR Funktion: CR/Level Ratio → CRComparison | hoch | Ja | #235, #1001 | Encounter-Balancing.md#cr-vergleich | encounter-utils.ts:compareCR() |
-| 237 | ✅ | Encounter | EncounterDifficulty Type: Easy, Medium, Hard, Deadly | hoch | Ja | - | Encounter-Balancing.md#difficulty-bestimmung, Encounter-System.md#5-step-pipeline | schemas/encounter.ts:encounterDifficultySchema |
-| 238 | ✅ | Encounter | Difficulty-Würfel: 12.5% Easy, 50% Medium, 25% Hard, 12.5% Deadly | hoch | Ja | #237 | Encounter-Balancing.md#difficulty-bestimmung | encounter-utils.ts:rollDifficulty() |
-| 239 | ✅ | Encounter | calculateXPBudget: Party-Size × Level × Difficulty-Faktor | hoch | Ja | #237, #502, #1001 | Encounter-Balancing.md#xp-budget, Character-System.md#encounter-balancing | encounter-utils.ts:calculateXPBudget() |
-| 240 | ✅ | Encounter | Gruppen-Multiplikatoren: Anzahl Gegner → effektives XP | hoch | Ja | - | Encounter-Balancing.md#gruppen-multiplikatoren | encounter-utils.ts:getGroupMultiplier(), calculateEffectiveXP() |
-| 241 | ✅ | Encounter | DailyXPTracker Interface: date, budgetTotal, budgetUsed, encountersToday | hoch | Ja | #910 | Encounter-Balancing.md#daily-xp-budget-tracking, Time-System.md#gamedate | types.ts:DailyXPTracker, encounter-store.ts:getDailyXP() |
-| 242 | ⛔ | Encounter | Long Rest Budget-Reset: budgetUsed = 0 bei rest:long-rest-completed | hoch | Ja | #241, #954 | Encounter-Balancing.md#resting--budget-reset | encounter-service.ts:setupEventHandlers() [ändern - auf rest:long-rest-completed statt time:day-changed] |
-| 243 | ✅ | Encounter | Erschöpftes Budget Effekt: <25% → 50% Combat→Trace, =0% → keine Combat | hoch | Ja | #241, #242 | Encounter-Balancing.md#effekt-auf-generierung, Encounter-System.md#typ-ableitung | encounter-service.ts:executeGenerationPipeline(), encounter-store.ts:isDailyBudgetExhausted() |
-| 244 | ✅ | Encounter | selectCompanions: Lead + Budget-Rest → Begleiter-Kreaturen | hoch | Ja | #239, #240 | Encounter-Balancing.md#companion-selection | encounter-utils.ts:selectCompanions(), calculateCreatureXP() |
-| 245 | ✅ | Encounter | fillCombatEncounter: Lead + Companions + XP-Berechnung | hoch | Ja | - | Encounter-Balancing.md#combat-befuellung, Encounter-System.md#encounter-befuellung, Creature.md#schema, NPC-System.md#lead-npc-auswahl | encounter-service.ts:executeGenerationPipeline() (Combat branch) |
-| 246 | ✅ | Encounter | Activity & Goal Selection: Kreatur → mögliche Aktivitäten/Ziele | hoch | Ja | #910 | Encounter-Balancing.md#activity--goal-selection | encounter-utils.ts:generateActivity(), generateGoal() |
-| 247 | ⬜ | Encounter | SocialEncounter Interface: possibleOutcomes, trade (disposition jetzt in Base) | hoch | Ja | #213, #231, #1300 | Encounter-Balancing.md#social, Encounter-System.md#typ-spezifisches-verhalten, NPC-System.md#lead-npc-auswahl | schemas/encounter.ts [ändern], types.ts:SocialEncounter [neu] |
-| 248 | ⬜ | Encounter | TraceEncounter Interface: creature, inferredActivity, age, clues, trackingDC | hoch | Ja | #213 | Encounter-Balancing.md#trace | schemas/encounter.ts [ändern], types.ts:TraceEncounter [neu] |
-| 249 | ⛔ | Encounter | PassingEncounter Interface: creature, activity, distance, awareness | hoch | Ja | #213, #1200 | Encounter-Balancing.md#passing, Encounter-System.md#typ-spezifisches-verhalten, Creature.md#schema | schemas/encounter.ts [ändern], types.ts:PassingEncounter [neu] |
-| 251 | ⬜ | Encounter | Multi-Gruppen-Trigger: Variety-Adjustment, Location-based, Random Chance | niedrig | Nein | #210, #250 | Encounter-Balancing.md#multi-gruppen-encounters, Encounter-System.md#variety-validation, NPC-System.md#multi-gruppen-encounters | encounter-utils.ts:shouldGenerateMultiGroup() [neu] |
-| 250 | ✅ | Encounter | GroupRelation Interface: groupA, groupB, relation, context | hoch | Ja | #213 | Encounter-Balancing.md#gruppen-relationen | schemas/encounter.ts [ändern], types.ts:GroupRelation [neu] |
-| 252 | ⬜ | Encounter | Multi-Gruppen-Generierung: 2+ NPC-Gruppen mit Relationen | hoch | Ja | #245, #250 | Encounter-Balancing.md#multi-gruppen-encounters-post-mvp | encounter-utils.ts:generateMultiGroupEncounter() [neu] |
+| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+| 235 | ✅ | Encounter | core | CRComparison Type: trivial, manageable, deadly, impossible | hoch | Ja | - | Encounter-Balancing.md#encounter-difficulty, Encounter-System.md#typ-ableitung | encounter-utils.ts:CRComparison type definition |
+| 236 | ✅ | Encounter | core | compareCR Funktion: CR/Level Ratio → CRComparison | hoch | Ja | #235 | Encounter-Balancing.md#encounter-difficulty | encounter-utils.ts:compareCR() |
+| 237 | ✅ | Encounter | core | EncounterDifficulty Type: Easy, Medium, Hard, Deadly | hoch | Ja | - | Encounter-Balancing.md#difficulty-bestimmung, Encounter-System.md#5-step-pipeline | schemas/encounter.ts:encounterDifficultySchema |
+| 238 | ✅ | Encounter | core | Difficulty-Würfel: 12.5% Easy, 50% Medium, 25% Hard, 12.5% Deadly | hoch | Ja | #237 | Encounter-Balancing.md#difficulty-bestimmung | encounter-utils.ts:rollDifficulty() |
+| 239 | ✅ | Encounter | features | calculateXPBudget: DMG XP_THRESHOLDS Tabelle statt linearer Approximation Konformität hergestellt: - Lineare Approximation (level × multiplier) → DMG XP_THRESHOLDS Lookup - Level 5 Medium: vorher 250 XP → jetzt 500 XP pro Charakter Verhalten jetzt: - Nutzt offizielle DMG-Tabelle für Level 1-20 - Summiert individuelle Schwellenwerte pro Party-Member - Level außerhalb 1-20 wird auf 1-20 geclampt | hoch | Ja | #237, #502 | Encounter-Balancing.md#xp-budget, Character-System.md#encounter-balancing | encounter-utils.ts:XP_THRESHOLDS (DMG Level 1-20 Tabelle), encounter-utils.ts:calculateXPBudget() (Lookup statt linear), encounter-utils.test.ts:calculateXPBudget Tests (DMG-konforme Erwartungen) |
+| 240 | ✅ | Encounter | core | Gruppen-Multiplikatoren: Anzahl Gegner → effektives XP | hoch | Ja | - | Encounter-Balancing.md#gruppen-multiplikatoren | encounter-utils.ts:getGroupMultiplier(), calculateEffectiveXP() |
+| 241 | ✅ | Encounter | features | DailyXPTracker Interface: date, budgetTotal, budgetUsed, encountersToday | hoch | Ja | #910 | Encounter-Balancing.md#daily-xp-budget-tracking, Time-System.md#gamedate | types.ts:DailyXPTracker, encounter-store.ts:getDailyXP() |
+| 242 | ⛔ | Encounter | features | Long Rest Budget-Reset: budgetUsed = 0 bei rest:long-rest-completed | hoch | Ja | #241, #954 | Encounter-Balancing.md#resting--budget-reset | encounter-service.ts:setupEventHandlers() [ändern - auf rest:long-rest-completed statt time:day-changed] |
+| 243 | ✅ | Encounter | features | Erschöpftes Budget Effekt: <25% → 50% Combat→Trace, =0% → keine Combat | hoch | Ja | #241, #242 | Encounter-Balancing.md#effekt-auf-generierung, Encounter-System.md#typ-ableitung | encounter-service.ts:executeGenerationPipeline(), encounter-store.ts:isDailyBudgetExhausted() |
+| 244 | ✅ | Encounter | features | selectCompanions: Lead + Budget-Rest → Begleiter-Kreaturen | hoch | Ja | #239, #240 | Encounter-Balancing.md#companion-selection | encounter-utils.ts:selectCompanions(), calculateCreatureXP() |
+| 245 | ✅ | Encounter | - | fillCombatEncounter: Lead + Companions + XP-Berechnung | hoch | Ja | - | Encounter-Balancing.md#combat | encounter-service.ts:executeGenerationPipeline() (Combat branch) |
+| 246 | ✅ | Encounter | features | Activity & Goal Selection: Kreatur → mögliche Aktivitäten/Ziele | hoch | Ja | #910 | Encounter-Balancing.md#activity--goal-selection | encounter-utils.ts:generateActivity(), generateGoal() |
+| 248 | ✅ | Encounter | core | Trace-Felder (traceAge, trackingDC) als optionale Felder auf EncounterInstance. REDUZIERT: clues/inferredActivity gestrichen (kreativ, nicht crunch) | hoch | Ja | #213 | Encounter-System.md#typ-spezifische-erweiterungen, Encounter-System.md#trace | schemas/encounter.ts:traceAgeSchema (Zeile 86-92), encounterInstanceSchema.traceAge + trackingDC (Zeile 593-605), schemas/index.ts:Export (Zeile 266-268) |
+| 251 | ⬜ | Encounter | features | Multi-Gruppen-Trigger: Variety-Adjustment, Location-based, Random Chance | niedrig | Nein | #210, #250 | Encounter-Balancing.md#multi-gruppen-encounters, Encounter-System.md#variety-validation, NPC-System.md#multi-gruppen-encounters | encounter-utils.ts:shouldGenerateMultiGroup() [neu] |
+| 250 | ✅ | Encounter | core | GroupRelation Interface: targetGroupId, relation (ohne context) | hoch | Ja | #213 | Encounter-Balancing.md#gruppen-relationen | schemas/encounter.ts [ändern], types.ts:GroupRelation [neu] |
+| 252 | ✅ | Encounter | features | Multi-Gruppen-Generierung: 2+ NPC-Gruppen mit Relationen. Deliverables: EncounterInstance.groups[], shouldGenerateMultiGroup(), distributeBudget(), createEncounterGroup(), deriveGroupRelation() | hoch | Ja | #245, #250 | Encounter-Balancing.md#multi-gruppen-encounters-post-mvp | schemas/encounter.ts (groups[], isMultiGroup), encounter-utils.ts (shouldGenerateMultiGroup, distributeBudget, deriveGroupRelation, createEncounterGroup), index.ts (exports) |
+| 3060 | ⬜ | Encounter | - | XP_THRESHOLDS Konstante: DMG Level 1-20 Tabelle (easy/medium/hard/deadly) | hoch | --layer | - | Encounter-Balancing.md#dd-5e-xp-thresholds | - |
+| 3061 | ⬜ | Encounter | - | calculatePartyThresholds: Summierung individueller Schwellenwerte pro Member | hoch | --layer | #3060, #502 | Encounter-Balancing.md#party-thresholds | - |
+| 3062 | ⬜ | Encounter | - | calculateEncounterDifficulty: adjustedXP vs Thresholds → trivial/easy/medium/hard/deadly/impossible | hoch | --layer | #3061, #240 | Encounter-Balancing.md#encounter-difficulty | - |
+| 3063 | ⬜ | Encounter | - | AvoidabilityFactors Interface: disposition, initialDistance, partyStealth, encounterPerception | hoch | --layer | - | Encounter-Balancing.md#avoidability-faktoren | - |
+| 3064 | ⬜ | Encounter | - | calculateAvoidabilityMultiplier: Disposition + Distanz + Stealth → Budget-Multiplikator (1.0-4.0) | hoch | --layer | #3063 | Encounter-Balancing.md#avoidability-faktoren | - |
+| 3065 | ⬜ | Encounter | - | calculateBaseBudget: Party-Thresholds → Medium-Budget | hoch | --layer | #3061 | Encounter-Balancing.md#basis-budget | - |
+| 3066 | ⬜ | Encounter | - | selectEncounterBudget: Exponentiell fallende Wahrscheinlichkeit (50% → 25% → 12.5%...) | hoch | --layer | #3065, #3064 | Encounter-Balancing.md#budget-auswahl-mit-exponentieller-wahrscheinlichkeit | - |
+| 3067 | ⬜ | Encounter | - | fillEncounter: Faction-Template Prüfung → generische Befüllung (Budget als Maximum) | hoch | --layer | #3066, #1400 | Encounter-Balancing.md#budget-muss-nicht-ausgeschoepft-werden | - |
+| 3069 | ⬜ | Encounter | - | calculateDailyBudget: 7× Medium-Thresholds (D&D Adventuring Day) | hoch | --layer | #3061 | Encounter-Balancing.md#tages-budget-berechnung | - |
+| 3070 | ⬜ | Encounter | - | fillSocialEncounter: Shop-Link via NPC-Owner (leadNpc.npcId → shopRegistry.findByNpcOwner) | hoch | --layer | - | Encounter-Balancing.md#social, Encounter-System.md#typ-spezifisches-verhalten | - |
+| 3071 | ⬜ | Encounter | - | fillPassingEncounter: Nutzt nur Basis-Felder (description, activity, perception) - keine Extra-Logik | hoch | --layer | - | Encounter-Balancing.md#passing | - |
+| 3072 | ⬜ | Encounter | - | fillTraceEncounter: traceAge + trackingDC Generierung (clues/inferredActivity gestrichen - kreativ, nicht crunch) | hoch | --layer | #248 | Encounter-Balancing.md#trace | - |
+| 3073 | ⬜ | Encounter | - | distributeBudget: narrativeRole (threat/victim/neutral/ally) → Budget-Anteile (60-80%/15-30%/20-40%/0-10%) | niedrig | Nein | #252 | Encounter-Balancing.md#budget-bei-multi-gruppen | - |
+| 3074 | ⬜ | Encounter | - | calculateEffectivePartyThresholds: Party + helfende Allies (status=free, disposition>0, combatants) | niedrig | Nein | #3061, #250 | Encounter-Balancing.md#allies-und-difficulty | - |

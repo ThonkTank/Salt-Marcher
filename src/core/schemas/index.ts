@@ -248,6 +248,9 @@ export {
   MAX_REROLL_ATTEMPTS,
   CR_COMBAT_THRESHOLD_FACTOR,
   BASE_ENCOUNTER_CHANCE,
+  // Activity schemas (Task #2969)
+  weightedActivitySchema,
+  type WeightedActivity,
   // GroupRelation schemas (Task #250)
   groupRelationTypeSchema,
   type GroupRelationType,
@@ -260,6 +263,9 @@ export {
   type NarrativeRole,
   encounterGroupSchema,
   type EncounterGroup,
+  // Trace schemas (Task #248)
+  traceAgeSchema,
+  type TraceAge,
 } from './encounter';
 
 // Character schemas

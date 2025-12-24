@@ -14,15 +14,15 @@ Dieses Dokument definiert, wie Claude Code mit diesem Repository arbeitet.
 2. **Task-Skripte nutzen** - Die Roadmap ist zu groß zum direkten Lesen:
    ```bash
    node scripts/task.mjs sort                # Top-Tasks anzeigen
-   node scripts/task.mjs search <keyword>    # Nach Keyword suchen
-   node scripts/task.mjs search <ID>         # Task-Details + Dependencies
+   node scripts/task.mjs sort <keyword>      # Nach Keyword filtern
+   node scripts/task.mjs show <ID>           # Task-Details + Dependencies
    ```
 
 Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 
 **⛔ ABSOLUT VERBOTEN:**
 - Development-Roadmap.md **NIEMALS** direkt lesen (Read-Tool) - nur über CLI-Skripte!
-- Development-Roadmap.md **NIEMALS** manuell editieren (Edit-Tool) - nur über CLI-Skripte!
+- Tasks **NIEMALS** manuell editieren (Edit-Tool) - nur über CLI-Skripte!
 
 ### CLAIM-FIRST REGEL (KEINE AUSNAHMEN)
 
@@ -45,7 +45,7 @@ Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 
 **Die einzigen erlaubten Schritte VOR dem Claim:**
 - ✅ Goals.md lesen (einmal pro Session)
-- ✅ Task mit Skript finden (`task.mjs sort`, `task.mjs search <keyword>`)
+- ✅ Task mit Skript finden (`task.mjs sort`, `task.mjs show <ID>`)
 - ✅ Task-ID notieren
 
 **Schritt 2 (Claim) ist ein GATE.** Ohne erfolgreichen Claim kein Weitermachen.
@@ -58,7 +58,7 @@ Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
 
 **ABBRUCH. SOFORT. OHNE NACHDENKEN.**
 
-Wenn `claim` fehlschlägt oder `task.mjs search` einen fremden Owner zeigt:
+Wenn `claim` fehlschlägt oder `task.mjs show` einen fremden Owner zeigt:
 
 1. **ABBRECHEN** - Diese Task existiert für dich nicht mehr
 2. **NÄCHSTE TASK** - `node scripts/task.mjs sort` ausführen
@@ -74,7 +74,7 @@ Wenn `claim` fehlschlägt oder `task.mjs search` einen fremden Owner zeigt:
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. TASK FINDEN                                              │
 │    → node scripts/task.mjs sort [keyword]                   │
-│    → node scripts/task.mjs search <keyword>                 │
+│    → node scripts/task.mjs show <ID>                        │
 ├─────────────────────────────────────────────────────────────┤
 │ 2. TASK SOFORT CLAIMEN (GATE)                               │
 │    → node scripts/task.mjs claim <ID>                       │
@@ -86,19 +86,26 @@ Wenn `claim` fehlschlägt oder `task.mjs search` einen fremden Owner zeigt:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Multi-Agent-Setup
+### Claim-System (Key-basiert)
 
-**PFLICHT für Claims:** Agent-ID muss gesetzt sein:
+Das Claim-System verwendet 4-Zeichen-Keys:
 
 ```bash
-export CLAUDE_AGENT_ID="agent-$(openssl rand -hex 4)"
+# Task claimen → Key merken!
+node scripts/task.mjs claim 428
+# Ausgabe: "Key: a4x2 (2h gültig)"
+
+# Task freigeben (nur Key nötig, keine ID)
+node scripts/task.mjs unclaim a4x2
+
+# Edit bei geclaimter Task erfordert Key
+node scripts/task.mjs edit 428 --status ✅ --key a4x2
 ```
 
-**Ohne Agent-ID schlagen `--claim` und `--unclaim` mit Fehler fehl.**
-
-Die Agent-ID Priorität:
-1. `CLAUDE_AGENT_ID` Umgebungsvariable (höchste Priorität)
-2. `--agent-id <id>` CLI-Flag
+**Wichtig:**
+- Key gilt 2 Stunden, dann automatisch freigegeben
+- Bei Edit ohne Key auf geclaime Task → Fehler
+- Key aufbewahren bis Task abgeschlossen
 
 **Annahme:** Immer davon ausgehen, dass andere Agenten simultan arbeiten könnten.
 
@@ -108,10 +115,10 @@ Die Agent-ID Priorität:
 
 | Aktion | ❌ VERBOTEN | ✅ ERLAUBT |
 |--------|-------------|------------|
-| Task lesen | Read-Tool auf Roadmap | `task.mjs search <ID>` |
-| Task suchen | Grep/Glob auf Roadmap | `task.mjs search <keyword>` |
+| Task lesen | Read-Tool auf Roadmap | `task.mjs show <ID>` |
+| Task suchen | Grep/Glob auf Roadmap | `task.mjs sort <keyword>` |
 | Status ändern | Edit-Tool auf Roadmap | `task.mjs edit <ID> --status X` |
-| Task anlegen | Edit-Tool auf Roadmap | `task.mjs add --task ...` |
+| Task anlegen | Edit-Tool auf Roadmap | `task.mjs add --task --doc <path> ...` |
 | Bug melden | Edit-Tool auf Roadmap | `task.mjs add --bug ...` |
 
 **Warum?**
@@ -179,7 +186,7 @@ Build output: Configured in `esbuild.config.mjs` → Obsidian vault plugins fold
 
 ```
 src/                   # Source code
-  core/                # Result, Option, EventBus, Schemas, Utils (128 tests)
+  core/                # Result, Option, EventBus, Schemas, Utils
   features/            # Feature layer (map, party, travel)
   infrastructure/      # Vault adapters, rendering
   application/         # SessionRunner, ViewModels
@@ -213,7 +220,7 @@ Goals.md               # Start here: high-level vision and feature overview (Ger
 
 ### Entity-Typen
 
-EntityRegistry manages 18 types: `creature`, `character`, `npc`, `faction`, `item`, `spell`, `terrain`, `location`, `maplink`, `map`, `track`, `quest`, `encounter`, `calendar`, `journal`, `worldevent`, `culture`, `shop`
+EntityRegistry manages 17 types: `creature`, `character`, `npc`, `faction`, `item`, `map`, `poi`, `maplink`, `terrain`, `quest`, `encounter`, `shop`, `party`, `calendar`, `journal`, `worldevent`, `track`
 
 ### Debug-Logging
 
@@ -362,7 +369,7 @@ Pro logische Einheit committen:
 
 | Komponente | Stabilität | Test-Ansatz |
 |------------|------------|-------------|
-| Core | Hoch | 136 Unit-Tests (inkl. EventBus request()) |
+| Core | Hoch | ~280 Unit-Tests (inkl. EventBus request()) |
 | Features (Iteration) | Niedrig | Manuelles Testen |
 | Features (Fertig) | Hoch | Automatisierte Tests nachziehen |
 
@@ -385,12 +392,13 @@ Bei fehlenden oder unklaren Schemas: User fragen.
 
 | Aktion | Befehl |
 |--------|--------|
-| Lesen | `node scripts/task.mjs search <ID>` |
-| Suchen | `node scripts/task.mjs search <keyword>` |
+| Lesen | `node scripts/task.mjs show <ID>` |
+| Suchen | `node scripts/task.mjs sort <keyword>` |
 | Priorisieren | `node scripts/task.mjs sort` |
 | Status ändern | `node scripts/task.mjs edit <ID> --status ✅` |
 | Claimen | `node scripts/task.mjs claim <ID>` |
-| Neue Task | `node scripts/task.mjs add --task ...` |
+| Unclaimen | `node scripts/task.mjs unclaim <key>` |
+| Neue Task | `node scripts/task.mjs add --task --doc <path> ...` |
 | Bug melden | `node scripts/task.mjs add --bug ...` |
 | Task löschen | `node scripts/task.mjs remove <ID>` |
 | Task splitten | `node scripts/task.mjs split <ID> "A" "B"` |
@@ -413,14 +421,13 @@ node scripts/task.mjs sort --help                 # Alle Optionen
 4. RefCount: Tasks/Bugs, von denen viele abhängen
 5. Nummer: Niedriger = höhere Priorität
 
-### Task-Suche (search)
+### Task-Details (show)
 
 ```bash
-node scripts/task.mjs search 428                  # Task #428 mit Dep-Trees
-node scripts/task.mjs search b4                   # Bug b4 Details
-node scripts/task.mjs search Travel               # Suche in Bereich/Beschreibung/Spec
-node scripts/task.mjs search 428 --depth 5        # Tieferer Dep-Baum
-node scripts/task.mjs search --help               # Alle Optionen
+node scripts/task.mjs show 428                    # Task #428 mit Dep-Trees
+node scripts/task.mjs show b4                     # Bug b4 Details
+node scripts/task.mjs show 428 --depth 5          # Tieferer Dep-Baum
+node scripts/task.mjs show --help                 # Alle Optionen
 ```
 
 ### Task-Bearbeitung (edit)
@@ -441,24 +448,26 @@ node scripts/task.mjs edit 428 --bereich Travel
 node scripts/task.mjs edit 428 --status ✅ --dry-run
 ```
 
-### Claims (claim)
+### Claims (claim/unclaim)
 
 ```bash
-node scripts/task.mjs claim 428                   # Task claimen
-node scripts/task.mjs claim 428 --unclaim         # Claim freigeben
-node scripts/task.mjs claim 428 --check           # Claim-Status prüfen
-node scripts/task.mjs claim --whoami              # Eigene Agent-ID anzeigen
+node scripts/task.mjs claim 428                   # Task claimen → Key merken!
+node scripts/task.mjs unclaim a4x2                # Claim freigeben (mit Key)
+node scripts/task.mjs edit 428 --key a4x2 ...     # Edit mit Key bei geclaimter Task
 ```
 
 ### Neue Tasks/Bugs (add)
 
 ```bash
-# Neue Task erstellen
-node scripts/task.mjs add --task -b Travel -m "Beschreibung" -p hoch
+# Neue Task erstellen (--doc ist erforderlich!)
+node scripts/task.mjs add --task --doc features/Travel-System.md -b Travel -m "Beschreibung"
+node scripts/task.mjs add --task --doc domain/Quest.md --init -b Quest -m "Neue Feature"  # --init erstellt Tabelle
 
-# Neuen Bug erstellen
+# Neuen Bug erstellen (nur Roadmap, kein --doc nötig)
 node scripts/task.mjs add --bug -m "Bug-Beschreibung" -p hoch -d "#428"
 ```
+
+**Wichtig:** Tasks werden immer sowohl in der Roadmap als auch im angegebenen Doc gespeichert.
 
 ### Löschen/Splitten (remove, split)
 

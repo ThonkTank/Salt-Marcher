@@ -31,6 +31,7 @@ import { calculatePartyLevel, calculatePartySpeed } from '@core/schemas';
 import type { EntityId } from '@core/index';
 import type { PartyFeaturePort, PartyStoragePort, CharacterStoragePort } from './types';
 import type { PartyStore } from './party-store';
+import { createCharacterService } from './character-service';
 import type {
   PartyStateChangedPayload,
   PartyPositionChangedPayload,
@@ -39,6 +40,7 @@ import type {
   PartyLoadRequestedPayload,
   PartyMemberAddedPayload,
   PartyMemberRemovedPayload,
+  EntitySavedPayload,
 } from '@core/events/domain-events';
 import { calculateEffectiveSpeed, calculateEncumbrance } from '@/features/inventory';
 
@@ -69,6 +71,13 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
   // Track subscriptions for cleanup
   const subscriptions: Unsubscribe[] = [];
 
+  // Create character service for HP tracking
+  const characterService = createCharacterService({
+    store,
+    characterStorage,
+    eventBus,
+  });
+
   // ===========================================================================
   // Member Loading Helper
   // ===========================================================================
@@ -81,12 +90,14 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
     const party = store.getState().currentParty;
     if (!party || party.members.length === 0) {
       store.setLoadedMembers([]);
+      characterService.syncTrackedLevels();
       return ok([]);
     }
 
     if (!characterStorage) {
       // No character storage - return empty array
       store.setLoadedMembers([]);
+      characterService.syncTrackedLevels();
       return ok([]);
     }
 
@@ -96,6 +107,10 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
     }
 
     store.setLoadedMembers([...result.value]);
+
+    // Sync character levels for level change detection
+    characterService.syncTrackedLevels();
+
     return ok(result.value);
   }
 
@@ -240,6 +255,32 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
         }
       )
     );
+
+    // Handle entity:saved for characters in party
+    // When a character is saved (e.g., via Library CRUD), reload party members
+    // to ensure Travel and Encounter features use fresh data.
+    subscriptions.push(
+      eventBus.subscribe<EntitySavedPayload>(
+        EventTypes.ENTITY_SAVED,
+        async (event) => {
+          // Only handle character saves
+          if (event.payload.type !== 'character') return;
+
+          const characterId = event.payload.id as CharacterId;
+          const party = store.getState().currentParty;
+
+          // Only reload if character is in the current party
+          if (!party || !party.members.includes(characterId)) return;
+
+          // Reload all members to get fresh data
+          await loadMembersFromStorage();
+          publishStateChanged(event.correlationId);
+        }
+      )
+    );
+
+    // Set up character service event handlers (character:hp-changed)
+    characterService.setupEventHandlers(publishStateChanged);
   }
 
   // Set up event handlers immediately if eventBus is provided
@@ -523,6 +564,9 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
     // =========================================================================
 
     dispose(): void {
+      // Clean up character service
+      characterService.dispose();
+
       // Clean up all EventBus subscriptions
       for (const unsubscribe of subscriptions) {
         unsubscribe();

@@ -8,7 +8,7 @@
 │     → Weitere: Features.md, Data-Flow.md, EventBus.md           │
 │                                                                 │
 │  B) Feature-Docs (PFLICHT, alle für diesen Bereich):            │
-│     → workflow-texts.json > featureRouting konsultieren         │
+│     → config.json > featureRouting konsultieren         │
 │     → ALLE Docs der Zeile lesen                                 │
 │                                                                 │
 │  C) Spec-Spalte der Task:                                       │

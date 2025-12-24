@@ -69,6 +69,10 @@ import {
   VIEW_TYPE_CARTOGRAPHER,
   CartographerView,
 } from './application/cartographer';
+import {
+  VIEW_TYPE_LIBRARY,
+  LibraryView,
+} from './application/library';
 import { createNotificationService, showSlotAssignmentDialog, type NotificationService } from './application/shared';
 
 // Presets (for bootstrap)
@@ -424,7 +428,9 @@ export default class SaltMarcherPlugin extends Plugin {
       return new DetailView(leaf, {
         encounterFeature: this.encounterFeature,
         combatFeature: this.combatFeature,
+        partyFeature: this.partyFeature,
         eventBus: this.eventBus!,
+        entityRegistry: this.entityRegistry,
       });
     });
 
@@ -435,6 +441,14 @@ export default class SaltMarcherPlugin extends Plugin {
         eventBus: this.eventBus!,
         mapFeature: this.mapFeature!,
         notificationService: this.notificationService!,
+      });
+    });
+
+    // Library - Entity CRUD interface (opens in center leaf)
+    this.registerView(VIEW_TYPE_LIBRARY, (leaf) => {
+      return new LibraryView(leaf, {
+        entityRegistry: this.entityRegistry!,
+        eventBus: this.eventBus,
       });
     });
 
@@ -454,6 +468,19 @@ export default class SaltMarcherPlugin extends Plugin {
         const leaf = this.app.workspace.getLeaf('tab');
         if (leaf) {
           await leaf.setViewState({ type: VIEW_TYPE_CARTOGRAPHER, active: true });
+          this.app.workspace.revealLeaf(leaf);
+        }
+      }
+    });
+
+    this.addRibbonIcon('book-open', 'Open Library', async () => {
+      const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_LIBRARY);
+      if (existing.length > 0) {
+        this.app.workspace.revealLeaf(existing[0]);
+      } else {
+        const leaf = this.app.workspace.getLeaf('tab');
+        if (leaf) {
+          await leaf.setViewState({ type: VIEW_TYPE_LIBRARY, active: true });
           this.app.workspace.revealLeaf(leaf);
         }
       }
@@ -502,6 +529,24 @@ export default class SaltMarcherPlugin extends Plugin {
           const leaf = this.app.workspace.getLeaf('tab');
           if (leaf) {
             await leaf.setViewState({ type: VIEW_TYPE_CARTOGRAPHER, active: true });
+            this.app.workspace.revealLeaf(leaf);
+          }
+        }
+      },
+    });
+
+    // Open Library
+    this.addCommand({
+      id: 'open-library',
+      name: 'Open Library',
+      callback: async () => {
+        const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_LIBRARY);
+        if (existing.length > 0) {
+          this.app.workspace.revealLeaf(existing[0]);
+        } else {
+          const leaf = this.app.workspace.getLeaf('tab');
+          if (leaf) {
+            await leaf.setViewState({ type: VIEW_TYPE_LIBRARY, active: true });
             this.app.workspace.revealLeaf(leaf);
           }
         }

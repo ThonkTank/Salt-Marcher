@@ -8,12 +8,12 @@
  * Services müssen keine Lines oder Indices mehr kennen.
  */
 
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join, basename, relative } from 'path';
 import { ok, err, TaskErrorCode } from '../core/result.mjs';
 import { parseRoadmap, detectDocTableFormat, formatDeps } from '../core/table/parser.mjs';
-import { buildDocTaskLine, updateDocTaskLine, updateTaskLine, buildTaskLine, buildBugLine } from '../core/table/builder.mjs';
+import { buildDocTaskLine, updateDocTaskLine, updateTaskLine, buildTaskLine, buildBugLine, buildEmptyTaskTable } from '../core/table/builder.mjs';
 import { TaskStatus } from '../core/table/schema.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -52,6 +52,20 @@ function detectDocFormat(content) {
     }
   }
   return null;
+}
+
+/**
+ * Prüft ob ein Doc bereits eine Task-Tabelle enthält
+ *
+ * @param {string} content - Der Inhalt der Datei
+ * @returns {boolean} - true wenn Tabelle vorhanden
+ */
+function docHasTable(content) {
+  const lines = content.split('\n');
+  // Suche nach Task-Tabellen-Header (| # | ...)
+  return lines.some(line =>
+    line.includes('| # |') && line.includes('Beschreibung')
+  );
 }
 
 // ============================================================================
@@ -192,13 +206,14 @@ export function createFsTaskAdapter(options = {}) {
 
         if (format?.isNewFormat) {
           const docCells = line.split('|');
-          const refs = docCells[8]?.trim() || '-';
-          const imp = docCells[9]?.trim() || '-';
+          const refs = docCells[9]?.trim() || '-';
+          const imp = docCells[10]?.trim() || '-';
 
           docLineA = buildDocTaskLine({
             number: idA,
             status: TaskStatus.DONE,
-            bereich: task.bereich,
+            domain: task.domain,
+            layer: task.layer || '-',
             beschreibung: descA,
             prio: task.prio,
             mvp: task.mvp,
@@ -210,7 +225,8 @@ export function createFsTaskAdapter(options = {}) {
           docLineB = buildDocTaskLine({
             number: idB,
             status: TaskStatus.OPEN,
-            bereich: task.bereich,
+            domain: task.domain,
+            layer: task.layer || '-',
             beschreibung: descB,
             prio: task.prio,
             mvp: task.mvp,
@@ -321,7 +337,8 @@ export function createFsTaskAdapter(options = {}) {
         // Aktuelle Werte aus der Task holen, Updates überschreiben
         const docUpdates = {
           status: updates.status ?? task.status,
-          bereich: updates.bereich ?? task.bereich,
+          domain: updates.domain ?? task.domain,
+          layer: updates.layer ?? task.layer,
           beschreibung: updates.beschreibung ?? task.beschreibung,
           prio: updates.prio ?? task.prio,
           mvp: updates.mvp ?? task.mvp,
@@ -429,7 +446,8 @@ export function createFsTaskAdapter(options = {}) {
       const lineA = buildTaskLine({
         number: idA,
         status: TaskStatus.DONE,
-        bereich: task.bereich,
+        domain: task.domain,
+        layer: task.layer || '-',
         beschreibung: descA,
         prio: task.prio,
         mvp: task.mvp,
@@ -441,7 +459,8 @@ export function createFsTaskAdapter(options = {}) {
       const lineB = buildTaskLine({
         number: idB,
         status: TaskStatus.OPEN,
-        bereich: task.bereich,
+        domain: task.domain,
+        layer: task.layer || '-',
         beschreibung: descB,
         prio: task.prio,
         mvp: task.mvp,
@@ -479,11 +498,11 @@ export function createFsTaskAdapter(options = {}) {
 
     /**
      * Fügt eine neue Task zur Roadmap hinzu
-     * Neue Tasks werden NICHT zu Docs synchronisiert
+     * Wenn doc angegeben, wird die Task auch in das Doc eingefügt
      */
     addTask(taskData, opts = {}) {
-      const { dryRun = false } = opts;
-      const { bereich, beschreibung, prio = 'mittel', mvp = 'Nein', deps = [], spec = '-', isBug = false } = taskData;
+      const { dryRun = false, doc = null, init = false } = opts;
+      const { domain, layer = '-', beschreibung, prio = 'mittel', mvp = 'Nein', deps = [], spec = '-', isBug = false } = taskData;
 
       // 1. Roadmap laden
       const loadResult = this.load();
@@ -517,7 +536,8 @@ export function createFsTaskAdapter(options = {}) {
         newLine = buildTaskLine({
           number: newId,
           status: TaskStatus.OPEN,
-          bereich: bereich || '-',
+          domain: domain || '-',
+          layer: layer || '-',
           beschreibung,
           prio,
           mvp,
@@ -556,11 +576,121 @@ export function createFsTaskAdapter(options = {}) {
         writeFileSync(roadmapPath, lines.join('\n'));
       }
 
+      // 5. Auch in Doc einfügen (wenn angegeben, nur für Tasks)
+      let docResult = null;
+      if (doc && !isBug) {
+        docResult = this.addTaskToDoc(doc, newLine, { init, dryRun });
+        if (!docResult.ok) {
+          // Rollback: Task aus Roadmap entfernen
+          if (!dryRun && insertIndex > 0) {
+            lines.splice(insertIndex, 1);
+            writeFileSync(roadmapPath, lines.join('\n'));
+          }
+          return docResult;
+        }
+      }
+
       return ok({
         success: true,
         newId,
         isBug,
-        line: newLine
+        line: newLine,
+        doc: docResult?.ok ? { path: doc, initialized: docResult.value.initialized } : null
+      });
+    },
+
+    /**
+     * Fügt eine Task-Zeile zu einem spezifischen Doc hinzu
+     *
+     * @param {string} docRelPath - Relativer Pfad ab docs/, z.B. "features/Travel-System.md"
+     * @param {string} taskLine - Die fertige Task-Zeile
+     * @param {object} [opts] - Optionen
+     * @param {boolean} [opts.init=false] - Tabelle erstellen falls nicht vorhanden
+     * @param {boolean} [opts.dryRun=false] - Vorschau ohne Speichern
+     * @returns {import('../core/result.mjs').Result<{success: boolean, initialized: boolean}>}
+     */
+    addTaskToDoc(docRelPath, taskLine, opts = {}) {
+      const { init = false, dryRun = false } = opts;
+      const fullPath = join(docsPath, docRelPath);
+
+      // 1. Prüfen ob Doc existiert
+      if (!existsSync(fullPath)) {
+        return err({
+          code: TaskErrorCode.FILE_NOT_FOUND,
+          message: `Doc nicht gefunden: ${docRelPath}`
+        });
+      }
+
+      // 2. Inhalt laden
+      let content;
+      try {
+        content = readFileSync(fullPath, 'utf-8');
+      } catch (e) {
+        return err({
+          code: TaskErrorCode.READ_FAILED,
+          message: `Konnte Doc nicht lesen: ${e.message}`,
+          path: fullPath,
+          cause: e
+        });
+      }
+
+      // 3. Prüfen ob Tabelle existiert
+      const hasTable = docHasTable(content);
+      let initialized = false;
+
+      if (!hasTable && !init) {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: `Doc hat keine Task-Tabelle. Nutze --init um eine zu erstellen.`
+        });
+      }
+
+      // 4. Tabelle initialisieren falls nötig
+      let lines = content.split('\n');
+
+      if (!hasTable && init) {
+        // Tabelle am Ende des Docs anhängen
+        const tableBlock = buildEmptyTaskTable();
+        lines.push(...tableBlock.split('\n'));
+        initialized = true;
+      }
+
+      // 5. Task-Zeile einfügen (am Ende der Tabelle)
+      // Finde die letzte Zeile der Tabelle (letzte Zeile die mit | beginnt)
+      let insertIndex = -1;
+
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const line = lines[i];
+        // Finde Task-Zeilen (| <nummer> | ...) oder Separator
+        if (line.match(/^\|.*\|/) && !line.match(/^\|\s*#\s*\|/) && !line.match(/^\|[-:\s|]+\|$/)) {
+          insertIndex = i + 1;
+          break;
+        }
+        // Falls wir den Header/Separator finden aber keine Datenzeilen, einfügen danach
+        if (line.match(/^\|[-:\s|]+\|$/)) {
+          insertIndex = i + 1;
+          break;
+        }
+      }
+
+      if (insertIndex === -1) {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: `Konnte Einfügeposition in Doc nicht finden`
+        });
+      }
+
+      // 6. Zeile einfügen und speichern
+      if (!dryRun) {
+        lines.splice(insertIndex, 0, taskLine);
+        writeFileSync(fullPath, lines.join('\n'));
+      }
+
+      return ok({
+        success: true,
+        initialized,
+        path: fullPath,
+        insertIndex
       });
     },
 
@@ -596,15 +726,17 @@ export function createFsTaskAdapter(options = {}) {
 
             const docLines = content.split('\n');
             for (const line of docLines) {
-              const match = line.match(/^\|\s*(\d+[a-z]?)\s*\|\s*([⬜✅🔶⚠️🔒⛔📋❌])\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/);
+              // 10-Spalten: # | Status | Domain | Layer | Beschreibung | ...
+              const match = line.match(/^\|\s*(\d+[a-z]?)\s*\|\s*([⬜✅🔶⚠️🔒⛔📋❌])\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|\s*([^|]+)\s*\|/);
               if (match) {
                 const idStr = match[1];
                 const id = /[a-z]$/i.test(idStr) ? idStr.toLowerCase() : parseInt(idStr, 10);
                 const docTask = {
                   number: id,
                   status: match[2],
-                  bereich: match[3].trim(),
-                  beschreibung: match[4].trim()
+                  domain: match[3].trim(),
+                  layer: match[4].trim(),
+                  beschreibung: match[5].trim()
                 };
 
                 if (definitions.has(id)) {

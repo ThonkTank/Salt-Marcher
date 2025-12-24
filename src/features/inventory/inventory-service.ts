@@ -233,5 +233,24 @@ export function createInventoryService(): InventoryFeaturePort {
     ): number {
       return countPartyRations(characters, itemLookup);
     },
+
+    // =========================================================================
+    // Gold Convenience
+    // =========================================================================
+
+    addGold(
+      character: Character,
+      amount: number,
+      itemLookup: (id: EntityId<'item'>) => Item | undefined
+    ): Result<Character, InventoryError> {
+      if (amount <= 0) {
+        return err(
+          createInventoryError('INVALID_QUANTITY', `Invalid gold amount: ${amount}`)
+        );
+      }
+
+      const GOLD_PIECE_ID = 'gold-piece' as EntityId<'item'>;
+      return this.addItem(character, GOLD_PIECE_ID, amount, itemLookup);
+    },
   };
 }

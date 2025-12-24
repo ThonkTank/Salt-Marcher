@@ -21,6 +21,9 @@ import type {
   Faction,
   NoiseLevel,
   ScentStrength,
+  NarrativeRole,
+  EncounterGroup,
+  GroupRelationType,
 } from '@core/schemas';
 import { DEFAULT_DETECTION_PROFILE } from '@core/schemas';
 import { createCombatCreature } from '@/features/combat';
@@ -300,6 +303,7 @@ export function populateEncounter(
     type,
     state: 'pending',
     creatures: [creatureInstance],
+    isMultiGroup: false,
     activity,
     goal,
     description,
@@ -390,5 +394,171 @@ export function groupCreaturesByDefinitionId(
   }
 
   return Array.from(groups.values());
+}
+
+// ============================================================================
+// Multi-Group Encounter Functions (Task #252)
+// ============================================================================
+
+/**
+ * Base chance for generating a multi-group encounter.
+ * ~17% chance per encounter generation.
+ *
+ * @see docs/features/Encounter-Balancing.md#multi-gruppen-encounters-post-mvp
+ */
+export const MULTI_GROUP_BASE_CHANCE = 0.17;
+
+/**
+ * Budget distribution ranges by narrative role.
+ * Each role has a [min, max] percentage range.
+ *
+ * @see docs/features/Encounter-Balancing.md#budget-bei-multi-gruppen
+ */
+export const NARRATIVE_ROLE_BUDGET_RANGES: Record<NarrativeRole, [number, number]> = {
+  threat: [0.6, 0.8],
+  victim: [0.15, 0.3],
+  neutral: [0.2, 0.4],
+  ally: [0.0, 0.1],
+};
+
+/**
+ * Determines whether to generate a multi-group encounter.
+ *
+ * Trigger conditions:
+ * 1. Base chance: ~17% per encounter
+ * 2. Variety rescue: When single-group can't satisfy variety needs (future)
+ *
+ * @param _context - Generation context (unused in MVP, for future variety rescue)
+ * @returns true if multi-group should be generated
+ *
+ * @see docs/features/Encounter-Balancing.md#wann-multi-gruppen
+ */
+export function shouldGenerateMultiGroup(_context?: GenerationContext): boolean {
+  // MVP: Simple base chance only
+  // Future: Add variety rescue logic when varietyState is available
+  return Math.random() < MULTI_GROUP_BASE_CHANCE;
+}
+
+/**
+ * Input for budget distribution: group ID with narrative role.
+ */
+export interface BudgetDistributionInput {
+  groupId: string;
+  narrativeRole: NarrativeRole;
+}
+
+/**
+ * Distributes XP budget among groups based on their narrative roles.
+ *
+ * Each narrative role has a budget range:
+ * - threat: 60-80% (main opposition)
+ * - victim: 15-30% (hostages, endangered)
+ * - neutral: 20-40% (bystanders, merchants)
+ * - ally: 0-10% (potential helpers)
+ *
+ * The actual percentage is randomly selected within the range.
+ * If total exceeds 100%, all shares are normalized proportionally.
+ *
+ * @param totalBudget - Total XP budget to distribute
+ * @param groups - Groups with their narrative roles
+ * @returns Map of groupId to allocated XP budget
+ *
+ * @see docs/features/Encounter-Balancing.md#budget-bei-multi-gruppen
+ */
+export function distributeBudget(
+  totalBudget: number,
+  groups: BudgetDistributionInput[]
+): Map<string, number> {
+  if (groups.length === 0) {
+    return new Map();
+  }
+
+  // Calculate raw shares for each group
+  const rawShares = new Map<string, number>();
+  let totalShare = 0;
+
+  for (const group of groups) {
+    const [min, max] = NARRATIVE_ROLE_BUDGET_RANGES[group.narrativeRole];
+    const share = min + Math.random() * (max - min);
+    rawShares.set(group.groupId, share);
+    totalShare += share;
+  }
+
+  // Normalize if total exceeds 1.0 (100%)
+  const result = new Map<string, number>();
+  for (const [groupId, share] of rawShares) {
+    const normalizedShare = totalShare > 1.0 ? share / totalShare : share;
+    const budget = Math.floor(totalBudget * normalizedShare);
+    result.set(groupId, budget);
+  }
+
+  return result;
+}
+
+/**
+ * Generates a relation type based on narrative roles of two groups.
+ * This creates realistic default relations.
+ *
+ * @param fromRole - Narrative role of the source group
+ * @param toRole - Narrative role of the target group
+ * @returns Appropriate relation type
+ */
+export function deriveGroupRelation(
+  fromRole: NarrativeRole,
+  toRole: NarrativeRole
+): GroupRelationType {
+  // Threat groups are hostile to victims and other threats
+  if (fromRole === 'threat') {
+    if (toRole === 'victim') return 'hostile';
+    if (toRole === 'threat') return 'hostile'; // Rival threats
+    if (toRole === 'ally') return 'hostile';
+    return 'neutral';
+  }
+
+  // Victims flee from threats
+  if (fromRole === 'victim') {
+    if (toRole === 'threat') return 'fleeing';
+    return 'neutral';
+  }
+
+  // Allies are friendly to victims and hostile to threats
+  if (fromRole === 'ally') {
+    if (toRole === 'threat') return 'hostile';
+    if (toRole === 'victim') return 'friendly';
+    return 'neutral';
+  }
+
+  // Neutral groups are neutral to everyone
+  return 'neutral';
+}
+
+/**
+ * Creates an EncounterGroup from basic parameters.
+ * Helper function for generateMultiGroupEncounter.
+ *
+ * @param params - Group creation parameters
+ * @returns Complete EncounterGroup
+ */
+export function createEncounterGroup(params: {
+  groupId: string;
+  creatures: CreatureInstance[];
+  narrativeRole: NarrativeRole;
+  budgetShare: number;
+  activity: string;
+  goal: string;
+  dispositionToParty: number;
+  relationsToOthers: Array<{ targetGroupId: string; relation: GroupRelationType }>;
+}): EncounterGroup {
+  return {
+    groupId: params.groupId,
+    creatures: params.creatures,
+    dispositionToParty: params.dispositionToParty,
+    relationsToOthers: params.relationsToOthers,
+    activity: params.activity,
+    goal: params.goal,
+    budgetShare: params.budgetShare,
+    narrativeRole: params.narrativeRole,
+    status: 'free',
+  };
 }
 

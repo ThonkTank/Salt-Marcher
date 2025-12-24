@@ -20,6 +20,8 @@ import type {
   ScentStrength,
   StealthAbility,
   CreatureDetectionProfile,
+  WeightedActivity,
+  ResolvedCulture,
 } from '@core/schemas';
 import { DEFAULT_DETECTION_PROFILE } from '@core/schemas/creature';
 import { calculateXP, calculateEffectiveXP } from './creature-utils';
@@ -687,20 +689,36 @@ export function generateDescription(
 // ============================================================================
 
 /**
- * XP multipliers per difficulty level (per party member per level).
- * @see docs/features/Encounter-Balancing.md#xp-budget-berechnung
+ * DMG XP Thresholds per character level.
+ * @see docs/features/Encounter-Balancing.md#dd-5e-xp-thresholds
  */
-const XP_DIFFICULTY_MULTIPLIERS: Record<EncounterDifficulty, number> = {
-  easy: 25,
-  medium: 50,
-  hard: 75,
-  deadly: 100,
+const XP_THRESHOLDS: Record<number, { easy: number; medium: number; hard: number; deadly: number }> = {
+  1:  { easy: 25,   medium: 50,    hard: 75,    deadly: 100   },
+  2:  { easy: 50,   medium: 100,   hard: 150,   deadly: 200   },
+  3:  { easy: 75,   medium: 150,   hard: 225,   deadly: 400   },
+  4:  { easy: 125,  medium: 250,   hard: 375,   deadly: 500   },
+  5:  { easy: 250,  medium: 500,   hard: 750,   deadly: 1100  },
+  6:  { easy: 300,  medium: 600,   hard: 900,   deadly: 1400  },
+  7:  { easy: 350,  medium: 750,   hard: 1100,  deadly: 1700  },
+  8:  { easy: 450,  medium: 900,   hard: 1400,  deadly: 2100  },
+  9:  { easy: 550,  medium: 1100,  hard: 1600,  deadly: 2400  },
+  10: { easy: 600,  medium: 1200,  hard: 1900,  deadly: 2800  },
+  11: { easy: 800,  medium: 1600,  hard: 2400,  deadly: 3600  },
+  12: { easy: 1000, medium: 2000,  hard: 3000,  deadly: 4500  },
+  13: { easy: 1100, medium: 2200,  hard: 3400,  deadly: 5100  },
+  14: { easy: 1250, medium: 2500,  hard: 3800,  deadly: 5700  },
+  15: { easy: 1400, medium: 2800,  hard: 4300,  deadly: 6400  },
+  16: { easy: 1600, medium: 3200,  hard: 4800,  deadly: 7200  },
+  17: { easy: 2000, medium: 3900,  hard: 5900,  deadly: 8800  },
+  18: { easy: 2100, medium: 4200,  hard: 6300,  deadly: 9500  },
+  19: { easy: 2400, medium: 4900,  hard: 7300,  deadly: 10900 },
+  20: { easy: 2800, medium: 5700,  hard: 8500,  deadly: 12700 },
 };
 
 /**
  * Calculate XP budget for an encounter based on party composition and difficulty.
  *
- * Formula: Sum of (member level × difficulty multiplier) for all party members.
+ * Uses DMG XP Thresholds table: sums individual character thresholds.
  *
  * @param partyMembers - Array of party members with their levels
  * @param difficulty - The encounter difficulty level
@@ -709,17 +727,20 @@ const XP_DIFFICULTY_MULTIPLIERS: Record<EncounterDifficulty, number> = {
  * @example
  * // 4 level-5 characters, medium difficulty
  * calculateXPBudget([{level: 5}, {level: 5}, {level: 5}, {level: 5}], 'medium')
- * // Returns: 4 × 5 × 50 = 1000 XP
+ * // Returns: 4 × 500 = 2000 XP (from DMG table)
+ *
+ * @see docs/features/Encounter-Balancing.md#party-thresholds
  */
 export function calculateXPBudget(
   partyMembers: readonly { level: number }[],
   difficulty: EncounterDifficulty
 ): number {
-  const multiplier = XP_DIFFICULTY_MULTIPLIERS[difficulty];
-  return partyMembers.reduce(
-    (sum, member) => sum + member.level * multiplier,
-    0
-  );
+  return partyMembers.reduce((sum, member) => {
+    // Clamp level to 1-20, fallback to level 20 for higher
+    const level = Math.max(1, Math.min(member.level, 20));
+    const thresholds = XP_THRESHOLDS[level];
+    return sum + thresholds[difficulty];
+  }, 0);
 }
 
 /**
@@ -1369,4 +1390,213 @@ export function calculateInitialDistance(
     default:
       return detectionRange;
   }
+}
+
+// ============================================================================
+// Activity-Pool-Hierarchy (Task #2969)
+// ============================================================================
+
+/**
+ * Generic activities available to all creatures.
+ * Lowest priority in the Activity-Pool-Hierarchy.
+ *
+ * @see docs/features/Encounter-System.md#activity-pool-hierarchie
+ */
+export const GENERIC_ACTIVITIES: readonly WeightedActivity[] = [
+  { activity: 'resting', weight: 1.0, contextTags: [] },
+  { activity: 'traveling', weight: 1.0, contextTags: [] },
+  { activity: 'foraging', weight: 0.8, contextTags: ['daylight'] },
+  { activity: 'patrolling', weight: 0.8, contextTags: [] },
+  { activity: 'hunting', weight: 0.6, contextTags: [] },
+  { activity: 'guarding', weight: 0.7, contextTags: [] },
+  { activity: 'prowling', weight: 0.5, contextTags: ['nocturnal'] },
+  { activity: 'sleeping', weight: 0.4, contextTags: ['nocturnal'] },
+];
+
+/**
+ * Context for activity filtering.
+ */
+export interface ActivityContext {
+  /** Current time of day */
+  timeSegment: TimeSegment;
+
+  /** Current terrain (for terrain-specific activities) */
+  terrainId: string;
+
+  /** Current weather (for weather-specific activities) */
+  weather: WeatherState | null;
+}
+
+/**
+ * Personality-based activity weight modifiers.
+ * Maps activity names to multipliers.
+ */
+export type PersonalityActivityModifiers = Readonly<Record<string, number>>;
+
+/**
+ * Check if an activity's context tags match the current context.
+ *
+ * @param contextTags - Tags from the activity (e.g., ["nocturnal", "aquatic"])
+ * @param context - Current encounter context
+ * @returns true if activity is available in this context
+ *
+ * @see docs/features/Encounter-System.md#activity-generierung-gruppen-basiert
+ */
+export function matchesActivityContext(
+  contextTags: readonly string[] | undefined,
+  context: ActivityContext
+): boolean {
+  // No tags = always available
+  if (!contextTags || contextTags.length === 0) return true;
+
+  // All tags must match
+  return contextTags.every((tag) => {
+    switch (tag) {
+      case 'nocturnal':
+        return context.timeSegment === 'night';
+
+      case 'daylight':
+        return ['morning', 'midday', 'afternoon'].includes(context.timeSegment);
+
+      case 'dawn':
+        return context.timeSegment === 'dawn';
+
+      case 'dusk':
+        return context.timeSegment === 'dusk';
+
+      case 'storm':
+        // Available during heavy precipitation
+        return context.weather !== null && context.weather.params.precipitation > 70;
+
+      case 'calm':
+        // Available during low wind
+        return context.weather === null || context.weather.params.wind < 30;
+
+      // Terrain-specific tags could be added here
+      // case 'aquatic': return context.terrainId === 'water';
+
+      default:
+        // Unknown tags are ignored (permissive)
+        return true;
+    }
+  });
+}
+
+/**
+ * Collect activities from creature definitions.
+ * Filters out duplicates by activity name (later definitions override earlier).
+ *
+ * @param creatures - Creatures in the encounter group
+ * @returns Combined activity pool from all creatures
+ */
+export function getCreatureTypeActivities(
+  creatures: readonly CreatureDefinition[]
+): WeightedActivity[] {
+  const activitiesMap = new Map<string, WeightedActivity>();
+
+  for (const creature of creatures) {
+    if (creature.activities) {
+      for (const activity of creature.activities) {
+        activitiesMap.set(activity.activity, activity);
+      }
+    }
+  }
+
+  return Array.from(activitiesMap.values());
+}
+
+/**
+ * Apply personality-based weight modifiers to activities.
+ *
+ * @param activities - Base activity pool
+ * @param personality - Optional personality modifiers (activity name → multiplier)
+ * @returns Activities with adjusted weights
+ *
+ * @example
+ * // Paranoid personality favors guarding, dislikes resting
+ * applyPersonalityWeights(activities, { guarding: 2.0, resting: 0.5 })
+ */
+function applyPersonalityWeights(
+  activities: readonly WeightedActivity[],
+  personality: PersonalityActivityModifiers | undefined
+): WeightedActivity[] {
+  if (!personality) return [...activities];
+
+  return activities.map((a) => {
+    const modifier = personality[a.activity] ?? 1.0;
+    return { ...a, weight: a.weight * modifier };
+  });
+}
+
+/**
+ * Select a random activity from a weighted pool.
+ *
+ * @param activities - Weighted activity pool
+ * @returns Selected activity name
+ */
+function weightedRandomActivity(activities: readonly WeightedActivity[]): string {
+  const totalWeight = activities.reduce((sum, a) => sum + a.weight, 0);
+  if (totalWeight <= 0) {
+    // Fallback to first activity if weights are invalid
+    return activities[0]?.activity ?? 'resting';
+  }
+
+  let random = Math.random() * totalWeight;
+
+  for (const activity of activities) {
+    random -= activity.weight;
+    if (random <= 0) return activity.activity;
+  }
+
+  // Fallback to last activity (rounding edge case)
+  return activities[activities.length - 1].activity;
+}
+
+/**
+ * Select an activity for an encounter group using the Activity-Pool-Hierarchy.
+ *
+ * Hierarchy (lowest to highest priority):
+ * 1. Generic activities (GENERIC_ACTIVITIES)
+ * 2. Creature-type activities (from CreatureDefinition.activities)
+ * 3. Faction activities (from ResolvedCulture.activities)
+ *
+ * Higher-priority activities add to the pool, increasing their selection probability.
+ *
+ * @param creatures - Creatures in the encounter group
+ * @param context - Current encounter context (time, terrain, weather)
+ * @param factionCulture - Optional resolved faction culture
+ * @param leadNPCPersonality - Optional personality modifiers from lead NPC
+ * @returns Selected activity string
+ *
+ * @see docs/features/Encounter-System.md#activity-generierung-gruppen-basiert
+ * @see docs/features/Encounter-System.md#activity-pool-hierarchie
+ */
+export function selectActivity(
+  creatures: readonly CreatureDefinition[],
+  context: ActivityContext,
+  factionCulture?: ResolvedCulture,
+  leadNPCPersonality?: PersonalityActivityModifiers
+): string {
+  // 1. Assemble pool from all three levels (Hierarchie)
+  const pool: WeightedActivity[] = [
+    ...GENERIC_ACTIVITIES,
+    ...getCreatureTypeActivities(creatures),
+    ...(factionCulture?.activities ?? []),
+  ];
+
+  // 2. Filter by context
+  const filtered = pool.filter((a) =>
+    matchesActivityContext(a.contextTags, context)
+  );
+
+  // 3. Fallback if nothing matches
+  if (filtered.length === 0) {
+    return GENERIC_ACTIVITIES[0].activity; // "resting"
+  }
+
+  // 4. Apply personality weighting
+  const weighted = applyPersonalityWeights(filtered, leadNPCPersonality);
+
+  // 5. Weighted random selection
+  return weightedRandomActivity(weighted);
 }

@@ -48,8 +48,11 @@ export const characterSchema = z.object({
   /** Armor Class */
   ac: z.number().int().positive(),
 
-  /** Base movement speed in feet (for Travel calculation) */
-  speed: z.number().int().positive(),
+  /** Base movement speed in feet (for Travel calculation, must be multiple of 5) */
+  speed: z.number().int().positive().refine(
+    (val) => val % 5 === 0,
+    { message: 'Speed muss ein Vielfaches von 5 sein (z.B. 25, 30, 35)' }
+  ),
 
   /** Strength score (for Encumbrance calculation, 1-30) */
   strength: z.number().int().min(1).max(30),
@@ -66,6 +69,15 @@ export const characterSchema = z.object({
 
   /** Last update timestamp */
   updatedAt: timestampSchema.optional(),
+}).superRefine((data, ctx) => {
+  // Validate currentHp <= maxHp
+  if (data.currentHp > data.maxHp) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Current HP darf nicht größer als Max HP sein',
+      path: ['currentHp'],
+    });
+  }
 });
 
 /**

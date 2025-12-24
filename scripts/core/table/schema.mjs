@@ -15,6 +15,7 @@
  */
 export const TaskStatus = Object.freeze({
   OPEN: '⬜',
+  READY: '🟢',        // Vorbereitet, bereit zur Umsetzung
   DONE: '✅',
   PARTIAL: '🔶',      // Implementiert, aber nicht spezifikationskonform
   BROKEN: '⚠️',       // Implementiert, aber funktioniert nicht
@@ -28,6 +29,7 @@ export const TaskStatus = Object.freeze({
  */
 export const VALID_STATUSES = Object.freeze([
   TaskStatus.OPEN,
+  TaskStatus.READY,
   TaskStatus.DONE,
   TaskStatus.PARTIAL,
   TaskStatus.BROKEN,
@@ -44,6 +46,8 @@ export const STATUS_ALIASES = Object.freeze({
   // English
   'done': TaskStatus.DONE,
   'complete': TaskStatus.DONE,
+  'ready': TaskStatus.READY,
+  'prepared': TaskStatus.READY,
   'partial': TaskStatus.PARTIAL,
   'nonconform': TaskStatus.PARTIAL,
   'broken': TaskStatus.BROKEN,
@@ -59,6 +63,7 @@ export const STATUS_ALIASES = Object.freeze({
   'approval': TaskStatus.REVIEW,
   // German
   'fertig': TaskStatus.DONE,
+  'bereit': TaskStatus.READY,
   'offen': TaskStatus.OPEN,
   'blockiert': TaskStatus.BLOCKED
 });
@@ -69,12 +74,13 @@ export const STATUS_ALIASES = Object.freeze({
  */
 export const STATUS_PRIORITY = Object.freeze({
   [TaskStatus.REVIEW]: 0,   // Review-Tasks ganz oben
-  [TaskStatus.PARTIAL]: 1,  // Nicht-konforme Tasks
-  [TaskStatus.BROKEN]: 2,   // Kaputte Tasks
-  [TaskStatus.OPEN]: 3,     // Offene Tasks
-  [TaskStatus.CLAIMED]: 4,  // In Arbeit
-  [TaskStatus.DONE]: 5,     // Fertig
-  [TaskStatus.BLOCKED]: 6   // Blockiert ganz unten
+  [TaskStatus.READY]: 1,    // Bereit zur Umsetzung
+  [TaskStatus.PARTIAL]: 2,  // Nicht-konforme Tasks
+  [TaskStatus.BROKEN]: 3,   // Kaputte Tasks
+  [TaskStatus.OPEN]: 4,     // Offene Tasks
+  [TaskStatus.CLAIMED]: 5,  // In Arbeit
+  [TaskStatus.DONE]: 6,     // Fertig
+  [TaskStatus.BLOCKED]: 7   // Blockiert ganz unten
 });
 
 // ============================================================================
@@ -279,6 +285,7 @@ export function isValidStatus(status) {
 export function getStatusName(status) {
   const names = {
     [TaskStatus.OPEN]: 'Offen',
+    [TaskStatus.READY]: 'Bereit',
     [TaskStatus.DONE]: 'Fertig',
     [TaskStatus.PARTIAL]: 'Nicht-konform',
     [TaskStatus.BROKEN]: 'Defekt',

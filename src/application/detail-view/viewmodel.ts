@@ -7,10 +7,12 @@
 
 import type { EventBus, Unsubscribe } from '@core/index';
 import { isSome, EventTypes, createEvent, newCorrelationId, now } from '@core/index';
+import { calculateXPBudget, getEncounterMultiplier } from '@core/utils';
 import type { CombatCompletedPayload } from '@core/events';
 import type { EncounterFeaturePort } from '@/features/encounter';
 import { groupCreaturesByDefinitionId } from '@/features/encounter';
 import type { CombatFeaturePort } from '@/features/combat';
+import type { PartyFeaturePort } from '@/features/party';
 import type {
   DetailViewState,
   DetailViewRenderHint,
@@ -34,6 +36,8 @@ export interface DetailViewModelDeps {
   combatFeature?: CombatFeaturePort;
   /** Creature definitions for CR/XP lookup in encounter builder */
   creatures?: readonly CreatureDefinition[];
+  /** Party feature for encounter rating calculation (#2414) */
+  partyFeature?: PartyFeaturePort;
   // Note: LootFeaturePort will be added when loot generation is implemented (#2431 follow-up)
 }
 
@@ -80,6 +84,10 @@ export interface DetailViewModel {
   /** Complete resolution and publish events */
   completeResolution(): void;
 
+  // Party Commands (#3216)
+  /** Toggle expanded state for a party member */
+  togglePartyMemberExpanded(characterId: string): void;
+
   // Cleanup
   dispose(): void;
 }
@@ -94,7 +102,7 @@ export interface DetailViewModel {
 export function createDetailViewModel(
   deps: DetailViewModelDeps
 ): DetailViewModel {
-  const { eventBus, encounterFeature, combatFeature, creatures = [] } = deps;
+  const { eventBus, encounterFeature, combatFeature, creatures = [], partyFeature } = deps;
 
   // Internal state
   let state: DetailViewState = createInitialDetailViewState();
@@ -119,6 +127,110 @@ export function createDetailViewModel(
   ): void {
     state = { ...state, ...partial };
     notify(hints);
+  }
+
+  // =========================================================================
+  // Encounter Rating Calculation (#2414)
+  // =========================================================================
+
+  // Default-Party: 4× Level 5 (D&D standard party)
+  const DEFAULT_PARTY_MEMBERS: readonly { level: number }[] = [
+    { level: 5 },
+    { level: 5 },
+    { level: 5 },
+    { level: 5 },
+  ];
+
+  /**
+   * Get party members for rating calculation.
+   * Falls back to default party (4× Level 5) if no party is available.
+   */
+  function getPartyMembersForRating(): readonly { level: number }[] {
+    if (!partyFeature) return DEFAULT_PARTY_MEMBERS;
+
+    const membersOpt = partyFeature.getMembers();
+    if (!isSome(membersOpt) || membersOpt.value.length === 0) {
+      return DEFAULT_PARTY_MEMBERS;
+    }
+
+    return membersOpt.value.map((c) => ({ level: c.level }));
+  }
+
+  /**
+   * Calculate encounter rating from builder creatures.
+   * Uses DMG XP thresholds for difficulty calculation.
+   * @see docs/features/Encounter-Balancing.md
+   */
+  interface EncounterRating {
+    /** Raw XP sum (displayed value) */
+    totalXP: number;
+    /** Effective XP with group multiplier (for difficulty calculation) */
+    effectiveXP: number;
+    /** Difficulty based on party thresholds */
+    difficulty: EncounterDifficulty;
+    /** XP used today from daily budget */
+    dailyBudgetUsed: number;
+    /** Total daily XP budget (7× medium threshold) */
+    dailyBudgetTotal: number;
+  }
+
+  function calculateEncounterRating(
+    builderCreatures: readonly BuilderCreature[]
+  ): EncounterRating {
+    // 1. Calculate raw XP
+    const totalXP = builderCreatures.reduce(
+      (sum, c) => sum + c.xp * c.count,
+      0
+    );
+
+    // 2. Total creature count for multiplier
+    const creatureCount = builderCreatures.reduce((sum, c) => sum + c.count, 0);
+
+    // 3. Effective XP with group multiplier
+    const multiplier = getEncounterMultiplier(creatureCount);
+    const effectiveXP = Math.floor(totalXP * multiplier);
+
+    // 4. Get party members for threshold calculation
+    const partyMembers = getPartyMembersForRating();
+
+    // 5. Calculate party thresholds
+    const easyThreshold = calculateXPBudget(partyMembers, 'easy');
+    const hardThreshold = calculateXPBudget(partyMembers, 'hard');
+    const deadlyThreshold = calculateXPBudget(partyMembers, 'deadly');
+
+    // 6. Determine difficulty
+    let difficulty: EncounterDifficulty;
+    if (effectiveXP < easyThreshold) {
+      difficulty = 'easy';
+    } else if (effectiveXP < hardThreshold) {
+      difficulty = 'medium';
+    } else if (effectiveXP < deadlyThreshold) {
+      difficulty = 'hard';
+    } else {
+      difficulty = 'deadly';
+    }
+
+    // 7. Daily Budget (7× Medium, DMG Adventuring Day)
+    const mediumThreshold = calculateXPBudget(partyMembers, 'medium');
+    const dailyBudgetTotal = mediumThreshold * 7;
+
+    // 8. Daily Budget Used from EncounterFeature
+    // Note: getDailyXP() is not yet in EncounterFeaturePort interface.
+    // Using type assertion until the interface is extended (separate task).
+    const dailyXP = (
+      encounterFeature as
+        | (EncounterFeaturePort & { getDailyXP?: () => { budgetUsed: number } })
+        | undefined
+    )?.getDailyXP?.();
+    const dailyBudgetUsed = dailyXP?.budgetUsed ?? 0;
+
+    return {
+      totalXP,
+      effectiveXP,
+      difficulty,
+      dailyBudgetUsed,
+      dailyBudgetTotal,
+    };
   }
 
   /**
@@ -174,7 +286,7 @@ export function createDetailViewModel(
     const grouped = groupCreaturesByDefinitionId(encounter.creatures, creatures);
 
     // Convert grouped creatures to builder format
-    const builderCreatures: BuilderCreature[] = grouped.map(group => ({
+    const builderCreatures: BuilderCreature[] = grouped.map((group) => ({
       type: 'creature' as const,
       entityId: group.definitionId,
       name: group.name,
@@ -183,12 +295,8 @@ export function createDetailViewModel(
       count: group.count,
     }));
 
-    // Calculate total XP from grouped creatures (with proper CR-based XP)
-    const totalXP = grouped.reduce((sum, g) => sum + g.totalXp, 0);
-
-    // Get budget info from encounter if available
-    const dailyBudgetUsed = encounter.effectiveXP ?? totalXP;
-    const dailyBudgetTotal = encounter.xpBudget ?? 0;
+    // Calculate encounter rating with proper DMG thresholds (#2414)
+    const rating = calculateEncounterRating(builderCreatures);
 
     // Extract disposition (defaults to 0 = neutral)
     const disposition = encounter.disposition ?? 0;
@@ -217,10 +325,10 @@ export function createDetailViewModel(
         builderActivity: encounter.activity ?? '',
         builderGoal: encounter.goal ?? '',
         builderCreatures,
-        totalXP,
-        difficulty: calculateDifficulty(totalXP),
-        dailyBudgetUsed,
-        dailyBudgetTotal,
+        totalXP: rating.effectiveXP,
+        difficulty: rating.difficulty,
+        dailyBudgetUsed: rating.dailyBudgetUsed,
+        dailyBudgetTotal: rating.dailyBudgetTotal,
         savedEncounterQuery: '',
         creatureQuery: '',
         sourceEncounterId: null, // New encounter, not from saved
@@ -233,18 +341,6 @@ export function createDetailViewModel(
   }
 
   /**
-   * Calculate difficulty from XP (placeholder implementation).
-   * Will be replaced by #2414 with proper Encounter-Balancing integration.
-   */
-  function calculateDifficulty(xp: number): EncounterDifficulty {
-    // Placeholder thresholds for a 4-player party at level 5
-    if (xp <= 250) return 'easy';
-    if (xp <= 500) return 'medium';
-    if (xp <= 750) return 'hard';
-    return 'deadly';
-  }
-
-  /**
    * Capitalize first letter.
    */
   function capitalizeFirst(str: string): string {
@@ -253,24 +349,24 @@ export function createDetailViewModel(
 
   /**
    * Update builder state and recalculate values.
+   * Uses calculateEncounterRating() for DMG-compliant difficulty (#2414).
    */
   function updateBuilderState(
     partial: Partial<DetailViewState['encounter']>
   ): void {
     const newEncounter = { ...state.encounter, ...partial };
 
-    // Recalculate totalXP from creatures
-    const totalXP = newEncounter.builderCreatures.reduce(
-      (sum, c) => sum + c.xp * c.count,
-      0
-    );
+    // Calculate encounter rating with proper DMG thresholds
+    const rating = calculateEncounterRating(newEncounter.builderCreatures);
 
     state = {
       ...state,
       encounter: {
         ...newEncounter,
-        totalXP,
-        difficulty: calculateDifficulty(totalXP),
+        totalXP: rating.effectiveXP, // Display effective XP (with multiplier)
+        difficulty: rating.difficulty,
+        dailyBudgetUsed: rating.dailyBudgetUsed,
+        dailyBudgetTotal: rating.dailyBudgetTotal,
       },
     };
 
@@ -631,6 +727,27 @@ export function createDetailViewModel(
         },
       };
       notify(['combat', 'full']);
+    },
+
+    // =========================================================================
+    // Party Commands (#3216)
+    // =========================================================================
+
+    togglePartyMemberExpanded(characterId: string): void {
+      const updatedMembers = state.party.members.map((member) =>
+        member.id === characterId
+          ? { ...member, expanded: !member.expanded }
+          : member
+      );
+
+      state = {
+        ...state,
+        party: {
+          ...state.party,
+          members: updatedMembers,
+        },
+      };
+      notify(['full']);
     },
 
     dispose(): void {

@@ -15,5 +15,10 @@ export { createInitialPartyState } from './types';
 // Store
 export { createPartyStore, type PartyStore } from './party-store';
 
-// Service
+// Services
 export { createPartyService, type PartyServiceDeps, type ItemLookupFn } from './party-service';
+export {
+  createCharacterService,
+  type CharacterService,
+  type CharacterServiceDeps,
+} from './character-service';

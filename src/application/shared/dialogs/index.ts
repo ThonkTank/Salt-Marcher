@@ -9,3 +9,11 @@ export {
   type SlotAssignmentDialogResult,
   type SlotAssignmentDialogOptions,
 } from './slot-assignment-dialog';
+
+export {
+  CharacterSelectionDialog,
+  showCharacterSelectionDialog,
+  type CharacterInfo,
+  type CharacterSelectionDialogOptions,
+  type CharacterSelectionDialogResult,
+} from './character-selection-dialog';

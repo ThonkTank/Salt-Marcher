@@ -7,3 +7,6 @@ export type { CombatTab, CombatTabCallbacks } from './combat-tab';
 
 export { createEncounterTab } from './encounter-tab';
 export type { EncounterTab, EncounterTabCallbacks } from './encounter-tab';
+
+export { createPartyTab } from './party-tab';
+export type { PartyTab, PartyTabCallbacks } from './party-tab';

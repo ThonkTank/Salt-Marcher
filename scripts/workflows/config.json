@@ -162,6 +162,23 @@
     "docs/architecture/Project-Structure.md"
   ],
 
+  "layerDocs": {
+    "core": [
+      "docs/architecture/Core.md",
+      "docs/architecture/EventBus.md",
+      "docs/architecture/EntityRegistry.md"
+    ],
+    "features": [
+      "docs/architecture/Features.md"
+    ],
+    "infra": [
+      "docs/architecture/Infrastructure.md"
+    ],
+    "apps": [
+      "docs/architecture/Application.md"
+    ]
+  },
+
   "leseliste": {
     "flowchartFile": "scripts/workflows/leseliste.txt"
   },

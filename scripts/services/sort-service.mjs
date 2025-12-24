@@ -133,7 +133,7 @@ export function createPrioritizeService(options = {}) {
     if (prio && task.prio.toLowerCase() !== prio.toLowerCase()) return false;
 
     if (keywords.length > 0) {
-      const searchText = `${task.bereich} ${task.beschreibung}`.toLowerCase();
+      const searchText = `${task.domain} ${task.beschreibung}`.toLowerCase();
       if (!keywords.some(kw => searchText.includes(kw.toLowerCase()))) {
         return false;
       }
@@ -380,6 +380,7 @@ export const defaultPrioritizeService = createPrioritizeService();
 
 const STATUS_ALIASES = {
   'open': '⬜', 'offen': '⬜',
+  'ready': '🟢', 'bereit': '🟢',
   'done': '✅', 'fertig': '✅',
   'partial': '🔶', 'fast': '🔶',
   'broken': '⚠️', 'kaputt': '⚠️',

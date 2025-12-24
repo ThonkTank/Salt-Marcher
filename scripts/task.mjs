@@ -25,6 +25,7 @@ const COMMANDS = {
   edit: () => import('./services/edit-service.mjs'),
   add: () => import('./services/add-service.mjs'),
   claim: () => import('./services/claim-service.mjs'),
+  unclaim: () => import('./services/unclaim-service.mjs'),
   remove: () => import('./services/remove-service.mjs'),
   split: () => import('./services/split-service.mjs'),
   sync: () => import('./services/sync-service.mjs'),
@@ -35,11 +36,69 @@ const COMMAND_DESCRIPTIONS = {
   sort: 'Priorisierte Task-Liste (mit Keyword-Filter)',
   edit: 'Task/Bug bearbeiten (Status, Deps, Beschreibung)',
   add: 'Neue Task oder Bug erstellen',
-  claim: 'Task claimen, freigeben oder prüfen',
+  claim: 'Task claimen (gibt Key zurück)',
+  unclaim: 'Task freigeben (mit Key)',
   remove: 'Task oder Bug löschen',
   split: 'Task in zwei Teile splitten',
   sync: 'Roadmap → Docs synchronisieren (Diskrepanzen beheben)',
 };
+
+/**
+ * Wrapped Text mit Einrückung
+ * @param {string} text - Der zu wrappende Text
+ * @param {number} width - Maximale Zeilenbreite
+ * @param {string} indent - Einrückung für alle Zeilen
+ */
+function wrapText(text, width, indent = '   ') {
+  const maxLen = width - indent.length;
+  if (text.length <= maxLen) return indent + text;
+
+  const words = text.split(/\s+/);
+  const lines = [];
+  let currentLine = '';
+
+  for (const word of words) {
+    if (currentLine.length + word.length + 1 <= maxLen) {
+      currentLine += (currentLine ? ' ' : '') + word;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+
+  return lines.map(line => indent + line).join('\n');
+}
+
+/**
+ * Tree-Ausgabe Funktion für Dependency/Dependent Trees
+ * @param {object} node - Tree-Node mit number, status, beschreibung, children
+ * @param {string} prefix - Einrückung
+ * @param {boolean} isLast - Letztes Kind im Parent?
+ * @param {boolean} isRoot - Root-Node (wird nicht gedruckt)?
+ * @param {number} maxDescLen - Max Länge der Beschreibung
+ */
+function printTree(node, prefix = '', isLast = true, isRoot = false, maxDescLen = 50) {
+  if (!node) return;
+
+  const nodeId = node.isBug ? node.number : `#${node.number}`;
+  const desc = (node.beschreibung || '').slice(0, maxDescLen);
+  const truncated = (node.beschreibung || '').length > maxDescLen ? '…' : '';
+  const missing = node.missing ? ' [FEHLT]' : '';
+
+  if (isRoot) {
+    // Root nicht nochmal ausgeben (ist schon oben)
+  } else {
+    const connector = isLast ? '└─' : '├─';
+    console.log(`${prefix}${connector} ${node.status} ${nodeId} ${desc}${truncated}${missing}`);
+  }
+
+  const children = node.children || [];
+  const childPrefix = prefix + (isRoot ? '' : (isLast ? '   ' : '│  '));
+  children.forEach((child, i) => {
+    printTree(child, childPrefix, i === children.length - 1, false, maxDescLen);
+  });
+}
 
 /**
  * Zeigt globale Hilfe
@@ -94,35 +153,49 @@ function formatOutput(result, opts) {
   // Erfolgreiche Ausgabe
   const value = result.value;
 
-  // Spezielle Formatierungen je nach Command
-  if (value.agentId !== undefined) {
-    // claim --whoami
-    console.log(`Agent-ID: ${value.agentId}`);
-    return;
-  }
-
-  if (value.action) {
-    // claim/unclaim result
-    const messages = {
-      claimed: '✅ Task geclaimed',
-      unclaimed: '✅ Claim freigegeben',
-      already_mine: '✅ Bereits dein Claim',
-      not_claimed: 'Task hat keinen Claim',
-      removed_by_status: 'Claim durch Status-Änderung entfernt'
-    };
-    console.log(messages[value.action] || `Aktion: ${value.action}`);
-    if (value.owner) console.log(`   Owner: ${value.owner}`);
-    if (value.remaining) console.log(`   Verbleibend: ${value.remaining}`);
+  // Claim-Ergebnis (neues Key-System)
+  if (value.key !== undefined) {
+    // claim result
+    console.log(`✅ Task #${value.taskId} geclaimed`);
+    console.log(`   Key: ${value.key} (2h gültig)`);
+    console.log(`   Merke dir den Key für unclaim und edit!`);
 
     // Bei erfolgreichem Claim: Task-Info und Workflow-Guidance anzeigen
-    if (value.action === 'claimed' && value.task && value.guidance) {
-      const task = value.task;
+    if (value.guidance?.task) {
+      const task = value.guidance.task;
       const guidance = value.guidance;
 
-      // Task-Info
+      // Task-Info (wie bei show)
+      const id = task.isBug ? task.number : `#${task.number}`;
+      const mvpLabel = task.mvp === 'Ja' ? 'MVP' : '';
       console.log();
-      console.log(`${task.status} #${task.number} ${task.bereich}`);
+      console.log(`${task.status} ${id} ${task.domain} | ${task.prio} | ${mvpLabel}`);
+      if (guidance.readingList?.layer) {
+        console.log(`   Layer: ${guidance.readingList.layer}`);
+      }
       console.log(`   ${task.beschreibung}`);
+      if (task.spec && task.spec !== '-') console.log(`   Spec: ${task.spec}`);
+      if (task.imp && task.imp !== '-') console.log(`   Imp: ${task.imp}`);
+
+      // Dependency-Tree (Voraussetzungen)
+      if (guidance.dependencyTree?.children?.length > 0) {
+        console.log('\n   Voraussetzungen:');
+        for (let i = 0; i < guidance.dependencyTree.children.length; i++) {
+          const child = guidance.dependencyTree.children[i];
+          const isLast = i === guidance.dependencyTree.children.length - 1;
+          printTree(child, '   ', isLast, false);
+        }
+      }
+
+      // Dependent-Tree (Blockiert)
+      if (guidance.dependentTree?.children?.length > 0) {
+        console.log('\n   Blockiert:');
+        for (let i = 0; i < guidance.dependentTree.children.length; i++) {
+          const child = guidance.dependentTree.children[i];
+          const isLast = i === guidance.dependentTree.children.length - 1;
+          printTree(child, '   ', isLast, false);
+        }
+      }
 
       // Workflow
       if (guidance.workflow) {
@@ -146,7 +219,7 @@ function formatOutput(result, opts) {
       // Leseliste im Box-Format
       if (guidance.readingList) {
         const rl = guidance.readingList;
-        const bereichKey = task.bereich.split('/').pop();
+        const bereichKey = task.domain ? task.domain.split('/').pop() : null;
         const W = 75; // Innenbreite der Box (passend für lange URLs)
 
         const pad = (s) => {
@@ -160,8 +233,9 @@ function formatOutput(result, opts) {
         lines.push('├─' + '─'.repeat(W) + '─┤');
         lines.push('│ ' + pad('') + ' │');
 
-        // A) Architektur-Baseline
-        lines.push('│ ' + pad('A) Architektur-Baseline (PFLICHT):') + ' │');
+        // A) Architektur-Baseline (mit Layer-Info wenn vorhanden)
+        const layerInfo = rl.layer ? ` + ${rl.layer}` : '';
+        lines.push('│ ' + pad(`A) Architektur-Baseline${layerInfo} (PFLICHT):`) + ' │');
         for (const doc of rl.baseline || []) {
           lines.push('│ ' + pad(`   → ${doc}`) + ' │');
         }
@@ -169,7 +243,8 @@ function formatOutput(result, opts) {
 
         // B) Feature-Docs
         if (rl.featureDocs?.length > 0) {
-          lines.push('│ ' + pad(`B) Feature-Docs (${bereichKey}):`) + ' │');
+          const bereichLabel = bereichKey ? ` (${bereichKey})` : '';
+          lines.push('│ ' + pad(`B) Feature-Docs${bereichLabel}:`) + ' │');
           for (const doc of rl.featureDocs) {
             lines.push('│ ' + pad(`   → ${doc}`) + ' │');
           }
@@ -205,14 +280,47 @@ function formatOutput(result, opts) {
     return;
   }
 
-  if (value.claimed !== undefined) {
-    // checkClaim result
-    if (value.claimed) {
-      console.log(`🔒 Geclaimed von: ${value.owner}`);
-      console.log(`   Verbleibend: ${value.remaining}`);
-      if (value.isMe) console.log('   (Das bist du)');
-    } else {
-      console.log('✅ Nicht geclaimed');
+  // Unclaim-Ergebnis
+  if (value.unclaimed) {
+    console.log(`✅ Task #${value.taskId} freigegeben`);
+    return;
+  }
+
+  // Multi-Show result (mehrere Tasks kompakt) - VOR sort prüfen!
+  if (value.isMultiShow) {
+    const termWidth = process.stdout.columns || 120;
+
+    for (const item of value.items) {
+      const id = item.isBug ? item.number : `#${item.number}`;
+      const depsArr = item.deps || [];
+      const depsStr = depsArr.length > 0
+        ? depsArr.map(d => typeof d === 'string' ? d : `#${d}`).join(', ')
+        : '';
+      const depsDisplay = depsStr ? ` [${depsStr}]` : '';
+
+      // Zeile 1: Status, ID, Domain, Prio, MVP, Deps
+      console.log(`${item.status} ${id} ${item.domain} | ${item.prio} | ${item.mvp === 'Ja' ? 'MVP' : ''}${depsDisplay}`);
+
+      // Beschreibung (vollständig mit Wrapping)
+      console.log(wrapText(item.beschreibung, termWidth));
+
+      // Spec (vollständig mit Wrapping)
+      if (item.spec && item.spec !== '-') {
+        console.log(wrapText(`Spec: ${item.spec}`, termWidth));
+      }
+
+      // Imp (vollständig mit Wrapping)
+      if (item.imp && item.imp !== '-') {
+        console.log(wrapText(`Imp: ${item.imp}`, termWidth));
+      }
+
+      console.log(); // Leerzeile zwischen Tasks
+    }
+
+    // Warnung für fehlende IDs
+    if (value.missing?.length > 0) {
+      console.log(`⚠️  Nicht gefunden: ${value.missing.map(id =>
+        typeof id === 'string' ? id : `#${id}`).join(', ')}`);
     }
     return;
   }
@@ -236,8 +344,8 @@ function formatOutput(result, opts) {
         : '';
       const depsDisplay = depsStr ? ` [${depsStr}]` : '';
 
-      // Zeile 1: Status, ID, Bereich, Prio, MVP, Deps
-      console.log(`${item.status} ${id} ${item.bereich} | ${item.prio} | ${item.mvp === 'Ja' ? 'MVP' : ''}${depsDisplay}`);
+      // Zeile 1: Status, ID, Domain, Prio, MVP, Deps
+      console.log(`${item.status} ${id} ${item.domain} | ${item.prio} | ${item.mvp === 'Ja' ? 'MVP' : ''}${depsDisplay}`);
 
       // Zeile 2: Beschreibung
       const maxDesc = termWidth - 4;
@@ -295,7 +403,7 @@ function formatOutput(result, opts) {
     }
     for (const item of value) {
       const id = item.isBug ? item.number : `#${item.number}`;
-      console.log(`${item.status} ${id} [${item.bereich}] ${item.beschreibung}`);
+      console.log(`${item.status} ${id} [${item.domain}] ${item.beschreibung}`);
     }
     console.log(`\n${value.length} Ergebnis(se)`);
     return;
@@ -353,7 +461,7 @@ function formatOutput(result, opts) {
     const id = item.isBug ? item.number : `#${item.number}`;
 
     // Task-Info
-    console.log(`\n${item.status} ${id} ${item.bereich} | ${item.prio} | ${item.mvp === 'Ja' ? 'MVP' : ''}`);
+    console.log(`\n${item.status} ${id} ${item.domain} | ${item.prio} | ${item.mvp === 'Ja' ? 'MVP' : ''}`);
     console.log(`   ${item.beschreibung}`);
     if (item.spec && item.spec !== '-') console.log(`   Spec: ${item.spec}`);
     if (item.imp && item.imp !== '-') console.log(`   Imp: ${item.imp}`);
@@ -363,30 +471,6 @@ function formatOutput(result, opts) {
       console.log(`\n   🔒 Geclaimed von: ${value.claim.owner}`);
       console.log(`      Verbleibend: ${value.claim.remaining}`);
       if (value.claim.isMe) console.log('      (Das bist du)');
-    }
-
-    // Tree-Ausgabe Funktion
-    const maxDescLen = 50;
-    function printTree(node, prefix = '', isLast = true, isRoot = false) {
-      if (!node) return;
-
-      const nodeId = node.isBug ? node.number : `#${node.number}`;
-      const desc = (node.beschreibung || '').slice(0, maxDescLen);
-      const truncated = (node.beschreibung || '').length > maxDescLen ? '…' : '';
-      const missing = node.missing ? ' [FEHLT]' : '';
-
-      if (isRoot) {
-        // Root nicht nochmal ausgeben (ist schon oben)
-      } else {
-        const connector = isLast ? '└─' : '├─';
-        console.log(`${prefix}${connector} ${node.status} ${nodeId} ${desc}${truncated}${missing}`);
-      }
-
-      const children = node.children || [];
-      const childPrefix = prefix + (isRoot ? '' : (isLast ? '   ' : '│  '));
-      children.forEach((child, i) => {
-        printTree(child, childPrefix, i === children.length - 1, false);
-      });
     }
 
     // Dependency-Tree (Voraussetzungen)

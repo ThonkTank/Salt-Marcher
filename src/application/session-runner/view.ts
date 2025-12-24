@@ -221,9 +221,10 @@ export class SessionRunnerView extends ItemView {
       },
 
       // Party Management
-      onManageParty: () => {
-        // Show "Coming soon" notification
-        this.deps.notificationService.info('Party Management coming soon!');
+      // TODO: Implement Party-Tab in DetailView (#3216-#3223)
+      onManageParty: async () => {
+        // Party-Tab noch nicht implementiert - wird später DetailView öffnen
+        this.deps.notificationService?.info('Party-Tab kommt bald (DetailView #3216)');
       },
 
       // Quest Management

@@ -6,12 +6,12 @@
  */
 
 import { ok, err, TaskErrorCode } from '../core/result.mjs';
-import { TaskStatus, VALID_STATUSES } from '../core/table/schema.mjs';
+import { TaskStatus, VALID_STATUSES, resolveStatusAlias } from '../core/table/schema.mjs';
 import { parseTaskId, parseDeps, formatId } from '../core/table/parser.mjs';
 import { normalizeId } from '../core/task/types.mjs';
 import { calculateAllPropagation } from '../core/deps/propagation.mjs';
 import { createFsTaskAdapter } from '../adapters/fs-task-adapter.mjs';
-import { createClaimService } from './claim-service.mjs';
+import { checkKey, handleStatusChange } from './claim-service.mjs';
 
 /**
  * @typedef {object} UpdateResult
@@ -28,12 +28,10 @@ import { createClaimService } from './claim-service.mjs';
  *
  * @param {object} [options] - Optionen
  * @param {import('../ports/task-port.mjs').TaskPort} [options.taskAdapter] - Task-Adapter
- * @param {import('./claim-service.mjs').ClaimService} [options.claimService] - Claim-Service
  * @returns {object}
  */
 export function createTaskService(options = {}) {
   const taskAdapter = options.taskAdapter ?? createFsTaskAdapter();
-  const claimService = options.claimService ?? createClaimService();
 
   return {
     /**
@@ -42,14 +40,15 @@ export function createTaskService(options = {}) {
      * Der Adapter kümmert sich automatisch um:
      * - Roadmap-Änderung
      * - Synchronisation zu allen Feature-Docs
+     *
+     * Bei geclaimed Tasks muss der Key übergeben werden.
      */
     updateTask(taskId, updates, opts = {}) {
-      const { dryRun = false, agentId = null } = opts;
+      const { dryRun = false, key = null } = opts;
       const result = {
         success: false,
         roadmap: { modified: false, before: null, after: null, statusChange: null },
         docs: [],
-        claim: null,
         propagation: [],
         errors: []
       };
@@ -73,12 +72,23 @@ export function createTaskService(options = {}) {
       result.item = item;
       result.originalStatus = item.status;
 
-      // 2. Status validieren
-      if (updates.status && !VALID_STATUSES.includes(updates.status)) {
+      // 2. Key-Check: Wenn Task geclaimed ist, muss Key stimmen
+      if (!checkKey(taskId, key)) {
         return err({
-          code: TaskErrorCode.INVALID_STATUS,
-          message: `Ungültiger Status: ${updates.status}. Gültig: ${VALID_STATUSES.join(', ')}`
+          code: TaskErrorCode.CLAIM_REQUIRED,
+          message: `Task ${formatId(taskId)} ist geclaimed. --key erforderlich.`
         });
+      }
+
+      // 3. Status validieren (Alias auflösen)
+      if (updates.status) {
+        updates.status = resolveStatusAlias(updates.status);
+        if (!VALID_STATUSES.includes(updates.status)) {
+          return err({
+            code: TaskErrorCode.INVALID_STATUS,
+            message: `Ungültiger Status: ${updates.status}. Gültig: ${VALID_STATUSES.join(', ')}`
+          });
+        }
       }
 
       // 3. Deps validieren
@@ -104,43 +114,13 @@ export function createTaskService(options = {}) {
         });
       }
 
-      // 4. Claim-Handling
-      const myId = claimService.getAgentId(agentId);
-
-      if (updates.claim) {
-        const claimResult = claimService.claim(taskId, myId);
-        if (!claimResult.ok) {
-          return claimResult;
-        }
-        result.claim = claimResult.value;
-        if (claimResult.value.action === 'claimed') {
-          updates.status = TaskStatus.CLAIMED;
-        }
-      }
-
-      if (updates.unclaim) {
-        const unclaimResult = claimService.unclaim(taskId, myId);
-        if (!unclaimResult.ok) {
-          return unclaimResult;
-        }
-        result.claim = unclaimResult.value;
-        if (!updates.status) {
-          updates.status = TaskStatus.OPEN;
-        }
-      }
-
-      // Status-Änderung entfernt Claim
-      if (updates.status && updates.status !== TaskStatus.CLAIMED) {
-        const handleResult = claimService.handleStatusChange(taskId, updates.status);
-        if (handleResult.ok && handleResult.value) {
-          result.claim = handleResult.value;
-        }
+      // 4. Status-Änderung entfernt Claim automatisch (nur bei echtem Update)
+      if (!dryRun && updates.status && updates.status !== TaskStatus.CLAIMED) {
+        handleStatusChange(taskId, updates.status);
       }
 
       // 5. Prüfen ob Änderungen vorliegen
-      const hasChanges = Object.keys(updates).some(key =>
-        !['claim', 'unclaim'].includes(key) && updates[key] !== undefined
-      );
+      const hasChanges = Object.keys(updates).some(k => updates[k] !== undefined);
 
       if (!hasChanges) {
         result.success = true;
@@ -255,20 +235,6 @@ export function createTaskService(options = {}) {
         changes,
         dryRun
       });
-    },
-
-    /**
-     * Prüft Claim-Status einer Task
-     */
-    checkClaim(taskId, agentId = null) {
-      return claimService.checkClaim(taskId, agentId);
-    },
-
-    /**
-     * Gibt die Agent-ID zurück
-     */
-    getAgentId(cliAgentId = null) {
-      return claimService.getAgentId(cliAgentId);
     }
   };
 }
@@ -291,12 +257,12 @@ export function parseArgs(argv) {
     status: null,
     deps: null,
     beschreibung: null,
-    bereich: null,
+    domain: null,
     prio: null,
     mvp: null,
     spec: null,
     imp: null,
-    agentId: null,
+    key: null,
     dryRun: false,
     json: false,
     quiet: false,
@@ -316,8 +282,10 @@ export function parseArgs(argv) {
       opts.deps = '-';
     } else if (arg === '--beschreibung' || arg === '-m') {
       opts.beschreibung = argv[++i];
-    } else if (arg === '--bereich' || arg === '-b') {
-      opts.bereich = argv[++i];
+    } else if (arg === '--domain' || arg === '-b') {
+      opts.domain = argv[++i];
+    } else if (arg === '--layer' || arg === '-l') {
+      opts.layer = argv[++i];
     } else if (arg === '--prio' || arg === '-p') {
       opts.prio = argv[++i];
     } else if (arg === '--mvp') {
@@ -326,8 +294,8 @@ export function parseArgs(argv) {
       opts.spec = argv[++i];
     } else if (arg === '--imp') {
       opts.imp = argv[++i];
-    } else if (arg === '--agent-id') {
-      opts.agentId = argv[++i];
+    } else if (arg === '--key' || arg === '-k') {
+      opts.key = argv[++i];
     } else if (arg === '--dry-run' || arg === '-n') {
       opts.dryRun = true;
     } else if (arg === '--json') {
@@ -364,8 +332,12 @@ export function execute(opts, service = null) {
   const updates = {};
   if (opts.status) updates.status = opts.status;
   if (opts.deps !== null) updates.deps = opts.deps;
-  if (opts.beschreibung) updates.beschreibung = opts.beschreibung;
-  if (opts.bereich) updates.bereich = opts.bereich;
+  if (opts.beschreibung) {
+    // Newlines durch Leerzeichen ersetzen (verhindert Multi-Line-Tabellenzeilen)
+    updates.beschreibung = opts.beschreibung.replace(/[\r\n]+/g, ' ').trim();
+  }
+  if (opts.domain) updates.domain = opts.domain;
+  if (opts.layer) updates.layer = opts.layer;
   if (opts.prio) updates.prio = opts.prio;
   if (opts.mvp) updates.mvp = opts.mvp;
   if (opts.spec) updates.spec = opts.spec;
@@ -373,7 +345,7 @@ export function execute(opts, service = null) {
 
   return editService.updateTask(opts.taskId, updates, {
     dryRun: opts.dryRun,
-    agentId: opts.agentId
+    key: opts.key
   });
 }
 
@@ -395,12 +367,13 @@ OPTIONEN:
   -d, --deps "<deps>"    Dependencies setzen (z.B. "#100, #202, b4")
   --no-deps              Dependencies entfernen (setzt auf "-")
   -m, --beschreibung "." Beschreibung ändern
-  -b, --bereich <name>   Bereich ändern (z.B. Travel, Map)
+  -b, --domain <name>    Domain ändern (z.B. Travel, Map)
+  -l, --layer <layer>    Layer ändern (core, features, infra, apps)
   -p, --prio <prio>      Priorität ändern (hoch, mittel, niedrig)
   --mvp <Ja|Nein>        MVP-Status ändern
   --spec "File.md#..."   Spec-Referenz ändern
   --imp "file:func()"    Implementierungs-Details ändern
-  --agent-id <id>        Agent-ID für Claim-Operationen
+  -k, --key <key>        Key für geclaime Tasks (4 Zeichen)
 
 ALLGEMEIN:
   -n, --dry-run          Vorschau ohne Speichern
@@ -410,9 +383,9 @@ ALLGEMEIN:
 
 BEISPIELE:
   node scripts/task.mjs edit 428 --status ✅
+  node scripts/task.mjs edit 428 --status ✅ --key a4x2    # Bei geclaimter Task
   node scripts/task.mjs edit 428 --deps "#100, #202"
   node scripts/task.mjs edit 428 --beschreibung "Neue Beschreibung"
   node scripts/task.mjs edit b4 --status ✅
-  node scripts/task.mjs edit 428 --status 🔶 --dry-run
 `;
 }

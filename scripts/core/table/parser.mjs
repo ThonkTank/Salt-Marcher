@@ -465,14 +465,15 @@ export function detectDocTableFormat(headerLine) {
     columns: cells,
     columnCount: cells.length,
     hasStatus: normalizedCells.includes('status'),
-    hasBereich: normalizedCells.includes('bereich'),
+    hasDomain: normalizedCells.includes('domain'),
+    hasLayer: normalizedCells.includes('layer'),
     hasImp: normalizedCells.some(c => c.includes('imp')),
     hasReferenzen: normalizedCells.some(c => c.includes('referenz')),
     hasSpec: normalizedCells.includes('spec'),
     // Alte 6-Spalten: # | Beschreibung | Prio | MVP? | Deps | Spec
     isOldFormat: cells.length === 6 && !normalizedCells.includes('status'),
-    // Neue 9-Spalten: # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp.
-    isNewFormat: cells.length >= 9 && normalizedCells.includes('status')
+    // Neue 10-Spalten: # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp.
+    isNewFormat: cells.length >= 10 && normalizedCells.includes('status')
   };
 }
 
@@ -493,28 +494,30 @@ export function parseDocTaskLine(line, format = null) {
   if (parsedId === null) return null;
 
   // Format automatisch erkennen
-  const isNewFormat = format?.isNewFormat ?? (cells.length >= 9);
+  const isNewFormat = format?.isNewFormat ?? (cells.length >= 10);
 
-  if (isNewFormat && cells.length >= 9) {
-    // Neues 9-Spalten-Format
+  if (isNewFormat && cells.length >= 10) {
+    // Neues 10-Spalten-Format
     return {
       number: numberStr,
       status: cells[1],
-      bereich: cells[2],
-      beschreibung: cells[3],
-      prio: cells[4],
-      mvp: cells[5],
-      depsRaw: cells[6],
-      deps: parseDeps(cells[6]).map(d => String(d)),
-      spec: cells[7],
-      imp: cells[8]
+      domain: cells[2],
+      layer: cells[3],
+      beschreibung: cells[4],
+      prio: cells[5],
+      mvp: cells[6],
+      depsRaw: cells[7],
+      deps: parseDeps(cells[7]).map(d => String(d)),
+      spec: cells[8],
+      imp: cells[9]
     };
   } else {
     // Altes 6-Spalten-Format
     return {
       number: numberStr,
       status: null,
-      bereich: null,
+      domain: null,
+      layer: null,
       beschreibung: cells[1],
       prio: cells[2],
       mvp: cells[3],

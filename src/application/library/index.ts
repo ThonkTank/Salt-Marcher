@@ -29,3 +29,10 @@ export {
   type LibraryViewModel,
   createLibraryViewModel,
 } from './viewmodel';
+
+// View
+export {
+  LibraryView,
+  createLibraryViewFactory,
+  type LibraryViewDeps,
+} from './view';

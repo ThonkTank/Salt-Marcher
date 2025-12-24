@@ -9,7 +9,12 @@
 
 import { z } from 'zod';
 import { entityIdSchema } from './common';
-import { encounterTemplateSchema, type EncounterTemplate } from './encounter';
+import {
+  encounterTemplateSchema,
+  weightedActivitySchema,
+  type EncounterTemplate,
+  type WeightedActivity,
+} from './encounter';
 
 // ============================================================================
 // Culture Sub-Schemas
@@ -129,6 +134,14 @@ export const cultureDataSchema = z.object({
 
   /** Speech patterns for RP */
   speech: speechDataSchema.optional(),
+
+  /**
+   * Faction-specific activities for encounter groups.
+   * Higher-priority than creature and generic activities in the pool hierarchy.
+   *
+   * @see docs/features/Encounter-System.md#activity-pool-hierarchie
+   */
+  activities: z.array(weightedActivitySchema).optional(),
 });
 
 export type CultureData = z.infer<typeof cultureDataSchema>;
@@ -231,6 +244,9 @@ export const resolvedCultureSchema = z.object({
     greetings: z.array(z.string()),
   }),
   speech: speechDataSchema.nullable(),
+
+  /** Resolved activity pool from faction culture */
+  activities: z.array(weightedActivitySchema),
 });
 
 export type ResolvedCulture = z.infer<typeof resolvedCultureSchema>;
@@ -276,4 +292,5 @@ export const EMPTY_RESOLVED_CULTURE: ResolvedCulture = {
     greetings: [],
   },
   speech: null,
+  activities: [],
 };

@@ -96,6 +96,7 @@ function mergeCulture(
       greetings: mergeArrays(base.values.greetings, overlay.values?.greetings),
     },
     speech: overlay.speech ?? base.speech,
+    activities: mergeArrays(base.activities, overlay.activities),
   };
 }
 

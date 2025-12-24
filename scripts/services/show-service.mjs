@@ -99,7 +99,7 @@ export function createLookupService(options = {}) {
      *
      * @param {string} query - Suchbegriff
      * @param {object} [opts] - Optionen
-     * @param {string} [opts.field] - 'bereich' | 'spec' | 'all' (default: 'all')
+     * @param {string} [opts.field] - 'domain' | 'spec' | 'all' (default: 'all')
      * @param {number} [opts.limit] - Max. Ergebnisse (0 = alle)
      * @returns {import('../core/result.mjs').Result<Array>}
      */
@@ -113,14 +113,14 @@ export function createLookupService(options = {}) {
       const keyword = query.toLowerCase();
 
       let results = items.filter(item => {
-        if (field === 'bereich') {
-          return item.bereich.toLowerCase().includes(keyword);
+        if (field === 'domain') {
+          return item.domain.toLowerCase().includes(keyword);
         }
         if (field === 'spec') {
           return (item.spec || '').toLowerCase().includes(keyword);
         }
         return (
-          item.bereich.toLowerCase().includes(keyword) ||
+          item.domain.toLowerCase().includes(keyword) ||
           item.beschreibung.toLowerCase().includes(keyword) ||
           (item.spec || '').toLowerCase().includes(keyword)
         );
@@ -281,7 +281,7 @@ function parseTaskId(str) {
  */
 export function parseArgs(argv) {
   const opts = {
-    itemId: null,
+    itemIds: [],
     tree: true,
     treeDepth: 3,
     json: false,
@@ -300,14 +300,10 @@ export function parseArgs(argv) {
     } else if (arg === '--json') {
       opts.json = true;
     } else if (!arg.startsWith('-')) {
-      // Task-ID parsen
-      if (arg.match(/^b\d+$/)) {
-        opts.itemId = arg;
-      } else {
-        const parsed = parseTaskId(arg);
-        if (parsed !== null) {
-          opts.itemId = parsed;
-        }
+      // Task-ID parsen und sammeln
+      const parsed = parseTaskId(arg);
+      if (parsed !== null) {
+        opts.itemIds.push(parsed);
       }
     }
   }
@@ -321,35 +317,54 @@ export function parseArgs(argv) {
 export function execute(opts, service = null) {
   const showService = service ?? createLookupService();
 
-  if (!opts.itemId) {
+  if (opts.itemIds.length === 0) {
     return {
       ok: false,
       error: {
         code: 'INVALID_FORMAT',
-        message: 'Task-ID erforderlich. Für Keyword-Suche: sort <keyword>'
+        message: 'Mind. eine Task-ID erforderlich. Für Keyword-Suche: sort <keyword>'
       }
     };
   }
 
-  const result = showService.getTask(opts.itemId);
-  if (!result.ok) return result;
+  // SINGLE: Detaillierte Ausgabe mit Trees
+  if (opts.itemIds.length === 1) {
+    const itemId = opts.itemIds[0];
+    const result = showService.getTask(itemId);
+    if (!result.ok) return result;
 
-  const data = { item: result.value.item };
+    const data = { item: result.value.item };
 
-  // IMMER beide Trees (außer --no-tree)
-  if (opts.tree !== false) {
-    const depsResult = showService.getDependencyTree(opts.itemId, opts.treeDepth);
-    if (depsResult.ok) data.dependencyTree = depsResult.value;
+    // IMMER beide Trees (außer --no-tree)
+    if (opts.tree !== false) {
+      const depsResult = showService.getDependencyTree(itemId, opts.treeDepth);
+      if (depsResult.ok) data.dependencyTree = depsResult.value;
 
-    const dependentsResult = showService.getDependentTree(opts.itemId, opts.treeDepth);
-    if (dependentsResult.ok) data.dependentTree = dependentsResult.value;
+      const dependentsResult = showService.getDependentTree(itemId, opts.treeDepth);
+      if (dependentsResult.ok) data.dependentTree = dependentsResult.value;
+    }
+
+    if (result.value.claim) {
+      data.claim = result.value.claim;
+    }
+
+    return { ok: true, value: data };
   }
 
-  if (result.value.claim) {
-    data.claim = result.value.claim;
+  // MULTI: Kompakte Liste ohne Trees
+  const items = [];
+  const missing = [];
+
+  for (const id of opts.itemIds) {
+    const result = showService.getTask(id);
+    if (result.ok) {
+      items.push(result.value.item);
+    } else {
+      missing.push(id);
+    }
   }
 
-  return { ok: true, value: data };
+  return ok({ items, missing, isMultiShow: true });
 }
 
 /**
@@ -357,28 +372,29 @@ export function execute(opts, service = null) {
  */
 export function showHelp() {
   return `
-Show Command - Task-Details mit Dependency-Trees anzeigen
+Show Command - Task-Details anzeigen
 
 USAGE:
-  node scripts/task.mjs show <ID>
+  node scripts/task.mjs show <ID> [ID...]
 
 ARGUMENTE:
   <ID>                   Task-ID (z.B. 428, #428, 428b) oder Bug-ID (z.B. b4)
+                         Mehrere IDs durch Leerzeichen trennen
 
 OPTIONEN:
-  --depth <N>            Tiefe der Trees (default: 3)
+  --depth <N>            Tiefe der Trees (default: 3, nur bei einzelner Task)
   --no-tree              Keine Trees anzeigen
   --json                 JSON-Ausgabe
   -h, --help             Diese Hilfe anzeigen
 
 BEISPIELE:
-  node scripts/task.mjs show 428             # Task #428 Details + Trees
-  node scripts/task.mjs show 428b            # Task #428b Details
-  node scripts/task.mjs show b4              # Bug b4 Details
-  node scripts/task.mjs show 428 --depth 5   # Tieferer Baum
-  node scripts/task.mjs show 428 --no-tree   # Ohne Trees
+  node scripts/task.mjs show 428              # Einzelne Task mit Trees
+  node scripts/task.mjs show 428 429 430      # Mehrere Tasks kompakt
+  node scripts/task.mjs show 428 b4           # Task + Bug gemischt
+  node scripts/task.mjs show 428 --depth 5    # Tieferer Baum (einzelne Task)
 
 HINWEIS:
+  Bei mehreren IDs: Kompakte Ausgabe ohne Trees
   Für Keyword-Suche nutze: sort <keyword>
 `;
 }

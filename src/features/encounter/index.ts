@@ -53,6 +53,14 @@ export {
   groupCreaturesByDefinitionId,
   type GroupedCreature,
   type TypeProbabilityMatrix,
+  // Multi-Group Encounter Functions (Task #252)
+  MULTI_GROUP_BASE_CHANCE,
+  NARRATIVE_ROLE_BUDGET_RANGES,
+  shouldGenerateMultiGroup,
+  distributeBudget,
+  deriveGroupRelation,
+  createEncounterGroup,
+  type BudgetDistributionInput,
 } from './encounter-utils';
 
 // NPC generation utilities (for testing/extension)

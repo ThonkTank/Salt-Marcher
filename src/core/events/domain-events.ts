@@ -322,6 +322,13 @@ export const EventTypes = {
   INVENTORY_ENCUMBRANCE_CHANGED: 'inventory:encumbrance-changed',
 
   // -------------------------------------------------------------------------
+  // character:* Events (3)
+  // -------------------------------------------------------------------------
+  CHARACTER_HP_CHANGED: 'character:hp-changed',
+  CHARACTER_DOWNED: 'character:downed',
+  CHARACTER_LEVEL_CHANGED: 'character:level-changed',
+
+  // -------------------------------------------------------------------------
   // town:* Events (2)
   // -------------------------------------------------------------------------
   TOWN_NAVIGATE_REQUESTED: 'town:navigate-requested',
@@ -1225,6 +1232,27 @@ export interface InventoryEncumbranceChangedPayload {
 }
 
 // ---------------------------------------------------------------------------
+// character:* Payloads
+// ---------------------------------------------------------------------------
+
+export interface CharacterHpChangedPayload {
+  characterId: EntityId<'character'>;
+  previousHp: number;
+  currentHp: number;
+  reason: 'damage' | 'heal' | 'rest' | 'manual';
+}
+
+export interface CharacterDownedPayload {
+  characterId: EntityId<'character'>;
+}
+
+export interface CharacterLevelChangedPayload {
+  characterId: EntityId<'character'>;
+  previousLevel: number;
+  newLevel: number;
+}
+
+// ---------------------------------------------------------------------------
 // town:* Payloads
 // ---------------------------------------------------------------------------
 
@@ -1478,6 +1506,11 @@ export interface EventPayloadMap {
   // inventory:*
   [EventTypes.INVENTORY_CHANGED]: InventoryChangedPayload;
   [EventTypes.INVENTORY_ENCUMBRANCE_CHANGED]: InventoryEncumbranceChangedPayload;
+
+  // character:*
+  [EventTypes.CHARACTER_HP_CHANGED]: CharacterHpChangedPayload;
+  [EventTypes.CHARACTER_DOWNED]: CharacterDownedPayload;
+  [EventTypes.CHARACTER_LEVEL_CHANGED]: CharacterLevelChangedPayload;
 
   // town:*
   [EventTypes.TOWN_NAVIGATE_REQUESTED]: TownNavigateRequestedPayload;

@@ -44,6 +44,9 @@ interface ShopDefinition {
   // Optional: Zuordnung zu Location
   locationId?: EntityId<'location'>;
 
+  // Optional: NPC-Besitzer (fuer Encounter-Integration)
+  npcOwnerId?: EntityId<'npc'>;
+
   // Inventar
   inventory: ShopInventoryEntry[];
 
@@ -100,6 +103,8 @@ Shop
  │
  ├──→ Location (N:1 - Shop kann Location zugeordnet sein)
  │
+ ├──→ NPC (N:1 - Shop kann NPC-Besitzer haben)
+ │
  ├──→ Item (N:M - Shop-Inventar referenziert Items)
  │
  └──→ Party (1:N - Party interagiert mit Shop)
@@ -126,6 +131,25 @@ Im SessionRunner wird das Shop-Panel angezeigt:
 - GM kann Verfuegbarkeit anpassen
 
 → Wireframe: [SessionRunner.md](../application/SessionRunner.md#shop-panel)
+
+### Encounter-Integration
+
+Shops koennen ueber `npcOwnerId` mit einem NPC verknuepft werden. Bei Social-Encounters mit diesem NPC zeigt das UI automatisch einen Shop-Link:
+
+```typescript
+// UI-Logik (Detail-View)
+function getShopForEncounter(encounter: EncounterInstance): Option<ShopDefinition> {
+  if (!encounter.leadNpc) return None;
+  return shopRegistry.findByNpcOwner(encounter.leadNpc.npcId);
+}
+```
+
+**Anwendungsfaelle:**
+- Reisende Haendler auf Strassen
+- Marktstaende auf Maerkten
+- Schmiede in einem Dorf
+
+→ Encounter-Schema: [Encounter-System.md#shop-integration-bei-social-encounters](../features/Encounter-System.md#shop-integration-bei-social-encounters)
 
 ---
 
@@ -174,13 +198,13 @@ Im SessionRunner wird das Shop-Panel angezeigt:
 function getShop(shopId: EntityId<'shop'>): Result<ShopDefinition, AppError>;
 
 // Shops nach Location
-function getShopsByLocation(locationId: EntityId<'location'>): ShopDefinition[];
+function getShopsByLocation(locationId: EntityId<'location'>): Result<ShopDefinition[], AppError>;
 
 // Shops nach Typ
-function getShopsByType(type: ShopType): ShopDefinition[];
+function getShopsByType(type: ShopType): Result<ShopDefinition[], AppError>;
 
 // Inventar mit aufgeloesten Items
-function getShopInventory(shopId: EntityId<'shop'>): ResolvedInventoryEntry[];
+function getShopInventory(shopId: EntityId<'shop'>): Result<ResolvedInventoryEntry[], AppError>;
 
 interface ResolvedInventoryEntry extends ShopInventoryEntry {
   item: ItemDefinition;  // Aufgeloeste Item-Entity
@@ -251,28 +275,30 @@ function calculateSellPrice(shop: ShopDefinition, itemId: EntityId<'item'>): num
 
 ## Tasks
 
-| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 2100 | ⬜ | Shop | ShopDefinition Schema (id, name, type, locationId, inventory, priceModifier, sellModifier, description, gmNotes) | mittel | Nein | #1600, #2703 | Shop.md#schema, EntityRegistry.md#entity-type-mapping, Core.md#branded-types | [neu] src/core/schemas/shop.ts |
-| 2101 | ⛔ | Shop | ShopType Enum (general, blacksmith, alchemist, magic, tavern, stable, custom) | mittel | Nein | #2100 | Shop.md#schema | [neu] src/core/schemas/shop.ts |
-| 2102 | ⛔ | Shop | ShopInventoryEntry Schema (itemId, price, quantity, available) | mittel | Nein | #2100, #1600 | Shop.md#shopinventoryentry, Item.md#schema | [neu] src/core/schemas/shop.ts |
-| 2103 | ⛔ | Shop | Currency Type (cp, sp, ep, gp, pp) | mittel | Nein | #2102, #1600 | Shop.md#shopinventoryentry, Item.md#currency-category-currency, Inventory-System.md#waehrungs-items | src/core/schemas/item.ts:CurrencyId (existiert als 'copper-piece' etc., nicht als 'cp' etc.) |
-| 2104 | ✅ | Shop | Shop EntityRegistry Integration: 'shop' als Entity-Typ | mittel | Nein | #2100, #2800, #2801 | Shop.md#schema, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#neue-entity-typen-mvp | src/core/schemas/common.ts:entityTypeSchema (Zeile 55) |
-| 2105 | ⛔ | Shop | Shop CRUD Events (shop:created, shop:updated, shop:deleted) | mittel | Nein | #2100, #2104 | Shop.md#events, Events-Catalog.md | [neu] src/core/events/domain-events.ts |
-| 2106 | ⛔ | Shop | Shop Interaction Events (shop:opened, shop:item-purchased, shop:item-sold, shop:closed) | mittel | Nein | #2105 | Shop.md#events, Events-Catalog.md, SessionRunner.md | [neu] src/core/events/domain-events.ts |
-| 2107 | ⛔ | Shop | getShop Query-Funktion (lädt Shop nach ID) | mittel | Nein | #2100, #2104, #2800 | Shop.md#queries, EntityRegistry.md#port-interface | [neu] src/features/shop/shop-queries.ts |
-| 2108 | ⛔ | Shop | getShopsByLocation Query-Funktion | mittel | Nein | #1516, #2100, #2104, #2800, #2804 | Shop.md#queries, EntityRegistry.md#querying, POI.md#schema | [neu] src/features/shop/shop-queries.ts |
-| 2109 | ⛔ | Shop | getShopsByType Query-Funktion | mittel | Nein | #2100, #2104, #2800, #2804 | Shop.md#queries, EntityRegistry.md#querying | [neu] src/features/shop/shop-queries.ts |
-| 2110 | ⛔ | Shop | getShopInventory Query-Funktion mit aufgelösten Items (ResolvedInventoryEntry) | mittel | Nein | #1600, #1607, #2107 | Shop.md#queries, Item.md#queries | [neu] src/features/shop/shop-queries.ts:getShopInventory() |
-| 2111 | ⛔ | Shop | calculateBuyPrice Funktion (Entry-Preis oder Item-Base-Preis + Shop-Modifikator) | mittel | Nein | #2102, #1600 | Shop.md#preis-berechnung, Item.md#schema | [neu] src/features/shop/shop-pricing.ts:calculateBuyPrice() |
-| 2112 | ⛔ | Shop | calculateSellPrice Funktion (Item-Base-Preis * sellModifier, default 0.5) | mittel | Nein | #2111, #1600 | Shop.md#preis-berechnung, Item.md#schema | [neu] src/features/shop/shop-pricing.ts:calculateSellPrice() |
-| 2113 | ⛔ | Shop | Shop Feature/Orchestrator mit CRUD-Logik | mittel | Nein | #2100, #2105, #2107, #2800 | Shop.md#verwendung, EntityRegistry.md#bootstrapping, Features.md | [neu] src/features/shop/orchestrator.ts:createShopOrchestrator(), [neu] src/features/shop/shop-service.ts, [neu] src/features/shop/shop-store.ts, [neu] src/features/shop/types.ts, [neu] src/features/shop/index.ts |
-| 2114 | ⛔ | Shop | Shop-Panel UI im SessionRunner (Inventar durchsuchen, filtern) | mittel | Nein | #2113, #2110, #2106 | Shop.md#verwendung, SessionRunner.md, DetailView.md | [neu] src/application/session-runner/panels/ShopPanel.svelte |
-| 2115 | ⛔ | Shop | Kauf-Funktion: Items kaufen, Party-Gold abziehen, shop:item-purchased Event | mittel | Nein | #500, #612, #615, #2111, #2114 | Shop.md#verwendung, Inventory-System.md#shop-integration-mvp, Character-System.md#character-schema | [neu] src/application/session-runner/panels/ShopPanel.svelte:handleBuyItem(), src/features/shop/shop-service.ts:purchaseItem() [neu] |
-| 2116 | ⛔ | Shop | Verkauf-Funktion: Items verkaufen, Party-Gold erhöhen, shop:item-sold Event | mittel | Nein | #500, #613, #614, #2112, #2114 | Shop.md#verwendung, Inventory-System.md#shop-integration-mvp, Character-System.md#character-schema | [neu] src/application/session-runner/panels/ShopPanel.svelte:handleSellItem(), src/features/shop/shop-service.ts:sellItem() [neu] |
-| 2117 | ⛔ | Shop | GM-Verfügbarkeits-Anpassung UI (quantity und available togglen) | niedrig | Nein | #2114, #2113 | Shop.md#verwendung, SessionRunner.md | [neu] src/application/session-runner/panels/ShopPanel.svelte:toggleAvailability() |
-| 2118 | ⛔ | Shop | Library CRUD UI: Shop erstellen, bearbeiten, löschen | mittel | Nein | #2105, #2113 | Shop.md#verwendung, Library.md | [neu] src/application/library/views/ShopView.svelte |
-| 2119 | ⛔ | Shop | Library Shop-Inventar Editor: Items aus Library wählen, Preise festlegen | mittel | Nein | #1600, #1607, #2118 | Shop.md#verwendung, Library.md, Item.md#queries | [neu] src/application/library/views/ShopView.svelte:InventoryEditor |
-| 2120 | ⛔ | Shop | Location-Zuordnung UI in Library (optional) | niedrig | Nein | #2118, #1516 | Shop.md#verwendung, Library.md, POI.md#schema | [neu] src/application/library/views/ShopView.svelte:LocationSelector |
-| 2121 | ⛔ | Shop | Dynamisches Restock-System (restockDays, restockQuantity) Post-MVP | niedrig | Nein | #2102, #2113 | Shop.md#shopinventoryentry, Time-System.md | [neu] src/core/schemas/shop.ts:ShopInventoryEntry.restockDays, [neu] src/features/shop/restock-service.ts |
-| 2122 | ⛔ | Shop | NPC-Händler Integration (Character als Shop-Betreiber) Post-MVP | niedrig | Nein | #1300, #1315, #2001, #2100 | Shop.md#prioritaet, NPC-System.md#npc-schema, EntityRegistry.md#neue-entity-typen-mvp | [neu] src/core/schemas/shop.ts:ShopDefinition.npcOwnerId |
+| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+| 2100 | ⛔ | Shop | core | ShopDefinition Schema mit Zod implementieren (id, name, type, locationId?, inventory, priceModifier?, sellModifier?, description?, gmNotes?) | mittel | Nein | #1600, #2703 | Shop.md#schema, EntityRegistry.md#entity-type-mapping, Core.md#branded-types | [neu] src/core/schemas/shop.ts |
+| 2101 | ⛔ | Shop | core | ShopType Zod-Enum definieren (general | blacksmith | alchemist | magic | tavern | stable | custom) | mittel | Nein | #2100 | Shop.md#schema | [neu] src/core/schemas/shop.ts |
+| 2102 | ⛔ | Shop | core | ShopInventoryEntry Schema mit Zod (itemId, price?: {amount, currency}, quantity?: number, available: boolean) | mittel | Nein | #2100, #1600 | Shop.md#shopinventoryentry, Item.md#schema | [neu] src/core/schemas/shop.ts |
+| 2103 | ⛔ | Shop | core | Currency Type als Zod-Enum (cp | sp | ep | gp | pp) in item.ts oder common.ts - harmonisieren mit existierendem CurrencyId | mittel | Nein | #1600 | Shop.md#shopinventoryentry, Item.md#currency-category-currency, Inventory-System.md#waehrungs-items | src/core/schemas/item.ts:CurrencyId (existiert als 'copper-piece' etc., nicht als 'cp' etc.) |
+| 2104 | ✅ | Shop | - | Shop EntityRegistry Integration: 'shop' als Entity-Typ | mittel | Nein | #2100, #2800, #2801 | Shop.md#schema, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#neue-entity-typen-mvp | src/core/schemas/common.ts:entityTypeSchema (Zeile 55) |
+| 2105 | ⛔ | Shop | core | Shop CRUD Events als Zod-Schemas definieren (shop:created, shop:updated, shop:deleted) in domain-events.ts | mittel | Nein | #2100, #2104 | Shop.md#events, Events-Catalog.md | [neu] src/core/events/domain-events.ts |
+| 2106 | ⛔ | Shop | core | Shop Interaction Events als Zod-Schemas (shop:opened, shop:item-purchased, shop:item-sold, shop:closed) in domain-events.ts | mittel | Nein | #2105 | Shop.md#events, Events-Catalog.md, SessionRunner.md | [neu] src/core/events/domain-events.ts |
+| 2107 | ⛔ | Shop | features | getShop(shopId): Result<ShopDefinition, AppError> Query-Funktion implementieren | mittel | Nein | #2100, #2104, #2800 | Shop.md#queries, EntityRegistry.md#port-interface | [neu] src/features/shop/shop-queries.ts |
+| 2108 | ⛔ | Shop | features | getShopsByLocation(locationId): Result<ShopDefinition[], AppError> Query-Funktion implementieren | mittel | Nein | #2100, #2104, #2800, #2804 | Shop.md#queries, EntityRegistry.md#querying, POI.md#schema | [neu] src/features/shop/shop-queries.ts |
+| 2109 | ⛔ | Shop | features | getShopsByType(type): Result<ShopDefinition[], AppError> Query-Funktion implementieren | mittel | Nein | #2101, #2104, #2800, #2804 | Shop.md#queries, EntityRegistry.md#querying | [neu] src/features/shop/shop-queries.ts |
+| 2110 | ⛔ | Shop | features | getShopInventory(shopId): Result<ResolvedInventoryEntry[], AppError> mit aufgelösten Items implementieren | mittel | Nein | #1600, #1607, #2107, #3164 | Shop.md#queries, Item.md#queries | [neu] src/features/shop/shop-queries.ts:getShopInventory() |
+| 2111 | ⛔ | Shop | features | calculateBuyPrice(shop, entry): number implementieren (Entry-Preis oder Item-Base-Preis + shop.priceModifier) | mittel | Nein | #2102, #1600 | Shop.md#preis-berechnung, Item.md#schema | [neu] src/features/shop/shop-pricing.ts:calculateBuyPrice() |
+| 2112 | ⛔ | Shop | features | calculateSellPrice(shop, itemId): number implementieren (Item-Base-Preis * shop.sellModifier, default 0.5) | mittel | Nein | #2111, #1600 | Shop.md#preis-berechnung, Item.md#schema | [neu] src/features/shop/shop-pricing.ts:calculateSellPrice() |
+| 2113 | ⛔ | Shop | features | Shop-Feature: createShopOrchestrator() Factory mit CRUD-Logik (shop-service, shop-store, types, index) | mittel | Nein | #2100, #2105, #2107, #2800, #3166 | Shop.md#verwendung, EntityRegistry.md#bootstrapping, Features.md | [neu] src/features/shop/orchestrator.ts:createShopOrchestrator(), [neu] src/features/shop/shop-service.ts, [neu] src/features/shop/shop-store.ts, [neu] src/features/shop/types.ts, [neu] src/features/shop/index.ts |
+| 2114 | ⛔ | Shop | application | ShopPanel.svelte im SessionRunner (Inventar anzeigen, durchsuchen, filtern) | mittel | Nein | #2113, #2110 | Shop.md#verwendung, SessionRunner.md, DetailView.md | [neu] src/application/session-runner/panels/ShopPanel.svelte |
+| 2115 | ⛔ | Shop | application | Kauf-Funktion in ShopPanel: handleBuyItem() + shop-service.purchaseItem() - Party-Gold abziehen, shop:item-purchased Event emittieren | mittel | Nein | #612, #615, #2111, #2114 | Shop.md#verwendung, Inventory-System.md#shop-integration-mvp, Character-System.md#character-schema | [neu] src/application/session-runner/panels/ShopPanel.svelte:handleBuyItem(), src/features/shop/shop-service.ts:purchaseItem() [neu] |
+| 2116 | ⛔ | Shop | application | Verkauf-Funktion in ShopPanel: handleSellItem() + shop-service.sellItem() - Party-Gold erhöhen, shop:item-sold Event emittieren | mittel | Nein | #613, #614, #2112, #2114 | Shop.md#verwendung, Inventory-System.md#shop-integration-mvp, Character-System.md#character-schema | [neu] src/application/session-runner/panels/ShopPanel.svelte:handleSellItem(), src/features/shop/shop-service.ts:sellItem() [neu] |
+| 2117 | ⛔ | Shop | application | GM-Verfügbarkeits-Anpassung in ShopPanel: toggleAvailability() für quantity und available | niedrig | Nein | #2114, #2113 | Shop.md#verwendung, SessionRunner.md | [neu] src/application/session-runner/panels/ShopPanel.svelte:toggleAvailability() |
+| 2118 | ⛔ | Shop | application | Shop CRUD UI in Library: ShopView.svelte für Erstellen, Bearbeiten, Löschen | mittel | Nein | #2105, #2113 | Shop.md#verwendung, Library.md | [neu] src/application/library/views/ShopView.svelte |
+| 2119 | ⛔ | Shop | application | Shop-Inventar-Editor in ShopView: Items aus Library wählen, Preise/Mengen festlegen | mittel | Nein | #1607, #2118 | Shop.md#verwendung, Library.md, Item.md#queries | [neu] src/application/library/views/ShopView.svelte:InventoryEditor |
+| 2120 | ⛔ | Shop | application | Location-Zuordnung UI in ShopView: LocationSelector-Komponente (optional) | niedrig | Nein | #2118, #1516 | Shop.md#verwendung, Library.md, POI.md#schema | [neu] src/application/library/views/ShopView.svelte:LocationSelector |
+| 2121 | ⛔ | Shop | features | Restock-System (Post-MVP): restockDays/restockQuantity in Schema + restock-service.ts mit Time-System Integration | niedrig | Nein | #2102, #2113 | Shop.md#shopinventoryentry, Time-System.md | [neu] src/core/schemas/shop.ts:ShopInventoryEntry.restockDays, [neu] src/features/shop/restock-service.ts |
+| 2122 | ⛔ | Shop | core | NPC-Händler Integration (Post-MVP): npcOwnerId?: EntityId<'npc'> zu ShopDefinition hinzufügen | niedrig | Nein | #1315, #2100 | Shop.md#prioritaet, NPC-System.md#npc-schema, EntityRegistry.md#neue-entity-typen-mvp | [neu] src/core/schemas/shop.ts:ShopDefinition.npcOwnerId |
+| 3164 | ⬜ | Shop | features | ResolvedInventoryEntry TypeScript Interface definieren (extends ShopInventoryEntry + item: ItemDefinition) | mittel | Nein | #2102, #1600 | Shop.md#queries | src/features/shop/types.ts:ResolvedInventoryEntry [neu] |
+| 3166 | ⬜ | Shop | infrastructure | Shop Storage Port Integration: ShopStoragePort mit load/save/delete/query Methoden (Persistent Category) | mittel | Nein | #2100, #2113, #2800 | Shop.md#schema, EntityRegistry.md#port-interface, Infrastructure.md#storage-ports | src/features/shop/storage-port.ts:ShopStoragePort [neu], src/infrastructure/vault/shop-adapter.ts [neu] |

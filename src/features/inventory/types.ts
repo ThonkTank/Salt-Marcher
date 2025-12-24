@@ -177,6 +177,22 @@ export interface InventoryFeaturePort {
     characters: readonly Character[],
     itemLookup: (id: EntityId<'item'>) => Item | undefined
   ): number;
+
+  // === Gold Convenience ===
+
+  /**
+   * Add gold to a character's inventory.
+   * Convenience wrapper that adds gold-piece items.
+   * @param character - The character to add gold to
+   * @param amount - Amount of gold pieces to add
+   * @param itemLookup - Function to look up items by ID
+   * @returns Updated character or error
+   */
+  addGold(
+    character: Character,
+    amount: number,
+    itemLookup: (id: EntityId<'item'>) => Item | undefined
+  ): Result<Character, InventoryError>;
 }
 
 // ============================================================================

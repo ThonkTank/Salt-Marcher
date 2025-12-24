@@ -74,6 +74,50 @@ export const encounterOutcomeSchema = z.enum([
 export type EncounterOutcome = z.infer<typeof encounterOutcomeSchema>;
 
 // ============================================================================
+// TraceAge Schema
+// ============================================================================
+
+/**
+ * Age of traces in a trace encounter.
+ * Affects tracking DC and pursuit viability.
+ *
+ * @see docs/features/Encounter-System.md#trace-spezifisch
+ */
+export const traceAgeSchema = z.enum([
+  'fresh', // Hours old - easy to track, pursuit viable
+  'recent', // 1-2 days old - moderate tracking, pursuit possible
+  'old', // Older - hard to track, pursuit unlikely
+]);
+
+export type TraceAge = z.infer<typeof traceAgeSchema>;
+
+// ============================================================================
+// WeightedActivity Schema
+// ============================================================================
+
+/**
+ * A weighted activity for encounter groups.
+ * Used by the Activity-Pool-Hierarchy (Generic → Creature → Faction).
+ *
+ * @see docs/features/Encounter-System.md#activity-pool-hierarchie
+ */
+export const weightedActivitySchema = z.object({
+  /** Activity name (e.g., "hunting", "patrolling", "resting") */
+  activity: z.string().min(1),
+
+  /** Weight for random selection (higher = more likely) */
+  weight: z.number().positive(),
+
+  /**
+   * Context tags for filtering (e.g., "nocturnal", "daylight", "aquatic").
+   * Activity only available if all tags match the current context.
+   */
+  contextTags: z.array(z.string()).optional(),
+});
+
+export type WeightedActivity = z.infer<typeof weightedActivitySchema>;
+
+// ============================================================================
 // CreatureSlot Schemas (3 Variants)
 // ============================================================================
 
@@ -442,11 +486,25 @@ export const encounterInstanceSchema = z.object({
 
   // === Creatures ===
 
-  /** Instantiated creatures */
+  /** Instantiated creatures (flat list for single-group encounters) */
   creatures: z.array(creatureInstanceSchema),
 
-  /** Lead NPC for this encounter (if any) */
+  /** Lead NPC for this encounter (if any, single-group only) */
   leadNpc: encounterLeadNpcSchema.optional(),
+
+  // === Multi-Group Encounters ===
+
+  /**
+   * Groups for multi-group encounters.
+   * When present, each group has its own creatures, leadNPC, disposition, etc.
+   * Mutually exclusive with top-level creatures/leadNpc for multi-group.
+   *
+   * @see docs/features/Encounter-Balancing.md#multi-gruppen-encounters-post-mvp
+   */
+  groups: z.lazy(() => z.array(encounterGroupSchema)).optional(),
+
+  /** Whether this is a multi-group encounter */
+  isMultiGroup: z.boolean().default(false),
 
   // === Context ===
 
@@ -531,6 +589,20 @@ export const encounterInstanceSchema = z.object({
    * @see docs/features/Encounter-System.md#disposition
    */
   disposition: z.number().min(-100).max(100),
+
+  // === Trace-spezifisch ===
+
+  /**
+   * Age of traces (only for type: 'trace').
+   * Affects tracking DC and pursuit viability.
+   */
+  traceAge: traceAgeSchema.optional(),
+
+  /**
+   * DC for Survival/Investigation checks to track (only for type: 'trace').
+   * Calculated from terrain, weather, and traceAge.
+   */
+  trackingDC: z.number().int().min(1).max(30).optional(),
 });
 
 export type EncounterInstance = z.infer<typeof encounterInstanceSchema>;

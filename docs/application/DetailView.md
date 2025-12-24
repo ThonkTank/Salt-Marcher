@@ -23,6 +23,7 @@ Die DetailView zeigt **kontextbezogene Details**, die nicht staendig sichtbar se
 | **Location** | Tile-Details, POIs, NPCs | `ui:tile-selected` (optional) |
 | **Quest** | Quest-Details (expanded) | Manuell |
 | **Journal** | Vollstaendige Ereignis-Historie | Manuell |
+| **Party** | Party-Mitglieder, HP-Tracking | Manuell (`[Manage →]` in SessionRunner) |
 
 **Idle-State:** Leer (Placeholder mit Hinweis, dass Tabs manuell oder automatisch geoeffnet werden).
 
@@ -648,6 +649,78 @@ Vollstaendige Ereignis-Historie.
 
 ---
 
+### Party-Tab
+
+Party-Mitglieder Uebersicht mit HP-Tracking und Inventory-Zugriff.
+
+```
+┌────────────────────────────────────────┐
+│  👥 PARTY                              │
+├────────────────────────────────────────┤
+│                                        │
+│  PARTY STATS                           │
+│  ────────────────────────────────────  │
+│  Members: 4  │  Avg Level: 5           │
+│  Travel Speed: 25 ft (Encumbered)      │
+│                                        │
+│  MEMBERS                               │
+│  ────────────────────────────────────  │
+│                                        │
+│  ▶ Thorin                              │
+│    HP: [10][+][-] 45/52  AC: 18  PP: 12│
+│    [Inventory] [Remove]                │
+│                                        │
+│  ▼ Elara  (expanded)                   │
+│    HP: [10][+][-] 28/28  AC: 13  PP: 14│
+│    Speed: 30 ft                        │
+│    Encumbrance: Light                  │
+│    Level: 5 Wizard                     │
+│    [Inventory] [Remove]                │
+│                                        │
+│  ────────────────────────────────────  │
+│  [+ Add]                               │
+│                                        │
+└────────────────────────────────────────┘
+```
+
+**Elemente:**
+
+| Element | Beschreibung |
+|---------|--------------|
+| `▶` / `▼` | Toggle fuer Collapsed/Expanded-Ansicht |
+| `[10][+][-]` | HP-Eingabe: Wert eingeben, dann +/- druecken |
+| `PP` | Passive Perception |
+| `[Inventory]` | Oeffnet Inventory-Dialog fuer diesen Character |
+| `[Remove]` | Entfernt Character aus Party (ohne Bestaetigung, Character existiert weiter in Library) |
+| `[+ Add]` | Oeffnet Auswahl-Dialog mit Characters aus Library |
+
+**Collapsed-Ansicht (Default):**
+- Name
+- HP (mit Eingabe + Buttons)
+- AC
+- Passive Perception
+
+**Expanded-Ansicht:**
+- Alles aus Collapsed
+- Speed
+- Encumbrance-Status
+- Level + Class
+
+**Party Stats:**
+- Member Count
+- Average Level
+- Travel Speed (langsamster Character, mit Encumbrance)
+
+**Wichtig:** Characters werden in der [Library](Library.md) erstellt und bearbeitet. Der Party-Tab ist nur fuer:
+- Aktive Party-Mitglieder anzeigen
+- HP-Tracking waehrend der Session
+- Schneller Inventory-Zugriff
+- Characters zur Party hinzufuegen/entfernen
+
+→ Details: [Character-System.md](../features/Character-System.md)
+
+---
+
 ## Auto-Open Verhalten
 
 Die DetailView oeffnet automatisch bestimmte Tabs basierend auf Events:
@@ -683,9 +756,10 @@ interface DetailViewState {
   location: LocationTabState | null;
   quest: QuestTabState | null;
   journal: JournalTabState | null;
+  party: PartyTabState | null;
 }
 
-type TabId = 'encounter' | 'combat' | 'shop' | 'location' | 'quest' | 'journal';
+type TabId = 'encounter' | 'combat' | 'shop' | 'location' | 'quest' | 'journal' | 'party';
 
 interface EncounterTabState {
   // Builder-State
@@ -779,6 +853,30 @@ interface JournalTabState {
   filter: JournalFilter;
   entries: JournalEntry[];
 }
+
+interface PartyTabState {
+  members: CharacterDisplay[];
+  partyStats: {
+    memberCount: number;
+    averageLevel: number;
+    travelSpeed: number;
+    encumbranceStatus: 'light' | 'encumbered' | 'heavily' | 'over_capacity';
+  };
+}
+
+interface CharacterDisplay {
+  id: EntityId<'character'>;
+  name: string;
+  level: number;
+  class: string;
+  currentHp: number;
+  maxHp: number;
+  ac: number;
+  passivePerception: number;
+  speed: number;
+  encumbrance: 'light' | 'encumbered' | 'heavily' | 'over_capacity';
+  expanded: boolean;  // UI-State: collapsed oder expanded
+}
 ```
 
 ### Event-Subscriptions
@@ -801,7 +899,13 @@ const subscriptions = [
   'ui:tile-selected',
 
   // Journal
-  'journal:entry-added'
+  'journal:entry-added',
+
+  // Party
+  'party:member-added',
+  'party:member-removed',
+  'party:loaded',
+  'entity:saved'             // Fuer Character-Updates
 ];
 ```
 
@@ -981,83 +1085,91 @@ Shop-Tab zeigt Haendler-Inventar
 
 ## Tasks
 
-| # | Status | Bereich | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| 2400 | ✅ | Application/DetailView | DetailView View Component (Hauptcontainer mit Tab-Navigation) | hoch | Ja | - | DetailView.md#uebersicht | src/application/detail-view/view.ts |
-| 2401 | ✅ | Application/DetailView | DetailView ViewModel mit State-Management | hoch | Ja | #2400 | DetailView.md#state-synchronisation, Application.md#viewmodel-pattern | src/application/detail-view/viewmodel.ts |
-| 2402 | ✅ | Application/DetailView | Tab-Management (activeTab State, setActiveTab) | hoch | Ja | #2401 | DetailView.md#uebersicht | viewmodel.ts:setActiveTab(), types.ts:DetailViewState.activeTab |
-| 2403 | ✅ | Application/DetailView | Idle-State Placeholder (Hinweis wenn kein Tab aktiv) | mittel | Ja | #2400 | DetailView.md#idle-state-kein-tab-aktiv | view.ts:idleState (lines 113-123) |
-| 2404 | ✅ | Application/DetailView | Auto-Open Verhalten für Encounter-Tab (encounter:generated) | hoch | Ja | #220, #2401 | DetailView.md#auto-open-verhalten, Encounter-System.md#events, Events-Catalog.md#encounter | viewmodel.ts:ENCOUNTER_GENERATED handler (lines 110-125) |
-| 2405 | ✅ | Application/DetailView | Auto-Open Verhalten für Combat-Tab (combat:started) | hoch | Ja | #322, #2401 | DetailView.md#auto-open-verhalten, Combat-System.md#combat-flow, Events-Catalog.md#combat | viewmodel.ts:COMBAT_STARTED handler (lines 140-150) |
-| 2406 | ⛔ | Application/DetailView | Auto-Open Verhalten für Location-Tab (ui:tile-selected, optional) | niedrig | Nein | #2401, #2448 | DetailView.md#auto-open-verhalten | viewmodel.ts:setupEventHandlers() [ändern - UI_TILE_SELECTED handler] |
-| 2407 | ✅ | Application/DetailView | Tab-Priorität System (Combat > Encounter > Rest) | mittel | Ja | #2402 | DetailView.md#auto-open-verhalten | viewmodel.ts:ENCOUNTER_GENERATED handler (line 118 - prüft ob combat aktiv) |
-| 2408 | ✅ | Application/DetailView | Encounter-Tab Component (Container) | hoch | Ja | - | DetailView.md#encounter-tab | src/application/detail-view/panels/encounter-tab.ts:createEncounterTab() |
-| 2409 | 📋 | Application/DetailView | Encounter-Builder State (Name, Activity, Goal, Creatures) | hoch | Ja | #2401 | DetailView.md#encounter-tab, Encounter-System.md#schemas | types.ts:EncounterTabState, types.ts:BuilderCreature, viewmodel.ts:setBuilder*(), viewmodel.ts:*CreatureFromBuilder() |
-| 2410 | ⛔ | Application/DetailView | Encounter-Suche (Autocomplete für gespeicherte EncounterDefinitions) | mittel | Ja | #2408, #2409 | DetailView.md#encounter-tab, Encounter-System.md#schemas | encounter-tab.ts [ändern - Suche-Input + Autocomplete-Logic] |
-| 2411 | ⛔ | Application/DetailView | Kreatur/NPC-Suche (Autocomplete für CreatureDefinitions + Named NPCs) | hoch | Ja | #2408, #2409 | DetailView.md#encounter-tab, Creature.md#schema, NPC-System.md#npc-schema | encounter-tab.ts [ändern - Kreatur-Suche-Input + Autocomplete-Logic] |
-| 2412 | ⛔ | Application/DetailView | Kreatur/NPC hinzufügen zum Builder | hoch | Ja | #2409, #2411 | DetailView.md#encounter-tab, DetailView.md#flow-neues-encounter-im-builder-erstellen | encounter-tab.ts [ändern - onAddCreature callback], viewmodel.ts [ändern - addCreatureToBuilder()] |
-| 2413 | ⛔ | Application/DetailView | Kreatur/NPC entfernen aus Builder ([×] Button) | mittel | Ja | #2409, #2412 | DetailView.md#encounter-tab | encounter-tab.ts [ändern - Remove-Button], viewmodel.ts [ändern - removeCreatureFromBuilder()] |
-| 2414 | ⛔ | Application/DetailView | Encounter-Wertung Live-Berechnung (Gesamt-XP, Difficulty, Daily-Budget) | hoch | Ja | #2409, #1400 | DetailView.md#encounter-tab, Encounter-Balancing.md#xp-budget, Encounter-Balancing.md#cr-vergleich | viewmodel.ts [ändern - calculateEncounterRating()], nutzet Encounter-Balancing-Feature #1400 |
-| 2415 | ✅ | Application/DetailView | Encounter-Builder befüllen aus encounter:generated Event | hoch | Ja | #2404, #2409 | DetailView.md#encounter-tab, DetailView.md#flow-random-encounter-builder, Encounter-System.md#events | viewmodel.ts:loadEncounterIntoBuilder(), ENCOUNTER_GENERATED handler |
-| 2416 | ⛔ | Application/DetailView | Encounter-Builder befüllen aus gespeichertem Encounter | mittel | Ja | #2409, #2410 | DetailView.md#flow-gespeichertes-encounter-laden, Encounter-System.md#schemas | viewmodel.ts [ändern - loadEncounterDefinition()], encounter-tab.ts [ändern - onLoadEncounter callback] |
-| 2417 | ⛔ | Application/DetailView | Encounter speichern (💾 Button) | mittel | Ja | #2409 | DetailView.md#flow-builder-speichern, Encounter-System.md#schemas | encounter-tab.ts [ändern - Save-Button], viewmodel.ts [ändern - saveEncounterDefinition()], view.ts [ändern - onSaveEncounter callback] |
-| 2418 | ✅ | Application/DetailView | Combat starten aus Builder (⚔️ Button, publiziert combat:start-requested) | hoch | Ja | #321, #2409 | DetailView.md#flow-builder-combat, Combat-System.md#combat-flow, Encounter-System.md#integration | encounter-tab.ts:onStartEncounter → view.ts:EventTypes.ENCOUNTER_START_REQUESTED (lines 236-244) |
-| 2419 | ✅ | Application/DetailView | Combat-Tab Component (Container) | hoch | Ja | #305, #2400 | DetailView.md#combat-tab, Combat-System.md#schemas | src/application/detail-view/panels/combat-tab.ts |
-| 2420 | ✅ | Application/DetailView | Combat-Tab State (CombatState, PendingEffects, Resolution) | hoch | Ja | #2401, #2419 | DetailView.md#combat-tab, DetailView.md#state-synchronisation, Combat-System.md#combatstate | types.ts:CombatTabState, ResolutionState |
-| 2421 | ✅ | Application/DetailView | Initiative-Tracker Display (Liste mit Reihenfolge, aktiver Participant markiert) | hoch | Ja | #2419, #2420 | DetailView.md#combat-tab, Combat-System.md#sortierung, Combat-System.md#initiative-layout | combat-tab.ts:renderParticipant(), renderInitiativeList() |
-| 2422 | ✅ | Application/DetailView | HP-Bar Display pro Participant | hoch | Ja | #308, #309, #2420, #2421 | DetailView.md#combat-tab, Combat-System.md#damage-heal | combat-tab.ts:createHpBar() (lines 265-298) |
-| 2423 | ✅ | Application/DetailView | Conditions Display pro Participant (Icons + Labels) | hoch | Ja | #312, #313, #2420, #2421 | DetailView.md#combat-tab, Combat-System.md#conditions | combat-tab.ts:conditions rendering (lines 220-246) |
-| 2424 | ✅ | Application/DetailView | Damage Button + Dialog | hoch | Ja | #319, #2419, #2420 | DetailView.md#combat-tab, Combat-System.md#combat-flow, Combat-System.md#automatische-effekte | combat-tab.ts:damageBtn + view.ts:onApplyDamage callback (lines 288-295) |
-| 2425 | ✅ | Application/DetailView | Heal Button + Dialog | hoch | Ja | #2419, #2424 | DetailView.md#combat-tab, Combat-System.md#start-of-turn | combat-tab.ts:healBtn + view.ts:onApplyHealing callback (lines 297-305) |
-| 2426 | ✅ | Application/DetailView | Condition Button + Dropdown | hoch | Ja | #2419, #2424 | DetailView.md#combat-tab, Combat-System.md#end-of-turn | combat-tab.ts:conditionBtn + view.ts:onAddCondition/onRemoveCondition callbacks (lines 306-323) |
-| 2427 | ⬜ | Application/DetailView | Add Effect Button + Dialog (Custom Start/End-of-Turn Effects) | mittel | Nein | #323, #2419, #2420 | DetailView.md#flow-combat-beenden, Combat-System.md#combat-flow | combat-tab.ts [ändern - Effect-Button + Dialog], view.ts [ändern - onAddEffect callback] |
-| 2428 | ✅ | Application/DetailView | Next Turn Button (combat:next-turn-requested) | hoch | Ja | #338, #339, #340, #2419, #2427 | DetailView.md#post-combat-resolution, Combat-System.md#post-combat-resolution, Combat-System.md#xp-berechnung | combat-tab.ts:nextTurnBtn + view.ts:onNextTurn callback (lines 274-277) |
-| 2429 | ✅ | Application/DetailView | End Combat Button (combat:end-requested) | hoch | Ja | #2419, #2428 | DetailView.md#post-combat-resolution, Combat-System.md#xp-berechnung | combat-tab.ts:endBtn + view.ts:onEndCombat callback (lines 279-287) |
-| 2430 | ⛔ | Application/DetailView | Start-of-Turn Effect Display (Save-Prompt für Effekte wie Tasha's Caustic Brew) | mittel | Nein | #408, #409, #2420, #2427, #2428 | DetailView.md#post-combat-resolution, Quest-System.md#quest-assignment-ui-post-combat, Quest-System.md#40-60-split-mechanik, Combat-System.md#post-combat-resolution | combat-tab.ts [ändern - Turn-Wechsel-Dialog mit Pending-Effects], viewmodel.ts [ändern - getPendingEffects()] |
-| 2431 | ✅ | Application/DetailView | Post-Combat Resolution State-Management | hoch | Ja | - | DetailView.md#post-combat-resolution, Loot-Feature.md#verteilen-einheitliches-loot-modal, Loot-Feature.md#loot-generierung-bei-encounter, Combat-System.md#post-combat-resolution | types.ts:CombatTabState [ändern - Resolution-Felder hinzufügen], viewmodel.ts [ändern - Resolution-State-Management] |
-| 2432 | ⬜ | Application/DetailView | Post-Combat Phase 1: XP-Summary Display (Basis-XP, GM-Anpassung, Verteilung) | hoch | Ja | - | DetailView.md#shop-tab, Shop.md#verwendung | combat-tab.ts [neu - renderResolutionPanel:XpPhase] |
-| 2433 | ⛔ | Application/DetailView | Post-Combat Phase 1: GM-Anpassung Controls ([-] [%] [+] Schnellauswahl) | mittel | Ja | #2432 | DetailView.md#shop-tab, DetailView.md#state-synchronisation, Shop.md#schema | combat-tab.ts:XpPhase [ändern - GM-Modifier-Controls] |
-| 2434 | ⛔ | Application/DetailView | Post-Combat Phase 2: Quest-Zuweisung Display (Quest-Suche, Aktive Quests Radio-Liste) | hoch | Ja | #2432, #2433 | DetailView.md#shop-tab, Shop.md#queries | combat-tab.ts [neu - renderResolutionPanel:QuestPhase] |
-| 2435 | ⛔ | Application/DetailView | Post-Combat Phase 2: Quest-Pool XP Zuweisung (Quest auswählen, XP zuweisen) | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events | viewmodel.ts [ändern - assignXpToQuest()], view.ts [ändern - onAssignQuestXp callback] |
-| 2436 | ⛔ | Application/DetailView | Post-Combat Phase 3: Loot-Verteilung Display (Items + Gold) | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events | combat-tab.ts [neu - renderResolutionPanel:LootPhase] |
-| 2437 | ⛔ | Application/DetailView | Post-Combat Phase 3: Item-Verteilung (Dropdown pro Item → Character) | hoch | Ja | #2400, #2436 | DetailView.md#location-tab, POI.md#tile-content-panel | combat-tab.ts:LootPhase [ändern - Item-Dropdown-Controls] |
-| 2438 | ⛔ | Application/DetailView | Post-Combat Phase 3: Gold-Verteilung (Gleichmäßig verteilen + manuell anpassen) | mittel | Ja | #2436, #2437 | DetailView.md#location-tab, DetailView.md#state-synchronisation, POI.md#queries | combat-tab.ts:LootPhase [ändern - Gold-Distribution-Controls] |
-| 2439 | ⛔ | Application/DetailView | Post-Combat Resolution: Überspringen-Button pro Phase | mittel | Ja | #2431, #2432, #2434, #2436, #2438 | DetailView.md#location-tab, Terrain.md#schema, Weather-System.md#weather-state | combat-tab.ts:renderResolutionPanel [ändern - Skip-Button], viewmodel.ts [ändern - skipPhase()] |
-| 2440 | ⛔ | Application/DetailView | Post-Combat Resolution: Weiter-Button (Phase-Transition) | hoch | Ja | #2431, #2432, #2438 | DetailView.md#location-tab, POI.md#tile-content-panel, POI.md#queries | combat-tab.ts:renderResolutionPanel [ändern - Next-Button], viewmodel.ts [ändern - nextPhase()] |
-| 2441 | ⛔ | Application/DetailView | Post-Combat Resolution: Events publizieren (encounter:resolved, quest:xp-accumulated, loot:distributed) | hoch | Ja | #2431, #2435, #2437, #2438 | DetailView.md#location-tab, Faction.md#praesenz-datenstruktur, Faction.md#encounter-integration | viewmodel.ts [ändern - Resolution-Event-Publishing], view.ts [ändern - Event-Callbacks] |
-| 2442 | ⛔ | Application/DetailView | Shop-Tab Component (Container) | mittel | Ja | #2400, #2438 | DetailView.md#location-tab, NPC-System.md#npc-schema, NPC-System.md#mvp-fraktions-basierte-location | [neu] src/application/detail-view/panels/shop-tab.ts |
-| 2443 | ⬜ | Application/DetailView | Shop-Tab State (activeShop, searchQuery, filter, mode) | mittel | Ja | #2400, #2401 | DetailView.md#quest-tab, Quest.md#schema | types.ts:ShopTabState [neu], viewmodel.ts [ändern - Shop-State-Management] |
-| 2444 | ⛔ | Application/DetailView | Shop-Tab Buy-Mode (Item-Liste, Search, Filter, Buy-Button) | mittel | Ja | #2442, #2443 | DetailView.md#quest-tab, DetailView.md#state-synchronisation, Quest-System.md#quest-progress-runtime-state | shop-tab.ts [ändern - Buy-Mode-Rendering] |
-| 2445 | ⛔ | Application/DetailView | Shop-Tab Sell-Mode (Party-Inventory, Sell-Button) | mittel | Ja | #2442, #2443, #2444 | DetailView.md#quest-tab, Quest-System.md#quest-schema-entityregistry, Quest.md#questobjective | shop-tab.ts [ändern - Sell-Mode-Rendering] |
-| 2446 | ⛔ | Application/DetailView | Shop-Tab Mode Toggle (Buy/Sell wechseln) | niedrig | Nein | #2442, #2443, #2444 | DetailView.md#quest-tab, Quest-System.md#quest-state-machine, Quest.md#events | shop-tab.ts [ändern - Mode-Toggle-Button], viewmodel.ts [ändern - toggleShopMode()] |
-| 2447 | ⛔ | Application/DetailView | Shop-Tab Load More / Pagination | niedrig | Nein | #2400, #2444 | DetailView.md#journal-tab, Journal.md#schema | shop-tab.ts [ändern - Pagination-Controls] |
-| 2448 | ⛔ | Application/DetailView | Location-Tab Component (Container) | mittel | Ja | #2400, #2447 | DetailView.md#journal-tab, DetailView.md#state-synchronisation, Journal.md#queries | [neu] src/application/detail-view/panels/location-tab.ts |
-| 2449 | ⛔ | Application/DetailView | Location-Tab State (selectedTile, tileData) | mittel | Ja | #2401, #2448 | DetailView.md#journal-tab, Journal.md#schema | types.ts:LocationTabState [neu], viewmodel.ts [ändern - Location-State-Management] |
-| 2450 | ⛔ | Application/DetailView | Location-Tab Terrain Display (Type, Elevation, Movement Cost) | mittel | Ja | #2448, #2449 | DetailView.md#journal-tab, Journal.md#journalentry | location-tab.ts [ändern - Terrain-Rendering] |
-| 2429a | ✅ | Application/DetailView | Update Initiative Button (combat:update-initiative-requested) | mittel | Ja | #2419, #2428 | DetailView.md#post-combat-resolution, Combat-System.md#xp-berechnung | combat-tab.ts:initBtn + view.ts:onUpdateInitiative callback (lines 324-332) |
-| 2451 | ⛔ | Application/DetailView | Location-Tab Weather Display (aktuelles Wetter für Tile) | mittel | Ja | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - Weather-Rendering] |
-| 2452 | ⛔ | Application/DetailView | Location-Tab POI-Liste (POIs auf Tile mit Details-Link) | mittel | Ja | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - POI-List-Rendering] |
-| 2453 | ⛔ | Application/DetailView | Location-Tab Fraktions-Präsenz (Factions mit %-Werten) | niedrig | Nein | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - Faction-Rendering] |
-| 2454 | ⛔ | Application/DetailView | Location-Tab Bekannte NPCs (NPCs auf Tile) | niedrig | Nein | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - NPC-List-Rendering] |
-| 2455 | ⬜ | Application/DetailView | Quest-Tab Component (Container) | niedrig | Nein | #2400 | DetailView.md#quest-tab | [neu] src/application/detail-view/panels/quest-tab.ts |
-| 2456 | ⬜ | Application/DetailView | Quest-Tab State (selectedQuest) | niedrig | Nein | #2401 | DetailView.md#viewmodel-state | types.ts:QuestTabState [neu], viewmodel.ts [ändern - Quest-State-Management] |
-| 2457 | ⛔ | Application/DetailView | Quest-Tab Details Display (Status, Progress, Description, Objectives) | niedrig | Nein | #2455, #2456 | DetailView.md#quest-tab | quest-tab.ts [ändern - Quest-Details-Rendering] |
-| 2458 | ⛔ | Application/DetailView | Quest-Tab Encounters Display (Liste mit XP-Info, Start-Button) | niedrig | Nein | #2455, #2456 | DetailView.md#quest-tab | quest-tab.ts [ändern - Encounter-List-Rendering] |
-| 2459 | ⛔ | Application/DetailView | Quest-Tab Rewards Display (Gold, Quest-XP Pool, Reputation) | niedrig | Nein | #2455, #2456 | DetailView.md#quest-tab | quest-tab.ts [ändern - Rewards-Rendering] |
-| 2460 | ⛔ | Application/DetailView | Quest-Tab Complete/Abandon Buttons | niedrig | Nein | #2455 | DetailView.md#quest-tab | quest-tab.ts [ändern - Action-Buttons], viewmodel.ts [ändern - completeQuest()/abandonQuest()], view.ts [ändern - Quest-Callbacks] |
-| 2461 | ⬜ | Application/DetailView | Journal-Tab Component (Container) | niedrig | Nein | #2400 | DetailView.md#journal-tab | [neu] src/application/detail-view/panels/journal-tab.ts |
-| 2462 | ⬜ | Application/DetailView | Journal-Tab State (filter, entries) | niedrig | Nein | #2401 | DetailView.md#viewmodel-state | types.ts:JournalTabState [neu], viewmodel.ts [ändern - Journal-State-Management] |
-| 2463 | ⛔ | Application/DetailView | Journal-Tab Filter Controls (Type-Filter, Date-Filter) | niedrig | Nein | #2461, #2462 | DetailView.md#journal-tab | journal-tab.ts [ändern - Filter-Controls] |
-| 2464 | ⛔ | Application/DetailView | Journal-Tab Entry Display (Chronologisch gruppiert nach Tag) | niedrig | Nein | #2461, #2462 | DetailView.md#journal-tab | journal-tab.ts [ändern - Entry-Rendering] |
-| 2465 | ⛔ | Application/DetailView | Journal-Tab Quick Note Button | niedrig | Nein | #2461 | DetailView.md#journal-tab | journal-tab.ts [ändern - Quick-Note-Button], viewmodel.ts [ändern - addQuickNote()], view.ts [ändern - onAddQuickNote callback] |
-| 2466 | ⛔ | Application/DetailView | Journal-Tab Export Button | niedrig | Nein | #2461 | DetailView.md#journal-tab | journal-tab.ts [ändern - Export-Button], viewmodel.ts [ändern - exportJournal()] |
-| 2467 | ⬜ | Application/DetailView | Keyboard-Shortcuts (1-6 für Tab-Wechsel, Escape für Close) | niedrig | Nein | #2402 | DetailView.md#keyboard-shortcuts | view.ts [ändern - onKeyDown handler mit Tab-Switch-Logic] |
-| 2468 | ⬜ | Application/DetailView | Keyboard-Shortcuts Combat-spezifisch (N=Next Turn, D=Damage, H=Heal) | niedrig | Nein | #2419 | DetailView.md#keyboard-shortcuts | view.ts [ändern - onKeyDown handler mit Combat-Shortcuts], combat-tab.ts [ändern - keyboard event passthrough] |
-| 2469 | ✅ | Application/DetailView | Event-Subscriptions Setup (encounter:generated, combat:started, etc.) | hoch | Ja | #2401 | DetailView.md#event-subscriptions | viewmodel.ts:setupEventHandlers() (lines 109-173) |
-| 2470 | ⬜ | Application/DetailView | Generate-Button im Encounter-Tab (🎲, publiziert encounter:generate-requested) | hoch | Ja | #2408, #215 | DetailView.md#encounter-tab | encounter-tab.ts [ändern - Generate-Button + Handler] |
-| 2970 | ⛔ | Application/DetailView | Situation-Sektion im Encounter-Tab: Activity + Disposition Anzeige | hoch | Ja | #2409 | DetailView.md#encounter-tab | - |
-| 2971 | ⛔ | Application/DetailView | Detection-Sektion im Encounter-Tab: Methode, Distanz, Awareness | hoch | Ja | #2409, #208 | DetailView.md#encounter-tab | - |
-| 3021 | ⛔ | DetailView | Attrition-Feedback Banner nach Combat | niedrig | Nein | #3018 | DetailView.md#post-combat-resolution, Faction.md#ui-feedback | - |
+| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+| 2400 | ✅ | Application/DetailView | - | DetailView View Component (Hauptcontainer mit Tab-Navigation) | hoch | Ja | - | DetailView.md#uebersicht | src/application/detail-view/view.ts |
+| 2401 | ✅ | Application/DetailView | - | DetailView ViewModel mit State-Management | hoch | Ja | #2400 | DetailView.md#state-synchronisation, Application.md#viewmodel-pattern | src/application/detail-view/viewmodel.ts |
+| 2402 | ✅ | Application/DetailView | - | Tab-Management (activeTab State, setActiveTab) | hoch | Ja | #2401 | DetailView.md#uebersicht | viewmodel.ts:setActiveTab(), types.ts:DetailViewState.activeTab |
+| 2403 | ✅ | Application/DetailView | - | Idle-State Placeholder (Hinweis wenn kein Tab aktiv) | mittel | Ja | #2400 | DetailView.md#idle-state-kein-tab-aktiv | view.ts:idleState (lines 113-123) |
+| 2404 | ✅ | Application/DetailView | - | Auto-Open Verhalten für Encounter-Tab (encounter:generated) | hoch | Ja | #220, #2401 | DetailView.md#auto-open-verhalten, Encounter-System.md#events, Events-Catalog.md#encounter | viewmodel.ts:ENCOUNTER_GENERATED handler (lines 110-125) |
+| 2405 | ✅ | Application/DetailView | - | Auto-Open Verhalten für Combat-Tab (combat:started) | hoch | Ja | #322, #2401 | DetailView.md#auto-open-verhalten, Combat-System.md#combat-flow, Events-Catalog.md#combat | viewmodel.ts:COMBAT_STARTED handler (lines 140-150) |
+| 2406 | ⛔ | Application/DetailView | - | Auto-Open Verhalten für Location-Tab (ui:tile-selected, optional) | niedrig | Nein | #2401, #2448 | DetailView.md#auto-open-verhalten | viewmodel.ts:setupEventHandlers() [ändern - UI_TILE_SELECTED handler] |
+| 2407 | ✅ | Application/DetailView | - | Tab-Priorität System (Combat > Encounter > Rest) | mittel | Ja | #2402 | DetailView.md#auto-open-verhalten | viewmodel.ts:ENCOUNTER_GENERATED handler (line 118 - prüft ob combat aktiv) |
+| 2408 | ✅ | Application/DetailView | - | Encounter-Tab Component (Container) | hoch | Ja | - | DetailView.md#encounter-tab | src/application/detail-view/panels/encounter-tab.ts:createEncounterTab() |
+| 2409 | ✅ | Application/DetailView | - | Encounter-Builder State (Name, Activity, Goal, Creatures) | hoch | Ja | #2401 | DetailView.md#encounter-tab, Encounter-System.md#schemas | types.ts:EncounterTabState, types.ts:BuilderCreature, viewmodel.ts:setBuilder*(), viewmodel.ts:*CreatureFromBuilder() |
+| 2410 | ⬜ | Application/DetailView | - | Encounter-Suche (Autocomplete für gespeicherte EncounterDefinitions) | mittel | Ja | #2408, #2409 | DetailView.md#encounter-tab, Encounter-System.md#schemas | encounter-tab.ts [ändern - Suche-Input + Autocomplete-Logic] |
+| 2411 | ⬜ | Application/DetailView | - | Kreatur/NPC-Suche (Autocomplete für CreatureDefinitions + Named NPCs) | hoch | Ja | #2408, #2409 | DetailView.md#encounter-tab, Creature.md#schema, NPC-System.md#npc-schema | encounter-tab.ts [ändern - Kreatur-Suche-Input + Autocomplete-Logic] |
+| 2412 | ⛔ | Application/DetailView | - | Kreatur/NPC hinzufügen zum Builder | hoch | Ja | #2409, #2411 | DetailView.md#encounter-tab, DetailView.md#flow-neues-encounter-im-builder-erstellen | encounter-tab.ts [ändern - onAddCreature callback], viewmodel.ts [ändern - addCreatureToBuilder()] |
+| 2413 | ⛔ | Application/DetailView | - | Kreatur/NPC entfernen aus Builder ([×] Button) | mittel | Ja | #2409, #2412 | DetailView.md#encounter-tab | encounter-tab.ts [ändern - Remove-Button], viewmodel.ts [ändern - removeCreatureFromBuilder()] |
+| 2414 | ✅ | Application/DetailView | - | Encounter-Wertung Live-Berechnung (Gesamt-XP, Difficulty, Daily-Budget) | hoch | Ja | #2409, #1400 | DetailView.md#encounter-tab, Encounter-Balancing.md#xp-budget, Encounter-Balancing.md#cr-vergleich | viewmodel.ts [ändern - calculateEncounterRating()], nutzet Encounter-Balancing-Feature #1400 |
+| 2415 | ✅ | Application/DetailView | - | Encounter-Builder befüllen aus encounter:generated Event | hoch | Ja | #2404, #2409 | DetailView.md#encounter-tab, DetailView.md#flow-random-encounter-builder, Encounter-System.md#events | viewmodel.ts:loadEncounterIntoBuilder(), ENCOUNTER_GENERATED handler |
+| 2416 | ⛔ | Application/DetailView | - | Encounter-Builder befüllen aus gespeichertem Encounter | mittel | Ja | #2409, #2410 | DetailView.md#flow-gespeichertes-encounter-laden, Encounter-System.md#schemas | viewmodel.ts [ändern - loadEncounterDefinition()], encounter-tab.ts [ändern - onLoadEncounter callback] |
+| 2417 | ⬜ | Application/DetailView | - | Encounter speichern (💾 Button) | mittel | Ja | #2409 | DetailView.md#flow-builder-speichern, Encounter-System.md#schemas | encounter-tab.ts [ändern - Save-Button], viewmodel.ts [ändern - saveEncounterDefinition()], view.ts [ändern - onSaveEncounter callback] |
+| 2418 | ✅ | Application/DetailView | - | Combat starten aus Builder (⚔️ Button, publiziert combat:start-requested) | hoch | Ja | #321, #2409 | DetailView.md#flow-builder-combat, Combat-System.md#combat-flow, Encounter-System.md#integration | encounter-tab.ts:onStartEncounter → view.ts:EventTypes.ENCOUNTER_START_REQUESTED (lines 236-244) |
+| 2419 | ✅ | Application/DetailView | - | Combat-Tab Component (Container) | hoch | Ja | #305, #2400 | DetailView.md#combat-tab, Combat-System.md#schemas | src/application/detail-view/panels/combat-tab.ts |
+| 2420 | ✅ | Application/DetailView | - | Combat-Tab State (CombatState, PendingEffects, Resolution) | hoch | Ja | #2401, #2419 | DetailView.md#combat-tab, DetailView.md#state-synchronisation, Combat-System.md#combatstate | types.ts:CombatTabState, ResolutionState |
+| 2421 | ✅ | Application/DetailView | - | Initiative-Tracker Display (Liste mit Reihenfolge, aktiver Participant markiert) | hoch | Ja | #2419, #2420 | DetailView.md#combat-tab, Combat-System.md#sortierung, Combat-System.md#initiative-layout | combat-tab.ts:renderParticipant(), renderInitiativeList() |
+| 2422 | ✅ | Application/DetailView | - | HP-Bar Display pro Participant | hoch | Ja | #308, #309, #2420, #2421 | DetailView.md#combat-tab, Combat-System.md#damage-heal | combat-tab.ts:createHpBar() (lines 265-298) |
+| 2423 | ✅ | Application/DetailView | - | Conditions Display pro Participant (Icons + Labels) | hoch | Ja | #312, #313, #2420, #2421 | DetailView.md#combat-tab, Combat-System.md#conditions | combat-tab.ts:conditions rendering (lines 220-246) |
+| 2424 | ✅ | Application/DetailView | - | Damage Button + Dialog | hoch | Ja | #319, #2419, #2420 | DetailView.md#combat-tab, Combat-System.md#combat-flow, Combat-System.md#automatische-effekte | combat-tab.ts:damageBtn + view.ts:onApplyDamage callback (lines 288-295) |
+| 2425 | ✅ | Application/DetailView | - | Heal Button + Dialog | hoch | Ja | #2419, #2424 | DetailView.md#combat-tab, Combat-System.md#start-of-turn | combat-tab.ts:healBtn + view.ts:onApplyHealing callback (lines 297-305) |
+| 2426 | ✅ | Application/DetailView | - | Condition Button + Dropdown | hoch | Ja | #2419, #2424 | DetailView.md#combat-tab, Combat-System.md#end-of-turn | combat-tab.ts:conditionBtn + view.ts:onAddCondition/onRemoveCondition callbacks (lines 306-323) |
+| 2427 | ⬜ | Application/DetailView | - | Add Effect Button + Dialog (Custom Start/End-of-Turn Effects) | mittel | Nein | #323, #2419, #2420 | DetailView.md#flow-combat-beenden, Combat-System.md#combat-flow | combat-tab.ts [ändern - Effect-Button + Dialog], view.ts [ändern - onAddEffect callback] |
+| 2428 | ✅ | Application/DetailView | - | Next Turn Button (combat:next-turn-requested) | hoch | Ja | #338, #339, #340, #2419, #2427 | DetailView.md#post-combat-resolution, Combat-System.md#post-combat-resolution, Combat-System.md#xp-berechnung | combat-tab.ts:nextTurnBtn + view.ts:onNextTurn callback (lines 274-277) |
+| 2429 | ✅ | Application/DetailView | - | End Combat Button (combat:end-requested) | hoch | Ja | #2419, #2428 | DetailView.md#post-combat-resolution, Combat-System.md#xp-berechnung | combat-tab.ts:endBtn + view.ts:onEndCombat callback (lines 279-287) |
+| 2430 | ⛔ | Application/DetailView | - | Start-of-Turn Effect Display (Save-Prompt für Effekte wie Tasha's Caustic Brew) | mittel | Nein | #408, #409, #2420, #2427, #2428 | DetailView.md#post-combat-resolution, Quest-System.md#quest-assignment-ui-post-combat, Quest-System.md#40-60-split-mechanik, Combat-System.md#post-combat-resolution | combat-tab.ts [ändern - Turn-Wechsel-Dialog mit Pending-Effects], viewmodel.ts [ändern - getPendingEffects()] |
+| 2431 | ✅ | Application/DetailView | - | Post-Combat Resolution State-Management | hoch | Ja | - | DetailView.md#post-combat-resolution, Loot-Feature.md#verteilen-einheitliches-loot-modal, Loot-Feature.md#loot-generierung-bei-encounter, Combat-System.md#post-combat-resolution | types.ts:CombatTabState [ändern - Resolution-Felder hinzufügen], viewmodel.ts [ändern - Resolution-State-Management] |
+| 2432 | ⬜ | Application/DetailView | - | Post-Combat Phase 1: XP-Summary Display (Basis-XP, GM-Anpassung, Verteilung) | hoch | Ja | - | DetailView.md#shop-tab, Shop.md#verwendung | combat-tab.ts [neu - renderResolutionPanel:XpPhase] |
+| 2433 | ⛔ | Application/DetailView | - | Post-Combat Phase 1: GM-Anpassung Controls ([-] [%] [+] Schnellauswahl) | mittel | Ja | #2432 | DetailView.md#shop-tab, DetailView.md#state-synchronisation, Shop.md#schema | combat-tab.ts:XpPhase [ändern - GM-Modifier-Controls] |
+| 2434 | ⛔ | Application/DetailView | - | Post-Combat Phase 2: Quest-Zuweisung Display (Quest-Suche, Aktive Quests Radio-Liste) | hoch | Ja | #2432, #2433 | DetailView.md#shop-tab, Shop.md#queries | combat-tab.ts [neu - renderResolutionPanel:QuestPhase] |
+| 2435 | ⛔ | Application/DetailView | - | Post-Combat Phase 2: Quest-Pool XP Zuweisung (Quest auswählen, XP zuweisen) | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events | viewmodel.ts [ändern - assignXpToQuest()], view.ts [ändern - onAssignQuestXp callback] |
+| 2436 | ⛔ | Application/DetailView | - | Post-Combat Phase 3: Loot-Verteilung Display (Items + Gold) | hoch | Ja | #2433, #2434 | DetailView.md#shop-tab, Shop.md#preis-berechnung, Shop.md#events | combat-tab.ts [neu - renderResolutionPanel:LootPhase] |
+| 2437 | ⛔ | Application/DetailView | - | Post-Combat Phase 3: Item-Verteilung (Dropdown pro Item → Character) | hoch | Ja | #2400, #2436 | DetailView.md#location-tab, POI.md#tile-content-panel | combat-tab.ts:LootPhase [ändern - Item-Dropdown-Controls] |
+| 2438 | ⛔ | Application/DetailView | - | Post-Combat Phase 3: Gold-Verteilung (Gleichmäßig verteilen + manuell anpassen) | mittel | Ja | #2436, #2437 | DetailView.md#location-tab, DetailView.md#state-synchronisation, POI.md#queries | combat-tab.ts:LootPhase [ändern - Gold-Distribution-Controls] |
+| 2439 | ⛔ | Application/DetailView | - | Post-Combat Resolution: Überspringen-Button pro Phase | mittel | Ja | #2431, #2432, #2434, #2436, #2438 | DetailView.md#location-tab, Terrain.md#schema, Weather-System.md#weather-state | combat-tab.ts:renderResolutionPanel [ändern - Skip-Button], viewmodel.ts [ändern - skipPhase()] |
+| 2440 | ⛔ | Application/DetailView | - | Post-Combat Resolution: Weiter-Button (Phase-Transition) | hoch | Ja | #2431, #2432, #2438 | DetailView.md#location-tab, POI.md#tile-content-panel, POI.md#queries | combat-tab.ts:renderResolutionPanel [ändern - Next-Button], viewmodel.ts [ändern - nextPhase()] |
+| 2441 | ⛔ | Application/DetailView | - | Post-Combat Resolution: Events publizieren (encounter:resolved, quest:xp-accumulated, loot:distributed) | hoch | Ja | #2431, #2435, #2437, #2438 | DetailView.md#location-tab, Faction.md#praesenz-datenstruktur, Faction.md#encounter-integration | viewmodel.ts [ändern - Resolution-Event-Publishing], view.ts [ändern - Event-Callbacks] |
+| 2442 | ⛔ | Application/DetailView | - | Shop-Tab Component (Container) | mittel | Ja | #2400, #2438 | DetailView.md#location-tab, NPC-System.md#npc-schema, NPC-System.md#mvp-fraktions-basierte-location | [neu] src/application/detail-view/panels/shop-tab.ts |
+| 2443 | ⬜ | Application/DetailView | - | Shop-Tab State (activeShop, searchQuery, filter, mode) | mittel | Ja | #2400, #2401 | DetailView.md#quest-tab, Quest.md#schema | types.ts:ShopTabState [neu], viewmodel.ts [ändern - Shop-State-Management] |
+| 2444 | ⛔ | Application/DetailView | - | Shop-Tab Buy-Mode (Item-Liste, Search, Filter, Buy-Button) | mittel | Ja | #2442, #2443 | DetailView.md#quest-tab, DetailView.md#state-synchronisation, Quest-System.md#quest-progress-runtime-state | shop-tab.ts [ändern - Buy-Mode-Rendering] |
+| 2445 | ⛔ | Application/DetailView | - | Shop-Tab Sell-Mode (Party-Inventory, Sell-Button) | mittel | Ja | #2442, #2443, #2444 | DetailView.md#quest-tab, Quest-System.md#quest-schema-entityregistry, Quest.md#questobjective | shop-tab.ts [ändern - Sell-Mode-Rendering] |
+| 2446 | ⛔ | Application/DetailView | - | Shop-Tab Mode Toggle (Buy/Sell wechseln) | niedrig | Nein | #2442, #2443, #2444 | DetailView.md#quest-tab, Quest-System.md#quest-state-machine, Quest.md#events | shop-tab.ts [ändern - Mode-Toggle-Button], viewmodel.ts [ändern - toggleShopMode()] |
+| 2447 | ⛔ | Application/DetailView | - | Shop-Tab Load More / Pagination | niedrig | Nein | #2400, #2444 | DetailView.md#journal-tab, Journal.md#schema | shop-tab.ts [ändern - Pagination-Controls] |
+| 2448 | ⛔ | Application/DetailView | - | Location-Tab Component (Container) | mittel | Ja | #2400, #2447 | DetailView.md#journal-tab, DetailView.md#state-synchronisation, Journal.md#queries | [neu] src/application/detail-view/panels/location-tab.ts |
+| 2449 | ⛔ | Application/DetailView | - | Location-Tab State (selectedTile, tileData) | mittel | Ja | #2401, #2448 | DetailView.md#journal-tab, Journal.md#schema | types.ts:LocationTabState [neu], viewmodel.ts [ändern - Location-State-Management] |
+| 2450 | ⛔ | Application/DetailView | - | Location-Tab Terrain Display (Type, Elevation, Movement Cost) | mittel | Ja | #2448, #2449 | DetailView.md#journal-tab, Journal.md#journalentry | location-tab.ts [ändern - Terrain-Rendering] |
+| 2429a | ✅ | Application/DetailView | - | Update Initiative Button (combat:update-initiative-requested) | mittel | Ja | #2419, #2428 | DetailView.md#post-combat-resolution, Combat-System.md#xp-berechnung | combat-tab.ts:initBtn + view.ts:onUpdateInitiative callback (lines 324-332) |
+| 2451 | ⛔ | Application/DetailView | - | Location-Tab Weather Display (aktuelles Wetter für Tile) | mittel | Ja | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - Weather-Rendering] |
+| 2452 | ⛔ | Application/DetailView | - | Location-Tab POI-Liste (POIs auf Tile mit Details-Link) | mittel | Ja | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - POI-List-Rendering] |
+| 2453 | ⛔ | Application/DetailView | - | Location-Tab Fraktions-Präsenz (Factions mit %-Werten) | niedrig | Nein | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - Faction-Rendering] |
+| 2454 | ⛔ | Application/DetailView | - | Location-Tab Bekannte NPCs (NPCs auf Tile) | niedrig | Nein | #2448, #2449 | DetailView.md#location-tab | location-tab.ts [ändern - NPC-List-Rendering] |
+| 2455 | ⬜ | Application/DetailView | - | Quest-Tab Component (Container) | niedrig | Nein | #2400 | DetailView.md#quest-tab | [neu] src/application/detail-view/panels/quest-tab.ts |
+| 2456 | ⬜ | Application/DetailView | - | Quest-Tab State (selectedQuest) | niedrig | Nein | #2401 | DetailView.md#viewmodel-state | types.ts:QuestTabState [neu], viewmodel.ts [ändern - Quest-State-Management] |
+| 2457 | ⛔ | Application/DetailView | - | Quest-Tab Details Display (Status, Progress, Description, Objectives) | niedrig | Nein | #2455, #2456 | DetailView.md#quest-tab | quest-tab.ts [ändern - Quest-Details-Rendering] |
+| 2458 | ⛔ | Application/DetailView | - | Quest-Tab Encounters Display (Liste mit XP-Info, Start-Button) | niedrig | Nein | #2455, #2456 | DetailView.md#quest-tab | quest-tab.ts [ändern - Encounter-List-Rendering] |
+| 2459 | ⛔ | Application/DetailView | - | Quest-Tab Rewards Display (Gold, Quest-XP Pool, Reputation) | niedrig | Nein | #2455, #2456 | DetailView.md#quest-tab | quest-tab.ts [ändern - Rewards-Rendering] |
+| 2460 | ⛔ | Application/DetailView | - | Quest-Tab Complete/Abandon Buttons | niedrig | Nein | #2455 | DetailView.md#quest-tab | quest-tab.ts [ändern - Action-Buttons], viewmodel.ts [ändern - completeQuest()/abandonQuest()], view.ts [ändern - Quest-Callbacks] |
+| 2461 | ⬜ | Application/DetailView | - | Journal-Tab Component (Container) | niedrig | Nein | #2400 | DetailView.md#journal-tab | [neu] src/application/detail-view/panels/journal-tab.ts |
+| 2462 | ⬜ | Application/DetailView | - | Journal-Tab State (filter, entries) | niedrig | Nein | #2401 | DetailView.md#viewmodel-state | types.ts:JournalTabState [neu], viewmodel.ts [ändern - Journal-State-Management] |
+| 2463 | ⛔ | Application/DetailView | - | Journal-Tab Filter Controls (Type-Filter, Date-Filter) | niedrig | Nein | #2461, #2462 | DetailView.md#journal-tab | journal-tab.ts [ändern - Filter-Controls] |
+| 2464 | ⛔ | Application/DetailView | - | Journal-Tab Entry Display (Chronologisch gruppiert nach Tag) | niedrig | Nein | #2461, #2462 | DetailView.md#journal-tab | journal-tab.ts [ändern - Entry-Rendering] |
+| 2465 | ⛔ | Application/DetailView | - | Journal-Tab Quick Note Button | niedrig | Nein | #2461 | DetailView.md#journal-tab | journal-tab.ts [ändern - Quick-Note-Button], viewmodel.ts [ändern - addQuickNote()], view.ts [ändern - onAddQuickNote callback] |
+| 2466 | ⛔ | Application/DetailView | - | Journal-Tab Export Button | niedrig | Nein | #2461 | DetailView.md#journal-tab | journal-tab.ts [ändern - Export-Button], viewmodel.ts [ändern - exportJournal()] |
+| 2467 | ⬜ | Application/DetailView | - | Keyboard-Shortcuts (1-7 für Tab-Wechsel, Escape für Close) | niedrig | Nein | #2402 | DetailView.md#keyboard-shortcuts | view.ts [ändern - onKeyDown handler mit Tab-Switch-Logic] |
+| 2468 | ⬜ | Application/DetailView | - | Keyboard-Shortcuts Combat-spezifisch (N=Next Turn, D=Damage, H=Heal) | niedrig | Nein | #2419 | DetailView.md#keyboard-shortcuts | view.ts [ändern - onKeyDown handler mit Combat-Shortcuts], combat-tab.ts [ändern - keyboard event passthrough] |
+| 2469 | ✅ | Application/DetailView | - | Event-Subscriptions Setup (encounter:generated, combat:started, etc.) | hoch | Ja | #2401 | DetailView.md#event-subscriptions | viewmodel.ts:setupEventHandlers() (lines 109-173) |
+| 2470 | ✅ | Application/DetailView | - | Generate-Button im Encounter-Tab (🎲, publiziert encounter:generate-requested) Deliverables: - [x] PartyFeaturePort als optionale Dependency in DetailViewDeps - [x] onRegenerateEncounter() nutzt Party-Position als Fallback - [x] Button funktioniert auch ohne bestehendes Encounter DoD: - [x] Button publiziert encounter:generate-requested mit korrekter Position - [x] TypeScript-Check erfolgreich - [x] Build erfolgreich | hoch | Ja | #2408, #215 | DetailView.md#encounter-tab | view.ts:onRegenerateEncounter() [geändert - Party-Fallback], view.ts:DetailViewDeps [geändert - partyFeature], main.ts [geändert - partyFeature übergabe] |
+| 2970 | ✅ | Application/DetailView | - | Situation-Sektion im Encounter-Tab: Activity + Disposition Anzeige | hoch | Ja | #2409 | DetailView.md#encounter-tab | - |
+| 2971 | 📋 | Application/DetailView | - | Detection-Sektion im Encounter-Tab: Methode, Distanz, Awareness | hoch | Ja | #2409, #208 | DetailView.md#encounter-tab | createDetectionSection() in encounter-tab.ts:599-654, DETECTION_METHOD_ICONS/LABELS Zeile 27-41, Integration in renderBuilder() Zeile 166-168, Re-export DetectionMethod in types.ts:14 |
+| 3021 | ⛔ | DetailView | - | Attrition-Feedback Banner nach Combat | niedrig | Nein | #3018 | DetailView.md#post-combat-resolution, Faction.md#ui-feedback | - |
+| 3216 | ✅ | Application/DetailView | - | Party-Tab Component (Container) | hoch | -d | - | - | - |
+| 3217 | ⬜ | Application/DetailView | - | Party-Tab State (members, partyStats) | hoch | -d | - | - | - |
+| 3218 | ⬜ | Application/DetailView | - | Party-Member Display (collapsed/expanded mit Name, HP, AC, PP) | hoch | -d | - | - | - |
+| 3219 | ⬜ | Application/DetailView | - | HP-Eingabe Pattern ([Wert][+][-] für Damage/Heal) | hoch | -d | - | - | - |
+| 3220 | ⬜ | Application/DetailView | - | [Inventory] Button + Dialog öffnen | mittel | -d | - | - | - |
+| 3221 | ✅ | Application/DetailView | - | [Remove] Button (Character aus Party entfernen) | hoch | -d | - | - | src/application/detail-view/view.ts:onRemoveMember() - ruft partyFeature.removeMember() auf |
+| 3222 | 📋 | Application/DetailView | - | [+ Add] Button + Character-Auswahl-Dialog (Library-Characters) Deliverables: - [x] CharacterSelectionDialog Modal-Klasse - [x] Export in dialogs/index.ts - [x] onAddMember() callback in view.ts - [x] EntityRegistry-Zugang in DetailViewDeps DoD: - [x] TypeScript-Check erfolgreich - [x] Build erfolgreich | hoch | -d | - | - | - |
+| 3223 | ⬜ | Application/DetailView | - | Party Stats Berechnung (Member Count, Avg Level, Travel Speed) | mittel | -d | - | - | - |
 
 ---
 

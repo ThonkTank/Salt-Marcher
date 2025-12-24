@@ -9,7 +9,6 @@
 
 import type { EventBus } from '@core/index';
 import type { Result } from '@core/types/result';
-import { ok, err } from '@core/types/result';
 import type { EntityType, EntityId } from '@core/types/common';
 import type {
   EntityRegistryPort,

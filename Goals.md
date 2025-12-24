@@ -27,7 +27,7 @@ Zwei parallele Views für Session-Management:
 - **Encounter** - Preview, Generierung, Quest-Encounters
 - **Combat** - Initiative-Tracker, HP, Conditions
 - **Shop** - Händler-Interface
-- **Location/Quest/Journal** - Kontextbezogene Details
+- **Location/Quest/Journal/Party** - Kontextbezogene Details
 
 → **Details:** [SessionRunner.md](docs/application/SessionRunner.md), [DetailView.md](docs/application/DetailView.md)
 
