@@ -17,6 +17,9 @@ import {
   type LibraryViewModelDeps,
   type LibraryViewModel,
 } from './viewmodel';
+import { createTabNavigation, type TabNavigation } from './TabNavigation';
+import { createBrowseView, type BrowseView } from './BrowseView';
+import { EntityModal, openEntityModal } from './EntityModal';
 
 // ============================================================================
 // View Dependencies
@@ -42,7 +45,16 @@ export class LibraryView extends ItemView {
   private viewModel: LibraryViewModel | null = null;
   private unsubscribe: (() => void) | null = null;
 
-  // Containers for future panels
+  // Tab Navigation
+  private tabNavigation: TabNavigation | null = null;
+
+  // Browse View
+  private browseView: BrowseView | null = null;
+
+  // Modal
+  private currentModal: EntityModal | null = null;
+
+  // Containers for panels
   private tabContainer: HTMLElement | null = null;
   private contentContainer: HTMLElement | null = null;
 
@@ -95,13 +107,21 @@ export class LibraryView extends ItemView {
       flex-shrink: 0;
     `;
 
+    // Create TabNavigation component
+    this.tabNavigation = createTabNavigation(this.tabContainer, this.viewModel);
+
     // === Content Area ===
     this.contentContainer = contentEl.createDiv('library-content');
     this.contentContainer.style.cssText = `
       flex: 1;
       overflow: auto;
       padding: 12px;
+      display: flex;
+      flex-direction: column;
     `;
+
+    // Create BrowseView component
+    this.browseView = createBrowseView(this.contentContainer, this.viewModel);
 
     // Subscribe to ViewModel updates
     this.unsubscribe = this.viewModel.subscribe((state, hints) => {
@@ -114,9 +134,15 @@ export class LibraryView extends ItemView {
 
   async onClose(): Promise<void> {
     this.unsubscribe?.();
+    this.tabNavigation?.dispose();
+    this.browseView?.dispose();
+    this.currentModal?.close();
     this.viewModel?.dispose();
 
     this.unsubscribe = null;
+    this.tabNavigation = null;
+    this.browseView = null;
+    this.currentModal = null;
     this.viewModel = null;
     this.tabContainer = null;
     this.contentContainer = null;
@@ -129,8 +155,7 @@ export class LibraryView extends ItemView {
   /**
    * Render the view based on state and hints.
    *
-   * This is a placeholder implementation for MVP.
-   * Full rendering will be implemented in subsequent tasks.
+   * Delegates rendering to TabNavigation and BrowseView components.
    */
   private render(state: Readonly<LibraryState>, hints: LibraryRenderHint[]): void {
     // Render tab navigation
@@ -138,177 +163,68 @@ export class LibraryView extends ItemView {
       this.renderTabs(state);
     }
 
-    // Render content area
-    if (hints.includes('full') || hints.includes('list') || hints.includes('loading')) {
-      this.renderContent(state);
+    // Render content area (BrowseView handles hint filtering internally)
+    if (hints.includes('full') || hints.includes('list') || hints.includes('loading') || hints.includes('selection')) {
+      this.renderContent(state, hints);
+    }
+
+    // Render modal
+    if (hints.includes('full') || hints.includes('modal')) {
+      this.renderModal(state);
     }
   }
 
   /**
-   * Render tab navigation (placeholder).
+   * Render tab navigation using TabNavigation component.
    */
   private renderTabs(state: Readonly<LibraryState>): void {
-    if (!this.tabContainer) return;
+    this.tabNavigation?.render(state.activeTab);
 
-    this.tabContainer.empty();
-
-    // Placeholder tabs - will be replaced by Tab-Navigation Component (Task #2600)
-    const tabs: Array<{ id: string; label: string }> = [
-      { id: 'creature', label: 'Creatures' },
-      { id: 'character', label: 'Characters' },
-      { id: 'item', label: 'Items' },
-      { id: 'poi', label: 'Locations' },
-      { id: 'faction', label: 'Factions' },
-    ];
-
-    for (const tab of tabs) {
-      const tabEl = this.tabContainer.createEl('button', {
-        text: tab.label,
-        cls: 'library-tab',
-      });
-
-      tabEl.style.cssText = `
-        padding: 6px 12px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        background: ${state.activeTab === tab.id ? 'var(--interactive-accent)' : 'var(--background-primary)'};
-        color: ${state.activeTab === tab.id ? 'var(--text-on-accent)' : 'var(--text-normal)'};
-        font-size: 13px;
-        white-space: nowrap;
-      `;
-
-      tabEl.addEventListener('click', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.viewModel?.setActiveTab(tab.id as any);
-      });
+    // Update entity counts for all tabs
+    const counts = this.viewModel?.getTabCounts();
+    if (counts) {
+      this.tabNavigation?.updateCounts(counts);
     }
   }
 
   /**
-   * Render content area (placeholder).
+   * Render content area using BrowseView component.
+   *
+   * @see Task #2603 - Browse-View Component
    */
-  private renderContent(state: Readonly<LibraryState>): void {
-    if (!this.contentContainer) return;
+  private renderContent(state: Readonly<LibraryState>, hints?: LibraryRenderHint[]): void {
+    this.browseView?.render(state, hints);
+  }
 
-    this.contentContainer.empty();
+  /**
+   * Render modal based on state.
+   *
+   * Opens/closes the EntityModal when state.modal.open changes.
+   *
+   * @see Task #2613 - Create/Edit Modal Component
+   * @see Task #2614 - Modal Tab-Navigation
+   */
+  private renderModal(state: Readonly<LibraryState>): void {
+    const { modal } = state;
 
-    // Loading state
-    if (state.isLoading) {
-      const loadingEl = this.contentContainer.createDiv('library-loading');
-      loadingEl.style.cssText = `
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        color: var(--text-muted);
-      `;
-      loadingEl.textContent = 'Loading...';
-      return;
-    }
-
-    // Error state
-    if (state.error) {
-      const errorEl = this.contentContainer.createDiv('library-error');
-      errorEl.style.cssText = `
-        padding: 12px;
-        background: var(--background-modifier-error);
-        border-radius: 4px;
-        color: var(--text-error);
-      `;
-      errorEl.textContent = state.error;
-      return;
-    }
-
-    // Empty state
-    if (state.entities.length === 0) {
-      const emptyEl = this.contentContainer.createDiv('library-empty');
-      emptyEl.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        color: var(--text-muted);
-        gap: 8px;
-      `;
-      emptyEl.createEl('div', { text: 'No entities found' });
-      emptyEl.createEl('div', {
-        text: `Active tab: ${state.activeTab}`,
-        cls: 'library-empty-hint',
-      }).style.fontSize = '12px';
-      return;
-    }
-
-    // Entity list (placeholder - will be replaced by Browse-View Component Task #2603)
-    const listEl = this.contentContainer.createDiv('library-list');
-    listEl.style.cssText = `
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    `;
-
-    // Header with count
-    const headerEl = listEl.createDiv('library-list-header');
-    headerEl.style.cssText = `
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--background-modifier-border);
-      margin-bottom: 8px;
-    `;
-    headerEl.createEl('span', {
-      text: `${state.totalCount} ${state.activeTab}(s)`,
-    });
-
-    // Simple entity cards
-    for (const entity of state.entities) {
-      const record = entity as Record<string, unknown>;
-      const cardEl = listEl.createDiv('library-card');
-      cardEl.style.cssText = `
-        padding: 12px;
-        background: var(--background-secondary);
-        border-radius: 6px;
-        cursor: pointer;
-        border: 1px solid var(--background-modifier-border);
-      `;
-
-      cardEl.createEl('div', {
-        text: (record.name as string) || (record.id as string) || 'Unnamed',
-        cls: 'library-card-name',
-      }).style.fontWeight = '500';
-
-      if (record.id) {
-        cardEl.createEl('div', {
-          text: `ID: ${record.id}`,
-          cls: 'library-card-id',
-        }).style.cssText = 'font-size: 11px; color: var(--text-muted);';
-      }
-
-      // Click to select
-      cardEl.addEventListener('click', () => {
-        this.viewModel?.selectEntity(record.id as string);
+    if (modal.open && !this.currentModal) {
+      // Open modal with tab navigation support
+      this.currentModal = openEntityModal(this.app, {
+        mode: modal.mode,
+        entityType: state.activeTab,
+        entityId: modal.entityId,
+        currentSection: modal.currentSection,
+        onCancel: () => {
+          this.viewModel?.closeModal();
+        },
+        onSectionChange: (sectionId: string) => {
+          this.viewModel?.setModalSection(sectionId);
+        },
       });
-
-      // Double-click to edit
-      cardEl.addEventListener('dblclick', () => {
-        this.viewModel?.openEditModal(record.id as string);
-      });
-    }
-
-    // Pagination info
-    if (state.totalCount > state.pageSize) {
-      const paginationEl = listEl.createDiv('library-pagination');
-      paginationEl.style.cssText = `
-        display: flex;
-        justify-content: center;
-        padding-top: 12px;
-        color: var(--text-muted);
-        font-size: 12px;
-      `;
-      const showing = Math.min((state.page + 1) * state.pageSize, state.totalCount);
-      paginationEl.textContent = `Showing ${showing} of ${state.totalCount}`;
+    } else if (!modal.open && this.currentModal) {
+      // Close modal
+      this.currentModal.close();
+      this.currentModal = null;
     }
   }
 }

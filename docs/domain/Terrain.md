@@ -17,6 +17,7 @@ TerrainDefinition beschreibt alle Eigenschaften eines Terrains:
 TerrainDefinition
 ├── Bewegungs-Mechaniken (movementCost, Transport-Einschraenkungen)
 ├── Encounter-Modifikatoren
+├── Features (Library-Referenzen fuer Encounter-Balance)
 ├── Wetter-Ranges (weatherRanges - Template fuer diesen Terrain-Typ)
 ├── Native Creatures (bidirektional sync)
 └── Visuelle Darstellung (displayColor, icon)
@@ -49,6 +50,11 @@ interface TerrainDefinition {
   // Encounter-System
   encounterModifier: number;              // Multiplikator fuer Encounter-Chance
   nativeCreatures: EntityId<'creature'>[]; // Kreaturen die hier heimisch sind
+  features: EntityId<'feature'>[];        // Features fuer Encounter-Balance (z.B. difficult-terrain, half-cover)
+
+  // Encounter-Schwierigkeit (Normalverteilung)
+  threatLevel: number;                    // -2 bis +2: Verschiebt Peak der Difficulty-Kurve
+  threatRange: number;                    // 0.5 bis 2.0: Breite/Streuung der Kurve
 
   // Encounter-Sichtweite (Basis-Wert in feet, wird mit Weather-Modifier multipliziert)
   encounterVisibility: number;            // z.B. 300ft plains, 60ft forest
@@ -161,18 +167,62 @@ Tile-Modifiers werden mit dem **Climate-Brush** im Cartographer erstellt:
 
 Mitgelieferte Terrain-Presets:
 
-| Terrain | movementCost | encounterMod | Transport | encounterVisibility |
-|---------|--------------|--------------|-----------|---------------------|
-| `road` | 1.0 | 0.5 | - | 300ft |
-| `plains` | 0.9 | 1.0 | - | 300ft |
-| `forest` | 0.6 | 1.2 | blocksMounted | 60ft |
-| `hills` | 0.7 | 1.0 | - | 150ft |
-| `mountains` | 0.4 | 0.8 | blocksMounted, blocksCarriage | 500ft |
-| `swamp` | 0.5 | 1.5 | blocksMounted, blocksCarriage | 90ft |
-| `desert` | 0.7 | 0.7 | - | 500ft |
-| `water` | 1.0 | 0.5 | requiresBoat | 300ft |
+| Terrain | movementCost | encounterMod | threatLevel | threatRange | Transport | encounterVisibility |
+|---------|--------------|--------------|:-----------:|:-----------:|-----------|---------------------|
+| `road` | 1.0 | 0.5 | -1 | 0.7 | - | 1000ft |
+| `plains` | 0.9 | 1.0 | 0 | 1.0 | - | 8000ft |
+| `forest` | 0.6 | 1.2 | 0 | 1.2 | blocksMounted | 150ft |
+| `hills` | 0.7 | 1.0 | 0 | 1.0 | - | 2500ft |
+| `mountains` | 0.4 | 0.8 | +1 | 1.3 | blocksMounted, blocksCarriage | 10000ft |
+| `swamp` | 0.5 | 1.5 | +1 | 1.5 | blocksMounted, blocksCarriage | 300ft |
+| `desert` | 0.7 | 0.7 | 0 | 0.8 | - | 8000ft |
+| `water` | 1.0 | 0.5 | -1 | 1.0 | requiresBoat | 5000ft |
 
-**Hinweis:** `encounterVisibility` ist der Basis-Wert bei klarem Wetter. Dieser wird mit `weather.visibilityModifier` (0.1-1.0) multipliziert. Siehe [Weather-System.md](../features/Weather-System.md).
+**threatLevel/threatRange Interpretation:**
+- **threatLevel**: -2 (sehr sicher) bis +2 (sehr gefaehrlich) - verschiebt Peak der Encounter-Difficulty
+- **threatRange**: 0.5 (vorhersehbar) bis 2.0 (chaotisch) - Streuung der Difficulty-Verteilung
+- Zusammen modellieren sie eine Normalverteilung fuer Encounter-Schwierigkeit
+
+→ Details: [encounter/Balance.md](../features/encounter/Balance.md#terrain-threat-kurve)
+
+**encounterVisibility Erklaerung:**
+
+`encounterVisibility` ist die **Basis-Sichtweite fuer Kreatur-Erkennung** bei klarem Wetter. Die Werte sind realistisch fuer menschliche Sichtweiten: Auf einer Ebene kann man ca. 1.5 Meilen (~8000ft) weit sehen.
+
+**Wichtig:** Dies ist NICHT die Overland-Visibility (Hex-basiert, fuer Fog-of-War). Das sind zwei verschiedene Systeme:
+
+| System | Einheit | Zweck |
+|--------|---------|-------|
+| **encounterVisibility** | Feet | Wie weit kann die Party Kreaturen erkennen? |
+| **Overland-Visibility** | Hexes | Welche Tiles sind auf der Map sichtbar? (Post-MVP) |
+
+→ Overland-Visibility Details: [Map-Feature.md](../features/Map-Feature.md#visibility-system-post-mvp)
+
+**Modifier (multiplikativ):**
+- `weather.visibilityModifier`: 0.1 (dichter Nebel) bis 1.0 (klar)
+- Encounter-Groessen-Modifier: Grosse Gruppen/Kreaturen sind weiter sichtbar
+
+→ Groessen-Modifier Details: [encounter/Balance.md](../features/encounter/Balance.md#encounter-groessen-modifier)
+
+**Features (Encounter-Balance + Hazards):**
+
+| Terrain | Features | Hazards |
+|---------|----------|---------|
+| `road` | - | - |
+| `plains` | - | - |
+| `forest` | Dichtes Unterholz, Alte Baeume, Stolperwurzeln, Dichte Dornen | Dornen: 1d4 piercing (DEX DC 12) |
+| `hills` | Felsvorspruenge | - |
+| `mountains` | Enge Paesse, Steinschlaggefahr | Steinschlag: 2d6 bludgeoning (DEX DC 14) |
+| `swamp` | Schnappende Ranken, Sinkender Morast, Giftpflanzen | Ranken: restrained (Attack +5), Gift: poisoned (CON DC 13) |
+| `desert` | Treibsand | Treibsand: restrained (STR DC 12) |
+| `water` | Starke Stroemung | Stroemung: forced-movement 15ft |
+
+**Beispiele:**
+- **Stolperwurzeln:** move-through trigger, prone condition, DEX DC 10
+- **Dichte Dornen:** move-through trigger, 1d4 piercing, DEX DC 12
+- **Schnappende Ranken:** enter trigger, restrained, Attack +5
+
+→ Feature-Schema: [encounter/Context.md](../features/encounter/Context.md#feature-schema)
 
 **Wetter-Ranges (Temperatur/Wind/Niederschlag/Nebel):**
 
@@ -264,6 +314,7 @@ User koennen eigene Terrains erstellen:
   "encounterModifier": 1.5,
   "encounterVisibility": 45,
   "nativeCreatures": ["pixie", "dryad", "blink-dog"],
+  "features": ["fey-mist", "dancing-lights", "whispering-trees"],
   "weatherRanges": {
     "temperature": { "min": 5, "average": 18, "max": 28 },
     "wind": { "min": 0, "average": 5, "max": 15 },
@@ -274,6 +325,33 @@ User koennen eigene Terrains erstellen:
   "displayColor": "#7B68EE",
   "icon": "sparkles",
   "description": "Ein von Feenmagie durchdrungener Wald mit ungewoehnlichem Wetter."
+}
+```
+
+**Passende Features fuer den Feenwald:**
+
+```json
+{
+  "id": "fey-mist",
+  "name": "Feennebel",
+  "modifiers": [
+    { "target": "no-special-sense", "value": -0.20 },
+    { "target": "trueSight", "value": 0.15 }
+  ],
+  "hazard": {
+    "trigger": "end-turn",
+    "effect": {
+      "type": "condition",
+      "condition": "charmed",
+      "duration": "until-saved"
+    },
+    "save": {
+      "ability": "wis",
+      "dc": 13,
+      "onSuccess": "negate"
+    }
+  },
+  "description": "Magischer Nebel verwirrt den Geist und kann Kreaturen verzaubern."
 }
 ```
 
@@ -380,7 +458,7 @@ function calculateInitialDistance(
 
 **Konsolidierung:** Dieses System nutzt den prozentualen `visibilityModifier` aus dem Weather-System (Map-Feature.md Referenz), statt eines binaeren `clear`/`obscured` Checks.
 
-→ Details: [Encounter-System.md](../features/Encounter-System.md) | [Weather-System.md](../features/Weather-System.md)
+→ Details: [encounter/Encounter.md](../features/encounter/Encounter.md) | [Weather-System.md](../features/Weather-System.md)
 
 ---
 
@@ -437,7 +515,7 @@ User-Terrains koennen Bundled-Terrains ueberschreiben (gleiche ID).
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
 | 1700 | ⬜ | Terrain | core | TerrainDefinition Schema (id, name, movementCost, encounterModifier, nativeCreatures, weatherRanges, displayColor, icon, description, requiresBoat, blocksMounted, blocksCarriage) | hoch | Ja | - | Terrain.md#schema, Terrain.md#terrainweatherranges, EntityRegistry.md#entity-types | src/core/schemas/terrain.ts:terrainDefinitionSchema (Zeile 21-106), presets/terrains/base-terrains.json, src/infrastructure/vault/terrain-registry.ts:DEFAULT_TERRAINS |
-| 2952 | ⛔ | Terrain | core | encounterVisibility Feld zu TerrainDefinition Schema hinzufügen (Basis-Sichtweite in feet, für Encounter-Entdeckung, variiert je nach Terrain: 60ft forest - 500ft mountains) | hoch | Ja | #1700 | Terrain.md#sichtweite-bei-encounter-generierung, Encounter-System.md#visuelle-range | - |
+| 2952 | ⛔ | Terrain | core | encounterVisibility Feld zu TerrainDefinition Schema hinzufügen (Basis-Sichtweite in feet, für Encounter-Entdeckung, variiert je nach Terrain: 60ft forest - 500ft mountains) | hoch | Ja | #1700 | Balance.md#perception-system | - |
 | 1702 | ⛔ | Terrain | core | TerrainWeatherRanges und WeatherRange Schemas (Wetter-Ranges mit temperature, wind, precipChance, precipIntensity, fogChance jeweils mit min/average/max Werten) | hoch | Ja | #1700 | Terrain.md#schema, Weather-System.md#tile-basierte-wetter-ranges | src/core/schemas/weather.ts:terrainWeatherRangesSchema (Zeile 22-47), src/core/schemas/weather.ts:weatherRangeSchema |
 | 1703 | ⛔ | Terrain | infrastructure | Default-Terrain Presets (8 Basis-Terrains: road, plains, forest, hills, mountains, swamp, desert, water mit vollständigen movementCost/encounterMod/Transport/weatherRanges Werten) | hoch | Ja | #1700, #1702 | Terrain.md#default-terrains, Terrain.md#schema, Terrain.md#sichtweite-bei-encounter-generierung | presets/terrains/base-terrains.json, src/infrastructure/vault/terrain-registry.ts:DEFAULT_TERRAINS (Zeile 21-84) |
 | 1704 | ⛔ | Terrain | features | onCreatureTerrainChanged Event-Handler: Synchronisiere creature.terrainAffinities → terrain.nativeCreatures (entfernte Terrains aus nativeCreatures, neue hinzufügen) | hoch | Ja | #1700, #1202, #1709 | Terrain.md#auto-sync-mechanismus, Creature.md#auto-sync-verhalten | src/features/terrain/auto-sync.ts:onCreatureTerrainChanged() [neu], src/core/events/terrain.ts [neu - terrain:creature-sync-needed Event] |
@@ -450,17 +528,17 @@ User-Terrains koennen Bundled-Terrains ueberschreiben (gleiche ID).
 | 1711 | ⛔ | Terrain | features | Terrain Feature/Orchestrator mit CRUD-Logik | hoch | Ja | #1700, #1709, #1710 | Terrain.md, Features.md | src/features/terrain/orchestrator.ts:createTerrainOrchestrator() [neu], src/features/terrain/types.ts:TerrainFeaturePort [neu], src/features/terrain/terrain-service.ts [neu], src/features/terrain/terrain-store.ts [neu], src/features/terrain/index.ts [neu - exports] |
 | 1712 | ⛔ | Terrain | features | movementCost Integration in Travel-System | hoch | Ja | #1700 | Terrain.md#travel-system, Terrain.md#verwendung-in-anderen-features, Travel-System.md#speed-berechnung | src/features/travel/travel-service.ts:getMovementCost() (Zeile 613, 615, 756, 760), src/features/map/map-service.ts:getTerrainMovementCost() (Zeile 225-234) |
 | 1713 | ⛔ | Terrain | features | weatherRanges Integration in Weather-System | hoch | Ja | #1702, #1700 | Terrain.md#weather-system, Terrain.md#verwendung-in-anderen-features, Weather-System.md#tile-basierte-wetter-ranges | src/features/weather/weather-service.ts:getTileWeatherRanges() (Zeile 77-82), src/features/weather/weather-utils.ts:generateFromRange() (Zeile 182, 220) |
-| 1714 | ⛔ | Terrain | features | nativeCreatures Integration in Encounter-System: getEligibleCreaturesFromTerrain() nutzt terrain.nativeCreatures für schnelles Filtering | hoch | Ja | #1706 | Terrain.md#encounter-system, Terrain.md#creature-terrain-auto-sync, Encounter-System.md#tile-eligibility | src/features/encounter/encounter-utils.ts:filterEligibleCreatures() (Zeile 52-54) [ändern - terrain.nativeCreatures nutzen statt nur creature.terrainAffinities], src/features/encounter/encounter-utils.ts:getEligibleCreaturesFromTerrain() [neu] |
+| 1714 | ⛔ | Terrain | features | nativeCreatures Integration in Encounter-System: getEligibleCreaturesFromTerrain() nutzt terrain.nativeCreatures für schnelles Filtering | hoch | Ja | #1706 | Terrain.md#encounter-system, Terrain.md#creature-terrain-auto-sync, encounter/Encounter.md#tile-eligibility | src/features/encounter/encounter-utils.ts:filterEligibleCreatures() (Zeile 52-54) [ändern - terrain.nativeCreatures nutzen statt nur creature.terrainAffinities], src/features/encounter/encounter-utils.ts:getEligibleCreaturesFromTerrain() [neu] |
 | 1715 | ⛔ | Terrain | application | Terrain Icons für visuelle Darstellung | niedrig | Nein | #1700 | Terrain.md#prioritaet, Terrain.md#schema | src/core/schemas/terrain.ts:terrainDefinitionSchema [ändern - icon Feld bereits vorhanden, nur UI fehlt] (Post-MVP) |
 | 2982 | ⛔ | Terrain | core | TileClimateModifiers Schema für OverworldTile.climateModifiers (temperatureModifier: Offset °C, humidityModifier: Offset %, windExposure: sheltered/normal/exposed) | hoch | Ja | #2979, #2958 | Terrain.md#tileclimatemodifiers, Map-Feature.md#overworldtile, Weather-System.md#tile-modifiers | - |
-| 3163 | ⬜ | Terrain | features | calculateInitialDistance(): Encounter-Startdistanz mit Terrain-Sichtweite × Weather-visibilityModifier × Time-Modifier, dann Typ-basierte Ranges (combat ×0.3-0.8, social ×0.5-1.0, passing ×0.7-1.0, trace 10-30ft) | hoch | --layer | #2952, #101 | Terrain.md#sichtweite-bei-encounter-generierung, Encounter-System.md#perception, Weather-System.md#visibility-modifier | - |
-| 3165 | ⬜ | Terrain | features | windExposure Effekte implementieren: sheltered (-30% Wind, ×1.5 Audio/Scent), normal (±0%, ×1.0), exposed (+30% Wind, ×0.5 Audio/Scent) für Weather und Encounter-Detection | hoch | --layer | #2982 | Terrain.md#windexposure-effekte, Weather-System.md#wind-exposure, Encounter-System.md#detection | - |
-| 3178 | ⬜ | Terrain | - | Terrain-Registry: loadBundledTerrains() aus presets/terrains/base-terrains.json mit allen 8 Default-Terrains inkl. weatherRanges und encounterVisibility | hoch | --deps | - | Terrain.md#storage, Terrain.md#default-terrains | - |
-| 3180 | ⬜ | Terrain | - | Terrain CRUD UI im Library-Workmode (Terrain-Liste, Terrain-Editor mit allen Feldern inkl. weatherRanges, nativeCreatures, Transport-Restrictions) | mittel | --deps | - | Terrain.md#custom-terrains-mvp, Library.md#entity-crud | - |
-| 3181 | ⬜ | Terrain | - | Terrain-Selector Component für Cartographer Terrain-Brush (8 Default-Terrains + User Custom Terrains mit Icon/Color Preview) | hoch | --deps | - | Terrain.md#custom-terrains-mvp, Cartographer.md#terrain-brush | - |
-| 3182 | ⬜ | Terrain | - | Climate-Brush Integration: climateModifiers auf OverworldTile schreiben (temperatureModifier, humidityModifier, windExposure) | hoch | --deps | - | Terrain.md#erstellung-im-cartographer, Cartographer.md#climate-brush | - |
-| 3183 | ⬜ | Terrain | - | validateTransportRestrictions(): Prüfe requiresBoat/blocksMounted/blocksCarriage gegen Party-Transportmode vor Travel | hoch | --deps | - | Terrain.md#schema, Travel-System.md#transport-modes | - |
-| 3191 | ⬜ | Terrain | - | Tile-Modifier Rendering im Cartographer: Visualisierung von temperatureModifier, humidityModifier, windExposure Overlays | niedrig | Nein | #2982 | Terrain.md#schema, Terrain.md#default-terrains, Encounter-System.md#encounter-chance | - |
+| 3163 | ⬜ | Terrain | features | calculateInitialDistance(): Encounter-Startdistanz mit Terrain-Sichtweite × Weather-visibilityModifier × Time-Modifier, dann Typ-basierte Ranges (combat ×0.3-0.8, social ×0.5-1.0, passing ×0.7-1.0, trace 10-30ft) | hoch | --layer | #2952, #101 | Terrain.md#sichtweite-bei-encounter-generierung, encounter/Encounter.md#perception, Weather-System.md#visibility-modifier | - |
+| 3165 | ⬜ | Terrain | features | windExposure Effekte implementieren: sheltered (-30% Wind, ×1.5 Audio/Scent), normal (±0%, ×1.0), exposed (+30% Wind, ×0.5 Audio/Scent) für Weather und Encounter-Detection | hoch | --layer | #2982 | Terrain.md#windexposure-effekte, Weather-System.md#wind-exposure, encounter/Encounter.md#detection | - |
+| 3178 | ⬜ | Terrain | features | Terrain-Registry: loadBundledTerrains() aus presets/terrains/base-terrains.json mit allen 8 Default-Terrains inkl. weatherRanges und encounterVisibility | hoch | --deps | - | Terrain.md#storage, Terrain.md#default-terrains | - |
+| 3180 | ⬜ | Terrain | features | Terrain CRUD UI im Library-Workmode (Terrain-Liste, Terrain-Editor mit allen Feldern inkl. weatherRanges, nativeCreatures, Transport-Restrictions) | mittel | --deps | - | Terrain.md#custom-terrains-mvp, Library.md#entity-crud | - |
+| 3181 | ⬜ | Terrain | features | Terrain-Selector Component für Cartographer Terrain-Brush (8 Default-Terrains + User Custom Terrains mit Icon/Color Preview) | hoch | --deps | - | Terrain.md#custom-terrains-mvp, Cartographer.md#terrain-brush | - |
+| 3182 | ⬜ | Terrain | features | Climate-Brush Integration: climateModifiers auf OverworldTile schreiben (temperatureModifier, humidityModifier, windExposure) | hoch | --deps | - | Terrain.md#erstellung-im-cartographer, Cartographer.md#climate-brush | - |
+| 3183 | ⬜ | Terrain | features | validateTransportRestrictions(): Prüfe requiresBoat/blocksMounted/blocksCarriage gegen Party-Transportmode vor Travel | hoch | --deps | - | Terrain.md#schema, Travel-System.md#transport-modes | - |
+| 3191 | ⬜ | Terrain | features | Tile-Modifier Rendering im Cartographer: Visualisierung von temperatureModifier, humidityModifier, windExposure Overlays | niedrig | Nein | #2982 | Terrain.md#schema, Terrain.md#default-terrains, encounter/Encounter.md#encounter-chance | - |
 | 3191 | ⬜ | Terrain | - | Tile-Modifier Rendering im Cartographer: Visualisierung von temperatureModifier, humidityModifier, windExposure Overlays | niedrig | Nein | #2982 | Terrain.md#erstellung-im-cartographer, Cartographer.md#climate-brush | - |
-| 3206 | ⬜ | Terrain | - | Area-Averaging Integration: Tile-Modifiers VOR Area-Averaging anwenden (climateModifiers beeinflussen Nachbar-Tiles im Weather-System) | mittel | --deps | - | Terrain.md#anwendungs-reihenfolge, Weather-System.md#berechnungs-reihenfolge | - |
-| 3207 | ⬜ | Terrain | - | Default-Terrain nativeCreatures Population: Basis-Terrains mit typischen Kreaturen besiedeln (forest → wolves/bears, swamp → lizardfolk, etc.) | niedrig | Nein | #1703, #1706 | Terrain.md#default-terrains, Terrain.md#creature-terrain-auto-sync | - |
+| 3206 | ⬜ | Terrain | features | Area-Averaging Integration: Tile-Modifiers VOR Area-Averaging anwenden (climateModifiers beeinflussen Nachbar-Tiles im Weather-System) | mittel | --deps | - | Terrain.md#anwendungs-reihenfolge, Weather-System.md#berechnungs-reihenfolge | - |
+| 3207 | ⬜ | Terrain | features | Default-Terrain nativeCreatures Population: Basis-Terrains mit typischen Kreaturen besiedeln (forest → wolves/bears, swamp → lizardfolk, etc.) | niedrig | Nein | #1703, #1706 | Terrain.md#default-terrains, Terrain.md#creature-terrain-auto-sync | - |

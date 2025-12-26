@@ -9,7 +9,7 @@ import { Plugin } from 'obsidian';
 import type { EventBus } from '@core/index';
 import { createEventBus, isSome, EventTypes, createEvent, newCorrelationId, now } from '@core/index';
 import type { QuestSlotAssignmentAvailablePayload, QuestAssignEncounterRequestedPayload } from '@core/events/domain-events';
-import type { CreatureDefinition, Faction, QuestDefinition, Item } from '@core/schemas';
+import type { QuestDefinition, Item } from '@core/schemas';
 
 // Infrastructure
 import {
@@ -27,6 +27,8 @@ import {
   createVaultTimeAdapter,
   createVaultCalendarAdapter,
   createAndPreloadEntityRegistry,
+  // Character Storage
+  createCharacterStorageAdapter,
   // In-memory adapters (terrain/items stay in-memory as preset data)
   createTerrainRegistry,
   createItemRegistry,
@@ -42,10 +44,8 @@ import { createPartyStore, createPartyService, type PartyFeaturePort } from './f
 import { createTravelService, type TravelFeaturePort } from './features/travel';
 import { createTimeStore, createTimeService, type TimeFeaturePort } from './features/time';
 import { createWeatherStore, createWeatherService, type WeatherFeaturePort } from './features/weather';
-import { createEncounterStore, createEncounterService, type EncounterFeaturePort } from './features/encounter';
 import { createCombatService, type CombatFeaturePort } from './features/combat';
 import { createQuestService, type QuestFeaturePort, type SerializableQuestState } from './features/quest';
-import { createLootService } from './features/loot';
 import { addDuration, diffInHours } from './features/time';
 
 // ============================================================================
@@ -79,10 +79,9 @@ import { createNotificationService, showSlotAssignmentDialog, type NotificationS
 import testOverworldPreset from '../presets/maps/test-overworld.json';
 import demoPartyPreset from '../presets/parties/demo-party.json';
 import gregorianCalendarPreset from '../presets/almanac/gregorian.json';
-import creaturesPreset from '../presets/creatures/base-creatures.json';
-import factionsPreset from '../presets/factions/base-factions.json';
 import questsPreset from '../presets/quests/demo-quests.json';
 import itemsPreset from '../presets/items/base-items.json';
+import charactersPreset from '../presets/characters/demo-characters.json';
 
 // ============================================================================
 // Bootstrap Fixtures
@@ -132,6 +131,20 @@ async function bootstrapFixtures(
       console.error('Salt Marcher: Failed to bootstrap calendar:', result.error);
     }
   }
+
+  // Bootstrap characters (always overwrite to ensure schema compatibility)
+  const basePath = settingsService.getSettings().basePath;
+  const charactersPath = `${basePath}/data/character`;
+  await vaultIO.ensureDir(charactersPath);
+  const characters = (charactersPreset as { characters: Array<{ id: string }> }).characters;
+  for (const character of characters) {
+    const charPath = `${charactersPath}/${character.id}.json`;
+    const result = await vaultIO.writeJson(charPath, character);
+    if (!result.ok) {
+      console.error(`Salt Marcher: Failed to bootstrap character ${character.id}:`, result.error);
+    }
+  }
+  console.log(`Salt Marcher: Character presets imported (${characters.length})`);
 }
 
 // ============================================================================
@@ -147,7 +160,6 @@ export default class SaltMarcherPlugin extends Plugin {
   private travelFeature?: TravelFeaturePort;
   private timeFeature?: TimeFeaturePort;
   private weatherFeature?: WeatherFeaturePort;
-  private encounterFeature?: EncounterFeaturePort;
   private combatFeature?: CombatFeaturePort;
   private questFeature?: QuestFeaturePort;
   private notificationService?: NotificationService;
@@ -259,9 +271,6 @@ export default class SaltMarcherPlugin extends Plugin {
     // Items stay in-memory (preset data for encumbrance calculation)
     const itemRegistry = createItemRegistry(itemsPreset as unknown as Item[]);
 
-    // Loot service (stateless, uses itemRegistry)
-    const lootService = createLootService();
-
     // EntityRegistry - Preload all entity types for sync access
     // Note: Features still use preset arrays for now; EntityRegistry integration is separate task
     this.entityRegistry = await createAndPreloadEntityRegistry(
@@ -272,7 +281,6 @@ export default class SaltMarcherPlugin extends Plugin {
         'npc',
         'faction',
         'quest',
-        'encounter',
         'item',
         'terrain',
         'map',
@@ -307,11 +315,15 @@ export default class SaltMarcherPlugin extends Plugin {
       eventBus: this.eventBus,
     });
 
+    // Character Storage (EntityRegistry-backed)
+    const characterStorage = createCharacterStorageAdapter(this.entityRegistry);
+
     // Party Feature (with itemLookup for encumbrance calculation)
     const partyStore = createPartyStore();
     this.partyFeature = createPartyService({
       store: partyStore,
       storage: partyStorage,
+      characterStorage,
       eventBus: this.eventBus,
       itemLookup: (id) => itemRegistry.lookup(id),
     });
@@ -341,21 +353,7 @@ export default class SaltMarcherPlugin extends Plugin {
       eventBus: this.eventBus,
     });
 
-    // Encounter Feature (with creature/faction presets for encounter generation)
-    const encounterStore = createEncounterStore();
-    this.encounterFeature = createEncounterService({
-      store: encounterStore,
-      mapFeature: this.mapFeature,
-      partyFeature: this.partyFeature,
-      timeFeature: this.timeFeature,
-      eventBus: this.eventBus,
-      creatures: creaturesPreset as unknown as CreatureDefinition[],
-      factions: factionsPreset as unknown as Faction[],
-      lootService,
-      itemRegistry,
-    });
-
-    // Combat Feature (integrates with Encounter)
+    // Combat Feature
     this.combatFeature = createCombatService({
       eventBus: this.eventBus,
     });
@@ -413,7 +411,6 @@ export default class SaltMarcherPlugin extends Plugin {
         travelFeature: this.travelFeature!,
         timeFeature: this.timeFeature!,
         weatherFeature: this.weatherFeature,
-        encounterFeature: this.encounterFeature,
         questFeature: this.questFeature,
         terrainStorage,
         notificationService: this.notificationService!,
@@ -426,7 +423,6 @@ export default class SaltMarcherPlugin extends Plugin {
     // DetailView - Context-dependent details (opens in right leaf)
     this.registerView(VIEW_TYPE_DETAIL_VIEW, (leaf) => {
       return new DetailView(leaf, {
-        encounterFeature: this.encounterFeature,
         combatFeature: this.combatFeature,
         partyFeature: this.partyFeature,
         eventBus: this.eventBus!,
@@ -563,7 +559,6 @@ export default class SaltMarcherPlugin extends Plugin {
         console.log('Party:', this.partyFeature?.getCurrentParty());
         console.log('Time:', this.timeFeature?.getCurrentTime());
         console.log('Weather:', this.weatherFeature?.getCurrentWeather());
-        console.log('Encounter:', this.encounterFeature?.getCurrentEncounter());
         console.log('Combat:', this.combatFeature?.getState());
         console.log('Quest:', this.questFeature?.getActiveQuests());
         console.groupEnd();
@@ -573,13 +568,6 @@ export default class SaltMarcherPlugin extends Plugin {
     // =========================================================================
     // Auto-Open DetailView on Key Events
     // =========================================================================
-
-    // Auto-open DetailView when encounter is generated
-    this.eventUnsubscribers.push(
-      this.eventBus.subscribe('encounter:generated', () => {
-        this.ensureDetailViewOpen();
-      })
-    );
 
     // Auto-open DetailView when combat starts
     this.eventUnsubscribers.push(
@@ -668,7 +656,6 @@ export default class SaltMarcherPlugin extends Plugin {
     this.travelFeature?.dispose();
     this.questFeature?.dispose();
     this.combatFeature?.dispose();
-    this.encounterFeature?.dispose();
     this.weatherFeature?.dispose();
     this.partyFeature?.dispose();
     this.mapFeature?.dispose();

@@ -35,6 +35,8 @@ export {
   // EntityRegistry
   createVaultEntityRegistryAdapter,
   createAndPreloadEntityRegistry,
+  // Character Storage
+  createCharacterStorageAdapter,
   // In-memory adapters (testing/development)
   createTerrainRegistry,
   createItemRegistry,

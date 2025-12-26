@@ -36,3 +36,24 @@ export {
   createLibraryViewFactory,
   type LibraryViewDeps,
 } from './view';
+
+// Tab Navigation
+export {
+  TabNavigation,
+  createTabNavigation,
+  getTabConfigs,
+  type TabConfig,
+} from './TabNavigation';
+
+// Browse View
+export {
+  BrowseView,
+  createBrowseView,
+} from './BrowseView';
+
+// Entity Modal
+export {
+  EntityModal,
+  openEntityModal,
+  type EntityModalOptions,
+} from './EntityModal';

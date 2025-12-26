@@ -16,6 +16,9 @@ import { createClaimService } from './claim-service.mjs';
  * @typedef {object} PrioritizeFilters
  * @property {string[]} [keywords] - Keyword-Filter (ODER-Verknüpfung)
  * @property {string} [status] - Nur Tasks mit diesem Status
+ * @property {string} [domain] - Domain-Filter (substring match)
+ * @property {string} [layer] - Layer-Filter (exact match)
+ * @property {string[]} [sortBy] - Sortierkriterien (default: mvp,status,prio,refcount,number)
  * @property {boolean} [mvp] - true = nur MVP, false = nur nicht-MVP
  * @property {string} [prio] - Nur Tasks mit dieser Priorität
  * @property {boolean} [includeDone] - Auch ✅ Tasks
@@ -78,29 +81,44 @@ export function createPrioritizeService(options = {}) {
   }
 
   /**
-   * Sortier-Vergleichsfunktion
+   * Sortierkriterien-Map für flexible Sortierung
    */
-  function compareItems(a, b, refCounts) {
-    const mvpDiff = (MVP_PRIORITY[a.mvp] ?? 99) - (MVP_PRIORITY[b.mvp] ?? 99);
-    if (mvpDiff !== 0) return mvpDiff;
+  const SORT_CRITERIA = {
+    mvp: (a, b) => (MVP_PRIORITY[a.mvp] ?? 99) - (MVP_PRIORITY[b.mvp] ?? 99),
+    status: (a, b) => (STATUS_PRIORITY[a.status] ?? 99) - (STATUS_PRIORITY[b.status] ?? 99),
+    prio: (a, b) => (PRIO_PRIORITY[a.prio] ?? 99) - (PRIO_PRIORITY[b.prio] ?? 99),
+    refcount: (a, b, refCounts) => (refCounts.get(b.number) || 0) - (refCounts.get(a.number) || 0),
+    number: (a, b) => {
+      const numA = typeof a.number === 'string' ? parseInt(a.number.slice(1), 10) : a.number;
+      const numB = typeof b.number === 'string' ? parseInt(b.number.slice(1), 10) : b.number;
+      if (a.isBug !== b.isBug) return a.isBug ? 1 : -1;
+      return numA - numB;
+    },
+    domain: (a, b) => (a.domain || '').localeCompare(b.domain || ''),
+    layer: (a, b) => (a.layer || '').localeCompare(b.layer || '')
+  };
 
-    const statusDiff = (STATUS_PRIORITY[a.status] ?? 99) - (STATUS_PRIORITY[b.status] ?? 99);
-    if (statusDiff !== 0) return statusDiff;
+  const DEFAULT_SORT = ['mvp', 'status', 'prio', 'refcount', 'number'];
 
-    const prioDiff = (PRIO_PRIORITY[a.prio] ?? 99) - (PRIO_PRIORITY[b.prio] ?? 99);
-    if (prioDiff !== 0) return prioDiff;
+  /**
+   * Flexible Sortier-Vergleichsfunktion
+   * @param {object} a - Erstes Item
+   * @param {object} b - Zweites Item
+   * @param {Map} refCounts - Referenzzählungen
+   * @param {string[]} sortBy - Sortierkriterien (mit optionalem -/+ Prefix)
+   */
+  function compareItems(a, b, refCounts, sortBy = DEFAULT_SORT) {
+    for (const criterion of sortBy) {
+      const desc = criterion.startsWith('-');
+      const key = desc ? criterion.slice(1) : criterion.replace(/^\+/, '');
+      const compareFn = SORT_CRITERIA[key];
+      if (!compareFn) continue;
 
-    const refCountA = refCounts.get(a.number) || 0;
-    const refCountB = refCounts.get(b.number) || 0;
-    const refDiff = refCountB - refCountA;
-    if (refDiff !== 0) return refDiff;
-
-    const numA = typeof a.number === 'string' ? parseInt(a.number.slice(1), 10) : a.number;
-    const numB = typeof b.number === 'string' ? parseInt(b.number.slice(1), 10) : b.number;
-
-    if (a.isBug !== b.isBug) return a.isBug ? 1 : -1;
-
-    return numA - numB;
+      let diff = compareFn(a, b, refCounts);
+      if (desc) diff = -diff;
+      if (diff !== 0) return diff;
+    }
+    return 0;
   }
 
   /**
@@ -110,6 +128,8 @@ export function createPrioritizeService(options = {}) {
     const {
       keywords = [],
       status = null,
+      domain = null,
+      layer = null,
       mvp = null,
       prio = null,
       includeDone = false,
@@ -118,15 +138,30 @@ export function createPrioritizeService(options = {}) {
       includeResolved = false
     } = filters;
 
-    if (task.status === '✅') {
-      if (task.isBug && !includeResolved) return false;
-      if (!task.isBug && !includeDone) return false;
+    // 1. Status-Filter hat Vorrang (überschreibt include-Flags)
+    if (status) {
+      if (task.status !== status) return false;
+    } else {
+      // Nur ohne expliziten Status: include-Flags anwenden
+      if (task.status === '✅') {
+        if (task.isBug && !includeResolved) return false;
+        if (!task.isBug && !includeDone) return false;
+      }
+      if (!includeClaimed && task.status === '🔒') return false;
     }
-    if (!includeClaimed && task.status === '🔒') return false;
-    if (status && task.status !== status) return false;
 
+    // 2. Domain/Layer Filter
+    if (domain && !task.domain?.toLowerCase().includes(domain.toLowerCase())) {
+      return false;
+    }
+    if (layer && task.layer?.toLowerCase() !== layer.toLowerCase()) {
+      return false;
+    }
+
+    // 3. Blocked (Dependencies)
     if (!includeBlocked && !areDepsResolved(task, statusMap)) return false;
 
+    // 4. MVP/Prio/Keywords
     if (mvp === true && task.mvp !== 'Ja') return false;
     if (mvp === false && task.mvp !== 'Nein') return false;
 
@@ -234,7 +269,8 @@ export function createPrioritizeService(options = {}) {
      * @returns {import('../core/result.mjs').Result<{items: Array, refCounts: Map, stats: object}>}
      */
     getPrioritizedTasks(filters = {}) {
-      const { limit = 10 } = filters;
+      const { limit = 10, sortBy } = filters;
+      const effectiveSortBy = sortBy ?? DEFAULT_SORT;
 
       const dataResult = loadData();
       if (!dataResult.ok) return dataResult;
@@ -255,7 +291,7 @@ export function createPrioritizeService(options = {}) {
       const filtered = items.filter(t => matchesFilters(t, filters, statusMap));
 
       // Sortieren
-      filtered.sort((a, b) => compareItems(a, b, refCounts));
+      filtered.sort((a, b) => compareItems(a, b, refCounts, effectiveSortBy));
 
       // Limitieren
       const results = limit > 0 ? filtered.slice(0, limit) : filtered;
@@ -397,6 +433,9 @@ export function parseArgs(argv) {
     keywords: [],
     limit: 10,
     status: null,
+    domain: null,
+    layer: null,
+    sortBy: null,
     mvp: null,
     prio: null,
     includeDone: false,
@@ -425,6 +464,12 @@ export function parseArgs(argv) {
       opts.mvp = false;
     } else if (arg === '-p' || arg === '--prio') {
       opts.prio = argv[++i]?.toLowerCase();
+    } else if (arg === '-d' || arg === '--domain') {
+      opts.domain = argv[++i];
+    } else if (arg === '-l' || arg === '--layer') {
+      opts.layer = argv[++i];
+    } else if (arg === '--sort-by') {
+      opts.sortBy = argv[++i]?.split(',').map(s => s.trim());
     } else if (arg === '--include-done') {
       opts.includeDone = true;
     } else if (arg === '--include-blocked') {
@@ -469,14 +514,23 @@ KEYWORDS:
 
 FILTER-OPTIONEN:
   -s, --status <status>   Nur Tasks mit diesem Status
-                          Werte: 📋, 🔶, ⚠️, ⬜, ✅ (oder: review, partial, broken, open, done)
+                          Werte: 📋, 🔶, ⚠️, ⬜, ✅, 🔒, ⛔
+                          Aliase: review, partial, broken, open, done, claimed, blocked
+  -d, --domain <name>     Nur Tasks mit diesem Domain (substring match)
+  -l, --layer <name>      Nur Tasks mit diesem Layer (exact match)
   --mvp                   Nur MVP-Tasks
   --no-mvp                Nur Nicht-MVP-Tasks
   -p, --prio <prio>       Nur Tasks mit dieser Priorität (hoch, mittel, niedrig)
-  --include-done          Auch ✅ Tasks anzeigen
+  --include-done          Auch ✅ Tasks anzeigen (ohne --status)
   --include-blocked       Auch Tasks mit unerfüllten Dependencies anzeigen
-  --include-claimed       Auch 🔒 (geclaimed) Tasks anzeigen
-  --include-resolved      Auch ✅ (gelöste) Bugs anzeigen
+  --include-claimed       Auch 🔒 Tasks anzeigen (ohne --status)
+  --include-resolved      Auch ✅ Bugs anzeigen
+
+SORTIER-OPTIONEN:
+  --sort-by <kriterien>   Komma-separierte Sortierkriterien
+                          Verfügbar: mvp, status, prio, refcount, number, domain, layer
+                          Prefix: - für absteigend, + für aufsteigend (default)
+                          Default: mvp,status,prio,refcount,number
 
 OUTPUT-OPTIONEN:
   -n, --limit <N>         Anzahl der Ergebnisse (default: 10, 0 = alle)
@@ -484,18 +538,15 @@ OUTPUT-OPTIONEN:
   -q, --quiet             Nur Tabelle, keine Statistiken
   -h, --help              Diese Hilfe anzeigen
 
-SORTIERKRITERIEN:
-  1. MVP: Ja > Nein
-  2. Status: 📋 > 🔶 > ⚠️ > ⬜
-  3. Prio: hoch > mittel > niedrig
-  4. RefCount: Tasks, von denen viele andere abhängen
-  5. Task-Nummer: Niedrigere = älter = höhere Priorität
-
 BEISPIELE:
-  node scripts/task.mjs sort                     # Top 10 aller offenen Tasks
-  node scripts/task.mjs sort quest               # Tasks mit "quest"
-  node scripts/task.mjs sort -n 5 --mvp          # Top 5 MVP-Tasks
-  node scripts/task.mjs sort --status 🔶         # Nur fast fertige Tasks
-  node scripts/task.mjs sort --prio hoch -n 0    # Alle hoch-prio Tasks
+  node scripts/task.mjs sort                        # Top 10 aller offenen Tasks
+  node scripts/task.mjs sort quest                  # Tasks mit "quest"
+  node scripts/task.mjs sort -n 5 --mvp             # Top 5 MVP-Tasks
+  node scripts/task.mjs sort --status 🔶            # Nur fast fertige Tasks
+  node scripts/task.mjs sort --status claimed -n 0  # Alle geclaimten Tasks
+  node scripts/task.mjs sort --domain Travel        # Nur Travel-Domain
+  node scripts/task.mjs sort --layer Feature        # Nur Feature-Layer
+  node scripts/task.mjs sort --sort-by status,prio  # Sortierung anpassen
+  node scripts/task.mjs sort --sort-by -number      # Neueste Tasks zuerst
 `;
 }

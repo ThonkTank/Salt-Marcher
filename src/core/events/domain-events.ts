@@ -12,9 +12,6 @@ import type {
   GameDateTime,
   TimeSegment,
   TransportMode,
-  EncounterInstance,
-  EncounterOutcome,
-  EncounterType,
   CombatParticipant,
   CombatState,
   Condition,
@@ -158,20 +155,6 @@ export const EventTypes = {
   // -------------------------------------------------------------------------
   CARTOGRAPHER_UNDO_REQUESTED: 'cartographer:undo-requested',
   CARTOGRAPHER_REDO_REQUESTED: 'cartographer:redo-requested',
-
-  // -------------------------------------------------------------------------
-  // encounter:* Events (9)
-  // -------------------------------------------------------------------------
-  ENCOUNTER_GENERATE_REQUESTED: 'encounter:generate-requested',
-  ENCOUNTER_START_REQUESTED: 'encounter:start-requested',
-  ENCOUNTER_DISMISS_REQUESTED: 'encounter:dismiss-requested',
-  ENCOUNTER_RESOLVE_REQUESTED: 'encounter:resolve-requested',
-  ENCOUNTER_STATE_CHANGED: 'encounter:state-changed',
-  ENCOUNTER_GENERATED: 'encounter:generated',
-  ENCOUNTER_STARTED: 'encounter:started',
-  ENCOUNTER_DISMISSED: 'encounter:dismissed',
-  ENCOUNTER_RESOLVED: 'encounter:resolved',
-  ENCOUNTER_FAILED: 'encounter:failed',
 
   // -------------------------------------------------------------------------
   // combat:* Events (23)
@@ -598,63 +581,6 @@ export interface CartographerUndoRequestedPayload {
 
 export interface CartographerRedoRequestedPayload {
   // empty
-}
-
-// ---------------------------------------------------------------------------
-// encounter:* Payloads
-// ---------------------------------------------------------------------------
-
-export interface EncounterGenerateRequestedPayload {
-  /** Current party position - Service builds full context from this */
-  position: HexCoordinate;
-  /** What triggered this generation */
-  trigger: 'time-based' | 'manual' | 'location' | 'travel';
-}
-
-export interface EncounterStartRequestedPayload {
-  encounterId: string;
-}
-
-export interface EncounterDismissRequestedPayload {
-  encounterId: string;
-  reason?: string;
-}
-
-export interface EncounterResolveRequestedPayload {
-  encounterId: string;
-  outcome: EncounterOutcome;
-}
-
-export interface EncounterStateChangedPayload {
-  currentEncounter: EncounterInstance | null;
-  historyLength: number;
-}
-
-export interface EncounterGeneratedPayload {
-  encounter: EncounterInstance;
-}
-
-export interface EncounterStartedPayload {
-  encounterId: string;
-  type: EncounterType;
-  encounter: EncounterInstance;
-}
-
-export interface EncounterDismissedPayload {
-  encounterId: string;
-  reason?: string;
-}
-
-export interface EncounterResolvedPayload {
-  encounterId: string;
-  outcome: EncounterOutcome;
-  xpAwarded: number;
-  loot?: unknown; // LootResult (defined in loot feature)
-}
-
-export interface EncounterFailedPayload {
-  reason: 'no_eligible_creatures' | 'selection_failed' | 'generation_failed' | 'invalid_tile';
-  details?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -1368,18 +1294,6 @@ export interface EventPayloadMap {
   // cartographer:*
   [EventTypes.CARTOGRAPHER_UNDO_REQUESTED]: CartographerUndoRequestedPayload;
   [EventTypes.CARTOGRAPHER_REDO_REQUESTED]: CartographerRedoRequestedPayload;
-
-  // encounter:*
-  [EventTypes.ENCOUNTER_GENERATE_REQUESTED]: EncounterGenerateRequestedPayload;
-  [EventTypes.ENCOUNTER_START_REQUESTED]: EncounterStartRequestedPayload;
-  [EventTypes.ENCOUNTER_DISMISS_REQUESTED]: EncounterDismissRequestedPayload;
-  [EventTypes.ENCOUNTER_RESOLVE_REQUESTED]: EncounterResolveRequestedPayload;
-  [EventTypes.ENCOUNTER_STATE_CHANGED]: EncounterStateChangedPayload;
-  [EventTypes.ENCOUNTER_GENERATED]: EncounterGeneratedPayload;
-  [EventTypes.ENCOUNTER_STARTED]: EncounterStartedPayload;
-  [EventTypes.ENCOUNTER_DISMISSED]: EncounterDismissedPayload;
-  [EventTypes.ENCOUNTER_RESOLVED]: EncounterResolvedPayload;
-  [EventTypes.ENCOUNTER_FAILED]: EncounterFailedPayload;
 
   // combat:*
   [EventTypes.COMBAT_START_REQUESTED]: CombatStartRequestedPayload;

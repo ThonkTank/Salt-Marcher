@@ -26,7 +26,7 @@ export function createAddService(options = {}) {
      */
     addTask(taskData, opts = {}) {
       const { dryRun = false, init = false } = opts;
-      const { domain, beschreibung, doc, prio, mvp, deps, spec } = taskData;
+      const { domain, layer, beschreibung, doc, prio, mvp, deps, spec } = taskData;
 
       // --doc ist erforderlich für Tasks
       if (!doc) {
@@ -46,6 +46,7 @@ export function createAddService(options = {}) {
       // Adapter kümmert sich um ID-Generierung und Einfügen
       const result = taskAdapter.addTask({
         domain,
+        layer: layer || '-',
         beschreibung,
         prio: prio || 'mittel',
         mvp: mvp || 'Nein',
@@ -159,12 +160,16 @@ export function parseArgs(argv) {
     type: null,
     beschreibung: null,
     domain: null,
+    layer: null,
     doc: null,
     init: false,
     prio: null,
     mvp: null,
     deps: null,
     spec: null,
+    // Bulk-Mode
+    tasks: null,  // JSON-Array für Bulk-Tasks
+    bugs: null,   // JSON-Array für Bulk-Bugs
     dryRun: false,
     json: false,
     quiet: false,
@@ -180,12 +185,18 @@ export function parseArgs(argv) {
       opts.type = 'task';
     } else if (arg === '--bug') {
       opts.type = 'bug';
+    } else if (arg === '--tasks') {
+      opts.tasks = argv[++i];
+    } else if (arg === '--bugs') {
+      opts.bugs = argv[++i];
     } else if (arg === '--beschreibung' || arg === '-m') {
       opts.beschreibung = argv[++i];
     } else if (arg === '--domain' || arg === '-b') {
       opts.domain = argv[++i];
     } else if (arg === '--doc') {
       opts.doc = argv[++i];
+    } else if (arg === '--layer' || arg === '-l') {
+      opts.layer = argv[++i];
     } else if (arg === '--init') {
       opts.init = true;
     } else if (arg === '--prio' || arg === '-p') {
@@ -214,9 +225,19 @@ export function parseArgs(argv) {
 export function execute(opts, service = null) {
   const addService = service ?? createAddService();
 
+  // Bulk-Mode: --tasks oder --bugs
+  if (opts.tasks) {
+    return executeBulkTasks(opts.tasks, addService, opts);
+  }
+  if (opts.bugs) {
+    return executeBulkBugs(opts.bugs, addService, opts);
+  }
+
+  // Single-Mode: --task oder --bug mit -m
   if (opts.type === 'task') {
     return addService.addTask({
       domain: opts.domain,
+      layer: opts.layer,
       beschreibung: opts.beschreibung,
       doc: opts.doc,
       prio: opts.prio,
@@ -238,24 +259,211 @@ export function execute(opts, service = null) {
 }
 
 /**
+ * Führt Bulk-Add für Tasks aus
+ */
+function executeBulkTasks(jsonString, addService, globalOpts) {
+  // 1. JSON parsen
+  let tasks;
+  try {
+    tasks = JSON.parse(jsonString);
+  } catch (e) {
+    return err({
+      code: TaskErrorCode.INVALID_FORMAT,
+      message: `Ungültiges JSON: ${e.message}`
+    });
+  }
+
+  // 2. Validierung: Array mit min. 1 Element
+  if (!Array.isArray(tasks)) {
+    return err({
+      code: TaskErrorCode.INVALID_FORMAT,
+      message: '--tasks muss ein JSON-Array sein'
+    });
+  }
+  if (tasks.length === 0) {
+    return err({
+      code: TaskErrorCode.INVALID_FORMAT,
+      message: '--tasks Array darf nicht leer sein'
+    });
+  }
+
+  // 3. Über alle Tasks iterieren (Partial Success)
+  const results = {
+    success: [],
+    failed: [],
+    dryRun: globalOpts.dryRun
+  };
+
+  for (let i = 0; i < tasks.length; i++) {
+    const taskData = tasks[i];
+    const taskIndex = i + 1;
+
+    // Pflichtfelder prüfen
+    if (!taskData.beschreibung) {
+      results.failed.push({
+        taskIndex,
+        error: { message: 'beschreibung fehlt' }
+      });
+      continue;
+    }
+    if (!taskData.doc) {
+      results.failed.push({
+        taskIndex,
+        error: { message: 'doc fehlt' }
+      });
+      continue;
+    }
+    if (!taskData.domain) {
+      results.failed.push({
+        taskIndex,
+        error: { message: 'domain fehlt' }
+      });
+      continue;
+    }
+
+    // addTask aufrufen
+    const result = addService.addTask({
+      domain: taskData.domain,
+      layer: taskData.layer,
+      beschreibung: taskData.beschreibung,
+      doc: taskData.doc,
+      prio: taskData.prio,
+      mvp: taskData.mvp,
+      deps: taskData.deps,
+      spec: taskData.spec
+    }, {
+      dryRun: globalOpts.dryRun,
+      init: taskData.init ?? false
+    });
+
+    if (result.ok) {
+      results.success.push({
+        taskId: result.value.taskId,
+        doc: result.value.doc?.path ?? taskData.doc,
+        beschreibung: taskData.beschreibung
+      });
+    } else {
+      results.failed.push({
+        taskIndex,
+        error: result.error
+      });
+    }
+  }
+
+  return ok(results);
+}
+
+/**
+ * Führt Bulk-Add für Bugs aus
+ */
+function executeBulkBugs(jsonString, addService, globalOpts) {
+  // 1. JSON parsen
+  let bugs;
+  try {
+    bugs = JSON.parse(jsonString);
+  } catch (e) {
+    return err({
+      code: TaskErrorCode.INVALID_FORMAT,
+      message: `Ungültiges JSON: ${e.message}`
+    });
+  }
+
+  // 2. Validierung: Array mit min. 1 Element
+  if (!Array.isArray(bugs)) {
+    return err({
+      code: TaskErrorCode.INVALID_FORMAT,
+      message: '--bugs muss ein JSON-Array sein'
+    });
+  }
+  if (bugs.length === 0) {
+    return err({
+      code: TaskErrorCode.INVALID_FORMAT,
+      message: '--bugs Array darf nicht leer sein'
+    });
+  }
+
+  // 3. Über alle Bugs iterieren (Partial Success)
+  const results = {
+    success: [],
+    failed: [],
+    propagation: [],
+    dryRun: globalOpts.dryRun
+  };
+
+  for (let i = 0; i < bugs.length; i++) {
+    const bugData = bugs[i];
+    const bugIndex = i + 1;
+
+    // Pflichtfeld prüfen
+    if (!bugData.beschreibung) {
+      results.failed.push({
+        bugIndex,
+        error: { message: 'beschreibung fehlt' }
+      });
+      continue;
+    }
+
+    // addBug aufrufen
+    const result = addService.addBug(bugData.beschreibung, {
+      prio: bugData.prio,
+      deps: bugData.deps
+    }, { dryRun: globalOpts.dryRun });
+
+    if (result.ok) {
+      results.success.push({
+        bugId: result.value.bugId,
+        beschreibung: bugData.beschreibung
+      });
+      // Propagation sammeln
+      if (result.value.affectedTasks?.length > 0) {
+        for (const affected of result.value.affectedTasks) {
+          results.propagation.push({
+            id: affected.taskId,
+            oldStatus: affected.oldStatus,
+            newStatus: affected.newStatus,
+            reason: `Bug ${result.value.bugId}`
+          });
+        }
+      }
+    } else {
+      results.failed.push({
+        bugIndex,
+        error: result.error
+      });
+    }
+  }
+
+  return ok(results);
+}
+
+/**
  * Zeigt Hilfe für add command
  */
 export function showHelp() {
   return `
 Add Command - Neue Task oder Bug erstellen
 
-USAGE:
+USAGE (Single):
   node scripts/task.mjs add --task --doc <path> [OPTIONS]
   node scripts/task.mjs add --bug [OPTIONS]
 
-TYP (erforderlich):
+USAGE (Bulk):
+  node scripts/task.mjs add --tasks '<JSON-Array>'
+  node scripts/task.mjs add --bugs '<JSON-Array>'
+
+TYP (erforderlich für Single-Mode):
   --task                 Neue Task erstellen
   --bug                  Neuen Bug erstellen
+
+BULK-MODE:
+  --tasks '<JSON>'       Mehrere Tasks auf einmal (JSON-Array)
+  --bugs '<JSON>'        Mehrere Bugs auf einmal (JSON-Array)
 
 OPTIONEN (Task):
   --doc <path>           Ziel-Dokument (relativ zu docs/) [erforderlich]
   --init                 Erstellt Tabelle im Doc falls nicht vorhanden
   -b, --domain <name>    Domain (z.B. Travel, Map) [erforderlich]
+  -l, --layer <layer>    Layer (core, features, infra, apps) [default: -]
   -m, --beschreibung "." Beschreibung [erforderlich]
   -p, --prio <prio>      Priorität (hoch, mittel, niedrig) [default: mittel]
   --mvp <Ja|Nein>        MVP-Status [default: Nein]
@@ -273,15 +481,49 @@ ALLGEMEIN:
   -q, --quiet            Kompakte Ausgabe
   -h, --help             Diese Hilfe anzeigen
 
-BEISPIELE:
+BEISPIELE (Single):
   node scripts/task.mjs add --task --doc features/Travel-System.md -b Travel -m "Neue Route"
   node scripts/task.mjs add --task --doc domain/Quest.md --init -b Quest -m "Quest-Log UI"
   node scripts/task.mjs add --bug -m "Login funktioniert nicht" --deps "#428"
 
+BEISPIELE (Bulk):
+  # Mehrere Tasks auf einmal
+  node scripts/task.mjs add --tasks '[
+    {"beschreibung": "Task A", "doc": "features/Travel-System.md", "domain": "Travel"},
+    {"beschreibung": "Task B", "doc": "features/Map-Feature.md", "domain": "Map", "prio": "hoch"}
+  ]'
+
+  # Mehrere Bugs auf einmal
+  node scripts/task.mjs add --bugs '[
+    {"beschreibung": "Bug A", "prio": "hoch", "deps": "#428"},
+    {"beschreibung": "Bug B"}
+  ]'
+
+JSON-SCHEMA (Task):
+  {
+    "beschreibung": "...",  // erforderlich
+    "doc": "...",           // erforderlich (relativ zu docs/)
+    "domain": "...",        // erforderlich
+    "layer": "...",         // optional, default: -
+    "prio": "...",          // optional, default: mittel
+    "mvp": "Ja|Nein",       // optional, default: Nein
+    "deps": "#100, #202",   // optional
+    "spec": "...",          // optional
+    "init": true|false      // optional, default: false
+  }
+
+JSON-SCHEMA (Bug):
+  {
+    "beschreibung": "...",  // erforderlich
+    "prio": "...",          // optional, default: hoch
+    "deps": "#428"          // optional (betroffene Tasks)
+  }
+
 HINWEISE:
   - Tasks werden immer sowohl in der Roadmap als auch im angegebenen Doc gespeichert
-  - Das Doc muss eine Task-Tabelle enthalten (oder --init verwenden)
-  - Bugs werden nur in der Roadmap gespeichert (kein --doc erforderlich)
+  - Das Doc muss eine Task-Tabelle enthalten (oder "init": true im JSON)
+  - Bugs werden nur in der Roadmap gespeichert (kein doc erforderlich)
+  - Bulk-Mode: Partial Success - fehlerhafte Items stoppen nicht die anderen
 `;
 }
 

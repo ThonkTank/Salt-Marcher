@@ -301,7 +301,7 @@ function promoteCreatureToNPC(
 }
 ```
 
-→ Details zur Entity Promotion: [Encounter-System.md](../features/Encounter-System.md#entity-promotion)
+→ Details zur Entity Promotion: [encounter/Encounter.md](../features/encounter/Encounter.md#entity-promotion)
 
 ---
 
@@ -371,7 +371,7 @@ function createEncounterLootContainer(
 }
 ```
 
-→ Details: [Encounter-System.md](../features/Encounter-System.md)
+→ Details: [encounter/Encounter.md](../features/encounter/Encounter.md)
 
 ---
 

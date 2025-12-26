@@ -442,7 +442,7 @@ Der Promotion-Dialog zeigt den POI-Vorschlag:
 ```
 
 → Entity Promotion: [Faction.md](Faction.md#entity-promotion)
-→ Encounter-Integration: [Encounter-System.md](../features/Encounter-System.md#entity-promotion)
+→ Encounter-Integration: [encounter/Encounter.md](../features/encounter/Encounter.md#entity-promotion)
 
 ---
 
@@ -627,8 +627,8 @@ const treasureChest: TreasurePOI = {
 
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-| 1500 | ✅ | Location/POI | - | BasePOI Interface mit gemeinsamen Eigenschaften (id, mapId, position, name, icon, visible) | hoch | Ja | - | POI.md#basepoi, EntityRegistry.md#entity-type-mapping | [neu] src/core/schemas/poi.ts |
-| 1501 | ✅ | Location/POI | - | EntrancePOI Schema (linkedMapId, spawnPosition, description) | hoch | Ja | - | POI.md#entrancepoi, Map-Navigation.md#bidirektionale-links | [neu] src/core/schemas/poi.ts |
+| 1500 | ✅ | Location/POI | features | BasePOI Interface mit gemeinsamen Eigenschaften (id, mapId, position, name, icon, visible) | hoch | Ja | - | POI.md#basepoi, EntityRegistry.md#entity-type-mapping | [neu] src/core/schemas/poi.ts |
+| 1501 | ✅ | Location/POI | features | EntrancePOI Schema (linkedMapId, spawnPosition, description) | hoch | Ja | - | POI.md#entrancepoi, Map-Navigation.md#bidirektionale-links | [neu] src/core/schemas/poi.ts |
 | 1502 | ⬜ | Location/POI | core | LandmarkPOI Schema (description, gmNotes) | hoch | Ja | #1500 | POI.md#landmarkpoi | [neu] src/core/schemas/poi.ts |
 | 1504 | ⬜ | Location/POI | core | TrapPOI Schema (dc, damage, triggered, detected, effect) | mittel | Nein | #1500 | POI.md#trappoi, Map-Feature.md#dungeontile | [neu] src/core/schemas/poi.ts |
 | 1505 | ⛔ | Location/POI | core | TreasurePOI Schema (items, locked, lockDC, looted, trapId) | mittel | Nein | #1500, #1504, #2600 | POI.md#treasurepoi, Item.md#schema | [neu] src/core/schemas/poi.ts |
@@ -642,6 +642,6 @@ const treasureChest: TreasurePOI = {
 | 1513 | ⛔ | Location/POI | application | POI Icon Rendering auf Map (Icon-Mapping nach POI-Typ) | hoch | Ja | #802, #804, #1509 | POI.md#map-darstellung, Map-Feature.md#overworld-rendering | [ändern] src/application/session-runner/panels/map-canvas.ts:renderTile() |
 | 1514 | ⛔ | Location/POI | core | Height-Feld für POI-Fernsicht (Sichtbarkeit über Tile-Grenze) | mittel | Nein | #843, #1500 | POI.md#height-feld-post-mvp, Map-Feature.md#poi-fernsicht, Map-Feature.md#visibility-system-post-mvp | [neu] src/core/schemas/poi.ts |
 | 1515 | ⛔ | Location/POI | core | glowsAtNight-Feld für nachtleuchtende POIs | mittel | Nein | #843, #1500 | POI.md#nachtleuchtende-pois-glowsatnight-post-mvp, Map-Feature.md#poi-fernsicht, Map-Feature.md#visibility-system-post-mvp | [neu] src/core/schemas/poi.ts |
-| 1516 | ✅ | Location/POI | - | POI EntityRegistry Integration: 'location'/'poi' als Entity-Typ (bereits vorhanden) | hoch | Ja | - | POI.md#schema, EntityRegistry.md#port-interface, EntityRegistry.md#entity-type-mapping | src/core/types/common.ts:20-21, src/core/schemas/common.ts:49-50 |
+| 1516 | ✅ | Location/POI | features | POI EntityRegistry Integration: 'location'/'poi' als Entity-Typ (bereits vorhanden) | hoch | Ja | - | POI.md#schema, EntityRegistry.md#port-interface, EntityRegistry.md#entity-type-mapping | src/core/types/common.ts:20-21, src/core/schemas/common.ts:49-50 |
 | 3016 | ⛔ | Location/POI | core | POI: lootContainers[] Referenz-Array | mittel | Ja | #1500, #3006 | POI.md#lootcontainer-referenz, LootContainer.md#poi-referenz | - |
 | 3168 | ⬜ | Location/POI | core | POI Union Type (alle 5 POI-Typen kombinieren) | hoch | Ja | #1500, #1501, #1502, #1504, #1505, #1506 | POI.md#poi-union-type | - |

@@ -23,6 +23,7 @@ const COMMANDS = {
   show: () => import('./services/show-service.mjs'),
   sort: () => import('./services/sort-service.mjs'),
   edit: () => import('./services/edit-service.mjs'),
+  'bulk-edit': () => import('./services/bulk-edit-service.mjs'),
   add: () => import('./services/add-service.mjs'),
   claim: () => import('./services/claim-service.mjs'),
   unclaim: () => import('./services/unclaim-service.mjs'),
@@ -35,6 +36,7 @@ const COMMAND_DESCRIPTIONS = {
   show: 'Task-Details mit Dependency-Trees anzeigen',
   sort: 'Priorisierte Task-Liste (mit Keyword-Filter)',
   edit: 'Task/Bug bearbeiten (Status, Deps, Beschreibung)',
+  'bulk-edit': 'Mehrere Tasks gleichzeitig bearbeiten',
   add: 'Neue Task oder Bug erstellen',
   claim: 'Task claimen (gibt Key zurück)',
   unclaim: 'Task freigeben (mit Key)',
@@ -143,9 +145,13 @@ function formatOutput(result, opts) {
   }
 
   if (!result.ok) {
-    console.error(`❌ Fehler: ${result.error.message}`);
-    if (result.error.code) {
-      console.error(`   Code: ${result.error.code}`);
+    console.error(`❌ ${result.error.message}`);
+
+    // Bei ALREADY_CLAIMED: Klare Abort-Nachricht
+    if (result.error.code === 'ALREADY_CLAIMED') {
+      console.error();
+      console.error('   ⛔ ABBRUCH: Diese Task ist für dich nicht zugänglich.');
+      console.error('   → Wähle eine andere: node scripts/task.mjs sort');
     }
     return;
   }
@@ -229,31 +235,35 @@ function formatOutput(result, opts) {
 
         const lines = [];
         lines.push('┌─' + '─'.repeat(W) + '─┐');
-        lines.push('│ ' + pad('LESELISTE') + ' │');
+        lines.push('│ ' + pad('LESELISTE (PFLICHT)') + ' │');
         lines.push('├─' + '─'.repeat(W) + '─┤');
         lines.push('│ ' + pad('') + ' │');
 
-        // A) Architektur-Baseline (mit Layer-Info wenn vorhanden)
-        const layerInfo = rl.layer ? ` + ${rl.layer}` : '';
-        lines.push('│ ' + pad(`A) Architektur-Baseline${layerInfo} (PFLICHT):`) + ' │');
-        for (const doc of rl.baseline || []) {
-          lines.push('│ ' + pad(`   → ${doc}`) + ' │');
-        }
-        lines.push('│ ' + pad('') + ' │');
+        let sectionCounter = 0;
+        const nextSection = () => String.fromCharCode(65 + sectionCounter++); // A, B, C, ...
 
-        // B) Feature-Docs
+        // Architektur-Docs (Layer-spezifisch)
+        if (rl.layerDocs?.length > 0 && rl.layer) {
+          lines.push('│ ' + pad(`${nextSection()}) Architektur-Docs (${rl.layer}):`) + ' │');
+          for (const doc of rl.layerDocs) {
+            lines.push('│ ' + pad(`   → ${doc}`) + ' │');
+          }
+          lines.push('│ ' + pad('') + ' │');
+        }
+
+        // Feature-Docs
         if (rl.featureDocs?.length > 0) {
           const bereichLabel = bereichKey ? ` (${bereichKey})` : '';
-          lines.push('│ ' + pad(`B) Feature-Docs${bereichLabel}:`) + ' │');
+          lines.push('│ ' + pad(`${nextSection()}) Feature-Docs${bereichLabel}:`) + ' │');
           for (const doc of rl.featureDocs) {
             lines.push('│ ' + pad(`   → ${doc}`) + ' │');
           }
           lines.push('│ ' + pad('') + ' │');
         }
 
-        // C) Spec der Task (jede Referenz auf eigener Zeile)
+        // Spec der Task (jede Referenz auf eigener Zeile)
         if (rl.specDoc && rl.specDoc !== '-') {
-          lines.push('│ ' + pad('C) Spec der Task:') + ' │');
+          lines.push('│ ' + pad(`${nextSection()}) Spec der Task:`) + ' │');
           const specRefs = rl.specDoc.split(', ');
           for (const ref of specRefs) {
             const trimmed = ref.trim();
@@ -264,11 +274,6 @@ function formatOutput(result, opts) {
           lines.push('│ ' + pad('') + ' │');
         }
 
-        lines.push('├─' + '─'.repeat(W) + '─┤');
-        lines.push('│ ' + pad('VORGEHEN:') + ' │');
-        lines.push('│ ' + pad('→ TodoWrite mit allen Docs erstellen') + ' │');
-        lines.push('│ ' + pad('→ Jeden Doc lesen, Todo als completed markieren') + ' │');
-        lines.push('│ ' + pad('→ ERST wenn alle completed: zurück zum Workflow') + ' │');
         lines.push('└─' + '─'.repeat(W) + '─┘');
 
         console.log();
@@ -409,6 +414,54 @@ function formatOutput(result, opts) {
     return;
   }
 
+  // bulk-edit result (has success[] and failed[] arrays)
+  if (Array.isArray(value.success) && Array.isArray(value.failed)) {
+    const { success, failed, propagation, dryRun } = value;
+
+    if (dryRun) {
+      console.log('DRY-RUN (keine Änderungen gespeichert)\n');
+    }
+
+    // Erfolge
+    for (const s of success) {
+      // bulk-add: taskId/bugId + beschreibung, bulk-edit: taskId + statusChange
+      const id = s.bugId ?? (typeof s.taskId === 'string' ? s.taskId : `#${s.taskId}`);
+      const statusInfo = s.statusChange
+        ? `: ${s.statusChange.from} -> ${s.statusChange.to}`
+        : '';
+      const desc = s.beschreibung ? ` "${s.beschreibung}"` : '';
+      console.log(`  ✅ ${id}${statusInfo}${desc}`);
+    }
+
+    // Fehler
+    for (const f of failed) {
+      // bulk-add: taskIndex/bugIndex, bulk-edit: taskId
+      const id = f.taskIndex
+        ? `Task ${f.taskIndex}`
+        : f.bugIndex
+          ? `Bug ${f.bugIndex}`
+          : typeof f.taskId === 'string' ? f.taskId : `#${f.taskId}`;
+      console.log(`  ❌ ${id}: ${f.error.message}`);
+    }
+
+    // Propagation
+    if (propagation?.length > 0) {
+      console.log('\nPropagation:');
+      for (const p of propagation) {
+        const id = typeof p.id === 'string' ? p.id : `#${p.id}`;
+        console.log(`  ${id}: ${p.oldStatus} -> ${p.newStatus} (${p.reason})`);
+      }
+    }
+
+    // Summary
+    const total = success.length + failed.length;
+    console.log(`\nErgebnis: ${success.length}/${total} Tasks aktualisiert`);
+    if (failed.length > 0) {
+      console.log(`         ${failed.length} fehlgeschlagen`);
+    }
+    return;
+  }
+
   if (value.success !== undefined) {
     // sync result
     if (value.isSync) {
@@ -468,9 +521,8 @@ function formatOutput(result, opts) {
 
     // Claim-Info
     if (value.claim) {
-      console.log(`\n   🔒 Geclaimed von: ${value.claim.owner}`);
-      console.log(`      Verbleibend: ${value.claim.remaining}`);
-      if (value.claim.isMe) console.log('      (Das bist du)');
+      console.log(`\n   🔒 Geclaimed (noch ${value.claim.remaining})`);
+      console.log('   → Wähle eine andere Task, oder gib den Key ein falls du diese Task geclaimed hast.');
     }
 
     // Dependency-Tree (Voraussetzungen)

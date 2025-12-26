@@ -3,15 +3,9 @@
  */
 
 import type {
-  EncounterInstance,
   CombatState,
   CombatEffect,
-  EncounterLeadNpc,
-  DetectionMethod,
 } from '@core/schemas';
-
-// Re-export for use in panel components
-export type { DetectionMethod };
 import type { EntityId } from '@core/types';
 import type { EncumbranceLevel } from '@/features/inventory';
 
@@ -27,78 +21,11 @@ export const VIEW_TYPE_DETAIL_VIEW = 'salt-marcher-detail-view';
 // ============================================================================
 
 /** Available tabs in DetailView */
-export type TabId = 'encounter' | 'combat' | 'party';
+export type TabId = 'combat' | 'party';
 
 // ============================================================================
 // Tab State Types
 // ============================================================================
-
-/**
- * Difficulty rating for encounters.
- */
-export type EncounterDifficulty = 'easy' | 'medium' | 'hard' | 'deadly';
-
-/**
- * Creature/NPC in the encounter builder.
- */
-export interface BuilderCreature {
-  type: 'creature' | 'npc';
-  entityId: string;
-  name: string;
-  cr: number;
-  xp: number;
-  count: number;
-}
-
-/**
- * Detection info for UI display.
- * Simplified from EncounterPerception for the builder state.
- * @see Encounter-System.md#encounterperception
- */
-export interface DetectionInfo {
-  method: DetectionMethod;
-  distance: number;
-  partyAware: boolean;
-  encounterAware: boolean;
-}
-
-/**
- * Encounter tab state.
- * Includes both the current encounter and the builder state.
- * @see DetailView.md#encounter-tab
- */
-export interface EncounterTabState {
-  // Current encounter (from encounter:generated or loaded)
-  currentEncounter: EncounterInstance | null;
-
-  // Builder state
-  builderName: string;
-  builderActivity: string;
-  builderGoal: string;
-  builderCreatures: BuilderCreature[];
-
-  // Calculated values (live, updated when builder changes)
-  totalXP: number;
-  difficulty: EncounterDifficulty;
-  dailyBudgetUsed: number;
-  dailyBudgetTotal: number;
-
-  // Search state (placeholders for #2410/#2411)
-  savedEncounterQuery: string;
-  creatureQuery: string;
-
-  // Source encounter ID (for update vs create logic)
-  sourceEncounterId: string | null;
-
-  // Situation: Disposition toward party (-100 hostile to +100 friendly)
-  disposition: number;
-
-  // Detection info (how party and encounter detected each other)
-  detection: DetectionInfo | null;
-
-  // Lead NPC info (personality, quirk, goal for roleplay)
-  leadNPC: EncounterLeadNpc | null;
-}
 
 /**
  * Combat tab state.
@@ -178,9 +105,6 @@ export interface DetailViewState {
   /** Currently active tab (null = idle/empty state) */
   activeTab: TabId | null;
 
-  /** Encounter tab state */
-  encounter: EncounterTabState;
-
   /** Combat tab state */
   combat: CombatTabState;
 
@@ -194,30 +118,6 @@ export interface DetailViewState {
 export function createInitialDetailViewState(): DetailViewState {
   return {
     activeTab: null,
-    encounter: {
-      currentEncounter: null,
-      // Builder state
-      builderName: '',
-      builderActivity: '',
-      builderGoal: '',
-      builderCreatures: [],
-      // Calculated values
-      totalXP: 0,
-      difficulty: 'easy',
-      dailyBudgetUsed: 0,
-      dailyBudgetTotal: 0,
-      // Search state
-      savedEncounterQuery: '',
-      creatureQuery: '',
-      // Source
-      sourceEncounterId: null,
-      // Situation
-      disposition: 0,
-      // Detection
-      detection: null,
-      // Lead NPC
-      leadNPC: null,
-    },
     combat: {
       combatState: null,
       pendingEffects: [],
@@ -243,10 +143,9 @@ export function createInitialDetailViewState(): DetailViewState {
  * Hints for optimized rendering.
  */
 export type DetailViewRenderHint =
-  | 'full'      // Full re-render
-  | 'tabs'      // Tab navigation changed
-  | 'encounter' // Encounter state changed
-  | 'combat';   // Combat state changed
+  | 'full'    // Full re-render
+  | 'tabs'    // Tab navigation changed
+  | 'combat'; // Combat state changed
 
 // ============================================================================
 // Callbacks

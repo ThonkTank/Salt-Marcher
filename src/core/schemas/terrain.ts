@@ -81,6 +81,46 @@ export const terrainDefinitionSchema = z.object({
    */
   nativeCreatures: z.array(entityIdSchema('creature')).default([]),
 
+  /**
+   * Terrain features (hazards, modifiers) active in this terrain.
+   * Used by Encounter-System for feature aggregation in Initiation Step 1.3.
+   */
+  features: z.array(entityIdSchema('feature')).default([]),
+
+  /**
+   * Base visibility in feet for encounter detection.
+   * Modified by weather.visibilityModifier and time of day.
+   * Used by Encounter-System for initial distance calculation.
+   *
+   * Default values from Terrain.md:
+   * - road: 1000 (open road)
+   * - plains: 8000 (~1.5 miles)
+   * - forest: 150 (dense, blocked sightlines)
+   * - hills: 2500 (moderate)
+   * - mountains: 10000 (very open)
+   * - swamp: 300 (fog, vegetation)
+   * - desert: 8000 (extremely flat)
+   * - water: 5000 (open with wave reflection)
+   */
+  encounterVisibility: z.number().positive().default(300),
+
+  /**
+   * Threat level shifts encounter difficulty distribution.
+   * Uses a normal distribution where this value shifts the mean (μ).
+   * -2 = much safer (peak at trivial/easy)
+   *  0 = neutral (peak at moderate)
+   * +2 = much deadlier (peak at hard/deadly)
+   */
+  threatLevel: z.number().min(-2).max(2).default(0),
+
+  /**
+   * Threat range controls encounter difficulty spread (σ).
+   * Lower values = predictable (clustered around mean).
+   * Higher values = chaotic (wide spread across all difficulties).
+   * 0.5 = very predictable, 1.0 = normal, 2.0 = very chaotic
+   */
+  threatRange: z.number().min(0.5).max(2).default(1.0),
+
   // -------------------------------------------------------------------------
   // Weather
   // -------------------------------------------------------------------------

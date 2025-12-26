@@ -144,6 +144,13 @@ export interface LibraryViewModel {
   setViewMode(mode: ViewMode): void;
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Tab Counts
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** Get entity counts for all tabs */
+  getTabCounts(): Map<EntityType, number>;
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Lifecycle
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -697,6 +704,24 @@ export function createLibraryViewModel(
     setViewMode(mode: ViewMode): void {
       if (mode === state.viewMode) return;
       updateState({ viewMode: mode }, ['list']);
+    },
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Tab Counts
+    // ─────────────────────────────────────────────────────────────────────────
+
+    getTabCounts(): Map<EntityType, number> {
+      const counts = new Map<EntityType, number>();
+      const types: EntityType[] = [
+        'creature', 'character', 'npc', 'faction', 'item',
+        'map', 'poi', 'maplink', 'terrain',
+        'quest', 'encounter', 'shop', 'party',
+        'calendar', 'journal', 'worldevent', 'track',
+      ];
+      for (const type of types) {
+        counts.set(type, entityRegistry.count(type));
+      }
+      return counts;
     },
 
     // ─────────────────────────────────────────────────────────────────────────

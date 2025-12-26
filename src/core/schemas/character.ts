@@ -57,6 +57,9 @@ export const characterSchema = z.object({
   /** Strength score (for Encumbrance calculation, 1-30) */
   strength: z.number().int().min(1).max(30),
 
+  /** Wisdom score (for Passive Perception calculation, 1-30) */
+  wisdom: z.number().int().min(1).max(30),
+
   /**
    * Inventory slots with typed items.
    * Each slot references an item by ID with quantity.

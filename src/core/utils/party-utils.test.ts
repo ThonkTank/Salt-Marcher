@@ -26,6 +26,7 @@ function createCharacter(
     ac: 15,
     speed: 30,
     strength: 10,
+    wisdom: 10,
     inventory: [],
   };
 }

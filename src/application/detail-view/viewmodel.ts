@@ -7,10 +7,8 @@
 
 import type { EventBus, Unsubscribe } from '@core/index';
 import { isSome, EventTypes, createEvent, newCorrelationId, now } from '@core/index';
-import { calculateXPBudget, getEncounterMultiplier } from '@core/utils';
-import type { CombatCompletedPayload } from '@core/events';
-import type { EncounterFeaturePort } from '@/features/encounter';
-import { groupCreaturesByDefinitionId } from '@/features/encounter';
+import type { EntityId } from '@core/types';
+import type { CombatCompletedPayload, EntitySavedPayload } from '@core/events';
 import type { CombatFeaturePort } from '@/features/combat';
 import type { PartyFeaturePort } from '@/features/party';
 import type {
@@ -18,13 +16,16 @@ import type {
   DetailViewRenderHint,
   DetailViewRenderCallback,
   TabId,
-  BuilderCreature,
-  EncounterDifficulty,
   ResolutionState,
-  DetectionInfo,
+  CharacterDisplay,
+  PartyTabState,
 } from './types';
 import { createInitialDetailViewState } from './types';
-import type { EncounterInstance, CreatureDefinition, EncounterLeadNpc } from '@core/schemas';
+import type { Character } from '@core/schemas';
+import type { EncumbranceLevel } from '@/features/inventory';
+import { calculateEncumbrance, calculateEffectiveSpeed } from '@/features/inventory/inventory-utils';
+import type { Item } from '@core/schemas';
+import type { EntityRegistryPort } from '@core/types/entity-registry.port';
 
 // ============================================================================
 // ViewModel Dependencies
@@ -32,13 +33,9 @@ import type { EncounterInstance, CreatureDefinition, EncounterLeadNpc } from '@c
 
 export interface DetailViewModelDeps {
   eventBus: EventBus;
-  encounterFeature?: EncounterFeaturePort;
   combatFeature?: CombatFeaturePort;
-  /** Creature definitions for CR/XP lookup in encounter builder */
-  creatures?: readonly CreatureDefinition[];
-  /** Party feature for encounter rating calculation (#2414) */
   partyFeature?: PartyFeaturePort;
-  // Note: LootFeaturePort will be added when loot generation is implemented (#2431 follow-up)
+  entityRegistry?: EntityRegistryPort;
 }
 
 // ============================================================================
@@ -55,20 +52,6 @@ export interface DetailViewModel {
   // Tab Control
   setActiveTab(tabId: TabId | null): void;
   getActiveTab(): TabId | null;
-
-  // Builder Commands (#2409)
-  setBuilderName(name: string): void;
-  setBuilderActivity(activity: string): void;
-  setBuilderGoal(goal: string): void;
-  addCreatureToBuilder(creature: BuilderCreature): void;
-  removeCreatureFromBuilder(index: number): void;
-  updateCreatureCount(index: number, count: number): void;
-  clearBuilder(): void;
-
-  // Situation/Detection/Lead NPC Commands (#2409)
-  setDisposition(value: number): void;
-  setDetection(detection: DetectionInfo | null): void;
-  setLeadNPC(leadNPC: EncounterLeadNpc | null): void;
 
   // Resolution Commands (#2431)
   /** Set GM XP modifier percent (-50 to +100) */
@@ -102,7 +85,7 @@ export interface DetailViewModel {
 export function createDetailViewModel(
   deps: DetailViewModelDeps
 ): DetailViewModel {
-  const { eventBus, encounterFeature, combatFeature, creatures = [], partyFeature } = deps;
+  const { eventBus, combatFeature, partyFeature, entityRegistry } = deps;
 
   // Internal state
   let state: DetailViewState = createInitialDetailViewState();
@@ -129,110 +112,6 @@ export function createDetailViewModel(
     notify(hints);
   }
 
-  // =========================================================================
-  // Encounter Rating Calculation (#2414)
-  // =========================================================================
-
-  // Default-Party: 4× Level 5 (D&D standard party)
-  const DEFAULT_PARTY_MEMBERS: readonly { level: number }[] = [
-    { level: 5 },
-    { level: 5 },
-    { level: 5 },
-    { level: 5 },
-  ];
-
-  /**
-   * Get party members for rating calculation.
-   * Falls back to default party (4× Level 5) if no party is available.
-   */
-  function getPartyMembersForRating(): readonly { level: number }[] {
-    if (!partyFeature) return DEFAULT_PARTY_MEMBERS;
-
-    const membersOpt = partyFeature.getMembers();
-    if (!isSome(membersOpt) || membersOpt.value.length === 0) {
-      return DEFAULT_PARTY_MEMBERS;
-    }
-
-    return membersOpt.value.map((c) => ({ level: c.level }));
-  }
-
-  /**
-   * Calculate encounter rating from builder creatures.
-   * Uses DMG XP thresholds for difficulty calculation.
-   * @see docs/features/Encounter-Balancing.md
-   */
-  interface EncounterRating {
-    /** Raw XP sum (displayed value) */
-    totalXP: number;
-    /** Effective XP with group multiplier (for difficulty calculation) */
-    effectiveXP: number;
-    /** Difficulty based on party thresholds */
-    difficulty: EncounterDifficulty;
-    /** XP used today from daily budget */
-    dailyBudgetUsed: number;
-    /** Total daily XP budget (7× medium threshold) */
-    dailyBudgetTotal: number;
-  }
-
-  function calculateEncounterRating(
-    builderCreatures: readonly BuilderCreature[]
-  ): EncounterRating {
-    // 1. Calculate raw XP
-    const totalXP = builderCreatures.reduce(
-      (sum, c) => sum + c.xp * c.count,
-      0
-    );
-
-    // 2. Total creature count for multiplier
-    const creatureCount = builderCreatures.reduce((sum, c) => sum + c.count, 0);
-
-    // 3. Effective XP with group multiplier
-    const multiplier = getEncounterMultiplier(creatureCount);
-    const effectiveXP = Math.floor(totalXP * multiplier);
-
-    // 4. Get party members for threshold calculation
-    const partyMembers = getPartyMembersForRating();
-
-    // 5. Calculate party thresholds
-    const easyThreshold = calculateXPBudget(partyMembers, 'easy');
-    const hardThreshold = calculateXPBudget(partyMembers, 'hard');
-    const deadlyThreshold = calculateXPBudget(partyMembers, 'deadly');
-
-    // 6. Determine difficulty
-    let difficulty: EncounterDifficulty;
-    if (effectiveXP < easyThreshold) {
-      difficulty = 'easy';
-    } else if (effectiveXP < hardThreshold) {
-      difficulty = 'medium';
-    } else if (effectiveXP < deadlyThreshold) {
-      difficulty = 'hard';
-    } else {
-      difficulty = 'deadly';
-    }
-
-    // 7. Daily Budget (7× Medium, DMG Adventuring Day)
-    const mediumThreshold = calculateXPBudget(partyMembers, 'medium');
-    const dailyBudgetTotal = mediumThreshold * 7;
-
-    // 8. Daily Budget Used from EncounterFeature
-    // Note: getDailyXP() is not yet in EncounterFeaturePort interface.
-    // Using type assertion until the interface is extended (separate task).
-    const dailyXP = (
-      encounterFeature as
-        | (EncounterFeaturePort & { getDailyXP?: () => { budgetUsed: number } })
-        | undefined
-    )?.getDailyXP?.();
-    const dailyBudgetUsed = dailyXP?.budgetUsed ?? 0;
-
-    return {
-      totalXP,
-      effectiveXP,
-      difficulty,
-      dailyBudgetUsed,
-      dailyBudgetTotal,
-    };
-  }
-
   /**
    * Get next resolution phase.
    * @see DetailView.md#post-combat-resolution
@@ -252,125 +131,168 @@ export function createDetailViewModel(
     }
   }
 
-  function syncFromFeatures(): void {
-    // Encounter
-    const encounter = encounterFeature?.getCurrentEncounter();
-    const currentEncounter = encounter && isSome(encounter) ? encounter.value : null;
+  // =========================================================================
+  // Party State Helpers (#3217)
+  // =========================================================================
 
-    // Combat
-    const combatState = combatFeature?.isActive() ? combatFeature.getState() : null;
+  /**
+   * Item lookup helper for encumbrance calculation.
+   * Returns undefined if entityRegistry is not available or item not found.
+   */
+  const itemLookup = (id: EntityId<'item'>): Item | undefined => {
+    if (!entityRegistry) return undefined;
+    return entityRegistry.get('item', id) as Item | undefined;
+  };
+
+  /**
+   * Map a Character to CharacterDisplay format for the Party Tab.
+   * @see DetailView.md#party-tab
+   */
+  function mapCharacterToDisplay(
+    character: Character,
+    expanded: boolean = false
+  ): CharacterDisplay {
+    // Calculate encumbrance from inventory if entityRegistry available
+    const encumbranceLevel: EncumbranceLevel = entityRegistry
+      ? calculateEncumbrance(character, itemLookup).level
+      : 'light';
+
+    return {
+      id: character.id,
+      name: character.name,
+      level: character.level,
+      class: character.class,
+      currentHp: character.currentHp,
+      maxHp: character.maxHp,
+      ac: character.ac,
+      passivePerception: 10 + Math.floor((character.wisdom - 10) / 2),
+      speed: character.speed,
+      encumbrance: encumbranceLevel,
+      expanded,
+    };
+  }
+
+  /**
+   * Calculate aggregate party stats from member displays.
+   * @see DetailView.md#party-tab
+   */
+  function calculatePartyStats(members: CharacterDisplay[]): PartyTabState['partyStats'] {
+    if (members.length === 0) {
+      return {
+        memberCount: 0,
+        averageLevel: 0,
+        travelSpeed: 0,
+        encumbranceStatus: 'light',
+      };
+    }
+
+    const avgLevel = Math.round(
+      members.reduce((sum, m) => sum + m.level, 0) / members.length
+    );
+
+    // Calculate effective speed per member (with encumbrance reduction), then take minimum
+    const minSpeed = Math.min(
+      ...members.map((m) => calculateEffectiveSpeed(m.speed, m.encumbrance))
+    );
+
+    // Worst encumbrance level determines party encumbrance
+    const encumbrancePriority: Record<EncumbranceLevel, number> = {
+      light: 0,
+      encumbered: 1,
+      heavily: 2,
+      over_capacity: 3,
+    };
+    const worstEncumbrance = members.reduce(
+      (worst, m) =>
+        encumbrancePriority[m.encumbrance] > encumbrancePriority[worst]
+          ? m.encumbrance
+          : worst,
+      'light' as EncumbranceLevel
+    );
+
+    return {
+      memberCount: members.length,
+      averageLevel: avgLevel,
+      travelSpeed: minSpeed,
+      encumbranceStatus: worstEncumbrance,
+    };
+  }
+
+  /**
+   * Update party state from PartyFeature.
+   * Preserves expanded UI state for existing members.
+   * @see DetailView.md#party-tab
+   */
+  function updatePartyState(): void {
+    if (!partyFeature) {
+      // No party feature - keep default empty state
+      return;
+    }
+
+    const membersOpt = partyFeature.getMembers();
+    if (!isSome(membersOpt)) {
+      // No party loaded - reset to empty
+      state = {
+        ...state,
+        party: {
+          members: [],
+          partyStats: calculatePartyStats([]),
+        },
+      };
+      notify(['full']);
+      return;
+    }
+
+    // Preserve expanded state for existing members
+    const existingExpanded = new Map(
+      state.party.members.map((m) => [m.id, m.expanded])
+    );
+
+    const members = membersOpt.value.map((character) =>
+      mapCharacterToDisplay(
+        character,
+        existingExpanded.get(character.id) ?? false
+      )
+    );
 
     state = {
       ...state,
-      encounter: {
-        ...state.encounter, // Preserve builder state
-        currentEncounter,
+      party: {
+        members,
+        partyStats: calculatePartyStats(members),
       },
+    };
+    notify(['full']);
+  }
+
+  function syncFromFeatures(): void {
+    // Combat
+    const combatState = combatFeature?.isActive() ? combatFeature.getState() : null;
+
+    // Party (#3217)
+    let partyState = state.party;
+    if (partyFeature) {
+      const membersOpt = partyFeature.getMembers();
+      if (isSome(membersOpt)) {
+        const members = membersOpt.value.map((c) =>
+          mapCharacterToDisplay(c, false)
+        );
+        partyState = {
+          members,
+          partyStats: calculatePartyStats(members),
+        };
+      }
+    }
+
+    state = {
+      ...state,
       combat: {
         combatState,
         pendingEffects: [],
         resolution: null,
       },
+      party: partyState,
     };
-  }
-
-  /**
-   * Load an encounter instance into the builder.
-   * Called when encounter:generated fires or when loading a saved encounter.
-   *
-   * Groups creatures by type using groupCreaturesByDefinitionId to fix b5:
-   * "Mehrere Kreaturen gleicher Art werden einzeln aufgelistet statt gruppiert"
-   */
-  function loadEncounterIntoBuilder(encounter: EncounterInstance): void {
-    // Group creatures by definition ID (fixes bug b5: creature grouping)
-    const grouped = groupCreaturesByDefinitionId(encounter.creatures, creatures);
-
-    // Convert grouped creatures to builder format
-    const builderCreatures: BuilderCreature[] = grouped.map((group) => ({
-      type: 'creature' as const,
-      entityId: group.definitionId,
-      name: group.name,
-      cr: group.cr,
-      xp: group.xpEach,
-      count: group.count,
-    }));
-
-    // Calculate encounter rating with proper DMG thresholds (#2414)
-    const rating = calculateEncounterRating(builderCreatures);
-
-    // Extract disposition (defaults to 0 = neutral)
-    const disposition = encounter.disposition ?? 0;
-
-    // Extract detection info from perception
-    const detection: DetectionInfo | null = encounter.perception
-      ? {
-          method: encounter.perception.detectionMethod,
-          distance: encounter.perception.initialDistance,
-          partyAware: encounter.perception.partyAware,
-          encounterAware: encounter.perception.encounterAware,
-        }
-      : null;
-
-    // Extract lead NPC
-    const leadNPC = encounter.leadNpc ?? null;
-
-    state = {
-      ...state,
-      encounter: {
-        ...state.encounter,
-        currentEncounter: encounter,
-        builderName: encounter.description
-          ? `${capitalizeFirst(encounter.type)} Encounter`
-          : `${capitalizeFirst(encounter.type)} Encounter`,
-        builderActivity: encounter.activity ?? '',
-        builderGoal: encounter.goal ?? '',
-        builderCreatures,
-        totalXP: rating.effectiveXP,
-        difficulty: rating.difficulty,
-        dailyBudgetUsed: rating.dailyBudgetUsed,
-        dailyBudgetTotal: rating.dailyBudgetTotal,
-        savedEncounterQuery: '',
-        creatureQuery: '',
-        sourceEncounterId: null, // New encounter, not from saved
-        // Situation/Detection/LeadNPC (#2409)
-        disposition,
-        detection,
-        leadNPC,
-      },
-    };
-  }
-
-  /**
-   * Capitalize first letter.
-   */
-  function capitalizeFirst(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
-
-  /**
-   * Update builder state and recalculate values.
-   * Uses calculateEncounterRating() for DMG-compliant difficulty (#2414).
-   */
-  function updateBuilderState(
-    partial: Partial<DetailViewState['encounter']>
-  ): void {
-    const newEncounter = { ...state.encounter, ...partial };
-
-    // Calculate encounter rating with proper DMG thresholds
-    const rating = calculateEncounterRating(newEncounter.builderCreatures);
-
-    state = {
-      ...state,
-      encounter: {
-        ...newEncounter,
-        totalXP: rating.effectiveXP, // Display effective XP (with multiplier)
-        difficulty: rating.difficulty,
-        dailyBudgetUsed: rating.dailyBudgetUsed,
-        dailyBudgetTotal: rating.dailyBudgetTotal,
-      },
-    };
-
-    notify(['encounter']);
   }
 
   // =========================================================================
@@ -378,41 +300,6 @@ export function createDetailViewModel(
   // =========================================================================
 
   function setupEventHandlers(): void {
-    // Encounter generated - auto-open encounter tab and load into builder
-    // replay: true ensures late-joining Views receive the sticky event
-    eventSubscriptions.push(
-      eventBus.subscribe(
-        EventTypes.ENCOUNTER_GENERATED,
-        () => {
-          // Get the encounter and load into builder
-          const encounter = encounterFeature?.getCurrentEncounter();
-          if (encounter && isSome(encounter)) {
-            loadEncounterIntoBuilder(encounter.value);
-          } else {
-            syncFromFeatures();
-          }
-
-          // Auto-open encounter tab (unless combat is active)
-          if (state.activeTab !== 'combat' || !state.combat.combatState) {
-            state = { ...state, activeTab: 'encounter' };
-          }
-          notify(['full']);
-        },
-        { replay: true }
-      )
-    );
-
-    // Encounter state changed - update encounter display
-    eventSubscriptions.push(
-      eventBus.subscribe(
-        EventTypes.ENCOUNTER_STATE_CHANGED,
-        () => {
-          syncFromFeatures();
-          notify(['encounter']);
-        }
-      )
-    );
-
     // Combat started - auto-open combat tab (highest priority)
     // replay: true ensures late-joining Views receive the sticky event
     eventSubscriptions.push(
@@ -467,6 +354,55 @@ export function createDetailViewModel(
         }
       )
     );
+
+    // =========================================================================
+    // Party Events (#3217)
+    // =========================================================================
+
+    // Party state changed - update party display
+    eventSubscriptions.push(
+      eventBus.subscribe(
+        EventTypes.PARTY_STATE_CHANGED,
+        () => updatePartyState()
+      )
+    );
+
+    // Party member added
+    eventSubscriptions.push(
+      eventBus.subscribe(
+        EventTypes.PARTY_MEMBER_ADDED,
+        () => updatePartyState()
+      )
+    );
+
+    // Party member removed
+    eventSubscriptions.push(
+      eventBus.subscribe(
+        EventTypes.PARTY_MEMBER_REMOVED,
+        () => updatePartyState()
+      )
+    );
+
+    // Party loaded
+    eventSubscriptions.push(
+      eventBus.subscribe(
+        EventTypes.PARTY_LOADED,
+        () => updatePartyState()
+      )
+    );
+
+    // Entity saved (for character HP/stat updates)
+    eventSubscriptions.push(
+      eventBus.subscribe<EntitySavedPayload>(
+        EventTypes.ENTITY_SAVED,
+        (event) => {
+          // Only update if a character was saved
+          if (event.payload.type === 'character') {
+            updatePartyState();
+          }
+        }
+      )
+    );
   }
 
   // Set up event handlers
@@ -498,72 +434,6 @@ export function createDetailViewModel(
 
     getActiveTab(): TabId | null {
       return state.activeTab;
-    },
-
-    // =========================================================================
-    // Builder Commands (#2409)
-    // =========================================================================
-
-    setBuilderName(name: string): void {
-      updateBuilderState({ builderName: name });
-    },
-
-    setBuilderActivity(activity: string): void {
-      updateBuilderState({ builderActivity: activity });
-    },
-
-    setBuilderGoal(goal: string): void {
-      updateBuilderState({ builderGoal: goal });
-    },
-
-    addCreatureToBuilder(creature: BuilderCreature): void {
-      const newCreatures = [...state.encounter.builderCreatures, creature];
-      updateBuilderState({ builderCreatures: newCreatures });
-    },
-
-    removeCreatureFromBuilder(index: number): void {
-      const newCreatures = state.encounter.builderCreatures.filter(
-        (_, i) => i !== index
-      );
-      updateBuilderState({ builderCreatures: newCreatures });
-    },
-
-    updateCreatureCount(index: number, count: number): void {
-      const newCreatures = state.encounter.builderCreatures.map((c, i) =>
-        i === index ? { ...c, count: Math.max(1, count) } : c
-      );
-      updateBuilderState({ builderCreatures: newCreatures });
-    },
-
-    clearBuilder(): void {
-      updateBuilderState({
-        builderName: '',
-        builderActivity: '',
-        builderGoal: '',
-        builderCreatures: [],
-        sourceEncounterId: null,
-        // Reset Situation/Detection/LeadNPC (#2409)
-        disposition: 0,
-        detection: null,
-        leadNPC: null,
-      });
-    },
-
-    // =========================================================================
-    // Situation/Detection/Lead NPC Commands (#2409)
-    // =========================================================================
-
-    setDisposition(value: number): void {
-      // Clamp to valid range: -100 to +100
-      updateBuilderState({ disposition: Math.max(-100, Math.min(100, value)) });
-    },
-
-    setDetection(detection: DetectionInfo | null): void {
-      updateBuilderState({ detection });
-    },
-
-    setLeadNPC(leadNPC: EncounterLeadNpc | null): void {
-      updateBuilderState({ leadNPC });
     },
 
     // =========================================================================
@@ -684,22 +554,6 @@ export function createDetailViewModel(
 
     completeResolution(): void {
       if (!state.combat.resolution) return;
-
-      // Publish encounter:resolved event
-      eventBus.publish(
-        createEvent(
-          EventTypes.ENCOUNTER_RESOLVED,
-          {
-            xpAwarded: state.combat.resolution.adjustedXP,
-            questId: state.combat.resolution.selectedQuestId,
-          },
-          {
-            correlationId: newCorrelationId(),
-            timestamp: now(),
-            source: 'detail-view-viewmodel',
-          }
-        )
-      );
 
       // Publish loot:distributed event if items were distributed
       if (state.combat.resolution.lootDistribution.size > 0) {

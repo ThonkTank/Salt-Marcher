@@ -37,14 +37,14 @@ export function calculateBlockedPropagation(changedTaskId, newStatus, allItems, 
   const dependents = findDependents(changedTaskId, allItems);
 
   for (const dependent of dependents) {
-    // ✅ Tasks werden nicht verändert
-    if (dependent.status === TaskStatus.DONE) continue;
-
     // Aktuelle Task aus Map holen (für aktuellen Status)
     const currentItem = itemMap.get(dependent.number);
     if (!currentItem) continue;
 
     if (isUnblocking) {
+      // ✅ Tasks werden bei Entblockierung nicht verändert
+      if (currentItem.status === TaskStatus.DONE) continue;
+
       // Prüfen ob alle Dependencies jetzt erfüllt sind
       // Wir müssen die geänderte Task als ✅ betrachten
       const tempMap = new Map(itemMap);
@@ -65,10 +65,18 @@ export function calculateBlockedPropagation(changedTaskId, newStatus, allItems, 
         }
       }
     } else {
-      // Blockierung prüfen
+      // Dependency nicht mehr erfüllt - Blockierung oder Konformitätsverlust prüfen
       if (!areDepsResolved(currentItem, itemMap)) {
-        // Task muss blockiert werden
-        if (currentItem.status !== TaskStatus.BLOCKED) {
+        if (currentItem.status === TaskStatus.DONE) {
+          // ✅ Tasks werden auf 🔶 gesetzt (nicht mehr konform)
+          effects.push({
+            taskId: dependent.number,
+            oldStatus: currentItem.status,
+            newStatus: TaskStatus.PARTIAL,
+            reason: `Dependency #${changedTaskId} ist nicht mehr erfüllt`
+          });
+        } else if (currentItem.status !== TaskStatus.BLOCKED) {
+          // Andere Tasks werden blockiert
           effects.push({
             taskId: dependent.number,
             oldStatus: currentItem.status,

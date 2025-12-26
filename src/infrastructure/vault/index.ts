@@ -56,3 +56,9 @@ export {
   createVaultEntityRegistryAdapter,
   createAndPreloadEntityRegistry,
 } from './entity-registry.adapter';
+
+// ============================================================================
+// Character Storage Adapter
+// ============================================================================
+
+export { createCharacterStorageAdapter } from './character-storage.adapter';

@@ -315,7 +315,7 @@ function getEligibleCreatures(tile: OverworldTile): CreatureDefinition[] {
 }
 ```
 
-> Details: [Encounter-System.md](../features/Encounter-System.md)
+> Details: [encounter/Encounter.md](../features/encounter/Encounter.md)
 
 ---
 
@@ -513,7 +513,7 @@ const shadowRavine: PathDefinition = {
 
 ---
 
-*Siehe auch: [Map.md](Map.md) | [Terrain.md](Terrain.md) | [Travel-System.md](../features/Travel-System.md) | [Encounter-System.md](../features/Encounter-System.md) | [Cartographer.md](../application/Cartographer.md)*
+*Siehe auch: [Map.md](Map.md) | [Terrain.md](Terrain.md) | [Travel-System.md](../features/Travel-System.md) | [encounter/Encounter.md](../features/encounter/Encounter.md) | [Cartographer.md](../application/Cartographer.md)*
 
 ## Tasks
 
@@ -522,7 +522,7 @@ const shadowRavine: PathDefinition = {
 | 1800 | ⬜ | Path | core | PathDefinition Schema (id, mapId, pathType, name, waypoints, movement, encounterModifier, displayStyle) | hoch | Nein | - | Path.md#schema, Map.md#entity-beziehungen | src/core/schemas/path.ts:pathDefinitionSchema [neu], src/core/schemas/path.ts:PathDefinition [neu] |
 | 1801 | ⛔ | Path | core | PathType Enum (road, river, ravine, cliff, trail) | hoch | Nein | #1800 | Path.md#schema | src/core/schemas/path.ts:pathTypeSchema [neu], src/core/schemas/path.ts:PathType [neu] |
 | 1802 | ⛔ | Path | core | PathMovement Schema (defaultModifier, transportModifiers, blocksMovement, requiresTransport) | hoch | Nein | #1800 | Path.md#pathmovement, Travel-System.md#pfad-modifikation-post-mvp | src/core/schemas/path.ts:pathMovementSchema [neu], src/core/schemas/path.ts:PathMovement [neu] |
-| 1803 | ⛔ | Path | core | PathEncounterModifier Schema (creaturePool, chanceModifier) | hoch | Nein | #1200, #1800 | Path.md#pathencountermodifier, Encounter-System.md#pfad-basierte-creature-pools-post-mvp, Creature.md#schema | src/core/schemas/path.ts:pathEncounterModifierSchema [neu], src/core/schemas/path.ts:PathEncounterModifier [neu] |
+| 1803 | ⛔ | Path | core | PathEncounterModifier Schema (creaturePool, chanceModifier) | hoch | Nein | #1200, #1800 | Path.md#pathencountermodifier, encounter/Encounter.md#pfad-basierte-creature-pools-post-mvp, Creature.md#schema | src/core/schemas/path.ts:pathEncounterModifierSchema [neu], src/core/schemas/path.ts:PathEncounterModifier [neu] |
 | 1804 | ⛔ | Path | core | PathDisplayStyle Schema (color, width, pattern, icon) | hoch | Nein | #1800 | Path.md#pathdisplaystyle | src/core/schemas/path.ts:pathDisplayStyleSchema [neu], src/core/schemas/path.ts:PathDisplayStyle [neu] |
 | 1805 | ⛔ | Path | core | TilePathInfo Schema (pathId, connections) | hoch | Nein | #801, #1800 | Path.md#tilepathinfo, Map.md#schema, Map-Feature.md#overworldtile | src/core/schemas/path.ts:tilePathInfoSchema [neu], src/core/schemas/path.ts:TilePathInfo [neu] |
 | 1806 | ⛔ | Path | core | PathDirectionality Schema (enabled, forwardSpeedModifier, backwardSpeedModifier) Post-MVP | niedrig | Nein | #1800 | Path.md#pathdirectionality-post-mvp | src/core/schemas/path.ts:pathDirectionalitySchema [neu], src/core/schemas/path.ts:PathDirectionality [neu] |
@@ -533,7 +533,7 @@ const shadowRavine: PathDefinition = {
 | 1811 | ⛔ | Path | features | calculatePathModifier Funktion für Travel-System | hoch | Nein | #3, #5, #1802, #1810, #1817, #1820 | Path.md#travel-system, Travel-System.md#pfad-modifikation-post-mvp, Travel-System.md#speed-berechnung | src/features/travel/path-utils.ts:calculatePathModifier() [neu] |
 | 1812 | ⛔ | Path | core | PATH_BLOCKED und TRANSPORT_REQUIRED Error-Codes für Pfad-Barrieren definieren | hoch | Nein | #1811 | Path.md#travel-system, Travel-System.md#pfad-modifikation-post-mvp, Error-Handling.md | src/core/types/common.ts:createError() [bereits vorhanden], Error-Codes als Konstanten dokumentieren |
 | 1813 | ⛔ | Path | features | Travel Speed-Formel mit Pfad-Multiplikator erweitern | hoch | Nein | #3, #5, #1811 | Path.md#travel-system, Travel-System.md#speed-berechnung, Travel-System.md#pfad-modifikation-post-mvp | src/features/travel/travel-service.ts:calculateSegmentTime() [ändern - Path-Multiplikator integrieren] |
-| 1814 | ⛔ | Path | features | getEligibleCreatures mit Path-Creature-Pool Integration | hoch | Nein | #200, #1803, #1810, #1817, #1820 | Path.md#encounter-system, Encounter-System.md#pfad-basierte-creature-pools-post-mvp, Encounter-System.md#tile-eligibility, Terrain.md#verwendung-in-anderen-features | src/features/encounter/encounter-utils.ts:filterEligibleCreatures() [ändern - Path-Creatures hinzufügen] |
+| 1814 | ⛔ | Path | features | getEligibleCreatures mit Path-Creature-Pool Integration | hoch | Nein | #200, #1803, #1810, #1817, #1820 | Path.md#encounter-system, encounter/Encounter.md#pfad-basierte-creature-pools-post-mvp, encounter/Encounter.md#tile-eligibility, Terrain.md#verwendung-in-anderen-features | src/features/encounter/encounter-utils.ts:filterEligibleCreatures() [ändern - Path-Creatures hinzufügen] |
 | 1815 | ⛔ | Path | core | Path CRUD Events (create/update/delete-requested + created/updated/deleted) | hoch | Nein | #1800 | Path.md#events, Events-Catalog.md#path-post-mvp | src/core/events/domain-events.ts:EventTypes [ändern - PATH_* Events hinzufügen], src/core/events/domain-events.ts:PathEventPayloads [neu] |
 | 1816 | ⛔ | Path | core | path:state-changed Event für Map-Sync | hoch | Nein | #1815 | Path.md#events, Events-Catalog.md#path-post-mvp, Map-Feature.md#events | src/core/events/domain-events.ts:EventTypes.PATH_STATE_CHANGED [neu], src/core/events/domain-events.ts:PathStateChangedPayload [neu] |
 | 1817 | ⛔ | Path | features | getPathsOnMap Query-Funktion implementieren (findet alle Pfade auf einer Map via EntityRegistry) | hoch | Nein | #1800, #1820, #1821, #2804 | Path.md#queries, EntityRegistry.md#querying | src/features/path/path-queries.ts:getPathsOnMap() [neu] |

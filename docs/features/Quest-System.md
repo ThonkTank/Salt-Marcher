@@ -1,6 +1,6 @@
 # Quest-System
 
-> **Lies auch:** [Quest](../domain/Quest.md), [Encounter-System](Encounter-System.md), [Loot-Feature](Loot-Feature.md)
+> **Lies auch:** [Quest](../domain/Quest.md), [Encounter-System](encounter/Encounter.md), [Loot-Feature](Loot-Feature.md)
 > **Wird benoetigt von:** SessionRunner
 
 Objektiv-basierte Quests mit automatischer XP-Berechnung und 40/60-Split.
@@ -377,7 +377,7 @@ interface QuestSettings {
 
 ---
 
-*Siehe auch: [Quest.md](../domain/Quest.md) | [Journal.md](../domain/Journal.md) | [Encounter-System.md](Encounter-System.md) | [Encounter-Balancing.md](Encounter-Balancing.md) | [Combat-System.md](Combat-System.md)*
+*Siehe auch: [Quest.md](../domain/Quest.md) | [Journal.md](../domain/Journal.md) | [encounter/Encounter.md](encounter/Encounter.md) | [encounter/Balance.md](encounter/Balance.md) | [Combat-System.md](Combat-System.md)*
 
 ## Tasks
 
@@ -385,13 +385,13 @@ interface QuestSettings {
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
 | 400 | ✅ | Quest | features | Quest State-Machine: unknown → discovered → active → completed/failed | hoch | Ja | - | Quest-System.md#quest-state-machine, Quest.md#quest-status, Quest.md#state-transitions | quest-service.ts |
 | 407 | ✅ | Quest | features | QuestProgress Runtime-State (Resumable) | hoch | Ja | #400, #402 | Quest-System.md#quest-progress-runtime-state, Quest.md#quest-progress | quest-store.ts, types.ts |
-| 408 | ✅ | Quest | features | 40/60 XP Split: 40% sofort bei Encounter-Ende (NON-NEGOTIABLE) | hoch | Ja | #407, #417 | Quest-System.md#40-60-split-mechanik, Quest-System.md#xp-verteilung, Encounter-System.md#integration, Combat-System.md#xp-berechnung | quest-xp.ts |
+| 408 | ✅ | Quest | features | 40/60 XP Split: 40% sofort bei Encounter-Ende (NON-NEGOTIABLE) | hoch | Ja | #407, #417 | Quest-System.md#40-60-split-mechanik, Quest-System.md#xp-verteilung, encounter/Encounter.md#integration, Combat-System.md#xp-berechnung | quest-xp.ts |
 | 410 | ✅ | Quest | features | Quest XP Auszahlung bei quest:completed | hoch | Ja | #409, #417 | Quest-System.md#40-60-split-mechanik, Quest.md#events | quest-service.ts |
 | 412 | ✅ | Quest | application | Quest-Assignment UI im Post-Combat Resolution Flow | hoch | Ja | #343, #411 | Quest-System.md#quest-assignment-ui-post-combat, Combat-System.md#post-combat-resolution, DetailView.md#post-combat-resolution, Quest.md#post-combat-flow | slot-assignment-dialog.ts |
 | 420 | ✅ | Quest | features | quest:state-changed Event | hoch | Ja | #400 | Quest-System.md#quest-feature-state-machine, Quest.md#events, Events-Catalog.md#quest | quest-service.ts |
-| 421 | ✅ | Quest | features | Subscription: encounter:resolved → Zeige UI-Prompt für Quest-Zuweisung | hoch | Ja | #223, #411, #412 | Quest-System.md#encounter-slot-matching, Quest-System.md#quest-encounter-beziehung, Encounter-System.md#events, Events-Catalog.md#encounter, Events-Catalog.md#quest | quest-service.ts |
+| 421 | ✅ | Quest | features | Subscription: encounter:resolved → Zeige UI-Prompt für Quest-Zuweisung | hoch | Ja | #411, #412 | Quest-System.md#encounter-slot-matching, Quest-System.md#quest-encounter-beziehung, encounter/Encounter.md#events, Events-Catalog.md#encounter, Events-Catalog.md#quest | quest-service.ts |
 | 423 | ⬜ | Quest | features | entity:deleted Subscription: Quest-Objektive als failed markieren wenn Target-Entity gelöscht | hoch | Ja | #402 | Quest-System.md#quest-feature-state-machine, Events-Catalog.md#entity, EntityRegistry.md#entity-lifecycle, Quest.md#questobjective | quest-service.ts:setupEventHandlers() [neu - entity:deleted Subscription] |
-| 428 | ⛔ | Quest | - | Quest-Panel im SessionRunner | hoch | Ja | #402, #425, #427 | Quest-System.md#ui-integration, SessionRunner.md#quest-panel, Quest.md#quest-management-im-session-runner, SessionRunner.md#sidebar-struktur | sidebar.ts, viewmodel.ts, types.ts |
+| 428 | ⛔ | Quest | features | Quest-Panel im SessionRunner | hoch | Ja | #402, #425, #427 | Quest-System.md#ui-integration, SessionRunner.md#quest-panel, Quest.md#quest-management-im-session-runner, SessionRunner.md#sidebar-struktur | sidebar.ts, viewmodel.ts, types.ts |
 | 432 | ⬜ | Quest | core | QuestDefinition.lootDistribution Konfiguration (randomEncounterLootPercent, completionRewardPercent, distributedLootPercent) | hoch | Ja | #402, #405 | Quest.md#questdefinition, Quest-System.md#loot-verteilung | quest.ts:questDefinitionSchema [ändern - lootDistribution-Feld hinzufügen], benötigt #2801 (Loot-Feature) |
 | 433 | ⛔ | Quest | features | Budget-Integration: Quest-Rewards reservieren Loot-Budget | hoch | Ja | #406, #432, #710, #2801 | Quest-System.md#budget-integration, Quest-System.md#loot-verteilung, Loot-Feature.md#quest-encounter-reduktion, Loot-Feature.md#budget-system | features/loot/loot-service.ts [neu], quest-service.ts [ändern - Integration mit Loot-Budget-System] |
 | 435 | ⛔ | Quest | application | Quantum-Encounter/Rewards Platzierung via UI | mittel | Nein | #405, #406, #428 | Quest-System.md#quantum-encounter-rewards-platzierung, Quest.md#questencounterslot, Quest.md#questreward, SessionRunner.md#quest-panel | Quest-Panel [neu - UI-Komponente für Quantum-Platzierung], quest-store.ts:placeReward() [nutzen], Map-Integration [neu] |

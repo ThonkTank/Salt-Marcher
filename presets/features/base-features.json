@@ -1,0 +1,135 @@
+{
+  "$schema": "../../src/core/schemas/feature.ts",
+  "description": "Base terrain feature definitions for encounter balance and hazards. Features modify creature effectiveness and can include environmental hazards.",
+  "features": [
+    {
+      "id": "dense-thorns",
+      "name": "Dichte Dornen",
+      "modifiers": [
+        { "target": "walk-only", "value": 0.1 }
+      ],
+      "hazard": {
+        "trigger": "enter",
+        "effect": {
+          "type": "damage",
+          "damage": { "dice": "1d4", "damageType": "piercing" }
+        },
+        "save": { "ability": "dex", "dc": 12 }
+      },
+      "description": "Thick thorn bushes that damage and slow creatures without flight or climb."
+    },
+    {
+      "id": "grabbing-vines",
+      "name": "Schnappende Ranken",
+      "hazard": {
+        "trigger": "enter",
+        "effect": {
+          "type": "condition",
+          "condition": "restrained"
+        },
+        "save": { "ability": "str", "dc": 13 }
+      },
+      "description": "Animated vines that attempt to restrain creatures entering the area."
+    },
+    {
+      "id": "magical-darkness",
+      "name": "Magische Dunkelheit",
+      "modifiers": [
+        { "target": "no-special-sense", "value": -0.3 },
+        { "target": "darkvision", "value": 0.15 }
+      ],
+      "description": "Supernatural darkness that impairs normal vision but benefits creatures with darkvision."
+    },
+    {
+      "id": "dense-fog",
+      "name": "Dichter Nebel",
+      "modifiers": [
+        { "target": "blindsight", "value": 0.2 },
+        { "target": "no-special-sense", "value": -0.2 }
+      ],
+      "description": "Thick fog that heavily obscures the area, favoring creatures with blindsight."
+    },
+    {
+      "id": "icy-ground",
+      "name": "Glatteis",
+      "modifiers": [
+        { "target": "fly", "value": 0.2 },
+        { "target": "walk-only", "value": -0.2 }
+      ],
+      "hazard": {
+        "trigger": "move-through",
+        "effect": {
+          "type": "condition",
+          "condition": "prone"
+        },
+        "save": { "ability": "dex", "dc": 10 }
+      },
+      "description": "Slippery ice that causes walking creatures to fall prone and favors flyers."
+    },
+    {
+      "id": "deep-water",
+      "name": "Tiefes Wasser",
+      "modifiers": [
+        { "target": "swim", "value": 0.3 },
+        { "target": "walk-only", "value": -0.4 }
+      ],
+      "description": "Waist-deep water that heavily impairs non-swimming creatures."
+    },
+    {
+      "id": "hidden-pits",
+      "name": "Versteckte Gruben",
+      "modifiers": [
+        { "target": "fly", "value": 0.3 },
+        { "target": "burrow", "value": 0.2 }
+      ],
+      "hazard": {
+        "trigger": "enter",
+        "effect": {
+          "type": "damage",
+          "damage": { "dice": "2d6", "damageType": "bludgeoning" }
+        },
+        "save": { "ability": "dex", "dc": 14 }
+      },
+      "description": "Concealed pit traps that drop creatures into holes, useless against flyers."
+    },
+    {
+      "id": "loose-rubble",
+      "name": "Loser Schutt",
+      "modifiers": [
+        { "target": "tremorsense", "value": 0.2 }
+      ],
+      "hazard": {
+        "trigger": "move-through",
+        "effect": {
+          "type": "difficult-terrain"
+        }
+      },
+      "description": "Unstable rocky ground that creates noise and slows movement."
+    },
+    {
+      "id": "burning-ground",
+      "name": "Brennender Boden",
+      "hazard": {
+        "trigger": "start-turn",
+        "effect": {
+          "type": "damage",
+          "damage": { "dice": "1d6", "damageType": "fire" }
+        }
+      },
+      "description": "Ground covered in flames that burns creatures standing in it each round."
+    },
+    {
+      "id": "poison-spores",
+      "name": "Giftsporen",
+      "hazard": {
+        "trigger": "enter",
+        "effect": {
+          "type": "condition",
+          "condition": "poisoned"
+        },
+        "save": { "ability": "con", "dc": 13 }
+      },
+      "description": "Clouds of toxic fungal spores that poison creatures breathing them."
+    }
+  ]
+}

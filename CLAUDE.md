@@ -396,10 +396,13 @@ Bei fehlenden oder unklaren Schemas: User fragen.
 | Suchen | `node scripts/task.mjs sort <keyword>` |
 | Priorisieren | `node scripts/task.mjs sort` |
 | Status ändern | `node scripts/task.mjs edit <ID> --status ✅` |
+| Bulk-Edit | `node scripts/task.mjs bulk-edit <ID> <ID> [...] --status ✅` |
 | Claimen | `node scripts/task.mjs claim <ID>` |
 | Unclaimen | `node scripts/task.mjs unclaim <key>` |
 | Neue Task | `node scripts/task.mjs add --task --doc <path> ...` |
 | Bug melden | `node scripts/task.mjs add --bug ...` |
+| Bulk-Add Tasks | `node scripts/task.mjs add --tasks '<JSON-Array>'` |
+| Bulk-Add Bugs | `node scripts/task.mjs add --bugs '<JSON-Array>'` |
 | Task löschen | `node scripts/task.mjs remove <ID>` |
 | Task splitten | `node scripts/task.mjs split <ID> "A" "B"` |
 
@@ -410,16 +413,28 @@ node scripts/task.mjs sort                        # Top 10 aller Tasks/Bugs
 node scripts/task.mjs sort travel                 # Keyword-Filter
 node scripts/task.mjs sort -n 5 --mvp             # Top 5 MVP-Tasks
 node scripts/task.mjs sort --status partial       # Nur 🔶 Status
+node scripts/task.mjs sort --status claimed -n 0  # Alle geclaimten Tasks
 node scripts/task.mjs sort --prio hoch -n 0       # Alle hoch-prio
+node scripts/task.mjs sort --domain Travel        # Nur Travel-Domain
+node scripts/task.mjs sort --layer features       # Nur Feature-Layer
+node scripts/task.mjs sort --sort-by status,prio  # Eigene Sortierung
+node scripts/task.mjs sort --sort-by -number      # Neueste Tasks zuerst
 node scripts/task.mjs sort --help                 # Alle Optionen
 ```
 
-**Sortierkriterien:**
-1. MVP: Ja > Nein
-2. Status: 📋 > 🔶 > ⚠️ > ⬜
-3. Prio: hoch > mittel > niedrig
-4. RefCount: Tasks/Bugs, von denen viele abhängen
-5. Nummer: Niedriger = höhere Priorität
+**Filter-Optionen:**
+| Option | Beschreibung |
+|--------|--------------|
+| `-s, --status <X>` | Nur Tasks mit Status X (überschreibt include-Flags) |
+| `-d, --domain <X>` | Nur Tasks mit Domain X (substring match) |
+| `-l, --layer <X>` | Nur Tasks mit Layer X (exact match) |
+| `--mvp` / `--no-mvp` | Nur MVP / Nur Nicht-MVP |
+| `-p, --prio <X>` | Nur Tasks mit Priorität X |
+
+**Sortier-Option:**
+`--sort-by <kriterien>` - Komma-separierte Liste: `mvp`, `status`, `prio`, `refcount`, `number`, `domain`, `layer`
+- Prefix `-` für absteigend (z.B. `-number` = neueste zuerst)
+- Default: `mvp,status,prio,refcount,number`
 
 ### Task-Details (show)
 
@@ -448,6 +463,24 @@ node scripts/task.mjs edit 428 --bereich Travel
 node scripts/task.mjs edit 428 --status ✅ --dry-run
 ```
 
+### Bulk-Edit (bulk-edit)
+
+```bash
+# Mehrere Tasks gleichzeitig bearbeiten (min. 2 IDs)
+node scripts/task.mjs bulk-edit 100 101 102 --status ✅
+
+# Mit Keys für geclaime Tasks (Reihenfolge = Task-Reihenfolge)
+node scripts/task.mjs bulk-edit 100 101 --status 🟢 --key a4x2 --key b5y3
+
+# Dry-run
+node scripts/task.mjs bulk-edit 100 101 102 --prio hoch --dry-run
+```
+
+**Verhalten:**
+- **Partial Success**: Fehlerhafte Tasks verhindern nicht die Bearbeitung anderer
+- **Keys**: Werden in Reihenfolge den Task-IDs zugeordnet
+- Alle edit-Optionen verfügbar (--status, --deps, --prio, etc.)
+
 ### Claims (claim/unclaim)
 
 ```bash
@@ -465,9 +498,27 @@ node scripts/task.mjs add --task --doc domain/Quest.md --init -b Quest -m "Neue 
 
 # Neuen Bug erstellen (nur Roadmap, kein --doc nötig)
 node scripts/task.mjs add --bug -m "Bug-Beschreibung" -p hoch -d "#428"
+
+# Bulk-Add: Mehrere Tasks auf einmal (JSON-Array mit individuellen Parametern)
+node scripts/task.mjs add --tasks '[
+  {"beschreibung": "Task A", "doc": "features/Travel-System.md", "domain": "Travel"},
+  {"beschreibung": "Task B", "doc": "features/Map-Feature.md", "domain": "Map", "prio": "hoch"}
+]'
+
+# Bulk-Add: Mehrere Bugs auf einmal
+node scripts/task.mjs add --bugs '[
+  {"beschreibung": "Bug A", "prio": "hoch", "deps": "#428"},
+  {"beschreibung": "Bug B"}
+]'
 ```
 
-**Wichtig:** Tasks werden immer sowohl in der Roadmap als auch im angegebenen Doc gespeichert.
+**Bulk-Add Verhalten:**
+- **Partial Success**: Fehlerhafte Items stoppen nicht die anderen
+- **Individuelle Parameter**: Jedes Objekt im Array hat eigene Werte
+- **JSON-Pflichtfelder (Task)**: `beschreibung`, `doc`, `domain`
+- **JSON-Pflichtfelder (Bug)**: `beschreibung`
+
+**Wichtig:** Tasks werden immer sowohl in der Roadmap als auch im angegebenen Doc gespeichert. Die Task-Tabelle steht am Ende jeder Dokumentationsdatei - bei Feature-Analyse die gesamte Datei lesen.
 
 ### Löschen/Splitten (remove, split)
 

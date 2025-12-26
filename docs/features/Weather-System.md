@@ -51,7 +51,7 @@ type MoonPhase = string;  // z.B. 'new' | 'crescent' | 'half' | 'gibbous' | 'ful
 - Neumond bei Bewoelkung: Nacht-Sichtweite ~0.1
 - Mondphase kommt aus dem Kalender-System (unterstuetzt custom Mondzyklen und Celestial Events)
 
-→ Details: [Encounter-System.md](Encounter-System.md#dynamischer-time-modifier)
+→ Details: [encounter/Encounter.md](encounter/Encounter.md#dynamischer-time-modifier)
 
 ### Temperatur
 
@@ -521,6 +521,166 @@ Environment Feature
 
 ---
 
+## Weather→Feature Mapping
+
+Der Weather-Service berechnet aktive Features basierend auf Wetter und Tageszeit. Diese Features werden vom Encounter-System fuer Balance-Berechnungen verwendet.
+
+### WeatherState Erweiterung
+
+```typescript
+interface WeatherState {
+  // ... bestehende Felder (temperature, wind, etc.)
+
+  // Berechnete Features (Library-Referenzen)
+  activeFeatures: EntityId<'feature'>[];
+}
+```
+
+### Mapping-Logik
+
+```typescript
+function deriveWeatherFeatures(
+  weather: WeatherState,
+  time: TimeState
+): EntityId<'feature'>[] {
+  const features: EntityId<'feature'>[] = [];
+
+  // Licht-Features (aus Time + Cloud Cover)
+  const effectiveBrightness = calculateBrightness(time.segment, weather.cloudCover, weather.moonPhase);
+
+  if (effectiveBrightness < 0.1) {
+    features.push('darkness');
+  } else if (effectiveBrightness < 0.5) {
+    features.push('dim-light');
+  }
+
+  // Sicht-Features (aus precipIntensity + fogLevel)
+  if (weather.fogLevel > 0.5 || weather.precipIntensity > 60) {
+    features.push('reduced-visibility');
+  }
+
+  // Wind-Features
+  if (weather.wind > 50) {
+    features.push('high-wind');
+  }
+
+  return features;
+}
+
+function calculateBrightness(
+  segment: TimeSegment,
+  cloudCover: number,
+  moonPhase: MoonPhase
+): number {
+  // Tageszeit-Basis
+  const segmentBrightness: Record<TimeSegment, number> = {
+    'dawn': 0.4,
+    'morning': 0.9,
+    'midday': 1.0,
+    'afternoon': 0.9,
+    'dusk': 0.4,
+    'night': 0.1
+  };
+
+  let brightness = segmentBrightness[segment];
+
+  // Nachts: Mondphase beeinflusst Helligkeit
+  if (segment === 'night') {
+    const moonBrightness = getMoonBrightness(moonPhase);  // 0.0 (Neumond) bis 0.4 (Vollmond)
+    brightness += moonBrightness * (1 - cloudCover);
+  }
+
+  // Wolken reduzieren Helligkeit am Tag
+  if (segment !== 'night') {
+    brightness *= (1 - cloudCover * 0.3);
+  }
+
+  return brightness;
+}
+```
+
+### Feature-Referenzen
+
+Der Weather-Service referenziert Features aus der Library. Weather-Features koennen sowohl Balance-Modifier als auch Hazards haben:
+
+| Bedingung | Feature-ID | Modifier | Hazard |
+|-----------|------------|----------|--------|
+| Helligkeit < 0.1 | `darkness` | darkvision +0.15, etc. | - |
+| Helligkeit 0.1-0.5 | `dim-light` | darkvision +0.10 | - |
+| fogLevel > 0.5 oder precipIntensity > 60 | `reduced-visibility` | - | - |
+| wind > 50 km/h | `high-wind` | fly -0.15 | - |
+| Hagel-Event | `hailstorm` | fly -0.20 | 1d6 cold, CON DC 10 |
+| Blizzard-Event | `blizzard` | walk-only -0.20 | 1d4 cold, CON DC 12 |
+
+### Weather-Hazard Beispiele
+
+**Eisiger Hagelsturm:**
+```json
+{
+  "id": "hailstorm",
+  "name": "Eisiger Hagelsturm",
+  "modifiers": [
+    { "target": "fly", "value": -0.20 }
+  ],
+  "hazard": {
+    "trigger": "start-turn",
+    "effect": {
+      "type": "damage",
+      "damage": { "dice": "1d6", "damageType": "cold" }
+    },
+    "save": {
+      "ability": "con",
+      "dc": 10,
+      "onSuccess": "half"
+    }
+  },
+  "description": "Hagel verursacht Kaelteschaden und erschwert das Fliegen."
+}
+```
+
+**Blizzard:**
+```json
+{
+  "id": "blizzard",
+  "name": "Schneesturm",
+  "modifiers": [
+    { "target": "walk-only", "value": -0.20 },
+    { "target": "no-special-sense", "value": -0.15 }
+  ],
+  "hazard": {
+    "trigger": "end-turn",
+    "effect": {
+      "type": "damage",
+      "damage": { "dice": "1d4", "damageType": "cold" }
+    },
+    "save": {
+      "ability": "con",
+      "dc": 12,
+      "onSuccess": "negate"
+    }
+  },
+  "description": "Eisiger Schneesturm behindert Bewegung und verursacht Kaelteschaden."
+}
+```
+
+### Integration mit Encounter
+
+Das Encounter-System aggregiert Features aus allen Quellen:
+
+```typescript
+function getEncounterFeatures(context: EncounterContext): Feature[] {
+  return [
+    ...context.terrain.features,           // Terrain-Features (statisch)
+    ...context.weather?.activeFeatures,    // Weather-Features (dynamisch)
+    ...context.room?.lightingFeatures      // Indoor-Features (bei Dungeons)
+  ].map(id => featureRegistry.get(id));
+}
+```
+
+→ Siehe auch: [encounter/Context.md](encounter/Context.md) fuer Feature-Aggregation und Schema-Definition
+
+---
+
 ## Sichtweiten-Einfluss (Post-MVP)
 
 Wetter beeinflusst die Overland-Sichtweite im Visibility-System.
@@ -799,23 +959,23 @@ Party betritt Dungeon um 10:00 bei Regen
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
 | 101 | 📋 | Weather | core | WeatherState: Vollständiges Interface mit precipChance, precipIntensity, fogLevel, windDirection, moonPhase, cloudCover, visibilityModifier | hoch | Ja | - | Weather-System.md#parameter | src/core/schemas/weather.ts:weatherParamsSchema, src/features/weather/types.ts:WeatherFeaturePort |
-| 102 | ✅ | Weather | - | Temperatur-Kategorisierung (freezing, cold, cool, mild, warm, hot) mit mechanischen Effekten | hoch | Ja | #101 | Weather-System.md#temperatur | src/core/schemas/weather.ts:temperatureCategorySchema+TEMPERATURE_THRESHOLDS, src/features/weather/weather-utils.ts:classifyTemperature() |
-| 103 | ✅ | Weather | - | Wind-Kategorisierung (calm, light, moderate, strong, gale) mit Effekten | hoch | Ja | #101 | Weather-System.md#wind | src/core/schemas/weather.ts:windCategorySchema+WIND_THRESHOLDS, src/features/weather/weather-utils.ts:classifyWind() |
+| 102 | ✅ | Weather | features | Temperatur-Kategorisierung (freezing, cold, cool, mild, warm, hot) mit mechanischen Effekten | hoch | Ja | #101 | Weather-System.md#temperatur | src/core/schemas/weather.ts:temperatureCategorySchema+TEMPERATURE_THRESHOLDS, src/features/weather/weather-utils.ts:classifyTemperature() |
+| 103 | ✅ | Weather | features | Wind-Kategorisierung (calm, light, moderate, strong, gale) mit Effekten | hoch | Ja | #101 | Weather-System.md#wind | src/core/schemas/weather.ts:windCategorySchema+WIND_THRESHOLDS, src/features/weather/weather-utils.ts:classifyWind() |
 | 104 | ⛔ | Weather | core | PrecipitationType Schema: none, drizzle, rain, heavy_rain, snow, blizzard, hail (ohne fog) | hoch | Ja | #101 | Weather-System.md#niederschlag | src/core/schemas/weather.ts:precipitationTypeSchema+PRECIPITATION_THRESHOLDS, src/features/weather/weather-utils.ts:classifyPrecipitation() |
 | 105 | ⛔ | Weather | core | TerrainWeatherRanges Schema: temperature, wind, precipChance, precipIntensity, fogChance (min/avg/max Kurven) | hoch | Ja | #101, #1702 | Weather-System.md#range-schema, Terrain.md#schema | src/core/schemas/weather.ts:terrainWeatherRangesSchema+DEFAULT_WEATHER_RANGES, src/core/schemas/terrain.ts:TerrainDefinition.weatherRanges, presets/terrains/base-terrains.json |
 | 106 | ⛔ | Weather | features | generateWeatherFromRanges(): Gaussian-ähnliche Verteilung (deviation -1 bis +1, lerp zwischen avg und min/max) | hoch | Ja | #105 | Weather-System.md#generierungs-mechanik | src/features/weather/weather-utils.ts:generateWeatherFromRanges()+generateFromRange() |
-| 107 | ✅ | Weather | - | Area-Averaging: Gewichteter Wetter-Durchschnitt über Hex-Nachbarn | hoch | Ja | #106, #802 | Weather-System.md#area-averaging | src/features/weather/weather-utils.ts:calculateAreaWeather(), src/features/weather/weather-service.ts:getTileWeatherRanges() |
-| 108 | ✅ | Weather | - | Time-Segment-Modifikatoren (6 Segmente mit Temperatur-Offset) | hoch | Ja | #101, #906, #912 | Weather-System.md#time-segment-berechnung, Time-System.md#time-segment-berechnung | src/core/schemas/weather.ts:SEGMENT_TEMPERATURE_MODIFIERS, src/features/weather/weather-utils.ts:generateWeatherFromRanges() |
-| 109 | ✅ | Weather | - | Übergangs-Logik: Gradueller Wetter-Wechsel (TRANSITION_SPEED=0.3) | hoch | Ja | #101, #108 | Weather-System.md#uebergangs-logik | src/features/weather/weather-utils.ts:transitionWeather(), src/features/weather/weather-service.ts:calculateNewWeather() |
-| 110 | ✅ | Weather | - | Event-Flow: time:segment-changed → environment:weather-changed | hoch | Ja | #109, #910 | Weather-System.md#event-flow, Events-Catalog.md#environment | src/features/weather/weather-service.ts:setupEventHandlers()+publishWeatherChanged() |
-| 111 | ✅ | Weather | - | Weather-Persistierung: currentWeather als Map Property | hoch | Ja | #101, #110, #800, #801 | Weather-System.md#current-weather-als-map-property, Map-Feature.md#overworldmap | src/core/schemas/map.ts:MapState.currentWeather, src/features/weather/weather-service.ts:initializeWeather() |
-| 112 | ✅ | Weather | - | Multi-Map Weather: Indoor-Maps haben kein Wetter | hoch | Ja | #111, #806 | Weather-System.md#map-typ-regeln, Map-Feature.md#wetter-auf-sub-maps | src/features/weather/weather-service.ts:initializeWeather() (map.type check) |
-| 113 | ⛔ | Weather | - | Multi-Map Weather: Stadt-Maps erben Wetter vom Overworld-Tile | hoch | Ja | #111, #112, #827 | Weather-System.md#map-typ-regeln, Map-Feature.md#wetter-auf-sub-maps | src/features/weather/weather-service.ts:getWeatherForMap() [neu] |
+| 107 | ✅ | Weather | features | Area-Averaging: Gewichteter Wetter-Durchschnitt über Hex-Nachbarn | hoch | Ja | #106, #802 | Weather-System.md#area-averaging | src/features/weather/weather-utils.ts:calculateAreaWeather(), src/features/weather/weather-service.ts:getTileWeatherRanges() |
+| 108 | ✅ | Weather | features | Time-Segment-Modifikatoren (6 Segmente mit Temperatur-Offset) | hoch | Ja | #101, #906, #912 | Weather-System.md#time-segment-berechnung, Time-System.md#time-segment-berechnung | src/core/schemas/weather.ts:SEGMENT_TEMPERATURE_MODIFIERS, src/features/weather/weather-utils.ts:generateWeatherFromRanges() |
+| 109 | ✅ | Weather | features | Übergangs-Logik: Gradueller Wetter-Wechsel (TRANSITION_SPEED=0.3) | hoch | Ja | #101, #108 | Weather-System.md#uebergangs-logik | src/features/weather/weather-utils.ts:transitionWeather(), src/features/weather/weather-service.ts:calculateNewWeather() |
+| 110 | ✅ | Weather | features | Event-Flow: time:segment-changed → environment:weather-changed | hoch | Ja | #109, #910 | Weather-System.md#event-flow, Events-Catalog.md#environment | src/features/weather/weather-service.ts:setupEventHandlers()+publishWeatherChanged() |
+| 111 | ✅ | Weather | features | Weather-Persistierung: currentWeather als Map Property | hoch | Ja | #101, #110, #800, #801 | Weather-System.md#current-weather-als-map-property, Map-Feature.md#overworldmap | src/core/schemas/map.ts:MapState.currentWeather, src/features/weather/weather-service.ts:initializeWeather() |
+| 112 | ✅ | Weather | features | Multi-Map Weather: Indoor-Maps haben kein Wetter | hoch | Ja | #111, #806 | Weather-System.md#map-typ-regeln, Map-Feature.md#wetter-auf-sub-maps | src/features/weather/weather-service.ts:initializeWeather() (map.type check) |
+| 113 | ⛔ | Weather | features | Multi-Map Weather: Stadt-Maps erben Wetter vom Overworld-Tile | hoch | Ja | #111, #112, #827 | Weather-System.md#map-typ-regeln, Map-Feature.md#wetter-auf-sub-maps | src/features/weather/weather-service.ts:getWeatherForMap() [neu] |
 | 114 | ⬜ | Weather | features | Background Weather Tick: Overworld-Weather läuft im Hintergrund | hoch | Ja | #111, #910 | Weather-System.md#background-weather | src/features/weather/weather-service.ts:setupEventHandlers() [ändern] |
 | 115 | ⛔ | Weather | features | Weather-Events: Blizzard, Thunderstorm, Heatwave, Dense Fog, Dust Storm | mittel | Nein | #102, #103, #104, #110 | Weather-System.md#weather-events | src/features/weather/weather-utils.ts:checkWeatherEvents() [neu], src/core/events/types.ts [ändern] |
 | 116 | ⛔ | Weather | features | Audio-Integration: Ambiance-Sounds bei weather-changed anpassen | mittel | Nein | #110, #1107, #1115 | Weather-System.md#consumer-features, Audio-System.md#context-updates | src/features/audio/orchestrator.ts [neu] |
-| 117a | 📋 | Weather | - | Visibility-Integration: Sichtweiten-Modifier aus Niederschlag + fogLevel berechnen | mittel | Nein | #3, #104, #110 | Weather-System.md#sichtweiten-einfluss-post-mvp, Map-Feature.md#visibility-system | src/features/map/visibility.ts:getVisibilityModifier() [neu] |
-| 117b | ⛔ | Weather | - | Travel-Integration: Speed-Faktor bei weather-changed Event neu berechnen (Wind, Niederschlag) | mittel | Nein | #3, #104, #110 | Weather-System.md#consumer-features, Travel-System.md#weather-faktoren | src/features/travel/orchestrator.ts:handleWeatherChanged() [neu] |
+| 117a | 📋 | Weather | features | Visibility-Integration: Sichtweiten-Modifier aus Niederschlag + fogLevel berechnen | mittel | Nein | #3, #104, #110 | Weather-System.md#sichtweiten-einfluss-post-mvp, Map-Feature.md#visibility-system | src/features/map/visibility.ts:getVisibilityModifier() [neu] |
+| 117b | ⛔ | Weather | features | Travel-Integration: Speed-Faktor bei weather-changed Event neu berechnen (Wind, Niederschlag) | mittel | Nein | #3, #104, #110 | Weather-System.md#consumer-features, Travel-System.md#weather-faktoren | src/features/travel/orchestrator.ts:handleWeatherChanged() [neu] |
 | 118 | ⛔ | Weather | features | Terrain-Einfluss auf Nachbar-Tiles (mountains blockiert Wind, etc.) | niedrig | Nein | #107, #1700, #2953 | Weather-System.md#terrain-einfluss-nice-to-have, Terrain.md | src/features/weather/weather-utils.ts:calculateAreaWeather() [ändern] |
 | 119 | ⬜ | Weather | features | GM Weather Override: Manuelles Überschreiben des generierten Wetters | mittel | Nein | #111 | Weather-System.md#gm-weather-override | src/core/schemas/map.ts:MapState.weatherOverride [neu], src/features/weather/weather-service.ts:setWeatherOverride() [neu] |
 | 120 | ⛔ | Weather | features | Weather-Historie: Signifikante Änderungen in Almanac EventJournal speichern | niedrig | Nein | #111, #2208 | Weather-System.md#weather-historie-in-almanac | src/features/almanac/event-journal.ts [neu] |
@@ -835,6 +995,6 @@ Party betritt Dungeon um 10:00 bei Regen
 | 2986 | ⛔ | Weather | features | Area-Averaging: applyTileModifiers() VOR Weighted-Averaging (Terrain-Einfluss propagiert in Umgebung) | hoch | Ja | #2983, #107 | Weather-System.md#berechnungs-reihenfolge | src/features/weather/weather-utils.ts:applyTileModifiers()+applyWindExposure() [neu] |
 | 2987 | ⛔ | Weather | features | TERRAIN_INFLUENCE Konstanten (water, mountains, forest, desert) | mittel | Nein | #2986 | Weather-System.md#terrain-einfluss-nice-to-have | src/features/weather/weather-utils.ts:TERRAIN_INFLUENCE [neu] |
 | 2988 | ⛔ | Weather | features | Terrain-Einfluss-Berechnung mit Stapelung (70% Dämpfung) | mittel | Nein | #2987 | Weather-System.md#stapelung | src/features/weather/weather-utils.ts:stackEffects() [neu] |
-| 3137 | ⬜ | Weather | - | calculateTemperature(): Kombination aller Temperatur-Modifier (Terrain-Basis + Time-Segment + Saison + Elevation) | hoch | -d | #106, #108, #2954, #2955 | Weather-System.md#berechnungs-reihenfolge | src/features/weather/weather-utils.ts:calculateTemperature() [neu] |
-| 3154 | ⬜ | Weather | - | Encounter-Integration: Kreatur-Präferenzen bei weather-changed Event berücksichtigen | niedrig | Nein | #110 | Weather-System.md#consumer-features, Encounter-System.md | - |
-| 3155 | ⬜ | Weather | - | UI-Integration: Weather-Widget aktualisieren bei environment:state-changed Event | mittel | Nein | #110 | Weather-System.md#consumer-features, SessionRunner.md | - |
+| 3137 | ⬜ | Weather | features | calculateTemperature(): Kombination aller Temperatur-Modifier (Terrain-Basis + Time-Segment + Saison + Elevation) | hoch | -d | #106, #108, #2954, #2955 | Weather-System.md#berechnungs-reihenfolge | src/features/weather/weather-utils.ts:calculateTemperature() [neu] |
+| 3154 | ⬜ | Weather | features | Encounter-Integration: Kreatur-Präferenzen bei weather-changed Event berücksichtigen | niedrig | Nein | #110 | Weather-System.md#consumer-features, encounter/Encounter.md | - |
+| 3155 | ⬜ | Weather | features | UI-Integration: Weather-Widget aktualisieren bei environment:state-changed Event | mittel | Nein | #110 | Weather-System.md#consumer-features, SessionRunner.md | - |

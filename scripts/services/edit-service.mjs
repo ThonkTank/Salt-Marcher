@@ -8,7 +8,7 @@
 import { ok, err, TaskErrorCode } from '../core/result.mjs';
 import { TaskStatus, VALID_STATUSES, resolveStatusAlias } from '../core/table/schema.mjs';
 import { parseTaskId, parseDeps, formatId } from '../core/table/parser.mjs';
-import { normalizeId } from '../core/task/types.mjs';
+import { normalizeId, areDepsResolved } from '../core/task/types.mjs';
 import { calculateAllPropagation } from '../core/deps/propagation.mjs';
 import { createFsTaskAdapter } from '../adapters/fs-task-adapter.mjs';
 import { checkKey, handleStatusChange } from './claim-service.mjs';
@@ -176,6 +176,37 @@ export function createTaskService(options = {}) {
         }
       }
 
+      // 8. Self-Check bei Dependency-Änderungen (✅ Task bekommt nicht-✅ Dep → 🔶)
+      if (updates.deps !== undefined && !item.isBug && !dryRun) {
+        // ItemMap aktualisieren mit neuen Dependencies
+        const updatedItem = roadmapData.itemMap.get(taskId);
+        if (updatedItem) {
+          // Deps parsen und in ItemMap aktualisieren
+          if (updates.deps === '-') {
+            updatedItem.deps = [];
+          } else {
+            updatedItem.deps = parseDeps(updates.deps);
+          }
+
+          // Prüfen ob Task ✅ ist und Deps nicht erfüllt
+          if (updatedItem.status === TaskStatus.DONE) {
+            if (!areDepsResolved(updatedItem, roadmapData.itemMap)) {
+              // Task selbst auf 🔶 setzen
+              const selfResult = taskAdapter.updateTask(taskId, { status: TaskStatus.PARTIAL }, { dryRun });
+              if (selfResult.ok) {
+                result.propagation.push({
+                  id: taskId,
+                  oldStatus: TaskStatus.DONE,
+                  newStatus: TaskStatus.PARTIAL,
+                  reason: 'Neue Dependency ist nicht erfüllt',
+                  docs: selfResult.value.docs
+                });
+              }
+            }
+          }
+        }
+      }
+
       result.success = true;
       result.dryRun = dryRun;
       return ok(result);
@@ -292,7 +323,7 @@ export function parseArgs(argv) {
       opts.mvp = argv[++i];
     } else if (arg === '--spec') {
       opts.spec = argv[++i];
-    } else if (arg === '--imp') {
+    } else if (arg === '--imp' || arg === '--impl') {
       opts.imp = argv[++i];
     } else if (arg === '--key' || arg === '-k') {
       opts.key = argv[++i];

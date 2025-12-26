@@ -295,7 +295,8 @@ export function getGuidance(taskId, overrideStatus = null) {
       meaning: workflow.meaning
     } : null,
     readingList: {
-      baseline: [...(config.architekturBaseline || []), ...layerDocs],
+      baseline: config.architekturBaseline || [],
+      layerDocs: layerDocs,
       layer: layerKey !== '-' ? layerKey : null,
       featureDocs: featureRouting
         ? featureRouting.docs.map(d => `${featureRouting.path}/${d}`)

@@ -27,6 +27,7 @@ export type EntityType =
   | 'calendar'
   | 'journal'
   | 'worldevent'
+  | 'feature' // Environment features for encounter balance and hazards
   | 'track';
 
 // ============================================================================
@@ -113,6 +114,7 @@ export type PartyId = EntityId<'party'>;
 export type CalendarId = EntityId<'calendar'>;
 export type JournalId = EntityId<'journal'>;
 export type WorldeventId = EntityId<'worldevent'>;
+export type FeatureId = EntityId<'feature'>;
 export type TrackId = EntityId<'track'>;
 
 // ============================================================================

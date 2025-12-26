@@ -41,7 +41,11 @@ export const terrainWeatherRangesSchema = z.object({
   /** Wind speed range in km/h */
   wind: weatherRangeSchema,
   /** Precipitation probability range (0-100) */
-  precipitation: weatherRangeSchema,
+  precipChance: weatherRangeSchema,
+  /** Precipitation intensity range (0-100) when precipitation occurs */
+  precipIntensity: weatherRangeSchema,
+  /** Fog probability range (0-100), independent of precipitation */
+  fogChance: weatherRangeSchema,
 });
 
 export type TerrainWeatherRanges = z.infer<typeof terrainWeatherRangesSchema>;
@@ -230,5 +234,7 @@ export const PRECIPITATION_THRESHOLDS = {
 export const DEFAULT_WEATHER_RANGES: TerrainWeatherRanges = {
   temperature: { min: -5, average: 15, max: 35 },
   wind: { min: 5, average: 20, max: 60 },
-  precipitation: { min: 10, average: 30, max: 70 },
+  precipChance: { min: 10, average: 30, max: 70 },
+  precipIntensity: { min: 20, average: 50, max: 80 },
+  fogChance: { min: 5, average: 15, max: 40 },
 };

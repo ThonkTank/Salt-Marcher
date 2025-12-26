@@ -149,7 +149,7 @@ function getShopForEncounter(encounter: EncounterInstance): Option<ShopDefinitio
 - Marktstaende auf Maerkten
 - Schmiede in einem Dorf
 
-→ Encounter-Schema: [Encounter-System.md#shop-integration-bei-social-encounters](../features/Encounter-System.md#shop-integration-bei-social-encounters)
+→ Encounter-Schema: [encounter/Encounter.md#shop-integration-bei-social-encounters](../features/encounter/Encounter.md#shop-integration-bei-social-encounters)
 
 ---
 
@@ -277,11 +277,11 @@ function calculateSellPrice(shop: ShopDefinition, itemId: EntityId<'item'>): num
 
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-| 2100 | ⛔ | Shop | core | ShopDefinition Schema mit Zod implementieren (id, name, type, locationId?, inventory, priceModifier?, sellModifier?, description?, gmNotes?) | mittel | Nein | #1600, #2703 | Shop.md#schema, EntityRegistry.md#entity-type-mapping, Core.md#branded-types | [neu] src/core/schemas/shop.ts |
+| 2100 | ⬜ | Shop | core | ShopDefinition Schema mit Zod implementieren (id, name, type, locationId?, inventory, priceModifier?, sellModifier?, description?, gmNotes?) | mittel | Nein | #1600, #2703 | Shop.md#schema, EntityRegistry.md#entity-type-mapping, Core.md#branded-types | [neu] src/core/schemas/shop.ts |
 | 2101 | ⛔ | Shop | core | ShopType Zod-Enum definieren (general | blacksmith | alchemist | magic | tavern | stable | custom) | mittel | Nein | #2100 | Shop.md#schema | [neu] src/core/schemas/shop.ts |
 | 2102 | ⛔ | Shop | core | ShopInventoryEntry Schema mit Zod (itemId, price?: {amount, currency}, quantity?: number, available: boolean) | mittel | Nein | #2100, #1600 | Shop.md#shopinventoryentry, Item.md#schema | [neu] src/core/schemas/shop.ts |
 | 2103 | ⛔ | Shop | core | Currency Type als Zod-Enum (cp | sp | ep | gp | pp) in item.ts oder common.ts - harmonisieren mit existierendem CurrencyId | mittel | Nein | #1600 | Shop.md#shopinventoryentry, Item.md#currency-category-currency, Inventory-System.md#waehrungs-items | src/core/schemas/item.ts:CurrencyId (existiert als 'copper-piece' etc., nicht als 'cp' etc.) |
-| 2104 | ✅ | Shop | - | Shop EntityRegistry Integration: 'shop' als Entity-Typ | mittel | Nein | #2100, #2800, #2801 | Shop.md#schema, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#neue-entity-typen-mvp | src/core/schemas/common.ts:entityTypeSchema (Zeile 55) |
+| 2104 | 🔶 | Shop | features | Shop EntityRegistry Integration: 'shop' als Entity-Typ | mittel | Nein | #2100, #2800, #2801 | Shop.md#schema, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#neue-entity-typen-mvp | src/core/schemas/common.ts:entityTypeSchema (Zeile 55) |
 | 2105 | ⛔ | Shop | core | Shop CRUD Events als Zod-Schemas definieren (shop:created, shop:updated, shop:deleted) in domain-events.ts | mittel | Nein | #2100, #2104 | Shop.md#events, Events-Catalog.md | [neu] src/core/events/domain-events.ts |
 | 2106 | ⛔ | Shop | core | Shop Interaction Events als Zod-Schemas (shop:opened, shop:item-purchased, shop:item-sold, shop:closed) in domain-events.ts | mittel | Nein | #2105 | Shop.md#events, Events-Catalog.md, SessionRunner.md | [neu] src/core/events/domain-events.ts |
 | 2107 | ⛔ | Shop | features | getShop(shopId): Result<ShopDefinition, AppError> Query-Funktion implementieren | mittel | Nein | #2100, #2104, #2800 | Shop.md#queries, EntityRegistry.md#port-interface | [neu] src/features/shop/shop-queries.ts |
@@ -301,4 +301,4 @@ function calculateSellPrice(shop: ShopDefinition, itemId: EntityId<'item'>): num
 | 2121 | ⛔ | Shop | features | Restock-System (Post-MVP): restockDays/restockQuantity in Schema + restock-service.ts mit Time-System Integration | niedrig | Nein | #2102, #2113 | Shop.md#shopinventoryentry, Time-System.md | [neu] src/core/schemas/shop.ts:ShopInventoryEntry.restockDays, [neu] src/features/shop/restock-service.ts |
 | 2122 | ⛔ | Shop | core | NPC-Händler Integration (Post-MVP): npcOwnerId?: EntityId<'npc'> zu ShopDefinition hinzufügen | niedrig | Nein | #1315, #2100 | Shop.md#prioritaet, NPC-System.md#npc-schema, EntityRegistry.md#neue-entity-typen-mvp | [neu] src/core/schemas/shop.ts:ShopDefinition.npcOwnerId |
 | 3164 | ⬜ | Shop | features | ResolvedInventoryEntry TypeScript Interface definieren (extends ShopInventoryEntry + item: ItemDefinition) | mittel | Nein | #2102, #1600 | Shop.md#queries | src/features/shop/types.ts:ResolvedInventoryEntry [neu] |
-| 3166 | ⬜ | Shop | infrastructure | Shop Storage Port Integration: ShopStoragePort mit load/save/delete/query Methoden (Persistent Category) | mittel | Nein | #2100, #2113, #2800 | Shop.md#schema, EntityRegistry.md#port-interface, Infrastructure.md#storage-ports | src/features/shop/storage-port.ts:ShopStoragePort [neu], src/infrastructure/vault/shop-adapter.ts [neu] |
+| 3166 | ⬜ | Shop | infrastructure | Shop Storage Port Integration: ShopStoragePort mit load/save/delete/query Methoden (Persistent Category) | mittel | Nein | #2100 | Shop.md#schema, EntityRegistry.md#port-interface, Infrastructure.md#storage-ports | src/features/shop/storage-port.ts:ShopStoragePort [neu], src/infrastructure/vault/shop-adapter.ts [neu] |

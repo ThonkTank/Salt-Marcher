@@ -8,7 +8,6 @@
 import { ItemView, type WorkspaceLeaf } from 'obsidian';
 import type { EventBus, CharacterId } from '@core/index';
 import type { EntityRegistryPort } from '@core/types/entity-registry.port';
-import type { EncounterFeaturePort } from '@/features/encounter';
 import type { CombatFeaturePort } from '@/features/combat';
 import type { PartyFeaturePort } from '@/features/party';
 import type { ConditionType, Character } from '@core/schemas';
@@ -21,10 +20,8 @@ import {
 } from './viewmodel';
 import {
   createCombatTab,
-  createEncounterTab,
   createPartyTab,
   type CombatTab,
-  type EncounterTab,
   type PartyTab,
 } from './panels';
 import { showCharacterSelectionDialog } from '@shared/dialogs';
@@ -35,7 +32,6 @@ import { showCharacterSelectionDialog } from '@shared/dialogs';
 
 export interface DetailViewDeps extends DetailViewModelDeps {
   eventBus: EventBus;
-  encounterFeature?: EncounterFeaturePort;
   combatFeature?: CombatFeaturePort;
   partyFeature?: PartyFeaturePort;
   entityRegistry?: EntityRegistryPort;
@@ -56,7 +52,6 @@ export class DetailView extends ItemView {
   private idleState: HTMLElement | null = null;
 
   // Panels
-  private encounterTabPanel: EncounterTab | null = null;
   private combatTabPanel: CombatTab | null = null;
   private partyTabPanel: PartyTab | null = null;
 
@@ -94,9 +89,9 @@ export class DetailView extends ItemView {
     // Create ViewModel
     this.viewModel = createDetailViewModel({
       eventBus: this.deps.eventBus,
-      encounterFeature: this.deps.encounterFeature,
       combatFeature: this.deps.combatFeature,
       partyFeature: this.deps.partyFeature,
+      entityRegistry: this.deps.entityRegistry,
     });
 
     // Create tab navigation
@@ -128,15 +123,10 @@ export class DetailView extends ItemView {
     this.idleState.innerHTML = `
       <div style="font-size: 24px; margin-bottom: 12px;">📋</div>
       <div style="margin-bottom: 8px;">Kein aktiver Kontext</div>
-      <div style="font-size: 12px;">Klicke auf einen Tab oder generiere einen Encounter im SessionRunner.</div>
+      <div style="font-size: 12px;">Klicke auf einen Tab.</div>
     `;
 
     // Create tab panels
-    this.encounterTabPanel = createEncounterTab(
-      this.contentContainer,
-      this.createEncounterCallbacks()
-    );
-
     this.combatTabPanel = createCombatTab(
       this.contentContainer,
       this.createCombatCallbacks()
@@ -155,7 +145,6 @@ export class DetailView extends ItemView {
 
   async onClose(): Promise<void> {
     this.unsubscribe?.();
-    this.encounterTabPanel?.dispose();
     this.combatTabPanel?.dispose();
     this.partyTabPanel?.dispose();
     this.viewModel?.dispose();
@@ -165,9 +154,18 @@ export class DetailView extends ItemView {
     this.tabNav = null;
     this.contentContainer = null;
     this.idleState = null;
-    this.encounterTabPanel = null;
     this.combatTabPanel = null;
     this.partyTabPanel = null;
+  }
+
+  /**
+   * Handle state changes from setViewState().
+   * Allows external code to open a specific tab via workspace.setViewState().
+   */
+  async setState(state: { activeTab?: TabId }): Promise<void> {
+    if (state.activeTab && this.viewModel) {
+      this.viewModel.setActiveTab(state.activeTab);
+    }
   }
 
   // =========================================================================
@@ -178,7 +176,6 @@ export class DetailView extends ItemView {
     if (!this.tabNav) return;
 
     const tabs: { id: TabId; label: string; icon: string }[] = [
-      { id: 'encounter', label: 'Encounter', icon: '⚔️' },
       { id: 'combat', label: 'Combat', icon: '🗡️' },
       { id: 'party', label: 'Party', icon: '👥' },
     ];
@@ -232,7 +229,6 @@ export class DetailView extends ItemView {
     }
 
     // Update panels
-    this.encounterTabPanel?.update(state);
     this.combatTabPanel?.update(state);
     this.partyTabPanel?.update(state);
   }
@@ -246,86 +242,6 @@ export class DetailView extends ItemView {
       correlationId: newCorrelationId(),
       timestamp: now(),
       source: 'detail-view',
-    };
-  }
-
-  private createEncounterCallbacks() {
-    return {
-      // Encounter actions
-      onStartEncounter: (encounterId: string) => {
-        this.deps.eventBus.publish(
-          createEvent(
-            EventTypes.ENCOUNTER_START_REQUESTED,
-            { encounterId },
-            this.eventOptions()
-          )
-        );
-      },
-      onDismissEncounter: (encounterId: string) => {
-        this.deps.eventBus.publish(
-          createEvent(
-            EventTypes.ENCOUNTER_DISMISS_REQUESTED,
-            { encounterId, reason: 'user-dismissed' },
-            this.eventOptions()
-          )
-        );
-      },
-      onRegenerateEncounter: () => {
-        // Prefer current encounter position, fallback to party position (#2470)
-        const state = this.viewModel?.getState();
-        let position = state?.encounter.currentEncounter?.position;
-
-        // Fallback: Get party position from PartyFeature
-        if (!position && this.deps.partyFeature) {
-          const partyPos = this.deps.partyFeature.getPosition();
-          if (isSome(partyPos)) {
-            position = partyPos.value;
-          }
-        }
-
-        if (position) {
-          this.deps.eventBus.publish(
-            createEvent(
-              EventTypes.ENCOUNTER_GENERATE_REQUESTED,
-              { position, trigger: 'manual' as const },
-              this.eventOptions()
-            )
-          );
-        } else {
-          console.warn(
-            '[DetailView] Cannot generate encounter: No position available'
-          );
-        }
-      },
-
-      // Builder actions (#2408/#2409)
-      onNameChange: (name: string) => {
-        this.viewModel?.setBuilderName(name);
-      },
-      onActivityChange: (activity: string) => {
-        this.viewModel?.setBuilderActivity(activity);
-      },
-      onGoalChange: (goal: string) => {
-        this.viewModel?.setBuilderGoal(goal);
-      },
-      onRemoveCreature: (index: number) => {
-        this.viewModel?.removeCreatureFromBuilder(index);
-      },
-      onCreatureCountChange: (index: number, count: number) => {
-        this.viewModel?.updateCreatureCount(index, count);
-      },
-      onSaveEncounter: () => {
-        // Placeholder for #2417
-        console.log('[DetailView] Save encounter - not yet implemented (#2417)');
-      },
-      onClearBuilder: () => {
-        this.viewModel?.clearBuilder();
-      },
-
-      // Situation actions (#2970)
-      onDispositionChange: (value: number) => {
-        this.viewModel?.setDisposition(value);
-      },
     };
   }
 
@@ -396,8 +312,31 @@ export class DetailView extends ItemView {
   private createPartyCallbacks() {
     return {
       onHpChange: (characterId: string, delta: number) => {
-        // Placeholder for #3219 - HP-Eingabe Pattern
-        console.log(`[DetailView] HP change for ${characterId}: ${delta > 0 ? '+' : ''}${delta}`);
+        // #3219 - HP-Eingabe Pattern
+        const state = this.viewModel?.getState();
+        const member = state?.party.members.find((m) => m.id === characterId);
+
+        if (!member) {
+          console.warn(`[DetailView] Character ${characterId} not found in party members`);
+          return;
+        }
+
+        const previousHp = member.currentHp;
+        const newHp = Math.max(0, Math.min(member.maxHp, previousHp + delta));
+
+        // Publish CHARACTER_HP_CHANGED event
+        this.deps.eventBus.publish(
+          createEvent(
+            EventTypes.CHARACTER_HP_CHANGED,
+            {
+              characterId: characterId as CharacterId,
+              previousHp,
+              currentHp: newHp,
+              reason: delta > 0 ? 'heal' : 'damage',
+            },
+            this.eventOptions()
+          )
+        );
       },
       onRemoveMember: async (characterId: string) => {
         if (!this.deps.partyFeature) {

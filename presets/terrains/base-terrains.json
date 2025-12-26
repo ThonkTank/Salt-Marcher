@@ -7,13 +7,19 @@
       "name": "Road",
       "movementCost": 1.0,
       "encounterModifier": 0.5,
-      "nativeCreatures": [],
+      "threatLevel": -1,
+      "threatRange": 0.7,
+      "nativeCreatures": ["bandit", "commoner"],
+      "features": [],
+      "encounterVisibility": 1000,
       "displayColor": "#8B7355",
       "description": "Well-maintained road. Normal travel speed.",
       "weatherRanges": {
         "temperature": { "min": -5, "average": 15, "max": 35 },
         "wind": { "min": 5, "average": 20, "max": 60 },
-        "precipitation": { "min": 10, "average": 30, "max": 70 }
+        "precipChance": { "min": 10, "average": 30, "max": 70 },
+        "precipIntensity": { "min": 20, "average": 50, "max": 80 },
+        "fogChance": { "min": 5, "average": 15, "max": 40 }
       }
     },
     {
@@ -21,13 +27,19 @@
       "name": "Plains",
       "movementCost": 0.9,
       "encounterModifier": 1.0,
-      "nativeCreatures": [],
+      "threatLevel": 0,
+      "threatRange": 1.0,
+      "nativeCreatures": ["wolf", "commoner"],
+      "features": [],
+      "encounterVisibility": 8000,
       "displayColor": "#90B050",
       "description": "Open grassland. Slightly slower than roads.",
       "weatherRanges": {
         "temperature": { "min": -5, "average": 15, "max": 35 },
         "wind": { "min": 5, "average": 20, "max": 60 },
-        "precipitation": { "min": 10, "average": 30, "max": 70 }
+        "precipChance": { "min": 10, "average": 30, "max": 70 },
+        "precipIntensity": { "min": 20, "average": 50, "max": 80 },
+        "fogChance": { "min": 5, "average": 15, "max": 40 }
       }
     },
     {
@@ -35,14 +47,20 @@
       "name": "Forest",
       "movementCost": 0.6,
       "encounterModifier": 1.2,
-      "nativeCreatures": [],
+      "threatLevel": 0,
+      "threatRange": 1.2,
+      "nativeCreatures": ["goblin", "wolf", "bandit", "skeleton", "dire-wolf", "orc", "kobold"],
+      "features": [],
+      "encounterVisibility": 150,
       "blocksMounted": true,
       "displayColor": "#228B22",
       "description": "Dense woodland. Significantly slower travel.",
       "weatherRanges": {
         "temperature": { "min": 0, "average": 15, "max": 30 },
         "wind": { "min": 0, "average": 10, "max": 30 },
-        "precipitation": { "min": 20, "average": 40, "max": 70 }
+        "precipChance": { "min": 20, "average": 40, "max": 70 },
+        "precipIntensity": { "min": 30, "average": 50, "max": 80 },
+        "fogChance": { "min": 15, "average": 30, "max": 50 }
       }
     },
     {
@@ -50,13 +68,19 @@
       "name": "Hills",
       "movementCost": 0.7,
       "encounterModifier": 1.0,
-      "nativeCreatures": [],
+      "threatLevel": 0,
+      "threatRange": 1.0,
+      "nativeCreatures": ["goblin", "wolf", "bandit", "dire-wolf", "orc", "kobold"],
+      "features": [],
+      "encounterVisibility": 2500,
       "displayColor": "#A0A050",
       "description": "Rolling terrain with elevation changes.",
       "weatherRanges": {
         "temperature": { "min": -10, "average": 10, "max": 30 },
         "wind": { "min": 10, "average": 30, "max": 50 },
-        "precipitation": { "min": 15, "average": 35, "max": 65 }
+        "precipChance": { "min": 15, "average": 35, "max": 65 },
+        "precipIntensity": { "min": 25, "average": 50, "max": 75 },
+        "fogChance": { "min": 10, "average": 25, "max": 45 }
       }
     },
     {
@@ -64,7 +88,11 @@
       "name": "Mountains",
       "movementCost": 0.4,
       "encounterModifier": 0.8,
-      "nativeCreatures": [],
+      "threatLevel": 1,
+      "threatRange": 1.3,
+      "nativeCreatures": ["goblin", "skeleton", "dire-wolf", "orc", "kobold"],
+      "features": [],
+      "encounterVisibility": 10000,
       "blocksMounted": true,
       "blocksCarriage": true,
       "displayColor": "#808080",
@@ -72,7 +100,9 @@
       "weatherRanges": {
         "temperature": { "min": -20, "average": 0, "max": 20 },
         "wind": { "min": 20, "average": 50, "max": 100 },
-        "precipitation": { "min": 20, "average": 50, "max": 80 }
+        "precipChance": { "min": 20, "average": 50, "max": 80 },
+        "precipIntensity": { "min": 40, "average": 60, "max": 90 },
+        "fogChance": { "min": 20, "average": 40, "max": 60 }
       }
     },
     {
@@ -80,7 +110,11 @@
       "name": "Swamp",
       "movementCost": 0.5,
       "encounterModifier": 1.5,
-      "nativeCreatures": [],
+      "threatLevel": 1,
+      "threatRange": 1.5,
+      "nativeCreatures": ["skeleton"],
+      "features": [],
+      "encounterVisibility": 300,
       "blocksMounted": true,
       "blocksCarriage": true,
       "displayColor": "#6B8E6B",
@@ -88,7 +122,9 @@
       "weatherRanges": {
         "temperature": { "min": 5, "average": 20, "max": 35 },
         "wind": { "min": 0, "average": 10, "max": 30 },
-        "precipitation": { "min": 40, "average": 60, "max": 90 }
+        "precipChance": { "min": 40, "average": 60, "max": 90 },
+        "precipIntensity": { "min": 30, "average": 50, "max": 70 },
+        "fogChance": { "min": 40, "average": 60, "max": 80 }
       }
     },
     {
@@ -96,13 +132,19 @@
       "name": "Desert",
       "movementCost": 0.7,
       "encounterModifier": 0.7,
+      "threatLevel": 0,
+      "threatRange": 0.8,
       "nativeCreatures": [],
+      "features": [],
+      "encounterVisibility": 8000,
       "displayColor": "#EDC9AF",
       "description": "Arid sandy terrain. Heat and sand slow travel.",
       "weatherRanges": {
         "temperature": { "min": 0, "average": 35, "max": 50 },
         "wind": { "min": 5, "average": 15, "max": 80 },
-        "precipitation": { "min": 0, "average": 5, "max": 20 }
+        "precipChance": { "min": 0, "average": 5, "max": 20 },
+        "precipIntensity": { "min": 10, "average": 30, "max": 60 },
+        "fogChance": { "min": 5, "average": 10, "max": 20 }
       }
     },
     {
@@ -110,14 +152,20 @@
       "name": "Water",
       "movementCost": 1.0,
       "encounterModifier": 0.5,
+      "threatLevel": -1,
+      "threatRange": 1.0,
       "nativeCreatures": [],
+      "features": [],
+      "encounterVisibility": 5000,
       "requiresBoat": true,
       "displayColor": "#4169E1",
       "description": "Deep water. Requires a boat to cross.",
       "weatherRanges": {
         "temperature": { "min": 5, "average": 18, "max": 30 },
         "wind": { "min": 10, "average": 30, "max": 80 },
-        "precipitation": { "min": 20, "average": 40, "max": 70 }
+        "precipChance": { "min": 20, "average": 40, "max": 70 },
+        "precipIntensity": { "min": 30, "average": 50, "max": 80 },
+        "fogChance": { "min": 15, "average": 30, "max": 50 }
       }
     }
   ]

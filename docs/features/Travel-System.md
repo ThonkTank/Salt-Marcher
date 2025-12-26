@@ -210,7 +210,7 @@ Terrain, Wetter und Tageszeit beeinflussen die **Kreatur-Auswahl**, nicht die En
 | Tageszeit | Nein | Ja (Filter) |
 | Population | **Ja** | Nein |
 
-→ Details zur Kreatur-Auswahl: [Encounter-System.md](Encounter-System.md#kreatur-auswahl)
+→ Details zur Kreatur-Auswahl: [encounter/Encounter.md](encounter/Encounter.md#kreatur-auswahl)
 
 ---
 
@@ -354,7 +354,7 @@ eventBus.publish({
 
 ---
 
-*Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Inventory-System.md](Inventory-System.md) (Encumbrance) | [Weather-System.md](Weather-System.md) | [Encounter-System.md](Encounter-System.md)*
+*Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Inventory-System.md](Inventory-System.md) (Encumbrance) | [Weather-System.md](Weather-System.md) | [encounter/Encounter.md](encounter/Encounter.md)*
 
 ## Tasks
 
@@ -364,7 +364,7 @@ eventBus.publish({
 | 3 | ✅ | Travel | features | Speed-Berechnung: Basis-Speed × Terrain-Faktor × Weather-Faktor | hoch | Ja | - | Travel-System.md#speed-berechnung, Character-System.md#travel-system | types.ts:calculateHexTraversalTime, travel-service.ts:getBaseSpeed |
 | 5 | ✅ | Travel | features | Terrain-Faktoren aus TerrainDefinition.movementCost lesen | hoch | Ja | #3, #1700 | Travel-System.md#terrain-faktoren, Terrain.md#verwendung-in-anderen-features, Map-Feature.md#overworld-rendering | travel-service.ts:calculateSegmentTime (via mapFeature.getMovementCost) |
 | 7 | ✅ | Travel | features | Zeit-Integration via time:advance-requested | hoch | Ja | #1, #908 | Travel-System.md#tagesreise-berechnung, Time-System.md#zeit-operationen, Events-Catalog.md#time | travel-service.ts:publishTimeAdvance |
-| 9 | ✅ | Travel | features | Encounter-Checks pro Stunde (12.5% Basis-Chance) | hoch | Ja | #1, #7, #215 | Travel-System.md#encounter-checks-waehrend-reisen, Encounter-System.md#aktivierungs-flow, Map-Feature.md#overworld-tiles | travel-service.ts:checkForEncounter, encounter-chance.ts:calculateEncounterChance/rollEncounter |
+| 9 | ✅ | Travel | features | Encounter-Checks pro Stunde (12.5% Basis-Chance) | hoch | Ja | #1, #7 | Travel-System.md#encounter-checks-waehrend-reisen, encounter/Encounter.md#aktivierungs-flow, Map-Feature.md#overworld-tiles | travel-service.ts:checkForEncounter, encounter-chance.ts:calculateEncounterChance/rollEncounter |
 | 11 | ✅ | Travel | features | Pause/Resume Funktionalität | hoch | Ja | #1 | Travel-System.md#state-machine, Events-Catalog.md#travel | travel-service.ts:pauseTravelInternal/resumeTravelInternal, travel-store.ts:setPaused/setResumed |
 | 12 | ✅ | Travel | features | Event-Flow: travel:plan-requested → route-planned → start-requested → started → position-changed → completed | hoch | Ja | #1, #2 | Travel-System.md#event-flow, Events-Catalog.md#travel, SessionRunner.md#travel-integration | travel-service.ts:publishRoutePlanned/publishTravelStarted/publishPositionChanged/publishTravelCompleted/publishStateChanged |
 | 14 | ⬜ | Travel | features | validateTransportAvailable(): Prüfe activeTransport in party.availableTransports bei plan-requested + Fehler-Event | hoch | Ja | #4 | Travel-System.md#transport-mode-invarianten, Character-System.md#character-schema | travel-service.ts:validateTransportAvailable [neu], party-service.ts:setActiveTransport [ändern] |
@@ -381,4 +381,4 @@ eventBus.publish({
 | 17 | ⬜ | Travel | features | Travel: PathDefinition-Integration in Speed-Berechnung (calculateSegmentTime mit Path-Multiplikatoren erweitern) | mittel | Nein | #3, #5, #1811 | Travel-System.md#pfad-modifikation-post-mvp, Path.md#pathmovement | travel-service.ts:getPathMultiplier [neu], calculateSegmentTime [ändern] |
 | 19 | ⛔ | Travel | features | Travel: PathDirectionality-Support für Fluss-Strömung (forwardSpeedModifier/backwardSpeedModifier in Speed-Berechnung) | niedrig | Nein | #17, #18, #1806 | Travel-System.md#pfad-modifikation-post-mvp | travel-service.ts:getPathMultiplier [ändern] |
 | 21 | ⛔ | Travel | features | checkForcedMarch(): 10h/Tag + CON-Save DC 10+1 pro extra Stunde → Erschöpfung | niedrig | Nein | #7, #20 | Travel-System.md#standard-reisestunden | party-service.ts:addExhaustion [neu], travel-service.ts:checkForcedMarch [neu] |
-| 3159 | ⬜ | Travel | features | calculateTilePopulation(): Summe(Faction.presence × memberCount / Territory-Größe) für Encounter-Chance | mittel | --deps | #10, #1409 | Travel-System.md#population-berechnung, Faction.md#praesenz-vorberechnung | - |
+| 3159 | ⛔ | Travel | features | calculateTilePopulation(): Summe(Faction.presence × memberCount / Territory-Größe) für Encounter-Chance | mittel | --deps | #10, #1409 | Travel-System.md#population-berechnung, Faction.md#praesenz-vorberechnung | - |

@@ -187,7 +187,7 @@ export function generateWeatherFromRanges(
   const baseTemp = generateFromRange(ranges.temperature, seed);
   const wind = generateFromRange(ranges.wind, seed ? seed + 1 : undefined);
   const precipitation = generateFromRange(
-    ranges.precipitation,
+    ranges.precipChance,
     seed ? seed + 2 : undefined
   );
 

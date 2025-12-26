@@ -21,10 +21,10 @@ import type { OverworldMap } from '../schemas/map';
 import type { BasePOI } from '../schemas/poi';
 import type { TerrainDefinition } from '../schemas/terrain';
 import type { QuestDefinition } from '../schemas/quest';
-import type { EncounterDefinition } from '../schemas/encounter';
 import type { Party } from '../schemas/party';
 import type { CalendarDefinition } from '../schemas/time';
 import type { JournalEntry } from '../schemas/journal';
+import type { Feature } from '../schemas/feature';
 
 // ============================================================================
 // Error Types
@@ -104,7 +104,7 @@ export interface EntityTypeMap {
 
   // Session Entities
   quest: QuestDefinition;
-  encounter: EncounterDefinition;
+  encounter: unknown; // Encounter schema will be redefined with new specs
   shop: unknown; // TODO: Task #2100
   party: Party;
 
@@ -112,6 +112,9 @@ export interface EntityTypeMap {
   calendar: CalendarDefinition;
   journal: JournalEntry;
   worldevent: unknown; // TODO: WorldEvent schema
+
+  // Environment
+  feature: Feature;
 
   // Audio
   track: unknown; // TODO: Track schema

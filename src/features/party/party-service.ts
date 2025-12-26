@@ -40,6 +40,7 @@ import type {
   PartyLoadRequestedPayload,
   PartyMemberAddedPayload,
   PartyMemberRemovedPayload,
+  PartyMembersChangedPayload,
   EntitySavedPayload,
 } from '@core/events/domain-events';
 import { calculateEffectiveSpeed, calculateEncumbrance } from '@/features/inventory';
@@ -91,6 +92,7 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
     if (!party || party.members.length === 0) {
       store.setLoadedMembers([]);
       characterService.syncTrackedLevels();
+      publishMembersChanged([]);
       return ok([]);
     }
 
@@ -98,6 +100,7 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
       // No character storage - return empty array
       store.setLoadedMembers([]);
       characterService.syncTrackedLevels();
+      publishMembersChanged(party.members as string[]);
       return ok([]);
     }
 
@@ -110,6 +113,9 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
 
     // Sync character levels for level change detection
     characterService.syncTrackedLevels();
+
+    // Publish members changed event
+    publishMembersChanged(party.members as string[]);
 
     return ok(result.value);
   }
@@ -222,6 +228,22 @@ export function createPartyService(deps: PartyServiceDeps): PartyFeaturePort {
 
     eventBus.publish(
       createEvent(EventTypes.PARTY_MEMBER_REMOVED, payload, {
+        correlationId: correlationId ?? newCorrelationId(),
+        timestamp: now(),
+        source: 'party-feature',
+      })
+    );
+  }
+
+  function publishMembersChanged(memberIds: string[], correlationId?: string): void {
+    if (!eventBus) return;
+
+    const payload: PartyMembersChangedPayload = {
+      memberIds,
+    };
+
+    eventBus.publish(
+      createEvent(EventTypes.PARTY_MEMBERS_CHANGED, payload, {
         correlationId: correlationId ?? newCorrelationId(),
         timestamp: now(),
         source: 'party-feature',

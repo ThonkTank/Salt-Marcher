@@ -11,8 +11,6 @@ import { ok, err, some, none } from '@core/index';
 import type { Result, AppError, Option, EntityId } from '@core/index';
 import {
   EventTypes,
-  type DomainEvent,
-  type EncounterResolvedPayload,
   type TimeStateChangedPayload,
   type QuestDiscoverRequestedPayload,
   type QuestActivateRequestedPayload,
@@ -104,16 +102,6 @@ export function createQuestService(deps: QuestServiceDeps): QuestFeaturePort {
   // ==========================================================================
 
   function setupEventHandlers(): void {
-    // Handle encounter resolved - check for open quest slots
-    subscriptions.push(
-      eventBus.subscribe<EncounterResolvedPayload>(
-        EventTypes.ENCOUNTER_RESOLVED,
-        (event) => {
-          handleEncounterResolved(event);
-        }
-      )
-    );
-
     // Handle time state changed - check deadlines
     subscriptions.push(
       eventBus.subscribe<TimeStateChangedPayload>(
@@ -180,20 +168,6 @@ export function createQuestService(deps: QuestServiceDeps): QuestFeaturePort {
         }
       )
     );
-  }
-
-  function handleEncounterResolved(event: DomainEvent<EncounterResolvedPayload>): void {
-    const openSlots = getOpenEncounterSlots();
-
-    if (openSlots.length > 0) {
-      // Notify UI that slot assignment is available
-      publish(EventTypes.QUEST_SLOT_ASSIGNMENT_AVAILABLE, {
-        encounterId: event.payload.encounterId,
-        encounterXP: event.payload.xpAwarded,
-        openSlots: openSlots,
-      }, event.correlationId);
-    }
-    // If no open slots, the 60% XP is forfeited (random encounter)
   }
 
   function checkDeadlines(currentTime: GameDateTime): void {

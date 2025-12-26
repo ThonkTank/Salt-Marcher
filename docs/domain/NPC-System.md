@@ -65,6 +65,10 @@ interface NPC {
   lastEncounter: GameDateTime;
   encounterCount: number;
 
+  // === Position-Tracking (fuer geografische NPC-Auswahl) ===
+  lastKnownPosition?: HexCoordinate;    // Letzte bekannte Position (aktualisiert bei Encounter)
+  lastSeenAt?: GameDateTime;            // Zeitpunkt der letzten Sichtung
+
   // === Optionale explizite Location (MVP, niedrige Prio) ===
   currentPOI?: EntityId<'poi'>;         // Wenn gesetzt: NPC ist an diesem POI
                                          // Wenn nicht: Faction-Territory-Logik
@@ -91,6 +95,108 @@ interface CreatureRef {
 - `statOverrides` - Post-MVP Feature (nutzt Creature-Editor UI)
 - `homeLocation` - Post-MVP (zusammen mit Routen/Schedules)
 - `cultureId` - Kultur ist direkt in der Faction eingebettet (via Faction-Hierarchie)
+
+---
+
+## Storage & Retrieval
+
+NPCs werden im EntityRegistry gespeichert und ueber definierte Kriterien wiedergefunden.
+
+### Speicherung
+
+NPCs werden als JSON-Dateien im Vault persistiert:
+
+```
+Vault/SaltMarcher/data/
+└── npc/
+    ├── griknak-blutfang.json
+    ├── merchant-silverbeard.json
+    └── guard-captain-helena.json
+```
+
+**Speicherungs-Trigger:**
+- Lead-NPC wird bei Encounter generiert → Sofort persistiert
+- GM erstellt NPC manuell in Library → Sofort persistiert
+- NPC-Status aendert sich (alive → dead) → Update persistiert
+
+### Retrieval: findExistingNPC()
+
+Bei Encounter-Generierung wird nach passenden existierenden NPCs gesucht:
+
+```typescript
+function findExistingNPC(
+  creatureId: EntityId<'creature'>,
+  factionId?: EntityId<'faction'>
+): Option<NPC> {
+  return entityRegistry.query('npc', npc =>
+    npc.creature.id === creatureId &&
+    npc.factionId === factionId &&
+    npc.status === 'alive'
+  ).first();
+}
+```
+
+**Match-Kriterien:**
+
+| Kriterium | Beschreibung |
+|-----------|--------------|
+| `creature.id` | Gleicher Kreatur-Typ (z.B. goblin-warrior) |
+| `factionId` | Gleiche Fraktion (z.B. blutfang-tribe) |
+| `status` | Muss 'alive' sein (tote NPCs werden nicht wiederverwendet) |
+
+**Priorisierung bei mehreren Matches:**
+
+```typescript
+function selectBestMatch(
+  candidates: NPC[],
+  encounterPosition: HexCoordinate
+): NPC {
+  // Primaer: Geografisch naechster NPC
+  // Sekundaer: Wer wurde laenger nicht gesehen?
+  return candidates.sort((a, b) => {
+    // 1. Geografische Naehe (wenn Position bekannt)
+    const distA = a.lastKnownPosition
+      ? hexDistance(encounterPosition, a.lastKnownPosition)
+      : Infinity;
+    const distB = b.lastKnownPosition
+      ? hexDistance(encounterPosition, b.lastKnownPosition)
+      : Infinity;
+
+    if (distA !== distB) return distA - distB;
+
+    // 2. Fallback: Wer wurde laenger nicht gesehen?
+    return a.lastEncounter.timestamp - b.lastEncounter.timestamp;
+  })[0];
+}
+```
+
+### NPC-Registry Queries
+
+Haeufige Abfragen:
+
+```typescript
+// Alle NPCs einer Fraktion
+entityRegistry.query('npc', npc => npc.factionId === factionId);
+
+// Alle lebenden NPCs an einem POI
+entityRegistry.query('npc', npc =>
+  npc.status === 'alive' && npc.currentPOI === poiId
+);
+
+// NPC mit hoechstem Encounter-Count (bekanntester NPC)
+entityRegistry.query('npc', () => true)
+  .sort((a, b) => b.encounterCount - a.encounterCount)[0];
+```
+
+### Wiederverwendung vs. Neu-Generierung
+
+| Situation | Verhalten |
+|-----------|-----------|
+| Passender NPC existiert | Wiederverwendung: `lastEncounter` + `encounterCount` aktualisieren |
+| Kein passender NPC | Neu-Generierung: Name, Persoenlichkeit, Quirk aus Kultur |
+| NPC wurde getoetet | Status auf 'dead', nicht mehr fuer Matches verfuegbar |
+
+→ Generierungsdetails: [NPC-Generierung](#npc-generierung)
 
 ---
 
@@ -429,8 +535,12 @@ function updateNPCAfterEncounter(
   outcome: EncounterOutcome
 ): void {
   // Tracking aktualisieren
-  npc.lastEncounter = encounter.timestamp;
+  npc.lastEncounter = encounter.generatedAt;
   npc.encounterCount++;
+
+  // Position-Tracking aktualisieren (fuer geografische NPC-Auswahl)
+  npc.lastKnownPosition = encounter.context.position;
+  npc.lastSeenAt = encounter.generatedAt;
 
   // Status aendern falls NPC getoetet wurde
   if (outcome.npcKilled?.includes(npc.id)) {
@@ -572,7 +682,7 @@ Gruppe 3: Woelfe (4)
 Total: 3 Leads + 2 Highlights = 5 benannte NPCs
 ```
 
-→ Details: [Encounter-System.md](../features/Encounter-System.md#multi-group-encounters)
+→ Details: [encounter/Encounter.md](../features/encounter/Encounter.md#multi-group-encounters)
 
 ---
 
@@ -619,37 +729,39 @@ NPCs koennen in der Library bearbeitet werden:
 
 ---
 
-*Siehe auch: [Faction.md](Faction.md) | [Character-System.md](../features/Character-System.md) | [Encounter-Balancing.md](../features/Encounter-Balancing.md)*
+*Siehe auch: [Faction.md](Faction.md) | [Character-System.md](../features/Character-System.md) | [encounter/Balance.md](../features/encounter/Balance.md)*
 
 ## Tasks
 
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-| 1300 | ✅ | NPC | core | NPC-Schema Interface: id, name, creature, factionId, personality, status | hoch | Ja | #1400, #2703 | NPC-System.md#npc-schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc, Core.md#branded-types | src/core/schemas/npc.ts:52-103 |
-| 1301 | ✅ | NPC | core | PersonalityTraits Interface: primary + secondary Traits | hoch | Ja | #1300 | NPC-System.md#npc-schema | src/core/schemas/npc.ts:22-28 |
-| 1302 | ✅ | NPC | core | CreatureRef Interface: type + id Verweis auf Creature-Template | hoch | Ja | #1200, #1300 | NPC-System.md#npc-schema, Creature.md#schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc | src/core/schemas/creature.ts:222-230 (creatureRefSchema) |
-| 1303 | ✅ | NPC | core | NPC Tracking-Felder: firstEncounter, lastEncounter, encounterCount | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#npc-lifecycle | src/core/schemas/npc.ts:85-92 |
-| 1304 | ✅ | NPC | core | NPC Status-Enum: alive, dead (Vereinfacht für MVP) | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#status-uebergaenge | src/core/schemas/npc.ts:40-42 |
-| 1305 | ✅ | NPC | core | Optional currentPOI-Feld: Explizite NPC-Platzierung | mittel | Nein | #1300, #1500 | NPC-System.md#mvp-niedrige-prio-explizite-npc-location, POI.md#schema | src/core/schemas/npc.ts:97 |
-| 1306 | ✅ | NPC | core | NPCMatchCriteria Interface: creatureType + factionId | hoch | Ja | #1300, #1400 | NPC-System.md#match-kriterien, Creature.md#schema, Faction.md#schema | src/core/schemas/npc.ts:114-120 (im Schema statt types.ts) |
+| 1300 | ⛔ | NPC | core | NPC-Schema Interface: id, name, creature, factionId, personality, status | hoch | Ja | #1400, #2703 | NPC-System.md#npc-schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc, Core.md#branded-types | src/core/schemas/npc.ts:52-103 |
+| 1301 | ⛔ | NPC | core | PersonalityTraits Interface: primary + secondary Traits | hoch | Ja | #1300 | NPC-System.md#npc-schema | src/core/schemas/npc.ts:22-28 |
+| 1302 | ⛔ | NPC | core | CreatureRef Interface: type + id Verweis auf Creature-Template | hoch | Ja | #1200, #1300 | NPC-System.md#npc-schema, Creature.md#schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc | src/core/schemas/creature.ts:222-230 (creatureRefSchema) |
+| 1303 | ⛔ | NPC | core | NPC Tracking-Felder: firstEncounter, lastEncounter, encounterCount | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#npc-lifecycle | src/core/schemas/npc.ts:85-92 |
+| 1304 | ⛔ | NPC | core | NPC Status-Enum: alive, dead (Vereinfacht für MVP) | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#status-uebergaenge | src/core/schemas/npc.ts:40-42 |
+| 1305 | ⛔ | NPC | core | Optional currentPOI-Feld: Explizite NPC-Platzierung | mittel | Nein | #1300, #1500 | NPC-System.md#mvp-niedrige-prio-explizite-npc-location, POI.md#schema | src/core/schemas/npc.ts:97 |
+| 1306 | ⛔ | NPC | core | NPCMatchCriteria Interface: creatureType + factionId | hoch | Ja | #1300, #1400 | NPC-System.md#match-kriterien, Creature.md#schema, Faction.md#schema | src/core/schemas/npc.ts:114-120 (im Schema statt types.ts) |
 | 1307 | ✅ | NPC | features | findMatchingNPC(): Suche existierende NPCs nach Kriterien | hoch | Ja | #1306, #2800, #2804 | NPC-System.md#match-kriterien, NPC-System.md#npc-auswahl-algorithmus, EntityRegistry.md#querying | Integriert in selectOrGenerateNpc (src/features/encounter/npc-generator.ts:320-353) |
-| 1308 | ✅ | NPC | features | calculateMatchScore(): Scoring-System (Wiedersehen +15, kürzlich -30) | hoch | Ja | #1303, #1307 | NPC-System.md#match-kriterien, NPC-System.md#npc-auswahl-algorithmus, NPC-System.md#npc-lifecycle | src/features/encounter/npc-generator.ts:277-301 (calculateNpcMatchScore) |
-| 1309 | ✅ | NPC | features | resolveFactionCulture(): Kultur aus Faction-Hierarchie auflösen | hoch | Ja | #1400, #1401, #1405 | NPC-System.md#npc-generierung, Faction.md#kultur-vererbung, Faction.md#hierarchie | src/features/encounter/npc-generator.ts:37-63 |
+| 1308 | ⛔ | NPC | features | calculateMatchScore(): Scoring-System (Wiedersehen +15, kürzlich -30) | hoch | Ja | #1303, #1307 | NPC-System.md#match-kriterien, NPC-System.md#npc-auswahl-algorithmus, NPC-System.md#npc-lifecycle | src/features/encounter/npc-generator.ts:277-301 (calculateNpcMatchScore) |
+| 1309 | 🔶 | NPC | features | resolveFactionCulture(): Kultur aus Faction-Hierarchie auflösen | hoch | Ja | #1400, #1401, #1405 | NPC-System.md#npc-generierung, Faction.md#kultur-vererbung, Faction.md#hierarchie | src/features/encounter/npc-generator.ts:37-63 |
 | 1310 | ✅ | NPC | features | generateNameFromCulture(): Namen aus Kultur-Daten generieren | hoch | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#kultur-vererbung, Faction.md#naming | src/features/encounter/npc-generator.ts:127-167 (generateNpcName) |
 | 1311 | ✅ | NPC | features | rollPersonalityFromCulture(): Persönlichkeits-Traits würfeln | hoch | Ja | #1309, #1401 | NPC-System.md#npc-generierung, Faction.md#kultur-vererbung, Faction.md#personality | src/features/encounter/npc-generator.ts:200-224 (generatePersonality) |
 | 1312 | 🔶 | NPC | features | rollQuirkFromCulture(): Quirk generieren mit Kreatur-Kompatibilitäts-Filter (canSpeak, socialCreature) und Einzigartigkeit-Tracking (100% Coverage) | mittel | Ja | #1309, #1401 | NPC-System.md#npc-generierung, NPC-System.md#quirk-einzigartigkeit, Faction.md#quirk-wuerfeln | src/features/encounter/npc-generator.ts:230-249 (rollQuirkFromCulture) |
-| 1313 | ⛔ | NPC | features | selectPersonalGoal(): Goal mit Pool-Hierarchie (Generisch → Creature → Fraktion) und Persönlichkeits-Gewichtung | mittel | Ja | #1200 | NPC-System.md#goal-pool-hierarchie, Creature.md#schema, Faction.md#culture-schema | src/features/encounter/npc-generator.ts:254-267 (generatePersonalGoal) |
-| 1314 | ✅ | NPC | features | generateNewNPC(): Haupt-Generierungs-Funktion mit Persistierung | hoch | Ja | #1300, #1310, #1311, #1312, #1313, #2800, #2802, #3172 | NPC-System.md#npc-generierung, NPC-System.md#npc-schema, EntityRegistry.md#port-interface | src/features/encounter/npc-generator.ts:358-385 (generateNewNpc) |
-| 1315 | ✅ | NPC | core | EntityRegistry Integration: NPC als Entity-Typ registrieren | hoch | Ja | #1300, #2800, #2801 | NPC-System.md#npc-generierung, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#storage | src/core/schemas/common.ts:45 (EntityType enum) |
-| 1316 | ⬜ | NPC | features | updateNPCAfterEncounter(): Tracking-Felder aktualisieren (lastEncounter, encounterCount) und Status-Transition (dead bei npcKilled) | hoch | Ja | #213, #214, #1303, #1304, #2800 | NPC-System.md#encounter-nachbereitung, NPC-System.md#status-uebergaenge, Encounter-System.md#encounter-outcome | [neu] src/features/npc/npc-service.ts:updateNpcAfterEncounter() |
-| 1318 | ✅ | NPC | features | selectOrGenerateLeadNPC(): Integration mit Encounter-System | hoch | Ja | #213, #1200, #1307, #1314 | NPC-System.md#lead-npc-auswahl, NPC-System.md#integration-mit-encounters, Encounter-System.md#npc-instanziierung | src/features/encounter/npc-generator.ts:320-353 (selectOrGenerateNpc), verwendet in encounter-service.ts:513-521 |
-| 1319 | ⛔ | NPC | features | resolveMultiGroupNPCs(): Lead + Highlight NPCs pro Gruppe (max 3 Highlights GLOBAL) | hoch | Ja | #213, #252, #1318, #2972, #2973 | NPC-System.md#multi-gruppen-encounters, Encounter-System.md#npc-instanziierung, Encounter-System.md#multi-group-encounters | [neu] src/features/encounter/npc-generator.ts:resolveMultiGroupNPCs() |
+| 1313 | 🟢 | NPC | features | selectPersonalGoal(): Goal mit Pool-Hierarchie (Generisch → Creature → Fraktion) und Persönlichkeits-Gewichtung | mittel | Ja | #1311, #1401, #3240 | NPC-System.md#goal-pool-hierarchie, Creature.md#schema, Faction.md#culture-schema | src/features/encounter/npc-generator.ts:254-267 (generatePersonalGoal) |
+| 1314 | ⛔ | NPC | features | generateNewNPC(): Haupt-Generierungs-Funktion mit Persistierung | hoch | Ja | #1300, #1310, #1311, #1312, #1313, #2800, #2802, #3172 | NPC-System.md#npc-generierung, NPC-System.md#npc-schema, EntityRegistry.md#port-interface | src/features/encounter/npc-generator.ts:358-385 (generateNewNpc) |
+| 1315 | ⛔ | NPC | core | EntityRegistry Integration: NPC als Entity-Typ registrieren | hoch | Ja | #1300, #2800, #2801 | NPC-System.md#npc-generierung, EntityRegistry.md#entity-type-mapping, EntityRegistry.md#storage | src/core/schemas/common.ts:45 (EntityType enum) |
+| 1316 | ⛔ | NPC | features | updateNPCAfterEncounter(): Tracking-Felder aktualisieren (lastEncounter, encounterCount) und Status-Transition (dead bei npcKilled) | hoch | Ja | #214, #1303, #1304, #2800 | NPC-System.md#encounter-nachbereitung, NPC-System.md#status-uebergaenge, encounter/Encounter.md#encounter-outcome | [neu] src/features/npc/npc-service.ts:updateNpcAfterEncounter() |
+| 1318 | ✅ | NPC | features | selectOrGenerateLeadNPC(): Integration mit Encounter-System | hoch | Ja | #1200, #1307, #1314 | NPC-System.md#lead-npc-auswahl, NPC-System.md#integration-mit-encounters, encounter/Encounter.md#npc-instanziierung | src/features/encounter/npc-generator.ts:320-353 (selectOrGenerateNpc), verwendet in encounter-service.ts:513-521 |
+| 1319 | ⛔ | NPC | features | resolveMultiGroupNPCs(): Lead + Highlight NPCs pro Gruppe (max 3 Highlights GLOBAL) | hoch | Ja | #252, #1318, #2972, #2973 | NPC-System.md#multi-gruppen-encounters, encounter/Encounter.md#npc-instanziierung, encounter/Encounter.md#multi-group-encounters | [neu] src/features/encounter/npc-generator.ts:resolveMultiGroupNPCs() |
 | 1320 | ⛔ | NPC | features | findEligibleNPCs(): NPCs nach Faction-Territory filtern (Faction.controlledPOIs → Tile-Präsenz) | hoch | Ja | #1400, #1409, #1410, #2804 | NPC-System.md#mvp-fraktions-basierte-location, Faction.md#territory-via-pois, Faction.md#encounter-integration | [neu] src/features/npc/npc-location.ts:findEligibleNpcs() |
 | 1321 | ⛔ | NPC | features | findNPCsAtTile(): Kombination explizite Location (currentPOI) + Faction-Territory-Logik | mittel | Nein | #1305, #1320, #1500 | NPC-System.md#mvp-niedrige-prio-explizite-npc-location, NPC-System.md#mvp-fraktions-basierte-location, POI.md#schema | [neu] src/features/npc/npc-location.ts:findNpcsAtTile() |
-| 1322 | ⬜ | NPC | application | NPC Library-View: CRUD-Interface für NPC-Bearbeitung | mittel | Ja | #1300, #2800, #2802 | NPC-System.md#npc-bearbeitung-library, NPC-System.md#gm-interface, Library.md#entity-views | [neu] src/application/views/library/NPCView.svelte |
-| 1323 | ⬜ | NPC | application | Lead-NPC UI-Sektion: Persönlichkeit, Quirk, Ziel, Wiederkehr-Indikator, Encounter-History, Re-Roll-Buttons ([Anderen NPC wählen] [Neu generieren]) | mittel | Ja | #213, #1318, #2415 | NPC-System.md#encounter-preview, NPC-System.md#gm-interface, Encounter-System.md#encounter-ui | [neu] src/application/components/encounter/EncounterPreview.svelte |
-| 2972 | ⬜ | NPC | core | PartialNPC/HighlightNPC Schema (Name + primaryTrait, session-only) | hoch | Ja | #1300 | NPC-System.md#npc-detail-stufen | [neu] src/core/schemas/npc.ts:partialNpcSchema |
+| 1322 | ⛔ | NPC | application | NPC Library-View: CRUD-Interface für NPC-Bearbeitung | mittel | Ja | #1300, #2800, #2802 | NPC-System.md#npc-bearbeitung-library, NPC-System.md#gm-interface, Library.md#entity-views | [neu] src/application/views/library/NPCView.svelte |
+| 1323 | ⬜ | NPC | application | Lead-NPC UI-Sektion: Persönlichkeit, Quirk, Ziel, Wiederkehr-Indikator, Encounter-History, Re-Roll-Buttons ([Anderen NPC wählen] [Neu generieren]) | mittel | Ja | #1318, #2409, #2415 | NPC-System.md#encounter-preview, NPC-System.md#gm-interface, encounter/Encounter.md#encounter-ui | [neu] src/application/components/encounter/EncounterPreview.svelte |
+| 2972 | ⛔ | NPC | core | PartialNPC/HighlightNPC Schema (Name + primaryTrait, session-only) | hoch | Ja | #1300 | NPC-System.md#npc-detail-stufen | [neu] src/core/schemas/npc.ts:partialNpcSchema |
 | 2973 | ⛔ | NPC | features | generateHighlightNPC(): Oberflächliche NPC-Generierung (Name + 1 Trait) | hoch | Ja | #2972 | NPC-System.md#npc-detail-stufen | [neu] src/features/encounter/npc-generator.ts:generateHighlightNpc() |
-| 2975 | ⛔ | NPC | features | buildCultureFromCreatureTags(): Fallback-Kultur-Generierung für fraktionslose Creatures (Beast/Predator-Tags → Naming/Personality) | mittel | Ja | #2978, #1314 | NPC-System.md#npc-generierung, Creature.md#tags | [neu] src/features/encounter/npc-generator.ts:buildCultureFromCreatureTags() |
-| 2978 | ⬜ | NPC | core | NPC-Schema: factionId von required auf optional ändern (Fallback auf Creature-Tags für fraktionslose NPCs) | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#npc-generierung | - |
-| 3172 | ⬜ | NPC | - | resolveCultureForNPC(): Wrapper-Funktion - nutzt resolveFactionCulture() wenn Faction vorhanden, sonst buildCultureFromCreatureTags() | mittel | -d | - | NPC-System.md#npc-generierung | - |
+| 2975 | ⛔ | NPC | features | buildCultureFromCreatureTags(): Fallback-Kultur-Generierung für fraktionslose Creatures (Beast/Predator-Tags → Naming/Personality) | mittel | Ja | #2978, #1314, #3245, #3246 | NPC-System.md#npc-generierung, Creature.md#tags | [neu] src/features/encounter/npc-generator.ts:buildCultureFromCreatureTags() |
+| 2978 | ⛔ | NPC | core | NPC-Schema: factionId von required auf optional ändern (Fallback auf Creature-Tags für fraktionslose NPCs) | hoch | Ja | #1300 | NPC-System.md#npc-schema, NPC-System.md#npc-generierung | - |
+| 3172 | ⬜ | NPC | features | resolveCultureForNPC(): Wrapper-Funktion - nutzt resolveFactionCulture() wenn Faction vorhanden, sonst buildCultureFromCreatureTags() | mittel | -d | - | NPC-System.md#npc-generierung | - |
+| 3240 | ⬜ | NPC | features | GENERIC_GOALS Konstante: Basis-Goal-Pool für alle Kreaturen (survive, explore, find_food, etc.) | hoch | --spec | - | - | - |
+| 3248 | ⬜ | NPC | features | usedQuirks Session-Tracking: Set<string> zur Vermeidung von Quirk-Wiederholungen innerhalb einer Session | mittel | -d | - | NPC-System.md#quirk-einzigartigkeit | - |

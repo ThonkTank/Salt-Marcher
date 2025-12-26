@@ -9,12 +9,6 @@
 
 import { z } from 'zod';
 import { entityIdSchema } from './common';
-import {
-  encounterTemplateSchema,
-  weightedActivitySchema,
-  type EncounterTemplate,
-  type WeightedActivity,
-} from './encounter';
 
 // ============================================================================
 // Culture Sub-Schemas
@@ -112,6 +106,63 @@ export const speechDataSchema = z.object({
 export type SpeechData = z.infer<typeof speechDataSchema>;
 
 // ============================================================================
+// Faction Status
+// ============================================================================
+
+/**
+ * Status of a faction in the dynamic world.
+ * - active: Faction appears in encounters
+ * - dormant: Faction is inactive but can be reactivated
+ * - extinct: All members eliminated, no encounters
+ */
+export const factionStatusSchema = z.enum(['active', 'dormant', 'extinct']);
+
+export type FactionStatus = z.infer<typeof factionStatusSchema>;
+
+// ============================================================================
+// Activity & Goal References (for culture)
+// ============================================================================
+
+/**
+ * Reference to an activity with faction-specific weighting.
+ */
+export const factionActivityRefSchema = z.object({
+  /** Activity identifier (e.g., "activity:raiding", "activity:patrolling") */
+  activityId: z.string().min(1),
+
+  /** Faction-specific weight (1.0 = normal) */
+  weight: z.number().min(0).default(1.0),
+});
+
+export type FactionActivityRef = z.infer<typeof factionActivityRefSchema>;
+
+/**
+ * Weighted goal for NPC generation.
+ */
+export const weightedGoalSchema = z.object({
+  /** Goal identifier (e.g., "loot", "protect_territory") */
+  goal: z.string().min(1),
+
+  /** Base weight (0-1) */
+  weight: z.number().min(0).max(1),
+
+  /** GM description */
+  description: z.string().optional(),
+
+  /** Personality bonus: increased weight when NPC has matching trait */
+  personalityBonus: z
+    .array(
+      z.object({
+        trait: z.string(),
+        multiplier: z.number(),
+      })
+    )
+    .optional(),
+});
+
+export type WeightedGoal = z.infer<typeof weightedGoalSchema>;
+
+// ============================================================================
 // CultureData Schema
 // ============================================================================
 
@@ -135,13 +186,11 @@ export const cultureDataSchema = z.object({
   /** Speech patterns for RP */
   speech: speechDataSchema.optional(),
 
-  /**
-   * Faction-specific activities for encounter groups.
-   * Higher-priority than creature and generic activities in the pool hierarchy.
-   *
-   * @see docs/features/Encounter-System.md#activity-pool-hierarchie
-   */
-  activities: z.array(weightedActivitySchema).optional(),
+  /** Activities for Flavour Step 4.1 (group-based) */
+  activities: z.array(factionActivityRefSchema).optional(),
+
+  /** Goals for NPC generation */
+  goals: z.array(weightedGoalSchema).optional(),
 });
 
 export type CultureData = z.infer<typeof cultureDataSchema>;
@@ -164,6 +213,74 @@ export const factionCreatureGroupSchema = z.object({
 export type FactionCreatureGroup = z.infer<typeof factionCreatureGroupSchema>;
 
 // ============================================================================
+// Encounter Template Schemas
+// ============================================================================
+
+/**
+ * A slot in an encounter template defining creature composition.
+ */
+export const templateCreatureSlotSchema = z.object({
+  /** Reference to creature template */
+  creatureId: entityIdSchema('creature'),
+
+  /** Number of creatures (fixed or range) */
+  count: z.union([
+    z.number().int().positive(),
+    z.object({
+      min: z.number().int().nonnegative(),
+      max: z.number().int().positive(),
+    }),
+  ]),
+
+  /** Role in the encounter */
+  role: z.enum(['leader', 'elite', 'regular', 'support']),
+});
+
+export type TemplateCreatureSlot = z.infer<typeof templateCreatureSlotSchema>;
+
+/**
+ * Faction-specific encounter template.
+ * Defines structured group compositions for encounters.
+ */
+export const factionEncounterTemplateSchema = z.object({
+  /** Template identifier */
+  id: z.string().min(1),
+
+  /** Display name (e.g., "Späher-Trupp", "Horde") */
+  name: z.string().min(1),
+
+  /** GM description */
+  description: z.string().optional(),
+
+  /** Creature composition slots */
+  composition: z.array(templateCreatureSlotSchema),
+
+  /** When to use this template */
+  triggers: z
+    .object({
+      /** Minimum XP budget */
+      minXPBudget: z.number().optional(),
+
+      /** Maximum XP budget */
+      maxXPBudget: z.number().optional(),
+
+      /** Compatible terrain types */
+      terrainTypes: z.array(entityIdSchema('terrain')).optional(),
+
+      /** Compatible encounter types */
+      encounterTypes: z.array(z.string()).optional(),
+    })
+    .optional(),
+
+  /** Relative probability (1.0 = normal, 0.1 = rare) */
+  weight: z.number().min(0).default(1.0),
+});
+
+export type FactionEncounterTemplate = z.infer<
+  typeof factionEncounterTemplateSchema
+>;
+
+// ============================================================================
 // Faction Schema
 // ============================================================================
 
@@ -181,6 +298,9 @@ export const factionSchema = z.object({
   /** Parent faction ID for inheritance (optional) */
   parentId: entityIdSchema('faction').optional(),
 
+  /** Faction status for dynamic world (active factions appear in encounters) */
+  status: factionStatusSchema.default('active'),
+
   /** Culture data (embedded, not referenced) */
   culture: cultureDataSchema.default({}),
 
@@ -190,8 +310,14 @@ export const factionSchema = z.object({
   /** POIs controlled by this faction (for territory calculation) */
   controlledPOIs: z.array(entityIdSchema('poi')).default([]),
 
+  /** Encounter templates for structured group compositions */
+  encounterTemplates: z.array(factionEncounterTemplateSchema).optional(),
+
   /** Display color for territory overlay (hex format, e.g., "#4169E1") */
   displayColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid hex color format'),
+
+  /** Default disposition toward party (-100 hostile to +100 friendly) */
+  defaultDisposition: z.number().int().min(-100).max(100).default(0),
 
   /** Party reputation with this faction (-100 to +100, default 0) */
   reputationWithParty: z.number().int().min(-100).max(100).default(0),
@@ -201,17 +327,6 @@ export const factionSchema = z.object({
 
   /** GM notes */
   gmNotes: z.string().optional(),
-
-  /**
-   * Faction-specific encounter templates.
-   * These take priority over generic templates during encounter generation.
-   *
-   * Templates define composition patterns (e.g., "leader + minions", "patrol")
-   * specific to this faction's typical encounter structures.
-   *
-   * @see docs/features/Encounter-System.md#template-auswahl-hierarchie
-   */
-  encounterTemplates: z.array(encounterTemplateSchema).optional(),
 });
 
 export type Faction = z.infer<typeof factionSchema>;
@@ -244,9 +359,6 @@ export const resolvedCultureSchema = z.object({
     greetings: z.array(z.string()),
   }),
   speech: speechDataSchema.nullable(),
-
-  /** Resolved activity pool from faction culture */
-  activities: z.array(weightedActivitySchema),
 });
 
 export type ResolvedCulture = z.infer<typeof resolvedCultureSchema>;
@@ -292,5 +404,4 @@ export const EMPTY_RESOLVED_CULTURE: ResolvedCulture = {
     greetings: [],
   },
   speech: null,
-  activities: [],
 };

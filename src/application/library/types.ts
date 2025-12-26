@@ -74,6 +74,111 @@ export interface ModalState {
 }
 
 // ============================================================================
+// Modal Section Types
+// ============================================================================
+
+/**
+ * Configuration for a modal section (tab).
+ *
+ * @see Library.md#modal-navigation
+ */
+export interface ModalSectionConfig {
+  /** Unique section identifier (e.g., 'basic', 'stats') */
+  id: string;
+
+  /** Display label for the tab */
+  label: string;
+
+  /** Optional icon for the tab */
+  icon?: string;
+}
+
+/**
+ * Entity-specific section configurations.
+ *
+ * Each entity type can have different sections (tabs) in the modal.
+ * Falls back to DEFAULT_SECTIONS if not specified.
+ */
+const ENTITY_SECTIONS: Partial<Record<EntityType, ModalSectionConfig[]>> = {
+  creature: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'stats', label: 'Stats' },
+    { id: 'abilities', label: 'Abilities' },
+    { id: 'actions', label: 'Actions' },
+    { id: 'habitat', label: 'Habitat' },
+  ],
+  character: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'stats', label: 'Stats' },
+    { id: 'inventory', label: 'Inventory' },
+  ],
+  npc: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'personality', label: 'Personality' },
+    { id: 'faction', label: 'Faction' },
+  ],
+  item: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'properties', label: 'Properties' },
+  ],
+  quest: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'objectives', label: 'Objectives' },
+    { id: 'rewards', label: 'Rewards' },
+  ],
+  encounter: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'creatures', label: 'Creatures' },
+    { id: 'triggers', label: 'Triggers' },
+  ],
+  shop: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'inventory', label: 'Inventory' },
+  ],
+  faction: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'culture', label: 'Culture' },
+    { id: 'territory', label: 'Territory' },
+  ],
+  map: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'settings', label: 'Settings' },
+  ],
+  poi: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'content', label: 'Content' },
+  ],
+  terrain: [
+    { id: 'basic', label: 'Basic Info' },
+    { id: 'mechanics', label: 'Mechanics' },
+    { id: 'climate', label: 'Climate' },
+  ],
+};
+
+/**
+ * Default sections for entity types without specific configuration.
+ */
+const DEFAULT_SECTIONS: ModalSectionConfig[] = [
+  { id: 'basic', label: 'Basic Info' },
+];
+
+/**
+ * Get the section configuration for an entity type.
+ *
+ * @param entityType - The entity type to get sections for
+ * @returns Array of section configurations
+ *
+ * @example
+ * ```typescript
+ * const sections = getEntitySections('creature');
+ * // [{ id: 'basic', label: 'Basic Info' }, { id: 'stats', label: 'Stats' }, ...]
+ * ```
+ */
+export function getEntitySections(entityType: EntityType): ModalSectionConfig[] {
+  return ENTITY_SECTIONS[entityType] ?? DEFAULT_SECTIONS;
+}
+
+// ============================================================================
 // Library State
 // ============================================================================
 

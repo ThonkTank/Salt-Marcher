@@ -60,6 +60,9 @@ interface CreatureDefinition {
   terrainAffinities: EntityId<'terrain'>[];   // In welchen Terrains heimisch
   activeTime: TimeSegment[];                   // 'dawn' | 'day' | 'dusk' | 'night'
 
+  // Encounter-Flavour: Was macht diese Kreatur? (→ encounter/Flavour.md)
+  activities: EntityId<'activity'>[];          // Pool moeglicher Activities (hunting, patrolling, etc.)
+
   // Gewichtungs-Praeferenzen (Optional, fuer Feinsteuerung)
   preferences?: CreaturePreferences;
 
@@ -144,6 +147,304 @@ interface DefaultLootEntry {
   itemId: EntityId<'item'>;
   chance: number;                  // 0.0-1.0 (1.0 = garantiert)
   quantity?: number | [min: number, max: number];
+}
+```
+
+### Action-Schema (Unified)
+
+Einheitliches Schema fuer alle Kampf-Aktionen (Creature und Character). Deckt ab:
+Weapon-Attacks, Spell-Attacks, AoE, Buffs/Debuffs, Healing, Summoning, Transformation, etc.
+
+→ **Vollstaendige Beispiele:** Siehe Abschnitt [Action-Beispiele](#action-beispiele) weiter unten.
+
+```typescript
+// ============================================================================
+// Range & Targeting
+// ============================================================================
+
+interface ActionRange {
+  type: 'reach' | 'ranged' | 'self' | 'touch';
+  normal: number;      // Feet
+  long?: number;       // Ranged weapons: long range with disadvantage
+}
+
+type AoeShape = 'sphere' | 'cube' | 'cone' | 'line' | 'cylinder';
+
+interface Aoe {
+  shape: AoeShape;
+  size: number;        // Radius/Laenge/Seite in Feet
+  width?: number;      // Fuer Line: Breite
+  height?: number;     // Fuer Cylinder: Hoehe
+  origin: 'self' | 'point' | 'creature';
+}
+
+interface Targeting {
+  type: 'single' | 'multiple' | 'area';
+  count?: number;      // Bei 'multiple': Max Anzahl Ziele
+  aoe?: Aoe;           // Bei 'area': AoE-Details
+  friendlyFire?: boolean;
+}
+
+// ============================================================================
+// Damage
+// ============================================================================
+
+type DamageType =
+  | 'acid' | 'bludgeoning' | 'cold' | 'fire' | 'force'
+  | 'lightning' | 'necrotic' | 'piercing' | 'poison'
+  | 'psychic' | 'radiant' | 'slashing' | 'thunder';
+
+interface ActionDamage {
+  dice: string;           // "1d8", "8d6"
+  modifier: number;       // +STR/DEX/etc
+  type: DamageType;
+  versatileDice?: string; // Zwei-Hand-Option
+  scalingDice?: string;   // Cantrip-Scaling pro Tier
+}
+
+// ============================================================================
+// Attack Roll vs Save
+// ============================================================================
+
+interface AttackRoll {
+  bonus: number;
+  advantage?: 'always' | 'conditional' | 'none';
+}
+
+interface SaveDC {
+  ability: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
+  dc: number;
+  onSave: 'none' | 'half' | 'special';
+}
+
+// ============================================================================
+// Conditions & Effects
+// ============================================================================
+
+type ConditionType =
+  | 'blinded' | 'charmed' | 'deafened' | 'frightened'
+  | 'grappled' | 'incapacitated' | 'invisible' | 'paralyzed'
+  | 'petrified' | 'poisoned' | 'prone' | 'restrained'
+  | 'stunned' | 'unconscious' | 'exhaustion';
+
+interface StatModifier {
+  stat: 'ac' | 'speed' | 'attack' | 'damage' | 'saves' |
+        'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha' |
+        'str-save' | 'dex-save' | 'con-save' | 'int-save' | 'wis-save' | 'cha-save' |
+        'initiative' | 'spell-dc';
+  value: number;
+  dice?: string;              // "1d4" fuer Bless
+  type: 'bonus' | 'set' | 'multiply';
+}
+
+interface RollModifier {
+  on: 'attacks' | 'saves' | 'ability-checks' | 'concentration' | 'death-saves' |
+      'str-checks' | 'dex-checks' | 'stealth' | 'perception' | 'initiative';
+  type: 'advantage' | 'disadvantage' | 'auto-success' | 'auto-fail';
+  against?: string;
+}
+
+interface DamageModifier {
+  type: 'resistance' | 'immunity' | 'vulnerability';
+  damageTypes: DamageType[];
+}
+
+interface MovementModifier {
+  type: 'speed' | 'fly' | 'swim' | 'climb' | 'burrow' | 'teleport';
+  value: number;
+  mode: 'grant' | 'bonus';
+}
+
+interface Duration {
+  type: 'instant' | 'rounds' | 'minutes' | 'hours' | 'until-save' | 'concentration' | 'until-long-rest';
+  value?: number;
+}
+
+interface ActionEffect {
+  condition?: ConditionType;
+  statModifiers?: StatModifier[];
+  rollModifiers?: RollModifier[];
+  damageModifiers?: DamageModifier[];
+  movementModifiers?: MovementModifier[];
+  tempHp?: { dice: string; modifier: number };
+  duration?: Duration;
+  endingSave?: SaveDC;
+  affectsTarget: 'self' | 'ally' | 'enemy' | 'any';
+  terrain?: 'difficult' | 'magical-darkness' | 'silence' | 'fog';
+  description?: string;
+}
+
+// ============================================================================
+// Action Economy & Timing
+// ============================================================================
+
+type ActionTimingType = 'action' | 'bonus' | 'reaction' | 'legendary' | 'lair' | 'mythic' | 'free';
+
+type TriggerEvent =
+  | 'attacked' | 'damaged' | 'spell-cast' | 'movement'
+  | 'start-turn' | 'end-turn' | 'ally-attacked' | 'ally-damaged'
+  | 'enters-reach' | 'leaves-reach';
+
+interface ActionTiming {
+  type: ActionTimingType;
+  trigger?: string;
+  triggerCondition?: {
+    event: TriggerEvent;
+    filter?: string;
+  };
+}
+
+// ============================================================================
+// Usage Limits & Resources
+// ============================================================================
+
+type ActionRecharge =
+  | { type: 'at-will' }
+  | { type: 'recharge'; range: [number, number] }
+  | { type: 'per-day'; uses: number }
+  | { type: 'per-rest'; uses: number; rest: 'short' | 'long' }
+  | { type: 'legendary'; cost: number }
+  | { type: 'lair' }
+  | { type: 'mythic' };
+
+interface SpellSlot {
+  level: number;
+  upcastDice?: string;
+  upcastEffect?: string;
+}
+
+interface SpellComponents {
+  verbal: boolean;
+  somatic: boolean;
+  material?: string;
+  materialCost?: number;
+  consumed?: boolean;
+}
+
+// ============================================================================
+// Special Action Types
+// ============================================================================
+
+interface Multiattack {
+  attacks: { actionRef: string; count: number }[];
+  description?: string;
+}
+
+interface ForcedMovement {
+  type: 'push' | 'pull' | 'teleport' | 'swap' | 'prone';
+  distance: number;
+  direction?: 'away' | 'toward' | 'chosen' | 'vertical';
+  save?: SaveDC;
+}
+
+interface ContestedCheck {
+  attackerSkill: 'athletics' | 'acrobatics' | 'deception' | 'insight' | 'intimidation' |
+                 'perception' | 'persuasion' | 'sleight-of-hand' | 'stealth';
+  defenderChoice: ('athletics' | 'acrobatics')[];
+  onSuccess: ActionEffect;
+  sizeLimit?: number;
+}
+
+interface ConditionalBonus {
+  condition: 'moved-distance' | 'ally-adjacent' | 'target-prone' | 'target-restrained' |
+             'below-half-hp' | 'first-attack' | 'hidden' | 'higher-ground' | 'darkness';
+  parameter?: number;
+  bonus: { type: 'damage' | 'attack' | 'advantage' | 'crit-range'; value?: number | string };
+}
+
+interface Summon {
+  creatureType: string;
+  crLimit?: number;
+  count?: { dice: string } | number;
+  duration: Duration;
+  control: 'friendly' | 'hostile' | 'uncontrolled';
+  statBlock?: string;
+}
+
+interface Transform {
+  into: 'beast' | 'creature' | 'object' | 'specific';
+  crLimit?: number;
+  specificForm?: string;
+  duration: Duration;
+  retainMind: boolean;
+  retainHp: boolean;
+}
+
+interface Counter {
+  counters: 'spell' | 'condition' | 'curse' | 'disease' | 'charm' | 'frightened' | 'any-magic';
+  autoSuccess?: boolean;
+  check?: { ability: 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'; dc: number | 'spell-level' };
+}
+
+interface Critical {
+  range: [number, number];
+  autoCrit?: string;
+  bonusDice?: string;
+}
+
+interface HpThreshold {
+  threshold: number;
+  comparison: 'below' | 'above' | 'equal-or-below';
+  effect: ActionEffect;
+  failEffect?: ActionEffect;
+}
+
+// ============================================================================
+// Haupt-Schema: Action
+// ============================================================================
+
+type ActionType =
+  | 'melee-weapon' | 'ranged-weapon' | 'melee-spell' | 'ranged-spell'
+  | 'save-effect' | 'aoe' | 'healing' | 'buff' | 'debuff' | 'utility'
+  | 'summon' | 'transform' | 'counter' | 'multiattack' | 'lair' | 'legendary';
+
+interface Action {
+  name: string;
+
+  // Kategorisierung
+  actionType: ActionType;
+
+  // Timing & Economy
+  timing: ActionTiming;
+
+  // Range & Targeting
+  range: ActionRange;
+  targeting: Targeting;
+
+  // Resolution (einer von)
+  attack?: AttackRoll;
+  save?: SaveDC;
+  contested?: ContestedCheck;
+  autoHit?: boolean;
+
+  // Primary Effects
+  damage?: ActionDamage;
+  extraDamage?: ActionDamage[];
+  healing?: { dice: string; modifier: number };
+  effects?: ActionEffect[];
+  forcedMovement?: ForcedMovement;
+
+  // Special Action Types
+  multiattack?: Multiattack;
+  summon?: Summon;
+  transform?: Transform;
+  counter?: Counter;
+
+  // Conditional Modifiers
+  conditionalBonuses?: ConditionalBonus[];
+  critical?: Critical;
+  hpThreshold?: HpThreshold;
+
+  // Resources
+  recharge?: ActionRecharge;
+  spellSlot?: SpellSlot;
+  components?: SpellComponents;
+  concentration?: boolean;
+
+  // Meta
+  description?: string;
+  properties?: string[];
+  source?: 'class' | 'race' | 'item' | 'spell' | 'innate' | 'lair';
 }
 ```
 
@@ -428,7 +729,7 @@ Encounter-Templates koennen Design-Rollen direkt als Slot-Anforderung nutzen:
 }
 ```
 
-→ **Encounter-Templates:** [Encounter-System.md](../features/Encounter-System.md#encounter-templates)
+→ **Encounter-Templates:** [encounter/Encounter.md](../features/encounter/Encounter.md#encounter-templates)
 
 ---
 
@@ -447,7 +748,7 @@ Creature-Selection basiert auf:
    - `creature.preferences.terrain` fuer Feinsteuerung
    - Fraktions-Praesenz multipliziert Gewichtung
 
-→ Details: [Encounter-System.md](../features/Encounter-System.md)
+→ Details: [encounter/Encounter.md](../features/encounter/Encounter.md)
 
 ### Combat-Feature
 
@@ -617,7 +918,308 @@ const orcWarband: CreatureDefinition = {
 };
 ```
 
-→ **Multi-Sense Detection:** [Encounter-System.md](../features/Encounter-System.md#multi-sense-detection)
+→ **Multi-Sense Detection:** [encounter/Encounter.md](../features/encounter/Encounter.md#multi-sense-detection)
+
+---
+
+## Action-Beispiele
+
+Vollstaendige Beispiele fuer verschiedene Action-Typen (referenziert von [Action-Schema](#action-schema-unified)):
+
+### Weapon Attacks
+
+**Melee mit Knockdown (Wolf Bite):**
+```json
+{
+  "name": "Bite",
+  "actionType": "melee-weapon",
+  "timing": { "type": "action" },
+  "range": { "type": "reach", "normal": 5 },
+  "targeting": { "type": "single" },
+  "attack": { "bonus": 4 },
+  "damage": { "dice": "2d4", "modifier": 2, "type": "piercing" },
+  "effects": [{
+    "condition": "prone",
+    "duration": { "type": "instant" },
+    "affectsTarget": "enemy"
+  }],
+  "conditionalBonuses": [{
+    "condition": "ally-adjacent",
+    "bonus": { "type": "advantage" }
+  }]
+}
+```
+
+**Ranged (Shortbow):**
+```json
+{
+  "name": "Shortbow",
+  "actionType": "ranged-weapon",
+  "timing": { "type": "action" },
+  "range": { "type": "ranged", "normal": 80, "long": 320 },
+  "targeting": { "type": "single" },
+  "attack": { "bonus": 4 },
+  "damage": { "dice": "1d6", "modifier": 2, "type": "piercing" }
+}
+```
+
+### AoE & Save-basiert
+
+**Dragon Breath (Cone):**
+```json
+{
+  "name": "Fire Breath",
+  "actionType": "aoe",
+  "timing": { "type": "action" },
+  "range": { "type": "self", "normal": 0 },
+  "targeting": {
+    "type": "area",
+    "aoe": { "shape": "cone", "size": 30, "origin": "self" },
+    "friendlyFire": true
+  },
+  "save": { "ability": "dex", "dc": 13, "onSave": "half" },
+  "damage": { "dice": "6d6", "modifier": 0, "type": "fire" },
+  "recharge": { "type": "recharge", "range": [5, 6] }
+}
+```
+
+**Fireball (Sphere):**
+```json
+{
+  "name": "Fireball",
+  "actionType": "aoe",
+  "timing": { "type": "action" },
+  "range": { "type": "ranged", "normal": 150 },
+  "targeting": {
+    "type": "area",
+    "aoe": { "shape": "sphere", "size": 20, "origin": "point" },
+    "friendlyFire": true
+  },
+  "save": { "ability": "dex", "dc": 15, "onSave": "half" },
+  "damage": { "dice": "8d6", "modifier": 0, "type": "fire" },
+  "spellSlot": { "level": 3, "upcastDice": "1d6" },
+  "components": { "verbal": true, "somatic": true, "material": "bat guano and sulfur" }
+}
+```
+
+### Buffs & Debuffs
+
+**Bless (Dice-Bonus):**
+```json
+{
+  "name": "Bless",
+  "actionType": "buff",
+  "timing": { "type": "action" },
+  "range": { "type": "ranged", "normal": 30 },
+  "targeting": { "type": "multiple", "count": 3 },
+  "autoHit": true,
+  "effects": [{
+    "statModifiers": [
+      { "stat": "attack", "dice": "1d4", "type": "bonus" },
+      { "stat": "saves", "dice": "1d4", "type": "bonus" }
+    ],
+    "duration": { "type": "concentration", "value": 1 },
+    "affectsTarget": "ally"
+  }],
+  "concentration": true,
+  "spellSlot": { "level": 1 },
+  "components": { "verbal": true, "somatic": true, "material": "holy water" }
+}
+```
+
+**Shield of Faith (AC-Buff):**
+```json
+{
+  "name": "Shield of Faith",
+  "actionType": "buff",
+  "timing": { "type": "bonus" },
+  "range": { "type": "ranged", "normal": 60 },
+  "targeting": { "type": "single" },
+  "autoHit": true,
+  "effects": [{
+    "statModifiers": [{ "stat": "ac", "value": 2, "type": "bonus" }],
+    "duration": { "type": "concentration", "value": 10 },
+    "affectsTarget": "ally"
+  }],
+  "concentration": true,
+  "spellSlot": { "level": 1 }
+}
+```
+
+### Reactions & Legendary
+
+**Shield (Reaction):**
+```json
+{
+  "name": "Shield",
+  "actionType": "buff",
+  "timing": {
+    "type": "reaction",
+    "trigger": "when hit by attack or targeted by magic missile",
+    "triggerCondition": { "event": "attacked" }
+  },
+  "range": { "type": "self", "normal": 0 },
+  "targeting": { "type": "single" },
+  "autoHit": true,
+  "effects": [{
+    "statModifiers": [{ "stat": "ac", "value": 5, "type": "bonus" }],
+    "duration": { "type": "rounds", "value": 1 },
+    "affectsTarget": "self"
+  }],
+  "spellSlot": { "level": 1 },
+  "components": { "verbal": true, "somatic": true }
+}
+```
+
+**Legendary Action (Tail Attack):**
+```json
+{
+  "name": "Tail Attack",
+  "actionType": "melee-weapon",
+  "timing": { "type": "legendary" },
+  "range": { "type": "reach", "normal": 15 },
+  "targeting": { "type": "single" },
+  "attack": { "bonus": 14 },
+  "damage": { "dice": "2d8", "modifier": 8, "type": "bludgeoning" },
+  "recharge": { "type": "legendary", "cost": 1 }
+}
+```
+
+### Multiattack & Lair
+
+**Multiattack (Dragon):**
+```json
+{
+  "name": "Multiattack",
+  "actionType": "multiattack",
+  "timing": { "type": "action" },
+  "range": { "type": "self", "normal": 0 },
+  "targeting": { "type": "single" },
+  "multiattack": {
+    "attacks": [
+      { "actionRef": "Bite", "count": 1 },
+      { "actionRef": "Claw", "count": 2 }
+    ],
+    "description": "The dragon makes three attacks: one with its bite and two with its claws."
+  }
+}
+```
+
+**Lair Action (Magma Eruption):**
+```json
+{
+  "name": "Magma Eruption",
+  "actionType": "lair",
+  "timing": { "type": "lair" },
+  "range": { "type": "ranged", "normal": 120 },
+  "targeting": {
+    "type": "area",
+    "aoe": { "shape": "cylinder", "size": 10, "height": 20, "origin": "point" }
+  },
+  "save": { "ability": "dex", "dc": 15, "onSave": "half" },
+  "damage": { "dice": "3d6", "modifier": 0, "type": "fire" },
+  "effects": [{
+    "terrain": "difficult",
+    "duration": { "type": "rounds", "value": 1 },
+    "affectsTarget": "any"
+  }],
+  "recharge": { "type": "lair" },
+  "source": "lair"
+}
+```
+
+### Spezial-Aktionen
+
+**Grapple (Contested Check):**
+```json
+{
+  "name": "Grapple",
+  "actionType": "special",
+  "timing": { "type": "action" },
+  "range": { "type": "reach", "normal": 5 },
+  "targeting": { "type": "single" },
+  "contested": {
+    "attackerSkill": "athletics",
+    "defenderChoice": ["athletics", "acrobatics"],
+    "onSuccess": {
+      "condition": "grappled",
+      "duration": { "type": "until-save" },
+      "affectsTarget": "enemy"
+    },
+    "sizeLimit": 1
+  }
+}
+```
+
+**Power Word Kill (HP-Threshold):**
+```json
+{
+  "name": "Power Word Kill",
+  "actionType": "save-effect",
+  "timing": { "type": "action" },
+  "range": { "type": "ranged", "normal": 60 },
+  "targeting": { "type": "single" },
+  "autoHit": true,
+  "hpThreshold": {
+    "threshold": 100,
+    "comparison": "equal-or-below",
+    "effect": {
+      "description": "The creature dies instantly",
+      "affectsTarget": "enemy"
+    },
+    "failEffect": {
+      "description": "The spell has no effect",
+      "affectsTarget": "enemy"
+    }
+  },
+  "spellSlot": { "level": 9 },
+  "components": { "verbal": true }
+}
+```
+
+**Conjure Animals (Summoning):**
+```json
+{
+  "name": "Conjure Animals",
+  "actionType": "summon",
+  "timing": { "type": "action" },
+  "range": { "type": "ranged", "normal": 60 },
+  "targeting": { "type": "area" },
+  "autoHit": true,
+  "summon": {
+    "creatureType": "beast",
+    "crLimit": 2,
+    "count": 8,
+    "duration": { "type": "concentration", "value": 60 },
+    "control": "friendly"
+  },
+  "concentration": true,
+  "spellSlot": { "level": 3, "upcastEffect": "double creatures per 2 levels" },
+  "components": { "verbal": true, "somatic": true }
+}
+```
+
+**Polymorph (Transformation):**
+```json
+{
+  "name": "Polymorph",
+  "actionType": "transform",
+  "timing": { "type": "action" },
+  "range": { "type": "ranged", "normal": 60 },
+  "targeting": { "type": "single" },
+  "save": { "ability": "wis", "dc": 16, "onSave": "none" },
+  "transform": {
+    "into": "beast",
+    "crLimit": 6,
+    "duration": { "type": "concentration", "value": 60 },
+    "retainMind": false,
+    "retainHp": false
+  },
+  "concentration": true,
+  "spellSlot": { "level": 4 },
+  "components": { "verbal": true, "somatic": true, "material": "caterpillar cocoon" }
+}
+```
 
 ---
 
@@ -655,7 +1257,7 @@ Vault/SaltMarcher/data/
 
 ---
 
-*Siehe auch: [NPC-System.md](NPC-System.md) | [Encounter-System.md](../features/Encounter-System.md) | [Terrain.md](Terrain.md) | [EntityRegistry.md](../architecture/EntityRegistry.md)*
+*Siehe auch: [NPC-System.md](NPC-System.md) | [encounter/Encounter.md](../features/encounter/Encounter.md) | [Terrain.md](Terrain.md) | [EntityRegistry.md](../architecture/EntityRegistry.md)*
 
 ## Tasks
 
@@ -664,29 +1266,38 @@ Vault/SaltMarcher/data/
 | 1200 | ⛔ | Creature | core | CreatureDefinition Schema: Vollständiges Interface implementieren | hoch | Ja | #2703, #2949, #2950, #1205, #1206, #1207, #1208, #1209 | Creature.md#schema, EntityRegistry.md#creature-hierarchie-definition-vs-instanz-vs-npc | src/core/schemas/creature.ts:creatureDefinitionSchema |
 | 1201 | ✅ | Creature | core | Basis-Statistiken: CR, HP, AC, Size | hoch | Ja | #1200 | Creature.md#creaturedefinition | src/core/schemas/creature.ts:creatureDefinitionSchema (Zeile 112-121) |
 | 1202 | ✅ | Creature | core | terrainAffinities: Array von Terrain-IDs | hoch | Ja | #1200, #1700 | Creature.md#creaturedefinition, Terrain.md#schema | src/core/schemas/creature.ts:creatureDefinitionSchema (Zeile 134) |
-| 1203 | ✅ | Creature | core | activeTime: TimeSegment-Array (dawn, day, dusk, night) | hoch | Ja | #1200 | Creature.md#creaturedefinition, Encounter-System.md#tile-eligibility | src/core/schemas/creature.ts:creatureDefinitionSchema (Zeile 137) |
+| 1203 | ✅ | Creature | core | activeTime: TimeSegment-Array (dawn, day, dusk, night) | hoch | Ja | #1200 | Creature.md#creaturedefinition, encounter/Encounter.md#tile-eligibility | src/core/schemas/creature.ts:creatureDefinitionSchema (Zeile 137) |
 | 1204 | ✅ | Creature | core | lootTags: String-Array für Loot-System | hoch | Ja | #1200 | Creature.md#creaturedefinition, Loot-Feature.md#loot-tags | src/core/schemas/creature.ts:creatureDefinitionSchema (Zeile 145) |
 | 1205 | ✅ | Creature | core | DefaultLootEntry Interface: itemId, chance, quantity | hoch | Ja | - | Creature.md#defaultloot, Item.md#schema | [neu] src/core/schemas/creature.ts:defaultLootEntrySchema |
 | 1206 | ✅ | Creature | core | defaultLoot Array: Garantiertes/wahrscheinliches Loot | hoch | Ja | - | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot | [neu] src/core/schemas/creature.ts:creatureDefinitionSchema |
-| 1207 | ✅ | Creature | core | CreaturePreferences Interface: Gewichtungs-Modifikatoren | hoch | Ja | #1200 | Creature.md#creaturepreferences, Encounter-System.md#tile-eligibility | src/core/schemas/creature.ts:creaturePreferencesSchema (Zeile 73-92) |
-| 1208 | ✅ | Creature | core | AbilityScores Interface: STR, DEX, CON, INT, WIS, CHA | hoch | Ja | #1200 | Creature.md#creaturedefinition, Combat-System.md#schemas | src/core/schemas/creature.ts:abilityScoresSchema (Zeile 45-52) |
-| 1209 | ✅ | Creature | core | SpeedBlock Interface: walk, fly, swim, climb, burrow | hoch | Ja | #1200 | Creature.md#creaturedefinition | src/core/schemas/creature.ts:speedBlockSchema (Zeile 59-65) |
+| 1207 | ✅ | Creature | core | CreaturePreferences Interface: Gewichtungs-Modifikatoren | hoch | Ja | - | Creature.md#creaturepreferences, encounter/Encounter.md#tile-eligibility | src/core/schemas/creature.ts:creaturePreferencesSchema (Zeile 73-92) |
+| 1208 | ✅ | Creature | core | AbilityScores Interface: STR, DEX, CON, INT, WIS, CHA | hoch | Ja | - | Creature.md#creaturedefinition, Combat-System.md#schemas | src/core/schemas/creature.ts:abilityScoresSchema (Zeile 45-52) |
+| 1209 | ✅ | Creature | core | SpeedBlock Interface: walk, fly, swim, climb, burrow | hoch | Ja | - | Creature.md#creaturedefinition | src/core/schemas/creature.ts:speedBlockSchema (Zeile 59-65) |
 | 1210 | ⛔ | Creature | core | Senses Interface: passivePerception, darkvision, blindsight, etc. | mittel | Nein | #1200 | Creature.md#creaturedefinition, Creature.md#sinne-post-mvp | [neu] src/core/schemas/creature.ts:sensesSchema |
 | 1211 | ✅ | Creature | core | Creature Runtime Interface: instanceId, currentHp, tempHp, conditions | hoch | Ja | #1200 | Creature.md#creature-runtime, Combat-System.md#schemas | src/core/schemas/creature.ts:creatureInstanceSchema (Zeile 183-211) |
 | 1212 | ⛔ | Creature | features | Auto-Sync: creature.terrainAffinities ← terrain.nativeCreatures bidirektional | hoch | Ja | #1202, #1700 | Creature.md#auto-sync-verhalten, Terrain.md#auto-sync-mechanismus | [neu] src/features/creature/auto-sync.ts:syncCreatureToTerrain() |
-| 1214 | ✅ | Creature | features | Encounter Integration: filterEligibleCreatures() | hoch | Ja | #200, #1202, #1203 | Creature.md#encounter-feature, Encounter-System.md#tile-eligibility | src/features/encounter/encounter-utils.ts:filterEligibleCreatures() (Zeile 45-61) |
+| 1214 | ✅ | Creature | features | Encounter Integration: filterEligibleCreatures() | hoch | Ja | #200, #1202, #1203 | Creature.md#encounter-feature, encounter/Encounter.md#tile-eligibility | src/features/encounter/encounter-utils.ts:filterEligibleCreatures() (Zeile 45-61) |
 | 1215 | ✅ | Creature | features | Combat Integration: createCombatCreature() Factory | hoch | Ja | #300, #1211 | Creature.md#combat-feature, Combat-System.md#schemas | src/features/combat/combat-utils.ts:createCombatCreature() (Zeile 90-99), createParticipantFromCreature() (Zeile 108-125) |
-| 1216 | ⛔ | Creature | features | Loot Integration: defaultLoot Processing bei Encounter | hoch | Ja | #215, #705, #1206 | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot, Encounter-System.md#schemas | src/features/loot/loot-utils.ts:mergeLootTags() (Zeile 130-145 nutzt nur lootTags), [neu] src/features/loot/loot-utils.ts:processDefaultLoot() |
+| 1216 | ⛔ | Creature | features | Loot Integration: defaultLoot Processing bei Encounter | hoch | Ja | #705, #1206 | Creature.md#defaultloot, Loot-Feature.md#creature-default-loot, encounter/Encounter.md#schemas | src/features/loot/loot-utils.ts:mergeLootTags() (Zeile 130-145 nutzt nur lootTags), [neu] src/features/loot/loot-utils.ts:processDefaultLoot() |
 | 1217 | ⛔ | Creature | infrastructure | Storage: creature/ und npc/ Verzeichnisse | hoch | Ja | #1200, #1300, #2802 | Creature.md#storage, EntityRegistry.md#storage, NPC-System.md#npc-schema | [neu] src/infrastructure/vault-entity-registry.adapter.ts (creature/npc-Verzeichnis-Setup) |
 | 1218 | ⛔ | Creature | infrastructure | Bundled Creatures: Mitgelieferte Basis-Kreaturen (_bundled/) | mittel | Ja | #1217 | Creature.md#storage | presets/creatures/base-creatures.json (8 creatures vorhanden, aber Vault-Integration fehlt) |
-| 1219 | ⛔ | Creature | core | Vollständiger D&D 5e Statblock: Skills, Saves, Resistances, etc. | mittel | Nein | #1200 | Creature.md#creaturedefinition | src/core/schemas/creature.ts:creatureDefinitionSchema (actions vorhanden Zeile 159, aber Skills/Saves/Resistances fehlen) [neu] skillProficienciesSchema, savingThrowProficienciesSchema, resistancesSchema |
+| 1219 | ⛔ | Creature | core | Vollständiger D&D 5e Statblock: Skills, Saves, Resistances, etc. | mittel | Nein | #1200, #3238, #3239, #3241, #3242 | Creature.md#creaturedefinition | src/core/schemas/creature.ts:creatureDefinitionSchema (actions vorhanden Zeile 159, aber Skills/Saves/Resistances fehlen) [neu] skillProficienciesSchema, savingThrowProficienciesSchema, resistancesSchema |
 | 1220 | ⛔ | Creature | core | Actions Interface: Attack, Spellcasting, Special Abilities | mittel | Nein | #1200 | Creature.md#creaturedefinition | src/core/schemas/creature.ts:creatureDefinitionSchema (actions als string[] Zeile 159), [neu] actionSchema mit strukturiertem Interface |
-| 1221 | ⛔ | Creature | core | Legendary Actions Interface: Legendary Actions für Boss-Monster | niedrig | Nein | #1200, #1220 | Creature.md#creaturedefinition, Combat-System.md#post-mvp-erweiterungen | [neu] src/core/schemas/creature.ts:legendaryActionSchema, creatureDefinitionSchema erweitern |
-| 1222 | ⛔ | Creature | features | Sinne-System: Encounter-Trigger basierend auf Sichtweite | mittel | Nein | #1210, #1214 | Creature.md#sinne-post-mvp, Encounter-System.md#tile-eligibility | [neu] src/features/encounter/visibility.ts:checkCreatureVisibility() |
+| 1221 | ⛔ | Creature | features | Legendary Actions Interface: Legendary Actions für Boss-Monster | niedrig | Nein | #1200, #1220 | Creature.md#creaturedefinition, Combat-System.md#post-mvp-erweiterungen | [neu] src/core/schemas/creature.ts:legendaryActionSchema, creatureDefinitionSchema erweitern |
+| 1222 | ⛔ | Creature | features | Sinne-System: Encounter-Trigger basierend auf Sichtweite | mittel | Nein | #1210, #1214 | Creature.md#sinne-post-mvp, encounter/Encounter.md#tile-eligibility | [neu] src/features/encounter/visibility.ts:checkCreatureVisibility() |
 | 1223 | ⛔ | Creature | features | Passive Perception für Stealth-Checks | mittel | Nein | #1210, #1222 | Creature.md#sinn-typen | [neu] src/features/encounter/visibility.ts:calculatePassivePerceptionDC() |
-| 2949 | ⛔ | Creature | core | CreatureDetectionProfile Schema (noiseLevel, scentStrength, stealthAbilities) - REQUIRED auf CreatureDefinition | hoch | Ja | #1200 | Creature.md#detection-profil | schemas/creature.ts:creatureDetectionProfileSchema |
-| 2950 | ✅ | Creature | core | StealthAbility Type (burrowing, invisibility, ethereal, shapechange, mimicry, ambusher) | hoch | Ja | - | Creature.md#stealthability | schemas/creature.ts:stealthAbilitySchema |
+| 2949 | 🟢 | Creature | core | CreatureDetectionProfile Schema (noiseLevel, scentStrength, stealthAbilities) - REQUIRED auf CreatureDefinition | hoch | Ja | - | Balance.md#multi-sense-detection | schemas/creature.ts:creatureDetectionProfileSchema |
+| 2950 | ✅ | Creature | core | StealthAbility Type (burrowing, invisibility, ethereal, shapechange, mimicry, ambusher) | hoch | Ja | - | Balance.md#multi-sense-detection | schemas/creature.ts:stealthAbilitySchema |
 | 2961 | ⛔ | Creature | features | Design-Rollen Ableitung: deriveDesignRole() aus Statblock | mittel | Ja | #1200 | Creature.md#design-rollen-mcdm-basiert | [neu] src/features/creature/design-role.ts:deriveDesignRole() |
 | 3003 | ⛔ | Creature | core | carriesLoot: boolean Feld (default humanoid=true, beast=false) | niedrig | Nein | #1200 | Creature.md#loot-kategorien | - |
 | 3004 | ⛔ | Creature | core | stashLocationHint: string Feld (Verweis auf Hoard-Location) | niedrig | Nein | #1200 | Creature.md#loot-kategorien | - |
-| 3129 | ⬜ | Creature | - | Stealth-Ability-Priorität: getPrimaryStealthAbility() Implementation | mittel | nein | #2950, #2949 | Creature.md#stealth-ability-prioritaet | - |
+| 3129 | ⛔ | Creature | features | Stealth-Ability-Priorität: getPrimaryStealthAbility() Implementation | mittel | nein | #2950, #2949 | Creature.md#stealth-ability-prioritaet | - |
+| 3238 | ⬜ | Creature | core | DamageType Enum: acid, bludgeoning, cold, fire, force, lightning, necrotic, piercing, poison, psychic, radiant, slashing, thunder | mittel | Nein | - | Creature.md#creaturedefinition | - |
+| 3239 | ⬜ | Creature | core | Condition Enum: blinded, charmed, deafened, frightened, grappled, incapacitated, invisible, paralyzed, petrified, poisoned, prone, restrained, stunned, unconscious | mittel | Nein | - | Creature.md#creaturedefinition | - |
+| 3241 | ⬜ | Creature | core | SkillProficiencies Schema: Record<SkillName, 'proficient' | 'expertise'> für creature.skills | mittel | Nein | #1200 | Creature.md#creaturedefinition | - |
+| 3242 | ⬜ | Creature | core | SavingThrowProficiencies Schema: Record<AbilityName, boolean> für creature.savingThrows | mittel | Nein | #1200, #1208 | Creature.md#creaturedefinition | - |
+| 3243 | ⬜ | Creature | core | Reactions Interface: reactions?: Action[] analog zu actions/legendaryActions | mittel | Nein | #1200, #1220 | Creature.md#creaturedefinition | - |
+| 3244 | ⬜ | Creature | core | Languages Feld: languages?: string[] für Sprachen der Kreatur | niedrig | Nein | #1200 | Creature.md#creaturedefinition | - |
+| 3245 | ⬜ | Creature | core | Creature.names Feld: names?: string[] für Fallback-Namensgenerierung bei fraktionslosen Creatures (von buildCultureFromCreatureTags genutzt) | mittel | -d | - | NPC-System.md#npc-generierung | - |
+| 3246 | ⬜ | Creature | core | Creature.quirks Feld: quirks?: WeightedQuirk[] für Fallback-Quirks bei fraktionslosen Creatures | mittel | -d | - | NPC-System.md#npc-generierung | - |
+| 3247 | ⬜ | Creature | core | Creature.goals Feld: goals?: WeightedGoal[] für Goal-Pool-Hierarchie in selectPersonalGoal() | mittel | -d | - | NPC-System.md#goal-pool-hierarchie | - |

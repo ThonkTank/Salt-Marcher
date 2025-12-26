@@ -11,8 +11,13 @@
 │                                                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  SCHRITT 1: LESELISTE ABARBEITEN                                │
-│  → (Siehe separaten LESELISTE-Block oben)                       │
+│  ⛔ SCHRITT 1: LESELISTE ABARBEITEN (NICHT ÜBERSPRINGBAR)        │
+│  → Siehe LESELISTE-Block oben - VOLLSTÄNDIG befolgen            │
+│  → TodoWrite mit ALLEN Docs erstellen                           │
+│  → JEDEN Doc lesen und Todo als completed markieren             │
+│  → ERST DANACH zu Schritt 2 weitergehen                         │
+│                                                                 │
+│  ⚠️ OHNE abgeschlossene Leseliste ist der Workflow UNGÜLTIG     │
 │                              ↓                                  │
 │  SCHRITT 2: BUG VERSTEHEN                                       │
 │  ┌───────────────────────────────────────────────────────────┐  │

@@ -424,6 +424,16 @@ Overworld-Map "Westeros"
 
 Overland-Sichtweiten-Visualisierung fuer Hex-Maps. Ermoeglicht dem GM zu sehen, welche Tiles die Party sehen kann.
 
+**Hinweis:** Dies ist die **Overland-Visibility** (Hex-basiert, fuer Fog-of-War). Fuer die **Encounter-Visibility** (Feet-basiert, fuer Kreatur-Erkennung) siehe:
+
+→ [Terrain.md#encountervisibility](../domain/Terrain.md#encountervisibility-erklaerung)
+→ [Balance.md#encounter-groessen-modifier](encounter/Balance.md#encounter-groessen-modifier)
+
+| System | Einheit | Zweck | Status |
+|--------|---------|-------|:------:|
+| **Overland-Visibility** | Hexes | Welche Tiles sind auf der Map sichtbar? | Post-MVP |
+| **Encounter-Visibility** | Feet | Wie weit kann die Party Kreaturen erkennen? | MVP |
+
 ### Konzept
 
 - **Overlay:** Halbtransparentes graues Overlay ueber nicht-sichtbare Tiles (merkbar aber nicht blockierend)
@@ -680,7 +690,7 @@ Travel-Feature operiert nur auf Overworld-Maps:
 | 827 | ⛔ | Map | features | TownMap Weather-Vererbung: Wetter vom Parent-Overworld-Tile übernehmen | hoch | Ja | #830, #820, #110, #801 | Map-Feature.md#wetter-auf-sub-maps, Weather-System.md#multi-map-weather | src/features/weather/weather-service.ts:getWeatherForMap() [neu] |
 | 829 | ⛔ | Map | features | State-Persistenz bei Map-Wechsel (Party-Position pro Map, globale Zeit, Wetter-State) | hoch | Ja | #821, #826, #900, #825 | Map-Feature.md#state-persistenz-bei-map-wechsel, Map-Navigation.md | src/features/map/map-service.ts:navigateToMap() [neu] |
 | 831 | ⛔ | Map | core | Street Schema (id, name, path, width) | mittel | Nein | #830 | Map-Feature.md#townmap | src/core/schemas/map.ts:streetSchema [neu] |
-| 832 | ⛔ | Map | core | Intersection Schema (id, position, connectedStreets) | mittel | Nein | #830 | Map-Feature.md#townmap | src/core/schemas/map.ts:intersectionSchema [neu] |
+| 832 | ⛔ | Map | features | Intersection Schema (id, position, connectedStreets) | mittel | Nein | #830 | Map-Feature.md#townmap | src/core/schemas/map.ts:intersectionSchema [neu] |
 | 834 | ⛔ | Map | core | BuildingType Type (tavern, shop, temple, etc.) | mittel | Nein | #833 | Map-Feature.md#townmap | src/core/schemas/map.ts:buildingTypeSchema [neu] |
 | 836 | ⛔ | Map | features | Town Navigation Feature (Strassen-basiertes Routing, Wegberechnung) | mittel | Nein | #830, #837, #831, #832 | Map-Feature.md#town-strassen-navigation | src/features/town/town-service.ts [neu] |
 | 838 | ⛔ | Map | features | town:route-calculated Event | mittel | Nein | #837 | Map-Feature.md#town-strassen-navigation, Events-Catalog.md | src/features/town/town-service.ts:publishRouteCalculated() [neu], src/core/events/domain-events.ts:TOWN_ROUTE_CALCULATED |

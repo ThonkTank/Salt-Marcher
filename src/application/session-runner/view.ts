@@ -27,6 +27,7 @@ import type {
   SidebarPanel,
   SidebarPanelCallbacks,
 } from './panels';
+import { VIEW_TYPE_DETAIL_VIEW } from '@/application/detail-view/types';
 
 // ============================================================================
 // View Dependencies
@@ -93,7 +94,6 @@ export class SessionRunnerView extends ItemView {
       notificationService: this.deps.notificationService,
       eventBus: this.deps.eventBus,
       weatherFeature: this.deps.weatherFeature,
-      encounterFeature: this.deps.encounterFeature,
       questFeature: this.deps.questFeature,
     });
 
@@ -221,10 +221,20 @@ export class SessionRunnerView extends ItemView {
       },
 
       // Party Management
-      // TODO: Implement Party-Tab in DetailView (#3216-#3223)
       onManageParty: async () => {
-        // Party-Tab noch nicht implementiert - wird später DetailView öffnen
-        this.deps.notificationService?.info('Party-Tab kommt bald (DetailView #3216)');
+        // Get or create right leaf for DetailView
+        const rightLeaf = this.app.workspace.getRightLeaf(false);
+        if (!rightLeaf) return;
+
+        // Open/activate DetailView with Party-Tab
+        await rightLeaf.setViewState({
+          type: VIEW_TYPE_DETAIL_VIEW,
+          active: true,
+          state: { activeTab: 'party' },
+        });
+
+        // Reveal the leaf
+        this.app.workspace.revealLeaf(rightLeaf);
       },
 
       // Quest Management

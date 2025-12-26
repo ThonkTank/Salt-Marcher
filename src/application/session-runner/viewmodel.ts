@@ -26,7 +26,6 @@ import type { PartyFeaturePort } from '@/features/party';
 import type { TravelFeaturePort, TravelState, Route } from '@/features/travel';
 import type { TimeFeaturePort } from '@/features/time';
 import type { WeatherFeaturePort } from '@/features/weather';
-import type { EncounterFeaturePort } from '@/features/encounter';
 import type { QuestFeaturePort } from '@/features/quest';
 import type { NotificationService } from '@/application/shared';
 import type {
@@ -52,7 +51,6 @@ export interface SessionRunnerViewModelDeps {
   notificationService: NotificationService;
   eventBus?: EventBus; // Optional during migration
   weatherFeature?: WeatherFeaturePort; // Optional for debug
-  encounterFeature?: EncounterFeaturePort; // Optional for debug
   questFeature?: QuestFeaturePort; // Optional for quest panel
 }
 
@@ -114,7 +112,6 @@ export function createSessionRunnerViewModel(
     notificationService,
     eventBus,
     weatherFeature,
-    encounterFeature,
     questFeature,
   } = deps;
 
@@ -151,10 +148,6 @@ export function createSessionRunnerViewModel(
     // Weather (optional)
     const weather = weatherFeature?.getCurrentWeather();
     const currentWeather = weather && isSome(weather) ? weather.value : null;
-
-    // Encounter (optional)
-    const encounter = encounterFeature?.getCurrentEncounter();
-    const currentEncounter = encounter && isSome(encounter) ? encounter.value : null;
 
     // Get terrain name at party position
     const partyPos = isSome(position) ? position.value : null;
@@ -243,7 +236,6 @@ export function createSessionRunnerViewModel(
       currentTime,
       timeSegment,
       currentWeather,
-      currentEncounter,
       // Header state
       header: {
         currentTime,
@@ -475,28 +467,6 @@ export function createSessionRunnerViewModel(
     eventSubscriptions.push(
       eventBus.subscribe(
         EventTypes.ENVIRONMENT_WEATHER_CHANGED,
-        () => {
-          syncFromFeatures();
-          notify(['full']);
-        }
-      )
-    );
-
-    // Encounter generated - update encounter display
-    eventSubscriptions.push(
-      eventBus.subscribe(
-        EventTypes.ENCOUNTER_GENERATED,
-        () => {
-          syncFromFeatures();
-          notify(['full']);
-        }
-      )
-    );
-
-    // Encounter state changed - update encounter display
-    eventSubscriptions.push(
-      eventBus.subscribe(
-        EventTypes.ENCOUNTER_STATE_CHANGED,
         () => {
           syncFromFeatures();
           notify(['full']);

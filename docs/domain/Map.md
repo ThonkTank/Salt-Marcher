@@ -124,7 +124,7 @@ Encounters werden tile-basiert generiert:
 - Fraktions-Praesenz modifiziert Encounter-Typ
 - Danger-Zone bestimmt CR-Budget fuer automatische Generierung
 
-→ Details: [Encounter-System.md](../features/Encounter-System.md)
+→ Details: [encounter/Encounter.md](../features/encounter/Encounter.md)
 
 ---
 
@@ -313,8 +313,8 @@ function getActiveMap(): BaseMap | null;
 | 822 | ✅ | Map | infrastructure | getMap(mapId): Result<BaseMap, AppError> | hoch | Ja | #800 | Map.md#queries, Map-Feature.md#events, EntityRegistry.md#port-interface | src/infrastructure/vault/map-adapter.ts:load() |
 | 823 | ✅ | Map | infrastructure | getMapsByType(type): BaseMap[] | hoch | Ja | #800 | Map.md#queries, Map-Feature.md#map-schemas | src/infrastructure/vault/map-adapter.ts:listIds() |
 | 824 | 📋 | Map | features | getCurrentMap(): Option<BaseMap> Query-Funktion im MapService implementieren | hoch | Ja | #800, #813 | Map.md#queries, Map-Feature.md#state-management | src/features/map/map-service.ts:getCurrentMap() |
-| 801 | ✅ | Map | core | OverworldMap Schema (dimensions, tiles, overlays) | hoch | Ja | #800 | Map.md#schema, Map-Feature.md#overworldmap, Travel-System.md#scope-hex-overland | src/core/schemas/map.ts:overworldMapSchema |
-| 803 | ✅ | Map | core | EncounterZone Schema (encounterChance, creaturePool, factionId) | hoch | Ja | #802 | Map.md#schema, Map-Feature.md#overworldmap, Encounter-System.md#encounterzone | src/core/schemas/map.ts:encounterZoneSchema |
+| 801 | ✅ | Map | features | OverworldMap Schema (dimensions, tiles, overlays) | hoch | Ja | #800 | Map.md#schema, Map-Feature.md#overworldmap, Travel-System.md#scope-hex-overland | src/core/schemas/map.ts:overworldMapSchema |
+| 803 | ✅ | Map | core | EncounterZone Schema (encounterChance, creaturePool, factionId) | hoch | Ja | #802 | Map.md#schema, Map-Feature.md#overworldmap, encounter/Encounter.md#encounterzone | src/core/schemas/map.ts:encounterZoneSchema |
 | 813 | ✅ | Map | features | map:load-requested Event Handler | hoch | Ja | #800 | Map.md#events, Map-Feature.md#events, Events-Catalog.md | src/features/map/map-service.ts:setupEventHandlers(), src/core/events/domain-events.ts:MAP_LOAD_REQUESTED |
 | 821 | ⬜ | Map | features | map:navigated Event nach Navigation publizieren (Domain Event) | hoch | Ja | #800, #813, #820 | Map.md#events, Map-Feature.md#events, Events-Catalog.md#map-events | src/features/map/map-service.ts:publishNavigated() [neu], src/core/events/domain-events.ts:MAP_NAVIGATED |
 | 826 | ✅ | Map | features | Zeit auf Sub-Maps: TimeService global unabhängig von aktueller Map-ID | hoch | Ja | #800, #802, #821, #900 | Map.md#verwendung-in-anderen-features, Time-System.md#global-time, Map-Feature.md | time-feature (globales Time-System) |
@@ -324,7 +324,7 @@ function getActiveMap(): BaseMap | null;
 | 837 | ⛔ | Map | features | town:navigate-requested Event Handler für Strassen-Navigation implementieren | mittel | Nein | #820, #830 | Map.md#events, Map-Feature.md#town-strassen-navigation | src/features/town/town-service.ts:setupEventHandlers() [neu], src/core/events/domain-events.ts:TOWN_NAVIGATE_REQUESTED |
 | 844 | ⛔ | Map | features | Basis-Sichtweite: 1 Hex bei flachem Terrain (VisibilityService) | mittel | Nein | #801, #802, #843 | Map.md, Map-Feature.md#sichtweiten-berechnung, Travel-System.md | src/features/map/visibility-service.ts:calculateVisibility() [neu] |
 | 848 | ⛔ | Map | features | Time-Visibility-Modifier: Tageszeit reduziert Sichtweite (VisibilityService) | mittel | Nein | #843, #900 | Map.md, Map-Feature.md#umwelt-modifier, Time-System.md#sichtweiten-einfluss | src/features/map/visibility-service.ts:getTimeModifier() [neu] |
-| 850 | ⛔ | Map | features | Creature-Sichtweite für Encounter-Trigger-Check implementieren | mittel | Nein | #200, #843, #1202 | Map.md, Map-Feature.md#creature-sichtweite, Creature.md#sinne, Encounter-System.md | src/features/encounter/encounter-service.ts:checkCreatureVisibility() [neu] |
+| 850 | ⛔ | Map | features | Creature-Sichtweite für Encounter-Trigger-Check implementieren | mittel | Nein | #200, #843, #1202 | Map.md, Map-Feature.md#creature-sichtweite, Creature.md#sinne, encounter/Encounter.md | src/features/encounter/encounter-service.ts:checkCreatureVisibility() [neu] |
 | 852 | ⛔ | Map | features | POI glowsAtNight: Nachtleuchtende POIs in Sichtweite berücksichtigen | mittel | Nein | #843, #851, #1515 | Map.md, Map-Feature.md#poi-fernsicht, POI.md#glowsatnight | src/features/map/visibility-service.ts:checkNightGlow() [neu] |
 | 854 | ⛔ | Map | features | VisibilityCache für Performance-Optimierung (Sichtweiten-Berechnungen cachen) | mittel | Nein | #843 | Map.md, Map-Feature.md#performance-optimierung | src/features/map/visibility-cache.ts [neu] |
 | 3010 | ⬜ | Map | core | DangerZone Typ auf OverworldTile ergänzen (safe/normal/dangerous/deadly) | hoch | Ja | #802 | Map.md#danger-zones-und-cr-budget | - |

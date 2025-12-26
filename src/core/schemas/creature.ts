@@ -10,7 +10,6 @@
 import { z } from 'zod';
 import { entityIdSchema, timeSegmentSchema } from './common';
 import { conditionSchema } from './combat';
-import { weightedActivitySchema } from './encounter';
 
 // ============================================================================
 // Sub-Schemas
@@ -272,14 +271,6 @@ export const creatureDefinitionSchema = z.object({
    */
   detectionProfile: creatureDetectionProfileSchema.optional(),
 
-  /**
-   * Creature-type-specific activities for encounter groups.
-   * Medium priority in the Activity-Pool-Hierarchy (below faction, above generic).
-   *
-   * @see docs/features/Encounter-System.md#activity-pool-hierarchie
-   */
-  activities: z.array(weightedActivitySchema).optional(),
-
   // === Loot System ===
 
   /** Tags for loot generation (e.g., ["humanoid", "poor", "tribal"]) */
@@ -312,6 +303,24 @@ export const creatureDefinitionSchema = z.object({
 
   /** Faction this creature belongs to (optional, can be overridden by NPC) */
   defaultFactionId: entityIdSchema('faction').optional(),
+
+  // === Encounter System: Group Sizes ===
+
+  /**
+   * Natural group size for encounters (independent of party level).
+   * Used by social/passing/trace encounters to determine realistic group sizes.
+   * - min: Smallest reasonable group (e.g., lone wolf = 1)
+   * - avg: Typical group size (used for weighted random selection)
+   * - max: Largest reasonable group (e.g., wolf pack = 8)
+   * @see docs/features/Encounter-System.md#gruppengroessen-hierarchie
+   */
+  groupSize: z
+    .object({
+      min: z.number().int().positive(),
+      avg: z.number().int().positive(),
+      max: z.number().int().positive(),
+    })
+    .optional(),
 });
 
 export type CreatureDefinition = z.infer<typeof creatureDefinitionSchema>;
@@ -335,6 +344,13 @@ export const creatureSchema = z.object({
 
   /** Reference to the creature template */
   definitionId: entityIdSchema('creature'),
+
+  /**
+   * Tags copied from CreatureDefinition at instantiation.
+   * Used for filtering (e.g., 'civilian', 'non-combatant').
+   * Optional for backwards compatibility.
+   */
+  tags: z.array(z.string()).optional(),
 
   // === Current State ===
 

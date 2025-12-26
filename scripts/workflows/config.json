@@ -1,31 +1,31 @@
 {
   "featureRouting": {
     "Time": {
-      "docs": ["Time-System.md", "Journal.md"],
+      "docs": ["Time-System.md", "../domain/Journal.md"],
       "path": "docs/features"
     },
     "Calendar": {
-      "docs": ["Time-System.md", "Journal.md"],
+      "docs": ["Time-System.md", "../domain/Journal.md"],
       "path": "docs/features"
     },
     "Travel": {
-      "docs": ["Travel-System.md", "Map-Feature.md", "Time-System.md", "Weather-System.md"],
+      "docs": ["Travel-System.md", "Map-Feature.md", "Time-System.md", "Weather-System.md", "encounter/Initiation.md"],
       "path": "docs/features"
     },
     "Weather": {
-      "docs": ["Weather-System.md", "Time-System.md", "Terrain.md"],
+      "docs": ["Weather-System.md", "Time-System.md", "../domain/Terrain.md"],
       "path": "docs/features"
     },
     "Encounter": {
-      "docs": ["Encounter-System.md", "Encounter-Balancing.md", "NPC-System.md"],
+      "docs": ["encounter/Encounter.md"],
       "path": "docs/features"
     },
     "Combat": {
-      "docs": ["Combat-System.md", "Encounter-System.md", "Character-System.md"],
+      "docs": ["Combat-System.md", "encounter/Encounter.md", "encounter/Difficulty.md", "Character-System.md"],
       "path": "docs/features"
     },
     "Quest": {
-      "docs": ["Quest-System.md", "Quest.md", "Encounter-System.md", "Loot-Feature.md"],
+      "docs": ["Quest-System.md", "../domain/Quest.md", "encounter/Encounter.md", "Loot-Feature.md"],
       "path": "docs/features"
     },
     "Audio": {
@@ -33,15 +33,15 @@
       "path": "docs/features"
     },
     "Loot": {
-      "docs": ["Loot-Feature.md", "Item.md", "Encounter-System.md"],
+      "docs": ["Loot-Feature.md", "../domain/Item.md", "encounter/Flavour.md"],
       "path": "docs/features"
     },
     "LootContainer": {
-      "docs": ["LootContainer.md", "Loot-Feature.md", "Item.md"],
+      "docs": ["LootContainer.md", "../features/Loot-Feature.md", "Item.md"],
       "path": "docs/domain"
     },
     "Map": {
-      "docs": ["Map-Feature.md", "Map.md", "Terrain.md", "Map-Navigation.md"],
+      "docs": ["Map-Feature.md", "../domain/Map.md", "../domain/Terrain.md", "../domain/Map-Navigation.md"],
       "path": "docs/features"
     },
     "Dungeon": {
@@ -49,23 +49,23 @@
       "path": "docs/features"
     },
     "Party": {
-      "docs": ["Character-System.md", "Inventory-System.md", "Item.md"],
+      "docs": ["Character-System.md", "Inventory-System.md", "../domain/Item.md"],
       "path": "docs/features"
     },
     "Character": {
-      "docs": ["Character-System.md", "Inventory-System.md", "Item.md"],
+      "docs": ["Character-System.md", "Inventory-System.md", "../domain/Item.md"],
       "path": "docs/features"
     },
     "Inventory": {
-      "docs": ["Inventory-System.md", "Item.md", "Character-System.md"],
+      "docs": ["Inventory-System.md", "../domain/Item.md", "Character-System.md"],
       "path": "docs/features"
     },
     "Creature": {
-      "docs": ["Creature.md", "EntityRegistry.md"],
+      "docs": ["Creature.md", "../architecture/EntityRegistry.md"],
       "path": "docs/domain"
     },
     "Monster": {
-      "docs": ["Creature.md", "EntityRegistry.md"],
+      "docs": ["Creature.md", "../architecture/EntityRegistry.md"],
       "path": "docs/domain"
     },
     "NPC": {
@@ -85,7 +85,7 @@
       "path": "docs/domain"
     },
     "Item": {
-      "docs": ["Item.md", "EntityRegistry.md"],
+      "docs": ["Item.md", "../architecture/EntityRegistry.md"],
       "path": "docs/domain"
     },
     "Terrain": {
@@ -101,27 +101,27 @@
       "path": "docs/domain"
     },
     "Journal": {
-      "docs": ["Journal.md", "Time-System.md"],
+      "docs": ["Journal.md", "../features/Time-System.md"],
       "path": "docs/domain"
     },
     "SessionRunner": {
-      "docs": ["SessionRunner.md", "Application.md", "Data-Flow.md"],
+      "docs": ["SessionRunner.md", "../architecture/Application.md", "../architecture/Data-Flow.md"],
       "path": "docs/application"
     },
     "DetailView": {
-      "docs": ["DetailView.md", "Application.md", "Combat-System.md", "Encounter-System.md"],
+      "docs": ["DetailView.md", "../architecture/Application.md", "../features/Combat-System.md", "../features/encounter/Encounter.md"],
       "path": "docs/application"
     },
     "Cartographer": {
-      "docs": ["Cartographer.md", "Map-Feature.md", "Map.md", "Terrain.md"],
+      "docs": ["Cartographer.md", "../features/Map-Feature.md", "../domain/Map.md", "../domain/Terrain.md"],
       "path": "docs/application"
     },
     "Library": {
-      "docs": ["Library.md", "EntityRegistry.md", "Application.md"],
+      "docs": ["Library.md", "../architecture/EntityRegistry.md", "../architecture/Application.md"],
       "path": "docs/application"
     },
     "Almanac": {
-      "docs": ["Time-System.md", "Journal.md", "SessionRunner.md"],
+      "docs": ["../features/Time-System.md", "../domain/Journal.md", "SessionRunner.md"],
       "path": "docs/application"
     },
     "Application": {

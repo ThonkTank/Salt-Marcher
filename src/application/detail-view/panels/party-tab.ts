@@ -235,7 +235,7 @@ export function createPartyTab(
     const rightSide = document.createElement('div');
     rightSide.style.cssText = 'display: flex; align-items: center; gap: 12px;';
 
-    // HP display with +/- (placeholder for #3219)
+    // HP display with [Value][+][-] pattern (#3219)
     const hpSection = document.createElement('div');
     hpSection.style.cssText = 'display: flex; align-items: center; gap: 4px;';
 
@@ -244,18 +244,43 @@ export function createPartyTab(
     hpValue.textContent = `${member.currentHp}/${member.maxHp}`;
     hpSection.appendChild(hpValue);
 
+    // HP change input field
+    const hpInput = document.createElement('input');
+    hpInput.type = 'number';
+    hpInput.min = '1';
+    hpInput.value = '1';
+    hpInput.style.cssText = `
+      width: 40px;
+      height: 24px;
+      padding: 2px 4px;
+      border: 1px solid var(--background-modifier-border);
+      border-radius: 4px;
+      background: var(--background-primary);
+      color: var(--text-normal);
+      font-size: 12px;
+      text-align: center;
+    `;
+    hpInput.title = 'Wert für Heilen/Schaden';
+    hpSection.appendChild(hpInput);
+
     const plusBtn = document.createElement('button');
     plusBtn.textContent = '+';
     plusBtn.style.cssText = getSmallButtonStyle();
     plusBtn.title = 'Heilen';
-    plusBtn.addEventListener('click', () => callbacks.onHpChange(member.id, 1));
+    plusBtn.addEventListener('click', () => {
+      const value = Math.max(1, parseInt(hpInput.value, 10) || 1);
+      callbacks.onHpChange(member.id, value);
+    });
     hpSection.appendChild(plusBtn);
 
     const minusBtn = document.createElement('button');
     minusBtn.textContent = '-';
     minusBtn.style.cssText = getSmallButtonStyle();
     minusBtn.title = 'Schaden';
-    minusBtn.addEventListener('click', () => callbacks.onHpChange(member.id, -1));
+    minusBtn.addEventListener('click', () => {
+      const value = Math.max(1, parseInt(hpInput.value, 10) || 1);
+      callbacks.onHpChange(member.id, -value);
+    });
     hpSection.appendChild(minusBtn);
 
     rightSide.appendChild(hpSection);

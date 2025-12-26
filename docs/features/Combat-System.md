@@ -1,6 +1,6 @@
 # Combat-System
 
-> **Lies auch:** [Encounter-System](Encounter-System.md), [Character-System](Character-System.md)
+> **Lies auch:** [Encounter-System](encounter/Encounter.md), [Character-System](Character-System.md)
 > **Wird benoetigt von:** SessionRunner, Dungeon
 
 Initiative-Tracker und Condition-Management fuer D&D Kaempfe.
@@ -17,6 +17,24 @@ Das Combat-System trackt:
 2. **HP-Tracking** - Damage/Healing
 3. **Conditions** - Status-Effekte mit Reminders
 4. **Automatische Effekte** - Start/End-of-Turn Trigger
+
+### Action-Schema
+
+Creature- und Character-Actions werden durch ein einheitliches Schema definiert, das alle D&D 5e Action-Typen unterstuetzt:
+
+- **Attack Types:** Melee/Ranged Weapon, Melee/Ranged Spell, Save-based, AoE
+- **Resolution:** Attack Rolls, Save DCs, Contested Checks, Auto-Hit
+- **Effects:** Damage, Healing, Conditions, Buffs/Debuffs, Forced Movement
+- **Action Economy:** Action, Bonus, Reaction, Legendary, Lair, Mythic
+- **Resources:** Recharge, Per-Day, Spell Slots, Components, Concentration
+
+→ **Vollstaendige Schema-Definition:** [Creature.md#action-schema](../domain/Creature.md#action-schema)
+→ **Action-Beispiele:** [Creature.md#action-beispiele](../domain/Creature.md#action-beispiele)
+
+Das Action-Schema wird verwendet fuer:
+- **Encounter-Generierung:** [Flavour.md#schritt-1-action-schadenspotential-berechnen](encounter/Flavour.md#schritt-1-action-schadenspotential-berechnen) - initialDistance-Berechnung
+- **Difficulty-Balancing:** [Difficulty.md#distance-modifier-action-basiert](encounter/Difficulty.md#distance-modifier-action-basiert) - XP-Modifier
+- **Combat-Resolution:** Start/End-of-Turn Effekte, automatische Reminders
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -703,7 +721,7 @@ Bei Plugin-Reload kann der aktive Combat wiederhergestellt werden:
 
 ---
 
-*Siehe auch: [Character-System.md](Character-System.md) | [Encounter-Balancing.md](Encounter-Balancing.md) | [Encounter-System.md](Encounter-System.md)*
+*Siehe auch: [Character-System.md](Character-System.md) | [encounter/Balance.md](encounter/Balance.md) | [encounter/Encounter.md](encounter/Encounter.md)*
 
 ## Tasks
 
@@ -720,7 +738,7 @@ Bei Plugin-Reload kann der aktive Combat wiederhergestellt werden:
 | 315 | ✅ | Combat | features | CombatEffect hinzufügen (addEffect) | hoch | Ja | #303 | Combat-System.md#combateffect | src/features/combat/combat-service.ts:addEffect(), src/features/combat/combat-store.ts:addEffect() |
 | 317 | ✅ | Combat | features | processTurnStart(): Start-of-Turn Effekte sammeln | hoch | Ja | #315 | Combat-System.md#start-of-turn | src/features/combat/combat-utils.ts:getStartOfTurnEffects() |
 | 319 | ✅ | Combat | features | nextTurn(): Zum nächsten Participant wechseln | hoch | Ja | #307 | Combat-System.md#combat-flow | src/features/combat/combat-service.ts:nextTurn() |
-| 321 | ✅ | Combat | features | combat:start-requested Handler implementieren | hoch | Ja | #225, #305 | Combat-System.md#combat-flow, Encounter-System.md#integration | src/features/combat/combat-service.ts:setupEventHandlers() (Zeile 205-217) |
+| 321 | ✅ | Combat | features | combat:start-requested Handler implementieren | hoch | Ja | #305 | Combat-System.md#combat-flow, encounter/Encounter.md#integration | src/features/combat/combat-service.ts:setupEventHandlers() (Zeile 205-217) |
 | 323 | ✅ | Combat | features | combat:end-requested Handler implementieren | hoch | Ja | #305 | Combat-System.md#events | src/features/combat/combat-service.ts:setupEventHandlers() (Zeile 220-225) |
 | 324 | ✅ | Combat | features | combat:completed Event publizieren mit xpAwarded, roundsTotal | hoch | Ja | #323 | Combat-System.md#events, Combat-System.md#post-combat-resolution | src/features/combat/combat-service.ts:publishCombatCompleted() |
 | 326 | ✅ | Combat | features | combat:participant-hp-changed Event publizieren | hoch | Ja | #308, #309 | Combat-System.md#events, Character-System.md#hp-tracking | src/features/combat/combat-service.ts:publishHpChanged() |
@@ -729,9 +747,9 @@ Bei Plugin-Reload kann der aktive Combat wiederhergestellt werden:
 | 332 | ✅ | Combat | features | combat:effect-added Event publizieren | hoch | Ja | #315 | Combat-System.md#events | src/features/combat/combat-service.ts:addEffect() (Zeile 542-545) |
 | 334 | ✅ | Combat | features | combat:condition-added Event publizieren | hoch | Ja | #312 | Combat-System.md#events | src/features/combat/combat-service.ts:publishConditionAdded() |
 | 336 | ✅ | Combat | features | calculateCombatDuration(): roundNumber × 6 Sekunden | hoch | Ja | #324 | Combat-System.md#zeit-berechnung, Time-System.md#zeit-operationen | src/features/combat/combat-utils.ts:calculateCombatDuration() |
-| 338 | ✅ | Combat | features | XP-Berechnung: Basis-XP aus besiegten Kreaturen | hoch | Ja | #324 | Combat-System.md#xp-berechnung, Encounter-System.md#typ-spezifisches-verhalten | src/features/combat/combat-utils.ts:calculateCombatXp(), src/features/combat/combat-utils.ts:getXpForCr() |
+| 338 | ✅ | Combat | features | XP-Berechnung: Basis-XP aus besiegten Kreaturen | hoch | Ja | #324 | Combat-System.md#xp-berechnung, encounter/Encounter.md#typ-spezifisches-verhalten | src/features/combat/combat-utils.ts:calculateCombatXp(), src/features/combat/combat-utils.ts:getXpForCr() |
 | 340 | ✅ | Combat | features | 40/60 XP-Split: 40% sofort, 60% Quest-Pool | hoch | Ja | #338 | Combat-System.md#xp-berechnung, Quest-System.md#xp-verteilung | src/features/combat/types.ts:CombatResult (UI-Integration offen) |
-| 343 | ⛔ | Combat | application | encounter:resolved Event nach Resolution-Flow | hoch | Ja | #223, #338, #2431, #2441 | Combat-System.md#post-combat-resolution, Encounter-System.md#events, DetailView.md#post-combat-resolution | DetailView/Resolution-UI [neu] (UI-Verantwortung, nicht Combat-Service) |
+| 343 | ⛔ | Combat | application | encounter:resolved Event nach Resolution-Flow | hoch | Ja | #338, #2431, #2441 | Combat-System.md#post-combat-resolution, encounter/Encounter.md#events, DetailView.md#post-combat-resolution | DetailView/Resolution-UI [neu] (UI-Verantwortung, nicht Combat-Service) |
 | 345 | ⬜ | Combat | features | Grid-Positioning: Positionierung auf Battle-Map (Post-MVP) | mittel | Nein | #301 | Combat-System.md#post-mvp-erweiterungen | src/features/combat/types.ts:CombatParticipant.position [neu], UI-Grid [neu] |
 | 347 | ⬜ | Combat | features | Lair Actions: Automatische Trigger (Post-MVP) | niedrig | Nein | #300 | Combat-System.md#post-mvp-erweiterungen | src/features/combat/types.ts:CombatState.lairActions [neu] |
 | 349 | ⬜ | Combat | features | Spell Slot Tracking: Automatische Reduktion (Post-MVP) | niedrig | Nein | #301 | Combat-System.md#post-mvp-erweiterungen, Character-System.md#post-mvp-erweiterungen | src/features/combat/combat-service.ts:trackSpellSlot() [neu], Character-Integration [neu] |
@@ -745,7 +763,7 @@ Bei Plugin-Reload kann der aktive Combat wiederhergestellt werden:
 | 316 | ✅ | Combat | features | CombatEffect entfernen (removeEffect) | hoch | Ja | #303 | Combat-System.md#combateffect | src/features/combat/combat-service.ts:removeEffect(), src/features/combat/combat-store.ts:removeEffect() |
 | 318 | ✅ | Combat | features | processTurnEnd(): Effect-Duration reduzieren | hoch | Ja | #315 | Combat-System.md#effekt-verarbeitung | src/features/combat/combat-store.ts:decrementEffectDurations() (in nextTurn) |
 | 320 | ✅ | Combat | features | Round-Tracking: roundNumber incrementieren bei Umlauf | hoch | Ja | #319 | Combat-System.md#combat-flow | src/features/combat/combat-store.ts:advanceTurn() |
-| 322 | ✅ | Combat | - | combat:started Event publizieren | hoch | Ja | #321 | Combat-System.md#events | src/features/combat/combat-service.ts:publishCombatStarted() |
+| 322 | ✅ | Combat | features | combat:started Event publizieren | hoch | Ja | #321 | Combat-System.md#events | src/features/combat/combat-service.ts:publishCombatStarted() |
 | 325 | ✅ | Combat | features | combat:turn-changed Event publizieren | hoch | Ja | #319 | Combat-System.md#events | src/features/combat/combat-service.ts:publishTurnChanged() |
 | 327 | ✅ | Combat | features | combat:character-downed Event publizieren | hoch | Ja | #311 | Combat-System.md#events | src/features/combat/combat-service.ts:publishCharacterDowned() |
 | 329 | ⬜ | Combat | features | combat:character-died Event Handler: Spieler-Input verarbeiten (0 HP → Tod) | hoch | Ja | #328 | Combat-System.md#events, Combat-System.md#death-saves | src/features/combat/combat-service.ts:publishCharacterDied() [neu] |
@@ -758,8 +776,8 @@ Bei Plugin-Reload kann der aktive Combat wiederhergestellt werden:
 | 344 | ⬜ | Combat | features | Resumable Combat State: initiativeOrder, currentTurnIndex, roundNumber, currentHp, conditions persistieren bei Plugin-Reload | mittel | Nein | #305 | Combat-System.md#resumable-combat-state-skizze | src/features/combat/combat-service.ts:restoreCombat() [neu], Plugin-Daten-Integration [neu] |
 | 346 | ⬜ | Combat | features | Legendary Actions: Tracking für Boss-Kreaturen (Post-MVP) | niedrig | Nein | #301 | Combat-System.md#post-mvp-erweiterungen | src/features/combat/types.ts:CombatParticipant.legendaryActions [neu] |
 | 348 | ⬜ | Combat | features | Reaction-Tracking: Wer hat Reaction verbraucht (Post-MVP) | niedrig | Nein | #301 | Combat-System.md#post-mvp-erweiterungen | src/features/combat/types.ts:CombatParticipant.reactionUsed [neu] |
-| 3034 | ⬜ | Combat | - | Concentrating-Tag visuell anzeigen: 🔮 Icon mit Spell-Name | hoch | Nein | #312, #2421 | Combat-System.md#gm-interface, Combat-System.md#conditions-ui | combat-tab.ts:renderConcentration() [neu], participant-row.ts [ändern] |
-| 3035 | ⬜ | Combat | - | Condition Icons + Tooltips rendern (gemäß Icon-Mapping) | hoch | --spec | #302, #2421 | - | combat-tab.ts:renderConditionIcon() [neu], condition-tooltip.ts [neu] |
-| 3036 | ⬜ | Combat | - | Start-of-Turn Effects UI: Effekt-Liste mit Aktionen anzeigen | hoch | --spec | #317, #2421 | - | combat-tab.ts:renderStartOfTurnEffects() [neu], turn-effect-dialog.ts [neu] |
-| 3037 | ⬜ | Combat | - | End-of-Turn Effects UI: Save-Dialoge anzeigen | hoch | --spec | #318, #2421 | - | combat-tab.ts:renderEndOfTurnEffects() [neu], save-prompt-dialog.ts [neu] |
-| 3038 | ⬜ | Combat | - | Concentration Break Handler: concentratingOn zurücksetzen | hoch | --spec | #331 | - | src/features/combat/combat-service.ts:breakConcentration() [neu] |
+| 3034 | ⬜ | Combat | features | Concentrating-Tag visuell anzeigen: 🔮 Icon mit Spell-Name | hoch | Nein | #312, #2421 | Combat-System.md#gm-interface, Combat-System.md#conditions-ui | combat-tab.ts:renderConcentration() [neu], participant-row.ts [ändern] |
+| 3035 | ⬜ | Combat | features | Condition Icons + Tooltips rendern (gemäß Icon-Mapping) | hoch | --spec | #302, #2421 | - | combat-tab.ts:renderConditionIcon() [neu], condition-tooltip.ts [neu] |
+| 3036 | ⬜ | Combat | features | Start-of-Turn Effects UI: Effekt-Liste mit Aktionen anzeigen | hoch | --spec | #317, #2421 | - | combat-tab.ts:renderStartOfTurnEffects() [neu], turn-effect-dialog.ts [neu] |
+| 3037 | ⬜ | Combat | features | End-of-Turn Effects UI: Save-Dialoge anzeigen | hoch | --spec | #318, #2421 | - | combat-tab.ts:renderEndOfTurnEffects() [neu], save-prompt-dialog.ts [neu] |
+| 3038 | ⬜ | Combat | features | Concentration Break Handler: concentratingOn zurücksetzen | hoch | --spec | #331 | - | src/features/combat/combat-service.ts:breakConcentration() [neu] |

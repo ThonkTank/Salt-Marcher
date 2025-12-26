@@ -2,7 +2,7 @@
  * DetailView - Public API
  *
  * Context-dependent detail panels for SessionRunner companion view.
- * Shows Encounter, Combat tabs (MVP), with more tabs to be added later.
+ * Shows Combat, Party tabs (MVP), with more tabs to be added later.
  */
 
 export { VIEW_TYPE_DETAIL_VIEW } from './types';
@@ -11,7 +11,6 @@ export type {
   DetailViewState,
   DetailViewRenderHint,
   DetailViewRenderCallback,
-  EncounterTabState,
   CombatTabState,
 } from './types';
 

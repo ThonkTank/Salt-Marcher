@@ -40,7 +40,6 @@ import {
   basePoiSchema,
   terrainDefinitionSchema,
   questDefinitionSchema,
-  encounterDefinitionSchema,
   partySchema,
   calendarDefinitionSchema,
   journalEntrySchema,
@@ -64,7 +63,7 @@ const entitySchemas: Partial<Record<EntityType, z.ZodTypeAny>> = {
   poi: basePoiSchema,
   terrain: terrainDefinitionSchema,
   quest: questDefinitionSchema,
-  encounter: encounterDefinitionSchema,
+  encounter: z.object({ id: z.string() }).passthrough(), // Schema will be redefined with new specs
   party: partySchema,
   calendar: calendarDefinitionSchema,
   journal: journalEntrySchema,

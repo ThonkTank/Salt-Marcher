@@ -9,7 +9,6 @@ import type {
   GameDateTime,
   TimeSegment,
   WeatherState,
-  EncounterInstance,
 } from '@core/schemas';
 import type { Route, TravelStatus } from '@/features/travel/types';
 import type { HealthSummary } from '@core/utils';
@@ -203,11 +202,9 @@ export interface RenderState {
   /** Token animation state (for smooth movement) */
   tokenAnimation: TokenAnimationState | null;
 
-  // === Weather & Encounter (for data access) ===
+  // === Weather (for data access) ===
   /** Current weather state */
   currentWeather: WeatherState | null;
-  /** Current encounter */
-  currentEncounter: EncounterInstance | null;
 
   // === UI Layout ===
   /** Header state */
@@ -247,9 +244,8 @@ export function createInitialRenderState(): RenderState {
     travelStatus: 'idle',
     tokenAnimation: null,
 
-    // Weather & Encounter
+    // Weather
     currentWeather: null,
-    currentEncounter: null,
 
     // UI Layout
     header: {

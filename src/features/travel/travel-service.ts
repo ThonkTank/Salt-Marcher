@@ -52,11 +52,6 @@ import type {
   PartyMemberAddedPayload,
   PartyMemberRemovedPayload,
 } from '@core/events/domain-events';
-import {
-  calculateEncounterChance,
-  rollEncounter,
-  DEFAULT_POPULATION,
-} from '../encounter/encounter-chance';
 import type {
   TimeAdvanceRequestedPayload,
   TravelPositionChangedPayload,
@@ -151,14 +146,13 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
   /**
    * Process one tick of the travel loop (advance time by 1 minute).
    * Time-based animation: token moves smoothly, position changes at segment end.
-   * Encounter checks happen at hour boundaries.
    * Returns whether the loop should continue.
    */
   async function processNextTravelTick(
     correlationId?: string
   ): Promise<{ shouldContinue: boolean }> {
     const state = store.getState();
-    const { route, currentSegmentIndex, minutesElapsedSegment, totalHoursTraveled, lastEncounterCheckHour } = state;
+    const { route, currentSegmentIndex } = state;
 
     if (!route || currentSegmentIndex >= route.segments.length) {
       // Route complete
@@ -176,27 +170,10 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
     const updatedState = store.getState();
     const newMinutesSegment = updatedState.minutesElapsedSegment;
 
-    // 2. Calculate total minutes traveled for encounter checks
-    // totalHoursTraveled contains completed segments, add current segment progress
-    const totalMinutesTraveled = totalHoursTraveled * 60 + newMinutesSegment;
-    const currentHour = Math.floor(totalMinutesTraveled / 60);
-
-    // 3. Encounter check at hour boundary
-    if (currentHour > lastEncounterCheckHour) {
-      store.setLastEncounterCheckHour(currentHour);
-      // Party ist noch im Start-Hex des aktuellen Segments (Bug b4 fix)
-      checkForEncounter(segment.from, correlationId);
-
-      // If encounter was generated, travel is paused
-      if (store.getStatus() !== 'traveling') {
-        return { shouldContinue: false };
-      }
-    }
-
-    // 4. Advance game time (1 minute)
+    // 2. Advance game time (1 minute)
     publishTimeAdvance(0, MINUTES_PER_TICK, correlationId);
 
-    // 5. Check if segment is complete
+    // 3. Check if segment is complete
     if (newMinutesSegment >= segmentDurationMinutes) {
       // Move party to segment destination (Pessimistic Save-First)
       const positionResult = await partyFeature.setPosition(segment.to);
@@ -250,56 +227,6 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
         correlationId
       );
     }
-  }
-
-  /**
-   * Check for encounter at position (called at hour boundaries).
-   * Returns true if encounter was triggered.
-   */
-  function checkForEncounter(
-    position: HexCoordinate,
-    correlationId?: string
-  ): boolean {
-    if (!eventBus) return false;
-
-    // Get population from map tile
-    const population = getPopulationAt(position);
-
-    // Calculate chance for 1 hour
-    const chance = calculateEncounterChance(1, population);
-
-    // Roll for encounter
-    if (!rollEncounter(chance)) {
-      return false;
-    }
-
-    // Generate encounter (will pause travel via existing event handler)
-    eventBus.publish(
-      createEvent(
-        EventTypes.ENCOUNTER_GENERATE_REQUESTED,
-        {
-          position,
-          trigger: 'travel' as const,
-        },
-        {
-          correlationId: correlationId ?? newCorrelationId(),
-          timestamp: now(),
-          source: 'travel-feature',
-        }
-      )
-    );
-
-    return true;
-  }
-
-  /**
-   * Get population at a hex coordinate for encounter chance calculation.
-   * TODO: Integrate with faction presence when available (post-MVP).
-   */
-  function getPopulationAt(_position: HexCoordinate): number {
-    // MVP: Use default population (50 = normal density)
-    // Post-MVP: Derive from tile.factionPresence
-    return DEFAULT_POPULATION;
   }
 
   // ===========================================================================
@@ -869,31 +796,6 @@ export function createTravelService(deps: TravelServiceDeps): TravelFeaturePort 
         (event) => {
           const correlationId = event.correlationId;
           cancelTravelInternal(correlationId);
-        }
-      )
-    );
-
-    // Auto-pause on encounter:generated
-    subscriptions.push(
-      eventBus.subscribe(
-        EventTypes.ENCOUNTER_GENERATED,
-        (event) => {
-          if (store.getStatus() === 'traveling') {
-            pauseTravelInternal('encounter', event.correlationId);
-          }
-        }
-      )
-    );
-
-    // Auto-resume on encounter:dismissed (if paused due to encounter)
-    subscriptions.push(
-      eventBus.subscribe(
-        EventTypes.ENCOUNTER_DISMISSED,
-        (event) => {
-          const state = store.getState();
-          if (state.status === 'paused' && state.pauseReason === 'encounter') {
-            resumeTravelInternal(event.correlationId);
-          }
         }
       )
     );
