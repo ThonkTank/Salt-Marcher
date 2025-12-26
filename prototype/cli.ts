@@ -5,11 +5,13 @@
  * Interaktives REPL zum Testen der Encounter-Generierungs-Pipeline.
  * Jeder Pipeline-Schritt kann einzeln oder als vollstaendige Pipeline ausgefuehrt werden.
  *
- * Usage: npx tsx prototype/cli.ts
+ * Usage:
+ *   npx tsx prototype/cli.ts                     # Interaktives REPL
+ *   npx tsx prototype/cli.ts --batch "cmd1" "cmd2" ...  # Batch-Modus
  */
 
 import * as readline from 'node:readline/promises';
-import { stdin, stdout } from 'node:process';
+import { stdin, stdout, argv } from 'node:process';
 import type { PipelineState, ReplConfig } from './types/encounter.js';
 import {
   loadCreatures,
@@ -22,6 +24,10 @@ import {
   type PresetLookups,
 } from './loaders/index.js';
 import { handleInitiate } from './commands/initiate.js';
+import { handlePopulate } from './commands/populate.js';
+import { handleFlavour } from './commands/flavour.js';
+import { handleDifficulty } from './commands/difficulty.js';
+import { handleAdjust } from './commands/adjust.js';
 import { createFormatter, type Formatter } from './output/index.js';
 
 const state: PipelineState = {};
@@ -155,38 +161,60 @@ const COMMANDS: Record<string, { description: string; handler: CommandHandler }>
   initiate: {
     description: 'Step 1: Context erstellen',
     handler: (args, flags) => {
-      return handleInitiate(args, flags, state, lookups);
+      return handleInitiate(args, flags, state, lookups, formatter);
     },
   },
 
   populate: {
     description: 'Steps 2-3: Seed + Template',
-    handler: () => {
-      console.log('[Not implemented] populate - kommt mit Task #3263\n');
-      return 'continue';
+    handler: (args, flags) => {
+      return handlePopulate(args, flags, state, lookups, formatter);
     },
   },
 
   flavour: {
     description: 'Step 4: NPCs, Activity, Loot',
-    handler: () => {
-      console.log('[Not implemented] flavour - kommt mit Task #3264\n');
+    handler: (args, flags) => {
+      const flagsRecord: Record<string, string> = {};
+      for (const [key, value] of flags) {
+        if (typeof value === 'string') {
+          flagsRecord[key] = value;
+        }
+      }
+      const output = handleFlavour(args, flagsRecord, state, lookups, formatter);
+      console.log(output);
       return 'continue';
     },
   },
 
   difficulty: {
     description: 'Step 5: Schwierigkeit berechnen',
-    handler: () => {
-      console.log('[Not implemented] difficulty - kommt mit Task #3265\n');
+    handler: (args, flags) => {
+      const flagsRecord: Record<string, string> = {};
+      for (const [key, value] of flags) {
+        if (typeof value === 'string') {
+          flagsRecord[key] = value;
+        }
+      }
+      const output = handleDifficulty(args, flagsRecord, state, lookups, formatter);
+      console.log(output);
       return 'continue';
     },
   },
 
   adjust: {
     description: 'Step 6: An Ziel-Difficulty anpassen',
-    handler: () => {
-      console.log('[Not implemented] adjust - kommt mit Task #3266\n');
+    handler: (_args, flags) => {
+      const flagsRecord: Record<string, string> = {};
+      for (const [key, value] of flags) {
+        if (typeof value === 'string') {
+          flagsRecord[key] = value;
+        }
+      }
+      const result = handleAdjust(_args, flagsRecord, state, lookups);
+      if (!result.success) {
+        console.log(`\nFehler: ${result.error}\n`);
+      }
       return 'continue';
     },
   },
@@ -320,10 +348,58 @@ async function executeCommand(input: string): Promise<CommandResult> {
 }
 
 // =============================================================================
+// Batch Mode
+// =============================================================================
+
+/**
+ * Parst CLI-Argumente für Batch-Modus.
+ *
+ * @returns Batch-Befehle oder null für interaktiven Modus
+ */
+function parseBatchArgs(): string[] | null {
+  const args = argv.slice(2);
+
+  if (args.length === 0) {
+    return null; // Interaktiver Modus
+  }
+
+  // --batch "cmd1" "cmd2" ...
+  if (args[0] === '--batch') {
+    return args.slice(1);
+  }
+
+  // Unbekannte Argumente
+  console.log(`Unbekanntes Argument: ${args[0]}`);
+  console.log('Usage:');
+  console.log('  npx tsx prototype/cli.ts                     # Interaktives REPL');
+  console.log('  npx tsx prototype/cli.ts --batch "cmd1" ...  # Batch-Modus');
+  process.exit(1);
+}
+
+/**
+ * Führt Befehle im Batch-Modus aus (nicht-interaktiv).
+ */
+async function runBatch(commands: string[]): Promise<void> {
+  // Load presets
+  console.log('Loading presets...');
+  const presets = loadAllPresets();
+  lookups = createPresetLookups(presets);
+  console.log(`Loaded: ${presets.creatures.length} creatures, ${presets.terrains.length} terrains, ${presets.templates.length} templates, ${presets.factions.length} factions\n`);
+
+  for (const cmd of commands) {
+    console.log(`> ${cmd}`);
+    const result = await executeCommand(cmd.trim());
+    if (result === 'exit') {
+      break;
+    }
+  }
+}
+
+// =============================================================================
 // REPL Main Loop
 // =============================================================================
 
-async function main(): Promise<void> {
+async function runRepl(): Promise<void> {
   // Load presets and create lookups
   console.log('Loading presets...');
   const presets = loadAllPresets();
@@ -349,6 +425,16 @@ async function main(): Promise<void> {
     }
   } finally {
     rl.close();
+  }
+}
+
+async function main(): Promise<void> {
+  const batchCommands = parseBatchArgs();
+
+  if (batchCommands) {
+    await runBatch(batchCommands);
+  } else {
+    await runRepl();
   }
 }
 

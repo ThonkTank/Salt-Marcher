@@ -127,7 +127,15 @@ function formatFlavouredGroup(group: FlavouredGroup, index: number): string[] {
     lines.push(`      Lead NPC: ${group.leadNpc.name}`);
   }
 
-  lines.push(`      Loot Items: ${group.loot.length}`);
+  lines.push(`      Loot: ${group.loot.items.length} items (${group.loot.totalValue.toFixed(1)} gp)`);
+  if (group.loot.items.length > 0) {
+    for (const { item, quantity } of group.loot.items.slice(0, 5)) {
+      lines.push(`        - ${quantity}x ${item.name} (${(item.value * quantity).toFixed(1)} gp)`);
+    }
+    if (group.loot.items.length > 5) {
+      lines.push(`        ... and ${group.loot.items.length - 5} more items`);
+    }
+  }
   lines.push(`      Creatures: ${group.creatures.length}`);
 
   for (const creature of group.creatures) {
@@ -185,6 +193,7 @@ export function formatDifficultyText(difficulty: DifficultyResult): string {
 
 /**
  * Formatiert ein BalancedEncounter als lesbaren Text.
+ * Updated for new BalanceInfo schema (Adjustments.md:917-933)
  */
 export function formatBalancedText(balanced: BalancedEncounter): string {
   const lines: string[] = [];
@@ -195,19 +204,15 @@ export function formatBalancedText(balanced: BalancedEncounter): string {
   lines.push(subHeader('Balance'));
   lines.push(line('Target:', balanced.balance.targetDifficulty.toUpperCase()));
   lines.push(line('Actual:', balanced.balance.actualDifficulty.toUpperCase()));
-  lines.push(line('Adjustments:', `${balanced.balance.adjustmentsMade.length}`));
+  lines.push(line('Win Prob:', `${(balanced.balance.partyWinProbability * 100).toFixed(1)}%`));
+  lines.push(line('TPK Risk:', `${(balanced.balance.tpkRisk * 100).toFixed(1)}%`));
+  lines.push(line('Combat Prob:', `${(balanced.balance.combatProbability * 100).toFixed(1)}%`));
+  lines.push(line('Adjustments:', `${balanced.balance.adjustmentsMade}`));
 
-  if (balanced.balance.adjustmentsMade.length > 0) {
-    for (const adj of balanced.balance.adjustmentsMade) {
-      lines.push(`      - ${adj}`);
-    }
-  }
-
-  // Difficulty
-  lines.push(subHeader('Difficulty'));
-  lines.push(line('Win Prob:', `${(balanced.difficulty.partyWinProbability * 100).toFixed(1)}%`));
-  lines.push(line('TPK Risk:', `${(balanced.difficulty.tpkRisk * 100).toFixed(1)}%`));
-  lines.push(line('XP Reward:', `${balanced.difficulty.xpReward}`));
+  // XP info
+  lines.push(subHeader('XP'));
+  lines.push(line('Base XP:', `${balanced.balance.xpReward}`));
+  lines.push(line('Adjusted XP:', `${balanced.balance.adjustedXP}`));
 
   // Groups summary
   lines.push(subHeader('Groups'));

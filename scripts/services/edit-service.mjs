@@ -7,7 +7,7 @@
 
 import { ok, err, TaskErrorCode } from '../core/result.mjs';
 import { TaskStatus, VALID_STATUSES, resolveStatusAlias } from '../core/table/schema.mjs';
-import { parseTaskId, parseDeps, formatId } from '../core/table/parser.mjs';
+import { parseTaskId, parseDeps, formatId, isBugId } from '../core/table/parser.mjs';
 import { normalizeId, areDepsResolved } from '../core/task/types.mjs';
 import { calculateAllPropagation } from '../core/deps/propagation.mjs';
 import { createFsTaskAdapter } from '../adapters/fs-task-adapter.mjs';
@@ -91,7 +91,24 @@ export function createTaskService(options = {}) {
         }
       }
 
-      // 3. Deps validieren
+      // 3a. Bug-Dependency-Validierung: Wenn Status auf ✅, Bugs prüfen
+      if (updates.status === TaskStatus.DONE && !item.isBug) {
+        const unresolvedBugs = (item.deps || [])
+          .filter(depId => isBugId(depId))
+          .filter(depId => {
+            const bugItem = roadmapData.itemMap.get(depId);
+            return bugItem && bugItem.status !== TaskStatus.DONE;
+          });
+
+        if (unresolvedBugs.length > 0) {
+          return err({
+            code: TaskErrorCode.UNRESOLVED_BUG_DEPS,
+            message: `Task kann nicht auf ✅ gesetzt werden: ${unresolvedBugs.map(formatId).join(', ')} noch nicht gelöst`
+          });
+        }
+      }
+
+      // 4. Deps validieren
       if (updates.deps && updates.deps !== '-') {
         const depIds = parseDeps(updates.deps);
         for (const depId of depIds) {

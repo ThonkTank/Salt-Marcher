@@ -9,6 +9,8 @@ import { ok, err, TaskErrorCode } from '../core/result.mjs';
 import { TaskStatus } from '../core/table/schema.mjs';
 import { parseTaskId, parseDeps, formatId, formatDeps } from '../core/table/parser.mjs';
 import { createFsTaskAdapter } from '../adapters/fs-task-adapter.mjs';
+import { calculateAllPropagation } from '../core/deps/propagation.mjs';
+import { areDepsResolved } from '../core/task/types.mjs';
 
 /**
  * Erstellt einen Remove-Service
@@ -280,12 +282,68 @@ export function createRemoveService(options = {}) {
         }
       }
 
+      // Propagation: Prüfen ob betroffene Tasks entblockt werden können
+      const propagation = [];
+
+      if (!dryRun && affectedTasks.length > 0) {
+        const reloadResult = taskAdapter.load();
+
+        if (reloadResult.ok) {
+          const freshData = reloadResult.value;
+          const allItems = [...freshData.tasks, ...freshData.bugs];
+
+          for (const affected of affectedTasks) {
+            const task = freshData.itemMap.get(affected.taskId);
+            if (!task || task.status !== TaskStatus.BLOCKED) continue;
+
+            // Prüfen ob alle Dependencies jetzt erfüllt sind
+            if (areDepsResolved(task, freshData.itemMap)) {
+              // Task entblocken
+              const unblockResult = taskAdapter.updateTask(task.number, { status: TaskStatus.OPEN });
+              if (unblockResult.ok) {
+                propagation.push({
+                  id: task.number,
+                  oldStatus: TaskStatus.BLOCKED,
+                  newStatus: TaskStatus.OPEN,
+                  reason: `Bug ${bugId} resolved - alle Dependencies erfüllt`,
+                  docs: unblockResult.value.docs
+                });
+
+                // Transitive Entblockierung: Tasks die von dieser abhängen
+                const transitiveEffects = calculateAllPropagation(
+                  task.number,
+                  TaskStatus.OPEN,
+                  allItems,
+                  freshData.itemMap
+                );
+
+                for (const effect of transitiveEffects) {
+                  if (effect.oldStatus === TaskStatus.BLOCKED && effect.newStatus === TaskStatus.OPEN) {
+                    const propResult = taskAdapter.updateTask(effect.taskId, { status: TaskStatus.OPEN });
+                    if (propResult.ok) {
+                      propagation.push({
+                        id: effect.taskId,
+                        oldStatus: effect.oldStatus,
+                        newStatus: effect.newStatus,
+                        reason: effect.reason,
+                        docs: propResult.value.docs
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
       return ok({
         success: true,
         bugId,
         oldStatus: bug.status,
         newStatus: TaskStatus.DONE,
         affectedTasks,
+        propagation,
         dryRun
       });
     }

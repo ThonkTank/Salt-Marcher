@@ -362,89 +362,166 @@ Die Seed-Gruppe ist immer `threat`. Weitere Gruppen werden zufaellig zugewiesen.
 
 **Zweck:** Passendes Template fuer die Seed-Kreatur finden.
 
-**Input:** `Creature` (Seed), `Faction?`
+**Input:** `Creature` (Seed), `Faction?`, `EncounterContext`
 
-**Output:** `EncounterTemplate`
+**Output:** `EncounterTemplate | undefined` (undefined = Creature.groupSize Fallback)
 
 ### Template-Auswahl Hierarchie
 
 ```
-1. Fraktion-Template (wenn Seed zu Faction gehoert)
-   └─ faction.encounterTemplates[passend zu Seed.tags]
+1. Faction-Templates (bevorzugt)
+   └─ Prueft ob Faction genug Kreaturen der richtigen Design Roles hat
 
-2. Fallback: Generisches Template
-   └─ Matching via compatibleTags
+2. Generic Templates (Fallback)
+   └─ Prueft ob eligible Creatures die Template-Rollen erfuellen koennen
+
+3. Creature.groupSize (letzter Fallback)
+   └─ Kein Template, Seed-Kreatur alleine in ihrer natuerlichen Gruppengroesse
 ```
 
 ### EncounterTemplate Schema
 
+Templates definieren Slots ueber **MCDM Design Roles**. Die Template-Auswahl prueft, ob eine Fraktion genug Kreaturen der jeweiligen Rollen hat.
+
 ```typescript
 interface EncounterTemplate {
   id: string;
-  name: string;                    // "leader-minions", "horde", "squad"
-  compatibleTags: string[];        // ["pack-hunter", "organized"]
-  roles: {
-    [roleName: string]: {
-      count: { min: number; max: number };
-      designRole?: DesignRole;     // Optional: MCDM-basierte Rolle
+  name: string;
+  description?: string;
+
+  // Slots basieren auf Design Roles
+  slots: {
+    [slotName: string]: {
+      designRole: DesignRole;           // REQUIRED: MCDM-Rolle
+      count: number | CountRange;       // Feste Zahl oder Range
     };
   };
 }
+
+// Count-Varianten:
+// - Fest: 1
+// - Flach (min/max): { min: 2, max: 4 }
+// - Kurve (min/avg/max): { min: 2, avg: 4, max: 10 }
+type CountRange =
+  | { min: number; max: number }
+  | { min: number; avg: number; max: number };
+
+type DesignRole =
+  | 'ambusher' | 'artillery' | 'brute' | 'controller' | 'leader'
+  | 'minion' | 'skirmisher' | 'soldier' | 'solo' | 'support';
 ```
 
 **Beispiel: Leader + Minions**
 
-```typescript
+```json
 {
-  id: "leader-minions",
-  name: "Leader + Minions",
-  compatibleTags: ["organized", "tribal", "military"],
-  roles: {
-    leader: { count: { min: 1, max: 1 } },
-    minions: { count: { min: 2, max: 6 } }
+  "id": "leader-minions",
+  "name": "Leader + Minions",
+  "slots": {
+    "leader": { "designRole": "leader", "count": 1 },
+    "minions": { "designRole": "minion", "count": { "min": 2, "avg": 4, "max": 10 } }
+  }
+}
+```
+
+**Beispiel: Balanced Squad**
+
+```json
+{
+  "id": "balanced-squad",
+  "name": "Balanced Squad",
+  "slots": {
+    "tank": { "designRole": "soldier", "count": { "min": 1, "max": 2 } },
+    "damage": { "designRole": "artillery", "count": { "min": 1, "max": 3 } },
+    "support": { "designRole": "support", "count": { "min": 0, "max": 1 } }
   }
 }
 ```
 
 ### Generische Templates (System-Presets)
 
-| Template | Rollen | Kompatible Tags |
-|----------|--------|-----------------|
-| `solo` | 1 Kreatur | solitary, apex-predator |
-| `pair` | 2 Kreaturen | mated-pair, duo |
-| `pack` | 3-8 gleiche | pack-hunter, swarm |
-| `horde` | 6-20 niedrige | swarm, horde |
-| `leader-minions` | 1 + 2-6 | organized, tribal |
-| `squad` | 3-6 gemischt | military, patrol |
+| Template | Slots | Beschreibung |
+|----------|-------|--------------|
+| `solo` | 1× solo | Einzelne maechtige Kreatur |
+| `pair` | 2× soldier | Zwei Kreaturen, oft Paarung |
+| `pack` | 3-8× minion | Rudel gleichartiger Kreaturen |
+| `horde` | 6-20× minion | Grosse Gruppe schwacher Kreaturen |
+| `leader-minions` | 1× leader + 2-6× minion | Anfuehrer mit Untergebenen |
+| `squad` | 1-2× soldier + 1-2× artillery + 0-1× support | Gemischte taktische Gruppe |
 
 Templates sind in `presets/encounter-templates/` gespeichert und editierbar.
 
-### Template-Auswahl Algorithmus
+### Template-Auswahl: Kapazitaets-basiert
+
+Die Template-Auswahl prueft, ob die Fraktion genug Kreaturen mit den richtigen Design Roles hat.
+
+**Hierarchie:**
+1. **Faction-Templates** (bevorzugt)
+2. **Generic Templates** (Fallback)
+3. **Creature.groupSize** (letzter Fallback, kein Template)
 
 ```typescript
-function selectTemplate(seed: Creature, faction?: Faction): EncounterTemplate {
-  // 1. Faction-Templates pruefen
-  if (faction?.encounterTemplates) {
-    const matching = faction.encounterTemplates.filter(t =>
-      t.compatibleTags.some(tag => seed.tags.includes(tag))
+function canFulfillTemplate(
+  creaturePool: Creature[],
+  template: EncounterTemplate,
+  context: EncounterContext
+): boolean {
+  for (const [slotName, slot] of Object.entries(template.slots)) {
+    const minRequired = typeof slot.count === 'number'
+      ? slot.count
+      : slot.count.min;
+
+    // Anzahl Kreaturen dieser Rolle im Pool zaehlen
+    const creaturesWithRole = creaturePool.filter(c =>
+      c.designRole === slot.designRole &&
+      isEligible(c, context.terrain, context.time)
     );
-    if (matching.length > 0) {
-      return weightedRandomSelect(matching);
+
+    if (creaturesWithRole.length < minRequired) {
+      return false;  // Nicht genug Kreaturen dieser Rolle
+    }
+  }
+  return true;
+}
+
+function selectTemplate(
+  seed: Creature,
+  faction: Faction | undefined,
+  genericTemplates: EncounterTemplate[],
+  context: EncounterContext
+): EncounterTemplate | undefined {
+  // 1. PRIORITAET: Faction-Templates
+  if (faction?.encounterTemplates) {
+    const viableFaction = faction.encounterTemplates.filter(t =>
+      canFulfillTemplate(faction.creaturePool, t, context)
+    );
+    if (viableFaction.length > 0) {
+      return randomSelect(viableFaction);
     }
   }
 
-  // 2. Generische Templates
-  const genericTemplates = loadGenericTemplates();
-  const compatible = genericTemplates.filter(t =>
-    t.compatibleTags.some(tag => seed.tags.includes(tag))
+  // 2. FALLBACK: Generic Templates
+  const viableGeneric = genericTemplates.filter(t =>
+    canFulfillTemplate(getAllEligibleCreatures(context), t, context)
   );
-
-  // 3. Fallback: Solo-Template
-  if (compatible.length === 0) {
-    return genericTemplates.find(t => t.id === 'solo')!;
+  if (viableGeneric.length > 0) {
+    return randomSelect(viableGeneric);
   }
 
-  return weightedRandomSelect(compatible);
+  // 3. LETZTER FALLBACK: Kein Template → Creature.groupSize nutzen
+  return undefined;
+}
+
+// Bei undefined Template: Seed.groupSize fuer Gruppengroesse nutzen
+function getGroupSizeFromTemplate(
+  seed: Creature,
+  template?: EncounterTemplate
+): CountRange {
+  if (template) {
+    return sumSlotCounts(template.slots);
+  }
+  // Fallback: Creature.groupSize oder Solo
+  return seed.groupSize ?? { min: 1, max: 1 };
 }
 ```
 
@@ -510,21 +587,21 @@ Die finale Berechnung erfolgt in Difficulty.md basierend auf Fraktions-Relatione
 ### Befuellungs-Flowchart
 
 ```
-Template mit Rollen (z.B. 1 Leader, 2-4 Guards)
+Template mit Slots (z.B. 1× leader, 2-4× minion)
               │
               ▼
 ┌─────────────────────────────────────────────────────────┐
-│ Fuer jede Rolle im Template:                            │
+│ Fuer jeden Slot im Template:                            │
 ├─────────────────────────────────────────────────────────┤
 │                                                          │
 │  1. Slot-Anzahl wuerfeln                                │
-│     └─ randomBetween(role.count.min, role.count.max)    │
+│     └─ resolveCount(slot.count) → konkrete Zahl         │
 │                                                          │
 │  2. Companion-Pool filtern                              │
 │     └─ Nur Kreaturen der gleichen Faction               │
 │     └─ Oder: Tag-Matching bei fraktionslos              │
 │                                                          │
-│  3. Design-Rolle matchen (falls role.designRole)        │
+│  3. Design-Rolle matchen (PFLICHT)                      │
 │     └─ Nur Kreaturen mit passender designRole           │
 │                                                          │
 │  4. Kreaturen auswaehlen                                │
@@ -552,33 +629,30 @@ function getCompanionPool(seed: Creature, allCreatures: Creature[]): Creature[] 
 ### Slot-Befuellung Algorithmus
 
 ```typescript
-function fillRoleSlots(
-  role: TemplateRole,
+function fillSlot(
+  slot: TemplateSlot,
   seed: Creature,
   companionPool: Creature[]
 ): EncounterCreature[] {
   // 1. Slot-Anzahl wuerfeln (aus Template, nicht Budget!)
-  const slotCount = randomBetween(role.count.min, role.count.max);
+  const slotCount = resolveCount(slot.count);
   if (slotCount === 0) return [];
 
-  // 2. Companion-Pool filtern
-  let candidates = companionPool;
+  // 2. Companion-Pool nach Design-Rolle filtern (PFLICHT)
+  const roleMatches = companionPool.filter(c =>
+    c.designRole === slot.designRole
+  );
 
-  // 2a. Design-Rolle matchen (falls gesetzt)
-  if (role.designRole) {
-    const roleMatches = companionPool.filter(c =>
-      c.designRoles?.includes(role.designRole)
-    );
-    if (roleMatches.length > 0) candidates = roleMatches;
-  }
+  // Fallback: Wenn keine Kreaturen mit Rolle, alle Kandidaten nutzen
+  let candidates = roleMatches.length > 0 ? roleMatches : companionPool;
 
-  // 2b. Tags der Seed bevorzugen
+  // 3. Tags der Seed bevorzugen
   const tagMatches = candidates.filter(c =>
     c.tags.some(t => seed.tags.includes(t))
   );
   if (tagMatches.length > 0) candidates = tagMatches;
 
-  // 3. Kreaturen auswaehlen (gewichtet nach Raritaet)
+  // 4. Kreaturen auswaehlen (gewichtet nach Raritaet)
   const selected: EncounterCreature[] = [];
   for (let i = 0; i < slotCount; i++) {
     const creature = weightedRandomSelect(candidates);
@@ -594,9 +668,19 @@ function fillRoleSlots(
 
   return selected;
 }
+
+function resolveCount(count: number | CountRange): number {
+  if (typeof count === 'number') return count;
+  if ('avg' in count) {
+    // Kurve: Normalverteilung um avg
+    return Math.round(normalRandom(count.avg, (count.max - count.min) / 4));
+  }
+  // Flach: Gleichverteilung zwischen min und max
+  return randomBetween(count.min, count.max);
+}
 ```
 
-**Keine XP-Budgets hier!** Die Anzahl kommt aus Template-Rollen.
+**Keine XP-Budgets hier!** Die Anzahl kommt aus Template-Slots.
 Adjustments.md passt spaeter an, falls das Encounter zu stark/schwach ist.
 
 ### CreatureSlot-Varianten
@@ -719,26 +803,37 @@ Rollen werden bei Creature-Erstellung aus dem Statblock abgeleitet.
 
 Gruppengroessen werden in folgender Prioritaet bestimmt:
 
-1. **Encounter-Template** ueberschreibt alles
-2. **Faction-Default** wenn kein Template
-3. **Creature-Default** als letzter Fallback
+1. **Encounter-Template** (Faction oder Generic) - Slots summiert
+2. **Creature.groupSize** als Fallback (wenn kein Template passt)
+3. **Solo** als letzter Fallback (wenn kein groupSize definiert)
 
 ```typescript
-function getGroupSize(seed: Creature, template?: EncounterTemplate, faction?: Faction): Range {
-  // 1. Template
+function getGroupSize(seed: Creature, template?: EncounterTemplate): CountRange {
+  // 1. Template: Slots summieren
   if (template) {
-    const totalSlots = Object.values(template.roles)
-      .reduce((sum, role) => sum + role.count.max, 0);
-    return { min: 1, max: totalSlots };
+    return sumSlotCounts(template.slots);
   }
 
-  // 2. Faction
-  if (faction?.defaultGroupSize) {
-    return faction.defaultGroupSize;
+  // 2. Creature.groupSize als Fallback
+  // 3. Solo als letzter Fallback
+  return seed.groupSize ?? { min: 1, max: 1 };
+}
+
+function sumSlotCounts(slots: Record<string, TemplateSlot>): CountRange {
+  let minTotal = 0;
+  let maxTotal = 0;
+
+  for (const slot of Object.values(slots)) {
+    if (typeof slot.count === 'number') {
+      minTotal += slot.count;
+      maxTotal += slot.count;
+    } else {
+      minTotal += slot.count.min;
+      maxTotal += slot.count.max;
+    }
   }
 
-  // 3. Creature
-  return seed.defaultGroupSize ?? { min: 1, max: 1 };
+  return { min: Math.max(1, minTotal), max: maxTotal };
 }
 ```
 
@@ -790,5 +885,9 @@ interface EncounterCreature {
 
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-| 3273 | ⬜ | Encounter | prototyp | Step 2.1b: Environmental-Eligibility - Hazards, Discoveries, Resources, Phenomena. Deliverables: Kategorien (hazard/discovery/resource/phenomenon), Trigger (Terrain/Wetter/POI/Zeit), EnvironmentalContext Schema, Kombination mit Creatures | mittel | Nein | #3263 | features/encounter/Population.md#step-21b-environmental-eligibility | prototype/pipeline/environmental.ts |
-| 3274 | ⬜ | Encounter | prototyp | Pfad-basierte Creature-Pools - Straßen/Flüsse erweitern eligible Creatures. Deliverables: Path.encounterModifier.creaturePool auslesen, Kreaturen zum Tile-Pool hinzufügen | mittel | Nein | #3263 | features/encounter/Population.md#pfad-basierte-creature-pools-post-mvp, domain/Path.md | prototype/pipeline/population.ts |
+| 3273 | ⛔ | Encounter | prototyp | Step 2.1b: Environmental-Eligibility - Hazards, Discoveries, Resources, Phenomena. Deliverables: Kategorien (hazard/discovery/resource/phenomenon), Trigger (Terrain/Wetter/POI/Zeit), EnvironmentalContext Schema, Kombination mit Creatures | mittel | Nein | #3263 | features/encounter/Population.md#step-21b-environmental-eligibility | prototype/pipeline/environmental.ts |
+| 3274 | ⛔ | Encounter | prototyp | Pfad-basierte Creature-Pools - Straßen/Flüsse erweitern eligible Creatures. Deliverables: Path.encounterModifier.creaturePool auslesen, Kreaturen zum Tile-Pool hinzufügen | mittel | Nein | #3263 | features/encounter/Population.md#pfad-basierte-creature-pools-post-mvp, domain/Path.md | prototype/pipeline/population.ts |
+| 3290 | 🔶 | Encounter | prototype | Tile-Eligibility: Rarität-basierte Gewichtung (common ×1.0, uncommon ×0.3, rare ×0.05). Deliverables: (1) Creature.rarity Typ-Feld, (2) RARITY_MULTIPLIER Konstante, (3) calculateWeight() erweitert, (4) base-creatures.json mit rarity-Werten (24 common, 14 uncommon, 2 rare). DoD: TypeScript kompiliert, CLI zeigt uncommon seltener als common. | mittel | Nein | #3263 | features/encounter/Population.md#gewichtung-soft-factors | prototype/types/encounter.ts: Creature.rarity Feld (common/uncommon/rare). prototype/loaders/preset-loader.ts: RawCreature.rarity, loadCreatures() mit Default common. prototype/pipeline/population.ts: RARITY_MULTIPLIER Konstante, calculateWeight() erweitert. presets/creatures/base-creatures.json: 40 Kreaturen mit rarity-Werten. |
+| 3291 | 🔶 | Encounter | prototype | Tile-Eligibility: Wetter-Präferenz Gewichtung (×1.5 bei preferredWeather match). Implementiert: (1) Creature.preferredWeather Typ-Feld, (2) WEATHER_PREFERENCE_MULTIPLIER Konstante, (3) getWeatherConditions() Helper, (4) calculateWeight() erweitert, (5) base-creatures.json mit preferredWeather (skeleton, wolf, giant-spider, crocodile, lizardfolk). | mittel | Nein | #3263 | features/encounter/Population.md#gewichtung-soft-factors | population.ts: getWeatherConditions(), calculateWeight() mit weather-Parameter, WEATHER_PREFERENCE_MULTIPLIER=1.5. preset-loader.ts: RawCreature.preferredWeather. encounter.ts: Creature.preferredWeather. base-creatures.json: 5 Kreaturen mit preferredWeather. |
+| 3292 | 🔶 | Encounter | prototype | Slot-Befüllung mit Kreaturen pro Rolle. NICHT KONFORM: designRole ist jetzt PFLICHTFELD (nicht optional). fillSlot() muss Kreaturen nach designRole filtern, nicht nach budgetPercent/crConstraint. | mittel | Nein | #3263 | features/encounter/Population.md#step-33-slot-befuellung | prototype/pipeline/population.ts: getCompanionPool() erweitert (terrain+time Filter), findGenericTemplate() Reihenfolge korrigiert |
+| 3293 | 🔶 | Encounter | prototype | Gruppengrößen-Hierarchie für Encounter-Population. NICHT KONFORM: getGroupSize() muss neues slots-Schema nutzen mit sumSlotCounts(). Fallback-Hierarchie: Template-Slots > Creature.groupSize > Solo. | mittel | Nein | #3263 | features/encounter/Population.md#gruppengroessen-hierarchie | population.ts:getGroupSize() - Hierarchie Template>Creature. Population.md:718-736 - Spec korrigiert |

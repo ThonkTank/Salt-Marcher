@@ -520,6 +520,45 @@ node scripts/task.mjs add --bugs '[
 
 **Wichtig:** Tasks werden immer sowohl in der Roadmap als auch im angegebenen Doc gespeichert. Die Task-Tabelle steht am Ende jeder Dokumentationsdatei - bei Feature-Analyse die gesamte Datei lesen.
 
+### Bug-System
+
+**Bugs vs. Tasks - Wichtige Unterschiede:**
+
+| Aspekt | Task | Bug |
+|--------|------|-----|
+| ID-Format | `#123` | `b123` |
+| Speicherort | Roadmap + Doc-File | Nur Roadmap |
+| Dependencies | Zeigt auf Vorbedingungen | Zeigt auf verdächtige Tasks |
+
+**Bug-Dependencies funktionieren anders als Task-Dependencies:**
+
+1. **Bug-Deps verweisen auf verdächtige Tasks**
+   - Eine Bug-Dependency `-d "#428, #429"` bedeutet: "Diese Tasks könnten die Ursache sein"
+   - NICHT: "Diese Tasks müssen fertig sein bevor der Bug bearbeitet werden kann"
+
+2. **Zirkuläre Dependency für Nachvollziehbarkeit**
+   - Wenn Bug `b5` mit `-d "#428"` erstellt wird:
+     - Bug `b5` hat Dependency auf `#428`
+     - Task `#428` bekommt automatisch Dependency auf `b5`
+   - So sieht man bei der Task sofort: "Hier gibt es einen Bug"
+
+3. **Automatische Cleanup bei Resolution**
+   - `node scripts/task.mjs remove b5 --resolve`
+   - Entfernt `b5` aus allen Task-Dependencies automatisch
+   - Task `#428` verliert die `b5` Dependency
+
+**Workflow bei Bug-Bearbeitung:**
+
+```
+1. Bug finden:     node scripts/task.mjs sort --status ⚠️
+2. Bug claimen:    node scripts/task.mjs claim b5
+3. Verdächtige Tasks prüfen (aus Dependencies)
+4. Bug fixen
+5. Bug resolven:   node scripts/task.mjs remove b5 --resolve
+```
+
+**Merke:** Bei Bugs bedeutet "Dependency" = "könnte die Ursache sein", nicht "muss vorher fertig sein".
+
 ### Löschen/Splitten (remove, split)
 
 ```bash
@@ -536,7 +575,8 @@ node scripts/task.mjs split 428 "Teil A fertig" "Teil B TODO"
 
 **Automatisches Verhalten:**
 - **Multi-File-Sync**: Deps-Änderungen werden in alle Doc-Files synchronisiert
-- **Bug-Propagation**: Neue Bugs setzen referenzierte Tasks automatisch auf ⚠️
+- **Bug-Propagation**: Neue Bugs setzen referenzierte Tasks automatisch auf ⚠️ und fügen zirkuläre Dependency hinzu
+- **Bug-Resolution**: `--resolve` entfernt den Bug automatisch aus allen Task-Dependencies
 - **Blockiert-Propagation**: Status-Änderung propagiert ⛔ zu allen Dependents mit nicht-erfüllten Deps
 - **Claim-Expire**: Claims verfallen nach 2 Stunden automatisch
 - **Status entfernt Claim**: Status-Änderung (außer auf 🔒) entfernt den Claim automatisch

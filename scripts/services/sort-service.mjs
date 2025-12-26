@@ -305,6 +305,12 @@ export function createPrioritizeService(options = {}) {
         ? findInconsistenciesCore(defsResult.value)
         : [];
 
+      // Verfügbare Werte sammeln (für Hilfe bei 0 Ergebnissen)
+      const availableValues = {
+        layers: [...new Set(items.map(i => i.layer).filter(Boolean))].sort(),
+        domains: [...new Set(items.map(i => i.domain).filter(Boolean))].sort()
+      };
+
       return ok({
         items: results,
         refCounts,
@@ -316,7 +322,8 @@ export function createPrioritizeService(options = {}) {
           filteredCount: filtered.length
         },
         cycles,
-        inconsistencies
+        inconsistencies,
+        availableValues
       });
     },
 

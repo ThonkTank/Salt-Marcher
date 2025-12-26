@@ -136,6 +136,23 @@ BEISPIELE:
 }
 
 /**
+ * Baut einen Filter-Header für die sort-Ausgabe
+ * @param {object} opts - Parse-Optionen mit Filtern
+ * @returns {string|null} - Header-Text oder null wenn keine Filter
+ */
+function buildFilterHeader(opts) {
+  const parts = [];
+  if (opts.layer) parts.push(`--layer ${opts.layer}`);
+  if (opts.domain) parts.push(`--domain ${opts.domain}`);
+  if (opts.status) parts.push(`--status ${opts.status}`);
+  if (opts.mvp === true) parts.push('--mvp');
+  if (opts.mvp === false) parts.push('--no-mvp');
+  if (opts.prio) parts.push(`--prio ${opts.prio}`);
+  if (opts.keywords?.length > 0) parts.push(opts.keywords.join(' '));
+  return parts.length > 0 ? `📋 Filter: ${parts.join(' ')}` : null;
+}
+
+/**
  * Formatiert Ausgabe (JSON oder Text)
  */
 function formatOutput(result, opts) {
@@ -333,9 +350,29 @@ function formatOutput(result, opts) {
   // sort result (object with items array)
   if (value.items && Array.isArray(value.items)) {
     const items = value.items;
+    const filterHeader = buildFilterHeader(opts);
+
     if (items.length === 0) {
+      if (filterHeader) {
+        console.log(filterHeader);
+        console.log();
+      }
       console.log('Keine Ergebnisse gefunden.');
+
+      // Verfügbare Werte anzeigen bei aktiven Filtern
+      if (opts.layer && value.availableValues?.layers?.length > 0) {
+        console.log(`Verfügbare Layer: ${value.availableValues.layers.join(', ')}`);
+      }
+      if (opts.domain && value.availableValues?.domains?.length > 0) {
+        console.log(`Verfügbare Domains: ${value.availableValues.domains.join(', ')}`);
+      }
       return;
+    }
+
+    // Filter-Header vor der Task-Liste
+    if (filterHeader) {
+      console.log(filterHeader);
+      console.log();
     }
 
     const termWidth = process.stdout.columns || 120;

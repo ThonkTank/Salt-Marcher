@@ -6,8 +6,9 @@
  * Usage: initiate --terrain <id> --time <segment> [--trigger <type>]
  */
 
-import type { PipelineState, TimeSegment } from '../types/encounter.js';
+import type { PipelineState, TimeSegment, WeatherState } from '../types/encounter.js';
 import type { PresetLookups } from '../loaders/index.js';
+import type { Formatter } from '../output/index.js';
 import {
   createContext,
   getAvailableTimeSegments,
@@ -40,12 +41,18 @@ export function handleInitiate(
   _args: string[],
   flags: Map<string, string | boolean>,
   state: PipelineState,
-  lookups: PresetLookups
+  lookups: PresetLookups,
+  formatter: Formatter
 ): CommandResult {
   // Get required flags
   const terrainId = flags.get('terrain');
   const time = flags.get('time');
   const trigger = flags.get('trigger');
+
+  // Get optional weather flags
+  const precipitation = flags.get('precipitation') as string | undefined;
+  const visibility = flags.get('visibility') as string | undefined;
+  const temperature = flags.get('temperature') as string | undefined;
 
   // Validate required flags
   if (typeof terrainId !== 'string' || !terrainId) {
@@ -60,10 +67,22 @@ export function handleInitiate(
     return 'continue';
   }
 
+  // Build weather state if any weather flags provided
+  let weather: WeatherState | undefined;
+  if (precipitation || visibility || temperature) {
+    weather = {
+      temperature: temperature ? parseInt(temperature, 10) : 15,
+      windSpeed: 10,
+      precipitation: (precipitation as WeatherState['precipitation']) ?? 'none',
+      visibility: (visibility as WeatherState['visibility']) ?? 'clear',
+    };
+  }
+
   // Build options
   const options: InitiationOptions = {
     terrainId,
     time: time as TimeSegment,
+    weather,
     triggeredBy: typeof trigger === 'string' ? (trigger as InitiationOptions['triggeredBy']) : undefined,
   };
 
@@ -85,19 +104,8 @@ export function handleInitiate(
   state.difficulty = undefined;
   state.balanced = undefined;
 
-  // Output success
-  console.log('\n=== EncounterContext Created ===\n');
-  console.log(`  Terrain:     ${context.terrain.name} (${context.terrain.id})`);
-  console.log(`  Time:        ${context.time}`);
-  console.log(`  Trigger:     ${context.triggeredBy}`);
-  console.log(`  Party Size:  ${context.party.size} (avg level ${context.party.averageLevel})`);
-  console.log(`  Features:    ${context.features.length} (aggregation not yet implemented)`);
-  if (context.weather) {
-    console.log(`  Weather:     ${context.weather.precipitation}, visibility ${context.weather.visibility}`);
-  } else {
-    console.log(`  Weather:     (not set)`);
-  }
-  console.log('\nNext step: populate [--seed <creature-id>]\n');
+  // Output success using formatter
+  console.log(formatter.formatContext(context));
 
   return 'continue';
 }
@@ -113,10 +121,14 @@ function printUsage(): void {
   const timeSegments = getAvailableTimeSegments().join('|');
   const triggers = getAvailableTriggers().join('|');
 
-  console.log('\nUsage: initiate --terrain <id> --time <segment> [--trigger <type>]');
-  console.log('\nFlags:');
-  console.log(`  --terrain <id>      Required. Terrain ID from presets.`);
-  console.log(`  --time <segment>    Required. Time of day: ${timeSegments}`);
-  console.log(`  --trigger <type>    Optional. Trigger type: ${triggers} (default: manual)`);
+  console.log('\nUsage: initiate --terrain <id> --time <segment> [options]');
+  console.log('\nRequired:');
+  console.log(`  --terrain <id>         Terrain ID from presets.`);
+  console.log(`  --time <segment>       Time of day: ${timeSegments}`);
+  console.log('\nOptional:');
+  console.log(`  --trigger <type>       Trigger type: ${triggers} (default: manual)`);
+  console.log(`  --precipitation <X>    Weather: none|light|moderate|heavy`);
+  console.log(`  --visibility <X>       Visibility: clear|reduced|poor`);
+  console.log(`  --temperature <N>      Temperature in Celsius (affects cold/snow/hot)`);
   console.log('');
 }

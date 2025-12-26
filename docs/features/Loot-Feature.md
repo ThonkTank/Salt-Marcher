@@ -1169,3 +1169,4 @@ Bei Magic Items hat der GM **immer** das letzte Wort:
 | 3108 | ⬜ | Loot | features | LootBudgetState persistieren/laden (Plugin data.json oder Session-State) | hoch | --deps | - | Loot-Feature.md#lootbudgetstate | - |
 | 3109 | ⬜ | Loot | features | Loot-Kategorien-Logik: carriesLoot bestimmt ob Wealth-basiertes Loot generiert wird | mittel | Nein | #3077, #3001 | Loot-Feature.md#loot-kategorien | - |
 | 3110 | ⬜ | Loot | features | calculateAverageWealthMultiplier(): Durchschnitt der Wealth-Multiplier aller Creatures berechnen | mittel | Nein | #3001 | Loot-Feature.md#wealth-system | - |
+| 3294 | ⬜ | Encounter | - | Quest-Budget-Reduktion: Loot-Budget reduzieren basierend auf Quest-Rewards (verhindert Doppel-Belohnung) | niedrig | Nein | #3270 | - | - |

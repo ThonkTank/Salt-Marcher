@@ -11,6 +11,9 @@ import type {
   Creature,
   Terrain,
   Faction,
+  FactionCulture,
+  FactionTemplateEntry,
+  FactionTemplateComposition,
   PartySnapshot,
   CharacterSnapshot,
   EncounterTemplate,
@@ -18,6 +21,9 @@ import type {
   CreatureSize,
   CreatureDisposition,
   TimeSegment,
+  Item,
+  DefaultLootEntry,
+  DesignRole,
 } from '../types/encounter.js';
 
 // =============================================================================
@@ -45,6 +51,25 @@ interface RawCreature {
   lootTags: string[];
   groupSize?: { min: number; avg: number; max: number };
   defaultFactionId?: string;
+  defaultLoot?: DefaultLootEntry[];
+  rarity?: string;
+  preferredWeather?: string[];
+  designRoles?: string[];
+  // Additional fields ignored for prototype
+  [key: string]: unknown;
+}
+
+/** Raw item from JSON */
+interface RawItem {
+  id: string;
+  name: string;
+  weight?: number;
+  category: string;
+  tags: string[];
+  value: number;
+  stackable?: boolean;
+  rarity?: string;
+  description?: string;
   // Additional fields ignored for prototype
   [key: string]: unknown;
 }
@@ -65,11 +90,49 @@ interface RawTerrain {
   [key: string]: unknown;
 }
 
+/** Raw faction template composition from JSON */
+interface RawFactionTemplateComposition {
+  creatureId: string;
+  count: number | { min: number; max: number };
+  role: string;
+}
+
+/** Raw faction template from JSON */
+interface RawFactionTemplate {
+  id: string;
+  name: string;
+  composition: RawFactionTemplateComposition[];
+  triggers?: {
+    minXPBudget?: number;
+    maxXPBudget?: number;
+  };
+  weight: number;
+}
+
+/** Raw faction culture from JSON */
+interface RawFactionCulture {
+  naming?: {
+    patterns: string[];
+    prefixes?: string[];
+    roots?: string[];
+    suffixes?: string[];
+  };
+  personality?: {
+    common: Array<{ trait: string; weight: number }>;
+    rare?: Array<{ trait: string; weight: number }>;
+  };
+  quirks?: Array<{ quirk: string; weight: number; description?: string }>;
+  activities?: Array<{ activityId: string; weight: number }>;
+}
+
 /** Raw faction from JSON */
 interface RawFaction {
   id: string;
   name: string;
   defaultDisposition: number;
+  encounterTemplates?: RawFactionTemplate[];
+  culture?: RawFactionCulture;
+  territoryTerrains?: string[];
   // Additional fields ignored for prototype
   [key: string]: unknown;
 }
@@ -126,6 +189,46 @@ interface RawCharacter {
 // =============================================================================
 
 /**
+ * Mapping for time segment aliases.
+ * Presets may use 'day' which maps to multiple segments.
+ */
+const TIME_SEGMENT_MAPPING: Record<string, TimeSegment[]> = {
+  day: ['morning', 'midday', 'afternoon'],
+  daytime: ['morning', 'midday', 'afternoon'],
+};
+
+const VALID_TIME_SEGMENTS: TimeSegment[] = [
+  'dawn',
+  'morning',
+  'midday',
+  'afternoon',
+  'dusk',
+  'night',
+];
+
+/**
+ * Normalizes raw activeTime strings to valid TimeSegments.
+ * Expands aliases like 'day' to their component segments.
+ */
+function normalizeActiveTime(raw: string[]): TimeSegment[] {
+  const result: TimeSegment[] = [];
+
+  for (const t of raw) {
+    // Check for alias mapping
+    if (TIME_SEGMENT_MAPPING[t]) {
+      result.push(...TIME_SEGMENT_MAPPING[t]);
+    } else if (VALID_TIME_SEGMENTS.includes(t as TimeSegment)) {
+      // Valid segment, add directly
+      result.push(t as TimeSegment);
+    }
+    // Invalid segments are silently ignored
+  }
+
+  // Remove duplicates (e.g., if both 'day' and 'morning' were specified)
+  return [...new Set(result)];
+}
+
+/**
  * Loads and parses a JSON file.
  */
 function loadJson<T>(relativePath: string): T {
@@ -160,11 +263,15 @@ export function loadCreatures(): Creature[] {
     size: c.size as CreatureSize,
     disposition: c.disposition as CreatureDisposition,
     terrainAffinities: c.terrainAffinities,
-    activeTime: c.activeTime as TimeSegment[],
+    activeTime: normalizeActiveTime(c.activeTime),
     tags: c.tags,
     lootTags: c.lootTags,
     groupSize: c.groupSize,
     defaultFactionId: c.defaultFactionId,
+    defaultLoot: c.defaultLoot,
+    rarity: (c.rarity as Creature['rarity']) ?? 'common',
+    preferredWeather: c.preferredWeather,
+    designRoles: c.designRoles as DesignRole[] | undefined,
   }));
 }
 
@@ -189,6 +296,28 @@ export function loadTerrains(): Terrain[] {
 }
 
 // =============================================================================
+// Item Loader
+// =============================================================================
+
+/**
+ * Loads all items from presets/items/base-items.json.
+ */
+export function loadItems(): Item[] {
+  const raw = loadJson<RawItem[]>('items/base-items.json');
+
+  return raw.map((i) => ({
+    id: i.id,
+    name: i.name,
+    category: i.category,
+    tags: i.tags,
+    value: i.value,
+    rarity: i.rarity ?? 'common',
+    weight: i.weight,
+    stackable: i.stackable,
+  }));
+}
+
+// =============================================================================
 // Template Loader
 // =============================================================================
 
@@ -197,10 +326,11 @@ export function loadTerrains(): Terrain[] {
  */
 function convertRolesToSlots(roles: Record<string, RawTemplateRole>): TemplateSlot[] {
   return Object.entries(roles).map(([roleName, role]) => ({
-    role: (role.designRole ?? roleName) as TemplateSlot['role'],
+    role: roleName as TemplateSlot['role'],
     tags: [], // Generic templates don't have tag constraints
     count: role.count,
     optional: false,
+    designRole: role.designRole as DesignRole | undefined,
   }));
 }
 
@@ -232,6 +362,46 @@ function dispositionFromNumber(value: number): CreatureDisposition {
 }
 
 /**
+ * Converts raw faction template composition to typed version.
+ */
+function convertFactionComposition(
+  raw: RawFactionTemplateComposition
+): FactionTemplateComposition {
+  return {
+    creatureId: raw.creatureId,
+    count: raw.count,
+    role: raw.role as FactionTemplateComposition['role'],
+  };
+}
+
+/**
+ * Converts raw faction template to typed version.
+ */
+function convertFactionTemplate(raw: RawFactionTemplate): FactionTemplateEntry {
+  return {
+    id: raw.id,
+    name: raw.name,
+    composition: raw.composition.map(convertFactionComposition),
+    triggers: raw.triggers,
+    weight: raw.weight,
+  };
+}
+
+/**
+ * Converts raw faction culture to typed version.
+ */
+function convertFactionCulture(raw?: RawFactionCulture): FactionCulture | undefined {
+  if (!raw) return undefined;
+
+  return {
+    naming: raw.naming,
+    personality: raw.personality,
+    quirks: raw.quirks,
+    activities: raw.activities,
+  };
+}
+
+/**
  * Loads all factions from presets/factions/base-factions.json.
  */
 export function loadFactions(): Faction[] {
@@ -241,7 +411,9 @@ export function loadFactions(): Faction[] {
     id: f.id,
     name: f.name,
     disposition: dispositionFromNumber(f.defaultDisposition),
-    territoryTerrains: [], // Not in current JSON, can be extended later
+    territoryTerrains: f.territoryTerrains ?? [],
+    encounterTemplates: f.encounterTemplates?.map(convertFactionTemplate),
+    culture: convertFactionCulture(f.culture),
   }));
 }
 
@@ -313,6 +485,7 @@ export interface PresetCollection {
   terrains: Terrain[];
   templates: EncounterTemplate[];
   factions: Faction[];
+  items: Item[];
   party: PartySnapshot;
 }
 
@@ -325,6 +498,7 @@ export function loadAllPresets(): PresetCollection {
     terrains: loadTerrains(),
     templates: loadTemplates(),
     factions: loadFactions(),
+    items: loadItems(),
     party: loadParty(),
   };
 }
@@ -341,6 +515,7 @@ export interface PresetLookups {
   terrains: Map<string, Terrain>;
   templates: Map<string, EncounterTemplate>;
   factions: Map<string, Faction>;
+  items: Map<string, Item>;
   party: PartySnapshot;
 }
 
@@ -353,6 +528,7 @@ export function createPresetLookups(presets: PresetCollection): PresetLookups {
     terrains: createLookup(presets.terrains),
     templates: createLookup(presets.templates),
     factions: createLookup(presets.factions),
+    items: createLookup(presets.items),
     party: presets.party,
   };
 }

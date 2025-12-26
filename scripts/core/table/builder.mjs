@@ -14,6 +14,36 @@ import {
 import { formatDeps, splitTableLine } from './parser.mjs';
 
 // ============================================================================
+// SANITIZATION
+// ============================================================================
+
+/**
+ * Ersetzt Pipe-Zeichen in Strings um Tabellen-Bruch zu verhindern
+ * Pipes werden durch "/" ersetzt (lesbar und sicher)
+ *
+ * @param {string} value - Der zu bereinigende Wert
+ * @returns {string} - Bereinigter Wert ohne Pipes
+ */
+function sanitizePipe(value) {
+  if (typeof value !== 'string') return value;
+  return value.replace(/\|/g, '/');
+}
+
+/**
+ * Kombinierte Sanitization: Newlines und Pipes entfernen
+ *
+ * @param {string} value - Der zu bereinigende Wert
+ * @returns {string} - Bereinigter Wert
+ */
+function sanitizeForTable(value) {
+  if (typeof value !== 'string') return value;
+  return value
+    .replace(/[\r\n]+/g, ' ')  // Newlines → Leerzeichen
+    .replace(/\|/g, '/')        // Pipes → Slash
+    .trim();
+}
+
+// ============================================================================
 // LINE BUILDING
 // ============================================================================
 
@@ -38,7 +68,8 @@ export function buildLine(item, schema) {
       value = '-';
     }
 
-    return String(value);
+    // Pipes escapen um Tabellen-Bruch zu verhindern
+    return sanitizeForTable(String(value));
   });
 
   return '| ' + cells.join(' | ') + ' |';
@@ -130,10 +161,8 @@ export function updateLine(line, updates, schema) {
         value = formatDeps(value);
       }
 
-      // Newlines entfernen (verhindert Multi-Line-Tabellenzeilen)
-      if (typeof value === 'string') {
-        value = value.replace(/[\r\n]+/g, ' ').trim();
-      }
+      // Sanitize: Newlines und Pipes entfernen
+      value = sanitizeForTable(String(value));
 
       // Zellen-Index berechnen (Schema-Index + 1 wegen führendem |)
       const cellIndex = schemaIndex + 1;
@@ -176,10 +205,10 @@ export function updateBugLine(line, updates) {
  * @param {object} [format] - Optional Format-Info (für altes vs neues Format)
  * @returns {string} - Die aktualisierte Zeile
  */
-// Hilfsfunktion: Entfernt Newlines aus Strings
+// Hilfsfunktion: Entfernt Newlines und Pipes aus Strings
 function sanitizeValue(value) {
   if (typeof value === 'string') {
-    return value.replace(/[\r\n]+/g, ' ').trim();
+    return sanitizeForTable(value);
   }
   return value;
 }

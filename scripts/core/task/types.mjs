@@ -96,11 +96,11 @@ export function sortIds(ids) {
  * @param {object} task - Task mit deps Array
  * @param {Map<string|number, object>} itemMap - Map aller Items
  * @param {object} [options] - Optionen
- * @param {boolean} [options.ignoreBugDeps=true] - Bug-Dependencies ignorieren
+ * @param {boolean} [options.ignoreBugDeps=false] - Bug-Dependencies ignorieren
  * @returns {boolean} - true wenn alle Deps erfüllt
  */
 export function areDepsResolved(task, itemMap, options = {}) {
-  const { ignoreBugDeps = true } = options;
+  const { ignoreBugDeps = false } = options;
 
   if (!task.deps || task.deps.length === 0) return true;
 

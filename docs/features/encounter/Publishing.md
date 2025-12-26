@@ -144,7 +144,6 @@ interface EncounterCreature {
   creatureId: EntityId<'creature'>;
   npcId?: EntityId<'npc'>;              // Falls persistierter NPC
   count: number;
-  role?: 'leader' | 'guard' | 'scout' | 'civilian';
   loot?: Item[];                        // Zugewiesene Items
 }
 ```
@@ -443,4 +442,7 @@ function suggestPOILocation(
 
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-| 3286 | ⬜ | Encounter | - | Publishing-Schemas: EncounterInstance, EncounterCreature, EncounterOutcome, CreatureKill | mittel | Nein | #3261 | - | - |
+| 3286 | ✅ | Encounter | prototype | Publishing-Schemas: EncounterInstance, EncounterCreature, EncounterOutcome, CreatureKill | mittel | Nein | #3261 | features/encounter/Publishing.md#output-schemas | prototype/types/encounter.ts: EncounterInstance (extends BalancedEncounter), EncounterCreature, EncounterOutcome, CreatureKill, EncounterState, OutcomeType |
+| 3287 | ⛔ | Encounter | prototype | Step 7: Publishing Core - EncounterInstance erstellen + publish Befehl | mittel | Nein | #3266, #3286 | features/encounter/Publishing.md#encounterinstance | prototype/pipeline/publishing.ts: createEncounterInstance(), generateEncounterId(), generateDescription(), addTraceInfo() | prototype/commands/publish.ts | prototype/output/text-formatter.ts (erweitern) |
+| 3288 | ⛔ | Encounter | prototype | Step 7: State-Machine + start/dismiss/resolve Befehle | mittel | Nein | #3287 | features/encounter/Publishing.md#state-machine, features/encounter/Publishing.md#lifecycle-events | prototype/pipeline/publishing.ts: startEncounter(), dismissEncounter(), resolveEncounter() | prototype/commands/start.ts, dismiss.ts, resolve.ts |
+| 3289 | ⛔ | Encounter | prototype | Publishing-Konsumenten: Combat, XP-Split, Shop, Attrition Integration | niedrig | Nein | #3288 | features/encounter/Publishing.md#konsumenten | prototype/pipeline/publishing.ts: shouldTriggerCombat(), calculateXPAward(), splitQuestXP(), getShopForEncounter(), applyAttrition() | prototype/commands/combat.ts, attrition.ts |
