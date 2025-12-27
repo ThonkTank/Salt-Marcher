@@ -1,5 +1,6 @@
 # Prototype-to-Production Workflow
 
+> **Lies auch:** [Goals.md](../../Goals.md)
 Dieses Dokument beschreibt den Entwicklungsflow von Schemas über CLI-Prototypen bis zur Production-Integration.
 
 ---
@@ -207,4 +208,3 @@ Ein Feature gilt als Production-Ready wenn:
 
 ---
 
-*Siehe auch: [Goals.md](../../Goals.md) für Architektur-Übersicht*

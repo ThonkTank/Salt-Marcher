@@ -1,6 +1,6 @@
 # Library
 
-> **Lies auch:** [EntityRegistry](../architecture/EntityRegistry.md), [Application](../architecture/Application.md)
+> **Lies auch:** [EntityRegistry](../architecture/EntityRegistry.md), [Application](../architecture/Application.md), [data-manager](../architecture/Data-Manager.md)
 > **Konsumiert:** Alle Entities
 
 Die zentrale Datenverwaltung fuer alle Entity-Typen.
@@ -409,4 +409,3 @@ const entityConfig = entityRegistry.getConfig(activeTab);
 
 ---
 
-*Siehe auch: [data-manager](../architecture/Data-Manager.md) | [EntityRegistry](../architecture/EntityRegistry.md)*

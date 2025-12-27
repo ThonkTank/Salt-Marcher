@@ -3,7 +3,7 @@
 > **Zurueck zu:** [Encounter](Encounter.md)
 > **Empfaengt von:** [Difficulty](Difficulty.md) - `SimulationResult`
 > **Liefert an:** [Publishing](Publishing.md) - `BalancedEncounter`
-> **Siehe auch:** [Difficulty](Difficulty.md) - Kampfsimulation, [Population](Population.md) - Template-Rollen, [Creature](../../domain/Creature.md) - Design-Rollen
+> **Lies auch:** [Difficulty](Difficulty.md) - Kampfsimulation, [Population](Population.md) - Template-Rollen, [Creature](../../domain/Creature.md) - Design-Rollen
 
 Machbarkeits-Anpassung: Encounter an Ziel-Difficulty anpassen.
 

@@ -1,6 +1,6 @@
 # Application Layer
 
-> **Lies auch:** [Features](Features.md), [Data-Flow](Data-Flow.md)
+> **Lies auch:** [Features](Features.md), [Data-Flow](Data-Flow.md), [EventBus.md](EventBus.md), [SessionRunner.md](../application/SessionRunner.md)
 > **Wird benoetigt von:** SessionRunner, Library, Cartographer
 
 UI-Komponenten und deren State-Management via MVVM Pattern.
@@ -370,7 +370,6 @@ describe('CartographerViewModel', () => {
 
 ---
 
-*Siehe auch: [Features.md](Features.md) | [EventBus.md](EventBus.md) | [SessionRunner.md](../application/SessionRunner.md)*
 
 ## Tasks
 

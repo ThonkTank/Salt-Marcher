@@ -1,6 +1,6 @@
 # Testing
 
-> **Lies auch:** [Conventions](Conventions.md)
+> **Lies auch:** [Conventions](Conventions.md), [Features.md](Features.md), [Application.md](Application.md)
 > **Wird benoetigt von:** Tests schreiben
 
 Test-Patterns pro Layer und Mock-Strategien.
@@ -685,4 +685,3 @@ test/                             # Test-Utilities auf Root-Ebene
 
 ---
 
-*Siehe auch: [Features.md](Features.md) | [Application.md](Application.md) | [Conventions.md](Conventions.md)*

@@ -418,6 +418,115 @@ export function createFsTaskAdapter(options = {}) {
     },
 
     /**
+     * Löscht mehrere Tasks/Bugs in einem Batch (vermeidet Race Conditions)
+     *
+     * @param {Array<number|string>} taskIds - Array von Task-IDs oder Bug-IDs
+     * @param {object} opts - Optionen
+     * @param {boolean} opts.dryRun - Nur simulieren
+     * @returns {Result} - Ergebnis mit deleted/failed Arrays
+     */
+    bulkDeleteTasks(taskIds, opts = {}) {
+      const { dryRun = false } = opts;
+
+      if (!taskIds || taskIds.length === 0) {
+        return ok({ success: true, deleted: [], failed: [], docs: [] });
+      }
+
+      // 1. Roadmap einmal laden
+      const loadResult = this.load();
+      if (!loadResult.ok) return loadResult;
+
+      const { lines, itemMap } = loadResult.value;
+
+      // 2. Tasks/Bugs finden und nach lineIndex sortieren (absteigend)
+      const toDelete = [];
+      const failed = [];
+
+      for (const taskId of taskIds) {
+        const task = itemMap.get(taskId);
+        if (task) {
+          toDelete.push({ id: taskId, task, lineIndex: task.lineIndex });
+        } else {
+          failed.push({ id: taskId, error: { message: `${taskId} nicht gefunden` } });
+        }
+      }
+
+      // Absteigend nach lineIndex sortieren (damit splice die Indizes nicht verschiebt)
+      toDelete.sort((a, b) => b.lineIndex - a.lineIndex);
+
+      // 3. Zeilen aus Roadmap entfernen (von hinten nach vorne)
+      const deleted = [];
+      if (!dryRun) {
+        for (const item of toDelete) {
+          lines.splice(item.lineIndex, 1);
+          deleted.push({ id: item.id, type: item.task.isBug ? 'bug' : 'task' });
+        }
+        writeFileSync(roadmapPath, lines.join('\n'));
+      } else {
+        for (const item of toDelete) {
+          deleted.push({ id: item.id, type: item.task.isBug ? 'bug' : 'task' });
+        }
+      }
+
+      // 4. Aus allen Docs löschen (gebündelt pro Doc)
+      const docResults = [];
+      const taskIdsToDelete = toDelete
+        .filter(item => !item.task.isBug)
+        .map(item => item.id);
+
+      if (taskIdsToDelete.length > 0) {
+        // Finde alle Docs die mindestens eine dieser Tasks enthalten
+        const allDocs = findMarkdownFiles(docsPath);
+        const idPatterns = taskIdsToDelete.map(id => new RegExp(`^\\|\\s*${id}\\s*\\|`));
+
+        for (const filePath of allDocs) {
+          if (filePath.endsWith('Development-Roadmap.md')) continue;
+
+          try {
+            const content = readFileSync(filePath, 'utf-8');
+            const docLines = content.split('\n');
+            let modified = false;
+
+            // Von hinten nach vorne löschen
+            for (let i = docLines.length - 1; i >= 0; i--) {
+              const line = docLines[i];
+              for (const pattern of idPatterns) {
+                if (pattern.test(line)) {
+                  if (!dryRun) {
+                    docLines.splice(i, 1);
+                  }
+                  modified = true;
+                  break;
+                }
+              }
+            }
+
+            if (modified) {
+              if (!dryRun) {
+                writeFileSync(filePath, docLines.join('\n'));
+              }
+              docResults.push({
+                file: basename(filePath),
+                path: relative(docsPath, filePath),
+                modified: true
+              });
+            }
+          } catch {
+            // Datei konnte nicht gelesen werden - ignorieren
+          }
+        }
+      }
+
+      return ok({
+        success: failed.length === 0,
+        deleted,
+        failed,
+        docs: docResults,
+        dryRun
+      });
+    },
+
+    /**
      * Splittet eine Task in zwei Teile in Roadmap UND allen Docs
      */
     splitTask(taskId, splitData, opts = {}) {
@@ -499,9 +608,10 @@ export function createFsTaskAdapter(options = {}) {
     /**
      * Fügt eine neue Task zur Roadmap hinzu
      * Wenn doc angegeben, wird die Task auch in das Doc eingefügt
+     * additionalDocs: Weitere Docs, in die die Task eingefügt werden soll
      */
     addTask(taskData, opts = {}) {
-      const { dryRun = false, doc = null, init = false } = opts;
+      const { dryRun = false, doc = null, init = false, additionalDocs = [] } = opts;
       const { domain, layer = '-', beschreibung, prio = 'mittel', mvp = 'Nein', deps = [], spec = '-', isBug = false } = taskData;
 
       // 1. Roadmap laden
@@ -552,21 +662,44 @@ export function createFsTaskAdapter(options = {}) {
 
       if (isBug) {
         // Bug-Tabelle finden (nach "## Bugs")
-        for (let i = lines.length - 1; i >= 0; i--) {
-          if (lines[i].match(/^\|\s*b\d+\s*\|/)) {
-            insertIndex = i + 1;
-            break;
+        let bugSeparatorIndex = -1;
+        let inBugSection = false;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes('## Bugs')) {
+            inBugSection = true;
           }
+          if (inBugSection) {
+            if (lines[i].match(/^\|\s*b\d+\s*\|/)) {
+              insertIndex = i + 1;
+            }
+            if (lines[i].match(/^\|[-:\s|]+\|$/) && bugSeparatorIndex === -1) {
+              bugSeparatorIndex = i;
+            }
+          }
+        }
+        // Fallback: Leere Bug-Tabelle → nach Separator einfügen
+        if (insertIndex === -1 && bugSeparatorIndex > 0) {
+          insertIndex = bugSeparatorIndex + 1;
         }
       } else {
         // Task-Tabelle finden (nach "## Tasks" aber vor "## Bugs")
+        let separatorIndex = -1;
         for (let i = 0; i < lines.length; i++) {
+          // Task-Datenzeile gefunden
           if (lines[i].match(/^\|\s*\d+\s*\|/) && !lines[i].match(/^\|\s*b\d+\s*\|/)) {
             insertIndex = i + 1;
+          }
+          // Tabellen-Separator merken (für leere Tabellen)
+          if (lines[i].match(/^\|[-:\s|]+\|$/) && separatorIndex === -1) {
+            separatorIndex = i;
           }
           if (lines[i].includes('## Bugs')) {
             break;
           }
+        }
+        // Fallback: Leere Tabelle → nach Separator einfügen
+        if (insertIndex === -1 && separatorIndex > 0) {
+          insertIndex = separatorIndex + 1;
         }
       }
 
@@ -576,10 +709,11 @@ export function createFsTaskAdapter(options = {}) {
         writeFileSync(roadmapPath, lines.join('\n'));
       }
 
-      // 5. Auch in Doc einfügen (wenn angegeben, nur für Tasks)
-      let docResult = null;
+      // 5. Auch in Docs einfügen (wenn angegeben, nur für Tasks)
+      const allDocResults = [];
+
       if (doc && !isBug) {
-        docResult = this.addTaskToDoc(doc, newLine, { init, dryRun });
+        const docResult = this.addTaskToDoc(doc, newLine, { init, dryRun });
         if (!docResult.ok) {
           // Rollback: Task aus Roadmap entfernen
           if (!dryRun && insertIndex > 0) {
@@ -588,6 +722,22 @@ export function createFsTaskAdapter(options = {}) {
           }
           return docResult;
         }
+        allDocResults.push({ path: doc, initialized: docResult.value.initialized });
+      }
+
+      // 6. Zusätzliche Docs (aus additionalDocs, z.B. Spec-Dateien)
+      if (!isBug && additionalDocs.length > 0) {
+        for (const additionalDoc of additionalDocs) {
+          // Duplikate vermeiden
+          if (additionalDoc === doc) continue;
+
+          const addResult = this.addTaskToDoc(additionalDoc, newLine, { init, dryRun });
+          if (addResult.ok) {
+            allDocResults.push({ path: additionalDoc, initialized: addResult.value.initialized });
+          }
+          // Bei Fehler: Warnung loggen aber weitermachen (best-effort)
+          // Nicht kritisch - Hauptdoc wurde bereits geschrieben
+        }
       }
 
       return ok({
@@ -595,7 +745,7 @@ export function createFsTaskAdapter(options = {}) {
         newId,
         isBug,
         line: newLine,
-        doc: docResult?.ok ? { path: doc, initialized: docResult.value.initialized } : null
+        docs: allDocResults
       });
     },
 

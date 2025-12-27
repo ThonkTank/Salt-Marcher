@@ -9,7 +9,7 @@ import { readFileSync, existsSync } from 'fs';
 import { resolve, relative } from 'path';
 import { ok, err, TaskErrorCode } from '../core/result.mjs';
 import { parseTaskId, isBugId } from '../core/table/parser.mjs';
-import { createRemoveService } from './remove-service.mjs';
+import { createFsTaskAdapter } from '../adapters/fs-task-adapter.mjs';
 
 /**
  * Extrahiert Task- und Bug-IDs aus der Task-Tabelle eines Dokuments
@@ -73,11 +73,11 @@ function extractIdsFromTable(content) {
  * Erstellt einen Clear-Service
  *
  * @param {object} [options] - Optionen
- * @param {object} [options.removeService] - Remove-Service Instanz
+ * @param {object} [options.taskAdapter] - Task-Adapter Instanz
  * @returns {object}
  */
 export function createClearService(options = {}) {
-  const removeService = options.removeService ?? createRemoveService();
+  const taskAdapter = options.taskAdapter ?? createFsTaskAdapter();
 
   return {
     /**
@@ -150,36 +150,21 @@ export function createClearService(options = {}) {
         });
       }
 
-      // Löschen via removeService
-      const deleted = [];
-      const failed = [];
+      // Batch-Löschung via taskAdapter (vermeidet Race Conditions)
+      const allIds = [...taskIds, ...bugIds];
+      const result = taskAdapter.bulkDeleteTasks(allIds, { dryRun: false });
 
-      // Tasks löschen
-      for (const taskId of taskIds) {
-        const result = removeService.deleteTask(taskId, { dryRun: false });
-        if (result.ok) {
-          deleted.push({ type: 'task', id: taskId });
-        } else {
-          failed.push({ type: 'task', id: taskId, error: result.error });
-        }
-      }
-
-      // Bugs löschen
-      for (const bugId of bugIds) {
-        const result = removeService.deleteBug(bugId, { dryRun: false });
-        if (result.ok) {
-          deleted.push({ type: 'bug', id: bugId });
-        } else {
-          failed.push({ type: 'bug', id: bugId, error: result.error });
-        }
+      if (!result.ok) {
+        return result;
       }
 
       return ok({
-        success: failed.length === 0,
+        success: result.value.failed.length === 0,
         docPath: relativePath,
-        deleted,
-        failed,
+        deleted: result.value.deleted,
+        failed: result.value.failed,
         totalCount,
+        docs: result.value.docs,
         dryRun
       });
     }

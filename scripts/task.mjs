@@ -31,6 +31,7 @@ const COMMANDS = {
   split: () => import('./services/split-service.mjs'),
   sync: () => import('./services/sync-service.mjs'),
   clear: () => import('./services/clear-service.mjs'),
+  'check-doc': () => import('./services/doc-watcher-service.mjs'),
 };
 
 const COMMAND_DESCRIPTIONS = {
@@ -45,6 +46,7 @@ const COMMAND_DESCRIPTIONS = {
   split: 'Task in zwei Teile splitten',
   sync: 'Roadmap → Docs synchronisieren (Diskrepanzen beheben)',
   clear: 'Alle Tasks/Bugs aus einem Dokument löschen',
+  'check-doc': 'Doc-Änderungen prüfen, Tasks auf 🔶 setzen',
 };
 
 /**

@@ -1,5 +1,6 @@
 # Glossary
 
+> **Lies auch:** [Core.md](Core.md), [Features.md](Features.md), [Application.md](Application.md), [EventBus.md](EventBus.md)
 > **Wird benoetigt von:** Bei Begriffsfragen
 
 Zentrale Begriffsdefinitionen fuer SaltMarcher.
@@ -217,4 +218,3 @@ CreatureDefinition (Template) → Creature (Runtime) → NPC (falls benannt/pers
 
 ---
 
-*Siehe auch: [Core.md](Core.md) | [Features.md](Features.md) | [Application.md](Application.md) | [EventBus.md](EventBus.md)*

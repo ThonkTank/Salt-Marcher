@@ -1,6 +1,6 @@
 # Time-System
 
-> **Lies auch:** [Journal](../domain/Journal.md), [Events-Catalog](../architecture/Events-Catalog.md)
+> **Lies auch:** [Journal](../domain/Journal.md), [Events-Catalog](../architecture/Events-Catalog.md), [Weather-System.md](Weather-System.md), [Travel-System.md](Travel-System.md), [Audio-System.md](Audio-System.md)
 > **Wird benoetigt von:** Travel, Weather, Audio, Encounter
 
 Backend-Feature fuer Kalender und Zeit-Verwaltung.
@@ -673,7 +673,6 @@ Vollstaendige Event-Definitionen: [Events-Catalog.md#rest](../architecture/Event
 
 ---
 
-*Siehe auch: [Weather-System.md](Weather-System.md) | [Travel-System.md](Travel-System.md) | [Audio-System.md](Audio-System.md)*
 
 ## Tasks
 

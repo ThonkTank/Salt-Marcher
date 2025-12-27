@@ -4,7 +4,7 @@
 > **Empfaengt von:** [Population](Population.md) - `EncounterDraft`
 > **Liefert an:** [Difficulty](Difficulty.md) - `FlavouredEncounter`
 >
-> **Siehe auch:** [NPC-System](../../domain/NPC-System.md), [Faction](../../domain/Faction.md)
+> **Lies auch:** [NPC-Resolution](NPC-Resolution.md), [Faction](../../data/faction.md)
 
 RP-Details fuer Encounters: Activities, Goals und NPC-Instanziierung.
 
@@ -326,9 +326,9 @@ function generateHighlightNPCs(
 
 ### NPC-Wiederverwendung
 
-Existierende NPCs werden bevorzugt. Die Retrieval-Logik ist im NPC-System dokumentiert:
+Existierende NPCs werden bevorzugt. Die Retrieval-Logik ist in NPC-Resolution dokumentiert:
 
-→ Details: [NPC-System.md](../../domain/NPC-System.md#storage--retrieval)
+→ Details: [NPC-Resolution.md](NPC-Resolution.md#storage--retrieval)
 
 ```typescript
 function findExistingNPC(

@@ -1,6 +1,6 @@
 # Cartographer
 
-> **Lies auch:** [Map-Feature](../features/Map-Feature.md), [Map](../domain/Map.md), [Terrain](../domain/Terrain.md)
+> **Lies auch:** [Map-Feature](../features/Map-Feature.md), [Map](../domain/Map.md), [Terrain](../domain/Terrain.md), [Path.md](../domain/Path.md), [Dungeon-System.md](../features/Dungeon-System.md)
 > **Konsumiert:** Map
 
 Der Karten-Editor fuer Hex-Overland und Grid-Dungeon Maps.
@@ -805,6 +805,106 @@ Platziert Creature/Object Tokens.
 
 ---
 
+## Faction-Praesenz-Berechnung
+
+Die Praesenz von Fraktionen auf der Map wird vorberechnet und auf Tiles gespeichert.
+
+### Berechnungslogik
+
+Fraktionen kontrollieren Territorium ueber POIs. Die Gesamt-CR einer Fraktion wird auf alle Tiles im Territorium **verteilt** (Budget-System).
+
+```typescript
+function distributePresenceToTiles(
+  faction: Faction,
+  factionPOIs: POI[],
+  allTiles: OverworldTile[],
+  creatureRegistry: Map<EntityId<'creature'>, CreatureDefinition>
+): void {
+  if (factionPOIs.length === 0) return;
+
+  // 1. CR-Summe berechnen: Σ(creature.cr × count)
+  const crTotal = faction.creatures.reduce((sum, group) => {
+    const creature = creatureRegistry.get(group.creatureId);
+    return sum + ((creature?.cr ?? 0) * group.count);
+  }, 0);
+
+  // 2. Maximale Reichweite: sqrt(CR) × 2
+  const maxRange = Math.sqrt(crTotal) * 2;
+
+  // 3. Tiles im Territorium mit Gewichten sammeln
+  const tilesWithWeights: Array<{ tile: OverworldTile; weight: number }> = [];
+
+  for (const tile of allTiles) {
+    const minDistance = Math.min(
+      ...factionPOIs.map(poi => hexDistance(tile.coordinate, poi.position))
+    );
+
+    if (minDistance <= maxRange) {
+      // Gewicht: Je naeher am POI, desto hoeher (1/(d+1))
+      const weight = 1 / (minDistance + 1);
+      tilesWithWeights.push({ tile, weight });
+    }
+  }
+
+  // 4. Gewichte normalisieren (Summe = 1)
+  const totalWeight = tilesWithWeights.reduce((sum, tw) => sum + tw.weight, 0);
+
+  // 5. CR verteilen
+  for (const { tile, weight } of tilesWithWeights) {
+    const normalizedWeight = weight / totalWeight;
+    tile.factionPresence = tile.factionPresence ?? [];
+    tile.factionPresence.push({
+      factionId: faction.id,
+      strength: crTotal * normalizedWeight
+    });
+  }
+}
+```
+
+### Workflow
+
+1. GM platziert POIs und weist sie Fraktionen zu
+2. Bei "Save" oder "Recalculate" wird Praesenz fuer alle Fraktionen berechnet
+3. Ergebnis wird auf `OverworldTile.factionPresence[]` gespeichert
+
+### Beispiel-Verteilung
+
+| Tile | Distanz | Gewicht | Normalisiert | CR-Anteil |
+|------|---------|---------|--------------|-----------|
+| POI | 0 | 1.00 | 0.35 | 2.01 |
+| A | 1 | 0.50 | 0.175 | 1.01 |
+| B | 1 | 0.50 | 0.175 | 1.01 |
+| C | 2 | 0.33 | 0.115 | 0.66 |
+| **Summe** | | | **1.00** | **5.75** |
+
+Summe aller CR-Anteile = Faction-Gesamt-CR (Budget-Constraint).
+
+### Neuberechnung nach Attrition
+
+Nach `faction:attrition-applied` werden betroffene Tiles neu berechnet:
+
+```typescript
+eventBus.on('faction:attrition-applied', (payload) => {
+  const faction = entityRegistry.get('faction', payload.factionId);
+  if (!faction) return;
+
+  // Alte Praesenz entfernen
+  for (const tile of getAllTiles()) {
+    tile.factionPresence = tile.factionPresence?.filter(
+      p => p.factionId !== faction.id
+    );
+  }
+
+  // Neu berechnen
+  const pois = getControlledPOIs(faction);
+  distributePresenceToTiles(faction, pois, getAllTiles(), creatureRegistry);
+});
+```
+
+→ Schema: [faction-presence.md](../data/faction-presence.md)
+
+---
+
 ## Layer-Control
 
 Steuert sichtbare Layer im Canvas.
@@ -954,4 +1054,3 @@ type ToolType = OverlandTool | DungeonTool;
 
 ---
 
-*Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Dungeon-System.md](../features/Dungeon-System.md) | [Terrain.md](../domain/Terrain.md)*

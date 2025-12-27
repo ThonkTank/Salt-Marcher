@@ -1,5 +1,6 @@
 # Conventions
 
+> **Lies auch:** [Features.md](Features.md), [Core.md](Core.md)
 > **Wird benoetigt von:** Alle Implementierungen
 
 Allgemeine Konventionen für die SaltMarcher-Entwicklung.
@@ -385,4 +386,3 @@ type MapId = string;
 
 ---
 
-*Siehe auch: [Features.md](Features.md) | [Core.md](Core.md)*

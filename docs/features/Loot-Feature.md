@@ -1,6 +1,6 @@
 # Loot-Feature
 
-> **Lies auch:** [Item](../domain/Item.md), [Encounter-System](encounter/Encounter.md), [Quest-System](Quest-System.md), [Creature](../domain/Creature.md)
+> **Lies auch:** [Item](../data/item.md), [Encounter-System](encounter/Encounter.md), [Quest-System](Quest-System.md), [Creature](../data/creature.md), [Character-System](Character-System.md)
 > **Wird benoetigt von:** Quest, Encounter, Combat
 
 Loot-Generierung mit Background-Budget-Tracking, Creature-spezifischem Loot und dynamischer Verteilung.
@@ -581,7 +581,7 @@ interface Faction {
 
 Items haben Tags, die fuer Matching verwendet werden:
 
-→ **Item-Schema:** Siehe [Item.md](../domain/Item.md)
+→ **Item-Schema:** Siehe [item.md](../data/item.md)
 
 **Fuer Loot relevante Felder:**
 
@@ -724,6 +724,29 @@ const bloodfang: Faction = {
   lootTags: ['weapons', 'tribal', 'trophies']  // Kein Gold, aber Trophaeen
 };
 ```
+
+### Item-Queries
+
+```typescript
+// Items nach Tags filtern (fuer Loot-Matching)
+function getItemsByTags(tags: string[]): Item[] {
+  return entityRegistry.query('item', item =>
+    item.tags.some(tag => tags.includes(tag))
+  );
+}
+
+// Items mit bestimmter Rarity oder niedriger (fuer Rarity-Filter)
+function getItemsUpToRarity(maxRarity: Rarity): Item[] {
+  const rarityOrder = ['common', 'uncommon', 'rare', 'very_rare', 'legendary', 'artifact'];
+  const maxIndex = rarityOrder.indexOf(maxRarity);
+
+  return entityRegistry.query('item', item =>
+    rarityOrder.indexOf(item.rarity ?? 'common') <= maxIndex
+  );
+}
+```
+
+→ Schema-Details: [item.md](../data/item.md)
 
 ---
 
@@ -1068,7 +1091,6 @@ Bei Magic Items hat der GM **immer** das letzte Wort:
 
 ---
 
-*Siehe auch: [encounter/Encounter.md](encounter/Encounter.md) | [Item.md](../domain/Item.md) | [Character.md](../domain/Character.md) | [Creature.md](../domain/Creature.md) | [Quest-System.md](Quest-System.md)*
 
 ## Tasks
 

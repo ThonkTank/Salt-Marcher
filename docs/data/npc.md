@@ -1,0 +1,172 @@
+# Schema: NPC
+
+> **Produziert von:** [Encounter](../features/encounter/Encounter.md) (Generierung), [Library](../application/Library.md) (CRUD)
+> **Konsumiert von:** [Encounter](../features/encounter/Encounter.md), [Quest](../features/Quest-System.md), [Shop](../domain/Shop.md)
+
+Benannte, persistente Kreatur-Instanz mit Persoenlichkeit.
+
+---
+
+## Drei-Stufen-Hierarchie
+
+| Begriff | Bedeutung | Persistenz |
+|---------|-----------|------------|
+| `CreatureDefinition` | Template/Statblock | EntityRegistry |
+| `Creature` | Runtime-Instanz | Nicht persistiert |
+| **`NPC`** | Benannte Instanz | EntityRegistry |
+
+- **CreatureDefinition**: Siehe [creature.md](creature.md)
+- **NPC**: Dieses Dokument
+- **Feature-Logik**: Siehe [NPC-Resolution.md](../features/encounter/NPC-Resolution.md)
+
+---
+
+## Felder
+
+| Feld | Typ | Beschreibung | Validierung |
+|------|-----|--------------|-------------|
+| `id` | `EntityId<'npc'>` | Eindeutige ID | Required |
+| `name` | `string` | Anzeigename | Required, non-empty |
+| `creature` | `CreatureRef` | Verweis auf Template | Required |
+| `factionId` | `EntityId<'faction'>?` | Fraktionszugehoerigkeit | Optional |
+| `personality` | `PersonalityTraits` | Persoenlichkeit | Required |
+| `quirk` | `string?` | Besonderheit | Optional |
+| `personalGoal` | `string` | Persoenliches Ziel | Required |
+| `status` | `'alive' \| 'dead'` | Lebensstatus | Required |
+| `firstEncounter` | `GameDateTime` | Erstes Treffen | Required |
+| `lastEncounter` | `GameDateTime` | Letztes Treffen | Required |
+| `encounterCount` | `number` | Anzahl Begegnungen | Required, >= 1 |
+| `lastKnownPosition` | `HexCoordinate?` | Letzte Position | Optional |
+| `lastSeenAt` | `GameDateTime?` | Zeitpunkt letzter Sichtung | Optional |
+| `currentPOI` | `EntityId<'poi'>?` | Aktueller Aufenthaltsort | Optional |
+| `gmNotes` | `string?` | GM-Notizen | Optional |
+
+---
+
+## Sub-Schemas
+
+### PersonalityTraits
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `primary` | `string` | Haupt-Persoenlichkeitszug |
+| `secondary` | `string` | Neben-Persoenlichkeitszug |
+
+**Beispiele:** "misstrauisch", "neugierig", "gierig", "loyal", "nervoes"
+
+### CreatureRef
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `type` | `string` | Kreatur-Typ (z.B. "goblin") |
+| `id` | `EntityId<'creature'>` | Verweis auf CreatureDefinition |
+
+---
+
+## NPC-Detail-Stufen
+
+Bei Encounters werden NPCs mit unterschiedlicher Detailtiefe generiert:
+
+| Stufe | Details | Persistierung | Max pro Encounter |
+|-------|---------|---------------|-------------------|
+| **Lead-NPC** | Name, 2 Traits, Quirk, Goal | Ja | 1 pro Gruppe |
+| **Highlight-NPC** | Name, 1 Trait | Nein (session-only) | Max 3 global |
+| **Anonym** | Nur Kreatur-Typ + Anzahl | Nein | Unbegrenzt |
+
+### PartialNPC (Highlight-NPCs)
+
+```typescript
+interface PartialNPC {
+  name: string;
+  primaryTrait: string;
+  creatureType: string;
+}
+```
+
+---
+
+## Location-Logik
+
+NPCs haben **keine explizite Location**. Ihre Praesenz wird ueber Fraktionen bestimmt:
+
+```
+NPC -> gehoert zu Fraktion -> Fraktion hat Presence -> NPC kann dort erscheinen
+```
+
+| Feld | Semantik |
+|------|----------|
+| `factionId` gesetzt | Location via Faction-Territory |
+| `currentPOI` gesetzt | Definitiv an diesem POI |
+| Beides nicht gesetzt | Fallback auf Creature-Tags |
+
+---
+
+## Invarianten
+
+- `status` ist nur `'alive'` oder `'dead'` (keine komplexen Stati)
+- `creature.id` muss auf existierende CreatureDefinition verweisen
+- `encounterCount` >= 1 nach Erstellung
+- `firstEncounter` <= `lastEncounter` (zeitliche Konsistenz)
+- `personality` muss beide Traits enthalten (`primary` und `secondary`)
+- Tote NPCs (`status: 'dead'`) werden nicht wiederverwendet
+
+---
+
+## Was NICHT im NPC-Schema ist
+
+| Konzept | Grund |
+|---------|-------|
+| `partyKnowledge` | GM trackt in Notizen/Journal |
+| `relationToParty` | Kreative GM-Entscheidung |
+| `encounters[]` | Historie via Journal-Entries |
+| `statOverrides` | Post-MVP Feature |
+| `homeLocation` | Post-MVP (Routen/Schedules) |
+| `cultureId` | Kultur ist in Faction eingebettet |
+
+---
+
+## Beispiel
+
+```typescript
+const griknak: NPC = {
+  id: 'npc:griknak-blutfang',
+  name: 'Griknak der Hinkende',
+
+  creature: {
+    type: 'goblin-warrior',
+    id: 'creature:goblin-warrior'
+  },
+
+  factionId: 'faction:blutfang-tribe',
+
+  personality: {
+    primary: 'misstrauisch',
+    secondary: 'gierig'
+  },
+  quirk: 'Hinkt auf dem linken Bein',
+  personalGoal: 'Will den Boss beeindrucken',
+
+  status: 'alive',
+
+  firstEncounter: { day: 15, month: 3, year: 1492, hour: 14 },
+  lastEncounter: { day: 20, month: 3, year: 1492, hour: 9 },
+  encounterCount: 2,
+
+  lastKnownPosition: { q: 5, r: -3 },
+  lastSeenAt: { day: 20, month: 3, year: 1492, hour: 9 },
+
+  gmNotes: 'Hat der Party beim letzten Mal Informationen verkauft'
+};
+```
+
+---
+
+## Storage
+
+```
+Vault/SaltMarcher/data/
+└── npc/
+    ├── griknak-blutfang.json
+    ├── merchant-silverbeard.json
+    └── guard-captain-helena.json
+```

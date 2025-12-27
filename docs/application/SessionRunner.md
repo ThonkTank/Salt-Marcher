@@ -1,6 +1,6 @@
 # SessionRunner
 
-> **Lies auch:** [Application](../architecture/Application.md), [Data-Flow](../architecture/Data-Flow.md), [DetailView](DetailView.md)
+> **Lies auch:** [Application](../architecture/Application.md), [Data-Flow](../architecture/Data-Flow.md), [DetailView](DetailView.md), [Travel-System.md](../features/Travel-System.md), [Weather-System.md](../features/Weather-System.md)
 > **Konsumiert:** Map, Travel, Time, Weather, Audio, Party, Quest
 
 Die zentrale Spielansicht waehrend einer D&D-Session. Zeigt die Karte und Quick-Controls fuer schnellen GM-Zugriff.
@@ -557,4 +557,3 @@ const subscriptions = [
 
 ---
 
-*Siehe auch: [DetailView.md](DetailView.md) | [Application.md](../architecture/Application.md) | [Travel-System.md](../features/Travel-System.md) | [Weather-System.md](../features/Weather-System.md)*

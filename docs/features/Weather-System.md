@@ -1,6 +1,6 @@
 # Weather-System
 
-> **Lies auch:** [Time-System](Time-System.md), [Terrain](../domain/Terrain.md)
+> **Lies auch:** [Time-System](Time-System.md), [Terrain](../domain/Terrain.md), [encounter/Context](encounter/Context.md), [Travel-System.md](Travel-System.md), [Audio-System.md](Audio-System.md)
 > **Wird benoetigt von:** Travel, Audio, Encounter
 
 Detaillierte Spezifikation des Wettersystems.
@@ -677,8 +677,6 @@ function getEncounterFeatures(context: EncounterContext): Feature[] {
 }
 ```
 
-→ Siehe auch: [encounter/Context.md](encounter/Context.md) fuer Feature-Aggregation und Schema-Definition
-
 ---
 
 ## Sichtweiten-Einfluss (Post-MVP)
@@ -952,7 +950,6 @@ Party betritt Dungeon um 10:00 bei Regen
 
 ---
 
-*Siehe auch: [Time-System.md](Time-System.md) | [Travel-System.md](Travel-System.md) | [Audio-System.md](Audio-System.md)*
 
 ## Tasks
 

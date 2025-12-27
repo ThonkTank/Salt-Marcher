@@ -1,6 +1,6 @@
 # Audio-System
 
-> **Lies auch:** [Time-System](Time-System.md), [Weather-System](Weather-System.md)
+> **Lies auch:** [Time-System](Time-System.md), [Weather-System](Weather-System.md), [Travel-System.md](Travel-System.md), [Events-Catalog.md](../architecture/Events-Catalog.md)
 > **Wird benoetigt von:** SessionRunner
 
 Kontextbasierte Hintergrundmusik und Umgebungsgeraeusche.
@@ -436,7 +436,6 @@ Wenn Auto-Switch deaktiviert oder GM manuell eingreift:
 
 ---
 
-*Siehe auch: [Weather-System.md](Weather-System.md) | [Travel-System.md](Travel-System.md) | [Events-Catalog.md](../architecture/Events-Catalog.md)*
 
 ## Tasks
 

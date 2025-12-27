@@ -2,7 +2,7 @@
 
 > **Zurueck zu:** [Encounter](Encounter.md)
 > **Empfaengt von:** [Adjustments](Adjustments.md) - `BalancedEncounter`
-> **Siehe auch:** [Initiation](Initiation.md), [Difficulty](Difficulty.md), [Combat-System](../Combat-System.md)
+> **Lies auch:** [Initiation](Initiation.md), [Difficulty](Difficulty.md), [Combat-System](../Combat-System.md)
 
 Was das Encounter-System produziert und fuer andere Systeme bereitstellt.
 
@@ -351,7 +351,7 @@ Nach Combat erscheint ein Info-Banner:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-→ Details: [Faction.md](../../domain/Faction.md#attrition-mechanik)
+→ Schema: [faction.md](../../data/faction.md)
 
 ---
 
@@ -434,7 +434,7 @@ function suggestPOILocation(
 }
 ```
 
-→ Details: [Faction.md](../../domain/Faction.md#entity-promotion)
+→ Schema: [faction.md](../../data/faction.md)
 
 ---
 

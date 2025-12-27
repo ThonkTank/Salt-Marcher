@@ -1,6 +1,6 @@
 # EntityRegistry
 
-> **Lies auch:** [Core](Core.md)
+> **Lies auch:** [Core](Core.md), [Features.md](Features.md), [Infrastructure.md](Infrastructure.md), [Path.md](../domain/Path.md)
 > **Wird benoetigt von:** Alle Entities
 
 Zentrale Speicherung und Verwaltung aller persistenten Entities.
@@ -54,7 +54,7 @@ type EntityType =
   | 'item'         // Item-Definitionen (→ docs/domain/Item.md)
   // World Entities
   | 'map'          // Map-Definitionen
-  | 'poi'          // Points of Interest (→ docs/domain/POI.md)
+  | 'poi'          // Points of Interest (→ docs/data/poi.md)
   | 'maplink'      // Standalone Map-Links (ohne POI)
   | 'terrain'      // Custom Terrain-Definitionen mit Mechaniken
   | 'feature'      // Environment-Features fuer Encounter-Balance (→ docs/features/encounter/Initiation.md)
@@ -142,7 +142,7 @@ type EntityTypeMap = {
   creature: CreatureDefinition;     // Template, NICHT Instanz
   character: Character;
   npc: NPC;                         // Benannte persistente Kreatur
-  faction: Faction;                 // Culture embedded (→ docs/domain/Faction.md)
+  faction: Faction;                 // Culture embedded (→ docs/data/faction.md)
   item: Item;
   // World Entities
   map: MapDefinition;
@@ -986,7 +986,6 @@ Aktuelles Wetter
 
 ---
 
-*Siehe auch: [Features.md](Features.md) | [Infrastructure.md](Infrastructure.md) | [Core.md](Core.md) | [Path.md](../domain/Path.md)*
 
 ## Tasks
 

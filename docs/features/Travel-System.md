@@ -1,6 +1,6 @@
 # Travel-System
 
-> **Lies auch:** [Map-Feature](Map-Feature.md), [Time-System](Time-System.md), [Weather-System](Weather-System.md)
+> **Lies auch:** [Map-Feature](Map-Feature.md), [Time-System](Time-System.md), [Weather-System](Weather-System.md), [Map.md](../domain/Map.md), [Path.md](../domain/Path.md), [Inventory-System.md](Inventory-System.md), [encounter/Encounter.md](encounter/Encounter.md)
 > **Wird benoetigt von:** SessionRunner
 
 Detaillierte Spezifikation des Reisesystems.
@@ -354,7 +354,6 @@ eventBus.publish({
 
 ---
 
-*Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Inventory-System.md](Inventory-System.md) (Encumbrance) | [Weather-System.md](Weather-System.md) | [encounter/Encounter.md](encounter/Encounter.md)*
 
 ## Tasks
 

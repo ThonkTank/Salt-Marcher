@@ -1,5 +1,6 @@
 # Projektstruktur
 
+> **Lies auch:** [Development-Roadmap.md](Development-Roadmap.md)
 > **Wird benoetigt von:** Neue Dateien anlegen
 
 Dieses Dokument definiert die Zielstruktur des `src/`-Verzeichnisses.
@@ -102,4 +103,3 @@ import { TravelOrchestrator } from '@/features/travel';
 
 ---
 
-*Siehe auch: [Development-Roadmap.md](Development-Roadmap.md)*

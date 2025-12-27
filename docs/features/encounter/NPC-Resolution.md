@@ -1,9 +1,13 @@
-# NPC-System
+# NPC-Resolution
 
-> **Lies auch:** [Creature](Creature.md), [Faction](Faction.md)
-> **Wird benoetigt von:** Encounter, Quest, Shop
+> **Zurueck zu:** [Encounter](Encounter.md)
+> **Empfaengt von:** [Population](Population.md) - `EncounterDraft`
+> **Liefert an:** [Flavour](Flavour.md) - `EncounterDraft` mit NPCs
+> **Schema:** [npc.md](../../data/npc.md)
 
-Verwaltung von NPCs: Auswahl existierender NPCs, Generierung neuer NPCs, Persistierung.
+Wie werden existierende NPCs wiederverwendet oder neue generiert?
+
+**Verantwortlichkeit:** Step 3.5 der 7-Step-Pipeline - NPC-Aufloesung nach Gruppen-Befuellung.
 
 **Design-Philosophie:** Das Plugin automatisiert Mechanik (Generierung, Matching, Status). Der GM macht die kreative Arbeit (was die Party weiss, Beziehungen, Story). Encounter-Historie wird ueber Journal-Entries im Almanac abgebildet, nicht im NPC-Schema.
 
@@ -35,66 +39,6 @@ Das NPC-System sorgt dafuer, dass die Spielwelt konsistent und lebendig wirkt:
 │     └── lastEncounter, encounterCount                           │
 └─────────────────────────────────────────────────────────────────┘
 ```
-
----
-
-## NPC-Schema
-
-NPCs werden im EntityRegistry gespeichert (`EntityType: 'npc'`).
-
-```typescript
-interface NPC {
-  id: EntityId<'npc'>;
-
-  // === Basis-Daten ===
-  name: string;
-  creature: CreatureRef;                // Verweis auf Kreatur-Template
-  factionId?: EntityId<'faction'>;      // Optional - wenn gesetzt: Kultur aus Faction
-                                         // Wenn nicht: Fallback auf Creature-Tags
-
-  // === Persoenlichkeit (generiert aus Faction-Kultur) ===
-  personality: PersonalityTraits;
-  quirk?: string;
-  personalGoal: string;
-
-  // === Status ===
-  status: 'alive' | 'dead';
-
-  // === Tracking (fuer Wiedererkennung) ===
-  firstEncounter: GameDateTime;
-  lastEncounter: GameDateTime;
-  encounterCount: number;
-
-  // === Position-Tracking (fuer geografische NPC-Auswahl) ===
-  lastKnownPosition?: HexCoordinate;    // Letzte bekannte Position (aktualisiert bei Encounter)
-  lastSeenAt?: GameDateTime;            // Zeitpunkt der letzten Sichtung
-
-  // === Optionale explizite Location (MVP, niedrige Prio) ===
-  currentPOI?: EntityId<'poi'>;         // Wenn gesetzt: NPC ist an diesem POI
-                                         // Wenn nicht: Faction-Territory-Logik
-
-  // === GM-Notizen ===
-  gmNotes?: string;
-}
-
-interface PersonalityTraits {
-  primary: string;                      // "misstrauisch" | "neugierig" | ...
-  secondary: string;                    // "gierig" | "loyal" | ...
-}
-
-interface CreatureRef {
-  type: string;                         // Kreatur-Typ (z.B. "goblin")
-  id: EntityId<'creature'>;             // Verweis auf Creature-Template
-}
-```
-
-**Was NICHT im NPC-Schema ist:**
-- `partyKnowledge` - GM trackt das in Notizen oder Journal-Entries
-- `relationToParty` - Kreative GM-Entscheidung
-- `encounters[]` - Historie via Journal-Entries im WorldEvents-Feature (mit NPC-Verlinkung)
-- `statOverrides` - Post-MVP Feature (nutzt Creature-Editor UI)
-- `homeLocation` - Post-MVP (zusammen mit Routen/Schedules)
-- `cultureId` - Kultur ist direkt in der Faction eingebettet (via Faction-Hierarchie)
 
 ---
 
@@ -195,85 +139,6 @@ entityRegistry.query('npc', () => true)
 | Passender NPC existiert | Wiederverwendung: `lastEncounter` + `encounterCount` aktualisieren |
 | Kein passender NPC | Neu-Generierung: Name, Persoenlichkeit, Quirk aus Kultur |
 | NPC wurde getoetet | Status auf 'dead', nicht mehr fuer Matches verfuegbar |
-
-→ Generierungsdetails: [NPC-Generierung](#npc-generierung)
-
----
-
-## NPC-Location via Fraktionen
-
-NPCs haben **keine explizite Location**. Stattdessen wird ihre moegliche Praesenz ueber Fraktionen bestimmt:
-
-```
-NPC → gehoert zu Fraktion → Fraktion hat Presence auf Tiles → NPC kann dort erscheinen
-```
-
-### MVP: Fraktions-basierte Location
-
-```typescript
-// NPC ist IMMER Teil einer Fraktion (required)
-interface NPC {
-  factionId: EntityId<'faction'>;
-  // ...
-}
-
-// Fraktion hat Territory via kontrollierte POIs
-interface Faction {
-  controlledPOIs: EntityId<'poi'>[];  // POIs die von Faction kontrolliert werden
-  // Praesenz wird aus POIs + Staerke berechnet
-}
-
-// Bei Encounter-Generierung: Welche NPCs koennen hier erscheinen?
-function findEligibleNPCs(tile: HexCoordinate): NPC[] {
-  const factionsAtTile = getFactionsByPresence(tile);
-  return npcs.filter(npc =>
-    factionsAtTile.some(f => f.id === npc.factionId)
-  );
-}
-```
-
-**Hinweis:** `factionId` ist optional. Fraktionslose NPCs (wilde Tiere, Einsiedler) nutzen Creature-Tags als Fallback fuer die Generierung.
-
-### MVP (niedrige Prio): Explizite NPC-Location
-
-Optional kann der GM einen NPC an einem spezifischen POI platzieren:
-
-```typescript
-interface NPC {
-  // ...
-  currentPOI?: EntityId<'poi'>;       // GM setzt expliziten Aufenthaltsort
-}
-
-// Encounter-Logik mit expliziter Location:
-function findNPCsAtTile(tile: HexCoordinate): NPC[] {
-  // 1. NPCs mit expliziter Location an diesem Tile
-  const explicitNPCs = npcs.filter(npc =>
-    npc.currentPOI && getPOITile(npc.currentPOI) === tile
-  );
-
-  // 2. NPCs via Faction-Territory (ohne explizite Location)
-  const factionNPCs = npcs.filter(npc =>
-    !npc.currentPOI && factionHasPresenceAt(npc.factionId, tile)
-  );
-
-  return [...explicitNPCs, ...factionNPCs];
-}
-```
-
-**Semantik:** Wenn `currentPOI` gesetzt ist, ist der NPC definitiv dort. Ohne explizite Location greift die Faction-Territory-Logik.
-
-### Post-MVP: Erweiterte Location-Features
-
-| Feature | Beschreibung | Prioritaet |
-|---------|--------------|------------|
-| **Stat-Overrides** | Vollstaendige Stat-Anpassungen, UI vom Creature-Editor | Hoch |
-| NPC-Routen | Wandernde NPCs (Haendler, Patrouillen) mit definierten Routen | Mittel |
-| NPC-Schedules | Tagesablauf-basierte Location (Morgens im Laden, Abends in Taverne) | Mittel |
-| `homeLocation` | NPC hat Heimat-Tile mit Radius-Bonus fuer Erscheinen | Niedrig |
-| Faction-lose NPCs | Einsiedler, Wanderer ohne Faction | Niedrig |
-| NPC-Agency | NPCs bewegen sich zur Runtime selbststaendig | Fernziel |
-
-**Wichtig:** Fuer MVP genuegt die Fraktions-basierte Location + optionale explizite POI-Platzierung. Erweiterte Features koennen spaeter hinzugefuegt werden, ohne das Schema zu brechen.
 
 ---
 
@@ -381,7 +246,11 @@ function generateNewNPC(
 
   return npc;
 }
+```
 
+### Kultur-Aufloesung
+
+```typescript
 // Kultur-Aufloesung: Faction-Hierarchie oder Creature-Tags Fallback
 function resolveCultureForNPC(
   creature: CreatureDefinition,
@@ -438,7 +307,11 @@ function resolveFactionCulture(faction: Faction): ResolvedCulture {
 }
 ```
 
-### Goal-Pool-Hierarchie
+→ Culture-Schema: [culture-data.md](../../data/culture-data.md)
+
+---
+
+## Goal-Pool-Hierarchie
 
 Das persoenliche Ziel eines NPCs wird aus mehreren Quellen zusammengestellt:
 
@@ -490,7 +363,9 @@ function selectPersonalGoal(
 - "loot" Goal hat `personalityBonus: [{ trait: 'greedy', multiplier: 2.0 }]` → Gewichtung verdoppelt
 - "help_others" Goal hat keine Bonus → normale Gewichtung (sehr unwahrscheinlich)
 
-### Quirk-Einzigartigkeit
+---
+
+## Quirk-Einzigartigkeit
 
 Quirks werden getrackt um Wiederholungen zu vermeiden:
 
@@ -552,41 +427,6 @@ function updateNPCAfterEncounter(
   // Journal-Entry wird separat erstellt (Almanac-Feature)
   // und kann mit diesem NPC verlinkt werden
 }
-```
-
----
-
-## NPC-Detail-Stufen
-
-Bei Encounters werden NPCs mit unterschiedlicher Detailtiefe generiert:
-
-### Drei Stufen
-
-| Stufe | Details | Persistierung | Max pro Encounter |
-|-------|---------|---------------|-------------------|
-| **Lead-NPC** | Name, Personality (2 Traits), Quirk, Goal | Ja (EntityRegistry) | 1 pro Gruppe |
-| **Highlight-NPC** | Name, Personality (1 Trait) | Nein (session-only) | 1 pro Gruppe, max 3 gesamt |
-| **Anonym** | Nur Kreatur-Typ + Anzahl | Nein | Unbegrenzt |
-
-### PartialNPC Schema (Highlight-NPCs)
-
-```typescript
-interface PartialNPC {
-  name: string;
-  primaryTrait: string;       // Nur ein Personality-Trait
-  creatureType: string;       // Kreatur-Typ fuer Anzeige
-}
-```
-
-**Verwendung:** Highlight-NPCs geben Gruppen mehr Persoenlichkeit, ohne die NPC-Datenbank aufzublaehen. Sie werden nicht persistiert und existieren nur fuer die Dauer des Encounters.
-
-### Beispiel
-
-```
-Goblin-Patrouille (5 Goblins):
-├── Lead: Griknak der Hinkende (misstrauisch, gierig) - "will Boss beeindrucken"
-├── Highlight: Snaggle (nervoes)
-└── Anonym: Goblin-Krieger ×3
 ```
 
 ---
@@ -653,7 +493,7 @@ function resolveMultiGroupNPCs(
 }
 ```
 
-**Wichtig - NPC-Limits bei Multi-Gruppen:**
+**NPC-Limits bei Multi-Gruppen:**
 
 | NPC-Typ | Limit | Persistiert? |
 |---------|-------|--------------|
@@ -682,54 +522,22 @@ Gruppe 3: Woelfe (4)
 Total: 3 Leads + 2 Highlights = 5 benannte NPCs
 ```
 
-→ Details: [encounter/Encounter.md](../features/encounter/Encounter.md#multi-group-encounters)
+→ Multi-Group-Details: [Population.md#multi-group-encounters](Population.md#multi-group-encounters)
 
 ---
 
-## GM-Interface
+## Erweiterungen
 
-### Encounter-Preview
-
-Bei der Encounter-Vorschau sieht der GM:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Encounter: Goblin-Patrouille                           │
-├─────────────────────────────────────────────────────────┤
-│  Lead NPC: Griknak der Hinkende                         │
-│  ★ Wiederkehrender NPC (2 vorherige Begegnungen)        │
-│                                                         │
-│  Persoenlichkeit: misstrauisch, gierig                  │
-│  Ziel: Boss beeindrucken                                │
-│  Quirk: Hinkt auf dem linken Bein                       │
-│                                                         │
-│  Letzte Begegnung: Vor 5 Tagen                          │
-├─────────────────────────────────────────────────────────┤
-│  [Start] [Anderen NPC waehlen] [Neu generieren]         │
-└─────────────────────────────────────────────────────────┘
-```
-
-### NPC-Bearbeitung (Library)
-
-NPCs koennen in der Library bearbeitet werden:
-- Name, Persoenlichkeit, Quirk anpassen
-- Status auf `dead` setzen
-- GM-Notizen hinzufuegen
+| Feature | Beschreibung |
+|---------|--------------|
+| **Stat-Overrides** | Vollstaendige Stat-Anpassungen, UI vom Creature-Editor |
+| NPC-Routen | Wandernde NPCs (Haendler, Patrouillen) mit definierten Routen |
+| NPC-Schedules | Tagesablauf-basierte Location (Morgens im Laden, Abends in Taverne) |
+| `homeLocation` | NPC hat Heimat-Tile mit Radius-Bonus fuer Erscheinen |
+| Faction-lose NPCs | Einsiedler, Wanderer ohne Faction |
+| NPC-Agency | NPCs bewegen sich zur Runtime selbststaendig |
 
 ---
-
-## Prioritaet
-
-| Komponente | Prioritaet | MVP |
-|------------|------------|-----|
-| NPC-Generierung | Hoch | Ja |
-| NPC-Persistierung | Hoch | Ja |
-| Existierende NPC-Auswahl | Mittel | Einfacher Match |
-| NPC-Status-Tracking | Mittel | Nur alive/dead |
-
----
-
-*Siehe auch: [Faction.md](Faction.md) | [Character-System.md](../features/Character-System.md) | [encounter/Balance.md](../features/encounter/Balance.md)*
 
 ## Tasks
 

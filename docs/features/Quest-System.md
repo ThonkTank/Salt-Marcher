@@ -1,6 +1,6 @@
 # Quest-System
 
-> **Lies auch:** [Quest](../domain/Quest.md), [Encounter-System](encounter/Encounter.md), [Loot-Feature](Loot-Feature.md)
+> **Lies auch:** [Quest](../domain/Quest.md), [Encounter-System](encounter/Encounter.md), [Loot-Feature](Loot-Feature.md), [Journal.md](../domain/Journal.md), [encounter/Balance.md](encounter/Balance.md), [Combat-System.md](Combat-System.md)
 > **Wird benoetigt von:** SessionRunner
 
 Objektiv-basierte Quests mit automatischer XP-Berechnung und 40/60-Split.
@@ -311,6 +311,24 @@ interface QuestProgress {
 
 ---
 
+## Queries
+
+```typescript
+// Quest nach ID
+function getQuest(questId: EntityId<'quest'>): Result<QuestDefinition, AppError>;
+
+// Quests nach Status
+function getQuestsByStatus(status: QuestStatus): QuestDefinition[];
+
+// Quests eines NPCs
+function getQuestsByGiver(npcId: EntityId<'npc'>): QuestDefinition[];
+
+// Aktive Quests mit offenen Encounter-Slots
+function getQuestsWithOpenSlots(): QuestDefinition[];
+```
+
+---
+
 ## Design-Entscheidungen
 
 ### Quantum-Encounter/Rewards Platzierung
@@ -377,7 +395,6 @@ interface QuestSettings {
 
 ---
 
-*Siehe auch: [Quest.md](../domain/Quest.md) | [Journal.md](../domain/Journal.md) | [encounter/Encounter.md](encounter/Encounter.md) | [encounter/Balance.md](encounter/Balance.md) | [Combat-System.md](Combat-System.md)*
 
 ## Tasks
 

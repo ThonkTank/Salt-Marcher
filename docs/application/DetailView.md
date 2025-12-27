@@ -1,6 +1,6 @@
 # DetailView
 
-> **Lies auch:** [Application](../architecture/Application.md), [SessionRunner](SessionRunner.md)
+> **Lies auch:** [Application](../architecture/Application.md), [SessionRunner](SessionRunner.md), [Combat-System.md](../features/Combat-System.md), [encounter/Encounter.md](../features/encounter/Encounter.md), [Shop.md](../domain/Shop.md)
 > **Konsumiert:** Encounter, Combat, Shop, Quest, Journal
 
 Kontextbezogene Detail-Ansichten fuer Session-relevante Informationen.
@@ -156,7 +156,7 @@ Encounter-Builder zum Erstellen, Bearbeiten und Starten von Encounters.
 |---------|--------|--------|
 | Situation | Activity + Disposition der Gruppe | BaseEncounterInstance |
 | Detection | Entdeckungsmethode, Distanz, Awareness | EncounterPerception |
-| Lead NPC | Persoenlichkeit, Quirk, Ziel, Wiederkehr-Info | NPC-System, NPC-Registry |
+| Lead NPC | Persoenlichkeit, Quirk, Ziel, Wiederkehr-Info | NPC-Resolution, NPC-Registry |
 | Kreaturen | Liste aller Encounter-Kreaturen (ohne Lead) | EncounterCreature[] |
 | Encounter-Wertung | XP, Difficulty, Budget | Encounter-Balancing |
 
@@ -392,7 +392,7 @@ Nach Combat-Aufloesung werden getoetete Kreaturen von ihrer Fraktion abgezogen:
 
 **Automatisch:** Diese Phase erscheint nur wenn Kreaturen einer Fraktion getoetet wurden. Nicht-Fraktions-Kreaturen triggern keine Attrition.
 
-→ Details: [Faction.md](../domain/Faction.md#attrition-mechanik)
+→ Details: [Publishing.md](../features/encounter/Publishing.md#attrition-integration)
 
 **Phase 5: Entity Promotion (optional, nur bei nicht-zugeordneten Kreaturen)**
 
@@ -455,7 +455,7 @@ Kreatur 1 von 3: "Junger Roter Drache"
 3. Optional: LootContainer wird aus LootTable generiert
 4. Optional: Ein-Kreatur-Fraktion wird erstellt
 
-→ Details: [Faction.md](../domain/Faction.md#entity-promotion)
+→ Details: [Publishing.md](../features/encounter/Publishing.md#entity-promotion)
 → Encounter-Integration: [encounter/Encounter.md](../features/encounter/Encounter.md#entity-promotion)
 
 **Events nach Resolution:**
@@ -562,6 +562,19 @@ Details zum aktuell ausgewaehlten Tile oder POI.
 │                                    │
 └────────────────────────────────────┘
 ```
+
+**POI-Typ-Anzeige:**
+
+| POI-Typ | Anzeige |
+|---------|---------|
+| `entrance` | Name + [Betreten]-Button |
+| `landmark` | Name + Beschreibung |
+| `trap` (detected) | Warnung + DC |
+| `trap` (hidden) | Nicht angezeigt (GM-only) |
+| `treasure` | Container + [Oeffnen]-Button |
+| `object` | Name + [Interagieren]-Button |
+
+→ POI-Schema: [poi.md](../data/poi.md)
 
 ### Quest-Tab
 
@@ -1090,4 +1103,3 @@ Shop-Tab zeigt Haendler-Inventar
 
 ---
 
-*Siehe auch: [SessionRunner.md](SessionRunner.md) | [Combat-System.md](../features/Combat-System.md) | [encounter/Encounter.md](../features/encounter/Encounter.md) | [Shop.md](../domain/Shop.md)*

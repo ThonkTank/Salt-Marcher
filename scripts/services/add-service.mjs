@@ -206,6 +206,9 @@ export function createAddService(options = {}) {
         });
       }
 
+      // Spec-Pfade extrahieren für zusätzliche Doc-Speicherung
+      const specFilePaths = specsResult.value.specs.map(s => s.filePath);
+
       // ========================================
       // 7. IMPL VALIDIEREN
       // ========================================
@@ -223,8 +226,11 @@ export function createAddService(options = {}) {
       // 8. TASK ERSTELLEN
       // ========================================
 
-      // Primäres Doc für Adapter (erstes gefundenes)
-      const primaryDoc = docs[0];
+      // Alle Docs: Location-Docs + Spec-Docs (dedupliziert)
+      // Pfade normalisieren: relativ zu docs/ (Adapter erwartet z.B. "domain/Creature.md")
+      const allDocPaths = [...new Set([...docs, ...specFilePaths])];
+      const relativeDocs = allDocPaths.map(d => d.replace(/^docs\//, ''));
+      const primaryDoc = relativeDocs[0];
 
       const result = taskAdapter.addTask({
         domain: domains.join(', '),
@@ -236,7 +242,7 @@ export function createAddService(options = {}) {
         spec: specs,
         impl,
         isBug: false
-      }, { dryRun, doc: primaryDoc, init, additionalDocs: docs.slice(1) });
+      }, { dryRun, doc: primaryDoc, init, additionalDocs: relativeDocs.slice(1) });
 
       if (!result.ok) {
         return result;
@@ -246,7 +252,7 @@ export function createAddService(options = {}) {
         success: true,
         taskId: result.value.newId,
         line: result.value.line,
-        docs,
+        docs: allDocPaths,
         dryRun
       });
     },
@@ -344,15 +350,15 @@ export function parseArgs(argv) {
     beschreibung: null,
     domain: null,
     layer: null,
-    doc: null,
     init: false,
     prio: null,
     mvp: null,
     deps: null,
-    spec: null,
+    specs: null,   // Spec-Referenzen (datei.md#abschnitt)
+    impl: null,    // Impl-Referenzen (datei.ts.funktion() [tag])
     // Bulk-Mode
-    tasks: null,  // JSON-Array für Bulk-Tasks
-    bugs: null,   // JSON-Array für Bulk-Bugs
+    tasks: null,   // JSON-Array für Bulk-Tasks
+    bugs: null,    // JSON-Array für Bulk-Bugs
     dryRun: false,
     json: false,
     quiet: false,
@@ -376,8 +382,6 @@ export function parseArgs(argv) {
       opts.beschreibung = argv[++i];
     } else if (arg === '--domain' || arg === '-b') {
       opts.domain = argv[++i];
-    } else if (arg === '--doc') {
-      opts.doc = argv[++i];
     } else if (arg === '--layer' || arg === '-l') {
       opts.layer = argv[++i];
     } else if (arg === '--init') {
@@ -388,8 +392,10 @@ export function parseArgs(argv) {
       opts.mvp = argv[++i];
     } else if (arg === '--deps' || arg === '-d') {
       opts.deps = argv[++i];
-    } else if (arg === '--spec') {
-      opts.spec = argv[++i];
+    } else if (arg === '--specs' || arg === '-s') {
+      opts.specs = argv[++i];
+    } else if (arg === '--impl' || arg === '-i') {
+      opts.impl = argv[++i];
     } else if (arg === '--dry-run' || arg === '-n') {
       opts.dryRun = true;
     } else if (arg === '--json') {
@@ -422,11 +428,11 @@ export function execute(opts, service = null) {
       domain: opts.domain,
       layer: opts.layer,
       beschreibung: opts.beschreibung,
-      doc: opts.doc,
       prio: opts.prio,
       mvp: opts.mvp,
       deps: opts.deps,
-      spec: opts.spec
+      specs: opts.specs,
+      impl: opts.impl
     }, { dryRun: opts.dryRun, init: opts.init });
   } else if (opts.type === 'bug') {
     return addService.addBug(opts.beschreibung, {
@@ -443,6 +449,9 @@ export function execute(opts, service = null) {
 
 /**
  * Führt Bulk-Add für Tasks aus
+ *
+ * Pflichtfelder im JSON:
+ * - domain, layer, beschreibung, deps, specs, impl
  */
 function executeBulkTasks(jsonString, addService, globalOpts) {
   // 1. JSON parsen
@@ -477,29 +486,25 @@ function executeBulkTasks(jsonString, addService, globalOpts) {
     dryRun: globalOpts.dryRun
   };
 
+  const requiredFields = ['domain', 'layer', 'beschreibung', 'deps', 'specs', 'impl'];
+
   for (let i = 0; i < tasks.length; i++) {
     const taskData = tasks[i];
     const taskIndex = i + 1;
 
     // Pflichtfelder prüfen
-    if (!taskData.beschreibung) {
-      results.failed.push({
-        taskIndex,
-        error: { message: 'beschreibung fehlt' }
-      });
-      continue;
+    let missingField = null;
+    for (const field of requiredFields) {
+      if (!taskData[field] || (typeof taskData[field] === 'string' && taskData[field].trim() === '')) {
+        missingField = field;
+        break;
+      }
     }
-    if (!taskData.doc) {
+
+    if (missingField) {
       results.failed.push({
         taskIndex,
-        error: { message: 'doc fehlt' }
-      });
-      continue;
-    }
-    if (!taskData.domain) {
-      results.failed.push({
-        taskIndex,
-        error: { message: 'domain fehlt' }
+        error: { message: `${missingField} fehlt` }
       });
       continue;
     }
@@ -509,11 +514,11 @@ function executeBulkTasks(jsonString, addService, globalOpts) {
       domain: taskData.domain,
       layer: taskData.layer,
       beschreibung: taskData.beschreibung,
-      doc: taskData.doc,
       prio: taskData.prio,
       mvp: taskData.mvp,
       deps: taskData.deps,
-      spec: taskData.spec
+      specs: taskData.specs,
+      impl: taskData.impl
     }, {
       dryRun: globalOpts.dryRun,
       init: taskData.init ?? false
@@ -522,7 +527,7 @@ function executeBulkTasks(jsonString, addService, globalOpts) {
     if (result.ok) {
       results.success.push({
         taskId: result.value.taskId,
-        doc: result.value.doc?.path ?? taskData.doc,
+        docs: result.value.docs,
         beschreibung: taskData.beschreibung
       });
     } else {
@@ -627,7 +632,7 @@ export function showHelp() {
 Add Command - Neue Task oder Bug erstellen
 
 USAGE (Single):
-  node scripts/task.mjs add --task --doc <path> [OPTIONS]
+  node scripts/task.mjs add --task [OPTIONS]
   node scripts/task.mjs add --bug [OPTIONS]
 
 USAGE (Bulk):
@@ -642,16 +647,18 @@ BULK-MODE:
   --tasks '<JSON>'       Mehrere Tasks auf einmal (JSON-Array)
   --bugs '<JSON>'        Mehrere Bugs auf einmal (JSON-Array)
 
-OPTIONEN (Task):
-  --doc <path>           Ziel-Dokument (relativ zu docs/) [erforderlich]
+OPTIONEN (Task - ALLE erforderlich):
+  -b, --domain <name>    Domain (z.B. Travel, Map) - Multi-Domain via ","
+  -l, --layer <layer>    Layer (features, domain, application) - Multi-Layer via ","
+  -m, --beschreibung "." Beschreibung
+  -d, --deps "<deps>"    Dependencies ("-" wenn keine, z.B. "#100, #202")
+  -s, --specs "<specs>"  Spec-Referenzen (datei.md#abschnitt) - Multi via ","
+  -i, --impl "<impl>"    Impl-Referenzen (datei.ts.funktion() [tag]) - Multi via ","
+
+OPTIONALE Task-Optionen:
   --init                 Erstellt Tabelle im Doc falls nicht vorhanden
-  -b, --domain <name>    Domain (z.B. Travel, Map) [erforderlich]
-  -l, --layer <layer>    Layer (core, features, infra, apps) [default: -]
-  -m, --beschreibung "." Beschreibung [erforderlich]
   -p, --prio <prio>      Priorität (hoch, mittel, niedrig) [default: mittel]
   --mvp <Ja|Nein>        MVP-Status [default: Nein]
-  -d, --deps "<deps>"    Dependencies (z.B. "#100, #202")
-  --spec "File.md#..."   Spec-Referenz
 
 OPTIONEN (Bug):
   -m, --beschreibung "." Beschreibung [erforderlich]
@@ -664,16 +671,52 @@ ALLGEMEIN:
   -q, --quiet            Kompakte Ausgabe
   -h, --help             Diese Hilfe anzeigen
 
+IMPL-TAGS:
+  [neu]                  Noch zu erstellen (nur Format geprüft)
+  [ändern]               Bestehendes ändern (Datei + Funktion muss existieren)
+  [fertig]               Bereits implementiert (Datei + Funktion muss existieren)
+
 BEISPIELE (Single):
-  node scripts/task.mjs add --task --doc features/Travel-System.md -b Travel -m "Neue Route"
-  node scripts/task.mjs add --task --doc domain/Quest.md --init -b Quest -m "Quest-Log UI"
+  # Vollständige Task mit allen Pflichtfeldern
+  node scripts/task.mjs add --task \\
+    -b Travel -l features \\
+    -m "Route-Validierung implementieren" \\
+    -d "#100, #101" \\
+    -s "Travel.md#Zustände" \\
+    -i "travel-engine.ts.validateRoute() [neu]"
+
+  # Multi-Domain und Multi-Layer
+  node scripts/task.mjs add --task \\
+    -b "SessionRunner, Encounter" \\
+    -l "application, features" \\
+    -m "Cross-Feature Integration" \\
+    -d "-" \\
+    -s "SessionRunner.md#Encounter-Integration" \\
+    -i "encounter-handler.ts.handleEncounter() [neu]"
+
+  # Bug erstellen
   node scripts/task.mjs add --bug -m "Login funktioniert nicht" --deps "#428"
 
 BEISPIELE (Bulk):
   # Mehrere Tasks auf einmal
   node scripts/task.mjs add --tasks '[
-    {"beschreibung": "Task A", "doc": "features/Travel-System.md", "domain": "Travel"},
-    {"beschreibung": "Task B", "doc": "features/Map-Feature.md", "domain": "Map", "prio": "hoch"}
+    {
+      "domain": "Travel",
+      "layer": "features",
+      "beschreibung": "Task A",
+      "deps": "-",
+      "specs": "Travel.md#API",
+      "impl": "travel.ts.start() [neu]"
+    },
+    {
+      "domain": "Map",
+      "layer": "domain",
+      "beschreibung": "Task B",
+      "deps": "#100",
+      "specs": "Map.md#Rendering",
+      "impl": "map.ts.render() [ändern]",
+      "prio": "hoch"
+    }
   ]'
 
   # Mehrere Bugs auf einmal
@@ -684,14 +727,14 @@ BEISPIELE (Bulk):
 
 JSON-SCHEMA (Task):
   {
+    "domain": "...",        // erforderlich - Multi via ","
+    "layer": "...",         // erforderlich - Multi via ","
     "beschreibung": "...",  // erforderlich
-    "doc": "...",           // erforderlich (relativ zu docs/)
-    "domain": "...",        // erforderlich
-    "layer": "...",         // optional, default: -
+    "deps": "...",          // erforderlich ("-" wenn keine)
+    "specs": "...",         // erforderlich (datei.md#abschnitt)
+    "impl": "...",          // erforderlich (datei.ts.funktion() [tag])
     "prio": "...",          // optional, default: mittel
     "mvp": "Ja|Nein",       // optional, default: Nein
-    "deps": "#100, #202",   // optional
-    "spec": "...",          // optional
     "init": true|false      // optional, default: false
   }
 
@@ -702,10 +745,24 @@ JSON-SCHEMA (Bug):
     "deps": "#428"          // optional (betroffene Tasks)
   }
 
+SPEICHERORT-AUFLÖSUNG:
+  Der Speicherort wird automatisch aus Domain+Layer ermittelt:
+  - features:     docs/features/{Domain}.md oder docs/features/{domain}/{Domain}.md
+  - domain:       docs/domain/{Domain}.md
+  - application:  docs/application/{Domain}.md
+  - architecture: docs/architecture/{Domain}.md
+
+  Bei Multi-Domain/Layer: Mindestens ein Match pro Layer erforderlich.
+
+VALIDIERUNG:
+  - deps: Referenzierte IDs müssen in der Roadmap existieren
+  - specs: Datei und Abschnitt (## oder ###) müssen existieren
+  - impl [ändern]/[fertig]: Datei und Funktion müssen in src/ existieren
+  - beschreibung: Wird normalisiert (Pipes, Newlines, etc. escaped)
+
 HINWEISE:
-  - Tasks werden immer sowohl in der Roadmap als auch im angegebenen Doc gespeichert
-  - Das Doc muss eine Task-Tabelle enthalten (oder "init": true im JSON)
-  - Bugs werden nur in der Roadmap gespeichert (kein doc erforderlich)
+  - Tasks werden in Roadmap + allen aufgelösten Docs gespeichert
+  - Bugs werden nur in der Roadmap gespeichert
   - Bulk-Mode: Partial Success - fehlerhafte Items stoppen nicht die anderen
 `;
 }

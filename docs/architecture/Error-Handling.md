@@ -1,6 +1,6 @@
 # Error-Handling
 
-> **Lies auch:** [Conventions](Conventions.md)
+> **Lies auch:** [Conventions](Conventions.md), [Core.md](Core.md), [EventBus.md](EventBus.md)
 > **Wird benoetigt von:** Alle Implementierungen
 
 Cross-Feature Fehlerbehandlung, Error-Propagation und Logging.
@@ -414,7 +414,6 @@ function handleEncounterError(error: EncounterError): void {
 
 ---
 
-*Siehe auch: [Core.md](Core.md) (Result-Typ) | [EventBus.md](EventBus.md) (Failed-Events) | [Conventions.md](Conventions.md)*
 
 ## Tasks
 

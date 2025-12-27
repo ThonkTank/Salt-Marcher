@@ -3,7 +3,7 @@
 > **Zurueck zu:** [Encounter](Encounter.md)
 > **Empfaengt von:** [Flavour](Flavour.md) - `FlavouredEncounter`
 > **Liefert an:** [Adjustments](Adjustments.md) - `SimulationResult`
-> **Siehe auch:** [Initiation](Initiation.md) - Feature-Schema, [Creature.md](../../domain/Creature.md) - Action-Schema
+> **Lies auch:** [Initiation](Initiation.md) - Feature-Schema, [Creature.md](../../domain/Creature.md) - Action-Schema
 
 Kampfsimulation mit Probability Mass Functions (PMF) zur Difficulty-Klassifizierung.
 

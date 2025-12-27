@@ -1,6 +1,6 @@
 # Character-System
 
-> **Lies auch:** [Inventory-System](Inventory-System.md), [Item](../domain/Item.md)
+> **Lies auch:** [Inventory-System](Inventory-System.md), [Item](../data/Item.md), [NPC-Resolution](encounter/NPC-Resolution.md), [Combat-System.md](Combat-System.md), [encounter/Balance.md](encounter/Balance.md)
 > **Wird benoetigt von:** Travel, Combat, Party
 
 Verwaltung von Player Characters (PCs): Schema, Tracking, Integration mit anderen Systemen.
@@ -274,7 +274,7 @@ GM oeffnet Party Manager
 
 NPCs haben andere Anforderungen (Persoenlichkeit, Kultur-Generierung, Faction-Zugehoerigkeit) waehrend PCs andere haben (Inventory, HP-Tracking, Level-Progression).
 
-→ **Details:** [NPC-System.md](../domain/NPC-System.md)
+→ **Details:** [NPC-Resolution.md](encounter/NPC-Resolution.md)
 
 ---
 
@@ -360,7 +360,6 @@ function getBestPartySense(
 
 ---
 
-*Siehe auch: [NPC-System.md](../domain/NPC-System.md) | [Inventory-System.md](Inventory-System.md) | [Combat-System.md](Combat-System.md) | [encounter/Balance.md](encounter/Balance.md)*
 
 ## Tasks
 

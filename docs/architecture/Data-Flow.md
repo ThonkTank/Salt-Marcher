@@ -1,6 +1,6 @@
 # Data-Flow
 
-> **Lies auch:** [Features](Features.md), [EventBus](EventBus.md)
+> **Lies auch:** [Features](Features.md), [EventBus](EventBus.md), [Application.md](Application.md)
 > **Wird benoetigt von:** Application
 
 Diagramme und Beschreibungen wie Daten zwischen Features fliessen.
@@ -370,7 +370,6 @@ Features reagieren auf Events anderer Features:
 
 ---
 
-*Siehe auch: [EventBus.md](EventBus.md) | [Features.md](Features.md) | [Application.md](Application.md)*
 
 ## Tasks
 

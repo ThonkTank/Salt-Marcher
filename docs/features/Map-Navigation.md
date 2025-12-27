@@ -1,13 +1,13 @@
 # Map-Navigation
 
-> **Lies auch:** [Map](Map.md), [POI](POI.md)
+> **Lies auch:** [Map](../data/map.md), [POI](../data/poi.md), [Map-Feature.md](Map-Feature.md), [Travel-System.md](Travel-System.md)
 > **Wird benoetigt von:** Travel, Map-Feature
 
 Navigation zwischen Maps via EntrancePOIs.
 
 **Design-Philosophie:** Map-Navigation ist GM-gesteuert, nicht automatisch. EntrancePOIs verbinden Maps - der GM entscheidet wann die Party eine Sub-Map betritt.
 
-> **Fuer das POI-System siehe:** [POI.md](POI.md)
+> **Fuer das POI-System siehe:** [poi.md](../data/poi.md)
 
 ---
 
@@ -194,25 +194,3 @@ Fuer eine vollstaendige Verbindung zwischen Maps muessen **zwei EntrancePOIs** e
 | **Dungeon** | Grid-basiertes Movement (5-foot Tiles, Zeit basiert auf Geschwindigkeit) |
 
 Jeder Map-Typ hat sein eigenes Bewegungssystem - Details in den jeweiligen Feature-Docs.
-
----
-
-## Prioritaet
-
-| Komponente | MVP | Post-MVP |
-|------------|:---:|:--------:|
-| EntrancePOI-Schema | ✓ | |
-| Tile Content Panel | ✓ | |
-| Betreten-Button | ✓ | |
-| History via Journal | ✓ | |
-| Bidirektionale Links (zwei POIs) | ✓ | |
-| Multi-POI-Tiles | | mittel |
-
----
-
-*Siehe auch: [POI.md](POI.md) | [Map-Feature.md](../features/Map-Feature.md) | [Travel-System.md](../features/Travel-System.md)*
-
-## Tasks
-
-| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|

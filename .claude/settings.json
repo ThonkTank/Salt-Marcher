@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node scripts/task.mjs check-doc --file \"$TOOL_INPUT_file_path\" --quiet 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

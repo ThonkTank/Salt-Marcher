@@ -491,18 +491,36 @@ node scripts/task.mjs edit 428 --key a4x2 ...     # Edit mit Key bei geclaimter 
 
 ### Neue Tasks/Bugs (add)
 
-```bash
-# Neue Task erstellen (--doc ist erforderlich!)
-node scripts/task.mjs add --task --doc features/Travel-System.md -b Travel -m "Beschreibung"
-node scripts/task.mjs add --task --doc domain/Quest.md --init -b Quest -m "Neue Feature"  # --init erstellt Tabelle
+**ALLE Task-Felder sind Pflicht:**
 
-# Neuen Bug erstellen (nur Roadmap, kein --doc nötig)
+```bash
+# Neue Task erstellen (alle Felder erforderlich!)
+node scripts/task.mjs add --task \
+  -b Travel -l features \
+  -m "Route-Validierung implementieren" \
+  -d "#100, #101" \
+  -s "Travel.md#Zustände" \
+  -i "travel-engine.ts.validateRoute() [neu]"
+
+# Multi-Domain und Multi-Layer (via Komma-Separator)
+node scripts/task.mjs add --task \
+  -b "SessionRunner, Encounter" \
+  -l "application, features" \
+  -m "Cross-Feature Integration" \
+  -d "-" \
+  -s "SessionRunner.md#Encounter-Integration" \
+  -i "encounter-handler.ts.handleEncounter() [neu]"
+
+# Neuen Bug erstellen (nur Roadmap, kein Layer/Domain/Specs/Impl nötig)
 node scripts/task.mjs add --bug -m "Bug-Beschreibung" -p hoch -d "#428"
 
-# Bulk-Add: Mehrere Tasks auf einmal (JSON-Array mit individuellen Parametern)
+# Bulk-Add: Mehrere Tasks auf einmal (JSON-Array mit allen Pflichtfeldern)
 node scripts/task.mjs add --tasks '[
-  {"beschreibung": "Task A", "doc": "features/Travel-System.md", "domain": "Travel"},
-  {"beschreibung": "Task B", "doc": "features/Map-Feature.md", "domain": "Map", "prio": "hoch"}
+  {
+    "domain": "Travel", "layer": "features",
+    "beschreibung": "Task A", "deps": "-",
+    "specs": "Travel.md#API", "impl": "travel.ts.start() [neu]"
+  }
 ]'
 
 # Bulk-Add: Mehrere Bugs auf einmal
@@ -512,13 +530,32 @@ node scripts/task.mjs add --bugs '[
 ]'
 ```
 
+**Pflichtfelder (Task):**
+| Flag | Beschreibung |
+|------|--------------|
+| `-b, --domain` | Domain (z.B. Travel, Map) - Multi via "," |
+| `-l, --layer` | Layer (features, domain, application) - Multi via "," |
+| `-m, --beschreibung` | Task-Beschreibung |
+| `-d, --deps` | Dependencies ("-" wenn keine, z.B. "#100, #202") |
+| `-s, --specs` | Spec-Referenzen (datei.md#abschnitt) - Multi via "," |
+| `-i, --impl` | Impl-Referenzen (datei.ts.funktion() [tag]) - Multi via "," |
+
+**Impl-Tags:** `[neu]` (nur Format geprüft), `[ändern]` / `[fertig]` (Datei + Funktion muss existieren)
+
+**Speicherort-Auflösung:**
+Der Speicherort wird automatisch aus Domain+Layer ermittelt (z.B. `docs/features/Travel.md`).
+
+**Validierung:**
+- `deps`: Referenzierte IDs müssen in der Roadmap existieren
+- `specs`: Datei und Abschnitt (## oder ###) müssen existieren
+- `impl [ändern]/[fertig]`: Datei und Funktion müssen in src/ existieren
+
 **Bulk-Add Verhalten:**
 - **Partial Success**: Fehlerhafte Items stoppen nicht die anderen
-- **Individuelle Parameter**: Jedes Objekt im Array hat eigene Werte
-- **JSON-Pflichtfelder (Task)**: `beschreibung`, `doc`, `domain`
+- **JSON-Pflichtfelder (Task)**: `domain`, `layer`, `beschreibung`, `deps`, `specs`, `impl`
 - **JSON-Pflichtfelder (Bug)**: `beschreibung`
 
-**Wichtig:** Tasks werden immer sowohl in der Roadmap als auch im angegebenen Doc gespeichert. Die Task-Tabelle steht am Ende jeder Dokumentationsdatei - bei Feature-Analyse die gesamte Datei lesen.
+**Wichtig:** Tasks werden in der Roadmap + allen aufgelösten Docs gespeichert.
 
 ### Bug-System
 

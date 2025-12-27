@@ -456,7 +456,6 @@ describe('VaultMapAdapter', () => {
 
 ---
 
-*Siehe auch: [Features.md](Features.md)*
 
 ## Tasks
 

@@ -1,5 +1,6 @@
 # Example Workflows
 
+> **Lies auch:** [Data-Flow.md](architecture/Data-Flow.md), [Features.md](architecture/Features.md)
 Konkrete User-Stories durchgespielt: Wie der GM SaltMarcher in der Praxis nutzt.
 
 ---
@@ -482,4 +483,3 @@ Die Session ist zu Ende, der GM schliesst Obsidian.
 
 ---
 
-*Siehe auch: [Data-Flow.md](architecture/Data-Flow.md) | [Features.md](architecture/Features.md)*

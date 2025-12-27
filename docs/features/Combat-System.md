@@ -1,6 +1,6 @@
 # Combat-System
 
-> **Lies auch:** [Encounter-System](encounter/Encounter.md), [Character-System](Character-System.md)
+> **Lies auch:** [Encounter-System](encounter/Encounter.md), [Character-System](Character-System.md), [encounter/Balance.md](encounter/Balance.md)
 > **Wird benoetigt von:** SessionRunner, Dungeon
 
 Initiative-Tracker und Condition-Management fuer D&D Kaempfe.
@@ -721,7 +721,6 @@ Bei Plugin-Reload kann der aktive Combat wiederhergestellt werden:
 
 ---
 
-*Siehe auch: [Character-System.md](Character-System.md) | [encounter/Balance.md](encounter/Balance.md) | [encounter/Encounter.md](encounter/Encounter.md)*
 
 ## Tasks
 

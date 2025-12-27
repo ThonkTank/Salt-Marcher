@@ -1,6 +1,6 @@
 # Inventory-System
 
-> **Lies auch:** [Item](../domain/Item.md), [Character-System](Character-System.md)
+> **Lies auch:** [Item](../data/item.md), [Character-System](Character-System.md), [Travel-System.md](Travel-System.md)
 > **Wird benoetigt von:** Party, Shop, Loot
 
 Verwaltung von Character-Inventaren: Items, Gewicht, Encumbrance, Rationen.
@@ -52,7 +52,7 @@ interface InventorySlot {
 
 Items werden im EntityRegistry gespeichert (`EntityType: 'item'`).
 
-→ **Schema-Definition:** Siehe [Item.md](../domain/Item.md)
+→ **Schema-Definition:** Siehe [item.md](../data/item.md)
 
 **Fuer Inventory relevante Felder:**
 
@@ -62,6 +62,17 @@ Items werden im EntityRegistry gespeichert (`EntityType: 'item'`).
 | `isRation` | Automatischer Verbrauch beim Reisen |
 | `category` | Equipped-Status (weapon, armor, shield) |
 | `damage`, `armorClass`, `properties` | Character-Statblock-Berechnung |
+
+### Item-Queries
+
+```typescript
+// Items nach Kategorie filtern
+function getItemsByCategory(category: ItemCategory): Item[] {
+  return entityRegistry.query('item', item =>
+    item.category === category
+  );
+}
+```
 
 ---
 
@@ -316,7 +327,7 @@ quickSell(characterId, itemId, quantity, shopId, options?: {
 
 > **Hinweis:** Der GM behaelt volle Kontrolle - Preise koennen jederzeit ueberschrieben werden.
 
-→ **Schema-Definition:** Siehe [Item.md](../domain/Item.md#currency-category-currency)
+→ **Schema-Definition:** Siehe [item.md](../data/item.md#currency)
 
 ---
 
@@ -437,7 +448,6 @@ const encumbranceOrder = {
 
 ---
 
-*Siehe auch: [Item.md](../domain/Item.md) | [Character-System.md](Character-System.md) | [Travel-System.md](Travel-System.md)*
 
 ## Tasks
 

@@ -1,6 +1,6 @@
 # Events-Catalog
 
-> **Lies auch:** [EventBus](EventBus.md)
+> **Lies auch:** [EventBus](EventBus.md), [Features.md](Features.md)
 > **Wird benoetigt von:** Alle Features mit Events
 
 **Single Source of Truth** fuer alle Domain-Events in SaltMarcher.
@@ -377,6 +377,38 @@ Inventar-Verwaltung und Encumbrance.
 - Encumbrance-Berechnung nach D&D 5e Variant Rules
 - Party-Integration via `getEffectivePartySpeed()` (Character.speed - Encumbrance-Reduction)
 - Travel-Integration: foot-Transport verwendet Character-Speed statt fixem Transport-Speed
+
+---
+
+## item:*
+
+Item-CRUD fuer EntityRegistry.
+
+### Implementierungs-Status
+
+| Event | Status | Seit |
+|-------|--------|------|
+| `item:created` | ❌ | - |
+| `item:updated` | ❌ | - |
+| `item:deleted` | ❌ | - |
+
+```typescript
+// Lifecycle
+'item:created': {
+  item: Item;
+}
+
+'item:updated': {
+  itemId: EntityId<'item'>;
+  changes: Partial<Item>;
+}
+
+'item:deleted': {
+  itemId: EntityId<'item'>;
+}
+```
+
+→ Schema-Details: [item.md](../data/item.md)
 
 ---
 
@@ -893,6 +925,21 @@ Fraktions-Verwaltung und Territory.
 'faction:poi-lost': {
   factionId: EntityId<'faction'>;
   poiId: EntityId<'poi'>;
+}
+
+// Dynamische Welt
+'faction:attrition-applied': {
+  factionId: EntityId<'faction'>;
+  casualties: Array<{ creatureId: EntityId<'creature'>; count: number }>;
+  remainingStrength: number;
+  correlationId: string;
+}
+
+'faction:status-changed': {
+  factionId: EntityId<'faction'>;
+  previousStatus: FactionStatus;  // 'active' | 'dormant' | 'extinct'
+  newStatus: FactionStatus;
+  correlationId: string;
 }
 ```
 
@@ -1418,7 +1465,6 @@ Bei der Implementation auf neue Naming-Konvention achten:
 
 ---
 
-*Siehe auch: [EventBus.md](EventBus.md) | [Features.md](Features.md)*
 
 ## Tasks
 

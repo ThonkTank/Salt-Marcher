@@ -130,6 +130,16 @@ function lookupByLayer(domain, layer, layerDir) {
       break;
     }
 
+    case 'data': {
+      // Data-Schemas: lowercase {domain}.md
+      const dataFile = join(layerDir, `${domain.toLowerCase()}.md`);
+      triedPaths.push(dataFile);
+      if (existsSync(dataFile)) {
+        return ok({ docPath: dataFile });
+      }
+      break;
+    }
+
     default: {
       // Generischer Fallback
       const directFile = join(layerDir, `${domain}.md`);

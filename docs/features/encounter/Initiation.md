@@ -1,7 +1,7 @@
 # Encounter-Initiation
 
 > **Zurueck zu:** [Encounter](Encounter.md)
-> **Siehe auch:** [Publishing](Publishing.md), [Travel-System](../Travel-System.md)
+> **Lies auch:** [Publishing](Publishing.md), [Travel-System](../Travel-System.md)
 
 Wie werden Encounters ausgeloest? Context-Erstellung, Feature-Aggregation und API fuer externe Systeme.
 
@@ -598,7 +598,7 @@ interface POIEncounterSettings {
 }
 ```
 
-→ Details: [POI.md](../../domain/POI.md)
+→ Details: [poi.md](../../data/poi.md)
 
 ---
 

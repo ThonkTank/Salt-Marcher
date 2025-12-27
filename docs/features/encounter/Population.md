@@ -77,8 +77,8 @@ Population beschreibt die Welt, nicht das Encounter fuer die Party. Gruppengroes
 
 > **Voraussetzungen:**
 > - [Creature.md#design-rollen](../../domain/Creature.md#design-rollen-mcdm-basiert) - DesignRole Definition
-> - [Faction.md#encounter-templates](../../domain/Faction.md#encounter-templates) - Template-Schema
-> - [Faction.md#countrange](../../domain/Faction.md#schema) - CountRange Typ
+> - [faction-encounter-template.md](../../data/faction-encounter-template.md) - Template-Schema
+> - [faction-encounter-template.md#countrange](../../data/faction-encounter-template.md#countrange) - CountRange Typ
 
 **Kompletter Ablauf von Tile zu Encounter:**
 
@@ -153,7 +153,7 @@ Summe = 12 → Roll 1-3 = A (25%), 4-7 = B (33%), 8-12 = C (42%)
 ```
 
 `strength` ist der bereits auf das Tile verteilte CR-Anteil.
-→ Details: [Faction.md#praesenz-datenstruktur](../../domain/Faction.md#praesenz-datenstruktur)
+→ Details: [faction-presence.md](../../data/faction-presence.md)
 
 Kreaturen mit Gesamt-Gewicht unter der Minimum-Schwelle werden ausgeschlossen.
 
@@ -307,7 +307,7 @@ Die Seed-Kreatur ist das "Centerpiece" des Encounters. Von ihr ausgehend werden 
 | **Companion-Pool** | Kreaturen der gleichen Faction (oder Tag-Matching) |
 | **Basis-Disposition** | Seed.faction?.defaultDisposition oder Seed.disposition |
 
-→ Faction-Templates: [Faction.md#encounter-templates](../../domain/Faction.md#encounter-templates)
+→ Faction-Templates: [faction-encounter-template.md](../../data/faction-encounter-template.md)
 
 ---
 
@@ -455,7 +455,7 @@ interface EncounterTemplate {
   };
 }
 
-// CountRange → Faction.md#countrange
+// CountRange → faction-encounter-template.md#countrange
 // DesignRole → Creature.md#design-rollen-mcdm-basiert
 ```
 
@@ -504,7 +504,7 @@ Templates sind in `presets/encounter-templates/` gespeichert und editierbar.
 Die Template-Auswahl prueft, ob die Fraktion genug Kreaturen mit den richtigen Design Roles hat.
 
 **Hierarchie:**
-1. **Faction-Templates** (bevorzugt) → [Faction.md#encounter-templates](../../domain/Faction.md#encounter-templates)
+1. **Faction-Templates** (bevorzugt) → [faction-encounter-template.md](../../data/faction-encounter-template.md)
 2. **Generic Templates** (Fallback)
 3. **Creature.groupSize** (letzter Fallback, kein Template)
 
@@ -521,7 +521,7 @@ function resolveCreatures(groups: FactionCreatureGroup[]): Creature[] {
 }
 ```
 
-→ Schema: [Faction.md#schema](../../domain/Faction.md#schema)
+→ Schema: [faction.md](../../data/faction.md)
 
 ```typescript
 function canFulfillTemplate(
@@ -677,7 +677,7 @@ Template mit Slots (z.B. 1× leader, 2-4× minion)
 
 Der Companion-Pool bestimmt, welche Kreaturen zusammen mit der Seed erscheinen koennen.
 
-→ Faction-Creatures: [Faction.md#schema](../../domain/Faction.md#schema)
+→ Faction-Creatures: [faction.md](../../data/faction.md)
 
 ```typescript
 function getCompanionPool(seed: Creature, allCreatures: Creature[]): Creature[] {

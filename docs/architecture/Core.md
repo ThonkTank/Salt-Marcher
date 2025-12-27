@@ -1,5 +1,6 @@
 # Core Layer
 
+> **Lies auch:** [Features.md](Features.md), [Conventions.md](Conventions.md)
 > **Wird benoetigt von:** Features, Infrastructure
 
 Gemeinsame Grundlagen für alle Layer: Typen, Schemas, Events.
@@ -406,7 +407,6 @@ eventBus.subscribe('travel:start-requested', (event) => {
 
 ---
 
-*Siehe auch: [Features.md](Features.md) | [Conventions.md](Conventions.md)*
 
 ## Tasks
 

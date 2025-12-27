@@ -279,13 +279,15 @@ export function getGuidance(taskId, overrideStatus = null) {
   // NEU: Speicherorte finden (alle Docs die diese Task enthalten)
   const storageLocations = taskAdapter.findDocsContainingTask(taskId);
 
-  // NEU: Siehe-auch-Referenzen aus allen Speicherorten extrahieren
-  const allSieheAuchRefs = [];
+  // NEU: Referenzen aus Speicherorten extrahieren + Warnungen sammeln
+  const allRefs = [];
+  const allWarnings = [];
   for (const doc of storageLocations) {
-    const refs = extractSieheAuch(doc.content, doc.path);
-    allSieheAuchRefs.push(...refs);
+    const { refs, warnings } = extractReferences(doc.content, doc.path);
+    allRefs.push(...refs);
+    allWarnings.push(...warnings);
   }
-  const sieheAuch = deduplicateRefs(allSieheAuchRefs);
+  const references = deduplicateRefs(allRefs);
 
   // NEU: Dependency-Details sammeln
   const dependencyDetails = [];
@@ -333,7 +335,8 @@ export function getGuidance(taskId, overrideStatus = null) {
       specDoc: item.spec,
       // NEU: Erweiterte Felder
       storageLocations: storageLocations.map(d => d.path),
-      sieheAuch: sieheAuch,
+      references: references,
+      formatWarnings: allWarnings,
       dependencies: dependencyDetails
     },
     dependencyTree: depTreeResult.ok ? depTreeResult.value : null,

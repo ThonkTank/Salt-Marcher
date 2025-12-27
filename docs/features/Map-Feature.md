@@ -1,6 +1,6 @@
 # Map-Feature
 
-> **Lies auch:** [Map](../domain/Map.md), [Terrain](../domain/Terrain.md), [Map-Navigation](../domain/Map-Navigation.md)
+> **Lies auch:** [Map](../data/map.md), [Terrain](../data/terrain-definition.md), [Map-Navigation](Map-Navigation.md), [Path.md](../data/path.md), [Travel-System.md](Travel-System.md), [Dungeon-System.md](Dungeon-System.md), [POI.md](../data/poi.md)
 > **Wird benoetigt von:** Travel, Weather, Cartographer, Dungeon
 
 Single Source of Truth fuer Map-Typen, Map-Content und Multi-Map-Verhalten.
@@ -376,8 +376,8 @@ Overworld-Map "Westeros"
     └── linkedMapId → DungeonMap "Goblinhohle"
 ```
 
-→ Navigation zwischen Maps: [Map-Navigation.md](../domain/Map-Navigation.md)
-→ POI-Konzept: [POI.md](../domain/POI.md)
+→ Navigation zwischen Maps: [Map-Navigation.md](Map-Navigation.md)
+→ POI-Konzept: [poi.md](../data/poi.md)
 
 ---
 
@@ -522,7 +522,7 @@ POIs mit `height`-Feld koennen ueber ihr Tile hinaus sichtbar sein (z.B. Tuerme,
 
 **Nachtleuchtende POIs:** POIs mit `glowsAtNight: true` ignorieren den Nacht-Modifier (10%), aber nicht den Weather-Modifier. Typische Beispiele: Staedte, Leuchttuerme, kampierende Heere.
 
-→ Details: [POI.md](../domain/POI.md#height-feld)
+→ Details: [poi.md](../data/poi.md)
 
 ### Performance-Optimierung
 
@@ -669,7 +669,6 @@ Travel-Feature operiert nur auf Overworld-Maps:
 
 ---
 
-*Siehe auch: [Map.md](../domain/Map.md) | [Path.md](../domain/Path.md) | [Travel-System.md](Travel-System.md) | [Dungeon-System.md](Dungeon-System.md) | [POI.md](../domain/POI.md) | [Map-Navigation.md](../domain/Map-Navigation.md)*
 
 ## Tasks
 
