@@ -9,6 +9,33 @@ import { ok, err, TaskErrorCode } from '../core/result.mjs';
 import { TaskStatus } from '../core/table/schema.mjs';
 import { parseDeps } from '../core/table/parser.mjs';
 import { createFsTaskAdapter } from '../adapters/fs-task-adapter.mjs';
+import { resolveMultiLocations, parseCommaSeparated } from './location-resolver.mjs';
+import { validateSpecs } from './spec-validator.mjs';
+import { validateImpls } from './impl-validator.mjs';
+
+// ============================================================================
+// DESCRIPTION NORMALIZATION
+// ============================================================================
+
+/**
+ * Normalisiert eine Beschreibung für Tabellen-/CLI-Kompatibilität.
+ *
+ * @param {string} text - Rohe Beschreibung
+ * @returns {string} - Normalisierte Beschreibung
+ */
+function normalizeBeschreibung(text) {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+  return text
+    .replace(/\|/g, '\\|')      // Pipe escapen (Tabellen-Separator)
+    .replace(/\n/g, ' ')        // Newlines zu Spaces
+    .replace(/\r/g, '')         // Carriage Returns entfernen
+    .replace(/\t/g, ' ')        // Tabs zu Spaces
+    .replace(/`/g, "'")         // Backticks zu Apostrophen
+    .replace(/\s+/g, ' ')       // Mehrfach-Spaces normalisieren
+    .trim();
+}
 
 /**
  * Erstellt einen Add-Service
@@ -23,37 +50,193 @@ export function createAddService(options = {}) {
   return {
     /**
      * Fügt eine neue Task hinzu
+     *
+     * Alle Felder sind Pflicht:
+     * - domain: Komma-separiert für Multi-Domain
+     * - layer: Komma-separiert für Multi-Layer
+     * - beschreibung: Task-Beschreibung
+     * - deps: Dependencies oder "-"
+     * - specs: Spec-Referenzen (datei.md#abschnitt)
+     * - impl: Impl-Referenzen (datei.ts.funktion() [tag])
      */
     addTask(taskData, opts = {}) {
       const { dryRun = false, init = false } = opts;
-      const { domain, layer, beschreibung, doc, prio, mvp, deps, spec } = taskData;
+      const { domain, layer, beschreibung, prio, mvp, deps, specs, impl } = taskData;
 
-      // --doc ist erforderlich für Tasks
-      if (!doc) {
+      // ========================================
+      // 1. PFLICHTFELD-VALIDIERUNG
+      // ========================================
+
+      if (!domain || domain.trim() === '') {
         return err({
           code: TaskErrorCode.INVALID_FORMAT,
-          message: '--doc erforderlich (z.B. --doc features/Travel-System.md)'
+          message: '--domain (-b) ist erforderlich'
         });
       }
 
-      if (!domain || !beschreibung) {
+      if (!layer || layer.trim() === '') {
         return err({
           code: TaskErrorCode.INVALID_FORMAT,
-          message: '--domain und --beschreibung erforderlich'
+          message: '--layer (-l) ist erforderlich'
         });
       }
 
-      // Adapter kümmert sich um ID-Generierung und Einfügen
+      if (!beschreibung || beschreibung.trim() === '') {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: '--beschreibung (-m) ist erforderlich'
+        });
+      }
+
+      if (deps === undefined || deps === null || deps.trim() === '') {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: '--deps (-d) ist erforderlich (use \'-\' if none)'
+        });
+      }
+
+      if (!specs || specs.trim() === '') {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: '--specs (-s) ist erforderlich'
+        });
+      }
+
+      if (!impl || impl.trim() === '') {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: '--impl (-i) ist erforderlich'
+        });
+      }
+
+      // ========================================
+      // 2. BESCHREIBUNG NORMALISIEREN
+      // ========================================
+
+      const normalizedBeschreibung = normalizeBeschreibung(beschreibung);
+      if (!normalizedBeschreibung) {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: 'Beschreibung darf nicht leer sein nach Normalisierung'
+        });
+      }
+
+      // ========================================
+      // 3. MULTI-DOMAIN/LAYER PARSEN
+      // ========================================
+
+      const domains = parseCommaSeparated(domain);
+      const layers = parseCommaSeparated(layer);
+
+      if (domains.length === 0) {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: 'Mindestens eine Domain erforderlich'
+        });
+      }
+
+      if (layers.length === 0) {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: 'Mindestens ein Layer erforderlich'
+        });
+      }
+
+      // ========================================
+      // 4. LOCATION RESOLUTION
+      // ========================================
+
+      const locationResult = resolveMultiLocations(domains, layers);
+      if (!locationResult.ok) {
+        return err({
+          code: TaskErrorCode.FILE_NOT_FOUND,
+          message: `Speicherort-Auflösung fehlgeschlagen: ${locationResult.error.message}`,
+          details: locationResult.error
+        });
+      }
+
+      const { docs } = locationResult.value;
+
+      // ========================================
+      // 5. DEPS VALIDIEREN
+      // ========================================
+
+      let parsedDeps = [];
+      if (deps !== '-') {
+        parsedDeps = parseDeps(deps);
+
+        // Deps in Roadmap prüfen
+        const loadResult = taskAdapter.load();
+        if (loadResult.ok) {
+          const { tasks, bugs } = loadResult.value;
+          const allIds = new Set([
+            ...tasks.map(t => t.number),
+            ...bugs.map(b => b.number)
+          ]);
+
+          for (const depId of parsedDeps) {
+            if (typeof depId === 'number' && !allIds.has(depId)) {
+              return err({
+                code: TaskErrorCode.DEP_NOT_FOUND,
+                message: `Dependency nicht gefunden: #${depId}`
+              });
+            }
+            if (typeof depId === 'string' && !allIds.has(depId)) {
+              return err({
+                code: TaskErrorCode.DEP_NOT_FOUND,
+                message: `Dependency nicht gefunden: ${depId}`
+              });
+            }
+          }
+        }
+      }
+
+      // ========================================
+      // 6. SPECS VALIDIEREN
+      // ========================================
+
+      // Specs gegen ersten Layer validieren (primärer Lookup)
+      const primaryLayer = layers[0];
+      const specsResult = validateSpecs(specs, primaryLayer);
+      if (!specsResult.ok) {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: `Specs-Validierung fehlgeschlagen: ${specsResult.error.message}`,
+          details: specsResult.error
+        });
+      }
+
+      // ========================================
+      // 7. IMPL VALIDIEREN
+      // ========================================
+
+      const implResult = validateImpls(impl);
+      if (!implResult.ok) {
+        return err({
+          code: TaskErrorCode.INVALID_FORMAT,
+          message: `Impl-Validierung fehlgeschlagen: ${implResult.error.message}`,
+          details: implResult.error
+        });
+      }
+
+      // ========================================
+      // 8. TASK ERSTELLEN
+      // ========================================
+
+      // Primäres Doc für Adapter (erstes gefundenes)
+      const primaryDoc = docs[0];
+
       const result = taskAdapter.addTask({
-        domain,
-        layer: layer || '-',
-        beschreibung,
+        domain: domains.join(', '),
+        layer: layers.join(', '),
+        beschreibung: normalizedBeschreibung,
         prio: prio || 'mittel',
         mvp: mvp || 'Nein',
-        deps: deps ? parseDeps(deps) : [],
-        spec: spec || '-',
+        deps: parsedDeps,
+        spec: specs,
+        impl,
         isBug: false
-      }, { dryRun, doc, init });
+      }, { dryRun, doc: primaryDoc, init, additionalDocs: docs.slice(1) });
 
       if (!result.ok) {
         return result;
@@ -63,7 +246,7 @@ export function createAddService(options = {}) {
         success: true,
         taskId: result.value.newId,
         line: result.value.line,
-        doc: result.value.doc,
+        docs,
         dryRun
       });
     },

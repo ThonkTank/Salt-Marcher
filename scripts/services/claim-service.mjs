@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 import { formatId } from '../core/table/parser.mjs';
 import { createFsTaskAdapter } from '../adapters/fs-task-adapter.mjs';
 import { createLookupService } from './show-service.mjs';
+import { extractReferences, deduplicateRefs } from './reference-extractor.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLAIMS_PATH = join(__dirname, '..', '..', 'docs', 'architecture', '.task-claims.json');
@@ -275,6 +276,34 @@ export function getGuidance(taskId, overrideStatus = null) {
   const depTreeResult = lookupService.getDependencyTree(taskId, 2);
   const dependentTreeResult = lookupService.getDependentTree(taskId, 2);
 
+  // NEU: Speicherorte finden (alle Docs die diese Task enthalten)
+  const storageLocations = taskAdapter.findDocsContainingTask(taskId);
+
+  // NEU: Siehe-auch-Referenzen aus allen Speicherorten extrahieren
+  const allSieheAuchRefs = [];
+  for (const doc of storageLocations) {
+    const refs = extractSieheAuch(doc.content, doc.path);
+    allSieheAuchRefs.push(...refs);
+  }
+  const sieheAuch = deduplicateRefs(allSieheAuchRefs);
+
+  // NEU: Dependency-Details sammeln
+  const dependencyDetails = [];
+  for (const dep of item.deps || []) {
+    const depTask = itemMap.get(dep);
+    if (depTask) {
+      const depDocs = taskAdapter.findDocsContainingTask(dep);
+      dependencyDetails.push({
+        id: dep,
+        status: depTask.status,
+        beschreibung: depTask.beschreibung,
+        spec: depTask.spec || null,
+        imp: depTask.imp || null,
+        locations: depDocs.map(d => d.path)
+      });
+    }
+  }
+
   return {
     task: {
       number: item.number,
@@ -301,7 +330,11 @@ export function getGuidance(taskId, overrideStatus = null) {
       featureDocs: featureRouting
         ? featureRouting.docs.map(d => `${featureRouting.path}/${d}`)
         : [],
-      specDoc: item.spec
+      specDoc: item.spec,
+      // NEU: Erweiterte Felder
+      storageLocations: storageLocations.map(d => d.path),
+      sieheAuch: sieheAuch,
+      dependencies: dependencyDetails
     },
     dependencyTree: depTreeResult.ok ? depTreeResult.value : null,
     dependentTree: dependentTreeResult.ok ? dependentTreeResult.value : null

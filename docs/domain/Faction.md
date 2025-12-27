@@ -78,26 +78,20 @@ interface FactionEncounterTemplate {
   name: string;                      // "Spaeher-Trupp", "Armee-Division"
   description?: string;
 
-  // Zusammensetzung
-  composition: TemplateCreatureSlot[];
-
-  // Wann wird dieses Template verwendet?
-  triggers?: {
-    minXPBudget?: number;            // Mindest-Budget fuer dieses Template
-    maxXPBudget?: number;            // Max-Budget
-    terrainTypes?: EntityId<'terrain'>[];
-    encounterTypes?: EncounterType[];
+  // Slots basieren auf Design Roles (→ Population.md#encountertemplate-schema)
+  slots: {
+    [slotName: string]: {
+      designRole: DesignRole;        // MCDM-Rolle (keine creatureId!)
+      count: number | CountRange;
+    };
   };
-
-  // Relative Wahrscheinlichkeit
-  weight: number;                    // 1.0 = normal, 0.1 = selten
 }
 
-interface TemplateCreatureSlot {
-  creatureId: EntityId<'creature'>;
-  count: number | { min: number; max: number };
-  role: 'leader' | 'elite' | 'regular' | 'support';
-}
+// DesignRole → Creature.md#design-rollen-mcdm-basiert
+
+type CountRange =
+  | { min: number; max: number }
+  | { min: number; avg: number; max: number };
 ```
 
 ### CultureData
@@ -378,40 +372,9 @@ function selectEncounterFaction(
 
 ## Encounter-Templates
 
-Fraktionen koennen vordefinierte Encounter-Zusammensetzungen definieren. Diese Templates werden bei Encounter-Generierung verwendet, wenn das Budget zum Template passt.
+Fraktionen koennen vordefinierte Encounter-Zusammensetzungen definieren. Diese Templates beschreiben typische Gruppenkonstellationen der Fraktion.
 
-### Template-Auswahl
-
-```typescript
-function selectMatchingTemplate(
-  templates: FactionEncounterTemplate[],
-  budget: number,
-  context: EncounterContext
-): FactionEncounterTemplate | undefined {
-  const matching = templates.filter(t => {
-    // Budget-Range pruefen
-    if (t.triggers?.minXPBudget && budget < t.triggers.minXPBudget) return false;
-    if (t.triggers?.maxXPBudget && budget > t.triggers.maxXPBudget) return false;
-
-    // Terrain pruefen
-    if (t.triggers?.terrainTypes && !t.triggers.terrainTypes.includes(context.terrain.id)) {
-      return false;
-    }
-
-    // Encounter-Typ pruefen
-    if (t.triggers?.encounterTypes && !t.triggers.encounterTypes.includes(context.encounterType)) {
-      return false;
-    }
-
-    return true;
-  });
-
-  if (matching.length === 0) return undefined;
-
-  // Gewichtete Zufallsauswahl
-  return weightedRandomSelect(matching.map(t => ({ value: t, weight: t.weight })));
-}
-```
+→ Template-Auswahl und -Verarbeitung: [Population.md](../features/encounter/Population.md#step-32a-single-group-template-matching)
 
 ### Beispiel: Koenigliche Armee
 
@@ -424,64 +387,40 @@ const ROYAL_ARMY: Faction = {
     {
       id: 'scout-patrol',
       name: 'Spaeher-Patrouille',
-      composition: [
-        { creatureId: 'scout', count: 2, role: 'regular' },
-      ],
-      triggers: { maxXPBudget: 200 },
-      weight: 1.0,
+      slots: {
+        scouts: { designRole: 'skirmisher', count: 2 }
+      }
     },
     {
       id: 'standard-patrol',
       name: 'Standard-Patrouille',
-      composition: [
-        { creatureId: 'guard', count: { min: 4, max: 6 }, role: 'regular' },
-        { creatureId: 'veteran', count: 1, role: 'leader' },
-      ],
-      triggers: { minXPBudget: 200, maxXPBudget: 1000 },
-      weight: 1.0,
+      slots: {
+        guards: { designRole: 'soldier', count: { min: 4, max: 6 } },
+        leader: { designRole: 'leader', count: 1 }
+      }
     },
     {
       id: 'reinforced-patrol',
       name: 'Verstaerkte Patrouille',
-      composition: [
-        { creatureId: 'guard', count: 10, role: 'regular' },
-        { creatureId: 'knight', count: 1, role: 'leader' },
-        { creatureId: 'war-horse', count: 1, role: 'support' },
-      ],
-      triggers: { minXPBudget: 1000, maxXPBudget: 3000 },
-      weight: 0.5,  // Seltener als Standard
+      slots: {
+        guards: { designRole: 'soldier', count: 10 },
+        leader: { designRole: 'leader', count: 1 },
+        support: { designRole: 'support', count: 1 }
+      }
     },
     {
       id: 'army-division',
       name: 'Armee-Division',
-      composition: [
-        { creatureId: 'guard', count: { min: 30, max: 50 }, role: 'regular' },
-        { creatureId: 'veteran', count: { min: 5, max: 10 }, role: 'elite' },
-        { creatureId: 'knight', count: { min: 2, max: 4 }, role: 'leader' },
-        { creatureId: 'priest', count: 1, role: 'support' },
-      ],
-      triggers: { minXPBudget: 5000 },
-      weight: 0.01,  // Sehr selten - Armeen sind ungewoehnlich
-    },
-  ],
+      slots: {
+        soldiers: { designRole: 'soldier', count: { min: 30, max: 50 } },
+        veterans: { designRole: 'brute', count: { min: 5, max: 10 } },
+        commanders: { designRole: 'leader', count: { min: 2, max: 4 } },
+        support: { designRole: 'support', count: 1 }
+      }
+    }
+  ]
 };
 ```
-
-### Budget und Template-Wahrscheinlichkeit
-
-Templates werden mit exponentiell fallender Wahrscheinlichkeit ausgewaehlt:
-
-| Budget-Multiplikator | Wahrscheinlichkeit |
-|---------------------|-------------------|
-| 1× (Basis) | 50% |
-| 2× | 25% |
-| 4× | 12.5% |
-| 8× | 6.25% |
-| usw. | ... |
-
-**Wichtig:** Das Template-Budget muss nicht ausgeschoepft werden. Ein Social-Encounter kann ein "Armee-Division" Template verwenden, aber es werden nur die Leader-NPCs fuer das Gespraech relevant sein - die Armee ist im Hintergrund.
-
-→ Details zur Budget-Berechnung: [encounter/Balance.md](../features/encounter/Balance.md)(../features/encounter/Balance.md#avoidability-system)
 
 ---
 
@@ -1161,50 +1100,3 @@ encounter:resolve-requested
 
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-| 1400 | 🔶 | Faction | features | Faction-Schema (id, name, parentId, culture, creatures, controlledPOIs, displayColor) | hoch | Ja | - | Faction.md#schema | src/core/schemas/faction.ts:160-188 |
-| 1417 | 🔶 | Faction | features | Faction EntityRegistry Integration: 'faction' als Entity-Typ | hoch | Ja | #1400 | [Faction.md#schema](#schema), [Faction.md#encounter-templates](#encounter-templates) | src/core/schemas/common.ts:46 (EntityType enum enthält 'faction') |
-| 1401 | 🔶 | Faction | features | CultureData-Schema (naming, personality, quirks, values, speech) | hoch | Ja | #1400 | Faction.md#culturedata | src/core/schemas/faction.ts:116-133 |
-| 1402 | 🔶 | Faction | features | FactionCreatureGroup-Schema (creatureId, count) | hoch | Ja | #1200, #1400 | [Faction.md#schema](#schema), [Creature.md#schema](Creature.md#schema) | src/core/schemas/faction.ts:142-150 |
-| 1403 | 🔶 | Faction | features | FactionPresence-Schema (factionId, strength) für Tile-Speicherung | hoch | Ja | #802, #1400 | [Faction.md#praesenz-datenstruktur](#praesenz-datenstruktur), [Map-Feature.md#overworldmap](../features/Map-Feature.md#overworldmap) | src/core/schemas/faction.ts:227-232 |
-| 1404 | ✅ | Faction | features | WeightedTrait und WeightedQuirk Schemas | mittel | Ja | #1401 | Faction.md#culturedata | src/core/schemas/faction.ts:20-36 |
-| 1405 | 🔶 | Faction | features | resolveFactionCulture(): Hierarchie von Wurzel zu Blatt auflösen | hoch | Ja | #1400, #1401 | [Faction.md#kultur-vererbung](#kultur-vererbung), [NPC-System.md#npc-generierung](NPC-System.md#npc-generierung) | src/features/encounter/npc-generator.ts:37-63 |
-| 1406 | ✅ | Faction | features | mergeCultureData(): Kultur-Eigenschaften mergen mit Vererbungsregeln | hoch | Ja | #1405 | [Faction.md#merge-regeln](#merge-regeln), [Faction.md#kultur-vererbung](#kultur-vererbung) | src/features/encounter/npc-generator.ts:69-100 (mergeCulture) |
-| 1407 | ✅ | Faction | features | mergeWeightedTraits(): Helper für Trait-Merging mit Gewichtung | mittel | Ja | #1406 | Faction.md#merge-regeln | Integriert in mergeCulture (src/features/encounter/npc-generator.ts:69-100) |
-| 1408 | ✅ | Faction | features | mergeWeightedQuirks(): Helper für Quirk-Merging | mittel | Ja | #1406 | Faction.md#merge-regeln | Integriert in mergeCulture (src/features/encounter/npc-generator.ts:69-100) |
-| 1409 | ⛔ | Faction | features | distributePresenceToTiles(): CR-Verteilungslogik mit Gewichtung (1/(d+1)) im Cartographer | hoch | Ja | #802, #1403, #1500, #3194 | Faction.md#praesenz-vorberechnung-cartographer, POI.md#basepoi, Map-Feature.md#overworldmap | [neu] src/features/faction/faction-presence.ts:calculatePresenceForTile() |
-| 1410 | ⛔ | Faction | features | getFactionsAtTile(): Vorberechnete Präsenz vom Tile lesen mit active-Filter | hoch | Ja | #801, #802, #1409 | Faction.md#encounter-integration, Map-Feature.md#overworldmap | [neu] src/features/faction/faction-presence.ts:getFactionsAtTile() |
-| 1411 | ⛔ | Faction | features | selectEncounterFaction(): Gewichtete Zufallsauswahl basierend auf FactionPresence.strength | hoch | Ja | #202, #1410, #3195 | Faction.md#encounter-integration, encounter/Encounter.md#tile-eligibility | [neu] src/features/faction/faction-presence.ts:selectEncounterFaction() |
-| 1412 | 🔶 | Faction | features | Bundled Basis-Fraktionen: Humanoids, Goblins, Orcs, Undead, etc. | hoch | Ja | #1400, #1401 | Faction.md#bundled-basis-fraktionen | presets/factions/base-factions.json |
-| 1413 | 🔶 | Faction | features | Faction Events: create/update/delete-requested und Lifecycle-Events | mittel | Ja | #1400 | Faction.md#events | src/core/events/domain-events.ts:FactionPayloads, FactionState |
-| 1414 | ⬜ | Faction | features | Faction Territory Events Implementation: poi-claimed, poi-lost EventBus-Handler + Event-Emission bei POI-Zuweisung | niedrig | Nein | #1413, #1500 | Faction.md#events, POI.md#basepoi | docs/architecture/Events-Catalog.md:756-764 (Events definiert, Implementierung fehlt) |
-| 1415 | ⛔ | Faction | application | Faction Library-View: CRUD-UI mit Kultur-Editor, Creature-Verwaltung, POI-Zuweisung | mittel | Ja | #1400, #1416, #2800 | Faction.md#schema, Library.md#tab-navigation | [neu] src/application/library/faction-view.svelte |
-| 1416 | ⛔ | Faction | features | FactionOrchestrator: CRUD-Logik + Event-Handling (create/update/delete-requested) | mittel | Ja | #1400, #1413 | Faction.md#schema, Faction.md#events, Architecture/Infrastructure.md#storage-port-pattern | [neu] src/features/faction/orchestrator.ts, [neu] src/features/faction/index.ts:createFactionOrchestrator() |
-| 2998 | 🔶 | Faction | features | reputationWithParty: number (-100 bis +100) Feld | niedrig | Nein | #1400 | Faction.md#party-reputation | src/core/schemas/faction.ts:184 (reputationWithParty field im Schema) |
-| 2999 | ⬜ | DetailView | application | Encounter-Resolution-Dialog: Reputation-Änderung UI mit Preset-Buttons [-20..-10..+20] | niedrig | Nein | #2998 | Faction.md#party-reputation, Faction.md#ui-konzept, DetailView.md#post-combat-resolution | - |
-| 3017 | ⛔ | Encounter | features | suggestHoardLocation(): POI-Vorschlag basierend auf Terrain-Präferenz + Proximity | niedrig | Nein | #3015, #1500, #3201 | Faction.md#poi-vorschlag, encounter/Encounter.md#entity-promotion | - |
-| 3018 | ⛔ | Faction | features | applyAttrition(): Creature-Counts nach Combat reduzieren + faction:attrition-applied Event | hoch | Ja | #1400, #1402, #3205 | Faction.md#attrition-mechanik, Faction.md#integration-im-encounter-service | - |
-| 3019 | ⛔ | Faction | features | recalculatePresenceForTile(): Neuberechnung nach faction:attrition-applied Event | mittel | Ja | #3018, #1409, #3200 | Faction.md#praesenz-neuberechnung | - |
-| 3020 | ⛔ | Faction | features | Auto-Status extinct: Wenn alle creature.count = 0 nach Attrition → status = extinct + faction:status-changed Event | mittel | Ja | #3018 | Faction.md#automatische-status-aenderungen | - |
-| 3114 | ⛔ | Faction | features | selectMatchingTemplate(): Budget + Context → Template-Auswahl mit Gewichtung | hoch | Nein | #3184, #3195 | Faction.md#encounter-templates, Faction.md#template-auswahl | - |
-| 3119 | ⛔ | Faction | features | generateName(): Name-Generierung aus CultureData mit Pattern-Replacement | mittel | Nein | #1405, #3196 | Faction.md#name-generieren, Faction.md#generierungsfunktionen | - |
-| 3121 | ⛔ | Faction | features | rollPersonality(): Personality-Trait-Auswahl mit forbidden-Filter + gewichtete Zufallswahl | mittel | Nein | #1405, #3195 | Faction.md#persoenlichkeit-wuerfeln | - |
-| 3123 | ⛔ | Faction | features | rollQuirk(): Quirk-Auswahl mit Kreatur-Kompatibilität + Einzigartigkeit-Tracking | mittel | Nein | #1405, #3195 | Faction.md#quirk-wuerfeln, Faction.md#generierungsfunktionen | - |
-| 3124 | ⬜ | Faction | features | getActiveFactionsAtTile(): Tile-Präsenz mit active-Status-Filter für Encounter-Generierung | hoch | Nein | #1410 | Faction.md#encounter-filter | - |
-| 3125 | ⬜ | Faction | features | promoteCreature(): Entity Promotion (Creature → NPC + POI + LootContainer + Faction) | mittel | Nein | #3203, #3204, #3017 | Faction.md#ergebnis-der-promotion, Faction.md#entity-promotion, encounter/Encounter.md#entity-promotion | - |
-| 3126 | ⬜ | Faction | application | Entity Promotion Dialog UI: Name-Input, POI-Toggle, Faction-Toggle mit Parent-Auswahl | niedrig | Nein | #3017 | Faction.md#promotion-dialog, Faction.md#entity-promotion | - |
-| 3127 | ⛔ | Faction | application | Post-Attrition UI Banner: Faction-Schwächung mit Creature-Count-Diffs + Extinct-Meldung | niedrig | Nein | #3018 | Faction.md#ui-feedback, Faction.md#attrition-mechanik | - |
-| 3128 | 🟢 | Faction | core | WeightedActivity + WeightedGoal Schemas für Kultur-Daten | niedrig | Nein | #1401 | Faction.md#culturedata | - |
-| 3131 | ⛔ | Faction | features | instantiateLootTable(): LootContainer-Erstellung bei Entity Promotion mit defaultLootTable | niedrig | Nein | #1708 | Faction.md#ergebnis-der-promotion, Loot-Feature.md | - |
-| 3184 | ⛔ | Faction | features | FactionEncounterTemplate Schema (id, name, composition, triggers, weight) eingebettet in Faction | hoch | -d | #1400, #3215 | Faction.md#schema, Faction.md#encounter-templates | - |
-| 3193 | ⬜ | Faction | features | ResolvedCulture Type: Aufgelöste Kultur-Daten nach Vererbung (alle Felder non-optional) | niedrig | -d | - | Faction.md#kultur-vererbung | - |
-| 3194 | 🟢 | Faction | features | hexDistance(): Helper-Funktion für Hex-Distanz-Berechnung zwischen Koordinaten | mittel | -d | #802 | Faction.md#praesenz-vorberechnung-cartographer, Map-Feature.md#hex-coordinates | - |
-| 3195 | 🟢 | Faction | features | weightedRandomSelect(): Generische gewichtete Zufallsauswahl-Utility (value, weight) | hoch | --spec | - | - | - |
-| 3196 | 🟢 | Faction | features | randomSelect(): Einfache Zufallsauswahl aus Array (gleichverteilte Wahrscheinlichkeit) | mittel | --spec | - | - | - |
-| 3200 | ⛔ | Faction | features | findTilesWithFactionPresence(): Alle Tiles mit gegebener Faction-Präsenz finden | mittel | -d | #1409 | Faction.md#praesenz-neuberechnung | - |
-| 3201 | ⛔ | Faction | features | getTilesInRadius(): Alle Tiles in gegebener Distanz von Koordinate finden | niedrig | -d | #802, #3194 | Faction.md#poi-vorschlag | - |
-| 3202 | ⬜ | Faction | features | hasPOI(): Prüfung ob Tile bereits einen POI hat | niedrig | Nein | #802, #1500 | Faction.md#poi-vorschlag | - |
-| 3203 | ⬜ | Faction | features | PromotionResult Interface (npc, poi?, lootContainer?, faction?) für Entity-Promotion-Return | niedrig | Nein | #3017 | Faction.md#ergebnis-der-promotion | - |
-| 3204 | ⬜ | Faction | features | PromotionOptions Interface (name, createPOI, createFaction, poiPosition, factionName, factionParent) | niedrig | Nein | #3017 | Faction.md#ergebnis-der-promotion | - |
-| 3205 | ⬜ | Faction | features | CombatOutcome Interface (defeatedCreatures: Array<{creatureId, count}>) für Attrition-Integration | mittel | -d | - | Faction.md#integration-im-encounter-service, Combat-System.md | - |
-| 3208 | 🟢 | Faction | core | FactionStatus-Enum (active, dormant, extinct) mit Status-Transitions | hoch | -d | - | Faction.md#faction-status | - |
-| 3215 | ⛔ | Faction | core | TemplateCreatureSlot Schema mit creatureId, count (number oder range), role (leader, elite, regular, support) | mittel | -d | #1400 | Faction.md#schema | - |

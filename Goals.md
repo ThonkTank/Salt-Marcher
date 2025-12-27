@@ -200,24 +200,64 @@ Grid-basierte Dungeon-Maps mit Simulation:
 ```
 ┌───────────────────────────────────────────────────────────────┐
 │                      Application Layer                        │
-│           (SessionRunner, ToolViews, UI Components)           │
+│     ViewModels: SessionRunner, DetailView, Cartographer       │
 └───────────────────────────────────────────────────────────────┘
                               ↓
 ┌───────────────────────────────────────────────────────────────┐
 │                       Feature Layer                           │
-│  State + Business Logic + StoragePorts                        │
-│  (Map, Party, Time, Travel, Encounter, Combat, Quest, Audio)  │
+│  State + Business Logic + Orchestration                       │
+│  (encounter/, travel/, weather/, combat/, quest/, audio/)     │
 └───────────────────────────────────────────────────────────────┘
                               ↓
 ┌───────────────────────────────────────────────────────────────┐
-│                     Infrastructure Layer                      │
-│          (Vault Adapters, Rendering, External APIs)           │
+│                        Data Layer                             │
+│     Schemas, Types, Utilities (EncounterContext, Stats)       │
+└───────────────────────────────────────────────────────────────┘
+                              ↓
+┌───────────────────────────────────────────────────────────────┐
+│                        Infra Layer                            │
+│       EventBus, Events-Catalog, Vault Adapters, Rendering     │
 └───────────────────────────────────────────────────────────────┘
 
-Core: Schemas, Types, Events, Utils (shared across all layers)
+Quer: tools/ (Task CLI), prototypes/ (Experimente)
 ```
 
-→ **Details:** [Features.md](docs/architecture/Features.md), [Application.md](docs/architecture/Application.md), [Infrastructure.md](docs/architecture/Infrastructure.md)
+→ **Details:** [docs/application/](docs/application/), [docs/features/](docs/features/), [docs/data/](docs/data/), [docs/infra/](docs/infra/)
+
+---
+
+## Entwicklungs-Workflow (Prototype → Production)
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ 1. Schema   │ →  │ 2. CLI      │ →  │ 3. EventBus │ →  │ 4. Prod     │
+│    Phase    │    │    Proto    │    │    Proto    │    │    Phase    │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+   docs/data/        prototype/        prototype/          src/
+```
+
+### 1. Schema-Phase
+- Grundlegende Schemas in `docs/data/` definieren
+- 100% saubere Definitionen: Nur Felder, Quelle, Konsumenten
+- Eine Task pro Schema-Dokument
+
+### 2. CLI-Prototype-Phase
+- Feature-Prototypen in `prototype/` (CLI-basiert)
+- Strikt unabhängig voneinander
+- Verwenden Schemas aus Phase 1
+- Manuelle Daten-Einspeisung statt Plugin-Integration
+
+### 3. EventBus-Prototype-Phase
+- Multi-Feature-Workflows per CLI simulieren
+- z.B. Reise mit Random Encounter Generierung
+- Prototypen kommunizieren via EventBus
+
+### 4. Production-Phase
+- Ausgereifte Prototypen nach `src/` kopieren
+- An ViewModel/Production-EventBus anschließen
+- Integration mit Obsidian-API
+
+→ **Details:** [docs/prototypes/README.md](docs/prototypes/README.md)
 
 ---
 
@@ -292,11 +332,35 @@ Vault/
 
 ### Ordner-Struktur
 
+```
+docs/
+├── infra/           # EventBus, Events-Catalog, Event-Patterns
+├── application/     # ViewModels mit Sub-Ordnern
+│   ├── SessionRunner/
+│   ├── DetailView/
+│   ├── Cartographer/
+│   └── Library/
+├── data/            # Grundlegende Schemas + Utilities
+│   ├── EncounterContext.md
+│   ├── CreatureStats.md
+│   └── ...
+├── features/        # Feature Sub-Directories
+│   ├── encounter/
+│   ├── travel/
+│   ├── weather/
+│   └── ...
+├── tools/           # Task CLI, Skripte
+└── prototypes/      # Prototype-Dokumentation
+```
+
 | Ordner | Inhalt |
 |--------|--------|
-| `docs/architecture/` | Architektur-Layer Docs (Core, Features, Application, Infrastructure, EventBus, Conventions, EntityRegistry) |
-| `docs/features/` | Feature-spezifische Docs (Travel, Weather, Combat, Quest, Time, etc.) |
-| `docs/domain/` | Domain-Entity Docs (NPC, Faction, Location, Map-Navigation) |
+| `docs/infra/` | EventBus, Events-Catalog, Event-Patterns, Conventions |
+| `docs/application/` | ViewModels: SessionRunner, DetailView, Cartographer, Library |
+| `docs/data/` | Grundlegende Schemas (EncounterContext, CreatureStats, EntityRegistry) |
+| `docs/features/` | Feature-Directories (encounter/, travel/, weather/, combat/, quest/) |
+| `docs/tools/` | Task CLI Dokumentation, Skripte |
+| `docs/prototypes/` | Prototype-Dokumentation, Experimente |
 
 ### Single Source of Truth
 
@@ -350,67 +414,75 @@ Goals.md enthält **nicht**:
 
 ## Dokumentations-Referenz
 
-### Architektur
+### infra/ (Infrastructure)
 
 | Dokument | Inhalt |
 |----------|--------|
-| [Core.md](docs/architecture/Core.md) | Schemas, Types, Utils |
-| [Features.md](docs/architecture/Features.md) | Feature-Pattern, State Machines, Dependency-Graph |
-| [Application.md](docs/architecture/Application.md) | MVVM, ViewModels |
-| [Infrastructure.md](docs/architecture/Infrastructure.md) | Adapters, Vault-Integration, State-Persistenz |
-| [EventBus.md](docs/architecture/EventBus.md) | Event-Patterns, Naming-Konvention |
-| [Events-Catalog.md](docs/architecture/Events-Catalog.md) | Single Source of Truth fuer alle Events |
-| [EntityRegistry.md](docs/architecture/EntityRegistry.md) | Entity-Verwaltung, Creature-Hierarchie |
-| [Conventions.md](docs/architecture/Conventions.md) | Naming, Error Handling |
-| [Error-Handling.md](docs/architecture/Error-Handling.md) | Error-Propagation, Fehlerbehandlung |
-| [Glossary.md](docs/architecture/Glossary.md) | Begriffsdefinitionen |
-| [Data-Flow.md](docs/architecture/Data-Flow.md) | Datenfluss-Diagramme |
-| [Testing.md](docs/architecture/Testing.md) | Test-Patterns, Mock-Strategien |
-| [Development-Roadmap.md](docs/architecture/Development-Roadmap.md) | Aktueller Implementierungs-Status |
-| [Project-Structure.md](docs/architecture/Project-Structure.md) | Ordnerstruktur, Modul-Organisation |
+| [EventBus.md](docs/infra/EventBus.md) | Event-Patterns, Naming-Konvention |
+| [Events-Catalog.md](docs/infra/Events-Catalog.md) | Single Source of Truth für alle Events |
+| [Conventions.md](docs/infra/Conventions.md) | Naming, Error Handling |
+| [Error-Handling.md](docs/infra/Error-Handling.md) | Error-Propagation, Fehlerbehandlung |
+| [Data-Flow.md](docs/infra/Data-Flow.md) | Datenfluss-Diagramme |
+| [Glossary.md](docs/infra/Glossary.md) | Begriffsdefinitionen |
 
-### Application-Docs
+### application/ (ViewModels)
 
-| Dokument | Inhalt |
-|----------|--------|
-| [SessionRunner.md](docs/application/SessionRunner.md) | Hauptansicht (Center), Quick-Controls, Map |
-| [DetailView.md](docs/application/DetailView.md) | Detail-Ansichten (Right), Encounter, Combat, Shop |
-| [Cartographer.md](docs/application/Cartographer.md) | Map-Editor, Tools, Layer |
-| [Library.md](docs/application/Library.md) | Entity-CRUD, Views |
+| Ordner | Inhalt |
+|--------|--------|
+| [SessionRunner/](docs/application/SessionRunner/) | Hauptansicht (Center), Quick-Controls, Map-Panel |
+| [DetailView/](docs/application/DetailView/) | Detail-Ansichten (Right), Encounter, Combat, Shop |
+| [Cartographer/](docs/application/Cartographer/) | Map-Editor, Tools, Layer |
+| [Library/](docs/application/Library/) | Entity-CRUD, Views |
 
-### System-Docs
+### data/ (Schemas & Types)
 
 | Dokument | Inhalt |
 |----------|--------|
-| [Map-Feature.md](docs/features/Map-Feature.md) | Map-Typen, Multi-Map-Verhalten |
-| [Encounter-System.md](docs/features/Encounter-System.md) | Pipeline, Typen, Algorithmus |
-| [Encounter-Balancing.md](docs/features/Encounter-Balancing.md) | XP-Budget, CR, Difficulty |
-| [Travel-System.md](docs/features/Travel-System.md) | Hex-Navigation, Speed-Berechnung |
-| [Weather-System.md](docs/features/Weather-System.md) | Wetter-Generierung, Events |
-| [Quest-System.md](docs/features/Quest-System.md) | Objectives, 40/60 XP-Split |
-| [Combat-System.md](docs/features/Combat-System.md) | Initiative, Conditions |
-| [Audio-System.md](docs/features/Audio-System.md) | Track-Tags, Mood-Matching |
-| [Dungeon-System.md](docs/features/Dungeon-System.md) | Grid-Maps, Fog of War, Licht |
-| [Time-System.md](docs/features/Time-System.md) | Kalender, WorldEvents, JournalEntries |
-| [Character-System.md](docs/features/Character-System.md) | PC-Schema |
-| [Inventory-System.md](docs/features/Inventory-System.md) | Items, Encumbrance |
-| [Loot-Feature.md](docs/features/Loot-Feature.md) | Tag-Matching, Generierung |
+| [EntityRegistry.md](docs/data/EntityRegistry.md) | Entity-Verwaltung, 17 Entity-Typen |
+| [EncounterContext.md](docs/data/EncounterContext.md) | Encounter-Kontext-Schema |
+| [CreatureStats.md](docs/data/CreatureStats.md) | Creature-Statistiken, Combat-Stats |
+| [Creature.md](docs/data/Creature.md) | Creature-Schema, Templates |
+| [NPC.md](docs/data/NPC.md) | NPC-Schema, Persistierung |
+| [Faction.md](docs/data/Faction.md) | Fraktionen, Territory, Kultur |
+| [POI.md](docs/data/POI.md) | Points of Interest, Sub-Maps |
+| [Map.md](docs/data/Map.md) | Map-Schema, Typen |
+| [Item.md](docs/data/Item.md) | Item-Schema, Kategorien |
+| [Shop.md](docs/data/Shop.md) | Händler, Inventar |
+| [Terrain.md](docs/data/Terrain.md) | Terrain-Typen, Mechaniken |
+| [Quest.md](docs/data/Quest.md) | Quest-Schema, Objectives |
+| [Journal.md](docs/data/Journal.md) | Automatische Ereignis-Historie |
 
-### Entity-Docs
+### features/ (Feature-Directories)
+
+| Ordner | Inhalt |
+|--------|--------|
+| [encounter/](docs/features/encounter/) | Pipeline, Typen, Balancing, Algorithmus |
+| [travel/](docs/features/travel/) | Hex-Navigation, Speed-Berechnung |
+| [weather/](docs/features/weather/) | Wetter-Generierung, Events |
+| [combat/](docs/features/combat/) | Initiative, Conditions |
+| [quest/](docs/features/quest/) | Objectives, 40/60 XP-Split |
+| [time/](docs/features/time/) | Kalender, WorldEvents, JournalEntries |
+| [audio/](docs/features/audio/) | Track-Tags, Mood-Matching |
+| [dungeon/](docs/features/dungeon/) | Grid-Maps, Fog of War, Licht |
+| [map/](docs/features/map/) | Map-Typen, Multi-Map-Verhalten, Navigation |
+| [character/](docs/features/character/) | PC-Schema, Party-Management |
+| [inventory/](docs/features/inventory/) | Items, Encumbrance |
+| [loot/](docs/features/loot/) | Tag-Matching, Generierung |
+
+### tools/ (Entwicklung)
 
 | Dokument | Inhalt |
 |----------|--------|
-| [Creature.md](docs/domain/Creature.md) | Creature-Schema, Templates |
-| [NPC-System.md](docs/domain/NPC-System.md) | NPC-Generierung, Auswahl |
-| [Faction.md](docs/domain/Faction.md) | Fraktionen, Territory, eingebettete Kultur |
-| [POI.md](docs/domain/POI.md) | Points of Interest, Sub-Maps, Verlinkung |
-| [Map.md](docs/domain/Map.md) | Map-Schema, Typen |
-| [Map-Navigation.md](docs/domain/Map-Navigation.md) | Map-Links, Navigation, History |
-| [Item.md](docs/domain/Item.md) | Item-Schema, Kategorien |
-| [Shop.md](docs/domain/Shop.md) | Händler, Inventar |
-| [Terrain.md](docs/domain/Terrain.md) | Terrain-Typen, Mechaniken |
-| [Quest.md](docs/domain/Quest.md) | Quest-Schema, Objectives |
-| [Journal.md](docs/domain/Journal.md) | Automatische Ereignis-Historie |
+| [Development-Roadmap.md](docs/tools/Development-Roadmap.md) | Aktueller Implementierungs-Status |
+| [Project-Structure.md](docs/tools/Project-Structure.md) | Ordnerstruktur, Modul-Organisation |
+| [Testing.md](docs/tools/Testing.md) | Test-Patterns, Mock-Strategien |
+| [Task-CLI.md](docs/tools/Task-CLI.md) | Task-Management-Skripte |
+
+### prototypes/ (Experimente)
+
+| Dokument | Inhalt |
+|----------|--------|
+| [Prototype-CLI.md](docs/prototypes/Prototype-CLI.md) | CLI-Prototyp für Encounter-Pipeline |
 
 ### Sonstiges
 

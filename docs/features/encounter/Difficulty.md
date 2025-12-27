@@ -1235,8 +1235,6 @@ const XP_THRESHOLDS: Record<number, { easy: number; medium: number; hard: number
 
 | Anzahl Gegner | Multiplikator |
 |---------------|---------------|
-| 1 | x1.0 |
-| 2 | x1.5 |
 | 3-6 | x2.0 |
 | 7-10 | x2.5 |
 | 11-14 | x3.0 |
@@ -1276,7 +1274,3 @@ function calculateAdjustedXP(encounter: FlavouredEncounter): number {
 
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-| 3278 | ⬜ | Encounter | prototyp | Step 5.0: Simulation-Setup - Combat Profiles, Resource Budget, 3D-Grid, Positionen, Surprise. Deliverables: createPartyProfiles(), calculateResourceBudget(), initializeGrid(), calculateInitialPositions(), checkSurprise() | mittel | Nein | #3264 | features/encounter/Difficulty.md#setup | prototype/pipeline/difficulty.ts |
-| 3279 | ⬜ | Encounter | prototyp | Step 5.0.6: Disposition-Berechnung - Creature/Faction-Disposition, Combat Probability. Deliverables: calculateDisposition(), calculateCombatProbability() | mittel | Nein | #3264 | features/encounter/Difficulty.md#step-50-disposition-berechnung | prototype/pipeline/difficulty.ts |
-| 3280 | ⬜ | Encounter | prototyp | Distance-Modifier mit Pain-Point-Decay für XP-Gewichtung. Deliverables: getDistanceXPModifier() mit asymptotischem Decay | mittel | Nein | #3264 | features/encounter/Difficulty.md, features/encounter/Flavour.md#perception-berechnung | prototype/pipeline/difficulty.ts |
-| 3281 | ⬜ | Encounter | prototyp | XP-Rewards: D&D 5e Thresholds (L1-20), Gruppen-Multiplikatoren. Deliverables: XP_THRESHOLDS, getGroupMultiplier(), calculateXPReward(), calculateAdjustedXP() | niedrig | Nein | #3265 | features/encounter/Difficulty.md#xp-rewards | prototype/pipeline/difficulty.ts |

@@ -30,6 +30,7 @@ const COMMANDS = {
   remove: () => import('./services/remove-service.mjs'),
   split: () => import('./services/split-service.mjs'),
   sync: () => import('./services/sync-service.mjs'),
+  clear: () => import('./services/clear-service.mjs'),
 };
 
 const COMMAND_DESCRIPTIONS = {
@@ -43,6 +44,7 @@ const COMMAND_DESCRIPTIONS = {
   remove: 'Task oder Bug löschen',
   split: 'Task in zwei Teile splitten',
   sync: 'Roadmap → Docs synchronisieren (Diskrepanzen beheben)',
+  clear: 'Alle Tasks/Bugs aus einem Dokument löschen',
 };
 
 /**
@@ -495,6 +497,52 @@ function formatOutput(result, opts) {
     console.log(`\nErgebnis: ${success.length}/${total} Tasks aktualisiert`);
     if (failed.length > 0) {
       console.log(`         ${failed.length} fehlgeschlagen`);
+    }
+    return;
+  }
+
+  // clear result (has docPath and deleted/failed arrays or taskIds/bugIds for dry-run)
+  if (value.docPath !== undefined) {
+    if (value.dryRun) {
+      console.log('DRY-RUN (keine Änderungen)\n');
+      console.log(`📋 Würde löschen aus ${value.docPath}:`);
+
+      const allIds = [
+        ...(value.taskIds || []).map(id => `#${id}`),
+        ...(value.bugIds || [])
+      ];
+
+      if (allIds.length > 0) {
+        console.log(`   ${allIds.join(', ')}`);
+        console.log(`\n${value.totalCount} Items würden gelöscht`);
+      } else {
+        console.log('   (keine Items gefunden)');
+      }
+      return;
+    }
+
+    if (value.message) {
+      console.log(`✅ ${value.message}`);
+      return;
+    }
+
+    console.log(`📋 Lösche aus ${value.docPath}\n`);
+
+    for (const item of value.deleted || []) {
+      const id = item.type === 'bug' ? item.id : `#${item.id}`;
+      console.log(`  ✅ ${id} gelöscht`);
+    }
+
+    for (const item of value.failed || []) {
+      const id = item.type === 'bug' ? item.id : `#${item.id}`;
+      console.log(`  ❌ ${id}: ${item.error?.message || 'Unbekannter Fehler'}`);
+    }
+
+    const deletedCount = (value.deleted || []).length;
+    const failedCount = (value.failed || []).length;
+    console.log(`\nErgebnis: ${deletedCount}/${value.totalCount} Items gelöscht`);
+    if (failedCount > 0) {
+      console.log(`         ${failedCount} fehlgeschlagen`);
     }
     return;
   }

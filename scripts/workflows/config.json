@@ -262,5 +262,12 @@
       "meaning": "Diese Task ist fertig und reviewed.",
       "flowchartFile": "scripts/workflows/abgeschlossen.txt"
     }
-  }
+  },
+
+  "sieheAuchPatterns": [
+    "^>\\s*\\*\\*(?:Lies auch|Siehe auch):\\*\\*\\s*(.+)$",
+    "^\\*Siehe auch:\\s*(.+)\\*$"
+  ],
+
+  "validLayers": ["infra", "application", "data", "features", "tools", "prototypes"]
 }

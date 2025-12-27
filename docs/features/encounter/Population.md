@@ -73,6 +73,48 @@ Population beschreibt die Welt, nicht das Encounter fuer die Party. Gruppengroes
 
 ---
 
+## Fraktions-basierter Population-Flow
+
+> **Voraussetzungen:**
+> - [Creature.md#design-rollen](../../domain/Creature.md#design-rollen-mcdm-basiert) - DesignRole Definition
+> - [Faction.md#encounter-templates](../../domain/Faction.md#encounter-templates) - Template-Schema
+> - [Faction.md#countrange](../../domain/Faction.md#schema) - CountRange Typ
+
+**Kompletter Ablauf von Tile zu Encounter:**
+
+```
+1. FRAKTIONS-AUSWAHL
+   └─ Tile.factionPresence[] lesen
+   └─ Gewichtete Zufallsauswahl (Gewicht = Praesenz-Staerke)
+
+2. TEMPLATE-SAMMLUNG
+   └─ faction.encounterTemplates (Prioritaet)
+   └─ + generische Templates aus presets/
+
+3. TEMPLATE-FILTERUNG
+   └─ Fuer jedes Template pruefen:
+      └─ Hat Fraktion genug Creatures mit passenden DesignRoles?
+   └─ Verwerfe Templates die nicht erfuellbar sind
+
+4. TEMPLATE-AUSWAHL
+   └─ Zufaellig aus gefilterten Templates
+   └─ Fraktionstemplates bevorzugt
+
+5. SEED-AUSWAHL
+   └─ Alle Creatures der Fraktion, die Template-Rollen erfuellen
+   └─ Zufaellig eine waehlen
+
+6. SLOT-BEFUELLUNG
+   └─ Pro Slot: Eine Kreatur-Art waehlen (nach designRole)
+   └─ Slot mit N Instanzen dieser Art fuellen
+   └─ WICHTIG: Ein Slot = eine Kreatur-Art
+
+7. FALLBACK
+   └─ Kein Template passt → creature.groupSize verwenden
+```
+
+---
+
 ## Step 2.1: Tile-Eligibility
 
 **Zweck:** Pool von moeglichen Kreaturen fuer dieses Tile erstellen.
@@ -94,11 +136,24 @@ Kreaturen werden **ausgeschlossen** wenn:
 
 Verbleibende Kreaturen erhalten Gewichtungen:
 
-| Faktor | Multiplikator | Beispiel |
-|--------|---------------|----------|
-| **Fraktionspraesenz** | ×2.0 bis ×5.0 | Blutfang kontrolliert dieses Hex |
+| Faktor | Gewichtung | Beispiel |
+|--------|------------|----------|
+| **Fraktionspraesenz** | `strength` als Gewicht (gewichtete Zufallsauswahl) | Blutfang kontrolliert dieses Hex |
 | **Raritaet** | common ×1.0, uncommon ×0.3, rare ×0.05 | Drache selten |
 | **Wetter** | ×1.5 wenn `creature.preferredWeather` matched | Yeti bei Schnee |
+
+**Fraktions-Auswahl:** Gewichtete Zufallsauswahl basierend auf Tile-Staerke:
+
+```
+Auf diesem Tile sind 3 Fraktionen praesent:
+- Fraktion A: strength 3 (= 3 CR auf diesem Tile)
+- Fraktion B: strength 4 (= 4 CR)
+- Fraktion C: strength 5 (= 5 CR)
+Summe = 12 → Roll 1-3 = A (25%), 4-7 = B (33%), 8-12 = C (42%)
+```
+
+`strength` ist der bereits auf das Tile verteilte CR-Anteil.
+→ Details: [Faction.md#praesenz-datenstruktur](../../domain/Faction.md#praesenz-datenstruktur)
 
 Kreaturen mit Gesamt-Gewicht unter der Minimum-Schwelle werden ausgeschlossen.
 
@@ -248,9 +303,11 @@ Die Seed-Kreatur ist das "Centerpiece" des Encounters. Von ihr ausgehend werden 
 
 | Aspekt | Quelle |
 |--------|--------|
-| **Template-Pool** | Seed.faction?.templates oder generische Templates via Seed.tags |
+| **Template-Pool** | Seed.faction?.encounterTemplates oder generische Templates via Seed.tags |
 | **Companion-Pool** | Kreaturen der gleichen Faction (oder Tag-Matching) |
 | **Basis-Disposition** | Seed.faction?.defaultDisposition oder Seed.disposition |
+
+→ Faction-Templates: [Faction.md#encounter-templates](../../domain/Faction.md#encounter-templates)
 
 ---
 
@@ -398,17 +455,8 @@ interface EncounterTemplate {
   };
 }
 
-// Count-Varianten:
-// - Fest: 1
-// - Flach (min/max): { min: 2, max: 4 }
-// - Kurve (min/avg/max): { min: 2, avg: 4, max: 10 }
-type CountRange =
-  | { min: number; max: number }
-  | { min: number; avg: number; max: number };
-
-type DesignRole =
-  | 'ambusher' | 'artillery' | 'brute' | 'controller' | 'leader'
-  | 'minion' | 'skirmisher' | 'soldier' | 'solo' | 'support';
+// CountRange → Faction.md#countrange
+// DesignRole → Creature.md#design-rollen-mcdm-basiert
 ```
 
 **Beispiel: Leader + Minions**
@@ -456,13 +504,28 @@ Templates sind in `presets/encounter-templates/` gespeichert und editierbar.
 Die Template-Auswahl prueft, ob die Fraktion genug Kreaturen mit den richtigen Design Roles hat.
 
 **Hierarchie:**
-1. **Faction-Templates** (bevorzugt)
+1. **Faction-Templates** (bevorzugt) → [Faction.md#encounter-templates](../../domain/Faction.md#encounter-templates)
 2. **Generic Templates** (Fallback)
 3. **Creature.groupSize** (letzter Fallback, kein Template)
 
+### Creature-Pool Aufloesung
+
+`faction.creatures` enthaelt nur IDs und Counts. Fuer Template-Matching brauchen wir aufgeloeste Creature-Objekte:
+
+```typescript
+function resolveCreatures(groups: FactionCreatureGroup[]): Creature[] {
+  return groups.flatMap(g => {
+    const creature = entityRegistry.get('creature', g.creatureId);
+    return creature ? [creature] : [];
+  });
+}
+```
+
+→ Schema: [Faction.md#schema](../../domain/Faction.md#schema)
+
 ```typescript
 function canFulfillTemplate(
-  creaturePool: Creature[],
+  creatures: Creature[],
   template: EncounterTemplate,
   context: EncounterContext
 ): boolean {
@@ -472,7 +535,7 @@ function canFulfillTemplate(
       : slot.count.min;
 
     // Anzahl Kreaturen dieser Rolle im Pool zaehlen
-    const creaturesWithRole = creaturePool.filter(c =>
+    const creaturesWithRole = creatures.filter(c =>
       c.designRole === slot.designRole &&
       isEligible(c, context.terrain, context.time)
     );
@@ -493,7 +556,7 @@ function selectTemplate(
   // 1. PRIORITAET: Faction-Templates
   if (faction?.encounterTemplates) {
     const viableFaction = faction.encounterTemplates.filter(t =>
-      canFulfillTemplate(faction.creaturePool, t, context)
+      canFulfillTemplate(resolveCreatures(faction.creatures), t, context)
     );
     if (viableFaction.length > 0) {
       return randomSelect(viableFaction);
@@ -611,6 +674,10 @@ Template mit Slots (z.B. 1× leader, 2-4× minion)
 ```
 
 ### Companion-Pool Bildung
+
+Der Companion-Pool bestimmt, welche Kreaturen zusammen mit der Seed erscheinen koennen.
+
+→ Faction-Creatures: [Faction.md#schema](../../domain/Faction.md#schema)
 
 ```typescript
 function getCompanionPool(seed: Creature, allCreatures: Creature[]): Creature[] {
@@ -885,9 +952,3 @@ interface EncounterCreature {
 
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-| 3273 | ⛔ | Encounter | prototyp | Step 2.1b: Environmental-Eligibility - Hazards, Discoveries, Resources, Phenomena. Deliverables: Kategorien (hazard/discovery/resource/phenomenon), Trigger (Terrain/Wetter/POI/Zeit), EnvironmentalContext Schema, Kombination mit Creatures | mittel | Nein | #3263 | features/encounter/Population.md#step-21b-environmental-eligibility | prototype/pipeline/environmental.ts |
-| 3274 | ⛔ | Encounter | prototyp | Pfad-basierte Creature-Pools - Straßen/Flüsse erweitern eligible Creatures. Deliverables: Path.encounterModifier.creaturePool auslesen, Kreaturen zum Tile-Pool hinzufügen | mittel | Nein | #3263 | features/encounter/Population.md#pfad-basierte-creature-pools-post-mvp, domain/Path.md | prototype/pipeline/population.ts |
-| 3290 | 🔶 | Encounter | prototype | Tile-Eligibility: Rarität-basierte Gewichtung (common ×1.0, uncommon ×0.3, rare ×0.05). Deliverables: (1) Creature.rarity Typ-Feld, (2) RARITY_MULTIPLIER Konstante, (3) calculateWeight() erweitert, (4) base-creatures.json mit rarity-Werten (24 common, 14 uncommon, 2 rare). DoD: TypeScript kompiliert, CLI zeigt uncommon seltener als common. | mittel | Nein | #3263 | features/encounter/Population.md#gewichtung-soft-factors | prototype/types/encounter.ts: Creature.rarity Feld (common/uncommon/rare). prototype/loaders/preset-loader.ts: RawCreature.rarity, loadCreatures() mit Default common. prototype/pipeline/population.ts: RARITY_MULTIPLIER Konstante, calculateWeight() erweitert. presets/creatures/base-creatures.json: 40 Kreaturen mit rarity-Werten. |
-| 3291 | 🔶 | Encounter | prototype | Tile-Eligibility: Wetter-Präferenz Gewichtung (×1.5 bei preferredWeather match). Implementiert: (1) Creature.preferredWeather Typ-Feld, (2) WEATHER_PREFERENCE_MULTIPLIER Konstante, (3) getWeatherConditions() Helper, (4) calculateWeight() erweitert, (5) base-creatures.json mit preferredWeather (skeleton, wolf, giant-spider, crocodile, lizardfolk). | mittel | Nein | #3263 | features/encounter/Population.md#gewichtung-soft-factors | population.ts: getWeatherConditions(), calculateWeight() mit weather-Parameter, WEATHER_PREFERENCE_MULTIPLIER=1.5. preset-loader.ts: RawCreature.preferredWeather. encounter.ts: Creature.preferredWeather. base-creatures.json: 5 Kreaturen mit preferredWeather. |
-| 3292 | 🔶 | Encounter | prototype | Slot-Befüllung mit Kreaturen pro Rolle. NICHT KONFORM: designRole ist jetzt PFLICHTFELD (nicht optional). fillSlot() muss Kreaturen nach designRole filtern, nicht nach budgetPercent/crConstraint. | mittel | Nein | #3263 | features/encounter/Population.md#step-33-slot-befuellung | prototype/pipeline/population.ts: getCompanionPool() erweitert (terrain+time Filter), findGenericTemplate() Reihenfolge korrigiert |
-| 3293 | 🔶 | Encounter | prototype | Gruppengrößen-Hierarchie für Encounter-Population. NICHT KONFORM: getGroupSize() muss neues slots-Schema nutzen mit sumSlotCounts(). Fallback-Hierarchie: Template-Slots > Creature.groupSize > Solo. | mittel | Nein | #3263 | features/encounter/Population.md#gruppengroessen-hierarchie | population.ts:getGroupSize() - Hierarchie Template>Creature. Population.md:718-736 - Spec korrigiert |
