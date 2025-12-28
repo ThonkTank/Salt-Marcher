@@ -56,6 +56,30 @@ git mv docs/domain docs/entities
 - Mit Anführungszeichen: `mv "path with spaces" "dest"`
 - Ordner-Renames: `git mv docs/old-folder docs/new-folder`
 
+### Rename-Erkennung (Delete + Create)
+
+Der Hook erkennt Delete+Create-Sequenzen als Renames:
+
+| Schritt | Tool | Aktion |
+|---------|------|--------|
+| 1 | Bash (`rm`) | Datei wird als "gelöscht" gemerkt (60s Timeout) |
+| 2 | Write | Neue Datei wird erstellt |
+| 3 | Hook | Vergleicht Dateinamen, führt Referenz-Update aus |
+
+**Beispiel:**
+```bash
+rm docs/entities/creature.md          # Schritt 1: Deletion gemerkt
+# Write tool: docs/data/creature.md   # Schritt 2: Match gefunden (gleicher Dateiname)
+# → Alle Links auf "creature.md" werden aktualisiert
+```
+
+**Matching-Algorithmus:**
+- Vergleich nach Dateiname (basename), case-insensitive
+- Bei mehreren Matches: Neuester Timestamp gewinnt
+- Timeout: 60 Sekunden zwischen Delete und Create
+
+**State-Datei:** `.claude/.hook-state.json` (gitignored, ephemeral)
+
 ### Link-Typen
 
 Nur Standard-Markdown-Links werden aktualisiert:
@@ -72,8 +96,9 @@ Nicht unterstützt:
 
 | Datei | Beschreibung |
 |-------|--------------|
-| `.claude/hooks/update-refs.mjs` | Bash-Hook: Referenzen + Docs-Tree |
-| `.claude/hooks/update-docs-tree.mjs` | Write-Hook: Nur Docs-Tree |
+| `.claude/hooks/update-refs.mjs` | Bash-Hook: Referenzen + Deletion-Tracking + Docs-Tree |
+| `.claude/hooks/update-docs-tree.mjs` | Write-Hook: Rename-Erkennung + Docs-Tree |
+| `.claude/hooks/hook-state.mjs` | State-Management für Rename-Erkennung |
 | `.claude/hooks/docs-tree.mjs` | Shared: Tree-Generierung |
 | `scripts/services/ref-updater-service.mjs` | Core: Referenz-Updates |
 

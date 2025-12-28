@@ -172,11 +172,14 @@ export function dismissEncounter(): void {
  */
 export function startCombat(): void {
   const state = getState();
-  if (!state.encounter.current) return;
+  const encounter = state.encounter.current;
+  if (!encounter) return;
+
+  const participants = buildParticipants(encounter);
 
   updateState(s => ({
     ...s,
     encounter: { ...s.encounter, status: 'active' },
-    combat: { status: 'active', participants: [], currentTurn: 0, round: 1 },
+    combat: { status: 'active', participants, currentTurn: 0, round: 1 },
   }));
 }
