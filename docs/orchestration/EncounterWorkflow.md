@@ -116,7 +116,6 @@ function buildEncounterContext(trigger: EncounterTrigger) {
     weather: state.weather!,
     party: buildPartySnapshot(),
     factions: getFactionPresence(),
-    eligibleCreatures: getEligibleCreatures(),
     trigger,
   };
 }
@@ -249,7 +248,6 @@ function buildEncounterContext(trigger: EncounterTrigger) {
     weather: state.weather!,
     party: buildPartySnapshot(),
     factions: getFactionPresence(),
-    eligibleCreatures: getEligibleCreatures(),
     trigger,
   };
 }

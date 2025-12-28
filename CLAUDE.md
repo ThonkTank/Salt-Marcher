@@ -118,7 +118,7 @@ src/                   # Source code
     encounterGenerator/
       balanceEncounter.ts
       calcDifficulty.ts
-      encounterGenerator.ts  # Ziel: sessionState für relevanten Kontext auslesen. Enc...
+      encounterGenerator.ts  # Ziel: sessionState für relevanten Kontext auslesen. Encou...
       encounterNPCs.ts
       groupGenerator.ts
     lootGenerator/

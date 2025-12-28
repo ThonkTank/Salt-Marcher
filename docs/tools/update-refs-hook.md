@@ -162,3 +162,4 @@ Hooks sind in `.claude/settings.json` registriert:
 - Keine Unterstützung für Mehrfach-Quellen: `mv file1 file2 dest/`
 - Bei `src/`: Nur `.ts`-Dateien (keine `.d.ts`, `.test.ts`, `.js`)
 - Bei `docs/`: Beschreibungen werden aus Zeile 3 extrahiert (führendes `> ` und `**Label:**` werden entfernt)
+- **Rename-Erkennung:** Nur bei gleichem Dateinamen (basename), Timeout 60 Sekunden
