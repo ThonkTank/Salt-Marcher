@@ -1,6 +1,6 @@
 # Event Bus
 
-> **Lies auch:** [Core](Core.md), [Features.md](Features.md), [Application.md](Application.md), [Events-Catalog.md](Events-Catalog.md)
+> **Lies auch:** [Data](Data.md), [Features.md](Features.md), [Application.md](Application.md), [Events-Catalog.md](Events-Catalog.md)
 > **Wird benoetigt von:** Features, Events-Catalog
 
 Zentraler Kommunikationskanal für Cross-Component Kommunikation.

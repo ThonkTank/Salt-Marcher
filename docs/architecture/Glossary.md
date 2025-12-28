@@ -1,6 +1,6 @@
 # Glossary
 
-> **Lies auch:** [Core.md](Core.md), [Features.md](Features.md), [Application.md](Application.md), [EventBus.md](EventBus.md)
+> **Lies auch:** [Data.md](Data.md), [Features.md](Features.md), [Application.md](Application.md), [EventBus.md](EventBus.md)
 > **Wird benoetigt von:** Bei Begriffsfragen
 
 Zentrale Begriffsdefinitionen fuer SaltMarcher.

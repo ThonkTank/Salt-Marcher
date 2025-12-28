@@ -1,6 +1,18 @@
 # Dungeon-System
 
-> **Lies auch:** [Map-Feature](Map-Feature.md), [Combat-System](Combat-System.md), [Cartographer.md](../application/Cartographer.md), [Travel-System.md](Travel-System.md), [encounter/Encounter.md](encounter/Encounter.md)
+> **Verantwortlichkeit:** Grid-basierte Dungeon Maps mit Fog of War, Lichtquellen und Triggern
+> **Schema:** [map.md#dungeon](../data/map.md#dungeon)
+>
+> **Referenzierte Schemas:**
+> - [creature.md](../data/creature.md) - Creature-Tokens
+> - [poi.md](../data/poi.md) - Dungeon-POIs
+>
+> **Verwandte Dokumente:**
+> - [Map-Feature.md](Map-Feature.md) - Map-Typen-Uebersicht
+> - [Combat-System.md](Combat-System.md) - Grid-Combat
+> - [Cartographer.md](../application/Cartographer.md) - Dungeon-Editor
+> - [encounter/Encounter.md](../services/encounter/Encounter.md) - Dungeon-Encounters
+>
 > **Wird benoetigt von:** SessionRunner
 
 Grid-basierte Dungeon Maps mit Fog of War, Lichtquellen und automatischen Triggern.

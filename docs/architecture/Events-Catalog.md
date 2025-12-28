@@ -1039,7 +1039,7 @@ Lineare Features (Strassen, Fluesse, Schluchten, Klippen).
 }
 ```
 
-> Schema-Details: [Path.md](../domain/Path.md)
+> Schema-Details: [Path.md](../data/path.md)
 
 ---
 
@@ -1119,7 +1119,7 @@ Loot-Generierung und -Verteilung.
 }
 ```
 
-> **Schema-Details:** [Loot-Feature.md](../features/Loot-Feature.md)
+> **Schema-Details:** [Loot.md](../services/Loot.md)
 
 ---
 

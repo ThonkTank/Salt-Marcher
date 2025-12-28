@@ -16,7 +16,7 @@ Feature Layer (State + Business Logic + StoragePorts)
         ↓
 Infrastructure Layer (Vault-Adapter, Rendering)
 
-Core: Schemas, Types, Events, Utils (quer durch alle Layer)
+Data Layer: Schemas, Types, Konstanten, Utils (Single-Concern pro Datei)
 ```
 
 **Abhängigkeitsregel:** Obere Layer dürfen untere Layer direkt abfragen. State-Änderungen propagieren nach oben via Events. Keine Zyklen erlaubt.
@@ -76,7 +76,7 @@ presets/
 
 | Layer | Pfad | Dokumentation |
 |-------|------|---------------|
-| Core | `src/core/` | [Core.md](Core.md) |
+| Data | `src/core/` | [Data.md](Data.md) |
 | Features | `src/features/` | [Features.md](Features.md) |
 | Infrastructure | `src/infrastructure/` | [Infrastructure.md](Infrastructure.md) |
 | Application | `src/application/` | [Application.md](Application.md) |

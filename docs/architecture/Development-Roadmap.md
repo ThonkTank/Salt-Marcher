@@ -35,7 +35,7 @@ Implementierungsstrategie und aktueller Status für Salt Marcher.
 
 | Thema | Dokument |
 |-------|----------|
-| Core-Types | Core.md |
+| Data Layer | Data.md |
 | Events | Events-Catalog.md |
 | Layer-Struktur | Project-Structure.md |
 | Error-Handling | Error-Handling.md |

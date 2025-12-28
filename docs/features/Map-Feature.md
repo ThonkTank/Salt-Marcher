@@ -1,6 +1,19 @@
 # Map-Feature
 
-> **Lies auch:** [Map](../data/map.md), [Terrain](../data/terrain-definition.md), [Map-Navigation](Map-Navigation.md), [Path.md](../data/path.md), [Travel-System.md](Travel-System.md), [Dungeon-System.md](Dungeon-System.md), [POI.md](../data/poi.md)
+> **Verantwortlichkeit:** Single Source of Truth fuer Map-Typen, Map-Content und Multi-Map-Verhalten
+> **Schema:** [map.md](../data/map.md)
+>
+> **Referenzierte Schemas:**
+> - [terrain-definition.md](../data/terrain-definition.md) - Terrain-Definitionen
+> - [poi.md](../data/poi.md) - Points of Interest
+> - [path.md](../data/path.md) - Pfad-Definitionen
+>
+> **Verwandte Dokumente:**
+> - [Map-Navigation.md](Map-Navigation.md) - Sub-Map-Navigation
+> - [Travel-System.md](Travel-System.md) - Hex-Overland-Reisen
+> - [Dungeon-System.md](Dungeon-System.md) - Dungeon-Maps
+> - [Cartographer.md](../application/Cartographer.md) - Map-Editor
+>
 > **Wird benoetigt von:** Travel, Weather, Cartographer, Dungeon
 
 Single Source of Truth fuer Map-Typen, Map-Content und Multi-Map-Verhalten.
@@ -100,7 +113,7 @@ interface OverworldTile {
 }
 
 // Tile-Level Klima-Anpassungen (ueberschreiben Terrain-Defaults)
-// → Details: [Terrain.md](../domain/Terrain.md#tileclimatemodifiers)
+// → Details: [terrain-definition.md](../data/terrain-definition.md#terrainweatherranges)
 interface TileClimateModifiers {
   temperatureModifier?: number;     // Offset in °C
   humidityModifier?: number;        // Offset in % - beeinflusst fog + precip
@@ -426,8 +439,8 @@ Overland-Sichtweiten-Visualisierung fuer Hex-Maps. Ermoeglicht dem GM zu sehen, 
 
 **Hinweis:** Dies ist die **Overland-Visibility** (Hex-basiert, fuer Fog-of-War). Fuer die **Encounter-Visibility** (Feet-basiert, fuer Kreatur-Erkennung) siehe:
 
-→ [Terrain.md#encountervisibility](../domain/Terrain.md#encountervisibility-erklaerung)
-→ [Balance.md#encounter-groessen-modifier](encounter/Balance.md#encounter-groessen-modifier)
+→ [terrain-definition.md#felder](../data/terrain-definition.md#felder)
+→ [Difficulty.md](encounter/Difficulty.md)
 
 | System | Einheit | Zweck | Status |
 |--------|---------|-------|:------:|
@@ -500,7 +513,7 @@ Beste Sicht in der Party gilt. Verschiedene Sinne stacken nicht.
 | **True Sight** | Ignoriert magische Dunkelheit |
 
 → Character-Sinne: [Character-System.md](Character-System.md#sinne)
-→ Creature-Sinne: [Creature.md](../domain/Creature.md#sinne)
+→ Creature-Sinne: [Creature.md](../data/creature.md#sinne)
 
 ### Creature-Sichtweite
 
@@ -509,7 +522,7 @@ Kreaturen haben eigene Sichtweite fuer:
 - NPC-Patrouillen
 - Stealth-Mechaniken
 
-→ Details: [Creature.md](../domain/Creature.md#sinne)
+→ Details: [Creature.md](../data/creature.md#sinne)
 
 ### POI-Fernsicht
 

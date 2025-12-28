@@ -113,6 +113,18 @@ export const MVP_PRIORITY = Object.freeze({
   'Nein': 1
 });
 
+/**
+ * Layer-Sortierung (niedrigere Zahl = höhere Priorität)
+ * data > prototype > architecture > features > application
+ */
+export const LAYER_PRIORITY = Object.freeze({
+  'data': 0,
+  'prototype': 1,
+  'architecture': 2,
+  'features': 3,
+  'application': 4
+});
+
 // ============================================================================
 // ROADMAP TABLE SCHEMA
 // ============================================================================

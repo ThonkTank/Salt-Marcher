@@ -1,4 +1,10 @@
-# CLAUDE.md - Arbeitsanweisungen für Salt Marcher
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+---
+
+# Arbeitsanweisungen für Salt Marcher
 
 Dieses Dokument definiert, wie Claude Code mit diesem Repository arbeitet.
 
@@ -95,8 +101,8 @@ Das Claim-System verwendet 4-Zeichen-Keys:
 node scripts/task.mjs claim 428
 # Ausgabe: "Key: a4x2 (2h gültig)"
 
-# Task freigeben (nur Key nötig, keine ID)
-node scripts/task.mjs unclaim a4x2
+# Task freigeben (4-Zeichen Key = unclaim)
+node scripts/task.mjs claim a4x2
 
 # Edit bei geclaimter Task erfordert Key
 node scripts/task.mjs edit 428 --status ✅ --key a4x2
@@ -118,8 +124,8 @@ node scripts/task.mjs edit 428 --status ✅ --key a4x2
 | Task lesen | Read-Tool auf Roadmap | `task.mjs show <ID>` |
 | Task suchen | Grep/Glob auf Roadmap | `task.mjs sort <keyword>` |
 | Status ändern | Edit-Tool auf Roadmap | `task.mjs edit <ID> --status X` |
-| Task anlegen | Edit-Tool auf Roadmap | `task.mjs add --task --doc <path> ...` |
-| Bug melden | Edit-Tool auf Roadmap | `task.mjs add --bug ...` |
+| Task anlegen | Edit-Tool auf Roadmap | `task.mjs add --tasks '<JSON>'` |
+| Bug melden | Edit-Tool auf Roadmap | `task.mjs add --bugs '<JSON>'` |
 
 **Warum?**
 - Multi-Agent-Konsistenz: Manuelle Edits erzeugen Race Conditions
@@ -186,15 +192,17 @@ Build output: Configured in `esbuild.config.mjs` → Obsidian vault plugins fold
 
 ```
 src/                   # Source code
-  core/                # Result, Option, EventBus, Schemas, Utils
+  core/                # Data Layer: Schemas, Types, Konstanten, Utils
   features/            # Feature layer (map, party, travel)
   infrastructure/      # Vault adapters, rendering
   application/         # SessionRunner, ViewModels
   main.ts              # Plugin entry point
 docs/                  # Authoritative documentation (German)
   architecture/        # Layer docs, EventBus, Conventions, Error-Handling
-  features/            # Feature specs (Travel, Weather, Encounter, Combat, etc.)
-  domain/              # Entity docs (NPC, Faction, Location, Map, Quest, Journal)
+  features/            # Stateful feature specs (Travel, Combat, Quest, Weather, etc.)
+  services/            # Stateless services (encounter/, NPCs/, Loot, Inventory)
+  entities/            # Entity schemas (1 Datei pro Typ)
+  constants/           # D&D Regeln, Enums, Lookup-Tabellen
   application/         # UI docs with wireframes (SessionRunner)
 presets/               # Fixture data (maps, terrains)
 Archive/               # Previous Alpha implementations - reference only
@@ -233,8 +241,10 @@ EntityRegistry manages 17 types: `creature`, `character`, `npc`, `faction`, `ite
 - **Goals.md**: Start here—vision, features, entity types, architecture diagram
 - **docs/architecture/Conventions.md**: Coding standards, error handling, patterns
 - **docs/architecture/Events-Catalog.md**: Single source of truth for all domain events
-- **docs/features/**: Detailed feature specifications
-- **docs/domain/**: Entity type documentation (Map, Quest, Journal, NPC, Faction, etc.)
+- **docs/features/**: Stateful feature specifications (Travel, Combat, Quest, etc.)
+- **docs/services/**: Stateless services (encounter/, NPCs/, Loot, Inventory)
+- **docs/entities/**: Entity schemas (1 Datei pro Typ)
+- **docs/constants/**: D&D Regeln, Enums, Lookup-Tabellen
 - **docs/application/**: UI documentation with wireframes (SessionRunner, DetailView)
 
 Alle Dokumentation ist auf Deutsch.
@@ -247,7 +257,7 @@ Alle Dokumentation ist auf Deutsch.
 
 | Quelle | Beschreibt |
 |--------|------------|
-| `docs/features/`, `docs/domain/` | **Zielzustand** - Was das Feature können soll (Spezifikation) |
+| `docs/features/`, `docs/services/`, `docs/entities/` | **Zielzustand** - Was das Feature können soll (Spezifikation) |
 | `Development-Roadmap.md` → Tasks | **Istzustand** - Status-Spalte zeigt Implementierungsstand |
 
 **Status-Bedeutungen:**
@@ -274,10 +284,14 @@ Application Layer (SessionRunner, Views, UI)
         ↓
 Feature Layer (State + Business Logic + StoragePorts)
         ↓
-Infrastructure Layer (Vault Adapters, Rendering)
-
-Core: Schemas, Types, Events, Utils (shared across all layers)
+Data Layer (Schemas, Types, Konstanten, Utils) ← Single-Concern pro Datei
+        ↓
+Infrastructure Layer (EventBus, Vault Adapters, Rendering)
 ```
+
+**Data Layer:** Kontextunabhängige Daten (D&D-Regeln, XP-Tabellen, Creature Types).
+Eine Datei = ein Schema / Type-Set / Konstanten-Set / Utility-Gruppe.
+Code-Pfad: `src/core/` (historischer Name)
 
 **Key Patterns:**
 - **MVVM**: ViewModels coordinate between UI and Features
@@ -379,7 +393,7 @@ Pro logische Einheit committen:
 | Ort | Inhalt |
 |-----|--------|
 | `docs/architecture/EntityRegistry.md` | Entity-Interfaces |
-| `docs/architecture/Core.md` | Basis-Types (Result, Option, EntityId) |
+| `docs/architecture/Data.md` | Data Layer: Schemas, Types, Konstanten, Utils |
 | Feature-Docs | Feature-spezifische Typen |
 
 Bei fehlenden oder unklaren Schemas: User fragen.
@@ -395,16 +409,21 @@ Bei fehlenden oder unklaren Schemas: User fragen.
 | Lesen | `node scripts/task.mjs show <ID>` |
 | Suchen | `node scripts/task.mjs sort <keyword>` |
 | Priorisieren | `node scripts/task.mjs sort` |
-| Status ändern | `node scripts/task.mjs edit <ID> --status ✅` |
-| Bulk-Edit | `node scripts/task.mjs bulk-edit <ID> <ID> [...] --status ✅` |
+| Status ändern | `node scripts/task.mjs edit <ID> [ID...] --status ✅` |
 | Claimen | `node scripts/task.mjs claim <ID>` |
-| Unclaimen | `node scripts/task.mjs unclaim <key>` |
-| Neue Task | `node scripts/task.mjs add --task --doc <path> ...` |
-| Bug melden | `node scripts/task.mjs add --bug ...` |
-| Bulk-Add Tasks | `node scripts/task.mjs add --tasks '<JSON-Array>'` |
-| Bulk-Add Bugs | `node scripts/task.mjs add --bugs '<JSON-Array>'` |
+| Freigeben | `node scripts/task.mjs claim <key>` |
+| Neue Tasks | `node scripts/task.mjs add --tasks '<JSON-Array>'` |
+| Neue Bugs | `node scripts/task.mjs add --bugs '<JSON-Array>'` |
 | Task löschen | `node scripts/task.mjs remove <ID>` |
 | Task splitten | `node scripts/task.mjs split <ID> "A" "B"` |
+| Kaputte Links finden | `node scripts/task.mjs scan-refs` |
+| Kaputte Links reparieren | `node scripts/task.mjs scan-refs --fix` |
+
+### Automatische Referenz-Updates
+
+Beim Verschieben von Dateien in `docs/` werden Markdown-Links automatisch aktualisiert (PostToolUse-Hook auf Bash).
+
+Dokumentation: [docs/tools/update-refs-hook.md](docs/tools/update-refs-hook.md)
 
 ### Task-Priorisierung (sort)
 
@@ -448,8 +467,14 @@ node scripts/task.mjs show --help                 # Alle Optionen
 ### Task-Bearbeitung (edit)
 
 ```bash
-# Status ändern
+# Einzelne Task bearbeiten
 node scripts/task.mjs edit 428 --status ✅
+
+# Mehrere Tasks gleichzeitig bearbeiten
+node scripts/task.mjs edit 100 101 102 --status ✅
+
+# Mit Keys für geclaime Tasks (Reihenfolge = Task-Reihenfolge)
+node scripts/task.mjs edit 100 101 --status 🟢 --key a4x2 --key b5y3
 
 # Dependencies ändern
 node scripts/task.mjs edit 428 --deps "#100, #202"
@@ -463,99 +488,71 @@ node scripts/task.mjs edit 428 --bereich Travel
 node scripts/task.mjs edit 428 --status ✅ --dry-run
 ```
 
-### Bulk-Edit (bulk-edit)
-
-```bash
-# Mehrere Tasks gleichzeitig bearbeiten (min. 2 IDs)
-node scripts/task.mjs bulk-edit 100 101 102 --status ✅
-
-# Mit Keys für geclaime Tasks (Reihenfolge = Task-Reihenfolge)
-node scripts/task.mjs bulk-edit 100 101 --status 🟢 --key a4x2 --key b5y3
-
-# Dry-run
-node scripts/task.mjs bulk-edit 100 101 102 --prio hoch --dry-run
-```
-
-**Verhalten:**
+**Verhalten bei mehreren IDs:**
 - **Partial Success**: Fehlerhafte Tasks verhindern nicht die Bearbeitung anderer
 - **Keys**: Werden in Reihenfolge den Task-IDs zugeordnet
-- Alle edit-Optionen verfügbar (--status, --deps, --prio, etc.)
 
-### Claims (claim/unclaim)
+### Claims (claim)
 
 ```bash
 node scripts/task.mjs claim 428                   # Task claimen → Key merken!
-node scripts/task.mjs unclaim a4x2                # Claim freigeben (mit Key)
+node scripts/task.mjs claim a4x2                  # Claim freigeben (4-Zeichen Key)
 node scripts/task.mjs edit 428 --key a4x2 ...     # Edit mit Key bei geclaimter Task
 ```
 
 ### Neue Tasks/Bugs (add)
 
-**ALLE Task-Felder sind Pflicht:**
+Tasks und Bugs werden über JSON-Arrays erstellt:
 
 ```bash
 # Neue Task erstellen (alle Felder erforderlich!)
-node scripts/task.mjs add --task \
-  -b Travel -l features \
-  -m "Route-Validierung implementieren" \
-  -d "#100, #101" \
-  -s "Travel.md#Zustände" \
-  -i "travel-engine.ts.validateRoute() [neu]"
+node scripts/task.mjs add --tasks '[{
+  "domain": "Travel", "layer": "features",
+  "beschreibung": "Route-Validierung implementieren",
+  "deps": "#100, #101",
+  "specs": "Travel.md#Zustände",
+  "impl": "travel-engine.ts.validateRoute() [neu]"
+}]'
 
-# Multi-Domain und Multi-Layer (via Komma-Separator)
-node scripts/task.mjs add --task \
-  -b "SessionRunner, Encounter" \
-  -l "application, features" \
-  -m "Cross-Feature Integration" \
-  -d "-" \
-  -s "SessionRunner.md#Encounter-Integration" \
-  -i "encounter-handler.ts.handleEncounter() [neu]"
-
-# Neuen Bug erstellen (nur Roadmap, kein Layer/Domain/Specs/Impl nötig)
-node scripts/task.mjs add --bug -m "Bug-Beschreibung" -p hoch -d "#428"
-
-# Bulk-Add: Mehrere Tasks auf einmal (JSON-Array mit allen Pflichtfeldern)
+# Mehrere Tasks auf einmal
 node scripts/task.mjs add --tasks '[
-  {
-    "domain": "Travel", "layer": "features",
-    "beschreibung": "Task A", "deps": "-",
-    "specs": "Travel.md#API", "impl": "travel.ts.start() [neu]"
-  }
+  {"domain": "Travel", "layer": "features", "beschreibung": "Task A", "deps": "-", "specs": "Travel.md#API", "impl": "travel.ts.start() [neu]"},
+  {"domain": "Map", "layer": "data", "beschreibung": "Task B", "deps": "#100", "specs": "Map.md#Rendering", "impl": "map.ts.render() [ändern]", "prio": "hoch"}
 ]'
 
-# Bulk-Add: Mehrere Bugs auf einmal
+# Neuen Bug erstellen
+node scripts/task.mjs add --bugs '[{"beschreibung": "Bug-Beschreibung", "prio": "hoch", "deps": "#428"}]'
+
+# Mehrere Bugs auf einmal
 node scripts/task.mjs add --bugs '[
   {"beschreibung": "Bug A", "prio": "hoch", "deps": "#428"},
   {"beschreibung": "Bug B"}
 ]'
 ```
 
-**Pflichtfelder (Task):**
-| Flag | Beschreibung |
+**Pflichtfelder (Task im JSON):**
+| Feld | Beschreibung |
 |------|--------------|
-| `-b, --domain` | Domain (z.B. Travel, Map) - Multi via "," |
-| `-l, --layer` | Layer (features, domain, application) - Multi via "," |
-| `-m, --beschreibung` | Task-Beschreibung |
-| `-d, --deps` | Dependencies ("-" wenn keine, z.B. "#100, #202") |
-| `-s, --specs` | Spec-Referenzen (datei.md#abschnitt) - Multi via "," |
-| `-i, --impl` | Impl-Referenzen (datei.ts.funktion() [tag]) - Multi via "," |
+| `domain` | Domain (z.B. "Travel", "Map") - Multi via "," |
+| `layer` | Layer ("features", "data", "application") - Multi via "," |
+| `beschreibung` | Task-Beschreibung |
+| `deps` | Dependencies ("-" wenn keine, z.B. "#100, #202") |
+| `specs` | Spec-Referenzen (datei.md#abschnitt) - Multi via "," |
+| `impl` | Impl-Referenzen (datei.ts.funktion() [tag]) - Multi via "," |
+
+**Optionale Felder:** `prio` (default: "mittel"), `mvp` (default: "Nein"), `init` (default: false)
 
 **Impl-Tags:** `[neu]` (nur Format geprüft), `[ändern]` / `[fertig]` (Datei + Funktion muss existieren)
-
-**Speicherort-Auflösung:**
-Der Speicherort wird automatisch aus Domain+Layer ermittelt (z.B. `docs/features/Travel.md`).
 
 **Validierung:**
 - `deps`: Referenzierte IDs müssen in der Roadmap existieren
 - `specs`: Datei und Abschnitt (## oder ###) müssen existieren
 - `impl [ändern]/[fertig]`: Datei und Funktion müssen in src/ existieren
 
-**Bulk-Add Verhalten:**
+**Verhalten:**
 - **Partial Success**: Fehlerhafte Items stoppen nicht die anderen
-- **JSON-Pflichtfelder (Task)**: `domain`, `layer`, `beschreibung`, `deps`, `specs`, `impl`
-- **JSON-Pflichtfelder (Bug)**: `beschreibung`
-
-**Wichtig:** Tasks werden in der Roadmap + allen aufgelösten Docs gespeichert.
+- Tasks werden in Roadmap + allen aufgelösten Docs gespeichert
+- Bugs werden nur in der Roadmap gespeichert
 
 ### Bug-System
 

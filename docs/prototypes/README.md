@@ -14,7 +14,7 @@ Dieses Dokument beschreibt den Entwicklungsflow von Schemas über CLI-Prototypen
 │  Phase 1    │  Phase 2    │  Phase 3    │  Phase 4    │  Ziel               │
 │  Schema     │  CLI-Proto  │  EventBus   │  Production │                     │
 ├─────────────┼─────────────┼─────────────┼─────────────┼─────────────────────┤
-│  docs/data/ │  prototype/ │  prototype/ │  src/       │  Obsidian Plugin    │
+│  docs/entities/ │  prototype/ │  prototype/ │  src/   │  Obsidian Plugin    │
 │  Schemas    │  Isoliert   │  Verbunden  │  Integriert │                     │
 └─────────────┴─────────────┴─────────────┴─────────────┴─────────────────────┘
 ```
@@ -23,7 +23,7 @@ Dieses Dokument beschreibt den Entwicklungsflow von Schemas über CLI-Prototypen
 
 ## Phase 1: Schema-Phase
 
-**Ort:** `docs/data/`
+**Ort:** `docs/entities/`
 
 ### Ziel
 Saubere, vollständige Schema-Definitionen ohne Implementierungs-Details.
@@ -186,7 +186,7 @@ src/
 
 Ein Feature gilt als Production-Ready wenn:
 
-1. **Schema vollständig** - Alle Datenstrukturen in `docs/data/` dokumentiert
+1. **Schema vollständig** - Alle Datenstrukturen in `docs/entities/` dokumentiert
 2. **CLI-Prototype funktional** - Isolierter Test erfolgreich
 3. **EventBus-Integration** - Kommuniziert korrekt mit anderen Features
 4. **Vault-Adapter** - Persistenz implementiert
@@ -203,7 +203,7 @@ Ein Feature gilt als Production-Ready wenn:
 | Direkt in `src/` starten | Keine isolierte Entwicklung | Phase 2 durchlaufen |
 | Obsidian-API in Prototype | Schwer testbar | Adapter-Pattern nutzen |
 | Cross-Feature-Imports | Tight Coupling | EventBus nutzen |
-| Schema im Code definieren | Keine Single Source of Truth | Erst in `docs/data/` |
+| Schema im Code definieren | Keine Single Source of Truth | Erst in `docs/entities/` |
 | UI vor Logik | Schwer refaktorbar | Bottom-Up entwickeln |
 
 ---

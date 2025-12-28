@@ -1,6 +1,6 @@
 # DetailView
 
-> **Lies auch:** [Application](../architecture/Application.md), [SessionRunner](SessionRunner.md), [Combat-System.md](../features/Combat-System.md), [encounter/Encounter.md](../features/encounter/Encounter.md), [Shop.md](../domain/Shop.md)
+> **Lies auch:** [Application](../architecture/Application.md), [SessionRunner](SessionRunner.md), [Combat-System.md](../features/Combat-System.md), [encounter/Encounter.md](../services/encounter/Encounter.md), [Shop.md](../data/shop.md)
 > **Konsumiert:** Encounter, Combat, Shop, Quest, Journal
 
 Kontextbezogene Detail-Ansichten fuer Session-relevante Informationen.
@@ -156,7 +156,7 @@ Encounter-Builder zum Erstellen, Bearbeiten und Starten von Encounters.
 |---------|--------|--------|
 | Situation | Activity + Disposition der Gruppe | BaseEncounterInstance |
 | Detection | Entdeckungsmethode, Distanz, Awareness | EncounterPerception |
-| Lead NPC | Persoenlichkeit, Quirk, Ziel, Wiederkehr-Info | NPC-Resolution, NPC-Registry |
+| Lead NPC | Persoenlichkeit, Quirk, Ziel, Wiederkehr-Info | NPC-Generation, EntityRegistry |
 | Kreaturen | Liste aller Encounter-Kreaturen (ohne Lead) | EncounterCreature[] |
 | Encounter-Wertung | XP, Difficulty, Budget | Encounter-Balancing |
 
@@ -166,9 +166,9 @@ Encounter-Builder zum Erstellen, Bearbeiten und Starten von Encounters.
 |---------|------------|
 | Gesamt-XP | Summe aller Creature-XP mit Gruppen-Multiplikator |
 | Difficulty | Easy/Medium/Hard/Deadly basierend auf Party-Level |
-| Tages-Budget | Prozent des Daily-XP-Budgets (siehe encounter/Balance.md) |
+| Tages-Budget | Prozent des Daily-XP-Budgets (siehe encounter/Difficulty.md) |
 
-→ XP-Budget Details: [encounter/Balance.md](../features/encounter/Balance.md#xp-budget)
+→ XP-Budget Details: [encounter/Difficulty.md](../services/encounter/Difficulty.md#xp-rewards-post-encounter)
 
 **Quellen fuer Kreaturen:**
 
@@ -392,7 +392,7 @@ Nach Combat-Aufloesung werden getoetete Kreaturen von ihrer Fraktion abgezogen:
 
 **Automatisch:** Diese Phase erscheint nur wenn Kreaturen einer Fraktion getoetet wurden. Nicht-Fraktions-Kreaturen triggern keine Attrition.
 
-→ Details: [Publishing.md](../features/encounter/Publishing.md#attrition-integration)
+→ Details: [Publishing.md](../services/encounter/Publishing.md#attrition-integration)
 
 **Phase 5: Entity Promotion (optional, nur bei nicht-zugeordneten Kreaturen)**
 
@@ -455,8 +455,8 @@ Kreatur 1 von 3: "Junger Roter Drache"
 3. Optional: LootContainer wird aus LootTable generiert
 4. Optional: Ein-Kreatur-Fraktion wird erstellt
 
-→ Details: [Publishing.md](../features/encounter/Publishing.md#entity-promotion)
-→ Encounter-Integration: [encounter/Encounter.md](../features/encounter/Encounter.md#entity-promotion)
+→ Details: [Publishing.md](../services/encounter/Publishing.md#entity-promotion)
+→ Encounter-Integration: [encounter/Encounter.md](../services/encounter/Encounter.md#entity-promotion)
 
 **Events nach Resolution:**
 - `encounter:resolved` wird gefeuert
@@ -519,7 +519,7 @@ Interaktion mit Haendlern.
 └────────────────────────────────────┘
 ```
 
-→ Entity-Schema: [Shop.md](../domain/Shop.md)
+→ Entity-Schema: [Shop.md](../data/shop.md)
 
 ### Location-Tab
 
@@ -658,7 +658,7 @@ Vollstaendige Ereignis-Historie.
 └────────────────────────────────────┘
 ```
 
-→ Details: [Journal.md](../domain/Journal.md)
+→ Details: [Journal.md](../data/journal.md)
 
 ---
 

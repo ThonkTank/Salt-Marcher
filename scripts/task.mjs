@@ -20,33 +20,31 @@
 
 // Command → Service Mapping (lazy-loaded)
 const COMMANDS = {
-  show: () => import('./services/show-service.mjs'),
+  show: () => import('./services/lookup-service.mjs'),
   sort: () => import('./services/sort-service.mjs'),
   edit: () => import('./services/edit-service.mjs'),
-  'bulk-edit': () => import('./services/bulk-edit-service.mjs'),
   add: () => import('./services/add-service.mjs'),
   claim: () => import('./services/claim-service.mjs'),
-  unclaim: () => import('./services/unclaim-service.mjs'),
   remove: () => import('./services/remove-service.mjs'),
   split: () => import('./services/split-service.mjs'),
   sync: () => import('./services/sync-service.mjs'),
   clear: () => import('./services/clear-service.mjs'),
   'check-doc': () => import('./services/doc-watcher-service.mjs'),
+  'scan-refs': () => import('./services/ref-updater-service.mjs'),
 };
 
 const COMMAND_DESCRIPTIONS = {
   show: 'Task-Details mit Dependency-Trees anzeigen',
   sort: 'Priorisierte Task-Liste (mit Keyword-Filter)',
-  edit: 'Task/Bug bearbeiten (Status, Deps, Beschreibung)',
-  'bulk-edit': 'Mehrere Tasks gleichzeitig bearbeiten',
-  add: 'Neue Task oder Bug erstellen',
-  claim: 'Task claimen (gibt Key zurück)',
-  unclaim: 'Task freigeben (mit Key)',
+  edit: 'Task/Bug bearbeiten (1 oder mehrere)',
+  add: 'Neue Task(s) oder Bug(s) erstellen',
+  claim: 'Task claimen (ID) oder freigeben (Key)',
   remove: 'Task oder Bug löschen',
   split: 'Task in zwei Teile splitten',
   sync: 'Roadmap → Docs synchronisieren (Diskrepanzen beheben)',
   clear: 'Alle Tasks/Bugs aus einem Dokument löschen',
   'check-doc': 'Doc-Änderungen prüfen, Tasks auf 🔶 setzen',
+  'scan-refs': 'Kaputte Markdown-Referenzen finden und fixen',
 };
 
 /**
@@ -132,8 +130,9 @@ BEISPIELE:
   node scripts/task.mjs sort Travel                # Tasks mit "Travel"
   node scripts/task.mjs sort --mvp                 # MVP-Tasks priorisiert
   node scripts/task.mjs edit 428 --status ✅       # Task abschließen
+  node scripts/task.mjs edit 100 101 --status ✅   # Mehrere Tasks bearbeiten
   node scripts/task.mjs claim 428                  # Task claimen
-  node scripts/task.mjs add --task -b Travel ...   # Neue Task erstellen
+  node scripts/task.mjs add --tasks '[{...}]'      # Neue Task(s) erstellen
   node scripts/task.mjs remove b4                  # Bug löschen
   node scripts/task.mjs split 428 "A" "B"          # Task splitten
 `);

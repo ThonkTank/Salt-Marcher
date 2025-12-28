@@ -1,6 +1,6 @@
 # Error-Handling
 
-> **Lies auch:** [Conventions](Conventions.md), [Core.md](Core.md), [EventBus.md](EventBus.md)
+> **Lies auch:** [Conventions](Conventions.md), [Data.md](Data.md), [EventBus.md](EventBus.md)
 > **Wird benoetigt von:** Alle Implementierungen
 
 Cross-Feature Fehlerbehandlung, Error-Propagation und Logging.

@@ -1,6 +1,18 @@
 # Weather-System
 
-> **Lies auch:** [Time-System](Time-System.md), [Terrain](../domain/Terrain.md), [encounter/Context](encounter/Context.md), [Travel-System.md](Travel-System.md), [Audio-System.md](Audio-System.md)
+> **Verantwortlichkeit:** Wetter-Simulation - Temperatur, Wind, Niederschlag, Sichtweite
+> **Schema:** (inline definiert - WeatherState)
+>
+> **Referenzierte Schemas:**
+> - [terrain-definition.md](../data/terrain-definition.md) - Terrain-Klima-Einfluss
+> - [calendar.md](../data/calendar.md) - Mondphasen
+>
+> **Verwandte Dokumente:**
+> - [Time-System.md](Time-System.md) - Tageszeit-Abhaengigkeit
+> - [Travel-System.md](Travel-System.md) - Reise-Speed-Modifikatoren
+> - [Audio-System.md](Audio-System.md) - Wetter-Ambience
+> - [encounter/Initiation.md](../services/encounter/Initiation.md) - Sichtweite fuer Encounters
+>
 > **Wird benoetigt von:** Travel, Audio, Encounter
 
 Detaillierte Spezifikation des Wettersystems.
@@ -757,7 +769,7 @@ Der GM kann das generierte Wetter jederzeit manuell überschreiben.
 
 **Wichtig:** Dies ist fuer **temporaere Session-Overrides** gedacht (z.B. "Dramatischer Sturm fuer diesen Encounter"), NICHT fuer permanente Klima-Anpassungen bei der Karten-Erstellung.
 
-Fuer permanente Tile-spezifische Klima-Anpassungen → siehe [TileClimateModifiers](../domain/Terrain.md#tileclimatemodifiers) und Cartographer Climate-Brush.
+Fuer permanente Tile-spezifische Klima-Anpassungen → siehe [TerrainWeatherRanges](../data/terrain-definition.md#terrainweatherranges) und Cartographer Climate-Brush.
 
 **Override-Schema:**
 

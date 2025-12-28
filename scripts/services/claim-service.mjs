@@ -12,7 +12,7 @@ import { fileURLToPath } from 'url';
 
 import { formatId } from '../core/table/parser.mjs';
 import { createFsTaskAdapter } from '../adapters/fs-task-adapter.mjs';
-import { createLookupService } from './show-service.mjs';
+import { createLookupService } from './lookup-service.mjs';
 import { extractReferences, deduplicateRefs } from './reference-extractor.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -361,7 +361,7 @@ function parseTaskId(str) {
 export function parseArgs(argv) {
   const opts = {
     taskId: null,
-    key: null,
+    key: null,      // Für unclaim (4-Zeichen Key)
     json: false,
     help: false
   };
@@ -374,10 +374,14 @@ export function parseArgs(argv) {
     } else if (arg === '--json') {
       opts.json = true;
     } else if (!arg.startsWith('-')) {
-      // Task-ID oder Key
-      const parsed = parseTaskId(arg);
-      if (parsed !== null) {
-        opts.taskId = parsed;
+      // Automatische Erkennung: 4-Zeichen Key (a-z0-9) = unclaim, sonst = claim
+      if (/^[a-z0-9]{4}$/.test(arg)) {
+        opts.key = arg;  // unclaim-Mode
+      } else {
+        const parsed = parseTaskId(arg);
+        if (parsed !== null) {
+          opts.taskId = parsed;  // claim-Mode
+        }
       }
     }
   }
@@ -386,36 +390,48 @@ export function parseArgs(argv) {
 }
 
 export function execute(opts) {
-  if (!opts.taskId) {
-    return {
-      ok: false,
-      error: { code: 'INVALID_FORMAT', message: 'Task-ID erforderlich' }
-    };
+  // Unclaim-Mode: Key angegeben
+  if (opts.key) {
+    const result = unclaim(opts.key);
+    if (result.ok) {
+      return { ok: true, value: { unclaimed: true, taskId: result.taskId, restoredStatus: result.restoredStatus } };
+    }
+    return { ok: false, error: { code: result.error, message: result.message } };
   }
 
-  const result = claim(opts.taskId);
-
-  if (result.ok) {
-    const guidance = getGuidance(opts.taskId, result.previousStatus);
-    return { ok: true, value: { ...result, guidance } };
+  // Claim-Mode: Task-ID angegeben
+  if (opts.taskId) {
+    const result = claim(opts.taskId);
+    if (result.ok) {
+      const guidance = getGuidance(opts.taskId, result.previousStatus);
+      return { ok: true, value: { ...result, guidance } };
+    }
+    return { ok: false, error: { code: result.error, message: result.message } };
   }
 
-  return { ok: false, error: { code: result.error, message: result.message } };
+  return {
+    ok: false,
+    error: { code: 'INVALID_FORMAT', message: 'Task-ID oder Key erforderlich' }
+  };
 }
 
 export function showHelp() {
   return `
-Claim Command - Task claimen
+Claim Command - Task claimen oder freigeben
 
 USAGE:
   node scripts/task.mjs claim <ID>     # Task claimen, Key merken!
-  node scripts/task.mjs unclaim <key>  # Task freigeben
+  node scripts/task.mjs claim <key>    # Task freigeben (4-Zeichen Key)
+
+ARGUMENTE:
+  <ID>     Task-ID (z.B. 428, #428, b4) → Claim-Mode
+  <key>    4-Zeichen Key (a-z0-9) → Unclaim-Mode
 
 BEISPIEL:
   $ node scripts/task.mjs claim 428
   Claimed. Key: a4x2 (2h gültig)
 
-  $ node scripts/task.mjs unclaim a4x2
+  $ node scripts/task.mjs claim a4x2
   Task #428 freigegeben
 
   $ node scripts/task.mjs edit 428 --status ✅ --key a4x2

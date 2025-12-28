@@ -5,15 +5,13 @@
 // Task-Operationen
 export * from './add-service.mjs';
 export * from './edit-service.mjs';
-export * from './bulk-edit-service.mjs';
 export * from './remove-service.mjs';
 export * from './split-service.mjs';
-export * from './show-service.mjs';
+export * from './lookup-service.mjs';
 export * from './sort-service.mjs';
 
 // Claim-System
 export * from './claim-service.mjs';
-export * from './unclaim-service.mjs';
 
 // Hilfsdienste
 export * from './clear-service.mjs';

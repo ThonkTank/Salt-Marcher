@@ -1,6 +1,17 @@
 # Time-System
 
-> **Lies auch:** [Journal](../domain/Journal.md), [Events-Catalog](../architecture/Events-Catalog.md), [Weather-System.md](Weather-System.md), [Travel-System.md](Travel-System.md), [Audio-System.md](Audio-System.md)
+> **Verantwortlichkeit:** Backend-Feature fuer Kalender und Zeit-Verwaltung
+> **Schema:** [calendar.md](../data/calendar.md)
+>
+> **Referenzierte Schemas:**
+> - [journal.md](../data/journal.md) - Zeit-basierte Eintraege
+>
+> **Verwandte Dokumente:**
+> - [Weather-System.md](Weather-System.md) - Tageszeit-Abhaengigkeit
+> - [Travel-System.md](Travel-System.md) - Zeit-Vorrücken bei Reisen
+> - [Audio-System.md](Audio-System.md) - Tageszeit-Tracks
+> - [Events-Catalog.md](../architecture/Events-Catalog.md) - time:* Events
+>
 > **Wird benoetigt von:** Travel, Weather, Audio, Encounter
 
 Backend-Feature fuer Kalender und Zeit-Verwaltung.

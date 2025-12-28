@@ -1,6 +1,15 @@
 # Map-Navigation
 
-> **Lies auch:** [Map](../data/map.md), [POI](../data/poi.md), [Map-Feature.md](Map-Feature.md), [Travel-System.md](Travel-System.md)
+> **Verantwortlichkeit:** Navigation zwischen Maps via EntrancePOIs
+>
+> **Referenzierte Schemas:**
+> - [map.md](../data/map.md) - Map-Definitionen
+> - [poi.md](../data/poi.md) - EntrancePOI-Typen
+>
+> **Verwandte Dokumente:**
+> - [Map-Feature.md](Map-Feature.md) - Map-Typen
+> - [Travel-System.md](Travel-System.md) - Reise-Integration
+>
 > **Wird benoetigt von:** Travel, Map-Feature
 
 Navigation zwischen Maps via EntrancePOIs.

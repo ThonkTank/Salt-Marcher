@@ -346,19 +346,8 @@ export function createAddService(options = {}) {
  */
 export function parseArgs(argv) {
   const opts = {
-    type: null,
-    beschreibung: null,
-    domain: null,
-    layer: null,
-    init: false,
-    prio: null,
-    mvp: null,
-    deps: null,
-    specs: null,   // Spec-Referenzen (datei.md#abschnitt)
-    impl: null,    // Impl-Referenzen (datei.ts.funktion() [tag])
-    // Bulk-Mode
-    tasks: null,   // JSON-Array für Bulk-Tasks
-    bugs: null,    // JSON-Array für Bulk-Bugs
+    tasks: null,   // JSON-Array für Tasks
+    bugs: null,    // JSON-Array für Bugs
     dryRun: false,
     json: false,
     quiet: false,
@@ -370,32 +359,10 @@ export function parseArgs(argv) {
 
     if (arg === '-h' || arg === '--help') {
       opts.help = true;
-    } else if (arg === '--task') {
-      opts.type = 'task';
-    } else if (arg === '--bug') {
-      opts.type = 'bug';
     } else if (arg === '--tasks') {
       opts.tasks = argv[++i];
     } else if (arg === '--bugs') {
       opts.bugs = argv[++i];
-    } else if (arg === '--beschreibung' || arg === '-m') {
-      opts.beschreibung = argv[++i];
-    } else if (arg === '--domain' || arg === '-b') {
-      opts.domain = argv[++i];
-    } else if (arg === '--layer' || arg === '-l') {
-      opts.layer = argv[++i];
-    } else if (arg === '--init') {
-      opts.init = true;
-    } else if (arg === '--prio' || arg === '-p') {
-      opts.prio = argv[++i];
-    } else if (arg === '--mvp') {
-      opts.mvp = argv[++i];
-    } else if (arg === '--deps' || arg === '-d') {
-      opts.deps = argv[++i];
-    } else if (arg === '--specs' || arg === '-s') {
-      opts.specs = argv[++i];
-    } else if (arg === '--impl' || arg === '-i') {
-      opts.impl = argv[++i];
     } else if (arg === '--dry-run' || arg === '-n') {
       opts.dryRun = true;
     } else if (arg === '--json') {
@@ -410,11 +377,12 @@ export function parseArgs(argv) {
 
 /**
  * Führt den add command aus
+ *
+ * Nur JSON-Modus: --tasks oder --bugs
  */
 export function execute(opts, service = null) {
   const addService = service ?? createAddService();
 
-  // Bulk-Mode: --tasks oder --bugs
   if (opts.tasks) {
     return executeBulkTasks(opts.tasks, addService, opts);
   }
@@ -422,28 +390,9 @@ export function execute(opts, service = null) {
     return executeBulkBugs(opts.bugs, addService, opts);
   }
 
-  // Single-Mode: --task oder --bug mit -m
-  if (opts.type === 'task') {
-    return addService.addTask({
-      domain: opts.domain,
-      layer: opts.layer,
-      beschreibung: opts.beschreibung,
-      prio: opts.prio,
-      mvp: opts.mvp,
-      deps: opts.deps,
-      specs: opts.specs,
-      impl: opts.impl
-    }, { dryRun: opts.dryRun, init: opts.init });
-  } else if (opts.type === 'bug') {
-    return addService.addBug(opts.beschreibung, {
-      prio: opts.prio,
-      deps: opts.deps
-    }, { dryRun: opts.dryRun });
-  }
-
   return err({
     code: TaskErrorCode.INVALID_FORMAT,
-    message: '--task oder --bug erforderlich'
+    message: '--tasks oder --bugs erforderlich (JSON-Array)'
   });
 }
 
@@ -629,41 +578,15 @@ function executeBulkBugs(jsonString, addService, globalOpts) {
  */
 export function showHelp() {
   return `
-Add Command - Neue Task oder Bug erstellen
+Add Command - Neue Task(s) oder Bug(s) erstellen
 
-USAGE (Single):
-  node scripts/task.mjs add --task [OPTIONS]
-  node scripts/task.mjs add --bug [OPTIONS]
-
-USAGE (Bulk):
+USAGE:
   node scripts/task.mjs add --tasks '<JSON-Array>'
   node scripts/task.mjs add --bugs '<JSON-Array>'
 
-TYP (erforderlich für Single-Mode):
-  --task                 Neue Task erstellen
-  --bug                  Neuen Bug erstellen
-
-BULK-MODE:
-  --tasks '<JSON>'       Mehrere Tasks auf einmal (JSON-Array)
-  --bugs '<JSON>'        Mehrere Bugs auf einmal (JSON-Array)
-
-OPTIONEN (Task - ALLE erforderlich):
-  -b, --domain <name>    Domain (z.B. Travel, Map) - Multi-Domain via ","
-  -l, --layer <layer>    Layer (features, domain, application) - Multi-Layer via ","
-  -m, --beschreibung "." Beschreibung
-  -d, --deps "<deps>"    Dependencies ("-" wenn keine, z.B. "#100, #202")
-  -s, --specs "<specs>"  Spec-Referenzen (datei.md#abschnitt) - Multi via ","
-  -i, --impl "<impl>"    Impl-Referenzen (datei.ts.funktion() [tag]) - Multi via ","
-
-OPTIONALE Task-Optionen:
-  --init                 Erstellt Tabelle im Doc falls nicht vorhanden
-  -p, --prio <prio>      Priorität (hoch, mittel, niedrig) [default: mittel]
-  --mvp <Ja|Nein>        MVP-Status [default: Nein]
-
-OPTIONEN (Bug):
-  -m, --beschreibung "." Beschreibung [erforderlich]
-  -p, --prio <prio>      Priorität [default: hoch]
-  -d, --deps "<deps>"    Betroffene Tasks (werden auf BROKEN gesetzt)
+COMMANDS:
+  --tasks '<JSON>'       Tasks erstellen (JSON-Array, auch für einzelne)
+  --bugs '<JSON>'        Bugs erstellen (JSON-Array, auch für einzelne)
 
 ALLGEMEIN:
   -n, --dry-run          Vorschau ohne Speichern
@@ -676,28 +599,17 @@ IMPL-TAGS:
   [ändern]               Bestehendes ändern (Datei + Funktion muss existieren)
   [fertig]               Bereits implementiert (Datei + Funktion muss existieren)
 
-BEISPIELE (Single):
-  # Vollständige Task mit allen Pflichtfeldern
-  node scripts/task.mjs add --task \\
-    -b Travel -l features \\
-    -m "Route-Validierung implementieren" \\
-    -d "#100, #101" \\
-    -s "Travel.md#Zustände" \\
-    -i "travel-engine.ts.validateRoute() [neu]"
+BEISPIELE:
+  # Einzelne Task erstellen
+  node scripts/task.mjs add --tasks '[{
+    "domain": "Travel",
+    "layer": "features",
+    "beschreibung": "Route-Validierung implementieren",
+    "deps": "#100, #101",
+    "specs": "Travel.md#Zustände",
+    "impl": "travel-engine.ts.validateRoute() [neu]"
+  }]'
 
-  # Multi-Domain und Multi-Layer
-  node scripts/task.mjs add --task \\
-    -b "SessionRunner, Encounter" \\
-    -l "application, features" \\
-    -m "Cross-Feature Integration" \\
-    -d "-" \\
-    -s "SessionRunner.md#Encounter-Integration" \\
-    -i "encounter-handler.ts.handleEncounter() [neu]"
-
-  # Bug erstellen
-  node scripts/task.mjs add --bug -m "Login funktioniert nicht" --deps "#428"
-
-BEISPIELE (Bulk):
   # Mehrere Tasks auf einmal
   node scripts/task.mjs add --tasks '[
     {
@@ -710,7 +622,7 @@ BEISPIELE (Bulk):
     },
     {
       "domain": "Map",
-      "layer": "domain",
+      "layer": "data",
       "beschreibung": "Task B",
       "deps": "#100",
       "specs": "Map.md#Rendering",
@@ -718,6 +630,9 @@ BEISPIELE (Bulk):
       "prio": "hoch"
     }
   ]'
+
+  # Bug erstellen
+  node scripts/task.mjs add --bugs '[{"beschreibung": "Login funktioniert nicht", "deps": "#428"}]'
 
   # Mehrere Bugs auf einmal
   node scripts/task.mjs add --bugs '[
@@ -748,9 +663,9 @@ JSON-SCHEMA (Bug):
 SPEICHERORT-AUFLÖSUNG:
   Der Speicherort wird automatisch aus Domain+Layer ermittelt:
   - features:     docs/features/{Domain}.md oder docs/features/{domain}/{Domain}.md
-  - domain:       docs/domain/{Domain}.md
+  - data:         docs/entities/{Domain}.md
   - application:  docs/application/{Domain}.md
-  - architecture: docs/architecture/{Domain}.md
+  - infra:        docs/infra/{Domain}.md
 
   Bei Multi-Domain/Layer: Mindestens ein Match pro Layer erforderlich.
 
@@ -763,7 +678,7 @@ VALIDIERUNG:
 HINWEISE:
   - Tasks werden in Roadmap + allen aufgelösten Docs gespeichert
   - Bugs werden nur in der Roadmap gespeichert
-  - Bulk-Mode: Partial Success - fehlerhafte Items stoppen nicht die anderen
+  - Partial Success: Fehlerhafte Items stoppen nicht die anderen
 `;
 }
 

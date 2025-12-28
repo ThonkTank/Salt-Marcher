@@ -7,9 +7,10 @@
 
 import { ok, err, TaskErrorCode } from '../core/result.mjs';
 import { formatId, isTaskId } from '../core/table/parser.mjs';
-import { STATUS_PRIORITY, MVP_PRIORITY, PRIO_PRIORITY } from '../core/table/schema.mjs';
+import { STATUS_PRIORITY, MVP_PRIORITY, PRIO_PRIORITY, LAYER_PRIORITY } from '../core/table/schema.mjs';
 import { findInconsistencies as findInconsistenciesCore } from '../core/consistency/checker.mjs';
 import { createFsTaskAdapter } from '../adapters/fs-task-adapter.mjs';
+import { createDataLoader } from '../core/data-loader.mjs';
 import { createClaimService } from './claim-service.mjs';
 
 /**
@@ -37,17 +38,17 @@ import { createClaimService } from './claim-service.mjs';
  */
 export function createPrioritizeService(options = {}) {
   const taskAdapter = options.taskAdapter ?? createFsTaskAdapter();
+  const dataLoader = createDataLoader(taskAdapter);
 
   /**
-   * Lädt alle Items
+   * Lädt alle Items mit zusätzlichen Berechnungen
    * @returns {import('../core/result.mjs').Result<{items: Array, tasks: Array, bugs: Array, statusMap: Map, refCounts: Map}>}
    */
   function loadData() {
-    const loadResult = taskAdapter.load();
-    if (!loadResult.ok) return loadResult;
+    const baseResult = dataLoader.loadAll();
+    if (!baseResult.ok) return baseResult;
 
-    const { tasks, bugs, itemMap } = loadResult.value;
-    const items = [...tasks, ...bugs];
+    const { items, tasks, bugs, itemMap } = baseResult.value;
     const statusMap = new Map(items.map(t => [t.number, t.status]));
     const refCounts = calculateRefCountsInternal(items);
 
@@ -95,10 +96,15 @@ export function createPrioritizeService(options = {}) {
       return numA - numB;
     },
     domain: (a, b) => (a.domain || '').localeCompare(b.domain || ''),
-    layer: (a, b) => (a.layer || '').localeCompare(b.layer || '')
+    layer: (a, b) => {
+      const layerA = a.layer?.toLowerCase() || '';
+      const layerB = b.layer?.toLowerCase() || '';
+      return (LAYER_PRIORITY[layerA] ?? 99) - (LAYER_PRIORITY[layerB] ?? 99);
+    },
+    depcount: (a, b) => a.deps.length - b.deps.length
   };
 
-  const DEFAULT_SORT = ['mvp', 'status', 'prio', 'refcount', 'number'];
+  const DEFAULT_SORT = ['mvp', 'status', 'prio', 'layer', 'depcount', 'refcount', 'number'];
 
   /**
    * Flexible Sortier-Vergleichsfunktion
@@ -535,9 +541,9 @@ FILTER-OPTIONEN:
 
 SORTIER-OPTIONEN:
   --sort-by <kriterien>   Komma-separierte Sortierkriterien
-                          Verfügbar: mvp, status, prio, refcount, number, domain, layer
+                          Verfügbar: mvp, status, prio, layer, depcount, refcount, number, domain
                           Prefix: - für absteigend, + für aufsteigend (default)
-                          Default: mvp,status,prio,refcount,number
+                          Default: mvp,status,prio,layer,depcount,refcount,number
 
 OUTPUT-OPTIONEN:
   -n, --limit <N>         Anzahl der Ergebnisse (default: 10, 0 = alle)

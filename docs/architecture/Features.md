@@ -1,6 +1,6 @@
 # Feature Layer
 
-> **Lies auch:** [Core](Core.md), [EventBus](EventBus.md), [Infrastructure.md](Infrastructure.md)
+> **Lies auch:** [Data](Data.md), [EventBus](EventBus.md), [Infrastructure.md](Infrastructure.md)
 > **Wird benoetigt von:** Alle Features
 
 Jedes Feature ist eine selbstständige Einheit mit State, Business Logic und StoragePort.

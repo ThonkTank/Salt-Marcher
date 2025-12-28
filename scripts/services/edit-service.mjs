@@ -301,7 +301,8 @@ export const defaultTaskService = createTaskService();
  */
 export function parseArgs(argv) {
   const opts = {
-    taskId: null,
+    taskIds: [],    // Array für 1+ IDs
+    keys: [],       // Array für Keys (Zuordnung nach Reihenfolge)
     status: null,
     deps: null,
     beschreibung: null,
@@ -310,7 +311,6 @@ export function parseArgs(argv) {
     mvp: null,
     spec: null,
     imp: null,
-    key: null,
     dryRun: false,
     json: false,
     quiet: false,
@@ -343,7 +343,7 @@ export function parseArgs(argv) {
     } else if (arg === '--imp' || arg === '--impl') {
       opts.imp = argv[++i];
     } else if (arg === '--key' || arg === '-k') {
-      opts.key = argv[++i];
+      opts.keys.push(argv[++i]);
     } else if (arg === '--dry-run' || arg === '-n') {
       opts.dryRun = true;
     } else if (arg === '--json') {
@@ -351,12 +351,12 @@ export function parseArgs(argv) {
     } else if (arg === '--quiet' || arg === '-q') {
       opts.quiet = true;
     } else if (!arg.startsWith('-')) {
-      // ID parsen
+      // IDs sammeln (Tasks und Bugs)
       if (arg.match(/^b\d+$/)) {
-        opts.taskId = arg;
+        opts.taskIds.push(arg);
       } else {
         const parsed = parseTaskId(arg);
-        if (parsed !== null) opts.taskId = parsed;
+        if (parsed !== null) opts.taskIds.push(parsed);
       }
     }
   }
@@ -366,22 +366,25 @@ export function parseArgs(argv) {
 
 /**
  * Führt den edit command aus
+ *
+ * - 1 ID: Single-Mode (Rückgabe wie bisher)
+ * - 2+ IDs: Bulk-Mode (Rückgabe: {success, failed, propagation})
  */
 export function execute(opts, service = null) {
   const editService = service ?? createTaskService();
 
-  if (!opts.taskId) {
+  if (opts.taskIds.length === 0) {
     return err({
       code: TaskErrorCode.INVALID_FORMAT,
-      message: 'Task-ID oder Bug-ID erforderlich'
+      message: 'Mindestens eine Task-ID oder Bug-ID erforderlich'
     });
   }
 
+  // Updates-Objekt bauen
   const updates = {};
   if (opts.status) updates.status = opts.status;
   if (opts.deps !== null) updates.deps = opts.deps;
   if (opts.beschreibung) {
-    // Newlines durch Leerzeichen ersetzen (verhindert Multi-Line-Tabellenzeilen)
     updates.beschreibung = opts.beschreibung.replace(/[\r\n]+/g, ' ').trim();
   }
   if (opts.domain) updates.domain = opts.domain;
@@ -391,10 +394,49 @@ export function execute(opts, service = null) {
   if (opts.spec) updates.spec = opts.spec;
   if (opts.imp) updates.imp = opts.imp;
 
-  return editService.updateTask(opts.taskId, updates, {
-    dryRun: opts.dryRun,
-    key: opts.key
-  });
+  // Single-Mode: 1 ID → direktes Ergebnis
+  if (opts.taskIds.length === 1) {
+    const key = opts.keys[0] ?? null;
+    return editService.updateTask(opts.taskIds[0], updates, {
+      dryRun: opts.dryRun,
+      key
+    });
+  }
+
+  // Bulk-Mode: 2+ IDs → Partial Success
+  const availableKeys = [...opts.keys];
+  const results = {
+    success: [],
+    failed: [],
+    propagation: [],
+    dryRun: opts.dryRun
+  };
+
+  for (const taskId of opts.taskIds) {
+    const key = availableKeys.shift() ?? null;
+
+    const result = editService.updateTask(taskId, { ...updates }, {
+      dryRun: opts.dryRun,
+      key
+    });
+
+    if (result.ok) {
+      results.success.push({
+        taskId,
+        statusChange: result.value.roadmap?.statusChange ?? null
+      });
+      if (result.value.propagation?.length > 0) {
+        results.propagation.push(...result.value.propagation);
+      }
+    } else {
+      results.failed.push({
+        taskId,
+        error: result.error
+      });
+    }
+  }
+
+  return ok(results);
 }
 
 /**
@@ -402,13 +444,13 @@ export function execute(opts, service = null) {
  */
 export function showHelp() {
   return `
-Edit Command - Task oder Bug bearbeiten
+Edit Command - Tasks oder Bugs bearbeiten (1 oder mehrere)
 
 USAGE:
-  node scripts/task.mjs edit <ID> [OPTIONS]
+  node scripts/task.mjs edit <ID> [ID...] [OPTIONS]
 
 ARGUMENTE:
-  <ID>                   Task-ID (z.B. 428, #428, 428b) oder Bug-ID (z.B. b4)
+  <ID> [ID...]           Eine oder mehrere Task-IDs (z.B. 428, #428) oder Bug-IDs (z.B. b4)
 
 OPTIONEN:
   -s, --status <status>  Status ändern (⬜, ✅, ⚠️, 🔶, 🔒, 📋, ⛔)
@@ -421,7 +463,10 @@ OPTIONEN:
   --mvp <Ja|Nein>        MVP-Status ändern
   --spec "File.md#..."   Spec-Referenz ändern
   --imp "file:func()"    Implementierungs-Details ändern
-  -k, --key <key>        Key für geclaime Tasks (4 Zeichen)
+
+CLAIM-HANDLING:
+  -k, --key <key>        Key für geclaime Tasks (kann mehrfach angegeben werden)
+                         Keys werden in Reihenfolge den Task-IDs zugeordnet
 
 ALLGEMEIN:
   -n, --dry-run          Vorschau ohne Speichern
@@ -429,11 +474,19 @@ ALLGEMEIN:
   -q, --quiet            Kompakte Ausgabe
   -h, --help             Diese Hilfe anzeigen
 
-BEISPIELE:
+BEISPIELE (Einzeln):
   node scripts/task.mjs edit 428 --status ✅
-  node scripts/task.mjs edit 428 --status ✅ --key a4x2    # Bei geclaimter Task
+  node scripts/task.mjs edit 428 --status ✅ --key a4x2
   node scripts/task.mjs edit 428 --deps "#100, #202"
-  node scripts/task.mjs edit 428 --beschreibung "Neue Beschreibung"
   node scripts/task.mjs edit b4 --status ✅
+
+BEISPIELE (Mehrere):
+  node scripts/task.mjs edit 100 101 102 --status ✅
+  node scripts/task.mjs edit 100 101 --status 🟢 --key a4x2 --key b5y3
+  node scripts/task.mjs edit 100 101 102 --prio hoch --dry-run
+
+HINWEISE:
+  - Bei mehreren IDs: Fehlerhafte Tasks verhindern nicht die Bearbeitung der anderen
+  - Keys werden in der angegebenen Reihenfolge den Tasks zugeordnet
 `;
 }

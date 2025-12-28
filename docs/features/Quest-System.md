@@ -1,6 +1,18 @@
 # Quest-System
 
-> **Lies auch:** [Quest](../domain/Quest.md), [Encounter-System](encounter/Encounter.md), [Loot-Feature](Loot-Feature.md), [Journal.md](../domain/Journal.md), [encounter/Balance.md](encounter/Balance.md), [Combat-System.md](Combat-System.md)
+> **Verantwortlichkeit:** Objektiv-basierte Quests mit automatischer XP-Berechnung und 40/60-Split
+> **Schema:** [quest.md](../data/quest.md)
+>
+> **Referenzierte Schemas:**
+> - [journal.md](../data/journal.md) - Quest-Eintraege
+> - [npc.md](../data/npc.md) - Quest-Geber
+>
+> **Verwandte Dokumente:**
+> - [encounter/Encounter.md](../services/encounter/Encounter.md) - Quest-Encounters
+> - [encounter/Difficulty.md](../services/encounter/Difficulty.md) - XP-Berechnung
+> - [Loot.md](../services/Loot.md) - Quest-Rewards
+> - [Combat-System.md](Combat-System.md) - Combat-Objectives
+>
 > **Wird benoetigt von:** SessionRunner
 
 Objektiv-basierte Quests mit automatischer XP-Berechnung und 40/60-Split.
@@ -225,7 +237,7 @@ Quest-Abschluss:
 - Encounter-Loot entsprechend geringer (kann 0 sein)
 - Bei Quest-Abschluss: 500g Reward
 
-→ Details: [Loot-Feature.md](Loot-Feature.md#budget-verteilung)
+→ Details: [Loot.md](../services/Loot.md#budget-verteilung)
 
 ### Reward-Platzierung
 

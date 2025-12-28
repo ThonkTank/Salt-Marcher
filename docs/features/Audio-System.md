@@ -1,6 +1,14 @@
 # Audio-System
 
-> **Lies auch:** [Time-System](Time-System.md), [Weather-System](Weather-System.md), [Travel-System.md](Travel-System.md), [Events-Catalog.md](../architecture/Events-Catalog.md)
+> **Verantwortlichkeit:** Kontextbasierte Hintergrundmusik und Umgebungsgeraeusche
+> **Schema:** [track.md](../data/track.md)
+>
+> **Verwandte Dokumente:**
+> - [Time-System.md](Time-System.md) - Tageszeit-Context
+> - [Weather-System.md](Weather-System.md) - Wetter-Ambience
+> - [Travel-System.md](Travel-System.md) - Reise-Musik
+> - [Events-Catalog.md](../architecture/Events-Catalog.md) - audio:* Events
+>
 > **Wird benoetigt von:** SessionRunner
 
 Kontextbasierte Hintergrundmusik und Umgebungsgeraeusche.

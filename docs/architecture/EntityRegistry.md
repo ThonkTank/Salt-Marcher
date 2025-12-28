@@ -1,6 +1,6 @@
 # EntityRegistry
 
-> **Lies auch:** [Core](Core.md), [Features.md](Features.md), [Infrastructure.md](Infrastructure.md), [Path.md](../domain/Path.md)
+> **Lies auch:** [Data](Data.md), [Features.md](Features.md), [Infrastructure.md](Infrastructure.md), [Path.md](../data/path.md)
 > **Wird benoetigt von:** Alle Entities
 
 Zentrale Speicherung und Verwaltung aller persistenten Entities.
@@ -54,11 +54,11 @@ type EntityType =
   | 'item'         // Item-Definitionen (→ docs/domain/Item.md)
   // World Entities
   | 'map'          // Map-Definitionen
-  | 'poi'          // Points of Interest (→ docs/data/poi.md)
+  | 'poi'          // Points of Interest (→ docs/entities/poi.md)
   | 'maplink'      // Standalone Map-Links (ohne POI)
   | 'terrain'      // Custom Terrain-Definitionen mit Mechaniken
-  | 'feature'      // Environment-Features fuer Encounter-Balance (→ docs/features/encounter/Initiation.md)
-  | 'activity'     // Creature-Activities fuer Encounter-Flavour (→ docs/features/encounter/Flavour.md)
+  | 'feature'      // Environment-Features fuer Encounter-Balance (→ docs/services/encounter/Initiation.md)
+  | 'activity'     // Creature-Activities fuer Encounter-Flavour (→ docs/services/encounter/Flavour.md)
   // Session Entities
   | 'quest'        // Quest-Definitionen
   | 'encounter'    // Vordefinierte Encounter-Templates
@@ -142,7 +142,7 @@ type EntityTypeMap = {
   creature: CreatureDefinition;     // Template, NICHT Instanz
   character: Character;
   npc: NPC;                         // Benannte persistente Kreatur
-  faction: Faction;                 // Culture embedded (→ docs/data/faction.md)
+  faction: Faction;                 // Culture embedded (→ docs/entities/faction.md)
   item: Item;
   // World Entities
   map: MapDefinition;
@@ -245,7 +245,7 @@ interface CreatureRef {
 
 > **Wichtig:** Ein NPC referenziert eine CreatureDefinition fuer seine Spielwerte. Die Persoenlichkeit und Geschichte sind NPC-spezifisch. Der `type` in CreatureRef wird fuer NPC-Matching bei Encounters benoetigt.
 
-→ Detaillierte Dokumentation: [encounter/Encounter.md](../features/encounter/Encounter.md#npc-instanziierung)
+→ Detaillierte Dokumentation: [encounter/Encounter.md](../services/encounter/Encounter.md#npc-instanziierung)
 
 ---
 
@@ -363,7 +363,7 @@ interface AttackRequirement {
 }
 ```
 
-> **Feature-Quellen:** Features kommen aus Terrain (statisch), Weather/Time (dynamisch) und Indoor/Dungeon (Raum-Beleuchtung). Siehe [encounter/Initiation.md](../features/encounter/Initiation.md).
+> **Feature-Quellen:** Features kommen aus Terrain (statisch), Weather/Time (dynamisch) und Indoor/Dungeon (Raum-Beleuchtung). Siehe [encounter/Initiation.md](../services/encounter/Initiation.md).
 
 ### Activity (activity)
 
@@ -402,7 +402,7 @@ interface Activity {
 | raiding | 60 | 90 | Chaos, sehr laut |
 | war_chanting | 45 | 100 | Ritual, extrem laut |
 
-→ Detaillierte Dokumentation: [encounter/Flavour.md](../features/encounter/Flavour.md)
+→ Detaillierte Dokumentation: [encounter/Flavour.md](../services/encounter/Flavour.md)
 → Presets: [presets/activities/base-activities.json](../../presets/activities/base-activities.json)
 
 ### Shop (shop)
@@ -491,7 +491,7 @@ interface CreatureSlot {
 
 > **NPC-Instanziierung:** NPCs werden erst bei Trigger generiert, nicht bei Definition. Encounter-Templates sind wiederverwendbar.
 
-→ Detaillierte Dokumentation: [encounter/Encounter.md](../features/encounter/Encounter.md)
+→ Detaillierte Dokumentation: [encounter/Encounter.md](../services/encounter/Encounter.md)
 
 ### LootContainer (lootcontainer)
 
@@ -538,7 +538,7 @@ pristine → partially_looted → looted
     └──────────────┴─→ (Party nimmt Teile oder alles)
 ```
 
-→ Detaillierte Dokumentation: [LootContainer.md](../domain/LootContainer.md)
+→ Detaillierte Dokumentation: [LootContainer.md](../data/LootContainer.md)
 
 ---
 

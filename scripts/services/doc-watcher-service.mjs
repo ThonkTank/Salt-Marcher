@@ -4,7 +4,7 @@
  * Überwacht Änderungen in docs/ und markiert betroffene Tasks als 🔶.
  *
  * Zwei Modi:
- * 1. docs/data/*: Eine Task pro Schema-Datei, auto-create, jede Änderung → 🔶
+ * 1. docs/entities/*: Eine Task pro Schema-Datei, auto-create, jede Änderung → 🔶
  * 2. Andere docs/*: Nur Tasks deren referenzierter Abschnitt geändert wurde → 🔶
  */
 
@@ -18,7 +18,7 @@ import { createAddService } from './add-service.mjs';
 import { calculateAllPropagation } from '../core/deps/propagation.mjs';
 
 const DOCS_ROOT = 'docs';
-const DATA_DIR = 'docs/data';
+const DATA_DIR = 'docs/entities';
 
 // ============================================================================
 // SECTION DETECTION
@@ -184,7 +184,7 @@ function findTasksBySpec(filename, section, tasks) {
 }
 
 // ============================================================================
-// MODE 1: docs/data/* (Schema-Dateien)
+// MODE 1: docs/entities/* (Schema-Dateien)
 // ============================================================================
 
 /**
@@ -488,7 +488,7 @@ function checkDocChange(filePath, opts = {}) {
 }
 
 /**
- * Prüft alle Schema-Dateien in docs/data/.
+ * Prüft alle Schema-Dateien in docs/entities/.
  *
  * @param {object} opts - Optionen
  * @returns {import('../core/result.mjs').Result}
@@ -592,19 +592,19 @@ USAGE:
 
 OPTIONEN:
   -f, --file <path>     Einzelne Datei prüfen
-  -a, --all             Alle docs/data/*.md prüfen
+  -a, --all             Alle docs/entities/*.md prüfen
   -n, --dry-run         Vorschau ohne Änderungen
   --json                JSON-Ausgabe
   -q, --quiet           Keine Ausgabe bei Erfolg
   -h, --help            Diese Hilfe anzeigen
 
 MODI:
-  docs/data/*:          Jede Änderung → Task auf 🔶 (auto-create wenn nicht vorhanden)
+  docs/entities/*:          Jede Änderung → Task auf 🔶 (auto-create wenn nicht vorhanden)
   Andere docs/*:        Nur Tasks mit Spec-Referenz auf geänderten Abschnitt → 🔶
 
 BEISPIELE:
   # Schema-Datei prüfen
-  node scripts/task.mjs check-doc --file docs/data/creature.md
+  node scripts/task.mjs check-doc --file docs/entities/creature.md
 
   # Feature-Dok prüfen
   node scripts/task.mjs check-doc --file docs/features/Travel.md

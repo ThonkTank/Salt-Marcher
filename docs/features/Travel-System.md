@@ -1,6 +1,19 @@
 # Travel-System
 
-> **Lies auch:** [Map-Feature](Map-Feature.md), [Time-System](Time-System.md), [Weather-System](Weather-System.md), [Map.md](../domain/Map.md), [Path.md](../domain/Path.md), [Inventory-System.md](Inventory-System.md), [encounter/Encounter.md](encounter/Encounter.md)
+> **Verantwortlichkeit:** Hex-Overland-Reisen - Routen-Planung, Animationen, Encounter-Trigger
+> **Schema:** [path.md](../data/path.md)
+>
+> **Referenzierte Schemas:**
+> - [map.md](../data/map.md) - Overworld-Maps
+> - [terrain-definition.md](../data/terrain-definition.md) - Terrain-Kosten
+>
+> **Verwandte Dokumente:**
+> - [Map-Feature.md](Map-Feature.md) - Map-Typen
+> - [Time-System.md](Time-System.md) - Zeit-Vorrücken bei Reisen
+> - [Weather-System.md](Weather-System.md) - Wetter-Effekte auf Reise
+> - [Inventory.md](../services/Inventory.md) - Encumbrance
+> - [encounter/Encounter.md](../services/encounter/Encounter.md) - Encounter-Trigger
+>
 > **Wird benoetigt von:** SessionRunner
 
 Detaillierte Spezifikation des Reisesystems.
@@ -76,7 +89,7 @@ function getTerrainFactor(tile: OverworldTile): number {
 | `desert` | 0.7 | Hitze, Sand |
 | `water` | 1.0 | Nur mit Boot |
 
-→ Custom Terrains koennen eigene movementCost-Werte definieren. Siehe [Terrain.md](../domain/Terrain.md)
+→ Custom Terrains koennen eigene movementCost-Werte definieren. Siehe [terrain-definition.md](../data/terrain-definition.md)
 
 ### Weather-Faktoren
 
@@ -136,7 +149,7 @@ function getPathMultiplier(
 | Fluss ohne Boot | 1.0 | blocked | Fehler |
 | Klippe | - | blocked | Fehler |
 
-> Details: [Path.md](../domain/Path.md)
+> Details: [Path.md](../data/path.md)
 
 ---
 

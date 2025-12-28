@@ -1,6 +1,6 @@
 # Cartographer
 
-> **Lies auch:** [Map-Feature](../features/Map-Feature.md), [Map](../domain/Map.md), [Terrain](../domain/Terrain.md), [Path.md](../domain/Path.md), [Dungeon-System.md](../features/Dungeon-System.md)
+> **Lies auch:** [Map-Feature](../features/Map-Feature.md), [Map](../data/map.md), [Terrain](../data/terrain-definition.md), [Path.md](../data/path.md), [Dungeon-System.md](../features/Dungeon-System.md)
 > **Konsumiert:** Map
 
 Der Karten-Editor fuer Hex-Overland und Grid-Dungeon Maps.
@@ -205,7 +205,7 @@ Kontrolliert Hoehenwerte fuer Terrain.
 
 Ueberschreibt berechnete Klimawerte lokal. Erstellt `TileClimateModifiers` auf Tile-Level.
 
-→ Schema: [Terrain.md#tileclimatemodifiers](../domain/Terrain.md#tileclimatemodifiers)
+→ Schema: [terrain-definition.md#terrainweatherranges](../data/terrain-definition.md#terrainweatherranges)
 
 ```
 ┌──────────────────────────────────────┐
@@ -264,7 +264,7 @@ Ueberschreibt berechnete Klimawerte lokal. Erstellt `TileClimateModifiers` auf T
 
 Setzt die Gefahrenstufe fuer automatische Encounter-Generierung. Die Danger-Zone bestimmt das CR-Budget eines Hexes.
 
-→ Schema: [Map.md#danger-zones-und-cr-budget](../domain/Map.md#danger-zones-und-cr-budget)
+→ Schema: [Map.md#danger-zones-und-cr-budget](../data/map.md#danger-zones-und-cr-budget)
 
 ```
 ┌──────────────────────────────────────┐
@@ -330,7 +330,7 @@ Wenn "Show CR Budget" aktiviert ist, zeigt jedes Hex sein verfuegbares Budget:
 - Verbrauch durch Fraktionen (crSpent)
 - Verfuegbares Budget (Differenz)
 
-→ Details: [Map.md](../domain/Map.md#cr-budget-berechnung)
+→ Details: [Map.md](../data/map.md#cr-budget-berechnung)
 
 ### Smooth-Transitions-Tool (Overland)
 
@@ -496,7 +496,7 @@ Pfade werden als Linien zwischen Hex-Zentren gezeichnet:
 - Pfade werden ueber dem Terrain gezeichnet
 - POIs und Party-Token werden zuletzt gerendert
 
-> Schema-Details: [Path.md](../domain/Path.md)
+> Schema-Details: [Path.md](../data/path.md)
 
 ### Location-Marker (Overland)
 
@@ -623,7 +623,7 @@ Zeigt Details zum ausgewaehlten Tile/Element.
 └──────────────────────────────────────┘
 ```
 
-→ Details: [Map.md](../domain/Map.md#danger-zones-und-cr-budget)
+→ Details: [Map.md](../data/map.md#danger-zones-und-cr-budget)
 
 ---
 

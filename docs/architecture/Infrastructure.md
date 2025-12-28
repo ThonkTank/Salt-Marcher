@@ -1,6 +1,6 @@
 # Infrastructure Layer
 
-> **Lies auch:** [Core](Core.md), [Features](Features.md)
+> **Lies auch:** [Data](Data.md), [Features](Features.md)
 > **Wird benoetigt von:** Vault, Rendering
 
 Implementiert Feature-StoragePorts für konkrete externe Systeme.

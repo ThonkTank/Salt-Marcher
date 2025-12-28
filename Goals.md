@@ -52,7 +52,7 @@ Kalender-Verwaltung und Session-Historie:
 - Journal (automatische Session-Historie)
 - Timeline-Ansicht
 
-→ **Details:** [Time-System.md](docs/features/Time-System.md), [Journal.md](docs/domain/Journal.md)
+→ **Details:** [Time-System.md](docs/features/Time-System.md), [Journal.md](docs/entities/journal.md)
 
 ### Library (Entity-Verwaltung)
 
@@ -63,7 +63,7 @@ CRUD für alle Entity-Typen:
 - Terrain, Playlists, Quests
 - Shops, Encounters
 
-→ **Details:** [Library.md](docs/application/Library.md), [NPC-System.md](docs/domain/NPC-System.md), [Faction.md](docs/domain/Faction.md), [Quest.md](docs/domain/Quest.md), [Map.md](docs/domain/Map.md)
+→ **Details:** [Library.md](docs/application/Library.md), [NPC.md](docs/entities/npc.md), [Faction.md](docs/entities/faction.md), [Quest.md](docs/entities/quest.md), [Map.md](docs/entities/map.md)
 
 ### Party Manager
 
@@ -74,7 +74,7 @@ Character-Tracking und Party-Konfiguration:
 - Transport-Modi (zu Fuß, beritten, Boot)
 - Conditions und Status-Effekte
 
-→ **Details:** [Character-System.md](docs/features/Character-System.md), [Inventory-System.md](docs/features/Inventory-System.md)
+→ **Details:** [Character-System.md](docs/features/Character-System.md), [Inventory.md](docs/services/Inventory.md)
 
 ---
 
@@ -103,7 +103,7 @@ Hex-basierte Overland-Navigation mit automatischem Zeit-Tracking. Die Party bewe
 | Environmental | Naturgefahren, Terrain-Herausforderungen |
 | Location | Interessante Orte zum Erkunden |
 
-→ **Details:** [Encounter-System.md](docs/features/Encounter-System.md), [Encounter-Balancing.md](docs/features/Encounter-Balancing.md)
+→ **Details:** [encounter/Encounter.md](docs/services/encounter/Encounter.md), [encounter/Difficulty.md](docs/services/encounter/Difficulty.md)
 
 ### Weather
 
@@ -211,7 +211,7 @@ Grid-basierte Dungeon-Maps mit Simulation:
                               ↓
 ┌───────────────────────────────────────────────────────────────┐
 │                        Data Layer                             │
-│     Schemas, Types, Utilities (EncounterContext, Stats)       │
+│   Schemas, Types, Konstanten, Utilities - Single-Concern      │
 └───────────────────────────────────────────────────────────────┘
                               ↓
 ┌───────────────────────────────────────────────────────────────┐
@@ -222,7 +222,7 @@ Grid-basierte Dungeon-Maps mit Simulation:
 Quer: tools/ (Task CLI), prototypes/ (Experimente)
 ```
 
-→ **Details:** [docs/application/](docs/application/), [docs/features/](docs/features/), [docs/data/](docs/data/), [docs/infra/](docs/infra/)
+→ **Details:** [docs/application/](docs/application/), [docs/features/](docs/features/), [docs/services/](docs/services/), [docs/entities/](docs/entities/), [docs/constants/](docs/constants/), [docs/architecture/](docs/architecture/)
 
 ---
 
@@ -233,11 +233,11 @@ Quer: tools/ (Task CLI), prototypes/ (Experimente)
 │ 1. Schema   │ →  │ 2. CLI      │ →  │ 3. EventBus │ →  │ 4. Prod     │
 │    Phase    │    │    Proto    │    │    Proto    │    │    Phase    │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-   docs/data/        prototype/        prototype/          src/
+   docs/entities/    prototype/        prototype/          src/
 ```
 
 ### 1. Schema-Phase
-- Grundlegende Schemas in `docs/data/` definieren
+- Grundlegende Schemas in `docs/entities/` definieren
 - 100% saubere Definitionen: Nur Felder, Quelle, Konsumenten
 - Eine Task pro Schema-Dokument
 
@@ -330,24 +330,80 @@ Vault/
 
 ## Dokumentations-Richtlinien
 
+### Header-Standards
+
+#### Feature-Dokumente (docs/features/, docs/services/)
+
+```markdown
+# Feature-Name
+
+> **Verantwortlichkeit:** Was macht dieses Feature? (1 Satz)
+> **Input:** Datentypen und Quellen (optional)
+> **Output:** Resultat-Typ und Ziel (optional)
+> **Schema:** Link zu Haupt-Schema in data/ (falls vorhanden)
+>
+> **Referenzierte Schemas:**
+> - [schema.md](pfad) - Kurzbeschreibung
+>
+> **Verwandte Dokumente:**
+> - [feature.md](pfad) - Kurzbeschreibung
+
+Einleitender Absatz...
+```
+
+**Pflichtfelder:** `Verantwortlichkeit`
+**Optionale Felder:** `Input`, `Output`, `Schema`, `Referenzierte Schemas`, `Verwandte Dokumente`
+
+#### Schema-Dokumente (docs/entities/)
+
+```markdown
+# Schema: EntityName
+
+> **Produziert von:** [Feature](pfad) (Aktion)
+> **Konsumiert von:** [Feature1](pfad), [Feature2](pfad)
+
+Kurzbeschreibung...
+```
+
+#### Index-Dokumente
+
+Index-Dokumente (z.B. Encounter.md) haben ein spezielles Format:
+
+```markdown
+# System-Name
+
+> **Modulare Dokumentation:**
+> - [Step1.md](Step1.md) - Beschreibung
+> - [Step2.md](Step2.md) - Beschreibung
+
+Ueberblick...
+```
+
 ### Ordner-Struktur
 
 ```
 docs/
-├── infra/           # EventBus, Events-Catalog, Event-Patterns
+├── architecture/    # EventBus, Events-Catalog, Conventions, Error-Handling
 ├── application/     # ViewModels mit Sub-Ordnern
 │   ├── SessionRunner/
 │   ├── DetailView/
 │   ├── Cartographer/
 │   └── Library/
-├── data/            # Grundlegende Schemas + Utilities
-│   ├── EncounterContext.md
-│   ├── CreatureStats.md
+├── entities/        # Entity Schemas (1 Datei pro Typ)
+│   ├── creature.md
+│   ├── npc.md
 │   └── ...
-├── features/        # Feature Sub-Directories
+├── constants/       # D&D Regeln, Enums, Lookup-Tabellen
+│   ├── TimeSegments.md
+│   ├── Difficulty.md
+│   └── ...
+├── features/        # Stateful Features (Entscheider)
+│   ├── Travel-System.md
+│   ├── Combat-System.md
+│   └── ...
+├── services/        # Stateless Services (Folger/Helfer)
 │   ├── encounter/
-│   ├── travel/
-│   ├── weather/
+│   ├── NPCs/
 │   └── ...
 ├── tools/           # Task CLI, Skripte
 └── prototypes/      # Prototype-Dokumentation
@@ -355,10 +411,12 @@ docs/
 
 | Ordner | Inhalt |
 |--------|--------|
-| `docs/infra/` | EventBus, Events-Catalog, Event-Patterns, Conventions |
+| `docs/architecture/` | EventBus, Events-Catalog, Conventions, Error-Handling |
 | `docs/application/` | ViewModels: SessionRunner, DetailView, Cartographer, Library |
-| `docs/data/` | Grundlegende Schemas (EncounterContext, CreatureStats, EntityRegistry) |
-| `docs/features/` | Feature-Directories (encounter/, travel/, weather/, combat/, quest/) |
+| `docs/entities/` | Entity Schemas (1 Datei pro Typ) |
+| `docs/constants/` | D&D Regeln, Enums, Lookup-Tabellen |
+| `docs/features/` | Stateful Features (Entscheider) |
+| `docs/services/` | Stateless Services (Folger/Helfer) |
 | `docs/tools/` | Task CLI Dokumentation, Skripte |
 | `docs/prototypes/` | Prototype-Dokumentation, Experimente |
 
@@ -418,12 +476,12 @@ Goals.md enthält **nicht**:
 
 | Dokument | Inhalt |
 |----------|--------|
-| [EventBus.md](docs/infra/EventBus.md) | Event-Patterns, Naming-Konvention |
-| [Events-Catalog.md](docs/infra/Events-Catalog.md) | Single Source of Truth für alle Events |
-| [Conventions.md](docs/infra/Conventions.md) | Naming, Error Handling |
-| [Error-Handling.md](docs/infra/Error-Handling.md) | Error-Propagation, Fehlerbehandlung |
-| [Data-Flow.md](docs/infra/Data-Flow.md) | Datenfluss-Diagramme |
-| [Glossary.md](docs/infra/Glossary.md) | Begriffsdefinitionen |
+| [EventBus.md](docs/architecture/EventBus.md) | Event-Patterns, Naming-Konvention |
+| [Events-Catalog.md](docs/architecture/Events-Catalog.md) | Single Source of Truth für alle Events |
+| [Conventions.md](docs/architecture/Conventions.md) | Naming, Error Handling |
+| [Error-Handling.md](docs/architecture/Error-Handling.md) | Error-Propagation, Fehlerbehandlung |
+| [Data-Flow.md](docs/architecture/Data-Flow.md) | Datenfluss-Diagramme |
+| [Glossary.md](docs/architecture/Glossary.md) | Begriffsdefinitionen |
 
 ### application/ (ViewModels)
 
@@ -434,48 +492,62 @@ Goals.md enthält **nicht**:
 | [Cartographer/](docs/application/Cartographer/) | Map-Editor, Tools, Layer |
 | [Library/](docs/application/Library/) | Entity-CRUD, Views |
 
-### data/ (Schemas & Types)
+### entities/ (Entity Schemas)
 
 | Dokument | Inhalt |
 |----------|--------|
-| [EntityRegistry.md](docs/data/EntityRegistry.md) | Entity-Verwaltung, 17 Entity-Typen |
-| [EncounterContext.md](docs/data/EncounterContext.md) | Encounter-Kontext-Schema |
-| [CreatureStats.md](docs/data/CreatureStats.md) | Creature-Statistiken, Combat-Stats |
-| [Creature.md](docs/data/Creature.md) | Creature-Schema, Templates |
-| [NPC.md](docs/data/NPC.md) | NPC-Schema, Persistierung |
-| [Faction.md](docs/data/Faction.md) | Fraktionen, Territory, Kultur |
-| [POI.md](docs/data/POI.md) | Points of Interest, Sub-Maps |
-| [Map.md](docs/data/Map.md) | Map-Schema, Typen |
-| [Item.md](docs/data/Item.md) | Item-Schema, Kategorien |
-| [Shop.md](docs/data/Shop.md) | Händler, Inventar |
-| [Terrain.md](docs/data/Terrain.md) | Terrain-Typen, Mechaniken |
-| [Quest.md](docs/data/Quest.md) | Quest-Schema, Objectives |
-| [Journal.md](docs/data/Journal.md) | Automatische Ereignis-Historie |
+| [EntityRegistry.md](docs/architecture/EntityRegistry.md) | Entity-Verwaltung, 17 Entity-Typen |
+| [Creature.md](docs/entities/creature.md) | Creature-Schema, Templates |
+| [NPC.md](docs/entities/npc.md) | NPC-Schema, Persistierung |
+| [Faction.md](docs/entities/faction.md) | Fraktionen, Territory, Kultur |
+| [POI.md](docs/entities/poi.md) | Points of Interest, Sub-Maps |
+| [Map.md](docs/entities/map.md) | Map-Schema, Typen |
+| [Item.md](docs/entities/item.md) | Item-Schema, Kategorien |
+| [Shop.md](docs/entities/shop.md) | Händler, Inventar |
+| [Terrain.md](docs/entities/terrain-definition.md) | Terrain-Typen, Mechaniken |
+| [Quest.md](docs/entities/quest.md) | Quest-Schema, Objectives |
+| [Journal.md](docs/entities/journal.md) | Automatische Ereignis-Historie |
 
-### features/ (Feature-Directories)
+### constants/ (D&D Regeln & Enums)
 
-| Ordner | Inhalt |
-|--------|--------|
-| [encounter/](docs/features/encounter/) | Pipeline, Typen, Balancing, Algorithmus |
-| [travel/](docs/features/travel/) | Hex-Navigation, Speed-Berechnung |
-| [weather/](docs/features/weather/) | Wetter-Generierung, Events |
-| [combat/](docs/features/combat/) | Initiative, Conditions |
-| [quest/](docs/features/quest/) | Objectives, 40/60 XP-Split |
-| [time/](docs/features/time/) | Kalender, WorldEvents, JournalEntries |
-| [audio/](docs/features/audio/) | Track-Tags, Mood-Matching |
-| [dungeon/](docs/features/dungeon/) | Grid-Maps, Fog of War, Licht |
-| [map/](docs/features/map/) | Map-Typen, Multi-Map-Verhalten, Navigation |
-| [character/](docs/features/character/) | PC-Schema, Party-Management |
-| [inventory/](docs/features/inventory/) | Items, Encumbrance |
-| [loot/](docs/features/loot/) | Tag-Matching, Generierung |
+| Dokument | Inhalt |
+|----------|--------|
+| [TimeSegments.md](docs/constants/TimeSegments.md) | Tages-Segmente (night, dawn, morning, etc.) |
+| [Difficulty.md](docs/constants/Difficulty.md) | Encounter-Schwierigkeit (trivial → deadly) |
+| [CreatureSizes.md](docs/constants/CreatureSizes.md) | Kreatur-Größen (tiny → gargantuan) |
+| [CreatureTypes.md](docs/constants/CreatureTypes.md) | Kreatur-Typen (aberration, beast, etc.) |
+| [LootRarity.md](docs/constants/LootRarity.md) | Loot-Seltenheit (common → legendary) |
+
+### features/ (Stateful Systems)
+
+| Dokument | Inhalt |
+|----------|--------|
+| [Travel-System.md](docs/features/Travel-System.md) | Hex-Navigation, Speed-Berechnung |
+| [Weather-System.md](docs/features/Weather-System.md) | Wetter-Generierung, Events |
+| [Combat-System.md](docs/features/Combat-System.md) | Initiative, Conditions |
+| [Quest-System.md](docs/features/Quest-System.md) | Objectives, 40/60 XP-Split |
+| [Time-System.md](docs/features/Time-System.md) | Kalender, WorldEvents, JournalEntries |
+| [Audio-System.md](docs/features/Audio-System.md) | Track-Tags, Mood-Matching |
+| [Dungeon-System.md](docs/features/Dungeon-System.md) | Grid-Maps, Fog of War, Licht |
+| [Map-Feature.md](docs/features/Map-Feature.md) | Map-Typen, Multi-Map-Verhalten, Navigation |
+| [Character-System.md](docs/features/Character-System.md) | PC-Schema, Party-Management |
+
+### services/ (Stateless Services)
+
+| Ordner/Dokument | Inhalt |
+|-----------------|--------|
+| [encounter/](docs/services/encounter/) | Pipeline, Typen, Balancing, Algorithmus |
+| [NPCs/](docs/services/NPCs/) | NPC-Generation, Matching, Lifecycle, Culture |
+| [Inventory.md](docs/services/Inventory.md) | Items, Encumbrance |
+| [Loot.md](docs/services/Loot.md) | Tag-Matching, Generierung |
 
 ### tools/ (Entwicklung)
 
 | Dokument | Inhalt |
 |----------|--------|
-| [Development-Roadmap.md](docs/tools/Development-Roadmap.md) | Aktueller Implementierungs-Status |
-| [Project-Structure.md](docs/tools/Project-Structure.md) | Ordnerstruktur, Modul-Organisation |
-| [Testing.md](docs/tools/Testing.md) | Test-Patterns, Mock-Strategien |
+| [Development-Roadmap.md](docs/architecture/Development-Roadmap.md) | Aktueller Implementierungs-Status |
+| [Project-Structure.md](docs/architecture/Project-Structure.md) | Ordnerstruktur, Modul-Organisation |
+| [Testing.md](docs/architecture/Testing.md) | Test-Patterns, Mock-Strategien |
 | [Task-CLI.md](docs/tools/Task-CLI.md) | Task-Management-Skripte |
 
 ### prototypes/ (Experimente)

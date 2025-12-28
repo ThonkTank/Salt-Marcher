@@ -1,6 +1,6 @@
 # Conventions
 
-> **Lies auch:** [Features.md](Features.md), [Core.md](Core.md)
+> **Lies auch:** [Features.md](Features.md), [Data.md](Data.md)
 > **Wird benoetigt von:** Alle Implementierungen
 
 Allgemeine Konventionen für die SaltMarcher-Entwicklung.

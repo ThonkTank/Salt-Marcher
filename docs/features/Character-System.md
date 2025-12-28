@@ -1,6 +1,18 @@
 # Character-System
 
-> **Lies auch:** [Inventory-System](Inventory-System.md), [Item](../data/Item.md), [NPC-Resolution](encounter/NPC-Resolution.md), [Combat-System.md](Combat-System.md), [encounter/Balance.md](encounter/Balance.md)
+> **Verantwortlichkeit:** Verwaltung von Player Characters - Schema, HP-Tracking, Inventory-Integration
+> **Schema:** (inline definiert)
+>
+> **Referenzierte Schemas:**
+> - [item.md](../data/item.md) - Inventory-Items
+> - [creature.md](../data/creature.md) - Action-Schema
+>
+> **Verwandte Dokumente:**
+> - [Inventory.md](../services/Inventory.md) - Inventory-System
+> - [Combat-System.md](Combat-System.md) - HP-Tracking im Kampf
+> - [encounter/Difficulty.md](../services/encounter/Difficulty.md) - Party-Profile fuer Simulation
+> - [NPC-Generation.md](../services/NPCs/NPC-Generation.md) - NPC-Generierung
+>
 > **Wird benoetigt von:** Travel, Combat, Party
 
 Verwaltung von Player Characters (PCs): Schema, Tracking, Integration mit anderen Systemen.
@@ -32,7 +44,7 @@ Das Character-System verwaltet die Spielercharaktere:
 │  └── strength (fuer Encumbrance)                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │  Inventory                                                       │
-│  └── InventorySlot[] → Inventory-System.md                       │
+│  └── InventorySlot[] → ../services/Inventory.md                       │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -64,7 +76,7 @@ interface Character {
   strength: number;           // STR-Score, benoetigt fuer Tragkapazitaet
 
   // === Inventory ===
-  inventory: InventorySlot[]; // Siehe Inventory-System.md
+  inventory: InventorySlot[]; // Siehe ../services/Inventory.md
 
   // === Sinne (Post-MVP) ===
   senses?: CharacterSenses;
@@ -117,7 +129,7 @@ function getBalancingInput(characters: Character[]): EncounterBalancingInput {
 }
 ```
 
-→ **Details:** [encounter/Balance.md](encounter/Balance.md)
+→ **Details:** [encounter/Difficulty.md](encounter/Difficulty.md)
 
 ### Travel-System
 
@@ -143,7 +155,7 @@ function getEffectiveSpeed(character: Character): number {
 }
 ```
 
-→ **Details:** [Travel-System.md](Travel-System.md), [Inventory-System.md](Inventory-System.md)
+→ **Details:** [Travel-System.md](Travel-System.md), [Inventory.md](../services/Inventory.md)
 
 ### Combat-Tracker
 
@@ -274,7 +286,7 @@ GM oeffnet Party Manager
 
 NPCs haben andere Anforderungen (Persoenlichkeit, Kultur-Generierung, Faction-Zugehoerigkeit) waehrend PCs andere haben (Inventory, HP-Tracking, Level-Progression).
 
-→ **Details:** [NPC-Resolution.md](encounter/NPC-Resolution.md)
+→ **Details:** [NPC-Generation.md](NPCs/NPC-Generation.md)
 
 ---
 
