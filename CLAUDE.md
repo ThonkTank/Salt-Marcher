@@ -86,7 +86,23 @@ Services haben keinen eigenen State. Sie empfangen Input und liefern Output:
 - Erlaubt: Input konsumieren, Output liefern, Vault lesen/schreiben
 - Verboten: Queries an andere Services, eigene Entscheidungen, eigenen State
 
-**Weiterführend:** [Overview.md](docs/architecture/Overview.md), [SessionControl-Architecture.md](docs/architecture/SessionControl-Architecture.md), [Services.md](docs/architecture/Services.md)
+**Weiterführend:** [Overview.md](docs/architecture/Overview.md), [Orchestration.md](docs/architecture/Orchestration.md), [Services.md](docs/architecture/Services.md)
+
+### Pflicht-Leseliste nach Layer
+
+**BEVOR du mit einem Layer arbeitest, MUSST du das entsprechende Dokument lesen.**
+Das gilt für JEDE Arbeit: Code schreiben, Fragen beantworten, Planung, Dokumentation.
+
+| Layer | Code-Pfad | Pflicht-Dokument |
+|-------|-----------|------------------|
+| **Orchestration** | `src/session/` | [Orchestration.md](docs/architecture/Orchestration.md) + [docs/orchestration/](docs/orchestration/) |
+| **Services** | `src/services/` | [Services.md](docs/architecture/Services.md) |
+| **Schemas** | `src/schemas/` | [schemas.md](docs/architecture/schemas.md) |
+| **Constants** | `src/constants/` | [constants.md](docs/architecture/constants.md) |
+| **Views** | `src/views/` | [docs/views/](docs/views/) |
+| **Infrastructure** | `src/infrastructure/` | [Infrastructure.md](docs/architecture/Infrastructure.md) |
+
+**KEINE AUSNAHMEN.** Auch bei einfachen Fragen oder Planungsarbeit: Erst lesen, dann antworten.
 
 ### Projektstruktur
 
@@ -103,6 +119,7 @@ docs/                  # Authoritative documentation (German)
     constants.md
     Development-Roadmap.md
     Infrastructure.md
+    Orchestration.md
     Overview.md
     schemas.md
     Services.md
@@ -148,8 +165,12 @@ docs/                  # Authoritative documentation (German)
     Quest.md
     Time.md
     Travel.md
-  prototypes/
-    README.md
+  orchestration/
+    CombatWorkflow.md
+    EncounterWorkflow.md
+    RestWorkflow.md
+    SessionControl.md
+    TravelWorkflow.md
   services/
     encounter/
       Adjustments.md
@@ -176,14 +197,7 @@ docs/                  # Authoritative documentation (German)
   Example-Workflows.md
 presets/               # Fixture data (maps, terrains)
 Archive/               # Previous Alpha implementations - reference only
-```
-
-### Path Aliases (tsconfig.json)
-
-```typescript
-@core/*    → src/core/*
-@shared/*  → src/application/shared/*
-@/*        → src/*
+Goals.md               # Start here: high-level vision and feature overview (German)
 ```
 
 ---
@@ -245,11 +259,13 @@ Archive/               # Previous Alpha implementations - reference only
 
 ---
 
-## 4. Task-Workflow
+## 4. Task-Workflow (PFLICHT)
 
-### Projekt-Kontext (PFLICHT)
+### Projekt-Kontext
 
-**VOR jeder Aufgabe** Task-Skripte nutzen (Roadmap ist zu groß zum direkten Lesen):
+**STOPP. VOR jeder Aufgabe MUSST du:**
+
+1. Task-Skripte nutzen (Roadmap ist zu groß zum direkten Lesen):
 
 ```bash
 node scripts/task.mjs sort                # Top-Tasks anzeigen
@@ -261,9 +277,9 @@ node scripts/task.mjs show <ID>           # Task-Details + Dependencies
 - Development-Roadmap.md direkt lesen (Read-Tool) - nur über CLI!
 - Tasks manuell editieren (Edit-Tool) - nur über CLI!
 
-### Claim-Gate Prinzip
+### Claim-Gate (KEINE AUSNAHMEN)
 
-Nach Task-Auswahl SOFORT claimen:
+**Nach Task-Auswahl SOFORT claimen - KEINE Analysen vorher:**
 
 ```bash
 node scripts/task.mjs claim <ID>
@@ -271,11 +287,13 @@ node scripts/task.mjs claim <ID>
 ```
 
 - **Bei Erfolg:** Key merken, weitermachen
-- **Bei Fehler:** ABBRUCH - nächste Task suchen, keine Analysen, kein Warten
+- **Bei Fehler:** ABBRUCH. Nächste Task suchen. KEINE Analysen. KEIN Warten. KEIN Nachdenken warum.
 
-**Vor dem Claim nur erlaubt:** Task mit Skript finden (`sort`, `show`), Task-ID notieren
+**Vor dem Claim ist NUR erlaubt:**
+- Task mit Skript finden (`sort`, `show`)
+- Task-ID notieren
 
-**Nach dem Claim:** Status der Task bestimmt den Workflow (siehe unten)
+**ALLES ANDERE IST VERBOTEN** bis der Claim erfolgreich ist.
 
 ### Status-Workflow-Zuordnung
 
@@ -290,9 +308,9 @@ node scripts/task.mjs claim <ID>
 | 🔒 | Von anderem Agent geclaimed | ABBRUCH |
 | ✅ | Implementiert und reviewed | ABBRUCH |
 
-**Nach dem Claim:**
-1. Status der Task prüfen (steht in der Ausgabe von `--claim`)
-2. Entsprechende Workflow-Datei lesen
+**PFLICHT nach dem Claim:**
+1. Status der Task prüfen (steht in der Ausgabe)
+2. Entsprechende Workflow-Datei lesen - **KEINE AUSNAHMEN**
 3. Workflow Schritt für Schritt befolgen
 
 ---
