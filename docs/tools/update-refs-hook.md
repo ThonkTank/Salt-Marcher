@@ -6,10 +6,11 @@ Automatisches Update von Markdown-Links und CLAUDE.md bei Änderungen in `docs/`
 
 ## Überblick
 
-Der Hook erfüllt zwei Aufgaben:
+Der Hook erfüllt drei Aufgaben:
 
 1. **Referenz-Updates**: Bei `mv`/`git mv` in `docs/` werden alle Markdown-Links aktualisiert
-2. **Projektstruktur-Updates**: Bei Strukturänderungen in `docs/` oder `src/` wird die Projektstruktur in CLAUDE.md neu generiert (inkl. Beschreibungen aus Zeile 1 bei .ts-Dateien und Zeile 3 bei .md-Dateien)
+2. **Rename-Erkennung**: Delete+Create-Sequenzen werden als Renames erkannt und Referenzen automatisch aktualisiert
+3. **Projektstruktur-Updates**: Bei Strukturänderungen in `docs/` oder `src/` wird die Projektstruktur in CLAUDE.md neu generiert (inkl. Beschreibungen aus Zeile 1 bei .ts-Dateien und Zeile 3 bei .md-Dateien)
 
 **Beispiele:**
 ```bash
@@ -30,16 +31,16 @@ git mv docs/domain docs/entities
 
 | Tool | Hook | Aktion |
 |------|------|--------|
-| Bash | `update-refs.mjs` | Referenz-Updates (nur docs/) + Projektstruktur |
-| Write | `update-docs-tree.mjs` | Nur Projektstruktur |
+| Bash | `update-refs.mjs` | Referenz-Updates + Deletion-Tracking + Projektstruktur |
+| Write | `update-docs-tree.mjs` | Rename-Erkennung + Projektstruktur |
 
 ### Erkannte Befehle (Bash)
 
-| Befehl | Referenz-Update (docs/) | Projektstruktur-Update (docs/ + src/) |
-|--------|------------------------|--------------------------------------|
-| `mv` / `git mv` | ✅ | ✅ |
-| `rm` | – | ✅ |
-| `mkdir` | – | ✅ |
+| Befehl | Referenz-Update (docs/) | Deletion-Tracking | Projektstruktur-Update |
+|--------|------------------------|-------------------|------------------------|
+| `mv` / `git mv` | ✅ | – | ✅ |
+| `rm` | – | ✅ (für Rename-Erkennung) | ✅ |
+| `mkdir` | – | – | ✅ |
 
 ### Ablauf
 
