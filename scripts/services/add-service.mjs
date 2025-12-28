@@ -664,7 +664,7 @@ SPEICHERORT-AUFLÖSUNG:
   Der Speicherort wird automatisch aus Domain+Layer ermittelt:
   - features:     docs/features/{Domain}.md oder docs/features/{domain}/{Domain}.md
   - data:         docs/entities/{Domain}.md
-  - application:  docs/application/{Domain}.md
+  - views:        docs/views/{Domain}.md
   - infra:        docs/infra/{Domain}.md
 
   Bei Multi-Domain/Layer: Mindestens ein Match pro Layer erforderlich.

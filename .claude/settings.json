@@ -18,6 +18,15 @@
             "command": "node .claude/hooks/update-refs.mjs"
           }
         ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/update-docs-tree.mjs"
+          }
+        ]
       }
     ]
   }

@@ -1,6 +1,6 @@
 # Cartographer
 
-> **Lies auch:** [Map-Feature](../features/Map-Feature.md), [Map](../data/map.md), [Terrain](../data/terrain-definition.md), [Path.md](../data/path.md), [Dungeon-System.md](../features/Dungeon-System.md)
+> **Lies auch:** [Map-Feature](../features/Map-Feature.md), [Map](../entities/map.md), [Terrain](../entities/terrain-definition.md), [Path.md](../entities/path.md), [Dungeon-System.md](../features/Dungeon-System.md)
 > **Konsumiert:** Map
 
 Der Karten-Editor fuer Hex-Overland und Grid-Dungeon Maps.
@@ -205,7 +205,7 @@ Kontrolliert Hoehenwerte fuer Terrain.
 
 Ueberschreibt berechnete Klimawerte lokal. Erstellt `TileClimateModifiers` auf Tile-Level.
 
-→ Schema: [terrain-definition.md#terrainweatherranges](../data/terrain-definition.md#terrainweatherranges)
+→ Schema: [terrain-definition.md#terrainweatherranges](../entities/terrain-definition.md#terrainweatherranges)
 
 ```
 ┌──────────────────────────────────────┐
@@ -264,7 +264,7 @@ Ueberschreibt berechnete Klimawerte lokal. Erstellt `TileClimateModifiers` auf T
 
 Setzt die Gefahrenstufe fuer automatische Encounter-Generierung. Die Danger-Zone bestimmt das CR-Budget eines Hexes.
 
-→ Schema: [Map.md#danger-zones-und-cr-budget](../data/map.md#danger-zones-und-cr-budget)
+→ Schema: [Map.md#danger-zones-und-cr-budget](../entities/map.md#danger-zones-und-cr-budget)
 
 ```
 ┌──────────────────────────────────────┐
@@ -330,7 +330,7 @@ Wenn "Show CR Budget" aktiviert ist, zeigt jedes Hex sein verfuegbares Budget:
 - Verbrauch durch Fraktionen (crSpent)
 - Verfuegbares Budget (Differenz)
 
-→ Details: [Map.md](../data/map.md#cr-budget-berechnung)
+→ Details: [Map.md](../entities/map.md#cr-budget-berechnung)
 
 ### Smooth-Transitions-Tool (Overland)
 
@@ -389,7 +389,7 @@ function smoothAtBorder(tile: Tile, neighbors: Tile[]): number {
 
 Berechnet abgeleitete Klima-Werte aus Terrain-Einfluessen.
 
-→ Terrain-Einfluss-Werte: [Weather-System.md#terrain-einfluss](../features/Weather-System.md#terrain-einfluss-nice-to-have)
+→ Terrain-Einfluss-Werte: [Weather.md](../services/Weather.md)
 
 ```
 ┌──────────────────────────────────────┐
@@ -496,7 +496,7 @@ Pfade werden als Linien zwischen Hex-Zentren gezeichnet:
 - Pfade werden ueber dem Terrain gezeichnet
 - POIs und Party-Token werden zuletzt gerendert
 
-> Schema-Details: [Path.md](../data/path.md)
+> Schema-Details: [Path.md](../entities/path.md)
 
 ### Location-Marker (Overland)
 
@@ -623,7 +623,7 @@ Zeigt Details zum ausgewaehlten Tile/Element.
 └──────────────────────────────────────┘
 ```
 
-→ Details: [Map.md](../data/map.md#danger-zones-und-cr-budget)
+→ Details: [Map.md](../entities/map.md#danger-zones-und-cr-budget)
 
 ---
 
@@ -901,7 +901,7 @@ eventBus.on('faction:attrition-applied', (payload) => {
 });
 ```
 
-→ Schema: [faction-presence.md](../data/faction-presence.md)
+→ Schema: [faction-presence.md](../entities/faction-presence.md)
 
 ---
 

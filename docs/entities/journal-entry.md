@@ -1,7 +1,7 @@
 # Schema: JournalEntry
 
 > **Produziert von:** Quest-Feature (auto), Encounter-Feature (auto), Travel-Feature (auto), GM/Player (manuell)
-> **Konsumiert von:** [SessionRunner](../application/SessionRunner.md) (Journal-Panel, Quick-Note), [Almanac](../application/Almanac.md) (Timeline-View)
+> **Konsumiert von:** [SessionRunner](../views/SessionRunner.md) (Journal-Panel, Quick-Note), [Almanac](../views/Almanac.md) (Timeline-View)
 
 ## Felder
 

@@ -86,7 +86,7 @@ Services haben keinen eigenen State. Sie empfangen Input und liefern Output:
 - Erlaubt: Input konsumieren, Output liefern, Vault lesen/schreiben
 - Verboten: Queries an andere Services, eigene Entscheidungen, eigenen State
 
-**Weiterführend:** [Overview.md](docs/architecture/Overview.md), [Orchestration.md](docs/architecture/Orchestration.md), [Services.md](docs/architecture/Services.md)
+**Weiterführend:** [Orchestration.md](docs/architecture/Orchestration.md), [Services.md](docs/architecture/Services.md)
 
 ### Pflicht-Leseliste nach Layer
 
@@ -120,10 +120,8 @@ docs/                  # Authoritative documentation (German)
     Development-Roadmap.md
     Infrastructure.md
     Orchestration.md
-    Overview.md
     schemas.md
     Services.md
-    SessionControl-Architecture.md
     Testing.md
   constants/
     CreatureSizes.md
@@ -136,6 +134,7 @@ docs/                  # Authoritative documentation (German)
     creature.md
     culture-data.md
     currency.md
+    encounter-instance.md
     faction-encounter-template.md
     faction-presence.md
     faction.md

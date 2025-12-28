@@ -3,11 +3,11 @@
 > **Verantwortlichkeit:** Existierenden NPC finden
 > **Input:** `creatureId`, `factionId?`, `position?`
 > **Output:** `Option<NPC>`
-> **Schema:** [npc.md](../../data/npc.md)
+> **Schema:** [npc.md](../../entities/npc.md)
 >
 > **Verwandte Dokumente:**
 > - [NPC-Generation.md](NPC-Generation.md) - NPC automatisch generieren
-> - [NPC-Lifecycle.md](NPC-Lifecycle.md) - Status-Updates nach Match
+> - [NPC-Lifecycle.md](../../features/NPC-Lifecycle.md) - Status-Updates nach Match
 
 Wie werden existierende NPCs wiederverwendet?
 
@@ -157,7 +157,7 @@ function useMatchedNPC(npc: NPC, position: HexCoordinate, time: GameDateTime): v
 }
 ```
 
-> Details zur Aktualisierung: [NPC-Lifecycle.md](NPC-Lifecycle.md)
+> Details zur Aktualisierung: [NPC-Lifecycle.md](../../features/NPC-Lifecycle.md)
 
 ---
 
@@ -218,8 +218,8 @@ NPCs ohne `lastKnownPosition` haben `Infinity` als Distanz und werden bei geogra
 ## Siehe auch
 
 - [NPC-Generation.md](NPC-Generation.md) - NPC automatisch generieren
-- [NPC-Lifecycle.md](NPC-Lifecycle.md) - Status-Uebergaenge
-- [npc.md](../../data/npc.md) - NPC-Schema
+- [NPC-Lifecycle.md](../../features/NPC-Lifecycle.md) - Status-Uebergaenge
+- [npc.md](../../entities/npc.md) - NPC-Schema
 
 ---
 

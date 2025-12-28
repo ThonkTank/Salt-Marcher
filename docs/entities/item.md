@@ -1,6 +1,6 @@
 # Schema: Item
 
-> **Produziert von:** [Library](../application/Library.md)
+> **Produziert von:** [Library](../views/Library.md)
 > **Konsumiert von:**
 >   - [Inventory](../services/Inventory.md) - Gewichtsberechnung, Encumbrance, Rationen-Tracking
 >   - [Loot](../services/Loot.md) - Tag-Matching, Budget-Tracking, Generierung

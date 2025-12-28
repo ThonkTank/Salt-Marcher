@@ -1,11 +1,11 @@
 # Quest-System
 
 > **Verantwortlichkeit:** Objektiv-basierte Quests mit automatischer XP-Berechnung und 40/60-Split
-> **Schema:** [quest.md](../data/quest.md)
+> **Schema:** [quest.md](../entities/quest.md)
 >
 > **Referenzierte Schemas:**
-> - [journal.md](../data/journal.md) - Quest-Eintraege
-> - [npc.md](../data/npc.md) - Quest-Geber
+> - [journal.md](../entities/journal.md) - Quest-Eintraege
+> - [npc.md](../entities/npc.md) - Quest-Geber
 >
 > **Verwandte Dokumente:**
 > - [encounter/Encounter.md](../services/encounter/Encounter.md) - Quest-Encounters
@@ -13,7 +13,7 @@
 > - [Loot.md](../services/Loot.md) - Quest-Rewards
 > - [Combat-System.md](Combat-System.md) - Combat-Objectives
 >
-> **Wird benoetigt von:** SessionRunner
+> **Wird benoetigt von:** SessionControl
 
 Objektiv-basierte Quests mit automatischer XP-Berechnung und 40/60-Split.
 
@@ -345,7 +345,7 @@ function getQuestsWithOpenSlots(): QuestDefinition[];
 
 ### Quantum-Encounter/Rewards Platzierung
 
-**Entscheidung:** GM-gesteuert via UI im SessionRunner
+**Entscheidung:** GM-gesteuert via UI im SessionControl
 
 - GM platziert manuell wenn passend
 - "Quantum" = "GM muss noch entscheiden wo"
@@ -371,9 +371,9 @@ Quest-Feature
 
 ### UI-Integration
 
-**Entscheidung:** Dediziertes Quest-Panel im SessionRunner
+**Entscheidung:** Dediziertes Quest-Panel im SessionControl
 
-- SessionRunner ist die Haupt-Spielansicht
+- SessionControl ist die Haupt-Spielansicht
 - Quest-Panel zeigt: Aktive Quests, Objectives, offene Encounter-Slots
 - Almanac/Timeline zeigt Quest-bezogene Events (Quest gestartet, Objective erreicht)
 
@@ -402,7 +402,7 @@ interface QuestSettings {
 | Predefined Encounters | ✓ | | Feste Slots |
 | Quantum Encounters | | mittel | GM-platziert |
 | Deadline-Tracking | ✓ | | Time-Integration |
-| Quest-UI im SessionRunner | ✓ | | Status-Anzeige |
+| Quest-UI im SessionControl | ✓ | | Status-Anzeige |
 | Quest-Editor in Library | | mittel | CRUD |
 
 ---

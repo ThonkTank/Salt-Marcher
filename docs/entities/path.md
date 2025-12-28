@@ -1,6 +1,6 @@
 # Schema: PathDefinition
 
-> **Produziert von:** [Cartographer](../application/Cartographer.md) (Path-Tool)
+> **Produziert von:** [Cartographer](../views/Cartographer.md) (Path-Tool)
 > **Konsumiert von:** [Travel](../features/Travel-System.md) (Speed-Modifikation via Multiplikatoren), [Encounter](../services/encounter/Encounter.md) (Creature-Pool-Erweiterung)
 
 Lineare Kartenelemente: Strassen, Fluesse, Schluchten, Klippen. Verbinden Hex-Zentren und modifizieren Bewegung als Multiplikatoren auf Terrain-Werte.

@@ -5,11 +5,11 @@
 >
 > **Verwandte Dokumente:**
 > - [Time-System.md](Time-System.md) - Tageszeit-Context
-> - [Weather-System.md](Weather-System.md) - Wetter-Ambience
+> - [Weather.md](../services/Weather.md) - Wetter-Ambience
 > - [Travel-System.md](Travel-System.md) - Reise-Musik
 > - [Events-Catalog.md](../architecture/Events-Catalog.md) - audio:* Events
 >
-> **Wird benoetigt von:** SessionRunner
+> **Wird benoetigt von:** SessionControl
 
 Kontextbasierte Hintergrundmusik und Umgebungsgeraeusche.
 
@@ -103,7 +103,7 @@ interface Track {
 ```typescript
 interface MoodContext {
   location: LocationType;      // "tavern", "wilderness", "dungeon", "town"
-  weather: WeatherType;        // Aus Weather-System
+  weather: WeatherType;        // Aus Weather-Service
   timeOfDay: TimeSegment;      // "day", "night", "dawn", "dusk"
   combatState: 'idle' | 'active';
 }

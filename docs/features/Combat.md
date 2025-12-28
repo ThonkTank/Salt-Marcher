@@ -1,18 +1,18 @@
 # Combat-System
 
 > **Verantwortlichkeit:** Initiative-Tracker und Condition-Management fuer D&D Kaempfe
-> **Schema:** [creature.md#action-schema](../data/creature.md#action-schema)
+> **Schema:** [creature.md#action-schema](../entities/creature.md#action-schema)
 >
 > **Referenzierte Schemas:**
-> - [creature.md](../data/creature.md) - Action-Schema, Creature-Stats
-> - [npc.md](../data/npc.md) - NPC-Referenzen
+> - [creature.md](../entities/creature.md) - Action-Schema, Creature-Stats
+> - [npc.md](../entities/npc.md) - NPC-Referenzen
 >
 > **Verwandte Dokumente:**
 > - [encounter/Encounter.md](../services/encounter/Encounter.md) - Encounter-Generierung
 > - [Character-System.md](Character-System.md) - PC-Stats
 > - [encounter/Difficulty.md](../services/encounter/Difficulty.md) - Kampf-Simulation
 >
-> **Wird benoetigt von:** SessionRunner, Dungeon
+> **Wird benoetigt von:** SessionControl, Dungeon
 
 Initiative-Tracker und Condition-Management fuer D&D Kaempfe.
 
@@ -39,12 +39,12 @@ Creature- und Character-Actions werden durch ein einheitliches Schema definiert,
 - **Action Economy:** Action, Bonus, Reaction, Legendary, Lair, Mythic
 - **Resources:** Recharge, Per-Day, Spell Slots, Components, Concentration
 
-→ **Vollstaendige Schema-Definition:** [Creature.md#action-schema](../data/creature.md#action-schema)
-→ **Action-Beispiele:** [Creature.md#action-beispiele](../data/creature.md#action-beispiele)
+→ **Vollstaendige Schema-Definition:** [Creature.md#action-schema](../entities/creature.md#action-schema)
+→ **Action-Beispiele:** [Creature.md#action-beispiele](../entities/creature.md#action-beispiele)
 
 Das Action-Schema wird verwendet fuer:
-- **Encounter-Generierung:** [Flavour.md#schritt-1-action-schadenspotential-berechnen](encounter/Flavour.md#schritt-1-action-schadenspotential-berechnen) - initialDistance-Berechnung
-- **Difficulty-Balancing:** [Difficulty.md#distance-modifier-action-basiert](encounter/Difficulty.md#distance-modifier-action-basiert) - XP-Modifier
+- **Encounter-Generierung:** [Flavour.md#schritt-1-action-schadenspotential-berechnen](../services/encounter/Flavour.md#schritt-1-action-schadenspotential-berechnen) - initialDistance-Berechnung
+- **Difficulty-Balancing:** [Difficulty.md#distance-modifier-action-basiert](../constants/Difficulty.md#distance-modifier-action-basiert) - XP-Modifier
 - **Combat-Resolution:** Start/End-of-Turn Effekte, automatische Reminders
 
 ```
@@ -680,7 +680,7 @@ const questPoolXP = Math.floor(adjustedXP * 0.6);    // In Quest-Pool oder verfa
 
 **Prinzip:** GM hat volle Kontrolle. System zeigt Optionen, GM entscheidet durch Ueberspringen/Bestaetigen.
 
-→ UI-Details: [DetailView.md](../application/DetailView.md#post-combat-resolution)
+→ UI-Details: [DetailView.md](../views/DetailView.md#post-combat-resolution)
 
 ---
 

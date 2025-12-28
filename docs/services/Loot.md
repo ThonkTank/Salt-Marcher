@@ -1,6 +1,6 @@
 # Loot-Feature
 
-> **Lies auch:** [Item](../data/item.md), [Encounter-System](encounter/Encounter.md), [Quest-System](Quest-System.md), [Creature](../data/creature.md), [Character-System](Character-System.md)
+> **Lies auch:** [Item](../entities/item.md), [Encounter-System](encounter/Encounter.md), [Quest-System](../features/Quest-System.md), [Creature](../entities/creature.md), [Character-System](../features/Character-System.md)
 > **Wird benoetigt von:** Quest, Encounter, Combat
 
 Loot-Generierung mit Background-Budget-Tracking, Creature-spezifischem Loot und dynamischer Verteilung.
@@ -363,11 +363,11 @@ function triggerMarker(marker: TreasureMarker): Hoard {
 
 Creatures koennen garantiertes oder wahrscheinliches Loot haben.
 
-→ Schema-Definition: [Creature.md](../data/creature.md#defaultloot)
+→ Schema-Definition: [Creature.md](../entities/creature.md#defaultloot)
 
 ### DefaultLootEntry
 
-→ Siehe [Creature.md#defaultloot](../data/creature.md#defaultloot) für das vollständige Interface.
+→ Siehe [Creature.md#defaultloot](../entities/creature.md#defaultloot) für das vollständige Interface.
 
 DefaultLootEntry wird im CreatureDefinition-Schema definiert und von Loot-Feature verwendet.
 
@@ -555,7 +555,7 @@ const adultRedDragon: CreatureDefinition = {
 };
 ```
 
-→ Details zu `carriesLoot` und `stashLocationHint`: [Creature.md](../data/creature.md#loot-kategorien)
+→ Details zu `carriesLoot` und `stashLocationHint`: [Creature.md](../entities/creature.md#loot-kategorien)
 
 ---
 
@@ -581,7 +581,7 @@ interface Faction {
 
 Items haben Tags, die fuer Matching verwendet werden:
 
-→ **Item-Schema:** Siehe [item.md](../data/item.md)
+→ **Item-Schema:** Siehe [item.md](../entities/item.md)
 
 **Fuer Loot relevante Felder:**
 
@@ -746,7 +746,7 @@ function getItemsUpToRarity(maxRarity: Rarity): Item[] {
 }
 ```
 
-→ Schema-Details: [item.md](../data/item.md)
+→ Schema-Details: [item.md](../entities/item.md)
 
 ---
 

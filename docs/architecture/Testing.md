@@ -1,6 +1,6 @@
 # Testing
 
-> **Lies auch:** [Conventions](Conventions.md), [Features.md](Features.md), [Application.md](Application.md)
+> **Lies auch:** [Orchestration.md](Orchestration.md), [Services.md](Services.md)
 > **Wird benoetigt von:** Tests schreiben
 
 Test-Patterns pro Layer und Mock-Strategien.
@@ -21,20 +21,20 @@ npx vitest run <file> # Einzelne Datei
 
 | Layer | Test-Typ | Mocking-Aufwand |
 |-------|----------|-----------------|
-| Core (Utils) | Unit Tests | Keine Mocks |
-| Features | State-Machine Tests | MockEventBus, MockStorage |
-| Application | Integration-Light | MockFeatures, MockEventBus |
-| Infrastructure | Integration | MockVault |
+| Schemas/Utils | Unit Tests | Keine Mocks |
+| Services | Pipeline Tests | MockVault |
+| SessionControl | State-Machine Tests | MockServices, MockStorage |
+| Views | Integration-Light | MockSessionControl |
 
 ---
 
-## Core Layer Tests
+## Schemas/Utils Tests
 
 ### Pure Function Unit Tests
 
-Core Utils sind pure functions ohne Side Effects - ideal fuer Unit Tests.
+Utils sind pure functions ohne Side Effects - ideal fuer Unit Tests.
 
-**Pfad:** `src/core/` (Tests neben Source)
+**Pfad:** `src/utils/`, `src/schemas/` (Tests neben Source)
 
 ```typescript
 // @core/utils/hex-math.test.ts

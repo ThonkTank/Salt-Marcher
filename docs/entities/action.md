@@ -1,6 +1,6 @@
 # Schema: Action
 
-> **Produziert von:** [Library](../application/Library.md) (Creature-Editor), Presets (bundled)
+> **Produziert von:** [Library](../views/Library.md) (Creature-Editor), Presets (bundled)
 > **Konsumiert von:** [Combat](../features/Combat-System.md), [CreatureDefinition](creature.md)
 
 Einheitliches Schema fuer alle Kampf-Aktionen (Creature und Character). Deckt ab:

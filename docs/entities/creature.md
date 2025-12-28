@@ -1,6 +1,6 @@
 # Schema: CreatureDefinition
 
-> **Produziert von:** [Library](../application/Library.md) (CRUD), Presets (bundled)
+> **Produziert von:** [Library](../views/Library.md) (CRUD), Presets (bundled)
 > **Konsumiert von:** [Encounter](../services/encounter/Encounter.md), [Combat](../features/Combat-System.md), [Loot](../services/Loot.md)
 
 Template fuer Monster und NPCs - wiederverwendbare Spielwerte und Encounter-Praeferenzen.

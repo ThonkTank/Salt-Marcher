@@ -1,16 +1,157 @@
-# Encounter-System
+# Encounter-Service
 
-> **Modulare Dokumentation:**
-> - [Initiation](Initiation.md) - Step 1: Trigger, Context-Erstellung, Feature-Aggregation, Hazard-Schema
-> - [Population](Population.md) - Steps 2-3: Tile-Eligibility, Templates, Multi-Gruppen
-> - [Flavour](Flavour.md) - Step 4: NPCs, Activity, Goals, Loot, Perception
->   - [NPC-Generation](../NPCs/NPC-Generation.md) - Sub-Dokument: NPC-Generierung
->   - [NPC-Matching](../NPCs/NPC-Matching.md) - Sub-Dokument: Existierenden NPC finden
-> - [Difficulty](Difficulty.md) - Step 5: Kampfsimulation, Win%/TPK-Klassifizierung
-> - [Adjustments](Adjustments.md) - Step 6: Machbarkeits-Anpassung
-> - [Publishing](Publishing.md) - Step 7: Output-Events, Schemas, Konsumenten
+> **Verantwortlichkeit:** Generiert kontextabhaengige Encounters basierend auf Position, Zeit, Wetter und Party-Zusammensetzung
+> **Input:** `EncounterContext` (vom SessionControl)
+> **Output:** `Result<EncounterInstance, EncounterError>`
+> **Schema:** [encounter-instance.md](../../entities/encounter-instance.md)
 
-Unified Entry-Point fuer Encounter-Generierung und Ablauf.
+---
+
+## Uebersicht
+
+| Aspekt | Wert |
+|--------|------|
+| Input | `EncounterContext` |
+| Output | `Result<EncounterInstance, EncounterError>` |
+| Vault-Zugriff | Lesen (Creatures, Factions, Activities) |
+| Pipeline-Aufrufe | NPCService, LootService |
+
+---
+
+## Input: EncounterContext
+
+```typescript
+interface EncounterContext {
+  // === Position & Umgebung ===
+  position: HexCoordinate;
+  terrain: TerrainDefinition;
+  indoorContext?: IndoorContext;
+
+  // === Zeit ===
+  timeSegment: TimeSegment;  // 'dawn' | 'day' | 'dusk' | 'night'
+  moonPhase?: MoonPhase;
+
+  // === Wetter ===
+  weather: Weather;
+
+  // === Party ===
+  party: PartySnapshot;
+
+  // === Verfuegbare Daten ===
+  factions: FactionPresence[];
+  eligibleCreatures: CreatureDefinition[];
+  activities: Activity[];
+
+  // === Trigger-Kontext ===
+  trigger: EncounterTrigger;
+  constraints?: EncounterConstraints;
+}
+
+interface PartySnapshot {
+  level: number;
+  size: number;
+  members: {
+    id: EntityId<'character'>;
+    level: number;
+    hp: number;
+    ac: number;
+  }[];
+  position: HexCoordinate;
+  thresholds: DifficultyThresholds;
+}
+
+type EncounterTrigger =
+  | { type: 'travel' }
+  | { type: 'location'; poiId: EntityId<'poi'> }
+  | { type: 'quest'; questId: EntityId<'quest'> }
+  | { type: 'manual' }
+  | { type: 'time'; reason: 'watch' | 'rest' };
+```
+
+-> Context-Building: [EncounterWorkflow.md](../../orchestration/EncounterWorkflow.md#context-building)
+
+---
+
+## Output: EncounterInstance
+
+-> **Schema:** [encounter-instance.md](../../entities/encounter-instance.md)
+
+---
+
+## Pipeline
+
+```
+EncounterContext
+        |
+        v
++------------------+
+| SEED-AUSWAHL     |  Terrain + Zeit -> Filter
+| (Step 2)         |  Faction + Raritaet -> Gewichtung
++------------------+
+        |
+        v
++------------------+
+| POPULATION       |  Seed -> Template-Matching
+| (Step 3)         |  Multi-Group-Check (~17%)
++------------------+
+        |
+        v
++------------------+
+| FLAVOUR          |  Activity + Goal
+| (Step 4)         |  Lead-NPC (-> NPCService)
+|                  |  Loot (-> LootService)
+|                  |  Perception
++------------------+
+        |
+        v
++------------------+
+| DIFFICULTY       |  PMF-Kampfsimulation
+| (Step 5)         |  Win% + TPK-Risk
++------------------+
+        |
+        v
++------------------+
+| ADJUSTMENTS      |  Ziel-Difficulty
+| (Step 6)         |  Beste Anpassung waehlen
++------------------+
+        |
+        v
+EncounterInstance
+```
+
+---
+
+## Helpers
+
+| Helper | Step | Input | Output | Dokument |
+|--------|:----:|-------|--------|----------|
+| Seed-Auswahl | 2 | EncounterContext | Seed | [Population.md](Population.md) |
+| Population | 3 | Seed, Context | EncounterDraft | [Population.md](Population.md) |
+| Flavour | 4 | EncounterDraft, Context | FlavouredEncounter | [Flavour.md](Flavour.md) |
+| Difficulty | 5 | FlavouredEncounter, PartySnapshot | SimulationResult | [Difficulty.md](Difficulty.md) |
+| Adjustments | 6 | FlavouredEncounter, SimResult, Terrain | BalancedEncounter | [Adjustments.md](Adjustments.md) |
+
+---
+
+## Daten-Transformation
+
+Die Pipeline transformiert Daten durch mehrere Abstraktionsebenen:
+
+```
+CreatureDefinition (Template)
+        |  Population (Step 3)
+        v
+CreatureInstance (Runtime)
+        |  Difficulty (Step 5)
+        v
+CombatProfile (Simulation)
+```
+
+| Typ | Persistenz | Beschreibung | Dokumentation |
+|-----|------------|--------------|---------------|
+| `CreatureDefinition` | Vault | Template/Statblock | [creature.md](../../entities/creature.md) |
+| `CreatureInstance` | Runtime | Instanz mit aktuellen HP, Position | [encounter-instance.md](../../entities/encounter-instance.md#encountergroup) |
+| `CombatProfile` | Simulation | PMF-basierte Kampfwerte | [Difficulty.md](Difficulty.md#combat-profile) |
 
 ---
 
@@ -22,7 +163,7 @@ Die Spielwelt existiert **unabhaengig von der Party**. Kreaturen werden basieren
 
 ### Difficulty durch Kampfsimulation
 
-**Ziel-Difficulty wird gewuerfelt, dann Encounter angepasst.** Population erstellt party-unabhaengige Encounters. Flavour fuegt Activity, Loot und Perception hinzu. Difficulty simuliert den Kampf mit Probability Mass Functions (PMF) und klassifiziert basierend auf Siegwahrscheinlichkeit und TPK-Risiko. Adjustments passt das Encounter an die gewuerfelte Difficulty an.
+Population erstellt party-unabhaengige Encounters. Difficulty simuliert den Kampf mit PMF und klassifiziert basierend auf Siegwahrscheinlichkeit und TPK-Risiko. Adjustments passt das Encounter an die Ziel-Difficulty an.
 
 ### Machbarkeit durch Umstaende
 
@@ -30,189 +171,67 @@ Schwierige Encounters werden durch **Umstaende** (Environment, Distance, Activit
 
 ---
 
-## 7-Step Generation Pipeline
+## Pipeline-Aufrufe
 
+| Service | Step | Zweck |
+|---------|------|-------|
+| NPCService | 4 (Flavour) | Lead-NPC fuer jede Gruppe generieren |
+| LootService | 4 (Flavour) | Loot aus Creature.defaultLoot generieren |
+
+```typescript
+class EncounterService {
+  constructor(
+    private npcService: NPCService,
+    private lootService: LootService
+  ) {}
+
+  generate(context: EncounterContext): Result<EncounterInstance, EncounterError> {
+    // Step 2: Seed-Auswahl
+    const seed = this.selectSeed(context);
+    if (isErr(seed)) return seed;
+
+    // Step 3: Population
+    const draft = this.populate(unwrap(seed), context);
+
+    // Step 4: Flavour (ruft NPCService + LootService auf)
+    const flavoured = this.addFlavour(draft, context);
+
+    // Step 5: Difficulty
+    const simResult = this.simulateDifficulty(flavoured, context.party);
+
+    // Step 6: Adjustments
+    const balanced = this.adjustToTarget(flavoured, simResult, context.terrain);
+
+    // Step 7: Output
+    return ok(this.buildInstance(balanced));
+  }
+}
 ```
-+-----------------------------------------------------------------------------+
-|  1. TRIGGER                                                                  |
-|     Externes System loest Encounter aus (Travel, Quest, Manual)             |
-|     -> Initiation.md                                                         |
-+-----------------------------------------------------------------------------+
-|  2. SEED-KREATUR-AUSWAHL                                                     |
-|     Terrain + Tageszeit -> Filter                                           |
-|     Fraktion + Raritaet + Wetter -> Gewichtete Zufallsauswahl               |
-|     -> Population.md#tile-eligibility                                        |
-+-----------------------------------------------------------------------------+
-|  3. STANDARD-ENCOUNTER ERSTELLEN                                             |
-|     Seed-Kreatur -> Template-Matching -> Gruppengroessen bestimmen          |
-|     -> Population.md#template-system                                         |
-+-----------------------------------------------------------------------------+
-|  4. FLAVOUR HINZUFUEGEN                                                      |
-|     Activity + Goal waehlen, Lead-NPC instanziieren, Loot, Perception       |
-|     -> Flavour.md                                                            |
-+-----------------------------------------------------------------------------+
-|  5. DIFFICULTY BERECHNEN                                                     |
-|     PMF-basierte Kampfsimulation -> Win% + TPK-Risk -> Klassifizierung      |
-|     -> Difficulty.md                                                         |
-+-----------------------------------------------------------------------------+
-|  6. MACHBARKEITS-ANPASSUNG                                                   |
-|     6.0: Ziel-Difficulty wuerfeln (Terrain-Threat)                          |
-|     6.1: Beste Option waehlen bis Ziel erreicht                             |
-|     -> Adjustments.md                                                        |
-+-----------------------------------------------------------------------------+
-|  7. PUBLIZIERUNG                                                             |
-|     encounter:generated Event (sticky)                                       |
-|     -> Publishing.md                                                         |
-+-----------------------------------------------------------------------------+
-```
 
 ---
 
-## Workflow-Kurzuebersicht
+## Vault-Zugriff
 
-### Step 1: Initiation → [Initiation.md](Initiation.md)
-Externes System loest Encounter aus, Context wird aufgebaut.
+### Lesen
 
-| Sub-Step | Beschreibung | Sektion |
-|----------|--------------|---------|
-| 1.1 Trigger | Event empfangen (travel, location, quest, manual, time) | [Trigger-Typen](Initiation.md#trigger-typen) |
-| 1.2 Context | Tile, Time, Weather, Party aus State holen | [Context-Erstellung](Initiation.md#context-erstellung) |
-| 1.3 Features | Terrain + Weather + Indoor Features aggregieren | [Feature-Aggregation](Initiation.md#feature-aggregation) |
+| Entity | Wann | Zweck |
+|--------|------|-------|
+| `creature` | Step 3 | Creature-Definitionen fuer Slots |
+| `faction` | Step 3 | Faction-Templates |
+| `activity` | Step 4 | Activity-Pool |
 
-**Output:** `EncounterContext`
-
----
-
-### Step 2: Seed-Auswahl → [Population.md](Population.md)
-Eine Kreatur als "Centerpiece" des Encounters bestimmen.
-
-| Sub-Step | Beschreibung | Sektion |
-|----------|--------------|---------|
-| 2.1 Filter | Terrain + Tageszeit filtern (Hard Requirements) | [Tile-Eligibility](Population.md#step-21-tile-eligibility) |
-| 2.2 Gewichtung | Faction + Raritaet + Wetter gewichten (Soft Factors) | [Gewichtung](Population.md#gewichtung-soft-factors) |
-| 2.3 Auswahl | Gewichtete Zufallsauswahl der Seed-Kreatur | [Seed-Kreatur-Auswahl](Population.md#step-22-seed-kreatur-auswahl) |
-
-**Output:** `Creature` (Seed)
+**Hinweis:** Der SessionControl liefert bereits aufgeloeste Daten im Context (`eligibleCreatures`, `factions`, `activities`). Der Service liest nur bei Bedarf zusaetzliche Details.
 
 ---
 
-### Step 3: Population → [Population.md](Population.md)
-Encounter mit Kreaturen befuellen.
+## Error-Codes
 
-| Sub-Step | Beschreibung | Sektion |
-|----------|--------------|---------|
-| 3.1 Multi-Group | Zufallsentscheidung ob 2 Gruppen (~17%) | [Multi-Group-Encounters](Population.md#multi-group-encounters) |
-| 3.2 Template | Faction- oder generisches Template waehlen | [Template-Matching](Population.md#step-32a-single-group-template-matching) |
-| 3.3 Slots | Template-Rollen mit Kreaturen befuellen | [Slot-Befuellung](Population.md#step-33-slot-befuellung) |
-| 3.4 Finalisierung | Gruppen mit NarrativeRole zusammenfuehren | [Gruppen-Finalisierung](Population.md#step-34-gruppen-finalisierung) |
-
-**Output:** `EncounterDraft`
+| Code | Bedeutung |
+|------|-----------|
+| `NO_ELIGIBLE_CREATURES` | Keine Kreaturen fuer Terrain/Zeit verfuegbar |
+| `NO_MATCHING_TEMPLATE` | Kein Template fuer Seed-Kreatur gefunden |
+| `SIMULATION_FAILED` | Kampfsimulation fehlgeschlagen |
 
 ---
 
-### Step 4: Flavour → [Flavour.md](Flavour.md)
-RP-Details pro Gruppe hinzufuegen.
-
-| Sub-Step | Beschreibung | Sektion |
-|----------|--------------|---------|
-| 4.1 Activity | Was macht die Gruppe gerade? (Pool → Filter → Auswahl) | [Activity-Generierung](Flavour.md#step-41-activity-generierung) |
-| 4.2 Goal | Ziel aus Activity + NarrativeRole ableiten | [Goal-Ableitung](Flavour.md#step-42-goal-ableitung) |
-| 4.3 NPCs | Lead-NPC (1/Gruppe, persistiert) + Highlight-NPCs (max 3 global) | [NPC-Instanziierung](Flavour.md#step-43-npc-instanziierung) |
-| 4.4 Loot | Aus Creature.defaultLoot wuerfeln, Kreaturen zuweisen | [Loot-Generierung](Flavour.md#step-44-loot-generierung) |
-| 4.5 Perception | initialDistance aus Activity + Terrain + Weather berechnen | [Perception-Berechnung](Flavour.md#step-45-perception-berechnung) |
-
-**Output:** `FlavouredEncounter`
-
----
-
-### Step 5: Difficulty → [Difficulty.md](Difficulty.md)
-Kampfsimulation und Difficulty-Klassifizierung.
-
-| Sub-Step | Beschreibung | Sektion |
-|----------|--------------|---------|
-| 5.0 Setup | Grid, Positionen, Resource Budget | [Setup](Difficulty.md#setup) |
-| 5.1 Simulation | Runden-weise PMF-Berechnung | [Simulation](Difficulty.md#simulation) |
-| 5.2 Outcome | Siegwahrscheinlichkeit, TPK-Risk | [Outcome](Difficulty.md#outcome) |
-| 5.3 Klassifizierung | Win% + TPK → Difficulty | [Klassifizierung](Difficulty.md#klassifizierung) |
-
-**Output:** `SimulationResult`
-
----
-
-### Step 6: Adjustments → [Adjustments.md](Adjustments.md)
-Ziel-Difficulty wuerfeln und Encounter anpassen.
-
-| Sub-Step | Beschreibung | Sektion |
-|----------|--------------|---------|
-| 6.0 Ziel | Ziel-Difficulty wuerfeln (Terrain-Threat) | [Ziel-Difficulty](Adjustments.md#step-60-ziel-difficulty-wuerfeln) |
-| 6.1 Optionen | Verfuegbare Anpassungen sammeln (Distance, Disposition, Environment, Activity) | [Optionen sammeln](Adjustments.md#optionen-sammeln) |
-| 6.2 Algorithmus | Beste Option waehlen, die Win% am naechsten zum Ziel bringt | [Anpassungs-Algorithmus](Adjustments.md#anpassungs-algorithmus) |
-| 6.3 Multi-Group | Bei Multi-Group: Save-Logik fuer Ally-Staerke | [Save-Logik](Adjustments.md#save-logik) |
-
-**Output:** `BalancedEncounter`
-
----
-
-### Step 7: Publishing → [Publishing.md](Publishing.md)
-Encounter publizieren und GM-Entscheidung ermoeglichen.
-
-| Sub-Step | Beschreibung | Sektion |
-|----------|--------------|---------|
-| 7.1 Instance | EncounterInstance mit ID, State, Timestamps erstellen | [EncounterInstance](Publishing.md#encounterinstance) |
-| 7.2 Event | `encounter:generated` (sticky) publizieren | [Lifecycle-Events](Publishing.md#lifecycle-events) |
-| 7.3 Preview | GM sieht Preview → Start / Dismiss / Regenerate | [Konsumenten](Publishing.md#konsumenten) |
-
-**Output:** `EncounterInstance` + Event
-
----
-
-## Detail-Dokumentation
-
-Die vollstaendige Dokumentation jedes Steps findet sich in den verlinkten Subdokumenten:
-
-| Step | Dokument | Kerninhalt |
-|:----:|----------|------------|
-| 2-3 | [Population.md](Population.md) | Tile-Eligibility, Seed-Auswahl, Templates, Multi-Group, Slot-Befuellung |
-| 4 | [Flavour.md](Flavour.md) | Activity, Goal, NPCs, Loot, Perception (Sweet-Spot/Pain-Point) |
-| 5 | [Difficulty.md](Difficulty.md) | PMF-Simulation, Disposition, Gruppen-Relationen, Klassifizierung |
-| 6 | [Adjustments.md](Adjustments.md) | Anpassungs-Algorithmus, Save-Logik, Multi-Group als Anpassung |
-| 7 | [Publishing.md](Publishing.md) | EncounterInstance, Lifecycle-Events, Konsumenten, Attrition |
-
----
-
-## Prioritaet
-
-| Komponente | MVP | Post-MVP |
-|------------|:---:|:--------:|
-| 7-Step Pipeline | X | |
-| XP-Modifikatoren (Environment, Distance, Disposition, Activity) | X | |
-| XP-Modifier: GroupRelations (Multi-Group) | X | |
-| XP-Modifier: Loot (magische Items) | X | |
-| Ziel-Difficulty wuerfeln (Terrain-Threat) | X | |
-| Machbarkeits-Anpassung | X | |
-| Tile-Eligibility (Filter + Gewichtung) | X | |
-| Faction-Encounter-Templates | X | |
-| NPC-Instanziierung + Persistierung | X | |
-| NPC-Position-Tracking (lastKnownPosition) | X | |
-| Activity-Entity-Typ (in Library) | X | |
-| Feature-Entity-Typ (in Library) | X | |
-| Combat-Role Distance Sweet-Spots | X | |
-| Terrain-Features mit Role-Modifiers | X | |
-| Hazard-Definitionen | | X |
-| Pfad-basierte Creature-Pools | | X |
-
-**Neue Entity-Typen:**
-- `activity` (#18) - Kreatur-Activities mit Properties (awareness, mobility, focus)
-- `feature` (#19) - Terrain/Environment-Features mit Modifiern
-
-→ Entity-Registry: [EntityRegistry.md](../../architecture/EntityRegistry.md)
-
----
-
-*Siehe auch: [NPC-Generation](../NPCs/NPC-Generation.md) | [Creature](../../data/creature.md) | [Combat-System](../Combat-System.md) | [Travel-System](../Travel-System.md)*
-
-
-## Tasks
-
-| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+*Siehe auch: [Services.md](../../architecture/Services.md) | [EncounterWorkflow.md](../../orchestration/EncounterWorkflow.md)*

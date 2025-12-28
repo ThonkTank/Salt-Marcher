@@ -1,19 +1,19 @@
 # Dungeon-System
 
 > **Verantwortlichkeit:** Grid-basierte Dungeon Maps mit Fog of War, Lichtquellen und Triggern
-> **Schema:** [map.md#dungeon](../data/map.md#dungeon)
+> **Schema:** [map.md#dungeon](../entities/map.md#dungeon)
 >
 > **Referenzierte Schemas:**
-> - [creature.md](../data/creature.md) - Creature-Tokens
-> - [poi.md](../data/poi.md) - Dungeon-POIs
+> - [creature.md](../entities/creature.md) - Creature-Tokens
+> - [poi.md](../entities/poi.md) - Dungeon-POIs
 >
 > **Verwandte Dokumente:**
 > - [Map-Feature.md](Map-Feature.md) - Map-Typen-Uebersicht
 > - [Combat-System.md](Combat-System.md) - Grid-Combat
-> - [Cartographer.md](../application/Cartographer.md) - Dungeon-Editor
+> - [Cartographer.md](../views/Cartographer.md) - Dungeon-Editor
 > - [encounter/Encounter.md](../services/encounter/Encounter.md) - Dungeon-Encounters
 >
-> **Wird benoetigt von:** SessionRunner
+> **Wird benoetigt von:** SessionControl
 
 Grid-basierte Dungeon Maps mit Fog of War, Lichtquellen und automatischen Triggern.
 
@@ -253,7 +253,7 @@ Dungeon-Maps werden im Cartographer erstellt (kein separates Tool):
 - Spezielle Tool-Palette: Wall-Tool, Door-Tool, Trap-Tool, Token-Placer
 - Vorhandene Infrastruktur wird wiederverwendet (Tile-Repository, Undo, Rendering)
 
-→ Tool-Wireframes: [Cartographer.md](../application/Cartographer.md#dungeon-tools)
+→ Tool-Wireframes: [Cartographer.md](../views/Cartographer.md#dungeon-tools)
 
 ### Raum-Definition
 

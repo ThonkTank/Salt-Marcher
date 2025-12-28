@@ -1,16 +1,17 @@
 # Encounter-Difficulty
 
-> **Verantwortlichkeit:** Step 5 der 7-Step-Pipeline - PMF-Simulation und Klassifizierung
-> **Input:** `FlavouredEncounter` aus [Flavour](Flavour.md)
-> **Output:** `SimulationResult` an [Adjustments](Adjustments.md)
+> **Helper fuer:** Encounter-Service (Step 5)
+> **Input:** `FlavouredEncounter`, `PartySnapshot`
+> **Output:** `SimulationResult`
+> **Aufgerufen von:** [Encounter.md#helpers](Encounter.md#helpers)
 >
 > **Referenzierte Schemas:**
-> - [creature.md](../../data/creature.md) - Action-Schema fuer Simulation
-> - [faction.md](../../data/faction.md) - Disposition-Werte
+> - [creature.md](../../entities/creature.md) - Action-Schema fuer Simulation
+> - [faction.md](../../entities/faction.md) - Disposition-Werte
 >
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
-> - [Initiation.md](Initiation.md) - Feature-Schema
+> - [EncounterWorkflow.md](../../orchestration/EncounterWorkflow.md#feature-schema) - Feature-Schema
 > - [Adjustments.md](Adjustments.md) - Downstream-Step
 
 Kampfsimulation mit Probability Mass Functions (PMF) zur Difficulty-Klassifizierung.
@@ -147,7 +148,7 @@ interface ParticipantState {
 
 ### 5.0.1: Party Combat Profile
 
-Erstellt Combat-Profile fuer alle Party-Mitglieder basierend auf dem Action-Schema aus [Creature.md](../../data/creature.md#action-schema).
+Erstellt Combat-Profile fuer alle Party-Mitglieder basierend auf dem Action-Schema aus [Creature.md](../../entities/creature.md#action-schema).
 
 ```typescript
 interface CombatProfile {
@@ -1440,8 +1441,8 @@ function calculateAdjustedXP(encounter: FlavouredEncounter): number {
 
 ## Referenzen
 
-- **Action-Schema:** [Creature.md#action-schema](../../data/creature.md#action-schema)
-- **Feature-Schema:** [Initiation.md#feature-schema](Initiation.md#feature-schema)
+- **Action-Schema:** [Creature.md#action-schema](../../entities/creature.md#action-schema)
+- **Feature-Schema:** [EncounterWorkflow.md#feature-schema](../../orchestration/EncounterWorkflow.md#feature-schema)
 - **Activity-Definitionen:** [Flavour.md#activity-beispiele](Flavour.md#activity-beispiele)
 - **Sweet-Spot/Pain-Point:** [#sweet-spot-pain-point](#sweet-spot-pain-point)
 

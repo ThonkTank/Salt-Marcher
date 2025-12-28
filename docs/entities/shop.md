@@ -1,7 +1,7 @@
 # Schema: Shop
 
-> **Produziert von:** [Library](../application/Library.md) (CRUD)
-> **Konsumiert von:** [SessionRunner](../application/SessionRunner.md#shop-panel) (Kauf/Verkauf-Interaktion), [Encounter](../services/encounter/Encounter.md#shop-integration) (NPC-verknuepfte Haendler)
+> **Produziert von:** [Library](../views/Library.md) (CRUD)
+> **Konsumiert von:** [SessionRunner](../views/SessionRunner.md#shop-panel) (Kauf/Verkauf-Interaktion), [Encounter](../services/encounter/Encounter.md#shop-integration) (NPC-verknuepfte Haendler)
 
 Shops sind Haendler mit einem Inventar. Die Definition erfolgt in der Library, die Interaktion (Kaufen/Verkaufen) im SessionRunner.
 

@@ -106,23 +106,23 @@
     },
     "SessionRunner": {
       "docs": ["SessionRunner.md", "../architecture/Application.md", "../architecture/Data-Flow.md"],
-      "path": "docs/application"
+      "path": "docs/views"
     },
     "DetailView": {
       "docs": ["DetailView.md", "../architecture/Application.md", "../features/Combat-System.md", "../features/encounter/Encounter.md"],
-      "path": "docs/application"
+      "path": "docs/views"
     },
     "Cartographer": {
       "docs": ["Cartographer.md", "../features/Map-Feature.md", "../domain/Map.md", "../domain/Terrain.md"],
-      "path": "docs/application"
+      "path": "docs/views"
     },
     "Library": {
       "docs": ["Library.md", "../architecture/EntityRegistry.md", "../architecture/Application.md"],
-      "path": "docs/application"
+      "path": "docs/views"
     },
     "Almanac": {
       "docs": ["../features/Time-System.md", "../domain/Journal.md", "SessionRunner.md"],
-      "path": "docs/application"
+      "path": "docs/views"
     },
     "Application": {
       "docs": ["Application.md", "Data-Flow.md", "Features.md"],

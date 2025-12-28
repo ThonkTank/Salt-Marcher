@@ -1,10 +1,20 @@
 #!/usr/bin/env node
 /**
- * PostToolUse Hook: Update References on File Move
+ * PostToolUse Hook: Update References and Docs Tree
  *
  * This hook is triggered after Bash tool calls.
- * It detects mv/git mv commands that move files in docs/ and
- * automatically updates all markdown references to those files.
+ * It handles two tasks:
+ *
+ * 1. Reference Updates: When files are moved in docs/, updates all markdown
+ *    links that reference those files.
+ *
+ * 2. Docs Tree Updates: When docs/ structure changes (mv, rm, mkdir),
+ *    regenerates the Projektstruktur section in CLAUDE.md.
+ *
+ * Supported commands:
+ * - mv/git mv: Move files or folders
+ * - rm: Delete files or folders
+ * - mkdir: Create folders
  *
  * Stdin format (from Claude Code):
  * {
@@ -13,7 +23,71 @@
  * }
  */
 
+import { existsSync, readdirSync, statSync } from 'fs';
+import { join, relative } from 'path';
 import { createRefUpdaterService } from '../../scripts/services/ref-updater-service.mjs';
+import { updateClaudemdDocsTree } from './docs-tree.mjs';
+
+// ============================================================================
+// FILE DISCOVERY
+// ============================================================================
+
+/**
+ * Recursively finds all markdown files in a directory.
+ *
+ * @param {string} dir - Directory to search
+ * @param {string[]} files - Accumulator array
+ * @returns {string[]} - Array of file paths
+ */
+function findAllMarkdownFiles(dir, files = []) {
+  if (!existsSync(dir)) return files;
+
+  const entries = readdirSync(dir);
+  for (const entry of entries) {
+    const fullPath = join(dir, entry);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      findAllMarkdownFiles(fullPath, files);
+    } else if (entry.endsWith('.md')) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
+// ============================================================================
+// COMMAND DETECTION
+// ============================================================================
+
+/**
+ * Checks if a command affects the docs/ directory structure.
+ * Returns the type of command if it does, null otherwise.
+ *
+ * @param {string} command - The bash command
+ * @returns {'mv' | 'rm' | 'mkdir' | null}
+ */
+function getDocsAffectingCommand(command) {
+  if (!command) return null;
+
+  // Check for mv/git mv affecting docs/
+  if (/\b(git\s+)?mv\b/.test(command) && command.includes('docs/')) {
+    return 'mv';
+  }
+
+  // Check for rm affecting docs/
+  if (/\brm\b/.test(command) && command.includes('docs/')) {
+    return 'rm';
+  }
+
+  // Check for mkdir affecting docs/
+  if (/\bmkdir\b/.test(command) && command.includes('docs/')) {
+    return 'mkdir';
+  }
+
+  return null;
+}
 
 // ============================================================================
 // MOVE COMMAND PARSING
@@ -99,43 +173,80 @@ async function main() {
   // Check if command succeeded (exitCode 0)
   const exitCode = input?.tool_result?.exitCode;
   if (exitCode !== 0) {
-    // Command failed, don't update references
+    // Command failed, don't process
     process.exit(0);
   }
 
-  // Parse move command
-  const moveInfo = parseMoveCommand(command);
-  if (!moveInfo) {
-    // Not a move command
+  // Check if command affects docs/
+  const commandType = getDocsAffectingCommand(command);
+  if (!commandType) {
     process.exit(0);
   }
 
-  // Normalize paths
-  const source = normalizePath(moveInfo.source);
-  const destination = normalizePath(moveInfo.destination);
+  // Handle move commands (update references)
+  if (commandType === 'mv') {
+    const moveInfo = parseMoveCommand(command);
+    if (moveInfo) {
+      const source = normalizePath(moveInfo.source);
+      const destination = normalizePath(moveInfo.destination);
 
-  // Only process moves from docs/
-  if (!source.startsWith('docs/')) {
-    process.exit(0);
-  }
+      if (source.startsWith('docs/')) {
+        try {
+          const service = createRefUpdaterService();
 
-  // Update references
-  try {
-    const service = createRefUpdaterService();
-    const result = service.updateReferences(source, destination);
+          // Check if destination is a folder (folder rename)
+          if (existsSync(destination) && statSync(destination).isDirectory()) {
+            // Folder rename: update references for all .md files in the folder
+            const files = findAllMarkdownFiles(destination);
+            let totalUpdatedFiles = 0;
+            let totalUpdates = 0;
 
-    if (result.ok && result.value.updatedFiles > 0) {
-      const { updatedFiles, totalUpdates } = result.value;
-      console.log(`[update-refs] Updated ${totalUpdates} reference(s) in ${updatedFiles} file(s)`);
+            for (const newPath of files) {
+              const relativePath = relative(destination, newPath);
+              const oldPath = join(source, relativePath);
 
-      // Show which files were updated
-      for (const change of result.value.changes) {
-        console.log(`  - ${change.file} (${change.count} link(s))`);
+              const result = service.updateReferences(oldPath, newPath);
+              if (result.ok && result.value.updatedFiles > 0) {
+                totalUpdatedFiles += result.value.updatedFiles;
+                totalUpdates += result.value.totalUpdates;
+
+                for (const change of result.value.changes) {
+                  console.log(`  - ${change.file} (${change.count} link(s))`);
+                }
+              }
+            }
+
+            if (totalUpdates > 0) {
+              console.log(`[update-refs] Folder rename: Updated ${totalUpdates} reference(s) in ${totalUpdatedFiles} file(s)`);
+            }
+          } else {
+            // Single file move
+            const result = service.updateReferences(source, destination);
+
+            if (result.ok && result.value.updatedFiles > 0) {
+              const { updatedFiles, totalUpdates } = result.value;
+              console.log(`[update-refs] Updated ${totalUpdates} reference(s) in ${updatedFiles} file(s)`);
+
+              for (const change of result.value.changes) {
+                console.log(`  - ${change.file} (${change.count} link(s))`);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`[update-refs] Error: ${error.message}`);
+        }
       }
     }
+  }
+
+  // Update CLAUDE.md docs tree for any docs-affecting command
+  try {
+    const result = updateClaudemdDocsTree();
+    if (result.success && result.message !== 'No changes needed') {
+      console.log(`[docs-tree] ${result.message}`);
+    }
   } catch (error) {
-    // Log error but don't fail the hook
-    console.error(`[update-refs] Error: ${error.message}`);
+    console.error(`[docs-tree] Error: ${error.message}`);
   }
 
   process.exit(0);

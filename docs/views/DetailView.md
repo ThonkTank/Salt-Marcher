@@ -1,11 +1,11 @@
 # DetailView
 
-> **Lies auch:** [Application](../architecture/Application.md), [SessionRunner](SessionRunner.md), [Combat-System.md](../features/Combat-System.md), [encounter/Encounter.md](../services/encounter/Encounter.md), [Shop.md](../data/shop.md)
+> **Lies auch:** [Application](../architecture/Application.md), [SessionRunner](SessionRunner.md), [Combat-System.md](../features/Combat-System.md), [encounter/Encounter.md](../services/encounter/Encounter.md), [Shop.md](../entities/shop.md)
 > **Konsumiert:** Encounter, Combat, Shop, Quest, Journal
 
 Kontextbezogene Detail-Ansichten fuer Session-relevante Informationen.
 
-**Pfad:** `src/application/detail-view/`
+**Pfad:** `src/views/detail-view/`
 
 **Companion View:** [SessionRunner](SessionRunner.md) (Center Leaf) fuer Map und Quick-Controls.
 
@@ -392,7 +392,7 @@ Nach Combat-Aufloesung werden getoetete Kreaturen von ihrer Fraktion abgezogen:
 
 **Automatisch:** Diese Phase erscheint nur wenn Kreaturen einer Fraktion getoetet wurden. Nicht-Fraktions-Kreaturen triggern keine Attrition.
 
-→ Details: [Publishing.md](../services/encounter/Publishing.md#attrition-integration)
+→ Details: [EncounterWorkflow.md#attrition](../orchestration/EncounterWorkflow.md#attrition)
 
 **Phase 5: Entity Promotion (optional, nur bei nicht-zugeordneten Kreaturen)**
 
@@ -455,7 +455,7 @@ Kreatur 1 von 3: "Junger Roter Drache"
 3. Optional: LootContainer wird aus LootTable generiert
 4. Optional: Ein-Kreatur-Fraktion wird erstellt
 
-→ Details: [Publishing.md](../services/encounter/Publishing.md#entity-promotion)
+→ Details: [EncounterWorkflow.md](../orchestration/EncounterWorkflow.md)
 → Encounter-Integration: [encounter/Encounter.md](../services/encounter/Encounter.md#entity-promotion)
 
 **Events nach Resolution:**
@@ -519,7 +519,7 @@ Interaktion mit Haendlern.
 └────────────────────────────────────┘
 ```
 
-→ Entity-Schema: [Shop.md](../data/shop.md)
+→ Entity-Schema: [Shop.md](../entities/shop.md)
 
 ### Location-Tab
 
@@ -574,7 +574,7 @@ Details zum aktuell ausgewaehlten Tile oder POI.
 | `treasure` | Container + [Oeffnen]-Button |
 | `object` | Name + [Interagieren]-Button |
 
-→ POI-Schema: [poi.md](../data/poi.md)
+→ POI-Schema: [poi.md](../entities/poi.md)
 
 ### Quest-Tab
 
@@ -658,7 +658,7 @@ Vollstaendige Ereignis-Historie.
 └────────────────────────────────────┘
 ```
 
-→ Details: [Journal.md](../data/journal.md)
+→ Details: [Journal.md](../entities/journal.md)
 
 ---
 

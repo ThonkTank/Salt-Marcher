@@ -4,8 +4,8 @@
 > **Schema:** (inline definiert)
 >
 > **Referenzierte Schemas:**
-> - [item.md](../data/item.md) - Inventory-Items
-> - [creature.md](../data/creature.md) - Action-Schema
+> - [item.md](../entities/item.md) - Inventory-Items
+> - [creature.md](../entities/creature.md) - Action-Schema
 >
 > **Verwandte Dokumente:**
 > - [Inventory.md](../services/Inventory.md) - Inventory-System
@@ -129,7 +129,7 @@ function getBalancingInput(characters: Character[]): EncounterBalancingInput {
 }
 ```
 
-→ **Details:** [encounter/Difficulty.md](encounter/Difficulty.md)
+→ **Details:** [encounter/Difficulty.md](../constants/Difficulty.md)
 
 ### Travel-System
 
@@ -223,7 +223,7 @@ Level-Ups werden manuell im Party Manager durchgefuehrt:
 
 ## Session State Synchronization
 
-Waehrend einer laufenden Session (SessionRunner) werden Character/Party-Aenderungen **sofort** zu allen aktiven Features propagiert.
+Waehrend einer laufenden Session (SessionControl) werden Character/Party-Aenderungen **sofort** zu allen aktiven Features propagiert.
 
 ### Sync-Garantie
 
@@ -286,7 +286,7 @@ GM oeffnet Party Manager
 
 NPCs haben andere Anforderungen (Persoenlichkeit, Kultur-Generierung, Faction-Zugehoerigkeit) waehrend PCs andere haben (Inventory, HP-Tracking, Level-Progression).
 
-→ **Details:** [NPC-Generation.md](NPCs/NPC-Generation.md)
+→ **Details:** [NPC-Generation.md](../services/NPCs/NPC-Generation.md)
 
 ---
 
@@ -300,9 +300,9 @@ Der Party Manager ist als Tab im DetailView implementiert und zeigt die aktiven 
 - Inventory-Zugriff via `[Inventory]` Button
 - Characters hinzufuegen/entfernen via `[+ Add]` / `[Remove]`
 
-**Wichtig:** Characters werden in der [Library](../application/Library.md) erstellt und bearbeitet. Der Party-Tab ist nur fuer Session-relevante Aktionen.
+**Wichtig:** Characters werden in der [Library](../views/Library.md) erstellt und bearbeitet. Der Party-Tab ist nur fuer Session-relevante Aktionen.
 
-→ **Wireframe + Details:** [DetailView.md#party-tab](../application/DetailView.md#party-tab)
+→ **Wireframe + Details:** [DetailView.md#party-tab](../views/DetailView.md#party-tab)
 
 ### Character-Bearbeitung (Library)
 

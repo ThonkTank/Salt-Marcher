@@ -1,17 +1,17 @@
 # Encounter-Population
 
-> **Verantwortlichkeit:** Steps 2-3 der 7-Step-Pipeline - Seed-Auswahl und Slot-Befuellung
-> **Input:** `EncounterContext` aus [Initiation](Initiation.md)
-> **Output:** `EncounterDraft` an [Flavour](Flavour.md)
+> **Helper fuer:** Encounter-Service (Steps 2-3)
+> **Input:** `EncounterContext`
+> **Output:** `EncounterDraft`
+> **Aufgerufen von:** [Encounter.md#helpers](Encounter.md#helpers)
 >
 > **Referenzierte Schemas:**
-> - [creature.md](../../data/creature.md) - Kreatur-Definitionen mit Design-Rollen
-> - [faction-encounter-template.md](../../data/faction-encounter-template.md) - Template-Schema
-> - [faction.md](../../data/faction.md) - Fraktions-Kreaturen-Pools
+> - [creature.md](../../entities/creature.md) - Kreatur-Definitionen mit Design-Rollen
+> - [faction-encounter-template.md](../../entities/faction-encounter-template.md) - Template-Schema
+> - [faction.md](../../entities/faction.md) - Fraktions-Kreaturen-Pools
 >
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
-> - [Initiation.md](Initiation.md) - Upstream-Step
 > - [Flavour.md](Flavour.md) - Downstream-Step
 
 Wie werden Kreaturen fuer ein Encounter ausgewaehlt und zusammengestellt?
@@ -82,9 +82,9 @@ Population beschreibt die Welt, nicht das Encounter fuer die Party. Gruppengroes
 ## Population-Flow
 
 > **Voraussetzungen:**
-> - [Creature.md#design-rollen](../../data/creature.md#design-rollen-mcdm-basiert) - DesignRole Definition
-> - [faction-encounter-template.md](../../data/faction-encounter-template.md) - Template-Schema
-> - [faction-encounter-template.md#countrange](../../data/faction-encounter-template.md#countrange) - CountRange Typ
+> - [Creature.md#design-rollen](../../entities/creature.md#design-rollen-mcdm-basiert) - DesignRole Definition
+> - [faction-encounter-template.md](../../entities/faction-encounter-template.md) - Template-Schema
+> - [faction-encounter-template.md#countrange](../../entities/faction-encounter-template.md#countrange) - CountRange Typ
 
 **Kompletter Ablauf von Tile zu Encounter:**
 
@@ -199,7 +199,7 @@ Summe = 12 → Roll 1-3 = A (25%), 4-7 = B (33%), 8-12 = C (42%)
 ```
 
 `strength` ist der bereits auf das Tile verteilte CR-Anteil.
-→ Details: [faction-presence.md](../../data/faction-presence.md)
+→ Details: [faction-presence.md](../../entities/faction-presence.md)
 
 Kreaturen mit Gesamt-Gewicht unter der Minimum-Schwelle werden ausgeschlossen.
 
@@ -230,7 +230,7 @@ function getEligibleCreatures(tile: OverworldTile, context: EncounterContext): W
 - Strasse: +Banditen, +Haendler
 - Fluss: +Wasserkreaturen, +Flussnymphen
 
-→ Details: [Path.md](../../data/path.md)
+→ Details: [Path.md](../../entities/path.md)
 
 ### Kein CR-Filter
 
@@ -254,7 +254,7 @@ Features stammen aus verschiedenen Quellen. Die **Quell-Systeme garantieren Kons
 
 | Quelle | Verantwortung | Konsistenz-Garantie |
 |--------|---------------|---------------------|
-| **Weather-System** | Wetter-Phaenomene (Sturm, Nebel, etc.) | Generiert nur sinnvolle Kombinationen |
+| **Weather-Service** | Wetter-Phaenomene (Sturm, Nebel, etc.) | Generiert nur sinnvolle Kombinationen |
 | **Time-System** | Lichtverhaeltnisse (Dunkelheit, Daemmerung) | Basiert auf Tageszeit + Wetter |
 | **Terrain-Pool** | Lokale Features (Dornen, Felsen, Kraeuter) | Nur terrain-passende Features |
 
@@ -262,7 +262,7 @@ Features stammen aus verschiedenen Quellen. Die **Quell-Systeme garantieren Kons
 
 | Typ | Quelle | Auswahl-Logik |
 |-----|--------|---------------|
-| `weather` | Weather-System | **Uebernommen** - keine eigene Auswahl |
+| `weather` | Weather-Service | **Uebernommen** - keine eigene Auswahl |
 | `lighting` | Time + Weather | **Uebernommen** - keine eigene Auswahl |
 | `location` | Terrain-Pool | **Max 1**, zufaellig aus Pool |
 | `local` | Terrain-Pool | **Diminishing Returns** |
@@ -360,7 +360,7 @@ Environmental Features werden parallel zur Creature-Auswahl bestimmt:
 | - | Ja | - | Entdeckung: Verlassene Lichtung |
 | - | - | Ja | Reiner Hazard: Steinschlag-Zone |
 
-→ Feature-Schema: [Initiation.md#feature-schema](Initiation.md#feature-schema)
+→ Feature-Schema: [EncounterWorkflow.md#feature-schema](../../orchestration/EncounterWorkflow.md#feature-schema)
 → Integration in Difficulty: [Difficulty.md#environment-modifier](Difficulty.md#environment-modifier)
 
 ---
@@ -397,7 +397,7 @@ Die Seed-Kreatur ist das "Centerpiece" des Encounters. Von ihr ausgehend werden 
 **Hinweis:** Disposition wird in Difficulty.md berechnet, nicht hier.
 → [Difficulty.md#step-50-disposition-berechnung](Difficulty.md#step-50-disposition-berechnung)
 
-→ Faction-Templates: [faction-encounter-template.md](../../data/faction-encounter-template.md)
+→ Faction-Templates: [faction-encounter-template.md](../../entities/faction-encounter-template.md)
 
 ---
 
@@ -605,7 +605,7 @@ Templates sind in `presets/encounter-templates/` gespeichert und editierbar.
 Die Template-Auswahl prueft, ob die Fraktion genug Kreaturen mit den richtigen Design Roles hat.
 
 **Hierarchie:**
-1. **Faction-Templates** (bevorzugt) → [faction-encounter-template.md](../../data/faction-encounter-template.md)
+1. **Faction-Templates** (bevorzugt) → [faction-encounter-template.md](../../entities/faction-encounter-template.md)
 2. **Generic Templates** (Fallback)
 3. **Creature.groupSize** (letzter Fallback, kein Template)
 
@@ -622,7 +622,7 @@ function resolveCreatures(groups: FactionCreatureGroup[]): Creature[] {
 }
 ```
 
-→ Schema: [faction.md](../../data/faction.md)
+→ Schema: [faction.md](../../entities/faction.md)
 
 ```typescript
 function canFulfillTemplate(
@@ -801,7 +801,7 @@ Template mit Slots (z.B. 1× leader, 2-4× minion)
 
 Der Companion-Pool bestimmt, welche Kreaturen zusammen mit der Seed erscheinen koennen.
 
-→ Faction-Creatures: [faction.md](../../data/faction.md)
+→ Faction-Creatures: [faction.md](../../entities/faction.md)
 
 ```typescript
 function getCompanionPool(seed: Creature, allCreatures: Creature[]): Creature[] {
@@ -906,7 +906,7 @@ function resolveCount(count: number | CountRange): number {
 - Gleichverteilung: `{ min: 2, max: 4 }` → randomBetween(2, 4)
 - Normalverteilung: `{ min: 2, avg: 4, max: 10 }` → Haeufung um avg
 
-→ Details: [faction-encounter-template.md#countrange](../../data/faction-encounter-template.md#countrange)
+→ Details: [faction-encounter-template.md#countrange](../../entities/faction-encounter-template.md#countrange)
 
 **Keine XP-Budgets hier!** Die Anzahl kommt aus Template-Slots.
 Adjustments.md passt spaeter an, falls das Encounter zu stark/schwach ist.
@@ -1042,7 +1042,7 @@ Templates koennen Design-Rollen direkt als Slot-Anforderung nutzen:
 
 Rollen werden bei Creature-Erstellung aus dem Statblock abgeleitet.
 
-→ Design-Rollen Details: [Creature.md](../../data/creature.md#design-rollen)
+→ Design-Rollen Details: [Creature.md](../../entities/creature.md#design-rollen)
 
 ### Gruppengroessen-Hierarchie
 

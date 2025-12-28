@@ -3,17 +3,17 @@
 > **Verantwortlichkeit:** Automatische NPC-Generierung
 > **Input:** `CreatureDefinition`, `Faction?`, optionale Parameter
 > **Output:** `NPC` (persistiert im EntityRegistry)
-> **Schema:** [npc.md](../../data/npc.md)
+> **Schema:** [npc.md](../../entities/npc.md)
 >
 > **Referenzierte Schemas:**
-> - [creature.md](../../data/creature.md) - Input: CreatureDefinition
-> - [faction.md](../../data/faction.md) - Faction mit eingebetteter Culture
-> - [culture-data.md](../../data/culture-data.md) - Naming, Personality, Quirks, Goals
+> - [creature.md](../../entities/creature.md) - Input: CreatureDefinition
+> - [faction.md](../../entities/faction.md) - Faction mit eingebetteter Culture
+> - [culture-data.md](../../entities/culture-data.md) - Naming, Personality, Quirks, Goals
 >
 > **Verwandte Dokumente:**
 > - [Culture-Resolution.md](Culture-Resolution.md) - Kultur-Aufloesung (Hierarchie, Kaskade)
 > - [NPC-Matching.md](NPC-Matching.md) - Existierenden NPC finden
-> - [NPC-Lifecycle.md](NPC-Lifecycle.md) - Persistierung, Status-Uebergaenge
+> - [NPC-Lifecycle.md](../../features/NPC-Lifecycle.md) - Persistierung, Status-Uebergaenge
 
 Wie werden neue NPCs generiert?
 
@@ -314,8 +314,8 @@ const shopkeeper = createNPC(humanCreature, merchantFaction);
 
 - [NPC-Matching.md](NPC-Matching.md) - Existierenden NPC finden
 - [Culture-Resolution.md](Culture-Resolution.md) - Kultur-Hierarchie und Aufloesung
-- [NPC-Lifecycle.md](NPC-Lifecycle.md) - Persistierung und Status-Uebergaenge
-- [npc.md](../../data/npc.md) - NPC-Schema
+- [NPC-Lifecycle.md](../../features/NPC-Lifecycle.md) - Persistierung und Status-Uebergaenge
+- [npc.md](../../entities/npc.md) - NPC-Schema
 
 ---
 

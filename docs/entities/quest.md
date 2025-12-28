@@ -1,7 +1,7 @@
 # Schema: Quest
 
-> **Produziert von:** [Library](../application/Library.md) (CRUD)
-> **Konsumiert von:** [Quest-System](../features/Quest-System.md), [SessionRunner](../application/SessionRunner.md), [Encounter](../services/encounter/Encounter.md), [Journal](../features/Journal.md)
+> **Produziert von:** [Library](../views/Library.md) (CRUD)
+> **Konsumiert von:** [Quest-System](../features/Quest-System.md), [SessionRunner](../views/SessionRunner.md), [Encounter](../services/encounter/Encounter.md), [Journal](../features/Journal.md)
 
 Strukturierte Story-Einheiten mit messbaren Objectives. Verbinden NPCs, Locations, Encounters und Rewards zu einer kohaerenten Spieler-Erfahrung.
 
@@ -169,7 +169,7 @@ Quest-Management-Panel mit:
 - Objective-Progress manuell aktualisieren
 - Verknuepfte Entities als clickable Links (NPCs, POIs, Items)
 
--> [SessionRunner.md](../application/SessionRunner.md)
+-> [SessionRunner.md](../views/SessionRunner.md)
 
 ### Encounter-Feature
 

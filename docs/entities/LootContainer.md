@@ -1,9 +1,9 @@
 # Schema: LootContainer
 
-> **Produziert von:** [Library](../application/Library.md), [Loot](../services/Loot.md) (generateLoot)
+> **Produziert von:** [Library](../views/Library.md), [Loot](../services/Loot.md) (generateLoot)
 > **Konsumiert von:**
 > - [POI](poi.md) - Container an Orten referenzieren
-> - [DetailView](../application/DetailView.md) - Looting UI
+> - [DetailView](../views/DetailView.md) - Looting UI
 > - [Encounter](../services/encounter/Encounter.md) - Loot nach Combat
 
 Persistente Loot-Instanzen in der Spielwelt: Schatzkisten, Drachenhorte, tote Abenteurer.

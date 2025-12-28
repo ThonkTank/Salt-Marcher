@@ -1,18 +1,18 @@
 # Map-Feature
 
 > **Verantwortlichkeit:** Single Source of Truth fuer Map-Typen, Map-Content und Multi-Map-Verhalten
-> **Schema:** [map.md](../data/map.md)
+> **Schema:** [map.md](../entities/map.md)
 >
 > **Referenzierte Schemas:**
-> - [terrain-definition.md](../data/terrain-definition.md) - Terrain-Definitionen
-> - [poi.md](../data/poi.md) - Points of Interest
-> - [path.md](../data/path.md) - Pfad-Definitionen
+> - [terrain-definition.md](../entities/terrain-definition.md) - Terrain-Definitionen
+> - [poi.md](../entities/poi.md) - Points of Interest
+> - [path.md](../entities/path.md) - Pfad-Definitionen
 >
 > **Verwandte Dokumente:**
 > - [Map-Navigation.md](Map-Navigation.md) - Sub-Map-Navigation
 > - [Travel-System.md](Travel-System.md) - Hex-Overland-Reisen
 > - [Dungeon-System.md](Dungeon-System.md) - Dungeon-Maps
-> - [Cartographer.md](../application/Cartographer.md) - Map-Editor
+> - [Cartographer.md](../views/Cartographer.md) - Map-Editor
 >
 > **Wird benoetigt von:** Travel, Weather, Cartographer, Dungeon
 
@@ -113,7 +113,7 @@ interface OverworldTile {
 }
 
 // Tile-Level Klima-Anpassungen (ueberschreiben Terrain-Defaults)
-// → Details: [terrain-definition.md](../data/terrain-definition.md#terrainweatherranges)
+// → Details: [terrain-definition.md](../entities/terrain-definition.md#terrainweatherranges)
 interface TileClimateModifiers {
   temperatureModifier?: number;     // Offset in °C
   humidityModifier?: number;        // Offset in % - beeinflusst fog + precip
@@ -390,7 +390,7 @@ Overworld-Map "Westeros"
 ```
 
 → Navigation zwischen Maps: [Map-Navigation.md](Map-Navigation.md)
-→ POI-Konzept: [poi.md](../data/poi.md)
+→ POI-Konzept: [poi.md](../entities/poi.md)
 
 ---
 
@@ -439,8 +439,8 @@ Overland-Sichtweiten-Visualisierung fuer Hex-Maps. Ermoeglicht dem GM zu sehen, 
 
 **Hinweis:** Dies ist die **Overland-Visibility** (Hex-basiert, fuer Fog-of-War). Fuer die **Encounter-Visibility** (Feet-basiert, fuer Kreatur-Erkennung) siehe:
 
-→ [terrain-definition.md#felder](../data/terrain-definition.md#felder)
-→ [Difficulty.md](encounter/Difficulty.md)
+→ [terrain-definition.md#felder](../entities/terrain-definition.md#felder)
+→ [Difficulty.md](../constants/Difficulty.md)
 
 | System | Einheit | Zweck | Status |
 |--------|---------|-------|:------:|
@@ -483,7 +483,7 @@ Party (Elev 2) -------- Berg (Elev 5) -------- Ziel (Elev 1)
 
 ### Umwelt-Modifier
 
-**Wetter:** → Details: [Weather-System.md](Weather-System.md#sichtweiten-einfluss)
+**Wetter:** → Details: [Weather.md](../services/Weather.md)
 
 | Wetter-Zustand | Modifier |
 |----------------|----------|
@@ -513,7 +513,7 @@ Beste Sicht in der Party gilt. Verschiedene Sinne stacken nicht.
 | **True Sight** | Ignoriert magische Dunkelheit |
 
 → Character-Sinne: [Character-System.md](Character-System.md#sinne)
-→ Creature-Sinne: [Creature.md](../data/creature.md#sinne)
+→ Creature-Sinne: [Creature.md](../entities/creature.md#sinne)
 
 ### Creature-Sichtweite
 
@@ -522,7 +522,7 @@ Kreaturen haben eigene Sichtweite fuer:
 - NPC-Patrouillen
 - Stealth-Mechaniken
 
-→ Details: [Creature.md](../data/creature.md#sinne)
+→ Details: [Creature.md](../entities/creature.md#sinne)
 
 ### POI-Fernsicht
 
@@ -535,7 +535,7 @@ POIs mit `height`-Feld koennen ueber ihr Tile hinaus sichtbar sein (z.B. Tuerme,
 
 **Nachtleuchtende POIs:** POIs mit `glowsAtNight: true` ignorieren den Nacht-Modifier (10%), aber nicht den Weather-Modifier. Typische Beispiele: Staedte, Leuchttuerme, kampierende Heere.
 
-→ Details: [poi.md](../data/poi.md)
+→ Details: [poi.md](../entities/poi.md)
 
 ### Performance-Optimierung
 
@@ -574,7 +574,7 @@ Toggle-Button im Map-Panel (SessionRunner):
 - Tooltip: "Sichtweite anzeigen"
 - State: Session-only (nicht persistiert)
 
-→ Details: [SessionRunner.md](../application/SessionRunner.md#visibility-toggle)
+→ Details: [SessionRunner.md](../views/SessionRunner.md#visibility-toggle)
 
 ---
 
@@ -647,11 +647,38 @@ Travel-Feature operiert nur auf Overworld-Maps:
 - Dungeon: Automatische Zeit-Berechnung bei Bewegung
 - Town: Manuelle Zeit-Vorrückung bei Aktivitaeten
 
-### Map + Weather
+### Map + Weather (State-Owner)
 
-- Overworld: Vollstaendiges Wetter-System mit Overlays
-- Town: Erbt Wetter von Parent-Tile
-- Dungeon: Kein Wetter (Indoor)
+Map ist der **State-Owner** fuer Weather. Der Weather-Service ist stateless - Map speichert und aktualisiert das Wetter.
+
+**Schema-Erweiterung:**
+```typescript
+interface OverworldMap extends BaseMap {
+  // ... bestehende Felder
+
+  // Weather State (von Map verwaltet)
+  currentWeather?: Weather;
+  weatherUpdatedAt?: GameDateTime;
+  weatherOverride?: WeatherOverride;  // GM kann Wetter ueberschreiben
+}
+```
+
+**Update-Trigger:**
+- Map reagiert auf `time:state-changed`
+- Ruft `weatherService.generate()` mit aktuellem Terrain, Season, TimeSegment
+- Speichert Ergebnis in `currentWeather`
+- Emittiert `map:weather-changed`
+
+**Map-Typ-Verhalten:**
+| Map-Typ | Weather-Verhalten |
+|---------|-------------------|
+| Overworld | Eigene Generierung via Weather-Service |
+| Town | Erbt von Parent-Tile (via MapLink) |
+| Dungeon | Kein Wetter (Indoor) |
+
+**Background Tick:** Wenn Party in Sub-Map (Town/Dungeon), tickt Parent-Map Weather im Hintergrund weiter.
+
+→ Weather-Service: [Weather.md](../services/Weather.md)
 
 ---
 

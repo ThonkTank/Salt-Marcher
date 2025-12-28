@@ -3,8 +3,8 @@
 > **Verantwortlichkeit:** Navigation zwischen Maps via EntrancePOIs
 >
 > **Referenzierte Schemas:**
-> - [map.md](../data/map.md) - Map-Definitionen
-> - [poi.md](../data/poi.md) - EntrancePOI-Typen
+> - [map.md](../entities/map.md) - Map-Definitionen
+> - [poi.md](../entities/poi.md) - EntrancePOI-Typen
 >
 > **Verwandte Dokumente:**
 > - [Map-Feature.md](Map-Feature.md) - Map-Typen
@@ -16,7 +16,7 @@ Navigation zwischen Maps via EntrancePOIs.
 
 **Design-Philosophie:** Map-Navigation ist GM-gesteuert, nicht automatisch. EntrancePOIs verbinden Maps - der GM entscheidet wann die Party eine Sub-Map betritt.
 
-> **Fuer das POI-System siehe:** [poi.md](../data/poi.md)
+> **Fuer das POI-System siehe:** [poi.md](../entities/poi.md)
 
 ---
 

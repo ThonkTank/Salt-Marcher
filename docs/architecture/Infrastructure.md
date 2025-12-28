@@ -1,6 +1,6 @@
 # Infrastructure Layer
 
-> **Lies auch:** [Data](Data.md), [Features](Features.md)
+> **Lies auch:** [Orchestration.md](Orchestration.md), [Services.md](Services.md)
 > **Wird benoetigt von:** Vault, Rendering
 
 Implementiert Feature-StoragePorts für konkrete externe Systeme.
@@ -226,7 +226,7 @@ interface TravelResumableState {
 | Korrupte JSON | Skip mit Warning, nicht gesamtes Feature blockieren |
 | Schema-Validierung fehlgeschlagen | Entity nicht laden, Warning an User |
 
-→ **Details:** Siehe [Features.md](Features.md#state-ownership--persistence) und [Error-Handling.md](Error-Handling.md)
+→ **Details:** Siehe [Orchestration.md](Orchestration.md)
 
 ---
 

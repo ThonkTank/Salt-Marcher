@@ -1,13 +1,14 @@
 # Encounter-Flavour
 
-> **Verantwortlichkeit:** Step 4 der 7-Step-Pipeline - RP-Details, NPCs, Loot, Perception
-> **Input:** `EncounterDraft` aus [Population](Population.md)
-> **Output:** `FlavouredEncounter` an [Difficulty](Difficulty.md)
+> **Helper fuer:** Encounter-Service (Step 4)
+> **Input:** `EncounterDraft`, `EncounterContext`
+> **Output:** `FlavouredEncounter`
+> **Aufgerufen von:** [Encounter.md#helpers](Encounter.md#helpers)
 >
 > **Referenzierte Schemas:**
-> - [npc.md](../../data/npc.md) - NPC-Entity
-> - [faction.md](../../data/faction.md) - Faction mit Culture
-> - [creature.md](../../data/creature.md) - Kreatur mit defaultLoot
+> - [npc.md](../../entities/npc.md) - NPC-Entity
+> - [faction.md](../../entities/faction.md) - Faction mit Culture
+> - [creature.md](../../entities/creature.md) - Kreatur mit defaultLoot
 >
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
@@ -863,7 +864,7 @@ function roundTo5ft(distance: number): number {
 
 Terrain-Sichtweite wird aus `terrain.encounterVisibility` gelesen.
 
-→ **Source of Truth:** [terrain-definition.md#default-presets](../../data/terrain-definition.md#default-presets)
+→ **Source of Truth:** [terrain-definition.md#default-presets](../../entities/terrain-definition.md#default-presets)
 
 | Terrain | Visibility | Begruendung |
 |---------|:----------:|-------------|

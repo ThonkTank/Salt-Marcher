@@ -1,7 +1,7 @@
 # Schema: JournalEntry
 
 > **Produziert von:** [Journal-Feature](../features/Journal.md) (Auto-Generierung, manuelle Eintraege)
-> **Konsumiert von:** [SessionRunner](../application/SessionRunner.md), [Almanac](../application/Almanac.md), [Quest](../features/Quest-System.md)
+> **Konsumiert von:** [SessionRunner](../views/SessionRunner.md), [Almanac](../views/Almanac.md), [Quest](../features/Quest-System.md)
 
 Persistente Aufzeichnung aller Session-relevanten Ereignisse - automatisch generierte und manuelle Eintraege.
 
@@ -78,13 +78,13 @@ Verknuepfung zu beliebigen Entities mit gecachtem Display-Namen.
 
 Journal-Panel mit filterbarer Liste aller Eintraege. Quick Note Button fuer schnelle GM-Notizen. Clickable Entity-Links in Eintraegen fuehren zur jeweiligen Detail-Ansicht.
 
-→ [SessionRunner.md](../application/SessionRunner.md)
+→ [SessionRunner.md](../views/SessionRunner.md)
 
 ### Almanac
 
 Timeline-View zeigt Journal-Eintraege chronologisch an. Filter nach Kategorie und Tags moeglich.
 
-→ [Almanac.md](../application/Almanac.md)
+→ [Almanac.md](../views/Almanac.md)
 
 ### Quest-Feature
 

@@ -1,12 +1,13 @@
 # Encounter-Adjustments
 
-> **Verantwortlichkeit:** Step 6 der 7-Step-Pipeline - Machbarkeits-Anpassung an Ziel-Difficulty
-> **Input:** `SimulationResult` aus [Difficulty](Difficulty.md)
-> **Output:** `BalancedEncounter` an [Publishing](Publishing.md)
+> **Helper fuer:** Encounter-Service (Step 6)
+> **Input:** `FlavouredEncounter`, `SimulationResult`, `TerrainDefinition`
+> **Output:** `BalancedEncounter`
+> **Aufgerufen von:** [Encounter.md#helpers](Encounter.md#helpers)
 >
 > **Referenzierte Schemas:**
-> - [terrain-definition.md](../../data/terrain-definition.md) - threatLevel/threatRange
-> - [creature.md](../../data/creature.md) - Design-Rollen fuer Slot-Anpassungen
+> - [terrain-definition.md](../../entities/terrain-definition.md) - threatLevel/threatRange
+> - [creature.md](../../entities/creature.md) - Design-Rollen fuer Slot-Anpassungen
 >
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
@@ -162,7 +163,7 @@ function getTargetWinProbability(difficulty: EncounterDifficulty): number {
 |-----------|-------------------|---------|--------|
 | **Distance** | Physische Entfernung | Sweet-Spot bis Pain-Point | [Difficulty.md](Difficulty.md#distance-modifier) |
 | **Disposition** | Wert (innerhalb gueltigem Range) | Kreatur-Base bis Faction-Base | [Difficulty.md](Difficulty.md#step-50-disposition-berechnung) |
-| **Environment** | Terrain-Features aktivieren | `terrain.features[]` | [terrain-definition.md](../../data/terrain-definition.md#felder) |
+| **Environment** | Terrain-Features aktivieren | `terrain.features[]` | [terrain-definition.md](../../entities/terrain-definition.md#felder) |
 | **Activity** | Activity wechseln | Generic + Creature + Faction Pool | [Flavour.md](Flavour.md#activity-pool-hierarchie) |
 | **Multi-Group** | Gruppen hinzufuegen | Fraktionen auf Tile, deren Templates | [Population.md](Population.md#step-21-tile-eligibility) |
 | **Creature-Slots** | Anzahl, Kreatur-Typ, Gruppen-Verteilung | Template-Rollen-Ranges, designRole-Match | [Population.md](Population.md#step-33-slot-befuellung) |
@@ -594,7 +595,7 @@ function collectAdjustmentOptions(
 
   // Environment-Optionen
   // Features kommen aus terrain.features[] (siehe Terrain.md#schema)
-  // → Feature-Schema: Initiation.md#feature-schema
+  // → Feature-Schema: EncounterWorkflow.md#feature-schema
   const availableFeatures = context.tile.terrain.features ?? [];
   for (const feature of availableFeatures) {
     const modified = applyFeatureToEncounter(encounter, feature);
@@ -745,9 +746,9 @@ Win%: 78%, TPK-Risk: 8% -> "moderate". Machbar fuer Level-3-Party.
 ### Feature-Schema
 
 Features werden in der **Library** als eigenstaendige Entities definiert (Entity-Typ: `feature`).
-Das kanonische Feature-Schema ist in Initiation.md definiert:
+Das kanonische Feature-Schema ist in EncounterWorkflow.md definiert:
 
-→ **Schema:** [Initiation.md](Initiation.md#feature-schema)
+→ **Schema:** [EncounterWorkflow.md#feature-schema](../../orchestration/EncounterWorkflow.md#feature-schema)
 → **Entity-Typ:** [EntityRegistry.md](../../architecture/EntityRegistry.md#feature-feature)
 
 Features definieren:
@@ -756,7 +757,7 @@ Features definieren:
 
 ### Hazard-Definition
 
-→ **Kanonisches Schema:** [Initiation.md#hazard-schema](Initiation.md#hazard-schema)
+→ **Kanonisches Schema:** [EncounterWorkflow.md#hazard-schema](../../orchestration/EncounterWorkflow.md#hazard-schema)
 
 **Hazard-Einfluss auf XP:**
 
@@ -942,6 +943,6 @@ interface BalancedEncounter extends FlavouredEncounter {
 // EncounterPerception: Siehe Flavour.md#encounterperception-schema
 ```
 
--> Naechster Schritt: [Publishing.md](Publishing.md)
+-> Output: [Encounter.md#output-encounterinstance](Encounter.md#output-encounterinstance)
 
 ---

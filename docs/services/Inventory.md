@@ -1,6 +1,6 @@
 # Inventory-System
 
-> **Lies auch:** [Item](../data/item.md), [Character-System](Character-System.md), [Travel-System.md](Travel-System.md)
+> **Lies auch:** [Item](../entities/item.md), [Character-System](../features/Character-System.md), [Travel-System.md](../features/Travel-System.md)
 > **Wird benoetigt von:** Party, Shop, Loot
 
 Verwaltung von Character-Inventaren: Items, Gewicht, Encumbrance, Rationen.
@@ -52,7 +52,7 @@ interface InventorySlot {
 
 Items werden im EntityRegistry gespeichert (`EntityType: 'item'`).
 
-→ **Schema-Definition:** Siehe [item.md](../data/item.md)
+→ **Schema-Definition:** Siehe [item.md](../entities/item.md)
 
 **Fuer Inventory relevante Felder:**
 
@@ -327,7 +327,7 @@ quickSell(characterId, itemId, quantity, shopId, options?: {
 
 > **Hinweis:** Der GM behaelt volle Kontrolle - Preise koennen jederzeit ueberschrieben werden.
 
-→ **Schema-Definition:** Siehe [item.md](../data/item.md#currency)
+→ **Schema-Definition:** Siehe [item.md](../entities/item.md#currency)
 
 ---
 
@@ -367,7 +367,7 @@ const encumbranceOrder = {
 };
 ```
 
-→ **Details:** [Travel-System.md](Travel-System.md)
+→ **Details:** [Travel-System.md](../features/Travel-System.md)
 
 ---
 

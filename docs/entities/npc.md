@@ -1,6 +1,6 @@
 # Schema: NPC
 
-> **Produziert von:** [Encounter](../services/encounter/Encounter.md) (Generierung), [Library](../application/Library.md) (CRUD)
+> **Produziert von:** [Encounter](../services/encounter/Encounter.md) (Generierung), [Library](../views/Library.md) (CRUD)
 > **Konsumiert von:** [Encounter](../services/encounter/Encounter.md), [Quest](../features/Quest-System.md), [Shop](shop.md)
 
 Benannte, persistente Kreatur-Instanz mit Persoenlichkeit.

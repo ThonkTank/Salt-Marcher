@@ -1,11 +1,11 @@
 # NPC-Lifecycle
 
 > **Verantwortlichkeit:** Persistierung, Status-Uebergaenge und laufende NPC-Simulation
-> **Schema:** [npc.md](../../data/npc.md)
+> **Schema:** [npc.md](../entities/npc.md)
 >
 > **Verwandte Dokumente:**
-> - [NPC-Generation.md](NPC-Generation.md) - NPC automatisch generieren
-> - [NPC-Matching.md](NPC-Matching.md) - Existierenden NPC finden
+> - [NPC-Generation.md](../services/NPCs/NPC-Generation.md) - NPC automatisch generieren
+> - [NPC-Matching.md](../services/NPCs/NPC-Matching.md) - Existierenden NPC finden
 
 Wie werden NPCs nach ihrer Erstellung verwaltet und aktualisiert?
 
@@ -105,10 +105,10 @@ Die folgenden Features sind fuer spaetere Implementierung vorgesehen:
 
 ## Siehe auch
 
-- [NPC-Generation.md](NPC-Generation.md) - NPC-Generierung
-- [NPC-Matching.md](NPC-Matching.md) - Existierenden NPC finden
-- [npc.md](../../data/npc.md) - NPC-Schema Definition
-- [Encounter.md](../encounter/Encounter.md) - Encounter-Pipeline
+- [NPC-Generation.md](../services/NPCs/NPC-Generation.md) - NPC-Generierung
+- [NPC-Matching.md](../services/NPCs/NPC-Matching.md) - Existierenden NPC finden
+- [npc.md](../entities/npc.md) - NPC-Schema Definition
+- [Encounter.md](../services/encounter/Encounter.md) - Encounter-Pipeline
 
 ---
 

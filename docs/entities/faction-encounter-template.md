@@ -1,6 +1,6 @@
 # Schema: FactionEncounterTemplate
 
-> **Produziert von:** [Library](../application/Library.md), [Faction](faction.md)
+> **Produziert von:** [Library](../views/Library.md), [Faction](faction.md)
 > **Konsumiert von:** [Population](../services/encounter/Population.md) (Template-Matching)
 
 ## Felder

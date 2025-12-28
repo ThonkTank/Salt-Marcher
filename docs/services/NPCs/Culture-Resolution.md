@@ -6,9 +6,9 @@
 > **Output:** `ResolvedCulture` (gemergte Pools fuer Name, Personality, Quirks, Goals)
 >
 > **Referenzierte Schemas:**
-> - [culture-data.md](../../data/culture-data.md) - Pool-Struktur (naming, personalities, quirks, goals)
-> - [faction.md](../../data/faction.md) - Faction mit eingebetteter Culture
-> - [creature.md](../../data/creature.md) - Species-Feld fuer Kultur-Lookup
+> - [culture-data.md](../../entities/culture-data.md) - Pool-Struktur (naming, personalities, quirks, goals)
+> - [faction.md](../../entities/faction.md) - Faction mit eingebetteter Culture
+> - [creature.md](../../entities/creature.md) - Species-Feld fuer Kultur-Lookup
 
 Wie wird die Kultur eines NPCs aus mehreren Quellen aufgeloest?
 
@@ -77,10 +77,10 @@ ROOT: Type-Preset (Humanoid, Beast, Monstrosity, etc.)
 
 | Schema | Ort | Zweck |
 |--------|-----|-------|
-| `CultureData` | [culture-data.md](../../data/culture-data.md) | Pool-Struktur (naming, personalities, quirks, goals) |
+| `CultureData` | [culture-data.md](../../entities/culture-data.md) | Pool-Struktur (naming, personalities, quirks, goals) |
 | Type-Presets | `presets/cultures/types/` | Basis-Kultur pro Creature-Type (Humanoid, Beast, etc.) |
 | Species-Cultures | `presets/cultures/species/` | Optionale Spezies-Kultur (Goblin, Wolf, etc.) |
-| `Faction.culture` | [faction.md#culture](../../data/faction.md) | Fraktions-spezifische Kultur-Erweiterung |
+| `Faction.culture` | [faction.md#culture](../../entities/faction.md) | Fraktions-spezifische Kultur-Erweiterung |
 
 ---
 
@@ -215,8 +215,8 @@ function buildFactionChain(faction: Faction): Faction[] {
 ## Siehe auch
 
 - [NPC-Generation.md](NPC-Generation.md) - Verwendet Culture-Resolution fuer NPC-Generierung
-- [culture-data.md](../../data/culture-data.md) - Schema-Definition der Culture-Pools
-- [faction.md](../../data/faction.md) - Faction mit eingebetteter Culture
+- [culture-data.md](../../entities/culture-data.md) - Schema-Definition der Culture-Pools
+- [faction.md](../../entities/faction.md) - Faction mit eingebetteter Culture
 
 ---
 

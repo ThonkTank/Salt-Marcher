@@ -219,41 +219,12 @@ function hasAnchor(content, anchor) {
 }
 
 /**
- * Attempts to find a similar file for a broken reference.
- * Uses case-insensitive matching and searches in common locations.
- *
- * @param {string} brokenPath - The broken path from the link
- * @param {string} fromDir - Directory of the file containing the link
- * @returns {string|null} - Suggested fix path or null
- */
-function findSimilarFile(brokenPath, fromDir) {
-  const filename = basename(brokenPath).toLowerCase();
-
-  // Search in docs/ for a file with the same name (case-insensitive)
-  const allMdFiles = findAllMarkdownFiles(DOCS_ROOT);
-
-  for (const file of allMdFiles) {
-    if (basename(file).toLowerCase() === filename) {
-      // Found a match - return relative path from fromDir
-      return relative(fromDir, file);
-    }
-  }
-
-  return null;
-}
-
-/**
  * Scans all docs for broken references.
  *
- * @param {object} opts - Options
- * @param {boolean} opts.fix - Whether to fix broken references
- * @param {boolean} opts.dryRun - If true with fix, show what would be fixed
  * @returns {import('../core/result.mjs').Result}
  */
-function scanBrokenReferences(opts = {}) {
-  const { fix = false, dryRun = false } = opts;
+function scanBrokenReferences() {
   const brokenRefs = [];
-  const fixedRefs = [];
 
   const mdFiles = findAllMarkdownFiles(DOCS_ROOT);
   // Also scan root files
@@ -265,15 +236,12 @@ function scanBrokenReferences(opts = {}) {
     const fileDir = dirname(filePath);
     const lines = content.split('\n');
 
-    let newContent = content;
-    let fileModified = false;
-
     for (let lineNum = 0; lineNum < lines.length; lineNum++) {
       const line = lines[lineNum];
       const linkMatches = [...line.matchAll(LINK_PATTERN)];
 
       for (const match of linkMatches) {
-        const [fullMatch, text, linkPath] = match;
+        const [fullMatch, , linkPath] = match;
 
         // Separate anchor from path
         const hashIndex = linkPath.indexOf('#');
@@ -290,39 +258,13 @@ function scanBrokenReferences(opts = {}) {
 
         // Check if file exists
         if (!existsSync(resolvedPath)) {
-          const broken = {
+          brokenRefs.push({
             file: filePath,
             line: lineNum + 1,
             link: fullMatch,
             target: pathPart,
             reason: 'FILE_NOT_FOUND'
-          };
-
-          // Try to find a suggestion
-          const suggestion = findSimilarFile(pathPart, fileDir);
-          if (suggestion) {
-            broken.suggestion = suggestion;
-
-            if (fix) {
-              const newLink = anchor
-                ? `[${text}](${suggestion}#${anchor})`
-                : `[${text}](${suggestion})`;
-
-              if (!dryRun) {
-                newContent = newContent.replace(fullMatch, newLink);
-                fileModified = true;
-              }
-
-              fixedRefs.push({
-                file: filePath,
-                line: lineNum + 1,
-                old: fullMatch,
-                new: newLink
-              });
-            }
-          }
-
-          brokenRefs.push(broken);
+          });
         } else if (anchor) {
           // File exists, check anchor
           try {
@@ -342,19 +284,11 @@ function scanBrokenReferences(opts = {}) {
         }
       }
     }
-
-    // Write fixed content
-    if (fileModified && !dryRun) {
-      writeFileSync(filePath, newContent, 'utf-8');
-    }
   }
 
   return ok({
     brokenRefs,
-    fixedCount: fixedRefs.length,
-    fixedRefs,
-    totalScanned: allFiles.length,
-    dryRun
+    totalScanned: allFiles.length
   });
 }
 
@@ -437,8 +371,6 @@ export function createRefUpdaterService() {
  */
 export function parseArgs(argv) {
   const opts = {
-    fix: false,
-    dryRun: false,
     json: false,
     quiet: false,
     help: false
@@ -446,9 +378,7 @@ export function parseArgs(argv) {
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === '--fix') opts.fix = true;
-    else if (arg === '-n' || arg === '--dry-run') opts.dryRun = true;
-    else if (arg === '--json') opts.json = true;
+    if (arg === '--json') opts.json = true;
     else if (arg === '-q' || arg === '--quiet') opts.quiet = true;
     else if (arg === '-h' || arg === '--help') opts.help = true;
   }
@@ -464,7 +394,7 @@ export function parseArgs(argv) {
  */
 export function execute(opts) {
   const service = createRefUpdaterService();
-  const result = service.scanBrokenReferences(opts);
+  const result = service.scanBrokenReferences();
 
   if (!result.ok) return result;
 
@@ -472,29 +402,16 @@ export function execute(opts) {
 
   // Format output for CLI
   if (!opts.json && !opts.quiet) {
-    if (opts.dryRun && opts.fix) {
-      console.log('DRY-RUN (keine Änderungen)\n');
-    }
-
     if (value.brokenRefs.length === 0) {
       console.log('Keine kaputten Referenzen gefunden.');
     } else {
       console.log(`Gefunden: ${value.brokenRefs.length} kaputte Referenz(en)\n`);
 
       for (const ref of value.brokenRefs) {
-        const suggestion = ref.suggestion ? ` -> ${ref.suggestion}` : '';
-        const fixStatus = opts.fix && ref.suggestion ? ' [FIXBAR]' : '';
         console.log(`  ${ref.file}:${ref.line}`);
         console.log(`    ${ref.link}`);
-        console.log(`    ${ref.reason}${suggestion}${fixStatus}`);
+        console.log(`    ${ref.reason}`);
         console.log();
-      }
-
-      if (opts.fix) {
-        console.log(`\nGefixt: ${value.fixedCount} Referenz(en)`);
-        if (value.brokenRefs.length > value.fixedCount) {
-          console.log(`Nicht fixbar: ${value.brokenRefs.length - value.fixedCount} (keine Ähnlichkeit gefunden)`);
-        }
       }
     }
 
@@ -511,41 +428,29 @@ export function execute(opts) {
  */
 export function showHelp() {
   return `
-Scan-Refs Command - Kaputte Markdown-Referenzen finden und fixen
+Scan-Refs Command - Kaputte Markdown-Referenzen finden
 
 USAGE:
   node scripts/task.mjs scan-refs [options]
 
 OPTIONS:
-  --fix              Kaputte Referenzen automatisch fixen (wo möglich)
-  -n, --dry-run      Vorschau ohne Änderungen (mit --fix)
   --json             JSON-Ausgabe
   -q, --quiet        Keine Ausgabe
   -h, --help         Diese Hilfe anzeigen
-
-BEISPIELE:
-  # Alle kaputten Referenzen finden
-  node scripts/task.mjs scan-refs
-
-  # Vorschau der Fixes
-  node scripts/task.mjs scan-refs --fix --dry-run
-
-  # Automatisch fixen
-  node scripts/task.mjs scan-refs --fix
 
 AUSGABE:
   Listet jede Datei mit kaputten Referenzen:
     docs/features/Travel.md:15
       [Creature](../domain/Creature.md)
-      FILE_NOT_FOUND -> ../data/creature.md [FIXBAR]
+      FILE_NOT_FOUND
 
-FIX-STRATEGIE:
-  - FILE_NOT_FOUND: Sucht case-insensitive nach gleichnamiger Datei in docs/
-  - ANCHOR_NOT_FOUND: Kann nicht automatisch gefixt werden (Section fehlt)
+FEHLERTYPEN:
+  - FILE_NOT_FOUND: Zieldatei existiert nicht
+  - ANCHOR_NOT_FOUND: Datei existiert, aber Überschrift fehlt
 
 HINWEISE:
   - Scannt docs/ und Root-Dateien (Goals.md, CLAUDE.md, README.md)
   - Externe URLs (http/https) werden ignoriert
-  - Der PostToolUse Hook nutzt diesen Service für automatische Updates bei mv/git mv
+  - Der PostToolUse Hook aktualisiert Links automatisch bei mv/git mv
 `;
 }

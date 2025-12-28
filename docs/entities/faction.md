@@ -1,7 +1,7 @@
 # Schema: Faction
 
-> **Produziert von:** [Library](../application/Library.md) (CRUD), [Encounter](../services/encounter/Encounter.md) (Entity Promotion)
-> **Konsumiert von:** [Encounter](../services/encounter/Encounter.md), [NPC-Generation](../services/NPCs/NPC-Generation.md), [Cartographer](../application/Cartographer.md)
+> **Produziert von:** [Library](../views/Library.md) (CRUD), [Encounter](../services/encounter/Encounter.md) (Entity Promotion)
+> **Konsumiert von:** [Encounter](../services/encounter/Encounter.md), [NPC-Generation](../services/NPCs/NPC-Generation.md), [Cartographer](../views/Cartographer.md)
 
 ## Felder
 

@@ -1,17 +1,25 @@
 # Update-Refs Hook
 
-Automatisches Update von Markdown-Links bei Dateiverschiebungen in `docs/`.
+Automatisches Update von Markdown-Links und CLAUDE.md bei Änderungen in `docs/`.
 
 ---
 
 ## Überblick
 
-Wenn Dateien in `docs/` per `mv` oder `git mv` verschoben werden, aktualisiert dieser Hook automatisch alle Markdown-Links, die auf die verschobene Datei zeigen.
+Der Hook erfüllt zwei Aufgaben:
 
-**Beispiel:**
+1. **Referenz-Updates**: Bei `mv`/`git mv` werden alle Markdown-Links aktualisiert
+2. **Docs-Tree-Updates**: Bei jeder Strukturänderung wird die Projektstruktur in CLAUDE.md neu generiert
+
+**Beispiele:**
 ```bash
+# Einzelne Datei
 git mv docs/entities/creature.md docs/entities/creature-definition.md
-# → Alle Links auf "entities/creature.md" werden zu "entities/creature-definition.md" aktualisiert
+# → Alle Links auf "creature.md" werden aktualisiert
+
+# Ganzer Ordner
+git mv docs/domain docs/entities
+# → Alle Links auf Dateien in "domain/" werden aktualisiert
 ```
 
 ---
@@ -20,21 +28,32 @@ git mv docs/entities/creature.md docs/entities/creature-definition.md
 
 ### Trigger
 
-PostToolUse-Hook auf `Bash`-Tool. Wird nach jedem Bash-Kommando ausgeführt.
+| Tool | Hook | Aktion |
+|------|------|--------|
+| Bash | `update-refs.mjs` | Referenz-Updates + Docs-Tree |
+| Write | `update-docs-tree.mjs` | Nur Docs-Tree |
+
+### Erkannte Befehle (Bash)
+
+| Befehl | Referenz-Update | Docs-Tree-Update |
+|--------|-----------------|------------------|
+| `mv` / `git mv` | ✅ | ✅ |
+| `rm` | – | ✅ |
+| `mkdir` | – | ✅ |
 
 ### Ablauf
 
-1. Hook erhält Kommando und Exit-Code via stdin (JSON)
-2. Parst `mv` oder `git mv` Befehle
-3. Prüft ob Source-Pfad in `docs/` liegt
-4. Bei Erfolg: Findet und ersetzt alle Markdown-Links in `docs/`
+1. Hook erhält Kommando/Dateipfad via stdin (JSON)
+2. Prüft ob `docs/` betroffen ist
+3. Bei `mv`: Aktualisiert alle Markdown-Links
+4. Bei jeder Änderung: Regeneriert Projektstruktur in CLAUDE.md
 
 ### Unterstützte Formate
 
-- `mv source dest`
-- `mv -i source dest` (mit Flags)
-- `git mv source dest`
-- Pfade mit Anführungszeichen: `mv "path with spaces" "dest"`
+- `mv source dest` / `git mv source dest`
+- Mit Flags: `mv -i source dest`
+- Mit Anführungszeichen: `mv "path with spaces" "dest"`
+- Ordner-Renames: `git mv docs/old-folder docs/new-folder`
 
 ### Link-Typen
 
@@ -52,41 +71,36 @@ Nicht unterstützt:
 
 | Datei | Beschreibung |
 |-------|--------------|
-| `.claude/hooks/update-refs.mjs` | Hook-Script (PostToolUse) |
-| `scripts/services/ref-updater-service.mjs` | Core-Logik für Referenz-Updates |
+| `.claude/hooks/update-refs.mjs` | Bash-Hook: Referenzen + Docs-Tree |
+| `.claude/hooks/update-docs-tree.mjs` | Write-Hook: Nur Docs-Tree |
+| `.claude/hooks/docs-tree.mjs` | Shared: Tree-Generierung |
+| `scripts/services/ref-updater-service.mjs` | Core: Referenz-Updates |
 
 ---
 
 ## CLI: Kaputte Links finden
 
 ```bash
-# Alle kaputten Links anzeigen
 node scripts/task.mjs scan-refs
-
-# Kaputte Links automatisch reparieren (wo möglich)
-node scripts/task.mjs scan-refs --fix
 ```
 
-### Scan-Ausgabe
+Zeigt alle kaputten Referenzen mit Datei, Zeile und Fehlertyp:
 
 ```
 docs/features/Travel.md:42
   [Terrain](../domain/Terrain.md)
-  → Datei existiert nicht
-  Vorschlag: ../data/terrain-definition.md
+  FILE_NOT_FOUND
 ```
 
-### Auto-Fix
-
-Mit `--fix` werden Links repariert, wenn:
-- Die Zieldatei nicht existiert
-- Ein eindeutiger Vorschlag gefunden wurde (Fuzzy-Match auf Dateiname)
+**Fehlertypen:**
+- `FILE_NOT_FOUND` – Zieldatei existiert nicht
+- `ANCHOR_NOT_FOUND` – Datei existiert, Überschrift fehlt
 
 ---
 
 ## Konfiguration
 
-Hook ist in `.claude/settings.json` registriert:
+Hooks sind in `.claude/settings.json` registriert:
 
 ```json
 {
@@ -98,6 +112,13 @@ Hook ist in `.claude/settings.json` registriert:
           "type": "command",
           "command": "node .claude/hooks/update-refs.mjs"
         }]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [{
+          "type": "command",
+          "command": "node .claude/hooks/update-docs-tree.mjs"
+        }]
       }
     ]
   }
@@ -108,7 +129,7 @@ Hook ist in `.claude/settings.json` registriert:
 
 ## Einschränkungen
 
-- Nur Dateien in `docs/` werden verarbeitet
+- Nur Pfade in `docs/` werden verarbeitet
 - Nur erfolgreich ausgeführte mv-Befehle (exitCode 0)
-- Keine Unterstützung für `mv *.md dest/` (Glob-Patterns)
-- Keine Unterstützung für `mv file1 file2 dest/` (Mehrfach-Quellen)
+- Keine Unterstützung für Glob-Patterns: `mv *.md dest/`
+- Keine Unterstützung für Mehrfach-Quellen: `mv file1 file2 dest/`

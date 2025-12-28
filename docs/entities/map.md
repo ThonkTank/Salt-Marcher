@@ -1,7 +1,7 @@
 # Schema: Map
 
-> **Produziert von:** [Cartographer](../application/Cartographer.md), [Library](../application/Library.md)
-> **Konsumiert von:** [Map-Feature](../features/Map-Feature.md) (Laden/Speichern), [Travel](../features/Travel-System.md) (Terrain-Faktoren), [Weather](../features/Weather-System.md) (Map-globales Wetter)
+> **Produziert von:** [Cartographer](../views/Cartographer.md), [Library](../views/Library.md)
+> **Konsumiert von:** [Map-Feature](../features/Map-Feature.md) (Laden/Speichern), [Travel](../features/Travel-System.md) (Terrain-Faktoren), [Weather](../services/Weather.md) (Map-globales Wetter)
 
 ## Felder
 

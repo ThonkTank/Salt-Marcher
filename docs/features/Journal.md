@@ -3,16 +3,16 @@
 > **Verantwortlichkeit:** Single Source of Truth fuer Session-Journal und automatische Event-Protokollierung
 >
 > **Referenzierte Schemas:**
-> - [journal-entry.md](../data/journal-entry.md) - Journal-Eintraege
-> - [journal-settings.md](../data/journal-settings.md) - Journal-Konfiguration
-> - [session.md](../data/session.md) - Session-Daten
+> - [journal-entry.md](../entities/journal-entry.md) - Journal-Eintraege
+> - [journal-settings.md](../entities/journal-settings.md) - Journal-Konfiguration
+> - [session.md](../entities/session.md) - Session-Daten
 >
 > **Verwandte Dokumente:**
 > - [Time-System.md](Time-System.md) - Zeit-basierte Eintraege
 > - [Quest-System.md](Quest-System.md) - Quest-Events
 > - [encounter/Encounter.md](../services/encounter/Encounter.md) - Encounter-Events
 >
-> **Wird benoetigt von:** SessionRunner, Almanac
+> **Wird benoetigt von:** SessionControl, Almanac
 
 Single Source of Truth fuer Session-Journal und automatische Event-Protokollierung.
 

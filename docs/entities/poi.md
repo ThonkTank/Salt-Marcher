@@ -1,12 +1,12 @@
 # Schema: POI
 
-> **Produziert von:** [Library](../application/Library.md) (CRUD), [Encounter](../services/encounter/Encounter.md) (Entity Promotion)
+> **Produziert von:** [Library](../views/Library.md) (CRUD), [Encounter](../services/encounter/Encounter.md) (Entity Promotion)
 > **Konsumiert von:**
 > - [Map-Navigation](../features/Map-Navigation.md) – EntrancePOI fuer Map-Wechsel zwischen Overworld/Dungeon/Town
 > - [Map-Feature](../features/Map-Feature.md) – Rendering auf Map, Visibility-Berechnung (Height, glowsAtNight)
 > - [Travel-System](../features/Travel-System.md) – POIs auf Party-Tile anzeigen
 > - [Dungeon-System](../features/Dungeon-System.md) – TrapPOI, TreasurePOI Interaktionen
-> - [Cartographer](../application/Cartographer.md) – POI-Platzierung, Faction-Territory-Berechnung
+> - [Cartographer](../views/Cartographer.md) – POI-Platzierung, Faction-Territory-Berechnung
 
 POIs sind das einheitliche System fuer alles, was auf einem Map-Tile platziert werden kann: Eingaenge, Fallen, Schaetze, Landmarken und Objekte.
 

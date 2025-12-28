@@ -1,20 +1,20 @@
 # Travel-System
 
 > **Verantwortlichkeit:** Hex-Overland-Reisen - Routen-Planung, Animationen, Encounter-Trigger
-> **Schema:** [path.md](../data/path.md)
+> **Schema:** [path.md](../entities/path.md)
 >
 > **Referenzierte Schemas:**
-> - [map.md](../data/map.md) - Overworld-Maps
-> - [terrain-definition.md](../data/terrain-definition.md) - Terrain-Kosten
+> - [map.md](../entities/map.md) - Overworld-Maps
+> - [terrain-definition.md](../entities/terrain-definition.md) - Terrain-Kosten
 >
 > **Verwandte Dokumente:**
 > - [Map-Feature.md](Map-Feature.md) - Map-Typen
 > - [Time-System.md](Time-System.md) - Zeit-Vorrücken bei Reisen
-> - [Weather-System.md](Weather-System.md) - Wetter-Effekte auf Reise
+> - [Weather.md](../services/Weather.md) - Wetter-Effekte auf Reise
 > - [Inventory.md](../services/Inventory.md) - Encumbrance
 > - [encounter/Encounter.md](../services/encounter/Encounter.md) - Encounter-Trigger
 >
-> **Wird benoetigt von:** SessionRunner
+> **Wird benoetigt von:** SessionControl
 
 Detaillierte Spezifikation des Reisesystems.
 
@@ -89,7 +89,7 @@ function getTerrainFactor(tile: OverworldTile): number {
 | `desert` | 0.7 | Hitze, Sand |
 | `water` | 1.0 | Nur mit Boot |
 
-→ Custom Terrains koennen eigene movementCost-Werte definieren. Siehe [terrain-definition.md](../data/terrain-definition.md)
+→ Custom Terrains koennen eigene movementCost-Werte definieren. Siehe [terrain-definition.md](../entities/terrain-definition.md)
 
 ### Weather-Faktoren
 
@@ -149,7 +149,7 @@ function getPathMultiplier(
 | Fluss ohne Boot | 1.0 | blocked | Fehler |
 | Klippe | - | blocked | Fehler |
 
-> Details: [Path.md](../data/path.md)
+> Details: [Path.md](../entities/path.md)
 
 ---
 
@@ -223,7 +223,7 @@ Terrain, Wetter und Tageszeit beeinflussen die **Kreatur-Auswahl**, nicht die En
 | Tageszeit | Nein | Ja (Filter) |
 | Population | **Ja** | Nein |
 
-→ Details zur Kreatur-Auswahl: [encounter/Encounter.md](encounter/Encounter.md#kreatur-auswahl)
+→ Details zur Kreatur-Auswahl: [encounter/Encounter.md](../services/encounter/Encounter.md#kreatur-auswahl)
 
 ---
 

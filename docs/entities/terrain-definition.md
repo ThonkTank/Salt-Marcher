@@ -1,11 +1,11 @@
 # Schema: TerrainDefinition
 
-> **Produziert von:** [Library](../application/Library.md) (CRUD), Presets (bundled)
+> **Produziert von:** [Library](../views/Library.md) (CRUD), Presets (bundled)
 > **Konsumiert von:**
 > - [Travel](../features/Travel-System.md) - movementCost fuer Speed-Berechnung
-> - [Weather](../features/Weather-System.md) - weatherRanges fuer Generierung
+> - [Weather](../services/Weather.md) - weatherRanges fuer Generierung
 > - [Encounter](../services/encounter/Encounter.md) - nativeCreatures, encounterModifier, features, threatLevel/threatRange
-> - [Cartographer](../application/Cartographer.md) - Terrain-Brush Auswahl
+> - [Cartographer](../views/Cartographer.md) - Terrain-Brush Auswahl
 
 Template fuer Terrain-Typen. User koennen eigene Terrains erstellen. Default-Terrains werden als Presets mitgeliefert.
 

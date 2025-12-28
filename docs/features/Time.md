@@ -4,10 +4,10 @@
 > **Schema:** [calendar.md](../data/calendar.md)
 >
 > **Referenzierte Schemas:**
-> - [journal.md](../data/journal.md) - Zeit-basierte Eintraege
+> - [journal.md](../entities/journal.md) - Zeit-basierte Eintraege
 >
 > **Verwandte Dokumente:**
-> - [Weather-System.md](Weather-System.md) - Tageszeit-Abhaengigkeit
+> - [Weather.md](../services/Weather.md) - Tageszeit-Abhaengigkeit
 > - [Travel-System.md](Travel-System.md) - Zeit-Vorrücken bei Reisen
 > - [Audio-System.md](Audio-System.md) - Tageszeit-Tracks
 > - [Events-Catalog.md](../architecture/Events-Catalog.md) - time:* Events
