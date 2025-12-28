@@ -10,6 +10,10 @@ import { isErr, unwrap, unwrapErr } from '@core/types/result';
 // State aus sessionState
 import { getState, updateState, vault } from './sessionState';
 
+// Typen
+import type { EncounterInstance } from '@entities/encounter-instance';
+import type { CombatParticipant } from '@features/Combat';
+
 // Encounter-Service
 import { generateEncounter } from '@services/encounterGenerator/encounterGenerator';
 
@@ -97,6 +101,55 @@ export function checkEncounter(trigger: EncounterTrigger, forceEncounter = false
       ? { ...s.travel, status: 'paused' }
       : s.travel,
   }));
+}
+
+// ============================================================================
+// HELPER-FUNKTIONEN
+// ============================================================================
+
+/**
+ * Baut CombatParticipants aus Encounter und Party.
+ */
+function buildParticipants(encounter: EncounterInstance): CombatParticipant[] {
+  const state = getState();
+  const participants: CombatParticipant[] = [];
+
+  // Party-Mitglieder hinzufügen
+  for (const memberId of state.party.members) {
+    const char = vault.getEntity('character', memberId);
+    participants.push({
+      id: `char-${memberId}`,
+      type: 'character',
+      entityId: memberId,
+      name: char.name,
+      initiative: 0,
+      maxHp: char.maxHp,
+      currentHp: char.currentHp,
+      conditions: [],
+      effects: [],
+    });
+  }
+
+  // Kreaturen aus Encounter-Gruppen hinzufügen
+  let creatureIndex = 0;
+  for (const group of encounter.groups) {
+    for (const creature of group.creatures) {
+      creatureIndex++;
+      participants.push({
+        id: `creature-${creatureIndex}`,
+        type: 'creature',
+        entityId: creature.definitionId,
+        name: creature.name ?? `${creature.definitionId} #${creatureIndex}`,
+        initiative: 0,
+        maxHp: creature.maxHp,
+        currentHp: creature.currentHp,
+        conditions: [],
+        effects: [],
+      });
+    }
+  }
+
+  return participants;
 }
 
 // ============================================================================
