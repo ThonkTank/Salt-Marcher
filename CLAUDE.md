@@ -1,192 +1,92 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Arbeitsanweisungen für Claude Code im Salt Marcher Repository.
 
 ---
 
-# Arbeitsanweisungen für Salt Marcher
+## 1. Projekt
 
-Dieses Dokument definiert, wie Claude Code mit diesem Repository arbeitet.
+### Vision
+
+Salt Marcher ist ein Obsidian-Plugin für D&D 5e Game Masters. Es automatisiert strikt algorithmische Regeln, bei denen der GM keine Kreativität aufwenden muss - nur mentale Energie zum Merken.
+
+**System:** D&D 5e (nicht system-agnostisch)
+
+### Haupt-Arbeitsmodi
+
+| Modus | Zweck |
+|-------|-------|
+| **SessionRunner** | Hauptansicht für Sessions: Map-Panel, Travel, Encounters, Combat, Zeit, Audio |
+| **Cartographer** | Visueller Map-Editor: Hex-Painting, Elevation, Klima, Location-Marker |
+| **Almanac** | Kalender-Verwaltung: WorldEvents, Journal, Timeline |
+| **Library** | Entity-CRUD: Creatures, Items, NPCs, Factions, Quests, etc. |
+
+### Kern-Systeme
+
+| System | Beschreibung | Details |
+|--------|--------------|---------|
+| **Travel** | Hex-basierte Overland-Navigation mit Zeit-Tracking, Speed-Berechnung, Encounter-Checks | [Travel.md](docs/features/Travel.md) |
+| **Encounter** | 6 Typen (Combat, Social, Passing, Trace, Environmental, Location) mit Creature-centric Balancing | [encounter/](docs/services/encounter/) |
+| **Weather** | Dynamisches Wetter basierend auf Terrain und Zeit, 6 Tages-Segmente, Weather-Events | [Weather.md](docs/services/Weather.md) |
+| **Quest** | Objektiv-basierte Quests, 40/60 XP-Split, Encounter-Slots, Loot-Verteilung | [Quest.md](docs/features/Quest.md) |
+| **Combat** | Initiative-Tracker, HP-Tracking, Conditions mit automatischen Reminders | [Combat.md](docs/features/Combat.md) |
+| **Audio** | 2-Layer (Music + Ambience), Tag-basiertes Mood-Matching, Crossfade | [Audio-System.md](docs/features/Audio-System.md) |
+| **Dungeon** | Grid-basierte Maps mit Fog of War, Licht, Fallen, Türen, Treasure | [Dungeon-System.md](docs/features/Dungeon-System.md) |
 
 ---
 
-## 1. STARTUP (VOR Claim)
+## 2. Architektur
 
-### Projekt-Kontext (PFLICHT - vor JEDER Aufgabe)
+### Zwei-Modi-Konzept
 
-**STOPP.** Bevor du irgendetwas tust:
+| Modus | Zweck | State-Owner | Views |
+|-------|-------|-------------|-------|
+| **Out-of-Session** | Daten vorbereiten | Vault (direkte CRUD) | Library, Cartographer, Almanac |
+| **In-Session** | Session spielen | SessionControl | SessionRunner, DetailView |
 
-1. **[Goals.md](Goals.md) lesen** - Vision, Features, Entity-Typen, Architektur
-2. **Task-Skripte nutzen** - Die Roadmap ist zu groß zum direkten Lesen:
-   ```bash
-   node scripts/task.mjs sort                # Top-Tasks anzeigen
-   node scripts/task.mjs sort <keyword>      # Nach Keyword filtern
-   node scripts/task.mjs show <ID>           # Task-Details + Dependencies
-   ```
+**Out-of-Session:** Der GM bereitet Inhalte vor. Alle Änderungen werden direkt im Vault persistiert. Keine zentrale State-Verwaltung nötig.
 
-Ohne diesen Kontext fehlt dir das Gesamtbild. Keine Ausnahmen.
+**In-Session:** Der GM führt eine aktive Session durch. Der SessionControl ist der einzige State-Owner für Position, Zeit, Wetter und aktive Workflows.
 
-**⛔ ABSOLUT VERBOTEN:**
-- Development-Roadmap.md **NIEMALS** direkt lesen (Read-Tool) - nur über CLI-Skripte!
-- Tasks **NIEMALS** manuell editieren (Edit-Tool) - nur über CLI-Skripte!
-
-### CLAIM-FIRST REGEL (KEINE AUSNAHMEN)
-
-**STOPP.** Nach Task-Auswahl gilt:
-
-1. `node scripts/task.mjs claim <ID>` ausführen
-2. NUR bei Erfolg: Weitermachen
-3. Bei Fehler: **ABBRUCH** - Task vergessen, nächste suchen
-   - ❌ KEINE Status-Prüfungen
-   - ❌ KEINE Analysen
-   - ❌ KEINE Wartezeit
-   - ❌ KEIN Nachdenken über "warum"
-
-**KEINE Aktionen vor dem Claim:**
-- ❌ Keine Docs lesen (außer Goals.md)
-- ❌ Keine Explore-Agents starten
-- ❌ Keine Plan-Agents starten
-- ❌ Kein Code schreiben
-- ❌ Keine Leseliste erstellen
-
-**Die einzigen erlaubten Schritte VOR dem Claim:**
-- ✅ Goals.md lesen (einmal pro Session)
-- ✅ Task mit Skript finden (`task.mjs sort`, `task.mjs show <ID>`)
-- ✅ Task-ID notieren
-
-**Schritt 2 (Claim) ist ein GATE.** Ohne erfolgreichen Claim kein Weitermachen.
-
-**⚠️ AUCH IM PLAN-MODE:** Das Claim-Script ist von der Plan-Mode-Restriktion "keine Änderungen" ausgenommen. Claim MUSS erfolgen, bevor Docs gelesen oder Agents gestartet werden.
-
-### FREMDE CLAIMS = ABBRUCH
-
-**Eine Task mit Status 🔒 die dir nicht gehört ist TABU.**
-
-**ABBRUCH. SOFORT. OHNE NACHDENKEN.**
-
-Wenn `claim` fehlschlägt oder `task.mjs show` einen fremden Owner zeigt:
-
-1. **ABBRECHEN** - Diese Task existiert für dich nicht mehr
-2. **NÄCHSTE TASK** - `node scripts/task.mjs sort` ausführen
-3. **WEITER** - Neue Task claimen
-
-**Es gibt KEINE Ausnahmen. Es gibt KEINE Sonderfälle.**
-
-**Mentales Modell:** Eine geclaime Task ist wie eine verschlossene Tür. Du klopfst nicht, du wartest nicht, du analysierst nicht warum sie zu ist. Du gehst zur nächsten Tür.
-
-### Task finden und claimen
+### Datenfluss
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ 1. TASK FINDEN                                              │
-│    → node scripts/task.mjs sort [keyword]                   │
-│    → node scripts/task.mjs show <ID>                        │
-├─────────────────────────────────────────────────────────────┤
-│ 2. TASK SOFORT CLAIMEN (GATE)                               │
-│    → node scripts/task.mjs claim <ID>                       │
-│    → ✅ Erfolg: Weiter zu Schritt 3                         │
-│    → ❌ Fehler: ABBRUCH → Schritt 1 (KEINE weiteren Aktionen)│
-├─────────────────────────────────────────────────────────────┤
-│ 3. WORKFLOW FOLGEN (siehe Sektion 2)                        │
-│    → Status der Task bestimmt den Workflow                  │
+│ Views (Svelte)                                               │
+│   $sessionControl.state   ← subscribet auf State             │
+│   sessionControl.method() → ruft Methoden auf                │
+└─────────────────────────────────────────────────────────────┘
+                              ↓↑
+┌─────────────────────────────────────────────────────────────┐
+│ SessionControl                                               │
+│   state = writable<SessionState>(...)                        │
+│   - Party-Position, Zeit, Wetter                             │
+│   - Travel-, Combat-, Encounter-Workflows                    │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Services (pure Pipelines)                                    │
+│   encounterService.generate(context) → Result                │
+│   weatherService.generate(input) → Weather                   │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ Vault (Persistence)                                          │
+│   Entities lesen, Journal schreiben, Session-State speichern │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Claim-System (Key-basiert)
+### Kernprinzipien
 
-Das Claim-System verwendet 4-Zeichen-Keys:
+**SessionControl = Single Source of Truth**
+Für In-Session-Daten gibt es genau einen Owner. Kein EventBus - die UI subscribet direkt auf den Svelte Store.
 
-```bash
-# Task claimen → Key merken!
-node scripts/task.mjs claim 428
-# Ausgabe: "Key: a4x2 (2h gültig)"
+**Services = Dumme Pipelines**
+Services haben keinen eigenen State. Sie empfangen Input und liefern Output:
+- Erlaubt: Input konsumieren, Output liefern, Vault lesen/schreiben
+- Verboten: Queries an andere Services, eigene Entscheidungen, eigenen State
 
-# Task freigeben (4-Zeichen Key = unclaim)
-node scripts/task.mjs claim a4x2
-
-# Edit bei geclaimter Task erfordert Key
-node scripts/task.mjs edit 428 --status ✅ --key a4x2
-```
-
-**Wichtig:**
-- Key gilt 2 Stunden, dann automatisch freigegeben
-- Bei Edit ohne Key auf geclaime Task → Fehler
-- Key aufbewahren bis Task abgeschlossen
-
-**Annahme:** Immer davon ausgehen, dass andere Agenten simultan arbeiten könnten.
-
-### PFLICHT: Task-Updates NUR über CLI
-
-**ABSOLUTES VERBOT - KEINE AUSNAHMEN:**
-
-| Aktion | ❌ VERBOTEN | ✅ ERLAUBT |
-|--------|-------------|------------|
-| Task lesen | Read-Tool auf Roadmap | `task.mjs show <ID>` |
-| Task suchen | Grep/Glob auf Roadmap | `task.mjs sort <keyword>` |
-| Status ändern | Edit-Tool auf Roadmap | `task.mjs edit <ID> --status X` |
-| Task anlegen | Edit-Tool auf Roadmap | `task.mjs add --tasks '<JSON>'` |
-| Bug melden | Edit-Tool auf Roadmap | `task.mjs add --bugs '<JSON>'` |
-
-**Warum?**
-- Multi-Agent-Konsistenz: Manuelle Edits erzeugen Race Conditions
-- Formatierung: CLI garantiert korrektes Tabellenformat
-- Claim-System: Nur CLI kann Claims korrekt setzen/prüfen
-
----
-
-## 2. NACH DEM CLAIM → WORKFLOW FOLGEN
-
-Nach erfolgreichem Claim bestimmt der **Status der Task** den zu folgenden Workflow.
-
-### Status-Workflow-Zuordnung
-
-| Status | Workflow-Datei | Bedeutung |
-|:------:|----------------|-----------|
-| ⬜ | `scripts/workflows/vorbereitung.txt` | Task für Umsetzung vorbereiten |
-| 🟢 | `scripts/workflows/umsetzung.txt` | Deliverables implementieren |
-| 🔶 | `scripts/workflows/konformitaet.txt` | Code spezifikationskonform machen |
-| ⚠️ | `scripts/workflows/reparatur.txt` | Bug beheben |
-| 📋 | `scripts/workflows/review.txt` | Implementation prüfen |
-| ⛔ | ABBRUCH | Task blockiert (Dependencies fehlen) |
-| 🔒 | ABBRUCH | Task von anderem Agent geclaimed |
-| ✅ | ABBRUCH | Task bereits abgeschlossen |
-
-**Nach dem Claim:**
-1. Status der Task prüfen (steht in der Ausgabe von `--claim`)
-2. Entsprechende Workflow-Datei lesen
-3. Workflow Schritt für Schritt befolgen
-
-**Die Workflows enthalten:**
-- Leselisten-Anforderungen (Architektur-Baseline + Feature-Docs)
-- Status-spezifische Schritte
-- Templates für Beschreibung/Imp-Spalte
-- Abschluss-Kommandos
-
----
-
-## 3. PROJEKT-REFERENZ (IMMER)
-
-### Projekt-Übersicht
-
-Salt Marcher is a D&D 5e world-building and session management tool built as an Obsidian plugin. It includes hex map editing, travel simulation, encounter generation, weather systems, and combat tracking.
-
-**Aktueller Status:** Nutze `node scripts/task.mjs sort` für den Implementierungsstand. Das `Archive/`-Verzeichnis enthält frühere Alpha-Implementierungen nur als Referenz.
-
-### Build-Kommandos
-
-```bash
-npm run dev         # Watch mode development (builds to Obsidian plugin folder)
-npm run build       # Production build
-npm run typecheck   # TypeScript type checking only
-npm run lint        # ESLint with cycle detection
-npm run test        # Run all Vitest tests
-npx vitest run path/to/file.test.ts    # Run single test file
-npx vitest run -t "test name pattern"  # Run tests matching pattern
-```
-
-Build output: Configured in `esbuild.config.mjs` → Obsidian vault plugins folder
-
-**ESLint:** Uses `import-x/no-cycle: error` to enforce no cyclic dependencies between modules.
+**Weiterführend:** [Overview.md](docs/architecture/Overview.md), [SessionControl-Architecture.md](docs/architecture/SessionControl-Architecture.md), [Services.md](docs/architecture/Services.md)
 
 ### Projektstruktur
 
@@ -198,15 +98,84 @@ src/                   # Source code
   application/         # SessionRunner, ViewModels
   main.ts              # Plugin entry point
 docs/                  # Authoritative documentation (German)
-  architecture/        # Layer docs, EventBus, Conventions, Error-Handling
-  features/            # Stateful feature specs (Travel, Combat, Quest, Weather, etc.)
-  services/            # Stateless services (encounter/, NPCs/, Loot, Inventory)
-  entities/            # Entity schemas (1 Datei pro Typ)
-  constants/           # D&D Regeln, Enums, Lookup-Tabellen
-  application/         # UI docs with wireframes (SessionRunner)
+  architecture/
+    .task-claims.json
+    constants.md
+    Development-Roadmap.md
+    Infrastructure.md
+    Overview.md
+    schemas.md
+    Services.md
+    SessionControl-Architecture.md
+    Testing.md
+  constants/
+    CreatureSizes.md
+    CreatureTypes.md
+    Difficulty.md
+    LootRarity.md
+    TimeSegments.md
+  entities/
+    action.md
+    creature.md
+    culture-data.md
+    currency.md
+    faction-encounter-template.md
+    faction-presence.md
+    faction.md
+    item.md
+    journal-entry.md
+    journal-settings.md
+    journal.md
+    LootContainer.md
+    map.md
+    npc.md
+    overworld-tile.md
+    path.md
+    poi.md
+    quest.md
+    session.md
+    shop.md
+    terrain-definition.md
+  features/
+    Audio-System.md
+    Character-System.md
+    Combat.md
+    Dungeon-System.md
+    Journal.md
+    Map-Feature.md
+    Map-Navigation.md
+    NPC-Lifecycle.md
+    Quest.md
+    Time.md
+    Travel.md
+  prototypes/
+    README.md
+  services/
+    encounter/
+      Adjustments.md
+      Difficulty.md
+      Encounter.md
+      Flavour.md
+      Initiation.md
+      Population.md
+      Publishing.md
+    NPCs/
+      Culture-Resolution.md
+      NPC-Generation.md
+      NPC-Matching.md
+    Inventory.md
+    Loot.md
+    Weather.md
+  tools/
+    update-refs-hook.md
+  views/
+    Cartographer.md
+    DetailView.md
+    Library.md
+    SessionRunner.md
+  Example-Workflows.md
 presets/               # Fixture data (maps, terrains)
 Archive/               # Previous Alpha implementations - reference only
-Goals.md               # Start here: high-level vision and feature overview (German)
 ```
 
 ### Path Aliases (tsconfig.json)
@@ -217,155 +186,195 @@ Goals.md               # Start here: high-level vision and feature overview (Ger
 @/*        → src/*
 ```
 
-### Haupt-Arbeitsmodi
-
-| Workmode | Purpose |
-|----------|---------|
-| SessionRunner | Main play view (maps, travel, encounters, calendar, audio, combat) |
-| Cartographer | Hex/grid map editor with terrain, elevation, climate tools |
-| Almanac | Calendar and timeline management |
-| Library | CRUD for all entities (creatures, items, spells, locations, etc.) |
-
-### Entity-Typen
-
-EntityRegistry manages 17 types: `creature`, `character`, `npc`, `faction`, `item`, `map`, `poi`, `maplink`, `terrain`, `quest`, `encounter`, `shop`, `party`, `calendar`, `journal`, `worldevent`, `track`
-
-### Debug-Logging
-
-1. Copy `.claude/debug.json.example` to `.claude/debug.json`
-2. Reload plugin in Obsidian
-3. View logs: `tail -f CONSOLE_LOG.txt`
-
-### Dokumentations-Referenz
-
-- **Goals.md**: Start here—vision, features, entity types, architecture diagram
-- **docs/architecture/Conventions.md**: Coding standards, error handling, patterns
-- **docs/architecture/Events-Catalog.md**: Single source of truth for all domain events
-- **docs/features/**: Stateful feature specifications (Travel, Combat, Quest, etc.)
-- **docs/services/**: Stateless services (encounter/, NPCs/, Loot, Inventory)
-- **docs/entities/**: Entity schemas (1 Datei pro Typ)
-- **docs/constants/**: D&D Regeln, Enums, Lookup-Tabellen
-- **docs/application/**: UI documentation with wireframes (SessionRunner, DetailView)
-
-Alle Dokumentation ist auf Deutsch.
-
 ---
 
-## 4. CODE-REFERENZ (IMMER)
+## 3. Konventionen
 
-### Soll vs. Ist (Dokumentation vs. Implementierung)
+### Import Order
 
-| Quelle | Beschreibt |
-|--------|------------|
-| `docs/features/`, `docs/services/`, `docs/entities/` | **Zielzustand** - Was das Feature können soll (Spezifikation) |
-| `Development-Roadmap.md` → Tasks | **Istzustand** - Status-Spalte zeigt Implementierungsstand |
-
-**Status-Bedeutungen:**
-| Status | Bedeutung |
-|:------:|-----------|
-| ⬜ | Noch nicht implementiert |
-| 🟢 | Bereit zur Umsetzung (vorbereitet) |
-| 📋 | Fertig, wartet auf Review |
-| ✅ | Implementiert, reviewed und funktionsfähig |
-| ⚠️ | Implementiert aber nicht funktionsfähig |
-| 🔶 | Funktionsfähig aber nicht spezifikations-konform |
-| 🔒 | Von einem Agenten geclaimed (in Bearbeitung) |
-| ⛔ | Blockiert - Dependencies nicht erfüllt |
-
-**Bei Diskrepanzen:** Code ↔ Dokumentation → Code an Dokumentation anpassen. Die Docs sind die Spezifikation.
-
-**Bei Unklarheiten:** Wenn die Dokumentation unklar oder widersprüchlich ist → AskUserQuestion nutzen.
-
-### Architektur
-
-**Layer Architecture:**
-```
-Application Layer (SessionRunner, Views, UI)
-        ↓
-Feature Layer (State + Business Logic + StoragePorts)
-        ↓
-Data Layer (Schemas, Types, Konstanten, Utils) ← Single-Concern pro Datei
-        ↓
-Infrastructure Layer (EventBus, Vault Adapters, Rendering)
-```
-
-**Data Layer:** Kontextunabhängige Daten (D&D-Regeln, XP-Tabellen, Creature Types).
-Eine Datei = ein Schema / Type-Set / Konstanten-Set / Utility-Gruppe.
-Code-Pfad: `src/core/` (historischer Name)
-
-**Key Patterns:**
-- **MVVM**: ViewModels coordinate between UI and Features
-- **EventBus**: Cross-feature communication via typed events
-- **StoragePort**: Features define storage interfaces, Infrastructure implements adapters
-- **Result Pattern**: `Result<T, AppError>` for all fallible operations
-- **Factory Functions**: Export `createXxxOrchestrator()` not classes directly
-
-**Feature Communication:**
-| Operation Type | Method | Use When |
-|---------------|--------|----------|
-| **Query** | Direct feature call | Reading state, computed values, no side effects |
-| **Command** | EventBus | State changes, cross-feature effects, workflows |
-
-**Dependency Rule:** Upper layers may query lower layers directly; state changes propagate upward via events. No cycles allowed.
-
-### Code-Konventionen
-
-**Import Order:**
 1. External packages (`obsidian`, `zod`)
 2. Core imports (`@core/types/result`, `@core/events`)
 3. Feature imports (`@/features/map`)
 4. Relative imports (`./types`, `./services/brush`)
 
-**Event Naming:**
-| Category | Pattern | Example |
-|----------|---------|---------|
-| Command | `namespace:verb-noun-requested` | `travel:start-requested` |
-| Domain | `namespace:past-participle` | `travel:started` |
-| State-Sync | `namespace:state-changed` | `travel:state-changed` |
-| Failure | `namespace:action-failed` | `map:load-failed` |
+### TypeScript-Patterns
 
-**Required:** All events MUST include `correlationId` for workflow tracing.
+| Pattern | Verwendung |
+|---------|------------|
+| `Result<T, AppError>` | Für fallible Operationen |
+| `Option<T>` | Für optionale Werte |
+| `EntityId<'map'>` | Branded Types für IDs (nicht `string`) |
+| `Readonly<State>` | Return-Typ für Getter |
 
-**TypeScript:**
-- Use `Result<T, AppError>` for fallible operations, `Option<T>` for optional values
-- Use branded types for IDs: `EntityId<'map'>` not `string`
-- Return `Readonly<State>` from getters
+### Error Codes
 
-**Error Codes:**
-| Category | Pattern | Example |
-|----------|---------|---------|
+| Kategorie | Pattern | Beispiel |
+|-----------|---------|----------|
 | Not Found | `*_NOT_FOUND` | `MAP_NOT_FOUND` |
 | Invalid | `INVALID_*` | `INVALID_COORDINATE` |
 | Failed | `*_FAILED` | `SAVE_FAILED` |
 | Conflict | `*_CONFLICT` | `VERSION_CONFLICT` |
 
-### CRUD vs Workflow Rule
+### Dokumentations-Richtlinien
 
-| Question | If Yes → |
-|----------|----------|
-| Has State Machine? | Workflow (EventBus) |
-| Affects other Features? | Workflow (EventBus) |
-| Synchronous & atomic? | CRUD (Direct call) |
+**Header-Standards für Feature-Docs:**
+```markdown
+# Feature-Name
 
-Examples: Terrain painting = CRUD (isolated). Map loading = Workflow (affects Travel, Weather).
+> **Verantwortlichkeit:** Was macht dieses Feature? (1 Satz)
+> **Input:** Datentypen und Quellen (optional)
+> **Output:** Resultat-Typ und Ziel (optional)
+> **Schema:** Link zu Haupt-Schema (falls vorhanden)
+```
 
-### State-Kategorien
+**Header-Standards für Schema-Docs:**
+```markdown
+# Schema: EntityName
 
-| Category | Storage | On Reload |
-|----------|---------|-----------|
-| Persistent | Vault JSON | Restored |
-| Session | Memory | Reset to defaults |
-| Resumable | Plugin data | Optional restore |
+> **Produziert von:** [Feature](pfad) (Aktion)
+> **Konsumiert von:** [Feature1](pfad), [Feature2](pfad)
+```
+
+**Single Source of Truth:**
+- Jedes System/Konzept hat eine autoritative Quelle
+- Andere Docs referenzieren diese Quelle, wiederholen keine Details
+- Bei Referenzen erlaubt: 1-2 Sätze Kontext + Link
+- Bei Referenzen verboten: Vollständige Schemas kopieren, Code duplizieren
+
+**Bei Diskrepanzen:** Code ↔ Dokumentation → Code an Dokumentation anpassen. Die Docs sind die Spezifikation.
 
 ---
 
-## 5. PROZESS-REFERENZ (IMMER)
+## 4. Task-Workflow
 
-### Commit-Granularität
+### Projekt-Kontext (PFLICHT)
 
-Pro logische Einheit committen:
-- `feat(core): add Result<T,E> type with tests`
-- `feat(core): add EventBus with publish/request`
+**VOR jeder Aufgabe** Task-Skripte nutzen (Roadmap ist zu groß zum direkten Lesen):
+
+```bash
+node scripts/task.mjs sort                # Top-Tasks anzeigen
+node scripts/task.mjs sort <keyword>      # Nach Keyword filtern
+node scripts/task.mjs show <ID>           # Task-Details + Dependencies
+```
+
+**ABSOLUT VERBOTEN:**
+- Development-Roadmap.md direkt lesen (Read-Tool) - nur über CLI!
+- Tasks manuell editieren (Edit-Tool) - nur über CLI!
+
+### Claim-Gate Prinzip
+
+Nach Task-Auswahl SOFORT claimen:
+
+```bash
+node scripts/task.mjs claim <ID>
+# Ausgabe: "Key: a4x2 (2h gültig)"
+```
+
+- **Bei Erfolg:** Key merken, weitermachen
+- **Bei Fehler:** ABBRUCH - nächste Task suchen, keine Analysen, kein Warten
+
+**Vor dem Claim nur erlaubt:** Task mit Skript finden (`sort`, `show`), Task-ID notieren
+
+**Nach dem Claim:** Status der Task bestimmt den Workflow (siehe unten)
+
+### Status-Workflow-Zuordnung
+
+| Status | Bedeutung | Workflow |
+|:------:|-----------|----------|
+| ⬜ | Noch nicht implementiert | `scripts/workflows/vorbereitung.txt` |
+| 🟢 | Bereit zur Umsetzung | `scripts/workflows/umsetzung.txt` |
+| 🔶 | Funktionsfähig aber nicht spezifikations-konform | `scripts/workflows/konformitaet.txt` |
+| ⚠️ | Implementiert aber nicht funktionsfähig | `scripts/workflows/reparatur.txt` |
+| 📋 | Fertig, wartet auf Review | `scripts/workflows/review.txt` |
+| ⛔ | Blockiert (Dependencies fehlen) | ABBRUCH |
+| 🔒 | Von anderem Agent geclaimed | ABBRUCH |
+| ✅ | Implementiert und reviewed | ABBRUCH |
+
+**Nach dem Claim:**
+1. Status der Task prüfen (steht in der Ausgabe von `--claim`)
+2. Entsprechende Workflow-Datei lesen
+3. Workflow Schritt für Schritt befolgen
+
+---
+
+## 5. CLI-Referenz
+
+### Kurzübersicht
+
+| Aktion | Befehl |
+|--------|--------|
+| Top-Tasks | `node scripts/task.mjs sort` |
+| Keyword-Suche | `node scripts/task.mjs sort <keyword>` |
+| Task-Details | `node scripts/task.mjs show <ID>` |
+| Claimen | `node scripts/task.mjs claim <ID>` |
+| Freigeben | `node scripts/task.mjs claim <key>` |
+| Status ändern | `node scripts/task.mjs edit <ID> --status ✅ --key <key>` |
+| Neue Task | `node scripts/task.mjs add --tasks '<JSON>'` |
+| Neuer Bug | `node scripts/task.mjs add --bugs '<JSON>'` |
+| Task löschen | `node scripts/task.mjs remove <ID>` |
+| Bug resolven | `node scripts/task.mjs remove <ID> --resolve` |
+
+### Sort-Filter
+
+```bash
+node scripts/task.mjs sort --status partial   # Nur 🔶
+node scripts/task.mjs sort --mvp              # Nur MVP-Tasks
+node scripts/task.mjs sort --domain Travel    # Nur Travel-Domain
+node scripts/task.mjs sort --prio hoch        # Nur hohe Priorität
+node scripts/task.mjs sort --help             # Alle Optionen
+```
+
+**Filter-Optionen:**
+| Option | Beschreibung |
+|--------|--------------|
+| `-s, --status <X>` | Nur Tasks mit Status X |
+| `-d, --domain <X>` | Nur Tasks mit Domain X |
+| `-l, --layer <X>` | Nur Tasks mit Layer X |
+| `--mvp` / `--no-mvp` | Nur MVP / Nur Nicht-MVP |
+| `-p, --prio <X>` | Nur Tasks mit Priorität X |
+
+### Task erstellen
+
+```bash
+node scripts/task.mjs add --tasks '[{
+  "domain": "Travel",
+  "layer": "features",
+  "beschreibung": "Route-Validierung implementieren",
+  "deps": "#100, #101",
+  "specs": "Travel.md#Zustände",
+  "impl": "travel-engine.ts.validateRoute() [neu]"
+}]'
+```
+
+**Pflichtfelder:** `domain`, `layer`, `beschreibung`, `deps` (oder "-"), `specs`, `impl`
+
+**Impl-Tags:** `[neu]` (nur Format geprüft), `[ändern]`/`[fertig]` (Datei + Funktion muss existieren)
+
+### Bug-System
+
+| Aspekt | Task | Bug |
+|--------|------|-----|
+| ID-Format | `#123` | `b123` |
+| Dependencies | Zeigt auf Vorbedingungen | Zeigt auf verdächtige Tasks |
+
+**Bug-Dependencies bedeuten:** "Diese Tasks könnten die Ursache sein" (NICHT: "müssen vorher fertig sein")
+
+```bash
+node scripts/task.mjs add --bugs '[{"beschreibung": "Bug-Beschreibung", "deps": "#428"}]'
+node scripts/task.mjs remove b5 --resolve   # Bug resolven
+```
+
+### Automatisches Verhalten
+
+- **Claim-Expire:** Claims verfallen nach 2 Stunden
+- **Status entfernt Claim:** Status-Änderung (außer auf 🔒) entfernt den Claim
+- **Bug-Propagation:** Neue Bugs setzen referenzierte Tasks auf ⚠️
+- **Bug-Resolution:** `--resolve` entfernt den Bug aus allen Task-Dependencies
+- **Blockiert-Propagation:** Status-Änderung propagiert ⛔ zu Dependents
+
+---
+
+## 6. Autonomie & Build
 
 ### Autonomie-Level
 
@@ -379,238 +388,46 @@ Pro logische Einheit committen:
 
 **Kurzregel:** Öffentliche API oder Architektur → Fragen. Sonst autonom.
 
+### Build-Kommandos
+
+```bash
+npm run dev         # Watch mode (builds to Obsidian plugin folder)
+npm run build       # Production build
+npm run typecheck   # TypeScript type checking
+npm run lint        # ESLint with cycle detection
+npm run test        # Run all Vitest tests
+npx vitest run path/to/file.test.ts    # Single test file
+```
+
+**ESLint:** `import-x/no-cycle: error` - keine zyklischen Dependencies
+
 ### Test-Strategie
 
 | Komponente | Stabilität | Test-Ansatz |
 |------------|------------|-------------|
-| Core | Hoch | ~280 Unit-Tests (inkl. EventBus request()) |
+| Core/Schemas | Hoch | Unit-Tests |
 | Features (Iteration) | Niedrig | Manuelles Testen |
 | Features (Fertig) | Hoch | Automatisierte Tests nachziehen |
 
 **Kriterium "Test-Ready":** User gibt Freigabe ("Feature ist fertig")
 
-**Schema-Definitionen:**
-| Ort | Inhalt |
-|-----|--------|
-| `docs/architecture/EntityRegistry.md` | Entity-Interfaces |
-| `docs/architecture/Data.md` | Data Layer: Schemas, Types, Konstanten, Utils |
-| Feature-Docs | Feature-spezifische Typen |
+### Debug-Logging
 
-Bei fehlenden oder unklaren Schemas: User fragen.
+1. Copy `.claude/debug.json.example` to `.claude/debug.json`
+2. Reload plugin in Obsidian
+3. View logs: `tail -f CONSOLE_LOG.txt`
 
----
+### Commit-Granularität
 
-## 6. DEV-TOOLS REFERENZ
-
-### CLI-Tools Kurzübersicht
-
-| Aktion | Befehl |
-|--------|--------|
-| Lesen | `node scripts/task.mjs show <ID>` |
-| Suchen | `node scripts/task.mjs sort <keyword>` |
-| Priorisieren | `node scripts/task.mjs sort` |
-| Status ändern | `node scripts/task.mjs edit <ID> [ID...] --status ✅` |
-| Claimen | `node scripts/task.mjs claim <ID>` |
-| Freigeben | `node scripts/task.mjs claim <key>` |
-| Neue Tasks | `node scripts/task.mjs add --tasks '<JSON-Array>'` |
-| Neue Bugs | `node scripts/task.mjs add --bugs '<JSON-Array>'` |
-| Task löschen | `node scripts/task.mjs remove <ID>` |
-| Task splitten | `node scripts/task.mjs split <ID> "A" "B"` |
-| Kaputte Links finden | `node scripts/task.mjs scan-refs` |
-| Kaputte Links reparieren | `node scripts/task.mjs scan-refs --fix` |
+Pro logische Einheit committen:
+```
+feat(core): add Result<T,E> type with tests
+feat(session): add TravelWorkflow state machine
+fix(encounter): correct XP calculation for mixed groups
+```
 
 ### Automatische Referenz-Updates
 
-Beim Verschieben von Dateien in `docs/` werden Markdown-Links automatisch aktualisiert (PostToolUse-Hook auf Bash).
+Beim Verschieben von Dateien in `docs/` werden Markdown-Links automatisch aktualisiert (PostToolUse-Hook).
 
-Dokumentation: [docs/tools/update-refs-hook.md](docs/tools/update-refs-hook.md)
-
-### Task-Priorisierung (sort)
-
-```bash
-node scripts/task.mjs sort                        # Top 10 aller Tasks/Bugs
-node scripts/task.mjs sort travel                 # Keyword-Filter
-node scripts/task.mjs sort -n 5 --mvp             # Top 5 MVP-Tasks
-node scripts/task.mjs sort --status partial       # Nur 🔶 Status
-node scripts/task.mjs sort --status claimed -n 0  # Alle geclaimten Tasks
-node scripts/task.mjs sort --prio hoch -n 0       # Alle hoch-prio
-node scripts/task.mjs sort --domain Travel        # Nur Travel-Domain
-node scripts/task.mjs sort --layer features       # Nur Feature-Layer
-node scripts/task.mjs sort --sort-by status,prio  # Eigene Sortierung
-node scripts/task.mjs sort --sort-by -number      # Neueste Tasks zuerst
-node scripts/task.mjs sort --help                 # Alle Optionen
-```
-
-**Filter-Optionen:**
-| Option | Beschreibung |
-|--------|--------------|
-| `-s, --status <X>` | Nur Tasks mit Status X (überschreibt include-Flags) |
-| `-d, --domain <X>` | Nur Tasks mit Domain X (substring match) |
-| `-l, --layer <X>` | Nur Tasks mit Layer X (exact match) |
-| `--mvp` / `--no-mvp` | Nur MVP / Nur Nicht-MVP |
-| `-p, --prio <X>` | Nur Tasks mit Priorität X |
-
-**Sortier-Option:**
-`--sort-by <kriterien>` - Komma-separierte Liste: `mvp`, `status`, `prio`, `refcount`, `number`, `domain`, `layer`
-- Prefix `-` für absteigend (z.B. `-number` = neueste zuerst)
-- Default: `mvp,status,prio,refcount,number`
-
-### Task-Details (show)
-
-```bash
-node scripts/task.mjs show 428                    # Task #428 mit Dep-Trees
-node scripts/task.mjs show b4                     # Bug b4 Details
-node scripts/task.mjs show 428 --depth 5          # Tieferer Dep-Baum
-node scripts/task.mjs show --help                 # Alle Optionen
-```
-
-### Task-Bearbeitung (edit)
-
-```bash
-# Einzelne Task bearbeiten
-node scripts/task.mjs edit 428 --status ✅
-
-# Mehrere Tasks gleichzeitig bearbeiten
-node scripts/task.mjs edit 100 101 102 --status ✅
-
-# Mit Keys für geclaime Tasks (Reihenfolge = Task-Reihenfolge)
-node scripts/task.mjs edit 100 101 --status 🟢 --key a4x2 --key b5y3
-
-# Dependencies ändern
-node scripts/task.mjs edit 428 --deps "#100, #202"
-node scripts/task.mjs edit 428 --no-deps
-
-# Beschreibung/Bereich ändern
-node scripts/task.mjs edit 428 --beschreibung "Neue Beschreibung"
-node scripts/task.mjs edit 428 --bereich Travel
-
-# Vorschau ohne Speichern
-node scripts/task.mjs edit 428 --status ✅ --dry-run
-```
-
-**Verhalten bei mehreren IDs:**
-- **Partial Success**: Fehlerhafte Tasks verhindern nicht die Bearbeitung anderer
-- **Keys**: Werden in Reihenfolge den Task-IDs zugeordnet
-
-### Claims (claim)
-
-```bash
-node scripts/task.mjs claim 428                   # Task claimen → Key merken!
-node scripts/task.mjs claim a4x2                  # Claim freigeben (4-Zeichen Key)
-node scripts/task.mjs edit 428 --key a4x2 ...     # Edit mit Key bei geclaimter Task
-```
-
-### Neue Tasks/Bugs (add)
-
-Tasks und Bugs werden über JSON-Arrays erstellt:
-
-```bash
-# Neue Task erstellen (alle Felder erforderlich!)
-node scripts/task.mjs add --tasks '[{
-  "domain": "Travel", "layer": "features",
-  "beschreibung": "Route-Validierung implementieren",
-  "deps": "#100, #101",
-  "specs": "Travel.md#Zustände",
-  "impl": "travel-engine.ts.validateRoute() [neu]"
-}]'
-
-# Mehrere Tasks auf einmal
-node scripts/task.mjs add --tasks '[
-  {"domain": "Travel", "layer": "features", "beschreibung": "Task A", "deps": "-", "specs": "Travel.md#API", "impl": "travel.ts.start() [neu]"},
-  {"domain": "Map", "layer": "data", "beschreibung": "Task B", "deps": "#100", "specs": "Map.md#Rendering", "impl": "map.ts.render() [ändern]", "prio": "hoch"}
-]'
-
-# Neuen Bug erstellen
-node scripts/task.mjs add --bugs '[{"beschreibung": "Bug-Beschreibung", "prio": "hoch", "deps": "#428"}]'
-
-# Mehrere Bugs auf einmal
-node scripts/task.mjs add --bugs '[
-  {"beschreibung": "Bug A", "prio": "hoch", "deps": "#428"},
-  {"beschreibung": "Bug B"}
-]'
-```
-
-**Pflichtfelder (Task im JSON):**
-| Feld | Beschreibung |
-|------|--------------|
-| `domain` | Domain (z.B. "Travel", "Map") - Multi via "," |
-| `layer` | Layer ("features", "data", "application") - Multi via "," |
-| `beschreibung` | Task-Beschreibung |
-| `deps` | Dependencies ("-" wenn keine, z.B. "#100, #202") |
-| `specs` | Spec-Referenzen (datei.md#abschnitt) - Multi via "," |
-| `impl` | Impl-Referenzen (datei.ts.funktion() [tag]) - Multi via "," |
-
-**Optionale Felder:** `prio` (default: "mittel"), `mvp` (default: "Nein"), `init` (default: false)
-
-**Impl-Tags:** `[neu]` (nur Format geprüft), `[ändern]` / `[fertig]` (Datei + Funktion muss existieren)
-
-**Validierung:**
-- `deps`: Referenzierte IDs müssen in der Roadmap existieren
-- `specs`: Datei und Abschnitt (## oder ###) müssen existieren
-- `impl [ändern]/[fertig]`: Datei und Funktion müssen in src/ existieren
-
-**Verhalten:**
-- **Partial Success**: Fehlerhafte Items stoppen nicht die anderen
-- Tasks werden in Roadmap + allen aufgelösten Docs gespeichert
-- Bugs werden nur in der Roadmap gespeichert
-
-### Bug-System
-
-**Bugs vs. Tasks - Wichtige Unterschiede:**
-
-| Aspekt | Task | Bug |
-|--------|------|-----|
-| ID-Format | `#123` | `b123` |
-| Speicherort | Roadmap + Doc-File | Nur Roadmap |
-| Dependencies | Zeigt auf Vorbedingungen | Zeigt auf verdächtige Tasks |
-
-**Bug-Dependencies funktionieren anders als Task-Dependencies:**
-
-1. **Bug-Deps verweisen auf verdächtige Tasks**
-   - Eine Bug-Dependency `-d "#428, #429"` bedeutet: "Diese Tasks könnten die Ursache sein"
-   - NICHT: "Diese Tasks müssen fertig sein bevor der Bug bearbeitet werden kann"
-
-2. **Zirkuläre Dependency für Nachvollziehbarkeit**
-   - Wenn Bug `b5` mit `-d "#428"` erstellt wird:
-     - Bug `b5` hat Dependency auf `#428`
-     - Task `#428` bekommt automatisch Dependency auf `b5`
-   - So sieht man bei der Task sofort: "Hier gibt es einen Bug"
-
-3. **Automatische Cleanup bei Resolution**
-   - `node scripts/task.mjs remove b5 --resolve`
-   - Entfernt `b5` aus allen Task-Dependencies automatisch
-   - Task `#428` verliert die `b5` Dependency
-
-**Workflow bei Bug-Bearbeitung:**
-
-```
-1. Bug finden:     node scripts/task.mjs sort --status ⚠️
-2. Bug claimen:    node scripts/task.mjs claim b5
-3. Verdächtige Tasks prüfen (aus Dependencies)
-4. Bug fixen
-5. Bug resolven:   node scripts/task.mjs remove b5 --resolve
-```
-
-**Merke:** Bei Bugs bedeutet "Dependency" = "könnte die Ursache sein", nicht "muss vorher fertig sein".
-
-### Löschen/Splitten (remove, split)
-
-```bash
-# Task oder Bug löschen
-node scripts/task.mjs remove 428
-node scripts/task.mjs remove b4
-
-# Bug als gelöst markieren (statt löschen)
-node scripts/task.mjs remove b4 --resolve
-
-# Task in zwei Teile splitten
-node scripts/task.mjs split 428 "Teil A fertig" "Teil B TODO"
-```
-
-**Automatisches Verhalten:**
-- **Multi-File-Sync**: Deps-Änderungen werden in alle Doc-Files synchronisiert
-- **Bug-Propagation**: Neue Bugs setzen referenzierte Tasks automatisch auf ⚠️ und fügen zirkuläre Dependency hinzu
-- **Bug-Resolution**: `--resolve` entfernt den Bug automatisch aus allen Task-Dependencies
-- **Blockiert-Propagation**: Status-Änderung propagiert ⛔ zu allen Dependents mit nicht-erfüllten Deps
-- **Claim-Expire**: Claims verfallen nach 2 Stunden automatisch
-- **Status entfernt Claim**: Status-Änderung (außer auf 🔒) entfernt den Claim automatisch
+Dokumentation: [update-refs-hook.md](docs/tools/update-refs-hook.md)
