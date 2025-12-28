@@ -13,7 +13,7 @@
 > - [Loot.md](../services/Loot.md) - Quest-Rewards
 > - [Combat-System.md](Combat-System.md) - Combat-Objectives
 >
-> **Wird benoetigt von:** SessionControl
+> **Wird benoetigt von:** sessionState
 
 Objektiv-basierte Quests mit automatischer XP-Berechnung und 40/60-Split.
 
@@ -345,7 +345,7 @@ function getQuestsWithOpenSlots(): QuestDefinition[];
 
 ### Quantum-Encounter/Rewards Platzierung
 
-**Entscheidung:** GM-gesteuert via UI im SessionControl
+**Entscheidung:** GM-gesteuert via UI im sessionState
 
 - GM platziert manuell wenn passend
 - "Quantum" = "GM muss noch entscheiden wo"
@@ -371,9 +371,9 @@ Quest-Feature
 
 ### UI-Integration
 
-**Entscheidung:** Dediziertes Quest-Panel im SessionControl
+**Entscheidung:** Dediziertes Quest-Panel im sessionState
 
-- SessionControl ist die Haupt-Spielansicht
+- sessionState ist die Haupt-Spielansicht
 - Quest-Panel zeigt: Aktive Quests, Objectives, offene Encounter-Slots
 - Almanac/Timeline zeigt Quest-bezogene Events (Quest gestartet, Objective erreicht)
 
@@ -402,7 +402,7 @@ interface QuestSettings {
 | Predefined Encounters | ✓ | | Feste Slots |
 | Quantum Encounters | | mittel | GM-platziert |
 | Deadline-Tracking | ✓ | | Time-Integration |
-| Quest-UI im SessionControl | ✓ | | Status-Anzeige |
+| Quest-UI im sessionState | ✓ | | Status-Anzeige |
 | Quest-Editor in Library | | mittel | CRUD |
 
 ---

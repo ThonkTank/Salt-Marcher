@@ -1,10 +1,10 @@
 # TravelWorkflow
 
 > **Verantwortlichkeit:** Orchestration der Hex-Overland-Reise
-> **State-Owner:** SessionControl
+> **State-Owner:** sessionState
 >
 > **Verwandte Dokumente:**
-> - [SessionControl.md](SessionControl.md) - State-Owner
+> - [sessionState.md](sessionState.md) - State-Owner
 > - [Travel.md](../features/Travel.md) - Feature-Spezifikation (Speed, Encounter-Checks)
 > - [EncounterWorkflow.md](EncounterWorkflow.md) - Encounter bei Reise
 

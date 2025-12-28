@@ -13,7 +13,7 @@
 > - [Cartographer.md](../views/Cartographer.md) - Dungeon-Editor
 > - [encounter/Encounter.md](../services/encounter/Encounter.md) - Dungeon-Encounters
 >
-> **Wird benoetigt von:** SessionControl
+> **Wird benoetigt von:** sessionState
 
 Grid-basierte Dungeon Maps mit Fog of War, Lichtquellen und automatischen Triggern.
 

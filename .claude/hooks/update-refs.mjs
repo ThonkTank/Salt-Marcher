@@ -27,6 +27,7 @@ import { existsSync, readdirSync, statSync } from 'fs';
 import { join, relative } from 'path';
 import { createRefUpdaterService } from '../../scripts/services/ref-updater-service.mjs';
 import { updateClaudemdDocsTree } from './docs-tree.mjs';
+import { recordDelete } from './hook-state.mjs';
 
 // ============================================================================
 // FILE DISCOVERY
@@ -62,7 +63,7 @@ function findAllMarkdownFiles(dir, files = []) {
 // ============================================================================
 
 /**
- * Checks if a command affects the docs/ directory structure.
+ * Checks if a command affects the docs/ or src/ directory structure.
  * Returns the type of command if it does, null otherwise.
  *
  * @param {string} command - The bash command
@@ -71,18 +72,20 @@ function findAllMarkdownFiles(dir, files = []) {
 function getDocsAffectingCommand(command) {
   if (!command) return null;
 
-  // Check for mv/git mv affecting docs/
-  if (/\b(git\s+)?mv\b/.test(command) && command.includes('docs/')) {
+  const affectsTrackedDir = command.includes('docs/') || command.includes('src/');
+
+  // Check for mv/git mv affecting docs/ or src/
+  if (/\b(git\s+)?mv\b/.test(command) && affectsTrackedDir) {
     return 'mv';
   }
 
-  // Check for rm affecting docs/
-  if (/\brm\b/.test(command) && command.includes('docs/')) {
+  // Check for rm affecting docs/ or src/
+  if (/\brm\b/.test(command) && affectsTrackedDir) {
     return 'rm';
   }
 
-  // Check for mkdir affecting docs/
-  if (/\bmkdir\b/.test(command) && command.includes('docs/')) {
+  // Check for mkdir affecting docs/ or src/
+  if (/\bmkdir\b/.test(command) && affectsTrackedDir) {
     return 'mkdir';
   }
 
@@ -145,6 +148,51 @@ function normalizePath(p) {
 }
 
 // ============================================================================
+// RM COMMAND PARSING
+// ============================================================================
+
+/**
+ * Parses rm commands to extract deleted paths.
+ *
+ * Handles:
+ * - rm file
+ * - rm -f file
+ * - rm -rf folder/
+ * - rm "path with spaces"
+ * - rm 'path with spaces'
+ *
+ * @param {string} command - The bash command to parse
+ * @returns {string[]} - Array of deleted paths
+ */
+function parseRmCommand(command) {
+  if (!command) return [];
+
+  // Match rm command with optional flags and path(s)
+  // Pattern: rm [flags] path(s)
+  const rmMatch = command.match(/\brm\s+(.+)$/);
+  if (!rmMatch) return [];
+
+  const argsString = rmMatch[1];
+  const paths = [];
+
+  // Tokenize: handle quoted strings and unquoted words
+  const tokenRegex = /"([^"]+)"|'([^']+)'|(\S+)/g;
+  let match;
+
+  while ((match = tokenRegex.exec(argsString)) !== null) {
+    const token = match[1] || match[2] || match[3];
+
+    // Skip flags (start with -)
+    if (token.startsWith('-')) continue;
+
+    // Add path
+    paths.push(normalizePath(token));
+  }
+
+  return paths;
+}
+
+// ============================================================================
 // MAIN
 // ============================================================================
 
@@ -181,6 +229,17 @@ async function main() {
   const commandType = getDocsAffectingCommand(command);
   if (!commandType) {
     process.exit(0);
+  }
+
+  // Handle rm commands (record deletions for rename detection)
+  if (commandType === 'rm') {
+    const deletedPaths = parseRmCommand(command);
+    for (const path of deletedPaths) {
+      if (path.startsWith('docs/') && path.endsWith('.md')) {
+        recordDelete(path);
+        console.log(`[update-refs] Recorded deletion: ${path}`);
+      }
+    }
   }
 
   // Handle move commands (update references)

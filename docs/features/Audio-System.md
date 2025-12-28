@@ -9,7 +9,7 @@
 > - [Travel-System.md](Travel-System.md) - Reise-Musik
 > - [Events-Catalog.md](../architecture/Events-Catalog.md) - audio:* Events
 >
-> **Wird benoetigt von:** SessionControl
+> **Wird benoetigt von:** sessionState
 
 Kontextbasierte Hintergrundmusik und Umgebungsgeraeusche.
 

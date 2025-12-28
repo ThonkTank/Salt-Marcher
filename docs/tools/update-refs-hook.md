@@ -1,6 +1,6 @@
 # Update-Refs Hook
 
-Automatisches Update von Markdown-Links und CLAUDE.md bei Änderungen in `docs/`.
+Automatisches Update von Markdown-Links und CLAUDE.md bei Änderungen in `docs/` oder `src/`.
 
 ---
 
@@ -8,8 +8,8 @@ Automatisches Update von Markdown-Links und CLAUDE.md bei Änderungen in `docs/`
 
 Der Hook erfüllt zwei Aufgaben:
 
-1. **Referenz-Updates**: Bei `mv`/`git mv` werden alle Markdown-Links aktualisiert
-2. **Docs-Tree-Updates**: Bei jeder Strukturänderung wird die Projektstruktur in CLAUDE.md neu generiert
+1. **Referenz-Updates**: Bei `mv`/`git mv` in `docs/` werden alle Markdown-Links aktualisiert
+2. **Projektstruktur-Updates**: Bei Strukturänderungen in `docs/` oder `src/` wird die Projektstruktur in CLAUDE.md neu generiert (inkl. Beschreibungen aus Zeile 1 bei .ts-Dateien und Zeile 3 bei .md-Dateien)
 
 **Beispiele:**
 ```bash
@@ -30,13 +30,13 @@ git mv docs/domain docs/entities
 
 | Tool | Hook | Aktion |
 |------|------|--------|
-| Bash | `update-refs.mjs` | Referenz-Updates + Docs-Tree |
-| Write | `update-docs-tree.mjs` | Nur Docs-Tree |
+| Bash | `update-refs.mjs` | Referenz-Updates (nur docs/) + Projektstruktur |
+| Write | `update-docs-tree.mjs` | Nur Projektstruktur |
 
 ### Erkannte Befehle (Bash)
 
-| Befehl | Referenz-Update | Docs-Tree-Update |
-|--------|-----------------|------------------|
+| Befehl | Referenz-Update (docs/) | Projektstruktur-Update (docs/ + src/) |
+|--------|------------------------|--------------------------------------|
 | `mv` / `git mv` | ✅ | ✅ |
 | `rm` | – | ✅ |
 | `mkdir` | – | ✅ |
@@ -44,8 +44,8 @@ git mv docs/domain docs/entities
 ### Ablauf
 
 1. Hook erhält Kommando/Dateipfad via stdin (JSON)
-2. Prüft ob `docs/` betroffen ist
-3. Bei `mv`: Aktualisiert alle Markdown-Links
+2. Prüft ob `docs/` oder `src/` betroffen ist
+3. Bei `mv` in `docs/`: Aktualisiert alle Markdown-Links
 4. Bei jeder Änderung: Regeneriert Projektstruktur in CLAUDE.md
 
 ### Unterstützte Formate
@@ -129,7 +129,10 @@ Hooks sind in `.claude/settings.json` registriert:
 
 ## Einschränkungen
 
-- Nur Pfade in `docs/` werden verarbeitet
-- Nur erfolgreich ausgeführte mv-Befehle (exitCode 0)
+- **Referenz-Updates:** Nur für Pfade in `docs/` (Markdown-Links)
+- **Projektstruktur-Updates:** Für `docs/` und `src/`
+- Nur erfolgreich ausgeführte Befehle (exitCode 0)
 - Keine Unterstützung für Glob-Patterns: `mv *.md dest/`
 - Keine Unterstützung für Mehrfach-Quellen: `mv file1 file2 dest/`
+- Bei `src/`: Nur `.ts`-Dateien (keine `.d.ts`, `.test.ts`, `.js`)
+- Bei `docs/`: Beschreibungen werden aus Zeile 3 extrahiert (führendes `> ` und `**Label:**` werden entfernt)

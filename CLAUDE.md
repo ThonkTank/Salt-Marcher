@@ -42,23 +42,23 @@ Salt Marcher ist ein Obsidian-Plugin für D&D 5e Game Masters. Es automatisiert 
 | Modus | Zweck | State-Owner | Views |
 |-------|-------|-------------|-------|
 | **Out-of-Session** | Daten vorbereiten | Vault (direkte CRUD) | Library, Cartographer, Almanac |
-| **In-Session** | Session spielen | SessionControl | SessionRunner, DetailView |
+| **In-Session** | Session spielen | sessionState | SessionRunner, DetailView |
 
 **Out-of-Session:** Der GM bereitet Inhalte vor. Alle Änderungen werden direkt im Vault persistiert. Keine zentrale State-Verwaltung nötig.
 
-**In-Session:** Der GM führt eine aktive Session durch. Der SessionControl ist der einzige State-Owner für Position, Zeit, Wetter und aktive Workflows.
+**In-Session:** Der GM führt eine aktive Session durch. Der sessionState ist der einzige State-Owner für Position, Zeit, Wetter und aktive Workflows.
 
 ### Datenfluss
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Views (Svelte)                                               │
-│   $sessionControl.state   ← subscribet auf State             │
-│   sessionControl.method() → ruft Methoden auf                │
+│   $sessionState           ← subscribet auf State             │
+│   Workflows               → orchestrieren State-Änderungen   │
 └─────────────────────────────────────────────────────────────┘
                               ↓↑
 ┌─────────────────────────────────────────────────────────────┐
-│ SessionControl                                               │
+│ sessionState                                               │
 │   state = writable<SessionState>(...)                        │
 │   - Party-Position, Zeit, Wetter                             │
 │   - Travel-, Combat-, Encounter-Workflows                    │
@@ -78,8 +78,8 @@ Salt Marcher ist ein Obsidian-Plugin für D&D 5e Game Masters. Es automatisiert 
 
 ### Kernprinzipien
 
-**SessionControl = Single Source of Truth**
-Für In-Session-Daten gibt es genau einen Owner. Kein EventBus - die UI subscribet direkt auf den Svelte Store.
+**sessionState = State-Container (kein Controller)**
+sessionState ist ein Svelte Store, kein Controller mit Methoden. Workflows lesen/schreiben State, Views subscriben.
 
 **Services = Dumme Pipelines**
 Services haben keinen eigenen State. Sie empfangen Input und liefern Output:
@@ -108,92 +108,108 @@ Das gilt für JEDE Arbeit: Code schreiben, Fragen beantworten, Planung, Dokument
 
 ```
 src/                   # Source code
-  core/                # Data Layer: Schemas, Types, Konstanten, Utils
-  features/            # Feature layer (map, party, travel)
-  infrastructure/      # Vault adapters, rendering
-  application/         # SessionRunner, ViewModels
-  main.ts              # Plugin entry point
+  constants/
+    EncounterConfig.ts  # Encounter-Konfiguration
+  entities/
+    creature.ts
+    faction.ts
+    factionEncounterTemplate.ts
+  services/
+    encounterGenerator/
+      balanceEncounter.ts
+      calcDifficulty.ts
+      encounterGenerator.ts  # Ziel: sessionState für relevanten Kontext auslesen. Enc...
+      encounterNPCs.ts
+      groupGenerator.ts
+    lootGenerator/
+      lootGenerator.ts
+    npcGenerator/
+      npcGenerator.ts
+  SessionRunner/
+    encounterWorkflow.ts  # Ziel: Encounter generieren lassen, in DetailView anzeigen...
+    sessionState.ts  # Ziel: Speichert alle Session-Zeit-State-Variablen.
 docs/                  # Authoritative documentation (German)
   architecture/
     .task-claims.json
-    constants.md
-    Development-Roadmap.md
-    Infrastructure.md
-    Orchestration.md
-    schemas.md
-    Services.md
-    Testing.md
+    constants.md  # D&D-Regeln, Lookup-Tabellen und Pure Utility Functions
+    Development-Roadmap.md  # Aktueller Task
+    Infrastructure.md  # [Orchestration.md](Orchestration.md), [Services.md](Servi...
+    Orchestration.md  # Die Orchestration-Schicht koordiniert Workflows waehrend ...
+    schemas.md  # Zod-basierte Entity-Definitionen und TypeScript-Typen
+    Services.md  # Services sind **stateless Pipelines**, die von Workflows ...
+    Testing.md  # [Orchestration.md](Orchestration.md), [Services.md](Servi...
   constants/
-    CreatureSizes.md
-    CreatureTypes.md
-    Difficulty.md
-    LootRarity.md
-    TimeSegments.md
+    CreatureSizes.md  # TODO: Inhalte extrahieren aus `docs/entities/creature.md`
+    CreatureTypes.md  # TODO: Inhalte extrahieren aus `docs/entities/creature.md`
+    Difficulty.md  # TODO: Inhalte extrahieren aus `docs/services/encounter/Di...
+    LootRarity.md  # TODO: Inhalte extrahieren aus `docs/services/Loot.md`
+    TimeSegments.md  # TODO: Inhalte extrahieren aus `docs/entities/creature.md`...
   entities/
-    action.md
-    creature.md
-    culture-data.md
-    currency.md
-    encounter-instance.md
-    faction-encounter-template.md
-    faction-presence.md
-    faction.md
-    item.md
-    journal-entry.md
-    journal-settings.md
-    journal.md
-    LootContainer.md
-    map.md
-    npc.md
-    overworld-tile.md
-    path.md
-    poi.md
-    quest.md
-    session.md
-    shop.md
-    terrain-definition.md
+    action.md  # [Library](../views/Library.md) (Creature-Editor), Presets...
+    activity.md  # [Library](../views/Library.md) (Activity-Editor), Presets...
+    creature.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
+    culture-data.md  # [Faction](faction.md) (eingebettet)
+    currency.md  # -
+    encounter-instance.md  # [Encounter-Service](../services/encounter/Encounter.md) (...
+    faction-encounter-template.md  # [Library](../views/Library.md), [Faction](faction.md)
+    faction-presence.md  # [Cartographer](../views/Cartographer.md) (Praesenz-Vorber...
+    faction.md  # [Library](../views/Library.md) (CRUD), [Encounter](../ser...
+    item.md  # [Library](../views/Library.md)
+    journal-entry.md  # Quest-Feature (auto), Encounter-Feature (auto), Travel-Fe...
+    journal-settings.md  # User-Konfiguration (Settings-UI)
+    journal.md  # [Journal-Feature](../features/Journal.md) (Auto-Generieru...
+    LootContainer.md  # [Library](../views/Library.md), [Loot](../services/Loot.m...
+    map.md  # [Cartographer](../views/Cartographer.md), [Library](../vi...
+    npc.md  # [Encounter](../services/encounter/Encounter.md) (Generier...
+    overworld-tile.md  # [Cartographer](../views/Cartographer.md) (Terrain/Danger-...
+    path.md  # [Cartographer](../views/Cartographer.md) (Path-Tool)
+    poi.md  # [Library](../views/Library.md) (CRUD), [Encounter](../ser...
+    quest.md  # [Library](../views/Library.md) (CRUD)
+    session.md  # sessionState (Session starten/beenden)
+    shop.md  # [Library](../views/Library.md) (CRUD)
+    terrain-definition.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
   features/
-    Audio-System.md
-    Character-System.md
-    Combat.md
-    Dungeon-System.md
-    Journal.md
-    Map-Feature.md
-    Map-Navigation.md
-    NPC-Lifecycle.md
-    Quest.md
-    Time.md
-    Travel.md
+    Audio-System.md  # Kontextbasierte Hintergrundmusik und Umgebungsgeraeusche
+    Character-System.md  # Verwaltung von Player Characters - Schema, HP-Tracking, I...
+    Combat.md  # Initiative-Tracker und Condition-Management fuer D&D Kaempfe
+    Dungeon-System.md  # Grid-basierte Dungeon Maps mit Fog of War, Lichtquellen u...
+    Journal.md  # Single Source of Truth fuer Session-Journal und automatis...
+    Map-Feature.md  # Single Source of Truth fuer Map-Typen, Map-Content und Mu...
+    Map-Navigation.md  # Navigation zwischen Maps via EntrancePOIs
+    NPC-Lifecycle.md  # Persistierung, Status-Uebergaenge und laufende NPC-Simula...
+    Quest.md  # Objektiv-basierte Quests mit automatischer XP-Berechnung ...
+    Time.md  # Backend-Feature fuer Kalender und Zeit-Verwaltung
+    Travel.md  # Hex-Overland-Reisen - Routen-Planung, Animationen, Encoun...
   orchestration/
-    CombatWorkflow.md
-    EncounterWorkflow.md
-    RestWorkflow.md
-    SessionControl.md
-    TravelWorkflow.md
+    CombatWorkflow.md  # Orchestration des Combat-Trackers
+    EncounterWorkflow.md  # Orchestration der Encounter-Generierung und -Resolution
+    RestWorkflow.md  # Orchestration von Short/Long Rest
+    SessionState.md  # State-Container fuer alle In-Session-Daten
+    TravelWorkflow.md  # Orchestration der Hex-Overland-Reise
   services/
     encounter/
-      Adjustments.md
-      Difficulty.md
-      Encounter.md
-      Flavour.md
-      Initiation.md
-      Population.md
-      Publishing.md
+      Balancing.md  # Encounter-Service (Step 6.1)
+      Difficulty.md  # Encounter-Service (Step 5)
+      Encounter.md  # Generiert kontextabhaengige Encounters basierend auf Posi...
+      encounterDistance.md  # Encounter-Service (Step 4.5)
+      groupActivity.md  # Encounter-Service (Step 4.1, 4.2)
+      groupPopulation.md  # Encounter-Service (Step 3)
+      groupSeed.md  # Encounter-Service (Step 2)
     NPCs/
-      Culture-Resolution.md
-      NPC-Generation.md
-      NPC-Matching.md
-    Inventory.md
-    Loot.md
-    Weather.md
+      Culture-Resolution.md  # Kultur-Aufloesung fuer NPC-Generierung
+      NPC-Generation.md  # Automatische NPC-Generierung
+      NPC-Matching.md  # Existierenden NPC finden
+    Inventory.md  # [Item](../entities/item.md), [Character-System](../featur...
+    Loot.md  # [Item](../entities/item.md), [Encounter-System](encounter...
+    Weather.md  # Stateless Service
   tools/
-    update-refs-hook.md
+    update-refs-hook.md  # Automatisches Update von Markdown-Links und CLAUDE.md bei...
   views/
-    Cartographer.md
-    DetailView.md
-    Library.md
-    SessionRunner.md
-  Example-Workflows.md
+    Cartographer.md  # [Map-Feature](../features/Map-Feature.md), [Map](../entit...
+    DetailView.md  # [Application](../architecture/Application.md), [SessionRu...
+    Library.md  # [EntityRegistry](../architecture/EntityRegistry.md), [App...
+    SessionRunner.md  # [Orchestration.md](../architecture/Orchestration.md)
+  Example-Workflows.md  # [Data-Flow.md](architecture/Data-Flow.md), [Features.md](...
 presets/               # Fixture data (maps, terrains)
 Archive/               # Previous Alpha implementations - reference only
 Goals.md               # Start here: high-level vision and feature overview (German)
@@ -247,6 +263,18 @@ Goals.md               # Start here: high-level vision and feature overview (Ger
 > **Produziert von:** [Feature](pfad) (Aktion)
 > **Konsumiert von:** [Feature1](pfad), [Feature2](pfad)
 ```
+
+**Schema-Dokumentations-Orte:**
+
+| Schema-Typ | Ort | Beispiele |
+|------------|-----|-----------|
+| **Persistente Entities** | `docs/entities/` | creature.md, faction.md, map.md |
+| **Service I/O Schemas** | Inline im Service-Doc | EncounterContext, SeedSelection, EncounterGroup |
+| **Orchestration State** | `docs/orchestration/` | SessionState, WorkflowState |
+
+- `docs/entities/` enthält NUR Vault-persistierte Entities
+- Service-interne Typen (Input/Output zwischen Steps) gehören in die Service-Dokumentation
+- Orchestration-State gehört in die Workflow-Dokumentation
 
 **Single Source of Truth:**
 - Jedes System/Konzept hat eine autoritative Quelle

@@ -20,3 +20,9 @@ Thumbs.db
 # Task claims und Agent-ID (ephemeral, agent-specific)
 docs/architecture/.task-claims.json
 .my-agent-id
+
+# Hook state (ephemeral, for rename detection)
+.claude/.hook-state.json
+
+# Generated test CLI
+scripts/test-cli/cli.mjs

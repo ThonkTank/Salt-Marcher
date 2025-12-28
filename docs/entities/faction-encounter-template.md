@@ -1,7 +1,7 @@
 # Schema: FactionEncounterTemplate
 
 > **Produziert von:** [Library](../views/Library.md), [Faction](faction.md)
-> **Konsumiert von:** [Population](../services/encounter/Population.md) (Template-Matching)
+> **Konsumiert von:** [groupPopulation](../services/encounter/groupPopulation.md) (Template-Matching)
 
 ## Felder
 
@@ -68,7 +68,7 @@ function resolveCount(count: SlotCount): number {
 }
 ```
 
-→ Verwendung: [Population.md#step-33-slot-befuellung](../services/encounter/Population.md#step-33-slot-befuellung)
+→ Verwendung: [groupPopulation.md#step-32-slot-befuellung](../services/encounter/groupPopulation.md#step-32-slot-befuellung)
 
 ## Invarianten
 

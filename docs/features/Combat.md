@@ -12,7 +12,7 @@
 > - [Character-System.md](Character-System.md) - PC-Stats
 > - [encounter/Difficulty.md](../services/encounter/Difficulty.md) - Kampf-Simulation
 >
-> **Wird benoetigt von:** SessionControl, Dungeon
+> **Wird benoetigt von:** sessionState, Dungeon
 
 Initiative-Tracker und Condition-Management fuer D&D Kaempfe.
 
@@ -43,7 +43,7 @@ Creature- und Character-Actions werden durch ein einheitliches Schema definiert,
 → **Action-Beispiele:** [Creature.md#action-beispiele](../entities/creature.md#action-beispiele)
 
 Das Action-Schema wird verwendet fuer:
-- **Encounter-Generierung:** [Flavour.md#schritt-1-action-schadenspotential-berechnen](../services/encounter/Flavour.md#schritt-1-action-schadenspotential-berechnen) - initialDistance-Berechnung
+- **Encounter-Generierung:** [encounterDistance.md](../services/encounter/encounterDistance.md) - initialDistance-Berechnung
 - **Difficulty-Balancing:** [Difficulty.md#distance-modifier-action-basiert](../constants/Difficulty.md#distance-modifier-action-basiert) - XP-Modifier
 - **Combat-Resolution:** Start/End-of-Turn Effekte, automatische Reminders
 

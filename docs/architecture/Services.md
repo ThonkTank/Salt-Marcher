@@ -1,20 +1,22 @@
 # Services (Pipeline-Pattern)
 
-Services sind **stateless Pipelines**, die vom SessionControl aufgerufen werden. Sie empfangen einen vollständigen Context und liefern ein Ergebnis zurück.
+Services sind **stateless Pipelines**, die von Workflows aufgerufen werden. Sie empfangen einen Context und liefern ein Ergebnis zurueck.
 
 ---
 
 ## Kernprinzip
 
 ```
-SessionControl (State Owner)
-        │
-        ├── sammelt Context aus eigenem State
-        │
-        ↓
+Workflow
+    │
+    ├── liest State aus sessionState
+    ├── holt Daten aus Vault
+    │
+    ↓
 Service.execute(context) → Result<Output, Error>
-        │
-        └── reine Funktion: Input → Output
+    │
+    ├── reine Funktion: Input → Output
+    └── darf Vault lesen/schreiben
 ```
 
 ---
@@ -27,7 +29,7 @@ Service.execute(context) → Result<Output, Error>
 |--------|----------|
 | Input konsumieren | `generate(context: EncounterContext)` |
 | Output liefern | `→ Result<EncounterInstance, Error>` |
-| Vault lesen | Creature-Definition aus Vault laden |
+| Vault lesen | Creature-Definitionen laden und filtern |
 | Vault schreiben | Journal-Eintrag speichern |
 | Andere Services in Pipeline aufrufen | Encounter ruft NPC-Generator auf |
 
@@ -35,9 +37,9 @@ Service.execute(context) → Result<Output, Error>
 
 | Aktion | Grund |
 |--------|-------|
-| Queries an andere Services | SessionControl liefert alle Daten |
-| Eigene Entscheidungen treffen | SessionControl entscheidet |
-| Eigenen State halten | SessionControl = Single Source of Truth |
+| Queries an andere Services | Workflow liefert alle Kontext-Daten |
+| Eigene Entscheidungen treffen | Workflow entscheidet |
+| Eigenen State halten | sessionState = Single Source of Truth |
 | Events emittieren | Kein EventBus |
 | Auf Events subscriben | Kein EventBus |
 
@@ -60,39 +62,44 @@ interface EncounterService {
   generate(context: EncounterContext): Result<EncounterInstance, EncounterError>;
 }
 
-// Context enthält ALLE benötigten Daten
+// Context enthaelt Kontext-Daten, KEINE vorgefilterten Listen
 interface EncounterContext {
   position: HexCoordinate;
   terrain: TerrainDefinition;
   timeSegment: TimeSegment;
   weather: Weather;
-  party: PartySnapshot;
   factions: FactionPresence[];
-  eligibleCreatures: CreatureDefinition[];
   trigger: EncounterTrigger;
+  // KEIN eligibleCreatures - Service filtert selbst via Vault
 }
 ```
 
-Der SessionControl baut den Context zusammen:
+Der Workflow baut den Context und ruft den Service:
 
 ```typescript
-// SessionControl
-async checkEncounter(): Promise<void> {
-  const context: EncounterContext = {
-    position: this.state.party.position,
-    terrain: this.getCurrentTerrain(),
-    timeSegment: this.state.time.daySegment,
-    weather: this.state.weather,
-    party: this.buildPartySnapshot(),
-    factions: this.getFactionPresence(),
-    eligibleCreatures: this.getEligibleCreatures(),
-    trigger: 'travel'
-  };
+// encounterWorkflow.ts
+import { getState, updateState } from './sessionState';
+import { generateEncounter } from '@services/encounterGenerator';
+import { vault } from '@infrastructure/vault';
 
-  const result = this.encounterService.generate(context);
+export function checkEncounter(trigger: EncounterTrigger): void {
+  if (!rollEncounterCheck()) return;
+
+  const state = getState();
+  const map = vault.getEntity('map', state.activeMapId!);
+  const tile = map.getTile(state.party.position);
+
+  const result = generateEncounter({
+    position: state.party.position,
+    terrain: vault.getEntity('terrain', tile.terrainId),
+    timeSegment: state.time.daySegment,
+    weather: state.weather!,
+    factions: tile.factionPresence ?? [],
+    trigger,
+  });
 
   if (isOk(result)) {
-    this.state.update(s => ({
+    updateState(s => ({
       ...s,
       encounter: { status: 'preview', current: unwrap(result) }
     }));
@@ -102,9 +109,35 @@ async checkEncounter(): Promise<void> {
 
 ---
 
+## Services filtern selbst
+
+Wenn ein Service Filterkriterien aus dem Context ableiten kann, fuehrt er die Filterung selbst durch:
+
+```typescript
+// ✅ RICHTIG - Service filtert via Vault
+function generateEncounter(context: EncounterContext): Result<EncounterInstance, Error> {
+  // Service laedt und filtert Creatures selbst
+  const allCreatures = vault.getAllEntities('creature');
+  const eligible = allCreatures
+    .filter(c => c.terrains.includes(context.terrain.id))
+    .filter(c => isActiveAtTime(c, context.timeSegment));
+
+  // Weiter mit eligible...
+}
+
+// ❌ FALSCH - Caller uebergibt vorgefilterte Liste
+function generateEncounter(context: { eligibleCreatures: Creature[] }) {
+  // Service bekommt fertige Liste - wer hat gefiltert? Nach welchen Kriterien?
+}
+```
+
+**Regel:** Der Caller uebergibt **keine vorgefilterten Listen**. Services haben Vault-Zugriff und filtern selbst.
+
+---
+
 ## Pipeline-Aufrufe zwischen Services
 
-Services dürfen andere Services aufrufen, aber **nur als Teil einer festen Pipeline**:
+Services duerfen andere Services aufrufen, aber **nur als Teil einer festen Pipeline**:
 
 ```
 EncounterService.generate()
@@ -117,35 +150,28 @@ EncounterService.generate()
 ### Erlaubt: Feste Pipeline
 
 ```typescript
-class EncounterService {
-  constructor(
-    private npcService: NPCService,
-    private lootService: LootService
-  ) {}
+function generateEncounter(context: EncounterContext): Result<EncounterInstance, Error> {
+  // 1. Gruppen erstellen
+  const groups = createGroups(context);
 
-  generate(context: EncounterContext): Result<EncounterInstance, Error> {
-    // 1. Gruppen erstellen
-    const groups = this.createGroups(context);
-
-    // 2. Lead-NPC generieren (Teil der Pipeline)
-    if (needsLeadNPC(groups)) {
-      const npc = this.npcService.generate({
-        faction: context.factions[0],
-        culture: context.factions[0].culture,
-        role: 'leader',
-        creatureBase: groups[0].leader
-      });
-      groups[0].leadNPC = npc;
-    }
-
-    // 3. Loot generieren (Teil der Pipeline)
-    const loot = this.lootService.generate({
-      creatures: groups.flatMap(g => g.creatures),
-      partyLevel: context.party.level
+  // 2. Lead-NPC generieren (Teil der Pipeline)
+  if (needsLeadNPC(groups)) {
+    const npc = generateNPC({
+      faction: context.factions[0],
+      culture: context.factions[0].culture,
+      role: 'leader',
+      creatureBase: groups[0].leader
     });
-
-    return ok({ groups, loot, ... });
+    groups[0].leadNPC = npc;
   }
+
+  // 3. Loot generieren (Teil der Pipeline)
+  const loot = generateLoot({
+    creatures: groups.flatMap(g => g.creatures),
+    partyLevel: context.party.level
+  });
+
+  return ok({ groups, loot, ... });
 }
 ```
 
@@ -153,14 +179,12 @@ class EncounterService {
 
 ```typescript
 // FALSCH - Service fragt anderen Service nach Informationen
-class EncounterService {
-  generate(context: EncounterContext) {
-    // ❌ VERBOTEN: Query an anderen Service
-    const weather = this.weatherService.getCurrentWeather();
-    const time = this.timeService.getCurrentTime();
+function generateEncounter(context: EncounterContext) {
+  // ❌ VERBOTEN: Query an anderen Service
+  const weather = weatherService.getCurrentWeather();
+  const time = timeService.getCurrentTime();
 
-    // Das ist falsch! SessionControl muss alle Daten liefern.
-  }
+  // Das ist falsch! Workflow muss alle Daten im Context liefern.
 }
 ```
 
@@ -168,37 +192,34 @@ class EncounterService {
 
 ## Vault-Zugriff
 
-Services dürfen den Vault lesen und schreiben:
+Services duerfen den Vault lesen und schreiben:
 
-### Lesen (Entities laden)
+### Lesen (Entities laden und filtern)
 
 ```typescript
-class EncounterService {
-  generate(context: EncounterContext) {
-    // ✅ Creature-Definition aus Vault laden
-    const creature = this.vault.getEntity('creature', creatureId);
-  }
+function generateEncounter(context: EncounterContext) {
+  // ✅ Creature-Definitionen aus Vault laden und filtern
+  const creatures = vault.getAllEntities('creature')
+    .filter(c => c.terrains.includes(context.terrain.id));
 }
 ```
 
 ### Schreiben (Ergebnisse persistieren)
 
 ```typescript
-class JournalService {
-  createEntry(context: JournalContext): Result<JournalEntry, Error> {
-    const entry = this.buildEntry(context);
+function createJournalEntry(context: JournalContext): Result<JournalEntry, Error> {
+  const entry = buildEntry(context);
 
-    // ✅ Journal-Eintrag in Vault speichern
-    this.vault.saveEntity('journal', entry);
+  // ✅ Journal-Eintrag in Vault speichern
+  vault.saveEntity('journal', entry);
 
-    return ok(entry);
-  }
+  return ok(entry);
 }
 ```
 
 ---
 
-## Verfügbare Services
+## Verfuegbare Services
 
 | Service | Input | Output | Vault-Zugriff |
 |---------|-------|--------|---------------|
@@ -215,7 +236,6 @@ class JournalService {
 
 Jeder Service hat eine eigene Dokumentation unter `docs/services/`:
 
-- [Service-Pattern.md](../services/Service-Pattern.md) - Template für Service-Docs
 - [encounter/](../services/encounter/) - Encounter-Pipeline
 - [NPCs/](../services/NPCs/) - NPC-Generierung und Matching
 - [Weather.md](../services/Weather.md) - Wetter-Generierung
@@ -225,7 +245,7 @@ Jeder Service hat eine eigene Dokumentation unter `docs/services/`:
 
 ## Anti-Patterns
 
-### 1. Service hält State
+### 1. Service haelt State
 
 ```typescript
 // ❌ FALSCH
@@ -238,33 +258,27 @@ class WeatherService {
 }
 
 // ✅ RICHTIG
-class WeatherService {
-  generate(input: WeatherInput): Weather {
-    // Pure function, kein interner State
-  }
+function generateWeather(input: WeatherInput): Weather {
+  // Pure function, kein interner State
 }
 ```
 
-### 2. Service entscheidet über Workflow
+### 2. Service entscheidet ueber Workflow
 
 ```typescript
 // ❌ FALSCH
-class EncounterService {
-  generate(context) {
-    const encounter = this.build(context);
+function generateEncounter(context) {
+  const encounter = build(context);
 
-    if (encounter.isDeadly) {
-      this.combatService.startCombat(encounter);  // Service startet Workflow!
-    }
+  if (encounter.isDeadly) {
+    startCombat(encounter);  // Service startet Workflow!
   }
 }
 
 // ✅ RICHTIG
-class EncounterService {
-  generate(context): Result<EncounterInstance, Error> {
-    return ok(this.build(context));
-    // SessionControl entscheidet, was mit dem Ergebnis passiert
-  }
+function generateEncounter(context): Result<EncounterInstance, Error> {
+  return ok(build(context));
+  // Workflow entscheidet, was mit dem Ergebnis passiert
 }
 ```
 
@@ -272,18 +286,30 @@ class EncounterService {
 
 ```typescript
 // ❌ FALSCH
-class EncounterService {
-  generate(context) {
-    const encounter = this.build(context);
-    this.eventBus.publish('encounter:generated', encounter);  // Events!
-  }
+function generateEncounter(context) {
+  const encounter = build(context);
+  eventBus.publish('encounter:generated', encounter);  // Events!
 }
 
 // ✅ RICHTIG
-class EncounterService {
-  generate(context): Result<EncounterInstance, Error> {
-    return ok(this.build(context));
-    // Kein EventBus, nur Return-Value
-  }
+function generateEncounter(context): Result<EncounterInstance, Error> {
+  return ok(build(context));
+  // Kein EventBus, nur Return-Value
 }
+```
+
+### 4. Caller uebergibt vorgefilterte Listen
+
+```typescript
+// ❌ FALSCH
+generateEncounter({
+  eligibleCreatures: getEligibleCreatures(),  // Wer filtert? Wo ist die Logik?
+});
+
+// ✅ RICHTIG
+generateEncounter({
+  terrain: terrain,
+  timeSegment: timeSegment,
+  // Service filtert Creatures selbst basierend auf terrain + timeSegment
+});
 ```

@@ -1,10 +1,10 @@
 # CombatWorkflow
 
 > **Verantwortlichkeit:** Orchestration des Combat-Trackers
-> **State-Owner:** SessionControl
+> **State-Owner:** sessionState
 >
 > **Verwandte Dokumente:**
-> - [SessionControl.md](SessionControl.md) - State-Owner
+> - [sessionState.md](sessionState.md) - State-Owner
 > - [Combat.md](../features/Combat.md) - Feature-Spezifikation
 > - [EncounterWorkflow.md](EncounterWorkflow.md) - Combat aus Encounter
 

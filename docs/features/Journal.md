@@ -12,7 +12,7 @@
 > - [Quest-System.md](Quest-System.md) - Quest-Events
 > - [encounter/Encounter.md](../services/encounter/Encounter.md) - Encounter-Events
 >
-> **Wird benoetigt von:** SessionControl, Almanac
+> **Wird benoetigt von:** sessionState, Almanac
 
 Single Source of Truth fuer Session-Journal und automatische Event-Protokollierung.
 

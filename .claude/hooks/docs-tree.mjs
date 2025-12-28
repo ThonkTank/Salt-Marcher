@@ -1,7 +1,7 @@
 /**
  * Docs Tree Generator
  *
- * Generates a directory tree of docs/ and updates CLAUDE.md.
+ * Generates a directory tree of docs/ and src/, and updates CLAUDE.md.
  * Used by update-refs.mjs (Bash hook) and update-docs-tree.mjs (Write hook).
  */
 
@@ -9,11 +9,119 @@ import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from '
 import { join } from 'path';
 
 const DOCS_ROOT = 'docs';
+const SRC_ROOT = 'src';
 const CLAUDEMD_PATH = 'CLAUDE.md';
+const MAX_COMMENT_LENGTH = 60;
 
 // ============================================================================
 // TREE GENERATION
 // ============================================================================
+
+/**
+ * Extracts the first line comment from a TypeScript file.
+ * Returns null if file is empty or first line is not a // comment.
+ *
+ * @param {string} filePath - Path to the file
+ * @returns {string | null} - Comment text or null
+ */
+function extractFirstLineComment(filePath) {
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    const firstLine = content.split('\n')[0];
+
+    if (!firstLine || !firstLine.startsWith('//')) {
+      return null;
+    }
+
+    let comment = firstLine.replace(/^\/\/\s*/, '').trim();
+
+    if (comment.length > MAX_COMMENT_LENGTH) {
+      comment = comment.substring(0, MAX_COMMENT_LENGTH - 3) + '...';
+    }
+
+    return comment || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extracts the description from a docs markdown file (line 3).
+ * Cleans up leading "> " and "**Label:**" patterns if present.
+ *
+ * @param {string} filePath - Path to the markdown file
+ * @returns {string | null} - Description text or null
+ */
+function extractDocsDescription(filePath) {
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n');
+    let line3 = lines[2]; // 0-indexed, so line 3 is index 2
+
+    if (!line3) return null;
+
+    // Remove leading "> " if present
+    line3 = line3.replace(/^>\s*/, '');
+
+    // Remove "**Label:**" pattern if present
+    line3 = line3.replace(/^\*\*[^*]+\*\*\s*/, '');
+
+    let description = line3.trim();
+
+    if (!description) return null;
+
+    if (description.length > MAX_COMMENT_LENGTH) {
+      description = description.substring(0, MAX_COMMENT_LENGTH - 3) + '...';
+    }
+
+    return description;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Generates a directory tree string for src/.
+ * Includes .ts files with their first-line comments.
+ *
+ * @param {string} dir - Directory to scan
+ * @param {string} indent - Current indentation
+ * @returns {string} - Tree representation
+ */
+function generateSrcTree(dir, indent = '') {
+  if (!existsSync(dir)) return '';
+
+  let tree = '';
+  const entries = readdirSync(dir).sort((a, b) => {
+    const aPath = join(dir, a);
+    const bPath = join(dir, b);
+    const aIsDir = statSync(aPath).isDirectory();
+    const bIsDir = statSync(bPath).isDirectory();
+
+    if (aIsDir && !bIsDir) return -1;
+    if (!aIsDir && bIsDir) return 1;
+    return a.localeCompare(b);
+  });
+
+  for (const entry of entries) {
+    const fullPath = join(dir, entry);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      tree += `${indent}${entry}/\n`;
+      tree += generateSrcTree(fullPath, indent + '  ');
+    } else if (entry.endsWith('.ts') && !entry.endsWith('.d.ts') && !entry.endsWith('.test.ts')) {
+      const comment = extractFirstLineComment(fullPath);
+      if (comment) {
+        tree += `${indent}${entry}  # ${comment}\n`;
+      } else {
+        tree += `${indent}${entry}\n`;
+      }
+    }
+  }
+
+  return tree;
+}
 
 /**
  * Generates a directory tree string for a given directory.
@@ -46,6 +154,13 @@ function generateDocsTree(dir, indent = '') {
     if (stat.isDirectory()) {
       tree += `${indent}${entry}/\n`;
       tree += generateDocsTree(fullPath, indent + '  ');
+    } else if (entry.endsWith('.md')) {
+      const description = extractDocsDescription(fullPath);
+      if (description) {
+        tree += `${indent}${entry}  # ${description}\n`;
+      } else {
+        tree += `${indent}${entry}\n`;
+      }
     } else {
       tree += `${indent}${entry}\n`;
     }
@@ -63,13 +178,9 @@ function generateDocsTree(dir, indent = '') {
 function generateFullTree() {
   let tree = '';
 
-  // src/ structure (static, as it changes less frequently)
+  // src/ structure (dynamic)
   tree += 'src/                   # Source code\n';
-  tree += '  core/                # Data Layer: Schemas, Types, Konstanten, Utils\n';
-  tree += '  features/            # Feature layer (map, party, travel)\n';
-  tree += '  infrastructure/      # Vault adapters, rendering\n';
-  tree += '  application/         # SessionRunner, ViewModels\n';
-  tree += '  main.ts              # Plugin entry point\n';
+  tree += generateSrcTree(SRC_ROOT, '  ');
 
   // docs/ structure (dynamic)
   tree += 'docs/                  # Authoritative documentation (German)\n';

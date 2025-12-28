@@ -1,10 +1,10 @@
 # RestWorkflow
 
 > **Verantwortlichkeit:** Orchestration von Short/Long Rest
-> **State-Owner:** SessionControl
+> **State-Owner:** sessionState
 >
 > **Verwandte Dokumente:**
-> - [SessionControl.md](SessionControl.md) - State-Owner
+> - [sessionState.md](sessionState.md) - State-Owner
 > - [Time.md](../features/Time.md#resting) - Rest-Spezifikation
 > - [EncounterWorkflow.md](EncounterWorkflow.md) - Encounter-Unterbrechung
 

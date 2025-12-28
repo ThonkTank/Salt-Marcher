@@ -12,7 +12,8 @@
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
 > - [EncounterWorkflow.md](../../orchestration/EncounterWorkflow.md#feature-schema) - Feature-Schema
-> - [Adjustments.md](Adjustments.md) - Downstream-Step
+> - [Encounter.md#goaldifficulty](Encounter.md#goaldifficulty-step-60) - Ziel-Difficulty (Step 6.0)
+> - [Balancing.md](Balancing.md) - Downstream-Step (Step 6.1)
 
 Kampfsimulation mit Probability Mass Functions (PMF) zur Difficulty-Klassifizierung.
 
@@ -21,7 +22,7 @@ Kampfsimulation mit Probability Mass Functions (PMF) zur Difficulty-Klassifizier
 ## Workflow-Uebersicht
 
 ```
-Input: FlavouredEncounter aus Flavour.md
+Input: FlavouredGroup[] aus Step 4 (groupActivity, groupNPCs, groupLoot, encounterDistance)
        (inkl. Activity, Perception, Groups)
         |
         v
@@ -64,10 +65,10 @@ Input: FlavouredEncounter aus Flavour.md
 +-----------------------------------------------------------------------+
         |
         v
-Output: SimulationResult (an Adjustments.md)
+Output: SimulationResult (an Balancing.md)
 ```
 
--> Weiter: [Adjustments.md](Adjustments.md) (Step 6: Machbarkeits-Anpassung)
+-> Weiter: [Encounter.md#goaldifficulty](Encounter.md#goaldifficulty-step-60) (Step 6.0: Ziel-Difficulty) + [Balancing.md](Balancing.md) (Step 6.1: Machbarkeits-Anpassung)
 
 ---
 
@@ -1443,7 +1444,7 @@ function calculateAdjustedXP(encounter: FlavouredEncounter): number {
 
 - **Action-Schema:** [Creature.md#action-schema](../../entities/creature.md#action-schema)
 - **Feature-Schema:** [EncounterWorkflow.md#feature-schema](../../orchestration/EncounterWorkflow.md#feature-schema)
-- **Activity-Definitionen:** [Flavour.md#activity-beispiele](Flavour.md#activity-beispiele)
+- **Activity-Definitionen:** [groupActivity.md](groupActivity.md#activity-beispiele)
 - **Sweet-Spot/Pain-Point:** [#sweet-spot-pain-point](#sweet-spot-pain-point)
 
 ---

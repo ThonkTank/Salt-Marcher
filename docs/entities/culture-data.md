@@ -10,7 +10,7 @@
 | naming | NamingConfig | Namensgenerierung | Optional |
 | personality | PersonalityConfig | Persoenlichkeits-Pools | Optional |
 | quirks | WeightedQuirk[] | Eigenheiten-Pool | Optional |
-| activities | FactionActivityRef[] | Aktivitaets-Referenzen | Optional, → [Flavour.md](../services/encounter/Flavour.md) |
+| activities | FactionActivityRef[] | Aktivitaets-Referenzen | Optional, -> [groupActivity.md](../services/encounter/groupActivity.md) |
 | goals | WeightedGoal[] | NPC-Ziele-Pool | Optional |
 | values | ValuesConfig | Werte & Verhalten | Optional |
 | speech | SpeechConfig | Sprach-RP-Hinweise | Optional |

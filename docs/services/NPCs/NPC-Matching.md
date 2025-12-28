@@ -166,7 +166,7 @@ function useMatchedNPC(npc: NPC, position: HexCoordinate, time: GameDateTime): v
 ### Encounter-System
 
 ```typescript
-// In Flavour.md Step 4.3
+// In Encounter.md Step 4.3 (groupNPCs)
 const existing = findMatchingNPC(
   leadCreature.id,
   group.factionId,

@@ -23,8 +23,8 @@ npx vitest run <file> # Einzelne Datei
 |-------|----------|-----------------|
 | Schemas/Utils | Unit Tests | Keine Mocks |
 | Services | Pipeline Tests | MockVault |
-| SessionControl | State-Machine Tests | MockServices, MockStorage |
-| Views | Integration-Light | MockSessionControl |
+| sessionState | State-Machine Tests | MockServices, MockStorage |
+| Views | Integration-Light | MocksessionState |
 
 ---
 

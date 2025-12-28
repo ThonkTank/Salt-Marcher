@@ -14,7 +14,7 @@
 > - [Inventory.md](../services/Inventory.md) - Encumbrance
 > - [encounter/Encounter.md](../services/encounter/Encounter.md) - Encounter-Trigger
 >
-> **Wird benoetigt von:** SessionControl
+> **Wird benoetigt von:** sessionState
 
 Detaillierte Spezifikation des Reisesystems.
 

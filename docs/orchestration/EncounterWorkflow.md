@@ -1,10 +1,10 @@
 # EncounterWorkflow
 
 > **Verantwortlichkeit:** Orchestration der Encounter-Generierung und -Resolution
-> **State-Owner:** SessionControl
+> **State-Owner:** sessionState
 >
 > **Verwandte Dokumente:**
-> - [SessionControl.md](SessionControl.md) - State-Owner
+> - [sessionState.md](sessionState.md) - State-Owner
 > - [encounter/Encounter.md](../services/encounter/Encounter.md) - Encounter-Service (7-Step Pipeline)
 > - [TravelWorkflow.md](TravelWorkflow.md) - Trigger waehrend Reise
 > - [CombatWorkflow.md](CombatWorkflow.md) - Combat aus Encounter
@@ -104,20 +104,20 @@ async checkEncounter(): Promise<void> {
 
 ### buildEncounterContext
 
-Baut den vollstaendigen Context fuer den EncounterService:
+Baut den Kontext fuer den EncounterService (kein separater Typ - inline Objekt):
 
 ```typescript
-private buildEncounterContext(): EncounterContext {
-  const state = this.getState();
+function buildEncounterContext(trigger: EncounterTrigger) {
+  const state = getState();
   return {
     position: state.party.position,
-    terrain: this.getCurrentTerrain(),
+    terrain: getCurrentTerrain(),
     timeSegment: state.time.daySegment,
     weather: state.weather!,
-    party: this.buildPartySnapshot(),
-    factions: this.getFactionPresence(),
-    eligibleCreatures: this.getEligibleCreatures(),
-    trigger: 'travel'
+    party: buildPartySnapshot(),
+    factions: getFactionPresence(),
+    eligibleCreatures: getEligibleCreatures(),
+    trigger,
   };
 }
 ```
@@ -235,28 +235,28 @@ Details: [CombatWorkflow.md#post-combat-resolution](CombatWorkflow.md#post-comba
 
 ## Context-Building
 
-Der SessionControl sammelt alle Daten fuer den EncounterService:
+Der EncounterWorkflow sammelt alle Daten und uebergibt sie direkt an `generateEncounter()`.
+Kein separater `EncounterContext`-Typ - das Schema ergibt sich aus den Parametern:
 
 ```typescript
-interface EncounterContext {
-  // Ort
-  position: HexCoordinate;
-  terrain: TerrainDefinition;
-
-  // Zeit
-  timeSegment: TimeSegment;
-  weather: Weather;
-
-  // Party
-  party: PartySnapshot;
-
-  // Lokale Daten
-  factions: FactionPresence[];
-  eligibleCreatures: CreatureDefinition[];
-
-  // Trigger
-  trigger: EncounterTrigger;
+// encounterWorkflow.ts
+function buildEncounterContext(trigger: EncounterTrigger) {
+  const state = getState();
+  return {
+    position: state.party.position,
+    terrain: getCurrentTerrain(),
+    timeSegment: state.time.daySegment,
+    weather: state.weather!,
+    party: buildPartySnapshot(),
+    factions: getFactionPresence(),
+    eligibleCreatures: getEligibleCreatures(),
+    trigger,
+  };
 }
+
+// Aufruf
+const context = buildEncounterContext(trigger);
+const result = generateEncounter(context);
 ```
 
 Der Service erhaelt alle Daten und trifft keine eigenen Queries.
@@ -279,7 +279,7 @@ features = Terrain.features ∪ Weather.activeFeatures ∪ Indoor.lightingFeatur
 | **Weather/Time** | darkness, dim-light, fog, rain | Outdoor |
 | **Indoor/Room** | darkness, low-ceiling | Indoor (statt Weather) |
 
-Der SessionControl aggregiert die Features und uebergibt sie im Context.
+Der sessionState aggregiert die Features und uebergibt sie im Context.
 
 ### Aggregation-Beispiele
 
@@ -455,7 +455,7 @@ interface EncounterPerception {
 
 ## Encounter-Verhalten nach Difficulty
 
-| Difficulty | Verhalten | SessionControl-Aktion |
+| Difficulty | Verhalten | sessionState-Aktion |
 |------------|-----------|---------------------|
 | **trivial** | Harmlose Begegnung | Beschreibung zeigen, dismiss |
 | **easy** | Geringes Risiko | GM entscheidet |

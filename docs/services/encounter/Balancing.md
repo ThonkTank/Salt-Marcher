@@ -1,7 +1,7 @@
-# Encounter-Adjustments
+# Encounter-Balancing
 
-> **Helper fuer:** Encounter-Service (Step 6)
-> **Input:** `FlavouredEncounter`, `SimulationResult`, `TerrainDefinition`
+> **Helper fuer:** Encounter-Service (Step 6.1)
+> **Input:** `FlavouredEncounter`, `SimulationResult`, `EncounterDifficulty` (aus [Encounter.md#goaldifficulty](Encounter.md#goaldifficulty-step-60))
 > **Output:** `BalancedEncounter`
 > **Aufgerufen von:** [Encounter.md#helpers](Encounter.md#helpers)
 >
@@ -12,55 +12,16 @@
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
 > - [Difficulty.md](Difficulty.md) - Kampfsimulation
-> - [Population.md](Population.md) - Template-Rollen
+> - [Encounter.md#goaldifficulty](Encounter.md#goaldifficulty-step-60) - Upstream-Step (Step 6.0)
+> - [groupPopulation.md](groupPopulation.md) - Template-Rollen
 
 Machbarkeits-Anpassung: Encounter an Ziel-Difficulty anpassen.
 
 ---
 
-## Step 6.0: Ziel-Difficulty Wuerfeln
+## Machbarkeits-Anpassung
 
-**Input:** `EncounterContext` (Terrain mit threatLevel/threatRange)
-
-**Output:** `EncounterDifficulty` (Ziel)
-
-Die Ziel-Difficulty ist **unabhaengig von der aktuellen Difficulty** und basiert nur auf dem Terrain-Threat. Sie wird via gewichtete Normalverteilung bestimmt:
-
-```typescript
-function rollTargetDifficulty(context: EncounterContext): EncounterDifficulty {
-  const difficulties = ['trivial', 'easy', 'moderate', 'hard', 'deadly'] as const;
-
-  const threatLevel = context.tile.terrain.threatLevel ?? 0;
-  const threatRange = context.tile.terrain.threatRange ?? 1.0;
-
-  // Normalverteilung: μ = 2 (moderate) + threatLevel * 0.5
-  const mean = 2 + threatLevel * 0.5;
-  const std = threatRange;
-
-  const weights = difficulties.map((_, i) =>
-    Math.exp(-0.5 * Math.pow((i - mean) / std, 2))
-  );
-
-  const sum = weights.reduce((a, b) => a + b, 0);
-  const normalized = weights.map(w => w / sum);
-
-  return weightedRandom(difficulties, normalized);
-}
-```
-
-| threatLevel | threatRange | Wahrscheinlichste Difficulty |
-|:-----------:|:-----------:|:----------------------------:|
-| -2 | 1.0 | trivial/easy |
-| 0 | 1.0 | moderate |
-| +2 | 1.0 | hard/deadly |
-| 0 | 0.5 | moderate (sehr vorhersehbar) |
-| 0 | 2.0 | alle moeglich (chaotisch) |
-
----
-
-## Step 6.1: Machbarkeits-Anpassung
-
-**Input:** `FlavouredEncounter`, `SimulationResult`, `EncounterDifficulty` (Ziel aus 6.0)
+**Input:** `FlavouredEncounter`, `SimulationResult`, `EncounterDifficulty` (Ziel aus [Encounter.md#goaldifficulty](Encounter.md#goaldifficulty-step-60))
 
 **Output:** `BalancedEncounter`
 
@@ -164,9 +125,9 @@ function getTargetWinProbability(difficulty: EncounterDifficulty): number {
 | **Distance** | Physische Entfernung | Sweet-Spot bis Pain-Point | [Difficulty.md](Difficulty.md#distance-modifier) |
 | **Disposition** | Wert (innerhalb gueltigem Range) | Kreatur-Base bis Faction-Base | [Difficulty.md](Difficulty.md#step-50-disposition-berechnung) |
 | **Environment** | Terrain-Features aktivieren | `terrain.features[]` | [terrain-definition.md](../../entities/terrain-definition.md#felder) |
-| **Activity** | Activity wechseln | Generic + Creature + Faction Pool | [Flavour.md](Flavour.md#activity-pool-hierarchie) |
-| **Multi-Group** | Gruppen hinzufuegen | Fraktionen auf Tile, deren Templates | [Population.md](Population.md#step-21-tile-eligibility) |
-| **Creature-Slots** | Anzahl, Kreatur-Typ, Gruppen-Verteilung | Template-Rollen-Ranges, designRole-Match | [Population.md](Population.md#step-33-slot-befuellung) |
+| **Activity** | Activity wechseln | Generic + Creature + Faction Pool | [groupActivity.md](groupActivity.md#activity-pool-hierarchie) |
+| **Multi-Group** | Gruppen hinzufuegen | Fraktionen auf Tile, deren Templates | [groupSeed.md](groupSeed.md#step-21-tile-eligibility) |
+| **Creature-Slots** | Anzahl, Kreatur-Typ, Gruppen-Verteilung | Template-Rollen-Ranges, designRole-Match | [groupPopulation.md](groupPopulation.md#step-32-slot-befuellung) |
 
 ### Save-Logik (Multi-Group Anpassung) {#save-logik}
 
@@ -177,7 +138,7 @@ Wenn die anderen Anpassungs-Optionen nicht ausreichen, kann Multi-Group verwende
 | Encounter zu trivial | Zweite Gruppe hinzufuegen | XP erhoehen |
 | Encounter zu schwer | Verbuendete Gruppe hinzufuegen | Effektive Party-Staerke erhoehen |
 
-**Maximal 2 Gruppen** pro Encounter (MVP-Limit, siehe [Population.md](Population.md#multi-group-encounters)).
+**Maximal 2 Gruppen** pro Encounter (MVP-Limit, siehe [Encounter.md](Encounter.md#multi-group-szenarien)).
 
 #### Gruppen-Generierungs-Loop
 
@@ -185,11 +146,11 @@ Wenn Balance eine zweite Gruppe benoetigt, wird diese vollstaendig durch die Pip
 
 ```
 Balance erkennt: Zweite Gruppe noetig
-        ↓
+        |
 Population: Creature-Selection + Template fuer neue Gruppe
-        ↓
+        |
 Flavour: Slot-Befuellung, Activity, NPC-Links, Loot, Perception
-        ↓
+        |
 Zurueck zu Balance: Beide Gruppen neu kalkulieren
 ```
 
@@ -220,7 +181,7 @@ Allies modifizieren die **effektive Party-Staerke**, nicht die XP direkt.
 
 | Ally-Staerke | Effekt | Begruendung |
 |--------------|--------|-------------|
-| **Stark** (CR ≥ Avg Party-Level) | Party effektiv staerker | Allies tragen signifikant bei |
+| **Stark** (CR >= Avg Party-Level) | Party effektiv staerker | Allies tragen signifikant bei |
 | **Schwach** (CR < Avg Party-Level) | Party effektiv schwaecher | Party muss Allies beschuetzen |
 
 ```typescript
@@ -314,13 +275,13 @@ function getEffectivePartyStrength(
 
 ### Multi-Group-Algorithmus (Fraktionsbasiert)
 
-Multi-Group-Optionen nutzen die **Tile-Eligibility** aus Population.md und waehlen passende Fraktionen basierend auf deren Disposition.
+Multi-Group-Optionen nutzen die **Tile-Eligibility** aus groupSeed.md und waehlen passende Fraktionen basierend auf deren Disposition.
 
 ```typescript
 /**
  * Sammelt Multi-Group-Optionen basierend auf verfuegbaren Fraktionen.
- * → Tile-Eligibility: Population.md#step-21-tile-eligibility
- * → Faction-Templates: Population.md#encountertemplate-schema
+ * -> Tile-Eligibility: groupSeed.md#step-21-tile-eligibility
+ * -> Faction-Templates: groupPopulation.md#step-31-template-auswahl
  */
 function collectMultiGroupOptions(
   encounter: FlavouredEncounter,
@@ -334,11 +295,11 @@ function collectMultiGroupOptions(
 
   const options: AdjustmentOption[] = [];
 
-  // 1. Tile-Pool abfragen (Population.md#tile-eligibility)
+  // 1. Tile-Pool abfragen (groupSeed.md#tile-eligibility)
   const eligibleCreatures = getEligibleCreatures(context.tile, context);
   const availableFactions = getFactionsFromCreatures(eligibleCreatures);
 
-  // 2. Fraktionen nach Disposition sortieren (hostile → friendly)
+  // 2. Fraktionen nach Disposition sortieren (hostile -> friendly)
   const sortedFactions = availableFactions.sort((a, b) =>
     a.defaultDisposition - b.defaultDisposition
   );
@@ -427,9 +388,9 @@ Innerhalb der Template-Rollen koennen Kreaturen angepasst werden, ohne die Grupp
 
 | Hebel | Beschreibung | Granularitaet |
 |-------|--------------|---------------|
-| **Anzahl** | Kreaturen innerhalb Role-Range hinzufuegen/entfernen | Fein (±5-15% Win%) |
-| **Kreatur-Swap** | Kreatur durch andere mit gleicher designRole ersetzen | Sehr fein (±2-8% Win%) |
-| **Gruppen-Verschiebung** | Bei Multi-Group: Hier hinzufuegen, dort entfernen | Mittel (±10-20% Win%) |
+| **Anzahl** | Kreaturen innerhalb Role-Range hinzufuegen/entfernen | Fein (+-5-15% Win%) |
+| **Kreatur-Swap** | Kreatur durch andere mit gleicher designRole ersetzen | Sehr fein (+-2-8% Win%) |
+| **Gruppen-Verschiebung** | Bei Multi-Group: Hier hinzufuegen, dort entfernen | Mittel (+-10-20% Win%) |
 
 #### CreatureSlotOption Schema
 
@@ -498,8 +459,8 @@ function collectCreatureSlotOptions(
 ```typescript
 /**
  * Findet Kreaturen mit gleicher designRole aus dem Companion-Pool.
- * → Companion-Pool: Population.md#companion-pool-bildung
- * → Design-Rollen: Creature.md#design-rollen
+ * -> Companion-Pool: groupSeed.md#output-seedselection
+ * -> Design-Rollen: Creature.md#design-rollen
  */
 function getAlternativeCreatures(
   group: FlavouredGroup,
@@ -568,17 +529,17 @@ Aktuelle Simulation: Win%: 58%, TPK: 22% -> "hard"
 Ziel-Difficulty: "moderate" (Win%: 77%)
 
 Creature-Slot-Optionen simulieren:
-  - Remove 1 Goblin (guards: 4 → 3):
+  - Remove 1 Goblin (guards: 4 -> 3):
     -> Win%: 65%, Distanz: 12%
-  - Remove 2 Goblins (guards: 4 → 2):
+  - Remove 2 Goblins (guards: 4 -> 2):
     -> Win%: 74%, Distanz: 3%
-  - Swap Hobgoblin Captain → Hobgoblin (CR 1):
-    -> Win%: 78%, Distanz: 1%  ← Beste Option!
-  - Swap Goblins → Goblin Boss (CR 1):
+  - Swap Hobgoblin Captain -> Hobgoblin (CR 1):
+    -> Win%: 78%, Distanz: 1%  <- Beste Option!
+  - Swap Goblins -> Goblin Boss (CR 1):
     -> Win%: 52%, Distanz: 25%
 
--> Beste Option: Swap Hobgoblin Captain → Hobgoblin
--> Ergebnis: Win%: 78%, TPK: 7% -> "moderate" ✓
+-> Beste Option: Swap Hobgoblin Captain -> Hobgoblin
+-> Ergebnis: Win%: 78%, TPK: 7% -> "moderate" ok
 ```
 
 ### Optionen sammeln
@@ -595,7 +556,7 @@ function collectAdjustmentOptions(
 
   // Environment-Optionen
   // Features kommen aus terrain.features[] (siehe Terrain.md#schema)
-  // → Feature-Schema: EncounterWorkflow.md#feature-schema
+  // -> Feature-Schema: EncounterWorkflow.md#feature-schema
   const availableFeatures = context.tile.terrain.features ?? [];
   for (const feature of availableFeatures) {
     const modified = applyFeatureToEncounter(encounter, feature);
@@ -628,7 +589,7 @@ function collectAdjustmentOptions(
 
   // Disposition-Optionen (in Range zwischen Creature-Base und Faction-Base)
   // Disposition beeinflusst Combat Probability
-  // → Berechnung: Difficulty.md#disposition-berechnung
+  // -> Berechnung: Difficulty.md#disposition-berechnung
   for (const group of encounter.groups) {
     const { minDisposition, maxDisposition } = getDispositionRange(group);
     for (const testDisp of [minDisposition, (minDisposition + maxDisposition) / 2, maxDisposition]) {
@@ -648,7 +609,7 @@ function collectAdjustmentOptions(
 
   // Activity-Optionen
   // Activity beeinflusst Surprise + Positioning in Simulation
-  // → Activity-Pool: Flavour.md#activity-pool-hierarchie
+  // -> Activity-Pool: groupActivity.md#activity-pool-hierarchie
   const availableActivities = getCreatureActivities(encounter.groups[0].creatures[0]);
   for (const activity of availableActivities) {
     const modified = setGroupActivity(encounter, encounter.groups[0].groupId, activity);
@@ -664,12 +625,12 @@ function collectAdjustmentOptions(
   }
 
   // Multi-Group-Optionen
-  // → Tile-Eligibility: Population.md#step-21-tile-eligibility
+  // -> Tile-Eligibility: groupSeed.md#step-21-tile-eligibility
   options.push(...collectMultiGroupOptions(encounter, current, targetWinProb, context, party));
 
   // Creature-Slot-Optionen
-  // → Slot-Befuellung: Population.md#step-33-slot-befuellung
-  // → Design-Rollen: Creature.md#design-rollen
+  // -> Slot-Befuellung: groupPopulation.md#step-32-slot-befuellung
+  // -> Design-Rollen: Creature.md#design-rollen
   options.push(...collectCreatureSlotOptions(encounter, current, targetWinProb, context, party));
 
   return options;
@@ -679,7 +640,7 @@ function collectAdjustmentOptions(
  * Holt die erlaubte Disposition-Range fuer eine Gruppe.
  * Range wird durch Faction-Base und Creature-Base definiert.
  * Disposition ist gruppenspezifisch, nicht global fuer das Encounter.
- * → Berechnung: Difficulty.md#step-50-disposition-berechnung
+ * -> Berechnung: Difficulty.md#step-50-disposition-berechnung
  */
 function getDispositionRange(group: FlavouredGroup): { minDisposition: number; maxDisposition: number } {
   const creature = getCreatureDefinition(group.creatures[0].creatureId);
@@ -748,8 +709,8 @@ Win%: 78%, TPK-Risk: 8% -> "moderate". Machbar fuer Level-3-Party.
 Features werden in der **Library** als eigenstaendige Entities definiert (Entity-Typ: `feature`).
 Das kanonische Feature-Schema ist in EncounterWorkflow.md definiert:
 
-→ **Schema:** [EncounterWorkflow.md#feature-schema](../../orchestration/EncounterWorkflow.md#feature-schema)
-→ **Entity-Typ:** [EntityRegistry.md](../../architecture/EntityRegistry.md#feature-feature)
+-> **Schema:** [EncounterWorkflow.md#feature-schema](../../orchestration/EncounterWorkflow.md#feature-schema)
+-> **Entity-Typ:** [EntityRegistry.md](../../architecture/EntityRegistry.md#feature-feature)
 
 Features definieren:
 - `modifiers[]`: Welche Kreatur-Eigenschaften werden wie beeinflusst
@@ -757,7 +718,7 @@ Features definieren:
 
 ### Hazard-Definition
 
-→ **Kanonisches Schema:** [EncounterWorkflow.md#hazard-schema](../../orchestration/EncounterWorkflow.md#hazard-schema)
+-> **Kanonisches Schema:** [EncounterWorkflow.md#hazard-schema](../../orchestration/EncounterWorkflow.md#hazard-schema)
 
 **Hazard-Einfluss auf XP:**
 
@@ -775,8 +736,8 @@ function calculateHazardXPModifier(
   const creatureVulnerability = getHazardVulnerability(hazard, creatures);
   const partyVulnerability = getHazardVulnerability(hazard, party.members);
 
-  // Positiv = schadet Party mehr → XP steigt
-  // Negativ = schadet Kreaturen mehr → XP sinkt
+  // Positiv = schadet Party mehr -> XP steigt
+  // Negativ = schadet Kreaturen mehr -> XP sinkt
   const balance = partyVulnerability - creatureVulnerability;
 
   return 1.0 + (severity * balance);
@@ -940,7 +901,7 @@ interface BalancedEncounter extends FlavouredEncounter {
 }
 
 // SimulationResult: Siehe Difficulty.md#output-schema
-// EncounterPerception: Siehe Flavour.md#encounterperception-schema
+// EncounterPerception: Siehe encounterDistance.md#encounterperception-schema
 ```
 
 -> Output: [Encounter.md#output-encounterinstance](Encounter.md#output-encounterinstance)

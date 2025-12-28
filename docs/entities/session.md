@@ -1,6 +1,6 @@
 # Schema: Session
 
-> **Produziert von:** SessionControl (Session starten/beenden)
+> **Produziert von:** sessionState (Session starten/beenden)
 > **Konsumiert von:** [Journal-Feature](../features/Journal.md) (Entry-Gruppierung via sessionId), [SessionRunner](../views/SessionRunner.md) (Session-Stats Anzeige)
 
 ## Felder

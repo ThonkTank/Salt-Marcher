@@ -23,9 +23,9 @@ Kontextbezogene Detail-Ansichten (Encounter, Combat, Shop) werden in der separat
 
 ---
 
-## View ↔ SessionControl-Verbindung
+## View ↔ sessionState-Verbindung
 
-Die View subscribet auf den reaktiven State des SessionControls:
+Die View subscribet auf den reaktiven State des sessionStates:
 
 ```svelte
 <script>
@@ -106,7 +106,7 @@ Die View subscribet auf den reaktiven State des SessionControls:
 
 Kompakte Anzeige von Zeit und Wetter mit Quick-Controls.
 
-| Element | Funktion | SessionControl-Aufruf |
+| Element | Funktion | sessionState-Aufruf |
 |---------|----------|---------------------|
 | `📅 15. Mirtul, 14:30` | Aktuelles Datum/Zeit | `state.time.currentDateTime` |
 | `☀️ Clear` | Wetter-Status | `state.weather.description` |
@@ -137,7 +137,7 @@ Kompakte Anzeige von Zeit und Wetter mit Quick-Controls.
 
 #### Audio-Sektion
 
-| Element | Funktion | SessionControl-Aufruf |
+| Element | Funktion | sessionState-Aufruf |
 |---------|----------|---------------------|
 | Track-Name | Aktueller Track | `state.audio.currentMusic` |
 | `[⏸]` | Play/Pause | `toggleAudio()` |
@@ -154,7 +154,7 @@ Kompakte Anzeige von Zeit und Wetter mit Quick-Controls.
 
 #### Actions-Sektion
 
-| Element | Funktion | SessionControl-Aufruf |
+| Element | Funktion | sessionState-Aufruf |
 |---------|----------|---------------------|
 | `[🛏️ Rest]` | Short/Long Rest starten | `startRest(type)` |
 
@@ -180,7 +180,7 @@ Zeigt die aktive Karte mit Party-Position.
 
 ### Map-Interaktionen
 
-| Aktion | Effekt | SessionControl-Aufruf |
+| Aktion | Effekt | sessionState-Aufruf |
 |--------|--------|---------------------|
 | **Kamera** | | |
 | Mittlere Maustaste (halten) | Pan | `updateCamera(offset)` |
@@ -215,7 +215,7 @@ sessionControl.startTravel(route)
     ↓
 state.travel.status = 'traveling'
     ↓
-SessionControl führt Travel-Loop aus:
+sessionState führt Travel-Loop aus:
     - Position aktualisieren
     - Zeit voranschreiten
     - Wetter neu berechnen
@@ -240,7 +240,7 @@ sessionControl.startRest(type)
     ↓
 state.rest.status = 'resting'
     ↓
-SessionControl führt Rest-Loop aus:
+sessionState führt Rest-Loop aus:
     - Pro Stunde: Encounter-Check
     - Bei Encounter: rest pausiert
     ↓
@@ -253,7 +253,7 @@ Rest abgeschlossen:
 
 ## Keyboard-Shortcuts
 
-| Shortcut | Aktion | SessionControl-Aufruf |
+| Shortcut | Aktion | sessionState-Aufruf |
 |----------|--------|---------------------|
 | `Space` | Travel Start/Pause | `toggleTravel()` |
 | `Escape` | Cancel | `cancelCurrentAction()` |

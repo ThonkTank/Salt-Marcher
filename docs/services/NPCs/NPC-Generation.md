@@ -285,7 +285,7 @@ const GENERIC_GOALS: WeightedGoal[] = [
 ### Encounter-System
 
 ```typescript
-// In Flavour.md Step 4.3
+// In Encounter.md Step 4.3 (groupNPCs)
 const npc = generateNPC(leadCreature, group.faction, {
   position: context.position,
   time: context.currentTime

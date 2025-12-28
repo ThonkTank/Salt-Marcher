@@ -73,7 +73,7 @@ Eintrag im Environmental-Pool fuer zufaellige Feature-Auswahl bei Encounters.
 - `location`: Generische Orte (Lichtung, Ruine, Hoehle). Maximal einer pro Encounter.
 - `local`: Lokale Features (Dornen, Felsen, Kraeuter). Diminishing Returns: 1. = 100%, 2. = 60%, 3. = 30%, ...
 
-→ Details: [Population.md#step-21b](../services/encounter/Population.md#step-21b-environmental-feature-auswahl-post-mvp)
+→ Details: [groupSeed.md#step-21b](../services/encounter/groupSeed.md#step-21b-environmental-feature-auswahl-post-mvp)
 
 ---
 

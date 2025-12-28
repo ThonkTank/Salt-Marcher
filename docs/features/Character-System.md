@@ -223,7 +223,7 @@ Level-Ups werden manuell im Party Manager durchgefuehrt:
 
 ## Session State Synchronization
 
-Waehrend einer laufenden Session (SessionControl) werden Character/Party-Aenderungen **sofort** zu allen aktiven Features propagiert.
+Waehrend einer laufenden Session (sessionState) werden Character/Party-Aenderungen **sofort** zu allen aktiven Features propagiert.
 
 ### Sync-Garantie
 

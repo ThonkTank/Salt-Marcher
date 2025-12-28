@@ -1,7 +1,7 @@
 # Schema: EncounterInstance
 
 > **Produziert von:** [Encounter-Service](../services/encounter/Encounter.md) (Pipeline-Output)
-> **Konsumiert von:** [SessionControl](../orchestration/SessionControl.md), [EncounterWorkflow](../orchestration/EncounterWorkflow.md)
+> **Konsumiert von:** [sessionState](../orchestration/sessionState.md), [EncounterWorkflow](../orchestration/EncounterWorkflow.md)
 
 Runtime-Repraeesntation eines generierten Encounters. Nicht persistiert - existiert nur waehrend der Session.
 
@@ -100,7 +100,7 @@ interface GeneratedLoot {
 
 ```
 1. Encounter-Service generiert EncounterInstance
-2. SessionControl speichert in state.encounter.current
+2. sessionState speichert in state.encounter.current
 3. GM interagiert (preview → active → resolving)
 4. Nach Resolution wird EncounterInstance verworfen
 ```

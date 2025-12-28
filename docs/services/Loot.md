@@ -34,7 +34,7 @@ Das Loot-System besteht aus drei Kern-Komponenten:
 
 Loot wird **bei Encounter-Generierung** erstellt, nicht bei Combat-Ende.
 
--> **Details:** [encounter/Flavour.md#step-44-loot-generierung](encounter/Flavour.md#step-44-loot-generierung)
+-> **Details:** [encounter/Encounter.md#grouploot](encounter/Encounter.md#grouploot-step-44)
 
 **Architektur-Konsequenz:**
 - `EncounterInstance` enthält `loot: GeneratedLoot` + optional `hoard: Hoard`
@@ -279,13 +279,13 @@ function generateHoard(budgetToSpend: number, constraints?: HoardConstraints): H
 
 Bestimmte Encounter-Typen koennen Hoards enthalten.
 
--> **Details:** [encounter/Flavour.md#hoard-wahrscheinlichkeit](encounter/Flavour.md#hoard-wahrscheinlichkeit)
+-> **Details:** [encounter/Encounter.md#grouploot](encounter/Encounter.md#grouploot-step-44)
 
 ### Loot bei Multi-Gruppen
 
 Bei Multi-Gruppen-Encounters wird Loot **pro Gruppe separat** generiert.
 
--> **Details:** [encounter/Flavour.md#multi-gruppen-loot](encounter/Flavour.md#multi-gruppen-loot)
+-> **Details:** [encounter/Encounter.md#grouploot](encounter/Encounter.md#grouploot-step-44)
 
 ---
 
@@ -410,16 +410,198 @@ Zusaetzlich zu defaultLoot wird Tag-basiertes Loot fuer das Rest-Budget generier
 
 ---
 
-## Loot-Generierung bei Encounters
+## Encounter-Loot-Generierung
 
-Die Orchestrierung von DefaultLoot und Tag-basiertem Loot bei Encounter-Generierung ist in der Encounter-Pipeline dokumentiert:
+Loot wird **bei Encounter-Generierung** erstellt (nicht bei Combat-Ende).
 
-→ **Workflow:** [Flavour.md Step 4.4](encounter/Flavour.md#step-44-loot-generierung)
+**Warum bei Generierung?**
+1. **Combat-Nutzung:** Gegner koennen Items im Kampf verwenden (Heiltranke, Waffen)
+2. **Balance-Modifier:** Loot-Info fuer XP-Modifier in [Difficulty.md](encounter/Difficulty.md#loot-xp-modifier)
+3. **Preview:** GM sieht potentielles Loot im Encounter-Preview
+4. **Budget:** Teure Ausruestung belastet Budget sofort
 
-Dieses Dokument beschreibt die **generischen Bausteine**:
-- [Creature Default-Loot](#creature-default-loot) - Chance-basierte feste Items
-- [Tag-basiertes Loot](#tag-basiertes-loot-ergaenzung) - Gewichtete Auswahl nach Tags
-- [Budget-Tracking](#budget-tracking) - Session-uebergreifende Verteilung
+### Orchestrierung: DefaultLoot + Tag-basiertes Loot
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ENCOUNTER-LOOT-GENERIERUNG                                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. Encounter-Budget berechnen                                  │
+│     encounterBudget = budget.balance × (0.10 + random() × 0.40) │
+│                                                                 │
+│  2. DefaultLoot pro Creature generieren                         │
+│     ├── Fuer jede Creature: defaultLoot-Eintraege durchlaufen  │
+│     ├── Chance-Roll: Math.random() < entry.chance               │
+│     ├── Soft-Cap pruefen: Bei Schulden teures Item weglassen   │
+│     ├── Item der Creature.loot zuweisen                         │
+│     └── defaultLootValue akkumulieren                          │
+│                                                                 │
+│  3. Rest-Budget fuer Tag-Loot berechnen                         │
+│     restBudget = encounterBudget - defaultLootValue             │
+│     (kann 0 oder negativ sein → kein Tag-Loot)                 │
+│                                                                 │
+│  4. Tag-basiertes Loot fuer Rest-Budget generieren              │
+│     ├── Nur wenn restBudget > 0                                 │
+│     ├── lootTags aus Seed-Creature oder Faction                │
+│     └── generateLoot(restBudget, lootTags, availableItems)     │
+│                                                                 │
+│  5. Ergebnisse kombinieren                                      │
+│     GeneratedLoot = defaultLoot.items + tagLoot.items          │
+│     totalValue = defaultLootValue + tagLootValue               │
+│                                                                 │
+│  6. Budget belasten                                             │
+│     budget.distributed += totalValue                            │
+│     budget.balance -= totalValue                                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Reihenfolge und Prioritaet
+
+| Schritt | System | Prioritaet | Budget-Verhalten |
+|---------|--------|-----------|------------------|
+| 1 | DefaultLoot | Hoch | Wird immer generiert (Soft-Cap bei Schulden) |
+| 2 | Tag-Loot | Normal | Nur wenn restBudget > 0 |
+
+**Begruendung:**
+- DefaultLoot ist **thematisch essentiell** (Wolf hat Pelz, Ritter hat Schwert)
+- Tag-Loot ist **Budget-Auffueller** (generische Items passend zu Creature-Tags)
+
+### generateEncounterLoot()
+
+```typescript
+function generateEncounterLoot(
+  encounter: FlavouredEncounter,
+  budget: LootBudgetState,
+  availableItems: Item[]
+): GeneratedLoot {
+  // 1. Encounter-Budget berechnen (10-50% vom Balance)
+  const encounterPercent = 0.10 + Math.random() * 0.40;
+  const encounterBudget = Math.max(0, budget.balance * encounterPercent);
+
+  const allItems: SelectedItem[] = [];
+  let totalValue = 0;
+
+  // 2. DefaultLoot pro Gruppe/Creature
+  for (const group of encounter.groups) {
+    for (const creature of group.creatures) {
+      const creatureDef = getCreatureDefinition(creature.creatureId);
+      const defaultLoot = processDefaultLoot(creatureDef, budget);
+
+      // Items der Creature zuweisen (fuer Combat-Nutzung)
+      creature.loot = defaultLoot.items.map(item => item.id);
+
+      allItems.push(...defaultLoot.items.map(item => ({ item, quantity: 1 })));
+      totalValue += defaultLoot.totalValue;
+    }
+  }
+
+  // 3. Rest-Budget berechnen
+  const restBudget = encounterBudget - totalValue;
+
+  // 4. Tag-basiertes Loot fuer Rest-Budget
+  if (restBudget > 0) {
+    const seedCreature = getCreatureDefinition(encounter.seedCreature.id);
+    const lootTags = seedCreature.lootTags ?? ['currency'];
+
+    const tagLoot = generateLoot(
+      { totalXP: encounter.totalXP },
+      lootTags,
+      availableItems.filter(item => item.value <= restBudget)
+    );
+
+    allItems.push(...tagLoot.items);
+    totalValue += tagLoot.totalValue;
+  }
+
+  // 5. Budget belasten
+  budget.distributed += totalValue;
+  budget.balance -= totalValue;
+
+  return { items: allItems, totalValue };
+}
+```
+
+### Edge Cases
+
+| Situation | Verhalten |
+|-----------|-----------|
+| **DefaultLoot > encounterBudget** | Schulden entstehen, kein Tag-Loot |
+| **DefaultLoot = encounterBudget** | Kein Tag-Loot (restBudget = 0) |
+| **Keine lootTags** | Fallback auf `['currency']` → nur Gold |
+| **Keine passenden Items** | Gold als Auffueller |
+| **balance < 0 (Schulden)** | encounterBudget = 0 → nur DefaultLoot mit Soft-Cap |
+
+### Loot-Zuweisung an Kreaturen
+
+Items werden **spezifischen Kreaturen zugewiesen** (nicht global), damit Balance pruefen kann ob Gegner magische Items verwenden koennen:
+
+| Kreatur-Eigenschaft | Item-Typ | Verwendbar? |
+|---------------------|----------|-------------|
+| Humanoid mit Haenden | Waffe, Zauberstab | Ja |
+| Beast ohne Haende | Waffe | Nein |
+| Caster mit Spellcasting | Zauberstab, Schriftrolle | Ja |
+| Creature ohne Spellcasting | Schriftrolle | Nein |
+
+```typescript
+interface EncounterCreature {
+  creatureId: EntityId<'creature'>;
+  npcId?: EntityId<'npc'>;
+  count: number;
+  role?: 'leader' | 'guard' | 'scout' | 'civilian';
+  loot?: EntityId<'item'>[];  // Zugewiesene Items
+}
+```
+
+### Hoard-Wahrscheinlichkeit
+
+Bestimmte Encounter-Typen koennen Hoards enthalten:
+
+| Encounter-Typ | Hoard-Wahrscheinlichkeit |
+|---------------|:------------------------:|
+| Boss-Combat | 70% |
+| Lager/Camp | 40% |
+| Normale Patrouille | 10% |
+| Passing/Trace | 0% |
+
+Hoards werden bei Generierung erstellt, aber erst nach Combat-Sieg zugaenglich.
+
+### Multi-Gruppen-Loot
+
+Bei Multi-Gruppen-Encounters wird Loot **pro Gruppe separat** generiert:
+
+```typescript
+function generateMultiGroupLoot(encounter: MultiGroupEncounter): void {
+  for (const group of encounter.groups) {
+    group.lootPool = generateLootForGroup(
+      group.creatures,
+      group.budgetShare * encounter.totalLootBudget
+    );
+  }
+}
+```
+
+**Typischer Loot pro Gruppe:**
+
+| Gruppe | Typischer Loot |
+|--------|----------------|
+| Banditen | Waffen, Gold, gestohlene Waren |
+| Haendler | Handelswaren, Muenzen, Vertraege |
+| Woelfe | Pelze, Knochen (Crafting) |
+| Soldaten | Militaerausruestung, Befehle |
+
+**GM-Kontrolle:** Der GM entscheidet, welchen Loot die Party erhaelt (abhaengig vom Encounter-Ausgang).
+
+### Quest-Encounter Budget
+
+Wenn ein Encounter Teil einer Quest mit definiertem Reward ist, wird Encounter-Loot reduziert:
+
+| Encounter-Typ | Budget-Anteil |
+|---------------|---------------|
+| Random (ohne Quest) | 10-50% (Durchschnitt 20%) |
+| Quest-Encounter (mit Reward) | Reduziert um Quest-Anteil |
+| Quest-Encounter (ohne Reward) | 10-50% (Durchschnitt 20%) |
 
 ---
 
