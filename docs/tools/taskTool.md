@@ -234,6 +234,14 @@ node scripts/task/task.mjs add --bugs '<JSON>'
 }]
 ```
 
+**Multi-Value-Support:** `domain`, `layer`, `specs` und `impl` unterstützen komma-separierte Werte:
+```json
+{
+  "specs": "groupActivity.md#Step-4.1, groupSeed.md#Selection",
+  "impl": "groupActivity.ts.selectActivity(), groupSeed.ts.buildPool() [ändern]"
+}
+```
+
 **Bug-JSON-Format:**
 ```json
 [{
@@ -340,12 +348,12 @@ node scripts/task/task.mjs remove 53 54 55         # Bulk Remove
 
 ### Task-Duplikation
 
-Tasks werden automatisch in referenzierte Dateien dupliziert:
+Tasks werden automatisch in **alle** referenzierten Dateien dupliziert (Spec und Impl unterstützen mehrere komma-separierte Einträge):
 
 | Spalte | Ziel | Bedingung |
 |--------|------|-----------|
-| `Spec` | Markdown-Datei(en) | Immer |
-| `Impl` mit `[ändern]`/`[fertig]` | TypeScript-Datei(en) | Datei + Funktion existiert |
+| `Spec` | Markdown-Datei(en) | Immer (pro Eintrag) |
+| `Impl` mit `[ändern]`/`[fertig]` | TypeScript-Datei(en) | Datei + Funktion existiert (pro Eintrag) |
 | `Impl` mit `[neu]` | - | Keine Duplikation |
 
 ### Pfad-Auflösung
