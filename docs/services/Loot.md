@@ -1276,5 +1276,6 @@ Bei Magic Items hat der GM **immer** das letzte Wort:
 
 ## Tasks
 
-| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+|  # | Status | Domain | Layer    | Beschreibung                                                                |  Prio  | MVP? | Deps | Spec               | Imp. |
+|--:|:----:|:-----|:-------|:--------------------------------------------------------------------------|:----:|:--:|:---|:-----------------|:---|
+| 10 |   ⬜    | Loot   | services | lootGenerator Service implementieren (Budget-System, DefaultLoot, Tag-Loot) | mittel |  Ja  | -    | Loot.md#Uebersicht | -    |

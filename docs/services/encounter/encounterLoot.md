@@ -246,3 +246,5 @@ Details: [Loot.md](../Loot.md#encounter-loot-generierung)
 
 | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
 |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+| 14 | ⬜ | Encounter | services | generateEncounterLoot implementieren (Budget-Berechnung, lootGenerator-Delegation) | mittel | Ja | #10 | encounterLoot.md#Step 4.4: Loot-Generierung | - |
+| 15 | ⬜ | Encounter | services | encounterLoot Input-Signatur: GroupWithNPCs[] statt GroupWithNPCs | niedrig | Nein | - | encounterLoot.md#Input | - |

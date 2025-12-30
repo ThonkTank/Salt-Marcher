@@ -220,6 +220,7 @@ src/                   # Source code
     time.ts  # Zeit-Typen für Kalender/Zeit-System
     weather.ts  # WeatherType Entity
   utils/
+    cultureResolution.ts  # Ziel: Shared Culture-Resolution für NPC-Generator und Act...
     diceParser.ts  # Dice Expression Parser - Recursive Descent Parser für Wür...
     hex.ts  # Hex-Grid Utilities
     index.ts  # Utils Index
@@ -288,22 +289,24 @@ docs/                  # Authoritative documentation (German)
     TravelWorkflow.md  # Orchestration der Hex-Overland-Reise
   services/
     encounter/
-      Balancing.md  # Encounter-Service (Step 6.1)
-      Difficulty.md  # Encounter-Service (Step 5)
-      Encounter.md  # Generiert kontextabhaengige Encounters basierend auf Posi...
+      balancing.md  # Encounter-Service (Step 6.1)
+      difficulty.md  # Encounter-Service (Step 5)
+      encounter.md  # Generiert kontextabhaengige Encounters basierend auf Posi...
       encounterDistance.md  # Encounter-Service (Step 4.5)
       encounterLoot.md  # Encounter-Service (Step 4.4)
       groupActivity.md  # Encounter-Service (Step 4.1, 4.2)
       groupPopulation.md  # Encounter-Service (Step 3)
       groupSeed.md  # Encounter-Service (Step 2)
-    NPCs/
+    npcs/
       Culture-Resolution.md  # Kultur-Aufloesung fuer NPC-Generierung
       NPC-Generation.md  # Automatische NPC-Generierung
       NPC-Matching.md  # Existierenden NPC finden
+      NPCs.md  # NPC-Management fuer Encounters, Quests und POIs
     Inventory.md  # [Item](../entities/item.md), [Character-System](../featur...
     Loot.md  # [Item](../entities/item.md), [Encounter-System](encounter...
     Weather.md  # Stateless Service
   tools/
+    taskTool.md  # CLI-Tool für Task-Management in der Development-Roadmap.
     update-refs-hook.md  # Automatisches Update von Markdown-Links, TypeScript-Impor...
   views/
     Cartographer.md  # [Map-Feature](../features/Map-Feature.md), [Map](../entit...
@@ -426,19 +429,12 @@ Jede TypeScript-Datei MUSS einen standardisierten Header haben:
 // Ziel: Was macht diese Datei? (1 Satz)
 // Siehe: docs/pfad/zum/dokument.md
 //
+// TASKS:
+// | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+// |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+// | 123 | ⬜ | Enc | srv | Task-Beschr. | hoch | Ja | - | ... | ... |
+//
 // [Optional: Pipeline, Workflow-Steps, oder andere Struktur-Info]
-//
-// DISKREPANZEN (als [HACK] oder [TODO] markiert):
-// ================================================
-//
-// [HACK: Dokument.md#section] Kurze Beschreibung
-//   → Was genau abweicht
-//
-// [TODO: Dokument.md#section] Geplante Änderung
-//   → Was noch fehlt
-//
-// RESOLVED:
-// - [YYYY-MM-DD] Was wurde behoben
 ```
 
 **Header-Elemente:**
@@ -447,15 +443,8 @@ Jede TypeScript-Datei MUSS einen standardisierten Header haben:
 |---------|:-------:|--------------|
 | `// Ziel:` | ✅ | Einzeiler: Was macht diese Datei? |
 | `// Siehe:` | ✅ | Link zur autoritativen Dokumentation |
+| `// TASKS:` | ❌ | Automatisch: Tasks die diese Datei referenzieren |
 | Pipeline/Struktur | ❌ | Optional: Steps, Workflow, Abhängigkeiten |
-| `DISKREPANZEN` | ✅* | Nur wenn Abweichungen existieren |
-| `RESOLVED` | ✅* | Nur wenn Abweichungen behoben wurden |
-
-**Diskrepanz-Marker:**
-
-- `[HACK]` = Bewusste Abweichung (MVP-Vereinfachung, temporärer Workaround)
-- `[TODO]` = Muss noch implementiert werden
-- `RESOLVED` = Erledigte Diskrepanzen (mit Datum)
 
 ---
 
@@ -468,9 +457,9 @@ Jede TypeScript-Datei MUSS einen standardisierten Header haben:
 1. Task-Skripte nutzen (Roadmap ist zu groß zum direkten Lesen):
 
 ```bash
-node scripts/task.mjs sort                # Top-Tasks anzeigen
-node scripts/task.mjs sort <keyword>      # Nach Keyword filtern
-node scripts/task.mjs show <ID>           # Task-Details + Dependencies
+node scripts/task/task.mjs sort                # Top-Tasks anzeigen
+node scripts/task/task.mjs sort <keyword>      # Nach Keyword filtern
+node scripts/task/task.mjs show <ID>           # Task-Details + Dependencies
 ```
 
 **ABSOLUT VERBOTEN:**
@@ -482,7 +471,7 @@ node scripts/task.mjs show <ID>           # Task-Details + Dependencies
 **Nach Task-Auswahl SOFORT claimen - KEINE Analysen vorher:**
 
 ```bash
-node scripts/task.mjs claim <ID>
+node scripts/task/task.mjs claim <ID>
 # Ausgabe: "Key: a4x2 (2h gültig)"
 ```
 
@@ -521,25 +510,28 @@ node scripts/task.mjs claim <ID>
 
 | Aktion | Befehl |
 |--------|--------|
-| Top-Tasks | `node scripts/task.mjs sort` |
-| Keyword-Suche | `node scripts/task.mjs sort <keyword>` |
-| Task-Details | `node scripts/task.mjs show <ID>` |
-| Claimen | `node scripts/task.mjs claim <ID>` |
-| Freigeben | `node scripts/task.mjs claim <key>` |
-| Status ändern | `node scripts/task.mjs edit <ID> --status ✅ --key <key>` |
-| Neue Task | `node scripts/task.mjs add --tasks '<JSON>'` |
-| Neuer Bug | `node scripts/task.mjs add --bugs '<JSON>'` |
-| Task löschen | `node scripts/task.mjs remove <ID>` |
-| Bug resolven | `node scripts/task.mjs remove <ID> --resolve` |
+| Top-Tasks | `node scripts/task/task.mjs sort` |
+| Keyword-Suche | `node scripts/task/task.mjs sort <keyword>` |
+| Task-Details | `node scripts/task/task.mjs show <ID>` |
+| Claimen | `node scripts/task/task.mjs claim <ID>` |
+| Freigeben | `node scripts/task/task.mjs claim <key>` |
+| Task editieren | `node scripts/task/task.mjs edit <ID> [ID2...] --status ✅` |
+| Geclaimte Task editieren | `node scripts/task/task.mjs edit <ID> --status ✅ --key <key>` |
+| Neue Task | `node scripts/task/task.mjs add --tasks '<JSON>'` |
+| Neuer Bug | `node scripts/task/task.mjs add --bugs '<JSON>'` |
+| Task(s) löschen | `node scripts/task/task.mjs remove <ID> [ID2...]` |
+| Bug resolven | `node scripts/task/task.mjs remove <ID> --resolve` |
+
+**Wichtig:** `--key` ist nur erforderlich wenn die Task geclaimed ist (Status 🔒). Nicht-geclaimte Tasks können direkt editiert werden.
 
 ### Sort-Filter
 
 ```bash
-node scripts/task.mjs sort --status partial   # Nur 🔶
-node scripts/task.mjs sort --mvp              # Nur MVP-Tasks
-node scripts/task.mjs sort --domain Travel    # Nur Travel-Domain
-node scripts/task.mjs sort --prio hoch        # Nur hohe Priorität
-node scripts/task.mjs sort --help             # Alle Optionen
+node scripts/task/task.mjs sort --status partial   # Nur 🔶
+node scripts/task/task.mjs sort --mvp              # Nur MVP-Tasks
+node scripts/task/task.mjs sort --domain Travel    # Nur Travel-Domain
+node scripts/task/task.mjs sort --prio hoch        # Nur hohe Priorität
+node scripts/task/task.mjs sort --help             # Alle Optionen
 ```
 
 **Filter-Optionen:**
@@ -551,10 +543,12 @@ node scripts/task.mjs sort --help             # Alle Optionen
 | `--mvp` / `--no-mvp` | Nur MVP / Nur Nicht-MVP |
 | `-p, --prio <X>` | Nur Tasks mit Priorität X |
 
+**Keyword-Suche:** Durchsucht alle Felder (beschreibung, domain, layer, spec, impl). `sort NPCs` findet Tasks mit Domain "NPCs" oder "NPCs" in anderen Feldern.
+
 ### Task erstellen
 
 ```bash
-node scripts/task.mjs add --tasks '[{
+node scripts/task/task.mjs add --tasks '[{
   "domain": "Travel",
   "layer": "features",
   "beschreibung": "Route-Validierung implementieren",
@@ -568,6 +562,24 @@ node scripts/task.mjs add --tasks '[{
 
 **Impl-Tags:** `[neu]` (nur Format geprüft), `[ändern]`/`[fertig]` (Datei + Funktion muss existieren)
 
+**Impl-Pfade:** Bei mehrdeutigen Dateien (z.B. `creature.ts` existiert in `constants/` und `types/entities/`) vollständigen Pfad angeben:
+```
+types/entities/creature.ts.someFunc() [ändern]
+constants/creature.ts.someFunc() [ändern]
+```
+
+**Task-Duplikation:**
+
+Tasks werden automatisch in alle referenzierten Dateien dupliziert:
+
+| Referenz | Ziel | Bedingung |
+|----------|------|-----------|
+| `specs` | Doc-Datei(en) | Immer |
+| `impl` mit `[ändern]`/`[fertig]` | Source-Datei(en) | Datei + Funktion müssen existieren |
+| `impl` mit `[neu]` | - | Keine Duplikation (Datei existiert noch nicht) |
+
+Bei `task edit` und `task remove` werden alle Duplikate automatisch synchronisiert.
+
 ### Bug-System
 
 | Aspekt | Task | Bug |
@@ -578,8 +590,8 @@ node scripts/task.mjs add --tasks '[{
 **Bug-Dependencies bedeuten:** "Diese Tasks könnten die Ursache sein" (NICHT: "müssen vorher fertig sein")
 
 ```bash
-node scripts/task.mjs add --bugs '[{"beschreibung": "Bug-Beschreibung", "deps": "#428"}]'
-node scripts/task.mjs remove b5 --resolve   # Bug resolven
+node scripts/task/task.mjs add --bugs '[{"beschreibung": "Bug-Beschreibung", "deps": "#428"}]'
+node scripts/task/task.mjs remove b5 --resolve   # Bug resolven
 ```
 
 ### Automatisches Verhalten

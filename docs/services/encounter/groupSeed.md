@@ -372,3 +372,14 @@ Das Ergebnis des groupSeed-Workflows (per Services.md: IDs statt voller Objekte)
 ---
 
 *Siehe auch: [Encounter.md](Encounter.md) | [groupPopulation.md](groupPopulation.md)*
+
+
+## Tasks
+
+| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+| 4 | ✅ | groupSeed | services/encounter | TimeSegment type: 6-Segment-Type aus #types/timeSegment nutzen | mittel | true | - | groupSeed.md#Gewichtung (Soft Factors) | - |
+| 5 | ✅ | groupSeed | services/encounter | Weather-Präferenzen: context.weather + creature.preferences.weather | mittel | true | - | groupSeed.md#Gewichtung (Soft Factors) | - |
+| 6 | ✅ | groupSeed | services/encounter | CR-basierte Rarity: threatLevel { min, max } statt statischer creature.rarity | mittel | true | - | groupSeed.md#Gewichtung (Soft Factors) | - |
+| 7 | ✅ | groupSeed | services/encounter | FactionStatus: Nur active Fraktionen liefern Kreaturen | mittel | true | - | groupSeed.md#Step 2.0: Fraktions/Nativ-Auswahl | - |
+| 8 | ✅ | groupSeed | services/encounter | Roll-Range: crBudget statt max(crBudget, factionTotal+1) | mittel | true | - | groupSeed.md#Step 2.0: Fraktions/Nativ-Auswahl | - |

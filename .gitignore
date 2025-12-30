@@ -25,4 +25,5 @@ docs/architecture/.task-claims.json
 .claude/.hook-state.json
 
 # Generated test CLI
-scripts/test-cli/cli.mjs
+scripts/cli/cli.mjs
+scripts/cli/cli.temp.ts

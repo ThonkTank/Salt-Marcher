@@ -1,6 +1,6 @@
 # Update-Refs Hook
 
-Automatisches Update von Markdown-Links, TypeScript-Imports und CLAUDE.md bei Änderungen in `docs/` oder `src/`.
+Automatisches Update von Markdown-Links, TypeScript-Imports, JSON-Pfaden und CLAUDE.md bei Datei-Verschiebungen.
 
 ---
 
@@ -8,10 +8,21 @@ Automatisches Update von Markdown-Links, TypeScript-Imports und CLAUDE.md bei Ä
 
 Der Hook erfüllt vier Aufgaben:
 
-1. **Markdown-Referenz-Updates**: Bei `mv`/`git mv` in `docs/` werden alle Markdown-Links aktualisiert
-2. **Import-Updates**: Bei `mv`/`git mv` in `src/` werden alle TypeScript-Imports aktualisiert
-3. **Rename-Erkennung**: Delete+Create-Sequenzen werden als Renames erkannt und Referenzen/Imports automatisch aktualisiert
-4. **Projektstruktur-Updates**: Bei Strukturänderungen in `docs/` oder `src/` wird die Projektstruktur in CLAUDE.md neu generiert (inkl. Beschreibungen aus Zeile 1 bei .ts-Dateien und Zeile 3 bei .md-Dateien)
+1. **Referenz-Updates**: Bei `mv`/`git mv` werden alle Referenzen aktualisiert (Markdown-Links, Imports, JSON-Pfade)
+2. **Rename-Erkennung**: Delete+Create-Sequenzen werden als Renames erkannt und Referenzen automatisch aktualisiert
+3. **Projektstruktur-Updates**: Bei Strukturänderungen wird die Projektstruktur in CLAUDE.md neu generiert
+4. **Selbstständig**: Alle Logik ist in `.claude/hooks/` enthalten, keine externen Dependencies
+
+**Unterstützte Verzeichnisse:**
+- `docs/` - Markdown-Dokumentation
+- `src/` - TypeScript-Source
+- `scripts/` - JavaScript-Skripte
+- `presets/` - Preset-Daten
+
+**Unterstützte Dateitypen:**
+- `.md` - Markdown-Links `[text](path)`
+- `.ts`, `.tsx`, `.js`, `.mjs` - Import/Export-Statements
+- `.json` - Pfad-Referenzen (tsconfig, package.json, etc.)
 
 **Beispiele:**
 ```bash
@@ -26,9 +37,6 @@ git mv src/types/common/Result.ts src/core/Result.ts
 # Ganzer Ordner
 git mv docs/domain docs/entities
 # -> Alle Links auf Dateien in "domain/" werden aktualisiert
-
-git mv src/services/encounter src/services/combat
-# -> Alle Imports auf Dateien in "encounter/" werden aktualisiert
 ```
 
 ---
@@ -39,24 +47,23 @@ git mv src/services/encounter src/services/combat
 
 | Tool | Hook | Aktion |
 |------|------|--------|
-| Bash | `update-refs.mjs` | Referenz-Updates + Import-Updates + Deletion-Tracking + Projektstruktur |
+| Bash | `update-refs.mjs` | Referenz-Updates + Deletion-Tracking + Projektstruktur |
 | Write | `update-docs-tree.mjs` | Rename-Erkennung + Projektstruktur |
 
 ### Erkannte Befehle (Bash)
 
-| Befehl | docs/ Links | src/ Imports | Deletion-Tracking | Projektstruktur |
-|--------|-------------|--------------|-------------------|-----------------|
-| `mv` / `git mv` | ✅ | ✅ | – | ✅ |
-| `rm` | – | – | ✅ (für Rename) | ✅ |
-| `mkdir` | – | – | – | ✅ |
+| Befehl | Referenz-Updates | Deletion-Tracking | Projektstruktur |
+|--------|------------------|-------------------|-----------------|
+| `mv` / `git mv` | ✅ | – | ✅ |
+| `rm` | – | ✅ (für Rename) | ✅ |
+| `mkdir` | – | – | ✅ |
 
 ### Ablauf
 
 1. Hook erhält Kommando/Dateipfad via stdin (JSON)
-2. Prüft ob `docs/` oder `src/` betroffen ist
-3. Bei `mv` in `docs/`: Aktualisiert alle Markdown-Links
-4. Bei `mv` in `src/`: Aktualisiert alle TypeScript-Imports
-5. Bei jeder Änderung: Regeneriert Projektstruktur in CLAUDE.md
+2. Prüft ob ein unterstütztes Verzeichnis betroffen ist
+3. Bei `mv`: Aktualisiert alle Referenzen (Markdown, Imports, JSON)
+4. Bei jeder Änderung: Regeneriert Projektstruktur in CLAUDE.md
 
 ### Unterstützte Formate
 
@@ -73,20 +80,13 @@ Der Hook erkennt Delete+Create-Sequenzen als Renames:
 |---------|------|--------|
 | 1 | Bash (`rm`) | Datei wird als "gelöscht" gemerkt (60s Timeout) |
 | 2 | Write | Neue Datei wird erstellt |
-| 3 | Hook | Vergleicht Dateinamen, führt Referenz-/Import-Update aus |
+| 3 | Hook | Vergleicht Dateinamen, führt Referenz-Update aus |
 
-**Beispiel (docs/):**
+**Beispiel:**
 ```bash
 rm docs/entities/creature.md          # Schritt 1: Deletion gemerkt
 # Write tool: docs/data/creature.md   # Schritt 2: Match gefunden
-# -> Alle Links auf "creature.md" werden aktualisiert
-```
-
-**Beispiel (src/):**
-```bash
-rm src/types/common/Result.ts         # Schritt 1: Deletion gemerkt
-# Write tool: src/core/Result.ts      # Schritt 2: Match gefunden
-# -> Alle Imports auf "Result.ts" werden aktualisiert
+# -> Alle Referenzen werden aktualisiert
 ```
 
 **Matching-Algorithmus:**
@@ -96,19 +96,13 @@ rm src/types/common/Result.ts         # Schritt 1: Deletion gemerkt
 
 **State-Datei:** `.claude/.hook-state.json` (gitignored, ephemeral)
 
-### Link-Typen (docs/)
+### Referenz-Typen
 
-Nur Standard-Markdown-Links werden aktualisiert:
+**Markdown (.md):**
 - `[Text](pfad.md)`
 - `[Text](pfad.md#section)`
 
-Nicht unterstützt:
-- `[[Wiki-Links]]`
-- HTML-Links
-
-### Import-Typen (src/)
-
-Alle TypeScript/JavaScript-Import-Varianten werden aktualisiert:
+**TypeScript/JavaScript (.ts, .tsx, .js, .mjs):**
 - `import { X } from 'path'`
 - `import X from 'path'`
 - `import * as X from 'path'`
@@ -117,21 +111,16 @@ Alle TypeScript/JavaScript-Import-Varianten werden aktualisiert:
 - `export * from 'path'`
 - `import('path')` (dynamic imports)
 
+**JSON (.json):**
+- Pfade die mit `./`, `../` oder `src/` beginnen
+- tsconfig.json `paths`-Objekt
+- package.json `main`, `types`, `exports`
+
 **Path-Aliases:**
 Der Hook bevorzugt Path-Aliases wo möglich:
+- `#entities/*` -> `src/types/entities/*`
 - `#types/*` -> `src/types/*`
 - `@/*` -> `src/*`
-
-**Beispiel:**
-```typescript
-// Vorher (relative imports)
-import { Result } from '../types/common/Result';
-import { ok } from '../../core/utils';
-
-// Nachher (mit Aliases)
-import { Result } from '#types/common/Result';
-import { ok } from '@/core/utils';
-```
 
 ---
 
@@ -139,32 +128,11 @@ import { ok } from '@/core/utils';
 
 | Datei | Beschreibung |
 |-------|--------------|
-| `.claude/hooks/update-refs.mjs` | Bash-Hook: Referenzen + Imports + Deletion-Tracking + Docs-Tree |
-| `.claude/hooks/update-docs-tree.mjs` | Write-Hook: Rename-Erkennung + Docs-Tree |
+| `.claude/hooks/update-refs.mjs` | Bash-Hook: mv/rm Erkennung + Referenz-Updates |
+| `.claude/hooks/update-docs-tree.mjs` | Write-Hook: Rename-Erkennung + Projektstruktur |
+| `.claude/hooks/ref-utils.mjs` | Kern-Logik: Referenz-Updates für alle Dateitypen |
 | `.claude/hooks/hook-state.mjs` | State-Management für Rename-Erkennung |
-| `.claude/hooks/docs-tree.mjs` | Shared: Tree-Generierung |
-| `scripts/services/ref-updater-service.mjs` | Core: Markdown-Referenz-Updates |
-| `scripts/services/import-updater-service.mjs` | Core: TypeScript-Import-Updates |
-
----
-
-## CLI: Kaputte Links finden
-
-```bash
-node scripts/task.mjs scan-refs
-```
-
-Zeigt alle kaputten Referenzen mit Datei, Zeile und Fehlertyp:
-
-```
-docs/features/Travel.md:42
-  [Terrain](../domain/Terrain.md)
-  FILE_NOT_FOUND
-```
-
-**Fehlertypen:**
-- `FILE_NOT_FOUND` – Zieldatei existiert nicht
-- `ANCHOR_NOT_FOUND` – Datei existiert, Überschrift fehlt
+| `.claude/hooks/docs-tree.mjs` | Tree-Generierung für CLAUDE.md |
 
 ---
 
@@ -195,6 +163,17 @@ Hooks sind in `.claude/settings.json` registriert:
 }
 ```
 
+### Ignore-Liste
+
+Folgende Verzeichnisse werden nicht gescannt:
+- `node_modules`
+- `.git`
+- `dist`, `build`
+- `.claude`
+- `Archive`
+- `.obsidian`, `.vscode`
+- `coverage`
+
 ---
 
 ## Einschränkungen
@@ -205,10 +184,8 @@ Hooks sind in `.claude/settings.json` registriert:
 - Keine Unterstützung für Mehrfach-Quellen: `mv file1 file2 dest/`
 - **Rename-Erkennung:** Nur bei gleichem Dateinamen (basename), Timeout 60 Sekunden
 
-**docs/ (Markdown-Links):**
-- Beschreibungen werden aus Zeile 3 extrahiert (führendes `> ` und `**Label:**` werden entfernt)
-
-**src/ (TypeScript-Imports):**
-- Nur `.ts`/`.tsx`-Dateien (keine `.d.ts`, `.js`, `.mjs`)
-- Scannt `src/` und `scripts/` für Import-Updates
-- Beschreibungen werden aus Zeile 1 extrahiert (Kommentar-Präfix `// ` entfernt)
+**Nicht unterstützt:**
+- `[[Wiki-Links]]`
+- HTML-Links
+- `.d.ts` Dateien (TypeScript Declaration Files)
+- `.test.ts` Dateien

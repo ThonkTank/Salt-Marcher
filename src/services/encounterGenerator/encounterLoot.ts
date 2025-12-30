@@ -1,22 +1,16 @@
 // Ziel: Loot fuer Encounter generieren und auf Kreaturen verteilen
 // Siehe: docs/services/encounter/encounterLoot.md
 //
+// TASKS:
+// | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+// |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+// | 14 | ⬜ | Encounter | services | generateEncounterLoot implementieren (Budget-Berechnung, lootGenerator-Delegation) | mittel | Ja | #10 | encounterLoot.md#Step 4.4: Loot-Generierung | - |
+// | 15 | ⬜ | Encounter | services | encounterLoot Input-Signatur: GroupWithNPCs[] statt GroupWithNPCs | niedrig | Nein | - | encounterLoot.md#Input | - |
+//
 // Verantwortlichkeiten:
 // - Budget nach NarrativeRole berechnen (ally/neutral belasten Budget nicht)
 // - Verteilung nach CR × RoleWeight
 // - Delegation an lootGenerator fuer Item-Generierung
-//
-// DISKREPANZEN (als [HACK] oder [TODO] markiert):
-// ================================================
-//
-// [TODO: encounterLoot.md#step-44] Implementierung fehlt komplett
-//   → generateEncounterLoot ist Stub, gibt leeres Loot zurueck
-//
-// [TODO: Loot.md] lootGenerator existiert noch nicht
-//   → Muss Budget-System, DefaultLoot, Tag-Loot implementieren
-//
-// [HACK: encounterLoot.md#input] Funktion nimmt einzelne Gruppe
-//   → Doku beschreibt GroupWithNPCs[], Code nimmt GroupWithNPCs
 
 import type { GroupWithNPCs } from './encounterNPCs';
 
@@ -44,12 +38,7 @@ export function generateEncounterLoot(
     terrain: { id: string };
   }
 ): GroupWithLoot {
-  // TODO: Implementierung
-  // 1. countsTowardsBudget basierend auf narrativeRole bestimmen
-  // 2. Budget berechnen (Anteil am Encounter-Budget)
-  // 3. lootGenerator.generate() aufrufen
-  // 4. Loot auf Kreaturen verteilen (CR × RoleWeight)
-
+  // Stub: siehe #14 fuer vollstaendige Implementierung
   const countsTowardsBudget =
     group.narrativeRole === 'threat' || group.narrativeRole === 'victim';
 

@@ -37,7 +37,8 @@ src/types/
 │   └── ...
 ├── common/              # Geteilte Basis-Typen
 │   ├── EntityId.ts      # Branded EntityId<T>
-│   └── Timestamp.ts     # Branded Timestamp
+│   ├── Timestamp.ts     # Branded Timestamp
+│   └── reputation.ts    # ReputationEntry Schema
 ├── HexCoordinate.ts     # Axiale Hex-Koordinaten
 ├── TimeSegment.ts       # Tages-Segmente
 ├── Weather.ts           # Wetter-Daten
@@ -117,6 +118,53 @@ export interface PartySnapshot {
 
 ---
 
+## ReputationEntry
+
+Gemeinsames Schema fuer Beziehungen zwischen Entities.
+
+**Pfad:** `src/types/common/reputation.ts`
+
+```typescript
+import { z } from 'zod';
+
+export const reputationEntrySchema = z.object({
+  entityType: z.enum(['party', 'faction', 'npc']),
+  entityId: z.string(),  // 'party' fuer Party, sonst Entity-ID
+  value: z.number().min(-100).max(100),
+});
+
+export type ReputationEntry = z.infer<typeof reputationEntrySchema>;
+```
+
+**Verwendung:**
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `entityType` | `'party' \| 'faction' \| 'npc'` | Typ der referenzierten Entity |
+| `entityId` | `string` | ID der Entity (`'party'` fuer Party) |
+| `value` | `number` | Reputation (-100 bis +100) |
+
+**Beispiele:**
+
+```typescript
+// Party-Beziehung (auf NPC oder Faction)
+{ entityType: 'party', entityId: 'party', value: -50 }
+
+// Faction-Beziehung (auf NPC oder andere Faction)
+{ entityType: 'faction', entityId: 'schmuggler', value: +30 }
+
+// NPC-Beziehung (auf anderen NPC)
+{ entityType: 'npc', entityId: 'rival-thief', value: -80 }
+```
+
+**Konsumenten:**
+
+- [faction.md](../entities/faction.md) - `Faction.reputations`
+- [npc.md](../entities/npc.md) - `NPC.reputations`
+- [groupActivity.md](../services/encounter/groupActivity.md) - Disposition-Berechnung
+
+---
+
 ## Branded Types
 
 ### EntityId<T>
@@ -176,3 +224,10 @@ Die autoritative Spezifikation für Entity-Schemas befindet sich in [docs/entiti
 - [../entities/](../entities/) - Entity-Spezifikationen (Single Source of Truth)
 - [constants.md](constants.md) - D&D-Regeln und Lookup-Tabellen
 - [Orchestration.md](Orchestration.md) - Architektur-Übersicht
+
+
+## Tasks
+
+|  # | Status | Domain | Layer    | Beschreibung                                                           |  Prio  | MVP? | Deps | Spec                     | Imp.                |
+|--:|:----:|:-----|:-------|:---------------------------------------------------------------------|:----:|:--:|:---|:-----------------------|:------------------|
+| 59 |   ⬜    | types  | entities | ReputationEntry Zod-Schema in src/types/common/reputation.ts erstellen | mittel | Nein | -    | types.md#ReputationEntry | reputation.ts [neu] |

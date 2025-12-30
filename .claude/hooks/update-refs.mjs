@@ -23,75 +23,20 @@
  * }
  */
 
-import { existsSync, readdirSync, statSync } from 'fs';
-import { join, relative } from 'path';
-import { createRefUpdaterService } from '../../scripts/services/ref-updater-service.mjs';
-import { createImportUpdaterService } from '../../scripts/services/import-updater-service.mjs';
+import { existsSync, statSync } from 'fs';
+import { updateAllReferences, updateFolderReferences } from './ref-utils.mjs';
 import { updateClaudemdDocsTree } from './docs-tree.mjs';
 import { recordDelete } from './hook-state.mjs';
-
-// ============================================================================
-// FILE DISCOVERY
-// ============================================================================
-
-/**
- * Recursively finds all markdown files in a directory.
- *
- * @param {string} dir - Directory to search
- * @param {string[]} files - Accumulator array
- * @returns {string[]} - Array of file paths
- */
-function findAllMarkdownFiles(dir, files = []) {
-  if (!existsSync(dir)) return files;
-
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    const fullPath = join(dir, entry);
-    const stat = statSync(fullPath);
-
-    if (stat.isDirectory()) {
-      findAllMarkdownFiles(fullPath, files);
-    } else if (entry.endsWith('.md')) {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
-}
-
-/**
- * Recursively finds all TypeScript files in a directory.
- *
- * @param {string} dir - Directory to search
- * @param {string[]} files - Accumulator array
- * @returns {string[]} - Array of file paths
- */
-function findAllSourceFiles(dir, files = []) {
-  if (!existsSync(dir)) return files;
-
-  const entries = readdirSync(dir);
-  for (const entry of entries) {
-    if (entry === 'node_modules' || entry.startsWith('.')) continue;
-
-    const fullPath = join(dir, entry);
-    const stat = statSync(fullPath);
-
-    if (stat.isDirectory()) {
-      findAllSourceFiles(fullPath, files);
-    } else if (/\.(ts|tsx)$/.test(entry) && !entry.endsWith('.d.ts')) {
-      files.push(fullPath);
-    }
-  }
-
-  return files;
-}
 
 // ============================================================================
 // COMMAND DETECTION
 // ============================================================================
 
+// Directories to track for reference updates
+const TRACKED_DIRS = ['docs/', 'src/', 'scripts/', 'presets/'];
+
 /**
- * Checks if a command affects the docs/ or src/ directory structure.
+ * Checks if a command affects tracked directories.
  * Returns the type of command if it does, null otherwise.
  *
  * @param {string} command - The bash command
@@ -100,19 +45,19 @@ function findAllSourceFiles(dir, files = []) {
 function getDocsAffectingCommand(command) {
   if (!command) return null;
 
-  const affectsTrackedDir = command.includes('docs/') || command.includes('src/');
+  const affectsTrackedDir = TRACKED_DIRS.some(dir => command.includes(dir));
 
-  // Check for mv/git mv affecting docs/ or src/
+  // Check for mv/git mv
   if (/\b(git\s+)?mv\b/.test(command) && affectsTrackedDir) {
     return 'mv';
   }
 
-  // Check for rm affecting docs/ or src/
+  // Check for rm
   if (/\brm\b/.test(command) && affectsTrackedDir) {
     return 'rm';
   }
 
-  // Check for mkdir affecting docs/ or src/
+  // Check for mkdir
   if (/\bmkdir\b/.test(command) && affectsTrackedDir) {
     return 'mkdir';
   }
@@ -263,15 +208,13 @@ async function main() {
   if (commandType === 'rm') {
     const deletedPaths = parseRmCommand(command);
     for (const path of deletedPaths) {
-      // Track .md files in docs/
-      if (path.startsWith('docs/') && path.endsWith('.md')) {
+      // Track relevant file types in tracked directories
+      const isTrackedDir = TRACKED_DIRS.some(dir => path.startsWith(dir));
+      const isRelevantFile = /\.(md|ts|tsx|js|mjs|json)$/.test(path);
+
+      if (isTrackedDir && isRelevantFile) {
         recordDelete(path);
         console.log(`[update-refs] Recorded deletion: ${path}`);
-      }
-      // Track .ts files in src/
-      if (path.startsWith('src/') && /\.(ts|tsx)$/.test(path)) {
-        recordDelete(path);
-        console.log(`[update-imports] Recorded deletion: ${path}`);
       }
     }
   }
@@ -283,99 +226,29 @@ async function main() {
       const source = normalizePath(moveInfo.source);
       const destination = normalizePath(moveInfo.destination);
 
-      if (source.startsWith('docs/')) {
-        try {
-          const service = createRefUpdaterService();
+      try {
+        // Check if destination is a folder (folder rename)
+        if (existsSync(destination) && statSync(destination).isDirectory()) {
+          // Folder rename: update all references for files in the folder
+          const result = updateFolderReferences(source, destination);
 
-          // Check if destination is a folder (folder rename)
-          if (existsSync(destination) && statSync(destination).isDirectory()) {
-            // Folder rename: update references for all .md files in the folder
-            const files = findAllMarkdownFiles(destination);
-            let totalUpdatedFiles = 0;
-            let totalUpdates = 0;
+          if (result.totalUpdates > 0) {
+            console.log(`[update-refs] Folder rename: Updated ${result.totalUpdates} reference(s) in ${result.updatedFiles} file(s)`);
+          }
+        } else {
+          // Single file move
+          const result = updateAllReferences(source, destination);
 
-            for (const newPath of files) {
-              const relativePath = relative(destination, newPath);
-              const oldPath = join(source, relativePath);
+          if (result.updatedFiles > 0) {
+            console.log(`[update-refs] Updated ${result.totalUpdates} reference(s) in ${result.updatedFiles} file(s)`);
 
-              const result = service.updateReferences(oldPath, newPath);
-              if (result.ok && result.value.updatedFiles > 0) {
-                totalUpdatedFiles += result.value.updatedFiles;
-                totalUpdates += result.value.totalUpdates;
-
-                for (const change of result.value.changes) {
-                  console.log(`  - ${change.file} (${change.count} link(s))`);
-                }
-              }
-            }
-
-            if (totalUpdates > 0) {
-              console.log(`[update-refs] Folder rename: Updated ${totalUpdates} reference(s) in ${totalUpdatedFiles} file(s)`);
-            }
-          } else {
-            // Single file move
-            const result = service.updateReferences(source, destination);
-
-            if (result.ok && result.value.updatedFiles > 0) {
-              const { updatedFiles, totalUpdates } = result.value;
-              console.log(`[update-refs] Updated ${totalUpdates} reference(s) in ${updatedFiles} file(s)`);
-
-              for (const change of result.value.changes) {
-                console.log(`  - ${change.file} (${change.count} link(s))`);
-              }
+            for (const change of result.changes) {
+              console.log(`  - ${change.file} (${change.count} ref(s))`);
             }
           }
-        } catch (error) {
-          console.error(`[update-refs] Error: ${error.message}`);
         }
-      }
-
-      // Handle src/ file moves (update imports)
-      if (source.startsWith('src/')) {
-        try {
-          const importService = createImportUpdaterService();
-
-          // Check if destination is a folder (folder rename)
-          if (existsSync(destination) && statSync(destination).isDirectory()) {
-            // Folder rename: update imports for all .ts files in the folder
-            const files = findAllSourceFiles(destination);
-            let totalUpdatedFiles = 0;
-            let totalUpdates = 0;
-
-            for (const newPath of files) {
-              const relativePath = relative(destination, newPath);
-              const oldPath = join(source, relativePath);
-
-              const result = importService.updateImports(oldPath, newPath);
-              if (result.ok && result.value.updatedFiles > 0) {
-                totalUpdatedFiles += result.value.updatedFiles;
-                totalUpdates += result.value.totalUpdates;
-
-                for (const change of result.value.changes) {
-                  console.log(`  - ${change.file} (${change.count} import(s))`);
-                }
-              }
-            }
-
-            if (totalUpdates > 0) {
-              console.log(`[update-imports] Folder rename: Updated ${totalUpdates} import(s) in ${totalUpdatedFiles} file(s)`);
-            }
-          } else {
-            // Single file move
-            const result = importService.updateImports(source, destination);
-
-            if (result.ok && result.value.updatedFiles > 0) {
-              const { updatedFiles, totalUpdates } = result.value;
-              console.log(`[update-imports] Updated ${totalUpdates} import(s) in ${updatedFiles} file(s)`);
-
-              for (const change of result.value.changes) {
-                console.log(`  - ${change.file} (${change.count} import(s))`);
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`[update-imports] Error: ${error.message}`);
-        }
+      } catch (error) {
+        console.error(`[update-refs] Error: ${error.message}`);
       }
     }
   }

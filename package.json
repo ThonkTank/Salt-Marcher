@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src/",
     "test": "vitest",
-    "cli:generate": "tsx scripts/test-cli/generate.ts",
-    "cli": "node scripts/test-cli/cli.mjs"
+    "cli:generate": "tsx scripts/cli/generate.ts",
+    "cli": "node scripts/cli/cli.mjs"
   },
   "dependencies": {
     "zod": "^3.24.1"

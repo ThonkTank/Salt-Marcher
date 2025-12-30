@@ -1,13 +1,16 @@
 # Encounter-Activity
 
-> **Helper fuer:** Encounter-Service (Step 4.1, 4.2)
-> **Input:** `EncounterGroup`, `EncounterContext`, `Faction?`
-> **Output:** `string` (Activity), `string` (Goal)
+> **Helper fuer:** Encounter-Service (Step 4.1, 4.2, 4.3)
+> **Input:** `EncounterGroup`, `EncounterContext`, `Faction?`, `NPC?`
+> **Output:** `string` (Activity), `string` (Goal), `Disposition`
 > **Aufgerufen von:** [Encounter.md](Encounter.md)
 >
 > **Referenzierte Schemas:**
 > - [activity.md](../../entities/activity.md) - Activity-Entity
-> - [faction.md](../../entities/faction.md) - Faction mit Culture
+> - [faction.md](../../entities/faction.md) - Faction mit Culture und Reputations
+> - [npc.md](../../entities/npc.md) - NPC mit Reputations
+> - [creature.md](../../entities/creature.md) - CreatureDefinition mit baseDisposition
+> - [types.md#ReputationEntry](../../architecture/types.md#reputationentry) - Reputation-Schema
 >
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
@@ -223,6 +226,94 @@ Fraktionen koennen Activity-Goal-Mappings definieren:
 
 ---
 
+## Step 4.3: Disposition-Berechnung
+
+**Zweck:** Wie steht die Gruppe zur Party?
+
+**Input:** `EncounterGroup`, `NPC?`, `Faction?`
+
+**Output:** `Disposition` ('hostile' | 'neutral' | 'friendly')
+
+### Disposition-Formel
+
+Die effektive Disposition wird aus Base-Disposition plus Reputation berechnet:
+
+```
+effectiveDisposition = clamp(baseDisposition + reputation, -100, +100)
+```
+
+**Label-Thresholds:**
+
+| Bereich | Label |
+|---------|-------|
+| < -33 | `hostile` |
+| -33 bis +33 | `neutral` |
+| > +33 | `friendly` |
+
+### Reputation-Lookup-Prioritaet
+
+1. **NPC.reputations** (Party-Eintrag) - falls NPC zugewiesen und Eintrag vorhanden
+2. **Faction.reputations** (Party-Eintrag) - falls Gruppe zu Faction gehoert
+3. **Default: 0** - keine Reputation bekannt
+
+```typescript
+function getGroupReputation(npcId?: string, factionId?: string): number {
+  // 1. NPC-Reputation hat Vorrang
+  if (npcId) {
+    const npc = vault.getEntity<NPC>('npc', npcId);
+    const partyRep = npc?.reputations?.find(
+      r => r.entityType === 'party' && r.entityId === 'party'
+    );
+    if (partyRep && partyRep.value !== 0) return partyRep.value;
+  }
+
+  // 2. Faction-Reputation als Fallback
+  if (factionId) {
+    const faction = vault.getEntity<Faction>('faction', factionId);
+    const partyRep = faction?.reputations?.find(
+      r => r.entityType === 'party' && r.entityId === 'party'
+    );
+    if (partyRep) return partyRep.value;
+  }
+
+  // 3. Default: 0
+  return 0;
+}
+
+function calculateDisposition(
+  baseDisposition: number,
+  reputation: number
+): Disposition {
+  const effective = Math.max(-100, Math.min(100, baseDisposition + reputation));
+
+  if (effective < -33) return 'hostile';
+  if (effective > 33) return 'friendly';
+  return 'neutral';
+}
+```
+
+### Disposition-Beispiele
+
+| Kreatur | baseDisposition | Reputation | Effektiv | Label |
+|---------|:---------------:|:----------:|:--------:|-------|
+| Goblin | -75 | 0 | -75 | hostile |
+| Goblin | -75 | +50 (Handel) | -25 | neutral |
+| Wolf | -25 | 0 | -25 | neutral |
+| Haendler | +25 | +30 (Stammkunde) | +55 | friendly |
+| Bandit | -75 | -20 (Ueberfall) | -95 | hostile |
+
+### narrativeRole hat keinen Einfluss
+
+**Wichtig:** `narrativeRole` beeinflusst die Disposition NICHT mehr.
+
+- `narrativeRole` beschreibt die narrative Funktion im Encounter (threat, victim, neutral, ally)
+- `disposition` beschreibt die tatsaechliche Einstellung zur Party
+
+Ein `ally` mit niedriger Reputation kann trotzdem `neutral` sein.
+Ein `threat` mit hoher Reputation kann `friendly` sein (z.B. Wachen die Party kennen).
+
+---
+
 ## Multi-Group Flavour
 
 Bei Encounters mit mehreren Gruppen wird Activity **pro Gruppe** generiert.
@@ -242,5 +333,13 @@ Activities der Gruppen sollten narrativ zusammenpassen:
 
 ## Tasks
 
-| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+|  # | Status | Domain    | Layer     | Beschreibung                                                              |  Prio  | MVP? | Deps | Spec                                                                 | Imp.                                       |
+|--:|:----:|:--------|:--------|:------------------------------------------------------------------------|:----:|:--:|:---|:-------------------------------------------------------------------|:-----------------------------------------|
+|  1 |   ⬜    | encounter | services  | Context-Filter: weather Tags, aquatic/terrain Tags für Activity-Auswahl   | mittel | Nein | -    | encounter/groupActivity.md#kontext-filter                            | groupActivity.ts.selectActivity()          |
+|  2 |   ⚠️   | encounter | services  | Goal-Ableitung mit Faction-Mappings                                       | mittel | Nein | b1   | encounter/groupActivity.md#Goal-Beispiele                            | groupActivity.ts.deriveGoal()              |
+|  3 |   ✅    | encounter | services  | Activity-Pool über Culture-System auflösen (resolveCultureChain)          | mittel | Nein | -    | encounter/groupActivity.md#Activity-Pool-Hierarchie                  | groupActivity.ts.selectActivity()          |
+| 23 |   ✅    | encounter | services  | active/resting Filter basierend auf creature.activeTime                   | mittel | Nein | -    | groupActivity.md#Kontext-Filter                                      | groupActivity.ts.selectActivity()          |
+| 24 |   ✅    | encounter | services  | Activity-Pool-Hierarchie (Step 4.1) implementiert                         | mittel | Nein | -    | groupActivity.md#Activity-Definition                                 | groupActivity.ts.selectActivity()          |
+| 25 |   ✅    | encounter | services  | CultureData.activities auf string[] umgestellt                            | mittel | Nein | -    | groupActivity.md#Activity-Definition                                 | groupActivity.ts.selectActivity()          |
+| 60 |   ⬜    | encounter | services  | Disposition-Berechnung mit baseDisposition + Reputation implementieren    | mittel | Nein | #59  | services/encounter/groupActivity.md#Step-4.3:-Disposition-Berechnung | groupActivity.ts.assignActivity() [ändern] |
+| 61 |   ⬜    | creature  | constants | DISPOSITION_THRESHOLDS und BASE_DISPOSITION_VALUES Konstanten hinzufuegen | mittel | Nein | -    | services/encounter/groupActivity.md#Disposition-Berechnung           | constants/creature.ts [ändern]             |

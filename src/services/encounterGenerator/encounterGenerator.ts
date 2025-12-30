@@ -1,6 +1,16 @@
 // Ziel: Encounter-Generierungs-Pipeline verwalten. Helper-Skripte nach Bedarf aufrufen.
 // Siehe: docs/services/encounter/Encounter.md
 //
+// TASKS:
+// | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+// |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+// | 13 | ⬜ | Encounter | services | Flavour-Service fuer Encounter-Beschreibung implementieren | niedrig | Nein | - | encounter.md#Pipeline | - |
+// | 27 | ⬜ | Encounter | services | EncounterConstraints implementieren (min/maxDifficulty, requiredTags) - Post-MVP | niedrig | Nein | - | encounter.md#Input-Schema | - |
+// | 30 | ✅ | Encounter | services | terrain als vollstaendige TerrainDefinition (statt partieller Struktur) | mittel | Ja | - | encounter.md#Input-Schema | - |
+// | 31 | ✅ | Encounter | services | weather an groupSeed uebergeben (Weather-Praeferenzen aktiviert) | mittel | Ja | - | encounter.md#Pipeline | - |
+// | 34 | ✅ | Encounter | services | position verwendet HexCoordinate statt inline { q, r } | mittel | Ja | - | encounter.md#Input-Schema | - |
+// | 35 | ✅ | Encounter | services | NPCs auf Encounter-Ebene (1-3 NPCs), nicht mehr leadNPC pro Gruppe | mittel | Ja | - | encounter.md#Pipeline | - |
+//
 // Pipeline:
 // 1.: Multi-Group-Check
 // 2.: groupSeed.ts - Seed-Kreatur auswählen
@@ -9,29 +19,6 @@
 // 5.: difficulty.ts - Ziel-Difficulty bestimmen + Simulation
 // 6.: balancing.ts - Balancing-Loop bis Ziel erreicht
 // 7.: EncounterInstance zusammenbauen
-//
-// DISKREPANZEN (als [HACK] oder [TODO] markiert):
-// ================================================
-//
-// [HACK: Encounter.md#orchestration] Doku zeigt Result-Handling für groupSeed
-//   → Impl verwendet `| null`, Doku zeigt `isErr()/unwrap()`
-//
-// [HACK: Encounter.md#orchestration] exclude als Teil von context
-//   → Doku zeigt separaten options-Parameter: selectSeed(context, { exclude })
-//
-// [HACK: Encounter.md#input-schema] PartyMember.maxHp nicht in Doku
-//   → partySnapshot.ts hat maxHp, Doku definiert nur hp
-//
-// [TODO: Encounter.md#input-schema] EncounterConstraints nicht implementiert
-//   → Post-MVP Feature für min/maxDifficulty, requiredTags, etc.
-//
-// RESOLVED:
-// - [2025-12-29] terrain als vollständige TerrainDefinition (statt partieller Struktur)
-// - [2025-12-29] weather an groupSeed übergeben (Weather-Präferenzen aktiviert)
-// - [2025-12-29] crBudget in Doku ergänzt, position+thresholds in PartySnapshot
-// - [2025-12-29] trigger bleibt string (MVP), Doku mit Post-MVP-Hinweis
-// - [2025-12-29] position verwendet HexCoordinate statt inline { q, r }
-// - [2025-12-30] NPCs auf Encounter-Ebene (1-3 NPCs), nicht mehr leadNPC pro Gruppe
 
 // ============================================================================
 // IMPORTS
@@ -255,7 +242,7 @@ export function generateEncounter(context: {
       timeSegment: context.timeSegment,
       weather: context.weather,
     },
-    description: '', // TODO: Flavour-Service
+    description: '',
   };
 
   return ok({

@@ -566,3 +566,17 @@ type GroupStatus = 'free' | 'captive' | 'incapacitated' | 'fleeing';
 ---
 
 *Siehe auch: [Encounter.md](Encounter.md) | [groupSeed.md](groupSeed.md) | [groupActivity.md](groupActivity.md)*
+
+
+## Tasks
+
+| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+| 9 | ✅ | encounter | services | generateEncounterGroup: Funktionsname + Return-Typ (populate→generateEncounterGroup, null→Result) | mittel | Nein | - | groupPopulation.md#kern-funktion | - |
+| 16 | ✅ | encounter | services | Gruppen-Finalisierung: crypto.randomUUID(), templateRef-Tracking, status default | mittel | Nein | - | groupPopulation.md#Step 3.3: Gruppen-Finalisierung | - |
+| 17 | ✅ | encounter | services | Slot-Befüllung: resolveCount mit randomNormal, Design-Rolle-Matching strikt | mittel | Nein | - | groupPopulation.md#Step 3.2: Slot-Befuellung | - |
+| 18 | ✅ | encounter | services | Generic Templates aus Vault laden und prüfen | mittel | Nein | - | groupPopulation.md#Step 3.1: Template-Auswahl | - |
+| 19 | ✅ | encounter | services | Companion-Pool: Faction-Liste + Tag-Matching für fraktionslose Kreaturen | mittel | Nein | - | groupPopulation.md#Step 3.0: Companion-Pool Bildung | - |
+| 20 | ✅ | encounter | services | canFulfillTemplate: count-Summe statt Eintrags-Anzahl für Fraktionen | mittel | Nein | - | groupPopulation.md#Step 3.1: Template-Auswahl | - |
+| 21 | ✅ | encounter | services | PopulatedGroup Output-Schema: groupId, templateRef, slots-Map, status | mittel | Nein | - | groupPopulation.md#Output: PopulatedGroup | - |
+| 22 | ✅ | encounter | services | companionPool-Typen: {creatureId,count}[] für selectTemplate, canFulfillTemplate, fillSlot | mittel | Nein | - | groupPopulation.md#Step 3.1: Template-Auswahl | - |

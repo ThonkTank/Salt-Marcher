@@ -1,6 +1,18 @@
 // Gruppen-Population: Template -> Slots -> Kreaturen
 // Siehe: docs/services/encounter/groupPopulation.md
 //
+// TASKS:
+// | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+// |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+// | 9 | ✅ | encounter | services | generateEncounterGroup: Funktionsname + Return-Typ (populate→generateEncounterGroup, null→Result) | mittel | Nein | - | groupPopulation.md#kern-funktion | - |
+// | 16 | ✅ | encounter | services | Gruppen-Finalisierung: crypto.randomUUID(), templateRef-Tracking, status default | mittel | Nein | - | groupPopulation.md#Step 3.3: Gruppen-Finalisierung | - |
+// | 17 | ✅ | encounter | services | Slot-Befüllung: resolveCount mit randomNormal, Design-Rolle-Matching strikt | mittel | Nein | - | groupPopulation.md#Step 3.2: Slot-Befuellung | - |
+// | 18 | ✅ | encounter | services | Generic Templates aus Vault laden und prüfen | mittel | Nein | - | groupPopulation.md#Step 3.1: Template-Auswahl | - |
+// | 19 | ✅ | encounter | services | Companion-Pool: Faction-Liste + Tag-Matching für fraktionslose Kreaturen | mittel | Nein | - | groupPopulation.md#Step 3.0: Companion-Pool Bildung | - |
+// | 20 | ✅ | encounter | services | canFulfillTemplate: count-Summe statt Eintrags-Anzahl für Fraktionen | mittel | Nein | - | groupPopulation.md#Step 3.1: Template-Auswahl | - |
+// | 21 | ✅ | encounter | services | PopulatedGroup Output-Schema: groupId, templateRef, slots-Map, status | mittel | Nein | - | groupPopulation.md#Output: PopulatedGroup | - |
+// | 22 | ✅ | encounter | services | companionPool-Typen: {creatureId,count}[] für selectTemplate, canFulfillTemplate, fillSlot | mittel | Nein | - | groupPopulation.md#Step 3.1: Template-Auswahl | - |
+//
 // Pipeline-Position: Step 3 (nach groupSeed, vor Flavouring)
 //
 // Pipeline:
@@ -12,39 +24,6 @@
 //      - für Kreaturen mit Fraktion: Prüfe, ob die Fraktion mindestens eine Gruppe kreaturen mit erforderlicher Rolle und anzahl pro slot hat.
 // 3.2: Slots befüllen (Design-Rolle matchen, Kreaturen zuweisen)
 // 3.3: Gruppe finalisieren (EncounterGroup zusammenbauen)
-//
-// DISKREPANZEN (als [HACK] oder [TODO] markiert):
-// ================================================
-//
-// (keine)
-//
-// RESOLVED:
-// - [2025-12-29] Funktionsname korrigiert (groupPopulation.md#kern-funktion)
-//   → populate() → generateEncounterGroup()
-// - [2025-12-29] Return-Typ korrigiert (groupPopulation.md#kern-funktion)
-//   → PopulatedGroup | null → Result<PopulatedGroup, PopulationError>
-// - [2025-12-29] Output-Schema vollständig (groupPopulation.md#output-encountergroup)
-//   → groupId, templateRef, slots-Map mit EncounterCreature[], status implementiert
-//   → PopulatedGroup interface exportiert
-// - [2025-12-29] Gruppen-Finalisierung vollständig (groupPopulation.md#step-33-gruppen-finalisierung)
-//   → groupId via crypto.randomUUID()
-//   → templateRef-Tracking implementiert
-//   → status: 'free' als Default
-// - [2025-12-29] Slot-Befüllung vollständig implementiert (groupPopulation.md#step-32-slot-befuellung)
-//   → resolveCount nutzt randomNormal für avg-Feld
-//   → Design-Rolle-Matching strikt (kein Fallback - vorherige Steps garantieren Erfüllbarkeit)
-// - [2025-12-29] Generic Templates implementiert (groupPopulation.md#step-31-template-auswahl)
-// - [2025-12-29] Companion-Pool implementiert (groupPopulation.md#step-30-companion-pool-bildung)
-//   → Faction: { creatureId, count }[] + Zeit-Filter
-//   → Fraktionslos: Tag-Matching mit eligibleCreatures
-// - [2025-12-29] companionPool-Typen korrigiert (groupPopulation.md#step-31-template-auswahl, #step-32-slot-befuellung)
-//   → selectTemplate, canFulfillTemplate, fillSlot, fillAllSlots akzeptieren jetzt { creatureId, count }[]
-//   → Vault-Lookups für designRole-Zugriff
-// - [2025-12-29] fillSlot Rollen-Filterung korrigiert
-//   → Seed-Kreatur nicht mehr aus roleMatches ausgeschlossen
-//   → Fallback entfernt - nur Kreaturen mit passender Rolle verwenden
-// - [2025-12-29] canFulfillTemplate count-Logik korrigiert
-//   → Prüft jetzt Summe der count-Werte statt Anzahl der Einträge für Fraktionen
 
 import { vault } from '@/infrastructure/vault/vaultInstance';
 import { randomBetween, randomNormal, randomSelect, assertValidValue } from '@/utils';
@@ -180,7 +159,7 @@ function canFulfillTemplate(
  *
  * Priorität:
  * 1. Faction-Templates (wenn vorhanden und erfüllbar)
- * 2. Generic Templates (TODO: nicht implementiert)
+ * 2. Generic Templates (vault: group-template)
  * 3. undefined = groupSize Fallback
  */
 function selectTemplate(

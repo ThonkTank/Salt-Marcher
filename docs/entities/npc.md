@@ -39,6 +39,7 @@ Benannte, persistente Kreatur-Instanz mit Persoenlichkeit.
 | `lastKnownPosition` | `HexCoordinate?` | Letzte Position | Optional |
 | `lastSeenAt` | `GameDateTime?` | Zeitpunkt letzter Sichtung | Optional |
 | `currentPOI` | `EntityId<'poi'>?` | Aktueller Aufenthaltsort | Optional |
+| `reputations` | `ReputationEntry[]` | Beziehungen zu anderen Entities | Optional, default: [] |
 | `gmNotes` | `string?` | GM-Notizen | Optional |
 
 ---
@@ -60,6 +61,44 @@ Benannte, persistente Kreatur-Instanz mit Persoenlichkeit.
 |------|-----|--------------|
 | `type` | `string` | Kreatur-Typ (z.B. "goblin") |
 | `id` | `EntityId<'creature'>` | Verweis auf CreatureDefinition |
+
+### reputations
+
+Array von Beziehungen zu anderen Entities (Party, Fraktionen, andere NPCs).
+
+-> Schema: [types.md#ReputationEntry](../architecture/types.md#reputationentry)
+
+```typescript
+reputations: ReputationEntry[]  // default: []
+```
+
+**Beispiel:**
+```typescript
+reputations: [
+  { entityType: 'party', entityId: 'party', value: -30 },      // Hasst die Party
+  { entityType: 'faction', entityId: 'schmuggler', value: +50 } // Mag Schmuggler
+]
+```
+
+**Verwendung:**
+
+| entityType | entityId | Bedeutung |
+|------------|----------|-----------|
+| `party` | `'party'` | Beziehung zur Party (fuer Disposition) |
+| `faction` | Faction-ID | Beziehung zu einer Fraktion |
+| `npc` | NPC-ID | Beziehung zu anderem NPC |
+
+**Disposition-Berechnung:**
+
+Wenn ein NPC in einem Encounter auftaucht, wird seine Disposition berechnet als:
+
+```
+effectiveDisposition = clamp(creature.baseDisposition + npc.reputations[party].value, -100, +100)
+```
+
+Falls kein Party-Eintrag vorhanden ist, wird die Faction-Reputation als Fallback verwendet.
+
+-> Berechnungslogik: [groupActivity.md](../services/encounter/groupActivity.md)
 
 ---
 
@@ -114,11 +153,12 @@ NPC -> gehoert zu Fraktion -> Fraktion hat Presence -> NPC kann dort erscheinen
 | Konzept | Grund |
 |---------|-------|
 | `partyKnowledge` | GM trackt in Notizen/Journal |
-| `relationToParty` | Kreative GM-Entscheidung |
 | `encounters[]` | Historie via Journal-Entries |
 | `statOverrides` | Post-MVP Feature |
 | `homeLocation` | Post-MVP (Routen/Schedules) |
 | `cultureId` | Kultur ist in Faction eingebettet |
+
+**Hinweis:** `relationToParty` ist jetzt ueber `reputations` abgebildet.
 
 ---
 
@@ -152,6 +192,11 @@ const griknak: NPC = {
   lastKnownPosition: { q: 5, r: -3 },
   lastSeenAt: { day: 20, month: 3, year: 1492, hour: 9 },
 
+  // Beziehungen
+  reputations: [
+    { entityType: 'party', entityId: 'party', value: +20 }  // Mag die Party (hat Infos verkauft)
+  ],
+
   gmNotes: 'Hat der Party beim letzten Mal Informationen verkauft'
 };
 ```
@@ -167,3 +212,10 @@ Vault/SaltMarcher/data/
     ├── merchant-silverbeard.json
     └── guard-captain-helena.json
 ```
+
+
+## Tasks
+
+|  # | Status | Domain | Layer    | Beschreibung                              |  Prio  | MVP? | Deps | Spec                        | Imp.                           |
+|--:|:----:|:-----|:-------|:----------------------------------------|:----:|:--:|:---|:--------------------------|:-----------------------------|
+| 63 |   ⬜    | NPCs   | entities | NPC-Schema: reputations Array hinzufuegen | mittel | Nein | #59  | entities/npc.md#reputations | types/entities/npc.ts [ändern] |

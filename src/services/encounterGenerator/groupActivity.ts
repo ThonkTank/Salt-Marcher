@@ -5,33 +5,25 @@
 //   Step 4.1: selectActivity() - Activity basierend auf Pool + Kontext wählen
 //   Step 4.2: deriveGoal() - Goal aus Activity + NarrativeRole ableiten
 //
-// DISKREPANZEN:
-// ================================================
+// TASKS:
+// |  # | Status | Domain    | Layer    | Beschreibung                                                           |  Prio  | MVP? | Deps | Spec                                                                 | Imp.                                       |
+// |--:|:----:|:--------|:-------|:---------------------------------------------------------------------|:----:|:--:|:---|:-------------------------------------------------------------------|:-----------------------------------------|
+// |  1 |   ⬜    | encounter | services | Context-Filter: weather/aquatic/terrain Tags                           | mittel | Nein | -    | groupActivity.md#kontext-filter                                      | selectActivity()                           |
+// |  2 |   ⚠️   | encounter | services | Goal-Ableitung mit Faction-Mappings                                    | mittel | Nein | b1   | groupActivity.md#Goal-Beispiele                                      | deriveGoal()                               |
+// |  3 |   ✅    | encounter | services | Activity-Pool über Culture-System auflösen                             | mittel | Nein | -    | groupActivity.md#Activity-Pool-Hierarchie                            | selectActivity()                           |
+// | 23 |   ✅    | encounter | services | active/resting Filter basierend auf creature.activeTime                | mittel | Nein | -    | groupActivity.md#Kontext-Filter                                      | selectActivity()                           |
+// | 24 |   ✅    | encounter | services | Activity-Pool-Hierarchie (Step 4.1) implementiert                      | mittel | Nein | -    | groupActivity.md#Activity-Definition                                 | selectActivity()                           |
+// | 25 |   ✅    | encounter | services | CultureData.activities auf string[] umgestellt                         | mittel | Nein | -    | groupActivity.md#Activity-Definition                                 | selectActivity()                           |
+// | 60 |   ⬜    | encounter | services | Disposition-Berechnung mit baseDisposition + Reputation implementieren | mittel | Nein | #59  | services/encounter/groupActivity.md#Step-4.3:-Disposition-Berechnung | groupActivity.ts.assignActivity() [ändern] |
 //
-// [HACK: groupActivity.md] disposition Feld nicht dokumentiert
-//   → Code gibt 'hostile' | 'neutral' | 'friendly' zurück, Docs erwähnen dies nicht
-//
-// [TODO: groupActivity.md#kontext-filter] Context-Filter
-//   → weather Tags, aquatic/terrain Tags
-//
-// [TODO: groupActivity.md#step-42] Goal-Ableitung
-//   → deriveGoal() mit DEFAULT_GOALS_BY_ROLE + Faction-Mappings
-//
-// [TODO: Culture-Chain] Activity-Pool über Culture-System auflösen
-//   → resolveCultureChain(creatureDef, faction) statt creature.activities
-//   → Activities aus Vault laden statt ACTIVITY_DEFINITIONS
-//   → Siehe: docs/services/NPCs/Culture-Resolution.md
-//
-// RESOLVED:
-// - [2025-12-30] Activity-Pool-Hierarchie (Step 4.1) implementiert
-// - [2025-12-30] active/resting Filter basierend auf creature.activeTime
-// - [2025-12-30] CultureData.activities auf string[] umgestellt
+// BUGS:
+// | b1 | ⬜ | disposition Feld nicht dokumentiert (hostile|neutral|friendly) | hoch | #2 |
 
 import type { PopulatedGroup, EncounterCreature, GroupStatus } from './groupPopulation';
 import type { Faction, CreatureDefinition } from '@/types/entities';
 import type { WeightedItem } from '#types/common/counting';
 import { type Activity, ACTIVITY_DEFINITIONS, GENERIC_ACTIVITY_IDS } from '@/constants';
-import { weightedRandomSelect } from '@/utils';
+import { weightedRandomSelect, resolveCultureChain, getCultureField } from '@/utils';
 import { vault } from '@/infrastructure/vault/vaultInstance';
 
 /** Output von assignActivity - PopulatedGroup mit Activity/Goal */
@@ -66,12 +58,12 @@ function isCreatureActiveNow(creatureId: string, timeSegment: string): boolean {
 }
 
 /**
- * Wählt eine Activity basierend auf Pool-Hierarchie und Kontext-Filter.
+ * Wählt eine Activity basierend auf Culture-Chain und Kontext-Filter.
  *
- * Pool-Hierarchie (Step 4.1):
+ * Pool-Hierarchie (via Culture-Chain mit 60%-Kaskade):
  * 1. GENERIC_ACTIVITIES - Basis-Pool für alle Kreaturen
- * 2. Creature.activities - Kreatur-Typ spezifische Activities
- * 3. Faction.culture.activities - Fraktions-spezifische Activities
+ * 2. Type/Species Culture - über resolveCultureChain()
+ * 3. Faction Culture - über resolveCultureChain()
  *
  * Kontext-Filter:
  * - Kreatur aktiv (timeSegment ∈ activeTime): nur 'active' Activities
@@ -83,33 +75,32 @@ function selectActivity(
   context: { terrain: { id: string }; timeSegment: string },
   faction?: Faction
 ): Activity {
-  // 1. Pool zusammenstellen (Hierarchie)
-  const activityIds = new Set<string>();
-
-  // Generic (immer)
-  GENERIC_ACTIVITY_IDS.forEach((id) => activityIds.add(id));
-
-  // Creature-spezifisch (aus group.creatures)
   const creatures = getAllCreatures(group);
-  for (const creature of creatures) {
-    const def = vault.getEntity<CreatureDefinition>('creature', creature.creatureId);
-    if (def?.activities) {
-      def.activities.forEach((id) => activityIds.add(id));
-    }
-  }
+  const seedCreature = creatures[0];
 
-  // Faction-spezifisch (activities ist jetzt string[])
-  if (faction?.culture?.activities) {
-    faction.culture.activities.forEach((id) => activityIds.add(id));
-  }
+  // 1. Seed-Kreatur's Definition holen
+  const creatureDef = seedCreature
+    ? vault.getEntity<CreatureDefinition>('creature', seedCreature.creatureId)
+    : null;
 
-  // 2. IDs zu Activities auflösen
+  // 2. Culture-Chain aufbauen (Type/Species → Faction)
+  const layers = resolveCultureChain(creatureDef, faction ?? null);
+
+  // 3. Activities aus Culture-Chain holen (mit 60%-Kaskade)
+  const cultureActivities = getCultureField(layers, 'activities') ?? [];
+
+  // 4. Pool zusammenstellen: Generic + Culture
+  const activityIds = new Set<string>([
+    ...GENERIC_ACTIVITY_IDS,
+    ...cultureActivities,
+  ]);
+
+  // 5. IDs zu Activities auflösen
   const pool: Activity[] = [...activityIds]
     .map((id) => ACTIVITY_DEFINITIONS[id])
     .filter((a): a is Activity => a !== undefined);
 
-  // 3. Nach Kontext filtern (basierend auf Seed-Kreatur's activeTime)
-  const seedCreature = creatures[0];
+  // 6. Nach Kontext filtern (basierend auf Seed-Kreatur's activeTime)
   const isActive = seedCreature ? isCreatureActiveNow(seedCreature.creatureId, context.timeSegment) : true;
 
   const filtered = pool.filter((a) => {
@@ -125,14 +116,14 @@ function selectActivity(
     // Kreatur ruht: nur 'resting' Activities
     if (!isActive && !hasResting) return false;
 
-    // TODO: aquatic nur bei Wasser-Terrain
+    // #1: aquatic nur bei Wasser-Terrain (siehe TASKS)
     return true;
   });
 
-  // 4. Fallback wenn alles gefiltert
+  // 7. Fallback wenn alles gefiltert
   const finalPool = filtered.length > 0 ? filtered : pool;
 
-  // 5. Gewichtete Auswahl (gleiche Gewichte)
+  // 8. Gewichtete Auswahl (gleiche Gewichte)
   const weighted: WeightedItem<Activity>[] = finalPool.map((a) => ({ item: a, weight: 1 }));
   const selected = weightedRandomSelect(weighted);
 
@@ -166,13 +157,14 @@ export function assignActivity(
     ...group,
     activity: activity.id,
     goal: deriveGoal(activity, group.narrativeRole),
-    disposition: group.narrativeRole === 'threat' ? 'hostile' : 'neutral',
+    disposition:
+      group.narrativeRole === 'threat' ? 'hostile' : group.narrativeRole === 'ally' ? 'friendly' : 'neutral',
   };
 }
 
 /**
  * Leitet ein Goal aus Activity und NarrativeRole ab.
- * TODO: [groupActivity.md#step-42] Vollständige Implementierung mit Faction-Mappings
+ * #2: Vollständige Implementierung mit Faction-Mappings (siehe TASKS)
  */
 function deriveGoal(activity: Activity, narrativeRole: string): string {
   // Basis-Goal-Mapping nach NarrativeRole

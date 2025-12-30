@@ -16,7 +16,7 @@
 | controlledLandmarks | EntityId<'landmark'>[] | Kontrollierte Landmarks | Required |
 | encounterTemplates | GroupTemplate[] | Gruppen-Templates | Optional, → [group-template.md](group-template.md) |
 | displayColor | string | Territory-Overlay | Hex-Format, z.B. "#4169E1" |
-| reputationWithParty | number | Party-Beziehung | -100 bis +100, default 0 |
+| reputations | ReputationEntry[] | Beziehungen zu anderen Entities | Optional, default: [] |
 | description | string | Beschreibung | Optional |
 | gmNotes | string | GM-Notizen | Optional |
 
@@ -41,12 +41,49 @@ type FactionStatus = 'active' | 'dormant' | 'extinct';
 | creatureId | EntityId<'creature'> | Creature-Template |
 | count | number | Anzahl in Fraktion |
 
+### reputations
+
+Array von Beziehungen zu anderen Entities (Party, andere Fraktionen, NPCs).
+
+-> Schema: [types.md#ReputationEntry](../architecture/types.md#reputationentry)
+
+```typescript
+reputations: ReputationEntry[]  // default: []
+```
+
+**Beispiel:**
+```typescript
+reputations: [
+  { entityType: 'party', entityId: 'party', value: -50 },          // Feindlich zur Party
+  { entityType: 'faction', entityId: 'schmuggler', value: +30 },   // Alliiert mit Schmugglern
+  { entityType: 'faction', entityId: 'stadtwache', value: -80 }    // Verhasst bei Stadtwache
+]
+```
+
+**Verwendung:**
+
+| entityType | entityId | Bedeutung |
+|------------|----------|-----------|
+| `party` | `'party'` | Beziehung zur Party (fuer Disposition) |
+| `faction` | Faction-ID | Beziehung zu anderer Fraktion |
+| `npc` | NPC-ID | Beziehung zu spezifischem NPC |
+
+**Disposition-Berechnung:**
+
+Wenn ein Fraktions-Mitglied (ohne NPC) in einem Encounter auftaucht:
+
+```
+effectiveDisposition = clamp(creature.baseDisposition + faction.reputations[party].value, -100, +100)
+```
+
+-> Berechnungslogik: [groupActivity.md](../services/encounter/groupActivity.md)
+
 ## Invarianten
 
 - `parentId` muss auf existierende Faction verweisen
 - `status` bestimmt Encounter-Eligibility (nur 'active')
 - `displayColor` muss gueltiges Hex-Format sein
-- `reputationWithParty` wird bei Encounter-Resolution manuell vom GM angepasst
+- `reputations` wird bei Encounter-Resolution manuell vom GM angepasst
 - Status-Uebergaenge: `active` ↔ `dormant` ↔ `extinct` (alle Richtungen durch GM moeglich)
 
 ## Beispiel
@@ -64,6 +101,16 @@ const bloodfangTribe: Faction = {
   ],
   controlledLandmarks: ['bloodfang-cave' as EntityId<'landmark'>],
   displayColor: '#8B0000',
-  reputationWithParty: -20
+  reputations: [
+    { entityType: 'party', entityId: 'party', value: -50 }  // Feindlich zur Party
+  ]
 };
 ```
+
+
+## Tasks
+
+|  # | Status | Domain  | Layer    | Beschreibung                                                           |  Prio  | MVP? | Deps | Spec                            | Imp.                               |
+|--:|:----:|:------|:-------|:---------------------------------------------------------------------|:----:|:--:|:---|:------------------------------|:---------------------------------|
+| 64 |   ⬜    | faction | entities | Faction-Schema: reputationWithParty zu reputations Array migrieren     | mittel | Nein | #59  | entities/faction.md#reputations | types/entities/faction.ts [ändern] |
+| 66 |   ⬜    | faction | entities | Faction-Presets: reputationWithParty zu reputations Array konvertieren | mittel | Nein | #64  | entities/faction.md#reputations | presets/factions.ts [neu]          |

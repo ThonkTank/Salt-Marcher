@@ -2,32 +2,24 @@
 // Siehe: docs/services/NPCs/NPC-Generation.md
 //
 // Pipeline:
-// 1. resolveCultureChain() - Culture-Resolution
-// 2. selectFromCultureLayers() - 60%-Kaskade Selektion
+// 1. resolveCultureChain() - Culture-Resolution (aus @/utils)
+// 2. getCultureField() - 60%-Kaskade Selektion (aus @/utils)
 // 3. generateNameFromCulture() - Name aus Patterns
 // 4. rollPersonalityFromCulture() - Primary + Secondary Traits
 // 5. rollQuirkFromCulture() - Optionaler Quirk
 // 6. selectPersonalGoal() - Ziel mit Culture-Pool
 // 7. generateNPC() - Orchestriert Pipeline, gibt NPC zurück (OHNE Persistierung)
 //
-// DISKREPANZEN (als [HACK] oder [TODO] markiert):
-// ================================================
 //
-// [HACK: Culture-Resolution.md#forbidden] Forbidden-Listen ignoriert
-//   → Nur positive Pools, keine Ausschluss-Logik
-//
-// [HACK: Culture-Resolution.md#faction-chain] Keine Faction-Ketten-Traversierung
-//   → Nur direkte Faction.culture, parentId ignoriert
-//
-// [HACK: NPC-Generation.md#quirk-filter] Quirk-Filterung fehlt
-//   → compatibleTags nicht geprüft
-//
-// [TODO: NPC-Generation.md#personality-bonus] PersonalityBonus fehlt
-//   → Multiplikatoren auf Goals nicht angewendet
-//
-// RESOLVED:
-// - [2025-12-30] Species-Cultures implementiert (Culture-Resolution.md#species)
-
+// TASKS:
+// |  # | Status | Domain | Layer    | Beschreibung                                                  |  Prio  | MVP? | Deps | Spec                                           | Imp.                                                  |
+// |--:|:----:|:-----|:-------|:------------------------------------------------------------|:----:|:--:|:---|:---------------------------------------------|:----------------------------------------------------|
+// | 53 |   🔶   | NPCs   | services | Culture-Resolution: Forbidden-Listen implementieren           | mittel | Nein | -    | Culture-Resolution.md#Forbidden-Listen         | npcGenerator.ts.rollPersonalityFromCulture() [ändern] |
+// | 54 |   🔶   | NPCs   | services | Culture-Resolution: Faction-Ketten-Traversierung via parentId | mittel | Nein | -    | Culture-Resolution.md#buildFactionChain()      | npcGenerator.ts.resolveCultureChain() [ändern]        |
+// | 55 |   🔶   | NPCs   | services | Quirk-Filterung: compatibleTags aus Creature pruefen          | mittel | Nein | -    | NPC-Generation.md#Quirk-Generierung            | npcGenerator.ts.rollQuirkFromCulture() [ändern]       |
+// | 56 |   ⬜    | NPCs   | services | PersonalityBonus: Multiplikatoren auf Goals anwenden          | mittel | Nein | -    | NPC-Generation.md#PersonalGoal-Pool-Hierarchie | npcGenerator.ts.selectPersonalGoal() [ändern]         |
+// | 57 |   🔶   | NPCs   | services | getDefaultTime: Zeit aus sessionState statt Hardcoded-Wert    | mittel | Nein | -    | NPC-Generation.md#API                          | npcGenerator.ts.getDefaultTime() [ändern]             |
+// | 58 |   ✅    | NPCs   | services | Species-Cultures in Culture-Resolution implementiert          | mittel | Nein | -    | Culture-Resolution.md#Kultur-Hierarchie        | npcGenerator.ts.resolveCultureChain() [fertig]        |
 import type { CreatureDefinition } from '#types/entities/creature';
 import type {
   Faction,
@@ -41,8 +33,7 @@ import type {
 import type { NPC, PersonalityTraits } from '#types/entities/npc';
 import type { GameDateTime } from '#types/time';
 import type { HexCoordinate } from '#types/hexCoordinate';
-import { randomSelect, weightedRandomSelect } from '@/utils/random';
-import { typePresets, speciesPresets } from '../../../presets/cultures';
+import { randomSelect, weightedRandomSelect, resolveCultureChain, getCultureField, type CultureLayer } from '@/utils';
 
 // ============================================================================
 // DEBUG HELPER
@@ -57,16 +48,6 @@ const debug = (...args: unknown[]) => {
 // ============================================================================
 // TYPES
 // ============================================================================
-
-/** Quelle einer Culture-Ebene */
-type CultureSource = 'type' | 'species' | 'faction';
-
-/** Eine Ebene in der Culture-Hierarchie */
-interface CultureLayer {
-  source: CultureSource;
-  culture: CultureData;
-  factionId?: string;
-}
 
 /** Optionen für NPC-Generierung */
 export interface GenerateNPCOptions {
@@ -85,140 +66,6 @@ const GENERIC_GOALS: WeightedGoal[] = [
   { goal: 'freedom', weight: 0.5, description: 'Freiheit bewahren' },
   { goal: 'revenge', weight: 0.3, description: 'Rache nehmen' },
 ];
-
-// ============================================================================
-// CULTURE RESOLUTION
-// ============================================================================
-
-/**
- * Bestimmt die Culture-Ebenen für einen NPC.
- *
- * [HACK: Culture-Resolution.md#faction-chain] Keine Faction-Ketten-Traversierung
- *
- * Hierarchie (von Root nach Leaf):
- * 1. Species-Culture (falls creature.species gesetzt) ODER Type-Preset
- * 2. Faction.culture (falls vorhanden)
- */
-function resolveCultureChain(
-  creature: CreatureDefinition,
-  faction: Faction | null
-): CultureLayer[] {
-  const layers: CultureLayer[] = [];
-
-  // 1. Basis: Species-Culture (ersetzt Type) ODER Type-Preset
-  if (creature.species) {
-    const speciesCulture = speciesPresets[creature.species];
-    if (speciesCulture) {
-      layers.push({ source: 'species', culture: speciesCulture });
-      debug('Culture layer: species =', creature.species);
-    } else {
-      // Fallback auf Type wenn Species nicht gefunden
-      addTypeCulture(layers, creature);
-    }
-  } else {
-    addTypeCulture(layers, creature);
-  }
-
-  // 2. Faction-Culture hinzufügen (falls vorhanden)
-  // [HACK: Culture-Resolution.md#faction-chain] Nur direkte Faction, keine parentId-Kette
-  if (faction?.culture) {
-    layers.push({
-      source: 'faction',
-      culture: faction.culture,
-      factionId: faction.id,
-    });
-    debug('Culture layer: faction =', faction.id);
-  }
-
-  debug('Total culture layers:', layers.length);
-  return layers;
-}
-
-/**
- * Fügt Type-Preset als Basis-Culture hinzu.
- * Hilfsfunktion für resolveCultureChain().
- */
-function addTypeCulture(layers: CultureLayer[], creature: CreatureDefinition): void {
-  const creatureType = creature.tags[0] ?? 'humanoid';
-  const typePreset = typePresets[creatureType];
-
-  if (typePreset) {
-    layers.push({ source: 'type', culture: typePreset });
-    debug('Culture layer: type =', creatureType);
-  } else {
-    // Fallback auf humanoid wenn Type nicht gefunden
-    const fallback = typePresets['humanoid'];
-    if (fallback) {
-      layers.push({ source: 'type', culture: fallback });
-      debug('Culture layer: type = humanoid (fallback)');
-    }
-  }
-}
-
-/**
- * Wählt ein Feld aus den Culture-Layers mit 60%-Kaskade.
- *
- * Leaf bekommt 60%, Rest kaskadiert:
- * - 1 Layer: 100%
- * - 2 Layer: Root 40%, Leaf 60%
- * - 3 Layer: Root 16%, Mid 24%, Leaf 60%
- */
-function selectCultureLayer(layers: CultureLayer[]): CultureLayer | null {
-  if (layers.length === 0) return null;
-  if (layers.length === 1) return layers[0];
-
-  // 60%-Kaskade berechnen (von Leaf nach Root)
-  const probabilities: number[] = [];
-  let remaining = 1.0;
-
-  for (let i = layers.length - 1; i > 0; i--) {
-    probabilities.unshift(remaining * 0.6);
-    remaining *= 0.4;
-  }
-  probabilities.unshift(remaining); // Root bekommt Rest
-
-  debug('Layer probabilities:', probabilities);
-
-  // Gewichtete Auswahl
-  const roll = Math.random();
-  let cumulative = 0;
-
-  for (let i = 0; i < layers.length; i++) {
-    cumulative += probabilities[i];
-    if (roll < cumulative) {
-      debug('Selected layer:', i, layers[i].source);
-      return layers[i];
-    }
-  }
-
-  return layers[layers.length - 1];
-}
-
-/**
- * Holt ein Feld aus den Culture-Layers mit Fallback.
- * Versucht erst die gewählte Layer, dann Fallback auf alle Layers.
- */
-function getCultureField<K extends keyof CultureData>(
-  layers: CultureLayer[],
-  field: K
-): CultureData[K] | undefined {
-  // Erst per Kaskade auswählen
-  const selected = selectCultureLayer(layers);
-  if (selected?.culture[field]) {
-    return selected.culture[field];
-  }
-
-  // Fallback: Erste Layer mit Daten (von Leaf nach Root)
-  for (let i = layers.length - 1; i >= 0; i--) {
-    const value = layers[i].culture[field];
-    if (value) {
-      debug(`Field ${field}: fallback to layer`, i);
-      return value;
-    }
-  }
-
-  return undefined;
-}
 
 // ============================================================================
 // NAME GENERATION
@@ -268,7 +115,7 @@ function generateFallbackName(): string {
  * Würfelt Persönlichkeits-Traits aus dem Culture-Pool.
  * Primary und Secondary sind unterschiedlich (keine Duplikate).
  *
- * [HACK: Culture-Resolution.md#forbidden] Forbidden-Listen ignoriert
+ * [#53] Forbidden-Listen ignoriert
  */
 function rollPersonalityFromCulture(layers: CultureLayer[]): PersonalityTraits {
   const personality = getCultureField(layers, 'personality') as PersonalityConfig | undefined;
@@ -312,14 +159,13 @@ function rollPersonalityFromCulture(layers: CultureLayer[]): PersonalityTraits {
 /**
  * Würfelt einen Quirk aus dem Culture-Pool.
  *
- * [HACK: NPC-Generation.md#quirk-filter] Quirk-Filterung fehlt
- * → compatibleTags nicht geprüft, alle Quirks werden berücksichtigt
+ * [#55] Quirk-Filterung fehlt → compatibleTags nicht geprüft
  *
  * @returns Quirk-Description oder undefined (50% Chance auf keinen Quirk)
  */
 function rollQuirkFromCulture(
   layers: CultureLayer[],
-  _creature: CreatureDefinition // Unused wegen HACK
+  _creature: CreatureDefinition // Unused, siehe #55
 ): string | undefined {
   // 50% Chance auf keinen Quirk
   if (Math.random() < 0.5) {
@@ -352,14 +198,13 @@ function rollQuirkFromCulture(
 /**
  * Wählt ein persönliches Ziel aus dem kombinierten Pool.
  *
- * [TODO: NPC-Generation.md#personality-bonus] PersonalityBonus fehlt
- * → Multiplikatoren auf Goals nicht angewendet
+ * [#56] PersonalityBonus fehlt → Multiplikatoren nicht angewendet
  *
  * Pool-Hierarchie: Generic → Culture-Goals
  */
 function selectPersonalGoal(
   layers: CultureLayer[],
-  _personality: PersonalityTraits // Unused wegen TODO
+  _personality: PersonalityTraits // Unused, siehe #56
 ): string {
   // Culture-Goals holen
   const cultureGoals = getCultureField(layers, 'goals') as WeightedGoal[] | undefined;
@@ -400,7 +245,7 @@ function generateNPCId(): string {
 
 /**
  * Liefert eine Default-Zeit für firstEncounter/lastEncounter.
- * [HACK] Sollte eigentlich aus sessionState kommen.
+ * [#57] Zeit sollte aus sessionState kommen.
  */
 function getDefaultTime(): GameDateTime {
   return {

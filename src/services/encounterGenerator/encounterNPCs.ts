@@ -1,6 +1,25 @@
 // NPCs für Encounter zuweisen (1-3 NPCs pro Encounter)
 // Siehe: docs/services/encounter/Encounter.md#encounternpcs-step-43
 //
+// TASKS:
+// | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
+// |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+// | 28 | ⬜ | NPCs | services | NPC-Matching: factionId undefined als fraktionsuebergreifend behandeln | mittel | Nein | - | NPC-Matching.md#Faction-Matching | - |
+// | 29 | ⬜ | creature | entities | HP-Varianz: Trefferpunkte basierend auf Hit Dice wuerfeln statt maxHp direkt verwenden | mittel | Nein | - | creature.md#Felder | - |
+// | 36 | ✅ | NPCs | services | findExistingNPC: Basis-Matching (creature.id + factionId + status) | mittel | Nein | - | NPC-Matching.md#Match-Kriterien | - |
+// | 37 | ✅ | NPCs | services | NPC-Priorisierung: Distanz (primaer) + lastEncounter (sekundaer) | mittel | Nein | - | NPC-Matching.md#Priorisierung | - |
+// | 38 | ✅ | Encounter | services | calculateHP: Basis-Implementation (maxHp direkt) | mittel | Nein | - | encounter.md#NPC-Zuordnung | - |
+// | 39 | ✅ | Encounter | services | convertGroupWithNPCs: Output-Konversion mit HP-Expansion | mittel | Nein | - | encounter.md#NPC-Zuordnung | - |
+// | 40 | ✅ | Encounter | services | rollNPCCount: Single-Group 1-3 NPCs (50/35/15%) | mittel | Nein | - | encounter.md#encounterNPCs (Step 4.3) | - |
+// | 41 | ✅ | Encounter | services | rollExtraNPCs: Multi-Group Extra-NPCs (0-1) | mittel | Nein | - | encounter.md#encounterNPCs (Step 4.3) | - |
+// | 42 | ✅ | Encounter | services | collectAllCandidates: Kreaturen sammeln mit Gewichtung | mittel | Nein | - | encounter.md#encounterNPCs (Step 4.3) | - |
+// | 43 | ✅ | Encounter | services | weightedSelectOne: Gewichtete Einzelauswahl | mittel | Nein | - | encounter.md#encounterNPCs (Step 4.3) | - |
+// | 44 | ✅ | Encounter | services | weightedSampleWithoutReplacement: Auswahl ohne Zuruecklegen | mittel | Nein | - | encounter.md#encounterNPCs (Step 4.3) | - |
+// | 45 | ✅ | Encounter | services | selectWithGroupConstraint: Multi-Group min 1 NPC pro Gruppe | mittel | Nein | - | encounter.md#encounterNPCs (Step 4.3) | - |
+// | 46 | ✅ | Encounter | services | matchOrGenerateNPC: Match-oder-Generate Orchestrierung | mittel | Nein | - | encounter.md#encounterNPCs (Step 4.3) | - |
+// | 47 | ✅ | Encounter | services | assignEncounterNPCs: Haupt-Funktion (Pipeline-Orchestrierung) | mittel | Nein | - | encounter.md#encounterNPCs (Step 4.3) | - |
+// | 48 | ✅ | NPCs | services | generateNPC: Delegation an npcGenerator-Service | mittel | Nein | - | NPC-Generation.md#API | - |
+//
 // Pipeline-Position: Step 4.3 (nach groupActivity, vor encounterLoot)
 //
 // Workflow:
@@ -10,16 +29,6 @@
 // 4. Gewichtete Zufallsauswahl ohne Zurücklegen
 // 5. Pro Auswahl: NPC-Matching oder NPC-Generation
 // 6. npcId in entsprechender Kreatur setzen
-//
-// DISKREPANZEN (als [HACK] oder [TODO] markiert):
-// ================================================
-//
-// [HACK: NPC-Matching.md#faction-matching] factionId undefined nicht unterstützt
-//   → Dokumentation: undefined = fraktionsübergreifend
-//   → Code: === factionId matched undefined nie
-//
-// RESOLVED:
-// - [2025-12-30] NPC-Tracking + Persistierung in encounterWorkflow.acceptEncounter()
 
 import { vault } from '@/infrastructure/vault/vaultInstance';
 import type { CreatureDefinition, Faction, NPC } from '@/types/entities';
@@ -248,7 +257,7 @@ function findExistingNPC(
   debug('NPC-Matching: searching', npcs.length, 'NPCs for', creature.id, 'faction:', factionId);
 
   // 1. Kandidaten filtern: creature.id + factionId + status='alive'
-  // [HACK: NPC-Matching.md#faction-matching] factionId undefined matched nie
+  // TODO(#28): factionId undefined sollte fraktionsuebergreifend matchen
   const candidates = npcs.filter(
     npc =>
       npc.creature.id === creature.id && npc.factionId === factionId && npc.status === 'alive'
@@ -337,8 +346,7 @@ function matchOrGenerateNPC(
 /**
  * Berechnet die HP für eine Kreatur-Instanz.
  *
- * [HACK: creature.md] HP direkt aus maxHp, keine Varianz
- * → Post-MVP: HP-Varianz basierend auf Hit Dice
+ * TODO(#29): HP-Varianz basierend auf Hit Dice statt maxHp direkt
  */
 function calculateHP(creature: CreatureDefinition): { currentHp: number; maxHp: number } {
   return {

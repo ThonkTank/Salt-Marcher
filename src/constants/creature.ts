@@ -1,5 +1,10 @@
 // Kreatur-bezogene Konstanten
 // Siehe: docs/entities/creature.md
+//
+// TASKS:
+// |  # | Status | Domain   | Layer     | Beschreibung                                                              |  Prio  | MVP? | Deps | Spec                                                       | Imp.                           |
+// |--:|:----:|:-------|:--------|:------------------------------------------------------------------------|:----:|:--:|:---|:---------------------------------------------------------|:-----------------------------|
+// | 61 |   ⬜    | creature | constants | DISPOSITION_THRESHOLDS und BASE_DISPOSITION_VALUES Konstanten hinzufuegen | mittel | Nein | -    | services/encounter/groupActivity.md#Disposition-Berechnung | constants/creature.ts [ändern] |
 
 // D&D 5e Kreatur-Größen
 export const CREATURE_SIZES = ['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan'] as const;

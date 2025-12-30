@@ -1,5 +1,10 @@
 // Vault-persistierte Faction
 // Siehe: docs/entities/faction.md
+//
+// TASKS:
+// |  # | Status | Domain  | Layer    | Beschreibung                                                       |  Prio  | MVP? | Deps | Spec                            | Imp.                               |
+// |--:|:----:|:------|:-------|:-----------------------------------------------------------------|:----:|:--:|:---|:------------------------------|:---------------------------------|
+// | 64 |   ⬜    | faction | entities | Faction-Schema: reputationWithParty zu reputations Array migrieren | mittel | Nein | #59  | entities/faction.md#reputations | types/entities/faction.ts [ändern] |
 
 import { z } from 'zod';
 import { groupTemplateSchema } from './groupTemplate';

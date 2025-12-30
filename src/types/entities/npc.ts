@@ -1,5 +1,10 @@
 // Vault-persistierte NPC-Entity
 // Siehe: docs/entities/npc.md
+//
+// TASKS:
+// |  # | Status | Domain | Layer    | Beschreibung                              |  Prio  | MVP? | Deps | Spec                        | Imp.                           |
+// |--:|:----:|:-----|:-------|:----------------------------------------|:----:|:--:|:---|:--------------------------|:-----------------------------|
+// | 63 |   ⬜    | NPCs   | entities | NPC-Schema: reputations Array hinzufuegen | mittel | Nein | #59  | entities/npc.md#reputations | types/entities/npc.ts [ändern] |
 
 import { z } from 'zod';
 import { hexCoordinateSchema } from './map';

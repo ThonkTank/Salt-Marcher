@@ -1,5 +1,10 @@
 // Vault-persistierte CreatureDefinition und Runtime CreatureInstance
 // Siehe: docs/entities/creature.md
+//
+// TASKS:
+// |  # | Status | Domain   | Layer    | Beschreibung                                                          |  Prio  | MVP? | Deps | Spec                        | Imp.                                |
+// |--:|:----:|:-------|:-------|:--------------------------------------------------------------------|:----:|:--:|:---|:--------------------------|:----------------------------------|
+// | 62 |   ⬜    | creature | entities | CreatureDefinition: disposition zu baseDisposition (number) migrieren | mittel | Nein | #61  | entities/creature.md#Felder | types/entities/creature.ts [ändern] |
 
 import { z } from 'zod';
 import { timeSegmentSchema } from '#types/time';

@@ -35,7 +35,7 @@ Das Creature-System unterscheidet drei Abstraktionsebenen:
 | `size` | `Size` | Kreaturgroesse | Required |
 | `tags` | `string[]` | Kategorisierung | Required, min 1 |
 | `species` | `string?` | Spezies fuer Kultur-Lookup | Optional |
-| `disposition` | `Disposition` | Grundhaltung | Required |
+| `baseDisposition` | `number` | Basis-Disposition (-100 bis +100) | Required |
 | `terrainAffinities` | `EntityId<'terrain'>[]` | Heimat-Terrains | Required, min 1 |
 | `activeTime` | `TimeSegment[]` | Aktive Tageszeiten | Required, min 1 |
 | `designRole` | `DesignRole` | MCDM-Kampfrolle | Required (auto-abgeleitet) |
@@ -72,11 +72,41 @@ Das Creature-System unterscheidet drei Abstraktionsebenen:
 type Size = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan';
 ```
 
-### Disposition
+### baseDisposition
+
+Numerische Basis-Disposition auf einer Skala von -100 bis +100.
 
 ```typescript
-type Disposition = 'hostile' | 'neutral' | 'friendly';
+baseDisposition: number  // -100 bis +100
 ```
+
+**Effektive Disposition:**
+
+Die tatsaechliche Disposition gegenueber der Party wird aus `baseDisposition` plus Reputation berechnet:
+
+```
+effectiveDisposition = clamp(baseDisposition + reputation, -100, +100)
+```
+
+**Label-Thresholds:**
+
+| Bereich | Label |
+|---------|-------|
+| < -33 | `hostile` |
+| -33 bis +33 | `neutral` |
+| > +33 | `friendly` |
+
+**Typische Basis-Werte:**
+
+| Kreatur-Typ | baseDisposition | Bedeutung |
+|-------------|:---------------:|-----------|
+| Raubtiere, Untote | -75 | Grundsaetzlich feindlich |
+| Wilde Tiere | -25 | Territorial, aber nicht aggressiv |
+| Neutrale NPCs | 0 | Abwartend |
+| Haendler, Dorfbewohner | +25 | Tendenziell freundlich |
+| Verbuendete | +75 | Grundsaetzlich freundlich |
+
+-> Reputation: [faction.md#reputations](faction.md#reputations), [npc.md#reputations](npc.md#reputations)
 
 ### Species
 
@@ -298,7 +328,7 @@ const goblin: CreatureDefinition = {
 
   // Kategorisierung
   tags: ['humanoid', 'goblinoid'],
-  disposition: 'hostile',
+  baseDisposition: -75,  // Grundsaetzlich feindlich
 
   // Encounter-System
   terrainAffinities: ['terrain:forest', 'terrain:cave'],
@@ -351,3 +381,12 @@ Vault/SaltMarcher/data/
 │   └── user/               # User-erstellte Kreaturen
 │       └── custom-beast.json
 ```
+
+
+## Tasks
+
+|  # | Status | Domain   | Layer    | Beschreibung                                                                           |  Prio  | MVP? | Deps | Spec                                 | Imp.                                |
+|--:|:----:|:-------|:-------|:-------------------------------------------------------------------------------------|:----:|:--:|:---|:-----------------------------------|:----------------------------------|
+| 29 |   ⬜    | creature | entities | HP-Varianz: Trefferpunkte basierend auf Hit Dice wuerfeln statt maxHp direkt verwenden | mittel | Nein | -    | creature.md#Felder                   | -                                   |
+| 62 |   ⬜    | creature | entities | CreatureDefinition: disposition zu baseDisposition (number) migrieren                  | mittel | Nein | #61  | entities/creature.md#Felder          | types/entities/creature.ts [ändern] |
+| 65 |   ⬜    | creature | entities | Creature-Presets: disposition zu baseDisposition konvertieren                          | mittel | Nein | #62  | entities/creature.md#baseDisposition | presets/creatures.ts [neu]          |
