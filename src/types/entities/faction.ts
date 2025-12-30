@@ -1,0 +1,116 @@
+// Vault-persistierte Faction
+// Siehe: docs/entities/faction.md
+
+import { z } from 'zod';
+import { groupTemplateSchema } from './groupTemplate';
+import { FACTION_STATUSES } from '../../constants/faction';
+
+// ============================================================================
+// CULTURE SUB-SCHEMAS
+// ============================================================================
+
+export const weightedTraitSchema = z.object({
+  trait: z.string(),
+  weight: z.number().min(0).max(1),
+});
+export type WeightedTrait = z.infer<typeof weightedTraitSchema>;
+
+export const personalityConfigSchema = z.object({
+  common: z.array(weightedTraitSchema).optional(),
+  rare: z.array(weightedTraitSchema).optional(),
+  forbidden: z.array(z.string()).optional(),
+});
+export type PersonalityConfig = z.infer<typeof personalityConfigSchema>;
+
+export const namingConfigSchema = z.object({
+  patterns: z.array(z.string()).optional(),
+  prefixes: z.array(z.string()).optional(),
+  roots: z.array(z.string()).optional(),
+  suffixes: z.array(z.string()).optional(),
+  titles: z.array(z.string()).optional(),
+});
+export type NamingConfig = z.infer<typeof namingConfigSchema>;
+
+export const weightedQuirkSchema = z.object({
+  quirk: z.string(),
+  weight: z.number().min(0).max(1),
+  description: z.string().optional(),
+  compatibleTags: z.array(z.string()).optional(),
+});
+export type WeightedQuirk = z.infer<typeof weightedQuirkSchema>;
+
+// DEPRECATED: FactionActivityRef wird durch einfache string[] ersetzt
+// Siehe: docs/entities/activity.md - Activities werden ohne Gewichtung referenziert
+export const factionActivityRefSchema = z.object({
+  activityId: z.string(),
+  weight: z.number(),
+});
+export type FactionActivityRef = z.infer<typeof factionActivityRefSchema>;
+
+export const personalityBonusEntrySchema = z.object({
+  trait: z.string(),
+  multiplier: z.number(),
+});
+export type PersonalityBonusEntry = z.infer<typeof personalityBonusEntrySchema>;
+
+export const weightedGoalSchema = z.object({
+  goal: z.string(),
+  weight: z.number(),
+  description: z.string().optional(),
+  personalityBonus: z.array(personalityBonusEntrySchema).optional(),
+});
+export type WeightedGoal = z.infer<typeof weightedGoalSchema>;
+
+export const valuesConfigSchema = z.object({
+  priorities: z.array(z.string()).optional(),
+  taboos: z.array(z.string()).optional(),
+  greetings: z.array(z.string()).optional(),
+});
+export type ValuesConfig = z.infer<typeof valuesConfigSchema>;
+
+export const speechConfigSchema = z.object({
+  dialect: z.string().optional(),
+  commonPhrases: z.array(z.string()).optional(),
+  accent: z.string().optional(),
+});
+export type SpeechConfig = z.infer<typeof speechConfigSchema>;
+
+export const cultureDataSchema = z.object({
+  naming: namingConfigSchema.optional(),
+  personality: personalityConfigSchema.optional(),
+  quirks: z.array(weightedQuirkSchema).optional(),
+  activities: z.array(z.string()).optional(), // Activity-IDs, keine Gewichtung
+  goals: z.array(weightedGoalSchema).optional(),
+  values: valuesConfigSchema.optional(),
+  speech: speechConfigSchema.optional(),
+});
+export type CultureData = z.infer<typeof cultureDataSchema>;
+
+// ============================================================================
+// FACTION SCHEMA
+// ============================================================================
+
+export const factionStatusSchema = z.enum(FACTION_STATUSES);
+
+export const factionCreatureGroupSchema = z.object({
+  creatureId: z.string(),
+  count: z.number().int().positive(),
+});
+export type FactionCreatureGroup = z.infer<typeof factionCreatureGroupSchema>;
+
+export const factionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  parentId: z.string().optional(),
+  status: factionStatusSchema,
+  culture: cultureDataSchema,
+  creatures: z.array(factionCreatureGroupSchema),
+  encounterTemplates: z.array(groupTemplateSchema).optional(),
+  controlledLandmarks: z.array(z.string()),
+  displayColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  reputationWithParty: z.number().min(-100).max(100).default(0),
+  description: z.string().optional(),
+  gmNotes: z.string().optional(),
+});
+
+export type Faction = z.infer<typeof factionSchema>;

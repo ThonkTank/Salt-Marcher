@@ -222,15 +222,19 @@ export function createAddService(options = {}) {
         });
       }
 
+      // Source-Pfade extrahieren (nur existierende Dateien, d.h. [ändern]/[fertig])
+      const sourcePaths = implResult.value.impls
+        .filter(i => i.filePath) // null für [neu]
+        .map(i => i.filePath);
+
       // ========================================
       // 8. TASK ERSTELLEN
       // ========================================
 
-      // Alle Docs: Location-Docs + Spec-Docs (dedupliziert)
+      // Doc-Pfade: Location-Docs + Spec-Docs (dedupliziert)
       // Pfade normalisieren: relativ zu docs/ (Adapter erwartet z.B. "domain/Creature.md")
       const allDocPaths = [...new Set([...docs, ...specFilePaths])];
-      const relativeDocs = allDocPaths.map(d => d.replace(/^docs\//, ''));
-      const primaryDoc = relativeDocs[0];
+      const relativeDocPaths = allDocPaths.map(d => d.replace(/^docs\//, ''));
 
       const result = taskAdapter.addTask({
         domain: domains.join(', '),
@@ -242,7 +246,12 @@ export function createAddService(options = {}) {
         spec: specs,
         impl,
         isBug: false
-      }, { dryRun, doc: primaryDoc, init, additionalDocs: relativeDocs.slice(1) });
+      }, {
+        dryRun,
+        init,
+        docPaths: relativeDocPaths,
+        sourcePaths
+      });
 
       if (!result.ok) {
         return result;
@@ -253,6 +262,7 @@ export function createAddService(options = {}) {
         taskId: result.value.newId,
         line: result.value.line,
         docs: allDocPaths,
+        sources: sourcePaths,
         dryRun
       });
     },
@@ -477,6 +487,7 @@ function executeBulkTasks(jsonString, addService, globalOpts) {
       results.success.push({
         taskId: result.value.taskId,
         docs: result.value.docs,
+        sources: result.value.sources,
         beschreibung: taskData.beschreibung
       });
     } else {

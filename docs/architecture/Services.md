@@ -21,6 +21,52 @@ Service.execute(context) → Result<Output, Error>
 
 ---
 
+## Inline-Typen
+
+Services definieren ihre Parameter inline. Keine separaten Type-Dateien fuer Service-interne Daten.
+
+### Prinzip
+
+**Services definieren inline, Workflows uebergeben inline.**
+
+- Service-Funktionen definieren ihre Input-Parameter inline in der Signatur
+- Keine separaten Type-Dateien fuer Service-interne Daten (SeedSelection, FlavouredGroup, etc.)
+- Nur persistierte Outputs (wie EncounterInstance) bekommen ein Schema in `src/types/`
+- Workflows bauen den Kontext inline und uebergeben ihn direkt
+- **Existierende Konstanten wiederverwenden:** Typen aus `src/constants/` (z.B. `FactionStatus`, `CreatureSize`) importieren statt inline duplizieren
+
+### Beispiel
+
+```typescript
+// Service definiert inline
+export function selectSeed(context: {
+  terrain: { id: string; threat: number };
+  timeSegment: string;
+  factions: { factionId: string; weight: number }[];
+  exclude?: string[];
+}): { creatureId: string; factionId: string | null } | null {
+  // Implementierung
+}
+
+// Workflow uebergibt inline
+const seed = selectSeed({
+  terrain: state.terrain,
+  timeSegment: state.time.daySegment,
+  factions: tile.factionPresence,
+});
+```
+
+### Vorteile
+
+| Aspekt | Inline-Typen | Separate Type-Dateien |
+|--------|--------------|----------------------|
+| Wartung | Typ neben Logik | Typ in separater Datei |
+| Lesbarkeit | Signatur zeigt Erwartungen | Muss Type-Datei oeffnen |
+| Refactoring | Aenderung an einer Stelle | Typ + Implementierung aendern |
+| Kopplung | Locker | Eng (gemeinsamer Typ) |
+
+---
+
 ## Regeln
 
 ### Erlaubt

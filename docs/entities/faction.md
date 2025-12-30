@@ -13,8 +13,8 @@
 | status | FactionStatus | Lebenszyklus | 'active' \| 'dormant' \| 'extinct' |
 | culture | CultureData | Eingebettete Kultur | Required, → [culture-data.md](culture-data.md) |
 | creatures | FactionCreatureGroup[] | Mitglieder | Required |
-| controlledPOIs | EntityId<'poi'>[] | Kontrollierte POIs | Required |
-| encounterTemplates | FactionEncounterTemplate[] | Gruppen-Templates | Optional, → [faction-encounter-template.md](faction-encounter-template.md) |
+| controlledLandmarks | EntityId<'landmark'>[] | Kontrollierte Landmarks | Required |
+| encounterTemplates | GroupTemplate[] | Gruppen-Templates | Optional, → [group-template.md](group-template.md) |
 | displayColor | string | Territory-Overlay | Hex-Format, z.B. "#4169E1" |
 | reputationWithParty | number | Party-Beziehung | -100 bis +100, default 0 |
 | description | string | Beschreibung | Optional |
@@ -62,7 +62,7 @@ const bloodfangTribe: Faction = {
     { creatureId: 'goblin-warrior' as EntityId<'creature'>, count: 20 },
     { creatureId: 'goblin-shaman' as EntityId<'creature'>, count: 3 }
   ],
-  controlledPOIs: ['bloodfang-cave' as EntityId<'poi'>],
+  controlledLandmarks: ['bloodfang-cave' as EntityId<'landmark'>],
   displayColor: '#8B0000',
   reputationWithParty: -20
 };

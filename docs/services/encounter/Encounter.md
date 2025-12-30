@@ -36,6 +36,7 @@ const context = {
   // Position & Umgebung
   position: state.party.position,        // HexCoordinate
   terrain,                               // TerrainDefinition
+  crBudget: tile.crBudget ?? terrain.defaultCrBudget,  // number
 
   // Zeit
   timeSegment: state.time.daySegment,    // TimeSegment
@@ -80,12 +81,16 @@ interface PartyMember {
 **EncounterTrigger** - Was das Encounter ausgeloest hat:
 
 ```typescript
-type EncounterTrigger =
-  | { type: 'travel' }                                    // Waehrend Reise
-  | { type: 'location'; poiId: EntityId<'poi'> }          // Beim Betreten eines POI
-  | { type: 'quest'; questId: EntityId<'quest'> }         // Quest-Encounter
-  | { type: 'manual' }                                    // GM hat manuell ausgeloest
-  | { type: 'time'; reason: 'watch' | 'rest' };           // Zeitbasiert (Wache, Rast)
+// MVP: Einfaches Enum (siehe encounterTypes.ts)
+type EncounterTrigger = 'travel' | 'rest' | 'manual' | 'location';
+
+// Post-MVP: Erweiterung zu Discriminated Union mit Payload
+// type EncounterTrigger =
+//   | { type: 'travel' }
+//   | { type: 'location'; poiId: EntityId<'poi'> }
+//   | { type: 'quest'; questId: EntityId<'quest'> }
+//   | { type: 'manual' }
+//   | { type: 'time'; reason: 'watch' | 'rest' };
 ```
 
 **EncounterConstraints** - Optionale Einschraenkungen:
@@ -134,13 +139,13 @@ EncounterContext
         |
         v
 +------------------+
-| groupNPCs        |  Lead-NPC (-> NPCService)
+| encounterNPCs    |  1-3 NPCs (-> NPCService)
 | (Step 4.3)       |
 +------------------+
         |
         v
 +------------------+
-| groupLoot        |  Loot (-> LootService)
+| encounterLoot    |  Loot (-> LootService)
 | (Step 4.4)       |
 +------------------+
         |
@@ -181,8 +186,8 @@ EncounterContext
 | groupSeed | 2 | EncounterContext | SeedSelection | [groupSeed.md](groupSeed.md) |
 | groupPopulation | 3 | SeedSelection | EncounterGroup | [groupPopulation.md](groupPopulation.md) |
 | groupActivity | 4.1-4.2 | EncounterGroup[], Context | activity, goal | [groupActivity.md](groupActivity.md) |
-| groupNPCs | 4.3 | EncounterGroup[], Context | LeadNPC[] | [→ groupNPCs](#groupnpcs-step-43) |
-| groupLoot | 4.4 | FlavouredGroup[], Context | GeneratedLoot[] | [→ groupLoot](#grouploot-step-44) |
+| encounterNPCs | 4.3 | GroupWithActivity[], Context | NPCs[], GroupWithNPCs[] | [→ encounterNPCs](#encounternpcs-step-43) |
+| encounterLoot | 4.4 | GroupWithNPCs[], Context | GroupWithLoot[] | [encounterLoot.md](encounterLoot.md) |
 | encounterDistance | 4.5 | FlavouredGroup[], Context | EncounterPerception | [encounterDistance.md](encounterDistance.md) |
 | Difficulty | 5 | FlavouredGroup[], PartySnapshot | SimulationResult | [Difficulty.md](Difficulty.md) |
 | goalDifficulty | 6.0 | EncounterContext | EncounterDifficulty | [→ goalDifficulty](#goaldifficulty-step-60) |
@@ -190,9 +195,9 @@ EncounterContext
 
 ---
 
-## groupNPCs (Step 4.3) {#groupnpcs-step-43}
+## encounterNPCs (Step 4.3) {#encounternpcs-step-43}
 
-Benannte NPCs fuer Encounters: Lead-NPC pro Gruppe + Highlight-NPCs.
+NPCs fuer das gesamte Encounter zuweisen (1-3 NPCs).
 
 **Delegation:** NPC-Matching und -Generierung erfolgen via NPCService.
 -> [NPC-Matching.md](../NPCs/NPC-Matching.md) | [NPC-Generation.md](../NPCs/NPC-Generation.md)
@@ -200,85 +205,95 @@ Benannte NPCs fuer Encounters: Lead-NPC pro Gruppe + Highlight-NPCs.
 ### Workflow
 
 ```
-Pro Gruppe:
-    +-> 1. Lead-Kreatur bestimmen (CR x 10 + designRole-Gewicht)
-    +-> 2. Existierenden NPC suchen (-> NPC-Matching)
-    +-> 3a. Match? -> NPC wiederverwenden
-    +-> 3b. Kein Match? -> NPC generieren (-> NPC-Generation)
-
-Global: Max 3 Highlight-NPCs ueber alle Gruppen
+1. Alle Kreaturen ueber alle Gruppen sammeln
+2. Gewicht berechnen: CR × ROLE_WEIGHT
+3. NPC-Anzahl bestimmen:
+   - Single-Group: 1-3 NPCs wuerfeln (50%/35%/15%)
+   - Multi-Group: min 1 NPC pro Gruppe, dann auffuellen bis max 3
+4. Gewichtete Zufallsauswahl ohne Zuruecklegen
+5. Pro Auswahl: NPC-Matching oder NPC-Generation
+6. npcId in entsprechender Kreatur setzen
 ```
 
-### Lead-Kreatur Score
+### ROLE_WEIGHTS (Multiplikatoren)
 
 ```typescript
 const ROLE_WEIGHTS: Record<DesignRole, number> = {
-  leader: 50, solo: 40, support: 30, controller: 25,
-  artillery: 20, soldier: 15, brute: 15, skirmisher: 10,
-  ambusher: 10, minion: 0
+  leader: 5.0,    // 5x wahrscheinlicher
+  solo: 5.0,
+  support: 2.0,
+  controller: 2.0,
+  brute: 2.0,
+  artillery: 1.0,
+  soldier: 1.0,
+  skirmisher: 1.0,
+  ambusher: 1.0,
+  minion: 0.5,    // Selten
 };
+```
 
-function getLeadScore(creature: EncounterCreature): number {
-  const def = entityRegistry.get('creature', creature.creatureId);
-  return def.cr * 10 + (ROLE_WEIGHTS[def.designRole] ?? 0);
+**Gewicht pro Kreatur:** `CR × ROLE_WEIGHT`
+
+### NPC-Zuordnung
+
+NPCs werden ueber `npcId` in der Kreatur-Instanz referenziert:
+
+```typescript
+interface EncounterCreatureInstance {
+  definitionId: string;
+  currentHp: number;
+  maxHp: number;
+  npcId?: string;  // Referenz auf NPC falls zugewiesen
 }
 ```
 
-**Wichtig:** Die Seed-Kreatur aus Population ist **nicht** automatisch der Lead-NPC.
-
-### NPC-Detail-Stufen
-
-| Stufe | Details | Persistierung |
-|-------|---------|---------------|
-| **Lead-NPC** | Name, 2 Traits, Quirk, Goal | Ja (Vault) |
-| **Highlight-NPC** | Name, 1 Trait | Nein (Session) |
-| **Anonym** | Kreatur-Typ + Anzahl | Nein |
+Alle zugewiesenen NPCs sind vollstaendig (Name, 2 Traits, Quirk, Goal) und werden im Vault persistiert.
 
 ---
 
-## groupLoot (Step 4.4) {#grouploot-step-44}
+## encounterLoot (Step 4.4) {#encounterloot-step-44}
 
-Loot fuer Encounter-Gruppen generieren.
+Loot fuer das gesamte Encounter generieren und auf Kreaturen verteilen.
 
-**Delegation:** Vollstaendige Loot-Logik im LootService.
--> [Loot.md](../Loot.md)
+**Dokumentation:** [encounterLoot.md](encounterLoot.md)
 
-### Warum bei Generierung?
+**Delegation:** Item-Generierung im LootService ([Loot.md](../Loot.md))
 
-Loot wird bei Encounter-Generierung erstellt (nicht bei Combat-Ende):
-1. **Combat-Nutzung:** Gegner koennen Items im Kampf verwenden
-2. **Preview:** GM sieht potentielles Loot im Encounter-Preview
-3. **Budget:** Loot belastet Budget sofort
+### Kernkonzept
 
-### Workflow
+Loot wird auf **Encounter-Ebene** berechnet und dann auf Kreaturen verteilt:
+1. **Budget nach NarrativeRole:** `ally`-Gruppen belasten Budget nicht (Party bestiehlt sie nicht)
+2. **Verteilung nach CR × Rolle:** Leader bekommen mehr als Minions
+3. **DefaultLoot zur Quelle:** Wolf-Pelz geht immer zum Wolf
 
-```
-Pro Gruppe:
-    +-> 1. Encounter-Budget berechnen (10-50% vom Balance)
-    +-> 2. DefaultLoot pro Creature wuerfeln
-    +-> 3. Rest-Budget fuer Tag-Loot
-    +-> 4. Budget belasten
-```
+### Budget-Belastung
 
-**GM-Kontrolle:** Der GM entscheidet, welchen Loot die Party erhaelt (abhaengig vom Encounter-Ausgang).
+| NarrativeRole | Belastet Budget? |
+|---------------|:----------------:|
+| threat | Ja |
+| victim | Ja (Belohnung) |
+| ally | Nein |
+| neutral | Nein |
 
 ---
 
 ## goalDifficulty (Step 6.0) {#goaldifficulty-step-60}
 
-Ziel-Difficulty via gewichtete Normalverteilung basierend auf Terrain-Threat.
+Ziel-Difficulty via gewichtete Normalverteilung basierend auf Terrain-ThreatLevel.
 
 **Unabhaengig von aktueller Difficulty** - basiert nur auf Terrain.
 
 ```typescript
-function rollTargetDifficulty(context: EncounterContext): EncounterDifficulty {
+function rollTargetDifficulty(threatLevel: ThreatLevel): EncounterDifficulty {
   const difficulties = ['trivial', 'easy', 'moderate', 'hard', 'deadly'] as const;
-  const { threatLevel = 0, threatRange = 1.0 } = context.tile.terrain;
 
-  // Normalverteilung: μ = 2 (moderate) + threatLevel * 0.5
-  const mean = 2 + threatLevel * 0.5;
+  // Mittelwert des CR-Bereichs normalisiert auf Difficulty-Index
+  // threatLevel.max von 2 → moderate, 4 → hard, 8 → deadly
+  const crMean = (threatLevel.min + threatLevel.max) / 2;
+  const mean = Math.min(4, 1 + crMean * 0.5);  // Skaliert CR auf 0-4 Index
+
   const weights = difficulties.map((_, i) =>
-    Math.exp(-0.5 * Math.pow((i - mean) / threatRange, 2))
+    Math.exp(-0.5 * Math.pow(i - mean, 2))
   );
   const sum = weights.reduce((a, b) => a + b, 0);
 
@@ -286,13 +301,12 @@ function rollTargetDifficulty(context: EncounterContext): EncounterDifficulty {
 }
 ```
 
-| threatLevel | threatRange | Wahrscheinlichste Difficulty |
-|:-----------:|:-----------:|:----------------------------:|
-| -2 | 1.0 | trivial/easy |
-| 0 | 1.0 | moderate |
-| +2 | 1.0 | hard/deadly |
-| 0 | 0.5 | moderate (vorhersehbar) |
-| 0 | 2.0 | alle moeglich (chaotisch) |
+| Terrain | threatLevel | CR-Mean | Wahrscheinlichste Difficulty |
+|---------|:-----------:|:-------:|:----------------------------:|
+| grassland | 0-2 | 1 | easy/moderate |
+| forest | 0.25-4 | 2.1 | moderate |
+| mountain | 2-8 | 5 | hard/deadly |
+| arctic | 1-7 | 4 | hard |
 
 -> Weiter: [Balancing.md](Balancing.md) (Step 6.1: Machbarkeits-Anpassung)
 
@@ -450,7 +464,7 @@ CreatureDefinition (Template)
         |  groupPopulation (Step 3)
         v
 EncounterGroup (Slots mit Creature-IDs)
-        |  groupActivity, groupNPCs, groupLoot, encounterDistance (Step 4)
+        |  groupActivity, encounterNPCs, encounterLoot, encounterDistance (Step 4)
         v
 FlavouredGroup (mit Activity, NPC, Loot, Perception)
         |  Difficulty (Step 5)
@@ -490,19 +504,22 @@ Das Ergebnis nach Step 4 (Activity, NPCs, Loot, Perception):
 interface FlavouredGroup extends EncounterGroup {
   activity: string;
   goal: string;
-  leadNpc: EncounterLeadNpc;
-  highlightNpcs?: HighlightNPC[];
+  creatures: EncounterCreatureInstance[];  // Mit npcId falls zugewiesen
   loot: GeneratedLoot;
   perception: EncounterPerception;
 }
 
-interface EncounterLeadNpc {
-  npcId: EntityId<'npc'>;
-  isNew: boolean;  // True = neu generiert, False = existierend
+interface EncounterCreatureInstance {
+  definitionId: string;
+  currentHp: number;
+  maxHp: number;
+  npcId?: string;  // Referenz auf NPC falls zugewiesen
 }
 ```
 
 -> Activity/Goal: [groupActivity.md](groupActivity.md)
+-> NPCs: [encounterNPCs](#encounternpcs-step-43)
+-> Loot: [encounterLoot.md](encounterLoot.md)
 -> Perception: [encounterDistance.md](encounterDistance.md)
 
 **Hinweis:** Disposition und Relations werden in Difficulty.md berechnet.
@@ -531,7 +548,7 @@ Schwierige Encounters werden durch **Umstaende** (Environment, Distance, Activit
 | Service | Step | Zweck |
 |---------|------|-------|
 | NPCService | 4.3 (groupNPCs) | Lead-NPC fuer jede Gruppe generieren |
-| LootService | 4.4 (groupLoot) | Loot aus Creature.defaultLoot generieren |
+| LootService | 4.4 (encounterLoot) | Loot aus Creature.defaultLoot generieren |
 
 ---
 

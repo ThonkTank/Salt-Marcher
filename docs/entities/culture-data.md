@@ -10,7 +10,7 @@
 | naming | NamingConfig | Namensgenerierung | Optional |
 | personality | PersonalityConfig | Persoenlichkeits-Pools | Optional |
 | quirks | WeightedQuirk[] | Eigenheiten-Pool | Optional |
-| activities | FactionActivityRef[] | Aktivitaets-Referenzen | Optional, -> [groupActivity.md](../services/encounter/groupActivity.md) |
+| activities | string[] | Activity-IDs (keine Gewichtung) | Optional, -> [activity.md](activity.md) |
 | goals | WeightedGoal[] | NPC-Ziele-Pool | Optional |
 | values | ValuesConfig | Werte & Verhalten | Optional |
 | speech | SpeechConfig | Sprach-RP-Hinweise | Optional |
@@ -50,13 +50,6 @@
 | weight | number | Gewichtung 0.0-1.0 |
 | description | string | GM-Beschreibung fuer RP |
 | compatibleTags | string[] | Kreatur-Tags fuer Kompatibilitaet |
-
-### FactionActivityRef
-
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| activityId | EntityId<'activity'> | Activity-Referenz |
-| weight | number | Fraktions-spezifische Gewichtung (1.0 = normal) |
 
 ### WeightedGoal
 
@@ -122,6 +115,7 @@ const goblinCulture: CultureData = {
     { quirk: 'nervous_laugh', weight: 0.3, description: 'Kichert nervoes' },
     { quirk: 'hoards_shiny', weight: 0.4, description: 'Sammelt Glaenzendes' }
   ],
+  activities: ['ambush', 'scavenge', 'camp', 'patrol', 'feeding'],
   values: {
     priorities: ['survival', 'loot', 'pleasing_boss'],
     taboos: ['direct_confrontation', 'sharing_treasure']

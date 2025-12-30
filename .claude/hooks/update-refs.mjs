@@ -26,6 +26,7 @@
 import { existsSync, readdirSync, statSync } from 'fs';
 import { join, relative } from 'path';
 import { createRefUpdaterService } from '../../scripts/services/ref-updater-service.mjs';
+import { createImportUpdaterService } from '../../scripts/services/import-updater-service.mjs';
 import { updateClaudemdDocsTree } from './docs-tree.mjs';
 import { recordDelete } from './hook-state.mjs';
 
@@ -51,6 +52,33 @@ function findAllMarkdownFiles(dir, files = []) {
     if (stat.isDirectory()) {
       findAllMarkdownFiles(fullPath, files);
     } else if (entry.endsWith('.md')) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
+/**
+ * Recursively finds all TypeScript files in a directory.
+ *
+ * @param {string} dir - Directory to search
+ * @param {string[]} files - Accumulator array
+ * @returns {string[]} - Array of file paths
+ */
+function findAllSourceFiles(dir, files = []) {
+  if (!existsSync(dir)) return files;
+
+  const entries = readdirSync(dir);
+  for (const entry of entries) {
+    if (entry === 'node_modules' || entry.startsWith('.')) continue;
+
+    const fullPath = join(dir, entry);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      findAllSourceFiles(fullPath, files);
+    } else if (/\.(ts|tsx)$/.test(entry) && !entry.endsWith('.d.ts')) {
       files.push(fullPath);
     }
   }
@@ -235,9 +263,15 @@ async function main() {
   if (commandType === 'rm') {
     const deletedPaths = parseRmCommand(command);
     for (const path of deletedPaths) {
+      // Track .md files in docs/
       if (path.startsWith('docs/') && path.endsWith('.md')) {
         recordDelete(path);
         console.log(`[update-refs] Recorded deletion: ${path}`);
+      }
+      // Track .ts files in src/
+      if (path.startsWith('src/') && /\.(ts|tsx)$/.test(path)) {
+        recordDelete(path);
+        console.log(`[update-imports] Recorded deletion: ${path}`);
       }
     }
   }
@@ -293,6 +327,54 @@ async function main() {
           }
         } catch (error) {
           console.error(`[update-refs] Error: ${error.message}`);
+        }
+      }
+
+      // Handle src/ file moves (update imports)
+      if (source.startsWith('src/')) {
+        try {
+          const importService = createImportUpdaterService();
+
+          // Check if destination is a folder (folder rename)
+          if (existsSync(destination) && statSync(destination).isDirectory()) {
+            // Folder rename: update imports for all .ts files in the folder
+            const files = findAllSourceFiles(destination);
+            let totalUpdatedFiles = 0;
+            let totalUpdates = 0;
+
+            for (const newPath of files) {
+              const relativePath = relative(destination, newPath);
+              const oldPath = join(source, relativePath);
+
+              const result = importService.updateImports(oldPath, newPath);
+              if (result.ok && result.value.updatedFiles > 0) {
+                totalUpdatedFiles += result.value.updatedFiles;
+                totalUpdates += result.value.totalUpdates;
+
+                for (const change of result.value.changes) {
+                  console.log(`  - ${change.file} (${change.count} import(s))`);
+                }
+              }
+            }
+
+            if (totalUpdates > 0) {
+              console.log(`[update-imports] Folder rename: Updated ${totalUpdates} import(s) in ${totalUpdatedFiles} file(s)`);
+            }
+          } else {
+            // Single file move
+            const result = importService.updateImports(source, destination);
+
+            if (result.ok && result.value.updatedFiles > 0) {
+              const { updatedFiles, totalUpdates } = result.value;
+              console.log(`[update-imports] Updated ${totalUpdates} import(s) in ${updatedFiles} file(s)`);
+
+              for (const change of result.value.changes) {
+                console.log(`  - ${change.file} (${change.count} import(s))`);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`[update-imports] Error: ${error.message}`);
         }
       }
     }

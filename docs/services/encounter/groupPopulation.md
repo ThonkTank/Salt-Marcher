@@ -2,13 +2,13 @@
 
 > **Helper fuer:** Encounter-Service (Step 3)
 > **Input:** `SeedSelection` (von [groupSeed.md](groupSeed.md))
-> **Output:** `EncounterGroup` (siehe [Output](#output-encountergroup))
+> **Output:** `PopulatedGroup` (siehe [Output](#output-populatedgroup))
 > **Aufgerufen von:** [Encounter.md](Encounter.md)
 > **Weiter an:** [groupActivity.md](groupActivity.md)
 >
 > **Referenzierte Schemas:**
 > - [creature.md](../../entities/creature.md) - Design-Rollen
-> - [faction-encounter-template.md](../../entities/faction-encounter-template.md) - Template-Schema
+> - [group-template.md](../../entities/group-template.md) - Template-Schema
 
 Wie wird aus einer Seed-Kreatur eine vollstaendige Encounter-Gruppe gebildet?
 
@@ -24,7 +24,7 @@ Gruppengroessen kommen aus Templates und Creature.groupSize - nicht aus XP-Budge
 function generateEncounterGroup(
   seed: SeedSelection,
   context: EncounterContext
-): Result<EncounterGroup, PopulationError>
+): Result<PopulatedGroup, PopulationError>
 ```
 
 ---
@@ -58,10 +58,10 @@ function generateEncounterGroup(
 |             v                                                                |
 |  +----------------------+                                                   |
 |  | 3.3 FINALISIERUNG    |                                                   |
-|  | EncounterGroup       |                                                   |
+|  | PopulatedGroup       |                                                   |
 |  +----------------------+                                                   |
 |                                                                              |
-|  Output: EncounterGroup (an groupActivity.md via Encounter.md)              |
+|  Output: PopulatedGroup (an groupActivity.md via Encounter.md)              |
 |                                                                              |
 +-----------------------------------------------------------------------------+
 ```
@@ -72,23 +72,33 @@ function generateEncounterGroup(
 
 **Zweck:** Pool von Kreaturen bestimmen, die zusammen mit der Seed erscheinen koennen.
 
-**Input:** `SeedSelection` (seed, faction)
+**Input:**
+- `seed: { creatureId, factionId }`
+- `context: { eligibleCreatures, timeSegment }` (eligibleCreatures von encounterGenerator.ts)
 
-**Output:** `Creature[]` (gefilterte Companion-Kandidaten)
+**Output:** `{ creatureId: string; count: number }[]`
 
 ### Algorithmus
 
 ```typescript
-function getCompanionPool(seed: SeedSelection, context: EncounterContext): Creature[] {
-  // 1. Faction-basiert
-  if (seed.faction) {
-    return resolveCreatures(seed.faction.creatures);
+function getCompanionPool(
+  seed: { creatureId: string; factionId: string | null },
+  context: { eligibleCreatures: CreatureDefinition[]; timeSegment: TimeSegment }
+): { creatureId: string; count: number }[] {
+  // 1. Faction-basiert: creature-Liste direkt uebernehmen, Zeit-Filter
+  if (seed.factionId) {
+    const faction = vault.getEntity('faction', seed.factionId);
+    return faction.creatures.filter(entry =>
+      vault.getEntity('creature', entry.creatureId)?.activeTime.includes(context.timeSegment)
+    );
   }
 
-  // 2. Tag-basiert (fraktionslos)
-  return context.eligibleCreatures
-    .map(w => w.creature)
-    .filter(c => c.tags.some(tag => seed.seed.tags.includes(tag)));
+  // 2. Tag-basiert (fraktionslos): Tag-Match mit Seed
+  const seedCreature = vault.getEntity('creature', seed.creatureId);
+  const tagMatches = context.eligibleCreatures.filter(c =>
+    c.tags.some(tag => seedCreature.tags.includes(tag))
+  );
+  return tagMatches.map(c => ({ creatureId: c.id, count: 1 }));
 }
 ```
 
@@ -96,19 +106,23 @@ function getCompanionPool(seed: SeedSelection, context: EncounterContext): Creat
 
 Wenn die Seed einer Fraktion angehoert:
 - Companions sind **alle Kreaturen der gleichen Fraktion**
+- Keine Zeit-Filterung (Zeit-Praeferenz wird bei Seed-Auswahl in groupSeed angewendet)
+- Output behaelt `{ creatureId, count }` Format der Fraktion bei
 - Beispiel: Goblin-Seed → nur Goblins, Hobgoblins, Bugbears aus der Tribe
 
 ### Tag-basiert (fraktionslos)
 
 Wenn die Seed keiner Fraktion angehoert:
+- `eligibleCreatures` werden von encounterGenerator.ts uebergeben (bereits terrain/zeit-gefiltert)
 - Companions werden ueber **gemeinsame Tags** gematcht
 - Mindestens ein gemeinsamer Tag erforderlich
+- Output: `{ creatureId, count: 1 }` (keine Mengen-Info bei fraktionslos)
 - Beispiele: `beast`, `pack-hunter`, `undead`, `goblinoid`
 
 ```typescript
 // Wolf (fraktionslos, Tags: ["beast", "pack-hunter"])
-// Companion-Pool: Alle Kreaturen mit "beast" oder "pack-hunter" Tag
-// Ergebnis: Woelfe, Dire Wolves, evtl. Worgs
+// Companion-Pool: Alle eligibleCreatures mit "beast" oder "pack-hunter" Tag
+// Ergebnis: [{ creatureId: "wolf", count: 1 }, { creatureId: "dire-wolf", count: 1 }]
 ```
 
 -> Faction-Creatures: [faction.md](../../entities/faction.md)
@@ -160,11 +174,11 @@ interface EncounterTemplate {
   };
 }
 
-// CountRange -> faction-encounter-template.md#countrange
+// CountRange -> group-template.md#countrange
 // DesignRole -> Creature.md#design-rollen-mcdm-basiert
 ```
 
--> Vollstaendiges Schema: [faction-encounter-template.md](../../entities/faction-encounter-template.md)
+-> Vollstaendiges Schema: [group-template.md](../../entities/group-template.md)
 
 ### Generische Templates (System-Presets)
 
@@ -183,18 +197,15 @@ Templates sind in `presets/encounter-templates/` gespeichert und editierbar.
 
 ```typescript
 function selectTemplate(
-  seed: SeedSelection,
-  companionPool: Creature[],  // Aus Step 3.0
-  genericTemplates: EncounterTemplate[],
-  context: EncounterContext
+  seedCreature: CreatureDefinition,
+  companionPool: { creatureId: string; count: number }[],  // Aus Step 3.0
+  faction: Faction | null
 ): EncounterTemplate | undefined {
-  const { seed: seedCreature, faction } = seed;
-
   // 1. PRIORITAET: Faction-Templates
   if (faction?.encounterTemplates) {
     const viableFaction = faction.encounterTemplates.filter(t =>
       hasSlotForRole(t, seedCreature.designRole) &&
-      canFulfillTemplate(companionPool, t, context)
+      canFulfillTemplate(companionPool, t)
     );
     if (viableFaction.length > 0) {
       return randomSelect(viableFaction);
@@ -202,9 +213,10 @@ function selectTemplate(
   }
 
   // 2. FALLBACK: Generic Templates
+  const genericTemplates = vault.getAllEntities('group-template');
   const viableGeneric = genericTemplates.filter(t =>
     hasSlotForRole(t, seedCreature.designRole) &&
-    canFulfillTemplate(companionPool, t, context)
+    canFulfillTemplate(companionPool, t)
   );
   if (viableGeneric.length > 0) {
     return randomSelect(viableGeneric);
@@ -219,19 +231,19 @@ function hasSlotForRole(template: EncounterTemplate, role: DesignRole): boolean 
 }
 
 function canFulfillTemplate(
-  creatures: Creature[],
-  template: EncounterTemplate,
-  context: EncounterContext
+  companionPool: { creatureId: string; count: number }[],
+  template: EncounterTemplate
 ): boolean {
-  for (const [slotName, slot] of Object.entries(template.slots)) {
+  for (const slot of Object.values(template.slots)) {
     const minRequired = typeof slot.count === 'number'
       ? slot.count
       : slot.count.min;
 
-    const creaturesWithRole = creatures.filter(c =>
-      c.designRole === slot.designRole &&
-      isEligible(c, context.terrain, context.time)
-    );
+    // Creatures resolvieren und nach Rolle filtern
+    const creaturesWithRole = companionPool.filter(entry => {
+      const creature = vault.getEntity('creature', entry.creatureId);
+      return creature?.designRole === slot.designRole;
+    });
 
     if (creaturesWithRole.length < minRequired) {
       return false;
@@ -282,70 +294,75 @@ Template mit Slots (z.B. 1x leader, 2-4x minion)
 ```typescript
 function fillAllSlots(
   template: EncounterTemplate,
-  seed: SeedSelection,
-  companionPool: Creature[]  // Aus Step 3.0
-): { [slotName: string]: EncounterCreature[] } {
-  const { seed: seedCreature } = seed;
-  const result: { [slotName: string]: EncounterCreature[] } = {};
+  seedCreature: CreatureDefinition,
+  companionPool: { creatureId: string; count: number }[]  // Aus Step 3.0
+): { creatureId: string; count: number }[] {
+  const allCreatures: { creatureId: string; count: number }[] = [];
 
   for (const [slotName, slot] of Object.entries(template.slots)) {
     // Seed belegt ihren passenden Slot (zaehlt gegen Count)
     const isSeedSlot = slot.designRole === seedCreature.designRole;
 
-    result[slotName] = fillSlot(
-      slot,
-      seedCreature,
-      companionPool,
-      isSeedSlot ? seedCreature : undefined
-    );
+    const slotCreatures = fillSlot(slot, seedCreature, companionPool, isSeedSlot);
+
+    // Merge in Gesamt-Array
+    for (const entry of slotCreatures) {
+      const existing = allCreatures.find(c => c.creatureId === entry.creatureId);
+      if (existing) {
+        existing.count += entry.count;
+      } else {
+        allCreatures.push({ ...entry });
+      }
+    }
   }
 
-  return result;
+  return allCreatures;
 }
 
 function fillSlot(
-  slot: TemplateSlot,
-  seed: Creature,
-  companionPool: Creature[],
-  seedToPlace?: Creature
-): EncounterCreature[] {
+  slot: SlotDef,
+  seedCreature: CreatureDefinition,
+  companionPool: { creatureId: string; count: number }[],
+  isSeedSlot: boolean
+): { creatureId: string; count: number }[] {
   // 1. Slot-Anzahl wuerfeln (aus Template, nicht Budget!)
   const slotCount = resolveCount(slot.count);
   if (slotCount === 0) return [];
 
-  // 2. Seed platzieren falls dieser Slot sie enthaelt
-  const selected: EncounterCreature[] = [];
+  const result: { creatureId: string; count: number }[] = [];
   let remainingCount = slotCount;
 
-  if (seedToPlace) {
-    selected.push({ creatureId: seedToPlace.id, count: 1 });
+  // 2. Seed platzieren falls dieser Slot sie enthaelt
+  if (isSeedSlot) {
+    result.push({ creatureId: seedCreature.id, count: 1 });
     remainingCount--;
   }
 
-  // 3. Companion-Pool nach Design-Rolle filtern (PFLICHT)
-  const roleMatches = companionPool.filter(c =>
-    c.designRole === slot.designRole
-  );
-  let candidates = roleMatches.length > 0 ? roleMatches : companionPool;
+  if (remainingCount <= 0) return result;
 
-  // 4. Tags der Seed bevorzugen
-  const tagMatches = candidates.filter(c =>
-    c.tags.some(t => seed.tags.includes(t))
-  );
-  if (tagMatches.length > 0) candidates = tagMatches;
+  // 3. Companion-Pool nach Design-Rolle filtern (STRIKT)
+  // Kein Fallback - vorherige Steps (canFulfillTemplate) garantieren Erfuellbarkeit
+  const roleMatches = companionPool.filter(entry => {
+    const creature = vault.getEntity('creature', entry.creatureId);
+    return creature?.designRole === slot.designRole;
+  });
 
-  // 5. Verbleibende Plaetze mit Companions fuellen
+  if (roleMatches.length === 0) return result;
+
+  // 4. Verbleibende Plaetze mit Companions fuellen
   for (let i = 0; i < remainingCount; i++) {
-    const creature = randomSelect(candidates);
-    const existing = selected.find(s => s.creatureId === creature.id);
+    const entry = randomSelect(roleMatches);
+    if (!entry) break;
+
+    const existing = result.find(r => r.creatureId === entry.creatureId);
     if (existing) {
       existing.count++;
     } else {
-      selected.push({ creatureId: creature.id, count: 1 });
+      result.push({ creatureId: entry.creatureId, count: 1 });
     }
   }
 
-  return selected;
+  return result;
 }
 
 function resolveCount(count: number | CountRange): number {
@@ -353,9 +370,7 @@ function resolveCount(count: number | CountRange): number {
   if (typeof count === 'number') return count;
 
   // Format 2: Normalverteilung (mit avg)
-  if ('avg' in count) {
-    return Math.round(normalRandom(count.avg, (count.max - count.min) / 4));
-  }
+  if ('avg' in count) return randomNormal(count.min, count.avg, count.max);
 
   // Format 3: Gleichverteilung (nur min/max)
   return randomBetween(count.min, count.max);
@@ -367,7 +382,7 @@ function resolveCount(count: number | CountRange): number {
 - Gleichverteilung: `{ min: 2, max: 4 }` -> randomBetween(2, 4)
 - Normalverteilung: `{ min: 2, avg: 4, max: 10 }` -> Haeufung um avg
 
--> Details: [faction-encounter-template.md#countrange](../../entities/faction-encounter-template.md#countrange)
+-> Details: [group-template.md#countrange](../../entities/group-template.md#countrange)
 
 **Keine XP-Budgets hier!** Die Anzahl kommt aus Template-Slots.
 [Balancing.md](Balancing.md) passt spaeter an, falls das Encounter zu stark/schwach ist.
@@ -376,11 +391,11 @@ function resolveCount(count: number | CountRange): number {
 
 ## Step 3.3: Gruppen-Finalisierung
 
-**Zweck:** Befuellte Slots zu einer EncounterGroup zusammenfuehren.
+**Zweck:** Befuellte Slots zu einer PopulatedGroup zusammenfuehren.
 
 **Input:** Template, befuellte Slots, SeedSelection
 
-**Output:** `EncounterGroup`
+**Output:** `PopulatedGroup`
 
 ### Single-Group
 
@@ -389,7 +404,7 @@ function finalizeGroup(
   seed: SeedSelection,
   template: EncounterTemplate | undefined,
   slots: { [slotName: string]: EncounterCreature[] }
-): EncounterGroup {
+): PopulatedGroup {
   return {
     groupId: generateId(),
     templateRef: template?.id,
@@ -510,15 +525,15 @@ interface TypedCreatureSlot {
 
 ---
 
-## Output: EncounterGroup {#output-encountergroup}
+## Output: PopulatedGroup {#output-populatedgroup}
 
-Das Ergebnis des groupPopulation-Workflows:
+Das Ergebnis des groupPopulation-Workflows. **Hinweis:** Dies ist ein intermediate Pipeline-Typ, nicht das finale `EncounterGroup` in [encounter-instance.md](../../entities/encounter-instance.md).
 
 ```typescript
-interface EncounterGroup {
+interface PopulatedGroup {
   groupId: string;
-  templateRef?: EntityId<'encounter-template'>;  // Verwendetes Template
-  factionId?: EntityId<'faction'>;               // null bei fraktionslosen Kreaturen
+  templateRef?: string;                          // Verwendetes Template
+  factionId: string | null;                      // null bei fraktionslosen Kreaturen
   slots: {
     [slotName: string]: EncounterCreature[];     // Kreaturen nach Slot gruppiert
   };
@@ -527,9 +542,9 @@ interface EncounterGroup {
 }
 
 interface EncounterCreature {
-  creatureId: EntityId<'creature'>;
+  creatureId: string;
   count: number;
-  npcId?: EntityId<'npc'>;  // Gesetzt nach NPC-Instanziierung in Flavour
+  npcId?: string;  // Gesetzt nach NPC-Instanziierung in Flavour
 }
 
 type NarrativeRole = 'threat' | 'victim' | 'neutral' | 'ally';

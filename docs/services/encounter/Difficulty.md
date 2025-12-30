@@ -22,7 +22,7 @@ Kampfsimulation mit Probability Mass Functions (PMF) zur Difficulty-Klassifizier
 ## Workflow-Uebersicht
 
 ```
-Input: FlavouredGroup[] aus Step 4 (groupActivity, groupNPCs, groupLoot, encounterDistance)
+Input: FlavouredGroup[] aus Step 4 (groupActivity, encounterNPCs, encounterLoot, encounterDistance)
        (inkl. Activity, Perception, Groups)
         |
         v

@@ -92,7 +92,7 @@ Optionales Feld fuer Kultur-Lookup. Wenn gesetzt und eine passende Species-Cultu
 ### TimeSegment
 
 ```typescript
-type TimeSegment = 'dawn' | 'day' | 'dusk' | 'night';
+type TimeSegment = 'dawn' | 'morning' | 'midday' | 'afternoon' | 'dusk' | 'night';
 ```
 
 ### AbilityScores
@@ -175,17 +175,17 @@ Optionale Gewichtungs-Modifikatoren fuer das Encounter-System.
 |------|-----|--------------|
 | `terrain` | `Record<EntityId<'terrain'>, number>` | Terrain-Gewichtung |
 | `timeOfDay` | `Record<TimeSegment, number>` | Tageszeit-Gewichtung |
-| `weather` | `Record<WeatherCondition, number>` | Wetter-Gewichtung |
+| `weather` | `{ prefers?: string[], avoids?: string[] }` | Wetter-Praeferenzen |
 | `altitude` | `{ min: number; max: number }` | Hoehenbereich |
 
 **Gewichtungs-Werte:**
 
-| Wert | Bedeutung |
-|------|-----------|
-| `2.0` | Bevorzugt - doppelte Wahrscheinlichkeit |
-| `1.0` | Normal - Standard-Wahrscheinlichkeit |
-| `0.5` | Selten - halbe Wahrscheinlichkeit |
-| `0` | Nie - erscheint nicht |
+| Feld | Typ | Effekt |
+|------|-----|--------|
+| `terrain` | `Record<string, number>` | Multiplikator (2.0 = bevorzugt, 0.5 = selten) |
+| `timeOfDay` | `Record<TimeSegment, number>` | Multiplikator |
+| `weather.prefers` | `string[]` | x2.0 - doppelte Wahrscheinlichkeit |
+| `weather.avoids` | `string[]` | x0.5 - halbe Wahrscheinlichkeit |
 
 ### DefaultLootEntry
 

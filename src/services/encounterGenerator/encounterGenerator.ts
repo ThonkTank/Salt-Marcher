@@ -1,63 +1,74 @@
-// Ziel: sessionState für relevanten Kontext auslesen. Encounter-Generierungs-Pipeline verwalten. Helper-Skripte nach Bedarf aufrufen.
+// Ziel: Encounter-Generierungs-Pipeline verwalten. Helper-Skripte nach Bedarf aufrufen.
 // Siehe: docs/services/encounter/Encounter.md
 //
 // Pipeline:
-// 1.: Würfeln für Gruppen/Umgebungs-Features.
-//     Siehe: docs/services/encounter/groupSeed.md
-// 2.: groupGenerator.ts für jede zu generierende Gruppe aufrufen.
-//     Siehe: docs/services/encounter/groupPopulation.md
-// 3.: Bestimmen, welche Kreaturen zu NPCs befördert werden.
-//     Siehe: docs/services/NPCs/NPC-Matching.md
-// 4.: Passende NPCs suchen oder NPCs/npcGenerator.generateNPC() für jede zu befördernde Kreatur aufrufen.
-//     Siehe: docs/services/NPCs/NPC-Generation.md
-// 5.: loot/lootGenerator.generateLoot() für den gesamten Encounter aufrufen.
-//     Siehe: docs/services/Loot.md
-// 6.: In-line setDifficultyGoal() verwenden, um Schwierigkeitsziel des Encounters zu bestimmen.
-//     Siehe: docs/services/encounter/Difficulty.md
-// 7.: calcDifficulty.ts aufrufen, um aktuelle Schwierigkeit des Encounters zu berechnen.
-//     Siehe: docs/services/encounter/Difficulty.md
-// 8.: balanceEncounter.ts aufrufen, um eine Variable anzupassen und dem Schwierigkeitsziel näher zu kommen.
-//     Siehe: docs/services/encounter/Balancing.md
-// 9.: Schritte 7 & 8 wiederholen, bis Schwierigkeitsziel erreicht ist.
+// 1.: Multi-Group-Check
+// 2.: groupSeed.ts - Seed-Kreatur auswählen
+// 3.: groupPopulation.ts - Template → Slots → Kreaturen
+// 4.: Flavouring (Activity, NPCs, Loot, Distance)
+// 5.: difficulty.ts - Ziel-Difficulty bestimmen + Simulation
+// 6.: balancing.ts - Balancing-Loop bis Ziel erreicht
+// 7.: EncounterInstance zusammenbauen
+//
+// DISKREPANZEN (als [HACK] oder [TODO] markiert):
+// ================================================
+//
+// [HACK: Encounter.md#orchestration] Doku zeigt Result-Handling für groupSeed
+//   → Impl verwendet `| null`, Doku zeigt `isErr()/unwrap()`
+//
+// [HACK: Encounter.md#orchestration] exclude als Teil von context
+//   → Doku zeigt separaten options-Parameter: selectSeed(context, { exclude })
+//
+// [HACK: Encounter.md#input-schema] PartyMember.maxHp nicht in Doku
+//   → partySnapshot.ts hat maxHp, Doku definiert nur hp
+//
+// [TODO: Encounter.md#input-schema] EncounterConstraints nicht implementiert
+//   → Post-MVP Feature für min/maxDifficulty, requiredTags, etc.
+//
+// RESOLVED:
+// - [2025-12-29] terrain als vollständige TerrainDefinition (statt partieller Struktur)
+// - [2025-12-29] weather an groupSeed übergeben (Weather-Präferenzen aktiviert)
+// - [2025-12-29] crBudget in Doku ergänzt, position+thresholds in PartySnapshot
+// - [2025-12-29] trigger bleibt string (MVP), Doku mit Post-MVP-Hinweis
+// - [2025-12-29] position verwendet HexCoordinate statt inline { q, r }
+// - [2025-12-30] NPCs auf Encounter-Ebene (1-3 NPCs), nicht mehr leadNPC pro Gruppe
 
 // ============================================================================
 // IMPORTS
 // ============================================================================
 
-// Result-Pattern für fehlerbehandlung
-import type { Result } from '@core/types/result';
-import { isErr, isOk, ok, err, unwrap } from '@core/types/result';
+import type { EncounterInstance } from '#types/encounterTypes';
+import { type Result, ok, err } from '#types/common/Result';
+import type { GameDateTime } from '#types/time';
+import type { TerrainDefinition, CreatureDefinition, NPC, Faction } from '@/types/entities';
+import type { PartySnapshot } from '#types/partySnapshot';
+import type { HexCoordinate } from '#types/hexCoordinate';
 
-// Helper-Module für Pipeline-Steps
-import * as groupSeed from './groupSeed';           // Step 2: Seed-Auswahl (Terrain + Faction → Kreatur)
-import * as groupPopulation from './groupPopulation'; // Step 3: Template → Slots → Kreaturen
-import * as groupActivity from './groupActivity';     // Step 4.1-4.2: Activity + Goal zuweisen
-import * as groupNPCs from './groupNPCs';             // Step 4.3: Lead-NPC pro Gruppe
-import * as groupLoot from './groupLoot';             // Step 4.4: Loot generieren (→ LootService)
-import * as encounterDistance from './encounterDistance'; // Step 4.5: Perception + Distanz berechnen
-import * as difficulty from './difficulty';           // Step 5: PMF-Kampfsimulation
-import * as balancing from './balancing';             // Step 6.1: Machbarkeits-Anpassung
+// ============================================================================
+// RESULT-TYP
+// ============================================================================
 
-// Typen für Pipeline-Datenfluss
-import type { EncounterContext } from './types/EncounterContext';       // Input vom sessionState
-import type { SeedSelection } from './types/SeedSelection';             // Output von groupSeed
-import type { EncounterGroup } from './types/EncounterGroup';           // Output von groupPopulation
-import type { FlavouredGroup } from './types/FlavouredGroup';           // Output von Step 4 (mit Activity, NPC, Loot, Perception)
-import type { SimulationResult } from './types/SimulationResult';       // Output von difficulty
-import type { EncounterInstance } from '@entities/encounter-instance';  // Finaler Output
+/** Ergebnis von generateEncounter - Encounter + neu generierte NPCs */
+export interface EncounterResult {
+  encounter: EncounterInstance;
+  generatedNPCs: NPC[];  // Neue NPCs die persistiert werden müssen
+}
 
-// Enums und Union-Types
-import type { NarrativeRole } from './types/NarrativeRole';             // 'threat' | 'victim' | 'neutral' | 'ally'
+import { vault } from '@/infrastructure/vault/vaultInstance';
+import * as groupSeed from './groupSeed';
+import * as groupPopulation from './groupPopulation';
+import * as groupActivity from './groupActivity';
+import * as encounterNPCs from './encounterNPCs';
+import * as encounterLoot from './encounterLoot';
+import * as encounterDistance from './encounterDistance';
+import * as difficulty from './difficulty';
+import * as balancing from './balancing';
 
-// Error-Typen
-import type { EncounterError } from './types/EncounterError';
-
-// Konfiguration (editierbar über Plugin-Optionen)
 import {
   MULTI_GROUP_PROBABILITY,
   MAX_BALANCING_ITERATIONS,
   SECONDARY_ROLE_THRESHOLDS,
-} from '@constants/EncounterConfig';
+} from '@/constants/encounterConfig';
 
 // ============================================================================
 // PIPELINE-FUNKTION
@@ -65,23 +76,18 @@ import {
 
 /**
  * Generiert einen vollständigen Encounter basierend auf dem übergebenen Kontext.
- *
- * @param context - Encounter-Kontext vom sessionState
- *   - position: Aktuelle Hex-Position der Party
- *   - terrain: Terrain-Definition des aktuellen Hexes
- *   - timeSegment: Aktuelles Tages-Segment (dawn, morning, midday, afternoon, dusk, night)
- *   - weather: Aktuelles Wetter
- *   - party: Party-Daten (Level, Größe, Ressourcen)
- *   - factions: Aktive Factions in der Region
- *   - eligibleCreatures: Vorgefilterte Kreaturen für dieses Terrain
- *
- * @returns Result<EncounterInstance, EncounterError>
- *
  * Siehe: docs/services/encounter/Encounter.md
  */
-export function generateEncounter(
-  context: EncounterContext
-): Result<EncounterInstance, EncounterError> {
+export function generateEncounter(context: {
+  position: HexCoordinate;
+  terrain: TerrainDefinition;
+  crBudget: number;
+  timeSegment: GameDateTime['segment'];
+  weather: { type: string; severity: number };
+  party: PartySnapshot;
+  factions: { factionId: string; weight: number }[];
+  trigger: string;
+}): Result<EncounterResult, { code: string; message?: string }> {
 
   // -------------------------------------------------------------------------
   // Step 1: Multi-Group-Check
@@ -92,22 +98,33 @@ export function generateEncounter(
   // Step 2: Primäre Seed-Auswahl
   // Siehe: docs/services/encounter/groupSeed.md
   // -------------------------------------------------------------------------
-  const primarySeedResult = groupSeed.selectSeed(context);
-  if (isErr(primarySeedResult)) return primarySeedResult;
-  const primarySeed = unwrap(primarySeedResult);
+  const primarySeed = groupSeed.selectSeed({
+    terrain: { id: context.terrain.id },
+    crBudget: context.crBudget,
+    timeSegment: context.timeSegment,
+    factions: context.factions,
+    weather: context.weather,
+  });
+  if (!primarySeed) {
+    return err({ code: 'NO_ELIGIBLE_CREATURES' });
+  }
 
   // -------------------------------------------------------------------------
   // Step 3: Sekundäre Seed (nur bei Multi-Group)
   // -------------------------------------------------------------------------
-  let secondarySeed: SeedSelection | null = null;
-  let secondaryRole: NarrativeRole = 'neutral';
+  let secondarySeed: { creatureId: string; factionId: string | null } | null = null;
+  let secondaryRole: 'threat' | 'victim' | 'neutral' | 'ally' = 'neutral';
 
   if (isMultiGroup) {
-    const secondarySeedResult = groupSeed.selectSeed(context, {
-      exclude: [primarySeed.seed.id],
+    secondarySeed = groupSeed.selectSeed({
+      terrain: { id: context.terrain.id },
+      crBudget: context.crBudget,
+      timeSegment: context.timeSegment,
+      factions: context.factions,
+      exclude: [primarySeed.creatureId],
+      weather: context.weather,
     });
-    if (isOk(secondarySeedResult)) {
-      secondarySeed = unwrap(secondarySeedResult);
+    if (secondarySeed) {
       secondaryRole = rollSecondaryRole();
     }
   }
@@ -116,116 +133,191 @@ export function generateEncounter(
   // Step 4: Gruppen-Population
   // Siehe: docs/services/encounter/groupPopulation.md
   // -------------------------------------------------------------------------
-  const groups: EncounterGroup[] = [];
 
-  const primaryGroupResult = groupPopulation.populate(primarySeed, context, 'threat');
-  if (isErr(primaryGroupResult)) return primaryGroupResult;
-  groups.push(unwrap(primaryGroupResult));
+  // Eligible Creatures für fraktionslose Gruppen laden (einmalig)
+  const eligibleCreatures = loadEligibleCreatures(context.terrain.id, context.timeSegment);
+
+  const populatedGroups: groupPopulation.PopulatedGroup[] = [];
+
+  const primaryResult = groupPopulation.generateEncounterGroup(
+    { creatureId: primarySeed.creatureId, factionId: primarySeed.factionId },
+    { terrain: context.terrain, timeSegment: context.timeSegment, eligibleCreatures },
+    'threat'
+  );
+  if (!primaryResult.ok) {
+    return err(primaryResult.error);
+  }
+  populatedGroups.push(primaryResult.value);
 
   if (secondarySeed) {
-    const secondaryGroupResult = groupPopulation.populate(secondarySeed, context, secondaryRole);
-    if (isErr(secondaryGroupResult)) return secondaryGroupResult;
-    groups.push(unwrap(secondaryGroupResult));
+    const secondaryResult = groupPopulation.generateEncounterGroup(
+      { creatureId: secondarySeed.creatureId, factionId: secondarySeed.factionId },
+      { terrain: context.terrain, timeSegment: context.timeSegment, eligibleCreatures },
+      secondaryRole
+    );
+    if (secondaryResult.ok) {
+      populatedGroups.push(secondaryResult.value);
+    }
   }
 
   // -------------------------------------------------------------------------
   // Step 5: Flavouring (Activity, NPCs, Loot, Distance)
-  // Siehe: docs/services/encounter/groupActivity.md
-  // Siehe: docs/services/NPCs/NPC-Matching.md, NPC-Generation.md
-  // Siehe: docs/services/Loot.md
-  // Siehe: docs/services/encounter/encounterDistance.md
   // -------------------------------------------------------------------------
-  const flavouredGroups: FlavouredGroup[] = [];
 
-  for (const group of groups) {
-    // Step 5.1: Activity + Goal zuweisen
-    const activityResult = groupActivity.assignActivity(group, context);
-    if (isErr(activityResult)) return activityResult;
+  // Step 5.1: Activity + Goal für alle Gruppen zuweisen
+  const groupsWithActivity = populatedGroups.map((group) => {
+    // Faction für Pool-Hierarchie laden (falls vorhanden)
+    const faction = group.factionId
+      ? vault.getEntity<Faction>('faction', group.factionId)
+      : undefined;
 
-    // Step 5.2: NPCs zuweisen/generieren
-    const npcsResult = groupNPCs.assignNPCs(unwrap(activityResult), context);
-    if (isErr(npcsResult)) return npcsResult;
+    return groupActivity.assignActivity(
+      group,
+      { terrain: context.terrain, timeSegment: context.timeSegment },
+      faction
+    );
+  });
 
+  // Step 5.2: NPCs für ALLE Gruppen zuweisen (1-3 NPCs pro Encounter)
+  const npcResult = encounterNPCs.assignEncounterNPCs(groupsWithActivity, {
+    position: context.position,
+  });
+  // Alle NPC-IDs (matched + generated) für die EncounterInstance
+  const allNPCs = [...npcResult.matchedNPCs, ...npcResult.generatedNPCs];
+  const encounterNpcIds = allNPCs.map(npc => npc.id);
+
+  // Step 5.3-5.4: Loot und Distance pro Gruppe
+  const flavouredGroups: encounterDistance.GroupWithPerception[] = [];
+
+  for (const group of npcResult.groups) {
     // Step 5.3: Loot generieren
-    const lootResult = groupLoot.generateLoot(unwrap(npcsResult), context);
-    if (isErr(lootResult)) return lootResult;
+    const withLoot = encounterLoot.generateEncounterLoot(group, {
+      terrain: context.terrain,
+    });
 
     // Step 5.4: Perception + Distanz berechnen
-    const distanceResult = encounterDistance.calculate(unwrap(lootResult), context);
-    if (isErr(distanceResult)) return distanceResult;
+    const withDistance = encounterDistance.calculate(withLoot, {
+      terrain: context.terrain,
+      weather: context.weather,
+      timeSegment: context.timeSegment,
+    });
 
-    flavouredGroups.push(unwrap(distanceResult));
+    flavouredGroups.push(withDistance);
   }
 
   // -------------------------------------------------------------------------
   // Step 6: Ziel-Difficulty bestimmen
   // Siehe: docs/services/encounter/Difficulty.md
   // -------------------------------------------------------------------------
-  const targetDifficulty = difficulty.rollTargetDifficulty(context.terrain.threat);
+  const targetDifficulty = difficulty.rollTargetDifficulty(context.terrain.threatLevel);
 
   // -------------------------------------------------------------------------
   // Step 7-9: Balancing-Loop
   // Siehe: docs/services/encounter/Balancing.md
   // -------------------------------------------------------------------------
   let currentGroups = flavouredGroups;
-  let simulationResult: SimulationResult;
+  let simulationResult = difficulty.simulate(currentGroups, context.party);
   let iterations = 0;
 
-  do {
-    // Step 7: Schwierigkeit berechnen
+  while (simulationResult.label !== targetDifficulty && iterations < MAX_BALANCING_ITERATIONS) {
+    const adjusted = balancing.adjust(currentGroups, simulationResult, targetDifficulty, context);
+    if (!adjusted) {
+      break; // Balancing nicht möglich → aktuelle Gruppen akzeptieren
+    }
+    currentGroups = adjusted;
     simulationResult = difficulty.simulate(currentGroups, context.party);
-
-    // Ziel erreicht?
-    if (simulationResult.difficulty === targetDifficulty) {
-      break;
-    }
-
-    // Step 8: Balancieren
-    const balanceResult = balancing.adjust(currentGroups, simulationResult, targetDifficulty, context);
-    if (isErr(balanceResult)) {
-      // Balancing nicht möglich → aktuelle Gruppen akzeptieren
-      break;
-    }
-    currentGroups = unwrap(balanceResult);
     iterations++;
-
-  } while (iterations < MAX_BALANCING_ITERATIONS);
+  }
 
   // -------------------------------------------------------------------------
   // Step 10: EncounterInstance zusammenbauen
   // -------------------------------------------------------------------------
   const encounterInstance: EncounterInstance = {
     id: crypto.randomUUID(),
-    groups: currentGroups,
-    targetDifficulty,
-    actualDifficulty: simulationResult.difficulty,
-    simulation: simulationResult,
+    groups: currentGroups.map(g => ({
+      creatures: g.creatures,
+      activity: g.activity,
+      goal: g.goal,
+      disposition: g.disposition,
+      narrativeRole: g.narrativeRole,
+    })),
+    npcs: encounterNpcIds, // 1-3 NPC-IDs pro Encounter
+    loot: aggregateLoot(currentGroups),
+    perception: aggregatePerception(currentGroups),
+    difficulty: {
+      label: simulationResult.label,
+      winProbability: simulationResult.winProbability,
+      tpkRisk: simulationResult.tpkRisk,
+    },
     context: {
       position: context.position,
       terrain: context.terrain.id,
       timeSegment: context.timeSegment,
       weather: context.weather,
     },
-    balancingIterations: iterations,
-    createdAt: Date.now(),
+    description: '', // TODO: Flavour-Service
   };
 
-  return ok(encounterInstance);
+  return ok({
+    encounter: encounterInstance,
+    generatedNPCs: npcResult.generatedNPCs,
+  });
 }
 
 // ============================================================================
 // HELPER-FUNKTIONEN
 // ============================================================================
 
-/**
- * Würfelt die narrative Rolle für eine sekundäre Gruppe.
- * Siehe: SECONDARY_ROLE_THRESHOLDS für Gewichtung
- */
-function rollSecondaryRole(): NarrativeRole {
+function rollSecondaryRole(): 'threat' | 'victim' | 'neutral' | 'ally' {
   const roll = Math.random();
-
   if (roll < SECONDARY_ROLE_THRESHOLDS.victim) return 'victim';
   if (roll < SECONDARY_ROLE_THRESHOLDS.neutral) return 'neutral';
   if (roll < SECONDARY_ROLE_THRESHOLDS.ally) return 'ally';
   return 'threat';
+}
+
+function aggregateLoot(
+  groups: { loot: { items: { id: string; quantity: number }[]; totalValue: number } }[]
+): { items: { id: string; quantity: number }[]; totalValue: number } {
+  const allItems: { id: string; quantity: number }[] = [];
+  let totalValue = 0;
+  for (const g of groups) {
+    allItems.push(...g.loot.items);
+    totalValue += g.loot.totalValue;
+  }
+  return { items: allItems, totalValue };
+}
+
+function aggregatePerception(
+  groups: { perception: { partyDetectsEncounter: number; encounterDetectsParty: number; isSurprise: boolean } }[]
+): { partyDetectsEncounter: number; encounterDetectsParty: number; isSurprise: boolean } {
+  // Nächste Distanz gewinnt
+  let minPartyDetects = Infinity;
+  let minEncounterDetects = Infinity;
+  let anySurprise = false;
+  for (const g of groups) {
+    minPartyDetects = Math.min(minPartyDetects, g.perception.partyDetectsEncounter);
+    minEncounterDetects = Math.min(minEncounterDetects, g.perception.encounterDetectsParty);
+    anySurprise = anySurprise || g.perception.isSurprise;
+  }
+  return {
+    partyDetectsEncounter: minPartyDetects === Infinity ? 60 : minPartyDetects,
+    encounterDetectsParty: minEncounterDetects === Infinity ? 60 : minEncounterDetects,
+    isSurprise: anySurprise,
+  };
+}
+
+/**
+ * Lädt eligible Creatures für fraktionslose Gruppen.
+ * Gefiltert nach Terrain-Affinität und aktiver Tageszeit.
+ */
+function loadEligibleCreatures(
+  terrainId: string,
+  timeSegment: GameDateTime['segment']
+): CreatureDefinition[] {
+  const allCreatures = vault.getAllEntities<CreatureDefinition>('creature');
+  return allCreatures.filter(c =>
+    c.terrainAffinities.includes(terrainId) &&
+    c.activeTime.includes(timeSegment)
+  );
 }

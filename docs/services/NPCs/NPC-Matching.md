@@ -121,7 +121,10 @@ function prioritizeCandidates(
     }
 
     // Sekundaer: Wer wurde laenger nicht gesehen?
-    return a.lastEncounter.timestamp - b.lastEncounter.timestamp;
+    // GameDateTime: { day, month, year, hour }
+    const dayDiff = a.lastEncounter.day - b.lastEncounter.day;
+    if (dayDiff !== 0) return dayDiff;
+    return a.lastEncounter.hour - b.lastEncounter.hour;
   })[0];
 }
 ```

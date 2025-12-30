@@ -63,25 +63,22 @@ Benannte, persistente Kreatur-Instanz mit Persoenlichkeit.
 
 ---
 
-## NPC-Detail-Stufen
+## Encounter-NPCs
 
-Bei Encounters werden NPCs mit unterschiedlicher Detailtiefe generiert:
+Pro Encounter werden 1-3 NPCs via gewichteter Zufallsauswahl bestimmt:
 
-| Stufe | Details | Persistierung | Max pro Encounter |
-|-------|---------|---------------|-------------------|
-| **Lead-NPC** | Name, 2 Traits, Quirk, Goal | Ja | 1 pro Gruppe |
-| **Highlight-NPC** | Name, 1 Trait | Nein (session-only) | Max 3 global |
-| **Anonym** | Nur Kreatur-Typ + Anzahl | Nein | Unbegrenzt |
+| Aspekt | Verhalten |
+|--------|-----------|
+| **Anzahl** | 1-3 NPCs (gewürfelt: 50%/35%/15%) |
+| **Vollständigkeit** | Alle NPCs: Name, 2 Traits, Quirk, Goal |
+| **Persistierung** | Im Vault persistiert |
+| **Multi-Group** | Min 1 NPC pro Gruppe |
 
-### PartialNPC (Highlight-NPCs)
+**Gewichtung:** `CR × ROLE_WEIGHT`
 
-```typescript
-interface PartialNPC {
-  name: string;
-  primaryTrait: string;
-  creatureType: string;
-}
-```
+NPCs werden in `creatures[]` über `npcId` referenziert, nicht als separate Liste.
+
+-> Details: [encounterNPCs](../services/encounter/Encounter.md#encounternpcs-step-43)
 
 ---
 

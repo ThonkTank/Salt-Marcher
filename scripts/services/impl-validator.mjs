@@ -158,8 +158,11 @@ export function parseImplString(implString) {
 /**
  * Findet eine Impl-Datei im src-Verzeichnis.
  * Sucht rekursiv in allen Unterordnern.
+ *
+ * @param {string} fileName - Dateiname (z.B. "groupSeed.ts")
+ * @returns {string|null} - Vollständiger Pfad oder null
  */
-function findImplFile(fileName) {
+export function findImplFile(fileName) {
   return findFileRecursive(SRC_ROOT, fileName);
 }
 
@@ -250,6 +253,7 @@ export function createImplValidatorService(options = {}) {
     validateImpl,
     validateImpls,
     parseImplString,
+    findImplFile,
     VALID_TAGS
   };
 }

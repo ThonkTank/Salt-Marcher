@@ -1,38 +1,63 @@
 # Orchestration Layer
 
-Die Orchestration-Schicht koordiniert Workflows waehrend einer aktiven Session. Der **sessionState** ist der zentrale State-Container, **Workflows** orchestrieren alle In-Session-Aktivitaeten.
+Die Orchestration-Schicht koordiniert Workflows waehrend einer aktiven Session. **sessionControl** orchestriert den aktiven Workflow und synct den Svelte Store, **Workflows** fuehren die Logik aus.
 
 ---
 
 ## Abgrenzung
 
-| Layer | Verantwortlichkeit | State | Beispiele |
-|-------|-------------------|-------|-----------|
-| **sessionState** | State-Container (nur Speicher) | Stateful | `sessionState.ts` |
-| **Workflows** | State lesen, Context bauen, Services aufrufen, State schreiben | Stateless (operiert auf sessionState) | EncounterWorkflow, TravelWorkflow |
-| **Services** | Business-Logik als Pipelines | Stateless | EncounterService, WeatherService |
-| **Views** | UI-Darstellung | Reactive (subscribed) | SessionRunner, DetailView |
+| Layer | Verantwortlichkeit | State | Pfad |
+|-------|-------------------|-------|------|
+| **sessionControl** | UI-Orchestrator, Workflow-Auswahl, Svelte Store sync | Svelte Store | `application/sessionControls/` |
+| **Workflows** | State lesen/schreiben, Services aufrufen, Vault persistieren | Stateless | `workflows/` |
+| **sessionState** | Einfacher State-Container (kein Framework) | Stateful | `infrastructure/state/` |
+| **Services** | Business-Logik als Pipelines | Stateless | `services/` |
+| **Views** | UI-Darstellung | Reactive (subscribed) | `views/` |
 
-**Wichtig:** sessionState ist KEIN Controller mit Methoden. Es ist nur ein Svelte Store.
+**Wichtig:** sessionState ist ein einfacher Container ohne Framework-Dependencies. sessionControl haelt den Svelte Store.
+
+---
+
+## sessionControl
+
+sessionControl in `application/sessionControls/` ist der **UI-Orchestrator**:
+
+- Haelt den Svelte Store (`sessionStore`)
+- Entscheidet welcher Workflow aktiv ist
+- Ruft Workflows auf
+- Synct Svelte Store mit Infrastructure-State nach Workflow-Aufrufen
+
+```typescript
+// sessionControl.ts
+import { writable } from 'svelte/store';
+import { getState } from '@/infrastructure/state/sessionState';
+
+export const sessionStore = writable<SessionState>(getState());
+
+export function syncStore(): void {
+  sessionStore.set(getState());
+}
+```
 
 ---
 
 ## sessionState
 
-Der sessionState ist ein **Svelte Store** - die Single Source of Truth fuer alle In-Session-Daten:
+sessionState in `infrastructure/state/` ist ein **einfacher Container** ohne Framework-Dependencies:
 
 - Party-Position und Transport
 - Aktuelle Zeit und Wetter
 - Aktive Workflows (Travel, Encounter, Combat, Rest)
-- UI-State (nicht persistiert)
 
-**Kernprinzip:** Views subscriben auf den Store. Workflows schreiben State-Updates. Keine Events.
+**Kernprinzip:** Kein Svelte, kein Framework. Ermoeglicht CLI-Testbarkeit.
 
 ```typescript
-// sessionState.ts
-export const sessionState = writable<SessionState>(initialState);
-export function getState(): SessionState { ... }
-export function updateState(fn: (s: SessionState) => SessionState): void { ... }
+// infrastructure/state/sessionState.ts
+let state: SessionState = { ... };
+
+export function getState(): SessionState { return state; }
+export function updateState(fn: (s: SessionState) => SessionState): void { state = fn(state); }
+export function resetState(initial: SessionState): void { state = initial; }
 ```
 
 Details: [SessionState.md](../orchestration/SessionState.md)
@@ -74,10 +99,10 @@ Workflows sind **maximal duenn**. Sie:
 ### Beispiel: Thin Workflow
 
 ```typescript
-// encounterWorkflow.ts
-import { getState, updateState } from './sessionState';
-import { generateEncounter } from '@services/encounterGenerator';
-import { vault } from '@infrastructure/vault';
+// workflows/encounterWorkflow.ts
+import { getState, updateState } from '@/infrastructure/state/sessionState';
+import { vault } from '@/infrastructure/vault/vaultInstance';
+import { generateEncounter } from '@/services/encounterGenerator/encounterGenerator';
 
 export function checkEncounter(trigger: EncounterTrigger): void {
   if (!rollEncounterCheck()) return;
@@ -106,6 +131,14 @@ export function checkEncounter(trigger: EncounterTrigger): void {
     }));
   }
 }
+```
+
+**sessionControl** synct nach jedem Workflow-Aufruf:
+
+```typescript
+// In sessionControl: Workflow aufrufen + Store syncen
+checkEncounter('travel');
+syncStore();
 ```
 
 ---

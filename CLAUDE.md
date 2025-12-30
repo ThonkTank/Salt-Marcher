@@ -52,41 +52,94 @@ Salt Marcher ist ein Obsidian-Plugin für D&D 5e Game Masters. Es automatisiert 
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Views (Svelte)                                               │
-│   $sessionState           ← subscribet auf State             │
-│   Workflows               → orchestrieren State-Änderungen   │
+│ sessionControl (Svelte)        src/application/sessionControls/
+│   sessionStore = writable()    ← Svelte Store für UI         │
+│   syncStore()                  → synct Store mit State       │
 └─────────────────────────────────────────────────────────────┘
-                              ↓↑
+       │ ruft auf           ↑ returned Result
+       ↓                    │
 ┌─────────────────────────────────────────────────────────────┐
-│ sessionState                                               │
-│   state = writable<SessionState>(...)                        │
-│   - Party-Position, Zeit, Wetter                             │
-│   - Travel-, Combat-, Encounter-Workflows                    │
+│ workflows/                     src/workflows/                │
+│   checkEncounter()             → orchestriert Logik          │
+│   startCombat()                → liest/schreibt State        │
+│   dismissEncounter()           → ruft Services auf           │
+│                                → schreibt Vault (Persistenz) │
 └─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│ Services (pure Pipelines)                                    │
-│   encounterService.generate(context) → Result                │
-│   weatherService.generate(input) → Weather                   │
-└─────────────────────────────────────────────────────────────┘
-                              ↓
-┌─────────────────────────────────────────────────────────────┐
-│ Vault (Persistence)                                          │
-│   Entities lesen, Journal schreiben, Session-State speichern │
-└─────────────────────────────────────────────────────────────┘
+       │ liest/schreibt     │ ruft auf        │ liest/schreibt
+       ↓                    ↓                 ↓
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│ infrastructure/  │  │ Services         │  │ Vault            │
+│ state/           │  │ src/services/    │  │ src/infra/vault/ │
+│                  │  │                  │  │                  │
+│ getState()       │  │ generateEncounter│  │ vault.getEntity()│
+│ updateState()    │  │ generateWeather  │  │ vault.saveEntity │
+│ resetState()     │  │                  │  │                  │
+│                  │  │ (liest State+    │  │                  │
+│ (kein Framework) │  │  Vault)          │  │                  │
+└──────────────────┘  └──────────────────┘  └──────────────────┘
 ```
 
 ### Kernprinzipien
 
-**sessionState = State-Container (kein Controller)**
-sessionState ist ein Svelte Store, kein Controller mit Methoden. Workflows lesen/schreiben State, Views subscriben.
+**sessionControl = UI-Orchestrator (Svelte)**
+sessionControl in `application/sessionControls/` orchestriert welcher Workflow aktiv ist, ruft Workflows auf, und synct den Svelte Store mit dem Infrastructure-State.
+
+**Workflows = Logik-Orchestratoren**
+Workflows in `workflows/` lesen/schreiben State, rufen Services auf, schreiben Vault (Persistenz), und returnen Results an sessionControl.
+
+**sessionState = Einfacher State-Container**
+sessionState in `infrastructure/state/` ist ein simpler Container ohne Framework-Dependencies. Ermöglicht CLI-Testbarkeit.
 
 **Services = Dumme Pipelines**
 Services haben keinen eigenen State. Sie empfangen Input und liefern Output:
-- Erlaubt: Input konsumieren, Output liefern, Vault lesen/schreiben
-- Verboten: Queries an andere Services, eigene Entscheidungen, eigenen State
+- Erlaubt: Input konsumieren, Output liefern, State + Vault lesen
+- Verboten: Queries an andere Services, eigene Entscheidungen, eigenen State, State/Vault schreiben
 
 **Weiterführend:** [Orchestration.md](docs/architecture/Orchestration.md), [Services.md](docs/architecture/Services.md)
+
+### Service-Typen
+
+**Services definieren inline, Workflows übergeben inline.**
+
+- Service-Funktionen definieren ihre Input-Parameter inline in der Signatur
+- Keine separaten Type-Dateien für Service-interne Daten
+- Nur persistierte Outputs (wie EncounterInstance) bekommen ein Schema in `src/types/`
+- Workflows bauen den Kontext inline und übergeben ihn direkt
+
+```typescript
+// Service definiert inline
+export function selectSeed(context: {
+  terrain: { id: string };
+  factions: { factionId: string; weight: number }[];
+}): { creatureId: string; factionId: string | null } | null
+
+// Workflow übergibt inline
+const seed = selectSeed({
+  terrain: state.terrain,
+  factions: tile.factionPresence,
+});
+```
+
+### Entity-Types und Zod-Schemas
+
+**Vault-persistierte Entities verwenden Zod-Schemas:**
+
+| Kategorie | Ort | Pattern |
+|-----------|-----|---------|
+| Entities | `src/types/entities/*.ts` | Zod-Schema + `z.infer` |
+| Runtime-Typen | `src/types/*.ts` | Plain TypeScript Interface |
+
+```typescript
+// Entity (vault-persistiert) - MIT Zod
+import { z } from 'zod';
+export const creatureDefinitionSchema = z.object({ ... });
+export type CreatureDefinition = z.infer<typeof creatureDefinitionSchema>;
+
+// Runtime-Typ (transient) - OHNE Zod
+export interface PartySnapshot { ... }
+```
+
+**Import-Alias:** `#entities/*` → `src/types/entities/*`
 
 ### Pflicht-Leseliste nach Layer
 
@@ -95,9 +148,10 @@ Das gilt für JEDE Arbeit: Code schreiben, Fragen beantworten, Planung, Dokument
 
 | Layer | Code-Pfad | Pflicht-Dokument |
 |-------|-----------|------------------|
-| **Orchestration** | `src/session/` | [Orchestration.md](docs/architecture/Orchestration.md) + [docs/orchestration/](docs/orchestration/) |
+| **Workflows** | `src/workflows/` | [Orchestration.md](docs/architecture/Orchestration.md) + [docs/orchestration/](docs/orchestration/) |
+| **Application** | `src/application/` | [Orchestration.md](docs/architecture/Orchestration.md) |
 | **Services** | `src/services/` | [Services.md](docs/architecture/Services.md) |
-| **Schemas** | `src/schemas/` | [schemas.md](docs/architecture/schemas.md) |
+| **Types** | `src/types/` | [types.md](docs/architecture/types.md) |
 | **Constants** | `src/constants/` | [constants.md](docs/architecture/constants.md) |
 | **Views** | `src/views/` | [docs/views/](docs/views/) |
 | **Infrastructure** | `src/infrastructure/` | [Infrastructure.md](docs/architecture/Infrastructure.md) |
@@ -108,26 +162,71 @@ Das gilt für JEDE Arbeit: Code schreiben, Fragen beantworten, Planung, Dokument
 
 ```
 src/                   # Source code
+  application/
+    sessionControls/
+      sessionControl.ts  # Session Control - Svelte-spezifische UI-Schicht
   constants/
-    EncounterConfig.ts  # Encounter-Konfiguration
-  entities/
-    creature.ts
-    faction.ts
-    factionEncounterTemplate.ts
+    creature.ts  # Kreatur-bezogene Konstanten
+    encounter.ts  # Encounter-bezogene Konstanten
+    encounterConfig.ts  # Encounter-Konfiguration
+    faction.ts  # Fraktions-bezogene Konstanten
+    index.ts  # Constants Index
+    npc.ts  # NPC-bezogene Konstanten
+    terrain.ts  # Terrain-/Map-bezogene Konstanten
+    time.ts  # Zeit-bezogene Konstanten
+  infrastructure/
+    state/
+      sessionState.ts  # Einfacher State-Container ohne Framework-Dependencies
+    vault/
+      PresetVaultAdapter.ts  # VaultAdapter-Implementierung für CLI-Testing
+      VaultAdapter.ts  # Vault-Adapter Interface für Datenzugriff
+      vaultInstance.ts  # Vault-Instance für globalen Zugriff
   services/
     encounterGenerator/
-      balanceEncounter.ts
-      calcDifficulty.ts
-      encounterGenerator.ts  # Ziel: sessionState für relevanten Kontext auslesen. Encou...
-      encounterNPCs.ts
-      groupGenerator.ts
+      balancing.ts  # Encounter-Balancing durch Umstände anpassen
+      difficulty.ts  # Difficulty-Berechnung und Ziel-Difficulty
+      encounterDistance.ts  # Perception + Distanz für Encounter berechnen
+      encounterGenerator.ts  # Ziel: Encounter-Generierungs-Pipeline verwalten. Helper-S...
+      encounterLoot.ts  # Ziel: Loot fuer Encounter generieren und auf Kreaturen ve...
+      encounterNPCs.ts  # NPCs für Encounter zuweisen (1-3 NPCs pro Encounter)
+      groupActivity.ts  # Ziel: Activity + Goal für Encounter-Gruppen zuweisen
+      groupPopulation.ts  # Gruppen-Population: Template -> Slots -> Kreaturen
+      groupSeed.ts  # Seed-Kreatur für Encounter auswählen
     lootGenerator/
-      lootGenerator.ts
+      lootGenerator.ts  # Ziel: Loot-Generierung mit Budget-Tracking, DefaultLoot u...
     npcGenerator/
-      npcGenerator.ts
-  SessionRunner/
+      npcGenerator.ts  # Ziel: NPC-Generierung für Encounter, Quest, Shop, POI
+  types/
+    common/
+      counting.ts  # Zähl- und Gewichtungs-Typen für das Encounter-System
+      Result.ts
+    entities/
+      activity.ts  # Vault-persistierte Activity-Definition
+      creature.ts  # Vault-persistierte CreatureDefinition und Runtime Creatur...
+      faction.ts  # Vault-persistierte Faction
+      groupTemplate.ts  # Vault-persistierte GroupTemplate
+      index.ts  # Entity Types Index
+      landmark.ts  # Vault-persistierte Landmark-Definition
+      map.ts  # Vault-persistierte Map-Definition
+      npc.ts  # Vault-persistierte NPC-Entity
+      overworldTile.ts  # Vault-persistierte OverworldTile
+      terrainDefinition.ts  # Vault-persistierte TerrainDefinition
+    encounterTypes.ts  # Encounter-Typen: Runtime-Repräsentation und Trigger für E...
+    factionPresence.ts  # Faction-Präsenz auf einem Tile
+    hexCoordinate.ts  # Axiale Hex-Koordinaten (q, r)
+    partySnapshot.ts  # Party-Snapshot für Encounter-Generierung
+    sessionState.ts  # Session-State Typen für CLI-Testbarkeit
+    terrainDefinition.ts  # Terrain-Definition für Hex-Tiles
+    time.ts  # Zeit-Typen für Kalender/Zeit-System
+    weather.ts  # WeatherType Entity
+  utils/
+    diceParser.ts  # Dice Expression Parser - Recursive Descent Parser für Wür...
+    hex.ts  # Hex-Grid Utilities
+    index.ts  # Utils Index
+    random.ts  # Single Source of Truth für alle Zufallsfunktionen.
+    validation.ts  # Input-Validierung für CLI und Services
+  workflows/
     encounterWorkflow.ts  # Ziel: Encounter generieren lassen, in DetailView anzeigen...
-    sessionState.ts  # Ziel: Speichert alle Session-Zeit-State-Variablen.
 docs/                  # Authoritative documentation (German)
   architecture/
     .task-claims.json
@@ -135,9 +234,9 @@ docs/                  # Authoritative documentation (German)
     Development-Roadmap.md  # Aktueller Task
     Infrastructure.md  # [Orchestration.md](Orchestration.md), [Services.md](Servi...
     Orchestration.md  # Die Orchestration-Schicht koordiniert Workflows waehrend ...
-    schemas.md  # Zod-basierte Entity-Definitionen und TypeScript-Typen
     Services.md  # Services sind **stateless Pipelines**, die von Workflows ...
     Testing.md  # [Orchestration.md](Orchestration.md), [Services.md](Servi...
+    types.md  # Zentrale TypeScript-Typen und Zod-Schemas
   constants/
     CreatureSizes.md  # TODO: Inhalte extrahieren aus `docs/entities/creature.md`
     CreatureTypes.md  # TODO: Inhalte extrahieren aus `docs/entities/creature.md`
@@ -151,19 +250,20 @@ docs/                  # Authoritative documentation (German)
     culture-data.md  # [Faction](faction.md) (eingebettet)
     currency.md  # -
     encounter-instance.md  # [Encounter-Service](../services/encounter/Encounter.md) (...
-    faction-encounter-template.md  # [Library](../views/Library.md), [Faction](faction.md)
     faction-presence.md  # [Cartographer](../views/Cartographer.md) (Praesenz-Vorber...
     faction.md  # [Library](../views/Library.md) (CRUD), [Encounter](../ser...
+    group-template.md  # [Library](../views/Library.md), [Faction](faction.md)
+    interior-object.md  # [Library](../views/Library.md) (CRUD)
     item.md  # [Library](../views/Library.md)
     journal-entry.md  # Quest-Feature (auto), Encounter-Feature (auto), Travel-Fe...
     journal-settings.md  # User-Konfiguration (Settings-UI)
     journal.md  # [Journal-Feature](../features/Journal.md) (Auto-Generieru...
+    landmark.md  # [Library](../views/Library.md) (CRUD), [Cartographer](../...
     LootContainer.md  # [Library](../views/Library.md), [Loot](../services/Loot.m...
     map.md  # [Cartographer](../views/Cartographer.md), [Library](../vi...
     npc.md  # [Encounter](../services/encounter/Encounter.md) (Generier...
     overworld-tile.md  # [Cartographer](../views/Cartographer.md) (Terrain/Danger-...
     path.md  # [Cartographer](../views/Cartographer.md) (Path-Tool)
-    poi.md  # [Library](../views/Library.md) (CRUD), [Encounter](../ser...
     quest.md  # [Library](../views/Library.md) (CRUD)
     session.md  # sessionState (Session starten/beenden)
     shop.md  # [Library](../views/Library.md) (CRUD)
@@ -192,6 +292,7 @@ docs/                  # Authoritative documentation (German)
       Difficulty.md  # Encounter-Service (Step 5)
       Encounter.md  # Generiert kontextabhaengige Encounters basierend auf Posi...
       encounterDistance.md  # Encounter-Service (Step 4.5)
+      encounterLoot.md  # Encounter-Service (Step 4.4)
       groupActivity.md  # Encounter-Service (Step 4.1, 4.2)
       groupPopulation.md  # Encounter-Service (Step 3)
       groupSeed.md  # Encounter-Service (Step 2)
@@ -203,7 +304,7 @@ docs/                  # Authoritative documentation (German)
     Loot.md  # [Item](../entities/item.md), [Encounter-System](encounter...
     Weather.md  # Stateless Service
   tools/
-    update-refs-hook.md  # Automatisches Update von Markdown-Links und CLAUDE.md bei...
+    update-refs-hook.md  # Automatisches Update von Markdown-Links, TypeScript-Impor...
   views/
     Cartographer.md  # [Map-Feature](../features/Map-Feature.md), [Map](../entit...
     DetailView.md  # [Application](../architecture/Application.md), [SessionRu...
@@ -244,6 +345,39 @@ Goals.md               # Start here: high-level vision and feature overview (Ger
 | Failed | `*_FAILED` | `SAVE_FAILED` |
 | Conflict | `*_CONFLICT` | `VERSION_CONFLICT` |
 
+### Naming-Konventionen
+
+| Kategorie | Pattern | Beispiel |
+|-----------|---------|----------|
+| **Dateinamen** | camelCase | `groupSeed.ts`, `encounterWorkflow.ts` |
+| **Ordner** | camelCase | `encounterGenerator/`, `workflows/`, `services/` |
+| **Funktionen** | verb-first, camelCase | `selectSeed()`, `generateEncounter()` |
+| **Typen/Interfaces** | PascalCase, keine Suffixe | `EncounterInstance`, `PartySnapshot` |
+| **State-Interfaces** | PascalCase + `State` Suffix | `SessionState`, `TravelWorkflowState` |
+| **Konstanten** | UPPER_SNAKE_CASE + `as const` | `MAX_GROUPS`, `TIME_MODIFIERS` |
+| **Store-Variablen** | camelCase | `sessionState`, `partyStore` |
+
+**Funktions-Präfixe:**
+
+| Präfix | Bedeutung | Beispiel |
+|--------|-----------|----------|
+| `select*` | Auswahl aus Optionen | `selectSeed()` |
+| `generate*` | Erzeugung neuer Daten | `generateEncounter()` |
+| `calculate*` | Berechnung | `calculatePerception()` |
+| `assign*` | Zuweisung zu Objekt | `assignActivity()` |
+| `roll*` | Zufallsbasierte Entscheidung | `rollTargetDifficulty()` |
+| `build*` | Konstruktion aus Teilen | `buildParticipants()` |
+| `aggregate*` | Zusammenfassung | `aggregateLoot()` |
+| `check*` | Prüfung/Validierung | `checkEncounter()` |
+| `dismiss*` | Beendigung/Ablehnung | `dismissEncounter()` |
+| `start*` / `init*` | Initialisierung | `startCombat()`, `initSessionControl()` |
+
+**Typ-Derivation aus Konstanten:**
+```typescript
+export const TIME_MODIFIERS = { dawn: 1.25, day: 1.0 } as const;
+export type TimeModifiers = typeof TIME_MODIFIERS;
+```
+
 ### Dokumentations-Richtlinien
 
 **Header-Standards für Feature-Docs:**
@@ -283,6 +417,45 @@ Goals.md               # Start here: high-level vision and feature overview (Ger
 - Bei Referenzen verboten: Vollständige Schemas kopieren, Code duplizieren
 
 **Bei Diskrepanzen:** Code ↔ Dokumentation → Code an Dokumentation anpassen. Die Docs sind die Spezifikation.
+
+**Datei-Header-Standard (PFLICHT):**
+
+Jede TypeScript-Datei MUSS einen standardisierten Header haben:
+
+```typescript
+// Ziel: Was macht diese Datei? (1 Satz)
+// Siehe: docs/pfad/zum/dokument.md
+//
+// [Optional: Pipeline, Workflow-Steps, oder andere Struktur-Info]
+//
+// DISKREPANZEN (als [HACK] oder [TODO] markiert):
+// ================================================
+//
+// [HACK: Dokument.md#section] Kurze Beschreibung
+//   → Was genau abweicht
+//
+// [TODO: Dokument.md#section] Geplante Änderung
+//   → Was noch fehlt
+//
+// RESOLVED:
+// - [YYYY-MM-DD] Was wurde behoben
+```
+
+**Header-Elemente:**
+
+| Element | Pflicht | Beschreibung |
+|---------|:-------:|--------------|
+| `// Ziel:` | ✅ | Einzeiler: Was macht diese Datei? |
+| `// Siehe:` | ✅ | Link zur autoritativen Dokumentation |
+| Pipeline/Struktur | ❌ | Optional: Steps, Workflow, Abhängigkeiten |
+| `DISKREPANZEN` | ✅* | Nur wenn Abweichungen existieren |
+| `RESOLVED` | ✅* | Nur wenn Abweichungen behoben wurden |
+
+**Diskrepanz-Marker:**
+
+- `[HACK]` = Bewusste Abweichung (MVP-Vereinfachung, temporärer Workaround)
+- `[TODO]` = Muss noch implementiert werden
+- `RESOLVED` = Erledigte Diskrepanzen (mit Datum)
 
 ---
 
@@ -455,6 +628,89 @@ npx vitest run path/to/file.test.ts    # Single test file
 | Features (Fertig) | Hoch | Automatisierte Tests nachziehen |
 
 **Kriterium "Test-Ready":** User gibt Freigabe ("Feature ist fertig")
+
+### CLI-Testing
+
+Services und Workflows können ohne Obsidian/Svelte via CLI getestet werden.
+
+```bash
+npm run cli:generate              # CLI aus src/ generieren
+npm run cli -- --list             # Alle Module anzeigen
+npm run cli -- <modul> --list     # Funktionen eines Moduls anzeigen
+npm run cli -- <modul> <fn> '{}'  # Funktion mit JSON-Args aufrufen
+npm run cli -- <modul> <fn> '[{},{},"arg3"]'  # Multi-Arg Funktion (Array = spread)
+```
+
+**Beispiele:**
+```bash
+npm run cli -- workflows/encounterWorkflow --list
+npm run cli -- services/encounterGenerator/groupSeed selectSeed '{"terrain":{"id":"forest"},"crBudget":15,"timeSegment":"midday","factions":[]}'
+
+# Multi-Argument Funktionen: Als JSON-Array übergeben
+npm run cli -- services/encounterGenerator/groupPopulation populate '[{"creatureId":"goblin","factionId":"bergstamm"},{"terrain":{"id":"forest"},"timeSegment":"midday","eligibleCreatures":[]},"threat"]'
+```
+
+**Architektur für Testbarkeit:**
+- `application/` und `views/` werden ausgeschlossen (Svelte-Dependencies)
+- `infrastructure/state/sessionState.ts` hat keine Framework-Dependencies
+- CLI initialisiert State via `resetState()` mit Test-Daten
+- CLI initialisiert Vault via `PresetVaultAdapter` mit Presets
+
+**Presets für CLI-Testing:**
+
+Presets liegen in `presets/` und werden automatisch beim CLI-Start geladen:
+
+| Entity-Typ | Ordner | Beispiel-IDs |
+|------------|--------|--------------|
+| creature | `presets/creatures/` | `goblin`, `bandit`, `wolf` |
+| faction | `presets/factions/` | `bergstamm`, `schmuggler` |
+| terrain | `presets/terrains/` | `forest`, `mountain`, `swamp` |
+
+**Gültige IDs finden:**
+```bash
+cat presets/factions/index.ts | grep "id:"
+cat presets/creatures/index.ts | grep "id:"
+```
+
+**Häufiger Fehler:** Nicht existierende IDs (wie `factionId: "test"`) führen zu leeren Ergebnissen oder `null`, da die Entity nicht im Vault gefunden wird.
+
+**Multi-Arg Funktionen:** Funktionen mit mehreren Parametern erwarten ein JSON-Array `[arg1, arg2, ...]`. Die CLI spread-et Arrays automatisch.
+
+### CLI Debug-Modus
+
+```bash
+npm run cli -- <modul> <fn> '{}' --debug
+npm run cli -- <modul> <fn> '{}' -d
+```
+
+Debug-Ausgaben zeigen interne Prozesse:
+- Pool-Aufbau und Filterung
+- Gewichtungs-Berechnungen
+- Entscheidungspunkte mit Zwischenergebnissen
+
+**Implementierte Services:**
+- `services/encounterGenerator/groupSeed`
+- `services/encounterGenerator/groupPopulation`
+
+**Pattern für neue Services:**
+```typescript
+// Am Dateianfang (nach Imports)
+const debug = (...args: unknown[]) => {
+  if (process.env.DEBUG_SERVICES === 'true') {
+    console.log('[serviceName]', ...args);
+  }
+};
+
+// In Funktionen
+debug('Step X:', relevantData);
+```
+
+**Beispiel:**
+```bash
+npm run cli -- services/encounterGenerator/groupSeed selectSeed \
+  '{"terrain":{"id":"forest"},"crBudget":15,"timeSegment":"midday","factions":[]}' \
+  --debug
+```
 
 ### Debug-Logging
 

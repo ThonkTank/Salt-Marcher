@@ -118,7 +118,6 @@ Kreaturen werden **ausgeschlossen** wenn:
 | Filter | Pruefung | Beispiel |
 |--------|----------|----------|
 | **Terrain** | `creature.terrainAffinities` enthaelt aktuelles Terrain? | Fisch nicht im Berg |
-| **Tageszeit** | `creature.activeTime` enthaelt aktuellen TimeSegment? | Vampir nicht mittags |
 
 ### Gewichtung (Soft Factors)
 
@@ -127,8 +126,21 @@ Verbleibende Kreaturen erhalten Gewichtungen:
 | Faktor | Gewichtung | Beispiel |
 |--------|------------|----------|
 | **Fraktionspraesenz** | `strength` als Gewicht (gewichtete Zufallsauswahl) | Blutfang kontrolliert dieses Hex |
-| **Raritaet** | common x1.0, uncommon x0.3, rare x0.05 | Drache selten |
-| **Wetter** | x1.5 wenn `creature.preferredWeather` matched | Yeti bei Schnee |
+| **CR-Rarity** | Kreaturen ausserhalb `terrain.threatLevel` werden seltener | Drache (CR 17) im Wald (0-4) = 10% |
+| **Tageszeit** | match = x2.0, mismatch = x0.5 | Vampir mittags seltener |
+| **Wetter** | prefers = x2.0, avoids = x0.5 | Wolf bei Schnee |
+
+**CR-Rarity (nur fraktionslose Kreaturen):**
+
+Jedes Terrain definiert einen CR-Bereich (`threatLevel: { min, max }`). Kreaturen ausserhalb dieses Bereichs werden seltener:
+- **Im Bereich:** 100% Gewichtung
+- **Ausserhalb:** -20% pro CR Distanz, min 10%
+
+Beispiel: Forest hat `threatLevel: { min: 0.25, max: 4 }`
+- Wolf (CR 0.25): 100% (im Bereich)
+- Owlbear (CR 3): 100% (im Bereich)
+- Troll (CR 5): 80% (1 CR ueber max)
+- Young Dragon (CR 10): 10% (6 CR ueber max, min erreicht)
 
 **Fraktions-Auswahl:** Gewichtete Zufallsauswahl basierend auf Tile-Staerke:
 
@@ -339,19 +351,16 @@ Die Seed-Kreatur ist das "Centerpiece" des Encounters. Von ihr ausgehend werden 
 **Hinweis:** Disposition wird in Difficulty.md berechnet, nicht hier.
 -> [Difficulty.md#step-50-disposition-berechnung](Difficulty.md#step-50-disposition-berechnung)
 
--> Faction-Templates: [faction-encounter-template.md](../../entities/faction-encounter-template.md)
+-> Faction-Templates: [group-template.md](../../entities/group-template.md)
 
 ---
 
 ## Output: SeedSelection {#output-seedselection}
 
-Das Ergebnis des groupSeed-Workflows:
+Das Ergebnis des groupSeed-Workflows (per Services.md: IDs statt voller Objekte):
 
 ```typescript
-interface SeedSelection {
-  seed: CreatureDefinition;
-  faction: Faction | null;
-}
+{ creatureId: string; factionId: string | null }
 ```
 
 **Naechster Schritt:** [groupPopulation.md](groupPopulation.md) empfaengt die SeedSelection und:

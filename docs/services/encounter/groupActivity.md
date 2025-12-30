@@ -61,15 +61,18 @@ Jede Gruppe im Encounter hat eine **separate** Activity. Bei Multi-Group-Encount
 | Banditen | threat | ambushing |
 | Haendler | victim | fleeing |
 
-### Activity-Pool-Hierarchie
+### Activity-Pool-Hierarchie (Culture-Chain)
 
-Activities werden aus drei Quellen zusammengestellt:
+Activities werden ueber das Culture-System aufgeloest:
 
 | Ebene | Beispiel-Activities | Quelle |
 |-------|---------------------|--------|
-| **Generisch** | resting, traveling, foraging | Basis-Pool (alle Kreaturen) |
-| **Creature-Typ** | hunting (Wolf), building (Beaver) | `Creature.activities` |
-| **Fraktion** | raiding, sacrificing, war_chanting | `Faction.culture.activities` |
+| **GENERIC_ACTIVITY_IDS** | sleeping, resting, traveling, wandering | Basis-Pool (alle Kreaturen) |
+| **Type Culture** | patrol, guard, resting | Fallback basierend auf creature.tags[0] |
+| **Species Culture** | ambush, scavenge, camp | ERSETZT Type wenn creature.species gesetzt |
+| **Faction Culture** | camp, patrol, raid | Ergaenzt mit 60%-Kaskade |
+
+-> Siehe: [Culture-Resolution.md](../NPCs/Culture-Resolution.md)
 
 ### Generische Activities (GENERIC_ACTIVITIES)
 
@@ -85,41 +88,59 @@ Diese Activities stehen allen Kreaturen zur Verfuegung:
 
 Creature- und Faction-Activities ergaenzen diesen Pool.
 
--> Vollstaendige Liste: [presets/activities/base-activities.json](../../../presets/activities/base-activities.json)
+-> Vollstaendige Liste: [presets/activities/index.ts](../../../presets/activities/index.ts)
 
 ```typescript
 function selectActivity(
   group: EncounterGroup,
   context: EncounterContext,
-  faction?: ResolvedFaction
-): string {
-  // 1. Pool zusammenstellen (Hierarchie)
-  const pool: WeightedActivity[] = [
-    ...GENERIC_ACTIVITIES,
-    ...getCreatureTypeActivities(group.creatures),
-    ...(faction?.culture.activities ?? [])
-  ];
+  faction?: Faction
+): Activity {
+  const activityIds = new Set<string>();
 
-  // 2. Nach Kontext filtern
-  const filtered = pool.filter(a =>
-    matchesContext(a.contextTags, context)
-  );
+  // 1. Generic (immer)
+  GENERIC_ACTIVITY_IDS.forEach(id => activityIds.add(id));
 
-  // 3. Gewichtete Auswahl
-  return weightedRandom(filtered);
+  // 2. Creature-spezifisch
+  const creatures = getAllCreatures(group);
+  for (const creature of creatures) {
+    const def = vault.getEntity<CreatureDefinition>('creature', creature.creatureId);
+    if (def?.activities) {
+      def.activities.forEach(id => activityIds.add(id));
+    }
+  }
+
+  // 3. Faction-spezifisch (string[])
+  if (faction?.culture?.activities) {
+    faction.culture.activities.forEach(id => activityIds.add(id));
+  }
+
+  // 4. IDs zu Activities aufloesen
+  const pool = [...activityIds]
+    .map(id => ACTIVITY_DEFINITIONS[id])
+    .filter((a): a is Activity => a !== undefined);
+
+  // 5. Nach Kontext filtern (active/resting basierend auf creature.activeTime)
+  const filtered = pool.filter(a => matchesContext(a.contextTags, context));
+
+  // 6. Gleichverteilte Zufallsauswahl (keine Gewichtung)
+  return randomSelect(filtered.length > 0 ? filtered : pool);
 }
 ```
 
 ### Kontext-Filter
 
-Activities werden nach Kontext gefiltert:
+Activities werden nach Kontext gefiltert basierend auf `contextTags`:
 
-| Kontext | Filter | Beispiel |
-|---------|--------|----------|
-| `timeOfDay` | nocturnal activities nur nachts | sleeping (Tag), hunting (Nacht) |
-| `terrain` | aquatic activities nur bei Wasser | fishing, swimming |
-| `weather` | shelter-seeking bei Sturm | hiding, camping |
-| `narrativeRole` | Role-spezifische Activities | fleeing (victim), ambushing (threat) |
+| Tag | Filter | Beschreibung |
+|-----|--------|--------------|
+| `active` | timeSegment ∈ creature.activeTime | Nur wenn Kreatur zur aktuellen Tageszeit aktiv ist |
+| `resting` | timeSegment ∉ creature.activeTime | Nur wenn Kreatur zur aktuellen Tageszeit ruht |
+| `movement` | - | Bewegungs-Aktivitaeten (traveling, patrol) |
+| `stealth` | - | Versteckte Aktivitaeten (ambush, hiding) |
+| `aquatic` | Wasser-Terrain | Nur bei Wasser-Terrain (TODO) |
+
+**Wichtig:** Activities mit BEIDEN Tags (`active` + `resting`) sind immer anwendbar (z.B. `feeding`, `wandering`).
 
 ### Activity-Beispiele
 

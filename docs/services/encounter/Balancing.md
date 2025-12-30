@@ -6,7 +6,7 @@
 > **Aufgerufen von:** [Encounter.md#helpers](Encounter.md#helpers)
 >
 > **Referenzierte Schemas:**
-> - [terrain-definition.md](../../entities/terrain-definition.md) - threatLevel/threatRange
+> - [terrain-definition.md](../../entities/terrain-definition.md) - threatLevel (CR-Bereich)
 > - [creature.md](../../entities/creature.md) - Design-Rollen fuer Slot-Anpassungen
 >
 > **Verwandte Dokumente:**

@@ -15,6 +15,7 @@ import { ok, err, TaskErrorCode } from '../core/result.mjs';
 import { parseRoadmap, detectDocTableFormat, formatDeps } from '../core/table/parser.mjs';
 import { buildDocTaskLine, updateDocTaskLine, updateTaskLine, buildTaskLine, buildBugLine, buildEmptyTaskTable } from '../core/table/builder.mjs';
 import { TaskStatus } from '../core/table/schema.mjs';
+import { createSrcTaskService } from '../services/src-task-service.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_ROADMAP_PATH = join(__dirname, '..', '..', 'docs', 'architecture', 'Development-Roadmap.md');
@@ -83,6 +84,7 @@ function docHasTable(content) {
 export function createFsTaskAdapter(options = {}) {
   const roadmapPath = options.roadmapPath ?? DEFAULT_ROADMAP_PATH;
   const docsPath = options.docsPath ?? DEFAULT_DOCS_PATH;
+  const srcTaskService = createSrcTaskService(options);
 
   // ============================================================================
   // Internal: Doc Operations
@@ -333,9 +335,11 @@ export function createFsTaskAdapter(options = {}) {
 
       // 4. Alle Docs synchronisieren (nur für nicht-Bugs)
       const docResults = [];
+      const srcResults = [];
+
       if (!task.isBug) {
         // Aktuelle Werte aus der Task holen, Updates überschreiben
-        const docUpdates = {
+        const syncUpdates = {
           status: updates.status ?? task.status,
           domain: updates.domain ?? task.domain,
           layer: updates.layer ?? task.layer,
@@ -348,14 +352,24 @@ export function createFsTaskAdapter(options = {}) {
 
         // Spec-Feld übernehmen
         if (updates.spec) {
-          docUpdates.spec = updates.spec;
+          syncUpdates.spec = updates.spec;
         }
 
+        // 4a. Docs synchronisieren
         const docs = findDocsContainingTask(taskId);
         for (const doc of docs) {
-          const result = syncDocFile(doc, taskId, docUpdates, dryRun);
+          const result = syncDocFile(doc, taskId, syncUpdates, dryRun);
           if (result.modified) {
             docResults.push(result);
+          }
+        }
+
+        // 4b. Source-Dateien synchronisieren
+        const sources = srcTaskService.findSourcesContainingTask(taskId);
+        for (const src of sources) {
+          const result = srcTaskService.updateTaskInSource(src.path, taskId, syncUpdates, { dryRun });
+          if (result.ok && result.value.modified) {
+            srcResults.push(result.value);
           }
         }
       }
@@ -367,7 +381,8 @@ export function createFsTaskAdapter(options = {}) {
           before: beforeLine,
           after: afterLine
         },
-        docs: docResults
+        docs: docResults,
+        sources: srcResults
       });
     },
 
@@ -400,7 +415,10 @@ export function createFsTaskAdapter(options = {}) {
 
       // 3. Aus allen Docs löschen
       const docResults = [];
+      const srcResults = [];
+
       if (!task.isBug) {
+        // 3a. Docs löschen
         const docs = findDocsContainingTask(taskId);
         for (const doc of docs) {
           const result = deleteFromDoc(doc, taskId, dryRun);
@@ -408,12 +426,22 @@ export function createFsTaskAdapter(options = {}) {
             docResults.push(result);
           }
         }
+
+        // 3b. Source-Dateien löschen
+        const sources = srcTaskService.findSourcesContainingTask(taskId);
+        for (const src of sources) {
+          const result = srcTaskService.removeTaskFromSource(src.path, taskId, { dryRun });
+          if (result.ok && result.value.deleted) {
+            srcResults.push(result.value);
+          }
+        }
       }
 
       return ok({
         success: true,
         roadmap: { deleted: true, line: deletedLine },
-        docs: docResults
+        docs: docResults,
+        sources: srcResults
       });
     },
 
@@ -607,11 +635,26 @@ export function createFsTaskAdapter(options = {}) {
 
     /**
      * Fügt eine neue Task zur Roadmap hinzu
-     * Wenn doc angegeben, wird die Task auch in das Doc eingefügt
-     * additionalDocs: Weitere Docs, in die die Task eingefügt werden soll
+     *
+     * @param {object} taskData - Task-Daten
+     * @param {object} [opts] - Optionen
+     * @param {boolean} [opts.dryRun=false] - Nur simulieren
+     * @param {boolean} [opts.init=false] - Tabelle initialisieren falls nicht vorhanden
+     * @param {string[]} [opts.docPaths=[]] - Doc-Pfade für Task-Tabelle (relativ zu docs/)
+     * @param {string[]} [opts.sourcePaths=[]] - Source-Pfade für Task-Tabelle (absolut)
+     * @param {string} [opts.doc] - Legacy: Einzelnes Doc
+     * @param {string[]} [opts.additionalDocs] - Legacy: Weitere Docs
      */
     addTask(taskData, opts = {}) {
-      const { dryRun = false, doc = null, init = false, additionalDocs = [] } = opts;
+      const {
+        dryRun = false,
+        init = false,
+        docPaths = [],
+        sourcePaths = [],
+        // Legacy-Support
+        doc = null,
+        additionalDocs = []
+      } = opts;
       const { domain, layer = '-', beschreibung, prio = 'mittel', mvp = 'Nein', deps = [], spec = '-', isBug = false } = taskData;
 
       // 1. Roadmap laden
@@ -709,34 +752,57 @@ export function createFsTaskAdapter(options = {}) {
         writeFileSync(roadmapPath, lines.join('\n'));
       }
 
-      // 5. Auch in Docs einfügen (wenn angegeben, nur für Tasks)
+      // 5. Docs einfügen (neu: docPaths, legacy: doc + additionalDocs)
       const allDocResults = [];
+      const allDocPathsToProcess = [...docPaths];
 
-      if (doc && !isBug) {
-        const docResult = this.addTaskToDoc(doc, newLine, { init, dryRun });
-        if (!docResult.ok) {
-          // Rollback: Task aus Roadmap entfernen
-          if (!dryRun && insertIndex > 0) {
-            lines.splice(insertIndex, 1);
-            writeFileSync(roadmapPath, lines.join('\n'));
-          }
-          return docResult;
+      // Legacy-Support: doc und additionalDocs zu docPaths hinzufügen
+      if (doc && !allDocPathsToProcess.includes(doc)) {
+        allDocPathsToProcess.unshift(doc);
+      }
+      for (const additionalDoc of additionalDocs) {
+        if (!allDocPathsToProcess.includes(additionalDoc)) {
+          allDocPathsToProcess.push(additionalDoc);
         }
-        allDocResults.push({ path: doc, initialized: docResult.value.initialized });
       }
 
-      // 6. Zusätzliche Docs (aus additionalDocs, z.B. Spec-Dateien)
-      if (!isBug && additionalDocs.length > 0) {
-        for (const additionalDoc of additionalDocs) {
-          // Duplikate vermeiden
-          if (additionalDoc === doc) continue;
-
-          const addResult = this.addTaskToDoc(additionalDoc, newLine, { init, dryRun });
-          if (addResult.ok) {
-            allDocResults.push({ path: additionalDoc, initialized: addResult.value.initialized });
+      if (!isBug && allDocPathsToProcess.length > 0) {
+        for (const docPath of allDocPathsToProcess) {
+          const docResult = this.addTaskToDoc(docPath, newLine, { init, dryRun });
+          if (!docResult.ok) {
+            // Strikt: Fehler werfen, Rollback durchführen
+            if (!dryRun && insertIndex > 0) {
+              lines.splice(insertIndex, 1);
+              writeFileSync(roadmapPath, lines.join('\n'));
+            }
+            return docResult;
           }
-          // Bei Fehler: Warnung loggen aber weitermachen (best-effort)
-          // Nicht kritisch - Hauptdoc wurde bereits geschrieben
+          allDocResults.push({ path: docPath, initialized: docResult.value.initialized });
+        }
+      }
+
+      // 6. Source-Dateien einfügen (neu: sourcePaths)
+      const allSrcResults = [];
+
+      if (!isBug && sourcePaths.length > 0) {
+        for (const srcPath of sourcePaths) {
+          const srcResult = srcTaskService.addTaskToSource(srcPath, newLine, { dryRun });
+          if (!srcResult.ok) {
+            // Strikt: Fehler werfen, Rollback durchführen
+            if (!dryRun && insertIndex > 0) {
+              // Roadmap-Rollback
+              const freshContent = readFileSync(roadmapPath, 'utf-8');
+              const freshLines = freshContent.split('\n');
+              const taskPattern = new RegExp(`^\\|\\s*${newId}\\s*\\|`);
+              const taskLineIndex = freshLines.findIndex(l => taskPattern.test(l));
+              if (taskLineIndex >= 0) {
+                freshLines.splice(taskLineIndex, 1);
+                writeFileSync(roadmapPath, freshLines.join('\n'));
+              }
+            }
+            return srcResult;
+          }
+          allSrcResults.push({ path: srcPath, initialized: srcResult.value.initialized });
         }
       }
 
@@ -745,7 +811,8 @@ export function createFsTaskAdapter(options = {}) {
         newId,
         isBug,
         line: newLine,
-        docs: allDocResults
+        docs: allDocResults,
+        sources: allSrcResults
       });
     },
 

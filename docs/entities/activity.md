@@ -43,14 +43,13 @@ Activities werden nach Kontext gefiltert. Tags bestimmen, wann eine Activity anw
 
 | Tag | Beschreibung |
 |-----|--------------|
-| `rest` | Ruhe-Aktivitaeten (sleeping, resting) |
+| `active` | Nur wenn Kreatur zur aktuellen Tageszeit aktiv ist (timeSegment ∈ creature.activeTime) |
+| `resting` | Nur wenn Kreatur zur aktuellen Tageszeit ruht (timeSegment ∉ creature.activeTime) |
 | `movement` | Bewegungs-Aktivitaeten (traveling, patrolling) |
-| `combat` | Kampfbereite Aktivitaeten (ambushing, raiding) |
-| `stealth` | Versteckte Aktivitaeten (hiding, stalking) |
-| `social` | Soziale Aktivitaeten (trading, arguing) |
-| `nocturnal` | Nur nachts |
-| `diurnal` | Nur tagsueber |
-| `aquatic` | Nur bei Wasser |
+| `stealth` | Versteckte Aktivitaeten (ambush, hiding) |
+| `aquatic` | Nur bei Wasser-Terrain |
+
+**Wichtig:** Activities mit BEIDEN Tags (`active` + `resting`) sind immer anwendbar (z.B. `feeding`, `wandering`).
 
 ---
 
@@ -58,51 +57,72 @@ Activities werden nach Kontext gefiltert. Tags bestimmen, wann eine Activity anw
 
 | Activity | Awareness | Detectability | Tags | Beschreibung |
 |----------|:---------:|:-------------:|------|--------------|
-| `sleeping` | 10 | 20 | rest | Tief schlafend, leise |
-| `resting` | 40 | 40 | rest | Entspannt, normal |
-| `feeding` | 30 | 50 | rest | Beim Essen, abgelenkt |
-| `traveling` | 55 | 55 | movement | Unterwegs, normal |
-| `wandering` | 50 | 50 | movement | Ziellos, durchschnittlich |
-| `patrolling` | 80 | 60 | movement, combat | Wachsam, sichtbar |
-| `hunting` | 90 | 30 | movement, stealth | Wachsam, leise |
-| `ambushing` | 95 | 10 | combat, stealth | Max wachsam, versteckt |
-| `hiding` | 90 | 5 | stealth | Wachsam, extrem versteckt |
-| `raiding` | 60 | 90 | combat | Chaos, sehr laut |
-| `war_chanting` | 45 | 100 | combat, social | Ritual, extrem laut |
+| `sleeping` | 10 | 20 | resting | Tief schlafend, kaum Wahrnehmung |
+| `resting` | 40 | 40 | resting | Entspannt, aber wachsam |
+| `lair` | 60 | 30 | resting | In der Hoehle, teilweise verborgen |
+| `camp` | 50 | 70 | resting | Am Lagerfeuer, Licht sichtbar |
+| `traveling` | 55 | 55 | active, movement | Unterwegs von A nach B |
+| `patrol` | 70 | 60 | active, movement | Wachsam auf Route |
+| `hunt` | 75 | 40 | active, movement | Aktiv auf Beutejagd |
+| `ambush` | 80 | 15 | active, stealth | Versteckt, lauert auf Beute |
+| `guard` | 85 | 65 | active | Bewacht festen Punkt |
+| `feeding` | 30 | 50 | active, resting | Beim Essen, abgelenkt (immer moeglich) |
+| `wandering` | 50 | 50 | active, resting, movement | Ziellos (immer moeglich) |
 
 ---
 
-## Pool-Hierarchie
+## Pool-Hierarchie (Culture-Chain)
 
-Activities kommen aus drei Quellen, die kombiniert werden:
+Activities werden ueber das Culture-System aufgeloest:
 
 | Ebene | Beschreibung | Beispiel |
 |-------|--------------|----------|
-| **GENERIC_ACTIVITIES** | Basis-Pool fuer alle Kreaturen | sleeping, resting, traveling |
-| **Creature.activities** | Kreatur-spezifisch | Wolf: hunting, howling |
-| **Faction.culture.activities** | Fraktions-spezifisch | Blutfang: raiding, sacrificing |
+| **GENERIC_ACTIVITY_IDS** | Basis-Pool fuer alle Kreaturen | sleeping, resting, traveling, wandering |
+| **Type Culture** | Fallback basierend auf creature.tags[0] | undead → patrol, guard, resting |
+| **Species Culture** | ERSETZT Type wenn creature.species gesetzt | goblin → ambush, scavenge, camp |
+| **Faction Culture** | Ergaenzt mit 60%-Kaskade | Bergstamm → camp, patrol, raid |
+
+**Aufloesungs-Reihenfolge:**
+1. GENERIC_ACTIVITY_IDS (immer)
+2. Type Culture ODER Species Culture (Species ersetzt Type falls vorhanden)
+3. Faction-Kette mit 60%-Kaskade (Leaf → Parent)
 
 ```typescript
-const pool: Activity[] = [
-  ...GENERIC_ACTIVITIES,
-  ...getCreatureTypeActivities(group.creatures),
-  ...(faction?.culture.activities ?? [])
-];
+const activityIds = new Set<string>();
+
+// 1. Generic (immer)
+GENERIC_ACTIVITY_IDS.forEach(id => activityIds.add(id));
+
+// 2. Culture-Chain aufloesen
+const culture = resolveCultureChain(creatureDef, faction);
+culture.activities?.forEach(id => activityIds.add(id));
+
+// 3. IDs zu Activities aus Vault auflosen
+const pool = [...activityIds]
+  .map(id => vault.getEntity<Activity>('activity', id))
+  .filter((a): a is Activity => a !== undefined);
 ```
+
+→ Siehe: [Culture-Resolution.md](../services/NPCs/Culture-Resolution.md)
 
 ---
 
 ## TypeScript-Schema
 
 ```typescript
-interface Activity {
-  id: EntityId<'activity'>;
-  name: string;
-  awareness: number;      // 0-100
-  detectability: number;  // 0-100
-  contextTags: string[];
-  description?: string;
-}
+// src/types/entities/activity.ts
+import { z } from 'zod';
+
+export const activitySchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  awareness: z.number().min(0).max(100),
+  detectability: z.number().min(0).max(100),
+  contextTags: z.array(z.string()),
+  description: z.string().optional(),
+});
+
+export type Activity = z.infer<typeof activitySchema>;
 ```
 
 ---

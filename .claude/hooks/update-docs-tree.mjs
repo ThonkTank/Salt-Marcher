@@ -16,6 +16,7 @@
 import { updateClaudemdDocsTree } from './docs-tree.mjs';
 import { findMatchingDelete, cleanupExpiredDeletes } from './hook-state.mjs';
 import { createRefUpdaterService } from '../../scripts/services/ref-updater-service.mjs';
+import { createImportUpdaterService } from '../../scripts/services/import-updater-service.mjs';
 
 async function main() {
   // Read stdin
@@ -45,7 +46,7 @@ async function main() {
     process.exit(0);
   }
 
-  // Check if this is a rename (matching a recent delete)
+  // Check if this is a rename (matching a recent delete) - docs/
   if (normalizedPath.startsWith('docs/') && normalizedPath.endsWith('.md')) {
     cleanupExpiredDeletes();
     const deletedFile = findMatchingDelete(normalizedPath);
@@ -65,6 +66,30 @@ async function main() {
         }
       } catch (error) {
         console.error(`[update-refs] Rename update error: ${error.message}`);
+      }
+    }
+  }
+
+  // Check if this is a rename (matching a recent delete) - src/
+  if (normalizedPath.startsWith('src/') && /\.(ts|tsx)$/.test(normalizedPath)) {
+    cleanupExpiredDeletes();
+    const deletedFile = findMatchingDelete(normalizedPath);
+
+    if (deletedFile) {
+      try {
+        const service = createImportUpdaterService();
+        const result = service.updateImports(deletedFile.path, normalizedPath);
+
+        if (result.ok && result.value.updatedFiles > 0) {
+          console.log(`[update-imports] Rename detected: ${deletedFile.path} -> ${normalizedPath}`);
+          console.log(`[update-imports] Updated ${result.value.totalUpdates} import(s) in ${result.value.updatedFiles} file(s)`);
+
+          for (const change of result.value.changes) {
+            console.log(`  - ${change.file} (${change.count} import(s))`);
+          }
+        }
+      } catch (error) {
+        console.error(`[update-imports] Rename update error: ${error.message}`);
       }
     }
   }

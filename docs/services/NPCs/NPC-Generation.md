@@ -2,7 +2,7 @@
 
 > **Verantwortlichkeit:** Automatische NPC-Generierung
 > **Input:** `CreatureDefinition`, `Faction?`, optionale Parameter
-> **Output:** `NPC` (persistiert im EntityRegistry)
+> **Output:** `NPC` (nicht persistiert - Caller ist verantwortlich fuer Persistierung)
 > **Schema:** [npc.md](../../entities/npc.md)
 >
 > **Referenzierte Schemas:**
@@ -50,8 +50,8 @@ Wie werden neue NPCs generiert?
 │  │ 5. selectPersonalGoal(creature, culture, personality)           │  │
 │  │    └── Pool-Hierarchie + Personality-Gewichtung                 │  │
 │  │    │                                                            │  │
-│  │ 6. EntityRegistry.save('npc', npc)                              │  │
-│  │    └── Persistierung                                            │  │
+│  │ 6. Return NPC (nicht persistieren)                               │  │
+│  │    └── Caller verantwortlich fuer Persistierung                 │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 │      │                                                               │
 │      ▼                                                               │
@@ -109,9 +109,7 @@ function generateNPC(
     lastKnownPosition: options?.position
   };
 
-  // Persistieren via EntityRegistry
-  entityRegistry.save('npc', npc);
-
+  // NPC zurueckgeben (Caller persistiert bei Bedarf)
   return npc;
 }
 ```

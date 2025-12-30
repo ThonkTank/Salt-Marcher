@@ -34,7 +34,7 @@ npx vitest run <file> # Einzelne Datei
 
 Utils sind pure functions ohne Side Effects - ideal fuer Unit Tests.
 
-**Pfad:** `src/utils/`, `src/schemas/` (Tests neben Source)
+**Pfad:** `src/utils/`, `src/types/` (Tests neben Source)
 
 ```typescript
 // @core/utils/hex-math.test.ts

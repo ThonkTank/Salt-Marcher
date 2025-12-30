@@ -1,0 +1,421 @@
+// Seed-Kreatur für Encounter auswählen
+// Siehe: docs/services/encounter/groupSeed.md
+//
+// Pipeline-Position: Step 2 (nach Multi-Group-Check, vor groupPopulation)
+//
+// DISKREPANZEN (als [HACK] oder [TODO] markiert):
+// ================================================
+//
+// [TODO: groupSeed.md#step-21b] Path-basierte Creature-Pools (Post-MVP)
+//   → Nicht implementiert per Spec
+//
+// [TODO: groupSeed.md#step-21b] Environmental Features (Post-MVP)
+//   → Nicht implementiert per Spec
+//
+// RESOLVED:
+// - [2025-12-29] TimeSegment type: Now uses proper 6-segment type from #types/timeSegment
+// - [2025-12-29] Weather-Präferenzen: context.weather + creature.preferences.weather implementiert
+// - [2025-12-29] CR-basierte Rarity: threatLevel { min, max } statt statischer creature.rarity
+//   → Kreaturen außerhalb des Terrain-CR-Bereichs werden seltener (nur fraktionslos)
+// - [2025-12-29] FactionStatus: Nur active Fraktionen liefern Kreaturen (per faction.md Spec)
+// - [2025-12-29] Obsolete TODOs entfernt: Soft-Weights waren bereits implementiert
+// - [2025-12-29] Roll-Range: Korrigiert auf crBudget (per Spec, nicht max(crBudget, factionTotal+1))
+
+import { vault } from '@/infrastructure/vault/vaultInstance';
+import { randomBetween, weightedRandomSelect } from '@/utils';
+import type { CreatureDefinition, ThreatLevel } from '@/types/entities';
+import type { WeightedItem } from '#types/common/counting';
+import type { GameDateTime } from '#types/time';
+import type { FactionStatus } from '@/constants';
+import { CREATURE_WEIGHTS } from '@/constants';
+
+// ============================================================================
+// DEBUG HELPER
+// ============================================================================
+
+const debug = (...args: unknown[]) => {
+  if (process.env.DEBUG_SERVICES === 'true') {
+    console.log('[groupSeed]', ...args);
+  }
+};
+
+// ============================================================================
+// TYPES (inline, per Services.md)
+// ============================================================================
+
+interface FactionData {
+  id: string;
+  status: FactionStatus;
+  creatures: { creatureId: string }[];
+}
+
+// TerrainData für Vault-Zugriff
+interface TerrainData {
+  id: string;
+  nativeCreatures: string[];
+  threatLevel: ThreatLevel;
+}
+
+// ============================================================================
+// CR-BASIERTE GEWICHTUNG (nur für fraktionslose Kreaturen)
+// ============================================================================
+
+/**
+ * Berechnet Gewichtung basierend auf CR vs. Terrain-ThreatLevel.
+ *
+ * Kreaturen innerhalb des threatLevel-Bereichs haben volle Gewichtung (1.0).
+ * Außerhalb fällt die Gewichtung linear ab: -0.2 pro CR Distanz, min 0.1.
+ *
+ * Beispiel: threatLevel { min: 1, max: 4 }
+ * - CR 2 → 1.0 (im Bereich)
+ * - CR 5 → 0.8 (1 CR über max)
+ * - CR 7 → 0.4 (3 CR über max)
+ * - CR 9+ → 0.1 (min)
+ */
+function calculateCRWeight(
+  cr: number,
+  threatLevel: ThreatLevel
+): number {
+  if (cr >= threatLevel.min && cr <= threatLevel.max) {
+    return 1.0; // Volle Gewichtung im Bereich
+  }
+
+  // Steiler linearer Abfall außerhalb: -0.2 pro CR
+  const distance = cr < threatLevel.min
+    ? threatLevel.min - cr
+    : cr - threatLevel.max;
+
+  // 1.0 → 0.1 über Distanz von 4.5 CR
+  const decay = Math.max(0.1, 1.0 - distance * 0.2);
+  return decay;
+}
+
+// ============================================================================
+// STEP 2.0: FRAKTIONS/NATIV-AUSWAHL
+// Siehe: docs/services/encounter/groupSeed.md#step-20-fraktionsnativ-auswahl
+// ============================================================================
+
+/**
+ * Entscheidet ob Fraktions-Kreaturen oder native Kreaturen verwendet werden.
+ *
+ * Roll über tile.crBudget: Fraktionen belegen Teile davon, Rest = native Kreaturen.
+ * Siehe: docs/services/encounter/groupSeed.md#step-20
+ *
+ * @param factions - Fraktionen mit ihren Gewichten (strength auf dem Tile)
+ * @param crBudget - CR-Budget des Tiles (tile.crBudget ?? terrain.defaultCrBudget)
+ * @returns factionId wenn Fraktion gewählt, null für native Kreaturen
+ */
+function selectFactionOrNative(
+  factions: { factionId: string; weight: number }[],
+  crBudget: number
+): string | null {
+  if (factions.length === 0) {
+    return null; // Keine Fraktionen → native Kreaturen
+  }
+
+  // Debug: Zeige wie die Roll-Bereiche aufgeteilt sind
+  debug('Faction thresholds:', factions.map((f, i) => {
+    const start = factions.slice(0, i).reduce((sum, x) => sum + x.weight, 0);
+    return `${f.factionId}=${start + 1}-${start + f.weight}`;
+  }).join(', ') + `, native=${factions.reduce((sum, f) => sum + f.weight, 0) + 1}-${crBudget}`);
+
+  // Roll über gesamtes CR-Budget (per Spec: groupSeed.md#step-20)
+  // Fraktionen belegen ihre Anteile, Rest = native Kreaturen
+  // Wenn crBudget < factionTotal, dominieren Fraktionen (100%)
+  const roll = randomBetween(1, crBudget);
+
+  // Gestaffelte Fraktions-Bereiche prüfen
+  let threshold = 0;
+  for (const faction of factions) {
+    threshold += faction.weight;
+    if (roll <= threshold) {
+      debug('Faction roll:', roll, '/', crBudget, '→', faction.factionId);
+      return faction.factionId;
+    }
+  }
+
+  // Roll außerhalb aller Fraktionen → native Kreaturen
+  debug('Faction roll:', roll, '/', crBudget, '→ native (no faction)');
+  return null;
+}
+
+// ============================================================================
+// STEP 2.1: TILE-ELIGIBILITY FILTER
+// Siehe: docs/services/encounter/groupSeed.md#step-21-tile-eligibility
+// ============================================================================
+
+/**
+ * Filtert Kreaturen nach Terrain-Kompatibilität.
+ *
+ * Hard Filters:
+ * - creature.terrainAffinities enthält aktuelles Terrain
+ * - creature.id nicht in exclude-Liste
+ *
+ * Soft Weights (in applyWeights()):
+ * - activeTime: match = ×2.0, mismatch = ×0.5
+ * - weather: prefers = ×2.0, avoids = ×0.5
+ */
+function filterEligibleCreatures(
+  creatures: CreatureDefinition[],
+  terrainId: string,
+  exclude?: string[]
+): CreatureDefinition[] {
+  const total = creatures.length;
+  const result = creatures.filter(creature => {
+    // Hard Filter 1: Terrain-Affinität
+    if (!creature.terrainAffinities.includes(terrainId)) {
+      return false;
+    }
+
+    // Hard Filter 2: Exclude-Liste
+    if (exclude?.includes(creature.id)) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Debug: Zeige WARUM Kreaturen gefiltert wurden
+  const filtered = {
+    terrain: creatures.filter(c => !c.terrainAffinities.includes(terrainId)).map(c => c.id),
+    excluded: creatures.filter(c => exclude?.includes(c.id)).map(c => c.id),
+  };
+  if (filtered.terrain.length || filtered.excluded.length) {
+    const parts: string[] = [];
+    if (filtered.terrain.length) parts.push(`terrain=[${filtered.terrain.join(',')}]`);
+    if (filtered.excluded.length) parts.push(`excluded=[${filtered.excluded.join(',')}]`);
+    debug('Filtered out:', parts.join(' '));
+  }
+
+  debug('Eligible after filter:', result.length, '/', total);
+  return result;
+}
+
+/**
+ * Wendet Gewichtungen auf gefilterte Kreaturen an.
+ *
+ * Gewichtungs-Faktoren:
+ * - CR-basierte Rarity: Kreaturen außerhalb des Terrain-ThreatLevel-Bereichs
+ *   werden seltener (nur für fraktionslose Kreaturen)
+ * - Activity Time: match = ×2.0, mismatch = ×0.5
+ * - Weather-Präferenz: prefers = ×2.0, avoids = ×0.5
+ */
+function applyWeights(
+  creatures: CreatureDefinition[],
+  weather?: { type: string },
+  threatLevel?: ThreatLevel,
+  isFactionless?: boolean,
+  timeSegment?: GameDateTime['segment']
+): WeightedItem<CreatureDefinition>[] {
+  const result = creatures.map(creature => {
+    let weight = 1.0;
+
+    // CR-basierte Rarity (nur für fraktionslose Kreaturen)
+    if (isFactionless && threatLevel) {
+      weight *= calculateCRWeight(creature.cr, threatLevel);
+    }
+
+    // Activity Time: match = ×2.0, mismatch = ×0.5
+    if (timeSegment && creature.activeTime) {
+      if (creature.activeTime.includes(timeSegment)) {
+        debug(`Time weight: ${creature.id} active=${timeSegment} → ×${CREATURE_WEIGHTS.activeTimeMatch}`);
+        weight *= CREATURE_WEIGHTS.activeTimeMatch;
+      } else {
+        debug(`Time weight: ${creature.id} inactive=${timeSegment} → ×${CREATURE_WEIGHTS.activeTimeMismatch}`);
+        weight *= CREATURE_WEIGHTS.activeTimeMismatch;
+      }
+    }
+
+    // Weather-Präferenz: prefers = ×2.0, avoids = ×0.5
+    if (weather?.type && creature.preferences?.weather) {
+      const { prefers, avoids } = creature.preferences.weather;
+      if (prefers?.includes(weather.type)) {
+        debug(`Weather weight: ${creature.id} prefers=${weather.type} → ×${CREATURE_WEIGHTS.weatherPrefers}`);
+        weight *= CREATURE_WEIGHTS.weatherPrefers;
+      } else if (avoids?.includes(weather.type)) {
+        debug(`Weather weight: ${creature.id} avoids=${weather.type} → ×${CREATURE_WEIGHTS.weatherAvoids}`);
+        weight *= CREATURE_WEIGHTS.weatherAvoids;
+      }
+    }
+
+    return { item: creature, weight };
+  });
+
+  // CR-Weights zusammengefasst nach CR
+  if (isFactionless && threatLevel) {
+    const crGroups = new Map<number, { count: number; weight: number }>();
+    creatures.forEach(c => {
+      const w = calculateCRWeight(c.cr, threatLevel);
+      if (!crGroups.has(c.cr)) crGroups.set(c.cr, { count: 0, weight: w });
+      crGroups.get(c.cr)!.count++;
+    });
+    const summary = [...crGroups.entries()]
+      .map(([cr, { count, weight }]) => `${count}× CR=${cr} → ${weight.toFixed(2)}`)
+      .join(', ');
+    debug(`CR weights: ${summary}`);
+  }
+
+  debug('Weighted pool:', result.map(w => `${w.item.id}:${w.weight.toFixed(2)}`).join(', '));
+  return result;
+}
+
+// ============================================================================
+// STEP 2.2: SEED-KREATUR-AUSWAHL
+// Siehe: docs/services/encounter/groupSeed.md#step-22-seed-kreatur-auswahl
+// ============================================================================
+
+/**
+ * Wählt eine Seed-Kreatur aus dem gewichteten Pool.
+ */
+function selectSeedCreature(
+  weightedCreatures: WeightedItem<CreatureDefinition>[]
+): CreatureDefinition | null {
+  const selected = weightedRandomSelect(weightedCreatures);
+  debug('Selected:', selected?.id ?? 'null', 'from', weightedCreatures.length, 'candidates');
+  return selected;
+}
+
+// ============================================================================
+// VAULT-ZUGRIFF HELPER
+// ============================================================================
+
+/**
+ * Lädt Kreaturen für eine Fraktion.
+ *
+ * Spec-konform: Lädt Faction aus Vault und resolved deren creatures-Liste.
+ * Nur active Fraktionen liefern Kreaturen (dormant/extinct = leer).
+ */
+function getFactionCreatures(factionId: string): CreatureDefinition[] {
+  const faction = vault.getEntity<FactionData>('faction', factionId);
+  if (!faction || faction.status !== 'active') {
+    debug('Faction creatures:', factionId, '→ 0 (not found or inactive)');
+    return [];
+  }
+
+  const creatures = faction.creatures
+    .map(c => vault.getEntity<CreatureDefinition>('creature', c.creatureId))
+    .filter((c): c is CreatureDefinition => c !== null);
+  debug('Faction creatures:', factionId, '→', creatures.length);
+  return creatures;
+}
+
+/**
+ * Lädt native Kreaturen für ein Terrain.
+ *
+ * Spec-konform: Lädt Terrain aus Vault und resolved deren nativeCreatures-Liste.
+ * Fallback: Wenn Terrain nicht gefunden, filtert über terrainAffinities.
+ */
+function getTerrainNativeCreatures(terrainId: string): CreatureDefinition[] {
+  const terrain = vault.getEntity<TerrainData>('terrain', terrainId);
+  if (!terrain) {
+    // Fallback wenn Terrain nicht im Vault
+    const allCreatures = vault.getAllEntities<CreatureDefinition>('creature');
+    const filtered = allCreatures.filter((c: CreatureDefinition) => c.terrainAffinities.includes(terrainId));
+    debug('Native creatures:', terrainId, '→', filtered.length, '(fallback)');
+    return filtered;
+  }
+
+  const creatures = terrain.nativeCreatures
+    .map(id => vault.getEntity<CreatureDefinition>('creature', id))
+    .filter((c): c is CreatureDefinition => c !== null);
+  debug('Native creatures:', terrainId, '→', creatures.length);
+  return creatures;
+}
+
+// ============================================================================
+// HAUPT-FUNKTION
+// ============================================================================
+
+/**
+ * Wählt eine Seed-Kreatur basierend auf Terrain, Zeit und Fraktionen.
+ * Gibt null zurück wenn keine geeignete Kreatur gefunden wird.
+ *
+ * Pipeline: encounterGenerator.ts → selectSeed → groupPopulation.ts
+ *
+ * @param context.terrain - Terrain-Daten mit id
+ * @param context.crBudget - CR-Budget des Tiles (tile.crBudget ?? terrain.defaultCrBudget)
+ * @param context.timeSegment - Aktuelle Tageszeit
+ * @param context.factions - Anwesende Fraktionen mit Gewichtung
+ * @param context.exclude - Creature-IDs die ausgeschlossen werden sollen
+ * @param context.weather - Aktuelles Wetter für Präferenz-Gewichtung
+ *
+ * @returns Seed-Auswahl mit creatureId und optionaler factionId, oder null
+ */
+export function selectSeed(context: {
+  terrain: { id: string };
+  crBudget: number;
+  timeSegment: GameDateTime['segment'];
+  factions: { factionId: string; weight: number }[];
+  exclude?: string[];
+  weather?: { type: string };
+}): { creatureId: string; factionId: string | null } | null {
+  debug('Input:', {
+    terrain: context.terrain.id,
+    crBudget: context.crBudget,
+    timeSegment: context.timeSegment,
+    factions: context.factions.length,
+    exclude: context.exclude?.length ?? 0,
+    weather: context.weather?.type,
+  });
+
+  // -------------------------------------------------------------------------
+  // Step 2.0: Fraktions/Nativ-Auswahl
+  // -------------------------------------------------------------------------
+  const selectedFactionId = selectFactionOrNative(
+    context.factions,
+    context.crBudget
+  );
+
+  // -------------------------------------------------------------------------
+  // Step 2.1: Creature-Pool laden und filtern
+  // -------------------------------------------------------------------------
+  const isFactionless = selectedFactionId === null;
+  let creaturePool: CreatureDefinition[];
+
+  // Terrain laden für threatLevel (CR-basierte Gewichtung)
+  const terrain = vault.getEntity<TerrainData>('terrain', context.terrain.id);
+  const threatLevel = terrain?.threatLevel;
+  debug('Terrain threatLevel:', threatLevel ? `{ min: ${threatLevel.min}, max: ${threatLevel.max} }` : 'not found');
+
+  if (!isFactionless) {
+    // Fraktions-Kreaturen laden
+    creaturePool = getFactionCreatures(selectedFactionId);
+  } else {
+    // Native Kreaturen laden
+    creaturePool = getTerrainNativeCreatures(context.terrain.id);
+  }
+
+  // Eligibility-Filter anwenden
+  const eligibleCreatures = filterEligibleCreatures(
+    creaturePool,
+    context.terrain.id,
+    context.exclude
+  );
+
+  if (eligibleCreatures.length === 0) {
+    return null; // Keine geeigneten Kreaturen gefunden
+  }
+
+  // Gewichtungen anwenden (inkl. Weather, Time + CR-basierte Rarity für fraktionslose)
+  const weightedCreatures = applyWeights(
+    eligibleCreatures,
+    context.weather,
+    threatLevel,
+    isFactionless,
+    context.timeSegment
+  );
+
+  // -------------------------------------------------------------------------
+  // Step 2.2: Seed-Kreatur auswählen
+  // -------------------------------------------------------------------------
+  const selectedCreature = selectSeedCreature(weightedCreatures);
+
+  if (!selectedCreature) {
+    return null;
+  }
+
+  return {
+    creatureId: selectedCreature.id,
+    factionId: selectedFactionId,
+  };
+}

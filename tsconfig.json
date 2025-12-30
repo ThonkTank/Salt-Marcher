@@ -15,8 +15,8 @@
     "verbatimModuleSyntax": true,
     "baseUrl": ".",
     "paths": {
-      "@core/*": ["src/core/*"],
-      "@shared/*": ["src/application/shared/*"],
+      "#types/*": ["src/types/*"],
+      "#entities/*": ["src/types/entities/*"],
       "@/*": ["src/*"]
     }
   },

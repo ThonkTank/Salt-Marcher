@@ -57,11 +57,11 @@ Bei Fehlern in der Encounter-Generierung (`isErr(result)`):
 | `POPULATION_FAILED` | Slot-Befuellung fehlgeschlagen | Travel fortsetzen, kein Encounter |
 
 ```typescript
-async checkEncounter(): Promise<void> {
-  if (!this.rollEncounterCheck()) return;
+checkEncounter(trigger: EncounterTrigger, forceEncounter = false): void {
+  if (!forceEncounter && !this.rollEncounterCheck()) return;
 
-  const context = this.buildEncounterContext();
-  const result = this.encounterService.generate(context);
+  const context = this.buildEncounterContext(trigger);
+  const result = generateEncounter(context);
 
   if (isErr(result)) {
     const error = unwrapErr(result);
@@ -74,29 +74,33 @@ async checkEncounter(): Promise<void> {
 }
 ```
 
+**Hinweis:** Encounter-Checks werden typischerweise von anderen Workflows getriggert (z.B. TravelWorkflow, RestWorkflow), nicht vom EncounterWorkflow selbst.
+
 ---
 
 ## API
 
 ### checkEncounter
 
-Prueft ob ein Encounter erscheint (bei Travel/Rest):
+Prueft ob ein Encounter erscheint und generiert ihn:
 
 ```typescript
-async checkEncounter(): Promise<void> {
-  if (!this.rollEncounterCheck()) return;
+checkEncounter(trigger: EncounterTrigger, forceEncounter = false): void {
+  if (!forceEncounter && !this.rollEncounterCheck()) return;
 
   // Context aus State bauen
-  const context = this.buildEncounterContext();
+  const context = this.buildEncounterContext(trigger);
 
   // Service aufrufen (pure Pipeline)
-  const result = this.encounterService.generate(context);
+  const result = generateEncounter(context);
 
   if (isOk(result)) {
-    this.updateState(s => ({
+    updateState(s => ({
       ...s,
-      encounter: { status: 'preview', current: unwrap(result) },
-      travel: { ...s.travel, status: 'paused' }  // Travel pausieren
+      encounter: { status: 'preview', current: unwrap(result), trigger },
+      travel: s.travel.status === 'traveling'
+        ? { ...s.travel, status: 'paused' }
+        : s.travel
     }));
   }
 }

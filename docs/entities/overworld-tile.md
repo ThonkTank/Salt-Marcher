@@ -10,12 +10,20 @@
 | coordinate | HexCoordinate | Axiale Position | Required |
 | terrain | EntityId<'terrain'> | Terrain-Referenz | Required |
 | elevation | number? | Hoehenstufe | Optional |
-| dangerZone | DangerZone? | Gefahrenstufe | Default: 'normal' |
-| crBudget | number? | Manueller CR-Override | Optional |
+| crBudget | number? | CR-Budget Override | Optional, Fallback: terrain.defaultCrBudget |
 | crSpent | number? | Summe factionPresence[].strength | Computed |
 | factionPresence | FactionPresence[]? | Fraktions-Praesenz | Optional |
 | paths | TilePathInfo[]? | Pfade durch dieses Tile | Optional |
 | climateModifiers | TileClimateModifiers? | Klima-Anpassungen | Optional |
+
+**Typische crBudget-Werte:**
+
+| Wert | Beschreibung |
+|------|--------------|
+| 5 | Staedte, Lager, Schutzgebiete |
+| 15 | Standard-Wildnis |
+| 30 | Monster-Territorien |
+| 50 | Drachen-Lande, verfluchte Zonen |
 
 ## Sub-Schemas
 
@@ -25,15 +33,6 @@
 |------|-----|--------------|
 | q | number | Axiale Q-Koordinate |
 | r | number | Axiale R-Koordinate |
-
-### DangerZone
-
-| Wert | CR-Budget | Beschreibung |
-|------|-----------|--------------|
-| `safe` | 5 | Staedte, Lager, Schutzgebiete |
-| `normal` | 15 | Standard-Wildnis |
-| `dangerous` | 30 | Monster-Territorien |
-| `deadly` | 50 | Drachen-Lande, verfluchte Zonen |
 
 ### TilePathInfo
 
@@ -69,29 +68,31 @@ Exponierte Bereiche (Berggipfel, Ebene): mehr Wind, Schall/Geruch verstreuen.
 ## Invarianten
 
 - `terrain` referenziert Terrain-Entity (nicht eingebettet)
-- CR-Budget = dangerZone-Basis oder crBudget-Override
-- Available CR = Budget - crSpent
-- DangerZone-Painting erfolgt via Cartographer Brush-Tool
+- Effektives CR-Budget = `tile.crBudget ?? terrain.defaultCrBudget`
+- Available CR = effektives CR-Budget - crSpent
+- CR-Painting erfolgt via Cartographer Brush-Tool (setzt `crBudget` Override)
 - `climateModifiers` Felder sind alle optional - nur ueberschriebene Werte werden gespeichert
 - Climate-Modifiers werden VOR dem Area-Averaging angewendet
 
 ## Beispiel
 
 ```typescript
-const tile: OverworldTile = {
+// Tile mit CR-Budget Override (gefaehrlicher als Standard-Forest)
+const dangerousTile: OverworldTile = {
   coordinate: { q: 3, r: -2 },
-  terrain: 'terrain:forest' as EntityId<'terrain'>,
-  elevation: 2,
-  dangerZone: 'dangerous',
+  terrain: 'forest',
+  crBudget: 30,  // Override: Monster-Territorium (forest.defaultCrBudget = 15)
   factionPresence: [
-    { factionId: 'faction:bloodfang' as EntityId<'faction'>, strength: 2.5 }
+    { factionId: 'bloodfang', weight: 2.5 }
   ],
-  crSpent: 2.5,
-  climateModifiers: {
-    temperatureModifier: -5,    // Kalter Wald
-    windExposure: 'sheltered'   // Geschuetzt durch Baeume
-  }
 };
+// Effektives CR-Budget: 30
 
-// Available CR: 30 (dangerous) - 2.5 = 27.5
+// Tile ohne Override (nutzt Terrain-Default)
+const normalTile: OverworldTile = {
+  coordinate: { q: 4, r: -2 },
+  terrain: 'forest',
+  // kein crBudget -> nutzt forest.defaultCrBudget (15)
+};
+// Effektives CR-Budget: 15
 ```

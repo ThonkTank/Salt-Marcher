@@ -22,46 +22,79 @@ Zwei Verzeichnisse für kontextunabhängige Daten und Logik:
 
 ## Constants (`src/constants/`)
 
+### Import-Pattern
+
+```typescript
+// Index-Import (bevorzugt)
+import type { FactionStatus, CreatureSize, TimeSegment } from '@/constants';
+
+// Direkter Import
+import { FACTION_STATUSES, type FactionStatus } from '@/constants/faction';
+```
+
 ### Struktur
 
 ```
 src/constants/
-├── xp-thresholds.ts     # XP pro Level für Encounter-Difficulty
-├── encounter-multipliers.ts  # Party-Size/Monster-Count Multiplikatoren
-├── travel-speed.ts      # Basis-Reisegeschwindigkeiten
-├── time-segments.ts     # Tagesabschnitte (dawn, morning, etc.)
-├── creature-sizes.ts    # Größen-Kategorien
-├── creature-types.ts    # D&D Kreatur-Typen
-├── loot-rarity.ts       # Seltenheits-Stufen
-└── index.ts             # Re-exports
+├── index.ts          # Re-exports aller Konstanten
+├── creature.ts       # CREATURE_SIZES, DISPOSITIONS, DESIGN_ROLES, NOISE_LEVELS, SCENT_STRENGTHS, STEALTH_ABILITIES
+├── encounter.ts      # ENCOUNTER_TRIGGERS, NARRATIVE_ROLES, DIFFICULTY_LABELS
+├── encounterConfig.ts  # Encounter-Konfiguration (Chancen, Modifikatoren)
+├── faction.ts        # FACTION_STATUSES
+├── npc.ts            # NPC_STATUSES
+├── terrain.ts        # MAP_TYPES, WIND_EXPOSURES, ENVIRONMENTAL_POOL_TYPES, WEATHER_CATEGORIES
+└── time.ts           # TIME_SEGMENTS
 ```
 
-### Beispiel
+### Pattern: Konstante + Type-Derivation
+
+Konstanten werden als `as const` Array definiert. Der zugehörige Type wird direkt daneben abgeleitet:
 
 ```typescript
-// src/constants/xp-thresholds.ts
-export const XP_THRESHOLDS_BY_LEVEL: Record<number, XPThreshold> = {
-  1: { easy: 25, medium: 50, hard: 75, deadly: 100 },
-  2: { easy: 50, medium: 100, hard: 150, deadly: 200 },
-  // ...
-};
+// src/constants/creature.ts
+export const CREATURE_SIZES = ['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan'] as const;
+export type CreatureSize = typeof CREATURE_SIZES[number];
+
+export const DISPOSITIONS = ['hostile', 'neutral', 'friendly'] as const;
+export type Disposition = typeof DISPOSITIONS[number];
 ```
+
+### Verwendung in Zod-Schemas
+
+Zod-Schemas importieren die Konstante und nutzen `z.enum()`:
+
+```typescript
+// src/types/entities/creature.ts
+import { z } from 'zod';
+import { CREATURE_SIZES, DISPOSITIONS } from '../../constants/creature';
+
+export const sizeSchema = z.enum(CREATURE_SIZES);
+export const dispositionSchema = z.enum(DISPOSITIONS);
+```
+
+> **Regel:** Enums für Zod-Schemas gehören nach `constants/`. Zod-Schemas importieren die Konstante, nicht umgekehrt. Keine Re-Exports von Types aus `constants/` in `types/`.
 
 ---
 
 ## Utils (`src/utils/`)
 
+### Import-Pattern
+
+```typescript
+// Index-Import (bevorzugt)
+import { randomBetween, rollDice, weightedRandomSelect } from '@/utils';
+
+// Direkter Import
+import { parseDice } from '@/utils/diceParser';
+```
+
 ### Struktur
 
 ```
 src/utils/
-├── hex-math.ts          # hexDistance, coordToKey, hexNeighbors
-├── time-math.ts         # addDuration, getTimeOfDay, getCurrentSeason
-├── creature-utils.ts    # parseCR, calculateXP, getEncounterMultiplier
-├── terrain-utils.ts     # getMovementCost, matchEncounterTerrain
-├── inventory-utils.ts   # addItem, removeItem, calculateWeight
-├── loot-utils.ts        # distributeCurrency, quickAssign
-└── index.ts             # Re-exports
+├── index.ts             # Re-exports aller Utils
+├── diceParser.ts        # parseDice, validateDiceExpression, asDiceExpression
+└── random.ts            # randomBetween, weightedRandomSelect, rollDice, diceMin, diceMax, diceAvg
 ```
 
 ### Regeln
@@ -98,9 +131,9 @@ Die autoritative Spezifikation für Konstanten befindet sich in [docs/constants/
 
 | Dokumentation | Implementierung |
 |---------------|-----------------|
-| `docs/constants/TimeSegments.md` | `src/constants/time-segments.ts` |
-| `docs/constants/Difficulty.md` | `src/constants/xp-thresholds.ts` |
-| `docs/constants/CreatureSizes.md` | `src/constants/creature-sizes.ts` |
+| `docs/constants/TimeSegments.md` | `src/constants/time.ts` |
+| `docs/constants/Difficulty.md` | `src/constants/encounter.ts` |
+| `docs/constants/CreatureSizes.md` | `src/constants/creature.ts` |
 | ... | ... |
 
 ---
@@ -108,5 +141,5 @@ Die autoritative Spezifikation für Konstanten befindet sich in [docs/constants/
 ## Weiterführend
 
 - [../constants/](../constants/) - Konstanten-Spezifikationen (Single Source of Truth)
-- [schemas.md](schemas.md) - Entity-Schemas
+- [types.md](types.md) - TypeScript-Typen und Entity-Schemas
 - [Orchestration.md](Orchestration.md) - Architektur-Übersicht
