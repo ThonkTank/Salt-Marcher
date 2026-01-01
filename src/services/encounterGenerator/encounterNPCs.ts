@@ -237,6 +237,7 @@ export interface GroupWithNPCs {
   templateRef?: string;
   factionId: string | null;
   slots: { [slotName: string]: CreatureInstance[] };
+  creatureIds: string[]; // Alle instanceIds (flat) für einfachen Zugriff
   narrativeRole: NarrativeRole;
   status: GroupStatus;
   creatures: EncounterCreatureInstance[];  // Mit npcId (falls NPC zugewiesen)
