@@ -2,6 +2,7 @@
 // Siehe: docs/services/encounter/Difficulty.md
 
 import type { ThreatLevel } from '@/types/entities';
+import type { Disposition, DifficultyLabel } from '@/constants';
 
 /**
  * Würfelt eine Ziel-Difficulty basierend auf Terrain-ThreatLevel.
@@ -10,7 +11,7 @@ import type { ThreatLevel } from '@/types/entities';
  */
 export function rollTargetDifficulty(
   threatLevel: ThreatLevel
-): 'trivial' | 'easy' | 'moderate' | 'hard' | 'deadly' {
+): DifficultyLabel {
   // TODO: Implementierung
   // Gewichtete Normalverteilung basierend auf threatLevel-Mittelwert
 
@@ -25,7 +26,7 @@ export function rollTargetDifficulty(
 export function simulate(
   groups: {
     creatures: { definitionId: string; currentHp: number; maxHp: number; npcId?: string }[];
-    disposition: 'hostile' | 'neutral' | 'friendly';
+    disposition: Disposition;
   }[],
   party: {
     level: number;
@@ -33,7 +34,7 @@ export function simulate(
     members: { id: string; level: number; hp: number; ac: number }[];
   }
 ): {
-  label: 'trivial' | 'easy' | 'moderate' | 'hard' | 'deadly';
+  label: DifficultyLabel;
   winProbability: number;
   tpkRisk: number;
 } {

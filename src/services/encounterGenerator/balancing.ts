@@ -2,6 +2,7 @@
 // Siehe: docs/services/encounter/Balancing.md
 
 import type { ThreatLevel } from '@/types/entities';
+import type { DifficultyLabel } from '@/constants';
 import type { GroupWithPerception } from './encounterDistance';
 
 /**
@@ -11,11 +12,11 @@ import type { GroupWithPerception } from './encounterDistance';
 export function adjust(
   groups: GroupWithPerception[],
   simulation: {
-    label: 'trivial' | 'easy' | 'moderate' | 'hard' | 'deadly';
+    label: DifficultyLabel;
     winProbability: number;
     tpkRisk: number;
   },
-  targetDifficulty: 'trivial' | 'easy' | 'moderate' | 'hard' | 'deadly',
+  targetDifficulty: DifficultyLabel,
   context: {
     terrain: { id: string; threatLevel: ThreatLevel };
     weather: { type: string; severity: number };

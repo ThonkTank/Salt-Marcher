@@ -20,7 +20,7 @@ import type { CreatureDefinition, ThreatLevel } from '@/types/entities';
 import type { WeightedItem } from '#types/common/counting';
 import type { GameDateTime } from '#types/time';
 import type { FactionStatus } from '@/constants';
-import { CREATURE_WEIGHTS } from '@/constants';
+import { CREATURE_WEIGHTS, CR_DECAY_RATE, MIN_CR_WEIGHT } from '@/constants';
 
 // ============================================================================
 // DEBUG HELPER
@@ -78,8 +78,8 @@ function calculateCRWeight(
     ? threatLevel.min - cr
     : cr - threatLevel.max;
 
-  // 1.0 → 0.1 über Distanz von 4.5 CR
-  const decay = Math.max(0.1, 1.0 - distance * 0.2);
+  // 1.0 → MIN_CR_WEIGHT über Distanz von 4.5 CR
+  const decay = Math.max(MIN_CR_WEIGHT, 1.0 - distance * CR_DECAY_RATE);
   return decay;
 }
 
@@ -99,7 +99,7 @@ function calculateCRWeight(
  * @returns factionId wenn Fraktion gewählt, null für native Kreaturen
  */
 function selectFactionOrNative(
-  factions: { factionId: string; weight: number }[],
+  factions: { factionId: string; randWeighting: number }[],
   crBudget: number
 ): string | null {
   if (factions.length === 0) {
@@ -108,9 +108,9 @@ function selectFactionOrNative(
 
   // Debug: Zeige wie die Roll-Bereiche aufgeteilt sind
   debug('Faction thresholds:', factions.map((f, i) => {
-    const start = factions.slice(0, i).reduce((sum, x) => sum + x.weight, 0);
-    return `${f.factionId}=${start + 1}-${start + f.weight}`;
-  }).join(', ') + `, native=${factions.reduce((sum, f) => sum + f.weight, 0) + 1}-${crBudget}`);
+    const start = factions.slice(0, i).reduce((sum, x) => sum + x.randWeighting, 0);
+    return `${f.factionId}=${start + 1}-${start + f.randWeighting}`;
+  }).join(', ') + `, native=${factions.reduce((sum, f) => sum + f.randWeighting, 0) + 1}-${crBudget}`);
 
   // Roll über gesamtes CR-Budget (per Spec: groupSeed.md#step-20)
   // Fraktionen belegen ihre Anteile, Rest = native Kreaturen
@@ -120,7 +120,7 @@ function selectFactionOrNative(
   // Gestaffelte Fraktions-Bereiche prüfen
   let threshold = 0;
   for (const faction of factions) {
-    threshold += faction.weight;
+    threshold += faction.randWeighting;
     if (roll <= threshold) {
       debug('Faction roll:', roll, '/', crBudget, '→', faction.factionId);
       return faction.factionId;
@@ -231,24 +231,24 @@ function applyWeights(
       }
     }
 
-    return { item: creature, weight };
+    return { item: creature, randWeighting: weight };
   });
 
   // CR-Weights zusammengefasst nach CR
   if (isFactionless && threatLevel) {
-    const crGroups = new Map<number, { count: number; weight: number }>();
+    const crGroups = new Map<number, { count: number; crWeight: number }>();
     creatures.forEach(c => {
       const w = calculateCRWeight(c.cr, threatLevel);
-      if (!crGroups.has(c.cr)) crGroups.set(c.cr, { count: 0, weight: w });
+      if (!crGroups.has(c.cr)) crGroups.set(c.cr, { count: 0, crWeight: w });
       crGroups.get(c.cr)!.count++;
     });
     const summary = [...crGroups.entries()]
-      .map(([cr, { count, weight }]) => `${count}× CR=${cr} → ${weight.toFixed(2)}`)
+      .map(([cr, { count, crWeight }]) => `${count}× CR=${cr} → ${crWeight.toFixed(2)}`)
       .join(', ');
     debug(`CR weights: ${summary}`);
   }
 
-  debug('Weighted pool:', result.map(w => `${w.item.id}:${w.weight.toFixed(2)}`).join(', '));
+  debug('Weighted pool:', result.map(w => `${w.item.id}:${w.randWeighting.toFixed(2)}`).join(', '));
   return result;
 }
 
@@ -338,7 +338,7 @@ export function selectSeed(context: {
   terrain: { id: string };
   crBudget: number;
   timeSegment: GameDateTime['segment'];
-  factions: { factionId: string; weight: number }[];
+  factions: { factionId: string; randWeighting: number }[];
   exclude?: string[];
   weather?: { type: string };
 }): { creatureId: string; factionId: string | null } | null {

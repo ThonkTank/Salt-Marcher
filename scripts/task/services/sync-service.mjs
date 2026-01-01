@@ -1,8 +1,9 @@
 // Ziel: Tasks zu referenzierten Spec/Impl-Dateien synchronisieren
 // Siehe: docs/tools/taskTool.md#task-duplikation
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { ok } from '../core/result.mjs';
 import { resolveSpecPath, resolveImplPath } from '../adapters/fs-task-adapter.mjs';
 import { updateSourceTasks } from '../core/table/src-table-parser.mjs';
@@ -63,12 +64,23 @@ export async function syncTask(task, operation) {
  * @returns {Promise<boolean>} - true wenn Datei geändert wurde
  */
 async function syncToFile(filePath, task, operation, format) {
-  if (!existsSync(filePath)) {
-    console.warn(`[sync] File not found: ${filePath}`);
-    return false;
-  }
+  let content;
 
-  const content = await readFile(filePath, 'utf-8');
+  if (!existsSync(filePath)) {
+    // Datei erstellen wenn sie nicht existiert (für [neu] Tasks)
+    if (format === 'typescript') {
+      await mkdir(dirname(filePath), { recursive: true });
+      const spec = Array.isArray(task.spec) ? task.spec[0] : task.spec;
+      content = `// Ziel: ${task.beschreibung}\n// Siehe: docs/${spec}\n`;
+      await writeFile(filePath, content, 'utf-8');
+      console.log(`[sync] created ${filePath}`);
+    } else {
+      console.warn(`[sync] File not found: ${filePath}`);
+      return false;
+    }
+  } else {
+    content = await readFile(filePath, 'utf-8');
+  }
   let updated;
 
   if (format === 'typescript') {
@@ -236,13 +248,13 @@ function mergeTaskLists(existing, incoming, operation) {
 
 /**
  * Prüft ob Impl synchronisiert werden soll.
- * Nur bei [ändern] oder [fertig], nicht bei [neu].
+ * Alle Tags ([neu], [ändern], [fertig]) werden synchronisiert.
  * @param {string} impl
  * @returns {boolean}
  */
 export function shouldSyncImpl(impl) {
   const tag = parseImplTag(impl);
-  return tag === '[ändern]' || tag === '[fertig]';
+  return tag !== null;
 }
 
 /**
@@ -278,3 +290,4 @@ export async function syncTasks(tasks, operation) {
   // Deduplizieren
   return [...new Set(allUpdatedFiles)];
 }
+

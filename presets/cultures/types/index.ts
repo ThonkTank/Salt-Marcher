@@ -1,8 +1,12 @@
 // Type-Presets für Culture-Resolution
-// Siehe: docs/services/NPCs/Culture-Resolution.md
+// Siehe: docs/services/npcs/Culture-Resolution.md
 //
 // Fallback-Kulturen für Creature-Types ohne Species-Culture.
 // Diese Presets werden verwendet, wenn keine Faction-Culture existiert.
+//
+// Struktur: LayerTraitConfig mit add[] und optional unwanted[]
+// - add[]: Fügt Attribute mit vollem Layer-Gewicht hinzu
+// - unwanted[]: Viertelt bisherigen akkumulierten Wert
 
 import { z } from 'zod';
 import { cultureDataSchema } from '../../../src/types/entities/faction';
@@ -34,41 +38,28 @@ export const typePresets: Record<string, TypeCulturePreset> = {
       titles: ['the Wanderer', 'the Bold', 'the Quiet', 'the Swift'],
     },
     personality: {
-      common: [
-        { trait: 'cautious', weight: 0.5 },
-        { trait: 'curious', weight: 0.5 },
-        { trait: 'practical', weight: 0.6 },
-        { trait: 'suspicious', weight: 0.4 },
-        { trait: 'greedy', weight: 0.4 },
-      ],
-      rare: [
-        { trait: 'heroic', weight: 0.1 },
-        { trait: 'cruel', weight: 0.15 },
-        { trait: 'generous', weight: 0.1 },
-      ],
+      add: ['cautious', 'curious', 'practical', 'suspicious', 'greedy', 'heroic', 'generous'],
+      unwanted: ['mindless', 'predatory'],
     },
-    quirks: [
-      { quirk: 'nervous_tic', weight: 0.3, description: 'Nervöses Zucken' },
-      { quirk: 'always_hungry', weight: 0.4, description: 'Isst ständig' },
-      { quirk: 'superstitious', weight: 0.3, description: 'Abergläubisch' },
-    ],
-    activities: ['traveling', 'camp', 'patrol', 'guard', 'resting', 'feeding'],
-    goals: [
-      { goal: 'survive', weight: 0.8, description: 'Überleben' },
-      { goal: 'profit', weight: 0.6, description: 'Profit machen' },
-      { goal: 'protect_family', weight: 0.5, description: 'Familie schützen' },
-      { goal: 'gain_power', weight: 0.3, description: 'Macht erlangen' },
-    ],
     values: {
-      priorities: ['survival', 'family', 'gold'],
-      taboos: ['betrayal'],
-      greetings: ['Hallo.', 'Was willst du?', 'Guten Tag.'],
+      add: ['survival', 'family', 'wealth', 'honor', 'freedom'],
     },
+    quirks: {
+      add: ['nervous_tic', 'always_hungry', 'superstitious', 'talks_to_self', 'whistles_tune'],
+    },
+    appearance: {
+      add: ['scarred_face', 'weathered_skin', 'tattoos', 'long_hair', 'bald'],
+    },
+    goals: {
+      add: ['survive', 'profit', 'protect_family', 'gain_respect', 'find_meaning'],
+    },
+    activities: ['traveling', 'camp', 'patrol', 'guard', 'resting', 'feeding'],
     speech: {
       dialect: 'normal',
       commonPhrases: ['Das ist mir zu riskant.', 'Was springt für mich dabei raus?'],
       accent: 'neutral',
     },
+    lootPool: ['shortsword', 'dagger', 'leather-armor', 'gold-piece', 'silver-piece', 'rations'],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -80,21 +71,24 @@ export const typePresets: Record<string, TypeCulturePreset> = {
       roots: ['Growler', 'Fang', 'Shadow', 'Swift', 'Claw', 'Howler', 'Stalker'],
     },
     personality: {
-      common: [
-        { trait: 'territorial', weight: 0.7 },
-        { trait: 'hungry', weight: 0.6 },
-        { trait: 'cautious', weight: 0.5 },
-        { trait: 'aggressive', weight: 0.4 },
-      ],
-      rare: [{ trait: 'curious', weight: 0.1 }],
+      add: ['territorial', 'hungry', 'cautious', 'aggressive', 'curious', 'predatory'],
+      unwanted: ['greedy', 'ambitious', 'manipulative'],
+    },
+    values: {
+      add: ['survival', 'territory', 'freedom'],
+      unwanted: ['wealth', 'honor', 'knowledge'],
+    },
+    quirks: {
+      add: ['territorial_marking', 'always_hungry', 'limps', 'scarred_hide'],
+    },
+    appearance: {
+      add: ['matted_fur', 'patchy_fur', 'missing_eye', 'scarred_body', 'long_claws'],
+    },
+    goals: {
+      add: ['hunt', 'protect_territory', 'feed_young', 'find_shelter', 'survive'],
     },
     activities: ['feeding', 'resting', 'wandering', 'lair', 'sleeping'],
-    goals: [
-      { goal: 'hunt', weight: 0.9, description: 'Beute jagen' },
-      { goal: 'protect_territory', weight: 0.7, description: 'Territorium verteidigen' },
-      { goal: 'feed_young', weight: 0.5, description: 'Junge füttern' },
-      { goal: 'find_shelter', weight: 0.4, description: 'Unterschlupf suchen' },
-    ],
+    lootPool: [],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -107,29 +101,29 @@ export const typePresets: Record<string, TypeCulturePreset> = {
       titles: ['the Forgotten', 'the Restless', 'the Bound', 'the Watcher'],
     },
     personality: {
-      common: [
-        { trait: 'mindless', weight: 0.6 },
-        { trait: 'relentless', weight: 0.7 },
-        { trait: 'hateful', weight: 0.5 },
-        { trait: 'bound', weight: 0.6 },
-      ],
-      rare: [
-        { trait: 'sorrowful', weight: 0.1 },
-        { trait: 'vengeful', weight: 0.15 },
-      ],
+      add: ['mindless', 'relentless', 'hateful', 'bound', 'sorrowful', 'vengeful'],
+      unwanted: ['curious', 'playful', 'generous', 'naive'],
+    },
+    values: {
+      add: ['revenge', 'domination', 'destruction'],
+      unwanted: ['friendship', 'family', 'peace'],
+    },
+    quirks: {
+      add: ['limps', 'missing_eye', 'paranoid_glances'],
+    },
+    appearance: {
+      add: ['rotting', 'skeletal', 'glowing_eyes', 'milky_eyes', 'missing_limb'],
+    },
+    goals: {
+      add: ['serve_master', 'destroy_living', 'guard_location', 'find_rest', 'consume_living'],
     },
     activities: ['patrol', 'guard', 'resting', 'wandering'],
-    goals: [
-      { goal: 'obey_master', weight: 0.8, description: 'Meister gehorchen' },
-      { goal: 'destroy_living', weight: 0.6, description: 'Lebende vernichten' },
-      { goal: 'guard_location', weight: 0.7, description: 'Ort bewachen' },
-      { goal: 'find_rest', weight: 0.2, description: 'Ruhe finden' },
-    ],
     speech: {
       dialect: 'hollow',
       commonPhrases: ['...', '*Stöhnen*', '*Knochenknirschen*'],
       accent: 'hohl, rasselnd',
     },
+    lootPool: ['dagger', 'club', 'gold-piece', 'silver-piece'],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -142,24 +136,24 @@ export const typePresets: Record<string, TypeCulturePreset> = {
       titles: ['of the Deep', 'the Hungry', 'the Patient', 'the Ancient'],
     },
     personality: {
-      common: [
-        { trait: 'aggressive', weight: 0.7 },
-        { trait: 'cunning', weight: 0.5 },
-        { trait: 'territorial', weight: 0.6 },
-        { trait: 'predatory', weight: 0.7 },
-      ],
-      rare: [
-        { trait: 'curious', weight: 0.1 },
-        { trait: 'playful', weight: 0.05 },
-      ],
+      add: ['aggressive', 'cunning', 'territorial', 'predatory', 'curious', 'playful'],
+      unwanted: ['cowardly', 'naive', 'trusting'],
+    },
+    values: {
+      add: ['territory', 'power', 'survival'],
+      unwanted: ['friendship', 'honesty', 'mercy'],
+    },
+    quirks: {
+      add: ['territorial_marking', 'always_hungry', 'limps', 'scarred_hide'],
+    },
+    appearance: {
+      add: ['long_claws', 'sharp_teeth', 'glowing_eyes', 'unusual_skin_color', 'scaly_patches'],
+    },
+    goals: {
+      add: ['hunt', 'protect_lair', 'expand_territory', 'hoard_treasure'],
     },
     activities: ['hunt', 'lair', 'feeding', 'ambush', 'wandering'],
-    goals: [
-      { goal: 'hunt', weight: 0.8, description: 'Beute jagen' },
-      { goal: 'protect_lair', weight: 0.7, description: 'Höhle verteidigen' },
-      { goal: 'expand_territory', weight: 0.4, description: 'Territorium erweitern' },
-      { goal: 'hoard_treasure', weight: 0.3, description: 'Schätze horten' },
-    ],
+    lootPool: [],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -173,39 +167,29 @@ export const typePresets: Record<string, TypeCulturePreset> = {
       suffixes: ['le', 'ik', 'az', 'uz', 'ak', 'ug'],
     },
     personality: {
-      common: [
-        { trait: 'cunning', weight: 0.7 },
-        { trait: 'cowardly', weight: 0.6 },
-        { trait: 'greedy', weight: 0.8 },
-        { trait: 'cruel', weight: 0.5 },
-      ],
-      rare: [
-        { trait: 'brave', weight: 0.1 },
-        { trait: 'loyal', weight: 0.15 },
-      ],
+      add: ['cunning', 'cowardly', 'greedy', 'cruel', 'brave', 'loyal', 'nervous', 'clever'],
+      unwanted: ['heroic', 'honorable', 'generous', 'naive'],
     },
-    quirks: [
-      { quirk: 'nervous_laugh', weight: 0.4, description: 'Kichert nervös' },
-      { quirk: 'hoards_shiny', weight: 0.5, description: 'Sammelt Glänzendes' },
-      { quirk: 'bites_nails', weight: 0.3, description: 'Kaut an Krallen' },
-    ],
-    activities: ['ambush', 'scavenge', 'camp', 'patrol', 'feeding'],
-    goals: [
-      { goal: 'loot', weight: 0.9, description: 'Beute machen' },
-      { goal: 'survive', weight: 0.8, description: 'Überleben' },
-      { goal: 'please_boss', weight: 0.6, description: 'Boss zufriedenstellen' },
-      { goal: 'avoid_work', weight: 0.5, description: 'Arbeit vermeiden' },
-    ],
     values: {
-      priorities: ['survival', 'loot', 'tribe'],
-      taboos: ['direct_confrontation', 'sharing_treasure'],
-      greetings: ['Was du wollen?', 'Nicht hauen!', 'Hab Schatz!'],
+      add: ['survival', 'wealth', 'power'],
+      unwanted: ['honesty', 'mercy', 'justice'],
     },
+    quirks: {
+      add: ['nervous_laugh', 'hoards_shiny', 'bites_nails', 'talks_fast', 'fidgets'],
+    },
+    appearance: {
+      add: ['sharp_teeth', 'missing_teeth', 'missing_ear', 'crooked_nose', 'war_paint'],
+    },
+    goals: {
+      add: ['loot', 'survive', 'please_boss', 'avoid_work', 'get_food'],
+    },
+    activities: ['ambush', 'scavenge', 'camp', 'patrol', 'feeding'],
     speech: {
       dialect: 'broken',
       commonPhrases: ['Nicht töten!', 'Boss sagt...', 'Wir mehr als du!', 'Hab gesehen, hab gesehen!'],
       accent: 'hoch, schnell, nervös',
     },
+    lootPool: ['club', 'dagger', 'crude-spear', 'goblin-totem', 'silver-piece'],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -220,24 +204,23 @@ export const typePresets: Record<string, TypeCulturePreset> = {
       titles: ['the Ancient', 'the Terrible', 'the Wise', 'Bane of Kingdoms'],
     },
     personality: {
-      common: [
-        { trait: 'arrogant', weight: 0.8 },
-        { trait: 'greedy', weight: 0.9 },
-        { trait: 'cunning', weight: 0.7 },
-        { trait: 'patient', weight: 0.6 },
-      ],
-      rare: [
-        { trait: 'merciful', weight: 0.05 },
-        { trait: 'curious', weight: 0.1 },
-      ],
+      add: ['arrogant', 'greedy', 'cunning', 'patient', 'merciful', 'curious', 'proud'],
+      unwanted: ['cowardly', 'naive', 'obedient'],
+    },
+    values: {
+      add: ['wealth', 'power', 'legacy', 'knowledge'],
+      unwanted: ['friendship', 'mercy'],
+    },
+    quirks: {
+      add: ['hoards_shiny', 'tells_stories'],
+    },
+    appearance: {
+      add: ['glowing_eyes', 'long_claws', 'scaly_patches', 'unusual_skin_color'],
+    },
+    goals: {
+      add: ['hoard_treasure', 'dominate', 'acquire_knowledge', 'protect_lair', 'expand_territory'],
     },
     activities: ['lair', 'guard', 'hunt', 'intimidate', 'resting'],
-    goals: [
-      { goal: 'hoard_treasure', weight: 0.9, description: 'Schätze horten' },
-      { goal: 'dominate', weight: 0.7, description: 'Dominieren' },
-      { goal: 'acquire_knowledge', weight: 0.5, description: 'Wissen sammeln' },
-      { goal: 'protect_lair', weight: 0.8, description: 'Hort verteidigen' },
-    ],
     speech: {
       dialect: 'archaic',
       commonPhrases: [
@@ -247,6 +230,7 @@ export const typePresets: Record<string, TypeCulturePreset> = {
       ],
       accent: 'donnernd, langsam, bedrohlich',
     },
+    lootPool: ['gold-piece', 'healing-potion', 'plate-armor', 'longsword'],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -260,21 +244,23 @@ export const typePresets: Record<string, TypeCulturePreset> = {
       titles: ['the Tempter', 'the Flayer', 'the Corruptor', 'the Bound'],
     },
     personality: {
-      common: [
-        { trait: 'manipulative', weight: 0.8 },
-        { trait: 'cruel', weight: 0.7 },
-        { trait: 'patient', weight: 0.6 },
-        { trait: 'deceitful', weight: 0.8 },
-      ],
-      rare: [{ trait: 'honorable', weight: 0.1 }],
+      add: ['manipulative', 'cruel', 'patient', 'deceitful', 'honorable', 'cunning'],
+      unwanted: ['naive', 'trusting', 'cowardly', 'generous'],
+    },
+    values: {
+      add: ['power', 'domination', 'cruelty'],
+      unwanted: ['mercy', 'friendship', 'honesty'],
+    },
+    quirks: {
+      add: ['compulsive_liar', 'excessive_politeness'],
+    },
+    appearance: {
+      add: ['curved_horns', 'glowing_eyes', 'red_eyes', 'forked_tongue', 'unusual_smell'],
+    },
+    goals: {
+      add: ['corrupt_souls', 'fulfill_contract', 'power', 'spread_chaos', 'dominate'],
     },
     activities: ['ambush', 'intimidate', 'guard', 'patrol', 'lair'],
-    goals: [
-      { goal: 'corrupt_souls', weight: 0.8, description: 'Seelen verderben' },
-      { goal: 'fulfill_contract', weight: 0.7, description: 'Vertrag erfüllen' },
-      { goal: 'gain_power', weight: 0.6, description: 'Macht erlangen' },
-      { goal: 'spread_chaos', weight: 0.5, description: 'Chaos verbreiten' },
-    ],
     speech: {
       dialect: 'formal',
       commonPhrases: [
@@ -284,6 +270,7 @@ export const typePresets: Record<string, TypeCulturePreset> = {
       ],
       accent: 'glatt, verführerisch',
     },
+    lootPool: ['gold-piece', 'healing-potion'],
   },
 };
 

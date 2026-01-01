@@ -30,7 +30,9 @@ Das Creature-System unterscheidet drei Abstraktionsebenen:
 | `id` | `EntityId<'creature'>` | Eindeutige ID | Required |
 | `name` | `string` | Anzeigename | Required, non-empty |
 | `cr` | `number` | Challenge Rating | Required, >= 0 |
-| `maxHp` | `number` | Maximale Trefferpunkte | Required, > 0 |
+| `hitDice` | `string` | Hit Dice Expression (z.B. "2d6+4") | Required |
+| `maxHp` | `number` | Maximale HP aus hitDice (berechnet) | Auto |
+| `averageHp` | `number` | Durchschnittliche HP aus hitDice (berechnet, aufgerundet) | Auto |
 | `ac` | `number` | Ruestungsklasse | Required, > 0 |
 | `size` | `Size` | Kreaturgroesse | Required |
 | `tags` | `string[]` | Kategorisierung | Required, min 1 |
@@ -118,6 +120,33 @@ Optionales Feld fuer Kultur-Lookup. Wenn gesetzt und eine passende Species-Cultu
 - Nicht gesetzt → Type-Preset (Humanoid, Beast, etc.)
 
 → Kultur-Aufloesung: [Culture-Resolution.md](../services/NPCs/Culture-Resolution.md)
+
+### hitDice
+
+Hit Dice Expression - Single Source of Truth fuer HP-Berechnung.
+
+```typescript
+hitDice: string  // z.B. "2d6", "2d8+4", "7d10+21"
+```
+
+**Berechnete Felder:**
+- `maxHp` = `diceMax(hitDice)` - Maximaler HP-Wert
+- `averageHp` = `Math.ceil(diceAvg(hitDice))` - Durchschnitt (aufgerundet)
+
+**Verhalten:**
+- Bei Encounter-Generierung wird fuer jede Kreatur-Instanz individuell gewuerfelt
+- `averageHp` fuer Difficulty-Berechnungen und UI verwenden
+- `maxHp` ist das theoretische Maximum (alle Wuerfel auf Maximum)
+- Validierung erfolgt via `validateDiceExpression()` bei Kreatur-Erstellung
+
+**Beispiele:**
+
+| Kreatur | hitDice | maxHp | averageHp | HP-Range |
+|---------|---------|-------|-----------|----------|
+| Goblin | "2d6" | 12 | 7 | 2-12 |
+| Wolf | "2d8+2" | 18 | 11 | 4-18 |
+| Skeleton | "2d8+4" | 20 | 13 | 6-20 |
+| Owlbear | "7d10+21" | 91 | 60 | 28-91 |
 
 ### TimeSegment
 
@@ -387,6 +416,6 @@ Vault/SaltMarcher/data/
 
 |  # | Status | Domain   | Layer    | Beschreibung                                                                           |  Prio  | MVP? | Deps | Spec                                 | Imp.                                |
 |--:|:----:|:-------|:-------|:-------------------------------------------------------------------------------------|:----:|:--:|:---|:-----------------------------------|:----------------------------------|
-| 29 |   ⬜    | creature | entities | HP-Varianz: Trefferpunkte basierend auf Hit Dice wuerfeln statt maxHp direkt verwenden | mittel | Nein | -    | creature.md#Felder                   | -                                   |
-| 62 |   ⬜    | creature | entities | CreatureDefinition: disposition zu baseDisposition (number) migrieren                  | mittel | Nein | #61  | entities/creature.md#Felder          | types/entities/creature.ts [ändern] |
+| 29 |   ✅    | creature | entities | HP-Varianz: Trefferpunkte basierend auf Hit Dice wuerfeln statt maxHp direkt verwenden | mittel | Nein | -    | creature.md#Felder                   | -                                   |
+| 62 |   ✅    | creature | entities | CreatureDefinition: disposition zu baseDisposition (number) migrieren                  | mittel | Nein | #61  | entities/creature.md#Felder          | types/entities/creature.ts [ändern] |
 | 65 |   ⬜    | creature | entities | Creature-Presets: disposition zu baseDisposition konvertieren                          | mittel | Nein | #62  | entities/creature.md#baseDisposition | presets/creatures.ts [neu]          |

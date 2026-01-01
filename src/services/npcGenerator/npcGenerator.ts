@@ -1,39 +1,46 @@
 // Ziel: NPC-Generierung für Encounter, Quest, Shop, POI
-// Siehe: docs/services/NPCs/NPC-Generation.md
+// Siehe: docs/services/npcs/NPC-Generation.md
 //
-// Pipeline:
-// 1. resolveCultureChain() - Culture-Resolution (aus @/utils)
-// 2. getCultureField() - 60%-Kaskade Selektion (aus @/utils)
-// 3. generateNameFromCulture() - Name aus Patterns
-// 4. rollPersonalityFromCulture() - Primary + Secondary Traits
-// 5. rollQuirkFromCulture() - Optionaler Quirk
-// 6. selectPersonalGoal() - Ziel mit Culture-Pool
-// 7. generateNPC() - Orchestriert Pipeline, gibt NPC zurück (OHNE Persistierung)
+// Pipeline (vereinfacht):
+// 1. resolveCultureChain() - Hierarchie: Register → Species/Type → Factions
+// 2. generateNameFromCulture() - Name aus Naming-Pools (60%-Kaskade)
+// 3. rollAttribute() - Generische Funktion für alle 5 Attribute
+// 4. generateNPC() - Orchestriert Pipeline, gibt NPC zurück (OHNE Persistierung)
 //
+// Neue Struktur (6 unabhängige Felder):
+// - name: Generiert aus Naming-Patterns
+// - personality: EIN Trait (z.B. "mutig", "feige")
+// - value: EIN Wert (z.B. "Freundschaft", "Macht")
+// - quirk: EINE Eigenheit (optional)
+// - appearance: EIN Merkmal (optional)
+// - goal: EIN Ziel (z.B. "Überleben", "Rache")
 //
-// TASKS:
-// |  # | Status | Domain | Layer    | Beschreibung                                                  |  Prio  | MVP? | Deps | Spec                                           | Imp.                                                  |
-// |--:|:----:|:-----|:-------|:------------------------------------------------------------|:----:|:--:|:---|:---------------------------------------------|:----------------------------------------------------|
-// | 53 |   🔶   | NPCs   | services | Culture-Resolution: Forbidden-Listen implementieren           | mittel | Nein | -    | Culture-Resolution.md#Forbidden-Listen         | npcGenerator.ts.rollPersonalityFromCulture() [ändern] |
-// | 54 |   🔶   | NPCs   | services | Culture-Resolution: Faction-Ketten-Traversierung via parentId | mittel | Nein | -    | Culture-Resolution.md#buildFactionChain()      | npcGenerator.ts.resolveCultureChain() [ändern]        |
-// | 55 |   🔶   | NPCs   | services | Quirk-Filterung: compatibleTags aus Creature pruefen          | mittel | Nein | -    | NPC-Generation.md#Quirk-Generierung            | npcGenerator.ts.rollQuirkFromCulture() [ändern]       |
-// | 56 |   ⬜    | NPCs   | services | PersonalityBonus: Multiplikatoren auf Goals anwenden          | mittel | Nein | -    | NPC-Generation.md#PersonalGoal-Pool-Hierarchie | npcGenerator.ts.selectPersonalGoal() [ändern]         |
-// | 57 |   🔶   | NPCs   | services | getDefaultTime: Zeit aus sessionState statt Hardcoded-Wert    | mittel | Nein | -    | NPC-Generation.md#API                          | npcGenerator.ts.getDefaultTime() [ändern]             |
-// | 58 |   ✅    | NPCs   | services | Species-Cultures in Culture-Resolution implementiert          | mittel | Nein | -    | Culture-Resolution.md#Kultur-Hierarchie        | npcGenerator.ts.resolveCultureChain() [fertig]        |
+// Gewichtungs-Mechanik:
+// - 60%-Kaskade: Leaf=100, Parent=60, Grandparent=36...
+// - unwanted[]: Viertelt bisherigen akkumulierten Wert
+
 import type { CreatureDefinition } from '#types/entities/creature';
-import type {
-  Faction,
-  CultureData,
-  WeightedTrait,
-  WeightedQuirk,
-  WeightedGoal,
-  NamingConfig,
-  PersonalityConfig,
-} from '#types/entities/faction';
-import type { NPC, PersonalityTraits } from '#types/entities/npc';
+import type { Faction, CultureData } from '#types/entities/faction';
+import type { NPC } from '#types/entities/npc';
 import type { GameDateTime } from '#types/time';
 import type { HexCoordinate } from '#types/hexCoordinate';
-import { randomSelect, weightedRandomSelect, resolveCultureChain, getCultureField, type CultureLayer } from '@/utils';
+import type { LayerTraitConfig } from '#types/common/layerTraitConfig';
+import {
+  weightedRandomSelect,
+  randomSelect,
+  resolveCultureChain,
+  mergeWeightedPool,
+  accumulateWithUnwanted,
+  type CultureLayer,
+} from '@/utils';
+import { FALLBACK_NPC_NAMES } from '@/constants';
+import {
+  personalityPresets,
+  valuePresets,
+  quirkPresets,
+  appearancePresets,
+  goalPresets,
+} from '../../../presets/npcAttributes';
 
 // ============================================================================
 // DEBUG HELPER
@@ -52,20 +59,16 @@ const debug = (...args: unknown[]) => {
 /** Optionen für NPC-Generierung */
 export interface GenerateNPCOptions {
   position?: HexCoordinate;
-  time?: GameDateTime;
+  time: GameDateTime;  // Required - Caller muss Zeit übergeben
 }
 
-// ============================================================================
-// GENERIC FALLBACK GOALS
-// ============================================================================
-
-const GENERIC_GOALS: WeightedGoal[] = [
-  { goal: 'survive', weight: 1.0, description: 'Am Leben bleiben' },
-  { goal: 'profit', weight: 0.8, description: 'Profit machen' },
-  { goal: 'power', weight: 0.6, description: 'Macht erlangen' },
-  { goal: 'freedom', weight: 0.5, description: 'Freiheit bewahren' },
-  { goal: 'revenge', weight: 0.3, description: 'Rache nehmen' },
-];
+/** Preset-Struktur für Attribute mit optionalem Tag-Filter */
+interface AttributePreset {
+  id: string;
+  name: string;
+  description?: string;
+  compatibleTags?: string[];
+}
 
 // ============================================================================
 // NAME GENERATION
@@ -74,26 +77,41 @@ const GENERIC_GOALS: WeightedGoal[] = [
 /**
  * Generiert einen Namen aus dem Naming-Config.
  * Pattern-Platzhalter: {prefix}, {root}, {suffix}, {title}
+ *
+ * Merged alle Naming-Komponenten über alle Culture-Layers mit 60%-Kaskade.
  */
 function generateNameFromCulture(layers: CultureLayer[]): string {
-  const naming = getCultureField(layers, 'naming') as NamingConfig | undefined;
+  // Merge all naming components across layers
+  const patterns = mergeWeightedPool(layers, c => c.naming?.patterns);
+  const prefixes = mergeWeightedPool(layers, c => c.naming?.prefixes);
+  const roots = mergeWeightedPool(layers, c => c.naming?.roots);
+  const suffixes = mergeWeightedPool(layers, c => c.naming?.suffixes);
+  const titles = mergeWeightedPool(layers, c => c.naming?.titles);
 
-  if (!naming?.patterns || naming.patterns.length === 0) {
+  debug('Merged naming pools:', {
+    patterns: patterns.length,
+    prefixes: prefixes.length,
+    roots: roots.length,
+    suffixes: suffixes.length,
+    titles: titles.length,
+  });
+
+  if (patterns.length === 0) {
     debug('No naming patterns, using fallback');
     return generateFallbackName();
   }
 
-  // Zufälliges Pattern wählen
-  const pattern = randomSelect(naming.patterns) ?? '{root}';
+  // Select pattern from merged pool
+  const pattern = weightedRandomSelect(patterns) ?? '{root}';
 
-  // Platzhalter ersetzen
+  // Fill placeholders from merged pools
   const name = pattern
-    .replace('{prefix}', randomSelect(naming.prefixes ?? []) ?? '')
-    .replace('{root}', randomSelect(naming.roots ?? []) ?? 'Unknown')
-    .replace('{suffix}', randomSelect(naming.suffixes ?? []) ?? '')
-    .replace('{title}', randomSelect(naming.titles ?? []) ?? '')
+    .replace('{prefix}', weightedRandomSelect(prefixes) ?? '')
+    .replace('{root}', weightedRandomSelect(roots) ?? 'Unknown')
+    .replace('{suffix}', weightedRandomSelect(suffixes) ?? '')
+    .replace('{title}', weightedRandomSelect(titles) ?? '')
     .trim()
-    .replace(/\s+/g, ' '); // Mehrfache Leerzeichen entfernen
+    .replace(/\s+/g, ' ');
 
   debug('Generated name:', name, 'from pattern:', pattern);
   return name || 'Unknown';
@@ -103,126 +121,70 @@ function generateNameFromCulture(layers: CultureLayer[]): string {
  * Fallback-Name wenn keine Naming-Config vorhanden.
  */
 function generateFallbackName(): string {
-  const fallbackNames = ['Stranger', 'Unknown', 'Nameless', 'Shadow', 'Wanderer'];
-  return randomSelect(fallbackNames) ?? 'Unknown';
+  return randomSelect([...FALLBACK_NPC_NAMES]) ?? 'Unknown';
 }
 
 // ============================================================================
-// PERSONALITY GENERATION
+// GENERIC ATTRIBUTE ROLLING
 // ============================================================================
 
 /**
- * Würfelt Persönlichkeits-Traits aus dem Culture-Pool.
- * Primary und Secondary sind unterschiedlich (keine Duplikate).
+ * Würfelt einen Attribut-Wert aus dem akkumulierten Pool.
  *
- * [#53] Forbidden-Listen ignoriert
+ * @param layers - Culture-Layers (Register → Species/Type → Factions)
+ * @param extractor - Holt LayerTraitConfig aus CultureData
+ * @param presets - Alle verfügbaren Presets für dieses Attribut
+ * @param creature - Optional: Für Tag-Filterung
+ * @returns Attribut-ID oder undefined
  */
-function rollPersonalityFromCulture(layers: CultureLayer[]): PersonalityTraits {
-  const personality = getCultureField(layers, 'personality') as PersonalityConfig | undefined;
-
-  if (!personality) {
-    debug('No personality config, using defaults');
-    return { primary: 'neutral', secondary: 'reserved' };
-  }
-
-  // Alle Traits sammeln (common + rare)
-  const allTraits: WeightedTrait[] = [
-    ...(personality.common ?? []),
-    ...(personality.rare ?? []),
-  ];
-
-  if (allTraits.length === 0) {
-    return { primary: 'neutral', secondary: 'reserved' };
-  }
-
-  // Primary wählen
-  const primaryTrait = weightedRandomSelect(
-    allTraits.map(t => ({ item: t.trait, weight: t.weight }))
-  );
-  const primary = primaryTrait ?? 'neutral';
-
-  // Secondary wählen (ohne Primary)
-  const remaining = allTraits.filter(t => t.trait !== primary);
-  const secondaryTrait = remaining.length > 0
-    ? weightedRandomSelect(remaining.map(t => ({ item: t.trait, weight: t.weight })))
-    : null;
-  const secondary = secondaryTrait ?? 'reserved';
-
-  debug('Personality:', { primary, secondary });
-  return { primary, secondary };
-}
-
-// ============================================================================
-// QUIRK GENERATION
-// ============================================================================
-
-/**
- * Würfelt einen Quirk aus dem Culture-Pool.
- *
- * [#55] Quirk-Filterung fehlt → compatibleTags nicht geprüft
- *
- * @returns Quirk-Description oder undefined (50% Chance auf keinen Quirk)
- */
-function rollQuirkFromCulture(
+function rollAttribute(
   layers: CultureLayer[],
-  _creature: CreatureDefinition // Unused, siehe #55
+  extractor: (culture: CultureData) => LayerTraitConfig | undefined,
+  presets: AttributePreset[],
+  creature?: CreatureDefinition
 ): string | undefined {
-  // 50% Chance auf keinen Quirk
-  if (Math.random() < 0.5) {
-    debug('No quirk (random skip)');
+  // Gewichte über alle Layers akkumulieren
+  const weights = accumulateWithUnwanted(layers, extractor);
+
+  // Pool bauen aus Presets die Gewicht > 0 haben
+  const creatureTags = creature?.tags ?? [];
+  const pool = presets
+    .filter(preset => {
+      // Tag-Filter: Keine compatibleTags = kompatibel mit allen
+      if (!preset.compatibleTags || preset.compatibleTags.length === 0) {
+        return true;
+      }
+      return preset.compatibleTags.some(tag => creatureTags.includes(tag));
+    })
+    .map(preset => ({
+      item: preset.id,
+      randWeighting: weights.get(preset.id) ?? 0,
+    }))
+    .filter(entry => entry.randWeighting > 0);
+
+  debug('Attribute pool size:', pool.length);
+
+  if (pool.length === 0) {
     return undefined;
   }
 
-  const quirks = getCultureField(layers, 'quirks') as WeightedQuirk[] | undefined;
-
-  if (!quirks || quirks.length === 0) {
-    debug('No quirks in culture');
-    return undefined;
-  }
-
-  // Gewichtete Auswahl (ohne compatibleTags-Filter)
-  const selected = weightedRandomSelect(
-    quirks.map(q => ({ item: q, weight: q.weight }))
-  );
-
-  if (!selected) return undefined;
-
-  debug('Selected quirk:', selected.quirk, '-', selected.description);
-  return selected.description ?? selected.quirk;
+  return weightedRandomSelect(pool) ?? undefined;
 }
 
-// ============================================================================
-// GOAL SELECTION
-// ============================================================================
-
 /**
- * Wählt ein persönliches Ziel aus dem kombinierten Pool.
- *
- * [#56] PersonalityBonus fehlt → Multiplikatoren nicht angewendet
- *
- * Pool-Hierarchie: Generic → Culture-Goals
+ * Würfelt ein Attribut und gibt die Description zurück.
  */
-function selectPersonalGoal(
+function rollAttributeDescription(
   layers: CultureLayer[],
-  _personality: PersonalityTraits // Unused, siehe #56
-): string {
-  // Culture-Goals holen
-  const cultureGoals = getCultureField(layers, 'goals') as WeightedGoal[] | undefined;
+  extractor: (culture: CultureData) => LayerTraitConfig | undefined,
+  presets: AttributePreset[],
+  creature?: CreatureDefinition
+): string | undefined {
+  const id = rollAttribute(layers, extractor, presets, creature);
+  if (!id) return undefined;
 
-  // Pools kombinieren
-  const combinedPool = [
-    ...GENERIC_GOALS,
-    ...(cultureGoals ?? []),
-  ];
-
-  // Gewichtete Auswahl
-  const selected = weightedRandomSelect(
-    combinedPool.map(g => ({ item: g, weight: g.weight }))
-  );
-
-  const goal = selected?.description ?? selected?.goal ?? 'survive';
-  debug('Selected goal:', goal);
-  return goal;
+  const preset = presets.find(p => p.id === id);
+  return preset?.description ?? preset?.name ?? id;
 }
 
 // ============================================================================
@@ -240,25 +202,6 @@ function generateNPCId(): string {
 }
 
 // ============================================================================
-// DEFAULT TIME
-// ============================================================================
-
-/**
- * Liefert eine Default-Zeit für firstEncounter/lastEncounter.
- * [#57] Zeit sollte aus sessionState kommen.
- */
-function getDefaultTime(): GameDateTime {
-  return {
-    day: 1,
-    month: 1,
-    year: 1,
-    hour: 12,
-    minute: 0,
-    segment: 'midday',
-  };
-}
-
-// ============================================================================
 // MAIN FUNCTION
 // ============================================================================
 
@@ -267,33 +210,32 @@ function getDefaultTime(): GameDateTime {
  *
  * @param creature - Die Kreatur-Definition (aus Preset oder Vault)
  * @param faction - Die Fraktion (falls vorhanden)
- * @param options - Optionale Position und Zeit
+ * @param options - Position und Zeit (time ist required)
  * @returns Vollständiges NPC-Objekt (NICHT persistiert)
  */
 export function generateNPC(
   creature: CreatureDefinition,
   faction: Faction | null,
-  options?: GenerateNPCOptions
+  options: GenerateNPCOptions
 ): NPC {
   debug('Generating NPC for creature:', creature.id, 'faction:', faction?.id ?? 'none');
 
-  // 1. Culture-Chain aufbauen
+  // 1. Culture-Chain aufbauen (Register → Species/Type → Factions)
   const layers = resolveCultureChain(creature, faction);
+  debug('Culture layers:', layers.length);
 
   // 2. Name generieren
   const name = generateNameFromCulture(layers);
 
-  // 3. Personality würfeln
-  const personality = rollPersonalityFromCulture(layers);
+  // 3. Alle Attribute unabhängig würfeln
+  const personality = rollAttribute(layers, c => c.personality, personalityPresets) ?? 'neutral';
+  const value = rollAttribute(layers, c => c.values, valuePresets) ?? 'survival';
+  const quirk = rollAttributeDescription(layers, c => c.quirks, quirkPresets, creature);
+  const appearance = rollAttributeDescription(layers, c => c.appearance, appearancePresets, creature);
+  const goal = rollAttributeDescription(layers, c => c.goals, goalPresets) ?? 'Überleben';
 
-  // 4. Quirk würfeln
-  const quirk = rollQuirkFromCulture(layers, creature);
-
-  // 5. Personal Goal wählen
-  const personalGoal = selectPersonalGoal(layers, personality);
-
-  // 6. NPC zusammenbauen
-  const now = options?.time ?? getDefaultTime();
+  // 4. NPC zusammenbauen
+  const now = options.time;
 
   const npc: NPC = {
     id: generateNPCId(),
@@ -304,20 +246,26 @@ export function generateNPC(
     },
     factionId: faction?.id,
     personality,
+    value,
     quirk,
-    personalGoal,
+    appearance,
+    goal,
     status: 'alive',
     firstEncounter: now,
     lastEncounter: now,
     encounterCount: 1,
     lastKnownPosition: options?.position,
+    reputations: [],
   };
 
   debug('Generated NPC:', {
     id: npc.id,
     name: npc.name,
     personality: npc.personality,
-    goal: npc.personalGoal,
+    value: npc.value,
+    quirk: npc.quirk,
+    appearance: npc.appearance,
+    goal: npc.goal,
   });
 
   return npc;

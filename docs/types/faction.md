@@ -112,5 +112,5 @@ const bloodfangTribe: Faction = {
 
 |  # | Status | Domain  | Layer    | Beschreibung                                                           |  Prio  | MVP? | Deps | Spec                            | Imp.                               |
 |--:|:----:|:------|:-------|:---------------------------------------------------------------------|:----:|:--:|:---|:------------------------------|:---------------------------------|
-| 64 |   ⬜    | faction | entities | Faction-Schema: reputationWithParty zu reputations Array migrieren     | mittel | Nein | #59  | entities/faction.md#reputations | types/entities/faction.ts [ändern] |
+| 64 |   ✅    | faction | entities | Faction-Schema: reputationWithParty zu reputations Array migrieren     | mittel | Nein | #59  | entities/faction.md#reputations | types/entities/faction.ts [ändern] |
 | 66 |   ⬜    | faction | entities | Faction-Presets: reputationWithParty zu reputations Array konvertieren | mittel | Nein | #64  | entities/faction.md#reputations | presets/factions.ts [neu]          |

@@ -3,21 +3,18 @@
 //
 // Funktionen:
 // - resolveCultureChain() - Culture-Hierarchie aufbauen (Type/Species → Faction)
-// - selectCultureLayer() - 60%-Kaskade Layer-Auswahl
-// - getCultureField() - Feld aus Layers mit Fallback holen
+// - calculateLayerWeights() - 60%-Kaskade Gewichte berechnen (Leaf=100, Parent=60, ...)
+// - mergeWeightedPool() - Items aus allen Layers in gewichteten Pool mergen (Duplikate summiert)
+// - aggregateWeightedPools() - Mehrere Pools zusammenführen (Weights summieren)
 //
-// DISKREPANZEN (als [HACK] markiert):
-// ================================================
-//
-// [HACK: Culture-Resolution.md#forbidden] Forbidden-Listen ignoriert
-//   → Nur positive Pools, keine Ausschluss-Logik
-//
-// [HACK: Culture-Resolution.md#faction-chain] Keine Faction-Ketten-Traversierung
-//   → Nur direkte Faction.culture, parentId ignoriert
+// Für gewichtete Auswahl aus Pool: weightedRandomSelect() aus random.ts verwenden
 
 import type { CreatureDefinition } from '#types/entities/creature';
 import type { Faction, CultureData } from '#types/entities/faction';
+import type { LayerTraitConfig } from '../types/common/layerTraitConfig';
 import { typePresets, speciesPresets } from '../../presets/cultures';
+import { vault } from '../infrastructure/vault/vaultInstance';
+import { getAllIds } from '../../presets/npcAttributes';
 
 // ============================================================================
 // DEBUG HELPER
@@ -34,7 +31,7 @@ const debug = (...args: unknown[]) => {
 // ============================================================================
 
 /** Quelle einer Culture-Ebene */
-export type CultureSource = 'type' | 'species' | 'faction';
+export type CultureSource = 'register' | 'type' | 'species' | 'faction';
 
 /** Eine Ebene in der Culture-Hierarchie */
 export interface CultureLayer {
@@ -44,17 +41,35 @@ export interface CultureLayer {
 }
 
 // ============================================================================
+// REGISTER BASE LAYER
+// ============================================================================
+
+/**
+ * Basis-Culture aus dem zentralen Register.
+ * Enthält alle verfügbaren Attribute-IDs als add[].
+ * Wird als erstes Layer in der Hierarchie verwendet.
+ */
+function buildRegisterCulture(): CultureData {
+  return {
+    personality: { add: getAllIds('personality') },
+    values: { add: getAllIds('values') },
+    quirks: { add: getAllIds('quirks') },
+    appearance: { add: getAllIds('appearance') },
+    goals: { add: getAllIds('goals') },
+  };
+}
+
+// ============================================================================
 // CULTURE RESOLUTION
 // ============================================================================
 
 /**
  * Bestimmt die Culture-Ebenen für eine Kreatur.
  *
- * [HACK: Culture-Resolution.md#faction-chain] Keine Faction-Ketten-Traversierung
- *
  * Hierarchie (von Root nach Leaf):
- * 1. Species-Culture (falls creature.species gesetzt) ODER Type-Preset
- * 2. Faction.culture (falls vorhanden)
+ * 1. Register (Base-Layer mit allen verfügbaren Attributen)
+ * 2. Species-Culture (falls creature.species gesetzt) ODER Type-Preset
+ * 3. Faction-Kette (Root → ... → Leaf) via parentId
  *
  * @param creature - Die Kreatur-Definition (kann null sein für Fallback)
  * @param faction - Die Fraktion (falls vorhanden)
@@ -65,6 +80,10 @@ export function resolveCultureChain(
 ): CultureLayer[] {
   const layers: CultureLayer[] = [];
 
+  // 1. Register als Base-Layer
+  layers.push({ source: 'register', culture: buildRegisterCulture() });
+  debug('Culture layer: register (base)');
+
   if (!creature) {
     // Fallback auf humanoid wenn keine Kreatur
     const fallback = typePresets['humanoid'];
@@ -73,7 +92,7 @@ export function resolveCultureChain(
       debug('Culture layer: type = humanoid (no creature fallback)');
     }
   } else {
-    // 1. Basis: Species-Culture (ersetzt Type) ODER Type-Preset
+    // 2. Species-Culture (ersetzt Type) ODER Type-Preset
     if (creature.species) {
       const speciesCulture = speciesPresets[creature.species];
       if (speciesCulture) {
@@ -88,15 +107,19 @@ export function resolveCultureChain(
     }
   }
 
-  // 2. Faction-Culture hinzufügen (falls vorhanden)
-  // [HACK: Culture-Resolution.md#faction-chain] Nur direkte Faction, keine parentId-Kette
-  if (faction?.culture) {
-    layers.push({
-      source: 'faction',
-      culture: faction.culture,
-      factionId: faction.id,
-    });
-    debug('Culture layer: faction =', faction.id);
+  // 3. Faction-Kette hinzufügen (von Root nach Leaf)
+  if (faction) {
+    const factionChain = buildFactionChain(faction);
+    for (const f of factionChain) {
+      if (f.culture) {
+        layers.push({
+          source: 'faction',
+          culture: f.culture,
+          factionId: f.id,
+        });
+        debug('Culture layer: faction =', f.id);
+      }
+    }
   }
 
   debug('Total culture layers:', layers.length);
@@ -125,66 +148,190 @@ function addTypeCulture(layers: CultureLayer[], creature: CreatureDefinition): v
 }
 
 /**
- * Wählt eine Layer aus den Culture-Layers mit 60%-Kaskade.
- *
- * Leaf bekommt 60%, Rest kaskadiert:
- * - 1 Layer: 100%
- * - 2 Layer: Root 40%, Leaf 60%
- * - 3 Layer: Root 16%, Mid 24%, Leaf 60%
+ * Traversiert die Faction-Hierarchie von Leaf nach Root.
+ * Bricht bei fehlender Parent-Faction ab (graceful degradation).
+ * @returns [root, ..., parent, leaf] - geordnet für 60%-Kaskade
  */
-export function selectCultureLayer(layers: CultureLayer[]): CultureLayer | null {
-  if (layers.length === 0) return null;
-  if (layers.length === 1) return layers[0];
+function buildFactionChain(faction: Faction): Faction[] {
+  const chain: Faction[] = [];
+  let current: Faction | null = faction;
 
-  // 60%-Kaskade berechnen (von Leaf nach Root)
-  const probabilities: number[] = [];
-  let remaining = 1.0;
-
-  for (let i = layers.length - 1; i > 0; i--) {
-    probabilities.unshift(remaining * 0.6);
-    remaining *= 0.4;
-  }
-  probabilities.unshift(remaining); // Root bekommt Rest
-
-  debug('Layer probabilities:', probabilities);
-
-  // Gewichtete Auswahl
-  const roll = Math.random();
-  let cumulative = 0;
-
-  for (let i = 0; i < layers.length; i++) {
-    cumulative += probabilities[i];
-    if (roll < cumulative) {
-      debug('Selected layer:', i, layers[i].source);
-      return layers[i];
+  while (current) {
+    chain.unshift(current);
+    if (current.parentId) {
+      try {
+        current = vault.getEntity<Faction>('faction', current.parentId);
+      } catch {
+        // Parent nicht gefunden - Kette hier beenden
+        debug('Parent faction not found:', current.parentId);
+        current = null;
+      }
+    } else {
+      current = null;
     }
   }
 
-  return layers[layers.length - 1];
+  debug('Faction chain:', chain.map(f => f.id));
+  return chain;
+}
+
+// ============================================================================
+// LAYER WEIGHTS (60%-Kaskade)
+// ============================================================================
+
+/**
+ * Berechnet Layer-Gewichte nach 60%-Kaskade.
+ *
+ * Leaf bekommt 100, jede höhere Ebene 60% der vorherigen:
+ * - 1 Layer: [100]
+ * - 2 Layer: [60, 100]
+ * - 3 Layer: [36, 60, 100]
+ * - 4 Layer: [21.6, 36, 60, 100]
+ */
+export function calculateLayerWeights(layerCount: number): number[] {
+  if (layerCount === 0) return [];
+  if (layerCount === 1) return [100];
+
+  const weights: number[] = [];
+  let weight = 100;
+
+  // Von Leaf (hinten) nach Root (vorne)
+  for (let i = 0; i < layerCount; i++) {
+    weights.unshift(weight);
+    weight *= 0.6;
+  }
+
+  return weights;
 }
 
 /**
- * Holt ein Feld aus den Culture-Layers mit Fallback.
- * Versucht erst die gewählte Layer (per 60%-Kaskade), dann Fallback auf alle Layers.
+ * Merged Items aus allen Layers in einen gewichteten Pool.
+ * Duplikate werden summiert (Item in Leaf + Parent = 160).
+ *
+ * @param layers - Die Culture-Layers
+ * @param extractor - Funktion um Items aus CultureData zu extrahieren
+ * @param getWeight - Optionale Funktion um Basis-Gewicht eines Items zu holen (default: 1.0)
  */
-export function getCultureField<K extends keyof CultureData>(
+export function mergeWeightedPool<T>(
   layers: CultureLayer[],
-  field: K
-): CultureData[K] | undefined {
-  // Erst per Kaskade auswählen
-  const selected = selectCultureLayer(layers);
-  if (selected?.culture[field]) {
-    return selected.culture[field];
+  extractor: (culture: CultureData) => T[] | undefined,
+  getWeight?: (item: T) => number
+): Array<{ item: T; randWeighting: number }> {
+  const weights = calculateLayerWeights(layers.length);
+  const merged = new Map<string, { item: T; randWeighting: number }>();
+
+  for (let i = 0; i < layers.length; i++) {
+    const items = extractor(layers[i].culture);
+    if (!items) continue;
+
+    const layerWeight = weights[i];
+    for (const item of items) {
+      // Content-basierter Key: String direkt, Objekte als JSON
+      const key = typeof item === 'string' ? item : JSON.stringify(item);
+      const baseWeight = getWeight?.(item) ?? 1.0;
+      const itemWeight = baseWeight * layerWeight;
+
+      const existing = merged.get(key);
+      if (existing) {
+        existing.randWeighting += itemWeight; // Duplikat summieren
+      } else {
+        merged.set(key, { item, randWeighting: itemWeight });
+      }
+    }
+
+    debug(`Merged ${items.length} items from layer ${i} (randWeighting: ${layerWeight})`);
   }
 
-  // Fallback: Erste Layer mit Daten (von Leaf nach Root)
-  for (let i = layers.length - 1; i >= 0; i--) {
-    const value = layers[i].culture[field];
-    if (value) {
-      debug(`Field ${field}: fallback to layer`, i);
-      return value;
+  const result = Array.from(merged.values());
+  debug('Total merged pool size:', result.length);
+  return result;
+}
+
+/**
+ * Aggregiert mehrere gewichtete Pools zu einem.
+ * Duplikate werden summiert (keine Kaskade).
+ *
+ * @param pools - Array von gewichteten Pools
+ * @param getKey - Optionale Funktion um Key für Duplikat-Erkennung zu generieren
+ * @returns Aggregierter Pool mit summierten randWeightings
+ */
+export function aggregateWeightedPools<T>(
+  pools: Array<Array<{ item: T; randWeighting: number }>>,
+  getKey?: (item: T) => string
+): Array<{ item: T; randWeighting: number }> {
+  const merged = new Map<string, { item: T; randWeighting: number }>();
+
+  for (const pool of pools) {
+    for (const entry of pool) {
+      const key = getKey?.(entry.item)
+        ?? (typeof entry.item === 'string' ? entry.item : JSON.stringify(entry.item));
+
+      const existing = merged.get(key);
+      if (existing) {
+        existing.randWeighting += entry.randWeighting;
+      } else {
+        merged.set(key, { item: entry.item, randWeighting: entry.randWeighting });
+      }
     }
   }
 
-  return undefined;
+  debug('aggregateWeightedPools:', pools.length, 'pools →', merged.size, 'unique items');
+  return Array.from(merged.values());
+}
+
+// ============================================================================
+// ACCUMULATE WITH UNWANTED (für NPC-Attribute)
+// ============================================================================
+
+/**
+ * Akkumuliert Gewichte über Layer mit 60%-Kaskade und unwanted-Vierteln.
+ *
+ * Verarbeitung pro Layer:
+ * 1. Zuerst unwanted verarbeiten (viertelt bisherigen akkumulierten Wert)
+ * 2. Dann add verarbeiten (addiert Layer-Gewicht)
+ *
+ * Beispiel mit 4 Layern (Register → Goblin → Rotfang → Silberblatt):
+ * - Kaskade: [21.6, 36, 60, 100]
+ * - Trait "gutherzig":
+ *   - Register: +21.6 → akkumuliert: 21.6
+ *   - Goblin: (nicht) → akkumuliert: 21.6
+ *   - Rotfang: unwanted → 21.6 / 4 = 5.4
+ *   - Silberblatt: +100 → 5.4 + 100 = 105.4
+ *
+ * @param layers - Culture-Layers von Root nach Leaf
+ * @param extractor - Holt LayerTraitConfig aus CultureData
+ * @returns Map<attributeId, akkumuliertesGewicht>
+ */
+export function accumulateWithUnwanted(
+  layers: CultureLayer[],
+  extractor: (culture: CultureData) => LayerTraitConfig | undefined
+): Map<string, number> {
+  const weights = calculateLayerWeights(layers.length);
+  const accumulated = new Map<string, number>();
+
+  for (let i = 0; i < layers.length; i++) {
+    const config = extractor(layers[i].culture);
+    if (!config) continue;
+
+    const layerWeight = weights[i];
+
+    // 1. Zuerst unwanted verarbeiten (viertelt bisherigen Wert)
+    for (const id of config.unwanted ?? []) {
+      const current = accumulated.get(id) ?? 0;
+      const quartered = current / 4;
+      accumulated.set(id, quartered);
+      debug(`Layer ${i}: unwanted '${id}' → ${current.toFixed(1)} / 4 = ${quartered.toFixed(1)}`);
+    }
+
+    // 2. Dann add verarbeiten (addiert Layer-Gewicht)
+    for (const id of config.add ?? []) {
+      const current = accumulated.get(id) ?? 0;
+      const newValue = current + layerWeight;
+      accumulated.set(id, newValue);
+      debug(`Layer ${i}: add '${id}' → ${current.toFixed(1)} + ${layerWeight.toFixed(1)} = ${newValue.toFixed(1)}`);
+    }
+  }
+
+  debug('accumulateWithUnwanted: total attributes with weight:', accumulated.size);
+  return accumulated;
 }

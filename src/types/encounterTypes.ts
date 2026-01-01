@@ -2,9 +2,12 @@
 // Siehe: docs/entities/encounter-instance.md
 
 import { z } from 'zod';
-import { creatureInstanceSchema, dispositionSchema } from './entities/creature';
+import { creatureInstanceSchema } from './entities/creature';
 import { hexCoordinateSchema } from './entities/map';
-import { ENCOUNTER_TRIGGERS, NARRATIVE_ROLES, DIFFICULTY_LABELS } from '../constants/encounter';
+import { ENCOUNTER_TRIGGERS, NARRATIVE_ROLES, DIFFICULTY_LABELS, DISPOSITIONS } from '../constants';
+
+// Disposition-Schema für berechnetes Ergebnis (Output-Type)
+const dispositionSchema = z.enum(DISPOSITIONS);
 
 // ============================================================================
 // SUB-SCHEMAS

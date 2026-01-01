@@ -131,46 +131,46 @@ EncounterContext
 | (Step 3)         |  Template -> Slots -> Creatures
 +------------------+
         |
-        v  EncounterGroup (1 oder mehr)
-+------------------+
-| groupActivity    |  Activity + Goal
-| (Step 4.1-4.2)   |
-+------------------+
-        |
-        v
+        v  PopulatedGroup (1 oder mehr)
 +------------------+
 | encounterNPCs    |  1-3 NPCs (-> NPCService)
-| (Step 4.3)       |
+| (Step 5.1)       |  VOR Activity fuer NPC-Reputation!
 +------------------+
         |
-        v
+        v  GroupWithNPCs[]
++------------------+
+| groupActivity    |  Activity + Goal + Disposition
+| (Step 5.2)       |  Nutzt NPC-Reputation
++------------------+
+        |
+        v  GroupWithActivity[]
 +------------------+
 | encounterLoot    |  Loot (-> LootService)
-| (Step 4.4)       |
+| (Step 5.3)       |
 +------------------+
         |
         v
 +--------------------+
 | encounterDistance  |  Perception-Berechnung
-| (Step 4.5)         |  initialDistance
+| (Step 5.4)         |  initialDistance
 +--------------------+
         |
         v  FlavouredGroup[]
 +------------------+
 | Difficulty       |  PMF-Kampfsimulation
-| (Step 5)         |  Win% + TPK-Risk
+| (Step 6)         |  Win% + TPK-Risk
 +------------------+
         |
         v
 +------------------+
 | goalDifficulty   |  Ziel-Difficulty wuerfeln
-| (Step 6.0)       |  Terrain-Threat
+| (Step 7.0)       |  Terrain-Threat
 +------------------+
         |
         v
 +------------------+
 | Balancing        |  Beste Anpassung waehlen
-| (Step 6.1)       |  Win% an Ziel anpassen
+| (Step 7.1)       |  Win% an Ziel anpassen
 +------------------+
         |
         v
@@ -184,20 +184,22 @@ EncounterContext
 | Helper | Step | Input | Output | Dokument |
 |--------|:----:|-------|--------|----------|
 | groupSeed | 2 | EncounterContext | SeedSelection | [groupSeed.md](groupSeed.md) |
-| groupPopulation | 3 | SeedSelection | EncounterGroup | [groupPopulation.md](groupPopulation.md) |
-| groupActivity | 4.1-4.2 | EncounterGroup[], Context | activity, goal | [groupActivity.md](groupActivity.md) |
-| encounterNPCs | 4.3 | GroupWithActivity[], Context | NPCs[], GroupWithNPCs[] | [→ encounterNPCs](#encounternpcs-step-43) |
-| encounterLoot | 4.4 | GroupWithNPCs[], Context | GroupWithLoot[] | [encounterLoot.md](encounterLoot.md) |
-| encounterDistance | 4.5 | FlavouredGroup[], Context | EncounterPerception | [encounterDistance.md](encounterDistance.md) |
-| Difficulty | 5 | FlavouredGroup[], PartySnapshot | SimulationResult | [Difficulty.md](Difficulty.md) |
-| goalDifficulty | 6.0 | EncounterContext | EncounterDifficulty | [→ goalDifficulty](#goaldifficulty-step-60) |
-| Balancing | 6.1 | FlavouredGroup[], SimResult, Difficulty | BalancedEncounter | [Balancing.md](Balancing.md) |
+| groupPopulation | 3 | SeedSelection | PopulatedGroup | [groupPopulation.md](groupPopulation.md) |
+| encounterNPCs | 5.1 | PopulatedGroup[], Context | NPCs[], GroupWithNPCs[] | [→ encounterNPCs](#encounternpcs-step-51) |
+| groupActivity | 5.2 | GroupWithNPCs[], Context | GroupWithActivity[] | [groupActivity.md](groupActivity.md) |
+| encounterLoot | 5.3 | GroupWithActivity[], Context | GroupWithLoot[] | [encounterLoot.md](encounterLoot.md) |
+| encounterDistance | 5.4 | GroupWithLoot[], Context | GroupWithPerception[] | [encounterDistance.md](encounterDistance.md) |
+| Difficulty | 6 | FlavouredGroup[], PartySnapshot | SimulationResult | [Difficulty.md](Difficulty.md) |
+| goalDifficulty | 7.0 | EncounterContext | EncounterDifficulty | [→ goalDifficulty](#goaldifficulty-step-70) |
+| Balancing | 7.1 | FlavouredGroup[], SimResult, Difficulty | BalancedEncounter | [Balancing.md](Balancing.md) |
 
 ---
 
-## encounterNPCs (Step 4.3) {#encounternpcs-step-43}
+## encounterNPCs (Step 5.1) {#encounternpcs-step-51}
 
 NPCs fuer das gesamte Encounter zuweisen (1-3 NPCs).
+
+**Wichtig:** Dieser Step laeuft VOR groupActivity (Step 5.2), damit NPC-Reputation in die Disposition-Berechnung einfliessen kann.
 
 **Delegation:** NPC-Matching und -Generierung erfolgen via NPCService.
 -> [NPC-Matching.md](../NPCs/NPC-Matching.md) | [NPC-Generation.md](../NPCs/NPC-Generation.md)
@@ -251,7 +253,7 @@ Alle zugewiesenen NPCs sind vollstaendig (Name, 2 Traits, Quirk, Goal) und werde
 
 ---
 
-## encounterLoot (Step 4.4) {#encounterloot-step-44}
+## encounterLoot (Step 5.3) {#encounterloot-step-53}
 
 Loot fuer das gesamte Encounter generieren und auf Kreaturen verteilen.
 
@@ -277,7 +279,7 @@ Loot wird auf **Encounter-Ebene** berechnet und dann auf Kreaturen verteilt:
 
 ---
 
-## goalDifficulty (Step 6.0) {#goaldifficulty-step-60}
+## goalDifficulty (Step 7.0) {#goaldifficulty-step-70}
 
 Ziel-Difficulty via gewichtete Normalverteilung basierend auf Terrain-ThreatLevel.
 

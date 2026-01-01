@@ -40,20 +40,24 @@ export async function editTask(taskId, changes, claimKey, tasks, bugs, claims) {
     }
   }
 
-  // 3. Bei Status → ✅: Dependencies prüfen
-  if (changes.status === STATUS.done.symbol) {
-    if (!areDependenciesSatisfied(task, tasks, bugs)) {
+  // 3. Bei Status-Änderung (außer → ⛔): Dependencies prüfen
+  if (changes.status && changes.status !== STATUS.blocked.symbol) {
+    if (task.deps.length > 0 && !areDependenciesSatisfied(task, tasks, bugs)) {
       return err({ code: 'DEPS_NOT_MET', id: taskId });
     }
   }
 
-  // 4. Änderungen anwenden
+  // 4. Alte Referenzen speichern (für Sync-Diff)
+  const oldSpec = [...task.spec];
+  const oldImpl = [...task.impl];
+
+  // 5. Änderungen anwenden
   const applyResult = applyChanges(task, changes, tasks, bugs);
   if (!applyResult.ok) {
     return applyResult;
   }
 
-  // 5. Bei Status-Änderung (nicht auf 🔒): Claim freigeben (nur wenn geclaimed war)
+  // 6. Bei Status-Änderung (nicht auf 🔒): Claim freigeben (nur wenn geclaimed war)
   let claimReleased = false;
   if (changes.status && changes.status !== STATUS.claimed.symbol && claimKey) {
     delete claims.claims[normalizedId];
@@ -61,14 +65,23 @@ export async function editTask(taskId, changes, claimKey, tasks, bugs, claims) {
     claimReleased = true;
   }
 
-  // 6. Status-Änderung zu Dependents propagieren
+  // 7. Status-Änderung zu Dependents propagieren
   let updatedTasks = [];
   if (changes.status) {
     const propagation = propagateStatus(`#${task.id}`, changes.status, tasks, bugs);
     updatedTasks = propagation.updatedTasks;
   }
 
-  // 7. Dateien synchronisieren
+  // 8. Dateien synchronisieren
+  // 8a. Entfernte Referenzen: Task aus alten Dateien entfernen
+  const removedSpecs = oldSpec.filter(s => !task.spec.includes(s));
+  const removedImpls = oldImpl.filter(i => !task.impl.includes(i));
+  if (removedSpecs.length || removedImpls.length) {
+    const oldTask = { ...task, spec: removedSpecs, impl: removedImpls };
+    await syncTask(oldTask, 'remove');
+  }
+
+  // 8b. Aktuelle Referenzen: Task hinzufügen/updaten
   await syncTask(task, 'update');
   for (const updated of updatedTasks) {
     await syncTask(updated, 'update');
@@ -135,6 +148,18 @@ export function applyChanges(task, changes, tasks, bugs) {
     task.deps = depIds;
   }
 
+  // Spec-Handling (multi-value)
+  if (changes.spec !== undefined) {
+    const specValues = changes.spec.split(',').map(s => s.trim()).filter(Boolean);
+    task.spec = (specValues.length === 1 && specValues[0] === '-') ? [] : specValues;
+  }
+
+  // Impl-Handling (multi-value)
+  if (changes.impl !== undefined) {
+    const implValues = changes.impl.split(',').map(i => i.trim()).filter(Boolean);
+    task.impl = (implValues.length === 1 && implValues[0] === '-') ? [] : implValues;
+  }
+
   return ok(undefined);
 }
 
@@ -145,4 +170,6 @@ export function applyChanges(task, changes, tasks, bugs) {
  * @property {string} [beschreibung]
  * @property {string} [prio]
  * @property {boolean} [mvp]
+ * @property {string} [spec]
+ * @property {string} [impl]
  */

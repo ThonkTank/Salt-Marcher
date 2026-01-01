@@ -52,23 +52,23 @@ export const tilePresets = tilePresetsSchema.parse([
   {
     coordinate: { q: -2, r: 2 },
     terrain: 'forest',
-    factionPresence: [{ factionId: 'bergstamm', weight: 1.0 }],
+    factionPresence: [{ factionId: 'bergstamm', randWeighting: 1.0 }],
   },
   {
     coordinate: { q: -1, r: 2 },
     terrain: 'forest',
-    factionPresence: [{ factionId: 'bergstamm', weight: 1.0 }],
+    factionPresence: [{ factionId: 'bergstamm', randWeighting: 1.0 }],
   },
   // Nord: Vorberge (leichter Goblin-Einfluss)
   {
     coordinate: { q: 0, r: 2 },
     terrain: 'hill',
-    factionPresence: [{ factionId: 'bergstamm', weight: 0.5 }],
+    factionPresence: [{ factionId: 'bergstamm', randWeighting: 0.5 }],
   },
   {
     coordinate: { q: 1, r: 1 },
     terrain: 'hill',
-    factionPresence: [{ factionId: 'bergstamm', weight: 0.5 }],
+    factionPresence: [{ factionId: 'bergstamm', randWeighting: 0.5 }],
   },
   // Ost: Felder (neutral)
   { coordinate: { q: 2, r: 0 }, terrain: 'grassland' },
@@ -79,17 +79,17 @@ export const tilePresets = tilePresetsSchema.parse([
   {
     coordinate: { q: 0, r: -2 },
     terrain: 'coast',
-    factionPresence: [{ factionId: 'schmuggler', weight: 1.0 }],
+    factionPresence: [{ factionId: 'schmuggler', randWeighting: 1.0 }],
   },
   {
     coordinate: { q: -1, r: -1 },
     terrain: 'coast',
-    factionPresence: [{ factionId: 'schmuggler', weight: 1.0 }],
+    factionPresence: [{ factionId: 'schmuggler', randWeighting: 1.0 }],
   },
   {
     coordinate: { q: -2, r: 0 },
     terrain: 'coast',
-    factionPresence: [{ factionId: 'schmuggler', weight: 1.5 }],
+    factionPresence: [{ factionId: 'schmuggler', randWeighting: 1.5 }],
   },
   // Nordwest: Küstenwald (neutral)
   { coordinate: { q: -2, r: 1 }, terrain: 'forest' },
@@ -101,38 +101,38 @@ export const tilePresets = tilePresetsSchema.parse([
   {
     coordinate: { q: -3, r: 3 },
     terrain: 'forest',
-    factionPresence: [{ factionId: 'bergstamm', weight: 1.5 }],
+    factionPresence: [{ factionId: 'bergstamm', randWeighting: 1.5 }],
   },
   // Nord: Bergkette (Goblin-Kerngebiet)
   {
     coordinate: { q: -2, r: 3 },
     terrain: 'mountain',
     crBudget: 30,
-    factionPresence: [{ factionId: 'bergstamm', weight: 2.5 }],
+    factionPresence: [{ factionId: 'bergstamm', randWeighting: 2.5 }],
   },
   {
     coordinate: { q: -1, r: 3 },
     terrain: 'mountain',
     crBudget: 30,
-    factionPresence: [{ factionId: 'bergstamm', weight: 3.0 }],
+    factionPresence: [{ factionId: 'bergstamm', randWeighting: 3.0 }],
   },
   {
     coordinate: { q: 0, r: 3 },
     terrain: 'mountain',
     crBudget: 30,
-    factionPresence: [{ factionId: 'bergstamm', weight: 3.0 }],
+    factionPresence: [{ factionId: 'bergstamm', randWeighting: 3.0 }],
   },
   {
     coordinate: { q: 1, r: 2 },
     terrain: 'mountain',
     crBudget: 30,
-    factionPresence: [{ factionId: 'bergstamm', weight: 2.5 }],
+    factionPresence: [{ factionId: 'bergstamm', randWeighting: 2.5 }],
   },
   // Nordost: Vorberge (Goblin-Randgebiet)
   {
     coordinate: { q: 2, r: 1 },
     terrain: 'hill',
-    factionPresence: [{ factionId: 'bergstamm', weight: 1.0 }],
+    factionPresence: [{ factionId: 'bergstamm', randWeighting: 1.0 }],
   },
   // Ost: Hügel und Felder (neutral)
   { coordinate: { q: 3, r: 0 }, terrain: 'hill' },
@@ -145,33 +145,33 @@ export const tilePresets = tilePresetsSchema.parse([
   {
     coordinate: { q: 1, r: -3 },
     terrain: 'coast',
-    factionPresence: [{ factionId: 'schmuggler', weight: 1.5 }],
+    factionPresence: [{ factionId: 'schmuggler', randWeighting: 1.5 }],
   },
   {
     coordinate: { q: 0, r: -3 },
     terrain: 'coast',
-    factionPresence: [{ factionId: 'schmuggler', weight: 2.0 }],
+    factionPresence: [{ factionId: 'schmuggler', randWeighting: 2.0 }],
   },
   {
     coordinate: { q: -1, r: -2 },
     terrain: 'coast',
-    factionPresence: [{ factionId: 'schmuggler', weight: 2.0 }],
+    factionPresence: [{ factionId: 'schmuggler', randWeighting: 2.0 }],
   },
   // West: Küste (Schmuggler-Kerngebiet)
   {
     coordinate: { q: -2, r: -1 },
     terrain: 'coast',
-    factionPresence: [{ factionId: 'schmuggler', weight: 2.5 }],
+    factionPresence: [{ factionId: 'schmuggler', randWeighting: 2.5 }],
   },
   {
     coordinate: { q: -3, r: 0 },
     terrain: 'coast',
-    factionPresence: [{ factionId: 'schmuggler', weight: 2.5 }],
+    factionPresence: [{ factionId: 'schmuggler', randWeighting: 2.5 }],
   },
   {
     coordinate: { q: -3, r: 1 },
     terrain: 'coast',
-    factionPresence: [{ factionId: 'schmuggler', weight: 2.0 }],
+    factionPresence: [{ factionId: 'schmuggler', randWeighting: 2.0 }],
   },
   // Nordwest: Küstenwald (neutral)
   { coordinate: { q: -3, r: 2 }, terrain: 'forest' },

@@ -2,6 +2,7 @@
 // Siehe: docs/services/encounter/encounterDistance.md
 
 import type { GroupWithLoot } from './encounterLoot';
+import { DEFAULT_PERCEPTION_DISTANCE } from '@/constants/encounterConfig';
 
 /** Output von calculate - GroupWithLoot erweitert um Perception */
 export interface GroupWithPerception extends GroupWithLoot {
@@ -29,8 +30,8 @@ export function calculate(
   return {
     ...group,
     perception: {
-      partyDetectsEncounter: 60,
-      encounterDetectsParty: 60,
+      partyDetectsEncounter: DEFAULT_PERCEPTION_DISTANCE,
+      encounterDetectsParty: DEFAULT_PERCEPTION_DISTANCE,
       isSurprise: false,
     },
   };

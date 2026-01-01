@@ -71,3 +71,13 @@ export const TIME_ENCOUNTER_MODIFIERS = {
 } as const;
 
 export type TimeEncounterModifiers = typeof TIME_ENCOUNTER_MODIFIERS;
+
+// ============================================================================
+// PERCEPTION/DISTANCE
+// ============================================================================
+
+/**
+ * Standard-Distanz für Encounter-Wahrnehmung (in Fuß).
+ * Wird verwendet wenn Perception-Berechnung keine Distanz ermitteln kann.
+ */
+export const DEFAULT_PERCEPTION_DISTANCE = 60;

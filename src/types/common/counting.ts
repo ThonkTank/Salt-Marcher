@@ -14,11 +14,11 @@ export interface CountRange {
 }
 
 /**
- * Item mit zugehörigem Gewicht für gewichtete Zufallsauswahl.
+ * Item mit zugehöriger Gewichtung für gewichtete Zufallsauswahl.
  */
 export interface WeightedItem<T> {
   item: T;
-  weight: number;
+  randWeighting: number;
 }
 
 // ============================================================================

@@ -70,7 +70,7 @@ export const IMPL_TAGS = ['[neu]', '[ändern]', '[fertig]'];
 export const BASE_LAYERS = [
   'services',
   'features',
-  'entities',
+  'types',
   'orchestration',
   'views',
   'infrastructure',
@@ -155,10 +155,10 @@ export async function loadValidDomains(docsPath) {
       domains.add(name);
     }
 
-    // Domains aus docs/entities/ (Dateien ohne .md)
-    const entitiesPath = join(docsPath, 'entities');
-    const entityEntries = await readdir(entitiesPath);
-    for (const entry of entityEntries) {
+    // Domains aus docs/types/ (Dateien ohne .md)
+    const typesPath = join(docsPath, 'types');
+    const typeEntries = await readdir(typesPath);
+    for (const entry of typeEntries) {
       const name = entry.replace('.md', '').replace('-', '');
       domains.add(name);
     }
@@ -213,17 +213,6 @@ export function isValidStatus(symbol) {
  */
 export function isValidPrio(prio) {
   return prio in PRIORITIES;
-}
-
-/**
- * Hilfsfunktion: Prüft ob Layer gültig ist (synchron, nur gegen BASE_LAYERS)
- * Für vollständige Validierung: isValidLayerAsync verwenden
- * @param {string} layer - Zu prüfender Layer (kann komma-separiert sein)
- * @returns {boolean} true wenn alle Layers gültig
- */
-export function isValidLayer(layer) {
-  const layers = parseMultiValue(layer);
-  return layers.every(l => BASE_LAYERS.includes(l) || l.startsWith('services/'));
 }
 
 /**

@@ -10,7 +10,7 @@ export {
   type CreatureInstance,
   // Sub-schemas
   sizeSchema,
-  dispositionSchema,
+  baseDispositionSchema,
   designRoleSchema,
   abilityScoresSchema,
   type AbilityScores,
@@ -89,8 +89,6 @@ export {
   type NPC,
   type NPCId,
   npcStatusSchema,
-  personalityTraitsSchema,
-  type PersonalityTraits,
   creatureRefSchema,
   type CreatureRef,
 } from './npc';
@@ -126,3 +124,12 @@ export { landmarkSchema, type Landmark } from './landmark';
 
 // Activity
 export { activitySchema, type Activity, type ActivityId } from './activity';
+
+// Trait
+export { traitSchema, type Trait } from './trait';
+
+// Quirk
+export { quirkSchema, type Quirk } from './quirk';
+
+// Goal
+export { goalSchema, type Goal, personalityBonusSchema, type PersonalityBonus } from './goal';

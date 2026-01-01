@@ -11,8 +11,9 @@
 
 import { existsSync } from 'node:fs';
 import { ok, err } from '../core/result.mjs';
-import { BASE_LAYERS, PRIORITIES, STATUS, parseMultiValue, isValidLayer } from '../core/table/schema.mjs';
-import { resolveSpecPath, resolveImplPath, functionExists } from '../adapters/fs-task-adapter.mjs';
+import { PRIORITIES, STATUS, parseMultiValue, isValidLayerAsync, loadValidLayers } from '../core/table/schema.mjs';
+import { resolveSpecPath, resolveImplPath, functionExists, DOCS_PATH } from '../adapters/fs-task-adapter.mjs';
+import { areDependenciesSatisfied } from '../core/deps/propagation.mjs';
 
 /**
  * Erstellt neue Tasks.
@@ -51,6 +52,12 @@ export async function addTasks(taskInputs, existingTasks) {
       impl: parseMultiValue(input.impl),      // String zu Array
       lineNumber: 0, // Wird beim Schreiben aktualisiert
     };
+
+    // Dependency-Check: Wenn nicht alle Dependencies erfüllt → ⛔
+    const allTasksForCheck = [...existingTasks, ...newTasks, task];
+    if (task.deps.length > 0 && !areDependenciesSatisfied(task, allTasksForCheck, [])) {
+      task.status = STATUS.blocked.symbol;
+    }
 
     newTasks.push(task);
   }
@@ -118,8 +125,9 @@ export async function validateTaskInput(input, existingTasks) {
     }
   }
 
-  if (!isValidLayer(input.layer)) {
-    return err({ code: 'INVALID_LAYER', layer: input.layer, valid: BASE_LAYERS });
+  if (!(await isValidLayerAsync(input.layer, DOCS_PATH))) {
+    const validLayers = await loadValidLayers(DOCS_PATH);
+    return err({ code: 'INVALID_LAYER', layer: input.layer, valid: validLayers });
   }
 
   if (input.prio && !PRIORITIES[input.prio]) {

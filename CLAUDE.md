@@ -171,6 +171,8 @@ src/                   # Source code
     encounterConfig.ts  # Encounter-Konfiguration
     faction.ts  # Fraktions-bezogene Konstanten
     index.ts  # Constants Index
+    item.ts  # Item-Konstanten
+    loot.ts  # Ziel: Loot-Konstanten für Budget und Wealth-System
     npc.ts  # NPC-bezogene Konstanten
     terrain.ts  # Terrain-/Map-bezogene Konstanten
     time.ts  # Zeit-bezogene Konstanten
@@ -181,6 +183,9 @@ src/                   # Source code
       PresetVaultAdapter.ts  # VaultAdapter-Implementierung für CLI-Testing
       VaultAdapter.ts  # Vault-Adapter Interface für Datenzugriff
       vaultInstance.ts  # Vault-Instance für globalen Zugriff
+  presets/
+    creatures.ts  # Ziel: Creature-Presets: disposition zu baseDisposition ko...
+    factions.ts  # Ziel: Faction-Presets: reputationWithParty zu reputations...
   services/
     encounterGenerator/
       balancing.ts  # Encounter-Balancing durch Umstände anpassen
@@ -199,21 +204,27 @@ src/                   # Source code
   types/
     common/
       counting.ts  # Zähl- und Gewichtungs-Typen für das Encounter-System
+      layerTraitConfig.ts  # Ziel: Gemeinsame Konfiguration für NPC-Attribute in Cultu...
+      reputation.ts  # Ziel: Gemeinsames Schema für Beziehungen zwischen Entities
       Result.ts
     entities/
       activity.ts  # Vault-persistierte Activity-Definition
       creature.ts  # Vault-persistierte CreatureDefinition und Runtime Creatur...
       faction.ts  # Vault-persistierte Faction
+      goal.ts  # Ziel: Vault-persistierte Goal-Definition
       groupTemplate.ts  # Vault-persistierte GroupTemplate
       index.ts  # Entity Types Index
       landmark.ts  # Vault-persistierte Landmark-Definition
       map.ts  # Vault-persistierte Map-Definition
       npc.ts  # Vault-persistierte NPC-Entity
       overworldTile.ts  # Vault-persistierte OverworldTile
+      quirk.ts  # Ziel: Vault-persistierte Quirk-Definition
       terrainDefinition.ts  # Vault-persistierte TerrainDefinition
+      trait.ts  # Vault-persistierte Trait-Definition
     encounterTypes.ts  # Encounter-Typen: Runtime-Repräsentation und Trigger für E...
     factionPresence.ts  # Faction-Präsenz auf einem Tile
     hexCoordinate.ts  # Axiale Hex-Koordinaten (q, r)
+    loot.ts  # Ziel: Loot-Typen für Budget-Tracking und Item-Auswahl
     partySnapshot.ts  # Party-Snapshot für Encounter-Generierung
     sessionState.ts  # Session-State Typen für CLI-Testbarkeit
     terrainDefinition.ts  # Terrain-Definition für Hex-Tiles
@@ -244,31 +255,6 @@ docs/                  # Authoritative documentation (German)
     Difficulty.md  # TODO: Inhalte extrahieren aus `docs/services/encounter/Di...
     LootRarity.md  # TODO: Inhalte extrahieren aus `docs/services/Loot.md`
     TimeSegments.md  # TODO: Inhalte extrahieren aus `docs/entities/creature.md`...
-  entities/
-    action.md  # [Library](../views/Library.md) (Creature-Editor), Presets...
-    activity.md  # [Library](../views/Library.md) (Activity-Editor), Presets...
-    creature.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
-    culture-data.md  # [Faction](faction.md) (eingebettet)
-    currency.md  # -
-    encounter-instance.md  # [Encounter-Service](../services/encounter/Encounter.md) (...
-    faction-presence.md  # [Cartographer](../views/Cartographer.md) (Praesenz-Vorber...
-    faction.md  # [Library](../views/Library.md) (CRUD), [Encounter](../ser...
-    group-template.md  # [Library](../views/Library.md), [Faction](faction.md)
-    interior-object.md  # [Library](../views/Library.md) (CRUD)
-    item.md  # [Library](../views/Library.md)
-    journal-entry.md  # Quest-Feature (auto), Encounter-Feature (auto), Travel-Fe...
-    journal-settings.md  # User-Konfiguration (Settings-UI)
-    journal.md  # [Journal-Feature](../features/Journal.md) (Auto-Generieru...
-    landmark.md  # [Library](../views/Library.md) (CRUD), [Cartographer](../...
-    LootContainer.md  # [Library](../views/Library.md), [Loot](../services/Loot.m...
-    map.md  # [Cartographer](../views/Cartographer.md), [Library](../vi...
-    npc.md  # [Encounter](../services/encounter/Encounter.md) (Generier...
-    overworld-tile.md  # [Cartographer](../views/Cartographer.md) (Terrain/Danger-...
-    path.md  # [Cartographer](../views/Cartographer.md) (Path-Tool)
-    quest.md  # [Library](../views/Library.md) (CRUD)
-    session.md  # sessionState (Session starten/beenden)
-    shop.md  # [Library](../views/Library.md) (CRUD)
-    terrain-definition.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
   features/
     Audio-System.md  # Kontextbasierte Hintergrundmusik und Umgebungsgeraeusche
     Character-System.md  # Verwaltung von Player Characters - Schema, HP-Tracking, I...
@@ -294,7 +280,7 @@ docs/                  # Authoritative documentation (German)
       encounter.md  # Generiert kontextabhaengige Encounters basierend auf Posi...
       encounterDistance.md  # Encounter-Service (Step 4.5)
       encounterLoot.md  # Encounter-Service (Step 4.4)
-      groupActivity.md  # Encounter-Service (Step 4.1, 4.2)
+      groupActivity.md  # Encounter-Service (Step 5.2)
       groupPopulation.md  # Encounter-Service (Step 3)
       groupSeed.md  # Encounter-Service (Step 2)
     npcs/
@@ -308,6 +294,31 @@ docs/                  # Authoritative documentation (German)
   tools/
     taskTool.md  # CLI-Tool für Task-Management in der Development-Roadmap.
     update-refs-hook.md  # Automatisches Update von Markdown-Links, TypeScript-Impor...
+  types/
+    action.md  # [Library](../views/Library.md) (Creature-Editor), Presets...
+    activity.md  # [Library](../views/Library.md) (Activity-Editor), Presets...
+    creature.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
+    culture-data.md  # [Faction](faction.md) (eingebettet)
+    currency.md  # -
+    encounter-instance.md  # [Encounter-Service](../services/encounter/Encounter.md) (...
+    faction-presence.md  # [Cartographer](../views/Cartographer.md) (Praesenz-Vorber...
+    faction.md  # [Library](../views/Library.md) (CRUD), [Encounter](../ser...
+    group-template.md  # [Library](../views/Library.md), [Faction](faction.md)
+    interior-object.md  # [Library](../views/Library.md) (CRUD)
+    item.md  # [Library](../views/Library.md)
+    journal-entry.md  # Quest-Feature (auto), Encounter-Feature (auto), Travel-Fe...
+    journal-settings.md  # User-Konfiguration (Settings-UI)
+    journal.md  # [Journal-Feature](../features/Journal.md) (Auto-Generieru...
+    landmark.md  # [Library](../views/Library.md) (CRUD), [Cartographer](../...
+    LootContainer.md  # [Library](../views/Library.md), [Loot](../services/Loot.m...
+    map.md  # [Cartographer](../views/Cartographer.md), [Library](../vi...
+    npc.md  # [Encounter](../services/encounter/Encounter.md) (Generier...
+    overworld-tile.md  # [Cartographer](../views/Cartographer.md) (Terrain/Danger-...
+    path.md  # [Cartographer](../views/Cartographer.md) (Path-Tool)
+    quest.md  # [Library](../views/Library.md) (CRUD)
+    session.md  # sessionState (Session starten/beenden)
+    shop.md  # [Library](../views/Library.md) (CRUD)
+    terrain-definition.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
   views/
     Cartographer.md  # [Map-Feature](../features/Map-Feature.md), [Map](../entit...
     DetailView.md  # [Application](../architecture/Application.md), [SessionRu...
@@ -450,6 +461,24 @@ Jede TypeScript-Datei MUSS einen standardisierten Header haben:
 
 ## 4. Task-Workflow (PFLICHT)
 
+### ⛔ KRITISCHE REGEL: Task-Dateien NIE direkt bearbeiten
+
+> **STOP! LIES DAS ZUERST!**
+>
+> Du darfst NIEMALS folgende Tools auf Task-Dateien anwenden:
+> - ❌ `Read` auf `Development-Roadmap.md`
+> - ❌ `Edit` auf Task-Tabellen in JEDER Datei
+> - ❌ `Write` auf Task-Tabellen in JEDER Datei
+>
+> **WARUM:** Tasks werden automatisch in 3-10 Dateien dupliziert. Manuelle Edits zerstören die Synchronisation.
+>
+> **EINZIGE erlaubte Methode:** `node scripts/task/task.mjs <command>`
+
+**Geschützte Dateien/Patterns (NIE manuell editieren):**
+- `docs/architecture/Development-Roadmap.md` - Haupt-Task-Liste
+- `// TASKS:` Blöcke in TypeScript-Dateien - Automatisch synchronisiert
+- `## TASKS` Blöcke in Markdown-Dateien - Automatisch synchronisiert
+
 ### Projekt-Kontext
 
 **STOPP. VOR jeder Aufgabe MUSST du:**
@@ -462,9 +491,22 @@ node scripts/task/task.mjs sort <keyword>      # Nach Keyword filtern
 node scripts/task/task.mjs show <ID>           # Task-Details + Dependencies
 ```
 
-**ABSOLUT VERBOTEN:**
-- Development-Roadmap.md direkt lesen (Read-Tool) - nur über CLI!
-- Tasks manuell editieren (Edit-Tool) - nur über CLI!
+**⛔ ABSOLUT VERBOTEN (KEINE AUSNAHMEN):**
+
+| Tool | Verbotene Aktion | Konsequenz |
+|------|------------------|------------|
+| `Read` | Development-Roadmap.md lesen | Nutze `task show <ID>` |
+| `Edit` | Task-Zeilen in JEDER Datei ändern | Desync zwischen Dateien |
+| `Write` | Dateien mit Task-Tabellen überschreiben | Verlorene Duplikate |
+
+**Verstöße führen zu:**
+- Inkonsistente Task-Status zwischen Roadmap und referenzierten Dateien
+- Verlorene Task-Duplikate in Spec/Impl-Dateien
+- Beschädigter Claim-Mechanismus (andere Agenten sehen falschen Status)
+
+**WARUM:** Tasks werden automatisch in 3-10 Dateien dupliziert (Roadmap + alle Spec/Impl-Dateien). Das CLI-Tool hält diese Duplikate synchron. Manuelle Edits zerstören diese Synchronisation UNWIDERRUFLICH.
+
+**ALLE Task-Änderungen NUR über:** `node scripts/task/task.mjs edit <ID> --status X`
 
 ### Claim-Gate (KEINE AUSNAHMEN)
 
@@ -524,6 +566,15 @@ node scripts/task/task.mjs claim <ID>
 
 **Wichtig:** `--key` ist nur erforderlich wenn die Task geclaimed ist (Status 🔒). Nicht-geclaimte Tasks können direkt editiert werden.
 
+**⛔ MANUELLES TASK-EDITING = DATENVERLUST**
+
+Du darfst KEINE dieser Tools auf Task-Daten anwenden:
+| Verboten | Stattdessen |
+|----------|-------------|
+| `Read` auf Roadmap | `node scripts/task/task.mjs show <ID>` |
+| `Edit` auf Task-Zeilen | `node scripts/task/task.mjs edit <ID> --status X` |
+| `Write` auf Task-Dateien | NIEMALS - führt zu unwiderruflichem Datenverlust |
+
 ### Sort-Filter
 
 ```bash
@@ -566,6 +617,12 @@ node scripts/task/task.mjs add --tasks '[{
 ```
 types/entities/creature.ts.someFunc() [ändern]
 constants/creature.ts.someFunc() [ändern]
+```
+
+**Multi-Value-Support:** `specs` und `impl` unterstützen komma-separierte Werte:
+```
+specs: "groupActivity.md#Step-4.1, groupSeed.md#Selection"
+impl: "groupActivity.ts.selectActivity(), groupSeed.ts.buildPool() [ändern]"
 ```
 
 **Task-Duplikation:**

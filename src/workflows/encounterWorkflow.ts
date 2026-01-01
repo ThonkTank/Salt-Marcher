@@ -70,7 +70,7 @@ export function checkEncounter(trigger: EncounterTrigger, forceEncounter = false
   // Step 1: Encounter-Check
   if (!forceEncounter) {
     const baseChance = terrain.encounterChance ?? DEFAULT_ENCOUNTER_CHANCE;
-    const timeModifier = TIME_ENCOUNTER_MODIFIERS[state.time.daySegment as keyof typeof TIME_ENCOUNTER_MODIFIERS] ?? 1.0;
+    const timeModifier = TIME_ENCOUNTER_MODIFIERS[state.time.segment as keyof typeof TIME_ENCOUNTER_MODIFIERS] ?? 1.0;
     if (Math.random() >= baseChance * timeModifier) {
       return;
     }
@@ -82,21 +82,11 @@ export function checkEncounter(trigger: EncounterTrigger, forceEncounter = false
     return { id, level: char.level, hp: char.currentHp, maxHp: char.maxHp, ac: char.ac };
   });
 
-  // TODO: XP-Thresholds aus Konstanten berechnen (src/constants/xp-thresholds.ts)
-  const avgLevel = Math.round(members.reduce((sum, m) => sum + m.level, 0) / members.length);
-  const thresholds = {
-    easy: avgLevel * 25 * members.length,
-    medium: avgLevel * 50 * members.length,
-    hard: avgLevel * 75 * members.length,
-    deadly: avgLevel * 100 * members.length,
-  };
-
   const party = {
     level: Math.max(...members.map(m => m.level)),
     size: members.length,
     members,
     position: state.party.position,
-    thresholds,
   };
 
   // Step 3: generateEncounter aufrufen
@@ -107,7 +97,8 @@ export function checkEncounter(trigger: EncounterTrigger, forceEncounter = false
     position: state.party.position,
     terrain,
     crBudget: effectiveCrBudget,
-    timeSegment: state.time.daySegment,
+    timeSegment: state.time.segment,
+    time: state.time,
     weather: state.weather!,
     party,
     factions: tile.factionPresence ?? [],
@@ -202,17 +193,8 @@ function buildParticipants(encounter: EncounterInstance): CombatParticipant[] {
 function updateNPCTracking(
   encounter: EncounterInstance,
   position: HexCoordinate,
-  time: { year: number; month: number; day: number; hour: number; minute: number; daySegment: string }
+  time: GameDateTime
 ): void {
-  // GameDateTime aus TimeState konstruieren
-  const gameTime: GameDateTime = {
-    year: time.year,
-    month: time.month,
-    day: time.day,
-    hour: time.hour,
-    segment: time.daySegment as GameDateTime['segment'],
-  };
-
   for (const group of encounter.groups) {
     for (const creature of group.creatures) {
       if (creature.npcId) {
@@ -220,10 +202,10 @@ function updateNPCTracking(
         if (npc) {
           vault.saveEntity('npc', {
             ...npc,
-            lastEncounter: gameTime,
+            lastEncounter: time,
             encounterCount: npc.encounterCount + 1,
             lastKnownPosition: position,
-            lastSeenAt: gameTime,
+            lastSeenAt: time,
           });
         }
       }

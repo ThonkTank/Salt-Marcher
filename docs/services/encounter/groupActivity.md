@@ -1,22 +1,22 @@
 # Encounter-Activity
 
-> **Helper fuer:** Encounter-Service (Step 4.1, 4.2, 4.3)
-> **Input:** `EncounterGroup`, `EncounterContext`, `Faction?`, `NPC?`
-> **Output:** `string` (Activity), `string` (Goal), `Disposition`
+> **Helper fuer:** Encounter-Service (Step 5.2)
+> **Input:** `GroupWithNPCs`, `EncounterContext`, `Faction?`
+> **Output:** `GroupWithActivity` (Activity, Goal, Disposition)
 > **Aufgerufen von:** [Encounter.md](Encounter.md)
 >
 > **Referenzierte Schemas:**
-> - [activity.md](../../entities/activity.md) - Activity-Entity
-> - [faction.md](../../entities/faction.md) - Faction mit Culture und Reputations
-> - [npc.md](../../entities/npc.md) - NPC mit Reputations
-> - [creature.md](../../entities/creature.md) - CreatureDefinition mit baseDisposition
+> - [activity.md](../../types/activity.md) - Activity-Entity
+> - [faction.md](../../types/faction.md) - Faction mit Culture und Reputations
+> - [npc.md](../../types/npc.md) - NPC mit Reputations
+> - [creature.md](../../types/creature.md) - CreatureDefinition mit baseDisposition
 > - [types.md#ReputationEntry](../../architecture/types.md#reputationentry) - Reputation-Schema
 >
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
-> - [encounterDistance.md](encounterDistance.md) - Perception-Berechnung (Step 4.5)
-> - [Encounter.md#groupnpcs](Encounter.md#groupnpcs-step-43) - NPC-Instanziierung (Step 4.3)
-> - [Encounter.md#grouploot](Encounter.md#grouploot-step-44) - Loot-Generierung (Step 4.4)
+> - [Encounter.md#encounternpcs-step-51](Encounter.md#encounternpcs-step-51) - NPC-Instanziierung (Step 5.1, VOR groupActivity!)
+> - [encounterDistance.md](encounterDistance.md) - Perception-Berechnung (Step 5.4)
+> - [Encounter.md#encounterloot-step-53](Encounter.md#encounterloot-step-53) - Loot-Generierung (Step 5.3)
 
 RP-Details fuer Encounters: Activities und Goals.
 
@@ -24,11 +24,11 @@ RP-Details fuer Encounters: Activities und Goals.
 
 ---
 
-## Step 4.1: Activity-Generierung
+## Step 5.2a: Activity-Generierung
 
 **Zweck:** Was macht die Gruppe gerade, wenn die Party sie antrifft?
 
-**Input:** `EncounterGroup`, `EncounterContext`, `Faction?`
+**Input:** `GroupWithNPCs`, `EncounterContext`, `Faction?`
 
 **Output:** `string` (Activity-Name)
 
@@ -95,55 +95,58 @@ Creature- und Faction-Activities ergaenzen diesen Pool.
 
 ```typescript
 function selectActivity(
-  group: EncounterGroup,
+  group: GroupWithNPCs,
   context: EncounterContext,
   faction?: Faction
 ): Activity {
-  const activityIds = new Set<string>();
+  // 1. Culture-Chain aufbauen (Type/Species → Faction)
+  const layers = resolveCultureChain(creatureDef, faction);
 
-  // 1. Generic (immer)
-  GENERIC_ACTIVITY_IDS.forEach(id => activityIds.add(id));
+  // 2. Activities aus ALLEN Layern sammeln mit Layer-Index
+  const activityEntries: { id: string; layerIndex: number }[] = [];
 
-  // 2. Creature-spezifisch
-  const creatures = getAllCreatures(group);
-  for (const creature of creatures) {
-    const def = vault.getEntity<CreatureDefinition>('creature', creature.creatureId);
-    if (def?.activities) {
-      def.activities.forEach(id => activityIds.add(id));
-    }
+  // Generic immer mit Layer 0 (niedrigste Prioritaet)
+  GENERIC_ACTIVITY_IDS.forEach(id => activityEntries.push({ id, layerIndex: 0 }));
+
+  // Culture-Layers hinzufuegen (hoehere Prioritaet)
+  for (let i = 0; i < layers.length; i++) {
+    layers[i].culture.activities?.forEach(id =>
+      activityEntries.push({ id, layerIndex: i + 1 })
+    );
   }
 
-  // 3. Faction-spezifisch (string[])
-  if (faction?.culture?.activities) {
-    faction.culture.activities.forEach(id => activityIds.add(id));
+  // 3. Basis-Gewichte per 60%-Kaskade berechnen
+  const layerWeights = calculateLayerWeights(layers.length + 1);
+
+  // 4. Gewichtete Items aufbauen
+  const weighted: WeightedItem<Activity>[] = [];
+  for (const entry of activityEntries) {
+    let weight = layerWeights[entry.layerIndex];
+
+    // Soft-Weighting fuer active/resting (siehe Kontext-Modifikatoren)
+    weight *= getContextModifier(activity, isCreatureActive);
+
+    weighted.push({ item: activity, weight });
   }
 
-  // 4. IDs zu Activities aufloesen
-  const pool = [...activityIds]
-    .map(id => ACTIVITY_DEFINITIONS[id])
-    .filter((a): a is Activity => a !== undefined);
-
-  // 5. Nach Kontext filtern (active/resting basierend auf creature.activeTime)
-  const filtered = pool.filter(a => matchesContext(a.contextTags, context));
-
-  // 6. Gleichverteilte Zufallsauswahl (keine Gewichtung)
-  return randomSelect(filtered.length > 0 ? filtered : pool);
+  // 5. Gewichtete Auswahl
+  return weightedRandomSelect(weighted);
 }
 ```
 
-### Kontext-Filter
+### Kontext-Modifikatoren (Soft-Weighting)
 
-Activities werden nach Kontext gefiltert basierend auf `contextTags`:
+Activities werden per Soft-Weighting bevorzugt/benachteiligt basierend auf `contextTags`:
 
-| Tag | Filter | Beschreibung |
-|-----|--------|--------------|
-| `active` | timeSegment ∈ creature.activeTime | Nur wenn Kreatur zur aktuellen Tageszeit aktiv ist |
-| `resting` | timeSegment ∉ creature.activeTime | Nur wenn Kreatur zur aktuellen Tageszeit ruht |
-| `movement` | - | Bewegungs-Aktivitaeten (traveling, patrol) |
-| `stealth` | - | Versteckte Aktivitaeten (ambush, hiding) |
-| `aquatic` | Wasser-Terrain | Nur bei Wasser-Terrain (TODO) |
+| Situation | Modifikator |
+|-----------|:-----------:|
+| Activity `active` + Kreatur aktiv | 2.0x |
+| Activity `resting` + Kreatur ruht | 2.0x |
+| Activity `active` + Kreatur ruht | 0.5x |
+| Activity `resting` + Kreatur aktiv | 0.5x |
+| Activity hat beide Tags | Kein Modifikator |
 
-**Wichtig:** Activities mit BEIDEN Tags (`active` + `resting`) sind immer anwendbar (z.B. `feeding`, `wandering`).
+**Wichtig:** Activities werden NIE gefiltert, nur gewichtet. Auch eine `sleeping` Activity kann bei einer aktiven Kreatur gewaehlt werden - nur mit 0.5x Wahrscheinlichkeit.
 
 ### Activity-Beispiele
 
@@ -157,7 +160,7 @@ Activities werden nach Kontext gefiltert basierend auf `contextTags`:
 
 ---
 
-## Step 4.2: Goal-Ableitung (Gruppen-Goal)
+## Step 5.2b: Goal-Ableitung (Gruppen-Goal)
 
 **Zweck:** Was will die Gruppe als Ganzes erreichen?
 
@@ -226,13 +229,15 @@ Fraktionen koennen Activity-Goal-Mappings definieren:
 
 ---
 
-## Step 4.3: Disposition-Berechnung
+## Step 5.2: Disposition-Berechnung
 
 **Zweck:** Wie steht die Gruppe zur Party?
 
-**Input:** `EncounterGroup`, `NPC?`, `Faction?`
+**Input:** `GroupWithNPCs`, `Faction?`
 
-**Output:** `Disposition` ('hostile' | 'neutral' | 'friendly')
+**Output:** `Disposition` ('hostile' | 'unfriendly' | 'indifferent' | 'friendly' | 'allied')
+
+**Hinweis:** Da encounterNPCs jetzt VOR groupActivity laeuft (Step 5.1), ist `group.creatures[0]?.npcId` verfuegbar und NPC-Reputation fliesst korrekt in die Disposition-Berechnung ein.
 
 ### Disposition-Formel
 
@@ -341,5 +346,5 @@ Activities der Gruppen sollten narrativ zusammenpassen:
 | 23 |   ✅    | encounter | services  | active/resting Filter basierend auf creature.activeTime                   | mittel | Nein | -    | groupActivity.md#Kontext-Filter                                      | groupActivity.ts.selectActivity()          |
 | 24 |   ✅    | encounter | services  | Activity-Pool-Hierarchie (Step 4.1) implementiert                         | mittel | Nein | -    | groupActivity.md#Activity-Definition                                 | groupActivity.ts.selectActivity()          |
 | 25 |   ✅    | encounter | services  | CultureData.activities auf string[] umgestellt                            | mittel | Nein | -    | groupActivity.md#Activity-Definition                                 | groupActivity.ts.selectActivity()          |
-| 60 |   ⬜    | encounter | services  | Disposition-Berechnung mit baseDisposition + Reputation implementieren    | mittel | Nein | #59  | services/encounter/groupActivity.md#Step-4.3:-Disposition-Berechnung | groupActivity.ts.assignActivity() [ändern] |
-| 61 |   ⬜    | creature  | constants | DISPOSITION_THRESHOLDS und BASE_DISPOSITION_VALUES Konstanten hinzufuegen | mittel | Nein | -    | services/encounter/groupActivity.md#Disposition-Berechnung           | constants/creature.ts [ändern]             |
+| 60 |   ✅    | encounter | services  | Disposition-Berechnung mit baseDisposition + Reputation implementieren    | mittel | Nein | #59  | services/encounter/groupActivity.md#Step-4.3:-Disposition-Berechnung | groupActivity.ts.assignActivity() [ändern] |
+| 61 |   ✅    | creature  | constants | DISPOSITION_THRESHOLDS und BASE_DISPOSITION_VALUES Konstanten hinzufuegen | mittel | Nein | -    | services/encounter/groupActivity.md#Disposition-Berechnung           | constants/creature.ts [ändern]             |

@@ -15,19 +15,27 @@ export function randomBetween(min: number, max: number): number {
  * Wählt ein Element basierend auf Gewichtung aus.
  * Höhere Gewichtung = höhere Wahrscheinlichkeit.
  *
+ * @param items - Array mit gewichteten Items
+ * @param debugLabel - Optional: Label für Debug-Ausgabe (nur bei DEBUG_SERVICES=true)
  * @returns Das ausgewählte Item oder null bei leerem Array
  */
-export function weightedRandomSelect<T>(items: WeightedItem<T>[]): T | null {
+export function weightedRandomSelect<T>(
+  items: WeightedItem<T>[],
+  debugLabel?: string
+): T | null {
   if (items.length === 0) return null;
 
-  const totalWeight = items.reduce((sum, entry) => sum + entry.weight, 0);
+  const totalWeight = items.reduce((sum, entry) => sum + entry.randWeighting, 0);
   if (totalWeight <= 0) return null;
 
   let roll = Math.random() * totalWeight;
 
   for (const entry of items) {
-    roll -= entry.weight;
+    roll -= entry.randWeighting;
     if (roll <= 0) {
+      if (debugLabel && process.env.DEBUG_SERVICES === 'true') {
+        console.log(`[${debugLabel}] Picked item with randWeighting ${entry.randWeighting} from total ${totalWeight}`);
+      }
       return entry.item;
     }
   }

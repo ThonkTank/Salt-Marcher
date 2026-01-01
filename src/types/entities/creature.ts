@@ -4,18 +4,20 @@
 // TASKS:
 // |  # | Status | Domain   | Layer    | Beschreibung                                                          |  Prio  | MVP? | Deps | Spec                        | Imp.                                |
 // |--:|:----:|:-------|:-------|:--------------------------------------------------------------------|:----:|:--:|:---|:--------------------------|:----------------------------------|
-// | 62 |   ⬜    | creature | entities | CreatureDefinition: disposition zu baseDisposition (number) migrieren | mittel | Nein | #61  | entities/creature.md#Felder | types/entities/creature.ts [ändern] |
+// | 62 |   ✅    | creature | entities | CreatureDefinition: disposition zu baseDisposition (number) migrieren | mittel | Nein | #61  | entities/creature.md#Felder | types/entities/creature.ts [ändern] |
 
 import { z } from 'zod';
 import { timeSegmentSchema } from '#types/time';
 import {
   CREATURE_SIZES,
-  DISPOSITIONS,
   DESIGN_ROLES,
   NOISE_LEVELS,
   SCENT_STRENGTHS,
   STEALTH_ABILITIES,
 } from '../../constants/creature';
+import { WEALTH_TIERS } from '../../constants/loot';
+import { validateDiceExpression } from '@/utils/diceParser';
+import { diceMax, diceAvg } from '@/utils/random';
 
 // ============================================================================
 // SUB-SCHEMAS
@@ -23,7 +25,10 @@ import {
 
 export const sizeSchema = z.enum(CREATURE_SIZES);
 
-export const dispositionSchema = z.enum(DISPOSITIONS);
+// baseDisposition: numerische Basis-Disposition (-100 bis +100)
+// Effektive Disposition = clamp(baseDisposition + reputation, -100, +100)
+// Siehe: docs/services/encounter/groupActivity.md#Disposition-Berechnung
+export const baseDispositionSchema = z.number().min(-100).max(100);
 
 export const designRoleSchema = z.enum(DESIGN_ROLES);
 
@@ -88,27 +93,44 @@ export const creaturePreferencesSchema = z.object({
 });
 export type CreaturePreferences = z.infer<typeof creaturePreferencesSchema>;
 
+// DefaultLootEntry: Garantiertes/wahrscheinliches Loot pro Creature
+// Siehe: docs/services/Loot.md#creature-default-loot
+export const defaultLootEntrySchema = z.object({
+  itemId: z.string().min(1),
+  chance: z.number().min(0).max(1),
+  quantity: z.tuple([z.number().int().positive(), z.number().int().positive()]).optional(),
+});
+export type DefaultLootEntry = z.infer<typeof defaultLootEntrySchema>;
+
+// WealthTier: Beeinflusst Loot-WERT, nicht Pool
+// Siehe: docs/services/Loot.md#wealth-system
+export const wealthTierSchema = z.enum(WEALTH_TIERS);
+export type WealthTier = z.infer<typeof wealthTierSchema>;
+
 // ============================================================================
 // CREATURE DEFINITION (Vault-persistiert)
 // ============================================================================
 
-export const creatureDefinitionSchema = z.object({
+// Input-Schema: Was in Presets/Vault gespeichert wird (ohne berechnete Felder)
+const creatureDefinitionInputSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   cr: z.number().min(0).max(30),
-  maxHp: z.number().int().positive(),
+  hitDice: z.string().min(1).refine(validateDiceExpression, { message: 'Invalid dice expression' }),
   ac: z.number().int().min(1).max(30),
   size: sizeSchema,
   tags: z.array(z.string()).min(1),
   species: z.string().optional(),
-  disposition: dispositionSchema,
+  baseDisposition: baseDispositionSchema,
   terrainAffinities: z.array(z.string()).min(1),
   activeTime: z.array(timeSegmentSchema).min(1),
   designRole: designRoleSchema,
   groupSize: z.union([z.number().int().positive(), countRangeSchema]).optional(),
   activities: z.array(z.string()).optional(),
   preferences: creaturePreferencesSchema.optional(),
-  lootTags: z.array(z.string()),
+  lootPool: z.array(z.string()).optional(),   // Item-IDs, überschreibt Culture-Kaskade
+  wealthTier: wealthTierSchema.optional(),    // Beeinflusst Loot-WERT
+  defaultLoot: z.array(defaultLootEntrySchema).optional(),
   carriesLoot: z.boolean().optional(),
   detectionProfile: detectionProfileSchema,
   abilities: abilityScoresSchema,
@@ -119,6 +141,13 @@ export const creatureDefinitionSchema = z.object({
   source: z.string().optional(),
 });
 
+// Output-Schema: Mit berechneten maxHp und averageHp aus hitDice
+export const creatureDefinitionSchema = creatureDefinitionInputSchema.transform((data) => ({
+  ...data,
+  maxHp: diceMax(data.hitDice),
+  averageHp: Math.ceil(diceAvg(data.hitDice)),
+}));
+
 export type CreatureDefinition = z.infer<typeof creatureDefinitionSchema>;
 export type CreatureId = CreatureDefinition['id'];
 
@@ -126,11 +155,20 @@ export type CreatureId = CreatureDefinition['id'];
 // CREATURE INSTANCE (Runtime - in Encounter/Combat)
 // ============================================================================
 
+export const creatureLootItemSchema = z.object({
+  id: z.string().min(1),
+  quantity: z.number().int().positive(),
+});
+export type CreatureLootItem = z.infer<typeof creatureLootItemSchema>;
+
 export const creatureInstanceSchema = z.object({
+  instanceId: z.string().uuid(), // Eindeutige Instanz-ID (crypto.randomUUID)
   definitionId: z.string().min(1),
   currentHp: z.number().int(),
   maxHp: z.number().int().positive(),
   npcId: z.string().optional(), // Referenz auf NPC falls zugewiesen
+  loot: z.array(creatureLootItemSchema).optional(), // Zugewiesene Items
+  slotName: z.string().optional(), // Slot-Zuordnung (leader, follower, etc.)
 });
 
 export type CreatureInstance = z.infer<typeof creatureInstanceSchema>;

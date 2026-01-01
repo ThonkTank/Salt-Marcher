@@ -1,8 +1,12 @@
 // Species-Presets für Culture-Resolution
-// Siehe: docs/services/NPCs/Culture-Resolution.md
+// Siehe: docs/services/npcs/Culture-Resolution.md
 //
 // Species-Cultures ERSETZEN Type-Presets wenn creature.species gesetzt ist.
 // Sie sind spezifischer als Type-Presets (z.B. "goblin" vs. "goblinoid").
+//
+// Struktur: LayerTraitConfig mit add[] und optional unwanted[]
+// - add[]: Fügt Attribute mit vollem Layer-Gewicht hinzu
+// - unwanted[]: Viertelt bisherigen akkumulierten Wert
 
 import { z } from 'zod';
 import { cultureDataSchema } from '../../../src/types/entities/faction';
@@ -34,38 +38,23 @@ export const speciesPresets: Record<string, SpeciesCulturePreset> = {
       suffixes: ['le', 'ik', 'az', 'uz', 'ak', 'ug', 'it'],
     },
     personality: {
-      common: [
-        { trait: 'cunning', weight: 0.8 },
-        { trait: 'cowardly', weight: 0.7 },
-        { trait: 'greedy', weight: 0.9 },
-        { trait: 'cruel', weight: 0.5 },
-        { trait: 'nervous', weight: 0.6 },
-      ],
-      rare: [
-        { trait: 'brave', weight: 0.1 },
-        { trait: 'loyal', weight: 0.15 },
-        { trait: 'clever', weight: 0.2 },
-      ],
+      add: ['cunning', 'cowardly', 'greedy', 'cruel', 'nervous', 'brave', 'loyal', 'clever'],
+      unwanted: ['heroic', 'honorable', 'generous', 'patient'],
     },
-    quirks: [
-      { quirk: 'nervous_laugh', weight: 0.5, description: 'Kichert nervös bei Gefahr' },
-      { quirk: 'hoards_shiny', weight: 0.6, description: 'Sammelt alles was glänzt' },
-      { quirk: 'bites_nails', weight: 0.4, description: 'Kaut an den Krallen' },
-      { quirk: 'talks_fast', weight: 0.5, description: 'Spricht hektisch und schnell' },
-    ],
-    activities: ['ambush', 'scavenge', 'camp', 'patrol', 'feeding'],
-    goals: [
-      { goal: 'loot', weight: 1.0, description: 'Beute machen' },
-      { goal: 'survive', weight: 0.9, description: 'Am Leben bleiben' },
-      { goal: 'please_boss', weight: 0.7, description: 'Boss zufriedenstellen' },
-      { goal: 'avoid_work', weight: 0.6, description: 'Arbeit vermeiden' },
-      { goal: 'get_food', weight: 0.5, description: 'Essen beschaffen' },
-    ],
     values: {
-      priorities: ['survival', 'loot', 'tribe'],
-      taboos: ['direct_confrontation', 'sharing_treasure', 'standing_ground'],
-      greetings: ['Was du wollen?', 'Nicht hauen!', 'Hab Schatz!', 'Boss nicht hier!'],
+      add: ['survival', 'wealth'],
+      unwanted: ['honor', 'justice', 'mercy'],
     },
+    quirks: {
+      add: ['nervous_laugh', 'hoards_shiny', 'bites_nails', 'talks_fast', 'fidgets'],
+    },
+    appearance: {
+      add: ['sharp_teeth', 'missing_teeth', 'missing_ear', 'crooked_nose', 'yellow_eyes'],
+    },
+    goals: {
+      add: ['loot', 'survive', 'please_boss', 'avoid_work', 'get_food'],
+    },
+    activities: ['ambush', 'scavenge', 'camp', 'patrol', 'feeding'],
     speech: {
       dialect: 'broken',
       commonPhrases: [
@@ -78,6 +67,7 @@ export const speciesPresets: Record<string, SpeciesCulturePreset> = {
       ],
       accent: 'hoch, schnell, nervös',
     },
+    lootPool: ['crude-spear', 'club', 'dagger', 'goblin-totem', 'silver-piece'],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -92,36 +82,23 @@ export const speciesPresets: Record<string, SpeciesCulturePreset> = {
       titles: ['der Eiserne', 'Kriegsmeister', 'der Unerbittliche', 'Scharfklinge'],
     },
     personality: {
-      common: [
-        { trait: 'disciplined', weight: 0.9 },
-        { trait: 'ruthless', weight: 0.7 },
-        { trait: 'tactical', weight: 0.8 },
-        { trait: 'proud', weight: 0.6 },
-        { trait: 'ambitious', weight: 0.5 },
-      ],
-      rare: [
-        { trait: 'merciful', weight: 0.1 },
-        { trait: 'honorable', weight: 0.2 },
-      ],
+      add: ['disciplined', 'ruthless', 'tactical', 'proud', 'ambitious', 'honorable', 'brave'],
+      unwanted: ['cowardly', 'nervous', 'naive', 'generous'],
     },
-    quirks: [
-      { quirk: 'counts_kills', weight: 0.5, description: 'Führt Buch über Siege' },
-      { quirk: 'polishes_armor', weight: 0.4, description: 'Poliert ständig Ausrüstung' },
-      { quirk: 'despises_cowards', weight: 0.6, description: 'Verachtet Feiglinge offen' },
-    ],
-    activities: ['patrol', 'guard', 'ambush', 'command', 'camp'],
-    goals: [
-      { goal: 'conquer', weight: 0.9, description: 'Erobern und unterwerfen' },
-      { goal: 'rise_in_rank', weight: 0.8, description: 'Im Rang aufsteigen' },
-      { goal: 'prove_worth', weight: 0.7, description: 'Wert beweisen' },
-      { goal: 'follow_orders', weight: 0.6, description: 'Befehle ausführen' },
-      { goal: 'crush_weakness', weight: 0.5, description: 'Schwäche vernichten' },
-    ],
     values: {
-      priorities: ['duty', 'strength', 'legion'],
-      taboos: ['cowardice', 'disobedience', 'mercy_to_weak'],
-      greetings: ['Halt. Identifiziere dich.', 'Was ist dein Anliegen?', 'Sprich schnell.'],
+      add: ['power', 'honor', 'strength'],
+      unwanted: ['mercy', 'friendship'],
     },
+    quirks: {
+      add: ['counts_kills', 'polishes_armor', 'despises_cowards'],
+    },
+    appearance: {
+      add: ['scarred_face', 'war_paint', 'heavily_armored', 'muscular'],
+    },
+    goals: {
+      add: ['conquer', 'rise_in_rank', 'prove_worth', 'follow_orders', 'crush_weakness'],
+    },
+    activities: ['patrol', 'guard', 'ambush', 'command', 'camp'],
     speech: {
       dialect: 'military',
       commonPhrases: [
@@ -133,6 +110,7 @@ export const speciesPresets: Record<string, SpeciesCulturePreset> = {
       ],
       accent: 'tief, knapp, befehlsgewohnt',
     },
+    lootPool: ['longsword', 'shortsword', 'chain-shirt', 'gold-piece'],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -149,39 +127,22 @@ export const speciesPresets: Record<string, SpeciesCulturePreset> = {
       titles: ['der Wanderer', 'der Stille', 'der Schnelle', 'der Alte', 'der Fremde'],
     },
     personality: {
-      common: [
-        { trait: 'practical', weight: 0.6 },
-        { trait: 'cautious', weight: 0.5 },
-        { trait: 'curious', weight: 0.5 },
-        { trait: 'ambitious', weight: 0.4 },
-        { trait: 'suspicious', weight: 0.4 },
-      ],
-      rare: [
-        { trait: 'heroic', weight: 0.1 },
-        { trait: 'cruel', weight: 0.15 },
-        { trait: 'generous', weight: 0.15 },
-        { trait: 'idealistic', weight: 0.1 },
-      ],
+      add: ['practical', 'cautious', 'curious', 'ambitious', 'suspicious', 'heroic', 'generous', 'idealistic'],
+      unwanted: ['mindless', 'predatory'],
     },
-    quirks: [
-      { quirk: 'nervous_tic', weight: 0.3, description: 'Nervöses Zucken' },
-      { quirk: 'always_hungry', weight: 0.4, description: 'Isst ständig etwas' },
-      { quirk: 'superstitious', weight: 0.3, description: 'Abergläubisch' },
-      { quirk: 'tells_stories', weight: 0.3, description: 'Erzählt gern Geschichten' },
-    ],
-    activities: ['traveling', 'camp', 'patrol', 'guard', 'resting', 'ambush'],
-    goals: [
-      { goal: 'survive', weight: 0.8, description: 'Überleben' },
-      { goal: 'profit', weight: 0.6, description: 'Profit machen' },
-      { goal: 'protect_family', weight: 0.6, description: 'Familie schützen' },
-      { goal: 'gain_respect', weight: 0.4, description: 'Respekt erlangen' },
-      { goal: 'find_meaning', weight: 0.3, description: 'Sinn finden' },
-    ],
     values: {
-      priorities: ['survival', 'family', 'community'],
-      taboos: ['betrayal', 'oath_breaking'],
-      greetings: ['Guten Tag.', 'Was führt Euch her?', 'Seid gegrüßt.', 'Hallo.'],
+      add: ['family', 'survival', 'freedom', 'wealth', 'honor'],
     },
+    quirks: {
+      add: ['nervous_tic', 'always_hungry', 'superstitious', 'tells_stories', 'whistles_tune'],
+    },
+    appearance: {
+      add: ['scarred_face', 'weathered_skin', 'tattoos', 'long_hair', 'bald', 'black_hair', 'red_hair'],
+    },
+    goals: {
+      add: ['survive', 'profit', 'protect_family', 'gain_respect', 'find_meaning'],
+    },
+    activities: ['traveling', 'camp', 'patrol', 'guard', 'resting', 'ambush'],
     speech: {
       dialect: 'normal',
       commonPhrases: [
@@ -193,6 +154,7 @@ export const speciesPresets: Record<string, SpeciesCulturePreset> = {
       ],
       accent: 'neutral',
     },
+    lootPool: ['shortsword', 'dagger', 'leather-armor', 'gold-piece', 'silver-piece', 'rations'],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -205,34 +167,29 @@ export const speciesPresets: Record<string, SpeciesCulturePreset> = {
       titles: ['the Bound', 'the Restless', 'the Forgotten', 'the Empty'],
     },
     personality: {
-      common: [
-        { trait: 'mindless', weight: 0.8 },
-        { trait: 'relentless', weight: 0.7 },
-        { trait: 'obedient', weight: 0.9 },
-        { trait: 'tireless', weight: 0.7 },
-      ],
-      rare: [
-        { trait: 'echo_of_life', weight: 0.1 },
-        { trait: 'sorrowful', weight: 0.05 },
-      ],
+      add: ['mindless', 'relentless', 'obedient', 'tireless', 'sorrowful'],
+      unwanted: ['curious', 'playful', 'generous', 'ambitious'],
+    },
+    values: {
+      add: ['domination'],
+      unwanted: ['friendship', 'family', 'freedom', 'wealth'],
+    },
+    quirks: {
+      add: ['limps', 'paranoid_glances'],
+    },
+    appearance: {
+      add: ['skeletal', 'rotting', 'glowing_eyes', 'missing_limb'],
+    },
+    goals: {
+      add: ['serve_master', 'guard_location', 'patrol', 'destroy_living'],
     },
     activities: ['patrol', 'guard', 'resting', 'wandering'],
-    goals: [
-      { goal: 'obey_master', weight: 1.0, description: 'Meister gehorchen' },
-      { goal: 'guard_location', weight: 0.8, description: 'Ort bewachen' },
-      { goal: 'destroy_intruders', weight: 0.7, description: 'Eindringlinge vernichten' },
-      { goal: 'patrol', weight: 0.6, description: 'Patrouillieren' },
-    ],
-    values: {
-      priorities: ['command', 'duty'],
-      taboos: [],
-      greetings: ['...', '*Knochenknirschen*', '*leeres Starren*'],
-    },
     speech: {
       dialect: 'hollow',
       commonPhrases: ['...', '*Klappern*', '*Knochenknirschen*', '*mechanisches Greifen*'],
       accent: 'hohl, rasselnd, leer',
     },
+    lootPool: ['dagger', 'club', 'silver-piece'],
   },
 };
 

@@ -11,7 +11,7 @@ import { WIND_EXPOSURES } from '../../constants/terrain';
 
 export const factionPresenceSchema = z.object({
   factionId: z.string(),
-  weight: z.number().positive(),
+  randWeighting: z.number().positive(),
 });
 export type FactionPresence = z.infer<typeof factionPresenceSchema>;
 

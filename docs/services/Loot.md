@@ -19,12 +19,12 @@ Das Loot-System besteht aus drei Kern-Komponenten:
 │     XP-Gewinne → Gold-Budget (DMG-basiert)                      │
 │     Trackt: accumulated, distributed, balance, debt             │
 ├─────────────────────────────────────────────────────────────────┤
-│  2. CREATURE DEFAULT-LOOT                                       │
-│     Ritter → Schwert + Ruestung (garantiert/wahrscheinlich)     │
-│     Wolf → Pelz (100%), Zaehne (30%)                            │
+│  2. LOOT-POOL-KASKADE                                           │
+│     Type/Species → Faction(s) → Creature (60%-Gewichtung)       │
+│     DefaultLoot ist Teil des Pools (nicht separat!)             │
 ├─────────────────────────────────────────────────────────────────┤
 │  3. VERTEILUNGSKANAELE                                          │
-│     ├── Encounter-Loot (10-50%, ∅ 20%)                          │
+│     ├── Encounter-Loot (via generateLoot + Budget)              │
 │     ├── Quest-Rewards (reserviert)                              │
 │     └── Hoards (akkumuliert, bei Entdeckung)                    │
 └─────────────────────────────────────────────────────────────────┘
@@ -108,9 +108,16 @@ function getGoldPerXP(partyLevel: number): number {
   return GOLD_PER_XP_BY_LEVEL[Math.min(20, Math.max(1, partyLevel))] ?? 0.5;
 }
 
+/**
+ * Konvertiert XP zu Gold basierend auf Party-Level.
+ * Verwendet DMG-Tabelle für Gold-pro-XP-Ratio.
+ */
+function xpToGold(xp: number, partyLevel: number): number {
+  return xp * getGoldPerXP(partyLevel);
+}
+
 function updateBudget(xpGained: number, partyLevel: number): void {
-  const goldPerXP = getGoldPerXP(partyLevel);
-  const goldToAdd = xpGained * goldPerXP;
+  const goldToAdd = xpToGold(xpGained, partyLevel);
   budget.accumulated += goldToAdd;
   budget.balance = budget.accumulated - budget.distributed;
 }
@@ -176,39 +183,14 @@ function calculateEncounterLoot(encounter: Encounter, quest?: Quest): number {
 ## Schulden-System und Soft-Cap
 
 ### Schulden entstehen wenn:
-- Creature mit teurem defaultLoot erscheint (Ritter mit Plattenruestung)
-- defaultLoot-Wert > verfuegbares Budget
+- Generiertes Loot teurer als verfuegbares Budget
+- Mehrere teure Items in Pools aggregiert werden
 
 ### Verhalten:
 
-```typescript
-function processDefaultLoot(creature: Creature, budget: LootBudgetState): Item[] {
-  const items: Item[] = [];
+Das Budget-Tracking in der encounterLoot-Pipeline steuert die Verteilung: Creatures mit bereits hohem `receivedValue` bekommen weniger weitere Items (niedrigerer `budgetFactor`).
 
-  for (const entry of creature.defaultLoot ?? []) {
-    // Chance wuerfeln
-    if (Math.random() > entry.chance) continue;
-
-    const item = getItem(entry.itemId);
-
-    // Soft-Cap: Item weglassen wenn Budget stark negativ
-    if (budget.balance < -1000 && item.value > 100) {
-      // Teures Item ueberspringen bei hohen Schulden
-      continue;
-    }
-
-    items.push(item);
-    budget.distributed += item.value;
-    budget.balance -= item.value;
-
-    if (budget.balance < 0) {
-      budget.debt += Math.abs(budget.balance);
-    }
-  }
-
-  return items;
-}
-```
+→ Details: [encounterLoot.md#Step 3](encounter/encounterLoot.md#step-3-items-auf-kreaturen-verteilen)
 
 ### Schulden-Abbau:
 - Naechste Encounters/Hoards geben weniger Loot
@@ -219,7 +201,7 @@ function processDefaultLoot(creature: Creature, budget: LootBudgetState): Item[]
 
 | MVP | Post-MVP |
 |-----|----------|
-| Teures Item wird weggelassen | Item-Downgrade (Platte → Kette) |
+| Budget-Tracking reduziert Loot bei ueberfuellten Creatures | Item-Downgrade (Platte → Kette) |
 
 ---
 
@@ -359,54 +341,42 @@ function triggerMarker(marker: TreasureMarker): Hoard {
 
 ---
 
-## Creature Default-Loot
+## Creature Loot-Pool
 
-Creatures koennen garantiertes oder wahrscheinliches Loot haben.
+> **Wichtig:** DefaultLoot ist jetzt Teil der Loot-Pool-Kaskade (nicht separat verarbeitet!)
 
-→ Schema-Definition: [Creature.md](../entities/creature.md#defaultloot)
+Creatures definieren ihren Loot via `lootPool` - ein Array von Item-IDs, das in die Culture-Resolution-Kaskade einfliesst.
 
-### DefaultLootEntry
-
-→ Siehe [Creature.md#defaultloot](../entities/creature.md#defaultloot) für das vollständige Interface.
-
-DefaultLootEntry wird im CreatureDefinition-Schema definiert und von Loot-Feature verwendet.
+→ Schema-Definition: [Creature.md](../types/creature.md#lootpool)
 
 ### Beispiele
 
 ```typescript
-// Wolf: Pelz garantiert, Zaehne 30%
+// Wolf: Pelz und Zaehne im Pool
 const wolf = {
-  defaultLoot: [
-    { itemId: 'wolf-pelt', chance: 1.0 },
-    { itemId: 'wolf-fang', chance: 0.3, quantity: [1, 2] }
-  ]
+  lootPool: ['wolf-pelt', 'wolf-fang'],
+  wealthTier: 'poor'
 };
 
-// Ritter: Volle Ausruestung
+// Ritter: Waffen und Ruestung im Pool
 const knight = {
-  defaultLoot: [
-    { itemId: 'longsword', chance: 1.0 },
-    { itemId: 'plate-armor', chance: 1.0 },     // Soft-Cap kann greifen!
-    { itemId: 'gold-piece', chance: 1.0, quantity: [10, 50] }
-  ]
+  lootPool: ['longsword', 'plate-armor', 'gold-piece'],
+  wealthTier: 'wealthy'
 };
 ```
 
-### Verarbeitung
+### Wie es funktioniert
 
-1. Fuer jede Creature im Encounter: defaultLoot wuerfeln
-2. Chance-Roll: `Math.random() < entry.chance`
-3. Soft-Cap pruefen: Bei hohen Schulden teure Items weglassen
-4. Items der Creature zuweisen (kann im Kampf genutzt werden)
-5. Budget belasten
+1. Creature's lootPool wird via Culture-Kaskade aufgeloest
+2. Pool wird mit anderen Creatures im Encounter aggregiert (CR-gewichtet)
+3. Per-Creature Budget berechnet: `xpToGold(xp, partyLevel) × wealthMultiplier`
+4. `generateLoot()` waehlt Items aus dem aggregierten Pool
+5. Items werden batch-weise verteilt:
+   - Gewichtung: `poolEntry.randWeighting × budgetFactor`
+   - Creatures mit offenem Budget bevorzugt
+   - `receivedValue` trackt erhaltenen Loot-Wert
 
----
-
-## Tag-basiertes Loot (Ergaenzung)
-
-Zusaetzlich zu defaultLoot wird Tag-basiertes Loot fuer das Rest-Budget generiert.
-
-> **Hinweis:** Dieser Abschnitt beschreibt das bestehende Tag-Matching-System. Es ergaenzt defaultLoot, ersetzt es nicht.
+→ Details: [encounterLoot.md](encounter/encounterLoot.md)
 
 ---
 
@@ -420,215 +390,50 @@ Loot wird **bei Encounter-Generierung** erstellt (nicht bei Combat-Ende).
 3. **Preview:** GM sieht potentielles Loot im Encounter-Preview
 4. **Budget:** Teure Ausruestung belastet Budget sofort
 
-### Orchestrierung: DefaultLoot + Tag-basiertes Loot
+→ **Vollstaendige Pipeline:** [encounterLoot.md](encounter/encounterLoot.md)
+
+### Pipeline-Uebersicht (3 Steps)
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  ENCOUNTER-LOOT-GENERIERUNG                                     │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  1. Encounter-Budget berechnen                                  │
-│     encounterBudget = budget.balance × (0.10 + random() × 0.40) │
-│                                                                 │
-│  2. DefaultLoot pro Creature generieren                         │
-│     ├── Fuer jede Creature: defaultLoot-Eintraege durchlaufen  │
-│     ├── Chance-Roll: Math.random() < entry.chance               │
-│     ├── Soft-Cap pruefen: Bei Schulden teures Item weglassen   │
-│     ├── Item der Creature.loot zuweisen                         │
-│     └── defaultLootValue akkumulieren                          │
-│                                                                 │
-│  3. Rest-Budget fuer Tag-Loot berechnen                         │
-│     restBudget = encounterBudget - defaultLootValue             │
-│     (kann 0 oder negativ sein → kein Tag-Loot)                 │
-│                                                                 │
-│  4. Tag-basiertes Loot fuer Rest-Budget generieren              │
-│     ├── Nur wenn restBudget > 0                                 │
-│     ├── lootTags aus Seed-Creature oder Faction                │
-│     └── generateLoot(restBudget, lootTags, availableItems)     │
-│                                                                 │
-│  5. Ergebnisse kombinieren                                      │
-│     GeneratedLoot = defaultLoot.items + tagLoot.items          │
-│     totalValue = defaultLootValue + tagLootValue               │
-│                                                                 │
-│  6. Budget belasten                                             │
-│     budget.distributed += totalValue                            │
-│     budget.balance -= totalValue                                │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+Step 1: Pools aggregieren + Budget berechnen
+        └── Alle Creature-Pools kombinieren (CR-gewichtet)
+        └── encounterBudget = totalXP × goldPerXP × avgWealth
+        └── Per-Creature Budget: xpToGold(xp, partyLevel) × wealthMultiplier
+        └── totalCapacity = Summe aller Creature-Tragkapazitaeten
+
+Step 2: generateLoot() einmal aufrufen
+        └── generateLoot(aggregatedPool, encounterBudget, totalCapacity) → Items[]
+        └── Dual-Limit: Budget UND Kapazitaet
+        └── Variety: Jedes Item maximal einmal
+
+Step 3: Items auf Kreaturen verteilen (Batch mit Budget-Tracking)
+        └── Batch-Verteilung: Alle Items eines Typs zusammen
+        └── Gewichtung: poolEntry.randWeighting × budgetFactor
+        └── budgetFactor = max(0.1, remainingBudget / creatureBudget)
+        └── receivedValue trackt erhaltenen Loot-Wert pro Kreatur
 ```
 
-### Reihenfolge und Prioritaet
+### Delegation
 
-| Schritt | System | Prioritaet | Budget-Verhalten |
-|---------|--------|-----------|------------------|
-| 1 | DefaultLoot | Hoch | Wird immer generiert (Soft-Cap bei Schulden) |
-| 2 | Tag-Loot | Normal | Nur wenn restBudget > 0 |
-
-**Begruendung:**
-- DefaultLoot ist **thematisch essentiell** (Wolf hat Pelz, Ritter hat Schwert)
-- Tag-Loot ist **Budget-Auffueller** (generische Items passend zu Creature-Tags)
-
-### generateEncounterLoot()
-
-```typescript
-function generateEncounterLoot(
-  encounter: FlavouredEncounter,
-  budget: LootBudgetState,
-  availableItems: Item[]
-): GeneratedLoot {
-  // 1. Encounter-Budget berechnen (10-50% vom Balance)
-  const encounterPercent = 0.10 + Math.random() * 0.40;
-  const encounterBudget = Math.max(0, budget.balance * encounterPercent);
-
-  const allItems: SelectedItem[] = [];
-  let totalValue = 0;
-
-  // 2. DefaultLoot pro Gruppe/Creature
-  for (const group of encounter.groups) {
-    for (const creature of group.creatures) {
-      const creatureDef = getCreatureDefinition(creature.creatureId);
-      const defaultLoot = processDefaultLoot(creatureDef, budget);
-
-      // Items der Creature zuweisen (fuer Combat-Nutzung)
-      creature.loot = defaultLoot.items.map(item => item.id);
-
-      allItems.push(...defaultLoot.items.map(item => ({ item, quantity: 1 })));
-      totalValue += defaultLoot.totalValue;
-    }
-  }
-
-  // 3. Rest-Budget berechnen
-  const restBudget = encounterBudget - totalValue;
-
-  // 4. Tag-basiertes Loot fuer Rest-Budget
-  if (restBudget > 0) {
-    const seedCreature = getCreatureDefinition(encounter.seedCreature.id);
-    const lootTags = seedCreature.lootTags ?? ['currency'];
-
-    const tagLoot = generateLoot(
-      { totalXP: encounter.totalXP },
-      lootTags,
-      availableItems.filter(item => item.value <= restBudget)
-    );
-
-    allItems.push(...tagLoot.items);
-    totalValue += tagLoot.totalValue;
-  }
-
-  // 5. Budget belasten
-  budget.distributed += totalValue;
-  budget.balance -= totalValue;
-
-  return { items: allItems, totalValue };
-}
-```
-
-### Edge Cases
-
-| Situation | Verhalten |
-|-----------|-----------|
-| **DefaultLoot > encounterBudget** | Schulden entstehen, kein Tag-Loot |
-| **DefaultLoot = encounterBudget** | Kein Tag-Loot (restBudget = 0) |
-| **Keine lootTags** | Fallback auf `['currency']` → nur Gold |
-| **Keine passenden Items** | Gold als Auffueller |
-| **balance < 0 (Schulden)** | encounterBudget = 0 → nur DefaultLoot mit Soft-Cap |
-
-### Loot-Zuweisung an Kreaturen
-
-Items werden **spezifischen Kreaturen zugewiesen** (nicht global), damit Balance pruefen kann ob Gegner magische Items verwenden koennen:
-
-| Kreatur-Eigenschaft | Item-Typ | Verwendbar? |
-|---------------------|----------|-------------|
-| Humanoid mit Haenden | Waffe, Zauberstab | Ja |
-| Beast ohne Haende | Waffe | Nein |
-| Caster mit Spellcasting | Zauberstab, Schriftrolle | Ja |
-| Creature ohne Spellcasting | Schriftrolle | Nein |
-
-```typescript
-interface EncounterCreature {
-  creatureId: EntityId<'creature'>;
-  npcId?: EntityId<'npc'>;
-  count: number;
-  role?: 'leader' | 'guard' | 'scout' | 'civilian';
-  loot?: EntityId<'item'>[];  // Zugewiesene Items
-}
-```
-
-### Hoard-Wahrscheinlichkeit
-
-Bestimmte Encounter-Typen koennen Hoards enthalten:
-
-| Encounter-Typ | Hoard-Wahrscheinlichkeit |
-|---------------|:------------------------:|
-| Boss-Combat | 70% |
-| Lager/Camp | 40% |
-| Normale Patrouille | 10% |
-| Passing/Trace | 0% |
-
-Hoards werden bei Generierung erstellt, aber erst nach Combat-Sieg zugaenglich.
-
-### Multi-Gruppen-Loot
-
-Bei Multi-Gruppen-Encounters wird Loot **pro Gruppe separat** generiert:
-
-```typescript
-function generateMultiGroupLoot(encounter: MultiGroupEncounter): void {
-  for (const group of encounter.groups) {
-    group.lootPool = generateLootForGroup(
-      group.creatures,
-      group.budgetShare * encounter.totalLootBudget
-    );
-  }
-}
-```
-
-**Typischer Loot pro Gruppe:**
-
-| Gruppe | Typischer Loot |
-|--------|----------------|
-| Banditen | Waffen, Gold, gestohlene Waren |
-| Haendler | Handelswaren, Muenzen, Vertraege |
-| Woelfe | Pelze, Knochen (Crafting) |
-| Soldaten | Militaerausruestung, Befehle |
-
-**GM-Kontrolle:** Der GM entscheidet, welchen Loot die Party erhaelt (abhaengig vom Encounter-Ausgang).
-
-### Quest-Encounter Budget
-
-Wenn ein Encounter Teil einer Quest mit definiertem Reward ist, wird Encounter-Loot reduziert:
-
-| Encounter-Typ | Budget-Anteil |
-|---------------|---------------|
-| Random (ohne Quest) | 10-50% (Durchschnitt 20%) |
-| Quest-Encounter (mit Reward) | Reduziert um Quest-Anteil |
-| Quest-Encounter (ohne Reward) | 10-50% (Durchschnitt 20%) |
+| encounterLoot.ts | lootGenerator.ts |
+|------------------|------------------|
+| Pool-Aggregation | generateLoot(pool, budget) |
+| Budget-Berechnung | xpToGold(xp, partyLevel) |
+| Item-Verteilung (Batch) | resolveLootPool() |
+| Budget-Tracking (receivedValue) | getWealthMultiplier() |
 
 ---
 
 ## Grundkonzept
 
-### Loot-Wert-Berechnung
-
-```typescript
-const LOOT_MULTIPLIER = 0.5;  // Goldwert pro XP
-
-function calculateLootValue(encounter: Encounter): number {
-  const baseValue = encounter.totalXP * LOOT_MULTIPLIER;
-  const avgWealth = calculateAverageWealthMultiplier(encounter.creatures);
-  return Math.round(baseValue * avgWealth);
-}
-
-// Beispiel: Encounter mit 400 XP → 200 Gold Loot-Wert (bei average Wealth)
-```
-
 ### Wealth-System
 
-Creatures koennen Wealth-Tags haben, die den Loot-Multiplikator beeinflussen.
+Creatures haben ein separates `wealthTier` Feld, das den Loot-WERT (nicht den Pool) beeinflusst.
 
 **WEALTH_MULTIPLIERS:**
 
-| Tag | Multiplikator | Beispiel-Kreaturen |
-|-----|:-------------:|-------------------|
+| wealthTier | Multiplikator | Beispiel-Kreaturen |
+|------------|:-------------:|-------------------|
 | `destitute` | 0.25× | Bettler, Verhungernde |
 | `poor` | 0.5× | Goblins, wilde Tiere |
 | `average` | 1.0× | Standard (default) |
@@ -637,7 +442,7 @@ Creatures koennen Wealth-Tags haben, die den Loot-Multiplikator beeinflussen.
 | `hoard` | 3.0× | Drachen, Schatzhüter |
 
 ```typescript
-const WEALTH_MULTIPLIERS: Record<string, number> = {
+const WEALTH_MULTIPLIERS: Record<WealthTier, number> = {
   'destitute': 0.25,
   'poor': 0.5,
   'average': 1.0,
@@ -646,11 +451,9 @@ const WEALTH_MULTIPLIERS: Record<string, number> = {
   'hoard': 3.0,
 };
 
-function getWealthMultiplier(creature: CreatureDefinition): number {
-  for (const [tag, multiplier] of Object.entries(WEALTH_MULTIPLIERS)) {
-    if (creature.lootTags?.includes(tag)) return multiplier;
-  }
-  return 1.0; // default: average
+function getWealthMultiplier(creature: { wealthTier?: WealthTier }): number {
+  if (!creature.wealthTier) return 1.0;
+  return WEALTH_MULTIPLIERS[creature.wealthTier] ?? 1.0;
 }
 
 function calculateAverageWealthMultiplier(creatures: EncounterCreature[]): number {
@@ -665,13 +468,13 @@ function calculateAverageWealthMultiplier(creatures: EncounterCreature[]): numbe
 
 **Beispiele:**
 
-| Encounter | CR | Basis-Loot | Wealth-Tag | Effektiver Loot |
+| Encounter | CR | Basis-Loot | wealthTier | Effektiver Loot |
 |-----------|---:|----------:|------------|----------------:|
 | 4 Goblins | 1/4 | 50g | `poor` (0.5×) | 25g |
 | Haendler + 2 Wachen | 2 | 150g | `wealthy` (1.5×) | 225g |
 | Junger Drache | 8 | 1800g | `hoard` (3.0×) | 5400g |
 
-**Hinweis:** Wealth-Tags sind Teil von `lootTags` (z.B. `["humanoid", "wealthy", "tribal"]`).
+**Hinweis:** `wealthTier` ist ein separates Feld auf CreatureDefinition, nicht Teil von lootTags.
 
 ---
 
@@ -741,21 +544,61 @@ const adultRedDragon: CreatureDefinition = {
 
 ---
 
-### Loot-Tags
+### Loot-Pool-Kaskade
 
-Creatures und Factions haben Loot-Tags, die bestimmen welche Item-Kategorien als Beute erscheinen:
+Loot-Pools werden ueber die Culture Resolution Kaskade aufgeloest. Jede Ebene definiert `lootPool: string[]` mit Item-IDs.
+
+```
+Type/Species → Faction(s) → Creature
+     ↓            ↓           ↓
+  Basis-Pool  Fraktions-Pool  Kreatur-Pool
+```
+
+**60%-Kaskade Gewichtung:**
+- Type: 16% Gewicht
+- Species: 24% Gewicht
+- Faction: 60% Gewicht
+- Creature: Überschreibt alles (wenn gesetzt)
 
 ```typescript
-// In Creature-Schema
-interface Creature {
-  // ...
-  lootTags?: string[];  // z.B. ["weapons", "gold", "tribal"]
+// In CultureData-Schema (Type, Species, Faction)
+interface CultureData {
+  // ...andere Felder...
+  lootPool?: string[];  // z.B. ["shortsword", "dagger", "leather-armor"]
 }
 
-// In Faction-Schema
-interface Faction {
-  // ...
-  lootTags?: string[];  // Ueberschreibt/ergaenzt Creature-Tags
+// In Creature-Schema
+interface CreatureDefinition {
+  // ...andere Felder...
+  lootPool?: string[];    // Überschreibt Culture-Kaskade
+  wealthTier?: WealthTier; // Beeinflusst Loot-WERT
+}
+```
+
+**resolveLootPool():**
+
+```typescript
+function resolveLootPool(
+  creature: CreatureWithLoot,
+  faction: Faction | null
+): Array<{ item: string; randWeighting: number }> {
+  // 1. Culture-Chain aufbauen (Type/Species → Faction)
+  const cultureLayers = resolveCultureChain(creature, faction);
+
+  // 2. Creature als unterste Layer hinzufügen (wenn lootPool gesetzt)
+  if (creature.lootPool?.length) {
+    cultureLayers.push({
+      source: 'creature',
+      culture: { lootPool: creature.lootPool },
+    });
+  }
+
+  // 3. mergeWeightedPool() für lootPool
+  return mergeWeightedPool(
+    cultureLayers,
+    (culture) => culture.lootPool,
+    () => 1.0
+  );
 }
 ```
 
@@ -777,81 +620,78 @@ Items haben Tags, die fuer Matching verwendet werden:
 
 ## Generierung
 
-### Item-Auswahl (Gewichtete Wahrscheinlichkeit)
+### generateLoot()
 
-**Prinzip:** Je mehr Tags uebereinstimmen, desto wahrscheinlicher wird das Item ausgewaehlt.
+Generiert Loot aus einem aggregierten Pool bis das Budget erreicht ist.
 
 ```typescript
+/**
+ * Generiert Loot aus einem Pool bis Budget oder Kapazitaet erschoepft.
+ *
+ * @param pool - Gewichteter Pool von Item-IDs (aggregiert aus allen Creatures)
+ * @param budget - Verfuegbares Budget in Gold
+ * @param carryCapacity - Tragkapazitaet in lb (default: Infinity fuer Hoards/Merchants)
+ * @returns Ausgewaehlte Items mit Gesamtwert
+ */
 function generateLoot(
-  encounter: Encounter,
-  lootTags: string[],
-  availableItems: Item[]
+  pool: Array<{ itemId: string; randWeighting: number }>,
+  budget: number,
+  carryCapacity: number = Infinity
 ): GeneratedLoot {
-  const targetValue = calculateLootValue(encounter);
-
-  // Items nach Tag-Score gewichten
-  const scoredItems = availableItems
-    .map(item => ({
-      item,
-      score: calculateTagScore(item.tags, lootTags)
-    }))
-    .filter(scored => scored.score > 0);  // Mindestens 1 Tag muss matchen
-
-  // Items auswaehlen bis Zielwert erreicht
   const selectedItems: SelectedItem[] = [];
-  let currentValue = 0;
+  let remainingBudget = budget;
+  let remainingCapacity = carryCapacity;
 
-  while (currentValue < targetValue && scoredItems.length > 0) {
-    const item = selectWeightedItem(scoredItems, targetValue - currentValue);
-    if (!item) break;
+  // Items aus Pool laden (mutable copy fuer Variety)
+  const poolItems = pool
+    .map(entry => {
+      const item = vault.getEntity('item', entry.itemId);
+      return item ? { item, randWeighting: entry.randWeighting } : null;
+    })
+    .filter((x): x is { item: Item; randWeighting: number } => x !== null);
 
-    selectedItems.push({ item, quantity: 1 });
-    currentValue += item.value;
-  }
-
-  // Gold als Auffueller (als Currency-Item)
-  const remainingValue = targetValue - currentValue;
-  if (remainingValue > 0) {
-    selectedItems.push({
-      item: { id: 'gold-piece', name: 'Goldmuenze', value: 1 } as Item,
-      quantity: Math.round(remainingValue)
+  // Iterativ Items auswaehlen bis Budget ODER Kapazitaet erschoepft
+  while (remainingBudget > 0 && poolItems.length > 0) {
+    // Filter: affordable + carryable
+    const eligible = poolItems.filter(wi => {
+      const itemPounds = wi.item.pounds ?? 0;
+      const affordable = wi.item.value <= remainingBudget;
+      const carryable = itemPounds === 0 || itemPounds <= remainingCapacity;
+      return affordable && carryable;
     });
-    currentValue += remainingValue;
+    if (eligible.length === 0) break;
+
+    // Gewichtete Zufallsauswahl (via utils/random.ts)
+    const selected = weightedRandomSelect(eligible, 'generateLoot');
+
+    // Bulk-Menge berechnen (10-30% der verbleibenden Ressourcen)
+    const itemPounds = selected.item.pounds ?? 0;
+    const targetValue = remainingBudget * (0.1 + Math.random() * 0.2);
+    const targetPounds = remainingCapacity * (0.1 + Math.random() * 0.2);
+
+    const qtyByValue = Math.floor(targetValue / selected.item.value);
+    const qtyByPounds = itemPounds > 0
+      ? Math.floor(targetPounds / itemPounds)
+      : Infinity;
+
+    const quantity = Math.max(1, Math.min(qtyByValue, qtyByPounds));
+
+    selectedItems.push({ item: selected.item, quantity });
+    remainingBudget -= selected.item.value * quantity;
+    remainingCapacity -= itemPounds * quantity;
+
+    // Variety: Item aus Pool entfernen (jedes Item max 1x)
+    poolItems.splice(poolItems.indexOf(selected), 1);
   }
 
   return {
     items: selectedItems,
-    totalValue: currentValue
+    totalValue: budget - remainingBudget
   };
 }
 
-function calculateTagScore(itemTags: string[], lootTags: string[]): number {
-  // Score = Anzahl uebereinstimmender Tags
-  return itemTags.filter(tag => lootTags.includes(tag)).length;
-}
-
-function selectWeightedItem(
-  scoredItems: ScoredItem[],
-  maxValue: number
-): Item | null {
-  // Filtere Items die ins Budget passen
-  const affordable = scoredItems.filter(s => s.item.value <= maxValue);
-  if (affordable.length === 0) return null;
-
-  // Gewichtete Zufallsauswahl (hoehere Scores = hoehere Chance)
-  const totalWeight = affordable.reduce((sum, s) => sum + s.score, 0);
-  let random = Math.random() * totalWeight;
-
-  for (const scored of affordable) {
-    random -= scored.score;
-    if (random <= 0) return scored.item;
-  }
-
-  return affordable[0].item;
-}
-
 interface GeneratedLoot {
-  items: SelectedItem[];  // Enthaelt auch Currency-Items (Gold, Silber, etc.)
+  items: SelectedItem[];
   totalValue: number;
 }
 
@@ -859,51 +699,96 @@ interface SelectedItem {
   item: Item;
   quantity: number;
 }
-
-interface ScoredItem {
-  item: Item;
-  score: number;
-}
 ```
+
+**Hinweis:** Der Pool wird von encounterLoot.ts aggregiert und enthaelt bereits CR-gewichtete Eintraege aller Creatures.
+
+### Carry Capacity
+
+Items haben ein `pounds` Feld (in lb). Bei Encounter-Loot wird die Gesamt-Tragkapazitaet
+aller Creatures als Limit verwendet.
+
+**CARRY_CAPACITY_BY_SIZE (D&D 5e basiert):**
+
+| Size | Capacity |
+|------|--------:|
+| tiny | 30 lb |
+| small | 120 lb |
+| medium | 150 lb |
+| large | 420 lb |
+| huge | 1200 lb |
+| gargantuan | 3120 lb |
+
+**Verwendung:**
+- Encounter: `totalCapacity = sum(CARRY_CAPACITY_BY_SIZE[creature.size])`
+- Hoards/Merchants: `carryCapacity = Infinity` (unbegrenzt)
+
+**Variety:** Jedes Item erscheint maximal einmal im generierten Loot.
+Nach Auswahl wird das Item aus dem Pool entfernt.
+
+### Muenzen im Pool
+
+Muenzen (gold-piece, silver-piece, copper-piece) sind **normale Pool-Items**:
+
+- Keine Sonderbehandlung bei Generierung
+- Werden wie andere Items ausgewaehlt
+- Muessen im lootPool definiert sein
+
+```typescript
+// Beispiel: Pool mit Muenzen
+lootPool: [
+  { itemId: 'gold-piece', randWeighting: 10 },
+  { itemId: 'silver-piece', randWeighting: 20 },
+  { itemId: 'shortsword', randWeighting: 3 },
+]
+```
+
+### Pool-Resolution
+
+Die Pool-Resolution erfolgt in `lootPool.ts` via `resolveLootPool()`.
+
+→ Details: [Loot-Pool-Kaskade](#loot-pool-kaskade)
 
 ---
 
-## Loot-Tags (Beispiele)
+## Loot-Pool-Beispiele
 
-### Basis-Tags
+### Type-Presets
 
-| Tag | Beschreibung |
-|-----|--------------|
-| `currency` | Muenzen (Gold, Silber, etc.) |
-| `weapons` | Waffen aller Art |
-| `armor` | Ruestungen, Schilde |
-| `consumables` | Traenke, Schriftrollen |
-| `supplies` | Rationen, Ausruestung |
-| `magic` | Magische Gegenstaende |
+| Type | lootPool |
+|------|----------|
+| `humanoid` | `shortsword`, `dagger`, `leather-armor`, `gold-piece`, `silver-piece`, `rations` |
+| `beast` | (leer - Beasts tragen keine Items) |
+| `undead` | `dagger`, `club`, `gold-piece`, `silver-piece` |
+| `goblinoid` | `club`, `dagger`, `crude-spear`, `goblin-totem`, `silver-piece` |
+| `monstrosity` | (leer - Monstrosities tragen meist keine Items) |
 
-### Kreatur-spezifische Tags
+### Species-Presets
 
-| Tag | Beschreibung |
-|-----|--------------|
-| `tribal` | Primitive Waffen, Totems |
-| `undead` | Verfluchte Items, Knochen |
-| `beast` | Pelze, Klauen, Zaehne |
-| `humanoid` | Standard-Ausruestung |
-| `arcane` | Magische Komponenten |
+| Species | lootPool |
+|---------|----------|
+| `goblin` | `crude-spear`, `club`, `dagger`, `goblin-totem`, `silver-piece` |
+| `hobgoblin` | `longsword`, `shortsword`, `chain-shirt`, `gold-piece` |
+| `human` | `shortsword`, `dagger`, `leather-armor`, `gold-piece`, `silver-piece`, `rations` |
+| `skeleton` | `dagger`, `club`, `silver-piece` |
 
 ### Beispiel-Zuordnung
 
 ```typescript
 // Goblin-Creature
-const goblin: Creature = {
+const goblin: CreatureDefinition = {
   // ...
-  lootTags: ['currency', 'weapons', 'tribal', 'supplies']
+  species: 'goblin',
+  wealthTier: 'poor',         // Beeinflusst Loot-WERT
+  // lootPool: undefined      // Nutzt Culture-Kaskade (Species "goblin")
 };
 
-// Blutfang-Fraktion ueberschreibt
-const bloodfang: Faction = {
+// Bergstamm-Fraktion erweitert Pool
+const bergstamm: Faction = {
   // ...
-  lootTags: ['weapons', 'tribal', 'trophies']  // Kein Gold, aber Trophaeen
+  culture: {
+    lootPool: ['bergstamm-amulet', 'mountain-herbs']  // Fraktions-spezifisch
+  }
 };
 ```
 
@@ -1255,10 +1140,10 @@ Bei Magic Items hat der GM **immer** das letzte Wort:
 
 | Komponente | MVP | Post-MVP | Notiz |
 |------------|:---:|:--------:|-------|
-| **Budget-Tracking** | ✓ | | XP → Gold, Balance, Debt |
+| **Global Budget-Tracking** | ✓ | | XP → Gold, Balance, Debt |
 | **Creature defaultLoot** | ✓ | | Inline, mit Chance-System |
 | **Schulden-System** | ✓ | | Budget kann negativ werden |
-| **Soft-Cap (Item weglassen)** | ✓ | | Teures Item ueberspringen |
+| **Per-Creature Budget** | ✓ | | receivedValue-Tracking bei Verteilung |
 | Basis Loot-Tags | ✓ | | Feste Liste |
 | Item-Auswahl nach Tags | ✓ | | Einfache Auswahl |
 | Gold-Generierung | ✓ | | Als Auffueller |
@@ -1274,8 +1159,21 @@ Bei Magic Items hat der GM **immer** das letzte Wort:
 ---
 
 
+
+
 ## Tasks
 
-|  # | Status | Domain | Layer    | Beschreibung                                                                |  Prio  | MVP? | Deps | Spec               | Imp. |
-|--:|:----:|:-----|:-------|:--------------------------------------------------------------------------|:----:|:--:|:---|:-----------------|:---|
-| 10 |   ⬜    | Loot   | services | lootGenerator Service implementieren (Budget-System, DefaultLoot, Tag-Loot) | mittel |  Ja  | -    | Loot.md#Uebersicht | -    |
+|  # | Status | Domain | Layer     | Beschreibung                                                                   |  Prio  | MVP? | Deps     | Spec                         | Imp.                                                                             |
+|--:|:----:|:-----|:--------|:-----------------------------------------------------------------------------|:----:|:--:|:-------|:---------------------------|:-------------------------------------------------------------------------------|
+| 68 |   ✅    | Loot   | types     | LootBudgetState Interface definieren (accumulated, distributed, balance, debt) | mittel | Nein | -        | Loot.md#lootbudgetstate      | types/loot.ts [neu]                                                              |
+| 69 |   ✅    | Loot   | constants | GOLD_PER_XP_BY_LEVEL Konstante (DMG-Tabelle Level 1-20)                        | mittel | Nein | -        | Loot.md#budget-berechnung    | constants/loot.ts [neu]                                                          |
+| 70 |   ✅    | Loot   | services  | getGoldPerXP() - Lookup in DMG-Tabelle, clamp 1-20                             | mittel | Nein | #69      | Loot.md#budget-berechnung    | services/lootGenerator/lootGenerator.ts.getGoldPerXP() [neu]                     |
+| 72 |   ✅    | Loot   | constants | WEALTH_MULTIPLIERS Konstante (destitute bis hoard)                             | mittel | Nein | -        | Loot.md#wealth-multipliers   | constants/loot.ts [neu]                                                          |
+| 73 |   ✅    | Loot   | services  | getWealthMultiplier() - Wealth-Tag aus Creature lesen, default 1.0             | mittel | Nein | #72      | Loot.md#wealth-system        | services/lootGenerator/lootGenerator.ts.getWealthMultiplier() [neu]              |
+| 74 |   ✅    | Loot   | services  | calculateAverageWealthMultiplier() - Durchschnitt ueber alle Kreaturen         | mittel | Nein | #73      | Loot.md#wealth-system        | services/lootGenerator/lootGenerator.ts.calculateAverageWealthMultiplier() [neu] |
+| 75 |   ✅    | Loot   | services  | calculateLootValue() - totalXP * LOOT_MULTIPLIER * avgWealth                   | mittel | Nein | #74      | Loot.md#loot-wert-berechnung | services/lootGenerator/lootGenerator.ts.calculateLootValue() [neu]               |
+| 78 |   ✅    | Loot   | services  | selectWeightedItem() - Gewichtete Zufallsauswahl aus Pool                      | mittel | Nein | -        | Loot.md#item-auswahl         | services/lootGenerator/lootGenerator.ts.selectWeightedItem() [neu]               |
+| 79 |   ✅    | Loot   | services  | generateLoot(pool, budget) - Pool-basiertes Loot bis Budget erschoepft         | mittel | Nein | #75, #78 | Loot.md#item-auswahl         | services/lootGenerator/lootGenerator.ts.generateLoot() [neu]                     |
+| 80 |   ⬜    | Loot   | types     | GeneratedLoot Interface (items: SelectedItem[], totalValue: number)            | mittel | Nein | #81      | Loot.md#generatedloot        | types/loot.ts [neu]                                                              |
+| 81 |   ✅    | Loot   | types     | SelectedItem Interface (item: Item, quantity: number)                          | mittel | Nein | -        | Loot.md#selecteditem         | types/loot.ts [neu]                                                              |
+| 82 |   ✅    | Loot   | services  | ScoredItem Interface intern (item: Item, score: number)                        | mittel | Nein | -        | Loot.md#scoreditem           | services/lootGenerator/lootGenerator.ts [neu]                                    |

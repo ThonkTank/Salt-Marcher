@@ -4,11 +4,11 @@
 
 import type { EntityId } from '@core/types/entity';
 import type { HexCoordinate } from '@core/types/coordinates';
-import type { TimeSegment } from '@constants/TimeSegments';
 import type { Weather } from '@services/weather/types/Weather';
 import type { TransportMode } from '@constants/TransportModes';
 import type { EncounterInstance } from '#types/encounterTypes';
 import type { NPC } from '#types/entities/npc';
+import type { GameDateTime } from '#types/time';
 
 // ============================================================================
 // STATE-TYPEN
@@ -19,15 +19,6 @@ export interface PartyState {
   mapId: EntityId<'map'>;
   members: EntityId<'character'>[];
   transport: TransportMode;
-}
-
-export interface TimeState {
-  year: number;
-  month: number;
-  day: number;
-  hour: number;
-  minute: number;
-  daySegment: TimeSegment;
 }
 
 export interface TravelWorkflowState {
@@ -53,7 +44,7 @@ export interface CombatWorkflowState {
 export interface SessionState {
   activeMapId: EntityId<'map'> | null;
   party: PartyState;
-  time: TimeState;
+  time: GameDateTime;
   weather: Weather | null;
   travel: TravelWorkflowState;
   encounter: EncounterWorkflowState;

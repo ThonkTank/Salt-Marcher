@@ -127,9 +127,10 @@ export async function resolveImplPath(implRef) {
   const [, filePath, functionName] = match;
   const filename = filePath.split('/').pop(); // Nur Dateiname für Suche
 
-  // Bei [neu] Tag keine Dateisuche (Datei existiert noch nicht)
+  // Bei [neu] Tag: Pfad aus Referenz ableiten (Datei existiert noch nicht)
   if (tag === '[neu]') {
-    return ok({ path: null, functionName: functionName || null, tag });
+    const targetPath = join(SRC_PATH, filePath);
+    return ok({ path: targetPath, functionName: functionName || null, tag });
   }
 
   // 1. Erst direkten Pfad versuchen (für vollständige Pfade wie 'types/entities/creature.ts')

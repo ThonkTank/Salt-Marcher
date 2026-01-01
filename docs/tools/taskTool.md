@@ -198,18 +198,22 @@ node scripts/task/task.mjs edit <ID> [ID2 ID3...] [--key <key>] [options]
 | `--beschreibung <X>` | Neue Beschreibung |
 | `--prio <X>` | Neue Priorität |
 | `--mvp` / `--no-mvp` | MVP-Flag setzen |
+| `--spec <X>` | Neue Spec-Referenz(en) (komma-separiert) |
+| `--impl <X>` | Neue Impl-Referenz(en) (komma-separiert) |
 
 **Beispiele:**
 ```bash
 node scripts/task/task.mjs edit 14 --status 🔶           # Ohne Claim
 node scripts/task/task.mjs edit 14 --status ✅ --key a4x2  # Mit Claim
 node scripts/task/task.mjs edit 53 54 55 --status 🔶     # Bulk Edit
+node scripts/task/task.mjs edit 67 --spec "Culture-Resolution.md#Trait-System" --impl "npcGenerator.ts.func() [fertig]"
 ```
 
 **Automatismen bei Status-Änderung:**
 - Status-Änderung entfernt automatisch den Claim (außer auf 🔒)
 - Propagiert Status zu Dependents (⛔ bei Blockierung)
 - Synchronisiert zu referenzierten Dateien
+- **DEPS_NOT_MET Fehler:** Status-Änderung wird abgelehnt wenn Dependencies nicht erfüllt sind (außer → ⛔)
 
 ---
 
@@ -275,6 +279,31 @@ node scripts/task/task.mjs remove 53 54 55         # Bulk Remove
 - Entfernt Bug aus `.task-claims.json`
 - Entfernt Bug-Referenz aus allen Task-Dependencies
 - Löscht Bug-Zeile aus Roadmap
+
+---
+
+### fix-deps - Inkonsistente Dependencies korrigieren
+
+Findet alle Tasks mit unerfüllten Dependencies und setzt sie auf ⛔.
+
+```bash
+node scripts/task/task.mjs fix-deps
+```
+
+**Verhalten:**
+- Prüft alle Tasks (außer ✅, ⛔, 🔒)
+- Setzt Tasks auf ⛔ wenn Dependencies nicht erfüllt sind
+- Synchronisiert Änderungen zu Spec/Impl-Dateien
+
+**Beispiel:**
+```bash
+node scripts/task/task.mjs fix-deps
+# Output:
+# 8 Task(s) auf ⛔ gesetzt:
+#   #70: getGoldPerXP() - Lookup in DMG-Tabelle
+#   #71: updateBudget() - Budget bei XP-Gewinn aktualisieren
+#   ...
+```
 
 ---
 
@@ -417,7 +446,7 @@ export const funktionsname =
 | `ALREADY_CLAIMED` | Task von anderem Agent geclaimed | Andere Task wählen |
 | `INVALID_KEY` | Falscher Claim-Key | Key aus Claim-Output verwenden |
 | `CLAIM_EXPIRED` | Claim älter als 2h | Neu claimen |
-| `DEPS_NOT_MET` | Dependencies nicht erfüllt | Deps zuerst bearbeiten |
+| `DEPS_NOT_MET` | Dependencies nicht erfüllt (bei jeder Status-Änderung außer → ⛔) | Deps zuerst ✅ setzen oder `fix-deps` verwenden |
 | `FILE_NOT_FOUND` | Impl-Datei existiert nicht | `[neu]` Tag verwenden |
 | `FUNC_NOT_FOUND` | Funktion in Datei nicht gefunden | Funktionsname prüfen |
 
@@ -433,6 +462,7 @@ export const funktionsname =
 - Claim-Key muss gültig und nicht abgelaufen sein
 - Status-Übergänge werden validiert
 - Zyklische Dependencies werden verhindert
+- **Dependencies müssen erfüllt sein** für Status-Änderungen (außer → ⛔)
 
 ---
 

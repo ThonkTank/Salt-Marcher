@@ -13,7 +13,8 @@ import { claimTask, releaseClaim, cleanupExpiredClaims } from './services/claim-
 import { editTask } from './services/edit-service.mjs';
 import { addTasks, addBugs } from './services/add-service.mjs';
 import { removeTask, removeBug } from './services/remove-service.mjs';
-import { propagateStatus } from './core/deps/propagation.mjs';
+import { propagateStatus, areDependenciesSatisfied } from './core/deps/propagation.mjs';
+import { STATUS } from './core/table/schema.mjs';
 import { syncTask, syncTasks } from './services/sync-service.mjs';
 
 // TODO: handleSort(args) - sort Befehl
@@ -32,6 +33,7 @@ const COMMANDS = {
   edit: handleEdit,
   add: handleAdd,
   remove: handleRemove,
+  'fix-deps': handleFixDeps,
   help: printUsage,
 };
 
@@ -254,6 +256,8 @@ async function handleEdit(args) {
       prio: { type: 'string' },
       mvp: { type: 'boolean' },
       'no-mvp': { type: 'boolean' },
+      spec: { type: 'string' },
+      impl: { type: 'string' },
     },
     allowPositionals: true,
   });
@@ -290,6 +294,8 @@ async function handleEdit(args) {
   if (values.prio) changes.prio = values.prio;
   if (values.mvp) changes.mvp = true;
   if (values['no-mvp']) changes.mvp = false;
+  if (values.spec) changes.spec = values.spec;
+  if (values.impl) changes.impl = values.impl;
 
   // Bulk edit: Sammle Erfolge und Fehler
   const successes = [];
@@ -559,6 +565,65 @@ async function handleRemove(args) {
 }
 
 /**
+ * fix-deps - Korrigiert alle Tasks mit unerfüllten Dependencies auf ⛔
+ */
+async function handleFixDeps() {
+  const roadmapResult = await readRoadmap();
+  if (!isOk(roadmapResult)) {
+    console.error('Roadmap konnte nicht gelesen werden');
+    process.exit(1);
+  }
+
+  const content = unwrap(roadmapResult);
+  const tasksResult = parseTasks(content);
+  const bugsResult = parseBugs(content);
+
+  if (!isOk(tasksResult)) {
+    console.error('Tasks konnten nicht geparst werden');
+    process.exit(1);
+  }
+
+  const tasks = unwrap(tasksResult);
+  const bugs = isOk(bugsResult) ? unwrap(bugsResult) : [];
+
+  const fixed = [];
+
+  for (const task of tasks) {
+    // Überspringe bereits erledigte, blockierte oder geclaimte Tasks
+    if (task.status === STATUS.done.symbol ||
+        task.status === STATUS.blocked.symbol ||
+        task.status === STATUS.claimed.symbol) {
+      continue;
+    }
+
+    // Prüfe ob Dependencies unerfüllt sind
+    if (task.deps.length > 0 && !areDependenciesSatisfied(task, tasks, bugs)) {
+      task.status = STATUS.blocked.symbol;
+      fixed.push(task);
+    }
+  }
+
+  if (fixed.length === 0) {
+    console.log('Keine Tasks mit unerfüllten Dependencies gefunden.');
+    return;
+  }
+
+  // Roadmap mit korrigierten Tasks schreiben
+  const updatedRoadmap = rebuildRoadmap(content, tasks, bugs);
+  await writeRoadmap(updatedRoadmap);
+
+  // Sync zu Spec/Impl-Dateien
+  for (const t of fixed) {
+    await syncTask(t, 'update');
+  }
+
+  console.log(`${fixed.length} Task(s) auf ⛔ gesetzt:`);
+  for (const t of fixed) {
+    console.log(`  #${t.id}: ${t.beschreibung}`);
+  }
+}
+
+/**
  * Rebuilds the roadmap content with updated tasks/bugs tables.
  * @param {string} originalContent
  * @param {import('./core/table/parser.mjs').Task[]} tasks
@@ -630,6 +695,8 @@ BEFEHLE:
 
   remove <ID> [ID2...]         Task(s) oder Bug(s) löschen
     --resolve                  Bei Bug: Aus Task-Dependencies entfernen
+
+  fix-deps                     Tasks mit unerfüllten Dependencies auf ⛔ setzen
 
   help                         Diese Hilfe anzeigen
 

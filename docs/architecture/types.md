@@ -230,4 +230,4 @@ Die autoritative Spezifikation für Entity-Schemas befindet sich in [docs/entiti
 
 |  # | Status | Domain | Layer    | Beschreibung                                                           |  Prio  | MVP? | Deps | Spec                     | Imp.                |
 |--:|:----:|:-----|:-------|:---------------------------------------------------------------------|:----:|:--:|:---|:-----------------------|:------------------|
-| 59 |   ⬜    | types  | entities | ReputationEntry Zod-Schema in src/types/common/reputation.ts erstellen | mittel | Nein | -    | types.md#ReputationEntry | reputation.ts [neu] |
+| 59 |   ✅    | types  | entities | ReputationEntry Zod-Schema in src/types/common/reputation.ts erstellen | mittel | Nein | -    | types.md#ReputationEntry | reputation.ts [neu] |

@@ -26,8 +26,8 @@
 // 3.3: Gruppe finalisieren (EncounterGroup zusammenbauen)
 
 import { vault } from '@/infrastructure/vault/vaultInstance';
-import { randomBetween, randomNormal, randomSelect, assertValidValue } from '@/utils';
-import { TIME_SEGMENTS, type DesignRole } from '@/constants';
+import { randomBetween, randomNormal, randomSelect, assertValidValue, rollDice } from '@/utils';
+import { TIME_SEGMENTS, type DesignRole, type NarrativeRole } from '@/constants';
 import { type Result, ok, err } from '#types/common/Result';
 import type { CreatureDefinition, GroupTemplate, SlotCount, SlotDef, Faction } from '@/types/entities';
 import type { GameDateTime } from '#types/time';
@@ -216,6 +216,21 @@ function selectTemplate(
 // ============================================================================
 
 /**
+ * Erstellt eine Kreatur-Instanz mit individuell gewürfelten HP und eindeutiger ID.
+ */
+function createInstance(creature: CreatureDefinition): CreatureInstance {
+  const hp = rollDice(creature.hitDice);
+  const instanceId = crypto.randomUUID();
+  debug('Instance created:', creature.id, 'HP:', hp, 'ID:', instanceId.slice(0, 8));
+  return {
+    instanceId,
+    definitionId: creature.id,
+    currentHp: hp,
+    maxHp: hp,
+  };
+}
+
+/**
  * Löst einen SlotCount zu einer konkreten Zahl auf.
  *
  * - Feste Zahl: direkt zurückgeben
@@ -238,7 +253,7 @@ function resolveCount(count: SlotCount): number {
 }
 
 /**
- * Befüllt einen einzelnen Slot mit Kreaturen.
+ * Befüllt einen einzelnen Slot mit Kreatur-Instanzen (individuell gewürfelte HP).
  *
  * @param slot - Slot-Definition mit designRole und count
  * @param seedCreature - Die Seed-Kreatur (wird platziert wenn Rolle passt)
@@ -250,21 +265,21 @@ function fillSlot(
   seedCreature: CreatureDefinition,
   companionPool: { creatureId: string; count: number }[],
   isSeedSlot: boolean
-): { creatureId: string; count: number }[] {
+): CreatureInstance[] {
   const slotCount = resolveCount(slot.count);
   if (slotCount === 0) return [];
 
-  const result: { creatureId: string; count: number }[] = [];
+  const instances: CreatureInstance[] = [];
   let remainingCount = slotCount;
 
   // Seed platzieren wenn dieser Slot sie enthält
   if (isSeedSlot) {
-    result.push({ creatureId: seedCreature.id, count: 1 });
+    instances.push(createInstance(seedCreature));
     remainingCount--;
     debug('Slot: placed seed', seedCreature.id);
   }
 
-  if (remainingCount <= 0) return result;
+  if (remainingCount <= 0) return instances;
 
   // Companions nach Design-Rolle filtern (Seed NICHT ausschließen)
   const roleMatches = companionPool.filter(entry => {
@@ -282,46 +297,42 @@ function fillSlot(
   // Kein Fallback - nur Kreaturen mit passender Rolle verwenden
   if (roleMatches.length === 0) {
     debug('Slot: no creatures match role', slot.designRole);
-    return result;
+    return instances;
   }
-
-  const candidates = roleMatches;
 
   // Verbleibende Plätze mit Companions füllen
   for (let i = 0; i < remainingCount; i++) {
-    const entry = randomSelect(candidates);
+    const entry = randomSelect(roleMatches);
     if (!entry) break;
 
-    const existing = result.find(r => r.creatureId === entry.creatureId);
-    if (existing) {
-      existing.count++;
-    } else {
-      result.push({ creatureId: entry.creatureId, count: 1 });
+    const creature = vault.getEntity<CreatureDefinition>('creature', entry.creatureId);
+    if (creature) {
+      instances.push(createInstance(creature));
     }
   }
 
-  debug('Slot filled:', slot.designRole, '->', result.map(r => `${r.creatureId}x${r.count}`).join(', '));
-  return result;
+  debug('Slot filled:', slot.designRole, '->', instances.length, 'instances');
+  return instances;
 }
 
 /**
  * Befüllt alle Slots eines Templates.
- * Gibt slots-Map zurück (slotName -> EncounterCreature[]).
+ * Gibt slots-Map zurück (slotName -> CreatureInstance[]).
  */
 function fillAllSlots(
   template: GroupTemplate,
   seedCreature: CreatureDefinition,
   companionPool: { creatureId: string; count: number }[]
-): { [slotName: string]: { creatureId: string; count: number }[] } {
-  const slots: { [slotName: string]: { creatureId: string; count: number }[] } = {};
+): { [slotName: string]: CreatureInstance[] } {
+  const slots: { [slotName: string]: CreatureInstance[] } = {};
 
   for (const [slotName, slot] of Object.entries(template.slots)) {
     const isSeedSlot = slot.designRole === seedCreature.designRole;
 
-    const slotCreatures = fillSlot(slot, seedCreature, companionPool, isSeedSlot);
-    slots[slotName] = slotCreatures;
+    const slotInstances = fillSlot(slot, seedCreature, companionPool, isSeedSlot);
+    slots[slotName] = slotInstances;
 
-    debug('Slot', slotName, 'filled:', slotCreatures.length, 'entries');
+    debug('Slot', slotName, 'filled:', slotInstances.length, 'instances');
   }
 
   return slots;
@@ -329,11 +340,11 @@ function fillAllSlots(
 
 /**
  * Generiert Gruppe basierend auf Creature.groupSize (kein Template).
- * Wraps creatures in a synthetic 'default' slot.
+ * Erstellt individuelle Instanzen mit gewürfelten HP.
  */
 function fillFromGroupSize(
   seedCreature: CreatureDefinition
-): { [slotName: string]: { creatureId: string; count: number }[] } {
+): { [slotName: string]: CreatureInstance[] } {
   const groupSize = seedCreature.groupSize;
 
   let count: number;
@@ -346,7 +357,14 @@ function fillFromGroupSize(
   }
 
   debug('GroupSize fallback:', seedCreature.id, '->', count);
-  return { default: [{ creatureId: seedCreature.id, count }] };
+
+  // Individuelle Instanzen mit HP erstellen
+  const instances: CreatureInstance[] = [];
+  for (let i = 0; i < count; i++) {
+    instances.push(createInstance(seedCreature));
+  }
+
+  return { default: instances };
 }
 
 // ============================================================================
@@ -356,11 +374,12 @@ function fillFromGroupSize(
 /** GroupStatus für Encounter-Gruppen */
 export type GroupStatus = 'free' | 'captive' | 'incapacitated' | 'fleeing';
 
-/** EncounterCreature für Slot-Einträge */
-export interface EncounterCreature {
-  creatureId: string;
-  count: number;
-  npcId?: string;
+/** CreatureInstance - Kreatur mit individuell gewürfelten HP und eindeutiger ID */
+export interface CreatureInstance {
+  instanceId: string;
+  definitionId: string;
+  currentHp: number;
+  maxHp: number;
 }
 
 /** PopulatedGroup - Output von generateEncounterGroup() */
@@ -368,8 +387,9 @@ export interface PopulatedGroup {
   groupId: string;
   templateRef?: string;
   factionId: string | null;
-  slots: { [slotName: string]: EncounterCreature[] };
-  narrativeRole: 'threat' | 'victim' | 'neutral' | 'ally';
+  slots: { [slotName: string]: CreatureInstance[] };
+  creatureIds: string[]; // Alle instanceIds (flat) für einfachen Zugriff
+  narrativeRole: NarrativeRole;
   status: GroupStatus;
 }
 
@@ -392,7 +412,7 @@ export function generateEncounterGroup(
     timeSegment: GameDateTime['segment'];
     eligibleCreatures: CreatureDefinition[];
   },
-  role: 'threat' | 'victim' | 'neutral' | 'ally'
+  role: NarrativeRole
 ): Result<PopulatedGroup, PopulationError> {
   debug('Input:', {
     seed: seed.creatureId,
@@ -430,7 +450,7 @@ export function generateEncounterGroup(
   // -------------------------------------------------------------------------
   // Step 3.2: Slots befüllen
   // -------------------------------------------------------------------------
-  let slots: { [slotName: string]: { creatureId: string; count: number }[] };
+  let slots: { [slotName: string]: CreatureInstance[] };
 
   if (template) {
     slots = fillAllSlots(template, seedCreature, companionPool);
@@ -441,25 +461,25 @@ export function generateEncounterGroup(
   // -------------------------------------------------------------------------
   // Step 3.3: Gruppe finalisieren
   // -------------------------------------------------------------------------
+
+  // Sammle alle instanceIds über alle Slots
+  const creatureIds = Object.values(slots).flat().map(c => c.instanceId);
+
   const result: PopulatedGroup = {
     groupId: crypto.randomUUID(),
     templateRef: template?.id,
     factionId: seed.factionId,
     slots,
+    creatureIds,
     narrativeRole: role,
     status: 'free',
   };
-
-  // Debug: Zähle alle Kreaturen über alle Slots
-  const totalCreatures = Object.values(slots).flat();
-  const totalCount = totalCreatures.reduce((sum, c) => sum + c.count, 0);
 
   debug('Output:', {
     groupId: result.groupId,
     templateRef: result.templateRef,
     slots: Object.keys(slots).length,
-    creatures: totalCreatures.length,
-    total: totalCount,
+    creatureCount: creatureIds.length,
     role: result.narrativeRole,
   });
 

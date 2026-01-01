@@ -3,5 +3,5 @@
 
 export interface FactionPresence {
   factionId: string;
-  weight: number;
+  randWeighting: number;
 }

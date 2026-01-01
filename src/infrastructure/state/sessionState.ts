@@ -22,7 +22,7 @@ let state: SessionState = {
     day: 1,
     hour: 8,
     minute: 0,
-    daySegment: 'morning',
+    segment: 'morning',
   },
   weather: null,
   travel: { status: 'idle', route: null, progress: null },

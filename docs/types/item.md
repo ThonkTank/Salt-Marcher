@@ -23,6 +23,8 @@ Unified Item-Schema fuer Inventar, Loot und Equipment. Items sind die Single Sou
 | rarity | Rarity | Seltenheit | Optional, default: 'common' |
 | isRation | boolean | Automatischer Verbrauch beim Reisen | Optional |
 | stackable | boolean | Stapelbar | Optional, default: true fuer consumable/gear/currency |
+| carryCapacity | number | Tragkapazitaet in lb (fuer Container) | Optional, >= 0 |
+| selfCarrying | boolean | Item traegt sich selbst (Wagon, Flying Carpet) | Optional, default: false |
 | damage | string | Waffen: Schadensformat | Optional, z.B. "1d8 slashing" |
 | armorClass | number | Ruestung: AC-Wert/Bonus | Optional |
 | properties | string[] | D&D Properties | Optional, z.B. ["versatile", "finesse"] |
@@ -41,6 +43,7 @@ type ItemCategory =
   | 'shield'       // Schilde (separiert fuer AC-Berechnung)
   | 'consumable'   // Traenke, Schriftrollen, verbrauchbare Items
   | 'gear'         // Ausruestung, Werkzeug, Abenteurer-Zubehoer
+  | 'container'    // Wagen, Truhen, Rucksaecke, Satteltaschen
   | 'treasure'     // Edelsteine, Kunst, wertvolle Objekte
   | 'currency';    // Muenzen (Gold, Silber, Kupfer, Platin)
 ```
@@ -63,18 +66,9 @@ type Rarity =
 
 Tags dienen dem Loot-Matching. Je mehr Tags zwischen Creature/Faction und Item uebereinstimmen, desto wahrscheinlicher erscheint das Item als Beute.
 
-### Basis-Tags
+Tags sind reine Flavour-Marker fuer Loot-Matching. Sie beschreiben NICHT die Funktion (dafuer gibt es Categories).
 
-| Tag | Beschreibung |
-|-----|--------------|
-| `currency` | Muenzen aller Art |
-| `weapons` | Waffen |
-| `armor` | Ruestungen und Schilde |
-| `consumables` | Traenke, Schriftrollen |
-| `magic` | Magische Gegenstaende |
-| `supplies` | Rationen, Seile, Ausruestung |
-
-### Kreatur-spezifische Tags
+### Kreatur-/Kultur-Tags
 
 | Tag | Beschreibung |
 |-----|--------------|
@@ -84,12 +78,27 @@ Tags dienen dem Loot-Matching. Je mehr Tags zwischen Creature/Faction und Item u
 | `humanoid` | Standard-Ausruestung, zivilisierte Items |
 | `arcane` | Magische Komponenten, Zauber-Fokus |
 
+### Umgebungs-Tags
+
+| Tag | Beschreibung |
+|-----|--------------|
+| `underwater` | Tauchausruestung, Meeresschaetze |
+| `volcanic` | Hitzebestaendige Items, Obsidian |
+| `frozen` | Kaelteresistente Ausruestung, Eis-Artefakte |
+
+### Fraktions-Tags
+
+| Tag | Beschreibung |
+|-----|--------------|
+| `military` | Militaerische Ausruestung, Uniformen |
+| `noble` | Edle Kleidung, Schmuck, feine Waren |
+| `criminal` | Diebeswerkzeug, gestohlene Waren |
+
 ### User-definierte Tags
 
 User koennen eigene Tags erstellen fuer:
 - Kampagnen-spezifische Items (z.B. `dwarvish`, `elven`, `orcish`)
 - Fraktions-Loot (z.B. `bloodfang`, `thieves_guild`)
-- Umgebungs-Loot (z.B. `underwater`, `volcanic`)
 
 ---
 
@@ -97,9 +106,12 @@ User koennen eigene Tags erstellen fuer:
 
 - `weight >= 0`
 - `value >= 0`
+- `carryCapacity >= 0` (wenn vorhanden)
 - Currency-Items haben immer `stackable: true`
 - Waffen muessen `damage` haben
 - Ruestungen muessen `armorClass` haben
+- Container haben typischerweise `carryCapacity > 0`
+- `selfCarrying` Items (Wagons, fliegende Items) zaehlen nicht gegen Tragkapazitaet
 - 50 Muenzen = 1 lb (D&D-Standard: weight = 0.02 fuer einzelne Muenze)
 - `id` muss innerhalb des EntityRegistry eindeutig sein
 
@@ -195,5 +207,35 @@ const goldPiece: Item = {
   tags: ['currency'],
   value: 1,               // Basis-Waehrung
   stackable: true
+};
+```
+
+### Container (Wagon)
+
+```typescript
+const wagon: Item = {
+  id: 'wagon',
+  name: 'Wagon',
+  weight: 400,            // Wagen selbst wiegt 400 lb
+  category: 'container',
+  tags: ['humanoid'],     // Flavour: von Humanoiden benutzt
+  value: 35,
+  carryCapacity: 800,     // Kann 800 lb tragen
+  selfCarrying: true,     // Pferde ziehen ihn, Party muss nicht tragen
+};
+```
+
+### Container (Chest)
+
+```typescript
+const chest: Item = {
+  id: 'chest',
+  name: 'Chest',
+  weight: 25,
+  category: 'container',
+  tags: [],               // Keine speziellen Flavour-Tags
+  value: 5,
+  carryCapacity: 100,     // Kann 100 lb tragen
+  // selfCarrying fehlt = false, Truhe muss getragen werden
 };
 ```

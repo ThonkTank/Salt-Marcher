@@ -19,27 +19,27 @@ export interface Activity {
   name: string;
   awareness: number; // 0-100
   detectability: number; // 0-100
-  contextTags: string[]; // active, resting, movement, stealth, aquatic
+  contextTags: ('active' | 'resting')[]; // Soft-Weighting basierend auf creature.activeTime
 }
 
 // Lookup-Map für alle Activities
 export const ACTIVITY_DEFINITIONS: Record<string, Activity> = {
-  // Resting (nur außerhalb creature.activeTime)
+  // Resting (bevorzugt außerhalb creature.activeTime)
   sleeping: { id: 'sleeping', name: 'Schlafen', awareness: 10, detectability: 20, contextTags: ['resting'] },
   resting: { id: 'resting', name: 'Rasten', awareness: 40, detectability: 40, contextTags: ['resting'] },
   lair: { id: 'lair', name: 'Im Bau', awareness: 60, detectability: 30, contextTags: ['resting'] },
   camp: { id: 'camp', name: 'Lagern', awareness: 50, detectability: 70, contextTags: ['resting'] },
 
-  // Active (nur innerhalb creature.activeTime)
-  traveling: { id: 'traveling', name: 'Reisen', awareness: 55, detectability: 55, contextTags: ['active', 'movement'] },
-  ambush: { id: 'ambush', name: 'Hinterhalt', awareness: 80, detectability: 15, contextTags: ['active', 'stealth'] },
-  patrol: { id: 'patrol', name: 'Patrouille', awareness: 70, detectability: 60, contextTags: ['active', 'movement'] },
-  hunt: { id: 'hunt', name: 'Jagen', awareness: 75, detectability: 40, contextTags: ['active', 'movement'] },
+  // Active (bevorzugt innerhalb creature.activeTime)
+  traveling: { id: 'traveling', name: 'Reisen', awareness: 55, detectability: 55, contextTags: ['active'] },
+  ambush: { id: 'ambush', name: 'Hinterhalt', awareness: 80, detectability: 15, contextTags: ['active'] },
+  patrol: { id: 'patrol', name: 'Patrouille', awareness: 70, detectability: 60, contextTags: ['active'] },
+  hunt: { id: 'hunt', name: 'Jagen', awareness: 75, detectability: 40, contextTags: ['active'] },
   scavenge: { id: 'scavenge', name: 'Plündern', awareness: 45, detectability: 55, contextTags: ['active'] },
 
-  // Beide (immer möglich)
+  // Beide (kein Modifikator)
   feeding: { id: 'feeding', name: 'Fressen', awareness: 30, detectability: 50, contextTags: ['active', 'resting'] },
-  wandering: { id: 'wandering', name: 'Umherziehen', awareness: 50, detectability: 50, contextTags: ['active', 'resting', 'movement'] },
+  wandering: { id: 'wandering', name: 'Umherziehen', awareness: 50, detectability: 50, contextTags: ['active', 'resting'] },
 };
 
 // IDs der generischen Activities (Basis-Pool)
@@ -55,3 +55,54 @@ export const CREATURE_WEIGHTS = {
   weatherPrefers: 2.0,
   weatherAvoids: 0.5,
 } as const;
+
+// ============================================================================
+// NPC ROLE WEIGHTS (für NPC-Auswahl in Encountern)
+// ============================================================================
+
+import type { DesignRole } from './creature';
+
+/**
+ * Gewichtung der Design-Rollen als Multiplikatoren.
+ * Höhere Werte = höhere Wahrscheinlichkeit als NPC ausgewählt zu werden.
+ * Berechnung: weight = CR × ROLE_WEIGHT
+ */
+export const NPC_ROLE_WEIGHTS: Record<DesignRole, number> = {
+  leader: 5.0,
+  solo: 5.0,
+  support: 2.0,
+  controller: 2.0,
+  brute: 2.0,
+  artillery: 1.0,
+  soldier: 1.0,
+  skirmisher: 1.0,
+  ambusher: 1.0,
+  minion: 0.5,
+} as const;
+
+// ============================================================================
+// SEED SELECTION WEIGHTS (für Creature-Pool Gewichtung)
+// ============================================================================
+
+/**
+ * Decay-Rate für CR-Distanz-Gewichtung.
+ * weight = 1.0 - distance × CR_DECAY_RATE
+ */
+export const CR_DECAY_RATE = 0.2;
+
+/**
+ * Minimales Gewicht für Kreaturen mit großer CR-Distanz.
+ * Verhindert dass Kreaturen komplett ausgeschlossen werden.
+ */
+export const MIN_CR_WEIGHT = 0.1;
+
+// ============================================================================
+// ACTIVITY LAYER WEIGHTING (für Culture-Chain Gewichtung)
+// ============================================================================
+
+/**
+ * Kaskaden-Ratio für Layer-Gewichtung.
+ * Leaf bekommt 60%, Rest kaskadiert.
+ * weights[layer] = remaining × LAYER_CASCADE_RATIO
+ */
+export const LAYER_CASCADE_RATIO = 0.6;

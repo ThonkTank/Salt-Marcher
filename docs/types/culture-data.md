@@ -29,18 +29,20 @@
 
 ### PersonalityConfig
 
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| common | WeightedTrait[] | Haeufige Traits |
-| rare | WeightedTrait[] | Seltene Traits |
-| forbidden | string[] | Ausgeschlossene Traits |
-
-### WeightedTrait
+Traits werden zentral in `presets/traits/` definiert und per ID referenziert.
+Soft-Weighting: Alle Traits sind immer im Pool, aber mit unterschiedlichen Gewichten.
 
 | Feld | Typ | Beschreibung |
 |------|-----|--------------|
-| trait | string | Trait-Name |
-| weight | number | Gewichtung 0.0-1.0 |
+| traits | string[] | Bevorzugte Trait-IDs (5x Gewicht) |
+| forbidden | string[] | Benachteiligte Trait-IDs (0.2x Gewicht) |
+
+**Gewichtungs-Modell:**
+- In `traits` gelistet → 5x Gewicht (bevorzugt)
+- Nicht gelistet → 1x Gewicht (neutral)
+- In `forbidden` → 0.2x Gewicht (benachteiligt, aber nicht ausgeschlossen)
+
+Siehe: [presets/traits/](../../presets/traits/) fuer zentrale Trait-Definitionen
 
 ### WeightedQuirk
 
@@ -102,14 +104,8 @@ const goblinCulture: CultureData = {
     suffixes: ['le', 'ik', 'az', 'uz']
   },
   personality: {
-    common: [
-      { trait: 'cunning', weight: 0.7 },
-      { trait: 'cowardly', weight: 0.6 },
-      { trait: 'greedy', weight: 0.8 }
-    ],
-    rare: [
-      { trait: 'brave', weight: 0.1 }
-    ]
+    traits: ['cunning', 'cowardly', 'greedy', 'cruel', 'nervous', 'brave', 'loyal', 'clever'],
+    // forbidden: ['kindhearted'] // Optional: benachteiligte Traits
   },
   quirks: [
     { quirk: 'nervous_laugh', weight: 0.3, description: 'Kichert nervoes' },

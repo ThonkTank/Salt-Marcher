@@ -23,8 +23,10 @@ export { hexDistance } from './hex';
 
 export {
   resolveCultureChain,
-  selectCultureLayer,
-  getCultureField,
+  calculateLayerWeights,
+  mergeWeightedPool,
+  aggregateWeightedPools,
+  accumulateWithUnwanted,
   type CultureSource,
   type CultureLayer,
 } from './cultureResolution';

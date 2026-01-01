@@ -48,6 +48,7 @@ const PRESET_MAPPINGS: Record<string, string> = {
   maps: 'map',
   tiles: 'tile',
   weatherTypes: 'weather-type',
+  items: 'item',
 };
 
 function scanExports(): FunctionInfo[] {

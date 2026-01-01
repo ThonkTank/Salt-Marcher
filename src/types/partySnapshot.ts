@@ -15,7 +15,6 @@ export interface PartySnapshot {
   size: number;
   members: PartyMember[];
   position: HexCoordinate;
-  thresholds: DifficultyThresholds;
 }
 
 export interface PartyMember {

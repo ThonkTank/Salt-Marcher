@@ -6,32 +6,375 @@
 > **Aufgerufen von:** [Encounter.md](Encounter.md)
 >
 > **Delegation:**
-> - [lootGenerator](../Loot.md) - Tatsaechliche Item-Generierung
+> - [lootGenerator](../Loot.md) - `generateLoot(pool, budget)`
+> - [lootPool](../Loot.md#loot-pool-kaskade) - `resolveLootPool()` via Culture-Kaskade
 >
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
-> - [Loot.md](../Loot.md) - Budget-System, DefaultLoot, Tag-Loot
-> - [creature.md](../../entities/creature.md#defaultloot) - DefaultLoot-Schema
+> - [Loot.md](../Loot.md) - Budget-System, Pool-Resolution
 
-Interface zwischen encounterGenerator und lootGenerator. Berechnet Encounter-Budget, delegiert Generierung an lootGenerator, verteilt Items auf Kreaturen.
-
----
-
-## Verantwortlichkeiten
-
-| encounterLoot (Step 4.4) | lootGenerator |
-|--------------------------|---------------|
-| Budget pro NarrativeRole berechnen | Budget-State verwalten |
-| Budget-Flags setzen (belastet/nicht) | DefaultLoot wuerfeln |
-| Verteilungs-Gewichte berechnen | Tag-basiertes Loot generieren |
-| Items auf Kreaturen verteilen | Soft-Cap anwenden |
-| | Hoards generieren |
-
-**Kernprinzip:** encounterLoot entscheidet WER Loot bekommt und WIEVIEL Budget. lootGenerator entscheidet WAS generiert wird.
+Interface zwischen encounterGenerator und lootGenerator. Orchestriert die 3-Step Pipeline fuer Encounter-Loot.
 
 ---
 
-## Step 4.4: Loot-Generierung
+## Budget nach NarrativeRole
+
+Alle Gruppen bekommen Loot zugewiesen. Die Budget-Berechnung unterscheidet sich nach NarrativeRole:
+
+| Role | Budget-Basis | Party-Contribution |
+|------|--------------|-------------------|
+| **threat** | `xpToGold(xp, partyLevel)` | 100% |
+| **victim** | `xpToGold(xp, crLevel)` | Reward: 10-50% (Threat-Staerke) |
+| **ally** | `xpToGold(xp, crLevel)` | 0% |
+| **neutral** | `xpToGold(xp, avg(crLevel, partyLevel))` | 0% |
+
+### Victim-Reward-Logik
+
+Victim bekommt **zwei Loot-Kategorien**:
+1. **Habseligkeiten**: Volles CR-basiertes Loot (behalten sie)
+2. **Reward**: Anteil davon als Belohnung fuer Party (basierend auf Threat-Staerke)
+
+```
+threatStrength = threatXP / victimXP
+rewardRatio = clamp(threatStrength × 0.4, 0.1, 0.5)
+victimReward = victimLootValue × rewardRatio  // → Party-Budget
+```
+
+| Threat vs Victim | threatStrength | rewardRatio | Beispiel (100g Victim) |
+|------------------|----------------|-------------|------------------------|
+| Schwaecher | 0.5 | 0.2 | 20g Reward |
+| Gleichstark | 1.0 | 0.4 | 40g Reward |
+| Staerker | 1.5+ | 0.5 (max) | 50g Reward |
+
+---
+
+## Pipeline-Uebersicht
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  ENCOUNTER-LOOT PIPELINE (3 Steps)                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Step 1: Pools aggregieren + Budget berechnen (Zwei-Pass)       │
+│          Pass 1: XP pro NarrativeRole sammeln                   │
+│          Pass 2: Budget pro Creature basierend auf Role         │
+│          Pools mit CR gewichten und kombinieren                 │
+│          → partyBudget + independentBudget                      │
+│                                                                 │
+│  Step 2: generateLoot() aufrufen                                │
+│          generateLoot(aggregatedPool, totalBudget)              │
+│          Ein Aufruf fuer das gesamte Encounter                  │
+│          (generateLoot garantiert Budget-Einhaltung)            │
+│                                                                 │
+│  Step 3: Items auf Kreaturen verteilen                          │
+│          Gewichtete Zufallsauswahl pro Item                     │
+│          Gewicht = poolWeight × budgetFactor                    │
+│          → totalValue + partyObtainableValue pro Gruppe         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Step 1: Pools aggregieren + Budget berechnen
+
+Alle Creature-Pools werden zu einem kombinierten Pool aggregiert.
+
+### Pool-Aggregation
+
+```typescript
+interface CreaturePoolEntry {
+  creatureIndex: number;
+  pool: Array<{ itemId: string; weight: number }>;
+  cr: number;
+  size: CreatureSize;
+  narrativeRole: NarrativeRole;
+  budget: number;             // Gesamt-Budget der Kreatur
+  partyContribution: number;  // Anteil der zum Party-Budget zaehlt
+  receivedValue: number;      // Tracking waehrend Verteilung
+}
+
+function aggregatePools(
+  groups: GroupWithNPCs[],
+  context: { partyLevel: number }
+): {
+  aggregatedPool: Array<{ itemId: string; weight: number }>;
+  creaturePools: CreaturePoolEntry[];
+  partyBudget: number;       // threat (100%) + victim (Reward-Anteil)
+  independentBudget: number; // ally + neutral + victim (Habseligkeiten)
+  totalCapacity: number;
+} {
+  const creaturePools: CreaturePoolEntry[] = [];
+  const allPools: Array<Array<{ item: string; weight: number }>> = [];
+  let totalXP = 0;
+  const creatures: { cr: number; wealthTier?: string }[] = [];
+
+  let creatureIndex = 0;
+  for (const group of groups) {
+    const faction = group.factionId
+      ? vault.getEntity('faction', group.factionId)
+      : null;
+
+    for (const creature of group.creatures) {
+      const def = vault.getEntity('creature', creature.definitionId);
+      if (!def) continue;
+
+      // XP summieren
+      const xp = CR_TO_XP[def.cr] ?? 0;
+      totalXP += xp;
+      creatures.push({ cr: def.cr, wealthTier: def.wealthTier });
+
+      // Nur Creatures mit carriesLoot bekommen Pool
+      if (def.carriesLoot === false) {
+        creatureIndex++;
+        continue;
+      }
+
+      // Pool via Culture-Kaskade aufloesen
+      const pool = resolveLootPool(def, faction);
+
+      // Per-Creature Budget berechnen
+      const creatureBudget = xpToGold(xp, context.partyLevel) * getWealthMultiplier(def);
+
+      creaturePools.push({
+        creatureIndex,
+        pool,
+        cr: def.cr,
+        budget: creatureBudget,
+        receivedValue: 0,
+      });
+
+      // Pool fuer Aggregation sammeln
+      allPools.push(pool);
+
+      creatureIndex++;
+    }
+  }
+
+  // Alle Pools aggregieren via cultureResolution Utility
+  const mergedPool = aggregateWeightedPools(allPools, (item) => item);
+  const aggregatedPool = mergedPool.map(p => ({ itemId: p.item, weight: p.weight }));
+
+  // Budget berechnen
+  const encounterBudget = calculateLootValue({
+    totalXP,
+    creatures,
+    partyLevel: context.partyLevel,
+  });
+
+  return { aggregatedPool, creaturePools, encounterBudget };
+}
+```
+
+### Beispiel Pool-Aggregation
+
+**Encounter:** 2 Goblins (CR 0.25) + 1 Bandit Captain (CR 2)
+
+| Creature | CR | Pool |
+|----------|---:|------|
+| Goblin 1 | 0.25 | dagger: 5, gold: 10 |
+| Goblin 2 | 0.25 | dagger: 5, gold: 10 |
+| Captain | 2.0 | shortsword: 8, gold: 10, potion: 3 |
+
+**Aggregiert (Weights summieren):**
+
+| Item | Berechnung | Aggregated Weight |
+|------|------------|------------------:|
+| dagger | 5 + 5 | 10 |
+| gold | 10 + 10 + 10 | 30 |
+| shortsword | 8 | 8 |
+| potion | 3 | 3 |
+
+---
+
+## Step 2: generateLoot() aufrufen
+
+Ein einzelner Aufruf fuer das gesamte Encounter.
+
+```typescript
+function generateEncounterItems(
+  aggregatedPool: Array<{ itemId: string; weight: number }>,
+  encounterBudget: number
+): SelectedItem[] {
+  return generateLoot(aggregatedPool, encounterBudget);
+}
+```
+
+**Hinweise:**
+- `generateLoot()` ist in `lootGenerator.ts` implementiert
+- Gibt `SelectedItem[]` zurueck (item + quantity)
+- Waehlt Items gewichtet aus bis Budget erschoepft
+
+---
+
+## Step 3: Items auf Kreaturen verteilen
+
+Items werden batch-weise verteilt (alle Einheiten eines Item-Typs zusammen) basierend auf tatsaechlichen Pool-Gewichten und verbleibendem Loot-Budget.
+
+### Verteilungs-Gewichtung
+
+```
+creatureWeight = poolEntry.weight × budgetFactor
+budgetFactor = max(0.1, remainingBudget / creatureBudget)
+```
+
+**Faktoren:**
+- `poolEntry.weight` - Tatsaechliches Gewicht aus dem aufgeloesten Pool (nicht binaer)
+- `budgetFactor` - Verhaeltnis von verbleibendem zu geplantem Budget (min 0.1)
+
+**Budget-Tracking:**
+- Jede Creature hat ein Ziel-Budget: `xpToGold(xp, partyLevel) × wealthMultiplier`
+- `receivedValue` trackt den kumulierten Wert bereits erhaltener Items
+- Creatures mit vollem Budget erhalten weniger, mit offenem Budget mehr
+
+```typescript
+function distributeItems(
+  items: Array<{ itemId: string; quantity: number }>,
+  creaturePools: CreaturePoolEntry[],
+  groups: GroupWithNPCs[]
+): void {
+  if (creaturePools.length === 0) return;
+
+  for (const { itemId, quantity } of items) {
+    if (quantity === 0) continue;
+
+    const item = vault.getEntity<{ value: number }>('item', itemId);
+    const itemValue = item?.value ?? 1;
+
+    // Step 1: Finde eligible Kreaturen (haben Item im Pool)
+    const eligible: { idx: number; weight: number }[] = [];
+
+    for (const cp of creaturePools) {
+      const poolEntry = cp.pool.find(p => p.itemId === itemId);
+      if (!poolEntry) continue;
+
+      // Remaining Budget Factor: mehr offenes Budget = hoeheres Gewicht
+      const remaining = cp.budget - cp.receivedValue;
+      const budgetFactor = Math.max(0.1, remaining / Math.max(1, cp.budget));
+
+      // Kombiniertes Gewicht = Pool-Weight × Budget-Factor
+      const weight = poolEntry.weight * budgetFactor;
+      eligible.push({ idx: cp.creatureIndex, weight });
+    }
+
+    // Fallback: Niemand hat Item im Pool → alle Carriers nach Budget
+    if (eligible.length === 0) {
+      for (const cp of creaturePools) {
+        if (cp.pool.length === 0) continue;
+        const remaining = cp.budget - cp.receivedValue;
+        const weight = Math.max(0.1, remaining / Math.max(1, cp.budget));
+        eligible.push({ idx: cp.creatureIndex, weight });
+      }
+    }
+
+    if (eligible.length === 0) continue;
+
+    // Step 2: Proportionale Batch-Verteilung
+    const totalWeight = eligible.reduce((sum, e) => sum + e.weight, 0);
+
+    const allocations = eligible.map(e => ({
+      creatureIndex: e.idx,
+      ideal: (e.weight / totalWeight) * quantity,
+      floor: 0,
+      remainder: 0,
+    }));
+
+    // Floor-Werte und Remainders berechnen
+    let distributed = 0;
+    for (const alloc of allocations) {
+      alloc.floor = Math.floor(alloc.ideal);
+      alloc.remainder = alloc.ideal - alloc.floor;
+      distributed += alloc.floor;
+    }
+
+    // Remaining Items nach Remainder-Groesse verteilen
+    allocations.sort((a, b) => b.remainder - a.remainder);
+    const remaining = quantity - distributed;
+    for (let i = 0; i < remaining && i < allocations.length; i++) {
+      allocations[i].floor++;
+    }
+
+    // Step 3: Zuweisen + Budget tracken
+    for (const alloc of allocations) {
+      if (alloc.floor > 0) {
+        assignItemToCreature(groups, alloc.creatureIndex, itemId, alloc.floor);
+        const cp = creaturePools.find(c => c.creatureIndex === alloc.creatureIndex);
+        if (cp) cp.receivedValue += itemValue * alloc.floor;
+      }
+    }
+  }
+}
+
+function assignItemToCreature(
+  groups: GroupWithNPCs[],
+  creatureIndex: number,
+  itemId: string,
+  quantity: number
+): void {
+  let idx = 0;
+  for (const group of groups) {
+    for (const creature of group.creatures) {
+      if (idx === creatureIndex) {
+        creature.loot = creature.loot ?? [];
+        const existing = creature.loot.find(l => l.id === itemId);
+        if (existing) {
+          existing.quantity += quantity;
+        } else {
+          creature.loot.push({ id: itemId, quantity });
+        }
+        return;
+      }
+      idx++;
+    }
+  }
+}
+```
+
+### Verteilungs-Beispiel
+
+**Encounter:** 2 Goblins (CR 0.25) + 1 Bandit Captain (CR 2)
+
+**Budget-Berechnung (Party Level 3, goldPerXP = 0.5):**
+
+| Creature | CR | XP | wealthTier | Budget |
+|----------|---:|---:|:----------:|-------:|
+| Goblin 1 | 0.25 | 50 | poor (0.5×) | 12.5g |
+| Goblin 2 | 0.25 | 50 | poor (0.5×) | 12.5g |
+| Captain | 2.0 | 450 | average (1.0×) | 225g |
+
+**Generierte Items:** 120× gold (1g each), shortsword (10g), 2× dagger (2g each)
+
+**Gold-Verteilung (alle haben gold im Pool):**
+
+| Creature | Pool-Weight | Budget-Factor | Combined | Anteil | Erhaelt |
+|----------|------------:|--------------:|---------:|-------:|--------:|
+| Goblin 1 | 10 | 12.5/12.5 = 1.0 | 10.0 | 10/30 = 33% | 40 |
+| Goblin 2 | 10 | 12.5/12.5 = 1.0 | 10.0 | 10/30 = 33% | 40 |
+| Captain | 10 | 225/225 = 1.0 | 10.0 | 10/30 = 33% | 40 |
+
+**Shortsword-Verteilung (nur Captain hat shortsword im Pool):**
+
+| Creature | Pool-Weight | Budget-Factor | Combined | Erhaelt |
+|----------|------------:|--------------:|---------:|--------:|
+| Captain | 8 | (225-40)/225 = 0.82 | 6.56 | 1 |
+
+**Dagger-Verteilung (nur Goblins haben dagger im Pool):**
+
+| Creature | Pool-Weight | Budget-Factor | Combined | Anteil | Erhaelt |
+|----------|------------:|--------------:|---------:|-------:|--------:|
+| Goblin 1 | 5 | (12.5-40)/12.5 = 0.1* | 0.5 | 50% | 1 |
+| Goblin 2 | 5 | (12.5-40)/12.5 = 0.1* | 0.5 | 50% | 1 |
+
+*Min-Floor 0.1 da Budget ueberschritten
+
+**Endergebnis:**
+- Goblin 1: 40× gold, 1× dagger (Wert: 42g, Budget: 12.5g)
+- Goblin 2: 40× gold, 1× dagger (Wert: 42g, Budget: 12.5g)
+- Captain: 40× gold, 1× shortsword (Wert: 50g, Budget: 225g)
+
+---
+
+## Input/Output Types
 
 ### Input
 
@@ -40,7 +383,7 @@ function generateEncounterLoot(
   groups: GroupWithNPCs[],
   context: {
     terrain: { id: string };
-    timeSegment: TimeSegment;
+    partyLevel: number;
   }
 ): GroupWithLoot[]
 ```
@@ -48,127 +391,39 @@ function generateEncounterLoot(
 ### Output
 
 ```typescript
-interface GroupWithLoot extends GroupWithNPCs {
+interface GroupWithLoot extends Omit<GroupWithNPCs, 'creatures'> {
+  creatures: EncounterCreatureInstance[];
   loot: {
     items: { id: string; quantity: number }[];
     totalValue: number;
-    countsTowardsBudget: boolean;  // Bestimmt ob Party-Budget belastet wird
+    partyObtainableValue: number; // Was die Party tatsaechlich bekommt
+    countsTowardsBudget: boolean;
   };
 }
-```
 
----
-
-## Budget-Berechnung nach NarrativeRole
-
-Loot wird fuer das **gesamte Encounter** berechnet, dann auf Gruppen verteilt. Die NarrativeRole bestimmt, ob das Loot das Party-Budget belastet.
-
-| NarrativeRole | Loot generiert? | Belastet Budget? | Begruendung |
-|---------------|:---------------:|:----------------:|-------------|
-| `threat` | Ja | Ja | Party bekommt Loot nach Kampfsieg |
-| `ally` (kaempft mit) | Ja | Nein | NPCs behalten ihr Loot, Party bestiehlt sie nicht |
-| `victim` (braucht Hilfe) | Ja | Ja | Opfer gibt Loot als Belohnung an Party |
-| `neutral` | Ja | Nein | Keine Interaktion erwartet |
-
-### Ally vs. Victim Unterscheidung
-
-Die Unterscheidung basiert auf der **Gruppenkonstellation**:
-
-| Konstellation | Gruppe | Rolle | Budget |
-|---------------|--------|-------|:------:|
-| Party + Woelfe vs. Banditen | Woelfe | ally | Nein |
-| Party rettet Haendler vor Banditen | Haendler | victim | Ja |
-| Party beobachtet Pilger | Pilger | neutral | Nein |
-
-**Heuristik:** `victim`-Gruppen haben typischerweise ein `goal` wie "escape_danger", "seek_help", "surrender".
-
-```typescript
-function countsTowardsBudget(role: NarrativeRole, goal: string): boolean {
-  if (role === 'threat') return true;
-  if (role === 'victim') return true;  // Belohnung fuer Rettung
-  // ally und neutral belasten Budget nicht
-  return false;
+interface EncounterCreatureInstance {
+  definitionId: string;
+  currentHp: number;
+  maxHp: number;
+  npcId?: string;
+  loot?: { id: string; quantity: number }[];
 }
 ```
 
----
-
-## Verteilungs-Algorithmus
-
-Loot wird auf einzelne Kreaturen verteilt, damit:
-1. Kreaturen Items im Kampf verwenden koennen (Heiltrank, Waffe)
-2. Balance-System pruefen kann, ob Gegner magische Items nutzen
-
-### Schritt 1: DefaultLoot zur Quelle
-
-DefaultLoot wird immer der Kreatur zugewiesen, die es generiert hat:
-
-```typescript
-// Wolf hat defaultLoot: [{ itemId: 'wolf-pelt', chance: 1.0 }]
-// → wolf-pelt geht an diesen Wolf
-```
-
-### Schritt 2: Rest-Budget gewichtet verteilen
-
-Das Rest-Budget (nach DefaultLoot) wird nach CR × RoleWeight verteilt:
-
-```typescript
-const ROLE_WEIGHTS: Record<DesignRole, number> = {
-  leader: 3.0,      // 3x Anteil
-  solo: 3.0,
-  support: 2.0,
-  controller: 2.0,
-  brute: 1.5,
-  artillery: 1.0,
-  soldier: 1.0,
-  skirmisher: 1.0,
-  ambusher: 1.0,
-  minion: 0.25,     // Kaum Loot
-};
-
-function calculateCreatureWeight(creature: CreatureInstance): number {
-  const cr = getCreatureDefinition(creature.definitionId).cr;
-  const roleWeight = ROLE_WEIGHTS[creature.role ?? 'soldier'];
-  return cr * roleWeight;
-}
-```
-
-**Beispiel:** 3 Banditen (CR 1/8) + 1 Bandit Captain (CR 2, leader)
-
-| Kreatur | CR | Rolle | Gewicht | Anteil |
-|---------|---:|-------|--------:|-------:|
-| Bandit 1 | 0.125 | soldier | 0.125 | 2% |
-| Bandit 2 | 0.125 | soldier | 0.125 | 2% |
-| Bandit 3 | 0.125 | soldier | 0.125 | 2% |
-| Captain | 2.0 | leader | 6.0 | 94% |
-| **Summe** | | | 6.375 | 100% |
-
-Der Captain bekommt 94% des Rest-Budgets (Gold, Ausruestung), die Banditen fast nichts.
+**partyObtainableValue nach NarrativeRole:**
+- **threat**: 100% von totalValue
+- **victim**: Anteil basierend auf victimRewardRatio (10-50%)
+- **ally/neutral**: 0
 
 ---
 
-## Workflow
+## Muenzen
 
-```
-1. Encounter-Budget berechnen
-   encounterBudget = partyBudget.balance × (0.10 + random() × 0.40)
+Muenzen (gold-piece, silver-piece, copper-piece) sind **normale Pool-Items**.
 
-2. Pro Gruppe: Budget-Anteil bestimmen
-   groupBudget = encounterBudget × (groupTotalCR / encounterTotalCR)
-   countsTowardsBudget = f(narrativeRole, goal)
-
-3. Pro Gruppe: lootGenerator aufrufen
-   generatedLoot = lootGenerator.generate(groupBudget, context)
-
-4. Pro Gruppe: Loot auf Kreaturen verteilen
-   - DefaultLoot → zur generierenden Kreatur
-   - Rest → nach CR × RoleWeight
-
-5. Budget nur fuer belastende Gruppen abziehen
-   if (countsTowardsBudget) {
-     partyBudget.distributed += generatedLoot.totalValue;
-   }
-```
+- Keine Sonderbehandlung bei Generierung oder Verteilung
+- Werden wie andere Items behandelt
+- Muessen im lootPool definiert sein
 
 ---
 
@@ -176,75 +431,78 @@ Der Captain bekommt 94% des Rest-Budgets (Gold, Ausruestung), die Banditen fast 
 
 | Situation | Verhalten |
 |-----------|-----------|
-| Alle Gruppen sind ally/neutral | Kein Budget abgezogen, Loot trotzdem generiert |
-| Victim ohne wertvolles Loot | Faction/Creature defaultLoot bestimmt Wert |
-| Multi-Threat (beide threat) | Beide Gruppen belasten Budget |
-| Kreatur ohne CR (0) | Minimum-Gewicht 0.1 verwenden |
+| Keine Creatures mit carriesLoot | Kein Loot generiert |
+| Leerer aggregierter Pool | Kein Loot generiert |
+| Budget = 0 | Kein Loot generiert |
+| Alle Items > Budget | Kein Item passt, Loot = leer |
 
 ---
 
-## Beispiel: Multi-Group Encounter
+## Beispiel: Vollstaendiger Flow
 
-**Szenario:** Banditen (threat) ueberfallen Haendler (victim)
+**Encounter:** Goblin-Patrouille (2 Goblins, 1 Hobgoblin Captain)
 
 ```typescript
-const groups = [
-  {
-    creatures: [captain, bandit1, bandit2],
-    narrativeRole: 'threat',
-    goal: 'rob_travelers'
-  },
-  {
-    creatures: [merchant, guard],
-    narrativeRole: 'victim',
-    goal: 'escape_danger'
-  }
-];
+// Input
+const groups = [{
+  creatures: [goblin1, goblin2, captain],
+  factionId: 'bergstamm',
+  narrativeRole: 'threat'
+}];
 
-// Budget-Berechnung:
-// - Banditen: 60% (threat, höherer CR)
-// - Händler: 40% (victim, niedriger CR)
+// Step 1: Aggregate Pools + Budget
+// - Goblin Pool: [crude-spear: 5, silver: 10, goblin-totem: 2]
+// - Captain Pool: [longsword: 8, gold: 15, chain-shirt: 3]
+// - Aggregated (CR-weighted): crude-spear: 2.5, silver: 5, goblin-totem: 1,
+//                             longsword: 16, gold: 30, chain-shirt: 6
+// - Per-Creature Budgets (Party Level 5):
+//   - Goblin 1: 50 XP × 0.5 × 0.5 = 12.5g
+//   - Goblin 2: 50 XP × 0.5 × 0.5 = 12.5g
+//   - Captain: 700 XP × 0.5 × 1.0 = 350g
+// - Encounter Budget: 150g
 
-// Budget-Belastung:
-// - Banditen: Ja (threat)
-// - Händler: Ja (victim → Belohnung)
+// Step 2: generateLoot()
+// → longsword (15g), chain-shirt (75g), 40× gold (40g), crude-spear (1g)
+// → Total: 131g
 
-// Ergebnis:
-// - Party besiegt Banditen → bekommt Banditen-Loot
-// - Party rettet Händler → bekommt Händler-Belohnung
-// - Gesamtes Loot-Budget wird abgezogen
+// Step 3: Distribute (Batch mit Budget-Tracking)
+// Item-Reihenfolge: longsword, chain-shirt, gold, crude-spear
+//
+// longsword (1×, 15g): Nur Captain hat im Pool (weight=8)
+//   - Captain: 8 × 1.0 = 8.0 → erhaelt 1 (receivedValue: 15g)
+//
+// chain-shirt (1×, 75g): Nur Captain hat im Pool (weight=3)
+//   - Captain: 3 × (335/350) = 2.87 → erhaelt 1 (receivedValue: 90g)
+//
+// gold (40×, 1g each): Alle haben im Pool
+//   - Goblin 1: 10 × 1.0 = 10.0, Goblin 2: 10 × 1.0 = 10.0, Captain: 15 × (260/350) = 11.1
+//   - Anteile: 10/31.1, 10/31.1, 11.1/31.1 → 13, 13, 14
+//
+// crude-spear (1×, 1g): Nur Goblins haben im Pool (weight=5)
+//   - Goblin 1: 5 × (0.1*) = 0.5, Goblin 2: 5 × (0.1*) = 0.5
+//   - *Budget ueberschritten, Min-Floor 0.1
+//   - 50/50 → Goblin 1 erhaelt (hoechster Remainder)
+
+// Output
+groups[0].creatures[0].loot = [{ id: 'crude-spear', quantity: 1 }, { id: 'gold', quantity: 13 }];
+groups[0].creatures[1].loot = [{ id: 'gold', quantity: 13 }];
+groups[0].creatures[2].loot = [{ id: 'longsword', quantity: 1 }, { id: 'chain-shirt', quantity: 1 }, { id: 'gold', quantity: 14 }];
 ```
 
 ---
 
-## Delegation an lootGenerator
+## Delegation
 
-encounterLoot ruft lootGenerator mit folgenden Parametern auf:
+| encounterLoot.ts | lootGenerator.ts | lootPool.ts |
+|------------------|------------------|-------------|
+| Pool-Aggregation | generateLoot(pool, budget) | resolveLootPool() |
+| Budget-Berechnung | | Culture-Kaskade |
+| Item-Verteilung | | |
 
-```typescript
-// Pro Gruppe
-const groupLoot = lootGenerator.generateGroupLoot({
-  budget: groupBudget,
-  creatures: group.creatures,
-  factionId: group.factionId,
-  terrain: context.terrain,
-  timeSegment: context.timeSegment,
-});
-```
-
-lootGenerator uebernimmt:
-- DefaultLoot pro Creature wuerfeln (Chance-System)
-- Tag-basiertes Loot fuer Rest-Budget
-- Soft-Cap bei Budget-Schulden
-- Hoard-Wahrscheinlichkeit (Boss, Lager)
-
-Details: [Loot.md](../Loot.md#encounter-loot-generierung)
-
----
 
 ## Tasks
 
-| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-| 14 | ⬜ | Encounter | services | generateEncounterLoot implementieren (Budget-Berechnung, lootGenerator-Delegation) | mittel | Ja | #10 | encounterLoot.md#Step 4.4: Loot-Generierung | - |
-| 15 | ⬜ | Encounter | services | encounterLoot Input-Signatur: GroupWithNPCs[] statt GroupWithNPCs | niedrig | Nein | - | encounterLoot.md#Input | - |
+|  # | Status | Domain    | Layer    | Beschreibung                                                        |  Prio  | MVP? | Deps | Spec                                                        | Imp.                                         |
+|--:|:----:|:--------|:-------|:------------------------------------------------------------------|:----:|:--:|:---|:----------------------------------------------------------|:-------------------------------------------|
+| 83 |   ✅    | Encounter | services | aggregatePools() - Creature-Pools kombinieren mit CR-Gewichtung     | mittel | Nein | -    | encounterLoot.md#step-1-pools-aggregieren--budget-berechnen | encounterGenerator/encounterLoot.ts [ändern] |
+| 84 |   ✅    | Encounter | services | distributeItems() - Items auf Creatures verteilen (CR × Pool-Match) | mittel | Nein | -    | encounterLoot.md#step-3-items-auf-kreaturen-verteilen       | encounterGenerator/encounterLoot.ts [ändern] |
