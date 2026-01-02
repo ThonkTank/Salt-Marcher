@@ -1,22 +1,11 @@
 // Ziel: Encounter-Generierungs-Pipeline verwalten. Helper-Skripte nach Bedarf aufrufen.
 // Siehe: docs/services/encounter/Encounter.md
 //
-// TASKS:
-// | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-// |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-// | 13 | ⬜ | Encounter | services | Flavour-Service fuer Encounter-Beschreibung implementieren | niedrig | Nein | - | encounter.md#Pipeline | - |
-// | 27 | ⬜ | Encounter | services | EncounterConstraints implementieren (min/maxDifficulty, requiredTags) - Post-MVP | niedrig | Nein | - | encounter.md#Input-Schema | - |
-// | 30 | ✅ | Encounter | services | terrain als vollstaendige TerrainDefinition (statt partieller Struktur) | mittel | Ja | - | encounter.md#Input-Schema | - |
-// | 31 | ✅ | Encounter | services | weather an groupSeed uebergeben (Weather-Praeferenzen aktiviert) | mittel | Ja | - | encounter.md#Pipeline | - |
-// | 34 | ✅ | Encounter | services | position verwendet HexCoordinate statt inline { q, r } | mittel | Ja | - | encounter.md#Input-Schema | - |
-// | 35 | ✅ | Encounter | services | NPCs auf Encounter-Ebene (1-3 NPCs), nicht mehr leadNPC pro Gruppe | mittel | Ja | - | encounter.md#Pipeline | - |
-//
 // Pipeline:
 // 1.: Multi-Group-Check
 // 2.: groupSeed.ts - Seed-Kreatur auswählen
-// 3.: groupPopulation.ts - Template → Slots → Kreaturen
-// 4.: Flavouring (NPCs → Activity → Loot → Distance)
-//     - NPCs VOR Activity, damit NPC-Reputation in Disposition einfließt
+// 3.: fillGroups.ts - Template → Slots → NPCs (kombiniert Population + NPC-Generierung)
+// 4.: Flavouring (Activity → Loot → Distance)
 // 5.: difficulty.ts - Ziel-Difficulty bestimmen + Simulation
 // 6.: balancing.ts - Balancing-Loop bis Ziel erreicht
 // 7.: EncounterInstance zusammenbauen
@@ -25,7 +14,7 @@
 // IMPORTS
 // ============================================================================
 
-import type { EncounterInstance } from '#types/encounterTypes';
+import type { EncounterInstance, EncounterGroup } from '#types/encounterTypes';
 import { type Result, ok, err } from '#types/common/Result';
 import type { GameDateTime } from '#types/time';
 import type { TerrainDefinition, CreatureDefinition, NPC, Faction } from '@/types/entities';
@@ -45,9 +34,8 @@ export interface EncounterResult {
 
 import { vault } from '@/infrastructure/vault/vaultInstance';
 import * as groupSeed from './groupSeed';
-import * as groupPopulation from './groupPopulation';
+import * as fillGroups from './fillGroups';
 import * as groupActivity from './groupActivity';
-import * as encounterNPCs from './encounterNPCs';
 import * as encounterLoot from './encounterLoot';
 import * as encounterDistance from './encounterDistance';
 import * as difficulty from './difficulty';
@@ -121,52 +109,60 @@ export function generateEncounter(context: {
   }
 
   // -------------------------------------------------------------------------
-  // Step 4: Gruppen-Population
-  // Siehe: docs/services/encounter/groupPopulation.md
+  // Step 3: Gruppen-Population + NPC-Generierung
+  // Siehe: docs/services/encounter/fillGroups.md
   // -------------------------------------------------------------------------
 
   // Eligible Creatures für fraktionslose Gruppen laden (einmalig)
   const eligibleCreatures = loadEligibleCreatures(context.terrain.id, context.timeSegment);
 
-  const populatedGroups: groupPopulation.PopulatedGroup[] = [];
+  const populatedGroups: EncounterGroup[] = [];
+  const allGeneratedNPCs: NPC[] = [];
+  const allMatchedNPCs: NPC[] = [];
 
-  const primaryResult = groupPopulation.generateEncounterGroup(
+  const fillContext = {
+    terrain: context.terrain,
+    timeSegment: context.timeSegment,
+    eligibleCreatures,
+    position: context.position,
+    time: context.time,
+  };
+
+  const primaryResult = fillGroups.fillGroup(
     { creatureId: primarySeed.creatureId, factionId: primarySeed.factionId },
-    { terrain: context.terrain, timeSegment: context.timeSegment, eligibleCreatures },
+    fillContext,
     'threat'
   );
   if (!primaryResult.ok) {
     return err(primaryResult.error);
   }
-  populatedGroups.push(primaryResult.value);
+  populatedGroups.push(primaryResult.value.group);
+  allGeneratedNPCs.push(...primaryResult.value.generatedNPCs);
+  allMatchedNPCs.push(...primaryResult.value.matchedNPCs);
 
   if (secondarySeed) {
-    const secondaryResult = groupPopulation.generateEncounterGroup(
+    const secondaryResult = fillGroups.fillGroup(
       { creatureId: secondarySeed.creatureId, factionId: secondarySeed.factionId },
-      { terrain: context.terrain, timeSegment: context.timeSegment, eligibleCreatures },
+      fillContext,
       secondaryRole
     );
     if (secondaryResult.ok) {
-      populatedGroups.push(secondaryResult.value);
+      populatedGroups.push(secondaryResult.value.group);
+      allGeneratedNPCs.push(...secondaryResult.value.generatedNPCs);
+      allMatchedNPCs.push(...secondaryResult.value.matchedNPCs);
     }
   }
 
   // -------------------------------------------------------------------------
-  // Step 5: Flavouring (NPCs, Activity, Loot, Distance)
+  // Step 4: Flavouring (Activity, Loot, Distance)
   // -------------------------------------------------------------------------
 
-  // Step 5.1: NPCs für ALLE Gruppen zuweisen (VOR Activity für NPC-Reputation!)
-  const npcResult = encounterNPCs.assignEncounterNPCs(populatedGroups, {
-    position: context.position,
-    time: context.time,
-  });
-  // Alle NPC-IDs (matched + generated) für die EncounterInstance
-  const allNPCs = [...npcResult.matchedNPCs, ...npcResult.generatedNPCs];
-  const encounterNpcIds = allNPCs.map(npc => npc.id);
+  // NPC-IDs aus allen Gruppen sammeln
+  const encounterNpcIds = [...allGeneratedNPCs, ...allMatchedNPCs].map(npc => npc.id);
 
-  // Step 5.2: Activity + Goal + Disposition für alle Gruppen zuweisen
-  // NPC-Reputation wird jetzt korrekt berücksichtigt
-  const groupsWithActivity = npcResult.groups.map((group) => {
+  // Step 4.1: Activity + Goal + Disposition für alle Gruppen zuweisen
+  // NPC-Reputation wird korrekt berücksichtigt (NPCs bereits in Slots)
+  const groupsWithActivity = populatedGroups.map((group) => {
     // Faction für Pool-Hierarchie laden (falls vorhanden)
     const faction = group.factionId
       ? vault.getEntity<Faction>('faction', group.factionId)
@@ -179,14 +175,14 @@ export function generateEncounter(context: {
     );
   });
 
-  // Step 5.3: Loot für ALLE Gruppen generieren (Budget-basiert)
+  // Step 4.2: Loot für ALLE Gruppen generieren (Budget-basiert)
   const groupsWithLoot = encounterLoot.generateEncounterLoot(groupsWithActivity, {
     terrain: context.terrain,
     partyLevel: context.party.level,
   });
 
-  // Step 5.4: Perception + Distanz pro Gruppe berechnen
-  const flavouredGroups: encounterDistance.GroupWithPerception[] = [];
+  // Step 4.3: Perception + Distanz pro Gruppe berechnen
+  const flavouredGroups: EncounterGroup[] = [];
   for (const group of groupsWithLoot) {
     const withDistance = encounterDistance.calculate(group, {
       terrain: context.terrain,
@@ -197,13 +193,13 @@ export function generateEncounter(context: {
   }
 
   // -------------------------------------------------------------------------
-  // Step 6: Ziel-Difficulty bestimmen
+  // Step 5: Ziel-Difficulty bestimmen
   // Siehe: docs/services/encounter/Difficulty.md
   // -------------------------------------------------------------------------
   const targetDifficulty = difficulty.rollTargetDifficulty(context.terrain.threatLevel);
 
   // -------------------------------------------------------------------------
-  // Step 7-9: Balancing-Loop
+  // Step 6: Balancing-Loop
   // Siehe: docs/services/encounter/Balancing.md
   // -------------------------------------------------------------------------
   let currentGroups = flavouredGroups;
@@ -221,18 +217,12 @@ export function generateEncounter(context: {
   }
 
   // -------------------------------------------------------------------------
-  // Step 10: EncounterInstance zusammenbauen
+  // Step 7: EncounterInstance zusammenbauen
   // -------------------------------------------------------------------------
   const encounterInstance: EncounterInstance = {
     id: crypto.randomUUID(),
-    groups: currentGroups.map(g => ({
-      creatures: g.creatures,
-      activity: g.activity,
-      goal: g.goal,
-      disposition: g.disposition,
-      narrativeRole: g.narrativeRole,
-    })),
-    npcs: encounterNpcIds, // 1-3 NPC-IDs pro Encounter
+    groups: currentGroups,  // Vollständige EncounterGroup[] direkt durchreichen
+    npcs: encounterNpcIds,  // 1-3 NPC-IDs pro Encounter
     loot: aggregateLoot(currentGroups),
     perception: aggregatePerception(currentGroups),
     difficulty: {
@@ -251,7 +241,7 @@ export function generateEncounter(context: {
 
   return ok({
     encounter: encounterInstance,
-    generatedNPCs: npcResult.generatedNPCs,
+    generatedNPCs: allGeneratedNPCs,
   });
 }
 
@@ -268,28 +258,32 @@ function rollSecondaryRole(): NarrativeRole {
 }
 
 function aggregateLoot(
-  groups: { loot: { items: { id: string; quantity: number }[]; totalValue: number } }[]
+  groups: EncounterGroup[]
 ): { items: { id: string; quantity: number }[]; totalValue: number } {
   const allItems: { id: string; quantity: number }[] = [];
   let totalValue = 0;
   for (const g of groups) {
-    allItems.push(...g.loot.items);
-    totalValue += g.loot.totalValue;
+    if (g.loot) {
+      allItems.push(...g.loot.items);
+      totalValue += g.loot.totalValue;
+    }
   }
   return { items: allItems, totalValue };
 }
 
 function aggregatePerception(
-  groups: { perception: { partyDetectsEncounter: number; encounterDetectsParty: number; isSurprise: boolean } }[]
+  groups: EncounterGroup[]
 ): { partyDetectsEncounter: number; encounterDetectsParty: number; isSurprise: boolean } {
   // Nächste Distanz gewinnt
   let minPartyDetects = Infinity;
   let minEncounterDetects = Infinity;
   let anySurprise = false;
   for (const g of groups) {
-    minPartyDetects = Math.min(minPartyDetects, g.perception.partyDetectsEncounter);
-    minEncounterDetects = Math.min(minEncounterDetects, g.perception.encounterDetectsParty);
-    anySurprise = anySurprise || g.perception.isSurprise;
+    if (g.perception) {
+      minPartyDetects = Math.min(minPartyDetects, g.perception.partyDetectsEncounter);
+      minEncounterDetects = Math.min(minEncounterDetects, g.perception.encounterDetectsParty);
+      anySurprise = anySurprise || g.perception.isSurprise;
+    }
   }
   return {
     partyDetectsEncounter: minPartyDetects === Infinity ? DEFAULT_PERCEPTION_DISTANCE : minPartyDetects,

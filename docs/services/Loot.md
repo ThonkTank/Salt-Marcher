@@ -392,35 +392,79 @@ Loot wird **bei Encounter-Generierung** erstellt (nicht bei Combat-Ende).
 
 → **Vollstaendige Pipeline:** [encounterLoot.md](encounter/encounterLoot.md)
 
-### Pipeline-Uebersicht (3 Steps)
+### Pipeline-Uebersicht (v5 - Generische Allokation)
 
 ```
 Step 1: Pools aggregieren + Budget berechnen
         └── Alle Creature-Pools kombinieren (CR-gewichtet)
-        └── encounterBudget = totalXP × goldPerXP × avgWealth
-        └── Per-Creature Budget: xpToGold(xp, partyLevel) × wealthMultiplier
-        └── totalCapacity = Summe aller Creature-Tragkapazitaeten
+        └── Pool als PoolEntry<Item>[] mit dimensions: { value, weight }
+        └── Per-NPC Budget: CR-basiertes totalBudget, reputation-basiertes carriedBudget
+        └── Creatures haben instanceId fuer eindeutige Identifikation
 
-Step 2: generateLoot() einmal aufrufen
-        └── generateLoot(aggregatedPool, encounterBudget, totalCapacity) → Items[]
-        └── Dual-Limit: Budget UND Kapazitaet
-        └── Variety: Jedes Item maximal einmal
+Step 2: Containers aus NPCs bauen
+        └── AllocationContainer[] mit:
+            └── budgets: { value: carriedBudget, weight: carryCapacity }
+            └── received: { value: 0, weight: 0 }
 
-Step 3: Items auf Kreaturen verteilen (Batch mit Budget-Tracking)
-        └── Batch-Verteilung: Alle Items eines Typs zusammen
-        └── Gewichtung: poolEntry.randWeighting × budgetFactor
-        └── budgetFactor = max(0.1, remainingBudget / creatureBudget)
-        └── receivedValue trackt erhaltenen Loot-Wert pro Kreatur
+Step 3: Generische Allokation via allocateItems()
+        └── Interner Loop bis Budget erschoepft:
+            └── selectPoolItem(pool, targetBudgets) - Item auswählen
+            └── selectTargetContainer(dimensions, containers, totals) - Container auswählen
+            └── Container.received aktualisieren
+            └── Item aus Pool entfernen (Variety)
+
+Step 4: Allokationen auf NPCs anwenden (Encounter-spezifisch)
+        └── Carried vs Stored Entscheidung (Budget/Kapazität)
+        └── carryCapacityMultiplier anwenden
+        └── LootContainers für stored loot erstellen
+
+Step 5: Ergebnis zusammenbauen
+        └── Gruppen mit partyObtainableValue je nach NarrativeRole
+        └── Slots-Struktur bleibt erhalten (mit creatureIds Array)
 ```
 
-### Delegation
+**Architektur-Änderung (v5):** Der Allokations-Loop ist jetzt in lootGenerator.ts
+als generische `allocateItems()` Funktion. Encounter-spezifische Logik (Carried vs Stored,
+carryCapacityMultiplier) bleibt in encounterLoot.ts.
+
+### Delegation (v5)
 
 | encounterLoot.ts | lootGenerator.ts |
 |------------------|------------------|
-| Pool-Aggregation | generateLoot(pool, budget) |
-| Budget-Berechnung | xpToGold(xp, partyLevel) |
-| Item-Verteilung (Batch) | resolveLootPool() |
-| Budget-Tracking (receivedValue) | getWealthMultiplier() |
+| Pool-Aggregation (mit Dimensionen) | `PoolEntry<Item>[]` bauen |
+| Container aus NPCs bauen | `AllocationContainer[]` mit Budgets |
+| Budget-Berechnung (CR, Reputation) | `allocateItems()` - generischer Loop |
+| Carried vs Stored Entscheidung | `selectPoolItem()` - Item-Auswahl |
+| carryCapacityMultiplier-Anwendung | `selectTargetContainer()` - Container-Auswahl |
+| NPC-Zuweisung | `xpToGold()`, `getWealthMultiplier()` |
+| LootContainer-Erstellung | `resolveLootPool()` |
+
+**Neue generische API (v5):**
+
+```typescript
+// Pool mit beliebigen Dimensionen
+interface PoolEntry<T> {
+  item: T;
+  randWeighting: number;
+  dimensions: Record<string, number>;  // z.B. { value: 10, weight: 5 }
+}
+
+// Container mit Budgets pro Dimension
+interface AllocationContainer {
+  id: string;
+  budgets: Record<string, number>;    // z.B. { value: 100, weight: 50 }
+  received: Record<string, number>;   // Tracking
+}
+
+// Generischer Allokations-Loop
+function allocateItems<T>(
+  pool: PoolEntry<T>[],
+  containers: AllocationContainer[],
+  options: {
+    calcTargetBudgets: (remaining, poolSize) => Record<string, number>;
+  }
+): AllocationResult<T>[];
+```
 
 ---
 
@@ -620,74 +664,103 @@ Items haben Tags, die fuer Matching verwendet werden:
 
 ## Generierung
 
-### generateLoot()
+### selectNextItem() (v4)
 
-Generiert Loot aus einem aggregierten Pool bis das Budget erreicht ist.
+Waehlt das naechste Item aus einem Pool basierend auf Budget und Kapazitaet.
 
 ```typescript
 /**
- * Generiert Loot aus einem Pool bis Budget oder Kapazitaet erschoepft.
+ * Waehlt ein einzelnes Item aus dem Pool.
+ * Der Loop ist in encounterLoot.ts, damit carryCapacityMultiplier nach jedem Item
+ * angewendet werden kann.
  *
- * @param pool - Gewichteter Pool von Item-IDs (aggregiert aus allen Creatures)
- * @param budget - Verfuegbares Budget in Gold
- * @param carryCapacity - Tragkapazitaet in lb (default: Infinity fuer Hoards/Merchants)
- * @returns Ausgewaehlte Items mit Gesamtwert
+ * @param pool - Gewichteter Pool von Item-IDs
+ * @param remainingBudget - Verbleibendes Budget in Gold
+ * @param remainingCapacity - Verbleibende Tragkapazitaet in lb
+ * @returns Ausgewaehltes Item mit Menge, oder null wenn nichts passt
+ */
+function selectNextItem(
+  pool: Array<{ itemId: string; randWeighting: number }>,
+  remainingBudget: number,
+  remainingCapacity: number
+): { itemId: string; quantity: number } | null {
+  // Items laden und filtern
+  const eligible = pool
+    .map(entry => {
+      const item = vault.getEntity('item', entry.itemId);
+      if (!item) return null;
+      const itemPounds = item.pounds ?? 0;
+      const affordable = item.value <= remainingBudget;
+      const carryable = itemPounds === 0 || itemPounds <= remainingCapacity;
+      if (!affordable || !carryable) return null;
+      return { item, randWeighting: entry.randWeighting };
+    })
+    .filter((x): x is { item: Item; randWeighting: number } => x !== null);
+
+  if (eligible.length === 0) return null;
+
+  // Gewichtete Zufallsauswahl
+  const selected = weightedRandomSelect(eligible, 'selectNextItem');
+
+  // Bulk-Menge berechnen (10-30% der verbleibenden Ressourcen)
+  const itemPounds = selected.item.pounds ?? 0;
+  const targetValue = remainingBudget * (0.1 + Math.random() * 0.2);
+  const targetPounds = remainingCapacity * (0.1 + Math.random() * 0.2);
+
+  const qtyByValue = Math.floor(targetValue / selected.item.value);
+  const qtyByPounds = itemPounds > 0
+    ? Math.floor(targetPounds / itemPounds)
+    : Infinity;
+
+  const quantity = Math.max(1, Math.min(qtyByValue, qtyByPounds));
+
+  return { itemId: selected.item.id, quantity };
+}
+```
+
+**Architektur-Hinweis (v4):**
+- Der Loop ist in `encounterLoot.ts`, nicht in lootGenerator.ts
+- Nach jedem Item kann `carryCapacityMultiplier` die Kreatur-Kapazitaet erhoehen
+- Items werden sofort via `instanceId` an Kreaturen zugewiesen
+- → Details: [encounterLoot.md](encounter/encounterLoot.md#step-2-item-auswahl-loop-in-encounterlootts)
+
+### generateLoot() (Legacy)
+
+Die alte Batch-Generierung ist noch fuer Hoards und Merchants verfuegbar, wo kein
+`carryCapacityMultiplier` benoetigt wird.
+
+```typescript
+/**
+ * @deprecated Fuer Encounter-Loot: Nutze selectNextItem() im Loop stattdessen.
+ * Weiterhin verwendet fuer: Hoards, Merchants, Quest-Rewards
  */
 function generateLoot(
   pool: Array<{ itemId: string; randWeighting: number }>,
   budget: number,
   carryCapacity: number = Infinity
 ): GeneratedLoot {
-  const selectedItems: SelectedItem[] = [];
+  const items: SelectedItem[] = [];
   let remainingBudget = budget;
   let remainingCapacity = carryCapacity;
+  const mutablePool = [...pool];
 
-  // Items aus Pool laden (mutable copy fuer Variety)
-  const poolItems = pool
-    .map(entry => {
-      const item = vault.getEntity('item', entry.itemId);
-      return item ? { item, randWeighting: entry.randWeighting } : null;
-    })
-    .filter((x): x is { item: Item; randWeighting: number } => x !== null);
+  while (remainingBudget > 0 && mutablePool.length > 0) {
+    const selection = selectNextItem(mutablePool, remainingBudget, remainingCapacity);
+    if (!selection) break;
 
-  // Iterativ Items auswaehlen bis Budget ODER Kapazitaet erschoepft
-  while (remainingBudget > 0 && poolItems.length > 0) {
-    // Filter: affordable + carryable
-    const eligible = poolItems.filter(wi => {
-      const itemPounds = wi.item.pounds ?? 0;
-      const affordable = wi.item.value <= remainingBudget;
-      const carryable = itemPounds === 0 || itemPounds <= remainingCapacity;
-      return affordable && carryable;
-    });
-    if (eligible.length === 0) break;
+    const item = vault.getEntity('item', selection.itemId);
+    if (!item) continue;
 
-    // Gewichtete Zufallsauswahl (via utils/random.ts)
-    const selected = weightedRandomSelect(eligible, 'generateLoot');
+    items.push({ item, quantity: selection.quantity });
+    remainingBudget -= item.value * selection.quantity;
+    remainingCapacity -= (item.pounds ?? 0) * selection.quantity;
 
-    // Bulk-Menge berechnen (10-30% der verbleibenden Ressourcen)
-    const itemPounds = selected.item.pounds ?? 0;
-    const targetValue = remainingBudget * (0.1 + Math.random() * 0.2);
-    const targetPounds = remainingCapacity * (0.1 + Math.random() * 0.2);
-
-    const qtyByValue = Math.floor(targetValue / selected.item.value);
-    const qtyByPounds = itemPounds > 0
-      ? Math.floor(targetPounds / itemPounds)
-      : Infinity;
-
-    const quantity = Math.max(1, Math.min(qtyByValue, qtyByPounds));
-
-    selectedItems.push({ item: selected.item, quantity });
-    remainingBudget -= selected.item.value * quantity;
-    remainingCapacity -= itemPounds * quantity;
-
-    // Variety: Item aus Pool entfernen (jedes Item max 1x)
-    poolItems.splice(poolItems.indexOf(selected), 1);
+    // Variety: Item aus Pool entfernen
+    const idx = mutablePool.findIndex(p => p.itemId === selection.itemId);
+    if (idx >= 0) mutablePool.splice(idx, 1);
   }
 
-  return {
-    items: selectedItems,
-    totalValue: budget - remainingBudget
-  };
+  return { items, totalValue: budget - remainingBudget };
 }
 
 interface GeneratedLoot {

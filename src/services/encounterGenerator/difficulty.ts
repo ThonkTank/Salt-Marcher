@@ -1,8 +1,9 @@
 // Difficulty-Berechnung und Ziel-Difficulty
 // Siehe: docs/services/encounter/Difficulty.md
 
+import type { EncounterGroup } from '@/types/encounterTypes';
 import type { ThreatLevel } from '@/types/entities';
-import type { Disposition, DifficultyLabel } from '@/constants';
+import type { DifficultyLabel } from '@/constants';
 
 /**
  * Würfelt eine Ziel-Difficulty basierend auf Terrain-ThreatLevel.
@@ -24,10 +25,7 @@ export function rollTargetDifficulty(
  * Simuliert den Kampf und berechnet Difficulty-Metriken.
  */
 export function simulate(
-  groups: {
-    creatures: { definitionId: string; currentHp: number; maxHp: number; npcId?: string }[];
-    disposition: Disposition;
-  }[],
+  groups: EncounterGroup[],
   party: {
     level: number;
     size: number;
@@ -40,6 +38,7 @@ export function simulate(
 } {
   // TODO: Implementierung
   // PMF-basierte Kampfsimulation
+  // Kreaturen via Object.values(group.slots).flat() iterieren
 
   // Stub: Gibt Placeholder zurück
   void groups;

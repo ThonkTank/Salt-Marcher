@@ -127,50 +127,44 @@ EncounterContext
         |
         v  SeedSelection
 +------------------+
-| groupPopulation  |  Seed -> Template
-| (Step 3)         |  Template -> Slots -> Creatures
+| fillGroups       |  Seed -> Template -> Slots
+| (Step 3)         |  NPC Match/Generate (mit HP)
 +------------------+
         |
-        v  PopulatedGroup (1 oder mehr)
-+------------------+
-| encounterNPCs    |  1-3 NPCs (-> NPCService)
-| (Step 5.1)       |  VOR Activity fuer NPC-Reputation!
-+------------------+
-        |
-        v  GroupWithNPCs[]
+        v  EncounterGroup (mit eingebetteten NPCs!)
 +------------------+
 | groupActivity    |  Activity + Goal + Disposition
-| (Step 5.2)       |  Nutzt NPC-Reputation
+| (Step 4)         |  Nutzt NPC-Reputation
 +------------------+
         |
-        v  GroupWithActivity[]
+        v  EncounterGroup (mit Activity)
 +------------------+
 | encounterLoot    |  Loot (-> LootService)
-| (Step 5.3)       |
+| (Step 5)         |
 +------------------+
         |
         v
 +--------------------+
 | encounterDistance  |  Perception-Berechnung
-| (Step 5.4)         |  initialDistance
+| (Step 6)           |  initialDistance
 +--------------------+
         |
-        v  FlavouredGroup[]
+        v  EncounterGroup (vollstaendig)
 +------------------+
 | Difficulty       |  PMF-Kampfsimulation
-| (Step 6)         |  Win% + TPK-Risk
+| (Step 7)         |  Win% + TPK-Risk
 +------------------+
         |
         v
 +------------------+
 | goalDifficulty   |  Ziel-Difficulty wuerfeln
-| (Step 7.0)       |  Terrain-Threat
+| (Step 8.0)       |  Terrain-Threat
 +------------------+
         |
         v
 +------------------+
 | Balancing        |  Beste Anpassung waehlen
-| (Step 7.1)       |  Win% an Ziel anpassen
+| (Step 8.1)       |  Win% an Ziel anpassen
 +------------------+
         |
         v
@@ -184,76 +178,17 @@ EncounterContext
 | Helper | Step | Input | Output | Dokument |
 |--------|:----:|-------|--------|----------|
 | groupSeed | 2 | EncounterContext | SeedSelection | [groupSeed.md](groupSeed.md) |
-| groupPopulation | 3 | SeedSelection | PopulatedGroup | [groupPopulation.md](groupPopulation.md) |
-| encounterNPCs | 5.1 | PopulatedGroup[], Context | NPCs[], GroupWithNPCs[] | [→ encounterNPCs](#encounternpcs-step-51) |
-| groupActivity | 5.2 | GroupWithNPCs[], Context | GroupWithActivity[] | [groupActivity.md](groupActivity.md) |
-| encounterLoot | 5.3 | GroupWithActivity[], Context | GroupWithLoot[] | [encounterLoot.md](encounterLoot.md) |
-| encounterDistance | 5.4 | GroupWithLoot[], Context | GroupWithPerception[] | [encounterDistance.md](encounterDistance.md) |
-| Difficulty | 6 | FlavouredGroup[], PartySnapshot | SimulationResult | [Difficulty.md](Difficulty.md) |
-| goalDifficulty | 7.0 | EncounterContext | EncounterDifficulty | [→ goalDifficulty](#goaldifficulty-step-70) |
-| Balancing | 7.1 | FlavouredGroup[], SimResult, Difficulty | BalancedEncounter | [Balancing.md](Balancing.md) |
+| fillGroups | 3 | SeedSelection, Context, Role | FillGroupResult | [fillGroups.md](fillGroups.md) |
+| groupActivity | 4 | EncounterGroup[], Context | EncounterGroup[] | [groupActivity.md](groupActivity.md) |
+| encounterLoot | 5 | EncounterGroup[], Context | EncounterGroup[] | [encounterLoot.md](encounterLoot.md) |
+| encounterDistance | 6 | EncounterGroup[], Context | EncounterGroup[] | [encounterDistance.md](encounterDistance.md) |
+| Difficulty | 7 | EncounterGroup[], PartySnapshot | SimulationResult | [Difficulty.md](Difficulty.md) |
+| goalDifficulty | 8.0 | EncounterContext | EncounterDifficulty | [→ goalDifficulty](#goaldifficulty-step-80) |
+| Balancing | 8.1 | EncounterGroup[], SimResult, Difficulty | BalancedEncounter | [Balancing.md](Balancing.md) |
 
 ---
 
-## encounterNPCs (Step 5.1) {#encounternpcs-step-51}
-
-NPCs fuer das gesamte Encounter zuweisen (1-3 NPCs).
-
-**Wichtig:** Dieser Step laeuft VOR groupActivity (Step 5.2), damit NPC-Reputation in die Disposition-Berechnung einfliessen kann.
-
-**Delegation:** NPC-Matching und -Generierung erfolgen via NPCService.
--> [NPC-Matching.md](../NPCs/NPC-Matching.md) | [NPC-Generation.md](../NPCs/NPC-Generation.md)
-
-### Workflow
-
-```
-1. Alle Kreaturen ueber alle Gruppen sammeln
-2. Gewicht berechnen: CR × ROLE_WEIGHT
-3. NPC-Anzahl bestimmen:
-   - Single-Group: 1-3 NPCs wuerfeln (50%/35%/15%)
-   - Multi-Group: min 1 NPC pro Gruppe, dann auffuellen bis max 3
-4. Gewichtete Zufallsauswahl ohne Zuruecklegen
-5. Pro Auswahl: NPC-Matching oder NPC-Generation
-6. npcId in entsprechender Kreatur setzen
-```
-
-### ROLE_WEIGHTS (Multiplikatoren)
-
-```typescript
-const ROLE_WEIGHTS: Record<DesignRole, number> = {
-  leader: 5.0,    // 5x wahrscheinlicher
-  solo: 5.0,
-  support: 2.0,
-  controller: 2.0,
-  brute: 2.0,
-  artillery: 1.0,
-  soldier: 1.0,
-  skirmisher: 1.0,
-  ambusher: 1.0,
-  minion: 0.5,    // Selten
-};
-```
-
-**Gewicht pro Kreatur:** `CR × ROLE_WEIGHT`
-
-### NPC-Zuordnung
-
-NPCs werden ueber `npcId` in der Kreatur-Instanz referenziert:
-
-```typescript
-interface EncounterCreatureInstance {
-  definitionId: string;
-  currentHp: number;
-  maxHp: number;
-  npcId?: string;  // Referenz auf NPC falls zugewiesen
-}
-```
-
-Alle zugewiesenen NPCs sind vollstaendig (Name, 2 Traits, Quirk, Goal) und werden im Vault persistiert.
-
----
-
-## encounterLoot (Step 5.3) {#encounterloot-step-53}
+## encounterLoot (Step 5) {#encounterloot-step-5}
 
 Loot fuer das gesamte Encounter generieren und auf Kreaturen verteilen.
 
@@ -279,7 +214,7 @@ Loot wird auf **Encounter-Ebene** berechnet und dann auf Kreaturen verteilt:
 
 ---
 
-## goalDifficulty (Step 7.0) {#goaldifficulty-step-70}
+## goalDifficulty (Step 8.0) {#goaldifficulty-step-80}
 
 Ziel-Difficulty via gewichtete Normalverteilung basierend auf Terrain-ThreatLevel.
 
@@ -310,13 +245,13 @@ function rollTargetDifficulty(threatLevel: ThreatLevel): EncounterDifficulty {
 | mountain | 2-8 | 5 | hard/deadly |
 | arctic | 1-7 | 4 | hard |
 
--> Weiter: [Balancing.md](Balancing.md) (Step 6.1: Machbarkeits-Anpassung)
+-> Weiter: [Balancing.md](Balancing.md) (Step 8.1: Machbarkeits-Anpassung)
 
 ---
 
-## Orchestration: groupSeed -> groupPopulation
+## Orchestration: groupSeed -> fillGroups
 
-Der Encounter-Service ruft die Helper in Sequenz auf. Fuer Multi-Group-Encounters wird `groupPopulation` mehrfach aufgerufen.
+Der Encounter-Service ruft die Helper in Sequenz auf. Fuer Multi-Group-Encounters wird `fillGroups` mehrfach aufgerufen.
 
 **Konfiguration:** Konstanten werden aus `src/constants/EncounterConfig.ts` importiert.
 
@@ -349,18 +284,24 @@ export function generateEncounter(context) {
     }
   }
 
-  // Step 4: Gruppen-Population
-  const groups = [];
-  const primaryGroupResult = groupPopulation.populate(primarySeed, context, 'threat');
-  if (isErr(primaryGroupResult)) return primaryGroupResult;
-  groups.push(unwrap(primaryGroupResult));
+  // Step 3: Gruppen-Befuellung (Population + NPCs in einem Schritt!)
+  const groups: EncounterGroup[] = [];
+  const allGeneratedNPCs: NPC[] = [];
+
+  const primaryResult = fillGroups.fillGroup(primarySeed, context, 'threat');
+  if (isErr(primaryResult)) return primaryResult;
+  groups.push(unwrap(primaryResult).group);
+  allGeneratedNPCs.push(...unwrap(primaryResult).generatedNPCs);
 
   if (secondarySeed) {
-    const secondaryGroupResult = groupPopulation.populate(secondarySeed, context, secondaryRole);
-    if (isOk(secondaryGroupResult)) groups.push(unwrap(secondaryGroupResult));
+    const secondaryResult = fillGroups.fillGroup(secondarySeed, context, secondaryRole);
+    if (isOk(secondaryResult)) {
+      groups.push(unwrap(secondaryResult).group);
+      allGeneratedNPCs.push(...unwrap(secondaryResult).generatedNPCs);
+    }
   }
 
-  // Step 5-9: Flavouring, Difficulty, Balancing
+  // Step 4-8: Activity, Loot, Distance, Difficulty, Balancing
   // ... (siehe encounterGenerator.ts)
 
   return ok(encounterInstance);
@@ -463,64 +404,49 @@ Die Pipeline transformiert Daten durch mehrere Abstraktionsebenen:
 
 ```
 CreatureDefinition (Template)
-        |  groupPopulation (Step 3)
+        |  fillGroups (Step 3)
         v
-EncounterGroup (Slots mit Creature-IDs)
-        |  groupActivity, encounterNPCs, encounterLoot, encounterDistance (Step 4)
+ EncounterGroup (Slots mit NPCs - vollstaendig!)
+        |  groupActivity, encounterLoot, encounterDistance (Step 4-6)
         v
-FlavouredGroup (mit Activity, NPC, Loot, Perception)
-        |  Difficulty (Step 5)
+EncounterGroup (erweitert um Activity, Loot, Perception)
+        |  Difficulty (Step 7)
         v
 CombatProfile (Simulation)
 ```
 
 | Typ | Persistenz | Beschreibung | Dokumentation |
 |-----|------------|--------------|---------------|
-| `CreatureDefinition` | Vault | Template/Statblock | [creature.md](../../entities/creature.md) |
-| `EncounterGroup` | Runtime | Gruppe mit Slots | [groupPopulation.md#output-encountergroup](groupPopulation.md#output-encountergroup) |
-| `FlavouredGroup` | Runtime | Mit Activity, NPC, Loot | [encounter-instance.md](../../entities/encounter-instance.md) |
+| `CreatureDefinition` | Vault | Template/Statblock | [creature.md](../../types/creature.md) |
+| `EncounterGroup` | Runtime | Gruppe mit NPCs in Slots | [fillGroups.md#output-fillgroupresult](fillGroups.md#output-fillgroupresult) |
+| `NPC` | Vault | Vollstaendiger NPC mit HP, Loot | [npc.md](../../types/npc.md) |
 | `CombatProfile` | Simulation | PMF-basierte Kampfwerte | [Difficulty.md](Difficulty.md#combat-profile) |
 
-### EncounterDraft
+### EncounterGroup
 
-Das Ergebnis der groupPopulation-Phase (vor Flavour):
+Das einheitliche Schema fuer Gruppen (nach fillGroups):
 
 ```typescript
-interface EncounterDraft {
-  // Gruppen (jede Gruppe hat eigenes Template + factionId)
-  groups: EncounterGroup[];
-  isMultiGroup: boolean;
+interface EncounterGroup {
+  groupId: string;
+  templateRef?: string;
+  factionId: string | null;
+  slots: Record<string, NPC[]>;   // NPCs direkt in Slots!
+  npcIds: string[];               // Index aller NPC-IDs
+  narrativeRole: NarrativeRole;
+  status: GroupStatus;
 
-  // Seed-Info (fuer Referenz, Seed ist in ihrer Gruppe enthalten)
-  seedCreatureId: EntityId<'creature'>;
+  // Spaeter befuellt (Step 4-6):
+  activity?: string;
+  goal?: string;
+  disposition?: Disposition;
+  loot?: GroupLoot;
+  perception?: GroupPerception;
 }
 ```
 
--> EncounterGroup-Schema: [groupPopulation.md#output-encountergroup](groupPopulation.md#output-encountergroup)
-
-### FlavouredGroup
-
-Das Ergebnis nach Step 4 (Activity, NPCs, Loot, Perception):
-
-```typescript
-interface FlavouredGroup extends EncounterGroup {
-  activity: string;
-  goal: string;
-  creatures: EncounterCreatureInstance[];  // Mit npcId falls zugewiesen
-  loot: GeneratedLoot;
-  perception: EncounterPerception;
-}
-
-interface EncounterCreatureInstance {
-  definitionId: string;
-  currentHp: number;
-  maxHp: number;
-  npcId?: string;  // Referenz auf NPC falls zugewiesen
-}
-```
-
+-> EncounterGroup-Schema: [fillGroups.md#output-fillgroupresult](fillGroups.md#output-fillgroupresult)
 -> Activity/Goal: [groupActivity.md](groupActivity.md)
--> NPCs: [encounterNPCs](#encounternpcs-step-43)
 -> Loot: [encounterLoot.md](encounterLoot.md)
 -> Perception: [encounterDistance.md](encounterDistance.md)
 

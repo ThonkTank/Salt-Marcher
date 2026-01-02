@@ -1,12 +1,5 @@
 // Ziel: Loot-Typen für Budget-Tracking und Item-Auswahl
 // Siehe: docs/services/Loot.md
-//
-// TASKS:
-// |  # | Status | Domain | Layer | Beschreibung                                                                   |  Prio  | MVP? | Deps | Spec                    | Imp.                |
-// |--:|:----:|:-----|:----|:-----------------------------------------------------------------------------|:----:|:--:|:---|:----------------------|:------------------|
-// | 68 |   ✅    | Loot   | types | LootBudgetState Interface definieren (accumulated, distributed, balance, debt) | mittel | Nein | -    | Loot.md#lootbudgetstate | types/loot.ts [neu] |
-// | 80 |   ⬜    | Loot   | types | GeneratedLoot Interface (items: SelectedItem[], totalValue: number)            | mittel | Nein | #81  | Loot.md#generatedloot   | types/loot.ts [neu] |
-// | 81 |   ✅    | Loot   | types | SelectedItem Interface (item: Item, quantity: number)                          | mittel | Nein | -    | Loot.md#selecteditem    | types/loot.ts [neu] |
 
 import { z } from 'zod';
 

@@ -1,35 +1,28 @@
 // Ziel: Loot fuer Encounter generieren und auf Kreaturen verteilen
 // Siehe: docs/services/encounter/encounterLoot.md
 //
-// Pipeline (3 Steps):
-// 1. Pools aggregieren + Budget berechnen (aggregatePools)
-// 2. generateLoot() einmal aufrufen
-// 3. Items auf Kreaturen verteilen (distributeItems)
-//
-// TASKS:
-// |  # | Status | Domain    | Layer    | Beschreibung                                                        |  Prio  | MVP? | Deps | Spec                                                        | Imp.                                         |
-// |--:|:----:|:--------|:-------|:------------------------------------------------------------------|:----:|:--:|:---|:----------------------------------------------------------|:-------------------------------------------|
-// | 83 |   ✅    | Encounter | services | aggregatePools() - Creature-Pools kombinieren mit CR-Gewichtung     | mittel | Nein | -    | encounterLoot.md#step-1-pools-aggregieren--budget-berechnen | encounterGenerator/encounterLoot.ts [ändern] |
-// | 84 |   ✅    | Encounter | services | distributeItems() - Items auf Creatures verteilen (CR × Pool-Match) | mittel | Nein | -    | encounterLoot.md#step-3-items-auf-kreaturen-verteilen       | encounterGenerator/encounterLoot.ts [ändern] |
+// Pipeline (4 Steps):
+// 1. calculateWealthDiscrepancy() - Diskrepanz zwischen possessions und totalBudget
+// 2. fillOpenBudget() - Offenes Budget mit allocateItems() fuellen (nur value)
+// 3. (In Step 2 integriert) - Items werden direkt NPCs zugewiesen
+// 4. selectCarriedItems() - Was NPCs gerade dabei haben (ephemer, nur weight)
 
-import type { EncounterCreatureInstance } from './encounterNPCs';
-import type { GroupWithActivity } from './groupActivity';
-import type { CreatureDefinition, Faction } from '@/types/entities';
+import type { EncounterGroup } from '@/types/encounterTypes';
+import type { CreatureDefinition, Faction, NPC } from '@/types/entities';
 import type { WealthTag } from '@/constants/loot';
 import type { CreatureSize } from '@/constants/creature';
 import type { NarrativeRole } from '@/constants/encounter';
 import { vault } from '@/infrastructure/vault/vaultInstance';
 import { CR_TO_XP, CARRY_CAPACITY_BY_SIZE, CR_TO_LEVEL_MAP } from '@/constants';
 import {
-  calculateLootValue,
-  generateLoot,
   getWealthMultiplier,
   resolveLootPool,
   xpToGold,
-  loadPool,
-  selectNextItem,
+  allocateItems,
   type Item,
-  type LoadedPoolEntry,
+  type PoolEntry,
+  type AllocationContainer,
+  type AllocationResult,
 } from '../lootGenerator/lootGenerator';
 import { aggregateWeightedPools } from '@/utils';
 
@@ -70,208 +63,133 @@ function calculateVictimRewardRatio(threatXP: number, victimXP: number): number 
   return Math.max(0.1, Math.min(0.5, threatStrength * 0.4));
 }
 
+// ============================================================================
+// NEW: CR-BASIERTES WEALTH-SYSTEM MIT CARRIED/STORED SPLIT
+// ============================================================================
+
 /**
- * Berechnet das Budget-Level für eine Creature basierend auf NarrativeRole.
+ * Berechnet totalWealth basierend auf CR (nicht partyLevel).
+ * Dies ist der gesamte Reichtum eines NPCs.
  */
-function getBudgetLevel(
-  cr: number,
-  narrativeRole: NarrativeRole,
-  partyLevel: number
+function calculateTotalWealth(cr: number, xp: number, wealthMultiplier: number): number {
+  const crLevel = crToEquivalentLevel(cr);
+  return xpToGold(xp, crLevel) * wealthMultiplier;
+}
+
+/**
+ * Berechnet expectedCarry basierend auf partyLevel.
+ * Dies ist was die Party von diesem XP-Wert erwartet.
+ */
+function calculateExpectedCarry(xp: number, partyLevel: number): number {
+  return xpToGold(xp, partyLevel);
+}
+
+/**
+ * Berechnet carriedBudget basierend auf Reputation.
+ * - reputation ≤ 0: nur expectedCarry
+ * - reputation > 0: expectedCarry + (difference × reputation/100)
+ *
+ * @param totalWealth - Gesamter Reichtum (CR-basiert)
+ * @param expectedCarry - Erwarteter Loot (partyLevel-basiert)
+ * @param npc - Der NPC mit Reputation
+ * @returns Budget für getragenes Loot
+ */
+function calculateCarriedBudget(
+  totalWealth: number,
+  expectedCarry: number,
+  npc: NPC
 ): number {
-  switch (narrativeRole) {
-    case 'threat':
-      return partyLevel;
-    case 'victim':
-    case 'ally':
-      return crToEquivalentLevel(cr);
-    case 'neutral':
-      return Math.round((crToEquivalentLevel(cr) + partyLevel) / 2);
-    default:
-      return partyLevel;
+  const partyRep = npc.reputations?.find(r => r.entityType === 'party');
+  const reputation = partyRep?.value ?? 0;
+
+  // Wenn totalWealth kleiner als expectedCarry, nur totalWealth
+  if (totalWealth <= expectedCarry) {
+    return totalWealth;
   }
+
+  // Reputation ≤ 0: nur expectedCarry
+  if (reputation <= 0) {
+    return expectedCarry;
+  }
+
+  // Reputation > 0: expectedCarry + anteiliger Bonus
+  const difference = totalWealth - expectedCarry;
+  const bonus = difference * (reputation / 100);
+  return expectedCarry + bonus;
 }
 
 // ============================================================================
-// TYPES
+// TYPES - NEW PIPELINE (v6)
 // ============================================================================
 
-/**
- * Wählt eine Ziel-Kreatur für ein einzelnes Item aus.
- * Gewichtung: poolEntry.randWeighting × budgetFactor
- *
- * @returns CreaturePoolEntry oder null wenn keine eligible
- */
-function selectTargetCreature(
-  item: Item,
-  _quantity: number,
-  creaturePools: CreaturePoolEntry[]
-): CreaturePoolEntry | null {
-  if (creaturePools.length === 0) return null;
-
-  // Step 1: Finde eligible Kreaturen (haben Item im Pool)
-  const eligible: { entry: CreaturePoolEntry; weight: number }[] = [];
-
-  for (const cp of creaturePools) {
-    const poolEntry = cp.pool.find(p => p.itemId === item.id);
-    if (!poolEntry) continue;
-
-    // Remaining Budget Factor: mehr offenes Budget = höheres Gewicht
-    const remaining = cp.budget - cp.receivedValue;
-    const budgetFactor = Math.max(0.1, remaining / Math.max(1, cp.budget));
-
-    // Kombiniertes Gewicht = Pool-Weight × Budget-Factor
-    const weight = poolEntry.randWeighting * budgetFactor;
-    eligible.push({ entry: cp, weight });
-  }
-
-  // Fallback: Niemand hat Item im Pool → alle Carriers nach Budget verteilen
-  if (eligible.length === 0) {
-    for (const cp of creaturePools) {
-      if (cp.pool.length === 0) continue;
-      const remaining = cp.budget - cp.receivedValue;
-      const weight = Math.max(0.1, remaining / Math.max(1, cp.budget));
-      eligible.push({ entry: cp, weight });
-    }
-  }
-
-  if (eligible.length === 0) return null;
-
-  // Step 2: Weighted random selection
-  const totalWeight = eligible.reduce((sum, e) => sum + e.weight, 0);
-  if (totalWeight === 0) return null;
-
-  let roll = Math.random() * totalWeight;
-  for (const { entry, weight } of eligible) {
-    roll -= weight;
-    if (roll <= 0) {
-      debug('selectTargetCreature:', item.id, '→ creature', entry.creatureIndex, '(weight:', weight.toFixed(2), ')');
-      return entry;
-    }
-  }
-
-  // Fallback: erster eligible
-  return eligible[0].entry;
-}
-
-/** Output von generateEncounterLoot - GroupWithActivity erweitert um Loot */
-export interface GroupWithLoot extends Omit<GroupWithActivity, 'creatures'> {
-  creatures: EncounterCreatureInstance[]; // Creatures mit loot-Feld
-  loot: {
-    items: { id: string; quantity: number }[];
-    totalValue: number;
-    partyObtainableValue: number; // Was die Party tatsächlich bekommt
-    countsTowardsBudget: boolean;
-  };
-}
-
-/** Internes Tracking für Creature-Pools (für Item-Verteilung) */
-interface CreaturePoolEntry {
-  creatureIndex: number;
-  pool: Array<{ itemId: string; randWeighting: number }>;
+/** Diskrepanz zwischen possessions und totalBudget */
+interface WealthDiscrepancy {
+  npcId: string;
+  npc: NPC;
   cr: number;
-  size: CreatureSize;         // Für Carry-Capacity-Berechnung
+  size: CreatureSize;
   narrativeRole: NarrativeRole;
-  budget: number;             // Gesamt-Budget der Kreatur
-  partyContribution: number;  // Anteil der zum Party-Budget zählt
-  receivedValue: number;      // Tracking während Verteilung
-  baseCapacity: number;       // Basis-Tragkapazität (aus Size)
-  currentCapacity: number;    // Aktuelle Kapazität (mit Multiplikatoren)
+  factionId: string | null;
+  totalBudget: number;        // CR-basierter Gesamtreichtum
+  existingValue: number;      // Wert der bestehenden possessions
+  openBudget: number;         // totalBudget - existingValue (was fehlt)
+  pool: Array<{ item: string; randWeighting: number }>; // Culture-basierter Pool
 }
 
 // ============================================================================
-// STEP 1: POOLS AGGREGIEREN + BUDGET BERECHNEN
+// STEP 1: WEALTH DISCREPANCY CALCULATION (v6)
 // ============================================================================
 
 /**
- * Aggregiert alle Creature-Pools zu einem kombinierten Pool.
- * Pool-Weights werden einfach summiert (via aggregateWeightedPools).
- * Berechnet auch die Gesamt-Tragkapazität aller Carriers.
- *
- * Zwei-Pass-Ansatz:
- * 1. XP pro NarrativeRole sammeln (für VictimRewardRatio)
- * 2. Budget pro Creature berechnen + Pools sammeln
+ * Summiert den Wert aller Items in possessions.
  */
-function aggregatePools(
-  groups: GroupWithActivity[],
-  context: { partyLevel: number }
-): {
-  aggregatedPool: Array<{ itemId: string; randWeighting: number }>;
-  creaturePools: CreaturePoolEntry[];
-  partyBudget: number;       // threat (100%) + victim (Reward-Anteil)
-  independentBudget: number; // ally + neutral + victim (Habseligkeiten)
-  totalCapacity: number;
-} {
-  // -------------------------------------------------------------------------
-  // Pass 1: XP pro NarrativeRole sammeln
-  // -------------------------------------------------------------------------
-  let threatXP = 0;
-  let victimXP = 0;
+function sumPossessionsValue(possessions: Array<{ id: string; quantity: number }> | undefined): number {
+  if (!possessions || possessions.length === 0) return 0;
 
-  for (const group of groups) {
-    for (const creature of group.creatures) {
-      const def = vault.getEntity<CreatureDefinition>('creature', creature.definitionId);
-      if (!def) continue;
-      const xp = CR_TO_XP[def.cr] ?? 0;
-      if (group.narrativeRole === 'threat') threatXP += xp;
-      if (group.narrativeRole === 'victim') victimXP += xp;
+  let total = 0;
+  for (const entry of possessions) {
+    const item = vault.getEntity<Item>('item', entry.id);
+    if (item) {
+      total += item.value * entry.quantity;
     }
   }
+  return total;
+}
 
-  const victimRewardRatio = calculateVictimRewardRatio(threatXP, victimXP);
-  debug('Pass 1 - XP by role:', { threatXP, victimXP, victimRewardRatio });
+/**
+ * Step 1: Berechnet die Diskrepanz zwischen bestehenden possessions und totalBudget.
+ *
+ * Für jeden NPC:
+ * - totalBudget = CR-basierter Gesamtreichtum
+ * - existingValue = Summe der Werte in possessions
+ * - openBudget = max(0, totalBudget - existingValue)
+ *
+ * NPCs mit openBudget > 0 brauchen neue Items.
+ */
+function calculateWealthDiscrepancy(
+  groups: EncounterGroup[],
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _context: { partyLevel: number }
+): WealthDiscrepancy[] {
+  const results: WealthDiscrepancy[] = [];
 
-  // -------------------------------------------------------------------------
-  // Pass 2: Budget pro Creature berechnen + Pools sammeln
-  // -------------------------------------------------------------------------
-  const creaturePools: CreaturePoolEntry[] = [];
-  const allPools: Array<Array<{ item: string; randWeighting: number }>> = [];
-  let partyBudget = 0;
-  let independentBudget = 0;
-
-  let creatureIndex = 0;
   for (const group of groups) {
     const faction = group.factionId
       ? vault.getEntity<Faction>('faction', group.factionId)
       : null;
 
-    for (const creature of group.creatures) {
-      const def = vault.getEntity<CreatureDefinition>('creature', creature.definitionId);
-      if (!def) {
-        creatureIndex++;
-        continue;
-      }
+    for (const npc of Object.values(group.slots).flat()) {
+      const def = vault.getEntity<CreatureDefinition>('creature', npc.creature.id);
+      if (!def) continue;
+
+      // Nur NPCs mit carriesLoot
+      if (def.carriesLoot === false) continue;
 
       const xp = CR_TO_XP[def.cr] ?? 0;
-
-      // Budget-Level basierend auf NarrativeRole
-      const budgetLevel = getBudgetLevel(def.cr, group.narrativeRole, context.partyLevel);
-      const creatureBudget = xpToGold(xp, budgetLevel) * getWealthMultiplier(def);
-
-      // Party-Contribution basierend auf NarrativeRole
-      let partyContribution: number;
-      switch (group.narrativeRole) {
-        case 'threat':
-          partyContribution = creatureBudget; // 100%
-          partyBudget += partyContribution;
-          break;
-        case 'victim':
-          partyContribution = creatureBudget * victimRewardRatio; // 10-50%
-          partyBudget += partyContribution;
-          independentBudget += creatureBudget - partyContribution; // Rest sind Habseligkeiten
-          break;
-        case 'ally':
-        case 'neutral':
-        default:
-          partyContribution = 0;
-          independentBudget += creatureBudget;
-          break;
-      }
-
-      // Nur Creatures mit carriesLoot bekommen Pool
-      if (def.carriesLoot === false) {
-        creatureIndex++;
-        continue;
-      }
+      const wealthMultiplier = getWealthMultiplier(def);
+      const totalBudget = calculateTotalWealth(def.cr, xp, wealthMultiplier);
+      const existingValue = sumPossessionsValue(npc.possessions);
+      const openBudget = Math.max(0, totalBudget - existingValue);
 
       // Pool via Culture-Kaskade auflösen
       const pool = resolveLootPool(
@@ -284,219 +202,239 @@ function aggregatePools(
         faction
       );
 
-      // Pool zu { itemId, randWeighting } konvertieren (für creaturePools)
-      const normalizedPool = pool.map(p => ({ itemId: p.item, randWeighting: p.randWeighting }));
-
-      const size = (def.size as CreatureSize) ?? 'medium';
-      const baseCapacity = CARRY_CAPACITY_BY_SIZE[size];
-
-      creaturePools.push({
-        creatureIndex,
-        pool: normalizedPool,
+      results.push({
+        npcId: npc.id,
+        npc,
         cr: def.cr,
-        size,
+        size: (def.size as CreatureSize) ?? 'medium',
         narrativeRole: group.narrativeRole,
-        budget: creatureBudget,
-        partyContribution,
-        receivedValue: 0,
-        baseCapacity,
-        currentCapacity: baseCapacity, // Startet mit Basis, wird durch Multiplikatoren erhöht
+        factionId: group.factionId ?? null,
+        totalBudget,
+        existingValue,
+        openBudget,
+        pool,
       });
 
-      // Pool für Aggregation sammeln
-      allPools.push(pool);
-
-      creatureIndex++;
+      debug('WealthDiscrepancy:', npc.id.slice(0, 8), {
+        totalBudget: totalBudget.toFixed(0),
+        existingValue: existingValue.toFixed(0),
+        openBudget: openBudget.toFixed(0),
+      });
     }
   }
 
-  // Alle Pools aggregieren via cultureResolution Utility
+  return results;
+}
+
+// ============================================================================
+// STEP 2: FILL OPEN BUDGET (v6)
+// ============================================================================
+
+/**
+ * Step 2: Füllt offenes Budget mit neuen Items.
+ *
+ * Verwendet allocateItems() mit NUR value-Dimension.
+ * Neue Items werden direkt zu npc.possessions hinzugefügt.
+ *
+ * @returns Die generierten Items (für spätere Persistierung nach Encounter-Ende)
+ */
+function fillOpenBudget(
+  groups: EncounterGroup[],
+  discrepancies: WealthDiscrepancy[]
+): AllocationResult<Item>[] {
+  // Nur NPCs mit openBudget > 0
+  const npcsWithOpenBudget = discrepancies.filter(d => d.openBudget > 0);
+
+  if (npcsWithOpenBudget.length === 0) {
+    debug('fillOpenBudget: No NPCs with open budget');
+    return [];
+  }
+
+  // Containers bauen: nur value-Dimension
+  const containers: AllocationContainer[] = npcsWithOpenBudget.map(d => ({
+    id: d.npcId,
+    budgets: { value: d.openBudget },
+    received: { value: 0 },
+  }));
+
+  // Pool aggregieren: alle Pools von NPCs mit openBudget
+  const allPools = npcsWithOpenBudget.map(d => d.pool);
   const mergedPool = aggregateWeightedPools(allPools, (item) => item);
-  const aggregatedPool = mergedPool.map(p => ({ itemId: p.item as string, randWeighting: p.randWeighting }));
 
-  // Gesamt-Tragkapazität aller Carriers berechnen
-  const totalCapacity = creaturePools.reduce(
-    (sum, cp) => sum + CARRY_CAPACITY_BY_SIZE[cp.size],
-    0
-  );
+  // Pool mit Dimensionen laden (nur value, kein weight für diesen Step)
+  const genericPool: PoolEntry<Item>[] = [];
+  for (const entry of mergedPool) {
+    const itemId = entry.item as string;
+    const item = vault.getEntity<Item>('item', itemId);
+    if (!item) continue;
 
-  debug('aggregatePools:', {
-    partyBudget,
-    independentBudget,
-    totalCapacity,
-    poolSize: aggregatedPool.length,
-    creaturePools: creaturePools.length,
+    genericPool.push({
+      item,
+      randWeighting: entry.randWeighting,
+      dimensions: {
+        value: item.value,
+        // weight hier NICHT berücksichtigen - das ist nur für Step 4
+      },
+    });
+  }
+
+  if (genericPool.length === 0) {
+    debug('fillOpenBudget: Empty pool');
+    return [];
+  }
+
+  // Generische Allokation (nur value-Dimension)
+  const allocations = allocateItems(genericPool, containers, {
+    maxIterations: 100,
+    calcTargetBudgets: (remainingBudgets, poolSize) => {
+      const minPercent = poolSize < 5 ? (1 / poolSize) : 0.1;
+      const maxPercent = Math.min(0.5, minPercent + 0.2);
+      const percent = minPercent + Math.random() * (maxPercent - minPercent);
+      return { value: remainingBudgets.value * percent };
+    },
   });
 
-  return { aggregatedPool, creaturePools, partyBudget, independentBudget, totalCapacity };
-}
+  debug('fillOpenBudget:', allocations.length, 'items generated');
 
-// ============================================================================
-// STEP 3: ITEMS AUF KREATUREN VERTEILEN
-// ============================================================================
-
-/**
- * Verteilt generierte Items auf Creatures basierend auf Pool-Weight und Budget.
- *
- * Gewicht = poolEntry.weight × budgetFactor
- * budgetFactor = max(0.1, remainingBudget / creatureBudget)
- *
- * Items werden batch-weise verteilt (alle Items einer ID zusammen),
- * proportional auf eligible Creatures aufgeteilt.
- */
-function distributeItems(
-  items: Array<{ itemId: string; quantity: number }>,
-  creaturePools: CreaturePoolEntry[],
-  groups: GroupWithActivity[]
-): void {
-  if (creaturePools.length === 0) {
-    debug('distributeItems: no carriers available');
-    return;
+  // Items zu possessions hinzufügen (temporär, Persistierung nach Encounter-Ende)
+  for (const allocation of allocations) {
+    addToPossessions(groups, allocation.containerId, allocation.item.id, allocation.quantity);
   }
 
-  for (const { itemId, quantity } of items) {
-    if (quantity === 0) continue;
-
-    // Item-Wert holen
-    const item = vault.getEntity<{ value: number }>('item', itemId);
-    const itemValue = item?.value ?? 1;
-
-    // Step 1: Finde eligible Kreaturen (haben Item im Pool)
-    const eligible: { idx: number; weight: number }[] = [];
-
-    for (const cp of creaturePools) {
-      const poolEntry = cp.pool.find(p => p.itemId === itemId);
-      if (!poolEntry) continue;
-
-      // Remaining Budget Factor: mehr offenes Budget = höheres Gewicht
-      const remaining = cp.budget - cp.receivedValue;
-      const budgetFactor = Math.max(0.1, remaining / Math.max(1, cp.budget));
-
-      // Kombiniertes Gewicht = Pool-Weight × Budget-Factor
-      const weight = poolEntry.randWeighting * budgetFactor;
-      eligible.push({ idx: cp.creatureIndex, weight });
-    }
-
-    // Fallback: Niemand hat Item im Pool → alle Carriers nach Budget verteilen
-    if (eligible.length === 0) {
-      for (const cp of creaturePools) {
-        if (cp.pool.length === 0) continue;
-        const remaining = cp.budget - cp.receivedValue;
-        const weight = Math.max(0.1, remaining / Math.max(1, cp.budget));
-        eligible.push({ idx: cp.creatureIndex, weight });
-      }
-    }
-
-    if (eligible.length === 0) continue;
-
-    // Step 2: Proportionale Batch-Verteilung
-    const totalWeight = eligible.reduce((sum, e) => sum + e.weight, 0);
-    if (totalWeight === 0) continue;
-
-    const allocations = eligible.map(e => ({
-      creatureIndex: e.idx,
-      ideal: (e.weight / totalWeight) * quantity,
-      floor: 0,
-      remainder: 0,
-    }));
-
-    // Floor-Werte und Remainders berechnen
-    let distributed = 0;
-    for (const alloc of allocations) {
-      alloc.floor = Math.floor(alloc.ideal);
-      alloc.remainder = alloc.ideal - alloc.floor;
-      distributed += alloc.floor;
-    }
-
-    // Remaining Items nach Remainder-Größe verteilen
-    allocations.sort((a, b) => b.remainder - a.remainder);
-    const remaining = quantity - distributed;
-    for (let i = 0; i < remaining && i < allocations.length; i++) {
-      allocations[i].floor++;
-    }
-
-    // Step 3: Zuweisen + Budget tracken
-    for (const alloc of allocations) {
-      if (alloc.floor > 0) {
-        assignItemToCreature(groups, alloc.creatureIndex, itemId, alloc.floor);
-
-        // receivedValue updaten
-        const cp = creaturePools.find(c => c.creatureIndex === alloc.creatureIndex);
-        if (cp) cp.receivedValue += itemValue * alloc.floor;
-      }
-    }
-
-    debug('distributeItems:', itemId, '×', quantity, '→', allocations.filter(a => a.floor > 0).length, 'creatures');
-  }
-
-  debug('distributeItems: distributed', items.length, 'unique item types');
+  return allocations;
 }
 
 /**
- * Weist Items einer Creature zu.
+ * Fügt ein Item zu NPC.possessions hinzu.
  */
-function assignItemToCreature(
-  groups: GroupWithActivity[],
-  creatureIndex: number,
+function addToPossessions(
+  groups: EncounterGroup[],
+  npcId: string,
   itemId: string,
   quantity: number
 ): void {
-  let idx = 0;
   for (const group of groups) {
-    for (const creature of group.creatures) {
-      if (idx === creatureIndex) {
-        creature.loot = creature.loot ?? [];
-        // Existierendes Item erhöhen oder neues hinzufügen
-        const existing = creature.loot.find(l => l.id === itemId);
+    for (const npc of Object.values(group.slots).flat()) {
+      if (npc.id === npcId) {
+        npc.possessions = npc.possessions ?? [];
+        const existing = npc.possessions.find(p => p.id === itemId);
         if (existing) {
           existing.quantity += quantity;
         } else {
-          creature.loot.push({ id: itemId, quantity });
+          npc.possessions.push({ id: itemId, quantity });
         }
+        debug('Added to possessions:', itemId, '×', quantity, '→ NPC', npcId.slice(0, 8));
         return;
       }
-      idx++;
     }
   }
 }
 
 // ============================================================================
-// MAIN FUNCTION
+// STEP 4: SELECT CARRIED ITEMS (v6 - EPHEMERAL)
+// ============================================================================
+
+/**
+ * Step 4: Bestimmt welche Items ein NPC gerade bei sich trägt.
+ *
+ * - Alle possessions als equal-weight Pool laden
+ * - allocateItems() mit nur weight-Dimension
+ * - Ergebnis: npc.carriedPossessions = was NPC gerade dabei hat (ephemer, nicht persistiert)
+ *
+ * @param npc - Der NPC mit possessions
+ * @param carryCapacity - Tragkapazität in lbs
+ * @returns Array von Items die der NPC trägt
+ */
+function selectCarriedItems(
+  npc: NPC,
+  carryCapacity: number
+): Array<{ id: string; quantity: number }> {
+  if (!npc.possessions || npc.possessions.length === 0) {
+    return [];
+  }
+
+  // Alle possessions als equal-weight Pool laden
+  const pool: PoolEntry<Item>[] = [];
+  for (const p of npc.possessions) {
+    const item = vault.getEntity<Item>('item', p.id);
+    if (!item) continue;
+
+    // Quantity als separate Einträge (jedes Stück kann einzeln getragen werden)
+    // Aber für Effizienz: ein Eintrag pro Item-Typ, dimensions skaliert
+    pool.push({
+      item,
+      randWeighting: 1,  // Alle gleich wahrscheinlich
+      dimensions: {
+        weight: (item.pounds ?? 0) * p.quantity,
+      },
+    });
+  }
+
+  if (pool.length === 0 || carryCapacity <= 0) {
+    return [];
+  }
+
+  // Ein Container: der NPC selbst
+  const container: AllocationContainer = {
+    id: npc.id,
+    budgets: { weight: carryCapacity },
+    received: { weight: 0 },
+  };
+
+  // Allokation nur nach Gewicht
+  const carried = allocateItems(pool, [container], {
+    maxIterations: pool.length,  // Max so viele wie Items im Pool
+    calcTargetBudgets: (remaining) => ({
+      // Große Chunks um möglichst viel zu tragen
+      weight: remaining.weight,
+    }),
+  });
+
+  // Ergebnis als loot-Format
+  const result: Array<{ id: string; quantity: number }> = [];
+  for (const allocation of carried) {
+    // Finde die ursprüngliche Menge aus possessions
+    const original = npc.possessions.find(p => p.id === allocation.item.id);
+    if (original) {
+      result.push({ id: allocation.item.id, quantity: original.quantity });
+    }
+  }
+
+  debug('selectCarriedItems:', npc.id.slice(0, 8), '→', result.length, 'item types carried');
+  return result;
+}
+
+// ============================================================================
+// MAIN FUNCTION (v6 - NEW PIPELINE)
 // ============================================================================
 
 /**
  * Generiert Loot für alle Encounter-Gruppen.
  *
- * Pipeline (mit carryCapacityMultiplier-Support):
- * 1. Pools aggregieren + Budget berechnen
- * 2. Loop: selectNextItem() → distribute → apply multiplier → repeat
+ * NEW v6 Pipeline:
+ * 1. calculateWealthDiscrepancy() - Diskrepanz zwischen possessions und totalBudget
+ * 2. fillOpenBudget() - Offenes Budget mit Items füllen (nur value-Dimension)
+ * 3. selectCarriedItems() - Pro NPC bestimmen was sie gerade dabei haben (ephemer)
  *
- * Budget nach NarrativeRole:
- * - threat: 100% Party-Budget (party-level-basiert)
- * - victim: CR-basiert + Reward (10-50% basierend auf Threat-Stärke)
- * - ally: CR-basiert, 0% Party
- * - neutral: Durchschnitt (CR + Party-Level), 0% Party
+ * Wichtige Änderungen:
+ * - npc.possessions: Alle Besitztümer (persistiert nach Encounter-Ende)
+ * - npc.carriedPossessions: Was NPC gerade dabei hat (ephemer, berechnet aus possessions + capacity)
+ * - Neue Items werden erst nach Encounter-Ende persistiert (Party könnte sie looten)
  */
 export function generateEncounterLoot(
-  groups: GroupWithActivity[],
+  groups: EncounterGroup[],
   context: {
     terrain: { id: string };
     partyLevel: number;
   }
-): GroupWithLoot[] {
+): EncounterGroup[] {
   // -------------------------------------------------------------------------
-  // Step 1: Pools aggregieren + Budget berechnen
+  // Step 1: Diskrepanz ermitteln
   // -------------------------------------------------------------------------
-  const { aggregatedPool, creaturePools, partyBudget, independentBudget } = aggregatePools(
-    groups,
-    context
-  );
+  const discrepancies = calculateWealthDiscrepancy(groups, context);
 
-  // Gesamtbudget für Loot-Generierung (Party + Independent)
-  let remainingBudget = partyBudget + independentBudget;
-
-  if (remainingBudget === 0 || aggregatedPool.length === 0) {
-    debug('No budget or empty pool, returning empty loot');
+  if (discrepancies.length === 0) {
+    debug('No NPCs with loot pools, returning empty loot');
     return groups.map(g => ({
       ...g,
       loot: {
@@ -508,69 +446,55 @@ export function generateEncounterLoot(
     }));
   }
 
+  const totalOpenBudget = discrepancies.reduce((sum, d) => sum + d.openBudget, 0);
+  debug('Step 1 - Discrepancies:', discrepancies.length, 'NPCs, total open budget:', totalOpenBudget.toFixed(0));
+
   // -------------------------------------------------------------------------
-  // Step 2: Item-Auswahl-Loop mit sofortiger Verteilung
+  // Step 2: Offenes Budget füllen (nur value-Dimension)
   // -------------------------------------------------------------------------
-  const loadedPool = loadPool(aggregatedPool);
+  const newAllocations = fillOpenBudget(groups, discrepancies);
+  debug('Step 2 - New items generated:', newAllocations.length);
 
-  let iterations = 0;
-  const MAX_ITERATIONS = 100;
+  // -------------------------------------------------------------------------
+  // Step 4: Carry-Selection pro NPC (ephemer)
+  // -------------------------------------------------------------------------
+  for (const discrepancy of discrepancies) {
+    const carryCapacity = CARRY_CAPACITY_BY_SIZE[discrepancy.size];
+    const carriedItems = selectCarriedItems(discrepancy.npc, carryCapacity);
 
-  while (iterations++ < MAX_ITERATIONS && remainingBudget > 0 && loadedPool.length > 0) {
-    // Gesamt-Tragkapazität aller Carriers (mit aktuellen Multiplikatoren)
-    const totalCapacity = creaturePools.reduce((sum, cp) => sum + cp.currentCapacity, 0);
-
-    // Nächstes Item auswählen
-    const selection = selectNextItem(loadedPool, remainingBudget, totalCapacity);
-    if (!selection) break;
-
-    const { item, quantity } = selection;
-
-    // Item verteilen (wie bisherige distributeItems-Logik, aber single item)
-    const targetCreature = selectTargetCreature(item, quantity, creaturePools);
-
-    if (targetCreature) {
-      // Item zuweisen
-      assignItemToCreature(groups, targetCreature.creatureIndex, item.id, quantity);
-
-      // Budget tracken
-      targetCreature.receivedValue += item.value * quantity;
-
-      // carryCapacityMultiplier anwenden
-      if (item.carryCapacityMultiplier && item.carryCapacityMultiplier > 1) {
-        const oldCapacity = targetCreature.currentCapacity;
-        targetCreature.currentCapacity *= item.carryCapacityMultiplier;
-        debug('Multiplier applied:', item.id, 'on creature', targetCreature.creatureIndex,
-          '- capacity:', oldCapacity.toFixed(0), '→', targetCreature.currentCapacity.toFixed(0));
-      }
-    }
-
-    // Budget aktualisieren
-    remainingBudget -= item.value * quantity;
-
-    debug('Loop iteration:', item.id, '×', quantity, '- remaining budget:', remainingBudget.toFixed(0));
+    // npc.carriedPossessions setzen (ephemer, nicht persistiert)
+    discrepancy.npc.carriedPossessions = carriedItems;
   }
 
-  const totalValue = (partyBudget + independentBudget) - remainingBudget;
-  debug('Loop complete:', iterations - 1, 'iterations, total value:', totalValue.toFixed(0));
+  debug('Step 4 - Carried items calculated for', discrepancies.length, 'NPCs');
 
   // -------------------------------------------------------------------------
   // Gruppen zusammenbauen mit partyObtainableValue
   // -------------------------------------------------------------------------
-  const result: GroupWithLoot[] = [];
+  const result: EncounterGroup[] = [];
+
+  // Für Victim-Reward-Ratio: XP pro Role sammeln
+  let threatXP = 0;
+  let victimXP = 0;
+  for (const d of discrepancies) {
+    const xp = CR_TO_XP[d.cr] ?? 0;
+    if (d.narrativeRole === 'threat') threatXP += xp;
+    if (d.narrativeRole === 'victim') victimXP += xp;
+  }
+  const victimRewardRatio = calculateVictimRewardRatio(threatXP, victimXP);
 
   for (const group of groups) {
     const countsTowardsBudget =
       group.narrativeRole === 'threat' || group.narrativeRole === 'victim';
 
-    // Alle Items der Gruppe sammeln
+    // Alle Items der Gruppe sammeln (aus npc.carriedPossessions)
     const groupItems: { id: string; quantity: number }[] = [];
     let groupValue = 0;
     let partyObtainableValue = 0;
 
-    for (const creature of group.creatures) {
-      if (creature.loot) {
-        for (const lootEntry of creature.loot) {
+    for (const npc of Object.values(group.slots).flat()) {
+      if (npc.carriedPossessions) {
+        for (const lootEntry of npc.carriedPossessions) {
           const item = vault.getEntity<{ value: number }>('item', lootEntry.id);
           const itemValue = (item?.value ?? 1) * lootEntry.quantity;
           groupValue += itemValue;
@@ -591,17 +515,9 @@ export function generateEncounterLoot(
       case 'threat':
         partyObtainableValue = groupValue; // 100%
         break;
-      case 'victim': {
-        // Reward-Anteil berechnen (gleiche Ratio wie bei Budget)
-        const groupCreaturePools = creaturePools.filter(cp => cp.narrativeRole === 'victim');
-        if (groupCreaturePools.length > 0) {
-          const totalBudgetForRole = groupCreaturePools.reduce((sum, cp) => sum + cp.budget, 0);
-          const totalContribution = groupCreaturePools.reduce((sum, cp) => sum + cp.partyContribution, 0);
-          const ratio = totalBudgetForRole > 0 ? totalContribution / totalBudgetForRole : 0;
-          partyObtainableValue = groupValue * ratio;
-        }
+      case 'victim':
+        partyObtainableValue = groupValue * victimRewardRatio; // 10-50%
         break;
-      }
       case 'ally':
       case 'neutral':
       default:

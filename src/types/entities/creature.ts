@@ -1,10 +1,5 @@
 // Vault-persistierte CreatureDefinition und Runtime CreatureInstance
 // Siehe: docs/entities/creature.md
-//
-// TASKS:
-// |  # | Status | Domain   | Layer    | Beschreibung                                                          |  Prio  | MVP? | Deps | Spec                        | Imp.                                |
-// |--:|:----:|:-------|:-------|:--------------------------------------------------------------------|:----:|:--:|:---|:--------------------------|:----------------------------------|
-// | 62 |   ✅    | creature | entities | CreatureDefinition: disposition zu baseDisposition (number) migrieren | mittel | Nein | #61  | entities/creature.md#Felder | types/entities/creature.ts [ändern] |
 
 import { z } from 'zod';
 import { timeSegmentSchema } from '#types/time';
@@ -155,11 +150,8 @@ export type CreatureId = CreatureDefinition['id'];
 // CREATURE INSTANCE (Runtime - in Encounter/Combat)
 // ============================================================================
 
-export const creatureLootItemSchema = z.object({
-  id: z.string().min(1),
-  quantity: z.number().int().positive(),
-});
-export type CreatureLootItem = z.infer<typeof creatureLootItemSchema>;
+// creatureLootItemSchema moved to npc.ts
+import { creatureLootItemSchema } from './npc';
 
 export const creatureInstanceSchema = z.object({
   instanceId: z.string().uuid(), // Eindeutige Instanz-ID (crypto.randomUUID)

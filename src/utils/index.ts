@@ -30,3 +30,13 @@ export {
   type CultureSource,
   type CultureLayer,
 } from './cultureResolution';
+
+export {
+  getCreatureById,
+  getCreatureByIdFromGroups,
+  iterateCreatures,
+  iterateCreaturesWithSlot,
+  countCreatures,
+  getAllCreatures,
+  hasCreature,
+} from './encounterHelpers';

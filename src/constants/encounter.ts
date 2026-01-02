@@ -13,6 +13,10 @@ export type NarrativeRole = typeof NARRATIVE_ROLES[number];
 export const DIFFICULTY_LABELS = ['trivial', 'easy', 'moderate', 'hard', 'deadly'] as const;
 export type DifficultyLabel = typeof DIFFICULTY_LABELS[number];
 
+// Gruppen-Status für Encounter-Gruppen
+export const GROUP_STATUSES = ['free', 'captive', 'incapacitated', 'fleeing'] as const;
+export type GroupStatus = typeof GROUP_STATUSES[number];
+
 // Activity-Definition für Encounter-Gruppen
 export interface Activity {
   id: string;

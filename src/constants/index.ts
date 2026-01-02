@@ -29,6 +29,8 @@ export {
   type NarrativeRole,
   DIFFICULTY_LABELS,
   type DifficultyLabel,
+  GROUP_STATUSES,
+  type GroupStatus,
   CREATURE_WEIGHTS,
   type Activity,
   ACTIVITY_DEFINITIONS,

@@ -1,17 +1,6 @@
 // Seed-Kreatur für Encounter auswählen
 // Siehe: docs/services/encounter/groupSeed.md
 //
-// TASKS:
-// | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-// |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-// | 1 | ⬜ | groupSeed | services/encounter | Path-basierte Creature-Pools (Post-MVP) | niedrig | Nein | - | groupSeed.md#Pfad-basierte Creature-Pools (Post-MVP) | - |
-// | 1 | ⬜ | groupSeed | services/encounter | Environmental Features für Creature-Pool (Post-MVP) | niedrig | Nein | - | groupSeed.md#Step 2.1b: Environmental-Feature-Auswahl (Post-MVP) | - |
-// | 4 | ✅ | groupSeed | services/encounter | TimeSegment type: 6-Segment-Type aus #types/timeSegment nutzen | mittel | true | - | groupSeed.md#Gewichtung (Soft Factors) | - |
-// | 5 | ✅ | groupSeed | services/encounter | Weather-Präferenzen: context.weather + creature.preferences.weather | mittel | true | - | groupSeed.md#Gewichtung (Soft Factors) | - |
-// | 6 | ✅ | groupSeed | services/encounter | CR-basierte Rarity: threatLevel { min, max } statt statischer creature.rarity | mittel | true | - | groupSeed.md#Gewichtung (Soft Factors) | - |
-// | 7 | ✅ | groupSeed | services/encounter | FactionStatus: Nur active Fraktionen liefern Kreaturen | mittel | true | - | groupSeed.md#Step 2.0: Fraktions/Nativ-Auswahl | - |
-// | 8 | ✅ | groupSeed | services/encounter | Roll-Range: crBudget statt max(crBudget, factionTotal+1) | mittel | true | - | groupSeed.md#Step 2.0: Fraktions/Nativ-Auswahl | - |
-//
 // Pipeline-Position: Step 2 (nach Multi-Group-Check, vor groupPopulation)
 
 import { vault } from '@/infrastructure/vault/vaultInstance';

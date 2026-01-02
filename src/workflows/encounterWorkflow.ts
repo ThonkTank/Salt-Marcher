@@ -154,29 +154,20 @@ function buildParticipants(encounter: EncounterInstance): CombatParticipant[] {
     });
   }
 
-  // Kreaturen aus Encounter-Gruppen hinzufügen
+  // NPCs aus Encounter-Gruppen hinzufügen
   let creatureIndex = 0;
   for (const group of encounter.groups) {
-    for (const creature of group.creatures) {
+    for (const npc of Object.values(group.slots).flat()) {
       creatureIndex++;
-
-      // Name via NPC-Lookup falls npcId gesetzt, sonst generischer Name
-      let creatureName = `${creature.definitionId} #${creatureIndex}`;
-      if (creature.npcId) {
-        const npc = vault.getEntity<NPC>('npc', creature.npcId);
-        if (npc) {
-          creatureName = npc.name;
-        }
-      }
 
       participants.push({
         id: `creature-${creatureIndex}`,
         type: 'creature',
-        entityId: creature.definitionId,
-        name: creatureName,
+        entityId: npc.creature.id,
+        name: npc.name,
         initiative: 0,
-        maxHp: creature.maxHp,
-        currentHp: creature.currentHp,
+        maxHp: npc.maxHp,
+        currentHp: npc.currentHp,
         conditions: [],
         effects: [],
       });
@@ -196,19 +187,14 @@ function updateNPCTracking(
   time: GameDateTime
 ): void {
   for (const group of encounter.groups) {
-    for (const creature of group.creatures) {
-      if (creature.npcId) {
-        const npc = vault.getEntity<NPC>('npc', creature.npcId);
-        if (npc) {
-          vault.saveEntity('npc', {
-            ...npc,
-            lastEncounter: time,
-            encounterCount: npc.encounterCount + 1,
-            lastKnownPosition: position,
-            lastSeenAt: time,
-          });
-        }
-      }
+    for (const npc of Object.values(group.slots).flat()) {
+      vault.saveEntity('npc', {
+        ...npc,
+        lastEncounter: time,
+        encounterCount: npc.encounterCount + 1,
+        lastKnownPosition: position,
+        lastSeenAt: time,
+      });
     }
   }
 }

@@ -1,25 +1,20 @@
 // Perception + Distanz für Encounter berechnen
 // Siehe: docs/services/encounter/encounterDistance.md
 
-import type { GroupWithLoot } from './encounterLoot';
+import type { EncounterGroup } from '@/types/encounterTypes';
 import { DEFAULT_PERCEPTION_DISTANCE } from '@/constants/encounterConfig';
-
-/** Output von calculate - GroupWithLoot erweitert um Perception */
-export interface GroupWithPerception extends GroupWithLoot {
-  perception: { partyDetectsEncounter: number; encounterDetectsParty: number; isSurprise: boolean };
-}
 
 /**
  * Berechnet Wahrnehmungs-Distanzen für eine Encounter-Gruppe.
  */
 export function calculate(
-  group: GroupWithLoot,
+  group: EncounterGroup,
   context: {
     terrain: { id: string };
     weather: { type: string; severity: number };
     timeSegment: string;
   }
-): GroupWithPerception {
+): EncounterGroup {
   // TODO: Implementierung
   // 1. Basis-Distanz aus Terrain
   // 2. Modifikatoren für Wetter, Tageszeit, Activity

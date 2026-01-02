@@ -31,6 +31,7 @@ import {
   resolveCultureChain,
   mergeWeightedPool,
   accumulateWithUnwanted,
+  rollDice,
   type CultureLayer,
 } from '@/utils';
 import { FALLBACK_NPC_NAMES } from '@/constants';
@@ -234,7 +235,10 @@ export function generateNPC(
   const appearance = rollAttributeDescription(layers, c => c.appearance, appearancePresets, creature);
   const goal = rollAttributeDescription(layers, c => c.goals, goalPresets) ?? 'Überleben';
 
-  // 4. NPC zusammenbauen
+  // 4. HP würfeln
+  const maxHp = rollDice(creature.hitDice);
+
+  // 5. NPC zusammenbauen
   const now = options.time;
 
   const npc: NPC = {
@@ -256,6 +260,10 @@ export function generateNPC(
     encounterCount: 1,
     lastKnownPosition: options?.position,
     reputations: [],
+    currentHp: maxHp,
+    maxHp,
+    possessions: [],  // Persistente Besitztümer (via encounterLoot befüllt)
+    carriedPossessions: undefined,  // Ephemer: was NPC gerade dabei hat (berechnet pro Encounter)
   };
 
   debug('Generated NPC:', {
@@ -266,6 +274,7 @@ export function generateNPC(
     quirk: npc.quirk,
     appearance: npc.appearance,
     goal: npc.goal,
+    hp: `${npc.currentHp}/${npc.maxHp}`,
   });
 
   return npc;

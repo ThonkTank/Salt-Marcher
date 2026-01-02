@@ -193,9 +193,8 @@ src/                   # Source code
       encounterDistance.ts  # Perception + Distanz für Encounter berechnen
       encounterGenerator.ts  # Ziel: Encounter-Generierungs-Pipeline verwalten. Helper-S...
       encounterLoot.ts  # Ziel: Loot fuer Encounter generieren und auf Kreaturen ve...
-      encounterNPCs.ts  # NPCs für Encounter zuweisen (1-3 NPCs pro Encounter)
+      fillGroups.ts  # Ziel: Gruppen mit NPCs befüllen (kombiniert groupPopulati...
       groupActivity.ts  # Ziel: Activity + Goal für Encounter-Gruppen zuweisen
-      groupPopulation.ts  # Gruppen-Population: Template -> Slots -> Kreaturen
       groupSeed.ts  # Seed-Kreatur für Encounter auswählen
     lootGenerator/
       lootGenerator.ts  # Ziel: Loot-Generierung mit Budget-Tracking, DefaultLoot u...
@@ -215,6 +214,7 @@ src/                   # Source code
       groupTemplate.ts  # Vault-persistierte GroupTemplate
       index.ts  # Entity Types Index
       landmark.ts  # Vault-persistierte Landmark-Definition
+      lootContainer.ts  # Ziel: Vault-persistierte LootContainer-Entity für stored ...
       map.ts  # Vault-persistierte Map-Definition
       npc.ts  # Vault-persistierte NPC-Entity
       overworldTile.ts  # Vault-persistierte OverworldTile
@@ -233,6 +233,7 @@ src/                   # Source code
   utils/
     cultureResolution.ts  # Ziel: Shared Culture-Resolution für NPC-Generator und Act...
     diceParser.ts  # Dice Expression Parser - Recursive Descent Parser für Wür...
+    encounterHelpers.ts  # Ziel: Helper-Funktionen für Encounter-Gruppen mit Slots-S...
     hex.ts  # Hex-Grid Utilities
     index.ts  # Utils Index
     random.ts  # Single Source of Truth für alle Zufallsfunktionen.
@@ -241,9 +242,7 @@ src/                   # Source code
     encounterWorkflow.ts  # Ziel: Encounter generieren lassen, in DetailView anzeigen...
 docs/                  # Authoritative documentation (German)
   architecture/
-    .task-claims.json
     constants.md  # D&D-Regeln, Lookup-Tabellen und Pure Utility Functions
-    Development-Roadmap.md  # Aktueller Task
     Infrastructure.md  # [Orchestration.md](Orchestration.md), [Services.md](Servi...
     Orchestration.md  # Die Orchestration-Schicht koordiniert Workflows waehrend ...
     Services.md  # Services sind **stateless Pipelines**, die von Workflows ...
@@ -280,8 +279,8 @@ docs/                  # Authoritative documentation (German)
       encounter.md  # Generiert kontextabhaengige Encounters basierend auf Posi...
       encounterDistance.md  # Encounter-Service (Step 4.5)
       encounterLoot.md  # Encounter-Service (Step 4.4)
+      fillGroups.md  # Encounter-Service (Step 3)
       groupActivity.md  # Encounter-Service (Step 5.2)
-      groupPopulation.md  # Encounter-Service (Step 3)
       groupSeed.md  # Encounter-Service (Step 2)
     npcs/
       Culture-Resolution.md  # Kultur-Aufloesung fuer NPC-Generierung
@@ -292,7 +291,6 @@ docs/                  # Authoritative documentation (German)
     Loot.md  # [Item](../entities/item.md), [Encounter-System](encounter...
     Weather.md  # Stateless Service
   tools/
-    taskTool.md  # CLI-Tool für Task-Management in der Development-Roadmap.
     update-refs-hook.md  # Automatisches Update von Markdown-Links, TypeScript-Impor...
   types/
     action.md  # [Library](../views/Library.md) (Creature-Editor), Presets...
@@ -440,11 +438,6 @@ Jede TypeScript-Datei MUSS einen standardisierten Header haben:
 // Ziel: Was macht diese Datei? (1 Satz)
 // Siehe: docs/pfad/zum/dokument.md
 //
-// TASKS:
-// | # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-// |--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
-// | 123 | ⬜ | Enc | srv | Task-Beschr. | hoch | Ja | - | ... | ... |
-//
 // [Optional: Pipeline, Workflow-Steps, oder andere Struktur-Info]
 ```
 
@@ -454,214 +447,11 @@ Jede TypeScript-Datei MUSS einen standardisierten Header haben:
 |---------|:-------:|--------------|
 | `// Ziel:` | ✅ | Einzeiler: Was macht diese Datei? |
 | `// Siehe:` | ✅ | Link zur autoritativen Dokumentation |
-| `// TASKS:` | ❌ | Automatisch: Tasks die diese Datei referenzieren |
 | Pipeline/Struktur | ❌ | Optional: Steps, Workflow, Abhängigkeiten |
 
 ---
 
-## 4. Task-Workflow (PFLICHT)
-
-### ⛔ KRITISCHE REGEL: Task-Dateien NIE direkt bearbeiten
-
-> **STOP! LIES DAS ZUERST!**
->
-> Du darfst NIEMALS folgende Tools auf Task-Dateien anwenden:
-> - ❌ `Read` auf `Development-Roadmap.md`
-> - ❌ `Edit` auf Task-Tabellen in JEDER Datei
-> - ❌ `Write` auf Task-Tabellen in JEDER Datei
->
-> **WARUM:** Tasks werden automatisch in 3-10 Dateien dupliziert. Manuelle Edits zerstören die Synchronisation.
->
-> **EINZIGE erlaubte Methode:** `node scripts/task/task.mjs <command>`
-
-**Geschützte Dateien/Patterns (NIE manuell editieren):**
-- `docs/architecture/Development-Roadmap.md` - Haupt-Task-Liste
-- `// TASKS:` Blöcke in TypeScript-Dateien - Automatisch synchronisiert
-- `## TASKS` Blöcke in Markdown-Dateien - Automatisch synchronisiert
-
-### Projekt-Kontext
-
-**STOPP. VOR jeder Aufgabe MUSST du:**
-
-1. Task-Skripte nutzen (Roadmap ist zu groß zum direkten Lesen):
-
-```bash
-node scripts/task/task.mjs sort                # Top-Tasks anzeigen
-node scripts/task/task.mjs sort <keyword>      # Nach Keyword filtern
-node scripts/task/task.mjs show <ID>           # Task-Details + Dependencies
-```
-
-**⛔ ABSOLUT VERBOTEN (KEINE AUSNAHMEN):**
-
-| Tool | Verbotene Aktion | Konsequenz |
-|------|------------------|------------|
-| `Read` | Development-Roadmap.md lesen | Nutze `task show <ID>` |
-| `Edit` | Task-Zeilen in JEDER Datei ändern | Desync zwischen Dateien |
-| `Write` | Dateien mit Task-Tabellen überschreiben | Verlorene Duplikate |
-
-**Verstöße führen zu:**
-- Inkonsistente Task-Status zwischen Roadmap und referenzierten Dateien
-- Verlorene Task-Duplikate in Spec/Impl-Dateien
-- Beschädigter Claim-Mechanismus (andere Agenten sehen falschen Status)
-
-**WARUM:** Tasks werden automatisch in 3-10 Dateien dupliziert (Roadmap + alle Spec/Impl-Dateien). Das CLI-Tool hält diese Duplikate synchron. Manuelle Edits zerstören diese Synchronisation UNWIDERRUFLICH.
-
-**ALLE Task-Änderungen NUR über:** `node scripts/task/task.mjs edit <ID> --status X`
-
-### Claim-Gate (KEINE AUSNAHMEN)
-
-**Nach Task-Auswahl SOFORT claimen - KEINE Analysen vorher:**
-
-```bash
-node scripts/task/task.mjs claim <ID>
-# Ausgabe: "Key: a4x2 (2h gültig)"
-```
-
-- **Bei Erfolg:** Key merken, weitermachen
-- **Bei Fehler:** ABBRUCH. Nächste Task suchen. KEINE Analysen. KEIN Warten. KEIN Nachdenken warum.
-
-**Vor dem Claim ist NUR erlaubt:**
-- Task mit Skript finden (`sort`, `show`)
-- Task-ID notieren
-
-**ALLES ANDERE IST VERBOTEN** bis der Claim erfolgreich ist.
-
-### Status-Workflow-Zuordnung
-
-| Status | Bedeutung | Workflow |
-|:------:|-----------|----------|
-| ⬜ | Noch nicht implementiert | `scripts/workflows/vorbereitung.txt` |
-| 🟢 | Bereit zur Umsetzung | `scripts/workflows/umsetzung.txt` |
-| 🔶 | Funktionsfähig aber nicht spezifikations-konform | `scripts/workflows/konformitaet.txt` |
-| ⚠️ | Implementiert aber nicht funktionsfähig | `scripts/workflows/reparatur.txt` |
-| 📋 | Fertig, wartet auf Review | `scripts/workflows/review.txt` |
-| ⛔ | Blockiert (Dependencies fehlen) | ABBRUCH |
-| 🔒 | Von anderem Agent geclaimed | ABBRUCH |
-| ✅ | Implementiert und reviewed | ABBRUCH |
-
-**PFLICHT nach dem Claim:**
-1. Status der Task prüfen (steht in der Ausgabe)
-2. Entsprechende Workflow-Datei lesen - **KEINE AUSNAHMEN**
-3. Workflow Schritt für Schritt befolgen
-
----
-
-## 5. CLI-Referenz
-
-### Kurzübersicht
-
-| Aktion | Befehl |
-|--------|--------|
-| Top-Tasks | `node scripts/task/task.mjs sort` |
-| Keyword-Suche | `node scripts/task/task.mjs sort <keyword>` |
-| Task-Details | `node scripts/task/task.mjs show <ID>` |
-| Claimen | `node scripts/task/task.mjs claim <ID>` |
-| Freigeben | `node scripts/task/task.mjs claim <key>` |
-| Task editieren | `node scripts/task/task.mjs edit <ID> [ID2...] --status ✅` |
-| Geclaimte Task editieren | `node scripts/task/task.mjs edit <ID> --status ✅ --key <key>` |
-| Neue Task | `node scripts/task/task.mjs add --tasks '<JSON>'` |
-| Neuer Bug | `node scripts/task/task.mjs add --bugs '<JSON>'` |
-| Task(s) löschen | `node scripts/task/task.mjs remove <ID> [ID2...]` |
-| Bug resolven | `node scripts/task/task.mjs remove <ID> --resolve` |
-
-**Wichtig:** `--key` ist nur erforderlich wenn die Task geclaimed ist (Status 🔒). Nicht-geclaimte Tasks können direkt editiert werden.
-
-**⛔ MANUELLES TASK-EDITING = DATENVERLUST**
-
-Du darfst KEINE dieser Tools auf Task-Daten anwenden:
-| Verboten | Stattdessen |
-|----------|-------------|
-| `Read` auf Roadmap | `node scripts/task/task.mjs show <ID>` |
-| `Edit` auf Task-Zeilen | `node scripts/task/task.mjs edit <ID> --status X` |
-| `Write` auf Task-Dateien | NIEMALS - führt zu unwiderruflichem Datenverlust |
-
-### Sort-Filter
-
-```bash
-node scripts/task/task.mjs sort --status partial   # Nur 🔶
-node scripts/task/task.mjs sort --mvp              # Nur MVP-Tasks
-node scripts/task/task.mjs sort --domain Travel    # Nur Travel-Domain
-node scripts/task/task.mjs sort --prio hoch        # Nur hohe Priorität
-node scripts/task/task.mjs sort --help             # Alle Optionen
-```
-
-**Filter-Optionen:**
-| Option | Beschreibung |
-|--------|--------------|
-| `-s, --status <X>` | Nur Tasks mit Status X |
-| `-d, --domain <X>` | Nur Tasks mit Domain X |
-| `-l, --layer <X>` | Nur Tasks mit Layer X |
-| `--mvp` / `--no-mvp` | Nur MVP / Nur Nicht-MVP |
-| `-p, --prio <X>` | Nur Tasks mit Priorität X |
-
-**Keyword-Suche:** Durchsucht alle Felder (beschreibung, domain, layer, spec, impl). `sort NPCs` findet Tasks mit Domain "NPCs" oder "NPCs" in anderen Feldern.
-
-### Task erstellen
-
-```bash
-node scripts/task/task.mjs add --tasks '[{
-  "domain": "Travel",
-  "layer": "features",
-  "beschreibung": "Route-Validierung implementieren",
-  "deps": "#100, #101",
-  "specs": "Travel.md#Zustände",
-  "impl": "travel-engine.ts.validateRoute() [neu]"
-}]'
-```
-
-**Pflichtfelder:** `domain`, `layer`, `beschreibung`, `deps` (oder "-"), `specs`, `impl`
-
-**Impl-Tags:** `[neu]` (nur Format geprüft), `[ändern]`/`[fertig]` (Datei + Funktion muss existieren)
-
-**Impl-Pfade:** Bei mehrdeutigen Dateien (z.B. `creature.ts` existiert in `constants/` und `types/entities/`) vollständigen Pfad angeben:
-```
-types/entities/creature.ts.someFunc() [ändern]
-constants/creature.ts.someFunc() [ändern]
-```
-
-**Multi-Value-Support:** `specs` und `impl` unterstützen komma-separierte Werte:
-```
-specs: "groupActivity.md#Step-4.1, groupSeed.md#Selection"
-impl: "groupActivity.ts.selectActivity(), groupSeed.ts.buildPool() [ändern]"
-```
-
-**Task-Duplikation:**
-
-Tasks werden automatisch in alle referenzierten Dateien dupliziert:
-
-| Referenz | Ziel | Bedingung |
-|----------|------|-----------|
-| `specs` | Doc-Datei(en) | Immer |
-| `impl` mit `[ändern]`/`[fertig]` | Source-Datei(en) | Datei + Funktion müssen existieren |
-| `impl` mit `[neu]` | - | Keine Duplikation (Datei existiert noch nicht) |
-
-Bei `task edit` und `task remove` werden alle Duplikate automatisch synchronisiert.
-
-### Bug-System
-
-| Aspekt | Task | Bug |
-|--------|------|-----|
-| ID-Format | `#123` | `b123` |
-| Dependencies | Zeigt auf Vorbedingungen | Zeigt auf verdächtige Tasks |
-
-**Bug-Dependencies bedeuten:** "Diese Tasks könnten die Ursache sein" (NICHT: "müssen vorher fertig sein")
-
-```bash
-node scripts/task/task.mjs add --bugs '[{"beschreibung": "Bug-Beschreibung", "deps": "#428"}]'
-node scripts/task/task.mjs remove b5 --resolve   # Bug resolven
-```
-
-### Automatisches Verhalten
-
-- **Claim-Expire:** Claims verfallen nach 2 Stunden
-- **Status entfernt Claim:** Status-Änderung (außer auf 🔒) entfernt den Claim
-- **Bug-Propagation:** Neue Bugs setzen referenzierte Tasks auf ⚠️
-- **Bug-Resolution:** `--resolve` entfernt den Bug aus allen Task-Dependencies
-- **Blockiert-Propagation:** Status-Änderung propagiert ⛔ zu Dependents
-
----
-
-## 6. Autonomie & Build
+## 4. Autonomie & Build
 
 ### Autonomie-Level
 

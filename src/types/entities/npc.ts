@@ -1,10 +1,5 @@
 // Vault-persistierte NPC-Entity
 // Siehe: docs/entities/npc.md
-//
-// TASKS:
-// |  # | Status | Domain | Layer    | Beschreibung                              |  Prio  | MVP? | Deps | Spec                        | Imp.                           |
-// |--:|:----:|:-----|:-------|:----------------------------------------|:----:|:--:|:---|:--------------------------|:-----------------------------|
-// | 63 |   ✅    | NPCs   | entities | NPC-Schema: reputations Array hinzufuegen | mittel | Nein | #59  | entities/npc.md#reputations | types/entities/npc.ts [ändern] |
 
 import { z } from 'zod';
 import { hexCoordinateSchema } from './map';
@@ -15,6 +10,13 @@ import { reputationEntrySchema } from '../common/reputation';
 // ============================================================================
 // SUB-SCHEMAS
 // ============================================================================
+
+// Verschoben von creature.ts - authoritative Definition
+export const creatureLootItemSchema = z.object({
+  id: z.string().min(1),
+  quantity: z.number().int().positive(),
+});
+export type CreatureLootItem = z.infer<typeof creatureLootItemSchema>;
 
 export const creatureRefSchema = z.object({
   type: z.string().min(1),
@@ -46,6 +48,21 @@ export const npcSchema = z.object({
   lastSeenAt: gameDateTimeSchema.optional(),
   currentPOI: z.string().min(1).optional(),
   reputations: z.array(reputationEntrySchema).optional().default([]),
+
+  // HP (werden beim Encounter gesetzt, im Vault persistiert)
+  currentHp: z.number().int(),
+  maxHp: z.number().int().positive(),
+
+  // Besitztümer (alle Items die NPC besitzt, im Vault persistiert)
+  possessions: z.array(creatureLootItemSchema).optional().default([]),
+
+  // Carried Possessions (ephemer: was NPC gerade dabei hat, wird pro Encounter berechnet)
+  // NICHT persistiert - selectCarriedItems() berechnet aus possessions + carryCapacity
+  carriedPossessions: z.array(creatureLootItemSchema).optional(),
+
+  // Lagerort der possessions (Hideout, Lager, etc.)
+  storedLootContainerId: z.string().optional(),
+
   gmNotes: z.string().optional(),
 });
 

@@ -1,11 +1,5 @@
 // Ziel: Loot-Konstanten für Budget und Wealth-System
 // Siehe: docs/services/Loot.md
-//
-// TASKS:
-// |  # | Status | Domain | Layer     | Beschreibung                                            |  Prio  | MVP? | Deps | Spec                       | Imp.                    |
-// |--:|:----:|:-----|:--------|:------------------------------------------------------|:----:|:--:|:---|:-------------------------|:----------------------|
-// | 69 |   ✅    | Loot   | constants | GOLD_PER_XP_BY_LEVEL Konstante (DMG-Tabelle Level 1-20) | mittel | Nein | -    | Loot.md#budget-berechnung  | constants/loot.ts [neu] |
-// | 72 |   ✅    | Loot   | constants | WEALTH_MULTIPLIERS Konstante (destitute bis hoard)      | mittel | Nein | -    | Loot.md#wealth-multipliers | constants/loot.ts [neu] |
 
 // ============================================================================
 // #69: GOLD_PER_XP_BY_LEVEL (DMG-Tabelle Level 1-20)

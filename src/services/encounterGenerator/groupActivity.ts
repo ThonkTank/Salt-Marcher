@@ -4,23 +4,8 @@
 // Pipeline:
 //   Step 4.1: selectActivity() - Activity basierend auf Pool + Kontext wählen
 //   Step 4.2: deriveGoal() - Goal aus Activity + NarrativeRole ableiten
-//
-// TASKS:
-// |  # | Status | Domain    | Layer    | Beschreibung                                                           |  Prio  | MVP? | Deps | Spec                                                                 | Imp.                                       |
-// |--:|:----:|:--------|:-------|:---------------------------------------------------------------------|:----:|:--:|:---|:-------------------------------------------------------------------|:-----------------------------------------|
-// |  1 |   ⬜    | encounter | services | Context-Filter: weather/aquatic/terrain Tags                           | mittel | Nein | -    | groupActivity.md#kontext-filter                                      | selectActivity()                           |
-// |  2 |   ⚠️   | encounter | services | Goal-Ableitung mit Faction-Mappings                                    | mittel | Nein | b1   | groupActivity.md#Goal-Beispiele                                      | deriveGoal()                               |
-// |  3 |   ✅    | encounter | services | Activity-Pool über Culture-System auflösen                             | mittel | Nein | -    | groupActivity.md#Activity-Pool-Hierarchie                            | selectActivity()                           |
-// | 23 |   ✅    | encounter | services | active/resting Filter basierend auf creature.activeTime                | mittel | Nein | -    | groupActivity.md#Kontext-Filter                                      | selectActivity()                           |
-// | 24 |   ✅    | encounter | services | Activity-Pool-Hierarchie (Step 4.1) implementiert                      | mittel | Nein | -    | groupActivity.md#Activity-Definition                                 | selectActivity()                           |
-// | 25 |   ✅    | encounter | services | CultureData.activities auf string[] umgestellt                         | mittel | Nein | -    | groupActivity.md#Activity-Definition                                 | selectActivity()                           |
-// | 60 |   ✅    | encounter | services | Disposition-Berechnung mit baseDisposition + Reputation implementieren | mittel | Nein | #59  | services/encounter/groupActivity.md#Step-4.3:-Disposition-Berechnung | groupActivity.ts.assignActivity() [ändern] |
-//
-// BUGS:
-// | b1 | ⬜ | disposition Feld nicht dokumentiert (hostile|neutral|friendly) | hoch | #2 |
 
-import type { CreatureInstance, GroupStatus } from './groupPopulation';
-import type { GroupWithNPCs, EncounterCreatureInstance } from './encounterNPCs';
+import type { EncounterGroup } from '@/types/encounterTypes';
 import type { Faction, CreatureDefinition, NPC } from '@/types/entities';
 import type { WeightedItem } from '#types/common/counting';
 import type { Disposition, NarrativeRole } from '@/constants';
@@ -28,17 +13,11 @@ import { type Activity, ACTIVITY_DEFINITIONS, GENERIC_ACTIVITY_IDS, CREATURE_WEI
 import { weightedRandomSelect, resolveCultureChain } from '@/utils';
 import { vault } from '@/infrastructure/vault/vaultInstance';
 
-/** Output von assignActivity - GroupWithNPCs erweitert um Activity/Goal/Disposition */
-export interface GroupWithActivity extends GroupWithNPCs {
-  activity: string;
-  goal: string;
-  disposition: Disposition;
-}
 
 /**
- * Sammelt alle CreatureInstances aus den Slots einer Gruppe.
+ * Sammelt alle NPCs aus den Slots einer Gruppe.
  */
-function getAllCreaturesFromSlots(group: GroupWithNPCs): CreatureInstance[] {
+function getAllCreaturesFromSlots(group: EncounterGroup): NPC[] {
   return Object.values(group.slots).flat();
 }
 
@@ -85,16 +64,16 @@ function calculateLayerWeights(layerCount: number): number[] {
  * 2. Soft-Weighting für active/resting Tags (2.0x match, 0.5x mismatch)
  */
 function selectActivity(
-  group: GroupWithNPCs,
+  group: EncounterGroup,
   context: { terrain: { id: string }; timeSegment: string },
   faction?: Faction
 ): Activity {
-  const creatures = getAllCreaturesFromSlots(group);
-  const seedCreature = creatures[0];
+  const npcs = getAllCreaturesFromSlots(group);
+  const seedNPC = npcs[0];
 
   // 1. Seed-Kreatur's Definition holen
-  const creatureDef = seedCreature
-    ? vault.getEntity<CreatureDefinition>('creature', seedCreature.definitionId)
+  const creatureDef = seedNPC
+    ? vault.getEntity<CreatureDefinition>('creature', seedNPC.creature.id)
     : null;
 
   // 2. Culture-Chain aufbauen (Type/Species → Faction)
@@ -123,8 +102,8 @@ function selectActivity(
   const layerWeights = calculateLayerWeights(totalLayers);
 
   // 5. Kreatur aktiv oder ruhend?
-  const isActive = seedCreature
-    ? isCreatureActiveNow(seedCreature.definitionId, context.timeSegment)
+  const isActive = seedNPC
+    ? isCreatureActiveNow(seedNPC.creature.id, context.timeSegment)
     : true;
 
   // 6. Gewichtete Items aufbauen
@@ -233,31 +212,30 @@ function calculateDisposition(baseDisposition: number, reputation: number): Disp
 
 /**
  * Weist einer Gruppe eine Activity und ein Goal zu.
- * Nutzt NPC-Reputation falls ein NPC zugewiesen wurde (encounterNPCs läuft vorher).
+ * Nutzt NPC-Reputation falls ein NPC zugewiesen wurde.
  */
 export function assignActivity(
-  group: GroupWithNPCs,
+  group: EncounterGroup,
   context: {
     terrain: { id: string };
     timeSegment: string;
   },
   faction?: Faction
-): GroupWithActivity {
+): EncounterGroup {
   const activity = selectActivity(group, context, faction);
 
   // Disposition berechnen (Step 5.2)
-  const creaturesFromSlots = getAllCreaturesFromSlots(group);
-  const seedCreature = creaturesFromSlots[0];
+  const npcs = getAllCreaturesFromSlots(group);
+  const seedNPC = npcs[0];
 
   // baseDisposition aus Creature-Definition holen
-  const creatureDef = seedCreature
-    ? vault.getEntity<CreatureDefinition>('creature', seedCreature.definitionId)
+  const creatureDef = seedNPC
+    ? vault.getEntity<CreatureDefinition>('creature', seedNPC.creature.id)
     : null;
   const baseDisposition = creatureDef?.baseDisposition ?? 0;
 
-  // NPC-ID aus creatures Array holen (falls NPC zugewiesen)
-  // encounterNPCs läuft jetzt VOR groupActivity, daher haben wir npcId
-  const seedNpcId = group.creatures[0]?.npcId;
+  // NPC-ID direkt aus dem NPC (NPCs sind jetzt direkt in Slots)
+  const seedNpcId = seedNPC?.id;
 
   // Reputation nachschlagen: NPC-Reputation hat Vorrang vor Faction-Reputation
   const reputation = getGroupReputation(seedNpcId, group.factionId ?? undefined);

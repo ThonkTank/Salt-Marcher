@@ -1,16 +1,16 @@
 // Encounter-Balancing durch Umstände anpassen
 // Siehe: docs/services/encounter/Balancing.md
 
+import type { EncounterGroup } from '@/types/encounterTypes';
 import type { ThreatLevel } from '@/types/entities';
 import type { DifficultyLabel } from '@/constants';
-import type { GroupWithPerception } from './encounterDistance';
 
 /**
  * Passt Encounter-Gruppen an die Ziel-Difficulty an.
  * Gibt null zurück wenn keine Anpassung möglich ist.
  */
 export function adjust(
-  groups: GroupWithPerception[],
+  groups: EncounterGroup[],
   simulation: {
     label: DifficultyLabel;
     winProbability: number;
@@ -22,7 +22,7 @@ export function adjust(
     weather: { type: string; severity: number };
     timeSegment: string;
   }
-): GroupWithPerception[] | null {
+): EncounterGroup[] | null {
   // TODO: Implementierung
   // 1. Difficulty-Delta berechnen
   // 2. Beste Anpassung wählen (Environment, Distance, Disposition, Activity)

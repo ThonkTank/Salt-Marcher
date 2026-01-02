@@ -40,6 +40,11 @@ Benannte, persistente Kreatur-Instanz mit Persoenlichkeit.
 | `lastSeenAt` | `GameDateTime?` | Zeitpunkt letzter Sichtung | Optional |
 | `currentPOI` | `EntityId<'poi'>?` | Aktueller Aufenthaltsort | Optional |
 | `reputations` | `ReputationEntry[]` | Beziehungen zu anderen Entities | Optional, default: [] |
+| `currentHp` | `number` | Aktuelle HP | Required |
+| `maxHp` | `number` | Maximale HP | Required, > 0 |
+| `possessions` | `CreatureLootItem[]` | Alle Besitztuemer (persistiert) | Optional, default: [] |
+| `carriedPossessions` | `CreatureLootItem[]?` | Was NPC gerade dabei hat (ephemer) | Optional |
+| `storedLootContainerId` | `string?` | Lagerort der possessions | Optional |
 | `gmNotes` | `string?` | GM-Notizen | Optional |
 
 ---
@@ -99,6 +104,32 @@ effectiveDisposition = clamp(creature.baseDisposition + npc.reputations[party].v
 Falls kein Party-Eintrag vorhanden ist, wird die Faction-Reputation als Fallback verwendet.
 
 -> Berechnungslogik: [groupActivity.md](../services/encounter/groupActivity.md)
+
+### Possessions vs carriedPossessions (v6)
+
+NPCs haben zwei getrennte Item-Listen:
+
+| Feld | Persistenz | Bedeutung |
+|------|------------|-----------|
+| `possessions` | Vault | **Alle** Items die der NPC besitzt |
+| `carriedPossessions` | Ephemer | Was der NPC **gerade dabei hat** |
+
+**Architektur:**
+- `possessions` wird ueber Zeit gefuellt (via `fillOpenBudget()` bei Diskrepanz)
+- `carriedPossessions` wird pro Encounter berechnet (via `selectCarriedItems()`)
+- `storedLootContainerId` gibt an, **wo** die possessions gelagert sind
+
+**Pipeline:**
+```
+1. calculateWealthDiscrepancy() - Was fehlt dem NPC?
+2. fillOpenBudget()             - Neue Items -> possessions
+3. selectCarriedItems()         - possessions -> carriedPossessions (ephemer)
+```
+
+**Persistierungs-Timing:**
+Neue Items werden erst nach Encounter-Ende persistiert. Waehrend des Encounters koennte die Party Items looten.
+
+-> Details: [encounterLoot.md](../services/encounter/encounterLoot.md)
 
 ---
 
@@ -196,6 +227,25 @@ const griknak: NPC = {
   reputations: [
     { entityType: 'party', entityId: 'party', value: +20 }  // Mag die Party (hat Infos verkauft)
   ],
+
+  // HP
+  currentHp: 12,
+  maxHp: 15,
+
+  // Besitztuemer (persistiert)
+  possessions: [
+    { id: 'shortsword', quantity: 1 },
+    { id: 'gold-coins', quantity: 25 }
+  ],
+
+  // Carried Possessions (ephemer, wird pro Encounter berechnet)
+  carriedPossessions: [
+    { id: 'shortsword', quantity: 1 },
+    { id: 'gold-coins', quantity: 10 }
+  ],
+
+  // Lagerort (optional)
+  storedLootContainerId: 'lootcontainer-blutfang-hideout',
 
   gmNotes: 'Hat der Party beim letzten Mal Informationen verkauft'
 };

@@ -133,3 +133,13 @@ export { quirkSchema, type Quirk } from './quirk';
 
 // Goal
 export { goalSchema, type Goal, personalityBonusSchema, type PersonalityBonus } from './goal';
+
+// LootContainer
+export {
+  lootContainerSchema,
+  type LootContainer,
+  type LootContainerId,
+  lootContainerStatusSchema,
+  type LootContainerStatus,
+  LOOT_CONTAINER_STATUSES,
+} from './lootContainer';
