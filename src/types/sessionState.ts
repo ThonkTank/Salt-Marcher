@@ -4,7 +4,7 @@
 
 import type { EntityId } from '@core/types/entity';
 import type { HexCoordinate } from '@core/types/coordinates';
-import type { Weather } from '@services/weather/types/Weather';
+import type { Weather } from '#types/weather';
 import type { TransportMode } from '@constants/TransportModes';
 import type { EncounterInstance } from '#types/encounterTypes';
 import type { NPC } from '#types/entities/npc';

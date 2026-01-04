@@ -226,15 +226,26 @@ function roundTo5ft(distance: number): number {
 
 ## Terrain-Visibility
 
-Terrain-Sichtweite wird aus `terrain.encounterVisibility` gelesen.
+Terrain-Sichtweite wird aus `terrain.visibilityRange` gelesen. Offene Terrains ohne dieses Feld nutzen einen Horizont-basierten Default (8000 ft).
 
--> **Source of Truth:** [terrain-definition.md#default-presets](../../entities/terrain-definition.md#default-presets)
+-> **Source of Truth:** [terrain-definition.md#default-presets](../../types/terrain-definition.md#default-presets)
 
-| Terrain | Visibility | Begruendung |
-|---------|:----------:|-------------|
-| Ebene | 8000 ft (~1.5 mi) | Freie Sicht bis zum Horizont |
+| Terrain | visibilityRange | Begruendung |
+|---------|:---------------:|-------------|
+| Ebene | - (8000 ft) | Freie Sicht bis zum Horizont (Default) |
 | Wald | 150 ft | Dichtes Blattwerk und Staemme |
-| Berg | 10000 ft (~2 mi) | Erhoeht, weite Sicht |
+| Sumpf | 100 ft | Niedriges Gestruepp, haeufiger Nebel |
+| Berg | - (8000 ft) | Erhoeht, weite Sicht (Default) |
+
+### Integration mit Overland-Visibility (Post-MVP)
+
+Fuer offene Terrains ohne explizites `visibilityRange`-Feld kann die Sichtweite aus dem Overland-Visibility-System abgeleitet werden:
+
+1. Berechne sichtbare Hexes via `calculateVisibleTiles()`
+2. Weiteste sichtbare Distanz x HEX_SIZE_FEET = Encounter-Visibility
+
+-> Details: [Map-Feature.md#visibility-system-post-mvp](../../features/Map-Feature.md#visibility-system-post-mvp)
+-> Utility: `src/utils/visibility.ts`
 
 ---
 

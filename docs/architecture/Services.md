@@ -274,7 +274,9 @@ function createJournalEntry(context: JournalContext): Result<JournalEntry, Error
 | LootService | LootContext | GeneratedLoot | Lesen (Items) |
 | WeatherService | WeatherInput | Weather | - |
 | JournalService | JournalContext | JournalEntry | Schreiben |
-| CombatService | CombatContext | CombatResult | - |
+| CombatSimulator/combatantAI | CombatProfile, SimulationState | ActionTargetScore, Vector3 | - |
+| CombatSimulator/combatResolver | PartyInput, EncounterGroup[] | SimulationResult | Lesen (Creatures) |
+| EncounterGenerator/difficulty | EncounterGroup[], PartyInput | SimulationResult, DifficultyLabel | Lesen (Creatures) |
 
 ---
 
@@ -283,6 +285,9 @@ function createJournalEntry(context: JournalContext): Result<JournalEntry, Error
 Jeder Service hat eine eigene Dokumentation unter `docs/services/`:
 
 - [encounter/](../services/encounter/) - Encounter-Pipeline
+- [combatSimulator/](../services/combatSimulator/) - Combat-Simulation
+  - [combatantAI.md](../services/combatSimulator/combatantAI.md) - AI-Entscheidungslogik
+  - [combatResolver.md](../services/combatSimulator/combatResolver.md) - State-Management + Execution
 - [NPCs/](../services/NPCs/) - NPC-Generierung und Matching
 - [Weather.md](../services/Weather.md) - Wetter-Generierung
 - [Loot.md](../services/Loot.md) - Loot-Generierung

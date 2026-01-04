@@ -21,6 +21,7 @@ import type { TerrainDefinition, CreatureDefinition, NPC, Faction } from '@/type
 import type { PartySnapshot } from '#types/partySnapshot';
 import type { HexCoordinate } from '#types/hexCoordinate';
 import type { NarrativeRole } from '@/constants';
+import type { Weather } from '#types/weather';
 
 // ============================================================================
 // RESULT-TYP
@@ -62,7 +63,7 @@ export function generateEncounter(context: {
   crBudget: number;
   timeSegment: GameDateTime['segment'];
   time: GameDateTime;  // Volles Zeit-Objekt für NPC-Generierung
-  weather: { type: string; severity: number };
+  weather: Weather;
   party: PartySnapshot;
   factions: { factionId: string; randWeighting: number }[];
   trigger: string;
@@ -175,6 +176,9 @@ export function generateEncounter(context: {
     );
   });
 
+  // Step 4.1.1: Gruppen-Relationen berechnen (basierend auf Disposition + Faction-Reputationen)
+  const alliances = groupActivity.calculateGroupRelations(groupsWithActivity);
+
   // Step 4.2: Loot für ALLE Gruppen generieren (Budget-basiert)
   const groupsWithLoot = encounterLoot.generateEncounterLoot(groupsWithActivity, {
     terrain: context.terrain,
@@ -188,6 +192,7 @@ export function generateEncounter(context: {
       terrain: context.terrain,
       weather: context.weather,
       timeSegment: context.timeSegment,
+      partyMemberIds: context.party.members.map(m => m.id),
     });
     flavouredGroups.push(withDistance);
   }
@@ -203,7 +208,7 @@ export function generateEncounter(context: {
   // Siehe: docs/services/encounter/Balancing.md
   // -------------------------------------------------------------------------
   let currentGroups = flavouredGroups;
-  let simulationResult = difficulty.simulate(currentGroups, context.party);
+  let simulationResult = difficulty.simulatePMF(currentGroups, context.party);
   let iterations = 0;
 
   while (simulationResult.label !== targetDifficulty && iterations < MAX_BALANCING_ITERATIONS) {
@@ -212,7 +217,7 @@ export function generateEncounter(context: {
       break; // Balancing nicht möglich → aktuelle Gruppen akzeptieren
     }
     currentGroups = adjusted;
-    simulationResult = difficulty.simulate(currentGroups, context.party);
+    simulationResult = difficulty.simulatePMF(currentGroups, context.party);
     iterations++;
   }
 
@@ -222,6 +227,7 @@ export function generateEncounter(context: {
   const encounterInstance: EncounterInstance = {
     id: crypto.randomUUID(),
     groups: currentGroups,  // Vollständige EncounterGroup[] direkt durchreichen
+    alliances,  // Gruppen-Allianzen (berechnet aus Disposition + Faction-Reputationen)
     npcs: encounterNpcIds,  // 1-3 NPC-IDs pro Encounter
     loot: aggregateLoot(currentGroups),
     perception: aggregatePerception(currentGroups),
@@ -234,7 +240,10 @@ export function generateEncounter(context: {
       position: context.position,
       terrain: context.terrain.id,
       timeSegment: context.timeSegment,
-      weather: context.weather,
+      weather: {
+        eventId: context.weather.event.id,
+        visibilityModifier: context.weather.visibilityModifier,
+      },
     },
     description: '',
   };

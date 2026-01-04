@@ -1,6 +1,13 @@
 // Entity Types Index
 // Siehe: docs/architecture/types.md
 
+// Character
+export {
+  characterSchema,
+  type Character,
+  type CharacterId,
+} from './character';
+
 // Creature
 export {
   creatureDefinitionSchema,
@@ -29,11 +36,28 @@ export {
   type CreaturePreferences,
 } from './creature';
 
+// Culture
+export {
+  cultureSchema,
+  type Culture,
+  type CultureId,
+} from './culture';
+
+// Species
+export {
+  speciesSchema,
+  type Species,
+  type SpeciesId,
+} from './species';
+
 // Faction
 export {
   factionSchema,
   type Faction,
   factionStatusSchema,
+  factionInfluenceSchema,
+  type FactionInfluence,
+  // DEPRECATED: cultureDataSchema wird durch Culture-Entity ersetzt
   cultureDataSchema,
   type CultureData,
   // Sub-schemas
@@ -143,3 +167,104 @@ export {
   type LootContainerStatus,
   LOOT_CONTAINER_STATUSES,
 } from './lootContainer';
+
+// Action
+export {
+  actionSchema,
+  type Action,
+  // Enum schemas
+  actionTypeSchema,
+  actionSourceSchema,
+  damageTypeSchema,
+  abilityTypeSchema,
+  conditionTypeSchema,
+  durationTypeSchema,
+  actionTimingTypeSchema,
+  triggerEventSchema,
+  rangeTypeSchema,
+  aoeShapeSchema,
+  aoeOriginSchema,
+  targetingTypeSchema,
+  saveOnSaveEffectSchema,
+  advantageConditionSchema,
+  modifiableStatSchema,
+  rollTargetSchema,
+  statModifierTypeSchema,
+  rollModifierTypeSchema,
+  damageModifierTypeSchema,
+  movementModifierTypeSchema,
+  movementModeSchema,
+  forcedMovementTypeSchema,
+  forcedMovementDirectionSchema,
+  affectsTargetSchema,
+  terrainEffectSchema,
+  bonusConditionSchema,
+  conditionalBonusTypeSchema,
+  counterTargetSchema,
+  summonControlSchema,
+  transformTargetSchema,
+  hpThresholdComparisonSchema,
+  skillTypeSchema,
+  restTypeSchema,
+  // Sub-schemas
+  actionRangeSchema,
+  type ActionRange,
+  aoeSchema,
+  type Aoe,
+  actionDamageSchema,
+  type ActionDamage,
+  attackRollSchema,
+  type AttackRoll,
+  saveDCSchema,
+  type SaveDC,
+  durationSchema,
+  type Duration,
+  healingSchema,
+  type Healing,
+  triggerConditionSchema,
+  type TriggerCondition,
+  statModifierSchema,
+  type StatModifier,
+  rollModifierSchema,
+  type RollModifier,
+  damageModifierSchema,
+  type DamageModifier,
+  movementModifierSchema,
+  type MovementModifier,
+  conditionalBonusEffectSchema,
+  type ConditionalBonusEffect,
+  conditionalBonusSchema,
+  type ConditionalBonus,
+  forcedMovementSchema,
+  type ForcedMovement,
+  spellSlotSchema,
+  type SpellSlot,
+  spellComponentsSchema,
+  type SpellComponents,
+  criticalSchema,
+  type Critical,
+  multiattackEntrySchema,
+  type MultiattackEntry,
+  multiattackSchema,
+  type Multiattack,
+  counterCheckSchema,
+  type CounterCheck,
+  targetingSchema,
+  type Targeting,
+  actionTimingSchema,
+  type ActionTiming,
+  actionEffectSchema,
+  type ActionEffect,
+  contestedCheckSchema,
+  type ContestedCheck,
+  hpThresholdSchema,
+  type HpThreshold,
+  summonSchema,
+  type Summon,
+  transformSchema,
+  type Transform,
+  counterSchema,
+  type Counter,
+  actionRechargeSchema,
+  type ActionRecharge,
+} from './action';

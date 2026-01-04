@@ -90,6 +90,9 @@ export const speechConfigSchema = z.object({
 });
 export type SpeechConfig = z.infer<typeof speechConfigSchema>;
 
+// DEPRECATED: CultureData wird durch eigenständige Culture-Entity ersetzt
+// Siehe: docs/types/culture.md
+// Nur noch für Migration alter Daten - nicht mehr in neuen Factions verwenden
 export const cultureDataSchema = z.object({
   // Naming (Pattern-basiert, bleibt unverändert)
   naming: namingConfigSchema.optional(),
@@ -109,6 +112,23 @@ export const cultureDataSchema = z.object({
 export type CultureData = z.infer<typeof cultureDataSchema>;
 
 // ============================================================================
+// FACTION INFLUENCE (NEU)
+// ============================================================================
+
+/**
+ * Pool-Erweiterung für Fraktions-Mitglieder.
+ * Erweitert die Kultur des NPCs, ersetzt sie nicht.
+ *
+ * Siehe: docs/types/faction.md#factioninfluence
+ */
+export const factionInfluenceSchema = z.object({
+  values: layerTraitConfigSchema.optional(),
+  goals: layerTraitConfigSchema.optional(),
+  activities: z.array(z.string()).optional(),
+});
+export type FactionInfluence = z.infer<typeof factionInfluenceSchema>;
+
+// ============================================================================
 // FACTION SCHEMA
 // ============================================================================
 
@@ -125,7 +145,17 @@ export const factionSchema = z.object({
   name: z.string().min(1),
   parentId: z.string().optional(),
   status: factionStatusSchema,
-  culture: cultureDataSchema,
+
+  // Culture-System (NEU)
+  usualCultures: z.array(z.string()).optional(),
+  cultureTolerance: z.number().min(0).max(1).default(0.3),
+  acceptedSpecies: z.array(z.string()).optional(),
+  influence: factionInfluenceSchema.optional(),
+
+  // DEPRECATED: culture wird durch usualCultures + influence ersetzt
+  // Nur noch für Migration alter Daten
+  culture: cultureDataSchema.optional(),
+
   creatures: z.array(factionCreatureGroupSchema),
   encounterTemplates: z.array(groupTemplateSchema).optional(),
   controlledLandmarks: z.array(z.string()),

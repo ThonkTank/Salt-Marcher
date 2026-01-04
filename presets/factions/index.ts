@@ -1,4 +1,4 @@
-// Faction-Presets für CLI-Testing und Plugin-Bundling
+// Faction-Presets fuer CLI-Testing und Plugin-Bundling
 // Siehe: docs/types/faction.md
 
 import { z } from 'zod';
@@ -17,24 +17,22 @@ export const factionPresetsSchema = z.array(factionPresetSchema);
 
 export const factionPresets = factionPresetsSchema.parse([
   // ──────────────────────────────────────────────────────────────────────────
-  // Ork-Allianz - Root-Faction für Bergstamm-Test
+  // Ork-Allianz - Root-Faction fuer Bergstamm-Test
   // ──────────────────────────────────────────────────────────────────────────
   {
     id: 'ork-allianz',
     name: 'Ork-Allianz',
     status: 'active',
-    culture: {
-      naming: {
-        patterns: ['{root}'],
-        roots: ['Gruk', 'Thrak', 'Morg'],
-      },
-      personality: {
-        add: ['aggressive', 'honorable'],
-      },
-      values: {
-        add: ['power', 'strength'],
-      },
+
+    // Culture-System (NEU)
+    usualCultures: ['faction:ork-allianz'],
+    cultureTolerance: 0.2,
+    acceptedSpecies: ['orc', 'half-orc', 'goblin', 'hobgoblin'],
+    influence: {
+      values: { add: ['power', 'strength'] },
+      goals: { add: ['conquer', 'dominate'] },
     },
+
     creatures: [],
     controlledLandmarks: [],
     displayColor: '#2F4F4F',
@@ -48,32 +46,16 @@ export const factionPresets = factionPresetsSchema.parse([
     parentId: 'ork-allianz',
     name: 'Bergstamm-Goblins',
     status: 'active',
-    culture: {
-      naming: {
-        patterns: ['{prefix}{root}', '{root}{suffix}'],
-        prefixes: ['Grik', 'Snag', 'Muk', 'Zit', 'Borg'],
-        roots: ['nak', 'gob', 'rik', 'snik', 'berg'],
-        suffixes: ['le', 'ik', 'az', 'uz', 'ak'],
-      },
-      personality: {
-        add: ['cunning', 'cowardly', 'greedy', 'brave'],
-      },
-      values: {
-        add: ['survival', 'wealth'],
-        unwanted: ['honor', 'justice'],
-      },
-      quirks: {
-        add: ['nervous_laugh', 'hoards_shiny'],
-      },
-      goals: {
-        add: ['loot', 'survive', 'please_boss'],
-      },
-      speech: {
-        dialect: 'broken',
-        commonPhrases: ['Nicht töten!', 'Hab Schatz!', 'Boss sagt...', 'Wir mehr als du!'],
-        accent: 'hoch, schnell, nervös',
-      },
+
+    // Culture-System (NEU)
+    usualCultures: ['faction:bergstamm', 'species:goblin'],
+    cultureTolerance: 0.1,
+    acceptedSpecies: ['goblin', 'hobgoblin'],
+    influence: {
+      values: { add: ['tribal_loyalty'], unwanted: ['honor', 'justice'] },
+      goals: { add: ['please_boss', 'raid'] },
     },
+
     creatures: [
       { creatureId: 'goblin', count: 15 },
       { creatureId: 'hobgoblin', count: 5 },
@@ -111,81 +93,49 @@ export const factionPresets = factionPresetsSchema.parse([
     controlledLandmarks: ['goblin-cave', 'watchtower-ruins'],
     displayColor: '#8B4513',
     reputations: [{ entityType: 'party', entityId: 'party', value: -20 }],
-    description: 'Ein Goblin-Stamm, der die Bergpässe kontrolliert und Reisende überfällt.',
+    description: 'Ein Goblin-Stamm, der die Bergpaesse kontrolliert und Reisende ueberfaellt.',
   },
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Handelsgilde - Dachorganisation für Schmuggler
+  // Handelsgilde - Dachorganisation fuer Schmuggler
   // ──────────────────────────────────────────────────────────────────────────
   {
     id: 'handelsgilde',
     name: 'Freie Handelsgilde',
     status: 'active',
-    culture: {
-      naming: {
-        patterns: ['{prefix} {root}', '{root} von {suffix}'],
-        prefixes: ['Meister', 'Kaufmann', 'Händler'],
-        roots: ['Heinrich', 'Wilhelm', 'Friedrich', 'Gustav', 'Ernst'],
-        suffixes: ['Nordhafen', 'Salzburg', 'Westmark'],
-      },
-      personality: {
-        add: ['patient', 'ambitious'],
-      },
-      values: {
-        add: ['wealth', 'reputation'],
-      },
-      goals: {
-        add: ['profit', 'gain_respect'],
-      },
+
+    // Culture-System (NEU)
+    usualCultures: ['faction:handelsgilde', 'species:human'],
+    cultureTolerance: 0.8,
+    acceptedSpecies: ['human', 'dwarf', 'halfling', 'elf'],
+    influence: {
+      values: { add: ['profit', 'reputation'] },
+      goals: { add: ['expand_trade', 'gain_influence'] },
     },
+
     creatures: [],
     controlledLandmarks: [],
     displayColor: '#DAA520',
   },
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Küstenschmuggler - Kontrollieren die Küste im Westen
+  // Kuestenschmuggler - Kontrollieren die Kueste im Westen
   // ──────────────────────────────────────────────────────────────────────────
   {
     id: 'schmuggler',
     parentId: 'handelsgilde',
-    name: 'Küstenschmuggler',
+    name: 'Kuestenschmuggler',
     status: 'active',
-    culture: {
-      naming: {
-        patterns: ['{prefix} {root}', '{root} "{title}"', '{root}'],
-        prefixes: ['Schwarzer', 'Einäugiger', 'Krummer', 'Fetter'],
-        roots: ['Jack', 'Pete', 'Morgan', 'Finn', 'Bart', 'Willem'],
-        titles: ['der Schlitzer', 'Messerhand', 'Narbengesicht', 'Goldklaue'],
-      },
-      personality: {
-        add: ['greedy', 'suspicious', 'opportunistic'],
-        unwanted: ['naive', 'trusting'],
-      },
-      values: {
-        add: ['wealth', 'freedom'],
-        unwanted: ['honor'],
-      },
-      quirks: {
-        add: ['superstitious', 'scarred_face'],
-      },
-      goals: {
-        add: ['profit', 'survive'],
-      },
-      appearance: {
-        add: ['scarred_face', 'tattoos', 'weathered_skin'],
-      },
-      speech: {
-        dialect: 'rough',
-        commonPhrases: [
-          'Kein Geschäft ohne Anzahlung',
-          'Die See nimmt, die See gibt',
-          'Frag nicht woher',
-          'Das kostet extra',
-        ],
-        accent: 'rau, langsam, drohend',
-      },
+
+    // Culture-System (NEU)
+    usualCultures: ['faction:schmuggler', 'species:human'],
+    cultureTolerance: 0.5,
+    acceptedSpecies: ['human'],
+    influence: {
+      values: { add: ['secrecy', 'loyalty_to_crew'], unwanted: ['honor'] },
+      goals: { add: ['smuggle_goods', 'avoid_guards'] },
     },
+
     creatures: [
       { creatureId: 'bandit', count: 10 },
       { creatureId: 'bandit-captain', count: 2 },
@@ -223,7 +173,7 @@ export const factionPresets = factionPresetsSchema.parse([
     controlledLandmarks: ['smuggler-cove', 'lighthouse-ruins'],
     displayColor: '#4682B4',
     reputations: [{ entityType: 'party', entityId: 'party', value: -10 }],
-    description: 'Schmuggler, die die Küstenhöhlen als Versteck nutzen und illegale Waren handeln.',
+    description: 'Schmuggler, die die Kuestenhoehlen als Versteck nutzen und illegale Waren handeln.',
   },
 ]);
 

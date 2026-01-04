@@ -319,6 +319,88 @@ Ein `threat` mit hoher Reputation kann `friendly` sein (z.B. Wachen die Party ke
 
 ---
 
+## Step 4.1.1: Gruppen-Relationen berechnen {#calculatealliances}
+
+**Zweck:** Bestimmt welche Gruppen im Encounter verbuendet sind.
+
+**Input:** `EncounterGroup[]` (nach assignActivity)
+
+**Output:** `Record<string, string[]>` (groupId → verbuendete groupIds)
+
+### Relation-Berechnung
+
+Die Funktion `calculateGroupRelations()` kombiniert explizite Regeln mit numerischer Disposition-Berechnung:
+
+**Explizite Regeln (Prioritaet):**
+
+| # | Bedingung | Effekt |
+|:-:|-----------|--------|
+| 1 | `disposition === 'allied'` | Gruppe verbuendet mit Party |
+| 2 | Gleiche `factionId` | Gruppen untereinander verbuendet |
+
+**Numerische Berechnung (fuer alle anderen Gruppen-Paare):**
+
+```
+relationValue = (dispA + dispB) / 2 + factionModifier
+```
+
+| relationValue | Klassifizierung | Effekt |
+|:-------------:|:---------------:|--------|
+| < -30 | `hostile` | Nicht verbuendet |
+| -30 bis +30 | `neutral` | Nicht verbuendet |
+| > +30 | `allied` | Verbuendet |
+
+Dabei ist:
+- `dispA`, `dispB`: `baseDisposition` der Seed-Kreatur jeder Gruppe
+- `factionModifier`: Faction-zu-Faction Reputation (falls beide Gruppen Factions haben)
+
+### Interne Helper-Funktionen
+
+```typescript
+// Holt baseDisposition der Seed-Kreatur
+function getGroupDisposition(group: EncounterGroup): number
+
+// Holt Faction-zu-Faction Reputation
+function getFactionRelation(factionAId: string, factionBId: string): number
+
+// Berechnet numerischen Relation-Wert
+function calculateRelationValue(groupA: EncounterGroup, groupB: EncounterGroup): number
+
+// Klassifiziert Wert zu Label
+function classifyRelation(value: number): 'hostile' | 'neutral' | 'allied'
+```
+
+### Beispiele
+
+| Gruppe A | Gruppe B | Berechnung | Ergebnis |
+|----------|----------|------------|:--------:|
+| Wachen (allied) | Party | disposition = allied | Verbuendet |
+| Banditen | Schmuggler | Gleiche Faction | Verbuendet |
+| Banditen (-70) | Orks (-60) | (-70 + -60)/2 = -65 | hostile |
+| Banditen (-70) | Haendler (+30) | (-70 + 30)/2 = -20 | neutral |
+| Wachen (+40) | Haendler (+30) | (40 + 30)/2 + 50 = +85 | allied |
+| Wolf (-20) | Hirsch (-10) | (-20 + -10)/2 = -15 | neutral |
+
+### Verwendung in Pipeline
+
+Gruppen-Relationen werden in [encounterGenerator.ts](../../../src/services/encounterGenerator/encounterGenerator.ts) nach `assignActivity()` berechnet:
+
+```typescript
+// Step 4.1: Activity zuweisen
+const groupsWithActivity = populatedGroups.map(g => assignActivity(g, context));
+
+// Step 4.1.1: Gruppen-Relationen berechnen
+const alliances = calculateGroupRelations(groupsWithActivity);
+
+const encounterInstance: EncounterInstance = {
+  groups: currentGroups,
+  alliances,  // Wird von difficulty.ts fuer Simulation konsumiert
+  // ...
+};
+```
+
+---
+
 ## Multi-Group Flavour
 
 Bei Encounters mit mehreren Gruppen wird Activity **pro Gruppe** generiert.

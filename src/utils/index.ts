@@ -1,42 +1,23 @@
 // Utils Index
 // Siehe: docs/architecture/constants.md
 
-export { parseDice, validateDiceExpression, asDiceExpression } from './diceParser';
+// Probability utilities (dice, random, PMF)
+export * from './probability';
 
-export {
-  randomBetween,
-  weightedRandomSelect,
-  randomSelect,
-  randomNormal,
-  rollDice,
-  diceMin,
-  diceMax,
-  diceAvg,
-  rollDiceDetailed,
-  type DiceRollDetail,
-  type DiceRollResult,
-} from './random';
+// Square-cell grid utilities (combat, dungeon)
+export * from './squareSpace';
 
+// Hex-cell grid utilities (overland)
+export * from './hexSpace';
+
+// Validation utilities
 export { assertValidValue } from './validation';
 
-export { hexDistance } from './hex';
-
+// Culture resolution (NPC generation)
 export {
-  resolveCultureChain,
-  calculateLayerWeights,
-  mergeWeightedPool,
-  aggregateWeightedPools,
-  accumulateWithUnwanted,
-  type CultureSource,
-  type CultureLayer,
+  selectCulture,
+  resolveAttributes,
+  mergeLayerConfigs,
+  buildFactionChain,
+  type ResolvedAttributes,
 } from './cultureResolution';
-
-export {
-  getCreatureById,
-  getCreatureByIdFromGroups,
-  iterateCreatures,
-  iterateCreaturesWithSlot,
-  countCreatures,
-  getAllCreatures,
-  hasCreature,
-} from './encounterHelpers';

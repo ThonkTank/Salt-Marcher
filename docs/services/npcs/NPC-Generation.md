@@ -7,8 +7,8 @@
 >
 > **Referenzierte Schemas:**
 > - [creature.md](../../types/creature.md) - Input: CreatureDefinition
-> - [faction.md](../../types/faction.md) - Faction mit eingebetteter Culture
-> - [culture-data.md](../../types/culture-data.md) - Naming, Attribute-Pools
+> - [faction.md](../../types/faction.md) - Faction mit usualCultures, influence
+> - [culture.md](../../types/culture.md) - Culture-Entity (Naming, Styling, Attribute-Pools)
 >
 > **Verwandte Dokumente:**
 > - [Culture-Resolution.md](Culture-Resolution.md) - Kultur-Aufloesung (Hierarchie, Kaskade, unwanted-Mechanik)

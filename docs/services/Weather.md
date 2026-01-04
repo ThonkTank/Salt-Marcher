@@ -1,143 +1,150 @@
 # Weather
 
 > **Typ:** Stateless Service
-> **Verantwortlichkeit:** Wetter-Generierung - Temperatur, Wind, Niederschlag, Nebel, Sichtweite
+> **Verantwortlichkeit:** Faktorbasierte Wetter-Generierung mit Event-Matching
 >
 > **Referenzierte Schemas:**
-> - [terrain-definition.md](../entities/terrain-definition.md) - Terrain-Klima-Einfluss
+> - [terrain-definition.md](../types/terrain-definition.md) - Terrain-Klima-Ranges
+> - [weather.ts](../../src/types/weather.ts) - Weather-Typen
 >
-> **Wird aufgerufen von:** Map (speichert Weather), Travel (Speed-Modifier), Encounter (Visibility)
+> **Wird aufgerufen von:** sessionState (speichert Weather), Travel (Speed-Modifier), Encounter (Visibility)
 
-Stateless Service zur Wetter-Generierung. Nimmt Terrain, Zeit und Saison als Input, liefert Weather-Objekt zurueck. Kein eigener State - der Aufrufer (typischerweise Map) speichert das Ergebnis.
+Stateless Service zur Wetter-Generierung. Generiert Weather aus 5 Grundfaktoren (temperature, humidity, wind, pressure, cloudCover) basierend auf Terrain-Ranges. Weather-Events matchen gegen diese Faktoren mit Preconditions.
+
+---
+
+## Architektur-Uebersicht
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Weather-Generierung                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Terrain-Ranges ──┐                                                 │
+│  Season          ─┼─► generateFactors() ──► WeatherFactors         │
+│  TimeSegment     ─┘           │                   │                 │
+│  Elevation                    │                   ▼                 │
+│                               │        matchWeatherEvent()          │
+│                               │                   │                 │
+│                               │                   ▼                 │
+│                               └──────────► Weather                  │
+│                                           ├─ factors                │
+│                                           ├─ event                  │
+│                                           ├─ visibilityModifier     │
+│                                           └─ travelSpeedModifier    │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Service-Interface
 
 ```typescript
-interface WeatherService {
-  generate(input: WeatherInput): Weather;
-  transition(current: Weather, target: Weather, speed?: number): Weather;
-  deriveFeatures(weather: Weather, time: TimeSegment): EntityId<'feature'>[];
-}
-
-interface WeatherInput {
+export function generateWeather(input: {
   terrain: TerrainDefinition;
   season: Season;
   timeSegment: TimeSegment;
-  elevation: number;
+  elevation?: number;
   seed?: number;
-  // Optional: Fuer Area-Averaging
-  neighborTerrains?: TerrainDefinition[];
-}
+}): Weather;
 ```
 
 **Verwendung:**
 ```typescript
-// Map ruft Service auf und speichert Ergebnis
-const weather = weatherService.generate({
-  terrain: currentTile.terrain,
-  season: calendar.currentSeason,
-  timeSegment: time.segment,
-  elevation: currentTile.elevation,
-  seed: generateSeed(time, position)
+import { generateWeather } from '@/services/weatherGenerator/weatherGenerator';
+
+const weather = generateWeather({
+  terrain: tile.terrain,
+  season: 'summer',
+  timeSegment: 'midday',
+  elevation: 500,
 });
 
-map.currentWeather = weather;
+// weather.visibilityModifier → 0.75 (bei Regen)
+// weather.event.id → 'rain'
+// weather.factors.temperature → 28.5
 ```
 
 ---
 
 ## Weather-Schema
 
+### WeatherFactors
+
+Generierte Basis-Werte aus Terrain-Ranges:
+
 ```typescript
-interface Weather {
-  // Kern-Parameter
-  temperature: number;           // Aktuelle Temperatur in °C
-  wind: number;                  // Wind in km/h
-  windDirection: HexDirection;   // 6 Hex-kompatible Richtungen
-
-  // Niederschlag
-  precipChance: number;          // 0-100: Wahrscheinlichkeit
-  precipIntensity: number;       // 0-100: Staerke
-  precipitationType: PrecipitationType;
-
-  // Nebel
-  fogLevel: number;              // 0-1: Nebeldichte
-
-  // Sichtweite (berechnet)
-  visibilityModifier: number;    // 0.1-1.0
-
-  // Astronomisch
-  cloudCover: number;            // 0-1
+interface WeatherFactors {
+  temperature: number;    // °C (-40 bis +50)
+  humidity: number;       // % (0-100)
+  wind: number;           // km/h (0-120)
+  pressure: number;       // -1 bis +1 (Tief- bis Hochdruck)
+  cloudCover: number;     // 0-1
 }
-
-type HexDirection = 'N' | 'NE' | 'SE' | 'S' | 'SW' | 'NW';
-type PrecipitationType = 'none' | 'drizzle' | 'rain' | 'heavy_rain' | 'snow' | 'blizzard' | 'hail';
 ```
 
----
+### WeatherEvent
 
-## Parameter-Kategorien
+Vault-persistierte Event-Entity mit Preconditions:
 
-### Temperatur
+```typescript
+interface WeatherEvent {
+  id: string;
+  name: string;
 
-| Kategorie | Bereich (°C) | Mechanische Effekte |
-|-----------|--------------|---------------------|
-| `freezing` | < -10 | Erschoepfung ohne Winterkleidung, Wasserflaechen gefroren |
-| `cold` | -10 bis 5 | Kaelte-Risiko ohne warme Kleidung |
-| `cool` | 5 bis 15 | Keine |
-| `mild` | 15 bis 25 | Keine |
-| `warm` | 25 bis 35 | Erhoehter Wasserbedarf |
-| `hot` | > 35 | Erschoepfung, doppelter Wasserbedarf |
+  // Preconditions (alle optional, nur gesetzte werden geprueft)
+  preconditions: {
+    temperature?: { min?: number; max?: number };
+    humidity?: { min?: number; max?: number };
+    wind?: { min?: number; max?: number };
+    pressure?: { min?: number; max?: number };
+    cloudCover?: { min?: number; max?: number };
+    terrains?: string[];  // Nur in diesen Terrains
+  };
 
-### Wind
+  // Gameplay-Effekte
+  effects: {
+    visibilityModifier: number;         // 0.1-1.0
+    travelSpeedModifier?: number;       // 0.1-1.0, default 1.0
+    perceptionModifier?: number;        // z.B. -2, -5
+    rangedAttackModifier?: number;      // z.B. -2, -4
+    exhaustionRisk?: boolean;
+  };
 
-| Staerke | km/h | Effekte |
-|--------|------|---------|
-| `calm` | 0-10 | Keine |
-| `light` | 10-30 | Keine |
-| `moderate` | 30-50 | Fernkampf -2, Segeln +20% Speed |
-| `strong` | 50-70 | Fernkampf Nachteil, Fliegen schwierig |
-| `gale` | > 70 | Kein Fernkampf, kein Fliegen, Bewegung halbiert |
+  description: string;
+  tags: string[];                       // z.B. ['precipitation', 'dangerous']
+  priority: number;                     // Hoeher = bevorzugt bei Mehrfach-Match
+}
+```
 
-### Niederschlag
+### Weather (Finales Objekt)
 
-| Typ | Sichtweite | Weitere Effekte |
-|-----|------------|-----------------|
-| `none` | Normal | Keine |
-| `drizzle` | Normal | Feucht |
-| `rain` | 300m | Perception -2, Tracks schwerer zu finden |
-| `heavy_rain` | 100m | Perception -5, schwieriges Terrain |
-| `snow` | 200m | Kaelte, langsamere Bewegung |
-| `blizzard` | 30m | Kaelte, stark reduzierte Bewegung |
-| `hail` | 200m | Schaden bei Exposition |
-
-### Nebel
-
-| fogLevel | Bezeichnung | Sichtweite | Effekte |
-|----------|-------------|------------|---------|
-| 0.0-0.2 | Klar | Normal | Keine |
-| 0.2-0.5 | Dunstig | 500m | Perception -1 |
-| 0.5-0.7 | Neblig | 100m | Perception -3 |
-| 0.7-0.9 | Dichter Nebel | 50m | Perception -5, leicht zu verlaufen |
-| 0.9-1.0 | Undurchdringlich | 10m | Fast blind, hohes Verirrungsrisiko |
+```typescript
+interface Weather {
+  factors: WeatherFactors;
+  event: WeatherEvent;
+  // Convenience-Felder (aus event.effects)
+  visibilityModifier: number;
+  travelSpeedModifier: number;
+}
+```
 
 ---
 
 ## Generierungs-Algorithmus
 
-### Terrain-basierte Ranges
+### 1. Faktoren aus Terrain-Ranges
 
-Jedes Terrain definiert Wetter-Ranges:
+Jedes Terrain definiert Weather-Ranges:
 
 ```typescript
 interface TerrainWeatherRanges {
-  temperature: WeatherRange;     // in °C
-  wind: WeatherRange;            // in km/h
-  precipChance: WeatherRange;    // 0-100
-  precipIntensity: WeatherRange; // 0-100
-  fogChance: WeatherRange;       // 0-100
+  temperature: WeatherRange;   // °C
+  humidity: WeatherRange;      // % (0-100)
+  wind: WeatherRange;          // km/h
+  pressure: WeatherRange;      // -1 bis +1
+  cloudCover: WeatherRange;    // 0-1
 }
 
 interface WeatherRange {
@@ -147,25 +154,12 @@ interface WeatherRange {
 }
 ```
 
-### Terrain-Beispiele
-
-| Terrain | Temperatur (°C) | Wind (km/h) | Precip-Chance (%) | Precip-Intensitaet (%) | Fog-Chance (%) |
-|---------|-----------------|-------------|-------------------|------------------------|----------------|
-| `plains` | -5 / 15 / 35 | 5 / 20 / 60 | 10 / 30 / 70 | 10 / 30 / 60 | 5 / 15 / 40 |
-| `mountains` | -20 / 0 / 20 | 20 / 50 / 100 | 20 / 50 / 80 | 20 / 50 / 80 | 10 / 30 / 60 |
-| `desert` | 0 / 35 / 50 | 5 / 15 / 80 | 0 / 5 / 20 | 5 / 20 / 50 | 0 / 5 / 20 |
-| `swamp` | 5 / 20 / 35 | 0 / 10 / 30 | 40 / 60 / 90 | 20 / 40 / 70 | 30 / 50 / 80 |
-| `forest` | 0 / 15 / 30 | 0 / 10 / 30 | 20 / 40 / 70 | 15 / 35 / 60 | 20 / 40 / 70 |
-| `water` | 5 / 18 / 30 | 10 / 30 / 80 | 20 / 40 / 70 | 20 / 40 / 70 | 15 / 30 / 50 |
-
-**Leseweise:** min / average / max
-
-### Range-Sampling
+### 2. Range-Sampling
 
 ```typescript
-function sampleFromRange(range: WeatherRange, seed: number): number {
-  const random = seededRandom(seed);
-  const deviation = (random() - 0.5) * 2; // -1 bis +1
+function sampleFromRange(range: WeatherRange, seed?: number): number {
+  const random = seed !== undefined ? seededRandom(seed) : Math.random();
+  const deviation = (random - 0.5) * 2; // -1 bis +1
 
   if (deviation >= 0) {
     return lerp(range.average, range.max, deviation);
@@ -175,221 +169,193 @@ function sampleFromRange(range: WeatherRange, seed: number): number {
 }
 ```
 
+### 3. Modifier anwenden
+
+```typescript
+// Season-Offset
+temperature += SEASON_TEMPERATURE_OFFSET[season];
+
+// Time-Segment-Offset
+temperature += TIME_TEMPERATURE_OFFSET[timeSegment];
+
+// Elevation-Offset (-6.5°C pro 1000m)
+temperature += (elevation / 1000) * ELEVATION_TEMPERATURE_FACTOR;
+```
+
+### 4. Event-Matching
+
+```typescript
+function matchWeatherEvent(factors: WeatherFactors, terrainId: string): WeatherEvent {
+  const allEvents = vault.getAllEntities<WeatherEvent>('weatherEvent');
+
+  const matches = allEvents
+    .filter(e => checkPreconditions(e.preconditions, factors, terrainId))
+    .sort((a, b) => b.priority - a.priority);
+
+  return matches[0] ?? getDefaultEvent();
+}
+```
+
 ---
 
-## Modifier-Stacking
+## Terrain-Beispiele
 
-### Berechnungs-Reihenfolge
+| Terrain | Temperature (°C) | Humidity (%) | Wind (km/h) | Pressure | CloudCover |
+|---------|------------------|--------------|-------------|----------|------------|
+| grassland | -5 / 15 / 35 | 20 / 45 / 75 | 5 / 20 / 60 | -0.3 / 0.1 / 0.5 | 0.05 / 0.35 / 0.7 |
+| forest | 0 / 15 / 30 | 40 / 60 / 85 | 0 / 10 / 30 | -0.3 / 0.1 / 0.5 | 0.2 / 0.5 / 0.8 |
+| mountain | -20 / 0 / 20 | 30 / 55 / 85 | 20 / 50 / 100 | -0.5 / -0.2 / 0.3 | 0.1 / 0.45 / 0.8 |
+| desert | 0 / 35 / 50 | 5 / 15 / 30 | 5 / 15 / 80 | -0.2 / 0.2 / 0.6 | 0 / 0.15 / 0.4 |
+| swamp | 5 / 20 / 35 | 60 / 80 / 98 | 0 / 10 / 30 | -0.3 / 0 / 0.4 | 0.3 / 0.6 / 0.9 |
+| arctic | -40 / -15 / 5 | 40 / 60 / 80 | 10 / 40 / 100 | -0.4 / -0.1 / 0.4 | 0.1 / 0.4 / 0.75 |
 
+**Leseweise:** min / average / max
+
+---
+
+## Modifier-Konstanten
+
+### Season-Modifier
+
+```typescript
+const SEASON_TEMPERATURE_OFFSET: Record<Season, number> = {
+  spring: 0,
+  summer: 10,
+  autumn: -5,
+  winter: -15,
+};
 ```
-Terrain-Basis → + Saison-Modifier → + Time-Segment → + Elevation → Finale Werte
-```
-
-### Saison-Modifier
-
-| Saison | Temperatur-Offset |
-|--------|-------------------|
-| Fruehling | 0°C |
-| Sommer | +10°C |
-| Herbst | -5°C |
-| Winter | -15°C |
 
 ### Time-Segment-Modifier
 
-| Segment | Stunden | Temperatur-Modifikator |
-|---------|---------|------------------------|
-| `dawn` | 5-8 | -5°C |
-| `morning` | 8-12 | 0°C |
-| `midday` | 12-15 | +5°C |
-| `afternoon` | 15-18 | 0°C |
-| `dusk` | 18-21 | -5°C |
-| `night` | 21-5 | -10°C |
+```typescript
+const TIME_TEMPERATURE_OFFSET: Record<TimeSegment, number> = {
+  dawn: -5,
+  morning: 0,
+  midday: 5,
+  afternoon: 0,
+  dusk: -5,
+  night: -10,
+};
+```
 
 ### Elevation-Modifier
 
-```
-Temperatur-Offset = -6.5°C × (Elevation / 1000m)
-```
-
-| Elevation | Temperatur-Offset |
-|-----------|-------------------|
-| 0m | 0°C |
-| 500m | -3.25°C |
-| 1000m | -6.5°C |
-| 2000m | -13°C |
-
----
-
-## Abgeleitete Werte
-
-### precipitationType
-
 ```typescript
-function derivePrecipitationType(
-  precipChance: number,
-  precipIntensity: number,
-  temperature: number,
-  seed: number
-): PrecipitationType {
-  const roll = seededRandom(seed)() * 100;
-  if (roll > precipChance) return 'none';
-
-  const isSnow = temperature < 2;
-  const isHailCondition = temperature >= 15 && precipIntensity > 70;
-
-  if (isHailCondition && seededRandom(seed + 1)() < 0.2) {
-    return 'hail';
-  }
-
-  if (precipIntensity < 20) {
-    return isSnow ? 'snow' : 'drizzle';
-  } else if (precipIntensity < 60) {
-    return isSnow ? 'snow' : 'rain';
-  } else {
-    return isSnow ? 'blizzard' : 'heavy_rain';
-  }
-}
-```
-
-### fogLevel
-
-```typescript
-function generateFogLevel(fogChance: number, seed: number): number {
-  const roll = seededRandom(seed)() * 100;
-  if (roll > fogChance) return 0;
-
-  const intensity = (fogChance - roll) / fogChance;
-  return intensity;
-}
-```
-
-### visibilityModifier
-
-```typescript
-function calculateVisibility(
-  precipitationType: PrecipitationType,
-  fogLevel: number
-): number {
-  const precipVisibility: Record<PrecipitationType, number> = {
-    'none': 1.0, 'drizzle': 1.0,
-    'rain': 0.75, 'snow': 0.75,
-    'heavy_rain': 0.5, 'blizzard': 0.25, 'hail': 0.75
-  };
-
-  const fogVisibility = 1.0 - (fogLevel * 0.9);
-
-  return Math.min(precipVisibility[precipitationType], fogVisibility);
-}
-```
-
----
-
-## Transitions
-
-Fuer sanfte Wetter-Uebergaenge (optional):
-
-```typescript
-function transitionWeather(
-  current: Weather,
-  target: Weather,
-  speed: number = 0.3
-): Weather {
-  return {
-    temperature: lerp(current.temperature, target.temperature, speed),
-    wind: lerp(current.wind, target.wind, speed),
-    windDirection: target.windDirection,
-    precipChance: target.precipChance,
-    precipIntensity: target.precipIntensity,
-    precipitationType: target.precipitationType,
-    fogLevel: lerp(current.fogLevel, target.fogLevel, speed),
-    visibilityModifier: target.visibilityModifier,
-    cloudCover: lerp(current.cloudCover, target.cloudCover, speed)
-  };
-}
+const ELEVATION_TEMPERATURE_FACTOR = -6.5; // °C pro 1000m
 ```
 
 ---
 
 ## Weather-Events
 
-Bestimmte Kombinationen ergeben spezielle Events:
+Events werden nach Prioritaet gematcht. Hoehere Prioritaet gewinnt bei Mehrfach-Match.
 
-| Event | Bedingungen | Effekte |
-|-------|-------------|---------|
-| `blizzard` | freezing + gale + snow | Reisen fast unmoeglich |
-| `thunderstorm` | warm + strong + heavy_rain | Blitzschlag-Gefahr |
-| `heatwave` | hot + calm + none | Doppelte Erschoepfungs-Checks |
-| `dense_fog` | cool + calm + fogLevel > 0.7 | Sichtweite 10m |
-| `dust_storm` | hot + gale + none (desert) | Sichtweite 20m, Schaden |
+### Fallback-Events (Priority: -1 bis 0)
+
+| Event | Preconditions | Visibility | Speed |
+|-------|---------------|------------|-------|
+| `cloudy` | (immer) | 0.9 | 1.0 |
+| `clear` | humidity < 40, cloudCover < 0.3 | 1.0 | 1.0 |
+| `overcast` | cloudCover > 0.7 | 0.85 | 1.0 |
+| `partly_cloudy` | cloudCover 0.3-0.7 | 0.95 | 1.0 |
+
+### Niederschlag (Priority: 1-4)
+
+| Event | Preconditions | Visibility | Speed | Tags |
+|-------|---------------|------------|-------|------|
+| `drizzle` | humidity 55-75, temp > 3°C | 0.9 | 0.95 | precipitation, light, rain |
+| `rain` | humidity > 65, temp > 3°C, pressure < 0.2 | 0.75 | 0.9 | precipitation, rain |
+| `heavy_rain` | humidity > 80, temp > 5°C, pressure < -0.1 | 0.5 | 0.7 | precipitation, heavy, rain |
+| `light_snow` | humidity 50-75, temp < 2°C | 0.85 | 0.9 | precipitation, light, snow, cold |
+| `snow` | humidity > 55, temp < 0°C | 0.7 | 0.8 | precipitation, snow, cold |
+| `blizzard` | humidity > 65, temp < -5°C, wind > 50 | 0.2 | 0.3 | precipitation, snow, cold, dangerous, storm |
+
+### Nebel (Priority: 1-3)
+
+| Event | Preconditions | Visibility | Tags |
+|-------|---------------|------------|------|
+| `mist` | humidity 70-85, wind < 20 | 0.7 | fog, light |
+| `fog` | humidity > 85, wind < 15 | 0.4 | fog |
+| `dense_fog` | humidity > 95, wind < 10 | 0.15 | fog, dangerous |
+
+### Stuerme (Priority: 3-5)
+
+| Event | Preconditions | Visibility | Speed | Tags |
+|-------|---------------|------------|-------|------|
+| `thunderstorm` | humidity > 75, temp > 15°C, pressure < -0.25, wind > 30 | 0.5 | 0.6 | storm, dangerous, precipitation |
+| `windstorm` | wind > 70 | 0.8 | 0.5 | storm, wind |
+| `sandstorm` | humidity < 25, wind > 45, terrains: [desert] | 0.15 | 0.4 | storm, dangerous, terrain-specific |
+
+### Temperatur-Extreme (Priority: 3)
+
+| Event | Preconditions | Visibility | Speed | Tags |
+|-------|---------------|------------|-------|------|
+| `heatwave` | temp > 38°C, humidity < 35, wind < 20 | 0.95 | 0.8 | temperature, dangerous, hot |
+| `cold_snap` | temp < -20°C, wind > 20 | 0.9 | 0.7 | temperature, dangerous, cold |
+
+---
+
+## Creature Weather-Preferences
+
+Kreaturen referenzieren Event-Tags (nicht Event-IDs):
 
 ```typescript
-function detectWeatherEvent(weather: Weather, terrain: TerrainType): WeatherEvent | null {
-  if (weather.temperature < -10 && weather.wind > 70 && weather.precipitationType === 'blizzard') {
-    return 'blizzard';
+creature.preferences.weather = {
+  prefers: ['precipitation', 'fog'],     // Mag Regen und Nebel
+  avoids: ['hot', 'dangerous', 'storm'], // Meidet Hitze und Gefahr
+};
+```
+
+**Matching in groupSeed.ts:**
+```typescript
+if (weather?.event && creature.preferences?.weather) {
+  const { prefers, avoids } = creature.preferences.weather;
+  const eventTags = weather.event.tags;
+
+  if (prefers?.some(tag => eventTags.includes(tag))) {
+    weight *= CREATURE_WEIGHTS.weatherPrefers;  // +30%
   }
-  if (weather.temperature > 25 && weather.wind > 50 && weather.precipitationType === 'heavy_rain') {
-    return 'thunderstorm';
+  else if (avoids?.some(tag => eventTags.includes(tag))) {
+    weight *= CREATURE_WEIGHTS.weatherAvoids;   // -50%
   }
-  // ... weitere Events
-  return null;
 }
 ```
 
 ---
 
-## Feature-Mapping
+## Integration
 
-Der Service kann aktive Features fuer Encounter-Balance ableiten:
+### Encounter-Pipeline
+
+Weather wird in der Encounter-Pipeline verwendet:
+
+1. **encounterGenerator.ts** - Nimmt Weather als Context-Parameter
+2. **groupSeed.ts** - Creature-Auswahl basierend auf Weather-Tags
+3. **encounterDistance.ts** - Sichtweite basierend auf visibilityModifier
+
+### Encounter-Persistierung
 
 ```typescript
-function deriveWeatherFeatures(
-  weather: Weather,
-  timeSegment: TimeSegment,
-  moonPhase?: string,
-): EntityId<'feature'>[] {
-  const features: EntityId<'feature'>[] = [];
-
-  // Licht-Features
-  const brightness = calculateBrightness(timeSegment, weather.cloudCover, moonPhase);
-  if (brightness < 0.1) features.push('darkness');
-  else if (brightness < 0.5) features.push('dim-light');
-
-  // Sicht-Features
-  if (weather.fogLevel > 0.5 || weather.precipIntensity > 60) {
-    features.push('reduced-visibility');
-  }
-
-  // Wind-Features
-  if (weather.wind > 50) features.push('high-wind');
-
-  return features;
+// In EncounterInstance.context
+weather: {
+  eventId: string;           // z.B. 'rain'
+  visibilityModifier: number; // z.B. 0.75
 }
 ```
 
 ---
 
-## Area-Averaging (Optional)
+## CLI-Testing
 
-Fuer realistischeres Wetter ueber mehrere Tiles:
+```bash
+# Weather generieren
+npm run cli -- services/weatherGenerator/weatherGenerator generateWeather \
+  '{"terrain":{"id":"forest","weatherRanges":{...}},"season":"summer","timeSegment":"midday"}'
 
-```typescript
-function generateWithAveraging(
-  centerTerrain: TerrainDefinition,
-  neighborTerrains: TerrainDefinition[],
-  input: Omit<WeatherInput, 'terrain'>
-): Weather {
-  const RADIUS_WEIGHT = 0.7; // Nachbarn haben 70% Gewicht
-
-  const centerWeather = generate({ ...input, terrain: centerTerrain });
-
-  if (neighborTerrains.length === 0) return centerWeather;
-
-  const neighborAvg = averageWeather(
-    neighborTerrains.map(t => generate({ ...input, terrain: t }))
-  );
-
-  return blendWeather(centerWeather, neighborAvg, RADIUS_WEIGHT);
-}
+# Mit Elevation
+npm run cli -- services/weatherGenerator/weatherGenerator generateWeather \
+  '{"terrain":{"id":"mountain","weatherRanges":{...}},"season":"winter","timeSegment":"night","elevation":2000}'
 ```
 
 ---
@@ -398,18 +364,10 @@ function generateWithAveraging(
 
 | Komponente | MVP | Post-MVP |
 |------------|:---:|:--------:|
-| Basis-Parameter (Temp, Wind, Precipitation) | ✓ | |
+| WeatherFactors-Generierung | ✓ | |
 | Terrain-basierte Ranges | ✓ | |
-| Saison/Time/Elevation Modifier | ✓ | |
-| Niederschlagstyp-Ableitung | ✓ | |
-| Nebel-Generierung | ✓ | |
-| Weather-Events | | mittel |
-| Area-Averaging | | niedrig |
-| Feature-Mapping | | mittel |
-
----
-
-## Tasks
-
-| # | Status | Domain | Layer | Beschreibung | Prio | MVP? | Deps | Spec | Imp. |
-|--:|:------:|--------|-------|--------------|:----:|:----:|------|------|------|
+| Season/Time/Elevation Modifier | ✓ | |
+| Event-Matching mit Preconditions | ✓ | |
+| Creature Weather-Preferences | ✓ | |
+| Area-Averaging (Nachbar-Tiles) | | niedrig |
+| Weather-Transitions (Interpolation) | | niedrig |

@@ -5,9 +5,13 @@
 > **Output:** `SimulationResult`
 > **Aufgerufen von:** [Encounter.md#helpers](Encounter.md#helpers)
 >
+> **Verwendet:**
+> - [combatResolver.md](../combatSimulator/combatResolver.md) - State-Management + Action-Resolution
+> - [combatantAI.md](../combatSimulator/combatantAI.md) - Entscheidungslogik (Action/Target-Auswahl, Movement)
+>
 > **Referenzierte Schemas:**
-> - [creature.md](../../entities/creature.md) - Action-Schema fuer Simulation
-> - [faction.md](../../entities/faction.md) - Disposition-Werte
+> - [creature.md](../../types/creature.md) - Action-Schema fuer Simulation
+> - [faction.md](../../types/faction.md) - Disposition-Werte
 >
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
@@ -15,7 +19,47 @@
 > - [Encounter.md#goaldifficulty](Encounter.md#goaldifficulty-step-60) - Ziel-Difficulty (Step 6.0)
 > - [Balancing.md](Balancing.md) - Downstream-Step (Step 6.1)
 
-Kampfsimulation mit Probability Mass Functions (PMF) zur Difficulty-Klassifizierung.
+Difficulty-Klassifizierung via PMF-basierter Kampfsimulation. Orchestriert die Simulation und nutzt combatResolver fuer State + Resolution.
+
+---
+
+## Service-Architektur
+
+`difficulty.ts` **orchestriert** die Combat-Simulation und nutzt combatResolver/combatantAI als Helper:
+
+```
+difficulty.ts (Orchestrator)
+    ├── simulatePMF()           ← Haupt-Entry-Point
+    ├── runSimulationLoop()     ← Autonomer Runden-Loop
+    ├── simulateRound()         ← Eine Runde simulieren
+    ├── calculatePartyWinProbability() / calculateTPKRisk()
+    │
+    ├─► combatResolver.ts (Helper-Repository)
+    │       ├── createPartyProfiles()
+    │       ├── createEnemyProfiles()
+    │       ├── createCombatState(profiles, alliances, distance)
+    │       ├── resolveAttack()
+    │       └── updateCombatantHP() / updateCombatantPosition()
+    │
+    └─► combatantAI.ts (AI-Entscheidungslogik)
+            ├── selectBestActionAndTarget()
+            ├── calculateMovement()
+            └── isAllied() / isHostile()
+
+**Hinweis:** `calculateAlliances()` liegt in [groupActivity.ts](groupActivity.md#calculatealliances) und wird bei Encounter-Erstellung aufgerufen. Die `alliances` werden im `EncounterInstance`-Objekt gespeichert und an die Simulation uebergeben.
+```
+
+**Zustaendigkeiten:**
+
+| Service | Verantwortlichkeit | Standalone? |
+|---------|-------------------|:-----------:|
+| `difficulty.ts` | Simulations-Loop, Victory-Conditions, Outcome-Analyse, Difficulty-Klassifizierung | Nein |
+| `combatResolver.ts` | State-Management, Action-Resolution (KEINE autonome Simulation) | Ja |
+| `combatantAI.ts` | Action-Selection, Target-Selection, Movement, Alliance-Checks | Ja |
+
+**Design-Entscheidung:** combatResolver enthält nur State + Resolution, damit es spaeter auch als generisches Helper-Repository fuer den manuellen Combat-Tracker dienen kann. Die autonome Simulations-Logik bleibt in difficulty.ts.
+
+**Hinweis:** Fuer Standalone-Nutzung (z.B. Combat-Tracker) siehe [combatSimulator/](../combatSimulator/).
 
 ---
 
@@ -154,19 +198,20 @@ Erstellt Combat-Profile fuer alle Party-Mitglieder basierend auf dem Action-Sche
 ```typescript
 interface CombatProfile {
   participantId: string;
-  side: 'party' | 'enemy';
+  groupId: string;                    // 'party' fuer PCs, UUID fuer Encounter-Gruppen
   hp: ProbabilityDistribution;        // Initial: { maxHP: 1.0 }
   ac: number;
   speed: SpeedMap;
   actions: Action[];                  // Aus Creature/Character Action-Schema
   conditions: ConditionState[];
   position: Vector3;
+  environmentBonus?: number;
 }
 
 function createPartyProfiles(party: PartyState): CombatProfile[] {
   return party.members.map(member => ({
     participantId: member.id,
-    side: 'party',
+    groupId: 'party',
     hp: new Map([[member.currentHP, 1.0]]),
     ac: member.ac,
     speed: member.speed,
@@ -246,7 +291,7 @@ function calculateInitialPositions(
   const encounterDistance = encounter.encounterDistance ?? 60;
 
   // Party startet bei x=0
-  const partyProfiles = profiles.filter(p => p.side === 'party');
+  const partyProfiles = profiles.filter(p => p.groupId === 'party');
   spreadFormation(partyProfiles, { x: 0, y: 0, z: 0 });
 
   // Gruppen starten bei encounterDistance
@@ -333,147 +378,22 @@ function checkSurprise(
 
 ---
 
-### 5.0.6: Disposition berechnen {#step-50-disposition-berechnung}
+### 5.0.6: Disposition und Gruppen-Relationen
 
-**Zweck:** Initiale Kampfbereitschaft jeder Gruppe zur Party bestimmen.
+Disposition und Gruppen-Relationen werden von [groupActivity.md](groupActivity.md) berechnet und sind in `EncounterInstance.alliances` gespeichert.
 
-**Input:** `FlavouredGroup[]`, `EncounterContext`
+-> **Authoritative Dokumentation:** [groupActivity.md#calculateGroupRelations](groupActivity.md#calculatealliances)
 
-**Output:** `DispositionResult` pro Gruppe
+**Zusammenfassung:**
 
-Disposition wird zwischen Faction- und Creature-Grenzen berechnet:
+| Konzept | Berechnet in | Output |
+|---------|--------------|--------|
+| **Disposition** (Gruppe → Party) | `assignActivity()` | `group.disposition` Label |
+| **Gruppen-Relationen** (Gruppe ↔ Gruppe) | `calculateGroupRelations()` | `alliances` Record |
 
-```typescript
-function calculateDisposition(
-  group: FlavouredGroup,
-  context: EncounterContext
-): { current: number; min: number; max: number } {
-  const creature = getCreatureDefinition(group.creatures[0].creatureId);
-  const faction = creature.factionId
-    ? getFaction(creature.factionId)
-    : undefined;
-
-  const factionDisp = faction?.defaultDisposition ?? 0;
-  const creatureDisp = creature.defaultDisposition ?? 0;
-
-  const min = Math.min(factionDisp, creatureDisp);
-  const max = Math.max(factionDisp, creatureDisp);
-  const current = faction ? factionDisp : creatureDisp;
-
-  return { current, min, max };
-}
-```
-
-| Kreatur | Faction | Faction-Disp | Creature-Disp | Range | Initial |
-|---------|---------|:------------:|:-------------:|:-----:|:-------:|
-| Goblin | Blutspeer | -70 | -30 | -70 bis -30 | -70 |
-| Wolf | - | - | -20 | -20 bis -20 | -20 |
-| Haendler | Gilde | +50 | +30 | +30 bis +50 | +50 |
-
----
-
-### Disposition vs. Gruppen-Relationen
-
-| Konzept | Frage | Scope | Verwendet fuer |
-|---------|-------|-------|----------------|
-| **Disposition** | "Wie steht Gruppe X zur Party?" | Gruppe → Party | Combat Probability (wird gekaempft?) |
-| **Gruppen-Relationen** | "Wie stehen Gruppe X und Y zueinander?" | Gruppe ↔ Gruppe | Simulations-Targeting (wer greift wen an?) |
-
-- **Single-Group:** Nur Disposition relevant
-- **Multi-Group:** Beide relevant
-
----
-
-### 5.0.7: Gruppen-Relationen berechnen {#gruppen-relationen-calculaterelations}
-
-Bei Multi-Group-Encounters werden die Relationen zwischen allen Gruppen berechnet.
-
-**Input:** `FlavouredGroup[]`, `EncounterContext`
-
-**Output:** `GroupRelation[]`
-
-Die Relation basiert auf:
-1. **Basis-Disposition** beider Gruppen (Creature + Faction)
-2. **Faction-zu-Faction Modifier** (wenn beide Gruppen Fraktionen haben)
-
-```typescript
-interface GroupRelation {
-  groupA: string;
-  groupB: string;
-  relation: 'hostile' | 'neutral' | 'allied';
-  relationValue: number;  // -100 bis +100 (Debug-Info)
-}
-
-function calculateGroupRelations(
-  groups: FlavouredGroup[],
-  context: EncounterContext
-): GroupRelation[] {
-  const relations: GroupRelation[] = [];
-
-  for (let i = 0; i < groups.length; i++) {
-    for (let j = i + 1; j < groups.length; j++) {
-      const groupA = groups[i];
-      const groupB = groups[j];
-
-      // Basis-Disposition beider Gruppen (Creature + Faction)
-      const dispA = getGroupDisposition(groupA);
-      const dispB = getGroupDisposition(groupB);
-
-      // Faction-zu-Faction Modifier (wenn beide Gruppen Fraktionen haben)
-      let factionMod = 0;
-      if (groupA.factionId && groupB.factionId) {
-        factionMod = getFactionRelation(groupA.factionId, groupB.factionId);
-        // Bereich: -100 (Erzfeinde) bis +100 (Verbuendete)
-      }
-
-      // Finale Relation: Durchschnitt der Dispositionen + Faction-Modifier
-      const relationValue = (dispA + dispB) / 2 + factionMod;
-
-      relations.push({
-        groupA: groupA.groupId,
-        groupB: groupB.groupId,
-        relation: classifyRelation(relationValue),
-        relationValue
-      });
-    }
-  }
-
-  return relations;
-}
-
-function classifyRelation(value: number): 'hostile' | 'neutral' | 'allied' {
-  if (value < -30) return 'hostile';
-  if (value > 30) return 'allied';
-  return 'neutral';
-}
-
-function getGroupDisposition(group: FlavouredGroup): number {
-  const creature = getCreatureDefinition(group.creatures[0].creatureId);
-  const faction = creature.factionId ? getFaction(creature.factionId) : undefined;
-
-  // Fallback-Kette: Faction-Disposition → Creature-Disposition → 0
-  return faction?.defaultDisposition ?? creature.defaultDisposition ?? 0;
-}
-```
-
-**Klassifizierungs-Schwellwerte:**
-
-| relationValue | Klassifizierung | Simulations-Effekt |
-|:-------------:|:---------------:|-------------------|
-| < -30 | `hostile` | Gruppen attackieren sich gegenseitig |
-| -30 bis +30 | `neutral` | Gruppen ignorieren sich |
-| > +30 | `allied` | Gruppen unterstuetzen sich gegenseitig |
-
-**Beispiele:**
-
-| Gruppe A | Gruppe B | Faction-Relation | relationValue | Ergebnis |
-|----------|----------|:----------------:|:-------------:|:--------:|
-| Banditen (-70) | Orks (-60) | Feindlich (-50) | -115 | hostile |
-| Banditen (-70) | Haendler (+30) | Neutral (0) | -20 | neutral |
-| Wachen (+40) | Haendler (+30) | Verbuendet (+50) | +85 | allied |
-| Wolf (-20) | Hirsch (-10) | - (fraktionslos) | -15 | neutral |
-
-**Simulations-Integration:** Die Relations werden in Step 5.1 verwendet um zu bestimmen, welche Kreaturen welche Seite angreifen.
+Die Simulation konsumiert `alliances` fuer Targeting-Entscheidungen:
+- Verbuendete Gruppen unterstuetzen sich
+- Nicht-verbuendete Gruppen attackieren sich
 
 ---
 
@@ -680,22 +600,34 @@ function runSimulation(initialState: SimulationState): SimulationResult {
 }
 
 function isEncounterOver(state: SimulationState): boolean {
-  const partyDeathProb = calculateSideDeathProbability(state, 'party');
-  const enemyDeathProb = calculateSideDeathProbability(state, 'enemy');
+  const partyDeathProb = calculateAllianceDeathProbability(state, 'party');
+  const enemyDeathProb = calculateEnemyDeathProbability(state);
 
   // Encounter endet wenn eine Seite >95% tot ist
   return partyDeathProb > 0.95 || enemyDeathProb > 0.95;
 }
 
-function calculateSideDeathProbability(
+function calculateAllianceDeathProbability(
   state: SimulationState,
-  side: 'party' | 'enemy'
+  groupId: string
 ): number {
-  const sideProfiles = state.profiles.filter(p => p.side === side);
+  // Alle Verbuendeten (inkl. sich selbst) muessen tot sein
+  const alliedGroups = [groupId, ...(state.alliances[groupId] ?? [])];
+  const alliedProfiles = state.profiles.filter(p => alliedGroups.includes(p.groupId));
 
-  // Alle Teilnehmer einer Seite muessen tot sein
   // P(alle tot) = Produkt der individuellen Todeswahrscheinlichkeiten
-  return sideProfiles.reduce(
+  return alliedProfiles.reduce(
+    (prob, p) => prob * p.deathProbability,
+    1.0
+  );
+}
+
+function calculateEnemyDeathProbability(state: SimulationState): number {
+  // Alle Nicht-Party, Nicht-Allied Gruppen muessen tot sein
+  const alliedWithParty = ['party', ...(state.alliances['party'] ?? [])];
+  const enemyProfiles = state.profiles.filter(p => !alliedWithParty.includes(p.groupId));
+
+  return enemyProfiles.reduce(
     (prob, p) => prob * p.deathProbability,
     1.0
   );
@@ -721,7 +653,7 @@ function calculateMovement(
     if (other.participantId === profile.participantId) continue;
 
     const distance = getDistance(profile.position, other.position);
-    const isEnemy = profile.side !== other.side;
+    const isEnemy = isHostile(profile.groupId, other.groupId, state.alliances);
 
     // Anziehungs-Faktoren
     let attraction = 0;
@@ -830,7 +762,7 @@ function getPossibleActions(
 
   for (const action of profile.actions) {
     // Resource-Check: Limitierte Ressourcen (Spell Slots) mit Budget skalieren
-    if (action.resourceCost && profile.side === 'party') {
+    if (action.resourceCost && profile.groupId === 'party') {
       const effectiveUses = action.uses * resourceBudget;
       if (effectiveUses < 0.5) continue;  // Zu teuer fuer diesen Encounter
     }
@@ -1043,8 +975,8 @@ Runde 1: Goblin greift Fighter an
 
 ```typescript
 function calculatePartyWinProbability(state: SimulationState): number {
-  const partyDeathProb = calculateSideDeathProbability(state, 'party');
-  const enemyDeathProb = calculateSideDeathProbability(state, 'enemy');
+  const partyDeathProb = calculateAllianceDeathProbability(state, 'party');
+  const enemyDeathProb = calculateEnemyDeathProbability(state);
 
   // Win = Enemy tot UND Party nicht tot
   // Vereinfacht: P(Win) ~= P(Enemy tot) - P(TPK)
@@ -1057,7 +989,7 @@ function calculatePartyWinProbability(state: SimulationState): number {
 ```typescript
 function calculateTPKRisk(state: SimulationState): number {
   // TPK = Alle Party-Mitglieder tot
-  return calculateSideDeathProbability(state, 'party');
+  return calculateAllianceDeathProbability(state, 'party');
 }
 ```
 
@@ -1092,7 +1024,7 @@ function calculatePartyHPLoss(
   let totalLoss = new Map<number, number>();
 
   for (const finalProfile of finalState.profiles) {
-    if (finalProfile.side !== 'party') continue;
+    if (finalProfile.groupId !== 'party') continue;
 
     const initialProfile = initialState.profiles.find(
       p => p.participantId === finalProfile.participantId
@@ -1370,6 +1302,7 @@ interface RoundResult {
 
 interface SimulationState {
   profiles: CombatProfile[];
+  alliances: Record<string, string[]>;  // groupId → verbuendete groupIds
   grid: Grid3D;
   roundNumber: number;
   surprise: SurpriseState;

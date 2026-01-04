@@ -12,6 +12,7 @@ Weapon-Attacks, Spell-Attacks, AoE, Buffs/Debuffs, Healing, Summoning, Transform
 
 | Feld | Typ | Beschreibung | Validierung |
 |------|-----|--------------|-------------|
+| `id` | `string` | Eindeutige ID (fuer Presets) | Required |
 | `name` | `string` | Aktionsname | Required |
 | `actionType` | `ActionType` | Kategorisierung | Required |
 | `timing` | `ActionTiming` | Timing & Economy | Required |

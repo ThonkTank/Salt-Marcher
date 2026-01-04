@@ -72,6 +72,41 @@ export function randomNormal(min: number, avg: number, max: number): number {
 }
 
 // ============================================================================
+// Pool Aggregation
+// ============================================================================
+
+/**
+ * Aggregiert mehrere gewichtete Pools zu einem.
+ * Duplikate werden summiert (keine Kaskade).
+ *
+ * @param pools - Array von gewichteten Pools
+ * @param getKey - Optionale Funktion um Key für Duplikat-Erkennung zu generieren
+ * @returns Aggregierter Pool mit summierten randWeightings
+ */
+export function aggregateWeightedPools<T>(
+  pools: Array<Array<{ item: T; randWeighting: number }>>,
+  getKey?: (item: T) => string
+): Array<{ item: T; randWeighting: number }> {
+  const merged = new Map<string, { item: T; randWeighting: number }>();
+
+  for (const pool of pools) {
+    for (const entry of pool) {
+      const key = getKey?.(entry.item)
+        ?? (typeof entry.item === 'string' ? entry.item : JSON.stringify(entry.item));
+
+      const existing = merged.get(key);
+      if (existing) {
+        existing.randWeighting += entry.randWeighting;
+      } else {
+        merged.set(key, { item: entry.item, randWeighting: entry.randWeighting });
+      }
+    }
+  }
+
+  return Array.from(merged.values());
+}
+
+// ============================================================================
 // Dice Expression Evaluation
 // ============================================================================
 
@@ -449,4 +484,46 @@ function formatDiceNode(node: Extract<DiceNode, { type: 'dice' }>): string {
   }
 
   return str;
+}
+
+// ============================================================================
+// Weather Range Sampling
+// ============================================================================
+
+import type { WeatherRange } from '#types/entities/terrainDefinition';
+
+/**
+ * Samplet einen Wert aus einem WeatherRange.
+ * Gleichverteilung um average, mit linearer Interpolation zu min/max.
+ */
+export function sampleFromRange(range: WeatherRange, seed?: number): number {
+  const random = seed !== undefined ? seededRandom(seed) : Math.random();
+  const deviation = (random - 0.5) * 2; // -1 bis +1
+
+  if (deviation >= 0) {
+    return lerp(range.average, range.max, deviation);
+  } else {
+    return lerp(range.average, range.min, -deviation);
+  }
+}
+
+/**
+ * Einfacher Seeded Random Generator (xorshift).
+ * Gibt einen Wert zwischen 0 und 1 zurück.
+ * HACK: Single xorshift step - ausreichend für Weather-Sampling,
+ * aber nicht für kryptographische oder statistische Zwecke.
+ */
+function seededRandom(seed: number): number {
+  let x = seed;
+  x ^= x << 13;
+  x ^= x >> 17;
+  x ^= x << 5;
+  return (x >>> 0) / 0xFFFFFFFF;
+}
+
+/**
+ * Lineare Interpolation zwischen a und b.
+ */
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
 }

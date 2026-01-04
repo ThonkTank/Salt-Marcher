@@ -1,47 +1,32 @@
 // Ziel: NPC-Generierung für Encounter, Quest, Shop, POI
 // Siehe: docs/services/npcs/NPC-Generation.md
 //
-// Pipeline (vereinfacht):
-// 1. resolveCultureChain() - Hierarchie: Register → Species/Type → Factions
-// 2. generateNameFromCulture() - Name aus Naming-Pools (60%-Kaskade)
-// 3. rollAttribute() - Generische Funktion für alle 5 Attribute
-// 4. generateNPC() - Orchestriert Pipeline, gibt NPC zurück (OHNE Persistierung)
+// Pipeline:
+// 1. selectCulture() - Kultur-Auswahl mit gewichtetem Pool
+// 2. resolveAttributes() - Attribut-Resolution aus Culture + Faction.influence
+// 3. generateNPC() - Orchestriert Pipeline, gibt NPC zurück (OHNE Persistierung)
 //
-// Neue Struktur (6 unabhängige Felder):
-// - name: Generiert aus Naming-Patterns
-// - personality: EIN Trait (z.B. "mutig", "feige")
-// - value: EIN Wert (z.B. "Freundschaft", "Macht")
+// NPC-Felder (6 unabhängige Attribute):
+// - name: Generiert aus Culture.naming Patterns
+// - personality: EIN Trait (z.B. "cunning", "brave")
+// - value: EIN Wert (z.B. "survival", "wealth")
 // - quirk: EINE Eigenheit (optional)
 // - appearance: EIN Merkmal (optional)
 // - goal: EIN Ziel (z.B. "Überleben", "Rache")
-//
-// Gewichtungs-Mechanik:
-// - 60%-Kaskade: Leaf=100, Parent=60, Grandparent=36...
-// - unwanted[]: Viertelt bisherigen akkumulierten Wert
 
 import type { CreatureDefinition } from '#types/entities/creature';
-import type { Faction, CultureData } from '#types/entities/faction';
+import type { Culture } from '#types/entities/culture';
+import type { Species } from '#types/entities/species';
+import type { Faction } from '#types/entities/faction';
 import type { NPC } from '#types/entities/npc';
 import type { GameDateTime } from '#types/time';
 import type { HexCoordinate } from '#types/hexCoordinate';
-import type { LayerTraitConfig } from '#types/common/layerTraitConfig';
 import {
-  weightedRandomSelect,
-  randomSelect,
-  resolveCultureChain,
-  mergeWeightedPool,
-  accumulateWithUnwanted,
+  selectCulture,
+  resolveAttributes,
   rollDice,
-  type CultureLayer,
 } from '@/utils';
-import { FALLBACK_NPC_NAMES } from '@/constants';
-import {
-  personalityPresets,
-  valuePresets,
-  quirkPresets,
-  appearancePresets,
-  goalPresets,
-} from '../../../presets/npcAttributes';
+import { vault } from '@/infrastructure/vault/vaultInstance';
 
 // ============================================================================
 // DEBUG HELPER
@@ -61,131 +46,7 @@ const debug = (...args: unknown[]) => {
 export interface GenerateNPCOptions {
   position?: HexCoordinate;
   time: GameDateTime;  // Required - Caller muss Zeit übergeben
-}
-
-/** Preset-Struktur für Attribute mit optionalem Tag-Filter */
-interface AttributePreset {
-  id: string;
-  name: string;
-  description?: string;
-  compatibleTags?: string[];
-}
-
-// ============================================================================
-// NAME GENERATION
-// ============================================================================
-
-/**
- * Generiert einen Namen aus dem Naming-Config.
- * Pattern-Platzhalter: {prefix}, {root}, {suffix}, {title}
- *
- * Merged alle Naming-Komponenten über alle Culture-Layers mit 60%-Kaskade.
- */
-function generateNameFromCulture(layers: CultureLayer[]): string {
-  // Merge all naming components across layers
-  const patterns = mergeWeightedPool(layers, c => c.naming?.patterns);
-  const prefixes = mergeWeightedPool(layers, c => c.naming?.prefixes);
-  const roots = mergeWeightedPool(layers, c => c.naming?.roots);
-  const suffixes = mergeWeightedPool(layers, c => c.naming?.suffixes);
-  const titles = mergeWeightedPool(layers, c => c.naming?.titles);
-
-  debug('Merged naming pools:', {
-    patterns: patterns.length,
-    prefixes: prefixes.length,
-    roots: roots.length,
-    suffixes: suffixes.length,
-    titles: titles.length,
-  });
-
-  if (patterns.length === 0) {
-    debug('No naming patterns, using fallback');
-    return generateFallbackName();
-  }
-
-  // Select pattern from merged pool
-  const pattern = weightedRandomSelect(patterns) ?? '{root}';
-
-  // Fill placeholders from merged pools
-  const name = pattern
-    .replace('{prefix}', weightedRandomSelect(prefixes) ?? '')
-    .replace('{root}', weightedRandomSelect(roots) ?? 'Unknown')
-    .replace('{suffix}', weightedRandomSelect(suffixes) ?? '')
-    .replace('{title}', weightedRandomSelect(titles) ?? '')
-    .trim()
-    .replace(/\s+/g, ' ');
-
-  debug('Generated name:', name, 'from pattern:', pattern);
-  return name || 'Unknown';
-}
-
-/**
- * Fallback-Name wenn keine Naming-Config vorhanden.
- */
-function generateFallbackName(): string {
-  return randomSelect([...FALLBACK_NPC_NAMES]) ?? 'Unknown';
-}
-
-// ============================================================================
-// GENERIC ATTRIBUTE ROLLING
-// ============================================================================
-
-/**
- * Würfelt einen Attribut-Wert aus dem akkumulierten Pool.
- *
- * @param layers - Culture-Layers (Register → Species/Type → Factions)
- * @param extractor - Holt LayerTraitConfig aus CultureData
- * @param presets - Alle verfügbaren Presets für dieses Attribut
- * @param creature - Optional: Für Tag-Filterung
- * @returns Attribut-ID oder undefined
- */
-function rollAttribute(
-  layers: CultureLayer[],
-  extractor: (culture: CultureData) => LayerTraitConfig | undefined,
-  presets: AttributePreset[],
-  creature?: CreatureDefinition
-): string | undefined {
-  // Gewichte über alle Layers akkumulieren
-  const weights = accumulateWithUnwanted(layers, extractor);
-
-  // Pool bauen aus Presets die Gewicht > 0 haben
-  const creatureTags = creature?.tags ?? [];
-  const pool = presets
-    .filter(preset => {
-      // Tag-Filter: Keine compatibleTags = kompatibel mit allen
-      if (!preset.compatibleTags || preset.compatibleTags.length === 0) {
-        return true;
-      }
-      return preset.compatibleTags.some(tag => creatureTags.includes(tag));
-    })
-    .map(preset => ({
-      item: preset.id,
-      randWeighting: weights.get(preset.id) ?? 0,
-    }))
-    .filter(entry => entry.randWeighting > 0);
-
-  debug('Attribute pool size:', pool.length);
-
-  if (pool.length === 0) {
-    return undefined;
-  }
-
-  return weightedRandomSelect(pool) ?? undefined;
-}
-
-/**
- * Würfelt ein Attribut und gibt die Description zurück.
- */
-function rollAttributeDescription(
-  layers: CultureLayer[],
-  extractor: (culture: CultureData) => LayerTraitConfig | undefined,
-  presets: AttributePreset[],
-  creature?: CreatureDefinition
-): string | undefined {
-  const id = rollAttribute(layers, extractor, presets, creature);
-  if (!id) return undefined;
-
-  const preset = presets.find(p => p.id === id);
-  return preset?.description ?? preset?.name ?? id;
+  allCultures?: Culture[];  // Optional - für Batch-Generierung (Cache)
 }
 
 // ============================================================================
@@ -221,19 +82,21 @@ export function generateNPC(
 ): NPC {
   debug('Generating NPC for creature:', creature.id, 'faction:', faction?.id ?? 'none');
 
-  // 1. Culture-Chain aufbauen (Register → Species/Type → Factions)
-  const layers = resolveCultureChain(creature, faction);
-  debug('Culture layers:', layers.length);
+  // 1. Species und Cultures laden
+  const species = creature.species
+    ? vault.getEntity<Species>('species', creature.species)
+    : null;
 
-  // 2. Name generieren
-  const name = generateNameFromCulture(layers);
+  const allCultures = options.allCultures
+    ?? vault.getAllEntities<Culture>('culture');
 
-  // 3. Alle Attribute unabhängig würfeln
-  const personality = rollAttribute(layers, c => c.personality, personalityPresets) ?? 'neutral';
-  const value = rollAttribute(layers, c => c.values, valuePresets) ?? 'survival';
-  const quirk = rollAttributeDescription(layers, c => c.quirks, quirkPresets, creature);
-  const appearance = rollAttributeDescription(layers, c => c.appearance, appearancePresets, creature);
-  const goal = rollAttributeDescription(layers, c => c.goals, goalPresets) ?? 'Überleben';
+  // 2. Kultur auswählen (Phase 1)
+  const selectedCulture = selectCulture(creature, species, faction, allCultures);
+  debug('Selected culture:', selectedCulture.id);
+
+  // 3. Attribute auflösen (Phase 2)
+  const attributes = resolveAttributes(creature, species, selectedCulture, faction);
+  debug('Resolved attributes:', attributes);
 
   // 4. HP würfeln
   const maxHp = rollDice(creature.hitDice);
@@ -243,17 +106,19 @@ export function generateNPC(
 
   const npc: NPC = {
     id: generateNPCId(),
-    name,
+    name: attributes.name,
     creature: {
       type: creature.tags[0] ?? 'unknown',
       id: creature.id,
     },
     factionId: faction?.id,
-    personality,
-    value,
-    quirk,
-    appearance,
-    goal,
+    cultureId: selectedCulture.id,
+    personality: attributes.personality ?? 'neutral',
+    value: attributes.value ?? 'survival',
+    quirk: attributes.quirk,
+    appearance: attributes.appearance,
+    styling: attributes.styling,
+    goal: attributes.goal ?? 'Überleben',
     status: 'alive',
     firstEncounter: now,
     lastEncounter: now,
@@ -269,10 +134,12 @@ export function generateNPC(
   debug('Generated NPC:', {
     id: npc.id,
     name: npc.name,
+    cultureId: npc.cultureId,
     personality: npc.personality,
     value: npc.value,
     quirk: npc.quirk,
     appearance: npc.appearance,
+    styling: npc.styling,
     goal: npc.goal,
     hp: `${npc.currentHp}/${npc.maxHp}`,
   });

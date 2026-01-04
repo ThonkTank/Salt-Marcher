@@ -119,8 +119,8 @@ export const encounterContextSchema = z.object({
   terrain: z.string().min(1),
   timeSegment: z.string().min(1),
   weather: z.object({
-    type: z.string().min(1),
-    severity: z.number().min(0).max(1),
+    eventId: z.string().min(1),
+    visibilityModifier: z.number().min(0).max(1),
   }),
 });
 export type EncounterContext = z.infer<typeof encounterContextSchema>;
@@ -132,6 +132,7 @@ export type EncounterContext = z.infer<typeof encounterContextSchema>;
 export const encounterInstanceSchema = z.object({
   id: z.string().min(1),
   groups: z.array(encounterGroupSchema),
+  alliances: z.record(z.string(), z.array(z.string())),  // groupId → verbündete groupIds
   npcs: z.array(z.string()), // NPC-IDs (1-3 NPCs pro Encounter)
   loot: encounterLootSchema,
   perception: encounterPerceptionSchema,

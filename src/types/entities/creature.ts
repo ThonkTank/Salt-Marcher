@@ -11,8 +11,9 @@ import {
   STEALTH_ABILITIES,
 } from '../../constants/creature';
 import { WEALTH_TIERS } from '../../constants/loot';
-import { validateDiceExpression } from '@/utils/diceParser';
-import { diceMax, diceAvg } from '@/utils/random';
+import { validateDiceExpression, diceMax, diceAvg } from '@/utils';
+import { layerTraitConfigSchema } from '../common/layerTraitConfig';
+import { actionSchema } from './action';
 
 // ============================================================================
 // SUB-SCHEMAS
@@ -54,6 +55,30 @@ export const sensesSchema = z.object({
   trueSight: z.number().int().min(0).optional(),
 });
 export type Senses = z.infer<typeof sensesSchema>;
+
+// SkillProficiencies: Totale Skill-Boni (inkl. Proficiency/Expertise)
+// Werte sind der finale Bonus, nicht nur der Proficiency-Modifier
+export const skillProficienciesSchema = z.object({
+  acrobatics: z.number().optional(),
+  animalHandling: z.number().optional(),
+  arcana: z.number().optional(),
+  athletics: z.number().optional(),
+  deception: z.number().optional(),
+  history: z.number().optional(),
+  insight: z.number().optional(),
+  intimidation: z.number().optional(),
+  investigation: z.number().optional(),
+  medicine: z.number().optional(),
+  nature: z.number().optional(),
+  perception: z.number().optional(),
+  performance: z.number().optional(),
+  persuasion: z.number().optional(),
+  religion: z.number().optional(),
+  sleightOfHand: z.number().optional(),
+  stealth: z.number().optional(),
+  survival: z.number().optional(),
+});
+export type SkillProficiencies = z.infer<typeof skillProficienciesSchema>;
 
 export const noiseLevelSchema = z.enum(NOISE_LEVELS);
 
@@ -116,6 +141,9 @@ const creatureDefinitionInputSchema = z.object({
   size: sizeSchema,
   tags: z.array(z.string()).min(1),
   species: z.string().optional(),
+  // Creature-spezifische Appearance-Erweiterung (ergaenzt Species.appearance)
+  // Basis-Appearance wird von Species geerbt, siehe: docs/types/species.md
+  appearanceOverride: layerTraitConfigSchema.optional(),
   baseDisposition: baseDispositionSchema,
   terrainAffinities: z.array(z.string()).min(1),
   activeTime: z.array(timeSegmentSchema).min(1),
@@ -129,9 +157,15 @@ const creatureDefinitionInputSchema = z.object({
   carriesLoot: z.boolean().optional(),
   detectionProfile: detectionProfileSchema,
   abilities: abilityScoresSchema,
+  skills: skillProficienciesSchema.optional(),
   speed: speedBlockSchema,
   senses: sensesSchema.optional(),
   languages: z.array(z.string()).optional(),
+  // Actions (D&D 5e Statblock)
+  actions: z.array(actionSchema).optional(),
+  actionIds: z.array(z.string()).optional(),  // Referenzen zu Action-Presets
+  reactions: z.array(actionSchema).optional(),
+  legendaryActions: z.array(actionSchema).optional(),
   description: z.string().optional(),
   source: z.string().optional(),
 });

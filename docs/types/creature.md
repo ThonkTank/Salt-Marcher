@@ -36,7 +36,8 @@ Das Creature-System unterscheidet drei Abstraktionsebenen:
 | `ac` | `number` | Ruestungsklasse | Required, > 0 |
 | `size` | `Size` | Kreaturgroesse | Required |
 | `tags` | `string[]` | Kategorisierung | Required, min 1 |
-| `species` | `string?` | Spezies fuer Kultur-Lookup | Optional |
+| `species` | `string?` | Referenz auf Species-Entity | Optional |
+| `appearanceOverride` | `LayerTraitConfig` | Creature-spezifische Ergaenzung | Optional |
 | `baseDisposition` | `number` | Basis-Disposition (-100 bis +100) | Required |
 | `terrainAffinities` | `EntityId<'terrain'>[]` | Heimat-Terrains | Required, min 1 |
 | `activeTime` | `TimeSegment[]` | Aktive Tageszeiten | Required, min 1 |
@@ -44,23 +45,20 @@ Das Creature-System unterscheidet drei Abstraktionsebenen:
 | `groupSize` | `number \| CountRange` | Natuerliche Gruppengroesse | Optional, default: 1 |
 | `activities` | `EntityId<'activity'>[]` | Moegliche Aktivitaeten | Optional |
 | `preferences` | `CreaturePreferences` | Gewichtungs-Modifikatoren | Optional |
-| `lootTags` | `string[]` | Loot-Kategorien | Required |
+| `lootPool` | `string[]` | Item-IDs (ueberschreibt Culture-Kaskade) | Optional |
+| `wealthTier` | `WealthTier?` | Beeinflusst Loot-WERT | Optional |
 | `defaultLoot` | `DefaultLootEntry[]` | Garantiertes Loot | Optional |
 | `carriesLoot` | `boolean` | Traegt Carried Loot? | Optional, default: true (humanoid) |
-| `stashLocationHint` | `string` | Hinweis auf Hoard | Optional |
 | `detectionProfile` | `CreatureDetectionProfile` | Entdeckbarkeit | **Required** |
 | `abilities` | `AbilityScores` | D&D 5e Attribute | Required |
 | `skills` | `SkillProficiencies` | Fertigkeiten | Optional |
-| `savingThrows` | `SavingThrowProficiencies` | Rettungswuerfe | Optional |
-| `resistances` | `DamageType[]` | Schadensresistenzen | Optional |
-| `immunities` | `DamageType[]` | Schadensimmunitaeten | Optional |
-| `conditionImmunities` | `Condition[]` | Zustandsimmunitaeten | Optional |
 | `senses` | `Senses` | Sinne | Optional |
 | `languages` | `string[]` | Sprachen | Optional |
 | `speed` | `SpeedBlock` | Bewegungsraten | Required |
-| `actions` | `Action[]` | Aktionen | Optional |
+| `actions` | `Action[]` | Aktionen (inline) | Optional |
+| `actionIds` | `string[]` | Referenzen zu Action-Presets | Optional |
 | `reactions` | `Action[]` | Reaktionen | Optional |
-| `legendaryActions` | `LegendaryAction[]` | Legendaere Aktionen | Optional |
+| `legendaryActions` | `Action[]` | Legendaere Aktionen | Optional |
 | `description` | `string` | Beschreibungstext | Optional |
 | `source` | `string` | Quellenverweis | Optional |
 
@@ -112,14 +110,59 @@ effectiveDisposition = clamp(baseDisposition + reputation, -100, +100)
 
 ### Species
 
-Optionales Feld fuer Kultur-Lookup. Wenn gesetzt und eine passende Species-Culture existiert, wird diese statt des Type-Presets verwendet.
+Referenz auf Species-Entity fuer physische Merkmale.
+
+```typescript
+species: 'goblin'  // Referenz auf Species-Entity
+```
+
+**Vererbung:**
+
+| Aspekt | Quelle | Ueberschreibbar |
+|--------|--------|-----------------|
+| appearance | Species.appearance | Ja, via appearanceOverride |
+| defaultSize | Species.defaultSize | Ja, via size |
+| defaultCulture | Species.defaultCulture | Ja, via Faction.usualCultures |
 
 **Beispiele:**
-- `species: "goblin"` → Goblin-Kultur statt generische Humanoid-Kultur
-- `species: "wolf"` → Wolf-Kultur statt generische Beast-Kultur
-- Nicht gesetzt → Type-Preset (Humanoid, Beast, etc.)
+- `species: "goblin"` → Creature erbt appearance von Species 'goblin'
+- `species: "human"` → Creature erbt appearance von Species 'human'
+- Nicht gesetzt → Creature erbt keine appearance
 
-→ Kultur-Aufloesung: [Culture-Resolution.md](../services/NPCs/Culture-Resolution.md)
+→ Species-Entity: [species.md](species.md)
+→ Culture-Auswahl: [Culture-Resolution.md](../services/npcs/Culture-Resolution.md)
+
+### appearanceOverride
+
+Creature-spezifische Ergaenzung zu Species.appearance.
+
+```typescript
+appearanceOverride: LayerTraitConfig  // { add?: string[], unwanted?: string[] }
+```
+
+**Anwendungsfaelle:**
+- Einzigartige Narben fuer bestimmte Creature-Variante
+- Boss-spezifische Merkmale (z.B. Goblin-Boss mit Krone)
+- Mutationen fuer spezielle Kreaturen
+
+**Beispiele:**
+
+| Creature | Species | appearanceOverride |
+|----------|---------|-------------------|
+| goblin | goblin | - (erbt alles von Species) |
+| goblin-boss | goblin | `{ add: ['crown', 'golden_teeth'] }` |
+| mutant-wolf | wolf | `{ add: ['extra_head', 'glowing_fur'] }` |
+
+**Unterschied zu Culture.styling:**
+
+| Feld | Quelle | Typ | Beispiele |
+|------|--------|-----|-----------|
+| `Species.appearance` | Species | Physisch/biologisch | Augenfarbe, Hautfarbe, Koerperbau |
+| `appearanceOverride` | Creature | Physisch/spezifisch | Einzigartige Narben, Boss-Merkmale |
+| `Culture.styling` | Culture | Kulturell/erlernt | Kleidung, Schmuck, Tattoos |
+
+→ Species-Entity: [species.md](species.md)
+→ Schema: [types.md#LayerTraitConfig](../architecture/types.md#layertraitconfig)
 
 ### hitDice
 
@@ -317,9 +360,10 @@ Das System synchronisiert automatisch: Aenderung an einer Seite aktualisiert die
 
 | Kategorie | Feld | Beschreibung |
 |-----------|------|--------------|
+| **Pool** | `lootPool` | Item-IDs fuer zufaellige Auswahl |
+| **Wealth** | `wealthTier` | Beeinflusst Loot-WERT |
 | **Carried** | `carriesLoot` | Was die Kreatur bei sich traegt |
 | **Harvestable** | `defaultLoot` | Vom Koerper gewinnbar |
-| **Stashed** | `stashLocationHint` | An anderem Ort (Hoard) |
 
 **carriesLoot Defaults:**
 
@@ -374,7 +418,8 @@ const goblin: CreatureDefinition = {
   },
 
   // Loot
-  lootTags: ['humanoid', 'poor', 'tribal'],
+  lootPool: ['item:scimitar', 'item:shortbow', 'item:gold-pouch'],
+  wealthTier: 'poor',
   defaultLoot: [
     { itemId: 'item:scimitar', chance: 1.0 },
     { itemId: 'item:shortbow', chance: 0.5 }
@@ -396,6 +441,47 @@ const goblin: CreatureDefinition = {
   source: 'Monster Manual, p. 166'
 };
 ```
+
+---
+
+## Action-Integration
+
+Creatures koennen Actions auf zwei Arten definieren:
+
+| Methode | Feld | Beschreibung | Verwendung |
+|---------|------|--------------|------------|
+| **Inline** | `actions` | Action-Objekte direkt im Creature | Einzigartige Custom-Actions |
+| **Referenz** | `actionIds` | IDs zu Action-Presets | Standard-MM-Actions |
+
+**Resolution-Reihenfolge (in combatResolver):**
+
+1. Inline-Actions aus `creature.actions[]`
+2. Referenzierte Actions via `creature.actionIds[]` → Vault-Lookup
+3. Fallback: CR-skalierte Default-Action
+
+**Beispiel mit Referenzen:**
+
+```typescript
+const goblin: CreatureDefinition = {
+  id: 'goblin',
+  name: 'Goblin',
+  cr: 0.25,
+  // ... andere Felder
+  actionIds: ['goblin-scimitar', 'goblin-shortbow'],  // Referenzen
+};
+```
+
+→ Action-Schema: [action.md](action.md)
+→ Action-Presets: `presets/actions/index.ts`
+
+### Weitere Action-Felder
+
+| Feld | Beschreibung | Beispiel |
+|------|--------------|----------|
+| `reactions` | Reaktionen auf Trigger | Shield, Parry |
+| `legendaryActions` | Legendaere Aktionen (mit `recharge: { type: 'legendary', cost: N }`) | Tail Attack |
+
+Alle Action-Felder sind optional und akzeptieren `Action[]`.
 
 ---
 

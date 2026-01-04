@@ -11,7 +11,10 @@
 | name | string | Fraktionsname | Required, non-empty |
 | parentId | EntityId<'faction'> | Sub-Faction von | Optional, muss existieren |
 | status | FactionStatus | Lebenszyklus | 'active' \| 'dormant' \| 'extinct' |
-| culture | CultureData | Eingebettete Kultur | Required, → [culture-data.md](culture-data.md) |
+| usualCultures | EntityId<'culture'>[] | Bevorzugte Kulturen | Optional |
+| cultureTolerance | number | Wie stark usualCultures bevorzugt (0-1) | Optional, default: 0.3 |
+| acceptedSpecies | string[] | Akzeptierte Spezies | Optional |
+| influence | FactionInfluence | Pool-Erweiterung fuer NPCs | Optional |
 | creatures | FactionCreatureGroup[] | Mitglieder | Required |
 | controlledLandmarks | EntityId<'landmark'>[] | Kontrollierte Landmarks | Required |
 | encounterTemplates | GroupTemplate[] | Gruppen-Templates | Optional, → [group-template.md](group-template.md) |
@@ -40,6 +43,75 @@ type FactionStatus = 'active' | 'dormant' | 'extinct';
 |------|-----|--------------|
 | creatureId | EntityId<'creature'> | Creature-Template |
 | count | number | Anzahl in Fraktion |
+
+### usualCultures
+
+Kulturen die in dieser Fraktion bevorzugt werden.
+
+```typescript
+usualCultures: ['culture:imperial-military', 'culture:guild-artisan']
+```
+
+Bei NPC-Generierung erhalten diese Kulturen hoeheres Gewicht:
+- `baseWeight = 100 + BOOST * (1 - cultureTolerance)`
+
+→ Selection-Algorithmus: [Culture-Resolution.md](../services/npcs/Culture-Resolution.md)
+
+### cultureTolerance
+
+Wie stark werden usualCultures bevorzugt?
+
+| tolerance | usualCultures Gewicht | Andere Kulturen |
+|-----------|----------------------|-----------------|
+| 0% | 100 + 900 = 1000 | 1 |
+| 30% (default) | 100 + 630 = 730 | 1 |
+| 100% | 100 | 1 |
+
+### acceptedSpecies
+
+Welche Spezies sind in dieser Fraktion willkommen?
+
+```typescript
+acceptedSpecies: ['human', 'elf', 'dwarf', 'orc']
+```
+
+Wird fuer Kultur-Fraktions-Kompatibilitaet verwendet:
+- Wenn Fraktion Species akzeptiert die NOT IN culture.usualSpecies:
+  - Intollerante Kulturen (culture.tolerance=0) → treten nicht bei
+  - Tolerante Kulturen (culture.tolerance=1) → kein Problem
+
+### FactionInfluence
+
+Erweitert die Attribut-Pools der Mitglieder-NPCs. Ersetzt Kultur NICHT, sondern ergaenzt.
+
+```typescript
+interface FactionInfluence {
+  values?: LayerTraitConfig;     // Fraktions-Werte
+  goals?: LayerTraitConfig;      // Fraktions-Ziele
+  activities?: string[];         // Activity-IDs
+}
+```
+
+**Beispiel:**
+
+```typescript
+influence: {
+  values: {
+    add: ['loyalty', 'discipline'],
+    unwanted: ['independence'],
+  },
+  goals: {
+    add: ['serve_faction', 'gain_rank'],
+  },
+  activities: ['patrol', 'guard', 'escort'],
+}
+```
+
+**Wichtig:** Influence wirkt additiv auf die Culture des NPCs:
+- Culture definiert Basis-Pools (Persoenlichkeit, Naming, etc.)
+- Influence erweitert nur values, goals, activities
+
+→ LayerTraitConfig: [types.md#LayerTraitConfig](../architecture/types.md#layertraitconfig)
 
 ### reputations
 
@@ -82,6 +154,8 @@ effectiveDisposition = clamp(creature.baseDisposition + faction.reputations[part
 
 - `parentId` muss auf existierende Faction verweisen
 - `status` bestimmt Encounter-Eligibility (nur 'active')
+- `cultureTolerance` muss im Bereich 0.0-1.0 liegen
+- `usualCultures` muss auf existierende Culture-Entities verweisen
 - `displayColor` muss gueltiges Hex-Format sein
 - `reputations` wird bei Encounter-Resolution manuell vom GM angepasst
 - Status-Uebergaenge: `active` ↔ `dormant` ↔ `extinct` (alle Richtungen durch GM moeglich)
@@ -94,7 +168,17 @@ const bloodfangTribe: Faction = {
   name: 'Blutfang-Stamm',
   parentId: 'base-goblins' as EntityId<'faction'>,
   status: 'active',
-  culture: { /* siehe culture-data.md */ },
+
+  // Culture-System (NEU)
+  usualCultures: ['culture:goblin-tribal'],
+  cultureTolerance: 0.1,  // Stark bevorzugt usualCultures
+  acceptedSpecies: ['goblin', 'hobgoblin', 'bugbear'],
+  influence: {
+    values: { add: ['loyalty_to_chief', 'tribal_honor'] },
+    goals: { add: ['serve_tribe', 'raid'] },
+    activities: ['ambush', 'patrol', 'guard'],
+  },
+
   creatures: [
     { creatureId: 'goblin-warrior' as EntityId<'creature'>, count: 20 },
     { creatureId: 'goblin-shaman' as EntityId<'creature'>, count: 3 }
@@ -104,6 +188,32 @@ const bloodfangTribe: Faction = {
   reputations: [
     { entityType: 'party', entityId: 'party', value: -50 }  // Feindlich zur Party
   ]
+};
+```
+
+### Diverse Abenteurergilde
+
+```typescript
+const adventurersGuild: Faction = {
+  id: 'adventurers-guild' as EntityId<'faction'>,
+  name: 'Gildenhaus der Abenteurer',
+  status: 'active',
+
+  // Culture-System
+  usualCultures: ['culture:guild-adventurer'],
+  cultureTolerance: 1.0,  // 100% tolerant - alle Kulturen willkommen
+  acceptedSpecies: ['human', 'elf', 'dwarf', 'halfling', 'orc', 'tiefling'],
+  influence: {
+    values: { add: ['camaraderie', 'profit', 'reputation'] },
+    goals: { add: ['complete_quest', 'gain_renown'] },
+  },
+
+  creatures: [
+    { creatureId: 'adventurer-fighter', count: 15 },
+    { creatureId: 'adventurer-mage', count: 8 }
+  ],
+  controlledLandmarks: ['guild-hall'],
+  displayColor: '#FFD700',
 };
 ```
 

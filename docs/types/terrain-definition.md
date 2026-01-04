@@ -27,6 +27,7 @@ Template fuer Terrain-Typen. User koennen eigene Terrains erstellen. Default-Ter
 | environmentalPool | EnvironmentalPoolEntry[] | Zufaellig auswaehlbare Features fuer Encounters | Optional, default: [] |
 | threatLevel | `{ min: number; max: number }` | CR-Bereich fuer native Kreaturen | Required, min/max >= 0 |
 | blockerHeight | number | Hoehe von Sicht-Blockern in Feet (0 = keine) | Required, >= 0 |
+| visibilityRange | number? | Max. Sichtweite in Feet (fuer dichte Terrains) | Optional, > 0 |
 | defaultCrBudget | number | Standard CR-Budget fuer Tiles dieses Terrains | Required, >= 0 |
 | weatherRanges | TerrainWeatherRanges | Wetter-Template | Required |
 | displayColor | string | Hex-Farbe fuer Map-Rendering | Required, Hex-Format |
@@ -113,6 +114,16 @@ Mitgelieferte Terrain-Presets:
 - `30` = Huegel-Hoehe (hill)
 - `60` = Baumkronen (forest)
 - `100` = Bergspitzen (mountain)
+
+**visibilityRange (in Feet):** Maximale Sichtweite fuer Encounter-Erkennung. Optional - nur fuer Terrains mit dichter Vegetation oder anderen Sichtblockern.
+- Wenn gesetzt: Verwendet diesen Wert als maximale Sichtweite
+- Wenn nicht gesetzt: Verwendet berechnete Sichtweite (Horizont-basiert, ~8000ft fuer offene Terrains)
+
+| Terrain | visibilityRange | Begruendung |
+|---------|-----------------|-------------|
+| forest | 150 | Dichtes Blattwerk blockiert Sicht |
+| swamp | 100 | Niedriges Gestruepp, haeufiger Nebel |
+| grassland, hill, mountain, desert, coast, arctic | - | Offenes Terrain, Horizont-basiert |
 
 ### Wetter-Ranges (min/average/max)
 

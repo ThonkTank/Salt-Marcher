@@ -1,333 +1,424 @@
 # Culture-Resolution
 
-> **Verantwortlichkeit:** Kultur-Aufloesung fuer NPC-Generierung
+> **Verantwortlichkeit:** Culture-Auswahl und Attribut-Resolution fuer NPC-Generierung
 > **Aufgerufen von:** [NPC-Generation.md](NPC-Generation.md)
-> **Input:** `CreatureDefinition`, `Faction | null`
-> **Output:** `CultureLayer[]` (fuer accumulateWithUnwanted und mergeWeightedPool)
+> **Input:** `CreatureDefinition`, `Faction | null`, `Culture[]` (alle verfuegbaren)
+> **Output:** `selectedCultureId`, `ResolvedAttributes`
 >
 > **Referenzierte Schemas:**
-> - [culture-data.md](../../types/culture-data.md) - LayerTraitConfig (add[] + unwanted[])
-> - [faction.md](../../types/faction.md) - Faction mit eingebetteter Culture
-> - [creature.md](../../types/creature.md) - Species-Feld fuer Kultur-Lookup
-
-Wie wird die Kultur eines NPCs aus mehreren Quellen aufgeloest?
+> - [culture.md](../../types/culture.md) - Culture-Entity mit usualSpecies, tolerance
+> - [faction.md](../../types/faction.md) - usualCultures, cultureTolerance, acceptedSpecies, influence
+> - [creature.md](../../types/creature.md) - species, appearance
 
 ---
 
-## Datenfluss
+## Uebersicht
+
+Culture-Resolution besteht aus zwei Phasen:
+
+1. **Culture-Selection:** Welche Kultur hat der NPC?
+2. **Attribut-Resolution:** Welche Traits bekommt der NPC?
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│  KULTUR-AUFLOESUNG                                                   │
+│  CULTURE-RESOLUTION                                                  │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
-│  CreatureDefinition + Faction                                        │
+│  Creature + Faction + alle Cultures                                  │
 │  │                                                                   │
 │  ▼                                                                   │
 │  ┌────────────────────────────────────────────────────────────────┐  │
-│  │ resolveCultureChain(creature, faction)                          │  │
+│  │ Phase 1: selectCulture()                                        │  │
 │  │                                                                 │  │
-│  │ 1. Register als Base-Layer (alle Traits verfuegbar)            │  │
-│  │                                                                 │  │
-│  │ 2. Species-Culture laden (falls creature.species gesetzt)      │  │
-│  │    └── ODER: Type-Preset laden (Humanoid, Beast, etc.)         │  │
-│  │                                                                 │  │
-│  │ 3. Faction-Kette traversieren                                   │  │
-│  │    └── [Root-Faction, ..., Leaf-Faction]                        │  │
-│  │                                                                 │  │
-│  │ 4. CultureLayer[] zurueckgeben                                  │  │
+│  │ 1. Faction.usualCultures → Pool (hohes Gewicht)                │  │
+│  │ 2. Alle anderen Cultures → Pool (niedriges Gewicht)            │  │
+│  │ 3. Species-Kompatibilitaet anwenden                             │  │
+│  │ 4. Kultur-Fraktions-Kompatibilitaet anwenden                    │  │
+│  │ 5. Ancestor-Boost anwenden (Parent-Kulturen)                    │  │
+│  │ 6. Weighted Random Selection                                    │  │
 │  └────────────────────────────────────────────────────────────────┘  │
 │      │                                                               │
-│      ├──────────────────────────────────────────────────────────────┤
+│      ▼ selectedCulture                                               │
+│  ┌────────────────────────────────────────────────────────────────┐  │
+│  │ Phase 2: resolveAttributes()                                    │  │
+│  │                                                                 │  │
+│  │ appearance  ← Creature.appearance                               │  │
+│  │ styling     ← Culture.styling                                   │  │
+│  │ personality ← Culture.personality                               │  │
+│  │ values      ← Culture.values + Faction.influence.values         │  │
+│  │ quirks      ← Culture.quirks                                    │  │
+│  │ goals       ← Culture.goals + Faction.influence.goals           │  │
+│  │ naming      ← Culture.naming                                    │  │
+│  └────────────────────────────────────────────────────────────────┘  │
 │      │                                                               │
-│      ▼ (fuer Naming)                   ▼ (fuer Attribute)           │
-│  ┌─────────────────────────────┐   ┌─────────────────────────────┐  │
-│  │ mergeWeightedPool()         │   │ accumulateWithUnwanted()    │  │
-│  │                             │   │                             │  │
-│  │ 60%-Kaskade:                │   │ 60%-Kaskade + unwanted:     │  │
-│  │ Leaf=100, Parent=60, ...    │   │ - add: +LayerWeight         │  │
-│  │ Duplikate summiert          │   │ - unwanted: akkumuliert/4   │  │
-│  └─────────────────────────────┘   └─────────────────────────────┘  │
-│      │                                │                             │
-│      ▼                                ▼                             │
-│  Gewichteter Pool (Naming)        Map<TraitId, Weight>              │
+│      ▼                                                               │
+│  NPC mit cultureId + generierten Attributen                         │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Kultur-Hierarchie
+## Phase 1: Culture-Selection
 
-Die Kultur eines NPCs wird aus mehreren Ebenen zusammengestellt:
-
-```
-Register (Base) → Species (oder Type) → Faction-Kette
-```
-
-| Layer | Quelle | Beschreibung |
-|-------|--------|--------------|
-| Register | `presets/npcAttributes/` | Alle Traits initial verfuegbar |
-| Species | `presets/cultures/species/` | Spezies-spezifisch (ersetzt Type) |
-| Type | `presets/cultures/types/` | Fallback wenn keine Species |
-| Faction | `faction.culture` | Fraktions-spezifische Gewichtung |
-
-**Wichtig:**
-- Register macht alle Traits initial verfuegbar (unterster Base-Layer)
-- Species-Culture **ersetzt** Type-Preset (nicht ergaenzt)
-- Faction-Ebenen **ergaenzen** die Basis mit gewichteter Wahrscheinlichkeit
-
-### Quellen
-
-| Schema | Ort | Zweck |
-|--------|-----|-------|
-| `LayerTraitConfig` | `src/types/common/layerTraitConfig.ts` | `{ add?: string[], unwanted?: string[] }` |
-| Register | `presets/npcAttributes/` | Zentrale Attribut-Definitionen |
-| Type-Presets | `presets/cultures/types/` | Basis-Kultur pro Creature-Type |
-| Species-Cultures | `presets/cultures/species/` | Optionale Spezies-Kultur |
-| `Faction.culture` | [faction.md#culture](../../types/faction.md) | Fraktions-Kultur-Erweiterung |
-
----
-
-## Gewichtungs-Mechanik
-
-### 60%-Kaskade
-
-Leaf bekommt Gewicht 100, jede hoehere Ebene 60% der vorherigen.
-
-| Ebenen | Gewichte (Root → ... → Leaf) |
-|:------:|------------------------------|
-| 1 | 100 |
-| 2 | 60 → 100 |
-| 3 | 36 → 60 → 100 |
-| 4 | 21.6 → 36 → 60 → 100 |
-
-### LayerTraitConfig
-
-Jeder Culture-Layer verwendet `LayerTraitConfig`:
+### Algorithmus
 
 ```typescript
-interface LayerTraitConfig {
-  add?: string[];      // Trait-IDs die Gewicht erhalten
-  unwanted?: string[]; // Trait-IDs die bisherigen Wert vierteln
-}
-```
-
-### accumulateWithUnwanted()
-
-**Algorithmus pro Layer (in Reihenfolge):**
-
-1. **unwanted verarbeiten:** Viertelt den bisherigen akkumulierten Wert
-2. **add verarbeiten:** Addiert das Layer-Gewicht zum akkumulierten Wert
-
-**Beispiel:** Trait "gutherzig" ueber 4 Layer
-
-| Layer | Aktion | Berechnung | Akkumuliert |
-|-------|--------|------------|-------------|
-| Register (21.6) | add | 0 + 21.6 | 21.6 |
-| Goblin (36) | - | - | 21.6 |
-| Rotfang (60) | unwanted | 21.6 / 4 | 5.4 |
-| Silberblatt (100) | add | 5.4 + 100 | 105.4 |
-
-**Ergebnis:** "gutherzig" hat Gewicht 105.4
-
-**Wichtig:**
-- unwanted viertelt nur den **bisherigen** akkumulierten Wert
-- Spaetere add-Eintraege sind davon nicht betroffen
-- Wenn ein Trait weder in add noch unwanted ist, bleibt sein akkumulierter Wert unveraendert
-
----
-
-## Implementierung
-
-### resolveCultureChain()
-
-```typescript
-type CultureSource = 'register' | 'type' | 'species' | 'faction';
-
-interface CultureLayer {
-  source: CultureSource;
-  culture: CultureData;
-  factionId?: string;
-}
-
-function resolveCultureChain(
+function selectCulture(
   creature: CreatureDefinition,
-  faction: Faction | null
-): CultureLayer[] {
-  const layers: CultureLayer[] = [];
+  faction: Faction | null,
+  allCultures: Culture[]
+): Culture {
+  const pool: Array<{ culture: Culture; weight: number }> = [];
 
-  // 1. Register als Base-Layer (alle Traits verfuegbar)
-  layers.push({ source: 'register', culture: buildRegisterCulture() });
-
-  // 2. Species-Culture oder Type-Preset
-  if (creature.species) {
-    const speciesCulture = getSpeciesCulture(creature.species);
-    if (speciesCulture) {
-      layers.push({ source: 'species', culture: speciesCulture });
-    } else {
-      layers.push({ source: 'type', culture: getTypeCulture(creature.tags[0]) });
-    }
-  } else {
-    layers.push({ source: 'type', culture: getTypeCulture(creature.tags[0]) });
-  }
-
-  // 3. Faction-Kette (von Root nach Leaf)
-  if (faction) {
-    const factionChain = buildFactionChain(faction);
-    for (const f of factionChain) {
-      layers.push({ source: 'faction', culture: f.culture, factionId: f.id });
+  for (const culture of allCultures) {
+    let weight = calculateCultureWeight(culture, creature, faction);
+    if (weight > 0) {
+      pool.push({ culture, weight });
     }
   }
 
-  return layers;
+  return weightedRandomSelect(pool);
 }
 ```
 
-### buildRegisterCulture()
+### Gewichtungsberechnung
 
 ```typescript
-function buildRegisterCulture(): CultureData {
+function calculateCultureWeight(
+  culture: Culture,
+  creature: CreatureDefinition,
+  faction: Faction | null,
+  allCultures: Culture[]
+): number {
+  const FACTION_BOOST = 900;
+  const SPECIES_BOOST = 9;
+  const PARENT_BOOST = 3;
+
+  // Step 1: Faction-Boost
+  const isUsualCulture = faction?.usualCultures?.includes(culture.id) ?? false;
+  const factionTolerance = faction?.cultureTolerance ?? 0.3;
+
+  let weight = isUsualCulture
+    ? 100 + FACTION_BOOST * (1 - factionTolerance)
+    : 1;
+
+  // Step 2: Species-Boost
+  const isCompatibleSpecies = culture.usualSpecies?.includes(creature.species ?? '') ?? true;
+  const cultureTolerance = culture.tolerance ?? 0.3;
+
+  if (isCompatibleSpecies) {
+    weight *= 1 + SPECIES_BOOST * (1 - cultureTolerance);
+  }
+  // Inkompatible Species: weight bleibt (Basis-Gewicht)
+
+  // Step 3: Kultur-Fraktions-Kompatibilitaet
+  const acceptedSpecies = faction?.acceptedSpecies ?? [];
+  const usualSpecies = culture.usualSpecies ?? [];
+
+  const hasUnwantedSpecies = acceptedSpecies.some(
+    species => !usualSpecies.includes(species)
+  );
+
+  if (hasUnwantedSpecies) {
+    weight *= cultureTolerance;
+    // Intollerante Kulturen (tolerance=0) → weight → 0
+    // Tollerante Kulturen (tolerance=1) → weight bleibt
+  }
+
+  // Step 4: Ancestor-Boost
+  // Parent-Kulturen von usualCultures erhalten abnehmenden Boost
+  const ancestorBoost = calculateAncestorBoost(
+    culture,
+    faction?.usualCultures ?? [],
+    allCultures,
+    PARENT_BOOST
+  );
+  weight *= ancestorBoost;
+
+  return weight;
+}
+```
+
+### Gewichtungs-Tabellen
+
+**Step 1: Faction-Boost (FACTION_BOOST = 900)**
+
+| factionTolerance | usualCultures Gewicht | Andere Kulturen |
+|------------------|----------------------|-----------------|
+| 0% | 100 + 900 = 1000 | 1 |
+| 30% (default) | 100 + 630 = 730 | 1 |
+| 50% | 100 + 450 = 550 | 1 |
+| 100% | 100 | 1 |
+
+**Step 2: Species-Boost (SPECIES_BOOST = 9)**
+
+| cultureTolerance | Kompatibel | Inkompatibel |
+|------------------|------------|--------------|
+| 0% | weight * 10 | weight * 1 |
+| 30% (default) | weight * 7.3 | weight * 1 |
+| 50% | weight * 5.5 | weight * 1 |
+| 100% | weight * 1 | weight * 1 |
+
+**Step 3: Kultur-Fraktions-Kompatibilitaet**
+
+| culture.tolerance | Effekt wenn Fraktion "fremde" Species hat |
+|-------------------|-------------------------------------------|
+| 0% | weight *= 0 (Kultur tritt nicht bei) |
+| 30% | weight *= 0.3 |
+| 100% | weight *= 1 (kein Problem) |
+
+**Step 4: Ancestor-Boost (PARENT_BOOST = 3)**
+
+Parent-Kulturen von usualCultures erhalten einen abnehmenden Boost.
+
+| Kultur ist... | Boost-Multiplikator | Beispiel |
+|---------------|---------------------|----------|
+| usualCulture selbst | Step 1 (factionWeight) | `imperial-military` |
+| Direct Parent (depth=1) | weight × 3.0 | `imperial` |
+| Grandparent (depth=2) | weight × 2.0 | `human-generic` |
+| Great-Grandparent (depth=3) | weight × 1.5 | usw. |
+| Kein Ancestor | weight × 1.0 | keine Beziehung |
+
+**Formel:** `1 + (PARENT_BOOST - 1) / 2^(depth - 1)`
+
+### Ancestor-Boost Algorithmus
+
+```typescript
+function calculateAncestorBoost(
+  culture: Culture,
+  usualCultures: string[],
+  allCultures: Culture[],
+  PARENT_BOOST: number
+): number {
+  // Fuer jede usualCulture pruefen ob culture ein Ancestor ist
+  for (const usualCultureId of usualCultures) {
+    const usualCulture = allCultures.find(c => c.id === usualCultureId);
+    let current = usualCulture;
+    let depth = 0;
+
+    // Parent-Kette nach oben traversieren
+    while (current?.parentId) {
+      depth++;
+      if (current.parentId === culture.id) {
+        // culture ist Ancestor von usualCulture in Tiefe depth
+        return 1 + (PARENT_BOOST - 1) / Math.pow(2, depth - 1);
+        // depth=1 (direct parent): 1 + 2 = 3.0
+        // depth=2 (grandparent):   1 + 1 = 2.0
+        // depth=3:                 1 + 0.5 = 1.5
+      }
+      current = allCultures.find(c => c.id === current!.parentId);
+    }
+  }
+  return 1; // Kein Ancestor einer usualCulture
+}
+```
+
+---
+
+## Beispiele
+
+### Goblin in "Blutfang-Stamm" (factionTolerance: 10%)
+
+```
+Stamm:
+├── usualCultures: ['goblin-tribal']
+├── factionTolerance: 0.1 (10%)
+├── acceptedSpecies: ['goblin', 'hobgoblin']
+
+Kultur: goblin-tribal
+├── usualSpecies: ['goblin', 'hobgoblin', 'bugbear']
+├── tolerance: 0.2 (20%)
+
+Berechnung:
+├── Step 1: usualCulture → weight = 100 + 900 * 0.9 = 910
+├── Step 2: Goblin IN usualSpecies → weight *= 1 + 9 * 0.8 = 8.2
+│           → weight = 910 * 8.2 = 7462
+├── Step 3: acceptedSpecies ⊆ usualSpecies → kein Malus
+└── Endgewicht: 7462
+
+Andere Kulturen:
+├── Basis: 1
+├── Species-Boost variiert
+└── Typisch: 1-10
+
+→ goblin-tribal: ~99.9%
+```
+
+### Mensch in "Diverse Abenteurergilde" (factionTolerance: 100%)
+
+```
+Gilde:
+├── usualCultures: ['guild-adventurer']
+├── factionTolerance: 1.0 (100%)
+├── acceptedSpecies: ['human', 'elf', 'dwarf', 'orc', 'halfling']
+
+Kultur A: guild-adventurer
+├── usualSpecies: ['human', 'elf', 'dwarf', 'halfling']
+├── tolerance: 0.8
+
+Kultur B: imperial-noble
+├── usualSpecies: ['human']
+├── tolerance: 0.3
+
+Berechnung A:
+├── Step 1: usualCulture → weight = 100 + 900 * 0 = 100
+├── Step 2: Human IN usualSpecies → weight *= 1 + 9 * 0.2 = 2.8
+│           → weight = 100 * 2.8 = 280
+├── Step 3: Orc NOT IN usualSpecies, aber tolerance=0.8
+│           → weight *= 0.8 = 224
+└── Endgewicht: 224
+
+Berechnung B:
+├── Step 1: nicht usualCulture → weight = 1
+├── Step 2: Human IN usualSpecies → weight *= 1 + 9 * 0.7 = 7.3
+│           → weight = 1 * 7.3 = 7.3
+├── Step 3: Orc NOT IN usualSpecies, tolerance=0.3
+│           → weight *= 0.3 = 2.19
+└── Endgewicht: 2.19
+
+→ guild-adventurer: ~99%, imperial-noble: ~1%
+```
+
+### Xenophobe Kultur bei diverser Fraktion
+
+```
+Fraktion:
+├── acceptedSpecies: ['human', 'orc', 'elf']
+
+Kultur: elven-isolationist
+├── usualSpecies: ['elf']
+├── tolerance: 0.0 (0%)
+
+Berechnung:
+├── Step 3: 'human', 'orc' NOT IN usualSpecies
+│           → weight *= 0.0 = 0
+└── Endgewicht: 0
+
+→ Xenophobe Elfen-Kultur tritt dieser Fraktion NICHT bei
+```
+
+### Ancestor-Boost bei Imperiale Legion
+
+```
+Kultur-Hierarchie:
+  human-generic (id: 'human-generic')
+    └── imperial (id: 'imperial', parentId: 'human-generic')
+          └── imperial-military (id: 'imperial-military', parentId: 'imperial')
+
+Fraktion: Imperiale Legion
+├── usualCultures: ['imperial-military']
+├── factionTolerance: 0.3
+
+Berechnung fuer 'imperial' (Parent von usualCulture):
+├── Step 1: NICHT usualCulture → weight = 1
+├── Step 2: Species-Boost (angenommen kompatibel) → weight = 7.3
+├── Step 3: Keine fremden Species → weight = 7.3
+├── Step 4: Parent von 'imperial-military' (depth=1)
+│           → weight *= 1 + (3-1) / 2^0 = 3.0
+│           → weight = 7.3 * 3.0 = 21.9
+└── Endgewicht: 21.9
+
+Berechnung fuer 'human-generic' (Grandparent):
+├── Step 1: NICHT usualCulture → weight = 1
+├── Step 2: Species-Boost → weight = 7.3
+├── Step 3: Keine fremden Species → weight = 7.3
+├── Step 4: Grandparent von 'imperial-military' (depth=2)
+│           → weight *= 1 + (3-1) / 2^1 = 2.0
+│           → weight = 7.3 * 2.0 = 14.6
+└── Endgewicht: 14.6
+
+Berechnung fuer 'elven-forest' (kein Ancestor):
+├── Step 1-3: ... → weight = X
+├── Step 4: Kein Ancestor → weight *= 1
+└── Kein Boost
+
+→ imperial-military: 730+, imperial: ~22, human-generic: ~15, andere: ~7
+```
+
+---
+
+## Phase 2: Attribut-Resolution
+
+Nach Culture-Selection werden die NPC-Attribute aufgeloest.
+
+### Quellen pro Attribut
+
+| Attribut | Primaer-Quelle | Sekundaer-Quelle |
+|----------|---------------|------------------|
+| appearance | Creature.appearance | - |
+| styling | Culture.styling | - |
+| personality | Culture.personality | - |
+| values | Culture.values | Faction.influence.values |
+| quirks | Culture.quirks | - |
+| goals | Culture.goals | Faction.influence.goals |
+| name | Culture.naming | - |
+
+### Algorithmus
+
+```typescript
+function resolveAttributes(
+  creature: CreatureDefinition,
+  culture: Culture,
+  faction: Faction | null
+): ResolvedAttributes {
   return {
-    personality: { add: getAllIds('personality') },
-    values: { add: getAllIds('values') },
-    quirks: { add: getAllIds('quirks') },
-    appearance: { add: getAllIds('appearance') },
-    goals: { add: getAllIds('goals') },
+    appearance: rollFromPool(creature.appearance),
+    styling: rollFromPool(culture.styling),
+    personality: rollFromPool(culture.personality),
+    values: rollFromPool(
+      mergeLayerConfigs(culture.values, faction?.influence?.values)
+    ),
+    quirks: rollFromPool(culture.quirks),
+    goals: rollFromPool(
+      mergeLayerConfigs(culture.goals, faction?.influence?.goals)
+    ),
+    name: generateNameFromConfig(culture.naming),
   };
 }
 ```
 
-### accumulateWithUnwanted()
+### Merge-Logik fuer influence
+
+Faction.influence erweitert den Pool, ersetzt ihn nicht:
 
 ```typescript
-function accumulateWithUnwanted(
-  layers: CultureLayer[],
-  extractor: (culture: CultureData) => LayerTraitConfig | undefined
-): Map<string, number> {
-  const weights = calculateLayerWeights(layers.length);
-  const accumulated = new Map<string, number>();
-
-  for (let i = 0; i < layers.length; i++) {
-    const config = extractor(layers[i].culture);
-    if (!config) continue;
-
-    const layerWeight = weights[i];
-
-    // 1. Zuerst unwanted (viertelt bisherigen Wert)
-    for (const id of config.unwanted ?? []) {
-      const current = accumulated.get(id) ?? 0;
-      accumulated.set(id, current / 4);
-    }
-
-    // 2. Dann add (fuegt Layer-Gewicht hinzu)
-    for (const id of config.add ?? []) {
-      const current = accumulated.get(id) ?? 0;
-      accumulated.set(id, current + layerWeight);
-    }
-  }
-
-  return accumulated;
-}
-```
-
-### mergeWeightedPool()
-
-Fuer Naming-Pools (ohne unwanted-Mechanik).
-
-```typescript
-function mergeWeightedPool<T>(
-  layers: CultureLayer[],
-  extractor: (culture: CultureData) => T[] | undefined
-): Array<{ item: T; randWeighting: number }> {
-  const weights = calculateLayerWeights(layers.length);
-  const merged = new Map<string, { item: T; randWeighting: number }>();
-
-  for (let i = 0; i < layers.length; i++) {
-    const items = extractor(layers[i].culture);
-    if (!items) continue;
-
-    for (const item of items) {
-      const key = typeof item === 'string' ? item : JSON.stringify(item);
-      const existing = merged.get(key);
-      if (existing) {
-        existing.randWeighting += weights[i];  // Duplikat summieren
-      } else {
-        merged.set(key, { item, randWeighting: weights[i] });
-      }
-    }
-  }
-
-  return Array.from(merged.values());
-}
-```
-
-### buildFactionChain()
-
-```typescript
-function buildFactionChain(faction: Faction): Faction[] {
-  const chain: Faction[] = [];
-  let current: Faction | null = faction;
-
-  // Zur Root traversieren
-  while (current) {
-    chain.unshift(current);
-    current = current.parentId
-      ? vault.getEntity('faction', current.parentId)
-      : null;
-  }
-
-  return chain; // [root, ..., leaf]
+function mergeLayerConfigs(
+  base: LayerTraitConfig | undefined,
+  extension: LayerTraitConfig | undefined
+): LayerTraitConfig {
+  return {
+    add: [...(base?.add ?? []), ...(extension?.add ?? [])],
+    unwanted: [...(base?.unwanted ?? []), ...(extension?.unwanted ?? [])],
+  };
 }
 ```
 
 ---
 
-## Culture-Preset Format
-
-### LayerTraitConfig
+## Konstanten
 
 ```typescript
-// presets/cultures/species/index.ts
-export const speciesPresets: Record<string, CultureData> = {
-  goblin: {
-    naming: { /* ... */ },
-    personality: {
-      add: ['cunning', 'cowardly', 'greedy', 'cruel', 'nervous'],
-      unwanted: ['heroic', 'honorable', 'generous', 'patient'],
-    },
-    values: {
-      add: ['survival', 'wealth'],
-      unwanted: ['honor', 'justice', 'mercy'],
-    },
-    quirks: {
-      add: ['nervous_laugh', 'hoards_shiny', 'bites_nails'],
-    },
-    appearance: {
-      add: ['sharp_teeth', 'missing_teeth', 'yellow_eyes'],
-    },
-    goals: {
-      add: ['loot', 'survive', 'please_boss', 'avoid_work'],
-    },
-    // ...
-  },
-};
+// src/constants/culture.ts
+
+/** Boost fuer usualCultures bei NPC-Generierung */
+export const FACTION_CULTURE_BOOST = 900;
+
+/** Boost fuer Species-Kompatibilitaet */
+export const SPECIES_COMPATIBILITY_BOOST = 9;
+
+/** Boost fuer Parent-Kulturen von usualCultures */
+export const PARENT_CULTURE_BOOST = 3;
+
+/** Default-Toleranz wenn nicht gesetzt */
+export const DEFAULT_TOLERANCE = 0.3;
 ```
 
 ---
 
 ## Siehe auch
 
-- [NPC-Generation.md](NPC-Generation.md) - Verwendet Culture-Resolution fuer NPC-Generierung
-- [culture-data.md](../../types/culture-data.md) - Schema-Definition der Culture-Pools
-- [faction.md](../../types/faction.md) - Faction mit eingebetteter Culture
-
----
-
-## Tasks
-
-|  # | Status | Domain | Layer    | Beschreibung                                                  |  Prio  | MVP? | Deps | Spec                                      | Imp.                                                  |
-|--:|:----:|:-----|:-------|:------------------------------------------------------------|:----:|:--:|:---|:----------------------------------------|:----------------------------------------------------|
-| 54 |   ✅    | NPCs   | services | Culture-Resolution: Faction-Ketten-Traversierung via parentId | mittel | Nein | -    | Culture-Resolution.md#buildFactionChain() | npcGenerator.ts.resolveCultureChain() [ändern]        |
-| 58 |   ✅    | NPCs   | services | Species-Cultures in Culture-Resolution implementiert          | mittel | Nein | -    | Culture-Resolution.md#Kultur-Hierarchie   | npcGenerator.ts.resolveCultureChain() [fertig]        |
-| 67 |   ✅    | NPCs   | services | Culture-Resolution: Soft-Weighting fuer Traits implementiert  | mittel | Nein | -    | Culture-Resolution.md#Trait-System        | npcGenerator.ts.rollPersonalityFromCulture() [fertig] |
+- [culture.md](../../types/culture.md) - Culture-Entity Schema mit parentId
+- [creature.md](../../types/creature.md) - Creature mit appearance
+- [faction.md](../../types/faction.md) - Faction mit usualCultures, influence
+- [NPC-Generation.md](NPC-Generation.md) - Verwendet Culture-Resolution

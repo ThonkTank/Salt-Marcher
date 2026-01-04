@@ -71,6 +71,13 @@ export function countCreatures(group: EncounterGroup): number {
 }
 
 /**
+ * Zählt alle NPCs über mehrere Gruppen.
+ */
+export function countCreaturesInGroups(groups: EncounterGroup[]): number {
+  return groups.reduce((sum, group) => sum + countCreatures(group), 0);
+}
+
+/**
  * Sammelt alle NPCs einer Gruppe in ein Array.
  * Nutze iterateCreatures() wenn möglich, um Kopien zu vermeiden.
  */

@@ -10,6 +10,7 @@ import type { WeightedItem } from '#types/common/counting';
 import type { GameDateTime } from '#types/time';
 import type { FactionStatus } from '@/constants';
 import { CREATURE_WEIGHTS, CR_DECAY_RATE, MIN_CR_WEIGHT } from '@/constants';
+import type { Weather } from '#types/weather';
 
 // ============================================================================
 // DEBUG HELPER
@@ -122,55 +123,28 @@ function selectFactionOrNative(
 }
 
 // ============================================================================
-// STEP 2.1: TILE-ELIGIBILITY FILTER
-// Siehe: docs/services/encounter/groupSeed.md#step-21-tile-eligibility
+// STEP 2.1: EXCLUDE-FILTER
 // ============================================================================
 
 /**
- * Filtert Kreaturen nach Terrain-Kompatibilität.
+ * Filtert Kreaturen nach Exclude-Liste.
  *
- * Hard Filters:
- * - creature.terrainAffinities enthält aktuelles Terrain
- * - creature.id nicht in exclude-Liste
- *
- * Soft Weights (in applyWeights()):
- * - activeTime: match = ×2.0, mismatch = ×0.5
- * - weather: prefers = ×2.0, avoids = ×0.5
+ * Terrain-Filterung erfolgt bereits in:
+ * - getTerrainNativeCreatures() für fraktionslose Kreaturen
+ * - getFactionCreatures() liefert alle Fraktionsmitglieder (terrain-unabhängig)
  */
-function filterEligibleCreatures(
+function filterByExclude(
   creatures: CreatureDefinition[],
-  terrainId: string,
   exclude?: string[]
 ): CreatureDefinition[] {
-  const total = creatures.length;
-  const result = creatures.filter(creature => {
-    // Hard Filter 1: Terrain-Affinität
-    if (!creature.terrainAffinities.includes(terrainId)) {
-      return false;
-    }
+  if (!exclude?.length) return creatures;
 
-    // Hard Filter 2: Exclude-Liste
-    if (exclude?.includes(creature.id)) {
-      return false;
-    }
-
-    return true;
-  });
-
-  // Debug: Zeige WARUM Kreaturen gefiltert wurden
-  const filtered = {
-    terrain: creatures.filter(c => !c.terrainAffinities.includes(terrainId)).map(c => c.id),
-    excluded: creatures.filter(c => exclude?.includes(c.id)).map(c => c.id),
-  };
-  if (filtered.terrain.length || filtered.excluded.length) {
-    const parts: string[] = [];
-    if (filtered.terrain.length) parts.push(`terrain=[${filtered.terrain.join(',')}]`);
-    if (filtered.excluded.length) parts.push(`excluded=[${filtered.excluded.join(',')}]`);
-    debug('Filtered out:', parts.join(' '));
+  const excluded = creatures.filter(c => exclude.includes(c.id)).map(c => c.id);
+  if (excluded.length) {
+    debug('Excluded:', excluded.join(', '));
   }
 
-  debug('Eligible after filter:', result.length, '/', total);
-  return result;
+  return creatures.filter(c => !exclude.includes(c.id));
 }
 
 /**
@@ -180,11 +154,11 @@ function filterEligibleCreatures(
  * - CR-basierte Rarity: Kreaturen außerhalb des Terrain-ThreatLevel-Bereichs
  *   werden seltener (nur für fraktionslose Kreaturen)
  * - Activity Time: match = ×2.0, mismatch = ×0.5
- * - Weather-Präferenz: prefers = ×2.0, avoids = ×0.5
+ * - Weather-Präferenz: prefers = ×2.0, avoids = ×0.5 (basierend auf Event-Tags)
  */
 function applyWeights(
   creatures: CreatureDefinition[],
-  weather?: { type: string },
+  weather?: Weather,
   threatLevel?: ThreatLevel,
   isFactionless?: boolean,
   timeSegment?: GameDateTime['segment']
@@ -208,14 +182,19 @@ function applyWeights(
       }
     }
 
-    // Weather-Präferenz: prefers = ×2.0, avoids = ×0.5
-    if (weather?.type && creature.preferences?.weather) {
+    // Weather-Präferenz: prefers = ×2.0, avoids = ×0.5 (basierend auf Event-Tags)
+    if (weather?.event && creature.preferences?.weather) {
       const { prefers, avoids } = creature.preferences.weather;
-      if (prefers?.includes(weather.type)) {
-        debug(`Weather weight: ${creature.id} prefers=${weather.type} → ×${CREATURE_WEIGHTS.weatherPrefers}`);
+      const eventTags = weather.event.tags;
+
+      // Prüfe ob irgendein preferred Tag matcht
+      if (prefers?.some(tag => eventTags.includes(tag))) {
+        debug(`Weather weight: ${creature.id} prefers tags in [${eventTags.join(',')}] → ×${CREATURE_WEIGHTS.weatherPrefers}`);
         weight *= CREATURE_WEIGHTS.weatherPrefers;
-      } else if (avoids?.includes(weather.type)) {
-        debug(`Weather weight: ${creature.id} avoids=${weather.type} → ×${CREATURE_WEIGHTS.weatherAvoids}`);
+      }
+      // Prüfe ob irgendein avoided Tag matcht
+      else if (avoids?.some(tag => eventTags.includes(tag))) {
+        debug(`Weather weight: ${creature.id} avoids tags in [${eventTags.join(',')}] → ×${CREATURE_WEIGHTS.weatherAvoids}`);
         weight *= CREATURE_WEIGHTS.weatherAvoids;
       }
     }
@@ -329,7 +308,7 @@ export function selectSeed(context: {
   timeSegment: GameDateTime['segment'];
   factions: { factionId: string; randWeighting: number }[];
   exclude?: string[];
-  weather?: { type: string };
+  weather?: Weather;
 }): { creatureId: string; factionId: string | null } | null {
   debug('Input:', {
     terrain: context.terrain.id,
@@ -337,7 +316,7 @@ export function selectSeed(context: {
     timeSegment: context.timeSegment,
     factions: context.factions.length,
     exclude: context.exclude?.length ?? 0,
-    weather: context.weather?.type,
+    weather: context.weather?.event?.id,
   });
 
   // -------------------------------------------------------------------------
@@ -367,12 +346,8 @@ export function selectSeed(context: {
     creaturePool = getTerrainNativeCreatures(context.terrain.id);
   }
 
-  // Eligibility-Filter anwenden
-  const eligibleCreatures = filterEligibleCreatures(
-    creaturePool,
-    context.terrain.id,
-    context.exclude
-  );
+  // Exclude-Filter anwenden (Terrain bereits in Pool-Laden gefiltert)
+  const eligibleCreatures = filterByExclude(creaturePool, context.exclude);
 
   if (eligibleCreatures.length === 0) {
     return null; // Keine geeigneten Kreaturen gefunden

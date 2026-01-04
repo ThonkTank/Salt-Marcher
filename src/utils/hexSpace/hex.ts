@@ -4,6 +4,13 @@
 import type { HexCoordinate } from '@/types/hexCoordinate';
 
 /**
+ * Konvertiert Hex-Koordinaten zu einem String-Key für Vault-Lookup.
+ */
+export function coordToKey(coord: HexCoordinate): string {
+  return `${coord.q},${coord.r}`;
+}
+
+/**
  * Berechnet die Distanz zwischen zwei Hex-Koordinaten.
  * Verwendet axiale Koordinaten (q, r) und Manhattan-Distanz.
  *

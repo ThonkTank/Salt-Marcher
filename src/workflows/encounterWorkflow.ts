@@ -15,6 +15,11 @@ import type { EncounterTrigger } from '@/constants/encounter';
 import type { NPC } from '#types/entities/npc';
 import type { HexCoordinate } from '#types/hexCoordinate';
 import type { GameDateTime } from '#types/time';
+import type { OverworldTile } from '#types/entities/overworldTile';
+import type { TerrainDefinition } from '#types/entities/terrainDefinition';
+
+// Utils
+import { coordToKey } from '@/utils';
 
 // Encounter-Service
 import { generateEncounter } from '@/services/encounterGenerator/encounterGenerator';
@@ -63,9 +68,8 @@ interface CombatParticipant {
  */
 export function checkEncounter(trigger: EncounterTrigger, forceEncounter = false): void {
   const state = getState();
-  const map = vault.getEntity('map', state.activeMapId!);
-  const tile = map.getTile(state.party.position);
-  const terrain = vault.getEntity('terrain', tile.terrainId);
+  const tile = vault.getEntity<OverworldTile>('tile', coordToKey(state.party.position));
+  const terrain = vault.getEntity<TerrainDefinition>('terrain', tile.terrain);
 
   // Step 1: Encounter-Check
   if (!forceEncounter) {

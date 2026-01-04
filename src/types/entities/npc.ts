@@ -35,10 +35,16 @@ export const npcSchema = z.object({
   name: z.string().min(1),
   creature: creatureRefSchema,
   factionId: z.string().min(1).optional(),
+
+  // Culture-Referenz (NEU)
+  cultureId: z.string().optional(),
+
+  // Generierte Attribute
   personality: z.string().min(1),
   value: z.string().min(1),
   quirk: z.string().optional(),
-  appearance: z.string().optional(),
+  appearance: z.string().optional(),  // Physische Merkmale (aus Creature.appearance)
+  styling: z.string().optional(),     // Kulturelle Marker (aus Culture.styling)
   goal: z.string().min(1),
   status: npcStatusSchema,
   firstEncounter: gameDateTimeSchema,

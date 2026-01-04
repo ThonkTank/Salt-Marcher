@@ -1,20 +1,28 @@
-// Ziel: Shared Culture-Resolution für NPC-Generator und Activity-Selection
+// Ziel: Culture-Selection und Attribut-Resolution für NPC-Generierung
 // Siehe: docs/services/npcs/Culture-Resolution.md
 //
-// Funktionen:
-// - resolveCultureChain() - Culture-Hierarchie aufbauen (Type/Species → Faction)
-// - calculateLayerWeights() - 60%-Kaskade Gewichte berechnen (Leaf=100, Parent=60, ...)
-// - mergeWeightedPool() - Items aus allen Layers in gewichteten Pool mergen (Duplikate summiert)
-// - aggregateWeightedPools() - Mehrere Pools zusammenführen (Weights summieren)
+// Zwei Phasen:
+// 1. selectCulture() - Kultur-Auswahl mit Weighted Pool (4-Step Algorithmus)
+// 2. resolveAttributes() - Attribut-Resolution aus Culture + Faction.influence
 //
-// Für gewichtete Auswahl aus Pool: weightedRandomSelect() aus random.ts verwenden
+// Utility-Funktionen:
+// - mergeLayerConfigs() - Config-Merging für LayerTraitConfig
+// - buildFactionChain() - Faction-Hierarchie für influence-Akkumulation
 
 import type { CreatureDefinition } from '#types/entities/creature';
-import type { Faction, CultureData } from '#types/entities/faction';
+import type { Culture } from '#types/entities/culture';
+import type { Species } from '#types/entities/species';
+import type { Faction } from '#types/entities/faction';
 import type { LayerTraitConfig } from '../types/common/layerTraitConfig';
-import { typePresets, speciesPresets } from '../../presets/cultures';
+import type { WeightedItem } from '#types/common/counting';
+import { weightedRandomSelect } from './probability';
 import { vault } from '../infrastructure/vault/vaultInstance';
-import { getAllIds } from '../../presets/npcAttributes';
+import {
+  FACTION_CULTURE_BOOST,
+  SPECIES_COMPATIBILITY_BOOST,
+  PARENT_CULTURE_BOOST,
+  DEFAULT_TOLERANCE,
+} from '@/constants';
 
 // ============================================================================
 // DEBUG HELPER
@@ -30,129 +38,340 @@ const debug = (...args: unknown[]) => {
 // TYPES
 // ============================================================================
 
-/** Quelle einer Culture-Ebene */
-export type CultureSource = 'register' | 'type' | 'species' | 'faction';
-
-/** Eine Ebene in der Culture-Hierarchie */
-export interface CultureLayer {
-  source: CultureSource;
-  culture: CultureData;
-  factionId?: string;
+/** Aufgelöste NPC-Attribute nach Phase 2 */
+export interface ResolvedAttributes {
+  appearance: string | undefined;
+  styling: string | undefined;
+  personality: string | undefined;
+  value: string | undefined;
+  quirk: string | undefined;
+  goal: string | undefined;
+  name: string;
 }
 
+
 // ============================================================================
-// REGISTER BASE LAYER
+// PHASE 1: CULTURE SELECTION
 // ============================================================================
 
 /**
- * Basis-Culture aus dem zentralen Register.
- * Enthält alle verfügbaren Attribute-IDs als add[].
- * Wird als erstes Layer in der Hierarchie verwendet.
+ * Wählt eine Kultur für den NPC basierend auf Creature, Species und Faction.
+ *
+ * Gewichtungs-Algorithmus (4 Steps):
+ * 1. Faction-Boost: usualCultures bekommen hohe Gewichtung
+ * 2. Species-Boost: Kulturen mit passender usualSpecies werden bevorzugt
+ * 3. Kultur-Fraktions-Kompatibilität: Intolerante Kulturen meiden diverse Fraktionen
+ * 4. Ancestor-Boost: Parent-Kulturen von usualCultures erhalten Bonus
+ *
+ * @param creature - Die Kreatur-Definition
+ * @param species - Die Species (für appearance und usualSpecies-Check)
+ * @param faction - Die Fraktion (für usualCultures und influence)
+ * @param allCultures - Alle verfügbaren Kulturen
+ * @returns Die ausgewählte Kultur
  */
-function buildRegisterCulture(): CultureData {
+export function selectCulture(
+  creature: CreatureDefinition | null,
+  species: Species | null,
+  faction: Faction | null,
+  allCultures: Culture[]
+): Culture {
+  if (allCultures.length === 0) {
+    throw new Error('selectCulture: allCultures is empty');
+  }
+
+  const pool: WeightedItem<Culture>[] = [];
+
+  for (const culture of allCultures) {
+    const weight = calculateCultureWeight(culture, creature, species, faction, allCultures);
+    pool.push({ item: culture, randWeighting: weight });
+    debug(`Culture '${culture.id}': weight=${weight.toFixed(2)}`);
+  }
+
+  const selected = weightedRandomSelect(pool);
+  if (!selected) {
+    // Fallback auf erste Kultur (sollte nicht passieren da weight >= 1)
+    debug('No culture selected, using fallback');
+    return allCultures[0];
+  }
+
+  debug(`Selected culture: ${selected.id}`);
+  return selected;
+}
+
+/**
+ * Berechnet das Gewicht einer Kultur für die Auswahl.
+ *
+ * 4-Step Algorithmus:
+ * 1. Faction-Boost: usualCulture = 100 + 900 * (1 - factionTolerance), andere = 1
+ * 2. Species-Boost: kompatibel = weight * (1 + 9 * (1 - cultureTolerance))
+ * 3. Kultur-Fraktions-Kompatibilität: weight *= cultureTolerance wenn Fraktion "fremde" Species hat
+ * 4. Ancestor-Boost: weight *= (1 + 2 / 2^(depth-1)) für Parent-Kulturen
+ */
+function calculateCultureWeight(
+  culture: Culture,
+  creature: CreatureDefinition | null,
+  species: Species | null,
+  faction: Faction | null,
+  allCultures: Culture[]
+): number {
+  const factionTolerance = faction?.cultureTolerance ?? DEFAULT_TOLERANCE;
+  const cultureTolerance = culture.tolerance ?? DEFAULT_TOLERANCE;
+
+  // Step 1: Faction-Boost
+  const isUsualCulture = faction?.usualCultures?.includes(culture.id) ?? false;
+  let weight = isUsualCulture
+    ? 100 + FACTION_CULTURE_BOOST * (1 - factionTolerance)
+    : 1;
+
+  debug(`Step 1 (${culture.id}): isUsualCulture=${isUsualCulture}, weight=${weight.toFixed(2)}`);
+
+  // Step 2: Species-Boost
+  const creatureSpecies = species?.id ?? creature?.species ?? '';
+  const isCompatibleSpecies = culture.usualSpecies?.includes(creatureSpecies) ?? true;
+
+  if (isCompatibleSpecies && culture.usualSpecies && culture.usualSpecies.length > 0) {
+    weight *= 1 + SPECIES_COMPATIBILITY_BOOST * (1 - cultureTolerance);
+    debug(`Step 2 (${culture.id}): species '${creatureSpecies}' compatible, weight=${weight.toFixed(2)}`);
+  }
+
+  // Step 3: Kultur-Fraktions-Kompatibilität
+  const acceptedSpecies = faction?.acceptedSpecies ?? [];
+  const usualSpecies = culture.usualSpecies ?? [];
+
+  if (acceptedSpecies.length > 0 && usualSpecies.length > 0) {
+    const hasUnwantedSpecies = acceptedSpecies.some(
+      s => !usualSpecies.includes(s)
+    );
+
+    if (hasUnwantedSpecies) {
+      weight *= cultureTolerance;
+      debug(`Step 3 (${culture.id}): faction has unwanted species, weight *= ${cultureTolerance} = ${weight.toFixed(2)}`);
+    }
+  }
+
+  // Step 4: Ancestor-Boost
+  const ancestorBoost = calculateAncestorBoost(
+    culture,
+    faction?.usualCultures ?? [],
+    allCultures
+  );
+  weight *= ancestorBoost;
+
+  if (ancestorBoost > 1) {
+    debug(`Step 4 (${culture.id}): ancestor boost = ${ancestorBoost.toFixed(2)}, weight=${weight.toFixed(2)}`);
+  }
+
+  return weight;
+}
+
+/**
+ * Berechnet den Ancestor-Boost für eine Kultur.
+ *
+ * Wenn die Kultur ein Ancestor (Parent, Grandparent, ...) einer usualCulture ist,
+ * bekommt sie einen abnehmenden Boost:
+ * - depth=1 (direct parent): 3.0
+ * - depth=2 (grandparent): 2.0
+ * - depth=3: 1.5
+ * - usw.
+ *
+ * Formel: 1 + (PARENT_CULTURE_BOOST - 1) / 2^(depth - 1)
+ */
+function calculateAncestorBoost(
+  culture: Culture,
+  usualCultures: string[],
+  allCultures: Culture[]
+): number {
+  if (usualCultures.length === 0) return 1;
+
+  // Für jede usualCulture prüfen ob culture ein Ancestor ist
+  for (const usualCultureId of usualCultures) {
+    const usualCulture = allCultures.find(c => c.id === usualCultureId);
+    if (!usualCulture) continue;
+
+    let current: Culture | undefined = usualCulture;
+    let depth = 0;
+
+    // Parent-Kette nach oben traversieren
+    while (current?.parentId) {
+      depth++;
+      if (current.parentId === culture.id) {
+        // culture ist Ancestor von usualCulture in Tiefe depth
+        const boost = 1 + (PARENT_CULTURE_BOOST - 1) / Math.pow(2, depth - 1);
+        debug(`Ancestor boost: ${culture.id} is depth-${depth} parent of ${usualCultureId}, boost=${boost.toFixed(2)}`);
+        return boost;
+      }
+      current = allCultures.find(c => c.id === current!.parentId);
+    }
+  }
+
+  return 1; // Kein Ancestor einer usualCulture
+}
+
+// ============================================================================
+// PHASE 2: ATTRIBUTE RESOLUTION
+// ============================================================================
+
+/**
+ * Löst NPC-Attribute aus Culture, Species und Faction.influence auf.
+ *
+ * Quellen:
+ * - appearance: Species.appearance (+ Creature.appearanceOverride)
+ * - styling: Culture.styling
+ * - personality: Culture.personality
+ * - values: Culture.values + Faction.influence.values (über Faction-Kette)
+ * - quirks: Culture.quirks
+ * - goals: Culture.goals + Faction.influence.goals (über Faction-Kette)
+ * - naming: Culture.naming
+ *
+ * @param creature - Die Kreatur-Definition
+ * @param species - Die Species
+ * @param culture - Die ausgewählte Kultur
+ * @param faction - Die Fraktion (für influence)
+ * @returns Aufgelöste Attribute
+ */
+export function resolveAttributes(
+  creature: CreatureDefinition | null,
+  species: Species | null,
+  culture: Culture,
+  faction: Faction | null
+): ResolvedAttributes {
+  debug('Resolving attributes for culture:', culture.id);
+
+  // Faction-Kette für influence-Akkumulation
+  const factionChain = faction ? buildFactionChain(faction) : [];
+  const allInfluence = factionChain
+    .filter(f => f.influence)
+    .map(f => f.influence!);
+
+  // Appearance aus Species (+ Creature-Override)
+  const appearancePool = mergeLayerConfigs(
+    species?.appearance,
+    creature?.appearanceOverride
+  );
+  const appearance = rollFromPool(appearancePool);
+
+  // Styling aus Culture
+  const styling = rollFromPool(culture.styling);
+
+  // Personality aus Culture
+  const personality = rollFromPool(culture.personality);
+
+  // Values aus Culture + Faction.influence
+  const valuesPool = mergeLayerConfigs(
+    culture.values,
+    ...allInfluence.map(i => i.values)
+  );
+  const value = rollFromPool(valuesPool);
+
+  // Quirks aus Culture
+  const quirk = rollFromPool(culture.quirks);
+
+  // Goals aus Culture + Faction.influence
+  const goalsPool = mergeLayerConfigs(
+    culture.goals,
+    ...allInfluence.map(i => i.goals)
+  );
+  const goal = rollFromPool(goalsPool);
+
+  // Name aus Culture.naming
+  const name = generateNameFromNaming(culture.naming);
+
+  debug('Resolved attributes:', { appearance, styling, personality, value, quirk, goal, name });
+
   return {
-    personality: { add: getAllIds('personality') },
-    values: { add: getAllIds('values') },
-    quirks: { add: getAllIds('quirks') },
-    appearance: { add: getAllIds('appearance') },
-    goals: { add: getAllIds('goals') },
+    appearance,
+    styling,
+    personality,
+    value,
+    quirk,
+    goal,
+    name,
   };
 }
 
-// ============================================================================
-// CULTURE RESOLUTION
-// ============================================================================
-
 /**
- * Bestimmt die Culture-Ebenen für eine Kreatur.
- *
- * Hierarchie (von Root nach Leaf):
- * 1. Register (Base-Layer mit allen verfügbaren Attributen)
- * 2. Species-Culture (falls creature.species gesetzt) ODER Type-Preset
- * 3. Faction-Kette (Root → ... → Leaf) via parentId
- *
- * @param creature - Die Kreatur-Definition (kann null sein für Fallback)
- * @param faction - Die Fraktion (falls vorhanden)
+ * Merged mehrere LayerTraitConfigs zu einem.
+ * add[] werden konkateniert, unwanted[] werden konkateniert.
  */
-export function resolveCultureChain(
-  creature: CreatureDefinition | null | undefined,
-  faction: Faction | null | undefined
-): CultureLayer[] {
-  const layers: CultureLayer[] = [];
+export function mergeLayerConfigs(
+  ...configs: (LayerTraitConfig | undefined)[]
+): LayerTraitConfig {
+  const add: string[] = [];
+  const unwanted: string[] = [];
 
-  // 1. Register als Base-Layer
-  layers.push({ source: 'register', culture: buildRegisterCulture() });
-  debug('Culture layer: register (base)');
-
-  if (!creature) {
-    // Fallback auf humanoid wenn keine Kreatur
-    const fallback = typePresets['humanoid'];
-    if (fallback) {
-      layers.push({ source: 'type', culture: fallback });
-      debug('Culture layer: type = humanoid (no creature fallback)');
-    }
-  } else {
-    // 2. Species-Culture (ersetzt Type) ODER Type-Preset
-    if (creature.species) {
-      const speciesCulture = speciesPresets[creature.species];
-      if (speciesCulture) {
-        layers.push({ source: 'species', culture: speciesCulture });
-        debug('Culture layer: species =', creature.species);
-      } else {
-        // Fallback auf Type wenn Species nicht gefunden
-        addTypeCulture(layers, creature);
-      }
-    } else {
-      addTypeCulture(layers, creature);
-    }
+  for (const config of configs) {
+    if (!config) continue;
+    if (config.add) add.push(...config.add);
+    if (config.unwanted) unwanted.push(...config.unwanted);
   }
 
-  // 3. Faction-Kette hinzufügen (von Root nach Leaf)
-  if (faction) {
-    const factionChain = buildFactionChain(faction);
-    for (const f of factionChain) {
-      if (f.culture) {
-        layers.push({
-          source: 'faction',
-          culture: f.culture,
-          factionId: f.id,
-        });
-        debug('Culture layer: faction =', f.id);
-      }
-    }
-  }
-
-  debug('Total culture layers:', layers.length);
-  return layers;
+  return { add, unwanted };
 }
 
 /**
- * Fügt Type-Preset als Basis-Culture hinzu.
- * Hilfsfunktion für resolveCultureChain().
+ * Wählt zufällig einen Trait aus einem LayerTraitConfig.
+ * Berücksichtigt unwanted (werden aus Pool entfernt).
  */
-function addTypeCulture(layers: CultureLayer[], creature: CreatureDefinition): void {
-  const creatureType = creature.tags[0] ?? 'humanoid';
-  const typePreset = typePresets[creatureType];
+function rollFromPool(config: LayerTraitConfig | undefined): string | undefined {
+  if (!config?.add || config.add.length === 0) return undefined;
 
-  if (typePreset) {
-    layers.push({ source: 'type', culture: typePreset });
-    debug('Culture layer: type =', creatureType);
-  } else {
-    // Fallback auf humanoid wenn Type nicht gefunden
-    const fallback = typePresets['humanoid'];
-    if (fallback) {
-      layers.push({ source: 'type', culture: fallback });
-      debug('Culture layer: type = humanoid (fallback)');
-    }
-  }
+  // unwanted aus Pool filtern
+  const unwantedSet = new Set(config.unwanted ?? []);
+  const pool = config.add.filter(item => !unwantedSet.has(item));
+
+  if (pool.length === 0) return undefined;
+
+  // Uniform random selection
+  const index = Math.floor(Math.random() * pool.length);
+  return pool[index];
 }
+
+/**
+ * Generiert einen Namen aus NamingConfig.
+ * Verwendet Pattern mit Platzhaltern: {prefix}, {root}, {suffix}, {title}
+ */
+function generateNameFromNaming(naming: Culture['naming']): string {
+  if (!naming?.patterns || naming.patterns.length === 0) {
+    return generateFallbackName();
+  }
+
+  // Zufälliges Pattern wählen
+  const pattern = naming.patterns[Math.floor(Math.random() * naming.patterns.length)];
+
+  // Platzhalter füllen
+  const selectRandom = (arr?: string[]) =>
+    arr && arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : '';
+
+  const name = pattern
+    .replace('{prefix}', selectRandom(naming.prefixes))
+    .replace('{root}', selectRandom(naming.roots) || 'Unknown')
+    .replace('{suffix}', selectRandom(naming.suffixes))
+    .replace('{title}', selectRandom(naming.titles))
+    .trim()
+    .replace(/\s+/g, ' ');
+
+  return name || 'Unknown';
+}
+
+/**
+ * Fallback-Name wenn keine Naming-Config vorhanden.
+ */
+function generateFallbackName(): string {
+  const fallbackNames = ['Stranger', 'Unknown', 'Wanderer', 'Traveler'];
+  return fallbackNames[Math.floor(Math.random() * fallbackNames.length)];
+}
+
+// ============================================================================
+// FACTION CHAIN (für influence-Akkumulation)
+// ============================================================================
 
 /**
  * Traversiert die Faction-Hierarchie von Leaf nach Root.
  * Bricht bei fehlender Parent-Faction ab (graceful degradation).
- * @returns [root, ..., parent, leaf] - geordnet für 60%-Kaskade
+ *
+ * @returns [root, ..., parent, leaf] - geordnet für Kaskade
  */
-function buildFactionChain(faction: Faction): Faction[] {
+export function buildFactionChain(faction: Faction): Faction[] {
   const chain: Faction[] = [];
   let current: Faction | null = faction;
 
@@ -162,7 +381,6 @@ function buildFactionChain(faction: Faction): Faction[] {
       try {
         current = vault.getEntity<Faction>('faction', current.parentId);
       } catch {
-        // Parent nicht gefunden - Kette hier beenden
         debug('Parent faction not found:', current.parentId);
         current = null;
       }
@@ -175,163 +393,4 @@ function buildFactionChain(faction: Faction): Faction[] {
   return chain;
 }
 
-// ============================================================================
-// LAYER WEIGHTS (60%-Kaskade)
-// ============================================================================
 
-/**
- * Berechnet Layer-Gewichte nach 60%-Kaskade.
- *
- * Leaf bekommt 100, jede höhere Ebene 60% der vorherigen:
- * - 1 Layer: [100]
- * - 2 Layer: [60, 100]
- * - 3 Layer: [36, 60, 100]
- * - 4 Layer: [21.6, 36, 60, 100]
- */
-export function calculateLayerWeights(layerCount: number): number[] {
-  if (layerCount === 0) return [];
-  if (layerCount === 1) return [100];
-
-  const weights: number[] = [];
-  let weight = 100;
-
-  // Von Leaf (hinten) nach Root (vorne)
-  for (let i = 0; i < layerCount; i++) {
-    weights.unshift(weight);
-    weight *= 0.6;
-  }
-
-  return weights;
-}
-
-/**
- * Merged Items aus allen Layers in einen gewichteten Pool.
- * Duplikate werden summiert (Item in Leaf + Parent = 160).
- *
- * @param layers - Die Culture-Layers
- * @param extractor - Funktion um Items aus CultureData zu extrahieren
- * @param getWeight - Optionale Funktion um Basis-Gewicht eines Items zu holen (default: 1.0)
- */
-export function mergeWeightedPool<T>(
-  layers: CultureLayer[],
-  extractor: (culture: CultureData) => T[] | undefined,
-  getWeight?: (item: T) => number
-): Array<{ item: T; randWeighting: number }> {
-  const weights = calculateLayerWeights(layers.length);
-  const merged = new Map<string, { item: T; randWeighting: number }>();
-
-  for (let i = 0; i < layers.length; i++) {
-    const items = extractor(layers[i].culture);
-    if (!items) continue;
-
-    const layerWeight = weights[i];
-    for (const item of items) {
-      // Content-basierter Key: String direkt, Objekte als JSON
-      const key = typeof item === 'string' ? item : JSON.stringify(item);
-      const baseWeight = getWeight?.(item) ?? 1.0;
-      const itemWeight = baseWeight * layerWeight;
-
-      const existing = merged.get(key);
-      if (existing) {
-        existing.randWeighting += itemWeight; // Duplikat summieren
-      } else {
-        merged.set(key, { item, randWeighting: itemWeight });
-      }
-    }
-
-    debug(`Merged ${items.length} items from layer ${i} (randWeighting: ${layerWeight})`);
-  }
-
-  const result = Array.from(merged.values());
-  debug('Total merged pool size:', result.length);
-  return result;
-}
-
-/**
- * Aggregiert mehrere gewichtete Pools zu einem.
- * Duplikate werden summiert (keine Kaskade).
- *
- * @param pools - Array von gewichteten Pools
- * @param getKey - Optionale Funktion um Key für Duplikat-Erkennung zu generieren
- * @returns Aggregierter Pool mit summierten randWeightings
- */
-export function aggregateWeightedPools<T>(
-  pools: Array<Array<{ item: T; randWeighting: number }>>,
-  getKey?: (item: T) => string
-): Array<{ item: T; randWeighting: number }> {
-  const merged = new Map<string, { item: T; randWeighting: number }>();
-
-  for (const pool of pools) {
-    for (const entry of pool) {
-      const key = getKey?.(entry.item)
-        ?? (typeof entry.item === 'string' ? entry.item : JSON.stringify(entry.item));
-
-      const existing = merged.get(key);
-      if (existing) {
-        existing.randWeighting += entry.randWeighting;
-      } else {
-        merged.set(key, { item: entry.item, randWeighting: entry.randWeighting });
-      }
-    }
-  }
-
-  debug('aggregateWeightedPools:', pools.length, 'pools →', merged.size, 'unique items');
-  return Array.from(merged.values());
-}
-
-// ============================================================================
-// ACCUMULATE WITH UNWANTED (für NPC-Attribute)
-// ============================================================================
-
-/**
- * Akkumuliert Gewichte über Layer mit 60%-Kaskade und unwanted-Vierteln.
- *
- * Verarbeitung pro Layer:
- * 1. Zuerst unwanted verarbeiten (viertelt bisherigen akkumulierten Wert)
- * 2. Dann add verarbeiten (addiert Layer-Gewicht)
- *
- * Beispiel mit 4 Layern (Register → Goblin → Rotfang → Silberblatt):
- * - Kaskade: [21.6, 36, 60, 100]
- * - Trait "gutherzig":
- *   - Register: +21.6 → akkumuliert: 21.6
- *   - Goblin: (nicht) → akkumuliert: 21.6
- *   - Rotfang: unwanted → 21.6 / 4 = 5.4
- *   - Silberblatt: +100 → 5.4 + 100 = 105.4
- *
- * @param layers - Culture-Layers von Root nach Leaf
- * @param extractor - Holt LayerTraitConfig aus CultureData
- * @returns Map<attributeId, akkumuliertesGewicht>
- */
-export function accumulateWithUnwanted(
-  layers: CultureLayer[],
-  extractor: (culture: CultureData) => LayerTraitConfig | undefined
-): Map<string, number> {
-  const weights = calculateLayerWeights(layers.length);
-  const accumulated = new Map<string, number>();
-
-  for (let i = 0; i < layers.length; i++) {
-    const config = extractor(layers[i].culture);
-    if (!config) continue;
-
-    const layerWeight = weights[i];
-
-    // 1. Zuerst unwanted verarbeiten (viertelt bisherigen Wert)
-    for (const id of config.unwanted ?? []) {
-      const current = accumulated.get(id) ?? 0;
-      const quartered = current / 4;
-      accumulated.set(id, quartered);
-      debug(`Layer ${i}: unwanted '${id}' → ${current.toFixed(1)} / 4 = ${quartered.toFixed(1)}`);
-    }
-
-    // 2. Dann add verarbeiten (addiert Layer-Gewicht)
-    for (const id of config.add ?? []) {
-      const current = accumulated.get(id) ?? 0;
-      const newValue = current + layerWeight;
-      accumulated.set(id, newValue);
-      debug(`Layer ${i}: add '${id}' → ${current.toFixed(1)} + ${layerWeight.toFixed(1)} = ${newValue.toFixed(1)}`);
-    }
-  }
-
-  debug('accumulateWithUnwanted: total attributes with weight:', accumulated.size);
-  return accumulated;
-}

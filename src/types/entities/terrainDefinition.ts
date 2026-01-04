@@ -15,12 +15,21 @@ export const weatherRangeSchema = z.object({
 });
 export type WeatherRange = z.infer<typeof weatherRangeSchema>;
 
+/**
+ * Faktorbasierte Wetter-Ranges für Terrain.
+ * Faktoren werden zufällig aus diesen Ranges generiert.
+ */
 export const terrainWeatherRangesSchema = z.object({
+  /** Temperatur in °C */
   temperature: weatherRangeSchema,
+  /** Luftfeuchtigkeit in % (0-100) */
+  humidity: weatherRangeSchema,
+  /** Windgeschwindigkeit in km/h */
   wind: weatherRangeSchema,
-  precipChance: weatherRangeSchema,
-  precipIntensity: weatherRangeSchema,
-  fogChance: weatherRangeSchema,
+  /** Luftdruck (-1 bis +1) */
+  pressure: weatherRangeSchema,
+  /** Bewölkung (0-1) */
+  cloudCover: weatherRangeSchema,
 });
 export type TerrainWeatherRanges = z.infer<typeof terrainWeatherRangesSchema>;
 
@@ -54,6 +63,7 @@ export const terrainDefinitionSchema = z.object({
   environmentalPool: z.array(environmentalPoolEntrySchema).optional(),
   threatLevel: threatLevelSchema,
   blockerHeight: z.number().min(0),
+  visibilityRange: z.number().positive().optional(),
   defaultCrBudget: z.number().min(0),
   weatherRanges: terrainWeatherRangesSchema,
   displayColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),

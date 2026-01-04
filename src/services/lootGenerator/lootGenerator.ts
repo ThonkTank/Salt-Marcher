@@ -1,16 +1,11 @@
-// Ziel: Loot-Generierung mit Budget-Tracking, DefaultLoot und Culture-Resolution-Kaskade
+// Ziel: Loot-Generierung mit Budget-Tracking und Container-Pool-Allokation
 // Siehe: docs/services/Loot.md
 
 import { GOLD_PER_XP_BY_LEVEL, WEALTH_MULTIPLIERS, type WealthTag } from '@/constants/loot';
 import { vault } from '@/infrastructure/vault/vaultInstance';
-import {
-  resolveCultureChain,
-  mergeWeightedPool,
-  type CultureLayer,
-} from '@/utils/cultureResolution';
+import { aggregateWeightedPools, randomBetween, weightedRandomSelect } from '@/utils';
 import type { WeightedItem } from '#types/common/counting';
-import type { CreatureDefinition } from '#entities/creature';
-import type { Faction, CultureData } from '#entities/faction';
+import type { Faction } from '#entities/faction';
 
 // ============================================================================
 // DEBUG HELPER
@@ -130,44 +125,33 @@ export function calculateAverageWealthMultiplier(
 }
 
 // ============================================================================
-// LOOT POOL RESOLUTION (Culture-Kaskade)
+// LOOT POOL RESOLUTION
 // ============================================================================
 
 /**
- * Löst den Loot-Pool für eine Kreatur über die Culture-Resolution-Kaskade auf.
+ * Löst den Loot-Pool für eine Kreatur auf.
  *
- * Kaskade (60%-Gewichtung):
- * 1. Type/Species Culture
- * 2. Faction(s) via parentId-Kette
- * 3. Creature-eigener lootPool (höchste Priorität)
+ * Aktuell: Nur Creature.lootPool (Culture-Kaskade nicht implementiert,
+ * da keine Culture-Presets lootPools definiert haben).
  *
  * @param creature - Die Kreatur mit optionalem lootPool
- * @param faction - Die Fraktion (optional)
+ * @param _faction - Die Fraktion (unused, für spätere Culture-Kaskade)
  * @returns Gewichteter Pool von Item-IDs
  */
 export function resolveLootPool(
   creature: CreatureWithLoot,
-  faction: Faction | null
+  _faction: Faction | null
 ): Array<{ item: string; randWeighting: number }> {
-  // 1. Culture-Chain aufbauen (Type/Species → Faction(s))
-  const creatureDef = creature as unknown as CreatureDefinition;
-  const cultureLayers = resolveCultureChain(creatureDef, faction);
-
-  // 2. Creature als unterste Layer hinzufügen (höchste Priorität)
-  const layers: CultureLayer[] = [...cultureLayers];
-  if (creature.lootPool && creature.lootPool.length > 0) {
-    layers.push({
-      source: 'type', // Wird als 'creature' behandelt, aber Type für Kompatibilität
-      culture: { lootPool: creature.lootPool } as CultureData,
-    });
+  if (!creature.lootPool || creature.lootPool.length === 0) {
+    debug('resolveLootPool:', creature.id, '→ no lootPool defined');
+    return [];
   }
 
-  // 3. mergeWeightedPool() für lootPool
-  const pool = mergeWeightedPool(
-    layers,
-    (culture) => culture.lootPool,
-    () => 1.0 // Basis-Gewicht
-  );
+  // Uniform weight für alle Items im Creature-lootPool
+  const pool = creature.lootPool.map(itemId => ({
+    item: itemId,
+    randWeighting: 1.0,
+  }));
 
   debug('resolveLootPool:', creature.id, '→', pool.length, 'items in pool');
   return pool;
@@ -196,30 +180,6 @@ export function calculateLootValue(encounter: {
 }
 
 
-// ============================================================================
-// GENERIC ALLOCATION TYPES
-// ============================================================================
-
-/**
- * Item im Pool mit beliebigen Dimensionen.
- * Generisch typisiert für verschiedene Item-Typen.
- */
-export interface PoolEntry<T> {
-  item: T;
-  randWeighting: number;
-  dimensions: Record<string, number>;  // z.B. { value: 10, weight: 2 }
-}
-
-/**
- * Container der Items empfängt.
- * Gewichtung ergibt sich aus Budget-Verhältnissen (remaining/total).
- */
-export interface AllocationContainer {
-  id: string;
-  budgets: Record<string, number>;    // z.B. { value: 100, weight: 50 }
-  received: Record<string, number>;   // Tracking: { value: 0, weight: 0 }
-}
-
 /**
  * Ergebnis einer Item-Allokation.
  */
@@ -230,276 +190,296 @@ export interface AllocationResult<T> {
   dimensions: Record<string, number>; // Item-Dimensionen × Quantity
 }
 
+// ============================================================================
+// CONTAINER-POOL ALLOCATION (Unified)
+// ============================================================================
+
 /**
- * Ergebnis von selectPoolItem (generisch).
+ * Container mit eigenem Pool für distributePoolItems().
+ * Jeder Container bringt seinen eigenen Pool mit.
  */
-export interface PoolItemSelection<T> {
-  item: T;
-  quantity: number;
-  dimensions: Record<string, number>;
+export interface ContainerWithPool<T> {
+  id: string;
+  pool: Array<{ item: T; randWeighting: number; dimensions: Record<string, number> }>;
+  budgets: Record<string, number>;  // z.B. { value: 100, weight: 50 }
 }
 
-// ============================================================================
-// GENERIC ALLOCATION FUNCTIONS
-// ============================================================================
+/**
+ * Interne Tracking-Struktur für Container während der Allokation.
+ */
+interface ContainerState<T> {
+  id: string;
+  pool: Map<string, { item: T; randWeighting: number; dimensions: Record<string, number> }>;
+  budgets: Record<string, number>;
+  received: Record<string, number>;
+}
 
 /**
- * Wählt das nächste Item aus einem generischen Pool.
+ * Berechnet Budget-Fraktionen basierend auf logarithmischer Skalierung.
+ *
+ * Ziel: Item-Anzahl skaliert logarithmisch mit Budget:
+ * - 1000 Gold → 4-13 Items
+ * - 10000 Gold → 8-24 Items
+ * - 100000 Gold → 12-37 Items
+ */
+function calcBudgetFraction(
+  totalBudget: number,
+  poolSize: number
+): number {
+  if (totalBudget <= 0 || poolSize <= 0) return 0;
+
+  // Ziel-Item-Anzahl: log10(budget)² ergibt schöne Skalierung
+  const logBudget = Math.log10(Math.max(10, totalBudget));
+  const targetItems = Math.max(1, Math.floor(logBudget * logBudget));
+
+  // Prozent-Range für Varianz (±50% um target)
+  const maxPercent = 100 / (targetItems * 0.5);   // Weniger Items = höhere %
+  const minPercent = 100 / (targetItems * 1.5);   // Mehr Items = niedrigere %
+
+  // Pool-Size Constraint (nicht mehr als Pool erlaubt)
+  const adjustedMinPercent = Math.max(minPercent, 100 / poolSize);
+
+  // Random zwischen min und max
+  const percent = randomBetween(
+    Math.floor(adjustedMinPercent),
+    Math.ceil(maxPercent)
+  );
+
+  const fraction = totalBudget * (percent / 100);
+  debug('calcBudgetFraction: budget', totalBudget, 'poolSize', poolSize, '→', percent.toFixed(1), '% →', fraction.toFixed(1));
+  return fraction;
+}
+
+/**
+ * Prüft ob ein Container mindestens ein Budget erschöpft hat.
+ * Ein Container ist "inaktiv" wenn received >= budget für irgendeine Dimension.
+ */
+function hasExhaustedBudget<T>(state: ContainerState<T>): boolean {
+  return Object.keys(state.budgets).some(dim =>
+    (state.received[dim] ?? 0) >= state.budgets[dim]
+  );
+}
+
+/**
+ * Verteilt Items aus Container-eigenen Pools auf ALLE passenden Container.
  *
  * Algorithmus:
- * 1. Filter: Items deren Dimensionen ≤ targetBudgets (alle Dimensionen)
- * 2. Weighted Random Selection aus eligible Items
- * 3. Quantity = min(targetBudget[dim] / item.dimension[dim]) für alle Dimensionen
- * 4. Item aus Pool entfernen (variety)
+ * 1. Initialisiere states, startTotalBudget, usedTotalBudget
+ * 2. LOOP:
+ *    a. Filter activeStates = states wo KEIN Budget erschöpft (received >= budget)
+ *    b. IF usedTotalBudget >= startTotalBudget für irgendein dim → RETURN
+ *    c. IF activeStates leer → RETURN
+ *    d. Aggregiere pools NUR von activeStates → aggregatedPool
+ *    e. Berechne Budget-Fraktion pro Dimension (von startTotalBudget!)
+ *    f. Wähle Item das in Fraktionen passt
+ *    g. Berechne baseQuantity = min(fraction / itemDim) für alle dims
+ *    h. Finde eligibleContainers: activeStates wo Item im Pool + nicht exhausted
+ *    i. Verteile auf ALLE eligibleContainers (gewichtet nach remaining budget)
+ *    j. Entferne Item aus ALLEN Pools
+ *    k. Erhöhe usedTotalBudget
+ *    l. GOTO 2
  *
- * @param pool - Mutabler Pool (wird modifiziert!)
- * @param targetBudgets - Ziel-Budgets pro Dimension für diese Iteration
- * @returns Item + Quantity + Dimensions, oder null wenn nichts passt
+ * @param containers - Container mit eigenen Pools und Budgets
+ * @param options - Optionale Konfiguration
+ * @returns Allokations-Ergebnisse für alle Container
  */
-export function selectPoolItem<T>(
-  pool: PoolEntry<T>[],
-  targetBudgets: Record<string, number>
-): PoolItemSelection<T> | null {
-  if (pool.length === 0) {
-    debug('selectPoolItem: pool empty');
-    return null;
+export function distributePoolItems<T>(
+  containers: ContainerWithPool<T>[],
+  options?: {
+    maxIterations?: number;
+    getItemKey?: (item: T) => string;
+  }
+): AllocationResult<T>[] {
+  if (containers.length === 0) {
+    debug('distributePoolItems: no containers');
+    return [];
   }
 
-  // Step 1: Filter - Items deren Dimensionen ≤ targetBudgets (alle Dimensionen)
-  const eligible = pool.filter(entry => {
-    for (const [dim, targetValue] of Object.entries(targetBudgets)) {
-      const itemValue = entry.dimensions[dim] ?? 0;
-      if (itemValue > targetValue) {
-        return false;
-      }
+  const maxIterations = options?.maxIterations ?? 100;
+  const getItemKey = options?.getItemKey ?? ((item: T) =>
+    typeof item === 'object' && item !== null && 'id' in item
+      ? String((item as { id: unknown }).id)
+      : JSON.stringify(item)
+  );
+
+  const results: AllocationResult<T>[] = [];
+
+  // Step 1: Initialize container states with Map-based pools
+  const states: ContainerState<T>[] = containers.map(c => ({
+    id: c.id,
+    pool: new Map(c.pool.map(entry => [getItemKey(entry.item), entry])),
+    budgets: { ...c.budgets },
+    received: Object.fromEntries(Object.keys(c.budgets).map(k => [k, 0])),
+  }));
+
+  // Calculate start total budgets across all containers (immutable reference)
+  const startTotalBudget: Record<string, number> = {};
+  for (const state of states) {
+    for (const [dim, budget] of Object.entries(state.budgets)) {
+      startTotalBudget[dim] = (startTotalBudget[dim] ?? 0) + budget;
     }
-    return true;
-  });
-
-  if (eligible.length === 0) {
-    debug('selectPoolItem: no eligible items for targetBudgets:', targetBudgets);
-    return null;
   }
 
-  // Step 2: Weighted random selection (inline to preserve full PoolEntry)
-  const totalWeight = eligible.reduce((sum, entry) => sum + entry.randWeighting, 0);
-  if (totalWeight <= 0) {
-    debug('selectPoolItem: total weight is 0');
-    return null;
-  }
+  // Track used budgets globally
+  const usedTotalBudget: Record<string, number> = {};
 
-  let roll = Math.random() * totalWeight;
-  let selected: PoolEntry<T> | null = null;
-  for (const entry of eligible) {
-    roll -= entry.randWeighting;
-    if (roll <= 0) {
-      selected = entry;
+  debug('distributePoolItems: starting with', containers.length, 'containers, startTotal:', startTotalBudget);
+
+  let iterations = 0;
+  while (iterations++ < maxIterations) {
+    // Step 2a: Filter to containers with NO exhausted budget
+    const activeStates = states.filter(s => !hasExhaustedBudget(s));
+
+    // Step 2b: Check global budget exhaustion
+    const globalExhausted = Object.entries(usedTotalBudget).some(([dim, used]) =>
+      startTotalBudget[dim] !== undefined && used >= startTotalBudget[dim]
+    );
+    if (globalExhausted) {
+      debug('distributePoolItems: global budget exhausted');
       break;
     }
-  }
-  if (!selected) {
-    selected = eligible[eligible.length - 1]; // Fallback
-  }
 
-  // Step 3: Calculate quantity = min(targetBudget[dim] / item.dimension[dim])
-  let quantity = Infinity;
-  for (const [dim, targetValue] of Object.entries(targetBudgets)) {
-    const itemValue = selected.dimensions[dim];
-    if (itemValue && itemValue > 0) {
-      const qtyForDim = Math.floor(targetValue / itemValue);
-      quantity = Math.min(quantity, qtyForDim);
+    // Step 2c: Check if any active containers remain
+    if (activeStates.length === 0) {
+      debug('distributePoolItems: no active containers');
+      break;
     }
-  }
-  quantity = Math.max(1, isFinite(quantity) ? quantity : 1);
 
-  // Step 4: Remove from pool (variety)
-  const poolIndex = pool.findIndex(entry => entry === selected);
-  if (poolIndex !== -1) {
-    pool.splice(poolIndex, 1);
-  }
+    // Step 2d: Aggregate pools from ACTIVE states only
+    const allPools = activeStates.map(s => Array.from(s.pool.values()));
+    const aggregatedPool = aggregateWeightedPools(allPools, getItemKey);
 
-  // Dimensions × Quantity
-  const totalDimensions: Record<string, number> = {};
-  for (const [dim, value] of Object.entries(selected.dimensions)) {
-    totalDimensions[dim] = value * quantity;
-  }
+    if (aggregatedPool.length === 0) {
+      debug('distributePoolItems: aggregated pool empty');
+      break;
+    }
 
-  debug('selectPoolItem: selected item ×', quantity, 'dimensions:', totalDimensions);
+    // Step 2e: Calculate budget fractions from START total budget
+    const targetBudgets: Record<string, number> = {};
+    for (const [dim, total] of Object.entries(startTotalBudget)) {
+      targetBudgets[dim] = calcBudgetFraction(total, aggregatedPool.length);
+    }
 
-  return {
-    item: selected.item,
-    quantity,
-    dimensions: totalDimensions,
-  };
-}
+    // Step 2f: Find items that fit in target budgets
+    const eligibleItems = aggregatedPool.filter(entry => {
+      for (const state of activeStates) {
+        const poolEntry = state.pool.get(getItemKey(entry.item));
+        if (poolEntry) {
+          let fits = true;
+          for (const [dim, target] of Object.entries(targetBudgets)) {
+            const itemDim = poolEntry.dimensions[dim] ?? 0;
+            if (itemDim > target) {
+              fits = false;
+              break;
+            }
+          }
+          if (fits) return true;
+        }
+      }
+      return false;
+    });
 
-/**
- * Wählt einen Container für ein Item basierend auf Budget-Verhältnissen.
- *
- * Gewichtung pro Container:
- * - Pro Dimension: (remaining / total) = (budgets[dim] - received[dim]) / totals[dim]
- * - Kombiniertes Gewicht: Durchschnitt aller Dimensionen
- *
- * @param dimensions - Item-Dimensionen × Quantity
- * @param containers - Verfügbare Container (received wird NICHT modifiziert)
- * @param totals - Gesamt-Budgets für Gewichtungsberechnung
- * @returns Container oder null wenn keiner passt
- */
-export function selectTargetContainer(
-  dimensions: Record<string, number>,
-  containers: AllocationContainer[],
-  totals: Record<string, number>
-): AllocationContainer | null {
-  if (containers.length === 0) {
-    debug('selectTargetContainer: no containers');
-    return null;
-  }
+    if (eligibleItems.length === 0) {
+      debug('distributePoolItems: no items fit target budgets', targetBudgets);
+      break;
+    }
 
-  // Step 1: Filter - Container wo Item reinpasst
-  const eligible: Array<{ container: AllocationContainer; weight: number }> = [];
+    // Select item via weighted random
+    const selectedItem = weightedRandomSelect(
+      eligibleItems.map(e => ({ item: e.item, randWeighting: e.randWeighting })),
+      'distributePoolItems'
+    );
+    if (!selectedItem) {
+      debug('distributePoolItems: weightedRandomSelect returned null');
+      break;
+    }
 
-  for (const container of containers) {
-    // Prüfen: Passt Item in alle Dimensionen?
-    let fits = true;
-    for (const [dim, itemValue] of Object.entries(dimensions)) {
-      const budget = container.budgets[dim] ?? 0;
-      const received = container.received[dim] ?? 0;
-      const remaining = budget - received;
-      if (itemValue > remaining) {
-        fits = false;
+    const itemKey = getItemKey(selectedItem);
+
+    // Get full item dimensions from first active container that has it
+    let itemDimensions: Record<string, number> = {};
+    for (const state of activeStates) {
+      const poolEntry = state.pool.get(itemKey);
+      if (poolEntry) {
+        itemDimensions = poolEntry.dimensions;
         break;
       }
     }
-    if (!fits) continue;
 
-    // Step 2: Gewicht berechnen = Durchschnitt aller (remaining / total)
-    let weightSum = 0;
-    let dimCount = 0;
-    for (const dim of Object.keys(dimensions)) {
-      const budget = container.budgets[dim] ?? 0;
-      const received = container.received[dim] ?? 0;
-      const remaining = budget - received;
-      const total = totals[dim] ?? 1;
-      const ratio = remaining / Math.max(1, total);
-      weightSum += ratio;
-      dimCount++;
+    // Step 2g: Calculate baseQuantity and track limiting dimension
+    let baseQuantity = Infinity;
+    let limitingDim = '';
+    for (const [dim, target] of Object.entries(targetBudgets)) {
+      const itemDim = itemDimensions[dim];
+      if (itemDim && itemDim > 0) {
+        const qty = Math.floor(target / itemDim);
+        if (qty < baseQuantity) {
+          baseQuantity = qty;
+          limitingDim = dim;
+        }
+      }
     }
-    const weight = dimCount > 0 ? weightSum / dimCount : 0.1;
+    baseQuantity = Math.max(1, isFinite(baseQuantity) ? baseQuantity : 1);
 
-    eligible.push({ container, weight: Math.max(0.01, weight) });
-  }
+    // Step 2h: Find ALL eligible containers (active + has item in pool)
+    const eligibleContainers = activeStates.filter(state =>
+      state.pool.has(itemKey) && !hasExhaustedBudget(state)
+    );
 
-  if (eligible.length === 0) {
-    debug('selectTargetContainer: no eligible containers for dimensions:', dimensions);
-    return null;
-  }
-
-  // Step 3: Weighted random selection
-  const totalWeight = eligible.reduce((sum, e) => sum + e.weight, 0);
-  let roll = Math.random() * totalWeight;
-
-  for (const { container, weight } of eligible) {
-    roll -= weight;
-    if (roll <= 0) {
-      debug('selectTargetContainer: selected', container.id, '(weight:', weight.toFixed(3), ')');
-      return container;
+    if (eligibleContainers.length === 0) {
+      debug('distributePoolItems: no container can receive item', itemKey);
+      // Remove item from all pools and continue
+      for (const state of states) {
+        state.pool.delete(itemKey);
+      }
+      continue;
     }
-  }
 
-  // Fallback
-  return eligible[0].container;
-}
+    // Step 2i: Distribute to ALL eligible containers
+    // Weight = remaining budget in limiting dimension
+    const containerWeights = eligibleContainers.map(state => ({
+      state,
+      weight: Math.max(0.01, state.budgets[limitingDim] - (state.received[limitingDim] ?? 0)),
+    }));
+    const totalWeight = containerWeights.reduce((sum, c) => sum + c.weight, 0);
 
-/**
- * Generische Item-Allokation auf Container.
- * Iteriert intern bis eines der Budgets erschöpft ist.
- *
- * @param pool - Pool mit Items und Dimensionen (wird mutiert!)
- * @param containers - Container mit Budgets (received wird aktualisiert)
- * @param options - Optionen
- * @returns Allokations-Ergebnisse
- */
-export function allocateItems<T>(
-  pool: PoolEntry<T>[],
-  containers: AllocationContainer[],
-  options: {
-    maxIterations?: number;
-    /**
-     * Berechnet targetBudgets für jeden Iterationsschritt.
-     * @param remainingBudgets - Summe aller verbleibenden Container-Budgets
-     * @param poolSize - Aktuelle Pool-Größe
-     * @returns Target-Budgets für diese Iteration
-     */
-    calcTargetBudgets: (
-      remainingBudgets: Record<string, number>,
-      poolSize: number
-    ) => Record<string, number>;
-  }
-): AllocationResult<T>[] {
-  const maxIterations = options.maxIterations ?? 100;
-  const results: AllocationResult<T>[] = [];
+    for (const { state, weight } of containerWeights) {
+      // Quantity for this container based on weight ratio
+      const containerQuantity = Math.max(1, Math.round(baseQuantity * (weight / totalWeight)));
 
-  // Totals berechnen (Summe aller Container-Budgets pro Dimension)
-  const totals: Record<string, number> = {};
-  for (const container of containers) {
-    for (const [dim, budget] of Object.entries(container.budgets)) {
-      totals[dim] = (totals[dim] ?? 0) + budget;
+      // Calculate dimensions for this allocation
+      const allocDimensions: Record<string, number> = {};
+      for (const [dim, value] of Object.entries(itemDimensions)) {
+        allocDimensions[dim] = value * containerQuantity;
+      }
+
+      // Record allocation
+      results.push({
+        containerId: state.id,
+        item: selectedItem,
+        quantity: containerQuantity,
+        dimensions: allocDimensions,
+      });
+
+      // Update container's received
+      for (const [dim, value] of Object.entries(allocDimensions)) {
+        state.received[dim] = (state.received[dim] ?? 0) + value;
+      }
+
+      // Step 2k: Update global usedTotalBudget
+      for (const [dim, value] of Object.entries(allocDimensions)) {
+        usedTotalBudget[dim] = (usedTotalBudget[dim] ?? 0) + value;
+      }
+
+      debug('distributePoolItems: allocated', itemKey, '×', containerQuantity, 'to', state.id);
+    }
+
+    // Step 2j: Remove item from ALL pools
+    for (const state of states) {
+      state.pool.delete(itemKey);
     }
   }
 
-  // Remaining Budgets initialisieren (= totals)
-  const remainingBudgets: Record<string, number> = { ...totals };
-
-  debug('allocateItems: starting with totals:', totals, 'pool size:', pool.length);
-
-  let iterations = 0;
-  while (iterations++ < maxIterations && pool.length > 0) {
-    // 1. Target-Budgets für diese Iteration berechnen
-    const targetBudgets = options.calcTargetBudgets(remainingBudgets, pool.length);
-
-    // 2. Item auswählen
-    const selection = selectPoolItem(pool, targetBudgets);
-    if (!selection) {
-      debug('allocateItems: no more eligible items');
-      break;
-    }
-
-    // 3. Container auswählen
-    const container = selectTargetContainer(selection.dimensions, containers, totals);
-    if (!container) {
-      debug('allocateItems: no container fits item, stopping');
-      break;
-    }
-
-    // 4. Allokation speichern
-    results.push({
-      containerId: container.id,
-      item: selection.item,
-      quantity: selection.quantity,
-      dimensions: selection.dimensions,
-    });
-
-    // 5. Container.received aktualisieren
-    for (const [dim, value] of Object.entries(selection.dimensions)) {
-      container.received[dim] = (container.received[dim] ?? 0) + value;
-    }
-
-    // 6. RemainingBudgets aktualisieren
-    for (const [dim, value] of Object.entries(selection.dimensions)) {
-      remainingBudgets[dim] = (remainingBudgets[dim] ?? 0) - value;
-    }
-
-    // 7. Abbruch wenn EIN Budget erschöpft (≤ 0)
-    const exhausted = Object.entries(remainingBudgets).some(([dim, val]) => {
-      // Nur Dimensionen prüfen die auch Budgets haben
-      return totals[dim] !== undefined && val <= 0;
-    });
-    if (exhausted) {
-      debug('allocateItems: budget exhausted, stopping');
-      break;
-    }
-  }
-
-  debug('allocateItems: completed with', results.length, 'allocations after', iterations - 1, 'iterations');
+  debug('distributePoolItems: completed with', results.length, 'allocations after', iterations - 1, 'iterations');
   return results;
 }

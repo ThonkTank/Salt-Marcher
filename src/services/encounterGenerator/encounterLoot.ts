@@ -1,11 +1,15 @@
 // Ziel: Loot fuer Encounter generieren und auf Kreaturen verteilen
 // Siehe: docs/services/encounter/encounterLoot.md
 //
-// Pipeline (4 Steps):
+// Pipeline (v6, 4 Steps):
 // 1. calculateWealthDiscrepancy() - Diskrepanz zwischen possessions und totalBudget
-// 2. fillOpenBudget() - Offenes Budget mit allocateItems() fuellen (nur value)
+// 2. fillOpenBudget() - Offenes Budget mit distributePoolItems() fuellen (nur value)
 // 3. (In Step 2 integriert) - Items werden direkt NPCs zugewiesen
 // 4. selectCarriedItems() - Was NPCs gerade dabei haben (ephemer, nur weight)
+//
+// Beide Funktionen nutzen distributePoolItems() aus lootGenerator.ts:
+// - Jeder Container (NPC) hat seinen eigenen Pool
+// - Budget-Fraktionen basierend auf log10(budget)²
 
 import type { EncounterGroup } from '@/types/encounterTypes';
 import type { CreatureDefinition, Faction, NPC } from '@/types/entities';
@@ -18,13 +22,11 @@ import {
   getWealthMultiplier,
   resolveLootPool,
   xpToGold,
-  allocateItems,
+  distributePoolItems,
   type Item,
-  type PoolEntry,
-  type AllocationContainer,
   type AllocationResult,
+  type ContainerWithPool,
 } from '../lootGenerator/lootGenerator';
-import { aggregateWeightedPools } from '@/utils';
 
 // ============================================================================
 // DEBUG HELPER
@@ -233,7 +235,8 @@ function calculateWealthDiscrepancy(
 /**
  * Step 2: Füllt offenes Budget mit neuen Items.
  *
- * Verwendet allocateItems() mit NUR value-Dimension.
+ * Verwendet distributePoolItems() mit NUR value-Dimension.
+ * Jeder NPC hat seinen eigenen Pool (Culture-basiert).
  * Neue Items werden direkt zu npc.possessions hinzugefügt.
  *
  * @returns Die generierten Items (für spätere Persistierung nach Encounter-Ende)
@@ -250,48 +253,43 @@ function fillOpenBudget(
     return [];
   }
 
-  // Containers bauen: nur value-Dimension
-  const containers: AllocationContainer[] = npcsWithOpenBudget.map(d => ({
-    id: d.npcId,
-    budgets: { value: d.openBudget },
-    received: { value: 0 },
-  }));
+  // Containers mit eigenen Pools bauen (neu: jeder NPC hat seinen eigenen Pool)
+  const containers: ContainerWithPool<Item>[] = [];
+  for (const d of npcsWithOpenBudget) {
+    // Pool mit Dimensionen laden (nur value, kein weight für diesen Step)
+    const pool: Array<{ item: Item; randWeighting: number; dimensions: Record<string, number> }> = [];
+    for (const entry of d.pool) {
+      const itemId = entry.item as string;
+      const item = vault.getEntity<Item>('item', itemId);
+      if (!item) continue;
 
-  // Pool aggregieren: alle Pools von NPCs mit openBudget
-  const allPools = npcsWithOpenBudget.map(d => d.pool);
-  const mergedPool = aggregateWeightedPools(allPools, (item) => item);
+      pool.push({
+        item,
+        randWeighting: entry.randWeighting,
+        dimensions: {
+          value: item.value,  // Per-unit value
+        },
+      });
+    }
 
-  // Pool mit Dimensionen laden (nur value, kein weight für diesen Step)
-  const genericPool: PoolEntry<Item>[] = [];
-  for (const entry of mergedPool) {
-    const itemId = entry.item as string;
-    const item = vault.getEntity<Item>('item', itemId);
-    if (!item) continue;
-
-    genericPool.push({
-      item,
-      randWeighting: entry.randWeighting,
-      dimensions: {
-        value: item.value,
-        // weight hier NICHT berücksichtigen - das ist nur für Step 4
-      },
-    });
+    if (pool.length > 0) {
+      containers.push({
+        id: d.npcId,
+        pool,
+        budgets: { value: d.openBudget },
+      });
+    }
   }
 
-  if (genericPool.length === 0) {
-    debug('fillOpenBudget: Empty pool');
+  if (containers.length === 0) {
+    debug('fillOpenBudget: No containers with pools');
     return [];
   }
 
-  // Generische Allokation (nur value-Dimension)
-  const allocations = allocateItems(genericPool, containers, {
+  // Generische Allokation über Container mit eigenen Pools
+  const allocations = distributePoolItems(containers, {
     maxIterations: 100,
-    calcTargetBudgets: (remainingBudgets, poolSize) => {
-      const minPercent = poolSize < 5 ? (1 / poolSize) : 0.1;
-      const maxPercent = Math.min(0.5, minPercent + 0.2);
-      const percent = minPercent + Math.random() * (maxPercent - minPercent);
-      return { value: remainingBudgets.value * percent };
-    },
+    getItemKey: (item) => item.id,
   });
 
   debug('fillOpenBudget:', allocations.length, 'items generated');
@@ -338,7 +336,7 @@ function addToPossessions(
  * Step 4: Bestimmt welche Items ein NPC gerade bei sich trägt.
  *
  * - Alle possessions als equal-weight Pool laden
- * - allocateItems() mit nur weight-Dimension
+ * - distributePoolItems() mit nur weight-Dimension (per-unit!)
  * - Ergebnis: npc.carriedPossessions = was NPC gerade dabei hat (ephemer, nicht persistiert)
  *
  * @param npc - Der NPC mit possessions
@@ -353,50 +351,52 @@ function selectCarriedItems(
     return [];
   }
 
-  // Alle possessions als equal-weight Pool laden
-  const pool: PoolEntry<Item>[] = [];
+  if (carryCapacity <= 0) {
+    return [];
+  }
+
+  // Pool mit per-unit Dimensions (WICHTIG: nicht skaliert!)
+  const pool: Array<{ item: Item; randWeighting: number; dimensions: Record<string, number> }> = [];
   for (const p of npc.possessions) {
     const item = vault.getEntity<Item>('item', p.id);
     if (!item) continue;
 
-    // Quantity als separate Einträge (jedes Stück kann einzeln getragen werden)
-    // Aber für Effizienz: ein Eintrag pro Item-Typ, dimensions skaliert
     pool.push({
       item,
       randWeighting: 1,  // Alle gleich wahrscheinlich
       dimensions: {
-        weight: (item.pounds ?? 0) * p.quantity,
+        weight: item.pounds ?? 0,  // PER-UNIT weight, nicht × quantity!
       },
     });
   }
 
-  if (pool.length === 0 || carryCapacity <= 0) {
+  if (pool.length === 0) {
     return [];
   }
 
-  // Ein Container: der NPC selbst
-  const container: AllocationContainer = {
+  // Ein Container: der NPC selbst mit seinem Pool
+  const container: ContainerWithPool<Item> = {
     id: npc.id,
+    pool,
     budgets: { weight: carryCapacity },
-    received: { weight: 0 },
   };
 
-  // Allokation nur nach Gewicht
-  const carried = allocateItems(pool, [container], {
-    maxIterations: pool.length,  // Max so viele wie Items im Pool
-    calcTargetBudgets: (remaining) => ({
-      // Große Chunks um möglichst viel zu tragen
-      weight: remaining.weight,
-    }),
+  // Allokation über distributePoolItems (korrekte Budget-Fraktionierung)
+  const carried = distributePoolItems([container], {
+    maxIterations: pool.length,
+    getItemKey: (item) => item.id,
   });
 
-  // Ergebnis als loot-Format
+  // Ergebnis als loot-Format mit korrekten Mengen
   const result: Array<{ id: string; quantity: number }> = [];
   for (const allocation of carried) {
-    // Finde die ursprüngliche Menge aus possessions
+    // Die Quantity aus der Allokation entspricht der Menge die getragen werden kann
+    // Aber wir sollten nicht mehr tragen als der NPC besitzt
     const original = npc.possessions.find(p => p.id === allocation.item.id);
     if (original) {
-      result.push({ id: allocation.item.id, quantity: original.quantity });
+      const maxQuantity = original.quantity;
+      const carriedQuantity = Math.min(allocation.quantity, maxQuantity);
+      result.push({ id: allocation.item.id, quantity: carriedQuantity });
     }
   }
 

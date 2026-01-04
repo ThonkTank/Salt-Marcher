@@ -1,5 +1,5 @@
 // Vault-persistierte Trait-Definition
-// Siehe: docs/entities/culture-data.md
+// Siehe: docs/types/culture.md
 //
 // Traits werden zentral definiert und in CultureData per ID referenziert.
 // Alle Traits sind immer im Pool verfügbar:

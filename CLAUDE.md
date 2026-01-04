@@ -166,7 +166,9 @@ src/                   # Source code
     sessionControls/
       sessionControl.ts  # Session Control - Svelte-spezifische UI-Schicht
   constants/
+    action.ts  # Action-bezogene Konstanten
     creature.ts  # Kreatur-bezogene Konstanten
+    culture.ts  # Konstanten für Culture-Resolution
     encounter.ts  # Encounter-bezogene Konstanten
     encounterConfig.ts  # Encounter-Konfiguration
     faction.ts  # Fraktions-bezogene Konstanten
@@ -176,6 +178,7 @@ src/                   # Source code
     npc.ts  # NPC-bezogene Konstanten
     terrain.ts  # Terrain-/Map-bezogene Konstanten
     time.ts  # Zeit-bezogene Konstanten
+    weather.ts  # Ziel: Konstanten für Weather-Faktor-Generierung
   infrastructure/
     state/
       sessionState.ts  # Einfacher State-Container ohne Framework-Dependencies
@@ -187,19 +190,26 @@ src/                   # Source code
     creatures.ts  # Ziel: Creature-Presets: disposition zu baseDisposition ko...
     factions.ts  # Ziel: Faction-Presets: reputationWithParty zu reputations...
   services/
+    combatSimulator/
+      combatantAI.ts  # Ziel: Entscheidungslogik für Combat-AI: Action/Target-Aus...
+      combatHelpers.ts  # Ziel: Gemeinsame Helper-Funktionen für Combat-AI und Comb...
+      combatResolver.ts  # Ziel: Combat State-Management und Action-Resolution
     encounterGenerator/
-      balancing.ts  # Encounter-Balancing durch Umstände anpassen
-      difficulty.ts  # Difficulty-Berechnung und Ziel-Difficulty
-      encounterDistance.ts  # Perception + Distanz für Encounter berechnen
+      balancing.ts  # Ziel: Encounter-Gruppen an Ziel-Difficulty anpassen durch...
+      difficulty.ts  # Ziel: Difficulty-Berechnung via PMF-basierter Combat-Simu...
+      encounterDistance.ts  # Ziel: Perception + Distanz für Encounter berechnen
       encounterGenerator.ts  # Ziel: Encounter-Generierungs-Pipeline verwalten. Helper-S...
+      encounterHelpers.ts  # Ziel: Helper-Funktionen für Encounter-Gruppen mit Slots-S...
       encounterLoot.ts  # Ziel: Loot fuer Encounter generieren und auf Kreaturen ve...
       fillGroups.ts  # Ziel: Gruppen mit NPCs befüllen (kombiniert groupPopulati...
       groupActivity.ts  # Ziel: Activity + Goal für Encounter-Gruppen zuweisen
       groupSeed.ts  # Seed-Kreatur für Encounter auswählen
     lootGenerator/
-      lootGenerator.ts  # Ziel: Loot-Generierung mit Budget-Tracking, DefaultLoot u...
+      lootGenerator.ts  # Ziel: Loot-Generierung mit Budget-Tracking und Container-...
     npcGenerator/
       npcGenerator.ts  # Ziel: NPC-Generierung für Encounter, Quest, Shop, POI
+    weatherGenerator/
+      weatherGenerator.ts  # Ziel: Weather generieren aus Terrain-Ranges, Season, Time...
   types/
     common/
       counting.ts  # Zähl- und Gewichtungs-Typen für das Encounter-System
@@ -207,8 +217,11 @@ src/                   # Source code
       reputation.ts  # Ziel: Gemeinsames Schema für Beziehungen zwischen Entities
       Result.ts
     entities/
+      action.ts  # Vault-persistierte Action-Definition
       activity.ts  # Vault-persistierte Activity-Definition
+      character.ts  # Vault-persistierte Character-Entity (Player Characters)
       creature.ts  # Vault-persistierte CreatureDefinition und Runtime Creatur...
+      culture.ts  # Vault-persistierte Culture-Entity
       faction.ts  # Vault-persistierte Faction
       goal.ts  # Ziel: Vault-persistierte Goal-Definition
       groupTemplate.ts  # Vault-persistierte GroupTemplate
@@ -219,6 +232,7 @@ src/                   # Source code
       npc.ts  # Vault-persistierte NPC-Entity
       overworldTile.ts  # Vault-persistierte OverworldTile
       quirk.ts  # Ziel: Vault-persistierte Quirk-Definition
+      species.ts  # Vault-persistierte Species-Entity
       terrainDefinition.ts  # Vault-persistierte TerrainDefinition
       trait.ts  # Vault-persistierte Trait-Definition
     encounterTypes.ts  # Encounter-Typen: Runtime-Repräsentation und Trigger für E...
@@ -229,14 +243,25 @@ src/                   # Source code
     sessionState.ts  # Session-State Typen für CLI-Testbarkeit
     terrainDefinition.ts  # Terrain-Definition für Hex-Tiles
     time.ts  # Zeit-Typen für Kalender/Zeit-System
-    weather.ts  # WeatherType Entity
+    weather.ts  # Ziel: Faktorbasiertes Weather-System mit Event-Matching
   utils/
-    cultureResolution.ts  # Ziel: Shared Culture-Resolution für NPC-Generator und Act...
-    diceParser.ts  # Dice Expression Parser - Recursive Descent Parser für Wür...
-    encounterHelpers.ts  # Ziel: Helper-Funktionen für Encounter-Gruppen mit Slots-S...
-    hex.ts  # Hex-Grid Utilities
+    hexSpace/
+      hex.ts  # Hex-Grid Utilities
+      index.ts  # Hex Space Utils Index
+      visibility.ts  # Ziel: Sightline- und Visibility-Berechnung fuer Overland-...
+    probability/
+      __tests__/
+      diceParser.ts  # Dice Expression Parser - Recursive Descent Parser für Wür...
+      index.ts  # Probability Utils Index
+      pmf.ts  # Ziel: Probability Mass Function (PMF) Utilities für Comba...
+      random.ts  # Single Source of Truth für alle Zufallsfunktionen.
+    squareSpace/
+      __tests__/
+      grid.ts  # Ziel: Grid utilities für square-cell Maps (Combat, Dungeon)
+      gridLineOfSight.ts  # Ziel: Line of Sight utilities für square-cell Maps (Comba...
+      index.ts  # Square Space Utils Index
+    cultureResolution.ts  # Ziel: Culture-Selection und Attribut-Resolution für NPC-G...
     index.ts  # Utils Index
-    random.ts  # Single Source of Truth für alle Zufallsfunktionen.
     validation.ts  # Input-Validierung für CLI und Services
   workflows/
     encounterWorkflow.ts  # Ziel: Encounter generieren lassen, in DetailView anzeigen...
@@ -273,6 +298,9 @@ docs/                  # Authoritative documentation (German)
     SessionState.md  # State-Container fuer alle In-Session-Daten
     TravelWorkflow.md  # Orchestration der Hex-Overland-Reise
   services/
+    combatSimulator/
+      combatantAI.md  # AI-Entscheidungslogik fuer Combat - was soll eine Kreatur...
+      combatResolver.md  # Combat State-Management und Action-Resolution
     encounter/
       balancing.md  # Encounter-Service (Step 6.1)
       difficulty.md  # Encounter-Service (Step 5)
@@ -283,7 +311,7 @@ docs/                  # Authoritative documentation (German)
       groupActivity.md  # Encounter-Service (Step 5.2)
       groupSeed.md  # Encounter-Service (Step 2)
     npcs/
-      Culture-Resolution.md  # Kultur-Aufloesung fuer NPC-Generierung
+      Culture-Resolution.md  # Culture-Auswahl und Attribut-Resolution fuer NPC-Generierung
       NPC-Generation.md  # Automatische NPC-Generierung
       NPC-Matching.md  # Existierenden NPC finden
       NPCs.md  # NPC-Management fuer Encounters, Quests und POIs
@@ -296,7 +324,7 @@ docs/                  # Authoritative documentation (German)
     action.md  # [Library](../views/Library.md) (Creature-Editor), Presets...
     activity.md  # [Library](../views/Library.md) (Activity-Editor), Presets...
     creature.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
-    culture-data.md  # [Faction](faction.md) (eingebettet)
+    culture.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
     currency.md  # -
     encounter-instance.md  # [Encounter-Service](../services/encounter/Encounter.md) (...
     faction-presence.md  # [Cartographer](../views/Cartographer.md) (Praesenz-Vorber...
@@ -316,7 +344,11 @@ docs/                  # Authoritative documentation (German)
     quest.md  # [Library](../views/Library.md) (CRUD)
     session.md  # sessionState (Session starten/beenden)
     shop.md  # [Library](../views/Library.md) (CRUD)
+    species.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
     terrain-definition.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
+  utils/
+    grid.md  # Square-cell Grid-Operationen fuer Combat und Dungeon-Maps
+    pmf.md  # Wahrscheinlichkeitsverteilungen für Combat-Simulation
   views/
     Cartographer.md  # [Map-Feature](../features/Map-Feature.md), [Map](../entit...
     DetailView.md  # [Application](../architecture/Application.md), [SessionRu...
@@ -448,6 +480,90 @@ Jede TypeScript-Datei MUSS einen standardisierten Header haben:
 | `// Ziel:` | ✅ | Einzeiler: Was macht diese Datei? |
 | `// Siehe:` | ✅ | Link zur autoritativen Dokumentation |
 | Pipeline/Struktur | ❌ | Optional: Steps, Workflow, Abhängigkeiten |
+
+### HACK & TODO Kommentare
+
+**Zweck:** Technische Schulden transparent dokumentieren, ohne Details im Code zu duplizieren.
+
+#### PFLICHT-TRIGGER
+
+| Situation | Aktion |
+|-----------|--------|
+| Du implementierst eine Vereinfachung statt der spezifizierten Lösung | MUSST du einen `[HACK]`-Eintrag im Header erstellen |
+| Du überspringst einen Step laut Dokumentation | MUSST du einen `[TODO]`-Eintrag im Header erstellen |
+| Du verwendest statische Werte statt berechneter | MUSST du einen `[HACK]`-Eintrag erstellen |
+| Du schätzt Werte statt sie aus dem Vault zu laden | MUSST du einen `[HACK]`-Eintrag erstellen |
+| Eine Funktion in der Spec existiert noch nicht | MUSST du einen `[TODO]`-Eintrag erstellen |
+
+**KEINE AUSNAHMEN.** Jede Abweichung von der Dokumentation erfordert Dokumentation.
+
+#### HEADER-SEKTION (konsolidiert)
+
+Platzierung: Nach `// Siehe:` und optionaler Pipeline-Übersicht, vor `import`.
+
+```typescript
+// ============================================================================
+// HACK & TODO
+// ============================================================================
+//
+// [HACK]: Kurzbeschreibung der Vereinfachung
+// - betroffeneFunktion() macht X statt Y
+// - konstanteName statische Werte statt Z
+//
+// [TODO]: Implementiere functionName() für featureDescription
+// - Spec: dokumentName.md#section
+// - Input: TypeA, Output: TypeB
+// - Details zur Implementierung
+```
+
+#### FORMAT-TEMPLATES
+
+**HACK-Eintrag:**
+```
+// [HACK]: {Kurzbeschreibung der Vereinfachung}
+// - {funktionOderKonstante} {was passiert} statt {was laut Spec passieren sollte}
+```
+
+**TODO-Eintrag:**
+```
+// [TODO]: Implementiere {functionName}() für {featureDescription}
+// - Spec: {dokument.md#section}
+// - Input: {InputType}, Output: {OutputType}
+// - {optionale Details}
+```
+
+#### INLINE-VERWEISE (Pflicht)
+
+Bei JEDER Funktion/Konstante mit HACK/TODO MUSST du einen Inline-Verweis hinzufügen:
+
+```typescript
+/** Beschreibung. HACK: siehe Header */
+export function simplifiedFunction() { ... }
+
+/** Lookup-Tabelle. HACK: siehe Header */
+const STATIC_VALUES = { ... };
+```
+
+**Verboten:** Details im Inline-Kommentar wiederholen. Nur "HACK: siehe Header" oder "TODO: siehe Header".
+
+#### AUTONOME PRÜFUNG
+
+**Vor jedem Commit MUSST du prüfen:**
+
+1. Habe ich eine Vereinfachung implementiert? → HACK-Eintrag vorhanden?
+2. Fehlt eine Funktion aus der Spec? → TODO-Eintrag vorhanden?
+3. Hat jede HACK/TODO-Funktion einen Inline-Verweis?
+
+**Bei neuen Dateien MUSST du:**
+
+1. Dokumentation lesen (Pflicht-Leseliste)
+2. Spec-Funktionen mit Code vergleichen
+3. Fehlende Funktionen als TODO dokumentieren
+4. Vereinfachungen als HACK dokumentieren
+
+#### REFERENZ-BEISPIEL
+
+Siehe [difficulty.ts](src/services/encounterGenerator/difficulty.ts) für vollständige Demonstration.
 
 ---
 

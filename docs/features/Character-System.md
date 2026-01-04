@@ -68,6 +68,7 @@ interface Character {
   currentHp: number;          // Aktueller HP-Stand
   ac: number;                 // Armor Class
   passivePerception: number;  // Passive Perception (10 + WIS-Mod + Prof)
+  passiveStealth: number;     // Passive Stealth (10 + DEX-Mod + Prof)
 
   // === Movement ===
   speed: number;              // Bewegung in ft, fuer Travel-Berechnung
@@ -317,6 +318,7 @@ Formular-Felder:
 | Current HP | Number | 0 - maxHp |
 | AC | Number | > 0 |
 | Passive Perception | Number | > 0 |
+| Passive Stealth | Number | > 0 |
 | Speed | Number | > 0, Vielfaches von 5 |
 | Strength | Number | 1-30 |
 

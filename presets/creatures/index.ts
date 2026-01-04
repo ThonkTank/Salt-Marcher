@@ -1,5 +1,5 @@
-// Creature-Presets für CLI-Testing und Plugin-Bundling
-// Siehe: docs/entities/creature.md
+// Creature-Presets fuer CLI-Testing und Plugin-Bundling
+// Siehe: docs/types/creature.md
 
 import { z } from 'zod';
 import { creatureDefinitionSchema } from '../../src/types/entities/creature';
@@ -9,13 +9,13 @@ import { creatureDefinitionSchema } from '../../src/types/entities/creature';
 // ============================================================================
 
 /**
- * Schema für Creature-Presets.
+ * Schema fuer Creature-Presets.
  * Erweitert creatureDefinitionSchema um Preset-spezifische Defaults.
  */
 export const creaturePresetSchema = creatureDefinitionSchema;
 
 /**
- * Schema für die gesamte Preset-Collection.
+ * Schema fuer die gesamte Preset-Collection.
  */
 export const creaturePresetsSchema = z.array(creaturePresetSchema);
 
@@ -33,8 +33,8 @@ export const creaturePresets = creaturePresetsSchema.parse([
     size: 'small',
     tags: ['humanoid', 'goblinoid'],
     species: 'goblin',
-    baseDisposition: -80, // hostile - aggressiv, hinterhältig
-    terrainAffinities: ['forest', 'hills', 'cave'],
+    baseDisposition: -80,
+    terrainAffinities: ['forest', 'hill', 'mountain'],
     activeTime: ['dawn', 'morning', 'midday', 'afternoon', 'dusk', 'night'],
     designRole: 'skirmisher',
     groupSize: { min: 4, avg: 6, max: 12 },
@@ -44,14 +44,17 @@ export const creaturePresets = creaturePresetsSchema.parse([
     },
     wealthTier: 'poor',
     carriesLoot: true,
+    // appearance wird von Species 'goblin' geerbt
     detectionProfile: {
       noiseLevel: 'normal',
       scentStrength: 'moderate',
     },
     abilities: { str: 8, dex: 14, con: 10, int: 10, wis: 8, cha: 8 },
+    skills: { stealth: 6 },
     speed: { walk: 30 },
     senses: { passivePerception: 9, darkvision: 60 },
     languages: ['Common', 'Goblin'],
+    actionIds: ['goblin-scimitar', 'goblin-shortbow'],
     source: 'MM',
   },
   {
@@ -63,8 +66,8 @@ export const creaturePresets = creaturePresetsSchema.parse([
     size: 'medium',
     tags: ['beast'],
     species: 'wolf',
-    baseDisposition: -40, // unfriendly - territorial, aber nicht aggressiv ohne Provokation
-    terrainAffinities: ['forest', 'hills', 'plains'],
+    baseDisposition: -40,
+    terrainAffinities: ['forest', 'hill', 'grassland'],
     activeTime: ['dawn', 'dusk', 'night'],
     designRole: 'skirmisher',
     groupSize: { min: 3, avg: 5, max: 8 },
@@ -74,14 +77,17 @@ export const creaturePresets = creaturePresetsSchema.parse([
     },
     wealthTier: 'poor',
     carriesLoot: false,
+    // appearance wird von Species 'wolf' geerbt
     detectionProfile: {
       noiseLevel: 'quiet',
       scentStrength: 'strong',
     },
     abilities: { str: 12, dex: 15, con: 12, int: 3, wis: 12, cha: 6 },
+    skills: { perception: 3, stealth: 4 },
     speed: { walk: 40 },
     senses: { passivePerception: 13 },
     languages: [],
+    actionIds: ['wolf-bite'],
     source: 'MM',
   },
   {
@@ -93,8 +99,8 @@ export const creaturePresets = creaturePresetsSchema.parse([
     size: 'medium',
     tags: ['humanoid', 'human'],
     species: 'human',
-    baseDisposition: -60, // unfriendly/hostile Grenze - räuberisch, aber verhandelbar
-    terrainAffinities: ['forest', 'hills', 'road'],
+    baseDisposition: -60,
+    terrainAffinities: ['forest', 'hill', 'grassland'],
     activeTime: ['morning', 'midday', 'afternoon', 'dusk'],
     designRole: 'soldier',
     groupSize: { min: 2, avg: 4, max: 8 },
@@ -104,6 +110,7 @@ export const creaturePresets = creaturePresetsSchema.parse([
     },
     wealthTier: 'poor',
     carriesLoot: true,
+    // appearance wird von Species 'human' geerbt
     detectionProfile: {
       noiseLevel: 'normal',
       scentStrength: 'faint',
@@ -112,6 +119,7 @@ export const creaturePresets = creaturePresetsSchema.parse([
     speed: { walk: 30 },
     senses: { passivePerception: 10 },
     languages: ['Common'],
+    actionIds: ['bandit-scimitar', 'bandit-light-crossbow'],
     source: 'MM',
   },
   {
@@ -123,7 +131,7 @@ export const creaturePresets = creaturePresetsSchema.parse([
     size: 'large',
     tags: ['monstrosity'],
     species: 'owlbear',
-    baseDisposition: -80, // hostile - extrem territorial, greift an
+    baseDisposition: -80,
     terrainAffinities: ['forest'],
     activeTime: ['dawn', 'morning', 'midday', 'afternoon', 'dusk'],
     designRole: 'brute',
@@ -134,14 +142,17 @@ export const creaturePresets = creaturePresetsSchema.parse([
     },
     wealthTier: 'poor',
     carriesLoot: false,
+    // appearance wird von Species 'owlbear' geerbt
     detectionProfile: {
       noiseLevel: 'loud',
       scentStrength: 'strong',
     },
     abilities: { str: 20, dex: 12, con: 17, int: 3, wis: 12, cha: 7 },
+    skills: { perception: 3 },
     speed: { walk: 40 },
     senses: { passivePerception: 13, darkvision: 60 },
     languages: [],
+    actionIds: ['owlbear-multiattack', 'owlbear-beak', 'owlbear-claws'],
     source: 'MM',
   },
   {
@@ -153,14 +164,15 @@ export const creaturePresets = creaturePresetsSchema.parse([
     size: 'medium',
     tags: ['undead'],
     species: 'skeleton',
-    baseDisposition: -100, // hostile - mindless, greift immer an
-    terrainAffinities: ['cave', 'ruins', 'graveyard'],
+    baseDisposition: -100,
+    terrainAffinities: ['mountain', 'forest'],
     activeTime: ['night'],
     designRole: 'minion',
     groupSize: { min: 3, avg: 6, max: 12 },
     activities: ['guard', 'patrol'],
     wealthTier: 'destitute',
     carriesLoot: true,
+    // appearance wird von Species 'skeleton' geerbt
     detectionProfile: {
       noiseLevel: 'quiet',
       scentStrength: 'none',
@@ -169,6 +181,7 @@ export const creaturePresets = creaturePresetsSchema.parse([
     speed: { walk: 30 },
     senses: { passivePerception: 9, darkvision: 60 },
     languages: [],
+    actionIds: ['skeleton-shortsword', 'skeleton-shortbow'],
     source: 'MM',
   },
   {
@@ -180,8 +193,8 @@ export const creaturePresets = creaturePresetsSchema.parse([
     size: 'medium',
     tags: ['humanoid', 'goblinoid'],
     species: 'hobgoblin',
-    baseDisposition: -70, // hostile - diszipliniert, aber militärisch aggressiv
-    terrainAffinities: ['forest', 'hills', 'cave', 'plains'],
+    baseDisposition: -70,
+    terrainAffinities: ['forest', 'hill', 'mountain', 'grassland'],
     activeTime: ['dawn', 'morning', 'midday', 'afternoon', 'dusk', 'night'],
     designRole: 'soldier',
     groupSize: { min: 2, avg: 4, max: 6 },
@@ -191,6 +204,7 @@ export const creaturePresets = creaturePresetsSchema.parse([
     },
     wealthTier: 'poor',
     carriesLoot: true,
+    // appearance wird von Species 'hobgoblin' geerbt
     detectionProfile: {
       noiseLevel: 'normal',
       scentStrength: 'moderate',
@@ -199,6 +213,7 @@ export const creaturePresets = creaturePresetsSchema.parse([
     speed: { walk: 30 },
     senses: { passivePerception: 10, darkvision: 60 },
     languages: ['Common', 'Goblin'],
+    actionIds: ['hobgoblin-longsword', 'hobgoblin-longbow'],
     source: 'MM',
   },
   {
@@ -210,8 +225,8 @@ export const creaturePresets = creaturePresetsSchema.parse([
     size: 'small',
     tags: ['humanoid', 'goblinoid'],
     species: 'goblin',
-    baseDisposition: -70, // hostile - aber taktischer, könnte verhandeln
-    terrainAffinities: ['forest', 'hills', 'cave'],
+    baseDisposition: -70,
+    terrainAffinities: ['forest', 'hill', 'mountain'],
     activeTime: ['dawn', 'morning', 'midday', 'afternoon', 'dusk', 'night'],
     designRole: 'leader',
     groupSize: 1,
@@ -221,14 +236,17 @@ export const creaturePresets = creaturePresetsSchema.parse([
     },
     wealthTier: 'average',
     carriesLoot: true,
+    // appearance wird von Species 'goblin' geerbt (goblin-boss ist auch ein Goblin)
     detectionProfile: {
       noiseLevel: 'normal',
       scentStrength: 'moderate',
     },
     abilities: { str: 10, dex: 14, con: 10, int: 10, wis: 8, cha: 10 },
+    skills: { stealth: 6 },
     speed: { walk: 30 },
     senses: { passivePerception: 9, darkvision: 60 },
     languages: ['Common', 'Goblin'],
+    actionIds: ['goblin-boss-scimitar', 'goblin-boss-javelin'],
     source: 'MM',
   },
   {
@@ -240,8 +258,8 @@ export const creaturePresets = creaturePresetsSchema.parse([
     size: 'medium',
     tags: ['humanoid', 'human'],
     species: 'human',
-    baseDisposition: -50, // unfriendly - verhandelt für Profit, weniger impulsiv
-    terrainAffinities: ['forest', 'hills', 'road', 'coast'],
+    baseDisposition: -50,
+    terrainAffinities: ['forest', 'hill', 'grassland', 'coast'],
     activeTime: ['morning', 'midday', 'afternoon', 'dusk'],
     designRole: 'leader',
     groupSize: 1,
@@ -251,6 +269,7 @@ export const creaturePresets = creaturePresetsSchema.parse([
     },
     wealthTier: 'wealthy',
     carriesLoot: true,
+    // appearance wird von Species 'human' geerbt
     detectionProfile: {
       noiseLevel: 'normal',
       scentStrength: 'faint',
@@ -259,6 +278,7 @@ export const creaturePresets = creaturePresetsSchema.parse([
     speed: { walk: 30 },
     senses: { passivePerception: 10 },
     languages: ['Common', 'Thieves Cant'],
+    actionIds: ['bandit-captain-multiattack', 'bandit-captain-scimitar', 'bandit-captain-dagger'],
     source: 'MM',
   },
   {
@@ -270,14 +290,15 @@ export const creaturePresets = creaturePresetsSchema.parse([
     size: 'medium',
     tags: ['humanoid', 'human'],
     species: 'human',
-    baseDisposition: -50, // unfriendly - einschüchternd, aber folgt Befehlen
-    terrainAffinities: ['forest', 'road', 'coast', 'urban'],
+    baseDisposition: -50,
+    terrainAffinities: ['forest', 'grassland', 'coast'],
     activeTime: ['morning', 'midday', 'afternoon', 'dusk', 'night'],
     designRole: 'brute',
     groupSize: { min: 2, avg: 3, max: 4 },
     activities: ['guard', 'intimidate', 'ambush'],
     wealthTier: 'poor',
     carriesLoot: true,
+    // appearance wird von Species 'human' geerbt
     detectionProfile: {
       noiseLevel: 'normal',
       scentStrength: 'faint',
@@ -286,9 +307,10 @@ export const creaturePresets = creaturePresetsSchema.parse([
     speed: { walk: 30 },
     senses: { passivePerception: 10 },
     languages: ['Common'],
+    actionIds: ['thug-multiattack', 'thug-mace', 'thug-heavy-crossbow'],
     source: 'MM',
   },
 ]);
 
-// Default-Export für einfachen Import
+// Default-Export fuer einfachen Import
 export default creaturePresets;

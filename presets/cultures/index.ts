@@ -1,10 +1,54 @@
-// Culture-Presets für NPC-Generation
-// Siehe: docs/services/NPCs/Culture-Resolution.md
+// Culture-Presets fuer NPC-Generation
+// Siehe: docs/types/culture.md
 //
-// Hierarchie:
-// 1. Faction.culture (in Faction-Presets eingebettet)
-// 2. Species-Cultures (presets/cultures/species/)
-// 3. Type-Presets (presets/cultures/types/)
+// Culture-Entities sind eigenstaendige Presets mit ID-Konvention:
+// - type:{creatureType} - Basis-Kulturen fuer D&D Creature-Types (Fallback)
+// - species:{speciesId} - Species-spezifische Kulturen
+// - faction:{factionId} - Faction-spezifische Kulturen
+//
+// Hierarchie bei Aufloesung (cultureResolution.ts):
+// 1. Faction-Culture (hoechste Prioritaet)
+// 2. Species-Culture
+// 3. Type-Culture (niedrigste Prioritaet, Fallback)
 
-export { typePresets, type TypeCulturePreset } from './types';
-export { speciesPresets, type SpeciesCulturePreset } from './species';
+import { z } from 'zod';
+import { cultureSchema, type Culture } from '../../src/types/entities/culture';
+import { typeCulturePresets, typePresets } from './types';
+import { speciesCulturePresets, speciesPresets } from './species';
+import { factionCulturePresets } from './factions';
+
+// ============================================================================
+// COMBINED CULTURE-PRESETS
+// ============================================================================
+
+/**
+ * Alle Culture-Presets als validiertes Array.
+ * Kombiniert Type-, Species- und Faction-Kulturen.
+ */
+export const culturePresets: Culture[] = z.array(cultureSchema).parse([
+  ...typeCulturePresets,
+  ...speciesCulturePresets,
+  ...factionCulturePresets,
+]);
+
+/**
+ * Culture-Presets als Map fuer schnellen ID-Lookup.
+ */
+export const culturePresetsMap: Map<string, Culture> = new Map(
+  culturePresets.map(c => [c.id, c])
+);
+
+// ============================================================================
+// RE-EXPORTS
+// ============================================================================
+
+// Kategorisierte Exports
+export { typeCulturePresets, typePresets } from './types';
+export { speciesCulturePresets, speciesPresets } from './species';
+export { factionCulturePresets } from './factions';
+
+// Type re-export
+export type { Culture } from '../../src/types/entities/culture';
+
+// Default-Export fuer CLI-Generator
+export default culturePresets;

@@ -1,79 +1,91 @@
-// Species-Presets für Culture-Resolution
-// Siehe: docs/services/npcs/Culture-Resolution.md
+// Species-Kulturen als eigenstaendige Culture-Entities
+// Siehe: docs/types/culture.md
 //
-// Species-Cultures ERSETZEN Type-Presets wenn creature.species gesetzt ist.
-// Sie sind spezifischer als Type-Presets (z.B. "goblin" vs. "goblinoid").
+// Species-Cultures definieren kulturelle Marker fuer Spezies.
+// Sie dienen als Basis fuer abgeleitete Kulturen (Factions, Regionen).
 //
-// Struktur: LayerTraitConfig mit add[] und optional unwanted[]
-// - add[]: Fügt Attribute mit vollem Layer-Gewicht hinzu
-// - unwanted[]: Viertelt bisherigen akkumulierten Wert
+// Physische Merkmale (appearance) sind NICHT hier - sie gehoeren zu Creature.
+// Hier nur kulturelle Attribute: styling, personality, values, quirks, goals, naming, speech
 
 import { z } from 'zod';
-import { cultureDataSchema } from '../../../src/types/entities/faction';
+import { cultureSchema, type Culture } from '../../../src/types/entities/culture';
 
 // ============================================================================
-// PRESET-SCHEMA
-// ============================================================================
-
-export const speciesCulturePresetSchema = cultureDataSchema;
-export type SpeciesCulturePreset = z.infer<typeof speciesCulturePresetSchema>;
-
-// ============================================================================
-// SPECIES-PRESETS
+// SPECIES-CULTURE-PRESETS
 // ============================================================================
 
 /**
  * Species-spezifische Kulturen.
- * Key = creature.species (aus CreatureDefinition)
+ * ID-Format: species:{speciesId}
  */
-export const speciesPresets: Record<string, SpeciesCulturePreset> = {
+export const speciesCulturePresets: Culture[] = z.array(cultureSchema).parse([
   // ──────────────────────────────────────────────────────────────────────────
   // Goblin - Kleine, listige, feige Kreaturen
   // ──────────────────────────────────────────────────────────────────────────
-  goblin: {
+  {
+    id: 'species:goblin',
+    name: 'Goblin-Kultur',
+    usualSpecies: ['goblin'],
+    tolerance: 0.2,
+
+    styling: {
+      add: ['tattered_clothes', 'tribal_paint', 'bone_jewelry', 'crude_weapons'],
+    },
+
     naming: {
       patterns: ['{prefix}{root}', '{root}{suffix}', '{root}'],
       prefixes: ['Grik', 'Snag', 'Muk', 'Zit', 'Nix', 'Skrit'],
       roots: ['nak', 'gob', 'rik', 'snik', 'mug', 'zak', 'nib', 'grak'],
       suffixes: ['le', 'ik', 'az', 'uz', 'ak', 'ug', 'it'],
     },
+
     personality: {
       add: ['cunning', 'cowardly', 'greedy', 'cruel', 'nervous', 'brave', 'loyal', 'clever'],
       unwanted: ['heroic', 'honorable', 'generous', 'patient'],
     },
+
     values: {
       add: ['survival', 'wealth'],
       unwanted: ['honor', 'justice', 'mercy'],
     },
+
     quirks: {
       add: ['nervous_laugh', 'hoards_shiny', 'bites_nails', 'talks_fast', 'fidgets'],
     },
-    appearance: {
-      add: ['sharp_teeth', 'missing_teeth', 'missing_ear', 'crooked_nose', 'yellow_eyes'],
-    },
+
     goals: {
       add: ['loot', 'survive', 'please_boss', 'avoid_work', 'get_food'],
     },
+
     activities: ['ambush', 'scavenge', 'camp', 'patrol', 'feeding'],
+
     speech: {
       dialect: 'broken',
       commonPhrases: [
-        'Nicht töten!',
+        'Nicht toeten!',
         'Boss sagt...',
         'Wir mehr als du!',
         'Hab gesehen, hab gesehen!',
         'Viel Schatz dort!',
         'Nicht ich, war andere Goblin!',
       ],
-      accent: 'hoch, schnell, nervös',
+      accent: 'hoch, schnell, nervoes',
     },
-    lootPool: ['crude-spear', 'club', 'dagger', 'goblin-totem', 'silver-piece'],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Hobgoblin - Militärisch, diszipliniert, brutal effizient
+  // Hobgoblin - Militaerisch, diszipliniert, brutal effizient
   // ──────────────────────────────────────────────────────────────────────────
-  hobgoblin: {
+  {
+    id: 'species:hobgoblin',
+    name: 'Hobgoblin-Kultur',
+    usualSpecies: ['hobgoblin'],
+    tolerance: 0.3,
+
+    styling: {
+      add: ['military_uniform', 'polished_armor', 'war_medals', 'regimental_colors'],
+    },
+
     naming: {
       patterns: ['{prefix}{root}', '{root} {title}', '{root}'],
       prefixes: ['Kur', 'Gor', 'Thrak', 'Mor', 'Zul', 'Krag'],
@@ -81,42 +93,53 @@ export const speciesPresets: Record<string, SpeciesCulturePreset> = {
       suffixes: ['ar', 'ok', 'ul', 'az', 'orn'],
       titles: ['der Eiserne', 'Kriegsmeister', 'der Unerbittliche', 'Scharfklinge'],
     },
+
     personality: {
       add: ['disciplined', 'ruthless', 'tactical', 'proud', 'ambitious', 'honorable', 'brave'],
       unwanted: ['cowardly', 'nervous', 'naive', 'generous'],
     },
+
     values: {
       add: ['power', 'honor', 'strength'],
       unwanted: ['mercy', 'friendship'],
     },
+
     quirks: {
       add: ['counts_kills', 'polishes_armor', 'despises_cowards'],
     },
-    appearance: {
-      add: ['scarred_face', 'war_paint', 'heavily_armored', 'muscular'],
-    },
+
     goals: {
       add: ['conquer', 'rise_in_rank', 'prove_worth', 'follow_orders', 'crush_weakness'],
     },
+
     activities: ['patrol', 'guard', 'ambush', 'command', 'camp'],
+
     speech: {
       dialect: 'military',
       commonPhrases: [
         'Befehl ist Befehl.',
-        'Schwäche wird bestraft.',
+        'Schwaeche wird bestraft.',
         'Die Legion vergisst nicht.',
         'Du wirst dienen oder sterben.',
-        'Ehre durch Stärke.',
+        'Ehre durch Staerke.',
       ],
       accent: 'tief, knapp, befehlsgewohnt',
     },
-    lootPool: ['longsword', 'shortsword', 'chain-shirt', 'gold-piece'],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Human - Vielseitig, anpassungsfähig, motivationsgetrieben
+  // Human - Vielseitig, anpassungsfaehig, motivationsgetrieben
   // ──────────────────────────────────────────────────────────────────────────
-  human: {
+  {
+    id: 'species:human',
+    name: 'Menschen-Kultur',
+    usualSpecies: ['human'],
+    tolerance: 0.7,
+
+    styling: {
+      add: ['practical_clothes', 'regional_fashion', 'work_attire', 'simple_jewelry'],
+    },
+
     naming: {
       patterns: ['{root}', '{prefix} {root}', '{root} {title}'],
       prefixes: ['Old', 'Young', 'Tall', 'Scarred', 'Red', 'Black'],
@@ -126,71 +149,90 @@ export const speciesPresets: Record<string, SpeciesCulturePreset> = {
       ],
       titles: ['der Wanderer', 'der Stille', 'der Schnelle', 'der Alte', 'der Fremde'],
     },
+
     personality: {
       add: ['practical', 'cautious', 'curious', 'ambitious', 'suspicious', 'heroic', 'generous', 'idealistic'],
       unwanted: ['mindless', 'predatory'],
     },
+
     values: {
       add: ['family', 'survival', 'freedom', 'wealth', 'honor'],
     },
+
     quirks: {
       add: ['nervous_tic', 'always_hungry', 'superstitious', 'tells_stories', 'whistles_tune'],
     },
-    appearance: {
-      add: ['scarred_face', 'weathered_skin', 'tattoos', 'long_hair', 'bald', 'black_hair', 'red_hair'],
-    },
+
     goals: {
       add: ['survive', 'profit', 'protect_family', 'gain_respect', 'find_meaning'],
     },
+
     activities: ['traveling', 'camp', 'patrol', 'guard', 'resting', 'ambush'],
+
     speech: {
       dialect: 'normal',
       commonPhrases: [
         'Das ist mir zu riskant.',
-        'Was springt für mich dabei raus?',
+        'Was springt fuer mich dabei raus?',
         'Man muss vorsichtig sein.',
         'Harte Zeiten.',
         'So ist das Leben.',
       ],
       accent: 'neutral',
     },
-    lootPool: ['shortsword', 'dagger', 'leather-armor', 'gold-piece', 'silver-piece', 'rations'],
   },
 
   // ──────────────────────────────────────────────────────────────────────────
   // Skeleton - Willenlos, gebunden, automatenhaft
   // ──────────────────────────────────────────────────────────────────────────
-  skeleton: {
+  {
+    id: 'species:skeleton',
+    name: 'Skelett-Kultur',
+    usualSpecies: ['skeleton'],
+    tolerance: 0.0,
+
+    styling: {
+      add: ['grave_clothes', 'rusted_armor', 'ancient_rags'],
+    },
+
     naming: {
       patterns: ['{root}', 'The {root}', '{root} {title}'],
       roots: ['Bones', 'Hollow', 'Remnant', 'Clatter', 'Dust', 'Shade', 'Echo'],
       titles: ['the Bound', 'the Restless', 'the Forgotten', 'the Empty'],
     },
+
     personality: {
       add: ['mindless', 'relentless', 'obedient', 'tireless', 'sorrowful'],
       unwanted: ['curious', 'playful', 'generous', 'ambitious'],
     },
+
     values: {
       add: ['domination'],
       unwanted: ['friendship', 'family', 'freedom', 'wealth'],
     },
+
     quirks: {
       add: ['limps', 'paranoid_glances'],
     },
-    appearance: {
-      add: ['skeletal', 'rotting', 'glowing_eyes', 'missing_limb'],
-    },
+
     goals: {
       add: ['serve_master', 'guard_location', 'patrol', 'destroy_living'],
     },
+
     activities: ['patrol', 'guard', 'resting', 'wandering'],
+
     speech: {
       dialect: 'hollow',
       commonPhrases: ['...', '*Klappern*', '*Knochenknirschen*', '*mechanisches Greifen*'],
       accent: 'hohl, rasselnd, leer',
     },
-    lootPool: ['dagger', 'club', 'silver-piece'],
   },
-};
+]);
 
-export default speciesPresets;
+// Legacy-Export fuer Rueckwaertskompatibilitaet
+// DEPRECATED: Verwende speciesCulturePresets stattdessen
+export const speciesPresets: Record<string, Culture> = Object.fromEntries(
+  speciesCulturePresets.map(c => [c.id.replace('species:', ''), c])
+);
+
+export default speciesCulturePresets;

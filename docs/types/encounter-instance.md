@@ -13,11 +13,44 @@ Runtime-Repraeesntation eines generierten Encounters. Nicht persistiert - existi
 |------|-----|--------------|
 | `id` | `EntityId<'encounter'>` | Eindeutige ID |
 | `groups` | `EncounterGroup[]` | Kreatur-Gruppen im Encounter |
+| `alliances` | `Record<string, string[]>` | Gruppen-Allianzen (groupId → verbuendete groupIds) |
+| `npcs` | `string[]` | NPC-IDs (1-3 NPCs pro Encounter) |
 | `loot` | `GeneratedLoot` | Generiertes Loot |
 | `perception` | `EncounterPerception` | Wahrnehmungs-Distanzen |
 | `difficulty` | `DifficultyClassification` | Schwierigkeits-Einstufung |
 | `context` | `EncounterContextSnapshot` | Snapshot des Generierungs-Kontexts |
 | `description` | `string` | GM-taugliche Beschreibung |
+
+---
+
+## Alliances
+
+Allianzen bestimmen welche Gruppen im Encounter verbuendet sind:
+
+```typescript
+alliances: Record<string, string[]>
+
+// Beispiel:
+{
+  'party': ['group-uuid-1'],           // Party verbuendet mit Wachen
+  'group-uuid-1': ['party'],            // Wachen verbuendet mit Party
+  'group-uuid-2': ['group-uuid-3'],     // Banditen verbuendet mit Schmugglern
+  'group-uuid-3': ['group-uuid-2'],     // Schmuggler verbuendet mit Banditen
+}
+```
+
+**Allianz-Regeln (Prioritaet):**
+
+| # | Bedingung | Effekt |
+|:-:|-----------|--------|
+| 1 | `disposition === 'allied'` | Gruppe verbuendet mit Party |
+| 2 | Gleiche `factionId` | Gruppen untereinander verbuendet |
+| 3 | Faction-Reputation >+60 | Deren Gruppen verbuendet |
+| 4 | Alle anderen | Feinde (nicht verbuendet) |
+
+Berechnet von: [groupActivity.calculateAlliances()](../services/encounter/groupActivity.md#calculatealliances)
+
+Konsumiert von: [difficulty.simulatePMF()](../services/encounter/difficulty.md) via [combatResolver](../services/combatSimulator/combatResolver.md)
 
 ---
 
