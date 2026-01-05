@@ -9,7 +9,7 @@
 //   - calculatePartyWinProbability(): Outcome-Analyse
 // - classifySimulationDifficulty(): Klassifiziert Win%/TPK → DifficultyLabel
 //
-// Nutzt: combatResolver.ts (State + Resolution), combatantAI.ts (Decisions)
+// Nutzt: combatTracking/ (State + Resolution), combatantAI.ts (Decisions)
 
 // ============================================================================
 // TODO
@@ -50,26 +50,20 @@ import {
   createEnemyProfiles,
   createCombatState,
   resolveAttack,
-  DEFAULT_ENCOUNTER_DISTANCE_FEET,
+  createTurnBudget,
   type PartyInput,
   type SimulationState,
+  type CombatState,
   type RoundResult,
-  // Turn Budget System
   type TurnBudget,
-  createTurnBudget,
-  hasBudgetRemaining,
-  consumeMovement,
-  consumeAction,
-  applyDash,
-} from '@/services/combatSimulator/combatResolver';
+} from '@/services/combatTracking';
+import { DEFAULT_ENCOUNTER_DISTANCE_FEET } from '@/services/gridSpace';
+import { isAllied, isHostile } from '@/services/combatSimulator/combatHelpers';
 import {
-  isAllied,
-  isHostile,
   // Turn Action System
   type TurnAction,
   type CombatProfile,
-  generateActionCandidates,
-  calculateTurnActionEV,
+  executeTurn,
 } from '@/services/combatSimulator/combatantAI';
 import { calculateGroupRelations } from '@/services/encounterGenerator/groupActivity';
 
@@ -363,94 +357,47 @@ function executeAction(
 }
 
 /**
- * Verbraucht Budget basierend auf ausgeführter Aktion.
- */
-function consumeBudget(budget: TurnBudget, turnAction: TurnAction): void {
-  switch (turnAction.type) {
-    case 'move':
-      consumeMovement(budget, 1);
-      break;
-    case 'attack':
-      consumeAction(budget);
-      break;
-    case 'dash':
-      applyDash(budget);  // Verdoppelt Movement und konsumiert Action
-      break;
-    case 'pass':
-      // Pass beendet den Zug - leere das Budget
-      budget.movementCells = 0;
-      budget.hasAction = false;
-      budget.hasBonusAction = false;
-      break;
-  }
-}
-
-/**
  * Simuliert einen vollständigen Zug eines Combatants.
- * Nutzt Turn-Budget-System für D&D 5e Aktionsökonomie.
- * Siehe: Plan cosmic-tinkering-unicorn.md#Step-5
+ * Delegiert an executeTurn() für Cell-basierte Entscheidungen.
  */
 function simulateTurn(
   profile: CombatProfile,
   state: SimulationState
 ): { damageDealt: number } {
   const budget = createTurnBudget(profile);
-  let totalDamageDealt = 0;
 
   debug('simulateTurn: starting', {
     participantId: profile.participantId,
     budget: { ...budget },
   });
 
-  while (hasBudgetRemaining(budget)) {
-    // 1. Alle möglichen Aktionen generieren
-    const candidates = generateActionCandidates(profile, state, budget);
+  // executeTurn() entscheidet Movement + Actions via Cell-Evaluation
+  const actions = executeTurn(profile, state, budget);
 
-    // 2. EV für jede Aktion berechnen und scoren
-    const scored = candidates.map(action => ({
-      action,
-      score: calculateTurnActionEV(action, profile, state),
-    }));
-
-    // 3. Beste Aktion auswählen
-    const best = scored.reduce((a, b) => a.score > b.score ? a : b);
-
-    // 4. Abbrechen wenn beste Aktion pass ist oder negativer Score
-    if (best.action.type === 'pass' || best.score <= 0) {
-      debug('simulateTurn: ending turn (pass or negative EV)', {
-        participantId: profile.participantId,
-        bestScore: best.score,
-        bestType: best.action.type,
-      });
-      break;
-    }
-
-    // 5. Aktion ausführen
-    const result = executeAction(best.action, profile, state);
+  // Aktionen ausführen und Damage tracken
+  let totalDamageDealt = 0;
+  for (const action of actions) {
+    const result = executeAction(action, profile, state);
     totalDamageDealt += result.damageDealt;
-
-    // 6. Budget verbrauchen
-    consumeBudget(budget, best.action);
 
     debug('simulateTurn: executed action', {
       participantId: profile.participantId,
-      actionType: best.action.type,
-      score: best.score,
+      actionType: action.type,
       damageDealt: result.damageDealt,
-      remainingBudget: { ...budget },
     });
   }
 
   debug('simulateTurn: completed', {
     participantId: profile.participantId,
     totalDamageDealt,
+    actionCount: actions.length,
   });
 
   return { damageDealt: totalDamageDealt };
 }
 
 /** Führt vollständige Kampfsimulation durch. */
-function runSimulationLoop(initialState: SimulationState): { state: SimulationState; rounds: number } {
+function runSimulationLoop(initialState: CombatState): { state: CombatState; rounds: number } {
   const state = initialState;
   let rounds = 0;
 
@@ -475,7 +422,7 @@ function runSimulationLoop(initialState: SimulationState): { state: SimulationSt
  * Nutzt Turn-Budget-System für jeden Combatant.
  * Siehe: Plan cosmic-tinkering-unicorn.md#Step-6
  */
-function simulateRound(state: SimulationState, roundNumber: number): RoundResult {
+function simulateRound(state: CombatState, roundNumber: number): RoundResult {
   let partyDPR = 0;
   let enemyDPR = 0;
 

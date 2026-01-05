@@ -1,7 +1,9 @@
-// Ziel: Gemeinsame Helper-Funktionen für Combat-AI und Combat-Resolver
+// Ziel: Gemeinsame Helper-Funktionen für Combat-AI, Combat-Tracking und Combat-Resolver
 // Siehe: docs/services/combatSimulator/
 //
 // Konsolidiert duplizierte Logik:
+// - Alliance/Hostility Checks
+// - Hit-Chance und Multiattack-Damage Berechnung
 // - Damage/Healing PMF Berechnung
 // - Range-Extraktion (Multiattack-aware)
 // - Distance/Position Helpers
@@ -15,7 +17,13 @@ import {
   addConstant,
   getDistance as gridGetDistance,
   feetToCell,
+  clamp,
+  calculateEffectiveDamage,
+  convolveDistributions,
+  createSingleValue,
+  getExpectedValue,
 } from '@/utils';
+import type { SituationalModifiers } from './situationalModifiers';
 
 // ============================================================================
 // MULTIATTACK RESOLUTION
@@ -161,7 +169,6 @@ export function getDistance(a: GridPosition, b: GridPosition): number {
 
 /**
  * Findet das nächste Profil aus einer Liste von Kandidaten.
- * Konsolidiert: calculateMovement, getNearestEnemy
  *
  * @param from Ausgangsposition
  * @param candidates Liste von Profilen mit Position
@@ -206,4 +213,128 @@ export function getMinDistanceToProfiles<T extends PositionedProfile>(
     if (dist < minDist) minDist = dist;
   }
   return minDist;
+}
+
+// ============================================================================
+// ALLIANCE HELPERS
+// ============================================================================
+
+/**
+ * Prüft ob zwei Gruppen verbündet sind.
+ * Gleiche Gruppe = automatisch verbündet.
+ *
+ * @param groupA Erste Gruppe
+ * @param groupB Zweite Gruppe
+ * @param alliances Alliance-Map (groupId → verbündete groupIds)
+ * @returns true wenn verbündet
+ */
+export function isAllied(
+  groupA: string,
+  groupB: string,
+  alliances: Record<string, string[]>
+): boolean {
+  if (groupA === groupB) return true;
+  return alliances[groupA]?.includes(groupB) ?? false;
+}
+
+/**
+ * Prüft ob zwei Gruppen Feinde sind (nicht verbündet).
+ *
+ * @param groupA Erste Gruppe
+ * @param groupB Zweite Gruppe
+ * @param alliances Alliance-Map (groupId → verbündete groupIds)
+ * @returns true wenn Feinde
+ */
+export function isHostile(
+  groupA: string,
+  groupB: string,
+  alliances: Record<string, string[]>
+): boolean {
+  return !isAllied(groupA, groupB, alliances);
+}
+
+// ============================================================================
+// HIT CHANCE CALCULATION
+// ============================================================================
+
+/**
+ * Berechnet Hit-Chance (5%-95% Range).
+ * D&D 5e: Natural 1 immer Miss, Natural 20 immer Hit.
+ *
+ * @param attackBonus Attack Bonus des Angreifers
+ * @param targetAC AC des Ziels
+ * @param modifiers Optional: Situational Modifiers (Advantage, Cover, etc.)
+ * @returns Hit-Wahrscheinlichkeit (0.05 - 0.95)
+ */
+export function calculateHitChance(
+  attackBonus: number,
+  targetAC: number,
+  modifiers?: SituationalModifiers
+): number {
+  // Auto-miss bei Full Cover oder ähnlichem
+  if (modifiers?.hasAutoMiss) return 0;
+
+  // Effektive Werte mit Modifiers berechnen
+  const effectiveAttackBonus = attackBonus
+    + (modifiers?.effectiveAttackMod ?? 0)  // +5 Advantage, -5 Disadvantage
+    + (modifiers?.totalAttackBonus ?? 0);   // Flat bonuses
+
+  const effectiveAC = targetAC
+    + (modifiers?.totalACBonus ?? 0);       // Cover etc.
+
+  const neededRoll = effectiveAC - effectiveAttackBonus;
+  return clamp((21 - neededRoll) / 20, 0.05, 0.95);
+}
+
+// ============================================================================
+// MULTIATTACK DAMAGE CALCULATION
+// ============================================================================
+
+/**
+ * Berechnet kombinierte Damage-PMF für Multiattack.
+ * Konvolviert alle referenzierten Actions (jeweils mit Hit-Chance).
+ *
+ * @param action Die Multiattack-Action
+ * @param allActions Alle verfügbaren Actions des Attackers (für Ref-Lookup)
+ * @param targetAC AC des Ziels für Hit-Chance-Berechnung
+ * @returns Kombinierte Damage-PMF oder null wenn keine gültigen Refs
+ */
+export function calculateMultiattackDamage(
+  action: Action,
+  allActions: Action[],
+  targetAC: number
+): ProbabilityDistribution | null {
+  if (!action.multiattack?.attacks?.length) {
+    return null;
+  }
+
+  let totalDamage = createSingleValue(0);
+  let validAttacksFound = false;
+
+  for (const entry of action.multiattack.attacks) {
+    const refAction = allActions.find(a => a.name === entry.actionRef);
+    if (!refAction) continue;
+
+    if (!refAction.damage || !refAction.attack) continue;
+
+    validAttacksFound = true;
+
+    const baseDamage = addConstant(
+      diceExpressionToPMF(refAction.damage.dice),
+      refAction.damage.modifier
+    );
+
+    const hitChance = calculateHitChance(refAction.attack.bonus, targetAC);
+    const effectiveDamage = calculateEffectiveDamage(baseDamage, hitChance);
+
+    for (let i = 0; i < entry.count; i++) {
+      totalDamage = convolveDistributions(totalDamage, effectiveDamage);
+    }
+  }
+
+  if (!validAttacksFound) {
+    return null;
+  }
+
+  return totalDamage;
 }

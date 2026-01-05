@@ -4,6 +4,9 @@
 // Probability utilities (dice, random, PMF)
 export * from './probability';
 
+// Math utilities (vector, clamp)
+export * from './math';
+
 // Square-cell grid utilities (combat, dungeon)
 export * from './squareSpace';
 

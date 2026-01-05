@@ -523,7 +523,10 @@ function seededRandom(seed: number): number {
 
 /**
  * Lineare Interpolation zwischen a und b.
+ * @param a Startwert
+ * @param b Endwert
+ * @param t Interpolationsfaktor (0 = a, 1 = b)
  */
-function lerp(a: number, b: number, t: number): number {
+export function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }

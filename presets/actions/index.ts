@@ -1,10 +1,64 @@
 // Action-Presets für CLI-Testing und Plugin-Bundling
 // Siehe: docs/types/action.md
 //
-// D&D 5e Monster Manual Actions für alle Creature-Presets.
+// D&D 5e Standard Actions und Monster Manual Actions.
 
 import { z } from 'zod';
-import { actionSchema } from '../../src/types/entities/action';
+import { actionSchema, type Action } from '../../src/types/entities/action';
+
+// ============================================================================
+// STANDARD-ACTIONS (verfügbar für alle Combatants)
+// ============================================================================
+
+/** D&D 5e Standard-Actions, die allen Combatants zur Verfügung stehen. */
+export const standardActions: Action[] = z.array(actionSchema).parse([
+  {
+    id: 'std-dash',
+    name: 'Dash',
+    actionType: 'utility',
+    timing: { type: 'action' },
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single' },
+    autoHit: true,
+    effects: [{
+      grantMovement: { type: 'dash' },
+      duration: { type: 'instant' },
+      affectsTarget: 'self',
+    }],
+    description: 'Gain extra movement equal to your speed for this turn.',
+  },
+  {
+    id: 'std-disengage',
+    name: 'Disengage',
+    actionType: 'utility',
+    timing: { type: 'action' },
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single' },
+    autoHit: true,
+    effects: [{
+      movementBehavior: { noOpportunityAttacks: true },
+      duration: { type: 'rounds', value: 1 },
+      affectsTarget: 'self',
+    }],
+    description: 'Your movement does not provoke opportunity attacks for this turn.',
+  },
+  {
+    id: 'std-dodge',
+    name: 'Dodge',
+    actionType: 'utility',
+    timing: { type: 'action' },
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single' },
+    autoHit: true,
+    effects: [{
+      incomingModifiers: { attacks: 'disadvantage' },
+      rollModifiers: [{ on: 'dex-save', type: 'advantage' }],
+      duration: { type: 'rounds', value: 1 },
+      affectsTarget: 'self',
+    }],
+    description: 'Attacks against you have disadvantage, and you have advantage on DEX saves.',
+  },
+]);
 
 // ============================================================================
 // PRESET-DATEN

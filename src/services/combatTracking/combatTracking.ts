@@ -1,25 +1,20 @@
 // Ziel: Combat State-Management und Action-Resolution
-// Siehe: docs/services/combatSimulator/combatResolver.md
+// Siehe: docs/services/combatTracking.md
 //
-// Generisches Helper-Repository für:
-// - Combat-Tracker (manuell): GM/Spieler lösen Aktionen aus
-// - Difficulty-Simulation (autonom): difficulty.ts nutzt diese Funktionen
+// UI-orientierter Service für Combat-Tracker:
+// - "Combatant X macht Combatant Y Z Schaden" → Service übernimmt State-Updates
+// - Profile-Erstellung aus Party und Encounter-Gruppen
+// - Turn Budget Tracking (D&D 5e Action Economy)
 //
-// KEINE autonome Simulation hier - nur State + Resolution!
-//
-// Funktionen:
-// - createCombatState(): State aus Party + Groups initialisieren
-// - resolveAttack(): Einzelnen Angriff auflösen (PMF-basiert)
-// - updateCombatantHP/Position(): State-Updates für Combat-Tracker
+// Wird von combatSimulator (AI) und Workflows genutzt.
 
 // ============================================================================
 // HACK & TODO
 // ============================================================================
 //
-// [HACK]: Default-Actions für Characters/Creatures ohne actions
+// [HACK]: Default-Actions für Characters ohne actions
 // - getDefaultPartyAction() generiert level-skalierte Weapon-Attack
-// - getDefaultCreatureAction() generiert CR-skalierte Natural-Attack
-// - Creatures können actionIds[] verwenden für Vault-basierte Actions
+// - Creatures: Default-Action in creatureCache.ts (getDefaultCreatureAction)
 // - Spec: difficulty.md#5.0.1 erwartet Character.actions
 //
 // [HACK]: Keine Surprise-Prüfung
@@ -48,33 +43,55 @@
 // - Spec: Opportunity Attacks benötigen Trigger-Detection
 
 import type { EncounterGroup } from '@/types/encounterTypes';
-import type { CreatureDefinition, Action, Character } from '@/types/entities';
+import type { Action, Character } from '@/types/entities';
 import { vault } from '@/infrastructure/vault/vaultInstance';
 import {
-  type ProbabilityDistribution,
   createSingleValue,
   calculateEffectiveDamage,
   applyDamageToHP,
   calculateDeathProbability,
   getExpectedValue,
-  type GridPosition,
-  type GridConfig,
-  createGrid,
   feetToCell,
-  spreadFormation as gridSpreadFormation,
 } from '@/utils';
 import {
-  calculateHitChance,
-  calculateMultiattackDamage,
-  isAllied,
-  isHostile,
-  type CombatProfile,
-  type SimulationState as AISimulationState,
-} from './combatantAI';
-import { calculateBaseDamagePMF } from './combatHelpers';
+  initializeGrid,
+  calculateInitialPositions,
+  DEFAULT_ENCOUNTER_DISTANCE_FEET,
+} from '../gridSpace';
+import { calculateBaseDamagePMF } from '../combatSimulator/combatHelpers';
+import { getResolvedCreature } from './creatureCache';
 
-// Re-export ProbabilityDistribution for consumers
-export type { ProbabilityDistribution } from '@/utils';
+// Types aus @/types/combat (Single Source of Truth)
+import type {
+  ProbabilityDistribution,
+  GridPosition,
+  GridConfig,
+  SpeedBlock,
+  CombatProfile,
+  SimulationState,
+  CombatState,
+  SurpriseState,
+  TurnBudget,
+  AttackResolution,
+  RoundResult,
+  ConditionState,
+} from '@/types/combat';
+
+// Re-exports für Consumer
+export type {
+  ProbabilityDistribution,
+  GridPosition,
+  GridConfig,
+  SpeedBlock,
+  CombatProfile,
+  SimulationState,
+  CombatState,
+  SurpriseState,
+  TurnBudget,
+  AttackResolution,
+  RoundResult,
+  ConditionState,
+} from '@/types/combat';
 
 // ============================================================================
 // DEBUG HELPER
@@ -82,50 +99,15 @@ export type { ProbabilityDistribution } from '@/utils';
 
 const debug = (...args: unknown[]) => {
   if (process.env.DEBUG_SERVICES === 'true') {
-    console.log('[combatResolver]', ...args);
+    console.log('[combatTracking]', ...args);
   }
 };
 
 // ============================================================================
-// CONSTANTS
+// TYPES (local, not in @/types/combat)
 // ============================================================================
 
-const GRID_MARGIN_CELLS = 20;
-export const DEFAULT_ENCOUNTER_DISTANCE_FEET = 60;
-export const DEFAULT_ENCOUNTER_DISTANCE_CELLS = feetToCell(DEFAULT_ENCOUNTER_DISTANCE_FEET);
-
-// ============================================================================
-// EXPORTED TYPES
-// ============================================================================
-
-// Re-export types from combatantAI and grid for consumers
-export type { CombatProfile, ConditionState, SpeedBlock } from './combatantAI';
-export type { GridPosition, GridConfig } from '@/utils';
-
-/** Surprise-State für Runde 1. */
-export interface SurpriseState {
-  partyHasSurprise: boolean;
-  enemyHasSurprise: boolean;
-}
-
-/** Simulation State für Runden-Tracking. */
-export interface SimulationState extends AISimulationState {
-  grid: GridConfig;
-  roundNumber: number;
-  surprise: SurpriseState;
-  resourceBudget: number;
-}
-
-/** Ergebnis einer einzelnen Runde. */
-export interface RoundResult {
-  round: number;
-  partyDPR: number;
-  enemyDPR: number;
-  partyHPRemaining: number;
-  enemyHPRemaining: number;
-}
-
-/** Input-Typ für Party (inline, nicht exportiert). */
+/** Input-Typ für Party. */
 export interface PartyInput {
   level: number;
   size: number;
@@ -133,21 +115,8 @@ export interface PartyInput {
 }
 
 // ============================================================================
-// TURN BUDGET SYSTEM
+// TURN BUDGET FUNCTIONS
 // ============================================================================
-
-/**
- * Action-Budget pro Zug. D&D 5e Aktionsökonomie.
- * Siehe: Plan cosmic-tinkering-unicorn.md#Step-1
- */
-export interface TurnBudget {
-  movementCells: number;      // Verbleibende Movement-Cells
-  baseMovementCells: number;  // Ursprüngliche Speed in Cells (für Dash)
-  hasAction: boolean;         // 1 Action (kann Multi-Attack sein)
-  hasDashed: boolean;         // Dash bereits verwendet in diesem Zug
-  hasBonusAction: boolean;    // TODO: Stub, immer false (siehe Header)
-  hasReaction: boolean;       // TODO: Stub, für OA später (siehe Header)
-}
 
 /** Erstellt TurnBudget aus CombatProfile. TODO: BonusAction-Detection (siehe Header) */
 export function createTurnBudget(profile: CombatProfile): TurnBudget {
@@ -172,7 +141,6 @@ export function createTurnBudget(profile: CombatProfile): TurnBudget {
 
 /** Prüft ob noch sinnvolle Aktionen möglich sind. */
 export function hasBudgetRemaining(budget: TurnBudget): boolean {
-  // Noch Movement oder Action übrig?
   return budget.movementCells > 0 || budget.hasAction || budget.hasBonusAction;
 }
 
@@ -198,61 +166,9 @@ export function consumeReaction(budget: TurnBudget): void {
 
 /** Dash fügt die Basis-Bewegungsrate hinzu und verbraucht die Action. */
 export function applyDash(budget: TurnBudget): void {
-  budget.movementCells += budget.baseMovementCells;  // Fügt Basis-Speed hinzu
-  budget.hasAction = false;                          // Dash verbraucht die Action
-  budget.hasDashed = true;                           // Markiert dass Dash verwendet wurde
-}
-
-// ============================================================================
-// GRID & POSITIONING
-// ============================================================================
-
-/** Initialisiert Grid für Kampfsimulation. */
-export function initializeGrid(encounterDistanceCells: number = DEFAULT_ENCOUNTER_DISTANCE_CELLS): GridConfig {
-  const gridSize = encounterDistanceCells + GRID_MARGIN_CELLS * 2;
-  return createGrid({
-    width: gridSize,
-    height: gridSize,
-    layers: 10,  // 0-9 = 0-45ft Höhe
-    diagonalRule: 'phb-variant',
-  });
-}
-
-/** Verteilt Combatants in Formation (2 Cells = 10ft Abstand). */
-function spreadFormation(profiles: CombatProfile[], center: GridPosition): void {
-  const spacingCells = 2;  // 10ft = 2 Cells
-  const positions = gridSpreadFormation(profiles.length, center, spacingCells);
-  profiles.forEach((profile, i) => {
-    profile.position = positions[i];
-  });
-}
-
-/** Setzt Initial-Positionen für alle Combatants basierend auf Allianzen. */
-export function calculateInitialPositions(
-  profiles: CombatProfile[],
-  alliances: Record<string, string[]>,
-  encounterDistanceCells: number = DEFAULT_ENCOUNTER_DISTANCE_CELLS
-): void {
-  // Party + Verbündete auf einer Seite
-  const partyAllies = profiles.filter(p => isAllied('party', p.groupId, alliances));
-  // Feinde auf der anderen Seite
-  const enemies = profiles.filter(p => isHostile('party', p.groupId, alliances));
-
-  // Party startet am Rand mit Margin
-  const partyCenter: GridPosition = { x: GRID_MARGIN_CELLS, y: GRID_MARGIN_CELLS, z: 0 };
-  // Feinde auf der gegenüberliegenden Seite
-  const enemyCenter: GridPosition = { x: GRID_MARGIN_CELLS + encounterDistanceCells, y: GRID_MARGIN_CELLS, z: 0 };
-
-  spreadFormation(partyAllies, partyCenter);
-  spreadFormation(enemies, enemyCenter);
-
-  debug('calculateInitialPositions:', {
-    partyAllyCount: partyAllies.length,
-    enemyCount: enemies.length,
-    encounterDistanceCells,
-    partyCenter,
-    enemyCenter,
-  });
+  budget.movementCells += budget.baseMovementCells;
+  budget.hasAction = false;
+  budget.hasDashed = true;
 }
 
 // ============================================================================
@@ -261,9 +177,8 @@ export function calculateInitialPositions(
 
 /** Generiert Default-Action für Character ohne Actions. HACK: siehe Header */
 function getDefaultPartyAction(level: number): Action {
-  // Level-skalierter Weapon-Attack als Fallback
-  const attackBonus = Math.floor(level / 4) + 4; // +4 bis +9
-  const damageBonus = Math.floor(level / 4) + 3; // +3 bis +8
+  const attackBonus = Math.floor(level / 4) + 4;
+  const damageBonus = Math.floor(level / 4) + 3;
 
   return {
     name: 'Weapon Attack',
@@ -276,24 +191,6 @@ function getDefaultPartyAction(level: number): Action {
   } as unknown as Action;
 }
 
-/** Generiert Default-Action für Creature ohne Actions. HACK: siehe Header */
-function getDefaultCreatureAction(cr: number): Action {
-  // CR-skalierter Natural-Attack als Fallback
-  const attackBonus = Math.max(2, Math.floor(cr) + 3);
-  const damageBonus = Math.max(1, Math.floor(cr));
-  const diceCount = Math.max(1, Math.floor(cr / 3));
-
-  return {
-    name: 'Natural Attack',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single' },
-    attack: { bonus: attackBonus },
-    damage: { dice: `${diceCount}d6`, modifier: damageBonus, type: 'bludgeoning' },
-  } as unknown as Action;
-}
-
 // ============================================================================
 // PROFILE CREATION
 // ============================================================================
@@ -301,7 +198,6 @@ function getDefaultCreatureAction(cr: number): Action {
 /** Erstellt Party-Profile. HACK: siehe Header (Default-Actions) */
 export function createPartyProfiles(party: PartyInput): CombatProfile[] {
   return party.members.map((member) => {
-    // Versuche Character aus Vault zu laden für Actions
     let actions: Action[] = [];
     try {
       const character = vault.getEntity<Character>('character', member.id);
@@ -310,7 +206,6 @@ export function createPartyProfiles(party: PartyInput): CombatProfile[] {
       // Character nicht im Vault - verwende Default
     }
 
-    // Fallback auf Default-Action
     if (actions.length === 0) {
       actions = [getDefaultPartyAction(member.level)];
     }
@@ -319,54 +214,46 @@ export function createPartyProfiles(party: PartyInput): CombatProfile[] {
 
     return {
       participantId: member.id,
-      groupId: 'party',  // Reservierte ID für Player Characters
+      groupId: 'party',
       hp: createSingleValue(member.hp),
       deathProbability: 0,
       ac: member.ac,
       speed: { walk: 30 },
       actions,
       conditions: [],
-      position: { x: 0, y: 0, z: 0 },  // Wird von calculateInitialPositions überschrieben
+      position: { x: 0, y: 0, z: 0 },
     };
   });
 }
 
-/** Erstellt Enemy-Profile aus Encounter-Gruppen. */
+/**
+ * Erstellt Enemy-Profile aus Encounter-Gruppen.
+ * Nutzt creatureCache für effizientes Laden (5 Goblins = 1 Lookup).
+ * HP von NPC.currentHp (instanz-spezifisch), nicht creature.averageHp.
+ */
 export function createEnemyProfiles(groups: EncounterGroup[]): CombatProfile[] {
   const profiles: CombatProfile[] = [];
 
   for (const group of groups) {
     for (const npcs of Object.values(group.slots)) {
       for (const npc of npcs) {
-        const creature = vault.getEntity<CreatureDefinition>('creature', npc.creature.id);
+        // Creature einmal laden (gecached für gleiche Creature-Typen)
+        const { definition: creature, actions } = getResolvedCreature(npc.creature.id);
 
-        // 1. Inline actions (direkt im Creature definiert)
-        let actions: Action[] = [...(creature.actions ?? [])];
-
-        // 2. Action references (via actionIds → Vault lookup)
-        if (creature.actionIds?.length) {
-          for (const actionId of creature.actionIds) {
-            try {
-              const action = vault.getEntity<Action>('action', actionId);
-              actions.push(action);
-            } catch {
-              debug('createEnemyProfile: action not found:', actionId);
-            }
-          }
-        }
-
-        // 3. Fallback auf Default-Action falls keine gefunden
-        if (actions.length === 0) {
-          actions = [getDefaultCreatureAction(creature.cr)];
-        }
-
-        debug('createEnemyProfile:', { npcId: npc.id, creatureId: npc.creature.id, actionsCount: actions.length });
+        debug('createEnemyProfile:', {
+          npcId: npc.id,
+          creatureId: npc.creature.id,
+          actionsCount: actions.length,
+          npcHp: npc.currentHp,
+        });
 
         profiles.push({
           participantId: npc.id,
-          groupId: group.groupId,  // UUID der Encounter-Gruppe
-          hp: createSingleValue(creature.averageHp ?? Math.floor(creature.maxHp / 2)),
-          deathProbability: 0,
+          groupId: group.groupId,
+          // HP von NPC (instanz-spezifisch), nicht creature.averageHp
+          hp: createSingleValue(npc.currentHp),
+          deathProbability: npc.currentHp <= 0 ? 1 : 0,
+          // Combat-Stats von Creature (geteilt via Cache)
           ac: creature.ac,
           speed: {
             walk: creature.speed?.walk ?? 30,
@@ -377,7 +264,7 @@ export function createEnemyProfiles(groups: EncounterGroup[]): CombatProfile[] {
           },
           actions,
           conditions: [],
-          position: { x: 0, y: 0, z: 0 },  // Wird von calculateInitialPositions überschrieben
+          position: { x: 0, y: 0, z: 0 },
         });
       }
     }
@@ -392,7 +279,6 @@ export function createEnemyProfiles(groups: EncounterGroup[]): CombatProfile[] {
 
 /** Prüft Surprise-State. HACK: siehe Header (Activity.awareness nicht geprüft) */
 export function checkSurprise(): SurpriseState {
-  // Vereinfacht: Keine Surprise (Activity-Lookup fehlt)
   return {
     partyHasSurprise: false,
     enemyHasSurprise: false,
@@ -413,12 +299,12 @@ export function createCombatState(
   alliances: Record<string, string[]>,
   encounterDistanceFeet: number = DEFAULT_ENCOUNTER_DISTANCE_FEET,
   resourceBudget: number = 0.5
-): SimulationState {
+): CombatState {
   const encounterDistanceCells = feetToCell(encounterDistanceFeet);
   const profiles = [...partyProfiles, ...enemyProfiles];
-  const grid = initializeGrid(encounterDistanceCells);
+  const grid = initializeGrid({ encounterDistanceCells });
 
-  calculateInitialPositions(profiles, alliances, encounterDistanceCells);
+  calculateInitialPositions(profiles, alliances, { encounterDistanceCells });
   const surprise = checkSurprise();
 
   debug('createCombatState:', {
@@ -444,17 +330,15 @@ export function createCombatState(
 // ACTION RESOLUTION
 // ============================================================================
 
-/** Ergebnis einer Attack-Resolution. */
-export interface AttackResolution {
-  newTargetHP: ProbabilityDistribution;
-  damageDealt: number;
-  newDeathProbability: number;
-}
+// Shared helpers for hit chance and multiattack damage
+import {
+  calculateHitChance,
+  calculateMultiattackDamage,
+} from '../combatSimulator/combatHelpers';
 
 /**
  * Resolves a single attack action against a target.
- * Supports incremental state updates for future encounter runner.
- * Unterstützt sowohl Einzelangriffe als auch Multiattack.
+ * Supports both single attacks and multiattack.
  */
 export function resolveAttack(
   attacker: CombatProfile,
@@ -464,7 +348,6 @@ export function resolveAttack(
   let effectiveDamage: ProbabilityDistribution;
 
   if (action.multiattack) {
-    // Multiattack: Kombinierte PMF (Hit-Chance bereits eingerechnet)
     const multiDamage = calculateMultiattackDamage(action, attacker.actions, target.ac);
     if (!multiDamage) {
       debug('resolveAttack: multiattack has no valid refs', { actionName: action.name });
@@ -472,20 +355,17 @@ export function resolveAttack(
     }
     effectiveDamage = multiDamage;
   } else {
-    // Einzelangriff
     if (!action.attack) {
       debug('resolveAttack: action has no attack', { actionName: action.name });
       return null;
     }
 
-    // Base Damage PMF berechnen
     const baseDamage = calculateBaseDamagePMF(action);
     if (!baseDamage) {
       debug('resolveAttack: action has no damage', { actionName: action.name });
       return null;
     }
 
-    // Hit-Chance berechnen und Effective Damage erstellen
     const hitChance = calculateHitChance(action.attack.bonus, target.ac);
     effectiveDamage = calculateEffectiveDamage(
       baseDamage,
@@ -495,13 +375,8 @@ export function resolveAttack(
     );
   }
 
-  // Schaden auf Ziel anwenden (getrennte Berechnung + Anwendung)
   const newTargetHP = applyDamageToHP(target.hp, effectiveDamage);
-
-  // Todeswahrscheinlichkeit aktualisieren
   const newDeathProbability = calculateDeathProbability(newTargetHP);
-
-  // DPR tracken (Expected Value der Effective Damage PMF)
   const damageDealt = getExpectedValue(effectiveDamage);
 
   debug('resolveAttack:', {
@@ -521,7 +396,7 @@ export function resolveAttack(
 }
 
 // ============================================================================
-// STATE UPDATES (für Combat-Tracker)
+// STATE UPDATES
 // ============================================================================
 
 /** Aktualisiert HP eines Combatants. */

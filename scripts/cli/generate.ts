@@ -32,6 +32,17 @@ interface FunctionInfo {
   modulePath: string; // Relativer Pfad ohne .ts
 }
 
+interface ModuleInfo {
+  functions: string[];
+  hasSchemas: boolean;
+}
+
+/** Prüft ob ein Modul `export const functionSchemas` exportiert. */
+function hasSchemaExport(filePath: string): boolean {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  return content.includes('export const functionSchemas');
+}
+
 // Module die Framework-Abhängigkeiten haben (svelte, obsidian)
 const EXCLUDE_DIRS = ['SessionRunner', 'views', 'application'];
 
@@ -55,8 +66,10 @@ const PRESET_MAPPINGS: Record<string, string> = {
   characters: 'character',
 };
 
-function scanExports(): FunctionInfo[] {
-  const results: FunctionInfo[] = [];
+/** Scannt alle exportierten Funktionen und Module mit Schema-Exports. */
+function scanExports(): { functions: FunctionInfo[]; modules: Map<string, ModuleInfo> } {
+  const functions: FunctionInfo[] = [];
+  const modules = new Map<string, ModuleInfo>();
 
   function walk(dir: string) {
     if (!fs.existsSync(dir)) return;
@@ -74,17 +87,26 @@ function scanExports(): FunctionInfo[] {
         walk(fullPath);
       } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts')) {
         const relativePath = path.relative(SRC_DIR, fullPath).replace('.ts', '');
-        const exports = getExportedFunctions(fullPath);
+        const exportedFunctions = getExportedFunctions(fullPath);
+        const hasSchemas = hasSchemaExport(fullPath);
 
-        for (const name of exports) {
-          results.push({ name, modulePath: relativePath });
+        // Track module info
+        if (exportedFunctions.length > 0) {
+          modules.set(relativePath, {
+            functions: exportedFunctions,
+            hasSchemas,
+          });
+        }
+
+        for (const name of exportedFunctions) {
+          functions.push({ name, modulePath: relativePath });
         }
       }
     }
   }
 
   walk(SRC_DIR);
-  return results;
+  return { functions, modules };
 }
 
 function getExportedFunctions(filePath: string): string[] {
@@ -134,7 +156,19 @@ function getAvailablePresets(): string[] {
   return presets;
 }
 
-function generateCLISource(functions: FunctionInfo[]): string {
+/**
+ * Konvertiert einen Modulpfad zu einem gültigen Variablennamen für Schemas.
+ * z.B. "services/combatSimulator/combatantAI" -> "combatantAISchemas"
+ */
+function modulePathToSchemaVar(modulePath: string): string {
+  const baseName = path.basename(modulePath);
+  return baseName + 'Schemas';
+}
+
+function generateCLISource(
+  functions: FunctionInfo[],
+  modules: Map<string, ModuleInfo>
+): string {
   // Gruppiere nach Modul
   const byModule = new Map<string, string[]>();
   for (const fn of functions) {
@@ -146,12 +180,29 @@ function generateCLISource(functions: FunctionInfo[]): string {
   const imports: string[] = [];
   const registryEntries: string[] = [];
 
+  // Schema-Imports für Module mit functionSchemas
+  const schemaImports: string[] = [];
+  const schemaRegistryEntries: string[] = [];
+
   for (const [modulePath, names] of byModule) {
     const importPath = `../../src/${modulePath}`;
-    imports.push(`import { ${names.join(', ')} } from '${importPath}';`);
+    const moduleInfo = modules.get(modulePath);
+    const hasSchemas = moduleInfo?.hasSchemas ?? false;
+
+    // Funktionen importieren
+    const importItems = [...names];
+    if (hasSchemas) {
+      importItems.push('functionSchemas as ' + modulePathToSchemaVar(modulePath));
+    }
+    imports.push(`import { ${importItems.join(', ')} } from '${importPath}';`);
 
     const fns = names.map(n => `    ${n},`).join('\n');
     registryEntries.push(`  '${modulePath}': {\n${fns}\n  },`);
+
+    // Schema-Registry Entry generieren
+    if (hasSchemas) {
+      schemaRegistryEntries.push(`  '${modulePath}': ${modulePathToSchemaVar(modulePath)},`);
+    }
   }
 
   // Preset imports generieren
@@ -177,8 +228,20 @@ import { resetState } from '../../src/infrastructure/state/sessionState';
 // Preset imports
 ${presetImports.join('\n')}
 
-// Function imports
+// Function imports (inkl. functionSchemas für Module mit Validierung)
 ${imports.join('\n')}
+
+// ============================================================================
+// SCHEMA REGISTRY (dynamisch generiert)
+// ============================================================================
+
+/**
+ * Schema-Registry: Mappt Modulpfade zu deren functionSchemas.
+ * Wird automatisch für Module generiert, die \`export const functionSchemas\` haben.
+ */
+const schemaRegistry: Record<string, Record<string, unknown[]>> = {
+${schemaRegistryEntries.join('\n')}
+};
 
 // ============================================================================
 // HELPERS
@@ -186,6 +249,96 @@ ${imports.join('\n')}
 
 function coordToKey(coord: { q: number; r: number }): string {
   return \`\${coord.q},\${coord.r}\`;
+}
+
+/**
+ * Gibt den erhaltenen Wert an einem Pfad zurück.
+ */
+function getNestedValue(obj: unknown, pathArray: (string | number)[]): unknown {
+  let current = obj;
+  for (const key of pathArray) {
+    if (current === null || typeof current !== 'object') return undefined;
+    current = (current as Record<string, unknown>)[key];
+  }
+  return current;
+}
+
+/**
+ * Formatiert Zod-Validierungsfehler mit hilfreichen Meldungen.
+ * Zeigt: Parameter, Feld, Fehler, erhaltenen Wert.
+ */
+function formatZodError(
+  error: { issues: Array<{ path: (string | number)[]; message: string; code: string }> },
+  input: unknown,
+  paramIndex: number
+): string {
+  const lines: string[] = [\`❌ Validierungsfehler in Parameter \${paramIndex + 1}:\`];
+
+  for (const issue of error.issues) {
+    const path = issue.path.join('.');
+    lines.push(\`\\n  Feld: \${path || '(root)'}\`);
+    lines.push(\`  Fehler: \${issue.message}\`);
+    lines.push(\`  Code: \${issue.code}\`);
+
+    // Zeige erhaltenen Wert (gekürzt)
+    const received = path ? getNestedValue(input, issue.path) : input;
+    const truncated = JSON.stringify(received)?.slice(0, 100) ?? 'undefined';
+    lines.push(\`  Erhalten: \${truncated}\${truncated.length >= 100 ? '...' : ''}\`);
+
+    // Kontextspezifische Hilfe für bekannte Felder
+    if (path === 'alliances') {
+      lines.push('  Erwartetes Format: Record<string, string[]>');
+      lines.push('  Beispiel: {"party": ["party"], "enemies": ["enemies"]}');
+    }
+    if (path.includes('hp')) {
+      lines.push('  Erwartetes Format: Object mit numerischen Keys');
+      lines.push('  Beispiel: {"7": 1} oder {"45": 1}');
+    }
+    if (path.includes('position')) {
+      lines.push('  Erwartetes Format: {x: number, y: number, z: number}');
+      lines.push('  Beispiel: {"x": 0, "y": 5, "z": 0}');
+    }
+    if (path.includes('speed')) {
+      lines.push('  Erwartetes Format: {walk: number, fly?: number, ...}');
+      lines.push('  Beispiel: {"walk": 30}');
+    }
+  }
+
+  return lines.join('\\n');
+}
+
+/**
+ * Validiert Input dynamisch gegen Schema-Registry.
+ * Gibt null zurück wenn kein Schema definiert oder Validierung erfolgreich.
+ * Gibt Fehler-String zurück wenn Validierung fehlschlägt.
+ */
+function validateInput(
+  modulePath: string,
+  functionName: string,
+  args: unknown[]
+): string | null {
+  const moduleSchemas = schemaRegistry[modulePath];
+  if (!moduleSchemas) return null;  // Modul hat keine Schemas
+
+  const fnSchemas = moduleSchemas[functionName] as { safeParse: (input: unknown) => { success: boolean; error?: { issues: Array<{ path: (string | number)[]; message: string; code: string }> } } }[] | undefined;
+  if (!fnSchemas) return null;  // Funktion hat kein Schema
+
+  // Validiere jeden Parameter
+  for (let i = 0; i < fnSchemas.length; i++) {
+    const schema = fnSchemas[i];
+    const arg = args[i];
+
+    if (!schema || typeof schema.safeParse !== 'function') {
+      continue;  // Schema ist kein Zod-Schema (z.B. z.any())
+    }
+
+    const result = schema.safeParse(arg);
+    if (!result.success && result.error) {
+      return formatZodError(result.error, arg, i);
+    }
+  }
+
+  return null;  // Alle Parameter valide
 }
 
 // ============================================================================
@@ -350,7 +503,18 @@ Beispiele:
   let result: unknown;
   if (argsJson) {
     const rawParsed = JSON.parse(argsJson);
+
+    // Validiere Input VOR Map-Konvertierung (Schemas erwarten Object-Format)
+    const rawArgsArray = Array.isArray(rawParsed) ? rawParsed : [rawParsed];
+    const validationError = validateInput(modulePath, functionName, rawArgsArray);
+    if (validationError) {
+      console.error(validationError);
+      process.exit(1);
+    }
+
+    // Konvertiere Objects mit numerischen Keys zu Maps (für PMF-Funktionen)
     const parsed = objectToMap(rawParsed);
+
     if (Array.isArray(parsed)) {
       // Multi-arg: spread array as arguments
       result = await fn(...parsed);
@@ -472,16 +636,18 @@ async function bundleCLI() {
 // ============================================================================
 
 console.log('Scanning src/ for exported functions...');
-const functions = scanExports();
+const { functions, modules } = scanExports();
 
 if (functions.length === 0) {
   console.log('Keine exportierten Funktionen gefunden.');
   process.exit(0);
 }
 
-console.log(`Found ${functions.length} functions in ${new Set(functions.map(f => f.modulePath)).size} modules.`);
+// Zähle Module mit Schema-Exports
+const modulesWithSchemas = [...modules.values()].filter(m => m.hasSchemas).length;
+console.log(`Found ${functions.length} functions in ${modules.size} modules (${modulesWithSchemas} with validation schemas).`);
 
-const cliSource = generateCLISource(functions);
+const cliSource = generateCLISource(functions, modules);
 
 // Temporäre Datei schreiben
 fs.writeFileSync(TEMP_FILE, cliSource);

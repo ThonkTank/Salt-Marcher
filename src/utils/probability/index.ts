@@ -15,6 +15,7 @@ export {
   rollDiceDetailed,
   aggregateWeightedPools,
   sampleFromRange,
+  lerp,
   type DiceRollDetail,
   type DiceRollResult,
 } from './random';

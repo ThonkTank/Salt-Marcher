@@ -143,6 +143,9 @@ type AbilityType = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
 | `rollModifiers` | `RollModifier[]?` | Wurf-Modifikatoren |
 | `damageModifiers` | `DamageModifier[]?` | Schadensresistenzen |
 | `movementModifiers` | `MovementModifier[]?` | Bewegungsaenderungen |
+| `grantMovement` | `GrantMovement?` | Sofortige Bewegungsgewaehrung (Dash) |
+| `movementBehavior` | `MovementBehavior?` | Bewegungsverhalten (Disengage) |
+| `incomingModifiers` | `IncomingModifiers?` | Eingehende Angriffs-Modifier (Dodge) |
 | `tempHp` | `{ dice: string; modifier: number }?` | Temporaere HP |
 | `duration` | `Duration?` | Dauer |
 | `endingSave` | `SaveDC?` | Wiederholter Rettungswurf |
@@ -201,7 +204,8 @@ type ModifiableStat =
 ```typescript
 type RollTarget =
   | 'attacks' | 'saves' | 'ability-checks' | 'concentration' | 'death-saves'
-  | 'str-checks' | 'dex-checks' | 'stealth' | 'perception' | 'initiative';
+  | 'str-checks' | 'dex-checks' | 'stealth' | 'perception' | 'initiative'
+  | 'str-save' | 'dex-save' | 'con-save' | 'int-save' | 'wis-save' | 'cha-save';
 ```
 
 ### DamageModifier
@@ -218,6 +222,57 @@ type RollTarget =
 | `type` | `'speed' \| 'fly' \| 'swim' \| 'climb' \| 'burrow' \| 'teleport'` | Bewegungstyp |
 | `value` | `number` | Geschwindigkeit (Feet) |
 | `mode` | `'grant' \| 'bonus'` | Verleiht oder addiert |
+
+### GrantMovement
+
+Gewaehrt sofortige zusaetzliche Bewegung. Wird fuer Dash und aehnliche Effekte verwendet.
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `type` | `'dash' \| 'extra'` | 'dash' = Basis-Speed, 'extra' = fester Wert |
+| `value` | `number?` | Nur fuer 'extra' - Bewegung in Feet |
+
+```typescript
+// Dash: Verdoppelt Movement
+grantMovement: { type: 'dash' }
+
+// Expeditious Retreat: +30ft
+grantMovement: { type: 'extra', value: 30 }
+```
+
+### MovementBehavior
+
+Modifiziert Bewegungsverhalten fuer die Dauer des Effekts. Wird fuer Disengage und aehnliche Effekte verwendet.
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `noOpportunityAttacks` | `boolean?` | Keine Gelegenheitsangriffe beim Verlassen |
+| `ignoresDifficultTerrain` | `boolean?` | Ignoriert schwieriges Gelaende |
+
+```typescript
+// Disengage
+movementBehavior: { noOpportunityAttacks: true }
+
+// Freedom of Movement
+movementBehavior: { noOpportunityAttacks: true, ignoresDifficultTerrain: true }
+```
+
+### IncomingModifiers
+
+Modifiziert eingehende Angriffe/Zauber gegen dieses Ziel. Wird fuer Dodge und aehnliche Effekte verwendet.
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `attacks` | `'advantage' \| 'disadvantage'?` | Modifikator auf eingehende Angriffe |
+| `spells` | `'advantage' \| 'disadvantage'?` | Modifikator auf eingehende Zauber |
+
+```typescript
+// Dodge: Disadvantage auf eingehende Angriffe
+incomingModifiers: { attacks: 'disadvantage' }
+
+// Blur: Disadvantage auf Angriffe und Zauber
+incomingModifiers: { attacks: 'disadvantage', spells: 'disadvantage' }
+```
 
 ### TerrainEffect
 
@@ -526,5 +581,70 @@ const dragonMultiattack: Action = {
     ],
     description: 'The dragon makes three attacks: one with its bite and two with its claws.'
   }
+};
+```
+
+---
+
+## Standard-Actions
+
+D&D 5e Standard-Aktionen werden als normale Actions mit spezifischen Effect-Feldern modelliert.
+**Wichtig:** Sie verwenden `actionType: 'utility'`, nicht spezielle ActionTypes.
+
+### Dash
+
+```typescript
+const dash: Action = {
+  id: 'std-dash',
+  name: 'Dash',
+  actionType: 'utility',
+  timing: { type: 'action' },
+  range: { type: 'self', normal: 0 },
+  targeting: { type: 'single' },
+  autoHit: true,
+  effects: [{
+    grantMovement: { type: 'dash' },
+    duration: { type: 'instant' },
+    affectsTarget: 'self'
+  }]
+};
+```
+
+### Disengage
+
+```typescript
+const disengage: Action = {
+  id: 'std-disengage',
+  name: 'Disengage',
+  actionType: 'utility',
+  timing: { type: 'action' },
+  range: { type: 'self', normal: 0 },
+  targeting: { type: 'single' },
+  autoHit: true,
+  effects: [{
+    movementBehavior: { noOpportunityAttacks: true },
+    duration: { type: 'rounds', value: 1 },
+    affectsTarget: 'self'
+  }]
+};
+```
+
+### Dodge
+
+```typescript
+const dodge: Action = {
+  id: 'std-dodge',
+  name: 'Dodge',
+  actionType: 'utility',
+  timing: { type: 'action' },
+  range: { type: 'self', normal: 0 },
+  targeting: { type: 'single' },
+  autoHit: true,
+  effects: [{
+    incomingModifiers: { attacks: 'disadvantage' },
+    rollModifiers: [{ on: 'dex-save', type: 'advantage' }],
+    duration: { type: 'rounds', value: 1 },
+    affectsTarget: 'self'
+  }]
 };
 ```

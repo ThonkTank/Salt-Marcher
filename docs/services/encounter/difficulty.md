@@ -6,8 +6,9 @@
 > **Aufgerufen von:** [Encounter.md#helpers](Encounter.md#helpers)
 >
 > **Verwendet:**
-> - [combatResolver.md](../combatSimulator/combatResolver.md) - State-Management + Action-Resolution
+> - [combatTracking.md](../combatTracking.md) - State-Management + Action-Resolution
 > - [combatantAI.md](../combatSimulator/combatantAI.md) - Entscheidungslogik (Action/Target-Auswahl, Movement)
+> - [combatHelpers.ts](../combatSimulator/) - Alliance-Checks, Hit-Chance
 >
 > **Referenzierte Schemas:**
 > - [creature.md](../../types/creature.md) - Action-Schema fuer Simulation
@@ -19,13 +20,13 @@
 > - [Encounter.md#goaldifficulty](Encounter.md#goaldifficulty-step-60) - Ziel-Difficulty (Step 6.0)
 > - [Balancing.md](Balancing.md) - Downstream-Step (Step 6.1)
 
-Difficulty-Klassifizierung via PMF-basierter Kampfsimulation. Orchestriert die Simulation und nutzt combatResolver fuer State + Resolution.
+Difficulty-Klassifizierung via PMF-basierter Kampfsimulation. Orchestriert die Simulation und nutzt combatTracking fuer State + Resolution.
 
 ---
 
 ## Service-Architektur
 
-`difficulty.ts` **orchestriert** die Combat-Simulation und nutzt combatResolver/combatantAI als Helper:
+`difficulty.ts` **orchestriert** die Combat-Simulation und nutzt combatTracking/combatantAI als Helper:
 
 ```
 difficulty.ts (Orchestrator)
@@ -34,19 +35,24 @@ difficulty.ts (Orchestrator)
     ├── simulateRound()         ← Eine Runde simulieren
     ├── calculatePartyWinProbability() / calculateTPKRisk()
     │
-    ├─► combatResolver.ts (Helper-Repository)
+    ├─► combatTracking/ (State-Management + Resolution)
     │       ├── createPartyProfiles()
     │       ├── createEnemyProfiles()
     │       ├── createCombatState(profiles, alliances, distance)
     │       ├── resolveAttack()
     │       └── updateCombatantHP() / updateCombatantPosition()
     │
+    ├─► combatHelpers.ts (Shared Utilities)
+    │       ├── isAllied() / isHostile()
+    │       ├── calculateHitChance()
+    │       └── calculateMultiattackDamage()
+    │
     └─► combatantAI.ts (AI-Entscheidungslogik)
             ├── selectBestActionAndTarget()
-            ├── calculateMovement()
-            └── isAllied() / isHostile()
+            ├── evaluateAllCells()
+            └── executeTurn()
 
-**Hinweis:** `calculateAlliances()` liegt in [groupActivity.ts](groupActivity.md#calculatealliances) und wird bei Encounter-Erstellung aufgerufen. Die `alliances` werden im `EncounterInstance`-Objekt gespeichert und an die Simulation uebergeben.
+**Hinweis:** `calculateGroupRelations()` liegt in [groupActivity.ts](groupActivity.md#calculatealliances) und wird bei Encounter-Erstellung aufgerufen. Die `alliances` werden im `EncounterInstance`-Objekt gespeichert und an die Simulation uebergeben.
 ```
 
 **Zustaendigkeiten:**
@@ -54,12 +60,13 @@ difficulty.ts (Orchestrator)
 | Service | Verantwortlichkeit | Standalone? |
 |---------|-------------------|:-----------:|
 | `difficulty.ts` | Simulations-Loop, Victory-Conditions, Outcome-Analyse, Difficulty-Klassifizierung | Nein |
-| `combatResolver.ts` | State-Management, Action-Resolution (KEINE autonome Simulation) | Ja |
-| `combatantAI.ts` | Action-Selection, Target-Selection, Movement, Alliance-Checks | Ja |
+| `combatTracking/` | State-Management, Action-Resolution, Turn Budget | Ja |
+| `combatHelpers.ts` | Alliance-Checks, Hit-Chance, Multiattack-Damage | Ja |
+| `combatantAI.ts` | Action-Selection, Target-Selection, Cell-Evaluation, Movement | Ja |
 
-**Design-Entscheidung:** combatResolver enthält nur State + Resolution, damit es spaeter auch als generisches Helper-Repository fuer den manuellen Combat-Tracker dienen kann. Die autonome Simulations-Logik bleibt in difficulty.ts.
+**Design-Entscheidung:** combatTracking/ enthält nur State + Resolution, damit es spaeter auch als generisches Helper-Repository fuer den manuellen Combat-Tracker dienen kann. Die autonome Simulations-Logik bleibt in difficulty.ts.
 
-**Hinweis:** Fuer Standalone-Nutzung (z.B. Combat-Tracker) siehe [combatSimulator/](../combatSimulator/).
+**Hinweis:** Fuer Standalone-Nutzung (z.B. Combat-Tracker) siehe [combatTracking.md](../combatTracking.md) und [combatSimulator/](../combatSimulator/).
 
 ---
 
@@ -397,181 +404,6 @@ Die Simulation konsumiert `alliances` fuer Targeting-Entscheidungen:
 
 ---
 
-## Sweet-Spot und Pain-Point {#sweet-spot-pain-point}
-
-Kampf-Distanzen werden basierend auf den Faehigkeiten der Kreaturen berechnet.
-
-### Konzepte
-
-**Sweet-Spot:** Die optimale Kampfdistanz der Kreatur - dort wo sie den meisten Schaden verursachen kann.
-- Basiert auf den Reichweiten aller Actions, gewichtet nach Schadenspotential
-- Melee-Kreaturen haben niedrigen Sweet-Spot (5-10ft)
-- Ranged/AoE-Kreaturen haben hoeheren Sweet-Spot (30-120ft)
-
-**Pain-Point:** Die Distanz, ab der die Kreatur die Party nicht mehr erreichen kann, bevor sie stirbt.
-- Basiert auf: Kreatur-HP, Party-DPR, Kreatur-Geschwindigkeit, maximale Angriffsreichweite
-- Kreaturen mit viel HP/Speed haben hohen Pain-Point
-- Kreaturen mit wenig HP/Speed haben niedrigen Pain-Point
-
-**Combat-Praeferenz:** Bestimmt, ob die Kreatur eher nah (Melee) oder fern (Ranged/AoE) starten will:
-- **Pure Melee:** Startet weiter weg (will Abstand kontrollieren) → `sweetSpot * 3`
-- **Pure Ranged/AoE:** Startet bei Sweet-Spot (optimale Reichweite) → `sweetSpot`
-- **Hybrid:** Startet dazwischen → `sweetSpot * 1.5`
-
-### Sweet-Spot berechnen
-
-Der Sweet-Spot ist die gewichtete Durchschnitts-Reichweite aller Actions:
-
-```typescript
-function calculateSweetSpot(creature: CreatureDefinition): number {
-  const actions = creature.actions ?? [];
-  if (actions.length === 0) return 30;  // Default fuer Kreaturen ohne Actions
-
-  let totalWeightedRange = 0;
-  let totalPotential = 0;
-
-  for (const action of actions) {
-    if (!action.damage && !action.healing) continue;
-
-    const optimalRange = getOptimalRange(action);
-    const potential = calculateActionDamagePotential(action, optimalRange);
-
-    totalWeightedRange += optimalRange * potential;
-    totalPotential += potential;
-  }
-
-  if (totalPotential === 0) return 30;
-  return totalWeightedRange / totalPotential;
-}
-
-function getOptimalRange(action: Action): number {
-  const range = action.range;
-
-  switch (range.type) {
-    case 'reach': return range.normal;  // 5-10ft
-    case 'ranged': return Math.min(range.normal, 60);  // Optimal bis 60ft
-    case 'self':
-      if (action.targeting.aoe) return 15;  // Ziele direkt vor sich
-      return 0;
-    case 'touch': return 5;
-    default: return 30;
-  }
-}
-```
-
-**Sweet-Spot Beispiele:**
-
-| Kreatur | Actions | Sweet-Spot |
-|---------|---------|:----------:|
-| Wolf | Bite (5ft) | 5ft |
-| Goblin | Scimitar (5ft), Shortbow (80ft) | ~40ft |
-| Young Dragon | Bite (10ft), Fire Breath (30ft cone) | ~15ft |
-| Mage | Fire Bolt (120ft), Fireball (150ft) | ~60ft |
-
-### Pain-Point berechnen
-
-Der Pain-Point ist die maximale Distanz, bei der die Kreatur noch sinnvoll angreifen kann:
-
-```typescript
-function calculatePainPoint(
-  creature: CreatureDefinition,
-  partyDPR: number,
-  partySize: number,
-  creatureCount: number
-): number {
-  const maxRange = getMaxActionRange(creature);
-
-  // Wie viele Runden ueberlebt die Kreatur?
-  const partyDPRperTarget = partyDPR / Math.min(creatureCount, partySize);
-  const roundsToKill = creature.maxHp / partyDPRperTarget;
-
-  // Maximale Distanz = Range + (Runden * Bewegung * 2)
-  const maxTravelDistance = roundsToKill * creature.speed.walk * 2;
-
-  return maxRange + maxTravelDistance;
-}
-
-function getMaxActionRange(creature: CreatureDefinition): number {
-  const actions = creature.actions ?? [];
-  if (actions.length === 0) return 30;
-
-  let maxRange = 0;
-  for (const action of actions) {
-    if (!action.damage) continue;
-
-    const range = action.range;
-    let effectiveMax = 0;
-
-    switch (range.type) {
-      case 'reach': effectiveMax = range.normal; break;
-      case 'ranged': effectiveMax = range.long ?? range.normal; break;
-      case 'self':
-        if (action.targeting.aoe) effectiveMax = action.targeting.aoe.size;
-        break;
-      case 'touch': effectiveMax = 5; break;
-    }
-
-    maxRange = Math.max(maxRange, effectiveMax);
-  }
-
-  return maxRange;
-}
-```
-
-**Pain-Point Beispiele:**
-
-| Kreatur | HP | Speed | Max Range | Party DPR | Pain-Point |
-|---------|:--:|:-----:|:---------:|:---------:|:----------:|
-| Goblin | 7 | 30ft | 80ft | 40 | ~90ft |
-| Orc | 15 | 30ft | 30ft | 40 | ~50ft |
-| Adult Dragon | 256 | 40ft | 90ft | 60 | ~430ft |
-
-### Combat-Praeferenz bestimmen
-
-```typescript
-type CombatPreference = 'melee' | 'ranged' | 'hybrid';
-
-function determineCombatPreference(creature: CreatureDefinition): CombatPreference {
-  const actions = creature.actions ?? [];
-  if (actions.length === 0) return 'melee';
-
-  let meleePotential = 0;
-  let rangedPotential = 0;
-
-  for (const action of actions) {
-    if (!action.damage) continue;
-
-    const range = action.range;
-    const potential = calculateActionDamagePotential(action, getOptimalRange(action));
-
-    if (range.type === 'reach' || range.type === 'touch') {
-      meleePotential += potential;
-    } else {
-      rangedPotential += potential;
-    }
-  }
-
-  const totalPotential = meleePotential + rangedPotential;
-  if (totalPotential === 0) return 'melee';
-
-  const rangedRatio = rangedPotential / totalPotential;
-
-  if (rangedRatio >= 0.7) return 'ranged';
-  if (rangedRatio <= 0.3) return 'melee';
-  return 'hybrid';
-}
-```
-
-**Combat-Praeferenz Mapping:**
-
-| Ranged-Ratio | Praeferenz | Basis-Distanz |
-|:------------:|:----------:|:-------------:|
-| >= 70% | `ranged` | `sweetSpot` |
-| 30-70% | `hybrid` | `sweetSpot * 1.5` |
-| <= 30% | `melee` | `sweetSpot * 3` |
-
----
-
 ## Step 5.1: Runden-Simulation {#simulation}
 
 **Input:** `SimulationState`
@@ -636,147 +468,35 @@ function calculateEnemyDeathProbability(state: SimulationState): number {
 
 ### 5.1.a: Positioning (Vektor-basierte Bewegung)
 
-```typescript
-interface CreatureVector {
-  target: CombatProfile;
-  attraction: number;    // Positiv = will naeher
-  repulsion: number;     // Positiv = will weg
-}
+Bewegung wird durch Attraction/Repulsion-Vektoren bestimmt. Jeder Combatant uebt auf jeden anderen eine Kraft aus:
 
-function calculateMovement(
-  profile: CombatProfile,
-  state: SimulationState
-): Vector3 {
-  const vectors: CreatureVector[] = [];
+- **Attraction**: Ich will naeher (Feinde angreifen)
+- **Repulsion**: Ich will weg (zu nah fuer Ranged)
 
-  for (const other of state.profiles) {
-    if (other.participantId === profile.participantId) continue;
+Die Summe aller Vektoren ergibt die optimale Bewegungsrichtung.
 
-    const distance = getDistance(profile.position, other.position);
-    const isEnemy = isHostile(profile.groupId, other.groupId, state.alliances);
-
-    // Anziehungs-Faktoren
-    let attraction = 0;
-    if (isEnemy) {
-      // Will ich dort Schaden machen?
-      const sweetSpot = calculateSweetSpot(profile.actions);
-      const inSweetSpot = Math.abs(distance - sweetSpot) < 10;
-      attraction += inSweetSpot ? 0 : 0.5;
-
-      // Melee-Praeferenz
-      const combatPref = determineCombatPreference(profile.actions);
-      if (combatPref === 'melee' && distance > 10) {
-        attraction += 0.8;
-      }
-    } else {
-      // Allies: Buff/Heal-Range?
-      const hasSupport = profile.actions.some(a => a.targetType === 'ally');
-      if (hasSupport && distance > 30) {
-        attraction += 0.3;
-      }
-    }
-
-    // Abstossungs-Faktoren
-    let repulsion = 0;
-    if (isEnemy) {
-      // Ranged: Will Abstand halten
-      const combatPref = determineCombatPreference(profile.actions);
-      if (combatPref === 'ranged' && distance < 15) {
-        repulsion += 0.6;
-      }
-
-      // Gefahr: Hoher DPR-Gegner
-      const enemyDPR = estimateDPR(other.actions);
-      if (enemyDPR > 20 && distance < 30) {
-        repulsion += 0.4;
-      }
-    }
-
-    vectors.push({ target: other, attraction, repulsion });
-  }
-
-  // Summe aller Vektoren -> Bewegungsrichtung
-  const resultVector = sumVectors(vectors.map(v => ({
-    direction: getDirection(profile.position, v.target.position),
-    magnitude: v.attraction - v.repulsion
-  })));
-
-  // Bewegung in Richtung des Ergebnisvektors (bis Speed)
-  const maxMove = profile.speed.walk ?? 30;
-  return moveInDirection(profile.position, resultVector, maxMove);
-}
-```
+> **Implementierung:** [combatantAI.md](../combatSimulator/combatantAI.md#movement-algorithmus)
+>
+> | Funktion | Beschreibung |
+> |----------|--------------|
+> | `calculateMovementVector(profile, state)` | Berechnet optimalen Bewegungsvektor |
+> | `calculateAttraction(profile, other, distance, isEnemy, cache)` | Attraction-Faktoren |
+> | `calculateRepulsion(profile, other, distance, isEnemy)` | Repulsion-Faktoren |
+> | `getOptimalRangeVsTarget(attacker, target, cache)` | Optimale Reichweite pro Matchup |
+> | `calculateMoveEV(from, to, profile, state)` | EV einer Bewegung (Vektor-Alignment) |
 
 ### 5.1.b: Action-Auswahl (EV-gewichtet)
 
-Aktionen werden basierend auf Expected Value ausgewaehlt:
+Aktionen werden basierend auf Expected Value ausgewaehlt. Das TurnBudget-System ermoeglicht granulare Schritt-fuer-Schritt Evaluation.
 
-```typescript
-interface WeightedAction {
-  action: Action;
-  weight: number;
-  targetId: string;
-}
-
-function selectAction(
-  profile: CombatProfile,
-  state: SimulationState,
-  resourceBudget: number
-): WeightedAction {
-  const possibleActions = getPossibleActions(profile, state, resourceBudget);
-  const weighted = possibleActions.map(a => ({
-    ...a,
-    weight: calculateActionEV(a, profile, state)
-  }));
-
-  // Gewichtete Auswahl (hoehere EV = wahrscheinlicher)
-  return weightedRandomSelect(weighted);
-}
-
-function calculateActionEV(
-  action: { action: Action; targetId: string },
-  profile: CombatProfile,
-  state: SimulationState
-): number {
-  const target = state.profiles.find(p => p.participantId === action.targetId);
-  if (!target) return 0;
-
-  // Expected Damage
-  const hitChance = calculateHitChance(action.action, target.ac);
-  const damageDist = calculateDamageDistribution(action.action);
-  const expectedDamage = getExpectedValue(damageDist) * hitChance;
-
-  // Risk: Schaden, den wir nehmen koennten (Position-basiert)
-  const exposureRisk = estimateExposureRisk(profile, state);
-
-  // EV = Expected Damage - Risk (vereinfacht)
-  return expectedDamage - exposureRisk * 0.5;
-}
-
-function getPossibleActions(
-  profile: CombatProfile,
-  state: SimulationState,
-  resourceBudget: number
-): Array<{ action: Action; targetId: string }> {
-  const result: Array<{ action: Action; targetId: string }> = [];
-
-  for (const action of profile.actions) {
-    // Resource-Check: Limitierte Ressourcen (Spell Slots) mit Budget skalieren
-    if (action.resourceCost && profile.groupId === 'party') {
-      const effectiveUses = action.uses * resourceBudget;
-      if (effectiveUses < 0.5) continue;  // Zu teuer fuer diesen Encounter
-    }
-
-    // Range-Check: Kann ich ein Ziel erreichen?
-    const targets = getValidTargets(profile, action, state);
-    for (const target of targets) {
-      result.push({ action, targetId: target.participantId });
-    }
-  }
-
-  return result;
-}
-```
+> **Implementierung:** [combatantAI.md](../combatSimulator/combatantAI.md#action-selection-algorithmus)
+>
+> | Funktion | Beschreibung |
+> |----------|--------------|
+> | `selectBestActionAndTarget(attacker, state)` | Waehlt beste (Action, Target)-Kombination |
+> | `calculatePairScore(attacker, action, target, distance)` | Score fuer Action+Target |
+> | `generateActionCandidates(profile, state, budget)` | Alle moeglichen TurnActions |
+> | `calculateTurnActionEV(turnAction, profile, state)` | EV einer TurnAction |
 
 ### 5.1.c: DPR-Distribution berechnen
 
@@ -1156,39 +876,6 @@ Alle bisherigen Difficulty-Faktoren werden in die Simulation integriert:
 | **Group Relations** | XP-Modifier | Gruppen attackieren sich gegenseitig |
 | **Loot/Items** | XP-Modifier | Teil des Action-Pools, modifiziert Stats |
 
-### Distance-Modifier (Pain-Point-Decay)
-
-Die Distanz beeinflusst den effektiven XP-Wert einer Kreatur. Ueber dem Pain-Point hinaus faellt der Wert asymptotisch ab, erreicht aber nie 0:
-
-```typescript
-function getDistanceXPModifier(distance: number, painPoint: number): number {
-  if (distance <= painPoint) {
-    return 1.0;  // Voller Wert innerhalb Pain-Point
-  }
-
-  // Ueber Pain-Point: asymptotischer Decay
-  const excessRatio = (distance - painPoint) / painPoint;
-  return 1 / (1 + excessRatio);  // Asymptote bei 0, erreicht nie 0
-}
-```
-
-**Beispiele (Pain-Point 100ft):**
-
-| Distanz | Excess | XP-Modifier |
-|--------:|-------:|------------:|
-| 50ft | - | 100% |
-| 100ft | 0% | 100% |
-| 150ft | 50% | 67% |
-| 200ft | 100% | 50% |
-| 300ft | 200% | 33% |
-| 500ft | 400% | 20% |
-| 1000ft | 900% | 10% |
-
-**Begruendung:** Selbst eine Kreatur weit ausserhalb ihrer Reichweite hat narrativen Wert und koennte:
-- Von der Party angegriffen werden (Party bewegt sich)
-- Verstaerkung rufen
-- Spaeter relevant werden
-
 ### Environment als Condition-Layer
 
 ```typescript
@@ -1378,7 +1065,6 @@ function calculateAdjustedXP(encounter: FlavouredEncounter): number {
 - **Action-Schema:** [Creature.md#action-schema](../../entities/creature.md#action-schema)
 - **Feature-Schema:** [EncounterWorkflow.md#feature-schema](../../orchestration/EncounterWorkflow.md#feature-schema)
 - **Activity-Definitionen:** [groupActivity.md](groupActivity.md#activity-beispiele)
-- **Sweet-Spot/Pain-Point:** [#sweet-spot-pain-point](#sweet-spot-pain-point)
 
 ---
 

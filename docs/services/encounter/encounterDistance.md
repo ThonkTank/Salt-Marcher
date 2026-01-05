@@ -12,7 +12,7 @@
 > **Verwandte Dokumente:**
 > - [Encounter.md](Encounter.md) - Pipeline-Uebersicht
 > - [groupActivity.md](groupActivity.md) - Activity-Generierung (Step 4.1-4.2)
-> - [Difficulty.md](Difficulty.md) - Sweet-Spot und Pain-Point Berechnung
+> - [Difficulty.md](Difficulty.md) - Difficulty-Berechnung via Simulation
 
 Perception-Berechnung fuer Encounters: In welcher Entfernung nimmt die Party das Encounter wahr?
 
@@ -28,7 +28,7 @@ Perception-Berechnung fuer Encounters: In welcher Entfernung nimmt die Party das
 
 Die `initialDistance` bestimmt, in welcher Entfernung die Party die Encounter-Gruppe wahrnimmt. Die Berechnung basiert auf **Umgebungsfaktoren** (Terrain, Weather, Activity, Gruppen-/Kreatur-Groesse).
 
-**Hinweis:** Sweet-Spot und Pain-Point (optimale Kampfdistanzen) werden in [Difficulty.md#sweet-spot-pain-point](Difficulty.md#sweet-spot-pain-point) berechnet und fuer Positioning verwendet.
+**Hinweis:** Initial-Positioning fuer Combat-Simulation wird durch `initialDistance` bestimmt. Optimale Reichweiten werden dynamisch pro Matchup in [combatantAI.md](../combatSimulator/combatantAI.md#optimale-reichweite-dynamisch) berechnet.
 
 ---
 

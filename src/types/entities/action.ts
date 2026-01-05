@@ -22,6 +22,7 @@ import {
   TARGETING_TYPES,
   SAVE_ON_SAVE_EFFECTS,
   ADVANTAGE_CONDITIONS,
+  ADVANTAGE_STATES,
   MODIFIABLE_STATS,
   ROLL_TARGETS,
   STAT_MODIFIER_TYPES,
@@ -29,6 +30,7 @@ import {
   DAMAGE_MODIFIER_TYPES,
   MOVEMENT_MODIFIER_TYPES,
   MOVEMENT_MODES,
+  GRANT_MOVEMENT_TYPES,
   FORCED_MOVEMENT_TYPES,
   FORCED_MOVEMENT_DIRECTIONS,
   AFFECTS_TARGETS,
@@ -68,6 +70,8 @@ export const rollModifierTypeSchema = z.enum(ROLL_MODIFIER_TYPES);
 export const damageModifierTypeSchema = z.enum(DAMAGE_MODIFIER_TYPES);
 export const movementModifierTypeSchema = z.enum(MOVEMENT_MODIFIER_TYPES);
 export const movementModeSchema = z.enum(MOVEMENT_MODES);
+export const grantMovementTypeSchema = z.enum(GRANT_MOVEMENT_TYPES);
+export const advantageStateSchema = z.enum(ADVANTAGE_STATES);
 export const forcedMovementTypeSchema = z.enum(FORCED_MOVEMENT_TYPES);
 export const forcedMovementDirectionSchema = z.enum(FORCED_MOVEMENT_DIRECTIONS);
 export const affectsTargetSchema = z.enum(AFFECTS_TARGETS);
@@ -256,6 +260,27 @@ export const counterCheckSchema = z.object({
 });
 export type CounterCheck = z.infer<typeof counterCheckSchema>;
 
+/** Movement-Gewährung (für Dash, Expeditious Retreat, etc.) */
+export const grantMovementSchema = z.object({
+  type: grantMovementTypeSchema,  // 'dash' = base speed, 'extra' = fixed value
+  value: z.number().positive().optional(),  // Nur für 'extra'
+});
+export type GrantMovement = z.infer<typeof grantMovementSchema>;
+
+/** Bewegungsverhalten-Modifikator (für Disengage, Freedom of Movement, etc.) */
+export const movementBehaviorSchema = z.object({
+  noOpportunityAttacks: z.boolean().optional(),
+  ignoresDifficultTerrain: z.boolean().optional(),
+});
+export type MovementBehavior = z.infer<typeof movementBehaviorSchema>;
+
+/** Eingehende Angriffs-Modifikatoren (für Dodge, Blur, etc.) */
+export const incomingModifiersSchema = z.object({
+  attacks: advantageStateSchema.optional(),  // 'advantage' | 'disadvantage'
+  spells: advantageStateSchema.optional(),
+});
+export type IncomingModifiers = z.infer<typeof incomingModifiersSchema>;
+
 // ============================================================================
 // LAYER 4: COMPLEX SUB-SCHEMAS
 // ============================================================================
@@ -284,6 +309,11 @@ export const actionEffectSchema = z.object({
   rollModifiers: z.array(rollModifierSchema).optional(),
   damageModifiers: z.array(damageModifierSchema).optional(),
   movementModifiers: z.array(movementModifierSchema).optional(),
+  // Standard-Action Effects (Dash, Disengage, Dodge, etc.)
+  grantMovement: grantMovementSchema.optional(),
+  movementBehavior: movementBehaviorSchema.optional(),
+  incomingModifiers: incomingModifiersSchema.optional(),
+  // HP & Duration
   tempHp: healingSchema.optional(),
   duration: durationSchema.optional(),
   endingSave: saveDCSchema.optional(),

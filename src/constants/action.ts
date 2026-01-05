@@ -148,6 +148,9 @@ export type SaveOnSaveEffect = (typeof SAVE_ON_SAVE_EFFECTS)[number];
 export const ADVANTAGE_CONDITIONS = ['always', 'conditional', 'none'] as const;
 export type AdvantageCondition = (typeof ADVANTAGE_CONDITIONS)[number];
 
+export const ADVANTAGE_STATES = ['advantage', 'disadvantage'] as const;
+export type AdvantageState = (typeof ADVANTAGE_STATES)[number];
+
 // ============================================================================
 // MODIFIERS
 // ============================================================================
@@ -181,11 +184,19 @@ export const ROLL_TARGETS = [
   'ability-checks',
   'concentration',
   'death-saves',
+  // Specific checks
   'str-checks',
   'dex-checks',
   'stealth',
   'perception',
   'initiative',
+  // Specific saves (für Dodge, etc.)
+  'str-save',
+  'dex-save',
+  'con-save',
+  'int-save',
+  'wis-save',
+  'cha-save',
 ] as const;
 export type RollTarget = (typeof ROLL_TARGETS)[number];
 
@@ -223,6 +234,9 @@ export type MovementModifierType = (typeof MOVEMENT_MODIFIER_TYPES)[number];
 
 export const MOVEMENT_MODES = ['grant', 'bonus'] as const;
 export type MovementMode = (typeof MOVEMENT_MODES)[number];
+
+export const GRANT_MOVEMENT_TYPES = ['dash', 'extra'] as const;
+export type GrantMovementType = (typeof GRANT_MOVEMENT_TYPES)[number];
 
 export const FORCED_MOVEMENT_TYPES = [
   'push',

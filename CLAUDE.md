@@ -191,9 +191,16 @@ src/                   # Source code
     factions.ts  # Ziel: Faction-Presets: reputationWithParty zu reputations...
   services/
     combatSimulator/
+      modifiers/
+        index.ts  # Ziel: Bootstrap für Modifier-Plugins
+        longRange.ts  # Ziel: Long Range Disadvantage Modifier
       combatantAI.ts  # Ziel: Entscheidungslogik für Combat-AI: Action/Target-Aus...
-      combatHelpers.ts  # Ziel: Gemeinsame Helper-Funktionen für Combat-AI und Comb...
-      combatResolver.ts  # Ziel: Combat State-Management und Action-Resolution
+      combatHelpers.ts  # Ziel: Gemeinsame Helper-Funktionen für Combat-AI, Combat-...
+      situationalModifiers.ts  # Ziel: Plugin-basiertes System für situative Combat-Modifi...
+    combatTracking/
+      combatTracking.ts  # Ziel: Combat State-Management und Action-Resolution
+      creatureCache.ts  # Ziel: Cache für geladene CreatureDefinitions + resolved A...
+      index.ts  # Ziel: Combat-Tracking Service Index
     encounterGenerator/
       balancing.ts  # Ziel: Encounter-Gruppen an Ziel-Difficulty anpassen durch...
       difficulty.ts  # Ziel: Difficulty-Berechnung via PMF-basierter Combat-Simu...
@@ -204,6 +211,9 @@ src/                   # Source code
       fillGroups.ts  # Ziel: Gruppen mit NPCs befüllen (kombiniert groupPopulati...
       groupActivity.ts  # Ziel: Activity + Goal für Encounter-Gruppen zuweisen
       groupSeed.ts  # Seed-Kreatur für Encounter auswählen
+    gridSpace/
+      gridSpace.ts  # Ziel: Grid-State und Positioning für Combat und andere Wo...
+      index.ts  # Ziel: Grid-Space Service Index
     lootGenerator/
       lootGenerator.ts  # Ziel: Loot-Generierung mit Budget-Tracking und Container-...
     npcGenerator/
@@ -235,6 +245,7 @@ src/                   # Source code
       species.ts  # Vault-persistierte Species-Entity
       terrainDefinition.ts  # Vault-persistierte TerrainDefinition
       trait.ts  # Vault-persistierte Trait-Definition
+    combat.ts  # Ziel: Zentrale Combat-Types für Simulation und Tracking
     encounterTypes.ts  # Encounter-Typen: Runtime-Repräsentation und Trigger für E...
     factionPresence.ts  # Faction-Präsenz auf einem Tile
     hexCoordinate.ts  # Axiale Hex-Koordinaten (q, r)
@@ -249,6 +260,10 @@ src/                   # Source code
       hex.ts  # Hex-Grid Utilities
       index.ts  # Hex Space Utils Index
       visibility.ts  # Ziel: Sightline- und Visibility-Berechnung fuer Overland-...
+    math/
+      clamp.ts  # Ziel: Clamp-Utility für Wertebereich-Begrenzung
+      index.ts  # Math Utils Index
+      vector.ts  # Ziel: Generische 3D-Vektor-Operationen für Combat-AI und ...
     probability/
       __tests__/
       diceParser.ts  # Dice Expression Parser - Recursive Descent Parser für Wür...
@@ -300,7 +315,6 @@ docs/                  # Authoritative documentation (German)
   services/
     combatSimulator/
       combatantAI.md  # AI-Entscheidungslogik fuer Combat - was soll eine Kreatur...
-      combatResolver.md  # Combat State-Management und Action-Resolution
     encounter/
       balancing.md  # Encounter-Service (Step 6.1)
       difficulty.md  # Encounter-Service (Step 5)
@@ -315,6 +329,8 @@ docs/                  # Authoritative documentation (German)
       NPC-Generation.md  # Automatische NPC-Generierung
       NPC-Matching.md  # Existierenden NPC finden
       NPCs.md  # NPC-Management fuer Encounters, Quests und POIs
+    combatTracking.md  # Combat State-Management und Action-Resolution
+    gridSpace.md  # Grid-State und Positioning für Combat und andere Workmodes
     Inventory.md  # [Item](../entities/item.md), [Character-System](../featur...
     Loot.md  # [Item](../entities/item.md), [Encounter-System](encounter...
     Weather.md  # Stateless Service

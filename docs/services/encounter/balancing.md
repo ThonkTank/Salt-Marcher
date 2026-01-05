@@ -122,7 +122,7 @@ function getTargetWinProbability(difficulty: EncounterDifficulty): number {
 
 | Parameter | Was wird angepasst | Grenzen | Quelle |
 |-----------|-------------------|---------|--------|
-| **Distance** | Physische Entfernung | Sweet-Spot bis Pain-Point | [Difficulty.md](Difficulty.md#distance-modifier) |
+| **Distance** | Physische Entfernung | Initial-Positioning fuer Simulation | [encounterDistance.md](encounterDistance.md) |
 | **Disposition** | Wert (innerhalb gueltigem Range) | Kreatur-Base bis Faction-Base | [Difficulty.md](Difficulty.md#step-50-disposition-berechnung) |
 | **Environment** | Terrain-Features aktivieren | `terrain.features[]` | [terrain-definition.md](../../entities/terrain-definition.md#felder) |
 | **Activity** | Activity wechseln | Generic + Creature + Faction Pool | [groupActivity.md](groupActivity.md#activity-pool-hierarchie) |

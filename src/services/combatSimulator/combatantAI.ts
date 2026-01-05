@@ -1,66 +1,129 @@
 // Ziel: Entscheidungslogik für Combat-AI: Action/Target-Auswahl, Movement, Preference
-// Siehe: docs/services/encounter/difficulty.md#step-51-runden-simulation
+// Siehe: docs/services/combatSimulator/combatantAI.md
 //
-// Standalone-callable für future Encounter-Runner:
+// Standalone-callable für Encounter-Runner:
 // - selectBestActionAndTarget(): "Was soll diese Kreatur tun?"
-// - calculateMovementVector(): Optimale Bewegungsrichtung (Vektor)
-// - calculateMoveEV(): Bewertung einer Bewegung (Vektor-Alignment)
+// - evaluateAllCells(): Cell-basierte Positionsbewertung
+// - executeTurn(): Iterative Movement + Action Ausführung
 //
-// Movement-System (implementiert):
-// - calculateAttraction(): Faktoren die zur Annäherung führen
-// - calculateRepulsion(): Faktoren die zur Entfernung führen
-// - calculateMovementVector(): Summe aller Attraction/Repulsion-Vektoren
-// - calculateMoveEV(): Alignment zwischen Bewegung und optimalem Vektor
-//
-// Dash-Integration (implementiert):
-// - Dash erscheint nur als Option wenn movementCells = 0
-// - calculateDashEV(): Vergleicht erreichbare Position mit Attack-Option
+// Cell-basiertes Positioning System:
+// - buildAttractionMap(): Baut Map aus allen Action/Enemy Kombinationen
+// - calculateAttractionScoreFromMap(): Attraction-Score mit Exponential Decay
+// - calculateDangerScore(): Wie gefährlich ist dieser Cell?
+// - calculateAllyScore(): Ally-Positioning (Healer, Tank)
+// - evaluateAllCells(): Kombinierte Bewertung aller erreichbaren Cells
 
 // ============================================================================
 // HACK & TODO
 // ============================================================================
 //
-// [TODO]: Ally-Support-Attraction basierend auf healing actions
-// - calculateAttraction() enthält Stub für Ally-Support
-// - Wenn profile.actions healing enthält, sollte Attraction zu verletzten Allies steigen
+// [HACK]: Tank-Erkennung vereinfacht auf AC >= 16
+// - calculateAllyScore() nutzt AC als Proxy für Tank-Rolle
+// - Korrekt wäre: Rolle aus Character/Creature-Schema oder explizites Tag
 //
-// [TODO]: Enemy-DPR-basierte Repulsion verfeinern
-// - calculateRepulsion() enthält auskommentierten Code
-// - Hoher Enemy-DPR sollte Repulsion erhöhen (Threshold kalibrieren)
+// [HACK]: Healing-Range nutzt getMaxAttackRange()
+// - calculateAllyScore() behandelt Healing wie Angriff für Range
+// - Korrekt wäre: Separate healing.range Eigenschaft im Action-Schema
+//
+// [HACK]: Keine Resistenz-Mitigation bei Danger-Berechnung
+// - calculateDangerScore() ignoriert eigene Resistenzen
+// - Korrekt wäre: applyResistances(enemyDamage, profile, enemy)
+//
+// [TODO]: Immunities/Resistances in Danger-Berechnung
+// - Spec: difficulty.md - "Berücksichtige Schadenstyp-Immunität"
+// - Input: profile.resistances/immunities, enemy.actions[].damage.type
+// - Output: mitigatedDamage = enemyDamage × resistanceFactor
+//
+// [TODO]: Terrain-Modifier für Danger/Attraction
+// - calculateDangerScore() ignoriert Cover-Positionen
+// - calculateAttractionScore() ignoriert Difficult Terrain
+// - Spec: (zukünftig) terrain.md
+//
+// [TODO]: AoE-Aktionen bewerten (Fireball etc.)
+// - calculateAttractionScore() bewertet nur Single-Target
+// - Cells die mehrere Gegner treffen sollten höher scoren
+//
+// [TODO]: 3D Movement (Fly, Climb)
+// - getRelevantCells() ignoriert z-Achse
+// - Kreaturen mit Fly sollten vertikale Positionen evaluieren
 //
 // [TODO]: Erweitere TurnAction für vollständige D&D 5e Aktionsökonomie
-// - disengage, dodge, help, ready Actions
+// - Dash: ✅ Implementiert als dashMove (minBand:1 für Attraction-Decay)
+// - disengage, dodge, help, ready Actions (noch offen)
 // - Bonus Actions (benötigt Feature-Detection)
 // - Reactions (benötigt Trigger-Detection)
 // - Legendary Actions (benötigt legendaryActionCost in Action-Schema)
 
+import { z } from 'zod';
 import type { Action } from '@/types/entities';
-import type { TurnBudget } from './combatResolver';
 import {
-  type ProbabilityDistribution,
   diceExpressionToPMF,
   getExpectedValue,
   addConstant,
   calculateEffectiveDamage,
-  applyDamageToHP,
-  calculateDeathProbability,
-  convolveDistributions,
-  createSingleValue,
-  type GridPosition,
-  type SpeedBlock,
   feetToCell,
-  getNeighbors,
+  positionToKey,
+  positionsEqual,
 } from '@/utils';
 import {
   resolveMultiattackRefs,
-  forEachResolvedAction,
-  calculateBaseDamagePMF,
-  calculateBaseHealingPMF,
-  getActionMaxRangeFeet,
+  getActionMaxRangeCells,
   getDistance,
-  findNearestProfile,
-  getMinDistanceToProfiles,
+  isAllied,
+  isHostile,
+  calculateHitChance,
+  calculateMultiattackDamage,
 } from './combatHelpers';
+import {
+  hasBudgetRemaining,
+  consumeMovement,
+  consumeAction,
+  applyDash,
+} from '../combatTracking';
+import {
+  evaluateSituationalModifiers,
+  type ModifierContext,
+  type CombatantContext,
+} from './situationalModifiers';
+// Bootstrap: Registriert alle Modifier-Plugins
+import './modifiers';
+
+// Standard-Actions (Dash, Disengage, Dodge) - verfügbar für alle Combatants
+import { standardActions } from '../../../presets/actions';
+
+// Types aus @/types/combat (Single Source of Truth)
+import type {
+  ProbabilityDistribution,
+  GridPosition,
+  SpeedBlock,
+  CombatProfile,
+  SimulationState,
+  ConditionState,
+  RangeCache,
+  TurnBudget,
+  ActionIntent,
+  CombatPreference,
+  ActionTargetScore,
+  CellScore,
+  CellEvaluation,
+  TurnAction,
+} from '@/types/combat';
+import { createRangeCache } from '@/types/combat';
+
+// Re-exports für Consumer
+export type {
+  CombatProfile,
+  SimulationState,
+  ConditionState,
+  RangeCache,
+  ActionIntent,
+  CombatPreference,
+  ActionTargetScore,
+  CellScore,
+  CellEvaluation,
+  TurnAction,
+} from '@/types/combat';
+export { createRangeCache } from '@/types/combat';
 
 
 // ============================================================================
@@ -74,345 +137,207 @@ const debug = (...args: unknown[]) => {
 };
 
 // ============================================================================
-// VECTOR UTILITIES (für Movement-System)
+// CLI VALIDATION SCHEMAS
 // ============================================================================
+// Zod-Schemas für dynamische Fehlermeldungen bei CLI-Tests.
+// Erkennt fehlende Felder und falsche Formate mit hilfreichen Meldungen.
 
-/** 3D-Vektor für Movement-Berechnungen. */
-export interface MovementVector {
-  x: number;
-  y: number;
-  z: number;
-}
+/** GridPosition Schema. */
+const gridPositionSchema = z.object({
+  x: z.number({ required_error: 'x ist erforderlich' }),
+  y: z.number({ required_error: 'y ist erforderlich' }),
+  z: z.number({ required_error: 'z ist erforderlich' }),
+});
 
-/** Gewichteter Vektor für Attraction/Repulsion-Berechnung. */
-export interface WeightedVector {
-  direction: MovementVector;
-  magnitude: number;
-}
+/** Speed Schema. */
+const speedSchema = z.object({
+  walk: z.number({ required_error: 'walk Speed ist erforderlich' }),
+  fly: z.number().optional(),
+  swim: z.number().optional(),
+  climb: z.number().optional(),
+  burrow: z.number().optional(),
+});
 
-/** Berechnet Richtungsvektor von a nach b (nicht normalisiert). */
-export function getDirectionVector(from: GridPosition, to: GridPosition): MovementVector {
-  return {
-    x: to.x - from.x,
-    y: to.y - from.y,
-    z: to.z - from.z,
-  };
-}
+/** Action Schema (minimal für CLI-Validierung). */
+const actionSchema = z.object({
+  name: z.string({ required_error: 'Action name ist erforderlich' }),
+  attack: z.object({
+    bonus: z.number({ required_error: 'attack.bonus ist erforderlich' }),
+  }).optional(),
+  damage: z.object({
+    dice: z.string(),
+    modifier: z.number(),
+    type: z.string(),
+  }).optional(),
+  healing: z.object({
+    dice: z.string(),
+    modifier: z.number(),
+  }).optional(),
+  range: z.object({
+    normal: z.number(),
+    long: z.number().optional(),
+  }).optional(),
+});
 
-/** Berechnet die Länge (Magnitude) eines Vektors. */
-export function vectorMagnitude(v: MovementVector): number {
-  return Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-}
+/**
+ * CombatProfile Schema für CLI-Validierung.
+ * Wichtig: deathProbability hat Default 0 (fehlt oft in Test-Daten).
+ */
+export const combatProfileSchema = z.object({
+  participantId: z.string({ required_error: 'participantId ist erforderlich' }),
+  groupId: z.string({ required_error: 'groupId ist erforderlich' }),
+  name: z.string({ required_error: 'name ist erforderlich' }),
+  ac: z.number({ required_error: 'ac ist erforderlich' }),
+  hp: z.record(z.string(), z.number(), {
+    required_error: 'hp ist erforderlich (Format: {"7": 1})',
+  }),
+  speed: speedSchema,
+  actions: z.array(actionSchema),
+  position: gridPositionSchema,
+  deathProbability: z.number().default(0),
+});
 
-/** Normalisiert einen Vektor auf Einheitslänge. Gibt Nullvektor zurück wenn Magnitude = 0. */
-export function normalizeVector(v: MovementVector): MovementVector {
-  const mag = vectorMagnitude(v);
-  if (mag === 0) return { x: 0, y: 0, z: 0 };
-  return {
-    x: v.x / mag,
-    y: v.y / mag,
-    z: v.z / mag,
-  };
-}
+/**
+ * SimulationState Schema für CLI-Validierung.
+ * Wichtig: alliances ist Record<string, string[]>, NICHT Array!
+ */
+export const simulationStateSchema = z.object({
+  profiles: z.array(combatProfileSchema),
+  alliances: z.record(z.string(), z.array(z.string()), {
+    required_error: 'alliances ist erforderlich',
+    invalid_type_error: 'alliances muss ein Record sein, kein Array. Format: {"party": ["party"], "enemies": ["enemies"]}',
+  }),
+});
 
-/** Skaliert einen Vektor mit einem Skalar. */
-export function scaleVector(v: MovementVector, scalar: number): MovementVector {
-  return {
-    x: v.x * scalar,
-    y: v.y * scalar,
-    z: v.z * scalar,
-  };
-}
+/** Typen aus Schemas ableiten. */
+export type ValidatedCombatProfile = z.infer<typeof combatProfileSchema>;
+export type ValidatedSimulationState = z.infer<typeof simulationStateSchema>;
 
-/** Addiert zwei Vektoren. */
-export function addVectors(a: MovementVector, b: MovementVector): MovementVector {
-  return {
-    x: a.x + b.x,
-    y: a.y + b.y,
-    z: a.z + b.z,
-  };
-}
-
-/** Summiert gewichtete Vektoren zu einem Ergebnis-Vektor. */
-export function sumWeightedVectors(vectors: WeightedVector[]): MovementVector {
-  let result: MovementVector = { x: 0, y: 0, z: 0 };
-
-  for (const { direction, magnitude } of vectors) {
-    const normalized = normalizeVector(direction);
-    const scaled = scaleVector(normalized, magnitude);
-    result = addVectors(result, scaled);
-  }
-
-  return result;
-}
-
-/** Berechnet Skalarprodukt (dot product) zweier Vektoren. */
-export function dotProduct(a: MovementVector, b: MovementVector): number {
-  return a.x * b.x + a.y * b.y + a.z * b.z;
-}
+/**
+ * functionSchemas: Mappt Funktionsnamen zu Parameter-Schema-Arrays.
+ * CLI-Generator erkennt diesen Export automatisch für dynamische Validierung.
+ */
+export const functionSchemas = {
+  evaluateAllCells: [combatProfileSchema, simulationStateSchema, z.number()],
+} as const;
 
 // ============================================================================
-// ATTRACTION / REPULSION SYSTEM
+// LOCAL TYPES (not shared, service-specific)
 // ============================================================================
 
 /**
- * Berechnet Attraction-Faktor für einen anderen Combatant.
- * Positiver Wert = ich will näher an dieses Ziel.
- *
- * Faktoren (aus difficulty.md#5.1.a):
- * - Enemy nicht im Sweet-Spot: +0.5
- * - Melee-Präferenz und Distanz > 2 Cells: +0.8
- * - Ally mit healing actions und Distanz > 6 Cells: +0.3 (TODO: Stub)
+ * TurnAction mit Score für Unified Action Selection.
+ * Ermöglicht Vergleich von Attack vs Move vs Pass auf derselben Skala.
  */
-export function calculateAttraction(
-  profile: CombatProfile,
-  _other: CombatProfile,  // TODO: Für Ally-Support-Attraction
-  distance: number,
-  isEnemy: boolean
+type ScoredAction = TurnAction & { score: number };
+
+// ============================================================================
+// ACTION EFFECT HELPERS
+// ============================================================================
+
+/**
+ * Prüft ob eine Action Movement gewährt (Dash-ähnlich).
+ * Effect-basierte Erkennung statt hardcodierter ActionType-Prüfung.
+ */
+function hasGrantMovementEffect(action: Action): boolean {
+  return action.effects?.some(e => e.grantMovement != null) ?? false;
+}
+
+/**
+ * Prüft ob eine Action ein Angriff ist (hat attack oder save oder damage).
+ */
+function isAttackAction(action: Action): boolean {
+  return (action.attack != null || action.save != null) && action.damage != null;
+}
+
+/**
+ * Kombiniert Creature-spezifische Actions mit Standard-Actions.
+ * Standard-Actions (Dash, Disengage, Dodge) sind für alle Combatants verfügbar.
+ */
+function getAvailableActions(profile: CombatProfile): Action[] {
+  return [...profile.actions, ...standardActions];
+}
+
+// ============================================================================
+// OPTIMAL RANGE & PREFERENCE
+// ============================================================================
+
+/**
+ * Berechnet optimale Angriffsreichweite für ein spezifisches Matchup.
+ * Berücksichtigt: Gegner-AC, eigene Actions, Hit-Chance.
+ * Cached Ergebnisse für Performance (5 Goblins vs 4 PCs = 4 Berechnungen, nicht 20).
+ *
+ * @param attacker Angreifendes Profil
+ * @param target Ziel-Profil
+ * @param cache Optional: Cache für wiederholte Matchups
+ * @returns Optimale Reichweite in Cells
+ */
+export function getOptimalRangeVsTarget(
+  attacker: CombatProfile,
+  target: CombatProfile,
+  cache?: RangeCache
 ): number {
-  let attraction = 0;
-
-  if (isEnemy) {
-    // Will ich dort Schaden machen?
-    const sweetSpot = calculateSweetSpot(profile.actions);
-    const inSweetSpot = Math.abs(distance - sweetSpot) < 2; // 2 Cells = 10ft
-    if (!inSweetSpot) {
-      attraction += 0.5;
-    }
-
-    // Melee-Präferenz: Will ich nah ran?
-    const pref = determineCombatPreference(profile.actions);
-    if (pref === 'melee' && distance > 2) {
-      attraction += 0.8;
-    }
-  } else {
-    // TODO: Ally-Support-Attraction basierend auf healing actions
-    // Stub: Allies ziehen nicht an (noch nicht implementiert)
+  // Cache-Check
+  const cached = cache?.get(attacker.participantId, target.participantId);
+  if (cached !== undefined) {
+    debug('getOptimalRangeVsTarget: cache hit', { attacker: attacker.participantId, target: target.participantId, cached });
+    return cached;
   }
 
-  return attraction;
-}
+  // Berechnung: Welche Reichweite maximiert meinen EV gegen dieses Ziel?
+  let bestRange = 1;  // Default: Melee (1 Cell = 5ft)
+  let bestEV = 0;
 
-/**
- * Berechnet Repulsion-Faktor für einen anderen Combatant.
- * Positiver Wert = ich will weg von diesem Ziel.
- *
- * Faktoren (aus difficulty.md#5.1.a):
- * - Ranged-Präferenz und Distanz < 3 Cells: +0.6
- * - Hoher Enemy-DPR (>20) und Distanz < 6 Cells: +0.4 (TODO: Stub)
- */
-export function calculateRepulsion(
-  profile: CombatProfile,
-  _other: CombatProfile,  // TODO: Für Enemy-DPR-basierte Repulsion
-  distance: number,
-  isEnemy: boolean
-): number {
-  let repulsion = 0;
+  for (const action of attacker.actions) {
+    // Multiattack: Evaluate die Multiattack selbst, nicht einzelne Refs
+    if (action.multiattack) {
+      const refs = resolveMultiattackRefs(action, attacker.actions);
+      let totalEV = 0;
+      let maxRange = 0;
 
-  if (isEnemy) {
-    // Ranged: Will Abstand halten
-    const pref = determineCombatPreference(profile.actions);
-    if (pref === 'ranged' && distance < 3) {
-      repulsion += 0.6;
-    }
+      for (const ref of refs) {
+        if (!ref.damage || !ref.attack) continue;
+        const rangeFeet = ref.range?.normal ?? 5;
+        maxRange = Math.max(maxRange, rangeFeet);
 
-    // TODO: Gefahr-basierte Repulsion (Enemy-DPR > 20)
-    // Stub: estimateDamagePotential() existiert, aber DPR-Threshold nicht kalibriert
-    // const enemyDPR = estimateDamagePotential(other.actions);
-    // if (enemyDPR > 20 && distance < 6) {
-    //   repulsion += 0.4;
-    // }
-  }
+        const hitChance = calculateHitChance(ref.attack.bonus, target.ac);
+        const dmgPMF = diceExpressionToPMF(ref.damage.dice);
+        const expectedDmg = getExpectedValue(addConstant(dmgPMF, ref.damage.modifier));
+        totalEV += hitChance * expectedDmg;
+      }
 
-  return repulsion;
-}
+      if (totalEV > bestEV) {
+        bestEV = totalEV;
+        bestRange = feetToCell(maxRange);
+      }
+    } else if (action.damage && action.attack) {
+      const rangeFeet = action.range?.normal ?? 5;
+      const rangeCells = feetToCell(rangeFeet);
 
-/**
- * Berechnet den optimalen Movement-Vektor für einen Combatant.
- * Summiert Attraction/Repulsion für alle anderen Combatants.
- *
- * Returns: Vektor der optimalen Bewegungsrichtung (nicht normalisiert).
- * Die Magnitude des Vektors repräsentiert die "Dringlichkeit" der Bewegung.
- */
-export function calculateMovementVector(
-  profile: CombatProfile,
-  state: SimulationState
-): MovementVector {
-  const vectors: WeightedVector[] = [];
+      const hitChance = calculateHitChance(action.attack.bonus, target.ac);
+      const dmgPMF = diceExpressionToPMF(action.damage.dice);
+      const expectedDmg = getExpectedValue(addConstant(dmgPMF, action.damage.modifier));
+      const ev = hitChance * expectedDmg;
 
-  for (const other of state.profiles) {
-    if (other.participantId === profile.participantId) continue;
-
-    const distance = getDistance(profile.position, other.position);
-    const isEnemy = isHostile(profile.groupId, other.groupId, state.alliances);
-
-    const attraction = calculateAttraction(profile, other, distance, isEnemy);
-    const repulsion = calculateRepulsion(profile, other, distance, isEnemy);
-
-    // Netto-Kraft: Attraction zieht an, Repulsion stößt ab
-    const netMagnitude = attraction - repulsion;
-
-    if (netMagnitude !== 0) {
-      const direction = getDirectionVector(profile.position, other.position);
-      vectors.push({
-        direction,
-        magnitude: netMagnitude, // Positiv = hin, negativ = weg
-      });
+      if (ev > bestEV) {
+        bestEV = ev;
+        bestRange = rangeCells;
+      }
     }
   }
 
-  const result = sumWeightedVectors(vectors);
-
-  debug('calculateMovementVector:', {
-    participantId: profile.participantId,
-    vectorCount: vectors.length,
-    result,
-    magnitude: vectorMagnitude(result),
+  debug('getOptimalRangeVsTarget:', {
+    attacker: attacker.participantId,
+    target: target.participantId,
+    targetAC: target.ac,
+    bestRange,
+    bestEV,
   });
 
-  return result;
-}
+  // Cache-Set
+  cache?.set(attacker.participantId, target.participantId, bestRange);
 
-// ============================================================================
-// INLINE TYPES (per Services.md convention)
-// ============================================================================
-
-export type { SpeedBlock } from '@/utils';
-
-/** Condition-State für Incapacitation-Layer. */
-export interface ConditionState {
-  name: string;
-  probability: number;
-  effect: 'incapacitated' | 'disadvantage' | 'other';
-}
-
-/** Combat Profile für einen Kampfteilnehmer (minimal für AI). */
-export interface CombatProfile {
-  participantId: string;
-  groupId: string;  // 'party' für PCs, UUID für Encounter-Gruppen
-  hp: ProbabilityDistribution;
-  deathProbability: number;
-  ac: number;
-  speed: SpeedBlock;
-  actions: Action[];
-  conditions?: ConditionState[];
-  position: GridPosition;  // Cell-Indizes, nicht Feet
-  environmentBonus?: number;
-}
-
-/** Simulation State (minimal für AI). */
-export interface SimulationState {
-  profiles: CombatProfile[];
-  alliances: Record<string, string[]>;  // groupId → verbündete groupIds
-}
-
-/** Intent einer Action: damage, healing, oder control. */
-export type ActionIntent = 'damage' | 'healing' | 'control';
-
-/** Combat-Präferenz für Positioning. */
-export type CombatPreference = 'melee' | 'ranged' | 'hybrid';
-
-/** Score-Ergebnis für eine (Action, Target)-Kombination. */
-export interface ActionTargetScore {
-  action: Action;
-  target: CombatProfile;
-  score: number;
-  intent: ActionIntent;
-}
-
-// ============================================================================
-// TURN ACTION TYPES
-// ============================================================================
-
-/**
- * Union Type für alle möglichen Zug-Aktionen.
- * Wird von generateActionCandidates erzeugt und von simulateTurn konsumiert.
- * Siehe: Plan cosmic-tinkering-unicorn.md#Step-2
- */
-export type TurnAction =
-  | { type: 'move'; targetCell: GridPosition }
-  | { type: 'attack'; action: Action; target: CombatProfile }
-  | { type: 'dash' }           // Verdoppelt Movement für diesen Zug
-  | { type: 'pass' };          // Zug beenden
-  // TODO: Stubs für später (siehe Header)
-  // | { type: 'disengage' }   // Kein Opportunity Attack
-  // | { type: 'dodge' }       // Vorteil auf Saves
-  // | { type: 'help' }        // Verbündeter bekommt Vorteil
-  // | { type: 'ready' }       // Reaction für Trigger
-  // | { type: 'bonus'; action: Action; target?: CombatProfile }
-  // | { type: 'reaction'; trigger: string; action: Action }
-
-/** Scored TurnAction für EV-basierte Selektion. */
-export interface ScoredTurnAction {
-  action: TurnAction;
-  score: number;
-}
-
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-/** Berechnet Hit-Chance (5%-95% Range). */
-export function calculateHitChance(attackBonus: number, targetAC: number): number {
-  const neededRoll = targetAC - attackBonus;
-  // Natural 1 immer Miss, Natural 20 immer Hit
-  return Math.max(0.05, Math.min(0.95, (21 - neededRoll) / 20));
-}
-
-// ============================================================================
-// ALLIANCE HELPERS
-// ============================================================================
-
-/** Prüft ob zwei Gruppen verbündet sind. */
-export function isAllied(
-  groupA: string,
-  groupB: string,
-  alliances: Record<string, string[]>
-): boolean {
-  if (groupA === groupB) return true;
-  return alliances[groupA]?.includes(groupB) ?? false;
-}
-
-/** Prüft ob zwei Gruppen Feinde sind (nicht verbündet). */
-export function isHostile(
-  groupA: string,
-  groupB: string,
-  alliances: Record<string, string[]>
-): boolean {
-  return !isAllied(groupA, groupB, alliances);
-}
-
-// ============================================================================
-// SWEET-SPOT & PREFERENCE
-// ============================================================================
-
-/** Berechnet Sweet-Spot (optimale Kampfdistanz in Cells). */
-export function calculateSweetSpot(actions: Action[]): number {
-  // Vereinfacht: Durchschnitt der Normal-Ranges (konvertiert zu Cells)
-  let totalRangeFeet = 0;
-  let count = 0;
-
-  for (const action of actions) {
-    if (action.multiattack) {
-      // Multiattack: Range aus referenzierten Actions
-      const refs = resolveMultiattackRefs(action, actions);
-      for (const ref of refs) {
-        if (ref.damage && ref.range) {
-          totalRangeFeet += ref.range.normal;
-          count++;
-        }
-      }
-    } else if (action.damage && action.range) {
-      totalRangeFeet += action.range.normal;
-      count++;
-    }
-  }
-
-  // Konvertiere zu Cells (5ft = 1 Cell)
-  const avgRangeFeet = count > 0 ? totalRangeFeet / count : 30;
-  const sweetSpotCells = feetToCell(avgRangeFeet);
-  debug('calculateSweetSpot:', { totalRangeFeet, count, sweetSpotCells });
-  return sweetSpotCells;
+  return bestRange;
 }
 
 /** Bestimmt Combat-Präferenz (melee/ranged/hybrid). */
@@ -473,6 +398,39 @@ export function estimateDamagePotential(actions: Action[]): number {
     const dmgPMF = diceExpressionToPMF(action.damage.dice);
     const expectedDmg = getExpectedValue(addConstant(dmgPMF, action.damage.modifier));
     return Math.max(maxDmg, expectedDmg);
+  }, 0);
+}
+
+/**
+ * Schätzt effektives Damage-Potential unter Berücksichtigung von Hit-Chance.
+ * Verwendet für Danger-Score Berechnung: Wie viel Schaden kann der Feind mir zufügen?
+ */
+export function estimateEffectiveDamagePotential(
+  actions: Action[],
+  targetAC: number
+): number {
+  return actions.reduce((maxDmg, action) => {
+    if (action.multiattack) {
+      const refs = resolveMultiattackRefs(action, actions);
+      const totalEffective = refs.reduce((sum, ref) => {
+        if (!ref.damage || !ref.attack) return sum;
+        const baseDmg = getExpectedValue(addConstant(
+          diceExpressionToPMF(ref.damage.dice),
+          ref.damage.modifier
+        ));
+        const hitChance = calculateHitChance(ref.attack.bonus, targetAC);
+        return sum + baseDmg * hitChance;
+      }, 0);
+      return Math.max(maxDmg, totalEffective);
+    }
+
+    if (!action.damage || !action.attack) return maxDmg;
+    const baseDmg = getExpectedValue(addConstant(
+      diceExpressionToPMF(action.damage.dice),
+      action.damage.modifier
+    ));
+    const hitChance = calculateHitChance(action.attack.bonus, targetAC);
+    return Math.max(maxDmg, baseDmg * hitChance);
   }, 0);
 }
 
@@ -541,7 +499,7 @@ export function getCandidates(
   state: SimulationState,
   intent: ActionIntent
 ): CombatProfile[] {
-  const alive = (p: CombatProfile) => p.deathProbability < 0.95;
+  const alive = (p: CombatProfile) => (p.deathProbability ?? 0) < 0.95;
 
   switch (intent) {
     case 'healing':
@@ -562,85 +520,6 @@ export function getCandidates(
 }
 
 // ============================================================================
-// MULTIATTACK DAMAGE CALCULATION
-// ============================================================================
-
-/**
- * Berechnet kombinierte Damage-PMF für Multiattack.
- * Konvolviert alle referenzierten Actions (jeweils mit Hit-Chance).
- *
- * REINE BERECHNUNG - nutzt calculateEffectiveDamage() pro Attack.
- *
- * @param action Die Multiattack-Action
- * @param allActions Alle verfügbaren Actions des Attackers (für Ref-Lookup)
- * @param targetAC AC des Ziels für Hit-Chance-Berechnung
- * @returns Kombinierte Damage-PMF oder null wenn keine gültigen Refs
- */
-export function calculateMultiattackDamage(
-  action: Action,
-  allActions: Action[],
-  targetAC: number
-): ProbabilityDistribution | null {
-  if (!action.multiattack?.attacks?.length) {
-    debug('calculateMultiattackDamage: no attacks defined', { actionName: action.name });
-    return null;
-  }
-
-  let totalDamage = createSingleValue(0);
-  let validAttacksFound = false;
-
-  for (const entry of action.multiattack.attacks) {
-    // 1. Referenzierte Action finden (via Name-Match)
-    const refAction = allActions.find(a => a.name === entry.actionRef);
-    if (!refAction) {
-      debug('calculateMultiattackDamage: actionRef not found', { actionRef: entry.actionRef });
-      continue;
-    }
-
-    if (!refAction.damage || !refAction.attack) {
-      debug('calculateMultiattackDamage: ref has no damage/attack', { actionRef: entry.actionRef });
-      continue;
-    }
-
-    validAttacksFound = true;
-
-    // 2. Base Damage PMF
-    const baseDamage = addConstant(
-      diceExpressionToPMF(refAction.damage.dice),
-      refAction.damage.modifier
-    );
-
-    // 3. Effective Damage (mit Hit-Chance)
-    const hitChance = calculateHitChance(refAction.attack.bonus, targetAC);
-    const effectiveDamage = calculateEffectiveDamage(baseDamage, hitChance);
-
-    // 4. count-mal convolven (z.B. 2× Scimitar)
-    for (let i = 0; i < entry.count; i++) {
-      totalDamage = convolveDistributions(totalDamage, effectiveDamage);
-    }
-
-    debug('calculateMultiattackDamage: added attack', {
-      actionRef: entry.actionRef,
-      count: entry.count,
-      hitChance,
-      expectedDmg: getExpectedValue(effectiveDamage),
-    });
-  }
-
-  if (!validAttacksFound) {
-    debug('calculateMultiattackDamage: no valid attacks found', { actionName: action.name });
-    return null;
-  }
-
-  debug('calculateMultiattackDamage: total', {
-    actionName: action.name,
-    expectedTotal: getExpectedValue(totalDamage),
-  });
-
-  return totalDamage;
-}
-
-// ============================================================================
 // ACTION/TARGET SCORING
 // ============================================================================
 
@@ -648,12 +527,14 @@ export function calculateMultiattackDamage(
  * Berechnet Score für eine (Action, Target)-Kombination.
  * Score ist auf einer "Value-Skala" normalisiert.
  * @param distanceCells Distanz in Cells
+ * @param state SimulationState für Modifier-Evaluation (Ally-Positionen etc.)
  */
 export function calculatePairScore(
   attacker: CombatProfile,
   action: Action,
   target: CombatProfile,
-  distanceCells: number
+  distanceCells: number,
+  state?: SimulationState
 ): ActionTargetScore | null {
   const intent = getActionIntent(action);
 
@@ -677,6 +558,42 @@ export function calculatePairScore(
     return null;
   }
 
+  // Situational Modifiers evaluieren (wenn state vorhanden)
+  let modifiers = undefined;
+  if (state) {
+    const attackerContext: CombatantContext = {
+      position: attacker.position,
+      groupId: attacker.groupId,
+      participantId: attacker.participantId,
+      conditions: attacker.conditions ?? [],
+      ac: attacker.ac,
+      hp: getExpectedValue(attacker.hp),
+    };
+    const targetContext: CombatantContext = {
+      position: target.position,
+      groupId: target.groupId,
+      participantId: target.participantId,
+      conditions: target.conditions ?? [],
+      ac: target.ac,
+      hp: getExpectedValue(target.hp),
+    };
+    const modifierContext: ModifierContext = {
+      attacker: attackerContext,
+      target: targetContext,
+      action,
+      state: {
+        profiles: state.profiles.map(p => ({
+          position: p.position,
+          groupId: p.groupId,
+          participantId: p.participantId,
+          conditions: p.conditions,
+        })),
+        alliances: state.alliances,
+      },
+    };
+    modifiers = evaluateSituationalModifiers(modifierContext);
+  }
+
   let score: number;
 
   switch (intent) {
@@ -685,37 +602,32 @@ export function calculatePairScore(
 
       if (action.multiattack) {
         // Multiattack: Kombinierte PMF (Hit-Chance bereits eingerechnet)
+        // TODO: Multiattack sollte auch Modifiers nutzen
         const multiDamage = calculateMultiattackDamage(action, attacker.actions, target.ac);
         if (!multiDamage) return null;
         effectiveDamage = multiDamage;
       } else {
-        // Einzelangriff
+        // Einzelangriff mit Situational Modifiers
         if (!action.damage || !action.attack) return null;
         const baseDamage = addConstant(
           diceExpressionToPMF(action.damage.dice),
           action.damage.modifier
         );
-        const hitChance = calculateHitChance(action.attack.bonus, target.ac);
+        const hitChance = calculateHitChance(action.attack.bonus, target.ac, modifiers);
         effectiveDamage = calculateEffectiveDamage(baseDamage, hitChance);
       }
 
-      // Volle PMF-Konvolution für Kill-Wahrscheinlichkeit
-      const projectedHP = applyDamageToHP(target.hp, effectiveDamage);
-      const killProbability = calculateDeathProbability(projectedHP);
-
-      // Score kombiniert Kill-Chance + Damage-Ratio
+      // Score = % der Target-HP die dieser Angriff entfernen kann
+      // Normalisiert auf gleiche Skala wie dangerScore (% der HP)
       const expectedDmg = getExpectedValue(effectiveDamage);
       const targetHp = getExpectedValue(target.hp);
-      const damageRatio = expectedDmg / Math.max(1, targetHp);
-
-      // Gewichtung: Kill hat Priorität, dann Damage-Ratio (gedämpft)
-      score = killProbability + (1 - killProbability) * damageRatio * 0.5;
+      score = expectedDmg / Math.max(1, targetHp);
 
       debug('calculatePairScore (damage):', {
         actionName: action.name,
         isMultiattack: !!action.multiattack,
-        killProbability,
-        damageRatio,
+        expectedDmg,
+        targetHp,
         score,
       });
       break;
@@ -771,7 +683,7 @@ export function selectBestActionAndTarget(
 
     for (const target of candidates) {
       const distance = getDistance(attacker.position, target.position);
-      const pairScore = calculatePairScore(attacker, action, target, distance);
+      const pairScore = calculatePairScore(attacker, action, target, distance, state);
       if (pairScore) scores.push(pairScore);
     }
   }
@@ -795,56 +707,6 @@ export function selectBestActionAndTarget(
   });
 
   return best;
-}
-
-// ============================================================================
-// TURN ACTION CANDIDATES
-// ============================================================================
-
-/**
- * Gibt alle gültigen Ziele für eine Action zurück (in Reichweite).
- * Nutzt getCandidates für Allianz-Filter und prüft Range.
- */
-export function getValidTargets(
-  attacker: CombatProfile,
-  action: Action,
-  state: SimulationState
-): CombatProfile[] {
-  const intent = getActionIntent(action);
-  const candidates = getCandidates(attacker, state, intent);
-
-  // Range-Check
-  const maxRangeFeet = action.range?.long ?? action.range?.normal ?? 5;
-  const maxRangeCells = feetToCell(maxRangeFeet);
-
-  return candidates.filter(target => {
-    const distance = getDistance(attacker.position, target.position);
-    return distance <= maxRangeCells;
-  });
-}
-
-/**
- * Findet nächsten Feind für Movement-Entscheidungen.
- */
-export function getNearestEnemy(
-  profile: CombatProfile,
-  state: SimulationState
-): CombatProfile | null {
-  const enemies = getCandidates(profile, state, 'damage');
-  if (enemies.length === 0) return null;
-
-  let nearest = enemies[0];
-  let nearestDist = getDistance(profile.position, nearest.position);
-
-  for (const enemy of enemies) {
-    const dist = getDistance(profile.position, enemy.position);
-    if (dist < nearestDist) {
-      nearest = enemy;
-      nearestDist = dist;
-    }
-  }
-
-  return nearest;
 }
 
 /**
@@ -872,282 +734,991 @@ export function getMaxAttackRange(profile: CombatProfile): number {
   return maxRange || 1;  // Default: Melee (1 Cell = 5ft)
 }
 
-/**
- * Generiert alle möglichen TurnActions basierend auf Budget.
- * Siehe: Plan cosmic-tinkering-unicorn.md#Step-3
- */
-export function generateActionCandidates(
-  profile: CombatProfile,
-  state: SimulationState,
-  budget: TurnBudget
-): TurnAction[] {
-  const candidates: TurnAction[] = [];
 
-  // 1. Movement-Optionen (alle 6 Richtungen)
-  if (budget.movementCells > 0) {
-    const neighbors = getNeighbors(profile.position);
-    for (const targetCell of neighbors) {
-      candidates.push({ type: 'move', targetCell });
+
+
+
+
+
+// ============================================================================
+// CELL-BASED POSITIONING SYSTEM (NEU)
+// ============================================================================
+//
+// Ersetzt das Vektor-basierte Attraction/Repulsion-System.
+// Jeder Cell wird explizit bewertet statt Richtungsvektoren zu summieren.
+// Alle Scores sind auf "% der HP" normalisiert für faire Vergleiche.
+
+/**
+ * Gibt alle relevanten Cells innerhalb der Bewegungsreichweite zurück.
+ * Performance-Optimierung: Limitiert auf erreichbare Cells.
+ */
+export function getRelevantCells(
+  center: GridPosition,
+  movementCells: number
+): GridPosition[] {
+  const range = movementCells;
+  const cells: GridPosition[] = [];
+
+  for (let dx = -range; dx <= range; dx++) {
+    for (let dy = -range; dy <= range; dy++) {
+      // TODO: 3D Movement für fliegende Kreaturen - siehe Header
+      cells.push({ x: center.x + dx, y: center.y + dy, z: center.z });
     }
   }
 
-  // 2. Attack-Optionen (wenn Action noch nicht verbraucht)
-  if (budget.hasAction) {
-    for (const action of profile.actions) {
-      const validTargets = getValidTargets(profile, action, state);
-      for (const target of validTargets) {
-        candidates.push({ type: 'attack', action, target });
+  debug('getRelevantCells:', { center, movementCells, range, cellCount: cells.length });
+  return cells;
+}
+
+
+/**
+ * Berechnet Movement-basiertes Decay für Attraction und Danger Scores.
+ * Kombiniert diskrete Bänder (50% pro Runde) mit leichtem Intra-Band Decay.
+ *
+ * @param distanceToTarget - Cells bis zum Ziel/Feind
+ * @param targetReach - Reichweite zum Ziel (Attack Range für Attraction, Range + Movement für Danger)
+ * @param movement - Movement pro Runde
+ * @returns Decay-Multiplikator (1.0 = voller Wert, 0.5 = halber Wert, etc.)
+ */
+export function calculateMovementDecay(
+  distanceToTarget: number,
+  targetReach: number,
+  movement: number
+): number {
+  if (distanceToTarget <= targetReach) {
+    // Band 0: Jetzt erreichbar - voller Wert
+    return 1.0;
+  }
+
+  const excessDistance = distanceToTarget - targetReach;
+
+  // Band-Nummer: 1 = nächste Runde, 2 = übernächste, etc.
+  const bandNumber = Math.ceil(excessDistance / Math.max(1, movement));
+
+  // Haupt-Multiplikator: 50% pro Runde
+  const bandMultiplier = Math.pow(0.5, bandNumber);
+
+  // Intra-Band Position: 0.0 (Band-Start) bis 1.0 (Band-Ende)
+  const positionInBand = movement > 0
+    ? (excessDistance % movement) / movement
+    : 0;
+
+  // Leichtes Decay innerhalb des Bands: 100% → 90% über das Band
+  // Incentiviert Bewegung in Richtung Band-Grenze
+  const intraBandDecay = 1.0 - (positionInBand * 0.1);
+
+  return bandMultiplier * intraBandDecay;
+}
+
+/**
+ * Cache für relative Attack-Cell-Patterns pro Action-Range.
+ * Geometrie ist konstant - nur einmal berechnen.
+ */
+const attackPatternCache = new Map<number, GridPosition[]>();
+
+/**
+ * Gibt relative Attack-Cells für eine gegebene Range zurück (gecached).
+ * Relative Cells sind zentriert auf Origin (0,0,0).
+ */
+function getRelativeAttackCells(rangeCells: number): GridPosition[] {
+  const cached = attackPatternCache.get(rangeCells);
+  if (cached) return cached;
+
+  const cells: GridPosition[] = [];
+  for (let dx = -rangeCells; dx <= rangeCells; dx++) {
+    for (let dy = -rangeCells; dy <= rangeCells; dy++) {
+      const cell = { x: dx, y: dy, z: 0 };
+      // Nur Cells die tatsächlich in Reichweite sind (PHB-Variant Distanz)
+      if (getDistance({ x: 0, y: 0, z: 0 }, cell) <= rangeCells) {
+        cells.push(cell);
       }
     }
   }
 
-  // 3. Dash (nur wenn Movement aufgebraucht, Action verfügbar, noch nicht gedashed)
-  if (budget.movementCells === 0 && budget.hasAction && !budget.hasDashed) {
-    candidates.push({ type: 'dash' });
+  attackPatternCache.set(rangeCells, cells);
+  return cells;
+}
+
+/**
+ * Source Map Entry: Geometrie-basierte Attack-Möglichkeit ohne Score-Berechnung.
+ * Score wird erst bei Query berechnet (Lazy Evaluation).
+ */
+interface SourceMapEntry {
+  action: Action;
+  target: CombatProfile;
+  distanceToTarget: number;  // Distanz von dieser Cell zum Target
+}
+
+/** Entry mit bereits berechnetem Score (für Rückwärtskompatibilität) */
+interface AttractionMapEntry {
+  score: number;
+  action: Action;
+  target: CombatProfile;
+}
+
+/**
+ * Phase 1: Baut Source-Map mit ALLEN Attack-Möglichkeiten (nur Geometrie).
+ * Keine Score-Berechnung oder Modifier-Evaluation - das ist günstig!
+ *
+ * Performance: ~12.800 Cells bei Long Range 320ft, aber nur O(1) pro Cell.
+ */
+export function buildSourceMaps(
+  profile: CombatProfile,
+  state: SimulationState
+): Map<string, SourceMapEntry[]> {
+  const sourceMap = new Map<string, SourceMapEntry[]>();
+  const enemies = getCandidates(profile, state, 'damage');
+
+  // Besetzte Cells (alle Combatants außer sich selbst)
+  const occupiedCells = new Set<string>(
+    state.profiles
+      .filter(p => p.participantId !== profile.participantId)
+      .map(p => positionToKey(p.position))
+  );
+
+  // Für jede Action: Berechne Range und hole gecachtes Pattern
+  const actionPatterns = new Map<string, { range: number; relativeCells: GridPosition[] }>();
+  for (const action of profile.actions) {
+    if (!action.damage && !action.healing) continue;
+    const range = getActionMaxRangeCells(action, profile.actions);
+    actionPatterns.set(action.name ?? action.id, {
+      range,
+      relativeCells: getRelativeAttackCells(range),
+    });
   }
 
-  // 4. Immer pass als Option
-  candidates.push({ type: 'pass' });
+  // Für jeden Enemy: Markiere alle Cells in Range (ohne Score-Berechnung!)
+  for (const enemy of enemies) {
+    for (const action of profile.actions) {
+      if (!action.damage && !action.healing) continue;
 
-  debug('generateActionCandidates:', {
-    participantId: profile.participantId,
-    movementCells: budget.movementCells,
-    hasAction: budget.hasAction,
-    candidateCount: candidates.length,
-    types: [...new Set(candidates.map(c => c.type))],
+      const pattern = actionPatterns.get(action.name ?? action.id);
+      if (!pattern) continue;
+
+      for (const relativeCell of pattern.relativeCells) {
+        const globalCell: GridPosition = {
+          x: enemy.position.x + relativeCell.x,
+          y: enemy.position.y + relativeCell.y,
+          z: enemy.position.z + relativeCell.z,
+        };
+        const key = positionToKey(globalCell);
+
+        // Überspringe besetzte Cells
+        if (occupiedCells.has(key)) continue;
+
+        // Distanz von dieser Cell zum Target (für spätere Modifier-Evaluation)
+        const distanceToTarget = getDistance(globalCell, enemy.position);
+
+        // Alle Entries für diese Cell sammeln (später wird bester ausgewählt)
+        const entries = sourceMap.get(key) ?? [];
+        entries.push({ action, target: enemy, distanceToTarget });
+        sourceMap.set(key, entries);
+      }
+    }
+  }
+
+  debug('buildSourceMaps:', {
+    profileId: profile.participantId,
+    enemyCount: enemies.length,
+    actionCount: actionPatterns.size,
+    mapSize: sourceMap.size,
   });
 
-  return candidates;
+  return sourceMap;
 }
 
-// ============================================================================
-// TURN ACTION EV CALCULATION
-// ============================================================================
-
 /**
- * Berechnet EV für eine Bewegung zu einer Zielzelle.
- * Nutzt Vektor-Alignment: Wie gut passt diese Bewegung zum optimalen Movement-Vektor?
+ * Phase 2: Berechnet Score für eine spezifische Cell aus der Source-Map.
+ * Evaluiert Modifiers nur für diese Cell - das ist teuer, aber nur ~100 Cells!
  */
-export function calculateMoveEV(
-  from: GridPosition,
-  to: GridPosition,
+export function calculateScoreFromSourceMap(
+  cell: GridPosition,
+  sourceMap: Map<string, SourceMapEntry[]>,
   profile: CombatProfile,
   state: SimulationState
-): number {
+): { score: number; bestAction: ActionTargetScore | null } {
+  const key = positionToKey(cell);
+  const entries = sourceMap.get(key);
+
+  if (!entries || entries.length === 0) {
+    return { score: 0, bestAction: null };
+  }
+
+  // Evaluiere alle Entries und wähle den besten Score
+  let bestScore = 0;
+  let bestAction: ActionTargetScore | null = null;
+
+  const virtualProfile = { ...profile, position: cell };
+
+  for (const entry of entries) {
+    const pairScore = calculatePairScore(
+      virtualProfile,
+      entry.action,
+      entry.target,
+      entry.distanceToTarget,
+      state
+    );
+
+    if (pairScore && pairScore.score > bestScore) {
+      bestScore = pairScore.score;
+      bestAction = pairScore;
+    }
+  }
+
+  return { score: bestScore, bestAction };
+}
+
+/**
+ * Berechnet Attraction-Score aus Source-Map mit Decay für Cells außerhalb Attack-Range.
+ * Kombiniert Phase 2 Score-Berechnung mit Movement-Decay.
+ *
+ * @param cell - Die zu bewertende Position
+ * @param sourceMap - Source-Map mit Attack-Möglichkeiten (nur Geometrie)
+ * @param profile - Profil für Modifier-Evaluation
+ * @param state - SimulationState für Modifier-Evaluation
+ * @param profileMovement - Bewegungsreichweite in Cells (für Decay)
+ * @param options - Optionen für Decay-Berechnung
+ * @param options.minBand - Minimum Band für Decay (für Dash: 1 = Aktionen erst nächste Runde)
+ */
+export function calculateAttractionFromSourceMap(
+  cell: GridPosition,
+  sourceMap: Map<string, SourceMapEntry[]>,
+  profile: CombatProfile,
+  state: SimulationState,
+  profileMovement: number = 6,
+  options?: { minBand?: number }
+): { score: number; bestAction: ActionTargetScore | null } {
+  const key = positionToKey(cell);
+  const entries = sourceMap.get(key);
+
+  // Fall 1: Direkt auf einer Attack-Cell - voller Score mit Modifiers
+  // Bei minBand > 0: Decay anwenden (z.B. Dash = nächste Runde erst angreifen)
+  if (entries && entries.length > 0) {
+    const { score: rawScore, bestAction } = calculateScoreFromSourceMap(cell, sourceMap, profile, state);
+
+    // minBand Decay: Band 0 Aktionen zu minBand verschieben
+    const minBandDecay = options?.minBand ? Math.pow(0.5, options.minBand) : 1.0;
+    const score = rawScore * minBandDecay;
+
+    debug('calculateAttractionFromSourceMap:', {
+      cell,
+      onAttackCell: true,
+      rawScore,
+      minBand: options?.minBand,
+      minBandDecay,
+      score,
+      action: bestAction?.action.name,
+    });
+
+    return { score, bestAction: options?.minBand ? null : bestAction };
+  }
+
+  // Fall 2: Nicht auf Attack-Cell - finde nächste und wende Decay an
+  let minDistance = Infinity;
+  let nearestKey: string | null = null;
+
+  for (const mapKey of sourceMap.keys()) {
+    const [x, y, z] = mapKey.split(',').map(Number);
+    const attackCell = { x, y, z };
+    const dist = getDistance(cell, attackCell);
+    if (dist < minDistance) {
+      minDistance = dist;
+      nearestKey = mapKey;
+    }
+  }
+
+  if (!nearestKey || minDistance === Infinity) {
+    return { score: 0, bestAction: null };
+  }
+
+  // Parse nearest cell position
+  const [nx, ny, nz] = nearestKey.split(',').map(Number);
+  const nearestCell = { x: nx, y: ny, z: nz };
+
+  // Berechne Score für nearest cell (mit Modifiers)
+  const { score: nearestScore } = calculateScoreFromSourceMap(nearestCell, sourceMap, profile, state);
+
+  // Movement-basiertes Decay
+  let decay = calculateMovementDecay(minDistance, 0, profileMovement);
+
+  // minBand: Wenn Decay 1.0 wäre (Band 0), stattdessen minBand Decay anwenden
+  // Aktionen die bereits in Band 1+ sind (decay < 1.0) bleiben unverändert
+  if (options?.minBand && decay === 1.0) {
+    decay = Math.pow(0.5, options.minBand);
+  }
+
+  const decayedScore = nearestScore * decay;
+
+  debug('calculateAttractionFromSourceMap:', {
+    cell,
+    onAttackCell: false,
+    minDistanceToAttackCell: minDistance,
+    nearestScore,
+    decay,
+    minBand: options?.minBand,
+    decayedScore,
+  });
+
+  return {
+    score: decayedScore,
+    bestAction: null,  // Kann von hier nicht angreifen
+  };
+}
+
+/**
+ * Baut eine Attraction-Map für alle Action/Enemy Kombinationen.
+ * Jede globale Cell enthält den besten Score der dort möglich ist.
+ *
+ * Optimierung: Attack-Cell-Patterns werden gecached (Geometrie konstant),
+ * nur Scores werden pro Enemy berechnet (dynamisch).
+ */
+export function buildAttractionMap(
+  profile: CombatProfile,
+  state: SimulationState
+): Map<string, AttractionMapEntry> {
+  const attractionMap = new Map<string, AttractionMapEntry>();
   const enemies = getCandidates(profile, state, 'damage');
-  if (enemies.length === 0) return 0;
 
-  // 1. Optimaler Movement-Vektor (Attraction/Repulsion)
-  const optimalVector = calculateMovementVector(profile, state);
-  const optimalMagnitude = vectorMagnitude(optimalVector);
+  // Besetzte Cells (alle Combatants außer sich selbst)
+  const occupiedCells = new Set<string>(
+    state.profiles
+      .filter(p => p.participantId !== profile.participantId)
+      .map(p => positionToKey(p.position))
+  );
 
-  // Wenn kein klarer optimaler Vektor, ist Bewegung neutral
-  if (optimalMagnitude < 0.1) return 0;
+  // Für jede Action: Berechne Range und hole gecachtes Pattern
+  const actionPatterns = new Map<string, { range: number; relativeCells: GridPosition[] }>();
+  for (const action of profile.actions) {
+    if (!action.damage && !action.healing) continue;
+    const range = getActionMaxRangeCells(action, profile.actions);
+    actionPatterns.set(action.name ?? action.id, {
+      range,
+      relativeCells: getRelativeAttackCells(range),
+    });
+  }
 
-  // 2. Bewegungs-Vektor (von from nach to)
-  const moveVector = getDirectionVector(from, to);
+  // Für jeden Enemy: Berechne Score und lege auf globale Cells
+  for (const enemy of enemies) {
+    for (const action of profile.actions) {
+      if (!action.damage && !action.healing) continue;
 
-  // 3. Alignment berechnen (wie gut passt die Richtung?)
-  const normalizedOptimal = normalizeVector(optimalVector);
-  const normalizedMove = normalizeVector(moveVector);
-  const alignment = dotProduct(normalizedOptimal, normalizedMove);
-  // alignment: -1 (entgegengesetzt) bis +1 (perfekt aligned)
+      const pattern = actionPatterns.get(action.name ?? action.id);
+      if (!pattern) continue;
 
-  // 4. Base-EV: Alignment * Dringlichkeit
-  // optimalMagnitude repräsentiert wie "dringend" Bewegung ist
-  const baseEV = alignment * Math.min(optimalMagnitude, 1.0);
+      // Transformiere relative Cells zu globalen Koordinaten
+      // Score wird pro Cell berechnet wegen positionsabhängiger Modifiers (Long Range etc.)
+      for (const relativeCell of pattern.relativeCells) {
+        const globalCell: GridPosition = {
+          x: enemy.position.x + relativeCell.x,
+          y: enemy.position.y + relativeCell.y,
+          z: enemy.position.z + relativeCell.z,
+        };
+        const key = `${globalCell.x},${globalCell.y},${globalCell.z}`;
 
-  // 5. Attack-Bonus wenn Zielposition Attack ermöglicht
-  const maxAttackRange = getMaxAttackRange(profile);
-  const currentDist = getMinDistanceToProfiles(from, enemies);
-  const newDist = getMinDistanceToProfiles(to, enemies);
-  const couldAttackBefore = currentDist <= maxAttackRange;
-  const canAttackAfter = newDist <= maxAttackRange;
-  const attackBonus = (!couldAttackBefore && canAttackAfter) ? 0.5 : 0;
+        // Überspringe besetzte Cells (Kollision)
+        if (occupiedCells.has(key)) continue;
 
-  const ev = baseEV + attackBonus;
+        // Score ist positionsabhängig (Long Range, Cover, etc.)
+        // Berechne Distanz von potentieller Position zum Ziel
+        const distanceFromCell = getDistance(globalCell, enemy.position);
 
-  debug('calculateMoveEV:', {
-    from, to,
-    optimalVector, optimalMagnitude,
-    alignment, baseEV, attackBonus, ev,
+        // Erstelle virtuelles Profil mit potentieller Position für Modifier-Evaluation
+        const virtualProfile = { ...profile, position: globalCell };
+        const pairScore = calculatePairScore(virtualProfile, action, enemy, distanceFromCell, state);
+        if (!pairScore) continue;
+
+        // Behalte den höchsten Score für diese Cell
+        const existing = attractionMap.get(key);
+        if (!existing || pairScore.score > existing.score) {
+          attractionMap.set(key, {
+            score: pairScore.score,
+            action,
+            target: enemy,
+          });
+        }
+      }
+    }
+  }
+
+  debug('buildAttractionMap:', {
+    profileId: profile.participantId,
+    enemyCount: enemies.length,
+    actionCount: actionPatterns.size,
+    mapSize: attractionMap.size,
   });
 
-  return ev;
+  return attractionMap;
 }
 
+
 /**
- * Berechnet EV für einen Angriff.
- * Nutzt calculatePairScore-Logik.
+ * Berechnet Attraction-Score basierend auf der vorberechneten Attraction-Map.
+ * Nutzt Movement-basiertes Decay (Bänder + Intra-Band) für Cells außerhalb der Attack-Reichweite.
+ *
+ * @param cell - Die zu bewertende Position
+ * @param attractionMap - Vorberechnete Map mit besten Scores pro Cell
+ * @param profileMovement - Bewegungsreichweite des Profils in Cells
  */
-export function calculateAttackEV(
-  action: Action,
-  target: CombatProfile,
-  attacker: CombatProfile,
-  _state: SimulationState
-): number {
-  const distance = getDistance(attacker.position, target.position);
-  const pairScore = calculatePairScore(attacker, action, target, distance);
+export function calculateAttractionScoreFromMap(
+  cell: GridPosition,
+  attractionMap: Map<string, AttractionMapEntry>,
+  profileMovement: number = 6
+): { score: number; bestAction: ActionTargetScore | null } {
+  const key = `${cell.x},${cell.y},${cell.z}`;
+  const entry = attractionMap.get(key);
 
-  // pairScore.score ist bereits auf einer Value-Skala normalisiert
-  // Wir skalieren es um es mit Movement-EV vergleichbar zu machen
-  // Ein Kill sollte deutlich mehr wert sein als Movement
-  const ev = pairScore ? pairScore.score * 2 : 0;
+  if (entry) {
+    // Direkt auf einem Attack Cell - voller Score
+    debug('calculateAttractionScoreFromMap:', {
+      cell,
+      onAttackCell: true,
+      score: entry.score,
+      action: entry.action.name,
+    });
 
-  debug('calculateAttackEV:', {
-    action: action.name,
-    target: target.participantId,
-    pairScore: pairScore?.score,
-    ev,
+    return {
+      score: entry.score,
+      bestAction: {
+        action: entry.action,
+        target: entry.target,
+        score: entry.score,
+        intent: 'damage',
+      },
+    };
+  }
+
+  // Nicht auf einem Attack Cell - finde nächste Attack Cell für Decay
+  let minDistance = Infinity;
+  let nearestEntry: AttractionMapEntry | null = null;
+
+  for (const [mapKey, mapEntry] of attractionMap) {
+    const [x, y, z] = mapKey.split(',').map(Number);
+    const attackCell = { x, y, z };
+    const dist = getDistance(cell, attackCell);
+    if (dist < minDistance) {
+      minDistance = dist;
+      nearestEntry = mapEntry;
+    }
+  }
+
+  if (!nearestEntry || minDistance === Infinity) {
+    return { score: 0, bestAction: null };
+  }
+
+  // Movement-basiertes Decay: Bänder + Intra-Band Decay
+  // targetReach = 0 weil wir die Distanz zur nächsten Attack-Cell messen
+  const decay = calculateMovementDecay(minDistance, 0, profileMovement);
+  const decayedScore = nearestEntry.score * decay;
+
+  debug('calculateAttractionScoreFromMap:', {
+    cell,
+    onAttackCell: false,
+    minDistanceToAttackCell: minDistance,
+    rawScore: nearestEntry.score,
+    decay,
+    decayedScore,
   });
 
-  return ev;
+  return {
+    score: decayedScore,
+    bestAction: null,
+  };
 }
 
+
 /**
- * Evaluiert den Wert einer Position für einen Combatant.
- * Berücksichtigt: Angriffsreichweite und Sweet-Spot-Nähe.
+ * Bewertet wie gefährlich ein Cell ist basierend auf Gegner-Positionen.
+ * Berücksichtigt: Melee-Reichweite, Ranged-Reichweite, Damage-Potential.
+ *
+ * Returns: Normalisierter Danger-Score (0-1+ Skala, relativ zu eigenen HP).
+ * Ein Score von 1.0 bedeutet "erwarteter Schaden = eigene HP".
  */
-export function evaluatePosition(
-  pos: GridPosition,
+export function calculateDangerScore(
+  cell: GridPosition,
   profile: CombatProfile,
   state: SimulationState
 ): number {
+  let totalDanger = 0;
+
   const enemies = getCandidates(profile, state, 'damage');
-  if (enemies.length === 0) return 0;
+  const profileHp = getExpectedValue(profile.hp);
 
-  const maxAttackRange = getMaxAttackRange(profile);
-  const sweetSpot = calculateSweetSpot(profile.actions);
+  for (const enemy of enemies) {
+    const distanceToEnemy = getDistance(cell, enemy.position);
+    // Effektiver Schaden unter Berücksichtigung der Hit-Chance gegen eigene AC
+    const enemyDamage = estimateEffectiveDamagePotential(enemy.actions, profile.ac);
+    const enemyMaxRange = getMaxAttackRange(enemy);
+    const enemyMovement = feetToCell(enemy.speed.walk ?? 30);
 
-  // 1. Kann ich von hier angreifen?
-  const minDist = getMinDistanceToProfiles(pos, enemies);
-  const canAttack = minDist <= maxAttackRange;
-  const attackBonus = canAttack ? 1.0 : 0;
+    // TODO: Berücksichtige Immunities/Resistances des eigenen Profils - siehe Header
+    // HACK: keine Resistenz-Mitigation
 
-  // 2. Wie nah am Sweet-Spot?
-  // Score ist höher wenn näher am Sweet-Spot
-  const deviation = Math.abs(minDist - sweetSpot);
-  const maxDeviation = Math.max(sweetSpot, 10); // Normalisierung
-  const sweetSpotScore = Math.max(0, 1 - deviation / maxDeviation) * 0.5;
+    // Unified Movement Decay: Bänder (50% pro Runde) + Intra-Band Decay (10%)
+    // enemyReach = wie weit der Feind angreifen kann (Range + 1 Runde Movement)
+    const enemyReach = enemyMaxRange + enemyMovement;
+    const dangerMultiplier = calculateMovementDecay(distanceToEnemy, enemyReach, enemyMovement);
 
-  return attackBonus + sweetSpotScore;
+    const dangerFromEnemy = enemyDamage * dangerMultiplier;
+    totalDanger += dangerFromEnemy;
+  }
+
+  // Normalisiere Danger relativ zu eigenen HP (0-1+ Skala)
+  // 1.0 = erwarteter Schaden entspricht eigenen HP
+  const normalizedDanger = profileHp > 0 ? totalDanger / profileHp : 0;
+
+  // TODO: Terrain-Modifier (Cover reduziert Danger) - siehe Header
+
+  debug('calculateDangerScore:', {
+    cell,
+    rawDanger: totalDanger,
+    profileHp,
+    normalizedDanger,
+    enemyCount: enemies.length,
+  });
+
+  return normalizedDanger;
 }
 
 /**
- * Findet die beste erreichbare Position in Richtung eines Vektors.
- * Simuliert schrittweise Bewegung und wählt Position mit höchstem EV.
+ * Bewertet Cell basierend auf Ally-Positionen.
+ * Heiler wollen zu verletzten Allies, Tanks wollen zwischen Gegner und Squishies.
  */
-export function findBestPositionInDirection(
-  start: GridPosition,
-  direction: MovementVector,
-  maxCells: number,
+export function calculateAllyScore(
+  cell: GridPosition,
   profile: CombatProfile,
   state: SimulationState
-): GridPosition {
-  const normalizedDir = normalizeVector(direction);
+): number {
+  let allyScore = 0;
 
-  // Wenn kein klarer Vektor, bleib wo du bist
-  if (vectorMagnitude(direction) < 0.1) return start;
+  const allies = state.profiles.filter(p =>
+    isAllied(profile.groupId, p.groupId, state.alliances) &&
+    p.participantId !== profile.participantId
+  );
 
-  let bestPosition = start;
-  let bestScore = evaluatePosition(start, profile, state);
+  if (allies.length === 0) return 0;
 
-  // Simuliere Bewegung Schritt für Schritt
-  let currentPos = start;
-  for (let i = 0; i < maxCells; i++) {
-    // Nächste Position in Richtung des Vektors
-    const nextPos: GridPosition = {
-      x: Math.round(currentPos.x + normalizedDir.x),
-      y: Math.round(currentPos.y + normalizedDir.y),
-      z: Math.round(currentPos.z + normalizedDir.z),
+  const hasHealingActions = profile.actions.some(a => a.healing);
+  const hasTankAbilities = profile.ac >= 16; // HACK: siehe Header
+
+  if (hasHealingActions) {
+    // Heiler will zu verletzten Allies
+    for (const ally of allies) {
+      const allyHp = getExpectedValue(ally.hp);
+      const allyMaxHp = Math.max(...ally.hp.keys());
+      const allyHpRatio = allyMaxHp > 0 ? allyHp / allyMaxHp : 1;
+      const urgency = 1 - allyHpRatio;
+
+      // HACK: Healing-Range nutzt getMaxAttackRange() - siehe Header
+      const healRange = getMaxAttackRange(profile);
+      const distanceToAlly = getDistance(cell, ally.position);
+
+      if (distanceToAlly <= healRange && urgency > 0.3) {
+        allyScore += urgency * 0.5;
+      }
+    }
+  }
+
+  if (hasTankAbilities) {
+    // Tank will zwischen Gegner und Squishies
+    const squishies = allies.filter(a => a.ac < 14);
+    const enemies = getCandidates(profile, state, 'damage');
+
+    for (const squishy of squishies) {
+      for (const enemy of enemies) {
+        // Ist dieser Cell auf dem Weg vom Gegner zum Squishy?
+        const enemyToSquishy = getDistance(enemy.position, squishy.position);
+        const enemyToCell = getDistance(enemy.position, cell);
+        const cellToSquishy = getDistance(cell, squishy.position);
+
+        // Dreieck-Ungleichung: Cell liegt "dazwischen" wenn Summe ≈ Direktweg
+        if (enemyToCell + cellToSquishy <= enemyToSquishy + 2) {
+          allyScore += 0.3;
+        }
+      }
+    }
+  }
+
+  debug('calculateAllyScore:', {
+    cell,
+    allyScore,
+    hasHealingActions,
+    hasTankAbilities,
+    allyCount: allies.length,
+  });
+
+  return allyScore;
+}
+
+/**
+ * Evaluiert alle relevanten Cells und findet den besten.
+ * Kombiniert Attraction, Danger und Ally-Scores.
+ *
+ * Baut eine vollständige Attraction-Map aus ALLEN Action/Enemy Kombinationen,
+ * sodass jeder Cell die beste verfügbare Action kennt.
+ */
+export function evaluateAllCells(
+  profile: CombatProfile,
+  state: SimulationState,
+  movementCells: number
+): CellEvaluation {
+  const relevantCells = getRelevantCells(profile.position, movementCells);
+  const cellScores = new Map<string, CellScore>();
+
+  // 1. Baue Attraction-Map aus ALLEN Action/Enemy Kombos
+  // Jede Cell enthält den besten Score + zugehörige Action/Target
+  const attractionMap = buildAttractionMap(profile, state);
+
+  let bestCell: CellScore | null = null;
+  let bestAction: ActionTargetScore | null = null;
+
+  const profileMovement = feetToCell(profile.speed?.walk ?? 30);
+
+  for (const cell of relevantCells) {
+    // 2. Attraction basierend auf der vollständigen Map
+    const { score: attractionScore, bestAction: cellBestAction } =
+      calculateAttractionScoreFromMap(cell, attractionMap, profileMovement);
+
+    // 3. Danger und Ally Scores wie bisher
+    const dangerScore = calculateDangerScore(cell, profile, state);
+    const allyScore = calculateAllyScore(cell, profile, state);
+
+    // Alle Scores auf gleicher Skala (% der HP) → einfache Addition/Subtraktion
+    const combinedScore = attractionScore + allyScore - dangerScore;
+
+    const cellScore: CellScore = {
+      position: cell,
+      attractionScore,
+      dangerScore,
+      allyScore,
+      combinedScore,
     };
 
-    // Wenn keine Bewegung mehr möglich (gleiche Position), abbrechen
-    if (nextPos.x === currentPos.x && nextPos.y === currentPos.y && nextPos.z === currentPos.z) {
-      break;
-    }
+    cellScores.set(positionToKey(cell), cellScore);
 
-    const score = evaluatePosition(nextPos, profile, state);
-    if (score > bestScore) {
-      bestScore = score;
-      bestPosition = nextPos;
-    }
+    // Nur erreichbare Cells als bestCell-Kandidaten (PHB-variant Distanz)
+    const distanceToCell = getDistance(profile.position, cell);
+    const isReachable = distanceToCell <= movementCells;
 
-    currentPos = nextPos;
+    if (isReachable && (!bestCell || combinedScore > bestCell.combinedScore)) {
+      bestCell = cellScore;
+      bestAction = cellBestAction;
+    }
   }
 
-  return bestPosition;
+  debug('evaluateAllCells:', {
+    profileId: profile.participantId,
+    cellCount: relevantCells.length,
+    attractionMapSize: attractionMap.size,
+    bestCell: bestCell?.position,
+    bestCombinedScore: bestCell?.combinedScore,
+  });
+
+  return { cells: cellScores, bestCell, bestAction };
+}
+
+// ============================================================================
+// ESCAPE DANGER CALCULATION
+// ============================================================================
+
+/**
+ * Berechnet Escape-Danger für alle relevanten Cells.
+ * Cached für die Dauer eines Zuges (Feind-Positionen ändern sich nicht).
+ *
+ * Für jede Cell: Was ist die minimale Danger, wenn wir optimal flüchten?
+ * Ermöglicht "Move in → Attack → Move out" Kiting-Pattern.
+ *
+ * @param profile Eigenes Profil
+ * @param state Simulation State
+ * @param maxMovement Maximales Movement (für Escape-Radius)
+ * @returns Map von Cell-Key zu Escape-Danger
+ */
+function buildEscapeDangerMap(
+  profile: CombatProfile,
+  state: SimulationState,
+  maxMovement: number
+): Map<string, number> {
+  const escapeDangerMap = new Map<string, number>();
+
+  // Alle Cells im erweiterten Bewegungsbereich (Movement + max Escape)
+  const extendedRange = maxMovement * 2;  // Move + Escape
+  const allCells = getRelevantCells(profile.position, extendedRange)
+    .filter(c => getDistance(profile.position, c) <= extendedRange);
+
+  for (const cell of allCells) {
+    const baseDanger = calculateDangerScore(cell, profile, state);
+
+    // Wie weit können wir von hier flüchten?
+    const distanceFromStart = getDistance(profile.position, cell);
+    const remainingMovement = Math.max(0, maxMovement - distanceFromStart);
+
+    if (remainingMovement <= 0) {
+      // Kein Escape möglich - volle Danger
+      escapeDangerMap.set(positionToKey(cell), baseDanger);
+      continue;
+    }
+
+    // Finde sicherste Escape-Cell
+    let minDanger = baseDanger;
+    const escapeCells = getRelevantCells(cell, remainingMovement)
+      .filter(c => getDistance(cell, c) <= remainingMovement);
+
+    for (const escapeCell of escapeCells) {
+      const danger = calculateDangerScore(escapeCell, profile, state);
+      if (danger < minDanger) {
+        minDanger = danger;
+      }
+    }
+
+    escapeDangerMap.set(positionToKey(cell), minDanger);
+  }
+
+  debug('buildEscapeDangerMap:', {
+    profileId: profile.participantId,
+    maxMovement,
+    mapSize: escapeDangerMap.size,
+  });
+
+  return escapeDangerMap;
+}
+
+// ============================================================================
+// UNIFIED ACTION SELECTION
+// ============================================================================
+
+/**
+ * Generiert alle möglichen Aktionen mit Scores für Unified Action Selection.
+ * Ermöglicht fairen Vergleich: Attack vs Move vs Pass auf derselben Skala.
+ *
+ * Phase 2: Berechnet Scores nur für erreichbare Cells (~100 statt ~12.800).
+ * Modifier-Evaluation erfolgt lazy bei Bedarf.
+ *
+ * Score-Bedeutung:
+ * - AttackAction: expectedDamage / targetHP (mit Modifiers)
+ * - MoveAction: combinedScore = attractionScore + allyScore - escapeDanger
+ * - PassAction: allyScore - escapeDanger at current position
+ */
+function generateScoredActions(
+  profile: CombatProfile,
+  state: SimulationState,
+  budget: TurnBudget,
+  sourceMap: Map<string, SourceMapEntry[]>,
+  escapeDangerMap: Map<string, number>
+): ScoredAction[] {
+  const actions: ScoredAction[] = [];
+  const profileMovement = feetToCell(profile.speed?.walk ?? 30);
+
+  // 1. Attack-Aktionen (wenn Action verfügbar)
+  if (budget.hasAction) {
+    // Attraction-Score an aktueller Position = "Wieviel Schaden kann ich JETZT machen?"
+    // Verwendet Source-Map mit Lazy Modifier-Evaluation
+    const { score: attackScore, bestAction } = calculateAttractionFromSourceMap(
+      profile.position,
+      sourceMap,
+      profile,
+      state,
+      profileMovement
+    );
+    if (bestAction && attackScore > 0) {
+      actions.push({
+        type: 'action',
+        action: bestAction.action,
+        target: bestAction.target,
+        score: attackScore,
+      });
+    }
+  }
+
+  // 2. Move-Aktionen (wenn Movement verfügbar)
+  if (budget.movementCells > 0) {
+    const reachableCells = getRelevantCells(profile.position, budget.movementCells)
+      .filter(cell => !positionsEqual(cell, profile.position))  // Nicht stehen bleiben
+      .filter(cell => getDistance(profile.position, cell) <= budget.movementCells);  // Nur erreichbare Cells
+
+    for (const cell of reachableCells) {
+      // Combined Score = attractionScore + allyScore - escapeDanger
+      // Escape-Danger: Minimale Danger wenn wir optimal flüchten (gecached)
+      // Ermöglicht "Move in → Attack → Move out" Kiting-Pattern
+      const { score: attractionScore } = calculateAttractionFromSourceMap(
+        cell,
+        sourceMap,
+        profile,
+        state,
+        profileMovement
+      );
+      // Escape-Danger aus Cache (berechnet am Anfang des Zuges)
+      const escapeDanger = escapeDangerMap.get(positionToKey(cell))
+        ?? calculateDangerScore(cell, profile, state);  // Fallback für nicht-gecachte Cells
+      const allyScore = calculateAllyScore(cell, profile, state);
+      const moveScore = attractionScore + allyScore - escapeDanger;
+
+      actions.push({
+        type: 'move',
+        targetCell: cell,
+        score: moveScore,
+      });
+    }
+  }
+
+  // 3. Movement-gewährende Aktionen (Dash etc.) - wenn Action verfügbar und noch nicht gedashed
+  // Prüft Effect-Felder statt hardcodierter ActionTypes
+  if (budget.hasAction && !budget.hasDashed) {
+    // Finde Dash-Action (oder andere grantMovement-Actions) aus Standard-Actions
+    const allActions = getAvailableActions(profile);
+    const dashAction = allActions.find(a => hasGrantMovementEffect(a));
+
+    if (dashAction) {
+      const dashRange = budget.movementCells + budget.baseMovementCells;
+      const dashReachableCells = getRelevantCells(profile.position, dashRange)
+        .filter(cell => !positionsEqual(cell, profile.position))
+        .filter(cell => getDistance(profile.position, cell) <= dashRange)
+        .filter(cell => getDistance(profile.position, cell) > budget.movementCells);
+
+      for (const cell of dashReachableCells) {
+        // minBand: 1 = Aktionen erst nächste Runde (Action durch Dash verbraucht)
+        const { score: attractionScore } = calculateAttractionFromSourceMap(
+          cell,
+          sourceMap,
+          profile,
+          state,
+          profileMovement,
+          { minBand: 1 }
+        );
+        const escapeDanger = escapeDangerMap.get(positionToKey(cell))
+          ?? calculateDangerScore(cell, profile, state);
+        const allyScore = calculateAllyScore(cell, profile, state);
+        const dashMoveScore = attractionScore + allyScore - escapeDanger;
+
+        actions.push({
+          type: 'action',
+          action: dashAction,
+          targetCell: cell,
+          score: dashMoveScore,
+        });
+      }
+    }
+  }
+
+  // 4. Pass (Score = combined score at current position)
+  // Nach Angriff: Retreat zu sicherer Position sollte mit "bleiben" vergleichbar sein
+  const currentEscapeDanger = escapeDangerMap.get(positionToKey(profile.position))
+    ?? calculateDangerScore(profile.position, profile, state);
+  const currentAlly = calculateAllyScore(profile.position, profile, state);
+  // attractionScore nicht inkludiert - Pass bedeutet wir greifen nicht an
+  // Wenn hasAction=true wird Attack separat evaluiert
+  const passScore = currentAlly - currentEscapeDanger;
+  actions.push({ type: 'pass', score: passScore });
+
+  return actions;
 }
 
 /**
- * Berechnet EV für Dash-Aktion.
- * Vergleicht den Wert der durch Dash erreichbaren Position mit der besten Attack-Option.
+ * Führt einen kompletten Zug aus: Movement + Action.
+ * Unified Action Selection: Jede Iteration wählt die beste Aktion aus allen Möglichkeiten.
  *
- * Dash wird nur evaluiert wenn movementCells = 0 (siehe generateActionCandidates).
- * Dash lohnt sich wenn die neue Position wertvoller ist als ein Attack.
+ * Movement-Kosten werden kumulativ berechnet (PHB-variant):
+ * Diagonale Schritte kosten abwechselnd 1-2 Cells (5-10-5-10 Regel).
  */
-export function calculateDashEV(
+export function executeTurn(
   profile: CombatProfile,
-  state: SimulationState
-): number {
-  const enemies = getCandidates(profile, state, 'damage');
-  if (enemies.length === 0) return 0;
+  state: SimulationState,
+  budget: TurnBudget
+): TurnAction[] {
+  const actions: TurnAction[] = [];
+  let currentPosition = { ...profile.position };
 
-  // 1. Wohin könnte ich mit Dash kommen?
-  const dashCells = feetToCell(profile.speed.walk ?? 30);
-  const optimalVector = calculateMovementVector(profile, state);
-  const dashTargetPos = findBestPositionInDirection(
-    profile.position,
-    optimalVector,
-    dashCells,
-    profile,
+  // Phase 1: Source-Map einmal berechnen (nur Geometrie, günstig)
+  // Modifier-Evaluation erfolgt lazy in Phase 2 (nur für erreichbare Cells)
+  const sourceMap = buildSourceMaps(
+    { ...profile, position: currentPosition },
     state
   );
 
-  // 2. Wie wertvoll ist diese Position?
-  const dashPositionEV = evaluatePosition(dashTargetPos, profile, state);
-  const currentPositionEV = evaluatePosition(profile.position, profile, state);
-  const positionImprovement = dashPositionEV - currentPositionEV;
+  // Phase 1b: Escape-Danger Map einmal berechnen (ändert sich nicht während des Zuges)
+  // Ermöglicht "Move in → Attack → Move out" Kiting-Pattern
+  const escapeDangerMap = buildEscapeDangerMap(
+    profile,
+    state,
+    budget.movementCells
+  );
 
-  // 3. Was würde ich aufgeben? (Beste Attack-Option)
-  const bestAttack = selectBestActionAndTarget(profile, state);
-  const attackEV = bestAttack ? bestAttack.score : 0;
+  while (hasBudgetRemaining(budget)) {
+    // Phase 2: Generiere Scores nur für erreichbare Cells (~100 statt ~12.800)
+    const scoredActions = generateScoredActions(
+      { ...profile, position: currentPosition },
+      state,
+      budget,
+      sourceMap,
+      escapeDangerMap
+    );
 
-  // 4. Dash lohnt sich wenn Position-Improvement > Attack-EV
-  // Skaliert, weil Attack-Score auf anderer Skala
-  const ev = positionImprovement - attackEV * 0.5;
+    // Beste Aktion wählen
+    const best = scoredActions.reduce((a, b) => a.score > b.score ? a : b);
 
-  debug('calculateDashEV:', {
-    dashCells,
-    dashTargetPos,
-    currentPositionEV,
-    dashPositionEV,
-    positionImprovement,
-    attackEV,
-    ev,
+    debug('executeTurn: best action', {
+      type: best.type,
+      score: best.score,
+      position: currentPosition,
+    });
+
+    // Pass = Zug beenden
+    if (best.type === 'pass') {
+      actions.push({ type: 'pass' });
+      break;
+    }
+
+    // Attack ausführen
+    if (best.type === 'attack') {
+      actions.push({
+        type: 'attack',
+        action: best.action,
+        target: best.target,
+      });
+      consumeAction(budget);
+
+      debug('executeTurn: attack', {
+        action: best.action.name,
+        target: best.target.participantId,
+      });
+      continue;
+    }
+
+    // Move ausführen
+    if (best.type === 'move') {
+      const moveCost = getDistance(currentPosition, best.targetCell);
+      actions.push({ type: 'move', targetCell: best.targetCell });
+      consumeMovement(budget, moveCost);
+      currentPosition = best.targetCell;
+
+      debug('executeTurn: move', {
+        to: best.targetCell,
+        cost: moveCost,
+        remainingMovement: budget.movementCells,
+      });
+      continue;
+    }
+
+    // Dash-Move ausführen: Action für Dash verbrauchen, dann Movement
+    if (best.type === 'dashMove') {
+      applyDash(budget);  // Action verbrauchen, Movement verdoppeln
+      const moveCost = getDistance(currentPosition, best.targetCell);
+      actions.push({ type: 'dashMove', targetCell: best.targetCell });
+      consumeMovement(budget, moveCost);
+      currentPosition = best.targetCell;
+
+      debug('executeTurn: dashMove', {
+        to: best.targetCell,
+        cost: moveCost,
+        remainingMovement: budget.movementCells,
+      });
+      continue;
+    }
+  }
+
+  debug('executeTurn: complete', {
+    profileId: profile.participantId,
+    actionCount: actions.length,
+    actionTypes: actions.map(a => a.type),
   });
 
-  return ev;
-}
-
-/**
- * Berechnet EV für eine TurnAction.
- * Haupteinstiegspunkt für EV-basierte Selektion.
- * Siehe: Plan cosmic-tinkering-unicorn.md#Step-4
- */
-export function calculateTurnActionEV(
-  turnAction: TurnAction,
-  profile: CombatProfile,
-  state: SimulationState
-): number {
-  switch (turnAction.type) {
-    case 'move':
-      return calculateMoveEV(profile.position, turnAction.targetCell, profile, state);
-    case 'attack':
-      return calculateAttackEV(turnAction.action, turnAction.target, profile, state);
-    case 'dash':
-      return calculateDashEV(profile, state);
-    case 'pass':
-      return 0;  // Neutral
-  }
+  return actions;
 }

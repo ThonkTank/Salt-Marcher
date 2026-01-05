@@ -1,10 +1,12 @@
 # combatantAI
 
 > **Verantwortlichkeit:** AI-Entscheidungslogik fuer Combat - was soll eine Kreatur tun?
-> **Konsumiert von:** [combatResolver](combatResolver.md), [Encounter-Runner](../../orchestration/EncounterWorkflow.md) (zukuenftig)
+> **Konsumiert von:** [combatTracking](../combatTracking.md), [difficulty.ts](../encounter/difficulty.md), [Encounter-Runner](../../orchestration/EncounterWorkflow.md) (zukuenftig)
 >
 > **Verwandte Dokumente:**
-> - [combatResolver.md](combatResolver.md) - State-Management + Execution
+> - [combatTracking.md](../combatTracking.md) - State-Management + Resolution
+> - [combatHelpers.ts](.) - Alliance-Checks, Hit-Chance (in diesem Ordner)
+> - [situationalModifiers.ts](.) - Plugin-System fuer Combat-Modifikatoren (in diesem Ordner)
 > - [difficulty.md](../encounter/difficulty.md) - Orchestrator fuer Difficulty-Simulation
 
 Standalone-callable Entscheidungslogik fuer Combat-AI. Ermoeglicht sowohl PMF-basierte Simulation (fuer Difficulty) als auch zukuenftigen Encounter-Runner (fuer GM-Unterstuetzung).
@@ -18,27 +20,30 @@ Standalone-callable Entscheidungslogik fuer Combat-AI. Ermoeglicht sowohl PMF-ba
 | Funktion | Beschreibung |
 |----------|--------------|
 | `selectBestActionAndTarget(attacker, state)` | Waehlt beste (Action, Target)-Kombination basierend auf EV-Score |
-| `calculatePairScore(attacker, action, target, distance)` | Berechnet Score fuer eine (Action, Target)-Kombination |
+| `calculatePairScore(attacker, action, target, distance, state?)` | Berechnet Score fuer eine (Action, Target)-Kombination |
 | `getActionIntent(action)` | Erkennt Intent: `damage`, `healing`, oder `control` |
 | `getCandidates(attacker, state, intent)` | Filtert moegliche Ziele basierend auf Intent und Allianzen |
 
-### Alliance Helpers
+### Alliance Helpers (aus combatHelpers.ts)
 
 | Funktion | Beschreibung |
 |----------|--------------|
 | `isAllied(groupA, groupB, alliances)` | Prueft ob zwei Gruppen verbuendet sind |
 | `isHostile(groupA, groupB, alliances)` | Prueft ob zwei Gruppen Feinde sind (nicht verbuendet) |
 
-### Movement (Vektor-System)
+> **Hinweis:** Diese Funktionen sind in `combatHelpers.ts` definiert, werden aber von combatantAI.ts importiert und verwendet.
+
+### Cell-Based Positioning
 
 | Funktion | Beschreibung |
 |----------|--------------|
-| `calculateMovementVector(profile, state)` | Berechnet optimalen Bewegungs-Vektor (Attraction/Repulsion) |
-| `calculateAttraction(profile, other, distance, isEnemy)` | Attraction-Faktor fuer einen Combatant |
-| `calculateRepulsion(profile, other, distance, isEnemy)` | Repulsion-Faktor fuer einen Combatant |
-| `calculateMoveEV(from, to, profile, state)` | EV einer Bewegung (Vektor-Alignment) |
-| `calculateDashEV(profile, state)` | EV fuer Dash (Position-Verbesserung vs Attack) |
-| `calculateSweetSpot(actions)` | Berechnet optimale Kampfdistanz |
+| `evaluateAllCells(profile, state, movementCells)` | Bewertet alle erreichbaren Cells und findet den besten |
+| `buildAttractionMap(profile, state)` | Baut Attraction-Map aus allen Action/Enemy Kombinationen |
+| `calculateAttractionFromSourceMap(cell, sourceMap, profile, state, movement, options?)` | Attraction-Score mit Decay. `options.minBand` verschiebt Band-0 zu minBand (fuer Dash) |
+| `calculateDangerScore(cell, profile, state)` | Wie gefaehrlich ist dieser Cell? |
+| `calculateAllyScore(cell, profile, state)` | Ally-Positioning Bonus (Healer, Tank) |
+| `executeTurn(profile, state, budget)` | Fuehrt kompletten Zug aus: Movement + Action |
+| `getOptimalRangeVsTarget(attacker, target, cache?)` | Berechnet optimale Reichweite fuer ein Matchup |
 | `determineCombatPreference(actions)` | Bestimmt Praeferenz: `melee`, `ranged`, oder `hybrid` |
 
 ### Potential Estimation
@@ -46,16 +51,32 @@ Standalone-callable Entscheidungslogik fuer Combat-AI. Ermoeglicht sowohl PMF-ba
 | Funktion | Beschreibung |
 |----------|--------------|
 | `estimateDamagePotential(actions)` | Schaetzt maximales Damage-Potential (Wuerfel-EV) |
+| `estimateEffectiveDamagePotential(actions, targetAC)` | Schaetzt effektives Damage-Potential unter Beruecksichtigung von Hit-Chance |
 | `estimateHealPotential(actions)` | Schaetzt maximales Heal-Potential |
 | `estimateControlPotential(actions)` | Schaetzt Control-Potential (basierend auf Save DC) |
 | `estimateCombatantValue(profile)` | Gesamtwert eines Combatants fuer Team |
 
-### Utilities
+### Utilities (aus combatHelpers.ts)
 
 | Funktion | Beschreibung |
 |----------|--------------|
-| `calculateHitChance(attackBonus, targetAC)` | Berechnet Hit-Chance (5%-95% Range) |
-| `getDistance(a, b)` | Berechnet Distanz zwischen zwei Positionen |
+| `calculateHitChance(attackBonus, targetAC, modifiers?)` | Berechnet Hit-Chance (5%-95% Range), optional mit Situational Modifiers |
+| `getDistance(a, b)` | Berechnet Distanz zwischen zwei Positionen (PHB-Variant) |
+| `calculateMultiattackDamage(action, allActions, targetAC)` | Kombinierte PMF fuer Multiattack |
+
+> **Hinweis:** Diese Funktionen sind in `combatHelpers.ts` definiert und werden von mehreren Services genutzt (combatTracking, combatantAI, difficulty).
+
+### Situational Modifiers (aus situationalModifiers.ts)
+
+| Funktion | Beschreibung |
+|----------|--------------|
+| `evaluateSituationalModifiers(context)` | Evaluiert alle registrierten Modifiers und akkumuliert Effekte |
+| `accumulateEffects(effects, sources)` | Akkumuliert mehrere ModifierEffects zu finalen SituationalModifiers |
+| `resolveAdvantageState(hasAdv, hasDisadv)` | Loest Advantage/Disadvantage per D&D 5e Regeln auf |
+| `createEmptyModifiers()` | Factory fuer leere Modifiers (keine aktiven Effekte) |
+| `modifierRegistry` | Globale Registry-Instanz fuer Modifier-Plugins |
+
+> **Hinweis:** Diese Funktionen sind in `situationalModifiers.ts` definiert. Modifier-Plugins liegen in `modifiers/`.
 
 ---
 
@@ -88,8 +109,25 @@ Minimal-State fuer AI-Entscheidungen:
 interface SimulationState {
   profiles: CombatProfile[];
   alliances: Record<string, string[]>;  // groupId → verbuendete groupIds
+  rangeCache?: RangeCache;              // Cache fuer optimale Reichweiten
 }
 ```
+
+### RangeCache
+
+Cache fuer optimale Reichweiten pro Attacker-Target-Matchup:
+
+```typescript
+interface RangeCache {
+  get(attackerId: string, targetId: string): number | undefined;
+  set(attackerId: string, targetId: string, range: number): void;
+}
+
+// Factory-Funktion
+function createRangeCache(): RangeCache;
+```
+
+**Zweck:** Bei 5 Goblins vs 4 PCs werden nur 4 Berechnungen durchgefuehrt, nicht 20 pro Runde.
 
 ### ActionTargetScore
 
@@ -112,17 +150,99 @@ type ActionIntent = 'damage' | 'healing' | 'control';
 type CombatPreference = 'melee' | 'ranged' | 'hybrid';
 ```
 
+### TurnAction & ScoredAction
+
+```typescript
+/** Union Type fuer alle moeglichen Zug-Aktionen. */
+type TurnAction =
+  | { type: 'move'; targetCell: GridPosition }
+  | { type: 'dashMove'; targetCell: GridPosition }  // Move mit Dash (Action verbraucht)
+  | { type: 'attack'; action: Action; target: CombatProfile }
+  | { type: 'dash' }
+  | { type: 'pass' };
+
+/** TurnAction mit Score fuer Unified Action Selection. */
+type ScoredAction = TurnAction & { score: number };
+```
+
+**DashMove vs Move:**
+- `move`: Normales Movement, Action bleibt verfuegbar fuer Angriff
+- `dashMove`: Action fuer Dash verbraucht, doppelte Reichweite, kein Angriff moeglich
+
+DashMove verwendet `minBand: 1` bei der Attraction-Berechnung, wodurch Band-0-Aktionen (diese Runde ausfuehrbar) zu Band-1 (naechste Runde) verschoben werden. Aktionen die bereits durch Distance-Decay in Band 1+ sind, bleiben unveraendert.
+
+### Situational Modifier Types (aus situationalModifiers.ts)
+
+```typescript
+/** Moegliche Effekte eines Modifiers */
+interface ModifierEffect {
+  advantage?: boolean;           // Grants advantage
+  disadvantage?: boolean;        // Grants disadvantage
+  attackBonus?: number;          // Flat attack bonus (+1, +2, etc.)
+  acBonus?: number;              // Target AC bonus (cover)
+  damageBonus?: number;          // Flat damage bonus
+  autoCrit?: boolean;            // Auto-critical hit (paralyzed target)
+  autoMiss?: boolean;            // Auto-miss (full cover)
+}
+
+/** Akkumulierte Modifiers fuer einen Angriff */
+interface SituationalModifiers {
+  effects: ModifierEffect[];     // Alle aktiven Effekte
+  sources: string[];             // IDs der aktiven Modifier-Quellen
+  netAdvantage: 'advantage' | 'disadvantage' | 'normal';
+  totalAttackBonus: number;
+  totalACBonus: number;
+  totalDamageBonus: number;
+  effectiveAttackMod: number;    // +5 fuer Advantage, -5 fuer Disadvantage
+  hasAutoCrit: boolean;
+  hasAutoMiss: boolean;
+}
+
+/** Kontext fuer Modifier-Evaluation */
+interface ModifierContext {
+  attacker: CombatantContext;
+  target: CombatantContext;
+  action: Action;
+  state: ModifierSimulationState;
+  cell?: GridPosition;           // Optional: Evaluierte Position (fuer AI)
+}
+
+/** Kontext fuer einen einzelnen Combatant */
+interface CombatantContext {
+  position: GridPosition;
+  groupId: string;
+  participantId: string;
+  conditions: ConditionState[];
+  ac: number;
+  hp: number;
+}
+```
+
+### ModifierEvaluator (Plugin Interface)
+
+```typescript
+/** Ein einzelner Modifier-Evaluator (Plugin) */
+interface ModifierEvaluator {
+  id: string;                    // Unique ID: 'long-range', 'pack-tactics'
+  name: string;                  // Display name fuer Debug/UI
+  description: string;           // Erklaerung fuer Debug/UI
+  isActive: (ctx: ModifierContext) => boolean;
+  getEffect: (ctx: ModifierContext) => ModifierEffect;
+  priority?: number;             // Hoeher = frueher (default: 0)
+}
+```
+
 ---
 
 ## Standalone-Nutzung (Encounter-Runner)
 
-Die AI-Funktionen sind standalone callable fuer den zukuenftigen Encounter-Runner:
+Die AI-Funktionen sind standalone callable fuer den Encounter-Runner:
 
 ```typescript
 import {
   selectBestActionAndTarget,
-  calculateMovementVector,
-  calculateMoveEV,
+  evaluateAllCells,
+  executeTurn,
   getCandidates,
 } from '@/services/combatSimulator/combatantAI';
 
@@ -130,13 +250,13 @@ import {
 const suggestion = selectBestActionAndTarget(goblinProfile, state);
 // → { action: 'Shortbow', target: wizard, score: 0.8, intent: 'damage' }
 
-// "In welche Richtung soll dieser Goblin sich bewegen?"
-const optimalVector = calculateMovementVector(goblinProfile, state);
-// → { x: 1.2, y: -0.5, z: 0 } // Richtung zum optimalen Ziel
+// "Welcher Cell ist optimal fuer diesen Goblin?"
+const evaluation = evaluateAllCells(goblinProfile, state, movementCells);
+// → { bestCell: { position, attractionScore, dangerScore, ... }, bestAction: ... }
 
-// "Ist diese Bewegung gut?"
-const moveEV = calculateMoveEV(goblinProfile.position, targetCell, goblinProfile, state);
-// → 0.8 (hoher EV = gute Bewegung)
+// "Fuehre den kompletten Zug aus"
+const actions = executeTurn(goblinProfile, state, budget);
+// → [{ type: 'move', targetCell }, { type: 'attack', action, target }]
 ```
 
 ---
@@ -165,71 +285,194 @@ Control: Score = targetValue (je wertvoller, desto besser zu disablen)
 
 ---
 
-## Movement-Algorithmus
+## Cell-Based Positioning
 
-### Vektor-basiertes Movement
+### Algorithmus
 
-Jeder Combatant uebt auf jeden anderen eine Kraft aus:
-- **Attraction**: Ich will naeher (Feinde angreifen, Sweet-Spot erreichen)
-- **Repulsion**: Ich will weg (zu nah fuer Ranged)
-
-Die Summe aller Vektoren ergibt die optimale Bewegungsrichtung:
+Statt Vektoren zu berechnen werden alle erreichbaren Cells explizit bewertet:
 
 ```typescript
-optimalVector = Σ(directionToOther × (attraction - repulsion))
+// 1. Baue Attraction-Map aus ALLEN Action/Enemy Kombinationen
+attractionMap = buildAttractionMap(profile, state)
+
+// 2. Bewerte jede erreichbare Cell
+for each cell in getRelevantCells(position, movementCells):
+  attractionScore = calculateAttractionScoreFromMap(cell, attractionMap)
+  dangerScore = calculateDangerScore(cell)          // Gefahr durch Feinde
+  allyScore = calculateAllyScore(cell)              // Ally-Positioning
+  combinedScore = attractionScore + allyScore - (dangerScore × DANGER_WEIGHT)
 ```
 
-### Attraction-Faktoren
+**Attraction-Map:** Jede globale Cell enthaelt den besten Score aller Action/Enemy Kombinationen.
+Attack-Cell-Patterns werden gecached (Geometrie konstant), Scores werden pro Enemy berechnet.
 
-| Bedingung | Attraction |
-|-----------|:----------:|
-| Feind nicht im Sweet-Spot | +0.5 |
-| Melee-Praeferenz, Distanz > 2 Cells | +0.8 |
+### Score-Komponenten
 
-### Repulsion-Faktoren
+| Score | Beschreibung | Faktoren |
+|-------|--------------|----------|
+| **Attraction** | Wie gut kann ich angreifen? | Beste Action/Target von diesem Cell, Erreichbarkeit, Setup-Bonus |
+| **Danger** | Wie gefaehrlich ist es hier? | Feind-Reichweite, **effektiver Schaden (Hit-Chance × Damage)**, Bewegungszonen |
+| **Ally** | Team-Positioning | Healer-Range zu Verletzten, Tank zwischen Feind und Squishy |
 
-| Bedingung | Repulsion |
-|-----------|:---------:|
-| Ranged-Praeferenz, Distanz < 3 Cells | +0.6 |
+**Danger-Score Berechnung (AC-adjustiert):**
+`calculateDangerScore()` verwendet `estimateEffectiveDamagePotential(enemy.actions, profile.ac)` um den erwarteten Schaden unter Beruecksichtigung der eigenen AC zu berechnen. Dadurch bewerten schwer gepanzerte Kreaturen Gefahr realistischer als nur mit rohem Damage-Potential.
 
-### MoveEV-Berechnung
+### executeTurn() - Unified Action Selection
+
+Fuehrt einen kompletten Zug mit Turn-Budget aus. Jede Iteration waehlt die beste Aktion aus allen Moeglichkeiten:
 
 ```typescript
-alignment = dotProduct(normalizedOptimal, normalizedMove);
-baseEV = alignment × min(optimalMagnitude, 1.0);
-moveEV = baseEV + attackBonus;  // +0.5 wenn Ziel Attack ermoeglicht
+attractionMap = buildAttractionMap(profile, state)  // Einmal berechnen
+
+while (hasBudgetRemaining(budget)):
+  scoredActions = generateScoredActions(profile, state, budget, attractionMap)
+  best = scoredActions.maxBy(score)
+
+  switch (best.type):
+    'attack':   execute attack, consumeAction(budget)
+    'move':     update position, consumeMovement(budget, cost)
+    'dashMove': applyDash(budget), update position, consumeMovement(budget, cost)
+    'pass':     break loop
 ```
 
-### Sweet-Spot
+**Score-Berechnung:**
+| Aktion | Score-Formel |
+|--------|--------------|
+| Attack | `attractionScore` (expectedDamage / targetHP) |
+| Move   | `attractionScore + allyScore - dangerScore` |
+| DashMove | `attractionScore(minBand:1) + allyScore - dangerScore` |
+| Pass   | `0` |
 
-Die optimale Kampfdistanz basiert auf den Action-Reichweiten:
+**DashMove:** Nur fuer Cells die ueber normales Movement hinaus erreichbar sind. `minBand: 1` bedeutet: Band-0-Aktionen (diese Runde) werden zu Band-1 (naechste Runde, 50% Decay). Aktionen die bereits in Band 1+ sind, bleiben unveraendert.
+
+**Ermoeglichte Patterns:**
+- **Ranged in Long Range:** Move in → Attack → Move out (wenn Movement uebrig)
+- **Melee:** Move → Attack (wenn nicht in Reichweite)
+- **Archer in Normal Range:** Attack zuerst, dann repositionieren
+- **DashMove:** Kreatur ist zu weit fuer normales Move, aber Dash lohnt sich fuer Position naechste Runde
+
+**Verhaltensbeispiele:**
+
+| Szenario | Erwartetes Verhalten |
+|----------|---------------------|
+| Archer in Normal Range (60ft) | Schiesst zuerst, dann repositioniert |
+| Archer in Long Range (120ft) | Move in → Attack → Move out (wenn Movement uebrig) |
+| Melee 30ft vom Target | Bewegt sich (moveScore > 0), greift an |
+| Melee 50ft vom Target (Speed 30) | DashMove wenn Attraction hoch genug (×0.5 Decay) |
+| High-AC Tank umgeben von Feinden | Danger-Score niedrig dank AC-Adjustierung |
+
+### Optimale Reichweite (dynamisch)
+
+Die optimale Kampfdistanz wird **pro Matchup** berechnet via `getOptimalRangeVsTarget()`:
 
 ```typescript
-sweetSpot = Σ(range x damagePotential) / Σ(damagePotential)
+// Fuer jeden Gegner: Welche Reichweite maximiert meinen EV?
+optimalRange = argmax(action.range) { hitChance(action, target.ac) × expectedDamage(action) }
 ```
 
-| Kreatur | Actions | Sweet-Spot |
-|---------|---------|:----------:|
-| Wolf | Bite (5ft) | 5ft |
-| Goblin | Scimitar (5ft), Shortbow (80ft) | ~40ft |
-| Mage | Fire Bolt (120ft), Fireball (150ft) | ~60ft |
+**Vorteile:**
+- Beruecksichtigt Ziel-AC (High-AC → Melee mit Advantage ggf. besser)
+- Beruecksichtigt tatsaechliche Hit-Chance und Damage
+- Ergebnisse werden pro Simulation gecached (RangeCache)
 
 ### Combat-Praeferenz
 
 | Ranged-Ratio | Praeferenz | Verhalten |
 |:------------:|:----------:|:----------|
-| >= 70% | `ranged` | Repulsion wenn zu nah |
+| >= 70% | `ranged` | Haelt Abstand |
 | 30-70% | `hybrid` | Balanciert |
-| <= 30% | `melee` | Starke Attraction |
+| <= 30% | `melee` | Sucht Nahkampf |
 
 ---
 
-## TODO
+## Situational Modifiers
 
-### TODO: Ally-Support-Attraction
+### Plugin-Architektur
 
-`calculateAttraction()` enthaelt Stub fuer Ally-Support. Wenn `profile.actions` healing enthaelt, sollte Attraction zu verletzten Allies steigen.
+Das Situational Modifier System ermoeglicht modulare Erweiterung von Combat-Modifikatoren:
 
-### TODO: Enemy-DPR-basierte Repulsion
+```
+src/services/combatSimulator/
+  situationalModifiers.ts     ← Core: Registry, Evaluation, Akkumulation
+  modifiers/
+    index.ts                  ← Bootstrap: Auto-Registration
+    longRange.ts              ← Plugin: Long Range Disadvantage
+    (weitere Plugins...)
+```
 
-`calculateRepulsion()` enthaelt auskommentierten Code. Hoher Enemy-DPR sollte Repulsion erhoehen (Threshold kalibrieren).
+### Neuen Modifier hinzufuegen
+
+1. Datei erstellen: `modifiers/newModifier.ts`
+2. ModifierEvaluator implementieren mit `modifierRegistry.register()`
+3. Import in `modifiers/index.ts` hinzufuegen
+
+**Keine Core-Aenderungen noetig!**
+
+### D&D 5e Regeln
+
+- **Advantage + Disadvantage = Normal** (canceln sich gegenseitig)
+- **+/-5 Approximation:** Advantage = +5, Disadvantage = -5 (Performance-Optimierung)
+
+### Evaluations-Flow
+
+```typescript
+// 1. Context bauen
+const context: ModifierContext = {
+  attacker: { position, groupId, participantId, conditions, ac, hp },
+  target: { position, groupId, participantId, conditions, ac, hp },
+  action: selectedAction,
+  state: { profiles, alliances },
+};
+
+// 2. Alle registrierten Modifiers evaluieren
+const modifiers = evaluateSituationalModifiers(context);
+// → { netAdvantage: 'disadvantage', effectiveAttackMod: -5, sources: ['long-range'], ... }
+
+// 3. In Hit-Chance einrechnen
+const hitChance = calculateHitChance(attackBonus, targetAC, modifiers);
+```
+
+### Implementierte Modifiers
+
+| ID | Beschreibung | Bedingung | Effekt |
+|----|-------------|-----------|--------|
+| `long-range` | Long Range Disadvantage | `distance > normalRange && distance <= longRange` | `{ disadvantage: true }` |
+
+### Geplante Modifiers (TODO)
+
+| ID | Beschreibung | Phase |
+|----|-------------|-------|
+| `prone-target` | Advantage in Melee, Disadvantage auf Ranged | 2 |
+| `pack-tactics` | Advantage wenn Ally adjacent zum Target | 3 |
+| `restrained` | Advantage auf Angriffe gegen Restrained | 3 |
+| `cover` | AC Bonus (+2 Half, +5 Three-Quarters) | 4 |
+| `higher-ground` | Optional Rule | 4 |
+| `flanking` | Optional Rule | 4 |
+
+### Integration in calculatePairScore()
+
+`calculatePairScore()` evaluiert Modifiers automatisch wenn `state` uebergeben wird:
+
+```typescript
+// Mit state: Modifiers werden evaluiert
+const pairScore = calculatePairScore(attacker, action, target, distance, state);
+
+// Ohne state: Keine Modifier-Evaluation (Fallback fuer Tests)
+const pairScore = calculatePairScore(attacker, action, target, distance);
+```
+
+### Integration in buildAttractionMap()
+
+Der Bug-Fix in `buildAttractionMap()` stellt sicher, dass Scores **pro Cell** berechnet werden:
+
+```typescript
+// Vorher (falsch): distance=0 fuer alle Cells
+const pairScore = calculatePairScore(profile, action, enemy, 0, state);
+
+// Nachher (korrekt): Echte Distanz von potentieller Position
+const distanceFromCell = getDistance(globalCell, enemy.position);
+const virtualProfile = { ...profile, position: globalCell };
+const pairScore = calculatePairScore(virtualProfile, action, enemy, distanceFromCell, state);
+```
+
+Dies ermoeglicht positionsabhaengige Modifiers wie Long Range Disadvantage.
