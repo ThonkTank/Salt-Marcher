@@ -24,11 +24,16 @@ export type {
 // CONDITION STATE
 // ============================================================================
 
-/** Condition-State für Incapacitation-Layer. */
+/**
+ * Condition-State für Combat-Tracking.
+ * Effect ist offen für beliebige Effect-Namen aus Actions.
+ * Value für numerische Buffs (z.B. +2 für Magic Weapon).
+ */
 export interface ConditionState {
   name: string;
   probability: number;
-  effect: 'incapacitated' | 'disadvantage' | 'other';
+  effect: string;  // 'incapacitated', 'disadvantage', 'attack-bonus', 'damage-bonus', etc.
+  value?: number;  // Numerischer Wert für Buffs
 }
 
 // ============================================================================
@@ -44,6 +49,19 @@ import type { ProbabilityDistribution, GridPosition, SpeedBlock, GridConfig } fr
  *
  * HP ist immer PMF - deterministische Werte als Single-Value-PMF.
  */
+/**
+ * Runtime Resource-Tracking für Combat.
+ * Spell Slots, Recharge-Timer, Per-Day Uses.
+ */
+export interface CombatResources {
+  /** Spell Slots: Level (1-9) → verbleibende Slots */
+  spellSlots?: Record<number, number>;
+  /** Recharge-Timer: actionId → Runden bis verfügbar (0 = bereit) */
+  rechargeTimers?: Record<string, number>;
+  /** Per-Day/Per-Rest Uses: actionId → verbleibende Uses */
+  perDayUses?: Record<string, number>;
+}
+
 export interface CombatProfile {
   participantId: string;
   groupId: string;  // 'party' für PCs, UUID für Encounter-Gruppen
@@ -55,6 +73,8 @@ export interface CombatProfile {
   conditions?: ConditionState[];
   position: GridPosition;  // Cell-Indizes, nicht Feet
   environmentBonus?: number;
+  resources?: CombatResources;
+  concentratingOn?: Action;  // Aktuell konzentrierter Spell
 }
 
 // ============================================================================
@@ -139,8 +159,8 @@ export interface TurnBudget {
 // ACTION TYPES
 // ============================================================================
 
-/** Intent einer Action: damage, healing, oder control. */
-export type ActionIntent = 'damage' | 'healing' | 'control';
+/** Intent einer Action: damage, healing, control, oder buff. */
+export type ActionIntent = 'damage' | 'healing' | 'control' | 'buff';
 
 /** Combat-Präferenz für Positioning. */
 export type CombatPreference = 'melee' | 'ranged' | 'hybrid';
@@ -193,6 +213,40 @@ export type TurnAction =
   | { type: 'action'; action: Action; target?: CombatProfile; targetCell?: GridPosition }
   | { type: 'pass' };
 
+/**
+ * Ergebnis der Turn-Exploration mit optionalen Metriken.
+ * Verwendet von executeTurn() für Debugging und Performance-Analyse.
+ */
+export interface TurnExplorationResult {
+  actions: TurnAction[];
+  finalCell: GridPosition;
+  totalValue: number;
+  candidatesEvaluated?: number;  // Anzahl evaluierter Aktionskandidaten
+  candidatesPruned?: number;     // Anzahl durch 50%-Threshold geprunter Kandidaten
+}
+
+/**
+ * Kandidat im iterativen Pruning-Prozess.
+ * Repräsentiert einen partiellen Turn-Pfad während der Exploration.
+ */
+export interface TurnCandidate {
+  cell: GridPosition;              // Aktuelle Position
+  budgetRemaining: TurnBudget;     // Verbleibendes Budget
+  actions: TurnAction[];           // Bisherige Aktionen in diesem Pfad
+  cumulativeValue: number;         // Summe aller bisherigen Action-Scores
+  priorActions: Action[];          // Für Bonus-Action Requirements (z.B. TWF)
+}
+
+/**
+ * Globale Best-Scores pro ActionSlot für Pruning-Schätzung.
+ * Ermöglicht aggressive Elimination: maxGain = action + bonus + movement
+ */
+export interface GlobalBestByType {
+  action: number;      // Bester Attack/Spell-Score global
+  bonusAction: number; // Bester Bonus-Action-Score global
+  movement: number;    // Beste Danger-Reduktion durch Movement
+}
+
 // ============================================================================
 // ATTACK RESOLUTION
 // ============================================================================
@@ -211,4 +265,37 @@ export interface RoundResult {
   enemyDPR: number;
   partyHPRemaining: number;
   enemyHPRemaining: number;
+}
+
+// ============================================================================
+// ACTION BASE VALUES CACHE
+// ============================================================================
+
+/**
+ * Gecachte Base-Values für Action-Target-Paarungen.
+ * Ermöglicht Trennung von stabilen Werten (gecacht) und situativen Modifiern (per Position).
+ *
+ * Cache-Key Format: {casterBaseName}-{actionId}:{targetId}
+ * z.B. "goblin-scimitar:fighter", "cleric-cure-wounds:wizard"
+ */
+export interface ActionBaseValues {
+  // Damage Component (Attack Roll)
+  baseDamageEV?: number;        // Expected Value des Damage (Würfel + Modifier)
+  baseHitChance?: number;       // Hit-Chance gegen Standard-AC (ohne situative Modifiers)
+
+  // Damage Component (Save-based, z.B. Fireball)
+  baseSaveFailChance?: number;  // Save-Fail-Chance (1 - typischer Save-Bonus / DC)
+
+  // Healing Component
+  baseHealEV?: number;          // Expected Value des Heals (Würfel + Modifier)
+
+  // Control Component
+  baseControlDuration?: number; // Erwartete Condition-Duration (Runden)
+  baseSuccessProb?: number;     // Wahrscheinlichkeit dass Condition angewendet wird
+
+  // Buff Component
+  baseOffensiveMultiplier?: number;  // z.B. 0.125 für Bless (+2.5 to-hit × 0.05)
+  baseDefensiveMultiplier?: number;  // z.B. 0.10 für Shield of Faith (+2 AC × 0.05)
+  baseExtraActions?: number;         // z.B. 1 für Haste
+  baseDuration?: number;             // Erwartete Buff-Duration (Runden)
 }

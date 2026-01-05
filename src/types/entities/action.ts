@@ -274,6 +274,20 @@ export const movementBehaviorSchema = z.object({
 });
 export type MovementBehavior = z.infer<typeof movementBehaviorSchema>;
 
+/** Voraussetzung für Bonus Actions (TWF, Flurry) */
+export const actionRequirementSchema = z.object({
+  actionType: z.array(actionTypeSchema).optional(),  // z.B. ['melee-weapon']
+  properties: z.array(z.string()).optional(),        // z.B. ['light']
+  sameTarget: z.boolean().optional(),                // Gleiches Target? (für zukünftige Features)
+});
+export type ActionRequirement = z.infer<typeof actionRequirementSchema>;
+
+/** Action-Voraussetzungen (z.B. TWF erfordert vorherigen Light-Melee-Attack) */
+export const actionRequiresSchema = z.object({
+  priorAction: actionRequirementSchema.optional(),
+});
+export type ActionRequires = z.infer<typeof actionRequiresSchema>;
+
 /** Eingehende Angriffs-Modifikatoren (für Dodge, Blur, etc.) */
 export const incomingModifiersSchema = z.object({
   attacks: advantageStateSchema.optional(),  // 'advantage' | 'disadvantage'
@@ -471,6 +485,9 @@ export const actionSchema = z.object({
   description: z.string().optional(),
   properties: z.array(z.string()).optional(),
   source: actionSourceSchema.optional(),
+
+  // Bonus Action Requirements (TWF, Flurry, etc.)
+  requires: actionRequiresSchema.optional(),
 }).superRefine((data, ctx) => {
   // Invariante 1: Genau einer von attack/save/contested/autoHit muss gesetzt sein
   const resolutionCount = [

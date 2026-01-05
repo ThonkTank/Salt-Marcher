@@ -1,5 +1,5 @@
 // Ziel: Plugin-basiertes System für situative Combat-Modifikatoren
-// Siehe: docs/services/combatSimulator/combatantAI.md
+// Siehe: docs/services/combatSimulator/actionScoring.md#situational-modifiers
 //
 // Architektur:
 // - ModifierEvaluator Interface für einzelne Modifier-Plugins
@@ -14,7 +14,10 @@
 // Keine Core-Änderungen nötig!
 
 import type { Action } from '@/types/entities';
-import type { GridPosition } from '@/utils';
+import type { GridPosition, ConditionState } from '@/types/combat';
+
+// Re-export ConditionState für Consumer
+export type { ConditionState } from '@/types/combat';
 
 // ============================================================================
 // MODIFIER EFFECT TYPES
@@ -47,19 +50,9 @@ export interface SituationalModifiers {
 }
 
 // ============================================================================
-// CONDITION STATE (für Combatant Conditions)
-// ============================================================================
-
-/** Condition-State für Combatants */
-export interface ConditionState {
-  name: string;
-  probability?: number;          // Für probabilistische Conditions
-  effect?: 'incapacitated' | 'disadvantage' | 'other';
-}
-
-// ============================================================================
 // MODIFIER CONTEXT
 // ============================================================================
+// ConditionState wird aus @/types/combat importiert (Single Source of Truth)
 
 /** Kontext für einen einzelnen Combatant */
 export interface CombatantContext {

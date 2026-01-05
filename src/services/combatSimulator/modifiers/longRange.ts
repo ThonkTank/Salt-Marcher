@@ -1,5 +1,5 @@
 // Ziel: Long Range Disadvantage Modifier
-// Siehe: docs/services/combatSimulator/combatantAI.md
+// Siehe: docs/services/combatSimulator/actionScoring.md#situational-modifiers
 //
 // D&D 5e Regel: Angriffe jenseits der Normal Range aber innerhalb
 // der Long Range haben Disadvantage.

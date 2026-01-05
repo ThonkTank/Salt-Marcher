@@ -475,7 +475,7 @@ Bewegung wird durch Attraction/Repulsion-Vektoren bestimmt. Jeder Combatant uebt
 
 Die Summe aller Vektoren ergibt die optimale Bewegungsrichtung.
 
-> **Implementierung:** [combatantAI.md](../combatSimulator/combatantAI.md#movement-algorithmus)
+> **Implementierung:** [turnExploration.md](../combatSimulator/turnExploration.md)
 >
 > | Funktion | Beschreibung |
 > |----------|--------------|
@@ -489,7 +489,7 @@ Die Summe aller Vektoren ergibt die optimale Bewegungsrichtung.
 
 Aktionen werden basierend auf Expected Value ausgewaehlt. Das TurnBudget-System ermoeglicht granulare Schritt-fuer-Schritt Evaluation.
 
-> **Implementierung:** [combatantAI.md](../combatSimulator/combatantAI.md#action-selection-algorithmus)
+> **Implementierung:** [actionScoring.md](../combatSimulator/actionScoring.md)
 >
 > | Funktion | Beschreibung |
 > |----------|--------------|

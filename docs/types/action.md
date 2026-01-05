@@ -35,6 +35,7 @@ Weapon-Attacks, Spell-Attacks, AoE, Buffs/Debuffs, Healing, Summoning, Transform
 | `critical` | `Critical?` | Kritische Treffer | Optional |
 | `hpThreshold` | `HpThreshold?` | HP-basierte Effekte | Optional |
 | `recharge` | `ActionRecharge?` | Wiederaufladung | Optional |
+| `requires` | `ActionRequires?` | Voraussetzungen (fuer Bonus Actions) | Optional |
 | `spellSlot` | `SpellSlot?` | Zauberplatz | Optional |
 | `components` | `SpellComponents?` | Zauberkomponenten | Optional |
 | `concentration` | `boolean?` | Erfordert Konzentration | Optional |
@@ -89,6 +90,7 @@ type ActionSource = 'class' | 'race' | 'item' | 'spell' | 'innate' | 'lair';
 | `count` | `number?` | Max Anzahl bei 'multiple' |
 | `aoe` | `Aoe?` | AoE-Details bei 'area' |
 | `friendlyFire` | `boolean?` | Trifft auch Verbuendete? |
+| `includeSelf` | `boolean?` | Kann der Caster sich selbst targeten? Default: false |
 
 ---
 
@@ -442,6 +444,42 @@ interface CounterCheck {
 | `comparison` | `'below' \| 'above' \| 'equal-or-below'` | Vergleich |
 | `effect` | `ActionEffect` | Effekt wenn erfuellt |
 | `failEffect` | `ActionEffect?` | Effekt wenn nicht erfuellt |
+
+### ActionRequires
+
+Voraussetzungen fuer Bonus Actions (z.B. TWF Off-Hand Attack).
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `priorAction` | `ActionRequirement?` | Erfordert vorherige Aktion |
+
+### ActionRequirement
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `actionType` | `ActionType[]?` | Erforderlicher Aktionstyp (z.B. `['melee-weapon']`) |
+| `properties` | `string[]?` | Erforderliche Waffen-Eigenschaften (z.B. `['light']`) |
+| `sameTarget` | `boolean?` | Gleiches Target wie vorherige Aktion? |
+
+**Beispiel: TWF Off-Hand Attack**
+
+```typescript
+const twfOffHand: Action = {
+  name: 'Off-Hand Attack',
+  actionType: 'melee-weapon',
+  timing: { type: 'bonus' },
+  requires: {
+    priorAction: {
+      actionType: ['melee-weapon'],
+      properties: ['light'],
+    },
+  },
+  range: { type: 'reach', normal: 5 },
+  targeting: { type: 'single' },
+  attack: { bonus: 4 },
+  damage: { dice: '1d6', modifier: 0, type: 'slashing' },  // Kein Modifier bei Off-Hand
+};
+```
 
 ---
 

@@ -1,5 +1,5 @@
 // Ziel: Bootstrap für Modifier-Plugins
-// Siehe: docs/services/combatSimulator/combatantAI.md
+// Siehe: docs/services/combatSimulator/actionScoring.md#situational-modifiers
 //
 // Importiert alle Modifier-Plugins, wodurch sie sich automatisch
 // in der globalen ModifierRegistry registrieren.
@@ -14,15 +14,19 @@
 // ============================================================================
 
 import './longRange';
-// import './proneTarget';      // TODO: Phase 2
-// import './packTactics';      // TODO: Phase 3
-// import './restrained';       // TODO: Phase 3
-// import './cover';            // TODO: Phase 4
-// import './higherGround';     // TODO: Phase 4
-// import './flanking';         // TODO: Phase 4
+import './proneTarget';
+import './restrained';
+import './packTactics';
+import './cover';
+// import './higherGround';     // TODO: Phase 8
+// import './flanking';         // TODO: Phase 8
 
 // ============================================================================
 // RE-EXPORTS
 // ============================================================================
 
 export { longRangeModifier } from './longRange';
+export { proneTargetModifier } from './proneTarget';
+export { restrainedModifier } from './restrained';
+export { packTacticsModifier } from './packTactics';
+export { coverModifier } from './cover';

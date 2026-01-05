@@ -188,16 +188,16 @@ export function simulatePMF(
   party: PartyInput,
   encounterDistance: number = DEFAULT_ENCOUNTER_DISTANCE_FEET
 ): SimulationResult {
-  // Profiles erstellen
+  // Resource Budget berechnen (vor Profile-Erstellung für Ressourcen-Skalierung)
+  const encounterXP = aggregateGroupXP(groups);
+  const resourceBudget = calculateResourceBudget(encounterXP, party.level, party.size);
+
+  // Profiles erstellen (mit resourceBudget für Spell Slots, Recharge, Per-Day)
   const partyProfiles = createPartyProfiles(party);
-  const enemyProfiles = createEnemyProfiles(groups);
+  const enemyProfiles = createEnemyProfiles(groups, resourceBudget);
 
   // Allianzen berechnen
   const alliances = calculateGroupRelations(groups);
-
-  // Resource Budget berechnen
-  const encounterXP = aggregateGroupXP(groups);
-  const resourceBudget = calculateResourceBudget(encounterXP, party.level, party.size);
 
   // Simulation State erstellen
   const initialState = createCombatState(
@@ -334,19 +334,23 @@ function executeAction(
       profile.position = turnAction.targetCell;
       break;
 
-    case 'attack': {
-      const resolution = resolveAttack(profile, turnAction.target, turnAction.action);
-      if (resolution) {
-        turnAction.target.hp = resolution.newTargetHP;
-        turnAction.target.deathProbability = resolution.newDeathProbability;
-        damageDealt = resolution.damageDealt;
+    case 'action': {
+      // Prüfe ob die Action ein Angriff ist (hat Target und ist kein Dash)
+      if (turnAction.target && turnAction.action.damage) {
+        const resolution = resolveAttack(profile, turnAction.target, turnAction.action);
+        if (resolution) {
+          turnAction.target.hp = resolution.newTargetHP;
+          turnAction.target.deathProbability = resolution.newDeathProbability;
+          damageDealt = resolution.damageDealt;
+        }
+      }
+      // grantMovement Actions (Dash) werden von executeTurn via applyDash behandelt
+      // targetCell Updates werden dort bereits gemacht
+      if (turnAction.targetCell) {
+        profile.position = turnAction.targetCell;
       }
       break;
     }
-
-    case 'dash':
-      // Dash-Effekt wird in consumeBudget via applyDash behandelt
-      break;
 
     case 'pass':
       // Nichts zu tun
@@ -372,7 +376,7 @@ function simulateTurn(
   });
 
   // executeTurn() entscheidet Movement + Actions via Cell-Evaluation
-  const actions = executeTurn(profile, state, budget);
+  const { actions } = executeTurn(profile, state, budget);
 
   // Aktionen ausführen und Damage tracken
   let totalDamageDealt = 0;

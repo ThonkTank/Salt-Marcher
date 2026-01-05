@@ -28,7 +28,7 @@ Perception-Berechnung fuer Encounters: In welcher Entfernung nimmt die Party das
 
 Die `initialDistance` bestimmt, in welcher Entfernung die Party die Encounter-Gruppe wahrnimmt. Die Berechnung basiert auf **Umgebungsfaktoren** (Terrain, Weather, Activity, Gruppen-/Kreatur-Groesse).
 
-**Hinweis:** Initial-Positioning fuer Combat-Simulation wird durch `initialDistance` bestimmt. Optimale Reichweiten werden dynamisch pro Matchup in [combatantAI.md](../combatSimulator/combatantAI.md#optimale-reichweite-dynamisch) berechnet.
+**Hinweis:** Initial-Positioning fuer Combat-Simulation wird durch `initialDistance` bestimmt. Optimale Reichweiten werden dynamisch pro Matchup in [actionScoring.md](../combatSimulator/actionScoring.md#optimale-reichweite-dynamisch) berechnet.
 
 ---
 

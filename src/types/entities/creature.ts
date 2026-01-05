@@ -166,6 +166,9 @@ const creatureDefinitionInputSchema = z.object({
   actionIds: z.array(z.string()).optional(),  // Referenzen zu Action-Presets
   reactions: z.array(actionSchema).optional(),
   legendaryActions: z.array(actionSchema).optional(),
+  // Spellcasting Resources: Level (1-9) → Anzahl Slots
+  // Siehe: docs/services/combatSimulator/actionScoring.md#resource-management
+  spellSlots: z.record(z.string(), z.number().int().nonnegative()).optional(),
   description: z.string().optional(),
   source: z.string().optional(),
 });
