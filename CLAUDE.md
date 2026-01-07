@@ -191,27 +191,46 @@ src/                   # Source code
     factions.ts  # Ziel: Faction-Presets: reputationWithParty zu reputations...
   services/
     combatantAI/
+      core/
+        actionEnumeration.ts  # Ziel: Action-Enumeration für Combat-AI
+        actionScoring.ts  # Ziel: Unified Action Scoring - alle Aktionstypen durch ei...
+        index.ts  # Ziel: Re-exports für core/ Module
+        stateProjection.ts  # Ziel: Immutable State-Operationen für Look-Ahead Algorithmen
+      helpers/
+        actionAvailability.ts  # Ziel: Konsolidierte Action-Availability-Logik fuer Combat-AI
+        actionSelection.ts  # Ziel: Candidate/Target-Filterung fuer Combat-AI
+        combatHelpers.ts  # Ziel: Gemeinsame Helper-Funktionen für Combat-AI, Combat-...
+        index.ts  # Ziel: Unified exports fuer Helper-Funktionen
+        pruningHelpers.ts  # Ziel: Pruning-Heuristiken für Combat-AI Kandidaten-Elimin...
+      layers/
+        baseResolution.ts  # Ziel: Base-Resolution Cache fuer Action-Target Kombinationen
+        debug.ts  # Ziel: Debug-Visualisierung fuer Layer-System
+        effectApplication.ts  # Ziel: Dynamische Effect-Anwendung auf Base-Resolution
+        escapeDanger.ts  # Ziel: Batch-optimierte Danger-Berechnung fuer Escape-Analyse
+        index.ts  # Ziel: Unified exports fuer Layer-System
+        initialization.ts  # Ziel: Layer-Initialisierung bei Combat-Start
+        positionUpdates.ts  # Ziel: Layer-Cache Invalidierung bei Positions-Aenderungen
+        reactionLayers.ts  # Ziel: Reaction/OA Evaluation und Kosten-Berechnung
+        threatMap.ts  # Ziel: ThreatMap-Queries fuer Position-Bewertung
       modifiers/
-        cover.ts  # Ziel: Cover Modifier - Half Cover (+2 AC) durch Kreaturen...
+        coreModifiers.ts  # Ziel: Schema-basierte Core Combat Modifiers
         index.ts  # Ziel: Bootstrap für Modifier-Plugins
-        longRange.ts  # Ziel: Long Range Disadvantage Modifier
-        packTactics.ts  # Ziel: Pack Tactics Modifier - Advantage wenn nicht-incapa...
-        proneTarget.ts  # Ziel: Prone Target Modifier - Advantage/Disadvantage basi...
-        rangedInMelee.ts  # Ziel: Ranged in Melee Disadvantage Modifier
-        restrained.ts  # Ziel: Restrained Modifier - Advantage auf alle Angriffe g...
-      actionAvailability.ts  # Ziel: Konsolidierte Action-Availability-Logik fuer Combat-AI
-      actionScoring.ts  # Ziel: Unified Action Scoring - alle Aktionstypen durch ei...
-      actionSelection.ts  # Ziel: Candidate/Target-Filterung fuer Combat-AI
-      combatantAI.ts  # Ziel: Entscheidungslogik fuer Combat-AI: Action/Target-Au...
-      combatHelpers.ts  # Ziel: Gemeinsame Helper-Funktionen für Combat-AI, Combat-...
-      influenceMaps.ts  # Ziel: Layer-Erweiterung für Action/Effect Schemas
-      initialiseCombatants.ts  # Ziel: AI Layer-Initialisierung für Combat
+      selectors/
+        factoredSelector.ts  # Ziel: Factored Action Spaces Selector - Dekomposition in ...
+        greedySelector.ts  # Ziel: Greedy ActionSelector - wählt Aktion mit höchstem S...
+        index.ts  # Ziel: Unified exports für Selector-System
+        iterativeSelector.ts  # Ziel: Iterative Deepening Selector - Anytime-Suche mit Mo...
+        randomSelector.ts  # Ziel: Random ActionSelector - wählt zufällige Aktion aus ...
+        registry.ts  # Ziel: Selector-Registry für dynamische Algorithmus-Auswahl
+        types.ts  # Ziel: ActionSelector Interface und Konfiguration für aust...
+      expressionEvaluator.ts  # Ziel: Interpreter für Schema-driven Condition Expressions
+      index.ts  # Ziel: Public API für CombatantAI-Modul
+      schemaModifierAdapter.ts  # Ziel: Adapter von Schema-defined Modifiers zu ModifierEva...
+      selectNextAction.ts  # Ziel: Thin wrapper für Combat-AI Action-Selection
       situationalModifiers.ts  # Ziel: Plugin-basiertes System für situative Combat-Modifi...
-      turnExecution.ts  # Ziel: Turn-Planung und Ausfuehrung fuer Combat-AI
     combatTracking/
       combatState.ts  # Ziel: Zentraler Combat State-Container
-      combatTracking.ts  # Ziel: Combat State-Management und Action-Resolution
-      creatureCache.ts  # Ziel: Cache für geladene CreatureDefinitions + resolved A...
+      executeAction.ts  # Ziel: Action-Ausführung und Protocol-Logging
       index.ts  # Ziel: Combat-Tracking Service Index
       initialiseCombat.ts  # Ziel: Konsolidierte Combat-Initialisierung
     encounterGenerator/
@@ -243,6 +262,7 @@ src/                   # Source code
       action.ts  # Vault-persistierte Action-Definition
       activity.ts  # Vault-persistierte Activity-Definition
       character.ts  # Vault-persistierte Character-Entity (Player Characters)
+      conditionExpression.ts  # Ziel: Schema-driven Expression Language für situative Com...
       creature.ts  # Vault-persistierte CreatureDefinition und Runtime Creatur...
       culture.ts  # Vault-persistierte Culture-Entity
       faction.ts  # Vault-persistierte Faction
@@ -321,6 +341,7 @@ docs/                  # Authoritative documentation (German)
     Travel.md  # Hex-Overland-Reisen - Routen-Planung, Animationen, Encoun...
   handoff/
     influence-map-implementation.md  # ✅ Abgeschlossen (2026-01-06)
+    pmf-combat-convergence-bug.md  # ## Problem
   orchestration/
     CombatWorkflow.md  # Orchestration des Combat-Trackers
     EncounterWorkflow.md  # Orchestration der Encounter-Generierung und -Resolution
@@ -337,11 +358,15 @@ docs/                  # Authoritative documentation (German)
     mcts.md  # Research & Konzept-Analyse
   services/
     combatantAI/
-      actionScoring.md  # Bewertungslogik fuer Combat-Aktionen - wie wertvoll ist e...
+      algorithm-approaches.md  # ActionSelector Interface und Algorithmen-Vergleich
+      buildBaseActionLayer.md  # Layer-Initialisierung und Base-Resolution Cache bei Comba...
+      buildPossibleActions.md  # Generiert alle gueltigen Action/Target/Position Kombinati...
+      buildThreatMap.md  # Position-Bewertung fuer Combat-AI - wie gefaehrlich/nuetz...
       combatantAI.md  # AI-Entscheidungslogik fuer Combat - was soll eine Kreatur...
-      influenceMaps.md  # Action Layer System fuer Combat-AI - Schema-Erweiterung m...
-      initialiseCombatants.md  # Konsolidierte Combatant-Initialisierung für Combat-Simula...
-      turnExecution.md  # Turn-Planung und Ausfuehrung fuer Combat-AI
+      getRelevantCells.md  # Berechnet erreichbare Zellen mit Movement-Kosten
+      planNextAction.md  # Entry Point und Orchestration der Action-Selection
+      scoreAction.md  # DPR-basierte Aktionsbewertung + situative Modifier-Anwendung
+      simulationState.md  # Hypothetisches State-Management fuer AI Look-Ahead
     encounter/
       balancing.md  # Encounter-Service (Step 6.1)
       difficulty.md  # Encounter-Service (Step 5)

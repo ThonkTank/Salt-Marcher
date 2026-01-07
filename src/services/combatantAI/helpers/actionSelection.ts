@@ -16,7 +16,7 @@ import type { Combatant, CombatantSimulationState } from '@/types/combat';
 import {
   getGroupId,
   getDeathProbability,
-} from '../combatTracking';
+} from '../../combatTracking';
 import { isHostile, isAllied } from './combatHelpers';
 
 // ============================================================================

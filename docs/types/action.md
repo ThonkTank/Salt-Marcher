@@ -307,8 +307,10 @@ type TerrainEffect = 'difficult' | 'magical-darkness' | 'silence' | 'fog';
 | `triggerCondition` | `TriggerCondition?` | Strukturierter Ausloeser |
 
 ```typescript
-type ActionTimingType = 'action' | 'bonus' | 'reaction' | 'legendary' | 'lair' | 'mythic' | 'free';
+type ActionTimingType = 'action' | 'bonus' | 'reaction' | 'legendary' | 'lair' | 'mythic' | 'free' | 'passive';
 ```
+
+**passive:** Fuer Creature-Traits (Pack Tactics, Magic Resistance, etc.) - keine Resolution erforderlich.
 
 ### TriggerCondition
 
@@ -499,7 +501,7 @@ const twfOffHand: Action = {
 
 ## Invarianten
 
-- **Resolution**: Genau einer von `attack`, `save`, `contested`, oder `autoHit` muss gesetzt sein
+- **Resolution**: Genau einer von `attack`, `save`, `contested`, oder `autoHit` muss gesetzt sein (Ausnahme: `timing.type = 'passive'`)
 - Bei `actionType: 'aoe'` muss `targeting.aoe` gesetzt sein
 - Bei `actionType: 'multiattack'` muss `multiattack` gesetzt sein
 - Bei `timing.type: 'reaction'` sollte `trigger` oder `triggerCondition` gesetzt sein
@@ -697,6 +699,72 @@ const dodge: Action = {
     incomingModifiers: { attacks: 'disadvantage' },
     rollModifiers: [{ on: 'dex-save', type: 'advantage' }],
     duration: { type: 'rounds', value: 1 },
+    affectsTarget: 'self'
+  }]
+};
+```
+
+---
+
+## Passive Traits als Actions
+
+Creature-Traits werden als Actions mit `timing.type = 'passive'` modelliert:
+
+- **Keine Resolution** - weder `attack`, `save`, `contested` noch `autoHit`
+- **Nur `effects` Feld** - definiert den passiven Effekt
+- **Werden bei Combat-Start in Effect-Layers umgewandelt**
+
+→ Siehe [combatantAI.md](../services/combatantAI/combatantAI.md#passive-traits-als-actions) fuer Combat-Integration.
+
+### Pack Tactics
+
+```typescript
+const packTactics: Action = {
+  id: 'trait-pack-tactics',
+  name: 'Pack Tactics',
+  actionType: 'buff',
+  timing: { type: 'passive' },
+  range: { type: 'self', normal: 0 },
+  targeting: { type: 'single', validTargets: 'self' },
+  // Keine Resolution (kein attack/save/contested/autoHit)
+  effects: [{
+    rollModifiers: [{ on: 'attacks', type: 'advantage', against: 'ally-adjacent-to-target' }],
+    affectsTarget: 'self'
+  }]
+};
+```
+
+### Magic Resistance
+
+```typescript
+const magicResistance: Action = {
+  id: 'trait-magic-resistance',
+  name: 'Magic Resistance',
+  actionType: 'buff',
+  timing: { type: 'passive' },
+  range: { type: 'self', normal: 0 },
+  targeting: { type: 'single', validTargets: 'self' },
+  effects: [{
+    rollModifiers: [{ on: 'saves', type: 'advantage', against: 'spells' }],
+    affectsTarget: 'self'
+  }]
+};
+```
+
+### Legendary Resistance
+
+```typescript
+const legendaryResistance: Action = {
+  id: 'trait-legendary-resistance',
+  name: 'Legendary Resistance',
+  actionType: 'buff',
+  timing: { type: 'passive' },
+  range: { type: 'self', normal: 0 },
+  targeting: { type: 'single', validTargets: 'self' },
+  recharge: { type: 'per-day', uses: 3 },
+  // Keine Resolution - wird durch Effect-Layer bei Save-Failure aktiviert
+  effects: [{
+    rollModifiers: [{ on: 'saves', type: 'auto-success' }],
     affectsTarget: 'self'
   }]
 };

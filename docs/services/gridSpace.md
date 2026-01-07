@@ -64,6 +64,25 @@ function getCellsInRange(
 
 Gibt alle Cells innerhalb einer Reichweite zurück (PHB-Variant Distanz).
 
+## Position-Key Format
+
+**Standard:** `"${x},${y},${z}"` (3D, Komma-separiert)
+
+```typescript
+function cellKey(pos: GridPosition): string {
+  return `${pos.x},${pos.y},${pos.z}`;
+}
+
+function parseKey(key: string): GridPosition {
+  const [x, y, z] = key.split(',').map(Number);
+  return { x, y, z };
+}
+```
+
+**Verwendung:** Alle Map-Keys (terrain, combatantPositions, cache) verwenden dieses Format.
+
+---
+
 ## Konstanten
 
 | Konstante | Wert | Beschreibung |

@@ -2,16 +2,19 @@
 // Siehe: docs/services/combatTracking.md
 //
 // Enthält:
+// - Creature Cache (getResolvedCreature, preloadCreatures, clearCreatureCache)
 // - CombatStateWithScoring Interface (erweitert CombatStateWithLayers mit baseValuesCache)
 // - Combatant Accessors (getHP, getAC, getSpeed, etc.)
 // - Combatant Setters (setHP, setPosition, setConditions, etc.)
 // - Turn Management (advanceTurn, getCurrentCombatant, isCombatOver)
+// - Turn Budget (createTurnBudget, consumeMovement, consumeAction, etc.)
 
-import type { Action } from '@/types/entities';
+import type { Action, CreatureDefinition } from '@/types/entities';
 import type { AbilityScores } from '@/types/entities/creature';
 import {
   calculateDeathProbability,
 } from '@/utils';
+import { vault } from '@/infrastructure/vault/vaultInstance';
 
 // Types aus @/types/combat (Single Source of Truth)
 import type {
@@ -24,10 +27,9 @@ import type {
   CombatState,
   CombatStateWithLayers,
   ActionBaseValues,
+  TurnBudget,
 } from '@/types/combat';
 import { isNPC } from '@/types/combat';
-
-import { getResolvedCreature } from './creatureCache';
 
 // ============================================================================
 // DEBUG HELPER
@@ -38,6 +40,118 @@ const debug = (...args: unknown[]) => {
     console.log('[combatState]', ...args);
   }
 };
+
+// ============================================================================
+// CREATURE CACHE
+// ============================================================================
+
+/** Cache-Entry mit CreatureDefinition + resolved Actions. */
+export interface ResolvedCreature {
+  definition: CreatureDefinition;
+  actions: Action[];  // Resolved: creature.actions + actionIds aus Vault
+}
+
+const creatureCache = new Map<string, ResolvedCreature>();
+
+/**
+ * Resolved Actions aus creature.actions + actionIds.
+ * Falls keine Actions vorhanden: Default-Action basierend auf CR.
+ */
+function resolveActions(creature: CreatureDefinition): Action[] {
+  const actions: Action[] = [...(creature.actions ?? [])];
+
+  // Lade referenzierte Actions aus Vault
+  if (creature.actionIds?.length) {
+    for (const actionId of creature.actionIds) {
+      try {
+        const action = vault.getEntity<Action>('action', actionId);
+        actions.push(action);
+        debug('resolved actionId:', actionId);
+      } catch {
+        debug('actionId not found, skipping:', actionId);
+      }
+    }
+  }
+
+  // Fallback: Default-Action wenn keine Actions vorhanden
+  if (actions.length === 0) {
+    debug('no actions, using default for CR:', creature.cr);
+    actions.push(getDefaultCreatureAction(creature.cr));
+  }
+
+  return actions;
+}
+
+/**
+ * Generiert Default-Action für Creature ohne Actions.
+ * CR-skalierte Natural Attack.
+ */
+function getDefaultCreatureAction(cr: number): Action {
+  const attackBonus = Math.max(2, Math.floor(cr) + 3);
+  const damageBonus = Math.max(1, Math.floor(cr));
+  const diceCount = Math.max(1, Math.floor(cr / 3));
+
+  return {
+    name: 'Natural Attack',
+    actionType: 'melee-weapon',
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single' },
+    attack: { bonus: attackBonus },
+    damage: { dice: `${diceCount}d6`, modifier: damageBonus, type: 'bludgeoning' },
+  } as unknown as Action;
+}
+
+/**
+ * Lädt CreatureDefinition mit resolved Actions (gecached).
+ * Wiederverwendbar für NPCs mit gleichem Creature-Typ.
+ */
+export function getResolvedCreature(creatureId: string): ResolvedCreature {
+  const cached = creatureCache.get(creatureId);
+  if (cached) {
+    debug('cache hit:', creatureId);
+    return cached;
+  }
+
+  debug('cache miss, loading:', creatureId);
+  const definition = vault.getEntity<CreatureDefinition>('creature', creatureId);
+  const actions = resolveActions(definition);
+
+  const resolved: ResolvedCreature = { definition, actions };
+  creatureCache.set(creatureId, resolved);
+
+  debug('cached:', creatureId, { actionsCount: actions.length });
+  return resolved;
+}
+
+/**
+ * Lädt mehrere CreatureDefinitions auf einmal (batch).
+ * Optimiert für Encounter mit mehreren Creature-Typen.
+ */
+export function preloadCreatures(creatureIds: string[]): void {
+  const uniqueIds = [...new Set(creatureIds)];
+  for (const id of uniqueIds) {
+    if (!creatureCache.has(id)) {
+      getResolvedCreature(id);
+    }
+  }
+  debug('preloaded:', uniqueIds.length, 'creatures');
+}
+
+/** Cache leeren (z.B. bei Session-Ende oder Vault-Änderung). */
+export function clearCreatureCache(): void {
+  const size = creatureCache.size;
+  creatureCache.clear();
+  debug('cleared cache:', size, 'entries');
+}
+
+/** Cache-Statistiken für Debugging. */
+export function getCreatureCacheStats(): { size: number; ids: string[] } {
+  return {
+    size: creatureCache.size,
+    ids: [...creatureCache.keys()],
+  };
+}
 
 // ============================================================================
 // COMBAT STATE WITH SCORING
@@ -211,6 +325,47 @@ export function getResources(c: Combatant): CombatResources | undefined {
 }
 
 // ============================================================================
+// DEAD COMBATANT MANAGEMENT (Zentrale Stelle für Death-Checks)
+// ============================================================================
+//
+// Diese Funktionen sind die EINZIGE Stelle im Code, die mit isDead arbeitet.
+// Alle anderen Stellen verwenden getAliveCombatants() oder isAlive().
+
+/**
+ * Markiert Combatants als tot wenn deathProb >= 0.95.
+ * EINZIGE Stelle wo isDead gesetzt wird.
+ * Aufrufen nach jeder Schadensanwendung in executeAction().
+ * Akzeptiert CombatState, CombatantSimulationState, und *WithLayers Varianten.
+ */
+export function markDeadCombatants(state: { combatants: Combatant[] }): void {
+  for (const c of state.combatants) {
+    if (!c.combatState.isDead && getDeathProbability(c) >= 0.95) {
+      c.combatState.isDead = true;
+      debug('combatant marked dead:', c.name, c.id, 'deathProb:', getDeathProbability(c));
+    }
+  }
+}
+
+/**
+ * Gibt nur lebende Combatants zurück.
+ * EINZIGER Accessor für Target-Selection, Turn-Order, etc.
+ * Akzeptiert CombatState, CombatantSimulationState, und *WithLayers Varianten.
+ */
+export function getAliveCombatants<T extends Combatant>(
+  state: { combatants: T[] }
+): T[] {
+  return state.combatants.filter(c => !c.combatState.isDead);
+}
+
+/**
+ * Prüft ob Combatant lebt.
+ * Convenience-Funktion für einzelne Combatants.
+ */
+export function isAlive(c: Combatant): boolean {
+  return !c.combatState.isDead;
+}
+
+// ============================================================================
 // COMBATANT SETTERS (für Mutationen während Simulation)
 // ============================================================================
 
@@ -274,22 +429,48 @@ export function setResources(c: Combatant, resources: CombatResources): void {
 // ============================================================================
 
 /**
- * Wechselt zum nächsten Combatant in der Initiative-Reihenfolge.
+ * Wechselt zum nächsten LEBENDEN Combatant in der Initiative-Reihenfolge.
+ * Überspringt automatisch tote Combatants (isDead === true).
  * Erhöht roundNumber wenn alle Combatants an der Reihe waren.
+ * Erstellt neues TurnBudget für den nächsten Combatant.
  *
  * @param state CombatState mit turnOrder und currentTurnIndex
  */
 export function advanceTurn(state: CombatState): void {
-  state.currentTurnIndex++;
-  if (state.currentTurnIndex >= state.turnOrder.length) {
-    state.currentTurnIndex = 0;
-    state.roundNumber++;
+  const startIndex = state.currentTurnIndex;
+  let loopCount = 0;
+  const maxLoops = state.turnOrder.length + 1;
+
+  // Zum nächsten LEBENDEN Combatant wechseln
+  do {
+    state.currentTurnIndex++;
+    if (state.currentTurnIndex >= state.turnOrder.length) {
+      state.currentTurnIndex = 0;
+      state.roundNumber++;
+    }
+    loopCount++;
+
+    // Safety: Verhindere Endlosschleife wenn alle tot sind
+    if (loopCount > maxLoops) {
+      debug('advanceTurn: alle Combatants tot, breche ab');
+      break;
+    }
+  } while (
+    state.combatants.find(c => c.id === state.turnOrder[state.currentTurnIndex])
+      ?.combatState.isDead === true
+  );
+
+  // Neues Budget für nächsten Combatant
+  const nextCombatant = getCurrentCombatant(state);
+  if (nextCombatant && !nextCombatant.combatState.isDead) {
+    state.currentTurnBudget = createTurnBudget(nextCombatant);
   }
 
   debug('advanceTurn:', {
     newIndex: state.currentTurnIndex,
     roundNumber: state.roundNumber,
     currentCombatantId: state.turnOrder[state.currentTurnIndex],
+    skipped: loopCount - 1,
   });
 }
 
@@ -306,34 +487,28 @@ export function getCurrentCombatant(state: CombatState): Combatant | undefined {
 }
 
 /**
- * Prüft ob der Combat beendet ist (eine Seite ist besiegt).
- * Eine Seite gilt als besiegt wenn die Todeswahrscheinlichkeit >95% ist.
+ * Prüft ob der Combat beendet ist (eine Seite hat keine Lebenden mehr).
+ * Verwendet getAliveCombatants() - keine probabilistischen Berechnungen mehr.
  *
  * @param state CombatState mit combatants und alliances
  * @returns true wenn Combat beendet ist
  */
 export function isCombatOver(state: CombatState): boolean {
-  // Berechne Todeswahrscheinlichkeit für Party-Allianz
-  const partyAllied = state.combatants.filter(c =>
+  const alive = getAliveCombatants(state);
+
+  const partyAlive = alive.filter(c =>
     isAlliedToParty(c.combatState.groupId, state.alliances)
   );
-  const partyDeathProb = partyAllied.length === 0
-    ? 1
-    : partyAllied.reduce((prob, c) => prob * getDeathProbability(c), 1.0);
-
-  // Berechne Todeswahrscheinlichkeit für Feinde
-  const enemies = state.combatants.filter(c =>
+  const enemiesAlive = alive.filter(c =>
     isHostileToParty(c.combatState.groupId, state.alliances)
   );
-  const enemyDeathProb = enemies.length === 0
-    ? 1
-    : enemies.reduce((prob, c) => prob * getDeathProbability(c), 1.0);
 
-  const isOver = partyDeathProb > 0.95 || enemyDeathProb > 0.95;
+  // Combat ist vorbei wenn eine Seite keine Lebenden mehr hat
+  const isOver = partyAlive.length === 0 || enemiesAlive.length === 0;
 
   debug('isCombatOver:', {
-    partyDeathProb,
-    enemyDeathProb,
+    partyAlive: partyAlive.length,
+    enemiesAlive: enemiesAlive.length,
     isOver,
   });
 
@@ -352,4 +527,70 @@ function isHostileToParty(groupId: string, alliances: Record<string, string[]>):
   if (groupId === 'party') return false;
   const partyAllies = alliances['party'] ?? [];
   return !partyAllies.includes(groupId);
+}
+
+// ============================================================================
+// TURN BUDGET FUNCTIONS
+// ============================================================================
+
+/**
+ * Prüft ob ein Combatant Bonus Actions hat.
+ * Bonus Actions sind Actions mit timing.type === 'bonus'.
+ */
+export function hasAnyBonusAction(combatant: Combatant): boolean {
+  return getActions(combatant).some(a => a.timing.type === 'bonus');
+}
+
+/** Erstellt TurnBudget aus Combatant. */
+export function createTurnBudget(combatant: Combatant): TurnBudget {
+  const speed = getSpeed(combatant);
+  const walkSpeed = speed.walk ?? 30;
+  const movementCells = Math.floor(walkSpeed / 5);
+
+  debug('createTurnBudget:', {
+    id: combatant.id,
+    walkSpeed,
+    movementCells,
+  });
+
+  return {
+    movementCells,
+    baseMovementCells: movementCells,
+    hasAction: true,
+    hasDashed: false,
+    hasBonusAction: hasAnyBonusAction(combatant),
+    hasReaction: true,
+  };
+}
+
+/** Prüft ob noch sinnvolle Aktionen möglich sind. */
+export function hasBudgetRemaining(budget: TurnBudget): boolean {
+  return budget.movementCells > 0 || budget.hasAction || budget.hasBonusAction;
+}
+
+/** Verbraucht Movement-Cells (1 Cell = 5ft). */
+export function consumeMovement(budget: TurnBudget, cells: number = 1): void {
+  budget.movementCells = Math.max(0, budget.movementCells - cells);
+}
+
+/** Verbraucht die Action für diesen Zug. */
+export function consumeAction(budget: TurnBudget): void {
+  budget.hasAction = false;
+}
+
+/** Verbraucht die Bonus Action für diesen Zug. */
+export function consumeBonusAction(budget: TurnBudget): void {
+  budget.hasBonusAction = false;
+}
+
+/** Verbraucht die Reaction. */
+export function consumeReaction(budget: TurnBudget): void {
+  budget.hasReaction = false;
+}
+
+/** Dash fügt die Basis-Bewegungsrate hinzu und verbraucht die Action. */
+export function applyDash(budget: TurnBudget): void {
+  budget.movementCells += budget.baseMovementCells;
+  budget.hasAction = false;
+  budget.hasDashed = true;
 }

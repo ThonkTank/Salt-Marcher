@@ -16,7 +16,7 @@ export const characterPresets = [
     level: 5,
     class: 'Fighter',
     maxHp: 44,
-    currentHp: 44,
+    currentHp: [[44, 1]],
     ac: 18,
     passivePerception: 12,
     passiveStealth: 10,  // DEX-Mod 0, keine Proficiency
@@ -31,7 +31,7 @@ export const characterPresets = [
     level: 5,
     class: 'Wizard',
     maxHp: 27,
-    currentHp: 27,
+    currentHp: [[27, 1]],
     ac: 13,
     passivePerception: 14,
     passiveStealth: 12,  // DEX-Mod +2

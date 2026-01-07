@@ -18,18 +18,16 @@ Der combatTracking Service ist UI-orientiert und ermöglicht einfache Combat-Tra
 ```
 src/services/combatTracking/
 ├── index.ts           # Öffentliche API (alle Exports)
-├── initialiseCombat.ts # Konsolidierte Combat-Initialisierung (inkl. AI-Layers)
-├── combatState.ts     # Combatant Accessors, Setters, Turn Management
-├── combatTracking.ts  # Turn Budget, Action Resolution, Reactions
-└── creatureCache.ts   # Creature-Caching für NPCs
+├── combatState.ts     # Creature Cache, Combatant Accessors/Setters, Turn Management, Turn Budget
+├── initialiseCombat.ts # Combat-Initialisierung (Combatants, Grid, Resources, AI-Layers)
+└── executeAction.ts   # Action-Ausführung, Resolution, Reactions, Protocol
 ```
 
 | Datei | Zweck |
 |-------|-------|
-| `initialiseCombat.ts` | Combat + AI Layer Initialisierung: Combatants, Grid, Resources, Layer-Daten |
-| `combatState.ts` | State-Container: Accessors/Setters für Combatant-Daten, Turn Management, `CombatStateWithScoring` |
-| `combatTracking.ts` | Action Resolution: Attack-Resolution, Reactions, Turn Budget |
-| `creatureCache.ts` | Performance: Cached Creature-Lookups für NPCs |
+| `combatState.ts` | Creature Cache, State-Container, Accessors/Setters, Turn Budget |
+| `initialiseCombat.ts` | Combat + AI Layer Initialisierung |
+| `executeAction.ts` | Action-Ausführung, Resolution, Reactions (Action-by-Action) |
 
 ---
 

@@ -56,7 +56,7 @@ import {
   getGroupId,
   getPosition,
   getConditions,
-} from '../combatTracking';
+} from '../../combatTracking';
 import {
   diceExpressionToPMF,
   getExpectedValue,
@@ -69,15 +69,14 @@ import {
   isAllied,
   calculateHitChance,
   calculateMultiattackDamage,
-} from './combatHelpers';
+} from '../helpers/combatHelpers';
 import {
   evaluateSituationalModifiers,
   type ModifierContext,
   type CombatantContext,
   type SituationalModifiers,
-} from './situationalModifiers';
-// Bootstrap: Auto-registriert alle Modifier (Side-Effect Import)
-import './modifiers';
+} from '../situationalModifiers';
+// Note: Core modifiers are registered in combatantAI/index.ts to avoid circular dependencies
 
 // ============================================================================
 // DEBUG HELPER
@@ -124,7 +123,7 @@ import {
   calculateEffectiveDamagePotential,
   calculateDamagePotential,
   calculateSaveFailChance,
-} from './combatHelpers';
+} from '../helpers/combatHelpers';
 
 /**
  * Berechnet erwarteten eingehenden DPR fuer einen Ally. HACK: siehe Header
@@ -348,7 +347,7 @@ import {
   getCandidates,
   getEnemies,
   getAllies,
-} from './actionSelection';
+} from '../helpers/actionSelection';
 
 // ============================================================================
 // ACTION/TARGET SCORING

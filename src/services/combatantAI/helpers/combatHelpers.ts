@@ -26,13 +26,13 @@ import {
   createSingleValue,
   getExpectedValue,
 } from '@/utils';
-import type { SituationalModifiers } from './situationalModifiers';
+import type { SituationalModifiers } from '../situationalModifiers';
 import {
   getAbilities,
   getSaveProficiencies,
   getCR,
   getActions,
-} from '../combatTracking';
+} from '../../combatTracking';
 
 // ============================================================================
 // MULTIATTACK RESOLUTION

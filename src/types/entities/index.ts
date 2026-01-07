@@ -168,6 +168,29 @@ export {
   LOOT_CONTAINER_STATUSES,
 } from './lootContainer';
 
+// ConditionExpression (Schema-driven Modifier DSL)
+export {
+  conditionExpressionSchema,
+  type ConditionExpression,
+  type AndExpression,
+  type OrExpression,
+  type NotExpression,
+  type ExistsExpression,
+  schemaModifierSchema,
+  type SchemaModifier,
+  schemaModifierEffectSchema,
+  type SchemaModifierEffect,
+  quantifiedEntitySchema,
+  type QuantifiedEntity,
+  entityRefSchema,
+  type EntityRef,
+  // Constants
+  ENTITY_REFS,
+  ENTITY_FILTERS,
+  QUANTIFIERS,
+  HP_COMPARISONS,
+} from './conditionExpression';
+
 // Action
 export {
   actionSchema,

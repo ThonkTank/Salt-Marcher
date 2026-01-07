@@ -15,38 +15,33 @@ export {
 } from './initialiseCombat';
 
 // ============================================================================
-// TYPES (re-exported from @/types/combat)
+// ACTION EXECUTION (executeAction.ts)
 // ============================================================================
 
-export type {
-  ProbabilityDistribution,
-  GridPosition,
-  GridConfig,
-  SpeedBlock,
-  ConditionState,
-  CombatResources,
-  SurpriseState,
-  // Combatant Types
-  Combatant,
-  NPCInCombat,
-  CharacterInCombat,
-  CombatantState,
-  CombatantSimulationState,
-  CombatState,
-  // Other Types
-  RoundResult,
-  AttackResolution,
-  TurnBudget,
-} from '@/types/combat';
-
-// Type Guards
-export { isNPC, isCharacter } from '@/types/combat';
+export {
+  executeAction,
+  // Action Resolution
+  resolveAttack,
+  resolveAttackWithReactions,
+  checkCounterspell,
+  processReactionTrigger,
+  // Types
+  type ActionResult,
+  type ReactionTrigger,
+  type AttackResolutionWithReactions,
+} from './executeAction';
 
 // ============================================================================
 // COMBATANT STATE (combatState.ts)
 // ============================================================================
 
 export {
+  // Creature Cache
+  getResolvedCreature,
+  preloadCreatures,
+  clearCreatureCache,
+  getCreatureCacheStats,
+  type ResolvedCreature,
   // Combatant Accessors
   getHP,
   getAC,
@@ -62,6 +57,10 @@ export {
   getDeathProbability,
   getMaxHP,
   getResources,
+  // Dead Combatant Management
+  markDeadCombatants,
+  getAliveCombatants,
+  isAlive,
   // Combatant Setters
   setHP,
   setPosition,
@@ -74,43 +73,8 @@ export {
   advanceTurn,
   getCurrentCombatant,
   isCombatOver,
+  // Turn Budget Functions
+  createTurnBudget,
   // Types
   type CombatStateWithScoring,
 } from './combatState';
-
-// ============================================================================
-// COMBAT TRACKING (combatTracking.ts)
-// ============================================================================
-
-export {
-  // Turn Budget Functions
-  hasAnyBonusAction,
-  createTurnBudget,
-  hasBudgetRemaining,
-  consumeMovement,
-  consumeAction,
-  consumeBonusAction,
-  consumeReaction,
-  applyDash,
-  // Action Resolution
-  resolveAttack,
-  // Reaction Processing
-  processReactionTrigger,
-  resolveAttackWithReactions,
-  checkCounterspell,
-  // Types
-  type ReactionTrigger,
-  type AttackResolutionWithReactions,
-} from './combatTracking';
-
-// Re-export Reaction types from @/types/combat
-export type { ReactionContext, ReactionResult } from '@/types/combat';
-
-// Creature Cache (für effizientes Laden)
-export {
-  getResolvedCreature,
-  preloadCreatures,
-  clearCreatureCache,
-  getCreatureCacheStats,
-  type ResolvedCreature,
-} from './creatureCache';

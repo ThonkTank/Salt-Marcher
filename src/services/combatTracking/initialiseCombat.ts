@@ -46,8 +46,8 @@ import type {
 import { vault } from '@/infrastructure/vault/vaultInstance';
 import { createSingleValue, feetToCell } from '@/utils';
 import { initializeGrid, DEFAULT_ENCOUNTER_DISTANCE_FEET } from '../gridSpace';
-import { getResolvedCreature } from './creatureCache';
-import { initializeLayers, precomputeBaseResolutions } from '../combatantAI/influenceMaps';
+import { getResolvedCreature, createTurnBudget } from './combatState';
+import { initializeLayers, precomputeBaseResolutions } from '../combatantAI/layers';
 
 // ============================================================================
 // DEBUG HELPER
@@ -218,6 +218,7 @@ function prepareCharacterForCombat(character: Character): CharacterInCombat {
       position: { x: 0, y: 0, z: 0 },
       conditions: [],
       groupId: 'party',
+      isDead: false,
     },
   };
 }
@@ -252,6 +253,7 @@ function prepareNPCForCombat(
       conditions: [],
       resources,
       groupId,
+      isDead: false,
     },
   };
 }
@@ -361,6 +363,13 @@ function createCombatState(
 
   const surprise = checkSurprise();
 
+  // Initiales Budget für ersten Combatant
+  const firstCombatantId = initiativeOrder[0];
+  const firstCombatant = combatants.find(c => c.id === firstCombatantId);
+  const initialBudget = firstCombatant
+    ? createTurnBudget(firstCombatant)
+    : { movementCells: 6, baseMovementCells: 6, hasAction: true, hasDashed: false, hasBonusAction: false, hasReaction: true };
+
   debug('createCombatState:', {
     combatantCount: combatants.length,
     partyCount: partyIds.length,
@@ -379,6 +388,11 @@ function createCombatState(
     // Initiative & Turn Tracking
     turnOrder: initiativeOrder,
     currentTurnIndex: 0,
+    // Turn Budget des aktuellen Combatants
+    currentTurnBudget: initialBudget,
+    // DPR-Tracking
+    partyDPR: 0,
+    enemyDPR: 0,
     // Combat Protocol
     protocol: [],
   };

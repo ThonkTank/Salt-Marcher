@@ -75,6 +75,7 @@ export interface CombatantState {
   resources?: CombatResources;      // Spell Slots, Recharge Timer
   concentratingOn?: string;         // Action-ID des aktiven Konzentrations-Spells
   groupId: string;                  // 'party' für PCs, UUID für Encounter-Gruppen
+  isDead: boolean;                  // true wenn deathProb >= 0.95 (zentral via markDeadCombatants)
 }
 
 /**
@@ -175,16 +176,23 @@ export interface CombatState extends CombatantSimulationState {
   turnOrder: string[];        // Combatant-IDs in Initiative-Reihenfolge
   currentTurnIndex: number;   // Index in turnOrder
 
+  // Turn Budget des aktuellen Combatants
+  currentTurnBudget: TurnBudget;
+
+  // DPR-Tracking für Outcome-Analyse
+  partyDPR: number;
+  enemyDPR: number;
+
   // Combat Protocol
   protocol: CombatProtocolEntry[];
 }
 
-/** Protokoll-Eintrag für einen Zug im Combat. */
+/** Protokoll-Eintrag für eine einzelne Aktion im Combat. */
 export interface CombatProtocolEntry {
   round: number;
   combatantId: string;
   combatantName: string;
-  actions: TurnAction[];
+  action: TurnAction;        // Einzelne Aktion (nicht Array)
   damageDealt: number;
   damageReceived: number;
   healingDone: number;
@@ -253,9 +261,11 @@ export interface CellEvaluation {
 
 /**
  * Vereinfachter TurnAction-Typ.
- * - move: Normale Bewegung ohne Action-Verbrauch
- * - action: Jede Action (Angriff, Dash, Dodge, etc.) - Effect-Felder bestimmen Verhalten
+ * - action: Jede Action (Angriff, Dash, Dodge, etc.) mit Position
  * - pass: Zug beenden
+ *
+ * Movement ist implizit: fromPosition definiert von wo aus die Action ausgeführt wird.
+ * Wenn fromPosition !== aktuelle Position, bewegt sich der Combatant zuerst dorthin.
  *
  * Das Combat-System prüft action.effects für spezifisches Verhalten:
  * - grantMovement: Dash-ähnliche Aktionen (extra Movement)
@@ -263,13 +273,24 @@ export interface CellEvaluation {
  * - incomingModifiers: Dodge-ähnliche Aktionen
  */
 export type TurnAction =
-  | { type: 'move'; targetCell: GridPosition }
-  | { type: 'action'; action: Action; target?: Combatant; targetCell?: GridPosition }
+  | { type: 'action'; action: Action; target?: Combatant; fromPosition: GridPosition; targetCell?: GridPosition }
   | { type: 'pass' };
 
 /**
+ * Interner Kandidat für Action-Auswahl.
+ * Kombiniert Action, Target und Position in einem Tupel für einheitliches Scoring.
+ */
+export interface ActionCandidate {
+  action: Action;
+  target?: Combatant;
+  targetCell?: GridPosition;  // für AoE-Zentrum
+  position: GridPosition;     // Position von der aus die Action ausgeführt wird
+  score: number;              // Bewertung dieser Kombination
+}
+
+/**
  * Ergebnis der Turn-Exploration mit optionalen Metriken.
- * Verwendet von executeTurn() für Debugging und Performance-Analyse.
+ * Intern verwendet fuer Debugging und Performance-Analyse.
  */
 export interface TurnExplorationResult {
   actions: TurnAction[];
@@ -352,6 +373,21 @@ export interface ActionBaseValues {
   baseDefensiveMultiplier?: number;  // z.B. 0.10 für Shield of Faith (+2 AC × 0.05)
   baseExtraActions?: number;         // z.B. 1 für Haste
   baseDuration?: number;             // Erwartete Buff-Duration (Runden)
+}
+
+// ============================================================================
+// THREAT MAP TYPES (für Position-Evaluation)
+// ============================================================================
+
+/**
+ * Threat-Daten für eine Cell.
+ * Kombiniert negative (Gegner-Schaden) und positive (Ally-Support) Faktoren.
+ * Inkludiert Pfad-Kosten (OA-Risiko) von der aktuellen Position.
+ */
+export interface ThreatMapEntry {
+  threat: number;      // Negativ: erwarteter Schaden von Gegnern + OA-Kosten
+  support: number;     // Positiv: Heilung/Buff-Potential von Allies
+  net: number;         // threat + support (Gesamtbewertung, negativ = schlecht)
 }
 
 // ============================================================================

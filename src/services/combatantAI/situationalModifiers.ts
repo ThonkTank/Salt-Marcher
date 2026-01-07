@@ -239,6 +239,9 @@ export function accumulateEffects(
 /**
  * Evaluiert alle registrierten Modifiers und akkumuliert Effekte.
  * Nutzt die globale Registry.
+ *
+ * Note: Core modifiers must be registered before calling this function.
+ * Use registerCoreModifiers() from './modifiers' at app startup.
  */
 export function evaluateSituationalModifiers(
   context: ModifierContext

@@ -105,6 +105,7 @@ export const ACTION_TIMING_TYPES = [
   'lair',
   'mythic',
   'free',
+  'passive',  // Für Traits: Pack Tactics, Magic Resistance, etc.
 ] as const;
 export type ActionTimingType = (typeof ACTION_TIMING_TYPES)[number];
 

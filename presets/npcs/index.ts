@@ -33,7 +33,7 @@ export const npcPresets = npcPresetsSchema.parse([
     lastEncounter: { year: 1, month: 1, day: 5, hour: 14, segment: 'afternoon' },
     encounterCount: 2,
     lastKnownPosition: { q: 3, r: -2 },
-    currentHp: 7,
+    currentHp: [[7, 1]],
     maxHp: 7,
   },
   {
@@ -48,7 +48,7 @@ export const npcPresets = npcPresetsSchema.parse([
     firstEncounter: { year: 1, month: 1, day: 10, hour: 8, segment: 'morning' },
     lastEncounter: { year: 1, month: 1, day: 10, hour: 8, segment: 'morning' },
     encounterCount: 1,
-    currentHp: 7,
+    currentHp: [[7, 1]],
     maxHp: 7,
   },
   {
@@ -65,7 +65,7 @@ export const npcPresets = npcPresetsSchema.parse([
     lastEncounter: { year: 1, month: 1, day: 7, hour: 18, segment: 'dusk' },
     encounterCount: 3,
     lastKnownPosition: { q: 5, r: -4 },
-    currentHp: 11,
+    currentHp: [[11, 1]],
     maxHp: 11,
   },
 
@@ -86,7 +86,7 @@ export const npcPresets = npcPresetsSchema.parse([
     lastEncounter: { year: 1, month: 1, day: 8, hour: 20, segment: 'dusk' },
     encounterCount: 3,
     lastKnownPosition: { q: -5, r: 2 },
-    currentHp: 11,
+    currentHp: [[11, 1]],
     maxHp: 11,
   },
   {
@@ -102,7 +102,7 @@ export const npcPresets = npcPresetsSchema.parse([
     firstEncounter: { year: 1, month: 1, day: 5, hour: 22, segment: 'night' },
     lastEncounter: { year: 1, month: 1, day: 5, hour: 22, segment: 'night' },
     encounterCount: 1,
-    currentHp: 32,
+    currentHp: [[32, 1]],
     maxHp: 32,
   },
 
@@ -122,7 +122,7 @@ export const npcPresets = npcPresetsSchema.parse([
     lastEncounter: { year: 1, month: 1, day: 2, hour: 6, segment: 'dawn' },
     encounterCount: 1,
     lastKnownPosition: { q: 2, r: 1 },
-    currentHp: 11,
+    currentHp: [[11, 1]],
     maxHp: 11,
   },
 ]);

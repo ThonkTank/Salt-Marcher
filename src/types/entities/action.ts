@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { validateDiceExpression } from '@/utils';
+import { schemaModifierSchema } from './conditionExpression';
 import {
   ACTION_TYPES,
   ACTION_SOURCES,
@@ -491,8 +492,14 @@ export const actionSchema = z.object({
 
   // Bonus Action Requirements (TWF, Flurry, etc.)
   requires: actionRequiresSchema.optional(),
+
+  // Schema-driven Modifiers (replaces hardcoded ModifierEvaluators)
+  // Allows defining creature traits, spell effects, item properties via schema
+  schemaModifiers: z.array(schemaModifierSchema).optional(),
 }).superRefine((data, ctx) => {
   // Invariante 1: Genau einer von attack/save/contested/autoHit muss gesetzt sein
+  // Ausnahme: passive Actions (Traits) brauchen keine Resolution
+  const isPassive = data.timing?.type === 'passive';
   const resolutionCount = [
     data.attack !== undefined,
     data.save !== undefined,
@@ -500,10 +507,10 @@ export const actionSchema = z.object({
     data.autoHit === true,
   ].filter(Boolean).length;
 
-  if (resolutionCount !== 1) {
+  if (!isPassive && resolutionCount !== 1) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Exactly one of attack, save, contested, or autoHit must be set',
+      message: 'Exactly one of attack, save, contested, or autoHit must be set (except for passive timing)',
       path: [],
     });
   }

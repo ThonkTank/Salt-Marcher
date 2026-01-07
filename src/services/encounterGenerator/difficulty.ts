@@ -4,12 +4,12 @@
 // Pipeline-Übersicht:
 // - rollTargetDifficulty(): Würfelt Ziel-Difficulty aus Terrain-ThreatLevel
 // - simulatePMF(): PMF-basierte Combat-Simulation
-//   - runSimulationLoop(): Autonomer Runden-Loop
-//   - simulateRound(): Eine Runde simulieren
-//   - calculatePartyWinProbability(): Outcome-Analyse
+//   - initialiseCombat() → State aufbauen
+//   - while(!isCombatOver): getCurrentCombatant → selectNextAction → executeAction
+//   - calculatePartyWinProbability() → Outcome-Analyse
 // - classifySimulationDifficulty(): Klassifiziert Win%/TPK → DifficultyLabel
 //
-// Nutzt: combatTracking/ (State + Resolution), combatantAI.ts (Decisions)
+// Nutzt: combatTracking/ (State + Turn Management), combatantAI/ (Decisions)
 
 // ============================================================================
 // TODO
@@ -46,34 +46,74 @@ import {
 import { countCreaturesInGroups } from './encounterHelpers';
 import { vault } from '@/infrastructure/vault/vaultInstance';
 import {
-  resolveAttack,
-  createTurnBudget,
   getHP,
   getDeathProbability,
   getGroupId,
-  setPosition,
-  getAbilities,
-  getCR,
-  getMaxHP,
-  getCombatantType,
-  isCharacter,
+  initialiseCombat,
+  executeAction,
+  getCurrentCombatant,
+  isCombatOver,
   type PartyInput,
-  type CombatState,
-  type RoundResult,
-  type Combatant,
 } from '@/services/combatTracking';
-import type {
-  CombatStateWithLayers,
-  CombatantWithLayers,
+import {
+  type CombatState,
+  type CombatStateWithLayers,
+  type CombatantWithLayers,
 } from '@/types/combat';
 import { DEFAULT_ENCOUNTER_DISTANCE_FEET } from '@/services/gridSpace';
-import { isAllied, isHostile } from '@/services/combatantAI/combatHelpers';
 import {
-  // Turn Action System
-  type TurnAction,
-  executeTurn,
-} from '@/services/combatantAI/combatantAI';
-import { initialiseCombat } from '@/services/combatTracking';
+  isAllied,
+  isHostile,
+  getDefaultSelector,
+  type ActionSelector,
+} from '@/services/combatantAI';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+/**
+ * SelectorMap für per-Alliance Selektor-Zuweisung.
+ * Keys: 'party' (Party + Verbündete) oder 'enemies' (feindliche Gruppen)
+ */
+export type SelectorMap = {
+  party?: ActionSelector;
+  enemies?: ActionSelector;
+};
+
+/**
+ * Selektor-Input: Einzelner Selektor ODER per-Alliance Map.
+ */
+export type SelectorInput = ActionSelector | SelectorMap;
+
+/**
+ * Prüft ob ein SelectorInput ein einzelner Selektor ist.
+ */
+function isSingleSelector(input: SelectorInput): input is ActionSelector {
+  return 'selectNextAction' in input;
+}
+
+/**
+ * Wählt den richtigen Selektor für einen Combatant basierend auf Alliance.
+ */
+function getSelectorForCombatant(
+  combatant: CombatantWithLayers,
+  state: CombatStateWithLayers,
+  selectors?: SelectorInput
+): ActionSelector {
+  if (!selectors) return getDefaultSelector();
+
+  // Einzelner Selektor für alle
+  if (isSingleSelector(selectors)) {
+    return selectors;
+  }
+
+  // Map: Lookup nach Alliance
+  const groupId = getGroupId(combatant);
+  const isPartyAlly = isAllied('party', groupId, state.alliances);
+  const key = isPartyAlly ? 'party' : 'enemies';
+  return selectors[key] ?? getDefaultSelector();
+}
 
 // ============================================================================
 // CONSTANTS
@@ -190,39 +230,60 @@ export function rollTargetDifficulty(
   return DIFFICULTY_LABELS[rolledIndex];
 }
 
-/** PMF-basierte Kampfsimulation. */
+/**
+ * PMF-basierte Kampfsimulation.
+ *
+ * Einfacher Combat-Loop:
+ * 1. initialiseCombat() - State + Grid + Combatants aufbauen
+ * 2. while(!isCombatOver): getCurrentCombatant → selectNextAction → executeAction
+ * 3. Ergebnis klassifizieren (Win%, TPK-Risk → DifficultyLabel)
+ */
 export function simulatePMF(
   encounter: { groups: EncounterGroup[]; alliances: Record<string, string[]> },
   party: PartyInput,
-  encounterDistance: number = DEFAULT_ENCOUNTER_DISTANCE_FEET
+  encounterDistance: number = DEFAULT_ENCOUNTER_DISTANCE_FEET,
+  selectors?: SelectorInput
 ): SimulationResult {
   // Resource Budget berechnen (Difficulty-Concern)
   const encounterXP = aggregateGroupXP(encounter.groups);
   const resourceBudget = calculateResourceBudget(encounterXP, party.level, party.size);
 
+  // Initiative VOR Combatant-Erstellung berechnen
+  const initiativeOrder = calculateInitiativeFromGroups(encounter.groups);
+
   // Combatants initialisieren (konsolidiert in combatTracking/initialiseCombat)
-  const stateWithLayers = initialiseCombat({
+  const state = initialiseCombat({
     groups: encounter.groups,
     alliances: encounter.alliances,
     party,
     resourceBudget,
     encounterDistanceFeet: encounterDistance,
-    initiativeOrder: [], // Wird separat via averageInitiative() gesetzt
+    initiativeOrder,
   });
 
-  // Simulation durchführen
-  const { state, rounds } = runSimulationLoop(stateWithLayers);
+  debug('simulatePMF: starting simulation', { initiativeOrder });
+
+  // Combat Loop - extrem simpel
+  while (!isCombatOver(state)) {
+    const combatant = getCurrentCombatant(state) as CombatantWithLayers | undefined;
+    if (!combatant) break;
+
+    const selector = getSelectorForCombatant(combatant, state, selectors);
+    const action = selector.selectNextAction(combatant, state, state.currentTurnBudget);
+    executeAction(combatant, action, state);
+  }
+
+  debug('simulatePMF: simulation complete', { rounds: state.roundNumber });
 
   // Ergebnis berechnen
   const winProbability = calculatePartyWinProbability(state);
   const tpkRisk = calculateTPKRisk(state);
-  const label = classifySimulationDifficulty(winProbability, tpkRisk);
 
   return {
-    label,
+    label: classifySimulationDifficulty(winProbability, tpkRisk),
     winProbability,
     tpkRisk,
-    rounds,
+    rounds: state.roundNumber,
   };
 }
 
@@ -321,101 +382,70 @@ function calculateResourceBudget(encounterXP: number, partyLevel: number, partyS
  */
 function expectedInitiativeOffset(index: number, count: number): number {
   if (count <= 1) return 0;
-  // k = index + 1 (1-basiert für Order Statistics)
-  // Offset = (n + 1 - 2k) / (n + 1) * 10.5
-  // Vereinfacht: (count - 2*index - 1) / (count + 1) * 10.5
   return ((count - 2 * index - 1) / (count + 1)) * 10.5;
 }
 
 /**
- * Berechnet deterministische Initiative-Reihenfolge für Combat.
+ * Berechnet deterministische Initiative-Reihenfolge aus Encounter-Gruppen.
  *
- * Basis: 10 + DEX-Modifier
- * Spread: Bei mehreren gleichen Creature-Types wird die erwartete Würfelverteilung
- *         deterministisch angewendet (höchster erwartet zuerst).
+ * Liest DEX, CR, HP direkt aus Creature-Definitionen im Vault.
+ * Ergebnis wird an initialiseCombat() übergeben.
  *
- * Tiebreaker (bei gleicher Initiative):
- * 1. Höchster DEX-Score (nicht Modifier)
- * 2. Höchste CR
- * 3. Höchste HP
- * 4. Spieler vor Monstern
- * 5. Alphabetisch nach Name
+ * **Berechnung:** Initiative = 10 + DEX-Mod + statistischer Spread
  *
- * @param combatants Alle Combatants im Combat
- * @returns Geordnete Liste von Combatant-IDs (höchste Initiative zuerst)
+ * **Tiebreaker:** DEX → CR → HP → Name (alphabetisch)
+ *
+ * @param groups Encounter-Gruppen mit NPCs
+ * @returns NPC-IDs sortiert nach Initiative (höchste zuerst)
  */
-export function averageInitiative(combatants: Combatant[]): string[] {
-  // Schritt 1: Gruppiere nach Creature-Type
-  const byType = new Map<string, Combatant[]>();
-  for (const c of combatants) {
-    const type = getCombatantType(c);
-    if (!byType.has(type)) {
-      byType.set(type, []);
-    }
-    byType.get(type)!.push(c);
-  }
+export function calculateInitiativeFromGroups(groups: EncounterGroup[]): string[] {
+  const entries: { id: string; init: number; dex: number; cr: number; hp: number; name: string; type: string }[] = [];
 
-  // Schritt 2: Berechne Initiative für jeden Combatant
-  interface InitiativeEntry {
-    id: string;
-    initiative: number;
-    dex: number;
-    cr: number;
-    hp: number;
-    isPlayer: boolean;
-    name: string;
-  }
-
-  const entries: InitiativeEntry[] = [];
-
-  for (const [_type, group] of byType) {
-    // Sortiere Gruppe nach DEX (für konsistente Spread-Zuweisung)
-    const sorted = [...group].sort((a, b) => getAbilities(b).dex - getAbilities(a).dex);
-
-    for (let i = 0; i < sorted.length; i++) {
-      const c = sorted[i];
-      const abilities = getAbilities(c);
-      const dexMod = Math.floor((abilities.dex - 10) / 2);
-      const baseInit = 10 + dexMod;
-      const offset = expectedInitiativeOffset(i, sorted.length);
-      const initiative = Math.round(baseInit + offset);
-
-      entries.push({
-        id: c.id,
-        initiative,
-        dex: abilities.dex,
-        cr: getCR(c),
-        hp: getMaxHP(c),
-        isPlayer: isCharacter(c),
-        name: c.name,
-      });
+  // NPCs aus Gruppen extrahieren
+  for (const group of groups) {
+    for (const npcs of Object.values(group.slots)) {
+      for (const npc of npcs) {
+        const creature = vault.getEntity<CreatureDefinition>('creature', npc.creature.id);
+        entries.push({
+          id: npc.id,
+          init: 0,
+          dex: creature.abilities.dex,
+          cr: creature.cr,
+          hp: creature.hp,
+          name: npc.name,
+          type: npc.creature.id,
+        });
+      }
     }
   }
 
-  // Schritt 3: Sortiere mit Tiebreakern
-  entries.sort((a, b) => {
-    // Höchste Initiative zuerst
-    if (a.initiative !== b.initiative) return b.initiative - a.initiative;
-    // Tiebreaker 1: Höchster DEX-Score
-    if (a.dex !== b.dex) return b.dex - a.dex;
-    // Tiebreaker 2: Höchste CR
-    if (a.cr !== b.cr) return b.cr - a.cr;
-    // Tiebreaker 3: Höchste HP
-    if (a.hp !== b.hp) return b.hp - a.hp;
-    // Tiebreaker 4: Spieler vor Monstern
-    if (a.isPlayer !== b.isPlayer) return a.isPlayer ? -1 : 1;
-    // Tiebreaker 5: Alphabetisch
-    return a.name.localeCompare(b.name);
-  });
+  // Gruppiere nach Creature-Type für Spread-Berechnung
+  const byType = new Map<string, typeof entries>();
+  for (const e of entries) {
+    if (!byType.has(e.type)) byType.set(e.type, []);
+    byType.get(e.type)!.push(e);
+  }
+
+  // Berechne Initiative mit Spread
+  for (const group of byType.values()) {
+    group.sort((a, b) => b.dex - a.dex);
+    for (let i = 0; i < group.length; i++) {
+      const dexMod = Math.floor((group[i].dex - 10) / 2);
+      group[i].init = Math.round(10 + dexMod + expectedInitiativeOffset(i, group.length));
+    }
+  }
+
+  // Sortiere mit Tiebreakern
+  entries.sort((a, b) =>
+    b.init - a.init || b.dex - a.dex || b.cr - a.cr || b.hp - a.hp || a.name.localeCompare(b.name)
+  );
 
   return entries.map(e => e.id);
 }
 
 // ============================================================================
-// SIMULATION LOOP (von combatResolver.ts hierher verschoben)
+// DEBUG HELPER
 // ============================================================================
-
-const MAX_ROUNDS = 10;
 
 const debug = (...args: unknown[]) => {
   if (process.env.DEBUG_SERVICES === 'true') {
@@ -424,179 +454,8 @@ const debug = (...args: unknown[]) => {
 };
 
 // ============================================================================
-// TURN-BASED SIMULATION (neu: Turn Budget System)
+// OUTCOME ANALYSIS
 // ============================================================================
-
-/**
- * Führt eine Aktion aus und aktualisiert State.
- * Siehe: Plan cosmic-tinkering-unicorn.md#Step-5
- */
-function executeAction(
-  turnAction: TurnAction,
-  combatant: Combatant,
-  state: CombatState
-): { damageDealt: number } {
-  let damageDealt = 0;
-
-  switch (turnAction.type) {
-    case 'move':
-      setPosition(combatant, turnAction.targetCell);
-      break;
-
-    case 'action': {
-      // Prüfe ob die Action ein Angriff ist (hat Target und ist kein Dash)
-      if (turnAction.target && turnAction.action.damage) {
-        const resolution = resolveAttack(combatant, turnAction.target, turnAction.action);
-        if (resolution) {
-          // Resolution updates are applied to the target by resolveAttack
-          damageDealt = resolution.damageDealt;
-        }
-      }
-      // grantMovement Actions (Dash) werden von executeTurn via applyDash behandelt
-      // targetCell Updates werden dort bereits gemacht
-      if (turnAction.targetCell) {
-        setPosition(combatant, turnAction.targetCell);
-      }
-      break;
-    }
-
-    case 'pass':
-      // Nichts zu tun
-      break;
-  }
-
-  return { damageDealt };
-}
-
-/**
- * Simuliert einen vollständigen Zug eines Combatants.
- * Delegiert an executeTurn() für Cell-basierte Entscheidungen.
- */
-function simulateTurn(
-  combatant: CombatantWithLayers,
-  state: CombatStateWithLayers
-): { damageDealt: number } {
-  const budget = createTurnBudget(combatant);
-
-  debug('simulateTurn: starting', {
-    id: combatant.id,
-    budget: { ...budget },
-  });
-
-  // executeTurn() entscheidet Movement + Actions via Cell-Evaluation
-  const { actions } = executeTurn(combatant, state, budget);
-
-  // Aktionen ausführen und Damage tracken
-  let totalDamageDealt = 0;
-  for (const action of actions) {
-    const result = executeAction(action, combatant, state);
-    totalDamageDealt += result.damageDealt;
-
-    debug('simulateTurn: executed action', {
-      id: combatant.id,
-      actionType: action.type,
-      damageDealt: result.damageDealt,
-    });
-  }
-
-  debug('simulateTurn: completed', {
-    id: combatant.id,
-    totalDamageDealt,
-    actionCount: actions.length,
-  });
-
-  return { damageDealt: totalDamageDealt };
-}
-
-/** Führt vollständige Kampfsimulation durch. */
-function runSimulationLoop(initialState: CombatStateWithLayers): { state: CombatStateWithLayers; rounds: number } {
-  const state = initialState;
-  let rounds = 0;
-
-  debug('runSimulationLoop: starting');
-
-  for (let round = 1; round <= MAX_ROUNDS; round++) {
-    if (isSimulationOver(state)) {
-      debug('runSimulationLoop: simulation over at round', round);
-      break;
-    }
-
-    simulateRound(state, round);
-    rounds = round;
-  }
-
-  debug('runSimulationLoop: completed', { rounds });
-  return { state, rounds };
-}
-
-/**
- * Simuliert eine Runde.
- * Nutzt Turn-Budget-System für jeden Combatant.
- * Siehe: Plan cosmic-tinkering-unicorn.md#Step-6
- */
-function simulateRound(state: CombatStateWithLayers, roundNumber: number): RoundResult {
-  let partyDPR = 0;
-  let enemyDPR = 0;
-
-  debug('simulateRound: starting round', roundNumber);
-
-  for (const combatant of state.combatants) {
-    // Skip wenn tot
-    if (getDeathProbability(combatant) >= 0.95) continue;
-
-    // Skip wenn surprised in Runde 1
-    if (roundNumber === 1) {
-      const combatantGroupId = getGroupId(combatant);
-      const isPartyAlly = isAllied('party', combatantGroupId, state.alliances);
-      if (
-        (isPartyAlly && state.surprise.enemyHasSurprise) ||
-        (!isPartyAlly && state.surprise.partyHasSurprise)
-      ) {
-        continue;
-      }
-    }
-
-    // Simuliere den vollständigen Zug mit Turn-Budget-System
-    const turnResult = simulateTurn(combatant, state);
-
-    // DPR tracken (Party-Allianz vs Feinde)
-    const combatantGroupId = getGroupId(combatant);
-    if (isAllied('party', combatantGroupId, state.alliances)) {
-      partyDPR += turnResult.damageDealt;
-    } else {
-      enemyDPR += turnResult.damageDealt;
-    }
-  }
-
-  const result: RoundResult = {
-    round: roundNumber,
-    partyDPR,
-    enemyDPR,
-    partyHPRemaining: calculateAllianceHP(state, 'party'),
-    enemyHPRemaining: calculateEnemyHP(state),
-  };
-
-  debug('simulateRound: completed', result);
-  return result;
-}
-
-// ============================================================================
-// OUTCOME ANALYSIS (von combatResolver.ts hierher verschoben)
-// ============================================================================
-
-/** Berechnet erwartete HP einer Allianz. */
-function calculateAllianceHP(state: CombatState, referenceGroupId: string): number {
-  return state.combatants
-    .filter(c => isAllied(referenceGroupId, getGroupId(c), state.alliances))
-    .reduce((sum, c) => sum + getExpectedValue(getHP(c)), 0);
-}
-
-/** Berechnet erwartete HP aller Feinde der Party. */
-function calculateEnemyHP(state: CombatState): number {
-  return state.combatants
-    .filter(c => isHostile('party', getGroupId(c), state.alliances))
-    .reduce((sum, c) => sum + getExpectedValue(getHP(c)), 0);
-}
 
 /** Berechnet Todeswahrscheinlichkeit einer Allianz (Produkt). */
 function calculateAllianceDeathProbability(
@@ -620,13 +479,6 @@ function calculateEnemyDeathProbability(state: CombatState): number {
   if (enemyCombatants.length === 0) return 1;
 
   return enemyCombatants.reduce((prob, c) => prob * getDeathProbability(c), 1.0);
-}
-
-/** Prüft ob Simulation beendet ist (Party-Allianz oder alle Feinde >95% tot). */
-function isSimulationOver(state: CombatState): boolean {
-  const partyAllianceDeathProb = calculateAllianceDeathProbability(state, 'party');
-  const enemyDeathProb = calculateEnemyDeathProbability(state);
-  return partyAllianceDeathProb > 0.95 || enemyDeathProb > 0.95;
 }
 
 /** Berechnet Party-Siegwahrscheinlichkeit. */

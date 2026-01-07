@@ -12,7 +12,7 @@
 // ist nach combatTracking/initialiseCombat.ts ausgelagert.
 //
 // Pipeline-Position:
-// - Aufgerufen von: turnExecution.executeTurn(), turnExecution.generateFollowups()
+// - Aufgerufen von: planNextAction.selectNextAction(), planNextAction.generateFollowups()
 // - Nutzt: Action.spellSlot, Action.recharge, Action.requires, Combatant.combatState
 // - Output: boolean (Verfuegbarkeit)
 
@@ -54,16 +54,16 @@
 
 import type { Action } from '@/types/entities';
 import type { Combatant, CombatResources } from '@/types/combat';
-import { getActions } from '../combatTracking';
+import { getActions } from '../../combatTracking';
 // Standard-Actions (Dash, Disengage, Dodge) - verfuegbar fuer alle Combatants
-import { standardActions } from '../../../presets/actions';
+import { standardActions } from '../../../../presets/actions';
 
 // Re-export Resource Management from combatTracking (canonical location)
 export {
   initializeResources,
   consumeActionResource,
   tickRechargeTimers,
-} from '../combatTracking';
+} from '../../combatTracking';
 
 // ============================================================================
 // DEBUG HELPER

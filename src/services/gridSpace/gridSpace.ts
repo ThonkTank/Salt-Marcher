@@ -15,7 +15,7 @@ import {
   feetToCell,
   spreadFormation as gridSpreadFormation,
 } from '@/utils';
-import { getDistance } from '../combatantAI/combatHelpers';
+import { getDistance } from '../combatantAI/helpers/combatHelpers';
 
 // Re-export für Consumer
 export type { GridPosition, GridConfig } from '@/utils';
