@@ -26,6 +26,10 @@ export {
   positionsEqual,
   getDirection,
   stepToward,
+  // Movement & Range utilities
+  getOffsetPattern,
+  getRelevantCells,
+  calculateMovementDecay,
 } from './grid';
 
 export {

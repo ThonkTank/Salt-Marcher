@@ -50,7 +50,7 @@ alliances: Record<string, string[]>
 
 Berechnet von: [groupActivity.calculateAlliances()](../services/encounter/groupActivity.md#calculatealliances)
 
-Konsumiert von: [difficulty.simulatePMF()](../services/encounter/difficulty.md) via [combatResolver](../services/combatSimulator/combatResolver.md)
+Konsumiert von: [difficulty.simulatePMF()](../services/encounter/difficulty.md) via [combatResolver](../services/combatantAI/combatResolver.md)
 
 ---
 

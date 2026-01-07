@@ -38,6 +38,9 @@ export const abilityScoresSchema = z.object({
 });
 export type AbilityScores = z.infer<typeof abilityScoresSchema>;
 
+export const abilityNameSchema = z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']);
+export type AbilityName = z.infer<typeof abilityNameSchema>;
+
 export const speedBlockSchema = z.object({
   walk: z.number().int().min(0),
   fly: z.number().int().min(0).optional(),
@@ -157,6 +160,9 @@ const creatureDefinitionInputSchema = z.object({
   carriesLoot: z.boolean().optional(),
   detectionProfile: detectionProfileSchema,
   abilities: abilityScoresSchema,
+  // Save-Proficiencies (welche Saves die Kreatur proficient ist)
+  // z.B. Dragon: ['dex', 'con', 'wis', 'cha']
+  saveProficiencies: z.array(abilityNameSchema).optional(),
   skills: skillProficienciesSchema.optional(),
   speed: speedBlockSchema,
   senses: sensesSchema.optional(),
@@ -167,7 +173,7 @@ const creatureDefinitionInputSchema = z.object({
   reactions: z.array(actionSchema).optional(),
   legendaryActions: z.array(actionSchema).optional(),
   // Spellcasting Resources: Level (1-9) → Anzahl Slots
-  // Siehe: docs/services/combatSimulator/actionScoring.md#resource-management
+  // Siehe: docs/services/combatantAI/actionScoring.md#resource-management
   spellSlots: z.record(z.string(), z.number().int().nonnegative()).optional(),
   description: z.string().optional(),
   source: z.string().optional(),

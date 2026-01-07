@@ -87,10 +87,24 @@ type ActionSource = 'class' | 'race' | 'item' | 'spell' | 'innate' | 'lair';
 | Feld | Typ | Beschreibung |
 |------|-----|--------------|
 | `type` | `'single' \| 'multiple' \| 'area'` | Zieltyp |
+| `validTargets` | `ValidTargets` | Erlaubte Zieltypen (Required) |
 | `count` | `number?` | Max Anzahl bei 'multiple' |
 | `aoe` | `Aoe?` | AoE-Details bei 'area' |
 | `friendlyFire` | `boolean?` | Trifft auch Verbuendete? |
 | `includeSelf` | `boolean?` | Kann der Caster sich selbst targeten? Default: false |
+
+### ValidTargets
+
+```typescript
+type ValidTargets = 'enemies' | 'allies' | 'self' | 'any';
+```
+
+| Wert | Beschreibung |
+|------|--------------|
+| `'enemies'` | Nur feindliche Ziele (Weapon Attacks, Debuffs) |
+| `'allies'` | Nur verbuendete Ziele (Healing, Buffs) - ohne Self |
+| `'self'` | Nur der Caster selbst (Dash, Dodge, Disengage) |
+| `'any'` | Beliebige Ziele (Self-Heal, Charm-Spells) |
 
 ---
 
@@ -475,7 +489,7 @@ const twfOffHand: Action = {
     },
   },
   range: { type: 'reach', normal: 5 },
-  targeting: { type: 'single' },
+  targeting: { type: 'single', validTargets: 'enemies' },
   attack: { bonus: 4 },
   damage: { dice: '1d6', modifier: 0, type: 'slashing' },  // Kein Modifier bei Off-Hand
 };
@@ -505,7 +519,7 @@ const wolfBite: Action = {
   actionType: 'melee-weapon',
   timing: { type: 'action' },
   range: { type: 'reach', normal: 5 },
-  targeting: { type: 'single' },
+  targeting: { type: 'single', validTargets: 'enemies' },
   attack: { bonus: 4 },
   damage: { dice: '2d4', modifier: 2, type: 'piercing' },
   effects: [{
@@ -530,6 +544,7 @@ const fireBreath: Action = {
   range: { type: 'self', normal: 0 },
   targeting: {
     type: 'area',
+    validTargets: 'enemies',
     aoe: { shape: 'cone', size: 30, origin: 'self' },
     friendlyFire: true
   },
@@ -547,7 +562,7 @@ const bless: Action = {
   actionType: 'buff',
   timing: { type: 'action' },
   range: { type: 'ranged', normal: 30 },
-  targeting: { type: 'multiple', count: 3 },
+  targeting: { type: 'multiple', count: 3, validTargets: 'allies' },
   autoHit: true,
   effects: [{
     statModifiers: [
@@ -575,7 +590,7 @@ const shield: Action = {
     triggerCondition: { event: 'attacked' }
   },
   range: { type: 'self', normal: 0 },
-  targeting: { type: 'single' },
+  targeting: { type: 'single', validTargets: 'self' },
   autoHit: true,
   effects: [{
     statModifiers: [{ stat: 'ac', value: 5, type: 'bonus' }],
@@ -595,7 +610,7 @@ const tailAttack: Action = {
   actionType: 'legendary',
   timing: { type: 'legendary' },
   range: { type: 'reach', normal: 15 },
-  targeting: { type: 'single' },
+  targeting: { type: 'single', validTargets: 'enemies' },
   attack: { bonus: 14 },
   damage: { dice: '2d8', modifier: 8, type: 'bludgeoning' },
   recharge: { type: 'legendary', cost: 1 }
@@ -610,7 +625,7 @@ const dragonMultiattack: Action = {
   actionType: 'multiattack',
   timing: { type: 'action' },
   range: { type: 'self', normal: 0 },
-  targeting: { type: 'single' },
+  targeting: { type: 'single', validTargets: 'enemies' },
   autoHit: true,
   multiattack: {
     attacks: [
@@ -638,7 +653,7 @@ const dash: Action = {
   actionType: 'utility',
   timing: { type: 'action' },
   range: { type: 'self', normal: 0 },
-  targeting: { type: 'single' },
+  targeting: { type: 'single', validTargets: 'self' },
   autoHit: true,
   effects: [{
     grantMovement: { type: 'dash' },
@@ -657,7 +672,7 @@ const disengage: Action = {
   actionType: 'utility',
   timing: { type: 'action' },
   range: { type: 'self', normal: 0 },
-  targeting: { type: 'single' },
+  targeting: { type: 'single', validTargets: 'self' },
   autoHit: true,
   effects: [{
     movementBehavior: { noOpportunityAttacks: true },
@@ -676,7 +691,7 @@ const dodge: Action = {
   actionType: 'utility',
   timing: { type: 'action' },
   range: { type: 'self', normal: 0 },
-  targeting: { type: 'single' },
+  targeting: { type: 'single', validTargets: 'self' },
   autoHit: true,
   effects: [{
     incomingModifiers: { attacks: 'disadvantage' },

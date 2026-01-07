@@ -6,20 +6,11 @@
 // - Profile-Erstellung aus Party und Encounter-Gruppen
 // - Turn Budget Tracking (D&D 5e Action Economy)
 //
-// Wird von combatSimulator (AI) und Workflows genutzt.
+// Wird von combatantAI und Workflows genutzt.
 
 // ============================================================================
 // HACK & TODO
 // ============================================================================
-//
-// [HACK]: Default-Actions für Characters ohne actions
-// - getDefaultPartyAction() generiert level-skalierte Weapon-Attack
-// - Creatures: Default-Action in creatureCache.ts (getDefaultCreatureAction)
-// - Spec: difficulty.md#5.0.1 erwartet Character.actions
-//
-// [HACK]: Keine Surprise-Prüfung
-// - checkSurprise() liefert immer keine Surprise
-// - Spec: difficulty.md#5.0.5 prüft Activity.awareness
 //
 // [HACK]: Keine Condition-Tracking
 // - conditionProb immer 0 in resolveAttack()
@@ -31,20 +22,9 @@
 // [TODO]: Implementiere resolveCondition() für Control-Actions
 // - Spec: difficulty.md#5.1.b (control intent)
 //
-// [TODO]: Implementiere checkSurprise() mit Activity.awareness
-// - Spec: difficulty.md#5.0.5
-//
 // [TODO]: Bonus Actions Requirement-Prüfung (requires.priorAction)
 // - generateBonusActions() in combatantAI.ts prüft Requirements
 // - Spec: turnExploration.md#bonus-action-requirements
-//
-// --- Phase 4: Resource Management ---
-//
-// [HACK]: Party-Resources nicht initialisiert
-// - createPartyProfiles() ruft NICHT initializeResources() auf
-// - Party-Member haben keine resources auf CombatProfile
-// - Spell-Slot-Tracking fuer PCs fehlt vollstaendig
-// - Ideal: Character.spellSlots nutzen oder aus Class/Level ableiten
 //
 // --- Phase 6: Reaction System ---
 //
@@ -69,66 +49,34 @@
 // - Benoetigt: Rueckgabe und Application in Combat-Flow
 //
 
-import type { EncounterGroup } from '@/types/encounterTypes';
-import type { Action, Character } from '@/types/entities';
-import { vault } from '@/infrastructure/vault/vaultInstance';
+import type { Action } from '@/types/entities';
 import {
-  createSingleValue,
   calculateEffectiveDamage,
   applyDamageToHP,
   calculateDeathProbability,
   getExpectedValue,
-  feetToCell,
   diceExpressionToPMF,
   addConstant,
 } from '@/utils';
-import {
-  initializeGrid,
-  calculateInitialPositions,
-  DEFAULT_ENCOUNTER_DISTANCE_FEET,
-} from '../gridSpace';
-import { calculateBaseDamagePMF } from '../combatSimulator/combatHelpers';
-import { initializeResources } from '../combatSimulator/turnExecution';
-import { getResolvedCreature } from './creatureCache';
+import { calculateBaseDamagePMF } from '../combatantAI/combatHelpers';
+// Reaction-Funktionen konsolidiert in actionScoring.ts
 import {
   findMatchingReactions,
   shouldUseReaction,
   evaluateReaction,
-  type ReactionContext,
-  type ReactionResult,
-} from '../combatSimulator/actionScoring';
+} from '../combatantAI/actionScoring';
+// Types sind jetzt in @/types/combat (Single Source of Truth)
+import type { ReactionContext, ReactionResult } from '@/types/combat';
 import type { TriggerEvent } from '@/constants/action';
 
 // Types aus @/types/combat (Single Source of Truth)
+// Re-exports sind in index.ts - hier nur lokale Imports
 import type {
   ProbabilityDistribution,
-  GridPosition,
-  GridConfig,
-  SpeedBlock,
-  CombatProfile,
-  SimulationState,
-  CombatState,
-  SurpriseState,
   TurnBudget,
   AttackResolution,
-  RoundResult,
-  ConditionState,
-} from '@/types/combat';
-
-// Re-exports für Consumer
-export type {
-  ProbabilityDistribution,
-  GridPosition,
-  GridConfig,
-  SpeedBlock,
-  CombatProfile,
-  SimulationState,
-  CombatState,
-  SurpriseState,
-  TurnBudget,
-  AttackResolution,
-  RoundResult,
-  ConditionState,
+  Combatant,
+  CombatantSimulationState,
 } from '@/types/combat';
 
 // ============================================================================
@@ -142,35 +90,39 @@ const debug = (...args: unknown[]) => {
 };
 
 // ============================================================================
-// TYPES (local, not in @/types/combat)
+// IMPORTS FROM combatState.ts (für lokale Verwendung)
 // ============================================================================
+// Re-exports sind in index.ts - hier nur lokale Imports
 
-/** Input-Typ für Party. */
-export interface PartyInput {
-  level: number;
-  size: number;
-  members: { id: string; level: number; hp: number; ac: number }[];
-}
+import {
+  getHP,
+  getAC,
+  getSpeed,
+  getActions,
+  getDeathProbability,
+} from './combatState';
+
 
 // ============================================================================
 // TURN BUDGET FUNCTIONS
 // ============================================================================
 
 /**
- * Prüft ob ein CombatProfile Bonus Actions hat.
+ * Prüft ob ein Combatant Bonus Actions hat.
  * Bonus Actions sind Actions mit timing.type === 'bonus'.
  */
-export function hasAnyBonusAction(profile: CombatProfile): boolean {
-  return profile.actions.some(a => a.timing.type === 'bonus');
+export function hasAnyBonusAction(combatant: Combatant): boolean {
+  return getActions(combatant).some(a => a.timing.type === 'bonus');
 }
 
-/** Erstellt TurnBudget aus CombatProfile. */
-export function createTurnBudget(profile: CombatProfile): TurnBudget {
-  const walkSpeed = profile.speed.walk ?? 30;
+/** Erstellt TurnBudget aus Combatant. */
+export function createTurnBudget(combatant: Combatant): TurnBudget {
+  const speed = getSpeed(combatant);
+  const walkSpeed = speed.walk ?? 30;
   const movementCells = Math.floor(walkSpeed / 5);
 
   debug('createTurnBudget:', {
-    participantId: profile.participantId,
+    id: combatant.id,
     walkSpeed,
     movementCells,
   });
@@ -180,7 +132,7 @@ export function createTurnBudget(profile: CombatProfile): TurnBudget {
     baseMovementCells: movementCells,
     hasAction: true,
     hasDashed: false,
-    hasBonusAction: hasAnyBonusAction(profile),
+    hasBonusAction: hasAnyBonusAction(combatant),
     hasReaction: true,      // Für OA-Detection später
   };
 }
@@ -218,176 +170,6 @@ export function applyDash(budget: TurnBudget): void {
 }
 
 // ============================================================================
-// DEFAULT ACTIONS
-// ============================================================================
-
-/** Generiert Default-Action für Character ohne Actions. HACK: siehe Header */
-function getDefaultPartyAction(level: number): Action {
-  const attackBonus = Math.floor(level / 4) + 4;
-  const damageBonus = Math.floor(level / 4) + 3;
-
-  return {
-    name: 'Weapon Attack',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single' },
-    attack: { bonus: attackBonus },
-    damage: { dice: '1d8', modifier: damageBonus, type: 'slashing' },
-  } as unknown as Action;
-}
-
-// ============================================================================
-// PROFILE CREATION
-// ============================================================================
-
-/** Erstellt Party-Profile. HACK: siehe Header (Default-Actions) */
-export function createPartyProfiles(party: PartyInput): CombatProfile[] {
-  return party.members.map((member) => {
-    let actions: Action[] = [];
-    try {
-      const character = vault.getEntity<Character>('character', member.id);
-      actions = character.actions ?? [];
-    } catch {
-      // Character nicht im Vault - verwende Default
-    }
-
-    if (actions.length === 0) {
-      actions = [getDefaultPartyAction(member.level)];
-    }
-
-    debug('createPartyProfile:', { memberId: member.id, actionsCount: actions.length });
-
-    return {
-      participantId: member.id,
-      groupId: 'party',
-      hp: createSingleValue(member.hp),
-      deathProbability: 0,
-      ac: member.ac,
-      speed: { walk: 30 },
-      actions,
-      conditions: [],
-      position: { x: 0, y: 0, z: 0 },
-    };
-  });
-}
-
-/**
- * Erstellt Enemy-Profile aus Encounter-Gruppen.
- * Nutzt creatureCache für effizientes Laden (5 Goblins = 1 Lookup).
- * HP von NPC.currentHp (instanz-spezifisch), nicht creature.averageHp.
- *
- * @param groups Encounter-Gruppen mit NPCs
- * @param resourceBudget Budget 0-1 für Ressourcen (1 = volle Spell Slots etc.)
- */
-export function createEnemyProfiles(
-  groups: EncounterGroup[],
-  resourceBudget: number = 1.0
-): CombatProfile[] {
-  const profiles: CombatProfile[] = [];
-
-  for (const group of groups) {
-    for (const npcs of Object.values(group.slots)) {
-      for (const npc of npcs) {
-        // Creature einmal laden (gecached für gleiche Creature-Typen)
-        const { definition: creature, actions } = getResolvedCreature(npc.creature.id);
-
-        // Resource-Initialisierung mit spellSlots aus Creature
-        const resources = initializeResources(
-          actions,
-          creature.spellSlots,
-          resourceBudget
-        );
-
-        debug('createEnemyProfile:', {
-          npcId: npc.id,
-          creatureId: npc.creature.id,
-          actionsCount: actions.length,
-          npcHp: npc.currentHp,
-          hasResources: Object.keys(resources).length > 0,
-        });
-
-        profiles.push({
-          participantId: npc.id,
-          groupId: group.groupId,
-          // HP von NPC (instanz-spezifisch), nicht creature.averageHp
-          hp: createSingleValue(npc.currentHp),
-          deathProbability: npc.currentHp <= 0 ? 1 : 0,
-          // Combat-Stats von Creature (geteilt via Cache)
-          ac: creature.ac,
-          speed: {
-            walk: creature.speed?.walk ?? 30,
-            fly: creature.speed?.fly,
-            swim: creature.speed?.swim,
-            climb: creature.speed?.climb,
-            burrow: creature.speed?.burrow,
-          },
-          actions,
-          conditions: [],
-          position: { x: 0, y: 0, z: 0 },
-          resources,
-        });
-      }
-    }
-  }
-
-  return profiles;
-}
-
-// ============================================================================
-// SURPRISE
-// ============================================================================
-
-/** Prüft Surprise-State. HACK: siehe Header (Activity.awareness nicht geprüft) */
-export function checkSurprise(): SurpriseState {
-  return {
-    partyHasSurprise: false,
-    enemyHasSurprise: false,
-  };
-}
-
-// ============================================================================
-// STATE INITIALIZATION
-// ============================================================================
-
-/**
- * Erstellt vollständigen CombatState aus Party und Gruppen.
- * @param encounterDistanceFeet Distanz in Feet (wird zu Cells konvertiert)
- */
-export function createCombatState(
-  partyProfiles: CombatProfile[],
-  enemyProfiles: CombatProfile[],
-  alliances: Record<string, string[]>,
-  encounterDistanceFeet: number = DEFAULT_ENCOUNTER_DISTANCE_FEET,
-  resourceBudget: number = 0.5
-): CombatState {
-  const encounterDistanceCells = feetToCell(encounterDistanceFeet);
-  const profiles = [...partyProfiles, ...enemyProfiles];
-  const grid = initializeGrid({ encounterDistanceCells });
-
-  calculateInitialPositions(profiles, alliances, { encounterDistanceCells });
-  const surprise = checkSurprise();
-
-  debug('createCombatState:', {
-    partyCount: partyProfiles.length,
-    enemyCount: enemyProfiles.length,
-    encounterDistanceFeet,
-    encounterDistanceCells,
-    alliances,
-    resourceBudget,
-  });
-
-  return {
-    profiles,
-    alliances,
-    grid,
-    roundNumber: 0,
-    surprise,
-    resourceBudget,
-  };
-}
-
-// ============================================================================
 // ACTION RESOLUTION
 // ============================================================================
 
@@ -395,21 +177,23 @@ export function createCombatState(
 import {
   calculateHitChance,
   calculateMultiattackDamage,
-} from '../combatSimulator/combatHelpers';
+} from '../combatantAI/combatHelpers';
 
 /**
  * Resolves a single attack action against a target.
  * Supports both single attacks and multiattack.
  */
 export function resolveAttack(
-  attacker: CombatProfile,
-  target: CombatProfile,
-  action: Action
+  attacker: Combatant,
+  target: Combatant,
+  action: Action,
+  acBonus?: number
 ): AttackResolution | null {
   let effectiveDamage: ProbabilityDistribution;
+  const targetAC = getAC(target) + (acBonus ?? 0);
 
   if (action.multiattack) {
-    const multiDamage = calculateMultiattackDamage(action, attacker.actions, target.ac);
+    const multiDamage = calculateMultiattackDamage(action, getActions(attacker), targetAC);
     if (!multiDamage) {
       debug('resolveAttack: multiattack has no valid refs', { actionName: action.name });
       return null;
@@ -427,22 +211,22 @@ export function resolveAttack(
       return null;
     }
 
-    const hitChance = calculateHitChance(action.attack.bonus, target.ac);
+    const hitChance = calculateHitChance(action.attack.bonus, targetAC);
     effectiveDamage = calculateEffectiveDamage(
       baseDamage,
       hitChance,
-      attacker.deathProbability,
+      getDeathProbability(attacker),
       0 // conditionProb - HACK: keine Conditions
     );
   }
 
-  const newTargetHP = applyDamageToHP(target.hp, effectiveDamage);
+  const newTargetHP = applyDamageToHP(getHP(target), effectiveDamage);
   const newDeathProbability = calculateDeathProbability(newTargetHP);
   const damageDealt = getExpectedValue(effectiveDamage);
 
   debug('resolveAttack:', {
-    attacker: attacker.participantId,
-    target: target.participantId,
+    attacker: attacker.id,
+    target: target.id,
     action: action.name,
     isMultiattack: !!action.multiattack,
     damageDealt,
@@ -457,32 +241,8 @@ export function resolveAttack(
 }
 
 // ============================================================================
-// STATE UPDATES
-// ============================================================================
-
-/** Aktualisiert HP eines Combatants. */
-export function updateCombatantHP(
-  combatant: CombatProfile,
-  newHP: ProbabilityDistribution
-): void {
-  combatant.hp = newHP;
-  combatant.deathProbability = calculateDeathProbability(newHP);
-}
-
-/** Aktualisiert Position eines Combatants. */
-export function updateCombatantPosition(
-  combatant: CombatProfile,
-  newPosition: GridPosition
-): void {
-  combatant.position = newPosition;
-}
-
-// ============================================================================
 // REACTION PROCESSING
 // ============================================================================
-
-// Re-export fuer externe Nutzung
-export type { ReactionContext, ReactionResult };
 
 /**
  * Interface fuer Reaction-Trigger-Events.
@@ -492,9 +252,9 @@ export interface ReactionTrigger {
   /** Das ausloesende Event */
   event: TriggerEvent;
   /** Der Ausloeser (Angreifer, Spell-Caster, etc.) */
-  source: CombatProfile;
+  source: Combatant;
   /** Optional: Das Ziel des Triggers */
-  target?: CombatProfile;
+  target?: Combatant;
   /** Optional: Die ausloesende Action */
   action?: Action;
   /** Optional: Zugefuegter Schaden (bei 'damaged' Event) */
@@ -504,47 +264,47 @@ export interface ReactionTrigger {
 }
 
 /**
- * Prueft und fuehrt Reactions fuer alle relevanten Profile aus.
+ * Prueft und fuehrt Reactions fuer alle relevanten Combatants aus.
  * Wird nach relevanten Events aufgerufen (attacked, damaged, spell-cast, etc.)
  *
  * @param trigger Der ausloesende Trigger
- * @param state SimulationState mit allen Profiles
- * @param budgets Map von participantId zu TurnBudget fuer Reaction-Tracking
+ * @param state CombatantSimulationState mit allen Combatants
+ * @param budgets Map von combatantId zu TurnBudget fuer Reaction-Tracking
  * @returns Array von ReactionResults (ausgefuehrte und abgelehnte Reactions)
  */
 export function processReactionTrigger(
   trigger: ReactionTrigger,
-  state: SimulationState,
+  state: CombatantSimulationState,
   budgets: Map<string, TurnBudget>
 ): ReactionResult[] {
   const results: ReactionResult[] = [];
 
   debug('processReactionTrigger:', {
     event: trigger.event,
-    source: trigger.source.participantId,
-    target: trigger.target?.participantId,
+    source: trigger.source.id,
+    target: trigger.target?.id,
   });
 
-  // Finde alle Profile die auf dieses Event reagieren koennten
-  for (const profile of state.profiles) {
+  // Finde alle Combatants die auf dieses Event reagieren koennten
+  for (const combatant of state.combatants) {
     // Skip Source (kann nicht auf eigene Aktion reagieren)
-    if (profile.participantId === trigger.source.participantId) {
+    if (combatant.id === trigger.source.id) {
       continue;
     }
 
-    // Skip tote Profile
-    if ((profile.deathProbability ?? 0) >= 0.95) {
+    // Skip tote Combatants
+    if (getDeathProbability(combatant) >= 0.95) {
       continue;
     }
 
     // Pruefe ob Reaction verfuegbar
-    const budget = budgets.get(profile.participantId);
+    const budget = budgets.get(combatant.id);
     if (!budget?.hasReaction) {
       continue;
     }
 
     // Finde passende Reactions fuer dieses Event
-    const matchingReactions = findMatchingReactions(profile, trigger.event);
+    const matchingReactions = findMatchingReactions(combatant, trigger.event);
 
     if (matchingReactions.length === 0) {
       continue;
@@ -562,10 +322,10 @@ export function processReactionTrigger(
 
     // Waehle beste Reaction basierend auf Score
     let bestReaction = matchingReactions[0];
-    let bestScore = evaluateReaction(bestReaction, context, profile, state);
+    let bestScore = evaluateReaction(bestReaction, context, combatant, state);
 
     for (let i = 1; i < matchingReactions.length; i++) {
-      const score = evaluateReaction(matchingReactions[i], context, profile, state);
+      const score = evaluateReaction(matchingReactions[i], context, combatant, state);
       if (score > bestScore) {
         bestScore = score;
         bestReaction = matchingReactions[i];
@@ -573,14 +333,14 @@ export function processReactionTrigger(
     }
 
     // Pruefe ob Reaction genutzt werden soll
-    if (!shouldUseReaction(bestReaction, context, profile, state, budget)) {
+    if (!shouldUseReaction(bestReaction, context, combatant, state, budget)) {
       debug('processReactionTrigger: reaction not worth using', {
-        profile: profile.participantId,
+        combatant: combatant.id,
         reaction: bestReaction.name,
         score: bestScore,
       });
       results.push({
-        reactor: profile,
+        reactor: combatant,
         reaction: bestReaction,
         executed: false,
       });
@@ -592,7 +352,7 @@ export function processReactionTrigger(
 
     // Effekte basierend auf Event-Typ
     const result: ReactionResult = {
-      reactor: profile,
+      reactor: combatant,
       reaction: bestReaction,
       executed: true,
       effect: {},
@@ -608,7 +368,7 @@ export function processReactionTrigger(
       if (acBonus > 0) {
         result.effect!.acBonus = acBonus;
         debug('processReactionTrigger: Shield AC bonus', {
-          profile: profile.participantId,
+          combatant: combatant.id,
           acBonus,
         });
       }
@@ -618,7 +378,7 @@ export function processReactionTrigger(
     if (trigger.event === 'spell-cast' && bestReaction.counter) {
       result.effect!.spellCountered = true;
       debug('processReactionTrigger: Counterspell', {
-        profile: profile.participantId,
+        combatant: combatant.id,
         counteredSpell: trigger.action?.name,
       });
     }
@@ -631,7 +391,7 @@ export function processReactionTrigger(
 
       // Save-basierte Reactions
       if (bestReaction.save) {
-        const saveBonus = Math.floor(getExpectedValue(trigger.source.hp) / 30) + 2; // Approximation
+        const saveBonus = Math.floor(getExpectedValue(getHP(trigger.source)) / 30) + 2; // Approximation
         const dc = bestReaction.save.dc;
         const failChance = Math.min(0.95, Math.max(0.05, (dc - saveBonus - 1) / 20));
 
@@ -644,7 +404,7 @@ export function processReactionTrigger(
 
       result.effect!.damage = damage;
       debug('processReactionTrigger: Damage reaction', {
-        profile: profile.participantId,
+        combatant: combatant.id,
         damage,
       });
     }
@@ -652,7 +412,7 @@ export function processReactionTrigger(
     results.push(result);
 
     debug('processReactionTrigger: reaction executed', {
-      profile: profile.participantId,
+      combatant: combatant.id,
       reaction: bestReaction.name,
       effect: result.effect,
     });
@@ -690,15 +450,15 @@ export interface AttackResolutionWithReactions extends AttackResolution {
  * @param attacker Der angreifende Combatant
  * @param target Das Ziel des Angriffs
  * @param action Die Attack-Action
- * @param state SimulationState fuer Reaction-Evaluation
+ * @param state CombatantSimulationState fuer Reaction-Evaluation
  * @param budgets Budget-Map fuer Reaction-Tracking
  * @returns AttackResolution mit Reaction-Informationen, null bei ungueltigem Attack
  */
 export function resolveAttackWithReactions(
-  attacker: CombatProfile,
-  target: CombatProfile,
+  attacker: Combatant,
+  target: Combatant,
   action: Action,
-  state: SimulationState,
+  state: CombatantSimulationState,
   budgets: Map<string, TurnBudget>
 ): AttackResolutionWithReactions | null {
   // Phase 1: 'attacked' Trigger (vor Damage-Resolution)
@@ -719,15 +479,8 @@ export function resolveAttackWithReactions(
     return total;
   }, 0);
 
-  // Phase 2: Attack Resolution mit modifiziertem AC
-  // Temporaer AC erhoehen fuer diese Resolution
-  const originalAC = target.ac;
-  target.ac += targetACBonus;
-
-  const baseResolution = resolveAttack(attacker, target, action);
-
-  // AC zuruecksetzen
-  target.ac = originalAC;
+  // Phase 2: Attack Resolution mit AC-Bonus aus Reactions
+  const baseResolution = resolveAttack(attacker, target, action, targetACBonus);
 
   if (!baseResolution) {
     return null;
@@ -752,8 +505,8 @@ export function resolveAttackWithReactions(
   }
 
   debug('resolveAttackWithReactions:', {
-    attacker: attacker.participantId,
-    target: target.participantId,
+    attacker: attacker.id,
+    target: target.id,
     action: action.name,
     targetACBonus,
     attackHit,
@@ -776,14 +529,14 @@ export function resolveAttackWithReactions(
  *
  * @param caster Der Spell-Caster
  * @param spell Die Spell-Action
- * @param state SimulationState fuer Reaction-Evaluation
+ * @param state CombatantSimulationState fuer Reaction-Evaluation
  * @param budgets Budget-Map fuer Reaction-Tracking
  * @returns true wenn der Spell durch Counterspell aufgehoben wurde
  */
 export function checkCounterspell(
-  caster: CombatProfile,
+  caster: Combatant,
   spell: Action,
-  state: SimulationState,
+  state: CombatantSimulationState,
   budgets: Map<string, TurnBudget>
 ): { countered: boolean; reactions: ReactionResult[] } {
   // Nur Spells mit spellSlot triggern Counterspell
@@ -804,7 +557,7 @@ export function checkCounterspell(
   const countered = reactions.some(r => r.executed && r.effect?.spellCountered);
 
   debug('checkCounterspell:', {
-    caster: caster.participantId,
+    caster: caster.id,
     spell: spell.name,
     spellLevel: spell.spellSlot.level,
     countered,
@@ -813,3 +566,4 @@ export function checkCounterspell(
 
   return { countered, reactions };
 }
+

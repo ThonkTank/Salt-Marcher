@@ -6,7 +6,7 @@
 // - Combatant-Positioning (Initial + Formation)
 // - Cell-Enumeration für AI und Movement
 //
-// Wird von combatTracking, combatSimulator und Workflows genutzt.
+// Wird von combatTracking, combatantAI und Workflows genutzt.
 
 import {
   type GridPosition,
@@ -15,7 +15,7 @@ import {
   feetToCell,
   spreadFormation as gridSpreadFormation,
 } from '@/utils';
-import { getDistance } from '../combatSimulator/combatHelpers';
+import { getDistance } from '../combatantAI/combatHelpers';
 
 // Re-export für Consumer
 export type { GridPosition, GridConfig } from '@/utils';

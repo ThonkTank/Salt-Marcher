@@ -20,6 +20,7 @@ import type { TerrainDefinition } from '#types/entities/terrainDefinition';
 
 // Utils
 import { coordToKey } from '@/utils';
+import type { ProbabilityDistribution } from '@/utils/probability';
 
 // Encounter-Service
 import { generateEncounter } from '@/services/encounterGenerator/encounterGenerator';
@@ -47,7 +48,7 @@ interface CombatParticipant {
   name: string;
   initiative: number;
   maxHp: number;
-  currentHp: number;
+  currentHp: ProbabilityDistribution;  // PMF für Combat-Simulation
   conditions: string[];
   effects: string[];
 }

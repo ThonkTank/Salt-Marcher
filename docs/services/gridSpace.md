@@ -80,7 +80,7 @@ Gibt alle Cells innerhalb einer Reichweite zurück (PHB-Variant Distanz).
 ## Consumer
 
 - [combatTracking](combatTracking.md) - Nutzt für State-Initialisierung
-- [combatSimulator](combatSimulator/combatantAI.md) - Nutzt für Cell-Evaluation
+- [combatantAI](combatantAI/combatantAI.md) - Nutzt für Cell-Evaluation
 - [difficulty](encounter/difficulty.md) - Nutzt via combatTracking
 
 ## Siehe auch

@@ -1,5 +1,5 @@
 // Ziel: Pack Tactics Modifier - Advantage wenn nicht-incapacitated Ally adjacent zum Target
-// Siehe: docs/services/combatSimulator/actionScoring.md#situational-modifiers
+// Siehe: docs/services/combatantAI/actionScoring.md#situational-modifiers
 //
 // D&D 5e SRD Zeile 27303:
 // "Advantage on attack roll if at least one of the creature's allies is within

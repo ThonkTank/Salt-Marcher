@@ -6,6 +6,7 @@ import { hexCoordinateSchema } from './map';
 import { gameDateTimeSchema } from '../time';
 import { NPC_STATUSES } from '../../constants/npc';
 import { reputationEntrySchema } from '../common/reputation';
+import { probabilityDistributionSchema } from '@/utils/probability';
 
 // ============================================================================
 // SUB-SCHEMAS
@@ -56,7 +57,9 @@ export const npcSchema = z.object({
   reputations: z.array(reputationEntrySchema).optional().default([]),
 
   // HP (werden beim Encounter gesetzt, im Vault persistiert)
-  currentHp: z.number().int(),
+  // currentHp ist ProbabilityDistribution für Combat-Simulation
+  // Für konkreten Wert: getExpectedValue(currentHp)
+  currentHp: probabilityDistributionSchema,
   maxHp: z.number().int().positive(),
 
   // Besitztümer (alle Items die NPC besitzt, im Vault persistiert)

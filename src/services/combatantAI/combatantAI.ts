@@ -1,26 +1,24 @@
 // Ziel: Entscheidungslogik fuer Combat-AI: Action/Target-Auswahl, Movement, Preference
-// Siehe: docs/services/combatSimulator/combatantAI.md (Hub)
-//        docs/services/combatSimulator/actionScoring.md (DPR-Scoring, Caching, Modifiers)
-//        docs/services/combatSimulator/turnExploration.md (Turn-Planung, Movement, Resources)
+// Siehe: docs/services/combatantAI/combatantAI.md (Hub)
+//        docs/services/combatantAI/actionScoring.md (DPR-Scoring, Caching, Modifiers)
+//        docs/services/combatantAI/turnExecution.md (Turn-Planung, Movement, Resources)
 //
 // Diese Datei ist der Index fuer das Combat-AI Modul.
 // Implementierung ist aufgeteilt in:
-// - baseValuesCache.ts: Caching-Infrastruktur
 // - actionScoring.ts: DPR-basierte Bewertungslogik
-// - cellPositioning.ts: Cell-basiertes Positioning-System
+// - influenceMaps.ts: Layer-System fuer Action/Effect Evaluation (inkl. Base-Value Caching)
 // - turnExecution.ts: Turn-Planung und Ausfuehrung
+//
+// Combatant-Initialisierung (inkl. AI-Layers) erfolgt in combatTracking/initialiseCombat.ts
+//
+// Pipeline-Position (Index-Modul):
+// - Re-exportiert: actionScoring, turnExecution, influenceMaps
+// - Eigene Funktionen: getOptimalRangeVsTarget(), determineCombatPreference()
+// - Aufgerufen von: difficulty.ts (via Re-Exports)
 
 // ============================================================================
 // HACK & TODO
 // ============================================================================
-//
-// [HACK]: Tank-Erkennung vereinfacht auf AC >= 16
-// - calculateAllyScore() nutzt AC als Proxy fuer Tank-Rolle
-// - Korrekt waere: Rolle aus Character/Creature-Schema oder explizites Tag
-//
-// [HACK]: Healing-Range nutzt getMaxAttackRange()
-// - calculateAllyScore() behandelt Healing wie Angriff fuer Range
-// - Korrekt waere: Separate healing.range Eigenschaft im Action-Schema
 //
 // [HACK]: Keine Resistenz-Mitigation bei Danger-Berechnung
 // - calculateDangerScore() ignoriert eigene Resistenzen
@@ -65,11 +63,11 @@ import {
 
 // Types aus @/types/combat (Single Source of Truth)
 import type {
-  CombatProfile,
-  SimulationState,
+  Combatant,
   RangeCache,
   CombatPreference,
 } from '@/types/combat';
+import { getActions, getAC, getPosition } from '../combatTracking';
 
 // ============================================================================
 // RE-EXPORTS (Backward Compatibility)
@@ -77,9 +75,18 @@ import type {
 
 // Types re-exported from @/types/combat
 export type {
-  CombatProfile,
+  // Combatant Types
+  Combatant,
+  NPCInCombat,
+  CharacterInCombat,
+  CombatantState,
+  CombatantSimulationState,
+  CombatState,
+  CombatantWithLayers,
+  CombatantSimulationStateWithLayers,
+  CombatStateWithLayers,
+  // Common Types
   CombatResources,
-  SimulationState,
   ConditionState,
   RangeCache,
   ActionIntent,
@@ -90,86 +97,97 @@ export type {
   TurnAction,
   TurnExplorationResult,
 } from '@/types/combat';
-export { createRangeCache } from '@/types/combat';
+export { createRangeCache, isNPC, isCharacter, combatantHasLayers } from '@/types/combat';
 
-// From baseValuesCache.ts
-export {
-  getRelativeAttackCells,
-  getBaseValuesCacheKey,
-  computeRelevantStatHash,
-  getCachedBaseValues,
-  setCachedBaseValues,
-  resetBaseValuesCache,
-  resetCombatCaches,
-} from './baseValuesCache';
-
-// From actionScoring.ts
+// From actionScoring.ts (inkl. konsolidierte Reaction-Funktionen)
 export {
   CONDITION_DURATION,
   DEFAULT_CONDITION_DURATION,
-  getTypicalSaveBonus,
-  calculateSaveFailChance,
-  estimateIncomingDPR,
-  estimateDamagePotential,
-  estimateEffectiveDamagePotential,
-  estimateHealPotential,
-  estimateControlPotential,
-  estimateCombatantValue,
+  calculateIncomingDPR,
   // Concentration Management (Phase 5)
   isConcentrationSpell,
   estimateRemainingConcentrationValue,
   getActionIntent,
-  getCandidates,
   calculatePairScore,
   selectBestActionAndTarget,
   getMaxAttackRange,
-  calculateAndCacheBaseValues,
-  computeScoreFromBaseValues,
-  // Reaction System (Phase 6)
+  // Reaction Helpers
   REACTION_THRESHOLD,
   getAvailableReactions,
   matchesTrigger,
   findMatchingReactions,
-  evaluateReaction,
   estimateExpectedReactionValue,
+  shouldUseAction,
+  evaluateReaction,
   shouldUseReaction,
 } from './actionScoring';
-export type { ReactionContext, ReactionResult } from './actionScoring';
 
-// From cellPositioning.ts
+// From combatHelpers.ts (Save + Potential calculations)
+export {
+  getSaveBonus,
+  calculateSaveFailChance,
+  calculateDamagePotential,
+  calculateEffectiveDamagePotential,
+  calculateHealPotential,
+  calculateControlPotential,
+  calculateCombatantValue,
+} from './combatHelpers';
+
+// From actionSelection.ts (direkt statt via actionScoring)
+export {
+  getCandidates,
+  getEnemies,
+  getAllies,
+} from './actionSelection';
+
+// Types sind jetzt in @/types/combat (Single Source of Truth)
+export type { ReactionContext, ReactionResult } from '@/types/combat';
+
+// From influenceMaps.ts (Layer-System)
+export {
+  buildEscapeDangerMap,
+  calculateDangerScoresBatch,
+  getThreatAt,
+  getAvailableActionsAt,
+  getBaseResolution,
+  getFullResolution,
+  applyEffectsToBase,
+  initializeLayers,
+  augmentWithLayers,
+} from './influenceMaps';
+export type {
+  CellRangeData,
+  BaseResolvedData,
+  FinalResolvedData,
+  ActionLayerData,
+  ActionWithLayer,
+  EffectCondition,
+  EffectLayerData,
+  LayerFilter,
+} from '@/types/combat';
+export { hasLayerData } from '@/types/combat';
+
+// Movement utilities from @/utils
 export {
   getRelevantCells,
   calculateMovementDecay,
-  buildSourceMaps,
-  calculateScoreFromSourceMap,
-  calculateAttractionFromSourceMap,
-  buildAttractionMap,
-  calculateAttractionScoreFromMap,
-  calculateDangerScore,
-  calculateAllyScore,
-  evaluateAllCells,
-  buildEscapeDangerMap,
-} from './cellPositioning';
-export type { SourceMapEntry, AttractionMapEntry } from './cellPositioning';
+} from '@/utils';
 
-// From turnExecution.ts
+// From turnExecution.ts (includes re-exports from actionAvailability.ts)
 export {
   hasGrantMovementEffect,
-  getAvailableActions,
-  matchesRequirement,
-  generateBonusActions,
-  wouldTriggerOA,
-  getEnemyReachCells,
-  estimateOADamage,
-  calculateExpectedOADamage,
+  getAvailableActionsWithLayers,
   executeTurn,
-  // Resource Management (Phase 4)
+  // Action Availability (from actionAvailability.ts via turnExecution.ts)
   isActionAvailable,
+  isActionUsable,
+  matchesRequirement,
+  hasIncapacitatingCondition,
+  getAvailableActionsForCombatant,
+  // Resource Management
   initializeResources,
   consumeActionResource,
   tickRechargeTimers,
-  // Reaction System (Phase 6)
-  executeOA,
 } from './turnExecution';
 
 // ============================================================================
@@ -226,29 +244,42 @@ const actionSchema = z.object({
 });
 
 /**
- * CombatProfile Schema fuer CLI-Validierung.
- * Wichtig: deathProbability hat Default 0 (fehlt oft in Test-Daten).
+ * CombatantState Schema fuer CLI-Validierung.
+ * Transient state attached to NPC/Character during combat.
  */
-export const combatProfileSchema = z.object({
-  participantId: z.string({ required_error: 'participantId ist erforderlich' }),
-  groupId: z.string({ required_error: 'groupId ist erforderlich' }),
-  name: z.string({ required_error: 'name ist erforderlich' }),
-  ac: z.number({ required_error: 'ac ist erforderlich' }),
-  hp: z.record(z.string(), z.number(), {
-    required_error: 'hp ist erforderlich (Format: {"7": 1})',
-  }),
-  speed: speedSchema,
-  actions: z.array(actionSchema),
+const combatantStateSchema = z.object({
   position: gridPositionSchema,
-  deathProbability: z.number().default(0),
+  conditions: z.array(z.object({ name: z.string() })).default([]),
+  groupId: z.string({ required_error: 'groupId ist erforderlich' }),
 });
 
 /**
- * SimulationState Schema fuer CLI-Validierung.
+ * Combatant Schema fuer CLI-Validierung.
+ * Structure: NPCInCombat | CharacterInCombat with combatState.
+ */
+export const combatantSchema = z.object({
+  id: z.string({ required_error: 'id ist erforderlich' }),
+  name: z.string({ required_error: 'name ist erforderlich' }),
+  currentHp: z.union([
+    z.number(),
+    z.record(z.string(), z.number()),
+  ], {
+    required_error: 'currentHp ist erforderlich',
+  }),
+  creature: z.object({
+    id: z.string(),
+    ac: z.number(),
+    speed: speedSchema.optional(),
+  }).optional(),
+  combatState: combatantStateSchema,
+});
+
+/**
+ * CombatantSimulationState Schema fuer CLI-Validierung.
  * Wichtig: alliances ist Record<string, string[]>, NICHT Array!
  */
-export const simulationStateSchema = z.object({
-  profiles: z.array(combatProfileSchema),
+export const combatantSimulationStateSchema = z.object({
+  combatants: z.array(combatantSchema),
   alliances: z.record(z.string(), z.array(z.string()), {
     required_error: 'alliances ist erforderlich',
     invalid_type_error: 'alliances muss ein Record sein, kein Array. Format: {"party": ["party"], "enemies": ["enemies"]}',
@@ -256,16 +287,8 @@ export const simulationStateSchema = z.object({
 });
 
 /** Typen aus Schemas ableiten. */
-export type ValidatedCombatProfile = z.infer<typeof combatProfileSchema>;
-export type ValidatedSimulationState = z.infer<typeof simulationStateSchema>;
-
-/**
- * functionSchemas: Mappt Funktionsnamen zu Parameter-Schema-Arrays.
- * CLI-Generator erkennt diesen Export automatisch fuer dynamische Validierung.
- */
-export const functionSchemas = {
-  evaluateAllCells: [combatProfileSchema, simulationStateSchema, z.number()],
-} as const;
+export type ValidatedCombatant = z.infer<typeof combatantSchema>;
+export type ValidatedCombatantSimulationState = z.infer<typeof combatantSimulationStateSchema>;
 
 // ============================================================================
 // OPTIMAL RANGE & PREFERENCE
@@ -276,31 +299,34 @@ export const functionSchemas = {
  * Beruecksichtigt: Gegner-AC, eigene Actions, Hit-Chance.
  * Cached Ergebnisse fuer Performance (5 Goblins vs 4 PCs = 4 Berechnungen, nicht 20).
  *
- * @param attacker Angreifendes Profil
- * @param target Ziel-Profil
+ * @param attacker Angreifender Combatant
+ * @param target Ziel-Combatant
  * @param cache Optional: Cache fuer wiederholte Matchups
  * @returns Optimale Reichweite in Cells
  */
 export function getOptimalRangeVsTarget(
-  attacker: CombatProfile,
-  target: CombatProfile,
+  attacker: Combatant,
+  target: Combatant,
   cache?: RangeCache
 ): number {
   // Cache-Check
-  const cached = cache?.get(attacker.participantId, target.participantId);
+  const cached = cache?.get(attacker.id, target.id);
   if (cached !== undefined) {
-    debug('getOptimalRangeVsTarget: cache hit', { attacker: attacker.participantId, target: target.participantId, cached });
+    debug('getOptimalRangeVsTarget: cache hit', { attacker: attacker.id, target: target.id, cached });
     return cached;
   }
+
+  const attackerActions = getActions(attacker);
+  const targetAC = getAC(target);
 
   // Berechnung: Welche Reichweite maximiert meinen EV gegen dieses Ziel?
   let bestRange = 1;  // Default: Melee (1 Cell = 5ft)
   let bestEV = 0;
 
-  for (const action of attacker.actions) {
+  for (const action of attackerActions) {
     // Multiattack: Evaluate die Multiattack selbst, nicht einzelne Refs
     if (action.multiattack) {
-      const refs = resolveMultiattackRefs(action, attacker.actions);
+      const refs = resolveMultiattackRefs(action, attackerActions);
       let totalEV = 0;
       let maxRange = 0;
 
@@ -309,7 +335,7 @@ export function getOptimalRangeVsTarget(
         const rangeFeet = ref.range?.normal ?? 5;
         maxRange = Math.max(maxRange, rangeFeet);
 
-        const hitChance = calculateHitChance(ref.attack.bonus, target.ac);
+        const hitChance = calculateHitChance(ref.attack.bonus, targetAC);
         const dmgPMF = diceExpressionToPMF(ref.damage.dice);
         const expectedDmg = getExpectedValue(addConstant(dmgPMF, ref.damage.modifier));
         totalEV += hitChance * expectedDmg;
@@ -323,7 +349,7 @@ export function getOptimalRangeVsTarget(
       const rangeFeet = action.range?.normal ?? 5;
       const rangeCells = feetToCell(rangeFeet);
 
-      const hitChance = calculateHitChance(action.attack.bonus, target.ac);
+      const hitChance = calculateHitChance(action.attack.bonus, targetAC);
       const dmgPMF = diceExpressionToPMF(action.damage.dice);
       const expectedDmg = getExpectedValue(addConstant(dmgPMF, action.damage.modifier));
       const ev = hitChance * expectedDmg;
@@ -336,15 +362,15 @@ export function getOptimalRangeVsTarget(
   }
 
   debug('getOptimalRangeVsTarget:', {
-    attacker: attacker.participantId,
-    target: target.participantId,
-    targetAC: target.ac,
+    attacker: attacker.id,
+    target: target.id,
+    targetAC,
     bestRange,
     bestEV,
   });
 
   // Cache-Set
-  cache?.set(attacker.participantId, target.participantId, bestRange);
+  cache?.set(attacker.id, target.id, bestRange);
 
   return bestRange;
 }

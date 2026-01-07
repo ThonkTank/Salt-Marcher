@@ -5,6 +5,9 @@
 // Eliminiert Duplikation zwischen combatantAI.ts und combatTracking.ts.
 
 import type { Action } from './entities/action';
+import type { NPC } from './entities/npc';
+import type { Character } from './entities/character';
+import type { TriggerEvent } from '@/constants/action';
 
 // ============================================================================
 // RE-EXPORTS aus @/utils (Single Source of Truth)
@@ -44,12 +47,6 @@ export interface ConditionState {
 import type { ProbabilityDistribution, GridPosition, SpeedBlock, GridConfig } from '@/utils';
 
 /**
- * Combat Profile für einen Kampfteilnehmer.
- * Unified für Simulation (PMF-basiert) und Tracking.
- *
- * HP ist immer PMF - deterministische Werte als Single-Value-PMF.
- */
-/**
  * Runtime Resource-Tracking für Combat.
  * Spell Slots, Recharge-Timer, Per-Day Uses.
  */
@@ -62,19 +59,55 @@ export interface CombatResources {
   perDayUses?: Record<string, number>;
 }
 
-export interface CombatProfile {
-  participantId: string;
-  groupId: string;  // 'party' für PCs, UUID für Encounter-Gruppen
-  hp: ProbabilityDistribution;
-  deathProbability: number;
-  ac: number;
-  speed: SpeedBlock;
-  actions: Action[];
-  conditions?: ConditionState[];
-  position: GridPosition;  // Cell-Indizes, nicht Feet
-  environmentBonus?: number;
-  resources?: CombatResources;
-  concentratingOn?: Action;  // Aktuell konzentrierter Spell
+
+// ============================================================================
+// COMBATANT (ersetzt CombatProfile)
+// ============================================================================
+
+/**
+ * Transiente Combat-Daten für einen Combatant.
+ * Wird an NPC/Character angehängt während Combat aktiv ist.
+ * NICHT persistiert - wird nach Combat entfernt.
+ */
+export interface CombatantState {
+  position: GridPosition;           // Cell-Indizes (5ft-Cells)
+  conditions: ConditionState[];     // Aktive Buffs/Debuffs
+  resources?: CombatResources;      // Spell Slots, Recharge Timer
+  concentratingOn?: string;         // Action-ID des aktiven Konzentrations-Spells
+  groupId: string;                  // 'party' für PCs, UUID für Encounter-Gruppen
+}
+
+/**
+ * NPC mit Combat-State (während Combat aktiv).
+ * currentHp ist bereits ProbabilityDistribution im Base-Typ.
+ */
+export type NPCInCombat = NPC & { combatState: CombatantState };
+
+/**
+ * Character mit Combat-State (während Combat aktiv).
+ * currentHp ist bereits ProbabilityDistribution im Base-Typ.
+ */
+export type CharacterInCombat = Character & { combatState: CombatantState };
+
+/**
+ * Unified Combatant-Typ für alle Kampfteilnehmer.
+ * Ersetzt CombatProfile - verwendet Base-Typen + transiente CombatantState.
+ */
+export type Combatant = NPCInCombat | CharacterInCombat;
+
+/**
+ * Type Guard: Prüft ob Combatant ein NPC ist.
+ * NPCs haben ein `creature`-Feld, Characters nicht.
+ */
+export function isNPC(c: Combatant): c is NPCInCombat {
+  return 'creature' in c;
+}
+
+/**
+ * Type Guard: Prüft ob Combatant ein Character ist.
+ */
+export function isCharacter(c: Combatant): c is CharacterInCombat {
+  return !('creature' in c);
 }
 
 // ============================================================================
@@ -110,10 +143,10 @@ export function createRangeCache(): RangeCache {
 
 /**
  * Simulation State für Combat-AI.
- * Minimaler State für Entscheidungslogik.
+ * Enthält alle Combatants und deren Allianzen.
  */
-export interface SimulationState {
-  profiles: CombatProfile[];
+export interface CombatantSimulationState {
+  combatants: Combatant[];
   alliances: Record<string, string[]>;  // groupId → verbündete groupIds
   rangeCache?: RangeCache;
 }
@@ -129,14 +162,35 @@ export interface SurpriseState {
 }
 
 /**
- * Combat State für Tracking (extended SimulationState).
- * Enthält zusätzliche Felder für UI und Round-Tracking.
+ * Combat State für Tracking und Simulation.
+ * Enthält Grid, Round-Number, Surprise-Status, Initiative und Protocol.
  */
-export interface CombatState extends SimulationState {
+export interface CombatState extends CombatantSimulationState {
   grid: GridConfig;
   roundNumber: number;
   surprise: SurpriseState;
   resourceBudget: number;
+
+  // Initiative & Turn Tracking
+  turnOrder: string[];        // Combatant-IDs in Initiative-Reihenfolge
+  currentTurnIndex: number;   // Index in turnOrder
+
+  // Combat Protocol
+  protocol: CombatProtocolEntry[];
+}
+
+/** Protokoll-Eintrag für einen Zug im Combat. */
+export interface CombatProtocolEntry {
+  round: number;
+  combatantId: string;
+  combatantName: string;
+  actions: TurnAction[];
+  damageDealt: number;
+  damageReceived: number;
+  healingDone: number;
+  positionBefore: GridPosition;
+  positionAfter: GridPosition;
+  notes: string[];           // "Critical hit", "Killed Goblin #2", etc.
 }
 
 // ============================================================================
@@ -168,7 +222,7 @@ export type CombatPreference = 'melee' | 'ranged' | 'hybrid';
 /** Score-Ergebnis für eine (Action, Target)-Kombination. */
 export interface ActionTargetScore {
   action: Action;
-  target: CombatProfile;
+  target: Combatant;
   score: number;
   intent: ActionIntent;
 }
@@ -210,7 +264,7 @@ export interface CellEvaluation {
  */
 export type TurnAction =
   | { type: 'move'; targetCell: GridPosition }
-  | { type: 'action'; action: Action; target?: CombatProfile; targetCell?: GridPosition }
+  | { type: 'action'; action: Action; target?: Combatant; targetCell?: GridPosition }
   | { type: 'pass' };
 
 /**
@@ -298,4 +352,171 @@ export interface ActionBaseValues {
   baseDefensiveMultiplier?: number;  // z.B. 0.10 für Shield of Faith (+2 AC × 0.05)
   baseExtraActions?: number;         // z.B. 1 für Haste
   baseDuration?: number;             // Erwartete Buff-Duration (Runden)
+}
+
+// ============================================================================
+// LAYER SYSTEM TYPES (für influenceMaps.ts)
+// ============================================================================
+
+/** Cell-spezifische Range-Daten (pre-computed) */
+export interface CellRangeData {
+  inRange: boolean;
+  inNormalRange: boolean;         // false = Long Range Disadvantage
+  distance: number;
+}
+
+/**
+ * Base Resolution für Action gegen Target-Typ (persistiert im ActionLayer).
+ * Enthält nur deterministische Werte - keine situativen Modifier.
+ * Key: combatantType (z.B. "goblin")
+ */
+export interface BaseResolvedData {
+  targetType: string;                       // combatantType des Ziels
+  targetAC: number;                         // AC aus CreatureDefinition (konstant)
+  baseHitChance: number;                    // d20-Mathe: attackBonus vs AC, ohne Advantage
+  baseDamagePMF: ProbabilityDistribution;   // Damage-Würfel ohne Hit-Chance
+  attackBonus: number;                      // Für spätere Modifier-Anwendung
+}
+
+/**
+ * Finale Resolution mit situativen Modifiern (dynamisch berechnet, nie gecacht).
+ * Kombiniert BaseResolvedData mit aktuellen Positions- und Condition-Daten.
+ */
+export interface FinalResolvedData {
+  targetId: string;                         // participantId des konkreten Ziels
+  base: BaseResolvedData;                   // Referenz auf gecachte Base-Daten
+  // Dynamisch berechnet:
+  finalHitChance: number;                   // Mit Advantage/Disadvantage
+  effectiveDamagePMF: ProbabilityDistribution; // baseDamagePMF × finalHitChance
+  netAdvantage: 'advantage' | 'disadvantage' | 'normal';
+  activeEffects: string[];                  // ["pack-tactics", "long-range", "prone-target"]
+}
+
+/** Layer-Daten für eine Action (Runtime-Erweiterung) */
+export interface ActionLayerData {
+  sourceKey: string;                              // "participantId:actionId"
+  rangeCells: number;                             // feetToCell(range.long ?? range.normal)
+  normalRangeCells?: number;                      // feetToCell(range.normal) für Long Range
+  sourcePosition: GridPosition;                   // Position des Angreifers
+  grid: Map<string, CellRangeData>;               // Cell → Range-Info
+  againstTarget: Map<string, BaseResolvedData>;   // Key: combatantType, lazy computed
+}
+
+/** Action mit Layer-Daten (zur Runtime) */
+export type ActionWithLayer = Action & { _layer: ActionLayerData };
+
+/** Type Guard für ActionWithLayer */
+export function hasLayerData(action: Action): action is ActionWithLayer {
+  return '_layer' in action;
+}
+
+/** Bedingung für Effect-Aktivierung */
+export type EffectCondition =
+  // Passive Effects (Always-On when condition met)
+  | { type: 'ally-adjacent-to-target' }           // Pack Tactics
+  | { type: 'ally-opposite-side' }                // Flanking
+  | { type: 'obstacle-between' }                  // Cover
+  | { type: 'target-has-condition'; condition: string }  // Prone, Restrained
+  | { type: 'always' }                            // Unconditional
+  // Reaction Triggers (Schema-driven via action.timing.triggerCondition)
+  | { type: 'trigger'; event: TriggerEvent };     // 'leaves-reach', 'attacked', etc.
+
+/**
+ * Base state type that both legacy and new layer states satisfy.
+ * Used by EffectLayerData.isActiveAt to accept both state types.
+ */
+export interface LayerStateBase {
+  alliances: Record<string, string[]>;
+}
+
+/**
+ * Kontext für Reaction-Evaluation.
+ * Beschreibt das auslösende Event und alle relevanten Informationen.
+ */
+export interface ReactionContext {
+  /** Das auslösende Event (attacked, damaged, spell-cast, leaves-reach, etc.) */
+  event: TriggerEvent;
+  /** Der Auslöser (Angreifer, Spell-Caster, sich bewegende Kreatur) */
+  source: Combatant;
+  /** Optional: Das Ziel des Triggers (bei attacked/damaged der Verteidiger) */
+  target?: Combatant;
+  /** Optional: Die auslösende Action */
+  action?: Action;
+  /** Optional: Bereits zugefügter Schaden (bei 'damaged' Event) */
+  damage?: number;
+  /** Optional: Spell-Level (bei 'spell-cast' Event für Counterspell) */
+  spellLevel?: number;
+  /** Optional: Bewegungs-Kontext für leaves-reach/enters-reach */
+  movement?: { from: GridPosition; to: GridPosition };
+}
+
+/**
+ * Ergebnis einer Reaction-Ausführung.
+ */
+export interface ReactionResult {
+  /** Der Reactor (wer hat reagiert) */
+  reactor: Combatant;
+  /** Die verwendete Reaction */
+  reaction?: Action;
+  /** Ob die Reaction ausgeführt wurde */
+  executed: boolean;
+  /** Optionale Effekte der Reaction */
+  effect?: {
+    /** Schaden der zugefügt wurde (OA, Hellish Rebuke) */
+    damage?: number;
+    /** AC-Bonus der gewährt wurde (Shield) */
+    acBonus?: number;
+    /** Ob ein Spell gecountert wurde (Counterspell) */
+    spellCountered?: boolean;
+  };
+}
+
+/** Layer-Daten für einen Effect/Trait (Runtime-Erweiterung) */
+export interface EffectLayerData {
+  effectId: string;                               // "pack-tactics", "flanking", "reaction:opp-attack"
+  effectType: 'advantage' | 'disadvantage' | 'ac-bonus' | 'attack-bonus' | 'reaction';
+  effectValue?: number;                           // Für Bonuses: +2, +5
+  range: number;                                  // Effekt-Range in Cells (für Reactions: Reach)
+  condition: EffectCondition;
+  isActiveAt: (                                   // Prüf-Funktion
+    attackerPos: GridPosition,
+    targetPos: GridPosition,
+    state: LayerStateBase
+  ) => boolean;
+  // Reaction-spezifische Felder (nur wenn effectType === 'reaction')
+  reactionAction?: Action;                        // Die zugehörige Reaction-Action
+}
+
+/** Filter für Layer-Abfragen */
+export type LayerFilter = (action: ActionWithLayer) => boolean;
+
+// ============================================================================
+// COMBATANT LAYER TYPES
+// ============================================================================
+
+/**
+ * Combatant mit Layer-Daten auf Actions.
+ * Ermöglicht situative Modifier (Advantage/Disadvantage) basierend auf Position.
+ */
+export type CombatantWithLayers = (NPCInCombat | CharacterInCombat) & {
+  combatState: CombatantState & {
+    effectLayers: EffectLayerData[];
+  };
+  /** Actions mit Layer-Daten (überschreibt getActions). */
+  _layeredActions: ActionWithLayer[];
+};
+
+/** Type Guard für CombatantWithLayers */
+export function combatantHasLayers(c: Combatant): c is CombatantWithLayers {
+  return '_layeredActions' in c && Array.isArray(c._layeredActions);
+}
+
+/** SimulationState mit Layer-erweiterten Combatants */
+export interface CombatantSimulationStateWithLayers extends Omit<CombatantSimulationState, 'combatants'> {
+  combatants: CombatantWithLayers[];
+}
+
+/** CombatState mit Layer-erweiterten Combatants */
+export interface CombatStateWithLayers extends Omit<CombatState, 'combatants'> {
+  combatants: CombatantWithLayers[];
 }

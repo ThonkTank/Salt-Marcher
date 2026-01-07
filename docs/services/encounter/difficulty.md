@@ -7,8 +7,8 @@
 >
 > **Verwendet:**
 > - [combatTracking.md](../combatTracking.md) - State-Management + Action-Resolution
-> - [combatantAI.md](../combatSimulator/combatantAI.md) - Entscheidungslogik (Action/Target-Auswahl, Movement)
-> - [combatHelpers.ts](../combatSimulator/) - Alliance-Checks, Hit-Chance
+> - [combatantAI.md](../combatantAI/combatantAI.md) - Entscheidungslogik (Action/Target-Auswahl, Movement)
+> - [combatHelpers.ts](../combatantAI/) - Alliance-Checks, Hit-Chance
 >
 > **Referenzierte Schemas:**
 > - [creature.md](../../types/creature.md) - Action-Schema fuer Simulation
@@ -49,7 +49,7 @@ difficulty.ts (Orchestrator)
     │
     └─► combatantAI.ts (AI-Entscheidungslogik)
             ├── selectBestActionAndTarget()
-            ├── evaluateAllCells()
+            ├── getThreatAt() / getAvailableActionsAt()
             └── executeTurn()
 
 **Hinweis:** `calculateGroupRelations()` liegt in [groupActivity.ts](groupActivity.md#calculatealliances) und wird bei Encounter-Erstellung aufgerufen. Die `alliances` werden im `EncounterInstance`-Objekt gespeichert und an die Simulation uebergeben.
@@ -66,7 +66,7 @@ difficulty.ts (Orchestrator)
 
 **Design-Entscheidung:** combatTracking/ enthält nur State + Resolution, damit es spaeter auch als generisches Helper-Repository fuer den manuellen Combat-Tracker dienen kann. Die autonome Simulations-Logik bleibt in difficulty.ts.
 
-**Hinweis:** Fuer Standalone-Nutzung (z.B. Combat-Tracker) siehe [combatTracking.md](../combatTracking.md) und [combatSimulator/](../combatSimulator/).
+**Hinweis:** Fuer Standalone-Nutzung (z.B. Combat-Tracker) siehe [combatTracking.md](../combatTracking.md) und [combatantAI/](../combatantAI/).
 
 ---
 
@@ -475,7 +475,7 @@ Bewegung wird durch Attraction/Repulsion-Vektoren bestimmt. Jeder Combatant uebt
 
 Die Summe aller Vektoren ergibt die optimale Bewegungsrichtung.
 
-> **Implementierung:** [turnExploration.md](../combatSimulator/turnExploration.md)
+> **Implementierung:** [turnExploration.md](../combatantAI/turnExploration.md)
 >
 > | Funktion | Beschreibung |
 > |----------|--------------|
@@ -489,7 +489,7 @@ Die Summe aller Vektoren ergibt die optimale Bewegungsrichtung.
 
 Aktionen werden basierend auf Expected Value ausgewaehlt. Das TurnBudget-System ermoeglicht granulare Schritt-fuer-Schritt Evaluation.
 
-> **Implementierung:** [actionScoring.md](../combatSimulator/actionScoring.md)
+> **Implementierung:** [actionScoring.md](../combatantAI/actionScoring.md)
 >
 > | Funktion | Beschreibung |
 > |----------|--------------|

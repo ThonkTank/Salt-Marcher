@@ -21,7 +21,8 @@ export const characterPresets = [
     passivePerception: 12,
     passiveStealth: 10,  // DEX-Mod 0, keine Proficiency
     speed: 30,
-    strength: 16,
+    abilities: { str: 16, dex: 10, con: 14, int: 10, wis: 12, cha: 8 },
+    saveProficiencies: ['str', 'con'] as const,  // Fighter Save Proficiencies
     inventory: [],
   },
   {
@@ -35,7 +36,8 @@ export const characterPresets = [
     passivePerception: 14,
     passiveStealth: 12,  // DEX-Mod +2
     speed: 30,
-    strength: 8,
+    abilities: { str: 8, dex: 14, con: 12, int: 18, wis: 14, cha: 10 },
+    saveProficiencies: ['int', 'wis'] as const,  // Wizard Save Proficiencies
     inventory: [],
   },
 ];

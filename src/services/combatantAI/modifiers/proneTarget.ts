@@ -1,5 +1,5 @@
 // Ziel: Prone Target Modifier - Advantage/Disadvantage basierend auf Distanz
-// Siehe: docs/services/combatSimulator/actionScoring.md#situational-modifiers
+// Siehe: docs/services/combatantAI/actionScoring.md#situational-modifiers
 //
 // D&D 5e SRD Zeile 14456:
 // "An attack roll against you has Advantage if the attacker is within 5 feet

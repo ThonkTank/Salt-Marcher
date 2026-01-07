@@ -1,7 +1,7 @@
 # Grid Utilities
 
 > **Verantwortlichkeit:** Square-cell Grid-Operationen fuer Combat und Dungeon-Maps
-> **Konsumiert von:** [combatResolver](../services/combatSimulator/combatResolver.md), [combatantAI](../services/combatSimulator/combatantAI.md), Dungeon-System (zukuenftig)
+> **Konsumiert von:** [combatResolver](../services/combatantAI/combatResolver.md), [combatantAI](../services/combatantAI/combatantAI.md), Dungeon-System (zukuenftig)
 >
 > **Verwandte Dokumente:**
 > - [hex.ts](../utils/hex.md) - Hex-Grid fuer Overworld

@@ -20,6 +20,7 @@ import {
   AOE_SHAPES,
   AOE_ORIGINS,
   TARGETING_TYPES,
+  VALID_TARGETS,
   SAVE_ON_SAVE_EFFECTS,
   ADVANTAGE_CONDITIONS,
   ADVANTAGE_STATES,
@@ -61,6 +62,7 @@ export const rangeTypeSchema = z.enum(RANGE_TYPES);
 export const aoeShapeSchema = z.enum(AOE_SHAPES);
 export const aoeOriginSchema = z.enum(AOE_ORIGINS);
 export const targetingTypeSchema = z.enum(TARGETING_TYPES);
+export const validTargetsSchema = z.enum(VALID_TARGETS);
 export const saveOnSaveEffectSchema = z.enum(SAVE_ON_SAVE_EFFECTS);
 export const advantageConditionSchema = z.enum(ADVANTAGE_CONDITIONS);
 export const modifiableStatSchema = z.enum(MODIFIABLE_STATS);
@@ -302,6 +304,7 @@ export type IncomingModifiers = z.infer<typeof incomingModifiersSchema>;
 /** Zielauswahl */
 export const targetingSchema = z.object({
   type: targetingTypeSchema,
+  validTargets: validTargetsSchema,
   count: z.number().int().positive().optional(),
   aoe: aoeSchema.optional(),
   friendlyFire: z.boolean().optional(),

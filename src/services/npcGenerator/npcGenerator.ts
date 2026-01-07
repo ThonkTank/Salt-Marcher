@@ -25,6 +25,7 @@ import {
   selectCulture,
   resolveAttributes,
   rollDice,
+  createSingleValue,
 } from '@/utils';
 import { vault } from '@/infrastructure/vault/vaultInstance';
 
@@ -125,7 +126,7 @@ export function generateNPC(
     encounterCount: 1,
     lastKnownPosition: options?.position,
     reputations: [],
-    currentHp: maxHp,
+    currentHp: createSingleValue(maxHp),
     maxHp,
     possessions: [],  // Persistente Besitztümer (via encounterLoot befüllt)
     carriedPossessions: undefined,  // Ephemer: was NPC gerade dabei hat (berechnet pro Encounter)

@@ -1,5 +1,5 @@
 // Ziel: Generische 3D-Vektor-Operationen für Combat-AI und Grid-Systeme
-// Siehe: docs/services/combatSimulator/turnExploration.md
+// Siehe: docs/services/combatantAI/turnExploration.md
 
 /**
  * 3D-Vektor mit x, y, z Komponenten.

@@ -1,28 +1,90 @@
 // Ziel: Combat-Tracking Service Index
 // Siehe: docs/services/combatTracking.md
 
-// Types re-exported from @/types/combat
+// ============================================================================
+// COMBAT INITIALIZATION (initialiseCombat.ts)
+// ============================================================================
+
+export {
+  initialiseCombat,
+  type PartyInput,
+  // Resource Management
+  initializeResources,
+  consumeActionResource,
+  tickRechargeTimers,
+} from './initialiseCombat';
+
+// ============================================================================
+// TYPES (re-exported from @/types/combat)
+// ============================================================================
+
 export type {
   ProbabilityDistribution,
   GridPosition,
   GridConfig,
   SpeedBlock,
   ConditionState,
-  CombatProfile,
+  CombatResources,
   SurpriseState,
-  SimulationState,
+  // Combatant Types
+  Combatant,
+  NPCInCombat,
+  CharacterInCombat,
+  CombatantState,
+  CombatantSimulationState,
   CombatState,
+  // Other Types
   RoundResult,
   AttackResolution,
   TurnBudget,
 } from '@/types/combat';
 
-// Local types
-export type { PartyInput } from './combatTracking';
+// Type Guards
+export { isNPC, isCharacter } from '@/types/combat';
 
-// Functions from combatTracking
+// ============================================================================
+// COMBATANT STATE (combatState.ts)
+// ============================================================================
+
+export {
+  // Combatant Accessors
+  getHP,
+  getAC,
+  getSpeed,
+  getActions,
+  getAbilities,
+  getSaveProficiencies,
+  getCR,
+  getCombatantType,
+  getGroupId,
+  getPosition,
+  getConditions,
+  getDeathProbability,
+  getMaxHP,
+  getResources,
+  // Combatant Setters
+  setHP,
+  setPosition,
+  setConditions,
+  addCondition,
+  removeCondition,
+  setConcentration,
+  setResources,
+  // Turn Management
+  advanceTurn,
+  getCurrentCombatant,
+  isCombatOver,
+  // Types
+  type CombatStateWithScoring,
+} from './combatState';
+
+// ============================================================================
+// COMBAT TRACKING (combatTracking.ts)
+// ============================================================================
+
 export {
   // Turn Budget Functions
+  hasAnyBonusAction,
   createTurnBudget,
   hasBudgetRemaining,
   consumeMovement,
@@ -30,19 +92,19 @@ export {
   consumeBonusAction,
   consumeReaction,
   applyDash,
-  // Profile Creation
-  createPartyProfiles,
-  createEnemyProfiles,
-  // Surprise
-  checkSurprise,
-  // State Initialization
-  createCombatState,
   // Action Resolution
   resolveAttack,
-  // State Updates
-  updateCombatantHP,
-  updateCombatantPosition,
+  // Reaction Processing
+  processReactionTrigger,
+  resolveAttackWithReactions,
+  checkCounterspell,
+  // Types
+  type ReactionTrigger,
+  type AttackResolutionWithReactions,
 } from './combatTracking';
+
+// Re-export Reaction types from @/types/combat
+export type { ReactionContext, ReactionResult } from '@/types/combat';
 
 // Creature Cache (für effizientes Laden)
 export {

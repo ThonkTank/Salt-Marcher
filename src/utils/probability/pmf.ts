@@ -19,6 +19,7 @@
 // [TODO]: Advantage/Disadvantage als First-Class-Feature
 // - Aktuell via 2d20kh1/kl1, aber kein dediziertes API
 
+import { z } from 'zod';
 import { parseDice } from './diceParser';
 import type { DiceNode, KeepDrop, Explode, Reroll, ComparisonOp } from '#types/common/counting';
 
@@ -31,6 +32,34 @@ import type { DiceNode, KeepDrop, Explode, Reroll, ComparisonOp } from '#types/c
  * Sum of all probabilities should equal 1.0.
  */
 export type ProbabilityDistribution = Map<number, number>;
+
+/**
+ * Serialisierbare Darstellung einer PMF für Vault-Persistierung.
+ * Array von [value, probability] Tuples.
+ */
+export type SerializedPMF = [number, number][];
+
+/**
+ * Zod-Schema für serialisierte ProbabilityDistribution.
+ * Validiert als Array von [value, probability] Tuples.
+ */
+export const probabilityDistributionSchema = z.array(
+  z.tuple([z.number(), z.number().min(0).max(1)])
+).transform((arr): ProbabilityDistribution => new Map(arr));
+
+/**
+ * Konvertiert Map zu serialisierbarem Array.
+ */
+export function serializePMF(pmf: ProbabilityDistribution): SerializedPMF {
+  return Array.from(pmf.entries());
+}
+
+/**
+ * Konvertiert serialisiertes Array zu Map.
+ */
+export function deserializePMF(arr: SerializedPMF): ProbabilityDistribution {
+  return new Map(arr);
+}
 
 // ============================================================================
 // Helper Functions

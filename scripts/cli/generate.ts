@@ -158,7 +158,7 @@ function getAvailablePresets(): string[] {
 
 /**
  * Konvertiert einen Modulpfad zu einem gültigen Variablennamen für Schemas.
- * z.B. "services/combatSimulator/combatantAI" -> "combatantAISchemas"
+ * z.B. "services/combatantAI/combatantAI" -> "combatantAISchemas"
  */
 function modulePathToSchemaVar(modulePath: string): string {
   const baseName = path.basename(modulePath);
@@ -249,6 +249,107 @@ ${schemaRegistryEntries.join('\n')}
 
 function coordToKey(coord: { q: number; r: number }): string {
   return \`\${coord.q},\${coord.r}\`;
+}
+
+/**
+ * Konvertiert ein Zod-Schema in ein ausfüllbares JSON-Template.
+ * Nutzt Zods interne _def Struktur um Typ-Informationen zu extrahieren.
+ */
+function zodSchemaToTemplate(schema: unknown): unknown {
+  if (!schema || typeof schema !== 'object') return '<unknown>';
+
+  const s = schema as { _def?: { typeName?: string; shape?: () => Record<string, unknown>; type?: unknown; innerType?: unknown; values?: string[]; options?: unknown[]; defaultValue?: () => unknown } };
+  const def = s._def;
+  if (!def || !def.typeName) return '<unknown>';
+
+  switch (def.typeName) {
+    case 'ZodString':
+      return '<string>';
+    case 'ZodNumber':
+      return '<number>';
+    case 'ZodBoolean':
+      return '<boolean>';
+    case 'ZodNull':
+      return null;
+    case 'ZodUndefined':
+      return undefined;
+    case 'ZodLiteral':
+      return (def as { value?: unknown }).value ?? '<literal>';
+    case 'ZodEnum':
+    case 'ZodNativeEnum':
+      return def.values ? '<' + def.values.join('|') + '>' : '<enum>';
+    case 'ZodArray':
+      // Zeige ein leeres Array, da Länge variabel
+      return [];
+    case 'ZodObject': {
+      const shape = typeof def.shape === 'function' ? def.shape() : (def.shape || {});
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(shape as Record<string, unknown>)) {
+        result[key] = zodSchemaToTemplate(value);
+      }
+      return result;
+    }
+    case 'ZodOptional':
+    case 'ZodNullable':
+      return zodSchemaToTemplate(def.innerType);
+    case 'ZodDefault':
+      // Zeige Default-Wert wenn vorhanden
+      if (def.defaultValue) {
+        try {
+          return def.defaultValue();
+        } catch {
+          return zodSchemaToTemplate(def.innerType);
+        }
+      }
+      return zodSchemaToTemplate(def.innerType);
+    case 'ZodUnion':
+    case 'ZodDiscriminatedUnion':
+      // Erste Option als Template
+      if (def.options && Array.isArray(def.options) && def.options.length > 0) {
+        return zodSchemaToTemplate(def.options[0]);
+      }
+      return '<union>';
+    case 'ZodRecord': {
+      const valueTemplate = zodSchemaToTemplate((def as { valueType?: unknown }).valueType ?? def.type);
+      return { '<key>': valueTemplate };
+    }
+    case 'ZodTuple':
+      return '<tuple>';
+    case 'ZodMap':
+      return '<map>';
+    case 'ZodSet':
+      return '<set>';
+    case 'ZodAny':
+      return '<any>';
+    case 'ZodUnknown':
+      return '<unknown>';
+    case 'ZodEffects':
+      // .refine(), .transform() etc.
+      return zodSchemaToTemplate((def as { schema?: unknown }).schema);
+    default:
+      return '<' + def.typeName.replace('Zod', '').toLowerCase() + '>';
+  }
+}
+
+/**
+ * Holt Schema-Template für eine Funktion.
+ * Bei Multi-Arg gibt Array zurück, bei Single-Arg das Objekt direkt.
+ */
+function getSchemaTemplate(modulePath: string, functionName: string): unknown {
+  const moduleSchemas = schemaRegistry[modulePath];
+  if (!moduleSchemas) {
+    return { error: 'Modul hat keine functionSchemas: ' + modulePath };
+  }
+
+  const fnSchemas = moduleSchemas[functionName] as unknown[] | undefined;
+  if (!fnSchemas) {
+    return { error: 'Funktion hat kein Schema: ' + functionName };
+  }
+
+  const templates = fnSchemas.map(schema => zodSchemaToTemplate(schema));
+
+  // Single-Arg: direkt zurückgeben, Multi-Arg: als Array
+  return templates.length === 1 ? templates[0] : templates;
 }
 
 /**
@@ -403,6 +504,7 @@ async function main() {
       list: { type: 'boolean', short: 'l' },
       help: { type: 'boolean', short: 'h' },
       debug: { type: 'boolean', short: 'd' },
+      schema: { type: 'boolean', short: 's' },
     },
   });
 
@@ -429,19 +531,25 @@ Service-Test-CLI
 
 Nutzung:
   npm run cli -- <modul> <funktion> '<json-args>'
+  npm run cli -- <modul> <funktion> --schema
   npm run cli -- --list
   npm run cli -- <modul> --list
 
 Optionen:
   -l, --list    Module oder Funktionen auflisten
+  -s, --schema  Input-Schema als ausfüllbares Template anzeigen
   -d, --debug   Debug-Modus aktivieren (DEBUG_SERVICES=true)
   -h, --help    Diese Hilfe anzeigen
 
 Beispiele:
+  # Schema-Template für eine Funktion anzeigen:
+  npm run cli -- services/combatantAI/cellPositioning evaluateAllCells --schema
+
+  # Funktion mit JSON-Args aufrufen:
   npm run cli -- services/encounterGenerator/groupSeed selectSeed '{\"terrain\":{\"id\":\"forest\"},\"crBudget\":15,\"timeSegment\":\"midday\",\"factions\":[]}'
 
   # Multi-Arg Funktionen (Array = spread):
-  npm run cli -- services/encounterGenerator/groupPopulation populate '[{\"creatureId\":\"goblin\",\"factionId\":\"bergstamm\"},{\"terrain\":{\"id\":\"forest\"},\"timeSegment\":\"midday\",\"eligibleCreatures\":[]},\"threat\"]'
+  npm run cli -- services/encounterGenerator/groupPopulation populate '[{...},{...},\"threat\"]'
 
   # Mit Debug-Output:
   npm run cli -- services/encounterGenerator/groupSeed selectSeed '{...}' --debug
@@ -472,6 +580,13 @@ Beispiele:
   if (typeof fn !== 'function') {
     console.error(functionName + ' ist keine Funktion.');
     process.exit(1);
+  }
+
+  // Schema-Template ausgeben
+  if (values.schema) {
+    const template = getSchemaTemplate(modulePath, functionName);
+    console.log(JSON.stringify(template, null, 2));
+    return;
   }
 
   // Convert object with numeric keys to Map (for PMF functions)

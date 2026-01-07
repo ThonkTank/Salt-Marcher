@@ -1,5 +1,5 @@
 // Ziel: Cover Modifier - Half Cover (+2 AC) durch Kreaturen in Sichtlinie
-// Siehe: docs/services/combatSimulator/actionScoring.md#situational-modifiers
+// Siehe: docs/services/combatantAI/actionScoring.md#situational-modifiers
 //
 // D&D 5e SRD Zeile 657:
 // "Another creature or an object that covers at least half of the target"

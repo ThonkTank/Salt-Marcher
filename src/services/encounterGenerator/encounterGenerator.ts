@@ -208,7 +208,7 @@ export function generateEncounter(context: {
   // Siehe: docs/services/encounter/Balancing.md
   // -------------------------------------------------------------------------
   let currentGroups = flavouredGroups;
-  let simulationResult = difficulty.simulatePMF(currentGroups, context.party);
+  let simulationResult = difficulty.simulatePMF({ groups: currentGroups, alliances }, context.party);
   let iterations = 0;
 
   while (simulationResult.label !== targetDifficulty && iterations < MAX_BALANCING_ITERATIONS) {
@@ -217,7 +217,7 @@ export function generateEncounter(context: {
       break; // Balancing nicht möglich → aktuelle Gruppen akzeptieren
     }
     currentGroups = adjusted;
-    simulationResult = difficulty.simulatePMF(currentGroups, context.party);
+    simulationResult = difficulty.simulatePMF({ groups: currentGroups, alliances }, context.party);
     iterations++;
   }
 

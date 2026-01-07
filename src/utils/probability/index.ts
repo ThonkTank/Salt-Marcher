@@ -22,6 +22,10 @@ export {
 
 export {
   type ProbabilityDistribution,
+  type SerializedPMF,
+  probabilityDistributionSchema,
+  serializePMF,
+  deserializePMF,
   createSingleValue,
   normalize,
   createUniformDie,

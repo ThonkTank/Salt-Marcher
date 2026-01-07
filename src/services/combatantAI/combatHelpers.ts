@@ -1,5 +1,5 @@
 // Ziel: Gemeinsame Helper-Funktionen für Combat-AI, Combat-Tracking und Combat-Resolver
-// Siehe: docs/services/combatSimulator/
+// Siehe: docs/services/combatantAI/
 //
 // Konsolidiert duplizierte Logik:
 // - Alliance/Hostility Checks
@@ -10,6 +10,9 @@
 // - Action-Iteration mit Multiattack-Expansion
 
 import type { Action } from '@/types/entities';
+import type { AbilityScores, AbilityName } from '@/types/entities/creature';
+import type { Combatant } from '@/types/combat';
+import { isNPC } from '@/types/combat';
 import {
   type ProbabilityDistribution,
   type GridPosition,
@@ -24,6 +27,12 @@ import {
   getExpectedValue,
 } from '@/utils';
 import type { SituationalModifiers } from './situationalModifiers';
+import {
+  getAbilities,
+  getSaveProficiencies,
+  getCR,
+  getActions,
+} from '../combatTracking';
 
 // ============================================================================
 // MULTIATTACK RESOLUTION
@@ -337,4 +346,165 @@ export function calculateMultiattackDamage(
   }
 
   return totalDamage;
+}
+
+// ============================================================================
+// SAVE CALCULATION
+// ============================================================================
+
+/**
+ * Berechnet Proficiency Bonus aus CR (Monster) oder Level (Character).
+ * D&D 5e Formel: floor((CR-1)/4) + 2, geclampt auf 2-9.
+ */
+export function getProficiencyBonus(c: Combatant): number {
+  const crOrLevel = isNPC(c) ? getCR(c) : (c as { level: number }).level;
+  // D&D 5e Proficiency-Tabelle: Level 1-4: +2, 5-8: +3, etc.
+  return clamp(Math.floor((crOrLevel - 1) / 4) + 2, 2, 9);
+}
+
+/**
+ * Berechnet Save-Bonus eines Combatants für ein Ability.
+ * Formel: Ability Modifier + (Proficiency wenn proficient).
+ *
+ * @param target Der Combatant dessen Save berechnet wird
+ * @param ability Das Ability ('str', 'dex', 'con', 'int', 'wis', 'cha')
+ * @returns Save-Bonus (kann negativ sein)
+ */
+export function getSaveBonus(target: Combatant, ability: AbilityName): number {
+  const abilities = getAbilities(target);
+  const abilityScore = abilities[ability];
+  const modifier = Math.floor((abilityScore - 10) / 2);
+  const proficiency = getProficiencyBonus(target);
+  const isProficient = getSaveProficiencies(target).includes(ability);
+  return modifier + (isProficient ? proficiency : 0);
+}
+
+/**
+ * Berechnet Wahrscheinlichkeit dass ein Save fehlschlägt.
+ * Formel: (DC - saveBonus - 1) / 20, geclampt auf [0.05, 0.95]
+ *
+ * D&D 5e: Natural 1 ist kein Auto-Fail für Saves, aber wir clampen
+ * auf 5%-95% für realistische Erwartungswerte.
+ *
+ * @param dc Der Save-DC
+ * @param target Der Combatant der saven muss
+ * @param ability Das Ability für den Save
+ * @returns Fail-Wahrscheinlichkeit (0.05 - 0.95)
+ */
+export function calculateSaveFailChance(
+  dc: number,
+  target: Combatant,
+  ability: AbilityName
+): number {
+  const saveBonus = getSaveBonus(target, ability);
+  const failChance = (dc - saveBonus - 1) / 20;
+  return clamp(failChance, 0.05, 0.95);
+}
+
+// ============================================================================
+// DAMAGE/HEAL/CONTROL POTENTIAL
+// ============================================================================
+
+/**
+ * Berechnet maximales Damage-Potential (ohne AC, reiner Würfel-EV).
+ * Iteriert alle Actions und returnt den höchsten erwarteten Schaden.
+ */
+export function calculateDamagePotential(actions: Action[]): number {
+  return actions.reduce((maxDmg, action) => {
+    if (action.multiattack) {
+      const refs = resolveMultiattackRefs(action, actions);
+      const totalDmg = refs.reduce((sum, ref) => {
+        if (!ref.damage) return sum;
+        const dmgPMF = diceExpressionToPMF(ref.damage.dice);
+        return sum + getExpectedValue(addConstant(dmgPMF, ref.damage.modifier));
+      }, 0);
+      return Math.max(maxDmg, totalDmg);
+    }
+
+    if (!action.damage) return maxDmg;
+    const dmgPMF = diceExpressionToPMF(action.damage.dice);
+    const expectedDmg = getExpectedValue(addConstant(dmgPMF, action.damage.modifier));
+    return Math.max(maxDmg, expectedDmg);
+  }, 0);
+}
+
+/**
+ * Berechnet effektives Damage-Potential unter Berücksichtigung von Hit-Chance.
+ * Für Danger-Score: Wie viel Schaden kann der Feind mir zufügen?
+ */
+export function calculateEffectiveDamagePotential(
+  actions: Action[],
+  targetAC: number
+): number {
+  return actions.reduce((maxDmg, action) => {
+    if (action.multiattack) {
+      const refs = resolveMultiattackRefs(action, actions);
+      const totalEffective = refs.reduce((sum, ref) => {
+        if (!ref.damage || !ref.attack) return sum;
+        const baseDmg = getExpectedValue(addConstant(
+          diceExpressionToPMF(ref.damage.dice),
+          ref.damage.modifier
+        ));
+        const hitChance = calculateHitChance(ref.attack.bonus, targetAC);
+        return sum + baseDmg * hitChance;
+      }, 0);
+      return Math.max(maxDmg, totalEffective);
+    }
+
+    if (!action.damage || !action.attack) return maxDmg;
+    const baseDmg = getExpectedValue(addConstant(
+      diceExpressionToPMF(action.damage.dice),
+      action.damage.modifier
+    ));
+    const hitChance = calculateHitChance(action.attack.bonus, targetAC);
+    return Math.max(maxDmg, baseDmg * hitChance);
+  }, 0);
+}
+
+/**
+ * Berechnet maximales Heal-Potential (reiner Würfel-EV).
+ */
+export function calculateHealPotential(actions: Action[]): number {
+  return actions.reduce((maxHeal, action) => {
+    if (!action.healing) return maxHeal;
+    const healPMF = diceExpressionToPMF(action.healing.dice);
+    const expectedHeal = getExpectedValue(addConstant(healPMF, action.healing.modifier));
+    return Math.max(maxHeal, expectedHeal);
+  }, 0);
+}
+
+/**
+ * Berechnet Control-Potential basierend auf Save DC.
+ * Höherer DC = effektivere Control (analog zu höherem Damage).
+ */
+export function calculateControlPotential(actions: Action[]): number {
+  return actions.reduce((maxDC, action) => {
+    if (!action.effects?.some(e => e.condition)) return maxDC;
+
+    if (action.save) {
+      return Math.max(maxDC, action.save.dc);
+    } else if (action.autoHit) {
+      return Math.max(maxDC, 20);
+    }
+
+    return maxDC;
+  }, 0);
+}
+
+/**
+ * Berechnet Gesamtwert eines Combatants (AC-unabhängig).
+ * Für Vergleich: "Wie wertvoll ist dieser Ally für das Team?"
+ *
+ * Gewichtung (heuristisch):
+ * - Damage direkt
+ * - Heal als "geretteter Damage" (~50%)
+ * - Control-DC skaliert (DC 15 ≈ 10 Damage-Äquivalent)
+ */
+export function calculateCombatantValue(combatant: Combatant): number {
+  const actions = getActions(combatant);
+  const dmg = calculateDamagePotential(actions);
+  const heal = calculateHealPotential(actions);
+  const controlDC = calculateControlPotential(actions);
+
+  return dmg + (heal * 0.5) + (controlDC * 0.7);
 }

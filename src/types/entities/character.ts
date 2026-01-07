@@ -3,6 +3,8 @@
 
 import { z } from 'zod';
 import { actionSchema } from './action';
+import { abilityScoresSchema, abilityNameSchema } from './creature';
+import { probabilityDistributionSchema } from '@/utils/probability';
 
 // ============================================================================
 // ZOD SCHEMA
@@ -20,7 +22,9 @@ export const characterSchema = z.object({
 
   // Combat-Stats
   maxHp: z.number().int().positive(),
-  currentHp: z.number().int().min(0),
+  // currentHp ist ProbabilityDistribution für Combat-Simulation
+  // Für konkreten Wert: getExpectedValue(currentHp)
+  currentHp: probabilityDistributionSchema,
   ac: z.number().int().positive(),
 
   // Perception (für Encounter-Distance)
@@ -30,8 +34,12 @@ export const characterSchema = z.object({
   // Movement (für Travel)
   speed: z.number().int().positive(),
 
-  // Attributes (für Encumbrance)
-  strength: z.number().int().min(1).max(30),
+  // Ability Scores (D&D 5e Standard)
+  abilities: abilityScoresSchema,
+
+  // Save-Proficiencies (welche Saves der Character proficient ist)
+  // z.B. Fighter: ['str', 'con'], Wizard: ['int', 'wis']
+  saveProficiencies: z.array(abilityNameSchema).optional(),
 
   // Inventory (simplified für MVP)
   inventory: z.array(z.unknown()),

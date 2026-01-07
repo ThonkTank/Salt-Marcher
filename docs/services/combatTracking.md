@@ -1,69 +1,126 @@
 # combatTracking Service
 
 > **Verantwortlichkeit:** Combat State-Management und Action-Resolution
-> **Input:** Party, Encounter-Gruppen, Allianzen, Aktionen
-> **Output:** Combat State, Attack-Resolution, HP-Updates
+> **Input:** Combatants, Aktionen, TurnBudgets
+> **Output:** Attack-Resolution, HP-Updates, State-Queries
 
 ## Übersicht
 
 Der combatTracking Service ist UI-orientiert und ermöglicht einfache Combat-Tracking-Operationen:
 - "Combatant X macht Combatant Y Z Schaden" → Service übernimmt alle State-Updates
-- Profile-Erstellung aus Party und Encounter-Gruppen
+- Unified Accessors für Combatant-Daten (NPC vs Character transparent)
 - Turn Budget Tracking (D&D 5e Action Economy)
 
 **Pfad:** `src/services/combatTracking/`
 
-## Funktionen
+## Dateistruktur
 
-### Profile Creation
-
-```typescript
-function createPartyProfiles(party: PartyInput): CombatProfile[]
-function createEnemyProfiles(groups: EncounterGroup[]): CombatProfile[]
+```
+src/services/combatTracking/
+├── index.ts           # Öffentliche API (alle Exports)
+├── initialiseCombat.ts # Konsolidierte Combat-Initialisierung (inkl. AI-Layers)
+├── combatState.ts     # Combatant Accessors, Setters, Turn Management
+├── combatTracking.ts  # Turn Budget, Action Resolution, Reactions
+└── creatureCache.ts   # Creature-Caching für NPCs
 ```
 
-Erstellt CombatProfiles aus Party-Daten und Encounter-Gruppen.
+| Datei | Zweck |
+|-------|-------|
+| `initialiseCombat.ts` | Combat + AI Layer Initialisierung: Combatants, Grid, Resources, Layer-Daten |
+| `combatState.ts` | State-Container: Accessors/Setters für Combatant-Daten, Turn Management, `CombatStateWithScoring` |
+| `combatTracking.ts` | Action Resolution: Attack-Resolution, Reactions, Turn Budget |
+| `creatureCache.ts` | Performance: Cached Creature-Lookups für NPCs |
 
-### State Initialization
+---
+
+## Combatant Accessors
 
 ```typescript
-function createCombatState(
-  partyProfiles: CombatProfile[],
-  enemyProfiles: CombatProfile[],
-  alliances: Record<string, string[]>,
-  encounterDistanceFeet?: number,
-  resourceBudget?: number
-): SimulationState
+function getHP(c: Combatant): ProbabilityDistribution
+function getAC(c: Combatant): number
+function getSpeed(c: Combatant): SpeedBlock
+function getActions(c: Combatant): Action[]
+function getAbilities(c: Combatant): AbilityScores
+function getSaveProficiencies(c: Combatant): string[]
+function getCR(c: Combatant): number
+function getCombatantType(c: Combatant): string
+function getGroupId(c: Combatant): string
+function getPosition(c: Combatant): GridPosition
+function getConditions(c: Combatant): ConditionState[]
+function getDeathProbability(c: Combatant): number
+function getMaxHP(c: Combatant): number
+function getResources(c: Combatant): CombatResources | undefined
 ```
 
-Erstellt vollständigen Combat-State mit Grid, Positionen und Surprise-Check.
+Unified Accessors: NPCs laden Werte via CreatureDefinition, Characters verwenden direkte Felder.
 
-### Action Resolution
+---
+
+## Combatant Setters
+
+```typescript
+function setHP(c: Combatant, hp: ProbabilityDistribution): void
+function setPosition(c: Combatant, pos: GridPosition): void
+function setConditions(c: Combatant, conditions: ConditionState[]): void
+function addCondition(c: Combatant, condition: ConditionState): void
+function removeCondition(c: Combatant, conditionName: string): void
+function setConcentration(c: Combatant, actionId: string | undefined): void
+function setResources(c: Combatant, resources: CombatResources): void
+```
+
+State-Mutationen direkt auf Combatant-Entity.
+
+---
+
+## Action Resolution
 
 ```typescript
 function resolveAttack(
-  attacker: CombatProfile,
-  target: CombatProfile,
-  action: Action
+  attacker: Combatant,
+  target: Combatant,
+  action: Action,
+  acBonus?: number
 ): AttackResolution | null
 ```
 
 Löst einen Angriff auf. Unterstützt Einzelangriffe und Multiattack.
 Gibt neue HP-Distribution, Damage-Dealt und Death-Probability zurück.
 
-### State Updates
+---
+
+## Reaction Processing
 
 ```typescript
-function updateCombatantHP(combatant: CombatProfile, newHP: ProbabilityDistribution): void
-function updateCombatantPosition(combatant: CombatProfile, newPosition: GridPosition): void
+function processReactionTrigger(
+  trigger: ReactionTrigger,
+  state: CombatantSimulationState,
+  budgets: Map<string, TurnBudget>
+): ReactionResult[]
+
+function resolveAttackWithReactions(
+  attacker: Combatant,
+  target: Combatant,
+  action: Action,
+  state: CombatantSimulationState,
+  budgets: Map<string, TurnBudget>
+): AttackResolutionWithReactions | null
+
+function checkCounterspell(
+  caster: Combatant,
+  spell: Action,
+  state: CombatantSimulationState,
+  budgets: Map<string, TurnBudget>
+): { countered: boolean; reactions: ReactionResult[] }
 ```
 
-Aktualisiert Combatant-State (mutiert direkt).
+Reaction-Trigger-Verarbeitung für Shield, Counterspell, Hellish Rebuke etc.
 
-### Turn Budget System
+---
+
+## Turn Budget System
 
 ```typescript
-function createTurnBudget(profile: CombatProfile): TurnBudget
+function createTurnBudget(combatant: Combatant): TurnBudget
 function hasBudgetRemaining(budget: TurnBudget): boolean
 function consumeMovement(budget: TurnBudget, cells?: number): void
 function consumeAction(budget: TurnBudget): void
@@ -74,34 +131,20 @@ function applyDash(budget: TurnBudget): void
 
 D&D 5e Aktionsökonomie: Movement, Action, Bonus Action, Reaction.
 
+---
+
 ## Types
 
-### CombatProfile
+### Combatant (NPCInCombat | CharacterInCombat)
 
 ```typescript
-interface CombatProfile {
-  participantId: string;
-  groupId: string;  // 'party' für PCs, UUID für Encounter-Gruppen
-  hp: ProbabilityDistribution;
-  deathProbability: number;
-  ac: number;
-  speed: SpeedBlock;
-  actions: Action[];
-  conditions?: ConditionState[];
+// Beide haben combatState für transiente Combat-Daten
+interface CombatantState {
   position: GridPosition;
-}
-```
-
-### SimulationState
-
-```typescript
-interface SimulationState {
-  profiles: CombatProfile[];
-  alliances: Record<string, string[]>;
-  grid: GridConfig;
-  roundNumber: number;
-  surprise: SurpriseState;
-  resourceBudget: number;
+  conditions: ConditionState[];
+  resources?: CombatResources;
+  groupId: string;
+  concentratingOn?: string;
 }
 ```
 
@@ -118,26 +161,29 @@ interface TurnBudget {
 }
 ```
 
+### CombatStateWithScoring
+
+Extended State für Combat-Simulation mit gecachten Base-Values.
+
+```typescript
+interface CombatStateWithScoring extends CombatStateWithLayers {
+  /** Base Values Cache: `{casterType}-{actionId}:{targetType}` → ActionBaseValues */
+  baseValuesCache: Map<string, ActionBaseValues>;
+}
+```
+
+Definiert in `combatState.ts`. Verwendet von difficulty.ts für Combat-Simulation.
+
+---
+
 ## Abhängigkeiten
 
-- [gridSpace](gridSpace.md) - Grid-Initialisierung und Positioning
-- [combatHelpers](combatSimulator/) - Hit-Chance, Multiattack-Damage, Alliance-Checks
+- [gridSpace](gridSpace.md) - Grid-Initialisierung
+- [influenceMaps](combatantAI/influenceMaps.md) - AI Layer System (initializeLayers, precomputeBaseResolutions)
+- [combatHelpers](combatantAI/) - Hit-Chance, Multiattack-Damage, Alliance-Checks
 - `utils/probability/` - PMF-Operationen
 
 ## Consumer
 
-- [combatSimulator](combatSimulator/combatantAI.md) - AI-Entscheidungslogik
+- [combatantAI](combatantAI/combatantAI.md) - AI-Entscheidungslogik
 - [difficulty](encounter/difficulty.md) - Combat-Simulation für Balancing
-
-## Migration
-
-**DEPRECATED:** `combatResolver.ts` ist jetzt eine Re-Export-Datei.
-Neue Consumer sollten direkt von `combatTracking/` importieren.
-
-```typescript
-// Alt (funktioniert noch)
-import { createCombatState } from '@/services/combatSimulator/combatResolver';
-
-// Neu (bevorzugt)
-import { createCombatState } from '@/services/combatTracking';
-```

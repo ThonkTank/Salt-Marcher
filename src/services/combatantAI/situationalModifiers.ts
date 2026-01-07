@@ -1,5 +1,5 @@
 // Ziel: Plugin-basiertes System für situative Combat-Modifikatoren
-// Siehe: docs/services/combatSimulator/actionScoring.md#situational-modifiers
+// Siehe: docs/services/combatantAI/actionScoring.md#situational-modifiers
 //
 // Architektur:
 // - ModifierEvaluator Interface für einzelne Modifier-Plugins
@@ -12,6 +12,11 @@
 // 2. ModifierEvaluator implementieren
 // 3. Import in modifiers/index.ts hinzufügen
 // Keine Core-Änderungen nötig!
+//
+// Pipeline-Position:
+// - Aufgerufen von: actionScoring.calculatePairScore() → evaluateSituationalModifiers()
+// - Plugins in: modifiers/*.ts (longRange, cover, packTactics, etc.)
+// - Output: SituationalModifiers (netAdvantage, effectiveAttackMod, etc.)
 
 import type { Action } from '@/types/entities';
 import type { GridPosition, ConditionState } from '@/types/combat';
@@ -291,3 +296,4 @@ export function createEmptyModifiers(): SituationalModifiers {
     hasAutoMiss: false,
   };
 }
+

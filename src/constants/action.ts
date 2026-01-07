@@ -138,6 +138,9 @@ export type AoeOrigin = (typeof AOE_ORIGINS)[number];
 export const TARGETING_TYPES = ['single', 'multiple', 'area'] as const;
 export type TargetingType = (typeof TARGETING_TYPES)[number];
 
+export const VALID_TARGETS = ['enemies', 'allies', 'self', 'any'] as const;
+export type ValidTargets = (typeof VALID_TARGETS)[number];
+
 // ============================================================================
 // SAVES & ROLLS
 // ============================================================================

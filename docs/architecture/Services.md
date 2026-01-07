@@ -276,7 +276,7 @@ function createJournalEntry(context: JournalContext): Result<JournalEntry, Error
 | JournalService | JournalContext | JournalEntry | Schreiben |
 | gridSpace | GridConfig, Combatants | GridConfig, Positions | - |
 | combatTracking | Party, Groups, Actions | SimulationState, AttackResolution | Lesen (Creatures) |
-| combatSimulator | CombatProfile, SimulationState | ActionTargetScore, TurnAction[] | - |
+| combatantAI | CombatProfile, SimulationState | ActionTargetScore, TurnAction[] | - |
 | EncounterGenerator/difficulty | EncounterGroup[], PartyInput | SimulationResult, DifficultyLabel | Lesen (Creatures) |
 
 ---
@@ -288,8 +288,8 @@ Jeder Service hat eine eigene Dokumentation unter `docs/services/`:
 - [encounter/](../services/encounter/) - Encounter-Pipeline
 - [gridSpace.md](../services/gridSpace.md) - Grid-State und Positioning
 - [combatTracking.md](../services/combatTracking.md) - Combat State-Management + Resolution
-- [combatSimulator/](../services/combatSimulator/) - Combat-AI
-  - [combatantAI.md](../services/combatSimulator/combatantAI.md) - AI-Entscheidungslogik
+- [combatantAI/](../services/combatantAI/) - Combat-AI
+  - [combatantAI.md](../services/combatantAI/combatantAI.md) - AI-Entscheidungslogik
 - [NPCs/](../services/NPCs/) - NPC-Generierung und Matching
 - [Weather.md](../services/Weather.md) - Wetter-Generierung
 - [Loot.md](../services/Loot.md) - Loot-Generierung

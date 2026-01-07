@@ -1,5 +1,5 @@
 // Ziel: Restrained Modifier - Advantage auf alle Angriffe gegen Restrained Target
-// Siehe: docs/services/combatSimulator/actionScoring.md#situational-modifiers
+// Siehe: docs/services/combatantAI/actionScoring.md#situational-modifiers
 //
 // D&D 5e SRD Zeile 14486:
 // "Attack rolls against you have Advantage"
