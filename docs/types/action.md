@@ -31,7 +31,6 @@ Weapon-Attacks, Spell-Attacks, AoE, Buffs/Debuffs, Healing, Summoning, Transform
 | `summon` | `Summon?` | Beschwoerung | Optional |
 | `transform` | `Transform?` | Verwandlung | Optional |
 | `counter` | `Counter?` | Aufhebung | Optional |
-| `conditionalBonuses` | `ConditionalBonus[]?` | Bedingte Boni | Optional |
 | `critical` | `Critical?` | Kritische Treffer | Optional |
 | `hpThreshold` | `HpThreshold?` | HP-basierte Effekte | Optional |
 | `recharge` | `ActionRecharge?` | Wiederaufladung | Optional |
@@ -41,6 +40,8 @@ Weapon-Attacks, Spell-Attacks, AoE, Buffs/Debuffs, Healing, Summoning, Transform
 | `concentration` | `boolean?` | Erfordert Konzentration | Optional |
 | `description` | `string?` | Beschreibungstext | Optional |
 | `properties` | `string[]?` | Waffen-Eigenschaften | Optional |
+| `schemaModifiers` | `SchemaModifier[]?` | Schema-driven Modifier | Optional |
+| `modifierRefs` | `string[]?` | IDs von Modifier-Presets | Optional |
 | `source` | `ActionSource?` | Herkunft | Optional |
 
 ---
@@ -386,25 +387,6 @@ type ActionRecharge =
 | `onSuccess` | `ActionEffect` | Effekt bei Erfolg |
 | `sizeLimit` | `number?` | Max Groessenunterschied |
 
-### ConditionalBonus
-
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| `condition` | `BonusCondition` | Voraussetzung |
-| `parameter` | `number?` | Parameter fuer Bedingung |
-| `bonus` | `ConditionalBonusEffect` | Gewaehlter Bonus |
-
-```typescript
-type BonusCondition =
-  | 'moved-distance' | 'ally-adjacent' | 'target-prone' | 'target-restrained'
-  | 'below-half-hp' | 'first-attack' | 'hidden' | 'higher-ground' | 'darkness';
-
-interface ConditionalBonusEffect {
-  type: 'damage' | 'attack' | 'advantage' | 'crit-range';
-  value?: number | string;
-}
-```
-
 ### Summon
 
 | Feld | Typ | Beschreibung |
@@ -443,6 +425,73 @@ interface CounterCheck {
   dc: number | 'spell-level';
 }
 ```
+
+### SchemaModifier
+
+Schema-driven Modifier fuer Creature Traits, Spell Effects und Item Properties.
+Ersetzt hardcodierte ModifierEvaluators durch deklarative JSON-basierte DSL.
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `id` | `string` | Eindeutige ID |
+| `name` | `string` | Modifier-Name |
+| `description` | `string?` | Beschreibung |
+| `condition` | `ConditionExpression` | Wann aktiv? |
+| `effect` | `SchemaModifierEffect` | Was passiert? |
+| `priority` | `number?` | Evaluierungsreihenfolge (hoeher = zuerst) |
+
+**ConditionExpression Predicates:**
+
+| Kategorie | Predicates |
+|-----------|------------|
+| Logical | `and`, `or`, `not`, `exists` |
+| Spatial | `adjacent-to`, `within-range`, `beyond-range`, `opposite-side`, `has-line-of-sight` |
+| State | `has-condition`, `is-incapacitated`, `hp-threshold`, `is-ally`, `is-enemy` |
+| Action | `action-is-type`, `action-has-property`, `action-range-type` |
+| Range | `target-in-long-range`, `target-beyond-normal-range` |
+
+**SchemaModifierEffect:**
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `advantage` | `boolean?` | Gewährt Advantage |
+| `disadvantage` | `boolean?` | Verursacht Disadvantage |
+| `attackBonus` | `number?` | Bonus auf Angriffswurf |
+| `acBonus` | `number?` | Bonus auf AC |
+| `damageBonus` | `number \| string?` | Bonus-Schaden (Zahl oder Dice-Expression) |
+| `autoCrit` | `boolean?` | Automatischer kritischer Treffer |
+| `autoMiss` | `boolean?` | Automatischer Fehlschlag |
+| `propertyModifiers` | `PropertyModifier[]?` | Generische Property-Änderungen |
+
+**Beispiel (Pack Tactics):**
+
+```typescript
+schemaModifiers: [{
+  id: 'pack-tactics',
+  name: 'Pack Tactics',
+  condition: {
+    type: 'exists',
+    entity: { type: 'quantified', quantifier: 'any', filter: 'ally' },
+    where: { type: 'adjacent-to', subject: 'self', object: 'target' }
+  },
+  effect: { advantage: true }
+}]
+```
+
+**Beispiel (Long-Limbed):**
+
+```typescript
+schemaModifiers: [{
+  id: 'long-limbed',
+  name: 'Long-Limbed',
+  condition: { type: 'action-is-type', actionType: 'melee-weapon' },
+  effect: {
+    propertyModifiers: [{ path: 'range.normal', operation: 'add', value: 5 }]
+  }
+}]
+```
+
+> **Schema:** [conditionExpression.ts](../../src/types/entities/conditionExpression.ts)
 
 ### Critical
 
@@ -517,6 +566,7 @@ const twfOffHand: Action = {
 
 ```typescript
 const wolfBite: Action = {
+  id: 'wolf-bite',
   name: 'Bite',
   actionType: 'melee-weapon',
   timing: { type: 'action' },
@@ -528,11 +578,8 @@ const wolfBite: Action = {
     condition: 'prone',
     duration: { type: 'instant' },
     affectsTarget: 'enemy'
-  }],
-  conditionalBonuses: [{
-    condition: 'ally-adjacent',
-    bonus: { type: 'advantage' }
   }]
+  // Pack Tactics: Wolf referenziert 'trait-pack-tactics' in creature.actionIds
 };
 ```
 

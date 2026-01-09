@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NEAT Evolution Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>NEAT Evolution Training</h1>
+      <div class="header-stats">
+        <span id="generation-display">Gen 0/0</span>
+        <span id="progress-percent">(0%)</span>
+        <span id="connection-status" class="status-indicator status-disconnected">Disconnected</span>
+      </div>
+    </header>
+
+    <!-- Progress Bar (Generations) -->
+    <div class="progress-container">
+      <div class="progress-bar" id="progress-bar"></div>
+      <div class="progress-label" id="progress-label">Waiting for data...</div>
+    </div>
+
+    <!-- Evaluation Progress (Genomes within current generation) -->
+    <div class="eval-progress-container" id="eval-progress-container">
+      <div class="eval-progress-bar" id="eval-progress-bar"></div>
+      <div class="eval-progress-label" id="eval-progress-label">Evaluating genomes...</div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+      <!-- Fitness Chart -->
+      <div class="chart-card">
+        <h3>Fitness Over Generations</h3>
+        <canvas id="fitness-chart"></canvas>
+      </div>
+
+      <!-- Species Chart -->
+      <div class="chart-card">
+        <h3>Species Count</h3>
+        <canvas id="species-chart"></canvas>
+      </div>
+
+      <!-- Complexity Chart -->
+      <div class="chart-card">
+        <h3>Network Complexity</h3>
+        <canvas id="complexity-chart"></canvas>
+      </div>
+
+      <!-- Stats Panel -->
+      <div class="chart-card stats-panel">
+        <h3>Current Statistics</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Best Fitness</span>
+            <span class="stat-value" id="stat-best-fitness">-</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Avg Fitness</span>
+            <span class="stat-value" id="stat-avg-fitness">-</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Species</span>
+            <span class="stat-value" id="stat-species">-</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Avg Nodes</span>
+            <span class="stat-value" id="stat-nodes">-</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Avg Connections</span>
+            <span class="stat-value" id="stat-connections">-</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Eval Time</span>
+            <span class="stat-value" id="stat-eval-time">-</span>
+          </div>
+        </div>
+
+        <h3 class="section-title">All-Time Best</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Fitness</span>
+            <span class="stat-value stat-highlight" id="stat-global-fitness">-</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Generation</span>
+            <span class="stat-value" id="stat-global-gen">-</span>
+          </div>
+        </div>
+
+        <h3 class="section-title">Performance</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Avg Time/Gen</span>
+            <span class="stat-value" id="stat-avg-time">-</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Elapsed</span>
+            <span class="stat-value" id="stat-elapsed">-</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">ETA</span>
+            <span class="stat-value" id="stat-eta">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Worker Status -->
+    <div class="worker-container">
+      <h3>Worker Status</h3>
+      <div class="worker-grid" id="worker-grid">
+        <!-- Workers will be added dynamically -->
+      </div>
+      <div class="worker-summary" id="worker-summary">-</div>
+    </div>
+  </div>
+
+  <!-- Completion Overlay -->
+  <div class="overlay" id="completion-overlay">
+    <div class="overlay-content">
+      <h2>Training Complete!</h2>
+      <div class="completion-stats">
+        <div class="completion-stat">
+          <span class="completion-label">Final Best Fitness</span>
+          <span class="completion-value" id="completion-fitness">-</span>
+        </div>
+        <div class="completion-stat">
+          <span class="completion-label">Total Generations</span>
+          <span class="completion-value" id="completion-generations">-</span>
+        </div>
+        <div class="completion-stat">
+          <span class="completion-label">Total Time</span>
+          <span class="completion-value" id="completion-time">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

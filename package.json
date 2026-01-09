@@ -11,7 +11,23 @@
     "lint": "eslint src/",
     "test": "vitest",
     "cli:generate": "tsx scripts/cli/generate.ts",
-    "cli": "node scripts/cli/cli.mjs"
+    "cli": "node scripts/cli/cli.mjs",
+    "test:tournament": "npx tsx scripts/test-selectors.ts --tournament --selector greedy",
+    "test:scenario:1v1": "npx tsx scripts/test-selectors.ts --tournament --scenario 0",
+    "test:scenario:mixed": "npx tsx scripts/test-selectors.ts --tournament --scenario 1",
+    "test:scenario:horde": "npx tsx scripts/test-selectors.ts --tournament --scenario 2",
+    "test:scenario:aura": "npx tsx scripts/test-selectors.ts --tournament --scenario 3",
+    "test:scenario:bloodied": "npx tsx scripts/test-selectors.ts --tournament --scenario 4",
+    "test:scenario:kiting": "npx tsx scripts/test-selectors.ts --tournament --scenario 5",
+    "test:scenario:healer": "npx tsx scripts/test-selectors.ts --tournament --scenario 6",
+    "test:scenario:grapple": "npx tsx scripts/test-selectors.ts --tournament --scenario 7",
+    "test:scenario:rampage": "npx tsx scripts/test-selectors.ts --tournament --scenario 8",
+    "build:evolution": "node scripts/evolution/esbuild.evolution.mjs",
+    "evolve": "npm run build:evolution && node dist/evolution/evolve.mjs",
+    "evolve:dev": "npx tsx scripts/evolution/evolve.ts",
+    "evaluate": "npm run build:evolution && node dist/evolution/evaluate.mjs",
+    "evaluate:dev": "npx tsx scripts/evolution/evaluate.ts",
+    "visualize": "npx tsx scripts/evolution/visualize.ts"
   },
   "dependencies": {
     "zod": "^3.24.1"

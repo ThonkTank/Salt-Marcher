@@ -92,6 +92,7 @@ export const DURATION_TYPES = [
   'minutes',
   'hours',
   'until-save',
+  'until-escape',  // Grapple, Web, Net - escape via action/movement
   'concentration',
   'until-long-rest',
 ] as const;
@@ -239,7 +240,7 @@ export type MovementModifierType = (typeof MOVEMENT_MODIFIER_TYPES)[number];
 export const MOVEMENT_MODES = ['grant', 'bonus'] as const;
 export type MovementMode = (typeof MOVEMENT_MODES)[number];
 
-export const GRANT_MOVEMENT_TYPES = ['dash', 'extra'] as const;
+export const GRANT_MOVEMENT_TYPES = ['dash', 'extra', 'teleport'] as const;
 export type GrantMovementType = (typeof GRANT_MOVEMENT_TYPES)[number];
 
 export const FORCED_MOVEMENT_TYPES = [
@@ -273,31 +274,6 @@ export const TERRAIN_EFFECTS = [
   'fog',
 ] as const;
 export type TerrainEffect = (typeof TERRAIN_EFFECTS)[number];
-
-// ============================================================================
-// CONDITIONAL BONUSES
-// ============================================================================
-
-export const BONUS_CONDITIONS = [
-  'moved-distance',
-  'ally-adjacent',
-  'target-prone',
-  'target-restrained',
-  'below-half-hp',
-  'first-attack',
-  'hidden',
-  'higher-ground',
-  'darkness',
-] as const;
-export type BonusCondition = (typeof BONUS_CONDITIONS)[number];
-
-export const CONDITIONAL_BONUS_TYPES = [
-  'damage',
-  'attack',
-  'advantage',
-  'crit-range',
-] as const;
-export type ConditionalBonusType = (typeof CONDITIONAL_BONUS_TYPES)[number];
 
 // ============================================================================
 // SPECIAL ACTIONS
@@ -370,3 +346,148 @@ export type RechargeType = (typeof RECHARGE_TYPES)[number];
 
 export const REST_TYPES = ['short', 'long'] as const;
 export type RestType = (typeof REST_TYPES)[number];
+
+// ============================================================================
+// CONDITION EFFECTS (D&D 5e Rules)
+// ============================================================================
+
+/**
+ * Deklarative Condition Effects gemäß D&D 5e PHB.
+ * Runtime-Code liest diese Effekte aus statt hardcoded Logik.
+ *
+ * Effekt-Typen:
+ * - speed: 0 = keine Bewegung möglich
+ * - attackRoll: 'advantage' | 'disadvantage' auf eigene Angriffe
+ * - incomingAttacks: 'advantage' | 'disadvantage' auf Angriffe gegen dieses Target
+ * - incomingMelee/incomingRanged: Spezifisch für Melee/Ranged
+ * - dexSaves: 'advantage' | 'disadvantage' auf DEX-Saves
+ * - incapacitated: true = keine Actions/Reactions möglich
+ * - autoFailStrDex: true = automatisch fehlgeschlagene STR/DEX Saves
+ * - standUpCost: 0.5 = halbe Bewegung zum Aufstehen (für Prone)
+ */
+export const CONDITION_EFFECTS = {
+  blinded: {
+    attackRoll: 'disadvantage',
+    incomingAttacks: 'advantage',
+    autoFailSight: true,
+  },
+  charmed: {
+    // Kann Charmer nicht angreifen - benötigt sourceId Tracking
+    // Charmer hat Advantage auf Social Checks
+  },
+  deafened: {
+    autoFailHearing: true,
+  },
+  frightened: {
+    attackRoll: 'disadvantage',  // Wenn Quelle sichtbar
+    abilityChecks: 'disadvantage',
+    // Kann sich nicht willentlich zur Quelle bewegen - benötigt sourceId Tracking
+  },
+  grappled: {
+    speed: 0,
+  },
+  incapacitated: {
+    cannotAct: true,  // Keine Actions oder Reactions
+  },
+  invisible: {
+    attackRoll: 'advantage',
+    incomingAttacks: 'disadvantage',
+  },
+  paralyzed: {
+    speed: 0,
+    incapacitated: true,
+    autoFailStrDex: true,
+    incomingAttacks: 'advantage',
+    incomingMeleeCrit: true,  // Melee Hits sind automatisch Crits
+  },
+  petrified: {
+    speed: 0,
+    incapacitated: true,
+    autoFailStrDex: true,
+    incomingAttacks: 'advantage',
+    // + Resistances auf alle Damage Types, Weight x10
+  },
+  poisoned: {
+    attackRoll: 'disadvantage',
+    abilityChecks: 'disadvantage',
+  },
+  prone: {
+    attackRoll: 'disadvantage',  // Eigene Angriffe haben Disadvantage
+    incomingMelee: 'advantage',
+    incomingRanged: 'disadvantage',
+    standUpCost: 0.5,  // Halbe Bewegung zum Aufstehen
+  },
+  restrained: {
+    speed: 0,
+    attackRoll: 'disadvantage',
+    dexSaves: 'disadvantage',
+    incomingAttacks: 'advantage',
+  },
+  stunned: {
+    speed: 0,
+    incapacitated: true,
+    autoFailStrDex: true,
+    incomingAttacks: 'advantage',
+  },
+  unconscious: {
+    speed: 0,
+    incapacitated: true,
+    prone: true,  // Fällt automatisch um
+    autoFailStrDex: true,
+    incomingAttacks: 'advantage',
+    incomingMeleeCrit: true,
+  },
+  exhaustion: {
+    // Exhaustion Level 1-6 mit gestaffelten Effekten
+    // Wird separat behandelt da Level-abhängig
+  },
+} as const;
+
+export type ConditionEffectKey = keyof typeof CONDITION_EFFECTS;
+export type ConditionEffect = (typeof CONDITION_EFFECTS)[ConditionEffectKey];
+
+// ============================================================================
+// ESCAPE CHECK TYPES
+// ============================================================================
+
+export const ESCAPE_CHECK_TYPES = ['dc', 'contested', 'automatic'] as const;
+export type EscapeCheckType = (typeof ESCAPE_CHECK_TYPES)[number];
+
+// ============================================================================
+// CONDITION SEVERITY (für AI-Scoring)
+// ============================================================================
+
+/**
+ * Schweregrad von Conditions für AI-Scoring.
+ * Höher = schlimmer = höhere Priorität zu escapen.
+ * Skaliert so dass typischer Damage-Score (5-15) vergleichbar ist.
+ */
+export const CONDITION_SEVERITY: Record<string, number> = {
+  // Incapacitating (kritisch) - höchste Priorität
+  paralyzed: 15,
+  stunned: 14,
+  unconscious: 15,
+  petrified: 15,
+
+  // Movement-restricting (hoch)
+  restrained: 10,
+  grappled: 7,
+
+  // Disadvantage-causing (mittel)
+  blinded: 6,
+  frightened: 5,
+  poisoned: 4,
+
+  // Minor (niedrig)
+  prone: 3,
+  deafened: 1,
+  charmed: 3,
+} as const;
+
+/**
+ * Gibt den Schweregrad einer Condition zurück.
+ * Wird für AI-Scoring von Escape-Actions verwendet.
+ */
+export function getConditionSeverity(conditionName: string): number {
+  return CONDITION_SEVERITY[conditionName] ?? 5; // Default: mittel
+}

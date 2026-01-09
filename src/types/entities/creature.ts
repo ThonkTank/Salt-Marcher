@@ -9,6 +9,7 @@ import {
   NOISE_LEVELS,
   SCENT_STRENGTHS,
   STEALTH_ABILITIES,
+  sizeSchema,
 } from '../../constants/creature';
 import { WEALTH_TIERS } from '../../constants/loot';
 import { validateDiceExpression, diceMax, diceAvg } from '@/utils';
@@ -19,7 +20,8 @@ import { actionSchema } from './action';
 // SUB-SCHEMAS
 // ============================================================================
 
-export const sizeSchema = z.enum(CREATURE_SIZES);
+// sizeSchema wird aus constants/creature importiert und hier re-exportiert
+export { sizeSchema };
 
 // baseDisposition: numerische Basis-Disposition (-100 bis +100)
 // Effektive Disposition = clamp(baseDisposition + reputation, -100, +100)
@@ -166,6 +168,10 @@ const creatureDefinitionInputSchema = z.object({
   skills: skillProficienciesSchema.optional(),
   speed: speedBlockSchema,
   senses: sensesSchema.optional(),
+  // D&D 5e Immunities/Vulnerabilities
+  vulnerabilities: z.array(z.string()).optional(),     // Damage Vulnerabilities
+  damageImmunities: z.array(z.string()).optional(),    // Damage Immunities
+  conditionImmunities: z.array(z.string()).optional(), // Condition Immunities
   languages: z.array(z.string()).optional(),
   // Actions (D&D 5e Statblock)
   actions: z.array(actionSchema).optional(),

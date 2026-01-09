@@ -4,10 +4,11 @@
 // Re-exportiert Grid-Types aus @/utils und definiert Combat-spezifische Types.
 // Eliminiert Duplikation zwischen combatantAI.ts und combatTracking.ts.
 
-import type { Action } from './entities/action';
+import type { Action, Duration, SaveDC } from './entities/action';
 import type { NPC } from './entities/npc';
 import type { Character } from './entities/character';
 import type { TriggerEvent } from '@/constants/action';
+import type { CombatCellProperties } from './combatTerrain';
 
 // ============================================================================
 // RE-EXPORTS aus @/utils (Single Source of Truth)
@@ -37,6 +38,9 @@ export interface ConditionState {
   probability: number;
   effect: string;  // 'incapacitated', 'disadvantage', 'attack-bonus', 'damage-bonus', etc.
   value?: number;  // Numerischer Wert für Buffs
+  duration?: Duration;  // Wie lange hält die Condition? (rounds, until-save, until-escape)
+  sourceId?: string;  // ID des Verursachers (für contested escape checks)
+  endingSave?: SaveDC;  // Save am Turn-Ende um Condition zu beenden (aus ActionEffect.endingSave)
 }
 
 // ============================================================================
@@ -150,6 +154,10 @@ export interface CombatantSimulationState {
   combatants: Combatant[];
   alliances: Record<string, string[]>;  // groupId → verbündete groupIds
   rangeCache?: RangeCache;
+  /** Optionale Terrain-Map für Cover/LoS-Berechnung. */
+  terrainMap?: Map<string, CombatCellProperties>;
+  /** Optionale Map-Grenzen für Grid-Boundary-Enforcement. */
+  mapBounds?: { minX: number; maxX: number; minY: number; maxY: number };
 }
 
 // ============================================================================
@@ -179,12 +187,41 @@ export interface CombatState extends CombatantSimulationState {
   // Turn Budget des aktuellen Combatants
   currentTurnBudget: TurnBudget;
 
+  // Reaction Budgets für alle Combatants (persistiert über Turns)
+  // Reset bei Start des eigenen Turns
+  reactionBudgets: Map<string, { hasReaction: boolean }>;
+
   // DPR-Tracking für Outcome-Analyse
   partyDPR: number;
   enemyDPR: number;
 
   // Combat Protocol
   protocol: CombatProtocolEntry[];
+
+  // Terrain Map (Sparse: nur nicht-default Cells)
+  terrainMap: Map<string, CombatCellProperties>;  // positionToKey → Properties
+
+  // Map Bounds (optional, für Grid-Boundary-Enforcement)
+  mapBounds?: { minX: number; maxX: number; minY: number; maxY: number };
+}
+
+// ============================================================================
+// PROTOCOL TYPES
+// ============================================================================
+
+/** HP-Änderung eines Combatants während einer Aktion. */
+export interface HPChange {
+  combatantId: string;
+  combatantName: string;
+  delta: number;  // negativ = Schaden, positiv = Heilung
+  source: 'attack' | 'terrain' | 'reaction' | 'heal' | 'effect';
+  sourceDetail?: string;  // z.B. "fire-damage", "half-cover"
+}
+
+/** Angewendeter Modifier während einer Aktion. */
+export interface AppliedModifier {
+  type: string;  // 'cover', 'advantage', 'pack-tactics', etc.
+  value?: number;  // z.B. +2 für half-cover
 }
 
 /** Protokoll-Eintrag für eine einzelne Aktion im Combat. */
@@ -199,6 +236,16 @@ export interface CombatProtocolEntry {
   positionBefore: GridPosition;
   positionAfter: GridPosition;
   notes: string[];           // "Critical hit", "Killed Goblin #2", etc.
+  /** Reactions die während dieser Aktion auftraten */
+  reactionEntries?: ReactionProtocolEntry[];
+
+  // Strukturierte Effekt-Daten für Logging
+  /** HP-Änderungen aller betroffenen Combatants */
+  hpChanges: HPChange[];
+  /** Angewendete Modifiers (Cover, Advantage, etc.) - nur wenn aktiv */
+  modifiersApplied: AppliedModifier[];
+  /** Todeswahrscheinlichkeit des Targets nach dem Angriff */
+  targetDeathProbability?: number;
 }
 
 // ============================================================================
@@ -212,17 +259,16 @@ export interface TurnBudget {
   movementCells: number;      // Verbleibende Movement-Cells
   baseMovementCells: number;  // Ursprüngliche Speed in Cells (für Dash)
   hasAction: boolean;         // 1 Action (kann Multi-Attack sein)
-  hasDashed: boolean;         // Dash bereits verwendet in diesem Zug
-  hasBonusAction: boolean;    // TODO: Stub, immer false
-  hasReaction: boolean;       // TODO: Stub, für OA später
+  hasBonusAction: boolean;    // Bonus Action verfügbar
+  hasReaction: boolean;       // Reaction verfügbar (für OA, Shield, etc.)
 }
 
 // ============================================================================
 // ACTION TYPES
 // ============================================================================
 
-/** Intent einer Action: damage, healing, control, oder buff. */
-export type ActionIntent = 'damage' | 'healing' | 'control' | 'buff';
+/** Intent einer Action: damage, healing, control, buff, oder escape. */
+export type ActionIntent = 'damage' | 'healing' | 'control' | 'buff' | 'escape';
 
 /** Combat-Präferenz für Positioning. */
 export type CombatPreference = 'melee' | 'ranged' | 'hybrid';
@@ -273,7 +319,7 @@ export interface CellEvaluation {
  * - incomingModifiers: Dodge-ähnliche Aktionen
  */
 export type TurnAction =
-  | { type: 'action'; action: Action; target?: Combatant; fromPosition: GridPosition; targetCell?: GridPosition }
+  | { type: 'action'; action: Action; target?: Combatant; fromPosition: GridPosition; targetCell?: GridPosition; score?: number }
   | { type: 'pass' };
 
 /**
@@ -487,8 +533,20 @@ export interface ReactionContext {
 }
 
 /**
- * Ergebnis einer Reaction-Ausführung.
+ * Effekte einer Reaction.
+ * Ausgelagert für Wiederverwendung in ReactionResult und ReactionTurnResult.
  */
+export interface ReactionEffect {
+  /** Schaden der zugefügt wurde (OA, Hellish Rebuke) */
+  damage?: number;
+  /** AC-Bonus der gewährt wurde (Shield) */
+  acBonus?: number;
+  /** Ob ein Spell gecountert wurde (Counterspell) */
+  spellCountered?: boolean;
+  /** Ob Bewegung gestoppt wurde (Sentinel) */
+  stopsMovement?: boolean;
+}
+
 export interface ReactionResult {
   /** Der Reactor (wer hat reagiert) */
   reactor: Combatant;
@@ -497,14 +555,51 @@ export interface ReactionResult {
   /** Ob die Reaction ausgeführt wurde */
   executed: boolean;
   /** Optionale Effekte der Reaction */
-  effect?: {
-    /** Schaden der zugefügt wurde (OA, Hellish Rebuke) */
-    damage?: number;
-    /** AC-Bonus der gewährt wurde (Shield) */
-    acBonus?: number;
-    /** Ob ein Spell gecountert wurde (Counterspell) */
-    spellCountered?: boolean;
-  };
+  effect?: ReactionEffect;
+}
+
+// ============================================================================
+// REACTION TURN TYPES (Mini-Turn für Reaction-Entscheidung)
+// ============================================================================
+
+/**
+ * Repräsentiert einen Mini-Turn für Reaction-Resolution.
+ * Der Reactor kann seine Reaction ausführen oder passen.
+ */
+export interface ReactionTurn {
+  /** Der Reactor der diesen Mini-Turn bekommt */
+  reactor: Combatant;
+  /** Verfügbare Reactions für diesen Trigger */
+  availableReactions: Action[];
+  /** Kontext des auslösenden Events */
+  context: ReactionContext;
+}
+
+/**
+ * Ergebnis eines Reaction Mini-Turns.
+ */
+export interface ReactionTurnResult {
+  /** Ob eine Reaction ausgeführt wurde */
+  executed: boolean;
+  /** Die verwendete Reaction (falls ausgeführt) */
+  reaction?: Action;
+  /** Effekte der Reaction */
+  effect?: ReactionEffect;
+}
+
+/**
+ * Protocol-Eintrag für Reaction-Events.
+ */
+export interface ReactionProtocolEntry {
+  type: 'reaction';
+  round: number;
+  reactorId: string;
+  reactorName: string;
+  reaction: Action;
+  trigger: TriggerEvent;
+  triggeredBy: string;
+  damageDealt?: number;
+  notes: string[];
 }
 
 /** Layer-Daten für einen Effect/Trait (Runtime-Erweiterung) */

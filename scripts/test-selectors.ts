@@ -14,6 +14,7 @@ import creaturesPresets from '../presets/creatures/index';
 import factionsPresets from '../presets/factions/index';
 import npcsPresets from '../presets/npcs/index';
 import charactersPresets from '../presets/characters/index';
+import { getMapConfigForScenario } from '../presets/combatMaps/index';
 
 // Vault initialisieren BEVOR andere Module geladen werden
 const vaultAdapter = new PresetVaultAdapter();
@@ -51,6 +52,14 @@ import {
 // Register core D&D 5e modifiers (schema-based)
 registerCoreModifiers();
 
+// File I/O for tournament results
+import { writeFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
@@ -85,6 +94,11 @@ const SCENARIOS: ScenarioConfig[] = [
     enemyIds: ['borgrik'],           // Hobgoblin (HP 11)
   },
   {
+    name: 'Bandit Captain',
+    partyIds: ['knight-aldric'],     // Knight (HP 52, AC 18)
+    enemyIds: ['kapitaen-moreno'],   // Bandit Captain (HP 52, AC 15, Pistol 30/90)
+  },
+  {
     name: '2v4 Mixed',
     partyIds: ['einaeugiger-pete', 'schwarzer-jack'],  // Thug + Bandit
     enemyIds: ['griknak', 'snaggle', 'borgrik', 'einsamer-wolf'],  // 2 Goblins + Hobgoblin + Wolf
@@ -93,6 +107,58 @@ const SCENARIOS: ScenarioConfig[] = [
     name: '1vN Horde',
     partyIds: ['borgrik'],  // Hobgoblin als starker Einzelkämpfer
     enemyIds: ['griknak', 'snaggle', 'schwarzer-jack', 'einsamer-wolf'],  // 4 schwächere NPCs
+  },
+
+  // ============================================================================
+  // TAKTISCHE SZENARIEN - Erfordern echte Entscheidungen
+  // ============================================================================
+
+  // A: Aura-Clustering - Captain zuerst töten entfernt Advantage für alle
+  {
+    name: 'Aura-Cluster',
+    partyIds: ['knight-aldric', 'knight-elara'],  // 2x Knight (HP 52)
+    enemyIds: ['captain-krug', 'griknak', 'snaggle'],  // Captain + 2 Goblins
+    // Taktik: Captain priorisieren vs. Minions ausdünnen?
+  },
+
+  // B: Bloodied Escalation - Berserker werden stärker bei <50% HP
+  {
+    name: 'Bloodied',
+    partyIds: ['knight-aldric', 'scout-finn'],  // Knight + Scout
+    enemyIds: ['berserker-ragnar', 'berserker-bjorn'],  // 2x Berserker (HP 67)
+    // Taktik: Einen schnell töten vs. Damage verteilen?
+  },
+
+  // C: Kiting - Scouts vs Glass Cannon Ogre
+  {
+    name: 'Kiting',
+    partyIds: ['scout-finn', 'scout-mira', 'scout-thorn'],  // 3x Scout (HP 16)
+    enemyIds: ['ogre-grok', 'griknak', 'snaggle'],  // Ogre (HP 68) + 2 Goblins
+    // Taktik: Ogre kiten (langsam) oder Goblins zuerst?
+  },
+
+  // D: Kill the Healer - Priest kann Allies heilen
+  {
+    name: 'Kill Healer',
+    partyIds: ['knight-aldric', 'schwarzer-jack'],  // Knight + Bandit
+    enemyIds: ['priest-marcus', 'borgrik', 'griknak'],  // Priest + Hobgoblin + Goblin
+    // Taktik: Priest priorisieren (Heals) vs. Threats?
+  },
+
+  // E: Grapple Zone - Bugbears mit 10ft Reach + Grapple
+  {
+    name: 'Grapple',
+    partyIds: ['scout-finn', 'scout-mira'],  // 2x Scout (HP 16, Ranged)
+    enemyIds: ['bugbear-gruk', 'bugbear-thrak'],  // 2x Bugbear (HP 33, 10ft Reach)
+    // Taktik: Range halten vs. in Grapple-Zone gehen?
+  },
+
+  // F: Rampage - Gnolls bekommen Bonus-Angriff nach Bloodying
+  {
+    name: 'Rampage',
+    partyIds: ['knight-aldric'],  // 1x Knight (HP 52, hohe AC)
+    enemyIds: ['gnoll-yipp', 'gnoll-krak', 'griknak', 'snaggle'],  // 2x Gnoll + 2 Goblins
+    // Taktik: Niedrig-HP Ziele vermeiden um Rampage zu verhindern?
   },
 ];
 
@@ -134,6 +200,8 @@ interface DuelResult {
   avgEnemyTurns: number;
   // Winner (aus letzter Iteration, nur bei verbose sinnvoll)
   lastWinner?: 'party' | 'enemies' | 'draw';
+  // Turn-by-Turn Logs für Markdown-Report
+  turnLogs: string[];
 }
 
 // ============================================================================
@@ -166,7 +234,7 @@ function createEncounterGroup(npcs: NPC[], groupId: string): EncounterGroup {
  * Initialisiert einen Combat-State aus Party- und Enemy-IDs.
  * Beide Seiten verwenden NPCs für konsistente AI-Tests.
  */
-function setupScenario(partyIds: string[], enemyIds: string[]): CombatStateWithLayers {
+function setupScenario(partyIds: string[], enemyIds: string[], scenarioName?: string): CombatStateWithLayers {
   // Party-NPCs finden
   const partyNpcs = partyIds.map(id => {
     const npc = findNPC(id);
@@ -187,6 +255,9 @@ function setupScenario(partyIds: string[], enemyIds: string[]): CombatStateWithL
     createEncounterGroup(enemyNpcs, 'enemies'),
   ];
 
+  // Map-Config für Szenario laden (mit Bounds und Spawn-Zonen)
+  const mapConfig = scenarioName ? getMapConfigForScenario(scenarioName) : undefined;
+
   const state = initialiseCombat({
     groups,
     alliances: {
@@ -201,6 +272,7 @@ function setupScenario(partyIds: string[], enemyIds: string[]): CombatStateWithL
     resourceBudget: 1.0,
     encounterDistanceFeet: 60,
     initiativeOrder: [...partyIds, ...enemyIds],
+    mapConfig,
   }) as CombatStateWithLayers;
 
   return state;
@@ -258,7 +330,7 @@ function runSelector(
   let successCount = 0;
 
   for (let i = 0; i < iterations; i++) {
-    const state = setupScenario(partyIds, enemyIds);
+    const state = setupScenario(partyIds, enemyIds, scenarioName);
 
     // Teste mit dem ersten Enemy-Combatant
     const combatant = state.combatants.find(c => c.combatState.groupId !== 'party');
@@ -343,6 +415,9 @@ function runCombatSimulation(
     createEncounterGroup(enemyNpcs, 'enemies'),
   ];
 
+  // Map-Config für Szenario laden (mit Bounds und Spawn-Zonen)
+  const mapConfig = getMapConfigForScenario(scenarioName);
+
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
 
@@ -354,6 +429,7 @@ function runCombatSimulation(
       resourceBudget: 1.0,
       encounterDistanceFeet: 60,
       initiativeOrder: [...partyIds, ...enemyIds],
+      mapConfig,
     }) as CombatStateWithLayers;
 
     // Combat Loop
@@ -400,7 +476,9 @@ function runSelectorDuel(
   partyIds: string[],
   enemyIds: string[],
   iterations: number,
-  verbose: boolean = false
+  verbose: boolean = false,
+  duelIndex?: number,
+  totalDuels?: number
 ): DuelResult {
   const partySelector = getSelector(partySelectorName);
   const enemySelector = getSelector(enemySelectorName);
@@ -438,6 +516,29 @@ function runSelectorDuel(
     createEncounterGroup(enemyNpcs, 'enemies'),
   ];
 
+  // Map-Config für Szenario laden (mit Bounds und Spawn-Zonen)
+  const mapConfig = getMapConfigForScenario(scenarioName);
+
+  // Sammle alle Turn-Logs für Markdown-Report
+  const turnLogs: string[] = [];
+
+  // Kampf-Header ausgeben (Console + Logs)
+  const indexStr = duelIndex !== undefined && totalDuels !== undefined
+    ? `[${duelIndex}/${totalDuels}] `
+    : '';
+  const headerLine = '═'.repeat(60);
+  const header = [
+    headerLine,
+    `${indexStr}Scenario: ${scenarioName}`,
+    `Party (${partySelectorName}): ${partyNpcs.map(n => n.name).join(', ')}`,
+    `Enemies (${enemySelectorName}): ${enemyNpcs.map(n => n.name).join(', ')}`,
+    headerLine,
+  ];
+  turnLogs.push(...header);
+  if (verbose) {
+    console.log('\n' + header.join('\n'));
+  }
+
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
 
@@ -449,6 +550,7 @@ function runSelectorDuel(
       resourceBudget: 1.0,
       encounterDistanceFeet: 60,
       initiativeOrder: [...partyIds, ...enemyIds],
+      mapConfig,
     }) as CombatStateWithLayers;
 
     // Per-Selector Timing
@@ -480,14 +582,48 @@ function runSelectorDuel(
         if (action.type === 'action') enemyTurns++;
       }
 
-      // Verbose Output
-      if (verbose && action.type === 'action' && action.target) {
-        const selectorName = selector.name.slice(0, 3).toUpperCase();
-        const targetDeath = (getDeathProbability(action.target) * 100).toFixed(0);
-        console.log(`[TURN] R${state.roundNumber} ${selectorName} ${combatant.name}: ${action.action?.name ?? '?'} → ${action.target.name} [${targetDeath}%☠] (${turnElapsed.toFixed(1)}ms)`);
-      }
+      // Position vor Action merken
+      const startPos = { ...combatant.combatState.position };
 
       executeAction(combatant, action, state);
+
+      // HP-Änderungen direkt aus Protocol lesen (Single Source of Truth)
+      const lastEntry = state.protocol[state.protocol.length - 1];
+      const hpChangesFormatted: string[] = [];
+      if (lastEntry?.hpChanges) {
+        for (const change of lastEntry.hpChanges) {
+          if (change.delta !== 0) {
+            const sign = change.delta > 0 ? '+' : '';
+            const source = change.sourceDetail ?? change.source;
+            hpChangesFormatted.push(`${change.combatantName} ${sign}${change.delta}HP (${source})`);
+          }
+        }
+      }
+
+      // Turn-Log erstellen (immer, für Markdown-Report)
+      let logLine: string | null = null;
+      if (action.type === 'action') {
+        const selectorName = selector.name.slice(0, 3).toUpperCase();
+        const endPos = combatant.combatState.position;
+        const posInfo = startPos.x === endPos.x && startPos.y === endPos.y
+          ? `@(${startPos.x},${startPos.y})`
+          : `(${startPos.x},${startPos.y})→(${endPos.x},${endPos.y})`;
+        const targetInfo = action.target
+          ? `→ ${action.target.name} [${(getDeathProbability(action.target) * 100).toFixed(0)}%☠]`
+          : '';
+        const scoreInfo = action.score !== undefined ? ` [Score: ${action.score.toFixed(1)}]` : '';
+        const hpInfo = hpChangesFormatted.length > 0 ? ` [${hpChangesFormatted.join(', ')}]` : '';
+        logLine = `[TURN] R${state.roundNumber} ${selectorName} ${combatant.name} ${posInfo}: ${action.action?.name ?? '?'} ${targetInfo}${scoreInfo}${hpInfo} (${turnElapsed.toFixed(1)}ms)`;
+      } else if (action.type === 'pass') {
+        const hpInfo = hpChangesFormatted.length > 0 ? ` [${hpChangesFormatted.join(', ')}]` : '';
+        logLine = `[TURN] R${state.roundNumber} ${selector.name.slice(0, 3).toUpperCase()} ${combatant.name}: PASS${hpInfo}`;
+      }
+
+      // Log sowohl in Console (wenn verbose) als auch ins Array
+      if (logLine) {
+        turnLogs.push(logLine);
+        if (verbose) console.log(logLine);
+      }
     }
 
     const elapsed = performance.now() - start;
@@ -505,9 +641,14 @@ function runSelectorDuel(
     else if (partyDead && !enemyDead) winner = 'enemies';
     else winner = 'draw';
 
-    // Verbose Summary
+    // Winner Summary (immer ins Array, optional Console)
+    const winnerSelector = winner === 'party' ? partySelectorName
+      : winner === 'enemies' ? enemySelectorName
+      : 'draw';
+    const winnerLine = `>>> WINNER: ${winnerSelector} (${winner.toUpperCase()}) | Rounds: ${state.roundNumber} | Party: ${partyTurns} turns (${partyTimeMs.toFixed(0)}ms, ${(partyTimeMs / Math.max(1, partyTurns)).toFixed(1)}ms/turn) | Enemies: ${enemyTurns} turns (${enemyTimeMs.toFixed(0)}ms, ${(enemyTimeMs / Math.max(1, enemyTurns)).toFixed(1)}ms/turn)`;
+    turnLogs.push(winnerLine);
     if (verbose) {
-      console.log(`\n>>> WINNER: ${winner.toUpperCase()} | Rounds: ${state.roundNumber} | Party: ${partyTurns} turns (${partyTimeMs.toFixed(0)}ms, ${(partyTimeMs / Math.max(1, partyTurns)).toFixed(1)}ms/turn) | Enemies: ${enemyTurns} turns (${enemyTimeMs.toFixed(0)}ms, ${(enemyTimeMs / Math.max(1, enemyTurns)).toFixed(1)}ms/turn)\n`);
+      console.log(`\n${winnerLine}\n`);
     }
 
     results.push({
@@ -536,6 +677,7 @@ function runSelectorDuel(
     avgPartyTurns: avg(results.map(r => r.partyTurns)),
     avgEnemyTurns: avg(results.map(r => r.enemyTurns)),
     lastWinner: results[results.length - 1]?.winner,
+    turnLogs,
   };
 }
 
@@ -716,22 +858,257 @@ function printDuelSummary(results: DuelResult[], selectors: string[]) {
 }
 
 // ============================================================================
+// TOURNAMENT (Markdown Output)
+// ============================================================================
+
+/**
+ * Generiert einen Markdown-Report aus Duell-Ergebnissen.
+ */
+function generateMarkdownReport(
+  results: DuelResult[],
+  selectors: string[],
+  scenarios: ScenarioConfig[]
+): string {
+  const lines: string[] = [];
+  const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+  // Header
+  lines.push('# Tournament Results');
+  lines.push('');
+  lines.push(`**Generated:** ${timestamp}`);
+  lines.push('');
+  lines.push('## Configuration');
+  lines.push('');
+  lines.push(`- **Selectors:** ${selectors.join(', ')}`);
+  lines.push(`- **Scenarios:** ${scenarios.map(s => s.name).join(', ')}`);
+  lines.push(`- **Iterations per duel:** ${DUEL_ITERATIONS} (slow: ${DUEL_SLOW_ITERATIONS})`);
+  lines.push('');
+
+  // Duell-Matrix pro Szenario
+  lines.push('## Results by Scenario');
+  lines.push('');
+  lines.push('Party-WinProb% (Row = Party-Selector, Column = Enemy-Selector)');
+  lines.push('');
+
+  for (const scenario of scenarios) {
+    lines.push(`### ${scenario.name}`);
+    lines.push('');
+
+    // Build matrix data
+    const matrix: Record<string, Record<string, number>> = {};
+    for (const r of results) {
+      if (r.scenario !== scenario.name) continue;
+      if (!matrix[r.partySelector]) matrix[r.partySelector] = {};
+      matrix[r.partySelector][r.enemySelector] = r.partyWinProb;
+    }
+
+    // Header row
+    lines.push('| Party \\ Enemy | ' + selectors.join(' | ') + ' |');
+    lines.push('|' + '-'.repeat(15) + '|' + selectors.map(() => '-'.repeat(10) + '|').join(''));
+
+    // Data rows
+    for (const partyS of selectors) {
+      const cells = selectors.map(enemyS => {
+        const val = matrix[partyS]?.[enemyS];
+        if (val === undefined) return '-';
+        return `${val.toFixed(1)}%`;
+      });
+      lines.push(`| ${partyS} | ${cells.join(' | ')} |`);
+    }
+
+    lines.push('');
+  }
+
+  // Gesamt-Ranking
+  lines.push('## Overall Ranking');
+  lines.push('');
+
+  const avgAsParty: Record<string, { total: number; count: number }> = {};
+  const avgAsEnemy: Record<string, { total: number; count: number }> = {};
+
+  for (const s of selectors) {
+    avgAsParty[s] = { total: 0, count: 0 };
+    avgAsEnemy[s] = { total: 0, count: 0 };
+  }
+
+  for (const r of results) {
+    avgAsParty[r.partySelector].total += r.partyWinProb;
+    avgAsParty[r.partySelector].count++;
+    avgAsEnemy[r.enemySelector].total += (100 - r.partyWinProb);
+    avgAsEnemy[r.enemySelector].count++;
+  }
+
+  const ranked = selectors
+    .map(s => ({
+      name: s,
+      avgWinAsParty: avgAsParty[s].count > 0 ? avgAsParty[s].total / avgAsParty[s].count : 0,
+      avgWinAsEnemy: avgAsEnemy[s].count > 0 ? avgAsEnemy[s].total / avgAsEnemy[s].count : 0,
+    }))
+    .sort((a, b) => b.avgWinAsParty - a.avgWinAsParty);
+
+  lines.push('| Selector | Avg Win% (Party) | Avg Win% (Enemy) |');
+  lines.push('|----------|------------------|------------------|');
+
+  for (const r of ranked) {
+    lines.push(`| ${r.name} | ${r.avgWinAsParty.toFixed(1)}% | ${r.avgWinAsEnemy.toFixed(1)}% |`);
+  }
+
+  lines.push('');
+
+  // Duel Details mit Turn-Logs
+  lines.push('## Duel Details');
+  lines.push('');
+
+  for (const scenario of scenarios) {
+    lines.push(`### ${scenario.name}`);
+    lines.push('');
+
+    const scenarioResults = results.filter(r => r.scenario === scenario.name);
+    for (const r of scenarioResults) {
+      lines.push('<details>');
+      lines.push(`<summary><b>${r.partySelector}</b> vs <b>${r.enemySelector}</b>: ${r.partyWinProb.toFixed(1)}% (${r.avgRounds.toFixed(1)} rounds)</summary>`);
+      lines.push('');
+      lines.push('```');
+      lines.push(...r.turnLogs);
+      lines.push('```');
+      lines.push('');
+      lines.push('</details>');
+      lines.push('');
+    }
+  }
+
+  lines.push('---');
+  lines.push('');
+  lines.push('> **Legend:** >50% = Party-Selector superior, <50% = Enemy-Selector superior');
+
+  return lines.join('\n');
+}
+
+/**
+ * Führt ein vollständiges Tournament durch und speichert die Ergebnisse.
+ * @param scenarioFilter - Optional: Index eines einzelnen Szenarios (für separate npm scripts)
+ */
+async function runTournament(
+  selectors: string[],
+  scenarios: ScenarioConfig[],
+  scenarioFilter?: number
+): Promise<void> {
+  // Wenn Filter gesetzt, nur dieses Szenario
+  const activeScenarios = scenarioFilter !== undefined
+    ? [scenarios[scenarioFilter]]
+    : scenarios;
+
+  console.log('\n' + '='.repeat(60));
+  console.log(' TOURNAMENT MODE');
+  console.log('='.repeat(60));
+  console.log(`Selectors: ${selectors.join(', ')}`);
+  console.log(`Scenarios: ${activeScenarios.map(s => s.name).join(', ')}`);
+  console.log('');
+
+  const duelResults: DuelResult[] = [];
+
+  // Deterministische Selektoren (random ausschließen)
+  const tournamentSelectors = selectors.filter(s => s !== 'random');
+
+  let totalDuels = tournamentSelectors.length * tournamentSelectors.length * activeScenarios.length;
+  let completed = 0;
+
+  for (const scenario of activeScenarios) {
+    for (const partyS of tournamentSelectors) {
+      for (const enemyS of tournamentSelectors) {
+        completed++;
+        // Deterministische Selektoren: 1 Iteration reicht (gleiches Ergebnis)
+        const iterations = 1;
+
+        try {
+          const result = runSelectorDuel(
+            partyS,
+            enemyS,
+            scenario.name,
+            scenario.partyIds,
+            scenario.enemyIds,
+            iterations,
+            true,  // Verbose: Turn-Logs im Terminal anzeigen
+            completed,
+            totalDuels
+          );
+          duelResults.push(result);
+        } catch (err) {
+          console.log(`FAILED: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    }
+  }
+
+  // Markdown-Report generieren und speichern
+  const report = generateMarkdownReport(duelResults, tournamentSelectors, activeScenarios);
+  const outputPath = join(__dirname, 'tournamentResults.md');
+  writeFileSync(outputPath, report, 'utf-8');
+
+  console.log('');
+  console.log('='.repeat(60));
+  console.log(`Results saved to: ${outputPath}`);
+  console.log('='.repeat(60));
+}
+
+// ============================================================================
 // MAIN
 // ============================================================================
 
 async function main() {
   const selectors = getRegisteredSelectors();
   const args = process.argv.slice(2);
+
+  // --help Ausgabe
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(`
+CombatantAI Selector Test Suite
+
+Usage: npx tsx scripts/test-selectors.ts [options]
+
+Options:
+  --perf            Run performance tests (default if no flags)
+  --quality         Run quality tests / combat simulations (default if no flags)
+  --duel            Run selector vs selector duels (all combinations)
+  --tournament      Run tournament and save results to scripts/tournamentResults.md
+    --selector X    Use only selector X for tournament (default: all selectors)
+  --detailed        Run single detailed duel with turn-by-turn output
+    --scenario X    Select scenario by name or index (default: 0)
+    [party] [enemy] Selector names (default: greedy greedy)
+  --help, -h        Show this help
+
+Scenarios:
+  ${SCENARIOS.map((s, i) => `${i} = "${s.name}"`).join('\n  ')}
+
+Selectors: ${selectors.join(', ')}
+
+Examples:
+  npx tsx scripts/test-selectors.ts --detailed greedy factored
+  npx tsx scripts/test-selectors.ts --detailed --scenario 1 greedy random
+  npx tsx scripts/test-selectors.ts --detailed --scenario "2v4 Mixed" factored greedy
+  npx tsx scripts/test-selectors.ts --duel
+  npx tsx scripts/test-selectors.ts --perf --quality
+  npx tsx scripts/test-selectors.ts --tournament --selector greedy
+`);
+    process.exit(0);
+  }
+
   const runPerf = args.length === 0 || args.includes('--perf');
   const runQuality = args.length === 0 || args.includes('--quality');
   const runDuel = args.includes('--duel');
+  const runTournamentMode = args.includes('--tournament');
   const runDetailed = args.includes('--detailed');
+
+  // Parse --selector flag for tournament filtering
+  const selectorFlagIdx = args.indexOf('--selector');
+  const selectorFilter = selectorFlagIdx !== -1 ? args[selectorFlagIdx + 1] : undefined;
 
   // Determine mode string
   const modes: string[] = [];
-  if (runPerf && !runDuel && !runDetailed) modes.push('performance');
-  if (runQuality && !runDuel && !runDetailed) modes.push('quality');
+  if (runPerf && !runDuel && !runDetailed && !runTournamentMode) modes.push('performance');
+  if (runQuality && !runDuel && !runDetailed && !runTournamentMode) modes.push('quality');
   if (runDuel) modes.push('duel');
+  if (runTournamentMode) modes.push('tournament');
   if (runDetailed) modes.push('detailed');
 
   console.log('Starting CombatantAI Selector Tests...');
@@ -864,13 +1241,50 @@ async function main() {
     console.log(' DETAILED DUEL TEST (Turn-by-Turn)');
     console.log('='.repeat(60));
 
-    // Parse optionale Argumente: --detailed greedy random
-    const detailedArgs = args.slice(args.indexOf('--detailed') + 1).filter(a => !a.startsWith('--'));
+    // Parse --scenario Flag (Name oder Index)
+    const scenarioFlagIdx = args.indexOf('--scenario');
+    const scenarioArg = scenarioFlagIdx !== -1 ? args[scenarioFlagIdx + 1] : undefined;
+    let scenario: ScenarioConfig;
+
+    if (scenarioArg) {
+      // Versuche erst als Name zu finden (höhere Priorität)
+      const foundByName = SCENARIOS.find(s => s.name === scenarioArg);
+      if (foundByName) {
+        scenario = foundByName;
+      } else {
+        // Versuche als reinen Index zu parsen (nur Ziffern)
+        const idx = /^\d+$/.test(scenarioArg) ? parseInt(scenarioArg, 10) : NaN;
+        if (!isNaN(idx) && idx >= 0 && idx < SCENARIOS.length) {
+          scenario = SCENARIOS[idx];
+        } else {
+          console.error(`Scenario not found: ${scenarioArg}`);
+          console.error(`Available: ${SCENARIOS.map((s, i) => `${i}="${s.name}"`).join(', ')}`);
+          process.exit(1);
+        }
+      }
+    } else {
+      scenario = SCENARIOS[0];
+    }
+
+    // Parse Selector-Args: Alle Nicht-Flag-Argumente nach --detailed, außer Szenario-Wert
+    const detailedStartIdx = args.indexOf('--detailed') + 1;
+    const detailedArgs: string[] = [];
+    for (let i = detailedStartIdx; i < args.length; i++) {
+      const arg = args[i];
+      // Stoppe bei anderen Flags
+      if (arg.startsWith('--')) {
+        // Überspringe --scenario und seinen Wert
+        if (arg === '--scenario') {
+          i++; // Skip den Wert
+        }
+        continue;
+      }
+      // Überspringe den Szenario-Wert wenn direkt nach --scenario
+      if (args[i - 1] === '--scenario') continue;
+      detailedArgs.push(arg);
+    }
     const partyS = detailedArgs[0] ?? 'greedy';
     const enemyS = detailedArgs[1] ?? 'greedy';
-
-    // Nur erstes Szenario für Detailansicht
-    const scenario = SCENARIOS[0];
 
     console.log(`\n${partyS.toUpperCase()} (Party) vs ${enemyS.toUpperCase()} (Enemies)`);
     console.log(`Scenario: ${scenario.name}`);
@@ -881,6 +1295,29 @@ async function main() {
     } catch (err) {
       console.log(`FAILED: ${err instanceof Error ? err.message : String(err)}`);
     }
+  }
+
+  // =========================================================================
+  // TOURNAMENT MODE (Markdown Output)
+  // =========================================================================
+  if (runTournamentMode) {
+    // Parse --scenario Flag auch für Tournament
+    const scenarioFlagIdx = args.indexOf('--scenario');
+    const scenarioArg = scenarioFlagIdx !== -1 ? args[scenarioFlagIdx + 1] : undefined;
+    let scenarioFilter: number | undefined;
+
+    if (scenarioArg) {
+      const idx = /^\d+$/.test(scenarioArg) ? parseInt(scenarioArg, 10) : NaN;
+      if (!isNaN(idx) && idx >= 0 && idx < SCENARIOS.length) {
+        scenarioFilter = idx;
+      }
+    }
+
+    // Gefilterte Selektoren: Wenn --selector gesetzt, nur diesen verwenden
+    const filteredSelectors = selectorFilter
+      ? [selectorFilter]
+      : selectors;
+    await runTournament(filteredSelectors, SCENARIOS, scenarioFilter);
   }
 
   console.log('All tests completed.');

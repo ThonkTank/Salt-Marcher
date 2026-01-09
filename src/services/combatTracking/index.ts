@@ -25,10 +25,13 @@ export {
   resolveAttackWithReactions,
   checkCounterspell,
   processReactionTrigger,
+  // Escape Resolution
+  resolveEscapeAttempt,
   // Types
   type ActionResult,
   type ReactionTrigger,
   type AttackResolutionWithReactions,
+  type EscapeAttemptResult,
 } from './executeAction';
 
 // ============================================================================
@@ -75,6 +78,20 @@ export {
   isCombatOver,
   // Turn Budget Functions
   createTurnBudget,
+  getEffectiveSpeed,
+  calculateGrantedMovement,
+  // Grapple Helpers
+  getGrappledTargets,
+  hasAbductTrait,
   // Types
   type CombatStateWithScoring,
 } from './combatState';
+
+// ============================================================================
+// PROTOCOL LOGGING (protocolLogger.ts)
+// ============================================================================
+
+export {
+  formatProtocolEntry,
+  formatBudget,
+} from './protocolLogger';

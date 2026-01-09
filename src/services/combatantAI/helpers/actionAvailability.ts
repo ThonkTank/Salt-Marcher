@@ -101,6 +101,33 @@ export function hasIncapacitatingCondition(combatant: Combatant): boolean {
   );
 }
 
+/**
+ * Berechnet die kombinierte Wahrscheinlichkeit, dass ein Combatant
+ * durch incapacitating Conditions handlungsunfaehig ist.
+ *
+ * Verwendet Inklusions-Exklusions-Prinzip vereinfacht:
+ * P(any) = 1 - P(none) = 1 - Π(1 - P(condition_i))
+ *
+ * @param combatant Der zu pruefende Combatant
+ * @returns Wahrscheinlichkeit (0-1) dass Combatant incapacitated ist
+ */
+export function getIncapacitatingProbability(combatant: Combatant): number {
+  const conditions = combatant.combatState.conditions ?? [];
+  const incapConditions = conditions.filter(c =>
+    INCAPACITATING_CONDITIONS.includes(c.name as typeof INCAPACITATING_CONDITIONS[number])
+  );
+
+  if (incapConditions.length === 0) return 0;
+
+  // P(mindestens eine aktiv) = 1 - P(alle inaktiv)
+  const allInactiveProb = incapConditions.reduce(
+    (prob, c) => prob * (1 - c.probability),
+    1
+  );
+
+  return 1 - allInactiveProb;
+}
+
 // ============================================================================
 // RESOURCE AVAILABILITY
 // ============================================================================
@@ -202,7 +229,8 @@ export function matchesRequirement(
  * Prueft ob eine Action ausgefuehrt werden kann (kombiniert alle Checks).
  * 1. Resource-Verfuegbarkeit (Spell Slots, Recharge, Uses)
  * 2. Prior-Action Requirements (fuer Bonus Actions wie TWF)
- * 3. Condition-Checks (Incapacitated kann keine Actions nehmen)
+ * 3. hasAction Requirements (fuer OA: Combatant muss Melee-Action haben)
+ * 4. Condition-Checks (Incapacitated kann keine Actions nehmen)
  *
  * @param action Die zu pruefende Action
  * @param combatant Der ausfuehrende Combatant
@@ -232,7 +260,23 @@ export function isActionUsable(
     }
   }
 
-  // 3. Condition Checks
+  // 3. hasAction Requirements (fuer OA: Combatant muss passende Action haben)
+  // Prueft ob der Combatant mindestens eine Action hat die den Kriterien entspricht
+  if (action.requires?.hasAction) {
+    const combatantActions = getActions(combatant);
+    const hasMatch = combatantActions.some(a =>
+      matchesRequirement(a, action.requires!.hasAction!)
+    );
+    if (!hasMatch) {
+      debug('isActionUsable: hasAction requirement not met', {
+        action: action.id,
+        required: action.requires.hasAction,
+      });
+      return false;
+    }
+  }
+
+  // 4. Condition Checks
   if (hasIncapacitatingCondition(combatant)) {
     debug('isActionUsable: combatant incapacitated', { combatant: combatant.id });
     return false;
@@ -242,12 +286,90 @@ export function isActionUsable(
 }
 
 // ============================================================================
+// ESCAPE ACTIONS
+// ============================================================================
+
+/**
+ * Generiert dynamische Escape-Actions für alle escapable Conditions eines Combatants.
+ * Jede Condition mit `duration.type === 'until-escape'` bekommt eine eigene Action,
+ * damit der Selector sie individuell scoren kann.
+ *
+ * Die generierten Actions haben:
+ * - id: `escape-{conditionName}` (z.B. 'escape-grappled')
+ * - timing basierend auf escapeCheck.timing
+ * - budgetCosts entsprechend dem Escape-Timing
+ * - _escapeCondition und _escapeCheck Meta-Felder
+ *
+ * @param combatant Der Combatant mit potentiellen escapable Conditions
+ * @returns Array von dynamisch generierten Escape-Actions
+ */
+export function getEscapeActionsForCombatant(combatant: Combatant): Action[] {
+  const conditions = combatant.combatState.conditions ?? [];
+  const escapableConditions = conditions.filter(
+    c => c.duration?.type === 'until-escape' && c.duration?.escapeCheck
+  );
+
+  if (escapableConditions.length === 0) return [];
+
+  return escapableConditions.map(condition => {
+    const escapeCheck = condition.duration!.escapeCheck!;
+    const conditionName = condition.name;
+
+    // Timing zu Action-Timing mappen
+    type ActionTimingType = 'action' | 'bonus' | 'free';
+    const timingType: ActionTimingType = escapeCheck.timing === 'bonus'
+      ? 'bonus'
+      : escapeCheck.timing === 'movement'
+        ? 'free'  // Movement-basiert, keine Action-Economy
+        : 'action';
+
+    // Budget-Costs basierend auf Escape-Timing
+    const budgetCosts = escapeCheck.timing === 'action'
+      ? [{ resource: 'action' as const, cost: { type: 'fixed' as const, value: 1 } }]
+      : escapeCheck.timing === 'bonus'
+        ? [{ resource: 'bonusAction' as const, cost: { type: 'fixed' as const, value: 1 } }]
+        : [{
+            resource: 'movement' as const,
+            cost: {
+              type: 'fixed' as const,
+              value: Math.ceil(('movementCost' in escapeCheck ? escapeCheck.movementCost ?? 0.5 : 0.5) * 6),
+            },
+          }];
+
+    const escapeAction: Action = {
+      id: `escape-${conditionName}`,
+      name: `Escape ${conditionName.charAt(0).toUpperCase() + conditionName.slice(1)}`,
+      actionType: 'utility',
+      timing: { type: timingType },
+      range: { type: 'self', normal: 0 },
+      targeting: { type: 'single', validTargets: 'self' },
+      autoHit: true,
+      budgetCosts,
+      description: `Attempt to escape from ${conditionName}.`,
+      // Meta-Felder für executeAction
+      _escapeCondition: conditionName,
+      _escapeCheck: escapeCheck,
+    };
+
+    debug('Generated escape action:', {
+      id: escapeAction.id,
+      condition: conditionName,
+      timing: timingType,
+      escapeType: escapeCheck.type,
+    });
+
+    return escapeAction;
+  });
+}
+
+// ============================================================================
 // AVAILABLE ACTIONS
 // ============================================================================
 
 /**
- * Kombiniert Creature-spezifische Actions mit Standard-Actions.
+ * Kombiniert Creature-spezifische Actions mit Standard-Actions und dynamischen Escape-Actions.
  * Standard-Actions (Dash, Disengage, Dodge) sind fuer alle Combatants verfuegbar.
+ * Escape-Actions werden dynamisch generiert wenn der Combatant escapable Conditions hat.
  * Filtert Actions die nicht verfuegbar sind (keine Spell Slots, auf Cooldown, etc.)
  *
  * @param combatant Der Combatant
@@ -259,6 +381,7 @@ export function getAvailableActionsForCombatant(
   context: { priorActions?: Action[] } = {}
 ): Action[] {
   const combatantActions = getActions(combatant);
-  const allActions = [...combatantActions, ...standardActions];
+  const escapeActions = getEscapeActionsForCombatant(combatant);
+  const allActions = [...combatantActions, ...standardActions, ...escapeActions];
   return allActions.filter(a => isActionUsable(a, combatant, context));
 }

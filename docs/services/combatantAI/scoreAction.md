@@ -24,11 +24,11 @@ Kombiniert gecachte Base-Resolutions mit dynamischen situativen Modifikatoren zu
 │  applyEffectsToBase(base, action, attacker, target, state)      │
 │                                                                 │
 │  Evaluiert:                                                     │
-│  ├── Situational Modifiers (Plugin-System)                      │
-│  │   ├── Pack Tactics (Advantage)                               │
-│  │   ├── Long Range (Disadvantage)                              │
-│  │   ├── Cover (AC Bonus)                                       │
-│  │   └── ...                                                    │
+│  ├── Schema Modifiers (aus action.schemaModifiers)              │
+│  │   ├── expressionEvaluator.ts - Condition Evaluation          │
+│  │   └── schemaModifierAdapter.ts - Converter                   │
+│  ├── Modifier Refs (aus action.modifierRefs → presets)          │
+│  ├── Passive Traits (aus combatant.actionIds → passives)        │
 │  └── Effect Layers (aus combatant.combatState.effectLayers)     │
 │                                                                 │
 │  → { finalHitChance, effectiveDamagePMF, netAdvantage }         │
@@ -83,8 +83,9 @@ function applyEffectsToBase(
 ```
 
 **Evaluierte Quellen:**
-1. **Situational Modifiers** (Plugin-System in `situationalModifiers.ts`)
-2. **Effect Layers** (aus `attacker.combatState.effectLayers`)
+1. **Schema Modifiers** - Inline `schemaModifiers` auf Actions + via `modifierRefs`
+2. **Passive Traits** - Actions mit `timing.type = 'passive'` und `schemaModifiers`
+3. **Effect Layers** - Aktive Buffs/Debuffs aus `attacker.combatState.effectLayers`
 
 **Output:**
 ```typescript

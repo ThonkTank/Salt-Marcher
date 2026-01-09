@@ -12,8 +12,12 @@ export { getCandidates, getEnemies, getAllies } from './actionSelection';
 
 // Re-exports aus combatHelpers (wird in 5.1c verschoben)
 export {
+  // Multiattack & BaseAction Resolution
   resolveMultiattackRefs,
   forEachResolvedAction,
+  resolveBaseAction,
+  resolveActionWithBase,
+  // Damage & Healing PMF
   calculateBaseDamagePMF,
   calculateBaseHealingPMF,
   getActionMaxRangeFeet,
@@ -21,6 +25,7 @@ export {
   getDistance,
   findNearestProfile,
   getMinDistanceToProfiles,
+  getReachableCells,
   isAllied,
   isHostile,
   calculateHitChance,
@@ -33,9 +38,17 @@ export {
   calculateHealPotential,
   calculateControlPotential,
   calculateCombatantValue,
+  // Turn Order & Movement Band Helpers
+  getTurnsUntilNextTurn,
+  getMovementBands,
+  getCellBand,
+  applyDistanceDecay,
+  DECAY_CONSTANTS,
+  // Property Modifier Application
+  applyPropertyModifiers,
 } from './combatHelpers';
 
-export type { PositionedProfile, NearestResult } from './combatHelpers';
+export type { PositionedProfile, NearestResult, GetReachableCellsOptions } from './combatHelpers';
 
 // Re-exports aus actionAvailability
 export {

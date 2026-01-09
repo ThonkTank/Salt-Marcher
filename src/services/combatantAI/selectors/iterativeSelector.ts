@@ -23,8 +23,8 @@ import type {
 } from '@/types/combat';
 import { buildThreatMap } from '../layers';
 import { buildPossibleActions, type ScoredAction } from '../core/actionEnumeration';
-import { getRelevantCells, positionToKey, positionsEqual } from '@/utils';
-import { getDistance } from '../helpers/combatHelpers';
+import { positionToKey, positionsEqual } from '@/utils';
+import { getDistance, getReachableCells } from '../helpers/combatHelpers';
 import { getPosition } from '../../combatTracking';
 import {
   consumeBudget,
@@ -50,6 +50,7 @@ interface ActionChainEntry {
   action: Action;
   target?: Combatant;
   fromPosition: GridPosition;
+  targetCell?: GridPosition;
   score: number;
 }
 
@@ -119,21 +120,15 @@ function generateCandidates(
   budget: TurnBudget
 ): ScoredAction[] {
   const currentCell = getPosition(combatant);
-
-  // Reachable cells
-  const reachableCells = [
-    currentCell,
-    ...getRelevantCells(currentCell, budget.movementCells)
-      .filter(cell => !positionsEqual(cell, currentCell))
-      .filter(cell => getDistance(currentCell, cell) <= budget.movementCells),
-  ];
-
-  // Build ThreatMap
+  const reachableCells = getReachableCells(currentCell, budget.movementCells, {
+    terrainMap: state.terrainMap,
+    combatant,
+    state,
+    bounds: state.mapBounds,
+  });
   const threatMap = buildThreatMap(combatant, state, reachableCells, currentCell);
-  const currentEntry = threatMap.get(positionToKey(currentCell));
-  const currentThreat = currentEntry?.net ?? 0;
 
-  return buildPossibleActions(combatant, state, budget, threatMap, currentThreat);
+  return buildPossibleActions(combatant, state, budget, threatMap);
 }
 
 /**
@@ -153,19 +148,13 @@ function applyActionToState(
 
 /**
  * Calculates budget consumption for an action.
+ * Note: Dash-Movement wird über budgetCosts in der Action gehandhabt.
  */
 function getBudgetConsumption(action: Action): {
   action?: boolean;
   bonusAction?: boolean;
-  dash?: boolean;
 } {
   const isBonusAction = action.timing.type === 'bonus';
-  const isDash = action.effects?.some(e => e.grantMovement != null) ?? false;
-
-  if (isDash) {
-    return isBonusAction ? { bonusAction: true, dash: true } : { dash: true };
-  }
-
   return isBonusAction ? { bonusAction: true } : { action: true };
 }
 
@@ -220,6 +209,7 @@ function depthLimitedSearch(
       action: candidate.action,
       target: candidate.target,
       fromPosition: candidate.fromPosition,
+      targetCell: candidate.targetCell,
       score: candidate.score,
     };
 
@@ -400,6 +390,8 @@ export const iterativeSelector: ActionSelector = {
       action: first.action,
       target: first.target,
       fromPosition: first.fromPosition,
+      targetCell: first.targetCell,
+      score: first.score,
     };
   },
 

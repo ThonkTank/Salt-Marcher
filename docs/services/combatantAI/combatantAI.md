@@ -42,9 +42,9 @@ src/services/combatantAI/
     combatHelpers.ts          # Distance, Alliance
     pruningHelpers.ts         # Beam-Search Helpers
 
-  modifiers/                  # Situational Modifier Plugins
-    situationalModifiers.ts   # Plugin Registry
-    cover.ts, longRange.ts, packTactics.ts, ...
+  modifiers/                  # Schema-Modifier Adapter
+    coreModifiers.ts          # Re-export von Preset-Modifiers
+    index.ts                  # Bootstrap fuer Modifier-Plugins
 ```
 
 ---
@@ -126,11 +126,26 @@ const attackPMF = {
 
 ### Passive Traits als Actions
 
-Creature-Traits (Pack Tactics, Magic Resistance) werden als Actions mit `timing.type = 'passive'` modelliert:
+Creature-Traits (Pack Tactics, Long-Limbed) werden als Actions mit `timing.type = 'passive'` modelliert:
 
 - Keine Resolution (kein `attack`/`save`/`contested`/`autoHit`)
-- Nur `effects` Feld
-- Werden bei Layer-Initialisierung in Effect-Layers umgewandelt
+- `schemaModifiers` Feld definiert Bedingungen und Effekte
+- Werden bei Effect Application via `expressionEvaluator.ts` ausgewertet
+
+**Beispiel (Long-Limbed):**
+
+```typescript
+{
+  id: 'trait-long-limbed',
+  timing: { type: 'passive' },
+  schemaModifiers: [{
+    condition: { type: 'action-is-type', actionType: 'melee-weapon' },
+    effect: { propertyModifiers: [{ path: 'range.normal', operation: 'add', value: 5 }] }
+  }]
+}
+```
+
+> **Schema:** [conditionExpression.ts](../../../src/types/entities/conditionExpression.ts)
 
 ---
 

@@ -6,6 +6,12 @@ import { greedySelector } from './greedySelector';
 import { randomSelector } from './randomSelector';
 import { factoredSelector } from './factoredSelector';
 import { iterativeSelector } from './iterativeSelector';
+import { bestFirstSelector } from './bestFirstSelector';
+import { killerSelector } from './killerSelector';
+import { lmrSelector } from './lmrSelector';
+import { ucbSelector } from './ucbSelector';
+import { starSelector } from './starSelector';
+import { minimaxSelector } from './minimaxSelector';
 
 // Registry: name → selector
 const registry = new Map<string, ActionSelector>();
@@ -48,8 +54,14 @@ export function getRegisteredSelectors(): string[] {
   return Array.from(registry.keys());
 }
 
-// Auto-Register: Greedy + Random + Factored + Iterative
+// Auto-Register all selectors
 registerSelector(greedySelector);
 registerSelector(randomSelector);
 registerSelector(factoredSelector);
 registerSelector(iterativeSelector);
+registerSelector(bestFirstSelector);
+registerSelector(killerSelector);
+registerSelector(lmrSelector);
+registerSelector(ucbSelector);
+registerSelector(starSelector);
+registerSelector(minimaxSelector);

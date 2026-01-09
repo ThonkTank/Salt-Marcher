@@ -22,8 +22,9 @@ import type {
   ModifierSimulationState,
 } from './situationalModifiers';
 import { getDistance, isAllied, isHostile } from './helpers/combatHelpers';
-import type { GridPosition, ConditionState } from '@/types/combat';
-import { feetToCell } from '@/utils';
+import { isNPC, type GridPosition, type Combatant } from '@/types/combat';
+import { feetToCell, getExpectedValue } from '@/utils';
+import { getAC } from '../combatTracking';
 
 // ============================================================================
 // DEBUG
@@ -99,27 +100,25 @@ function resolveEntityPosition(ref: EntityRef, ctx: EvaluationContext): GridPosi
 }
 
 /**
- * Profile type from simulation state.
+ * Extrahiert CombatantContext direkt aus Combatant.
+ * Keine Profile-Indirektion - alle Daten vom Ursprung.
  */
-type SimulationProfile = ModifierSimulationState['profiles'][number];
-
-/**
- * Converts a simulation profile to a minimal CombatantContext.
- * Note: AC and HP are not available from profiles, defaulting to 0.
- */
-function profileToCombatantContext(profile: SimulationProfile): CombatantContext {
+export function combatantToCombatantContext(c: Combatant): CombatantContext {
   return {
-    position: profile.position,
-    groupId: profile.groupId,
-    participantId: profile.participantId,
-    conditions: profile.conditions ?? [],
-    ac: 0, // Not available from profile
-    hp: 0, // Not available from profile
+    position: c.combatState.position,
+    groupId: c.combatState.groupId,
+    participantId: c.id,
+    conditions: c.combatState.conditions,
+    ac: getAC(c),
+    hp: getExpectedValue(c.currentHp),
+    maxHp: c.maxHp,
+    creatureId: isNPC(c) ? c.creature.id : undefined,
   };
 }
 
 /**
  * Gets filtered entities based on quantified entity specification.
+ * Verwendet direkt Combatants aus dem State.
  */
 function getFilteredEntities(
   quantified: QuantifiedEntity,
@@ -129,21 +128,22 @@ function getFilteredEntities(
   const referenceEntity = resolveEntity(relativeTo, ctx);
   const referenceGroupId = referenceEntity.groupId;
 
-  return ctx.state.profiles
-    .filter((profile) => {
+  return ctx.state.combatants
+    .filter((c) => {
       // Never include the reference entity itself
-      if (profile.participantId === referenceEntity.participantId) return false;
+      if (c.id === referenceEntity.participantId) return false;
 
+      const groupId = c.combatState.groupId;
       switch (quantified.filter) {
         case 'ally':
-          return isAllied(profile.groupId, referenceGroupId, ctx.alliances);
+          return isAllied(groupId, referenceGroupId, ctx.alliances);
         case 'enemy':
-          return isHostile(profile.groupId, referenceGroupId, ctx.alliances);
+          return isHostile(groupId, referenceGroupId, ctx.alliances);
         case 'any-creature':
           return true;
       }
     })
-    .map(profileToCombatantContext);
+    .map(combatantToCombatantContext);
 }
 
 // ============================================================================
@@ -248,6 +248,9 @@ export function evaluateCondition(
       // For now, return false as this is a complex case
       debug('has-advantage: not yet supported, returning false');
       return false;
+
+    case 'is-creature-type':
+      return evaluateIsCreatureType(expr, ctx);
 
     // === Action Predicates ===
     case 'action-has-property':
@@ -480,13 +483,21 @@ function evaluateHpThreshold(
 ): boolean {
   const entity = resolveEntity(expr.entity, ctx);
 
-  // HP is percentage in threshold, but we need actual HP percentage
-  // Note: CombatantContext has hp but not maxHp, so we can't calculate percentage
-  // For now, assume threshold is absolute HP value
-  // TODO: Add maxHp to CombatantContext for proper percentage calculation
+  // Calculate HP percentage (threshold is 0-100)
+  if (entity.maxHp <= 0) {
+    debug('hp-threshold: maxHp is 0 or negative, returning false');
+    return false;
+  }
 
-  debug('hp-threshold: using absolute HP (percentage not yet supported)');
-  const hpPercent = entity.hp; // Treating as percentage for now
+  const hpPercent = (entity.hp / entity.maxHp) * 100;
+
+  debug('hp-threshold:', {
+    hp: entity.hp,
+    maxHp: entity.maxHp,
+    hpPercent,
+    comparison: expr.comparison,
+    threshold: expr.threshold,
+  });
 
   switch (expr.comparison) {
     case 'below':
@@ -516,4 +527,12 @@ function evaluateIsEnemy(
   const entity = resolveEntity(expr.entity, ctx);
   const relativeTo = resolveEntity(expr.relativeTo ?? 'attacker', ctx);
   return isHostile(entity.groupId, relativeTo.groupId, ctx.alliances);
+}
+
+function evaluateIsCreatureType(
+  expr: { type: 'is-creature-type'; entity: EntityRef; creatureId: string },
+  ctx: EvaluationContext
+): boolean {
+  const entity = resolveEntity(expr.entity, ctx);
+  return entity.creatureId === expr.creatureId;
 }

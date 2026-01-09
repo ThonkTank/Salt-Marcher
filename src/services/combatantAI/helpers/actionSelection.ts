@@ -15,7 +15,7 @@ import type { Action } from '@/types/entities';
 import type { Combatant, CombatantSimulationState } from '@/types/combat';
 import {
   getGroupId,
-  getDeathProbability,
+  getAliveCombatants,
 } from '../../combatTracking';
 import { isHostile, isAllied } from './combatHelpers';
 
@@ -29,47 +29,42 @@ export function getCandidates(
   state: CombatantSimulationState,
   action: Action
 ): Combatant[] {
-  const alive = (c: Combatant) => getDeathProbability(c) < 0.95;
+  const alive = getAliveCombatants(state);
 
   switch (action.targeting.validTargets) {
     case 'enemies':
-      return state.combatants.filter(c =>
-        isHostile(getGroupId(attacker), getGroupId(c), state.alliances) &&
-        alive(c)
+      return alive.filter(c =>
+        isHostile(getGroupId(attacker), getGroupId(c), state.alliances)
       );
     case 'allies':
-      return state.combatants.filter(c =>
+      return alive.filter(c =>
         isAllied(getGroupId(attacker), getGroupId(c), state.alliances) &&
-        c.id !== attacker.id &&
-        alive(c)
+        c.id !== attacker.id
       );
     case 'self':
       return [attacker];
     case 'any':
-      return state.combatants.filter(alive);
+      return alive;
   }
 }
 
-/** Helper: Alle lebenden Feinde. */
+/** Helper: Alle lebenden Feinde (via getAliveCombatants). */
 export function getEnemies(
   combatant: Combatant,
   state: CombatantSimulationState
 ): Combatant[] {
-  const alive = (c: Combatant) => getDeathProbability(c) < 0.95;
-  return state.combatants.filter(c =>
-    isHostile(getGroupId(combatant), getGroupId(c), state.alliances) && alive(c)
+  return getAliveCombatants(state).filter(c =>
+    isHostile(getGroupId(combatant), getGroupId(c), state.alliances)
   );
 }
 
-/** Helper: Alle lebenden Verbuendeten (ohne sich selbst). */
+/** Helper: Alle lebenden Verbuendeten ohne sich selbst (via getAliveCombatants). */
 export function getAllies(
   combatant: Combatant,
   state: CombatantSimulationState
 ): Combatant[] {
-  const alive = (c: Combatant) => getDeathProbability(c) < 0.95;
-  return state.combatants.filter(c =>
+  return getAliveCombatants(state).filter(c =>
     isAllied(getGroupId(combatant), getGroupId(c), state.alliances) &&
-    c.id !== combatant.id &&
-    alive(c)
+    c.id !== combatant.id
   );
 }

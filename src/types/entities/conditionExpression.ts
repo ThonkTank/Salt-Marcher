@@ -36,6 +36,9 @@ export type Quantifier = (typeof QUANTIFIERS)[number];
 export const HP_COMPARISONS = ['below', 'above', 'equal-or-below', 'equal-or-above'] as const;
 export type HpComparison = (typeof HP_COMPARISONS)[number];
 
+export const MODIFIER_OPERATIONS = ['add', 'multiply', 'set', 'min', 'max'] as const;
+export type ModifierOperation = (typeof MODIFIER_OPERATIONS)[number];
+
 // ============================================================================
 // ENUM SCHEMAS
 // ============================================================================
@@ -182,6 +185,14 @@ export const hasAdvantagePredicateSchema = z.object({
 });
 export type HasAdvantagePredicate = z.infer<typeof hasAdvantagePredicateSchema>;
 
+/** Is-creature-type: entity matches specific creature definition ID (for Aura of Authority, etc.) */
+export const isCreatureTypePredicateSchema = z.object({
+  type: z.literal('is-creature-type'),
+  entity: entityRefSchema,
+  creatureId: z.string().min(1),
+});
+export type IsCreatureTypePredicate = z.infer<typeof isCreatureTypePredicateSchema>;
+
 // --- Action Predicates ---
 
 /** Action has specific property (finesse, light, heavy, etc.) */
@@ -258,6 +269,7 @@ export type ConditionExpression =
   | IsAllyPredicate
   | IsEnemyPredicate
   | HasAdvantagePredicate
+  | IsCreatureTypePredicate
   // Action predicates
   | ActionHasPropertyPredicate
   | ActionIsTypePredicate
@@ -305,6 +317,7 @@ export const conditionExpressionSchema: z.ZodType<ConditionExpression> = z.lazy(
     isAllyPredicateSchema,
     isEnemyPredicateSchema,
     hasAdvantagePredicateSchema,
+    isCreatureTypePredicateSchema,
     // Action predicates
     actionHasPropertyPredicateSchema,
     actionIsTypePredicateSchema,
@@ -313,11 +326,31 @@ export const conditionExpressionSchema: z.ZodType<ConditionExpression> = z.lazy(
 );
 
 // ============================================================================
+// PROPERTY MODIFIERS
+// ============================================================================
+
+/**
+ * Generic property modifier that can target any action property via JSON path.
+ *
+ * Examples:
+ * - { path: 'range.normal', operation: 'add', value: 5 }  // Long-Limbed trait
+ * - { path: 'attack.bonus', operation: 'add', value: 1 }  // Magic Weapon
+ * - { path: 'damage.modifier', operation: 'add', value: 2 }  // Rage
+ */
+export const propertyModifierSchema = z.object({
+  path: z.string().min(1), // JSON path to property: 'range.normal', 'attack.bonus'
+  operation: z.enum(MODIFIER_OPERATIONS),
+  value: z.union([z.number(), z.boolean(), z.string()]),
+});
+export type PropertyModifier = z.infer<typeof propertyModifierSchema>;
+
+// ============================================================================
 // MODIFIER EFFECT
 // ============================================================================
 
 /** Effect produced by a schema modifier */
 export const schemaModifierEffectSchema = z.object({
+  // Legacy fields (kept for compatibility)
   advantage: z.boolean().optional(),
   disadvantage: z.boolean().optional(),
   attackBonus: z.number().optional(),
@@ -325,6 +358,9 @@ export const schemaModifierEffectSchema = z.object({
   damageBonus: z.union([z.number(), z.string()]).optional(), // number or dice expression
   autoCrit: z.boolean().optional(),
   autoMiss: z.boolean().optional(),
+
+  // Generic property modifiers
+  propertyModifiers: z.array(propertyModifierSchema).optional(),
 });
 export type SchemaModifierEffect = z.infer<typeof schemaModifierEffectSchema>;
 

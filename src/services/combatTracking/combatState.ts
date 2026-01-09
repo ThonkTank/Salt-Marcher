@@ -7,7 +7,7 @@
 // - Combatant Accessors (getHP, getAC, getSpeed, etc.)
 // - Combatant Setters (setHP, setPosition, setConditions, etc.)
 // - Turn Management (advanceTurn, getCurrentCombatant, isCombatOver)
-// - Turn Budget (createTurnBudget, consumeMovement, consumeAction, etc.)
+// - Turn Budget (createTurnBudget)
 
 import type { Action, CreatureDefinition } from '@/types/entities';
 import type { AbilityScores } from '@/types/entities/creature';
@@ -15,6 +15,7 @@ import {
   calculateDeathProbability,
 } from '@/utils';
 import { vault } from '@/infrastructure/vault/vaultInstance';
+import { CONDITION_EFFECTS, type ConditionEffectKey } from '@/constants/action';
 
 // Types aus @/types/combat (Single Source of Truth)
 import type {
@@ -25,6 +26,7 @@ import type {
   ConditionState,
   Combatant,
   CombatState,
+  CombatantSimulationState,
   CombatStateWithLayers,
   ActionBaseValues,
   TurnBudget,
@@ -54,8 +56,11 @@ export interface ResolvedCreature {
 const creatureCache = new Map<string, ResolvedCreature>();
 
 /**
- * Resolved Actions aus creature.actions + actionIds.
- * Falls keine Actions vorhanden: Default-Action basierend auf CR.
+ * Resolved Actions aus creature.actions + actionIds + standardActions.
+ * Falls keine creature-spezifischen Actions vorhanden: Default-Action basierend auf CR.
+ *
+ * StandardActions (Move, Dash, Disengage, Dodge, Opportunity Attack) werden
+ * automatisch hinzugefügt wenn sie im Vault mit 'std-' Prefix registriert sind.
  */
 function resolveActions(creature: CreatureDefinition): Action[] {
   const actions: Action[] = [...(creature.actions ?? [])];
@@ -73,10 +78,26 @@ function resolveActions(creature: CreatureDefinition): Action[] {
     }
   }
 
-  // Fallback: Default-Action wenn keine Actions vorhanden
+  // Fallback: Default-Action wenn keine creature-spezifischen Actions vorhanden
   if (actions.length === 0) {
     debug('no actions, using default for CR:', creature.cr);
     actions.push(getDefaultCreatureAction(creature.cr));
+  }
+
+  // StandardActions hinzufügen (Move, Dash, Disengage, Dodge, Opportunity Attack)
+  // Diese sind für alle Combatants verfügbar, gefiltert durch requires.hasAction
+  try {
+    const allActions = vault.getAllEntities<Action>('action');
+    const standardActions = allActions.filter(a => a.id?.startsWith('std-'));
+    for (const stdAction of standardActions) {
+      // Nur hinzufügen wenn noch nicht vorhanden (verhindert Duplikate)
+      if (!actions.some(a => a.id === stdAction.id)) {
+        actions.push(stdAction);
+        debug('added standardAction:', stdAction.id);
+      }
+    }
+  } catch {
+    debug('could not load standardActions from vault');
   }
 
   return actions;
@@ -380,9 +401,35 @@ export function setHP(c: Combatant, hp: ProbabilityDistribution): void {
 /**
  * Setzt Position des Combatants.
  * Mutiert combatState.position.
+ *
+ * Grapple-Drag (D&D 5e PHB):
+ * Wenn state übergeben wird und Combatant jemanden grappled,
+ * werden die gegrappelten Targets mitbewegt.
+ *
+ * @param c Der Combatant der bewegt wird
+ * @param pos Die neue Position
+ * @param state Optional: State mit combatants Array für Grapple-Drag
  */
-export function setPosition(c: Combatant, pos: GridPosition): void {
+export function setPosition(c: Combatant, pos: GridPosition, state?: CombatantSimulationState): void {
   c.combatState.position = pos;
+
+  // Grapple-Drag: Gegrappelte Targets mitbewegen
+  if (state) {
+    const grappledTargets = state.combatants.filter(target =>
+      target.combatState.conditions.some(
+        cond => cond.name === 'grappled' && cond.sourceId === c.id
+      )
+    );
+
+    for (const target of grappledTargets) {
+      target.combatState.position = pos;
+      debug('setPosition: grapple-drag', {
+        grappler: c.id,
+        target: target.id,
+        newPos: pos,
+      });
+    }
+  }
 }
 
 /**
@@ -407,6 +454,251 @@ export function removeCondition(c: Combatant, conditionName: string): void {
   c.combatState.conditions = c.combatState.conditions.filter(
     cond => cond.name !== conditionName
   );
+}
+
+/**
+ * Ergebnis der Condition-Verarbeitung am Turn-Start.
+ */
+export interface TurnStartConditionResult {
+  expired: string[];  // Namen der abgelaufenen Conditions
+  saved: string[];  // Namen der Conditions die durch Save beendet wurden
+  remaining: string[];  // Namen der noch aktiven Conditions
+}
+
+/**
+ * Berechnet Save-Erfolgswahrscheinlichkeit für einen Combatant.
+ * Vereinfachte Version ohne combatantAI-Import um zirkuläre Dependencies zu vermeiden.
+ *
+ * Formel: (DC - saveBonus - 1) / 20, geclampt auf [0.05, 0.95]
+ * saveBonus = abilityModifier + (isProficient ? profBonus : 0)
+ */
+function calculateSaveSuccessChance(
+  c: Combatant,
+  dc: number,
+  ability: keyof AbilityScores
+): number {
+  const abilities = getAbilities(c);
+  const abilityScore = abilities[ability];
+  const modifier = Math.floor((abilityScore - 10) / 2);
+
+  // Vereinfachte Proficiency-Berechnung (CR-basiert)
+  const cr = c.cr ?? 0;
+  const profBonus = Math.floor(cr / 4) + 2;
+
+  // Prüfe Save-Proficiency
+  const saveProficiencies = c.creature?.saveProficiencies ?? [];
+  const isProficient = saveProficiencies.includes(ability);
+
+  const saveBonus = modifier + (isProficient ? profBonus : 0);
+  const successChance = (21 + saveBonus - dc) / 20;  // 21 = d20 average + 0.5 rounding
+
+  // Clamp auf [0.05, 0.95] - Natural 1/20 haben keine Sonderbedeutung bei Saves
+  return Math.max(0.05, Math.min(0.95, successChance));
+}
+
+/**
+ * Verarbeitet Conditions am Turn-Start eines Combatants.
+ * - Dekrementiert duration.value für Conditions mit type 'rounds'
+ * - Entfernt abgelaufene Conditions (value <= 0)
+ * - Prüft Start-of-Turn Saves (für until-save mit saveAt: 'start')
+ *
+ * @param c Der Combatant dessen Conditions verarbeitet werden
+ * @returns Ergebnis mit abgelaufenen, gesaveten und verbleibenden Conditions
+ */
+export function processConditionsOnTurnStart(c: Combatant): TurnStartConditionResult {
+  const expired: string[] = [];
+  const saved: string[] = [];
+  const remaining: string[] = [];
+
+  // Iteriere über Kopie, da wir während der Iteration entfernen könnten
+  const conditionsCopy = [...c.combatState.conditions];
+
+  for (const condition of conditionsCopy) {
+    if (!condition.duration) {
+      // Keine Duration = permanent (z.B. Trait-Effekte)
+      remaining.push(condition.name);
+      continue;
+    }
+
+    if (condition.duration.type === 'rounds' && condition.duration.value !== undefined) {
+      // Dekrementiere Duration
+      condition.duration.value--;
+
+      debug('processConditionsOnTurnStart: rounds decrement', {
+        combatant: c.name,
+        condition: condition.name,
+        newValue: condition.duration.value,
+      });
+
+      if (condition.duration.value <= 0) {
+        // Condition ist abgelaufen
+        removeCondition(c, condition.name);
+        expired.push(condition.name);
+        debug('processConditionsOnTurnStart: expired', {
+          combatant: c.name,
+          condition: condition.name,
+        });
+      } else {
+        remaining.push(condition.name);
+      }
+    } else if (condition.duration.type === 'until-save') {
+      // Start-of-Turn Saves (z.B. Hold Person, Dominate)
+      // Nur wenn saveAt === 'start' (default ist 'end')
+      const saveAt = condition.duration.saveAt ?? 'end';
+
+      if (saveAt === 'start' && condition.duration.saveDC && condition.duration.saveAbility) {
+        const successChance = calculateSaveSuccessChance(
+          c,
+          condition.duration.saveDC,
+          condition.duration.saveAbility
+        );
+
+        // Probabilistischer Save: Condition wird mit Erfolgswahrscheinlichkeit entfernt
+        // Wir reduzieren die Condition-Probability um die Erfolgsrate
+        condition.probability = condition.probability * (1 - successChance);
+
+        debug('processConditionsOnTurnStart: start-of-turn save', {
+          combatant: c.name,
+          condition: condition.name,
+          dc: condition.duration.saveDC,
+          ability: condition.duration.saveAbility,
+          successChance,
+          newProbability: condition.probability,
+        });
+
+        // Wenn Probability unter Schwellwert, Condition entfernen
+        if (condition.probability < 0.05) {
+          removeCondition(c, condition.name);
+          saved.push(condition.name);
+          debug('processConditionsOnTurnStart: saved', {
+            combatant: c.name,
+            condition: condition.name,
+          });
+        } else {
+          remaining.push(condition.name);
+        }
+      } else {
+        // End-of-Turn Save oder keine Save-Info vorhanden
+        remaining.push(condition.name);
+      }
+    } else if (condition.duration.type === 'until-escape') {
+      // Escape erfordert Action, wird nicht automatisch geprüft
+      remaining.push(condition.name);
+    } else {
+      // Andere Duration-Types (instant, concentration, etc.)
+      remaining.push(condition.name);
+    }
+  }
+
+  return { expired, saved, remaining };
+}
+
+/**
+ * Ergebnis der Condition-Verarbeitung am Turn-Ende.
+ */
+export interface TurnEndConditionResult {
+  saved: string[];  // Namen der Conditions die durch Save beendet wurden
+  remaining: string[];  // Namen der noch aktiven Conditions
+  expired: string[];  // Namen der abgelaufenen Conditions (für Konsistenz mit TurnStartConditionResult)
+}
+
+/**
+ * Verarbeitet Conditions am Turn-Ende eines Combatants.
+ * - Prüft endingSave (ActionEffect.endingSave - erlaubt Save am Turn-Ende)
+ * - Prüft End-of-Turn Saves (für until-save mit saveAt: 'end', der Default)
+ *
+ * @param c Der Combatant dessen Conditions verarbeitet werden
+ * @returns Ergebnis mit gesaveten und verbleibenden Conditions
+ */
+export function processConditionsOnTurnEnd(c: Combatant): TurnEndConditionResult {
+  const saved: string[] = [];
+  const remaining: string[] = [];
+  const expired: string[] = [];
+
+  // Iteriere über Kopie, da wir während der Iteration entfernen könnten
+  const conditionsCopy = [...c.combatState.conditions];
+
+  for (const condition of conditionsCopy) {
+    // 1. Prüfe endingSave (unabhängig von Duration-Type)
+    if (condition.endingSave) {
+      const successChance = calculateSaveSuccessChance(
+        c,
+        condition.endingSave.dc,
+        condition.endingSave.ability
+      );
+
+      condition.probability = condition.probability * (1 - successChance);
+
+      debug('processConditionsOnTurnEnd: endingSave', {
+        combatant: c.name,
+        condition: condition.name,
+        dc: condition.endingSave.dc,
+        ability: condition.endingSave.ability,
+        successChance,
+        newProbability: condition.probability,
+      });
+
+      if (condition.probability < 0.05) {
+        removeCondition(c, condition.name);
+        saved.push(condition.name);
+        debug('processConditionsOnTurnEnd: saved via endingSave', {
+          combatant: c.name,
+          condition: condition.name,
+        });
+        continue;  // Weiter zur nächsten Condition
+      }
+    }
+
+    // 2. Duration-basierte Verarbeitung
+    if (!condition.duration) {
+      remaining.push(condition.name);
+      continue;
+    }
+
+    if (condition.duration.type === 'until-save') {
+      // End-of-Turn Saves (z.B. Hold Person, Dominate)
+      // Default ist 'end', also saveAt undefined = end
+      const saveAt = condition.duration.saveAt ?? 'end';
+
+      if (saveAt === 'end' && condition.duration.saveDC && condition.duration.saveAbility) {
+        const successChance = calculateSaveSuccessChance(
+          c,
+          condition.duration.saveDC,
+          condition.duration.saveAbility
+        );
+
+        // Probabilistischer Save: Condition wird mit Erfolgswahrscheinlichkeit entfernt
+        condition.probability = condition.probability * (1 - successChance);
+
+        debug('processConditionsOnTurnEnd: end-of-turn save', {
+          combatant: c.name,
+          condition: condition.name,
+          dc: condition.duration.saveDC,
+          ability: condition.duration.saveAbility,
+          successChance,
+          newProbability: condition.probability,
+        });
+
+        // Wenn Probability unter Schwellwert, Condition entfernen
+        if (condition.probability < 0.05) {
+          removeCondition(c, condition.name);
+          saved.push(condition.name);
+          debug('processConditionsOnTurnEnd: saved', {
+            combatant: c.name,
+            condition: condition.name,
+          });
+        } else {
+          remaining.push(condition.name);
+        }
+      } else {
+        remaining.push(condition.name);
+      }
+    } else {
+      remaining.push(condition.name);
+    }
+  }
+
+  return { saved, remaining, expired };
 }
 
 /**
@@ -463,7 +755,27 @@ export function advanceTurn(state: CombatState): void {
   // Neues Budget für nächsten Combatant
   const nextCombatant = getCurrentCombatant(state);
   if (nextCombatant && !nextCombatant.combatState.isDead) {
-    state.currentTurnBudget = createTurnBudget(nextCombatant);
+    state.currentTurnBudget = createTurnBudget(nextCombatant, state);
+
+    // Reaction Budget für diesen Combatant zurücksetzen (D&D 5e: Reset bei Turn-Start)
+    if (state.reactionBudgets) {
+      state.reactionBudgets.set(nextCombatant.id, { hasReaction: true });
+    }
+
+    // Condition Duration Processing (D&D 5e: Decrement at Turn Start)
+    const conditionResult = processConditionsOnTurnStart(nextCombatant);
+    if (conditionResult.expired.length > 0) {
+      debug('advanceTurn: conditions expired', {
+        combatant: nextCombatant.name,
+        expired: conditionResult.expired,
+      });
+    }
+    if (conditionResult.saved.length > 0) {
+      debug('advanceTurn: conditions saved', {
+        combatant: nextCombatant.name,
+        saved: conditionResult.saved,
+      });
+    }
   }
 
   debug('advanceTurn:', {
@@ -541,10 +853,98 @@ export function hasAnyBonusAction(combatant: Combatant): boolean {
   return getActions(combatant).some(a => a.timing.type === 'bonus');
 }
 
+// ============================================================================
+// GRAPPLE HELPERS
+// ============================================================================
+
+/**
+ * Findet alle Combatants die von diesem Grappler gegrappled werden.
+ * Sucht nach 'grappled' Conditions mit sourceId = grappler.id.
+ *
+ * @param grappler Der potentielle Grappler
+ * @param state State mit combatants Array
+ * @returns Array von gegrappelten Combatants
+ */
+export function getGrappledTargets(
+  grappler: Combatant,
+  state: CombatantSimulationState
+): Combatant[] {
+  return state.combatants.filter(c =>
+    c.combatState.conditions.some(
+      cond => cond.name === 'grappled' && cond.sourceId === grappler.id
+    )
+  );
+}
+
+/**
+ * Prüft ob ein Combatant das Abduct-Trait hat.
+ * Abduct: Keine Speed-Reduktion beim Ziehen gegrappelter Targets.
+ *
+ * @param combatant Der zu prüfende Combatant
+ * @returns true wenn trait-abduct in Actions vorhanden
+ */
+export function hasAbductTrait(combatant: Combatant): boolean {
+  return getActions(combatant).some(a => a.id === 'trait-abduct');
+}
+
+/**
+ * Berechnet effektive Speed unter Berücksichtigung von Conditions.
+ * Conditions wie 'grappled', 'restrained', 'paralyzed' setzen Speed auf 0.
+ * Liest Effekte deklarativ aus CONDITION_EFFECTS.
+ *
+ * Grapple-Drag (D&D 5e PHB):
+ * Wenn Combatant jemanden grappled, ist Speed halbiert beim Bewegen.
+ * Ausnahme: Abduct-Trait entfernt diese Reduktion.
+ *
+ * @param combatant Der Combatant
+ * @param state Optional: State mit combatants Array für Grapple-Drag Check
+ * @returns Effektive Speed in Feet
+ */
+export function getEffectiveSpeed(combatant: Combatant, state?: CombatantSimulationState): number {
+  const baseSpeed = getSpeed(combatant).walk ?? 30;
+  const conditions = combatant.combatState.conditions ?? [];
+
+  // Prüfe alle aktiven Conditions auf Speed-Modifikation
+  for (const cond of conditions) {
+    const condName = cond.name as ConditionEffectKey;
+    const effects = CONDITION_EFFECTS[condName];
+    if (effects && 'speed' in effects && effects.speed === 0) {
+      debug('getEffectiveSpeed:', {
+        id: combatant.id,
+        condition: cond.name,
+        speedOverride: 0,
+      });
+      return 0;
+    }
+  }
+
+  // Grapple-Drag: Speed halbieren wenn Target grappled (außer Abduct)
+  if (state && getGrappledTargets(combatant, state).length > 0) {
+    if (!hasAbductTrait(combatant)) {
+      const halvedSpeed = Math.floor(baseSpeed / 2);
+      debug('getEffectiveSpeed:', {
+        id: combatant.id,
+        grappling: true,
+        hasAbduct: false,
+        baseSpeed,
+        halvedSpeed,
+      });
+      return halvedSpeed;
+    }
+    debug('getEffectiveSpeed:', {
+      id: combatant.id,
+      grappling: true,
+      hasAbduct: true,
+      speed: baseSpeed,
+    });
+  }
+
+  return baseSpeed;
+}
+
 /** Erstellt TurnBudget aus Combatant. */
-export function createTurnBudget(combatant: Combatant): TurnBudget {
-  const speed = getSpeed(combatant);
-  const walkSpeed = speed.walk ?? 30;
+export function createTurnBudget(combatant: Combatant, state?: CombatantSimulationState): TurnBudget {
+  const walkSpeed = getEffectiveSpeed(combatant, state);  // Berücksichtigt Conditions + Grapple-Drag
   const movementCells = Math.floor(walkSpeed / 5);
 
   debug('createTurnBudget:', {
@@ -557,40 +957,39 @@ export function createTurnBudget(combatant: Combatant): TurnBudget {
     movementCells,
     baseMovementCells: movementCells,
     hasAction: true,
-    hasDashed: false,
     hasBonusAction: hasAnyBonusAction(combatant),
     hasReaction: true,
   };
 }
 
-/** Prüft ob noch sinnvolle Aktionen möglich sind. */
-export function hasBudgetRemaining(budget: TurnBudget): boolean {
-  return budget.movementCells > 0 || budget.hasAction || budget.hasBonusAction;
+/**
+ * Calculates movement bonus from grantMovement effect.
+ * Single source of truth for dash/extra/teleport calculations.
+ *
+ * Used by both candidate generation (actionEnumeration) and
+ * execution (executeAction) to ensure consistent movement ranges.
+ *
+ * @param grant The grantMovement effect from an Action
+ * @param budget Current turn budget with baseMovementCells
+ * @returns Number of cells to add to movement budget
+ */
+export function calculateGrantedMovement(
+  grant: { type: 'dash' | 'extra' | 'teleport'; value?: number },
+  budget: TurnBudget
+): number {
+  switch (grant.type) {
+    case 'dash':
+      return budget.baseMovementCells;  // Effective speed from budget
+    case 'extra':
+      return Math.floor((grant.value ?? 0) / 5);
+    case 'teleport':
+      return Math.floor((grant.value ?? 0) / 5);  // Independent of current budget
+    default:
+      return 0;
+  }
 }
 
-/** Verbraucht Movement-Cells (1 Cell = 5ft). */
-export function consumeMovement(budget: TurnBudget, cells: number = 1): void {
-  budget.movementCells = Math.max(0, budget.movementCells - cells);
-}
-
-/** Verbraucht die Action für diesen Zug. */
-export function consumeAction(budget: TurnBudget): void {
-  budget.hasAction = false;
-}
-
-/** Verbraucht die Bonus Action für diesen Zug. */
-export function consumeBonusAction(budget: TurnBudget): void {
-  budget.hasBonusAction = false;
-}
-
-/** Verbraucht die Reaction. */
-export function consumeReaction(budget: TurnBudget): void {
-  budget.hasReaction = false;
-}
-
-/** Dash fügt die Basis-Bewegungsrate hinzu und verbraucht die Action. */
-export function applyDash(budget: TurnBudget): void {
-  budget.movementCells += budget.baseMovementCells;
-  budget.hasAction = false;
-  budget.hasDashed = true;
-}
+// NOTE: Legacy budget functions (consumeMovement, consumeAction, consumeBonusAction,
+// consumeReaction, applyDash, hasBudgetRemaining) wurden entfernt.
+// Budget-Verbrauch wird jetzt über budgetCosts im Action-Schema gesteuert.
+// Siehe: executeAction.ts applyBudgetCosts()

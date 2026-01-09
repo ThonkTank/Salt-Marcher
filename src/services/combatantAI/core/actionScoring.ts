@@ -49,6 +49,8 @@ import type {
   TurnBudget,
 } from '@/types/combat';
 import type { TriggerEvent } from '@/constants/action';
+import { getConditionSeverity } from '@/constants/action';
+import { resolveEscapeAttempt } from '../../combatTracking/executeAction';
 import {
   getHP,
   getAC,
@@ -65,6 +67,7 @@ import {
 } from '@/utils';
 import {
   resolveMultiattackRefs,
+  resolveActionWithBase,
   getDistance,
   isAllied,
   calculateHitChance,
@@ -72,10 +75,9 @@ import {
 } from '../helpers/combatHelpers';
 import {
   evaluateSituationalModifiers,
-  type ModifierContext,
-  type CombatantContext,
   type SituationalModifiers,
 } from '../situationalModifiers';
+import { combatantToCombatantContext } from '../expressionEvaluator';
 // Note: Core modifiers are registered in combatantAI/index.ts to avoid circular dependencies
 
 // ============================================================================
@@ -356,6 +358,7 @@ import {
 /**
  * Berechnet Score für eine (Action, Target)-Kombination.
  * Summiert alle Effekte der Action (Damage, Healing, Conditions, Buffs, etc.)
+ * Resolves baseAction references (OA etc.) before scoring.
  *
  * @param triggerContext Optional: Kontext für Reactions (eingehender Angriff, Spell, etc.)
  */
@@ -368,65 +371,49 @@ export function calculatePairScore(
   triggerContext?: ReactionContext
 ): ActionTargetScore | null {
   const attackerActions = getActions(attacker);
+
+  // Resolve baseAction (für OA etc.) - übernimmt attack/damage von Basis-Action
+  const resolvedAction = resolveActionWithBase(action, attackerActions);
+
   const targetAC = getAC(target);
 
-  // Range-Check
+  // Range-Check (use resolved action for range since it may have different reach)
   let maxRangeFeet: number;
-  if (action.multiattack) {
-    const refs = resolveMultiattackRefs(action, attackerActions);
+  if (resolvedAction.multiattack) {
+    const refs = resolveMultiattackRefs(resolvedAction, attackerActions);
     maxRangeFeet = refs.reduce((max, ref) => {
       if (!ref.range) return max;
       return Math.max(max, ref.range.long ?? ref.range.normal);
     }, 0);
   } else {
-    maxRangeFeet = action.range.long ?? action.range.normal;
+    // Use original action's range for OA (has its own reach rules)
+    maxRangeFeet = action.range?.long ?? action.range?.normal ?? 5;
   }
 
   const maxRangeCells = feetToCell(maxRangeFeet);
   if (distanceCells > maxRangeCells) {
-    debug('calculatePairScore: out of range', { actionName: action.name, distanceCells, maxRangeCells });
+    debug('calculatePairScore: out of range', { actionName: resolvedAction.name, distanceCells, maxRangeCells });
     return null;
   }
 
   // Multiattack: Separate Logik (kombinierte PMF)
-  if (action.multiattack) {
-    const multiDamage = calculateMultiattackDamage(action, attackerActions, targetAC);
+  if (resolvedAction.multiattack) {
+    const multiDamage = calculateMultiattackDamage(resolvedAction, attackerActions, targetAC);
     if (!multiDamage) return null;
     const score = getExpectedValue(multiDamage);
-    debug('calculatePairScore (multiattack):', { actionName: action.name, score });
+    debug('calculatePairScore (multiattack):', { actionName: resolvedAction.name, score });
     return { action, target, score, intent: 'damage' };
   }
 
   // Situational Modifiers evaluieren
   let modifiers: SituationalModifiers | undefined;
   if (state) {
-    const attackerContext: CombatantContext = {
-      position: getPosition(attacker),
-      groupId: getGroupId(attacker),
-      participantId: attacker.id,
-      conditions: getConditions(attacker),
-      ac: getAC(attacker),
-      hp: getExpectedValue(getHP(attacker)),
-    };
-    const targetContext: CombatantContext = {
-      position: getPosition(target),
-      groupId: getGroupId(target),
-      participantId: target.id,
-      conditions: getConditions(target),
-      ac: getAC(target),
-      hp: getExpectedValue(getHP(target)),
-    };
     modifiers = evaluateSituationalModifiers({
-      attacker: attackerContext,
-      target: targetContext,
-      action,
+      attacker: combatantToCombatantContext(attacker),
+      target: combatantToCombatantContext(target),
+      action: resolvedAction,
       state: {
-        profiles: state.combatants.map(c => ({
-          position: getPosition(c),
-          groupId: getGroupId(c),
-          participantId: c.id,
-          conditions: getConditions(c),
-        })),
+        combatants: state.combatants,
         alliances: state.alliances,
       },
     });
@@ -437,43 +424,57 @@ export function calculatePairScore(
   // ========================================
   let score = 0;
 
-  // 1. Damage Component
-  if (action.damage) {
-    score += scoreDamageComponent(action, target, modifiers);
+  // 0. Escape Action Scoring (für dynamisch generierte escape-* Actions)
+  if (resolvedAction._escapeCondition && state) {
+    const escapeScore = scoreEscapeAction(attacker, resolvedAction, state);
+    if (escapeScore !== null) {
+      debug('calculatePairScore (escape):', {
+        actionName: resolvedAction.name,
+        condition: resolvedAction._escapeCondition,
+        score: escapeScore,
+      });
+      return { action, target: attacker, score: escapeScore, intent: 'escape' as ActionIntent };
+    }
+    return null;  // Escape not applicable
+  }
+
+  // 1. Damage Component (use resolved stats)
+  if (resolvedAction.damage) {
+    score += scoreDamageComponent(resolvedAction, target, modifiers);
   }
 
   // 2. Healing Component
-  if (action.healing && state) {
-    score += scoreHealingComponent(action, target, state);
+  if (resolvedAction.healing && state) {
+    score += scoreHealingComponent(resolvedAction, target, state);
   }
 
   // 3. Effects (Conditions, Buffs, etc.)
-  for (const effect of action.effects ?? []) {
-    score += scoreEffect(effect, action, target, state);
+  for (const effect of resolvedAction.effects ?? []) {
+    score += scoreEffect(effect, resolvedAction, target, state);
   }
 
   // 4. Counter (Counterspell)
-  if (action.counter && triggerContext?.spellLevel !== undefined) {
-    score += scoreCounterComponent(action, triggerContext);
+  if (resolvedAction.counter && triggerContext?.spellLevel !== undefined) {
+    score += scoreCounterComponent(resolvedAction, triggerContext);
   }
 
   // 5. Trigger-Response (Shield auf incoming attack)
-  if (triggerContext?.action && !action.damage && hasACBuff(action)) {
-    score += scoreTriggerResponse(action, triggerContext, attacker);
+  if (triggerContext?.action && !resolvedAction.damage && hasACBuff(resolvedAction)) {
+    score += scoreTriggerResponse(resolvedAction, triggerContext, attacker);
   }
 
   // 6. Concentration-Switch-Kosten
-  if (state && isConcentrationSpell(action)) {
+  if (state && isConcentrationSpell(resolvedAction)) {
     score -= getConcentrationSwitchCost(attacker, state);
   }
 
   if (score === 0) {
-    debug('calculatePairScore: zero score', { actionName: action.name });
+    debug('calculatePairScore: zero score', { actionName: resolvedAction.name, hasBaseAction: !!action.baseAction });
     return null;
   }
 
-  const intent = getActionIntent(action);  // Für Logging/Metadata
-  debug('calculatePairScore:', { actionName: action.name, intent, score });
+  const intent = getActionIntent(resolvedAction);  // Für Logging/Metadata
+  debug('calculatePairScore:', { actionName: resolvedAction.name, intent, score, hasBaseAction: !!action.baseAction });
 
   return { action, target, score, intent };
 }
@@ -481,6 +482,66 @@ export function calculatePairScore(
 // ============================================================================
 // SCORE COMPONENTS
 // ============================================================================
+
+/**
+ * Escape-Score: conditionSeverity × successProb × timingMultiplier
+ *
+ * Bewertet escape-* Actions basierend auf:
+ * - Schwere der Condition (via CONDITION_SEVERITY)
+ * - Erfolgswahrscheinlichkeit (via resolveEscapeAttempt)
+ * - Timing-Kosten (Action > Bonus > Movement)
+ *
+ * @returns Score in DPR-Skala oder null wenn Escape nicht anwendbar
+ */
+function scoreEscapeAction(
+  escapee: Combatant,
+  action: Action,
+  state: CombatantSimulationState
+): number | null {
+  const conditionName = action._escapeCondition;
+  if (!conditionName) return null;
+
+  // Finde die Condition auf dem Escapee
+  const conditions = getConditions(escapee);
+  const condition = conditions.find(c => c.name === conditionName);
+  if (!condition) {
+    debug('scoreEscapeAction: condition not found', { conditionName });
+    return null;
+  }
+
+  // Erfolgswahrscheinlichkeit berechnen
+  const escapeResult = resolveEscapeAttempt(escapee, condition, state);
+  const successProb = escapeResult.successProbability;
+
+  // Condition-Schwere (höher = schlimmer = dringender zu escapen)
+  const severity = getConditionSeverity(conditionName);
+
+  // Timing-Multiplier: Bevorzuge günstigere Optionen
+  // Action = 1.0, Bonus = 1.2 (günstiger), Movement = 1.3 (günstigster)
+  let timingMultiplier = 1.0;
+  const timing = action.timing?.type;
+  if (timing === 'bonus') {
+    timingMultiplier = 1.2;  // Bonus Actions sind wertvoller da sie Action frei lassen
+  } else if (timing === 'free') {
+    timingMultiplier = 1.3;  // Movement-basiert, lässt Action + Bonus frei
+  }
+
+  // Score = Severity * SuccessProb * TimingMultiplier
+  // Severity ist auf ~1-15 Skala, multipliziert mit successProb (0-1) und timingMultiplier
+  const score = severity * successProb * timingMultiplier;
+
+  debug('scoreEscapeAction:', {
+    escapee: escapee.name,
+    condition: conditionName,
+    severity,
+    successProb,
+    timing,
+    timingMultiplier,
+    score,
+  });
+
+  return score;
+}
 
 /** Damage-Score: hitChance × expectedDamage oder saveFailChance × damage */
 function scoreDamageComponent(

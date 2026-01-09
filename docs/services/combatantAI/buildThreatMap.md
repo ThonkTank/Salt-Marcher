@@ -3,9 +3,9 @@
 > **Verantwortlichkeit:** Position-Bewertung fuer Combat-AI - wie gefaehrlich/nuetzlich ist eine Cell?
 > **Code:** `src/services/combatantAI/layers/threatMap.ts`
 > **Konsumiert von:** [planNextAction](planNextAction.md), [buildPossibleActions](buildPossibleActions.md)
-> **Abhaengigkeit:** [scoreAction](scoreAction.md) (`getFullResolution`)
+> **Abhaengigkeit:** [scoreAction](scoreAction.md) (`getFullResolution`), [combatHelpers](../helpers/combatHelpers.ts) (`getTurnsUntilNextTurn`)
 
-Stateless Query-Service. Berechnet Threat/Support-Werte fuer Cells basierend auf Gegner- und Ally-Positionen.
+Stateless Query-Service. Berechnet Threat/Support/Opportunity-Werte fuer Cells basierend auf Gegner- und Ally-Positionen mit Turn-Decay und Distance-Projektion.
 
 ---
 
@@ -24,15 +24,116 @@ Stateless Query-Service. Berechnet Threat/Support-Werte fuer Cells basierend auf
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  NUTZUNG                                                        │
+│  OPPORTUNITY MAP (ersetzt approachBonus)                        │
+│  buildOpportunityMap(combatant, state, reachableCells, budget)  │
 │                                                                 │
-│  buildPossibleActions.ts:                                       │
-│    threatDelta = targetThreat - currentThreat                   │
-│    candidateScore = actionScore + threatDelta × THREAT_WEIGHT   │
+│  Fuer jede Cell:                                                │
+│  └── opportunity = getOpportunityAt(cell) [Aktions-Potential]   │
 │                                                                 │
-│  findBestMove.ts:                                               │
-│    globalBest.movement = currentDanger - minEscapeDanger        │
+│  projectMapWithDecay() projiziert Werte auf umliegende Cells    │
 └─────────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  NUTZUNG in buildPossibleActions.ts:                            │
+│                                                                 │
+│  score = opportunityDelta × OPPORTUNITY_WEIGHT                  │
+│        + threatDelta × THREAT_WEIGHT                            │
+│                                                                 │
+│  opportunityDelta = targetOpportunity - currentOpportunity      │
+│  threatDelta = targetThreat - currentThreat                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Konstanten
+
+| Konstante | Wert | Beschreibung |
+|-----------|------|--------------|
+| `DECAY_CONSTANTS.TURN_DECAY` | 0.9 | Decay pro Turn Entfernung (value × 0.9^turns) |
+| `DECAY_CONSTANTS.PER_STEP` | 0.95 | Decay pro Cell Entfernung |
+| `DECAY_CONSTANTS.BAND_CROSSING` | 0.7 | Extra Decay beim Ueberschreiten einer Movement-Band |
+| `DECAY_CONSTANTS.MAX_BANDS` | 3 | Maximale Movement-Bands fuer Projektion |
+| `THREAT_WEIGHT` | 1.0 | Gewichtung von Threat-Delta im Score |
+| `OPPORTUNITY_WEIGHT` | 1.0 | Gewichtung von Opportunity-Delta im Score |
+| `FUTURE_DISCOUNT` | 0.5 | Discount für Future-Turn Opportunity |
+
+---
+
+## Turn-Decay (Timing-basiert)
+
+### Konzept
+
+Nicht alle Aktionen sind gleich relevant. Aktionen von Combatants die bald dran sind, sind gefaehrlicher als Aktionen von Combatants die erst in 3 Runden handeln.
+
+**Formel:** `value × 0.9^turnsUntilNextTurn`
+
+### Timing-Gruppen
+
+Aktionen werden nach `timing.type` gruppiert:
+
+| Timing | Decay | Begruendung |
+|--------|-------|-------------|
+| `reaction` | **Kein Decay** (voller Wert) | Reactions koennen jederzeit ausgeloest werden |
+| `action` | `× 0.9^turns` | Standard-Aktionen sind turn-abhaengig |
+| `bonus` | `× 0.9^turns` | Bonus-Aktionen sind turn-abhaengig |
+| `free` | `× 0.9^turns` | Free Actions sind turn-abhaengig |
+
+### Beispiel
+
+```
+Turn Order: A → B → C → D → A → B → ...
+
+Wenn B dran ist:
+- C hat turnsUntil = 1 → Decay = 0.9^1 = 0.9 (90% Wert)
+- D hat turnsUntil = 2 → Decay = 0.9^2 = 0.81 (81% Wert)
+- A hat turnsUntil = 3 → Decay = 0.9^3 = 0.729 (73% Wert)
+
+Aber: Reactions von allen Gegnern haben vollen Wert!
+```
+
+---
+
+## Distance Decay (Projektion)
+
+### Konzept
+
+Werte werden auf umliegende Zellen projiziert, um potentielle Bewegung zu beruecksichtigen.
+
+**Zwei Decay-Stufen:**
+
+1. **Per-Step Decay:** `× 0.95` pro Cell Entfernung (leicht)
+2. **Band-Crossing Decay:** `× 0.7` beim Ueberschreiten einer Movement-Band (stark)
+
+### Movement-Bands
+
+Zellen werden in Bands eingeteilt basierend auf Erreichbarkeit:
+
+```
+Band 0: Aktuelle Position
+Band 1: Erreichbar in 1 Runde (bis speed Cells)
+Band 2: Erreichbar in 2 Runden (bis 2×speed Cells)
+Band 3: Erreichbar in 3 Runden (bis 3×speed Cells)
+```
+
+### Projektion-Logik
+
+```typescript
+function applyDistanceDecay(value, sourceCell, targetCell, bands): number {
+  const distance = getDistance(sourceCell, targetCell);
+  const sourceBand = getCellBand(sourceCell, bands);
+  const targetBand = getCellBand(targetCell, bands);
+  const bandsCrossed = Math.abs(targetBand - sourceBand);
+
+  // Per-Step Decay
+  let decayed = value * Math.pow(DECAY_CONSTANTS.PER_STEP, distance);
+
+  // Band-Crossing Decay
+  decayed *= Math.pow(DECAY_CONSTANTS.BAND_CROSSING, bandsCrossed);
+
+  return decayed;
+}
 ```
 
 ---
@@ -60,105 +161,17 @@ interface ThreatMapEntry {
 ```
 
 **Berechnung pro Cell:**
-1. `baseThreat = getThreatAt(cell)` - Gegner-Schaden
+1. `baseThreat = getThreatAt(cell)` - Gegner-Schaden (mit Turn-Decay)
 2. `pathCost = calculateExpectedReactionCost(currentPos, cell)` - OA-Risiko
 3. `threat = -(baseThreat + pathCost)` - Negativ = schlecht
-4. `support = getSupportAt(cell)` - Ally-Heilung
+4. `support = getSupportAt(cell)` - Ally-Heilung (mit Turn-Decay)
 5. `net = threat + support`
 
 ---
 
-## Mid-Turn Update
+## getThreatAt()
 
-Die ThreatMap wird **nach jeder Aktion** neu berechnet:
-
-```
-Turn Start
-    │
-    ├─▶ buildThreatMap() ──▶ buildPossibleActions() ──▶ findBestMove()
-    │                                                          │
-    │                                                          ▼
-    │                                                    executeAction()
-    │                                                          │
-    ├─▶ buildThreatMap() ──▶ buildPossibleActions() ──▶ findBestMove()
-    │   (neu berechnet!)                                       │
-    │                                                          ▼
-    │                                                    executeAction()
-    │                                                          │
-    └─▶ ... (repeat until turn ends)
-```
-
-**Warum Mid-Turn Update?**
-- Combatant bewegt sich → Position aendert sich → Threat aendert sich
-- Feind stirbt → weniger Threat auf allen Cells
-- Ally bewegt sich → Support-Verteilung aendert sich
-
-**Performance:** Akzeptiert zugunsten Genauigkeit. Die ThreatMap muss die aktuelle taktische Situation reflektieren.
-
----
-
-## Turn Order Behandlung
-
-### Alle Feinde werden immer beruecksichtigt
-
-Die ThreatMap modelliert **zukuenftige Gefahr** - wie viel Schaden koennten wir erleiden, wenn alle Feinde uns angreifen?
-
-**Kernprinzip:** "Vor dem Zug ist nach dem Zug"
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Turn Order ist STATISCH nach Initiative-Roll                   │
-│  (keine Vorhersage noetig, keine Unsicherheit)                  │
-│                                                                 │
-│  Round N:  A → B → C → D → A → B → C → D → ...                  │
-│                                                                 │
-│  Wenn B dran ist:                                               │
-│  - A hat in dieser Runde schon gehandelt                        │
-│  - C und D werden noch handeln                                  │
-│  - In Runde N+1 wird A wieder VOR B handeln                     │
-│                                                                 │
-│  → Alle Feinde sind relevant fuer Threat-Berechnung!            │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Warum nicht nur "Feinde die noch dran kommen"?**
-
-- Feind A hat schon gehandelt, aber in Runde N+1 handelt A wieder vor uns
-- Die ThreatMap bewertet Positionen fuer **die naechsten 1-2 Runden**
-- Turn Order ist zyklisch - jeder Feind wird irgendwann handeln
-
-### Keine Gewichtung nach Turn Order
-
-Eine Position ist gefaehrlich, wenn Feinde sie bedrohen koennen - unabhaengig davon, wann sie dran sind.
-
-```typescript
-// KORREKT: Alle Feinde zaehlen gleich
-function getThreatAt(cell: GridPosition, viewer: CombatantWithLayers, state): number {
-  return getEnemies(state, viewer)
-    .flatMap(enemy => enemy._layeredActions)
-    .filter(action => isInRange(cell, enemy.position, action))
-    .reduce((sum, action) => sum + getExpectedDamage(action), 0);
-}
-
-// FALSCH: Turn Order Gewichtung (unnoetig komplex, falsches Modell)
-function getThreatAt_wrong(...) {
-  return getEnemies(state, viewer)
-    .map(enemy => ({
-      enemy,
-      turnsUntilAction: calculateTurnsUntil(enemy, viewer, state)  // UNNOETIG
-    }))
-    .filter(({ turnsUntilAction }) => turnsUntilAction <= 2)        // FALSCH
-    ...
-}
-```
-
----
-
-## Query-Funktionen
-
-### getThreatAt()
-
-Berechnet Danger-Score fuer eine Cell. Summiert erwarteten Schaden aller feindlichen Actions.
+Berechnet Danger-Score fuer eine Cell. Summiert erwarteten Schaden aller feindlichen Actions mit Timing-Gruppierung und Turn-Decay.
 
 ```typescript
 function getThreatAt(
@@ -170,95 +183,49 @@ function getThreatAt(
 ```
 
 **Berechnung:**
-- Iteriert ueber alle feindlichen Combatants
-- Fuer jede Damage-Action: Prueft ob Cell in Range
-- Wendet optionalen Filter an
-- Summiert `getExpectedValue(getFullResolution().effectiveDamagePMF)`
-
-### LayerFilter
-
-Optionaler Filter fuer Action-Typen in Threat-Berechnung.
 
 ```typescript
-interface LayerFilter {
-  actionTypes?: ('melee' | 'ranged' | 'spell')[];
-  maxRange?: number;  // In Cells
-  excludeReactions?: boolean;
+function getThreatAt(cell, viewer, state, filter?): number {
+  let total = 0;
+
+  for (const enemy of getEnemies(state, viewer)) {
+    const turnsUntil = getTurnsUntilNextTurn(enemy, viewer, state);
+    total += getThreatFromCombatant(cell, viewer, enemy, turnsUntil, state, filter);
+  }
+
+  return total;
 }
-```
 
-**Verwendung:**
-- `actionTypes`: Nur bestimmte Action-Typen beruecksichtigen
-- `maxRange`: Nur Actions mit Range <= maxRange
-- `excludeReactions`: Reactions ignorieren (z.B. fuer Escape-Danger)
+function getThreatFromCombatant(cell, viewer, enemy, turnsUntil, state, filter?): number {
+  const actionsByTiming = groupActionsByTiming(enemy._layeredActions);
+  let totalThreat = 0;
 
-**Beispiele:**
-```typescript
-// Nur Melee-Bedrohungen (fuer Ranged-Combatants)
-getThreatAt(cell, archer, state, { actionTypes: ['melee'] });
+  for (const [timing, actions] of actionsByTiming) {
+    const filteredActions = applyFilter(actions, filter);
+    const scores = filteredActions
+      .filter(a => a.damage && isInRange(cell, enemy.position, a))
+      .map(a => getExpectedDamage(a, viewer, state));
 
-// Nur nahreichweitige Bedrohungen
-getThreatAt(cell, viewer, state, { maxRange: 6 });
+    if (scores.length === 0) continue;
 
-// Ohne Reactions (fuer Disengage-Planung)
-getThreatAt(cell, viewer, state, { excludeReactions: true });
-```
+    const groupAvg = sum(scores) / scores.length;
 
-### Multi-Cell Kreaturen (Threat-Aggregation)
-
-Bei Multi-Cell Kreaturen (Large+) muss der Threat ueber alle besetzten Cells aggregiert werden.
-
-**Regel:** Pro Threat-Source (Angreifer + Action) den **hoechsten** Wert ueber alle besetzten Cells nehmen.
-
-**Warum nicht summieren?** Eine Kreatur kann nur einmal pro Angreifer angegriffen werden - egal wie viele Cells sie besetzt.
-
-```typescript
-function getThreatForMultiCell(
-  targetCells: GridPosition[],  // Alle besetzten Cells
-  viewer: CombatantWithLayers,
-  state: CombatantSimulationStateWithLayers
-): number {
-  // Sammle alle Threat-Sources ueber alle Cells
-  const threatBySource = new Map<string, number>();  // sourceKey → maxThreat
-
-  for (const cell of targetCells) {
-    for (const enemy of getEnemies(state, viewer)) {
-      for (const action of enemy._layeredActions) {
-        const sourceKey = `${enemy.combatantId}:${action.id}`;
-        const threat = calculateThreat(action, enemy, cell, state);
-
-        // Nur den hoechsten Wert pro Source behalten
-        const existing = threatBySource.get(sourceKey) ?? 0;
-        threatBySource.set(sourceKey, Math.max(existing, threat));
-      }
+    if (timing === 'reaction') {
+      totalThreat += groupAvg;  // Voller Wert
+    } else {
+      totalThreat += groupAvg * Math.pow(DECAY_CONSTANTS.TURN_DECAY, turnsUntil);
     }
   }
 
-  // Summiere ueber Sources (nicht ueber Cells)
-  return Array.from(threatBySource.values()).reduce((sum, t) => sum + t, 0);
+  return totalThreat;
 }
 ```
 
-**Beispiel:**
-```
-Huge Creature (3×3) besetzt 9 Cells.
-Goblin mit Longsword kann 2 dieser Cells erreichen:
-  - Cell A: 70% Hit-Chance (wegen Cover)
-  - Cell B: 85% Hit-Chance (kein Cover)
-
-Threat von diesem Goblin = max(70%, 85%) × avgDamage
-                        = 85% × 4.5 = 3.8 DPR
-
-NICHT: (70% + 85%) × 4.5 = 7.0 DPR  // FALSCH - Goblin kann nur 1× angreifen
-```
-
-> **Siehe auch:** [combatantAI.md#multi-cell-creatures](combatantAI.md#multi-cell-creatures) fuer Grid-Footprint Regeln
-
 ---
 
-### getSupportAt()
+## getSupportAt()
 
-Berechnet Support-Score fuer eine Cell. Bewertet Healing-Potential basierend auf aktuellem Bedarf.
+Berechnet Support-Score fuer eine Cell. Bewertet Healing-Potential basierend auf aktuellem Bedarf mit Timing-Gruppierung und Turn-Decay.
 
 ```typescript
 function getSupportAt(
@@ -268,238 +235,193 @@ function getSupportAt(
 ): number
 ```
 
-**Formel:**
-```
-supportScore = healingPotential × healingNeed
-```
-
-| Komponente | Berechnung | Beschreibung |
-|------------|------------|--------------|
-| `healingPotential` | Summe erwarteter Heilung von Allies | Wie viel Heilung koennte ich hier erhalten? |
-| `healingNeed` | `1 - (currentHP / maxHP)` | Wie dringend brauche ich Heilung? (0-1) |
-
 **Berechnung:**
+
 ```typescript
-function getSupportAt(cell: GridPosition, viewer: CombatantWithLayers, state): number {
-  // 1. Healing-Bedarf des Viewers berechnen
+function getSupportAt(cell, viewer, state): number {
   const hpRatio = viewer.combatState.hp / viewer.combatState.maxHp;
-  const healingNeed = 1 - hpRatio;  // 0 = volle HP, 1 = fast tot
+  const healingNeed = 1 - hpRatio;
 
-  // Bei voller HP ist Support irrelevant
-  if (healingNeed < 0.05) return 0;
+  if (healingNeed < 0.05) return 0;  // Bei voller HP irrelevant
 
-  // 2. Healing-Potential an dieser Cell berechnen
-  let healingPotential = 0;
+  let total = 0;
   for (const ally of getAllies(state, viewer)) {
-    for (const action of ally._layeredActions) {
-      if (!action.healing) continue;
-      if (!isInRange(cell, ally.position, action)) continue;
+    if (ally.id === viewer.id) continue;
+    const turnsUntil = getTurnsUntilNextTurn(ally, viewer, state);
+    total += getSupportFromCombatant(cell, viewer, ally, turnsUntil, state);
+  }
 
-      healingPotential += getExpectedHealAmount(action);
+  return total * healingNeed;
+}
+
+function getSupportFromCombatant(cell, viewer, ally, turnsUntil, state): number {
+  const actionsByTiming = groupActionsByTiming(ally._layeredActions);
+  let totalSupport = 0;
+
+  for (const [timing, actions] of actionsByTiming) {
+    const scores = actions
+      .filter(a => a.healing && isInRange(cell, ally.position, a))
+      .map(a => getExpectedHealing(a, viewer, state));
+
+    if (scores.length === 0) continue;
+
+    const groupAvg = sum(scores) / scores.length;
+
+    if (timing === 'reaction') {
+      totalSupport += groupAvg;
+    } else {
+      totalSupport += groupAvg * Math.pow(DECAY_CONSTANTS.TURN_DECAY, turnsUntil);
     }
   }
 
-  // 3. Gewichteter Score
-  return healingPotential * healingNeed;
+  return totalSupport;
+}
+```
+
+---
+
+## OpportunityMap
+
+### Konzept
+
+Die OpportunityMap bewertet das Aktions-Potential jeder Cell. Sie ersetzt den alten `approachBonus` (distanz-basiert) durch eine wert-basierte Bewertung.
+
+**Unterschied:**
+- **Alt (approachBonus):** "Naeher am Feind = besser"
+- **Neu (OpportunityMap):** "Bessere Aktionen moeglich = besser"
+
+### getOpportunityAt()
+
+```typescript
+function getOpportunityAt(
+  cell: GridPosition,
+  combatant: CombatantWithLayers,
+  budget: TurnBudget,
+  state: CombatantSimulationStateWithLayers
+): number
+```
+
+**Berechnung:**
+
+```typescript
+function getOpportunityAt(cell, combatant, budget, state): number {
+  const virtualCombatant = { ...combatant, position: cell };
+  const available = getAvailableActionsWithLayers(combatant, {});
+  const actionsByTiming = groupActionsByTiming(available);
+
+  let totalOpportunity = 0;
+
+  for (const [timing, actions] of actionsByTiming) {
+    // Nur Aktionen die wir uns leisten koennen
+    if (timing === 'action' && !budget.hasAction) continue;
+    if (timing === 'bonus' && !budget.hasBonusAction) continue;
+
+    const scores: number[] = [];
+    for (const action of actions) {
+      if (!action.damage) continue;
+
+      for (const enemy of getEnemies(state, combatant)) {
+        const dist = getDistance(cell, getPosition(enemy));
+        const maxRange = getActionMaxRangeCells(action, combatant._layeredActions);
+        if (dist > maxRange) continue;
+
+        const result = calculatePairScore(virtualCombatant, action, enemy, dist, state);
+        if (result && result.score > 0) {
+          scores.push(result.score);
+        }
+      }
+    }
+
+    if (scores.length > 0) {
+      totalOpportunity += sum(scores) / scores.length;  // Durchschnitt pro Gruppe
+    }
+  }
+
+  return totalOpportunity;
+}
+```
+
+### buildOpportunityMap()
+
+```typescript
+function buildOpportunityMap(
+  combatant: CombatantWithLayers,
+  state: CombatantSimulationStateWithLayers,
+  reachableCells: GridPosition[],
+  budget: TurnBudget
+): Map<string, number>
+```
+
+---
+
+## projectMapWithDecay()
+
+Projiziert Map-Werte auf umliegende Zellen mit Distance Decay.
+
+```typescript
+function projectMapWithDecay(
+  sourceMap: Map<string, number>,
+  combatant: CombatantWithLayers,
+  allCells: GridPosition[]
+): Map<string, number>
+```
+
+**Verwendung:**
+
+```typescript
+const opportunityMap = buildOpportunityMap(combatant, state, reachableCells, budget);
+const projectedOpportunity = projectMapWithDecay(opportunityMap, combatant, reachableCells);
+
+// Jetzt hat jede Cell nicht nur ihren eigenen Wert,
+// sondern auch projizierte Werte von benachbarten Cells
+```
+
+---
+
+## Nutzung in buildPossibleActions
+
+```typescript
+// OpportunityMap berechnen
+const opportunityMap = buildOpportunityMap(combatant, state, reachableCells, budget);
+const projectedOpportunity = projectMapWithDecay(opportunityMap, combatant, reachableCells);
+const currentOpportunity = projectedOpportunity.get(currentCellKey) ?? 0;
+
+// Movement-Score berechnen
+for (const targetCell of reachableCells) {
+  const targetOpportunity = projectedOpportunity.get(cellKey) ?? 0;
+  const opportunityDelta = targetOpportunity - currentOpportunity;
+
+  const targetEntry = threatMap.get(cellKey);
+  const targetThreat = targetEntry?.net ?? 0;
+  const threatDelta = currentThreat - targetThreat;
+
+  // Kombinierter Score
+  const score = opportunityDelta * OPPORTUNITY_WEIGHT + threatDelta * THREAT_WEIGHT;
+}
+```
+
+---
+
+## LayerFilter
+
+Optionaler Filter fuer Action-Typen in Threat-Berechnung.
+
+```typescript
+interface LayerFilter {
+  actionTypes?: ('melee' | 'ranged' | 'spell')[];
+  maxRange?: number;
+  excludeReactions?: boolean;
 }
 ```
 
 **Beispiele:**
-
-| Situation | Potential | Need | Score | Interpretation |
-|-----------|-----------|------|-------|----------------|
-| Volle HP, Cleric in Range | 20 | 0.0 | 0 | Heilung irrelevant |
-| 50% HP, Cleric in Range | 20 | 0.5 | 10 | Moderate Prioritaet |
-| 20% HP, Cleric in Range | 20 | 0.8 | 16 | Hohe Prioritaet - in Cleric-Range bleiben! |
-| 20% HP, kein Healer in Range | 0 | 0.8 | 0 | Kein Support hier verfuegbar |
-
-**Warum diese Formel?**
-- Verhindert dass volle-HP Combatants in Heiler-Range bleiben
-- Priorisiert Heilung fuer verletzte Combatants
-- Skaliert mit Schwere der Verletzung
-
----
-
-### getDominantThreat()
-
-Findet die gefaehrlichste Action fuer eine Cell.
-
 ```typescript
-function getDominantThreat(
-  cell: GridPosition,
-  viewer: CombatantWithLayers,
-  state: CombatantSimulationStateWithLayers
-): { action: ActionWithLayer; attacker: CombatantWithLayers; resolved: FinalResolvedData } | null
+// Nur Melee-Bedrohungen
+getThreatAt(cell, archer, state, { actionTypes: ['melee'] });
+
+// Ohne Reactions (fuer Disengage-Planung)
+getThreatAt(cell, viewer, state, { excludeReactions: true });
 ```
-
-**Nutzung:** Debugging, taktische Analyse ("Wer bedroht mich am meisten?")
-
----
-
-### getAvailableActionsAt()
-
-Prueft welche Actions von einer hypothetischen Cell aus moeglich sind.
-
-```typescript
-function getAvailableActionsAt(
-  cell: GridPosition,
-  attacker: CombatantWithLayers,
-  state: CombatantSimulationStateWithLayers
-): Array<{ action: ActionWithLayer; targets: FinalResolvedData[] }>
-```
-
-**Nutzung:** Candidate-Generierung ("Was kann ich von hier aus tun?")
-
----
-
-## Escape Danger
-
-### buildEscapeDangerMap()
-
-Berechnet Escape-Danger: Minimale Danger wenn wir optimal fluechten.
-
-```typescript
-function buildEscapeDangerMap(
-  combatant: Combatant,
-  state: CombatantSimulationState,
-  maxMovement: number
-): Map<string, number>
-```
-
-**Konzept:**
-Fuer jede Cell: Was ist die minimale Danger, wenn wir nach der Aktion optimal wegbewegen?
-
-```
-             Aktuelle Position
-                    │
-                    ▼
-            ┌───────────────┐
-            │   Cell X      │ ← Danger = 20
-            └───────┬───────┘
-                    │ (remaining movement)
-          ┌─────────┼─────────┐
-          ▼         ▼         ▼
-      Cell A    Cell B    Cell C
-      Danger=15 Danger=5  Danger=10
-
-      Escape-Danger fuer Cell X = 5 (min von A, B, C)
-```
-
-**Nutzung:** Kiting-Pattern ("Move in → Attack → Move out")
-
----
-
-### calculateDangerScoresBatch()
-
-Effiziente Danger-Berechnung fuer viele Cells.
-
-```typescript
-function calculateDangerScoresBatch(
-  cells: GridPosition[],
-  combatant: Combatant,
-  state: CombatantSimulationState
-): Map<string, number>
-```
-
-**Optimierung:**
-1. Enemy-Daten einmal vorberechnen (O(E))
-2. Fuer alle Cells wiederverwenden (O(C × E) mit O(1) pro Enemy)
-
----
-
-## Reaction Layer API
-
-### calculateExpectedReactionCost()
-
-Berechnet erwartete Reaction-Kosten fuer eine Bewegung.
-
-```typescript
-function calculateExpectedReactionCost(
-  mover: CombatantWithLayers,
-  fromCell: GridPosition,
-  toCell: GridPosition,
-  state: CombatantSimulationStateWithLayers,
-  hasDisengage?: boolean
-): number
-```
-
-**Was wird berechnet:**
-- Summiert Schaden aller Feinde die `leaves-reach` triggern koennten
-- Beruecksichtigt Hit-Chance und erwarteten Schaden
-
-**Disengage:** Wenn `hasDisengage = true`, returned 0 (keine OA moeglich)
-
----
-
-### wouldTriggerReaction()
-
-Prueft ob Bewegung einen Reaction-Trigger ausloest.
-
-```typescript
-function wouldTriggerReaction(
-  mover: Combatant,
-  fromCell: GridPosition,
-  toCell: GridPosition,
-  reactor: CombatantWithLayers,
-  state: CombatantSimulationStateWithLayers,
-  trigger?: TriggerEvent,
-  hasDisengage?: boolean
-): boolean
-```
-
-**Trigger-Typen:**
-- `leaves-reach`: OA wenn wir Reach verlassen
-- `enters-reach`: Sentinel-Style Reactions
-- `attacked`, `damaged`, `spell-cast`: Globale Trigger
-
----
-
-### findReactionLayers()
-
-Findet alle Reaction-Layers fuer einen Trigger-Event.
-
-```typescript
-function findReactionLayers(
-  combatant: CombatantWithLayers,
-  trigger: TriggerEvent
-): EffectLayerData[]
-```
-
----
-
-## Datenstrukturen
-
-### ThreatMapEntry
-
-```typescript
-interface ThreatMapEntry {
-  threat: number;   // Negativ: Schaden (schlecht)
-  support: number;  // Positiv: Heilung (gut)
-  net: number;      // threat + support (Gesamt-Bewertung)
-}
-```
-
-### CachedEnemyData (intern)
-
-```typescript
-interface CachedEnemyData {
-  position: GridPosition;
-  damage: number;         // calculateEffectiveDamagePotential
-  maxRange: number;       // getMaxAttackRange
-  movement: number;       // feetToCell(speed.walk)
-  targetingProb: number;  // 1 / validTargetsForEnemy
-}
-```
-
----
-
-## Konstanten
-
-| Konstante | Wert | Beschreibung | Tunable |
-|-----------|------|--------------|---------|
-| `THREAT_WEIGHT` | 0.5 | Gewichtung von Threat-Delta im Candidate-Score | ⚙️ Ja |
-
-> **⚙️ Tunable:** Experimentelle Werte, werden beim Prototyping angepasst. Keine finalen Specs.
 
 ---
 
@@ -515,10 +437,24 @@ interface CachedEnemyData {
 
 | Funktion | Beschreibung |
 |----------|--------------|
-| `getThreatAt(cell, viewer, state, filter?)` | Danger-Score fuer Cell |
-| `getSupportAt(cell, viewer, state)` | Support-Score fuer Cell |
+| `getThreatAt(cell, viewer, state, filter?)` | Danger-Score mit Turn-Decay |
+| `getSupportAt(cell, viewer, state)` | Support-Score mit Turn-Decay |
 | `getDominantThreat(cell, viewer, state)` | Gefaehrlichste Action |
 | `getAvailableActionsAt(cell, attacker, state)` | Verfuegbare Actions |
+
+### OpportunityMap
+
+| Funktion | Beschreibung |
+|----------|--------------|
+| `getOpportunityAt(cell, combatant, budget, state)` | Aktions-Potential einer Cell |
+| `buildOpportunityMap(combatant, state, cells, budget)` | Berechnet OpportunityMap |
+
+### Projektion
+
+| Funktion | Beschreibung |
+|----------|--------------|
+| `projectMapWithDecay(sourceMap, combatant, cells)` | Projiziert mit Distance Decay |
+| `projectThreatMapWithDecay(threatMap, combatant, cells)` | Projiziert ThreatMap |
 
 ### Escape Danger
 
@@ -531,6 +467,6 @@ interface CachedEnemyData {
 
 | Funktion | Beschreibung |
 |----------|--------------|
-| `calculateExpectedReactionCost(mover, from, to, state, disengage?)` | OA-Kosten fuer Bewegung |
+| `calculateExpectedReactionCost(mover, from, to, state, disengage?)` | OA-Kosten |
 | `wouldTriggerReaction(mover, from, to, reactor, state, trigger?, disengage?)` | Prueft Trigger |
 | `findReactionLayers(combatant, trigger)` | Findet Reaction-Layers |

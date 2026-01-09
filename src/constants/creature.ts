@@ -1,9 +1,12 @@
 // Kreatur-bezogene Konstanten
 // Siehe: docs/entities/creature.md
 
+import { z } from 'zod';
+
 // D&D 5e Kreatur-Größen
 export const CREATURE_SIZES = ['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan'] as const;
-export type CreatureSize = typeof CREATURE_SIZES[number];
+export const sizeSchema = z.enum(CREATURE_SIZES);
+export type CreatureSize = z.infer<typeof sizeSchema>;
 
 // Tragkapazität nach Creature-Size (in lb)
 // Basiert auf D&D 5e: Carrying Capacity = STR × 15 lb

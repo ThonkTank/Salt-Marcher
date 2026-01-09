@@ -19,19 +19,21 @@ import type {
   Combatant,
   ThreatMapEntry,
 } from '@/types/combat';
-import { buildThreatMap } from '../layers';
-import { getRelevantCells, positionToKey, positionsEqual } from '@/utils';
+import { buildThreatMap, getOpportunityAt } from '../layers';
+import { positionToKey } from '@/utils';
 import {
   getActionMaxRangeCells,
   getDistance,
-  isHostile,
+  getReachableCells,
 } from '../helpers/combatHelpers';
-import { getGroupId, getPosition } from '../../combatTracking';
+import { getEnemies } from '../helpers/actionSelection';
+import { getPosition } from '../../combatTracking';
 import { calculatePairScore } from '../core/actionScoring';
 import {
   getAvailableActionsWithLayers,
   hasGrantMovementEffect,
   getThreatWeight,
+  subtractActionCost,
 } from '../core/actionEnumeration';
 
 // ============================================================================
@@ -51,7 +53,7 @@ const ACTION_BEAM_WIDTH = 3;
 interface RankedPosition {
   cell: GridPosition;
   threatScore: number;        // Negativ = gefährlich, positiv = sicher
-  proximityScore: number;     // Nähe zu Enemies (für Melee)
+  opportunityScore: number;   // Action-Potential an dieser Position
   combinedScore: number;
 }
 
@@ -59,6 +61,7 @@ interface RankedAction {
   action: Action;
   target?: Combatant;
   fromPosition: GridPosition;
+  targetCell?: GridPosition;
   score: number;
 }
 
@@ -89,37 +92,52 @@ const debug = (...args: unknown[]) => {
 /**
  * Phase 1: Positionen ranken (unabhängig von konkreten Actions).
  *
- * Score = threatScore + proximityScore
+ * Score = threatScore + opportunityScore
  * - threatScore: -netThreat aus ThreatMap (negativ = gefährlich)
- * - proximityScore: Nähe zum nächsten Enemy (für Melee-Einheiten)
+ * - opportunityScore: Action-Potential mit verbleibendem Budget nach Movement
  */
 function rankPositions(
   combatant: CombatantWithLayers,
   state: CombatantSimulationStateWithLayers,
   reachableCells: GridPosition[],
   threatMap: Map<string, ThreatMapEntry>,
-  enemies: Combatant[]
+  budget: TurnBudget
 ): RankedPosition[] {
   const threatWeight = getThreatWeight(combatant);
+  const currentCell = getPosition(combatant);
 
   return reachableCells.map(cell => {
     const key = positionToKey(cell);
     const entry = threatMap.get(key);
     const threatScore = -(entry?.net ?? 0) * threatWeight;
 
-    // Proximity: Nähe zum nächsten Enemy (1 / distance, max 1.0 für adjacent)
-    let minDistance = Infinity;
-    for (const enemy of enemies) {
-      const dist = getDistance(cell, getPosition(enemy));
-      if (dist < minDistance) minDistance = dist;
-    }
-    const proximityScore = minDistance > 0 ? Math.min(1 / minDistance, 1) : 1;
+    // Remaining movement after reaching this cell
+    const distanceToCell = getDistance(currentCell, cell);
+    const remainingMovement = Math.max(0, budget.movementCells - distanceToCell);
+
+    // Budget reflecting what we can still do from this position
+    const positionBudget: TurnBudget = {
+      hasAction: budget.hasAction,
+      hasBonusAction: budget.hasBonusAction,
+      hasReaction: budget.hasReaction,
+      movementCells: remainingMovement,
+      baseMovementCells: budget.baseMovementCells,
+    };
+
+    // Virtual combatant at this position for opportunity calculation
+    const virtualCombatant: CombatantWithLayers = {
+      ...combatant,
+      combatState: { ...combatant.combatState, position: cell },
+    };
+
+    // Opportunity: Action-Potential an dieser Position mit verbleibendem Budget
+    const opportunityScore = getOpportunityAt(cell, virtualCombatant, positionBudget, state);
 
     return {
       cell,
       threatScore,
-      proximityScore,
-      combinedScore: threatScore + proximityScore,
+      opportunityScore,
+      combinedScore: threatScore + opportunityScore,
     };
   }).sort((a, b) => b.combinedScore - a.combinedScore);
 }
@@ -127,7 +145,10 @@ function rankPositions(
 /**
  * Phase 2: Actions für eine Position ranken.
  *
- * Erstellt virtuelle Position und bewertet alle Actions mit DPR-Score.
+ * Unified Scoring: actionScore + positionThreat + remainingOpportunity
+ * - actionScore: DPR-basierter Wert der Aktion
+ * - positionThreat: Wie gefährlich ist die Position? (absolut)
+ * - remainingOpportunity: Was kann ich NOCH tun nach dieser Aktion?
  */
 function rankActionsFromPosition(
   combatant: CombatantWithLayers,
@@ -135,11 +156,11 @@ function rankActionsFromPosition(
   budget: TurnBudget,
   position: GridPosition,
   enemies: Combatant[],
-  threatMap: Map<string, ThreatMapEntry>,
-  currentThreat: number
+  threatMap: Map<string, ThreatMapEntry>
 ): RankedAction[] {
   const results: RankedAction[] = [];
   const threatWeight = getThreatWeight(combatant);
+  const opportunityWeight = 0.5; // Same as in actionEnumeration
 
   // Virtual combatant at position
   const virtualCombatant: CombatantWithLayers = {
@@ -147,11 +168,10 @@ function rankActionsFromPosition(
     combatState: { ...combatant.combatState, position },
   };
 
-  // Threat delta for this position
+  // Absolute threat at this position
   const posKey = positionToKey(position);
-  const targetEntry = threatMap.get(posKey);
-  const targetThreat = targetEntry?.net ?? 0;
-  const threatDelta = currentThreat - targetThreat;
+  const posEntry = threatMap.get(posKey);
+  const positionThreat = posEntry?.net ?? 0;
 
   // Get available actions based on budget
   const allActions = getAvailableActionsWithLayers(virtualCombatant, {});
@@ -163,13 +183,22 @@ function rankActionsFromPosition(
   });
 
   for (const action of relevantActions) {
-    // Dash-like actions: utility score only
-    if (hasGrantMovementEffect(action) && !budget.hasDashed) {
-      results.push({
-        action,
-        fromPosition: position,
-        score: 0.1 + threatDelta * threatWeight,
-      });
+    // Budget nach dieser Aktion
+    const remainingBudget = subtractActionCost(budget, action);
+
+    // Opportunity mit verbleibendem Budget
+    const remainingOpportunity = getOpportunityAt(position, virtualCombatant, remainingBudget, state);
+
+    // Dash-like actions: no direct damage, only position value
+    if (hasGrantMovementEffect(action)) {
+      const score = positionThreat * threatWeight + remainingOpportunity * opportunityWeight;
+      if (score > 0) {
+        results.push({
+          action,
+          fromPosition: position,
+          score,
+        });
+      }
       continue;
     }
 
@@ -183,12 +212,16 @@ function rankActionsFromPosition(
 
         const result = calculatePairScore(virtualCombatant, action, enemy, distance, state);
         if (result && result.score > 0) {
-          const combinedScore = result.score + threatDelta * threatWeight;
+          // Unified Score
+          const score = result.score
+            + positionThreat * threatWeight
+            + remainingOpportunity * opportunityWeight;
+
           results.push({
             action,
             target: enemy,
             fromPosition: position,
-            score: combinedScore,
+            score,
           });
         }
       }
@@ -242,26 +275,22 @@ export const factoredSelector: ActionSelector = {
 
     const currentCell = getPosition(combatant);
 
-    // Reachable cells
-    const reachableCells = [
-      currentCell,
-      ...getRelevantCells(currentCell, budget.movementCells)
-        .filter(cell => !positionsEqual(cell, currentCell))
-        .filter(cell => getDistance(currentCell, cell) <= budget.movementCells),
-    ];
+    // Reachable cells (mit Bounds-Enforcement)
+    const reachableCells = getReachableCells(currentCell, budget.movementCells, {
+      terrainMap: state.terrainMap,
+      combatant,
+      state,
+      bounds: state.mapBounds,
+    });
 
-    // Enemies
-    const enemies = state.combatants.filter(c =>
-      isHostile(getGroupId(combatant), getGroupId(c), state.alliances)
-    );
+    // Enemies (via zentralem getEnemies Helper)
+    const enemies = getEnemies(combatant, state);
 
     // Build ThreatMap
     const threatMap = buildThreatMap(combatant, state, reachableCells, currentCell);
-    const currentEntry = threatMap.get(positionToKey(currentCell));
-    const currentThreat = currentEntry?.net ?? 0;
 
     // Phase 1: Rank positions
-    const rankedPositions = rankPositions(combatant, state, reachableCells, threatMap, enemies);
+    const rankedPositions = rankPositions(combatant, state, reachableCells, threatMap, budget);
     positionsRanked = rankedPositions.length;
 
     // Take top-K positions
@@ -286,8 +315,7 @@ export const factoredSelector: ActionSelector = {
         budget,
         pos.cell,
         enemies,
-        threatMap,
-        currentThreat
+        threatMap
       );
 
       // Take top-K actions per position
@@ -341,12 +369,14 @@ export const factoredSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    // Return without score property
+    // Return with score property
     return {
       type: 'action',
       action: best.action,
       target: best.target,
       fromPosition: best.fromPosition,
+      targetCell: best.targetCell,
+      score: best.score,
     };
   },
 

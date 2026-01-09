@@ -46,6 +46,17 @@ export {
 } from './threatMap';
 
 // ============================================================================
+// OPPORTUNITY MAP & PROJECTION (neu: OpportunityMap + Distance Decay)
+// ============================================================================
+
+export {
+  getOpportunityAt,
+  buildOpportunityMap,
+  projectMapWithDecay,
+  projectThreatMapWithDecay,
+} from './threatMap';
+
+// ============================================================================
 // ESCAPE DANGER
 // ============================================================================
 

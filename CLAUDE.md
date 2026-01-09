@@ -196,6 +196,17 @@ src/                   # Source code
         actionScoring.ts  # Ziel: Unified Action Scoring - alle Aktionstypen durch ei...
         index.ts  # Ziel: Re-exports für core/ Module
         stateProjection.ts  # Ziel: Immutable State-Operationen für Look-Ahead Algorithmen
+      evolution/
+        __tests__/
+        neat/
+          __tests__/
+          genome.ts  # Ziel: NEAT Genome Erstellung und Serialisierung
+          index.ts  # Ziel: Re-exports für NEAT Core Module
+          innovation.ts  # Ziel: Innovation Tracking für NEAT - konsistente Nummerie...
+          network.ts  # Ziel: Network-Aufbau und Forward-Pass für NEAT Genomes
+        featureExtraction.ts  # Ziel: Feature Extraction für NEAT Neural Network Inputs
+        index.ts  # Ziel: Public API für Evolution/NEAT Module
+        types.ts  # Ziel: TypeScript-Typen für NEAT Evolution System
       helpers/
         actionAvailability.ts  # Ziel: Konsolidierte Action-Availability-Logik fuer Combat-AI
         actionSelection.ts  # Ziel: Candidate/Target-Filterung fuer Combat-AI
@@ -213,26 +224,40 @@ src/                   # Source code
         reactionLayers.ts  # Ziel: Reaction/OA Evaluation und Kosten-Berechnung
         threatMap.ts  # Ziel: ThreatMap-Queries fuer Position-Bewertung
       modifiers/
-        coreModifiers.ts  # Ziel: Schema-basierte Core Combat Modifiers
+        coreModifiers.ts  # Ziel: Re-export Core Combat Modifiers aus Presets
         index.ts  # Ziel: Bootstrap für Modifier-Plugins
       selectors/
+        __tests__/
+        bestFirstSelector.ts  # Ziel: Best-First Search Selector - Priority Queue mit Bud...
+        evolvedSelector.ts  # Ziel: Evolved ActionSelector - NEAT Network als Action-En...
         factoredSelector.ts  # Ziel: Factored Action Spaces Selector - Dekomposition in ...
         greedySelector.ts  # Ziel: Greedy ActionSelector - wählt Aktion mit höchstem S...
         index.ts  # Ziel: Unified exports für Selector-System
         iterativeSelector.ts  # Ziel: Iterative Deepening Selector - Anytime-Suche mit Mo...
+        killerSelector.ts  # Ziel: Killer Heuristic Selector - Iterative Deepening mit...
+        lmrSelector.ts  # Ziel: Late Move Reduction Selector - Reduzierte Suchtiefe...
+        minimaxSelector.ts  # Ziel: Minimax Lookahead Selector - Multi-Runden Voraussch...
         randomSelector.ts  # Ziel: Random ActionSelector - wählt zufällige Aktion aus ...
         registry.ts  # Ziel: Selector-Registry für dynamische Algorithmus-Auswahl
+        starSelector.ts  # Ziel: Star1 Selector - Alpha-Beta mit Chance Nodes (Expec...
         types.ts  # Ziel: ActionSelector Interface und Konfiguration für aust...
+        ucbSelector.ts  # Ziel: UCB1 Selector - Flat Monte Carlo mit Upper Confiden...
       expressionEvaluator.ts  # Ziel: Interpreter für Schema-driven Condition Expressions
       index.ts  # Ziel: Public API für CombatantAI-Modul
       schemaModifierAdapter.ts  # Ziel: Adapter von Schema-defined Modifiers zu ModifierEva...
       selectNextAction.ts  # Ziel: Thin wrapper für Combat-AI Action-Selection
       situationalModifiers.ts  # Ziel: Plugin-basiertes System für situative Combat-Modifi...
+    combatTerrain/
+      index.ts  # Ziel: Combat Terrain Service Index
+      spawnHelpers.ts  # Ziel: Spawn-Positionierung für Combat mit Terrain-Awareness
+      terrainEffects.ts  # Ziel: Terrain Effect Trigger System für Combat
+      terrainMovement.ts  # Ziel: Terrain-aware Pathfinding für Combat AI
     combatTracking/
       combatState.ts  # Ziel: Zentraler Combat State-Container
       executeAction.ts  # Ziel: Action-Ausführung und Protocol-Logging
       index.ts  # Ziel: Combat-Tracking Service Index
       initialiseCombat.ts  # Ziel: Konsolidierte Combat-Initialisierung
+      protocolLogger.ts  # Ziel: Einheitliches Logging-Format für CombatProtocolEntry
     encounterGenerator/
       balancing.ts  # Ziel: Encounter-Gruppen an Ziel-Difficulty anpassen durch...
       difficulty.ts  # Ziel: Difficulty-Berechnung via PMF-basierter Combat-Simu...
@@ -279,6 +304,7 @@ src/                   # Source code
       terrainDefinition.ts  # Vault-persistierte TerrainDefinition
       trait.ts  # Vault-persistierte Trait-Definition
     combat.ts  # Ziel: Zentrale Combat-Types für Simulation und Tracking
+    combatTerrain.ts  # Ziel: Combat Terrain Types für LOS, Cover, Difficult Terrain
     encounterTypes.ts  # Encounter-Typen: Runtime-Repräsentation und Trigger für E...
     factionPresence.ts  # Faction-Präsenz auf einem Tile
     hexCoordinate.ts  # Axiale Hex-Koordinaten (q, r)
@@ -360,7 +386,7 @@ docs/                  # Authoritative documentation (German)
     combatantAI/
       algorithm-approaches.md  # ActionSelector Interface und Algorithmen-Vergleich
       buildBaseActionLayer.md  # Layer-Initialisierung und Base-Resolution Cache bei Comba...
-      buildPossibleActions.md  # Generiert alle gueltigen Action/Target/Position Kombinati...
+      buildPossibleActions.md  # Generiert alle gueltigen Action/Target/Cell Kombinationen
       buildThreatMap.md  # Position-Bewertung fuer Combat-AI - wie gefaehrlich/nuetz...
       combatantAI.md  # AI-Entscheidungslogik fuer Combat - was soll eine Kreatur...
       getRelevantCells.md  # Berechnet erreichbare Zellen mit Movement-Kosten

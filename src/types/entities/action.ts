@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { validateDiceExpression } from '@/utils';
 import { schemaModifierSchema } from './conditionExpression';
+import { sizeSchema } from '../../constants/creature';
 import {
   ACTION_TYPES,
   ACTION_SOURCES,
@@ -37,8 +38,6 @@ import {
   FORCED_MOVEMENT_DIRECTIONS,
   AFFECTS_TARGETS,
   TERRAIN_EFFECTS,
-  BONUS_CONDITIONS,
-  CONDITIONAL_BONUS_TYPES,
   COUNTER_TARGETS,
   SUMMON_CONTROLS,
   TRANSFORM_TARGETS,
@@ -79,8 +78,6 @@ export const forcedMovementTypeSchema = z.enum(FORCED_MOVEMENT_TYPES);
 export const forcedMovementDirectionSchema = z.enum(FORCED_MOVEMENT_DIRECTIONS);
 export const affectsTargetSchema = z.enum(AFFECTS_TARGETS);
 export const terrainEffectSchema = z.enum(TERRAIN_EFFECTS);
-export const bonusConditionSchema = z.enum(BONUS_CONDITIONS);
-export const conditionalBonusTypeSchema = z.enum(CONDITIONAL_BONUS_TYPES);
 export const counterTargetSchema = z.enum(COUNTER_TARGETS);
 export const summonControlSchema = z.enum(SUMMON_CONTROLS);
 export const transformTargetSchema = z.enum(TRANSFORM_TARGETS);
@@ -135,10 +132,50 @@ export const saveDCSchema = z.object({
 });
 export type SaveDC = z.infer<typeof saveDCSchema>;
 
+/** Escape-Timing für Condition-Beendigung */
+export const escapeTimingSchema = z.enum(['action', 'bonus', 'movement']);
+export type EscapeTiming = z.infer<typeof escapeTimingSchema>;
+
+/**
+ * Escape-Check Definition für Conditions mit 'until-escape' Duration.
+ * Discriminated Union für verschiedene Escape-Mechanismen (D&D 5e RAW).
+ */
+export const escapeCheckSchema = z.discriminatedUnion('type', [
+  // Contested Check (Grapple): Athletics vs Athletics/Acrobatics
+  z.object({
+    type: z.literal('contested'),
+    timing: escapeTimingSchema,
+    defenderSkill: skillTypeSchema,  // Skill des Grapplers (z.B. athletics)
+    escaperChoice: z.array(skillTypeSchema),  // Optionen für den Gefangenen
+  }),
+  // Simple DC Check (Net, Web): Strength DC
+  z.object({
+    type: z.literal('dc'),
+    timing: escapeTimingSchema,
+    dc: z.number().int().positive(),
+    ability: abilityTypeSchema,
+  }),
+  // Automatic (Prone): Kostet nur Movement, kein Check
+  z.object({
+    type: z.literal('automatic'),
+    timing: escapeTimingSchema,
+    movementCost: z.number().min(0).max(1).optional(),  // 0.5 = "half movement"
+  }),
+]);
+export type EscapeCheck = z.infer<typeof escapeCheckSchema>;
+
+/** Timing für Save-basierte Condition-Beendigung */
+export const saveTimingSchema = z.enum(['start', 'end']);
+export type SaveTiming = z.infer<typeof saveTimingSchema>;
+
 /** Dauer eines Effekts */
 export const durationSchema = z.object({
   type: durationTypeSchema,
   value: z.number().positive().optional(),
+  escapeCheck: escapeCheckSchema.optional(),  // Für until-escape: Wie kann man entkommen?
+  saveAt: saveTimingSchema.optional(),  // Für until-save: Wann wird gesaved? (start/end of turn)
+  saveDC: z.number().int().positive().optional(),  // DC für den Save (überschreibt Action.save.dc)
+  saveAbility: abilityTypeSchema.optional(),  // Ability für den Save (überschreibt Action.save.ability)
 });
 export type Duration = z.infer<typeof durationSchema>;
 
@@ -192,20 +229,35 @@ export const movementModifierSchema = z.object({
 });
 export type MovementModifier = z.infer<typeof movementModifierSchema>;
 
-/** Bedingter Bonus-Effekt */
-export const conditionalBonusEffectSchema = z.object({
-  type: conditionalBonusTypeSchema,
-  value: z.union([z.number(), z.string()]).optional(),
-});
-export type ConditionalBonusEffect = z.infer<typeof conditionalBonusEffectSchema>;
+// ============================================================================
+// BUDGET COSTS (Movement, Action, Bonus Action, Reaction)
+// ============================================================================
 
-/** Bedingter Bonus */
-export const conditionalBonusSchema = z.object({
-  condition: bonusConditionSchema,
-  parameter: z.number().optional(),
-  bonus: conditionalBonusEffectSchema,
+/** Budget-Ressourcen die eine Action verbrauchen kann */
+export const BUDGET_RESOURCES = ['movement', 'action', 'bonusAction', 'reaction'] as const;
+export type BudgetResource = (typeof BUDGET_RESOURCES)[number];
+
+/** Kosten-Typ: fixed, toTarget, oder all */
+export const budgetCostTypeSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('fixed'),
+    value: z.number().int().min(0),  // Fester Wert (z.B. 1 für Action, Cells für Movement)
+  }),
+  z.object({
+    type: z.literal('toTarget'),     // Distanz zu targetCell (für Movement-Actions)
+  }),
+  z.object({
+    type: z.literal('all'),          // Verbraucht gesamtes Budget (z.B. Steady Aim)
+  }),
+]);
+export type BudgetCostType = z.infer<typeof budgetCostTypeSchema>;
+
+/** Einzelne Ressourcen-Kosten */
+export const resourceCostSchema = z.object({
+  resource: z.enum(BUDGET_RESOURCES),
+  cost: budgetCostTypeSchema,
 });
-export type ConditionalBonus = z.infer<typeof conditionalBonusSchema>;
+export type ResourceCost = z.infer<typeof resourceCostSchema>;
 
 /** Erzwungene Bewegung */
 export const forcedMovementSchema = z.object({
@@ -288,8 +340,30 @@ export type ActionRequirement = z.infer<typeof actionRequirementSchema>;
 /** Action-Voraussetzungen (z.B. TWF erfordert vorherigen Light-Melee-Attack) */
 export const actionRequiresSchema = z.object({
   priorAction: actionRequirementSchema.optional(),
+  // NEU: Verfügbarkeitsprüfung - hat der Combatant eine passende Action?
+  // Für OA: { hasAction: { actionType: ['melee-weapon'] } }
+  hasAction: actionRequirementSchema.optional(),
 });
 export type ActionRequires = z.infer<typeof actionRequiresSchema>;
+
+/** Basis-Action Selektion (für OA: inherit beste Melee-Action Stats) */
+export const BASE_ACTION_SELECT_MODES = ['best-damage', 'best-attack', 'first'] as const;
+export type BaseActionSelectMode = (typeof BASE_ACTION_SELECT_MODES)[number];
+
+export const BASE_ACTION_USAGE_MODES = ['inherit'] as const;
+export type BaseActionUsageMode = (typeof BASE_ACTION_USAGE_MODES)[number];
+
+/** Referenz auf eine Basis-Action deren Stats übernommen werden */
+export const baseActionRefSchema = z.object({
+  // Selektion: Welche Action(s) kommen in Frage?
+  actionType: z.array(actionTypeSchema).optional(),
+  properties: z.array(z.string()).optional(),
+  // Auswahl bei mehreren Matches
+  select: z.enum(BASE_ACTION_SELECT_MODES).default('best-damage'),
+  // Verwendungsart: 'inherit' = übernimm attack/damage/properties
+  usage: z.enum(BASE_ACTION_USAGE_MODES).default('inherit'),
+});
+export type BaseActionRef = z.infer<typeof baseActionRefSchema>;
 
 /** Eingehende Angriffs-Modifikatoren (für Dodge, Blur, etc.) */
 export const incomingModifiersSchema = z.object({
@@ -338,6 +412,9 @@ export const actionEffectSchema = z.object({
   affectsTarget: affectsTargetSchema,
   terrain: terrainEffectSchema.optional(),
   description: z.string().optional(),
+  // Size-Limit: Effekt gilt nur für Targets dieser Größe oder kleiner
+  // Beispiel: Wolf Bite → Prone nur bei Medium oder kleiner
+  targetSizeMax: sizeSchema.optional(),
 });
 export type ActionEffect = z.infer<typeof actionEffectSchema>;
 
@@ -474,8 +551,7 @@ export const actionSchema = z.object({
   transform: transformSchema.optional(),
   counter: counterSchema.optional(),
 
-  // Conditional & Critical
-  conditionalBonuses: z.array(conditionalBonusSchema).optional(),
+  // Critical
   critical: criticalSchema.optional(),
   hpThreshold: hpThresholdSchema.optional(),
 
@@ -485,6 +561,11 @@ export const actionSchema = z.object({
   components: spellComponentsSchema.optional(),
   concentration: z.boolean().optional(),
 
+  // Budget Costs (Movement, Action, Bonus Action, Reaction verbrauch)
+  // Beispiel Move: [{ resource: 'movement', cost: { type: 'toTarget' } }]
+  // Beispiel Steady Aim: [{ resource: 'movement', cost: { type: 'all' } }]
+  budgetCosts: z.array(resourceCostSchema).optional(),
+
   // Metadata
   description: z.string().optional(),
   properties: z.array(z.string()).optional(),
@@ -493,24 +574,69 @@ export const actionSchema = z.object({
   // Bonus Action Requirements (TWF, Flurry, etc.)
   requires: actionRequiresSchema.optional(),
 
+  // Basis-Action Referenz (für OA: inherit Stats von bester Melee-Action)
+  // Wird bei Execution aufgelöst - attack/damage/properties von Basis übernommen
+  baseAction: baseActionRefSchema.optional(),
+
   // Schema-driven Modifiers (replaces hardcoded ModifierEvaluators)
   // Allows defining creature traits, spell effects, item properties via schema
   schemaModifiers: z.array(schemaModifierSchema).optional(),
-}).superRefine((data, ctx) => {
-  // Invariante 1: Genau einer von attack/save/contested/autoHit muss gesetzt sein
-  // Ausnahme: passive Actions (Traits) brauchen keine Resolution
-  const isPassive = data.timing?.type === 'passive';
-  const resolutionCount = [
-    data.attack !== undefined,
-    data.save !== undefined,
-    data.contested !== undefined,
-    data.autoHit === true,
-  ].filter(Boolean).length;
 
-  if (!isPassive && resolutionCount !== 1) {
+  // ID-Referenzen auf Modifier-Presets (Alternative zu inline schemaModifiers)
+  // z.B. ['long-range', 'pack-tactics'] referenziert presets/modifiers/
+  modifierRefs: z.array(z.string().min(1)).optional(),
+
+  // Meta-Felder für dynamisch generierte Escape-Actions
+  // Diese werden NICHT in Presets definiert, sondern zur Laufzeit von
+  // getEscapeActionsForCombatant() generiert
+  _escapeCondition: z.string().optional(),
+  _escapeCheck: escapeCheckSchema.optional(),
+}).superRefine((data, ctx) => {
+  // Invariante 1: Resolution-Mechanik Validierung
+  // Erlaubt:
+  // - attack (pure attack)
+  // - save (save-only spell wie Fireball)
+  // - contested (grapple etc.)
+  // - autoHit (Magic Missile etc.)
+  // - attack + save (attack mit sekundärem Save-Effect, z.B. Wolf Bite)
+  // Verboten:
+  // - contested + attack/save (contested ist eigenständig)
+  // - autoHit + attack/save (autoHit ist eigenständig)
+  // - Keine Resolution bei non-passive Actions
+  // Ausnahmen:
+  // - passive Actions (Traits) brauchen keine Resolution
+  // - baseAction.usage='inherit' Actions erben Stats zur Laufzeit
+  const isPassive = data.timing?.type === 'passive';
+  const inheritsFromBase = data.baseAction?.usage === 'inherit';
+
+  const hasAttack = data.attack !== undefined;
+  const hasSave = data.save !== undefined;
+  const hasContested = data.contested !== undefined;
+  const hasAutoHit = data.autoHit === true;
+
+  // Contested und autoHit sind eigenständig - dürfen nicht kombiniert werden
+  if (hasContested && (hasAttack || hasSave || hasAutoHit)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Exactly one of attack, save, contested, or autoHit must be set (except for passive timing)',
+      message: 'contested cannot be combined with attack, save, or autoHit',
+      path: [],
+    });
+  }
+
+  if (hasAutoHit && (hasAttack || hasSave || hasContested)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'autoHit cannot be combined with attack, save, or contested',
+      path: [],
+    });
+  }
+
+  // Mindestens eine Resolution-Mechanik muss gesetzt sein (außer passive/inherit)
+  const hasAnyResolution = hasAttack || hasSave || hasContested || hasAutoHit;
+  if (!isPassive && !inheritsFromBase && !hasAnyResolution) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'At least one of attack, save, contested, or autoHit must be set (except for passive timing or baseAction inherit)',
       path: [],
     });
   }

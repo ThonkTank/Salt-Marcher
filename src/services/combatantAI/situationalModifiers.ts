@@ -19,7 +19,10 @@
 // - Output: SituationalModifiers (netAdvantage, effectiveAttackMod, etc.)
 
 import type { Action } from '@/types/entities';
-import type { GridPosition, ConditionState } from '@/types/combat';
+import type { PropertyModifier } from '@/types/entities/conditionExpression';
+import type { GridPosition, ConditionState, Combatant } from '@/types/combat';
+import { getActions } from '../combatTracking';
+import { createSchemaModifierEvaluator } from './schemaModifierAdapter';
 
 // Re-export ConditionState für Consumer
 export type { ConditionState } from '@/types/combat';
@@ -37,6 +40,9 @@ export interface ModifierEffect {
   damageBonus?: number;          // Flat damage bonus
   autoCrit?: boolean;            // Auto-critical hit (e.g., paralyzed target)
   autoMiss?: boolean;            // Auto-miss (full cover)
+
+  // Generic property modifiers for action modifications
+  propertyModifiers?: PropertyModifier[];
 }
 
 /** Akkumulierte Modifiers für einen Angriff */
@@ -67,16 +73,13 @@ export interface CombatantContext {
   conditions: ConditionState[];
   ac: number;
   hp: number;
+  maxHp: number;              // Für HP-Prozent-Berechnungen (Bloodied)
+  creatureId?: string;        // Für Creature-Type-Checks (Aura of Authority)
 }
 
-/** Minimale SimulationState-Info für Modifier-Evaluation */
+/** SimulationState für Modifier-Evaluation - direkte Combatant-Referenz */
 export interface ModifierSimulationState {
-  profiles: Array<{
-    position: GridPosition;
-    groupId: string;
-    participantId: string;
-    conditions?: ConditionState[];
-  }>;
+  combatants: Combatant[];   // Direkte Referenz, keine Kopie
   alliances: Record<string, string[]>;
 }
 
@@ -264,6 +267,36 @@ export function evaluateSituationalModifiers(
       }
     } catch (error) {
       console.error(`[situationalModifiers] Error in evaluator ${evaluator.id}:`, error);
+    }
+  }
+
+  // Evaluate passive actions of the attacker (für Creature Traits wie Pack Tactics)
+  if (context.state?.combatants) {
+    const attacker = context.state.combatants.find(
+      (c: Combatant) => c.id === context.attacker.participantId
+    );
+    if (attacker) {
+      const actions = getActions(attacker);
+      for (const action of actions) {
+        if (action.timing?.type === 'passive' && action.schemaModifiers?.length) {
+          for (const schemaMod of action.schemaModifiers) {
+            const evaluator = createSchemaModifierEvaluator(schemaMod);
+            try {
+              if (evaluator.isActive(context)) {
+                activeEffects.push(evaluator.getEffect(context));
+                activeSources.push(evaluator.id);
+
+                debug('Passive modifier active:', {
+                  id: evaluator.id,
+                  actionId: action.id,
+                });
+              }
+            } catch (error) {
+              console.error(`[situationalModifiers] Error in passive modifier ${schemaMod.id}:`, error);
+            }
+          }
+        }
+      }
     }
   }
 

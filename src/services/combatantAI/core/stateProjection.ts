@@ -2,7 +2,7 @@
 // Siehe: docs/services/combatantAI/simulationState.md
 //
 // Funktionen:
-// - isBudgetExhausted() - Budget-Check (invertiert hasBudgetRemaining)
+// - isBudgetExhausted() - Budget-Check (keine sinnvollen Aktionen mehr möglich)
 // - consumeBudget() - Immutable Budget-Update
 // - cloneState() - Deep-Clone für Look-Ahead
 // - projectState() - State nach hypothetischer Aktion
@@ -23,7 +23,6 @@ import type {
 
 /**
  * Prüft ob das Budget erschöpft ist (keine sinnvollen Aktionen mehr möglich).
- * Invertierte Logik von hasBudgetRemaining() in combatState.ts.
  */
 export function isBudgetExhausted(budget: TurnBudget): boolean {
   return !budget.hasAction && !budget.hasBonusAction && budget.movementCells <= 0;
@@ -41,15 +40,11 @@ export interface BudgetConsumption {
   bonusAction?: boolean;
   /** Reaction verbrauchen */
   reaction?: boolean;
-  /** Dash anwenden (adds baseMovementCells, sets hasAction=false, hasDashed=true) */
-  dash?: boolean;
 }
 
 /**
  * Immutable Budget-Update. Gibt neues TurnBudget zurück.
- *
- * Im Gegensatz zu consumeMovement(), consumeAction() etc. in combatState.ts
- * wird das Original-Budget nicht mutiert.
+ * Das Original-Budget wird nicht mutiert.
  */
 export function consumeBudget(
   budget: TurnBudget,
@@ -68,11 +63,6 @@ export function consumeBudget(
   }
   if (consumption.reaction) {
     newBudget.hasReaction = false;
-  }
-  if (consumption.dash) {
-    newBudget.movementCells += newBudget.baseMovementCells;
-    newBudget.hasAction = false;
-    newBudget.hasDashed = true;
   }
 
   return newBudget;

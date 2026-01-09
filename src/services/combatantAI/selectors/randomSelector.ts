@@ -10,8 +10,8 @@ import type {
 } from '@/types/combat';
 import { buildPossibleActions } from '../core';
 import { buildThreatMap } from '../layers';
-import { getRelevantCells, positionToKey, positionsEqual, randomSelect } from '@/utils';
-import { getDistance } from '../helpers/combatHelpers';
+import { positionToKey, randomSelect } from '@/utils';
+import { getReachableCells } from '../helpers/combatHelpers';
 import { getPosition } from '../../combatTracking';
 
 // ============================================================================
@@ -67,23 +67,19 @@ export const randomSelector: ActionSelector = {
 
     const currentCell = getPosition(combatant);
 
-    // Alle erreichbaren Positionen für ThreatMap
-    const reachableCells = [
-      currentCell,
-      ...getRelevantCells(currentCell, budget.movementCells)
-        .filter(cell => !positionsEqual(cell, currentCell))
-        .filter(cell => getDistance(currentCell, cell) <= budget.movementCells),
-    ];
+    // Alle erreichbaren Positionen für ThreatMap (mit Bounds-Enforcement)
+    const reachableCells = getReachableCells(currentCell, budget.movementCells, {
+      terrainMap: state.terrainMap,
+      combatant,
+      state,
+      bounds: state.mapBounds,
+    });
 
     // ThreatMap einmal pro Turn berechnen
     const threatMap = buildThreatMap(combatant, state, reachableCells, currentCell);
 
-    // Current Threat (für Delta-Berechnung)
-    const currentEntry = threatMap.get(positionToKey(currentCell));
-    const currentThreat = currentEntry?.net ?? 0;
-
     // Generiere alle Action/Target/Position Kombinationen
-    const candidates = buildPossibleActions(combatant, state, budget, threatMap, currentThreat);
+    const candidates = buildPossibleActions(combatant, state, budget, threatMap);
     nodesEvaluated = candidates.length;
 
     // Nur Kandidaten mit positivem Score
@@ -119,10 +115,15 @@ export const randomSelector: ActionSelector = {
       elapsedMs: lastStats.elapsedMs.toFixed(2),
     });
 
-    // Entferne Score-Property für return
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { score, ...action } = selected;
-    return action as TurnAction;
+    // TurnAction mit Score zurückgeben
+    return {
+      type: 'action',
+      action: selected.action,
+      target: selected.target,
+      fromPosition: selected.fromPosition,
+      targetCell: selected.targetCell,
+      score: selected.score,
+    };
   },
 
   getStats(): SelectorStats {

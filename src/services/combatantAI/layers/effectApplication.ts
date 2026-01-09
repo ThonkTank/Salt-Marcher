@@ -14,13 +14,11 @@ import type {
   ActionWithLayer,
   EffectLayerData,
 } from '@/types/combat';
-import { getExpectedValue, calculateEffectiveDamage } from '@/utils';
+import { getExpectedValue, calculateEffectiveDamage, positionToKey } from '@/utils';
+import { calculateCover, maxCover, type CoverLevel } from '@/utils/squareSpace/gridLineOfSight';
 import { getBaseResolution } from './baseResolution';
-import {
-  evaluateSituationalModifiers,
-  type ModifierContext,
-  type CombatantContext,
-} from '../situationalModifiers';
+import { evaluateSituationalModifiers } from '../situationalModifiers';
+import { combatantToCombatantContext } from '../expressionEvaluator';
 import { calculateHitChance } from '../helpers/combatHelpers';
 import { getGroupId, getPosition, getAC, getConditions, getHP } from '../../combatTracking';
 
@@ -33,6 +31,19 @@ const debug = (...args: unknown[]) => {
     console.log('[layers/effectApplication]', ...args);
   }
 };
+
+// ============================================================================
+// TERRAIN COVER HELPERS
+// ============================================================================
+
+/** Konvertiert Cover-Level zu AC-Bonus per D&D 5e PHB p.196 */
+function getCoverACBonus(cover: CoverLevel): number {
+  switch (cover) {
+    case 'half': return 2;
+    case 'three-quarters': return 5;
+    default: return 0;  // 'none' oder 'full' (full = autoMiss, kein AC-Bonus nötig)
+  }
+}
 
 // ============================================================================
 // EFFECT APPLICATION (Dynamisch - nie gecacht)
@@ -53,42 +64,50 @@ export function applyEffectsToBase(
   const targetPosition = getPosition(target);
 
   // Situational Modifiers evaluieren
-  const attackerContext: CombatantContext = {
-    position: attackerPosition,
-    groupId: getGroupId(attacker),
-    participantId: attacker.id,
-    conditions: getConditions(attacker),
-    ac: getAC(attacker),
-    hp: getExpectedValue(getHP(attacker)),
-  };
-  const targetContext: CombatantContext = {
-    position: targetPosition,
-    groupId: getGroupId(target),
-    participantId: target.id,
-    conditions: getConditions(target),
-    ac: getAC(target),
-    hp: getExpectedValue(getHP(target)),
-  };
-
-  const modifierContext: ModifierContext = {
-    attacker: attackerContext,
-    target: targetContext,
+  const modifiers = evaluateSituationalModifiers({
+    attacker: combatantToCombatantContext(attacker),
+    target: combatantToCombatantContext(target),
     action,
     state: {
-      profiles: state.combatants.map(c => ({
-        position: getPosition(c),
-        groupId: getGroupId(c),
-        participantId: c.id,
-        conditions: getConditions(c),
-      })),
+      combatants: state.combatants,
       alliances: state.alliances,
     },
-  };
+  });
 
-  const modifiers = evaluateSituationalModifiers(modifierContext);
+  // Terrain-based Cover berechnen (wenn terrainMap vorhanden)
+  let terrainCoverBonus = 0;
+  let hasTerrainFullCover = false;
+
+  if (state.terrainMap) {
+    // 1. Raycast-basiertes Cover (Wände/Säulen zwischen Attacker und Target)
+    const raycastCover = calculateCover(attackerPosition, targetPosition, (pos) => {
+      const key = positionToKey(pos);
+      return state.terrainMap?.get(key)?.blocksLoS ?? false;
+    });
+
+    // 2. Terrain-Cell Cover (Target steht auf/hinter Cover-Terrain)
+    const targetKey = positionToKey(targetPosition);
+    const targetCell = state.terrainMap.get(targetKey);
+    const cellCover: CoverLevel = targetCell?.cover ?? 'none';
+
+    // 3. Höheres Cover gewinnt
+    const effectiveCover = maxCover(raycastCover, cellCover);
+
+    if (effectiveCover === 'full') {
+      hasTerrainFullCover = true;
+    } else {
+      terrainCoverBonus = getCoverACBonus(effectiveCover);
+    }
+  }
 
   // Effect Layers pruefen (Pack Tactics etc.)
   const activeEffects: string[] = [...modifiers.sources];
+  if (terrainCoverBonus > 0) {
+    activeEffects.push(`terrain-cover-${terrainCoverBonus}`);
+  }
+  if (hasTerrainFullCover) {
+    activeEffects.push('terrain-full-cover');
+  }
   const effectLayers = attacker.combatState.effectLayers ?? [];
   for (const effectLayer of effectLayers) {
     if (effectLayer.isActiveAt(attackerPosition, targetPosition, state)) {
@@ -96,8 +115,15 @@ export function applyEffectsToBase(
     }
   }
 
-  // Final Hit-Chance mit Advantage/Disadvantage
-  const finalHitChance = calculateHitChance(base.attackBonus, getAC(target), modifiers);
+  // Effektive Modifiers mit Terrain-Cover
+  const effectiveModifiers = {
+    ...modifiers,
+    totalACBonus: modifiers.totalACBonus + terrainCoverBonus,
+    hasAutoMiss: modifiers.hasAutoMiss || hasTerrainFullCover,
+  };
+
+  // Final Hit-Chance mit Advantage/Disadvantage + Terrain Cover
+  const finalHitChance = calculateHitChance(base.attackBonus, getAC(target), effectiveModifiers);
 
   // Effective Damage PMF
   const effectiveDamagePMF = calculateEffectiveDamage(base.baseDamagePMF, finalHitChance);
@@ -114,9 +140,12 @@ export function applyEffectsToBase(
   debug('applyEffectsToBase:', {
     sourceKey: action._layer.sourceKey,
     targetId: target.id,
+    targetPos: positionToKey(targetPosition),
     baseHitChance: base.baseHitChance,
     finalHitChance,
     netAdvantage: modifiers.netAdvantage,
+    terrainCoverBonus,
+    hasTerrainFullCover,
     activeEffects,
   });
 

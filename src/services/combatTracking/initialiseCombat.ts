@@ -48,6 +48,8 @@ import { createSingleValue, feetToCell } from '@/utils';
 import { initializeGrid, DEFAULT_ENCOUNTER_DISTANCE_FEET } from '../gridSpace';
 import { getResolvedCreature, createTurnBudget } from './combatState';
 import { initializeLayers, precomputeBaseResolutions } from '../combatantAI/layers';
+import { calculateSpawnPositions } from '../combatTerrain';
+import type { CombatMapConfig } from '@/types/combatTerrain';
 
 // ============================================================================
 // DEBUG HELPER
@@ -334,30 +336,56 @@ function createEnemyCombatants(
  * @param encounterDistanceFeet Distanz in Feet
  * @param resourceBudget Budget 0-1 für Ressourcen
  * @param initiativeOrder Sortierte Combatant-IDs (von averageInitiative())
+ * @param mapConfig Optional: CombatMapConfig mit Terrain und Spawn-Zonen
  */
 function createCombatState(
   combatants: Combatant[],
   alliances: Record<string, string[]>,
   encounterDistanceFeet: number = DEFAULT_ENCOUNTER_DISTANCE_FEET,
   resourceBudget: number = 0.5,
-  initiativeOrder: string[] = []
+  initiativeOrder: string[] = [],
+  mapConfig?: CombatMapConfig
 ): CombatState {
   const encounterDistanceCells = feetToCell(encounterDistanceFeet);
   const grid = initializeGrid({ encounterDistanceCells });
 
-  // Positionen initialisieren (nutzt combatState.position)
-  const partyIds = combatants.filter(c => c.combatState.groupId === 'party').map(c => c.id);
-  const enemyIds = combatants.filter(c => c.combatState.groupId !== 'party').map(c => c.id);
+  // Combatants nach Gruppe trennen
+  const partyCombatants = combatants.filter(c => c.combatState.groupId === 'party');
+  const enemyCombatants = combatants.filter(c => c.combatState.groupId !== 'party');
 
-  // Einfache Positionierung: Party links, Enemies rechts
-  let partyX = 0;
-  let enemyX = encounterDistanceCells;
+  // Positionierung: Terrain-aware wenn mapConfig vorhanden, sonst Legacy
+  if (mapConfig) {
+    // Terrain-aware Positionierung mit Spawn-Zonen
+    const [partySpawns, enemySpawns] = calculateSpawnPositions(
+      mapConfig.bounds,
+      mapConfig.spawnZones,
+      mapConfig.terrainMap,
+      partyCombatants.length,
+      enemyCombatants.length
+    );
 
-  for (const combatant of combatants) {
-    if (combatant.combatState.groupId === 'party') {
-      combatant.combatState.position = { x: partyX++, y: 0, z: 0 };
-    } else {
-      combatant.combatState.position = { x: enemyX++, y: 0, z: 0 };
+    partyCombatants.forEach((c, i) => {
+      c.combatState.position = partySpawns[i] ?? { x: i, y: 0, z: 0 };
+    });
+    enemyCombatants.forEach((c, i) => {
+      c.combatState.position = enemySpawns[i] ?? { x: mapConfig.bounds.maxX - i, y: 0, z: 0 };
+    });
+
+    debug('createCombatState: terrain-aware spawning', {
+      partySpawns: partySpawns.map(p => `(${p.x},${p.y})`),
+      enemySpawns: enemySpawns.map(p => `(${p.x},${p.y})`),
+    });
+  } else {
+    // Legacy-Positionierung: Party links, Enemies rechts
+    let partyX = 0;
+    let enemyX = encounterDistanceCells;
+
+    for (const combatant of combatants) {
+      if (combatant.combatState.groupId === 'party') {
+        combatant.combatState.position = { x: partyX++, y: 0, z: 0 };
+      } else {
+        combatant.combatState.position = { x: enemyX++, y: 0, z: 0 };
+      }
     }
   }
 
@@ -368,15 +396,22 @@ function createCombatState(
   const firstCombatant = combatants.find(c => c.id === firstCombatantId);
   const initialBudget = firstCombatant
     ? createTurnBudget(firstCombatant)
-    : { movementCells: 6, baseMovementCells: 6, hasAction: true, hasDashed: false, hasBonusAction: false, hasReaction: true };
+    : { movementCells: 6, baseMovementCells: 6, hasAction: true, hasBonusAction: false, hasReaction: true };
 
   debug('createCombatState:', {
     combatantCount: combatants.length,
-    partyCount: partyIds.length,
-    enemyCount: enemyIds.length,
+    partyCount: partyCombatants.length,
+    enemyCount: enemyCombatants.length,
     encounterDistanceFeet,
     encounterDistanceCells,
+    hasMapConfig: !!mapConfig,
   });
+
+  // Reaction Budgets für alle Combatants initialisieren
+  const reactionBudgets = new Map<string, { hasReaction: boolean }>();
+  for (const combatant of combatants) {
+    reactionBudgets.set(combatant.id, { hasReaction: true });
+  }
 
   return {
     combatants,
@@ -390,11 +425,17 @@ function createCombatState(
     currentTurnIndex: 0,
     // Turn Budget des aktuellen Combatants
     currentTurnBudget: initialBudget,
+    // Reaction Budgets (persistieren über Turns, Reset bei eigenem Turn-Start)
+    reactionBudgets,
     // DPR-Tracking
     partyDPR: 0,
     enemyDPR: 0,
     // Combat Protocol
     protocol: [],
+    // Terrain Map (aus mapConfig oder leer)
+    terrainMap: mapConfig?.terrainMap ?? new Map(),
+    // Map Bounds (optional, für Boundary-Enforcement)
+    mapBounds: mapConfig?.bounds,
   };
 }
 
@@ -407,7 +448,7 @@ function createCombatState(
  *
  * Erstellt aus Encounter-Gruppen und Party vollständige Combatants mit:
  * - CombatantState (Position, Conditions, Resources)
- * - Grid-Positionierung
+ * - Grid-Positionierung (terrain-aware wenn mapConfig vorhanden)
  * - Turn Tracking (turnOrder, currentTurnIndex, protocol)
  * - AI Layer-Daten (_layeredActions, effectLayers)
  * - Pre-Computed Base Resolutions für Scoring
@@ -416,8 +457,10 @@ function createCombatState(
  * @param context.alliances Gruppen-Allianzen (aus groupActivity.calculateGroupRelations)
  * @param context.party Party-Input mit Members
  * @param context.resourceBudget Resource-Budget 0-1 (aus difficulty.calculateResourceBudget)
- * @param context.encounterDistanceFeet Encounter-Distanz in Feet
+ * @param context.encounterDistanceFeet Encounter-Distanz in Feet (Legacy, ignoriert wenn mapConfig)
  * @param context.initiativeOrder Sortierte Combatant-IDs (von averageInitiative())
+ * @param context.mapConfig Optional: CombatMapConfig mit Terrain, Bounds und Spawn-Zonen
+ * @param context.terrainMap Deprecated: Verwende mapConfig stattdessen
  * @returns CombatStateWithLayers mit vollständig initialisierten AI-Daten
  */
 export function initialiseCombat(context: {
@@ -427,6 +470,9 @@ export function initialiseCombat(context: {
   resourceBudget: number;
   encounterDistanceFeet?: number;
   initiativeOrder: string[];
+  mapConfig?: CombatMapConfig;
+  /** @deprecated Verwende mapConfig stattdessen */
+  terrainMap?: Map<string, import('@/types/combatTerrain').CombatCellProperties>;
 }): CombatStateWithLayers {
   const {
     groups,
@@ -435,7 +481,15 @@ export function initialiseCombat(context: {
     resourceBudget,
     encounterDistanceFeet = DEFAULT_ENCOUNTER_DISTANCE_FEET,
     initiativeOrder,
+    mapConfig,
+    terrainMap,
   } = context;
+
+  // Backward-Compatibility: terrainMap in mapConfig wrappen
+  const effectiveMapConfig: CombatMapConfig | undefined = mapConfig ?? (terrainMap ? {
+    terrainMap,
+    bounds: { minX: -100, maxX: 100, minY: -100, maxY: 100 },  // Unbegrenzt für Legacy
+  } : undefined);
 
   // Step 1: Party Combatants erstellen (Characters aus Vault laden)
   const partyCombatants = createPartyCombatants(party);
@@ -450,7 +504,8 @@ export function initialiseCombat(context: {
     alliances,
     encounterDistanceFeet,
     resourceBudget,
-    initiativeOrder
+    initiativeOrder,
+    effectiveMapConfig
   );
 
   // Step 4: AI Layer System initialisieren (NACH Positionen)

@@ -141,9 +141,11 @@ export {
 // ============================================================================
 
 export {
-  // Multiattack
+  // Multiattack & BaseAction Resolution
   resolveMultiattackRefs,
   forEachResolvedAction,
+  resolveBaseAction,
+  resolveActionWithBase,
   // Damage/Healing PMF
   calculateBaseDamagePMF,
   calculateBaseHealingPMF,

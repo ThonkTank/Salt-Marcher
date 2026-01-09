@@ -13,6 +13,17 @@ import { actionSchema, type Action } from '../../src/types/entities/action';
 /** D&D 5e Standard-Actions, die allen Combatants zur Verfügung stehen. */
 export const standardActions: Action[] = z.array(actionSchema).parse([
   {
+    id: 'std-move',
+    name: 'Move',
+    actionType: 'utility',
+    timing: { type: 'free' },  // Keine Action-Economy (verbraucht nur Movement)
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single', validTargets: 'self' },
+    autoHit: true,
+    budgetCosts: [{ resource: 'movement', cost: { type: 'toTarget' } }],
+    description: 'Move up to your remaining movement.',
+  },
+  {
     id: 'std-dash',
     name: 'Dash',
     actionType: 'utility',
@@ -25,6 +36,10 @@ export const standardActions: Action[] = z.array(actionSchema).parse([
       duration: { type: 'instant' },
       affectsTarget: 'self',
     }],
+    budgetCosts: [
+      { resource: 'action', cost: { type: 'fixed', value: 1 } },
+      { resource: 'movement', cost: { type: 'toTarget' } },  // Bewegt nach Movement-Grant
+    ],
     description: 'Gain extra movement equal to your speed for this turn.',
   },
   {
@@ -57,6 +72,60 @@ export const standardActions: Action[] = z.array(actionSchema).parse([
       affectsTarget: 'self',
     }],
     description: 'Attacks against you have disadvantage, and you have advantage on DEX saves.',
+  },
+  {
+    id: 'std-opportunity-attack',
+    name: 'Opportunity Attack',
+    actionType: 'melee-weapon',
+    timing: {
+      type: 'reaction',
+      triggerCondition: { event: 'leaves-reach' },
+    },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    // HACK: autoHit placeholder - actual attack comes from baseAction
+    autoHit: true,
+    // Stats werden von baseAction übernommen - keine eigenen attack/damage
+    budgetCosts: [{ resource: 'reaction', cost: { type: 'fixed', value: 1 } }],
+    // Verfügbarkeits-Prüfung: Nur wenn Combatant eine Melee-Weapon-Action hat
+    requires: {
+      hasAction: { actionType: ['melee-weapon'] },
+    },
+    // Übernimm attack/damage/properties von bester Melee-Action
+    baseAction: {
+      actionType: ['melee-weapon'],
+      select: 'best-damage',
+      usage: 'inherit',
+    },
+    description: 'When a creature leaves your reach, you can use your reaction to make one melee attack against it.',
+  },
+  {
+    id: 'std-grapple',
+    name: 'Grapple',
+    actionType: 'debuff',
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    contested: {
+      attackerSkill: 'athletics',
+      defenderChoice: ['athletics', 'acrobatics'],
+      sizeLimit: 1,  // Target max 1 size larger
+      onSuccess: {
+        condition: 'grappled',
+        duration: {
+          type: 'until-escape',
+          escapeCheck: {
+            type: 'contested',
+            timing: 'action',
+            defenderSkill: 'athletics',  // Grappler's Athletics
+            escaperChoice: ['athletics', 'acrobatics'],
+          },
+        },
+        affectsTarget: 'enemy',
+      },
+    },
+    budgetCosts: [{ resource: 'action', cost: { type: 'fixed', value: 1 } }],
+    description: 'Contested Athletics vs Athletics/Acrobatics. On success, target is Grappled (speed 0). Target can escape with Action.',
   },
 ]);
 
@@ -100,21 +169,17 @@ export const actionPresets = z.array(actionSchema).parse([
     range: { type: 'reach', normal: 5 },
     targeting: { type: 'single', validTargets: 'enemies' },
     attack: { bonus: 4 },
-    damage: { dice: '2d4', modifier: 2, type: 'piercing' },
-    // Pack Tactics: advantage if ally adjacent (conditional bonus)
-    conditionalBonuses: [
-      { condition: 'ally-adjacent', bonus: { type: 'advantage' } },
-    ],
-    // Knockdown: DC 11 STR save or prone
+    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+    // Pack Tactics: handled via trait-pack-tactics passive action in creature's actionIds
+    // SRD 5.2: "If the target is a Medium or smaller creature, it has the Prone condition."
     effects: [
       {
         condition: 'prone',
         duration: { type: 'instant' },
         affectsTarget: 'enemy',
+        targetSizeMax: 'medium',
       },
     ],
-    // Note: The prone effect should only apply on hit, controlled by save
-    // For simplicity, we'll add it as an effect (HACK: no save integration yet)
   },
 
   // ==========================================================================
@@ -182,7 +247,7 @@ export const actionPresets = z.array(actionSchema).parse([
   },
 
   // ==========================================================================
-  // SKELETON (CR 1/4)
+  // SKELETON (CR 1/4) - SRD 5.2
   // ==========================================================================
   {
     id: 'skeleton-shortsword',
@@ -191,8 +256,8 @@ export const actionPresets = z.array(actionSchema).parse([
     timing: { type: 'action' },
     range: { type: 'reach', normal: 5 },
     targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+    attack: { bonus: 5 },
+    damage: { dice: '1d6', modifier: 3, type: 'piercing' },
   },
   {
     id: 'skeleton-shortbow',
@@ -201,12 +266,12 @@ export const actionPresets = z.array(actionSchema).parse([
     timing: { type: 'action' },
     range: { type: 'ranged', normal: 80, long: 320 },
     targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+    attack: { bonus: 5 },
+    damage: { dice: '1d6', modifier: 3, type: 'piercing' },
   },
 
   // ==========================================================================
-  // HOBGOBLIN (CR 1/2)
+  // HOBGOBLIN (CR 1/2) - SRD 5.2
   // ==========================================================================
   {
     id: 'hobgoblin-longsword',
@@ -216,7 +281,7 @@ export const actionPresets = z.array(actionSchema).parse([
     range: { type: 'reach', normal: 5 },
     targeting: { type: 'single', validTargets: 'enemies' },
     attack: { bonus: 3 },
-    damage: { dice: '1d8', modifier: 1, type: 'slashing' },
+    damage: { dice: '2d10', modifier: 1, type: 'slashing' },  // SRD 5.2: 2d10+1
   },
   {
     id: 'hobgoblin-longbow',
@@ -227,6 +292,7 @@ export const actionPresets = z.array(actionSchema).parse([
     targeting: { type: 'single', validTargets: 'enemies' },
     attack: { bonus: 3 },
     damage: { dice: '1d8', modifier: 1, type: 'piercing' },
+    extraDamage: [{ dice: '3d4', modifier: 0, type: 'poison' }],  // SRD 5.2: +3d4 poison
   },
 
   // ==========================================================================
@@ -266,10 +332,10 @@ export const actionPresets = z.array(actionSchema).parse([
     autoHit: true,
     multiattack: {
       attacks: [
-        { actionRef: 'Scimitar', count: 2 },
-        { actionRef: 'Dagger', count: 1 },
+        { actionRef: 'Scimitar', count: 1 },
+        { actionRef: 'Pistol', count: 1 },
       ],
-      description: 'The captain makes three melee attacks: two with its scimitar and one with its dagger.',
+      description: 'The bandit makes two attacks, using Scimitar and Pistol in any combination.',
     },
   },
   {
@@ -283,14 +349,14 @@ export const actionPresets = z.array(actionSchema).parse([
     damage: { dice: '1d6', modifier: 3, type: 'slashing' },
   },
   {
-    id: 'bandit-captain-dagger',
-    name: 'Dagger',
-    actionType: 'melee-weapon',
+    id: 'bandit-captain-pistol',
+    name: 'Pistol',
+    actionType: 'ranged-weapon',
     timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
+    range: { type: 'ranged', normal: 30, long: 90 },
     targeting: { type: 'single', validTargets: 'enemies' },
     attack: { bonus: 5 },
-    damage: { dice: '1d4', modifier: 3, type: 'piercing' },
+    damage: { dice: '1d10', modifier: 3, type: 'piercing' },
   },
 
   // ==========================================================================
@@ -331,7 +397,383 @@ export const actionPresets = z.array(actionSchema).parse([
     attack: { bonus: 2 },
     damage: { dice: '1d10', modifier: 0, type: 'piercing' },
   },
+
+  // ==========================================================================
+  // BUGBEAR WARRIOR (CR 1) - SRD 5.2
+  // ==========================================================================
+  // NOTE: Bugbear has Long-Limbed trait (10 ft reach on all attacks)
+  // TODO: Abduct trait - no extra movement cost for grappled creatures
+  {
+    id: 'bugbear-grab',
+    name: 'Grab',
+    actionType: 'melee-weapon',  // SRD 5.2: Attack Roll, nicht Contested Check
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },  // Base 5ft, Long-Limbed trait adds +5
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 4 },  // +4 to hit
+    damage: { dice: '2d6', modifier: 2, type: 'bludgeoning' },  // 9 (2d6+2) damage
+    effects: [{
+      condition: 'grappled',
+      duration: {
+        type: 'until-escape',
+        escapeCheck: {
+          type: 'dc',  // Fixed DC, nicht contested
+          timing: 'action',
+          dc: 12,
+          ability: 'str',  // Escape via Strength (Athletics) check
+        },
+      },
+      affectsTarget: 'enemy',
+      targetSizeMax: 'medium',  // Medium or smaller only
+    }],
+    description: 'Melee Attack: +4, reach 10 ft. 9 (2d6+2) bludgeoning. If Medium or smaller: Grappled (escape DC 12).',
+  },
+  {
+    id: 'bugbear-light-hammer',
+    name: 'Light Hammer',
+    actionType: 'melee-weapon',
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },  // Base 5ft, Long-Limbed trait adds +5 (also thrown 20/60)
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 4 },
+    damage: { dice: '3d4', modifier: 2, type: 'bludgeoning' },  // 9 (3d4+2)
+    // Advantage against grappled targets (via schemaModifiers)
+    schemaModifiers: [{
+      id: 'grappled-advantage',
+      name: 'Grappled Advantage',
+      description: 'Advantage on attacks against grappled targets',
+      condition: { type: 'has-condition', entity: 'target', condition: 'grappled' },
+      effect: { advantage: true },
+      priority: 8,
+    }],
+    properties: ['light', 'thrown'],  // Dokumentation: kann auch geworfen werden (20/60 ft)
+    description: 'Melee or Ranged Attack: +4, reach 10 ft or range 20/60 ft. Advantage if target grappled.',
+  },
+
+  // ==========================================================================
+  // HOBGOBLIN CAPTAIN (CR 3)
+  // ==========================================================================
+  {
+    id: 'hobcaptain-multiattack',
+    name: 'Multiattack',
+    actionType: 'multiattack',
+    timing: { type: 'action' },
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    autoHit: true,
+    multiattack: {
+      attacks: [
+        { actionRef: 'Greatsword', count: 2 },
+      ],
+      description: 'The hobgoblin captain makes two attacks with its greatsword or longbow.',
+    },
+  },
+  {
+    id: 'hobcaptain-greatsword',
+    name: 'Greatsword',
+    actionType: 'melee-weapon',
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 4 },
+    damage: { dice: '2d6', modifier: 2, type: 'slashing' },
+    extraDamage: [{ dice: '1d6', modifier: 0, type: 'poison' }],
+  },
+  {
+    id: 'hobcaptain-longbow',
+    name: 'Longbow',
+    actionType: 'ranged-weapon',
+    timing: { type: 'action' },
+    range: { type: 'ranged', normal: 150, long: 600 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 4 },
+    damage: { dice: '1d8', modifier: 2, type: 'piercing' },
+    extraDamage: [{ dice: '2d4', modifier: 0, type: 'poison' }],
+  },
+
+  // ==========================================================================
+  // BERSERKER (CR 2)
+  // ==========================================================================
+  {
+    id: 'berserker-greataxe',
+    name: 'Greataxe',
+    actionType: 'melee-weapon',
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 5 },
+    damage: { dice: '1d12', modifier: 3, type: 'slashing' },
+    // Bloodied Frenzy: Advantage when bloodied (handled via schemaModifiers)
+    modifierRefs: ['bloodied-frenzy'],
+  },
+
+  // ==========================================================================
+  // KNIGHT (CR 3)
+  // ==========================================================================
+  {
+    id: 'knight-multiattack',
+    name: 'Multiattack',
+    actionType: 'multiattack',
+    timing: { type: 'action' },
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    autoHit: true,
+    multiattack: {
+      attacks: [
+        { actionRef: 'Greatsword', count: 2 },
+      ],
+      description: 'The knight makes two attacks with its greatsword or heavy crossbow.',
+    },
+  },
+  {
+    id: 'knight-greatsword',
+    name: 'Greatsword',
+    actionType: 'melee-weapon',
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 5 },
+    damage: { dice: '2d6', modifier: 3, type: 'slashing' },
+    extraDamage: [{ dice: '1d8', modifier: 0, type: 'radiant' }],
+  },
+  {
+    id: 'knight-heavy-crossbow',
+    name: 'Heavy Crossbow',
+    actionType: 'ranged-weapon',
+    timing: { type: 'action' },
+    range: { type: 'ranged', normal: 100, long: 400 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 2 },
+    damage: { dice: '2d10', modifier: 0, type: 'piercing' },
+    extraDamage: [{ dice: '1d8', modifier: 0, type: 'radiant' }],
+  },
+
+  // ==========================================================================
+  // GNOLL WARRIOR (CR 1/2)
+  // ==========================================================================
+  {
+    id: 'gnoll-rend',
+    name: 'Rend',
+    actionType: 'melee-weapon',
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 4 },
+    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+  },
+  {
+    id: 'gnoll-bone-bow',
+    name: 'Bone Bow',
+    actionType: 'ranged-weapon',
+    timing: { type: 'action' },
+    range: { type: 'ranged', normal: 150, long: 600 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 3 },
+    damage: { dice: '1d10', modifier: 1, type: 'piercing' },
+  },
+  {
+    id: 'gnoll-rampage',
+    name: 'Rampage',
+    actionType: 'melee-weapon',
+    timing: { type: 'bonus' },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 4 },
+    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+    recharge: { type: 'per-day', uses: 1 },
+    // Trigger: After dealing damage to bloodied creature
+    description: 'After dealing damage to a bloodied creature, move half speed and make one Rend attack.',
+  },
+
+  // ==========================================================================
+  // OGRE (CR 2)
+  // ==========================================================================
+  {
+    id: 'ogre-greatclub',
+    name: 'Greatclub',
+    actionType: 'melee-weapon',
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 6 },
+    damage: { dice: '2d8', modifier: 4, type: 'bludgeoning' },
+  },
+  {
+    id: 'ogre-javelin',
+    name: 'Javelin',
+    actionType: 'ranged-weapon',
+    timing: { type: 'action' },
+    range: { type: 'ranged', normal: 30, long: 120 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 6 },
+    damage: { dice: '2d6', modifier: 4, type: 'piercing' },
+  },
+
+  // ==========================================================================
+  // SCOUT (CR 1/2)
+  // ==========================================================================
+  {
+    id: 'scout-multiattack',
+    name: 'Multiattack',
+    actionType: 'multiattack',
+    timing: { type: 'action' },
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    autoHit: true,
+    multiattack: {
+      attacks: [
+        { actionRef: 'Shortsword', count: 1 },
+        { actionRef: 'Longbow', count: 1 },
+      ],
+      description: 'The scout makes two attacks, using Shortsword and Longbow in any combination.',
+    },
+  },
+  {
+    id: 'scout-shortsword',
+    name: 'Shortsword',
+    actionType: 'melee-weapon',
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 4 },
+    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+  },
+  {
+    id: 'scout-longbow',
+    name: 'Longbow',
+    actionType: 'ranged-weapon',
+    timing: { type: 'action' },
+    range: { type: 'ranged', normal: 150, long: 600 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 4 },
+    damage: { dice: '1d8', modifier: 2, type: 'piercing' },
+  },
+
+  // ==========================================================================
+  // PRIEST (CR 2)
+  // ==========================================================================
+  {
+    id: 'priest-multiattack',
+    name: 'Multiattack',
+    actionType: 'multiattack',
+    timing: { type: 'action' },
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    autoHit: true,
+    multiattack: {
+      attacks: [
+        { actionRef: 'Mace', count: 2 },
+      ],
+      description: 'The priest makes two attacks, using Mace or Radiant Flame in any combination.',
+    },
+  },
+  {
+    id: 'priest-mace',
+    name: 'Mace',
+    actionType: 'melee-weapon',
+    timing: { type: 'action' },
+    range: { type: 'reach', normal: 5 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 5 },
+    damage: { dice: '1d6', modifier: 3, type: 'bludgeoning' },
+    extraDamage: [{ dice: '2d4', modifier: 0, type: 'radiant' }],
+  },
+  {
+    id: 'priest-radiant-flame',
+    name: 'Radiant Flame',
+    actionType: 'ranged-spell',
+    timing: { type: 'action' },
+    range: { type: 'ranged', normal: 60 },
+    targeting: { type: 'single', validTargets: 'enemies' },
+    attack: { bonus: 5 },
+    damage: { dice: '2d10', modifier: 0, type: 'radiant' },
+  },
+  {
+    id: 'priest-healing-word',
+    name: 'Healing Word',
+    actionType: 'healing',
+    timing: { type: 'bonus' },
+    range: { type: 'ranged', normal: 60 },
+    targeting: { type: 'single', validTargets: 'allies' },
+    autoHit: true,
+    healing: { dice: '1d4', modifier: 3 },
+    recharge: { type: 'per-day', uses: 3 },
+    description: 'Heals 1d4+3 HP to an ally within 60 feet.',
+  },
+]);
+
+// ============================================================================
+// PASSIVE TRAITS
+// ============================================================================
+
+export const passiveTraits = z.array(actionSchema).parse([
+  {
+    id: 'trait-pack-tactics',
+    name: 'Pack Tactics',
+    actionType: 'buff',
+    timing: { type: 'passive' },
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single', validTargets: 'self' },
+    autoHit: true,
+    schemaModifiers: [{
+      id: 'pack-tactics',
+      name: 'Pack Tactics',
+      description: 'Advantage if non-incapacitated ally is adjacent to target',
+      condition: {
+        type: 'exists',
+        entity: { type: 'quantified', quantifier: 'any', filter: 'ally', relativeTo: 'attacker' },
+        where: {
+          type: 'and',
+          conditions: [
+            { type: 'adjacent-to', subject: 'self', object: 'target' },
+            { type: 'is-incapacitated', entity: 'self', negate: true },
+          ],
+        },
+      },
+      effect: { advantage: true },
+      priority: 7,
+    }],
+    description: 'Advantage on attack rolls if non-incapacitated ally is within 5 feet of target.',
+  },
+  {
+    id: 'trait-long-limbed',
+    name: 'Long-Limbed',
+    actionType: 'buff',
+    timing: { type: 'passive' },
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single', validTargets: 'self' },
+    autoHit: true,
+    schemaModifiers: [{
+      id: 'long-limbed',
+      name: 'Long-Limbed',
+      description: '+5 ft reach on melee weapon attacks',
+      condition: {
+        type: 'action-is-type',
+        actionType: 'melee-weapon',
+      },
+      effect: {
+        propertyModifiers: [
+          { path: 'range.normal', operation: 'add', value: 5 },
+        ],
+      },
+      priority: 5,
+    }],
+    description: 'Melee weapon attacks have +5 ft reach.',
+  },
+  {
+    id: 'trait-abduct',
+    name: 'Abduct',
+    actionType: 'buff',
+    timing: { type: 'passive' },
+    range: { type: 'self', normal: 0 },
+    targeting: { type: 'single', validTargets: 'self' },
+    autoHit: true,
+    // Note: Effect is implemented in combatState.ts getEffectiveSpeed() + setPosition()
+    // Creatures with this trait don't have halved speed when dragging grappled targets
+    description: 'The creature needn\'t spend extra movement to move a creature it is grappling.',
+  },
 ]);
 
 // Default-Export für CLI-Loading
-export default actionPresets;
+// Inkludiert standardActions + alle Monster-Actions + passive traits
+export default [...standardActions, ...actionPresets, ...passiveTraits];

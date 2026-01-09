@@ -63,6 +63,11 @@ function convertEffect(schemaEffect: SchemaModifierEffect): ModifierEffect {
     effect.autoMiss = schemaEffect.autoMiss;
   }
 
+  // Pass through property modifiers directly
+  if (schemaEffect.propertyModifiers !== undefined) {
+    effect.propertyModifiers = schemaEffect.propertyModifiers;
+  }
+
   return effect;
 }
 

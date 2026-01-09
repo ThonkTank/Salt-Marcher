@@ -23,8 +23,8 @@ import {
   proneTargetCloseModifier,
   proneTargetFarModifier,
   restrainedModifier,
-  packTacticsModifier,
   halfCoverModifier,
+  modifierPresetsMap,
 } from './coreModifiers';
 
 // Track if core modifiers are registered
@@ -49,22 +49,69 @@ export function registerCoreModifiers(): void {
 }
 
 // ============================================================================
+// MODIFIER REF RESOLUTION
+// ============================================================================
+
+/**
+ * Resolves modifier IDs to their SchemaModifier definitions from presets.
+ * Unknown IDs are logged as warnings and skipped.
+ *
+ * @param refs Array of modifier IDs to resolve
+ * @returns Array of resolved SchemaModifier definitions
+ */
+export function resolveModifierRefs(refs: string[]): SchemaModifier[] {
+  const resolved: SchemaModifier[] = [];
+
+  for (const id of refs) {
+    const modifier = modifierPresetsMap.get(id);
+    if (modifier) {
+      resolved.push(modifier);
+    } else {
+      console.warn(`[modifiers] Unknown modifier ref: "${id}". Available: ${Array.from(modifierPresetsMap.keys()).join(', ')}`);
+    }
+  }
+
+  return resolved;
+}
+
+/**
+ * Gets a single modifier by ID from presets.
+ *
+ * @param id Modifier ID
+ * @returns The SchemaModifier or undefined if not found
+ */
+export function getModifierById(id: string): SchemaModifier | undefined {
+  return modifierPresetsMap.get(id);
+}
+
+// ============================================================================
 // SCHEMA MODIFIER REGISTRATION
 // ============================================================================
 
 /**
  * Registers all schema-defined modifiers from an array of Actions.
  * Call this after loading Actions from Vault to activate their schemaModifiers.
+ * Handles both inline schemaModifiers and modifierRefs (ID references to presets).
  *
- * @param actions Actions that may contain schemaModifiers
+ * @param actions Actions that may contain schemaModifiers or modifierRefs
  */
 export function registerSchemaModifiers(actions: Action[]): void {
   for (const action of actions) {
-    if (!action.schemaModifiers?.length) continue;
+    // Register inline schema modifiers
+    if (action.schemaModifiers?.length) {
+      for (const schemaMod of action.schemaModifiers) {
+        const evaluator = createSchemaModifierEvaluator(schemaMod);
+        modifierRegistry.register(evaluator);
+      }
+    }
 
-    for (const schemaMod of action.schemaModifiers) {
-      const evaluator = createSchemaModifierEvaluator(schemaMod);
-      modifierRegistry.register(evaluator);
+    // Register referenced modifiers from presets
+    if (action.modifierRefs?.length) {
+      const resolved = resolveModifierRefs(action.modifierRefs);
+      for (const schemaMod of resolved) {
+        const evaluator = createSchemaModifierEvaluator(schemaMod);
+        modifierRegistry.register(evaluator);
+      }
     }
   }
 }
@@ -94,6 +141,7 @@ export function unregisterSchemaModifier(id: string): void {
 // ============================================================================
 
 // Core modifier schemas (for testing/inspection)
+// NOTE: packTacticsModifier removed - now defined as passive action
 export {
   CORE_MODIFIERS,
   longRangeModifier,
@@ -101,8 +149,8 @@ export {
   proneTargetCloseModifier,
   proneTargetFarModifier,
   restrainedModifier,
-  packTacticsModifier,
   halfCoverModifier,
+  modifierPresetsMap,
 } from './coreModifiers';
 
 // Schema modifier utilities

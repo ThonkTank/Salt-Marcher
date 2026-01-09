@@ -325,9 +325,9 @@ function mapEffectToType(effect: ActionEffect): EffectLayerData['effectType'] {
 
 | Ability | Modellierung als Action |
 |---------|------------------------|
-| Sneak Attack | `conditionalBonuses: [{ condition: 'advantage-or-ally-adjacent', bonus: { bonusDamage: '3d6' } }]` |
+| Sneak Attack | `schemaModifiers: [{ condition: { type: 'or', conditions: [{ type: 'has-advantage' }, ...] }, effect: { damageBonus: '3d6' } }]` |
 | Reckless Attack | `timing: { type: 'bonus' }, effects: [{ advantage: true, grantedEffects: [...] }]` |
-| Divine Smite | `timing: { type: 'bonus' }, conditionalBonuses: [{ resourceCost: { slot: 1 }, bonus: { bonusDamage: '2d8' } }]` |
+| Divine Smite | `timing: { type: 'bonus' }` mit Spell-Slot-Verbrauch |
 
 **Effect-Layer Typen:**
 
