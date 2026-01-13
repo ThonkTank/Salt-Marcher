@@ -28,7 +28,7 @@ import type {
   TurnAction,
 } from '@/types/combat';
 import { buildThreatMap } from '../layers';
-import { buildPossibleActions, type ScoredAction } from '../core/actionEnumeration';
+import { buildPossibleActions, toTurnAction, type ScoredAction } from '../core/actionEnumeration';
 import { positionToKey } from '@/utils';
 import { getReachableCells } from '../helpers/combatHelpers';
 import { getPosition } from '../../combatTracking';
@@ -281,14 +281,7 @@ export const ucbSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    return {
-      type: 'action',
-      action: selected.action,
-      target: selected.target,
-      fromPosition: selected.fromPosition,
-      targetCell: selected.targetCell,
-      score: selected.score,
-    };
+    return toTurnAction(selected);
   },
 
   getStats(): SelectorStats {

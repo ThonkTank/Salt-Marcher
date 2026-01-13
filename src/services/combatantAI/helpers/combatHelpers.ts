@@ -47,6 +47,7 @@ import {
 
 /**
  * Löst Multiattack-Referenzen auf und gibt alle referenzierten Actions zurück.
+ * Bei orRef wird die primäre Action (actionRef) zurückgegeben.
  * Gibt leeres Array zurück wenn keine Multiattack oder keine gültigen Refs.
  *
  * @param action Die Multiattack-Action
@@ -67,6 +68,56 @@ export function resolveMultiattackRefs(action: Action, allActions: Action[]): Ac
     }
   }
   return resolved;
+}
+
+/**
+ * Prüft ob ein Multiattack Ranged-Optionen hat (für Mixed Melee/Ranged Multiattacks).
+ * Berücksichtigt sowohl actionRef als auch orRef.
+ */
+export function multiattackHasRangedOption(action: Action, allActions: Action[]): boolean {
+  if (!action.multiattack?.attacks?.length) return false;
+
+  for (const entry of action.multiattack.attacks) {
+    // Check primary actionRef
+    const primaryAction = allActions.find(a => a.name === entry.actionRef);
+    if (primaryAction && (primaryAction.range?.normal ?? 5) > 5) {
+      return true;
+    }
+
+    // Check orRef alternative
+    if (entry.orRef) {
+      const altAction = allActions.find(a => a.name === entry.orRef);
+      if (altAction && (altAction.range?.normal ?? 5) > 5) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Prüft ob ein Multiattack Melee-Optionen hat.
+ * Berücksichtigt sowohl actionRef als auch orRef.
+ */
+export function multiattackHasMeleeOption(action: Action, allActions: Action[]): boolean {
+  if (!action.multiattack?.attacks?.length) return false;
+
+  for (const entry of action.multiattack.attacks) {
+    // Check primary actionRef
+    const primaryAction = allActions.find(a => a.name === entry.actionRef);
+    if (primaryAction && (primaryAction.range?.normal ?? 5) <= 5) {
+      return true;
+    }
+
+    // Check orRef alternative
+    if (entry.orRef) {
+      const altAction = allActions.find(a => a.name === entry.orRef);
+      if (altAction && (altAction.range?.normal ?? 5) <= 5) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -166,6 +217,39 @@ function getExpectedDamageValue(action: Action): number {
 }
 
 /**
+ * Injiziert Spellcasting-Stats (attack bonus, save DC) in einen Spell.
+ * Findet den Spellcasting-Trait des Casters und übernimmt dessen Stats.
+ *
+ * @param spell Die Spell-Action (mit isSpell: true)
+ * @param combatantActions Alle Actions des Combatants (inkl. Spellcasting-Trait)
+ * @returns Spell mit injizierten Stats
+ */
+export function resolveSpellWithCaster(
+  spell: Action,
+  combatantActions: Action[]
+): Action {
+  // Nur für Spells
+  if (!spell.isSpell) return spell;
+
+  // Finde Spellcasting-Trait des Casters
+  const spellcastingTrait = combatantActions.find(a => a.spellcasting);
+  if (!spellcastingTrait?.spellcasting) return spell;
+
+  const sc = spellcastingTrait.spellcasting;
+
+  // Injiziere Stats
+  return {
+    ...spell,
+    // Überschreibe attack bonus falls vorhanden
+    attack: spell.attack ? { ...spell.attack, bonus: sc.attackBonus } : undefined,
+    // Überschreibe save DC in allen Effects
+    effects: spell.effects?.map(e =>
+      e.save ? { ...e, save: { ...e.save, dc: sc.saveDC } } : e
+    ),
+  };
+}
+
+/**
  * Wendet baseAction-Resolution auf eine Action an und merged die Stats.
  * Wird VOR Attack-Resolution aufgerufen (für OA etc.).
  *
@@ -180,21 +264,24 @@ export function resolveActionWithBase(
   action: Action,
   combatantActions: Action[]
 ): Action {
-  // Keine baseAction oder nicht inherit → unverändert zurück
-  if (!action.baseAction || action.baseAction.usage !== 'inherit') {
-    return action;
+  // 1. Spell-Stats injizieren (falls isSpell: true)
+  let resolved = resolveSpellWithCaster(action, combatantActions);
+
+  // 2. BaseAction Resolution (für OA etc.)
+  if (!resolved.baseAction || resolved.baseAction.usage !== 'inherit') {
+    return resolved;
   }
 
-  const baseAction = resolveBaseAction(action.baseAction, combatantActions);
+  const baseAction = resolveBaseAction(resolved.baseAction, combatantActions);
   if (!baseAction) {
     // Keine passende Basis-Action gefunden → unverändert zurück
     // (isActionUsable hätte dies bereits verhindern sollen)
-    return action;
+    return resolved;
   }
 
   // Merge: Behalte Action-spezifische Felder, übernehme Combat-Stats
   return {
-    ...action,
+    ...resolved,
     attack: baseAction.attack,
     damage: baseAction.damage,
     // range bleibt von OA (5ft Reach) - nicht von Basis übernehmen
@@ -490,18 +577,44 @@ export function calculateHitChance(
 // ============================================================================
 
 /**
+ * Berechnet Expected Value einer einzelnen Attack-Action mit Hit-Chance.
+ * Helper für calculateMultiattackDamage.
+ */
+function calculateSingleAttackExpectedValue(
+  refAction: Action,
+  targetAC: number,
+  attackModifier: number
+): number {
+  if (!refAction.damage || !refAction.attack) return 0;
+
+  const baseDamage = addConstant(
+    diceExpressionToPMF(refAction.damage.dice),
+    refAction.damage.modifier
+  );
+
+  let hitChance = calculateHitChance(refAction.attack.bonus, targetAC);
+  hitChance += attackModifier * 0.05;
+  hitChance = Math.max(0.05, Math.min(0.95, hitChance));
+
+  return getExpectedValue(calculateEffectiveDamage(baseDamage, hitChance));
+}
+
+/**
  * Berechnet kombinierte Damage-PMF für Multiattack.
  * Konvolviert alle referenzierten Actions (jeweils mit Hit-Chance).
+ * Bei orRef wird die Action mit höherem Expected Damage verwendet.
  *
  * @param action Die Multiattack-Action
  * @param allActions Alle verfügbaren Actions des Attackers (für Ref-Lookup)
  * @param targetAC AC des Ziels für Hit-Chance-Berechnung
+ * @param attackModifier Optional: Situativer Modifier auf Hit-Chance (z.B. +5 für Advantage)
  * @returns Kombinierte Damage-PMF oder null wenn keine gültigen Refs
  */
 export function calculateMultiattackDamage(
   action: Action,
   allActions: Action[],
-  targetAC: number
+  targetAC: number,
+  attackModifier: number = 0
 ): ProbabilityDistribution | null {
   if (!action.multiattack?.attacks?.length) {
     return null;
@@ -511,19 +624,38 @@ export function calculateMultiattackDamage(
   let validAttacksFound = false;
 
   for (const entry of action.multiattack.attacks) {
-    const refAction = allActions.find(a => a.name === entry.actionRef);
-    if (!refAction) continue;
+    const primaryAction = allActions.find(a => a.name === entry.actionRef);
+    const altAction = entry.orRef ? allActions.find(a => a.name === entry.orRef) : null;
 
-    if (!refAction.damage || !refAction.attack) continue;
+    // Wähle die bessere Option (höherer Expected Damage)
+    let bestAction: Action | null = null;
+
+    if (primaryAction?.damage && primaryAction?.attack) {
+      if (altAction?.damage && altAction?.attack) {
+        // Beide Optionen verfügbar - wähle höheren Expected Damage
+        const primaryEV = calculateSingleAttackExpectedValue(primaryAction, targetAC, attackModifier);
+        const altEV = calculateSingleAttackExpectedValue(altAction, targetAC, attackModifier);
+        bestAction = primaryEV >= altEV ? primaryAction : altAction;
+      } else {
+        bestAction = primaryAction;
+      }
+    } else if (altAction?.damage && altAction?.attack) {
+      bestAction = altAction;
+    }
+
+    if (!bestAction) continue;
 
     validAttacksFound = true;
 
     const baseDamage = addConstant(
-      diceExpressionToPMF(refAction.damage.dice),
-      refAction.damage.modifier
+      diceExpressionToPMF(bestAction.damage!.dice),
+      bestAction.damage!.modifier
     );
 
-    const hitChance = calculateHitChance(refAction.attack.bonus, targetAC);
+    let hitChance = calculateHitChance(bestAction.attack!.bonus, targetAC);
+    hitChance += attackModifier * 0.05;
+    hitChance = Math.max(0.05, Math.min(0.95, hitChance));
+
     const effectiveDamage = calculateEffectiveDamage(baseDamage, hitChance);
 
     for (let i = 0; i < entry.count; i++) {

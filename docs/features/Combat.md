@@ -57,8 +57,10 @@ Das Action-Schema wird verwendet fuer:
 │  HP-Tracking                     │  Trefferwuerfe berechnen     │
 │  Conditions als Tags             │  Damage-Resistenzen anwenden │
 │  Automatische Effekte            │  Taktische Entscheidungen    │
-│  Konzentration Tracking          │  Grid-Positioning (Post-MVP) │
-│                                  │  Death Saves (Spieler-Sache) │
+│  Konzentration Tracking          │  Death Saves (Spieler-Sache) │
+│  Grid-Positioning                │                              │
+│  AI-Vorschlaege                  │                              │
+│  Reactions (Shield, OA, etc.)    │                              │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -101,14 +103,18 @@ combat:end-requested
 
 ## Schemas
 
-### CombatState
+> **Hinweis:** Dies sind vereinfachte UI-Schemas. Die technische Implementierung verwendet
+> `Combatant = NPCInCombat | CharacterInCombat` aus [combat.ts](../../src/types/combat.ts).
+> Siehe [CombatTab.md](../views/EncounterRunner/CombatTab.md) fuer View-Details.
+
+### CombatState (UI-Sicht)
 
 ```typescript
 interface CombatState {
   status: 'idle' | 'active';
   encounterId?: EntityId<'encounter'>;
 
-  // Teilnehmer
+  // Teilnehmer (intern: Combatant[])
   participants: CombatParticipant[];
   initiativeOrder: string[];      // Sortierte participant IDs
 
@@ -139,6 +145,10 @@ interface CombatParticipant {
   // Note: Death Saves werden vom Spieler getrackt, nicht im Combat-Tracker
 }
 ```
+
+> **Implementierung:** Die tatsaechlichen Typen in [combat.ts](../../src/types/combat.ts) sind reicher:
+> - `Combatant` = `NPCInCombat | CharacterInCombat` (Union Type mit vollen Entity-Daten)
+> - `CombatState` enthaelt Grid, Terrain, Protocol, Turn-Budgets, und Layer-System
 
 ### Conditions
 
@@ -703,10 +713,8 @@ const questPoolXP = Math.floor(adjustedXP * 0.6);    // In Quest-Pool oder verfa
 | Feature | Beschreibung | Prioritaet |
 |---------|--------------|------------|
 | Resumable Combat State | Combat-State bei Plugin-Reload wiederherstellen | Mittel |
-| Grid-Positioning | Positionierung auf Battle-Map | Mittel |
 | Legendary Actions | Tracking fuer Boss-Kreaturen | Niedrig |
 | Lair Actions | Automatische Trigger | Niedrig |
-| Reaction-Tracking | Wer hat Reaction verbraucht | Niedrig |
 | Spell Slot Tracking | Automatische Reduktion | Niedrig |
 
 ### Resumable Combat State (Skizze)

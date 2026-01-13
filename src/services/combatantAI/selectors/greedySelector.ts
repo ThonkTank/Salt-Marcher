@@ -8,7 +8,7 @@ import type {
   TurnBudget,
   TurnAction,
 } from '@/types/combat';
-import { buildPossibleActions } from '../core';
+import { buildPossibleActions, toTurnAction } from '../core';
 import { buildThreatMap } from '../layers';
 import { positionToKey } from '@/utils';
 import { getDistance, getReachableCells } from '../helpers/combatHelpers';
@@ -115,15 +115,7 @@ export const greedySelector: ActionSelector = {
       elapsedMs: lastStats.elapsedMs.toFixed(2),
     });
 
-    // TurnAction mit Score zurückgeben
-    return {
-      type: 'action',
-      action: bestCandidate.action,
-      target: bestCandidate.target,
-      fromPosition: bestCandidate.fromPosition,
-      targetCell: bestCandidate.targetCell,
-      score: bestCandidate.score,
-    };
+    return toTurnAction(bestCandidate);
   },
 
   getStats(): SelectorStats {

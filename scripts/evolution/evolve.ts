@@ -124,6 +124,19 @@ interface Checkpoint {
 }
 
 /**
+ * Combat-Statistiken eines einzelnen Genomes.
+ */
+interface GenomeCombatStats {
+  hitRate: number;
+  totalKills: number;
+  totalDeaths: number;
+  avgHPLostPercent: number;
+  wins: number;
+  losses: number;
+  draws: number;
+}
+
+/**
  * Statistiken für eine Generation.
  */
 interface GenerationStats {
@@ -135,6 +148,9 @@ interface GenerationStats {
   avgConnections: number;
   bestGenomeId: string;
   evalTimeMs: number;
+
+  // === Combat-Statistiken des BESTEN Genomes ===
+  bestGenomeStats: GenomeCombatStats;
 }
 
 // ============================================================================
@@ -267,8 +283,31 @@ function calculateStats(
   const avgNodes = population.reduce((sum, g) => sum + g.nodes.length, 0) / population.length;
   const avgConnections = population.reduce((sum, g) => sum + g.connections.length, 0) / population.length;
 
-  const bestEval = evaluations.find(e => e.fitness === bestFitness);
+  // Finde die Evaluation des besten Genomes
+  const bestEval = evaluations.reduce((best, e) =>
+    e.fitness > best.fitness ? e : best,
+    evaluations[0]
+  );
   const bestGenomeId = bestEval?.genomeId || population.find(g => g.fitness === bestFitness)?.id || 'unknown';
+
+  // Combat-Statistiken des besten Genomes
+  const bestGenomeStats: GenomeCombatStats = bestEval ? {
+    hitRate: bestEval.hitRate,
+    totalKills: bestEval.totalKills,
+    totalDeaths: bestEval.totalDeaths,
+    avgHPLostPercent: bestEval.avgHPLostPercent,
+    wins: bestEval.wins,
+    losses: bestEval.losses,
+    draws: bestEval.draws,
+  } : {
+    hitRate: 0,
+    totalKills: 0,
+    totalDeaths: 0,
+    avgHPLostPercent: 0,
+    wins: 0,
+    losses: 0,
+    draws: 0,
+  };
 
   return {
     generation,
@@ -279,6 +318,7 @@ function calculateStats(
     avgConnections,
     bestGenomeId,
     evalTimeMs,
+    bestGenomeStats,
   };
 }
 
@@ -409,6 +449,17 @@ type EvalProgressCallback = (progress: {
   total: number;
   genomeId: string;
   fitness: number;
+  nodeCount: number;
+  connectionCount: number;
+  speciesId: number;
+  // Combat-Stats des aktuellen Genomes (für "Last" Tab)
+  hitRate: number;
+  kills: number;
+  deaths: number;
+  hpLost: number;
+  wins: number;
+  losses: number;
+  draws: number;
 }) => void;
 
 /**
@@ -607,6 +658,15 @@ async function evolve(config: NEATConfig, resumePath?: string): Promise<NEATGeno
               total: progress.total,
               genomeId: progress.genomeId,
               generation: gen,
+              // Combat-Stats für "Last" Tab im Dashboard
+              fitness: progress.fitness,
+              hitRate: progress.hitRate,
+              kills: progress.kills,
+              deaths: progress.deaths,
+              hpLost: progress.hpLost,
+              wins: progress.wins,
+              losses: progress.losses,
+              draws: progress.draws,
             },
           });
           // Broadcast detailed worker status

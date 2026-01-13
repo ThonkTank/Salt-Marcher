@@ -20,7 +20,7 @@ import {
   extractActionFeatures,
   combineFeatures,
 } from '../evolution';
-import { buildPossibleActions } from '../core';
+import { buildPossibleActions, toTurnAction } from '../core';
 
 // ============================================================================
 // DEBUG
@@ -158,14 +158,7 @@ export function createEvolvedSelector(
         elapsedMs: lastStats.elapsedMs.toFixed(2),
       });
 
-      return {
-        type: 'action',
-        action: bestCandidate.action,
-        target: bestCandidate.target,
-        fromPosition: bestCandidate.fromPosition,
-        targetCell: bestCandidate.targetCell,
-        score: bestScore, // Network-Score statt heuristischem Score
-      };
+      return toTurnAction(bestCandidate);
     },
 
     getStats(): SelectorStats {

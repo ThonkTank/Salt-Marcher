@@ -1,28 +1,31 @@
-// Ziel: Plugin-basiertes System für situative Combat-Modifikatoren
+// Ziel: Plugin-basiertes System für situative Combat-Modifikatoren (AI Layer)
 // Siehe: docs/services/combatantAI/actionScoring.md#situational-modifiers
 //
 // Architektur:
-// - ModifierEvaluator Interface für einzelne Modifier-Plugins
-// - ModifierRegistry für dynamische Registrierung
-// - evaluateSituationalModifiers() akkumuliert alle aktiven Effekte
+// - ADAPTER: Importiert Basis-Logik aus combatTracking/resolution/gatherModifiers
+// - ModifierEvaluator Interface für AI-spezifische Plugins
+// - ModifierRegistry für dynamische Plugin-Registrierung
+// - evaluateSituationalModifiers() kombiniert Core + Plugins
 // - +/-5 Approximation für Advantage/Disadvantage (Performance)
 //
-// Erweiterbarkeit:
-// 1. Neue Datei in modifiers/ erstellen
-// 2. ModifierEvaluator implementieren
-// 3. Import in modifiers/index.ts hinzufügen
-// Keine Core-Änderungen nötig!
+// Core vs AI Split:
+// - Core (gatherModifiers): Conditions, Buffs, Schema-Modifiers, Passive Traits, Auras
+// - AI (hier): Registry-Plugins für AI-spezifische Evaluation (long-range, cover)
 //
 // Pipeline-Position:
 // - Aufgerufen von: actionScoring.calculatePairScore() → evaluateSituationalModifiers()
-// - Plugins in: modifiers/*.ts (longRange, cover, packTactics, etc.)
+// - Plugins in: modifiers/*.ts (longRange, cover, etc.)
 // - Output: SituationalModifiers (netAdvantage, effectiveAttackMod, etc.)
 
 import type { Action } from '@/types/entities';
 import type { PropertyModifier } from '@/types/entities/conditionExpression';
-import type { GridPosition, ConditionState, Combatant } from '@/types/combat';
-import { getActions } from '../combatTracking';
-import { createSchemaModifierEvaluator } from './schemaModifierAdapter';
+import type { GridPosition, ConditionState, Combatant, CombatState } from '@/types/combat';
+import {
+  gatherModifiers,
+  resolveAdvantageState as coreResolveAdvantage,
+  type ModifierSet,
+  type GatherModifiersContext,
+} from '../combatTracking/resolution/gatherModifiers';
 
 // Re-export ConditionState für Consumer
 export type { ConditionState } from '@/types/combat';
@@ -175,15 +178,49 @@ const debug = (...args: unknown[]) => {
 /**
  * Resolves advantage/disadvantage per D&D 5e cancellation rules.
  * Any advantage + any disadvantage = normal roll (they cancel).
+ *
+ * Note: Uses 'normal' for backwards compatibility with AI layer.
+ * Core uses 'none' instead. This function wraps core and converts.
  */
 export function resolveAdvantageState(
   hasAdvantage: boolean,
   hasDisadvantage: boolean
 ): 'advantage' | 'disadvantage' | 'normal' {
-  if (hasAdvantage && hasDisadvantage) return 'normal';
-  if (hasAdvantage) return 'advantage';
-  if (hasDisadvantage) return 'disadvantage';
-  return 'normal';
+  const result = coreResolveAdvantage(
+    hasAdvantage ? 1 : 0,
+    hasDisadvantage ? 1 : 0
+  );
+  return result === 'none' ? 'normal' : result;
+}
+
+// ============================================================================
+// TYPE CONVERSION
+// ============================================================================
+
+/**
+ * Converts ModifierSet from gatherModifiers to SituationalModifiers format.
+ */
+function modifierSetToSituationalModifiers(
+  modSet: ModifierSet,
+  additionalEffects: ModifierEffect[] = [],
+  additionalSources: string[] = []
+): SituationalModifiers {
+  // Convert base ModifierSet to ModifierEffect
+  const baseEffect: ModifierEffect = {
+    advantage: modSet.attackAdvantage === 'advantage',
+    disadvantage: modSet.attackAdvantage === 'disadvantage',
+    attackBonus: modSet.attackBonus,
+    acBonus: modSet.targetACBonus,
+    damageBonus: modSet.damageBonus,
+    autoCrit: modSet.hasAutoCrit,
+    autoMiss: modSet.hasAutoMiss,
+  };
+
+  const allEffects = [baseEffect, ...additionalEffects];
+  const allSources = [...modSet.sources, ...additionalSources];
+
+  // Accumulate all effects
+  return accumulateEffects(allEffects, allSources);
 }
 
 // ============================================================================
@@ -236,31 +273,81 @@ export function accumulateEffects(
 }
 
 // ============================================================================
+// CORE ADAPTER
+// ============================================================================
+
+/**
+ * Finds a Combatant by participantId.
+ */
+function findCombatant(participantId: string, combatants: Combatant[]): Combatant | undefined {
+  return combatants.find(c => c.id === participantId);
+}
+
+/**
+ * Calls gatherModifiers from combatTracking and converts the result.
+ * This is the bridge between AI ModifierContext and Combat GatherModifiersContext.
+ */
+function gatherModifiersForAI(context: ModifierContext): ModifierSet | null {
+  const actor = findCombatant(context.attacker.participantId, context.state.combatants);
+  const target = findCombatant(context.target.participantId, context.state.combatants);
+
+  if (!actor || !target) {
+    debug('gatherModifiersForAI: Could not find actor or target combatant');
+    return null;
+  }
+
+  // Build GatherModifiersContext
+  const gatherCtx: GatherModifiersContext = {
+    actor,
+    action: context.action,
+    state: {
+      combatants: context.state.combatants,
+      alliances: context.state.alliances,
+      // Minimal CombatState fields needed
+    } as unknown as CombatState,
+  };
+
+  // Call gatherModifiers with single target
+  const targetResult = {
+    targets: [target],
+    isAoE: false,
+    primaryTarget: target,
+  };
+
+  const results = gatherModifiers(gatherCtx, targetResult);
+  return results[0] ?? null;
+}
+
+// ============================================================================
 // MAIN EVALUATION FUNCTION
 // ============================================================================
 
 /**
- * Evaluiert alle registrierten Modifiers und akkumuliert Effekte.
- * Nutzt die globale Registry.
+ * Evaluiert alle Modifiers und akkumuliert Effekte.
  *
- * Note: Core modifiers must be registered before calling this function.
- * Use registerCoreModifiers() from './modifiers' at app startup.
+ * Combines:
+ * 1. Core modifiers from gatherModifiers (conditions, buffs, schema-modifiers, etc.)
+ * 2. Registry plugins (AI-specific evaluators)
  */
 export function evaluateSituationalModifiers(
   context: ModifierContext
 ): SituationalModifiers {
+  // 1. Get base modifiers from core combat tracking
+  const baseModifiers = gatherModifiersForAI(context);
+
+  // 2. Evaluate registry plugins (AI-specific)
   const evaluators = modifierRegistry.getAll();
-  const activeEffects: ModifierEffect[] = [];
-  const activeSources: string[] = [];
+  const pluginEffects: ModifierEffect[] = [];
+  const pluginSources: string[] = [];
 
   for (const evaluator of evaluators) {
     try {
       if (evaluator.isActive(context)) {
         const effect = evaluator.getEffect(context);
-        activeEffects.push(effect);
-        activeSources.push(evaluator.id);
+        pluginEffects.push(effect);
+        pluginSources.push(evaluator.id);
 
-        debug('Modifier active:', {
+        debug('Plugin modifier active:', {
           id: evaluator.id,
           effect,
         });
@@ -270,37 +357,15 @@ export function evaluateSituationalModifiers(
     }
   }
 
-  // Evaluate passive actions of the attacker (für Creature Traits wie Pack Tactics)
-  if (context.state?.combatants) {
-    const attacker = context.state.combatants.find(
-      (c: Combatant) => c.id === context.attacker.participantId
-    );
-    if (attacker) {
-      const actions = getActions(attacker);
-      for (const action of actions) {
-        if (action.timing?.type === 'passive' && action.schemaModifiers?.length) {
-          for (const schemaMod of action.schemaModifiers) {
-            const evaluator = createSchemaModifierEvaluator(schemaMod);
-            try {
-              if (evaluator.isActive(context)) {
-                activeEffects.push(evaluator.getEffect(context));
-                activeSources.push(evaluator.id);
+  // 3. Merge base and plugin modifiers
+  let result: SituationalModifiers;
 
-                debug('Passive modifier active:', {
-                  id: evaluator.id,
-                  actionId: action.id,
-                });
-              }
-            } catch (error) {
-              console.error(`[situationalModifiers] Error in passive modifier ${schemaMod.id}:`, error);
-            }
-          }
-        }
-      }
-    }
+  if (baseModifiers) {
+    result = modifierSetToSituationalModifiers(baseModifiers, pluginEffects, pluginSources);
+  } else {
+    // Fallback: Only use plugin effects
+    result = accumulateEffects(pluginEffects, pluginSources);
   }
-
-  const result = accumulateEffects(activeEffects, activeSources);
 
   debug('evaluateSituationalModifiers:', {
     attackerId: context.attacker.participantId,
@@ -332,4 +397,3 @@ export function createEmptyModifiers(): SituationalModifiers {
     hasAutoMiss: false,
   };
 }
-

@@ -44,6 +44,8 @@ import {
   HP_THRESHOLD_COMPARISONS,
   SKILL_TYPES,
   REST_TYPES,
+  EFFECT_TRIGGERS,
+  ZONE_TARGET_FILTERS,
 } from '../../constants/action';
 
 // ============================================================================
@@ -84,6 +86,8 @@ export const transformTargetSchema = z.enum(TRANSFORM_TARGETS);
 export const hpThresholdComparisonSchema = z.enum(HP_THRESHOLD_COMPARISONS);
 export const skillTypeSchema = z.enum(SKILL_TYPES);
 export const restTypeSchema = z.enum(REST_TYPES);
+export const effectTriggerSchema = z.enum(EFFECT_TRIGGERS);
+export const zoneTargetFilterSchema = z.enum(ZONE_TARGET_FILTERS);
 
 // ============================================================================
 // LAYER 2: SIMPLE SUB-SCHEMAS
@@ -206,12 +210,22 @@ export const statModifierSchema = z.object({
 });
 export type StatModifier = z.infer<typeof statModifierSchema>;
 
-/** Wurf-Modifikator */
-export const rollModifierSchema = z.object({
-  on: rollTargetSchema,
-  type: rollModifierTypeSchema,
-  against: z.string().optional(),
-});
+/** Wurf-Modifikator (Discriminated Union für advantage/dice) */
+export const rollModifierSchema = z.discriminatedUnion('type', [
+  // advantage/disadvantage/auto-success/auto-fail
+  z.object({
+    on: rollTargetSchema,
+    type: z.enum(['advantage', 'disadvantage', 'auto-success', 'auto-fail']),
+    against: z.string().optional(),
+  }),
+  // dice bonus/penalty (Bless, Guidance, Bane)
+  z.object({
+    on: rollTargetSchema,
+    type: z.literal('dice'),
+    value: z.string().refine(validateDiceExpression, { message: 'Invalid dice expression' }),
+    against: z.string().optional(),
+  }),
+]);
 export type RollModifier = z.infer<typeof rollModifierSchema>;
 
 /** Schadensmodifikator (Resistenz/Immunität/Vulnerabilität) */
@@ -298,6 +312,9 @@ export type Critical = z.infer<typeof criticalSchema>;
 export const multiattackEntrySchema = z.object({
   actionRef: z.string().min(1),
   count: z.number().int().positive(),
+  // Alternative Action für "X or Y" Multiattacks (z.B. "2x Greatsword or Longbow")
+  // AI wählt basierend auf Situation (Melee vs Ranged)
+  orRef: z.string().min(1).optional(),
 });
 export type MultiattackEntry = z.infer<typeof multiattackEntrySchema>;
 
@@ -328,6 +345,14 @@ export const movementBehaviorSchema = z.object({
   ignoresDifficultTerrain: z.boolean().optional(),
 });
 export type MovementBehavior = z.infer<typeof movementBehaviorSchema>;
+
+/** Zone-Definition für Auras/Emanations (Spirit Guardians, etc.) */
+export const effectZoneSchema = z.object({
+  radius: z.number().positive(), // Radius in feet
+  targetFilter: zoneTargetFilterSchema.optional(), // 'enemies' | 'allies' | 'all'
+  speedModifier: z.number().optional(), // z.B. 0.5 für halbe Speed
+});
+export type EffectZone = z.infer<typeof effectZoneSchema>;
 
 /** Voraussetzung für Bonus Actions (TWF, Flurry) */
 export const actionRequirementSchema = z.object({
@@ -415,6 +440,21 @@ export const actionEffectSchema = z.object({
   // Size-Limit: Effekt gilt nur für Targets dieser Größe oder kleiner
   // Beispiel: Wolf Bite → Prone nur bei Medium oder kleiner
   targetSizeMax: sizeSchema.optional(),
+
+  // === ZONE-BASIERTE EFFECTS (Spirit Guardians, etc.) ===
+  // Trigger: Wann wird der Effect ausgelöst (on-enter, on-start-turn, etc.)
+  // Ohne trigger = Resolution-Effect (sofort bei Action-Resolution angewendet)
+  trigger: effectTriggerSchema.optional(),
+  // Damage für triggered Effects (Alternative zu Action-Level damage)
+  damage: actionDamageSchema.optional(),
+  // Save für triggered Effects (überschreibt Action.save bei Zone-Evaluation)
+  save: saveDCSchema.optional(),
+  // Zone-Definition für Auras - impliziert trigger-based Evaluation
+  zone: effectZoneSchema.optional(),
+  // Condition-Removal (für Lesser Restoration, etc.)
+  removeConditions: z.array(conditionTypeSchema).optional(),
+  // Concentration-Breaker (für Dispel Magic)
+  breakConcentration: z.boolean().optional(),
 });
 export type ActionEffect = z.infer<typeof actionEffectSchema>;
 
@@ -506,6 +546,12 @@ const rechargeMythicSchema = z.object({
   type: z.literal('mythic'),
 });
 
+const rechargeSharedPoolSchema = z.object({
+  type: z.literal('shared-pool'),
+  poolId: z.string().min(1), // z.B. 'divine-aid'
+  uses: z.number().int().positive(), // Maximale Pool-Größe
+});
+
 export const actionRechargeSchema = z.discriminatedUnion('type', [
   rechargeAtWillSchema,
   rechargeRechargeSchema,
@@ -514,8 +560,38 @@ export const actionRechargeSchema = z.discriminatedUnion('type', [
   rechargeLegendarySchema,
   rechargeLairSchema,
   rechargeMythicSchema,
+  rechargeSharedPoolSchema,
 ]);
 export type ActionRecharge = z.infer<typeof actionRechargeSchema>;
+
+// ============================================================================
+// SPELLCASTING (für Spellcasting-Traits)
+// ============================================================================
+
+/** Shared Pool Definition (z.B. "divine-aid": 3/Day total) */
+export const spellPoolSchema = z.object({
+  uses: z.number().int().positive(),
+  rechargeOn: z.enum(['short-rest', 'long-rest']),
+});
+export type SpellPool = z.infer<typeof spellPoolSchema>;
+
+/** Spell-Eintrag: entweder individuelle Uses ODER Pool-Referenz */
+export const spellEntrySchema = z.object({
+  spellId: z.string().min(1),
+  uses: z.union([z.literal('at-will'), z.number().int().positive()]).optional(),
+  poolId: z.string().min(1).optional(),
+});
+export type SpellEntry = z.infer<typeof spellEntrySchema>;
+
+/** Spellcasting-Feature für Traits (definiert Stats und verfügbare Spells) */
+export const spellcastingSchema = z.object({
+  ability: abilityTypeSchema,                          // 'wis', 'int', 'cha'
+  attackBonus: z.number().int(),                       // +5
+  saveDC: z.number().int().positive(),                 // 13
+  spells: z.array(spellEntrySchema),                   // Verfügbare Spells
+  pools: z.record(z.string(), spellPoolSchema).optional(), // Shared Pools
+});
+export type Spellcasting = z.infer<typeof spellcastingSchema>;
 
 // ============================================================================
 // LAYER 5: MAIN ACTION SCHEMA
@@ -571,6 +647,14 @@ export const actionSchema = z.object({
   properties: z.array(z.string()).optional(),
   source: actionSourceSchema.optional(),
 
+  // Spellcasting Support
+  // isSpell: true markiert diese Action als Spell → Stats (attack bonus, save DC)
+  // werden zur Laufzeit aus dem Spellcasting-Trait des Casters injiziert
+  isSpell: z.boolean().optional(),
+  // spellcasting: Definiert Spellcasting-Stats und verfügbare Spells für Traits
+  // Nur bei passive Traits verwendet (z.B. 'priest-spellcasting')
+  spellcasting: spellcastingSchema.optional(),
+
   // Bonus Action Requirements (TWF, Flurry, etc.)
   requires: actionRequiresSchema.optional(),
 
@@ -581,6 +665,12 @@ export const actionSchema = z.object({
   // Schema-driven Modifiers (replaces hardcoded ModifierEvaluators)
   // Allows defining creature traits, spell effects, item properties via schema
   schemaModifiers: z.array(schemaModifierSchema).optional(),
+
+  // Aura-Definition für Emanations (z.B. Aura of Authority)
+  // Wenn gesetzt, werden schemaModifiers auch auf Allies innerhalb des Radius angewendet
+  aura: z.object({
+    radius: z.number().positive(), // in feet
+  }).optional(),
 
   // ID-Referenzen auf Modifier-Presets (Alternative zu inline schemaModifiers)
   // z.B. ['long-range', 'pack-tactics'] referenziert presets/modifiers/

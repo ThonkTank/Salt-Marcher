@@ -18,12 +18,9 @@ import { createSchemaModifierEvaluator } from '../schemaModifierAdapter';
 
 import {
   CORE_MODIFIERS,
-  longRangeModifier,
-  rangedInMeleeModifier,
-  proneTargetCloseModifier,
-  proneTargetFarModifier,
-  restrainedModifier,
   halfCoverModifier,
+  bloodiedFrenzyModifier,
+  auraOfAuthorityModifier,
   modifierPresetsMap,
 } from './coreModifiers';
 
@@ -140,19 +137,16 @@ export function unregisterSchemaModifier(id: string): void {
 // RE-EXPORTS
 // ============================================================================
 
-// Core modifier schemas (for testing/inspection)
-// NOTE: packTacticsModifier removed - now defined as passive action
+// AI-specific modifier schemas (for testing/inspection)
+// NOTE: Standard D&D 5e modifiers (long range, prone, restrained) are in gatherModifiers.ts
 export {
   CORE_MODIFIERS,
-  longRangeModifier,
-  rangedInMeleeModifier,
-  proneTargetCloseModifier,
-  proneTargetFarModifier,
-  restrainedModifier,
   halfCoverModifier,
+  bloodiedFrenzyModifier,
+  auraOfAuthorityModifier,
   modifierPresetsMap,
 } from './coreModifiers';
 
 // Schema modifier utilities
 export { createSchemaModifierEvaluator } from '../schemaModifierAdapter';
-export { evaluateCondition, createEvaluationContext } from '../expressionEvaluator';
+export { evaluateCondition, createEvaluationContext } from '@/utils/combatModifiers';

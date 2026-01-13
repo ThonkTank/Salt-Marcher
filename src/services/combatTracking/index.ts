@@ -95,3 +95,17 @@ export {
   formatProtocolEntry,
   formatBudget,
 } from './protocolLogger';
+
+// ============================================================================
+// ZONE EFFECTS (zoneEffects.ts)
+// ============================================================================
+
+export {
+  applyZoneEffects,
+  getZoneSpeedModifier,
+  activateZone,
+  deactivateZonesForOwner,
+  resetZoneTriggersForCombatant,
+  createActiveZone,
+  type ZoneEffectResult,
+} from './zoneEffects';

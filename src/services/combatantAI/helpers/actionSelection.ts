@@ -2,13 +2,13 @@
 // Siehe: docs/services/combatantAI/actionScoring.md#candidate-selection
 //
 // Funktionen:
-// - getCandidates(): Filtert moegliche Ziele basierend auf action.targeting.validTargets
+// - getCandidates(): Delegiert zu getValidCandidates() aus findTargets.ts (Single Source of Truth)
 // - getEnemies(): Alle lebenden Feinde eines Combatants
 // - getAllies(): Alle lebenden Verbuendeten eines Combatants (ohne sich selbst)
 //
 // Pipeline-Position:
 // - Aufgerufen von: actionScoring.*, influenceMaps.*
-// - Nutzt: combatHelpers.isHostile(), isAllied()
+// - Delegiert zu: resolution/findTargets.ts
 // - Output: Combatant[] (gefilterte Listen)
 
 import type { Action } from '@/types/entities';
@@ -18,34 +18,22 @@ import {
   getAliveCombatants,
 } from '../../combatTracking';
 import { isHostile, isAllied } from './combatHelpers';
+import { getValidCandidates } from '../../combatTracking/resolution/findTargets';
 
 // ============================================================================
 // CANDIDATE FILTERING
 // ============================================================================
 
-/** Filtert moegliche Ziele basierend auf action.targeting.validTargets. */
+/**
+ * Filtert moegliche Ziele basierend auf action.targeting.validTargets.
+ * Delegiert zu getValidCandidates() aus findTargets.ts (Single Source of Truth).
+ */
 export function getCandidates(
   attacker: Combatant,
   state: CombatantSimulationState,
   action: Action
 ): Combatant[] {
-  const alive = getAliveCombatants(state);
-
-  switch (action.targeting.validTargets) {
-    case 'enemies':
-      return alive.filter(c =>
-        isHostile(getGroupId(attacker), getGroupId(c), state.alliances)
-      );
-    case 'allies':
-      return alive.filter(c =>
-        isAllied(getGroupId(attacker), getGroupId(c), state.alliances) &&
-        c.id !== attacker.id
-      );
-    case 'self':
-      return [attacker];
-    case 'any':
-      return alive;
-  }
+  return getValidCandidates(attacker, action, state);
 }
 
 /** Helper: Alle lebenden Feinde (via getAliveCombatants). */

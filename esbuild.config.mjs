@@ -1,4 +1,5 @@
 import esbuild from 'esbuild';
+import sveltePlugin from 'esbuild-svelte';
 import { copyFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 
@@ -19,6 +20,11 @@ const context = await esbuild.context({
   sourcemap: prod ? false : 'inline',
   treeShaking: true,
   outfile: join(outDir, 'main.js'),
+  plugins: [
+    sveltePlugin({
+      compilerOptions: { css: 'injected' },
+    }),
+  ],
 });
 
 if (prod) {

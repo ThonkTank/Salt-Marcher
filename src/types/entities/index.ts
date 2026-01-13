@@ -180,6 +180,8 @@ export {
   type SchemaModifier,
   schemaModifierEffectSchema,
   type SchemaModifierEffect,
+  propertyModifierSchema,
+  type PropertyModifier,
   quantifiedEntitySchema,
   type QuantifiedEntity,
   entityRefSchema,
@@ -189,7 +191,36 @@ export {
   ENTITY_FILTERS,
   QUANTIFIERS,
   HP_COMPARISONS,
+  MODIFIER_OPERATIONS,
 } from './conditionExpression';
+
+// EncounterPreset
+export {
+  encounterPresetSchema,
+  type EncounterPreset,
+  type EncounterPresetMode,
+  encounterPresetModeSchema,
+  ENCOUNTER_PRESET_MODES,
+  // Mode-specific schemas
+  authoredPresetSchema,
+  type AuthoredPreset,
+  templatePresetSchema,
+  type TemplatePreset,
+  embeddedPresetSchema,
+  type EmbeddedPreset,
+  // Group schemas
+  authoredGroupSchema,
+  type AuthoredGroup,
+  templateGroupSchema,
+  type TemplateGroup,
+  embeddedGroupSchema,
+  type EmbeddedGroup,
+  creatureEntrySchema,
+  type CreatureEntry,
+  // Combat config
+  encounterCombatConfigSchema,
+  type EncounterCombatConfig,
+} from './encounterPreset';
 
 // Action
 export {

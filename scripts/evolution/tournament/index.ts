@@ -2,16 +2,15 @@
 // Siehe: docs/services/combatantAI/algorithm-approaches.md
 
 // ============================================================================
-// SCENARIOS
+// PRESETS (from centralized presets/encounters/)
 // ============================================================================
 
-export type { ScenarioConfig } from './scenarios';
+export type { EncounterPreset, AuthoredPreset } from '../../../src/types/entities/encounterPreset';
 export {
-  SCENARIOS,
-  QUICK_SCENARIOS,
-  getScenarioByName,
-  getRandomScenarios,
-} from './scenarios';
+  tournamentPresets,
+  getTournamentPresetById,
+  getTournamentPresetByName,
+} from '../../../presets/encounters';
 
 // ============================================================================
 // FIGHT

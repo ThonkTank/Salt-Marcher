@@ -19,6 +19,8 @@ export {
   getThreatWeight,
   hasGrantMovementEffect,
   getAvailableActionsWithLayers,
+  // Conversion
+  toTurnAction,
   // Target Helpers (re-exported from actionSelection)
   getCandidates,
   getEnemies,

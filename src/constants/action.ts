@@ -69,6 +69,7 @@ export const CONDITION_TYPES = [
   'deafened',
   'frightened',
   'grappled',
+  'hidden',
   'incapacitated',
   'invisible',
   'paralyzed',
@@ -213,6 +214,7 @@ export const ROLL_MODIFIER_TYPES = [
   'disadvantage',
   'auto-success',
   'auto-fail',
+  'dice',  // For Bless, Guidance, Bane (+1d4/-1d4)
 ] as const;
 export type RollModifierType = (typeof ROLL_MODIFIER_TYPES)[number];
 
@@ -341,8 +343,28 @@ export const RECHARGE_TYPES = [
   'legendary',
   'lair',
   'mythic',
+  'shared-pool', // Divine Aid, etc. - mehrere Actions teilen einen Pool
 ] as const;
 export type RechargeType = (typeof RECHARGE_TYPES)[number];
+
+// ============================================================================
+// EFFECT TRIGGERS (für Zone-basierte Effects wie Spirit Guardians)
+// ============================================================================
+
+export const EFFECT_TRIGGERS = [
+  'on-enter', // Betreten einer Zone
+  'on-leave', // Verlassen einer Zone
+  'on-start-turn', // Turn-Start in Zone
+  'on-end-turn', // Turn-End in Zone
+] as const;
+export type EffectTrigger = (typeof EFFECT_TRIGGERS)[number];
+
+// ============================================================================
+// ZONE TARGET FILTERS (für Aura-Targeting)
+// ============================================================================
+
+export const ZONE_TARGET_FILTERS = ['enemies', 'allies', 'all'] as const;
+export type ZoneTargetFilter = (typeof ZONE_TARGET_FILTERS)[number];
 
 export const REST_TYPES = ['short', 'long'] as const;
 export type RestType = (typeof REST_TYPES)[number];

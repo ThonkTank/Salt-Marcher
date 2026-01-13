@@ -4,10 +4,11 @@
 // Re-exportiert Grid-Types aus @/utils und definiert Combat-spezifische Types.
 // Eliminiert Duplikation zwischen combatantAI.ts und combatTracking.ts.
 
-import type { Action, Duration, SaveDC } from './entities/action';
+import type { Action, ActionEffect, Duration, SaveDC } from './entities/action';
+import type { SchemaModifier } from './entities/conditionExpression';
 import type { NPC } from './entities/npc';
 import type { Character } from './entities/character';
-import type { TriggerEvent } from '@/constants/action';
+import type { TriggerEvent, AbilityType } from '@/constants/action';
 import type { CombatCellProperties } from './combatTerrain';
 
 // ============================================================================
@@ -25,7 +26,89 @@ export type {
 } from '@/utils';
 
 // ============================================================================
-// CONDITION STATE
+// ACTIVE MODIFIER SYSTEM (Unified Modifier Architecture)
+// ============================================================================
+
+/**
+ * Source of an active modifier.
+ * Tracks where the modifier came from for duration management and UI display.
+ */
+export interface ModifierSource {
+  type: 'condition' | 'buff' | 'trait' | 'item' | 'spell' | 'aura';
+  sourceId?: string;        // Combatant-ID des Verursachers
+  concentrationOf?: string; // Combatant-ID wenn Concentration-abhängig
+}
+
+/**
+ * Duration specification for active modifiers.
+ * Extends base Duration with save-based ending options.
+ */
+export interface ModifierDuration {
+  type: 'rounds' | 'until-save' | 'until-escape' | 'permanent';
+  value?: number;           // Verbleibende Runden (für 'rounds')
+  saveAt?: 'start' | 'end'; // Wann wird gesaved?
+  saveDC?: number;          // DC für den Save
+  saveAbility?: AbilityType; // Ability für den Save
+}
+
+/**
+ * Runtime wrapper for SchemaModifier in combat.
+ * Combines the modifier definition with runtime metadata.
+ */
+export interface ActiveModifier {
+  /** Referenz auf SchemaModifier Definition */
+  modifier: SchemaModifier;
+
+  /** Runtime-Metadaten: Woher kommt der Modifier? */
+  source: ModifierSource;
+
+  /** Optionale Duration (wenn nicht vorhanden: permanent) */
+  duration?: ModifierDuration;
+
+  /** Für probabilistische Modifier (z.B. 80% Chance dass Condition noch aktiv) */
+  probability: number;
+}
+
+// ============================================================================
+// AREA EFFECTS (Cover, Auras, Zones)
+// ============================================================================
+
+/** Area shape types for zone effects */
+export type AreaType = 'sphere' | 'cylinder' | 'cone' | 'line' | 'cube';
+
+/**
+ * Definition of an area for zone effects.
+ * Used by AreaEffect to define the shape and position.
+ */
+export interface AreaDefinition {
+  type: AreaType;
+  radius?: number;        // Sphere, Cylinder (in feet)
+  length?: number;        // Cone, Line (in feet)
+  width?: number;         // Line, Cube (in feet)
+  origin: 'self' | 'point';  // Zentrum am Caster oder frei platziert
+  position?: GridPosition;   // Nur wenn origin === 'point'
+}
+
+/**
+ * Position-based effect in combat (Cover, Auras, Zones).
+ * Replaces ActiveZone with unified modifier-based architecture.
+ */
+export interface AreaEffect {
+  id: string;
+  /** Combatant der den Effect kontrolliert ('terrain' für Cover-Hindernisse) */
+  ownerId: string;
+  /** Action die den Effect erstellt hat */
+  sourceActionId: string;
+  /** Geometrie des Effekts */
+  area: AreaDefinition;
+  /** Der Modifier der angewendet wird (verwendet SchemaModifier direkt) */
+  modifier: SchemaModifier;
+  /** Combatant-IDs die diesen Turn bereits getriggert wurden (1x pro Turn) */
+  triggeredThisTurn: Set<string>;
+}
+
+// ============================================================================
+// CONDITION STATE (Legacy - wird durch ActiveModifier ersetzt)
 // ============================================================================
 
 /**
@@ -75,7 +158,8 @@ export interface CombatResources {
  */
 export interface CombatantState {
   position: GridPosition;           // Cell-Indizes (5ft-Cells)
-  conditions: ConditionState[];     // Aktive Buffs/Debuffs
+  conditions: ConditionState[];     // Legacy: Aktive Buffs/Debuffs
+  modifiers: ActiveModifier[];      // NEU: Unified Modifier System (Conditions, Buffs, Traits)
   resources?: CombatResources;      // Spell Slots, Recharge Timer
   concentratingOn?: string;         // Action-ID des aktiven Konzentrations-Spells
   groupId: string;                  // 'party' für PCs, UUID für Encounter-Gruppen
@@ -143,6 +227,28 @@ export function createRangeCache(): RangeCache {
 }
 
 // ============================================================================
+// ACTIVE ZONES (Spirit Guardians, etc.)
+// ============================================================================
+
+/**
+ * Runtime-Zustand einer aktiven Zone (z.B. Spirit Guardians).
+ * Zones sind Action-Effects mit trigger-basierten Auslösern die bei
+ * Movement (on-enter) oder Turn-Events (on-start-turn) evaluiert werden.
+ */
+export interface ActiveZone {
+  /** Unique ID dieser Zone-Instance. */
+  id: string;
+  /** Die Action die diese Zone erstellt hat. */
+  sourceActionId: string;
+  /** Der Combatant der die Zone kontrolliert. */
+  ownerId: string;
+  /** Der Effect aus der Action-Definition (enthält zone, trigger, damage, etc.). */
+  effect: ActionEffect;
+  /** Combatant-IDs die diesen Turn bereits von dieser Zone getriggert wurden (1x pro Turn). */
+  triggeredThisTurn: Set<string>;
+}
+
+// ============================================================================
 // SIMULATION STATE
 // ============================================================================
 
@@ -195,6 +301,20 @@ export interface CombatState extends CombatantSimulationState {
   partyDPR: number;
   enemyDPR: number;
 
+  // Hit/Miss-Tracking für Trefferquoten-Analyse
+  partyHits: number;
+  partyMisses: number;
+  enemyHits: number;
+  enemyMisses: number;
+
+  // Kill-Tracking für Body Count
+  partyKills: number;   // Party hat Enemy getötet
+  enemyKills: number;   // Enemy hat Party getötet
+
+  // HP-Tracking für Start/End Vergleich
+  partyStartHP: number;
+  enemyStartHP: number;
+
   // Combat Protocol
   protocol: CombatProtocolEntry[];
 
@@ -203,6 +323,17 @@ export interface CombatState extends CombatantSimulationState {
 
   // Map Bounds (optional, für Grid-Boundary-Enforcement)
   mapBounds?: { minX: number; maxX: number; minY: number; maxY: number };
+
+  // === ACTIVE ZONES (Spirit Guardians, etc.) ===
+  /** Legacy: Aktive Zonen (Auras, Spell-Effects) - werden bei Movement/Turn-Events evaluiert. */
+  activeZones: ActiveZone[];
+
+  /** NEU: Position-basierte Effekte (Cover, Auras, Zones) - Unified Modifier Architecture */
+  areaEffects: AreaEffect[];
+
+  // === SHARED RESOURCE POOLS (Divine Aid, etc.) ===
+  /** Shared Resource Pools: combatantId → poolId → remaining uses. */
+  resourcePools: Map<string, Map<string, number>>;
 }
 
 // ============================================================================
@@ -214,8 +345,8 @@ export interface HPChange {
   combatantId: string;
   combatantName: string;
   delta: number;  // negativ = Schaden, positiv = Heilung
-  source: 'attack' | 'terrain' | 'reaction' | 'heal' | 'effect';
-  sourceDetail?: string;  // z.B. "fire-damage", "half-cover"
+  source: 'attack' | 'terrain' | 'reaction' | 'heal' | 'effect' | 'zone';
+  sourceDetail?: string;  // z.B. "fire-damage", "zone:spirit-guardians"
 }
 
 /** Angewendeter Modifier während einer Aktion. */
@@ -319,7 +450,7 @@ export interface CellEvaluation {
  * - incomingModifiers: Dodge-ähnliche Aktionen
  */
 export type TurnAction =
-  | { type: 'action'; action: Action; target?: Combatant; fromPosition: GridPosition; targetCell?: GridPosition; score?: number }
+  | { type: 'action'; action: Action; target?: Combatant; position: GridPosition }
   | { type: 'pass' };
 
 /**

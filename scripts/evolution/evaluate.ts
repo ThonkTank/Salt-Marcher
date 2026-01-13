@@ -17,6 +17,7 @@ import creaturesPresets from '../../presets/creatures/index';
 import factionsPresets from '../../presets/factions/index';
 import npcsPresets from '../../presets/npcs/index';
 import charactersPresets from '../../presets/characters/index';
+import encounterPresets from '../../presets/encounters/index';
 
 // Vault initialisieren BEVOR andere Module geladen werden
 const vaultAdapter = new PresetVaultAdapter();
@@ -25,6 +26,7 @@ vaultAdapter.register('creature', creaturesPresets);
 vaultAdapter.register('faction', factionsPresets);
 vaultAdapter.register('npc', npcsPresets);
 vaultAdapter.register('character', charactersPresets);
+vaultAdapter.register('encounter', encounterPresets);
 setVault(vaultAdapter);
 
 // ============================================================================
@@ -43,8 +45,14 @@ import {
   registerCoreModifiers,
 } from '../../src/services/combatantAI';
 
-import { SCENARIOS, QUICK_SCENARIOS, type ScenarioConfig } from './tournament/scenarios';
+import type { AuthoredPreset } from '../../src/types/entities/encounterPreset';
+import { tournamentPresets } from '../../presets/encounters';
 import { runFight, type FightResult } from './tournament/fight';
+
+// Quick-Szenarien für schnelle Evaluation
+const QUICK_PRESETS = tournamentPresets.filter(p =>
+  p.name === '1v1 Melee' || p.name === 'Aura-Cluster'
+);
 import {
   aggregateResults,
   calculateFitnessFromResults,
@@ -63,7 +71,7 @@ interface EvaluateConfig {
   vsPath?: string;
   opponent?: 'greedy' | 'random' | 'all';
   fights: number;
-  scenarios: ScenarioConfig[];
+  scenarios: AuthoredPreset[];
   verbose: boolean;
   compareAll: boolean;
   quick: boolean;
@@ -97,7 +105,7 @@ interface ScenarioBreakdown {
 function parseArgs(argv: string[]): EvaluateConfig {
   const config: EvaluateConfig = {
     fights: 10,
-    scenarios: SCENARIOS,
+    scenarios: tournamentPresets,
     verbose: false,
     compareAll: false,
     quick: false,
@@ -140,7 +148,7 @@ function parseArgs(argv: string[]): EvaluateConfig {
       case '--quick':
       case '-q':
         config.quick = true;
-        config.scenarios = QUICK_SCENARIOS;
+        config.scenarios = QUICK_PRESETS;
         break;
       case '--help':
       case '-h':
@@ -219,7 +227,7 @@ async function loadGenome(genomePath: string): Promise<NEATGenome> {
 function runEvaluation(
   selector: ActionSelector,
   opponent: ActionSelector,
-  scenarios: ScenarioConfig[],
+  scenarios: AuthoredPreset[],
   fightsPerScenario: number,
   verbose: boolean
 ): { results: FightResult[]; breakdown: ScenarioBreakdown[] } {

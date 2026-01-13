@@ -163,6 +163,9 @@ Das gilt für JEDE Arbeit: Code schreiben, Fragen beantworten, Planung, Dokument
 ```
 src/                   # Source code
   application/
+    combatTest/
+      combatTestControl.ts  # Ziel: Svelte Store und UI-Event-Handling fuer Combat Test
+      index.ts  # Ziel: Re-exports fuer Combat Test Application
     sessionControls/
       sessionControl.ts  # Session Control - Svelte-spezifische UI-Schicht
   constants/
@@ -181,6 +184,7 @@ src/                   # Source code
     weather.ts  # Ziel: Konstanten für Weather-Faktor-Generierung
   infrastructure/
     state/
+      combatTestState.ts  # Ziel: State-Container fuer Combat Test ohne Framework-Dep...
       sessionState.ts  # Einfacher State-Container ohne Framework-Dependencies
     vault/
       PresetVaultAdapter.ts  # VaultAdapter-Implementierung für CLI-Testing
@@ -242,7 +246,6 @@ src/                   # Source code
         starSelector.ts  # Ziel: Star1 Selector - Alpha-Beta mit Chance Nodes (Expec...
         types.ts  # Ziel: ActionSelector Interface und Konfiguration für aust...
         ucbSelector.ts  # Ziel: UCB1 Selector - Flat Monte Carlo mit Upper Confiden...
-      expressionEvaluator.ts  # Ziel: Interpreter für Schema-driven Condition Expressions
       index.ts  # Ziel: Public API für CombatantAI-Modul
       schemaModifierAdapter.ts  # Ziel: Adapter von Schema-defined Modifiers zu ModifierEva...
       selectNextAction.ts  # Ziel: Thin wrapper für Combat-AI Action-Selection
@@ -253,11 +256,17 @@ src/                   # Source code
       terrainEffects.ts  # Ziel: Terrain Effect Trigger System für Combat
       terrainMovement.ts  # Ziel: Terrain-aware Pathfinding für Combat AI
     combatTracking/
+      resolution/
+        findTargets.ts  # Ziel: Target-Selection fuer Resolution Pipeline
+        gatherModifiers.ts  # Ziel: Sammelt alle Modifier die eine Aktion beeinflussen
+        getModifiers.ts  # Ziel: Sammelt alle Modifier die eine Aktion beeinflussen
+        index.ts  # Ziel: Re-exports fuer Resolution Pipeline
       combatState.ts  # Ziel: Zentraler Combat State-Container
       executeAction.ts  # Ziel: Action-Ausführung und Protocol-Logging
       index.ts  # Ziel: Combat-Tracking Service Index
       initialiseCombat.ts  # Ziel: Konsolidierte Combat-Initialisierung
       protocolLogger.ts  # Ziel: Einheitliches Logging-Format für CombatProtocolEntry
+      zoneEffects.ts  # Ziel: Zone-Effect Evaluation und Application
     encounterGenerator/
       balancing.ts  # Ziel: Encounter-Gruppen an Ziel-Difficulty anpassen durch...
       difficulty.ts  # Ziel: Difficulty-Berechnung via PMF-basierter Combat-Simu...
@@ -268,6 +277,9 @@ src/                   # Source code
       fillGroups.ts  # Ziel: Gruppen mit NPCs befüllen (kombiniert groupPopulati...
       groupActivity.ts  # Ziel: Activity + Goal für Encounter-Gruppen zuweisen
       groupSeed.ts  # Seed-Kreatur für Encounter auswählen
+    encounterLoader/
+      index.ts  # Ziel: Encounter Loader Service - Preset → CombatState
+      resolvePreset.ts  # Ziel: Preset → EncounterGroup[] Resolution
     gridSpace/
       gridSpace.ts  # Ziel: Grid-State und Positioning für Combat und andere Wo...
       index.ts  # Ziel: Grid-Space Service Index
@@ -290,6 +302,7 @@ src/                   # Source code
       conditionExpression.ts  # Ziel: Schema-driven Expression Language für situative Com...
       creature.ts  # Vault-persistierte CreatureDefinition und Runtime Creatur...
       culture.ts  # Vault-persistierte Culture-Entity
+      encounterPreset.ts  # Ziel: Unified Encounter Preset Schema fuer authored, temp...
       faction.ts  # Vault-persistierte Faction
       goal.ts  # Ziel: Vault-persistierte Goal-Definition
       groupTemplate.ts  # Vault-persistierte GroupTemplate
@@ -305,7 +318,7 @@ src/                   # Source code
       trait.ts  # Vault-persistierte Trait-Definition
     combat.ts  # Ziel: Zentrale Combat-Types für Simulation und Tracking
     combatTerrain.ts  # Ziel: Combat Terrain Types für LOS, Cover, Difficult Terrain
-    encounterTypes.ts  # Encounter-Typen: Runtime-Repräsentation und Trigger für E...
+    encounterTypes.ts  # Encounter-Typen: Sub-Schemas für Encounter-Pipeline und E...
     factionPresence.ts  # Faction-Präsenz auf einem Tile
     hexCoordinate.ts  # Axiale Hex-Koordinaten (q, r)
     loot.ts  # Ziel: Loot-Typen für Budget-Tracking und Item-Auswahl
@@ -315,6 +328,10 @@ src/                   # Source code
     time.ts  # Zeit-Typen für Kalender/Zeit-System
     weather.ts  # Ziel: Faktorbasiertes Weather-System mit Event-Matching
   utils/
+    combatModifiers/
+      expressionEvaluator.ts  # Ziel: Interpreter für Schema-driven Condition Expressions
+      helpers.ts  # Ziel: Gemeinsame Hilfsfunktionen fuer Combat-Modifier-Eva...
+      index.ts  # Ziel: Shared Combat Modifier Utilities
     hexSpace/
       hex.ts  # Hex-Grid Utilities
       index.ts  # Hex Space Utils Index
@@ -337,8 +354,21 @@ src/                   # Source code
     cultureResolution.ts  # Ziel: Culture-Selection und Attribut-Resolution für NPC-G...
     index.ts  # Utils Index
     validation.ts  # Input-Validierung für CLI und Services
+  views/
+    EncounterRunner/
+      components/
+        index.ts  # Ziel: Re-exports fuer EncounterRunner Komponenten
+      tabs/
+        index.ts  # Ziel: Re-exports fuer EncounterRunner Tabs
+      index.ts  # Ziel: Re-exports fuer EncounterRunner View
+    shared/
+      index.ts  # Ziel: Re-exports fuer shared View-Komponenten
+      tooltipHelpers.ts  # Ziel: Schema-Generierungs-Funktionen fuer Tooltips
+      types.ts  # Ziel: Shared TypeScript Interfaces fuer View-Komponenten
   workflows/
+    combatTestWorkflow.ts  # Ziel: Orchestriert Combat Test - Szenario-Laden, AI-Vorsc...
     encounterWorkflow.ts  # Ziel: Encounter generieren lassen, in DetailView anzeigen...
+  main.ts  # Ziel: Obsidian Plugin Entry Point für Salt Marcher
 docs/                  # Authoritative documentation (German)
   architecture/
     constants.md  # D&D-Regeln, Lookup-Tabellen und Pure Utility Functions
@@ -369,7 +399,8 @@ docs/                  # Authoritative documentation (German)
     influence-map-implementation.md  # ✅ Abgeschlossen (2026-01-06)
     pmf-combat-convergence-bug.md  # ## Problem
   orchestration/
-    CombatWorkflow.md  # Orchestration des Combat-Trackers
+    CombatTestWorkflow.md  # Orchestriert Combat-Test UI - Szenario-Laden, AI-Vorschla...
+    CombatWorkflow.md  # Orchestration des Combat-Trackers + State-Mutation
     EncounterWorkflow.md  # Orchestration der Encounter-Generierung und -Resolution
     RestWorkflow.md  # Orchestration von Short/Long Rest
     SessionState.md  # State-Container fuer alle In-Session-Daten
@@ -393,6 +424,15 @@ docs/                  # Authoritative documentation (German)
       planNextAction.md  # Entry Point und Orchestration der Action-Selection
       scoreAction.md  # DPR-basierte Aktionsbewertung + situative Modifier-Anwendung
       simulationState.md  # Hypothetisches State-Management fuer AI Look-Ahead
+    combatTracking/
+      actionResolution.md  # Einheitliche Resolution aller Combat-Aktionen (aktiv, Zon...
+      combatTracking.md  # Combat Resolution (READ-ONLY)
+      determineSuccess.md  # Wuerfel-Resolution fuer Combat-Aktionen
+      findTargets.md  # Ziel-Auswahl fuer Combat-Aktionen
+      gatherModifiers.md  # Sammelt alle Modifier die eine Aktion beeinflussen
+      movement.md  # Movement-Execution und Budget-Tracking im Combat
+      resolveEffects.md  # Berechnet die Effekte einer Aktion basierend auf Success-...
+      triggers.md  # Bestimmt WANN die Resolution-Pipeline aufgerufen wird
     encounter/
       balancing.md  # Encounter-Service (Step 6.1)
       difficulty.md  # Encounter-Service (Step 5)
@@ -407,7 +447,6 @@ docs/                  # Authoritative documentation (German)
       NPC-Generation.md  # Automatische NPC-Generierung
       NPC-Matching.md  # Existierenden NPC finden
       NPCs.md  # NPC-Management fuer Encounters, Quests und POIs
-    combatTracking.md  # Combat State-Management und Action-Resolution
     gridSpace.md  # Grid-State und Positioning für Combat und andere Workmodes
     Inventory.md  # [Item](../entities/item.md), [Character-System](../featur...
     Loot.md  # [Item](../entities/item.md), [Encounter-System](encounter...
@@ -444,10 +483,17 @@ docs/                  # Authoritative documentation (German)
     grid.md  # Square-cell Grid-Operationen fuer Combat und Dungeon-Maps
     pmf.md  # Wahrscheinlichkeitsverteilungen für Combat-Simulation
   views/
+    EncounterRunner/
+      ChaseTab.md  # [EncounterRunner](../EncounterRunner.md)
+      CombatTab.md  # [EncounterRunner](../EncounterRunner.md)
+      SocialTab.md  # [EncounterRunner](../EncounterRunner.md)
     Cartographer.md  # [Map-Feature](../features/Map-Feature.md), [Map](../entit...
     DetailView.md  # [Application](../architecture/Application.md), [SessionRu...
+    EncounterRunner.md  # Session-View fuer aktive Encounters aller Typen (Combat, ...
     Library.md  # [EntityRegistry](../architecture/EntityRegistry.md), [App...
     SessionRunner.md  # [Orchestration.md](../architecture/Orchestration.md)
+    shared.md  # View-uebergreifende UI-Komponenten fuer Grid-Rendering un...
+    Tooltip.md  # View-übergreifendes Popup-System für kontextuelle Hilfe u...
   Example-Workflows.md  # [Data-Flow.md](architecture/Data-Flow.md), [Features.md](...
 presets/               # Fixture data (maps, terrains)
 Archive/               # Previous Alpha implementations - reference only

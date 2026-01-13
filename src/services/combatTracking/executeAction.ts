@@ -109,6 +109,18 @@ import { wouldTriggerReaction, findReactionLayers } from '@/services/combatantAI
 import { getReachableCellsWithTerrain } from '../combatTerrain/terrainMovement';
 import { applyTerrainEffects } from '../combatTerrain/terrainEffects';
 import { positionsEqual } from '@/utils/squareSpace/grid';
+import {
+  applyZoneEffects,
+  resetZoneTriggersForCombatant,
+  createActiveZone,
+  activateZone,
+} from './zoneEffects';
+import { setConcentration } from './combatState';
+import {
+  gatherModifiers,
+  type ModifierSet,
+  type GatherModifiersContext,
+} from './resolution/gatherModifiers';
 
 // ============================================================================
 // DEBUG HELPER
@@ -306,39 +318,77 @@ function applyBudgetCosts(
  * Resolves a single attack action against a target.
  * Supports both single attacks and multiattack.
  * Resolves baseAction references (OA etc.) before processing.
+ *
+ * @param modifiers Optional ModifierSet from gatherModifiers()
  */
 export function resolveAttack(
   attacker: Combatant,
   target: Combatant,
   action: Action,
-  acBonus?: number
+  modifiers?: ModifierSet
 ): AttackResolution | null {
   // Resolve baseAction (für OA etc.) - übernimmt attack/damage von Basis-Action
   const resolvedAction = resolveActionWithBase(action, getActions(attacker));
 
   let effectiveDamage: ProbabilityDistribution;
-  const targetAC = getAC(target) + (acBonus ?? 0);
+  const targetAC = getAC(target) + (modifiers?.targetACBonus ?? 0);
+  const attackBonus = (resolvedAction.attack?.bonus ?? 0) + (modifiers?.attackBonus ?? 0);
+  const damageBonus = modifiers?.damageBonus ?? 0;
 
   if (resolvedAction.multiattack) {
+    // Note: multiattack damage calculation already considers hit chance internally
+    // We add attackBonus but AC is already passed in
     const multiDamage = calculateMultiattackDamage(resolvedAction, getActions(attacker), targetAC);
     if (!multiDamage) {
       debug('resolveAttack: multiattack has no valid refs', { actionName: resolvedAction.name });
       return null;
     }
     effectiveDamage = multiDamage;
+    // Add damage bonus if any
+    if (damageBonus !== 0) {
+      effectiveDamage = addConstant(effectiveDamage, damageBonus);
+    }
   } else {
     if (!resolvedAction.attack) {
       debug('resolveAttack: action has no attack', { actionName: resolvedAction.name });
       return null;
     }
 
-    const baseDamage = calculateBaseDamagePMF(resolvedAction);
+    let baseDamage = calculateBaseDamagePMF(resolvedAction);
     if (!baseDamage) {
       debug('resolveAttack: action has no damage', { actionName: resolvedAction.name });
       return null;
     }
 
-    const hitChance = calculateHitChance(resolvedAction.attack.bonus, targetAC);
+    // Add damage bonus from modifiers
+    if (damageBonus !== 0) {
+      baseDamage = addConstant(baseDamage, damageBonus);
+    }
+
+    // Calculate hit chance with attack bonus from modifiers
+    let hitChance = calculateHitChance(attackBonus, targetAC);
+
+    // Apply advantage/disadvantage effect on hit chance
+    if (modifiers?.attackAdvantage === 'advantage') {
+      // P(hit with adv) = 1 - (1 - P(hit))^2
+      hitChance = 1 - Math.pow(1 - hitChance, 2);
+    } else if (modifiers?.attackAdvantage === 'disadvantage') {
+      // P(hit with disadv) = P(hit)^2
+      hitChance = Math.pow(hitChance, 2);
+    }
+
+    // Auto-crit handling (hits on hit, always crits)
+    if (modifiers?.hasAutoCrit) {
+      // For simplicity, treat auto-crit as guaranteed hit with double dice
+      // Full crit implementation would double damage dice only
+      hitChance = 1.0;
+    }
+
+    // Auto-miss handling
+    if (modifiers?.hasAutoMiss) {
+      hitChance = 0.0;
+    }
+
     const conditionProb = getIncapacitatingProbability(attacker);
     effectiveDamage = calculateEffectiveDamage(
       baseDamage,
@@ -954,15 +1004,50 @@ export function resolveAttackWithReactions(
   };
   const attackedReactions = processReactionTrigger(attackedTrigger, state, budgets);
 
-  const targetACBonus = attackedReactions.reduce((total, result) => {
+  // Collect AC bonus from reactions (e.g., Shield)
+  const reactionACBonus = attackedReactions.reduce((total, result) => {
     if (result.executed && result.effect?.acBonus) {
       return total + result.effect.acBonus;
     }
     return total;
   }, 0);
 
-  // Phase 2: Attack Resolution
-  const baseResolution = resolveAttack(attacker, target, action, targetACBonus);
+  // Gather all modifiers from combatTracking
+  const gatherCtx: GatherModifiersContext = {
+    actor: attacker,
+    action,
+    state: state as unknown as CombatState,
+  };
+  const targetResult = {
+    targets: [target],
+    isAoE: false,
+    primaryTarget: target,
+  };
+  const modifierSets = gatherModifiers(gatherCtx, targetResult);
+  const baseModifiers = modifierSets[0] ?? {
+    attackAdvantage: 'none' as const,
+    attackBonus: 0,
+    targetACBonus: 0,
+    saveAdvantage: 'none' as const,
+    saveBonus: 0,
+    damageBonus: 0,
+    hasAutoCrit: false,
+    hasAutoMiss: false,
+    sources: [],
+  };
+
+  // Merge reaction AC bonus with gathered modifiers
+  const reactionSources = attackedReactions
+    .filter(r => r.executed && r.reaction)
+    .map(r => `reaction:${r.reaction!.id}`);
+  const mergedModifiers: ModifierSet = {
+    ...baseModifiers,
+    targetACBonus: baseModifiers.targetACBonus + reactionACBonus,
+    sources: [...baseModifiers.sources, ...reactionSources],
+  };
+
+  // Phase 2: Attack Resolution with full modifiers
+  const baseResolution = resolveAttack(attacker, target, action, mergedModifiers);
   if (!baseResolution) return null;
 
   const attackHit = baseResolution.damageDealt > 0;
@@ -985,7 +1070,7 @@ export function resolveAttackWithReactions(
     attackedReactions,
     damagedReactions,
     attackHit,
-    targetACBonus,
+    targetACBonus: mergedModifiers.targetACBonus,
   };
 }
 
@@ -1392,11 +1477,11 @@ export function executeAction(
 
   switch (action.type) {
     case 'action': {
-      // 1. Movement zu fromPosition (wenn unterschiedlich) - MIT OA-CHECKS
+      // 1. Movement zu position (wenn unterschiedlich) - MIT OA-CHECKS
       const currentPos = getPosition(combatant);
-      const needsMovement = action.fromPosition.x !== currentPos.x ||
-          action.fromPosition.y !== currentPos.y ||
-          action.fromPosition.z !== currentPos.z;
+      const needsMovement = action.position.x !== currentPos.x ||
+          action.position.y !== currentPos.y ||
+          action.position.z !== currentPos.z;
 
       if (needsMovement) {
         // Prüfe ob Disengage aktiv ist (noOpportunityAttacks aus movementBehavior)
@@ -1405,7 +1490,7 @@ export function executeAction(
         ) ?? false;
 
         // === OA-CHECKS vor Bewegung ===
-        const movementResult = executeMovement(combatant, action.fromPosition, state, hasDisengage);
+        const movementResult = executeMovement(combatant, action.position, state, hasDisengage);
 
         // OA-Schaden tracken
         if (movementResult.damageReceived > 0) {
@@ -1460,13 +1545,20 @@ export function executeAction(
         const leaveResult = applyTerrainEffects(combatant, currentPos, 'on-leave', state);
         hpChanges.push(...leaveResult.hpChanges);
 
-        const moveCost = getDistance(currentPos, action.fromPosition);
-        setPosition(combatant, action.fromPosition, state);
+        const moveCost = getDistance(currentPos, action.position);
+        setPosition(combatant, action.position, state);
         budget.movementCells = Math.max(0, budget.movementCells - moveCost);
 
         // === TERRAIN EFFECTS: on-enter ===
-        const enterResult = applyTerrainEffects(combatant, action.fromPosition, 'on-enter', state);
+        const enterResult = applyTerrainEffects(combatant, action.position, 'on-enter', state);
         hpChanges.push(...enterResult.hpChanges);
+
+        // === ZONE EFFECTS: on-enter (Spirit Guardians, etc.) ===
+        const zoneEnterResult = applyZoneEffects(combatant, 'on-enter', state);
+        hpChanges.push(...zoneEnterResult.hpChanges);
+        if (zoneEnterResult.conditionsApplied.length > 0) {
+          notes.push(`Zone-Conditions: ${zoneEnterResult.conditionsApplied.join(', ')}`);
+        }
       }
 
       // 2. Budget konsumieren (Legacy-Pfad für Actions ohne budgetCosts)
@@ -1488,7 +1580,9 @@ export function executeAction(
         if (grant) {
           budget.movementCells += calculateGrantedMovement(grant, budget);
         }
-        applyBudgetCosts(action.action.budgetCosts, budget, combatant, action.targetCell, state);
+        // targetCell wird aus target.combatState.position abgeleitet wenn vorhanden
+        const targetCell = action.target ? getPosition(action.target) : undefined;
+        applyBudgetCosts(action.action.budgetCosts, budget, combatant, targetCell, state);
       }
 
       // 3. Action Resolution basierend auf Typ
@@ -1576,9 +1670,31 @@ export function executeAction(
             // Death Probability tracken
             targetDeathProbability = resolution.newDeathProbability;
 
-            // Kill-Note hinzufügen
+            // Hit/Miss-Tracking
+            const attackerGroupId = combatant.combatState.groupId;
+            const attackerIsPartyAlly = attackerGroupId === 'party' ||
+              (state.alliances['party']?.includes(attackerGroupId) ?? false);
+            if (attackerIsPartyAlly) {
+              if (resolution.attackHit) state.partyHits++;
+              else state.partyMisses++;
+            } else {
+              if (resolution.attackHit) state.enemyHits++;
+              else state.enemyMisses++;
+            }
+
+            // Kill-Note und Kill-Tracking
             if (resolution.newDeathProbability > 0.95) {
               notes.push(`${action.target.name} besiegt`);
+
+              // Kill-Tracking: Wer wurde getötet?
+              const targetGroupId = action.target.combatState.groupId;
+              const targetIsPartyAlly = targetGroupId === 'party' ||
+                (state.alliances['party']?.includes(targetGroupId) ?? false);
+              if (targetIsPartyAlly) {
+                state.enemyKills++;  // Enemy hat Party-Member getötet
+              } else {
+                state.partyKills++;  // Party hat Enemy getötet
+              }
             }
 
             // === CONDITION RESOLUTION ===
@@ -1666,6 +1782,46 @@ export function executeAction(
             const saveInfo = cc.saveDC ? ` (DC ${cc.saveDC})` : '';
             notes.push(`${cc.combatantName} erhält ${cc.condition}${saveInfo}`);
           }
+
+          // 3d. Break Concentration (Dispel Magic)
+          for (const effect of action.action.effects) {
+            if (effect.breakConcentration && action.target.combatState.concentratingOn) {
+              const prevSpell = action.target.combatState.concentratingOn;
+              setConcentration(action.target, undefined, state);
+              notes.push(`${action.target.name}: Concentration gebrochen (${prevSpell})`);
+
+              debug('breakConcentration:', {
+                target: action.target.name,
+                prevSpell,
+              });
+            }
+          }
+        }
+      }
+
+      // 4. Zone Activation (Spirit Guardians, etc.)
+      // Wenn Action Zone-Effects hat, aktiviere diese als Active Zone
+      if (action.action.effects) {
+        for (const effect of action.action.effects) {
+          if (effect.zone) {
+            // Concentration-Check: Vorherige Concentration beenden
+            if (action.action.concentration) {
+              setConcentration(combatant, action.action.id, state);
+            }
+
+            // Zone aktivieren
+            const zone = createActiveZone(combatant.id, action.action.id ?? 'unknown', effect);
+            activateZone(state, zone);
+            notes.push(`${action.action.name}: Zone aktiviert (${effect.zone.radius}ft Radius)`);
+
+            debug('zone activated:', {
+              combatant: combatant.name,
+              action: action.action.name,
+              radius: effect.zone.radius,
+              trigger: effect.trigger,
+              targetFilter: effect.zone.targetFilter,
+            });
+          }
         }
       }
       break;
@@ -1687,12 +1843,25 @@ export function executeAction(
       // Turn beenden - zum nächsten Combatant wechseln
       advanceTurn(state);
 
-      // === TERRAIN EFFECTS: on-start-turn (für nächsten Combatant) ===
+      // === TERRAIN EFFECTS & ZONE EFFECTS: on-start-turn (für nächsten Combatant) ===
       // NOTE: Diese Effects gehören zum nächsten Combatant, nicht zu diesem Protocol-Eintrag
       const nextCombatant = getCurrentCombatant(state);
       if (nextCombatant && !nextCombatant.combatState.isDead) {
+        // Reset Zone-Triggers für neuen Combatant (erlaubt neuen Trigger pro Turn)
+        resetZoneTriggersForCombatant(state, nextCombatant.id);
+
+        // Terrain Effects
         applyTerrainEffects(nextCombatant, getPosition(nextCombatant), 'on-start-turn', state);
+
+        // Zone Effects (Spirit Guardians etc.)
+        const zoneStartResult = applyZoneEffects(nextCombatant, 'on-start-turn', state);
         // hpChanges für start-turn werden im nächsten executeAction geloggt
+        // Aber Zone-Damage ist sofort relevant - wird hier nicht geloggt (TODO: separate Protocol-Entry)
+        debug('zone effects on turn start:', {
+          combatant: nextCombatant.name,
+          damage: zoneStartResult.hpChanges.reduce((sum, c) => sum + Math.abs(c.delta), 0),
+          conditions: zoneStartResult.conditionsApplied,
+        });
       }
       break;
     }

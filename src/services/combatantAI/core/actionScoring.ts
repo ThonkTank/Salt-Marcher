@@ -71,13 +71,12 @@ import {
   getDistance,
   isAllied,
   calculateHitChance,
-  calculateMultiattackDamage,
 } from '../helpers/combatHelpers';
 import {
   evaluateSituationalModifiers,
   type SituationalModifiers,
 } from '../situationalModifiers';
-import { combatantToCombatantContext } from '../expressionEvaluator';
+import { combatantToCombatantContext } from '@/utils/combatModifiers';
 // Note: Core modifiers are registered in combatantAI/index.ts to avoid circular dependencies
 
 // ============================================================================
@@ -396,16 +395,7 @@ export function calculatePairScore(
     return null;
   }
 
-  // Multiattack: Separate Logik (kombinierte PMF)
-  if (resolvedAction.multiattack) {
-    const multiDamage = calculateMultiattackDamage(resolvedAction, attackerActions, targetAC);
-    if (!multiDamage) return null;
-    const score = getExpectedValue(multiDamage);
-    debug('calculatePairScore (multiattack):', { actionName: resolvedAction.name, score });
-    return { action, target, score, intent: 'damage' };
-  }
-
-  // Situational Modifiers evaluieren
+  // Situational Modifiers evaluieren (auch für Multiattack benötigt)
   let modifiers: SituationalModifiers | undefined;
   if (state) {
     modifiers = evaluateSituationalModifiers({
@@ -419,12 +409,43 @@ export function calculatePairScore(
     });
   }
 
-  // ========================================
-  // EFFEKT-SUMMIERUNG (statt Intent-Routing)
-  // ========================================
-  let score = 0;
+  // Multiattack: Aggregiere Scores der Ref-Actions via scoreSingleAction()
+  if (resolvedAction.multiattack) {
+    const refs = resolveMultiattackRefs(resolvedAction, attackerActions);
+    let totalScore = 0;
 
-  // 0. Escape Action Scoring (für dynamisch generierte escape-* Actions)
+    // Jede Ref-Action durch existierende Scoring-Logik jagen
+    for (const entry of resolvedAction.multiattack.attacks) {
+      const refAction = refs.find(r => r.name === entry.actionRef);
+      if (!refAction) continue;
+
+      const count = entry.count ?? 1;
+      const refScore = scoreSingleAction(attacker, refAction, target, state, modifiers);
+      totalScore += refScore * count;
+    }
+
+    // Multiattack-Level Effects (falls vorhanden, z.B. Bleed auf Multiattack-Level)
+    for (const effect of resolvedAction.effects ?? []) {
+      totalScore += scoreEffect(effect, resolvedAction, target, state);
+    }
+
+    // Multiattack-Level Concentration (falls Multiattack selbst Concentration hat)
+    if (state && isConcentrationSpell(resolvedAction)) {
+      totalScore -= getConcentrationSwitchCost(attacker, state);
+    }
+
+    if (totalScore === 0) return null;
+
+    const intent = getActionIntent(resolvedAction);
+    debug('calculatePairScore (multiattack):', { actionName: resolvedAction.name, score: totalScore, intent });
+    return { action, target, score: totalScore, intent };
+  }
+
+  // ========================================
+  // SINGLE ACTION SCORING
+  // ========================================
+
+  // 0. Escape Action Scoring (Spezialfall: dynamisch generierte escape-* Actions)
   if (resolvedAction._escapeCondition && state) {
     const escapeScore = scoreEscapeAction(attacker, resolvedAction, state);
     if (escapeScore !== null) {
@@ -438,34 +459,16 @@ export function calculatePairScore(
     return null;  // Escape not applicable
   }
 
-  // 1. Damage Component (use resolved stats)
-  if (resolvedAction.damage) {
-    score += scoreDamageComponent(resolvedAction, target, modifiers);
-  }
+  // 1. Standard-Scoring via scoreSingleAction() (Damage, Healing, Effects, Concentration)
+  let score = scoreSingleAction(attacker, resolvedAction, target, state, modifiers);
 
-  // 2. Healing Component
-  if (resolvedAction.healing && state) {
-    score += scoreHealingComponent(resolvedAction, target, state);
-  }
-
-  // 3. Effects (Conditions, Buffs, etc.)
-  for (const effect of resolvedAction.effects ?? []) {
-    score += scoreEffect(effect, resolvedAction, target, state);
-  }
-
-  // 4. Counter (Counterspell)
+  // 2. Reaction-spezifische Komponenten (benötigen triggerContext)
   if (resolvedAction.counter && triggerContext?.spellLevel !== undefined) {
     score += scoreCounterComponent(resolvedAction, triggerContext);
   }
 
-  // 5. Trigger-Response (Shield auf incoming attack)
   if (triggerContext?.action && !resolvedAction.damage && hasACBuff(resolvedAction)) {
     score += scoreTriggerResponse(resolvedAction, triggerContext, attacker);
-  }
-
-  // 6. Concentration-Switch-Kosten
-  if (state && isConcentrationSpell(resolvedAction)) {
-    score -= getConcentrationSwitchCost(attacker, state);
   }
 
   if (score === 0) {
@@ -473,7 +476,7 @@ export function calculatePairScore(
     return null;
   }
 
-  const intent = getActionIntent(resolvedAction);  // Für Logging/Metadata
+  const intent = getActionIntent(resolvedAction);
   debug('calculatePairScore:', { actionName: resolvedAction.name, intent, score, hasBaseAction: !!action.baseAction });
 
   return { action, target, score, intent };
@@ -482,6 +485,47 @@ export function calculatePairScore(
 // ============================================================================
 // SCORE COMPONENTS
 // ============================================================================
+
+/**
+ * Scored eine einzelne (nicht-multiattack) Action gegen ein Target.
+ * Enthält: Damage, Healing, Effects, Concentration.
+ *
+ * Diese Funktion wird sowohl für standalone Actions als auch für
+ * Ref-Actions innerhalb von Multiattacks verwendet.
+ *
+ * @returns Score in DPR-Skala (0 wenn keine Effekte)
+ */
+function scoreSingleAction(
+  attacker: Combatant,
+  action: Action,
+  target: Combatant,
+  state: CombatantSimulationState | undefined,
+  modifiers: SituationalModifiers | undefined
+): number {
+  let score = 0;
+
+  // 1. Damage Component
+  if (action.damage) {
+    score += scoreDamageComponent(action, target, modifiers);
+  }
+
+  // 2. Healing Component
+  if (action.healing && state) {
+    score += scoreHealingComponent(action, target, state);
+  }
+
+  // 3. Effects (Conditions, Buffs, etc.)
+  for (const effect of action.effects ?? []) {
+    score += scoreEffect(effect, action, target, state);
+  }
+
+  // 4. Concentration-Switch-Kosten
+  if (state && isConcentrationSpell(action)) {
+    score -= getConcentrationSwitchCost(attacker, state);
+  }
+
+  return score;
+}
 
 /**
  * Escape-Score: conditionSeverity × successProb × timingMultiplier

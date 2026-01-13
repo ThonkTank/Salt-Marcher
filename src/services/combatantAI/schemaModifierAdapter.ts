@@ -11,7 +11,8 @@
 
 import type { SchemaModifier, SchemaModifierEffect } from '@/types/entities/conditionExpression';
 import type { ModifierContext, ModifierEvaluator, ModifierEffect } from './situationalModifiers';
-import { evaluateCondition, createEvaluationContext } from './expressionEvaluator';
+import { evaluateCondition, createEvaluationContext } from '@/utils/combatModifiers';
+import { diceExpressionToPMF, getExpectedValue } from '@/utils/probability';
 
 // ============================================================================
 // DEBUG
@@ -51,9 +52,14 @@ function convertEffect(schemaEffect: SchemaModifierEffect): ModifierEffect {
     if (typeof schemaEffect.damageBonus === 'number') {
       effect.damageBonus = schemaEffect.damageBonus;
     } else {
-      // TODO: Implement dice expression evaluation for damageBonus
-      // For now, log warning and skip
-      debug('damageBonus dice expression not yet supported:', schemaEffect.damageBonus);
+      // Parse dice expression and use expected value for scoring
+      try {
+        const pmf = diceExpressionToPMF(schemaEffect.damageBonus);
+        effect.damageBonus = getExpectedValue(pmf);
+        debug('damageBonus dice expression:', schemaEffect.damageBonus, '→ avg:', effect.damageBonus);
+      } catch (e) {
+        debug('Failed to parse damageBonus dice expression:', schemaEffect.damageBonus, e);
+      }
     }
   }
   if (schemaEffect.autoCrit !== undefined) {

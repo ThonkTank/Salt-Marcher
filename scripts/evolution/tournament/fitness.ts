@@ -27,6 +27,23 @@ export interface FightStatistics {
   avgSurvivors: number;
   /** Anzahl Kämpfe */
   totalFights: number;
+
+  // === Erweiterte Statistiken (für Diagnose) ===
+
+  /** Anzahl Treffer */
+  totalHits: number;
+  /** Anzahl Fehlschläge */
+  totalMisses: number;
+  /** Trefferquote (0-1) */
+  hitRate: number;
+  /** Anzahl Kills */
+  totalKills: number;
+  /** Anzahl Deaths */
+  totalDeaths: number;
+  /** Durchschnittlicher HP-Verlust in Prozent (0-1) */
+  avgHPLostPercent: number;
+  /** Durchschnittlicher Enemy HP-Verlust in Prozent (0-1) */
+  avgEnemyHPLostPercent: number;
 }
 
 // ============================================================================
@@ -76,11 +93,23 @@ export function aggregateResults(results: FightResult[]): FightStatistics {
       totalDamageReceived: 0,
       avgSurvivors: 0,
       totalFights: 0,
+      // Erweiterte Statistiken
+      totalHits: 0,
+      totalMisses: 0,
+      hitRate: 0,
+      totalKills: 0,
+      totalDeaths: 0,
+      avgHPLostPercent: 0,
+      avgEnemyHPLostPercent: 0,
     };
   }
 
   let wins = 0, losses = 0, draws = 0;
   let totalRounds = 0, totalDealt = 0, totalReceived = 0, totalSurvivors = 0;
+  // Erweiterte Zähler
+  let totalHits = 0, totalMisses = 0;
+  let totalKills = 0, totalDeaths = 0;
+  let totalHPLostPercent = 0, totalEnemyHPLostPercent = 0;
 
   for (const r of results) {
     if (r.winner === 'party') wins++;
@@ -91,9 +120,25 @@ export function aggregateResults(results: FightResult[]): FightStatistics {
     totalDealt += r.partyDamageDealt;
     totalReceived += r.partyDamageReceived;
     totalSurvivors += r.partySurvivors;
+
+    // Erweiterte Statistiken aggregieren
+    totalHits += r.partyHits;
+    totalMisses += r.partyMisses;
+    totalKills += r.partyKills;
+    totalDeaths += r.enemyKills;  // Enemy kills = Party deaths
+
+    // HP-Lost Prozent (sicher gegen Division durch 0)
+    if (r.partyStartHP > 0) {
+      totalHPLostPercent += (r.partyStartHP - r.partyEndHP) / r.partyStartHP;
+    }
+    if (r.enemyStartHP > 0) {
+      totalEnemyHPLostPercent += (r.enemyStartHP - r.enemyEndHP) / r.enemyStartHP;
+    }
   }
 
   const n = results.length;
+  const totalAttempts = totalHits + totalMisses;
+
   return {
     wins,
     losses,
@@ -103,6 +148,14 @@ export function aggregateResults(results: FightResult[]): FightStatistics {
     totalDamageReceived: totalReceived,
     avgSurvivors: totalSurvivors / n,
     totalFights: n,
+    // Erweiterte Statistiken
+    totalHits,
+    totalMisses,
+    hitRate: totalAttempts > 0 ? totalHits / totalAttempts : 0,
+    totalKills,
+    totalDeaths,
+    avgHPLostPercent: totalHPLostPercent / n,
+    avgEnemyHPLostPercent: totalEnemyHPLostPercent / n,
   };
 }
 

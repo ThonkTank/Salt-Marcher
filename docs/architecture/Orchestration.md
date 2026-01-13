@@ -74,6 +74,7 @@ Workflows sind **Thin Orchestration** - sie koordinieren, transformieren aber ni
 | **Encounter** | idle → preview → active → resolving → idle | Encounter-Check waehrend Travel |
 | **Combat** | idle → active → idle | GM startet Combat aus Encounter |
 | **Rest** | idle → resting ↔ paused → idle | GM startet Short/Long Rest |
+| **CombatTest** | idle → active → idle | UI-Szenario-Auswahl (AI-Testing) |
 
 Workflows koennen sich gegenseitig unterbrechen:
 - Travel → Encounter (automatisch bei Check)
@@ -154,6 +155,7 @@ Detaillierte Spezifikationen unter `docs/orchestration/`:
 | [EncounterWorkflow.md](../orchestration/EncounterWorkflow.md) | Encounter-Generierung, Preview, Resolution |
 | [CombatWorkflow.md](../orchestration/CombatWorkflow.md) | Combat-Start, Zug-Verwaltung, Ende |
 | [RestWorkflow.md](../orchestration/RestWorkflow.md) | Short/Long Rest, Unterbrechung |
+| [CombatTestWorkflow.md](../orchestration/CombatTestWorkflow.md) | Combat-Test UI, AI-Vorschlaege |
 
 ---
 

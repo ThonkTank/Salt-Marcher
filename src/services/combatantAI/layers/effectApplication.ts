@@ -18,7 +18,7 @@ import { getExpectedValue, calculateEffectiveDamage, positionToKey } from '@/uti
 import { calculateCover, maxCover, type CoverLevel } from '@/utils/squareSpace/gridLineOfSight';
 import { getBaseResolution } from './baseResolution';
 import { evaluateSituationalModifiers } from '../situationalModifiers';
-import { combatantToCombatantContext } from '../expressionEvaluator';
+import { combatantToCombatantContext } from '@/utils/combatModifiers';
 import { calculateHitChance } from '../helpers/combatHelpers';
 import { getGroupId, getPosition, getAC, getConditions, getHP } from '../../combatTracking';
 

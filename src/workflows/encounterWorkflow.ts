@@ -10,7 +10,7 @@ import { getState, updateState } from '@/infrastructure/state/sessionState';
 import { vault } from '@/infrastructure/vault/vaultInstance';
 
 // Typen
-import type { EncounterInstance } from '#types/encounterTypes';
+import type { EmbeddedPreset } from '@/types/entities/encounterPreset';
 import type { EncounterTrigger } from '@/constants/encounter';
 import type { NPC } from '#types/entities/npc';
 import type { HexCoordinate } from '#types/hexCoordinate';
@@ -139,7 +139,7 @@ export function checkEncounter(trigger: EncounterTrigger, forceEncounter = false
 /**
  * Baut CombatParticipants aus Encounter und Party.
  */
-function buildParticipants(encounter: EncounterInstance): CombatParticipant[] {
+function buildParticipants(encounter: EmbeddedPreset): CombatParticipant[] {
   const state = getState();
   const participants: CombatParticipant[] = [];
 
@@ -187,7 +187,7 @@ function buildParticipants(encounter: EncounterInstance): CombatParticipant[] {
  * Siehe: docs/services/NPCs/NPC-Matching.md#nach-erfolgreichem-match
  */
 function updateNPCTracking(
-  encounter: EncounterInstance,
+  encounter: EmbeddedPreset,
   position: HexCoordinate,
   time: GameDateTime
 ): void {

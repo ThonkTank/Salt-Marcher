@@ -17,6 +17,7 @@ import creaturesPresets from '../../../presets/creatures/index';
 import factionsPresets from '../../../presets/factions/index';
 import npcsPresets from '../../../presets/npcs/index';
 import charactersPresets from '../../../presets/characters/index';
+import encounterPresets from '../../../presets/encounters/index';
 
 // Vault initialisieren BEVOR andere Module geladen werden
 const vaultAdapter = new PresetVaultAdapter();
@@ -25,6 +26,7 @@ vaultAdapter.register('creature', creaturesPresets);
 vaultAdapter.register('faction', factionsPresets);
 vaultAdapter.register('npc', npcsPresets);
 vaultAdapter.register('character', charactersPresets);
+vaultAdapter.register('encounter', encounterPresets);
 setVault(vaultAdapter);
 
 // ============================================================================
@@ -39,10 +41,18 @@ import {
   registerCoreModifiers,
 } from '../../../src/services/combatantAI';
 
-import type { ScenarioConfig } from './scenarios';
-import { SCENARIOS, QUICK_SCENARIOS, getRandomScenarios } from './scenarios';
+import type { EncounterPreset, AuthoredPreset } from '../../../src/types/entities/encounterPreset';
+import {
+  tournamentPresets,
+  getTournamentPresetById,
+} from '../../../presets/encounters';
 import type { FightResult } from './fight';
 import { runFight } from './fight';
+
+// Quick-Szenarien für schnelle Evaluation (Subset der Tournament-Presets)
+const QUICK_PRESETS = tournamentPresets.filter(p =>
+  p.name === '1v1 Melee' || p.name === 'Aura-Cluster'
+);
 import {
   calculateFitnessFromResults,
   aggregateResults,
@@ -66,8 +76,8 @@ export type OpponentSpec = NEATGenome | 'greedy' | 'random';
  * Konfiguration für ein Tournament.
  */
 export interface TournamentConfig {
-  /** Szenarien für Kämpfe (default: alle SCENARIOS) */
-  scenarios: ScenarioConfig[];
+  /** Szenarien für Kämpfe (default: alle tournamentPresets) */
+  scenarios: AuthoredPreset[];
   /** Anzahl Kämpfe pro Genome (default: 5) */
   fightsPerGenome: number;
   /** Maximale Runden pro Kampf (default: 50) */
@@ -86,7 +96,7 @@ export interface TournamentConfig {
  * Standard-Tournament-Konfiguration.
  */
 export const DEFAULT_TOURNAMENT_CONFIG: TournamentConfig = {
-  scenarios: SCENARIOS,
+  scenarios: tournamentPresets,
   fightsPerGenome: 5,
   maxRounds: 50,
   selfPlayRatio: 0.5,
@@ -121,6 +131,23 @@ export interface GenomeEvaluation {
   totalFights: number;
   /** Zeit für Evaluation in ms */
   evalTimeMs: number;
+
+  // === Erweiterte Statistiken ===
+
+  /** Anzahl Treffer */
+  totalHits: number;
+  /** Anzahl Fehlschläge */
+  totalMisses: number;
+  /** Trefferquote (0-1) */
+  hitRate: number;
+  /** Anzahl Kills */
+  totalKills: number;
+  /** Anzahl Deaths */
+  totalDeaths: number;
+  /** Durchschnittlicher HP-Verlust (0-1) */
+  avgHPLostPercent: number;
+  /** Durchschnittlicher Enemy HP-Verlust (0-1) */
+  avgEnemyHPLostPercent: number;
 }
 
 /**
@@ -251,6 +278,17 @@ export function evaluateGenome(
           enemySurvivors: result.partySurvivors,
           partyActions: result.enemyActions,
           enemyActions: result.partyActions,
+          // Erweiterte Statistiken spiegeln
+          partyHits: result.enemyHits,
+          partyMisses: result.enemyMisses,
+          enemyHits: result.partyHits,
+          enemyMisses: result.partyMisses,
+          partyKills: result.enemyKills,
+          enemyKills: result.partyKills,
+          partyStartHP: result.enemyStartHP,
+          partyEndHP: result.enemyEndHP,
+          enemyStartHP: result.partyStartHP,
+          enemyEndHP: result.partyEndHP,
         };
 
     allResults.push(adjustedResult);
@@ -272,6 +310,14 @@ export function evaluateGenome(
     avgSurvivors: stats.avgSurvivors,
     totalFights: stats.totalFights,
     evalTimeMs,
+    // Erweiterte Statistiken
+    totalHits: stats.totalHits,
+    totalMisses: stats.totalMisses,
+    hitRate: stats.hitRate,
+    totalKills: stats.totalKills,
+    totalDeaths: stats.totalDeaths,
+    avgHPLostPercent: stats.avgHPLostPercent,
+    avgEnemyHPLostPercent: stats.avgEnemyHPLostPercent,
   };
 }
 
@@ -361,7 +407,7 @@ export function quickEvaluate(
   baselineNames: string[] = ['greedy', 'random']
 ): GenomeEvaluation {
   return evaluateGenome(genome, baselineNames as OpponentSpec[], {
-    scenarios: QUICK_SCENARIOS,
+    scenarios: QUICK_PRESETS,
     fightsPerGenome: baselineNames.length,  // 1 fight per baseline
     selfPlayRatio: 0,  // Nur Baselines
     baselineNames,
@@ -478,7 +524,7 @@ if (isDirectExecution) {
 
     // Tournament starten (verbose=false für schnellere Tests)
     const result = runTournament(population, {
-      scenarios: QUICK_SCENARIOS,
+      scenarios: QUICK_PRESETS,
       fightsPerGenome,
       verbose: false,
     });

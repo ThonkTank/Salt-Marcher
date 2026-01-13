@@ -219,6 +219,7 @@ function prepareCharacterForCombat(character: Character): CharacterInCombat {
     combatState: {
       position: { x: 0, y: 0, z: 0 },
       conditions: [],
+      modifiers: [],
       groupId: 'party',
       isDead: false,
     },
@@ -253,6 +254,7 @@ function prepareNPCForCombat(
     combatState: {
       position: { x: 0, y: 0, z: 0 },
       conditions: [],
+      modifiers: [],
       resources,
       groupId,
       isDead: false,
@@ -430,12 +432,29 @@ function createCombatState(
     // DPR-Tracking
     partyDPR: 0,
     enemyDPR: 0,
+    // Hit/Miss-Tracking
+    partyHits: 0,
+    partyMisses: 0,
+    enemyHits: 0,
+    enemyMisses: 0,
+    // Kill-Tracking
+    partyKills: 0,
+    enemyKills: 0,
+    // HP-Tracking (Start-HP = Summe aller maxHp)
+    partyStartHP: partyCombatants.reduce((sum, c) => sum + c.maxHp, 0),
+    enemyStartHP: enemyCombatants.reduce((sum, c) => sum + c.maxHp, 0),
     // Combat Protocol
     protocol: [],
     // Terrain Map (aus mapConfig oder leer)
     terrainMap: mapConfig?.terrainMap ?? new Map(),
     // Map Bounds (optional, für Boundary-Enforcement)
     mapBounds: mapConfig?.bounds,
+    // Active Zones (Spirit Guardians, Moonbeam, etc.) - werden bei Spell-Cast aktiviert
+    activeZones: [],
+    // Area Effects (Cover, Auras, Zones) - Unified Modifier Architecture
+    areaEffects: [],
+    // Shared Resource Pools (Divine Aid, etc.) - combatantId → poolId → remaining uses
+    resourcePools: new Map(),
   };
 }
 

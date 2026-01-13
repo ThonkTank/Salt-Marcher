@@ -1,14 +1,17 @@
 # CombatWorkflow
 
-> **Verantwortlichkeit:** Orchestration des Combat-Trackers
+> **Verantwortlichkeit:** Orchestration des Combat-Trackers + State-Mutation
 > **State-Owner:** sessionState
 >
 > **Verwandte Dokumente:**
 > - [sessionState.md](sessionState.md) - State-Owner
 > - [Combat.md](../features/Combat.md) - Feature-Spezifikation
 > - [EncounterWorkflow.md](EncounterWorkflow.md) - Combat aus Encounter
+> - [combatTracking](../services/combatTracking/combatTracking.md) - Resolution Service (READ-ONLY)
 
-Dieser Workflow orchestriert den Combat-Tracker. Er verwaltet Initiative, Zuege und die Post-Combat-Resolution.
+Dieser Workflow orchestriert den Combat-Tracker. Er verwaltet Initiative, Zuege, die Post-Combat-Resolution und ist der **State-Owner** fuer Combat-State-Mutationen.
+
+**Architektur:** Der `combatTracking` Service berechnet was passieren wuerde (READ-ONLY). Der `combatWorkflow` wendet das Ergebnis auf den State an (WRITE).
 
 ---
 
@@ -231,6 +234,135 @@ applyHealing(participantId: string, amount: number): void {
   }));
 }
 ```
+
+---
+
+## Action Resolution (AI/Simulation)
+
+Fuer AI-gesteuerte Combat-Simulation ruft der Workflow den combatTracking Service auf und wendet das Ergebnis an.
+
+**Architektur-Trennung:**
+- `combatTracking` (Service) = **READ-ONLY** - berechnet was passieren wuerde
+- `combatWorkflow` = **WRITE** - wendet das Ergebnis auf den State an
+
+```
+combatTracking (READ-ONLY)
+        │
+        ├─► findTargets()
+        ├─► gatherModifiers()
+        ├─► determineSuccess()
+        └─► resolveEffects()
+                │
+                ▼
+        ResolutionResult
+                │
+                ▼
+combatWorkflow.applyResult() [WRITE]
+```
+
+### executeAction
+
+Orchestriert die Resolution-Pipeline und wendet das Ergebnis an:
+
+```typescript
+function executeAction(
+  actor: Combatant,
+  action: Action,
+  target: Combatant,
+  state: CombatState
+): void {
+  // 1. Resolution-Pipeline aufrufen (READ-ONLY)
+  const context: ResolutionContext = { actor, action, target, state, trigger: 'active' };
+  const targets = findTargets(context);
+  const modifiers = gatherModifiers(context, targets);
+  const success = determineSuccess(context, targets, modifiers);
+  const result = resolveEffects(context, success, modifiers);
+
+  // 2. Ergebnis anwenden (WRITE)
+  applyResult(result, state);
+}
+```
+
+### applyResult
+
+Wendet ein `ResolutionResult` auf den State an:
+
+```typescript
+function applyResult(result: ResolutionResult, state: CombatState): void {
+  // 1. HP-Aenderungen
+  for (const hpChange of result.hpChanges) {
+    const combatant = findCombatant(state, hpChange.combatantId);
+    setHP(combatant, createPMF(hpChange.newHP));
+  }
+
+  // 2. Conditions hinzufuegen
+  for (const condApp of result.conditionsToAdd) {
+    addCondition(condApp.target, {
+      ...condApp.condition,
+      probability: condApp.probability
+    });
+  }
+
+  // 3. Conditions entfernen
+  for (const condRem of result.conditionsToRemove) {
+    const combatant = findCombatant(state, condRem.targetId);
+    removeCondition(combatant, condRem.conditionName);
+  }
+
+  // 4. Forced Movement
+  for (const movement of result.forcedMovement) {
+    applyForcedMovement(state, movement);
+  }
+
+  // 5. Zone aktivieren
+  if (result.zoneActivation) {
+    state.activeZones.push(createActiveZone(result.zoneActivation));
+  }
+
+  // 6. Concentration brechen
+  if (result.concentrationBreak) {
+    breakConcentration(findCombatant(state, result.concentrationBreak), state);
+  }
+
+  // 7. Dead markieren
+  markDeadCombatants(state);
+
+  // 8. Protocol schreiben
+  writeProtocolEntry(state, result.protocolData);
+}
+```
+
+### ResolutionResult Interface
+
+```typescript
+interface ResolutionResult {
+  hpChanges: HPChange[];
+  conditionsToAdd: ConditionApplication[];
+  conditionsToRemove: ConditionRemoval[];
+  forcedMovement: ForcedMovementEntry[];
+  zoneActivation?: ZoneActivation;
+  concentrationBreak?: string;        // Combatant ID
+  protocolData: ProtocolData;
+}
+```
+
+### Anwendungs-Reihenfolge
+
+Die Reihenfolge der Mutations ist wichtig fuer korrektes Verhalten:
+
+1. **HP-Aenderungen** - Damage/Healing anwenden
+2. **Concentration-Check** - Bei Damage pruefen ob Konzentration bricht
+3. **Conditions anwenden** - Neue Conditions hinzufuegen
+4. **Forced Movement** - Position-Updates
+5. **Zone aktivieren** - Bei Zone-Aktionen
+6. **Dead markieren** - Tote Combatants markieren
+7. **Protocol schreiben** - Alles dokumentieren
+
+### Verwandte Dokumente
+
+- [actionResolution.md](../services/combatTracking/actionResolution.md) - Pipeline-Uebersicht
+- [resolveEffects.md](../services/combatTracking/resolveEffects.md) - ResolutionResult-Struktur
+- [gatherModifiers.md](../services/combatTracking/gatherModifiers.md) - Modifier-Sammlung
 
 ---
 

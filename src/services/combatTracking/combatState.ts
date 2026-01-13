@@ -703,9 +703,29 @@ export function processConditionsOnTurnEnd(c: Combatant): TurnEndConditionResult
 
 /**
  * Setzt den aktiven Konzentrations-Spell.
+ * Bei Concentration-Wechsel werden Zones des vorherigen Spells deaktiviert.
+ *
+ * @param c Der Combatant
+ * @param actionId Die neue Concentration-Action (oder undefined zum Beenden)
+ * @param state Optional: CombatState für Zone-Deaktivierung
  */
-export function setConcentration(c: Combatant, actionId: string | undefined): void {
+export function setConcentration(
+  c: Combatant,
+  actionId: string | undefined,
+  state?: CombatState
+): void {
+  const prev = c.combatState.concentratingOn;
   c.combatState.concentratingOn = actionId;
+
+  // Deaktiviere Zones bei Concentration-Wechsel
+  if (state && prev && prev !== actionId && state.activeZones) {
+    const before = state.activeZones.length;
+    state.activeZones = state.activeZones.filter(z => z.ownerId !== c.id);
+    const removed = before - state.activeZones.length;
+    if (removed > 0) {
+      debug('setConcentration: deactivated zones', { ownerId: c.id, removed });
+    }
+  }
 }
 
 /**
@@ -888,7 +908,7 @@ export function hasAbductTrait(combatant: Combatant): boolean {
 }
 
 /**
- * Berechnet effektive Speed unter Berücksichtigung von Conditions.
+ * Berechnet effektive Speed unter Berücksichtigung von Conditions und Zones.
  * Conditions wie 'grappled', 'restrained', 'paralyzed' setzen Speed auf 0.
  * Liest Effekte deklarativ aus CONDITION_EFFECTS.
  *
@@ -896,8 +916,11 @@ export function hasAbductTrait(combatant: Combatant): boolean {
  * Wenn Combatant jemanden grappled, ist Speed halbiert beim Bewegen.
  * Ausnahme: Abduct-Trait entfernt diese Reduktion.
  *
+ * Zone Speed-Modifier (Spirit Guardians, etc.):
+ * Zones mit speedModifier reduzieren Movement (z.B. 0.5 für halbe Speed).
+ *
  * @param combatant Der Combatant
- * @param state Optional: State mit combatants Array für Grapple-Drag Check
+ * @param state Optional: State mit combatants Array für Grapple-Drag und Zone Check
  * @returns Effektive Speed in Feet
  */
 export function getEffectiveSpeed(combatant: Combatant, state?: CombatantSimulationState): number {
@@ -918,28 +941,75 @@ export function getEffectiveSpeed(combatant: Combatant, state?: CombatantSimulat
     }
   }
 
+  let effectiveSpeed = baseSpeed;
+
   // Grapple-Drag: Speed halbieren wenn Target grappled (außer Abduct)
   if (state && getGrappledTargets(combatant, state).length > 0) {
     if (!hasAbductTrait(combatant)) {
-      const halvedSpeed = Math.floor(baseSpeed / 2);
+      effectiveSpeed = Math.floor(effectiveSpeed / 2);
       debug('getEffectiveSpeed:', {
         id: combatant.id,
         grappling: true,
         hasAbduct: false,
         baseSpeed,
-        halvedSpeed,
+        halvedSpeed: effectiveSpeed,
       });
-      return halvedSpeed;
+    } else {
+      debug('getEffectiveSpeed:', {
+        id: combatant.id,
+        grappling: true,
+        hasAbduct: true,
+        speed: effectiveSpeed,
+      });
     }
-    debug('getEffectiveSpeed:', {
-      id: combatant.id,
-      grappling: true,
-      hasAbduct: true,
-      speed: baseSpeed,
-    });
   }
 
-  return baseSpeed;
+  // Zone Speed-Modifier (Spirit Guardians, etc.)
+  // Prüfe ob Combatant in einer Zone mit speedModifier steht
+  const combatState = state as CombatState | undefined;
+  if (combatState?.activeZones && combatState.activeZones.length > 0) {
+    const combatantPos = combatant.combatState.position;
+
+    for (const zone of combatState.activeZones) {
+      // Skip own zones
+      if (zone.ownerId === combatant.id) continue;
+
+      // Skip if no speedModifier defined
+      if (!zone.effect.zone?.speedModifier) continue;
+
+      // Check target filter (inline version of isValidZoneTarget)
+      const owner = combatState.combatants.find(c => c.id === zone.ownerId);
+      if (!owner) continue;
+
+      const filter = zone.effect.zone.targetFilter ?? 'all';
+      const ownerGroup = owner.combatState.groupId;
+      const combatantGroup = combatant.combatState.groupId;
+      const ownerAllies = combatState.alliances[ownerGroup] ?? [];
+      const isAlly = combatantGroup === ownerGroup || ownerAllies.includes(combatantGroup);
+      const isEnemy = !isAlly;
+
+      if (filter === 'enemies' && !isEnemy) continue;
+      if (filter === 'allies' && !isAlly) continue;
+
+      // Check if in radius (inline version of isInZoneRadius)
+      const ownerPos = owner.combatState.position;
+      const dx = Math.abs(combatantPos.x - ownerPos.x);
+      const dy = Math.abs(combatantPos.y - ownerPos.y);
+      const distanceFeet = Math.max(dx, dy) * (combatState.grid?.cellSizeFeet ?? 5);
+
+      if (distanceFeet <= zone.effect.zone.radius) {
+        effectiveSpeed = Math.floor(effectiveSpeed * zone.effect.zone.speedModifier);
+        debug('getEffectiveSpeed: zone modifier applied', {
+          id: combatant.id,
+          zone: zone.sourceActionId,
+          speedModifier: zone.effect.zone.speedModifier,
+          newSpeed: effectiveSpeed,
+        });
+      }
+    }
+  }
+
+  return effectiveSpeed;
 }
 
 /** Erstellt TurnBudget aus Combatant. */

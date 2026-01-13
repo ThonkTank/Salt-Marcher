@@ -42,10 +42,17 @@ src/services/combatantAI/
     combatHelpers.ts          # Distance, Alliance
     pruningHelpers.ts         # Beam-Search Helpers
 
-  modifiers/                  # Schema-Modifier Adapter
+  modifiers/                  # AI-spezifische Modifier-Plugins
     coreModifiers.ts          # Re-export von Preset-Modifiers
     index.ts                  # Bootstrap fuer Modifier-Plugins
+
+  situationalModifiers.ts     # ADAPTER: Imports core from combatTracking/gatherModifiers
+  expressionEvaluator.ts      # MOVED to src/utils/combatModifiers/
 ```
+
+> **Architektur-Hinweis:** Die Kern-Modifier-Logik (`gatherModifiers.ts`) liegt in `combatTracking`.
+> `combatantAI/situationalModifiers.ts` ist ein **Adapter** der diese Logik importiert und um
+> AI-spezifische Registry-Plugins erweitert. Siehe [gatherModifiers.md](../combatTracking/gatherModifiers.md).
 
 ---
 

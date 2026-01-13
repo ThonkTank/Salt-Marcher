@@ -37,6 +37,7 @@ import type {
   Combatant,
   CombatantWithLayers,
   CombatantSimulationStateWithLayers,
+  TurnAction,
 } from '@/types/combat';
 import { positionToKey, feetToCell, getExpectedValue, diceExpressionToPMF, addConstant } from '@/utils';
 import { hasLineOfSight } from '@/utils/squareSpace/gridLineOfSight';
@@ -48,6 +49,8 @@ import {
   calculateMultiattackDamage,
   calculateHitChance,
   resolveMultiattackRefs,
+  multiattackHasMeleeOption,
+  multiattackHasRangedOption,
 } from '../helpers/combatHelpers';
 import {
   getGroupId,
@@ -84,6 +87,22 @@ export type ScoredAction = {
   targetCell?: GridPosition;
   score: number;
 };
+
+/**
+ * Konvertiert ein Action-Kandidat-Objekt zu TurnAction.
+ * Akzeptiert ScoredAction oder interne Typen (ActionChainEntry, ActionEntry).
+ * Zentralisiert die Konvertierung für alle Selectors.
+ */
+export function toTurnAction(
+  scored: { action: Action; target?: Combatant; fromPosition: GridPosition }
+): TurnAction {
+  return {
+    type: 'action',
+    action: scored.action,
+    target: scored.target,
+    position: scored.fromPosition,
+  };
+}
 
 // ============================================================================
 // CONSTANTS
@@ -166,22 +185,22 @@ export function calculateMeleeRangedDPRRatio(
     if (!action.damage && !action.multiattack) continue;
 
     // Multiattack: Berechne kombinierte DPR und prüfe ob Melee oder Ranged
+    // Mit orRef kann ein Multiattack BEIDE Optionen haben (z.B. Greatsword or Longbow)
     if (action.multiattack) {
       const pmf = calculateMultiattackDamage(action, actions, targetAC);
       if (!pmf) continue;
 
       const expectedDmg = getExpectedValue(pmf);
 
-      // Prüfe ob Multiattack-Refs Melee oder Ranged sind
-      const refs = resolveMultiattackRefs(action, actions);
-      const isMeleeMultiattack = refs.every(ref => {
-        const range = ref.range?.normal ?? 5;
-        return range <= 5;
-      });
+      // Prüfe ob Multiattack Melee- und/oder Ranged-Optionen hat (inkl. orRef)
+      const hasMelee = multiattackHasMeleeOption(action, actions);
+      const hasRanged = multiattackHasRangedOption(action, actions);
 
-      if (isMeleeMultiattack) {
+      // Multiattack trägt zu beiden Kategorien bei wenn beide Optionen verfügbar
+      if (hasMelee) {
         meleeDPR = Math.max(meleeDPR, expectedDmg);
-      } else {
+      }
+      if (hasRanged) {
         rangedDPR = Math.max(rangedDPR, expectedDmg);
       }
       continue;

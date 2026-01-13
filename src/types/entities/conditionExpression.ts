@@ -216,6 +216,21 @@ export const actionRangeTypePredicateSchema = z.object({
 });
 export type ActionRangeTypePredicate = z.infer<typeof actionRangeTypePredicateSchema>;
 
+/** Action matches specific ID(s) - for trait-based timing overrides */
+export const actionIsIdPredicateSchema = z.object({
+  type: z.literal('action-is-id'),
+  actionId: z.union([z.string(), z.array(z.string())]),
+});
+export type ActionIsIdPredicate = z.infer<typeof actionIsIdPredicateSchema>;
+
+// --- Always Predicate ---
+
+/** Always: Unconditionally true (for modifiers that are always active when present) */
+export const alwaysPredicateSchema = z.object({
+  type: z.literal('always'),
+});
+export type AlwaysPredicate = z.infer<typeof alwaysPredicateSchema>;
+
 // ============================================================================
 // CONDITION EXPRESSION (Recursive Discriminated Union)
 // ============================================================================
@@ -273,7 +288,10 @@ export type ConditionExpression =
   // Action predicates
   | ActionHasPropertyPredicate
   | ActionIsTypePredicate
-  | ActionRangeTypePredicate;
+  | ActionRangeTypePredicate
+  | ActionIsIdPredicate
+  // Always predicate
+  | AlwaysPredicate;
 
 /**
  * Lazy schema for recursive structure.
@@ -322,6 +340,9 @@ export const conditionExpressionSchema: z.ZodType<ConditionExpression> = z.lazy(
     actionHasPropertyPredicateSchema,
     actionIsTypePredicateSchema,
     actionRangeTypePredicateSchema,
+    actionIsIdPredicateSchema,
+    // Always predicate
+    alwaysPredicateSchema,
   ])
 );
 

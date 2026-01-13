@@ -350,11 +350,18 @@ interface ActionTargetScore {
 
 ## Situational Modifiers
 
-### Plugin-Architektur
+### Adapter-Architektur
+
+> **Single Source of Truth:** Die Kern-Modifier-Logik liegt in `combatTracking/resolution/gatherModifiers.ts`.
+> Die AI-Schicht (`situationalModifiers.ts`) ist ein **Adapter** der diese Logik importiert und um
+> AI-spezifische Plugins erweitert (z.B. Position-Hypothesen fuer Look-Ahead).
 
 ```
+src/services/combatTracking/resolution/
+  gatherModifiers.ts          ← SINGLE SOURCE OF TRUTH (6 Quellen)
+
 src/services/combatantAI/
-  situationalModifiers.ts     ← Core: Registry, Evaluation, Akkumulation
+  situationalModifiers.ts     ← ADAPTER: Imports gatherModifiers + Registry-Plugins
   modifiers/
     index.ts                  ← Bootstrap: Auto-Registration
     longRange.ts              ← Plugin: Long Range Disadvantage

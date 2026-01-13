@@ -20,11 +20,11 @@ import type {
   ModifierContext,
   CombatantContext,
   ModifierSimulationState,
-} from './situationalModifiers';
-import { getDistance, isAllied, isHostile } from './helpers/combatHelpers';
+} from '@/services/combatantAI/situationalModifiers';
+import { getDistance, isAllied, isHostile, feetToCell } from './helpers';
 import { isNPC, type GridPosition, type Combatant } from '@/types/combat';
-import { feetToCell, getExpectedValue } from '@/utils';
-import { getAC } from '../combatTracking';
+import { getExpectedValue } from '@/utils';
+import { getAC } from '@/services/combatTracking';
 
 // ============================================================================
 // DEBUG
@@ -262,6 +262,11 @@ export function evaluateCondition(
     case 'action-range-type':
       return ctx.action.range?.type === expr.rangeType;
 
+    case 'action-is-id': {
+      const ids = Array.isArray(expr.actionId) ? expr.actionId : [expr.actionId];
+      return ids.includes(ctx.action.id);
+    }
+
     default:
       console.warn(`[expressionEvaluator] Unknown expression type: ${(expr as { type: string }).type}`);
       return false;
@@ -416,8 +421,8 @@ function evaluateInLineBetween(
 }
 
 function evaluateHasLineOfSight(
-  expr: { type: 'has-line-of-sight'; from: EntityRef; to: EntityRef },
-  ctx: EvaluationContext
+  _expr: { type: 'has-line-of-sight'; from: EntityRef; to: EntityRef },
+  _ctx: EvaluationContext
 ): boolean {
   // For now, assume line of sight exists if no blocking terrain
   // Full implementation would need terrain/obstacle data

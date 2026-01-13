@@ -8,13 +8,14 @@
 // 4.: Flavouring (Activity → Loot → Distance)
 // 5.: difficulty.ts - Ziel-Difficulty bestimmen + Simulation
 // 6.: balancing.ts - Balancing-Loop bis Ziel erreicht
-// 7.: EncounterInstance zusammenbauen
+// 7.: EmbeddedPreset zusammenbauen
 
 // ============================================================================
 // IMPORTS
 // ============================================================================
 
-import type { EncounterInstance, EncounterGroup } from '#types/encounterTypes';
+import type { EncounterGroup } from '#types/encounterTypes';
+import type { EmbeddedPreset } from '@/types/entities/encounterPreset';
 import { type Result, ok, err } from '#types/common/Result';
 import type { GameDateTime } from '#types/time';
 import type { TerrainDefinition, CreatureDefinition, NPC, Faction } from '@/types/entities';
@@ -29,7 +30,7 @@ import type { Weather } from '#types/weather';
 
 /** Ergebnis von generateEncounter - Encounter + neu generierte NPCs */
 export interface EncounterResult {
-  encounter: EncounterInstance;
+  encounter: EmbeddedPreset;
   generatedNPCs: NPC[];  // Neue NPCs die persistiert werden müssen
 }
 
@@ -46,7 +47,6 @@ import {
   MULTI_GROUP_PROBABILITY,
   MAX_BALANCING_ITERATIONS,
   SECONDARY_ROLE_THRESHOLDS,
-  DEFAULT_PERCEPTION_DISTANCE,
 } from '@/constants/encounterConfig';
 
 // ============================================================================
@@ -222,15 +222,14 @@ export function generateEncounter(context: {
   }
 
   // -------------------------------------------------------------------------
-  // Step 7: EncounterInstance zusammenbauen
+  // Step 7: EmbeddedPreset zusammenbauen
   // -------------------------------------------------------------------------
-  const encounterInstance: EncounterInstance = {
+  const encounter: EmbeddedPreset = {
     id: crypto.randomUUID(),
+    name: `Encounter at ${context.terrain.id}`,
+    mode: 'embedded',
     groups: currentGroups,  // Vollständige EncounterGroup[] direkt durchreichen
     alliances,  // Gruppen-Allianzen (berechnet aus Disposition + Faction-Reputationen)
-    npcs: encounterNpcIds,  // 1-3 NPC-IDs pro Encounter
-    loot: aggregateLoot(currentGroups),
-    perception: aggregatePerception(currentGroups),
     difficulty: {
       label: simulationResult.label,
       winProbability: simulationResult.winProbability,
@@ -245,11 +244,10 @@ export function generateEncounter(context: {
         visibilityModifier: context.weather.visibilityModifier,
       },
     },
-    description: '',
   };
 
   return ok({
-    encounter: encounterInstance,
+    encounter,
     generatedNPCs: allGeneratedNPCs,
   });
 }
@@ -264,41 +262,6 @@ function rollSecondaryRole(): NarrativeRole {
   if (roll < SECONDARY_ROLE_THRESHOLDS.neutral) return 'neutral';
   if (roll < SECONDARY_ROLE_THRESHOLDS.ally) return 'ally';
   return 'threat';
-}
-
-function aggregateLoot(
-  groups: EncounterGroup[]
-): { items: { id: string; quantity: number }[]; totalValue: number } {
-  const allItems: { id: string; quantity: number }[] = [];
-  let totalValue = 0;
-  for (const g of groups) {
-    if (g.loot) {
-      allItems.push(...g.loot.items);
-      totalValue += g.loot.totalValue;
-    }
-  }
-  return { items: allItems, totalValue };
-}
-
-function aggregatePerception(
-  groups: EncounterGroup[]
-): { partyDetectsEncounter: number; encounterDetectsParty: number; isSurprise: boolean } {
-  // Nächste Distanz gewinnt
-  let minPartyDetects = Infinity;
-  let minEncounterDetects = Infinity;
-  let anySurprise = false;
-  for (const g of groups) {
-    if (g.perception) {
-      minPartyDetects = Math.min(minPartyDetects, g.perception.partyDetectsEncounter);
-      minEncounterDetects = Math.min(minEncounterDetects, g.perception.encounterDetectsParty);
-      anySurprise = anySurprise || g.perception.isSurprise;
-    }
-  }
-  return {
-    partyDetectsEncounter: minPartyDetects === Infinity ? DEFAULT_PERCEPTION_DISTANCE : minPartyDetects,
-    encounterDetectsParty: minEncounterDetects === Infinity ? DEFAULT_PERCEPTION_DISTANCE : minEncounterDetects,
-    isSurprise: anySurprise,
-  };
 }
 
 /**

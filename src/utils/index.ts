@@ -24,3 +24,14 @@ export {
   buildFactionChain,
   type ResolvedAttributes,
 } from './cultureResolution';
+
+// Combat modifier utilities (expression evaluation, helpers)
+// Note: getDistance and feetToCell already exported from squareSpace
+export {
+  evaluateCondition,
+  createEvaluationContext,
+  combatantToCombatantContext,
+  type EvaluationContext,
+  isAllied,
+  isHostile,
+} from './combatModifiers';

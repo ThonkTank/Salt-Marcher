@@ -442,9 +442,4 @@ export function getMapConfigForScenario(scenarioName: string): CombatMapConfig {
   return factory();
 }
 
-/** @deprecated Verwende getMapConfigForScenario stattdessen */
-export function getTerrainMapForScenario(scenarioName: string): Map<string, CombatCellProperties> {
-  return getMapConfigForScenario(scenarioName).terrainMap;
-}
-
 export default COMBAT_MAP_FACTORIES;

@@ -22,6 +22,19 @@ const __dirname = path.dirname(__filename);
 // ============================================================================
 
 /**
+ * Combat-Statistiken eines einzelnen Genomes.
+ */
+export interface GenomeCombatStats {
+  hitRate: number;
+  totalKills: number;
+  totalDeaths: number;
+  avgHPLostPercent: number;
+  wins: number;
+  losses: number;
+  draws: number;
+}
+
+/**
  * Statistiken für eine Generation (aus evolve.ts).
  */
 export interface GenerationStats {
@@ -33,6 +46,8 @@ export interface GenerationStats {
   avgConnections: number;
   bestGenomeId: string;
   evalTimeMs: number;
+  // Combat-Statistiken des BESTEN Genomes (nicht Durchschnitt)
+  bestGenomeStats: GenomeCombatStats;
 }
 
 /**
@@ -55,6 +70,7 @@ export interface GlobalBest {
 
 /**
  * Evaluation progress within a generation.
+ * Enthält Combat-Stats des zuletzt evaluierten Genomes für "Last" Tab.
  */
 export interface EvalProgress {
   /** Current genome being evaluated (1-based) */
@@ -65,6 +81,15 @@ export interface EvalProgress {
   genomeId: string;
   /** Generation number */
   generation: number;
+  // Combat-Stats des aktuellen Genomes (für "Last" Tab)
+  fitness: number;
+  hitRate: number;
+  kills: number;
+  deaths: number;
+  hpLost: number;
+  wins: number;
+  losses: number;
+  draws: number;
 }
 
 /**

@@ -38,13 +38,10 @@ export function formatProtocolEntry(
   const targetInfo = entry.action.target
     ? `→ ${entry.action.target.name} [${((entry.targetDeathProbability ?? 0) * 100).toFixed(0)}%☠]`
     : '';
-  const scoreInfo = entry.action.score !== undefined
-    ? ` [Score: ${entry.action.score.toFixed(1)}]`
-    : '';
   const hpInfo = formatHpChanges(entry);
   const timeInfo = elapsedMs !== undefined ? ` (${elapsedMs.toFixed(1)}ms)` : '';
 
-  return `[TURN] R${entry.round} ${selectorTag} ${entry.combatantName} ${posInfo}: ${actionName} ${targetInfo}${scoreInfo}${hpInfo}${timeInfo}`;
+  return `[TURN] R${entry.round} ${selectorTag} ${entry.combatantName} ${posInfo}: ${actionName} ${targetInfo}${hpInfo}${timeInfo}`;
 }
 
 /**

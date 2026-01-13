@@ -384,6 +384,25 @@ export const npcPresets = npcPresetsSchema.parse([
     currentHp: [[27, 1]],
     maxHp: 27,
   },
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Test-Szenario NPCs: Owlbear (Brute)
+  // ──────────────────────────────────────────────────────────────────────────
+  {
+    id: 'owlbear-grimclaw',
+    name: 'Grimclaw',
+    creature: { type: 'owlbear', id: 'owlbear' },
+    personality: 'territorial',
+    value: 'survival',
+    quirk: 'Kreischt bei Annäherung',
+    goal: 'Revier verteidigen',
+    status: 'alive',
+    firstEncounter: { year: 1, month: 1, day: 1, hour: 12, segment: 'midday' },
+    lastEncounter: { year: 1, month: 1, day: 1, hour: 12, segment: 'midday' },
+    encounterCount: 1,
+    currentHp: [[59, 1]],
+    maxHp: 59,
+  },
 ]);
 
 export default npcPresets;

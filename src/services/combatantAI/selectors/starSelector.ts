@@ -28,7 +28,7 @@ import type {
   Combatant,
 } from '@/types/combat';
 import { buildThreatMap } from '../layers';
-import { buildPossibleActions, type ScoredAction } from '../core/actionEnumeration';
+import { buildPossibleActions, toTurnAction, type ScoredAction } from '../core/actionEnumeration';
 import { positionToKey, positionsEqual, getExpectedValue, diceExpressionToPMF, addConstant } from '@/utils';
 import { getDistance, getReachableCells, calculateHitChance } from '../helpers/combatHelpers';
 import { getPosition, getAC } from '../../combatTracking';
@@ -438,14 +438,7 @@ export const starSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    return {
-      type: 'action',
-      action: first.action,
-      target: first.target,
-      fromPosition: first.fromPosition,
-      targetCell: first.targetCell,
-      score: first.score,
-    };
+    return toTurnAction(first);
   },
 
   getStats(): SelectorStats {

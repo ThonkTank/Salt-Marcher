@@ -28,10 +28,10 @@ export const creaturePresets = creaturePresetsSchema.parse([
     id: 'goblin',
     name: 'Goblin',
     cr: 0.25,
-    hitDice: '2d6',
+    hitDice: '3d6',  // SRD 5.2: 3d6 (10 HP avg)
     ac: 15,
     size: 'small',
-    tags: ['humanoid', 'goblinoid'],
+    tags: ['fey', 'goblinoid'],  // SRD 5.2: Fey statt Humanoid
     species: 'goblin',
     baseDisposition: -80,
     terrainAffinities: ['forest', 'hill', 'mountain'],
@@ -49,12 +49,12 @@ export const creaturePresets = creaturePresetsSchema.parse([
       noiseLevel: 'normal',
       scentStrength: 'moderate',
     },
-    abilities: { str: 8, dex: 14, con: 10, int: 10, wis: 8, cha: 8 },
+    abilities: { str: 8, dex: 15, con: 10, int: 10, wis: 8, cha: 8 },  // SRD 5.2: DEX 15
     skills: { stealth: 6 },
     speed: { walk: 30 },
     senses: { passivePerception: 9, darkvision: 60 },
     languages: ['Common', 'Goblin'],
-    actionIds: ['goblin-scimitar', 'goblin-shortbow'],
+    actionIds: ['goblin-scimitar', 'goblin-shortbow', 'trait-nimble-escape', 'trait-goblin-cunning'],
     source: 'MM',
   },
   {
@@ -148,11 +148,11 @@ export const creaturePresets = creaturePresetsSchema.parse([
       scentStrength: 'strong',
     },
     abilities: { str: 20, dex: 12, con: 17, int: 3, wis: 12, cha: 7 },
-    skills: { perception: 3 },
-    speed: { walk: 40 },
-    senses: { passivePerception: 13, darkvision: 60 },
+    skills: { perception: 5 },
+    speed: { walk: 40, climb: 40 },
+    senses: { passivePerception: 15, darkvision: 60 },
     languages: [],
-    actionIds: ['owlbear-multiattack', 'owlbear-beak', 'owlbear-claws'],
+    actionIds: ['owlbear-multiattack', 'owlbear-rend'],
     source: 'MM',
   },
   {
@@ -226,7 +226,7 @@ export const creaturePresets = creaturePresetsSchema.parse([
     hitDice: '6d6',
     ac: 17,
     size: 'small',
-    tags: ['humanoid', 'goblinoid'],
+    tags: ['fey', 'goblinoid'],  // SRD 5.2: Fey statt Humanoid
     species: 'goblin',
     baseDisposition: -70,
     terrainAffinities: ['forest', 'hill', 'mountain'],
@@ -244,12 +244,18 @@ export const creaturePresets = creaturePresetsSchema.parse([
       noiseLevel: 'normal',
       scentStrength: 'moderate',
     },
-    abilities: { str: 10, dex: 14, con: 10, int: 10, wis: 8, cha: 10 },
+    abilities: { str: 10, dex: 15, con: 10, int: 10, wis: 8, cha: 10 },  // SRD 5.2: DEX 15
     skills: { stealth: 6 },
     speed: { walk: 30 },
     senses: { passivePerception: 9, darkvision: 60 },
     languages: ['Common', 'Goblin'],
-    actionIds: ['goblin-boss-scimitar', 'goblin-boss-javelin'],
+    actionIds: [
+      'goblin-boss-multiattack',  // SRD 5.2: 2x Scimitar/Shortbow
+      'goblin-boss-scimitar',
+      'goblin-boss-shortbow',  // SRD 5.2: Shortbow statt Javelin
+      'trait-nimble-escape',
+      'trait-goblin-cunning',
+    ],
     source: 'MM',
   },
   {
@@ -375,8 +381,12 @@ export const creaturePresets = creaturePresetsSchema.parse([
     speed: { walk: 30 },
     senses: { passivePerception: 10, darkvision: 60 },
     languages: ['Common', 'Goblin'],
-    actionIds: ['hobcaptain-multiattack', 'hobcaptain-greatsword', 'hobcaptain-longbow'],
-    // HACK: Aura of Authority (10ft Advantage) wird via modifierRefs implementiert
+    actionIds: [
+      'hobcaptain-multiattack',
+      'hobcaptain-greatsword',
+      'hobcaptain-longbow',
+      'trait-aura-of-authority',  // 10ft Emanation: Advantage on attacks
+    ],
     source: 'MM',
   },
 
@@ -572,7 +582,21 @@ export const creaturePresets = creaturePresetsSchema.parse([
     speed: { walk: 30 },
     senses: { passivePerception: 15 },
     languages: ['Common'],
-    actionIds: ['priest-multiattack', 'priest-mace', 'priest-radiant-flame', 'priest-healing-word'],
+    actionIds: [
+      // Weapon Actions
+      'priest-multiattack',
+      'priest-mace',
+      // Spellcasting Trait (definiert Stats und verfügbare Spells)
+      'priest-spellcasting',
+      // Generic Spells (Stats kommen aus priest-spellcasting Trait)
+      'spell-light',              // At-will
+      'spell-radiant-flame',      // At-will (Multiattack option)
+      'spell-spirit-guardians',   // 1/Day - 15ft emanation, 3d8 radiant
+      'spell-bless',              // Divine Aid Pool 3/Day
+      'spell-dispel-magic',       // Divine Aid Pool 3/Day
+      'spell-healing-word',       // Divine Aid Pool 3/Day
+      'spell-lesser-restoration', // Divine Aid Pool 3/Day
+    ],
     source: 'MM',
   },
 ]);

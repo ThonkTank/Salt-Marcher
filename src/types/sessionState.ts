@@ -6,7 +6,7 @@ import type { EntityId } from '@core/types/entity';
 import type { HexCoordinate } from '@core/types/coordinates';
 import type { Weather } from '#types/weather';
 import type { TransportMode } from '@constants/TransportModes';
-import type { EncounterInstance } from '#types/encounterTypes';
+import type { EmbeddedPreset } from '@/types/entities/encounterPreset';
 import type { NPC } from '#types/entities/npc';
 import type { GameDateTime } from '#types/time';
 
@@ -29,7 +29,7 @@ export interface TravelWorkflowState {
 
 export interface EncounterWorkflowState {
   status: 'idle' | 'preview' | 'accepted' | 'active' | 'resolving';
-  current: EncounterInstance | null;
+  current: EmbeddedPreset | null;
   generatedNPCs: NPC[];  // Neu generierte NPCs (noch nicht persistiert)
   trigger?: 'travel' | 'rest' | 'manual' | 'location';
 }

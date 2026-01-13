@@ -61,6 +61,7 @@ function createMockCombatant(overrides: {
   const combatState: CombatantState & { effectLayers: EffectLayerData[] } = {
     position: overrides.position ?? { x: 0, y: 0, z: 0 },
     conditions: overrides.conditions ?? [],
+    modifiers: [],
     groupId: overrides.groupId ?? 'party',
     isDead: overrides.isDead ?? false,
     concentratingOn: overrides.concentratingOn,

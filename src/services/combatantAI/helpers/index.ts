@@ -16,7 +16,10 @@ export {
   resolveMultiattackRefs,
   forEachResolvedAction,
   resolveBaseAction,
+  resolveSpellWithCaster,
   resolveActionWithBase,
+  multiattackHasMeleeOption,
+  multiattackHasRangedOption,
   // Damage & Healing PMF
   calculateBaseDamagePMF,
   calculateBaseHealingPMF,

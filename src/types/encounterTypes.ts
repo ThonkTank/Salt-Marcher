@@ -1,5 +1,5 @@
-// Encounter-Typen: Runtime-Repräsentation und Trigger für Encounters
-// Siehe: docs/entities/encounter-instance.md
+// Encounter-Typen: Sub-Schemas für Encounter-Pipeline und EncounterPreset
+// Siehe: docs/types/encounter-preset.md
 
 import { z } from 'zod';
 import { npcSchema } from './entities/npc';
@@ -125,20 +125,3 @@ export const encounterContextSchema = z.object({
 });
 export type EncounterContext = z.infer<typeof encounterContextSchema>;
 
-// ============================================================================
-// ENCOUNTER INSTANCE (Runtime - generiert vom Encounter-Service)
-// ============================================================================
-
-export const encounterInstanceSchema = z.object({
-  id: z.string().min(1),
-  groups: z.array(encounterGroupSchema),
-  alliances: z.record(z.string(), z.array(z.string())),  // groupId → verbündete groupIds
-  npcs: z.array(z.string()), // NPC-IDs (1-3 NPCs pro Encounter)
-  loot: encounterLootSchema,
-  perception: encounterPerceptionSchema,
-  difficulty: encounterDifficultySchema,
-  context: encounterContextSchema,
-  description: z.string(),
-});
-
-export type EncounterInstance = z.infer<typeof encounterInstanceSchema>;

@@ -52,7 +52,7 @@
 // - Requires: spellSlots Feld auf Character Entity
 // - Alternativ: Inferenz aus Character-Level und Class
 
-import type { Action } from '@/types/entities';
+import type { Action, SchemaModifier, PropertyModifier } from '@/types/entities';
 import type { Combatant, CombatResources } from '@/types/combat';
 import { getActions } from '../../combatTracking';
 // Standard-Actions (Dash, Disengage, Dodge) - verfuegbar fuer alle Combatants
@@ -363,6 +363,102 @@ export function getEscapeActionsForCombatant(combatant: Combatant): Action[] {
 }
 
 // ============================================================================
+// TIMING OVERRIDES (Property Modifiers)
+// ============================================================================
+
+/**
+ * Prueft ob eine Action ID mit einem action-is-id Predicate matcht.
+ * Unterstuetzt sowohl einzelne IDs als auch Arrays.
+ */
+function matchesActionId(
+  condition: { type: string; actionId?: string | string[] },
+  actionId: string
+): boolean {
+  if (condition.type !== 'action-is-id') return false;
+  const ids = Array.isArray(condition.actionId) ? condition.actionId : [condition.actionId];
+  return ids.includes(actionId);
+}
+
+/**
+ * Wendet PropertyModifiers auf eine Action an.
+ * Unterstuetzt 'set' Operation fuer timing.type Overrides.
+ *
+ * @param action Die urspruengliche Action
+ * @param modifiers Die anzuwendenden PropertyModifiers
+ * @returns Kopie der Action mit angewandten Modifiers
+ */
+function applyPropertyModifiers(action: Action, modifiers: PropertyModifier[] | undefined): Action {
+  if (!modifiers || modifiers.length === 0) return action;
+
+  // Shallow copy - wir modifizieren nur timing
+  let modified = { ...action };
+
+  for (const mod of modifiers) {
+    // Nur timing.type wird aktuell unterstuetzt
+    if (mod.path === 'timing.type' && mod.operation === 'set') {
+      modified = {
+        ...modified,
+        timing: {
+          ...modified.timing,
+          type: mod.value as 'action' | 'bonus' | 'reaction' | 'legendary' | 'lair' | 'mythic' | 'free' | 'passive',
+        },
+      };
+      debug('applyPropertyModifiers: timing override', {
+        action: action.id,
+        from: action.timing?.type,
+        to: mod.value,
+      });
+    }
+    // Weitere property paths koennen hier ergaenzt werden
+  }
+
+  return modified;
+}
+
+/**
+ * Wendet Timing-Overrides von passiven Traits auf Actions an.
+ * Passive Traits mit schemaModifiers koennen action-is-id Conditions nutzen
+ * um z.B. Disengage/Hide zu Bonus Actions zu machen (Nimble Escape).
+ *
+ * @param actions Die zu modifizierenden Actions
+ * @param allActions Alle Actions des Combatants (inkl. passive Traits)
+ * @returns Actions mit angewandten Timing-Overrides
+ */
+function applyTimingOverrides(actions: Action[], allActions: Action[]): Action[] {
+  // 1. Sammle alle schemaModifiers mit action-is-id condition aus passiven Traits
+  const passiveTraits = allActions.filter(a => a.timing?.type === 'passive');
+  const timingModifiers: { modifier: SchemaModifier; trait: Action }[] = [];
+
+  for (const trait of passiveTraits) {
+    if (!trait.schemaModifiers) continue;
+    for (const mod of trait.schemaModifiers) {
+      if (mod.condition.type === 'action-is-id' && mod.effect.propertyModifiers) {
+        timingModifiers.push({ modifier: mod, trait });
+      }
+    }
+  }
+
+  if (timingModifiers.length === 0) return actions;
+
+  debug('applyTimingOverrides: found modifiers', {
+    count: timingModifiers.length,
+    traits: timingModifiers.map(m => m.trait.id),
+  });
+
+  // 2. Fuer jede Action pruefen ob ein Modifier matcht
+  return actions.map(action => {
+    const matchingMod = timingModifiers.find(({ modifier }) =>
+      matchesActionId(modifier.condition, action.id)
+    );
+
+    if (!matchingMod) return action;
+
+    // 3. propertyModifiers anwenden
+    return applyPropertyModifiers(action, matchingMod.modifier.effect.propertyModifiers);
+  });
+}
+
+// ============================================================================
 // AVAILABLE ACTIONS
 // ============================================================================
 
@@ -383,5 +479,9 @@ export function getAvailableActionsForCombatant(
   const combatantActions = getActions(combatant);
   const escapeActions = getEscapeActionsForCombatant(combatant);
   const allActions = [...combatantActions, ...standardActions, ...escapeActions];
-  return allActions.filter(a => isActionUsable(a, combatant, context));
+
+  // Wende Timing-Overrides von passiven Traits an (z.B. Nimble Escape)
+  const modifiedActions = applyTimingOverrides(allActions, combatantActions);
+
+  return modifiedActions.filter(a => isActionUsable(a, combatant, context));
 }

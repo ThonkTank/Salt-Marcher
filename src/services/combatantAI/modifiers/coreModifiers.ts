@@ -1,19 +1,15 @@
 // Ziel: Re-export Core Combat Modifiers aus Presets
 // Siehe: docs/services/combatantAI/combatantAI.md
 //
-// Dieses Modul re-exportiert alle Core Modifier aus presets/modifiers/.
-// Die Definitionen liegen zentral in den Presets, um Wiederverwendung zu ermöglichen.
+// Dieses Modul re-exportiert AI-spezifische Modifier aus presets/modifiers/.
+// Standard D&D 5e Modifier werden von gatherModifiers.ts gehandhabt (Single Source of Truth).
 
-// Re-export alle Core Modifiers aus Presets
-// NOTE: packTacticsModifier removed - now defined as passive action in presets/actions/
+// Re-export AI-spezifische Modifiers aus Presets
 export {
   // Individual modifiers
-  longRangeModifier,
-  rangedInMeleeModifier,
-  proneTargetCloseModifier,
-  proneTargetFarModifier,
-  restrainedModifier,
   halfCoverModifier,
+  bloodiedFrenzyModifier,
+  auraOfAuthorityModifier,
   // Collection
   modifierPresets as CORE_MODIFIERS,
   modifierPresetsMap,

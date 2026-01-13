@@ -20,6 +20,7 @@ import type {
   ThreatMapEntry,
 } from '@/types/combat';
 import { buildThreatMap, getOpportunityAt } from '../layers';
+import { toTurnAction } from '../core/actionEnumeration';
 import { positionToKey } from '@/utils';
 import {
   getActionMaxRangeCells,
@@ -369,15 +370,7 @@ export const factoredSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    // Return with score property
-    return {
-      type: 'action',
-      action: best.action,
-      target: best.target,
-      fromPosition: best.fromPosition,
-      targetCell: best.targetCell,
-      score: best.score,
-    };
+    return toTurnAction(best);
   },
 
   getStats(): SelectorStats {

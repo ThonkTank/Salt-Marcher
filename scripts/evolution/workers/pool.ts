@@ -66,7 +66,7 @@ export function hasCompiledWorker(): boolean {
 import type { NEATGenome } from '../../../src/services/combatantAI/evolution';
 import { serializeGenome } from '../../../src/services/combatantAI/evolution';
 import type { GenomeEvaluation, TournamentConfig } from '../tournament/tournament';
-import type { ScenarioConfig } from '../tournament/scenarios';
+import type { AuthoredPreset } from '../../../src/types/entities/encounterPreset';
 
 // ============================================================================
 // TYPES
@@ -94,7 +94,7 @@ export interface EvaluationJob {
   opponents: SerializedOpponent[];
   /** Tournament configuration subset */
   config: {
-    scenarios: ScenarioConfig[];
+    scenarios: AuthoredPreset[];
     fightsPerGenome: number;
     maxRounds: number;
     selfPlayRatio: number;
@@ -135,6 +135,17 @@ export type EvalProgressCallback = (progress: {
   total: number;
   genomeId: string;
   fitness: number;
+  nodeCount: number;
+  connectionCount: number;
+  speciesId: number;
+  // Combat-Stats des aktuellen Genomes (für "Last" Tab im Dashboard)
+  hitRate: number;
+  kills: number;
+  deaths: number;
+  hpLost: number;
+  wins: number;
+  losses: number;
+  draws: number;
 }) => void;
 
 /**
@@ -430,6 +441,16 @@ export function createWorkerPool(workerCount?: number): WorkerPool {
       const total = genomes.length;
       let completedCount = 0;
 
+      // Create genome metadata map for progress callback
+      const genomeMetadata = new Map<string, { nodeCount: number; connectionCount: number; speciesId: number }>();
+      for (const genome of genomes) {
+        genomeMetadata.set(genome.id, {
+          nodeCount: genome.nodes.length,
+          connectionCount: genome.connections.length,
+          speciesId: genome.species,
+        });
+      }
+
       // Create jobs for all genomes
       const jobs: EvaluationJob[] = genomes.map(genome => ({
         jobId: nextJobId++,
@@ -453,11 +474,23 @@ export function createWorkerPool(workerCount?: number): WorkerPool {
         const promise = dispatchJob(workerState, job).then(result => {
           completedCount++;
           if (onProgress) {
+            const meta = genomeMetadata.get(result.genomeId);
             onProgress({
               current: completedCount,
               total,
               genomeId: result.genomeId,
               fitness: result.fitness,
+              nodeCount: meta?.nodeCount ?? 0,
+              connectionCount: meta?.connectionCount ?? 0,
+              speciesId: meta?.speciesId ?? 0,
+              // Combat-Stats aus der Evaluation
+              hitRate: result.hitRate,
+              kills: result.totalKills,
+              deaths: result.totalDeaths,
+              hpLost: result.avgHPLostPercent,
+              wins: result.wins,
+              losses: result.losses,
+              draws: result.draws,
             });
           }
           return result;
@@ -582,6 +615,17 @@ export function createSequentialPool(): WorkerPool {
             total,
             genomeId: evaluation.genomeId,
             fitness: evaluation.fitness,
+            nodeCount: genome.nodes.length,
+            connectionCount: genome.connections.length,
+            speciesId: genome.species,
+            // Combat-Stats aus der Evaluation
+            hitRate: evaluation.hitRate,
+            kills: evaluation.totalKills,
+            deaths: evaluation.totalDeaths,
+            hpLost: evaluation.avgHPLostPercent,
+            wins: evaluation.wins,
+            losses: evaluation.losses,
+            draws: evaluation.draws,
           });
         }
       }

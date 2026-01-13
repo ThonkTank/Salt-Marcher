@@ -24,7 +24,7 @@ import type {
   Combatant,
 } from '@/types/combat';
 import { buildThreatMap } from '../layers';
-import { buildPossibleActions, type ScoredAction } from '../core/actionEnumeration';
+import { buildPossibleActions, toTurnAction, type ScoredAction } from '../core/actionEnumeration';
 import { positionsEqual, getExpectedValue, calculateDeathProbability } from '@/utils';
 import { getDistance, getReachableCells } from '../helpers/combatHelpers';
 import {
@@ -308,21 +308,16 @@ function simulateGreedyTurn(
     if (action.type === 'pass') break;
 
     // Apply position change
-    const actionScore = action.score ?? 0;
     currentState = applyActionToState(currentState, combatant.id, {
       action: action.action,
       target: action.target,
-      fromPosition: action.fromPosition,
-      targetCell: action.targetCell,
-      score: actionScore,
+      fromPosition: action.position,
+      score: 0,  // Score is internal, not tracked per turn
     });
-
-    // Track damage dealt
-    totalDamage += actionScore;
 
     // Consume budget
     const consumption = getBudgetConsumption(action.action);
-    const movementUsed = getDistance(getPosition(currentCombatant), action.fromPosition);
+    const movementUsed = getDistance(getPosition(currentCombatant), action.position);
     budget = consumeBudget(budget, {
       ...consumption,
       movementCells: movementUsed,
@@ -640,14 +635,7 @@ export const minimaxSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    return {
-      type: 'action',
-      action: result.action.action,
-      target: result.action.target,
-      fromPosition: result.action.fromPosition,
-      targetCell: result.action.targetCell,
-      score: result.action.score,
-    };
+    return toTurnAction(result.action);
   },
 
   getStats(): SelectorStats {

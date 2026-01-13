@@ -23,7 +23,7 @@ import type {
   Combatant,
 } from '@/types/combat';
 import { buildThreatMap } from '../layers';
-import { buildPossibleActions, type ScoredAction } from '../core/actionEnumeration';
+import { buildPossibleActions, toTurnAction, type ScoredAction } from '../core/actionEnumeration';
 import { positionToKey, positionsEqual } from '@/utils';
 import { getDistance, getReachableCells } from '../helpers/combatHelpers';
 import { getPosition } from '../../combatTracking';
@@ -461,14 +461,7 @@ export const killerSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    return {
-      type: 'action',
-      action: first.action,
-      target: first.target,
-      fromPosition: first.fromPosition,
-      targetCell: first.targetCell,
-      score: first.score,
-    };
+    return toTurnAction(first);
   },
 
   getStats(): SelectorStats {

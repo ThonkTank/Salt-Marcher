@@ -1,20 +1,43 @@
-/* NEAT Evolution Dashboard - Dark Theme */
+/* ==========================================================================
+   NEAT Evolution Dashboard - Dark Theme
+   ========================================================================== */
+
+/* ==========================================================================
+   1. VARIABLES & RESET
+   ========================================================================== */
 
 :root {
+  /* Backgrounds */
   --bg-primary: #1a1a2e;
   --bg-secondary: #16213e;
   --bg-card: #1f2940;
+  --bg-worker: #1f2937;
+
+  /* Text */
   --text-primary: #e8e8e8;
   --text-secondary: #a0a0a0;
   --text-muted: #6b7280;
+
+  /* Accents */
   --accent-green: #10b981;
   --accent-blue: #3b82f6;
   --accent-yellow: #f59e0b;
   --accent-red: #ef4444;
   --accent-purple: #8b5cf6;
+
+  /* Borders */
   --border-color: #374151;
+  --border-worker: #374151;
+
+  /* Progress */
   --progress-bg: #374151;
   --progress-fill: linear-gradient(90deg, #10b981, #3b82f6);
+
+  /* Worker */
+  --worker-idle: #4b5563;
+
+  /* Font */
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
 }
 
 * {
@@ -31,13 +54,16 @@ body {
   min-height: 100vh;
 }
 
+/* ==========================================================================
+   2. LAYOUT (Container, Header, Grid)
+   ========================================================================== */
+
 .container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
 }
 
-/* Header */
 .header {
   display: flex;
   justify-content: space-between;
@@ -81,7 +107,11 @@ body {
   color: var(--accent-red);
 }
 
-/* Progress Bar */
+/* ==========================================================================
+   3. PROGRESS BARS
+   ========================================================================== */
+
+/* Generation Progress (large) */
 .progress-container {
   position: relative;
   height: 32px;
@@ -110,7 +140,7 @@ body {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-/* Evaluation Progress (Genome-level) */
+/* Evaluation Progress (small) */
 .eval-progress-container {
   position: relative;
   height: 20px;
@@ -140,7 +170,10 @@ body {
   white-space: nowrap;
 }
 
-/* Charts Grid */
+/* ==========================================================================
+   4. CHARTS
+   ========================================================================== */
+
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -172,8 +205,15 @@ body {
   max-height: 200px;
 }
 
-/* Stats Panel */
+/* ==========================================================================
+   5. STATS PANEL & TABS
+   ========================================================================== */
+
 .stats-panel {
+  background-color: var(--bg-card);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
 }
@@ -184,6 +224,48 @@ body {
   border-top: 1px solid var(--border-color);
 }
 
+/* Tabs */
+.tab-container {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.tab.active {
+  background-color: var(--accent-blue);
+  color: white;
+}
+
+.tab-content {
+  transition: opacity 0.2s ease;
+}
+
+.tab-content.hidden {
+  display: none;
+}
+
+/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -194,6 +276,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  position: relative;
 }
 
 .stat-label {
@@ -207,14 +290,17 @@ body {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-primary);
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 .stat-highlight {
   color: var(--accent-green);
 }
 
-/* Worker Status */
+/* ==========================================================================
+   6. WORKERS
+   ========================================================================== */
+
 .worker-container {
   background-color: var(--bg-card);
   border-radius: 12px;
@@ -229,6 +315,7 @@ body {
   margin-bottom: 15px;
 }
 
+/* Worker Grid (dots mode) */
 .worker-grid {
   display: flex;
   gap: 8px;
@@ -236,18 +323,25 @@ body {
   margin-bottom: 10px;
 }
 
+.worker-grid--cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+/* Worker Indicator (dot) */
 .worker-indicator {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background-color: #4b5563;
-  border: 2px solid #6b7280;
+  background-color: var(--worker-idle);
+  border: 2px solid var(--text-muted);
   transition: all 0.2s ease;
 }
 
 .worker-indicator.active {
-  background-color: #10b981;
-  border-color: #10b981;
+  background-color: var(--accent-green);
+  border-color: var(--accent-green);
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
 }
 
@@ -256,15 +350,7 @@ body {
   color: var(--text-muted);
 }
 
-/* Worker Card Grid */
-.worker-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-/* Spinner animation for active workers */
+/* Worker Card (detailed mode) */
 @keyframes worker-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -279,9 +365,9 @@ body {
   display: flex;
   flex-direction: column;
   padding: 12px;
-  background: #1f2937;
+  background: var(--bg-worker);
   border-radius: 8px;
-  border: 1px solid #374151;
+  border: 1px solid var(--border-worker);
   min-width: 140px;
   transition: all 0.3s ease;
 }
@@ -296,6 +382,8 @@ body {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+  border: none;
+  padding: 0;
 }
 
 .worker-card .header span {
@@ -307,7 +395,7 @@ body {
 .worker-card .spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid #374151;
+  border: 2px solid var(--border-worker);
   border-top-color: var(--accent-green);
   border-radius: 50%;
   animation: worker-spin 1s linear infinite;
@@ -321,7 +409,7 @@ body {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #6b7280;
+  background: var(--text-muted);
 }
 
 .worker-card.active .status-dot {
@@ -337,12 +425,12 @@ body {
 
 .worker-card .details .job-id {
   color: var(--accent-blue);
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 .worker-card .details .duration {
   color: var(--accent-yellow);
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 .worker-card .details .idle-text {
@@ -352,12 +440,15 @@ body {
 .worker-card .stats {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #374151;
+  border-top: 1px solid var(--border-worker);
   font-size: 0.7rem;
   color: var(--text-muted);
 }
 
-/* Completion Overlay */
+/* ==========================================================================
+   7. OVERLAYS & MODALS
+   ========================================================================== */
+
 .overlay {
   position: fixed;
   top: 0;
@@ -411,8 +502,12 @@ body {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-family: var(--font-mono);
 }
+
+/* ==========================================================================
+   8. UTILITIES & ANIMATIONS
+   ========================================================================== */
 
 /* Scrollbar */
 ::-webkit-scrollbar {
@@ -433,7 +528,7 @@ body {
   background: var(--text-muted);
 }
 
-/* Animation for new data */
+/* Update Animation */
 @keyframes pulse {
   0% { opacity: 1; }
   50% { opacity: 0.6; }
@@ -442,4 +537,59 @@ body {
 
 .updating {
   animation: pulse 0.3s ease;
+}
+
+/* ==========================================================================
+   9. TOOLTIPS
+   ========================================================================== */
+
+.stat-item[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  text-transform: none;
+  letter-spacing: normal;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 100;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.stat-item[data-tooltip]::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 2px;
+  border: 6px solid transparent;
+  border-top-color: var(--border-color);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 101;
+}
+
+.stat-item[data-tooltip]:hover::after,
+.stat-item[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+.stat-item[data-tooltip] {
+  cursor: help;
 }

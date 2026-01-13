@@ -42,6 +42,7 @@ Weapon-Attacks, Spell-Attacks, AoE, Buffs/Debuffs, Healing, Summoning, Transform
 | `properties` | `string[]?` | Waffen-Eigenschaften | Optional |
 | `schemaModifiers` | `SchemaModifier[]?` | Schema-driven Modifier | Optional |
 | `modifierRefs` | `string[]?` | IDs von Modifier-Presets | Optional |
+| `aura` | `Aura?` | Emanation fuer Aura-Traits | Optional |
 | `source` | `ActionSource?` | Herkunft | Optional |
 
 ---
@@ -366,8 +367,31 @@ type ActionRecharge =
 
 | Feld | Typ | Beschreibung |
 |------|-----|--------------|
-| `attacks` | `{ actionRef: string; count: number }[]` | Angriffs-Sequenz |
+| `attacks` | `MultiattackEntry[]` | Angriffs-Sequenz |
 | `description` | `string?` | Beschreibung |
+
+### MultiattackEntry
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `actionRef` | `string` | Referenz zur Action (Name) |
+| `count` | `number` | Anzahl dieser Attacke |
+| `orRef` | `string?` | Alternative Action fuer "X oder Y" Kombinationen |
+
+**orRef Pattern:**
+
+Fuer Multiattacks mit "X oder Y" Kombinationen (z.B. "2x Greatsword oder Longbow"):
+
+```typescript
+multiattack: {
+  attacks: [
+    { actionRef: 'Greatsword', count: 2, orRef: 'Longbow' }
+  ],
+  description: 'The hobgoblin captain makes two attacks (Greatsword or Longbow).'
+}
+```
+
+Die AI waehlt automatisch die bessere Option basierend auf Distanz und erwartetem Schaden.
 
 ### ForcedMovement
 
@@ -492,6 +516,47 @@ schemaModifiers: [{
 ```
 
 > **Schema:** [conditionExpression.ts](../../src/types/entities/conditionExpression.ts)
+
+### Aura
+
+Aura-Definition fuer Emanations (z.B. Aura of Authority, Paladin Auras).
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `radius` | `number` | Radius in Feet (z.B. 10 fuer 10ft Emanation) |
+
+Wenn `aura` auf einer passive Action mit `schemaModifiers` gesetzt ist, werden diese Modifier automatisch auf alle Allies innerhalb des Radius angewendet (via `evaluateSituationalModifiers()`).
+
+**Voraussetzungen:**
+- Aura-Owner darf nicht incapacitated sein
+- Ally muss sich innerhalb des Radius befinden
+- Action muss `timing.type: 'passive'` haben
+
+**Beispiel (Aura of Authority):**
+
+```typescript
+const auraOfAuthority: Action = {
+  id: 'trait-aura-of-authority',
+  name: 'Aura of Authority',
+  actionType: 'buff',
+  timing: { type: 'passive' },
+  range: { type: 'self', normal: 0 },
+  targeting: { type: 'single', validTargets: 'self' },
+  autoHit: true,
+  aura: { radius: 10 },  // 10ft emanation
+  schemaModifiers: [{
+    id: 'aura-of-authority',
+    name: 'Aura of Authority',
+    description: 'Advantage on attack rolls within aura',
+    condition: {
+      type: 'not',
+      condition: { type: 'is-incapacitated', entity: 'attacker' },
+    },
+    effect: { advantage: true },
+    priority: 8,
+  }],
+};
+```
 
 ### Critical
 
@@ -816,3 +881,136 @@ const legendaryResistance: Action = {
   }]
 };
 ```
+
+---
+
+## Spellcasting-System
+
+Generische Spells und Spellcasting-Traits ermoeglichen kreatur-unabhaengige Zauber.
+Stats (attack bonus, save DC) werden zur Laufzeit aus dem Spellcasting-Trait des Casters injiziert.
+
+### isSpell Marker
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `isSpell` | `boolean?` | Markiert generische Spells |
+
+Spells mit `isSpell: true` erhalten ihre Stats (attack bonus, save DC) zur Laufzeit vom Spellcasting-Trait des Casters via `resolveSpellWithCaster()`.
+
+### Spellcasting Feld
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `spellcasting` | `Spellcasting?` | Spellcasting-Feature fuer Traits |
+
+### Spellcasting Schema
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `ability` | `AbilityType` | Spellcasting Ability (wis, int, cha) |
+| `attackBonus` | `number` | Spell Attack Bonus |
+| `saveDC` | `number` | Spell Save DC |
+| `spells` | `SpellEntry[]` | Verfuegbare Spells |
+| `pools` | `Record<string, SpellPool>?` | Shared Resource Pools |
+
+### SpellEntry
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `spellId` | `string` | Referenz auf generischen Spell (z.B. `spell-bless`) |
+| `uses` | `'at-will' \| number?` | Individuelle Uses (at-will oder X/Day) |
+| `poolId` | `string?` | Shared Pool Referenz (alternative zu `uses`) |
+
+### SpellPool
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `uses` | `number` | Anzahl Uses im Pool |
+| `rechargeOn` | `'short-rest' \| 'long-rest'` | Recharge-Zeitpunkt |
+
+### breakConcentration Effect
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `breakConcentration` | `boolean?` | Bricht Concentration des Ziels (Dispel Magic) |
+
+### Architektur
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Generische Spell-Actions                                    │
+│   spell-light, spell-dispel-magic, spell-spirit-guardians   │
+│   → Haben attack: { bonus: 0 } oder save: { dc: 0 }         │
+│   → Marker: isSpell: true                                   │
+└─────────────────────────────────────────────────────────────┘
+                           ↑
+                  Stats werden injiziert von
+                           ↑
+┌─────────────────────────────────────────────────────────────┐
+│ Spellcasting-Trait (pro Creature)                           │
+│   priest-spellcasting                                       │
+│   → spellcasting: { ability, attackBonus, saveDC, spells }  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Beispiel: Priest Spellcasting
+
+```typescript
+// Spellcasting-Trait (passive Action auf Creature)
+const priestSpellcasting: Action = {
+  id: 'priest-spellcasting',
+  name: 'Spellcasting (Priest)',
+  actionType: 'buff',
+  timing: { type: 'passive' },
+  range: { type: 'self', normal: 0 },
+  targeting: { type: 'single', validTargets: 'self' },
+  spellcasting: {
+    ability: 'wis',
+    attackBonus: 5,
+    saveDC: 13,
+    spells: [
+      // At-will Cantrips
+      { spellId: 'spell-light', uses: 'at-will' },
+      { spellId: 'spell-radiant-flame', uses: 'at-will' },
+      // 1/Day
+      { spellId: 'spell-spirit-guardians', uses: 1 },
+      // Shared Pool (Divine Aid 3/Day TOTAL)
+      { spellId: 'spell-bless', poolId: 'divine-aid' },
+      { spellId: 'spell-dispel-magic', poolId: 'divine-aid' },
+      { spellId: 'spell-healing-word', poolId: 'divine-aid' },
+      { spellId: 'spell-lesser-restoration', poolId: 'divine-aid' },
+    ],
+    pools: {
+      'divine-aid': { uses: 3, rechargeOn: 'long-rest' },
+    },
+  },
+};
+
+// Generischer Spell (attack bonus = 0, wird zur Laufzeit ersetzt)
+const radiantFlame: Action = {
+  id: 'spell-radiant-flame',
+  name: 'Radiant Flame',
+  actionType: 'ranged-spell',
+  isSpell: true,
+  timing: { type: 'action' },
+  range: { type: 'ranged', normal: 60 },
+  targeting: { type: 'single', validTargets: 'enemies' },
+  attack: { bonus: 0 }, // → wird zu bonus: 5 (aus priest-spellcasting)
+  damage: { dice: '2d10', modifier: 0, type: 'radiant' },
+};
+
+// Dispel Magic mit breakConcentration
+const dispelMagic: Action = {
+  id: 'spell-dispel-magic',
+  name: 'Dispel Magic',
+  actionType: 'debuff',
+  isSpell: true,
+  timing: { type: 'action' },
+  range: { type: 'ranged', normal: 120 },
+  targeting: { type: 'single', validTargets: 'any' },
+  autoHit: true,
+  effects: [{ breakConcentration: true, affectsTarget: 'enemy' }],
+};
+```
+
+> **Schema:** [action.ts](../../src/types/entities/action.ts)

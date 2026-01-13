@@ -8,7 +8,7 @@ import type {
   TurnBudget,
   TurnAction,
 } from '@/types/combat';
-import { buildPossibleActions } from '../core';
+import { buildPossibleActions, toTurnAction } from '../core';
 import { buildThreatMap } from '../layers';
 import { positionToKey, randomSelect } from '@/utils';
 import { getReachableCells } from '../helpers/combatHelpers';
@@ -115,15 +115,7 @@ export const randomSelector: ActionSelector = {
       elapsedMs: lastStats.elapsedMs.toFixed(2),
     });
 
-    // TurnAction mit Score zurückgeben
-    return {
-      type: 'action',
-      action: selected.action,
-      target: selected.target,
-      fromPosition: selected.fromPosition,
-      targetCell: selected.targetCell,
-      score: selected.score,
-    };
+    return toTurnAction(selected);
   },
 
   getStats(): SelectorStats {
