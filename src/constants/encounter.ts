@@ -10,7 +10,7 @@ export const NARRATIVE_ROLES = ['threat', 'victim', 'neutral', 'ally'] as const;
 export type NarrativeRole = typeof NARRATIVE_ROLES[number];
 
 // D&D 5e Encounter-Schwierigkeitsgrade
-export const DIFFICULTY_LABELS = ['trivial', 'easy', 'moderate', 'hard', 'deadly'] as const;
+export const DIFFICULTY_LABELS = ['trivial', 'easy', 'medium', 'hard', 'deadly'] as const;
 export type DifficultyLabel = typeof DIFFICULTY_LABELS[number];
 
 // Gruppen-Status für Encounter-Gruppen

@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # combatTracking Service
 
 > **Verantwortlichkeit:** Combat Resolution (READ-ONLY)
@@ -35,7 +38,7 @@ Der combatTracking Service ist **READ-ONLY**. Er berechnet was passieren wuerde 
 |----------|--------------|
 | [actionResolution.md](actionResolution.md) | **Pipeline-Architektur** - Unified Resolution fuer alle Aktionen |
 | [findTargets.md](findTargets.md) | Target Selection, AoE, Range-Validierung |
-| [gatherModifiers.md](gatherModifiers.md) | Modifier Collection (Adv/Disadv, Boni, AC) |
+| [getModifiers.md](getModifiers.md) | Modifier Collection (Adv/Disadv, Boni, AC) |
 | [determineSuccess.md](determineSuccess.md) | Attack/Save/Contested Resolution |
 | [resolveEffects.md](resolveEffects.md) | Effect Resolution → ResolutionResult |
 | [triggers.md](triggers.md) | Trigger-System (Zones, Reactions, OA) |
@@ -54,14 +57,16 @@ src/services/combatTracking/           # READ-ONLY Service
 ├── index.ts                           # Oeffentliche API
 ├── combatState.ts                     # State-Accessors (READ-ONLY)
 ├── initialiseCombat.ts                # Combat-Initialisierung
+├── conditionLifecycle.ts              # Condition-Lifecycle-Pipeline (linked, death, sync)
+├── movement.ts                        # Movement-Logik (READ-ONLY)
 │
 ├── resolution/                        # Pipeline-Komponenten (alle READ-ONLY)
 │   ├── index.ts                       # Re-exports
-│   ├── types.ts                       # Interface-Definitionen
-│   ├── findTargets.ts                 # Target Selection
-│   ├── gatherModifiers.ts             # Modifier Collection
-│   ├── determineSuccess.ts            # Attack/Save/Contested
-│   └── resolveEffects.ts              # Effect Resolution → ResolutionResult
+│   ├── resolveAction.ts               # Pipeline-Orchestrator (ruft 4 Steps)
+│   ├── findTargets.ts                 # Step 1: Target Selection
+│   ├── getModifiers.ts                # Step 2: Modifier Collection
+│   ├── determineSuccess.ts            # Step 3: Attack/Save/Contested
+│   └── resolveEffects.ts              # Step 4: Effect Resolution → ResolutionResult
 │
 └── triggers/                          # Trigger-Erkennung (READ-ONLY)
     ├── index.ts
@@ -70,7 +75,7 @@ src/services/combatTracking/           # READ-ONLY Service
 
 src/workflows/
 └── combatWorkflow.ts                  # State-Owner (WRITE)
-    ├── executeAction()                # Orchestriert Pipeline + Apply
+    ├── runAction()                    # Ruft resolveAction() + applyResult()
     ├── applyResult()                  # State-Mutation
     └── writeProtocol()                # Protocol-Entry
 ```
@@ -79,6 +84,8 @@ src/workflows/
 |-------|-------|
 | `combatState.ts` | State-Accessors (READ-ONLY), Turn Budget |
 | `initialiseCombat.ts` | Combat + AI Layer Initialisierung |
+| `conditionLifecycle.ts` | Linked Conditions, Death Triggers, Position Sync |
+| `movement.ts` | Movement-Budget, Pathfinding, OA-Trigger (READ-ONLY) |
 | `resolution/` | Action Resolution Pipeline (4 Schritte, READ-ONLY) |
 | `triggers/` | Wann wird Pipeline aufgerufen (aktiv, Zone, Reaction) |
 | `combatWorkflow.ts` | State-Mutation, Protocol-Logging (WRITE) |
@@ -192,13 +199,68 @@ D&D 5e Aktionsökonomie: Movement, Action, Bonus Action, Reaction.
 ```typescript
 // Beide haben combatState für transiente Combat-Daten
 interface CombatantState {
-  position: GridPosition;
-  conditions: ConditionState[];
-  resources?: CombatResources;
-  groupId: string;
-  concentratingOn?: string;
+  position: GridPosition;               // Cell-Indizes (5ft-Cells)
+  conditions: ConditionState[];         // Legacy: einfache Condition-Liste
+  modifiers: ActiveModifier[];          // NEU: Unified Modifier System
+  resources?: CombatResources;          // Spell Slots, Recharge Timer
+  inventory: CombatInventoryItem[];     // Combat-Inventory (Items, Munition)
+  concentratingOn?: string;             // Action-ID des Konzentrations-Spells
+  groupId: string;                      // 'party' fuer PCs, UUID fuer NPCs
+  isDead: boolean;                      // true wenn deathProb >= 0.95
 }
 ```
+
+### CombatInventoryItem
+
+```typescript
+interface CombatInventoryItem {
+  id: string;           // Item-ID (z.B. 'crossbow-bolt', 'healing-potion')
+  quantity: number;     // Verbleibende Anzahl
+  tags?: string[];      // Item-Tags fuer itemTag-basierte Cost-Typen
+}
+```
+
+Bei Combat-Start wird Inventory aus NPC.possessions oder Character.inventory kopiert. Bei `consume-item` Cost wird quantity dekrementiert.
+
+### Modifier-System (modifiers vs conditions)
+
+Das Combat-System verwendet zwei parallele Tracking-Systeme:
+
+| System | Verwendung | Format |
+|--------|------------|--------|
+| `modifiers: ActiveModifier[]` | **Unified Modifier System** fuer komplexe Effekte | SchemaModifier + Runtime-Metadaten |
+| `conditions: ConditionState[]` | **Legacy-System** fuer einfache Statuseffekte | Name + Probability |
+
+**modifiers** ist das neue System fuer:
+- Conditions mit kontextuellen Effekten (whenAttacking, whenDefending)
+- Buffs mit Konzentrations-Tracking
+- Traits mit komplexen Bedingungen
+- Zeitbasierte Modifier mit Duration
+
+**conditions** bleibt fuer:
+- Einfache HP-basierte Statuseffekte (unconscious bei 0 HP)
+- Direkte Effect-Namen ohne Schema (incapacitated, disadvantage)
+- Abwaertskompatibilitaet mit aelterem Code
+
+```typescript
+// Unified Modifier (modifiers[])
+interface ActiveModifier {
+  modifier: SchemaModifier;      // Vollstaendige Definition
+  source: ModifierSource;        // Woher kommt der Modifier?
+  duration?: Duration;           // Wann endet er?
+  probability: number;           // Wahrscheinlichkeit (1.0 = sicher)
+}
+
+// Legacy Condition (conditions[])
+interface ConditionState {
+  name: string;                  // z.B. 'restrained', 'stunned'
+  probability: number;
+  effect: string;                // z.B. 'incapacitated', 'disadvantage'
+  value?: number;                // Fuer numerische Buffs
+}
+```
+
+**Langfristiges Ziel:** conditions wird durch modifiers ersetzt.
 
 ### TurnBudget
 

@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # planNextAction
 
 > **Verantwortlichkeit:** Entry Point und Orchestration der Action-Selection
@@ -147,15 +150,15 @@ return { type: 'action', action: best.action, target: best.target, fromPosition:
 // Aufruf-Loop in difficulty.simulateTurn() oder CombatWorkflow
 while (true) {
   action = selectNextAction(combatant, state, budget)  // AI: Read-only
-  result = executeAction(combatant, action, state, budget)  // Tracking: Mutation
+  result = runAction({ actorId, turnAction: action }, state)  // Workflow: Mutation
   if (action.type === 'pass') break
 }
 ```
 
 **Vorteile:**
-- Saubere Trennung: AI (Read-only) vs Tracking (Mutation)
+- Saubere Trennung: AI (Read-only) vs Workflow (Mutation)
 - Protocol-Eintrag pro Aktion (nicht pro Turn)
-- Budget-Mutation durch executeAction(), nicht AI
+- Budget-Mutation durch runAction(), nicht AI
 
 ---
 
@@ -249,7 +252,7 @@ interface TurnBudget {
 | Kontext | Funktion | Verhalten |
 |---------|----------|-----------|
 | AI (Look-Ahead) | `consumeBudget()` | Immutable, returned neues Budget |
-| Tracking (Real) | `executeAction()` | Mutiert State + Budget |
+| Workflow (Real) | `runAction()` | Mutiert State + Budget |
 
 Die AI arbeitet **read-only** und darf den echten State/Budget nicht mutieren.
 
@@ -378,7 +381,7 @@ function consumeActionResource(
 ): void  // Mutates resources
 ```
 
-**Wird aufgerufen bei:** Nach erfolgreicher Action-Ausfuehrung (in `executeAction.ts`)
+**Wird aufgerufen bei:** Nach erfolgreicher Action-Ausfuehrung (in `combatWorkflow.ts`)
 
 ### Recharge-Timer
 

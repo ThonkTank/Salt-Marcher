@@ -35,13 +35,14 @@
   //
   // ============================================================================
 
-  import type { CombatState, Combatant } from '@/types/combat';
+  import type { CombatState, Combatant, ManualRollData } from '@/types/combat';
   import type { Action } from '#entities/action';
   import type {
     GridPosition,
     ActionModifier,
     ResolutionRequest,
     ResolutionResult,
+    RollResult,
   } from '@/views/shared/types';
 
   import { GridCanvas, ActionPanel, ResolutionPopup } from '@/views/shared';
@@ -57,7 +58,7 @@
     onAcceptAction: () => void;
     onSkipTurn: () => void;
     onEndCombat: () => void;
-    onManualAction: (action: Action, targetId: string) => void;
+    onManualAction: (action: Action, targetId: string, manualRolls?: ManualRollData) => void;
     onTokenDrag: (combatantId: string, newPosition: GridPosition) => void;
   }
 
@@ -170,13 +171,41 @@
     };
   }
 
+  /**
+   * Converts view RollResult to ManualRollData.resultOverride.
+   */
+  function mapRollResultToOverride(rollResult: RollResult): ManualRollData['resultOverride'] {
+    switch (rollResult) {
+      case 'hit': return 'hit';
+      case 'miss': return 'miss';
+      case 'crit': return 'crit';
+      default: return undefined; // 'save' and 'fail' not used for attacks
+    }
+  }
+
   function handleResolution(result: ResolutionResult): void {
-    // TODO: Apply result to combat state based on result.type
     switch (result.type) {
-      case 'action':
-        console.log('Action resolved:', result.rollResult, 'Damage:', result.totalDamage);
-        // TODO: Apply damage, update HP, log to protocol
+      case 'action': {
+        // Convert view result to ManualRollData
+        const manualRolls: ManualRollData | undefined =
+          result.attackRoll !== undefined || result.damageRoll !== undefined || result.rollResult !== undefined
+            ? {
+                attackRoll: result.attackRoll,
+                damageRoll: result.damageRoll,
+                resultOverride: mapRollResultToOverride(result.rollResult),
+              }
+            : undefined;
+
+        // Call parent with manual roll data
+        if (actionPanelData) {
+          onManualAction(
+            actionPanelData.action,
+            actionPanelData.target.id,
+            manualRolls
+          );
+        }
         break;
+      }
       case 'reaction':
         console.log('Reaction:', result.used ? 'used' : 'ignored');
         // TODO: Apply reaction effect if used
@@ -191,7 +220,6 @@
         break;
     }
     pendingResolution = null;
-    // Nach Resolution: advanceTurn() etc.
   }
 
   function handleResolutionCancel(): void {

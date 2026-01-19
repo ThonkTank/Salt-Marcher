@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # scoreAction
 
 > **Verantwortlichkeit:** DPR-basierte Aktionsbewertung + situative Modifier-Anwendung
@@ -352,16 +355,16 @@ interface ActionTargetScore {
 
 ### Adapter-Architektur
 
-> **Single Source of Truth:** Die Kern-Modifier-Logik liegt in `combatTracking/resolution/gatherModifiers.ts`.
+> **Single Source of Truth:** Die Kern-Modifier-Logik liegt in `combatTracking/resolution/getModifiers.ts`.
 > Die AI-Schicht (`situationalModifiers.ts`) ist ein **Adapter** der diese Logik importiert und um
 > AI-spezifische Plugins erweitert (z.B. Position-Hypothesen fuer Look-Ahead).
 
 ```
 src/services/combatTracking/resolution/
-  gatherModifiers.ts          ← SINGLE SOURCE OF TRUTH (6 Quellen)
+  getModifiers.ts          ← SINGLE SOURCE OF TRUTH (6 Quellen)
 
 src/services/combatantAI/
-  situationalModifiers.ts     ← ADAPTER: Imports gatherModifiers + Registry-Plugins
+  situationalModifiers.ts     ← ADAPTER: Imports getModifiers + Registry-Plugins
   modifiers/
     index.ts                  ← Bootstrap: Auto-Registration
     longRange.ts              ← Plugin: Long Range Disadvantage

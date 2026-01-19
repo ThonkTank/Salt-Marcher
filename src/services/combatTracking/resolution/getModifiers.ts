@@ -1,33 +1,42 @@
 // Ziel: Sammelt alle Modifier die eine Aktion beeinflussen
-// Siehe: docs/services/combatTracking/gatherModifiers.md
+// Siehe: docs/services/combatTracking/getModifiers.md
 //
-// Unified Modifier Architecture: 4 Quellen statt 6 Collector-Funktionen
+// Unified Modifier Architecture: 5 Quellen
 // 1. attacker.combatState.modifiers[]  → Conditions, Buffs, Traits
 // 2. target.combatState.modifiers[]    → Conditions, Buffs, Traits
 // 3. action.modifierRefs[] + schemaModifiers[] → Action-dependent
 // 4. state.areaEffects[]               → Cover, Auras, Zones
+// 5. Auto-Ranged Modifiers             → Long Range, Ranged in Melee (D&D 5e Core)
 //
 // Alle Modifier verwenden das einheitliche SchemaModifier Format.
 
 import type {
   Combatant,
   CombatState,
-  AreaEffect,
 } from '@/types/combat';
-import type { Action } from '#entities/action';
-import type { SchemaModifier, SchemaModifierEffect } from '@/types/entities/conditionExpression';
+import type {
+  CombatEvent,
+  SchemaModifier,
+  SchemaModifierEffect,
+} from '@/types/entities/combatEvent';
 import type { TargetResult } from './findTargets';
 import type { EvaluationContext } from '@/utils/combatModifiers';
 import {
   getPosition,
-  getGroupId,
   getConditions,
 } from '../combatState';
 import {
   evaluateCondition,
-  combatantToCombatantContext,
+  isAllied,
 } from '@/utils/combatModifiers';
 import { modifierPresetsMap } from '../../../../presets/modifiers';
+
+// DEBUG helper
+const debug = (...args: unknown[]) => {
+  if (process.env.DEBUG_SERVICES === 'true') {
+    console.log('[getModifiers]', ...args);
+  }
+};
 
 // ============================================================================
 // TYPES
@@ -62,8 +71,8 @@ export interface ModifierSet {
 
 /** Context for modifier gathering */
 export interface GetModifiersContext {
-  attacker: Combatant;
-  action: Action;
+  actor: Combatant;
+  action: CombatEvent;
   state: Readonly<CombatState>;
 }
 
@@ -82,26 +91,45 @@ interface PartialModifiers {
   sources: string[];
 }
 
+/** Modifier source for contextual effect resolution */
+type ModifierSource = 'actor' | 'target' | 'action' | 'area';
+
+/** Modifier with tracked source */
+interface TrackedModifier {
+  modifier: SchemaModifier;
+  source: ModifierSource;
+}
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+/**
+ * Extracts attack type from action check field.
+ * Supports both legacy format ({ type: 'attack', attackType: ... }) and
+ * unified check format ({ roll: { type: 'attack', attackType: ... } }).
+ */
+function getCheckAttackType(action: CombatEvent): string | undefined {
+  if (!action.check) return undefined;
+
+  // Legacy format: { type: 'attack', attackType: ... }
+  if ('type' in action.check && action.check.type === 'attack') {
+    return (action.check as { attackType?: string }).attackType;
+  }
+
+  // Unified format: { roll: { type: 'attack', attackType: ... } }
+  if ('roll' in action.check && action.check.roll?.type === 'attack') {
+    return action.check.roll.attackType;
+  }
+
+  return undefined;
+}
 
 /** Calculate distance between two combatants in cells (Chebyshev distance) */
 function getDistanceCells(a: Combatant, b: Combatant): number {
   const posA = getPosition(a);
   const posB = getPosition(b);
   return Math.max(Math.abs(posA.x - posB.x), Math.abs(posA.y - posB.y));
-}
-
-/** Check if groups are allied */
-function isAllied(
-  actorGroupId: string,
-  targetGroupId: string,
-  alliances: Record<string, string[]>
-): boolean {
-  if (actorGroupId === targetGroupId) return true;
-  const allies = alliances[actorGroupId] ?? [];
-  return allies.includes(targetGroupId);
 }
 
 /** Create empty partial modifiers for accumulation */
@@ -123,21 +151,18 @@ function createEmptyPartial(): PartialModifiers {
 
 /**
  * Creates an EvaluationContext from attacker/target combatants.
- * Adapts CombatState types to EvaluationContext types.
+ * Uses Combatant types directly.
  */
 function buildEvaluationContext(
   attacker: Combatant,
   target: Combatant,
-  action: Action,
+  action: CombatEvent,
   state: Readonly<CombatState>
 ): EvaluationContext {
-  const attackerCtx = combatantToCombatantContext(attacker);
-  const targetCtx = combatantToCombatantContext(target);
-
   return {
-    self: attackerCtx,
-    attacker: attackerCtx,
-    target: targetCtx,
+    self: attacker,
+    attacker,
+    target,
     action,
     state: {
       combatants: state.combatants,
@@ -218,7 +243,7 @@ function getAreaModifiers(
 /**
  * Applies a SchemaModifierEffect to partial modifiers.
  */
-function applySchemaEffect(effect: SchemaModifierEffect, result: PartialModifiers): void {
+function applyEffectFields(effect: SchemaModifierEffect, result: PartialModifiers): void {
   // Advantage/Disadvantage
   if (effect.advantage === true) {
     result.attackAdvSources++;
@@ -244,6 +269,62 @@ function applySchemaEffect(effect: SchemaModifierEffect, result: PartialModifier
   }
   if (effect.autoMiss === true) {
     result.hasAutoMiss = true;
+  }
+}
+
+/**
+ * Applies a SchemaModifier using unified contextualEffects system.
+ *
+ * Effect contexts:
+ * - passive: Always applied (for all sources)
+ * - Source 'actor': Apply whenAttacking effects
+ * - Source 'target': Apply whenDefending + whenDefendingMelee/Ranged effects
+ * - Source 'action'/'area': Apply passive effects only
+ */
+function applyModifierEffect(
+  mod: SchemaModifier,
+  source: ModifierSource,
+  isAdjacent: boolean,
+  result: PartialModifiers
+): void {
+  const ctx = mod.contextualEffects;
+  let applied = false;
+
+  // Passive effects: Always applied when modifier is active
+  if (ctx.passive) {
+    applyEffectFields(ctx.passive, result);
+    applied = true;
+  }
+
+  // Actor's modifiers: apply whenAttacking
+  if (source === 'actor' && ctx.whenAttacking) {
+    applyEffectFields(ctx.whenAttacking, result);
+    applied = true;
+  }
+
+  // Target's modifiers: apply whenDefending and melee/ranged variants
+  if (source === 'target') {
+    // General defending effect
+    if (ctx.whenDefending) {
+      applyEffectFields(ctx.whenDefending, result);
+      applied = true;
+    }
+
+    // Melee-specific (adjacent)
+    if (isAdjacent && ctx.whenDefendingMelee) {
+      applyEffectFields(ctx.whenDefendingMelee, result);
+      applied = true;
+    }
+
+    // Ranged-specific (non-adjacent)
+    if (!isAdjacent && ctx.whenDefendingRanged) {
+      applyEffectFields(ctx.whenDefendingRanged, result);
+      applied = true;
+    }
+  }
+
+  if (applied) {
+    result.sources.push(mod.id);
   }
 }
 
@@ -301,44 +382,77 @@ export function createEmptyModifierSet(): ModifierSet {
  * 3. action.modifierRefs[] + schemaModifiers[] - Action-dependent modifiers
  * 4. state.areaEffects[]              - Cover, Auras, Zones
  *
- * All modifiers are evaluated with the expression DSL and applied uniformly.
+ * Contextual Effects:
+ * - Actor modifiers: Apply whenAttacking effects
+ * - Target modifiers: Apply whenDefending + melee/ranged variants based on adjacency
+ * - Action/Area modifiers: Use legacy effect field (no contextual effects)
  */
 export function getModifiers(
   context: GetModifiersContext,
   targetResult: TargetResult
 ): ModifierSet[] {
-  const { attacker, action, state } = context;
+  const { actor, action, state } = context;
 
   return targetResult.targets.map(target => {
     // Build evaluation context for the expression DSL
-    const evalCtx = buildEvaluationContext(attacker, target, action, state);
+    const evalCtx = buildEvaluationContext(actor, target, action, state);
 
-    // 1. Collect all SchemaModifier from the 4 sources
-    const allModifiers: SchemaModifier[] = [
-      // Source 1: Attacker modifiers (Conditions, Buffs, Traits)
-      ...attacker.combatState.modifiers.map(am => am.modifier),
+    // Calculate adjacency for melee/ranged distinction
+    const isAdjacent = getDistanceCells(actor, target) <= 1;
+
+    // 1. Collect all SchemaModifier from the 4 sources WITH source tracking
+    const trackedModifiers: TrackedModifier[] = [
+      // Source 1: Actor modifiers (Conditions, Buffs, Traits)
+      ...actor.combatState.modifiers.map(am => ({ modifier: am.modifier, source: 'actor' as const })),
       // Source 2: Target modifiers (Conditions, Buffs, Traits)
-      ...target.combatState.modifiers.map(am => am.modifier),
+      ...target.combatState.modifiers.map(am => ({ modifier: am.modifier, source: 'target' as const })),
       // Source 3: Action modifiers (refs + inline)
-      ...resolveModifierRefs(action.modifierRefs ?? []),
-      ...(action.schemaModifiers ?? []),
+      ...resolveModifierRefs(action.modifierRefs ?? []).map(m => ({ modifier: m, source: 'action' as const })),
+      ...(action.schemaModifiers ?? []).map(m => ({ modifier: m, source: 'action' as const })),
       // Source 4: Area effects (Cover, Auras, Zones)
-      ...getAreaModifiers(attacker, target, state),
+      ...getAreaModifiers(actor, target, state).map(m => ({ modifier: m, source: 'area' as const })),
     ];
+
+    // Source 5: Auto-applied ranged attack modifiers (Long Range Disadvantage, Ranged in Melee)
+    // D&D 5e Core Rules - automatically apply to all ranged weapon/spell attacks
+    const checkAttackType = getCheckAttackType(action);
+    const isRangedAction =
+      checkAttackType === 'ranged-weapon' ||
+      checkAttackType === 'ranged-spell' ||
+      action.actionType === 'ranged-weapon' ||
+      action.actionType === 'ranged-spell' ||
+      (action.range?.type === 'ranged');
+
+    if (isRangedAction) {
+      const rangedModifiers = [
+        modifierPresetsMap.get('ranged-long-range'),
+        modifierPresetsMap.get('ranged-in-melee'),
+      ].filter((m): m is SchemaModifier => m !== undefined);
+
+      trackedModifiers.push(
+        ...rangedModifiers.map(m => ({ modifier: m, source: 'action' as const }))
+      );
+
+      debug('Auto-applied ranged modifiers:', {
+        actionId: action.id,
+        modifierIds: rangedModifiers.map(m => m.id),
+      });
+    }
 
     // 2. Evaluate and accumulate (sorted by priority, higher first)
     const result = createEmptyPartial();
-    const sortedModifiers = allModifiers.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+    const sortedModifiers = trackedModifiers.sort(
+      (a, b) => (b.modifier.priority ?? 0) - (a.modifier.priority ?? 0)
+    );
 
-    for (const mod of sortedModifiers) {
-      if (evaluateCondition(mod.condition, evalCtx)) {
-        applySchemaEffect(mod.effect, result);
-        result.sources.push(mod.id);
+    for (const { modifier, source } of sortedModifiers) {
+      if (evaluateCondition(modifier.condition, evalCtx)) {
+        applyModifierEffect(modifier, source, isAdjacent, result);
       }
     }
 
     // 3. Finalize: resolve advantage states
-    return {
+    const finalModifiers = {
       attackAdvantage: resolveAdvantageState(result.attackAdvSources, result.attackDisadvSources),
       attackBonus: result.attackBonus,
       targetACBonus: result.targetACBonus,
@@ -349,9 +463,15 @@ export function getModifiers(
       hasAutoMiss: result.hasAutoMiss,
       sources: result.sources,
     };
+
+    debug('finalModifiers:', {
+      targetId: target.id,
+      attackAdvantage: finalModifiers.attackAdvantage,
+      sources: finalModifiers.sources,
+      advSources: result.attackAdvSources,
+      disadvSources: result.attackDisadvSources,
+    });
+
+    return finalModifiers;
   });
 }
-
-// Legacy alias for backwards compatibility
-export { getModifiers as gatherModifiers };
-export type { GetModifiersContext as GatherModifiersContext };

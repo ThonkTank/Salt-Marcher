@@ -1,158 +1,19 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # CombatTestWorkflow
 
 > **Verantwortlichkeit:** Orchestriert Combat-Test UI - Szenario-Laden, AI-Vorschlaege, Action-Ausfuehrung
+> **Controller:** `src/application/combatTest/combatTestControl.ts`
 > **State:** `CombatTestState` in `src/infrastructure/state/combatTestState.ts`
 > **Trigger:** UI-Events aus `CombatTest.svelte`
 >
 > **Verwandte Dokumente:**
 > - [Orchestration.md](../architecture/Orchestration.md) - Architektur-Uebersicht
+> - [CombatWorkflow.md](CombatWorkflow.md) - Combat Business-Logik
 > - [combatantAI.md](../services/combatantAI/combatantAI.md) - AI-Entscheidungslogik
 
-Dieser Workflow orchestriert die Combat-Test UI fuer AI-Entwicklung und Balancing. Er laedt Szenarien, holt AI-Vorschlaege und fuehrt Aktionen aus.
-
----
-
-## State-Struktur
-
-```typescript
-interface CombatTestState {
-  combat: CombatStateWithLayers | null;
-  suggestedAction: TurnAction | null;
-  selectedScenarioId: string | null;
-  error: string | null;
-}
-```
-
-| Feld | Typ | Beschreibung |
-|------|-----|--------------|
-| `combat` | `CombatStateWithLayers \| null` | Aktiver Combat-State mit Layer-Daten |
-| `suggestedAction` | `TurnAction \| null` | AI-Vorschlag fuer aktuellen Combatant |
-| `selectedScenarioId` | `string \| null` | ID des geladenen Szenarios |
-| `error` | `string \| null` | Fehlermeldung bei Lade-Problemen |
-
----
-
-## State-Machine
-
-```
-idle → active → idle
-```
-
-| Transition | Trigger | Aktion |
-|------------|---------|--------|
-| idle → active | `loadScenario()` | Preset laden, Combat initialisieren |
-| active → idle | Manuell / Reset | State zuruecksetzen |
-
----
-
-## API
-
-### loadScenario
-
-Laedt ein Szenario aus den Encounter-Presets:
-
-```typescript
-export function loadScenario(scenarioId: string): void {
-  if (!scenarioId) {
-    updateCombatTestState(() => ({
-      combat: null,
-      suggestedAction: null,
-      selectedScenarioId: null,
-      error: null,
-    }));
-    return;
-  }
-
-  try {
-    const preset = getEncounterPresetById(scenarioId);
-    if (!preset) throw new Error(`Preset not found: ${scenarioId}`);
-
-    const combat = loadEncounterPreset(
-      preset,
-      { level: 1, size: 0, members: [] },
-      { mapConfigLoader: getMapConfigForScenario }
-    );
-
-    updateCombatTestState(() => ({
-      combat,
-      suggestedAction: null,
-      selectedScenarioId: scenarioId,
-      error: null,
-    }));
-
-    requestNextAction();
-  } catch (e) {
-    updateCombatTestState(s => ({
-      ...s,
-      error: e instanceof Error ? e.message : String(e),
-    }));
-  }
-}
-```
-
-### requestNextAction
-
-Holt AI-Vorschlag fuer den aktuellen Combatant:
-
-```typescript
-export function requestNextAction(): void {
-  const state = getCombatTestState();
-  if (!state.combat) return;
-
-  const currentId = state.combat.turnOrder[state.combat.currentTurnIndex];
-  const current = state.combat.combatants.find(c => c.id === currentId);
-  if (!current) {
-    updateCombatTestState(s => ({ ...s, suggestedAction: null }));
-    return;
-  }
-
-  const budget = createTurnBudget(current, state.combat);
-  const suggestion = selectNextAction(current, state.combat, budget);
-
-  updateCombatTestState(s => ({ ...s, suggestedAction: suggestion }));
-}
-```
-
-### executeCurrentAction
-
-Fuehrt die vorgeschlagene Aktion aus:
-
-```typescript
-export function executeCurrentAction(): void {
-  const state = getCombatTestState();
-  if (!state.combat || !state.suggestedAction) return;
-
-  const currentId = state.combat.turnOrder[state.combat.currentTurnIndex];
-  const current = state.combat.combatants.find(c => c.id === currentId);
-  if (!current) return;
-
-  if (state.suggestedAction.type === 'pass') {
-    advanceTurn(state.combat);
-  } else {
-    current.combatState.position = state.suggestedAction.fromPosition;
-    executeAction(current, state.suggestedAction, state.combat);
-    advanceTurn(state.combat);
-  }
-
-  updateCombatTestState(s => ({ ...s, suggestedAction: null }));
-  requestNextAction();
-}
-```
-
-### skipCurrentTurn
-
-Ueberspringt den aktuellen Turn ohne Aktion:
-
-```typescript
-export function skipCurrentTurn(): void {
-  const state = getCombatTestState();
-  if (!state.combat) return;
-
-  advanceTurn(state.combat);
-  updateCombatTestState(s => ({ ...s, suggestedAction: null }));
-  requestNextAction();
-}
-```
+Dieser Controller orchestriert die Combat-Test UI fuer AI-Entwicklung und Balancing. Er ruft `combatWorkflow` direkt auf und verwaltet den UI-spezifischen State.
 
 ---
 
@@ -168,46 +29,132 @@ export function skipCurrentTurn(): void {
 ┌─────────────────────────────────────────────────────────────┐
 │ combatTestControl.ts            src/application/combatTest/ │
 │   - combatTestStore = writable<CombatTestUIState>()         │
-│   - Ruft Workflows auf, synct Store                         │
+│   - Ruft combatWorkflow direkt auf                          │
+│   - Verwaltet combatTestState (UI-spezifisch)               │
+│   - Berechnet ActionHighlight (UI-spezifisch)               │
 └─────────────────────────────────────────────────────────────┘
        ↓ calls
 ┌─────────────────────────────────────────────────────────────┐
-│ combatTestWorkflow.ts                     src/workflows/    │
-│   - getCombatTestState() / updateCombatTestState()          │
-│   - loadEncounterPreset(), selectNextAction(), executeAction│
+│ combatWorkflow.ts                       src/workflows/      │
+│   - loadScenario(), requestAISuggestion()                   │
+│   - executeAISuggestion(), skipTurn()                       │
+│   - runAction(), applyResult()                              │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Verwendete Services
+## State-Struktur
 
-| Service | Funktionen | Zweck |
-|---------|------------|-------|
-| `encounterLoader` | `loadEncounterPreset()` | Szenario → CombatState |
-| `combatantAI` | `selectNextAction()` | AI-Entscheidung |
-| `combatTracking` | `executeAction()`, `advanceTurn()`, `createTurnBudget()` | Combat-Ausfuehrung |
+```typescript
+interface CombatTestState {
+  combat: CombatStateWithLayers | null;
+  suggestedAction: TurnAction | null;
+  actionHighlight: ActionHighlight | null;
+  selectedScenarioId: string | null;
+  error: string | null;
+}
+
+interface CombatTestUIState extends CombatTestState {
+  availableScenarios: Array<{ id: string; name: string }>;
+}
+```
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `combat` | `CombatStateWithLayers \| null` | Aktiver Combat-State mit Layer-Daten |
+| `suggestedAction` | `TurnAction \| null` | AI-Vorschlag fuer aktuellen Combatant |
+| `actionHighlight` | `ActionHighlight \| null` | UI-Highlight fuer Ziel-Position |
+| `selectedScenarioId` | `string \| null` | ID des geladenen Szenarios |
+| `error` | `string \| null` | Fehlermeldung bei Lade-Problemen |
 
 ---
 
-## CLI-Testing
+## API (combatTestControl.ts)
 
-```bash
-# Workflow-Funktionen direkt aufrufen
-npm run cli -- workflows/combatTestWorkflow loadScenario '"1v1"'
+### initCombatTestControl
 
-# State inspizieren
-npm run cli -- infrastructure/state/combatTestState getCombatTestState '{}'
+Initialisiert den Controller und laedt verfuegbare Szenarien:
+
+```typescript
+export function initCombatTestControl(): void
+```
+
+### openScenario
+
+Laedt ein Szenario und holt ersten AI-Vorschlag:
+
+```typescript
+export function openScenario(scenarioId: string): void
+```
+
+### acceptSuggestedAction
+
+Fuehrt die vorgeschlagene Aktion aus:
+
+```typescript
+export function acceptSuggestedAction(): void
+```
+
+### skipCurrentTurn
+
+Ueberspringt den aktuellen Turn:
+
+```typescript
+export function skipCurrentTurn(): void
+```
+
+### resetCombatTest
+
+Setzt den State zurueck:
+
+```typescript
+export function resetCombatTest(): void
+```
+
+---
+
+## Verwendete combatWorkflow Funktionen
+
+| Funktion | Zweck |
+|----------|-------|
+| `loadScenario(scenarioId)` | Preset → CombatStateWithLayers |
+| `requestAISuggestion(state)` | AI-Entscheidung holen |
+| `executeAISuggestion(suggestion, state)` | AI-Vorschlag ausfuehren |
+| `skipTurn(state)` | Turn ueberspringen |
+| `getAvailableScenarios()` | Szenario-Liste |
+
+---
+
+## UI-spezifische Logik
+
+### ActionHighlight
+
+```typescript
+interface ActionHighlight {
+  targetPosition: GridPosition;
+  actionName: string;
+  targetName: string | null;
+}
+```
+
+Wird im Controller berechnet fuer visuelles Feedback in der UI:
+
+```typescript
+function computeActionHighlight(
+  suggestion: TurnAction | null,
+  combat: CombatStateWithLayers
+): ActionHighlight | null
 ```
 
 ---
 
 ## Unterschied zu CombatWorkflow
 
-| Aspekt | CombatWorkflow | CombatTestWorkflow |
+| Aspekt | CombatWorkflow | CombatTestControl |
 |--------|---------------|-------------------|
-| **Zweck** | Live-Session Combat | AI-Testing & Balancing |
-| **State-Owner** | sessionState | combatTestState |
-| **Initiative** | GM wuerfelt | Auto-generiert |
-| **Aktionen** | GM entscheidet | AI schlaegt vor |
-| **Persistenz** | Session-ueberdauernd | Transient |
+| **Typ** | Workflow (Business-Logik) | Controller (UI-Orchestration) |
+| **Zweck** | Combat-Operationen | AI-Testing & Balancing |
+| **State-Owner** | Keiner (State-agnostisch) | combatTestState |
+| **UI-Logik** | Keine | ActionHighlight |
+| **Svelte-Integration** | Keine | combatTestStore |

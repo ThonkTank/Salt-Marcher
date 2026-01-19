@@ -1,24 +1,38 @@
 // Action-Presets für CLI-Testing und Plugin-Bundling
-// Siehe: docs/types/action.md
+// Siehe: docs/types/combatEvent.md
 //
 // D&D 5e Standard Actions und Monster Manual Actions.
+// Alle Attack-Actions verwenden das Unified Check Format.
+//
+// ============================================================================
+// HACK & TODO
+// ============================================================================
+//
+// [HACK]: Utility-Actions im Legacy-Format
+// - std-move, std-dash, std-disengage, std-dodge, std-hide, std-help verwenden
+//   noch autoHit: true statt Unified Check (kein Check nötig)
+// - Multiattack-Actions verwenden execute-events Pattern (kein direkter Check)
+//
+// [TODO]: Multiattack execute-events Resolver
+// - Spec: docs/types/combatEvent.md#multiattack
+// - owlbear-multiattack, goblin-boss-multiattack, bandit-captain-multiattack,
+//   knight-multiattack benötigen execute-events Resolver
 
-import { z } from 'zod';
-import { actionSchema, type Action } from '../../src/types/entities/action';
+import type { CombatEvent } from '../../src/types/entities/combatEvent';
 
 // ============================================================================
 // STANDARD-ACTIONS (verfügbar für alle Combatants)
 // ============================================================================
 
 /** D&D 5e Standard-Actions, die allen Combatants zur Verfügung stehen. */
-export const standardActions: Action[] = z.array(actionSchema).parse([
+export const standardActions = [
   {
     id: 'std-move',
     name: 'Move',
     actionType: 'utility',
     timing: { type: 'free' },  // Keine Action-Economy (verbraucht nur Movement)
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     budgetCosts: [{ resource: 'movement', cost: { type: 'toTarget' } }],
     description: 'Move up to your remaining movement.',
@@ -29,7 +43,7 @@ export const standardActions: Action[] = z.array(actionSchema).parse([
     actionType: 'utility',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     effects: [{
       grantMovement: { type: 'dash' },
@@ -48,7 +62,7 @@ export const standardActions: Action[] = z.array(actionSchema).parse([
     actionType: 'utility',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     effects: [{
       movementBehavior: { noOpportunityAttacks: true },
@@ -63,7 +77,7 @@ export const standardActions: Action[] = z.array(actionSchema).parse([
     actionType: 'utility',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     effects: [{
       condition: 'hidden',
@@ -78,7 +92,7 @@ export const standardActions: Action[] = z.array(actionSchema).parse([
     actionType: 'utility',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     effects: [{
       incomingModifiers: { attacks: 'disadvantage' },
@@ -97,7 +111,7 @@ export const standardActions: Action[] = z.array(actionSchema).parse([
       triggerCondition: { event: 'leaves-reach' },
     },
     range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
+    targeting: { type: 'single', filter: 'enemy' },
     // HACK: autoHit placeholder - actual attack comes from baseAction
     autoHit: true,
     // Stats werden von baseAction übernommen - keine eigenen attack/damage
@@ -117,84 +131,162 @@ export const standardActions: Action[] = z.array(actionSchema).parse([
   {
     id: 'std-grapple',
     name: 'Grapple',
-    actionType: 'debuff',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    contested: {
-      attackerSkill: 'athletics',
-      defenderChoice: ['athletics', 'acrobatics'],
-      sizeLimit: 1,  // Target max 1 size larger
-      onSuccess: {
-        condition: 'grappled',
-        duration: {
-          type: 'until-escape',
-          escapeCheck: {
-            type: 'contested',
-            timing: 'action',
-            defenderSkill: 'athletics',  // Grappler's Athletics
-            escaperChoice: ['athletics', 'acrobatics'],
+    precondition: {
+      type: 'and',
+      conditions: [
+        { type: 'has-free-hand' },
+        { type: 'size-category', entity: 'target', max: 'one-larger' },
+      ],
+    },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'skill', skill: 'athletics' },
+      against: { type: 'contested', choice: ['athletics', 'acrobatics'] },
+    },
+    effect: {
+      type: 'all',
+      effects: [
+        {
+          type: 'apply-condition',
+          condition: 'grappled',
+          to: 'target',
+          source: 'self',
+          duration: {
+            type: 'until-escape',
+            escapeCheck: {
+              type: 'contested',
+              timing: 'action',
+              defenderSkill: 'athletics',
+              escaperChoice: ['athletics', 'acrobatics'],
+            },
           },
         },
-        affectsTarget: 'enemy',
-      },
+        {
+          type: 'apply-condition',
+          condition: 'grappling',
+          to: 'self',
+          linkedTo: 'target',
+        },
+      ],
     },
-    budgetCosts: [{ resource: 'action', cost: { type: 'fixed', value: 1 } }],
+    duration: { type: 'instant' },
     description: 'Contested Athletics vs Athletics/Acrobatics. On success, target is Grappled (speed 0). Target can escape with Action.',
   },
-]);
+  // ==========================================================================
+  // TEST ACTION (für Pipeline-Debugging)
+  // ==========================================================================
+  {
+    id: 'std-test-basic-attack',
+    name: 'Test Attack',
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 10 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6', damageType: 'slashing' },
+    duration: { type: 'instant' },
+    description: 'Minimale Test-Action für Pipeline-Debugging. Expected damage: 3.5 @ ~80% hit',
+  },
+] as CombatEvent[];
 
 // ============================================================================
 // PRESET-DATEN
 // ============================================================================
 
-export const actionPresets = z.array(actionSchema).parse([
+export const actionPresets = [
   // ==========================================================================
   // GOBLIN (CR 1/4)
   // ==========================================================================
+  // Fully migrated to new 7-component schema (no legacy fields)
   {
     id: 'goblin-scimitar',
     name: 'Scimitar',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'slashing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+2', damageType: 'slashing' },
+    duration: { type: 'instant' },
   },
+  // Ranged modifiers (long range, ranged in melee) applied automatically via getModifiers.ts
   {
     id: 'goblin-shortbow',
     name: 'Shortbow',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 80, long: 320 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 80, long: 320 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+2', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
   // WOLF (CR 1/4)
+  // SRD 5.2: Bite. Melee Weapon Attack: +4 to hit, reach 5 ft, one target.
+  // Hit: 7 (2d4 + 2) piercing damage. If the target is a creature, it must
+  // succeed on a DC 11 Strength saving throw or be knocked prone.
   // ==========================================================================
   {
     id: 'wolf-bite',
     name: 'Bite',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
-    // Pack Tactics: handled via trait-pack-tactics passive action in creature's actionIds
-    // SRD 5.2: "If the target is a Medium or smaller creature, it has the Prone condition."
-    effects: [
-      {
-        condition: 'prone',
-        duration: { type: 'instant' },
-        affectsTarget: 'enemy',
-        targetSizeMax: 'medium',
-      },
-    ],
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: {
+      type: 'all',
+      effects: [
+        { type: 'damage', damage: '2d4+2', damageType: 'piercing' },
+        {
+          type: 'apply-condition',
+          condition: 'prone',
+          save: { ability: 'str', dc: 11, onSave: 'none' },
+        },
+      ],
+    },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -203,22 +295,50 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'bandit-scimitar',
     name: 'Scimitar',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 3 },
-    damage: { dice: '1d6', modifier: 1, type: 'slashing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 3 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+1', damageType: 'slashing' },
+    duration: { type: 'instant' },
   },
+  // Fully migrated to new 7-component schema
+  // Two-Handed weapon (requires 2 free hands)
+  // Ammunition tracked via consume-item cost
+  // Ranged modifiers (long range, ranged in melee) applied automatically
   {
     id: 'bandit-light-crossbow',
     name: 'Light Crossbow',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 80, long: 320 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 3 },
-    damage: { dice: '1d8', modifier: 1, type: 'piercing' },
+    precondition: { type: 'has-free-hands', count: 2 },
+    trigger: { type: 'active' },
+    cost: {
+      type: 'composite',
+      costs: [
+        { type: 'action-economy', economy: 'action' },
+        { type: 'consume-item', itemTag: 'ammunition', quantity: 1 },
+      ],
+    },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 80, long: 320 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 3 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d8+1', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -230,7 +350,7 @@ export const actionPresets = z.array(actionSchema).parse([
     actionType: 'multiattack',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'enemies' },
+    targeting: { type: 'single', filter: 'enemy' },
     autoHit: true,
     multiattack: {
       attacks: [{ actionRef: 'Rend', count: 2 }],
@@ -240,12 +360,21 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'owlbear-rend',
     name: 'Rend',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 7 },
-    damage: { dice: '2d8', modifier: 5, type: 'slashing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 7 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '2d8+5', damageType: 'slashing' },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -254,22 +383,48 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'skeleton-shortsword',
     name: 'Shortsword',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 5 },
-    damage: { dice: '1d6', modifier: 3, type: 'piercing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 5 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+3', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
+  // Ranged modifiers (long range, ranged in melee) applied automatically via getModifiers.ts
+  // Ammunition tracked via consume-item cost
   {
     id: 'skeleton-shortbow',
     name: 'Shortbow',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 80, long: 320 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 5 },
-    damage: { dice: '1d6', modifier: 3, type: 'piercing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: {
+      type: 'composite',
+      costs: [
+        { type: 'action-economy', economy: 'action' },
+        { type: 'consume-item', itemTag: 'ammunition', quantity: 1 },
+      ],
+    },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 80, long: 320 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 5 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+3', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -278,23 +433,52 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'hobgoblin-longsword',
     name: 'Longsword',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 3 },
-    damage: { dice: '2d10', modifier: 1, type: 'slashing' },  // SRD 5.2: 2d10+1
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 3 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '2d10+1', damageType: 'slashing' },
+    duration: { type: 'instant' },
   },
   {
     id: 'hobgoblin-longbow',
     name: 'Longbow',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 150, long: 600 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 3 },
-    damage: { dice: '1d8', modifier: 1, type: 'piercing' },
-    extraDamage: [{ dice: '3d4', modifier: 0, type: 'poison' }],  // SRD 5.2: +3d4 poison
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: {
+      type: 'composite',
+      costs: [
+        { type: 'action-economy', economy: 'action' },
+        { type: 'consume-item', itemTag: 'arrow', quantity: 1 },
+      ],
+    },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 150, long: 600 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 3 },
+      against: { type: 'ac' },
+    },
+    effect: {
+      type: 'all',
+      effects: [
+        { type: 'damage', damage: '1d8+1', damageType: 'piercing' },
+        { type: 'damage', damage: '3d4', damageType: 'poison' },
+      ],
+    },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -303,22 +487,46 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'goblin-boss-scimitar',
     name: 'Scimitar',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'slashing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+2', damageType: 'slashing' },
+    duration: { type: 'instant' },
   },
   {
     id: 'goblin-boss-shortbow',
     name: 'Shortbow',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 80, long: 320 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+    precondition: { type: 'has-free-hands', count: 2 },
+    trigger: { type: 'active' },
+    cost: {
+      type: 'composite',
+      costs: [
+        { type: 'action-economy', economy: 'action' },
+        { type: 'consume-item', itemTag: 'ammunition', quantity: 1 },
+      ],
+    },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 80, long: 320 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+2', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
   {
     id: 'goblin-boss-multiattack',
@@ -326,7 +534,7 @@ export const actionPresets = z.array(actionSchema).parse([
     actionType: 'multiattack',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     multiattack: {
       attacks: [
@@ -345,7 +553,7 @@ export const actionPresets = z.array(actionSchema).parse([
     actionType: 'multiattack',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'enemies' },
+    targeting: { type: 'single', filter: 'enemy' },
     autoHit: true,
     multiattack: {
       attacks: [
@@ -358,22 +566,46 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'bandit-captain-scimitar',
     name: 'Scimitar',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 5 },
-    damage: { dice: '1d6', modifier: 3, type: 'slashing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 5 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+3', damageType: 'slashing' },
+    duration: { type: 'instant' },
   },
   {
     id: 'bandit-captain-pistol',
     name: 'Pistol',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 30, long: 90 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 5 },
-    damage: { dice: '1d10', modifier: 3, type: 'piercing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: {
+      type: 'composite',
+      costs: [
+        { type: 'action-economy', economy: 'action' },
+        { type: 'consume-item', itemTag: 'ammunition', quantity: 1 },
+      ],
+    },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 30, long: 90 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 5 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d10+3', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -385,7 +617,7 @@ export const actionPresets = z.array(actionSchema).parse([
     actionType: 'multiattack',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'enemies' },
+    targeting: { type: 'single', filter: 'enemy' },
     autoHit: true,
     multiattack: {
       attacks: [
@@ -397,22 +629,46 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'thug-mace',
     name: 'Mace',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'bludgeoning' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+2', damageType: 'bludgeoning' },
+    duration: { type: 'instant' },
   },
   {
     id: 'thug-heavy-crossbow',
     name: 'Heavy Crossbow',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 100, long: 400 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 2 },
-    damage: { dice: '1d10', modifier: 0, type: 'piercing' },
+    precondition: { type: 'has-free-hands', count: 2 },
+    trigger: { type: 'active' },
+    cost: {
+      type: 'composite',
+      costs: [
+        { type: 'action-economy', economy: 'action' },
+        { type: 'consume-item', itemTag: 'ammunition', quantity: 1 },
+      ],
+    },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 100, long: 400 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 2 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d10', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -423,37 +679,66 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'bugbear-grab',
     name: 'Grab',
-    actionType: 'melee-weapon',  // SRD 5.2: Attack Roll, nicht Contested Check
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },  // Base 5ft, Long-Limbed trait adds +5
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },  // +4 to hit
-    damage: { dice: '2d6', modifier: 2, type: 'bludgeoning' },  // 9 (2d6+2) damage
-    effects: [{
-      condition: 'grappled',
-      duration: {
-        type: 'until-escape',
-        escapeCheck: {
-          type: 'dc',  // Fixed DC, nicht contested
-          timing: 'action',
-          dc: 12,
-          ability: 'str',  // Escape via Strength (Athletics) check
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },  // Base 5ft, Long-Limbed trait adds +5
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: {
+      type: 'all',
+      effects: [
+        { type: 'damage', damage: '2d6+2', damageType: 'bludgeoning' },  // 9 (2d6+2) damage
+        {
+          type: 'conditional',
+          condition: { type: 'size-category', entity: 'target', max: 'medium' },
+          then: {
+            type: 'apply-condition',
+            condition: 'grappled',
+            to: 'target',
+            source: 'self',
+            duration: {
+              type: 'until-escape',
+              escapeCheck: {
+                type: 'dc',  // Fixed DC, nicht contested
+                timing: 'action',
+                dc: 12,
+                ability: 'athletics',  // Escape via Strength (Athletics) check
+              },
+            },
+          },
+          else: { type: 'none' },
         },
-      },
-      affectsTarget: 'enemy',
-      targetSizeMax: 'medium',  // Medium or smaller only
-    }],
+      ],
+    },
+    duration: { type: 'instant' },
     description: 'Melee Attack: +4, reach 10 ft. 9 (2d6+2) bludgeoning. If Medium or smaller: Grappled (escape DC 12).',
   },
   {
     id: 'bugbear-light-hammer',
     name: 'Light Hammer',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },  // Base 5ft, Long-Limbed trait adds +5 (also thrown 20/60)
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '3d4', modifier: 2, type: 'bludgeoning' },  // 9 (3d4+2)
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },  // Base 5ft, Long-Limbed trait adds +5 (also thrown 20/60)
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '3d4+2', damageType: 'bludgeoning' },  // 9 (3d4+2)
+    duration: { type: 'instant' },
     // Advantage against grappled targets (via schemaModifiers)
     schemaModifiers: [{
       id: 'grappled-advantage',
@@ -476,7 +761,7 @@ export const actionPresets = z.array(actionSchema).parse([
     actionType: 'multiattack',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'enemies' },
+    targeting: { type: 'single', filter: 'enemy' },
     autoHit: true,
     multiattack: {
       attacks: [
@@ -489,24 +774,52 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'hobcaptain-greatsword',
     name: 'Greatsword',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '2d6', modifier: 2, type: 'slashing' },
-    extraDamage: [{ dice: '1d6', modifier: 0, type: 'poison' }],
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: {
+      type: 'all',
+      effects: [
+        { type: 'damage', damage: '2d6+2', damageType: 'slashing' },
+        { type: 'damage', damage: '1d6', damageType: 'poison' },
+      ],
+    },
+    duration: { type: 'instant' },
   },
   {
     id: 'hobcaptain-longbow',
     name: 'Longbow',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 150, long: 600 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d8', modifier: 2, type: 'piercing' },
-    extraDamage: [{ dice: '2d4', modifier: 0, type: 'poison' }],
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 150, long: 600 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: {
+      type: 'all',
+      effects: [
+        { type: 'damage', damage: '1d8+2', damageType: 'piercing' },
+        { type: 'damage', damage: '2d4', damageType: 'poison' },
+      ],
+    },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -515,12 +828,21 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'berserker-greataxe',
     name: 'Greataxe',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 5 },
-    damage: { dice: '1d12', modifier: 3, type: 'slashing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 5 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d12+3', damageType: 'slashing' },
+    duration: { type: 'instant' },
     // Bloodied Frenzy: Advantage when bloodied (handled via schemaModifiers)
     modifierRefs: ['bloodied-frenzy'],
   },
@@ -534,7 +856,7 @@ export const actionPresets = z.array(actionSchema).parse([
     actionType: 'multiattack',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'enemies' },
+    targeting: { type: 'single', filter: 'enemy' },
     autoHit: true,
     multiattack: {
       attacks: [
@@ -546,24 +868,58 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'knight-greatsword',
     name: 'Greatsword',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 5 },
-    damage: { dice: '2d6', modifier: 3, type: 'slashing' },
-    extraDamage: [{ dice: '1d8', modifier: 0, type: 'radiant' }],
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 5 },
+      against: { type: 'ac' },
+    },
+    effect: {
+      type: 'all',
+      effects: [
+        { type: 'damage', damage: '2d6+3', damageType: 'slashing' },
+        { type: 'damage', damage: '1d8', damageType: 'radiant' },
+      ],
+    },
+    duration: { type: 'instant' },
   },
   {
     id: 'knight-heavy-crossbow',
     name: 'Heavy Crossbow',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 100, long: 400 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 2 },
-    damage: { dice: '2d10', modifier: 0, type: 'piercing' },
-    extraDamage: [{ dice: '1d8', modifier: 0, type: 'radiant' }],
+    precondition: { type: 'has-free-hands', count: 2 },
+    trigger: { type: 'active' },
+    cost: {
+      type: 'composite',
+      costs: [
+        { type: 'action-economy', economy: 'action' },
+        { type: 'consume-item', itemTag: 'ammunition', quantity: 1 },
+      ],
+    },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 100, long: 400 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 2 },
+      against: { type: 'ac' },
+    },
+    effect: {
+      type: 'all',
+      effects: [
+        { type: 'damage', damage: '2d10', damageType: 'piercing' },
+        { type: 'damage', damage: '1d8', damageType: 'radiant' },
+      ],
+    },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -572,32 +928,65 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'gnoll-rend',
     name: 'Rend',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+2', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
   {
     id: 'gnoll-bone-bow',
     name: 'Bone Bow',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 150, long: 600 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 3 },
-    damage: { dice: '1d10', modifier: 1, type: 'piercing' },
+    precondition: { type: 'has-free-hands', count: 2 },
+    trigger: { type: 'active' },
+    cost: {
+      type: 'composite',
+      costs: [
+        { type: 'action-economy', economy: 'action' },
+        { type: 'consume-item', itemTag: 'ammunition', quantity: 1 },
+      ],
+    },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 150, long: 600 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 3 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d10+1', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
   {
     id: 'gnoll-rampage',
     name: 'Rampage',
-    actionType: 'melee-weapon',
-    timing: { type: 'bonus' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'bonus-action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+2', damageType: 'piercing' },
+    duration: { type: 'instant' },
     recharge: { type: 'per-day', uses: 1 },
     // Trigger: After dealing damage to bloodied creature
     description: 'After dealing damage to a bloodied creature, move half speed and make one Rend attack.',
@@ -609,22 +998,46 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'ogre-greatclub',
     name: 'Greatclub',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 6 },
-    damage: { dice: '2d8', modifier: 4, type: 'bludgeoning' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 6 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '2d8+4', damageType: 'bludgeoning' },
+    duration: { type: 'instant' },
   },
   {
     id: 'ogre-javelin',
     name: 'Javelin',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 30, long: 120 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 6 },
-    damage: { dice: '2d6', modifier: 4, type: 'piercing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: {
+      type: 'composite',
+      costs: [
+        { type: 'action-economy', economy: 'action' },
+        { type: 'consume-item', itemId: 'javelin', quantity: 1 },
+      ],
+    },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 30, long: 120 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 6 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '2d6+4', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -636,7 +1049,7 @@ export const actionPresets = z.array(actionSchema).parse([
     actionType: 'multiattack',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'enemies' },
+    targeting: { type: 'single', filter: 'enemy' },
     autoHit: true,
     multiattack: {
       attacks: [
@@ -649,22 +1062,46 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'scout-shortsword',
     name: 'Shortsword',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d6', modifier: 2, type: 'piercing' },
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d6+2', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
   {
     id: 'scout-longbow',
     name: 'Longbow',
-    actionType: 'ranged-weapon',
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 150, long: 600 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 4 },
-    damage: { dice: '1d8', modifier: 2, type: 'piercing' },
+    precondition: { type: 'has-free-hands', count: 2 },
+    trigger: { type: 'active' },
+    cost: {
+      type: 'composite',
+      costs: [
+        { type: 'action-economy', economy: 'action' },
+        { type: 'consume-item', itemTag: 'ammunition', quantity: 1 },
+      ],
+    },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 150, long: 600 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-weapon', bonus: 4 },
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '1d8+2', damageType: 'piercing' },
+    duration: { type: 'instant' },
   },
 
   // ==========================================================================
@@ -676,7 +1113,7 @@ export const actionPresets = z.array(actionSchema).parse([
     actionType: 'multiattack',
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'enemies' },
+    targeting: { type: 'single', filter: 'enemy' },
     autoHit: true,
     multiattack: {
       attacks: [
@@ -688,15 +1125,29 @@ export const actionPresets = z.array(actionSchema).parse([
   {
     id: 'priest-mace',
     name: 'Mace',
-    actionType: 'melee-weapon',
-    timing: { type: 'action' },
-    range: { type: 'reach', normal: 5 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 5 },
-    damage: { dice: '1d6', modifier: 3, type: 'bludgeoning' },
-    extraDamage: [{ dice: '2d4', modifier: 0, type: 'radiant' }],
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'reach', distance: 5 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'melee-weapon', bonus: 5 },
+      against: { type: 'ac' },
+    },
+    effect: {
+      type: 'all',
+      effects: [
+        { type: 'damage', damage: '1d6+3', damageType: 'bludgeoning' },
+        { type: 'damage', damage: '2d4', damageType: 'radiant' },
+      ],
+    },
+    duration: { type: 'instant' },
   },
-]);
+] as CombatEvent[];
 
 // ============================================================================
 // GENERIC SPELLS
@@ -704,7 +1155,7 @@ export const actionPresets = z.array(actionSchema).parse([
 // des Casters injiziert via resolveSpellWithCaster().
 // ============================================================================
 
-export const genericSpells = z.array(actionSchema).parse([
+export const genericSpells = [
   // --------------------------------------------------------------------------
   // CANTRIPS (At-will)
   // --------------------------------------------------------------------------
@@ -715,20 +1166,29 @@ export const genericSpells = z.array(actionSchema).parse([
     isSpell: true,
     timing: { type: 'action' },
     range: { type: 'touch', normal: 0 },
-    targeting: { type: 'single', validTargets: 'any' },
+    targeting: { type: 'single', filter: 'any' },
     autoHit: true,
     description: 'Touch an object. It sheds bright light in a 20ft radius.',
   },
   {
     id: 'spell-radiant-flame',
     name: 'Radiant Flame',
-    actionType: 'ranged-spell',
+    precondition: { type: 'always' },
+    trigger: { type: 'active' },
+    cost: { type: 'action-economy', economy: 'action' },
+    targeting: {
+      type: 'single',
+      range: { type: 'ranged', normal: 60 },
+      filter: 'enemy',
+    },
+    check: {
+      roller: 'actor',
+      roll: { type: 'attack', attackType: 'ranged-spell', bonus: 0 },  // Injiziert aus Spellcasting-Trait
+      against: { type: 'ac' },
+    },
+    effect: { type: 'damage', damage: '2d10', damageType: 'radiant' },
+    duration: { type: 'instant' },
     isSpell: true,
-    timing: { type: 'action' },
-    range: { type: 'ranged', normal: 60 },
-    targeting: { type: 'single', validTargets: 'enemies' },
-    attack: { bonus: 0 }, // Injiziert aus Spellcasting-Trait
-    damage: { dice: '2d10', modifier: 0, type: 'radiant' },
     description: 'Ranged spell attack. 2d10 radiant damage.',
   },
 
@@ -742,7 +1202,7 @@ export const genericSpells = z.array(actionSchema).parse([
     isSpell: true,
     timing: { type: 'bonus' },
     range: { type: 'ranged', normal: 60 },
-    targeting: { type: 'single', validTargets: 'allies' },
+    targeting: { type: 'single', filter: 'ally' },
     autoHit: true,
     healing: { dice: '1d4', modifier: 3 },
     description: 'Heals 1d4+3 HP to an ally within 60 feet.',
@@ -754,7 +1214,7 @@ export const genericSpells = z.array(actionSchema).parse([
     isSpell: true,
     timing: { type: 'action' },
     range: { type: 'ranged', normal: 30 },
-    targeting: { type: 'multiple', validTargets: 'allies', maxTargets: 3 },
+    targeting: { type: 'multiple', filter: 'ally', maxTargets: 3 },
     autoHit: true,
     concentration: true,
     effects: [
@@ -780,7 +1240,7 @@ export const genericSpells = z.array(actionSchema).parse([
     isSpell: true,
     timing: { type: 'action' },
     range: { type: 'touch', normal: 0 },
-    targeting: { type: 'single', validTargets: 'allies' },
+    targeting: { type: 'single', filter: 'ally' },
     autoHit: true,
     effects: [
       {
@@ -801,7 +1261,7 @@ export const genericSpells = z.array(actionSchema).parse([
     isSpell: true,
     timing: { type: 'action' },
     range: { type: 'ranged', normal: 120 },
-    targeting: { type: 'single', validTargets: 'any' },
+    targeting: { type: 'single', filter: 'any' },
     autoHit: true,
     effects: [
       {
@@ -818,7 +1278,7 @@ export const genericSpells = z.array(actionSchema).parse([
     isSpell: true,
     timing: { type: 'action' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     concentration: true,
     effects: [
@@ -842,20 +1302,20 @@ export const genericSpells = z.array(actionSchema).parse([
     ],
     description: '15ft emanation. 3d8 radiant (WIS save half) when enemy enters or starts turn. Halves enemy speed.',
   },
-]);
+] as CombatEvent[];
 
 // ============================================================================
 // PASSIVE TRAITS
 // ============================================================================
 
-export const passiveTraits = z.array(actionSchema).parse([
+export const passiveTraits = [
   {
     id: 'trait-pack-tactics',
     name: 'Pack Tactics',
     actionType: 'buff',
     timing: { type: 'passive' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     schemaModifiers: [{
       id: 'pack-tactics',
@@ -883,7 +1343,7 @@ export const passiveTraits = z.array(actionSchema).parse([
     actionType: 'buff',
     timing: { type: 'passive' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     schemaModifiers: [{
       id: 'long-limbed',
@@ -908,7 +1368,7 @@ export const passiveTraits = z.array(actionSchema).parse([
     actionType: 'buff',
     timing: { type: 'passive' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     // Note: Effect is implemented in combatState.ts getEffectiveSpeed() + setPosition()
     // Creatures with this trait don't have halved speed when dragging grappled targets
@@ -920,7 +1380,7 @@ export const passiveTraits = z.array(actionSchema).parse([
     actionType: 'buff',
     timing: { type: 'passive' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     schemaModifiers: [{
       id: 'nimble-escape-timing',
@@ -945,7 +1405,7 @@ export const passiveTraits = z.array(actionSchema).parse([
     actionType: 'buff',
     timing: { type: 'passive' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     schemaModifiers: [{
       id: 'goblin-cunning-damage',
@@ -971,7 +1431,7 @@ export const passiveTraits = z.array(actionSchema).parse([
     actionType: 'buff',
     timing: { type: 'passive' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     aura: { radius: 10 },  // 10ft emanation
     schemaModifiers: [{
@@ -1002,7 +1462,7 @@ export const passiveTraits = z.array(actionSchema).parse([
     actionType: 'buff',
     timing: { type: 'passive' },
     range: { type: 'self', normal: 0 },
-    targeting: { type: 'single', validTargets: 'self' },
+    targeting: { type: 'single', filter: 'self' },
     autoHit: true,
     spellcasting: {
       ability: 'wis',
@@ -1026,7 +1486,10 @@ export const passiveTraits = z.array(actionSchema).parse([
     },
     description: 'WIS-based spellcasting. Spell attack +5, Save DC 13. Divine Aid 3/Day.',
   },
-]);
+] as CombatEvent[];
+
+// Alias for consumer code migration
+export const standardCombatEvents = standardActions;
 
 // Default-Export für CLI-Loading
 // Inkludiert standardActions + alle Monster-Actions + generic spells + passive traits

@@ -8,7 +8,7 @@ import type {
   TurnBudget,
   TurnAction,
 } from '@/types/combat';
-import { buildPossibleActions, toTurnAction } from '../core';
+import { buildPossibleCombatEvents, toTurnCombatEvent } from '../core';
 import { buildThreatMap } from '../layers';
 import { positionToKey, randomSelect } from '@/utils';
 import { getReachableCells } from '../helpers/combatHelpers';
@@ -36,12 +36,12 @@ const debug = (...args: unknown[]) => {
 
 /**
  * Random Selector - Statistischer Baseline für Combat-AI.
- * Wählt zufällig aus allen Action/Target/Position-Kombinationen mit score > 0.
+ * Wählt zufällig aus allen CombatEvent/Target/Position-Kombinationen mit score > 0.
  *
  * Algorithmus:
  * 1. Budget-Check → Pass wenn erschöpft
  * 2. ThreatMap berechnen für erreichbare Zellen
- * 3. Kandidaten generieren (alle Action/Target/Position Kombinationen)
+ * 3. Kandidaten generieren (alle CombatEvent/Target/Position Kombinationen)
  * 4. Nur Kandidaten mit score > 0 filtern
  * 5. Zufällig aus validen Kandidaten wählen
  * 6. Pass wenn keine validen Kandidaten
@@ -78,8 +78,8 @@ export const randomSelector: ActionSelector = {
     // ThreatMap einmal pro Turn berechnen
     const threatMap = buildThreatMap(combatant, state, reachableCells, currentCell);
 
-    // Generiere alle Action/Target/Position Kombinationen
-    const candidates = buildPossibleActions(combatant, state, budget, threatMap);
+    // Generiere alle CombatEvent/Target/Position Kombinationen
+    const candidates = buildPossibleCombatEvents(combatant, state, budget, threatMap);
     nodesEvaluated = candidates.length;
 
     // Nur Kandidaten mit positivem Score
@@ -115,7 +115,7 @@ export const randomSelector: ActionSelector = {
       elapsedMs: lastStats.elapsedMs.toFixed(2),
     });
 
-    return toTurnAction(selected);
+    return toTurnCombatEvent(selected);
   },
 
   getStats(): SelectorStats {

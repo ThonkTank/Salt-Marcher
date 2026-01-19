@@ -1,7 +1,7 @@
-// Ziel: Unified Action Scoring - alle Aktionstypen durch eine Pipeline
+// Ziel: Unified CombatEvent Scoring - alle Aktionstypen durch eine Pipeline
 // Siehe: docs/services/combatantAI/actionScoring.md
 //
-// Score = Summe aller Effekte einer Action (alle auf DPR-Skala):
+// Score = Summe aller Effekte einer CombatEvent (alle auf DPR-Skala):
 // - scoreDamageComponent() = hitChance × expectedDamage
 // - scoreHealingComponent() = allyDPR × survivalRoundsGained
 // - scoreEffect() für jeden Effect:
@@ -22,7 +22,7 @@
 //
 // [HACK]: Condition Duration als statische Lookup-Tabelle
 // - CONDITION_DURATION nutzt feste Werte statt action.effects[].duration
-// - Ideal: Duration aus Action-Effect extrahieren, Lookup nur als Fallback
+// - Ideal: Duration aus CombatEvent-Effect extrahieren, Lookup nur als Fallback
 //
 // [HACK]: Incoming DPR gleichmaessig auf Allies verteilt
 // - calculateIncomingDPR() teilt totalEnemyDPR / allyCount
@@ -39,26 +39,28 @@
 // [TODO]: Multi-Target Healing/Buff Scoring
 // [TODO]: Friendly Fire Scoring
 
-import type { Action, ActionEffect } from '@/types/entities';
+import type { CombatEvent, Effect, CombatEventEffect, LegacyEffect } from '@/types/entities/combatEvent';
 import type {
   Combatant,
   CombatantSimulationState,
-  ActionIntent,
-  ActionTargetScore,
+  CombatEventIntent,
+  CombatEventTargetScore,
   ReactionContext,
   TurnBudget,
 } from '@/types/combat';
 import type { TriggerEvent } from '@/constants/action';
 import { getConditionSeverity } from '@/constants/action';
-import { resolveEscapeAttempt } from '../../combatTracking/executeAction';
 import {
-  getHP,
   getAC,
-  getActions,
+  getCombatEvents,
   getGroupId,
   getPosition,
   getConditions,
 } from '../../combatTracking';
+import {
+  determineSuccess,
+  createEmptyModifierSet,
+} from '../../combatTracking/resolution';
 import {
   diceExpressionToPMF,
   getExpectedValue,
@@ -67,7 +69,7 @@ import {
 } from '@/utils';
 import {
   resolveMultiattackRefs,
-  resolveActionWithBase,
+  resolveCombatEventWithBase,
   getDistance,
   isAllied,
   calculateHitChance,
@@ -76,7 +78,6 @@ import {
   evaluateSituationalModifiers,
   type SituationalModifiers,
 } from '../situationalModifiers';
-import { combatantToCombatantContext } from '@/utils/combatModifiers';
 // Note: Core modifiers are registered in combatantAI/index.ts to avoid circular dependencies
 
 // ============================================================================
@@ -138,7 +139,7 @@ export function calculateIncomingDPR(ally: Combatant, state: CombatantSimulation
   const allyAC = getAC(ally);
   let totalEnemyDPR = 0;
   for (const enemy of enemies) {
-    totalEnemyDPR += calculateEffectiveDamagePotential(getActions(enemy), allyAC);
+    totalEnemyDPR += calculateEffectiveDamagePotential(getCombatEvents(enemy), allyAC);
   }
 
   // Verteile auf alle Allies (vereinfacht: gleichmaessig)
@@ -155,9 +156,9 @@ export function calculateIncomingDPR(ally: Combatant, state: CombatantSimulation
 // ============================================================================
 
 /**
- * Prueft ob eine Action Concentration erfordert.
+ * Prueft ob eine CombatEvent Concentration erfordert.
  */
-export function isConcentrationSpell(action: Action): boolean {
+export function isConcentrationSpell(action: CombatEvent): boolean {
   return action.concentration === true;
 }
 
@@ -183,15 +184,15 @@ const REMAINING_DURATION_FACTOR = 0.5;
  * @returns Geschaetzter verbleibender Wert in DPR-Skala
  */
 export function estimateRemainingConcentrationValue(
-  spell: Action,
+  spell: CombatEvent,
   combatant: Combatant,
   state: CombatantSimulationState
 ): number {
-  const intent = getActionIntent(spell);
+  const intent = getCombatEventIntent(spell);
 
   // Original-Duration aus Spell extrahieren
   const durationEffect = spell.effects?.find(e => e.duration);
-  const originalDuration = durationEffect?.duration?.value ?? 3;
+  const originalDuration = (durationEffect?.duration?.type === 'rounds' ? durationEffect.duration.value : undefined) ?? 3;
   const remainingDuration = originalDuration * REMAINING_DURATION_FACTOR;
 
   let perRoundValue = 0;
@@ -203,7 +204,7 @@ export function estimateRemainingConcentrationValue(
       const enemies = getEnemies(combatant, state);
       if (enemies.length > 0) {
         const avgEnemyDPR = enemies.reduce((sum, e) =>
-          sum + calculateDamagePotential(getActions(e)), 0) / enemies.length;
+          sum + calculateDamagePotential(getCombatEvents(e)), 0) / enemies.length;
 
         // Success-Prob aus Spell-Save extrahieren (approx via typischem Target)
         let successProb = 0.5; // Default
@@ -221,7 +222,7 @@ export function estimateRemainingConcentrationValue(
       const allies = getAllies(combatant, state);
       if (allies.length > 0) {
         const avgAllyDPR = allies.reduce((sum, a) =>
-          sum + calculateDamagePotential(getActions(a)), 0) / allies.length;
+          sum + calculateDamagePotential(getCombatEvents(a)), 0) / allies.length;
 
         // Buff-Multipliers aus Effects extrahieren
         let offensiveMultiplier = 0;
@@ -229,7 +230,7 @@ export function estimateRemainingConcentrationValue(
 
         for (const effect of spell.effects ?? []) {
           // Roll Modifiers (Advantage)
-          if (effect.rollModifiers) {
+          if (effect.type === 'roll-modifier' && effect.rollModifiers) {
             for (const mod of effect.rollModifiers) {
               if (mod.on === 'attacks' && mod.type === 'advantage') {
                 offensiveMultiplier += 0.25;
@@ -238,19 +239,13 @@ export function estimateRemainingConcentrationValue(
           }
 
           // Stat Modifiers
-          if (effect.statModifiers) {
+          if (effect.type === 'stat-modifier' && effect.statModifiers) {
             for (const mod of effect.statModifiers) {
               if (mod.stat === 'ac') {
-                defensiveMultiplier += mod.value * 0.05;
+                defensiveMultiplier += mod.bonus * 0.05;
               }
               if (mod.stat === 'attack') {
-                offensiveMultiplier += mod.value * 0.05;
-              }
-              if (mod.dice) {
-                const diceEV = getExpectedValue(diceExpressionToPMF(mod.dice));
-                if (mod.stat === 'attack') {
-                  offensiveMultiplier += diceEV * 0.05;
-                }
+                offensiveMultiplier += mod.bonus * 0.05;
               }
             }
           }
@@ -267,7 +262,7 @@ export function estimateRemainingConcentrationValue(
       if (spell.damage) {
         const baseDamageEV = getExpectedValue(addConstant(
           diceExpressionToPMF(spell.damage.dice),
-          spell.damage.modifier
+          spell.damage.modifier ?? 0
         ));
 
         let successProb = 1.0;
@@ -293,7 +288,7 @@ export function estimateRemainingConcentrationValue(
       if (spell.healing) {
         const baseHealEV = getExpectedValue(addConstant(
           diceExpressionToPMF(spell.healing.dice),
-          spell.healing.modifier
+          spell.healing.modifier ?? 0
         ));
         // Simplified: Heal-Value pro Runde als DPR-Aequivalent
         perRoundValue = baseHealEV * 0.5; // Heal ist ~50% so wertvoll wie Damage
@@ -320,21 +315,21 @@ export function estimateRemainingConcentrationValue(
 // ACTION INTENT & CANDIDATES
 // ============================================================================
 
-/** Erkennt Intent einer Action: damage, healing, control, oder buff. */
-export function getActionIntent(action: Action): ActionIntent {
+/** Erkennt Intent einer CombatEvent: damage, healing, control, oder buff. */
+export function getCombatEventIntent(action: CombatEvent): CombatEventIntent {
   // Healing hat hoechste Prioritaet
   if (action.healing) return 'healing';
 
-  // Control: Action verursacht Condition
-  if (action.effects?.some(e => e.condition)) return 'control';
+  // Control: CombatEvent verursacht Condition
+  if (action.effects?.some(e => e.type === 'apply-condition' && e.condition)) return 'control';
 
-  // Buff: Action gewaehrt Stat/Roll-Modifikatoren oder extra Movement (ohne Damage)
+  // Buff: CombatEvent gewaehrt Stat/Roll-Modifikatoren oder extra Movement (ohne Damage)
   // Pruefe auf buff-spezifische Effects OHNE damage
   if (!action.damage) {
     const hasBuff = action.effects?.some(e =>
-      (e.statModifiers && e.statModifiers.length > 0) ||
-      (e.rollModifiers && e.rollModifiers.length > 0) ||
-      e.grantMovement
+      (e.type === 'stat-modifier' && e.statModifiers && e.statModifiers.length > 0) ||
+      (e.type === 'roll-modifier' && e.rollModifiers && e.rollModifiers.length > 0) ||
+      (e.type === 'grant-movement' && e.grantMovement)
     );
     if (hasBuff) return 'buff';
   }
@@ -355,34 +350,34 @@ import {
 // ============================================================================
 
 /**
- * Berechnet Score für eine (Action, Target)-Kombination.
- * Summiert alle Effekte der Action (Damage, Healing, Conditions, Buffs, etc.)
- * Resolves baseAction references (OA etc.) before scoring.
+ * Berechnet Score für eine (CombatEvent, Target)-Kombination.
+ * Summiert alle Effekte der CombatEvent (Damage, Healing, Conditions, Buffs, etc.)
+ * Resolves baseCombatEvent references (OA etc.) before scoring.
  *
  * @param triggerContext Optional: Kontext für Reactions (eingehender Angriff, Spell, etc.)
  */
 export function calculatePairScore(
   attacker: Combatant,
-  action: Action,
+  action: CombatEvent,
   target: Combatant,
   distanceCells: number,
   state?: CombatantSimulationState,
   triggerContext?: ReactionContext
-): ActionTargetScore | null {
-  const attackerActions = getActions(attacker);
+): CombatEventTargetScore | null {
+  const attackerCombatEvents = getCombatEvents(attacker);
 
-  // Resolve baseAction (für OA etc.) - übernimmt attack/damage von Basis-Action
-  const resolvedAction = resolveActionWithBase(action, attackerActions);
+  // Resolve baseCombatEvent (für OA etc.) - übernimmt attack/damage von Basis-CombatEvent
+  const resolvedCombatEvent = resolveCombatEventWithBase(action, attackerCombatEvents);
 
   const targetAC = getAC(target);
 
   // Range-Check (use resolved action for range since it may have different reach)
   let maxRangeFeet: number;
-  if (resolvedAction.multiattack) {
-    const refs = resolveMultiattackRefs(resolvedAction, attackerActions);
+  if (resolvedCombatEvent.multiattack) {
+    const refs = resolveMultiattackRefs(resolvedCombatEvent, attackerCombatEvents);
     maxRangeFeet = refs.reduce((max, ref) => {
       if (!ref.range) return max;
-      return Math.max(max, ref.range.long ?? ref.range.normal);
+      return Math.max(max, ref.range.long ?? ref.range.normal ?? 5);
     }, 0);
   } else {
     // Use original action's range for OA (has its own reach rules)
@@ -391,7 +386,7 @@ export function calculatePairScore(
 
   const maxRangeCells = feetToCell(maxRangeFeet);
   if (distanceCells > maxRangeCells) {
-    debug('calculatePairScore: out of range', { actionName: resolvedAction.name, distanceCells, maxRangeCells });
+    debug('calculatePairScore: out of range', { actionName: resolvedCombatEvent.name, distanceCells, maxRangeCells });
     return null;
   }
 
@@ -399,9 +394,9 @@ export function calculatePairScore(
   let modifiers: SituationalModifiers | undefined;
   if (state) {
     modifiers = evaluateSituationalModifiers({
-      attacker: combatantToCombatantContext(attacker),
-      target: combatantToCombatantContext(target),
-      action: resolvedAction,
+      attacker,
+      target,
+      action: resolvedCombatEvent,
       state: {
         combatants: state.combatants,
         alliances: state.alliances,
@@ -409,35 +404,35 @@ export function calculatePairScore(
     });
   }
 
-  // Multiattack: Aggregiere Scores der Ref-Actions via scoreSingleAction()
-  if (resolvedAction.multiattack) {
-    const refs = resolveMultiattackRefs(resolvedAction, attackerActions);
+  // Multiattack: Aggregiere Scores der Ref-CombatEvents via scoreSingleCombatEvent()
+  if (resolvedCombatEvent.multiattack) {
+    const refs = resolveMultiattackRefs(resolvedCombatEvent, attackerCombatEvents);
     let totalScore = 0;
 
-    // Jede Ref-Action durch existierende Scoring-Logik jagen
-    for (const entry of resolvedAction.multiattack.attacks) {
-      const refAction = refs.find(r => r.name === entry.actionRef);
-      if (!refAction) continue;
+    // Jede Ref-CombatEvent durch existierende Scoring-Logik jagen
+    for (const entry of resolvedCombatEvent.multiattack.attacks) {
+      const refCombatEvent = refs.find(r => r.name === entry.actionRef);
+      if (!refCombatEvent) continue;
 
       const count = entry.count ?? 1;
-      const refScore = scoreSingleAction(attacker, refAction, target, state, modifiers);
+      const refScore = scoreSingleCombatEvent(attacker, refCombatEvent, target, state, modifiers);
       totalScore += refScore * count;
     }
 
     // Multiattack-Level Effects (falls vorhanden, z.B. Bleed auf Multiattack-Level)
-    for (const effect of resolvedAction.effects ?? []) {
-      totalScore += scoreEffect(effect, resolvedAction, target, state);
+    for (const effect of resolvedCombatEvent.effects ?? []) {
+      totalScore += scoreEffect(effect, resolvedCombatEvent, target, state);
     }
 
     // Multiattack-Level Concentration (falls Multiattack selbst Concentration hat)
-    if (state && isConcentrationSpell(resolvedAction)) {
+    if (state && isConcentrationSpell(resolvedCombatEvent)) {
       totalScore -= getConcentrationSwitchCost(attacker, state);
     }
 
     if (totalScore === 0) return null;
 
-    const intent = getActionIntent(resolvedAction);
-    debug('calculatePairScore (multiattack):', { actionName: resolvedAction.name, score: totalScore, intent });
+    const intent = getCombatEventIntent(resolvedCombatEvent);
+    debug('calculatePairScore (multiattack):', { actionName: resolvedCombatEvent.name, score: totalScore, intent });
     return { action, target, score: totalScore, intent };
   }
 
@@ -445,39 +440,39 @@ export function calculatePairScore(
   // SINGLE ACTION SCORING
   // ========================================
 
-  // 0. Escape Action Scoring (Spezialfall: dynamisch generierte escape-* Actions)
-  if (resolvedAction._escapeCondition && state) {
-    const escapeScore = scoreEscapeAction(attacker, resolvedAction, state);
+  // 0. Escape CombatEvent Scoring (Spezialfall: dynamisch generierte escape-* CombatEvents)
+  if (resolvedCombatEvent._escapeCondition && state) {
+    const escapeScore = scoreEscapeCombatEvent(attacker, resolvedCombatEvent, state);
     if (escapeScore !== null) {
       debug('calculatePairScore (escape):', {
-        actionName: resolvedAction.name,
-        condition: resolvedAction._escapeCondition,
+        actionName: resolvedCombatEvent.name,
+        condition: resolvedCombatEvent._escapeCondition,
         score: escapeScore,
       });
-      return { action, target: attacker, score: escapeScore, intent: 'escape' as ActionIntent };
+      return { action, target: attacker, score: escapeScore, intent: 'escape' as CombatEventIntent };
     }
     return null;  // Escape not applicable
   }
 
-  // 1. Standard-Scoring via scoreSingleAction() (Damage, Healing, Effects, Concentration)
-  let score = scoreSingleAction(attacker, resolvedAction, target, state, modifiers);
+  // 1. Standard-Scoring via scoreSingleCombatEvent() (Damage, Healing, Effects, Concentration)
+  let score = scoreSingleCombatEvent(attacker, resolvedCombatEvent, target, state, modifiers);
 
   // 2. Reaction-spezifische Komponenten (benötigen triggerContext)
-  if (resolvedAction.counter && triggerContext?.spellLevel !== undefined) {
-    score += scoreCounterComponent(resolvedAction, triggerContext);
+  if (resolvedCombatEvent.counter && triggerContext?.spellLevel !== undefined) {
+    score += scoreCounterComponent(resolvedCombatEvent, triggerContext);
   }
 
-  if (triggerContext?.action && !resolvedAction.damage && hasACBuff(resolvedAction)) {
-    score += scoreTriggerResponse(resolvedAction, triggerContext, attacker);
+  if (triggerContext?.action && !resolvedCombatEvent.damage && hasACBuff(resolvedCombatEvent)) {
+    score += scoreTriggerResponse(resolvedCombatEvent, triggerContext, attacker);
   }
 
   if (score === 0) {
-    debug('calculatePairScore: zero score', { actionName: resolvedAction.name, hasBaseAction: !!action.baseAction });
+    debug('calculatePairScore: zero score', { actionName: resolvedCombatEvent.name, hasBaseCombatEvent: !!action.baseCombatEvent });
     return null;
   }
 
-  const intent = getActionIntent(resolvedAction);
-  debug('calculatePairScore:', { actionName: resolvedAction.name, intent, score, hasBaseAction: !!action.baseAction });
+  const intent = getCombatEventIntent(resolvedCombatEvent);
+  debug('calculatePairScore:', { actionName: resolvedCombatEvent.name, intent, score, hasBaseCombatEvent: !!action.baseCombatEvent });
 
   return { action, target, score, intent };
 }
@@ -487,17 +482,17 @@ export function calculatePairScore(
 // ============================================================================
 
 /**
- * Scored eine einzelne (nicht-multiattack) Action gegen ein Target.
+ * Scored eine einzelne (nicht-multiattack) CombatEvent gegen ein Target.
  * Enthält: Damage, Healing, Effects, Concentration.
  *
- * Diese Funktion wird sowohl für standalone Actions als auch für
- * Ref-Actions innerhalb von Multiattacks verwendet.
+ * Diese Funktion wird sowohl für standalone CombatEvents als auch für
+ * Ref-CombatEvents innerhalb von Multiattacks verwendet.
  *
  * @returns Score in DPR-Skala (0 wenn keine Effekte)
  */
-function scoreSingleAction(
+function scoreSingleCombatEvent(
   attacker: Combatant,
-  action: Action,
+  action: CombatEvent,
   target: Combatant,
   state: CombatantSimulationState | undefined,
   modifiers: SituationalModifiers | undefined
@@ -530,16 +525,16 @@ function scoreSingleAction(
 /**
  * Escape-Score: conditionSeverity × successProb × timingMultiplier
  *
- * Bewertet escape-* Actions basierend auf:
+ * Bewertet escape-* CombatEvents basierend auf:
  * - Schwere der Condition (via CONDITION_SEVERITY)
- * - Erfolgswahrscheinlichkeit (via resolveEscapeAttempt)
- * - Timing-Kosten (Action > Bonus > Movement)
+ * - Erfolgswahrscheinlichkeit (via determineSuccess Pipeline)
+ * - Timing-Kosten (CombatEvent > Bonus > Movement)
  *
  * @returns Score in DPR-Skala oder null wenn Escape nicht anwendbar
  */
-function scoreEscapeAction(
+function scoreEscapeCombatEvent(
   escapee: Combatant,
-  action: Action,
+  action: CombatEvent,
   state: CombatantSimulationState
 ): number | null {
   const conditionName = action._escapeCondition;
@@ -549,32 +544,47 @@ function scoreEscapeAction(
   const conditions = getConditions(escapee);
   const condition = conditions.find(c => c.name === conditionName);
   if (!condition) {
-    debug('scoreEscapeAction: condition not found', { conditionName });
+    debug('scoreEscapeCombatEvent: condition not found', { conditionName });
     return null;
   }
 
-  // Erfolgswahrscheinlichkeit berechnen
-  const escapeResult = resolveEscapeAttempt(escapee, condition, state);
-  const successProb = escapeResult.successProbability;
+  // Erfolgswahrscheinlichkeit via Pipeline (determineSuccess handles contested/save)
+  // Escape actions target self, so create minimal context
+  // Cast state to CombatState - simulation state has the required combatants array
+  const context = {
+    actor: escapee,
+    action,
+    state: state as unknown as import('@/types/combat').CombatState,
+    trigger: 'active' as const,
+  };
+  const targetResult = {
+    targets: [escapee],
+    isAoE: false,
+    primaryTarget: escapee,
+  };
+  const modifierSets = [createEmptyModifierSet()];
+
+  const successResults = determineSuccess(context, targetResult, modifierSets);
+  const successProb = successResults[0]?.hitProbability ?? 0;
 
   // Condition-Schwere (höher = schlimmer = dringender zu escapen)
   const severity = getConditionSeverity(conditionName);
 
   // Timing-Multiplier: Bevorzuge günstigere Optionen
-  // Action = 1.0, Bonus = 1.2 (günstiger), Movement = 1.3 (günstigster)
+  // CombatEvent = 1.0, Bonus = 1.2 (günstiger), Movement = 1.3 (günstigster)
   let timingMultiplier = 1.0;
   const timing = action.timing?.type;
   if (timing === 'bonus') {
-    timingMultiplier = 1.2;  // Bonus Actions sind wertvoller da sie Action frei lassen
+    timingMultiplier = 1.2;  // Bonus CombatEvents sind wertvoller da sie CombatEvent frei lassen
   } else if (timing === 'free') {
-    timingMultiplier = 1.3;  // Movement-basiert, lässt Action + Bonus frei
+    timingMultiplier = 1.3;  // Movement-basiert, lässt CombatEvent + Bonus frei
   }
 
   // Score = Severity * SuccessProb * TimingMultiplier
   // Severity ist auf ~1-15 Skala, multipliziert mit successProb (0-1) und timingMultiplier
   const score = severity * successProb * timingMultiplier;
 
-  debug('scoreEscapeAction:', {
+  debug('scoreEscapeCombatEvent:', {
     escapee: escapee.name,
     condition: conditionName,
     severity,
@@ -589,7 +599,7 @@ function scoreEscapeAction(
 
 /** Damage-Score: hitChance × expectedDamage oder saveFailChance × damage */
 function scoreDamageComponent(
-  action: Action,
+  action: CombatEvent,
   target: Combatant,
   modifiers?: SituationalModifiers
 ): number {
@@ -597,12 +607,12 @@ function scoreDamageComponent(
 
   const baseDamageEV = getExpectedValue(addConstant(
     diceExpressionToPMF(action.damage.dice),
-    action.damage.modifier
+    action.damage.modifier ?? 0
   ));
 
   // Attack Roll
   if (action.attack) {
-    let hitChance = calculateHitChance(action.attack.bonus, getAC(target));
+    let hitChance = calculateHitChance(action.attack.bonus ?? 0, getAC(target));
     if (modifiers) {
       hitChance += modifiers.effectiveAttackMod * 0.05;
       hitChance = Math.max(0.05, Math.min(0.95, hitChance));
@@ -626,7 +636,7 @@ function scoreDamageComponent(
 
 /** Healing-Score: allyDPR × survivalRoundsGained */
 function scoreHealingComponent(
-  action: Action,
+  action: CombatEvent,
   target: Combatant,
   state: CombatantSimulationState
 ): number {
@@ -634,45 +644,49 @@ function scoreHealingComponent(
 
   const healEV = getExpectedValue(addConstant(
     diceExpressionToPMF(action.healing.dice),
-    action.healing.modifier
+    action.healing.modifier ?? 0
   ));
-  const allyDPR = calculateDamagePotential(getActions(target));
+  const allyDPR = calculateDamagePotential(getCombatEvents(target));
   const incomingDPR = calculateIncomingDPR(target, state);
   const survivalRoundsGained = healEV / Math.max(1, incomingDPR);
 
   return allyDPR * survivalRoundsGained;
 }
 
-/** Effect-Score: Summiert Condition, StatModifier, RollModifier Scores */
+/** Effect-Score: Summiert Condition, StatModifier, RollModifier Scores.
+ * Accepts LegacyEffect for backwards compatibility with action.effects arrays.
+ */
 function scoreEffect(
-  effect: ActionEffect,
-  action: Action,
+  effect: LegacyEffect,
+  action: CombatEvent,
   target: Combatant,
   state?: CombatantSimulationState
 ): number {
   let score = 0;
 
-  // Condition (Control)
-  if (effect.condition) {
-    const duration = effect.duration?.value
-      ?? CONDITION_DURATION[effect.condition]
-      ?? DEFAULT_CONDITION_DURATION;
-    const targetDPR = calculateDamagePotential(getActions(target));
+  // Condition (Control) - check effect type or condition property
+  if ((effect.type === 'apply-condition' || effect.condition) && effect.condition) {
+    const duration = effect.duration?.type === 'rounds'
+      ? ((effect.duration as { value?: number }).value ?? CONDITION_DURATION[effect.condition] ?? DEFAULT_CONDITION_DURATION)
+      : (CONDITION_DURATION[effect.condition] ?? DEFAULT_CONDITION_DURATION);
+    const targetDPR = calculateDamagePotential(getCombatEvents(target));
     const successProb = getSuccessProb(action, target);
     score += targetDPR * duration * successProb;
   }
 
-  // Stat Modifiers (Buffs)
-  if (effect.statModifiers) {
+  // Stat Modifiers (Buffs) - check effect type or statModifiers property
+  if ((effect.type === 'stat-modifier' || effect.statModifiers) && effect.statModifiers) {
+    const duration = effect.duration?.type === 'rounds' ? ((effect.duration as { value?: number }).value ?? 3) : 3;
     for (const mod of effect.statModifiers) {
-      score += scoreStatModifier(mod, target, effect.duration?.value ?? 3, state);
+      score += scoreStatModifier(mod, target, duration, state);
     }
   }
 
-  // Roll Modifiers (Advantage/Disadvantage)
-  if (effect.rollModifiers) {
+  // Roll Modifiers (Advantage/Disadvantage) - check effect type or rollModifiers property
+  if ((effect.type === 'roll-modifier' || effect.rollModifiers) && effect.rollModifiers) {
+    const duration = effect.duration?.type === 'rounds' ? ((effect.duration as { value?: number }).value ?? 3) : 3;
     for (const mod of effect.rollModifiers) {
-      score += scoreRollModifier(mod, target, effect.duration?.value ?? 3);
+      score += scoreRollModifier(mod, target, duration);
     }
   }
 
@@ -681,16 +695,13 @@ function scoreEffect(
 
 /** StatModifier-Score: AC/Attack/Damage Buffs → DPR-Äquivalent */
 function scoreStatModifier(
-  mod: { stat: string; value: number; dice?: string },
+  mod: { stat: string; bonus: number },
   target: Combatant,
   duration: number,
   _state?: CombatantSimulationState
 ): number {
-  const allyDPR = calculateDamagePotential(getActions(target));
-  let value = mod.value;
-  if (mod.dice) {
-    value += getExpectedValue(diceExpressionToPMF(mod.dice));
-  }
+  const allyDPR = calculateDamagePotential(getCombatEvents(target));
+  const value = mod.bonus;
 
   switch (mod.stat) {
     case 'ac':
@@ -710,7 +721,7 @@ function scoreRollModifier(
   target: Combatant,
   duration: number
 ): number {
-  const allyDPR = calculateDamagePotential(getActions(target));
+  const allyDPR = calculateDamagePotential(getCombatEvents(target));
 
   if (mod.on === 'attacks' && mod.type === 'advantage') {
     return allyDPR * 0.25 * duration;
@@ -723,7 +734,7 @@ function scoreRollModifier(
 
 /** Counter-Score (Counterspell): spellValue × successProb */
 function scoreCounterComponent(
-  action: Action,
+  action: CombatEvent,
   triggerContext: ReactionContext
 ): number {
   const targetSpellLevel = triggerContext.spellLevel ?? 1;
@@ -745,7 +756,7 @@ function scoreCounterComponent(
 
 /** Trigger-Response-Score (Shield): hitChanceReduction × incomingDamage */
 function scoreTriggerResponse(
-  action: Action,
+  action: CombatEvent,
   triggerContext: ReactionContext,
   defender: Combatant
 ): number {
@@ -757,8 +768,8 @@ function scoreTriggerResponse(
   );
 }
 
-/** Success-Probability für eine Action (Attack, Save, Contested, AutoHit) */
-function getSuccessProb(action: Action, target: Combatant): number {
+/** Success-Probability für eine CombatEvent (Attack, Save, Contested, AutoHit) */
+function getSuccessProb(action: CombatEvent, target: Combatant): number {
   if (action.save) {
     return calculateSaveFailChance(action.save.dc, target, action.save.ability);
   }
@@ -769,15 +780,15 @@ function getSuccessProb(action: Action, target: Combatant): number {
     return 1.0;
   }
   if (action.attack) {
-    return calculateHitChance(action.attack.bonus, getAC(target));
+    return calculateHitChance(action.attack.bonus ?? 0, getAC(target));
   }
   return 0.5;
 }
 
-/** Prüft ob Action einen AC-Buff hat (für Shield-Detection) */
-function hasACBuff(action: Action): boolean {
+/** Prüft ob CombatEvent einen AC-Buff hat (für Shield-Detection) */
+function hasACBuff(action: CombatEvent): boolean {
   return action.effects?.some(e =>
-    e.statModifiers?.some(m => m.stat === 'ac')
+    e.type === 'stat-modifier' && e.statModifiers?.some(m => m.stat === 'ac')
   ) ?? false;
 }
 
@@ -788,14 +799,15 @@ function hasACBuff(action: Action): boolean {
  * Score = hitChanceReduction × expectedDamage
  */
 function calculateShieldScore(
-  action: Action,
+  action: CombatEvent,
   attackBonus: number,
   defenderAC: number,
-  incomingDamage: { dice: string; modifier: number } | undefined
+  incomingDamage: { dice: string; modifier?: number } | undefined
 ): number {
   const acBonus = action.effects?.reduce((total, effect) => {
+    if (effect.type !== 'stat-modifier') return total;
     const acMod = effect.statModifiers?.find(m => m.stat === 'ac');
-    return total + (acMod?.value ?? 0);
+    return total + (acMod?.bonus ?? 0);
   }, 0) ?? 0;
 
   if (acBonus <= 0) return 0;
@@ -807,7 +819,7 @@ function calculateShieldScore(
   let expectedDamage = 10;
   if (incomingDamage) {
     const damagePMF = diceExpressionToPMF(incomingDamage.dice);
-    expectedDamage = getExpectedValue(addConstant(damagePMF, incomingDamage.modifier));
+    expectedDamage = getExpectedValue(addConstant(damagePMF, incomingDamage.modifier ?? 0));
   }
 
   return hitChanceReduction * expectedDamage;
@@ -821,26 +833,26 @@ function getConcentrationSwitchCost(
   const concentratingOnId = attacker.combatState.concentratingOn;
   if (!concentratingOnId) return 0;
 
-  const currentActions = getActions(attacker);
-  const concentratingOnAction = currentActions.find(a => a.id === concentratingOnId);
-  if (!concentratingOnAction) return 0;
+  const currentCombatEvents = getCombatEvents(attacker);
+  const concentratingOnCombatEvent = currentCombatEvents.find(a => a.id === concentratingOnId);
+  if (!concentratingOnCombatEvent) return 0;
 
-  return estimateRemainingConcentrationValue(concentratingOnAction, attacker, state);
+  return estimateRemainingConcentrationValue(concentratingOnCombatEvent, attacker, state);
 }
 
 /**
- * Waehlt beste (Action, Target)-Kombination basierend auf EV-Score.
+ * Waehlt beste (CombatEvent, Target)-Kombination basierend auf EV-Score.
  * Standalone aufrufbar fuer Encounter-Runner: "Was soll diese Kreatur tun?"
  */
-export function selectBestActionAndTarget(
+export function selectBestCombatEventAndTarget(
   attacker: Combatant,
   state: CombatantSimulationState
-): ActionTargetScore | null {
-  const scores: ActionTargetScore[] = [];
-  const attackerActions = getActions(attacker);
+): CombatEventTargetScore | null {
+  const scores: CombatEventTargetScore[] = [];
+  const attackerCombatEvents = getCombatEvents(attacker);
   const attackerPos = getPosition(attacker);
 
-  for (const action of attackerActions) {
+  for (const action of attackerCombatEvents) {
     const candidates = getCandidates(attacker, state, action);
 
     for (const target of candidates) {
@@ -851,7 +863,7 @@ export function selectBestActionAndTarget(
   }
 
   if (scores.length === 0) {
-    debug('selectBestActionAndTarget: no valid actions for', attacker.id);
+    debug('selectBestCombatEventAndTarget: no valid actions for', attacker.id);
     return null;
   }
 
@@ -860,9 +872,9 @@ export function selectBestActionAndTarget(
     curr.score > best.score ? curr : best
   );
 
-  debug('selectBestActionAndTarget:', {
+  debug('selectBestCombatEventAndTarget:', {
     attacker: attacker.id,
-    bestAction: best.action.name,
+    bestCombatEvent: best.action.name,
     bestTarget: best.target.id,
     bestScore: best.score,
     intent: best.intent,
@@ -876,11 +888,11 @@ export function selectBestActionAndTarget(
  */
 export function getMaxAttackRange(combatant: Combatant): number {
   let maxRange = 0;
-  const actions = getActions(combatant);
+  const actions = getCombatEvents(combatant);
 
-  const updateMaxRange = (act: Action) => {
+  const updateMaxRange = (act: CombatEvent) => {
     if (act.damage && act.range) {
-      const rangeFeet = act.range.long ?? act.range.normal;
+      const rangeFeet = act.range.long ?? act.range.normal ?? 5;
       maxRange = Math.max(maxRange, feetToCell(rangeFeet));
     }
   };
@@ -902,18 +914,18 @@ export function getMaxAttackRange(combatant: Combatant): number {
 // ============================================================================
 
 /**
- * Filtert verfügbare Reactions aus den Actions eines Combatants.
+ * Filtert verfügbare Reactions aus den CombatEvents eines Combatants.
  */
-export function getAvailableReactions(combatant: Combatant): Action[] {
-  return getActions(combatant).filter(a => a.timing.type === 'reaction');
+export function getAvailableReactions(combatant: Combatant): CombatEvent[] {
+  return getCombatEvents(combatant).filter(a => a.timing?.type === 'reaction');
 }
 
 /**
  * Prüft ob eine Reaction für ein bestimmtes Trigger-Event relevant ist.
  */
-export function matchesTrigger(reaction: Action, event: TriggerEvent): boolean {
+export function matchesTrigger(reaction: CombatEvent, event: TriggerEvent): boolean {
   // Explizites triggerCondition hat Vorrang
-  if (reaction.timing.triggerCondition?.event) {
+  if (reaction.timing?.triggerCondition?.event) {
     return reaction.timing.triggerCondition.event === event;
   }
 
@@ -940,7 +952,7 @@ export function matchesTrigger(reaction: Action, event: TriggerEvent): boolean {
 export function findMatchingReactions(
   combatant: Combatant,
   event: TriggerEvent
-): Action[] {
+): CombatEvent[] {
   return getAvailableReactions(combatant).filter(r => matchesTrigger(r, event));
 }
 
@@ -992,27 +1004,27 @@ export function estimateExpectedReactionValue(
 }
 
 /**
- * Entscheidet ob eine Action genutzt werden soll (inkl. Opportunity Cost für Reactions).
+ * Entscheidet ob eine CombatEvent genutzt werden soll (inkl. Opportunity Cost für Reactions).
  */
-export function shouldUseAction(
+export function shouldUseCombatEvent(
   score: number,
-  action: Action,
+  action: CombatEvent,
   actor: Combatant,
   state: CombatantSimulationState,
   budget?: TurnBudget
 ): boolean {
   // Keine Reaction verfügbar
-  if (action.timing.type === 'reaction' && budget && !budget.hasReaction) {
+  if (action.timing?.type === 'reaction' && budget && !budget.hasReaction) {
     return false;
   }
 
   // Reactions: Opportunity Cost berücksichtigen
-  if (action.timing.type === 'reaction') {
+  if (action.timing?.type === 'reaction') {
     const opportunityCost = estimateExpectedReactionValue(actor, state);
     return score > opportunityCost * REACTION_THRESHOLD;
   }
 
-  // Standard/Bonus Actions: Jeder positive Score ist gut
+  // Standard/Bonus CombatEvents: Jeder positive Score ist gut
   return score > 0;
 }
 
@@ -1024,10 +1036,10 @@ export function shouldUseAction(
  * Bewertet eine Reaction gegen einen Trigger-Kontext.
  * Nutzt unterschiedliche Scoring-Logik basierend auf dem Reaction-Typ.
  *
- * @returns Score in DPR-Skala (vergleichbar mit anderen Action-Scores)
+ * @returns Score in DPR-Skala (vergleichbar mit anderen CombatEvent-Scores)
  */
 export function evaluateReaction(
-  reaction: Action,
+  reaction: CombatEvent,
   context: ReactionContext,
   combatant: Combatant,
   state: CombatantSimulationState
@@ -1075,7 +1087,7 @@ export function evaluateReaction(
  * Bewertet Shield-artige Reactions (AC-Boost).
  */
 function evaluateShieldReaction(
-  reaction: Action,
+  reaction: CombatEvent,
   context: ReactionContext,
   combatant: Combatant
 ): number {
@@ -1091,7 +1103,7 @@ function evaluateShieldReaction(
  * Bewertet Counterspell Reaction.
  */
 function evaluateCounterspellReaction(
-  reaction: Action,
+  reaction: CombatEvent,
   context: ReactionContext,
   _combatant: Combatant,
   state: CombatantSimulationState
@@ -1116,13 +1128,13 @@ function evaluateCounterspellReaction(
  * Bewertet Reactions auf 'damaged' Event (Hellish Rebuke, Absorb Elements).
  */
 function evaluateDamagedReaction(
-  reaction: Action,
+  reaction: CombatEvent,
   context: ReactionContext,
   _combatant: Combatant
 ): number {
   if (reaction.damage) {
     const damagePMF = diceExpressionToPMF(reaction.damage.dice);
-    let baseDamage = getExpectedValue(addConstant(damagePMF, reaction.damage.modifier));
+    let baseDamage = getExpectedValue(addConstant(damagePMF, reaction.damage.modifier ?? 0));
 
     if (reaction.save) {
       const saveFailChance = calculateSaveFailChance(
@@ -1152,20 +1164,20 @@ function evaluateDamagedReaction(
  * Schätzt den Wert eines Spells für Counterspell-Bewertung.
  */
 function estimateSpellValue(
-  spell: Action | undefined,
+  spell: CombatEvent | undefined,
   caster: Combatant,
   state: CombatantSimulationState
 ): number {
   if (!spell) return 10;
 
-  const intent = getActionIntent(spell);
+  const intent = getCombatEventIntent(spell);
 
   switch (intent) {
     case 'damage': {
       if (!spell.damage) return 10;
       const damagePMF = diceExpressionToPMF(spell.damage.dice);
-      const baseDamage = getExpectedValue(addConstant(damagePMF, spell.damage.modifier));
-      const targetCount = spell.targeting.type === 'area' ? 3 : 1;
+      const baseDamage = getExpectedValue(addConstant(damagePMF, spell.damage.modifier ?? 0));
+      const targetCount = spell.targeting?.type === 'area' ? 3 : 1;
       return baseDamage * targetCount;
     }
 
@@ -1174,8 +1186,9 @@ function estimateSpellValue(
       if (enemies.length === 0) return 15;
 
       const avgEnemyDPR = enemies.reduce((sum, e) =>
-        sum + calculateDamagePotential(getActions(e)), 0) / enemies.length;
-      const duration = spell.effects?.[0]?.duration?.value ?? 3;
+        sum + calculateDamagePotential(getCombatEvents(e)), 0) / enemies.length;
+      const firstEffect = spell.effects?.[0];
+      const duration = (firstEffect?.duration?.type === 'rounds' ? firstEffect.duration.value : undefined) ?? 3;
 
       return avgEnemyDPR * duration * 0.5;
     }
@@ -1188,7 +1201,7 @@ function estimateSpellValue(
     case 'healing': {
       if (!spell.healing) return 10;
       const healPMF = diceExpressionToPMF(spell.healing.dice);
-      return getExpectedValue(addConstant(healPMF, spell.healing.modifier)) * 0.5;
+      return getExpectedValue(addConstant(healPMF, spell.healing.modifier ?? 0)) * 0.5;
     }
 
     default:
@@ -1202,7 +1215,7 @@ function estimateSpellValue(
  * Formel: reactionValue > opportunityCost × REACTION_THRESHOLD
  */
 export function shouldUseReaction(
-  reaction: Action,
+  reaction: CombatEvent,
   context: ReactionContext,
   combatant: Combatant,
   state: CombatantSimulationState,

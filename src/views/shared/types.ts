@@ -1,7 +1,7 @@
 // Ziel: Shared TypeScript Interfaces fuer View-Komponenten
 // Siehe: docs/views/shared.md
 
-import type { Action } from '#entities/action';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type { Combatant } from '@/types/combat';
 
 // ============================================================================
@@ -57,7 +57,7 @@ export interface ActionPanelProps {
   position: GridPosition;
   cellSize: number;
   anchor?: 'right' | 'left' | 'top' | 'bottom'; // default: 'right'
-  action: Action;
+  action: CombatEvent;
   attacker: Combatant;
   target: Combatant;
   modifiers: ActionModifier[];
@@ -83,8 +83,8 @@ export interface EffectInfo {
 
 /** Discriminated Union fuer alle Resolution-Typen */
 export type ResolutionRequest =
-  | { type: 'action'; action: Action; attacker: Combatant; target: Combatant; mode: 'roll' | 'enter' }
-  | { type: 'reaction'; reaction: Action; owner: Combatant; trigger: string }
+  | { type: 'action'; action: CombatEvent; attacker: Combatant; target: Combatant; mode: 'roll' | 'enter' }
+  | { type: 'reaction'; reaction: CombatEvent; owner: Combatant; trigger: string }
   | { type: 'concentration'; combatant: Combatant; spell: string; damage: number }
   | { type: 'turnEffect'; combatant: Combatant; timing: 'start' | 'end'; effect: EffectInfo };
 
@@ -105,7 +105,7 @@ export interface ResolutionPopupProps {
 // Legacy types (deprecated, use ResolutionRequest/Result stattdessen)
 /** @deprecated Use ResolutionRequest with type='action' */
 export interface ActionResolutionProps {
-  action: Action;
+  action: CombatEvent;
   attacker: Combatant;
   target: Combatant;
   mode: 'roll' | 'enter';

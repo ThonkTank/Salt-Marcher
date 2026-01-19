@@ -17,7 +17,7 @@ import type {
   LayerFilter,
   TurnBudget,
 } from '@/types/combat';
-import type { Action } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type { ActionTimingType } from '@/constants/action';
 import { positionToKey, keyToPosition, getExpectedValue, diceExpressionToPMF, addConstant } from '@/utils';
 import { hasLineOfSight, calculateCover, type CoverLevel } from '@/utils/squareSpace/gridLineOfSight';
@@ -34,7 +34,7 @@ import {
 } from '../helpers/combatHelpers';
 import { getGroupId, getPosition, getHP, getMaxHP } from '../../combatTracking';
 import { calculatePairScore } from '../core/actionScoring';
-import { getAvailableActionsWithLayers } from '../core/actionEnumeration';
+import { getAvailableCombatEventsWithLayers } from '../core/actionEnumeration';
 import { getEnemies, getAllies } from '../helpers/actionSelection';
 
 // ============================================================================
@@ -76,7 +76,7 @@ function groupActionsByTiming(
   const groups = new Map<ActionTimingType, ActionWithLayer[]>();
 
   for (const action of actions) {
-    const timing = action.timing.type;
+    const timing = action.timing?.type ?? 'action';
     const existing = groups.get(timing) ?? [];
     existing.push(action);
     groups.set(timing, existing);
@@ -132,7 +132,7 @@ function getThreatFromCombatant(
       const rangeData = action._layer.grid.get(cellKey);
       if (!rangeData?.inRange) continue;
 
-      // LoS-Check für diese Action (wenn terrainMap vorhanden)
+      // LoS-Check für diese CombatEvent (wenn terrainMap vorhanden)
       if (state.terrainMap) {
         const maxRange = action._layer.rangeCells;
         if (!hasLineOfSight(enemyPos, cell, maxRange, state.terrainMap)) {
@@ -190,7 +190,7 @@ function hasTurnOrder(
  * @param cell Ziel-Cell
  * @param viewer Der Combatant der die Bedrohung bewertet
  * @param state Combat State mit Layer-Daten (optionale Turn-Order)
- * @param filter Optional: Filter für Action-Typen
+ * @param filter Optional: Filter für CombatEvent-Typen
  * @returns Threat-Score (höher = gefährlicher)
  */
 export function getThreatAt(
@@ -235,7 +235,7 @@ export function getThreatAt(
 }
 
 /**
- * Findet die gefaehrlichste Action fuer eine Cell.
+ * Findet die gefaehrlichste CombatEvent fuer eine Cell.
  * Fuer Debugging und taktische Analyse.
  */
 export function getDominantThreat(
@@ -516,10 +516,10 @@ export function buildThreatMap(
 // ============================================================================
 
 /**
- * Prüft ob eine Action mit dem aktuellen Budget ausgeführt werden kann.
+ * Prüft ob eine CombatEvent mit dem aktuellen Budget ausgeführt werden kann.
  */
 function canAffordAction(action: ActionWithLayer, budget: TurnBudget): boolean {
-  switch (action.timing.type) {
+  switch (action.timing?.type ?? 'action') {
     case 'action':
       return budget.hasAction;
     case 'bonus':
@@ -578,7 +578,7 @@ export function getOpportunityAt(
         const enemies = getEnemies(combatant, state);
 
         for (const enemy of enemies) {
-          // Prüfe ob Action das Target von dieser Cell aus erreichen kann
+          // Prüfe ob CombatEvent das Target von dieser Cell aus erreichen kann
           const targetPosition = getPosition(enemy);
           const distance = getDistance(cell, targetPosition);
 

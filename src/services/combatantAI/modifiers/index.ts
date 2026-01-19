@@ -5,24 +5,24 @@
 // Hardcoded Modifier-Dateien wurden durch Schema-basierte Definitionen ersetzt.
 //
 // Neue Modifier hinzufügen:
-// Option A (core): SchemaModifier zu CORE_MODIFIERS in coreModifiers.ts hinzufügen
-// Option B (action): SchemaModifier in Action definieren, registerSchemaModifiers() rufen
+// Option A (core): SchemaModifier zu modifierPresets in presets/modifiers/index.ts hinzufügen
+// Option B (action): SchemaModifier in CombatEvent definieren, registerSchemaModifiers() rufen
 
-import type { Action, SchemaModifier } from '@/types/entities';
+import type { CombatEvent, SchemaModifier } from '@/types/entities/combatEvent';
 import { modifierRegistry } from '../situationalModifiers';
 import { createSchemaModifierEvaluator } from '../schemaModifierAdapter';
 
 // ============================================================================
-// CORE MODIFIERS (Schema-Based)
+// CORE MODIFIERS (Schema-Based) - Import from presets
 // ============================================================================
 
 import {
-  CORE_MODIFIERS,
+  modifierPresets as CORE_MODIFIERS,
   halfCoverModifier,
   bloodiedFrenzyModifier,
   auraOfAuthorityModifier,
   modifierPresetsMap,
-} from './coreModifiers';
+} from '../../../../presets/modifiers';
 
 // Track if core modifiers are registered
 let coreModifiersRegistered = false;
@@ -86,13 +86,13 @@ export function getModifierById(id: string): SchemaModifier | undefined {
 // ============================================================================
 
 /**
- * Registers all schema-defined modifiers from an array of Actions.
- * Call this after loading Actions from Vault to activate their schemaModifiers.
+ * Registers all schema-defined modifiers from an array of CombatEvents.
+ * Call this after loading CombatEvents from Vault to activate their schemaModifiers.
  * Handles both inline schemaModifiers and modifierRefs (ID references to presets).
  *
- * @param actions Actions that may contain schemaModifiers or modifierRefs
+ * @param actions CombatEvents that may contain schemaModifiers or modifierRefs
  */
-export function registerSchemaModifiers(actions: Action[]): void {
+export function registerSchemaModifiers(actions: CombatEvent[]): void {
   for (const action of actions) {
     // Register inline schema modifiers
     if (action.schemaModifiers?.length) {
@@ -138,14 +138,14 @@ export function unregisterSchemaModifier(id: string): void {
 // ============================================================================
 
 // AI-specific modifier schemas (for testing/inspection)
-// NOTE: Standard D&D 5e modifiers (long range, prone, restrained) are in gatherModifiers.ts
+// NOTE: Standard D&D 5e modifiers (long range, prone, restrained) are in getModifiers.ts
 export {
   CORE_MODIFIERS,
   halfCoverModifier,
   bloodiedFrenzyModifier,
   auraOfAuthorityModifier,
   modifierPresetsMap,
-} from './coreModifiers';
+};
 
 // Schema modifier utilities
 export { createSchemaModifierEvaluator } from '../schemaModifierAdapter';

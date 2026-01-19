@@ -1,6 +1,11 @@
 // Ziel: Interpreter für Schema-driven Condition Expressions
 // Siehe: docs/services/combatantAI/combatantAI.md
 //
+// ============================================================================
+// ⚠️ ON HOLD - Combat-Implementierung ist vorübergehend pausiert.
+// Diese Datei wird aktuell nicht verwendet.
+// ============================================================================
+//
 // Evaluiert ConditionExpression gegen ModifierContext.
 // Unterstützt:
 // - Logical operators: and, or, not
@@ -9,22 +14,49 @@
 // - State predicates: has-condition, is-incapacitated, hp-threshold
 // - Action predicates: action-has-property, action-is-type, action-range-type
 
-import type { Action } from '@/types/entities';
+// ============================================================================
+// HACK & TODO
+// ============================================================================
+//
+// [TODO]: Predicate String Shorthand Parser
+// - Spec: docs/types/combatEvent.md#predicate-syntax
+// - evaluateCondition() erwartet Object-Form Precondition
+// - Benötigt: preprocessPredicate(expr) vor Auswertung
+// - Beispiel: "target:condition:prone" → { type: 'has-condition', entity: 'target', condition: 'prone' }
+//
+// [HACK]: has-line-of-sight STUB
+// - evaluateHasLineOfSight() returned immer true
+// - Benötigt: LOS-Berechnung gegen Terrain/Obstacles aus CombatState
+// - Abhängigkeit: gridLineOfSight.ts Integration
+//
+// [HACK]: has-advantage nicht implementiert
+// - Returns false mit "not yet supported" log
+// - Benötigt: Zugriff auf bereits berechnete Modifiers
+// - Zirkuläre Abhängigkeit vermeiden (Modifier → Condition → Modifier)
+//
+// [HACK]: has-free-hands STUB
+// - evaluateHasFreeHands() returned immer true
+// - Benötigt: Equipment-System mit Händen-Tracking
+// - Abhängigkeit: Equipment-Entity und Hand-Slot-Logik
+//
+
 import type {
-  ConditionExpression,
+  CombatEvent,
+  Precondition as ConditionExpression,
   EntityRef,
   QuantifiedEntity,
   ExistsExpression,
-} from '@/types/entities/conditionExpression';
+  SizeCategory,
+} from '@/types/entities/combatEvent';
+import { CREATURE_SIZES } from '@/constants/creature';
 import type {
   ModifierContext,
-  CombatantContext,
   ModifierSimulationState,
 } from '@/services/combatantAI/situationalModifiers';
 import { getDistance, isAllied, isHostile, feetToCell } from './helpers';
 import { isNPC, type GridPosition, type Combatant } from '@/types/combat';
 import { getExpectedValue } from '@/utils';
-import { getAC } from '@/services/combatTracking';
+import { getAC, getResolvedCreature } from '@/services/combatTracking';
 
 // ============================================================================
 // DEBUG
@@ -46,13 +78,13 @@ const debug = (...args: unknown[]) => {
  */
 export interface EvaluationContext {
   /** The entity that owns this modifier (for exists where clauses) */
-  self: CombatantContext;
+  self: Combatant;
   /** The attacking entity */
-  attacker: CombatantContext;
+  attacker: Combatant;
   /** The target entity */
-  target: CombatantContext;
+  target: Combatant;
   /** The action being evaluated */
-  action: Action;
+  action: CombatEvent;
   /** Full simulation state for entity queries */
   state: ModifierSimulationState;
   /** Alliances lookup */
@@ -79,9 +111,9 @@ export function createEvaluationContext(modCtx: ModifierContext): EvaluationCont
 // ============================================================================
 
 /**
- * Resolves an entity reference to its CombatantContext.
+ * Resolves an entity reference to its Combatant.
  */
-function resolveEntity(ref: EntityRef, ctx: EvaluationContext): CombatantContext {
+function resolveEntity(ref: EntityRef, ctx: EvaluationContext): Combatant {
   switch (ref) {
     case 'self':
       return ctx.self;
@@ -96,24 +128,7 @@ function resolveEntity(ref: EntityRef, ctx: EvaluationContext): CombatantContext
  * Resolves an entity reference to its position.
  */
 function resolveEntityPosition(ref: EntityRef, ctx: EvaluationContext): GridPosition {
-  return resolveEntity(ref, ctx).position;
-}
-
-/**
- * Extrahiert CombatantContext direkt aus Combatant.
- * Keine Profile-Indirektion - alle Daten vom Ursprung.
- */
-export function combatantToCombatantContext(c: Combatant): CombatantContext {
-  return {
-    position: c.combatState.position,
-    groupId: c.combatState.groupId,
-    participantId: c.id,
-    conditions: c.combatState.conditions,
-    ac: getAC(c),
-    hp: getExpectedValue(c.currentHp),
-    maxHp: c.maxHp,
-    creatureId: isNPC(c) ? c.creature.id : undefined,
-  };
+  return resolveEntity(ref, ctx).combatState.position;
 }
 
 /**
@@ -123,27 +138,25 @@ export function combatantToCombatantContext(c: Combatant): CombatantContext {
 function getFilteredEntities(
   quantified: QuantifiedEntity,
   ctx: EvaluationContext
-): CombatantContext[] {
+): Combatant[] {
   const relativeTo = quantified.relativeTo ?? 'attacker';
   const referenceEntity = resolveEntity(relativeTo, ctx);
-  const referenceGroupId = referenceEntity.groupId;
+  const referenceGroupId = referenceEntity.combatState.groupId;
 
-  return ctx.state.combatants
-    .filter((c) => {
-      // Never include the reference entity itself
-      if (c.id === referenceEntity.participantId) return false;
+  return ctx.state.combatants.filter((c) => {
+    // Never include the reference entity itself
+    if (c.id === referenceEntity.id) return false;
 
-      const groupId = c.combatState.groupId;
-      switch (quantified.filter) {
-        case 'ally':
-          return isAllied(groupId, referenceGroupId, ctx.alliances);
-        case 'enemy':
-          return isHostile(groupId, referenceGroupId, ctx.alliances);
-        case 'any-creature':
-          return true;
-      }
-    })
-    .map(combatantToCombatantContext);
+    const groupId = c.combatState.groupId;
+    switch (quantified.filter) {
+      case 'ally':
+        return isAllied(groupId, referenceGroupId, ctx.alliances);
+      case 'enemy':
+        return isHostile(groupId, referenceGroupId, ctx.alliances);
+      case 'any-creature':
+        return true;
+    }
+  });
 }
 
 // ============================================================================
@@ -162,8 +175,8 @@ const INCAPACITATING_CONDITIONS = [
 /**
  * Checks if an entity has any incapacitating condition.
  */
-function isEntityIncapacitated(entity: CombatantContext): boolean {
-  return entity.conditions.some(
+function isEntityIncapacitated(entity: Combatant): boolean {
+  return entity.combatState.conditions.some(
     (c) =>
       INCAPACITATING_CONDITIONS.includes(c.name as typeof INCAPACITATING_CONDITIONS[number]) ||
       INCAPACITATING_CONDITIONS.includes(c.effect as typeof INCAPACITATING_CONDITIONS[number])
@@ -244,6 +257,7 @@ export function evaluateCondition(
       return evaluateIsEnemy(expr, ctx);
 
     case 'has-advantage':
+      // HACK: siehe Header - has-advantage nicht implementiert
       // Note: This requires access to already-computed modifiers
       // For now, return false as this is a complex case
       debug('has-advantage: not yet supported, returning false');
@@ -251,6 +265,10 @@ export function evaluateCondition(
 
     case 'is-creature-type':
       return evaluateIsCreatureType(expr, ctx);
+
+    // === Equipment Predicates ===
+    case 'has-free-hands':
+      return evaluateHasFreeHands(expr, ctx);
 
     // === Action Predicates ===
     case 'action-has-property':
@@ -266,6 +284,9 @@ export function evaluateCondition(
       const ids = Array.isArray(expr.actionId) ? expr.actionId : [expr.actionId];
       return ids.includes(ctx.action.id);
     }
+
+    case 'size-category':
+      return evaluateSizeCategory(expr, ctx);
 
     default:
       console.warn(`[expressionEvaluator] Unknown expression type: ${(expr as { type: string }).type}`);
@@ -302,7 +323,7 @@ function evaluateExists(expr: ExistsExpression, ctx: EvaluationContext): boolean
 
   // 'any' or 'all' quantifier
   if (expr.where) {
-    const checkFn = (candidate: CombatantContext): boolean => {
+    const checkFn = (candidate: Combatant): boolean => {
       const innerCtx: EvaluationContext = { ...ctx, self: candidate };
       return evaluateCondition(expr.where!, innerCtx);
     };
@@ -420,6 +441,7 @@ function evaluateInLineBetween(
   return perpDistance <= 1;
 }
 
+/** HACK: siehe Header - LOS STUB */
 function evaluateHasLineOfSight(
   _expr: { type: 'has-line-of-sight'; from: EntityRef; to: EntityRef },
   _ctx: EvaluationContext
@@ -432,14 +454,39 @@ function evaluateHasLineOfSight(
 
 // --- Action Range Predicates ---
 
+/**
+ * Helper to get range from action (supports both legacy and new schema).
+ * Legacy: action.range
+ * New: action.targeting.range (for single/multi targeting types)
+ */
+function getActionRange(action: EvaluationContext['action']): { normal?: number; long?: number } | null {
+  // Legacy format: action.range
+  if (action.range) {
+    return action.range;
+  }
+  // New schema: action.targeting.range
+  const targeting = action.targeting;
+  if (targeting && 'range' in targeting && targeting.range) {
+    const range = targeting.range as { type: string; normal?: number; long?: number; disadvantage?: number };
+    if (range.type === 'ranged') {
+      return {
+        normal: range.normal,
+        long: range.long ?? range.disadvantage, // long is alias for disadvantage in schema
+      };
+    }
+  }
+  return null;
+}
+
 function evaluateTargetInLongRange(ctx: EvaluationContext): boolean {
   const { action, attacker, target } = ctx;
 
-  if (!action.range?.long) return false;
+  const range = getActionRange(action);
+  if (!range?.long) return false;
 
-  const distance = getDistance(attacker.position, target.position);
-  const normalRangeCells = feetToCell(action.range.normal);
-  const longRangeCells = feetToCell(action.range.long);
+  const distance = getDistance(attacker.combatState.position, target.combatState.position);
+  const normalRangeCells = feetToCell(range.normal);
+  const longRangeCells = feetToCell(range.long);
 
   return distance > normalRangeCells && distance <= longRangeCells;
 }
@@ -447,12 +494,23 @@ function evaluateTargetInLongRange(ctx: EvaluationContext): boolean {
 function evaluateTargetBeyondNormalRange(ctx: EvaluationContext): boolean {
   const { action, attacker, target } = ctx;
 
-  if (!action.range) return false;
+  const range = getActionRange(action);
+  if (!range?.normal) {
+    debug('target-beyond-normal-range: no range found', { hasRange: !!range });
+    return false;
+  }
 
-  const distance = getDistance(attacker.position, target.position);
-  const normalRangeCells = feetToCell(action.range.normal);
+  const distance = getDistance(attacker.combatState.position, target.combatState.position);
+  const normalRangeCells = feetToCell(range.normal);
+  const result = distance > normalRangeCells;
 
-  return distance > normalRangeCells;
+  debug('target-beyond-normal-range:', {
+    distance,
+    normalRangeCells,
+    result,
+  });
+
+  return result;
 }
 
 // --- State Predicates ---
@@ -462,7 +520,7 @@ function evaluateHasCondition(
   ctx: EvaluationContext
 ): boolean {
   const entity = resolveEntity(expr.entity, ctx);
-  const hasCondition = entity.conditions.some(
+  const hasCondition = entity.combatState.conditions.some(
     (c) => c.name === expr.condition || c.effect === expr.condition
   );
   return expr.negate ? !hasCondition : hasCondition;
@@ -494,10 +552,11 @@ function evaluateHpThreshold(
     return false;
   }
 
-  const hpPercent = (entity.hp / entity.maxHp) * 100;
+  const hp = getExpectedValue(entity.currentHp);
+  const hpPercent = (hp / entity.maxHp) * 100;
 
   debug('hp-threshold:', {
-    hp: entity.hp,
+    hp,
     maxHp: entity.maxHp,
     hpPercent,
     comparison: expr.comparison,
@@ -522,7 +581,7 @@ function evaluateIsAlly(
 ): boolean {
   const entity = resolveEntity(expr.entity, ctx);
   const relativeTo = resolveEntity(expr.relativeTo ?? 'attacker', ctx);
-  return isAllied(entity.groupId, relativeTo.groupId, ctx.alliances);
+  return isAllied(entity.combatState.groupId, relativeTo.combatState.groupId, ctx.alliances);
 }
 
 function evaluateIsEnemy(
@@ -531,7 +590,7 @@ function evaluateIsEnemy(
 ): boolean {
   const entity = resolveEntity(expr.entity, ctx);
   const relativeTo = resolveEntity(expr.relativeTo ?? 'attacker', ctx);
-  return isHostile(entity.groupId, relativeTo.groupId, ctx.alliances);
+  return isHostile(entity.combatState.groupId, relativeTo.combatState.groupId, ctx.alliances);
 }
 
 function evaluateIsCreatureType(
@@ -539,5 +598,98 @@ function evaluateIsCreatureType(
   ctx: EvaluationContext
 ): boolean {
   const entity = resolveEntity(expr.entity, ctx);
-  return entity.creatureId === expr.creatureId;
+  return isNPC(entity) ? entity.creature.id === expr.creatureId : false;
+}
+
+// --- Equipment Predicates ---
+
+/**
+ * HACK: siehe Header - Equipment-System nicht implementiert.
+ * Prüft ob eine Entity genügend freie Hände hat.
+ * Für MVP: Immer true (Equipment-System später).
+ */
+function evaluateHasFreeHands(
+  expr: { type: 'has-free-hands'; count: number },
+  _ctx: EvaluationContext
+): boolean {
+  debug('has-free-hands: Equipment-System nicht implementiert, returning true', {
+    requiredHands: expr.count,
+  });
+  // TODO: Implement when Equipment system is ready
+  // Would need to check:
+  // 1. What's in main hand and off hand
+  // 2. If wielding two-handed weapon
+  // 3. If holding shield
+  return true;
+}
+
+// --- Size Predicates ---
+
+/** Size category ordering for comparison (index = size) */
+const SIZE_ORDER = CREATURE_SIZES;
+
+/**
+ * Gets the size index for comparison.
+ * Handles 'one-larger' by looking up attacker size and adding 1.
+ */
+function getSizeIndex(size: SizeCategory | 'one-larger', attackerSize: SizeCategory | undefined): number {
+  if (size === 'one-larger') {
+    if (!attackerSize) {
+      debug('getSizeIndex: one-larger without attacker size, defaulting to medium');
+      return SIZE_ORDER.indexOf('medium') + 1;
+    }
+    const attackerIndex = SIZE_ORDER.indexOf(attackerSize);
+    return Math.min(attackerIndex + 1, SIZE_ORDER.length - 1);
+  }
+  return SIZE_ORDER.indexOf(size);
+}
+
+/**
+ * Gets the size of an entity.
+ * NPCs have size in creature definition via getResolvedCreature.
+ * PCs default to 'medium'.
+ */
+function getEntitySize(entity: Combatant): SizeCategory {
+  if (isNPC(entity)) {
+    const resolved = getResolvedCreature(entity.creature.id);
+    return resolved.definition.size ?? 'medium';
+  }
+  // Player characters - check character.size or default to medium
+  if ('character' in entity && entity.character) {
+    return (entity.character as { size?: SizeCategory }).size ?? 'medium';
+  }
+  return 'medium';
+}
+
+/**
+ * Evaluates size-category precondition.
+ * Checks if entity's size is within the specified max (inclusive).
+ */
+function evaluateSizeCategory(
+  expr: { type: 'size-category'; entity?: EntityRef; max: SizeCategory | 'one-larger' },
+  ctx: EvaluationContext
+): boolean {
+  // Default to 'target' if entity not specified (for targeting filters)
+  const entityRef = expr.entity ?? 'target';
+  const entity = resolveEntity(entityRef, ctx);
+  const entitySize = getEntitySize(entity);
+  const entitySizeIndex = SIZE_ORDER.indexOf(entitySize);
+
+  // Get attacker size for 'one-larger' comparison
+  const attackerSize = getEntitySize(ctx.attacker);
+  const maxSizeIndex = getSizeIndex(expr.max, attackerSize);
+
+  const result = entitySizeIndex <= maxSizeIndex;
+
+  debug('evaluateSizeCategory:', {
+    entity: entityRef,
+    entitySize,
+    entitySizeIndex,
+    max: expr.max,
+    maxSizeIndex,
+    attackerSize,
+    result,
+  });
+
+  return result;
 }

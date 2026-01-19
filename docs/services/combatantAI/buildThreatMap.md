@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # buildThreatMap
 
 > **Verantwortlichkeit:** Position-Bewertung fuer Combat-AI - wie gefaehrlich/nuetzlich ist eine Cell?

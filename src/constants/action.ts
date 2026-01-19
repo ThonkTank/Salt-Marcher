@@ -69,6 +69,7 @@ export const CONDITION_TYPES = [
   'deafened',
   'frightened',
   'grappled',
+  'grappling',  // Applied to grappler (speed halved while dragging)
   'hidden',
   'incapacitated',
   'invisible',
@@ -96,6 +97,7 @@ export const DURATION_TYPES = [
   'until-escape',  // Grapple, Web, Net - escape via action/movement
   'concentration',
   'until-long-rest',
+  'permanent',  // Traits, innate abilities
 ] as const;
 export type DurationType = (typeof DURATION_TYPES)[number];
 
@@ -368,105 +370,6 @@ export type ZoneTargetFilter = (typeof ZONE_TARGET_FILTERS)[number];
 
 export const REST_TYPES = ['short', 'long'] as const;
 export type RestType = (typeof REST_TYPES)[number];
-
-// ============================================================================
-// CONDITION EFFECTS (D&D 5e Rules)
-// ============================================================================
-
-/**
- * Deklarative Condition Effects gemäß D&D 5e PHB.
- * Runtime-Code liest diese Effekte aus statt hardcoded Logik.
- *
- * Effekt-Typen:
- * - speed: 0 = keine Bewegung möglich
- * - attackRoll: 'advantage' | 'disadvantage' auf eigene Angriffe
- * - incomingAttacks: 'advantage' | 'disadvantage' auf Angriffe gegen dieses Target
- * - incomingMelee/incomingRanged: Spezifisch für Melee/Ranged
- * - dexSaves: 'advantage' | 'disadvantage' auf DEX-Saves
- * - incapacitated: true = keine Actions/Reactions möglich
- * - autoFailStrDex: true = automatisch fehlgeschlagene STR/DEX Saves
- * - standUpCost: 0.5 = halbe Bewegung zum Aufstehen (für Prone)
- */
-export const CONDITION_EFFECTS = {
-  blinded: {
-    attackRoll: 'disadvantage',
-    incomingAttacks: 'advantage',
-    autoFailSight: true,
-  },
-  charmed: {
-    // Kann Charmer nicht angreifen - benötigt sourceId Tracking
-    // Charmer hat Advantage auf Social Checks
-  },
-  deafened: {
-    autoFailHearing: true,
-  },
-  frightened: {
-    attackRoll: 'disadvantage',  // Wenn Quelle sichtbar
-    abilityChecks: 'disadvantage',
-    // Kann sich nicht willentlich zur Quelle bewegen - benötigt sourceId Tracking
-  },
-  grappled: {
-    speed: 0,
-  },
-  incapacitated: {
-    cannotAct: true,  // Keine Actions oder Reactions
-  },
-  invisible: {
-    attackRoll: 'advantage',
-    incomingAttacks: 'disadvantage',
-  },
-  paralyzed: {
-    speed: 0,
-    incapacitated: true,
-    autoFailStrDex: true,
-    incomingAttacks: 'advantage',
-    incomingMeleeCrit: true,  // Melee Hits sind automatisch Crits
-  },
-  petrified: {
-    speed: 0,
-    incapacitated: true,
-    autoFailStrDex: true,
-    incomingAttacks: 'advantage',
-    // + Resistances auf alle Damage Types, Weight x10
-  },
-  poisoned: {
-    attackRoll: 'disadvantage',
-    abilityChecks: 'disadvantage',
-  },
-  prone: {
-    attackRoll: 'disadvantage',  // Eigene Angriffe haben Disadvantage
-    incomingMelee: 'advantage',
-    incomingRanged: 'disadvantage',
-    standUpCost: 0.5,  // Halbe Bewegung zum Aufstehen
-  },
-  restrained: {
-    speed: 0,
-    attackRoll: 'disadvantage',
-    dexSaves: 'disadvantage',
-    incomingAttacks: 'advantage',
-  },
-  stunned: {
-    speed: 0,
-    incapacitated: true,
-    autoFailStrDex: true,
-    incomingAttacks: 'advantage',
-  },
-  unconscious: {
-    speed: 0,
-    incapacitated: true,
-    prone: true,  // Fällt automatisch um
-    autoFailStrDex: true,
-    incomingAttacks: 'advantage',
-    incomingMeleeCrit: true,
-  },
-  exhaustion: {
-    // Exhaustion Level 1-6 mit gestaffelten Effekten
-    // Wird separat behandelt da Level-abhängig
-  },
-} as const;
-
-export type ConditionEffectKey = keyof typeof CONDITION_EFFECTS;
-export type ConditionEffect = (typeof CONDITION_EFFECTS)[ConditionEffectKey];
 
 // ============================================================================
 // ESCAPE CHECK TYPES

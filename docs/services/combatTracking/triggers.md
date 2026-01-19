@@ -1,7 +1,11 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # Trigger-System
 
 > **Verantwortlichkeit:** Bestimmt WANN die Resolution-Pipeline aufgerufen wird
 > **Pfad:** `src/services/combatTracking/triggers/`
+> **Schema:** [CombatEvent.trigger](../../types/combatEvent.md#trigger) - Schema-driven DSL fuer Trigger
 
 ## Konzept
 
@@ -19,7 +23,7 @@ Das Trigger-System ist die Orchestrations-Schicht ueber der Resolution-Pipeline.
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  RESOLUTION PIPELINE (fuer alle Trigger gleich, READ-ONLY)  │
-│  findTargets → gatherModifiers → determineSuccess → resolveEffects│
+│  findTargets → getModifiers → determineSuccess → resolveEffects│
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -55,27 +59,33 @@ Spieler oder AI waehlt eine Aktion aus dem Turn-Budget.
 ### Flow
 
 ```typescript
-// In executeAction.ts (Orchestrator)
-function executeAction(
-  state: CombatState,
-  turnAction: TurnAction
-): void {
-  if (turnAction.type === 'action') {
-    const context: ResolutionContext = {
-      actor: getCurrentCombatant(state),
-      action: turnAction.action,
-      target: turnAction.target,
-      state,
-      trigger: 'active'
-    };
+// In combatWorkflow.ts (Orchestrator)
+import { resolveAction } from '@/services/combatTracking/resolution';
 
-    // Resolution Pipeline aufrufen
-    const targets = findTargets(context);
-    const modifiers = gatherModifiers(context, targets);
-    const success = determineSuccess(context, targets, modifiers);
-    const result = resolveEffects(context, success, modifiers);
-    // result wird an combatWorkflow zurueckgegeben
-  }
+function runAction(
+  input: { actorId: string; turnAction: TurnAction },
+  state: CombatState
+): ResolutionResult | null {
+  const actor = state.combatants.find(c => c.id === input.actorId);
+  if (!actor) return null;
+
+  // ResolutionContext bauen
+  const context: ResolutionContext = {
+    actor,
+    action: input.turnAction.action,
+    state,
+    trigger: 'active',
+    explicitTarget: input.turnAction.target,
+    position: input.turnAction.position,
+  };
+
+  // Pipeline aufrufen (READ-ONLY)
+  const result = resolveAction(context);
+
+  // Ergebnis anwenden (WRITE)
+  applyResult(result, state, actor, input.turnAction);
+
+  return result;
 }
 ```
 
@@ -486,11 +496,68 @@ src/services/combatTracking/triggers/
 
 ---
 
+## Execution Order
+
+### Active Action Flow
+
+```
+1. Spieler/AI waehlt Aktion
+2. Budget-Check (hasAction, hasBonusAction, movement)
+3. Optional: Reaction-Interception (siehe unten)
+4. Resolution-Pipeline (READ-ONLY):
+   findTargets → getModifiers → determineSuccess → resolveEffects
+5. applyResult (WRITE)
+6. Budget-Verbrauch
+```
+
+### Reaction Timing
+
+Reactions koennen an verschiedenen Punkten feuern:
+
+| Reaction-Typ | Wann | Modifiziert |
+|--------------|------|-------------|
+| `on-attacked` (Shield) | **VOR** determineSuccess | AC via Modifier |
+| `on-damaged` (Hellish Rebuke) | **NACH** applyResult | Separate Resolution |
+| `on-spell-cast` (Counterspell) | **VOR** Resolution | Bricht Aktion ab |
+| `on-leaves-reach` (OA) | **WAEHREND** Bewegung | Separate Resolution |
+
+**Wichtig:** Shield (+5 AC) wird als Modifier in der getModifiers-Phase hinzugefuegt,
+NICHT als separate Resolution. Daher ist es ein "Input-Modifier".
+
+### Movement + Zone Flow
+
+```
+1. Combatant bewegt sich (path: [start, ..., end])
+2. Fuer jeden Schritt (from → to):
+   a. on-leave Zones pruefen (inkl. OA)
+   b. on-enter Zones pruefen
+3. Am Ziel: Position-Sync pruefen (handlePositionSync)
+```
+
+### Turn Lifecycle
+
+```
+Turn-Start:
+  1. Conditions mit 'end-of-turn' Save pruefen
+  2. Reaction-Budget reset
+  3. Zone 'on-start-turn' pruefen
+  4. Concentration-Effekte aktualisieren
+
+Turn-End:
+  1. Zone 'on-end-turn' pruefen
+  2. Conditions mit 'start-of-turn' Save pruefen
+  3. Duration-Countdown fuer Runden-basierte Effekte
+```
+
+---
+
 ## Verwandte Dokumente
 
 - [actionResolution.md](actionResolution.md) - Pipeline-Uebersicht
 - [findTargets.md](findTargets.md) - Target-Auswahl
-- [gatherModifiers.md](gatherModifiers.md) - Modifier-Sammlung
+- [getModifiers.md](getModifiers.md) - Modifier-Sammlung
 - [resolveEffects.md](resolveEffects.md) - Effekt-Resolution
 - [CombatWorkflow.md](../../orchestration/CombatWorkflow.md) - State-Mutation
 - [combatTracking.md](combatTracking.md) - Service-Uebersicht
+- [CombatEvent.trigger](../../types/combatEvent.md#trigger) - Schema-Definition
+- [Conditions als CombatEvents](../../types/combatEvent.md#conditions-als-combatevents) - Condition-Lifecycle

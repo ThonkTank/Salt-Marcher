@@ -18,7 +18,6 @@ import { getExpectedValue, calculateEffectiveDamage, positionToKey } from '@/uti
 import { calculateCover, maxCover, type CoverLevel } from '@/utils/squareSpace/gridLineOfSight';
 import { getBaseResolution } from './baseResolution';
 import { evaluateSituationalModifiers } from '../situationalModifiers';
-import { combatantToCombatantContext } from '@/utils/combatModifiers';
 import { calculateHitChance } from '../helpers/combatHelpers';
 import { getGroupId, getPosition, getAC, getConditions, getHP } from '../../combatTracking';
 
@@ -65,8 +64,8 @@ export function applyEffectsToBase(
 
   // Situational Modifiers evaluieren
   const modifiers = evaluateSituationalModifiers({
-    attacker: combatantToCombatantContext(attacker),
-    target: combatantToCombatantContext(target),
+    attacker,
+    target,
     action,
     state: {
       combatants: state.combatants,

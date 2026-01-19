@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # determineSuccess
 
 > **Verantwortlichkeit:** Wuerfel-Resolution fuer Combat-Aktionen
@@ -21,7 +24,7 @@ TargetResult + Action + ModifierSet[]
 SuccessResult[] (pro Target)
 ```
 
-**Wichtig:** Die Modifiers (Advantage, Boni, AC-Modifikatoren) werden von [gatherModifiers](gatherModifiers.md) berechnet und hier verwendet.
+**Wichtig:** Die Modifiers (Advantage, Boni, AC-Modifikatoren) werden von [getModifiers](getModifiers.md) berechnet und hier verwendet.
 
 ---
 
@@ -50,7 +53,7 @@ attack: {
 
 ### Hit-Chance Berechnung (mit Modifiers)
 
-Die Hit-Chance wird unter Beruecksichtigung der Modifiers aus [gatherModifiers](gatherModifiers.md) berechnet:
+Die Hit-Chance wird unter Beruecksichtigung der Modifiers aus [getModifiers](getModifiers.md) berechnet:
 
 ```typescript
 function calculateHitChance(
@@ -79,7 +82,7 @@ function calculateHitChance(
 }
 ```
 
-**Modifier-Quellen (siehe [gatherModifiers](gatherModifiers.md)):**
+**Modifier-Quellen (siehe [getModifiers](getModifiers.md)):**
 - `attackBonus`: Bless (+1d4), Bardic Inspiration, etc.
 - `targetACBonus`: Shield (+5), Cover (+2/+5)
 - `attackAdvantage`: Prone Target, Pack Tactics, Blinded Actor, etc.
@@ -133,7 +136,7 @@ save: {
 
 ### Save-Chance Berechnung (mit Modifiers)
 
-Die Save-Chance wird unter Beruecksichtigung der Modifiers aus [gatherModifiers](gatherModifiers.md) berechnet:
+Die Save-Chance wird unter Beruecksichtigung der Modifiers aus [getModifiers](getModifiers.md) berechnet:
 
 ```typescript
 function calculateSaveChance(
@@ -161,7 +164,7 @@ function calculateSaveChance(
 }
 ```
 
-**Modifier-Quellen (siehe [gatherModifiers](gatherModifiers.md)):**
+**Modifier-Quellen (siehe [getModifiers](getModifiers.md)):**
 - `saveBonus`: Bless (+1d4), Cover (+2/+5 auf DEX), etc.
 - `saveAdvantage`: Magic Resistance (Advantage auf Saves gegen Spells)
 
@@ -361,6 +364,6 @@ const expectedMultiplier =
 
 - [actionResolution.md](actionResolution.md) - Pipeline-Uebersicht
 - [findTargets.md](findTargets.md) - Pipeline-Schritt 1
-- [gatherModifiers.md](gatherModifiers.md) - Pipeline-Schritt 2 (Modifiers sammeln)
+- [getModifiers.md](getModifiers.md) - Pipeline-Schritt 2 (Modifiers sammeln)
 - [resolveEffects.md](resolveEffects.md) - Pipeline-Schritt 4 (Naechster Schritt)
-- [../../types/action.md](../../types/action.md) - Action-Schema
+- [CombatEvent.check](../../types/combatEvent.md#check) - Check-Schema

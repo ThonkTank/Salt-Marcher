@@ -1,4 +1,4 @@
-// Ziel: Factored Action Spaces Selector - Dekomposition in Position × Action × BonusAction
+// Ziel: Factored CombatEvent Spaces Selector - Dekomposition in Position × CombatEvent × BonusAction
 // Siehe: docs/services/combatantAI/algorithm-approaches.md
 //
 // Algorithmus:
@@ -9,7 +9,7 @@
 // Komplexität: O(P + K×A) statt O(P×A) für K << P
 
 import type { ActionSelector, SelectorConfig, SelectorStats } from './types';
-import type { Action } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type {
   CombatantWithLayers,
   CombatantSimulationStateWithLayers,
@@ -20,7 +20,7 @@ import type {
   ThreatMapEntry,
 } from '@/types/combat';
 import { buildThreatMap, getOpportunityAt } from '../layers';
-import { toTurnAction } from '../core/actionEnumeration';
+import { toTurnCombatEvent } from '../core/actionEnumeration';
 import { positionToKey } from '@/utils';
 import {
   getActionMaxRangeCells,
@@ -31,10 +31,10 @@ import { getEnemies } from '../helpers/actionSelection';
 import { getPosition } from '../../combatTracking';
 import { calculatePairScore } from '../core/actionScoring';
 import {
-  getAvailableActionsWithLayers,
+  getAvailableCombatEventsWithLayers,
   hasGrantMovementEffect,
   getThreatWeight,
-  subtractActionCost,
+  subtractCombatEventCost,
 } from '../core/actionEnumeration';
 
 // ============================================================================
@@ -54,12 +54,12 @@ const ACTION_BEAM_WIDTH = 3;
 interface RankedPosition {
   cell: GridPosition;
   threatScore: number;        // Negativ = gefährlich, positiv = sicher
-  opportunityScore: number;   // Action-Potential an dieser Position
+  opportunityScore: number;   // CombatEvent-Potential an dieser Position
   combinedScore: number;
 }
 
 interface RankedAction {
-  action: Action;
+  action: CombatEvent;
   target?: Combatant;
   fromPosition: GridPosition;
   targetCell?: GridPosition;
@@ -95,7 +95,7 @@ const debug = (...args: unknown[]) => {
  *
  * Score = threatScore + opportunityScore
  * - threatScore: -netThreat aus ThreatMap (negativ = gefährlich)
- * - opportunityScore: Action-Potential mit verbleibendem Budget nach Movement
+ * - opportunityScore: CombatEvent-Potential mit verbleibendem Budget nach Movement
  */
 function rankPositions(
   combatant: CombatantWithLayers,
@@ -131,7 +131,7 @@ function rankPositions(
       combatState: { ...combatant.combatState, position: cell },
     };
 
-    // Opportunity: Action-Potential an dieser Position mit verbleibendem Budget
+    // Opportunity: CombatEvent-Potential an dieser Position mit verbleibendem Budget
     const opportunityScore = getOpportunityAt(cell, virtualCombatant, positionBudget, state);
 
     return {
@@ -175,17 +175,17 @@ function rankActionsFromPosition(
   const positionThreat = posEntry?.net ?? 0;
 
   // Get available actions based on budget
-  const allActions = getAvailableActionsWithLayers(virtualCombatant, {});
+  const allActions = getAvailableCombatEventsWithLayers(virtualCombatant, {});
 
-  // Filter by timing (Action vs Bonus Action)
+  // Filter by timing (CombatEvent vs Bonus CombatEvent)
   const relevantActions = allActions.filter(a => {
-    if (a.timing.type === 'bonus') return budget.hasBonusAction;
+    if (a.timing?.type === 'bonus') return budget.hasBonusAction;
     return budget.hasAction;
   });
 
   for (const action of relevantActions) {
     // Budget nach dieser Aktion
-    const remainingBudget = subtractActionCost(budget, action);
+    const remainingBudget = subtractCombatEventCost(budget, action);
 
     // Opportunity mit verbleibendem Budget
     const remainingOpportunity = getOpportunityAt(position, virtualCombatant, remainingBudget, state);
@@ -237,9 +237,9 @@ function rankActionsFromPosition(
 // ============================================================================
 
 /**
- * Factored Action Spaces Selector.
+ * Factored CombatEvent Spaces Selector.
  *
- * Dekomposition: Position × Action
+ * Dekomposition: Position × CombatEvent
  * Statt O(P×A) alle Kombinationen zu evaluieren, wird in zwei Phasen gearbeitet:
  * 1. Positionen ranken O(P)
  * 2. Für Top-K Positionen Actions ranken O(K×A)
@@ -370,7 +370,7 @@ export const factoredSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    return toTurnAction(best);
+    return toTurnCombatEvent(best);
   },
 
   getStats(): SelectorStats {

@@ -19,7 +19,7 @@ import {
 import { getDistance, isHostile, calculateEffectiveDamagePotential } from '../helpers/combatHelpers';
 import { getMaxAttackRange } from '../core/actionScoring';
 import { getEnemies } from '../helpers/actionSelection';
-import { getGroupId, getPosition, getSpeed, getAC, getActions } from '../../combatTracking';
+import { getGroupId, getPosition, getSpeed, getAC, getCombatEvents } from '../../combatTracking';
 
 // ============================================================================
 // DEBUG HELPER
@@ -70,7 +70,7 @@ export function calculateDangerScoresBatch(
   // Phase 1: Enemy-Daten einmal vorberechnen (O(E))
   const enemies = getEnemies(combatant, state);
   const cachedEnemies: CachedEnemyData[] = enemies.map(enemy => {
-    const damage = calculateEffectiveDamagePotential(getActions(enemy), getAC(combatant));
+    const damage = calculateEffectiveDamagePotential(getCombatEvents(enemy), getAC(combatant));
     const maxRange = getMaxAttackRange(enemy);
     const movement = feetToCell(getSpeed(enemy).walk ?? 30);
 

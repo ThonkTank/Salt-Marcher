@@ -9,8 +9,7 @@
 // - Distance/Position Helpers
 // - Action-Iteration mit Multiattack-Expansion
 
-import type { Action, BaseActionRef } from '@/types/entities';
-import type { PropertyModifier } from '@/types/entities/conditionExpression';
+import type { CombatEvent, BaseActionRef, PropertyModifier } from '@/types/entities/combatEvent';
 import type { AbilityScores, AbilityName } from '@/types/entities/creature';
 import type { Combatant, CombatState, CombatantSimulationState } from '@/types/combat';
 import type { CombatCellProperties } from '@/types/combatTerrain';
@@ -37,7 +36,7 @@ import {
   getAbilities,
   getSaveProficiencies,
   getCR,
-  getActions,
+  getCombatEvents,
   getSpeed,
 } from '../../combatTracking';
 
@@ -54,10 +53,10 @@ import {
  * @param allActions Alle verfügbaren Actions (für Ref-Lookup)
  * @returns Array mit aufgelösten Actions (count-mal dupliziert)
  */
-export function resolveMultiattackRefs(action: Action, allActions: Action[]): Action[] {
+export function resolveMultiattackRefs(action: CombatEvent, allActions: CombatEvent[]): CombatEvent[] {
   if (!action.multiattack?.attacks?.length) return [];
 
-  const resolved: Action[] = [];
+  const resolved: CombatEvent[] = [];
   for (const entry of action.multiattack.attacks) {
     const refAction = allActions.find(a => a.name === entry.actionRef);
     if (refAction) {
@@ -74,7 +73,7 @@ export function resolveMultiattackRefs(action: Action, allActions: Action[]): Ac
  * Prüft ob ein Multiattack Ranged-Optionen hat (für Mixed Melee/Ranged Multiattacks).
  * Berücksichtigt sowohl actionRef als auch orRef.
  */
-export function multiattackHasRangedOption(action: Action, allActions: Action[]): boolean {
+export function multiattackHasRangedOption(action: CombatEvent, allActions: CombatEvent[]): boolean {
   if (!action.multiattack?.attacks?.length) return false;
 
   for (const entry of action.multiattack.attacks) {
@@ -99,7 +98,7 @@ export function multiattackHasRangedOption(action: Action, allActions: Action[])
  * Prüft ob ein Multiattack Melee-Optionen hat.
  * Berücksichtigt sowohl actionRef als auch orRef.
  */
-export function multiattackHasMeleeOption(action: Action, allActions: Action[]): boolean {
+export function multiattackHasMeleeOption(action: CombatEvent, allActions: CombatEvent[]): boolean {
   if (!action.multiattack?.attacks?.length) return false;
 
   for (const entry of action.multiattack.attacks) {
@@ -128,8 +127,8 @@ export function multiattackHasMeleeOption(action: Action, allActions: Action[]):
  * @param callback Wird für jede Action (inkl. Multiattack-Refs) aufgerufen
  */
 export function forEachResolvedAction(
-  actions: Action[],
-  callback: (action: Action) => void
+  actions: CombatEvent[],
+  callback: (action: CombatEvent) => void
 ): void {
   for (const action of actions) {
     if (action.multiattack) {
@@ -155,8 +154,8 @@ export function forEachResolvedAction(
  */
 export function resolveBaseAction(
   ref: BaseActionRef,
-  allActions: Action[]
-): Action | null {
+  allActions: CombatEvent[]
+): CombatEvent | null {
   // Filtere nach Kriterien
   const matches = allActions.filter(a => {
     // actionType-Filter
@@ -210,44 +209,16 @@ export function resolveBaseAction(
  * Berechnet erwarteten Schaden einer Action (für resolveBaseAction Selektion).
  * Hilfsfunktion die nur den EV des Damage-Dice + Modifier berechnet.
  */
-function getExpectedDamageValue(action: Action): number {
+function getExpectedDamageValue(action: CombatEvent): number {
   if (!action.damage) return 0;
   const dmgPMF = diceExpressionToPMF(action.damage.dice);
   return getExpectedValue(addConstant(dmgPMF, action.damage.modifier));
 }
 
-/**
- * Injiziert Spellcasting-Stats (attack bonus, save DC) in einen Spell.
- * Findet den Spellcasting-Trait des Casters und übernimmt dessen Stats.
- *
- * @param spell Die Spell-Action (mit isSpell: true)
- * @param combatantActions Alle Actions des Combatants (inkl. Spellcasting-Trait)
- * @returns Spell mit injizierten Stats
- */
-export function resolveSpellWithCaster(
-  spell: Action,
-  combatantActions: Action[]
-): Action {
-  // Nur für Spells
-  if (!spell.isSpell) return spell;
-
-  // Finde Spellcasting-Trait des Casters
-  const spellcastingTrait = combatantActions.find(a => a.spellcasting);
-  if (!spellcastingTrait?.spellcasting) return spell;
-
-  const sc = spellcastingTrait.spellcasting;
-
-  // Injiziere Stats
-  return {
-    ...spell,
-    // Überschreibe attack bonus falls vorhanden
-    attack: spell.attack ? { ...spell.attack, bonus: sc.attackBonus } : undefined,
-    // Überschreibe save DC in allen Effects
-    effects: spell.effects?.map(e =>
-      e.save ? { ...e, save: { ...e.save, dc: sc.saveDC } } : e
-    ),
-  };
-}
+// Import and re-export resolveSpellWithCaster from canonical location (combatTracking/resolution)
+// Moved there to avoid import cycles and align with Resolution Pipeline architecture
+import { resolveSpellWithCaster } from '../../combatTracking/resolution/resolveSpellStats';
+export { resolveSpellWithCaster };
 
 /**
  * Wendet baseAction-Resolution auf eine Action an und merged die Stats.
@@ -261,9 +232,9 @@ export function resolveSpellWithCaster(
  * @returns Resolved Action mit gemergten Stats
  */
 export function resolveActionWithBase(
-  action: Action,
-  combatantActions: Action[]
-): Action {
+  action: CombatEvent,
+  combatantActions: CombatEvent[]
+): CombatEvent {
   // 1. Spell-Stats injizieren (falls isSpell: true)
   let resolved = resolveSpellWithCaster(action, combatantActions);
 
@@ -300,7 +271,7 @@ export function resolveActionWithBase(
  * @param action Die Action mit damage-Feld
  * @returns Base Damage PMF oder null wenn keine damage
  */
-export function calculateBaseDamagePMF(action: Action): ProbabilityDistribution | null {
+export function calculateBaseDamagePMF(action: CombatEvent): ProbabilityDistribution | null {
   if (!action.damage) return null;
   return addConstant(
     diceExpressionToPMF(action.damage.dice),
@@ -315,7 +286,7 @@ export function calculateBaseDamagePMF(action: Action): ProbabilityDistribution 
  * @param action Die Action mit healing-Feld
  * @returns Base Healing PMF oder null wenn keine healing
  */
-export function calculateBaseHealingPMF(action: Action): ProbabilityDistribution | null {
+export function calculateBaseHealingPMF(action: CombatEvent): ProbabilityDistribution | null {
   if (!action.healing) return null;
   return addConstant(
     diceExpressionToPMF(action.healing.dice),
@@ -337,7 +308,7 @@ export function calculateBaseHealingPMF(action: Action): ProbabilityDistribution
  * @param allActions Alle verfügbaren Actions (für Multiattack-Lookup)
  * @returns Maximale Range in Feet
  */
-export function getActionMaxRangeFeet(action: Action, allActions: Action[]): number {
+export function getActionMaxRangeFeet(action: CombatEvent, allActions: CombatEvent[]): number {
   if (action.multiattack) {
     const refs = resolveMultiattackRefs(action, allActions);
     return refs.reduce((max, ref) => {
@@ -355,7 +326,7 @@ export function getActionMaxRangeFeet(action: Action, allActions: Action[]): num
  * @param allActions Alle verfügbaren Actions (für Multiattack-Lookup)
  * @returns Maximale Range in Cells
  */
-export function getActionMaxRangeCells(action: Action, allActions: Action[]): number {
+export function getActionMaxRangeCells(action: CombatEvent, allActions: CombatEvent[]): number {
   return feetToCell(getActionMaxRangeFeet(action, allActions));
 }
 
@@ -502,42 +473,10 @@ export function getReachableCells(
 }
 
 // ============================================================================
-// ALLIANCE HELPERS
+// ALLIANCE HELPERS (Re-exported from combatModifiers for backwards compatibility)
 // ============================================================================
-
-/**
- * Prüft ob zwei Gruppen verbündet sind.
- * Gleiche Gruppe = automatisch verbündet.
- *
- * @param groupA Erste Gruppe
- * @param groupB Zweite Gruppe
- * @param alliances Alliance-Map (groupId → verbündete groupIds)
- * @returns true wenn verbündet
- */
-export function isAllied(
-  groupA: string,
-  groupB: string,
-  alliances: Record<string, string[]>
-): boolean {
-  if (groupA === groupB) return true;
-  return alliances[groupA]?.includes(groupB) ?? false;
-}
-
-/**
- * Prüft ob zwei Gruppen Feinde sind (nicht verbündet).
- *
- * @param groupA Erste Gruppe
- * @param groupB Zweite Gruppe
- * @param alliances Alliance-Map (groupId → verbündete groupIds)
- * @returns true wenn Feinde
- */
-export function isHostile(
-  groupA: string,
-  groupB: string,
-  alliances: Record<string, string[]>
-): boolean {
-  return !isAllied(groupA, groupB, alliances);
-}
+// Single Source of Truth: @/utils/combatModifiers/helpers
+export { isAllied, isHostile } from '@/utils/combatModifiers';
 
 // ============================================================================
 // HIT CHANCE CALCULATION
@@ -581,7 +520,7 @@ export function calculateHitChance(
  * Helper für calculateMultiattackDamage.
  */
 function calculateSingleAttackExpectedValue(
-  refAction: Action,
+  refAction: CombatEvent,
   targetAC: number,
   attackModifier: number
 ): number {
@@ -611,8 +550,8 @@ function calculateSingleAttackExpectedValue(
  * @returns Kombinierte Damage-PMF oder null wenn keine gültigen Refs
  */
 export function calculateMultiattackDamage(
-  action: Action,
-  allActions: Action[],
+  action: CombatEvent,
+  allActions: CombatEvent[],
   targetAC: number,
   attackModifier: number = 0
 ): ProbabilityDistribution | null {
@@ -628,7 +567,7 @@ export function calculateMultiattackDamage(
     const altAction = entry.orRef ? allActions.find(a => a.name === entry.orRef) : null;
 
     // Wähle die bessere Option (höherer Expected Damage)
-    let bestAction: Action | null = null;
+    let bestAction: CombatEvent | null = null;
 
     if (primaryAction?.damage && primaryAction?.attack) {
       if (altAction?.damage && altAction?.attack) {
@@ -731,7 +670,7 @@ export function calculateSaveFailChance(
  * Berechnet maximales Damage-Potential (ohne AC, reiner Würfel-EV).
  * Iteriert alle Actions und returnt den höchsten erwarteten Schaden.
  */
-export function calculateDamagePotential(actions: Action[]): number {
+export function calculateDamagePotential(actions: CombatEvent[]): number {
   return actions.reduce((maxDmg, action) => {
     if (action.multiattack) {
       const refs = resolveMultiattackRefs(action, actions);
@@ -755,7 +694,7 @@ export function calculateDamagePotential(actions: Action[]): number {
  * Für Danger-Score: Wie viel Schaden kann der Feind mir zufügen?
  */
 export function calculateEffectiveDamagePotential(
-  actions: Action[],
+  actions: CombatEvent[],
   targetAC: number
 ): number {
   return actions.reduce((maxDmg, action) => {
@@ -786,7 +725,7 @@ export function calculateEffectiveDamagePotential(
 /**
  * Berechnet maximales Heal-Potential (reiner Würfel-EV).
  */
-export function calculateHealPotential(actions: Action[]): number {
+export function calculateHealPotential(actions: CombatEvent[]): number {
   return actions.reduce((maxHeal, action) => {
     if (!action.healing) return maxHeal;
     const healPMF = diceExpressionToPMF(action.healing.dice);
@@ -799,7 +738,7 @@ export function calculateHealPotential(actions: Action[]): number {
  * Berechnet Control-Potential basierend auf Save DC.
  * Höherer DC = effektivere Control (analog zu höherem Damage).
  */
-export function calculateControlPotential(actions: Action[]): number {
+export function calculateControlPotential(actions: CombatEvent[]): number {
   return actions.reduce((maxDC, action) => {
     if (!action.effects?.some(e => e.condition)) return maxDC;
 
@@ -823,7 +762,7 @@ export function calculateControlPotential(actions: Action[]): number {
  * - Control-DC skaliert (DC 15 ≈ 10 Damage-Äquivalent)
  */
 export function calculateCombatantValue(combatant: Combatant): number {
-  const actions = getActions(combatant);
+  const actions = getCombatEvents(combatant);
   const dmg = calculateDamagePotential(actions);
   const heal = calculateHealPotential(actions);
   const controlDC = calculateControlPotential(actions);
@@ -1068,54 +1007,59 @@ function setByPath(obj: unknown, path: string, value: unknown): void {
  * ]);
  */
 export function applyPropertyModifiers(
-  action: Action,
+  action: CombatEvent,
   modifiers: PropertyModifier[]
-): Action {
+): CombatEvent {
   if (!modifiers.length) return action;
 
   // Deep clone to avoid mutating the original
-  const modified = JSON.parse(JSON.stringify(action)) as Action;
+  const modified = JSON.parse(JSON.stringify(action)) as CombatEvent;
 
   for (const mod of modifiers) {
-    const currentValue = getByPath(modified, mod.path);
+    // Support both legacy 'property' and new 'path' field
+    const path = mod.path ?? mod.property;
+    if (!path) continue;
 
-    switch (mod.operation) {
+    const currentValue = getByPath(modified, path);
+    const operation = mod.operation ?? 'set'; // Default to 'set' for legacy modifiers
+
+    switch (operation) {
       case 'add': {
         if (typeof currentValue === 'number' && typeof mod.value === 'number') {
-          setByPath(modified, mod.path, currentValue + mod.value);
+          setByPath(modified, path, currentValue + mod.value);
         } else if (currentValue === undefined && typeof mod.value === 'number') {
           // If path doesn't exist, treat as 0 + value
-          setByPath(modified, mod.path, mod.value);
+          setByPath(modified, path, mod.value);
         }
         break;
       }
 
       case 'multiply': {
         if (typeof currentValue === 'number' && typeof mod.value === 'number') {
-          setByPath(modified, mod.path, currentValue * mod.value);
+          setByPath(modified, path, currentValue * mod.value);
         }
         break;
       }
 
       case 'set': {
-        setByPath(modified, mod.path, mod.value);
+        setByPath(modified, path, mod.value);
         break;
       }
 
       case 'min': {
         if (typeof currentValue === 'number' && typeof mod.value === 'number') {
-          setByPath(modified, mod.path, Math.min(currentValue, mod.value));
+          setByPath(modified, path, Math.min(currentValue, mod.value));
         } else if (currentValue === undefined && typeof mod.value === 'number') {
-          setByPath(modified, mod.path, mod.value);
+          setByPath(modified, path, mod.value);
         }
         break;
       }
 
       case 'max': {
         if (typeof currentValue === 'number' && typeof mod.value === 'number') {
-          setByPath(modified, mod.path, Math.max(currentValue, mod.value));
+          setByPath(modified, path, Math.max(currentValue, mod.value));
         } else if (currentValue === undefined && typeof mod.value === 'number') {
-          setByPath(modified, mod.path, mod.value);
+          setByPath(modified, path, mod.value);
         }
         break;
       }
@@ -1124,3 +1068,7 @@ export function applyPropertyModifiers(
 
   return modified;
 }
+
+// Alias for migration (old name was resolveCombatEventWithBase)
+export const resolveCombatEventWithBase = resolveActionWithBase;
+export const getCombatEventMaxRangeCells = getActionMaxRangeCells;

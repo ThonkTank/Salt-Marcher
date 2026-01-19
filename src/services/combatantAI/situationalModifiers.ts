@@ -2,14 +2,14 @@
 // Siehe: docs/services/combatantAI/actionScoring.md#situational-modifiers
 //
 // Architektur:
-// - ADAPTER: Importiert Basis-Logik aus combatTracking/resolution/gatherModifiers
+// - ADAPTER: Importiert Basis-Logik aus combatTracking/resolution/getModifiers
 // - ModifierEvaluator Interface für AI-spezifische Plugins
 // - ModifierRegistry für dynamische Plugin-Registrierung
 // - evaluateSituationalModifiers() kombiniert Core + Plugins
 // - +/-5 Approximation für Advantage/Disadvantage (Performance)
 //
 // Core vs AI Split:
-// - Core (gatherModifiers): Conditions, Buffs, Schema-Modifiers, Passive Traits, Auras
+// - Core (getModifiers): Conditions, Buffs, Schema-Modifiers, Passive Traits, Auras
 // - AI (hier): Registry-Plugins für AI-spezifische Evaluation (long-range, cover)
 //
 // Pipeline-Position:
@@ -17,15 +17,14 @@
 // - Plugins in: modifiers/*.ts (longRange, cover, etc.)
 // - Output: SituationalModifiers (netAdvantage, effectiveAttackMod, etc.)
 
-import type { Action } from '@/types/entities';
-import type { PropertyModifier } from '@/types/entities/conditionExpression';
+import type { CombatEvent, PropertyModifier } from '@/types/entities/combatEvent';
 import type { GridPosition, ConditionState, Combatant, CombatState } from '@/types/combat';
 import {
-  gatherModifiers,
+  getModifiers,
   resolveAdvantageState as coreResolveAdvantage,
   type ModifierSet,
-  type GatherModifiersContext,
-} from '../combatTracking/resolution/gatherModifiers';
+  type GetModifiersContext,
+} from '../combatTracking/resolution';
 
 // Re-export ConditionState für Consumer
 export type { ConditionState } from '@/types/combat';
@@ -66,19 +65,6 @@ export interface SituationalModifiers {
 // ============================================================================
 // MODIFIER CONTEXT
 // ============================================================================
-// ConditionState wird aus @/types/combat importiert (Single Source of Truth)
-
-/** Kontext für einen einzelnen Combatant */
-export interface CombatantContext {
-  position: GridPosition;
-  groupId: string;
-  participantId: string;
-  conditions: ConditionState[];
-  ac: number;
-  hp: number;
-  maxHp: number;              // Für HP-Prozent-Berechnungen (Bloodied)
-  creatureId?: string;        // Für Creature-Type-Checks (Aura of Authority)
-}
 
 /** SimulationState für Modifier-Evaluation - direkte Combatant-Referenz */
 export interface ModifierSimulationState {
@@ -88,9 +74,9 @@ export interface ModifierSimulationState {
 
 /** Vollständiger Kontext für Modifier-Evaluation */
 export interface ModifierContext {
-  attacker: CombatantContext;
-  target: CombatantContext;
-  action: Action;
+  attacker: Combatant;
+  target: Combatant;
+  action: CombatEvent;
   state: ModifierSimulationState;
   cell?: GridPosition;           // Optional: Evaluierte Position (für AI)
 }
@@ -198,7 +184,7 @@ export function resolveAdvantageState(
 // ============================================================================
 
 /**
- * Converts ModifierSet from gatherModifiers to SituationalModifiers format.
+ * Converts ModifierSet from getModifiers to SituationalModifiers format.
  */
 function modifierSetToSituationalModifiers(
   modSet: ModifierSet,
@@ -277,28 +263,13 @@ export function accumulateEffects(
 // ============================================================================
 
 /**
- * Finds a Combatant by participantId.
+ * Calls getModifiers from combatTracking and converts the result.
+ * This is the bridge between AI ModifierContext and Combat GetModifiersContext.
  */
-function findCombatant(participantId: string, combatants: Combatant[]): Combatant | undefined {
-  return combatants.find(c => c.id === participantId);
-}
-
-/**
- * Calls gatherModifiers from combatTracking and converts the result.
- * This is the bridge between AI ModifierContext and Combat GatherModifiersContext.
- */
-function gatherModifiersForAI(context: ModifierContext): ModifierSet | null {
-  const actor = findCombatant(context.attacker.participantId, context.state.combatants);
-  const target = findCombatant(context.target.participantId, context.state.combatants);
-
-  if (!actor || !target) {
-    debug('gatherModifiersForAI: Could not find actor or target combatant');
-    return null;
-  }
-
-  // Build GatherModifiersContext
-  const gatherCtx: GatherModifiersContext = {
-    actor,
+function getModifiersForAI(context: ModifierContext): ModifierSet | null {
+  // Build GetModifiersContext - attacker and target are already Combatant objects
+  const modifierCtx: GetModifiersContext = {
+    actor: context.attacker,
     action: context.action,
     state: {
       combatants: context.state.combatants,
@@ -307,14 +278,14 @@ function gatherModifiersForAI(context: ModifierContext): ModifierSet | null {
     } as unknown as CombatState,
   };
 
-  // Call gatherModifiers with single target
+  // Call getModifiers with single target
   const targetResult = {
-    targets: [target],
+    targets: [context.target],
     isAoE: false,
-    primaryTarget: target,
+    primaryTarget: context.target,
   };
 
-  const results = gatherModifiers(gatherCtx, targetResult);
+  const results = getModifiers(modifierCtx, targetResult);
   return results[0] ?? null;
 }
 
@@ -326,14 +297,14 @@ function gatherModifiersForAI(context: ModifierContext): ModifierSet | null {
  * Evaluiert alle Modifiers und akkumuliert Effekte.
  *
  * Combines:
- * 1. Core modifiers from gatherModifiers (conditions, buffs, schema-modifiers, etc.)
+ * 1. Core modifiers from getModifiers (conditions, buffs, schema-modifiers, etc.)
  * 2. Registry plugins (AI-specific evaluators)
  */
 export function evaluateSituationalModifiers(
   context: ModifierContext
 ): SituationalModifiers {
   // 1. Get base modifiers from core combat tracking
-  const baseModifiers = gatherModifiersForAI(context);
+  const baseModifiers = getModifiersForAI(context);
 
   // 2. Evaluate registry plugins (AI-specific)
   const evaluators = modifierRegistry.getAll();
@@ -368,8 +339,8 @@ export function evaluateSituationalModifiers(
   }
 
   debug('evaluateSituationalModifiers:', {
-    attackerId: context.attacker.participantId,
-    targetId: context.target.participantId,
+    attackerId: context.attacker.id,
+    targetId: context.target.id,
     actionName: context.action.name,
     activeSources: result.sources,
     netAdvantage: result.netAdvantage,

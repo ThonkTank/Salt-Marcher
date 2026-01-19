@@ -19,40 +19,69 @@
 //
 // ============================================================================
 
-import type { Action } from '#entities/action';
+import type { CombatEvent } from '@/types/entities/combatEvent';
+
+/**
+ * Extracts attack type from action check field.
+ * Supports both legacy format ({ type: 'attack', attackType: ... }) and
+ * unified check format ({ roll: { type: 'attack', attackType: ... } }).
+ */
+function getCheckAttackType(action: CombatEvent): string | undefined {
+  if (!action.check) return undefined;
+
+  // Legacy format: { type: 'attack', attackType: ... }
+  if ('type' in action.check && action.check.type === 'attack') {
+    return (action.check as { attackType?: string }).attackType;
+  }
+
+  // Unified format: { roll: { type: 'attack', attackType: ... } }
+  if ('roll' in action.check && action.check.roll?.type === 'attack') {
+    return action.check.roll.attackType;
+  }
+
+  return undefined;
+}
 
 /**
  * Generiert eine Beschreibung fuer eine Action.
- * HACK: siehe Header - vereinfachte Implementierung
+ * Uses new 7-component CombatEvent schema.
  */
-export function generateActionDescription(action: Action): string {
+export function generateActionDescription(action: CombatEvent): string {
   const parts: string[] = [];
 
-  // Action Type
-  parts.push(`${action.actionType} (${action.timing.type})`);
+  // Action Type aus check oder trigger (neues Schema)
+  const actionType = getCheckAttackType(action) ?? action.trigger?.type ?? 'unknown';
+  const timing = action.cost?.type === 'action-economy'
+    ? action.cost.economy
+    : 'free';
+  parts.push(`${actionType} (${timing})`);
 
-  // Range
-  if (action.range) {
-    if (action.range.type === 'reach') {
-      parts.push(`Reach ${action.range.normal}ft`);
-    } else if (action.range.type === 'ranged') {
-      parts.push(`Range ${action.range.normal}/${action.range.long ?? '-'}ft`);
+  // Range aus targeting.range (neues Schema)
+  // Only 'single' and 'multi' targeting types have range
+  const targeting = action.targeting;
+  if (targeting && (targeting.type === 'single' || targeting.type === 'multi')) {
+    const range = targeting.range;
+    if (range) {
+      if (range.type === 'reach') {
+        parts.push(`Reach ${range.distance}ft`);
+      } else if (range.type === 'ranged') {
+        parts.push(`Range ${range.normal}/${range.long ?? '-'}ft`);
+      }
     }
   }
 
-  // Damage
-  if (action.damage) {
-    const mod = action.damage.modifier ?? 0;
-    const sign = mod >= 0 ? '+' : '';
-    parts.push(`${action.damage.dice}${mod !== 0 ? sign + mod : ''} ${action.damage.type}`);
+  // Damage aus effect (neues Schema)
+  if (action.effect?.type === 'damage') {
+    parts.push(`${action.effect.damage} ${action.effect.damageType}`);
   }
 
-  // Effects (simplified)
+  // Effects aus effects Array (legacy conditions)
   if (action.effects && action.effects.length > 0) {
     const effectNames = action.effects
+      .filter(e => e.type === 'apply-condition' || e.condition)
       .map(e => e.condition ?? 'effect')
       .join(', ');
-    parts.push(`Effects: ${effectNames}`);
+    if (effectNames) parts.push(`Effects: ${effectNames}`);
   }
 
   return parts.join(' · ');

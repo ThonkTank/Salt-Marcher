@@ -72,3 +72,6 @@ export interface ActionSelector {
    */
   getStats?(): SelectorStats;
 }
+
+// Alias for migration
+export type CombatEventSelector = ActionSelector;

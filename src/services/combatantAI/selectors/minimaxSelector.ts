@@ -13,18 +13,18 @@
 // - Berücksichtigt Gegner-Reaktionen
 // - Wählt Aktionen die langfristig mehr Schaden austeilen als erleiden
 
-import type { ActionSelector, SelectorConfig, SelectorStats } from './types';
-import type { Action } from '@/types/entities';
+import type { CombatEventSelector, SelectorConfig, SelectorStats } from './types';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type {
   CombatantWithLayers,
   CombatantSimulationStateWithLayers,
   TurnBudget,
-  TurnAction,
+  TurnCombatEvent,
   GridPosition,
   Combatant,
 } from '@/types/combat';
 import { buildThreatMap } from '../layers';
-import { buildPossibleActions, toTurnAction, type ScoredAction } from '../core/actionEnumeration';
+import { buildPossibleCombatEvents, toTurnCombatEvent, type ScoredCombatEvent } from '../core/actionEnumeration';
 import { positionsEqual, getExpectedValue, calculateDeathProbability } from '@/utils';
 import { getDistance, getReachableCells } from '../helpers/combatHelpers';
 import {
@@ -59,8 +59,8 @@ const DEFAULT_TOP_K = 10;
 // TYPES
 // ============================================================================
 
-interface ActionChainEntry {
-  action: Action;
+interface CombatEventChainEntry {
+  action: CombatEvent;
   target?: Combatant;
   fromPosition: GridPosition;
   targetCell?: GridPosition;
@@ -69,7 +69,7 @@ interface ActionChainEntry {
 
 interface MinimaxResult {
   score: number;
-  action?: ActionChainEntry;
+  action?: CombatEventChainEntry;
 }
 
 interface RoundState {
@@ -198,7 +198,7 @@ function generateCandidates(
   combatant: CombatantWithLayers,
   state: CombatantSimulationStateWithLayers,
   budget: TurnBudget
-): ScoredAction[] {
+): ScoredCombatEvent[] {
   const currentCell = getPosition(combatant);
   const reachableCells = getReachableCells(currentCell, budget.movementCells, {
     terrainMap: state.terrainMap,
@@ -208,13 +208,13 @@ function generateCandidates(
   });
   const threatMap = buildThreatMap(combatant, state, reachableCells, currentCell);
 
-  return buildPossibleActions(combatant, state, budget, threatMap);
+  return buildPossibleCombatEvents(combatant, state, budget, threatMap);
 }
 
 /**
  * Selects top-K candidates by score.
  */
-function selectTopK(candidates: ScoredAction[], k: number): ScoredAction[] {
+function selectTopK(candidates: ScoredCombatEvent[], k: number): ScoredCombatEvent[] {
   if (candidates.length <= k) return candidates;
 
   return [...candidates].sort((a, b) => b.score - a.score).slice(0, k);
@@ -224,14 +224,14 @@ function selectTopK(candidates: ScoredAction[], k: number): ScoredAction[] {
  * Orders candidates with previous best first (move ordering).
  */
 function orderByPreviousBest(
-  candidates: ScoredAction[],
-  previousBest?: ActionChainEntry
-): ScoredAction[] {
+  candidates: ScoredCombatEvent[],
+  previousBest?: CombatEventChainEntry
+): ScoredCombatEvent[] {
   if (!previousBest) {
     return [...candidates].sort((a, b) => b.score - a.score);
   }
 
-  const matchesBest = (c: ScoredAction) =>
+  const matchesBest = (c: ScoredCombatEvent) =>
     c.action.id === previousBest.action.id &&
     c.target?.id === previousBest.target?.id &&
     positionsEqual(c.fromPosition, previousBest.fromPosition);
@@ -249,12 +249,12 @@ function orderByPreviousBest(
 /**
  * Gets budget consumption for an action.
  */
-function getBudgetConsumption(action: Action): {
+function getBudgetConsumption(action: CombatEvent): {
   action?: boolean;
-  bonusAction?: boolean;
+  bonusCombatEvent?: boolean;
 } {
-  const isBonusAction = action.timing.type === 'bonus';
-  return isBonusAction ? { bonusAction: true } : { action: true };
+  const isBonusCombatEvent = action.timing?.type === 'bonus';
+  return isBonusCombatEvent ? { bonusCombatEvent: true } : { action: true };
 }
 
 // ============================================================================
@@ -265,10 +265,10 @@ function getBudgetConsumption(action: Action): {
  * Applies an action to state (position update only for simulation).
  * Note: Damage is estimated via score, not actually applied to HP.
  */
-function applyActionToState(
+function applyCombatEventToState(
   state: CombatantSimulationStateWithLayers,
   combatantId: string,
-  action: ActionChainEntry
+  action: CombatEventChainEntry
 ): CombatantSimulationStateWithLayers {
   return projectState(state, combatantId, {
     position: action.fromPosition,
@@ -308,7 +308,7 @@ function simulateGreedyTurn(
     if (action.type === 'pass') break;
 
     // Apply position change
-    currentState = applyActionToState(currentState, combatant.id, {
+    currentState = applyCombatEventToState(currentState, combatant.id, {
       action: action.action,
       target: action.target,
       fromPosition: action.position,
@@ -364,7 +364,7 @@ function minimax(
   perspectiveGroupId: string,
   activeCombatant: CombatantWithLayers,
   topK: number,
-  previousBest?: ActionChainEntry
+  previousBest?: CombatEventChainEntry
 ): MinimaxResult {
   // Time check
   if (performance.now() - startTime >= timeLimitMs) {
@@ -413,12 +413,12 @@ function minimax(
     candidates = orderByPreviousBest(candidates, previousBest);
 
     let bestScore = -Infinity;
-    let bestAction: ActionChainEntry | undefined;
+    let bestCombatEvent: CombatEventChainEntry | undefined;
 
     for (const candidate of candidates) {
       if (candidate.score <= 0) continue;
 
-      const entry: ActionChainEntry = {
+      const entry: CombatEventChainEntry = {
         action: candidate.action,
         target: candidate.target,
         fromPosition: candidate.fromPosition,
@@ -427,7 +427,7 @@ function minimax(
       };
 
       // Apply action
-      const newState = applyActionToState(state, activeCombatant.id, entry);
+      const newState = applyCombatEventToState(state, activeCombatant.id, entry);
 
       // After our action, simulate all opponent turns
       const afterOpponents = simulateAllOpponentTurns(newState, perspectiveGroupId);
@@ -450,7 +450,7 @@ function minimax(
 
       if (totalScore > bestScore) {
         bestScore = totalScore;
-        bestAction = entry;
+        bestCombatEvent = entry;
       }
 
       // Alpha-beta pruning
@@ -465,7 +465,7 @@ function minimax(
       return { score: evaluateNetDamage(initialState, state, perspectiveGroupId) };
     }
 
-    return { score: bestScore, action: bestAction };
+    return { score: bestScore, action: bestCombatEvent };
   } else {
     // OPPONENT TURN: This path shouldn't be reached with current design
     // (opponents are simulated via simulateAllOpponentTurns)
@@ -592,7 +592,7 @@ function iterativeDeepening(
  * - timeLimit: Time budget in ms (default: 100)
  * - topK: Top-K candidates at deeper levels (default: 10)
  */
-export const minimaxSelector: ActionSelector = {
+export const minimaxSelector: CombatEventSelector = {
   name: 'minimax',
 
   selectNextAction(
@@ -600,7 +600,7 @@ export const minimaxSelector: ActionSelector = {
     state: CombatantSimulationStateWithLayers,
     budget: TurnBudget,
     config?: SelectorConfig
-  ): TurnAction {
+  ): TurnCombatEvent {
     const maxRounds = config?.maxDepth ?? DEFAULT_MAX_ROUNDS;
     const timeLimit = config?.timeLimit ?? DEFAULT_TIME_LIMIT;
     const topK = config?.beamWidth ?? DEFAULT_TOP_K; // Reuse beamWidth for topK
@@ -635,7 +635,7 @@ export const minimaxSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    return toTurnAction(result.action);
+    return toTurnCombatEvent(result.action);
   },
 
   getStats(): SelectorStats {

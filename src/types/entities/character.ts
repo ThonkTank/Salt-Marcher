@@ -2,7 +2,7 @@
 // Siehe: docs/features/Character-System.md
 
 import { z } from 'zod';
-import { actionSchema } from './action';
+import { combatEventSchema } from './combatEvent';
 import { abilityScoresSchema, abilityNameSchema } from './creature';
 import { probabilityDistributionSchema } from '@/utils/probability';
 
@@ -46,7 +46,7 @@ export const characterSchema = z.object({
 
   // Combat Actions (für PMF-Simulation)
   // Optional: Falls nicht gesetzt, werden Default-Actions basierend auf Level/Class generiert
-  actions: z.array(actionSchema).optional(),
+  actions: z.array(combatEventSchema).optional(),
 });
 
 // ============================================================================

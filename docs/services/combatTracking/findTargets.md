@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # findTargets
 
 > **Verantwortlichkeit:** Ziel-Auswahl fuer Combat-Aktionen
@@ -348,6 +351,6 @@ const validTarget = isHostile(Cleric, Goblin); // true
 ## Verwandte Dokumente
 
 - [actionResolution.md](actionResolution.md) - Pipeline-Uebersicht
-- [gatherModifiers.md](gatherModifiers.md) - Naechster Pipeline-Schritt (Modifier sammeln)
+- [getModifiers.md](getModifiers.md) - Naechster Pipeline-Schritt (Modifier sammeln)
 - [determineSuccess.md](determineSuccess.md) - Pipeline-Schritt 3
-- [../../types/action.md](../../types/action.md) - Action-Schema mit Targeting
+- [CombatEvent.targeting](../../types/combatEvent.md#targeting) - Targeting-Schema

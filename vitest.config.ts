@@ -14,6 +14,8 @@ export default defineConfig({
       '**/node_modules/**',
       '**/Alpha1/**',
       '**/Alpha2/**',
+      '**/combatantAI/**',
+      '**/scripts/evolution/**',
     ],
     reporters: [
       'default',

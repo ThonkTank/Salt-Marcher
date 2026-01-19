@@ -73,8 +73,9 @@ interface FillSlotsResult {
 
 /**
  * Lädt Companion-Kandidaten für die Seed-Kreatur.
+ * Exportiert für Wiederverwendung in balancing.ts (Slot-Replace).
  */
-function getCompanionPool(
+export function getCompanionPool(
   seed: { creatureId: string; factionId: string | null },
   context: { eligibleCreatures: CreatureDefinition[]; timeSegment: GameDateTime['segment'] }
 ): { creatureId: string; count: number }[] {

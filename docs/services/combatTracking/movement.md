@@ -1,15 +1,65 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # Movement
 
-> **Verantwortlichkeit:** Movement-Execution und Budget-Tracking im Combat
-> **Pfad:** `src/services/combatTracking/executeAction.ts` (executeMovement)
-> **Pfad:** `src/services/combatTerrain/terrainMovement.ts` (Pathfinding)
+> **Verantwortlichkeit:** Combat-spezifische Movement-Logik
+> **Pfad (Single Source of Truth):** `src/services/combatTracking/movement.ts`
+> **Pfad (Pathfinding):** `src/services/combatTerrain/terrainMovement.ts`
+> **Pfad (Execution):** `src/workflows/combatWorkflow.ts`
 
-## Uebersicht
+---
 
-Movement im Combat-System umfasst:
-1. **Voluntary Movement** - Combatant bewegt sich waehrend seines Zuges
-2. **Forced Movement** - Effekte bewegen Combatants (Grapple-Drag, Teleport)
-3. **Action-basiertes Movement** - Bewegung als Teil einer Aktion (toTarget)
+## Architektur
+
+Movement-Logik ist auf drei Module verteilt:
+
+```
+combatTracking/movement.ts       →  Combat-spezifisch (READ-ONLY)
+├── Speed & TurnBudget
+├── Dash/Teleport/Extra Movement
+├── Grapple-Queries
+└── Action-Helpers
+
+combatTerrain/terrainMovement.ts →  Wiederverwendbar (Combat + Dungeon)
+├── Dijkstra Pathfinding
+├── Movement-Kosten (Terrain)
+└── Cell-Occupancy
+
+workflows/combatWorkflow.ts      →  Movement Execution (State-Mutation)
+├── runAction() → resolveAction() + applyResult()
+├── OA-Resolution
+└── Zone/Terrain-Effekt Trigger
+```
+
+---
+
+## movement.ts API (READ-ONLY)
+
+### Speed & Budget
+
+| Funktion | Beschreibung |
+|----------|--------------|
+| `getSpeed(c)` | SpeedBlock aus Combatant (walk, fly, swim, climb, burrow) |
+| `getEffectiveSpeed(c, state?)` | Effektive Speed unter Berücksichtigung von Modifiers und Zones |
+| `createTurnBudget(c, state?)` | Erstellt TurnBudget für einen Combatant |
+| `calculateGrantedMovement(grant, budget)` | Berechnet Movement-Bonus von grantMovement Effects |
+| `hasAnyBonusAction(c)` | Prüft ob Combatant Bonus Actions hat |
+
+### Grapple Queries
+
+| Funktion | Beschreibung |
+|----------|--------------|
+| `getGrappledTargets(grappler, state)` | Findet alle von diesem Grappler gegrappelten Combatants |
+| `hasAbductTrait(c)` | Prüft ob Combatant das Abduct-Trait hat (keine Speed-Reduktion beim Drag) |
+
+### Action Helpers
+
+| Funktion | Beschreibung |
+|----------|--------------|
+| `hasGrantMovementEffect(action)` | Prüft ob Action Movement gewährt (Dash, Teleport, etc.) |
+| `hasToTargetMovementCost(action)` | Prüft ob Action toTarget Movement-Kosten hat |
+| `getMovementRange(action, budget, combatant)` | Berechnet erreichbare Range für Movement-Action |
 
 ---
 
@@ -22,7 +72,6 @@ interface TurnBudget {
   movementCells: number;      // Verbleibende Bewegung
   baseMovementCells: number;  // Basis-Speed (ohne Dash)
   hasAction: boolean;
-  hasDashed: boolean;
   hasBonusAction: boolean;
   hasReaction: boolean;
 }
@@ -35,20 +84,17 @@ interface TurnBudget {
 const movementCells = Math.floor(speed.walk / 5);
 ```
 
-### Dash-Aktion
+### Effective Speed
 
-Dash verdoppelt die verfuegbare Bewegung fuer diesen Zug:
+`getEffectiveSpeed()` berücksichtigt:
 
-```typescript
-function applyDash(budget: TurnBudget): void {
-  budget.movementCells += budget.baseMovementCells;
-  budget.hasDashed = true;
-}
-```
+1. **speedOverride** - Absoluter Wert (0 für grappled, paralyzed, etc.)
+2. **speedMultiplier** - Multiplikator (0.5 für grappling)
+3. **Zone Speed-Modifier** - Spirit Guardians, etc.
 
 ---
 
-## Pathfinding
+## Pathfinding (terrainMovement.ts)
 
 ### Dijkstra mit Terrain-Kosten
 
@@ -79,7 +125,7 @@ function getReachableCellsWithTerrain(
 
 ---
 
-## Movement Execution
+## Movement Execution (combatWorkflow.ts)
 
 ### executeMovement Flow
 
@@ -118,30 +164,6 @@ Opportunity Attacks werden getriggert wenn:
 2. Feind hat noch Reaction verfuegbar
 3. Combatant hat NICHT Disengage-Effekt aktiv
 
-```typescript
-function wouldTriggerReaction(
-  mover: Combatant,
-  from: GridPosition,
-  to: GridPosition,
-  reactor: Combatant,
-  state: CombatState
-): boolean {
-  const wasInReach = isInReach(reactor, from);
-  const stillInReach = isInReach(reactor, to);
-  return wasInReach && !stillInReach;
-}
-```
-
-### Disengage-Effekt
-
-```typescript
-effects: [{
-  movementBehavior: {
-    noOpportunityAttacks: true
-  }
-}]
-```
-
 ---
 
 ## Action-basiertes Movement
@@ -164,6 +186,25 @@ budgetCosts: {
 | `toTarget` | Dijkstra-Distanz zum Ziel |
 | `fixed` | Feste Anzahl Cells |
 | `all` | Gesamtes verbleibendes Movement |
+
+### grantMovement Effects
+
+Actions können Movement gewähren:
+
+```typescript
+effects: [{
+  grantMovement: {
+    type: 'dash' | 'extra' | 'teleport';
+    value?: number;  // nur bei 'extra' und 'teleport'
+  }
+}]
+```
+
+| Type | Beschreibung |
+|------|--------------|
+| `dash` | Verdoppelt baseMovementCells |
+| `extra` | Addiert fixen Wert zu movementCells |
+| `teleport` | Ersetzt Budget komplett (unabhängig von current budget) |
 
 ---
 

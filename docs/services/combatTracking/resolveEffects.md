@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # resolveEffects
 
 > **Verantwortlichkeit:** Berechnet die Effekte einer Aktion basierend auf Success-Results
@@ -661,6 +664,6 @@ Siehe [CombatWorkflow.md](../../orchestration/CombatWorkflow.md) fuer Details.
 
 - [actionResolution.md](actionResolution.md) - Pipeline-Uebersicht
 - [determineSuccess.md](determineSuccess.md) - Vorheriger Pipeline-Schritt
-- [gatherModifiers.md](gatherModifiers.md) - Modifier-Input
+- [getModifiers.md](getModifiers.md) - Modifier-Input
 - [CombatWorkflow.md](../../orchestration/CombatWorkflow.md) - State-Mutation
 - [triggers.md](triggers.md) - Trigger-System

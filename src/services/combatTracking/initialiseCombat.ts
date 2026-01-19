@@ -32,7 +32,8 @@
 // - Math.floor(maxSlots * resourceBudget) → 0 bei budget < 1/maxSlots
 
 import type { EncounterGroup } from '@/types/encounterTypes';
-import type { Character, Action } from '@/types/entities';
+import type { Character } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type { NPC } from '@/types/entities/npc';
 import type {
   Combatant,
@@ -42,14 +43,18 @@ import type {
   CombatStateWithLayers,
   SurpriseState,
   CombatResources,
+  CombatInventoryItem,
 } from '@/types/combat';
 import { vault } from '@/infrastructure/vault/vaultInstance';
 import { createSingleValue, feetToCell } from '@/utils';
 import { initializeGrid, DEFAULT_ENCOUNTER_DISTANCE_FEET } from '../gridSpace';
-import { getResolvedCreature, createTurnBudget } from './combatState';
+import { getResolvedCreature } from './combatState';
+import { createTurnBudget } from './movement';
 import { initializeLayers, precomputeBaseResolutions } from '../combatantAI/layers';
 import { calculateSpawnPositions } from '../combatTerrain';
 import type { CombatMapConfig } from '@/types/combatTerrain';
+import { buildLifecycleRegistry } from './conditionLifecycle';
+import { modifierPresets } from '../../../presets/modifiers';
 
 // ============================================================================
 // DEBUG HELPER
@@ -87,7 +92,7 @@ export interface PartyInput {
  * @returns Initialisierte CombatResources
  */
 export function initializeResources(
-  actions: Action[],
+  actions: CombatEvent[],
   spellSlots: Record<string, number> | undefined,
   resourceBudget: number
 ): CombatResources {
@@ -138,7 +143,7 @@ export function initializeResources(
  * @param resources Die zu aktualisierenden Resources (mutiert!)
  */
 export function consumeActionResource(
-  action: Action,
+  action: CombatEvent,
   resources: CombatResources | undefined
 ): void {
   if (!resources) return;
@@ -207,19 +212,41 @@ function checkSurprise(): SurpriseState {
 // ============================================================================
 
 /**
+ * Konvertiert Character-Inventory zu CombatInventoryItem[].
+ * Character.inventory ist z.unknown[] - wir extrahieren id/quantity falls vorhanden.
+ * HACK: Character.inventory Format ist unspezifiziert (z.unknown[]).
+ */
+function convertCharacterInventory(inventory: unknown[]): CombatInventoryItem[] {
+  return inventory
+    .filter((item): item is { id: string; quantity?: number } =>
+      typeof item === 'object' &&
+      item !== null &&
+      'id' in item &&
+      typeof (item as { id: unknown }).id === 'string'
+    )
+    .map(item => ({
+      id: item.id,
+      quantity: typeof item.quantity === 'number' ? item.quantity : 1,
+    }));
+}
+
+/**
  * Bereitet einen Character für Combat vor.
- * Fügt CombatantState hinzu.
+ * Fügt CombatantState hinzu und kopiert Inventory.
  *
  * @param character Der Character aus dem Vault
  * @returns CharacterInCombat mit combatState
  */
 function prepareCharacterForCombat(character: Character): CharacterInCombat {
+  const inventory = convertCharacterInventory(character.inventory ?? []);
+
   return {
     ...character,
     combatState: {
       position: { x: 0, y: 0, z: 0 },
       conditions: [],
       modifiers: [],
+      inventory,
       groupId: 'party',
       isDead: false,
     },
@@ -228,7 +255,11 @@ function prepareCharacterForCombat(character: Character): CharacterInCombat {
 
 /**
  * Bereitet einen NPC für Combat vor.
- * Fügt CombatantState hinzu und initialisiert Resources.
+ * Fügt CombatantState hinzu, initialisiert Resources und kopiert Inventory.
+ *
+ * Inventory-Quellen (in Prioritäts-Reihenfolge):
+ * 1. carriedPossessions (ephemer, berechnet pro Encounter)
+ * 2. possessions (persistiert im Vault)
  *
  * @param npc Der NPC aus dem Encounter
  * @param groupId Die Encounter-Gruppen-ID (UUID)
@@ -249,6 +280,13 @@ function prepareNPCForCombat(
     resourceBudget
   );
 
+  // Inventory: Prefer carriedPossessions (ephemeral) over possessions (persistent)
+  const possessions = npc.carriedPossessions ?? npc.possessions ?? [];
+  const inventory: CombatInventoryItem[] = possessions.map(item => ({
+    id: item.id,
+    quantity: item.quantity,
+  }));
+
   return {
     ...npc,
     combatState: {
@@ -256,6 +294,7 @@ function prepareNPCForCombat(
       conditions: [],
       modifiers: [],
       resources,
+      inventory,
       groupId,
       isDead: false,
     },
@@ -455,6 +494,8 @@ function createCombatState(
     areaEffects: [],
     // Shared Resource Pools (Divine Aid, etc.) - combatantId → poolId → remaining uses
     resourcePools: new Map(),
+    // Condition Lifecycle Registry (linked conditions, death triggers, position sync)
+    lifecycleRegistry: buildLifecycleRegistry(modifierPresets),
   };
 }
 

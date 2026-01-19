@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # buildPossibleActions
 
 > **Verantwortlichkeit:** Generiert alle gueltigen Action/Target/Cell Kombinationen

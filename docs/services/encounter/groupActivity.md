@@ -241,11 +241,17 @@ Fraktionen koennen Activity-Goal-Mappings definieren:
 
 ### Disposition-Formel
 
-Die effektive Disposition wird aus Base-Disposition plus Reputation berechnet:
+Die effektive Disposition wird aus drei Faktoren berechnet:
 
 ```
-effectiveDisposition = clamp(baseDisposition + reputation, -100, +100)
+effectiveDisposition = clamp(baseDisposition + factionDisposition + reputation, -100, +100)
 ```
+
+| Komponente | Quelle | Range | Beschreibung |
+|------------|--------|:-----:|--------------|
+| `baseDisposition` | `CreatureDefinition.baseDisposition` | -100 bis +100 | Grundeinstellung der Kreatur |
+| `factionDisposition` | `Faction.defaultDisposition` | -100 bis +100 | Fraktions-Default (0 wenn keine Faction) |
+| `reputation` | NPC oder Faction Reputation | -100 bis +100 | Party-Beziehung |
 
 **Label-Thresholds:**
 
@@ -286,10 +292,16 @@ function getGroupReputation(npcId?: string, factionId?: string): number {
 }
 
 function calculateDisposition(
-  baseDisposition: number,
+  creature: CreatureDefinition,
+  faction: Faction | undefined,
   reputation: number
 ): Disposition {
-  const effective = Math.max(-100, Math.min(100, baseDisposition + reputation));
+  const baseDisposition = creature.baseDisposition ?? 0;
+  const factionDisposition = faction?.defaultDisposition ?? 0;
+
+  const effective = Math.max(-100, Math.min(100,
+    baseDisposition + factionDisposition + reputation
+  ));
 
   if (effective < -33) return 'hostile';
   if (effective > 33) return 'friendly';
@@ -415,6 +427,30 @@ Activities der Gruppen sollten narrativ zusammenpassen:
 | raiding | victim | defending, surrendering |
 | hunting | neutral | observing, hiding |
 | patrolling | ally | patrolling, resting |
+
+---
+
+## buildActivityPool() Export
+
+Fuer den Balancing-Service wird `buildActivityPool()` exportiert:
+
+```typescript
+export function buildActivityPool(
+  group: EncounterGroup,
+  context: { terrain: { id: string }; timeSegment: string },
+  faction?: Faction
+): Activity[]
+```
+
+Sammelt alle verfuegbaren Activities aus der Culture-Chain **ohne Zufallsauswahl**:
+
+1. **Generic Activities:** `GENERIC_ACTIVITY_IDS`
+2. **Culture Activities:** Via `selectCulture()` basierend auf Creature/Species
+3. **Faction Activities:** Via `buildFactionChain()` aus `faction.influence.activities`
+
+Im Gegensatz zu `selectActivity()` wird KEINE gewichtete Zufallsauswahl durchgefuehrt - alle Activities werden zurueckgegeben.
+
+**Verwendet von:** [balancing.md](balancing.md#activity-optionen)
 
 ---
 

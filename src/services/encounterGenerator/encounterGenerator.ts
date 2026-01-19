@@ -206,20 +206,24 @@ export function generateEncounter(context: {
   // -------------------------------------------------------------------------
   // Step 6: Balancing-Loop
   // Siehe: docs/services/encounter/Balancing.md
+  // Nutzt XP-Multiplikator-System statt Win-Probability-Deltas
   // -------------------------------------------------------------------------
-  let currentGroups = flavouredGroups;
-  let simulationResult = difficulty.simulatePMF({ groups: currentGroups, alliances }, context.party);
-  let iterations = 0;
+  const balanceResult = balancing.adjust(
+    flavouredGroups,
+    targetDifficulty,
+    { terrain: { id: context.terrain.id }, timeSegment: context.timeSegment },
+    context.party
+  );
 
-  while (simulationResult.label !== targetDifficulty && iterations < MAX_BALANCING_ITERATIONS) {
-    const adjusted = balancing.adjust(currentGroups, simulationResult, targetDifficulty, context);
-    if (!adjusted) {
-      break; // Balancing nicht möglich → aktuelle Gruppen akzeptieren
-    }
-    currentGroups = adjusted;
-    simulationResult = difficulty.simulatePMF({ groups: currentGroups, alliances }, context.party);
-    iterations++;
+  // Falls Balancing möglich war, NPCs aus Slot-Erhöhungen sammeln
+  let currentGroups = flavouredGroups;
+  if (balanceResult) {
+    currentGroups = balanceResult.groups;
+    allGeneratedNPCs.push(...balanceResult.generatedNPCs);
   }
+
+  // Difficulty-Simulation für finales Ergebnis (für Backward-Compatibility)
+  const simulationResult = difficulty.simulatePMF({ groups: currentGroups, alliances }, context.party);
 
   // -------------------------------------------------------------------------
   // Step 7: EmbeddedPreset zusammenbauen
@@ -231,7 +235,7 @@ export function generateEncounter(context: {
     groups: currentGroups,  // Vollständige EncounterGroup[] direkt durchreichen
     alliances,  // Gruppen-Allianzen (berechnet aus Disposition + Faction-Reputationen)
     difficulty: {
-      label: simulationResult.label,
+      label: balanceResult?.balance.actualDifficulty ?? simulationResult.label,
       winProbability: simulationResult.winProbability,
       tpkRisk: simulationResult.tpkRisk,
     },

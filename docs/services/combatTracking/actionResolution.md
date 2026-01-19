@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # Action Resolution Pipeline
 
 > **Verantwortlichkeit:** Einheitliche Resolution aller Combat-Aktionen (aktiv, Zones, Reactions)
@@ -33,7 +36,7 @@ Der combatTracking Service ist **READ-ONLY**. Er berechnet was passieren wuerde 
 
 ## Konzept
 
-Alle Combat-Aktionen durchlaufen dieselbe vierstufige Pipeline. Der Unterschied zwischen aktiven Aktionen, Zone-Effekten und Reactions liegt nur im **Trigger** - nicht in der Resolution-Logik.
+Alle Combat-Aktionen durchlaufen dieselbe fuenfstufige Pipeline. Der Unterschied zwischen aktiven Aktionen, Zone-Effekten und Reactions liegt nur im **Trigger** - nicht in der Resolution-Logik.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -51,14 +54,19 @@ Alle Combat-Aktionen durchlaufen dieselbe vierstufige Pipeline. Der Unterschied 
 ┌─────────────────────────────────────────────────────────────┐
 │  RESOLUTION PIPELINE (READ-ONLY)                            │
 ├─────────────────────────────────────────────────────────────┤
-│  findTargets      → Wer wird getroffen?                     │
-│  gatherModifiers  → Advantage, Bless, Pack Tactics, etc.    │
-│  determineSuccess → Trifft es? (Attack/Save/Contested)      │
-│  resolveEffects   → Was passiert? (Damage, Conditions)      │
+│  resolveSpellStats → Spell Attack Bonus + Save DC injizieren│
+│  findTargets       → Wer wird getroffen?                    │
+│  getModifiers      → Advantage, Bless, Pack Tactics, etc.   │
+│  determineSuccess  → Trifft es? (Attack/Save/Contested)     │
+│  resolveEffects    → Was passiert? (Damage, Conditions)     │
+│  extractBudgetCosts→ Was kostet die Aktion?                 │
 └─────────────────────────────────────────────────────────────┘
                               │
                               ▼
-                     ResolutionResult
+                       ActionResult
+                       ├─ resolution: ResolutionResult
+                       ├─ budgetCosts: ActionBudgetCosts
+                       └─ successResults: SuccessResult[]
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -66,6 +74,8 @@ Alle Combat-Aktionen durchlaufen dieselbe vierstufige Pipeline. Der Unterschied 
 │  - HP-Aenderungen anwenden                                  │
 │  - Conditions hinzufuegen/entfernen                         │
 │  - Position-Updates                                         │
+│  - Budget-Kosten vom Turn-Budget abziehen                   │
+│  - Inventory-Kosten (consume-item) abziehen                 │
 │  - Protocol-Entry schreiben                                 │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -74,12 +84,38 @@ Alle Combat-Aktionen durchlaufen dieselbe vierstufige Pipeline. Der Unterschied 
 
 ## Pipeline-Komponenten
 
-| Komponente | Verantwortung | Dokument |
-|------------|---------------|----------|
-| `findTargets` | Ziel-Auswahl, Range, AoE | [findTargets.md](findTargets.md) |
-| `gatherModifiers` | Modifier sammeln (Adv/Disadv, Boni, AC) | [gatherModifiers.md](gatherModifiers.md) |
-| `determineSuccess` | Wuerfel-Resolution unter Beruecksichtigung der Modifiers | [determineSuccess.md](determineSuccess.md) |
-| `resolveEffects` | Effekte berechnen, inkl. sekundaere Saves | [resolveEffects.md](resolveEffects.md) |
+| Step | Komponente | Verantwortung | Dokument |
+|------|------------|---------------|----------|
+| 0 | `resolveSpellWithCaster` | Spell Attack Bonus + Save DC aus Caster-Trait injizieren | (inline) |
+| 1 | `findTargets` | Ziel-Auswahl, Range, AoE | [findTargets.md](findTargets.md) |
+| 2 | `getModifiers` | Modifier sammeln (Adv/Disadv, Boni, AC) | [getModifiers.md](getModifiers.md) |
+| 3 | `determineSuccess` | Attack/Save/Contested Resolution | [determineSuccess.md](determineSuccess.md) |
+| 4 | `resolveEffects` | Effekte berechnen (Damage, Conditions) | [resolveEffects.md](resolveEffects.md) |
+
+### Step 0: Spell Stats Resolution
+
+Spells definieren `check.roll.bonus: 0` als Platzhalter. Der tatsaechliche Attack Bonus und Save DC kommen aus dem Spellcasting-Trait des Casters (z.B. `priest-spellcasting`).
+
+```typescript
+// Spell-Definition (generisch)
+{
+  id: 'spell-radiant-flame',
+  check: { roll: { bonus: 0 } },  // Platzhalter
+  isSpell: true,
+}
+
+// Spellcasting-Trait (kreaturspezifisch)
+{
+  id: 'priest-spellcasting',
+  spellcasting: {
+    ability: 'wis',
+    attackBonus: 5,   // Wird in Spell injiziert
+    saveDC: 13,       // Wird in effects[].save.dc injiziert
+  },
+}
+```
+
+`resolveSpellWithCaster()` merged diese Werte bevor `findTargets()` aufgerufen wird.
 
 Trigger-System: [triggers.md](triggers.md)
 
@@ -96,16 +132,16 @@ ResolutionContext (READ-ONLY state!)
     │       Input:  Action, Actor-Position, State
     │       Output: TargetResult { targets[], isAoE }
     │
-    ├─► gatherModifiers(context, targets)
+    ├─► getModifiers(context, targets)
     │       Input:  Actor, Targets, State (Conditions, Traits, Buffs)
     │       Output: ModifierSet[] (pro Target)
     │
     ├─► determineSuccess(context, targets, modifiers)
-    │       Input:  Action, Targets, ModifierSet
-    │       Output: SuccessResult[] (pro Target)
+    │       Input:  Action, Targets, ModifierSet[]
+    │       Output: SuccessResult[] (hit, critical, damageMultiplier)
     │
-    └─► resolveEffects(context, successResults)
-            Input:  Action, Success/Fail pro Target
+    └─► resolveEffects(context, targets, successResults, modifiers)
+            Input:  Action, Targets, SuccessResult[], ModifierSet[]
             Output: ResolutionResult (pure data, keine Mutation)
 
                               │
@@ -153,7 +189,7 @@ interface TargetResult {
   friendlyFire: boolean;
 }
 
-// Output von gatherModifiers (pro Actor-Target Paar)
+// Output von getModifiers (pro Actor-Target Paar)
 interface ModifierSet {
   attackAdvantage: AdvantageState;  // 'advantage' | 'disadvantage' | 'none'
   attackBonus: number;              // Flat bonus (Bless, etc.)
@@ -178,7 +214,27 @@ interface SuccessResult {
 ### Pipeline-Output (Pure Data)
 
 ```typescript
-// Finales Ergebnis - KEINE State-Mutation, nur Daten
+// Gesamtergebnis der Resolution-Pipeline
+interface ActionResult {
+  /** Effekte: HP-Aenderungen, Conditions, etc. */
+  resolution: ResolutionResult;
+
+  /** Budget-Kosten: Was wird durch die Aktion verbraucht? */
+  budgetCosts: ActionBudgetCosts;
+
+  /** Erfolgs-Details pro Target (fuer Logging/UI) */
+  successResults: SuccessResult[];
+}
+
+// Budget-Kosten einer Aktion (D&D 5e Action Economy)
+interface ActionBudgetCosts {
+  movement: number;        // Verbrauchte Movement-Cells
+  action: boolean;         // Verbraucht Standard-Action
+  bonusAction: boolean;    // Verbraucht Bonus Action
+  reaction: boolean;       // Verbraucht Reaction
+}
+
+// Effekte einer Aktion - KEINE State-Mutation, nur Daten
 interface ResolutionResult {
   hpChanges: HPChange[];
   conditionsToAdd: ConditionApplication[];
@@ -238,7 +294,7 @@ Beide nutzen dieselbe Pipeline - nur der Trigger und die Action unterscheiden si
    - Action.range = { type: 'reach', normal: 5 }
    → TargetResult { targets: [Goblin], isAoE: false }
 
-3. gatherModifiers:
+3. getModifiers:
    - Actor Conditions: keine
    - Target Conditions: prone → Advantage (Melee)
    - Traits: keine
@@ -275,7 +331,7 @@ Beide nutzen dieselbe Pipeline - nur der Trigger und die Action unterscheiden si
 2. findTargets:
    → TargetResult { targets: [Bandit], isAoE: false }
 
-3. gatherModifiers:
+3. getModifiers:
    - Pack Tactics (Ally adjacent) → Advantage
    → ModifierSet { attackAdvantage: 'advantage' }
 
@@ -308,14 +364,16 @@ src/services/combatTracking/           # READ-ONLY Service
 ├── index.ts                           # Public API
 ├── combatState.ts                     # State-Accessors (READ-ONLY)
 ├── initialiseCombat.ts                # Combat Init
+├── movement.ts                        # Movement-Logik (READ-ONLY)
 │
 ├── resolution/                        # Pipeline-Komponenten (alle READ-ONLY)
 │   ├── index.ts                       # Re-exports
-│   ├── types.ts                       # Interface-Definitionen
-│   ├── findTargets.ts                 # Target Selection
-│   ├── gatherModifiers.ts             # Modifier Collection
-│   ├── determineSuccess.ts            # Attack/Save/Contested
-│   └── resolveEffects.ts              # Effect Resolution (returns data)
+│   ├── resolveAction.ts               # Pipeline-Orchestrator (ruft 5 Steps)
+│   ├── resolveSpellStats.ts           # Step 0: Spell Attack Bonus + Save DC
+│   ├── findTargets.ts                 # Step 1: Target Selection
+│   ├── getModifiers.ts                # Step 2: Modifier Collection
+│   ├── determineSuccess.ts            # Step 3: Attack/Save/Contested
+│   └── resolveEffects.ts              # Step 4: Effect Resolution
 │
 └── triggers/                          # Trigger-Erkennung (READ-ONLY)
     ├── index.ts
@@ -324,7 +382,7 @@ src/services/combatTracking/           # READ-ONLY Service
 
 src/workflows/
 └── combatWorkflow.ts                  # State-Owner (WRITE)
-    ├── executeAction()                # Orchestriert Pipeline + Apply
+    ├── runAction()                    # Ruft resolveAction() + applyResult()
     ├── applyResult()                  # State-Mutation
     └── writeProtocol()                # Protocol-Entry
 ```
@@ -335,7 +393,7 @@ src/workflows/
 
 - [combatTracking.md](combatTracking.md) - Service-Uebersicht
 - [triggers.md](triggers.md) - Trigger-System Details
-- [gatherModifiers.md](gatherModifiers.md) - Modifier-Sammlung
+- [getModifiers.md](getModifiers.md) - Modifier-Sammlung
 - [resolveEffects.md](resolveEffects.md) - Effekt-Resolution
 - [CombatWorkflow.md](../../orchestration/CombatWorkflow.md) - State-Mutation
 - [../combatantAI/combatantAI.md](../combatantAI/combatantAI.md) - AI-Entscheidungslogik

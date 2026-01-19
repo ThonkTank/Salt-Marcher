@@ -1,16 +1,15 @@
 // Ziel: Shared Combat Modifier Utilities
-// Siehe: docs/services/combatTracking/gatherModifiers.md
+// Siehe: docs/services/combatTracking/getModifiers.md
 //
 // Re-exports für Expression Evaluation und Helper Functions.
 // Verwendet von:
-// - combatTracking/resolution/gatherModifiers.ts
+// - combatTracking/resolution/getModifiers.ts
 // - combatantAI/situationalModifiers.ts
 // - combatantAI/schemaModifierAdapter.ts
 
 export {
   evaluateCondition,
   createEvaluationContext,
-  combatantToCombatantContext,
   type EvaluationContext,
 } from './expressionEvaluator';
 

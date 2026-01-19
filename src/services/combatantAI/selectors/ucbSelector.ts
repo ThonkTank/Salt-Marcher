@@ -28,7 +28,7 @@ import type {
   TurnAction,
 } from '@/types/combat';
 import { buildThreatMap } from '../layers';
-import { buildPossibleActions, toTurnAction, type ScoredAction } from '../core/actionEnumeration';
+import { buildPossibleCombatEvents, toTurnCombatEvent, type ScoredCombatEvent } from '../core/actionEnumeration';
 import { positionToKey } from '@/utils';
 import { getReachableCells } from '../helpers/combatHelpers';
 import { getPosition } from '../../combatTracking';
@@ -195,7 +195,7 @@ export const ucbSelector: ActionSelector = {
     });
     const threatMap = buildThreatMap(combatant, state, reachableCells, currentCell);
 
-    const candidates = buildPossibleActions(combatant, state, budget, threatMap);
+    const candidates = buildPossibleCombatEvents(combatant, state, budget, threatMap);
     const nodesEvaluated = candidates.length;
 
     // Filter to positive-score candidates only
@@ -281,7 +281,7 @@ export const ucbSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    return toTurnAction(selected);
+    return toTurnCombatEvent(selected);
   },
 
   getStats(): SelectorStats {

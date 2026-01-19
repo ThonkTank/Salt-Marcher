@@ -28,6 +28,77 @@ const debug = (...args: unknown[]) => {
 };
 
 // ============================================================================
+// SCHEMA COMPATIBILITY HELPERS
+// ============================================================================
+
+/**
+ * Extracts attack bonus from check field.
+ * Supports both legacy format ({ type: 'attack', bonus: ... }) and
+ * unified check format ({ roll: { type: 'attack', bonus: ... } }).
+ */
+function getCheckBonus(action: ActionWithLayer): number | undefined {
+  const check = action.check;
+  if (!check) return undefined;
+
+  // Unified format: { roller: 'actor', roll: { type: 'attack', bonus: 4 }, against: { ... } }
+  if ('roll' in check && check.roll?.type === 'attack') {
+    const bonus = (check.roll as { bonus?: number }).bonus;
+    debug('getCheckBonus (unified):', {
+      actionId: action.id,
+      rollType: check.roll.type,
+      bonus,
+    });
+    return typeof bonus === 'number' ? bonus : undefined;
+  }
+
+  // Legacy format: { type: 'attack', bonus: 4 }
+  if ('type' in check && check.type === 'attack') {
+    const bonus = (check as { bonus?: number }).bonus;
+    debug('getCheckBonus (legacy):', {
+      actionId: action.id,
+      checkType: check.type,
+      bonus,
+    });
+    return typeof bonus === 'number' ? bonus : undefined;
+  }
+
+  debug('getCheckBonus (no attack):', { actionId: action.id });
+  return undefined;
+}
+
+/**
+ * Extracts damage info from action (supports both legacy and new schema).
+ * Legacy: action.damage.dice + action.damage.modifier
+ * New: action.effect.damage (parsed from string like "1d6+2")
+ */
+function getDamageInfo(action: ActionWithLayer): { dice: string; modifier: number } | null {
+  // Legacy format
+  if (action.damage) {
+    return {
+      dice: action.damage.dice,
+      modifier: action.damage.modifier ?? 0,
+    };
+  }
+
+  // New schema: action.effect.damage is a dice expression string like "1d6+2"
+  const effect = action.effect;
+  if (effect && effect.type === 'damage' && typeof effect.damage === 'string') {
+    // Parse "1d6+2" into { dice: "1d6", modifier: 2 }
+    const match = effect.damage.match(/^([^+-]+)([+-]\d+)?$/);
+    if (match) {
+      const dice = match[1].trim();
+      const modStr = match[2] ?? '+0';
+      const modifier = parseInt(modStr, 10);
+      return { dice, modifier };
+    }
+    // Fallback: treat whole string as dice expression
+    return { dice: effect.damage, modifier: 0 };
+  }
+
+  return null;
+}
+
+// ============================================================================
 // BASE RESOLUTION (Cached by combatantType - keine situativen Modifier)
 // ============================================================================
 
@@ -42,7 +113,8 @@ export function resolveBaseAgainstTarget(
 ): BaseResolvedData {
   const targetType = getCombatantType(target);
   const targetAC = getAC(target);
-  const attackBonus = action.attack?.bonus ?? 0;
+  // Support both legacy (action.attack.bonus) and new schema (action.check.bonus)
+  const attackBonus = action.attack?.bonus ?? getCheckBonus(action) ?? 0;
 
   // Base Hit-Chance: d20-Mathe ohne Advantage/Disadvantage
   // Formel: (21 - (targetAC - attackBonus)) / 20, clamped [0.05, 0.95]
@@ -50,11 +122,13 @@ export function resolveBaseAgainstTarget(
   const baseHitChance = Math.min(0.95, Math.max(0.05, (21 - neededRoll) / 20));
 
   // Base Damage PMF (Wuerfel ohne Hit-Chance)
+  // Support both legacy (action.damage) and new schema (action.effect.damage)
   let baseDamagePMF: ProbabilityDistribution;
-  if (action.damage) {
+  const damageInfo = getDamageInfo(action);
+  if (damageInfo) {
     baseDamagePMF = addConstant(
-      diceExpressionToPMF(action.damage.dice),
-      action.damage.modifier
+      diceExpressionToPMF(damageInfo.dice),
+      damageInfo.modifier
     );
   } else {
     baseDamagePMF = new Map([[0, 1]]);

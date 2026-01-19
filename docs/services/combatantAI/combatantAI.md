@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # combatantAI
 
 > **Verantwortlichkeit:** AI-Entscheidungslogik fuer Combat - was soll eine Kreatur tun?
@@ -46,13 +49,13 @@ src/services/combatantAI/
     coreModifiers.ts          # Re-export von Preset-Modifiers
     index.ts                  # Bootstrap fuer Modifier-Plugins
 
-  situationalModifiers.ts     # ADAPTER: Imports core from combatTracking/gatherModifiers
+  situationalModifiers.ts     # ADAPTER: Imports core from combatTracking/getModifiers
   expressionEvaluator.ts      # MOVED to src/utils/combatModifiers/
 ```
 
-> **Architektur-Hinweis:** Die Kern-Modifier-Logik (`gatherModifiers.ts`) liegt in `combatTracking`.
+> **Architektur-Hinweis:** Die Kern-Modifier-Logik (`getModifiers.ts`) liegt in `combatTracking`.
 > `combatantAI/situationalModifiers.ts` ist ein **Adapter** der diese Logik importiert und um
-> AI-spezifische Registry-Plugins erweitert. Siehe [gatherModifiers.md](../combatTracking/gatherModifiers.md).
+> AI-spezifische Registry-Plugins erweitert. Siehe [getModifiers.md](../combatTracking/getModifiers.md).
 
 ---
 
@@ -152,7 +155,7 @@ Creature-Traits (Pack Tactics, Long-Limbed) werden als Actions mit `timing.type 
 }
 ```
 
-> **Schema:** [conditionExpression.ts](../../../src/types/entities/conditionExpression.ts)
+> **Schema:** [CombatEvent.precondition](../../types/combatEvent.md#precondition)
 
 ---
 
@@ -254,7 +257,8 @@ const action = selectNextAction(combatant, state, budget);
 
 | Export | Quelle | Beschreibung |
 |--------|--------|--------------|
-| `isActionAvailable` | helpers/actionAvailability | Action-Verfuegbarkeit |
+| `isActionAvailable` | helpers/actionAvailability | Action-Verfuegbarkeit (all checks) |
+| `isCostAffordable` | helpers/actionAvailability | Cost-Check (Budget, Resources, Inventory) |
 | `getAvailableActionsForCombatant` | helpers/actionAvailability | Alle verfuegbaren Actions |
 | `getCandidates` | helpers/actionSelection | Target-Filterung |
 | `getEnemies` | helpers/actionSelection | Alle Feinde |
@@ -262,6 +266,22 @@ const action = selectNextAction(combatant, state, budget);
 | `getDistance` | helpers/combatHelpers | Chebyshev-Distanz |
 | `isHostile` | helpers/combatHelpers | Alliance-Check |
 | `isAllied` | helpers/combatHelpers | Alliance-Check |
+
+#### isCostAffordable
+
+Prueft ob ein Combatant alle Kosten einer Action bezahlen kann:
+
+```typescript
+function isCostAffordable(action: CombatEvent, combatant: Combatant): boolean
+```
+
+Unterstuetzt alle Cost-Typen:
+- `action-economy` - Budget-Check (action, bonus-action, reaction, movement)
+- `spell-slot` - Spell Slot vorhanden?
+- `resource` - Per-Day/Per-Rest Use vorhanden?
+- `consume-item` - Item in Inventory mit ausreichender quantity?
+- `composite` - Alle Sub-Costs erfuellt?
+- `choice` - Mindestens eine Option erfuellt?
 
 ---
 

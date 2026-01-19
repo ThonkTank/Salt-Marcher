@@ -1,11 +1,11 @@
-// Ziel: Action-Enumeration für Combat-AI
-// Siehe: docs/services/combatantAI/buildPossibleActions.md
+// Ziel: CombatEvent-Enumeration für Combat-AI
+// Siehe: docs/services/combatantAI/buildPossibleCombatEvents.md
 //
 // Funktionen:
-// - buildPossibleActions(): Generiert alle Action/Target/Position Kombinationen
+// - buildPossibleCombatEvents(): Generiert alle CombatEvent/Target/Position Kombinationen
 // - getThreatWeight(): Personality-basierter Threat-Weight (aktuell: fixed 0.5)
-// - hasGrantMovementEffect(): Prüft ob Action Movement gewährt
-// - getAvailableActionsWithLayers(): Verfügbare Actions für CombatantWithLayers
+// - hasGrantMovementEffect(): Prüft ob CombatEvent Movement gewährt
+// - getAvailableCombatEventsWithLayers(): Verfügbare CombatEvents für CombatantWithLayers
 //
 // Re-exports:
 // - getCandidates, getEnemies, getAllies aus actionSelection
@@ -24,12 +24,12 @@
 // - Korrekt wäre: PERSONALITY_THREAT_WEIGHTS Lookup
 //
 // [HACK]: generateCandidates() generiert nur Enemy-Targets
-// - Healing/Buff Actions gegen Allies werden nicht generiert
+// - Healing/Buff CombatEvents gegen Allies werden nicht generiert
 // - Combatants attackieren immer, heilen nie Allies
 // - Korrekt wäre: getCandidates() für Healing/Buff mit Ally-Targeting
 //
 
-import type { Action } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type {
   GridPosition,
   TurnBudget,
@@ -37,18 +37,17 @@ import type {
   Combatant,
   CombatantWithLayers,
   CombatantSimulationStateWithLayers,
-  TurnAction,
+  TurnCombatEvent,
 } from '@/types/combat';
-import { positionToKey, feetToCell, getExpectedValue, diceExpressionToPMF, addConstant } from '@/utils';
+import { positionToKey, getExpectedValue, diceExpressionToPMF, addConstant } from '@/utils';
 import { hasLineOfSight } from '@/utils/squareSpace/gridLineOfSight';
 import {
-  getActionMaxRangeCells,
+  getCombatEventMaxRangeCells,
   getDistance,
   getReachableCells,
   isHostile,
   calculateMultiattackDamage,
   calculateHitChance,
-  resolveMultiattackRefs,
   multiattackHasMeleeOption,
   multiattackHasRangedOption,
 } from '../helpers/combatHelpers';
@@ -56,32 +55,36 @@ import {
   getGroupId,
   getPosition,
   getAliveCombatants,
-  getSpeed,
   getAC,
-  calculateGrantedMovement,
+  hasGrantMovementEffect,
+  hasToTargetMovementCost,
+  getMovementRange,
 } from '../../combatTracking';
 import { calculatePairScore } from './actionScoring';
-import { isActionUsable, getEscapeActionsForCombatant } from '../helpers/actionAvailability';
-import { standardActions } from '../../../../presets/actions';
+import { isCombatEventUsable, getEscapeCombatEventsForCombatant } from '../helpers/actionAvailability';
+import { standardCombatEvents } from '../../../../presets/actions';
 import { getOpportunityAt } from '../layers/threatMap';
 
 // ============================================================================
-// RE-EXPORTS (Target Helpers)
+// RE-EXPORTS (Target Helpers + Movement Helpers)
 // ============================================================================
 
 export { getCandidates, getEnemies, getAllies } from '../helpers/actionSelection';
+
+// Re-export from combatTracking for consumers that import from core/
+export { hasGrantMovementEffect } from '../../combatTracking';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 /**
- * Action-Kandidat mit Score für Unified Action Selection.
+ * CombatEvent-Kandidat mit Score für Unified CombatEvent Selection.
  * Nur 'action' Typ - 'pass' wird separat behandelt.
  */
-export type ScoredAction = {
+export type ScoredCombatEvent = {
   type: 'action';
-  action: Action;
+  action: CombatEvent;
   target?: Combatant;
   fromPosition: GridPosition;
   targetCell?: GridPosition;
@@ -89,13 +92,13 @@ export type ScoredAction = {
 };
 
 /**
- * Konvertiert ein Action-Kandidat-Objekt zu TurnAction.
- * Akzeptiert ScoredAction oder interne Typen (ActionChainEntry, ActionEntry).
+ * Konvertiert ein CombatEvent-Kandidat-Objekt zu TurnCombatEvent.
+ * Akzeptiert ScoredCombatEvent oder interne Typen (CombatEventChainEntry, CombatEventEntry).
  * Zentralisiert die Konvertierung für alle Selectors.
  */
-export function toTurnAction(
-  scored: { action: Action; target?: Combatant; fromPosition: GridPosition }
-): TurnAction {
+export function toTurnCombatEvent(
+  scored: { action: CombatEvent; target?: Combatant; fromPosition: GridPosition }
+): TurnCombatEvent {
   return {
     type: 'action',
     action: scored.action,
@@ -114,7 +117,7 @@ const THREAT_WEIGHT = 1.0;
 /** Gewichtung für Opportunity-Delta im Score. */
 const OPPORTUNITY_WEIGHT = 1.0;
 
-/** Discount für Future-Turn Opportunity (0.5 damit Actions nicht von Movement dominiert werden). */
+/** Discount für Future-Turn Opportunity (0.5 damit CombatEvents nicht von Movement dominiert werden). */
 const FUTURE_DISCOUNT = 0.5;
 
 /**
@@ -131,9 +134,9 @@ const APPROACH_BONUS_THRESHOLD = 1.5;
 const APPROACH_BONUS_MULTIPLIER = 0.5;
 
 /**
- * Intrinsischer Bonus für produktive Actions (Damage/Healing/Control).
+ * Intrinsischer Bonus für produktive CombatEvents (Damage/Healing/Control).
  * Verhindert dass Movement-only höher scored als verfügbare Angriffe.
- * Konservativ gewählt: Actions leicht bevorzugt, Movement bleibt relevant.
+ * Konservativ gewählt: CombatEvents leicht bevorzugt, Movement bleibt relevant.
  */
 const ACTION_INTRINSIC_BONUS = 1.8;
 
@@ -163,7 +166,7 @@ export interface MeleeRangedDPRRatio {
  * Berechnet das Verhältnis von Melee-DPR zu Ranged-DPR.
  * Wert > 1 bedeutet: Melee ist besser als Ranged.
  *
- * Berücksichtigt Multiattack-Actions korrekt:
+ * Berücksichtigt Multiattack-CombatEvents korrekt:
  * - Multiattack mit Melee-Refs wird als Melee gewertet
  * - Damage wird mit Hit-Chance gegen targetAC berechnet
  *
@@ -175,7 +178,7 @@ export function calculateMeleeRangedDPRRatio(
   combatant: CombatantWithLayers,
   targetAC: number
 ): MeleeRangedDPRRatio {
-  const actions = combatant._layeredActions;
+  const actions = combatant._layeredCombatEvents ?? [];
 
   let meleeDPR = 0;
   let rangedDPR = 0;
@@ -206,7 +209,7 @@ export function calculateMeleeRangedDPRRatio(
       continue;
     }
 
-    // Einzelne Action
+    // Einzelne CombatEvent
     if (!action.damage) continue;
 
     const range = action.range?.normal ?? 5;
@@ -240,55 +243,16 @@ export function calculateMeleeRangedDPRRatio(
   return { meleeDPR, rangedDPR, ratio };
 }
 
-/**
- * Prüft ob eine Action Movement gewährt (Dash-ähnlich).
- * Effect-basierte Erkennung statt hardcodierter ActionType-Prüfung.
- */
-export function hasGrantMovementEffect(action: Action): boolean {
-  return action.effects?.some(e => e.grantMovement != null) ?? false;
-}
+// Movement helpers imported from combatTracking/movement.ts:
+// - hasGrantMovementEffect
+// - hasToTargetMovementCost
+// - getMovementRange
 
 /**
- * Prüft ob eine Action movement.toTarget Kosten hat (Movement-Action wie std-move).
- * Diese Actions brauchen ein targetCell für die Bewegung.
+ * Prüft ob CombatEvent das entsprechende Timing-Budget hat.
  */
-export function hasToTargetMovementCost(action: Action): boolean {
-  return action.budgetCosts?.some(
-    c => c.resource === 'movement' && c.cost.type === 'toTarget'
-  ) ?? false;
-}
-
-/**
- * Berechnet erreichbare Range für eine Movement-Action.
- * Berücksichtigt grantMovement Effects (Dash, Teleport, etc.)
- *
- * Verwendet calculateGrantedMovement() als Single Source of Truth
- * für die Berechnung, um Konsistenz mit executeAction() zu gewährleisten.
- */
-export function getMovementRange(
-  action: Action,
-  budget: TurnBudget,
-  _combatant: CombatantWithLayers  // Unused: Speed lookup now via budget.baseMovementCells
-): number {
-  const grant = action.effects?.find(e => e.grantMovement)?.grantMovement;
-
-  if (!grant) {
-    return budget.movementCells;
-  }
-
-  // Teleport ersetzt Budget komplett
-  if (grant.type === 'teleport') {
-    return calculateGrantedMovement(grant, budget);
-  }
-
-  // Dash/Extra addiert zum aktuellen Budget
-  return budget.movementCells + calculateGrantedMovement(grant, budget);
-}
-
-/**
- * Prüft ob Action das entsprechende Timing-Budget hat.
- */
-export function hasTimingBudget(action: Action, budget: TurnBudget): boolean {
+export function hasTimingBudget(action: CombatEvent, budget: TurnBudget): boolean {
+  if (!action.timing) return true; // Legacy actions without timing are always available
   switch (action.timing.type) {
     case 'action': return budget.hasAction;
     case 'bonus': return budget.hasBonusAction;
@@ -298,26 +262,28 @@ export function hasTimingBudget(action: Action, budget: TurnBudget): boolean {
 }
 
 /**
- * Version for CombatantWithLayers that uses _layeredActions.
+ * Version for CombatantWithLayers that uses _layeredCombatEvents.
  * Combines layered actions with standard actions and dynamic escape actions.
  * Filters by availability and supports priorActions context for requirements checking.
  */
-export function getAvailableActionsWithLayers(
+export function getAvailableCombatEventsWithLayers(
   combatant: CombatantWithLayers,
-  context: { priorActions?: Action[] } = {}
-): Action[] {
+  context: { priorActions?: CombatEvent[] } = {}
+): CombatEvent[] {
   // Dynamic escape actions for until-escape conditions (grappled, restrained, etc.)
-  const escapeActions = getEscapeActionsForCombatant(combatant);
-  const allActions = [...combatant._layeredActions, ...standardActions, ...escapeActions];
-  return allActions.filter(a => isActionUsable(a, combatant, context));
+  const escapeCombatEvents = getEscapeCombatEventsForCombatant(combatant);
+  const allCombatEvents = [...combatant._layeredCombatEvents ?? [], ...standardCombatEvents, ...escapeCombatEvents];
+  return allCombatEvents.filter(a => isCombatEventUsable(a, combatant, context));
 }
 
 /**
  * Berechnet verbleibendes Budget nach Ausführung einer Aktion.
  * Wird für remainingOpportunity-Berechnung benötigt.
  */
-export function subtractActionCost(budget: TurnBudget, action: Action): TurnBudget {
+export function subtractCombatEventCost(budget: TurnBudget, action: CombatEvent): TurnBudget {
   const result = { ...budget };
+
+  if (!action.timing) return result; // Legacy actions without timing don't consume budget
 
   switch (action.timing.type) {
     case 'action':
@@ -329,7 +295,7 @@ export function subtractActionCost(budget: TurnBudget, action: Action): TurnBudg
     case 'reaction':
       result.hasReaction = false;
       break;
-    // 'free' und 'passive' verbrauchen kein Action-Budget
+    // 'free' und 'passive' verbrauchen kein CombatEvent-Budget
   }
 
   return result;
@@ -337,7 +303,7 @@ export function subtractActionCost(budget: TurnBudget, action: Action): TurnBudg
 
 /**
  * Erstellt ein frisches Budget für nächsten Turn.
- * Für Future-Opportunity Berechnung bei positionsverändernden Actions.
+ * Für Future-Opportunity Berechnung bei positionsverändernden CombatEvents.
  */
 function getFreshBudget(baseBudget: TurnBudget): TurnBudget {
   return {
@@ -355,7 +321,7 @@ function getFreshBudget(baseBudget: TurnBudget): TurnBudget {
  *
  * @param cell Ziel-Position
  * @param combatant Virtueller Combatant an der Position
- * @param remainingBudget Budget nach der aktuellen Action
+ * @param remainingBudget Budget nach der aktuellen CombatEvent
  * @param isMoving True wenn Position sich ändert (für futureOpportunity)
  * @param state Combat State
  * @returns Kombinierter Opportunity-Score (bereits gewichtet)
@@ -380,11 +346,11 @@ function calculatePositionOpportunity(
 }
 
 /**
- * Erreichbare Cells für Non-Movement Actions.
+ * Erreichbare Cells für Non-Movement CombatEvents.
  * Aktuelle Cell + alle Cells erreichbar mit Movement-Budget.
  * Nutzt terrain-aware Pathfinding wenn terrainMap vorhanden.
  */
-function getCellsForAction(
+function getCellsForCombatEvent(
   currentCell: GridPosition,
   budget: TurnBudget,
   combatant: CombatantWithLayers,
@@ -402,17 +368,17 @@ function getCellsForAction(
 }
 
 /**
- * Enemies in Action-Range von einer Cell.
+ * Enemies in CombatEvent-Range von einer Cell.
  * Prüft Line of Sight wenn terrainMap vorhanden.
  */
 function getEnemiesInRangeFrom(
   cell: GridPosition,
-  action: Action,
+  action: CombatEvent,
   enemies: Combatant[],
-  allActions: Action[],
+  allCombatEvents: CombatEvent[],
   state: CombatantSimulationStateWithLayers
 ): Combatant[] {
-  const maxRange = getActionMaxRangeCells(action, allActions);
+  const maxRange = getCombatEventMaxRangeCells(action, allCombatEvents);
 
   return enemies.filter(enemy => {
     const enemyPos = getPosition(enemy);
@@ -445,9 +411,9 @@ function withPosition(
 // ============================================================================
 
 /**
- * Generiert alle Action/Target/Cell Kombinationen mit Unified Scoring.
+ * Generiert alle CombatEvent/Target/Cell Kombinationen mit Unified Scoring.
  *
- * Komponenten-basierte Evaluation: Jede Action wird anhand ihrer individuellen
+ * Komponenten-basierte Evaluation: Jede CombatEvent wird anhand ihrer individuellen
  * Eigenschaften evaluiert - keine künstlichen Kategorien.
  *
  * Komponenten-Fragen:
@@ -457,19 +423,19 @@ function withPosition(
  *
  * Unified Score = actionScore + positionThreat + remainingOpportunity
  */
-export function buildPossibleActions(
+export function buildPossibleCombatEvents(
   combatant: CombatantWithLayers,
   state: CombatantSimulationStateWithLayers,
   budget: TurnBudget,
   threatMap: Map<string, ThreatMapEntry>,
   options?: { skipScoring?: boolean }
-): ScoredAction[] {
+): ScoredCombatEvent[] {
   const skipScoring = options?.skipScoring ?? false;
-  const candidates: ScoredAction[] = [];
+  const candidates: ScoredCombatEvent[] = [];
   const currentCell = getPosition(combatant);
 
-  // Alle verfügbaren Actions
-  const allActions = getAvailableActionsWithLayers(combatant, {});
+  // Alle verfügbaren CombatEvents
+  const allCombatEvents = getAvailableCombatEventsWithLayers(combatant, {});
 
   // Enemies für Target-Suche (nur LEBENDE Combatants)
   const enemies = getAliveCombatants(state).filter(c =>
@@ -525,9 +491,9 @@ export function buildPossibleActions(
   };
 
   // =========================================================================
-  // Komponenten-basierte Evaluation: Für jede Action
+  // Komponenten-basierte Evaluation: Für jede CombatEvent
   // =========================================================================
-  for (const action of allActions) {
+  for (const action of allCombatEvents) {
     // 1. Budget-Check
     if (!hasTimingBudget(action, budget)) continue;
 
@@ -556,11 +522,11 @@ export function buildPossibleActions(
         const virtualCombatant = withPosition(combatant, cell);
         const cellKey = positionToKey(cell);
         const positionThreat = threatMap.get(cellKey)?.net ?? 0;
-        const remainingBudget = subtractActionCost(budget, action);
+        const remainingBudget = subtractCombatEventCost(budget, action);
 
         if (needsEnemyTarget) {
           // Movement + Damage (Thunder Step)
-          const enemiesInRange = getEnemiesInRangeFrom(cell, action, enemies, combatant._layeredActions, state);
+          const enemiesInRange = getEnemiesInRangeFrom(cell, action, enemies, combatant._layeredCombatEvents ?? [], state);
 
           for (const enemy of enemiesInRange) {
             if (skipScoring) {
@@ -642,12 +608,12 @@ export function buildPossibleActions(
       }
     } else if (needsEnemyTarget) {
       // =====================================================================
-      // Reine Attack-Action (Longsword, Fireball, etc.)
+      // Reine Attack-CombatEvent (Longsword, Fireball, etc.)
       // =====================================================================
-      const cellsForAction = getCellsForAction(currentCell, budget, combatant, state);
+      const cellsForCombatEvent = getCellsForCombatEvent(currentCell, budget, combatant, state);
 
-      for (const cell of cellsForAction) {
-        const enemiesInRange = getEnemiesInRangeFrom(cell, action, enemies, combatant._layeredActions, state);
+      for (const cell of cellsForCombatEvent) {
+        const enemiesInRange = getEnemiesInRangeFrom(cell, action, enemies, combatant._layeredCombatEvents ?? [], state);
 
         for (const enemy of enemiesInRange) {
           if (skipScoring) {
@@ -664,7 +630,7 @@ export function buildPossibleActions(
             const virtualCombatant = withPosition(combatant, cell);
             const cellKey = positionToKey(cell);
             const positionThreat = threatMap.get(cellKey)?.net ?? 0;
-            const remainingBudget = subtractActionCost(budget, action);
+            const remainingBudget = subtractCombatEventCost(budget, action);
 
             const opportunityScore = calculatePositionOpportunity(
               cell, virtualCombatant, remainingBudget, isMoving, state
@@ -707,10 +673,10 @@ export function buildPossibleActions(
       } else {
         const cellKey = positionToKey(currentCell);
         const positionThreat = threatMap.get(cellKey)?.net ?? 0;
-        const remainingBudget = subtractActionCost(budget, action);
+        const remainingBudget = subtractCombatEventCost(budget, action);
         const remainingOpportunity = getOpportunityAt(currentCell, combatant, remainingBudget, state);
 
-        // Escape Actions: Use calculatePairScore for proper escape scoring
+        // Escape CombatEvents: Use calculatePairScore for proper escape scoring
         if (action._escapeCondition) {
           // Escape targets self, so use combatant as both attacker and target
           const escapeScore = calculatePairScore(combatant, action, combatant, 0, state);
@@ -728,7 +694,7 @@ export function buildPossibleActions(
             });
           }
         } else {
-          // Standard Self-Actions: nur Opportunity-Wert
+          // Standard Self-CombatEvents: nur Opportunity-Wert
           const score = positionThreat * THREAT_WEIGHT + remainingOpportunity * OPPORTUNITY_WEIGHT;
 
           if (score > 0) {
@@ -746,3 +712,19 @@ export function buildPossibleActions(
 
   return candidates;
 }
+
+// ============================================================================
+// ALIASES FOR MIGRATION
+// ============================================================================
+
+/** @deprecated Use ScoredCombatEvent instead */
+export type ScoredAction = ScoredCombatEvent;
+
+/** @deprecated Use toTurnCombatEvent instead */
+export const toTurnAction = toTurnCombatEvent;
+
+/** @deprecated Use buildPossibleCombatEvents instead */
+export const buildPossibleActions = buildPossibleCombatEvents;
+
+/** @deprecated Use subtractCombatEventCost instead */
+export const subtractActionCost = subtractCombatEventCost;

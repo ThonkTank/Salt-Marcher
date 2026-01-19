@@ -8,7 +8,7 @@ import type {
   TurnBudget,
   TurnAction,
 } from '@/types/combat';
-import { buildPossibleActions, toTurnAction } from '../core';
+import { buildPossibleCombatEvents, toTurnCombatEvent } from '../core';
 import { buildThreatMap } from '../layers';
 import { positionToKey } from '@/utils';
 import { getDistance, getReachableCells } from '../helpers/combatHelpers';
@@ -36,12 +36,12 @@ const debug = (...args: unknown[]) => {
 
 /**
  * Greedy Selector - Baseline für Combat-AI.
- * Evaluiert alle Action/Target/Position-Kombinationen und wählt die mit dem höchsten Score.
+ * Evaluiert alle CombatEvent/Target/Position-Kombinationen und wählt die mit dem höchsten Score.
  *
  * Algorithmus:
  * 1. Budget-Check → Pass wenn erschöpft
  * 2. ThreatMap berechnen für erreichbare Zellen
- * 3. Kandidaten generieren (alle Action/Target/Position Kombinationen)
+ * 3. Kandidaten generieren (alle CombatEvent/Target/Position Kombinationen)
  * 4. Beste Aktion wählen (höchster Score)
  * 5. Pass wenn beste Score ≤ 0
  */
@@ -77,8 +77,8 @@ export const greedySelector: ActionSelector = {
     // ThreatMap einmal pro Turn berechnen
     const threatMap = buildThreatMap(combatant, state, reachableCells, currentCell);
 
-    // Generiere alle Action/Target/Position Kombinationen
-    const candidates = buildPossibleActions(combatant, state, budget, threatMap);
+    // Generiere alle CombatEvent/Target/Position Kombinationen
+    const candidates = buildPossibleCombatEvents(combatant, state, budget, threatMap);
     nodesEvaluated = candidates.length;
 
     // Keine Aktionen verfügbar → Pass
@@ -115,7 +115,7 @@ export const greedySelector: ActionSelector = {
       elapsedMs: lastStats.elapsedMs.toFixed(2),
     });
 
-    return toTurnAction(bestCandidate);
+    return toTurnCombatEvent(bestCandidate);
   },
 
   getStats(): SelectorStats {

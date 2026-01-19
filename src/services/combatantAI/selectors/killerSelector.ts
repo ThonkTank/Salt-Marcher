@@ -13,7 +13,7 @@
 // - Killer Moves nutzen lokale Struktur des Suchbaums
 
 import type { ActionSelector, SelectorConfig, SelectorStats } from './types';
-import type { Action } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type {
   CombatantWithLayers,
   CombatantSimulationStateWithLayers,
@@ -23,7 +23,7 @@ import type {
   Combatant,
 } from '@/types/combat';
 import { buildThreatMap } from '../layers';
-import { buildPossibleActions, toTurnAction, type ScoredAction } from '../core/actionEnumeration';
+import { buildPossibleCombatEvents, toTurnCombatEvent, type ScoredCombatEvent } from '../core/actionEnumeration';
 import { positionToKey, positionsEqual } from '@/utils';
 import { getDistance, getReachableCells } from '../helpers/combatHelpers';
 import { getPosition } from '../../combatTracking';
@@ -46,7 +46,7 @@ const KILLER_SLOTS = 2; // Number of killer moves per depth
 // ============================================================================
 
 interface ActionChainEntry {
-  action: Action;
+  action: CombatEvent;
   target?: Combatant;
   fromPosition: GridPosition;
   targetCell?: GridPosition;
@@ -99,7 +99,7 @@ const debug = (...args: unknown[]) => {
 // MOVE KEY HELPERS
 // ============================================================================
 
-function getMoveKey(candidate: ScoredAction): MoveKey {
+function getMoveKey(candidate: ScoredCombatEvent): MoveKey {
   return {
     actionId: candidate.action.id,
     targetId: candidate.target?.id,
@@ -111,7 +111,7 @@ function moveKeyToString(key: MoveKey): string {
   return `${key.actionId}:${key.targetId ?? ''}:${key.posKey}`;
 }
 
-function movesMatch(a: MoveKey, b: ScoredAction): boolean {
+function movesMatch(a: MoveKey, b: ScoredCombatEvent): boolean {
   return (
     a.actionId === b.action.id &&
     a.targetId === b.target?.id &&
@@ -148,7 +148,7 @@ function updateHistory(move: MoveKey, depth: number): void {
   historyTable.set(key, current + depth * depth);
 }
 
-function getHistoryScore(candidate: ScoredAction): number {
+function getHistoryScore(candidate: ScoredCombatEvent): number {
   const key = moveKeyToString(getMoveKey(candidate));
   return historyTable.get(key) ?? 0;
 }
@@ -169,17 +169,17 @@ let historyHits = 0;
  * Order: Killer moves → History-sorted → Rest by score
  */
 function orderMoves(
-  candidates: ScoredAction[],
+  candidates: ScoredCombatEvent[],
   depth: number,
   previousBest: ActionChainEntry[]
-): ScoredAction[] {
+): ScoredCombatEvent[] {
   const killers = killerMoves.get(depth) ?? [];
   const hint = previousBest[0];
 
   // Partition into categories
-  const killerMatches: ScoredAction[] = [];
-  const hintMatches: ScoredAction[] = [];
-  const rest: ScoredAction[] = [];
+  const killerMatches: ScoredCombatEvent[] = [];
+  const hintMatches: ScoredCombatEvent[] = [];
+  const rest: ScoredCombatEvent[] = [];
 
   for (const c of candidates) {
     // Check if matches previous best
@@ -222,7 +222,7 @@ function generateCandidates(
   combatant: CombatantWithLayers,
   state: CombatantSimulationStateWithLayers,
   budget: TurnBudget
-): ScoredAction[] {
+): ScoredCombatEvent[] {
   const currentCell = getPosition(combatant);
   const reachableCells = getReachableCells(currentCell, budget.movementCells, {
     terrainMap: state.terrainMap,
@@ -232,7 +232,7 @@ function generateCandidates(
   });
   const threatMap = buildThreatMap(combatant, state, reachableCells, currentCell);
 
-  return buildPossibleActions(combatant, state, budget, threatMap);
+  return buildPossibleCombatEvents(combatant, state, budget, threatMap);
 }
 
 function applyActionToState(
@@ -245,11 +245,11 @@ function applyActionToState(
   });
 }
 
-function getBudgetConsumption(action: Action): {
+function getBudgetConsumption(action: CombatEvent): {
   action?: boolean;
   bonusAction?: boolean;
 } {
-  const isBonusAction = action.timing.type === 'bonus';
+  const isBonusAction = action.timing?.type === 'bonus';
   return isBonusAction ? { bonusAction: true } : { action: true };
 }
 
@@ -461,7 +461,7 @@ export const killerSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    return toTurnAction(first);
+    return toTurnCombatEvent(first);
   },
 
   getStats(): SelectorStats {

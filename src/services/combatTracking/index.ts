@@ -1,5 +1,10 @@
 // Ziel: Combat-Tracking Service Index
 // Siehe: docs/services/combatTracking.md
+//
+// ============================================================================
+// ⚠️ ON HOLD - Combat-Implementierung ist vorübergehend pausiert.
+// Diese Datei wird aktuell nicht verwendet.
+// ============================================================================
 
 // ============================================================================
 // COMBAT INITIALIZATION (initialiseCombat.ts)
@@ -15,26 +20,6 @@ export {
 } from './initialiseCombat';
 
 // ============================================================================
-// ACTION EXECUTION (executeAction.ts)
-// ============================================================================
-
-export {
-  executeAction,
-  // Action Resolution
-  resolveAttack,
-  resolveAttackWithReactions,
-  checkCounterspell,
-  processReactionTrigger,
-  // Escape Resolution
-  resolveEscapeAttempt,
-  // Types
-  type ActionResult,
-  type ReactionTrigger,
-  type AttackResolutionWithReactions,
-  type EscapeAttemptResult,
-} from './executeAction';
-
-// ============================================================================
 // COMBATANT STATE (combatState.ts)
 // ============================================================================
 
@@ -48,8 +33,7 @@ export {
   // Combatant Accessors
   getHP,
   getAC,
-  getSpeed,
-  getActions,
+  getCombatEvents,
   getAbilities,
   getSaveProficiencies,
   getCR,
@@ -76,16 +60,26 @@ export {
   advanceTurn,
   getCurrentCombatant,
   isCombatOver,
-  // Turn Budget Functions
-  createTurnBudget,
-  getEffectiveSpeed,
-  calculateGrantedMovement,
-  // Grapple Helpers
-  getGrappledTargets,
-  hasAbductTrait,
   // Types
   type CombatStateWithScoring,
 } from './combatState';
+
+// ============================================================================
+// MOVEMENT (movement.ts) - Single Source of Truth for combat movement
+// ============================================================================
+
+export {
+  // Speed & Budget
+  getSpeed,
+  getEffectiveSpeed,
+  createTurnBudget,
+  calculateGrantedMovement,
+  // hasAnyBonusAction, // TODO: Implement hasAnyBonusAction
+  // Action Helpers
+  hasGrantMovementEffect,
+  hasToTargetMovementCost,
+  getMovementRange,
+} from './movement';
 
 // ============================================================================
 // PROTOCOL LOGGING (protocolLogger.ts)
@@ -109,3 +103,43 @@ export {
   createActiveZone,
   type ZoneEffectResult,
 } from './zoneEffects';
+
+// ============================================================================
+// CONDITION LIFECYCLE (conditionLifecycle.ts)
+// ============================================================================
+
+export {
+  buildLifecycleRegistry,
+  handleLinkedConditionOnApply,
+  handleLinkedConditionOnRemove,
+  handleSourceDeath,
+  handlePositionSync,
+} from './conditionLifecycle';
+
+// ============================================================================
+// RESOLUTION PIPELINE (resolution/)
+// ============================================================================
+
+export {
+  // Pipeline Orchestrator
+  resolveAction,
+  // Step 1: Target Selection
+  findTargets,
+  isValidTarget,
+  isInRange,
+  getValidCandidates,
+  type TargetResult,
+  type FindTargetsContext,
+  // Step 2: Modifier Gathering
+  getModifiers,
+  resolveAdvantageState,
+  createEmptyModifierSet,
+  type ModifierSet,
+  type AdvantageState,
+  type GetModifiersContext,
+  // Step 3: Success Determination
+  determineSuccess,
+  type SuccessResult,
+  // Step 4: Effect Resolution (Single Source of Truth)
+  resolveEffects,
+} from './resolution';

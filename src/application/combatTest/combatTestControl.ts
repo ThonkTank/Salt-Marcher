@@ -1,26 +1,35 @@
 // Ziel: Svelte Store und UI-Event-Handling fuer Combat Test
 // Siehe: docs/architecture/Orchestration.md
 //
+// ============================================================================
+// ⚠️ ON HOLD - Combat-Implementierung ist vorübergehend pausiert.
+// Diese Datei wird aktuell nicht verwendet.
+// ============================================================================
+//
 // Der combatTestControl orchestriert:
 // - combatTestStore (Svelte Store fuer UI)
-// - Ruft Workflows auf
-// - Synct Store mit Infrastructure State
-// - KEINE Service-Calls, KEIN direkter State-Zugriff
+// - Ruft combatWorkflow direkt auf
+// - Verwaltet combatTestState (UI-spezifisch)
+// - Berechnet ActionHighlight (UI-spezifisch)
 
 import { writable, type Writable } from 'svelte/store';
 import { setVault, vault } from '@/infrastructure/vault/vaultInstance';
 import { PresetVaultAdapter } from '@/infrastructure/vault/PresetVaultAdapter';
+import type { TurnAction, CombatStateWithLayers } from '@/types/combat';
 import {
   getCombatTestState,
+  updateCombatTestState,
   resetCombatTestState,
   type CombatTestState,
+  type ActionHighlight,
 } from '@/infrastructure/state/combatTestState';
 import {
-  loadScenario,
-  executeCurrentAction,
-  skipCurrentTurn,
+  loadScenario as loadScenarioCore,
+  requestAISuggestion,
+  executeAISuggestion,
+  skipTurn as skipTurnCore,
   getAvailableScenarios,
-} from '@/workflows/combatTestWorkflow';
+} from '@/workflows/combatWorkflow';
 
 // ============================================================================
 // TYPES
@@ -51,7 +60,7 @@ export const combatTestStore: Writable<CombatTestUIState> = writable(initialStat
 
 /**
  * Synct Svelte Store mit Infrastructure State.
- * Wird nach jedem Workflow-Aufruf aufgerufen.
+ * Wird nach jedem State-Update aufgerufen.
  */
 function syncStore(): void {
   const state = getCombatTestState();
@@ -59,6 +68,43 @@ function syncStore(): void {
     ...s,
     ...state,
   }));
+}
+
+// ============================================================================
+// HELPERS (UI-spezifisch)
+// ============================================================================
+
+/**
+ * Berechnet ActionHighlight aus TurnAction (UI-spezifisch).
+ */
+function computeActionHighlight(
+  suggestion: TurnAction | null,
+  combat: CombatStateWithLayers
+): ActionHighlight | null {
+  if (!suggestion || suggestion.type !== 'action') return null;
+
+  const currentId = combat.turnOrder[combat.currentTurnIndex];
+  const current = combat.combatants.find(c => c.id === currentId);
+  return {
+    targetPosition:
+      suggestion.target?.combatState.position ??
+      current?.combatState.position ?? { x: 0, y: 0, z: 0 },
+    actionName: suggestion.action.name,
+    targetName: suggestion.target?.name ?? null,
+  };
+}
+
+/**
+ * Fordert AI-Vorschlag an und aktualisiert State.
+ */
+function requestNextAction(): void {
+  const state = getCombatTestState();
+  if (!state.combat) return;
+
+  const suggestion = requestAISuggestion(state.combat);
+  const actionHighlight = computeActionHighlight(suggestion, state.combat);
+
+  updateCombatTestState(s => ({ ...s, suggestedAction: suggestion, actionHighlight }));
 }
 
 // ============================================================================
@@ -87,7 +133,39 @@ export function initCombatTestControl(): void {
  * @param scenarioId ID des Szenarios
  */
 export function openScenario(scenarioId: string): void {
-  loadScenario(scenarioId);
+  if (!scenarioId) {
+    updateCombatTestState(() => ({
+      combat: null,
+      suggestedAction: null,
+      actionHighlight: null,
+      selectedScenarioId: null,
+      error: null,
+    }));
+    syncStore();
+    return;
+  }
+
+  try {
+    const combat = loadScenarioCore(scenarioId);
+    if (!combat) throw new Error(`Preset not found: ${scenarioId}`);
+
+    updateCombatTestState(() => ({
+      combat,
+      suggestedAction: null,
+      actionHighlight: null,
+      selectedScenarioId: scenarioId,
+      error: null,
+    }));
+
+    requestNextAction();
+  } catch (e) {
+    updateCombatTestState(s => ({
+      ...s,
+      combat: null,
+      error: e instanceof Error ? e.message : String(e),
+      selectedScenarioId: scenarioId,
+    }));
+  }
   syncStore();
 }
 
@@ -95,7 +173,12 @@ export function openScenario(scenarioId: string): void {
  * Akzeptiert den AI-Vorschlag und fuehrt die Aktion aus.
  */
 export function acceptSuggestedAction(): void {
-  executeCurrentAction();
+  const state = getCombatTestState();
+  if (!state.combat || !state.suggestedAction) return;
+
+  executeAISuggestion(state.suggestedAction, state.combat);
+  updateCombatTestState(s => ({ ...s, suggestedAction: null, actionHighlight: null }));
+  requestNextAction();
   syncStore();
 }
 
@@ -103,7 +186,12 @@ export function acceptSuggestedAction(): void {
  * Ueberspringt den aktuellen Turn.
  */
 export function skipTurn(): void {
-  skipCurrentTurn();
+  const state = getCombatTestState();
+  if (!state.combat) return;
+
+  skipTurnCore(state.combat);
+  updateCombatTestState(s => ({ ...s, suggestedAction: null, actionHighlight: null }));
+  requestNextAction();
   syncStore();
 }
 

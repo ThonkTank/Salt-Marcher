@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # buildBaseActionLayer
 
 > **Verantwortlichkeit:** Layer-Initialisierung und Base-Resolution Cache bei Combat-Start

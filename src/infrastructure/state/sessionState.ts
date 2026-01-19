@@ -1,8 +1,7 @@
 // Einfacher State-Container ohne Framework-Dependencies
 // Siehe: docs/orchestration/SessionState.md
 
-import type { SessionState } from '#types/sessionState';
-import type { EntityId } from '@core/types/entity';
+import type { SessionState, EntityId } from '#types/sessionState';
 
 // ============================================================================
 // STATE

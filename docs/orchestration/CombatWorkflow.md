@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # CombatWorkflow
 
 > **Verantwortlichkeit:** Orchestration des Combat-Trackers + State-Mutation
@@ -8,6 +11,8 @@
 > - [Combat.md](../features/Combat.md) - Feature-Spezifikation
 > - [EncounterWorkflow.md](EncounterWorkflow.md) - Combat aus Encounter
 > - [combatTracking](../services/combatTracking/combatTracking.md) - Resolution Service (READ-ONLY)
+> - [CombatEvent](../types/combatEvent.md#conditions-als-combatevents) - Condition-Lifecycle als CombatEvents
+> - [CombatEvent](../types/combatEvent.md) - Schema fuer Actions
 
 Dieser Workflow orchestriert den Combat-Tracker. Er verwaltet Initiative, Zuege, die Post-Combat-Resolution und ist der **State-Owner** fuer Combat-State-Mutationen.
 
@@ -246,40 +251,53 @@ Fuer AI-gesteuerte Combat-Simulation ruft der Workflow den combatTracking Servic
 - `combatWorkflow` = **WRITE** - wendet das Ergebnis auf den State an
 
 ```
-combatTracking (READ-ONLY)
+combatWorkflow.runAction() [Orchestration]
         │
-        ├─► findTargets()
-        ├─► gatherModifiers()
-        ├─► determineSuccess()
-        └─► resolveEffects()
+        └─► resolveAction(context)                 [READ-ONLY]
                 │
-                ▼
-        ResolutionResult
-                │
-                ▼
-combatWorkflow.applyResult() [WRITE]
+                ├─► findTargets()
+                ├─► getModifiers()
+                ├─► determineSuccess()
+                └─► resolveEffects()
+                        │
+                        ▼
+                ResolutionResult
+                        │
+                        ▼
+            applyResult(result, state)             [WRITE]
 ```
 
-### executeAction
+### runAction
 
 Orchestriert die Resolution-Pipeline und wendet das Ergebnis an:
 
 ```typescript
-function executeAction(
-  actor: Combatant,
-  action: Action,
-  target: Combatant,
-  state: CombatState
-): void {
-  // 1. Resolution-Pipeline aufrufen (READ-ONLY)
-  const context: ResolutionContext = { actor, action, target, state, trigger: 'active' };
-  const targets = findTargets(context);
-  const modifiers = gatherModifiers(context, targets);
-  const success = determineSuccess(context, targets, modifiers);
-  const result = resolveEffects(context, success, modifiers);
+import { resolveAction } from '@/services/combatTracking/resolution';
 
-  // 2. Ergebnis anwenden (WRITE)
-  applyResult(result, state);
+function runAction(
+  input: { actorId: string; turnAction: TurnAction },
+  state: CombatState
+): ResolutionResult | null {
+  const actor = state.combatants.find(c => c.id === input.actorId);
+  if (!actor) return null;
+
+  // 1. ResolutionContext bauen
+  const context: ResolutionContext = {
+    actor,
+    action: input.turnAction.action,
+    state,
+    trigger: 'active',
+    explicitTarget: input.turnAction.target,
+    position: input.turnAction.position,
+  };
+
+  // 2. Resolution-Pipeline aufrufen (READ-ONLY)
+  const result = resolveAction(context);
+
+  // 3. Ergebnis anwenden (WRITE)
+  applyResult(result, state, actor, input.turnAction);
+
+  return result;
 }
 ```
 
@@ -362,7 +380,7 @@ Die Reihenfolge der Mutations ist wichtig fuer korrektes Verhalten:
 
 - [actionResolution.md](../services/combatTracking/actionResolution.md) - Pipeline-Uebersicht
 - [resolveEffects.md](../services/combatTracking/resolveEffects.md) - ResolutionResult-Struktur
-- [gatherModifiers.md](../services/combatTracking/gatherModifiers.md) - Modifier-Sammlung
+- [getModifiers.md](../services/combatTracking/getModifiers.md) - Modifier-Sammlung
 
 ---
 
@@ -400,6 +418,89 @@ removeCondition(participantId: string, conditionType: ConditionType): void {
   }));
 }
 ```
+
+---
+
+## Condition Lifecycle Integration
+
+Die Condition-Verwaltung nutzt den `conditionLifecycle` Service fuer komplexe Beziehungen:
+
+### Linked Conditions
+
+Wenn eine Condition mit `linkedToSource` definiert ist, wird automatisch die linked Condition auf den Source angewendet:
+
+```typescript
+addCondition(target, { name: 'grappled', sourceId: grappler.id });
+// → handleLinkedConditionOnApply: Grappler bekommt 'grappling'
+```
+
+### Death Triggers
+
+Wenn ein Combatant stirbt, werden alle von ihm verursachten Conditions behandelt:
+
+```typescript
+markDeadCombatants(state);
+// → handleSourceDeath: Entfernt 'grappled' von allen Targets (wenn onSourceDeath: 'remove-from-targets')
+```
+
+### Position Sync
+
+Wenn ein Combatant bewegt wird, werden linked Targets mitbewegt:
+
+```typescript
+setPosition(grappler, newPos);
+// → handlePositionSync: Grappled Target wird zu newPos bewegt
+```
+
+Details: [CombatEvent](../types/combatEvent.md#conditions-als-combatevents)
+
+---
+
+## AI Integration
+
+Fuer AI-gesteuerte Combatants stellt der Workflow eine Schnittstelle bereit:
+
+### requestAISuggestion
+
+Fragt den `combatantAI` Service nach der besten Aktion:
+
+```typescript
+import { selectNextAction } from '@/services/combatantAI';
+
+function requestAISuggestion(combatantId: string): TurnAction | null {
+  const combatant = findCombatant(state, combatantId);
+  if (!combatant) return null;
+
+  const suggestion = selectNextAction({
+    combatant,
+    state,
+    selectorType: 'greedy'  // oder 'minimax', 'ucb', etc.
+  });
+
+  return suggestion;
+}
+```
+
+### executeAISuggestion
+
+Fuehrt die vorgeschlagene Aktion aus:
+
+```typescript
+function executeAISuggestion(combatantId: string, suggestion: TurnAction): void {
+  // 1. Bewegung ausfuehren (wenn vorhanden)
+  if (suggestion.movement) {
+    moveCombatant(combatantId, suggestion.movement);
+  }
+
+  // 2. Aktion ausfuehren
+  runAction({ actorId: combatantId, turnAction: suggestion }, state);
+
+  // 3. Budget aktualisieren
+  consumeActionBudget(suggestion.action, getCurrentTurnBudget(combatantId));
+}
+```
+
+Details: [combatantAI.md](../services/combatantAI/combatantAI.md)
 
 ---
 

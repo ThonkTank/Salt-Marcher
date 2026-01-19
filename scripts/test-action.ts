@@ -1,4 +1,10 @@
 // Ziel: Combat Action Test - einzelne Aktion mit detailliertem Logging testen
+//
+// ============================================================================
+// ⚠️ ON HOLD - Combat-Implementierung ist vorübergehend pausiert.
+// Dieses Script ist aktuell nicht funktionsfähig.
+// ============================================================================
+//
 // Usage: npx tsx scripts/test-action.ts <caster>:<alliance>@<x>,<y> <action-id> <target>:<alliance>@<x>,<y> [--verbose]
 //
 // Beispiele:
@@ -34,15 +40,14 @@ setVault(vaultAdapter);
 // ============================================================================
 
 import type { CreatureDefinition } from '../src/types/entities/creature';
-import type { ActionDefinition } from '../src/types/entities/action';
+import type { CombatEvent, Cost } from '../src/types/entities/combatEvent';
 import type { NPC } from '../src/types/entities/npc';
 import type { EncounterGroup } from '../src/types/encounterTypes';
-import type { CombatStateWithLayers, Combatant } from '../src/types/combat';
+import type { CombatStateWithLayers, Combatant, CombatInventoryItem } from '../src/types/combat';
 import type { GridPosition } from '../src/utils/squareSpace/grid';
 import {
   initialiseCombat,
   setPosition,
-  getActions,
   getHP,
   getAC,
   getPosition,
@@ -50,11 +55,11 @@ import {
   getConditions,
   getResources,
   createTurnBudget,
-  executeAction,
 } from '../src/services/combatTracking';
 import { formatProtocolEntry, formatBudget } from '../src/services/combatTracking/protocolLogger';
-import { getExpectedValue } from '../src/utils/probability/pmf';
-import { registerCoreModifiers } from '../src/services/combatantAI';
+import { runAction } from '../src/workflows/combatWorkflow';
+import { getExpectedValue, createSingleValue } from '../src/utils/probability/pmf';
+import { registerCoreModifiers, getAvailableActionsForCombatant } from '../src/services/combatantAI';
 import { cellToFeet } from '../src/utils/squareSpace/grid';
 
 registerCoreModifiers();
@@ -103,7 +108,8 @@ function parseCombatantArg(arg: string): ParsedCombatant {
     throw new Error(`Invalid position: "${posStr}". Expected: <x>,<y> (numbers)`);
   }
 
-  return { creatureId, alliance, position: { x, y } };
+  // z: 0 ist erforderlich für 3D-Distanz-Berechnung
+  return { creatureId, alliance, position: { x, y, z: 0 } };
 }
 
 // ============================================================================
@@ -118,19 +124,34 @@ function findNPCByCreature(creatureId: string): NPC | undefined {
   return npcsPresets.find(npc => npc.creature.id === creatureId);
 }
 
-function findAction(id: string): ActionDefinition | undefined {
+function findAction(id: string): CombatEvent | undefined {
   return actionsPresets.find(a => a.id === id);
 }
 
-function getOrCreateNPC(creature: CreatureDefinition, alliance: 'party' | 'enemy'): NPC {
-  // Suche existierenden NPC
-  const existing = findNPCByCreature(creature.id);
-  if (existing) return existing;
+// Instance counter for unique NPC IDs when same creature is used multiple times
+const creatureInstanceCounter = new Map<string, number>();
 
-  // Auto-Create transient NPC
+function getOrCreateNPC(creature: CreatureDefinition, alliance: 'party' | 'enemy'): NPC {
+  // Suche existierenden NPC im Vault
+  const existing = findNPCByCreature(creature.id);
+  if (existing) {
+    // Clone existing NPC with unique ID to avoid conflicts
+    const count = (creatureInstanceCounter.get(creature.id) ?? 0) + 1;
+    creatureInstanceCounter.set(creature.id, count);
+    return {
+      ...existing,
+      id: `${existing.id}-${count}`,
+      name: count > 1 ? `${existing.name} ${count}` : existing.name,
+    };
+  }
+
+  // Auto-Create transient NPC with unique instance ID
+  const count = (creatureInstanceCounter.get(creature.id) ?? 0) + 1;
+  creatureInstanceCounter.set(creature.id, count);
+
   return {
-    id: `test-${creature.id}`,
-    name: creature.name,
+    id: `test-${creature.id}-${count}`,
+    name: count > 1 ? `${creature.name} ${count}` : creature.name,
     creature,
     factionId: null,
     disposition: 'hostile',
@@ -140,10 +161,12 @@ function getOrCreateNPC(creature: CreatureDefinition, alliance: 'party' | 'enemy
     homeRegionId: null,
     currentRegionId: null,
     notes: '',
+    currentHp: createSingleValue(creature.averageHp),
+    maxHp: creature.averageHp,
   } as NPC;
 }
 
-function findActionForCreature(creature: CreatureDefinition, actionId: string): ActionDefinition | undefined {
+function findActionForCreature(creature: CreatureDefinition, actionId: string): CombatEvent | undefined {
   // Suche in creature.actionIds
   if (creature.actionIds.includes(actionId)) {
     return findAction(actionId);
@@ -193,7 +216,7 @@ function logCombatantState(c: Combatant, label: string, verbose: boolean): void 
   }
 }
 
-function formatActionInfo(action: ActionDefinition): string {
+function formatActionInfo(action: CombatEvent): string {
   const parts: string[] = [];
 
   // Action type
@@ -220,6 +243,102 @@ function formatActionInfo(action: ActionDefinition): string {
   return parts.join(', ');
 }
 
+/**
+ * Logs inventory state with quantities.
+ */
+function logInventory(combatant: Combatant, label: string): void {
+  const inventory = combatant.combatState.inventory;
+  if (inventory.length === 0) {
+    console.log(`  ${label}: (empty)`);
+  } else {
+    console.log(`  ${label}:`);
+    for (const item of inventory) {
+      const tags = item.tags?.length ? ` [${item.tags.join(', ')}]` : '';
+      console.log(`    - ${item.id}: qty ${item.quantity}${tags}`);
+    }
+  }
+}
+
+// ============================================================================
+// AUTO-PROVISION INVENTORY FOR CONSUME-ITEM COSTS
+// ============================================================================
+
+interface ConsumeItemCost {
+  itemId?: string;
+  itemTag?: string;
+  quantity: number;
+}
+
+/**
+ * Extracts all consume-item costs from an action (handles composite costs).
+ */
+function extractConsumeItemCosts(action: CombatEvent): ConsumeItemCost[] {
+  const costs: ConsumeItemCost[] = [];
+
+  function extractFromCost(cost: Cost | undefined): void {
+    if (!cost) return;
+
+    if (cost.type === 'consume-item') {
+      costs.push({
+        itemId: cost.itemId,
+        itemTag: cost.itemTag,
+        quantity: cost.quantity ?? 1,
+      });
+    } else if (cost.type === 'composite') {
+      for (const subCost of cost.costs) {
+        extractFromCost(subCost);
+      }
+    }
+  }
+
+  extractFromCost(action.cost);
+  return costs;
+}
+
+/**
+ * Provisions required items in combatant's inventory.
+ * Returns list of provisioned items for logging.
+ */
+function provisionInventory(
+  combatant: Combatant,
+  consumeItemCosts: ConsumeItemCost[]
+): Array<{ id: string; provisioned: number }> {
+  const provisioned: Array<{ id: string; provisioned: number }> = [];
+  const inventory = combatant.combatState.inventory;
+
+  for (const cost of consumeItemCosts) {
+    // Generate item ID from tag if not specified
+    const itemId = cost.itemId ?? (cost.itemTag ? `${cost.itemTag}-auto` : 'unknown-item');
+
+    // Find existing item
+    let item = inventory.find(i =>
+      (cost.itemId && i.id === cost.itemId) ||
+      (cost.itemTag && i.tags?.includes(cost.itemTag))
+    );
+
+    // Calculate how many we need (provision 10x required for multiple uses)
+    const targetQty = cost.quantity * 10;
+
+    if (!item) {
+      // Create new item
+      const newItem: CombatInventoryItem = {
+        id: itemId,
+        quantity: targetQty,
+        tags: cost.itemTag ? [cost.itemTag] : undefined,
+      };
+      inventory.push(newItem);
+      provisioned.push({ id: itemId, provisioned: targetQty });
+    } else if (item.quantity < cost.quantity) {
+      // Top up existing item
+      const added = targetQty - item.quantity;
+      item.quantity = targetQty;
+      provisioned.push({ id: item.id, provisioned: added });
+    }
+  }
+
+  return provisioned;
+}
+
 // ============================================================================
 // MAIN
 // ============================================================================
@@ -235,11 +354,17 @@ Arguments:
 
 Options:
   --verbose                     Show detailed internal state
+  --with-condition <name>       Apply condition to caster (for testing escape actions)
+  --escape-dc <dc>              DC for escape check (default: 12)
+  --condition-source <id>       Source ID for condition (default: 'test-source')
 
 Examples:
   npx tsx scripts/test-action.ts goblin:enemy@0,0 goblin-scimitar knight:party@1,0
   npx tsx scripts/test-action.ts goblin:enemy@0,0 goblin-shortbow knight:party@6,0
   npx tsx scripts/test-action.ts bandit-captain:enemy@5,5 bandit-captain-multiattack knight:party@6,5
+
+  # Test escape from grappled condition:
+  npx tsx scripts/test-action.ts goblin:party@0,0 escape-grappled goblin:party@0,0 --with-condition grappled --escape-dc 12
 
 Available creatures:`);
 
@@ -251,10 +376,49 @@ Available creatures:`);
   }
 }
 
+interface ConditionConfig {
+  name: string;
+  dc: number;
+  sourceId: string;
+}
+
+function parseConditionArgs(args: string[]): ConditionConfig | null {
+  const conditionIdx = args.indexOf('--with-condition');
+  if (conditionIdx === -1 || conditionIdx + 1 >= args.length) return null;
+
+  const conditionName = args[conditionIdx + 1];
+
+  // Parse optional --escape-dc
+  const dcIdx = args.indexOf('--escape-dc');
+  const dc = dcIdx !== -1 && dcIdx + 1 < args.length
+    ? parseInt(args[dcIdx + 1], 10)
+    : 12;
+
+  // Parse optional --condition-source
+  const sourceIdx = args.indexOf('--condition-source');
+  const sourceId = sourceIdx !== -1 && sourceIdx + 1 < args.length
+    ? args[sourceIdx + 1]
+    : 'test-source';
+
+  return { name: conditionName, dc, sourceId };
+}
+
 function main(): void {
   const args = process.argv.slice(2);
   const verbose = args.includes('--verbose') || args.includes('-v');
-  const filteredArgs = args.filter(a => a !== '--verbose' && a !== '-v');
+
+  // Parse condition config before filtering
+  const conditionConfig = parseConditionArgs(args);
+
+  // Filter out all option flags and their values
+  const filteredArgs = args.filter((a, i, arr) => {
+    if (a === '--verbose' || a === '-v') return false;
+    if (a === '--with-condition' || a === '--escape-dc' || a === '--condition-source') return false;
+    // Also filter the value after these flags
+    const prevArg = arr[i - 1];
+    if (prevArg === '--with-condition' || prevArg === '--escape-dc' || prevArg === '--condition-source') return false;
+    return true;
+  });
 
   if (filteredArgs.length < 3 || filteredArgs[0] === '--help' || filteredArgs[0] === '-h') {
     printUsage();
@@ -289,9 +453,10 @@ function main(): void {
     process.exit(1);
   }
 
-  // Find action
-  const action = findActionForCreature(casterCreature, actionId);
-  if (!action) {
+  // Find action (skip for escape-* actions which are dynamically generated)
+  const isDynamicEscapeAction = actionId.startsWith('escape-');
+  let action = findActionForCreature(casterCreature, actionId);
+  if (!action && !isDynamicEscapeAction) {
     console.error(`Action not found: ${actionId}`);
     console.error(`Available actions for ${casterCreature.id}: ${casterCreature.actionIds.join(', ')}`);
     process.exit(1);
@@ -351,18 +516,57 @@ function main(): void {
     initiativeOrder: [casterNpc.id, targetNpc.id],
   }) as CombatStateWithLayers;
 
-  // Find combatants in state
-  const caster = state.combatants.find(c => c.creature.id === casterParsed.creatureId);
-  const target = state.combatants.find(c => c.creature.id === targetParsed.creatureId);
+  // Find combatants in state by NPC ID (unique, even for same creature type)
+  const caster = state.combatants.find(c => c.id === casterNpc.id);
+  const target = state.combatants.find(c => c.id === targetNpc.id);
 
   if (!caster || !target) {
     console.error('Failed to find combatants in combat state');
+    console.error(`Looking for caster ID: ${casterNpc.id}, target ID: ${targetNpc.id}`);
+    console.error(`Available combatants: ${state.combatants.map(c => c.id).join(', ')}`);
     process.exit(1);
   }
 
   // Set positions
   setPosition(caster, casterParsed.position, state);
   setPosition(target, targetParsed.position, state);
+
+  // Apply condition to caster if specified (for testing escape actions)
+  if (conditionConfig) {
+    const conditionState: import('../src/types/combat').ConditionState = {
+      name: conditionConfig.name,
+      probability: 1,
+      effect: conditionConfig.name,  // Use condition name as effect type
+      duration: {
+        type: 'until-escape',
+        escapeCheck: {
+          type: 'dc',
+          timing: 'action',
+          dc: conditionConfig.dc,
+          ability: 'str',
+        },
+      },
+      sourceId: conditionConfig.sourceId,
+    };
+    caster.combatState.conditions = [...(caster.combatState.conditions ?? []), conditionState];
+    console.log(`\n[SETUP] Applied condition '${conditionConfig.name}' to caster (escape DC ${conditionConfig.dc})`);
+  }
+
+  // Resolve action to get the actual action definition (includes dynamic escape actions)
+  const allAvailableActions = getAvailableActionsForCombatant(caster);
+  const resolvedAction = allAvailableActions.find(a => a.id === actionId);
+  if (!resolvedAction) {
+    console.error(`Action ${actionId} not found in caster's available actions`);
+    console.error(`Available: ${allAvailableActions.map(a => a.id).join(', ')}`);
+    process.exit(1);
+  }
+
+  // Use resolved action for everything (covers both static and dynamic actions)
+  const finalAction = resolvedAction;
+
+  // Auto-provision inventory for consume-item costs
+  const consumeItemCosts = extractConsumeItemCosts(finalAction);
+  const provisioned = provisionInventory(caster, consumeItemCosts);
 
   // ============================================================================
   // OUTPUT
@@ -377,43 +581,52 @@ function main(): void {
   console.log(`  Caster: ${casterCreature.name} @ (${casterParsed.position.x},${casterParsed.position.y}) [${casterParsed.alliance}]`);
   console.log(`  Target: ${targetCreature.name} @ (${targetParsed.position.x},${targetParsed.position.y}) [${targetParsed.alliance}]`);
   console.log(`  Distance: ${distance} cells (${distanceFeet}ft)`);
-  console.log(`  Action: ${action.name} (${formatActionInfo(action)})`);
+  console.log(`  Action: ${finalAction.name} (${formatActionInfo(finalAction)})`);
+
+  // Show provisioned items
+  if (provisioned.length > 0) {
+    console.log('\n=== AUTO-PROVISIONED ITEMS ===');
+    for (const p of provisioned) {
+      console.log(`  Added ${p.provisioned}x ${p.id}`);
+    }
+  }
 
   // Pre-action state
   console.log('\n=== PRE-ACTION STATE ===');
   logCombatantState(caster, 'Caster', verbose);
+  logInventory(caster, 'Caster Inventory');
   logCombatantState(target, 'Target', verbose);
 
   // Create budget
   const budget = createTurnBudget(caster, state);
   console.log(`\n  ${formatBudget(budget)}`);
 
-  // Execute action
-  console.log('\n=== EXECUTING ACTION ===');
-
-  // Resolve action to get the actual action definition
-  const resolvedAction = getActions(caster).find(a => a.id === actionId);
-  if (!resolvedAction) {
-    console.error(`Action ${actionId} not found in caster's resolved actions`);
-    console.error(`Available: ${getActions(caster).map(a => a.id).join(', ')}`);
-    process.exit(1);
-  }
-
   // Execute
-  executeAction(
-    caster,
+  const result = runAction(
     {
-      type: 'action',
-      action: resolvedAction,
-      target,
-      position: casterParsed.position,
+      actorId: caster.id,
+      turnAction: {
+        type: 'action',
+        action: finalAction,
+        target,
+        position: casterParsed.position,
+      },
     },
     state
   );
 
+  // Show resolution result details in verbose mode
+  if (verbose && result) {
+    console.log('\n  Resolution Details:');
+    console.log(`    hpChanges: ${JSON.stringify(result.hpChanges)}`);
+    console.log(`    conditionsToAdd: ${result.conditionsToAdd.length}`);
+    console.log(`    hit: ${result.protocolData.hit}, critical: ${result.protocolData.critical}`);
+  }
+
   // Post-action state
   console.log('\n=== POST-ACTION STATE ===');
   logCombatantState(caster, 'Caster', verbose);
+  logInventory(caster, 'Caster Inventory');
   logCombatantState(target, 'Target', verbose);
 
   // Combat log

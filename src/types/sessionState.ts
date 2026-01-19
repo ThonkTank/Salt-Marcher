@@ -2,13 +2,17 @@
 // Extrahiert aus src/SessionRunner/sessionState.ts
 // Siehe: docs/orchestration/SessionState.md
 
-import type { EntityId } from '@core/types/entity';
-import type { HexCoordinate } from '@core/types/coordinates';
+import type { HexCoordinate } from '#types/hexCoordinate';
 import type { Weather } from '#types/weather';
-import type { TransportMode } from '@constants/TransportModes';
 import type { EmbeddedPreset } from '@/types/entities/encounterPreset';
 import type { NPC } from '#types/entities/npc';
 import type { GameDateTime } from '#types/time';
+
+// Branded type for entity IDs
+export type EntityId<T extends string> = string & { readonly __entityType: T };
+
+// Transport mode for travel
+export type TransportMode = 'foot' | 'horse' | 'wagon' | 'boat' | 'flying';
 
 // ============================================================================
 // STATE-TYPEN

@@ -13,7 +13,7 @@
 // - Effizienter als depth-first bei breiten Suchräumen
 
 import type { ActionSelector, SelectorConfig, SelectorStats } from './types';
-import type { Action } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type {
   CombatantWithLayers,
   CombatantSimulationStateWithLayers,
@@ -23,7 +23,7 @@ import type {
   Combatant,
 } from '@/types/combat';
 import { buildThreatMap } from '../layers';
-import { buildPossibleActions, toTurnAction, type ScoredAction } from '../core/actionEnumeration';
+import { buildPossibleCombatEvents, toTurnCombatEvent, type ScoredCombatEvent } from '../core/actionEnumeration';
 import { positionToKey } from '@/utils';
 import { getDistance, getReachableCells } from '../helpers/combatHelpers';
 import { getPosition } from '../../combatTracking';
@@ -48,7 +48,7 @@ const DEFAULT_MAX_NODES = 500;
 // ============================================================================
 
 interface SearchNode {
-  /** Action chain leading to this node */
+  /** CombatEvent chain leading to this node */
   chain: ActionChainEntry[];
   /** Cumulative score */
   score: number;
@@ -63,7 +63,7 @@ interface SearchNode {
 }
 
 interface ActionChainEntry {
-  action: Action;
+  action: CombatEvent;
   target?: Combatant;
   fromPosition: GridPosition;
   targetCell?: GridPosition;
@@ -157,7 +157,7 @@ function generateCandidates(
   combatant: CombatantWithLayers,
   state: CombatantSimulationStateWithLayers,
   budget: TurnBudget
-): ScoredAction[] {
+): ScoredCombatEvent[] {
   const currentCell = getPosition(combatant);
   const reachableCells = getReachableCells(currentCell, budget.movementCells, {
     terrainMap: state.terrainMap,
@@ -167,7 +167,7 @@ function generateCandidates(
   });
   const threatMap = buildThreatMap(combatant, state, reachableCells, currentCell);
 
-  return buildPossibleActions(combatant, state, budget, threatMap);
+  return buildPossibleCombatEvents(combatant, state, budget, threatMap);
 }
 
 /**
@@ -186,11 +186,11 @@ function applyAction(
 /**
  * Calculates budget consumption for an action.
  */
-function getBudgetConsumption(action: Action): {
+function getBudgetConsumption(action: CombatEvent): {
   action?: boolean;
   bonusAction?: boolean;
 } {
-  const isBonusAction = action.timing.type === 'bonus';
+  const isBonusAction = action.timing?.type === 'bonus';
   return isBonusAction ? { bonusAction: true } : { action: true };
 }
 
@@ -346,7 +346,7 @@ export const bestFirstSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    return toTurnAction(first);
+    return toTurnCombatEvent(first);
   },
 
   getStats(): SelectorStats {

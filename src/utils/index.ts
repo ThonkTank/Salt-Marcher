@@ -30,7 +30,6 @@ export {
 export {
   evaluateCondition,
   createEvaluationContext,
-  combatantToCombatantContext,
   type EvaluationContext,
   isAllied,
   isHostile,

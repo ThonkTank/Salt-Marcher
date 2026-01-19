@@ -47,14 +47,28 @@
 // - Kein Gold-Tracking im Combat-State
 // - Ideal: components.consumed=true → Gold abziehen und tracken
 //
+// [HACK]: itemTag-basierte Kosten nicht vollstaendig implementiert
+// - isCostAffordable() unterstuetzt nur itemId, nicht itemTag
+// - itemTag erfordert Item-Entity Lookup um Tags zu pruefen
+// - Fuer MVP: itemId direkter Match, itemTag ignoriert
+//
 // [TODO]: Party-Resources initialisieren
 // - createPartyCombatants() sollte Character.spellSlots nutzen
 // - Requires: spellSlots Feld auf Character Entity
 // - Alternativ: Inferenz aus Character-Level und Class
 
-import type { Action, SchemaModifier, PropertyModifier } from '@/types/entities';
-import type { Combatant, CombatResources } from '@/types/combat';
-import { getActions } from '../../combatTracking';
+import type {
+  CombatEvent,
+  SchemaModifier,
+  PropertyModifier,
+  Cost,
+  AbilityType,
+  SkillType,
+  SkillOrAbility,
+  Check,
+} from '@/types/entities/combatEvent';
+import type { Combatant, CombatResources, CombatInventoryItem } from '@/types/combat';
+import { getCombatEvents } from '../../combatTracking';
 // Standard-Actions (Dash, Disengage, Dodge) - verfuegbar fuer alle Combatants
 import { standardActions } from '../../../../presets/actions';
 
@@ -141,7 +155,7 @@ export function getIncapacitatingProbability(combatant: Combatant): number {
  * @returns true wenn Action ausgefuehrt werden kann
  */
 export function isActionAvailable(
-  action: Action,
+  action: CombatEvent,
   resources: CombatResources | undefined
 ): boolean {
   // Kein Resource-Tracking = alles verfuegbar
@@ -180,6 +194,198 @@ export function isActionAvailable(
 }
 
 // ============================================================================
+// COST AFFORDABILITY (consume-item)
+// ============================================================================
+
+/**
+ * Findet ein Item im Combat-Inventory anhand itemId oder itemTag.
+ * HACK: itemTag nicht vollstaendig implementiert - siehe Header.
+ *
+ * @param inventory Das Combat-Inventory des Combatants
+ * @param itemId Optionale exakte Item-ID
+ * @param itemTag Optionales Item-Tag (nicht implementiert)
+ * @returns Das gefundene Item oder undefined
+ */
+function findInventoryItem(
+  inventory: CombatInventoryItem[],
+  itemId?: string,
+  itemTag?: string
+): CombatInventoryItem | undefined {
+  // 1. itemId Match: Exakter ID-Match
+  if (itemId) {
+    return inventory.find(item => item.id === itemId);
+  }
+
+  // 2. itemTag Match: HACK - nur wenn Item tags hat
+  // Vollstaendige Implementierung erfordert Item-Entity Lookup
+  if (itemTag) {
+    return inventory.find(item => item.tags?.includes(itemTag));
+  }
+
+  return undefined;
+}
+
+/**
+ * Prueft ob ein einzelner Cost bezahlt werden kann.
+ *
+ * @param cost Der zu pruefende Cost
+ * @param inventory Das Combat-Inventory des Combatants
+ * @param resources Die Combat-Resources des Combatants
+ * @returns true wenn Cost bezahlt werden kann
+ */
+function isSingleCostAffordable(
+  cost: Cost,
+  inventory: CombatInventoryItem[],
+  resources: CombatResources | undefined
+): boolean {
+  switch (cost.type) {
+    case 'consume-item': {
+      const item = findInventoryItem(inventory, cost.itemId, cost.itemTag);
+      if (!item || item.quantity < cost.quantity) {
+        debug('isSingleCostAffordable: not enough items', {
+          costItemId: cost.itemId,
+          costItemTag: cost.itemTag,
+          required: cost.quantity,
+          available: item?.quantity ?? 0,
+        });
+        return false;
+      }
+      return true;
+    }
+
+    case 'action-economy':
+      // Action-Economy wird separat ueber TurnBudget geprueft
+      return true;
+
+    case 'spell-slot': {
+      const level = cost.level as number;
+      const available = resources?.spellSlots?.[level] ?? 0;
+      return available > 0;
+    }
+
+    case 'hp':
+      // HP-Kosten koennten gegen currentHp geprueft werden
+      // Fuer MVP: Immer erlauben (AI entscheidet ob lohnend)
+      return true;
+
+    case 'composite':
+      // Rekursiv alle Sub-Costs pruefen
+      return cost.costs.every(subCost =>
+        isSingleCostAffordable(subCost, inventory, resources)
+      );
+
+    default:
+      // Unbekannte Costs: Erlauben (fail-open)
+      return true;
+  }
+}
+
+/**
+ * Prueft ob ein Combatant die Kosten einer Action bezahlen kann.
+ * Unterstuetzt alle Cost-Typen inkl. composite und consume-item.
+ *
+ * @param action Die zu pruefende Action
+ * @param combatant Der Combatant der die Action ausfuehren will
+ * @returns true wenn alle Costs bezahlt werden koennen
+ */
+export function isCostAffordable(
+  action: CombatEvent,
+  combatant: Combatant
+): boolean {
+  // Keine Costs = immer erschwinglich
+  if (!action.cost) return true;
+
+  const inventory = combatant.combatState.inventory ?? [];
+  const resources = combatant.combatState.resources;
+
+  return isSingleCostAffordable(action.cost, inventory, resources);
+}
+
+/**
+ * Konsumiert Items aus dem Combat-Inventory.
+ * Mutiert das Inventory direkt.
+ *
+ * @param inventory Das Combat-Inventory (wird mutiert)
+ * @param itemId Optionale exakte Item-ID
+ * @param itemTag Optionales Item-Tag
+ * @param quantity Anzahl zu konsumieren
+ */
+function consumeInventoryItem(
+  inventory: CombatInventoryItem[],
+  itemId?: string,
+  itemTag?: string,
+  quantity: number = 1
+): void {
+  const item = findInventoryItem(inventory, itemId, itemTag);
+  if (item) {
+    item.quantity -= quantity;
+    debug('consumeInventoryItem:', {
+      itemId: item.id,
+      consumed: quantity,
+      remaining: item.quantity,
+    });
+  }
+}
+
+/**
+ * Konsumiert einen einzelnen Cost.
+ * Mutiert Inventory und Resources.
+ */
+function consumeSingleCost(
+  cost: Cost,
+  inventory: CombatInventoryItem[],
+  resources: CombatResources | undefined
+): void {
+  switch (cost.type) {
+    case 'consume-item':
+      consumeInventoryItem(inventory, cost.itemId, cost.itemTag, cost.quantity);
+      break;
+
+    case 'spell-slot': {
+      const level = cost.level as number;
+      if (resources?.spellSlots && resources.spellSlots[level] > 0) {
+        resources.spellSlots[level]--;
+        debug('consumeSingleCost: spell slot', { level });
+      }
+      break;
+    }
+
+    case 'hp':
+      // HP-Kosten werden ueber damage resolution abgehandelt, nicht hier
+      break;
+
+    case 'composite':
+      for (const subCost of cost.costs) {
+        consumeSingleCost(subCost, inventory, resources);
+      }
+      break;
+
+    case 'action-economy':
+      // Action-Economy wird ueber TurnBudget verwaltet, nicht hier
+      break;
+  }
+}
+
+/**
+ * Konsumiert die Kosten einer Action nach erfolgreicher Ausfuehrung.
+ * Mutiert combatState.inventory und combatState.resources.
+ *
+ * @param action Die ausgefuehrte Action
+ * @param combatant Der Combatant (combatState wird mutiert)
+ */
+export function consumeActionCost(
+  action: CombatEvent,
+  combatant: Combatant
+): void {
+  if (!action.cost) return;
+
+  const inventory = combatant.combatState.inventory ?? [];
+  const resources = combatant.combatState.resources;
+
+  consumeSingleCost(action.cost, inventory, resources);
+}
+
+// ============================================================================
 // REQUIREMENT MATCHING
 // ============================================================================
 
@@ -194,7 +400,7 @@ export function isActionAvailable(
  * @returns true wenn alle Requirements erfuellt sind
  */
 export function matchesRequirement(
-  prior: Action,
+  prior: CombatEvent,
   requirement: { actionType?: string[]; properties?: string[]; sameTarget?: boolean }
 ): boolean {
   // actionType Match: prior.actionType muss in requirement.actionType enthalten sein
@@ -228,9 +434,10 @@ export function matchesRequirement(
 /**
  * Prueft ob eine Action ausgefuehrt werden kann (kombiniert alle Checks).
  * 1. Resource-Verfuegbarkeit (Spell Slots, Recharge, Uses)
- * 2. Prior-Action Requirements (fuer Bonus Actions wie TWF)
- * 3. hasAction Requirements (fuer OA: Combatant muss Melee-Action haben)
- * 4. Condition-Checks (Incapacitated kann keine Actions nehmen)
+ * 2. Cost-Affordability (consume-item, composite costs)
+ * 3. Prior-Action Requirements (fuer Bonus Actions wie TWF)
+ * 4. hasAction Requirements (fuer OA: Combatant muss Melee-Action haben)
+ * 5. Condition-Checks (Incapacitated kann keine Actions nehmen)
  *
  * @param action Die zu pruefende Action
  * @param combatant Der ausfuehrende Combatant
@@ -238,18 +445,24 @@ export function matchesRequirement(
  * @returns true wenn Action ausgefuehrt werden kann
  */
 export function isActionUsable(
-  action: Action,
+  action: CombatEvent,
   combatant: Combatant,
-  context: { priorActions?: Action[] } = {}
+  context: { priorActions?: CombatEvent[] } = {}
 ): boolean {
   const resources = combatant.combatState.resources;
 
-  // 1. Resource Check
+  // 1. Resource Check (legacy: spellSlot, recharge, perDay)
   if (!isActionAvailable(action, resources)) {
     return false;
   }
 
-  // 2. Prior-Action Requirements (fuer Bonus Actions wie TWF)
+  // 2. Cost Affordability (new: consume-item, composite)
+  if (!isCostAffordable(action, combatant)) {
+    debug('isActionUsable: cost not affordable', { action: action.id });
+    return false;
+  }
+
+  // 3. Prior-Action Requirements (fuer Bonus Actions wie TWF)
   if (action.requires?.priorAction) {
     const hasMatch = context.priorActions?.some(prior =>
       matchesRequirement(prior, action.requires!.priorAction!)
@@ -260,10 +473,10 @@ export function isActionUsable(
     }
   }
 
-  // 3. hasAction Requirements (fuer OA: Combatant muss passende Action haben)
+  // 4. hasAction Requirements (fuer OA: Combatant muss passende Action haben)
   // Prueft ob der Combatant mindestens eine Action hat die den Kriterien entspricht
   if (action.requires?.hasAction) {
-    const combatantActions = getActions(combatant);
+    const combatantActions = getCombatEvents(combatant);
     const hasMatch = combatantActions.some(a =>
       matchesRequirement(a, action.requires!.hasAction!)
     );
@@ -276,7 +489,7 @@ export function isActionUsable(
     }
   }
 
-  // 4. Condition Checks
+  // 5. Condition Checks
   if (hasIncapacitatingCondition(combatant)) {
     debug('isActionUsable: combatant incapacitated', { combatant: combatant.id });
     return false;
@@ -303,7 +516,7 @@ export function isActionUsable(
  * @param combatant Der Combatant mit potentiellen escapable Conditions
  * @returns Array von dynamisch generierten Escape-Actions
  */
-export function getEscapeActionsForCombatant(combatant: Combatant): Action[] {
+export function getEscapeActionsForCombatant(combatant: Combatant): CombatEvent[] {
   const conditions = combatant.combatState.conditions ?? [];
   const escapableConditions = conditions.filter(
     c => c.duration?.type === 'until-escape' && c.duration?.escapeCheck
@@ -312,7 +525,9 @@ export function getEscapeActionsForCombatant(combatant: Combatant): Action[] {
   if (escapableConditions.length === 0) return [];
 
   return escapableConditions.map(condition => {
-    const escapeCheck = condition.duration!.escapeCheck!;
+    // Type assertion safe due to filter above (duration.type === 'until-escape')
+    const duration = condition.duration as Extract<typeof condition.duration, { type: 'until-escape' }>;
+    const escapeCheck = duration.escapeCheck;
     const conditionName = condition.name;
 
     // Timing zu Action-Timing mappen
@@ -332,21 +547,58 @@ export function getEscapeActionsForCombatant(combatant: Combatant): Action[] {
             resource: 'movement' as const,
             cost: {
               type: 'fixed' as const,
-              value: Math.ceil(('movementCost' in escapeCheck ? escapeCheck.movementCost ?? 0.5 : 0.5) * 6),
+              value: Math.ceil(0.5 * 6), // Default: half movement
             },
           }];
 
-    const escapeAction: Action = {
+    // Build unified check based on escapeCheck type
+    // Unified Check Schema: roller, roll, against, onSuccess, onFailure
+    let check: Check | undefined;
+
+    if (escapeCheck.type === 'dc' && escapeCheck.ability && escapeCheck.dc != null) {
+      // DC-based escape: Actor rolls ability check vs fixed DC
+      check = {
+        roller: 'actor' as const,
+        roll: { type: 'ability' as const, ability: escapeCheck.ability as AbilityType },
+        against: { type: 'fixed' as const, dc: escapeCheck.dc },
+        onSuccess: 'effect-applies' as const,
+        onFailure: 'no-effect' as const,
+      };
+    } else if (escapeCheck.type === 'contested' && escapeCheck.escaperChoice?.[0]) {
+      // Contested escape: Actor rolls skill vs defender's choice
+      check = {
+        roller: 'actor' as const,
+        roll: { type: 'skill' as const, skill: escapeCheck.escaperChoice[0] as SkillType },
+        against: {
+          type: 'contested' as const,
+          choice: escapeCheck.defenderSkill
+            ? [escapeCheck.defenderSkill as SkillOrAbility]
+            : ['athletics', 'acrobatics'] as SkillOrAbility[],
+        },
+        onSuccess: 'effect-applies' as const,
+        onFailure: 'no-effect' as const,
+      };
+    } else if (escapeCheck.type === 'automatic') {
+      // Automatic escape: no check required
+      check = { type: 'auto' as const };
+    }
+
+    const escapeAction: CombatEvent = {
       id: `escape-${conditionName}`,
       name: `Escape ${conditionName.charAt(0).toUpperCase() + conditionName.slice(1)}`,
       actionType: 'utility',
       timing: { type: timingType },
       range: { type: 'self', normal: 0 },
-      targeting: { type: 'single', validTargets: 'self' },
-      autoHit: true,
+      targeting: { type: 'self' },
+      check,
+      // Effect: remove the condition when check succeeds
+      effect: {
+        type: 'remove-condition',
+        condition: conditionName,
+      },
       budgetCosts,
       description: `Attempt to escape from ${conditionName}.`,
-      // Meta-Felder für executeAction
+      // Meta-Felder für Condition-Lookup (kept for debugging)
       _escapeCondition: conditionName,
       _escapeCheck: escapeCheck,
     };
@@ -387,7 +639,7 @@ function matchesActionId(
  * @param modifiers Die anzuwendenden PropertyModifiers
  * @returns Kopie der Action mit angewandten Modifiers
  */
-function applyPropertyModifiers(action: Action, modifiers: PropertyModifier[] | undefined): Action {
+function applyPropertyModifiers(action: CombatEvent, modifiers: PropertyModifier[] | undefined): CombatEvent {
   if (!modifiers || modifiers.length === 0) return action;
 
   // Shallow copy - wir modifizieren nur timing
@@ -424,15 +676,15 @@ function applyPropertyModifiers(action: Action, modifiers: PropertyModifier[] | 
  * @param allActions Alle Actions des Combatants (inkl. passive Traits)
  * @returns Actions mit angewandten Timing-Overrides
  */
-function applyTimingOverrides(actions: Action[], allActions: Action[]): Action[] {
+function applyTimingOverrides(actions: CombatEvent[], allActions: CombatEvent[]): CombatEvent[] {
   // 1. Sammle alle schemaModifiers mit action-is-id condition aus passiven Traits
   const passiveTraits = allActions.filter(a => a.timing?.type === 'passive');
-  const timingModifiers: { modifier: SchemaModifier; trait: Action }[] = [];
+  const timingModifiers: { modifier: SchemaModifier; trait: CombatEvent }[] = [];
 
   for (const trait of passiveTraits) {
     if (!trait.schemaModifiers) continue;
     for (const mod of trait.schemaModifiers) {
-      if (mod.condition.type === 'action-is-id' && mod.effect.propertyModifiers) {
+      if (mod.condition.type === 'action-is-id' && mod.contextualEffects?.passive?.propertyModifiers) {
         timingModifiers.push({ modifier: mod, trait });
       }
     }
@@ -454,7 +706,9 @@ function applyTimingOverrides(actions: Action[], allActions: Action[]): Action[]
     if (!matchingMod) return action;
 
     // 3. propertyModifiers anwenden
-    return applyPropertyModifiers(action, matchingMod.modifier.effect.propertyModifiers);
+    const propertyMods = matchingMod.modifier.contextualEffects.passive?.propertyModifiers;
+    if (!propertyMods) return action;
+    return applyPropertyModifiers(action, propertyMods);
   });
 }
 
@@ -474,9 +728,9 @@ function applyTimingOverrides(actions: Action[], allActions: Action[]): Action[]
  */
 export function getAvailableActionsForCombatant(
   combatant: Combatant,
-  context: { priorActions?: Action[] } = {}
-): Action[] {
-  const combatantActions = getActions(combatant);
+  context: { priorActions?: CombatEvent[] } = {}
+): CombatEvent[] {
+  const combatantActions = getCombatEvents(combatant);
   const escapeActions = getEscapeActionsForCombatant(combatant);
   const allActions = [...combatantActions, ...standardActions, ...escapeActions];
 
@@ -485,3 +739,7 @@ export function getAvailableActionsForCombatant(
 
   return modifiedActions.filter(a => isActionUsable(a, combatant, context));
 }
+
+// Aliases for migration
+export const isCombatEventUsable = isActionUsable;
+export const getEscapeCombatEventsForCombatant = getEscapeActionsForCombatant;

@@ -181,6 +181,7 @@ src/                   # Source code
     npc.ts  # NPC-bezogene Konstanten
     terrain.ts  # Terrain-/Map-bezogene Konstanten
     time.ts  # Zeit-bezogene Konstanten
+    trigger.ts  # Ziel: Konstanten für TriggerExpression Language
     weather.ts  # Ziel: Konstanten für Weather-Faktor-Generierung
   infrastructure/
     state/
@@ -196,8 +197,8 @@ src/                   # Source code
   services/
     combatantAI/
       core/
-        actionEnumeration.ts  # Ziel: Action-Enumeration für Combat-AI
-        actionScoring.ts  # Ziel: Unified Action Scoring - alle Aktionstypen durch ei...
+        actionEnumeration.ts  # Ziel: CombatEvent-Enumeration für Combat-AI
+        actionScoring.ts  # Ziel: Unified CombatEvent Scoring - alle Aktionstypen dur...
         index.ts  # Ziel: Re-exports für core/ Module
         stateProjection.ts  # Ziel: Immutable State-Operationen für Look-Ahead Algorithmen
       evolution/
@@ -228,13 +229,12 @@ src/                   # Source code
         reactionLayers.ts  # Ziel: Reaction/OA Evaluation und Kosten-Berechnung
         threatMap.ts  # Ziel: ThreatMap-Queries fuer Position-Bewertung
       modifiers/
-        coreModifiers.ts  # Ziel: Re-export Core Combat Modifiers aus Presets
         index.ts  # Ziel: Bootstrap für Modifier-Plugins
       selectors/
         __tests__/
         bestFirstSelector.ts  # Ziel: Best-First Search Selector - Priority Queue mit Bud...
-        evolvedSelector.ts  # Ziel: Evolved ActionSelector - NEAT Network als Action-En...
-        factoredSelector.ts  # Ziel: Factored Action Spaces Selector - Dekomposition in ...
+        evolvedSelector.ts  # Ziel: Evolved ActionSelector - NEAT Network als CombatEve...
+        factoredSelector.ts  # Ziel: Factored CombatEvent Spaces Selector - Dekompositio...
         greedySelector.ts  # Ziel: Greedy ActionSelector - wählt Aktion mit höchstem S...
         index.ts  # Ziel: Unified exports für Selector-System
         iterativeSelector.ts  # Ziel: Iterative Deepening Selector - Anytime-Suche mit Mo...
@@ -257,14 +257,26 @@ src/                   # Source code
       terrainMovement.ts  # Ziel: Terrain-aware Pathfinding für Combat AI
     combatTracking/
       resolution/
+        resolveEffect/
+          all.ts  # Ziel: Resolver für effect.type === 'all' (Composite Effect)
+          applyCondition.ts  # Ziel: Resolver für effect.type === 'apply-condition'
+          conditional.ts  # Ziel: Resolver für effect.type === 'conditional'
+          damage.ts  # Ziel: Resolver für effect.type === 'damage'
+          index.ts  # Ziel: Dispatcher für rekursiven Effect-Resolver
+          removeCondition.ts  # Ziel: Resolver für effect.type === 'remove-condition'
+          types.ts  # Ziel: Shared Types für rekursiven Effect-Resolver
+        determineSuccess.ts  # Ziel: Wuerfel-Resolution fuer Combat-Aktionen
         findTargets.ts  # Ziel: Target-Selection fuer Resolution Pipeline
-        gatherModifiers.ts  # Ziel: Sammelt alle Modifier die eine Aktion beeinflussen
         getModifiers.ts  # Ziel: Sammelt alle Modifier die eine Aktion beeinflussen
         index.ts  # Ziel: Re-exports fuer Resolution Pipeline
+        resolveAction.ts  # Ziel: Pipeline-Orchestrator für Action Resolution (READ-O...
+        resolveEffects.ts  # Ziel: Berechnet die Effekte einer Aktion basierend auf Ta...
+        resolveSpellStats.ts  # Ziel: Injiziert Spellcasting-Stats (attack bonus, save DC...
       combatState.ts  # Ziel: Zentraler Combat State-Container
-      executeAction.ts  # Ziel: Action-Ausführung und Protocol-Logging
+      conditionLifecycle.ts  # Ziel: Einheitliche Condition-Lifecycle-Pipeline
       index.ts  # Ziel: Combat-Tracking Service Index
       initialiseCombat.ts  # Ziel: Konsolidierte Combat-Initialisierung
+      movement.ts  # Ziel: Combat-spezifische Movement-Logik (READ-ONLY)
       protocolLogger.ts  # Ziel: Einheitliches Logging-Format für CombatProtocolEntry
       zoneEffects.ts  # Ziel: Zone-Effect Evaluation und Application
     encounterGenerator/
@@ -296,10 +308,9 @@ src/                   # Source code
       reputation.ts  # Ziel: Gemeinsames Schema für Beziehungen zwischen Entities
       Result.ts
     entities/
-      action.ts  # Vault-persistierte Action-Definition
       activity.ts  # Vault-persistierte Activity-Definition
       character.ts  # Vault-persistierte Character-Entity (Player Characters)
-      conditionExpression.ts  # Ziel: Schema-driven Expression Language für situative Com...
+      combatEvent.ts  # Ziel: Unified CombatEvent Schema - ersetzt alle separaten...
       creature.ts  # Vault-persistierte CreatureDefinition und Runtime Creatur...
       culture.ts  # Vault-persistierte Culture-Entity
       encounterPreset.ts  # Ziel: Unified Encounter Preset Schema fuer authored, temp...
@@ -366,7 +377,7 @@ src/                   # Source code
       tooltipHelpers.ts  # Ziel: Schema-Generierungs-Funktionen fuer Tooltips
       types.ts  # Ziel: Shared TypeScript Interfaces fuer View-Komponenten
   workflows/
-    combatTestWorkflow.ts  # Ziel: Orchestriert Combat Test - Szenario-Laden, AI-Vorsc...
+    combatWorkflow.ts  # Ziel: State-Owner fuer Combat-Aktionen - orchestriert Res...
     encounterWorkflow.ts  # Ziel: Encounter generieren lassen, in DetailView anzeigen...
   main.ts  # Ziel: Obsidian Plugin Entry Point für Salt Marcher
 docs/                  # Authoritative documentation (German)
@@ -386,7 +397,7 @@ docs/                  # Authoritative documentation (German)
   features/
     Audio-System.md  # Kontextbasierte Hintergrundmusik und Umgebungsgeraeusche
     Character-System.md  # Verwaltung von Player Characters - Schema, HP-Tracking, I...
-    Combat.md  # Initiative-Tracker und Condition-Management fuer D&D Kaempfe
+    Combat.md
     Dungeon-System.md  # Grid-basierte Dungeon Maps mit Fog of War, Lichtquellen u...
     Journal.md  # Single Source of Truth fuer Session-Journal und automatis...
     Map-Feature.md  # Single Source of Truth fuer Map-Typen, Map-Content und Mu...
@@ -399,8 +410,8 @@ docs/                  # Authoritative documentation (German)
     influence-map-implementation.md  # ✅ Abgeschlossen (2026-01-06)
     pmf-combat-convergence-bug.md  # ## Problem
   orchestration/
-    CombatTestWorkflow.md  # Orchestriert Combat-Test UI - Szenario-Laden, AI-Vorschla...
-    CombatWorkflow.md  # Orchestration des Combat-Trackers + State-Mutation
+    CombatTestWorkflow.md
+    CombatWorkflow.md
     EncounterWorkflow.md  # Orchestration der Encounter-Generierung und -Resolution
     RestWorkflow.md  # Orchestration von Short/Long Rest
     SessionState.md  # State-Container fuer alle In-Session-Daten
@@ -415,24 +426,24 @@ docs/                  # Authoritative documentation (German)
     mcts.md  # Research & Konzept-Analyse
   services/
     combatantAI/
-      algorithm-approaches.md  # ActionSelector Interface und Algorithmen-Vergleich
-      buildBaseActionLayer.md  # Layer-Initialisierung und Base-Resolution Cache bei Comba...
-      buildPossibleActions.md  # Generiert alle gueltigen Action/Target/Cell Kombinationen
-      buildThreatMap.md  # Position-Bewertung fuer Combat-AI - wie gefaehrlich/nuetz...
-      combatantAI.md  # AI-Entscheidungslogik fuer Combat - was soll eine Kreatur...
-      getRelevantCells.md  # Berechnet erreichbare Zellen mit Movement-Kosten
-      planNextAction.md  # Entry Point und Orchestration der Action-Selection
-      scoreAction.md  # DPR-basierte Aktionsbewertung + situative Modifier-Anwendung
-      simulationState.md  # Hypothetisches State-Management fuer AI Look-Ahead
+      algorithm-approaches.md
+      buildBaseActionLayer.md
+      buildPossibleActions.md
+      buildThreatMap.md
+      combatantAI.md
+      getRelevantCells.md
+      planNextAction.md
+      scoreAction.md
+      simulationState.md
     combatTracking/
-      actionResolution.md  # Einheitliche Resolution aller Combat-Aktionen (aktiv, Zon...
-      combatTracking.md  # Combat Resolution (READ-ONLY)
-      determineSuccess.md  # Wuerfel-Resolution fuer Combat-Aktionen
-      findTargets.md  # Ziel-Auswahl fuer Combat-Aktionen
-      gatherModifiers.md  # Sammelt alle Modifier die eine Aktion beeinflussen
-      movement.md  # Movement-Execution und Budget-Tracking im Combat
-      resolveEffects.md  # Berechnet die Effekte einer Aktion basierend auf Success-...
-      triggers.md  # Bestimmt WANN die Resolution-Pipeline aufgerufen wird
+      actionResolution.md
+      combatTracking.md
+      determineSuccess.md
+      findTargets.md
+      getModifiers.md
+      movement.md
+      resolveEffects.md
+      triggers.md
     encounter/
       balancing.md  # Encounter-Service (Step 6.1)
       difficulty.md  # Encounter-Service (Step 5)
@@ -454,8 +465,9 @@ docs/                  # Authoritative documentation (German)
   tools/
     update-refs-hook.md  # Automatisches Update von Markdown-Links, TypeScript-Impor...
   types/
-    action.md  # [Library](../views/Library.md) (Creature-Editor), Presets...
     activity.md  # [Library](../views/Library.md) (Activity-Editor), Presets...
+    combatEvent-guide.md
+    combatEvent.md
     creature.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
     culture.md  # [Library](../views/Library.md) (CRUD), Presets (bundled)
     currency.md  # -
@@ -494,6 +506,7 @@ docs/                  # Authoritative documentation (German)
     SessionRunner.md  # [Orchestration.md](../architecture/Orchestration.md)
     shared.md  # View-uebergreifende UI-Komponenten fuer Grid-Rendering un...
     Tooltip.md  # View-übergreifendes Popup-System für kontextuelle Hilfe u...
+  attribution.md  # Dieses Projekt verwendet Referenzimplementierungen und Pa...
   Example-Workflows.md  # [Data-Flow.md](architecture/Data-Flow.md), [Features.md](...
 presets/               # Fixture data (maps, terrains)
 Archive/               # Previous Alpha implementations - reference only

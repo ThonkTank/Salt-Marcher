@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # simulationState
 
 > **Verantwortlichkeit:** Hypothetisches State-Management fuer AI Look-Ahead
@@ -15,11 +18,11 @@ Stateless Utility-Modul fuer immutable State-Operationen. Ermoeglicht Look-Ahead
 ┌─────────────────────────────────────────────────────────────────┐
 │  TRENNUNG: Simulation vs Tracking                               │
 │                                                                 │
-│  AI (Read-only)              │  Tracking (Mutation)             │
+│  AI (Read-only)              │  Workflow (Mutation)             │
 │  ─────────────────────────── │ ───────────────────────────────  │
-│  consumeBudget()             │  executeAction()                 │
-│  projectState()              │  applyDamage()                   │
-│  cloneState()                │  updateCombatantState()          │
+│  consumeBudget()             │  runAction()                     │
+│  projectState()              │  applyResult()                   │
+│  cloneState()                │  applyDamage()                   │
 │                              │                                  │
 │  → Returned neue Objekte     │  → Mutiert State direkt          │
 │  → Fuer Look-Ahead           │  → Fuer echten Combat            │

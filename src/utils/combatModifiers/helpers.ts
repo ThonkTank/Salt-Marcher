@@ -1,5 +1,5 @@
 // Ziel: Gemeinsame Hilfsfunktionen fuer Combat-Modifier-Evaluation
-// Siehe: docs/services/combatTracking/gatherModifiers.md
+// Siehe: docs/services/combatTracking/getModifiers.md
 //
 // Pure Functions ohne Service-Dependencies:
 // - getDistance: Chebyshev-Distanz mit PHB-Variant
@@ -7,7 +7,7 @@
 // - feetToCell: Re-export aus squareSpace
 //
 // Wird verwendet von:
-// - combatTracking/resolution/gatherModifiers.ts
+// - combatTracking/resolution/getModifiers.ts
 // - utils/combatModifiers/expressionEvaluator.ts
 // - combatantAI/situationalModifiers.ts (via Re-Import)
 

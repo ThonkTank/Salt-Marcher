@@ -222,10 +222,10 @@ Ziel-Difficulty via gewichtete Normalverteilung basierend auf Terrain-ThreatLeve
 
 ```typescript
 function rollTargetDifficulty(threatLevel: ThreatLevel): EncounterDifficulty {
-  const difficulties = ['trivial', 'easy', 'moderate', 'hard', 'deadly'] as const;
+  const difficulties = ['trivial', 'easy', 'medium', 'hard', 'deadly'] as const;
 
   // Mittelwert des CR-Bereichs normalisiert auf Difficulty-Index
-  // threatLevel.max von 2 → moderate, 4 → hard, 8 → deadly
+  // threatLevel.max von 2 → medium, 4 → hard, 8 → deadly
   const crMean = (threatLevel.min + threatLevel.max) / 2;
   const mean = Math.min(4, 1 + crMean * 0.5);  // Skaliert CR auf 0-4 Index
 
@@ -240,8 +240,8 @@ function rollTargetDifficulty(threatLevel: ThreatLevel): EncounterDifficulty {
 
 | Terrain | threatLevel | CR-Mean | Wahrscheinlichste Difficulty |
 |---------|:-----------:|:-------:|:----------------------------:|
-| grassland | 0-2 | 1 | easy/moderate |
-| forest | 0.25-4 | 2.1 | moderate |
+| grassland | 0-2 | 1 | easy/medium |
+| forest | 0.25-4 | 2.1 | medium |
 | mountain | 2-8 | 5 | hard/deadly |
 | arctic | 1-7 | 4 | hard |
 

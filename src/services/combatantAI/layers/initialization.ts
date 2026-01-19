@@ -6,7 +6,7 @@
 // - Aufgerufen von: planNextAction.selectNextAction() -> initializeLayers()
 // - Output: CombatStateWithLayers, CombatantWithLayers
 
-import type { Action } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type { TriggerEvent } from '@/constants/action';
 import type {
   GridPosition,
@@ -23,7 +23,7 @@ import type {
 } from '@/types/combat';
 import { feetToCell, positionToKey } from '@/utils';
 import { getDistance, isAllied } from '../helpers/combatHelpers';
-import { getGroupId, getPosition, getActions } from '../../combatTracking';
+import { getGroupId, getPosition, getCombatEvents } from '../../combatTracking';
 
 // ============================================================================
 // DEBUG HELPER
@@ -72,7 +72,7 @@ export function augmentWithLayers(
   alliances: Record<string, string[]>
 ): CombatantWithLayers {
   const position = getPosition(combatant);
-  const actions = getActions(combatant);
+  const actions = getCombatEvents(combatant);
 
   const layeredActions = actions.map(action => {
     const layerData = buildActionLayerData(
@@ -102,20 +102,25 @@ export function augmentWithLayers(
 }
 
 /**
- * Erstellt ActionLayerData fuer eine einzelne Action.
+ * Erstellt ActionLayerData fuer eine einzelne CombatEvent.
  * Berechnet Range, Grid-Coverage (keine Target-Resolution).
  */
 export function buildActionLayerData(
   participantId: string,
-  action: Action,
+  action: CombatEvent,
   position: GridPosition
 ): ActionLayerData {
   const actionId = action.id ?? action.name ?? 'unknown';
   const sourceKey = `${participantId}:${actionId}`;
 
-  // Range-Berechnung
-  const maxRangeFeet = action.range?.long ?? action.range?.normal ?? 5;
-  const normalRangeFeet = action.range?.normal ?? 5;
+  // Range-Berechnung aus targeting.range (neues Schema)
+  const targetingRange = action.targeting?.range;
+  const maxRangeFeet = targetingRange?.type === 'ranged'
+    ? targetingRange.long ?? targetingRange.normal ?? 5
+    : targetingRange?.distance ?? 5;
+  const normalRangeFeet = targetingRange?.type === 'ranged'
+    ? targetingRange.normal ?? 5
+    : targetingRange?.distance ?? 5;
   const rangeCells = feetToCell(maxRangeFeet);
   const normalRangeCells = feetToCell(normalRangeFeet);
 
@@ -165,7 +170,7 @@ export function buildEffectLayers(
   alliances: Record<string, string[]>
 ): EffectLayerData[] {
   const effectLayers: EffectLayerData[] = [];
-  const actions = getActions(combatant);
+  const actions = getCombatEvents(combatant);
   const groupId = getGroupId(combatant);
 
   // Pruefe Actions auf spezielle Traits via Namen
@@ -201,11 +206,12 @@ export function buildEffectLayers(
     }
   }
 
-  // Reaction Effect Layers aus timing.type === 'reaction'
+  // Reaction Effect Layers aus trigger.type === 'reaction' (neues Schema)
   for (const action of actions) {
-    if (action.timing.type !== 'reaction') continue;
+    const isReaction = action.trigger?.type === 'reaction';
+    if (!isReaction) continue;
 
-    const triggerEvent = action.timing.triggerCondition?.event;
+    const triggerEvent = action.trigger.event;
     if (!triggerEvent) continue;
 
     const reactionLayer = buildReactionEffectLayer(combatant, action, triggerEvent);
@@ -218,15 +224,15 @@ export function buildEffectLayers(
 }
 
 /**
- * Erstellt ein Reaction Effect Layer aus einer Action mit timing.type === 'reaction'.
- * Leitet Range (Reach) und Trigger-Condition aus dem Action-Schema ab.
+ * Erstellt ein Reaction Effect Layer aus einer CombatEvent mit trigger.type === 'reaction'.
+ * Leitet Range (Reach) und Trigger-Condition aus dem CombatEvent-Schema ab.
  */
 function buildReactionEffectLayer(
   combatant: Combatant,
-  action: Action,
+  action: CombatEvent,
   triggerEvent: TriggerEvent
 ): EffectLayerData | null {
-  // Reach aus Action-Schema ableiten
+  // Reach aus CombatEvent-Schema ableiten
   // Fuer Melee-Reactions (OA): range.normal ist die Reach in Feet
   // Fuer andere: Default 5ft (Adjacent)
   const rangeFeet = action.range.type === 'reach'

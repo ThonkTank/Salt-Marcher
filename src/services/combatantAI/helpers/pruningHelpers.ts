@@ -93,7 +93,7 @@ export function computeGlobalBestByType(
   // Bonus Actions koennen Requirements haben - wir nehmen konservativ den besten
   // Score unter der Annahme dass Requirements erfuellt werden
   const bonusActions = getAvailableActionsForCombatant(combatant)
-    .filter(a => a.timing.type === 'bonus');
+    .filter(a => a.timing?.type === 'bonus');
 
   for (const action of bonusActions) {
     // Fuer jede Bonus-Action: Finde besten Score gegen alle Enemies

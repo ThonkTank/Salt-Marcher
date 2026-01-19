@@ -249,6 +249,27 @@ interface EncounterGroup {
 
 ---
 
+## generateNPC() Export
+
+Fuer den Balancing-Service wird `generateNPC()` exportiert:
+
+```typescript
+export function generateNPC(
+  creatureId: string,
+  factionId: string | null,
+  context: { terrain: { id: string }; timeSegment: string }
+): NPC
+```
+
+Generiert einen vollstaendigen NPC mit:
+- **Identifikation:** id, name, creature (Referenz)
+- **Persoenlichkeit:** personality, value, quirk, appearance, goal
+- **Status:** currentHp, maxHp (gewuerfelt aus hitDice)
+
+**Verwendet von:** [balancing.md](balancing.md#creature-slot-optionen) bei Creature-Slot-Erhoehungen
+
+---
+
 ## Error-Codes
 
 | Code | Bedeutung |

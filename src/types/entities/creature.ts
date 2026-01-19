@@ -14,7 +14,7 @@ import {
 import { WEALTH_TIERS } from '../../constants/loot';
 import { validateDiceExpression, diceMax, diceAvg } from '@/utils';
 import { layerTraitConfigSchema } from '../common/layerTraitConfig';
-import { actionSchema } from './action';
+import { combatEventSchema } from './combatEvent';
 
 // ============================================================================
 // SUB-SCHEMAS
@@ -174,10 +174,10 @@ const creatureDefinitionInputSchema = z.object({
   conditionImmunities: z.array(z.string()).optional(), // Condition Immunities
   languages: z.array(z.string()).optional(),
   // Actions (D&D 5e Statblock)
-  actions: z.array(actionSchema).optional(),
+  actions: z.array(combatEventSchema).optional(),
   actionIds: z.array(z.string()).optional(),  // Referenzen zu Action-Presets
-  reactions: z.array(actionSchema).optional(),
-  legendaryActions: z.array(actionSchema).optional(),
+  reactions: z.array(combatEventSchema).optional(),
+  legendaryActions: z.array(combatEventSchema).optional(),
   // Spellcasting Resources: Level (1-9) → Anzahl Slots
   // Siehe: docs/services/combatantAI/actionScoring.md#resource-management
   spellSlots: z.record(z.string(), z.number().int().nonnegative()).optional(),

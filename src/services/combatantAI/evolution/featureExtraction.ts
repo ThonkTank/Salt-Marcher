@@ -4,7 +4,7 @@
 // Extrahiert normalisierte Features aus Combat-State und Actions.
 // Features werden für Network-Inputs verwendet (86 Dimensionen total).
 
-import type { Action } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type {
   Combatant,
   CombatantWithLayers,
@@ -21,7 +21,7 @@ import {
   getMaxHP,
   getPosition,
   getConditions,
-  getActions,
+  getCombatEvents,
   getSpeed,
   getResources,
   getGroupId,
@@ -113,7 +113,7 @@ function hasAnyNegativeCondition(c: Combatant): boolean {
  * Basiert auf effektivem Damage-Potential gegen typische AC.
  */
 function calculateThreatLevel(c: Combatant, targetAC: number = 15): number {
-  const actions = getActions(c);
+  const actions = getCombatEvents(c);
   const dmgPotential = calculateEffectiveDamagePotential(actions, targetAC);
   return Math.min(1, dmgPotential / NORM.MAX_THREAT);
 }
@@ -122,7 +122,7 @@ function calculateThreatLevel(c: Combatant, targetAC: number = 15): number {
  * Prüft ob Combatant Healing-Actions hat.
  */
 function hasHealingAction(c: Combatant): boolean {
-  return getActions(c).some(a => a.healing != null);
+  return getCombatEvents(c).some(a => a.healing != null);
 }
 
 /**
@@ -339,9 +339,9 @@ export function extractStateFeatures(
 // ============================================================================
 
 /**
- * Extrahiert Action-Properties (10 Werte).
+ * Extrahiert CombatEvent-Properties (10 Werte).
  */
-function extractActionProperties(action: Action): number[] {
+function extractActionProperties(action: CombatEvent): number[] {
   // Damage EV
   let damageEV = 0;
   const damagePMF = calculateBaseDamagePMF(action);
@@ -377,7 +377,7 @@ function extractActionProperties(action: Action): number[] {
       if (cost.resource === 'movement') usesMovement = 1;
     }
   } else {
-    // Default: Action-Timing bestimmt Budget
+    // Default: CombatEvent-Timing bestimmt Budget
     if (action.timing?.type === 'action') usesAction = 1;
     if (action.timing?.type === 'bonus') usesBonus = 1;
   }
@@ -434,11 +434,11 @@ function extractTargetProperties(
 }
 
 /**
- * Extrahiert Action/Target-Features.
+ * Extrahiert CombatEvent/Target-Features.
  * Total: 19 Werte (10 + 9)
  */
 export function extractActionFeatures(
-  action: Action,
+  action: CombatEvent,
   target: Combatant | undefined,
   combatant: CombatantWithLayers,
   state: CombatantSimulationStateWithLayers
@@ -454,7 +454,7 @@ export function extractActionFeatures(
 // ============================================================================
 
 /**
- * Kombiniert State + Action Features.
+ * Kombiniert State + CombatEvent Features.
  * Total: 86 Werte (67 + 19)
  */
 export function combineFeatures(
@@ -473,7 +473,7 @@ export function combineFeatures(
     }
     if (actionFeatures.length !== expectedAction) {
       console.warn(
-        `[featureExtraction] Action features mismatch: got ${actionFeatures.length}, expected ${expectedAction}`
+        `[featureExtraction] CombatEvent features mismatch: got ${actionFeatures.length}, expected ${expectedAction}`
       );
     }
   }

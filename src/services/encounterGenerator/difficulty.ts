@@ -1,15 +1,15 @@
 // Ziel: Difficulty-Berechnung via PMF-basierter Combat-Simulation
 // Siehe: docs/services/encounter/difficulty.md
 //
+// ============================================================================
+// ⚠️ ON HOLD - Combat-Simulation ist vorübergehend deaktiviert.
+// HACK: simulatePMF() nutzt CR-basierte XP-Threshold-Berechnung statt Simulation.
+// ============================================================================
+//
 // Pipeline-Übersicht:
 // - rollTargetDifficulty(): Würfelt Ziel-Difficulty aus Terrain-ThreatLevel
-// - simulatePMF(): PMF-basierte Combat-Simulation
-//   - initialiseCombat() → State aufbauen
-//   - while(!isCombatOver): getCurrentCombatant → selectNextAction → executeAction
-//   - calculatePartyWinProbability() → Outcome-Analyse
+// - simulatePMF(): PMF-basierte Combat-Simulation [ON HOLD]
 // - classifySimulationDifficulty(): Klassifiziert Win%/TPK → DifficultyLabel
-//
-// Nutzt: combatTracking/ (State + Turn Management), combatantAI/ (Decisions)
 
 // ============================================================================
 // TODO
@@ -39,80 +39,45 @@ import type { EncounterGroup } from '@/types/encounterTypes';
 import type { ThreatLevel, CreatureDefinition } from '@/types/entities';
 import type { DifficultyLabel } from '@/constants';
 import { DIFFICULTY_LABELS } from '@/constants';
-import {
-  randomNormal,
-  getExpectedValue
-} from '@/utils';
+import { randomNormal } from '@/utils';
 import { countCreaturesInGroups } from './encounterHelpers';
 import { vault } from '@/infrastructure/vault/vaultInstance';
-import {
-  getHP,
-  getDeathProbability,
-  getGroupId,
-  initialiseCombat,
-  executeAction,
-  getCurrentCombatant,
-  isCombatOver,
-  type PartyInput,
-} from '@/services/combatTracking';
-import {
-  type CombatState,
-  type CombatStateWithLayers,
-  type CombatantWithLayers,
-} from '@/types/combat';
-import { DEFAULT_ENCOUNTER_DISTANCE_FEET } from '@/services/gridSpace';
-import {
-  isAllied,
-  isHostile,
-  getDefaultSelector,
-  type ActionSelector,
-} from '@/services/combatantAI';
 
 // ============================================================================
-// TYPES
+// ON HOLD: Combat-Imports deaktiviert
+// ============================================================================
+// import {
+//   getHP,
+//   getDeathProbability,
+//   getGroupId,
+//   initialiseCombat,
+//   getCurrentCombatant,
+//   isCombatOver,
+//   type PartyInput,
+// } from '@/services/combatTracking';
+// import { runAction } from '@/workflows/combatWorkflow';
+// import {
+//   type CombatState,
+//   type CombatStateWithLayers,
+//   type CombatantWithLayers,
+// } from '@/types/combat';
+// import { DEFAULT_ENCOUNTER_DISTANCE_FEET } from '@/services/gridSpace';
+// import {
+//   isAllied,
+//   isHostile,
+//   getDefaultSelector,
+//   type ActionSelector,
+// } from '@/services/combatantAI';
+
+// ============================================================================
+// PLACEHOLDER TYPES (ON HOLD)
 // ============================================================================
 
-/**
- * SelectorMap für per-Alliance Selektor-Zuweisung.
- * Keys: 'party' (Party + Verbündete) oder 'enemies' (feindliche Gruppen)
- */
-export type SelectorMap = {
-  party?: ActionSelector;
-  enemies?: ActionSelector;
-};
-
-/**
- * Selektor-Input: Einzelner Selektor ODER per-Alliance Map.
- */
-export type SelectorInput = ActionSelector | SelectorMap;
-
-/**
- * Prüft ob ein SelectorInput ein einzelner Selektor ist.
- */
-function isSingleSelector(input: SelectorInput): input is ActionSelector {
-  return 'selectNextAction' in input;
-}
-
-/**
- * Wählt den richtigen Selektor für einen Combatant basierend auf Alliance.
- */
-function getSelectorForCombatant(
-  combatant: CombatantWithLayers,
-  state: CombatStateWithLayers,
-  selectors?: SelectorInput
-): ActionSelector {
-  if (!selectors) return getDefaultSelector();
-
-  // Einzelner Selektor für alle
-  if (isSingleSelector(selectors)) {
-    return selectors;
-  }
-
-  // Map: Lookup nach Alliance
-  const groupId = getGroupId(combatant);
-  const isPartyAlly = isAllied('party', groupId, state.alliances);
-  const key = isPartyAlly ? 'party' : 'enemies';
-  return selectors[key] ?? getDefaultSelector();
+/** ON HOLD: Placeholder für PartyInput während Combat deaktiviert ist. */
+export interface PartyInput {
+  characters: { id: string; name: string; level: number }[];
+  level: number;
+  size: number;
 }
 
 // ============================================================================
@@ -231,60 +196,67 @@ export function rollTargetDifficulty(
 }
 
 /**
- * PMF-basierte Kampfsimulation.
- *
- * Einfacher Combat-Loop:
- * 1. initialiseCombat() - State + Grid + Combatants aufbauen
- * 2. while(!isCombatOver): getCurrentCombatant → selectNextAction → executeAction
- * 3. Ergebnis klassifizieren (Win%, TPK-Risk → DifficultyLabel)
+ * Berechnet Encounter-Difficulty via D&D 5e XP-Thresholds.
+ * HACK: Temporäre Lösung während PMF-Simulation on hold ist.
+ */
+export function calculateDifficulty(
+  groups: EncounterGroup[],
+  party: PartyInput
+): SimulationResult {
+  // 1. XP aggregieren (existierende Funktion)
+  const adjustedXP = aggregateGroupXP(groups);
+
+  // 2. Party-Thresholds summieren
+  const levels = party.characters?.map(c => c.level)
+    ?? Array(party.size).fill(party.level);
+
+  const thresholds = { easy: 0, medium: 0, hard: 0, deadly: 0 };
+  for (const level of levels) {
+    const t = XP_THRESHOLDS[Math.max(1, Math.min(20, level))];
+    thresholds.easy += t.easy;
+    thresholds.medium += t.medium;
+    thresholds.hard += t.hard;
+    thresholds.deadly += t.deadly;
+  }
+
+  // 3. Difficulty klassifizieren
+  let label: DifficultyLabel;
+  if (adjustedXP < thresholds.easy * 0.5) label = 'trivial';
+  else if (adjustedXP < thresholds.medium) label = 'easy';
+  else if (adjustedXP < thresholds.hard) label = 'medium';
+  else if (adjustedXP < thresholds.deadly) label = 'hard';
+  else label = 'deadly';
+
+  // 4. Geschätzte Win-Probability/TPK-Risk (für Backward-Compatibility)
+  const estimates: Record<DifficultyLabel, { win: number; tpk: number }> = {
+    trivial:  { win: 0.98, tpk: 0.01 },
+    easy:     { win: 0.90, tpk: 0.02 },
+    medium: { win: 0.77, tpk: 0.08 },
+    hard:     { win: 0.60, tpk: 0.18 },
+    deadly:   { win: 0.40, tpk: 0.35 },
+  };
+
+  debug('calculateDifficulty:', { adjustedXP, thresholds, label });
+
+  return {
+    label,
+    winProbability: estimates[label].win,
+    tpkRisk: estimates[label].tpk,
+    rounds: 3,
+  };
+}
+
+/**
+ * Berechnet Difficulty via XP-Thresholds.
+ * HACK: Wrapper um calculateDifficulty() für Backward-Compatibility.
  */
 export function simulatePMF(
   encounter: { groups: EncounterGroup[]; alliances: Record<string, string[]> },
   party: PartyInput,
-  encounterDistance: number = DEFAULT_ENCOUNTER_DISTANCE_FEET,
-  selectors?: SelectorInput
+  _encounterDistance?: number,
+  _selectors?: unknown
 ): SimulationResult {
-  // Resource Budget berechnen (Difficulty-Concern)
-  const encounterXP = aggregateGroupXP(encounter.groups);
-  const resourceBudget = calculateResourceBudget(encounterXP, party.level, party.size);
-
-  // Initiative VOR Combatant-Erstellung berechnen
-  const initiativeOrder = calculateInitiativeFromGroups(encounter.groups);
-
-  // Combatants initialisieren (konsolidiert in combatTracking/initialiseCombat)
-  const state = initialiseCombat({
-    groups: encounter.groups,
-    alliances: encounter.alliances,
-    party,
-    resourceBudget,
-    encounterDistanceFeet: encounterDistance,
-    initiativeOrder,
-  });
-
-  debug('simulatePMF: starting simulation', { initiativeOrder });
-
-  // Combat Loop - extrem simpel
-  while (!isCombatOver(state)) {
-    const combatant = getCurrentCombatant(state) as CombatantWithLayers | undefined;
-    if (!combatant) break;
-
-    const selector = getSelectorForCombatant(combatant, state, selectors);
-    const action = selector.selectNextAction(combatant, state, state.currentTurnBudget);
-    executeAction(combatant, action, state);
-  }
-
-  debug('simulatePMF: simulation complete', { rounds: state.roundNumber });
-
-  // Ergebnis berechnen
-  const winProbability = calculatePartyWinProbability(state);
-  const tpkRisk = calculateTPKRisk(state);
-
-  return {
-    label: classifySimulationDifficulty(winProbability, tpkRisk),
-    winProbability,
-    tpkRisk,
-    rounds: state.roundNumber,
-  };
+  return calculateDifficulty(encounter.groups, party);
 }
 
 /** Klassifiziert Difficulty basierend auf Simulation. */
@@ -296,7 +268,7 @@ export function classifySimulationDifficulty(winProbability: number, tpkRisk: nu
   // Dann Win-Probability
   if (winProbability > 0.95) return 'trivial';
   if (winProbability > 0.85) return 'easy';
-  if (winProbability > 0.70) return 'moderate';
+  if (winProbability > 0.70) return 'medium';
   if (winProbability > 0.50) return 'hard';
 
   return 'deadly';
@@ -454,43 +426,15 @@ const debug = (...args: unknown[]) => {
 };
 
 // ============================================================================
-// OUTCOME ANALYSIS
+// ON HOLD: Combat-Analyse Funktionen deaktiviert
 // ============================================================================
-
-/** Berechnet Todeswahrscheinlichkeit einer Allianz (Produkt). */
-function calculateAllianceDeathProbability(
-  state: CombatState,
-  referenceGroupId: string
-): number {
-  const alliedCombatants = state.combatants.filter(c =>
-    isAllied(referenceGroupId, getGroupId(c), state.alliances)
-  );
-  if (alliedCombatants.length === 0) return 1;
-
-  // P(alle tot) = Produkt der individuellen Todeswahrscheinlichkeiten
-  return alliedCombatants.reduce((prob, c) => prob * getDeathProbability(c), 1.0);
-}
-
-/** Berechnet Todeswahrscheinlichkeit aller Feinde der Party. */
-function calculateEnemyDeathProbability(state: CombatState): number {
-  const enemyCombatants = state.combatants.filter(c =>
-    isHostile('party', getGroupId(c), state.alliances)
-  );
-  if (enemyCombatants.length === 0) return 1;
-
-  return enemyCombatants.reduce((prob, c) => prob * getDeathProbability(c), 1.0);
-}
-
-/** Berechnet Party-Siegwahrscheinlichkeit. */
-function calculatePartyWinProbability(state: CombatState): number {
-  const partyAllianceDeathProb = calculateAllianceDeathProbability(state, 'party');
-  const enemyDeathProb = calculateEnemyDeathProbability(state);
-
-  // Win = Feinde tot UND Party-Allianz nicht tot
-  return enemyDeathProb * (1 - partyAllianceDeathProb);
-}
-
-/** Berechnet TPK-Risiko (Tod der gesamten Party-Allianz). */
-function calculateTPKRisk(state: CombatState): number {
-  return calculateAllianceDeathProbability(state, 'party');
-}
+//
+// Die folgenden Funktionen sind deaktiviert, da sie Combat-Imports benötigen:
+// - calculateAllianceDeathProbability()
+// - calculateEnemyDeathProbability()
+// - calculatePartyWinProbability()
+// - calculateTPKRisk()
+// - isSingleSelector()
+// - getSelectorForCombatant()
+//
+// Diese Funktionen werden reaktiviert, wenn Combat wieder aktiviert wird.

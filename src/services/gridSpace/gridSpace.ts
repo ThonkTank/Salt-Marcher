@@ -15,7 +15,23 @@ import {
   feetToCell,
   spreadFormation as gridSpreadFormation,
 } from '@/utils';
-import { getDistance } from '../combatantAI/helpers/combatHelpers';
+import { isAllied } from '@/utils/combatModifiers';
+
+// ============================================================================
+// ON HOLD: Combat-AI Import deaktiviert - lokale Implementierung
+// ============================================================================
+// import { getDistance } from '../combatantAI/helpers/combatHelpers';
+
+/**
+ * ON HOLD: Lokale getDistance Implementierung.
+ * Berechnet PHB-Variant Distanz (Chebyshev: Diagonalen = 1 Cell).
+ */
+function getDistance(a: GridPosition, b: GridPosition): number {
+  const dx = Math.abs(a.x - b.x);
+  const dy = Math.abs(a.y - b.y);
+  // PHB variant: Diagonalen kosten 5ft wie orthogonale Bewegung
+  return Math.max(dx, dy);
+}
 
 // Re-export für Consumer
 export type { GridPosition, GridConfig } from '@/utils';
@@ -117,16 +133,10 @@ export function calculateInitialPositions(
 ): void {
   const encounterDistanceCells = config?.encounterDistanceCells ?? DEFAULT_ENCOUNTER_DISTANCE_CELLS;
 
-  // Helper: Prüft ob groupA mit groupB verbündet ist
-  const isAllied = (groupA: string, groupB: string): boolean => {
-    if (groupA === groupB) return true;
-    return alliances[groupA]?.includes(groupB) ?? false;
-  };
-
   // Party + Verbündete auf einer Seite
-  const partyAllies = profiles.filter(p => isAllied('party', p.groupId));
+  const partyAllies = profiles.filter(p => isAllied('party', p.groupId, alliances));
   // Feinde auf der anderen Seite (nicht mit party verbündet)
-  const enemies = profiles.filter(p => !isAllied('party', p.groupId));
+  const enemies = profiles.filter(p => !isAllied('party', p.groupId, alliances));
 
   // Party startet am Rand mit Margin
   const partyCenter: GridPosition = { x: GRID_MARGIN_CELLS, y: GRID_MARGIN_CELLS, z: 0 };

@@ -13,7 +13,7 @@ import type {
   ActionWithLayer,
   ThreatMapEntry,
 } from '@/types/combat';
-import type { Action } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type { FeedForwardNetwork, NEATGenome } from '../../evolution';
 import { createSingleValue } from '@/utils';
 
@@ -83,13 +83,14 @@ function createMockCombatant(overrides: {
   isDead?: boolean;
   conditions?: ConditionState[];
   concentratingOn?: string;
-  actions?: Action[];
+  actions?: CombatEvent[];
   speed?: number;
 }): CombatantWithLayers {
   const combatState: CombatantState & { effectLayers: EffectLayerData[] } = {
     position: overrides.position ?? { x: 0, y: 0, z: 0 },
     conditions: overrides.conditions ?? [],
     modifiers: [],
+    inventory: [],
     groupId: overrides.groupId ?? 'party',
     isDead: overrides.isDead ?? false,
     concentratingOn: overrides.concentratingOn,
@@ -132,18 +133,18 @@ function createMockState(combatants: CombatantWithLayers[]): CombatantSimulation
   } as CombatantSimulationStateWithLayers;
 }
 
-function createMockAction(overrides?: Partial<Action>): Action {
+function createMockAction(overrides?: Partial<CombatEvent>): CombatEvent {
   return {
     id: overrides?.id ?? 'attack-1',
     name: overrides?.name ?? 'Attack',
     actionType: overrides?.actionType ?? 'melee-weapon',
     timing: overrides?.timing ?? { type: 'action' },
     range: overrides?.range ?? { type: 'reach', normal: 5 },
-    targeting: overrides?.targeting ?? { type: 'single', validTargets: 'enemies' },
+    targeting: overrides?.targeting ?? { type: 'single', filter: 'enemy' },
     attack: overrides?.attack ?? { bonus: 5 },
     damage: overrides?.damage ?? { dice: '1d8', modifier: 3, type: 'slashing' },
     ...overrides,
-  } as Action;
+  } as CombatEvent;
 }
 
 function createMockNetwork(): FeedForwardNetwork {

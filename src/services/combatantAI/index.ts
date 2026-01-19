@@ -1,5 +1,10 @@
 // Ziel: Public API für CombatantAI-Modul
 // Siehe: docs/services/combatantAI/combatantAI.md
+//
+// ============================================================================
+// ⚠️ ON HOLD - Combat-Implementierung ist vorübergehend pausiert.
+// Diese Datei wird aktuell nicht verwendet.
+// ============================================================================
 
 // ============================================================================
 // MAIN API
@@ -40,15 +45,15 @@ export {
   projectState,
   type BudgetConsumption,
   type StateProjection,
-  // Action Enumeration
-  buildPossibleActions,
+  // CombatEvent Enumeration
+  buildPossibleCombatEvents,
   getThreatWeight,
-  hasGrantMovementEffect,
-  getAvailableActionsWithLayers,
+  hasTimingBudget,
+  getAvailableCombatEventsWithLayers,
   getCandidates,
   getEnemies,
   getAllies,
-  type ScoredAction,
+  type ScoredCombatEvent,
 } from './core';
 
 // ============================================================================
@@ -119,9 +124,9 @@ export {
   REACTION_THRESHOLD,
   // Scoring Functions
   calculateIncomingDPR,
-  getActionIntent,
+  getCombatEventIntent,
   calculatePairScore,
-  selectBestActionAndTarget,
+  selectBestCombatEventAndTarget,
   getMaxAttackRange,
   // Concentration
   isConcentrationSpell,
@@ -131,7 +136,7 @@ export {
   matchesTrigger,
   findMatchingReactions,
   estimateExpectedReactionValue,
-  shouldUseAction,
+  shouldUseCombatEvent,
   evaluateReaction,
   shouldUseReaction,
 } from './core/actionScoring';

@@ -1,8 +1,8 @@
-// Ziel: Evolved ActionSelector - NEAT Network als Action-Entscheider
+// Ziel: Evolved ActionSelector - NEAT Network als CombatEvent-Entscheider
 // Siehe: docs/services/combatantAI/combatantAI.md
 //
 // Factory-Funktion die ein trainiertes NEAT-Network in einen ActionSelector
-// verwandelt. Das Network scored Action/Target Kombinationen statt der
+// verwandelt. Das Network scored CombatEvent/Target Kombinationen statt der
 // regelbasierten DPR-Heuristik.
 
 import type { ActionSelector, SelectorConfig, SelectorStats } from './types';
@@ -20,7 +20,7 @@ import {
   extractActionFeatures,
   combineFeatures,
 } from '../evolution';
-import { buildPossibleActions, toTurnAction } from '../core';
+import { buildPossibleCombatEvents, toTurnCombatEvent } from '../core';
 
 // ============================================================================
 // DEBUG
@@ -53,7 +53,7 @@ function isNEATGenome(brain: FeedForwardNetwork | NEATGenome): brain is NEATGeno
 /**
  * Factory: Erstellt ActionSelector aus NEAT Network.
  *
- * Das Network bewertet Action/Target Kombinationen und gibt die
+ * Das Network bewertet CombatEvent/Target Kombinationen und gibt die
  * beste Aktion zurück. Anders als der regelbasierte greedySelector
  * lernt das Network optimale Bewertungen durch Evolution.
  *
@@ -99,8 +99,8 @@ export function createEvolvedSelector(
         return { type: 'pass' };
       }
 
-      // 2. Generiere Kandidaten via buildPossibleActions (ohne Scoring - NN scored selbst)
-      const candidates = buildPossibleActions(
+      // 2. Generiere Kandidaten via buildPossibleCombatEvents (ohne Scoring - NN scored selbst)
+      const candidates = buildPossibleCombatEvents(
         combatant, state, budget, new Map(), { skipScoring: true }
       );
       nodesEvaluated = candidates.length;
@@ -119,7 +119,7 @@ export function createEvolvedSelector(
       let bestScore = -Infinity;
 
       for (const candidate of candidates) {
-        // Action Features für diesen Kandidaten
+        // CombatEvent Features für diesen Kandidaten
         const actionFeatures = extractActionFeatures(
           candidate.action,
           candidate.target,
@@ -158,7 +158,7 @@ export function createEvolvedSelector(
         elapsedMs: lastStats.elapsedMs.toFixed(2),
       });
 
-      return toTurnAction(bestCandidate);
+      return toTurnCombatEvent(bestCandidate);
     },
 
     getStats(): SelectorStats {

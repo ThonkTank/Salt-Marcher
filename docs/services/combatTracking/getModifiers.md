@@ -1,25 +1,29 @@
-# gatherModifiers
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
+# getModifiers
 
 > **Verantwortlichkeit:** Sammelt alle Modifier die eine Aktion beeinflussen
 > **Input:** Attacker, Target, Action, CombatState
 > **Output:** ModifierSet
-> **Pfad:** `src/services/combatTracking/resolution/gatherModifiers.ts`
-> **Schema:** [conditionExpression.ts](../../../src/types/entities/conditionExpression.ts) (SchemaModifier)
+> **Pfad:** `src/services/combatTracking/resolution/getModifiers.ts`
+> **Schema:** [CombatEvent.precondition](../../types/combatEvent.md#precondition) (SchemaModifier)
 
 ---
 
 ## Uebersicht
 
-`gatherModifiers` sammelt Modifier aus 4 einheitlichen Quellen und evaluiert sie mit derselben Logik. Alle Modifier verwenden das `SchemaModifier` Format - keine separate Behandlung nach Typ.
+`getModifiers` sammelt Modifier aus 5 einheitlichen Quellen und evaluiert sie mit derselben Logik. Alle Modifier verwenden das `SchemaModifier` Format - keine separate Behandlung nach Typ.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ gatherModifiers(attacker, target, action, state)            │
+│ getModifiers(attacker, target, action, state)               │
 │                                                             │
 │   1. attacker.combatState.modifiers[]  → ActiveModifier[]   │
 │   2. target.combatState.modifiers[]    → ActiveModifier[]   │
 │   3. action.modifierRefs[] + schemaModifiers[]              │
 │   4. state.areaEffects[]               → AreaEffect[]       │
+│   5. Auto-Ranged Modifiers             → D&D 5e Core Rules  │
 │                                                             │
 │   Alle: evaluateCondition(mod.condition, ctx) → applyEffect │
 └─────────────────────────────────────────────────────────────┘
@@ -81,20 +85,32 @@ Modifier die auf dem Ziel liegen:
 
 ### 3. Action-Modifier (`action.modifierRefs[]`, `action.schemaModifiers[]`)
 
-Modifier die von der Aktion abhängen:
+Modifier die von der Aktion abhaengen:
 
 | Quelle | Beispiele |
 |--------|-----------|
-| `modifierRefs` | `['long-range', 'ranged-in-melee']` - Preset-IDs |
+| `modifierRefs` | Preset-IDs fuer action-spezifische Modifier |
 | `schemaModifiers` | Inline-Modifier fuer action-spezifische Effekte |
 
 ```typescript
-// Beispiel: Ranged Attack
-const longbow: Action = {
-  name: 'Longbow',
-  modifierRefs: ['long-range', 'ranged-in-melee'],
+// Beispiel: Reckless Attack (Barbarian Feature)
+const recklessAttack: CombatEvent = {
+  id: 'reckless-attack',
+  name: 'Reckless Attack',
+  schemaModifiers: [{
+    id: 'reckless-attack-advantage',
+    name: 'Reckless Attack',
+    condition: { type: 'always' },
+    contextualEffects: {
+      passive: { advantage: true },
+      whenDefending: { advantage: true },  // Enemies get advantage until next turn
+    },
+    priority: 5,
+  }],
 };
 ```
+
+**Hinweis:** Ranged-Modifier (Long Range, In Melee) werden **automatisch** angewendet (siehe Source 5). Nicht in `modifierRefs` angeben.
 
 ### 4. Area Effects (`state.areaEffects[]`)
 
@@ -105,6 +121,54 @@ Position-basierte Modifier:
 | Cover | Hindernis zwischen Attacker und Target → +2/+5 AC |
 | Auras | Aura of Protection → Save Bonus fuer Allies im Radius |
 | Zones | Spirit Guardians → Damage wenn Target in Zone |
+
+### 5. Auto-Ranged Modifiers (D&D 5e Core Rules)
+
+Automatisch angewendete Modifier fuer alle Ranged-Aktionen. Diese werden **nicht** in `modifierRefs` angegeben - das System erkennt Ranged-Aktionen automatisch.
+
+**Erkennung einer Ranged-Aktion:**
+```typescript
+const isRangedAction =
+  action.check?.attackType === 'ranged-weapon' ||
+  action.check?.attackType === 'ranged-spell' ||
+  action.targeting?.range?.type === 'ranged';
+```
+
+**Automatisch angewendete Modifier:**
+
+| Modifier ID | Condition | Effect | D&D 5e Regel |
+|-------------|-----------|--------|--------------|
+| `ranged-long-range` | `target-beyond-normal-range` | Disadvantage | PHB 195: "...you have disadvantage on the attack roll" |
+| `ranged-in-melee` | `adjacent-to: enemy` | Disadvantage | PHB 195: "...when a hostile creature is within 5 feet of you" |
+
+**Preset-Definitionen:**
+
+```typescript
+// presets/modifiers/index.ts
+export const rangedLongRangeModifier: SchemaModifier = {
+  id: 'ranged-long-range',
+  name: 'Long Range',
+  description: 'Disadvantage when target is beyond normal range',
+  condition: { type: 'target-beyond-normal-range' },
+  contextualEffects: { passive: { disadvantage: true } },
+  priority: 10,
+};
+
+export const rangedInMeleeModifier: SchemaModifier = {
+  id: 'ranged-in-melee',
+  name: 'Ranged Attack in Melee',
+  description: 'Disadvantage when hostile creature within 5 feet',
+  condition: {
+    type: 'exists',
+    entity: { type: 'quantified', quantifier: 'any', filter: 'enemy', relativeTo: 'attacker' },
+    where: { type: 'adjacent-to', subject: 'self', object: 'attacker' },
+  },
+  contextualEffects: { passive: { disadvantage: true } },
+  priority: 10,
+};
+```
+
+**Wichtig:** Im Gegensatz zu `long-range` und `ranged-in-melee` in `modifierRefs` (die manuell angegeben werden muessen), werden `ranged-long-range` und `ranged-in-melee` **automatisch** angewendet. Aktionen sollten daher keine manuellen Ranged-Modifier mehr referenzieren.
 
 ---
 
@@ -183,7 +247,7 @@ interface AreaDefinition {
 ## Evaluation-Flow
 
 ```typescript
-function gatherModifiers(
+function getModifiers(
   attacker: Combatant,
   target: Combatant,
   action: Action,
@@ -461,30 +525,31 @@ ModifierSet = {
 ```typescript
 // Kontext
 attacker = Archer
-target = Goblin (hinter Half Cover)
-action = Longbow { modifierRefs: ['long-range', 'ranged-in-melee'] }
-state = Target in Normal Range, Half Cover Obstacle
+target = Goblin (hinter Half Cover, in Long Range)
+action = Longbow (ranged-weapon attack)
+state = Target in Long Range, Half Cover Obstacle, kein Feind adjacent zu Archer
 
-// Gesammelte Modifier
+// Gesammelte Modifier (5 Quellen)
 1. attacker.modifiers → []
 2. target.modifiers → []
-3. action.modifierRefs → [longRangeModifier, rangedInMeleeModifier]
+3. action.modifierRefs → []  // Keine manuellen Modifier noetig
 4. state.areaEffects → [halfCoverEffect]
+5. auto-ranged → [rangedLongRangeModifier, rangedInMeleeModifier]  // Automatisch!
 
 // Evaluation
-longRangeModifier.condition = target-in-long-range → FALSE (in normal range)
-rangedInMeleeModifier.condition = exists(enemy adjacent) → FALSE
+rangedLongRangeModifier.condition = target-beyond-normal-range → TRUE (in long range)
+rangedInMeleeModifier.condition = exists(enemy adjacent to attacker) → FALSE
 halfCoverEffect.modifier.condition = in-line-between → TRUE
 
 // Ergebnis
 ModifierSet = {
-  attackAdvantage: 'none',
+  attackAdvantage: 'disadvantage',  // Long Range!
   attackBonus: 0,
   targetACBonus: 2,  // Half Cover
   saveAdvantage: 'none',
   saveBonus: 0,
   damageBonus: 0,
-  sources: ['half-cover']
+  sources: ['ranged-long-range', 'half-cover']
 }
 ```
 
@@ -495,6 +560,6 @@ ModifierSet = {
 - [actionResolution.md](actionResolution.md) - Pipeline-Uebersicht
 - [findTargets.md](findTargets.md) - Vorheriger Pipeline-Schritt
 - [determineSuccess.md](determineSuccess.md) - Naechster Pipeline-Schritt
-- [../../types/action.md](../../types/action.md) - Action-Schema
-- [conditionExpression.ts](../../../src/types/entities/conditionExpression.ts) - SchemaModifier Definition
+- [combatEvent.md](../../types/combatEvent.md) - CombatEvent-Schema
+- [CombatEvent.precondition](../../types/combatEvent.md#precondition) - SchemaModifier Definition
 - [presets/modifiers/index.ts](../../../presets/modifiers/index.ts) - Modifier-Presets

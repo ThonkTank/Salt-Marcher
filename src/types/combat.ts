@@ -4,8 +4,15 @@
 // Re-exportiert Grid-Types aus @/utils und definiert Combat-spezifische Types.
 // Eliminiert Duplikation zwischen combatantAI.ts und combatTracking.ts.
 
-import type { Action, ActionEffect, Duration, SaveDC } from './entities/action';
-import type { SchemaModifier } from './entities/conditionExpression';
+import type {
+  CombatEvent,
+  Effect,
+  LegacyEffect,
+  Duration,
+  SaveDC,
+  SchemaModifier,
+  ConditionLifecycle,
+} from './entities/combatEvent';
 import type { NPC } from './entities/npc';
 import type { Character } from './entities/character';
 import type { TriggerEvent, AbilityType } from '@/constants/action';
@@ -26,6 +33,17 @@ export type {
 } from '@/utils';
 
 // ============================================================================
+// CONDITION LIFECYCLE REGISTRY
+// ============================================================================
+
+/**
+ * Registry mapping condition names to their lifecycle configurations.
+ * Built from modifierPresets at combat initialization.
+ * Used for linked conditions, death triggers, and position sync.
+ */
+export type LifecycleRegistry = Map<string, ConditionLifecycle>;
+
+// ============================================================================
 // ACTIVE MODIFIER SYSTEM (Unified Modifier Architecture)
 // ============================================================================
 
@@ -40,20 +58,10 @@ export interface ModifierSource {
 }
 
 /**
- * Duration specification for active modifiers.
- * Extends base Duration with save-based ending options.
- */
-export interface ModifierDuration {
-  type: 'rounds' | 'until-save' | 'until-escape' | 'permanent';
-  value?: number;           // Verbleibende Runden (für 'rounds')
-  saveAt?: 'start' | 'end'; // Wann wird gesaved?
-  saveDC?: number;          // DC für den Save
-  saveAbility?: AbilityType; // Ability für den Save
-}
-
-/**
  * Runtime wrapper for SchemaModifier in combat.
  * Combines the modifier definition with runtime metadata.
+ *
+ * Uses unified Duration schema from action.ts.
  */
 export interface ActiveModifier {
   /** Referenz auf SchemaModifier Definition */
@@ -63,7 +71,7 @@ export interface ActiveModifier {
   source: ModifierSource;
 
   /** Optionale Duration (wenn nicht vorhanden: permanent) */
-  duration?: ModifierDuration;
+  duration?: Duration;
 
   /** Für probabilistische Modifier (z.B. 80% Chance dass Condition noch aktiv) */
   probability: number;
@@ -123,7 +131,7 @@ export interface ConditionState {
   value?: number;  // Numerischer Wert für Buffs
   duration?: Duration;  // Wie lange hält die Condition? (rounds, until-save, until-escape)
   sourceId?: string;  // ID des Verursachers (für contested escape checks)
-  endingSave?: SaveDC;  // Save am Turn-Ende um Condition zu beenden (aus ActionEffect.endingSave)
+  endingSave?: { dc: number; ability: AbilityType };  // Save am Turn-Ende um Condition zu beenden
 }
 
 // ============================================================================
@@ -152,6 +160,17 @@ export interface CombatResources {
 // ============================================================================
 
 /**
+ * Inventory-Item während Combat.
+ * Kopiert aus NPC.possessions oder Character.inventory bei Combat-Start.
+ * Wird bei Item-Consumption dekrementiert.
+ */
+export interface CombatInventoryItem {
+  id: string;           // Item-ID (z.B. 'crossbow-bolt', 'healing-potion')
+  quantity: number;     // Verbleibende Anzahl
+  tags?: string[];      // Optional: Item-Tags für itemTag-basierte Kosten
+}
+
+/**
  * Transiente Combat-Daten für einen Combatant.
  * Wird an NPC/Character angehängt während Combat aktiv ist.
  * NICHT persistiert - wird nach Combat entfernt.
@@ -161,6 +180,7 @@ export interface CombatantState {
   conditions: ConditionState[];     // Legacy: Aktive Buffs/Debuffs
   modifiers: ActiveModifier[];      // NEU: Unified Modifier System (Conditions, Buffs, Traits)
   resources?: CombatResources;      // Spell Slots, Recharge Timer
+  inventory: CombatInventoryItem[]; // Combat-Inventory (kopiert aus NPC.possessions/Character.inventory)
   concentratingOn?: string;         // Action-ID des aktiven Konzentrations-Spells
   groupId: string;                  // 'party' für PCs, UUID für Encounter-Gruppen
   isDead: boolean;                  // true wenn deathProb >= 0.95 (zentral via markDeadCombatants)
@@ -231,6 +251,30 @@ export function createRangeCache(): RangeCache {
 // ============================================================================
 
 /**
+ * Zone Effect - specialized effect type for active zones.
+ * Contains the zone definition and optional trigger/damage/save properties.
+ */
+export interface ZoneEffect {
+  type: 'create-zone';
+  zone?: {
+    id?: string;
+    shape?: 'sphere' | 'cylinder' | 'cone' | 'cube' | 'line';
+    origin?: 'self' | 'point' | 'target';
+    radius?: number;
+    speedModifier?: number;
+    targetFilter?: 'all' | 'enemies' | 'allies';
+    damage?: { dice: string; modifier?: number; type?: string };
+    save?: { ability: AbilityType; dc: number; onSave?: 'none' | 'half' | 'special' };
+    condition?: string;
+  };
+  trigger?: 'on-enter' | 'on-leave' | 'on-start-turn' | 'on-end-turn';
+  // Legacy flat properties for backwards compatibility
+  damage?: { dice: string; modifier?: number; type?: string };
+  save?: { ability: AbilityType; dc: number; onSave?: 'none' | 'half' | 'special' };
+  condition?: string;
+}
+
+/**
  * Runtime-Zustand einer aktiven Zone (z.B. Spirit Guardians).
  * Zones sind Action-Effects mit trigger-basierten Auslösern die bei
  * Movement (on-enter) oder Turn-Events (on-start-turn) evaluiert werden.
@@ -243,7 +287,7 @@ export interface ActiveZone {
   /** Der Combatant der die Zone kontrolliert. */
   ownerId: string;
   /** Der Effect aus der Action-Definition (enthält zone, trigger, damage, etc.). */
-  effect: ActionEffect;
+  effect: ZoneEffect;
   /** Combatant-IDs die diesen Turn bereits von dieser Zone getriggert wurden (1x pro Turn). */
   triggeredThisTurn: Set<string>;
 }
@@ -334,6 +378,14 @@ export interface CombatState extends CombatantSimulationState {
   // === SHARED RESOURCE POOLS (Divine Aid, etc.) ===
   /** Shared Resource Pools: combatantId → poolId → remaining uses. */
   resourcePools: Map<string, Map<string, number>>;
+
+  // === CONDITION LIFECYCLE REGISTRY ===
+  /**
+   * Registry for condition lifecycle behaviors.
+   * Built from modifierPresets at combat initialization.
+   * Used for linked conditions, death triggers, and position sync.
+   */
+  lifecycleRegistry: LifecycleRegistry;
 }
 
 // ============================================================================
@@ -406,7 +458,7 @@ export type CombatPreference = 'melee' | 'ranged' | 'hybrid';
 
 /** Score-Ergebnis für eine (Action, Target)-Kombination. */
 export interface ActionTargetScore {
-  action: Action;
+  action: CombatEvent;
   target: Combatant;
   score: number;
   intent: ActionIntent;
@@ -450,7 +502,7 @@ export interface CellEvaluation {
  * - incomingModifiers: Dodge-ähnliche Aktionen
  */
 export type TurnAction =
-  | { type: 'action'; action: Action; target?: Combatant; position: GridPosition }
+  | { type: 'action'; action: CombatEvent; target?: Combatant; position: GridPosition }
   | { type: 'pass' };
 
 /**
@@ -458,7 +510,7 @@ export type TurnAction =
  * Kombiniert Action, Target und Position in einem Tupel für einheitliches Scoring.
  */
 export interface ActionCandidate {
-  action: Action;
+  action: CombatEvent;
   target?: Combatant;
   targetCell?: GridPosition;  // für AoE-Zentrum
   position: GridPosition;     // Position von der aus die Action ausgeführt wird
@@ -486,7 +538,7 @@ export interface TurnCandidate {
   budgetRemaining: TurnBudget;     // Verbleibendes Budget
   actions: TurnAction[];           // Bisherige Aktionen in diesem Pfad
   cumulativeValue: number;         // Summe aller bisherigen Action-Scores
-  priorActions: Action[];          // Für Bonus-Action Requirements (z.B. TWF)
+  priorActions: CombatEvent[];          // Für Bonus-Action Requirements (z.B. TWF)
 }
 
 /**
@@ -615,11 +667,11 @@ export interface ActionLayerData {
   againstTarget: Map<string, BaseResolvedData>;   // Key: combatantType, lazy computed
 }
 
-/** Action mit Layer-Daten (zur Runtime) */
-export type ActionWithLayer = Action & { _layer: ActionLayerData };
+/** CombatEvent mit Layer-Daten (zur Runtime) */
+export type ActionWithLayer = CombatEvent & { _layer: ActionLayerData };
 
 /** Type Guard für ActionWithLayer */
-export function hasLayerData(action: Action): action is ActionWithLayer {
+export function hasLayerData(action: CombatEvent): action is ActionWithLayer {
   return '_layer' in action;
 }
 
@@ -654,7 +706,7 @@ export interface ReactionContext {
   /** Optional: Das Ziel des Triggers (bei attacked/damaged der Verteidiger) */
   target?: Combatant;
   /** Optional: Die auslösende Action */
-  action?: Action;
+  action?: CombatEvent;
   /** Optional: Bereits zugefügter Schaden (bei 'damaged' Event) */
   damage?: number;
   /** Optional: Spell-Level (bei 'spell-cast' Event für Counterspell) */
@@ -682,7 +734,7 @@ export interface ReactionResult {
   /** Der Reactor (wer hat reagiert) */
   reactor: Combatant;
   /** Die verwendete Reaction */
-  reaction?: Action;
+  reaction?: CombatEvent;
   /** Ob die Reaction ausgeführt wurde */
   executed: boolean;
   /** Optionale Effekte der Reaction */
@@ -701,7 +753,7 @@ export interface ReactionTurn {
   /** Der Reactor der diesen Mini-Turn bekommt */
   reactor: Combatant;
   /** Verfügbare Reactions für diesen Trigger */
-  availableReactions: Action[];
+  availableReactions: CombatEvent[];
   /** Kontext des auslösenden Events */
   context: ReactionContext;
 }
@@ -713,7 +765,7 @@ export interface ReactionTurnResult {
   /** Ob eine Reaction ausgeführt wurde */
   executed: boolean;
   /** Die verwendete Reaction (falls ausgeführt) */
-  reaction?: Action;
+  reaction?: CombatEvent;
   /** Effekte der Reaction */
   effect?: ReactionEffect;
 }
@@ -726,7 +778,7 @@ export interface ReactionProtocolEntry {
   round: number;
   reactorId: string;
   reactorName: string;
-  reaction: Action;
+  reaction: CombatEvent;
   trigger: TriggerEvent;
   triggeredBy: string;
   damageDealt?: number;
@@ -746,7 +798,7 @@ export interface EffectLayerData {
     state: LayerStateBase
   ) => boolean;
   // Reaction-spezifische Felder (nur wenn effectType === 'reaction')
-  reactionAction?: Action;                        // Die zugehörige Reaction-Action
+  reactionAction?: CombatEvent;                   // Die zugehörige Reaction-Action
 }
 
 /** Filter für Layer-Abfragen */
@@ -766,6 +818,8 @@ export type CombatantWithLayers = (NPCInCombat | CharacterInCombat) & {
   };
   /** Actions mit Layer-Daten (überschreibt getActions). */
   _layeredActions: ActionWithLayer[];
+  /** Alias for migration - same as _layeredActions. */
+  _layeredCombatEvents?: ActionWithLayer[];
 };
 
 /** Type Guard für CombatantWithLayers */
@@ -782,3 +836,240 @@ export interface CombatantSimulationStateWithLayers extends Omit<CombatantSimula
 export interface CombatStateWithLayers extends Omit<CombatState, 'combatants'> {
   combatants: CombatantWithLayers[];
 }
+
+// ============================================================================
+// RESOLUTION PIPELINE TYPES (findTargets → getModifiers → resolveEffects)
+// ============================================================================
+
+/**
+ * Manual roll data from GM input.
+ * When present, resolution uses deterministic values instead of probability.
+ */
+export interface ManualRollData {
+  /** The natural d20 roll (1-20), not the total */
+  attackRoll?: number;
+  /** The damage dice result (before modifiers) */
+  damageRoll?: number;
+  /** Direct result selection (bypasses roll calculation) */
+  resultOverride?: 'hit' | 'miss' | 'crit';
+}
+
+/**
+ * Trigger type for resolution context.
+ * Determines HOW the resolution was triggered, not WHAT happens.
+ */
+export type TriggerType =
+  | 'active'                        // Player/AI chooses action
+  | 'zone-enter'                    // Movement into zone
+  | 'zone-leave'                    // Movement out of zone (incl. OA)
+  | 'zone-start-turn'               // Turn start in zone
+  | 'zone-end-turn'                 // Turn end in zone
+  | 'reaction-attacked'             // Reaction: Shield
+  | 'reaction-damaged'              // Reaction: Hellish Rebuke
+  | 'reaction-spell-cast';          // Reaction: Counterspell
+
+/**
+ * Context for the entire resolution pipeline.
+ * READ-ONLY input for findTargets → getModifiers → resolveEffects.
+ */
+export interface ResolutionContext {
+  /** The combatant performing the action */
+  actor: Combatant;
+  /** The action being performed */
+  action: CombatEvent;
+  /** Combat state (READ-ONLY!) */
+  state: Readonly<CombatState>;
+  /** How this resolution was triggered */
+  trigger: TriggerType;
+  /** Pre-selected target (for single-target actions) */
+  explicitTarget?: Combatant;
+  /** Target position (for AoE actions) */
+  position?: GridPosition;
+  /** Manual roll data from GM (bypasses probabilistic calculation) */
+  manualRolls?: ManualRollData;
+}
+
+/**
+ * Result of success determination per target.
+ * Internal type used between determineSuccess and resolveEffects.
+ */
+export interface SuccessResult {
+  target: Combatant;
+  /** Whether the attack hit or save failed */
+  hit: boolean;
+  /** Whether a critical hit was rolled (nat 20) */
+  critical: boolean;
+  /** Exact hit probability (for protocol) */
+  hitProbability: number;
+  /** Exact crit probability (for protocol) */
+  critProbability: number;
+  /** For save-based actions: whether the save succeeded */
+  saveSucceeded?: boolean;
+  /** For contested checks: whether the contest was won */
+  contestWon?: boolean;
+  /**
+   * Whether the primary check succeeded.
+   * Used by effect resolvers to determine if effects should be applied.
+   * - Attack: checkSucceeded = hit
+   * - Target-Save: checkSucceeded = !saveSucceeded (effect applies on failed save)
+   * - Contested: checkSucceeded = contestWon
+   * - Actor-Check (self-targeting save): checkSucceeded = check >= DC
+   * - Auto-hit: checkSucceeded = true
+   */
+  checkSucceeded: boolean;
+  /** Damage multiplier: 1.0 normal, 0.5 save-half, 2.0 crit dice. Used only for damage calculation. */
+  damageMultiplier: number;
+  /** True if this result came from manual GM input */
+  isManual?: boolean;
+  /** Actual attack roll total (when manual, for protocol display) */
+  actualAttackRoll?: number;
+}
+
+/**
+ * HP change entry in resolution result.
+ * Different from existing HPChange - includes expected values and resolution metadata.
+ */
+export interface ResolutionHPChange {
+  combatantId: string;
+  combatantName: string;
+  /** HP before this action (expected value) */
+  previousHP: number;
+  /** HP after this action (expected value) */
+  newHP: number;
+  /** Delta: negative = damage, positive = healing */
+  change: number;
+  /** Source description (action name, zone name, etc.) */
+  source: string;
+  /** Damage type for resistance/vulnerability display */
+  damageType?: string;
+}
+
+/**
+ * Condition to be applied to a target.
+ * Includes probability after any saves.
+ */
+export interface ConditionApplication {
+  targetId: string;
+  targetName: string;
+  /** Full condition state to apply */
+  condition: ConditionState;
+  /** Probability that condition is applied (0-1, after save) */
+  probability: number;
+}
+
+/**
+ * Condition to be removed from a target.
+ */
+export interface ConditionRemoval {
+  targetId: string;
+  conditionName: string;
+}
+
+/**
+ * Forced movement entry in resolution result.
+ */
+export interface ForcedMovementEntry {
+  targetId: string;
+  type: 'push' | 'pull' | 'slide';
+  /** Distance in feet */
+  distance: number;
+  /** Optional: direction vector (normalized) */
+  direction?: GridPosition;
+}
+
+/**
+ * Zone activation data for creating new zones.
+ */
+export interface ZoneActivation {
+  actionId: string;
+  ownerId: string;
+  /** Radius in feet */
+  radius: number;
+  /** Filter for affected targets */
+  targetFilter: string;
+  /** Trigger type for zone */
+  trigger: string;
+  /** Effect definition from action (LegacyEffect for backwards compatibility) */
+  effect: LegacyEffect;
+}
+
+/**
+ * Protocol data for combat logging.
+ * Structured data that can be formatted into CombatProtocolEntry.
+ */
+export interface ResolutionProtocolData {
+  roundNumber: number;
+  actorId: string;
+  actorName: string;
+  actionName: string;
+  targetIds: string[];
+  targetNames: string[];
+  hit: boolean;
+  critical: boolean;
+  damageDealt: number;
+  healingDone: number;
+  damageType?: string;
+  conditionsApplied: string[];
+  trigger: TriggerType;
+}
+
+/**
+ * Final resolution result - PURE DATA, NO STATE MUTATION.
+ * Output of resolveEffects(), input for combatWorkflow.applyResult().
+ */
+export interface ResolutionResult {
+  /** HP changes for all affected combatants */
+  hpChanges: ResolutionHPChange[];
+  /** Conditions to be applied (with probability) */
+  conditionsToAdd: ConditionApplication[];
+  /** Conditions to be removed */
+  conditionsToRemove: ConditionRemoval[];
+  /** Forced movement entries */
+  forcedMovement: ForcedMovementEntry[];
+  /** Zone to be activated (e.g., Spirit Guardians) */
+  zoneActivation?: ZoneActivation;
+  /** Combatant ID whose concentration should break */
+  concentrationBreak?: string;
+  /** Protocol data for logging */
+  protocolData: ResolutionProtocolData;
+}
+
+/**
+ * Budget costs for an action.
+ * Extracted from action for application in workflow.
+ */
+export interface ActionBudgetCosts {
+  movement: number;        // Movement cells consumed
+  action: boolean;         // Consumes action
+  bonusAction: boolean;    // Consumes bonus action
+  reaction: boolean;       // Consumes reaction
+}
+
+/**
+ * Result from resolveAction() in combatTracking (pure, no mutation).
+ * Contains everything needed for combatWorkflow to apply the result.
+ */
+export interface ActionResult {
+  /** Resolution result (HP changes, conditions, etc.) */
+  resolution: ResolutionResult;
+  /** Budget costs to apply */
+  budgetCosts: ActionBudgetCosts;
+  /** Success results per target (for advanced logging) */
+  successResults: SuccessResult[];
+}
+
+// ============================================================================
+// COMBAT EVENT ALIASES (Migration Support)
+// ============================================================================
+
+/** Alias for ActionBaseValues - used in CombatStateWithScoring cache */
+export type CombatEventBaseValues = ActionBaseValues;
+
+/** Alias for ActionIntent - used in action scoring */
+export type CombatEventIntent = ActionIntent;
+
+/** Alias for ActionTargetScore - used in action selection */
+export type CombatEventTargetScore = ActionTargetScore;
+
+/** Alias for TurnAction - used in action enumeration */
+export type TurnCombatEvent = TurnAction;

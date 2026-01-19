@@ -14,17 +14,17 @@ export {
 } from './stateProjection';
 
 export {
-  // Action Enumeration
-  buildPossibleActions,
+  // CombatEvent Enumeration
+  buildPossibleCombatEvents,
   getThreatWeight,
-  hasGrantMovementEffect,
-  getAvailableActionsWithLayers,
+  hasTimingBudget,
+  getAvailableCombatEventsWithLayers,
   // Conversion
-  toTurnAction,
+  toTurnCombatEvent,
   // Target Helpers (re-exported from actionSelection)
   getCandidates,
   getEnemies,
   getAllies,
   // Types
-  type ScoredAction,
+  type ScoredCombatEvent,
 } from './actionEnumeration';

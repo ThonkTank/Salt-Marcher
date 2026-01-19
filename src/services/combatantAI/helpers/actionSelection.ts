@@ -11,7 +11,7 @@
 // - Delegiert zu: resolution/findTargets.ts
 // - Output: Combatant[] (gefilterte Listen)
 
-import type { Action } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type { Combatant, CombatantSimulationState } from '@/types/combat';
 import {
   getGroupId,
@@ -25,13 +25,13 @@ import { getValidCandidates } from '../../combatTracking/resolution/findTargets'
 // ============================================================================
 
 /**
- * Filtert moegliche Ziele basierend auf action.targeting.validTargets.
+ * Filtert moegliche Ziele basierend auf action.targeting.filter.
  * Delegiert zu getValidCandidates() aus findTargets.ts (Single Source of Truth).
  */
 export function getCandidates(
   attacker: Combatant,
   state: CombatantSimulationState,
-  action: Action
+  action: CombatEvent
 ): Combatant[] {
   return getValidCandidates(attacker, action, state);
 }

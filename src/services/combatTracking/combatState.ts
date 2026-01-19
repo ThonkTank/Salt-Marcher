@@ -9,27 +9,32 @@
 // - Turn Management (advanceTurn, getCurrentCombatant, isCombatOver)
 // - Turn Budget (createTurnBudget)
 
-import type { Action, CreatureDefinition } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
+import type { CreatureDefinition } from '@/types/entities';
 import type { AbilityScores } from '@/types/entities/creature';
 import {
   calculateDeathProbability,
 } from '@/utils';
 import { vault } from '@/infrastructure/vault/vaultInstance';
-import { CONDITION_EFFECTS, type ConditionEffectKey } from '@/constants/action';
+import { modifierPresetsMap } from '../../../presets/modifiers';
+import {
+  handleLinkedConditionOnApply,
+  handleLinkedConditionOnRemove,
+  handleSourceDeath,
+  handlePositionSync,
+} from './conditionLifecycle';
 
 // Types aus @/types/combat (Single Source of Truth)
 import type {
   ProbabilityDistribution,
   GridPosition,
-  SpeedBlock,
   CombatResources,
   ConditionState,
   Combatant,
   CombatState,
   CombatantSimulationState,
   CombatStateWithLayers,
-  ActionBaseValues,
-  TurnBudget,
+  CombatEventBaseValues,
 } from '@/types/combat';
 import { isNPC } from '@/types/combat';
 
@@ -47,29 +52,29 @@ const debug = (...args: unknown[]) => {
 // CREATURE CACHE
 // ============================================================================
 
-/** Cache-Entry mit CreatureDefinition + resolved Actions. */
+/** Cache-Entry mit CreatureDefinition + resolved CombatEvents. */
 export interface ResolvedCreature {
   definition: CreatureDefinition;
-  actions: Action[];  // Resolved: creature.actions + actionIds aus Vault
+  actions: CombatEvent[];  // Resolved: creature.actions + actionIds aus Vault
 }
 
 const creatureCache = new Map<string, ResolvedCreature>();
 
 /**
- * Resolved Actions aus creature.actions + actionIds + standardActions.
- * Falls keine creature-spezifischen Actions vorhanden: Default-Action basierend auf CR.
+ * Resolved CombatEvents aus creature.actions + actionIds + standardCombatEvents.
+ * Falls keine creature-spezifischen CombatEvents vorhanden: Default-CombatEvent basierend auf CR.
  *
- * StandardActions (Move, Dash, Disengage, Dodge, Opportunity Attack) werden
+ * StandardCombatEvents (Move, Dash, Disengage, Dodge, Opportunity Attack) werden
  * automatisch hinzugefügt wenn sie im Vault mit 'std-' Prefix registriert sind.
  */
-function resolveActions(creature: CreatureDefinition): Action[] {
-  const actions: Action[] = [...(creature.actions ?? [])];
+function resolveCombatEvents(creature: CreatureDefinition): CombatEvent[] {
+  const actions: CombatEvent[] = [...(creature.actions ?? [])];
 
-  // Lade referenzierte Actions aus Vault
+  // Lade referenzierte CombatEvents aus Vault
   if (creature.actionIds?.length) {
     for (const actionId of creature.actionIds) {
       try {
-        const action = vault.getEntity<Action>('action', actionId);
+        const action = vault.getEntity<CombatEvent>('action', actionId);
         actions.push(action);
         debug('resolved actionId:', actionId);
       } catch {
@@ -78,36 +83,36 @@ function resolveActions(creature: CreatureDefinition): Action[] {
     }
   }
 
-  // Fallback: Default-Action wenn keine creature-spezifischen Actions vorhanden
+  // Fallback: Default-CombatEvent wenn keine creature-spezifischen CombatEvents vorhanden
   if (actions.length === 0) {
     debug('no actions, using default for CR:', creature.cr);
-    actions.push(getDefaultCreatureAction(creature.cr));
+    actions.push(getDefaultCreatureCombatEvent(creature.cr));
   }
 
-  // StandardActions hinzufügen (Move, Dash, Disengage, Dodge, Opportunity Attack)
-  // Diese sind für alle Combatants verfügbar, gefiltert durch requires.hasAction
+  // StandardCombatEvents hinzufügen (Move, Dash, Disengage, Dodge, Opportunity Attack)
+  // Diese sind für alle Combatants verfügbar, gefiltert durch requires.hasCombatEvent
   try {
-    const allActions = vault.getAllEntities<Action>('action');
-    const standardActions = allActions.filter(a => a.id?.startsWith('std-'));
-    for (const stdAction of standardActions) {
+    const allCombatEvents = vault.getAllEntities<CombatEvent>('action');
+    const standardCombatEvents = allCombatEvents.filter(a => a.id?.startsWith('std-'));
+    for (const stdCombatEvent of standardCombatEvents) {
       // Nur hinzufügen wenn noch nicht vorhanden (verhindert Duplikate)
-      if (!actions.some(a => a.id === stdAction.id)) {
-        actions.push(stdAction);
-        debug('added standardAction:', stdAction.id);
+      if (!actions.some(a => a.id === stdCombatEvent.id)) {
+        actions.push(stdCombatEvent);
+        debug('added standardCombatEvent:', stdCombatEvent.id);
       }
     }
   } catch {
-    debug('could not load standardActions from vault');
+    debug('could not load standardCombatEvents from vault');
   }
 
   return actions;
 }
 
 /**
- * Generiert Default-Action für Creature ohne Actions.
+ * Generiert Default-CombatEvent für Creature ohne CombatEvents.
  * CR-skalierte Natural Attack.
  */
-function getDefaultCreatureAction(cr: number): Action {
+function getDefaultCreatureCombatEvent(cr: number): CombatEvent {
   const attackBonus = Math.max(2, Math.floor(cr) + 3);
   const damageBonus = Math.max(1, Math.floor(cr));
   const diceCount = Math.max(1, Math.floor(cr / 3));
@@ -120,11 +125,11 @@ function getDefaultCreatureAction(cr: number): Action {
     targeting: { type: 'single' },
     attack: { bonus: attackBonus },
     damage: { dice: `${diceCount}d6`, modifier: damageBonus, type: 'bludgeoning' },
-  } as unknown as Action;
+  } as unknown as CombatEvent;
 }
 
 /**
- * Lädt CreatureDefinition mit resolved Actions (gecached).
+ * Lädt CreatureDefinition mit resolved CombatEvents (gecached).
  * Wiederverwendbar für NPCs mit gleichem Creature-Typ.
  */
 export function getResolvedCreature(creatureId: string): ResolvedCreature {
@@ -136,7 +141,7 @@ export function getResolvedCreature(creatureId: string): ResolvedCreature {
 
   debug('cache miss, loading:', creatureId);
   const definition = vault.getEntity<CreatureDefinition>('creature', creatureId);
-  const actions = resolveActions(definition);
+  const actions = resolveCombatEvents(definition);
 
   const resolved: ResolvedCreature = { definition, actions };
   creatureCache.set(creatureId, resolved);
@@ -183,12 +188,12 @@ export function getCreatureCacheStats(): { size: number; ids: string[] } {
  * combatantAI ist pure Mathematik - alle Daten kommen aus diesem State.
  */
 export interface CombatStateWithScoring extends CombatStateWithLayers {
-  /** Base Values Cache: `{casterType}-{actionId}:{targetType}` → ActionBaseValues */
-  baseValuesCache: Map<string, ActionBaseValues>;
+  /** Base Values Cache: `{casterType}-{actionId}:{targetType}` → CombatEventBaseValues */
+  baseValuesCache: Map<string, CombatEventBaseValues>;
 }
 
 // Re-exports für Convenience
-export type { CombatState, CombatStateWithLayers, Combatant, ActionBaseValues };
+export type { CombatState, CombatStateWithLayers, Combatant, CombatEventBaseValues };
 
 // ============================================================================
 // COMBATANT ACCESSORS
@@ -217,35 +222,19 @@ export function getAC(c: Combatant): number {
   return c.ac;
 }
 
-/**
- * Gibt Speed des Combatants zurück.
- * NPC: via CreatureDefinition, Character: nur walk (speed-Feld).
- */
-export function getSpeed(c: Combatant): SpeedBlock {
-  if (isNPC(c)) {
-    const creature = getResolvedCreature(c.creature.id).definition;
-    return {
-      walk: creature.speed?.walk ?? 30,
-      fly: creature.speed?.fly,
-      swim: creature.speed?.swim,
-      climb: creature.speed?.climb,
-      burrow: creature.speed?.burrow,
-    };
-  }
-  return { walk: c.speed };
-}
+// getSpeed moved to movement.ts - re-exported below
 
 /**
- * Gibt Actions des Combatants zurück.
- * NPC: resolved Actions via CreatureDefinition.
+ * Gibt CombatEvents des Combatants zurück.
+ * NPC: resolved CombatEvents via CreatureDefinition.
  * Character: character.actions (muss definiert sein).
  */
-export function getActions(c: Combatant): Action[] {
+export function getCombatEvents(c: Combatant): CombatEvent[] {
   if (isNPC(c)) {
     return getResolvedCreature(c.creature.id).actions;
   }
   if (!c.actions || c.actions.length === 0) {
-    throw new Error(`Character "${c.name}" (${c.id}) hat keine Actions definiert`);
+    throw new Error(`Character "${c.name}" (${c.id}) hat keine CombatEvents definiert`);
   }
   return c.actions;
 }
@@ -355,14 +344,23 @@ export function getResources(c: Combatant): CombatResources | undefined {
 /**
  * Markiert Combatants als tot wenn deathProb >= 0.95.
  * EINZIGE Stelle wo isDead gesetzt wird.
- * Aufrufen nach jeder Schadensanwendung in executeAction().
+ * Aufrufen nach jeder Schadensanwendung in executeCombatEvent().
  * Akzeptiert CombatState, CombatantSimulationState, und *WithLayers Varianten.
+ *
+ * Lifecycle: When a combatant dies, handles death triggers for conditions
+ * where the dead combatant was the source (e.g., frees grappled targets).
+ * Requires CombatState with lifecycleRegistry for lifecycle handling.
  */
-export function markDeadCombatants(state: { combatants: Combatant[] }): void {
+export function markDeadCombatants(state: CombatState | { combatants: Combatant[] }): void {
   for (const c of state.combatants) {
     if (!c.combatState.isDead && getDeathProbability(c) >= 0.95) {
       c.combatState.isDead = true;
       debug('combatant marked dead:', c.name, c.id, 'deathProb:', getDeathProbability(c));
+
+      // Lifecycle: Handle death triggers (e.g., free grappled targets when grappler dies)
+      if ('lifecycleRegistry' in state && state.lifecycleRegistry) {
+        handleSourceDeath(c, state, state.lifecycleRegistry);
+      }
     }
   }
 }
@@ -410,22 +408,17 @@ export function setHP(c: Combatant, hp: ProbabilityDistribution): void {
  * @param pos Die neue Position
  * @param state Optional: State mit combatants Array für Grapple-Drag
  */
-export function setPosition(c: Combatant, pos: GridPosition, state?: CombatantSimulationState): void {
+export function setPosition(c: Combatant, pos: GridPosition, state?: CombatantSimulationState | CombatState): void {
   c.combatState.position = pos;
 
-  // Grapple-Drag: Gegrappelte Targets mitbewegen
-  if (state) {
-    const grappledTargets = state.combatants.filter(target =>
-      target.combatState.conditions.some(
-        cond => cond.name === 'grappled' && cond.sourceId === c.id
-      )
-    );
-
-    for (const target of grappledTargets) {
-      target.combatState.position = pos;
-      debug('setPosition: grapple-drag', {
-        grappler: c.id,
-        target: target.id,
+  // Lifecycle: Position sync for linked conditions (e.g., grappled targets follow grappler)
+  // Only CombatState has lifecycleRegistry - skip for CombatantSimulationState
+  if (state && 'lifecycleRegistry' in state && state.lifecycleRegistry) {
+    const synced = handlePositionSync(c, pos, state, state.lifecycleRegistry);
+    if (synced.length > 0) {
+      debug('setPosition: position sync', {
+        mover: c.id,
+        synced: synced.map(s => s.id),
         newPos: pos,
       });
     }
@@ -441,19 +434,122 @@ export function setConditions(c: Combatant, conditions: ConditionState[]): void 
 }
 
 /**
- * Fügt eine Condition hinzu.
+ * Gibt die Modifier-ID für eine Condition zurück.
+ * Naming-Pattern: condition-{name} (exakte Übereinstimmung)
  */
-export function addCondition(c: Combatant, condition: ConditionState): void {
+function getModifierIdForCondition(conditionName: string): string {
+  return `condition-${conditionName}`;
+}
+
+/**
+ * Options for addCondition lifecycle handling.
+ */
+export interface AddConditionOptions {
+  /** The combatant who applied this condition (for linked conditions) */
+  source?: Combatant;
+  /** Combat state for lifecycle registry access */
+  state?: CombatState;
+}
+
+/**
+ * Fügt eine Condition hinzu.
+ * Registriert automatisch den zugehörigen SchemaModifier auf combatState.modifiers[].
+ * Uses unified Duration schema directly (no conversion needed).
+ *
+ * Lifecycle: If source and state are provided, handles linked conditions
+ * (e.g., applying 'grappling' to source when 'grappled' is applied to target).
+ */
+export function addCondition(
+  c: Combatant,
+  condition: ConditionState,
+  options?: AddConditionOptions
+): void {
+  // 1. Condition auf conditions[] speichern
   c.combatState.conditions.push(condition);
+
+  // 2. SchemaModifier auf modifiers[] registrieren (exakte ID: condition-{name})
+  const modifierId = getModifierIdForCondition(condition.name);
+  const modifier = modifierPresetsMap.get(modifierId);
+  if (modifier) {
+    c.combatState.modifiers.push({
+      modifier,
+      source: { type: 'condition', sourceId: condition.sourceId },
+      duration: condition.duration,  // Unified Duration schema
+      probability: condition.probability,
+    });
+    debug('addCondition: registered modifier', {
+      combatant: c.id,
+      condition: condition.name,
+      modifierId,
+    });
+  }
+
+  // 3. Lifecycle: Handle linked conditions (e.g., grappled → grappling on source)
+  if (options?.source && options?.state?.lifecycleRegistry) {
+    handleLinkedConditionOnApply(
+      c,
+      condition,
+      options.source,
+      options.state.lifecycleRegistry
+    );
+  }
+}
+
+/**
+ * Options for removeCondition lifecycle handling.
+ */
+export interface RemoveConditionOptions {
+  /** Combat state for lifecycle registry access */
+  state?: CombatState;
 }
 
 /**
  * Entfernt eine Condition nach Name.
+ * Entfernt automatisch den zugehörigen SchemaModifier von combatState.modifiers[].
+ *
+ * Lifecycle: If state is provided, handles linked condition removal
+ * (e.g., removing 'grappling' from source when last 'grappled' target is freed).
  */
-export function removeCondition(c: Combatant, conditionName: string): void {
+export function removeCondition(
+  c: Combatant,
+  conditionName: string,
+  options?: RemoveConditionOptions
+): void {
+  // 0. Store sourceId before removal for lifecycle handling
+  const condition = c.combatState.conditions.find(cond => cond.name === conditionName);
+  const sourceId = condition?.sourceId;
+
+  // 1. Condition von conditions[] entfernen
   c.combatState.conditions = c.combatState.conditions.filter(
     cond => cond.name !== conditionName
   );
+
+  // 2. Zugehörigen Modifier von modifiers[] entfernen (exakte ID: condition-{name})
+  const modifierId = getModifierIdForCondition(conditionName);
+  const beforeCount = c.combatState.modifiers.length;
+  c.combatState.modifiers = c.combatState.modifiers.filter(
+    am => am.modifier.id !== modifierId
+  );
+  const removedCount = beforeCount - c.combatState.modifiers.length;
+
+  if (removedCount > 0) {
+    debug('removeCondition: removed modifier', {
+      combatant: c.id,
+      condition: conditionName,
+      modifierId,
+    });
+  }
+
+  // 3. Lifecycle: Handle linked condition removal (e.g., grappling when no more grappled targets)
+  if (options?.state?.lifecycleRegistry && sourceId) {
+    handleLinkedConditionOnRemove(
+      c,
+      conditionName,
+      sourceId,
+      options.state,
+      options.state.lifecycleRegistry
+    );
+  }
 }
 
 /**
@@ -582,7 +678,7 @@ export function processConditionsOnTurnStart(c: Combatant): TurnStartConditionRe
         remaining.push(condition.name);
       }
     } else if (condition.duration.type === 'until-escape') {
-      // Escape erfordert Action, wird nicht automatisch geprüft
+      // Escape erfordert CombatEvent, wird nicht automatisch geprüft
       remaining.push(condition.name);
     } else {
       // Andere Duration-Types (instant, concentration, etc.)
@@ -604,7 +700,7 @@ export interface TurnEndConditionResult {
 
 /**
  * Verarbeitet Conditions am Turn-Ende eines Combatants.
- * - Prüft endingSave (ActionEffect.endingSave - erlaubt Save am Turn-Ende)
+ * - Prüft endingSave (CombatEventEffect.endingSave - erlaubt Save am Turn-Ende)
  * - Prüft End-of-Turn Saves (für until-save mit saveAt: 'end', der Default)
  *
  * @param c Der Combatant dessen Conditions verarbeitet werden
@@ -706,7 +802,7 @@ export function processConditionsOnTurnEnd(c: Combatant): TurnEndConditionResult
  * Bei Concentration-Wechsel werden Zones des vorherigen Spells deaktiviert.
  *
  * @param c Der Combatant
- * @param actionId Die neue Concentration-Action (oder undefined zum Beenden)
+ * @param actionId Die neue Concentration-CombatEvent (oder undefined zum Beenden)
  * @param state Optional: CombatState für Zone-Deaktivierung
  */
 export function setConcentration(
@@ -862,204 +958,13 @@ function isHostileToParty(groupId: string, alliances: Record<string, string[]>):
 }
 
 // ============================================================================
-// TURN BUDGET FUNCTIONS
+// IMPORT FROM movement.ts (für lokale Verwendung)
 // ============================================================================
 
-/**
- * Prüft ob ein Combatant Bonus Actions hat.
- * Bonus Actions sind Actions mit timing.type === 'bonus'.
- */
-export function hasAnyBonusAction(combatant: Combatant): boolean {
-  return getActions(combatant).some(a => a.timing.type === 'bonus');
-}
+// advanceTurn braucht createTurnBudget
+import { createTurnBudget } from './movement';
 
-// ============================================================================
-// GRAPPLE HELPERS
-// ============================================================================
-
-/**
- * Findet alle Combatants die von diesem Grappler gegrappled werden.
- * Sucht nach 'grappled' Conditions mit sourceId = grappler.id.
- *
- * @param grappler Der potentielle Grappler
- * @param state State mit combatants Array
- * @returns Array von gegrappelten Combatants
- */
-export function getGrappledTargets(
-  grappler: Combatant,
-  state: CombatantSimulationState
-): Combatant[] {
-  return state.combatants.filter(c =>
-    c.combatState.conditions.some(
-      cond => cond.name === 'grappled' && cond.sourceId === grappler.id
-    )
-  );
-}
-
-/**
- * Prüft ob ein Combatant das Abduct-Trait hat.
- * Abduct: Keine Speed-Reduktion beim Ziehen gegrappelter Targets.
- *
- * @param combatant Der zu prüfende Combatant
- * @returns true wenn trait-abduct in Actions vorhanden
- */
-export function hasAbductTrait(combatant: Combatant): boolean {
-  return getActions(combatant).some(a => a.id === 'trait-abduct');
-}
-
-/**
- * Berechnet effektive Speed unter Berücksichtigung von Conditions und Zones.
- * Conditions wie 'grappled', 'restrained', 'paralyzed' setzen Speed auf 0.
- * Liest Effekte deklarativ aus CONDITION_EFFECTS.
- *
- * Grapple-Drag (D&D 5e PHB):
- * Wenn Combatant jemanden grappled, ist Speed halbiert beim Bewegen.
- * Ausnahme: Abduct-Trait entfernt diese Reduktion.
- *
- * Zone Speed-Modifier (Spirit Guardians, etc.):
- * Zones mit speedModifier reduzieren Movement (z.B. 0.5 für halbe Speed).
- *
- * @param combatant Der Combatant
- * @param state Optional: State mit combatants Array für Grapple-Drag und Zone Check
- * @returns Effektive Speed in Feet
- */
-export function getEffectiveSpeed(combatant: Combatant, state?: CombatantSimulationState): number {
-  const baseSpeed = getSpeed(combatant).walk ?? 30;
-  const conditions = combatant.combatState.conditions ?? [];
-
-  // Prüfe alle aktiven Conditions auf Speed-Modifikation
-  for (const cond of conditions) {
-    const condName = cond.name as ConditionEffectKey;
-    const effects = CONDITION_EFFECTS[condName];
-    if (effects && 'speed' in effects && effects.speed === 0) {
-      debug('getEffectiveSpeed:', {
-        id: combatant.id,
-        condition: cond.name,
-        speedOverride: 0,
-      });
-      return 0;
-    }
-  }
-
-  let effectiveSpeed = baseSpeed;
-
-  // Grapple-Drag: Speed halbieren wenn Target grappled (außer Abduct)
-  if (state && getGrappledTargets(combatant, state).length > 0) {
-    if (!hasAbductTrait(combatant)) {
-      effectiveSpeed = Math.floor(effectiveSpeed / 2);
-      debug('getEffectiveSpeed:', {
-        id: combatant.id,
-        grappling: true,
-        hasAbduct: false,
-        baseSpeed,
-        halvedSpeed: effectiveSpeed,
-      });
-    } else {
-      debug('getEffectiveSpeed:', {
-        id: combatant.id,
-        grappling: true,
-        hasAbduct: true,
-        speed: effectiveSpeed,
-      });
-    }
-  }
-
-  // Zone Speed-Modifier (Spirit Guardians, etc.)
-  // Prüfe ob Combatant in einer Zone mit speedModifier steht
-  const combatState = state as CombatState | undefined;
-  if (combatState?.activeZones && combatState.activeZones.length > 0) {
-    const combatantPos = combatant.combatState.position;
-
-    for (const zone of combatState.activeZones) {
-      // Skip own zones
-      if (zone.ownerId === combatant.id) continue;
-
-      // Skip if no speedModifier defined
-      if (!zone.effect.zone?.speedModifier) continue;
-
-      // Check target filter (inline version of isValidZoneTarget)
-      const owner = combatState.combatants.find(c => c.id === zone.ownerId);
-      if (!owner) continue;
-
-      const filter = zone.effect.zone.targetFilter ?? 'all';
-      const ownerGroup = owner.combatState.groupId;
-      const combatantGroup = combatant.combatState.groupId;
-      const ownerAllies = combatState.alliances[ownerGroup] ?? [];
-      const isAlly = combatantGroup === ownerGroup || ownerAllies.includes(combatantGroup);
-      const isEnemy = !isAlly;
-
-      if (filter === 'enemies' && !isEnemy) continue;
-      if (filter === 'allies' && !isAlly) continue;
-
-      // Check if in radius (inline version of isInZoneRadius)
-      const ownerPos = owner.combatState.position;
-      const dx = Math.abs(combatantPos.x - ownerPos.x);
-      const dy = Math.abs(combatantPos.y - ownerPos.y);
-      const distanceFeet = Math.max(dx, dy) * (combatState.grid?.cellSizeFeet ?? 5);
-
-      if (distanceFeet <= zone.effect.zone.radius) {
-        effectiveSpeed = Math.floor(effectiveSpeed * zone.effect.zone.speedModifier);
-        debug('getEffectiveSpeed: zone modifier applied', {
-          id: combatant.id,
-          zone: zone.sourceActionId,
-          speedModifier: zone.effect.zone.speedModifier,
-          newSpeed: effectiveSpeed,
-        });
-      }
-    }
-  }
-
-  return effectiveSpeed;
-}
-
-/** Erstellt TurnBudget aus Combatant. */
-export function createTurnBudget(combatant: Combatant, state?: CombatantSimulationState): TurnBudget {
-  const walkSpeed = getEffectiveSpeed(combatant, state);  // Berücksichtigt Conditions + Grapple-Drag
-  const movementCells = Math.floor(walkSpeed / 5);
-
-  debug('createTurnBudget:', {
-    id: combatant.id,
-    walkSpeed,
-    movementCells,
-  });
-
-  return {
-    movementCells,
-    baseMovementCells: movementCells,
-    hasAction: true,
-    hasBonusAction: hasAnyBonusAction(combatant),
-    hasReaction: true,
-  };
-}
-
-/**
- * Calculates movement bonus from grantMovement effect.
- * Single source of truth for dash/extra/teleport calculations.
- *
- * Used by both candidate generation (actionEnumeration) and
- * execution (executeAction) to ensure consistent movement ranges.
- *
- * @param grant The grantMovement effect from an Action
- * @param budget Current turn budget with baseMovementCells
- * @returns Number of cells to add to movement budget
- */
-export function calculateGrantedMovement(
-  grant: { type: 'dash' | 'extra' | 'teleport'; value?: number },
-  budget: TurnBudget
-): number {
-  switch (grant.type) {
-    case 'dash':
-      return budget.baseMovementCells;  // Effective speed from budget
-    case 'extra':
-      return Math.floor((grant.value ?? 0) / 5);
-    case 'teleport':
-      return Math.floor((grant.value ?? 0) / 5);  // Independent of current budget
-    default:
-      return 0;
-  }
-}
-
-// NOTE: Legacy budget functions (consumeMovement, consumeAction, consumeBonusAction,
-// consumeReaction, applyDash, hasBudgetRemaining) wurden entfernt.
-// Budget-Verbrauch wird jetzt über budgetCosts im Action-Schema gesteuert.
-// Siehe: executeAction.ts applyBudgetCosts()
+// NOTE: Alle Movement-Funktionen (getSpeed, getEffectiveSpeed, createTurnBudget,
+// calculateGrantedMovement, hasAnyBonusCombatEvent, getGrappledTargets, hasAbductTrait)
+// werden jetzt aus combatTracking/movement.ts exportiert.
+// Konsumenten importieren via combatTracking/index.ts

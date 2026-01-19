@@ -18,6 +18,8 @@ export {
   resolveBaseAction,
   resolveSpellWithCaster,
   resolveActionWithBase,
+  resolveCombatEventWithBase,
+  getCombatEventMaxRangeCells,
   multiattackHasMeleeOption,
   multiattackHasRangedOption,
   // Damage & Healing PMF
@@ -59,7 +61,12 @@ export {
   isActionAvailable,
   matchesRequirement,
   isActionUsable,
+  isCombatEventUsable,
+  isCostAffordable,
+  consumeActionCost,
   getAvailableActionsForCombatant,
+  getEscapeActionsForCombatant,
+  getEscapeCombatEventsForCombatant,
 } from './actionAvailability';
 
 // Re-exports aus pruningHelpers

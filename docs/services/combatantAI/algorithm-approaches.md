@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # Algorithm Approaches for Combat AI
 
 > **Verantwortlichkeit:** ActionSelector Interface und Algorithmen-Vergleich

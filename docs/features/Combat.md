@@ -1,3 +1,6 @@
+> ⚠️ **ON HOLD** - Diese Dokumentation ist aktuell nicht aktiv.
+> Die Combat-Implementierung wurde vorübergehend pausiert.
+
 # Combat-System
 
 > **Verantwortlichkeit:** Initiative-Tracker und Condition-Management fuer D&D Kaempfe

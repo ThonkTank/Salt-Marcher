@@ -12,7 +12,7 @@
 // - Nutzt vorherige Iterationen für Move Ordering
 
 import type { ActionSelector, SelectorConfig, SelectorStats } from './types';
-import type { Action } from '@/types/entities';
+import type { CombatEvent } from '@/types/entities/combatEvent';
 import type {
   CombatantWithLayers,
   CombatantSimulationStateWithLayers,
@@ -22,7 +22,7 @@ import type {
   Combatant,
 } from '@/types/combat';
 import { buildThreatMap } from '../layers';
-import { buildPossibleActions, toTurnAction, type ScoredAction } from '../core/actionEnumeration';
+import { buildPossibleCombatEvents, toTurnCombatEvent, type ScoredCombatEvent } from '../core/actionEnumeration';
 import { positionToKey, positionsEqual } from '@/utils';
 import { getDistance, getReachableCells } from '../helpers/combatHelpers';
 import { getPosition } from '../../combatTracking';
@@ -47,7 +47,7 @@ const DEFAULT_MAX_DEPTH = 3;
 // ============================================================================
 
 interface ActionChainEntry {
-  action: Action;
+  action: CombatEvent;
   target?: Combatant;
   fromPosition: GridPosition;
   targetCell?: GridPosition;
@@ -89,16 +89,16 @@ const debug = (...args: unknown[]) => {
  * Moves candidates that match the previous best to the front.
  */
 function orderByPreviousBest(
-  candidates: ScoredAction[],
+  candidates: ScoredCombatEvent[],
   previousBest: ActionChainEntry[]
-): ScoredAction[] {
+): ScoredCombatEvent[] {
   if (previousBest.length === 0) {
     // No previous best - sort by score descending
     return [...candidates].sort((a, b) => b.score - a.score);
   }
 
   const hint = previousBest[0];
-  const matchesHint = (c: ScoredAction) =>
+  const matchesHint = (c: ScoredCombatEvent) =>
     c.action.id === hint.action.id &&
     c.target?.id === hint.target?.id &&
     positionsEqual(c.fromPosition, hint.fromPosition);
@@ -112,13 +112,13 @@ function orderByPreviousBest(
 
 /**
  * Generates candidates for current state and budget.
- * Wrapper around buildPossibleActions that handles ThreatMap setup.
+ * Wrapper around buildPossibleCombatEvents that handles ThreatMap setup.
  */
 function generateCandidates(
   combatant: CombatantWithLayers,
   state: CombatantSimulationStateWithLayers,
   budget: TurnBudget
-): ScoredAction[] {
+): ScoredCombatEvent[] {
   const currentCell = getPosition(combatant);
   const reachableCells = getReachableCells(currentCell, budget.movementCells, {
     terrainMap: state.terrainMap,
@@ -128,7 +128,7 @@ function generateCandidates(
   });
   const threatMap = buildThreatMap(combatant, state, reachableCells, currentCell);
 
-  return buildPossibleActions(combatant, state, budget, threatMap);
+  return buildPossibleCombatEvents(combatant, state, budget, threatMap);
 }
 
 /**
@@ -148,13 +148,13 @@ function applyActionToState(
 
 /**
  * Calculates budget consumption for an action.
- * Note: Dash-Movement wird über budgetCosts in der Action gehandhabt.
+ * Note: Dash-Movement wird über budgetCosts in der CombatEvent gehandhabt.
  */
-function getBudgetConsumption(action: Action): {
+function getBudgetConsumption(action: CombatEvent): {
   action?: boolean;
   bonusAction?: boolean;
 } {
-  const isBonusAction = action.timing.type === 'bonus';
+  const isBonusAction = action.timing?.type === 'bonus';
   return isBonusAction ? { bonusAction: true } : { action: true };
 }
 
@@ -385,7 +385,7 @@ export const iterativeSelector: ActionSelector = {
       stats: lastStats,
     });
 
-    return toTurnAction(first);
+    return toTurnCombatEvent(first);
   },
 
   getStats(): SelectorStats {

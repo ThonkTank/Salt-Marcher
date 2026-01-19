@@ -4,18 +4,48 @@
 // Evaluiert trigger-basierte Effects aus ActiveZones bei Movement und Turn-Events.
 // Spirit Guardians, Moonbeam, etc. verwenden dieses System.
 
-import type { ActionEffect } from '@/types/entities';
+// ============================================================================
+// HACK & TODO
+// ============================================================================
+//
+// [HACK]: Single trigger statt separate on*-Handler
+// - Spec: docs/types/combatEvent.md#zones (Zeile 693-741)
+// - isInZoneRadius() + applyZoneEffect() verwenden zone.effect.trigger
+// - Laut Spec: zone.onEnter, zone.onExit, zone.onStartTurn, zone.onEndTurn separat
+// - Vereinfachung bis Schema-Update
+//
+// [HACK]: Numerische DC statt Formula-DC
+// - rollSaveCheck() erwartet numeric dc (Zeile 258)
+// - Spec: Formula-DC mit @-Referenzen (docs/types/combatEvent.md#formula-dc)
+// - Benötigt Formula-Parser in resolveEffects.ts oder shared util
+//
+// [TODO]: Zone terrainEffect Support
+// - Spec: docs/types/combatEvent.md#zones
+// - ZoneDefinition.terrainEffect fehlt in Implementation
+// - getZoneSpeedModifier() behandelt nur speedModifier, nicht terrainEffect
+//
+// [TODO]: Zone attached origin für Spirit Guardians
+// - Spec: docs/types/combatEvent.md#zones (origin: { type: 'attached', to: 'self' })
+// - isInZoneRadius() verwendet statische Owner-Position
+// - Braucht: Zone-Position folgt Owner bei Movement
+//
+// [HACK]: Nur damage und apply-condition Effects
+// - applyZoneEffect() (Zeile 163-231) behandelt nur diese zwei Effect-Typen
+// - Andere Effects (push, pull, grant-*, etc.) werden ignoriert
+
+import type { Effect } from '@/types/entities/combatEvent';
 import type {
   Combatant,
   CombatState,
   HPChange,
   ActiveZone,
   GridPosition,
+  ZoneEffect,
 } from '@/types/combat';
 import type { EffectTrigger } from '@/constants/action';
 import { getDistanceFeet } from '@/utils/squareSpace/grid';
 import { rollDice } from '@/utils/probability/random';
-import { getPosition, getAbilities, addCondition, getAliveCombatants } from './combatState';
+import { getPosition, getAbilities, addCondition } from './combatState';
 import { isHostile, isAllied } from '../combatantAI/helpers/combatHelpers';
 import type { AbilityScores } from '@/types/entities/creature';
 
@@ -73,7 +103,7 @@ export function applyZoneEffects(
     // Skip own zones (can't hurt yourself with Spirit Guardians)
     if (zone.ownerId === combatant.id) continue;
 
-    // Check trigger match
+    // Check trigger match - HACK: siehe Header - single trigger statt on*
     if (zone.effect.trigger !== trigger) continue;
 
     // Check target filter (enemies/allies/all)
@@ -118,7 +148,10 @@ function isInZoneRadius(
   state: CombatState
 ): boolean {
   const owner = state.combatants.find(c => c.id === zone.ownerId);
-  if (!owner || !zone.effect.zone) return false;
+  if (!owner) return false;
+
+  // Check if effect type is create-zone
+  if (zone.effect.type !== 'create-zone' || !zone.effect.zone) return false;
 
   const ownerPos = getPosition(owner);
   const distance = getDistanceFeet(combatantPos, ownerPos, state.grid);
@@ -139,7 +172,10 @@ function isValidZoneTarget(
   const owner = state.combatants.find(c => c.id === zone.ownerId);
   if (!owner) return false;
 
-  const filter = zone.effect.zone?.targetFilter ?? 'all';
+  // Check if effect type is create-zone
+  if (zone.effect.type !== 'create-zone' || !zone.effect.zone) return false;
+
+  const filter = zone.effect.zone.targetFilter ?? 'all';
   const ownerGroup = owner.combatState.groupId;
   const combatantGroup = combatant.combatState.groupId;
 
@@ -162,20 +198,25 @@ function applyZoneEffect(
   const result: ZoneEffectResult = { hpChanges: [], conditionsApplied: [] };
   const effect = zone.effect;
 
-  // Damage with optional save
-  if (effect.damage) {
-    let damage = rollDice(effect.damage.dice);
-    if (effect.damage.modifier) damage += effect.damage.modifier;
+  // Get damage/save/condition from flat properties or zone definition
+  const zoneDamage = effect.damage ?? effect.zone?.damage;
+  const zoneSave = effect.save ?? effect.zone?.save;
+  const zoneCondition = effect.condition ?? effect.zone?.condition;
 
-    // Save reduces damage
-    if (effect.save) {
-      const saveSuccess = rollSaveCheck(combatant, effect.save.ability, effect.save.dc);
+  // Damage with optional save - HACK: siehe Header - nur damage + apply-condition
+  if (zoneDamage?.dice) {
+    let damage = rollDice(zoneDamage.dice);
+    if (zoneDamage.modifier) damage += zoneDamage.modifier;
+
+    // Save reduces damage - HACK: siehe Header - numerische DC statt Formula-DC
+    if (zoneSave) {
+      const saveSuccess = rollSaveCheck(combatant, zoneSave.ability, zoneSave.dc);
 
       if (saveSuccess) {
-        if (effect.save.onSave === 'half') {
+        if (zoneSave.onSave === 'half') {
           damage = Math.floor(damage / 2);
           debug('applyZoneEffect: save success, half damage', { damage });
-        } else if (effect.save.onSave === 'none') {
+        } else if (zoneSave.onSave === 'none') {
           damage = 0;
           debug('applyZoneEffect: save success, no damage');
         }
@@ -199,21 +240,21 @@ function applyZoneEffect(
       debug('applyZoneEffect: damage applied', {
         combatant: combatant.id,
         damage,
-        damageType: effect.damage.type,
+        damageType: zoneDamage.type,
       });
     }
   }
 
   // Condition application
-  if (effect.condition) {
+  if (zoneCondition) {
     addCondition(combatant, {
-      name: effect.condition,
+      name: zoneCondition,
       probability: 1.0,
-      effect: effect.condition,
-      duration: effect.duration,
+      effect: zoneCondition,
+      duration: undefined, // Zone effects don't have duration on the flat structure
       sourceId: zone.ownerId,
     });
-    result.conditionsApplied.push(effect.condition);
+    result.conditionsApplied.push(zoneCondition);
 
     debug('applyZoneEffect: condition applied', {
       combatant: combatant.id,
@@ -242,6 +283,7 @@ function applyZoneDamage(combatant: Combatant, damage: number): void {
 /**
  * Führt einen Saving Throw durch.
  * Vereinfachte deterministische Version.
+ * HACK: siehe Header - numerische DC statt Formula-DC
  *
  * @returns true wenn Save erfolgreich, false wenn fehlgeschlagen
  */
@@ -298,8 +340,11 @@ export function getZoneSpeedModifier(
     // Skip own zones
     if (zone.ownerId === combatant.id) continue;
 
+    // Check if effect type is create-zone
+    if (zone.effect.type !== 'create-zone' || !zone.effect.zone) continue;
+
     // Skip if no speedModifier defined
-    if (!zone.effect.zone?.speedModifier) continue;
+    if (!zone.effect.zone.speedModifier) continue;
 
     // Check target filter
     if (!isValidZoneTarget(combatant, zone, state)) continue;
@@ -370,19 +415,24 @@ export function resetZoneTriggersForCombatant(
 }
 
 /**
- * Erstellt eine ActiveZone aus einem ActionEffect mit Zone-Definition.
+ * Erstellt eine ActiveZone aus einem Effect mit Zone-Definition.
  * Helper für executeAction.ts.
  */
 export function createActiveZone(
   ownerId: string,
-  actionId: string,
-  effect: ActionEffect
+  actionId: string | undefined,
+  effect: ZoneEffect | Effect
 ): ActiveZone {
+  // Convert Effect to ZoneEffect if needed
+  const zoneEffect: ZoneEffect = effect.type === 'create-zone'
+    ? effect as ZoneEffect
+    : { type: 'create-zone', ...effect } as ZoneEffect;
+
   return {
-    id: `${ownerId}-${actionId}-${Date.now()}`,
-    sourceActionId: actionId,
+    id: `${ownerId}-${actionId ?? 'unknown'}-${Date.now()}`,
+    sourceActionId: actionId ?? 'unknown',
     ownerId,
-    effect,
+    effect: zoneEffect,
     triggeredThisTurn: new Set(),
   };
 }

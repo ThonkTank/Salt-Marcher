@@ -9,7 +9,7 @@
 // - Keine Änderung am ModifierRegistry Interface nötig
 // - Seamless Integration mit hardcoded Modifiers
 
-import type { SchemaModifier, SchemaModifierEffect } from '@/types/entities/conditionExpression';
+import type { SchemaModifier, SchemaModifierEffect } from '@/types/entities/combatEvent';
 import type { ModifierContext, ModifierEvaluator, ModifierEffect } from './situationalModifiers';
 import { evaluateCondition, createEvaluationContext } from '@/utils/combatModifiers';
 import { diceExpressionToPMF, getExpectedValue } from '@/utils/probability';
@@ -87,12 +87,27 @@ function convertEffect(schemaEffect: SchemaModifierEffect): ModifierEffect {
  * This allows schema-defined modifiers to be used with the existing
  * ModifierRegistry system without any changes to the core evaluation logic.
  *
+ * For unified contextualEffects system:
+ * - Combines passive + whenAttacking effects for attack scoring
+ * - Condition-based effects (whenDefending) are handled by getModifiers.ts
+ *
  * @param schemaMod The schema-defined modifier
  * @returns A ModifierEvaluator that can be registered with ModifierRegistry
  */
 export function createSchemaModifierEvaluator(schemaMod: SchemaModifier): ModifierEvaluator {
-  // Pre-convert the effect since it's static
-  const effect = convertEffect(schemaMod.effect);
+  // Pre-convert effects from unified contextualEffects
+  // Combine passive + whenAttacking for attack-phase evaluation
+  const ctx = schemaMod.contextualEffects;
+  const combinedEffect: ModifierEffect = {};
+
+  if (ctx.passive) {
+    Object.assign(combinedEffect, convertEffect(ctx.passive));
+  }
+  if (ctx.whenAttacking) {
+    const attackEffect = convertEffect(ctx.whenAttacking);
+    // Merge attack effect (later values override)
+    Object.assign(combinedEffect, attackEffect);
+  }
 
   // Define functions separately to avoid potential esbuild transformation issues
   function isActive(modCtx: ModifierContext): boolean {
@@ -109,7 +124,7 @@ export function createSchemaModifierEvaluator(schemaMod: SchemaModifier): Modifi
   }
 
   function getEffect(): ModifierEffect {
-    return effect;
+    return combinedEffect;
   }
 
   return {

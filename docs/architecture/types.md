@@ -165,6 +165,51 @@ export type ReputationEntry = z.infer<typeof reputationEntrySchema>;
 
 ---
 
+## CombatInventoryItem
+
+Runtime-Typ fuer Inventory-Tracking waehrend Combat. Wird bei Combat-Start aus NPC.possessions oder Character.inventory kopiert.
+
+**Pfad:** `src/types/combat.ts`
+
+```typescript
+interface CombatInventoryItem {
+  id: string;           // Item-ID (z.B. 'crossbow-bolt', 'healing-potion')
+  quantity: number;     // Verbleibende Anzahl
+  tags?: string[];      // Item-Tags fuer itemTag-basierte Cost-Typen
+}
+```
+
+**Verwendung:**
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| `id` | `string` | Eindeutige Item-Identifikation |
+| `quantity` | `number` | Verbleibende Anzahl (dekrementiert bei consume-item) |
+| `tags` | `string[]` | Optional: Gruppierung fuer `itemTag`-basierte Costs |
+
+**Beispiele:**
+
+```typescript
+// Standard-Munition
+{ id: 'crossbow-bolt', quantity: 20 }
+
+// Gruppierte Items via Tags
+{ id: 'healing-potion', quantity: 3, tags: ['potion', 'healing'] }
+{ id: 'mana-potion', quantity: 2, tags: ['potion', 'restoration'] }
+
+// consume-item Cost mit itemTag
+cost: { type: 'consume-item', itemTag: 'potion', quantity: 1 }
+// → Verbraucht EIN Item mit Tag 'potion' (healing-potion ODER mana-potion)
+```
+
+**Konsumenten:**
+
+- [combatTracking.md](../services/combatTracking/combatTracking.md) - `CombatantState.inventory`
+- [combatEvent.md](../types/combatEvent.md) - `Cost.consume-item`
+- [actionAvailability.ts](../../src/services/combatantAI/helpers/actionAvailability.ts) - `isCostAffordable()`
+
+---
+
 ## Branded Types
 
 ### EntityId<T>
