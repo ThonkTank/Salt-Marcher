@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Reference implementations (external)
+references/
+
 # Build output
 dist/
 
