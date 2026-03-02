@@ -1,0 +1,7 @@
+cobalt.session=DEIN_COBALT_SESSION_COOKIE_HIER
+delay.ms=2000
+output.dir=data/monsters
+
+# Item Crawler
+items.output.dir=data/items
+magic-items.slugs.file=data/magic-item-slugs.txt

@@ -1,0 +1,408 @@
+.root {
+    -sm-bg-darkest:  #12181c;
+    -sm-bg-panel:    #1a2025;
+    -sm-bg-card:     #232b2f;
+    -sm-bg-elevated: #26282a;
+
+    -sm-text-primary:   #ecedee;
+    -sm-text-secondary: #a4a7ab;
+    -sm-text-muted:     #6c6f73;
+
+    -sm-easy:   #00c680;
+    -sm-medium: #ffb62a;
+    -sm-hard:   #d56c19;
+    -sm-deadly: #c60000;
+
+    -sm-accent:       #1c74c6;
+    -sm-accent-hover: #41a9f2;
+    -sm-monster-red:  #c60000;
+
+    -sm-active-bg:     #3a3510;
+    -sm-dead-bg:       #2a2a2a;
+    -sm-creature-link: #41a9f2;
+
+    -sm-chip-type-bg:      #1a2a3e;
+    -sm-chip-type-border:  #305590;
+    -sm-chip-biome-bg:     #1a3025;
+    -sm-chip-biome-border: #307045;
+    -sm-chip-size-bg:      #2a1a30;
+    -sm-chip-size-border:  #553070;
+    -sm-chip-align-bg:     #30251a;
+    -sm-chip-align-border: #705530;
+    -sm-chip-sub-bg:       #1a3030;
+    -sm-chip-sub-border:   #307070;
+    -sm-chip-cr-bg:        #1a2530;
+    -sm-chip-cr-border:    #305070;
+
+    -sm-border-subtle: #333a3f;
+
+    -fx-font-family: "SansSerif";
+    -fx-font-size: 13px;
+    -fx-base: #12181c;
+    -fx-background: #12181c;
+}
+
+/* ---- Global surfaces ---- */
+.split-pane {
+    -fx-background-color: -sm-bg-darkest;
+    -fx-padding: 0;
+}
+.split-pane > .split-pane-divider {
+    -fx-background-color: -sm-border-subtle;
+    -fx-padding: 0 1 0 1;
+}
+.scroll-pane, .scroll-pane > .viewport {
+    -fx-background-color: -sm-bg-darkest;
+}
+
+/* ---- Labels ---- */
+.label {
+    -fx-text-fill: -sm-text-primary;
+}
+.text-secondary {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+}
+.text-muted {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 11px;
+}
+.difficulty-easy   { -fx-text-fill: -sm-easy; }
+.difficulty-medium { -fx-text-fill: -sm-medium; }
+.difficulty-hard   { -fx-text-fill: -sm-hard; }
+.difficulty-deadly { -fx-text-fill: -sm-deadly; }
+.title {
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+.large {
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+}
+.small {
+    -fx-font-size: 11px;
+}
+.bold {
+    -fx-font-weight: bold;
+}
+.mono {
+    -fx-font-family: "Monospaced";
+    -fx-font-size: 12px;
+}
+
+/* ---- Buttons ---- */
+.button {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-padding: 6 12 6 12;
+}
+.button:hover {
+    -fx-background-color: derive(-sm-bg-elevated, 20%);
+}
+.button:focused {
+    -fx-border-color: -sm-accent;
+    -fx-border-width: 2;
+}
+.button.accent {
+    -fx-background-color: -sm-accent;
+}
+.button.accent:hover {
+    -fx-background-color: -sm-accent-hover;
+}
+.button.compact {
+    -fx-padding: 2 6 2 6;
+    -fx-font-size: 11px;
+}
+.button.danger {
+    -fx-background-color: -sm-monster-red;
+}
+
+/* ---- TextFields ---- */
+.text-field {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+    -fx-prompt-text-fill: -sm-text-muted;
+    -fx-font-size: 13px;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 2;
+    -fx-background-radius: 2;
+    -fx-padding: 4 8 4 8;
+}
+.text-field:focused {
+    -fx-border-color: -sm-accent;
+}
+
+/* ---- TableView ---- */
+.table-view {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent;
+}
+.table-view .filler {
+    -fx-background-color: -sm-bg-elevated;
+}
+.table-view .column-header-background {
+    -fx-background-color: -sm-bg-elevated;
+}
+.table-view .column-header-background .filler {
+    -fx-background-color: -sm-bg-elevated;
+}
+.table-view .column-header {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+}
+.table-view .column-header .label {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+}
+.table-view .table-row-cell {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-cell-size: 28px;
+}
+.table-view .table-row-cell:selected {
+    -fx-background-color: -sm-accent;
+}
+.table-view .table-row-cell .table-cell {
+    -fx-text-fill: -sm-text-primary;
+}
+.table-view .table-row-cell:selected .table-cell {
+    -fx-text-fill: -sm-text-primary;
+}
+.table-view .table-row-cell:empty {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent;
+}
+.table-view .placeholder .label {
+    -fx-text-fill: -sm-text-muted;
+}
+
+/* ---- ComboBox ---- */
+.combo-box {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 2;
+    -fx-background-radius: 2;
+}
+.combo-box .list-cell {
+    -fx-text-fill: -sm-text-primary;
+    -fx-background-color: -sm-bg-elevated;
+    -fx-font-size: 13px;
+}
+.combo-box .arrow-button {
+    -fx-background-color: -sm-bg-elevated;
+}
+.combo-box .arrow {
+    -fx-background-color: -sm-text-secondary;
+}
+.combo-box-popup .list-view {
+    -fx-background-color: -sm-bg-elevated;
+}
+.combo-box-popup .list-view .list-cell {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+}
+.combo-box-popup .list-view .list-cell:hover {
+    -fx-background-color: -sm-bg-card;
+}
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
+
+/* ---- Slider ---- */
+.slider .track {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-background-radius: 3;
+    -fx-pref-height: 4;
+}
+.slider .thumb {
+    -fx-background-color: -sm-accent;
+    -fx-background-radius: 6;
+    -fx-pref-width: 14;
+    -fx-pref-height: 14;
+}
+.slider .thumb:hover {
+    -fx-background-color: -sm-accent-hover;
+}
+.slider:disabled .thumb {
+    -fx-background-color: -sm-text-muted;
+}
+.slider:disabled .track {
+    -fx-background-color: derive(-sm-bg-elevated, -10%);
+}
+.slider .axis {
+    -fx-tick-label-fill: -sm-text-muted;
+    -fx-font-size: 10px;
+}
+
+/* ---- CheckBox ---- */
+.check-box {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+}
+.check-box .box {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 2;
+    -fx-background-radius: 2;
+    -fx-padding: 3;
+}
+.check-box:selected .box {
+    -fx-background-color: -sm-accent;
+    -fx-border-color: -sm-accent;
+}
+.check-box:selected .box .mark {
+    -fx-background-color: -sm-text-primary;
+}
+
+/* ---- TitledPane (collapsible filter sections) ---- */
+.titled-pane {
+    -fx-text-fill: -sm-text-primary;
+}
+.titled-pane > .title {
+    -fx-background-color: -sm-bg-panel;
+    -fx-padding: 4 8 4 8;
+}
+.titled-pane > .title > .arrow-button .arrow {
+    -fx-background-color: -sm-text-secondary;
+}
+.titled-pane > .content {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: transparent;
+    -fx-padding: 4 8 4 8;
+}
+
+/* ---- Spinner ---- */
+.spinner {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 2;
+}
+.spinner .text-field {
+    -fx-border-color: transparent;
+}
+.spinner .increment-arrow-button, .spinner .decrement-arrow-button {
+    -fx-background-color: -sm-bg-elevated;
+}
+.spinner .increment-arrow-button .increment-arrow,
+.spinner .decrement-arrow-button .decrement-arrow {
+    -fx-background-color: -sm-text-secondary;
+}
+
+/* ---- ScrollBar ---- */
+.scroll-bar {
+    -fx-background-color: -sm-bg-panel;
+}
+.scroll-bar .thumb {
+    -fx-background-color: -sm-border-subtle;
+    -fx-background-radius: 3;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: derive(-sm-border-subtle, 20%);
+}
+.scroll-bar .increment-button, .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.scroll-bar .increment-arrow, .scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
+}
+
+/* ---- Creature card ---- */
+.creature-card {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 2;
+    -fx-background-radius: 2;
+    -fx-padding: 8 12 8 12;
+}
+
+/* ---- Creature link ---- */
+.creature-link {
+    -fx-text-fill: -sm-creature-link;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+.creature-link:hover {
+    -fx-underline: true;
+}
+
+/* ---- Chips ---- */
+.chip {
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-padding: 2 6 2 6;
+    -fx-font-size: 11px;
+    -fx-text-fill: -sm-text-primary;
+}
+.chip-type    { -fx-background-color: -sm-chip-type-bg;  -fx-border-color: -sm-chip-type-border; }
+.chip-biome   { -fx-background-color: -sm-chip-biome-bg; -fx-border-color: -sm-chip-biome-border; }
+.chip-size    { -fx-background-color: -sm-chip-size-bg;  -fx-border-color: -sm-chip-size-border; }
+.chip-align   { -fx-background-color: -sm-chip-align-bg; -fx-border-color: -sm-chip-align-border; }
+.chip-subtype { -fx-background-color: -sm-chip-sub-bg;   -fx-border-color: -sm-chip-sub-border; }
+.chip-cr      { -fx-background-color: -sm-chip-cr-bg;    -fx-border-color: -sm-chip-cr-border; }
+
+/* ---- Combat runner ---- */
+.combatant-active .table-cell {
+    -fx-background-color: -sm-active-bg;
+    -fx-font-weight: bold;
+}
+.combatant-dead .table-cell {
+    -fx-background-color: -sm-dead-bg;
+    -fx-text-fill: -sm-text-muted;
+}
+
+/* ---- Dialog ---- */
+.dialog-pane {
+    -fx-background-color: -sm-bg-panel;
+}
+.dialog-pane .header-panel {
+    -fx-background-color: -sm-bg-panel;
+}
+.dialog-pane .content.label {
+    -fx-text-fill: -sm-text-primary;
+}
+.dialog-pane .button-bar .button {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+}
+
+/* ---- Toolbar ---- */
+.toolbar {
+    -fx-background-color: -sm-bg-panel;
+    -fx-padding: 6 12 6 12;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+}
+
+/* ---- Stat block ---- */
+.stat-block {
+    -fx-control-inner-background: -sm-bg-panel;
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-family: "Monospaced";
+    -fx-font-size: 12px;
+}
+
+/* ---- Filter pane ---- */
+.filter-pane {
+    -fx-background-color: -sm-bg-darkest;
+    -fx-border-color: transparent -sm-border-subtle transparent transparent;
+}
+
+/* ---- Encounter summary ---- */
+.encounter-pane {
+    -fx-background-color: -sm-bg-darkest;
+    -fx-border-color: transparent transparent transparent -sm-border-subtle;
+}
+.encounter-bottom {
+    -fx-border-color: -sm-border-subtle transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.remove-btn {
+    -fx-font-size: 16px;
+}

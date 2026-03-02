@@ -1,0 +1,11 @@
+out/
+lib/
+*.db
+*.class
+.vscode/
+
+# Crawler-Konfiguration (enthält Session-Cookie)
+crawler.properties
+
+# Heruntergeladene Monster-Daten
+data/
