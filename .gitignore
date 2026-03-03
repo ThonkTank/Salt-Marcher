@@ -1,11 +1,14 @@
 out/
 lib/
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
 *.class
 .vscode/
 
 # Crawler-Konfiguration (enthält Session-Cookie)
-crawler.properties
+crawler*.properties
 
 # Heruntergeladene Monster-Daten
 data/

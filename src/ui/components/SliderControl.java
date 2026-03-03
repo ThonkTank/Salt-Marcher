@@ -6,6 +6,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.util.StringConverter;
 
 import java.util.function.Function;
@@ -25,12 +26,12 @@ public class SliderControl extends HBox {
 
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("text-muted");
-        titleLabel.setMinWidth(72);
-        titleLabel.setPrefWidth(72);
+        titleLabel.setMinWidth(Region.USE_PREF_SIZE);
 
         autoBox = new CheckBox("Auto");
         autoBox.setSelected(true);
         autoBox.getStyleClass().add("small");
+        autoBox.setMinWidth(Region.USE_PREF_SIZE);
 
         valueLabel = new Label();
         valueLabel.getStyleClass().add("text-secondary");
@@ -73,4 +74,9 @@ public class SliderControl extends HBox {
     public double getValue() { return autoBox.isSelected() ? -1 : slider.getValue(); }
     public boolean isAuto()  { return autoBox.isSelected(); }
     public Slider getSlider() { return slider; }
+
+    public void setCompact(boolean compact) {
+        valueLabel.setVisible(!compact);
+        valueLabel.setManaged(!compact);
+    }
 }

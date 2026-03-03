@@ -86,10 +86,7 @@ Available skills and when to assign them:
 
 | Skill | Assign when the issue is about... |
 |-------|-----------------------------------|
-| `review-smells` | Code smells, anti-patterns, duplication, complexity |
-| `review-elegance` | Readability, idiomatic style, naming |
-| `review-simplicity` | Over-engineering, unnecessary abstractions, KISS violations |
-| `review-quality` | Combined smells + elegance + simplicity for small directories |
+| `review-quality` | Code smells, elegance, readability, simplicity, KISS violations |
 | `review-structure` | File/folder organization, package layout, co-location |
 | `review-architecture` | Layer violations, dependency direction, separation of concerns |
 | `review-conventions` | Inconsistent patterns across the codebase, naming conventions |
@@ -100,7 +97,7 @@ Available skills and when to assign them:
 | `review-ui` | Combined visual design + accessibility for small UI scopes |
 | `review-onboarding` | Missing/poor docs, comments, onboarding friction, stale docs |
 
-If unsure, use `review-smells` as the default.
+If unsure, use `review-quality` as the default.
 
 ### Step 6 — Relocate misplaced issues
 

@@ -1,17 +1,14 @@
 package ui.components;
 
 import javafx.collections.FXCollections;
-import javafx.geometry.Insets;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
 
 import java.util.List;
 import java.util.function.BiConsumer;
 
-public class CrRangeSelector extends VBox {
+public class CrRangeSelector extends HBox {
 
     private final ComboBox<String> minCombo;
     private final ComboBox<String> maxCombo;
@@ -23,33 +20,26 @@ public class CrRangeSelector extends VBox {
         this.onChange = onChange;
         this.crValues = crValues;
 
-        setSpacing(4);
+        setSpacing(2);
 
-        Label titleLabel = new Label("Challenge Rating");
-        titleLabel.getStyleClass().add("bold");
-
-        HBox row = new HBox(4);
-        Label minLabel = new Label("Min:");
-        minLabel.getStyleClass().add("text-secondary");
-        minLabel.setMinWidth(30);
-        Label maxLabel = new Label("Max:");
-        maxLabel.getStyleClass().add("text-secondary");
-        maxLabel.setMinWidth(30);
+        Label crLabel = new Label("CR");
+        crLabel.getStyleClass().addAll("text-muted", "bold");
+        crLabel.setMinWidth(20);
 
         minCombo = new ComboBox<>(FXCollections.observableArrayList(crValues));
         maxCombo = new ComboBox<>(FXCollections.observableArrayList(crValues));
         minCombo.getSelectionModel().selectFirst();
         maxCombo.getSelectionModel().selectLast();
-        HBox.setHgrow(minCombo, Priority.ALWAYS);
-        HBox.setHgrow(maxCombo, Priority.ALWAYS);
-        minCombo.setMaxWidth(Double.MAX_VALUE);
-        maxCombo.setMaxWidth(Double.MAX_VALUE);
+        minCombo.setPrefWidth(65);
+        maxCombo.setPrefWidth(65);
+
+        Label dash = new Label("-");
+        dash.getStyleClass().add("text-muted");
 
         minCombo.setOnAction(e -> onSelectionChanged());
         maxCombo.setOnAction(e -> onSelectionChanged());
 
-        row.getChildren().addAll(minLabel, minCombo, maxLabel, maxCombo);
-        getChildren().addAll(titleLabel, row);
+        getChildren().addAll(crLabel, minCombo, dash, maxCombo);
     }
 
     private void onSelectionChanged() {

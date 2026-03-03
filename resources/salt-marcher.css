@@ -6,18 +6,24 @@
 
     -sm-text-primary:   #ecedee;
     -sm-text-secondary: #a4a7ab;
-    -sm-text-muted:     #6c6f73;
+    -sm-text-muted:     #8a8d91;
 
     -sm-easy:   #00c680;
     -sm-medium: #ffb62a;
     -sm-hard:   #d56c19;
-    -sm-deadly: #c60000;
+    -sm-deadly: #e53935;
+
+    /* same values as difficulty colors, but semantically separate */
+    -sm-hp-healthy:  #00c680;
+    -sm-hp-wounded:  #ffb62a;
+    -sm-hp-critical: #e53935;
 
     -sm-accent:       #1c74c6;
     -sm-accent-hover: #41a9f2;
     -sm-monster-red:  #c60000;
 
-    -sm-active-bg:     #3a3510;
+    -sm-active-bg:      #3a3510;
+    -sm-active-bg-card: #423b12;
     -sm-dead-bg:       #2a2a2a;
     -sm-creature-link: #41a9f2;
 
@@ -35,6 +41,18 @@
     -sm-chip-cr-border:    #305070;
 
     -sm-border-subtle: #333a3f;
+
+    -sm-stat-red:       #922610;
+    -sm-stat-red-light: #d87050;
+    /* Radius/size tokens: JavaFX CSS variables cannot carry Size values, so use literal
+       values directly in rules below. (e.g. 20px for stat block name, 3/6 for radii) */
+
+    -sm-role-brute:      #e07070;
+    -sm-role-artillery:  #f9a825;
+    -sm-role-controller: #b070d0;
+    -sm-role-skirmisher: #5aaf5e;
+    -sm-role-tank:       #5a9ed6;
+    -sm-role-leader:     #ff8f00;
 
     -fx-font-family: "SansSerif";
     -fx-font-size: 13px;
@@ -121,6 +139,10 @@
 .button.danger {
     -fx-background-color: -sm-monster-red;
 }
+.button:disabled {
+    -fx-opacity: 0.4;
+    -fx-cursor: default;
+}
 
 /* ---- TextFields ---- */
 .text-field {
@@ -129,8 +151,8 @@
     -fx-prompt-text-fill: -sm-text-muted;
     -fx-font-size: 13px;
     -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 2;
-    -fx-background-radius: 2;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
     -fx-padding: 4 8 4 8;
 }
 .text-field:focused {
@@ -185,8 +207,8 @@
 .combo-box {
     -fx-background-color: -sm-bg-elevated;
     -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 2;
-    -fx-background-radius: 2;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
 }
 .combo-box .list-cell {
     -fx-text-fill: -sm-text-primary;
@@ -248,8 +270,8 @@
 .check-box .box {
     -fx-background-color: -sm-bg-panel;
     -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 2;
-    -fx-background-radius: 2;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
     -fx-padding: 3;
 }
 .check-box:selected .box {
@@ -281,7 +303,7 @@
 .spinner {
     -fx-background-color: -sm-bg-elevated;
     -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 2;
+    -fx-border-radius: 3;
 }
 .spinner .text-field {
     -fx-border-color: transparent;
@@ -318,10 +340,23 @@
 .creature-card {
     -fx-background-color: -sm-bg-card;
     -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 2;
-    -fx-background-radius: 2;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
     -fx-padding: 8 12 8 12;
 }
+
+/* ---- Role badge ---- */
+.role-badge {
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 0 3 0 3;
+}
+.role-brute      { -fx-border-color: -sm-role-brute;      -fx-text-fill: -sm-role-brute; }
+.role-artillery  { -fx-border-color: -sm-role-artillery;  -fx-text-fill: -sm-role-artillery; }
+.role-controller { -fx-border-color: -sm-role-controller; -fx-text-fill: -sm-role-controller; }
+.role-skirmisher { -fx-border-color: -sm-role-skirmisher; -fx-text-fill: -sm-role-skirmisher; }
+.role-tank       { -fx-border-color: -sm-role-tank;       -fx-text-fill: -sm-role-tank; }
+.role-leader     { -fx-border-color: -sm-role-leader;     -fx-text-fill: -sm-role-leader; }
 
 /* ---- Creature link ---- */
 .creature-link {
@@ -348,14 +383,9 @@
 .chip-subtype { -fx-background-color: -sm-chip-sub-bg;   -fx-border-color: -sm-chip-sub-border; }
 .chip-cr      { -fx-background-color: -sm-chip-cr-bg;    -fx-border-color: -sm-chip-cr-border; }
 
-/* ---- Combat runner ---- */
-.combatant-active .table-cell {
-    -fx-background-color: -sm-active-bg;
-    -fx-font-weight: bold;
-}
-.combatant-dead .table-cell {
-    -fx-background-color: -sm-dead-bg;
-    -fx-text-fill: -sm-text-muted;
+/* ---- Utility ---- */
+.clickable {
+    -fx-cursor: hand;
 }
 
 /* ---- Dialog ---- */
@@ -380,29 +410,360 @@
     -fx-border-color: transparent transparent -sm-border-subtle transparent;
 }
 
-/* ---- Stat block ---- */
-.stat-block {
-    -fx-control-inner-background: -sm-bg-panel;
-    -fx-text-fill: -sm-text-primary;
-    -fx-font-family: "Monospaced";
+/* ---- Rich Stat Block ---- */
+.stat-block-pane {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-stat-red transparent -sm-stat-red transparent;
+    -fx-border-width: 3 0 3 0;
+    -fx-background-radius: 0;
+}
+/* Intentional: serif evokes D&D Beyond stat block feel */
+.stat-block-name {
+    -fx-text-fill: -sm-stat-red-light;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Serif";
+}
+.stat-block-meta {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}
+.stat-block-separator {
+    -fx-background-color: -sm-stat-red;
+}
+.stat-block-abilities {
+    -fx-background-color: transparent;
+}
+.stat-block-ability-header {
+    -fx-text-fill: -sm-stat-red-light;
+    -fx-font-weight: bold;
     -fx-font-size: 12px;
+}
+.stat-block-ability-value {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 12px;
+}
+.stat-block-prop-label {
+    -fx-fill: -sm-text-primary;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+.stat-block-prop-value {
+    -fx-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+}
+.stat-block-section-header {
+    -fx-text-fill: -sm-stat-red-light;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Serif";
+    -fx-border-color: transparent transparent -sm-stat-red transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.stat-block-action-name {
+    -fx-fill: -sm-text-primary;
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-size: 13px;
+}
+.stat-block-action-desc {
+    -fx-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+}
+.stat-block-loading {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-style: italic;
+    -fx-padding: 16;
+}
+
+/* ---- Detail panel (inline stat block below table) ---- */
+.detail-panel {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: -sm-stat-red transparent transparent transparent;
+    -fx-border-width: 2 0 0 0;
+}
+.detail-header {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-padding: 4 8 4 8;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+}
+
+/* ---- Combat Cards ---- */
+.combat-card {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: transparent;
+    -fx-border-width: 1 1 1 3;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 10 14 10 14;
+}
+.combat-card:focused {
+    -fx-border-color: -sm-accent;
+}
+.combat-card-active {
+    -fx-background-color: -sm-active-bg-card;
+    -fx-border-color: -sm-medium;
+}
+.combat-card-dead {
+    -fx-background-color: -sm-dead-bg;
+    /* Keep a subtle left border to preserve the vertical list rhythm (other cards use 3px left border).
+       Opacity already signals reduced prominence; fully transparent border breaks the left edge alignment. */
+    -fx-border-color: -sm-border-subtle transparent transparent transparent;
+    -fx-opacity: 0.6;
+}
+.combat-card-pc {
+    -fx-border-color: -sm-accent;
+}
+.combat-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+.combat-name-dead {
+    -fx-text-fill: -sm-text-muted;
+}
+.combat-detail {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+}
+.combat-turn-indicator-inactive {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+    -fx-min-width: 24;
+}
+.combat-turn-indicator {
+    -fx-text-fill: -sm-medium;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-min-width: 24;
+}
+.hp-bar-track {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-background-radius: 3;
+}
+.hp-bar-fill {
+    -fx-background-radius: 3;
+}
+.hp-bar-text {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+.hp-text-dark {
+    -fx-text-fill: -sm-bg-darkest;
+}
+.hp-fill-healthy  { -fx-background-color: -sm-hp-healthy; }
+.hp-fill-wounded  { -fx-background-color: -sm-hp-wounded; }
+.hp-fill-critical { -fx-background-color: -sm-hp-critical; }
+.ac-badge {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 2 6 2 6;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+.init-badge {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
 }
 
 /* ---- Filter pane ---- */
 .filter-pane {
     -fx-background-color: -sm-bg-darkest;
-    -fx-border-color: transparent -sm-border-subtle transparent transparent;
-}
-
-/* ---- Encounter summary ---- */
-.encounter-pane {
-    -fx-background-color: -sm-bg-darkest;
-    -fx-border-color: transparent transparent transparent -sm-border-subtle;
-}
-.encounter-bottom {
-    -fx-border-color: -sm-border-subtle transparent transparent transparent;
-    -fx-border-width: 1 0 0 0;
 }
 .remove-btn {
     -fx-font-size: 16px;
+}
+
+/* ---- Navigation sidebar ---- */
+.nav-sidebar {
+    -fx-background-color: -sm-bg-panel;
+    -fx-padding: 8 4 8 4;
+    -fx-border-color: transparent -sm-border-subtle transparent transparent;
+    -fx-pref-width: 48;
+    -fx-min-width: 48;
+    -fx-max-width: 48;
+}
+.nav-btn {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6;
+    -fx-pref-width: 36;
+    -fx-pref-height: 36;
+    -fx-min-width: 36;
+    -fx-min-height: 36;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+    -fx-font-size: 18px;
+    -fx-text-fill: -sm-text-secondary;
+}
+.nav-btn:hover {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+}
+.nav-btn:selected {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
+.nav-btn:focused {
+    -fx-border-color: -sm-accent;
+    -fx-border-width: 2;
+}
+
+/* ---- Quick Search Bar ---- */
+.quick-search-field {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+    -fx-prompt-text-fill: -sm-text-muted;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 4 8;
+    -fx-font-size: 12px;
+}
+.quick-search-field:focused {
+    -fx-border-color: -sm-accent;
+}
+.quick-search-list {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+.quick-search-list .list-cell {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-padding: 4 8;
+}
+.quick-search-list .list-cell:hover {
+    -fx-background-color: -sm-bg-card;
+}
+.quick-search-list .list-cell:selected {
+    -fx-background-color: -sm-accent;
+}
+
+/* ---- Context Menu ---- */
+.context-menu {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+.context-menu .menu-item {
+    -fx-background-color: -sm-bg-elevated;
+}
+.context-menu .menu-item .label {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 12px;
+}
+.context-menu .menu-item:hover,
+.context-menu .menu-item:focused {
+    -fx-background-color: -sm-accent;
+}
+.context-menu .separator .line {
+    -fx-background-color: -sm-border-subtle;
+}
+
+/* ---- Browser Expand Strip ---- */
+.browser-expand-strip {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: transparent -sm-border-subtle transparent transparent;
+    -fx-padding: 8 4;
+    -fx-cursor: hand;
+}
+.browser-expand-strip:hover {
+    -fx-background-color: -sm-bg-elevated;
+}
+
+/* ---- Fixed Stat Block Panel ---- */
+.stat-block-fixed-panel {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: -sm-stat-red transparent transparent transparent;
+    -fx-border-width: 2 0 0 0;
+}
+.stat-block-fixed-header {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* ---- Filter Dropdown Popup ---- */
+.filter-dropdown {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 8;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 2);
+}
+.filter-trigger {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 3 8;
+    -fx-font-size: 11px;
+}
+.filter-trigger:hover {
+    -fx-text-fill: -sm-text-primary;
+    -fx-background-color: -sm-bg-card;
+}
+.filter-trigger-active {
+    -fx-border-color: -sm-accent;
+    -fx-text-fill: -sm-accent-hover;
+}
+
+/* ---- Control Panel (left) ---- */
+.control-panel {
+    -fx-background-color: -sm-bg-panel;
+}
+.control-separator {
+    -fx-background-color: -sm-border-subtle;
+}
+
+/* ---- Encounter Controls: scrollable middle zone ---- */
+.encounter-controls .scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+.encounter-controls .scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+.encounter-controls .scroll-pane .scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-pref-width: 6;
+}
+.encounter-controls .scroll-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: -sm-text-muted;
+    -fx-background-radius: 3;
+}
+.encounter-controls .scroll-pane .scroll-bar:vertical .track {
+    -fx-background-color: transparent;
+}
+.encounter-controls .scroll-pane .scroll-bar .increment-button,
+.encounter-controls .scroll-pane .scroll-bar .decrement-button {
+    -fx-pref-height: 0;
+    -fx-pref-width: 0;
+}
+.section-header {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 8 2 8;
+}
+.encounter-controls-divider {
+    -fx-background-color: -sm-border-subtle;
+    -fx-min-width: 1;
+    -fx-max-width: 1;
+    -fx-pref-width: 1;
+}
+
+/* ---- Inspector Pane (right) ---- */
+.inspector-pane {
+    -fx-background-color: -sm-bg-darkest;
+}
+.inspector-divider {
+    -fx-background-color: -sm-border-subtle;
+    -fx-cursor: default;
 }

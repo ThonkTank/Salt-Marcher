@@ -1,43 +1,47 @@
 package ui.components;
 
 import entities.Creature;
-import ui.ThemeColors;
-import ui.components.StatBlockView;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import services.EncounterGenerator;
 import services.EncounterGenerator.EncounterSlot;
 import services.RoleClassifier;
 import services.RoleClassifier.MonsterRole;
 
-public class CreatureCard extends HBox {
+import java.util.function.Consumer;
+
+public class CreatureCard extends VBox {
 
     private final Label countLabel;
     private final EncounterSlot slot;
+    private Consumer<Long> onRequestStatBlock;
 
     public CreatureCard(EncounterSlot slot, Runnable onCountChanged, Runnable onRemove) {
         this.slot = slot;
         getStyleClass().add("creature-card");
-        setSpacing(8);
-        setAlignment(Pos.CENTER_LEFT);
-        setMaxHeight(56);
+        setSpacing(0);
 
         Creature c = slot.creature;
+
+        // ---- Summary Row (top part) ----
+        HBox summary = new HBox(8);
+        summary.setAlignment(Pos.CENTER_LEFT);
 
         // LEFT: [-] count [+]
         Button minusBtn = new Button("\u2212");
         minusBtn.getStyleClass().add("compact");
+        minusBtn.setAccessibleText("Weniger " + c.Name);
         countLabel = new Label(String.valueOf(slot.count));
         countLabel.getStyleClass().add("bold");
         countLabel.setMinWidth(24);
         countLabel.setAlignment(Pos.CENTER);
         Button plusBtn = new Button("+");
         plusBtn.getStyleClass().add("compact");
+        plusBtn.setAccessibleText("Mehr " + c.Name);
 
         HBox qtyBox = new HBox(2, minusBtn, countLabel, plusBtn);
         qtyBox.setAlignment(Pos.CENTER);
@@ -45,7 +49,17 @@ public class CreatureCard extends HBox {
         // CENTER: Name + detail
         Label nameLabel = new Label(c.Name);
         nameLabel.getStyleClass().add("creature-link");
-        nameLabel.setOnMouseClicked(e -> showStatBlock(c));
+        nameLabel.setFocusTraversable(true);
+        nameLabel.setOnMouseClicked(e -> {
+            if (onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
+        });
+        nameLabel.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ENTER
+                    || e.getCode() == javafx.scene.input.KeyCode.SPACE) {
+                if (onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
+                e.consume();
+            }
+        });
 
         MonsterRole role = slot.role != null ? slot.role : RoleClassifier.classify(c);
         String detail = "CR " + c.CR + "  |  " + c.XP + " XP";
@@ -56,52 +70,57 @@ public class CreatureCard extends HBox {
         detailLabel.getStyleClass().add("text-secondary");
 
         Label roleBadge = new Label(role.name());
-        roleBadge.getStyleClass().add("small");
-        Color roleColor = ThemeColors.colorForRole(role.name());
-        roleBadge.setTextFill(roleColor);
-        roleBadge.setStyle("-fx-border-color: " + toHex(roleColor)
-                + "; -fx-border-radius: 2; -fx-padding: 0 3 0 3;");
+        roleBadge.getStyleClass().addAll("small", "role-badge", "role-" + role.name().toLowerCase());
 
         HBox detailRow = new HBox(4, detailLabel, roleBadge);
         detailRow.setAlignment(Pos.CENTER_LEFT);
 
+        // Stat block link
+        Label expandArrow = new Label("\u25BC");
+        expandArrow.getStyleClass().addAll("text-muted", "clickable");
+        expandArrow.setOnMouseClicked(e -> {
+            if (onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
+        });
+        expandArrow.setAccessibleText("Stat Block anzeigen");
+
         VBox infoBox = new VBox(2, nameLabel, detailRow);
         HBox.setHgrow(infoBox, Priority.ALWAYS);
 
-        // RIGHT: Remove
+        // RIGHT: Expand + Remove
         Button removeBtn = new Button("\u00d7");
         removeBtn.getStyleClass().addAll("compact", "remove-btn");
+        removeBtn.setAccessibleText("Entfernen: " + c.Name);
 
-        getChildren().addAll(qtyBox, infoBox, removeBtn);
+        VBox rightBox = new VBox(4, expandArrow, removeBtn);
+        rightBox.setAlignment(Pos.CENTER_RIGHT);
+
+        summary.getChildren().addAll(qtyBox, infoBox, rightBox);
+
+        getChildren().add(summary);
 
         // Wiring
         minusBtn.setOnAction(e -> {
             if (slot.count > 1) {
                 slot.count--;
                 countLabel.setText(String.valueOf(slot.count));
-                if (onCountChanged != null) onCountChanged.run();
+                onCountChanged.run();
             }
         });
         plusBtn.setOnAction(e -> {
             if (slot.count < EncounterGenerator.MAX_CREATURES_PER_SLOT) {
                 slot.count++;
                 countLabel.setText(String.valueOf(slot.count));
-                if (onCountChanged != null) onCountChanged.run();
+                onCountChanged.run();
             }
         });
-        removeBtn.setOnAction(e -> { if (onRemove != null) onRemove.run(); });
+        removeBtn.setOnAction(e -> onRemove.run());
     }
 
     public void refreshCount() {
         countLabel.setText(String.valueOf(slot.count));
     }
 
-    private void showStatBlock(Creature c) {
-        StatBlockView.showAsync(c.Id, getScene().getWindow());
-    }
-
-    private static String toHex(Color c) {
-        return String.format("#%02x%02x%02x",
-                (int)(c.getRed()*255), (int)(c.getGreen()*255), (int)(c.getBlue()*255));
+    public void setOnRequestStatBlock(Consumer<Long> callback) {
+        this.onRequestStatBlock = callback;
     }
 }

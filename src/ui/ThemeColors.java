@@ -1,10 +1,16 @@
 package ui;
 
+import javafx.geometry.Insets;
+import javafx.scene.control.Label;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 
+import java.util.List;
+
 /**
- * Java Color constants for programmatic use (Canvas drawing, dynamic inline styles).
- * These MUST stay in sync with the CSS variables in resources/salt-marcher.css.
+ * Color constants for Canvas drawing + shared UI style helpers.
+ * Canvas colors MUST stay in sync with the CSS variables in resources/salt-marcher.css.
  * Prefer CSS style classes over these constants wherever possible.
  */
 public final class ThemeColors {
@@ -17,19 +23,31 @@ public final class ThemeColors {
     public static final Color EASY   = Color.web("#00c680");          // -sm-easy
     public static final Color MEDIUM = Color.web("#ffb62a");          // -sm-medium
     public static final Color HARD   = Color.web("#d56c19");          // -sm-hard
-    public static final Color DEADLY = Color.web("#c60000");          // -sm-deadly
+    public static final Color DEADLY = Color.web("#e53935");          // -sm-deadly
 
-    // Dynamic role badge border color (CreatureCard inline style)
-    public static Color colorForRole(String roleName) {
-        if (roleName == null) return TEXT_SECONDARY;
-        return switch (roleName) {
-            case "BRUTE"      -> Color.web("#c62828");
-            case "ARTILLERY"  -> Color.web("#f9a825");
-            case "CONTROLLER" -> Color.web("#7b1fa2");
-            case "SKIRMISHER" -> Color.web("#2e7d32");
-            case "TANK"       -> Color.web("#1565c0");
-            case "LEADER"     -> Color.web("#ff8f00");
-            default           -> TEXT_SECONDARY;
+    // ---- CSS style helpers ----
+
+    private static final List<String> DIFFICULTY_STYLES =
+            List.of("difficulty-easy", "difficulty-medium", "difficulty-hard", "difficulty-deadly", "text-muted");
+
+    public static Region controlSeparator() {
+        Region sep = new Region();
+        sep.getStyleClass().add("control-separator");
+        sep.setMinHeight(1);
+        sep.setMaxHeight(1);
+        VBox.setMargin(sep, new Insets(4, 0, 4, 0));
+        return sep;
+    }
+
+    public static void applyDifficultyStyle(Label label, String difficulty) {
+        label.getStyleClass().removeAll(DIFFICULTY_STYLES);
+        String cls = switch (difficulty != null ? difficulty : "") {
+            case "Easy"   -> "difficulty-easy";
+            case "Medium" -> "difficulty-medium";
+            case "Hard"   -> "difficulty-hard";
+            case "Deadly" -> "difficulty-deadly";
+            default       -> "text-muted";
         };
+        label.getStyleClass().add(cls);
     }
 }

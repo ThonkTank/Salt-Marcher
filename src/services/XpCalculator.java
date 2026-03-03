@@ -68,6 +68,22 @@ public class XpCalculator {
         return "Deadly";
     }
 
+    // ---- DifficultyStats: shared between EncounterRosterPane and CombatTrackerPane ----
+
+    public record DifficultyStats(int adjXp, String difficulty,
+                                  int easyTh, int mediumTh, int hardTh, int deadlyTh) {}
+
+    public static DifficultyStats computeStats(int adjXp, int partySize, int avgLevel) {
+        int partySz = Math.max(1, partySize);
+        int easyTh   = getXpThreshold(avgLevel, "Easy")   * partySz;
+        int mediumTh = getXpThreshold(avgLevel, "Medium") * partySz;
+        int hardTh   = getXpThreshold(avgLevel, "Hard")   * partySz;
+        int deadlyTh = getXpThreshold(avgLevel, "Deadly") * partySz;
+        String diff = adjXp == 0 ? "" :
+                classifyDifficultyByXp(adjXp, easyTh, mediumTh, hardTh, deadlyTh);
+        return new DifficultyStats(adjXp, diff, easyTh, mediumTh, hardTh, deadlyTh);
+    }
+
     /** Kategorisiert anhand von XP-Schwellenwerten (für Encounter-Zusammenfassung). */
     public static String classifyDifficultyByXp(int adjustedXp, int easyTh, int mediumTh,
                                                 int hardTh, int deadlyTh) {

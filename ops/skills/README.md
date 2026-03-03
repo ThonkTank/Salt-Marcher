@@ -18,10 +18,7 @@ The filename (without `.md`) is the skill name used in `apply_skill.sh` and in b
 
 | Skill file | Focus |
 |---|---|
-| `review-smells.md` | Code smells, anti-patterns, duplication |
-| `review-elegance.md` | Readability, idiomatic style, naming |
-| `review-simplicity.md` | Over-engineering, KISS violations |
-| `review-quality.md` | Combined smells + elegance + simplicity (for small dirs) |
+| `review-quality.md` | Code smells, elegance, readability, simplicity, KISS violations |
 | `review-structure.md` | File/folder organization, package layout |
 | `review-architecture.md` | Layer violations, dependency direction |
 | `review-conventions.md` | Inconsistent patterns across the codebase |

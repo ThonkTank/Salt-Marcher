@@ -1,6 +1,7 @@
 package ui.components;
 
 import ui.ThemeColors;
+import javafx.scene.AccessibleRole;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.Region;
@@ -20,15 +21,19 @@ public class DifficultyMeter extends Region {
         setPrefHeight(28);
         setMinHeight(28);
         setMaxHeight(28);
+        setAccessibleRole(AccessibleRole.TEXT);
     }
 
-    public void update(int easy, int medium, int hard, int deadly, int adjXp) {
+    public void update(int easy, int medium, int hard, int deadly, int adjXp, String difficultyLabel) {
         this.easyThreshold   = easy;
         this.mediumThreshold = medium;
         this.hardThreshold   = hard;
         this.deadlyThreshold = deadly;
         this.adjustedXp      = adjXp;
         draw();
+
+        setAccessibleText("XP: " + adjXp + " \u2014 " + difficultyLabel);
+        notifyAccessibleAttributeChanged(javafx.scene.AccessibleAttribute.TEXT);
     }
 
     private void draw() {

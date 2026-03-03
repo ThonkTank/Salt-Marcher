@@ -1,8 +1,6 @@
 package ui;
 
 import entities.Creature;
-import ui.components.StatBlockView;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -12,15 +10,16 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.MouseButton;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
+import javafx.scene.layout.*;
 import repositories.CreatureRepository;
 
 import java.util.function.Consumer;
 
+/**
+ * Monster database table with sorting and pagination.
+ * Stat blocks are displayed externally via onRequestStatBlock callback (routed to InspectorPane).
+ * Filters live externally in EncounterControls (left panel).
+ */
 public class MonsterListPane extends BorderPane {
 
     private static final int PAGE_SIZE = 50;
@@ -34,7 +33,9 @@ public class MonsterListPane extends BorderPane {
     private final ComboBox<String> sortCombo;
 
     private Consumer<Creature> onAddCreature;
+    private Consumer<Long> onRequestStatBlock;
     private Task<?> currentTask;
+    private boolean combatMode = false;
 
     private FilterPane.FilterCriteria currentCriteria;
     private int currentOffset = 0;
@@ -74,47 +75,66 @@ public class MonsterListPane extends BorderPane {
 
         TableColumn<Creature, String> nameCol = new TableColumn<>("Name");
         nameCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().Name));
+        nameCol.setMinWidth(120);
         nameCol.setPrefWidth(200);
         nameCol.setCellFactory(col -> new TableCell<>() {
+            private final Label lbl = new Label();
+            {
+                lbl.getStyleClass().add("creature-link");
+                lbl.setOnMouseClicked(ev -> {
+                    if (getIndex() < 0 || getIndex() >= getTableView().getItems().size()) return;
+                    Creature c = getTableView().getItems().get(getIndex());
+                    if (onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
+                });
+                lbl.setAccessibleRole(javafx.scene.AccessibleRole.BUTTON);
+            }
             @Override
             protected void updateItem(String name, boolean empty) {
                 super.updateItem(name, empty);
                 if (empty || name == null) { setText(null); setGraphic(null); return; }
-                Label lbl = new Label(name);
-                lbl.getStyleClass().add("creature-link");
+                lbl.setText(name);
+                lbl.setAccessibleText("Stat Block: " + name);
                 setGraphic(lbl);
             }
         });
 
         TableColumn<Creature, String> crCol = new TableColumn<>("CR");
         crCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().CR));
+        crCol.setMinWidth(40);
         crCol.setPrefWidth(50);
         crCol.setMaxWidth(60);
 
         TableColumn<Creature, String> typeCol = new TableColumn<>("Typ");
         typeCol.setCellValueFactory(cd -> new SimpleStringProperty(
                 cd.getValue().CreatureType != null ? cd.getValue().CreatureType : ""));
+        typeCol.setMinWidth(80);
         typeCol.setPrefWidth(110);
+        typeCol.setMaxWidth(150);
 
         TableColumn<Creature, String> sizeCol = new TableColumn<>("Groesse");
         sizeCol.setCellValueFactory(cd -> new SimpleStringProperty(
                 cd.getValue().Size != null ? cd.getValue().Size : ""));
-        sizeCol.setPrefWidth(80);
-        sizeCol.setMaxWidth(90);
+        sizeCol.setMinWidth(65);
+        sizeCol.setPrefWidth(85);
+        sizeCol.setMaxWidth(100);
 
         TableColumn<Creature, Number> xpCol = new TableColumn<>("XP");
         xpCol.setCellValueFactory(cd -> new SimpleIntegerProperty(cd.getValue().XP));
+        xpCol.setMinWidth(45);
         xpCol.setPrefWidth(60);
-        xpCol.setMaxWidth(70);
+        xpCol.setMaxWidth(75);
 
         TableColumn<Creature, Void> addCol = new TableColumn<>("");
-        addCol.setPrefWidth(55);
-        addCol.setMaxWidth(60);
+        addCol.setMinWidth(55);
+        addCol.setPrefWidth(65);
+        addCol.setMaxWidth(75);
         addCol.setSortable(false);
         addCol.setCellFactory(col -> new TableCell<>() {
             private final Button btn = new Button("+Add");
+            private final Tooltip addTip = new Tooltip();
             {
                 btn.getStyleClass().addAll("accent", "compact");
+                btn.setTooltip(addTip);
                 btn.setOnAction(e -> {
                     Creature c = getTableView().getItems().get(getIndex());
                     if (onAddCreature != null) onAddCreature.accept(c);
@@ -123,7 +143,12 @@ public class MonsterListPane extends BorderPane {
             @Override
             protected void updateItem(Void v, boolean empty) {
                 super.updateItem(v, empty);
-                setGraphic(empty ? null : btn);
+                if (empty) { setGraphic(null); return; }
+                btn.setText(combatMode ? "+Reinf." : "+Add");
+                addTip.setText(combatMode
+                        ? "Als Verstaerkung hinzufuegen"
+                        : "Zum Encounter hinzufuegen (Shift+Enter)");
+                setGraphic(btn);
             }
         });
 
@@ -170,37 +195,12 @@ public class MonsterListPane extends BorderPane {
             loadPage();
         });
 
-        // Name click -> stat block
-        table.setOnMouseClicked(e -> {
-            if (e.getButton() != MouseButton.PRIMARY) return;
-            Creature c = table.getSelectionModel().getSelectedItem();
-            if (c == null) return;
-
-            @SuppressWarnings("unchecked")
-            TableColumn<Creature, ?> clickedCol = (TableColumn<Creature, ?>)
-                    table.getColumns().stream()
-                            .filter(col -> {
-                                double x = e.getX();
-                                double colStart = 0;
-                                for (var tc : table.getColumns()) {
-                                    if (tc == col) return x >= colStart && x < colStart + tc.getWidth();
-                                    colStart += tc.getWidth();
-                                }
-                                return false;
-                            })
-                            .findFirst().orElse(null);
-
-            if (clickedCol == nameCol) {
-                showStatBlock(c);
-            }
-        });
-
         // Keyboard: ENTER -> stat block, Shift+ENTER -> add
         table.setOnKeyPressed(e -> {
             Creature c = table.getSelectionModel().getSelectedItem();
             if (c == null) return;
             if (e.getCode() == KeyCode.ENTER && !e.isShiftDown()) {
-                showStatBlock(c);
+                if (onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
                 e.consume();
             } else if (e.getCode() == KeyCode.ENTER && e.isShiftDown()) {
                 if (onAddCreature != null) onAddCreature.accept(c);
@@ -209,8 +209,12 @@ public class MonsterListPane extends BorderPane {
         });
     }
 
-    public void setOnAddCreature(Consumer<Creature> callback) {
-        this.onAddCreature = callback;
+    public void setOnAddCreature(Consumer<Creature> callback) { this.onAddCreature = callback; }
+    public void setOnRequestStatBlock(Consumer<Long> callback) { this.onRequestStatBlock = callback; }
+
+    public void setCombatMode(boolean combat) {
+        this.combatMode = combat;
+        table.refresh();
     }
 
     public void applyFilters(FilterPane.FilterCriteria criteria) {
@@ -220,6 +224,7 @@ public class MonsterListPane extends BorderPane {
     }
 
     public void loadInitial() {
+        if (!items.isEmpty()) return;
         this.currentCriteria = new FilterPane.FilterCriteria();
         this.currentOffset = 0;
         loadPage();
@@ -251,7 +256,7 @@ public class MonsterListPane extends BorderPane {
             updatePagination();
         });
         task.setOnFailed(e ->
-                System.err.println("Fehler beim Laden: " + task.getException().getMessage()));
+                System.err.println("Monster laden fehlgeschlagen: " + task.getException().getMessage()));
         currentTask = task;
         Thread t = new Thread(task, "sm-monster-load");
         t.setDaemon(true);
@@ -265,9 +270,5 @@ public class MonsterListPane extends BorderPane {
         prevButton.setDisable(currentOffset <= 0);
         nextButton.setDisable(currentOffset + PAGE_SIZE >= totalCount);
         countLabel.setText(totalCount + " Monster gefunden");
-    }
-
-    private void showStatBlock(Creature c) {
-        StatBlockView.showAsync(c.Id, getScene().getWindow());
     }
 }

@@ -275,8 +275,13 @@ public class CreatureRepository {
         saveJunctionValues(conn, "creature_subtypes", "subtype", c.Id, c.Subtypes);
     }
 
+    private static final Set<String> ALLOWED_JUNCTIONS =
+            Set.of("creature_biomes:biome", "creature_subtypes:subtype");
+
     private static void saveJunctionValues(Connection conn, String table, String column,
                                            Long creatureId, List<String> values) throws SQLException {
+        if (!ALLOWED_JUNCTIONS.contains(table + ":" + column))
+            throw new IllegalArgumentException("Invalid junction table/column: " + table + "." + column);
         try (PreparedStatement del = conn.prepareStatement(
                 "DELETE FROM " + table + " WHERE creature_id = ?")) {
             del.setLong(1, creatureId);
@@ -366,8 +371,12 @@ public class CreatureRepository {
     }
 
     public static List<Creature> searchByName(String query, int limit) {
+        return searchByName(query, limit, true);
+    }
+
+    public static List<Creature> searchByName(String query, int limit, boolean loadRelations) {
         List<Creature> creatures = new ArrayList<>();
-        String sql = "SELECT * FROM creatures WHERE LOWER(name) LIKE LOWER(?) LIMIT ?";
+        String sql = "SELECT * FROM creatures WHERE name LIKE ? COLLATE NOCASE LIMIT ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, "%" + query + "%");
@@ -375,9 +384,11 @@ public class CreatureRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) creatures.add(mapCreatureFields(rs));
             }
-            loadActions(conn, creatures);
-            loadBiomes(conn, creatures);
-            loadSubtypes(conn, creatures);
+            if (loadRelations) {
+                loadActions(conn, creatures);
+                loadBiomes(conn, creatures);
+                loadSubtypes(conn, creatures);
+            }
         } catch (SQLException e) {
             System.err.println("Fehler bei Kreaturensuche: " + e.getMessage());
         }
