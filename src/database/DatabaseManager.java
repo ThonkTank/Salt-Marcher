@@ -13,12 +13,6 @@ public class DatabaseManager {
     private static Connection realConnection;
 
     static {
-        try {
-            Class.forName("org.sqlite.JDBC");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("SQLite JDBC Treiber nicht gefunden", e);
-        }
-
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 if (realConnection != null && !realConnection.isClosed()) {
@@ -46,15 +40,27 @@ public class DatabaseManager {
                 new Class<?>[]{ Connection.class },
                 (proxy, method, args) -> {
                     if ("close".equals(method.getName())) return null;
-                    return method.invoke(realConnection, args);
+                    try {
+                        return method.invoke(realConnection, args);
+                    } catch (java.lang.reflect.InvocationTargetException e) {
+                        throw e.getCause();
+                    }
                 });
+    }
+
+    public static void applyBulkImportPragmas(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("PRAGMA synchronous = NORMAL");
+            stmt.execute("PRAGMA cache_size = -64000");
+        }
     }
 
     public static void setupDatabase() {
         String playersSql = "CREATE TABLE IF NOT EXISTS player_characters ("
-                + "id    INTEGER PRIMARY KEY,"
-                + "name  TEXT    NOT NULL,"
-                + "level INTEGER NOT NULL DEFAULT 1"
+                + "id       INTEGER PRIMARY KEY,"
+                + "name     TEXT    NOT NULL,"
+                + "level    INTEGER NOT NULL DEFAULT 1,"
+                + "in_party INTEGER NOT NULL DEFAULT 1"
                 + ")";
 
         String creaturesSql = "CREATE TABLE IF NOT EXISTS creatures ("
@@ -162,9 +168,21 @@ public class DatabaseManager {
             // Migrate existing comma-delimited data into junction tables
             migrateBiomes(conn);
             migrateSubtypes(conn);
+            migratePartyColumn(conn);
 
         } catch (SQLException e) {
-            System.err.println("Fehler beim Datenbank-Setup: " + e.getMessage());
+            throw new RuntimeException("Datenbankschema konnte nicht erstellt werden", e);
+        }
+    }
+
+    private static void migratePartyColumn(Connection conn) {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE player_characters ADD COLUMN in_party INTEGER NOT NULL DEFAULT 1");
+        } catch (SQLException e) {
+            // SQLite returns error when column already exists — normal on subsequent starts
+            if (!e.getMessage().contains("duplicate column name")) {
+                System.err.println("Unerwarteter Fehler bei migratePartyColumn: " + e.getMessage());
+            }
         }
     }
 
@@ -176,8 +194,15 @@ public class DatabaseManager {
         migrateDelimitedColumn(conn, "biomes", "creature_biomes", "biome", "Biome-Migration");
     }
 
+    private static final java.util.Set<String> MIGRATION_ALLOWED =
+            java.util.Set.of("subtype:creature_subtypes:subtype", "biomes:creature_biomes:biome");
+
     private static void migrateDelimitedColumn(Connection conn, String sourceColumn,
                                                String targetTable, String targetColumn, String label) {
+        String key = sourceColumn + ":" + targetTable + ":" + targetColumn;
+        if (!MIGRATION_ALLOWED.contains(key))
+            throw new IllegalArgumentException("Invalid migration params: " + key);
+
         try (Statement stmt = conn.createStatement()) {
             boolean junctionEmpty;
             try (var rs = stmt.executeQuery("SELECT COUNT(*) FROM " + targetTable)) {
@@ -192,23 +217,32 @@ public class DatabaseManager {
             }
             if (!hasData) return;
 
-            try (var rs = stmt.executeQuery(
-                    "SELECT id, " + sourceColumn + " FROM creatures WHERE " + sourceColumn + " IS NOT NULL AND " + sourceColumn + " != ''");
-                 var ins = conn.prepareStatement(
-                    "INSERT OR IGNORE INTO " + targetTable + "(creature_id, " + targetColumn + ") VALUES(?, ?)")) {
-                while (rs.next()) {
-                    long id = rs.getLong("id");
-                    String raw = rs.getString(sourceColumn);
-                    for (String val : raw.split(",")) {
-                        String trimmed = val.trim();
-                        if (!trimmed.isEmpty()) {
-                            ins.setLong(1, id);
-                            ins.setString(2, trimmed);
-                            ins.addBatch();
+            conn.setAutoCommit(false);
+            try {
+                try (var rs = stmt.executeQuery(
+                        "SELECT id, " + sourceColumn + " FROM creatures WHERE " + sourceColumn + " IS NOT NULL AND " + sourceColumn + " != ''");
+                     var ins = conn.prepareStatement(
+                        "INSERT OR IGNORE INTO " + targetTable + "(creature_id, " + targetColumn + ") VALUES(?, ?)")) {
+                    while (rs.next()) {
+                        long id = rs.getLong("id");
+                        String raw = rs.getString(sourceColumn);
+                        for (String val : raw.split(",")) {
+                            String trimmed = val.trim();
+                            if (!trimmed.isEmpty()) {
+                                ins.setLong(1, id);
+                                ins.setString(2, trimmed);
+                                ins.addBatch();
+                            }
                         }
                     }
+                    ins.executeBatch();
                 }
-                ins.executeBatch();
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
             System.err.println(label + ": " + e.getMessage());

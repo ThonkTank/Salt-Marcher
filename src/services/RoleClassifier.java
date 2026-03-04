@@ -136,21 +136,13 @@ public class RoleClassifier {
     // --- Hilfsmethoden ---
 
     private static int crToIndex(String cr) {
-        if (cr == null) return 0;
-        return switch (cr.trim()) {
-            case "0"    -> 0;
-            case "1/8"  -> 1;
-            case "1/4"  -> 2;
-            case "1/2"  -> 3;
-            default -> {
-                try {
-                    int val = Integer.parseInt(cr.trim());
-                    yield Math.min(Math.max(val + 3, 0), CR_BENCHMARKS.length - 1);
-                } catch (NumberFormatException e) {
-                    yield 0;
-                }
-            }
-        };
+        double val = EncounterTemplate.crToNumber(cr);
+        // Indices 0-3 are fractional CRs (0, 1/8, 1/4, 1/2); integer CRs start at index 4.
+        if (val <= 0)    return 0;
+        if (val < 0.25)  return 1;
+        if (val < 0.5)   return 2;
+        if (val < 1.0)   return 3;
+        return Math.min((int) val + 4, CR_BENCHMARKS.length - 1);
     }
 
     private static String collectActionText(Creature c) {

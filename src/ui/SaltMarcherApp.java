@@ -16,15 +16,18 @@ public class SaltMarcherApp extends Application {
         EncounterView encounterView = new EncounterView();
         encounterView.setOnRefreshToolbar(shell::refreshToolbar);
         encounterView.setOnRefreshPanels(shell::refreshPanels);
-        encounterView.setOnToggleLayout(shell::toggleLayout);
         encounterView.setOnRequestStatBlock(shell.getInspectorPane()::showStatBlock);
         encounterView.setOnEnsureStatBlock(shell.getInspectorPane()::ensureStatBlock);
+        encounterView.setOnUpdateSceneContent(shell.getScenePane()::setContent);
 
-        PartyView partyView = new PartyView();
-        partyView.setOnPartyChanged(encounterView::refreshPartyState);
+        PartyPanel partyPanel = new PartyPanel();
+        partyPanel.setOnPartyChanged(encounterView::refreshPartyState);
+        shell.addPersistentToolbarItem(partyPanel.getTriggerButton());
+
+        OverworldView overworldView = new OverworldView();
 
         shell.registerView(ViewId.ENCOUNTER, encounterView);
-        shell.registerView(ViewId.PARTY, partyView);
+        shell.registerView(ViewId.OVERWORLD, overworldView);
         shell.navigateTo(ViewId.ENCOUNTER);
 
         Scene scene = new Scene(shell, 1150, 700);

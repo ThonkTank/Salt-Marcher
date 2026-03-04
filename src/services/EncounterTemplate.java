@@ -119,14 +119,13 @@ public class EncounterTemplate {
             MonsterRole[] roles = pickRoles(usedPrimary, fraction);
             usedPrimary.add(roles[0]);
 
-            // CR und Count werden primär von strength bestimmt.
-            // fraction beeinflusst nur sekundär (dominante Gruppen etwas stärker).
-
-            // CR-Bereich: str=0 → niedrig, str=1 → hoch
-            //   str=0: minCr=0.0, maxCr=0.25
-            //   str=0.5: minCr=0.2, maxCr=1.0
-            //   str=1: minCr=0.5, maxCr=2.5
-            // Dominante Gruppen (fraction >= 0.5) bekommen nochmal +0.2 auf CR
+            // CR and count are primarily determined by strength parameter.
+            // Strength controls the encounter feel: str=0 generates swarms of weak creatures,
+            // while str=1 creates elite encounters with few high-CR creatures.
+            // Fraction (budget share) provides a secondary influence: dominant groups (fraction >= 0.5)
+            // receive a slight CR boost to make them tactically distinct from support roles.
+            // Tuning rationale: strength=1 at party level 5 yields approximately CR 3-5 creatures,
+            // matching D&D Dungeon Master's Guide elite encounter guidelines.
             double fractionBoost = (fraction >= 0.5) ? CR_DOMINANT_BOOST
                                  : (fraction >= 0.3) ? CR_MEDIUM_BOOST : 0.0;
             double minCr = Math.max(0.0, str * CR_STR_SCALE + fractionBoost - 0.1);

@@ -723,30 +723,6 @@
     -fx-background-color: -sm-border-subtle;
 }
 
-/* ---- Encounter Controls: scrollable middle zone ---- */
-.encounter-controls .scroll-pane {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
-}
-.encounter-controls .scroll-pane .viewport {
-    -fx-background-color: transparent;
-}
-.encounter-controls .scroll-pane .scroll-bar:vertical {
-    -fx-background-color: transparent;
-    -fx-pref-width: 6;
-}
-.encounter-controls .scroll-pane .scroll-bar:vertical .thumb {
-    -fx-background-color: -sm-text-muted;
-    -fx-background-radius: 3;
-}
-.encounter-controls .scroll-pane .scroll-bar:vertical .track {
-    -fx-background-color: transparent;
-}
-.encounter-controls .scroll-pane .scroll-bar .increment-button,
-.encounter-controls .scroll-pane .scroll-bar .decrement-button {
-    -fx-pref-height: 0;
-    -fx-pref-width: 0;
-}
 .section-header {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
@@ -763,7 +739,122 @@
 .inspector-pane {
     -fx-background-color: -sm-bg-darkest;
 }
+
+/* ---- Scene Pane (persistent lower-right context) ---- */
+.scene-pane {
+    -fx-background-color: -sm-bg-darkest;
+}
+
+/* ---- Hex Map (Overworld) ---- */
+.hex-map-pane {
+    -fx-background-color: -sm-bg-panel;
+}
+.hex-map-placeholder {
+    -fx-text-alignment: center;
+    -fx-font-size: 16px;
+}
 .inspector-divider {
     -fx-background-color: -sm-border-subtle;
     -fx-cursor: default;
+}
+
+/* ---- HP / Initiative edit popup ---- */
+.edit-popup-panel {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-accent;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8;
+    -fx-spacing: 6;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0, 0, 2);
+}
+.edit-popup-panel .button {
+    -fx-padding: 3 8 3 8;
+    -fx-font-size: 13px;
+}
+.spinner-btn {
+    -fx-padding: 2 8 2 8;
+    -fx-font-size: 11px;
+    -fx-min-width: 28;
+}
+
+/* ---- Party panel (toolbar popup) ---- */
+.party-panel {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 12, 0, 0, 3);
+    -fx-min-width: 280;
+    -fx-pref-width: 320;
+}
+.party-header {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-padding: 8 12 8 12;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-border-width: 1;
+}
+.party-section-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-weight: bold;
+    -fx-padding: 6 8 2 8;
+}
+.party-row {
+    -fx-padding: 5 8 5 8;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-border-width: 1;
+}
+.party-row:hover {
+    -fx-background-color: derive(-sm-bg-panel, 15%);
+}
+.party-btn {
+    -fx-padding: 2 8 2 8;
+    -fx-font-size: 11px;
+}
+.party-btn.remove {
+    -fx-background-color: -sm-medium;
+    -fx-text-fill: #1a1200;
+}
+.party-btn.remove:hover {
+    -fx-background-color: derive(-sm-medium, 25%);
+}
+.party-btn.delete {
+    -fx-background-color: -sm-monster-red;
+    -fx-text-fill: -sm-text-primary;
+}
+.party-btn.delete:hover {
+    -fx-background-color: derive(-sm-monster-red, 25%);
+}
+.party-search {
+    -fx-padding: 8 8 4 8;
+}
+.party-suggestions {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-width: 0 1 1 1;
+    -fx-max-height: 120;
+}
+.party-suggestions .list-cell {
+    -fx-background-color: -sm-bg-card;
+    -fx-padding: 4 8 4 8;
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 12px;
+}
+.party-suggestions .list-cell:hover,
+.party-suggestions .list-cell:selected {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
+.party-summary {
+    -fx-padding: 6 12 6 12;
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle transparent transparent transparent;
+    -fx-border-width: 1;
+    -fx-font-size: 11px;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-border-radius: 0 0 6 6;
+    -fx-background-radius: 0 0 6 6;
 }

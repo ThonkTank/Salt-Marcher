@@ -26,12 +26,6 @@ public interface AppView {
     /** Content for the left control panel. Returns null to leave the panel empty. */
     default Node getControlPanel() { return null; }
 
-    /** Content for the right inspector's top section. Returns null to leave it empty. */
-    default Node getInspectorContent() { return null; }
-
-    /** Notifies the view that the shell layout mode changed. */
-    default void onLayoutChanged(boolean stacked) {}
-
     /** Called each time this view becomes the active view. Safe to call multiple times. */
     default void onShow() {}
 

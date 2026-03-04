@@ -13,6 +13,9 @@ import java.util.function.Function;
 
 public class SliderControl extends HBox {
 
+    /** Returned by getValue() when the slider is in Auto mode. */
+    public static final double AUTO_VALUE = -1.0;
+
     private final Slider slider;
     private final CheckBox autoBox;
     private final Label valueLabel;
@@ -71,7 +74,7 @@ public class SliderControl extends HBox {
         }
     }
 
-    public double getValue() { return autoBox.isSelected() ? -1 : slider.getValue(); }
+    public double getValue() { return autoBox.isSelected() ? AUTO_VALUE : slider.getValue(); }
     public boolean isAuto()  { return autoBox.isSelected(); }
     public Slider getSlider() { return slider; }
 

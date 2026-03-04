@@ -13,6 +13,10 @@ import java.util.Map;
 
 public class CombatSetup {
 
+    private static int rollInitiative(Creature c) {
+        return (int) (Math.random() * 20) + 1 + c.InitiativeBonus;
+    }
+
     public static List<CombatantState> buildCombatants(
             List<PlayerCharacter> party,
             List<Integer> pcInitiatives,
@@ -27,8 +31,9 @@ public class CombatSetup {
             cs.Name              = pc.Name + " (Lv." + pc.Level + ")";
             cs.IsPlayerCharacter = true;
             cs.Initiative        = pcInitiatives.get(i);
-            cs.Ac                = 0;
-            cs.MaxHp             = 0;
+            // PC stats (AC, MaxHp) are not tracked; the UI displays the character sheet instead
+            cs.AC                = 0; // 0 = unknown/managed externally by convention
+            cs.MaxHp             = 0; // 0 = unknown/managed externally by convention
             cs.CurrentHp         = 0;
             combatants.add(cs);
         }
@@ -45,10 +50,9 @@ public class CombatSetup {
                 cs.IsPlayerCharacter = false;
                 cs.MaxHp             = slot.creature.HP;
                 cs.CurrentHp         = slot.creature.HP;
-                cs.Ac                = slot.creature.AC;
+                cs.AC                = slot.creature.AC;
                 cs.InitiativeBonus   = slot.creature.InitiativeBonus;
-                cs.Initiative        = (int) (Math.random() * 20) + 1
-                        + slot.creature.InitiativeBonus;
+                cs.Initiative        = rollInitiative(slot.creature);
                 combatants.add(cs);
             }
         }
@@ -65,23 +69,23 @@ public class CombatSetup {
     /** Compute difficulty stats from alive monster combatants. */
     public static XpCalculator.DifficultyStats computeLiveStats(
             List<CombatantState> combatants, int partySize, int avgLevel) {
-        Map<Long, EncounterSlot> slotMap = new LinkedHashMap<>();
+        Map<Long, Creature> creatureMap = new LinkedHashMap<>();
+        Map<Long, Integer> countMap = new LinkedHashMap<>();
         for (CombatantState cs : combatants) {
             if (cs.IsPlayerCharacter || cs.CreatureRef == null) continue;
             if (cs.CurrentHp > 0) {
                 Long id = cs.CreatureRef.Id;
-                EncounterSlot slot = slotMap.computeIfAbsent(id, k -> {
-                    EncounterSlot s = new EncounterSlot();
-                    s.creature = cs.CreatureRef;
-                    s.count = 0;
-                    return s;
-                });
-                slot.count++;
+                creatureMap.putIfAbsent(id, cs.CreatureRef);
+                countMap.put(id, countMap.getOrDefault(id, 0) + 1);
             }
         }
-        List<EncounterSlot> liveSlots = new ArrayList<>(slotMap.values());
+        List<Creature> creatures = new ArrayList<>(creatureMap.values());
+        List<Integer> counts = new ArrayList<>();
+        for (Creature c : creatures) {
+            counts.add(countMap.get(c.Id));
+        }
         return XpCalculator.computeStats(
-                EncounterGenerator.adjustedXp(liveSlots), partySize, avgLevel);
+                EncounterGenerator.adjustedXpFromCounts(creatures, counts), partySize, avgLevel);
     }
 
     /**
@@ -96,9 +100,9 @@ public class CombatSetup {
         cs.IsPlayerCharacter = false;
         cs.MaxHp             = creature.HP;
         cs.CurrentHp         = creature.HP;
-        cs.Ac                = creature.AC;
+        cs.AC                = creature.AC;
         cs.InitiativeBonus   = creature.InitiativeBonus;
-        cs.Initiative        = (int) (Math.random() * 20) + 1 + creature.InitiativeBonus;
+        cs.Initiative        = rollInitiative(creature);
         return cs;
     }
 }

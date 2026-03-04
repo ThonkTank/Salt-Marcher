@@ -15,7 +15,7 @@ public class Creature {
     public int Speed;                // Walk-Speed in ft (für EncounterGenerator)
     public int InitiativeBonus;
     public List<String> Biomes;
-    public List<Action> Actions;     // alle Aktionen flach (Rückwärtskompatibilität)
+    public List<Action> Actions;     // fallback for unrecognized action_types from DB
 
     // --- Basis-Identität ---
     public String Size;              // Tiny / Small / Medium / Large / Huge / Gargantuan

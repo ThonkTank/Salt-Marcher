@@ -7,10 +7,8 @@ import javafx.event.EventHandler;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextInputControl;
-import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -24,30 +22,23 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Encounter workflow view: orchestrates builder, initiative, and combat modes.
- * Provides content for all three zones of the app shell.
- * A layout toggle button in the toolbar lets the user switch between
- * 3-column and stacked layouts (handled by AppShell).
+ * Encounter workflow view: orchestrates builder and combat modes.
+ * Builder mode shows the monster browser + roster; combat mode shows the turn tracker.
  */
 public class EncounterView implements AppView {
 
-    enum Mode { BUILDER, INITIATIVE, COMBAT }
+    enum Mode { BUILDER, COMBAT }
 
     private Runnable onRefreshToolbar;
     private Runnable onRefreshPanels;
-    private Runnable onToggleLayout;
     private Consumer<Long> onRequestStatBlock;
     private Consumer<Long> onEnsureStatBlock;
+    private Consumer<Node> onUpdateSceneContent;
     private final MonsterListPane monsterList;
 
     private final EncounterControls encounterControls;
-    private final CombatControls combatControls;
     private final EncounterRosterPane rosterPane;
     private CombatTrackerPane trackerPane;
-    private InitiativePane initiativePane;
-
-    private final Button layoutToggle;
-    private final Label partySummaryLabel;
 
     private List<PlayerCharacter> partyCache = new ArrayList<>();
     private int cachedAvgLevel = 1;
@@ -58,15 +49,7 @@ public class EncounterView implements AppView {
     public EncounterView() {
         monsterList = new MonsterListPane();
         encounterControls = new EncounterControls();
-        combatControls = new CombatControls();
         rosterPane = new EncounterRosterPane();
-
-        // Layout toggle button (delegates to AppShell)
-        layoutToggle = new Button("\u2194");
-        layoutToggle.setTooltip(new Tooltip("Layout wechseln (Spalten / Gestapelt)"));
-        layoutToggle.getStyleClass().add("compact");
-        layoutToggle.setOnAction(e -> { if (onToggleLayout != null) onToggleLayout.run(); });
-        layoutToggle.setAccessibleText("Layout wechseln");
 
         // Wiring (filter callback wired in setFilterData when FilterPane is ready)
         monsterList.setOnAddCreature(this::onAddCreature);
@@ -75,10 +58,6 @@ public class EncounterView implements AppView {
         rosterPane.setOnStartCombat(this::onRequestCombat);
         rosterPane.setOnRosterChanged(() -> rosterPane.setStartCombatEnabled(rosterPane.hasSlots()));
         rosterPane.setOnRequestStatBlock(id -> { if (onRequestStatBlock != null) onRequestStatBlock.accept(id); });
-        combatControls.getQuickSearch().setOnCreatureSelected(this::onAddReinforcement);
-
-        partySummaryLabel = new Label("Keine Party-Mitglieder");
-        partySummaryLabel.getStyleClass().add("text-secondary");
     }
 
     // ---- Callback setters (wired by SaltMarcherApp after construction) ----
@@ -87,9 +66,9 @@ public class EncounterView implements AppView {
 
     public void setOnRefreshToolbar(Runnable callback) { this.onRefreshToolbar = callback; }
     public void setOnRefreshPanels(Runnable callback) { this.onRefreshPanels = callback; }
-    public void setOnToggleLayout(Runnable callback) { this.onToggleLayout = callback; }
     public void setOnRequestStatBlock(Consumer<Long> callback) { this.onRequestStatBlock = callback; }
     public void setOnEnsureStatBlock(Consumer<Long> callback) { this.onEnsureStatBlock = callback; }
+    public void setOnUpdateSceneContent(Consumer<Node> callback) { this.onUpdateSceneContent = callback; }
     // Scene must be set before combat starts so the scene-level key filter can be installed.
     public void setScene(Scene scene) { this.scene = scene; }
 
@@ -103,46 +82,22 @@ public class EncounterView implements AppView {
     @Override public Node getRoot() { return monsterList; }
 
     @Override public String getTitle() {
-        return switch (currentMode) {
-            case BUILDER -> "Encounter Builder";
-            case INITIATIVE -> "Initiative";
-            case COMBAT -> "Encounter Runner";
-        };
+        return currentMode == Mode.COMBAT ? "Encounter Runner" : "Encounter Builder";
     }
 
     @Override public String getIconText() { return "\u2694"; }
 
     @Override
-    public List<Node> getToolbarItems() {
-        return List.of(layoutToggle, partySummaryLabel);
-    }
-
-    @Override
-    public Node getControlPanel() {
-        return switch (currentMode) {
-            case COMBAT -> combatControls;
-            case BUILDER, INITIATIVE -> encounterControls;
-        };
-    }
-
-    @Override
-    public Node getInspectorContent() {
-        return switch (currentMode) {
-            case BUILDER -> rosterPane;
-            case INITIATIVE -> initiativePane;
-            case COMBAT -> trackerPane;
-        };
-    }
-
-    @Override
-    public void onLayoutChanged(boolean stacked) {
-        encounterControls.setHorizontal(stacked);
-    }
+    public Node getControlPanel() { return encounterControls; }
 
     @Override
     public void onShow() {
         refreshPartyState();
         monsterList.loadInitial();
+        // Push current content into the persistent ScenePane
+        if (onUpdateSceneContent != null) {
+            onUpdateSceneContent.accept(currentMode == Mode.COMBAT ? trackerPane : rosterPane);
+        }
     }
 
     // ---- Mode switching ----
@@ -151,6 +106,7 @@ public class EncounterView implements AppView {
         Mode oldMode = currentMode;
         currentMode = mode;
         monsterList.setCombatMode(mode == Mode.COMBAT);
+        encounterControls.setCombatMode(mode == Mode.COMBAT);
 
         // Install/remove scene-level combat shortcuts
         if (scene != null) {
@@ -159,6 +115,11 @@ public class EncounterView implements AppView {
             } else if (mode != Mode.COMBAT && oldMode == Mode.COMBAT) {
                 scene.removeEventFilter(KeyEvent.KEY_PRESSED, combatKeyHandler);
             }
+        }
+
+        // Push new content to the persistent ScenePane
+        if (onUpdateSceneContent != null) {
+            onUpdateSceneContent.accept(mode == Mode.COMBAT ? trackerPane : rosterPane);
         }
 
         if (onRefreshToolbar != null) onRefreshToolbar.run();
@@ -180,7 +141,7 @@ public class EncounterView implements AppView {
         rosterPane.setStartCombatEnabled(false);
         Task<List<PlayerCharacter>> task = new Task<>() {
             @Override protected List<PlayerCharacter> call() {
-                return PlayerCharacterRepository.getAllCharacters();
+                return PlayerCharacterRepository.getPartyMembers();
             }
         };
         task.setOnSucceeded(e -> {
@@ -189,10 +150,9 @@ public class EncounterView implements AppView {
             if (size > 0) {
                 cachedAvgLevel = (int) Math.round(
                         partyCache.stream().mapToInt(pc -> pc.Level).average().orElse(1));
-                partySummaryLabel.setText("Party: " + size + " Chars, \u00D8 Lv " + cachedAvgLevel);
                 rosterPane.setPartyInfo(size, cachedAvgLevel);
             } else {
-                partySummaryLabel.setText("Keine Party-Mitglieder");
+                cachedAvgLevel = 1;
                 rosterPane.setPartyInfo(0, 1);
             }
             rosterPane.setGenerateEnabled(true);
@@ -214,13 +174,6 @@ public class EncounterView implements AppView {
             updateCombatStatus();
         } else {
             rosterPane.addCreature(creature);
-        }
-    }
-
-    private void onAddReinforcement(entities.Creature creature) {
-        if (trackerPane != null) {
-            trackerPane.addReinforcement(creature);
-            updateCombatStatus();
         }
     }
 
@@ -250,8 +203,9 @@ public class EncounterView implements AppView {
         Task<Encounter> task = new Task<>() {
             @Override protected Encounter call() {
                 return EncounterGenerator.generateEncounter(
-                        partySize, avgLevel, types, subtypes, biomes,
-                        difficulty, groupCount, balance, strength);
+                        new EncounterGenerator.EncounterRequest(
+                            partySize, avgLevel, types, subtypes, biomes,
+                            difficulty, groupCount, balance, strength));
             }
         };
         task.setOnSucceeded(e -> {
@@ -268,26 +222,18 @@ public class EncounterView implements AppView {
         t.start();
     }
 
-    // ---- Combat start (via initiative phase) ----
+    // ---- Combat start ----
 
     private void onRequestCombat() {
         if (!rosterPane.hasSlots()) return;
         if (!ensurePartyExists()) return;
 
-        initiativePane = new InitiativePane(partyCache);
-        initiativePane.setOnConfirm(initiatives -> {
-            Encounter encounter = rosterPane.buildEncounter();
-            List<CombatantState> combatants = CombatSetup.buildCombatants(
-                    partyCache, initiatives, encounter);
-            initiativePane = null;
-            startCombat(combatants);
-        });
-        initiativePane.setOnCancel(() -> {
-            initiativePane = null;
-            switchMode(Mode.BUILDER);
-        });
-
-        switchMode(Mode.INITIATIVE);
+        Encounter encounter = rosterPane.buildEncounter();
+        // PCs start with initiative 10 — editable inline in the tracker
+        List<Integer> defaultInitiatives = partyCache.stream().map(pc -> 10).toList();
+        List<CombatantState> combatants = CombatSetup.buildCombatants(
+                partyCache, defaultInitiatives, encounter);
+        startCombat(combatants);
     }
 
     private void startCombat(List<CombatantState> combatants) {
@@ -311,7 +257,7 @@ public class EncounterView implements AppView {
         if (trackerPane == null) return;
         CombatTrackerPane.CombatStats stats = trackerPane.computeStats(
                 Math.max(1, partyCache.size()), cachedAvgLevel);
-        combatControls.updateStatus(stats, trackerPane.getRound(), trackerPane.getCurrentTurnName());
+        trackerPane.updateStatusBar(stats, trackerPane.getRound());
     }
 
     // ---- Helpers ----

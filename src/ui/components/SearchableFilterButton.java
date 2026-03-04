@@ -21,6 +21,9 @@ import java.util.function.Consumer;
  */
 public class SearchableFilterButton extends VBox {
 
+    /** Lists with more options than this threshold get a search field to filter. */
+    private static final int SEARCH_FIELD_THRESHOLD = 6;
+
     private final String label;
     private final Button trigger;
     private final Popup popup;
@@ -41,9 +44,9 @@ public class SearchableFilterButton extends VBox {
         popupContent.getStyleClass().add("filter-dropdown");
         popupContent.setPadding(new Insets(8));
 
-        // Search field (only for lists with >6 options)
+        // Search field (only for lists with more options than threshold)
         TextField searchField = null;
-        if (options.size() > 6) {
+        if (options.size() > SEARCH_FIELD_THRESHOLD) {
             searchField = new TextField();
             searchField.setPromptText(label + " suchen...");
             searchField.getStyleClass().add("quick-search-field");

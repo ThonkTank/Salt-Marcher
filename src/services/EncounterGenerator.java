@@ -17,6 +17,12 @@ public class EncounterGenerator {
 
     public static final int MAX_CREATURES_PER_SLOT = 10;
 
+    public record EncounterRequest(
+        int partySize, int avgLevel,
+        List<String> creatureTypes, List<String> subtypes, List<String> biomes,
+        double difficultyValue, int groupCount, double balance, double strength
+    ) {}
+
     public static class Encounter {
         public List<EncounterSlot> slots;
         public String difficulty;
@@ -27,18 +33,30 @@ public class EncounterGenerator {
     }
 
     public static class EncounterSlot {
-        public Creature creature;
+        public final Creature creature;
         public int count;
         public MonsterRole role;
+
+        public EncounterSlot(Creature creature, int count, MonsterRole role) {
+            if (creature == null) throw new IllegalArgumentException("creature must be non-null");
+            this.creature = creature;
+            this.count = count;
+            this.role = role;
+        }
     }
 
     /**
-     * @param difficultyValue  -1 = auto, 0.0 (Easy) bis 1.0 (Deadly), kontinuierlich
+     * @param request contains partySize, avgLevel, creatureTypes, subtypes, biomes,
+     *                difficultyValue (-1 = auto), groupCount, balance, strength
      */
-    public static Encounter generateEncounter(int partySize, int avgLevel, List<String> creatureTypes,
-                                                List<String> subtypes, List<String> biomes,
-                                                double difficultyValue, int groupCount,
-                                                double balance, double strength) {
+    public static Encounter generateEncounter(EncounterRequest request) {
+        double difficultyValue = request.difficultyValue();
+        int partySize = request.partySize();
+        int avgLevel = request.avgLevel();
+        int groupCount = request.groupCount();
+        double balance = request.balance();
+        double strength = request.strength();
+
         // 1. Difficulty auflösen
         if (difficultyValue < 0) {
             double r = Math.random();
@@ -64,7 +82,7 @@ public class EncounterGenerator {
 
         // 4. Kandidaten laden
         List<Creature> candidates = repositories.CreatureRepository.getCreaturesByFilters(
-                creatureTypes, 1, xpCeiling, biomes, subtypes);
+                request.creatureTypes(), 1, xpCeiling, request.biomes(), request.subtypes());
 
         if (candidates.isEmpty()) {
             return buildResult(new ArrayList<>(), difficultyName, avgLevel, partySize, xpBudget, shape.label());
@@ -145,11 +163,8 @@ public class EncounterGenerator {
             Creature selected = weightedSelect(pool, slots, roleMap, spec.preferredRoles);
             if (selected == null) continue;
 
-            EncounterSlot slot = new EncounterSlot();
-            slot.creature = selected;
-            slot.count = 1;
-
-            slot.role = roleMap.get(selected.Id);
+            MonsterRole role = roleMap.get(selected.Id);
+            EncounterSlot slot = new EncounterSlot(selected, 1, role);
             slots.add(slot);
         }
 
@@ -184,10 +199,13 @@ public class EncounterGenerator {
                 for (int i = 0; i < slots.size(); i++) {
                     EncounterSlot s = slots.get(i);
                     if (s.count >= MAX_CREATURES_PER_SLOT) continue;
-                    s.count++;
-                    boolean fits = adjustedXp(slots) <= xpCeiling;
-                    s.count--;
-                    if (!fits) continue;
+                    // Compute what adjusted XP would be if we incremented this slot by 1 (without mutating)
+                    int projectedRaw = usedRawXp(slots) + s.creature.XP;
+                    int projectedCount = 0;
+                    for (EncounterSlot ss : slots) projectedCount += ss.count;
+                    projectedCount++; // Test +1
+                    int projectedAdjusted = (int) (projectedRaw * getMultiplierForGroupSize(projectedCount));
+                    if (projectedAdjusted > xpCeiling) continue;
                     if (s.count < bestCount) { bestCount = s.count; bestSlot = i; }
                 }
                 if (bestSlot >= 0) {
@@ -207,7 +225,7 @@ public class EncounterGenerator {
                                          int xpBudget, int xpCeiling) {
         int currentRaw = usedRawXp(slots);
         int currentCount = 0;
-        for (EncounterSlot s : slots) if (s.creature != null) currentCount += s.count;
+        for (EncounterSlot s : slots) currentCount += s.count;
 
         // Welche XP braucht die Ergänzungskreatur?
         int newCount = currentCount + 1;
@@ -227,10 +245,8 @@ public class EncounterGenerator {
         Creature selected = weightedSelect(viable, slots, roleMap, MonsterRole.values());
         if (selected == null) return;
 
-        EncounterSlot slot = new EncounterSlot();
-        slot.creature = selected;
-        slot.count = 1;
-        slot.role = roleMap.get(selected.Id);
+        MonsterRole role = roleMap.get(selected.Id);
+        EncounterSlot slot = new EncounterSlot(selected, 1, role);
         slots.add(slot);
     }
 
@@ -262,10 +278,13 @@ public class EncounterGenerator {
             Creature c = candidates.get(i);
             double w = 1.0;
 
+            // Role preference: +2.0. Thematic coherence bonuses intentionally outweigh role preference
+            // so that encounters feel cohesive (e.g., all goblins, or a warband of similar creatures)
+            // before prioritizing mechanical role diversity.
             if (prefSet.contains(roleMap.get(c.Id))) w += 2.0;
 
             for (EncounterSlot slot : filledSlots) {
-                if (slot.creature == null) continue;
+                // Type coherence: +3.0. Subtype coherence: +5.0. Biome coherence: +2.0.
                 if (c.CreatureType != null && c.CreatureType.equals(slot.creature.CreatureType)) w += 3.0;
                 if (c.Subtypes != null && slot.creature.Subtypes != null
                         && !Collections.disjoint(c.Subtypes, slot.creature.Subtypes)) w += 5.0;
@@ -313,19 +332,26 @@ public class EncounterGenerator {
         int totalRaw = 0;
         int totalCount = 0;
         for (EncounterSlot s : slots) {
-            if (s.creature != null) {
-                totalRaw += s.creature.XP * s.count;
-                totalCount += s.count;
-            }
+            totalRaw += s.creature.XP * s.count;
+            totalCount += s.count;
+        }
+        return (int) (totalRaw * getMultiplierForGroupSize(totalCount));
+    }
+
+    /** Computes adjusted XP for a list of creatures with their counts (avoids EncounterSlot allocation). */
+    public static int adjustedXpFromCounts(List<Creature> creatures, List<Integer> counts) {
+        int totalRaw = 0;
+        int totalCount = 0;
+        for (int i = 0; i < creatures.size(); i++) {
+            totalRaw += creatures.get(i).XP * counts.get(i);
+            totalCount += counts.get(i);
         }
         return (int) (totalRaw * getMultiplierForGroupSize(totalCount));
     }
 
     private static int usedRawXp(List<EncounterSlot> slots) {
         int total = 0;
-        for (EncounterSlot s : slots) {
-            if (s.creature != null) total += s.creature.XP * s.count;
-        }
+        for (EncounterSlot s : slots) total += s.creature.XP * s.count;
         return total;
     }
 

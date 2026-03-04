@@ -38,6 +38,14 @@ public class StatBlockPane extends VBox {
         setPadding(new Insets(16));
         setMaxWidth(580);
 
+        buildHeader(c);
+        buildCoreStats(c);
+        buildAbilityGrid(c);
+        buildProperties(c);
+        buildActionSections(c);
+    }
+
+    private void buildHeader(Creature c) {
         // --- Header: Name ---
         Label name = new Label(c.Name);
         name.getStyleClass().add("stat-block-name");
@@ -61,7 +69,9 @@ public class StatBlockPane extends VBox {
         metaLabel.setWrapText(true);
 
         getChildren().addAll(name, metaLabel, separator());
+    }
 
+    private void buildCoreStats(Creature c) {
         // --- Core Stats: AC, HP, Speed ---
         addProperty("Armor Class", c.AC + (notEmpty(c.AcNotes) ? " (" + c.AcNotes + ")" : ""));
         addProperty("Hit Points", c.HP + (notEmpty(c.HitDice) ? " (" + c.HitDice + ")" : ""));
@@ -74,7 +84,9 @@ public class StatBlockPane extends VBox {
         addProperty("Speed", speed.toString());
 
         getChildren().add(separator());
+    }
 
+    private void buildAbilityGrid(Creature c) {
         // --- Ability Scores Grid ---
         GridPane abilities = new GridPane();
         abilities.getStyleClass().add("stat-block-abilities");
@@ -104,7 +116,9 @@ public class StatBlockPane extends VBox {
         }
 
         getChildren().addAll(abilities, separator());
+    }
 
+    private void buildProperties(Creature c) {
         // --- Properties ---
         addPropertyIfPresent("Saving Throws", formatDelimited(c.SavingThrows));
         addPropertyIfPresent("Skills", formatDelimited(c.Skills));
@@ -120,9 +134,11 @@ public class StatBlockPane extends VBox {
         addProperty("Challenge", crLine);
 
         getChildren().add(separator());
+    }
 
+    private void buildActionSections(Creature c) {
         // --- Action Sections ---
-        addActionSection(null, null, c.Traits);
+        addTraitSection(c.Traits);
         addActionSection("Actions", null, c.Actions);
         addActionSection("Bonus Actions", null, c.BonusActions);
         addActionSection("Reactions", null, c.Reactions);
@@ -191,6 +207,11 @@ public class StatBlockPane extends VBox {
 
     private void addPropertyIfPresent(String label, String value) {
         if (notEmpty(value)) addProperty(label, value);
+    }
+
+    /** Adds a trait section without a header or description (renders traits directly). */
+    private void addTraitSection(List<Creature.Action> traits) {
+        addActionSection(null, null, traits);
     }
 
     private void addActionSection(String title, String description, List<Creature.Action> actions) {

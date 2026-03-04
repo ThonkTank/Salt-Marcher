@@ -2,19 +2,16 @@ package ui;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import services.XpCalculator;
 import ui.components.SliderControl;
 
 /**
- * Encounter controls panel with two layout modes:
- *   Vertical (sidebar): filter on top, collapsible sliders, sticky buttons at bottom
- *   Horizontal (top bar): filter | 2x2 slider grid | buttons — single row
+ * Encounter controls panel shown above the monster list.
+ * Layout: filter section on top, 2x2 slider grid below.
  */
 public class EncounterControls extends VBox {
 
@@ -24,22 +21,17 @@ public class EncounterControls extends VBox {
     private final SliderControl balanceSlider;
     private final SliderControl strengthSlider;
 
-    // Persistent layout regions (created once, rearranged on mode switch)
     private final VBox filterRegion;
     private final VBox sliderSection;
-    private final ScrollPane scrollPane;
-    private final VBox scrollContent;
 
-    // Horizontal mode: paired slider rows + grid container
     private final HBox sliderRow1;
     private final HBox sliderRow2;
     private final VBox sliderGrid;
 
-    // Section headers (created once, reused in both layout modes to avoid per-toggle allocation)
     private final Label filterHeader;
     private final Label encounterHeader;
 
-    private boolean horizontal = false;
+    private boolean combatMode = false;
 
     public EncounterControls() {
         setSpacing(0);
@@ -100,14 +92,7 @@ public class EncounterControls extends VBox {
         encounterHeader = new Label("ENCOUNTER");
         encounterHeader.getStyleClass().addAll("section-header", "text-muted");
 
-        // Scrollable middle zone (filter + sliders)
-        scrollContent = new VBox(0, filterHeader, filterRegion, encounterHeader, sliderSection);
-        scrollPane = new ScrollPane(scrollContent);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-
-        // Paired rows + grid for horizontal mode
+        // Paired rows + grid
         sliderRow1 = new HBox(8);
         sliderRow2 = new HBox(8);
         sliderGrid = new VBox(2, sliderRow1, sliderRow2);
@@ -116,33 +101,7 @@ public class EncounterControls extends VBox {
         HBox.setHgrow(balanceSlider, Priority.ALWAYS);
         HBox.setHgrow(strengthSlider, Priority.ALWAYS);
 
-        // Default: vertical layout
-        applyVerticalLayout();
-    }
-
-    /** Switch between vertical (sidebar) and horizontal (top bar) layout. */
-    public void setHorizontal(boolean horiz) {
-        if (this.horizontal == horiz) return;
-        this.horizontal = horiz;
-        if (horiz) applyHorizontalLayout();
-        else applyVerticalLayout();
-    }
-
-    private void applyVerticalLayout() {
-        getStyleClass().remove("encounter-controls-horizontal");
-
-        // Sliders back into vertical VBox
-        sliderSection.getChildren().setAll(
-                difficultySlider, groupSlider, balanceSlider, strengthSlider);
-        sliderSection.setSpacing(2);
-
-        setSliderCompact(true);
-
-        VBox.setVgrow(scrollPane, Priority.ALWAYS);
-        filterRegion.setPadding(Insets.EMPTY);
-
-        getChildren().setAll(scrollPane);
-        setMaxHeight(Double.MAX_VALUE);
+        applyHorizontalLayout();
     }
 
     private void applyHorizontalLayout() {
@@ -167,7 +126,7 @@ public class EncounterControls extends VBox {
 
         // Assemble: Row1 (filter) | separator | Row2 (encounter)
         getChildren().setAll(filterRow, ThemeColors.controlSeparator(), encounterSection);
-        setMaxHeight(Region.USE_PREF_SIZE);
+        setMaxHeight(Double.MAX_VALUE);
     }
 
     private void setSliderCompact(boolean compact) {
@@ -178,6 +137,25 @@ public class EncounterControls extends VBox {
     }
 
     // ---- Public API ----
+
+    /** Switch between combat mode (filter + quick search) and builder mode (filter + sliders). */
+    public void setCombatMode(boolean combat) {
+        if (this.combatMode == combat) return;
+        this.combatMode = combat;
+        if (combat) applyCombatLayout();
+        else applyHorizontalLayout();
+    }
+
+    private void applyCombatLayout() {
+        if (!getStyleClass().contains("encounter-controls-horizontal"))
+            getStyleClass().add("encounter-controls-horizontal");
+
+        filterRegion.setPadding(new Insets(0, 4, 0, 4));
+        VBox filterRow = new VBox(0, filterHeader, filterRegion);
+
+        getChildren().setAll(filterRow);
+        setMaxHeight(Double.MAX_VALUE);
+    }
 
     public FilterPane getFilterPane() { return filterPane; }
 

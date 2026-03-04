@@ -102,12 +102,12 @@ public class EncounterRosterPane extends VBox {
         VBox.setVgrow(contentArea, Priority.ALWAYS);
 
         // ---- Action buttons (bottom-pinned) ----
-        generateButton = new Button("Generieren");
+        generateButton = new Button("_Generieren");
         generateButton.getStyleClass().add("accent");
         generateButton.setMaxWidth(Double.MAX_VALUE);
         generateButton.setOnAction(e -> { if (onGenerate != null) onGenerate.run(); });
 
-        startCombatButton = new Button("Kampf starten");
+        startCombatButton = new Button("_Kampf starten");
         startCombatButton.getStyleClass().add("accent");
         startCombatButton.setDisable(true);
         startCombatButton.setMaxWidth(Double.MAX_VALUE);
@@ -141,10 +141,7 @@ public class EncounterRosterPane extends VBox {
                 return;
             }
         }
-        EncounterSlot newSlot = new EncounterSlot();
-        newSlot.creature = creature;
-        newSlot.count = 1;
-        newSlot.role = RoleClassifier.classify(creature);
+        EncounterSlot newSlot = new EncounterSlot(creature, 1, RoleClassifier.classify(creature));
         slots.add(newSlot);
         showCards();
         rebuildCards();

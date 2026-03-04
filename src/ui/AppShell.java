@@ -1,7 +1,6 @@
 package ui;
 
 import javafx.application.Platform;
-import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -11,19 +10,16 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
 
-import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Main application shell supporting two layout modes:
- *   Layout A ("3 columns"): [Sidebar | SplitPane(ControlPanel, Center, Inspector)]
- *   Layout B ("stacked"):   [Sidebar | SplitPane(VBox(ControlPanel, Center), Inspector)]
+ * Main application shell: sidebar + nested SplitPane layout.
+ *   Sidebar | mainSplit [ leftColumn(VBox: ControlPanel/Center) | rightSplit(vertical: Context/StatBlock) ]
  *
- * All content zones are resizable via SplitPane dividers. Divider positions are
- * preserved during mode switches within a view (BUILDER → INITIATIVE → COMBAT).
- * Toggle via {@link #toggleLayout()}.
+ * Dividers (mainSplit, rightSplit) are independently resizable.
+ * Divider positions are preserved during mode switches within a view.
  */
 public class AppShell extends BorderPane {
 
@@ -33,18 +29,17 @@ public class AppShell extends BorderPane {
 
     private final StackPane contentArea = new StackPane();
     private final HBox toolbar = new HBox(8);
+    private final HBox persistentToolbarItems = new HBox(8);
     private final VBox sidebar = new VBox(4);
     private final VBox controlPanelContainer = new VBox();
     private final InspectorPane inspectorPane;
     private final SplitPane mainSplit = new SplitPane();
-    private final VBox stackedCenter = new VBox();
-
-    // Layout mode
-    private boolean stackedLayout = false;
+    private final VBox leftColumn = new VBox();
+    private final SplitPane rightSplit = new SplitPane();
+    private final ScenePane scenePane = new ScenePane();
 
     // Track which panels the current view provides (to avoid SplitPane reconfig on mode switch)
     private boolean currentViewHasControl = false;
-    private boolean currentViewHasInspector = false;
 
     private ViewId activeViewId;
 
@@ -67,28 +62,17 @@ public class AppShell extends BorderPane {
         // ---- Inspector ----
         inspectorPane = new InspectorPane();
 
-        // ---- Main SplitPane (resizable content zones) ----
-        mainSplit.setOrientation(Orientation.HORIZONTAL);
+        // ---- Left column: control panel (content height) + center (fills rest) ----
+        VBox.setVgrow(controlPanelContainer, Priority.NEVER);
+        VBox.setVgrow(contentArea, Priority.ALWAYS);
+
+        // ---- Split panes ----
+        mainSplit.setOrientation(javafx.geometry.Orientation.HORIZONTAL);
+        rightSplit.setOrientation(javafx.geometry.Orientation.VERTICAL);
 
         setLeft(sidebar);
         setCenter(mainSplit);
     }
-
-    // ---- Layout toggle ----
-
-    public void toggleLayout() {
-        stackedLayout = !stackedLayout;
-        configureSplitItems();
-        if (activeViewId != null) {
-            AppView target = views.get(activeViewId);
-            if (target != null) {
-                target.onLayoutChanged(stackedLayout);
-                applyViewContent(target);
-            }
-        }
-    }
-
-    public boolean isStackedLayout() { return stackedLayout; }
 
     // ---- View management ----
 
@@ -116,9 +100,7 @@ public class AppShell extends BorderPane {
 
         activeViewId = id;
 
-        // Determine which panels this view provides
         currentViewHasControl = target.getControlPanel() != null;
-        currentViewHasInspector = target.getInspectorContent() != null;
 
         applyViewContent(target);
         configureSplitItems();
@@ -130,7 +112,7 @@ public class AppShell extends BorderPane {
         target.onShow();
     }
 
-    /** Refresh all panels for the active view (called after mode/layout changes).
+    /** Refresh all panels for the active view (called after mode changes).
      *  Does NOT reconfigure SplitPane items — preserves divider positions. */
     public void refreshPanels() {
         if (activeViewId != null) {
@@ -150,14 +132,20 @@ public class AppShell extends BorderPane {
     }
 
     public InspectorPane getInspectorPane() { return inspectorPane; }
+    public ScenePane getScenePane() { return scenePane; }
+
+    /** Add a node to the persistent (right-aligned) toolbar zone. Survives navigation. */
+    public void addPersistentToolbarItem(Node item) {
+        persistentToolbarItems.getChildren().add(item);
+    }
 
     // ---- Internal ----
 
-    /** Swap content inside containers without touching SplitPane structure. */
+    /** Swap content inside containers without touching SplitPane structure.
+     *  SplitPane items are managed exclusively by configureSplitItems() (called on navigation)
+     *  to preserve divider positions across mode switches. */
     private void applyViewContent(AppView target) {
-        Node centerContent = target.getRoot();
         Node controlPanel = target.getControlPanel();
-        Node inspectorContent = target.getInspectorContent();
 
         // Control panel content
         controlPanelContainer.getChildren().clear();
@@ -167,53 +155,25 @@ public class AppShell extends BorderPane {
         }
 
         // Center content
-        contentArea.getChildren().setAll(centerContent);
-
-        // Stacked layout: rebuild stackedCenter children
-        if (stackedLayout) {
-            stackedCenter.getChildren().clear();
-            if (controlPanel != null) stackedCenter.getChildren().add(controlPanelContainer);
-            stackedCenter.getChildren().add(contentArea);
-            VBox.setVgrow(contentArea, Priority.ALWAYS);
-        }
-
-        // Inspector content
-        if (inspectorContent != null) {
-            inspectorPane.setContextContent(inspectorContent);
-        }
+        contentArea.getChildren().setAll(target.getRoot());
     }
 
-    /** Configure SplitPane items based on current view's panels and layout mode.
-     *  Called on view navigation and layout toggle (NOT on mode switch). */
+    /** Configure SplitPane items based on current view's panels.
+     *  Called on view navigation only — not on mode switches — to preserve divider positions. */
     private void configureSplitItems() {
-        if (stackedLayout) {
-            // Layout B: [stacked(controlPanel+content), inspector]
-            controlPanelContainer.setMaxWidth(Double.MAX_VALUE);
-            List<Node> items = new ArrayList<>();
-            items.add(stackedCenter);
-            if (currentViewHasInspector) items.add(inspectorPane);
-            mainSplit.getItems().setAll(items);
-            if (currentViewHasInspector) {
-                Platform.runLater(() -> mainSplit.setDividerPositions(0.65));
-            }
+        if (currentViewHasControl) {
+            leftColumn.getChildren().setAll(controlPanelContainer, contentArea);
         } else {
-            // Layout A: [controlPanel, content, inspector]
-            controlPanelContainer.setMaxWidth(Double.MAX_VALUE);
-            List<Node> items = new ArrayList<>();
-            if (currentViewHasControl) items.add(controlPanelContainer);
-            items.add(contentArea);
-            if (currentViewHasInspector) items.add(inspectorPane);
-            mainSplit.getItems().setAll(items);
-            Platform.runLater(() -> {
-                if (currentViewHasControl && currentViewHasInspector) {
-                    mainSplit.setDividerPositions(0.20, 0.65);
-                } else if (currentViewHasControl) {
-                    mainSplit.setDividerPositions(0.25);
-                } else if (currentViewHasInspector) {
-                    mainSplit.setDividerPositions(0.65);
-                }
-            });
+            leftColumn.getChildren().setAll(contentArea);
         }
+
+        rightSplit.getItems().setAll(inspectorPane, scenePane);
+        mainSplit.getItems().setAll(leftColumn, rightSplit);
+
+        Platform.runLater(() -> {
+            mainSplit.setDividerPositions(0.50);
+            rightSplit.setDividerPositions(0.45);
+        });
     }
 
     private void rebuildToolbar(AppView view) {
@@ -228,5 +188,8 @@ public class AppShell extends BorderPane {
 
         List<Node> items = view.getToolbarItems();
         toolbar.getChildren().addAll(items);
+
+        // Persistent items (e.g. PartyPanel) — always present, rightmost
+        toolbar.getChildren().add(persistentToolbarItems);
     }
 }

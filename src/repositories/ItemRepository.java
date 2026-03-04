@@ -45,7 +45,7 @@ public class ItemRepository {
         i.Properties          = rs.getString("properties");
         i.ArmorClass          = rs.getString("armor_class");
         i.Description         = rs.getString("description");
-        i.Source               = rs.getString("source");
+        i.Source              = rs.getString("source");
         i.Tags                = rs.getString("tags");
         return i;
     }
@@ -94,7 +94,7 @@ public class ItemRepository {
                 if (rs.next()) return mapItemFields(rs);
             }
         } catch (SQLException e) {
-            System.err.println("Fehler beim Laden: " + e.getMessage());
+            System.err.println("ItemRepository.getItem(id=" + id + "): " + e.getMessage());
         }
         return null;
     }
@@ -125,7 +125,7 @@ public class ItemRepository {
                 while (rs.next()) items.add(mapItemFields(rs));
             }
         } catch (SQLException e) {
-            System.err.println("Fehler beim Laden: " + e.getMessage());
+            System.err.println("ItemRepository.getItemsByCategory('" + category + "'): " + e.getMessage());
         }
         return items;
     }
@@ -140,7 +140,7 @@ public class ItemRepository {
                 while (rs.next()) items.add(mapItemFields(rs));
             }
         } catch (SQLException e) {
-            System.err.println("Fehler beim Laden: " + e.getMessage());
+            System.err.println("ItemRepository.getMagicItemsByRarity('" + rarity + "'): " + e.getMessage());
         }
         return items;
     }

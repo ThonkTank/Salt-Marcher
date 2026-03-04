@@ -42,12 +42,8 @@ public class MonsterImporter {
         System.out.println();
 
         try (Connection conn = DatabaseManager.getConnection()) {
-            try (Statement pragma = conn.createStatement()) {
-                pragma.execute("PRAGMA journal_mode = WAL");
-                pragma.execute("PRAGMA synchronous = NORMAL");
-                pragma.execute("PRAGMA cache_size = -64000");
-                System.out.println("PRAGMAs gesetzt: WAL, synchronous=OFF, cache_size=64MB");
-            }
+            DatabaseManager.applyBulkImportPragmas(conn);
+            System.out.println("PRAGMAs für Bulk-Import gesetzt: synchronous=NORMAL, cache_size=64MB");
 
             conn.setAutoCommit(false);
 

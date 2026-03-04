@@ -50,13 +50,11 @@ public class CreatureCard extends VBox {
         Label nameLabel = new Label(c.Name);
         nameLabel.getStyleClass().add("creature-link");
         nameLabel.setFocusTraversable(true);
-        nameLabel.setOnMouseClicked(e -> {
-            if (onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
-        });
+        nameLabel.setOnMouseClicked(e -> fireStatBlockRequest());
         nameLabel.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ENTER
                     || e.getCode() == javafx.scene.input.KeyCode.SPACE) {
-                if (onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
+                fireStatBlockRequest();
                 e.consume();
             }
         });
@@ -78,9 +76,7 @@ public class CreatureCard extends VBox {
         // Stat block link
         Label expandArrow = new Label("\u25BC");
         expandArrow.getStyleClass().addAll("text-muted", "clickable");
-        expandArrow.setOnMouseClicked(e -> {
-            if (onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
-        });
+        expandArrow.setOnMouseClicked(e -> fireStatBlockRequest());
         expandArrow.setAccessibleText("Stat Block anzeigen");
 
         VBox infoBox = new VBox(2, nameLabel, detailRow);
@@ -114,6 +110,10 @@ public class CreatureCard extends VBox {
             }
         });
         removeBtn.setOnAction(e -> onRemove.run());
+    }
+
+    private void fireStatBlockRequest() {
+        if (onRequestStatBlock != null) onRequestStatBlock.accept(slot.creature.Id);
     }
 
     public void refreshCount() {

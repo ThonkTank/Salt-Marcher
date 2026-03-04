@@ -2,7 +2,6 @@ package ui;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -10,17 +9,16 @@ import javafx.scene.layout.*;
 import ui.components.StatBlockPane;
 
 /**
- * Right inspector panel with a vertical split: context-dependent top section
- * (encounter roster, combat tracker, etc.) and a collapsible stat block bottom section.
- * ONE consistent location for all stat block display.
+ * Top-right panel: shows the stat block for a selected creature.
+ * Owned by AppShell; visible across all views.
  */
 public class InspectorPane extends VBox {
 
-    private final VBox contextSection;
-    private final VBox detailSection;
     private final VBox detailContent;
     private final Label detailTitle;
     private final ScrollPane detailScroll;
+    private final VBox detailSection;
+    private final Label placeholder;
 
     private Long displayedCreatureId = null;
 
@@ -29,16 +27,7 @@ public class InspectorPane extends VBox {
         setMinWidth(320);
         getStyleClass().add("inspector-pane");
 
-        // ---- Top: context-dependent content (encounter roster, combat tracker, etc.) ----
-        // No outer ScrollPane — each content pane handles its own internal scrolling.
-        // Direct VBox placement lets VGrow propagate so child panes can pin buttons at bottom.
-        contextSection = new VBox();
-        VBox.setVgrow(contextSection, Priority.ALWAYS);
-
-        // ---- Divider ----
-        Region divider = ThemeColors.controlSeparator();
-
-        // ---- Bottom: stat block (collapsible) ----
+        // ---- Header ----
         detailTitle = new Label();
         detailTitle.getStyleClass().add("bold");
         Button closeBtn = new Button("\u00d7");
@@ -60,24 +49,22 @@ public class InspectorPane extends VBox {
 
         detailSection = new VBox(detailHeader, detailScroll);
         detailSection.getStyleClass().add("stat-block-fixed-panel");
-        detailSection.setVisible(false);
-        detailSection.setManaged(false);
-        detailSection.setPrefHeight(280);
-        detailSection.setMinHeight(150);
+        VBox.setVgrow(detailSection, Priority.ALWAYS);
 
-        getChildren().addAll(contextSection, divider, detailSection);
-    }
+        // ---- Placeholder ----
+        placeholder = new Label("Kein Stat Block ausgewählt");
+        placeholder.getStyleClass().add("text-muted");
+        placeholder.setMaxWidth(Double.MAX_VALUE);
+        placeholder.setMaxHeight(Double.MAX_VALUE);
+        placeholder.setAlignment(Pos.CENTER);
+        VBox.setVgrow(placeholder, Priority.ALWAYS);
 
-    /** Replace the top section content (encounter roster, combat tracker, initiative pane, etc.) */
-    public void setContextContent(Node content) {
-        contextSection.getChildren().setAll(content);
-        VBox.setVgrow(content, Priority.ALWAYS);
+        getChildren().add(placeholder);
     }
 
     /**
-     * Show a stat block in the bottom detail section. Toggles: clicking the same
-     * creature a second time collapses the panel. Use {@link #ensureStatBlock} for
-     * non-toggling display (e.g. auto-show on turn advance).
+     * Show a stat block. Toggles: clicking the same creature a second time hides the panel.
+     * Use {@link #ensureStatBlock} for non-toggling display (e.g. auto-show on turn advance).
      */
     public void showStatBlock(Long creatureId) {
         if (creatureId == null) return;
@@ -92,26 +79,24 @@ public class InspectorPane extends VBox {
         loadStatBlock(creatureId);
     }
 
-    private void loadStatBlock(Long creatureId) {
-        displayedCreatureId = creatureId;
-        detailContent.getChildren().setAll(StatBlockPane.createAsyncContainer(creatureId));
-        detailTitle.setText("Stat Block");
-        detailSection.setVisible(true);
-        detailSection.setManaged(true);
-        detailScroll.setVvalue(0);
-    }
-
     /** Show a stat block with a specific title. */
     public void showStatBlock(Long creatureId, String name) {
         showStatBlock(creatureId);
         if (creatureId != null) detailTitle.setText(name);
     }
 
-    /** Hide the stat block detail section. */
+    private void loadStatBlock(Long creatureId) {
+        displayedCreatureId = creatureId;
+        detailContent.getChildren().setAll(StatBlockPane.createAsyncContainer(creatureId));
+        detailTitle.setText("Stat Block");
+        detailScroll.setVvalue(0);
+        getChildren().setAll(detailSection);
+    }
+
+    /** Hide the stat block and show the placeholder. */
     public void hideStatBlock() {
         displayedCreatureId = null;
-        detailSection.setVisible(false);
-        detailSection.setManaged(false);
+        getChildren().setAll(placeholder);
     }
 
     /** Get the ID of the currently displayed stat block creature (null if none). */

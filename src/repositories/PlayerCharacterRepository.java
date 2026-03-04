@@ -32,11 +32,15 @@ public class PlayerCharacterRepository {
 
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
-                    PlayerCharacter pc = new PlayerCharacter();
-                    pc.Id    = keys.getLong(1);
-                    pc.Name  = name;
-                    pc.Level = level;
-                    return pc;
+                    long id = keys.getLong(1);
+                    // Fetch via mapper to ensure consistency
+                    String selectSql = "SELECT id, name, level FROM player_characters WHERE id = ?";
+                    try (PreparedStatement selectPs = conn.prepareStatement(selectSql)) {
+                        selectPs.setLong(1, id);
+                        try (ResultSet rs = selectPs.executeQuery()) {
+                            if (rs.next()) return mapPlayerCharacter(rs);
+                        }
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -45,54 +49,52 @@ public class PlayerCharacterRepository {
         return null;
     }
 
-    public static List<PlayerCharacter> getAllCharacters() {
+    public static List<PlayerCharacter> getPartyMembers() {
         List<PlayerCharacter> list = new ArrayList<>();
-        String sql = "SELECT id, name, level FROM player_characters ORDER BY id";
+        String sql = "SELECT id, name, level FROM player_characters WHERE in_party = 1 ORDER BY id";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                list.add(mapPlayerCharacter(rs));
-            }
+            while (rs.next()) list.add(mapPlayerCharacter(rs));
         } catch (SQLException e) {
-            System.err.println("Fehler beim Laden aller Charaktere: " + e.getMessage());
+            System.err.println("Fehler beim Laden der Party: " + e.getMessage());
         }
         return list;
     }
 
-    public static void saveCharacter(PlayerCharacter pc) {
-        String sql = "INSERT INTO player_characters(id, name, level) VALUES(?,?,?)";
+    public static List<PlayerCharacter> getAvailableCharacters() {
+        List<PlayerCharacter> list = new ArrayList<>();
+        String sql = "SELECT id, name, level FROM player_characters WHERE in_party = 0 ORDER BY name";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) list.add(mapPlayerCharacter(rs));
+        } catch (SQLException e) {
+            System.err.println("Fehler beim Laden verfügbarer Charaktere: " + e.getMessage());
+        }
+        return list;
+    }
 
+    public static void addToParty(Long id) {
+        String sql = "UPDATE player_characters SET in_party = 1 WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setLong(1, pc.Id);
-            ps.setString(2, pc.Name);
-            ps.setInt(3, pc.Level);
+            ps.setLong(1, id);
             ps.executeUpdate();
-
         } catch (SQLException e) {
-            System.err.println("Fehler beim Speichern: " + e.getMessage());
+            System.err.println("Fehler beim Hinzufügen zur Party: " + e.getMessage());
         }
     }
 
-    public static PlayerCharacter getCharacter(Long id) {
-        String sql = "SELECT id, name, level FROM player_characters WHERE id = ?";
-
+    public static void removeFromParty(Long id) {
+        String sql = "UPDATE player_characters SET in_party = 0 WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-
             ps.setLong(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapPlayerCharacter(rs);
-                }
-            }
+            ps.executeUpdate();
         } catch (SQLException e) {
-            System.err.println("Fehler beim Laden: " + e.getMessage());
+            System.err.println("Fehler beim Entfernen aus der Party: " + e.getMessage());
         }
-        return null;
     }
 
     public static void deleteCharacter(Long id) {

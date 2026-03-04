@@ -11,6 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import database.DatabaseManager;
 import entities.Creature;
@@ -61,11 +62,11 @@ public class CreatureRepository {
 
         c.Biomes = new ArrayList<>(); // loaded via loadBiomes()
 
-        c.Traits           = new ArrayList<>();
-        c.Actions          = new ArrayList<>();
-        c.BonusActions     = new ArrayList<>();
-        c.Reactions        = new ArrayList<>();
-        c.LegendaryActions = new ArrayList<>();
+        c.Traits           = new ArrayList<>(); // loaded via loadActions()
+        c.Actions          = new ArrayList<>(); // loaded via loadActions()
+        c.BonusActions     = new ArrayList<>(); // loaded via loadActions()
+        c.Reactions        = new ArrayList<>(); // loaded via loadActions()
+        c.LegendaryActions = new ArrayList<>(); // loaded via loadActions()
         return c;
     }
 
@@ -106,36 +107,28 @@ public class CreatureRepository {
     }
 
     private static void loadBiomes(Connection conn, List<Creature> creatures) throws SQLException {
-        if (creatures.isEmpty()) return;
-        Map<Long, Creature> byId = new HashMap<>();
-        for (Creature c : creatures) byId.put(c.Id, c);
-        String sql = "SELECT creature_id, biome FROM creature_biomes WHERE creature_id IN ("
-                + placeholders(creatures.size()) + ")";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            int idx = 1;
-            for (Creature c : creatures) ps.setLong(idx++, c.Id);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Creature c = byId.get(rs.getLong("creature_id"));
-                    if (c != null) c.Biomes.add(rs.getString("biome"));
-                }
-            }
-        }
+        loadStringList(conn, creatures, "creature_biomes", "biome", (c, v) -> c.Biomes.add(v));
     }
 
     private static void loadSubtypes(Connection conn, List<Creature> creatures) throws SQLException {
+        loadStringList(conn, creatures, "creature_subtypes", "subtype", (c, v) -> c.Subtypes.add(v));
+    }
+
+    private static void loadStringList(Connection conn, List<Creature> creatures,
+            String table, String valueColumn,
+            java.util.function.BiConsumer<Creature, String> adder) throws SQLException {
         if (creatures.isEmpty()) return;
         Map<Long, Creature> byId = new HashMap<>();
         for (Creature c : creatures) byId.put(c.Id, c);
-        String sql = "SELECT creature_id, subtype FROM creature_subtypes WHERE creature_id IN ("
-                + placeholders(creatures.size()) + ")";
+        String sql = "SELECT creature_id, " + valueColumn + " FROM " + table
+                   + " WHERE creature_id IN (" + placeholders(creatures.size()) + ")";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             int idx = 1;
             for (Creature c : creatures) ps.setLong(idx++, c.Id);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Creature c = byId.get(rs.getLong("creature_id"));
-                    if (c != null) c.Subtypes.add(rs.getString("subtype"));
+                    if (c != null) adder.accept(c, rs.getString(valueColumn));
                 }
             }
         }
@@ -173,11 +166,7 @@ public class CreatureRepository {
                 }
 
                 try (PreparedStatement ps = conn.prepareStatement(ACTION_INSERT_SQL)) {
-                    insertActions(ps, c.Id, "trait",            c.Traits);
-                    insertActions(ps, c.Id, "action",           c.Actions);
-                    insertActions(ps, c.Id, "bonus_action",     c.BonusActions);
-                    insertActions(ps, c.Id, "reaction",         c.Reactions);
-                    insertActions(ps, c.Id, "legendary_action", c.LegendaryActions);
+                    insertAllActions(ps, c);
                     ps.executeBatch();
                 }
 
@@ -187,6 +176,8 @@ public class CreatureRepository {
             } catch (SQLException e) {
                 try { conn.rollback(); } catch (SQLException ignored) {}
                 throw e;
+            } finally {
+                conn.setAutoCommit(true);  // Restore shared connection state
             }
         } catch (SQLException e) {
             System.err.println("Fehler beim Speichern von '" + c.Name + "': " + e.getMessage());
@@ -201,11 +192,7 @@ public class CreatureRepository {
         }
 
         try (PreparedStatement ps = conn.prepareStatement(ACTION_INSERT_SQL)) {
-            insertActions(ps, c.Id, "trait",            c.Traits);
-            insertActions(ps, c.Id, "action",           c.Actions);
-            insertActions(ps, c.Id, "bonus_action",     c.BonusActions);
-            insertActions(ps, c.Id, "reaction",         c.Reactions);
-            insertActions(ps, c.Id, "legendary_action", c.LegendaryActions);
+            insertAllActions(ps, c);
             ps.executeBatch();
         }
 
@@ -219,11 +206,7 @@ public class CreatureRepository {
         bindCreatureParams(creaturePs, c);
         creaturePs.executeUpdate();
 
-        insertActions(actionPs, c.Id, "trait",            c.Traits);
-        insertActions(actionPs, c.Id, "action",           c.Actions);
-        insertActions(actionPs, c.Id, "bonus_action",     c.BonusActions);
-        insertActions(actionPs, c.Id, "reaction",         c.Reactions);
-        insertActions(actionPs, c.Id, "legendary_action", c.LegendaryActions);
+        insertAllActions(actionPs, c);
         actionPs.executeBatch();
     }
 
@@ -233,7 +216,8 @@ public class CreatureRepository {
         ps.setString(2,  c.Name);
         ps.setString(3,  c.Size);
         ps.setString(4,  c.CreatureType);
-        ps.setString(5,  c.Subtypes != null ? String.join(", ", c.Subtypes) : null);
+        // LEGACY COLUMN: subtype column maintained for schema backward-compat, actual subtypes stored in creature_subtypes junction table
+        ps.setString(5,  null);
         ps.setString(6,  c.Alignment);
         ps.setString(7,  c.CR);
         ps.setInt   (8,  c.XP);
@@ -263,6 +247,7 @@ public class CreatureRepository {
         ps.setString(32, c.Senses);
         ps.setInt   (33, c.PassivePerception);
         ps.setString(34, c.Languages);
+        // LEGACY COLUMN: biomes column maintained for schema backward-compat, actual biomes stored in creature_biomes junction table
         ps.setString(35, "");
         ps.setInt   (36, c.LegendaryActionCount);
     }
@@ -301,6 +286,14 @@ public class CreatureRepository {
                 ins.executeBatch();
             }
         }
+    }
+
+    private static void insertAllActions(PreparedStatement ps, Creature c) throws SQLException {
+        insertActions(ps, c.Id, "trait",            c.Traits);
+        insertActions(ps, c.Id, "action",           c.Actions);
+        insertActions(ps, c.Id, "bonus_action",     c.BonusActions);
+        insertActions(ps, c.Id, "reaction",         c.Reactions);
+        insertActions(ps, c.Id, "legendary_action", c.LegendaryActions);
     }
 
     private static void insertActions(PreparedStatement ps, Long creatureId,
@@ -454,12 +447,11 @@ public class CreatureRepository {
         appendAlignmentClause(where, params, alignments);
 
         String col = switch (sortColumn != null ? sortColumn : "name") {
-            case "cr"   -> "xp";
-            case "type" -> "creature_type";
-            case "size" -> "size";
-            case "xp"   -> "xp";
             case "name" -> "name";
-            default     -> throw new IllegalArgumentException("Invalid sort column: " + sortColumn);
+            case "cr", "xp"   -> "xp";  // Both CR and XP sort by the xp column value
+            case "type"       -> "creature_type";
+            case "size"       -> "size";
+            default           -> throw new IllegalArgumentException("Invalid sort column: " + sortColumn);
         };
         String dir = "DESC".equalsIgnoreCase(sortDirection) ? "DESC" : "ASC";
         String whereStr = where.toString();
@@ -512,16 +504,7 @@ public class CreatureRepository {
     }
 
     public static List<String> getDistinctSubtypes() {
-        List<String> subtypes = new ArrayList<>();
-        String sql = "SELECT DISTINCT subtype FROM creature_subtypes ORDER BY subtype";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) subtypes.add(rs.getString(1));
-        } catch (SQLException e) {
-            System.err.println("Fehler bei Distinct-Subtypes: " + e.getMessage());
-        }
-        return subtypes;
+        return getDistinctFromTable("creature_subtypes", "subtype", "Distinct-Subtypes");
     }
 
     public static List<String> getDistinctSizes() {
@@ -535,16 +518,20 @@ public class CreatureRepository {
     }
 
     public static List<String> getDistinctBiomes() {
-        List<String> biomes = new ArrayList<>();
-        String sql = "SELECT DISTINCT biome FROM creature_biomes ORDER BY biome";
+        return getDistinctFromTable("creature_biomes", "biome", "Distinct-Biomes");
+    }
+
+    private static List<String> getDistinctFromTable(String table, String column, String errorLabel) {
+        List<String> values = new ArrayList<>();
+        String sql = "SELECT DISTINCT " + column + " FROM " + table + " ORDER BY " + column;
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) biomes.add(rs.getString(1));
+            while (rs.next()) values.add(rs.getString(1));
         } catch (SQLException e) {
-            System.err.println("Fehler bei Distinct-Biomes: " + e.getMessage());
+            System.err.println("Fehler bei " + errorLabel + ": " + e.getMessage());
         }
-        return biomes;
+        return values;
     }
 
     private static final Set<String> ALLOWED_DISTINCT_COLUMNS =

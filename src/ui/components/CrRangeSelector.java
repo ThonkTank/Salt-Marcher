@@ -27,7 +27,9 @@ public class CrRangeSelector extends HBox {
         crLabel.setMinWidth(20);
 
         minCombo = new ComboBox<>(FXCollections.observableArrayList(crValues));
+        minCombo.setAccessibleText("Minimaler CR");
         maxCombo = new ComboBox<>(FXCollections.observableArrayList(crValues));
+        maxCombo.setAccessibleText("Maximaler CR");
         minCombo.getSelectionModel().selectFirst();
         maxCombo.getSelectionModel().selectLast();
         minCombo.setPrefWidth(65);
@@ -47,20 +49,32 @@ public class CrRangeSelector extends HBox {
         int minIdx = minCombo.getSelectionModel().getSelectedIndex();
         int maxIdx = maxCombo.getSelectionModel().getSelectedIndex();
         if (minIdx > maxIdx) {
-            updating = true;
-            maxCombo.getSelectionModel().select(minIdx);
-            updating = false;
+            // Suppress callback while adjusting the max value
+            withSuppressedCallback(() -> maxCombo.getSelectionModel().select(minIdx));
         }
         if (onChange != null) onChange.accept(getMinCr(), getMaxCr());
+    }
+
+    /**
+     * Executes an action while suppressing the onChange callback.
+     * Prevents duplicate or cascading onChange events during programmatic selection changes.
+     */
+    private void withSuppressedCallback(Runnable action) {
+        updating = true;
+        try {
+            action.run();
+        } finally {
+            updating = false;
+        }
     }
 
     public String getMinCr() { return minCombo.getValue(); }
     public String getMaxCr() { return maxCombo.getValue(); }
 
     public void reset() {
-        updating = true;
-        minCombo.getSelectionModel().selectFirst();
-        maxCombo.getSelectionModel().selectLast();
-        updating = false;
+        withSuppressedCallback(() -> {
+            minCombo.getSelectionModel().selectFirst();
+            maxCombo.getSelectionModel().selectLast();
+        });
     }
 }
