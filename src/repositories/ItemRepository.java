@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import database.DatabaseManager;
 import entities.Item;
 
 public class ItemRepository {
@@ -33,7 +32,7 @@ public class ItemRepository {
     // Mapping
     // -------------------------------------------------------------------------
 
-    private static Item mapItemFields(ResultSet rs) throws SQLException {
+    private static Item mapRow(ResultSet rs) throws SQLException {
         Item i = new Item();
         i.Id                  = rs.getLong("id");
         i.Name                = rs.getString("name");
@@ -141,14 +140,13 @@ public class ItemRepository {
     // Queries
     // -------------------------------------------------------------------------
 
-    public static Item getItem(Long id) {
+    public static Item getItem(Connection conn, Long id) {
         String sql = "SELECT * FROM items WHERE id = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
             Item item = null;
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) item = mapItemFields(rs);
+                if (rs.next()) item = mapRow(rs);
             }
             if (item != null) loadTags(conn, List.of(item));
             return item;
@@ -158,15 +156,14 @@ public class ItemRepository {
         return null;
     }
 
-    public static List<Item> searchByName(String query, int limit) {
+    public static List<Item> searchByName(Connection conn, String query, int limit) {
         List<Item> items = new ArrayList<>();
         String sql = "SELECT * FROM items WHERE LOWER(name) LIKE LOWER(?) LIMIT ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, "%" + query + "%");
             ps.setInt(2, limit);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) items.add(mapItemFields(rs));
+                while (rs.next()) items.add(mapRow(rs));
             }
             loadTags(conn, items);
         } catch (SQLException e) {
@@ -175,14 +172,13 @@ public class ItemRepository {
         return items;
     }
 
-    public static List<Item> getItemsByCategory(String category) {
+    public static List<Item> getItemsByCategory(Connection conn, String category) {
         List<Item> items = new ArrayList<>();
         String sql = "SELECT * FROM items WHERE LOWER(category) = LOWER(?) ORDER BY name";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, category);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) items.add(mapItemFields(rs));
+                while (rs.next()) items.add(mapRow(rs));
             }
             loadTags(conn, items);
         } catch (SQLException e) {
@@ -191,14 +187,13 @@ public class ItemRepository {
         return items;
     }
 
-    public static List<Item> getMagicItemsByRarity(String rarity) {
+    public static List<Item> getMagicItemsByRarity(Connection conn, String rarity) {
         List<Item> items = new ArrayList<>();
         String sql = "SELECT * FROM items WHERE is_magic = 1 AND LOWER(rarity) = LOWER(?) ORDER BY name";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, rarity);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) items.add(mapItemFields(rs));
+                while (rs.next()) items.add(mapRow(rs));
             }
             loadTags(conn, items);
         } catch (SQLException e) {

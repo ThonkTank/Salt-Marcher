@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import database.DatabaseManager;
 import services.CreatureService;
 import ui.encounter.EncounterView;
 import ui.encounter.EncounterViewCallbacks;
@@ -75,7 +76,7 @@ public class SaltMarcherApp extends Application {
 
     public static void main(String[] args) {
         try {
-            CreatureService.initSchema();
+            DatabaseManager.setupDatabase();
         } catch (Exception e) {
             System.err.println("SaltMarcherApp.main(): database init failed: " + e.getMessage());
             System.exit(1);

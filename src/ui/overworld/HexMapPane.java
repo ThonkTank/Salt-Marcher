@@ -1,6 +1,7 @@
 package ui.overworld;
 
 import javafx.scene.layout.StackPane;
+import services.HexMapService;
 import ui.components.HexGridPane;
 
 /** Hex grid map viewer for the overworld travel view. Read-only (no tile editing). */
@@ -17,6 +18,15 @@ public class HexMapPane extends StackPane {
         getChildren().add(hexGrid);
     }
 
-    public void loadFirstMap() { hexGrid.loadFirstMap(); }
-    public void loadMap(long mapId) { hexGrid.loadMap(mapId); }
+    public void loadFirstMap() {
+        HexMapService.loadFirstMapAsync(
+                hexGrid::loadTiles,
+                ex -> System.err.println("HexMapPane.loadFirstMap(): " + ex.getMessage()));
+    }
+
+    public void loadMap(long mapId) {
+        HexMapService.loadMapAsync(mapId,
+                hexGrid::loadTiles,
+                ex -> System.err.println("HexMapPane.loadMap(): " + ex.getMessage()));
+    }
 }

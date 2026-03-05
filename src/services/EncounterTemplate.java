@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
-import services.RoleClassifier.MonsterRole;
+import entities.MonsterRole;
 
 /**
  * Procedural shape generator for encounter structures.

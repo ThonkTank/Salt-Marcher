@@ -35,10 +35,10 @@ After cloning, the database is empty. Run `./crawl.sh` to populate monster data 
 
 **Layer structure** (bottom-up):
 - `src/entities/` — POJOs with PascalCase fields (intentional convention)
-- `src/database/DatabaseManager` — connection factory (`getConnection()` returns a fresh, closeable Connection; callers own it via try-with-resources). No migration ladder — `setupDatabase()` uses idempotent CREATE TABLE IF NOT EXISTS + INSERT OR IGNORE seeding
-- `src/repositories/` — all methods **static**, all JDBC in try-with-resources
-- `src/services/` — all methods **static**, stateless business logic
-- `src/importer/` — HTML scrapers and bulk importers (run as standalone CLI, not from the app). `dev/` sub-package has harness mains
+- `src/database/DatabaseManager` — connection factory (`getConnection()` returns a fresh, closeable Connection; callers own it via try-with-resources). No migration ladder — `setupDatabase()` uses idempotent CREATE TABLE IF NOT EXISTS + INSERT OR IGNORE seeding. `database/dev/` has schema verification harness
+- `src/repositories/` — all methods **static**, accept `Connection conn` as first parameter; callers (services) own the connection lifecycle via try-with-resources
+- `src/services/` — all methods **static**, stateless business logic. Domain value objects (Encounter, EncounterSlot) live in `entities/`, not here
+- `src/importer/` — HTML scrapers and bulk importers (run as standalone CLI, not from the app). `dev/` sub-package has parser harness mains
 - `src/ui/` — JavaFX single-window app with sidebar navigation
 
 **UI shell architecture:**
@@ -47,13 +47,13 @@ After cloning, the database is empty. Run `./crawl.sh` to populate monster data 
 - `ViewId` enum + `ViewCategory` (SESSION vs EDITOR) — to add a new view: add enum entry, implement AppView, register in SaltMarcherApp
 - `ScenePane`/`SceneHandle` — tabbed right-column area; views register persistent tabs via SceneHandle at construction time
 - Views push content to ScenePane via `setOnUpdateSceneContent(Consumer<Node>)` callback
-- `ui/components/` — reusable widgets (DifficultyMeter, StatBlockPane, SearchableFilterButton, etc.)
+- `ui/components/` — reusable widgets (DifficultyMeter, HexGridPane, StatBlockPane, SearchableFilterButton, etc.). `TerrainType` is a shared enum used by both `HexGridPane` (`ui/components/`) and `TilePropertiesPane` (`ui/mapeditor/`); it lives here so neither package owns it
 
 **Encounter subsystem** (`ui/encounter/`): builder mode (EncounterRosterPane) ↔ combat mode (CombatTrackerPane), DifficultyMeter live-updates in both.
 
-**Overworld/map subsystem** (`ui/overworld/`, `ui/mapeditor/`): hex grid with axial coordinates (q, r). Forgotten Realms calendar (12×30 + 5 intercalary days). Campaign state singleton (id=1) in DB.
+**Overworld/map subsystem** (`ui/overworld/`, `ui/mapeditor/`): hex grid with axial coordinates (q, r). `HexGridPane` (shared hex renderer) lives in `ui/components/`. `HexMapService` provides async loading helpers (`loadFirstMapAsync`, `loadMapAsync`) used by both `HexMapPane` and `MapEditorCanvas`. Forgotten Realms calendar (12×30 + 5 intercalary days). Campaign state singleton (id=1) in DB.
 
-**Map editor** (`ui/mapeditor/`): EDITOR-category view with `MapEditorCanvas`, `TilePropertiesPane`, `MapEditorControls`, and `EditorTool` enum. `TerrainType` enum lives in `ui/components/` (shared with the hex renderer). Overrides `getRightColumn()` with its own properties panel.
+**Map editor** (`ui/mapeditor/`): EDITOR-category view with `MapEditorCanvas`, `TilePropertiesPane`, `MapEditorControls`, and `EditorTool` enum. Overrides `getRightColumn()` with its own properties panel.
 
 ## Key Conventions
 

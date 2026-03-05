@@ -1,18 +1,13 @@
 package ui.components;
 
-import database.DatabaseManager;
 import entities.HexTile;
 import javafx.beans.value.ChangeListener;
-import javafx.concurrent.Task;
 import javafx.scene.Group;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
-import services.HexMapService;
-import ui.components.TerrainType;
 
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +22,18 @@ import java.util.function.Consumer;
 public class HexGridPane extends Pane {
 
     private static final double HEX_SIZE = 48.0; // px, center to vertex
+
+    private static final double[] HEX_VERTEX_DX;
+    private static final double[] HEX_VERTEX_DY;
+    static {
+        HEX_VERTEX_DX = new double[6];
+        HEX_VERTEX_DY = new double[6];
+        for (int i = 0; i < 6; i++) {
+            double angle = Math.toRadians(60.0 * i);
+            HEX_VERTEX_DX[i] = HEX_SIZE * Math.cos(angle);
+            HEX_VERTEX_DY[i] = HEX_SIZE * Math.sin(angle);
+        }
+    }
 
     private final Group hexGroup = new Group();
     private final Label emptyLabel = new Label("Keine Karte geladen");
@@ -71,40 +78,6 @@ public class HexGridPane extends Pane {
 
     // -------------------------------------------------------------------------
     // Data loading
-
-    /** Loads tiles for the given map asynchronously. */
-    public void loadMap(long mapId) {
-        Task<List<HexTile>> task = new Task<>() {
-            @Override protected List<HexTile> call() throws Exception {
-                try (Connection c = DatabaseManager.getConnection()) {
-                    return HexMapService.getTiles(c, mapId);
-                }
-            }
-        };
-        task.setOnSucceeded(e -> loadTiles(task.getValue()));
-        task.setOnFailed(e -> System.err.println(
-            "HexGridPane.loadMap(): " + task.getException().getMessage()));
-        Thread t = new Thread(task, "sm-load-hex-map");
-        t.setDaemon(true);
-        t.start();
-    }
-
-    /** Loads the first available map asynchronously. No-op if no maps exist. */
-    public void loadFirstMap() {
-        Task<Long> task = new Task<>() {
-            @Override protected Long call() throws Exception {
-                try (Connection c = DatabaseManager.getConnection()) {
-                    return HexMapService.getFirstMapId(c).orElse(null);
-                }
-            }
-        };
-        task.setOnSucceeded(e -> { if (task.getValue() != null) loadMap(task.getValue()); });
-        task.setOnFailed(e -> System.err.println(
-            "HexGridPane.loadFirstMap(): " + task.getException().getMessage()));
-        Thread t = new Thread(task, "sm-load-hex-map-id");
-        t.setDaemon(true);
-        t.start();
-    }
 
     /** Rebuilds all hex Polygon nodes from the given tile list. */
     public void loadTiles(List<HexTile> tiles) {
@@ -174,9 +147,8 @@ public class HexGridPane extends Pane {
 
         double[] pts = new double[12];
         for (int i = 0; i < 6; i++) {
-            double angle = Math.toRadians(60.0 * i); // flat-top: 0° points right
-            pts[i * 2]     = cx + HEX_SIZE * Math.cos(angle);
-            pts[i * 2 + 1] = cy + HEX_SIZE * Math.sin(angle);
+            pts[i * 2]     = cx + HEX_VERTEX_DX[i];
+            pts[i * 2 + 1] = cy + HEX_VERTEX_DY[i];
         }
 
         Polygon hex = new Polygon(pts);

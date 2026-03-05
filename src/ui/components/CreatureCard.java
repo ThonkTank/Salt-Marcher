@@ -7,7 +7,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import services.RoleClassifier.MonsterRole;
+import entities.MonsterRole;
 
 import java.util.function.Consumer;
 

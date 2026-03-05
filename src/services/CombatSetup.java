@@ -5,8 +5,8 @@ import entities.Creature;
 import entities.MonsterCombatant;
 import entities.PcCombatant;
 import entities.PlayerCharacter;
-import services.Encounter;
-import services.EncounterSlot;
+import entities.Encounter;
+import entities.EncounterSlot;
 
 import java.util.ArrayList;
 import java.util.List;

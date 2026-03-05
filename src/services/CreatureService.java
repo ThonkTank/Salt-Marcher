@@ -4,6 +4,8 @@ import database.DatabaseManager;
 import entities.Creature;
 import repositories.CreatureRepository;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 
 /**
@@ -33,14 +35,14 @@ public class CreatureService {
     /** Paginated search result returned to the UI layer. */
     public record PageResult(List<Creature> creatures, int totalCount) {}
 
-    /** Initializes the database schema. Called once at application startup. */
-    public static void initSchema() {
-        DatabaseManager.setupDatabase();
-    }
-
     /** Returns the total number of creatures in the database. */
     public static int countAll() {
-        return CreatureRepository.countAll();
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return CreatureRepository.countAll(conn);
+        } catch (SQLException e) {
+            System.err.println("CreatureService.countAll(): " + e.getMessage());
+            return 0;
+        }
     }
 
     public static PageResult searchCreatures(
@@ -59,14 +61,24 @@ public class CreatureService {
             System.err.println("CreatureService.searchCreatures(): unknown CR value: " + crMin);
         if (crMax != null && xpMax == null)
             System.err.println("CreatureService.searchCreatures(): unknown CR value: " + crMax);
-        CreatureRepository.SearchResult r = CreatureRepository.searchWithFiltersAndCount(
-                nameQuery, xpMin, xpMax, sizes, types, subtypes, biomes, alignments,
-                sortColumn, sortDirection, limit, offset);
-        return new PageResult(r.creatures(), r.totalCount());
+        try (Connection conn = DatabaseManager.getConnection()) {
+            CreatureRepository.SearchResult r = CreatureRepository.searchWithFiltersAndCount(
+                    conn, nameQuery, xpMin, xpMax, sizes, types, subtypes, biomes, alignments,
+                    sortColumn, sortDirection, limit, offset);
+            return new PageResult(r.creatures(), r.totalCount());
+        } catch (SQLException e) {
+            System.err.println("CreatureService.searchCreatures(): " + e.getMessage());
+            return new PageResult(List.of(), 0);
+        }
     }
 
     public static Creature getCreature(long id) {
-        return CreatureRepository.getCreature(id);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return CreatureRepository.getCreature(conn, id);
+        } catch (SQLException e) {
+            System.err.println("CreatureService.getCreature(): " + e.getMessage());
+            return null;
+        }
     }
 
     /**
@@ -76,17 +88,27 @@ public class CreatureService {
     public static List<Creature> getCreaturesForEncounter(
             List<String> types, int minXP, int maxXP,
             List<String> biomes, List<String> subtypes) {
-        return CreatureRepository.getCreaturesByFilters(types, minXP, maxXP, biomes, subtypes);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return CreatureRepository.getCreaturesByFilters(conn, types, minXP, maxXP, biomes, subtypes);
+        } catch (SQLException e) {
+            System.err.println("CreatureService.getCreaturesForEncounter(): " + e.getMessage());
+            return List.of();
+        }
     }
 
     public static FilterOptions loadFilterOptions() {
-        return new FilterOptions(
-                CreatureRepository.getDistinctSizes(),
-                CreatureRepository.getDistinctTypes(),
-                CreatureRepository.getDistinctSubtypes(),
-                CreatureRepository.getDistinctBiomes(),
-                CreatureRepository.getDistinctAlignments(),
-                XpCalculator.getCrValues()
-        );
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return new FilterOptions(
+                    CreatureRepository.getDistinctSizes(conn),
+                    CreatureRepository.getDistinctTypes(conn),
+                    CreatureRepository.getDistinctSubtypes(conn),
+                    CreatureRepository.getDistinctBiomes(conn),
+                    CreatureRepository.getDistinctAlignments(conn),
+                    XpCalculator.getCrValues()
+            );
+        } catch (SQLException e) {
+            System.err.println("CreatureService.loadFilterOptions(): " + e.getMessage());
+            return new FilterOptions(List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+        }
     }
 }

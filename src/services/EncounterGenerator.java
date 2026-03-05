@@ -10,11 +10,13 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 
 import entities.Combatant;
+import entities.Encounter;
+import entities.EncounterSlot;
 import entities.MonsterCombatant;
 import entities.Creature;
 import services.EncounterTemplate.ShapeResult;
 import services.EncounterTemplate.SlotSpec;
-import services.RoleClassifier.MonsterRole;
+import entities.MonsterRole;
 
 /**
  * Generates balanced D&D 5e encounters using the XP budget model (DMG pp.82-83).

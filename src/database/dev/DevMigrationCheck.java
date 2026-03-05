@@ -1,4 +1,4 @@
-package importer.dev;
+package database.dev;
 
 import database.DatabaseManager;
 import repositories.CalendarRepository;
@@ -15,7 +15,7 @@ import java.sql.Statement;
  *
  * Run after compiling with the standard javac command:
  *   java -cp "out:lib/sqlite-jdbc.jar:lib/slf4j-api.jar:lib/slf4j-nop.jar" \
- *        importer.dev.DevMigrationCheck
+ *        database.dev.DevMigrationCheck
  *
  * Expected output: all tables present, epoch 0 = Hammer 1, 1 DR.
  */

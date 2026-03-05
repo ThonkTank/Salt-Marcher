@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
-import database.DatabaseManager;
 import entities.Creature;
 import entities.ChallengeRating;
 
@@ -23,7 +22,7 @@ public class CreatureRepository {
     // Mapping
     // -------------------------------------------------------------------------
 
-    private static Creature mapCreatureFields(ResultSet rs) throws SQLException {
+    private static Creature mapRow(ResultSet rs) throws SQLException {
         Creature c = new Creature();
         c.Id               = rs.getLong("id");
         c.Name             = rs.getString("name");
@@ -34,7 +33,7 @@ public class CreatureRepository {
         try {
             c.CR = ChallengeRating.of(rs.getString("cr"));
         } catch (IllegalArgumentException e) {
-            System.err.println("CreatureRepository.mapCreatureFields(): Invalid CR: " + e.getMessage());
+            System.err.println("CreatureRepository.mapRow(): Invalid CR: " + e.getMessage());
             c.CR = ChallengeRating.of("0");  // fallback
         }
         c.XP               = rs.getInt("xp");
@@ -124,9 +123,14 @@ public class CreatureRepository {
         loadStringList(conn, creatures, "creature_subtypes", "subtype", (c, v) -> c.Subtypes.add(v));
     }
 
+    private static final Set<String> ALLOWED_LOAD_TABLES =
+            Set.of("creature_biomes:biome", "creature_subtypes:subtype");
+
     private static void loadStringList(Connection conn, List<Creature> creatures,
             String table, String valueColumn,
             java.util.function.BiConsumer<Creature, String> adder) throws SQLException {
+        if (!ALLOWED_LOAD_TABLES.contains(table + ":" + valueColumn))
+            throw new IllegalArgumentException("Invalid table/column for loadStringList: " + table + "." + valueColumn);
         if (creatures.isEmpty()) return;
         Map<Long, Creature> byId = indexById(creatures);
         String sql = "SELECT creature_id, " + valueColumn + " FROM " + table
@@ -301,17 +305,16 @@ public class CreatureRepository {
     }
 
     // -------------------------------------------------------------------------
-    // Queries (für EncounterGenerator — Signaturen unverändert)
+    // Queries
     // -------------------------------------------------------------------------
 
-    public static Creature getCreature(long id) {
+    public static Creature getCreature(Connection conn, long id) {
         String sql = "SELECT * FROM creatures WHERE id = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    Creature c = mapCreatureFields(rs);
+                    Creature c = mapRow(rs);
                     List<Creature> single = List.of(c);
                     loadActions(conn, single);
                     loadBiomes(conn, single);
@@ -326,7 +329,7 @@ public class CreatureRepository {
         return null;
     }
 
-    public static List<Creature> getCreaturesByFilters(List<String> creatureTypes, int minXP, int maxXP,
+    public static List<Creature> getCreaturesByFilters(Connection conn, List<String> creatureTypes, int minXP, int maxXP,
                                                         List<String> biomes, List<String> subtypes) {
         List<Creature> creatures = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT * FROM creatures WHERE xp >= ? AND xp <= ?");
@@ -337,11 +340,10 @@ public class CreatureRepository {
         appendSubtypeClause(sql, params, subtypes);
         appendBiomesClause(sql, params, biomes);
 
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             bindParams(ps, params);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) creatures.add(mapCreatureFields(rs));
+                while (rs.next()) creatures.add(mapRow(rs));
             }
             loadBiomes(conn, creatures);
             loadSubtypes(conn, creatures);
@@ -354,11 +356,11 @@ public class CreatureRepository {
     /**
      * Returns creatures with base stats only — {@code Biomes}, {@code Actions}, {@code Subtypes},
      * and {@code Traits} are empty lists (not null, but not loaded). Suitable for autocomplete
-     * and name-only lookups. Use {@link #searchByName(String, int, boolean)} with
+     * and name-only lookups. Use {@link #searchByName(Connection, String, int, boolean)} with
      * {@code loadRelations=true} for any display use case.
      */
-    public static List<Creature> searchByName(String query, int limit) {
-        return searchByName(query, limit, false);
+    public static List<Creature> searchByName(Connection conn, String query, int limit) {
+        return searchByName(conn, query, limit, false);
     }
 
     /**
@@ -367,15 +369,14 @@ public class CreatureRepository {
      *                      creature data is not needed (avoids N+1 relation queries).
      *                      Pass {@code true} for any display use case.
      */
-    public static List<Creature> searchByName(String query, int limit, boolean loadRelations) {
+    public static List<Creature> searchByName(Connection conn, String query, int limit, boolean loadRelations) {
         List<Creature> creatures = new ArrayList<>();
         String sql = "SELECT * FROM creatures WHERE LOWER(name) LIKE LOWER(?) LIMIT ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, "%" + query + "%");
             ps.setInt(2, limit);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) creatures.add(mapCreatureFields(rs));
+                while (rs.next()) creatures.add(mapRow(rs));
             }
             if (loadRelations) {
                 loadActions(conn, creatures);
@@ -393,9 +394,8 @@ public class CreatureRepository {
     // Filtered search (for encounter builder)
     // -------------------------------------------------------------------------
 
-    public static int countAll() {
-        try (Connection conn = DatabaseManager.getConnection();
-             Statement stmt = conn.createStatement();
+    public static int countAll(Connection conn) {
+        try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM creatures")) {
             return rs.next() ? rs.getInt(1) : 0;
         } catch (SQLException e) {
@@ -407,6 +407,7 @@ public class CreatureRepository {
     public record SearchResult(int totalCount, List<Creature> creatures) {}
 
     public static SearchResult searchWithFiltersAndCount(
+            Connection conn,
             String nameQuery,
             Integer xpMin, Integer xpMax,
             List<String> sizes,
@@ -443,15 +444,14 @@ public class CreatureRepository {
         // Single query: COUNT(*) OVER() gives total matches before LIMIT (SQLite 3.25+)
         String sql = "SELECT *, COUNT(*) OVER() AS total_count FROM creatures" + where
                 + " ORDER BY " + col + " " + dir + " LIMIT ? OFFSET ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             int idx = bindParams(ps, params);
             ps.setInt(idx++, limit);
             ps.setInt(idx, offset);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     if (creatures.isEmpty()) totalCount = rs.getInt("total_count");
-                    creatures.add(mapCreatureFields(rs));
+                    creatures.add(mapRow(rs));
                 }
             }
         } catch (SQLException e) {
@@ -474,38 +474,37 @@ public class CreatureRepository {
     // Distinct value queries (for filter population)
     // -------------------------------------------------------------------------
 
-    public static List<String> getDistinctTypes() {
-        return getDistinctColumn("creature_type");
+    public static List<String> getDistinctTypes(Connection conn) {
+        return getDistinctColumn(conn, "creature_type");
     }
 
-    public static List<String> getDistinctSubtypes() {
-        return getDistinctFromTable("creature_subtypes", "subtype", "Distinct-Subtypes");
+    public static List<String> getDistinctSubtypes(Connection conn) {
+        return getDistinctFromTable(conn, "creature_subtypes", "subtype", "Distinct-Subtypes");
     }
 
-    public static List<String> getDistinctSizes() {
+    public static List<String> getDistinctSizes(Connection conn) {
         // Basis-Groessen in fester Reihenfolge — kombinierte Werte wie "Medium or Small"
-        // werden durch den LIKE-Filter korrekt abgedeckt
+        // werden durch den LIKE-Filter korrekt abgedeckt (conn accepted for API uniformity)
         return List.of("Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan");
     }
 
-    public static List<String> getDistinctAlignments() {
-        return getDistinctColumn("alignment");
+    public static List<String> getDistinctAlignments(Connection conn) {
+        return getDistinctColumn(conn, "alignment");
     }
 
-    public static List<String> getDistinctBiomes() {
-        return getDistinctFromTable("creature_biomes", "biome", "Distinct-Biomes");
+    public static List<String> getDistinctBiomes(Connection conn) {
+        return getDistinctFromTable(conn, "creature_biomes", "biome", "Distinct-Biomes");
     }
 
     private static final Set<String> ALLOWED_DISTINCT_TABLES =
             Set.of("creature_subtypes:subtype", "creature_biomes:biome");
 
-    private static List<String> getDistinctFromTable(String table, String column, String errorLabel) {
+    private static List<String> getDistinctFromTable(Connection conn, String table, String column, String errorLabel) {
         if (!ALLOWED_DISTINCT_TABLES.contains(table + ":" + column))
             throw new IllegalArgumentException("Invalid table/column for distinct query: " + table + "." + column);
         List<String> values = new ArrayList<>();
         String sql = "SELECT DISTINCT " + column + " FROM " + table + " ORDER BY " + column;
-        try (Connection conn = DatabaseManager.getConnection();
-             Statement stmt = conn.createStatement();
+        try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) values.add(rs.getString(1));
         } catch (SQLException e) {
@@ -517,14 +516,13 @@ public class CreatureRepository {
     private static final Set<String> ALLOWED_DISTINCT_COLUMNS =
             Set.of("creature_type", "alignment");
 
-    private static List<String> getDistinctColumn(String column) {
+    private static List<String> getDistinctColumn(Connection conn, String column) {
         if (!ALLOWED_DISTINCT_COLUMNS.contains(column))
             throw new IllegalArgumentException("Invalid column: " + column);
         List<String> values = new ArrayList<>();
         String sql = "SELECT DISTINCT " + column + " FROM creatures WHERE "
                 + column + " IS NOT NULL AND " + column + " != '' ORDER BY " + column;
-        try (Connection conn = DatabaseManager.getConnection();
-             Statement stmt = conn.createStatement();
+        try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) values.add(rs.getString(1));
         } catch (SQLException e) {

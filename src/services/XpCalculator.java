@@ -3,6 +3,8 @@ package services;
 import java.util.List;
 import java.util.Map;
 
+import entities.EncounterSlot;
+
 public class XpCalculator {
 
     // ---- CR-to-XP mapping (standard 5e SRD) ----

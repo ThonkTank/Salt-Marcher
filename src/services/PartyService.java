@@ -1,8 +1,11 @@
 package services;
 
+import database.DatabaseManager;
 import entities.PlayerCharacter;
 import repositories.PlayerCharacterRepository;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,31 +17,62 @@ import java.util.Optional;
 public class PartyService {
 
     public static List<PlayerCharacter> getActiveParty() {
-        return PlayerCharacterRepository.getPartyMembers();
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return PlayerCharacterRepository.getPartyMembers(conn);
+        } catch (SQLException e) {
+            System.err.println("PartyService.getActiveParty(): " + e.getMessage());
+            return List.of();
+        }
     }
 
     public static List<PlayerCharacter> getAvailableCharacters() {
-        return PlayerCharacterRepository.getAvailableCharacters();
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return PlayerCharacterRepository.getAvailableCharacters(conn);
+        } catch (SQLException e) {
+            System.err.println("PartyService.getAvailableCharacters(): " + e.getMessage());
+            return List.of();
+        }
     }
 
     public static void addToParty(long id) {
-        PlayerCharacterRepository.addToParty(id);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            PlayerCharacterRepository.addToParty(conn, id);
+        } catch (SQLException e) {
+            System.err.println("PartyService.addToParty(): " + e.getMessage());
+        }
     }
 
     public static void removeFromParty(long id) {
-        PlayerCharacterRepository.removeFromParty(id);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            PlayerCharacterRepository.removeFromParty(conn, id);
+        } catch (SQLException e) {
+            System.err.println("PartyService.removeFromParty(): " + e.getMessage());
+        }
     }
 
     public static void deleteCharacter(long id) {
-        PlayerCharacterRepository.deleteCharacter(id);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            PlayerCharacterRepository.deleteCharacter(conn, id);
+        } catch (SQLException e) {
+            System.err.println("PartyService.deleteCharacter(): " + e.getMessage());
+        }
     }
 
     public static void updateCharacter(long id, String name, int level) {
-        PlayerCharacterRepository.updateCharacter(id, name, level);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            PlayerCharacterRepository.updateCharacter(conn, id, name, level);
+        } catch (SQLException e) {
+            System.err.println("PartyService.updateCharacter(): " + e.getMessage());
+        }
     }
 
     public static Optional<PlayerCharacter> createCharacter(String name, int level) {
-        return PlayerCharacterRepository.createCharacter(name, level);
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return PlayerCharacterRepository.createCharacter(conn, name, level);
+        } catch (SQLException e) {
+            System.err.println("PartyService.createCharacter(): " + e.getMessage());
+            return Optional.empty();
+        }
     }
 
     /** Returns the average level of the party, rounded to the nearest integer. Returns 1 for an empty party. */

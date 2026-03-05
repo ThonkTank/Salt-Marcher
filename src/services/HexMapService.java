@@ -1,7 +1,9 @@
 package services;
 
+import database.DatabaseManager;
 import entities.HexMap;
 import entities.HexTile;
+import javafx.concurrent.Task;
 import repositories.HexTileRepository;
 
 import java.sql.Connection;
@@ -9,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /**
  * Thin service facade for map-related data access.
@@ -30,6 +33,44 @@ public class HexMapService {
 
     public static void updateTerrainType(Connection conn, long tileId, String terrainType) {
         HexTileRepository.updateTerrainType(conn, tileId, terrainType);
+    }
+
+    /**
+     * Loads tiles for the given map on a background thread and delivers them to the FX thread.
+     * Consolidates the DB query into a single connection.
+     */
+    public static void loadMapAsync(long mapId, Consumer<List<HexTile>> onSuccess, Consumer<Throwable> onError) {
+        Task<List<HexTile>> task = new Task<>() {
+            @Override protected List<HexTile> call() throws Exception {
+                try (Connection conn = DatabaseManager.getConnection()) {
+                    return HexTileRepository.getTilesInMap(conn, mapId);
+                }
+            }
+        };
+        task.setOnSucceeded(e -> onSuccess.accept(task.getValue()));
+        task.setOnFailed(e -> onError.accept(task.getException()));
+        Thread t = new Thread(task, "sm-load-hex-map");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /**
+     * Loads tiles for the first available map (single Task, single connection).
+     */
+    public static void loadFirstMapAsync(Consumer<List<HexTile>> onSuccess, Consumer<Throwable> onError) {
+        Task<List<HexTile>> task = new Task<>() {
+            @Override protected List<HexTile> call() throws Exception {
+                try (Connection conn = DatabaseManager.getConnection()) {
+                    Optional<Long> mapId = HexTileRepository.getFirstMapId(conn);
+                    return mapId.map(id -> HexTileRepository.getTilesInMap(conn, id)).orElse(List.of());
+                }
+            }
+        };
+        task.setOnSucceeded(e -> onSuccess.accept(task.getValue()));
+        task.setOnFailed(e -> onError.accept(task.getException()));
+        Thread t = new Thread(task, "sm-load-hex-map");
+        t.setDaemon(true);
+        t.start();
     }
 
     /**

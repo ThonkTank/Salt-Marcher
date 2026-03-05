@@ -22,8 +22,8 @@ import services.CombatSetup;
 import services.RoleClassifier;
 import services.XpCalculator;
 import services.EncounterGenerator;
-import services.Encounter;
-import services.EncounterSlot;
+import entities.Encounter;
+import entities.EncounterSlot;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -257,11 +257,12 @@ public class EncounterView implements AppView {
         if (!ensurePartyExists()) return;
 
         Encounter encounter = rosterPane.buildEncounter();
-        List<Integer> defaultInitiatives = Collections.nCopies(partyCache.size(), DEFAULT_PC_INITIATIVE);
+        List<PlayerCharacter> partyCopy = List.copyOf(partyCache);
+        List<Integer> defaultInitiatives = Collections.nCopies(partyCopy.size(), DEFAULT_PC_INITIATIVE);
         Task<List<Combatant>> task = new Task<>() {
             @Override
             protected List<Combatant> call() {
-                return CombatSetup.buildCombatants(partyCache, defaultInitiatives, encounter);
+                return CombatSetup.buildCombatants(partyCopy, defaultInitiatives, encounter);
             }
         };
         task.setOnSucceeded(e -> startCombat(task.getValue()));

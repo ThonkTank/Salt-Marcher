@@ -1,6 +1,7 @@
 package services;
 
 import entities.Creature;
+import entities.MonsterRole;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -13,10 +14,6 @@ import java.util.Map;
  * Safe to call from any thread.
  */
 public class RoleClassifier {
-
-    public enum MonsterRole {
-        BRUTE, ARTILLERY, CONTROLLER, SKIRMISHER, TANK, LEADER
-    }
 
     // DMG benchmarks: expected HP and AC per CR tier
     private static final int[][] CR_BENCHMARKS = {

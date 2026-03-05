@@ -22,9 +22,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import services.EncounterGenerator;
-import services.Encounter;
-import services.EncounterSlot;
-import services.RoleClassifier.MonsterRole;
+import entities.Encounter;
+import entities.EncounterSlot;
+import entities.MonsterRole;
 import services.XpCalculator;
 import ui.components.CreatureCard;
 import ui.components.DifficultyMeter;
@@ -284,8 +284,9 @@ public class EncounterRosterPane extends VBox {
         toast.setAlignment(Pos.CENTER_LEFT);
 
         cardList.getChildren().set(index, toast);
+        msg.notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
 
-        PauseTransition pause = new PauseTransition(Duration.seconds(4));
+        PauseTransition pause = new PauseTransition(Duration.seconds(5));
         pause.setOnFinished(e -> cardList.getChildren().remove(toast));
 
         undoBtn.setOnAction(e -> {

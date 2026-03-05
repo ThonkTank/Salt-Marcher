@@ -8,12 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import database.DatabaseManager;
 import entities.PlayerCharacter;
 
 public class PlayerCharacterRepository {
 
-    private static PlayerCharacter mapPlayerCharacter(ResultSet rs) throws SQLException {
+    private static PlayerCharacter mapRow(ResultSet rs) throws SQLException {
         PlayerCharacter pc = new PlayerCharacter();
         pc.Id    = rs.getLong("id");
         pc.Name  = rs.getString("name");
@@ -21,11 +20,10 @@ public class PlayerCharacterRepository {
         return pc;
     }
 
-    public static Optional<PlayerCharacter> createCharacter(String name, int level) {
+    public static Optional<PlayerCharacter> createCharacter(Connection conn, String name, int level) throws SQLException {
         String sql = "INSERT INTO player_characters(name, level) VALUES(?,?)";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql,
-                     java.sql.Statement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql,
+                java.sql.Statement.RETURN_GENERATED_KEYS)) {
 
             ps.setString(1, name);
             ps.setInt(2, level);
@@ -40,82 +38,61 @@ public class PlayerCharacterRepository {
                     return Optional.of(pc);
                 }
             }
-        } catch (SQLException e) {
-            System.err.println("PlayerCharacterRepository.createCharacter(): " + e.getMessage());
         }
         return Optional.empty();
     }
 
-    public static List<PlayerCharacter> getPartyMembers() {
+    public static List<PlayerCharacter> getPartyMembers(Connection conn) throws SQLException {
         List<PlayerCharacter> list = new ArrayList<>();
         String sql = "SELECT id, name, level FROM player_characters WHERE in_party = 1 ORDER BY id";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapPlayerCharacter(rs));
-        } catch (SQLException e) {
-            System.err.println("PlayerCharacterRepository.getPartyMembers(): " + e.getMessage());
+            while (rs.next()) list.add(mapRow(rs));
         }
         return list;
     }
 
-    public static List<PlayerCharacter> getAvailableCharacters() {
+    public static List<PlayerCharacter> getAvailableCharacters(Connection conn) throws SQLException {
         List<PlayerCharacter> list = new ArrayList<>();
         String sql = "SELECT id, name, level FROM player_characters WHERE in_party = 0 ORDER BY name";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
+        try (PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) list.add(mapPlayerCharacter(rs));
-        } catch (SQLException e) {
-            System.err.println("PlayerCharacterRepository.getAvailableCharacters(): " + e.getMessage());
+            while (rs.next()) list.add(mapRow(rs));
         }
         return list;
     }
 
-    public static void addToParty(long id) {
+    public static void addToParty(Connection conn, long id) throws SQLException {
         String sql = "UPDATE player_characters SET in_party = 1 WHERE id = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("PlayerCharacterRepository.addToParty(): " + e.getMessage());
         }
     }
 
-    public static void removeFromParty(long id) {
+    public static void removeFromParty(Connection conn, long id) throws SQLException {
         String sql = "UPDATE player_characters SET in_party = 0 WHERE id = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("PlayerCharacterRepository.removeFromParty(): " + e.getMessage());
         }
     }
 
-    public static void updateCharacter(long id, String name, int level) {
+    public static void updateCharacter(Connection conn, long id, String name, int level) throws SQLException {
         String sql = "UPDATE player_characters SET name=?, level=? WHERE id=?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, name);
             ps.setInt(2, level);
             ps.setLong(3, id);
             ps.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("PlayerCharacterRepository.updateCharacter(): " + e.getMessage());
         }
     }
 
-    public static void deleteCharacter(long id) {
+    public static void deleteCharacter(Connection conn, long id) throws SQLException {
         String sql = "DELETE FROM player_characters WHERE id = ?";
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
             ps.executeUpdate();
-        } catch (SQLException e) {
-            System.err.println("PlayerCharacterRepository.deleteCharacter(): " + e.getMessage());
         }
     }
 }

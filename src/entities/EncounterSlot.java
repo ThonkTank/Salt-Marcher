@@ -1,7 +1,4 @@
-package services;
-
-import entities.Creature;
-import services.RoleClassifier.MonsterRole;
+package entities;
 
 /** A single creature type with a count within an {@link Encounter}. {@code count} and {@code role} are mutable. */
 public class EncounterSlot {
