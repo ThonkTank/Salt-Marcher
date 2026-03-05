@@ -8,6 +8,7 @@ import services.CreatureService;
 import ui.encounter.EncounterView;
 import ui.encounter.EncounterViewCallbacks;
 import ui.encounter.PartyPopup;
+import ui.mapeditor.MapEditorView;
 import ui.overworld.OverworldView;
 
 /**
@@ -35,10 +36,14 @@ public class SaltMarcherApp extends Application {
         partyPopup.setOnPartyChanged(encounterView::refreshPartyState);
         shell.addPersistentToolbarItem(partyPopup.getTriggerButton());
 
-        OverworldView overworldView = new OverworldView();
+        OverworldView overworldView = new OverworldView(shell.getSceneRegistry());
 
+        MapEditorView mapEditorView = new MapEditorView();
+
+        // Register session views first, then editors (sidebar separator auto-inserts between categories)
         shell.registerView(ViewId.ENCOUNTER, encounterView);
         shell.registerView(ViewId.OVERWORLD, overworldView);
+        shell.registerView(ViewId.MAP_EDITOR, mapEditorView);
 
         Scene scene = new Scene(shell, 1150, 700);
         scene.getStylesheets().add(

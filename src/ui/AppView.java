@@ -31,4 +31,15 @@ public interface AppView {
 
     /** Called when navigating away from this view. */
     default void onHide() {}
+
+    /**
+     * Custom right-column content. Returns null (default) to use the standard
+     * InspectorPane + ScenePane layout. Editor views ({@link ui.ViewCategory#EDITOR})
+     * may override to provide a properties panel or other editing-specific layout.
+     * <p>
+     * <strong>SESSION views must return null.</strong> Returning a non-null node from a
+     * SESSION view removes ScenePane from the scene graph, silently breaking any
+     * {@link SceneHandle} tab registrations made at construction time.
+     */
+    default Node getRightColumn() { return null; }
 }

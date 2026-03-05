@@ -28,6 +28,14 @@
     -sm-accent-hover: #41a9f2;
     -sm-monster-red:  #c60000;
 
+    /* Terrain fill colors — shared between hex grid renderer and editor palette */
+    -sm-terrain-grassland: #3a6b3a;
+    -sm-terrain-forest:    #2a5030;
+    -sm-terrain-mountain:  #555560;
+    -sm-terrain-water:     #1a3d5c;
+    -sm-terrain-desert:    #7a6030;
+    -sm-terrain-swamp:     #3a4a28;
+
     -sm-active-bg:      #3a3510;
     -sm-active-bg-card: #423b12;
     -sm-dead-bg:       #2a2a2a;
@@ -662,6 +670,10 @@
     -fx-border-color: -sm-accent-hover;
     -fx-border-width: 2;
 }
+.nav-separator {
+    -fx-background-color: -sm-border-subtle;
+    -fx-padding: 0 6 0 6;
+}
 
 /* ---- Quick Search Bar ---- */
 .quick-search-field {
@@ -821,14 +833,149 @@
     -fx-background-radius: 4 4 0 0;
 }
 
-/* ---- Hex Map (Overworld) ---- */
+/* ---- Travel Pane (ScenePane tab: Reise) ---- */
+.travel-pane {
+    -fx-padding: 8;
+    -fx-spacing: 8;
+}
+.travel-location-icon {
+    -fx-font-size: 13px;
+}
+.travel-status-badge {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 11px;
+    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 10;
+}
+.travel-day-label {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+}
+.travel-details-grid {
+    -fx-padding: 4 0 4 0;
+}
+.travel-detail-key {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 11px;
+}
+.travel-detail-value {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+}
+.travel-section-header {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 0 0 0;
+}
+.travel-placeholder {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}
+
+/* ---- Hex Map (Overworld + Editor) ---- */
 .hex-map-pane {
     -fx-background-color: -sm-bg-panel;
+}
+.map-editor-canvas {
+    -fx-background-color: -sm-bg-darkest;
 }
 .hex-map-placeholder {
     -fx-text-alignment: center;
     -fx-font-size: 16px;
 }
+
+/* ---- Hex Grid Terrain Colors ---- */
+.hex-tile {
+    -fx-stroke: #111619;
+    -fx-stroke-width: 1;
+    -fx-fill: -sm-bg-panel;
+}
+.hex-terrain-grassland { -fx-fill: -sm-terrain-grassland; }
+.hex-terrain-forest    { -fx-fill: -sm-terrain-forest; }
+.hex-terrain-mountain  { -fx-fill: -sm-terrain-mountain; }
+.hex-terrain-water     { -fx-fill: -sm-terrain-water; }
+.hex-terrain-desert    { -fx-fill: -sm-terrain-desert; }
+.hex-terrain-swamp     { -fx-fill: -sm-terrain-swamp; }
+
+.hex-tile-hovered  { -fx-stroke: -sm-text-secondary; -fx-stroke-width: 2; }
+.hex-tile-selected { -fx-stroke: -sm-accent;         -fx-stroke-width: 2.5; }
+
+/* ---- Map Editor Tool Panel ---- */
+.map-editor-toolbar {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+}
+.toolbar-divider {
+    -fx-background-color: -sm-border-subtle;
+    -fx-min-width: 1;
+    -fx-max-width: 1;
+    -fx-pref-width: 1;
+    -fx-min-height: 20;
+    -fx-max-height: 20;
+}
+.tool-btn {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-padding: 6 10;
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-cursor: hand;
+    -fx-alignment: CENTER_LEFT;
+}
+.tool-btn:hover {
+    -fx-background-color: -sm-bg-card;
+    -fx-text-fill: -sm-text-primary;
+}
+.tool-btn:selected {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
+.tool-btn:focused {
+    -fx-border-color: -sm-accent-hover;
+    -fx-border-width: 2;
+}
+
+/* ---- Terrain Palette (right panel) ---- */
+.terrain-swatch {
+    -fx-min-width: 14;
+    -fx-min-height: 14;
+    -fx-max-width: 14;
+    -fx-max-height: 14;
+    -fx-background-radius: 2;
+}
+.terrain-swatch-grassland { -fx-background-color: -sm-terrain-grassland; }
+.terrain-swatch-forest    { -fx-background-color: -sm-terrain-forest; }
+.terrain-swatch-mountain  { -fx-background-color: -sm-terrain-mountain; }
+.terrain-swatch-water     { -fx-background-color: -sm-terrain-water; }
+.terrain-swatch-desert    { -fx-background-color: -sm-terrain-desert; }
+.terrain-swatch-swamp     { -fx-background-color: -sm-terrain-swamp; }
+.terrain-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-padding: 4 8;
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-cursor: hand;
+    -fx-graphic-text-gap: 8;
+}
+.terrain-btn:hover {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+}
+.terrain-btn:selected {
+    -fx-background-color: -sm-bg-card;
+    -fx-text-fill: -sm-text-primary;
+    -fx-border-color: -sm-accent;
+    -fx-border-width: 1;
+}
+.terrain-btn:focused {
+    -fx-border-color: -sm-accent-hover;
+    -fx-border-width: 2;
+}
+
 .inspector-divider {
     -fx-background-color: -sm-border-subtle;
     -fx-cursor: default;

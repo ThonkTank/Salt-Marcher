@@ -1,24 +1,22 @@
 package ui.overworld;
 
-import javafx.geometry.Pos;
-import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
+import ui.components.HexGridPane;
 
-/**
- * Placeholder for the hex grid map.
- * Future: JavaFX Canvas-based hex tile renderer with party token.
- */
+/** Hex grid map viewer for the overworld travel view. Read-only (no tile editing). */
 public class HexMapPane extends StackPane {
+
+    private final HexGridPane hexGrid = new HexGridPane();
 
     public HexMapPane() {
         getStyleClass().add("hex-map-pane");
         setMinSize(200, 200);
-
-        Label placeholder = new Label("Hex-Karte\n(Platzhalter)");
-        placeholder.getStyleClass().addAll("text-muted", "hex-map-placeholder");
-        placeholder.setAlignment(Pos.CENTER);
-
-        getChildren().add(placeholder);
-        setAlignment(Pos.CENTER);
+        hexGrid.setReadOnly(true);
+        hexGrid.prefWidthProperty().bind(widthProperty());
+        hexGrid.prefHeightProperty().bind(heightProperty());
+        getChildren().add(hexGrid);
     }
+
+    public void loadFirstMap() { hexGrid.loadFirstMap(); }
+    public void loadMap(long mapId) { hexGrid.loadMap(mapId); }
 }

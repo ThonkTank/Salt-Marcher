@@ -47,10 +47,12 @@ public class AppShell extends BorderPane {
     // currentViewHasControl caches whether the active view provides a control panel so that
     // refreshPanels() can call applyViewContent() safely without re-running configureSplitItems().
     private boolean currentViewHasControl = false;
+    private boolean currentViewHasCustomRight = false;
     private final Map<ViewId, double[]> savedMainDividers = new EnumMap<>(ViewId.class);
     private final Map<ViewId, double[]> savedRightDividers = new EnumMap<>(ViewId.class);
 
     private ViewId activeViewId;
+    private ViewCategory lastRegisteredCategory = null;
 
     public AppShell() {
         // ---- Sidebar (always far left) ----
@@ -88,6 +90,16 @@ public class AppShell extends BorderPane {
     public void registerView(ViewId id, AppView view) {
         views.put(id, view);
 
+        // Insert separator when switching from one category to another
+        if (lastRegisteredCategory != null && id.getCategory() != lastRegisteredCategory) {
+            Region sep = new Region();
+            sep.getStyleClass().add("nav-separator");
+            sep.setMinHeight(1);
+            sep.setPrefHeight(1);
+            sidebar.getChildren().add(sep);
+        }
+        lastRegisteredCategory = id.getCategory();
+
         ToggleButton btn = new ToggleButton(view.getIconText());
         btn.getStyleClass().add("nav-btn");
         btn.setToggleGroup(navGroup);
@@ -107,7 +119,7 @@ public class AppShell extends BorderPane {
             // Save divider positions for the view we're leaving
             if (mainSplit.getDividerPositions().length > 0)
                 savedMainDividers.put(activeViewId, mainSplit.getDividerPositions().clone());
-            if (rightSplit.getDividerPositions().length > 0)
+            if (!currentViewHasCustomRight && rightSplit.getDividerPositions().length > 0)
                 savedRightDividers.put(activeViewId, rightSplit.getDividerPositions().clone());
 
             AppView current = views.get(activeViewId);
@@ -117,6 +129,7 @@ public class AppShell extends BorderPane {
         activeViewId = id;
 
         currentViewHasControl = target.getControlPanel() != null;
+        currentViewHasCustomRight = target.getRightColumn() != null;
 
         applyViewContent(target);
         configureSplitItems();
@@ -196,14 +209,28 @@ public class AppShell extends BorderPane {
             leftColumn.getChildren().setAll(contentArea);
         }
 
-        rightSplit.getItems().setAll(inspectorPane, scenePane);
-        mainSplit.getItems().setAll(leftColumn, rightSplit);
+        AppView target = views.get(activeViewId);
+        Node customRight = target != null ? target.getRightColumn() : null;
+
+        if (customRight != null && activeViewId.getCategory() == ViewCategory.SESSION) {
+            throw new IllegalStateException("SESSION view " + activeViewId
+                + " must not return a custom right column — ScenePane tab registrations would be lost.");
+        }
+
+        if (customRight != null) {
+            mainSplit.getItems().setAll(leftColumn, customRight);
+        } else {
+            rightSplit.getItems().setAll(inspectorPane, scenePane);
+            mainSplit.getItems().setAll(leftColumn, rightSplit);
+        }
 
         Platform.runLater(() -> {
             double[] mainPos = savedMainDividers.get(activeViewId);
-            double[] rightPos = savedRightDividers.get(activeViewId);
             mainSplit.setDividerPositions(mainPos != null ? mainPos[0] : 0.62);
-            rightSplit.setDividerPositions(rightPos != null ? rightPos[0] : 0.45);
+            if (customRight == null) {
+                double[] rightPos = savedRightDividers.get(activeViewId);
+                rightSplit.setDividerPositions(rightPos != null ? rightPos[0] : 0.45);
+            }
         });
     }
 

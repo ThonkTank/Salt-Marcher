@@ -6,6 +6,11 @@ package ui;
  * then call {@link AppShell#registerView(ViewId, AppView)} in SaltMarcherApp.
  */
 public enum ViewId {
-    ENCOUNTER,
-    OVERWORLD
+    ENCOUNTER(ViewCategory.SESSION),
+    OVERWORLD(ViewCategory.SESSION),
+    MAP_EDITOR(ViewCategory.EDITOR);
+
+    private final ViewCategory category;
+    ViewId(ViewCategory category) { this.category = category; }
+    public ViewCategory getCategory() { return category; }
 }
