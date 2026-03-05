@@ -1,39 +1,50 @@
 package ui;
 
-import database.DatabaseManager;
 import javafx.application.Application;
 import javafx.concurrent.Task;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import repositories.CreatureRepository;
+import services.CreatureService;
+import ui.encounter.EncounterView;
+import ui.encounter.EncounterViewCallbacks;
+import ui.encounter.PartyPopup;
+import ui.overworld.OverworldView;
 
+/**
+ * Bootstrap class and cross-view wiring hub.
+ * Constructs the AppShell and all views, then injects callbacks that cross view boundaries.
+ * Internal wiring (between a view and its own sub-panes) is done inside view constructors.
+ * Cross-view wiring (e.g. EncounterView updating InspectorPane via AppShell) is done here
+ * because the bootstrap is the only place that holds references to both ends.
+ */
 public class SaltMarcherApp extends Application {
 
     @Override
     public void start(Stage primaryStage) {
         AppShell shell = new AppShell();
 
-        EncounterView encounterView = new EncounterView();
-        encounterView.setOnRefreshToolbar(shell::refreshToolbar);
-        encounterView.setOnRefreshPanels(shell::refreshPanels);
-        encounterView.setOnRequestStatBlock(shell.getInspectorPane()::showStatBlock);
-        encounterView.setOnEnsureStatBlock(shell.getInspectorPane()::ensureStatBlock);
-        encounterView.setOnUpdateSceneContent(shell.getScenePane()::setContent);
+        EncounterView encounterView = new EncounterView(new EncounterViewCallbacks(
+                shell::refreshToolbar,
+                shell::refreshPanels,
+                shell.getShowStatBlockHandler(),
+                shell.getSceneRegistry()
+        ));
+        encounterView.setOnEnsureStatBlock(shell.getEnsureStatBlockHandler());
 
-        PartyPanel partyPanel = new PartyPanel();
-        partyPanel.setOnPartyChanged(encounterView::refreshPartyState);
-        shell.addPersistentToolbarItem(partyPanel.getTriggerButton());
+        PartyPopup partyPopup = new PartyPopup();
+        partyPopup.setOnPartyChanged(encounterView::refreshPartyState);
+        shell.addPersistentToolbarItem(partyPopup.getTriggerButton());
 
         OverworldView overworldView = new OverworldView();
 
         shell.registerView(ViewId.ENCOUNTER, encounterView);
         shell.registerView(ViewId.OVERWORLD, overworldView);
-        shell.navigateTo(ViewId.ENCOUNTER);
 
         Scene scene = new Scene(shell, 1150, 700);
         scene.getStylesheets().add(
                 getClass().getResource("/salt-marcher.css").toExternalForm());
-        encounterView.setScene(scene);
+
+        shell.navigateTo(ViewId.ENCOUNTER);
 
         primaryStage.setTitle("Salt Marcher");
         primaryStage.setScene(scene);
@@ -41,29 +52,36 @@ public class SaltMarcherApp extends Application {
         primaryStage.setMinHeight(500);
         primaryStage.show();
 
-        // Load filter data asynchronously after window is visible
-        Task<FilterPane.FilterData> filterTask = new Task<>() {
-            @Override protected FilterPane.FilterData call() {
-                return new FilterPane.FilterData(
-                        CreatureRepository.getDistinctSizes(),
-                        CreatureRepository.getDistinctTypes(),
-                        CreatureRepository.getDistinctSubtypes(),
-                        CreatureRepository.getDistinctBiomes(),
-                        CreatureRepository.getDistinctAlignments(),
-                        CreatureRepository.getCrValues()
-                );
+        // Filter data requires a DB query (creature types/biomes), so it is loaded asynchronously.
+        // setFilterData() wires the filter-changed callback internally (see EncounterControls.setFilterData).
+        // All other EncounterView callbacks above are wired synchronously.
+        Task<CreatureService.FilterOptions> filterTask = new Task<>() {
+            @Override protected CreatureService.FilterOptions call() {
+                return CreatureService.loadFilterOptions();
             }
         };
         filterTask.setOnSucceeded(e -> encounterView.setFilterData(filterTask.getValue()));
         filterTask.setOnFailed(e ->
-                System.err.println("Filter laden fehlgeschlagen: " + filterTask.getException().getMessage()));
+                System.err.println("SaltMarcherApp.start(): filter load failed: " + filterTask.getException().getMessage()));
         Thread t = new Thread(filterTask, "sm-filter-load");
         t.setDaemon(true);
         t.start();
     }
 
     public static void main(String[] args) {
-        DatabaseManager.setupDatabase();
+        try {
+            CreatureService.initSchema();
+        } catch (Exception e) {
+            System.err.println("SaltMarcherApp.main(): database init failed: " + e.getMessage());
+            System.exit(1);
+        }
+        // Startup diagnostic: show creature count so newcomers know if the DB is populated
+        int count = CreatureService.countAll();
+        if (count == 0) {
+            System.out.println("INFO: Database is empty. Run ./crawl.sh to populate monster data.");
+        } else {
+            System.out.println("INFO: Database ready: " + count + " creatures loaded.");
+        }
         launch(args);
     }
 }

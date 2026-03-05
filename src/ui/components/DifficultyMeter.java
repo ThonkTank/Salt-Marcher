@@ -1,13 +1,20 @@
 package ui.components;
 
-import ui.ThemeColors;
 import javafx.scene.AccessibleRole;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 
+/**
+ * Canvas-based XP difficulty bar.
+ * Renders colored threshold zones (easy/medium/hard/deadly) and a marker at the
+ * current adjusted-XP position. Colors are Canvas-drawn and must stay in sync with
+ * the CSS variables in resources/salt-marcher.css (see {@link ThemeColors}).
+ * Call {@link #update} after each roster change.
+ */
 public class DifficultyMeter extends Region {
+    private static final double BAR_CORNER_RADIUS = 3.0;
     private final Canvas canvas = new Canvas();
     private int easyThreshold, mediumThreshold, hardThreshold, deadlyThreshold;
     private int adjustedXp;
@@ -22,6 +29,8 @@ public class DifficultyMeter extends Region {
         setMinHeight(28);
         setMaxHeight(28);
         setAccessibleRole(AccessibleRole.TEXT);
+        setAccessibleRoleDescription("Schwierigkeitsanzeige");
+        setAccessibleText("Encounter leer");
     }
 
     public void update(int easy, int medium, int hard, int deadly, int adjXp, String difficultyLabel) {
@@ -32,7 +41,10 @@ public class DifficultyMeter extends Region {
         this.adjustedXp      = adjXp;
         draw();
 
-        setAccessibleText("XP: " + adjXp + " \u2014 " + difficultyLabel);
+        String accessibleText = (adjXp > 0 && difficultyLabel != null && !difficultyLabel.isEmpty())
+                ? "XP: " + adjXp + " \u2014 " + difficultyLabel
+                : "Encounter leer";
+        setAccessibleText(accessibleText);
         notifyAccessibleAttributeChanged(javafx.scene.AccessibleAttribute.TEXT);
     }
 
@@ -57,14 +69,15 @@ public class DifficultyMeter extends Region {
         int[] thresholds = { 0, easyThreshold, mediumThreshold, hardThreshold, deadlyThreshold };
         Color[] colors = { ThemeColors.BG_ELEVATED, ThemeColors.EASY, ThemeColors.MEDIUM, ThemeColors.HARD, ThemeColors.DEADLY };
 
-        // Clip to rounded rect
+        // Clip to rounded rect — fillRoundRect can't paint multiple color segments inside one rounded region,
+        // so we clip the entire bar to a rounded path and then fill each difficulty zone as a plain rect.
         gc.save();
         gc.beginPath();
-        gc.moveTo(pad + 3, barY);
-        gc.arcTo(pad + barW, barY, pad + barW, barY + barH, 3);
-        gc.arcTo(pad + barW, barY + barH, pad, barY + barH, 3);
-        gc.arcTo(pad, barY + barH, pad, barY, 3);
-        gc.arcTo(pad, barY, pad + barW, barY, 3);
+        gc.moveTo(pad + BAR_CORNER_RADIUS, barY);
+        gc.arcTo(pad + barW, barY, pad + barW, barY + barH, BAR_CORNER_RADIUS);
+        gc.arcTo(pad + barW, barY + barH, pad, barY + barH, BAR_CORNER_RADIUS);
+        gc.arcTo(pad, barY + barH, pad, barY, BAR_CORNER_RADIUS);
+        gc.arcTo(pad, barY, pad + barW, barY, BAR_CORNER_RADIUS);
         gc.closePath();
         gc.clip();
 

@@ -4,10 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +15,7 @@ import java.util.function.BiConsumer;
 
 import database.DatabaseManager;
 import entities.Creature;
+import entities.ChallengeRating;
 
 public class CreatureRepository {
 
@@ -28,9 +29,14 @@ public class CreatureRepository {
         c.Name             = rs.getString("name");
         c.Size             = rs.getString("size");
         c.CreatureType     = rs.getString("creature_type");
-        c.Subtypes         = new ArrayList<>(); // loaded via loadSubtypes()
+        c.Subtypes         = new ArrayList<>(); // populated by loadSubtypes()
         c.Alignment        = rs.getString("alignment");
-        c.CR               = rs.getString("cr");
+        try {
+            c.CR = ChallengeRating.of(rs.getString("cr"));
+        } catch (IllegalArgumentException e) {
+            System.err.println("CreatureRepository.mapCreatureFields(): Invalid CR: " + e.getMessage());
+            c.CR = ChallengeRating.of("0");  // fallback
+        }
         c.XP               = rs.getInt("xp");
         c.HP               = rs.getInt("hp");
         c.HitDice          = rs.getString("hit_dice");
@@ -59,14 +65,15 @@ public class CreatureRepository {
         c.PassivePerception= rs.getInt("passive_perception");
         c.Languages        = rs.getString("languages");
         c.LegendaryActionCount = rs.getInt("legendary_action_count");
+        c.Role = rs.getString("role");
 
-        c.Biomes = new ArrayList<>(); // loaded via loadBiomes()
+        c.Biomes = new ArrayList<>(); // populated by loadBiomes()
 
-        c.Traits           = new ArrayList<>(); // loaded via loadActions()
-        c.Actions          = new ArrayList<>(); // loaded via loadActions()
-        c.BonusActions     = new ArrayList<>(); // loaded via loadActions()
-        c.Reactions        = new ArrayList<>(); // loaded via loadActions()
-        c.LegendaryActions = new ArrayList<>(); // loaded via loadActions()
+        c.Traits           = new ArrayList<>(); // populated by loadActions()
+        c.Actions          = new ArrayList<>(); // populated by loadActions()
+        c.BonusActions     = new ArrayList<>(); // populated by loadActions()
+        c.Reactions        = new ArrayList<>(); // populated by loadActions()
+        c.LegendaryActions = new ArrayList<>(); // populated by loadActions()
         return c;
     }
 
@@ -74,11 +81,16 @@ public class CreatureRepository {
         return String.join(",", Collections.nCopies(count, "?"));
     }
 
+    private static Map<Long, Creature> indexById(List<Creature> creatures) {
+        Map<Long, Creature> byId = new HashMap<>(creatures.size() * 2);
+        for (Creature c : creatures) byId.put(c.Id, c);
+        return byId;
+    }
+
     private static void loadActions(Connection conn, List<Creature> creatures) throws SQLException {
         if (creatures.isEmpty()) return;
 
-        Map<Long, Creature> byId = new HashMap<>();
-        for (Creature c : creatures) byId.put(c.Id, c);
+        Map<Long, Creature> byId = indexById(creatures);
 
         String sql = "SELECT creature_id, action_type, name, description FROM creature_actions WHERE creature_id IN ("
                 + placeholders(creatures.size()) + ")";
@@ -90,9 +102,7 @@ public class CreatureRepository {
                 while (ar.next()) {
                     Creature c = byId.get(ar.getLong("creature_id"));
                     if (c == null) continue;
-                    Creature.Action action = new Creature.Action();
-                    action.Name        = ar.getString("name");
-                    action.Description = ar.getString("description");
+                    Creature.Action action = new Creature.Action(ar.getString("name"), ar.getString("description"));
                     String type = ar.getString("action_type");
                     switch (type) {
                         case "trait":            c.Traits.add(action);           break;
@@ -118,8 +128,7 @@ public class CreatureRepository {
             String table, String valueColumn,
             java.util.function.BiConsumer<Creature, String> adder) throws SQLException {
         if (creatures.isEmpty()) return;
-        Map<Long, Creature> byId = new HashMap<>();
-        for (Creature c : creatures) byId.put(c.Id, c);
+        Map<Long, Creature> byId = indexById(creatures);
         String sql = "SELECT creature_id, " + valueColumn + " FROM " + table
                    + " WHERE creature_id IN (" + placeholders(creatures.size()) + ")";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -138,16 +147,24 @@ public class CreatureRepository {
     // SQL constants (shared with MonsterImporter for PreparedStatement reuse)
     // -------------------------------------------------------------------------
 
+    // Parameter positions for bindCreatureParams / MonsterImporter:
+    // 1=id, 2=name, 3=size, 4=creature_type, 5=alignment,
+    // 6=cr, 7=xp, 8=hp, 9=hit_dice, 10=ac, 11=ac_notes,
+    // 12=speed, 13=fly_speed, 14=swim_speed, 15=climb_speed, 16=burrow_speed,
+    // 17=str, 18=dex, 19=con, 20=intel, 21=wis, 22=cha,
+    // 23=initiative_bonus, 24=proficiency_bonus, 25=saving_throws, 26=skills,
+    // 27=damage_vulnerabilities, 28=damage_resistances, 29=damage_immunities, 30=condition_immunities,
+    // 31=senses, 32=passive_perception, 33=languages, 34=legendary_action_count, 35=role
     public static final String CREATURE_INSERT_SQL = "INSERT OR REPLACE INTO creatures("
-            + "id, name, size, creature_type, subtype, alignment,"
+            + "id, name, size, creature_type, alignment,"
             + "cr, xp, hp, hit_dice, ac, ac_notes,"
             + "speed, fly_speed, swim_speed, climb_speed, burrow_speed,"
             + "str, dex, con, intel, wis, cha,"
             + "initiative_bonus, proficiency_bonus,"
             + "saving_throws, skills,"
             + "damage_vulnerabilities, damage_resistances, damage_immunities, condition_immunities,"
-            + "senses, passive_perception, languages, biomes, legendary_action_count"
-            + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            + "senses, passive_perception, languages, legendary_action_count, role"
+            + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     public static final String ACTION_INSERT_SQL =
             "INSERT INTO creature_actions(creature_id, action_type, name, description) VALUES(?,?,?,?)";
@@ -156,58 +173,33 @@ public class CreatureRepository {
     // Save
     // -------------------------------------------------------------------------
 
-    public static void saveCreature(Creature c) {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                try (PreparedStatement ps = conn.prepareStatement(CREATURE_INSERT_SQL)) {
-                    bindCreatureParams(ps, c);
-                    ps.executeUpdate();
-                }
-
-                try (PreparedStatement ps = conn.prepareStatement(ACTION_INSERT_SQL)) {
-                    insertAllActions(ps, c);
-                    ps.executeBatch();
-                }
-
-                saveBiomes(conn, c);
-                saveSubtypes(conn, c);
-                conn.commit();
-            } catch (SQLException e) {
-                try { conn.rollback(); } catch (SQLException ignored) {}
-                throw e;
-            } finally {
-                conn.setAutoCommit(true);  // Restore shared connection state
-            }
-        } catch (SQLException e) {
-            System.err.println("Fehler beim Speichern von '" + c.Name + "': " + e.getMessage());
+    /**
+     * Saves a creature and its junction table rows within an open bulk-import connection.
+     * Caller must have set {@code autoCommit(false)} before calling.
+     */
+    public static void save(Creature c, Connection conn) throws SQLException {
+        try (PreparedStatement creaturePs = conn.prepareStatement(CREATURE_INSERT_SQL);
+             PreparedStatement actionPs   = conn.prepareStatement(ACTION_INSERT_SQL)) {
+            saveCreatureBatch(c, creaturePs, actionPs, conn);
         }
     }
 
-    /** Speichert Kreatur auf einer vorhandenen Connection (für Batch-Import). */
-    public static void saveCreature(Creature c, Connection conn) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(CREATURE_INSERT_SQL)) {
-            bindCreatureParams(ps, c);
-            ps.executeUpdate();
-        }
-
-        try (PreparedStatement ps = conn.prepareStatement(ACTION_INSERT_SQL)) {
-            insertAllActions(ps, c);
-            ps.executeBatch();
-        }
-
-        saveBiomes(conn, c);
-        saveSubtypes(conn, c);
-    }
-
-    /** Speichert Kreatur mit vorbereiteten Statements (für Bulk-Import). */
+    /**
+     * Low-level batch step: binds and executes inserts using caller-managed statements.
+     * A {@code Connection} parameter is required because saving to {@code creature_biomes} and
+     * {@code creature_subtypes} needs additional statements within the same transaction.
+     * Caller must have set {@code autoCommit(false)} before calling.
+     */
     public static void saveCreatureBatch(Creature c, PreparedStatement creaturePs,
-                                         PreparedStatement actionPs) throws SQLException {
+                                         PreparedStatement actionPs, Connection conn) throws SQLException {
         bindCreatureParams(creaturePs, c);
         creaturePs.executeUpdate();
 
         insertAllActions(actionPs, c);
         actionPs.executeBatch();
+
+        saveBiomes(conn, c);
+        saveSubtypes(conn, c);
     }
 
     private static void bindCreatureParams(PreparedStatement ps, Creature c) throws SQLException {
@@ -216,40 +208,37 @@ public class CreatureRepository {
         ps.setString(2,  c.Name);
         ps.setString(3,  c.Size);
         ps.setString(4,  c.CreatureType);
-        // LEGACY COLUMN: subtype column maintained for schema backward-compat, actual subtypes stored in creature_subtypes junction table
-        ps.setString(5,  null);
-        ps.setString(6,  c.Alignment);
-        ps.setString(7,  c.CR);
-        ps.setInt   (8,  c.XP);
-        ps.setInt   (9,  c.HP);
-        ps.setString(10, c.HitDice);
-        ps.setInt   (11, c.AC);
-        ps.setString(12, c.AcNotes);
-        ps.setInt   (13, c.Speed);
-        ps.setInt   (14, c.FlySpeed);
-        ps.setInt   (15, c.SwimSpeed);
-        ps.setInt   (16, c.ClimbSpeed);
-        ps.setInt   (17, c.BurrowSpeed);
-        ps.setInt   (18, c.Str);
-        ps.setInt   (19, c.Dex);
-        ps.setInt   (20, c.Con);
-        ps.setInt   (21, c.Intel);
-        ps.setInt   (22, c.Wis);
-        ps.setInt   (23, c.Cha);
-        ps.setInt   (24, c.InitiativeBonus);
-        ps.setInt   (25, c.ProficiencyBonus);
-        ps.setString(26, c.SavingThrows);
-        ps.setString(27, c.Skills);
-        ps.setString(28, c.DamageVulnerabilities);
-        ps.setString(29, c.DamageResistances);
-        ps.setString(30, c.DamageImmunities);
-        ps.setString(31, c.ConditionImmunities);
-        ps.setString(32, c.Senses);
-        ps.setInt   (33, c.PassivePerception);
-        ps.setString(34, c.Languages);
-        // LEGACY COLUMN: biomes column maintained for schema backward-compat, actual biomes stored in creature_biomes junction table
-        ps.setString(35, "");
-        ps.setInt   (36, c.LegendaryActionCount);
+        ps.setString(5,  c.Alignment);
+        ps.setString(6,  c.CR != null ? c.CR.display : null);
+        ps.setInt   (7,  c.XP);
+        ps.setInt   (8,  c.HP);
+        ps.setString(9,  c.HitDice);
+        ps.setInt   (10, c.AC);
+        ps.setString(11, c.AcNotes);
+        ps.setInt   (12, c.Speed);
+        ps.setInt   (13, c.FlySpeed);
+        ps.setInt   (14, c.SwimSpeed);
+        ps.setInt   (15, c.ClimbSpeed);
+        ps.setInt   (16, c.BurrowSpeed);
+        ps.setInt   (17, c.Str);
+        ps.setInt   (18, c.Dex);
+        ps.setInt   (19, c.Con);
+        ps.setInt   (20, c.Intel);
+        ps.setInt   (21, c.Wis);
+        ps.setInt   (22, c.Cha);
+        ps.setInt   (23, c.InitiativeBonus);
+        ps.setInt   (24, c.ProficiencyBonus);
+        ps.setString(25, c.SavingThrows);
+        ps.setString(26, c.Skills);
+        ps.setString(27, c.DamageVulnerabilities);
+        ps.setString(28, c.DamageResistances);
+        ps.setString(29, c.DamageImmunities);
+        ps.setString(30, c.ConditionImmunities);
+        ps.setString(31, c.Senses);
+        ps.setInt   (32, c.PassivePerception);
+        ps.setString(33, c.Languages);
+        ps.setInt   (34, c.LegendaryActionCount);
+        ps.setString(35, c.Role);
     }
 
     private static void saveBiomes(Connection conn, Creature c) throws SQLException {
@@ -263,6 +252,9 @@ public class CreatureRepository {
     private static final Set<String> ALLOWED_JUNCTIONS =
             Set.of("creature_biomes:biome", "creature_subtypes:subtype");
 
+    // Internal method: table and column MUST always be literal strings, never user input.
+    // The ALLOWED_JUNCTIONS whitelist is a defense-in-depth check; the SQL safety guarantee
+    // depends on all callers respecting this invariant.
     private static void saveJunctionValues(Connection conn, String table, String column,
                                            Long creatureId, List<String> values) throws SQLException {
         if (!ALLOWED_JUNCTIONS.contains(table + ":" + column))
@@ -312,7 +304,7 @@ public class CreatureRepository {
     // Queries (für EncounterGenerator — Signaturen unverändert)
     // -------------------------------------------------------------------------
 
-    public static Creature getCreature(Long id) {
+    public static Creature getCreature(long id) {
         String sql = "SELECT * FROM creatures WHERE id = ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -324,11 +316,12 @@ public class CreatureRepository {
                     loadActions(conn, single);
                     loadBiomes(conn, single);
                     loadSubtypes(conn, single);
+                    c.relationsLoaded = true;
                     return c;
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Fehler beim Laden: " + e.getMessage());
+            System.err.println("CreatureRepository.getCreature(id=" + id + "): " + e.getMessage());
         }
         return null;
     }
@@ -346,30 +339,37 @@ public class CreatureRepository {
 
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
-            int idx = 1;
-            for (Object p : params) {
-                if (p instanceof String s) ps.setString(idx++, s);
-                else if (p instanceof Integer i) ps.setInt(idx++, i);
-            }
+            bindParams(ps, params);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) creatures.add(mapCreatureFields(rs));
             }
-            loadActions(conn, creatures);
             loadBiomes(conn, creatures);
             loadSubtypes(conn, creatures);
         } catch (SQLException e) {
-            System.err.println("Fehler beim Laden: " + e.getMessage());
+            System.err.println("CreatureRepository.getCreaturesByFilters(): " + e.getMessage());
         }
         return creatures;
     }
 
+    /**
+     * Returns creatures with base stats only — {@code Biomes}, {@code Actions}, {@code Subtypes},
+     * and {@code Traits} are empty lists (not null, but not loaded). Suitable for autocomplete
+     * and name-only lookups. Use {@link #searchByName(String, int, boolean)} with
+     * {@code loadRelations=true} for any display use case.
+     */
     public static List<Creature> searchByName(String query, int limit) {
-        return searchByName(query, limit, true);
+        return searchByName(query, limit, false);
     }
 
+    /**
+     * @param loadRelations if {@code false}, skips loading actions/biomes/subtypes —
+     *                      useful for autocomplete or name-only lookups where full
+     *                      creature data is not needed (avoids N+1 relation queries).
+     *                      Pass {@code true} for any display use case.
+     */
     public static List<Creature> searchByName(String query, int limit, boolean loadRelations) {
         List<Creature> creatures = new ArrayList<>();
-        String sql = "SELECT * FROM creatures WHERE name LIKE ? COLLATE NOCASE LIMIT ?";
+        String sql = "SELECT * FROM creatures WHERE LOWER(name) LIKE LOWER(?) LIMIT ?";
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, "%" + query + "%");
@@ -381,51 +381,34 @@ public class CreatureRepository {
                 loadActions(conn, creatures);
                 loadBiomes(conn, creatures);
                 loadSubtypes(conn, creatures);
+                creatures.forEach(c -> c.relationsLoaded = true);
             }
         } catch (SQLException e) {
-            System.err.println("Fehler bei Kreaturensuche: " + e.getMessage());
+            System.err.println("CreatureRepository.searchByName(): " + e.getMessage());
         }
         return creatures;
-    }
-
-    // -------------------------------------------------------------------------
-    // CR-to-XP mapping (standard 5e SRD)
-    // -------------------------------------------------------------------------
-
-    private static final LinkedHashMap<String, Integer> CR_TO_XP = new LinkedHashMap<>();
-    static {
-        CR_TO_XP.put("0", 10);       CR_TO_XP.put("1/8", 25);
-        CR_TO_XP.put("1/4", 50);     CR_TO_XP.put("1/2", 100);
-        CR_TO_XP.put("1", 200);      CR_TO_XP.put("2", 450);
-        CR_TO_XP.put("3", 700);      CR_TO_XP.put("4", 1100);
-        CR_TO_XP.put("5", 1800);     CR_TO_XP.put("6", 2300);
-        CR_TO_XP.put("7", 2900);     CR_TO_XP.put("8", 3900);
-        CR_TO_XP.put("9", 5000);     CR_TO_XP.put("10", 5900);
-        CR_TO_XP.put("11", 7200);    CR_TO_XP.put("12", 8400);
-        CR_TO_XP.put("13", 10000);   CR_TO_XP.put("14", 11500);
-        CR_TO_XP.put("15", 13000);   CR_TO_XP.put("16", 15000);
-        CR_TO_XP.put("17", 18000);   CR_TO_XP.put("18", 20000);
-        CR_TO_XP.put("19", 22000);   CR_TO_XP.put("20", 25000);
-        CR_TO_XP.put("21", 33000);   CR_TO_XP.put("22", 41000);
-        CR_TO_XP.put("23", 50000);   CR_TO_XP.put("24", 62000);
-        CR_TO_XP.put("25", 75000);   CR_TO_XP.put("26", 90000);
-        CR_TO_XP.put("27", 105000);  CR_TO_XP.put("28", 120000);
-        CR_TO_XP.put("29", 135000);  CR_TO_XP.put("30", 155000);
-    }
-
-    public static List<String> getCrValues() {
-        return new ArrayList<>(CR_TO_XP.keySet());
     }
 
     // -------------------------------------------------------------------------
     // Filtered search (for encounter builder)
     // -------------------------------------------------------------------------
 
+    public static int countAll() {
+        try (Connection conn = DatabaseManager.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM creatures")) {
+            return rs.next() ? rs.getInt(1) : 0;
+        } catch (SQLException e) {
+            System.err.println("CreatureRepository.countAll(): " + e.getMessage());
+            return 0;
+        }
+    }
+
     public record SearchResult(int totalCount, List<Creature> creatures) {}
 
     public static SearchResult searchWithFiltersAndCount(
             String nameQuery,
-            String crMin, String crMax,
+            Integer xpMin, Integer xpMax,
             List<String> sizes,
             List<String> types,
             List<String> subtypes,
@@ -434,12 +417,11 @@ public class CreatureRepository {
             String sortColumn, String sortDirection,
             int limit, int offset) {
 
-        // Build WHERE clause once, reuse for both queries
         StringBuilder where = new StringBuilder(" WHERE 1=1");
         List<Object> params = new ArrayList<>();
 
         appendNameClause(where, params, nameQuery);
-        appendCrRangeClause(where, params, crMin, crMax);
+        appendXpRangeClause(where, params, xpMin, xpMax);
         appendSizeClause(where, params, sizes);
         appendTypeClause(where, params, types);
         appendSubtypeClause(where, params, subtypes);
@@ -454,34 +436,26 @@ public class CreatureRepository {
             default           -> throw new IllegalArgumentException("Invalid sort column: " + sortColumn);
         };
         String dir = "DESC".equalsIgnoreCase(sortDirection) ? "DESC" : "ASC";
-        String whereStr = where.toString();
 
         int totalCount = 0;
         List<Creature> creatures = new ArrayList<>();
 
-        try (Connection conn = DatabaseManager.getConnection()) {
-            // Count query
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "SELECT COUNT(*) FROM creatures" + whereStr)) {
-                bindParams(ps, params);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) totalCount = rs.getInt(1);
-                }
-            }
-
-            // Data query
-            String dataSql = "SELECT * FROM creatures" + whereStr
-                    + " ORDER BY " + col + " " + dir + " LIMIT ? OFFSET ?";
-            try (PreparedStatement ps = conn.prepareStatement(dataSql)) {
-                int idx = bindParams(ps, params);
-                ps.setInt(idx++, limit);
-                ps.setInt(idx, offset);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) creatures.add(mapCreatureFields(rs));
+        // Single query: COUNT(*) OVER() gives total matches before LIMIT (SQLite 3.25+)
+        String sql = "SELECT *, COUNT(*) OVER() AS total_count FROM creatures" + where
+                + " ORDER BY " + col + " " + dir + " LIMIT ? OFFSET ?";
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            int idx = bindParams(ps, params);
+            ps.setInt(idx++, limit);
+            ps.setInt(idx, offset);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    if (creatures.isEmpty()) totalCount = rs.getInt("total_count");
+                    creatures.add(mapCreatureFields(rs));
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Fehler bei gefilterter Suche: " + e.getMessage());
+            System.err.println("CreatureRepository.searchWithFiltersAndCount(): " + e.getMessage());
         }
         return new SearchResult(totalCount, creatures);
     }
@@ -491,6 +465,7 @@ public class CreatureRepository {
         for (Object p : params) {
             if (p instanceof String s) ps.setString(idx++, s);
             else if (p instanceof Integer i) ps.setInt(idx++, i);
+            else throw new IllegalArgumentException("bindParams: unsupported param type: " + p.getClass().getName());
         }
         return idx;
     }
@@ -521,15 +496,20 @@ public class CreatureRepository {
         return getDistinctFromTable("creature_biomes", "biome", "Distinct-Biomes");
     }
 
+    private static final Set<String> ALLOWED_DISTINCT_TABLES =
+            Set.of("creature_subtypes:subtype", "creature_biomes:biome");
+
     private static List<String> getDistinctFromTable(String table, String column, String errorLabel) {
+        if (!ALLOWED_DISTINCT_TABLES.contains(table + ":" + column))
+            throw new IllegalArgumentException("Invalid table/column for distinct query: " + table + "." + column);
         List<String> values = new ArrayList<>();
         String sql = "SELECT DISTINCT " + column + " FROM " + table + " ORDER BY " + column;
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) values.add(rs.getString(1));
         } catch (SQLException e) {
-            System.err.println("Fehler bei " + errorLabel + ": " + e.getMessage());
+            System.err.println("CreatureRepository.getDistinctFromTable(" + errorLabel + "): " + e.getMessage());
         }
         return values;
     }
@@ -544,11 +524,11 @@ public class CreatureRepository {
         String sql = "SELECT DISTINCT " + column + " FROM creatures WHERE "
                 + column + " IS NOT NULL AND " + column + " != '' ORDER BY " + column;
         try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) values.add(rs.getString(1));
         } catch (SQLException e) {
-            System.err.println("Fehler bei Distinct-Query: " + e.getMessage());
+            System.err.println("CreatureRepository.getDistinctColumn(" + column + "): " + e.getMessage());
         }
         return values;
     }
@@ -563,10 +543,8 @@ public class CreatureRepository {
         params.add("%" + nameQuery.trim() + "%");
     }
 
-    private static void appendCrRangeClause(StringBuilder sql, List<Object> params,
-                                             String crMin, String crMax) {
-        Integer xpMin = crMin != null ? CR_TO_XP.get(crMin) : null;
-        Integer xpMax = crMax != null ? CR_TO_XP.get(crMax) : null;
+    private static void appendXpRangeClause(StringBuilder sql, List<Object> params,
+                                             Integer xpMin, Integer xpMax) {
         if (xpMin != null) {
             sql.append(" AND xp >= ?");
             params.add(xpMin);
@@ -621,8 +599,8 @@ public class CreatureRepository {
 
     private static void appendBiomesClause(StringBuilder sql, List<Object> params, List<String> biomes) {
         if (biomes == null || biomes.isEmpty()) return;
-        sql.append(" AND id IN (SELECT creature_id FROM creature_biomes WHERE biome IN (");
-        sql.append(placeholders(biomes.size()));
+        sql.append(" AND id IN (SELECT creature_id FROM creature_biomes WHERE LOWER(biome) IN (");
+        sql.append(String.join(", ", Collections.nCopies(biomes.size(), "LOWER(?)")));
         sql.append("))");
         params.addAll(biomes);
     }

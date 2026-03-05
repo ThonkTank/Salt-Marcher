@@ -9,6 +9,8 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -38,8 +40,15 @@ public class AppShell extends BorderPane {
     private final SplitPane rightSplit = new SplitPane();
     private final ScenePane scenePane = new ScenePane();
 
-    // Track which panels the current view provides (to avoid SplitPane reconfig on mode switch)
+    // JavaFX SplitPane resets divider positions whenever getItems() is mutated.
+    // configureSplitItems() sets the SplitPane items (resets dividers) and is called ONLY on navigation (navigateTo).
+    // applyViewContent() swaps content inside existing containers without touching SplitPane items
+    // and is called on both navigation and mode switches (refreshPanels).
+    // currentViewHasControl caches whether the active view provides a control panel so that
+    // refreshPanels() can call applyViewContent() safely without re-running configureSplitItems().
     private boolean currentViewHasControl = false;
+    private final Map<ViewId, double[]> savedMainDividers = new EnumMap<>(ViewId.class);
+    private final Map<ViewId, double[]> savedRightDividers = new EnumMap<>(ViewId.class);
 
     private ViewId activeViewId;
 
@@ -92,8 +101,15 @@ public class AppShell extends BorderPane {
     public void navigateTo(ViewId id) {
         AppView target = views.get(id);
         if (target == null) return;
+        if (id.equals(activeViewId)) return;
 
         if (activeViewId != null) {
+            // Save divider positions for the view we're leaving
+            if (mainSplit.getDividerPositions().length > 0)
+                savedMainDividers.put(activeViewId, mainSplit.getDividerPositions().clone());
+            if (rightSplit.getDividerPositions().length > 0)
+                savedRightDividers.put(activeViewId, rightSplit.getDividerPositions().clone());
+
             AppView current = views.get(activeViewId);
             if (current != null) current.onHide();
         }
@@ -124,6 +140,7 @@ public class AppShell extends BorderPane {
         }
     }
 
+    /** Rebuild only the toolbar items for the active view. Does NOT touch panels or SplitPane items. */
     public void refreshToolbar() {
         if (activeViewId != null) {
             AppView current = views.get(activeViewId);
@@ -131,8 +148,14 @@ public class AppShell extends BorderPane {
         }
     }
 
-    public InspectorPane getInspectorPane() { return inspectorPane; }
-    public ScenePane getScenePane() { return scenePane; }
+    /** Returns a method reference to {@link InspectorPane#showStatBlock(Long)} — toggles the stat block panel. */
+    public Consumer<Long> getShowStatBlockHandler() { return inspectorPane::showStatBlock; }
+    /** Returns a method reference to {@link InspectorPane#ensureStatBlock(Long)} — shows without toggling. */
+    public Consumer<Long> getEnsureStatBlockHandler() { return inspectorPane::ensureStatBlock; }
+    /** Returns the SceneRegistry for tab-based game-activity registration. */
+    public SceneRegistry getSceneRegistry() { return scenePane; }
+    /** Returns a handler for showing arbitrary content in the inspector panel. */
+    public BiConsumer<String, Node> getShowContentHandler() { return inspectorPane::showContent; }
 
     /** Add a node to the persistent (right-aligned) toolbar zone. Survives navigation. */
     public void addPersistentToolbarItem(Node item) {
@@ -141,9 +164,12 @@ public class AppShell extends BorderPane {
 
     // ---- Internal ----
 
-    /** Swap content inside containers without touching SplitPane structure.
-     *  SplitPane items are managed exclusively by configureSplitItems() (called on navigation)
-     *  to preserve divider positions across mode switches. */
+    /**
+     * Swaps content inside existing containers. MUST NOT touch {@code mainSplit.getItems()}
+     * or {@code rightSplit.getItems()} — mutating SplitPane items resets divider positions.
+     * Item configuration is the exclusive responsibility of {@link #configureSplitItems()},
+     * which is called on navigation only. This method is safe to call on mode switches.
+     */
     private void applyViewContent(AppView target) {
         Node controlPanel = target.getControlPanel();
 
@@ -154,8 +180,11 @@ public class AppShell extends BorderPane {
             VBox.setVgrow(controlPanel, Priority.ALWAYS);
         }
 
-        // Center content
-        contentArea.getChildren().setAll(target.getRoot());
+        // Center content — guard against re-inserting the same node (preserves scroll/filter state)
+        Node root = target.getRoot();
+        if (!contentArea.getChildren().contains(root)) {
+            contentArea.getChildren().setAll(root);
+        }
     }
 
     /** Configure SplitPane items based on current view's panels.
@@ -171,8 +200,10 @@ public class AppShell extends BorderPane {
         mainSplit.getItems().setAll(leftColumn, rightSplit);
 
         Platform.runLater(() -> {
-            mainSplit.setDividerPositions(0.50);
-            rightSplit.setDividerPositions(0.45);
+            double[] mainPos = savedMainDividers.get(activeViewId);
+            double[] rightPos = savedRightDividers.get(activeViewId);
+            mainSplit.setDividerPositions(mainPos != null ? mainPos[0] : 0.62);
+            rightSplit.setDividerPositions(rightPos != null ? rightPos[0] : 0.45);
         });
     }
 
@@ -184,12 +215,19 @@ public class AppShell extends BorderPane {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
+        // Keep nav button tooltip in sync with the active view's current title (e.g. after mode switch)
+        ToggleButton activeBtn = navButtons.get(activeViewId);
+        if (activeBtn != null) {
+            activeBtn.setTooltip(new Tooltip(view.getTitle()));
+            activeBtn.setAccessibleText(view.getTitle());
+        }
+
         toolbar.getChildren().addAll(title, spacer);
 
         List<Node> items = view.getToolbarItems();
         toolbar.getChildren().addAll(items);
 
-        // Persistent items (e.g. PartyPanel) — always present, rightmost
+        // Persistent items (e.g. PartyPopup) — always present, rightmost
         toolbar.getChildren().add(persistentToolbarItems);
     }
 }

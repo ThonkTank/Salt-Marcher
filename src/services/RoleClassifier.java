@@ -2,12 +2,15 @@ package services;
 
 import entities.Creature;
 
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
- * Klassifiziert Kreaturen in taktische Rollen anhand vorhandener Stat-Block-Felder.
- * Rein statisch, kein DB-Zugriff — arbeitet nur auf dem bereits geladenen Creature-Objekt.
+ * Classifies creatures into tactical roles based on existing stat block fields.
+ * Purely static, no DB access — operates only on the already-loaded Creature object.
+ * Safe to call from any thread.
  */
 public class RoleClassifier {
 
@@ -15,7 +18,7 @@ public class RoleClassifier {
         BRUTE, ARTILLERY, CONTROLLER, SKIRMISHER, TANK, LEADER
     }
 
-    // DMG-Richtwerte: erwartete HP und AC pro CR-Stufe
+    // DMG benchmarks: expected HP and AC per CR tier
     private static final int[][] CR_BENCHMARKS = {
         // { expectedHP, expectedAC }
         {   3, 13 }, // CR 0
@@ -69,117 +72,132 @@ public class RoleClassifier {
     };
 
     public static MonsterRole classify(Creature c) {
-        int[] scores = scoreAllRoles(c);
-        int bestIdx = 0;
-        for (int i = 1; i < scores.length; i++) {
-            if (scores[i] > scores[bestIdx]) bestIdx = i;
+        Map<MonsterRole, Integer> scores = scoreAllRoles(c);
+        MonsterRole best = MonsterRole.BRUTE;
+        int bestScore = Integer.MIN_VALUE;
+        for (var entry : scores.entrySet()) {
+            if (entry.getValue() > bestScore) {
+                bestScore = entry.getValue();
+                best = entry.getKey();
+            }
         }
-        return MonsterRole.values()[bestIdx];
+        return best;
     }
 
     /**
-     * Gibt Score-Array zurück: [BRUTE, ARTILLERY, CONTROLLER, SKIRMISHER, TANK, LEADER]
+     * Returns a score map keyed by MonsterRole — no ordinal coupling.
      */
-    public static int[] scoreAllRoles(Creature c) {
-        int[] scores = new int[MonsterRole.values().length];
-        int crIdx = crToIndex(c.CR);
+    public static Map<MonsterRole, Integer> scoreAllRoles(Creature c) {
+        EnumMap<MonsterRole, Integer> scores = new EnumMap<>(MonsterRole.class);
+        for (MonsterRole role : MonsterRole.values()) scores.put(role, 0);
+
+        int crIdx = DndMath.crToIndex(c.CR);
+        if (crIdx < 0 || crIdx >= CR_BENCHMARKS.length) {
+            System.err.println("RoleClassifier.scoreAllRoles(): crToIndex out of bounds: " + crIdx + " for CR " + c.CR);
+            crIdx = 0;
+        }
         int expectedHP = CR_BENCHMARKS[crIdx][0];
         int expectedAC = CR_BENCHMARKS[crIdx][1];
 
-        // Alle Action-Texte sammeln für Keyword-Suche
-        String allActionText = collectActionText(c);
-        String allTraitText = collectTraitText(c);
+        // Collect all action/trait lists for keyword scanning (no string concatenation)
+        List<Creature.Action>[] actionLists = collectActionLists(c);
+        List<Creature.Action>[] traitLists = new List[]{ c.Traits };
 
         // --- BRUTE: Hohe HP, hoher STR, niedriger AC ---
-        if (c.Str >= 18) scores[0] += 3;
-        if (c.HP > expectedHP * 1.2) scores[0] += 2;
-        if (c.AC < expectedAC - 1) scores[0] += 1;
-        if (containsAny(allActionText, "multiattack")) scores[0] += 1;
+        if (c.Str >= 18) addScore(scores, MonsterRole.BRUTE, 3);
+        if (c.HP > expectedHP * 1.2) addScore(scores, MonsterRole.BRUTE, 2);
+        if (c.AC < expectedAC - 1) addScore(scores, MonsterRole.BRUTE, 1);
+        if (containsAnyInLists(actionLists, "multiattack")) addScore(scores, MonsterRole.BRUTE, 1);
 
         // --- ARTILLERY: Fernkampf, hoher DEX, niedrige HP ---
-        if (c.Dex >= 16 && containsAny(allActionText, RANGED_KEYWORDS)) scores[1] += 3;
-        else if (containsAny(allActionText, RANGED_KEYWORDS)) scores[1] += 2;
-        if (c.HP < expectedHP * 0.8) scores[1] += 1;
-        if (c.FlySpeed > 0) scores[1] += 1;
+        if (c.Dex >= 16 && containsAnyInLists(actionLists, RANGED_KEYWORDS)) addScore(scores, MonsterRole.ARTILLERY, 3);
+        else if (containsAnyInLists(actionLists, RANGED_KEYWORDS)) addScore(scores, MonsterRole.ARTILLERY, 2);
+        if (c.HP < expectedHP * 0.8) addScore(scores, MonsterRole.ARTILLERY, 1);
+        if (c.FlySpeed > 0) addScore(scores, MonsterRole.ARTILLERY, 1);
 
         // --- CONTROLLER: Spellcasting, Conditions ---
-        if (containsAny(allTraitText, "spellcasting", "innate spellcasting")) scores[2] += 3;
-        int conditionCount = countMatches(allActionText, CONDITION_KEYWORDS);
-        if (conditionCount >= 2) scores[2] += 3;
-        else if (conditionCount == 1) scores[2] += 2;
-        if (containsAny(allActionText, "saving throw", "save")) scores[2] += 1;
+        if (containsAnyInLists(traitLists, "spellcasting", "innate spellcasting")) addScore(scores, MonsterRole.CONTROLLER, 3);
+        int conditionCount = countMatchesInLists(actionLists, CONDITION_KEYWORDS);
+        if (conditionCount >= 2) addScore(scores, MonsterRole.CONTROLLER, 3);
+        else if (conditionCount == 1) addScore(scores, MonsterRole.CONTROLLER, 2);
+        if (containsAnyInLists(actionLists, "saving throw", "save")) addScore(scores, MonsterRole.CONTROLLER, 1);
 
         // --- SKIRMISHER: Hoher Speed, hoher DEX ---
-        if (c.Speed >= 40 && c.Dex >= 14) scores[3] += 3;
-        else if (c.Speed >= 40 || (c.Dex >= 16 && c.FlySpeed > 0)) scores[3] += 2;
-        if (c.FlySpeed > 0) scores[3] += 1;
-        if (c.HP < expectedHP * 0.8) scores[3] += 1;
-        if (containsAny(allActionText, "disengage", "dash", "teleport")) scores[3] += 1;
+        if (c.Speed >= 40 && c.Dex >= 14) addScore(scores, MonsterRole.SKIRMISHER, 3);
+        else if (c.Speed >= 40 || (c.Dex >= 16 && c.FlySpeed > 0)) addScore(scores, MonsterRole.SKIRMISHER, 2);
+        if (c.FlySpeed > 0) addScore(scores, MonsterRole.SKIRMISHER, 1);
+        if (c.HP < expectedHP * 0.8) addScore(scores, MonsterRole.SKIRMISHER, 1);
+        if (containsAnyInLists(actionLists, "disengage", "dash", "teleport")) addScore(scores, MonsterRole.SKIRMISHER, 1);
 
         // --- TANK: Hoher AC, defensiv ---
-        if (c.AC >= expectedAC + 2 && c.Str >= 14) scores[4] += 3;
-        else if (c.AC >= expectedAC + 1) scores[4] += 2;
-        if (c.AcNotes != null && c.AcNotes.toLowerCase(Locale.ROOT).contains("shield")) scores[4] += 1;
-        if (containsAny(allActionText, "multiattack")) scores[4] += 1;
-        if (c.HP >= expectedHP) scores[4] += 1;
+        if (c.AC >= expectedAC + 2 && c.Str >= 14) addScore(scores, MonsterRole.TANK, 3);
+        else if (c.AC >= expectedAC + 1) addScore(scores, MonsterRole.TANK, 2);
+        if (c.AcNotes != null && c.AcNotes.toLowerCase(Locale.ROOT).contains("shield")) addScore(scores, MonsterRole.TANK, 1);
+        if (containsAnyInLists(actionLists, "multiattack")) addScore(scores, MonsterRole.TANK, 1);
+        if (c.HP >= expectedHP) addScore(scores, MonsterRole.TANK, 1);
 
         // --- LEADER: Legendary, Support, Buffs ---
-        if (c.LegendaryActionCount > 0) scores[5] += 2;
-        int leaderCount = countMatches(allActionText + " " + allTraitText, LEADER_KEYWORDS);
-        if (leaderCount >= 2) scores[5] += 3;
-        else if (leaderCount == 1) scores[5] += 2;
-        if (containsAny(allTraitText, "leadership", "pack tactics")) scores[5] += 1;
+        if (c.LegendaryActionCount > 0) addScore(scores, MonsterRole.LEADER, 2);
+        int leaderCount = countMatchesInLists(actionLists, LEADER_KEYWORDS)
+                        + countMatchesInLists(traitLists, LEADER_KEYWORDS);
+        if (leaderCount >= 2) addScore(scores, MonsterRole.LEADER, 3);
+        else if (leaderCount == 1) addScore(scores, MonsterRole.LEADER, 2);
+        if (containsAnyInLists(traitLists, "leadership", "pack tactics")) addScore(scores, MonsterRole.LEADER, 1);
 
         return scores;
     }
 
-    // --- Hilfsmethoden ---
-
-    private static int crToIndex(String cr) {
-        double val = EncounterTemplate.crToNumber(cr);
-        // Indices 0-3 are fractional CRs (0, 1/8, 1/4, 1/2); integer CRs start at index 4.
-        if (val <= 0)    return 0;
-        if (val < 0.25)  return 1;
-        if (val < 0.5)   return 2;
-        if (val < 1.0)   return 3;
-        return Math.min((int) val + 4, CR_BENCHMARKS.length - 1);
+    private static void addScore(EnumMap<MonsterRole, Integer> scores, MonsterRole role, int delta) {
+        scores.merge(role, delta, Integer::sum);
     }
 
-    private static String collectActionText(Creature c) {
-        StringBuilder sb = new StringBuilder();
-        appendActions(sb, c.Actions);
-        appendActions(sb, c.BonusActions);
-        appendActions(sb, c.LegendaryActions);
-        appendActions(sb, c.Reactions);
-        return sb.toString().toLowerCase(Locale.ROOT);
+    // --- Helper methods ---
+
+    @SuppressWarnings("unchecked")
+    private static List<Creature.Action>[] collectActionLists(Creature c) {
+        return new List[]{ c.Actions, c.BonusActions, c.LegendaryActions, c.Reactions };
     }
 
-    private static String collectTraitText(Creature c) {
-        StringBuilder sb = new StringBuilder();
-        appendActions(sb, c.Traits);
-        return sb.toString().toLowerCase(Locale.ROOT);
-    }
-
-    private static void appendActions(StringBuilder sb, List<Creature.Action> actions) {
-        if (actions == null) return;
-        for (Creature.Action a : actions) {
-            if (a.Name != null) { sb.append(a.Name); sb.append(' '); }
-            if (a.Description != null) { sb.append(a.Description); sb.append(' '); }
-        }
-    }
-
-    private static boolean containsAny(String text, String... keywords) {
-        for (String kw : keywords) {
-            if (text.contains(kw)) return true;
+    /** Checks if any action name or description in the given lists contains any keyword (case-insensitive). */
+    private static boolean containsAnyInLists(List<Creature.Action>[] lists, String... keywords) {
+        for (List<Creature.Action> actions : lists) {
+            if (actions == null) continue;
+            for (Creature.Action a : actions) {
+                for (String kw : keywords) {
+                    if (containsIgnoreCase(a.Name, kw) || containsIgnoreCase(a.Description, kw)) return true;
+                }
+            }
         }
         return false;
     }
 
-    private static int countMatches(String text, String[] keywords) {
+    /** Counts how many distinct keywords appear in any action name or description (case-insensitive). */
+    private static int countMatchesInLists(List<Creature.Action>[] lists, String[] keywords) {
         int count = 0;
         for (String kw : keywords) {
-            if (text.contains(kw)) count++;
+            outer:
+            for (List<Creature.Action> actions : lists) {
+                if (actions == null) continue;
+                for (Creature.Action a : actions) {
+                    if (containsIgnoreCase(a.Name, kw) || containsIgnoreCase(a.Description, kw)) {
+                        count++;
+                        break outer;
+                    }
+                }
+            }
         }
         return count;
     }
+
+    private static boolean containsIgnoreCase(String text, String keyword) {
+        if (text == null || keyword == null) return false;
+        int tLen = text.length();
+        int kLen = keyword.length();
+        if (kLen > tLen) return false;
+        for (int i = 0; i <= tLen - kLen; i++) {
+            if (text.regionMatches(true, i, keyword, 0, kLen)) return true;
+        }
+        return false;
+    }
+
 }

@@ -1,15 +1,22 @@
 package ui;
 
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import ui.components.StatBlockPane;
 
 /**
- * Top-right panel: shows the stat block for a selected creature.
+ * Top-right panel: shows detailed info for a selected item.
+ * Primary use: creature stat blocks. Also accepts arbitrary content
+ * (room descriptions, item info, etc.) via {@link #showContent(String, Node)}.
  * Owned by AppShell; visible across all views.
  */
 public class InspectorPane extends VBox {
@@ -21,6 +28,7 @@ public class InspectorPane extends VBox {
     private final Label placeholder;
 
     private Long displayedCreatureId = null;
+    private Task<?> pendingStatBlockTask = null;
 
     public InspectorPane() {
         setPrefWidth(380);
@@ -79,16 +87,24 @@ public class InspectorPane extends VBox {
         loadStatBlock(creatureId);
     }
 
-    /** Show a stat block with a specific title. */
-    public void showStatBlock(Long creatureId, String name) {
-        showStatBlock(creatureId);
-        if (creatureId != null) detailTitle.setText(name);
+    private void loadStatBlock(Long creatureId) {
+        if (pendingStatBlockTask != null) { pendingStatBlockTask.cancel(false); pendingStatBlockTask = null; }
+        displayedCreatureId = creatureId;
+        detailTitle.setText("Stat Block");
+        detailScroll.setVvalue(0);
+        getChildren().setAll(detailSection);
+        pendingStatBlockTask = StatBlockPane.loadAsync(creatureId, detailContent);
     }
 
-    private void loadStatBlock(Long creatureId) {
-        displayedCreatureId = creatureId;
-        detailContent.getChildren().setAll(StatBlockPane.createAsyncContainer(creatureId));
-        detailTitle.setText("Stat Block");
+    /**
+     * Show arbitrary content in the inspector panel (room descriptions, item info, etc.).
+     * Replaces any currently displayed stat block. Close button returns to placeholder.
+     */
+    public void showContent(String title, Node content) {
+        if (pendingStatBlockTask != null) { pendingStatBlockTask.cancel(false); pendingStatBlockTask = null; }
+        displayedCreatureId = null;
+        detailTitle.setText(title);
+        detailContent.getChildren().setAll(content);
         detailScroll.setVvalue(0);
         getChildren().setAll(detailSection);
     }

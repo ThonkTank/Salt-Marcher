@@ -1,5 +1,7 @@
 package entities;
 
+import java.util.List;
+
 public class Item {
 
     // --- Identität ---
@@ -29,5 +31,5 @@ public class Item {
     // --- Shared ---
     public String Description;
     public String Source;              // "Player's Handbook"
-    public String Tags;                // "Combat, Damage, Utility"
+    public List<String> Tags;          // loaded from item_tags junction table (parallel to Creature.Biomes)
 }

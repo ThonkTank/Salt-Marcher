@@ -17,7 +17,7 @@ public interface AppView {
     /** Title shown in the toolbar when this view is active. */
     String getTitle();
 
-    /** Single character shown in the sidebar nav button (e.g. "\u2694" for swords). */
+    /** Short label for the sidebar nav button — typically a single emoji or symbol (e.g. "\u2694" ⚔ or "\uD83D\uDDFA" 🗺). */
     default String getIconText() { return ""; }
 
     /** Extra nodes placed right-aligned in the toolbar. */

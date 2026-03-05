@@ -11,6 +11,12 @@ import javafx.util.StringConverter;
 
 import java.util.function.Function;
 
+/**
+ * Labeled slider with an optional "Auto" checkbox.
+ * When Auto is checked, {@link #getValue()} returns {@link #AUTO_VALUE} (-1.0),
+ * signalling callers to use a default/random strategy. When unchecked, the slider
+ * is enabled and {@code getValue()} returns the slider's current position.
+ */
 public class SliderControl extends HBox {
 
     /** Returned by getValue() when the slider is in Auto mode. */
@@ -35,6 +41,7 @@ public class SliderControl extends HBox {
         autoBox.setSelected(true);
         autoBox.getStyleClass().add("small");
         autoBox.setMinWidth(Region.USE_PREF_SIZE);
+        autoBox.setAccessibleText(title + " automatisch bestimmen");
 
         valueLabel = new Label();
         valueLabel.getStyleClass().add("text-secondary");
@@ -53,6 +60,7 @@ public class SliderControl extends HBox {
         }
         if (labelFormatter != null) slider.setLabelFormatter(labelFormatter);
         slider.setDisable(true);
+        slider.setAccessibleRoleDescription(title);
         if (tooltip != null) slider.setAccessibleText(tooltip);
         HBox.setHgrow(slider, Priority.ALWAYS);
 
@@ -76,10 +84,4 @@ public class SliderControl extends HBox {
 
     public double getValue() { return autoBox.isSelected() ? AUTO_VALUE : slider.getValue(); }
     public boolean isAuto()  { return autoBox.isSelected(); }
-    public Slider getSlider() { return slider; }
-
-    public void setCompact(boolean compact) {
-        valueLabel.setVisible(!compact);
-        valueLabel.setManaged(!compact);
-    }
 }

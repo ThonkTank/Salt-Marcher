@@ -1,6 +1,7 @@
 package importer;
 
 import entities.Creature;
+import entities.ChallengeRating;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -11,12 +12,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Parst den HTML-Inhalt eines D&D Beyond Stat-Blocks (outerHtml des .mon-stat-block Elements)
- * in ein Creature-Objekt. Nutzt Jsoup-CSS-Selektoren statt Regex für alle strukturierten Felder.
+ * Parses the HTML content of a D&D Beyond stat block (outerHtml of the .mon-stat-block element)
+ * into a Creature object. Uses Jsoup CSS selectors instead of regex for all structured fields.
  *
- * Unterstützt beide Formate:
- *   OLD (2014 MM): CSS-Prefix "mon-stat-block__"
- *   NEW (2024):    CSS-Prefix "mon-stat-block-2024__"
+ * Supports both formats:
+ *   OLD (2014 MM): CSS prefix "mon-stat-block__"
+ *   NEW (2024):    CSS prefix "mon-stat-block-2024__"
  */
 public class HtmlStatBlockParser {
 
@@ -39,15 +40,25 @@ public class HtmlStatBlockParser {
     private static final Pattern SENSE_PATTERN = Pattern.compile(
             "(?i)(Darkvision|Blindsight|Truesight|Tremorsense)\\s+(\\d+)\\s*ft");
     private static final Pattern SAVES_PATTERN = Pattern.compile("([A-Z]{3})\\s+([+-]\\d+)");
+    // The character class includes both ASCII apostrophe (') and Unicode right single quote (')
+    // to match skill names like "Thieves' Tools" as they appear on D&D Beyond.
     private static final Pattern SKILLS_PATTERN = Pattern.compile("([A-Za-z ()'']+?)\\s+([+-]\\d+)");
+    // Old CR format: "14 (11,500 XP)" — CR and XP are embedded in one tidbit value.
     private static final Pattern CR_OLD_PATTERN = Pattern.compile("([\\d/]+)\\s*\\((\\d[\\d,]*)\\s*XP\\)");
+    // New CR format: "14 (XP 11,500; PB +5)" — CR, XP, and PB each matched by separate patterns.
     private static final Pattern CR_NEW_PATTERN = Pattern.compile("^([\\d/]+)");
     private static final Pattern XP_NEW_PATTERN = Pattern.compile("XP\\s*([\\d,]+)");
     private static final Pattern PB_NEW_PATTERN = Pattern.compile("PB\\s+\\+?(\\d+)");
     private static final Pattern PB_PATTERN = Pattern.compile("\\+?(\\d+)");
+    // Two sentence forms DnD Beyond uses for legendary action counts:
+    //   "The goblin boss can take 3 legendary actions" (most common)
+    //   "Uses: 3" (seen in some newer stat blocks)
     private static final Pattern LEGENDARY_COUNT_PATTERN = Pattern.compile(
             "(?i)(?:uses:\\s*(\\d+)|can take\\s+(\\d+)\\s+legendary)");
-    private static final Pattern PARSE_INT_STRIP = Pattern.compile("[+,]");
+    // Strips "+" and "," before Integer.parseInt: "+4" -> "4", "11,500" -> "11500"
+    // Removes + sign prefix and , thousand-separator before integer parsing.
+    private static final Pattern PARSE_INT_NORMALIZE = Pattern.compile("[+,]");
+    // Removes parentheses: "(22)" → "22" (HP expressions from old format)
     private static final Pattern PARSE_INT_PARENS = Pattern.compile("[()]");
 
     // -------------------------------------------------------------------------
@@ -76,6 +87,12 @@ public class HtmlStatBlockParser {
         c.Reactions        = new ArrayList<>();
         c.LegendaryActions = new ArrayList<>();
 
+        // true = 2024 Monster Manual format; false = 2014 format. Affects ability table
+        // structure, save storage (embedded in ability table vs separate tidbit), initiative,
+        // and attribute label names (e.g. "HP" vs "Hit Points").
+        // Uses [class*=] (attribute substring) rather than .selectFirst(".mon-stat-block-2024")
+        // because DnD Beyond renders compound class lists (e.g. "mon-stat-block-2024 mon-stat-block-2024--collapsed").
+        // Jsoup's CSS class selector requires an exact token match, so the substring selector is required.
         boolean isNew = doc.selectFirst("[class*=mon-stat-block-2024]") != null;
         String prefix = isNew ? "mon-stat-block-2024" : "mon-stat-block";
 
@@ -88,7 +105,7 @@ public class HtmlStatBlockParser {
         parseHabitat(doc, c);
 
         // Fallback: ProficiencyBonus aus CR
-        if (c.ProficiencyBonus == 0) c.ProficiencyBonus = crToProficiencyBonus(c.CR);
+        if (c.ProficiencyBonus == 0 && c.CR != null) c.ProficiencyBonus = services.DndMath.proficiencyBonus(c.CR);
         // Fallback: InitiativeBonus aus DEX für old format
         if (!isNew && c.InitiativeBonus == 0 && c.Dex != 0)
             c.InitiativeBonus = abilityModifier(c.Dex);
@@ -153,13 +170,13 @@ public class HtmlStatBlockParser {
         // 4) Swarm-Handling: "swarm of Tiny beasts" -> Type="Beast", Subtypes=["Swarm of Tiny"]
         Matcher swarmMatcher = SWARM_PATTERN.matcher(typeRaw);
         if (swarmMatcher.find()) {
-            String swarmSize = capitalizeFirst(swarmMatcher.group(1).trim());
-            String baseType  = capitalizeFirst(singularize(swarmMatcher.group(2).trim()));
+            String swarmSize = CrawlerHttpUtils.capitalizeFirst(swarmMatcher.group(1).trim());
+            String baseType  = CrawlerHttpUtils.capitalizeFirst(singularize(swarmMatcher.group(2).trim()));
             c.CreatureType = baseType;
             c.Subtypes.clear();
             c.Subtypes.add("Swarm of " + swarmSize);
         } else {
-            c.CreatureType = capitalizeFirst(typeRaw);
+            c.CreatureType = CrawlerHttpUtils.capitalizeFirst(typeRaw);
         }
     }
 
@@ -177,9 +194,12 @@ public class HtmlStatBlockParser {
 
     private static String capitalizeSizes(String raw) {
         // "medium or small" -> "Medium or Small"
-        return EACH_SIZE_PATTERN.matcher(raw).replaceAll(m -> capitalizeFirst(m.group(1)));
+        return EACH_SIZE_PATTERN.matcher(raw).replaceAll(m -> CrawlerHttpUtils.capitalizeFirst(m.group(1)));
     }
 
+    // Minimal singularizer for D&D creature type names in swarm entries (e.g. "beasts" → "beast",
+    // "flies" → "fly"). Intentionally limited to rules that work for the known type vocabulary.
+    // Not a general English singularizer — irregular plurals (wolves, mice, etc.) are not expected.
     private static String singularize(String plural) {
         if (plural == null || plural.isEmpty()) return plural;
         String lower = plural.toLowerCase();
@@ -190,6 +210,17 @@ public class HtmlStatBlockParser {
 
     // -------------------------------------------------------------------------
     // Attribute-Block: AC, HP, Speed, Initiative
+    //
+    // Attribute structure (both formats):
+    //   <div class="mon-stat-block__attribute">
+    //     <span class="mon-stat-block__attribute-label">Armor Class</span>
+    //     <div class="mon-stat-block__attribute-data">
+    //       <span class="mon-stat-block__attribute-data-value">15</span>
+    //       <span class="mon-stat-block__attribute-data-extra">(natural armor)</span>
+    //     </div>
+    //   </div>
+    // In the 2024 format, label names differ: "AC" instead of "Armor Class",
+    // "HP" instead of "Hit Points". The 2024 format also adds an "Initiative" attribute.
     // -------------------------------------------------------------------------
 
     private static void parseAttributes(Document doc, String prefix, boolean isNew, Creature c) {
@@ -242,7 +273,6 @@ public class HtmlStatBlockParser {
             parseNewAbilityScores(doc, c);
         } else {
             parseOldAbilityScores(doc, c);
-            c.InitiativeBonus = abilityModifier(c.Dex);
         }
     }
 
@@ -256,6 +286,9 @@ public class HtmlStatBlockParser {
     }
 
     private static void parseNewAbilityScores(Document doc, Creature c) {
+        // New-format ability table has 4 columns: Abbrev | Score | Modifier | Save
+        // Example row: STR | 18 | +4 | +7
+        // Save is only stored when it differs from the raw ability modifier (proficiency bonus applies).
         List<String> saveEntries = new ArrayList<>();
         for (Element table : doc.select("table.stat-table")) {
             for (Element row : table.select("tbody tr")) {
@@ -286,6 +319,14 @@ public class HtmlStatBlockParser {
 
     // -------------------------------------------------------------------------
     // Tidbit-Felder: Skills, Senses, Languages, CR, Saving Throws, Immunities …
+    //
+    // Tidbit structure (both formats):
+    //   <div class="mon-stat-block__tidbit">
+    //     <span class="mon-stat-block__tidbit-label">Skills</span>
+    //     <span class="mon-stat-block__tidbit-data">Stealth +6, Perception +3</span>
+    //   </div>
+    // "Tidbit" is a D&D Beyond term for the compact key/value rows below the ability scores.
+    // Old (2014) and new (2024) formats use the same DOM structure but different label names.
     // -------------------------------------------------------------------------
 
     private static void parseTidbits(Document doc, String prefix, boolean isNew, Creature c) {
@@ -324,7 +365,12 @@ public class HtmlStatBlockParser {
         if (crRaw != null) {
             Matcher m = CR_OLD_PATTERN.matcher(crRaw);
             if (m.find()) {
-                c.CR = m.group(1).trim();
+                try {
+                    c.CR = ChallengeRating.of(m.group(1).trim());
+                } catch (IllegalArgumentException e) {
+                    System.err.println("HtmlStatBlockParser.parse(): Invalid CR: " + e.getMessage());
+                    c.CR = ChallengeRating.of("0");
+                }
                 c.XP = parseIntNoComma(m.group(2), 0);
             }
         }
@@ -344,6 +390,8 @@ public class HtmlStatBlockParser {
         if (c.DamageResistances == null)
             c.DamageResistances = tidbit(doc, prefix, "Damage Resistances");
 
+        // New format combines damage + condition immunities in one "Immunities" tidbit,
+        // separated by ";". splitImmunities() handles the split.
         splitImmunities(tidbit(doc, prefix, "Immunities"), c);
         if (c.ConditionImmunities == null)
             c.ConditionImmunities = tidbit(doc, prefix, "Condition Immunities");
@@ -352,7 +400,14 @@ public class HtmlStatBlockParser {
         String crRaw = tidbit(doc, prefix, "CR");
         if (crRaw != null) {
             Matcher mCR = CR_NEW_PATTERN.matcher(crRaw);
-            if (mCR.find()) c.CR = mCR.group(1).trim();
+            if (mCR.find()) {
+                try {
+                    c.CR = ChallengeRating.of(mCR.group(1).trim());
+                } catch (IllegalArgumentException e) {
+                    System.err.println("HtmlStatBlockParser.parse(): Invalid CR: " + e.getMessage());
+                    c.CR = ChallengeRating.of("0");
+                }
+            }
 
             Matcher mXP = XP_NEW_PATTERN.matcher(crRaw);
             if (mXP.find()) c.XP = parseIntNoComma(mXP.group(1), 0);
@@ -385,35 +440,49 @@ public class HtmlStatBlockParser {
 
     // -------------------------------------------------------------------------
     // Aktions-Sektionen: Traits, Actions, Bonus Actions, Reactions, Legendary
+    //
+    // Section structure (both formats):
+    //   <div class="mon-stat-block__description-block-heading">Actions</div>
+    //   <p><strong>Multiattack.</strong> The goblin makes two attacks.</p>
+    //   <p><strong>Scimitar.</strong> Melee Weapon Attack: +4 to hit, ...</p>
+    //
+    // Traits, Actions, Bonus Actions, Reactions, and Legendary Actions all share
+    // the same DOM level — only the preceding heading div distinguishes which list
+    // a <p> element belongs to. <h3> elements are NOT used; headings are always <div>s.
     // -------------------------------------------------------------------------
 
     private static void parseAllSections(Document doc, Creature c) {
-        String currentSection = "traits";
+        // inLegendaryActions tracks whether we are inside a Legendary Actions section,
+        // because <p> elements for traits, actions, and legendary actions share the same DOM
+        // level — only the preceding heading div distinguishes them.
+        boolean inLegendaryActions = false;
         List<Creature.Action> currentList = c.Traits;
 
-        // Sektions-Überschriften sind <div class="...__description-block-heading">, KEINE <h3>
+        // Sektions-Überschriften sind <div class="...__description-block-heading">, KEINE <h3>.
+        // <p> elements carry action/trait entries (each starts with <strong>Name</strong>)
+        // and also the legendary-action intro sentence (no <strong>, used only for count extraction).
         for (Element el : doc.select("div[class*=description-block-heading], p")) {
             if (el.tagName().equals("div")) {
                 // Sektions-Überschrift
                 String heading = el.text().trim().toLowerCase();
                 switch (heading) {
                     case "actions":
-                        currentSection = "actions";
-                        currentList    = c.Actions;
+                        inLegendaryActions = false;
+                        currentList        = c.Actions;
                         break;
                     case "bonus actions":
-                        currentSection = "bonus_actions";
-                        currentList    = c.BonusActions;
+                        inLegendaryActions = false;
+                        currentList        = c.BonusActions;
                         break;
                     case "reactions":
-                        currentSection = "reactions";
-                        currentList    = c.Reactions;
+                        inLegendaryActions = false;
+                        currentList        = c.Reactions;
                         break;
                     case "legendary actions":
-                        currentSection = "legendary_actions";
-                        currentList    = c.LegendaryActions;
+                        inLegendaryActions = true;
+                        currentList        = c.LegendaryActions;
                         break;
-                    // "traits", "lair actions", "regional effects" etc.: currentSection unverändert
+                    // "traits", "lair actions", "regional effects" etc.: keine Änderung
                     default:
                         break;
                 }
@@ -424,13 +493,18 @@ public class HtmlStatBlockParser {
             Element strong = el.selectFirst("strong");
             if (strong == null) {
                 // Intro-Satz der Legendary Actions: Count extrahieren
-                if ("legendary_actions".equals(currentSection) && c.LegendaryActionCount == 0) {
+                if (inLegendaryActions && c.LegendaryActionCount == 0) {
                     Matcher m = LEGENDARY_COUNT_PATTERN.matcher(el.text());
                     if (m.find()) {
                         String g = m.group(1) != null ? m.group(1) : m.group(2);
                         c.LegendaryActionCount = parseInt(g, 3);
                     } else {
+                        // D&D 5e default legendary action budget is 3.
+                        // LEGENDARY_COUNT_PATTERN captures both common sentence forms:
+                        //   "can take 3 legendary actions" and "Uses: 3"
                         c.LegendaryActionCount = 3;
+                        System.err.println("HtmlStatBlockParser.parseAllSections(): "
+                                + "Legendary action count not found for '" + c.Name + "', defaulting to 3");
                     }
                 }
                 continue;
@@ -449,10 +523,7 @@ public class HtmlStatBlockParser {
                 ? fullText.substring(nameWithPeriod.length()).trim()
                 : "";
 
-            Creature.Action action = new Creature.Action();
-            action.Name        = name;
-            action.Description = description;
-            currentList.add(action);
+            currentList.add(new Creature.Action(name, description));
         }
     }
 
@@ -461,42 +532,32 @@ public class HtmlStatBlockParser {
     // -------------------------------------------------------------------------
 
     /**
-     * Gibt den Wert eines Attribut-Felds zurück (z.B. "15" für AC).
-     * Traversiert Geschwister-Elemente NACH dem Label, um das richtige data-value zu finden.
-     * Notwendig weil AC und Initiative denselben Parent-Div teilen.
+     * Shared helper: walks siblings after a matching attribute label and returns the text
+     * of the first child element matching {@code fieldClass}. Stops at the next label element.
      */
-    private static String attrValue(Document doc, String prefix, String labelText) {
+    private static String attrField(Document doc, String prefix, String labelText, String fieldClass) {
         for (Element label : doc.select("." + prefix + "__attribute-label")) {
-            if (label.text().trim().equalsIgnoreCase(labelText)) {
-                Element sibling = label.nextElementSibling();
-                while (sibling != null) {
-                    if (sibling.hasClass(prefix + "__attribute-label")) break; // nächstes Label → stop
-                    Element val = sibling.selectFirst("." + prefix + "__attribute-data-value");
-                    if (val != null) return val.text().trim();
-                    sibling = sibling.nextElementSibling();
-                }
+            if (!label.text().trim().equalsIgnoreCase(labelText)) continue;
+            Element sibling = label.nextElementSibling();
+            while (sibling != null) {
+                if (sibling.hasClass(prefix + "__attribute-label")) break;
+                Element val = sibling.selectFirst("." + prefix + fieldClass);
+                if (val != null) return val.text().trim();
+                sibling = sibling.nextElementSibling();
             }
         }
         return null;
     }
 
-    /**
-     * Gibt den Klammer-Zusatz eines Attribut-Felds zurück (z.B. "leather armor, shield" für AC).
-     * Strips surrounding parentheses.
-     */
+    /** Gibt den Wert eines Attribut-Felds zurück (z.B. "15" für AC). */
+    private static String attrValue(Document doc, String prefix, String labelText) {
+        return attrField(doc, prefix, labelText, "__attribute-data-value");
+    }
+
+    /** Gibt den Klammer-Zusatz eines Attribut-Felds zurück (z.B. "leather armor, shield" für AC). Strips surrounding parentheses. */
     private static String attrExtra(Document doc, String prefix, String labelText) {
-        for (Element label : doc.select("." + prefix + "__attribute-label")) {
-            if (label.text().trim().equalsIgnoreCase(labelText)) {
-                Element sibling = label.nextElementSibling();
-                while (sibling != null) {
-                    if (sibling.hasClass(prefix + "__attribute-label")) break;
-                    Element extra = sibling.selectFirst("." + prefix + "__attribute-data-extra");
-                    if (extra != null) return extra.text().trim().replaceAll("^\\(|\\)$", "");
-                    sibling = sibling.nextElementSibling();
-                }
-            }
-        }
-        return null;
+        String raw = attrField(doc, prefix, labelText, "__attribute-data-extra");
+        return raw != null ? raw.replaceAll("^\\(|\\)$", "") : null;
     }
 
     /**
@@ -559,31 +620,11 @@ public class HtmlStatBlockParser {
     // Utility
     // -------------------------------------------------------------------------
 
-    static int crToProficiencyBonus(String cr) {
-        if (cr == null) return 2;
-        double val = parseCr(cr);
-        if (val <= 4)  return 2;
-        if (val <= 8)  return 3;
-        if (val <= 12) return 4;
-        if (val <= 16) return 5;
-        if (val <= 20) return 6;
-        if (val <= 24) return 7;
-        if (val <= 28) return 8;
-        return 9;
-    }
-
-    static double parseCr(String cr) {
-        if (cr == null || cr.isBlank()) return 0;
-        if (cr.contains("/")) {
-            String[] p = cr.split("/");
-            return (double) parseInt(p[0], 0) / parseInt(p[1], 1);
-        }
-        try { return Double.parseDouble(cr.trim()); }
-        catch (NumberFormatException e) { return 0; }
-    }
-
     private static void splitImmunities(String raw, Creature c) {
         if (raw == null) return;
+        // In the 2024 stat-block format, the "Immunities" tidbit may combine both damage
+        // and condition immunities in one field, separated by ";".
+        // Example: "Fire, Cold; Charmed, Frightened"
         if (raw.contains(";")) {
             String[] parts = raw.split(";", 2);
             c.DamageImmunities = parts[0].trim();
@@ -600,7 +641,7 @@ public class HtmlStatBlockParser {
 
     private static int parseInt(String s, int def) {
         if (s == null) return def;
-        s = PARSE_INT_STRIP.matcher(s.trim()).replaceAll("");
+        s = PARSE_INT_NORMALIZE.matcher(s.trim()).replaceAll("");
         // Klammern entfernen: "(22)" → "22"
         s = PARSE_INT_PARENS.matcher(s).replaceAll("");
         try { return Integer.parseInt(s.trim()); }
@@ -609,11 +650,7 @@ public class HtmlStatBlockParser {
 
     private static int parseIntNoComma(String s, int def) {
         if (s == null) return def;
-        return parseInt(s.replace(",", ""), def);
+        return parseInt(s, def); // PARSE_INT_NORMALIZE already strips commas
     }
 
-    private static String capitalizeFirst(String s) {
-        if (s == null || s.isEmpty()) return s;
-        return Character.toUpperCase(s.charAt(0)) + s.substring(1).toLowerCase();
-    }
 }

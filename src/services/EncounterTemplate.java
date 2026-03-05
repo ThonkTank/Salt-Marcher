@@ -4,29 +4,38 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import services.RoleClassifier.MonsterRole;
 
 /**
- * Prozeduraler Shape-Generator für Encounter-Strukturen.
+ * Procedural shape generator for encounter structures.
  *
- * Steuerparameter:
- *   groupCount — Anzahl Kreaturgruppen (1-4, oder -1 = auto)
- *   balance    — 0.0 = extrem dominant (Boss+Filler), 1.0 = alle gleich stark (-1 = auto)
- *   strength   — 0.0 = viele schwache (Schwarm), 1.0 = wenige starke (Elite) (-1 = auto)
+ * Tuning parameters:
+ *   groupCount — number of creature groups (1-4, or -1 = auto)
+ *   balance    — 0.0 = extremely dominant (boss+filler), 1.0 = all equally strong (-1 = auto)
+ *   strength   — 0.0 = many weak (swarm), 1.0 = few elite (-1 = auto)
  */
 public class EncounterTemplate {
 
-    // Tuning-Konstanten für buildSpecs
-    private static final double CR_STR_SCALE     = 0.6;  // Wie stark Strength den Min-CR beeinflusst
-    private static final double CR_BASE_MAX      = 0.25; // Basis-Max-CR bei str=0
-    private static final double CR_STR_MAX_SCALE = 2.0;  // Wie stark Strength den Max-CR erhöht
-    private static final double CR_DOMINANT_BOOST = 0.3;  // CR-Bonus für dominante Gruppen (fraction >= 0.5)
-    private static final double CR_MEDIUM_BOOST   = 0.1;  // CR-Bonus für mittlere Gruppen (fraction >= 0.3)
-    private static final int    COUNT_MAX_BASE    = 10;   // Max-Count bei str=0
-    private static final int    COUNT_MAX_SCALE   = 9;    // Reduktion des Max-Count bei str=1
-    private static final int    COUNT_MIN_BASE    = 4;    // Min-Count bei str=0
-    private static final int    COUNT_MIN_SCALE   = 3;    // Reduktion des Min-Count bei str=1
+    // Tuning constants for buildSpecs — derived empirically to produce encounter shapes
+    // that feel right for 4-player parties in the CR 1-15 range. CR fractions are relative
+    // to party average level (e.g. CR_BASE_MAX 0.25 = max CR is 25% of avg level at strength=0).
+    private static final double CR_STR_SCALE     = 0.6;  // How strongly strength raises min CR fraction
+    private static final double CR_BASE_MAX      = 0.25; // Base max CR fraction when strength=0 (many weak)
+    private static final double CR_STR_MAX_SCALE = 2.0;  // How strongly strength raises max CR fraction
+    private static final double CR_DOMINANT_BOOST = 0.3;  // CR bonus for dominant groups (budget fraction >= 0.5)
+    private static final double CR_MEDIUM_BOOST   = 0.1;  // CR bonus for medium groups (budget fraction >= 0.3)
+    private static final int    COUNT_MAX_BASE    = 10;   // Max creature count when strength=0 (swarm)
+    private static final int    COUNT_MAX_SCALE   = 9;    // Reduction in max count at strength=1 (elite)
+    private static final int    COUNT_MIN_BASE    = 4;    // Min creature count when strength=0
+    private static final int    COUNT_MIN_SCALE   = 3;    // Reduction in min count at strength=1
+
+    // Budget-fraction thresholds — midpoints used consistently in buildSpecs and pickRoles
+    private static final double FRACTION_DOMINANT = 0.50; // >= this: dominant group (boss/leader role)
+    private static final double FRACTION_MEDIUM   = 0.40; // >= this: medium group (strong support role)
+    private static final double FRACTION_SUPPORT  = 0.30; // >= this: medium CR boost applies
+    private static final double FRACTION_SWARM    = 0.25; // < this: swarm count bonus applies
 
     public static class SlotSpec {
         public final MonsterRole[] preferredRoles;
@@ -56,8 +65,8 @@ public class EncounterTemplate {
         int groups = (groupCount >= 1 && groupCount <= 4)
                 ? groupCount
                 : rollGroupCount(difficulty);
-        double bal = (balance < 0) ? Math.random() : balance;
-        double str = (strength < 0) ? Math.random() : strength;
+        double bal = (balance < 0) ? ThreadLocalRandom.current().nextDouble() : balance;
+        double str = (strength < 0) ? ThreadLocalRandom.current().nextDouble() : strength;
 
         double[] curve = buildPowerCurve(groups, bal);
         SlotSpec[] specs = buildSpecs(curve, str);
@@ -68,7 +77,7 @@ public class EncounterTemplate {
     // --- Gruppenanzahl ---
 
     private static int rollGroupCount(String difficulty) {
-        double r = Math.random();
+        double r = ThreadLocalRandom.current().nextDouble();
         return switch (difficulty) {
             case "Easy"   -> r < 0.15 ? 1 : (r < 0.55 ? 2 : 3);
             case "Medium" -> r < 0.10 ? 1 : (r < 0.45 ? 2 : (r < 0.85 ? 3 : 4));
@@ -126,12 +135,13 @@ public class EncounterTemplate {
             // receive a slight CR boost to make them tactically distinct from support roles.
             // Tuning rationale: strength=1 at party level 5 yields approximately CR 3-5 creatures,
             // matching D&D Dungeon Master's Guide elite encounter guidelines.
-            double fractionBoost = (fraction >= 0.5) ? CR_DOMINANT_BOOST
-                                 : (fraction >= 0.3) ? CR_MEDIUM_BOOST : 0.0;
+            double fractionBoost = (fraction >= FRACTION_DOMINANT) ? CR_DOMINANT_BOOST
+                                 : (fraction >= FRACTION_SUPPORT)  ? CR_MEDIUM_BOOST : 0.0;
             double minCr = Math.max(0.0, str * CR_STR_SCALE + fractionBoost - 0.1);
             double maxCr = CR_BASE_MAX + str * CR_STR_MAX_SCALE + fractionBoost;
 
-            double fractionCountBoost = (fraction < 0.25) ? 2.0 : (fraction < 0.4 ? 1.0 : 0.0);
+            double fractionCountBoost = (fraction < FRACTION_SWARM) ? 2.0
+                                      : (fraction < FRACTION_MEDIUM) ? 1.0 : 0.0;
             int maxCount = Math.max(1, (int) Math.round(COUNT_MAX_BASE - str * COUNT_MAX_SCALE + fractionCountBoost));
             int minCount = Math.max(1, (int) Math.round(COUNT_MIN_BASE - str * COUNT_MIN_SCALE));
             if (minCount > maxCount) minCount = maxCount;
@@ -161,7 +171,7 @@ public class EncounterTemplate {
     };
 
     private static MonsterRole[] pickRoles(Set<MonsterRole> usedPrimary, double fraction) {
-        MonsterRole[][] pools = (fraction >= 0.40) ? ROLE_POOLS_DOMINANT : ROLE_POOLS_SUPPORT;
+        MonsterRole[][] pools = (fraction >= FRACTION_MEDIUM) ? ROLE_POOLS_DOMINANT : ROLE_POOLS_SUPPORT;
 
         List<MonsterRole[]> preferred = new ArrayList<>();
         List<MonsterRole[]> fallback = new ArrayList<>();
@@ -172,7 +182,7 @@ public class EncounterTemplate {
 
         List<MonsterRole[]> source = preferred.isEmpty() ? fallback : preferred;
         if (source.isEmpty()) source = List.of(pools);
-        return source.get((int) (Math.random() * source.size()));
+        return source.get(ThreadLocalRandom.current().nextInt(source.size()));
     }
 
     // --- Label ---
@@ -186,28 +196,12 @@ public class EncounterTemplate {
         boolean hasDominant = false;
         int totalMaxCount = 0;
         for (SlotSpec s : specs) {
-            if (s.budgetFraction >= 0.50) hasDominant = true;
+            if (s.budgetFraction >= FRACTION_DOMINANT) hasDominant = true;
             totalMaxCount += s.maxCount;
         }
 
         if (totalMaxCount >= 15) return "Schwarm";
         if (hasDominant) return specs.length + " Gruppen, Anführer";
         return specs.length + " Gruppen, gemischt";
-    }
-
-    // --- Hilfsmethoden ---
-
-    public static double crToNumber(String cr) {
-        if (cr == null) return 0;
-        return switch (cr.trim()) {
-            case "0"   -> 0;
-            case "1/8" -> 0.125;
-            case "1/4" -> 0.25;
-            case "1/2" -> 0.5;
-            default -> {
-                try { yield Double.parseDouble(cr.trim()); }
-                catch (NumberFormatException e) { yield 0; }
-            }
-        };
     }
 }

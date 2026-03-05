@@ -1,3 +1,5 @@
+/* Loaded at runtime via classpath: java -cp "out:resources:..." ui.SaltMarcherApp
+   Java-side color constants mirrored in ui/components/ThemeColors.java — keep in sync. */
 .root {
     -sm-bg-darkest:  #12181c;
     -sm-bg-panel:    #1a2025;
@@ -6,19 +8,23 @@
 
     -sm-text-primary:   #ecedee;
     -sm-text-secondary: #a4a7ab;
-    -sm-text-muted:     #8a8d91;
+    -sm-text-muted:     #969aa0;  /* lightened to clear 4.5:1 on bg-card/elevated */
 
+    /* Difficulty colors: easy/medium pass 4.5:1 as-is on bg-card, so no -text variant needed.
+       Hard/deadly need separate lighter -text values for text label contrast. */
     -sm-easy:   #00c680;
     -sm-medium: #ffb62a;
-    -sm-hard:   #d56c19;
+    -sm-hard:      #d56c19;  /* graphical fills (bars) */
+    -sm-hard-text: #e8843a;  /* text labels — lighter for contrast on dark bg (~4.6:1) */
     -sm-deadly: #e53935;
+    -sm-deadly-text: #f26866;  /* text labels — lighter for contrast on dark bg (~4.6:1 on bg-card) */
 
     /* same values as difficulty colors, but semantically separate */
     -sm-hp-healthy:  #00c680;
     -sm-hp-wounded:  #ffb62a;
     -sm-hp-critical: #e53935;
 
-    -sm-accent:       #1c74c6;
+    -sm-accent:       #1e7fd4;  /* lightened to 3:1 non-text contrast (WCAG 1.4.11) while keeping 4.5:1 text contrast */
     -sm-accent-hover: #41a9f2;
     -sm-monster-red:  #c60000;
 
@@ -43,13 +49,13 @@
     -sm-border-subtle: #333a3f;
 
     -sm-stat-red:       #922610;
-    -sm-stat-red-light: #d87050;
+    -sm-stat-red-light: #e08060;  /* lightened to clear 4.5:1 on bg-card */
     /* Radius/size tokens: JavaFX CSS variables cannot carry Size values, so use literal
        values directly in rules below. (e.g. 20px for stat block name, 3/6 for radii) */
 
     -sm-role-brute:      #e07070;
     -sm-role-artillery:  #f9a825;
-    -sm-role-controller: #b070d0;
+    -sm-role-controller: #bd7fdc;  /* lightened to clear 4.5:1 on bg-card */
     -sm-role-skirmisher: #5aaf5e;
     -sm-role-tank:       #5a9ed6;
     -sm-role-leader:     #ff8f00;
@@ -87,11 +93,11 @@
 }
 .difficulty-easy   { -fx-text-fill: -sm-easy; }
 .difficulty-medium { -fx-text-fill: -sm-medium; }
-.difficulty-hard   { -fx-text-fill: -sm-hard; }
-.difficulty-deadly { -fx-text-fill: -sm-deadly; }
+.difficulty-hard   { -fx-text-fill: -sm-hard-text; }
+.difficulty-deadly { -fx-text-fill: -sm-deadly-text; }
 .title {
     -fx-font-weight: bold;
-    -fx-font-size: 14px;
+    -fx-font-size: 15px;
 }
 .large {
     -fx-font-weight: bold;
@@ -123,7 +129,7 @@
     -fx-background-color: derive(-sm-bg-elevated, 20%);
 }
 .button:focused {
-    -fx-border-color: -sm-accent;
+    -fx-border-color: -sm-accent-hover;
     -fx-border-width: 2;
 }
 .button.accent {
@@ -143,6 +149,21 @@
     -fx-opacity: 0.4;
     -fx-cursor: default;
 }
+.button.flat {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.button.flat:hover {
+    -fx-background-color: derive(-sm-bg-elevated, 10%);
+}
+.chip-remove-btn {
+    -fx-padding: 0 4 0 4;
+    -fx-font-size: 11px;
+    -fx-min-width: 24;
+    -fx-pref-width: 24;
+    -fx-max-width: 24;
+    -fx-min-height: 24;
+}
 
 /* ---- TextFields ---- */
 .text-field {
@@ -156,7 +177,7 @@
     -fx-padding: 4 8 4 8;
 }
 .text-field:focused {
-    -fx-border-color: -sm-accent;
+    -fx-border-color: -sm-accent-hover;
 }
 
 /* ---- TableView ---- */
@@ -281,6 +302,10 @@
 .check-box:selected .box .mark {
     -fx-background-color: -sm-text-primary;
 }
+.check-box:focused .box {
+    -fx-border-color: -sm-accent-hover;
+    -fx-border-width: 2;
+}
 
 /* ---- TitledPane (collapsible filter sections) ---- */
 .titled-pane {
@@ -364,6 +389,18 @@
     -fx-font-weight: bold;
     -fx-cursor: hand;
 }
+.button.creature-link {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-text-fill: -sm-creature-link;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+.button.creature-link:hover {
+    -fx-underline: true;
+    -fx-background-color: transparent;
+}
 .creature-link:hover {
     -fx-underline: true;
 }
@@ -438,11 +475,11 @@
 .stat-block-ability-header {
     -fx-text-fill: -sm-stat-red-light;
     -fx-font-weight: bold;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
 }
 .stat-block-ability-value {
     -fx-text-fill: -sm-text-primary;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
 }
 .stat-block-prop-label {
     -fx-fill: -sm-text-primary;
@@ -496,7 +533,7 @@
     -fx-border-width: 1 1 1 3;
     -fx-border-radius: 3;
     -fx-background-radius: 3;
-    -fx-padding: 10 14 10 14;
+    -fx-padding: 8 12 8 12;
 }
 .combat-card:focused {
     -fx-border-color: -sm-accent;
@@ -528,7 +565,7 @@
 }
 .combat-turn-indicator-inactive {
     -fx-text-fill: -sm-text-muted;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
     -fx-font-weight: normal;
     -fx-min-width: 24;
 }
@@ -555,18 +592,21 @@
 }
 .hp-fill-healthy  { -fx-background-color: -sm-hp-healthy; }
 .hp-fill-wounded  { -fx-background-color: -sm-hp-wounded; }
-.hp-fill-critical { -fx-background-color: -sm-hp-critical; }
+/* Solid fill for critical state; non-color redundant cue is the "! " prefix in the HP label text. */
+.hp-fill-critical {
+    -fx-background-color: -sm-hp-critical;
+}
 .ac-badge {
     -fx-background-color: -sm-bg-elevated;
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 3;
     -fx-background-radius: 3;
     -fx-padding: 2 6 2 6;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
     -fx-font-weight: bold;
 }
 .init-badge {
-    -fx-text-fill: -sm-text-secondary;
+    -fx-text-fill: -sm-text-primary;  /* text-secondary at 11px on bg-card fails 4.5:1 (WCAG 1.4.3) */
     -fx-font-size: 11px;
 }
 
@@ -576,6 +616,17 @@
 }
 .remove-btn {
     -fx-font-size: 16px;
+}
+.undo-toast {
+    -fx-background-color: -sm-bg-card;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-padding: 8 12 8 12;
+}
+.undo-toast-label {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-style: italic;
 }
 
 /* ---- Navigation sidebar ---- */
@@ -604,11 +655,11 @@
     -fx-text-fill: -sm-text-primary;
 }
 .nav-btn:selected {
-    -fx-background-color: -sm-accent;
+    -fx-background-color: #165fa0;  /* darkened accent — text-primary (#ecedee) clears 7.2:1 (WCAG 1.4.3) */
     -fx-text-fill: -sm-text-primary;
 }
 .nav-btn:focused {
-    -fx-border-color: -sm-accent;
+    -fx-border-color: -sm-accent-hover;
     -fx-border-width: 2;
 }
 
@@ -621,10 +672,10 @@
     -fx-border-radius: 3;
     -fx-background-radius: 3;
     -fx-padding: 4 8;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
 }
 .quick-search-field:focused {
-    -fx-border-color: -sm-accent;
+    -fx-border-color: -sm-accent-hover;
 }
 .quick-search-list {
     -fx-background-color: -sm-bg-elevated;
@@ -655,7 +706,7 @@
 }
 .context-menu .menu-item .label {
     -fx-text-fill: -sm-text-primary;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
 }
 .context-menu .menu-item:hover,
 .context-menu .menu-item:focused {
@@ -726,7 +777,7 @@
 .section-header {
     -fx-font-size: 11px;
     -fx-font-weight: bold;
-    -fx-padding: 8 8 2 8;
+    -fx-padding: 6 8 4 8;
 }
 .encounter-controls-divider {
     -fx-background-color: -sm-border-subtle;
@@ -740,9 +791,34 @@
     -fx-background-color: -sm-bg-darkest;
 }
 
-/* ---- Scene Pane (persistent lower-right context) ---- */
+/* ---- Scene Pane (persistent lower-right game state) ---- */
 .scene-pane {
     -fx-background-color: -sm-bg-darkest;
+}
+.scene-tab-bar {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-border-width: 1;
+}
+.scene-tab {
+    -fx-background-color: transparent;
+    -fx-background-radius: 4 4 0 0;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 12px;
+    -fx-padding: 4 10 4 10;
+    -fx-cursor: hand;
+}
+.scene-tab:hover {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+}
+.scene-tab:selected {
+    -fx-background-color: -sm-bg-darkest;
+    -fx-text-fill: -sm-text-primary;
+    -fx-border-color: -sm-border-subtle -sm-border-subtle transparent -sm-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 4 4 0 0;
+    -fx-background-radius: 4 4 0 0;
 }
 
 /* ---- Hex Map (Overworld) ---- */
@@ -767,7 +843,7 @@
     -fx-background-radius: 6;
     -fx-padding: 8;
     -fx-spacing: 6;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0, 0, 2);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 2);
 }
 .edit-popup-panel .button {
     -fx-padding: 3 8 3 8;
@@ -777,6 +853,7 @@
     -fx-padding: 2 8 2 8;
     -fx-font-size: 11px;
     -fx-min-width: 28;
+    -fx-min-height: 28;  /* min touch target (WCAG 2.5.8) */
 }
 
 /* ---- Party panel (toolbar popup) ---- */
@@ -786,7 +863,7 @@
     -fx-border-width: 1;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
-    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 12, 0, 0, 3);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 12, 0, 0, 3);
     -fx-min-width: 280;
     -fx-pref-width: 320;
 }
@@ -797,7 +874,7 @@
     -fx-border-width: 1;
 }
 .party-section-label {
-    -fx-font-size: 10px;
+    -fx-font-size: 11px;
     -fx-text-fill: -sm-text-muted;
     -fx-font-weight: bold;
     -fx-padding: 6 8 2 8;
@@ -815,11 +892,14 @@
     -fx-font-size: 11px;
 }
 .party-btn.remove {
-    -fx-background-color: -sm-medium;
-    -fx-text-fill: #1a1200;
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-secondary;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-width: 1;
 }
 .party-btn.remove:hover {
-    -fx-background-color: derive(-sm-medium, 25%);
+    -fx-background-color: derive(-sm-bg-elevated, 20%);
+    -fx-text-fill: -sm-text-primary;
 }
 .party-btn.delete {
     -fx-background-color: -sm-monster-red;
@@ -841,7 +921,7 @@
     -fx-background-color: -sm-bg-card;
     -fx-padding: 4 8 4 8;
     -fx-text-fill: -sm-text-primary;
-    -fx-font-size: 12px;
+    -fx-font-size: 13px;
 }
 .party-suggestions .list-cell:hover,
 .party-suggestions .list-cell:selected {

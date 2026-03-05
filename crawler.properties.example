@@ -1,5 +1,13 @@
-cobalt.session=DEIN_COBALT_SESSION_COOKIE_HIER
+cobalt.session=YOUR_COBALT_SESSION_COOKIE_HERE
+# SECURITY: After creating crawler.properties, restrict permissions:
+#   chmod 600 crawler.properties
+
+# Delay in milliseconds between HTTP requests.
+# 1500-2000 ms is safe for DnD Beyond. Below 1000 ms risks HTTP 429 (rate limited)
+# and potential temporary IP bans. The crawler will print a warning on 429.
 delay.ms=2000
+
+# Output directory for crawled monster HTML files
 output.dir=data/monsters
 
 # Item Crawler

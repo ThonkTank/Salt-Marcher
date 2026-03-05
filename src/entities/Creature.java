@@ -4,29 +4,29 @@ import java.util.List;
 
 public class Creature {
 
-    // --- Bestehende Felder (EncounterGenerator-Kompatibilität) ---
+    // --- Core fields (EncounterGenerator compatibility) ---
     public Long Id;
     public String Name;
     public String CreatureType;      // humanoid, dragon, undead, ...
-    public String CR;                // "1/4", "1/2", "14" (war int)
+    public ChallengeRating CR;        // encapsulates both display ("1/4") and numeric (0.25) forms
     public int XP;
     public int HP;
     public int AC;
-    public int Speed;                // Walk-Speed in ft (für EncounterGenerator)
+    public int Speed;                // Walk speed in ft (used by EncounterGenerator)
     public int InitiativeBonus;
     public List<String> Biomes;
     public List<Action> Actions;     // fallback for unrecognized action_types from DB
 
-    // --- Basis-Identität ---
+    // --- Base identity ---
     public String Size;              // Tiny / Small / Medium / Large / Huge / Gargantuan
-    public List<String> Subtypes;    // z.B. ["Goblinoid"], ["gnome", "shapeshifter"]
+    public List<String> Subtypes;    // e.g. ["Goblinoid"], ["gnome", "shapeshifter"]
     public String Alignment;
 
     // --- AC & HP Details ---
     public String AcNotes;           // "natural armor", "leather armor, shield"
     public String HitDice;           // "2d6", "18d8+54"
 
-    // --- Geschwindigkeit aufgeschlüsselt ---
+    // --- Speed breakdown ---
     public int FlySpeed;
     public int SwimSpeed;
     public int ClimbSpeed;
@@ -36,28 +36,28 @@ public class Creature {
     public int Str;
     public int Dex;
     public int Con;
-    public int Intel;                // 'int' ist Java-Keyword
+    public int Intel;                // named 'Intel' to avoid the 'int' keyword
     public int Wis;
     public int Cha;
 
     public int ProficiencyBonus;
 
-    // --- Saves & Skills (delimited strings, konsistent mit biomes-Muster) ---
+    // --- Saves & Skills (delimited strings, consistent with biomes pattern) ---
     public String SavingThrows;          // "CON:10,INT:12,WIS:9"
     public String Skills;                // "Stealth:6,Perception:3"
 
-    // --- Damage-Affinitäten & Conditions ---
+    // --- Damage affinities & Conditions ---
     public String DamageVulnerabilities;
     public String DamageResistances;
     public String DamageImmunities;
     public String ConditionImmunities;
 
-    // --- Sinne & Sprachen ---
+    // --- Senses & Languages ---
     public String Senses;                // "darkvision:60,truesight:120"
     public int PassivePerception;
     public String Languages;
 
-    // --- Aktionen nach Typ ---
+    // --- Actions by type ---
     public List<Action> Traits;
     public List<Action> BonusActions;
     public List<Action> Reactions;
@@ -66,7 +66,17 @@ public class Creature {
 
     // --- Nested Action class ---
     public static class Action {
-        public String Name;
-        public String Description;
+        public final String Name;
+        public final String Description;
+        public Action(String name, String description) {
+            this.Name = name;
+            this.Description = description;
+        }
     }
+
+    /** Pre-computed tactical role (e.g. "BRUTE", "TANK"). Null for legacy records imported before v6 schema. */
+    public String Role;
+
+    /** True once actions, biomes, and subtypes have been loaded from the DB. */
+    public boolean relationsLoaded = false;
 }

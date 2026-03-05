@@ -1,7 +1,48 @@
 package services;
 
+import java.util.List;
+import java.util.Map;
+
 public class XpCalculator {
 
+    // ---- CR-to-XP mapping (standard 5e SRD) ----
+    private static final Map<String, Integer> CR_TO_XP = Map.ofEntries(
+        Map.entry("0",   10),    Map.entry("1/8",  25),
+        Map.entry("1/4", 50),    Map.entry("1/2",  100),
+        Map.entry("1",   200),   Map.entry("2",    450),
+        Map.entry("3",   700),   Map.entry("4",    1100),
+        Map.entry("5",   1800),  Map.entry("6",    2300),
+        Map.entry("7",   2900),  Map.entry("8",    3900),
+        Map.entry("9",   5000),  Map.entry("10",   5900),
+        Map.entry("11",  7200),  Map.entry("12",   8400),
+        Map.entry("13",  10000), Map.entry("14",   11500),
+        Map.entry("15",  13000), Map.entry("16",   15000),
+        Map.entry("17",  18000), Map.entry("18",   20000),
+        Map.entry("19",  22000), Map.entry("20",   25000),
+        Map.entry("21",  33000), Map.entry("22",   41000),
+        Map.entry("23",  50000), Map.entry("24",   62000),
+        Map.entry("25",  75000), Map.entry("26",   90000),
+        Map.entry("27",  105000), Map.entry("28",  120000),
+        Map.entry("29",  135000), Map.entry("30",  155000)
+    );
+
+    // Ordered CR values for display (CRs do not sort lexicographically).
+    private static final List<String> CR_ORDER = List.of(
+        "0", "1/8", "1/4", "1/2",
+        "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+        "11", "12", "13", "14", "15", "16", "17", "18", "19", "20",
+        "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"
+    );
+
+    public static List<String> getCrValues() {
+        return CR_ORDER;
+    }
+
+    public static Integer xpForCr(String cr) {
+        return CR_TO_XP.get(cr);
+    }
+
+    // Source: D&D 5e Dungeon Master's Guide (2014), p.82, Table: XP Thresholds by Character Level.
     // Rows: Level 1-20 (Index 0-19), Columns: Easy, Medium, Hard, Deadly
     private static final int[][] THRESHOLDS = {
     //   Easy   Medium   Hard  Deadly
@@ -31,36 +72,48 @@ public class XpCalculator {
 
     public static int getXpThreshold(int avgLevel, String difficulty) {
         if (avgLevel < 1 || avgLevel > 20) {
-            throw new IllegalArgumentException("Ungültiges Level: " + avgLevel);
+            throw new IllegalArgumentException("Invalid level: " + avgLevel);
         }
         int col = switch (difficulty) {
             case "Easy"   -> EASY;
             case "Medium" -> MEDIUM;
             case "Hard"   -> HARD;
             case "Deadly" -> DEADLY;
-            default -> throw new IllegalArgumentException("Ungültige Schwierigkeit: " + difficulty);
+            default -> throw new IllegalArgumentException("Invalid difficulty: " + difficulty);
         };
         return THRESHOLDS[avgLevel - 1][col];
     }
 
     /**
-     * Interpoliert den XP-Threshold für einen kontinuierlichen Schwierigkeitswert.
-     * @param t 0.0 = Easy, 0.333 = Medium, 0.667 = Hard, 1.0 = Deadly
+     * Interpolates the XP threshold for a continuous difficulty value.
+     * @param t continuous difficulty: 0.0 = Easy, 0.333 = Medium, 0.667 = Hard, 1.0 = Deadly
+     *          (midpoints of the four columns in the DMG XP threshold table)
      */
     public static int interpolateThreshold(int avgLevel, double t) {
         avgLevel = Math.max(1, Math.min(20, avgLevel));
         int[] row = THRESHOLDS[avgLevel - 1];
 
-        // t auf den 4-Punkte-Bereich mappen: 0.0→col0, 0.333→col1, 0.667→col2, 1.0→col3
-        double scaled = t * 3.0; // 0.0-3.0
-        int lower = Math.min((int) scaled, 2);       // 0, 1, oder 2
-        int upper = lower + 1;                        // 1, 2, oder 3
-        double frac = scaled - lower;                 // 0.0-1.0 innerhalb des Segments
+        // Map [0,1] to [0,3]: 3 intervals cover 4 boundary columns (Easy/Medium/Hard/Deadly).
+        // t=0.0→col0 (Easy), t≈0.333→col1 (Medium), t≈0.667→col2 (Hard), t=1.0→col3 (Deadly).
+        double scaled = t * 3.0; // [0.0, 3.0]
+        int lower = Math.min((int) scaled, 2);       // 0, 1, or 2
+        int upper = lower + 1;                        // 1, 2, or 3
+        double frac = scaled - lower;                 // 0.0-1.0 within the segment
 
         return (int) (row[lower] + (row[upper] - row[lower]) * frac);
     }
 
-    /** Kategorisiert einen kontinuierlichen Wert in den nächsten Difficulty-String. */
+    /**
+     * Maps a continuous difficulty value to the nearest difficulty label.
+     * Boundaries are set at the midpoints between the column indices used by
+     * {@link #interpolateThreshold} (0.0, 0.333, 0.667, 1.0):
+     * <pre>
+     *   [0.0,   0.167) → Easy   (centre: 0.0)
+     *   [0.167, 0.50)  → Medium (centre: 0.333)
+     *   [0.50,  0.833) → Hard   (centre: 0.667)
+     *   [0.833, 1.0]   → Deadly (centre: 1.0)
+     * </pre>
+     */
     public static String classifyDifficulty(double t) {
         if (t < 0.167) return "Easy";
         if (t < 0.50)  return "Medium";
@@ -84,7 +137,13 @@ public class XpCalculator {
         return new DifficultyStats(adjXp, diff, easyTh, mediumTh, hardTh, deadlyTh);
     }
 
-    /** Kategorisiert anhand von XP-Schwellenwerten (für Encounter-Zusammenfassung). */
+    /** Compute difficulty stats from a roster of encounter slots. */
+    public static DifficultyStats computeStatsFromSlots(
+            List<EncounterSlot> slots, int partySize, int avgLevel) {
+        return computeStats(EncounterGenerator.adjustedXp(slots), partySize, avgLevel);
+    }
+
+    /** Categorizes by XP thresholds (for encounter summary display). */
     public static String classifyDifficultyByXp(int adjustedXp, int easyTh, int mediumTh,
                                                 int hardTh, int deadlyTh) {
         if (adjustedXp >= deadlyTh)  return "Deadly";

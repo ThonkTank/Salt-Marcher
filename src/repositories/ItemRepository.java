@@ -5,7 +5,10 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import database.DatabaseManager;
 import entities.Item;
@@ -20,8 +23,11 @@ public class ItemRepository {
             + "id, name, slug, category, subcategory, is_magic,"
             + "rarity, requires_attunement, attunement_condition,"
             + "cost, cost_cp, weight, damage, properties, armor_class,"
-            + "description, source, tags"
-            + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            + "description, source"
+            + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+    public static final String ITEM_TAG_INSERT_SQL =
+            "INSERT OR IGNORE INTO item_tags(item_id, tag) VALUES(?, ?)";
 
     // -------------------------------------------------------------------------
     // Mapping
@@ -46,17 +52,68 @@ public class ItemRepository {
         i.ArmorClass          = rs.getString("armor_class");
         i.Description         = rs.getString("description");
         i.Source              = rs.getString("source");
-        i.Tags                = rs.getString("tags");
+        i.Tags                = new ArrayList<>(); // populated by loadTags()
         return i;
+    }
+
+    private static void loadTags(Connection conn, List<Item> items) throws SQLException {
+        if (items.isEmpty()) return;
+        Map<Long, Item> byId = new HashMap<>(items.size() * 2);
+        for (Item i : items) byId.put(i.Id, i);
+        String sql = "SELECT item_id, tag FROM item_tags WHERE item_id IN ("
+                + String.join(",", Collections.nCopies(items.size(), "?")) + ")";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            int idx = 1;
+            for (Item i : items) ps.setLong(idx++, i.Id);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Item item = byId.get(rs.getLong("item_id"));
+                    if (item != null) item.Tags.add(rs.getString("tag"));
+                }
+            }
+        }
     }
 
     // -------------------------------------------------------------------------
     // Save
     // -------------------------------------------------------------------------
 
-    public static void saveItemBatch(Item item, PreparedStatement ps) throws SQLException {
-        bindItemParams(ps, item);
-        ps.executeUpdate();
+    /**
+     * Saves an item and its tags within an open bulk-import connection.
+     * Caller must have set {@code autoCommit(false)} before calling.
+     */
+    public static void save(Item item, Connection conn) throws SQLException {
+        try (PreparedStatement itemPs = conn.prepareStatement(ITEM_INSERT_SQL)) {
+            saveItemBatch(item, itemPs, conn);
+        }
+    }
+
+    /**
+     * Low-level batch step: binds and executes the item insert using a caller-managed statement.
+     * The {@code conn} parameter is needed for tag management (item_tags junction table).
+     * Caller must have set {@code autoCommit(false)} before calling.
+     */
+    public static void saveItemBatch(Item item, PreparedStatement itemPs, Connection conn) throws SQLException {
+        // Clear existing tags first (INSERT OR REPLACE on items row does not cascade-delete tags
+        // without PRAGMA foreign_keys=ON, so we handle it explicitly).
+        try (PreparedStatement del = conn.prepareStatement("DELETE FROM item_tags WHERE item_id = ?")) {
+            del.setLong(1, item.Id);
+            del.executeUpdate();
+        }
+        bindItemParams(itemPs, item);
+        itemPs.executeUpdate();
+        if (item.Tags != null && !item.Tags.isEmpty()) {
+            try (PreparedStatement tagPs = conn.prepareStatement(ITEM_TAG_INSERT_SQL)) {
+                for (String tag : item.Tags) {
+                    if (tag != null && !tag.isBlank()) {
+                        tagPs.setLong(1, item.Id);
+                        tagPs.setString(2, tag.trim());
+                        tagPs.addBatch();
+                    }
+                }
+                tagPs.executeBatch();
+            }
+        }
     }
 
     private static void bindItemParams(PreparedStatement ps, Item i) throws SQLException {
@@ -78,7 +135,6 @@ public class ItemRepository {
         ps.setString (15, i.ArmorClass);
         ps.setString (16, i.Description);
         ps.setString (17, i.Source);
-        ps.setString (18, i.Tags);
     }
 
     // -------------------------------------------------------------------------
@@ -90,9 +146,12 @@ public class ItemRepository {
         try (Connection conn = DatabaseManager.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
+            Item item = null;
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return mapItemFields(rs);
+                if (rs.next()) item = mapItemFields(rs);
             }
+            if (item != null) loadTags(conn, List.of(item));
+            return item;
         } catch (SQLException e) {
             System.err.println("ItemRepository.getItem(id=" + id + "): " + e.getMessage());
         }
@@ -109,8 +168,9 @@ public class ItemRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) items.add(mapItemFields(rs));
             }
+            loadTags(conn, items);
         } catch (SQLException e) {
-            System.err.println("Fehler bei Itemsuche: " + e.getMessage());
+            System.err.println("ItemRepository.searchByName(): " + e.getMessage());
         }
         return items;
     }
@@ -124,6 +184,7 @@ public class ItemRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) items.add(mapItemFields(rs));
             }
+            loadTags(conn, items);
         } catch (SQLException e) {
             System.err.println("ItemRepository.getItemsByCategory('" + category + "'): " + e.getMessage());
         }
@@ -139,6 +200,7 @@ public class ItemRepository {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) items.add(mapItemFields(rs));
             }
+            loadTags(conn, items);
         } catch (SQLException e) {
             System.err.println("ItemRepository.getMagicItemsByRarity('" + rarity + "'): " + e.getMessage());
         }

@@ -8,6 +8,12 @@ import javafx.scene.layout.HBox;
 import java.util.List;
 import java.util.function.BiConsumer;
 
+/**
+ * Paired CR min/max ComboBox row. Automatically clamps maxCr >= minCr when the user
+ * bumps the minimum above the current maximum — without firing a duplicate onChange event.
+ * The {@code updating} flag suppresses onChange during programmatic clamp adjustments
+ * (see {@link #withSuppressedCallback}).
+ */
 public class CrRangeSelector extends HBox {
 
     private final ComboBox<String> minCombo;
@@ -71,6 +77,7 @@ public class CrRangeSelector extends HBox {
     public String getMinCr() { return minCombo.getValue(); }
     public String getMaxCr() { return maxCombo.getValue(); }
 
+    /** Resets both combos to full range. Does NOT fire onChange — caller must trigger a filter refresh afterward. */
     public void reset() {
         withSuppressedCallback(() -> {
             minCombo.getSelectionModel().selectFirst();

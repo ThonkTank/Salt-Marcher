@@ -5,6 +5,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,6 +31,11 @@ import java.util.regex.Pattern;
  *     <p>Description...</p>
  *   </div>
  *   <div class="source-description">Dungeon Master's Guide, pg. 234</div>
+ *
+ * <p>Unlike {@link HtmlStatBlockParser} which exposes a single {@code parse()} entry point
+ * (internally auto-detecting the 2014/2024 stat block format), this parser exposes two methods
+ * ({@link #parseEquipment} and {@link #parseMagicItem}) because the HTML structure of equipment
+ * and magic item pages is too different to unify behind a single dispatcher.
  */
 public class HtmlItemParser {
 
@@ -64,6 +70,16 @@ public class HtmlItemParser {
         return content;
     }
 
+    /**
+     * Returns true if the given span text looks like a magic item type/rarity line
+     * (e.g. "Wondrous Item, rare" or "Weapon (any sword), very rare").
+     * Used by {@link ItemCrawler} to pre-capture the rarity span — shares the same
+     * RARITY_PATTERN so both sides stay in sync.
+     */
+    static boolean isRaritySpan(String text) {
+        return RARITY_PATTERN.matcher(text).find();
+    }
+
     // -------------------------------------------------------------------------
     // Equipment parsen (/equipment/{id}-{slug})
     // -------------------------------------------------------------------------
@@ -71,6 +87,7 @@ public class HtmlItemParser {
     public static Item parseEquipment(Document doc) {
         Item item = new Item();
         item.IsMagic = false;
+        item.Tags = new ArrayList<>();
 
         item.Name = extractName(doc);
         parseEquipmentMetaLine(doc, item);
@@ -89,6 +106,7 @@ public class HtmlItemParser {
     public static Item parseMagicItem(Document doc) {
         Item item = new Item();
         item.IsMagic = true;
+        item.Tags = new ArrayList<>();
 
         item.Name = extractName(doc);
         parseMagicItemTypeLine(doc, item);
@@ -171,21 +189,24 @@ public class HtmlItemParser {
     }
 
     /**
-     * Gibt den Text-Inhalt des Parents zurück, der VOR dem gegebenen Element steht.
+     * Gibt den Text-Inhalt des Parents zurück, der VOR dem gegebenen Element steht
+     * (nur direkte TextNodes zwischen dem letzten vorherigen Span und dem Ziel-Element).
+     * Nutzt Jsoup-Knotentraversal statt HTML-String-Suche.
      */
     private static String getPrecedingText(Element parent, Element child) {
-        String parentHtml = parent.html();
-        String childHtml = child.outerHtml();
-        int idx = parentHtml.indexOf(childHtml);
-        if (idx <= 0) return "";
-        // Letztes Label vor dem Span finden (z.B. "Type:", "Cost:", "Weight:")
-        String before = parentHtml.substring(0, idx);
-        // Nur den letzten Teil nach dem vorherigen </span> nehmen
-        int lastSpanClose = before.lastIndexOf("</span>");
-        if (lastSpanClose >= 0) {
-            before = before.substring(lastSpanClose + "</span>".length());
+        // Collect text nodes after the most recent preceding span.
+        // Each new span resets the buffer so we only keep text from the nearest label context.
+        StringBuilder sb = new StringBuilder();
+        for (org.jsoup.nodes.Node node : parent.childNodes()) {
+            if (node == child) break;
+            if (node instanceof Element && ((Element) node).tagName().equals("span")) {
+                // Neuer Span-Vorgänger — Text davor verwerfen, frisch sammeln
+                sb.setLength(0);
+            } else if (node instanceof org.jsoup.nodes.TextNode) {
+                sb.append(((org.jsoup.nodes.TextNode) node).text());
+            }
         }
-        return before;
+        return sb.toString();
     }
 
     private static void categorizeEquipment(String typeText, Item item) {
@@ -265,17 +286,10 @@ public class HtmlItemParser {
 
     private static void parseEquipmentTags(Document doc, Item item) {
         // <div class="tags"><div class="tag">Combat</div><div class="tag">Damage</div></div>
-        Elements tagEls = doc.select("div.tags div.tag");
-        if (tagEls.isEmpty()) return;
-
-        StringBuilder sb = new StringBuilder();
-        for (Element tag : tagEls) {
+        for (Element tag : doc.select("div.tags div.tag")) {
             String t = tag.text().trim();
-            if (t.isEmpty() || t.equalsIgnoreCase("Tags:")) continue;
-            if (sb.length() > 0) sb.append(", ");
-            sb.append(t);
+            if (!t.isEmpty() && !t.equalsIgnoreCase("Tags:")) item.Tags.add(t);
         }
-        if (sb.length() > 0) item.Tags = sb.toString();
     }
 
     // -------------------------------------------------------------------------
@@ -285,31 +299,30 @@ public class HtmlItemParser {
     private static void parseMagicItemTypeLine(Document doc, Item item) {
         // Die Typ-Zeile steht in einem <span> außerhalb von .more-info-content
         // Format: "Wondrous Item, uncommon" oder "Weapon (any sword), rare (requires attunement)"
+        // Strategie 1 (bevorzugt): Rarity + Typ-Keyword; Strategie 2 (Fallback): nur Rarity
+        // (z.B. "Tattoo, uncommon", "Figurine of Wondrous Power, rare")
 
         String typeLine = null;
+        String rarityOnlyLine = null;
 
-        // Strategie 1: <span> mit Rarity-Keyword suchen (NICHT in scripts/styles)
-        for (Element span : doc.select("span")) {
+        // Anchor the search to the h1.page-title parent (header area) to avoid false matches
+        // from navigation or sidebar spans on full live pages. Saved HTML fragments are minimal
+        // so the fallback to doc.select("span") is only a safety net for missing h1.
+        Element h1 = doc.selectFirst("h1.page-title");
+        Elements spans = h1 != null ? h1.parent().select("span") : doc.select("span");
+
+        for (Element span : spans) {
             String text = span.text().trim();
             if (text.isEmpty() || text.length() > 200) continue;
-            if (RARITY_PATTERN.matcher(text).find() && MAGIC_TYPE_PATTERN.matcher(text).find()) {
+            if (!RARITY_PATTERN.matcher(text).find()) continue;
+            if (MAGIC_TYPE_PATTERN.matcher(text).find()) {
                 typeLine = text;
-                break;
+                break; // best match, done
             }
+            if (rarityOnlyLine == null) rarityOnlyLine = text; // keep first fallback
         }
 
-        // Strategie 2: Nur Rarity-Match (Type könnte fehlen)
-        if (typeLine == null) {
-            for (Element span : doc.select("span")) {
-                String text = span.text().trim();
-                if (text.isEmpty() || text.length() > 200) continue;
-                if (RARITY_PATTERN.matcher(text).find()) {
-                    typeLine = text;
-                    break;
-                }
-            }
-        }
-
+        if (typeLine == null) typeLine = rarityOnlyLine;
         if (typeLine == null) return;
 
         // Typ extrahieren
@@ -321,7 +334,7 @@ public class HtmlItemParser {
         // Rarity extrahieren
         Matcher rarityMatcher = RARITY_PATTERN.matcher(typeLine);
         if (rarityMatcher.find()) {
-            item.Rarity = toTitleCase(rarityMatcher.group(1));
+            item.Rarity = CrawlerHttpUtils.toTitleCase(rarityMatcher.group(1));
         }
 
         // Attunement extrahieren
@@ -346,8 +359,11 @@ public class HtmlItemParser {
         if (text.startsWith("Notes:")) {
             text = text.substring("Notes:".length()).trim();
         }
-        if (!text.isEmpty() && item.Tags == null) {
-            item.Tags = text;
+        if (!text.isEmpty() && item.Tags.isEmpty()) {
+            for (String tag : text.split(",")) {
+                String trimmed = tag.trim();
+                if (!trimmed.isEmpty()) item.Tags.add(trimmed);
+            }
         }
     }
 
@@ -414,7 +430,6 @@ public class HtmlItemParser {
 
         // Fallback: Suche nach "Source:" Label
         for (Element el : doc.select("p, span, div")) {
-            if (el.tagName().equals("script") || el.tagName().equals("style")) continue;
             String text = el.ownText().trim();
             if (text.startsWith("Source:")) {
                 return text.substring("Source:".length()).trim();
@@ -427,20 +442,20 @@ public class HtmlItemParser {
     // Cost conversion
     // -------------------------------------------------------------------------
 
-    /** "15 gp" → 1500 cp, "5 sp" → 50 cp. Gibt 0 zurück bei unbekanntem Format. */
+    /** "15 gp" → 1500 cp, "5 sp" → 50 cp. Returns 0 for unknown format. Clamps to Integer.MAX_VALUE on overflow. */
     static int costToCp(String costStr) {
         if (costStr == null) return 0;
         Matcher m = COST_PATTERN.matcher(costStr);
         if (!m.find()) return 0;
-        int amount = Integer.parseInt(m.group(1).replace(",", ""));
-        switch (m.group(2).toLowerCase()) {
-            case "cp": return amount;
-            case "sp": return amount * 10;
-            case "ep": return amount * 50;
-            case "gp": return amount * 100;
-            case "pp": return amount * 1000;
-            default:   return 0;
-        }
+        long amount;
+        try { amount = Long.parseLong(m.group(1).replace(",", "")); }
+        catch (NumberFormatException e) { return 0; }
+        long multiplier = switch (m.group(2).toLowerCase()) {
+            case "cp" -> 1L; case "sp" -> 10L; case "ep" -> 50L;
+            case "gp" -> 100L; case "pp" -> 1000L; default -> 0L;
+        };
+        long result = amount * multiplier;
+        return result > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) result;
     }
 
     // -------------------------------------------------------------------------
@@ -458,15 +473,4 @@ public class HtmlItemParser {
         catch (NumberFormatException e) { return 0.0; }
     }
 
-    private static String toTitleCase(String s) {
-        if (s == null || s.isEmpty()) return s;
-        String[] parts = s.split("\\s+");
-        StringBuilder sb = new StringBuilder();
-        for (String part : parts) {
-            if (sb.length() > 0) sb.append(' ');
-            sb.append(Character.toUpperCase(part.charAt(0)))
-              .append(part.substring(1).toLowerCase());
-        }
-        return sb.toString();
-    }
 }

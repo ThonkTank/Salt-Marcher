@@ -6,16 +6,18 @@ import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
-import javafx.scene.layout.*;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.application.Platform;
-import repositories.CreatureRepository;
+import services.CreatureService;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * Rich D&D Beyond-style stat block component.
@@ -95,7 +97,7 @@ public class StatBlockPane extends VBox {
         abilities.setPadding(new Insets(4, 0, 4, 0));
 
         String[] labels = {"STR", "DEX", "CON", "INT", "WIS", "CHA"};
-        int[] scores = {c.Str, c.Dex, c.Con, c.Intel, c.Wis, c.Cha};
+        int[] scores = {c.Str, c.Dex, c.Con, c.Intel, c.Wis, c.Cha}; // Intel = Intelligence (named to avoid Java's int keyword)
 
         for (int i = 0; i < 6; i++) {
             ColumnConstraints cc = new ColumnConstraints();
@@ -129,9 +131,8 @@ public class StatBlockPane extends VBox {
         addPropertyIfPresent("Senses", formatSenses(c.Senses, c.PassivePerception));
         addPropertyIfPresent("Languages", c.Languages);
 
-        String crLine = c.CR + " (" + String.format("%,d", c.XP) + " XP)";
-        if (c.ProficiencyBonus > 0) crLine += "     PB +" + c.ProficiencyBonus;
-        addProperty("Challenge", crLine);
+        addProperty("Challenge", c.CR + " (" + String.format("%,d", c.XP) + " XP)");
+        if (c.ProficiencyBonus > 0) addProperty("Proficiency Bonus", "+" + c.ProficiencyBonus);
 
         getChildren().add(separator());
     }
@@ -150,46 +151,46 @@ public class StatBlockPane extends VBox {
         addActionSection("Legendary Actions", legendaryDesc, c.LegendaryActions);
     }
 
-    private static void loadAsync(Long creatureId, Consumer<StatBlockPane> onLoaded) {
+    /**
+     * Loads a stat block into {@code container} asynchronously.
+     * Replaces the container's children with a loading placeholder, then with the stat block on success.
+     * Returns the background Task so the caller can cancel it if the user navigates away
+     * before the load completes. Returns {@code null} if the creature is already cached
+     * (load completes synchronously, no task to cancel).
+     * Must be called on the FX Application Thread.
+     */
+    public static Task<Creature> loadAsync(Long creatureId, VBox container) {
         if (!Platform.isFxApplicationThread())
-            throw new IllegalStateException("loadAsync must be called on the FX Application Thread");
+            throw new IllegalStateException("StatBlockPane.loadAsync must be called on the FX Application Thread");
+        Label loading = new Label("Lade Stat Block...");
+        loading.getStyleClass().add("stat-block-loading");
+        container.getChildren().setAll(loading);
+
         Creature cached = creatureCache.get(creatureId);
         if (cached != null) {
-            onLoaded.accept(new StatBlockPane(cached));
-            return;
+            container.getChildren().setAll(new StatBlockPane(cached));
+            return null;
         }
 
         Task<Creature> task = new Task<>() {
-            @Override protected Creature call() {
-                return CreatureRepository.getCreature(creatureId);
-            }
+            @Override protected Creature call() { return CreatureService.getCreature(creatureId); }
         };
         task.setOnSucceeded(e -> {
             Creature c = task.getValue();
             if (c != null) {
                 creatureCache.put(creatureId, c);
-                onLoaded.accept(new StatBlockPane(c));
+                container.getChildren().setAll(new StatBlockPane(c));
             }
         });
-        task.setOnFailed(e ->
-                System.err.println("Stat-Block laden fehlgeschlagen: " + task.getException().getMessage()));
+        task.setOnFailed(e -> {
+            System.err.println("StatBlockPane.loadAsync(id=" + creatureId + "): "
+                    + task.getException().getMessage());
+            container.getChildren().setAll(new Label("Fehler beim Laden."));
+        });
         Thread t = new Thread(task, "sm-stat-block");
         t.setDaemon(true);
         t.start();
-    }
-
-    /** Creates a VBox with loading placeholder that auto-replaces with a StatBlockPane when loaded. */
-    public static VBox createAsyncContainer(Long creatureId) {
-        VBox container = new VBox();
-        container.setPadding(new Insets(6, 0, 0, 0));
-        Label loading = new Label("Lade Stat Block...");
-        loading.getStyleClass().add("stat-block-loading");
-        container.getChildren().add(loading);
-        loadAsync(creatureId, pane -> {
-            container.getChildren().clear();
-            container.getChildren().add(pane);
-        });
-        return container;
+        return task;
     }
 
     // ---- Layout helpers ----
@@ -284,6 +285,11 @@ public class StatBlockPane extends VBox {
         return !sb.isEmpty() ? sb.toString() : null;
     }
 
+    /**
+     * Parses the DB delimited format ("KEY:value,KEY:value") into display form ("KEY value, KEY value").
+     * {@code valueSuffix} is appended to each value (e.g. " ft." for senses, "" for saving throws).
+     * See CLAUDE.md "Delimited string formats" for the storage convention used across all stat columns.
+     */
     private static String reformatColonDelimited(String raw, String valueSuffix) {
         if (!notEmpty(raw)) return null;
         StringBuilder sb = new StringBuilder();

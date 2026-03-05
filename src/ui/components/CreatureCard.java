@@ -7,25 +7,28 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import services.EncounterGenerator;
-import services.EncounterGenerator.EncounterSlot;
-import services.RoleClassifier;
 import services.RoleClassifier.MonsterRole;
 
 import java.util.function.Consumer;
 
+/**
+ * Purely presentational roster card: shows creature name, CR, role badge,
+ * XP contribution, and +/- count controls. Used inside {@link ui.encounter.EncounterRosterPane}.
+ *
+ * <p>Count mutation is owned by the caller: {@code onIncrement} and {@code onDecrement}
+ * are responsible for updating their count and calling {@link #updateCount(int)} to sync the label.
+ */
 public class CreatureCard extends VBox {
 
     private final Label countLabel;
-    private final EncounterSlot slot;
+    private final Creature creature;
     private Consumer<Long> onRequestStatBlock;
 
-    public CreatureCard(EncounterSlot slot, Runnable onCountChanged, Runnable onRemove) {
-        this.slot = slot;
+    public CreatureCard(Creature c, int initialCount, MonsterRole role,
+                        Runnable onIncrement, Runnable onDecrement, Runnable onRemove) {
+        this.creature = c;
         getStyleClass().add("creature-card");
         setSpacing(0);
-
-        Creature c = slot.creature;
 
         // ---- Summary Row (top part) ----
         HBox summary = new HBox(8);
@@ -35,7 +38,7 @@ public class CreatureCard extends VBox {
         Button minusBtn = new Button("\u2212");
         minusBtn.getStyleClass().add("compact");
         minusBtn.setAccessibleText("Weniger " + c.Name);
-        countLabel = new Label(String.valueOf(slot.count));
+        countLabel = new Label(String.valueOf(initialCount));
         countLabel.getStyleClass().add("bold");
         countLabel.setMinWidth(24);
         countLabel.setAlignment(Pos.CENTER);
@@ -47,19 +50,12 @@ public class CreatureCard extends VBox {
         qtyBox.setAlignment(Pos.CENTER);
 
         // CENTER: Name + detail
-        Label nameLabel = new Label(c.Name);
+        // Button gives native :focused pseudo-state for proper focus ring (vs. Label+AccessibleRole hack)
+        Button nameLabel = new Button(c.Name);
         nameLabel.getStyleClass().add("creature-link");
-        nameLabel.setFocusTraversable(true);
-        nameLabel.setOnMouseClicked(e -> fireStatBlockRequest());
-        nameLabel.setOnKeyPressed(e -> {
-            if (e.getCode() == javafx.scene.input.KeyCode.ENTER
-                    || e.getCode() == javafx.scene.input.KeyCode.SPACE) {
-                fireStatBlockRequest();
-                e.consume();
-            }
-        });
+        nameLabel.setAccessibleText("Stat Block \u00f6ffnen: " + c.Name);
+        nameLabel.setOnAction(e -> fireStatBlockRequest());
 
-        MonsterRole role = slot.role != null ? slot.role : RoleClassifier.classify(c);
         String detail = "CR " + c.CR + "  |  " + c.XP + " XP";
         if (c.CreatureType != null && !c.CreatureType.isBlank()) {
             detail += "  |  " + c.CreatureType;
@@ -73,11 +69,11 @@ public class CreatureCard extends VBox {
         HBox detailRow = new HBox(4, detailLabel, roleBadge);
         detailRow.setAlignment(Pos.CENTER_LEFT);
 
-        // Stat block link
+        // Stat block link — purely decorative; nameLabel handles keyboard access
         Label expandArrow = new Label("\u25BC");
         expandArrow.getStyleClass().addAll("text-muted", "clickable");
         expandArrow.setOnMouseClicked(e -> fireStatBlockRequest());
-        expandArrow.setAccessibleText("Stat Block anzeigen");
+        expandArrow.setFocusTraversable(false);
 
         VBox infoBox = new VBox(2, nameLabel, detailRow);
         HBox.setHgrow(infoBox, Priority.ALWAYS);
@@ -94,33 +90,22 @@ public class CreatureCard extends VBox {
 
         getChildren().add(summary);
 
-        // Wiring
-        minusBtn.setOnAction(e -> {
-            if (slot.count > 1) {
-                slot.count--;
-                countLabel.setText(String.valueOf(slot.count));
-                onCountChanged.run();
-            }
-        });
-        plusBtn.setOnAction(e -> {
-            if (slot.count < EncounterGenerator.MAX_CREATURES_PER_SLOT) {
-                slot.count++;
-                countLabel.setText(String.valueOf(slot.count));
-                onCountChanged.run();
-            }
-        });
+        // Wiring — count mutation and bounds checking are handled by the owner (EncounterRosterPane)
+        minusBtn.setOnAction(e -> onDecrement.run());
+        plusBtn.setOnAction(e -> onIncrement.run());
         removeBtn.setOnAction(e -> onRemove.run());
     }
 
     private void fireStatBlockRequest() {
-        if (onRequestStatBlock != null) onRequestStatBlock.accept(slot.creature.Id);
-    }
-
-    public void refreshCount() {
-        countLabel.setText(String.valueOf(slot.count));
+        if (onRequestStatBlock != null) onRequestStatBlock.accept(creature.Id);
     }
 
     public void setOnRequestStatBlock(Consumer<Long> callback) {
         this.onRequestStatBlock = callback;
+    }
+
+    /** Updates the displayed count label to the given value. */
+    public void updateCount(int count) {
+        countLabel.setText(String.valueOf(count));
     }
 }
