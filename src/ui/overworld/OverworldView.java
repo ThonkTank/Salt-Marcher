@@ -36,4 +36,9 @@ public class OverworldView implements AppView {
             mapLoaded = true;
         }
     }
+
+    @Override
+    public void onHide() {
+        mapLoaded = false;
+    }
 }

@@ -2,9 +2,13 @@ package ui.components;
 
 import entities.HexTile;
 import javafx.beans.value.ChangeListener;
+import javafx.geometry.Point2D;
+import javafx.scene.Cursor;
 import javafx.scene.Group;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
 
@@ -50,10 +54,18 @@ public class HexGridPane extends Pane {
     private boolean paintMode = false;
     private Polygon selectedPolygon = null;
 
+    // Party token
+    private static final double TOKEN_RADIUS = 14.0;
+    private StackPane partyToken;
+    private Long partyTileId;
+    private boolean draggingToken = false;
+    private double tokenDragOffsetX, tokenDragOffsetY;
+
     private Consumer<HexTile> onTileClicked;
     private Consumer<HexTile> onTileHovered;
     private Consumer<HexTile> onTileDragPainted;
     private Runnable onPaintStrokeFinished;
+    private Consumer<HexTile> onPartyTokenMoved;
 
     public HexGridPane() {
         Rectangle clip = new Rectangle();
@@ -98,18 +110,46 @@ public class HexGridPane extends Pane {
             if (tile.TileId != null) tilePolygons.put(tile.TileId, hex);
         }
         hexGroup.getChildren().addAll(polygons);
+
+        // Re-add party token on top after reload
+        if (partyToken != null && partyTileId != null) {
+            hexGroup.getChildren().add(partyToken);
+            positionTokenById(partyTileId);
+        }
+
         centerOnTiles(tiles);
     }
 
     // -------------------------------------------------------------------------
     // Public API
 
-    public void setOnTileClicked(Consumer<HexTile> cb)      { onTileClicked = cb; }
-    public void setOnTileHovered(Consumer<HexTile> cb)     { onTileHovered = cb; }
-    public void setOnTileDragPainted(Consumer<HexTile> cb)   { onTileDragPainted = cb; }
+    public void setOnTileClicked(Consumer<HexTile> cb)        { onTileClicked = cb; }
+    public void setOnTileHovered(Consumer<HexTile> cb)      { onTileHovered = cb; }
+    public void setOnTileDragPainted(Consumer<HexTile> cb)  { onTileDragPainted = cb; }
     public void setOnPaintStrokeFinished(Runnable cb)       { onPaintStrokeFinished = cb; }
+    public void setOnPartyTokenMoved(Consumer<HexTile> cb)  { onPartyTokenMoved = cb; }
     public void setReadOnly(boolean readOnly)               { this.readOnly = readOnly; }
     public void setPaintMode(boolean paintMode)             { this.paintMode = paintMode; }
+
+    /**
+     * Shows or moves the party token to the given tile. Pass null to remove.
+     * Creates the token lazily on first call.
+     */
+    public void setPartyToken(Long tileId) {
+        if (tileId == null) {
+            if (partyToken != null) hexGroup.getChildren().remove(partyToken);
+            partyTileId = null;
+            return;
+        }
+        partyTileId = tileId;
+        if (partyToken == null) {
+            partyToken = buildPartyToken();
+        }
+        if (!hexGroup.getChildren().contains(partyToken)) {
+            hexGroup.getChildren().add(partyToken);
+        }
+        positionTokenById(tileId);
+    }
 
     /** Highlights the given tile as selected (clears previous selection). ID-based — reload-safe. */
     public void setSelectedTile(HexTile tile) {
@@ -140,6 +180,101 @@ public class HexGridPane extends Pane {
     }
 
     // -------------------------------------------------------------------------
+    // Party token
+
+    private StackPane buildPartyToken() {
+        Circle circle = new Circle(TOKEN_RADIUS);
+        circle.getStyleClass().add("party-token-circle");
+
+        Label icon = new Label("\u2691");
+        icon.getStyleClass().add("party-token-icon");
+        icon.setMouseTransparent(true);
+
+        StackPane token = new StackPane(circle, icon);
+        token.setPrefSize(TOKEN_RADIUS * 2, TOKEN_RADIUS * 2);
+        token.setMaxSize(TOKEN_RADIUS * 2, TOKEN_RADIUS * 2);
+        token.setCursor(Cursor.HAND);
+
+        token.setOnMousePressed(e -> {
+            if (e.isPrimaryButtonDown()) {
+                Point2D local = hexGroup.sceneToLocal(e.getSceneX(), e.getSceneY());
+                tokenDragOffsetX = (token.getLayoutX() + TOKEN_RADIUS) - local.getX();
+                tokenDragOffsetY = (token.getLayoutY() + TOKEN_RADIUS) - local.getY();
+                draggingToken = true;
+                token.setCursor(Cursor.MOVE);
+                e.consume();
+            }
+        });
+
+        token.setOnMouseDragged(e -> {
+            if (draggingToken) {
+                Point2D local = hexGroup.sceneToLocal(e.getSceneX(), e.getSceneY());
+                double cx = local.getX() + tokenDragOffsetX;
+                double cy = local.getY() + tokenDragOffsetY;
+                token.setLayoutX(cx - TOKEN_RADIUS);
+                token.setLayoutY(cy - TOKEN_RADIUS);
+                e.consume();
+            }
+        });
+
+        token.setOnMouseReleased(e -> {
+            if (draggingToken) {
+                draggingToken = false;
+                token.setCursor(Cursor.HAND);
+                Point2D local = hexGroup.sceneToLocal(e.getSceneX(), e.getSceneY());
+                double dropX = local.getX() + tokenDragOffsetX;
+                double dropY = local.getY() + tokenDragOffsetY;
+                HexTile nearest = findNearestTile(dropX, dropY);
+                if (nearest != null && nearest.TileId != null) {
+                    positionToken(nearest);
+                    if (!nearest.TileId.equals(partyTileId)) {
+                        partyTileId = nearest.TileId;
+                        if (onPartyTokenMoved != null) onPartyTokenMoved.accept(nearest);
+                    }
+                } else {
+                    positionTokenById(partyTileId);
+                }
+                e.consume();
+            }
+        });
+
+        return token;
+    }
+
+    private void positionToken(HexTile tile) {
+        double cx = hexCenterX(tile.Q);
+        double cy = hexCenterY(tile.Q, tile.R);
+        partyToken.setLayoutX(cx - TOKEN_RADIUS);
+        partyToken.setLayoutY(cy - TOKEN_RADIUS);
+    }
+
+    private void positionTokenById(Long tileId) {
+        if (tileId == null) return;
+        Polygon p = tilePolygons.get(tileId);
+        if (p != null && p.getUserData() instanceof HexTile tile) {
+            positionToken(tile);
+        }
+    }
+
+    /** Finds the tile whose hex center is closest to the given point (in hexGroup local coords). */
+    private HexTile findNearestTile(double localX, double localY) {
+        HexTile nearest = null;
+        double minDist = Double.MAX_VALUE;
+        for (Polygon poly : tilePolygons.values()) {
+            if (!(poly.getUserData() instanceof HexTile tile)) continue;
+            double cx = hexCenterX(tile.Q);
+            double cy = hexCenterY(tile.Q, tile.R);
+            double dx = localX - cx, dy = localY - cy;
+            double dist = dx * dx + dy * dy;
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = tile;
+            }
+        }
+        return nearest;
+    }
+
+    // -------------------------------------------------------------------------
 
     private Polygon buildHexPolygon(HexTile tile) {
         double cx = hexCenterX(tile.Q);
@@ -157,14 +292,33 @@ public class HexGridPane extends Pane {
         if (terrainClass != null) hex.getStyleClass().add(terrainClass);
         hex.setUserData(tile);
 
-        hex.setOnMouseEntered(e -> {
-            hex.getStyleClass().add("hex-tile-hovered");
-            if (onTileHovered != null) onTileHovered.accept(tile);
+        // Start full-drag gesture so sibling hexes receive MOUSE_DRAG_ENTERED events.
+        hex.setOnDragDetected(e -> {
+            if (paintMode && !readOnly && e.isPrimaryButtonDown()) hex.startFullDrag();
+        });
+
+        // Paint the initial hex immediately on press (before any drag).
+        hex.setOnMousePressed(e -> {
             if (paintMode && e.isPrimaryButtonDown() && !readOnly && onTileDragPainted != null) {
                 onTileDragPainted.accept(tile);
             }
         });
+
+        // Hover styling (fires when NOT in a drag gesture).
+        hex.setOnMouseEntered(e -> {
+            hex.getStyleClass().add("hex-tile-hovered");
+            if (onTileHovered != null) onTileHovered.accept(tile);
+        });
         hex.setOnMouseExited(e -> hex.getStyleClass().remove("hex-tile-hovered"));
+
+        // Drag painting: fires when cursor enters this hex DURING a full-drag gesture.
+        hex.setOnMouseDragEntered(e -> {
+            hex.getStyleClass().add("hex-tile-hovered");
+            if (paintMode && !readOnly && onTileDragPainted != null) {
+                onTileDragPainted.accept(tile);
+            }
+        });
+        hex.setOnMouseDragExited(e -> hex.getStyleClass().remove("hex-tile-hovered"));
 
         // Handler always installed; readOnly checked at dispatch time so toggling works.
         hex.setOnMouseClicked(e -> {

@@ -207,6 +207,57 @@ public class HexTileRepository {
         return result;
     }
 
+    public static void updateMap(Connection conn, long mapId, String name, int radius) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE hex_maps SET name=?, radius=? WHERE map_id=?")) {
+            ps.setString(1, name);
+            ps.setInt(2, radius);
+            ps.setLong(3, mapId);
+            ps.executeUpdate();
+        }
+    }
+
+    public static void insertTilesForRadius(Connection conn, long mapId, int newRadius) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT OR IGNORE INTO hex_tiles(map_id, q, r, terrain_type, elevation, is_explored)"
+                + " VALUES(?,?,?,'grassland',0,0)")) {
+            for (int q = -newRadius; q <= newRadius; q++) {
+                int rMin = Math.max(-newRadius, -q - newRadius);
+                int rMax = Math.min(newRadius, -q + newRadius);
+                for (int r = rMin; r <= rMax; r++) {
+                    ps.setLong(1, mapId);
+                    ps.setInt(2, q);
+                    ps.setInt(3, r);
+                    ps.addBatch();
+                }
+            }
+            ps.executeBatch();
+        }
+    }
+
+    public static int deleteTilesOutsideRadius(Connection conn, long mapId, int newRadius) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM hex_tiles WHERE map_id=?"
+                + " AND (abs(q) + abs(r) + abs(q + r)) / 2 > ?")) {
+            ps.setLong(1, mapId);
+            ps.setInt(2, newRadius);
+            return ps.executeUpdate();
+        }
+    }
+
+    public static void clearPartyTileOutsideRadius(Connection conn, long mapId, int newRadius) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE campaign_state SET party_tile_id = NULL"
+                + " WHERE party_tile_id IN ("
+                + "   SELECT tile_id FROM hex_tiles WHERE map_id=?"
+                + "   AND (abs(q) + abs(r) + abs(q + r)) / 2 > ?"
+                + " )")) {
+            ps.setLong(1, mapId);
+            ps.setInt(2, newRadius);
+            ps.executeUpdate();
+        }
+    }
+
     // -------------------------------------------------------------------------
 
     private static List<HexTile> collectTiles(PreparedStatement ps) throws SQLException {

@@ -5,6 +5,9 @@ import entities.HexMap;
 import entities.HexTile;
 import javafx.concurrent.Task;
 import javafx.scene.Node;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import services.HexMapService;
 import ui.AppView;
 
@@ -27,6 +30,7 @@ public class MapEditorView implements AppView {
 
     /** Accumulates tile-ID → terrain changes during a paint stroke; flushed on mouse release. */
     private final Map<Long, String> dirtyTiles = new HashMap<>();
+    private boolean initialLoadDone = false;
 
     public MapEditorView() {
         controls = new MapEditorControls();
@@ -40,6 +44,7 @@ public class MapEditorView implements AppView {
 
         controls.setOnMapSelected(mapId -> canvas.loadMap(mapId));
         controls.setOnNewMapRequested(this::showNewMapDialog);
+        controls.setOnEditMapRequested(this::showEditMapDialog);
 
         canvas.setOnTileClicked(tile -> {
             if (controls.getActiveTool() == EditorTool.SELECT) {
@@ -94,6 +99,53 @@ public class MapEditorView implements AppView {
         Thread t = new Thread(task, "sm-save-terrain");
         t.setDaemon(true);
         t.start();
+    }
+
+    private void showEditMapDialog(HexMap map) {
+        EditMapDialog dialog = new EditMapDialog(map);
+        dialog.showAndWait().ifPresent(result -> {
+            int oldRadius = map.Radius != null ? map.Radius : 0;
+            boolean shrinking = result.radius() < oldRadius;
+
+            if (shrinking) {
+                int tilesToRemove = HexMapService.hexTileCount(oldRadius) - HexMapService.hexTileCount(result.radius());
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                        "Radius von " + oldRadius + " auf " + result.radius() + " verkleinern?\n"
+                        + tilesToRemove + " Felder werden unwiderruflich gel\u00f6scht.\n"
+                        + "Falls die Gruppe auf einem dieser Felder steht, wird ihre Position zur\u00fcckgesetzt.",
+                        ButtonType.CANCEL, ButtonType.OK);
+                confirm.setHeaderText("Kartenverkleinerung best\u00e4tigen");
+                Button cancelBtn = (Button) confirm.getDialogPane().lookupButton(ButtonType.CANCEL);
+                cancelBtn.setDefaultButton(true);
+                Button okBtn = (Button) confirm.getDialogPane().lookupButton(ButtonType.OK);
+                okBtn.setDefaultButton(false);
+
+                var choice = confirm.showAndWait();
+                if (choice.isEmpty() || choice.get() != ButtonType.OK) return;
+            }
+
+            Task<Void> task = new Task<>() {
+                @Override protected Void call() throws Exception {
+                    try (Connection c = DatabaseManager.getConnection()) {
+                        HexMapService.updateMap(c, map.MapId, result.name(), oldRadius, result.radius());
+                    }
+                    return null;
+                }
+            };
+            task.setOnSucceeded(e ->
+                loadMapListAsync(maps -> {
+                    controls.selectMap(map.MapId);
+                    canvas.loadMap(map.MapId);
+                }));
+            task.setOnFailed(e -> {
+                String msg = task.getException().getMessage();
+                System.err.println("MapEditorView.editMap(): " + msg);
+                new Alert(Alert.AlertType.ERROR, "Fehler beim Speichern: " + msg).showAndWait();
+            });
+            Thread t = new Thread(task, "sm-edit-map");
+            t.setDaemon(true);
+            t.start();
+        });
     }
 
     /** Loads all maps into the controls combo box, then loads the first map (or opens dialog if none). */
@@ -158,6 +210,9 @@ public class MapEditorView implements AppView {
 
     @Override
     public void onShow() {
-        loadMapList();
+        if (!initialLoadDone) {
+            loadMapList();
+            initialLoadDone = true;
+        }
     }
 }

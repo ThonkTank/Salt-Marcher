@@ -1,5 +1,6 @@
 package ui.overworld;
 
+import entities.HexTile;
 import javafx.scene.layout.StackPane;
 import services.HexMapService;
 import ui.components.HexGridPane;
@@ -16,11 +17,26 @@ public class HexMapPane extends StackPane {
         hexGrid.prefWidthProperty().bind(widthProperty());
         hexGrid.prefHeightProperty().bind(heightProperty());
         getChildren().add(hexGrid);
+
+        hexGrid.setOnPartyTokenMoved(tile ->
+                HexMapService.updatePartyTileAsync(tile.TileId));
     }
 
     public void loadFirstMap() {
-        HexMapService.loadFirstMapAsync(
-                hexGrid::loadTiles,
+        HexMapService.loadFirstMapWithPartyAsync(
+                (tiles, partyTileId) -> {
+                    hexGrid.loadTiles(tiles);
+                    Long tokenTileId = partyTileId;
+                    if (tokenTileId == null && !tiles.isEmpty()) {
+                        tokenTileId = tiles.stream()
+                                .filter(t -> t.Q == 0 && t.R == 0)
+                                .findFirst()
+                                .map(t -> t.TileId)
+                                .orElse(tiles.get(0).TileId);
+                        HexMapService.updatePartyTileAsync(tokenTileId);
+                    }
+                    hexGrid.setPartyToken(tokenTileId);
+                },
                 ex -> System.err.println("HexMapPane.loadFirstMap(): " + ex.getMessage()));
     }
 

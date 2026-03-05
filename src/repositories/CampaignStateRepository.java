@@ -54,6 +54,15 @@ public class CampaignStateRepository {
         }
     }
 
+    /** Updates only the party_tile_id column without touching other campaign state fields. */
+    public static void updatePartyTile(Connection conn, long tileId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE campaign_state SET party_tile_id=? WHERE campaign_id=1")) {
+            ps.setLong(1, tileId);
+            ps.executeUpdate();
+        }
+    }
+
     /** @throws IllegalArgumentException if days is not positive */
     public static void advanceDay(Connection conn, int days) {
         if (days <= 0) throw new IllegalArgumentException("advanceDay(): days must be positive: " + days);

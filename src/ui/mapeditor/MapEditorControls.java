@@ -23,6 +23,7 @@ public class MapEditorControls extends HBox {
     private Consumer<EditorTool> onToolChanged;
     private Consumer<Long> onMapSelected;
     private Runnable onNewMapRequested;
+    private Consumer<HexMap> onEditMapRequested;
 
     private final ComboBox<HexMap> mapCombo = new ComboBox<>();
     private boolean updatingMapCombo = false;
@@ -54,6 +55,16 @@ public class MapEditorControls extends HBox {
         newMapBtn.setAccessibleText("Neue Karte");
         newMapBtn.setOnAction(e -> { if (onNewMapRequested != null) onNewMapRequested.run(); });
 
+        Button editMapBtn = new Button("\u2699 Bearb.");
+        editMapBtn.getStyleClass().addAll("button", "compact");
+        editMapBtn.setTooltip(new Tooltip("Karte bearbeiten"));
+        editMapBtn.setAccessibleText("Karte bearbeiten");
+        editMapBtn.setOnAction(e -> {
+            HexMap sel = mapCombo.getValue();
+            if (sel != null && onEditMapRequested != null) onEditMapRequested.accept(sel);
+        });
+        editMapBtn.disableProperty().bind(mapCombo.valueProperty().isNull());
+
         // -- Separator --
         Region sep = new Region();
         sep.getStyleClass().add("toolbar-divider");
@@ -80,7 +91,7 @@ public class MapEditorControls extends HBox {
             if (onToolChanged != null) onToolChanged.accept(activeTool);
         });
 
-        getChildren().addAll(mapCombo, newMapBtn, sep, selectBtn, brushBtn);
+        getChildren().addAll(mapCombo, newMapBtn, editMapBtn, sep, selectBtn, brushBtn);
     }
 
     /** Populates the map combo box. Does not fire onMapSelected. */
@@ -111,4 +122,5 @@ public class MapEditorControls extends HBox {
     public void setOnToolChanged(Consumer<EditorTool> cb)   { onToolChanged = cb; }
     public void setOnMapSelected(Consumer<Long> cb)         { onMapSelected = cb; }
     public void setOnNewMapRequested(Runnable cb)            { onNewMapRequested = cb; }
+    public void setOnEditMapRequested(Consumer<HexMap> cb)  { onEditMapRequested = cb; }
 }

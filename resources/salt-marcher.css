@@ -16,6 +16,7 @@
     -sm-medium: #ffb62a;
     -sm-hard:      #d56c19;  /* graphical fills (bars) */
     -sm-hard-text: #e8843a;  /* text labels — lighter for contrast on dark bg (~4.6:1) */
+    -sm-warning:   #e8843a;  /* reuses hard-text tone for warning labels */
     -sm-deadly: #e53935;
     -sm-deadly-text: #f26866;  /* text labels — lighter for contrast on dark bg (~4.6:1 on bg-card) */
 
@@ -98,6 +99,9 @@
 .text-muted {
     -fx-text-fill: -sm-text-muted;
     -fx-font-size: 11px;
+}
+.text-warning {
+    -fx-text-fill: -sm-warning;
 }
 .difficulty-easy   { -fx-text-fill: -sm-easy; }
 .difficulty-medium { -fx-text-fill: -sm-medium; }
@@ -902,6 +906,18 @@
 
 .hex-tile-hovered  { -fx-stroke: -sm-text-secondary; -fx-stroke-width: 2; }
 .hex-tile-selected { -fx-stroke: -sm-accent;         -fx-stroke-width: 2.5; }
+
+/* ---- Party Token ---- */
+.party-token-circle {
+    -fx-fill: -sm-accent;
+    -fx-stroke: -sm-accent-hover;
+    -fx-stroke-width: 1.5;
+}
+.party-token-icon {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
 
 /* ---- Map Editor Tool Panel ---- */
 .map-editor-toolbar {
