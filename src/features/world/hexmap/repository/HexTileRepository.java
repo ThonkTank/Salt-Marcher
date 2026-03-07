@@ -35,6 +35,9 @@ public final class HexTileRepository {
             }
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (!keys.next()) {
+                    throw new SQLException("No generated key returned for hex_maps insert");
+                }
                 return keys.getLong(1);
             }
         }
@@ -60,6 +63,9 @@ public final class HexTileRepository {
             ps.setString(9, tile.notes());
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (!keys.next()) {
+                    throw new SQLException("No generated key returned for hex_tiles insert");
+                }
                 return keys.getLong(1);
             }
         }
