@@ -1,4 +1,4 @@
-package features.encounter.service.application;
+package features.encounter.service;
 
 import features.creaturecatalog.model.Creature;
 import features.creaturecatalog.service.CreatureService;
@@ -8,7 +8,7 @@ import features.encounter.model.EncounterSlot;
 import features.encounter.model.MonsterRole;
 import features.encounter.model.MonsterRoleParser;
 import features.encounter.service.combat.CombatSetup;
-import features.encounter.service.rules.XpCalculator;
+import features.gamerules.service.XpCalculator;
 import features.encounter.service.generation.EncounterGenerator;
 import features.encountertable.model.EncounterTable;
 import features.encountertable.service.EncounterTableService;
@@ -22,7 +22,7 @@ import java.util.Map;
  * Workflow facade for encounter UI use-cases.
  * Encapsulates party/table loading, candidate selection, generation, and combat setup.
  */
-public class EncounterApplicationService {
+public class EncounterService {
 
     public record PartySnapshot(List<PlayerCharacter> party, int avgLevel) {}
     public enum TableLoadStatus { SUCCESS, STORAGE_ERROR }

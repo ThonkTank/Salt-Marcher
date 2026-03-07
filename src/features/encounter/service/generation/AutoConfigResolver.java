@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import features.encounter.service.rules.XpCalculator;
+import features.gamerules.service.XpCalculator;
 
 final class AutoConfigResolver {
 

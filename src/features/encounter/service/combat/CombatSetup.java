@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import features.encounter.service.EncounterCreatureMapper;
-import features.encounter.service.rules.XpCalculator;
+import features.gamerules.service.XpCalculator;
 
 public final class CombatSetup {
     private CombatSetup() {}

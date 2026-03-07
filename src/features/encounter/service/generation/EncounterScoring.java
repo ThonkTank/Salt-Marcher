@@ -6,19 +6,14 @@ import features.encounter.model.Combatant;
 import features.creaturecatalog.model.Creature;
 import features.encounter.model.EncounterSlot;
 import features.encounter.model.MonsterCombatant;
-import features.encounter.service.rules.XpCalculator;
+import features.gamerules.service.XpCalculator;
 
-public class EncounterScoring {
+public final class EncounterScoring {
     private EncounterScoring() {}
 
     /** Source: DMG p.83, encounter multipliers. */
     public static double getMultiplierForGroupSize(int groupSize) {
-        if (groupSize <= 1)  return 1.0;
-        if (groupSize == 2)  return 1.5;
-        if (groupSize <= 6)  return 2.0;
-        if (groupSize <= 10) return 2.5;
-        if (groupSize <= 14) return 3.0;
-        return 4.0;
+        return XpCalculator.getMultiplierForGroupSize(groupSize);
     }
 
     public static int adjustedXp(List<EncounterSlot> slots) {

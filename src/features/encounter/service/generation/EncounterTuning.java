@@ -2,12 +2,11 @@ package features.encounter.service.generation;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 import features.encounter.service.rules.EncounterRules;
-import features.encounter.service.rules.XpCalculator;
+import features.gamerules.service.XpCalculator;
 
-public class EncounterTuning {
+public final class EncounterTuning {
     private EncounterTuning() {}
 
     public static final int MAX_CREATURES_PER_SLOT = EncounterRules.MAX_CREATURES_PER_SLOT;
@@ -116,16 +115,26 @@ public class EncounterTuning {
     }
 
     public static int resolveLevel(int level) {
-        if (level < 1) return ThreadLocalRandom.current().nextInt(1, 6);
+        return resolveLevel(level, null);
+    }
+
+    public static int resolveLevel(int level, GenerationContext context) {
+        GenerationContext ctx = context != null ? context : GenerationContext.defaultContext();
+        if (level < 1) return ctx.nextInt(1, 6);
         return Math.max(1, Math.min(5, level));
     }
 
     public static double resolveAmountValue(double amountValue) {
+        return resolveAmountValue(amountValue, null);
+    }
+
+    public static double resolveAmountValue(double amountValue, GenerationContext context) {
+        GenerationContext ctx = context != null ? context : GenerationContext.defaultContext();
         if (amountValue >= 1.0) return Math.max(1.0, Math.min(5.0, amountValue));
         // Auto: continuous curve with a stronger low-count bias.
         // Compared to the old [1,4] mode=2 setup this makes high target counts much rarer.
         double a = 1.0, b = 3.6, c = 1.5;
-        double u = ThreadLocalRandom.current().nextDouble();
+        double u = ctx.nextDouble();
         double fc = (c - a) / (b - a);
         if (u < fc) {
             return a + Math.sqrt(u * (b - a) * (c - a));
@@ -134,7 +143,12 @@ public class EncounterTuning {
     }
 
     public static double resolveDifficulty(double difficultyValue) {
-        if (difficultyValue < 0) return ThreadLocalRandom.current().nextDouble();
+        return resolveDifficulty(difficultyValue, null);
+    }
+
+    public static double resolveDifficulty(double difficultyValue, GenerationContext context) {
+        GenerationContext ctx = context != null ? context : GenerationContext.defaultContext();
+        if (difficultyValue < 0) return ctx.nextDouble();
         return Math.max(0.0, Math.min(1.0, difficultyValue));
     }
 

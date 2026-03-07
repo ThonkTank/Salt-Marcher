@@ -1,4 +1,4 @@
-package features.encounter.service.rules;
+package features.gamerules.service;
 
 import java.util.List;
 import java.util.Map;
@@ -212,11 +212,11 @@ public final class XpCalculator {
     }
 
     private static int applyGroupMultiplier(int totalRaw, int totalCount) {
-        return (int) (totalRaw * multiplierForGroupSize(totalCount));
+        return (int) (totalRaw * getMultiplierForGroupSize(totalCount));
     }
 
     // Source: DMG p.83, encounter multipliers.
-    private static double multiplierForGroupSize(int groupSize) {
+    public static double getMultiplierForGroupSize(int groupSize) {
         if (groupSize <= 1) return 1.0;
         if (groupSize == 2) return 1.5;
         if (groupSize <= 6) return 2.0;

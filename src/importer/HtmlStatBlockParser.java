@@ -1,7 +1,7 @@
 package importer;
 
-import entities.Creature;
-import entities.ChallengeRating;
+import features.creaturecatalog.model.Creature;
+import features.creaturecatalog.model.ChallengeRating;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -105,7 +105,7 @@ public class HtmlStatBlockParser {
         parseHabitat(doc, c);
 
         // Fallback: ProficiencyBonus aus CR
-        if (c.ProficiencyBonus == 0 && c.CR != null) c.ProficiencyBonus = services.DndMath.proficiencyBonus(c.CR);
+        if (c.ProficiencyBonus == 0 && c.CR != null) c.ProficiencyBonus = features.gamerules.service.DndMath.proficiencyBonus(c.CR);
         // Fallback: InitiativeBonus aus DEX für old format
         if (!isNew && c.InitiativeBonus == 0 && c.Dex != 0)
             c.InitiativeBonus = abilityModifier(c.Dex);
@@ -492,20 +492,30 @@ public class HtmlStatBlockParser {
             // <p> Element
             Element strong = el.selectFirst("strong");
             if (strong == null) {
-                // Intro-Satz der Legendary Actions: Count extrahieren
-                if (inLegendaryActions && c.LegendaryActionCount == 0) {
-                    Matcher m = LEGENDARY_COUNT_PATTERN.matcher(el.text());
-                    if (m.find()) {
-                        String g = m.group(1) != null ? m.group(1) : m.group(2);
-                        c.LegendaryActionCount = parseInt(g, 3);
-                    } else {
-                        // D&D 5e default legendary action budget is 3.
-                        // LEGENDARY_COUNT_PATTERN captures both common sentence forms:
-                        //   "can take 3 legendary actions" and "Uses: 3"
-                        c.LegendaryActionCount = 3;
-                        System.err.println("HtmlStatBlockParser.parseAllSections(): "
-                                + "Legendary action count not found for '" + c.Name + "', defaulting to 3");
+                if (inLegendaryActions) {
+                    // Intro-Satz der Legendary Actions: Count extrahieren
+                    if (c.LegendaryActionCount == 0) {
+                        Matcher m = LEGENDARY_COUNT_PATTERN.matcher(el.text());
+                        if (m.find()) {
+                            String g = m.group(1) != null ? m.group(1) : m.group(2);
+                            c.LegendaryActionCount = parseInt(g, 3);
+                        } else {
+                            // D&D 5e default legendary action budget is 3.
+                            // LEGENDARY_COUNT_PATTERN captures both common sentence forms:
+                            //   "can take 3 legendary actions" and "Uses: 3"
+                            c.LegendaryActionCount = 3;
+                            System.err.println("HtmlStatBlockParser.parseAllSections(): "
+                                    + "Legendary action count not found for '" + c.Name + "', defaulting to 3");
+                        }
                     }
+                    continue;
+                }
+                // Kein <strong>: Zauber-Subliste im alten Format (z.B. "Cantrips (at will): fire bolt, ...")
+                // oder Fußnote — an letzten Eintrag anhängen.
+                if (!currentList.isEmpty()) {
+                    Creature.Action last = currentList.get(currentList.size() - 1);
+                    currentList.set(currentList.size() - 1,
+                            new Creature.Action(last.Name, last.Description + "\n" + el.text().trim()));
                 }
                 continue;
             }
@@ -515,10 +525,17 @@ public class HtmlStatBlockParser {
                 ? nameWithPeriod.substring(0, nameWithPeriod.length() - 1)
                 : nameWithPeriod;
 
-            // Sub-Listen (z.B. "At Will:", "1/Day Each:") überspringen
-            if (name.endsWith(":")) continue;
-
             String fullText = el.text().trim();
+
+            // Sub-Listen (z.B. "Cantrips (at will):", "1st level (4 slots):") an letzten Eintrag anhängen
+            if (name.endsWith(":")) {
+                if (!currentList.isEmpty()) {
+                    Creature.Action last = currentList.get(currentList.size() - 1);
+                    currentList.set(currentList.size() - 1,
+                            new Creature.Action(last.Name, last.Description + "\n" + fullText));
+                }
+                continue;
+            }
             String description = fullText.length() > nameWithPeriod.length()
                 ? fullText.substring(nameWithPeriod.length()).trim()
                 : "";
