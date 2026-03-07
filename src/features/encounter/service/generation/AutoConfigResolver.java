@@ -143,7 +143,7 @@ final class AutoConfigResolver {
             }
             return new AutoConfig(
                     difficulty != null ? difficulty : EncounterTuning.resolveDifficulty(-1, ctx),
-                    amount != null ? amount : EncounterTuning.resolveAmountValue(-1, ctx),
+                    amount != null ? amount : EncounterTuning.resolveAmountValue(-1, partySize, ctx),
                     groups != null ? groups : EncounterTuning.resolveLevel(-1, ctx),
                     balance != null ? balance : EncounterTuning.resolveLevel(-1, ctx));
         }
@@ -162,7 +162,7 @@ final class AutoConfigResolver {
         }
         if (idx == 1) {
             List<Double> candidates = request.amountValue() < 0
-                    ? shuffledAmountCandidates(ctx)
+                    ? shuffledAmountCandidates(partySize, ctx)
                     : List.of(amount);
             return tryCandidates(
                     candidates,
@@ -237,19 +237,24 @@ final class AutoConfigResolver {
         return out;
     }
 
-    private static List<Double> shuffledAmountCandidates(GenerationContext context) {
-        List<Double> out = new ArrayList<>();
-        for (int i = 0; i < 10; i++) out.add(EncounterTuning.resolveAmountValue(-1, context));
-        out.add(1.0);
-        out.add(1.5);
-        out.add(2.0);
-        out.add(2.5);
-        out.add(3.0);
-        out.add(3.5);
-        out.add(4.0);
-        out.add(5.0);
-        shuffleInPlace(out, context);
-        return out;
+    private static List<Double> shuffledAmountCandidates(int partySize, GenerationContext context) {
+        List<Double> primary = new ArrayList<>();
+        for (int i = 0; i < 20; i++) {
+            primary.add(EncounterTuning.resolveAmountValue(-1, partySize, context));
+        }
+        EncounterTuning.AutoAmountAnchorProfile profile = EncounterTuning.autoAmountAnchorProfile(partySize);
+        List<Double> coreAnchors = new ArrayList<>(profile.coreAnchors());
+        List<Double> outliers = new ArrayList<>(profile.outliers());
+
+        shuffleInPlace(primary, context);
+        shuffleInPlace(coreAnchors, context);
+        shuffleInPlace(outliers, context);
+
+        List<Double> combined = new ArrayList<>(primary.size() + coreAnchors.size() + outliers.size());
+        combined.addAll(primary);
+        combined.addAll(coreAnchors);
+        combined.addAll(outliers);
+        return combined;
     }
 
     private static <T> void shuffleInPlace(List<T> list, GenerationContext context) {

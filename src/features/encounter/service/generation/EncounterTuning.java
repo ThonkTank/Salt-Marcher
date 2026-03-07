@@ -14,8 +14,20 @@ public final class EncounterTuning {
     public static final int MAX_CREATURES_PER_SLOT = EncounterRules.MAX_CREATURES_PER_SLOT;
     public static final int MAX_TURNS_PER_ROUND = EncounterRules.MAX_TURNS_PER_ROUND;
     static final int START_TOLERANCE_PCT = 5;
+    private static final int AUTO_AMOUNT_HIGH_TAIL_MAX_MULTIPLIER = 8;
+    private static final double AUTO_AMOUNT_CURVE_CORE_WEIGHT = 0.86;
+    private static final double AUTO_AMOUNT_CURVE_CORE_MODE_MULTIPLIER = 1.30;
+    private static final double AUTO_AMOUNT_CURVE_CORE_SIGMA = 0.75;
+    private static final double AUTO_AMOUNT_CURVE_TAIL_MODE_MULTIPLIER = 4.20;
+    private static final double AUTO_AMOUNT_CURVE_TAIL_SIGMA = 1.00;
+    /**
+     * Fallback party size used only by legacy overloads that do not receive an explicit party size.
+     * Prefer {@link #resolveAmountValue(double, int, GenerationContext)} at new call sites.
+     */
+    public static final int DEFAULT_PARTY_SIZE_FOR_AUTO_AMOUNT = 4;
 
     public record SlotBounds(int minSlots, int maxSlots) {}
+    record AutoAmountAnchorProfile(List<Double> coreAnchors, List<Double> outliers) {}
 
     /**
      * Computes the XP ceiling for candidate pre-fetching.
@@ -130,18 +142,97 @@ public final class EncounterTuning {
         return resolveAmountValue(amountValue, null);
     }
 
+    /**
+     * Legacy fallback overload that applies {@link #DEFAULT_PARTY_SIZE_FOR_AUTO_AMOUNT} when
+     * auto amount is requested ({@code amountValue < 1.0}).
+     * Prefer {@link #resolveAmountValue(double, int, GenerationContext)} at call sites where party size is known.
+     */
     public static double resolveAmountValue(double amountValue, GenerationContext context) {
+        return resolveAmountValue(amountValue, DEFAULT_PARTY_SIZE_FOR_AUTO_AMOUNT, context);
+    }
+
+    public static double resolveAmountValue(double amountValue, int partySize, GenerationContext context) {
         GenerationContext ctx = context != null ? context : GenerationContext.defaultContext();
         if (amountValue >= 1.0) return Math.max(1.0, Math.min(5.0, amountValue));
-        // Auto: continuous curve with a stronger low-count bias.
-        // Compared to the old [1,4] mode=2 setup this makes high target counts much rarer.
-        double a = 1.0, b = 3.6, c = 1.5;
-        double u = ctx.nextDouble();
-        double fc = (c - a) / (b - a);
-        if (u < fc) {
-            return a + Math.sqrt(u * (b - a) * (c - a));
+        int targetCreatures = resolveAutoTargetCreatures(partySize, ctx);
+        return amountValueForTargetCreatures(targetCreatures, partySize);
+    }
+
+    private static int resolveAutoTargetCreatures(int partySize, GenerationContext context) {
+        int p = Math.max(1, partySize);
+        int min = 1;
+        int max = p * AUTO_AMOUNT_HIGH_TAIL_MAX_MULTIPLIER;
+        return sampleCurvedAmountTarget(min, max, p, context);
+    }
+
+    private static int sampleCurvedAmountTarget(int min, int max, int partySize, GenerationContext context) {
+        if (max <= min) return min;
+        int count = max - min + 1;
+        double[] cdf = new double[count];
+        double total = 0.0;
+        for (int i = 0; i < count; i++) {
+            int creatures = min + i;
+            total += curvedAmountWeight(creatures, partySize);
+            cdf[i] = total;
         }
-        return b - Math.sqrt((1.0 - u) * (b - a) * (b - c));
+        if (total <= 0.0) return min;
+        double pick = context.nextDouble() * total;
+        for (int i = 0; i < count; i++) {
+            if (pick <= cdf[i]) return min + i;
+        }
+        return max;
+    }
+
+    private static double curvedAmountWeight(int creatures, int partySize) {
+        double multiplier = creatures / (double) Math.max(1, partySize);
+        double core = gaussian(multiplier, AUTO_AMOUNT_CURVE_CORE_MODE_MULTIPLIER, AUTO_AMOUNT_CURVE_CORE_SIGMA);
+        double tail = gaussian(multiplier, AUTO_AMOUNT_CURVE_TAIL_MODE_MULTIPLIER, AUTO_AMOUNT_CURVE_TAIL_SIGMA);
+        return AUTO_AMOUNT_CURVE_CORE_WEIGHT * core + (1.0 - AUTO_AMOUNT_CURVE_CORE_WEIGHT) * tail;
+    }
+
+    private static double gaussian(double x, double mean, double sigma) {
+        if (sigma <= 0.0) return x == mean ? 1.0 : 0.0;
+        double z = (x - mean) / sigma;
+        return Math.exp(-0.5 * z * z);
+    }
+
+    static double amountValueForTargetCreatures(int targetCreatures, int partySize) {
+        int p = Math.max(1, partySize);
+        int target = Math.max(1, targetCreatures);
+        if (target <= 1) return 1.0;
+        double twoP = p * 2.0;
+        if (target <= twoP) {
+            double amount = 1.0 + (target - 1.0) / (twoP - 1.0);
+            return Math.max(1.0, Math.min(5.0, amount));
+        }
+        double fourP = p * 4.0;
+        if (target <= fourP) {
+            double amount = 2.0 + (target - twoP) / (2.0 * p);
+            return Math.max(1.0, Math.min(5.0, amount));
+        }
+        double mult = target / (double) p;
+        double amount = 3.0 + (mult - 4.0) / 4.0;
+        return Math.max(1.0, Math.min(5.0, amount));
+    }
+
+    static AutoAmountAnchorProfile autoAmountAnchorProfile(int partySize) {
+        int p = Math.max(1, partySize);
+        List<Double> coreAnchors = new ArrayList<>();
+        coreAnchors.add(amountValueForTargetCreatures((int) Math.ceil(p * 0.5), p));
+        coreAnchors.add(amountValueForTargetCreatures((int) Math.ceil(p * 0.75), p));
+        coreAnchors.add(amountValueForTargetCreatures(p, p));
+        coreAnchors.add(amountValueForTargetCreatures((int) Math.ceil(p * 1.25), p));
+        coreAnchors.add(amountValueForTargetCreatures((int) Math.ceil(p * 1.5), p));
+        coreAnchors.add(amountValueForTargetCreatures(p * 2, p));
+
+        List<Double> outliers = new ArrayList<>();
+        outliers.add(amountValueForTargetCreatures((int) Math.ceil(p * 0.33), p));
+        outliers.add(amountValueForTargetCreatures((int) Math.ceil(p * 2.5), p));
+        outliers.add(amountValueForTargetCreatures(p * 3, p));
+        outliers.add(3.5);
+        outliers.add(4.0);
+        outliers.add(5.0);
+        return new AutoAmountAnchorProfile(coreAnchors, outliers);
     }
 
     public static double resolveDifficulty(double difficultyValue) {
