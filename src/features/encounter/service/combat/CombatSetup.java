@@ -14,16 +14,10 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import features.encounter.service.EncounterCreatureMapper;
-import features.encounter.service.generation.EncounterGenerator;
+import features.encounter.service.rules.XpCalculator;
 
-public class CombatSetup {
+public final class CombatSetup {
     private CombatSetup() {}
-
-    /**
-     * Minimum size for runtime mob grouping in CombatTrackerPane.
-     * CombatSetup itself always creates individual monster combatants.
-     */
-    public static final int MOB_MIN_SIZE = 4;
 
     private static int rollInitiative(EncounterCreatureSnapshot c) {
         return ThreadLocalRandom.current().nextInt(1, 21) + c.getInitiativeBonus();
@@ -86,10 +80,7 @@ public class CombatSetup {
         }
 
         // Nach Initiative sortieren — Gleichstand: PCs gewinnen
-        combatants.sort((a, b) -> {
-            if (b.getInitiative() != a.getInitiative()) return b.getInitiative() - a.getInitiative();
-            return Boolean.compare(b instanceof PcCombatant, a instanceof PcCombatant);
-        });
+        combatants.sort(CombatOrdering.BY_INITIATIVE_PC_FIRST);
 
         return combatants;
     }
@@ -97,8 +88,7 @@ public class CombatSetup {
     /** Compute difficulty stats from alive monster combatants. */
     public static XpCalculator.DifficultyStats computeLiveStats(
             List<Combatant> combatants, int partySize, int avgLevel) {
-        return XpCalculator.computeStats(
-                EncounterGenerator.adjustedXpFromCombatants(combatants), partySize, avgLevel);
+        return XpCalculator.computeStatsFromCombatants(combatants, partySize, avgLevel);
     }
 
     /**

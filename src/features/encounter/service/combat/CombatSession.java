@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * Canonical combat state and rules. UI is expected to render this state and wire user events
@@ -29,6 +30,27 @@ public class CombatSession {
 
     /** Archived monster state used for inactive rows and restore actions. */
     public record InactiveEnemy(long id, MonsterCombatant combatant, EnemyStatus status) {}
+
+    /** Stable pointer for preserving current/focus turn across re-grouping. */
+    private record TurnRef(PcCombatant pc, MonsterCombatant monster) {
+        static TurnRef forPc(PcCombatant pc) {
+            return pc == null ? null : new TurnRef(pc, null);
+        }
+
+        static TurnRef forMonster(MonsterCombatant monster) {
+            return monster == null ? null : new TurnRef(null, monster);
+        }
+    }
+
+    private record TurnSelection(TurnRef active, TurnRef focused) {
+        static TurnSelection none() {
+            return new TurnSelection(null, null);
+        }
+
+        static TurnSelection same(TurnRef ref) {
+            return new TurnSelection(ref, ref);
+        }
+    }
 
     private final List<Combatant> combatants = new ArrayList<>();
     private final List<CombatTurnGrouper.GroupedTurnEntry> turnEntries = new ArrayList<>();
@@ -96,10 +118,11 @@ public class CombatSession {
     }
 
     public void addReinforcement(Creature creature) {
-        MonsterCombatant mc = CombatSetup.createReinforcement(creature);
-        mc.rename(CombatSetup.uniqueNameFor(creature, combatants));
-        combatants.add(mc);
-        normalizeMonsterGrouping(mc, mc);
+        mutateAndNormalize(() -> {
+            MonsterCombatant mc = CombatSetup.createReinforcement(creature);
+            mc.rename(CombatSetup.uniqueNameFor(creature, combatants));
+            combatants.add(mc);
+        });
     }
 
     /**
@@ -129,66 +152,70 @@ public class CombatSession {
 
     public void setInitiative(CombatTurnGrouper.GroupedTurnEntry entry, int initiative) {
         if (entry == null) return;
-        if (entry.kind() == CombatTurnGrouper.GroupedTurnKind.PC && entry.pc() != null) {
-            entry.pc().setInitiative(initiative);
-        } else {
-            for (MonsterCombatant mc : entry.monsters()) mc.setInitiative(initiative);
-        }
-        Object ref = referenceFor(entry);
-        normalizeMonsterGrouping(ref, ref);
+        TurnRef ref = referenceFor(entry);
+        mutateAndNormalize(ref, ref, () -> {
+            if (entry.kind() == CombatTurnGrouper.GroupedTurnKind.PC && entry.pc() != null) {
+                entry.pc().setInitiative(initiative);
+            } else {
+                for (MonsterCombatant mc : entry.monsters()) mc.setInitiative(initiative);
+            }
+        });
     }
 
     public void healMonster(MonsterCombatant mc, int heal) {
         if (mc == null || heal <= 0) return;
-        mc.heal(heal);
-        normalizeMonsterGrouping(mc, mc);
+        mutateAndNormalize(TurnRef.forMonster(mc), TurnRef.forMonster(mc), () -> mc.heal(heal));
     }
 
     public void applyDamageToMonster(MonsterCombatant mc, int damage) {
         if (mc == null || damage <= 0) return;
-        mc.applyDamage(damage);
-
-        Object activeRef = null;
-        Object focusedRef = null;
-        if (mc.getCurrentHp() <= 0) {
-            activeRef = preferredReferenceAfterRemoval(currentTurn, List.of(mc));
-            focusedRef = preferredReferenceAfterRemoval(focusedIndex, List.of(mc));
-            archiveMonster(mc, EnemyStatus.DEAD);
-            combatants.remove(mc);
-        }
-        normalizeMonsterGrouping(activeRef, focusedRef);
+        mutateAndNormalize(() -> {
+            boolean dies = mc.getCurrentHp() - damage <= 0;
+            TurnSelection selection = dies
+                    ? new TurnSelection(
+                    preferredReferenceAfterRemoval(currentTurn, List.of(mc)),
+                    preferredReferenceAfterRemoval(focusedIndex, List.of(mc)))
+                    : TurnSelection.same(TurnRef.forMonster(mc));
+            mc.applyDamage(damage);
+            if (mc.getCurrentHp() <= 0) {
+                archiveMonster(mc, EnemyStatus.DEAD);
+                combatants.remove(mc);
+            }
+            return selection;
+        });
     }
 
     /** Applies mob damage with spillover over sorted member HP (lowest HP first). */
     public void applyDamageToMob(CombatTurnGrouper.GroupedTurnEntry mobEntry, int damage) {
         if (mobEntry == null || damage <= 0 || mobEntry.monsters().isEmpty()) return;
+        mutateAndNormalize(() -> {
+            List<MonsterCombatant> members = new ArrayList<>(mobEntry.monsters());
+            List<MonsterCombatant> removedMembers = new ArrayList<>();
+            int remainingDamage = damage;
+            members.sort(Comparator.comparingInt(MonsterCombatant::getCurrentHp));
 
-        List<MonsterCombatant> members = new ArrayList<>(mobEntry.monsters());
-        List<MonsterCombatant> removedMembers = new ArrayList<>();
-        members.sort(Comparator.comparingInt(MonsterCombatant::getCurrentHp));
-
-        for (MonsterCombatant mc : members) {
-            if (damage <= 0) break;
-            if (!mc.isAlive()) continue;
-            if (damage >= mc.getCurrentHp()) {
-                damage -= mc.getCurrentHp();
-                mc.setCurrentHp(0);
-                archiveMonster(mc, EnemyStatus.DEAD);
-                combatants.remove(mc);
-                removedMembers.add(mc);
-            } else {
-                mc.applyDamage(damage);
-                damage = 0;
+            for (MonsterCombatant mc : members) {
+                if (remainingDamage <= 0) break;
+                if (!mc.isAlive()) continue;
+                if (remainingDamage >= mc.getCurrentHp()) {
+                    remainingDamage -= mc.getCurrentHp();
+                    mc.setCurrentHp(0);
+                    archiveMonster(mc, EnemyStatus.DEAD);
+                    combatants.remove(mc);
+                    removedMembers.add(mc);
+                } else {
+                    mc.applyDamage(remainingDamage);
+                    remainingDamage = 0;
+                }
             }
-        }
-
-        Object activeRef = null;
-        Object focusedRef = null;
-        if (!removedMembers.isEmpty()) {
-            activeRef = preferredReferenceAfterRemoval(currentTurn, removedMembers);
-            focusedRef = preferredReferenceAfterRemoval(focusedIndex, removedMembers);
-        }
-        normalizeMonsterGrouping(activeRef, focusedRef);
+            if (!removedMembers.isEmpty()) {
+                return new TurnSelection(
+                        preferredReferenceAfterRemoval(currentTurn, removedMembers),
+                        preferredReferenceAfterRemoval(focusedIndex, removedMembers)
+                );
+            }
+            return TurnSelection.none();
+        });
     }
 
     public void healMobFront(CombatTurnGrouper.GroupedTurnEntry mobEntry, int heal) {
@@ -196,46 +223,49 @@ public class CombatSession {
         List<MonsterCombatant> members = new ArrayList<>(mobEntry.monsters());
         members.sort(Comparator.comparingInt(MonsterCombatant::getCurrentHp));
         MonsterCombatant front = members.get(0);
-        front.heal(heal);
-        normalizeMonsterGrouping(front, front);
+        mutateAndNormalize(TurnRef.forMonster(front), TurnRef.forMonster(front), () -> front.heal(heal));
     }
 
     public void duplicateCombatant(MonsterCombatant original) {
         if (original == null || original.getCreatureRef() == null) return;
-        EncounterCreatureSnapshot source = original.getCreatureRef();
-        MonsterCombatant clone = CombatSetup.createReinforcement(source);
-        clone.rename(CombatSetup.uniqueNameFor(source, combatants));
-        combatants.add(clone);
-        normalizeMonsterGrouping(clone, clone);
+        mutateAndNormalize(() -> {
+            EncounterCreatureSnapshot source = original.getCreatureRef();
+            MonsterCombatant clone = CombatSetup.createReinforcement(source);
+            clone.rename(CombatSetup.uniqueNameFor(source, combatants));
+            combatants.add(clone);
+        });
     }
 
     public void removeMonster(MonsterCombatant mc) {
         if (mc == null) return;
-        Object activeRef = preferredReferenceAfterRemoval(currentTurn, List.of(mc));
-        Object focusedRef = preferredReferenceAfterRemoval(focusedIndex, List.of(mc));
-        archiveMonster(mc, EnemyStatus.REMOVED);
-        combatants.remove(mc);
-        normalizeMonsterGrouping(activeRef, focusedRef);
+        TurnRef activeRef = preferredReferenceAfterRemoval(currentTurn, List.of(mc));
+        TurnRef focusedRef = preferredReferenceAfterRemoval(focusedIndex, List.of(mc));
+        mutateAndNormalize(activeRef, focusedRef, () -> {
+            archiveMonster(mc, EnemyStatus.REMOVED);
+            combatants.remove(mc);
+        });
     }
 
     public void removeMob(CombatTurnGrouper.GroupedTurnEntry entry) {
         if (entry == null || entry.monsters().isEmpty()) return;
         List<MonsterCombatant> removedMembers = new ArrayList<>(entry.monsters());
-        Object activeRef = preferredReferenceAfterRemoval(currentTurn, removedMembers);
-        Object focusedRef = preferredReferenceAfterRemoval(focusedIndex, removedMembers);
-        for (MonsterCombatant mc : entry.monsters()) {
-            archiveMonster(mc, EnemyStatus.REMOVED);
-            combatants.remove(mc);
-        }
-        normalizeMonsterGrouping(activeRef, focusedRef);
+        TurnRef activeRef = preferredReferenceAfterRemoval(currentTurn, removedMembers);
+        TurnRef focusedRef = preferredReferenceAfterRemoval(focusedIndex, removedMembers);
+        mutateAndNormalize(activeRef, focusedRef, () -> {
+            for (MonsterCombatant mc : entry.monsters()) {
+                archiveMonster(mc, EnemyStatus.REMOVED);
+                combatants.remove(mc);
+            }
+        });
     }
 
     public void restoreRemoved(InactiveEnemy removed) {
         if (removed == null || removed.status() != EnemyStatus.REMOVED) return;
-        inactiveEnemies.removeIf(ie -> ie.id() == removed.id());
         MonsterCombatant restored = copyCombatant(removed.combatant());
-        combatants.add(restored);
-        normalizeMonsterGrouping(restored, restored);
+        mutateAndNormalize(TurnRef.forMonster(restored), TurnRef.forMonster(restored), () -> {
+            inactiveEnemies.removeIf(ie -> ie.id() == removed.id());
+            combatants.add(restored);
+        });
     }
 
     private void archiveMonster(MonsterCombatant mc, EnemyStatus status) {
@@ -263,7 +293,26 @@ public class CombatSession {
         return false;
     }
 
-    private void normalizeMonsterGrouping(Object activeRef, Object focusedRef) {
+    private void mutateAndNormalize(Runnable mutation) {
+        mutateAndNormalize(() -> {
+            mutation.run();
+            return TurnSelection.none();
+        });
+    }
+
+    private void mutateAndNormalize(TurnRef activeRef, TurnRef focusedRef, Runnable mutation) {
+        mutateAndNormalize(() -> {
+            mutation.run();
+            return new TurnSelection(activeRef, focusedRef);
+        });
+    }
+
+    private void mutateAndNormalize(Supplier<TurnSelection> mutation) {
+        TurnSelection selection = mutation.get();
+        normalizeMonsterGrouping(selection.active(), selection.focused());
+    }
+
+    private void normalizeMonsterGrouping(TurnRef activeRef, TurnRef focusedRef) {
         if (activeRef == null && !turnEntries.isEmpty() && currentTurn < turnEntries.size()) {
             activeRef = referenceFor(turnEntries.get(currentTurn));
         }
@@ -271,10 +320,7 @@ public class CombatSession {
             focusedRef = referenceFor(turnEntries.get(focusedIndex));
         }
 
-        combatants.sort((a, b) -> {
-            if (b.getInitiative() != a.getInitiative()) return b.getInitiative() - a.getInitiative();
-            return Boolean.compare(b instanceof PcCombatant, a instanceof PcCombatant);
-        });
+        combatants.sort(CombatOrdering.BY_INITIATIVE_PC_FIRST);
 
         rebuildTurnEntries();
 
@@ -284,29 +330,29 @@ public class CombatSession {
         if (focusedIndex < 0) focusedIndex = Math.min(currentTurn, Math.max(0, turnEntries.size() - 1));
     }
 
-    private int resolveTurnIndex(Object ref) {
+    private int resolveTurnIndex(TurnRef ref) {
         if (turnEntries.isEmpty()) return 0;
         if (ref == null) return 0;
 
         for (int i = 0; i < turnEntries.size(); i++) {
             CombatTurnGrouper.GroupedTurnEntry t = turnEntries.get(i);
-            if (t.kind() == CombatTurnGrouper.GroupedTurnKind.PC && t.pc() == ref) return i;
-            if ((t.kind() == CombatTurnGrouper.GroupedTurnKind.MONSTER
-                    || t.kind() == CombatTurnGrouper.GroupedTurnKind.MOB) && t.monsters().contains(ref)) {
-                return i;
-            }
+            if (ref.pc() != null && t.kind() == CombatTurnGrouper.GroupedTurnKind.PC && t.pc() == ref.pc()) return i;
+            if (ref.monster() != null
+                    && (t.kind() == CombatTurnGrouper.GroupedTurnKind.MONSTER
+                    || t.kind() == CombatTurnGrouper.GroupedTurnKind.MOB)
+                    && t.monsters().contains(ref.monster())) return i;
         }
         return 0;
     }
 
-    private Object referenceFor(CombatTurnGrouper.GroupedTurnEntry entry) {
+    private TurnRef referenceFor(CombatTurnGrouper.GroupedTurnEntry entry) {
         if (entry == null) return null;
-        if (entry.kind() == CombatTurnGrouper.GroupedTurnKind.PC) return entry.pc();
-        if (!entry.monsters().isEmpty()) return entry.monsters().get(0);
+        if (entry.kind() == CombatTurnGrouper.GroupedTurnKind.PC) return TurnRef.forPc(entry.pc());
+        if (!entry.monsters().isEmpty()) return TurnRef.forMonster(entry.monsters().get(0));
         return null;
     }
 
-    private Object preferredReferenceAfterRemoval(int preferredIndex, List<MonsterCombatant> removedMembers) {
+    private TurnRef preferredReferenceAfterRemoval(int preferredIndex, List<MonsterCombatant> removedMembers) {
         if (turnEntries.isEmpty()) return null;
 
         Set<MonsterCombatant> removed = new HashSet<>(removedMembers);
@@ -314,17 +360,17 @@ public class CombatSession {
 
         for (int offset = 0; offset < turnEntries.size(); offset++) {
             CombatTurnGrouper.GroupedTurnEntry entry = turnEntries.get((start + offset) % turnEntries.size());
-            Object ref = survivingReferenceFor(entry, removed);
+            TurnRef ref = survivingReferenceFor(entry, removed);
             if (ref != null) return ref;
         }
         return null;
     }
 
-    private Object survivingReferenceFor(CombatTurnGrouper.GroupedTurnEntry entry, Set<MonsterCombatant> removedMembers) {
+    private TurnRef survivingReferenceFor(CombatTurnGrouper.GroupedTurnEntry entry, Set<MonsterCombatant> removedMembers) {
         if (entry == null) return null;
-        if (entry.kind() == CombatTurnGrouper.GroupedTurnKind.PC) return entry.pc();
+        if (entry.kind() == CombatTurnGrouper.GroupedTurnKind.PC) return TurnRef.forPc(entry.pc());
         for (MonsterCombatant monster : entry.monsters()) {
-            if (!removedMembers.contains(monster)) return monster;
+            if (!removedMembers.contains(monster)) return TurnRef.forMonster(monster);
         }
         return null;
     }
