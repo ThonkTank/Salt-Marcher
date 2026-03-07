@@ -146,7 +146,7 @@ public final class CreatureService {
                     CreatureSearchRepository.getDistinctSubtypes(conn),
                     CreatureSearchRepository.getDistinctBiomes(conn),
                     CreatureSearchRepository.getDistinctAlignments(conn),
-                    XpCalculator.getCrValues()
+                    XpCalculator.crValues()
             ));
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "CreatureService.loadFilterOptions(): DB access failed", e);

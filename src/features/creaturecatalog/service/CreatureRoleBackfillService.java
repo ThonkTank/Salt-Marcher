@@ -30,42 +30,56 @@ public final class CreatureRoleBackfillService {
         try (Connection conn = DatabaseManager.getConnection()) {
             List<Long> pending = collectPendingRoleIds(conn);
             if (pending.isEmpty()) return new BackfillSummary(0, 0, 0);
-
-            boolean initialAutoCommit = conn.getAutoCommit();
-            int updated = 0;
-            int failed = 0;
-            conn.setAutoCommit(false);
-            try {
-                for (Long creatureId : pending) {
-                    try {
-                        Creature creature = CreatureRepository.getCreature(conn, creatureId);
-                        if (creature == null) {
-                            failed++;
-                            continue;
-                        }
-                        MonsterRole role = creature.CR != null
-                                ? RoleClassifier.classify(creature)
-                                : MonsterRole.BRUTE;
-                        CreatureRepository.updateRole(conn, creatureId, role.name());
-                        updated++;
-                    } catch (RuntimeException | SQLException e) {
-                        failed++;
-                        LOGGER.log(Level.WARNING,
-                                "CreatureRoleBackfillService: role backfill failed for id=" + creatureId, e);
-                    }
-                }
-                conn.commit();
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(initialAutoCommit);
-            }
-            return new BackfillSummary(pending.size(), updated, failed);
+            return runRoleUpdate(conn, pending, "role backfill");
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "CreatureRoleBackfillService.backfillMissingRoles(): DB access failed", e);
             return new BackfillSummary(0, 0, 1);
         }
+    }
+
+    public static BackfillSummary recomputeAllRoles() {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            List<Long> all = collectAllRoleIds(conn);
+            if (all.isEmpty()) return new BackfillSummary(0, 0, 0);
+            return runRoleUpdate(conn, all, "role recompute");
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "CreatureRoleBackfillService.recomputeAllRoles(): DB access failed", e);
+            return new BackfillSummary(0, 0, 1);
+        }
+    }
+
+    private static BackfillSummary runRoleUpdate(Connection conn, List<Long> ids, String operationName) throws SQLException {
+        boolean initialAutoCommit = conn.getAutoCommit();
+        int updated = 0;
+        int failed = 0;
+        conn.setAutoCommit(false);
+        try {
+            for (Long creatureId : ids) {
+                try {
+                    Creature creature = CreatureRepository.getCreature(conn, creatureId);
+                    if (creature == null) {
+                        failed++;
+                        continue;
+                    }
+                    MonsterRole role = creature.CR != null
+                            ? RoleClassifier.classify(creature)
+                            : MonsterRole.BRUTE;
+                    CreatureRepository.updateRole(conn, creatureId, role.name());
+                    updated++;
+                } catch (RuntimeException | SQLException e) {
+                    failed++;
+                    LOGGER.log(Level.WARNING,
+                            "CreatureRoleBackfillService: " + operationName + " failed for id=" + creatureId, e);
+                }
+            }
+            conn.commit();
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        } finally {
+            conn.setAutoCommit(initialAutoCommit);
+        }
+        return new BackfillSummary(ids.size(), updated, failed);
     }
 
     private static List<Long> collectPendingRoleIds(Connection conn) throws SQLException {
@@ -76,5 +90,13 @@ public final class CreatureRoleBackfillService {
             }
         }
         return pending;
+    }
+
+    private static List<Long> collectAllRoleIds(Connection conn) throws SQLException {
+        List<Long> all = new ArrayList<>();
+        for (CreatureRepository.RoleValue roleValue : CreatureRepository.getRoleValues(conn)) {
+            all.add(roleValue.id());
+        }
+        return all;
     }
 }

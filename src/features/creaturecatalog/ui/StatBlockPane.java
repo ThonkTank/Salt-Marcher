@@ -14,8 +14,8 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.application.Platform;
 import features.creaturecatalog.service.CreatureService;
-import ui.UiAsyncExecutor;
-import ui.UiErrorReporter;
+import ui.async.UiAsyncTasks;
+import ui.async.UiErrorReporter;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -180,26 +180,26 @@ public class StatBlockPane extends VBox {
                 return CreatureService.getCreature(creatureId);
             }
         };
-        task.setOnSucceeded(e -> {
-            CreatureService.ServiceResult<Creature> result = task.getValue();
-            Creature c = result.value();
-            if (c != null) {
-                creatureCache.put(creatureId, c);
-                container.getChildren().setAll(new StatBlockPane(c));
-            } else if (result.isOk()) {
-                container.getChildren().setAll(new Label("Creature not found."));
-            } else if (!result.isOk()) {
-                UiErrorReporter.reportBackgroundFailure(
-                        "StatBlockPane.loadAsync(id=" + creatureId + ")",
-                        new IllegalStateException("CreatureService status: " + result.status()));
-                container.getChildren().setAll(new Label("Failed to load."));
-            }
-        });
-        task.setOnFailed(e -> {
-            UiErrorReporter.reportBackgroundFailure("StatBlockPane.loadAsync(id=" + creatureId + ")", task.getException());
-            container.getChildren().setAll(new Label("Failed to load."));
-        });
-        UiAsyncExecutor.submit(task);
+        UiAsyncTasks.submit(
+                task,
+                result -> {
+                    Creature c = result.value();
+                    if (c != null) {
+                        creatureCache.put(creatureId, c);
+                        container.getChildren().setAll(new StatBlockPane(c));
+                    } else if (result.isOk()) {
+                        container.getChildren().setAll(new Label("Creature not found."));
+                    } else if (!result.isOk()) {
+                        UiErrorReporter.reportBackgroundFailure(
+                                "StatBlockPane.loadAsync(id=" + creatureId + ")",
+                                new IllegalStateException("CreatureService status: " + result.status()));
+                        container.getChildren().setAll(new Label("Failed to load."));
+                    }
+                },
+                throwable -> {
+                    UiErrorReporter.reportBackgroundFailure("StatBlockPane.loadAsync(id=" + creatureId + ")", throwable);
+                    container.getChildren().setAll(new Label("Failed to load."));
+                });
         return task;
     }
 
