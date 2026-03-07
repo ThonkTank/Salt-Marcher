@@ -40,7 +40,7 @@ public final class CreatureRepository {
         for (int start = 0; start < creatures.size(); start += IN_CLAUSE_BATCH_SIZE) {
             int end = Math.min(start + IN_CLAUSE_BATCH_SIZE, creatures.size());
             List<Creature> batch = creatures.subList(start, end);
-            String sql = "SELECT creature_id, action_type, name, description FROM creature_actions WHERE creature_id IN ("
+            String sql = "SELECT creature_id, action_type, name, description, to_hit_bonus FROM creature_actions WHERE creature_id IN ("
                     + placeholders(batch.size()) + ")";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 int idx = 1;
@@ -49,7 +49,12 @@ public final class CreatureRepository {
                     while (ar.next()) {
                         Creature c = byId.get(ar.getLong("creature_id"));
                         if (c == null) continue;
-                        Creature.Action action = new Creature.Action(ar.getString("name"), ar.getString("description"));
+                        Number toHitRaw = (Number) ar.getObject("to_hit_bonus");
+                        Integer toHitBonus = toHitRaw != null ? toHitRaw.intValue() : null;
+                        Creature.Action action = new Creature.Action(
+                                ar.getString("name"),
+                                ar.getString("description"),
+                                toHitBonus);
                         String type = ar.getString("action_type");
                         switch (type) {
                             case "trait":            c.Traits.add(action);           break;
@@ -101,7 +106,7 @@ public final class CreatureRepository {
             + "source_slug=excluded.source_slug, slug_key=excluded.slug_key";
 
     public static final String ACTION_INSERT_SQL =
-            "INSERT INTO creature_actions(creature_id, action_type, name, description) VALUES(?,?,?,?)";
+            "INSERT INTO creature_actions(creature_id, action_type, name, description, to_hit_bonus) VALUES(?,?,?,?,?)";
 
     // -------------------------------------------------------------------------
     // Save
@@ -241,6 +246,7 @@ public final class CreatureRepository {
             ps.setString(2, type);
             ps.setString(3, a.Name);
             ps.setString(4, a.Description);
+            ps.setObject(5, a.ToHitBonus);
             ps.addBatch();
         }
     }

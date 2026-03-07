@@ -2,6 +2,7 @@ package features.encounter.ui;
 
 import features.encounter.service.EncounterService;
 import ui.shell.SceneRegistry;
+import ui.components.statblock.StatBlockRequest;
 
 import java.util.function.Consumer;
 
@@ -12,6 +13,6 @@ import java.util.function.Consumer;
 public record EncounterViewCallbacks(
         Runnable onRefreshToolbar,
         Runnable onRefreshPanels,
-        Consumer<Long> onRequestStatBlock,
+        Consumer<StatBlockRequest> onRequestStatBlock,
         SceneRegistry sceneRegistry,
         EncounterService encounterService) {}

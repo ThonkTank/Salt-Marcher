@@ -5,6 +5,7 @@ import features.creaturepicker.ui.MonsterListPane;
 import features.encountertable.model.EncounterTable;
 import ui.shell.AppView;
 import ui.shell.SceneHandle;
+import ui.components.statblock.StatBlockRequest;
 import javafx.scene.Node;
 import features.encounter.ui.builder.EncounterControls;
 import features.encounter.ui.builder.EncounterRosterPane;
@@ -40,16 +41,16 @@ public class EncounterView implements AppView {
                 workflow.onSceneChanged(oldScene, newScene));
 
         monsterList.setOnAddCreature(workflow::onAddCreature);
-        monsterList.setOnRequestStatBlock(callbacks.onRequestStatBlock());
+        monsterList.setOnRequestStatBlock(id -> callbacks.onRequestStatBlock().accept(StatBlockRequest.forCreature(id)));
 
         rosterPane.setOnGenerate(workflow::onGenerate);
         rosterPane.setOnStartCombat(workflow::onRequestCombat);
         rosterPane.setOnRosterChanged(workflow::onRosterChanged);
-        rosterPane.setOnRequestStatBlock(callbacks.onRequestStatBlock());
+        rosterPane.setOnRequestStatBlock(id -> callbacks.onRequestStatBlock().accept(StatBlockRequest.forCreature(id)));
     }
 
     /** Optional: omitting disables auto-show (without toggle) for stat blocks during combat. */
-    public void setOnEnsureStatBlock(Consumer<Long> callback) {
+    public void setOnEnsureStatBlock(Consumer<StatBlockRequest> callback) {
         workflow.setOnEnsureStatBlock(callback);
     }
 

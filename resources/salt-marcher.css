@@ -552,6 +552,27 @@
     -fx-font-style: italic;
     -fx-padding: 16;
 }
+.inspector-mob-footer {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+.inspector-mob-ac-field {
+    -fx-padding: 2 6 2 6;
+}
+.stat-block-action-name-label {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-size: 13px;
+}
+.stat-block-action-mob-hits {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 12px;
+}
+.stat-block-action-count {
+    -fx-pref-width: 72;
+}
 
 /* ---- Detail panel (inline stat block below table) ---- */
 .detail-panel {

@@ -70,9 +70,16 @@ public class Creature {
     public static class Action {
         public final String Name;
         public final String Description;
+        public final Integer ToHitBonus;
+
         public Action(String name, String description) {
+            this(name, description, null);
+        }
+
+        public Action(String name, String description, Integer toHitBonus) {
             this.Name = name;
             this.Description = description;
+            this.ToHitBonus = toHitBonus;
         }
     }
 

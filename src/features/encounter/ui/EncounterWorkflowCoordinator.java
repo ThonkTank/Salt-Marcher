@@ -23,6 +23,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyEvent;
 import ui.shell.SceneHandle;
+import ui.components.statblock.StatBlockRequest;
 import ui.async.UiAsyncExecutor;
 import ui.async.UiErrorReporter;
 import features.creaturepicker.ui.MonsterListPane;
@@ -39,8 +40,8 @@ final class EncounterWorkflowCoordinator {
 
     private final Runnable onRefreshToolbar;
     private final Runnable onRefreshPanels;
-    private final Consumer<Long> onRequestStatBlock;
-    private Consumer<Long> onEnsureStatBlock;
+    private final Consumer<StatBlockRequest> onRequestStatBlock;
+    private Consumer<StatBlockRequest> onEnsureStatBlock;
 
     private final SceneHandle encounterScene;
     private final MonsterListPane monsterList;
@@ -78,7 +79,7 @@ final class EncounterWorkflowCoordinator {
         this.rosterPane = Objects.requireNonNull(rosterPane, "rosterPane");
     }
 
-    void setOnEnsureStatBlock(Consumer<Long> callback) {
+    void setOnEnsureStatBlock(Consumer<StatBlockRequest> callback) {
         this.onEnsureStatBlock = callback;
     }
 
@@ -196,7 +197,6 @@ final class EncounterWorkflowCoordinator {
 
         Encounter encounter = rosterPane.buildEncounter();
         List<PlayerCharacter> partyCopy = List.copyOf(partyCache);
-
         InitiativePane initiativePane = new InitiativePane(partyCopy, encounter.slots());
         initiativePane.setOnCancel(() -> encounterScene.setContent(rosterPane));
         initiativePane.setOnConfirm(result -> {
@@ -293,16 +293,8 @@ final class EncounterWorkflowCoordinator {
 
     private void startCombat(List<Combatant> combatants) {
         trackerPane = new CombatTrackerPane();
-        trackerPane.setOnRequestStatBlock(id -> {
-            if (onRequestStatBlock != null) {
-                onRequestStatBlock.accept(id);
-            }
-        });
-        trackerPane.setOnEnsureStatBlock(id -> {
-            if (onEnsureStatBlock != null) {
-                onEnsureStatBlock.accept(id);
-            }
-        });
+        trackerPane.setOnRequestStatBlock(onRequestStatBlock);
+        trackerPane.setOnEnsureStatBlock(onEnsureStatBlock);
         trackerPane.setOnCombatStateChanged(this::updateCombatStatus);
         trackerPane.setOnEndCombat(this::onEndCombat);
         trackerPane.startCombat(combatants);

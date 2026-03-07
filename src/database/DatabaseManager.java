@@ -134,7 +134,8 @@ public final class DatabaseManager {
                     + "creature_id INTEGER NOT NULL REFERENCES creatures(id) ON DELETE CASCADE,"
                     + "action_type TEXT    NOT NULL DEFAULT 'action',"
                     + "name        TEXT,"
-                    + "description TEXT"
+                    + "description TEXT,"
+                    + "to_hit_bonus INTEGER"
                     + ")");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS items ("
@@ -294,6 +295,7 @@ public final class DatabaseManager {
                     + "ON encounter_tables(lower(trim(name)))");
 
             ensureCreatureImportColumns(conn);
+            ensureCreatureActionColumns(conn);
             ensureItemTagCompatibility(conn);
 
             // Seed default time-of-day phases (German UI strings)
@@ -375,6 +377,14 @@ public final class DatabaseManager {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_source_slug ON creatures(source_slug)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_slug_key ON creatures(slug_key)");
+        }
+    }
+
+    private static void ensureCreatureActionColumns(Connection conn) throws SQLException {
+        if (!columnExists(conn, "creature_actions", "to_hit_bonus")) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE creature_actions ADD COLUMN to_hit_bonus INTEGER");
+            }
         }
     }
 

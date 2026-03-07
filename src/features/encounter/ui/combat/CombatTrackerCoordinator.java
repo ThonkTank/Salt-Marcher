@@ -5,6 +5,7 @@ import features.encounter.model.Combatant;
 import features.encounter.model.MonsterCombatant;
 import features.encounter.service.combat.CombatSession;
 import features.encounter.service.combat.CombatTurnGrouper;
+import ui.components.statblock.StatBlockRequest;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -16,14 +17,14 @@ final class CombatTrackerCoordinator {
     private CombatTrackerRenderState state = CombatTrackerRenderState.empty();
 
     private Consumer<CombatTrackerRenderState> onRenderStateChanged;
-    private Consumer<Long> onEnsureStatBlock;
+    private Consumer<StatBlockRequest> onEnsureStatBlock;
     private Runnable onCombatStateChanged;
 
     void setOnRenderStateChanged(Consumer<CombatTrackerRenderState> callback) {
         this.onRenderStateChanged = callback;
     }
 
-    void setOnEnsureStatBlock(Consumer<Long> callback) {
+    void setOnEnsureStatBlock(Consumer<StatBlockRequest> callback) {
         this.onEnsureStatBlock = callback;
     }
 
@@ -40,9 +41,14 @@ final class CombatTrackerCoordinator {
     }
 
     void nextTurn() {
-        Long activeCreatureId = dispatchCommand(session::nextTurn);
-        if (activeCreatureId != null && onEnsureStatBlock != null) {
-            onEnsureStatBlock.accept(activeCreatureId);
+        dispatchCommand(session::nextTurn);
+        if (onEnsureStatBlock == null) return;
+        List<CombatTurnGrouper.GroupedTurnEntry> entries = state.turnEntries();
+        int currentTurnIndex = state.currentTurnIndex();
+        if (entries.isEmpty() || currentTurnIndex < 0 || currentTurnIndex >= entries.size()) return;
+        CombatTurnGrouper.GroupedTurnEntry active = entries.get(currentTurnIndex);
+        if (active.creatureId() != null) {
+            onEnsureStatBlock.accept(CombatStatBlockRequestMapper.fromTurnEntry(active));
         }
     }
 

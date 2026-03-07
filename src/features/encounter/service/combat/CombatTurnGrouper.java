@@ -57,7 +57,8 @@ public final class CombatTurnGrouper {
                     continue;
                 }
                 Long creatureId = mc.getCreatureRef() != null ? mc.getCreatureRef().getId() : null;
-                aliveBuckets.computeIfAbsent(new MobBucketKey(creatureId, mc.getInitiative()), k -> new ArrayList<>()).add(mc);
+                MobBucketKey key = new MobBucketKey(creatureId, mc.getInitiative());
+                aliveBuckets.computeIfAbsent(key, k -> new ArrayList<>()).add(mc);
             }
         }
 

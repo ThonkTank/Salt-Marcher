@@ -2,6 +2,7 @@ package importer;
 
 import features.creaturecatalog.model.Creature;
 import features.creaturecatalog.model.ChallengeRating;
+import features.creaturecatalog.service.ActionToHitParser;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
@@ -520,7 +521,7 @@ public final class HtmlStatBlockParser {
                 if (!currentList.isEmpty()) {
                     Creature.Action last = currentList.get(currentList.size() - 1);
                     currentList.set(currentList.size() - 1,
-                            new Creature.Action(last.Name, last.Description + "\n" + el.text().trim()));
+                            actionWithDerivedToHit(last.Name, last.Description + "\n" + el.text().trim()));
                 }
                 continue;
             }
@@ -537,7 +538,7 @@ public final class HtmlStatBlockParser {
                 if (!currentList.isEmpty()) {
                     Creature.Action last = currentList.get(currentList.size() - 1);
                     currentList.set(currentList.size() - 1,
-                            new Creature.Action(last.Name, last.Description + "\n" + fullText));
+                            actionWithDerivedToHit(last.Name, last.Description + "\n" + fullText));
                 }
                 continue;
             }
@@ -545,8 +546,12 @@ public final class HtmlStatBlockParser {
                 ? fullText.substring(nameWithPeriod.length()).trim()
                 : "";
 
-            currentList.add(new Creature.Action(name, description));
+            currentList.add(actionWithDerivedToHit(name, description));
         }
+    }
+
+    private static Creature.Action actionWithDerivedToHit(String name, String description) {
+        return new Creature.Action(name, description, ActionToHitParser.extractToHitBonus(description));
     }
 
     // -------------------------------------------------------------------------

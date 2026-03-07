@@ -28,6 +28,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
+import ui.components.statblock.StatBlockRequest;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -56,7 +57,7 @@ public class CombatTrackerPane extends VBox {
     private final Button nextTurnButton;
     private final HBox endButtonContainer;
 
-    private Consumer<Long> onRequestStatBlock;
+    private Consumer<StatBlockRequest> onRequestStatBlock;
     private Runnable onEndCombat;
     private Button endCombatButton;
 
@@ -101,8 +102,8 @@ public class CombatTrackerPane extends VBox {
         });
     }
 
-    public void setOnRequestStatBlock(Consumer<Long> callback) { this.onRequestStatBlock = callback; }
-    public void setOnEnsureStatBlock(Consumer<Long> callback) {
+    public void setOnRequestStatBlock(Consumer<StatBlockRequest> callback) { this.onRequestStatBlock = callback; }
+    public void setOnEnsureStatBlock(Consumer<StatBlockRequest> callback) {
         coordinator.setOnEnsureStatBlock(callback);
     }
     public void setOnCombatStateChanged(Runnable callback) {
@@ -132,7 +133,7 @@ public class CombatTrackerPane extends VBox {
             case ENTER -> {
                 CombatTurnGrouper.GroupedTurnEntry entry = state.focusedEntry();
                 if (entry != null && entry.creatureId() != null && onRequestStatBlock != null) {
-                    onRequestStatBlock.accept(entry.creatureId());
+                    onRequestStatBlock.accept(CombatStatBlockRequestMapper.fromTurnEntry(entry));
                 }
             }
             case F2 -> {
@@ -217,7 +218,8 @@ public class CombatTrackerPane extends VBox {
         List<CombatTurnGrouper.GroupedTurnEntry> turnEntries = state.turnEntries();
         cardList.getChildren().clear();
         for (int i = 0; i < turnEntries.size(); i++) {
-            CardResult cr = buildCard(turnEntries.get(i), i);
+            CombatTurnGrouper.GroupedTurnEntry entry = turnEntries.get(i);
+            CardResult cr = buildCard(entry, i);
             cr.card().setFocusTraversable(true);
             cardList.getChildren().add(cr.card());
         }
@@ -344,7 +346,7 @@ public class CombatTrackerPane extends VBox {
             nameBtn.getStyleClass().addAll("combat-name", "creature-link");
             nameBtn.setAccessibleText("Stat Block \u00f6ffnen: " + entry.name());
             nameBtn.setOnAction(e -> {
-                if (onRequestStatBlock != null) onRequestStatBlock.accept(cid);
+                if (onRequestStatBlock != null) onRequestStatBlock.accept(CombatStatBlockRequestMapper.fromTurnEntry(entry));
             });
             nameNode = nameBtn;
         } else {

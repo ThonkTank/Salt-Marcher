@@ -9,6 +9,7 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
+import ui.components.statblock.StatBlockRequest;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -192,10 +193,10 @@ public class AppShell extends BorderPane {
         }
     }
 
-    /** Returns a method reference to {@link InspectorPane#showStatBlock(Long)} — toggles the stat block panel. */
-    public Consumer<Long> getShowStatBlockHandler() { return inspectorPane::showStatBlock; }
-    /** Returns a method reference to {@link InspectorPane#ensureStatBlock(Long)} — shows without toggling. */
-    public Consumer<Long> getEnsureStatBlockHandler() { return inspectorPane::ensureStatBlock; }
+    /** Returns a handler for {@link InspectorPane#showStatBlock(StatBlockRequest)} — toggles the stat block panel. */
+    public Consumer<StatBlockRequest> getShowStatBlockHandler() { return request -> inspectorPane.showStatBlock(request); }
+    /** Returns a handler for {@link InspectorPane#ensureStatBlock(StatBlockRequest)} — shows without toggling. */
+    public Consumer<StatBlockRequest> getEnsureStatBlockHandler() { return request -> inspectorPane.ensureStatBlock(request); }
     /** Returns the SceneRegistry for tab-based game-activity registration. */
     public SceneRegistry getSceneRegistry() { return scenePane; }
     /** Returns a handler for showing arbitrary content in the inspector panel. */

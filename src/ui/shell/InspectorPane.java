@@ -7,11 +7,15 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import features.creaturecatalog.ui.StatBlockPane;
+import ui.components.statblock.StatBlockRequest;
 
 /**
  * Top-right panel: shows detailed info for a selected item.
@@ -20,14 +24,16 @@ import features.creaturecatalog.ui.StatBlockPane;
  * Owned by AppShell; visible across all views.
  */
 public class InspectorPane extends VBox {
-
     private final VBox detailContent;
     private final Label detailTitle;
     private final ScrollPane detailScroll;
     private final VBox detailSection;
+    private final HBox mobFooter;
+    private final TextField mobAcField;
+    private final IntegerProperty mobTargetAc = new SimpleIntegerProperty(15);
     private final Label placeholder;
 
-    private Long displayedCreatureId = null;
+    private StatBlockRequest displayedRequest = null;
     private Task<?> pendingStatBlockTask = null;
 
     public InspectorPane() {
@@ -55,7 +61,26 @@ public class InspectorPane extends VBox {
         detailScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         VBox.setVgrow(detailScroll, Priority.ALWAYS);
 
-        detailSection = new VBox(detailHeader, detailScroll);
+        Label acLabel = new Label("Ziel-AC");
+        acLabel.getStyleClass().add("text-secondary");
+        mobAcField = new TextField("15");
+        mobAcField.setPrefWidth(72);
+        mobAcField.getStyleClass().addAll("quick-search-field", "inspector-mob-ac-field");
+        mobAcField.textProperty().addListener((obs, oldText, newText) -> {
+            try {
+                mobTargetAc.set(Integer.parseInt(newText.trim()));
+            } catch (NumberFormatException ignored) {
+                // Keep previous valid AC while input is temporarily invalid.
+            }
+        });
+        mobFooter = new HBox(8, acLabel, mobAcField);
+        mobFooter.setAlignment(Pos.CENTER_LEFT);
+        mobFooter.setPadding(new Insets(6, 8, 6, 8));
+        mobFooter.getStyleClass().add("inspector-mob-footer");
+        mobFooter.setVisible(false);
+        mobFooter.setManaged(false);
+
+        detailSection = new VBox(detailHeader, detailScroll, mobFooter);
         detailSection.getStyleClass().add("stat-block-fixed-panel");
         VBox.setVgrow(detailSection, Priority.ALWAYS);
 
@@ -71,29 +96,31 @@ public class InspectorPane extends VBox {
     }
 
     /**
-     * Show a stat block. Toggles: clicking the same creature a second time hides the panel.
-     * Use {@link #ensureStatBlock} for non-toggling display (e.g. auto-show on turn advance).
+     * Show a stat block. Toggles: selecting the same request a second time hides the panel.
      */
-    public void showStatBlock(Long creatureId) {
-        if (creatureId == null) return;
-        if (creatureId.equals(displayedCreatureId)) { hideStatBlock(); return; }
-        loadStatBlock(creatureId);
+    public void showStatBlock(StatBlockRequest request) {
+        if (request == null) return;
+        if (request.equals(displayedRequest)) { hideStatBlock(); return; }
+        loadStatBlock(request);
     }
 
     /** Show a stat block without toggling. Used by auto-show (e.g. nextTurn). */
-    public void ensureStatBlock(Long creatureId) {
-        if (creatureId == null) return;
-        if (creatureId.equals(displayedCreatureId)) return;
-        loadStatBlock(creatureId);
+    public void ensureStatBlock(StatBlockRequest request) {
+        if (request == null) return;
+        if (request.equals(displayedRequest)) return;
+        loadStatBlock(request);
     }
 
-    private void loadStatBlock(Long creatureId) {
+    private void loadStatBlock(StatBlockRequest request) {
         if (pendingStatBlockTask != null) { pendingStatBlockTask.cancel(false); pendingStatBlockTask = null; }
-        displayedCreatureId = creatureId;
+        displayedRequest = request;
+        boolean mobContext = request.mobCount() != null;
+        mobFooter.setVisible(mobContext);
+        mobFooter.setManaged(mobContext);
         detailTitle.setText("Stat Block");
         detailScroll.setVvalue(0);
         getChildren().setAll(detailSection);
-        pendingStatBlockTask = StatBlockPane.loadAsync(creatureId, detailContent);
+        pendingStatBlockTask = StatBlockPane.loadAsync(request, detailContent, mobTargetAc);
     }
 
     /**
@@ -102,10 +129,12 @@ public class InspectorPane extends VBox {
      */
     public void showContent(String title, Node content) {
         if (pendingStatBlockTask != null) { pendingStatBlockTask.cancel(false); pendingStatBlockTask = null; }
-        displayedCreatureId = null;
+        displayedRequest = null;
         detailTitle.setText(title);
         detailContent.getChildren().setAll(content);
         detailScroll.setVvalue(0);
+        mobFooter.setVisible(false);
+        mobFooter.setManaged(false);
         getChildren().setAll(detailSection);
     }
 
@@ -115,13 +144,15 @@ public class InspectorPane extends VBox {
             pendingStatBlockTask.cancel(false);
             pendingStatBlockTask = null;
         }
-        displayedCreatureId = null;
+        displayedRequest = null;
         detailContent.getChildren().clear();
+        mobFooter.setVisible(false);
+        mobFooter.setManaged(false);
         getChildren().setAll(placeholder);
     }
 
     /** Get the ID of the currently displayed stat block creature (null if none). */
     public Long getDisplayedCreatureId() {
-        return displayedCreatureId;
+        return displayedRequest != null ? displayedRequest.creatureId() : null;
     }
 }
