@@ -1,0 +1,93 @@
+package features.encounter.service.generation;
+
+import java.util.List;
+
+import features.encounter.model.Combatant;
+import features.creaturecatalog.model.Creature;
+import features.encounter.model.EncounterSlot;
+import features.encounter.model.MonsterCombatant;
+import features.encounter.service.rules.XpCalculator;
+
+public class EncounterScoring {
+    private EncounterScoring() {}
+
+    /** Source: DMG p.83, encounter multipliers. */
+    public static double getMultiplierForGroupSize(int groupSize) {
+        if (groupSize <= 1)  return 1.0;
+        if (groupSize == 2)  return 1.5;
+        if (groupSize <= 6)  return 2.0;
+        if (groupSize <= 10) return 2.5;
+        if (groupSize <= 14) return 3.0;
+        return 4.0;
+    }
+
+    public static int adjustedXp(List<EncounterSlot> slots) {
+        int totalRaw = 0;
+        int totalCount = 0;
+        for (EncounterSlot s : slots) {
+            totalRaw += s.getCreature().getXp() * s.getCount();
+            totalCount += s.getCount();
+        }
+        return applyMultiplier(totalRaw, totalCount);
+    }
+
+    /** Computes adjusted XP for a list of creatures with their counts (avoids EncounterSlot allocation). */
+    public static int adjustedXpFromCounts(List<Creature> creatures, List<Integer> counts) {
+        int totalRaw = 0;
+        int totalCount = 0;
+        for (int i = 0; i < creatures.size(); i++) {
+            totalRaw += creatures.get(i).XP * counts.get(i);
+            totalCount += counts.get(i);
+        }
+        return applyMultiplier(totalRaw, totalCount);
+    }
+
+    /** Computes adjusted XP directly from alive monster combatants, avoiding intermediate maps. */
+    public static int adjustedXpFromCombatants(List<Combatant> combatants) {
+        int totalRaw = 0;
+        int totalCount = 0;
+        for (Combatant cs : combatants) {
+            if (cs instanceof MonsterCombatant mc && mc.isAlive()) {
+                totalRaw += mc.getCreatureRef().getXp();
+                totalCount++;
+            }
+        }
+        return applyMultiplier(totalRaw, totalCount);
+    }
+
+    public static int applyMultiplier(int totalRaw, int totalCount) {
+        return (int) (totalRaw * getMultiplierForGroupSize(totalCount));
+    }
+
+    public static String classifyDifficultyByBudget(int avgLevel, int partySize, int budget) {
+        int easy = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.EASY) * Math.max(1, partySize);
+        int medium = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.MEDIUM) * Math.max(1, partySize);
+        int hard = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.HARD) * Math.max(1, partySize);
+        int deadly = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.DEADLY) * Math.max(1, partySize);
+        return XpCalculator.classifyDifficultyByXp(budget, easy, medium, hard, deadly);
+    }
+
+    public static String classifyDifficultyFromSlots(List<EncounterSlot> slots, int avgLevel, int partySize) {
+        int easy = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.EASY) * Math.max(1, partySize);
+        int medium = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.MEDIUM) * Math.max(1, partySize);
+        int hard = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.HARD) * Math.max(1, partySize);
+        int deadly = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.DEADLY) * Math.max(1, partySize);
+        int adj = adjustedXp(slots);
+        return XpCalculator.classifyDifficultyByXp(adj, easy, medium, hard, deadly);
+    }
+
+    public static String deriveShapeLabel(List<EncounterSlot> slots) {
+        if (slots.isEmpty()) return "";
+        int total = 0;
+        int maxCount = 0;
+        for (EncounterSlot s : slots) {
+            total += s.getCount();
+            maxCount = Math.max(maxCount, s.getCount());
+        }
+        if (slots.size() == 1 && total == 1) return "Einzelgegner";
+        if (slots.size() == 1) return "Einzelgruppe";
+        if (total >= 15) return "Schwarm";
+        if (maxCount >= 5) return slots.size() + " Gruppen, Mob";
+        return slots.size() + " Gruppen";
+    }
+}
