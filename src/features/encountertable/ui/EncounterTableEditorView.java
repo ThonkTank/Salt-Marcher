@@ -10,9 +10,9 @@ import javafx.scene.control.TextInputDialog;
 import features.creaturecatalog.service.CreatureService;
 import features.encountertable.service.EncounterTableNameNormalizer;
 import features.encountertable.service.EncounterTableService;
-import ui.AppView;
-import ui.UiAsyncExecutor;
-import ui.UiErrorReporter;
+import ui.shell.AppView;
+import ui.async.UiAsyncTasks;
+import ui.async.UiErrorReporter;
 
 import java.util.List;
 import java.util.Optional;
@@ -293,13 +293,14 @@ public class EncounterTableEditorView implements AppView {
         Task<T> task = new Task<>() {
             @Override protected T call() throws Exception { return work.call(); }
         };
-        if (onSuccess != null) task.setOnSucceeded(e -> onSuccess.accept(task.getValue()));
-        task.setOnFailed(e -> {
-            Throwable throwable = task.getException();
-            UiErrorReporter.reportBackgroundFailure("EncounterTableEditorView." + errorLabel + "()", throwable);
-            if (onFailure != null) onFailure.accept(throwable);
-        });
-        UiAsyncExecutor.submit(task);
+        Consumer<T> successHandler = onSuccess != null ? onSuccess : ignored -> {};
+        UiAsyncTasks.submit(
+                task,
+                successHandler,
+                throwable -> {
+                    UiErrorReporter.reportBackgroundFailure("EncounterTableEditorView." + errorLabel + "()", throwable);
+                    if (onFailure != null) onFailure.accept(throwable);
+                });
     }
 
     private void applyTableList(List<EncounterTable> tables) {

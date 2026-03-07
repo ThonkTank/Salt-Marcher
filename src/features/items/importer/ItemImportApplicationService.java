@@ -2,8 +2,8 @@ package features.items.importer;
 
 import features.items.model.Item;
 import features.items.repository.ItemRepository;
-import importer.CrawlerHttpUtils;
 import org.jsoup.Jsoup;
+import shared.crawler.slug.SlugIdentity;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -27,8 +27,8 @@ public final class ItemImportApplicationService {
                 ? HtmlItemParser.parseMagicItem(Jsoup.parse(Files.readString(htmlFile)))
                 : HtmlItemParser.parseEquipment(Jsoup.parse(Files.readString(htmlFile)));
 
-        item.Id = CrawlerHttpUtils.extractIdFromFilename(filename);
-        item.Slug = CrawlerHttpUtils.slugFromFilename(filename);
+        item.Id = SlugIdentity.extractIdFromFilename(filename);
+        item.Slug = SlugIdentity.slugFromFilename(filename);
         item.IsMagic = isMagic;
         if (item.Name == null || item.Name.isBlank()) {
             throw new IllegalStateException("No name found");

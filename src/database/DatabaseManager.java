@@ -8,9 +8,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
-public class DatabaseManager {
+public final class DatabaseManager {
 
     private static final String URL = "jdbc:sqlite:game.db";
+
+    private DatabaseManager() {
+        throw new AssertionError("No instances");
+    }
 
     /**
      * Opens and returns a fresh JDBC connection with base PRAGMAs applied.
@@ -60,12 +64,15 @@ public class DatabaseManager {
      * Safe to call on every startup: all DDL uses CREATE TABLE IF NOT EXISTS,
      * all seed inserts use INSERT OR IGNORE.
      *
-     * NOTE: This method performs NO migrations on existing databases.
-     * The legacy schema migration ladder (versions 1–6, meta table) was
-     * removed when the codebase moved to a fresh-install model.
-     * If you are working with a game.db from before this change, delete it
-     * and re-crawl (./crawl.sh). For future schema changes that require
-     * ALTER TABLE, re-introduce a meta-based version table at that point.
+     * Schema policy:
+     * - Imported source data (monsters/items/equipment/spells) is disposable and
+     *   can be rebuilt by re-crawling.
+     * - User-created campaign data (e.g. encounter tables) must be preserved.
+     *
+     * Therefore this method allows lightweight, additive, idempotent compatibility
+     * migrations where needed to keep existing user databases usable
+     * (see ensureCreatureImportColumns). We intentionally avoid destructive or
+     * multi-step migration ladders here.
      */
     public static void setupDatabase() {
         try (Connection conn = getConnection();
@@ -117,7 +124,9 @@ public class DatabaseManager {
                     + "passive_perception     INTEGER DEFAULT 10,"
                     + "languages              TEXT,"
                     + "legendary_action_count INTEGER DEFAULT 0,"
-                    + "role                   TEXT"
+                    + "role                   TEXT,"
+                    + "source_slug            TEXT,"
+                    + "slug_key               TEXT"
                     + ")");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS creature_actions ("
@@ -145,8 +154,7 @@ public class DatabaseManager {
                     + "properties           TEXT,"
                     + "armor_class          TEXT,"
                     + "description          TEXT,"
-                    + "source               TEXT,"
-                    + "tags                 TEXT DEFAULT ''"
+                    + "source               TEXT"
                     + ")");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS item_tags ("
@@ -165,6 +173,14 @@ public class DatabaseManager {
                     + "creature_id INTEGER NOT NULL REFERENCES creatures(id) ON DELETE CASCADE,"
                     + "subtype     TEXT    NOT NULL,"
                     + "PRIMARY KEY (creature_id, subtype)"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS creature_import_aliases ("
+                    + "source_slug TEXT PRIMARY KEY,"
+                    + "slug_key    TEXT,"
+                    + "external_id INTEGER,"
+                    + "local_id    INTEGER NOT NULL REFERENCES creatures(id) ON DELETE CASCADE,"
+                    + "last_seen_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP"
                     + ")");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS hex_maps ("
@@ -240,6 +256,20 @@ public class DatabaseManager {
                     + "CHECK (influence BETWEEN 0 AND 100)"
                     + ")");
 
+            stmt.execute("CREATE TABLE IF NOT EXISTS encounter_tables ("
+                    + "table_id    INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "name        TEXT    NOT NULL,"
+                    + "description TEXT"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS encounter_table_entries ("
+                    + "table_id    INTEGER NOT NULL REFERENCES encounter_tables(table_id) ON DELETE CASCADE,"
+                    + "creature_id INTEGER NOT NULL REFERENCES creatures(id) ON DELETE CASCADE,"
+                    + "weight      INTEGER NOT NULL DEFAULT 1,"
+                    + "PRIMARY KEY (table_id, creature_id),"
+                    + "CHECK (weight BETWEEN 1 AND 10)"
+                    + ")");
+
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_xp ON creatures(xp)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_type ON creatures(creature_type)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_actions_creature_id ON creature_actions(creature_id)");
@@ -252,11 +282,19 @@ public class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_item_tags_tag ON item_tags(tag)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creature_biomes_biome ON creature_biomes(biome)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creature_subtypes_subtype ON creature_subtypes(subtype)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_creature_aliases_local_id ON creature_import_aliases(local_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_creature_aliases_slug_key ON creature_import_aliases(slug_key)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_map ON hex_tiles(map_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_faction ON hex_tiles(dominant_faction_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_world_locations_tile ON world_locations(tile_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_tile_influence_faction ON tile_faction_influence(faction_id)");
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_tod_phases_order ON time_of_day_phases(display_order)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounter_table_entries_table ON encounter_table_entries(table_id)");
+            stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_encounter_tables_name_norm_unique "
+                    + "ON encounter_tables(lower(trim(name)))");
+
+            ensureCreatureImportColumns(conn);
+            ensureItemTagCompatibility(conn);
 
             // Seed default time-of-day phases (German UI strings)
             try (PreparedStatement ps = conn.prepareStatement(
@@ -318,6 +356,73 @@ public class DatabaseManager {
 
         } catch (SQLException e) {
             throw new RuntimeException("Datenbankschema konnte nicht erstellt werden", e);
+        }
+    }
+
+    private static void ensureCreatureImportColumns(Connection conn) throws SQLException {
+        // Additive compatibility migration for existing DBs:
+        // preserves user-created rows while importer schema evolves.
+        if (!columnExists(conn, "creatures", "source_slug")) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE creatures ADD COLUMN source_slug TEXT");
+            }
+        }
+        if (!columnExists(conn, "creatures", "slug_key")) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE creatures ADD COLUMN slug_key TEXT");
+            }
+        }
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_source_slug ON creatures(source_slug)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_slug_key ON creatures(slug_key)");
+        }
+    }
+
+    private static void ensureItemTagCompatibility(Connection conn) throws SQLException {
+        // One-way compatibility migration:
+        // backfill canonical item_tags from legacy items.tags if that old column exists.
+        if (!columnExists(conn, "items", "tags")) return;
+
+        String selectLegacy = "SELECT id, tags FROM items WHERE tags IS NOT NULL AND TRIM(tags) <> ''";
+        try (PreparedStatement select = conn.prepareStatement(selectLegacy);
+             ResultSet rs = select.executeQuery();
+             PreparedStatement hasTags = conn.prepareStatement(
+                     "SELECT 1 FROM item_tags WHERE item_id = ? LIMIT 1");
+             PreparedStatement insertTag = conn.prepareStatement(
+                     "INSERT OR IGNORE INTO item_tags(item_id, tag) VALUES(?, ?)")) {
+            while (rs.next()) {
+                long itemId = rs.getLong("id");
+                if (itemHasCanonicalTags(hasTags, itemId)) continue;
+                String tagsCsv = rs.getString("tags");
+                if (tagsCsv == null || tagsCsv.isBlank()) continue;
+
+                for (String raw : tagsCsv.split(",")) {
+                    String tag = raw.trim();
+                    if (tag.isEmpty()) continue;
+                    insertTag.setLong(1, itemId);
+                    insertTag.setString(2, tag);
+                    insertTag.addBatch();
+                }
+            }
+            insertTag.executeBatch();
+        }
+    }
+
+    private static boolean itemHasCanonicalTags(PreparedStatement hasTags, long itemId) throws SQLException {
+        hasTags.clearParameters();
+        hasTags.setLong(1, itemId);
+        try (ResultSet rs = hasTags.executeQuery()) {
+            return rs.next();
+        }
+    }
+
+    private static boolean columnExists(Connection conn, String table, String column) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("PRAGMA table_info(" + table + ")");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                if (column.equalsIgnoreCase(rs.getString("name"))) return true;
+            }
+            return false;
         }
     }
 }

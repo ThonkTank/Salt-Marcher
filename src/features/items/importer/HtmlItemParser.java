@@ -1,10 +1,10 @@
 package features.items.importer;
 
 import features.items.model.Item;
-import importer.CrawlerHttpUtils;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import shared.crawler.text.CaseText;
 
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -337,7 +337,7 @@ public final class HtmlItemParser {
         // Extract rarity
         Matcher rarityMatcher = RARITY_PATTERN.matcher(typeLine);
         if (rarityMatcher.find()) {
-            item.Rarity = CrawlerHttpUtils.toTitleCase(rarityMatcher.group(1));
+            item.Rarity = CaseText.toTitleCase(rarityMatcher.group(1));
         }
 
         // Extract attunement

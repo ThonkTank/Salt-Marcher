@@ -22,8 +22,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import features.creaturecatalog.service.CreatureService;
-import ui.UiAsyncExecutor;
-import ui.UiErrorReporter;
+import ui.async.UiAsyncTasks;
+import ui.async.UiErrorReporter;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -295,31 +295,31 @@ public class MonsterListPane extends BorderPane {
                         new CreatureService.PageRequest(sortColumn, sortDirection, PAGE_SIZE, offset));
             }
         };
-        task.setOnSucceeded(e -> {
-            CreatureService.ServiceResult<CreatureService.PageResult> serviceResult = task.getValue();
-            CreatureService.PageResult result = serviceResult.value();
-            totalCount = result.totalCount();
-            items.setAll(result.creatures());
-            table.setPlaceholder(serviceResult.isOk() ? emptyPlaceholder : errorPlaceholder);
-            sortCombo.setDisable(false);
-            updatePagination();
-            if (!serviceResult.isOk()) {
-                UiErrorReporter.reportBackgroundFailure(
-                        "MonsterListPane.loadPage() service failure",
-                        new IllegalStateException("CreatureService status: " + serviceResult.status()));
-            }
-        });
-        task.setOnFailed(e -> {
-            if (!task.isCancelled()) {
-                UiErrorReporter.reportBackgroundFailure("MonsterListPane.loadPage()", task.getException());
-                table.setPlaceholder(errorPlaceholder);
-                sortCombo.setDisable(false);
-                prevButton.setDisable(currentOffset <= 0);
-                nextButton.setDisable(currentOffset + PAGE_SIZE >= totalCount);
-            }
-        });
         currentTask = task;
-        UiAsyncExecutor.submit(task);
+        UiAsyncTasks.submit(
+                task,
+                serviceResult -> {
+                    CreatureService.PageResult result = serviceResult.value();
+                    totalCount = result.totalCount();
+                    items.setAll(result.creatures());
+                    table.setPlaceholder(serviceResult.isOk() ? emptyPlaceholder : errorPlaceholder);
+                    sortCombo.setDisable(false);
+                    updatePagination();
+                    if (!serviceResult.isOk()) {
+                        UiErrorReporter.reportBackgroundFailure(
+                                "MonsterListPane.loadPage() service failure",
+                                new IllegalStateException("CreatureService status: " + serviceResult.status()));
+                    }
+                },
+                throwable -> {
+                    if (!task.isCancelled()) {
+                        UiErrorReporter.reportBackgroundFailure("MonsterListPane.loadPage()", throwable);
+                        table.setPlaceholder(errorPlaceholder);
+                        sortCombo.setDisable(false);
+                        prevButton.setDisable(currentOffset <= 0);
+                        nextButton.setDisable(currentOffset + PAGE_SIZE >= totalCount);
+                    }
+                });
     }
 
     private void updatePagination() {

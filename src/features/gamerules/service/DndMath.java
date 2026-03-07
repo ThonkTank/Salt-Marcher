@@ -14,43 +14,44 @@ public final class DndMath {
         throw new AssertionError("No instances");
     }
 
-    // DMG benchmarks: expected HP and AC per CR tier.
-    // Row format: { expectedHp, expectedAc }.
+    // Data-driven benchmarks: median HP and AC per CR tier from local game.db snapshot
+    // (2502 creatures, computed 2026-03-07). Row format: { expectedHp, expectedAc }.
+    // CR 29 had no samples in the snapshot; value is linearly interpolated between CR 28 and 30.
     private static final int[][] CR_BENCHMARKS = {
-        {   3, 13 }, // CR 0
-        {   7, 13 }, // CR 1/8
-        {  14, 13 }, // CR 1/4
+        {   4, 12 }, // CR 0
+        {   9, 12 }, // CR 1/8
+        {  13, 12 }, // CR 1/4
         {  21, 13 }, // CR 1/2
-        {  33, 13 }, // CR 1
-        {  52, 13 }, // CR 2
-        {  67, 13 }, // CR 3
-        {  82, 14 }, // CR 4
-        {  97, 15 }, // CR 5
-        { 112, 15 }, // CR 6
-        { 127, 15 }, // CR 7
-        { 144, 16 }, // CR 8
-        { 161, 16 }, // CR 9
-        { 178, 17 }, // CR 10
-        { 195, 17 }, // CR 11
-        { 210, 17 }, // CR 12
-        { 225, 18 }, // CR 13
-        { 240, 18 }, // CR 14
-        { 255, 18 }, // CR 15
-        { 270, 18 }, // CR 16
-        { 285, 19 }, // CR 17
-        { 300, 19 }, // CR 18
-        { 315, 19 }, // CR 19
-        { 330, 19 }, // CR 20
-        { 345, 19 }, // CR 21
-        { 400, 19 }, // CR 22
-        { 420, 19 }, // CR 23
-        { 445, 19 }, // CR 24
-        { 470, 19 }, // CR 25
-        { 495, 19 }, // CR 26
-        { 520, 19 }, // CR 27
-        { 545, 19 }, // CR 28
-        { 580, 19 }, // CR 29
-        { 625, 19 }, // CR 30
+        {  27, 13 }, // CR 1
+        {  39, 13 }, // CR 2
+        {  58, 14 }, // CR 3
+        {  66, 14 }, // CR 4
+        {  85, 15 }, // CR 5
+        {  91, 15 }, // CR 6
+        { 107, 15 }, // CR 7
+        { 115, 15 }, // CR 8
+        { 139, 16 }, // CR 9
+        { 148, 17 }, // CR 10
+        { 161, 17 }, // CR 11
+        { 147, 15 }, // CR 12
+        { 184, 16 }, // CR 13
+        { 188, 17 }, // CR 14
+        { 187, 17 }, // CR 15
+        { 208, 18 }, // CR 16
+        { 225, 19 }, // CR 17
+        { 245, 18 }, // CR 18
+        { 241, 19 }, // CR 19
+        { 300, 19 }, // CR 20
+        { 290, 19 }, // CR 21
+        { 307, 19 }, // CR 22
+        { 346, 20 }, // CR 23
+        { 426, 21 }, // CR 24
+        { 472, 20 }, // CR 25
+        { 507, 21 }, // CR 26
+        { 533, 22 }, // CR 27
+        { 565, 22 }, // CR 28
+        { 583, 23 }, // CR 29
+        { 600, 24 }, // CR 30
     };
 
     /**

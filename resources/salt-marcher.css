@@ -294,6 +294,33 @@
     -fx-tick-label-fill: -sm-text-muted;
     -fx-font-size: 10px;
 }
+.difficulty-slider .track {
+    -fx-background-color:
+        linear-gradient(to right,
+            -sm-easy 0%,   -sm-easy 25%,
+            -sm-medium 25%, -sm-medium 50%,
+            -sm-hard 50%,  -sm-hard 75%,
+            -sm-deadly 75%, -sm-deadly 100%);
+}
+.auto-dice-btn {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-text-fill: -sm-text-muted;
+    -fx-padding: 2 7 2 7;
+    -fx-font-size: 12px;
+}
+.auto-dice-btn:hover {
+    -fx-background-color: -sm-bg-card;
+    -fx-text-fill: -sm-text-primary;
+}
+.auto-dice-btn.active {
+    -fx-background-color: -sm-accent;
+    -fx-border-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
 
 /* ---- CheckBox ---- */
 .check-box {
