@@ -3,20 +3,26 @@ package features.creaturecatalog.service;
 import database.DatabaseManager;
 import features.creaturecatalog.model.Creature;
 import features.creaturecatalog.repository.CreatureRepository;
-import features.encounter.model.MonsterRole;
-import features.encounter.model.MonsterRoleParser;
+import features.gamerules.model.MonsterRole;
+import features.gamerules.model.MonsterRoleParser;
 import features.gamerules.service.RoleClassifier;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * One-shot startup repair for legacy creatures with missing or invalid persisted roles.
  */
 public final class CreatureRoleBackfillService {
-    private CreatureRoleBackfillService() {}
+    private static final Logger LOGGER = Logger.getLogger(CreatureRoleBackfillService.class.getName());
+
+    private CreatureRoleBackfillService() {
+        throw new AssertionError("No instances");
+    }
 
     public record BackfillSummary(int checked, int updated, int failed) {}
 
@@ -44,8 +50,8 @@ public final class CreatureRoleBackfillService {
                         updated++;
                     } catch (RuntimeException | SQLException e) {
                         failed++;
-                        System.err.println("CreatureRoleBackfillService: role backfill failed for id="
-                                + creatureId + ": " + e.getMessage());
+                        LOGGER.log(Level.WARNING,
+                                "CreatureRoleBackfillService: role backfill failed for id=" + creatureId, e);
                     }
                 }
                 conn.commit();
@@ -57,12 +63,12 @@ public final class CreatureRoleBackfillService {
             }
             return new BackfillSummary(pending.size(), updated, failed);
         } catch (SQLException e) {
-            System.err.println("CreatureRoleBackfillService.backfillMissingRoles(): " + e.getMessage());
+            LOGGER.log(Level.WARNING, "CreatureRoleBackfillService.backfillMissingRoles(): DB access failed", e);
             return new BackfillSummary(0, 0, 1);
         }
     }
 
-    private static List<Long> collectPendingRoleIds(Connection conn) {
+    private static List<Long> collectPendingRoleIds(Connection conn) throws SQLException {
         List<Long> pending = new ArrayList<>();
         for (CreatureRepository.RoleValue roleValue : CreatureRepository.getRoleValues(conn)) {
             if (MonsterRoleParser.parseOrNull(roleValue.role()) == null) {
