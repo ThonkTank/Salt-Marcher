@@ -5,7 +5,7 @@ import features.world.hexmap.model.HexTerrainType;
 import features.world.hexmap.model.HexTile;
 import features.world.hexmap.service.HexMapService;
 import javafx.concurrent.Task;
-import ui.UiAsyncTasks;
+import ui.async.UiAsyncTasks;
 
 import java.util.List;
 import java.util.Map;

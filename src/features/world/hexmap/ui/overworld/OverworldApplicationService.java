@@ -4,7 +4,7 @@ import features.world.hexmap.model.HexTile;
 import features.world.hexmap.service.HexMapService;
 import features.world.hexmap.service.PartyPositionSession;
 import javafx.concurrent.Task;
-import ui.UiAsyncTasks;
+import ui.async.UiAsyncTasks;
 
 import java.util.List;
 import java.util.Objects;

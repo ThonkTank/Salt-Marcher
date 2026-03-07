@@ -1,8 +1,8 @@
 package features.world.hexmap.ui.overworld;
 
 import javafx.scene.Node;
-import ui.AppView;
-import ui.UiErrorReporter;
+import ui.shell.AppView;
+import ui.async.UiErrorReporter;
 
 /**
  * Overworld-Reiseansicht. Zeigt die Hex-Karte im Hauptbereich inklusive Gruppenmarker.
