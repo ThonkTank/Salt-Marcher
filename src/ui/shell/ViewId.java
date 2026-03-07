@@ -1,4 +1,4 @@
-package ui;
+package ui.shell;
 
 /**
  * Navigation identifiers for views registered with {@link AppShell}.
@@ -8,7 +8,8 @@ package ui;
 public enum ViewId {
     ENCOUNTER(ViewCategory.SESSION),
     OVERWORLD(ViewCategory.SESSION),
-    MAP_EDITOR(ViewCategory.EDITOR);
+    MAP_EDITOR(ViewCategory.EDITOR),
+    TABLE_EDITOR(ViewCategory.EDITOR);
 
     private final ViewCategory category;
     ViewId(ViewCategory category) { this.category = category; }

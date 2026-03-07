@@ -1,4 +1,4 @@
-package ui;
+package ui.shell;
 
 /**
  * Groups {@link ViewId}s into sidebar sections.

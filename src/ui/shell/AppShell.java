@@ -1,4 +1,4 @@
-package ui;
+package ui.shell;
 
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -17,11 +17,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Main application shell: sidebar + nested SplitPane layout.
- *   Sidebar | mainSplit [ leftColumn(VBox: ControlPanel/Center) | rightSplit(vertical: Context/StatBlock) ]
- *
- * Dividers (mainSplit, rightSplit) are independently resizable.
- * Divider positions are preserved during mode switches within a view.
+ * Main application shell: sidebar + four-panel cockpit layout.
+ * <pre>
+ * +---toolbar------------------------------+
+ * | side | Controls      | Details         |
+ * | bar  | (top-left)    | (top-right)     |
+ * |      |---------------+-----------------|
+ * |      | Main          | State           |
+ * |      | (bottom-left) | (bottom-right)  |
+ * +------+---------------+-----------------+
+ * </pre>
+ * Left column is a VBox (Controls takes natural height, Main fills rest — not resizable).
+ * Right column is a vertical SplitPane (Details / State — resizable).
+ * <p>
+ * SESSION views leave Details/State null → shell shows InspectorPane + ScenePane (persistent across SESSION views).
+ * EDITOR views override Details/State → shell shows view-specific content.
+ * <p>
+ * SplitPane items are set once in the constructor and never mutated.
+ * Content is swapped inside StackPane containers only, which preserves divider positions.
  */
 public class AppShell extends BorderPane {
 
@@ -29,25 +42,25 @@ public class AppShell extends BorderPane {
     private final Map<ViewId, ToggleButton> navButtons = new EnumMap<>(ViewId.class);
     private final ToggleGroup navGroup = new ToggleGroup();
 
-    private final StackPane contentArea = new StackPane();
+    // ---- Cockpit panels ----
+    private final VBox controlsPanel = new VBox();               // Top-left: controls
+    private final StackPane mainPanel = new StackPane();         // Bottom-left: main workspace
+    private final StackPane detailsContainer = new StackPane(); // Top-right: wraps InspectorPane or view content
+    private final StackPane stateContainer = new StackPane();   // Bottom-right: wraps ScenePane or view content
+
+    // ---- Shell-owned panel defaults (used when views return null) ----
+    private final InspectorPane inspectorPane;
+    private final ScenePane scenePane = new ScenePane();
+
+    // ---- Layout structure ----
     private final HBox toolbar = new HBox(8);
     private final HBox persistentToolbarItems = new HBox(8);
     private final VBox sidebar = new VBox(4);
-    private final VBox controlPanelContainer = new VBox();
-    private final InspectorPane inspectorPane;
-    private final SplitPane mainSplit = new SplitPane();
     private final VBox leftColumn = new VBox();
+    private final SplitPane mainSplit = new SplitPane();
     private final SplitPane rightSplit = new SplitPane();
-    private final ScenePane scenePane = new ScenePane();
 
-    // JavaFX SplitPane resets divider positions whenever getItems() is mutated.
-    // configureSplitItems() sets the SplitPane items (resets dividers) and is called ONLY on navigation (navigateTo).
-    // applyViewContent() swaps content inside existing containers without touching SplitPane items
-    // and is called on both navigation and mode switches (refreshPanels).
-    // currentViewHasControl caches whether the active view provides a control panel so that
-    // refreshPanels() can call applyViewContent() safely without re-running configureSplitItems().
-    private boolean currentViewHasControl = false;
-    private boolean currentViewHasCustomRight = false;
+    // ---- Divider persistence ----
     private final Map<ViewId, double[]> savedMainDividers = new EnumMap<>(ViewId.class);
     private final Map<ViewId, double[]> savedRightDividers = new EnumMap<>(ViewId.class);
 
@@ -59,27 +72,36 @@ public class AppShell extends BorderPane {
         sidebar.getStyleClass().add("nav-sidebar");
         sidebar.setAlignment(Pos.TOP_CENTER);
 
-        // ---- Control panel container ----
-        controlPanelContainer.getStyleClass().add("control-panel");
-        controlPanelContainer.setPrefWidth(240);
-        controlPanelContainer.setMinWidth(200);
-        controlPanelContainer.setMaxHeight(Double.MAX_VALUE);
+        // ---- Controls panel ----
+        controlsPanel.getStyleClass().add("control-panel");
+        controlsPanel.setPrefWidth(240);
+        controlsPanel.setMinWidth(200);
+        controlsPanel.setMaxHeight(Double.MAX_VALUE);
 
         // ---- Toolbar ----
         toolbar.getStyleClass().add("toolbar");
         toolbar.setAlignment(Pos.CENTER_LEFT);
         setTop(toolbar);
 
-        // ---- Inspector ----
+        // ---- Inspector (shell-owned, SESSION default for Details panel) ----
         inspectorPane = new InspectorPane();
 
-        // ---- Left column: control panel (content height) + center (fills rest) ----
-        VBox.setVgrow(controlPanelContainer, Priority.NEVER);
-        VBox.setVgrow(contentArea, Priority.ALWAYS);
+        // ---- Left column: Controls (content height) + Main (fills rest) ----
+        VBox.setVgrow(controlsPanel, Priority.NEVER);
+        VBox.setVgrow(mainPanel, Priority.ALWAYS);
+        leftColumn.getChildren().addAll(controlsPanel, mainPanel);
 
-        // ---- Split panes ----
-        mainSplit.setOrientation(javafx.geometry.Orientation.HORIZONTAL);
+        // ---- Right column: Details + State in vertical SplitPane ----
+        // Items set once — never mutated. Content swapped inside containers.
+        detailsContainer.getChildren().add(inspectorPane);
+        stateContainer.getChildren().add(scenePane);
         rightSplit.setOrientation(javafx.geometry.Orientation.VERTICAL);
+        rightSplit.getItems().addAll(detailsContainer, stateContainer);
+
+        // ---- Main split: left column + right column ----
+        // Items set once — never mutated.
+        mainSplit.setOrientation(javafx.geometry.Orientation.HORIZONTAL);
+        mainSplit.getItems().addAll(leftColumn, rightSplit);
 
         setLeft(sidebar);
         setCenter(mainSplit);
@@ -119,7 +141,7 @@ public class AppShell extends BorderPane {
             // Save divider positions for the view we're leaving
             if (mainSplit.getDividerPositions().length > 0)
                 savedMainDividers.put(activeViewId, mainSplit.getDividerPositions().clone());
-            if (!currentViewHasCustomRight && rightSplit.getDividerPositions().length > 0)
+            if (rightSplit.getDividerPositions().length > 0)
                 savedRightDividers.put(activeViewId, rightSplit.getDividerPositions().clone());
 
             AppView current = views.get(activeViewId);
@@ -128,21 +150,30 @@ public class AppShell extends BorderPane {
 
         activeViewId = id;
 
-        currentViewHasControl = target.getControlPanel() != null;
-        currentViewHasCustomRight = target.getRightColumn() != null;
-
         applyViewContent(target);
-        configureSplitItems();
 
         ToggleButton btn = navButtons.get(id);
         if (btn != null) btn.setSelected(true);
 
         rebuildToolbar(target);
+
+        // Restore divider positions after layout pass
+        ViewId targetViewId = activeViewId;
+        Platform.runLater(() -> {
+            if (targetViewId != activeViewId) {
+                return;
+            }
+            double[] mainPos = savedMainDividers.get(targetViewId);
+            mainSplit.setDividerPositions(mainPos != null ? mainPos[0] : 0.62);
+            double[] rightPos = savedRightDividers.get(targetViewId);
+            rightSplit.setDividerPositions(rightPos != null ? rightPos[0] : 0.45);
+        });
+
         target.onShow();
     }
 
     /** Refresh all panels for the active view (called after mode changes).
-     *  Does NOT reconfigure SplitPane items — preserves divider positions. */
+     *  Content-only swap — SplitPane items are never touched, divider positions preserved. */
     public void refreshPanels() {
         if (activeViewId != null) {
             AppView target = views.get(activeViewId);
@@ -153,7 +184,7 @@ public class AppShell extends BorderPane {
         }
     }
 
-    /** Rebuild only the toolbar items for the active view. Does NOT touch panels or SplitPane items. */
+    /** Rebuild only the toolbar items for the active view. Does NOT touch panels. */
     public void refreshToolbar() {
         if (activeViewId != null) {
             AppView current = views.get(activeViewId);
@@ -178,60 +209,40 @@ public class AppShell extends BorderPane {
     // ---- Internal ----
 
     /**
-     * Swaps content inside existing containers. MUST NOT touch {@code mainSplit.getItems()}
-     * or {@code rightSplit.getItems()} — mutating SplitPane items resets divider positions.
-     * Item configuration is the exclusive responsibility of {@link #configureSplitItems()},
-     * which is called on navigation only. This method is safe to call on mode switches.
+     * Swaps content inside the four cockpit panel containers.
+     * Never touches SplitPane items — divider positions are always preserved.
+     * Safe to call on both navigation and mode switches.
      */
     private void applyViewContent(AppView target) {
-        Node controlPanel = target.getControlPanel();
+        // Controls panel (top-left)
+        Node controls = target.getControlsContent();
+        controlsPanel.getChildren().clear();
+        if (controls != null) {
+            controlsPanel.getChildren().add(controls);
+            VBox.setVgrow(controls, Priority.ALWAYS);
+        }
+        controlsPanel.setVisible(controls != null);
+        controlsPanel.setManaged(controls != null);
 
-        // Control panel content
-        controlPanelContainer.getChildren().clear();
-        if (controlPanel != null) {
-            controlPanelContainer.getChildren().add(controlPanel);
-            VBox.setVgrow(controlPanel, Priority.ALWAYS);
+        // Main panel (bottom-left) — guard preserves scroll/filter state
+        Node main = target.getMainContent();
+        if (!mainPanel.getChildren().contains(main)) {
+            mainPanel.getChildren().setAll(main);
         }
 
-        // Center content — guard against re-inserting the same node (preserves scroll/filter state)
-        Node root = target.getRoot();
-        if (!contentArea.getChildren().contains(root)) {
-            contentArea.getChildren().setAll(root);
-        }
-    }
-
-    /** Configure SplitPane items based on current view's panels.
-     *  Called on view navigation only — not on mode switches — to preserve divider positions. */
-    private void configureSplitItems() {
-        if (currentViewHasControl) {
-            leftColumn.getChildren().setAll(controlPanelContainer, contentArea);
-        } else {
-            leftColumn.getChildren().setAll(contentArea);
+        // Details panel (top-right) — null = shell-owned InspectorPane
+        Node details = target.getDetailsContent();
+        Node detailsNode = details != null ? details : inspectorPane;
+        if (!detailsContainer.getChildren().contains(detailsNode)) {
+            detailsContainer.getChildren().setAll(detailsNode);
         }
 
-        AppView target = views.get(activeViewId);
-        Node customRight = target != null ? target.getRightColumn() : null;
-
-        if (customRight != null && activeViewId.getCategory() == ViewCategory.SESSION) {
-            throw new IllegalStateException("SESSION view " + activeViewId
-                + " must not return a custom right column — ScenePane tab registrations would be lost.");
+        // State panel (bottom-right) — null = shell-owned ScenePane
+        Node state = target.getStateContent();
+        Node stateNode = state != null ? state : scenePane;
+        if (!stateContainer.getChildren().contains(stateNode)) {
+            stateContainer.getChildren().setAll(stateNode);
         }
-
-        if (customRight != null) {
-            mainSplit.getItems().setAll(leftColumn, customRight);
-        } else {
-            rightSplit.getItems().setAll(inspectorPane, scenePane);
-            mainSplit.getItems().setAll(leftColumn, rightSplit);
-        }
-
-        Platform.runLater(() -> {
-            double[] mainPos = savedMainDividers.get(activeViewId);
-            mainSplit.setDividerPositions(mainPos != null ? mainPos[0] : 0.62);
-            if (customRight == null) {
-                double[] rightPos = savedRightDividers.get(activeViewId);
-                rightSplit.setDividerPositions(rightPos != null ? rightPos[0] : 0.45);
-            }
-        });
     }
 
     private void rebuildToolbar(AppView view) {

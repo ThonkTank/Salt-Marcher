@@ -1,4 +1,4 @@
-package ui;
+package ui.shell;
 
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -11,7 +11,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import ui.components.StatBlockPane;
+import features.creaturecatalog.ui.StatBlockPane;
 
 /**
  * Top-right panel: shows detailed info for a selected item.
@@ -111,7 +111,12 @@ public class InspectorPane extends VBox {
 
     /** Hide the stat block and show the placeholder. */
     public void hideStatBlock() {
+        if (pendingStatBlockTask != null) {
+            pendingStatBlockTask.cancel(false);
+            pendingStatBlockTask = null;
+        }
         displayedCreatureId = null;
+        detailContent.getChildren().clear();
         getChildren().setAll(placeholder);
     }
 

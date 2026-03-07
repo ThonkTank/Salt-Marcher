@@ -23,7 +23,9 @@ import java.util.List;
  * context where Java {@link javafx.scene.paint.Color} objects are required.
  */
 public final class ThemeColors {
-    private ThemeColors() {}
+    private ThemeColors() {
+        throw new AssertionError("No instances");
+    }
 
     // Canvas painting (DifficultyMeter) — no CSS equivalent for Canvas
     public static final Color BG_ELEVATED   = Color.web("#26282a");  // -sm-bg-elevated
