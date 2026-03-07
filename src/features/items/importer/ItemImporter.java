@@ -14,7 +14,7 @@ import java.util.stream.Stream;
  * CLI entry point: reads crawled HTML files from data/items/ and imports
  * them into the SQLite database via {@link ItemImportApplicationService}.
  *
- * Run after {@link ItemCrawler} or via {@code ./crawl-items.sh}.
+ * Run after {@link ItemCrawler} or via {@code ./scripts/crawl-items.sh}.
  */
 public class ItemImporter {
 
@@ -25,7 +25,7 @@ public class ItemImporter {
 
         if (!Files.exists(equipmentDir) && !Files.exists(magicItemsDir)) {
             System.err.println("Directory not found: data/items/");
-            System.err.println("Run ItemCrawler first (or ./crawl-items.sh).");
+            System.err.println("Run ItemCrawler first (or ./scripts/crawl-items.sh).");
             System.exit(1);
         }
 

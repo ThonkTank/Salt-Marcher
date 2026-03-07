@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * CLI entry point: reads crawled HTML files from data/monsters/ and imports
  * them into the SQLite database via {@link CreatureRepository}.
  *
- * Run after {@link MonsterCrawler} or via {@code ./crawl.sh}.
+ * Run after {@link MonsterCrawler} or via {@code ./scripts/crawl.sh}.
  */
 public final class MonsterImporter {
     private static final DateTimeFormatter TS = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
@@ -38,12 +38,12 @@ public final class MonsterImporter {
     }
 
     public static void main(String[] args) throws Exception {
-        // Default crawl output directory — change only if crawl.sh uses a custom output.dir.
+        // Default crawl output directory — change only if scripts/crawl.sh uses a custom output.dir.
         Path dataDir = Paths.get("data/monsters");
 
         if (!Files.exists(dataDir)) {
             System.err.println("Directory not found: " + dataDir.toAbsolutePath());
-            System.err.println("Run MonsterCrawler first (or ./crawl.sh).");
+            System.err.println("Run MonsterCrawler first (or ./scripts/crawl.sh).");
             System.exit(1);
         }
 

@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * self-contained HTML fragment under data/monsters/{id}-{slug}.html.
  *
  * Prerequisites: crawler.properties with a valid CobaltSession cookie.
- * Run via: ./crawl.sh  (or: java importer.MonsterCrawler directly)
+ * Run via: ./scripts/crawl.sh  (or: java importer.MonsterCrawler directly)
  *
  * Output is consumed by {@link MonsterImporter}.
  */

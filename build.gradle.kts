@@ -1,5 +1,7 @@
 import java.nio.file.Files
 import java.nio.file.Path
+import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.JavaExec
 
 plugins {
     java
@@ -35,18 +37,18 @@ sourceSets {
 }
 
 dependencies {
-    implementation(files("lib/sqlite-jdbc.jar"))
-    implementation(files("lib/jsoup-1.17.2.jar"))
+    implementation("org.xerial:sqlite-jdbc:3.45.1.0")
+    implementation("org.jsoup:jsoup:1.17.2")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2")
-    runtimeOnly(files("lib/slf4j-api.jar"))
-    runtimeOnly(files("lib/slf4j-nop.jar"))
+    runtimeOnly("org.slf4j:slf4j-api:2.0.9")
+    runtimeOnly("org.slf4j:slf4j-nop:2.0.9")
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.0")
 }
 
 application {
-    mainClass = "ui.SaltMarcherApp"
+    mainClass = "ui.bootstrap.SaltMarcherApp"
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -57,64 +59,75 @@ tasks.test {
     useJUnitPlatform()
 }
 
-val crawlerMonsters by tasks.registering(JavaExec::class) {
+fun registerJavaExecTask(
+    taskName: String,
+    taskDescription: String,
+    taskMainClass: String,
+    dependsOnTask: TaskProvider<*>? = null,
+    taskArgs: List<String> = emptyList()
+): TaskProvider<JavaExec> = tasks.register<JavaExec>(taskName) {
     group = "application"
-    description = "Run monster crawler only."
+    description = taskDescription
     classpath = sourceSets.main.get().runtimeClasspath
-    mainClass = "importer.MonsterCrawler"
+    mainClass = taskMainClass
+    if (dependsOnTask != null) {
+        dependsOn(dependsOnTask)
+    }
+    if (taskArgs.isNotEmpty()) {
+        args(taskArgs)
+    }
 }
 
-val importMonsters by tasks.registering(JavaExec::class) {
-    group = "application"
-    description = "Run monster importer."
-    classpath = sourceSets.main.get().runtimeClasspath
-    mainClass = "importer.MonsterImporter"
-    dependsOn(crawlerMonsters)
-}
+val crawlerMonsters = registerJavaExecTask(
+    taskName = "crawlerMonsters",
+    taskDescription = "Run monster crawler only.",
+    taskMainClass = "importer.MonsterCrawler"
+)
 
-val recoverEncounterTables by tasks.registering(JavaExec::class) {
-    group = "application"
-    description = "Restore encounter tables from backup JSON. Pass --args='--latest' or --args='data/backups/encounter-tables-...json'."
-    classpath = sourceSets.main.get().runtimeClasspath
-    mainClass = "importer.EncounterTableRecoveryTool"
-}
+val importMonsters = registerJavaExecTask(
+    taskName = "importMonsters",
+    taskDescription = "Run monster importer.",
+    taskMainClass = "importer.MonsterImporter",
+    dependsOnTask = crawlerMonsters
+)
 
-val recomputeRoles by tasks.registering(JavaExec::class) {
-    group = "application"
-    description = "Recompute and persist creature tactical roles for all creatures."
-    classpath = sourceSets.main.get().runtimeClasspath
-    mainClass = "importer.CreatureRoleRecomputeTool"
-}
+val recoverEncounterTables = registerJavaExecTask(
+    taskName = "recoverEncounterTables",
+    taskDescription = "Restore encounter tables from backup JSON. Pass --args='--latest' or --args='data/backups/encounter-tables-...json'.",
+    taskMainClass = "importer.EncounterTableRecoveryTool"
+)
 
-val applyCreatureOverrides by tasks.registering(JavaExec::class) {
-    group = "application"
-    description = "Apply versioned creature CR/XP overrides from data/creature_overrides.csv."
-    classpath = sourceSets.main.get().runtimeClasspath
-    mainClass = "importer.CreatureOverridesTool"
-}
+val recomputeRoles = registerJavaExecTask(
+    taskName = "recomputeRoles",
+    taskDescription = "Recompute and persist creature tactical roles for all creatures.",
+    taskMainClass = "importer.CreatureRoleRecomputeTool"
+)
 
-val crawlerItems by tasks.registering(JavaExec::class) {
-    group = "application"
-    description = "Run item crawler only."
-    classpath = sourceSets.main.get().runtimeClasspath
-    mainClass = "features.items.importer.ItemCrawler"
-}
+val applyCreatureOverrides = registerJavaExecTask(
+    taskName = "applyCreatureOverrides",
+    taskDescription = "Apply versioned creature CR/XP overrides from data/creature_overrides.csv.",
+    taskMainClass = "importer.CreatureOverridesTool"
+)
 
-val importItems by tasks.registering(JavaExec::class) {
-    group = "application"
-    description = "Run item importer."
-    classpath = sourceSets.main.get().runtimeClasspath
-    mainClass = "features.items.importer.ItemImporter"
-    dependsOn(crawlerItems)
-}
+val crawlerItems = registerJavaExecTask(
+    taskName = "crawlerItems",
+    taskDescription = "Run item crawler only.",
+    taskMainClass = "features.items.importer.ItemCrawler"
+)
 
-val crawlerItemsSlugs by tasks.registering(JavaExec::class) {
-    group = "application"
-    description = "Build magic-item slug list only."
-    classpath = sourceSets.main.get().runtimeClasspath
-    mainClass = "features.items.importer.ItemCrawler"
-    args("--build-slugs")
-}
+val importItems = registerJavaExecTask(
+    taskName = "importItems",
+    taskDescription = "Run item importer.",
+    taskMainClass = "features.items.importer.ItemImporter",
+    dependsOnTask = crawlerItems
+)
+
+val crawlerItemsSlugs = registerJavaExecTask(
+    taskName = "crawlerItemsSlugs",
+    taskDescription = "Build magic-item slug list only.",
+    taskMainClass = "features.items.importer.ItemCrawler",
+    taskArgs = listOf("--build-slugs")
+)
 
 tasks.register("crawler") {
     group = "application"
@@ -185,7 +198,7 @@ val checkRepositorySqlExceptionConvention by tasks.registering {
     description = "Fail when new repositories catch and likely swallow SQLException."
     val sqlCatchPattern = Regex("""catch\s*\(\s*SQLException\b""")
     val sqlSwallowPattern = Regex(
-        """catch\s*\(\s*SQLException\b[\s\S]{0,400}?(?:System\.(?:out|err)\.println\(|return\s+(?:Optional\.empty\(\)|0L|false|null)\s*;)"""
+        """catch\s*\(\s*SQLException\b[\s\S]*?(?:System\.(?:out|err)\.println\(|return\s+(?:Optional\.empty\(\)|0L|false|null)\s*;)[\s\S]*?\}"""
     )
 
     doLast {

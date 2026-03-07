@@ -1,11 +1,13 @@
 out/
-lib/
+/lib/
 *.db
 *.db-shm
 *.db-wal
 *.db-journal
 *.class
 .vscode/
+.gradle/
+build/
 
 # Crawler-Konfiguration (enthält Session-Cookie)
 crawler*.properties

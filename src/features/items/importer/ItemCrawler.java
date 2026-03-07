@@ -1,11 +1,14 @@
 package features.items.importer;
 
-import importer.CrawlerConfig;
-import importer.CrawlerHttpUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import shared.crawler.config.CrawlerConfig;
+import shared.crawler.config.CrawlerConfigException;
+import shared.crawler.config.CrawlerProperties;
+import shared.crawler.http.CrawlerHttpClient;
+import shared.crawler.slug.SlugIdentity;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -25,8 +28,8 @@ import java.util.regex.Pattern;
  *
  * Prerequisites: crawler.properties with a valid CobaltSession cookie.
  * Magic items require a slug file (data/magic-item-slugs.txt) — build it first
- * with: ./crawl-items.sh --build-slugs   (or: java features.items.importer.ItemCrawler --build-slugs)
- * Normal run: ./crawl-items.sh
+ * with: ./scripts/crawl-items.sh --build-slugs   (or: java features.items.importer.ItemCrawler --build-slugs)
+ * Normal run: ./scripts/crawl-items.sh
  *
  * Output is consumed by {@link ItemImporter}.
  */
@@ -55,10 +58,17 @@ public class ItemCrawler {
     // -------------------------------------------------------------------------
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        Properties props = CrawlerHttpUtils.loadCrawlerProperties();
+        Properties props = CrawlerProperties.loadCrawlerProperties();
 
-        CrawlerConfig config = CrawlerConfig.fromProperties(props);
-        Path outputDir = CrawlerHttpUtils.resolveOutputDir(
+        CrawlerConfig config;
+        try {
+            config = CrawlerConfig.fromProperties(props);
+        } catch (CrawlerConfigException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+            return;
+        }
+        Path outputDir = CrawlerProperties.resolveOutputDir(
                 props.getProperty("items.output.dir", "data/items"));
         Path slugsFile = Paths.get(props.getProperty("magic-items.slugs.file",
                 "data/magic-item-slugs.txt"));
@@ -105,7 +115,7 @@ public class ItemCrawler {
         }
 
         // Deduplication: for slugs with the same name suffix, keep the lowest ID (2014 version)
-        Set<String> equipmentSlugs = CrawlerHttpUtils.deduplicateSlugs(rawEquipmentSlugs);
+        Set<String> equipmentSlugs = SlugIdentity.deduplicateSlugs(rawEquipmentSlugs);
         int removed = rawEquipmentSlugs.size() - equipmentSlugs.size();
         if (removed > 0) {
             System.out.println("Deduplication: " + removed + " newer duplicates removed"
@@ -119,7 +129,7 @@ public class ItemCrawler {
 
         // 2. Load magic-item slugs from file
         Set<String> rawMagicSlugs = loadMagicItemSlugs();
-        Set<String> magicSlugs = CrawlerHttpUtils.deduplicateSlugs(rawMagicSlugs);
+        Set<String> magicSlugs = SlugIdentity.deduplicateSlugs(rawMagicSlugs);
         if (!magicSlugs.isEmpty()) {
             int sizeBefore = entries.size();
             for (String slug : magicSlugs) {
@@ -368,7 +378,7 @@ public class ItemCrawler {
     // -------------------------------------------------------------------------
 
     private String get(String url) throws IOException, InterruptedException {
-        return CrawlerHttpUtils.get(url, httpClient, cobaltSession);
+        return CrawlerHttpClient.get(url, httpClient, cobaltSession);
     }
 
     // -------------------------------------------------------------------------

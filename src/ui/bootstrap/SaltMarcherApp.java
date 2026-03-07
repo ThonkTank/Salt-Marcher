@@ -136,7 +136,7 @@ public class SaltMarcherApp extends Application {
         if (!countResult.isOk()) {
             LOGGER.log(Level.INFO, "Database check unavailable (DB access failed).");
         } else if (countResult.value() == 0) {
-            LOGGER.log(Level.INFO, "Database is empty. Run ./crawl.sh to populate monster data.");
+            LOGGER.log(Level.INFO, "Database is empty. Run ./scripts/crawl.sh to populate monster data.");
         } else {
             LOGGER.log(Level.INFO, "Database ready: {0} creatures loaded.", countResult.value());
         }
