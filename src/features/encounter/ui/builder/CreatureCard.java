@@ -1,19 +1,20 @@
-package ui.components;
+package features.encounter.ui.builder;
 
-import entities.Creature;
+import features.creaturecatalog.model.Creature;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import entities.MonsterRole;
+import features.gamerules.model.MonsterRole;
 
 import java.util.function.Consumer;
 
 /**
  * Purely presentational roster card: shows creature name, CR, role badge,
- * XP contribution, and +/- count controls. Used inside {@link ui.encounter.EncounterRosterPane}.
+ * XP contribution, and +/- count controls. Used inside
+ * {@link features.encounter.ui.builder.EncounterRosterPane}.
  *
  * <p>Count mutation is owned by the caller: {@code onIncrement} and {@code onDecrement}
  * are responsible for updating their count and calling {@link #updateCount(int)} to sync the label.

@@ -25,13 +25,12 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
-import features.encounter.model.MonsterRole;
+import features.gamerules.model.MonsterRole;
 import features.encounter.model.EncounterCreatureSnapshot;
 import features.encounter.service.EncounterCreatureMapper;
 import features.encounter.service.EncounterService;
 import features.encounter.service.generation.EncounterGenerator;
 import features.gamerules.service.XpCalculator;
-import ui.components.CreatureCard;
 import ui.components.DifficultyMeter;
 import ui.components.ThemeColors;
 

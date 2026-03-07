@@ -1,6 +1,7 @@
 package features.encountertable.ui;
 
 import features.encountertable.model.EncounterTable;
+import features.creaturepicker.ui.FilterPane;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -8,7 +9,6 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import features.creaturecatalog.service.CreatureService;
-import ui.components.creature.FilterPane;
 import ui.components.ThemeColors;
 
 import java.util.List;

@@ -1,4 +1,4 @@
-package ui.components.creature;
+package features.creaturepicker.ui;
 
 import features.creaturecatalog.model.Creature;
 import javafx.beans.property.SimpleIntegerProperty;

@@ -2,6 +2,7 @@ package features.encounter.ui.builder;
 
 import features.encountertable.model.EncounterTable;
 import features.encounter.service.EncounterService;
+import features.creaturepicker.ui.FilterPane;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -14,7 +15,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.util.StringConverter;
 import features.creaturecatalog.service.CreatureService;
-import ui.components.creature.FilterPane;
 import ui.components.SliderControl;
 
 import java.util.ArrayList;
@@ -254,9 +254,9 @@ public class EncounterControls extends VBox {
         tableListBox.getChildren().clear();
         tableCheckboxById.clear();
 
-        List<Long> beforeIds = selectedTables.stream().map(t -> t.TableId).toList();
+        List<Long> beforeIds = selectedTables.stream().map(t -> t.tableId).toList();
         Map<Long, EncounterTable> tableById = new LinkedHashMap<>();
-        for (EncounterTable t : tables) tableById.put(t.TableId, t);
+        for (EncounterTable t : tables) tableById.put(t.tableId, t);
 
         List<EncounterTable> reboundSelection = new ArrayList<>();
         for (Long id : beforeIds) {
@@ -265,7 +265,7 @@ public class EncounterControls extends VBox {
         }
         selectedTables.clear();
         selectedTables.addAll(reboundSelection);
-        List<Long> afterIds = selectedTables.stream().map(t -> t.TableId).toList();
+        List<Long> afterIds = selectedTables.stream().map(t -> t.tableId).toList();
 
         // "Alle Monster" clear button
         Button clearAll = new Button("(Alle Monster)");
@@ -281,22 +281,22 @@ public class EncounterControls extends VBox {
         tableListBox.getChildren().add(clearAll);
 
         for (EncounterTable t : tables) {
-            boolean checked = selectedTables.stream().anyMatch(s -> s.TableId == t.TableId);
-            CheckBox cb = new CheckBox(t.Name);
-            cb.setUserData(t.TableId);
+            boolean checked = selectedTables.stream().anyMatch(s -> s.tableId == t.tableId);
+            CheckBox cb = new CheckBox(t.name);
+            cb.setUserData(t.tableId);
             cb.setSelected(checked);
             cb.setMaxWidth(Double.MAX_VALUE);
             cb.setOnAction(e -> {
                 if (cb.isSelected()) {
-                    if (selectedTables.stream().noneMatch(s -> s.TableId == t.TableId))
+                    if (selectedTables.stream().noneMatch(s -> s.tableId == t.tableId))
                         selectedTables.add(t);
                 } else {
-                    selectedTables.removeIf(s -> s.TableId == t.TableId);
+                    selectedTables.removeIf(s -> s.tableId == t.tableId);
                 }
                 updateTableButton();
                 fireTableChanged();
             });
-            tableCheckboxById.put(t.TableId, cb);
+            tableCheckboxById.put(t.tableId, cb);
             tableListBox.getChildren().add(cb);
         }
 
@@ -309,7 +309,7 @@ public class EncounterControls extends VBox {
         if (selectedTables.isEmpty()) {
             tableButton.setText("Tabelle \u25BE");
         } else if (selectedTables.size() == 1) {
-            tableButton.setText(selectedTables.get(0).Name + " \u25BE");
+            tableButton.setText(selectedTables.get(0).name + " \u25BE");
             tableButton.getStyleClass().add("filter-trigger-active");
         } else {
             tableButton.setText("Tabellen (" + selectedTables.size() + ") \u25BE");
@@ -324,7 +324,7 @@ public class EncounterControls extends VBox {
 
     private void fireTableChanged() {
         if (onTableChanged != null) {
-            List<Long> ids = selectedTables.stream().map(t -> t.TableId).toList();
+            List<Long> ids = selectedTables.stream().map(t -> t.tableId).toList();
             onTableChanged.accept(ids);
         }
     }
@@ -334,13 +334,13 @@ public class EncounterControls extends VBox {
         for (EncounterTable t : List.copyOf(selectedTables)) {
             HBox chip = new HBox(2);
             chip.getStyleClass().addAll("chip", "chip-table");
-            chip.getChildren().add(new javafx.scene.control.Label(t.Name));
+            chip.getChildren().add(new javafx.scene.control.Label(t.name));
             Button x = new Button("\u00d7");
             x.getStyleClass().addAll("flat", "compact", "chip-remove-btn");
-            x.setAccessibleText("Entfernen: " + t.Name);
+            x.setAccessibleText("Entfernen: " + t.name);
             x.setOnAction(e -> {
-                long tableId = t.TableId;
-                selectedTables.removeIf(s -> s.TableId == tableId);
+                long tableId = t.tableId;
+                selectedTables.removeIf(s -> s.tableId == tableId);
                 uncheckTableCheckbox(tableId);
                 updateTableButton();
                 fireTableChanged();
@@ -371,7 +371,7 @@ public class EncounterControls extends VBox {
      * Returns the currently selected encounter table IDs (empty list = all creatures).
      */
     public List<Long> getSelectedTableIds() {
-        return selectedTables.stream().map(t -> t.TableId).toList();
+        return selectedTables.stream().map(t -> t.tableId).toList();
     }
 
     /** @return slider value in [0.0, 1.0], or -1.0 ({@link ui.components.SliderControl#AUTO_VALUE}) if Auto is selected. */

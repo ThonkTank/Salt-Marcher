@@ -1,6 +1,7 @@
 package features.encountertable.ui;
 
 import features.encountertable.model.EncounterTable;
+import features.creaturepicker.ui.MonsterListPane;
 import javafx.concurrent.Task;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
@@ -12,7 +13,6 @@ import features.encountertable.service.EncounterTableService;
 import ui.AppView;
 import ui.UiAsyncExecutor;
 import ui.UiErrorReporter;
-import ui.components.creature.MonsterListPane;
 
 import java.util.List;
 import java.util.Optional;
