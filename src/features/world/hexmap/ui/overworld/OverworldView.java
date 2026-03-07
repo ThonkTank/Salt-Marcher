@@ -20,9 +20,8 @@ public class OverworldView implements AppView {
         hexMapPane = new HexMapPane();
         applicationService = new OverworldApplicationService();
         hexMapPane.setOnPartyTokenMoved(tileId ->
-                applicationService.updatePartyTile(
+                applicationService.schedulePartyTileUpdate(
                         tileId,
-                        () -> { },
                         ex -> UiErrorReporter.reportBackgroundFailure("OverworldView.updatePartyTile()", ex)));
     }
 
@@ -55,5 +54,10 @@ public class OverworldView implements AppView {
                     },
                     ex -> UiErrorReporter.reportBackgroundFailure("OverworldView.loadInitialMap()", ex));
         }
+    }
+
+    @Override
+    public void onHide() {
+        applicationService.shutdownPartyPositionSession();
     }
 }

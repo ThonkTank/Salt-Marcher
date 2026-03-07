@@ -2,10 +2,13 @@ package features.world.hexmap.ui.overworld;
 
 import features.world.hexmap.model.HexTile;
 import features.world.hexmap.service.HexMapService;
+import features.world.hexmap.service.PartyPositionSession;
 import javafx.concurrent.Task;
-import ui.UiAsyncExecutor;
+import ui.UiAsyncTasks;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -15,6 +18,8 @@ import java.util.function.Consumer;
 public final class OverworldApplicationService {
 
     public record OverworldMapState(List<HexTile> tiles, Long partyTileId, Long defaultPartyTileId) {}
+    private final AtomicReference<Consumer<Throwable>> persistErrorHandler = new AtomicReference<>(ignored -> { });
+    private PartyPositionSession partyPositionSession = new PartyPositionSession(this::handlePersistError);
 
     public void loadInitialMap(Consumer<OverworldMapState> onSuccess, Consumer<Throwable> onError) {
         Task<OverworldMapState> task = new Task<>() {
@@ -27,9 +32,7 @@ public final class OverworldApplicationService {
                 return new OverworldMapState(tiles, partyTileId, defaultPartyTileId);
             }
         };
-        task.setOnSucceeded(e -> onSuccess.accept(task.getValue()));
-        task.setOnFailed(e -> onError.accept(task.getException()));
-        UiAsyncExecutor.submit(task);
+        UiAsyncTasks.submit(task, onSuccess, onError);
     }
 
     public void updatePartyTile(Long tileId, Runnable onSuccess, Consumer<Throwable> onError) {
@@ -44,9 +47,27 @@ public final class OverworldApplicationService {
                 return null;
             }
         };
-        task.setOnSucceeded(e -> onSuccess.run());
-        task.setOnFailed(e -> onError.accept(task.getException()));
-        UiAsyncExecutor.submit(task);
+        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+    }
+
+    public void schedulePartyTileUpdate(Long tileId, Consumer<Throwable> onError) {
+        if (tileId == null) {
+            onError.accept(new IllegalArgumentException("tileId darf nicht null sein"));
+            return;
+        }
+        try {
+            persistErrorHandler.set(Objects.requireNonNull(onError, "onError"));
+            getPartyPositionSession().scheduleUpdate(tileId);
+        } catch (RuntimeException ex) {
+            onError.accept(ex);
+        }
+    }
+
+    public synchronized void shutdownPartyPositionSession() {
+        if (partyPositionSession != null) {
+            partyPositionSession.close();
+            partyPositionSession = null;
+        }
     }
 
     private static Long pickDefaultPartyTileId(List<HexTile> tiles) {
@@ -57,5 +78,16 @@ public final class OverworldApplicationService {
             }
         }
         return tiles.get(0).tileId();
+    }
+
+    private synchronized PartyPositionSession getPartyPositionSession() {
+        if (partyPositionSession == null) {
+            partyPositionSession = new PartyPositionSession(this::handlePersistError);
+        }
+        return partyPositionSession;
+    }
+
+    private void handlePersistError(Throwable throwable) {
+        persistErrorHandler.get().accept(throwable);
     }
 }

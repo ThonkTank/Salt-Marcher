@@ -1,14 +1,12 @@
 package features.world.hexmap.ui.editor;
 
-import database.DatabaseManager;
 import features.world.hexmap.model.HexMap;
 import features.world.hexmap.model.HexTerrainType;
 import features.world.hexmap.model.HexTile;
 import features.world.hexmap.service.HexMapService;
 import javafx.concurrent.Task;
-import ui.UiAsyncExecutor;
+import ui.UiAsyncTasks;
 
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -19,12 +17,6 @@ import java.util.function.Consumer;
  */
 public final class MapEditorApplicationService {
 
-    private static <T> void submitTask(Task<T> task, Consumer<T> onSuccess, Consumer<Throwable> onError) {
-        task.setOnSucceeded(e -> onSuccess.accept(task.getValue()));
-        task.setOnFailed(e -> onError.accept(task.getException()));
-        UiAsyncExecutor.submit(task);
-    }
-
     public void loadMapList(Consumer<List<HexMap>> onSuccess, Consumer<Throwable> onError) {
         Task<List<HexMap>> task = new Task<>() {
             @Override
@@ -32,7 +24,7 @@ public final class MapEditorApplicationService {
                 return HexMapService.getAllMaps();
             }
         };
-        submitTask(task, onSuccess, onError);
+        UiAsyncTasks.submit(task, onSuccess, onError);
     }
 
     public void loadMap(Long mapId, Consumer<List<HexTile>> onSuccess, Consumer<Throwable> onError) {
@@ -43,12 +35,10 @@ public final class MapEditorApplicationService {
         Task<List<HexTile>> task = new Task<>() {
             @Override
             protected List<HexTile> call() throws Exception {
-                try (Connection conn = DatabaseManager.getConnection()) {
-                    return HexMapService.getTiles(conn, mapId);
-                }
+                return HexMapService.getTiles(mapId);
             }
         };
-        submitTask(task, onSuccess, onError);
+        UiAsyncTasks.submit(task, onSuccess, onError);
     }
 
     public void createMap(String name, int radius, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
@@ -58,7 +48,7 @@ public final class MapEditorApplicationService {
                 return HexMapService.createHexMap(name, radius);
             }
         };
-        submitTask(task, onSuccess, onError);
+        UiAsyncTasks.submit(task, onSuccess, onError);
     }
 
     public void updateMap(Long mapId, String name, int oldRadius, int newRadius, Runnable onSuccess, Consumer<Throwable> onError) {
@@ -73,7 +63,7 @@ public final class MapEditorApplicationService {
                 return null;
             }
         };
-        submitTask(task, ignored -> onSuccess.run(), onError);
+        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
     }
 
     public void flushTerrainChanges(Map<Long, HexTerrainType> terrainChanges, Runnable onSuccess, Consumer<Throwable> onError) {
@@ -88,7 +78,7 @@ public final class MapEditorApplicationService {
                 return null;
             }
         };
-        submitTask(task, ignored -> onSuccess.run(), onError);
+        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
     }
 
     public int removedTilesForRadiusChange(int oldRadius, int newRadius) {

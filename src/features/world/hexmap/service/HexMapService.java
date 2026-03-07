@@ -4,7 +4,7 @@ import database.DatabaseManager;
 import features.world.hexmap.model.HexMap;
 import features.world.hexmap.model.HexTerrainType;
 import features.world.hexmap.model.HexTile;
-import features.world.hexmap.repository.HexMapCampaignStateAdapter;
+import features.world.hexmap.service.adapter.HexMapCampaignStateAdapter;
 import features.world.hexmap.repository.HexTileRepository;
 
 import java.sql.Connection;
@@ -12,32 +12,13 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Thin service facade for map-related data access.
  * UI components access hex map data through this class, not directly via repositories.
  */
 public final class HexMapService {
-    private static final Logger LOGGER = Logger.getLogger(HexMapService.class.getName());
-
     public record MapLoadResult(List<HexTile> tiles, Long partyTileId) {}
-
-    private static final AtomicLong pendingPartyTileId = new AtomicLong(-1);
-    private static final Object PARTY_SAVE_LOCK = new Object();
-    private static final ScheduledExecutorService partySaveExecutor =
-            Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "sm-save-party-pos");
-                t.setDaemon(true);
-                return t;
-            });
-    private static volatile ScheduledFuture<?> pendingSave;
 
     private HexMapService() {
         throw new AssertionError("No instances");
@@ -107,7 +88,7 @@ public final class HexMapService {
             if (newRadius > oldRadius) {
                 HexTileRepository.insertTilesForRadius(conn, mapId, newRadius);
             } else if (newRadius < oldRadius) {
-                HexTileRepository.clearPartyTileOutsideRadius(conn, mapId, newRadius);
+                HexMapCampaignStateAdapter.clearPartyTileOutsideRadius(conn, mapId, newRadius);
                 HexTileRepository.deleteTilesOutsideRadius(conn, mapId, newRadius);
             }
 
@@ -117,24 +98,6 @@ public final class HexMapService {
             throw e;
         } finally {
             conn.setAutoCommit(previousAutoCommit);
-        }
-    }
-
-    /** Persists the party's current tile position in campaign_state (debounced, 300ms). */
-    public static void updatePartyTileAsync(long tileId) {
-        pendingPartyTileId.set(tileId);
-        synchronized (PARTY_SAVE_LOCK) {
-            if (pendingSave != null) {
-                pendingSave.cancel(false);
-            }
-            pendingSave = partySaveExecutor.schedule(() -> {
-                long id = pendingPartyTileId.get();
-                try (Connection conn = DatabaseManager.getConnection()) {
-                    HexMapCampaignStateAdapter.updatePartyTile(conn, id);
-                } catch (Exception e) {
-                    LOGGER.log(Level.WARNING, "HexMapService.updatePartyTileAsync(): persist failed", e);
-                }
-            }, 300, TimeUnit.MILLISECONDS);
         }
     }
 

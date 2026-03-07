@@ -204,10 +204,7 @@ public class HexGridPane extends Pane {
         // Initiales Hex sofort bei Mouse-Press bemalen (vor jeder Drag-Bewegung).
         hex.setOnMousePressed(e -> {
             if (paintMode && e.isPrimaryButtonDown() && !readOnly && onTileDragPainted != null) {
-                HexTile currentTile = currentTile(hex);
-                if (currentTile != null) {
-                    onTileDragPainted.accept(currentTile);
-                }
+                dispatchTileIfPresent(hex, onTileDragPainted);
             }
         });
 
@@ -215,10 +212,7 @@ public class HexGridPane extends Pane {
         hex.setOnMouseEntered(e -> {
             hex.getStyleClass().add("hex-tile-hovered");
             if (onTileHovered != null) {
-                HexTile currentTile = currentTile(hex);
-                if (currentTile != null) {
-                    onTileHovered.accept(currentTile);
-                }
+                dispatchTileIfPresent(hex, onTileHovered);
             }
         });
         hex.setOnMouseExited(e -> hex.getStyleClass().remove("hex-tile-hovered"));
@@ -227,10 +221,7 @@ public class HexGridPane extends Pane {
         hex.setOnMouseDragEntered(e -> {
             hex.getStyleClass().add("hex-tile-hovered");
             if (paintMode && !readOnly && onTileDragPainted != null) {
-                HexTile currentTile = currentTile(hex);
-                if (currentTile != null) {
-                    onTileDragPainted.accept(currentTile);
-                }
+                dispatchTileIfPresent(hex, onTileDragPainted);
             }
         });
         hex.setOnMouseDragExited(e -> hex.getStyleClass().remove("hex-tile-hovered"));
@@ -238,16 +229,22 @@ public class HexGridPane extends Pane {
         // Handler immer installiert; readOnly wird bei Dispatch geprueft, damit Umschalten korrekt funktioniert.
         hex.setOnMouseClicked(e -> {
             if (!readOnly && e.isStillSincePress()) {
-                HexTile currentTile = currentTile(hex);
-                if (currentTile != null) {
+                dispatchTileIfPresent(hex, currentTile -> {
                     setSelectedTile(currentTile);
                     if (onTileClicked != null) {
                         onTileClicked.accept(currentTile);
                     }
-                }
+                });
             }
         });
         return hex;
+    }
+
+    private static void dispatchTileIfPresent(Polygon hex, Consumer<HexTile> consumer) {
+        HexTile tile = currentTile(hex);
+        if (tile != null) {
+            consumer.accept(tile);
+        }
     }
 
     private static HexTile currentTile(Polygon hex) {

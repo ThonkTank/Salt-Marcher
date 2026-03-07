@@ -108,35 +108,39 @@ public class MapEditorView implements AppView {
                 map,
                 newRadius -> applicationService.removedTilesForRadiusChange(oldRadius, newRadius));
         dialog.showAndWait().ifPresent(result -> {
-            boolean shrinking = result.radius() < oldRadius;
-
-            if (shrinking) {
-                int tilesToRemove = applicationService.removedTilesForRadiusChange(oldRadius, result.radius());
-                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                        "Radius von " + oldRadius + " auf " + result.radius() + " verkleinern?\n"
-                        + tilesToRemove + " Felder werden unwiderruflich gel\u00f6scht.\n"
-                        + "Falls die Gruppe auf einem dieser Felder steht, wird ihre Position zur\u00fcckgesetzt.",
-                        ButtonType.CANCEL, ButtonType.OK);
-                confirm.setHeaderText("Kartenverkleinerung best\u00e4tigen");
-                Button cancelBtn = (Button) confirm.getDialogPane().lookupButton(ButtonType.CANCEL);
-                cancelBtn.setDefaultButton(true);
-                Button okBtn = (Button) confirm.getDialogPane().lookupButton(ButtonType.OK);
-                okBtn.setDefaultButton(false);
-
-                var choice = confirm.showAndWait();
-                if (choice.isEmpty() || choice.get() != ButtonType.OK) return;
+            if (result.radius() < oldRadius && !confirmShrink(oldRadius, result.radius())) {
+                return;
             }
 
-            applicationService.updateMap(map.mapId(), result.name(), oldRadius, result.radius(),
-                () -> loadMapListAsync(maps -> {
-                    controls.selectMap(map.mapId());
-                }),
-                ex -> {
+            submitMapUpdate(map.mapId(), result.name(), oldRadius, result.radius());
+        });
+    }
+
+    private boolean confirmShrink(int oldRadius, int newRadius) {
+        int tilesToRemove = applicationService.removedTilesForRadiusChange(oldRadius, newRadius);
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
+                "Radius von " + oldRadius + " auf " + newRadius + " verkleinern?\n"
+                + tilesToRemove + " Felder werden unwiderruflich gel\u00f6scht.\n"
+                + "Falls die Gruppe auf einem dieser Felder steht, wird ihre Position zur\u00fcckgesetzt.",
+                ButtonType.CANCEL, ButtonType.OK);
+        confirm.setHeaderText("Kartenverkleinerung best\u00e4tigen");
+        Button cancelBtn = (Button) confirm.getDialogPane().lookupButton(ButtonType.CANCEL);
+        cancelBtn.setDefaultButton(true);
+        Button okBtn = (Button) confirm.getDialogPane().lookupButton(ButtonType.OK);
+        okBtn.setDefaultButton(false);
+
+        var choice = confirm.showAndWait();
+        return choice.isPresent() && choice.get() == ButtonType.OK;
+    }
+
+    private void submitMapUpdate(Long mapId, String name, int oldRadius, int newRadius) {
+        applicationService.updateMap(mapId, name, oldRadius, newRadius,
+            () -> loadMapListAsync(maps -> controls.selectMap(mapId)),
+            ex -> {
                 UiErrorReporter.reportBackgroundFailure("MapEditorView.editMap()", ex);
                 String msg = ex.getMessage() != null ? ex.getMessage() : "Unbekannter Fehler";
                 new Alert(Alert.AlertType.ERROR, "Fehler beim Speichern: " + msg).showAndWait();
             });
-        });
     }
 
     /** Laedt alle Karten in die ComboBox und waehlt die erste Karte aus (oder öffnet den Neu-Dialog). */

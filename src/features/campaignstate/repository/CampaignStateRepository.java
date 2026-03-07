@@ -61,6 +61,23 @@ public final class CampaignStateRepository {
         }
     }
 
+    /**
+     * Clears party position when it points to a tile outside the given map radius.
+     * Intended for map-radius shrink operations coordinated by application services.
+     */
+    public static void clearPartyTileOutsideRadius(Connection conn, long mapId, int radius) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE campaign_state SET party_tile_id = NULL"
+                        + " WHERE party_tile_id IN ("
+                        + "   SELECT tile_id FROM hex_tiles WHERE map_id=?"
+                        + "   AND (abs(q) + abs(r) + abs(q + r)) / 2 > ?"
+                        + " )")) {
+            ps.setLong(1, mapId);
+            ps.setInt(2, radius);
+            ps.executeUpdate();
+        }
+    }
+
     /** @throws IllegalArgumentException if days is not positive */
     public static void advanceDay(Connection conn, int days) throws SQLException {
         if (days <= 0) throw new IllegalArgumentException("advanceDay(): days must be positive: " + days);

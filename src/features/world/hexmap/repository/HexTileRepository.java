@@ -51,7 +51,7 @@ public final class HexTileRepository {
             ps.setLong(1, tile.mapId());
             ps.setInt(2, tile.q());
             ps.setInt(3, tile.r());
-            ps.setString(4, tile.terrainType() != null ? tile.terrainType().dbValue() : HexTerrainType.GRASSLAND.dbValue());
+            ps.setString(4, tile.terrainType().dbValue());
             ps.setInt(5, tile.elevation());
             ps.setString(6, tile.biome() != null ? tile.biome().dbValue() : null);
             ps.setInt(7, tile.explored() ? 1 : 0);
@@ -223,19 +223,6 @@ public final class HexTileRepository {
             ps.setLong(1, mapId);
             ps.setInt(2, newRadius);
             return ps.executeUpdate();
-        }
-    }
-
-    public static void clearPartyTileOutsideRadius(Connection conn, long mapId, int newRadius) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE campaign_state SET party_tile_id = NULL"
-                        + " WHERE party_tile_id IN ("
-                        + "   SELECT tile_id FROM hex_tiles WHERE map_id=?"
-                        + "   AND (abs(q) + abs(r) + abs(q + r)) / 2 > ?"
-                        + " )")) {
-            ps.setLong(1, mapId);
-            ps.setInt(2, newRadius);
-            ps.executeUpdate();
         }
     }
 
