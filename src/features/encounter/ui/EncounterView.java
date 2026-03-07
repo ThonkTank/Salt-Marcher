@@ -5,6 +5,8 @@ import features.creaturecatalog.model.Creature;
 import features.encountertable.model.EncounterTable;
 import features.party.model.PlayerCharacter;
 import ui.AppView;
+import ui.UiAsyncExecutor;
+import ui.UiErrorReporter;
 import ui.SceneHandle;
 import javafx.concurrent.Task;
 import javafx.event.EventHandler;
@@ -45,7 +47,7 @@ public class EncounterView implements AppView {
     private Consumer<Long> onEnsureStatBlock;
     private final SceneHandle encounterScene;
     private final MonsterListPane monsterList;
-    private final EncounterService applicationService;
+    private final EncounterService encounterService;
 
     private final EncounterControls encounterControls;
     private final EncounterRosterPane rosterPane;
@@ -60,6 +62,8 @@ public class EncounterView implements AppView {
     private Scene scene;
     private Task<?> partyLoadTask;
     private Task<EncounterService.TableCatalogResult> tableLoadTask;
+    private Task<EncounterGenerator.GenerationResult> generationTask;
+    private Task<List<Combatant>> combatPreparationTask;
     private final EventHandler<KeyEvent> combatKeyHandler = this::handleSceneCombatKey;
     private boolean initialLoadDone = false;
 
@@ -68,9 +72,9 @@ public class EncounterView implements AppView {
         this.onRefreshPanels = callbacks.onRefreshPanels();
         this.onRequestStatBlock = callbacks.onRequestStatBlock();
         monsterList = new MonsterListPane();
-        applicationService = new EncounterService();
-        encounterControls = new EncounterControls();
-        rosterPane = new EncounterRosterPane();
+        encounterService = new EncounterService();
+        encounterControls = new EncounterControls(encounterService);
+        rosterPane = new EncounterRosterPane(encounterService);
         this.encounterScene = callbacks.sceneRegistry().registerScene("⚔ Encounter", rosterPane);
 
         // Track scene availability automatically — eliminates the need for setScene(Scene).
@@ -79,6 +83,9 @@ public class EncounterView implements AppView {
                 oldScene.removeEventFilter(KeyEvent.KEY_PRESSED, combatKeyHandler);
             }
             scene = newScene;
+            if (scene != null) {
+                syncCombatKeyHandler();
+            }
         });
 
         // Wiring (filter callback wired in setFilterData when FilterPane is ready)
@@ -129,9 +136,18 @@ public class EncounterView implements AppView {
             monsterList.loadInitial();
             initialLoadDone = true;
         }
+        syncCombatKeyHandler();
         // Ensure the encounter tab shows the right content and is active
         encounterScene.setContent(currentMode == Mode.COMBAT && trackerPane != null ? trackerPane : rosterPane);
         encounterScene.activate();
+    }
+
+    @Override
+    public void onHide() {
+        if (scene != null) {
+            scene.removeEventFilter(KeyEvent.KEY_PRESSED, combatKeyHandler);
+        }
+        cancelPendingTasks();
     }
 
     // ---- Mode switching ----
@@ -142,13 +158,8 @@ public class EncounterView implements AppView {
         monsterList.setCombatMode(mode == Mode.COMBAT);
         encounterControls.setCombatMode(mode == Mode.COMBAT);
 
-        // Install/remove scene-level combat shortcuts
-        if (scene != null) {
-            if (mode == Mode.COMBAT && oldMode != Mode.COMBAT) {
-                scene.addEventFilter(KeyEvent.KEY_PRESSED, combatKeyHandler);
-            } else if (mode != Mode.COMBAT && oldMode == Mode.COMBAT) {
-                scene.removeEventFilter(KeyEvent.KEY_PRESSED, combatKeyHandler);
-            }
+        if (mode != oldMode) {
+            syncCombatKeyHandler();
         }
 
         // Update encounter tab content (Roster ↔ Tracker)
@@ -170,16 +181,16 @@ public class EncounterView implements AppView {
     // ---- Party ----
 
     public void refreshPartyState() {
-        if (partyLoadTask != null && partyLoadTask.isRunning()) partyLoadTask.cancel();
+        cancelTask(partyLoadTask);
         rosterPane.setGenerateEnabled(false);
         rosterPane.setStartCombatEnabled(false);
         Task<EncounterService.PartySnapshot> task = new Task<>() {
             @Override protected EncounterService.PartySnapshot call() {
-                return applicationService.loadPartySnapshot();
+                return encounterService.loadPartySnapshot();
             }
         };
-        task.setOnSucceeded(e -> {
-            EncounterService.PartySnapshot snapshot = task.getValue();
+        partyLoadTask = task;
+        submitTask(task, "EncounterView.refreshPartyState()", snapshot -> {
             partyCache = snapshot.party();
             int size = partyCache.size();
             if (size > 0) {
@@ -195,26 +206,17 @@ public class EncounterView implements AppView {
             // "Kampf starten" stays disabled until roster has slots
             rosterPane.setStartCombatEnabled(rosterPane.hasSlots());
         });
-        task.setOnFailed(e -> {
-            if (!task.isCancelled()) {
-                System.err.println("EncounterView.refreshPartyState(): " + task.getException().getMessage());
-            }
-        });
-        partyLoadTask = task;
-        Thread t = new Thread(task, "sm-party-load");
-        t.setDaemon(true);
-        t.start();
     }
 
     private void refreshTableState() {
-        if (tableLoadTask != null && tableLoadTask.isRunning()) tableLoadTask.cancel();
+        cancelTask(tableLoadTask);
         Task<EncounterService.TableCatalogResult> task = new Task<>() {
             @Override protected EncounterService.TableCatalogResult call() {
-                return applicationService.loadEncounterTables();
+                return encounterService.loadEncounterTables();
             }
         };
-        task.setOnSucceeded(e -> {
-            EncounterService.TableCatalogResult result = task.getValue();
+        tableLoadTask = task;
+        submitTask(task, "EncounterView.refreshTableState()", result -> {
             if (result.status() == EncounterService.TableLoadStatus.SUCCESS) {
                 encounterControls.setTableList(result.tables());
             } else {
@@ -226,15 +228,6 @@ public class EncounterView implements AppView {
                 alert.showAndWait();
             }
         });
-        task.setOnFailed(e -> {
-            if (!task.isCancelled()) {
-                System.err.println("EncounterView.refreshTableState(): " + task.getException().getMessage());
-            }
-        });
-        tableLoadTask = task;
-        Thread t = new Thread(task, "sm-table-load-encounter");
-        t.setDaemon(true);
-        t.start();
     }
 
     // ---- Actions ----
@@ -244,7 +237,7 @@ public class EncounterView implements AppView {
             trackerPane.addReinforcement(creature);
             updateCombatStatus();
         } else {
-            rosterPane.addCreature(creature, applicationService.classifyRole(creature));
+            rosterPane.addCreature(creature, encounterService.classifyRole(creature));
         }
     }
 
@@ -252,6 +245,7 @@ public class EncounterView implements AppView {
 
     private void onGenerate() {
         if (!ensurePartyExists()) return;
+        cancelTask(generationTask);
 
         int partySize = partyCache.size();
         int avgLevel = cachedAvgLevel;
@@ -270,7 +264,7 @@ public class EncounterView implements AppView {
 
         Task<EncounterGenerator.GenerationResult> task = new Task<>() {
             @Override protected EncounterGenerator.GenerationResult call() {
-                return applicationService.generateEncounter(new EncounterService.GenerationRequest(
+                return encounterService.generateEncounter(new EncounterService.GenerationRequest(
                         partySize,
                         avgLevel,
                         new EncounterService.EncounterFilter(
@@ -286,9 +280,9 @@ public class EncounterView implements AppView {
                 ));
             }
         };
-        task.setOnSucceeded(e -> {
+        generationTask = task;
+        submitTask(task, "EncounterView.onGenerate()", result -> {
             rosterPane.setGenerateEnabled(true);
-            EncounterGenerator.GenerationResult result = task.getValue();
             if (result == null) {
                 rosterPane.showGenerationFailed();
                 return;
@@ -297,17 +291,10 @@ public class EncounterView implements AppView {
                 case SUCCESS -> rosterPane.setEncounter(result.encounter());
                 case BLOCKED_BY_USER_INPUT, NO_SOLUTION, TIMEOUT -> rosterPane.showGenerationFailed(result.message());
             }
+        }, () -> {
+            rosterPane.setGenerateEnabled(true);
+            rosterPane.showGenerationFailed();
         });
-        task.setOnFailed(e -> {
-            if (!task.isCancelled()) {
-                System.err.println("EncounterView.onGenerate(): " + task.getException().getMessage());
-                rosterPane.setGenerateEnabled(true);
-                rosterPane.showGenerationFailed();
-            }
-        });
-        Thread t = new Thread(task, "sm-encounter-gen");
-        t.setDaemon(true);
-        t.start();
     }
 
     // ---- Combat start ----
@@ -324,10 +311,11 @@ public class EncounterView implements AppView {
         initiativePane.setOnConfirm(result -> {
             List<Integer> pcInitiatives = result.pcInitiatives();
             List<Integer> monsterInitiatives = result.monsterInitiatives();
+            cancelTask(combatPreparationTask);
             Task<List<Combatant>> task = new Task<>() {
                 @Override
                 protected List<Combatant> call() {
-                    return applicationService.prepareCombatants(new EncounterService.CombatStartRequest(
+                    return encounterService.prepareCombatants(new EncounterService.CombatStartRequest(
                             partyCopy,
                             pcInitiatives,
                             encounter,
@@ -335,15 +323,8 @@ public class EncounterView implements AppView {
                     ));
                 }
             };
-            task.setOnSucceeded(e -> startCombat(task.getValue()));
-            task.setOnFailed(e -> {
-                if (!task.isCancelled()) {
-                    System.err.println("EncounterView.onRequestCombat(): " + task.getException().getMessage());
-                }
-            });
-            Thread t = new Thread(task, "sm-combat-setup");
-            t.setDaemon(true);
-            t.start();
+            combatPreparationTask = task;
+            submitTask(task, "EncounterView.onRequestCombat()", this::startCombat);
         });
         encounterScene.setContent(initiativePane);
     }
@@ -366,7 +347,7 @@ public class EncounterView implements AppView {
         List<CombatSession.EnemyOutcome> outcomes = trackerPane.getEnemyOutcomes();
         trackerPane = null;
         switchMode(Mode.BUILDER);  // removes keyboard handler, resets toolbar/panels
-        CombatResultsPane resultsPane = new CombatResultsPane(outcomes, partyCache);
+        CombatResultsPane resultsPane = new CombatResultsPane(encounterService, outcomes, partyCache);
         resultsPane.setOnDone(() -> encounterScene.setContent(rosterPane));
         encounterScene.setContent(resultsPane);  // override rosterPane until GM dismisses
     }
@@ -374,7 +355,7 @@ public class EncounterView implements AppView {
     private void updateCombatStatus() {
         if (trackerPane == null) return;
         CombatSession.EnemyTotals totals = trackerPane.getEnemyTotals();
-        XpCalculator.DifficultyStats ds = applicationService.computeLiveDifficultyStats(
+        XpCalculator.DifficultyStats ds = encounterService.computeLiveDifficultyStats(
                 trackerPane.getCombatants(), Math.max(1, partyCache.size()), cachedAvgLevel);
         trackerPane.updateStatusBar(ds, totals.alive(), totals.total(), trackerPane.getRound());
         trackerPane.signalAllEnemiesDead(totals.alive() == 0 && totals.total() > 0);
@@ -386,7 +367,7 @@ public class EncounterView implements AppView {
         List<EncounterSlot> slots = rosterPane.getSlots();
         boolean hasData = !slots.isEmpty() && !partyCache.isEmpty();
         if (hasData) {
-            rosterPane.updateSummary(applicationService.computeRosterDifficultyStats(
+            rosterPane.updateSummary(encounterService.computeRosterDifficultyStats(
                     slots, partyCache.size(), cachedAvgLevel));
         } else {
             rosterPane.updateSummary(null);
@@ -402,5 +383,48 @@ public class EncounterView implements AppView {
             return false;
         }
         return true;
+    }
+
+    private void syncCombatKeyHandler() {
+        if (scene == null) return;
+        scene.removeEventFilter(KeyEvent.KEY_PRESSED, combatKeyHandler);
+        if (currentMode == Mode.COMBAT) {
+            scene.addEventFilter(KeyEvent.KEY_PRESSED, combatKeyHandler);
+        }
+    }
+
+    private void cancelPendingTasks() {
+        cancelTask(partyLoadTask);
+        cancelTask(tableLoadTask);
+        cancelTask(generationTask);
+        cancelTask(combatPreparationTask);
+    }
+
+    private void cancelTask(Task<?> task) {
+        if (task != null && task.isRunning()) {
+            task.cancel();
+        }
+    }
+
+    private <T> void submitTask(Task<T> task, String failureContext, Consumer<T> onSuccess) {
+        submitTask(task, failureContext, onSuccess, null);
+    }
+
+    private <T> void submitTask(
+            Task<T> task,
+            String failureContext,
+            Consumer<T> onSuccess,
+            Runnable onFailure
+    ) {
+        task.setOnSucceeded(e -> onSuccess.accept(task.getValue()));
+        task.setOnFailed(e -> {
+            if (!task.isCancelled()) {
+                UiErrorReporter.reportBackgroundFailure(failureContext, task.getException());
+                if (onFailure != null) {
+                    onFailure.run();
+                }
+            }
+        });
+        UiAsyncExecutor.submit(task);
     }
 }
