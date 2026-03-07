@@ -1,22 +1,23 @@
 package features.encounter.service;
 
 import features.creaturecatalog.model.Creature;
-import features.creaturecatalog.service.CreatureService;
 import features.encounter.model.Combatant;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
-import features.encounter.model.MonsterRole;
-import features.encounter.model.MonsterRoleParser;
+import features.gamerules.model.MonsterRole;
+import features.gamerules.model.MonsterRoleParser;
+import features.encounter.service.combat.CombatOutcomeService;
 import features.encounter.service.combat.CombatSetup;
-import features.gamerules.service.XpCalculator;
+import features.encounter.service.combat.CombatSession;
+import features.encounter.service.generation.EncounterScoring;
 import features.encounter.service.generation.EncounterGenerator;
 import features.encountertable.model.EncounterTable;
-import features.encountertable.service.EncounterTableService;
+import features.gamerules.service.XpCalculator;
 import features.party.model.PlayerCharacter;
-import features.party.service.PartyService;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Workflow facade for encounter UI use-cases.
@@ -24,9 +25,35 @@ import java.util.Map;
  */
 public class EncounterService {
 
+    public interface PartyProvider {
+        List<PlayerCharacter> getActiveParty();
+        int averageLevel(List<PlayerCharacter> party);
+    }
+
+    public interface EncounterTableProvider {
+        TableCatalogResult loadEncounterTables();
+        CandidateSelection loadCandidates(List<Long> tableIds, int xpCeiling);
+    }
+
+    public interface CreatureCandidateProvider {
+        List<Creature> getCreaturesForEncounter(
+                List<String> types,
+                int minXp,
+                int maxXp,
+                List<String> biomes,
+                List<String> subtypes
+        );
+    }
+
     public record PartySnapshot(List<PlayerCharacter> party, int avgLevel) {}
     public enum TableLoadStatus { SUCCESS, STORAGE_ERROR }
     public record TableCatalogResult(TableLoadStatus status, List<EncounterTable> tables) {}
+    public record CandidateSelection(
+            List<Creature> candidates,
+            Map<Long, Integer> selectionWeights,
+            TableLoadStatus status
+    ) {}
+
     public record EncounterFilter(
             List<String> types,
             List<String> subtypes,
@@ -51,28 +78,65 @@ public class EncounterService {
             List<Integer> monsterInitiatives
     ) {}
 
-    private record CandidateLoadResult(
-            List<Creature> candidates,
-            Map<Long, Integer> selectionWeights,
-            String errorMessage
+    public enum CombatStartStatus { SUCCESS, INVALID_INPUT }
+
+    public enum CombatStartFailureReason {
+        REQUEST_MISSING,
+        PARTY_MISSING,
+        PC_INITIATIVES_MISSING,
+        ENCOUNTER_MISSING,
+        ENCOUNTER_SLOTS_INVALID,
+        PARTY_MEMBER_MISSING,
+        PC_INITIATIVE_VALUE_MISSING,
+        PC_INITIATIVE_COUNT_MISMATCH
+    }
+
+    public record CombatStartResult(
+            CombatStartStatus status,
+            List<Combatant> combatants,
+            CombatStartFailureReason failureReason
     ) {
-        boolean isError() {
-            return errorMessage != null;
+        public static CombatStartResult success(List<Combatant> combatants) {
+            return new CombatStartResult(CombatStartStatus.SUCCESS, combatants, null);
+        }
+
+        public static CombatStartResult invalidInput(CombatStartFailureReason failureReason) {
+            return new CombatStartResult(CombatStartStatus.INVALID_INPUT, List.of(), failureReason);
         }
     }
 
+    private record CandidateLoadResult(
+            List<Creature> candidates,
+            Map<Long, Integer> selectionWeights,
+            EncounterGenerator.GenerationFailureReason failureReason
+    ) {
+        boolean isError() {
+            return failureReason != null;
+        }
+    }
+
+    private final PartyProvider partyProvider;
+    private final EncounterTableProvider encounterTableProvider;
+    private final CreatureCandidateProvider creatureCandidateProvider;
+
+    public EncounterService(
+            PartyProvider partyProvider,
+            EncounterTableProvider encounterTableProvider,
+            CreatureCandidateProvider creatureCandidateProvider
+    ) {
+        this.partyProvider = Objects.requireNonNull(partyProvider, "partyProvider");
+        this.encounterTableProvider = Objects.requireNonNull(encounterTableProvider, "encounterTableProvider");
+        this.creatureCandidateProvider = Objects.requireNonNull(creatureCandidateProvider, "creatureCandidateProvider");
+    }
+
     public PartySnapshot loadPartySnapshot() {
-        List<PlayerCharacter> party = PartyService.getActiveParty();
-        int avgLevel = PartyService.averageLevel(party);
+        List<PlayerCharacter> party = partyProvider.getActiveParty();
+        int avgLevel = partyProvider.averageLevel(party);
         return new PartySnapshot(party, avgLevel);
     }
 
     public TableCatalogResult loadEncounterTables() {
-        EncounterTableService.TableListResult result = EncounterTableService.loadAll();
-        if (result.status() == EncounterTableService.ReadStatus.SUCCESS) {
-            return new TableCatalogResult(TableLoadStatus.SUCCESS, result.tables());
-        }
-        return new TableCatalogResult(TableLoadStatus.STORAGE_ERROR, List.of());
+        return encounterTableProvider.loadEncounterTables();
     }
 
     public MonsterRole classifyRole(Creature creature) {
@@ -91,7 +155,7 @@ public class EncounterService {
         CandidateLoadResult loadedCandidates =
                 loadCandidates(request, xpCeiling, types, subtypes, biomes);
         if (loadedCandidates.isError()) {
-            return EncounterGenerator.GenerationResult.blockedByUserInput(loadedCandidates.errorMessage());
+            return EncounterGenerator.GenerationResult.blockedByUserInput(loadedCandidates.failureReason());
         }
 
         return EncounterGenerator.generateEncounter(
@@ -100,13 +164,20 @@ public class EncounterService {
         );
     }
 
-    public List<Combatant> prepareCombatants(CombatStartRequest request) {
-        return CombatSetup.buildCombatants(
+    public CombatStartResult prepareCombatants(CombatStartRequest request) {
+        if (request == null) {
+            return CombatStartResult.invalidInput(CombatStartFailureReason.REQUEST_MISSING);
+        }
+        CombatSetup.BuildCombatantsResult result = CombatSetup.buildCombatants(
                 request.party(),
                 request.pcInitiatives(),
                 request.encounter(),
                 request.monsterInitiatives()
         );
+        if (result.status() == CombatSetup.BuildCombatantsStatus.SUCCESS) {
+            return CombatStartResult.success(result.combatants());
+        }
+        return CombatStartResult.invalidInput(mapCombatStartFailureReason(result.failureReason()));
     }
 
     public XpCalculator.DifficultyStats computeLiveDifficultyStats(
@@ -116,7 +187,31 @@ public class EncounterService {
 
     public XpCalculator.DifficultyStats computeRosterDifficultyStats(
             List<EncounterSlot> slots, int partySize, int avgLevel) {
-        return XpCalculator.computeStatsFromSlots(slots, partySize, avgLevel);
+        return XpCalculator.computeStats(EncounterScoring.adjustedXp(slots), partySize, avgLevel);
+    }
+
+    public int previewDifficultyTargetXp(int avgLevel, int partySize, double difficultyValue) {
+        return EncounterGenerator.targetBudgetForDifficulty(avgLevel, partySize, difficultyValue);
+    }
+
+    public int previewTargetMonsterSlots(int partySize, int groupsLevel) {
+        return EncounterGenerator.targetMonsterSlotsForLevel(partySize, groupsLevel);
+    }
+
+    public int previewTargetCreaturesForAmount(double amountValue, int partySize) {
+        return EncounterGenerator.targetCreaturesForAmount(amountValue, partySize);
+    }
+
+    public int maxCreaturesPerSlot() {
+        return EncounterGenerator.MAX_CREATURES_PER_SLOT;
+    }
+
+    public CombatOutcomeService.XpSettlement settleCombatXp(
+            List<CombatSession.EnemyOutcome> outcomes,
+            int partySize,
+            double defeatThreshold,
+            double xpFraction) {
+        return CombatOutcomeService.settleXp(outcomes, partySize, defeatThreshold, xpFraction);
     }
 
     private static <T> List<T> nullIfEmpty(List<T> list) {
@@ -143,7 +238,7 @@ public class EncounterService {
         );
     }
 
-    private static CandidateLoadResult loadCandidates(
+    private CandidateLoadResult loadCandidates(
             GenerationRequest request,
             int xpCeiling,
             List<String> types,
@@ -151,25 +246,40 @@ public class EncounterService {
             List<String> biomes) {
         List<Long> tableIds = request.tableIds() == null ? List.of() : request.tableIds();
         if (!tableIds.isEmpty()) {
-            EncounterTableService.CandidatesResult candidateResult =
-                    EncounterTableService.getCandidatesFromTables(tableIds, xpCeiling);
-            if (candidateResult.status() == EncounterTableService.ReadStatus.STORAGE_ERROR) {
+            CandidateSelection selection = encounterTableProvider.loadCandidates(tableIds, xpCeiling);
+            if (selection.status() == TableLoadStatus.STORAGE_ERROR) {
                 return new CandidateLoadResult(
                         List.of(),
                         Map.of(),
-                        "Datenbankfehler: Tabellen-Kandidaten konnten nicht geladen werden."
+                        EncounterGenerator.GenerationFailureReason.TABLE_CANDIDATES_STORAGE_ERROR
                 );
             }
             return new CandidateLoadResult(
-                    candidateResult.candidates(),
-                    candidateResult.selectionWeights(),
+                    selection.candidates(),
+                    selection.selectionWeights(),
                     null
             );
         }
         return new CandidateLoadResult(
-                CreatureService.getCreaturesForEncounter(types, 1, xpCeiling, biomes, subtypes),
+                creatureCandidateProvider.getCreaturesForEncounter(types, 1, xpCeiling, biomes, subtypes),
                 Map.of(),
                 null
         );
+    }
+
+    private static CombatStartFailureReason mapCombatStartFailureReason(
+            CombatSetup.BuildCombatantsFailureReason failureReason) {
+        if (failureReason == null) {
+            return CombatStartFailureReason.PC_INITIATIVE_COUNT_MISMATCH;
+        }
+        return switch (failureReason) {
+            case PARTY_MISSING -> CombatStartFailureReason.PARTY_MISSING;
+            case PC_INITIATIVES_MISSING -> CombatStartFailureReason.PC_INITIATIVES_MISSING;
+            case ENCOUNTER_MISSING -> CombatStartFailureReason.ENCOUNTER_MISSING;
+            case ENCOUNTER_SLOTS_INVALID -> CombatStartFailureReason.ENCOUNTER_SLOTS_INVALID;
+            case PARTY_MEMBER_MISSING -> CombatStartFailureReason.PARTY_MEMBER_MISSING;
+            case PC_INITIATIVE_VALUE_MISSING -> CombatStartFailureReason.PC_INITIATIVE_VALUE_MISSING;
+            case PC_INITIATIVE_COUNT_MISMATCH -> CombatStartFailureReason.PC_INITIATIVE_COUNT_MISMATCH;
+        };
     }
 }

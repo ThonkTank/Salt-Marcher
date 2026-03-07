@@ -1,6 +1,7 @@
 package features.encounter.ui.combat;
 
 import features.encounter.model.EncounterSlot;
+import features.encounter.service.combat.InitiativeRoller;
 import features.party.model.PlayerCharacter;
 import ui.components.ThemeColors;
 import javafx.geometry.Insets;
@@ -10,7 +11,6 @@ import javafx.scene.layout.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 /**
@@ -26,10 +26,6 @@ public class InitiativePane extends VBox {
 
     private Runnable onCancel;
     private Consumer<Result> onConfirm;
-
-    private static int rollD20(int bonus) {
-        return ThreadLocalRandom.current().nextInt(1, 21) + bonus;
-    }
 
     public void setOnCancel(Runnable callback) { this.onCancel = callback; }
     public void setOnConfirm(Consumer<Result> callback) { this.onConfirm = callback; }
@@ -77,7 +73,7 @@ public class InitiativePane extends VBox {
                         ? slot.getCreature().getName() + " x" + slot.getCount()
                         : slot.getCreature().getName();
                 int bonus = slot.getCreature().getInitiativeBonus();
-                Spinner<Integer> spinner = new Spinner<>(-10, 40, rollD20(bonus));
+                Spinner<Integer> spinner = new Spinner<>(-10, 40, InitiativeRoller.rollWithBonus(bonus));
                 spinner.setEditable(true);
                 spinner.setPrefWidth(85);
                 monsterEntries.add(new MonsterEntry(displayName, bonus, spinner));
@@ -91,7 +87,7 @@ public class InitiativePane extends VBox {
             Button rollAllBtn = new Button("Alle w\u00FCrfeln");
             rollAllBtn.getStyleClass().add("spinner-btn");
             rollAllBtn.setOnAction(e -> monsterEntries.forEach(
-                    entry -> entry.spinner().getValueFactory().setValue(rollD20(entry.initBonus()))));
+                    entry -> entry.spinner().getValueFactory().setValue(InitiativeRoller.rollWithBonus(entry.initBonus()))));
 
             HBox monsterTitleRow = new HBox(8, monsterHeader, rollAllBtn);
             monsterTitleRow.setAlignment(Pos.CENTER_LEFT);
@@ -109,7 +105,7 @@ public class InitiativePane extends VBox {
                 Button rerollBtn = new Button("\uD83C\uDFB2");
                 rerollBtn.getStyleClass().add("spinner-btn");
                 final MonsterEntry e = entry;
-                rerollBtn.setOnAction(ev -> e.spinner().getValueFactory().setValue(rollD20(e.initBonus())));
+                rerollBtn.setOnAction(ev -> e.spinner().getValueFactory().setValue(InitiativeRoller.rollWithBonus(e.initBonus())));
 
                 monsterGrid.add(nameLabel, 0, i);
                 monsterGrid.add(entry.spinner(), 1, i);

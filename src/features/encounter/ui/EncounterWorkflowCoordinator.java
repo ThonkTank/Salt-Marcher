@@ -22,9 +22,9 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyEvent;
-import ui.SceneHandle;
-import ui.UiAsyncExecutor;
-import ui.UiErrorReporter;
+import ui.shell.SceneHandle;
+import ui.async.UiAsyncExecutor;
+import ui.async.UiErrorReporter;
 import features.creaturepicker.ui.MonsterListPane;
 
 import java.util.ArrayList;

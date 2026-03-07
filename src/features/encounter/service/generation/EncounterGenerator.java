@@ -16,7 +16,9 @@ import features.encounter.service.rules.EncounterRules;
  * CandidateScorer, SearchBacktracker).
  */
 public final class EncounterGenerator {
-    private EncounterGenerator() {}
+    private EncounterGenerator() {
+        throw new AssertionError("No instances");
+    }
 
     public static final int MAX_CREATURES_PER_SLOT = EncounterRules.MAX_CREATURES_PER_SLOT;
     public static final int MAX_TURNS_PER_ROUND = EncounterRules.MAX_TURNS_PER_ROUND;
@@ -134,8 +136,8 @@ public final class EncounterGenerator {
     }
 
     /** Source: DMG p.83, encounter multipliers. */
-    public static double getMultiplierForGroupSize(int groupSize) {
-        return EncounterScoring.getMultiplierForGroupSize(groupSize);
+    public static double multiplierForGroupSize(int groupSize) {
+        return EncounterScoring.multiplierForGroupSize(groupSize);
     }
 
     public static int adjustedXp(List<EncounterSlot> slots) {

@@ -7,7 +7,9 @@ import features.encounter.service.rules.EncounterRules;
 import features.gamerules.service.XpCalculator;
 
 public final class EncounterTuning {
-    private EncounterTuning() {}
+    private EncounterTuning() {
+        throw new AssertionError("No instances");
+    }
 
     public static final int MAX_CREATURES_PER_SLOT = EncounterRules.MAX_CREATURES_PER_SLOT;
     public static final int MAX_TURNS_PER_ROUND = EncounterRules.MAX_TURNS_PER_ROUND;
@@ -20,7 +22,7 @@ public final class EncounterTuning {
      * Auto mode uses the global maximum (125% Deadly).
      */
     public static int computeXpCeiling(int avgLevel, double difficultyValue, int partySize) {
-        int easy = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.EASY) * Math.max(1, partySize);
+        int easy = XpCalculator.xpThreshold(avgLevel, XpCalculator.Difficulty.EASY) * Math.max(1, partySize);
         int deadly125 = deadly125Budget(avgLevel, partySize);
         if (difficultyValue < 0) return deadly125;
         int target = mapDifficultyToBudget(avgLevel, partySize, difficultyValue);
@@ -153,12 +155,12 @@ public final class EncounterTuning {
     }
 
     public static int deadly125Budget(int avgLevel, int partySize) {
-        int deadly = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.DEADLY) * Math.max(1, partySize);
+        int deadly = XpCalculator.xpThreshold(avgLevel, XpCalculator.Difficulty.DEADLY) * Math.max(1, partySize);
         return (int) Math.round(deadly * 1.25);
     }
 
     public static int mapDifficultyToBudget(int avgLevel, int partySize, double difficultyValue) {
-        int easy = XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.EASY) * Math.max(1, partySize);
+        int easy = XpCalculator.xpThreshold(avgLevel, XpCalculator.Difficulty.EASY) * Math.max(1, partySize);
         int max = deadly125Budget(avgLevel, partySize);
         double t = Math.max(0.0, Math.min(1.0, difficultyValue));
         return (int) Math.round(easy + (max - easy) * t);

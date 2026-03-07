@@ -17,7 +17,9 @@ final class AutoConfigResolver {
     private static final int START_TOLERANCE_PCT = 5;
     private static final int MAX_CREATURES_PER_SLOT = EncounterSearchEngine.MAX_CREATURES_PER_SLOT;
 
-    private AutoConfigResolver() {}
+    private AutoConfigResolver() {
+        throw new AssertionError("No instances");
+    }
 
     static AutoConfig resolveAutoConfig(EncounterGenerator.EncounterRequest request,
                                         EncounterTuning.SlotBounds bounds,
@@ -101,7 +103,7 @@ final class AutoConfigResolver {
             }
 
             int minBudget = difficulty == null
-                    ? XpCalculator.getXpThreshold(avgLevel, XpCalculator.Difficulty.EASY) * Math.max(1, partySize)
+                    ? XpCalculator.xpThreshold(avgLevel, XpCalculator.Difficulty.EASY) * Math.max(1, partySize)
                     : -1;
             int maxBudget = difficulty == null ? EncounterTuning.deadly125Budget(avgLevel, partySize) : -1;
             if (difficulty != null) {

@@ -11,16 +11,40 @@ import features.encounter.model.EncounterSlot;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 import features.encounter.service.EncounterCreatureMapper;
+import features.encounter.service.generation.EncounterScoring;
 import features.gamerules.service.XpCalculator;
 
 public final class CombatSetup {
-    private CombatSetup() {}
+    private CombatSetup() {
+        throw new AssertionError("No instances");
+    }
 
-    private static int rollInitiative(EncounterCreatureSnapshot c) {
-        return ThreadLocalRandom.current().nextInt(1, 21) + c.getInitiativeBonus();
+    public enum BuildCombatantsStatus { SUCCESS, INVALID_INPUT }
+
+    public enum BuildCombatantsFailureReason {
+        PARTY_MISSING,
+        PC_INITIATIVES_MISSING,
+        ENCOUNTER_MISSING,
+        ENCOUNTER_SLOTS_INVALID,
+        PARTY_MEMBER_MISSING,
+        PC_INITIATIVE_VALUE_MISSING,
+        PC_INITIATIVE_COUNT_MISMATCH
+    }
+
+    public record BuildCombatantsResult(
+            BuildCombatantsStatus status,
+            List<Combatant> combatants,
+            BuildCombatantsFailureReason failureReason
+    ) {
+        public static BuildCombatantsResult success(List<Combatant> combatants) {
+            return new BuildCombatantsResult(BuildCombatantsStatus.SUCCESS, combatants, null);
+        }
+
+        public static BuildCombatantsResult invalidInput(BuildCombatantsFailureReason failureReason) {
+            return new BuildCombatantsResult(BuildCombatantsStatus.INVALID_INPUT, List.of(), failureReason);
+        }
     }
 
     private static MonsterCombatant monsterCombatantFrom(EncounterCreatureSnapshot c, int initiative) {
@@ -35,7 +59,7 @@ public final class CombatSetup {
     }
 
     private static MonsterCombatant monsterCombatantFrom(EncounterCreatureSnapshot c) {
-        return monsterCombatantFrom(c, rollInitiative(c));
+        return monsterCombatantFrom(c, InitiativeRoller.rollFor(c));
     }
 
     /**
@@ -48,15 +72,45 @@ public final class CombatSetup {
      *                           Every creature in the same slot receives the same initiative.
      *                           Pass null to auto-roll every slot.
      */
-    public static List<Combatant> buildCombatants(
+    public static BuildCombatantsResult buildCombatants(
             List<PlayerCharacter> party,
             List<Integer> pcInitiatives,
             Encounter encounter,
             List<Integer> monsterInitiatives) {
+        if (party == null) {
+            return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PARTY_MISSING);
+        }
+        if (pcInitiatives == null) {
+            return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PC_INITIATIVES_MISSING);
+        }
+        if (encounter == null) {
+            return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.ENCOUNTER_MISSING);
+        }
+        if (encounter.slots() == null) {
+            return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.ENCOUNTER_SLOTS_INVALID);
+        }
+        if (pcInitiatives.size() != party.size()) {
+            return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PC_INITIATIVE_COUNT_MISMATCH);
+        }
+        for (PlayerCharacter pc : party) {
+            if (pc == null) {
+                return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PARTY_MEMBER_MISSING);
+            }
+        }
+        for (Integer initiative : pcInitiatives) {
+            if (initiative == null) {
+                return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PC_INITIATIVE_VALUE_MISSING);
+            }
+        }
+        for (EncounterSlot slot : encounter.slots()) {
+            if (slot == null || slot.getCreature() == null) {
+                return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.ENCOUNTER_SLOTS_INVALID);
+            }
+        }
 
         List<Combatant> combatants = new ArrayList<>();
 
-        // PCs mit manueller Initiative
+        // PCs with manually entered initiative.
         for (int i = 0; i < party.size(); i++) {
             PlayerCharacter pc = party.get(i);
             PcCombatant cs     = new PcCombatant();
@@ -65,12 +119,15 @@ public final class CombatSetup {
             combatants.add(cs);
         }
 
-        // Monster — always individual combatants. Runtime mob grouping is handled by CombatTrackerPane.
+        // Monsters are always individual combatants. Runtime mob grouping is handled by CombatTrackerPane.
         int slotIdx = 0;
         for (EncounterSlot slot : encounter.slots()) {
-            int initiative = (monsterInitiatives != null && slotIdx < monsterInitiatives.size())
+            Integer monsterInitiative = (monsterInitiatives != null && slotIdx < monsterInitiatives.size())
                     ? monsterInitiatives.get(slotIdx)
-                    : rollInitiative(slot.getCreature());
+                    : InitiativeRoller.rollFor(slot.getCreature());
+            int initiative = monsterInitiative != null
+                    ? monsterInitiative
+                    : InitiativeRoller.rollFor(slot.getCreature());
             slotIdx++;
             for (int i = 1; i <= slot.getCount(); i++) {
                 MonsterCombatant mc = monsterCombatantFrom(slot.getCreature(), initiative);
@@ -79,16 +136,20 @@ public final class CombatSetup {
             }
         }
 
-        // Nach Initiative sortieren — Gleichstand: PCs gewinnen
+        // Sort by initiative; PCs win ties.
         combatants.sort(CombatOrdering.BY_INITIATIVE_PC_FIRST);
 
-        return combatants;
+        return BuildCombatantsResult.success(combatants);
     }
 
     /** Compute difficulty stats from alive monster combatants. */
     public static XpCalculator.DifficultyStats computeLiveStats(
             List<Combatant> combatants, int partySize, int avgLevel) {
-        return XpCalculator.computeStatsFromCombatants(combatants, partySize, avgLevel);
+        return XpCalculator.computeStats(
+                EncounterScoring.adjustedXpFromCombatants(combatants),
+                partySize,
+                avgLevel
+        );
     }
 
     /**

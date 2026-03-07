@@ -15,7 +15,9 @@ import features.encounter.service.rules.EncounterRules;
  * Encounter generation from hard constraints + weighted random choices.
  */
 final class EncounterSearchEngine {
-    private EncounterSearchEngine() {}
+    private EncounterSearchEngine() {
+        throw new AssertionError("No instances");
+    }
 
     static final int MAX_CREATURES_PER_SLOT = EncounterRules.MAX_CREATURES_PER_SLOT;
 
@@ -139,7 +141,7 @@ final class EncounterSearchEngine {
                 if (totalCreatures <= 0) continue;
                 if (targetCreatures != Integer.MAX_VALUE && totalCreatures != targetCreatures) continue;
 
-                double mult = EncounterScoring.getMultiplierForGroupSize(totalCreatures);
+                double mult = EncounterScoring.multiplierForGroupSize(totalCreatures);
                 int rawLower = (int) Math.ceil(lowerAdj / mult);
                 int rawUpper = (int) Math.floor(upperAdj / mult);
                 if (rawLower > rawUpper) continue;

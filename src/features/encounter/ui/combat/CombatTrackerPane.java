@@ -34,39 +34,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /** ScenePane content for combat mode. */
 public class CombatTrackerPane extends VBox {
     private record TopRowResult(HBox row) {}
     private record CardResult(VBox card) {}
-    private record CombatViewState(
-            int round,
-            int currentTurnIndex,
-            int focusedIndex,
-            String currentTurnName,
-            List<Combatant> combatants,
-            List<CombatTurnGrouper.GroupedTurnEntry> turnEntries,
-            List<CombatSession.InactiveEnemy> inactiveEnemies,
-            List<CombatSession.EnemyOutcome> enemyOutcomes,
-            CombatSession.EnemyTotals enemyTotals) {
-        static CombatViewState empty() {
-            return new CombatViewState(
-                    1,
-                    0,
-                    0,
-                    null,
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    List.of(),
-                    new CombatSession.EnemyTotals(0, 0));
-        }
-
-        CombatTurnGrouper.GroupedTurnEntry focusedEntry() {
-            return (focusedIndex >= 0 && focusedIndex < turnEntries.size()) ? turnEntries.get(focusedIndex) : null;
-        }
-    }
 
     // HP bar color thresholds: green above HEALTHY, yellow between, red below CRITICAL
     private static final double HP_HEALTHY = 0.5;
@@ -74,8 +46,8 @@ public class CombatTrackerPane extends VBox {
     private static final double BAR_WIDTH = 90;
     private static final double BAR_HEIGHT = 24;
 
-    private final CombatSession session = new CombatSession();
-    private CombatViewState state = CombatViewState.empty();
+    private final CombatTrackerCoordinator coordinator = new CombatTrackerCoordinator();
+    private CombatTrackerRenderState state = CombatTrackerRenderState.empty();
 
     private final VBox cardList;
     private final ScrollPane cardScroll;
@@ -85,8 +57,6 @@ public class CombatTrackerPane extends VBox {
     private final HBox endButtonContainer;
 
     private Consumer<Long> onRequestStatBlock;
-    private Consumer<Long> onEnsureStatBlock;
-    private Runnable onCombatStateChanged;
     private Runnable onEndCombat;
     private Button endCombatButton;
 
@@ -125,11 +95,19 @@ public class CombatTrackerPane extends VBox {
         HBox.setHgrow(endButtonContainer, Priority.ALWAYS);
 
         getChildren().addAll(roundLabel, statusBar, cardScroll, turnRow);
+        coordinator.setOnRenderStateChanged(newState -> {
+            state = newState;
+            buildAllCards();
+        });
     }
 
     public void setOnRequestStatBlock(Consumer<Long> callback) { this.onRequestStatBlock = callback; }
-    public void setOnEnsureStatBlock(Consumer<Long> callback) { this.onEnsureStatBlock = callback; }
-    public void setOnCombatStateChanged(Runnable callback) { this.onCombatStateChanged = callback; }
+    public void setOnEnsureStatBlock(Consumer<Long> callback) {
+        coordinator.setOnEnsureStatBlock(callback);
+    }
+    public void setOnCombatStateChanged(Runnable callback) {
+        coordinator.setOnCombatStateChanged(callback);
+    }
     public void setOnEndCombat(Runnable callback) { this.onEndCombat = callback; }
 
     /** Handle a combat keyboard shortcut. Returns true if the event was consumed. */
@@ -192,7 +170,7 @@ public class CombatTrackerPane extends VBox {
     }
 
     public void startCombat(List<Combatant> newCombatants) {
-        dispatchCommand(() -> session.startCombat(newCombatants));
+        coordinator.startCombat(newCombatants);
     }
 
     public int getRound() { return state.round(); }
@@ -212,7 +190,7 @@ public class CombatTrackerPane extends VBox {
     public CombatSession.EnemyTotals getEnemyTotals() { return state.enemyTotals(); }
 
     public void addReinforcement(Creature creature) {
-        dispatchCommand(() -> session.addReinforcement(creature));
+        coordinator.addReinforcement(creature);
     }
 
     private boolean isAlive(CombatTurnGrouper.GroupedTurnEntry entry) {
@@ -488,13 +466,11 @@ public class CombatTrackerPane extends VBox {
     // ---- Turn logic ----
 
     private void nextTurn() {
-        Long activeCreatureId = dispatchCommand(session::nextTurn);
-        if (activeCreatureId != null && onEnsureStatBlock != null) onEnsureStatBlock.accept(activeCreatureId);
+        coordinator.nextTurn();
     }
 
     private void moveFocus(int delta) {
-        session.moveFocus(delta);
-        refreshViewState();
+        coordinator.moveFocus(delta);
     }
 
     private void updateFocus() {
@@ -535,12 +511,12 @@ public class CombatTrackerPane extends VBox {
         damageBtn.setOnAction(e -> {
             int v = parseOrDefault(sp.field().getText(), value[0]);
             popup.hide();
-            dispatchCommand(() -> session.applyDamageToMonster(mc, v));
+            coordinator.applyDamageToMonster(mc, v);
         });
         healBtn.setOnAction(e -> {
             int v = parseOrDefault(sp.field().getText(), value[0]);
             popup.hide();
-            dispatchCommand(() -> session.healMonster(mc, v));
+            coordinator.healMonster(mc, v);
         });
 
         showAtAnchor(popup, anchor, buildPopupContent(sp.dec(), sp.field(), sp.inc(), damageBtn, healBtn), sp.field());
@@ -559,12 +535,12 @@ public class CombatTrackerPane extends VBox {
         damageBtn.setOnAction(e -> {
             int v = parseOrDefault(sp.field().getText(), value[0]);
             popup.hide();
-            dispatchCommand(() -> session.applyDamageToMob(mobEntry, v));
+            coordinator.applyDamageToMob(mobEntry, v);
         });
         healBtn.setOnAction(e -> {
             int v = parseOrDefault(sp.field().getText(), value[0]);
             popup.hide();
-            dispatchCommand(() -> session.healMobFront(mobEntry, v));
+            coordinator.healMobFront(mobEntry, v);
         });
 
         showAtAnchor(popup, anchor, buildPopupContent(sp.dec(), sp.field(), sp.inc(), damageBtn, healBtn), sp.field());
@@ -582,7 +558,7 @@ public class CombatTrackerPane extends VBox {
         Runnable apply = () -> {
             int v = parseOrDefault(sp.field().getText(), value[0]);
             popup.hide();
-            dispatchCommand(() -> session.setInitiative(entry, v));
+            coordinator.setInitiative(entry, v);
         };
 
         setBtn.setOnAction(e -> apply.run());
@@ -591,19 +567,19 @@ public class CombatTrackerPane extends VBox {
     }
 
     private void duplicateCombatant(MonsterCombatant original) {
-        dispatchCommand(() -> session.duplicateCombatant(original));
+        coordinator.duplicateCombatant(original);
     }
 
     private void removeMonster(MonsterCombatant mc) {
-        dispatchCommand(() -> session.removeMonster(mc));
+        coordinator.removeMonster(mc);
     }
 
     private void removeMob(CombatTurnGrouper.GroupedTurnEntry entry) {
-        dispatchCommand(() -> session.removeMob(entry));
+        coordinator.removeMob(entry);
     }
 
     private void restoreRemoved(CombatSession.InactiveEnemy removed) {
-        dispatchCommand(() -> session.restoreRemoved(removed));
+        coordinator.restoreRemoved(removed);
     }
 
     // ---- Popup helpers ----
@@ -695,38 +671,4 @@ public class CombatTrackerPane extends VBox {
         endButtonContainer.getChildren().addAll(cancelBtn, confirmBtn);
     }
 
-    private void fireCombatStateChanged() {
-        if (onCombatStateChanged != null) onCombatStateChanged.run();
-    }
-
-    private void dispatchCommand(Runnable command) {
-        command.run();
-        refreshViewState();
-        fireCombatStateChanged();
-    }
-
-    private <T> T dispatchCommand(Supplier<T> command) {
-        T result = command.get();
-        refreshViewState();
-        fireCombatStateChanged();
-        return result;
-    }
-
-    private void refreshViewState() {
-        state = readViewState();
-        buildAllCards();
-    }
-
-    private CombatViewState readViewState() {
-        return new CombatViewState(
-                session.getRound(),
-                session.getCurrentTurnIndex(),
-                session.getFocusedIndex(),
-                session.getCurrentTurnName(),
-                List.copyOf(session.getCombatants()),
-                List.copyOf(session.getTurnEntries()),
-                List.copyOf(session.getInactiveEnemies()),
-                List.copyOf(session.getEnemyOutcomes()),
-                session.getEnemyTotals());
-    }
 }
