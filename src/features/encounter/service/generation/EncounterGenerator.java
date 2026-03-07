@@ -7,6 +7,7 @@ import features.encounter.model.Combatant;
 import features.creaturecatalog.model.Creature;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
+import features.encounter.service.rules.EncounterMobSlotRules;
 import features.encounter.service.rules.EncounterRules;
 
 /**
@@ -128,7 +129,7 @@ public final class EncounterGenerator {
      * >10 creatures: split into multiple mob-sized slots (4..10)
      */
     public static List<Integer> splitForMobSlots(int count) {
-        return EncounterTuning.splitForMobSlots(count);
+        return EncounterMobSlotRules.splitForMobSlots(count);
     }
 
     public static int targetCreaturesForAmount(double amountValue, int partySize) {

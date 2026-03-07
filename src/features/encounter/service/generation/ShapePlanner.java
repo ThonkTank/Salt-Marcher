@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import features.encounter.service.rules.EncounterMobSlotRules;
+
 
 final class ShapePlanner {
 
@@ -135,7 +137,7 @@ final class ShapePlanner {
             List<Integer> out = new ArrayList<>();
             int maxN = Math.max(3, sc * MAX_CREATURES_PER_SLOT);
             for (int n = 1; n <= maxN; n++) {
-                if (EncounterTuning.splitForMobSlots(n).size() == sc) out.add(n);
+                if (EncounterMobSlotRules.splitForMobSlots(n).size() == sc) out.add(n);
             }
             return List.copyOf(out);
         });

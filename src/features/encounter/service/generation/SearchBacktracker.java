@@ -15,6 +15,7 @@ import features.encounter.model.EncounterCreatureSnapshot;
 import features.encounter.model.EncounterSlot;
 import features.gamerules.model.MonsterRole;
 import features.encounter.service.EncounterCreatureMapper;
+import features.encounter.service.rules.EncounterMobSlotRules;
 
 final class SearchBacktracker {
 
@@ -118,7 +119,7 @@ final class SearchBacktracker {
 
     static int mobSlotCount(BuildState state) {
         int slots = 0;
-        for (int count : state.counts.values()) slots += EncounterTuning.splitForMobSlots(count).size();
+        for (int count : state.counts.values()) slots += EncounterMobSlotRules.splitForMobSlots(count).size();
         return slots;
     }
 
@@ -143,7 +144,7 @@ final class SearchBacktracker {
             if (c == null) continue;
             MonsterRole role = roleMap.getOrDefault(e.getKey(), MonsterRole.BRUTE);
             EncounterCreatureSnapshot snapshot = EncounterCreatureMapper.toSnapshot(c);
-            for (int part : EncounterTuning.splitForMobSlots(e.getValue())) {
+            for (int part : EncounterMobSlotRules.splitForMobSlots(e.getValue())) {
                 slots.add(new EncounterSlot(snapshot, part, role));
             }
         }

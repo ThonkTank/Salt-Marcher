@@ -377,7 +377,7 @@ public class CombatSession {
 
     private void rebuildTurnEntries() {
         turnEntries.clear();
-        int pcTurns = (int) combatants.stream().filter(c -> c instanceof PcCombatant).count();
-        turnEntries.addAll(CombatTurnGrouper.groupTurns(combatants, Math.max(1, pcTurns)));
+        // Runtime grouping is deterministic and independent of current PC turn counts.
+        turnEntries.addAll(CombatTurnGrouper.groupTurns(combatants));
     }
 }
