@@ -3,12 +3,10 @@ package features.gamerules.service;
 import java.util.List;
 import java.util.Map;
 
-import features.encounter.model.Combatant;
-import features.encounter.model.EncounterSlot;
-import features.encounter.model.MonsterCombatant;
-
 public final class XpCalculator {
-    private XpCalculator() {}
+    private XpCalculator() {
+        throw new AssertionError("No instances");
+    }
 
     public enum Difficulty {
         EASY("Easy"),
@@ -56,7 +54,7 @@ public final class XpCalculator {
         "21", "22", "23", "24", "25", "26", "27", "28", "29", "30"
     );
 
-    public static List<String> getCrValues() {
+    public static List<String> crValues() {
         return CR_ORDER;
     }
 
@@ -95,7 +93,7 @@ public final class XpCalculator {
     private static final int HARD_COL = 2;
     private static final int DEADLY_COL = 3;
 
-    public static int getXpThreshold(int avgLevel, Difficulty difficulty) {
+    public static int xpThreshold(int avgLevel, Difficulty difficulty) {
         if (avgLevel < 1 || avgLevel > 20) {
             throw new IllegalArgumentException("Invalid level: " + avgLevel);
         }
@@ -154,25 +152,13 @@ public final class XpCalculator {
 
     public static DifficultyStats computeStats(int adjXp, int partySize, int avgLevel) {
         int partySz = Math.max(1, partySize);
-        int easyTh = getXpThreshold(avgLevel, Difficulty.EASY) * partySz;
-        int mediumTh = getXpThreshold(avgLevel, Difficulty.MEDIUM) * partySz;
-        int hardTh = getXpThreshold(avgLevel, Difficulty.HARD) * partySz;
-        int deadlyTh = getXpThreshold(avgLevel, Difficulty.DEADLY) * partySz;
+        int easyTh = xpThreshold(avgLevel, Difficulty.EASY) * partySz;
+        int mediumTh = xpThreshold(avgLevel, Difficulty.MEDIUM) * partySz;
+        int hardTh = xpThreshold(avgLevel, Difficulty.HARD) * partySz;
+        int deadlyTh = xpThreshold(avgLevel, Difficulty.DEADLY) * partySz;
         String diff = adjXp == 0 ? "" :
                 classifyDifficultyByXp(adjXp, easyTh, mediumTh, hardTh, deadlyTh);
         return new DifficultyStats(adjXp, diff, easyTh, mediumTh, hardTh, deadlyTh);
-    }
-
-    /** Compute difficulty stats from a roster of encounter slots. */
-    public static DifficultyStats computeStatsFromSlots(
-            List<EncounterSlot> slots, int partySize, int avgLevel) {
-        return computeStats(adjustedXpFromSlots(slots), partySize, avgLevel);
-    }
-
-    /** Compute difficulty stats from alive monster combatants. */
-    public static DifficultyStats computeStatsFromCombatants(
-            List<Combatant> combatants, int partySize, int avgLevel) {
-        return computeStats(adjustedXpFromCombatants(combatants), partySize, avgLevel);
     }
 
     /** Categorizes by XP thresholds (for encounter summary display). */
@@ -189,34 +175,12 @@ public final class XpCalculator {
         return Math.max(0.0, Math.min(1.0, value));
     }
 
-    private static int adjustedXpFromSlots(List<EncounterSlot> slots) {
-        int totalRaw = 0;
-        int totalCount = 0;
-        for (EncounterSlot slot : slots) {
-            totalRaw += slot.getCreature().getXp() * slot.getCount();
-            totalCount += slot.getCount();
-        }
-        return applyGroupMultiplier(totalRaw, totalCount);
-    }
-
-    private static int adjustedXpFromCombatants(List<Combatant> combatants) {
-        int totalRaw = 0;
-        int totalCount = 0;
-        for (Combatant combatant : combatants) {
-            if (combatant instanceof MonsterCombatant mc && mc.isAlive()) {
-                totalRaw += mc.getCreatureRef().getXp();
-                totalCount++;
-            }
-        }
-        return applyGroupMultiplier(totalRaw, totalCount);
-    }
-
-    private static int applyGroupMultiplier(int totalRaw, int totalCount) {
-        return (int) (totalRaw * getMultiplierForGroupSize(totalCount));
+    public static int adjustedXp(int totalRaw, int totalCount) {
+        return (int) (totalRaw * multiplierForGroupSize(totalCount));
     }
 
     // Source: DMG p.83, encounter multipliers.
-    public static double getMultiplierForGroupSize(int groupSize) {
+    public static double multiplierForGroupSize(int groupSize) {
         if (groupSize <= 1) return 1.0;
         if (groupSize == 2) return 1.5;
         if (groupSize <= 6) return 2.0;
