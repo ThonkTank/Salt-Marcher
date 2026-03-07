@@ -8,7 +8,7 @@ import java.util.Map;
 import features.creaturecatalog.model.Creature;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
-import features.encounter.model.MonsterRole;
+import features.gamerules.model.MonsterRole;
 import features.encounter.service.rules.EncounterRules;
 
 /**
@@ -74,9 +74,10 @@ final class EncounterSearchEngine {
                     request.balanceLevel() < 0 ? null : Math.max(1, Math.min(5, request.balanceLevel())),
                     bounds, partySize, avgLevel, globalMinXp, globalMaxXp, MAX_DIFFERENT_CREATURES)) {
                 return EncounterGenerator.GenerationResult.blockedByUserInput(
-                        "Kombination der gesetzten Einstellungen ist nicht machbar. Auto aktivieren oder Werte lockern.");
+                        EncounterGenerator.GenerationFailureReason.SETTINGS_COMBINATION_INFEASIBLE);
             }
-            return EncounterGenerator.GenerationResult.noSolution("Keine machbare Auto-Kombination gefunden.");
+            return EncounterGenerator.GenerationResult.noSolution(
+                    EncounterGenerator.GenerationFailureReason.AUTO_CONFIG_NO_SOLUTION);
         }
 
         double difficultyValue = config.difficultyValue();
@@ -94,9 +95,10 @@ final class EncounterSearchEngine {
         if (targetCreatures != Integer.MAX_VALUE
                 && (targetCreatures < targetSlots || targetCreatures > targetSlots * MAX_CREATURES_PER_SLOT)) {
             return request.amountValue() < 0 || request.groupsLevel() < 0
-                    ? EncounterGenerator.GenerationResult.noSolution("Keine machbare Auto-Kombination gefunden.")
+                    ? EncounterGenerator.GenerationResult.noSolution(
+                    EncounterGenerator.GenerationFailureReason.AUTO_CONFIG_NO_SOLUTION)
                     : EncounterGenerator.GenerationResult.blockedByUserInput(
-                    "Menge und Gruppen passen nicht zusammen (Slots erlauben nur begrenzte Kreaturenzahl).");
+                    EncounterGenerator.GenerationFailureReason.AMOUNT_GROUPS_CONFLICT);
         }
 
         int maxTypes = Math.max(1, Math.min(MAX_DIFFERENT_CREATURES, targetSlots));
@@ -105,9 +107,10 @@ final class EncounterSearchEngine {
                 : ShapePlanner.buildFeasibleShapePlans(targetSlots, targetCreatures, maxTypes);
         if (targetCreatures != Integer.MAX_VALUE && feasiblePlans.isEmpty()) {
             return request.amountValue() < 0 || request.groupsLevel() < 0
-                    ? EncounterGenerator.GenerationResult.noSolution("Keine machbare Auto-Kombination gefunden.")
+                    ? EncounterGenerator.GenerationResult.noSolution(
+                    EncounterGenerator.GenerationFailureReason.AUTO_CONFIG_NO_SOLUTION)
                     : EncounterGenerator.GenerationResult.blockedByUserInput(
-                    "Unmögliche Kombination: Gruppen + Kreaturenzahl ergeben mit Mob-Regeln keine gültige Slot-Verteilung.");
+                    EncounterGenerator.GenerationFailureReason.SLOT_DISTRIBUTION_INVALID);
         }
 
         int tolPct = START_TOLERANCE_PCT;

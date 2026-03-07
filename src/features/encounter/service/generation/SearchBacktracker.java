@@ -13,7 +13,7 @@ import java.util.Set;
 import features.creaturecatalog.model.Creature;
 import features.encounter.model.EncounterCreatureSnapshot;
 import features.encounter.model.EncounterSlot;
-import features.encounter.model.MonsterRole;
+import features.gamerules.model.MonsterRole;
 import features.encounter.service.EncounterCreatureMapper;
 
 final class SearchBacktracker {
