@@ -1,5 +1,6 @@
 package features.world.hexmap.ui.editor.panes;
 
+import features.world.hexmap.model.HexTerrainType;
 import features.world.hexmap.model.HexTile;
 import features.world.hexmap.ui.shared.HexGridPane;
 import javafx.scene.layout.StackPane;
@@ -29,7 +30,7 @@ public class MapEditorCanvas extends StackPane {
     public void setPaintMode(boolean paintMode)              { hexGrid.setPaintMode(paintMode); }
     public void setOnPaintStrokeFinished(Runnable cb)       { hexGrid.setOnPaintStrokeFinished(cb); }
 
-    public void updateTileTerrain(Long tileId, String terrainType) {
+    public void updateTileTerrain(Long tileId, HexTerrainType terrainType) {
         if (tileId == null) return;
         hexGrid.updateTileTerrain(tileId, terrainType);
     }

@@ -1,6 +1,7 @@
 package features.world.hexmap.ui.editor.panes;
 
-import features.world.hexmap.ui.shared.TerrainType;
+import features.world.hexmap.model.HexTerrainType;
+import features.world.hexmap.ui.shared.HexTerrainUiType;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -18,8 +19,8 @@ import java.util.function.Consumer;
 public class ToolSettingsPane extends VBox {
 
     private final VBox terrainSection;
-    private String activeTerrainType = TerrainType.GRASSLAND.key;
-    private Consumer<String> onTerrainSelected;
+    private HexTerrainType activeTerrainType = HexTerrainType.GRASSLAND;
+    private Consumer<HexTerrainType> onTerrainSelected;
 
     public ToolSettingsPane() {
         getStyleClass().add("tool-settings-pane");
@@ -42,7 +43,7 @@ public class ToolSettingsPane extends VBox {
 
         ToggleGroup terrainGroup = new ToggleGroup();
 
-        for (TerrainType terrain : TerrainType.values()) {
+        for (HexTerrainUiType terrain : HexTerrainUiType.values()) {
             Region swatch = new Region();
             swatch.getStyleClass().addAll("terrain-swatch", terrain.swatchCssClass());
 
@@ -54,14 +55,14 @@ public class ToolSettingsPane extends VBox {
             btn.setAlignment(Pos.CENTER_LEFT);
             btn.setAccessibleText(terrain.label);
 
-            if (terrain.key.equals(activeTerrainType)) {
+            if (terrain.key.equals(activeTerrainType.dbValue())) {
                 btn.setSelected(true);
             }
 
             btn.setOnAction(e -> {
                 if (btn.isSelected()) {
-                    activeTerrainType = terrain.key;
-                    if (onTerrainSelected != null) onTerrainSelected.accept(terrain.key);
+                    activeTerrainType = HexTerrainType.fromKey(terrain.key).orElse(HexTerrainType.GRASSLAND);
+                    if (onTerrainSelected != null) onTerrainSelected.accept(activeTerrainType);
                 } else {
                     btn.setSelected(true); // Deselect verhindern: es muss immer ein Gelaende aktiv sein
                 }
@@ -79,6 +80,6 @@ public class ToolSettingsPane extends VBox {
         terrainSection.setManaged(visible);
     }
 
-    public String getActiveTerrainType() { return activeTerrainType; }
-    public void setOnTerrainSelected(Consumer<String> cb) { onTerrainSelected = cb; }
+    public HexTerrainType getActiveTerrainType() { return activeTerrainType; }
+    public void setOnTerrainSelected(Consumer<HexTerrainType> cb) { onTerrainSelected = cb; }
 }

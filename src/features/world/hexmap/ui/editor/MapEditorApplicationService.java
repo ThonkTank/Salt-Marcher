@@ -1,7 +1,8 @@
-package features.world.hexmap.ui.editor.application;
+package features.world.hexmap.ui.editor;
 
 import database.DatabaseManager;
 import features.world.hexmap.model.HexMap;
+import features.world.hexmap.model.HexTerrainType;
 import features.world.hexmap.model.HexTile;
 import features.world.hexmap.service.HexMapService;
 import javafx.concurrent.Task;
@@ -10,7 +11,6 @@ import ui.UiAsyncExecutor;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
@@ -30,22 +30,6 @@ public final class MapEditorApplicationService {
             @Override
             protected List<HexMap> call() throws Exception {
                 return HexMapService.getAllMaps();
-            }
-        };
-        submitTask(task, onSuccess, onError);
-    }
-
-    public void loadFirstMap(Consumer<List<HexTile>> onSuccess, Consumer<Throwable> onError) {
-        Task<List<HexTile>> task = new Task<>() {
-            @Override
-            protected List<HexTile> call() throws Exception {
-                try (Connection conn = DatabaseManager.getConnection()) {
-                    Optional<Long> mapId = HexMapService.getFirstMapId(conn);
-                    if (mapId.isEmpty()) {
-                        return List.of();
-                    }
-                    return HexMapService.getTiles(conn, mapId.get());
-                }
             }
         };
         submitTask(task, onSuccess, onError);
@@ -92,7 +76,7 @@ public final class MapEditorApplicationService {
         submitTask(task, ignored -> onSuccess.run(), onError);
     }
 
-    public void flushTerrainChanges(Map<Long, String> terrainChanges, Runnable onSuccess, Consumer<Throwable> onError) {
+    public void flushTerrainChanges(Map<Long, HexTerrainType> terrainChanges, Runnable onSuccess, Consumer<Throwable> onError) {
         if (terrainChanges == null || terrainChanges.isEmpty()) {
             onSuccess.run();
             return;
@@ -105,5 +89,9 @@ public final class MapEditorApplicationService {
             }
         };
         submitTask(task, ignored -> onSuccess.run(), onError);
+    }
+
+    public int removedTilesForRadiusChange(int oldRadius, int newRadius) {
+        return Math.max(0, HexMapService.hexTileCount(oldRadius) - HexMapService.hexTileCount(newRadius));
     }
 }

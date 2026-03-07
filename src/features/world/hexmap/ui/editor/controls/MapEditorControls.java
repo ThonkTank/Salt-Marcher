@@ -39,13 +39,13 @@ public class MapEditorControls extends HBox {
         mapCombo.setMaxWidth(160);
         mapCombo.setPromptText("Karte wählen…");
         mapCombo.setConverter(new StringConverter<>() {
-            @Override public String toString(HexMap m) { return m == null ? "" : m.Name; }
+            @Override public String toString(HexMap m) { return m == null ? "" : m.name(); }
             @Override public HexMap fromString(String s) { return null; }
         });
         mapCombo.setOnAction(e -> {
             if (!updatingMapCombo && onMapSelected != null) {
                 HexMap sel = mapCombo.getValue();
-                if (sel != null) onMapSelected.accept(sel.MapId);
+                if (sel != null) onMapSelected.accept(sel.mapId());
             }
         });
 
@@ -102,7 +102,7 @@ public class MapEditorControls extends HBox {
         boolean restoredPreviousSelection = false;
         if (prev != null) {
             for (HexMap m : maps) {
-                if (m.MapId != null && prev.MapId != null && m.MapId.equals(prev.MapId)) {
+                if (m.mapId() != null && prev.mapId() != null && m.mapId().equals(prev.mapId())) {
                     mapCombo.setValue(m);
                     restoredPreviousSelection = true;
                     break;
@@ -119,7 +119,7 @@ public class MapEditorControls extends HBox {
     public void selectMap(Long mapId) {
         if (mapId == null) return;
         for (HexMap m : mapCombo.getItems()) {
-            if (m.MapId != null && m.MapId.equals(mapId)) {
+            if (m.mapId() != null && m.mapId().equals(mapId)) {
                 mapCombo.setValue(m);
                 return;
             }

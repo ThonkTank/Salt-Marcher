@@ -4,7 +4,8 @@ import features.world.hexmap.model.HexMap;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
-import features.world.hexmap.service.HexMapService;
+
+import java.util.function.IntUnaryOperator;
 
 /**
  * Modaler Dialog zum Bearbeiten von Name und Radius einer bestehenden Hex-Karte.
@@ -14,11 +15,11 @@ public class EditMapDialog extends Dialog<EditMapDialog.Result> {
 
     public record Result(String name, int radius) {}
 
-    public EditMapDialog(HexMap map) {
+    public EditMapDialog(HexMap map, IntUnaryOperator removedTilesForRadius) {
         setTitle("Karte bearbeiten");
         setHeaderText("Karteneigenschaften bearbeiten");
 
-        int currentRadius = map.Radius != null ? map.Radius : 0;
+        int currentRadius = map.radius() != null ? map.radius() : 0;
 
         ButtonType saveType = new ButtonType("Speichern", ButtonBar.ButtonData.OK_DONE);
         getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
@@ -28,7 +29,7 @@ public class EditMapDialog extends Dialog<EditMapDialog.Result> {
         grid.setVgap(8);
         grid.setPadding(new Insets(16));
 
-        TextField nameField = new TextField(map.Name);
+        TextField nameField = new TextField(map.name());
         nameField.setPromptText("Kartenname");
 
         Spinner<Integer> radiusSpinner = new Spinner<>(0, 20, currentRadius);
@@ -46,7 +47,7 @@ public class EditMapDialog extends Dialog<EditMapDialog.Result> {
 
         radiusSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null && newVal < currentRadius) {
-                int lost = HexMapService.hexTileCount(currentRadius) - HexMapService.hexTileCount(newVal);
+                int lost = removedTilesForRadius.applyAsInt(newVal);
                 warningLabel.setText("Radius wird verkleinert \u2014 " + lost + " Felder werden gel\u00f6scht.");
                 warningLabel.setVisible(true);
                 warningLabel.setManaged(true);

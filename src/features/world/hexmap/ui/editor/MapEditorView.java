@@ -1,8 +1,9 @@
 package features.world.hexmap.ui.editor;
 
 import features.world.hexmap.model.HexMap;
+import features.world.hexmap.model.HexTerrainType;
 import features.world.hexmap.model.HexTile;
-import features.world.hexmap.ui.editor.application.MapEditorApplicationService;
+import features.world.hexmap.ui.editor.MapEditorApplicationService;
 import features.world.hexmap.ui.editor.controls.EditorTool;
 import features.world.hexmap.ui.editor.controls.MapEditorControls;
 import features.world.hexmap.ui.editor.dialogs.EditMapDialog;
@@ -14,13 +15,13 @@ import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
-import features.world.hexmap.service.HexMapService;
 import ui.AppView;
 import ui.UiErrorReporter;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 /**
@@ -37,7 +38,8 @@ public class MapEditorView implements AppView {
     private final MapEditorApplicationService applicationService;
 
     /** Sammelt Tile-ID -> Gelaendeaenderung waehrend eines Malstrichs; Flush bei Mouse-Release. */
-    private final Map<Long, String> dirtyTiles = new HashMap<>();
+    private final Map<Long, HexTerrainType> dirtyTiles = new HashMap<>();
+    private final AtomicLong loadSequence = new AtomicLong(0);
     private Long currentMapId;
     private boolean initialLoadDone = false;
 
@@ -74,20 +76,19 @@ public class MapEditorView implements AppView {
 
     /** Optimistisches UI-Update; DB-Schreiben wird bis zum Ende des Malstrichs aufgeschoben. */
     private void paintTile(HexTile tile) {
-        if (tile == null || tile.TileId == null) return;
-        String terrain = toolSettingsPane.getActiveTerrainType();
-        if (terrain.equals(tile.TerrainType)) return;
+        if (tile == null || tile.tileId() == null) return;
+        HexTerrainType terrain = toolSettingsPane.getActiveTerrainType();
+        if (terrain == tile.terrainType()) return;
 
-        canvas.updateTileTerrain(tile.TileId, terrain);
-        tile.TerrainType = terrain;
-        dirtyTiles.put(tile.TileId, terrain);
-        propertiesPane.showTile(tile);
+        canvas.updateTileTerrain(tile.tileId(), terrain);
+        dirtyTiles.put(tile.tileId(), terrain);
+        propertiesPane.showTile(tile, terrain);
     }
 
     /** Schreibt gesammelte Gelaendeaenderungen asynchron in die DB. */
     private void flushDirtyTiles() {
         if (dirtyTiles.isEmpty()) return;
-        Map<Long, String> batch = new HashMap<>(dirtyTiles);
+        Map<Long, HexTerrainType> batch = new HashMap<>(dirtyTiles);
         dirtyTiles.clear();
 
         applicationService.flushTerrainChanges(batch, () -> { }, ex -> {
@@ -102,13 +103,15 @@ public class MapEditorView implements AppView {
     }
 
     private void showEditMapDialog(HexMap map) {
-        EditMapDialog dialog = new EditMapDialog(map);
+        int oldRadius = map.radius() != null ? map.radius() : 0;
+        EditMapDialog dialog = new EditMapDialog(
+                map,
+                newRadius -> applicationService.removedTilesForRadiusChange(oldRadius, newRadius));
         dialog.showAndWait().ifPresent(result -> {
-            int oldRadius = map.Radius != null ? map.Radius : 0;
             boolean shrinking = result.radius() < oldRadius;
 
             if (shrinking) {
-                int tilesToRemove = HexMapService.hexTileCount(oldRadius) - HexMapService.hexTileCount(result.radius());
+                int tilesToRemove = applicationService.removedTilesForRadiusChange(oldRadius, result.radius());
                 Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
                         "Radius von " + oldRadius + " auf " + result.radius() + " verkleinern?\n"
                         + tilesToRemove + " Felder werden unwiderruflich gel\u00f6scht.\n"
@@ -124,10 +127,9 @@ public class MapEditorView implements AppView {
                 if (choice.isEmpty() || choice.get() != ButtonType.OK) return;
             }
 
-            applicationService.updateMap(map.MapId, result.name(), oldRadius, result.radius(),
+            applicationService.updateMap(map.mapId(), result.name(), oldRadius, result.radius(),
                 () -> loadMapListAsync(maps -> {
-                    controls.selectMap(map.MapId);
-                    loadMapAsync(map.MapId);
+                    controls.selectMap(map.mapId());
                 }),
                 ex -> {
                 UiErrorReporter.reportBackgroundFailure("MapEditorView.editMap()", ex);
@@ -143,7 +145,7 @@ public class MapEditorView implements AppView {
             if (maps.isEmpty()) {
                 showNewMapDialog();
             } else {
-                controls.selectMap(maps.get(0).MapId);
+                controls.selectMap(maps.get(0).mapId());
             }
         });
     }
@@ -166,9 +168,20 @@ public class MapEditorView implements AppView {
     }
 
     private void loadMapAsync(Long mapId) {
+        long requestSequence = loadSequence.incrementAndGet();
         applicationService.loadMap(mapId,
-                canvas::loadTiles,
-                ex -> UiErrorReporter.reportBackgroundFailure("MapEditorView.loadMapAsync()", ex));
+                tiles -> {
+                    if (requestSequence != loadSequence.get()) {
+                        return;
+                    }
+                    canvas.loadTiles(tiles);
+                },
+                ex -> {
+                    if (requestSequence != loadSequence.get()) {
+                        return;
+                    }
+                    UiErrorReporter.reportBackgroundFailure("MapEditorView.loadMapAsync()", ex);
+                });
     }
 
     @Override public Node getMainContent()     { return canvas; }
