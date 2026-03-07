@@ -5,6 +5,7 @@ import features.creaturecatalog.model.ChallengeRating;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import shared.crawler.text.CaseText;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +20,11 @@ import java.util.regex.Pattern;
  *   OLD (2014 MM): CSS prefix "mon-stat-block__"
  *   NEW (2024):    CSS prefix "mon-stat-block-2024__"
  */
-public class HtmlStatBlockParser {
+public final class HtmlStatBlockParser {
+
+    private HtmlStatBlockParser() {
+        throw new AssertionError("No instances");
+    }
 
     // Pre-compiled Patterns
     private static final Pattern SIZE_PREFIX_PATTERN = Pattern.compile(
@@ -62,7 +67,7 @@ public class HtmlStatBlockParser {
     private static final Pattern PARSE_INT_PARENS = Pattern.compile("[()]");
 
     // -------------------------------------------------------------------------
-    // Stat-Block-Element finden (zentralisiert für Crawler, QuickTest, etc.)
+    // Find stat-block root element (centralized for crawler/tests/etc.)
     // -------------------------------------------------------------------------
 
     public static Element findStatBlock(Document doc) {
@@ -74,7 +79,7 @@ public class HtmlStatBlockParser {
     }
 
     // -------------------------------------------------------------------------
-    // Öffentlicher Einstiegspunkt
+    // Public entry point
     // -------------------------------------------------------------------------
 
     public static Creature parse(Document doc) {
@@ -104,9 +109,9 @@ public class HtmlStatBlockParser {
         parseAllSections(doc, c);
         parseHabitat(doc, c);
 
-        // Fallback: ProficiencyBonus aus CR
+        // Fallback: derive proficiency bonus from CR
         if (c.ProficiencyBonus == 0 && c.CR != null) c.ProficiencyBonus = features.gamerules.service.DndMath.proficiencyBonus(c.CR);
-        // Fallback: InitiativeBonus aus DEX für old format
+        // Fallback: derive initiative bonus from DEX for old format
         if (!isNew && c.InitiativeBonus == 0 && c.Dex != 0)
             c.InitiativeBonus = abilityModifier(c.Dex);
 
@@ -123,7 +128,7 @@ public class HtmlStatBlockParser {
     }
 
     // -------------------------------------------------------------------------
-    // Meta-Zeile: "Small Humanoid (Goblinoid), Neutral Evil"
+    // Meta row: "Small Humanoid (Goblinoid), Neutral Evil"
     // -------------------------------------------------------------------------
 
     private static void parseMeta(Document doc, String prefix, Creature c) {
@@ -131,15 +136,15 @@ public class HtmlStatBlockParser {
         if (el == null) return;
         String text = el.text().trim();
 
-        // 1) Size(s) vom Anfang abtrennen: "Medium or Small Humanoid ..." -> size="Medium or Small"
+        // 1) Extract leading size(s): "Medium or Small Humanoid ..." -> size="Medium or Small"
         Matcher sizeMatcher = SIZE_PREFIX_PATTERN.matcher(text);
         if (!sizeMatcher.find()) return;
 
         c.Size = capitalizeSizes(sizeMatcher.group(1).trim());
 
-        String rest = text.substring(sizeMatcher.end()); // z.B. "Humanoid (Human, Shapechanger)"
+        String rest = text.substring(sizeMatcher.end()); // e.g. "Humanoid (Human, Shapechanger)"
 
-        // 2) Alignment: letztes Komma AUSSERHALB von Klammern finden
+        // 2) Alignment: find the last comma outside parentheses
         int splitAt = lastCommaOutsideParens(rest);
         String typePart;
         if (splitAt >= 0) {
@@ -150,7 +155,7 @@ public class HtmlStatBlockParser {
             c.Alignment = null;
         }
 
-        // 3) Subtypes aus Klammern extrahieren: "Humanoid (gnome, shapeshifter)" -> type="Humanoid", subtypes=["gnome","shapeshifter"]
+        // 3) Extract subtypes from parentheses: "Humanoid (gnome, shapeshifter)" -> type="Humanoid", subtypes=["gnome","shapeshifter"]
         int parenOpen = typePart.indexOf('(');
         String typeRaw;
         if (parenOpen >= 0) {
@@ -167,16 +172,16 @@ public class HtmlStatBlockParser {
             typeRaw = typePart;
         }
 
-        // 4) Swarm-Handling: "swarm of Tiny beasts" -> Type="Beast", Subtypes=["Swarm of Tiny"]
+        // 4) Swarm handling: "swarm of Tiny beasts" -> Type="Beast", Subtypes=["Swarm of Tiny"]
         Matcher swarmMatcher = SWARM_PATTERN.matcher(typeRaw);
         if (swarmMatcher.find()) {
-            String swarmSize = CrawlerHttpUtils.capitalizeFirst(swarmMatcher.group(1).trim());
-            String baseType  = CrawlerHttpUtils.capitalizeFirst(singularize(swarmMatcher.group(2).trim()));
+            String swarmSize = CaseText.capitalizeFirst(swarmMatcher.group(1).trim());
+            String baseType  = CaseText.capitalizeFirst(singularize(swarmMatcher.group(2).trim()));
             c.CreatureType = baseType;
             c.Subtypes.clear();
             c.Subtypes.add("Swarm of " + swarmSize);
         } else {
-            c.CreatureType = CrawlerHttpUtils.capitalizeFirst(typeRaw);
+            c.CreatureType = CaseText.capitalizeFirst(typeRaw);
         }
     }
 
@@ -194,7 +199,7 @@ public class HtmlStatBlockParser {
 
     private static String capitalizeSizes(String raw) {
         // "medium or small" -> "Medium or Small"
-        return EACH_SIZE_PATTERN.matcher(raw).replaceAll(m -> CrawlerHttpUtils.capitalizeFirst(m.group(1)));
+        return EACH_SIZE_PATTERN.matcher(raw).replaceAll(m -> CaseText.capitalizeFirst(m.group(1)));
     }
 
     // Minimal singularizer for D&D creature type names in swarm entries (e.g. "beasts" → "beast",
@@ -416,7 +421,7 @@ public class HtmlStatBlockParser {
             if (mPB.find()) c.ProficiencyBonus = parseInt(mPB.group(1), 2);
         }
 
-        // PB als separates Tidbit (Fallback)
+        // PB as separate tidbit (fallback)
         if (c.ProficiencyBonus == 0) {
             String pbRaw = tidbit(doc, prefix, "Proficiency Bonus");
             if (pbRaw != null) {
@@ -458,12 +463,12 @@ public class HtmlStatBlockParser {
         boolean inLegendaryActions = false;
         List<Creature.Action> currentList = c.Traits;
 
-        // Sektions-Überschriften sind <div class="...__description-block-heading">, KEINE <h3>.
+        // Section headers are <div class="...__description-block-heading">, not <h3>.
         // <p> elements carry action/trait entries (each starts with <strong>Name</strong>)
         // and also the legendary-action intro sentence (no <strong>, used only for count extraction).
         for (Element el : doc.select("div[class*=description-block-heading], p")) {
             if (el.tagName().equals("div")) {
-                // Sektions-Überschrift
+                // Section header
                 String heading = el.text().trim().toLowerCase();
                 switch (heading) {
                     case "actions":
@@ -482,18 +487,18 @@ public class HtmlStatBlockParser {
                         inLegendaryActions = true;
                         currentList        = c.LegendaryActions;
                         break;
-                    // "traits", "lair actions", "regional effects" etc.: keine Änderung
+                    // "traits", "lair actions", "regional effects", etc.: no list switch
                     default:
                         break;
                 }
                 continue;
             }
 
-            // <p> Element
+            // <p> element
             Element strong = el.selectFirst("strong");
             if (strong == null) {
                 if (inLegendaryActions) {
-                    // Intro-Satz der Legendary Actions: Count extrahieren
+                    // Legendary actions intro sentence: extract action count
                     if (c.LegendaryActionCount == 0) {
                         Matcher m = LEGENDARY_COUNT_PATTERN.matcher(el.text());
                         if (m.find()) {
@@ -510,8 +515,8 @@ public class HtmlStatBlockParser {
                     }
                     continue;
                 }
-                // Kein <strong>: Zauber-Subliste im alten Format (z.B. "Cantrips (at will): fire bolt, ...")
-                // oder Fußnote — an letzten Eintrag anhängen.
+                // No <strong>: spell sub-list in old format (e.g. "Cantrips (at will): fire bolt, ...")
+                // or footnote - append to the last entry.
                 if (!currentList.isEmpty()) {
                     Creature.Action last = currentList.get(currentList.size() - 1);
                     currentList.set(currentList.size() - 1,
@@ -527,7 +532,7 @@ public class HtmlStatBlockParser {
 
             String fullText = el.text().trim();
 
-            // Sub-Listen (z.B. "Cantrips (at will):", "1st level (4 slots):") an letzten Eintrag anhängen
+            // Sub-lists (e.g. "Cantrips (at will):", "1st level (4 slots):") append to last entry
             if (name.endsWith(":")) {
                 if (!currentList.isEmpty()) {
                     Creature.Action last = currentList.get(currentList.size() - 1);
@@ -545,7 +550,7 @@ public class HtmlStatBlockParser {
     }
 
     // -------------------------------------------------------------------------
-    // Selektor-Hilfsmethoden
+    // Selector helper methods
     // -------------------------------------------------------------------------
 
     /**
@@ -566,19 +571,19 @@ public class HtmlStatBlockParser {
         return null;
     }
 
-    /** Gibt den Wert eines Attribut-Felds zurück (z.B. "15" für AC). */
+    /** Returns attribute field value (e.g. "15" for AC). */
     private static String attrValue(Document doc, String prefix, String labelText) {
         return attrField(doc, prefix, labelText, "__attribute-data-value");
     }
 
-    /** Gibt den Klammer-Zusatz eines Attribut-Felds zurück (z.B. "leather armor, shield" für AC). Strips surrounding parentheses. */
+    /** Returns attribute field extra text (e.g. "leather armor, shield" for AC). Strips surrounding parentheses. */
     private static String attrExtra(Document doc, String prefix, String labelText) {
         String raw = attrField(doc, prefix, labelText, "__attribute-data-extra");
         return raw != null ? raw.replaceAll("^\\(|\\)$", "") : null;
     }
 
     /**
-     * Gibt den Wert eines Tidbit-Felds zurück (z.B. "Stealth +6" für Skills).
+     * Returns tidbit field value (e.g. "Stealth +6" for Skills).
      */
     private static String tidbit(Document doc, String prefix, String labelText) {
         for (Element tidbitEl : doc.select("." + prefix + "__tidbit")) {
@@ -592,8 +597,8 @@ public class HtmlStatBlockParser {
     }
 
     /**
-     * Extrahiert Habitat-Daten aus dem appended environment-tags Block.
-     * HTML-Struktur (außerhalb des Stat-Blocks, vom Crawler mitgespeichert):
+     * Extracts habitat data from the appended environment-tags block.
+     * HTML structure (outside the stat block, persisted by crawler):
      *   <p class="tags environment-tags">Habitat:
      *     <span class="tag environment-tag">Forest</span>...
      *   </p>
@@ -606,7 +611,7 @@ public class HtmlStatBlockParser {
     }
 
     // -------------------------------------------------------------------------
-    // String-Normalisierung
+    // String normalization
     // -------------------------------------------------------------------------
 
     /** "CON +10, INT +12" → "CON:+10,INT:+12" */
@@ -651,7 +656,7 @@ public class HtmlStatBlockParser {
         }
     }
 
-    /** D&D-korrekter Ability-Modifier: floor((score - 10) / 2). */
+    /** D&D-correct ability modifier: floor((score - 10) / 2). */
     static int abilityModifier(int score) {
         return Math.floorDiv(score - 10, 2);
     }
@@ -659,7 +664,7 @@ public class HtmlStatBlockParser {
     private static int parseInt(String s, int def) {
         if (s == null) return def;
         s = PARSE_INT_NORMALIZE.matcher(s.trim()).replaceAll("");
-        // Klammern entfernen: "(22)" → "22"
+        // Remove parentheses: "(22)" -> "22"
         s = PARSE_INT_PARENS.matcher(s).replaceAll("");
         try { return Integer.parseInt(s.trim()); }
         catch (NumberFormatException e) { return def; }

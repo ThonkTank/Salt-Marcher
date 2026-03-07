@@ -25,7 +25,7 @@ import java.util.function.Function;
  *       });
  * </pre>
  */
-public class BulkImporter {
+public final class BulkImporter {
 
     @FunctionalInterface
     public interface Processor<T> {
@@ -37,7 +37,9 @@ public class BulkImporter {
         void process(T item, Connection conn) throws Exception;
     }
 
-    private BulkImporter() {}
+    private BulkImporter() {
+        throw new AssertionError("No instances");
+    }
 
     /**
      * Runs a bulk import pipeline with transaction management and progress reporting.
@@ -58,8 +60,7 @@ public class BulkImporter {
         try {
             DatabaseManager.setupDatabase();
         } catch (Exception e) {
-            System.err.println("BulkImporter.run(): database setup failed: " + e.getMessage());
-            return;
+            throw new IllegalStateException("BulkImporter.run(): database setup failed", e);
         }
 
         System.out.println("Importing " + total + " " + label + "...");
@@ -88,6 +89,9 @@ public class BulkImporter {
                         // Systemic connection/schema error — abort rather than counting thousands
                         // of files as individually failed.
                         throw e;
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new SQLException("Import interrupted", e);
                     } catch (Exception e) {
                         failed++;
                         System.err.printf("ERROR [%s] %s: %s%n",
@@ -102,7 +106,7 @@ public class BulkImporter {
             }
 
         } catch (SQLException e) {
-            System.err.println("BulkImporter.run(): " + e.getMessage());
+            throw new IllegalStateException("BulkImporter.run(): " + e.getMessage(), e);
         }
 
         System.out.println();

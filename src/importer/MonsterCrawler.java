@@ -4,6 +4,11 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import shared.crawler.config.CrawlerConfig;
+import shared.crawler.config.CrawlerConfigException;
+import shared.crawler.config.CrawlerProperties;
+import shared.crawler.http.CrawlerHttpClient;
+import shared.crawler.slug.SlugIdentity;
 
 import java.io.IOException;
 import java.net.http.HttpClient;
@@ -51,10 +56,17 @@ public class MonsterCrawler {
     // -------------------------------------------------------------------------
 
     public static void main(String[] args) throws Exception {
-        Properties props = CrawlerHttpUtils.loadCrawlerProperties();
+        Properties props = CrawlerProperties.loadCrawlerProperties();
 
-        CrawlerConfig config = CrawlerConfig.fromProperties(props);
-        Path outputDir = CrawlerHttpUtils.resolveOutputDir(
+        CrawlerConfig config;
+        try {
+            config = CrawlerConfig.fromProperties(props);
+        } catch (CrawlerConfigException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+            return;
+        }
+        Path outputDir = CrawlerProperties.resolveOutputDir(
                 props.getProperty("output.dir", "data/monsters"));
 
         Files.createDirectories(outputDir);
@@ -66,7 +78,7 @@ public class MonsterCrawler {
     // Crawl orchestration
     // -------------------------------------------------------------------------
 
-    public void crawl() throws Exception {
+    public void crawl() throws IOException, InterruptedException {
         System.out.println("Starting D&D Beyond Monster Crawler...");
         System.out.println("Output directory: " + outputDir.toAbsolutePath());
 
@@ -90,7 +102,7 @@ public class MonsterCrawler {
         }
 
         // Deduplication: for slugs with the same name suffix, keep the lowest ID (2014 version)
-        Set<String> slugs = CrawlerHttpUtils.deduplicateSlugs(rawSlugs);
+        Set<String> slugs = SlugIdentity.deduplicateSlugs(rawSlugs);
         int removed = rawSlugs.size() - slugs.size();
         if (removed > 0) {
             System.out.println("Deduplication: " + removed + " newer duplicates removed"
@@ -134,7 +146,7 @@ public class MonsterCrawler {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
-            } catch (Exception e) {
+            } catch (IOException e) {
                 System.err.println("MonsterCrawler.crawl() [" + slug + "]: " + e.getMessage());
                 failed++;
             }
@@ -152,7 +164,7 @@ public class MonsterCrawler {
     // Listing page: extract monster slugs
     // -------------------------------------------------------------------------
 
-    private List<String> fetchMonsterSlugs(int page) throws Exception {
+    private List<String> fetchMonsterSlugs(int page) throws IOException, InterruptedException {
         String url = BASE_URL + "/monsters?page=" + page;
         String html = get(url);
         Document doc = Jsoup.parse(html, BASE_URL);
@@ -177,7 +189,7 @@ public class MonsterCrawler {
     // Detail page: fetch stat block and save as text
     // -------------------------------------------------------------------------
 
-    private void fetchMonsterDetail(String slug, Path outFile) throws Exception {
+    private void fetchMonsterDetail(String slug, Path outFile) throws IOException, InterruptedException {
         // Path traversal check
         if (!outFile.normalize().startsWith(outputDir.normalize())) {
             throw new SecurityException("Path traversal detected: " + slug);
@@ -218,8 +230,8 @@ public class MonsterCrawler {
     // HTTP helper
     // -------------------------------------------------------------------------
 
-    private String get(String url) throws Exception {
-        return CrawlerHttpUtils.get(url, httpClient, cobaltSession);
+    private String get(String url) throws IOException, InterruptedException {
+        return CrawlerHttpClient.get(url, httpClient, cobaltSession);
     }
 
 }
