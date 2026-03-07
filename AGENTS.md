@@ -72,3 +72,4 @@
 ## Security & Configuration Tips
 - Do not commit secrets. Keep session cookies in local `crawler.properties` only.
 - Start from `crawler.properties.example` for local setup.
+- Store local database backups under `data/backups/db/` (for example `data/backups/db/game.db.bak-<timestamp>`), never in the repository root.

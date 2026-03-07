@@ -1,6 +1,7 @@
 out/
 /lib/
 *.db
+game.db.bak-*
 *.db-shm
 *.db-wal
 *.db-journal
