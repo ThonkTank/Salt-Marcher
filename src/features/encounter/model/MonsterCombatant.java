@@ -1,5 +1,7 @@
 package features.encounter.model;
 
+import features.gamerules.model.LootCoins;
+
 import java.util.Objects;
 
 /** Combat state for a monster. Tracks HP, AC, and source snapshot for stat-block lookup. */
@@ -7,6 +9,7 @@ public class MonsterCombatant extends Combatant {
     private int currentHp;
     private int maxHp;
     private int ac;
+    private LootCoins lootCoins;
     private EncounterCreatureSnapshot creatureRef;
 
     public MonsterCombatant(
@@ -16,6 +19,7 @@ public class MonsterCombatant extends Combatant {
             int currentHp,
             int maxHp,
             int ac,
+            LootCoins lootCoins,
             EncounterCreatureSnapshot creatureRef) {
         rename(name);
         setInitiative(initiative);
@@ -24,6 +28,7 @@ public class MonsterCombatant extends Combatant {
         setMaxHp(maxHp);
         setCurrentHp(currentHp);
         setAc(ac);
+        setLootCoins(lootCoins);
     }
 
     public int getCurrentHp() {
@@ -73,6 +78,14 @@ public class MonsterCombatant extends Combatant {
 
     public void setCreatureRef(EncounterCreatureSnapshot creatureRef) {
         this.creatureRef = Objects.requireNonNull(creatureRef, "creatureRef must be non-null");
+    }
+
+    public LootCoins getLootCoins() {
+        return lootCoins;
+    }
+
+    public void setLootCoins(LootCoins lootCoins) {
+        this.lootCoins = Objects.requireNonNull(lootCoins, "lootCoins must be non-null");
     }
 
     private static int clampHp(int currentHp, int maxHp) {

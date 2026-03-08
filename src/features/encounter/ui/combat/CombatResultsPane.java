@@ -1,5 +1,7 @@
 package features.encounter.ui.combat;
 
+import features.gamerules.model.LootCoins;
+import features.encounter.model.MonsterCombatant;
 import features.encounter.service.EncounterService;
 import features.encounter.service.combat.CombatSession;
 import features.party.model.PlayerCharacter;
@@ -9,8 +11,11 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.util.StringConverter;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Post-combat summary shown in the ScenePane (state panel).
@@ -51,7 +56,14 @@ public class CombatResultsPane extends VBox {
         Label partyInfoLabel = new Label();
         partyInfoLabel.getStyleClass().add("text-secondary");
 
-        VBox xpBox = new VBox(2, perPlayerLabel, partyInfoLabel);
+        Label perPlayerGoldLabel = new Label();
+        perPlayerGoldLabel.getStyleClass().add("title");
+        perPlayerGoldLabel.setStyle("-fx-font-size: 1.5em;");
+
+        Label goldInfoLabel = new Label();
+        goldInfoLabel.getStyleClass().add("text-secondary");
+
+        VBox xpBox = new VBox(2, perPlayerLabel, partyInfoLabel, perPlayerGoldLabel, goldInfoLabel);
         xpBox.setPadding(new Insets(8));
         xpBox.setAlignment(Pos.CENTER_LEFT);
 
@@ -85,6 +97,10 @@ public class CombatResultsPane extends VBox {
         fractionRow.setPadding(new Insets(2, 8, 8, 8));
         HBox.setHgrow(fractionSlider, Priority.ALWAYS);
 
+        // ---- Loot toggles for non-dead enemies ----
+        List<CombatSession.EnemyOutcome> safeOutcomes = outcomes == null ? List.of() : outcomes;
+        OptionalLootSection optionalLootSection = buildOptionalLootSection(safeOutcomes);
+
         // ---- Done button ----
         Button doneButton = new Button("Abschließen");
         doneButton.setMaxWidth(Double.MAX_VALUE);
@@ -96,21 +112,26 @@ public class CombatResultsPane extends VBox {
 
         // ---- Reactive update ----
         Runnable update = () -> {
-            double thresh = thresholdSlider.getValue();
-            double fraction = fractionSlider.getValue();
-            var settlement = this.encounterService.settleCombatXp(outcomes, partySize, thresh, fraction);
-
-            subtitleLabel.setText(settlement.defeatedCount() + " Gegner besiegt · "
-                    + settlement.eligibleXp() + " XP");
-            thresholdValueLabel.setText((int) Math.round(thresh * 100) + "%");
-            fractionValueLabel.setText((int) Math.round(fraction * 100) + "%");
-            perPlayerLabel.setText(settlement.perPlayerXp() + " XP");
-            partyInfoLabel.setText("pro Spieler  (" + partySize + " Spieler · "
-                    + settlement.awardedXp() + " XP gesamt)");
+            updateSettlementUi(
+                    outcomes,
+                    partySize,
+                    thresholdSlider.getValue(),
+                    fractionSlider.getValue(),
+                    optionalLootSection.rows(),
+                    subtitleLabel,
+                    thresholdValueLabel,
+                    fractionValueLabel,
+                    perPlayerLabel,
+                    partyInfoLabel,
+                    perPlayerGoldLabel,
+                    goldInfoLabel);
         };
 
         thresholdSlider.valueProperty().addListener((o, ov, nv) -> update.run());
         fractionSlider.valueProperty().addListener((o, ov, nv) -> update.run());
+        for (OptionalLootRow row : optionalLootSection.rows()) {
+            row.toggle().selectedProperty().addListener((o, ov, nv) -> update.run());
+        }
         update.run();
 
         getChildren().addAll(
@@ -123,6 +144,9 @@ public class CombatResultsPane extends VBox {
                 thresholdRow,
                 fractionTitle,
                 fractionRow,
+                new Separator(),
+                optionalLootSection.title(),
+                optionalLootSection.scrollPane(),
                 new Separator(),
                 doneRow
         );
@@ -142,4 +166,106 @@ public class CombatResultsPane extends VBox {
         });
         return s;
     }
+
+    private static LootCoins lootOf(CombatSession.EnemyOutcome outcome) {
+        return outcome != null && outcome.combatant() != null
+                ? outcome.combatant().getLootCoins()
+                : LootCoins.zero();
+    }
+
+    private static String statusLabel(CombatSession.EnemyStatus status) {
+        if (status == null) {
+            return "Unbekannt";
+        }
+        return switch (status) {
+            case ALIVE -> "Lebt";
+            case DEAD -> "Tot";
+            case REMOVED -> "Entfernt";
+        };
+    }
+
+    private OptionalLootSection buildOptionalLootSection(List<CombatSession.EnemyOutcome> outcomes) {
+        List<OptionalLootRow> rows = new ArrayList<>();
+
+        Label title = new Label("Weitere Kreaturen (Loot optional)");
+        title.getStyleClass().add("text-secondary");
+        title.setPadding(new Insets(4, 8, 2, 8));
+
+        VBox list = new VBox(4);
+        list.setPadding(new Insets(2, 8, 8, 8));
+
+        for (CombatSession.EnemyOutcome outcome : outcomes) {
+            if (outcome == null
+                    || outcome.status() == CombatSession.EnemyStatus.DEAD
+                    || outcome.combatant() == null) {
+                continue;
+            }
+            CheckBox toggle = new CheckBox(
+                    outcome.combatant().getName()
+                            + " (" + statusLabel(outcome.status()) + ")"
+                            + " - " + lootOf(outcome).formatCompact());
+            rows.add(new OptionalLootRow(outcome.combatant(), toggle));
+            list.getChildren().add(toggle);
+        }
+
+        ScrollPane scroll = new ScrollPane(list);
+        scroll.setFitToWidth(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.setPrefViewportHeight(120);
+        scroll.setMinViewportHeight(80);
+
+        boolean hasRows = !rows.isEmpty();
+        scroll.setVisible(hasRows);
+        scroll.setManaged(hasRows);
+        title.setVisible(hasRows);
+        title.setManaged(hasRows);
+
+        return new OptionalLootSection(title, scroll, List.copyOf(rows));
+    }
+
+    private Set<MonsterCombatant> collectSelectedOptionalLootCombatants(List<OptionalLootRow> rows) {
+        Set<MonsterCombatant> selected = new HashSet<>();
+        for (OptionalLootRow row : rows) {
+            if (row.toggle().isSelected()) {
+                selected.add(row.combatant());
+            }
+        }
+        return selected;
+    }
+
+    private void updateSettlementUi(
+            List<CombatSession.EnemyOutcome> outcomes,
+            int partySize,
+            double threshold,
+            double fraction,
+            List<OptionalLootRow> optionalLootRows,
+            Label subtitleLabel,
+            Label thresholdValueLabel,
+            Label fractionValueLabel,
+            Label perPlayerLabel,
+            Label partyInfoLabel,
+            Label perPlayerGoldLabel,
+            Label goldInfoLabel) {
+        Set<MonsterCombatant> selectedOptionalLootCombatants =
+                collectSelectedOptionalLootCombatants(optionalLootRows);
+        var settlement = this.encounterService.settleCombatRewards(
+                outcomes, partySize, threshold, fraction, selectedOptionalLootCombatants);
+        var xpSettlement = settlement.xpSettlement();
+
+        subtitleLabel.setText(xpSettlement.defeatedCount() + " Gegner besiegt · "
+                + xpSettlement.eligibleXp() + " XP");
+        thresholdValueLabel.setText((int) Math.round(threshold * 100) + "%");
+        fractionValueLabel.setText((int) Math.round(fraction * 100) + "%");
+        perPlayerLabel.setText(xpSettlement.perPlayerXp() + " XP");
+        partyInfoLabel.setText("pro Spieler  (" + partySize + " Spieler · "
+                + xpSettlement.awardedXp() + " XP gesamt)");
+
+        perPlayerGoldLabel.setText(settlement.perPlayerLoot().formatCompact());
+        goldInfoLabel.setText("Loot-Pool: " + settlement.pooledLoot().formatCompact() + " gesamt ("
+                + settlement.deadLoot().formatCompact() + " durch tote Gegner)");
+    }
+
+    private record OptionalLootRow(MonsterCombatant combatant, CheckBox toggle) {}
+    private record OptionalLootSection(Label title, ScrollPane scrollPane, List<OptionalLootRow> rows) {}
 }

@@ -1,7 +1,7 @@
 package features.encounter.service.combat;
 
 import features.encounter.model.EncounterCreatureSnapshot;
-import features.encounter.model.EncounterSlot;
+import features.gamerules.model.LootCoins;
 import features.encounter.model.MonsterCombatant;
 
 import java.util.List;
@@ -16,23 +16,20 @@ public final class MonsterCombatantFactory {
     }
 
     static MonsterCombatant createFromSlot(
-            EncounterSlot slot,
+            PreparedEncounterSlot slot,
             int creatureIndex,
             int initiative,
             RandomGenerator random) {
         Objects.requireNonNull(slot, "slot");
         Objects.requireNonNull(random, "random");
-        if (slot.getCreature() == null) {
-            throw new IllegalArgumentException("slot creature must be non-null");
-        }
-        if (creatureIndex < 1 || creatureIndex > slot.getCount()) {
+        if (creatureIndex < 1 || creatureIndex > slot.count()) {
             throw new IllegalArgumentException("creatureIndex must be within slot count");
         }
 
-        int lootGold = lootFor(slot.getPerCreatureLootGold(), creatureIndex);
-        MonsterCombatant combatant = create(slot.getCreature(), initiative, lootGold, random);
-        if (slot.getCount() > 1) {
-            combatant.rename(slot.getCreature().getName() + " #" + creatureIndex);
+        LootCoins lootCoins = lootFor(slot.perCreatureLoot(), creatureIndex);
+        MonsterCombatant combatant = create(slot.creature(), initiative, lootCoins, random);
+        if (slot.count() > 1) {
+            combatant.rename(slot.creature().getName() + " #" + creatureIndex);
         }
         return combatant;
     }
@@ -43,13 +40,13 @@ public final class MonsterCombatantFactory {
 
     static MonsterCombatant createReinforcement(EncounterCreatureSnapshot creature, RandomGenerator random) {
         Objects.requireNonNull(creature, "creature");
-        return create(creature, InitiativeRoller.rollFor(creature), 0, random);
+        return create(creature, InitiativeRoller.rollFor(creature), LootCoins.zero(), random);
     }
 
     private static MonsterCombatant create(
             EncounterCreatureSnapshot creature,
             int initiative,
-            int lootGold,
+            LootCoins lootCoins,
             RandomGenerator random) {
         int rolledHp = HitPointRoller.rollFor(creature, random);
         return new MonsterCombatant(
@@ -59,15 +56,15 @@ public final class MonsterCombatantFactory {
                 rolledHp,
                 rolledHp,
                 creature.getAc(),
-                lootGold,
+                lootCoins,
                 creature);
     }
 
-    private static int lootFor(List<Integer> perCreatureLoot, int creatureIndex) {
+    private static LootCoins lootFor(List<LootCoins> perCreatureLoot, int creatureIndex) {
         if (perCreatureLoot == null || perCreatureLoot.size() < creatureIndex) {
-            return 0;
+            return LootCoins.zero();
         }
-        Integer value = perCreatureLoot.get(creatureIndex - 1);
-        return value == null ? 0 : value;
+        LootCoins value = perCreatureLoot.get(creatureIndex - 1);
+        return value == null ? LootCoins.zero() : value;
     }
 }

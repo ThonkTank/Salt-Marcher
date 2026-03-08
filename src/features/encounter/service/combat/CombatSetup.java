@@ -6,8 +6,6 @@ import features.encounter.model.EncounterCreatureSnapshot;
 import features.encounter.model.MonsterCombatant;
 import features.encounter.model.PcCombatant;
 import features.party.model.PlayerCharacter;
-import features.encounter.model.Encounter;
-import features.encounter.model.EncounterSlot;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,8 +27,8 @@ public final class CombatSetup {
     public enum BuildCombatantsFailureReason {
         PARTY_MISSING,
         PC_INITIATIVES_MISSING,
-        ENCOUNTER_MISSING,
-        ENCOUNTER_SLOTS_INVALID,
+        SLOTS_MISSING,
+        SLOTS_INVALID,
         PARTY_MEMBER_MISSING,
         PC_INITIATIVE_VALUE_MISSING,
         PC_INITIATIVE_COUNT_MISMATCH
@@ -63,15 +61,15 @@ public final class CombatSetup {
     public static BuildCombatantsResult buildCombatants(
             List<PlayerCharacter> party,
             List<Integer> pcInitiatives,
-            Encounter encounter,
+            List<PreparedEncounterSlot> preparedSlots,
             List<Integer> monsterInitiatives) {
-        return buildCombatants(party, pcInitiatives, encounter, monsterInitiatives, ThreadLocalRandom.current());
+        return buildCombatants(party, pcInitiatives, preparedSlots, monsterInitiatives, ThreadLocalRandom.current());
     }
 
     static BuildCombatantsResult buildCombatants(
             List<PlayerCharacter> party,
             List<Integer> pcInitiatives,
-            Encounter encounter,
+            List<PreparedEncounterSlot> preparedSlots,
             List<Integer> monsterInitiatives,
             RandomGenerator random) {
         Objects.requireNonNull(random, "random");
@@ -81,11 +79,11 @@ public final class CombatSetup {
         if (pcInitiatives == null) {
             return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PC_INITIATIVES_MISSING);
         }
-        if (encounter == null) {
-            return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.ENCOUNTER_MISSING);
+        if (preparedSlots == null) {
+            return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.SLOTS_MISSING);
         }
-        if (encounter.slots() == null) {
-            return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.ENCOUNTER_SLOTS_INVALID);
+        if (preparedSlots.isEmpty()) {
+            return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.SLOTS_INVALID);
         }
         if (pcInitiatives.size() != party.size()) {
             return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PC_INITIATIVE_COUNT_MISMATCH);
@@ -100,9 +98,9 @@ public final class CombatSetup {
                 return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PC_INITIATIVE_VALUE_MISSING);
             }
         }
-        for (EncounterSlot slot : encounter.slots()) {
-            if (slot == null || slot.getCreature() == null) {
-                return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.ENCOUNTER_SLOTS_INVALID);
+        for (PreparedEncounterSlot slot : preparedSlots) {
+            if (slot == null || slot.creature() == null) {
+                return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.SLOTS_INVALID);
             }
         }
 
@@ -119,15 +117,15 @@ public final class CombatSetup {
 
         // Monsters are always individual combatants. Runtime mob grouping is handled by CombatTrackerPane.
         int slotIdx = 0;
-        for (EncounterSlot slot : encounter.slots()) {
+        for (PreparedEncounterSlot slot : preparedSlots) {
             Integer monsterInitiative = (monsterInitiatives != null && slotIdx < monsterInitiatives.size())
                     ? monsterInitiatives.get(slotIdx)
-                    : InitiativeRoller.rollFor(slot.getCreature());
+                    : InitiativeRoller.rollFor(slot.creature());
             int initiative = monsterInitiative != null
                     ? monsterInitiative
-                    : InitiativeRoller.rollFor(slot.getCreature());
+                    : InitiativeRoller.rollFor(slot.creature());
             slotIdx++;
-            for (int i = 1; i <= slot.getCount(); i++) {
+            for (int i = 1; i <= slot.count(); i++) {
                 MonsterCombatant mc = MonsterCombatantFactory.createFromSlot(slot, i, initiative, random);
                 combatants.add(mc);
             }

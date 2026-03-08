@@ -4,11 +4,14 @@ import features.creaturecatalog.model.Creature;
 import features.encounter.model.Combatant;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
+import features.encounter.model.MonsterCombatant;
 import features.gamerules.model.MonsterRole;
 import features.gamerules.model.MonsterRoleParser;
 import features.encounter.service.combat.CombatOutcomeService;
 import features.encounter.service.combat.CombatSetup;
 import features.encounter.service.combat.CombatSession;
+import features.encounter.service.combat.EncounterLootService;
+import features.encounter.service.combat.PreparedEncounterSlot;
 import features.encounter.service.generation.EncounterScoring;
 import features.encounter.service.generation.EncounterGenerator;
 import features.encountertable.model.EncounterTable;
@@ -18,6 +21,7 @@ import features.party.model.PlayerCharacter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Workflow facade for encounter UI use-cases.
@@ -168,10 +172,21 @@ public class EncounterService {
         if (request == null) {
             return CombatStartResult.invalidInput(CombatStartFailureReason.REQUEST_MISSING);
         }
+        if (request.encounter() == null) {
+            return CombatStartResult.invalidInput(CombatStartFailureReason.ENCOUNTER_MISSING);
+        }
+        List<EncounterSlot> encounterSlots = request.encounter().slots();
+        if (encounterSlots == null || encounterSlots.isEmpty()) {
+            return CombatStartResult.invalidInput(CombatStartFailureReason.ENCOUNTER_SLOTS_INVALID);
+        }
+        List<PreparedEncounterSlot> preparedSlots = EncounterLootService.assignLootToSlots(
+                encounterSlots,
+                request.encounter().averageLevel(),
+                request.party() != null ? request.party().size() : request.encounter().partySize());
         CombatSetup.BuildCombatantsResult result = CombatSetup.buildCombatants(
                 request.party(),
                 request.pcInitiatives(),
-                request.encounter(),
+                preparedSlots,
                 request.monsterInitiatives()
         );
         if (result.status() == CombatSetup.BuildCombatantsStatus.SUCCESS) {
@@ -206,12 +221,18 @@ public class EncounterService {
         return EncounterGenerator.MAX_CREATURES_PER_SLOT;
     }
 
-    public CombatOutcomeService.XpSettlement settleCombatXp(
+    public CombatOutcomeService.CombatRewardsSettlement settleCombatRewards(
             List<CombatSession.EnemyOutcome> outcomes,
             int partySize,
             double defeatThreshold,
-            double xpFraction) {
-        return CombatOutcomeService.settleXp(outcomes, partySize, defeatThreshold, xpFraction);
+            double xpFraction,
+            Set<MonsterCombatant> optionalLootSelections) {
+        return CombatOutcomeService.settleRewards(
+                outcomes,
+                partySize,
+                defeatThreshold,
+                xpFraction,
+                optionalLootSelections);
     }
 
     private static <T> List<T> nullIfEmpty(List<T> list) {
@@ -275,8 +296,7 @@ public class EncounterService {
         return switch (failureReason) {
             case PARTY_MISSING -> CombatStartFailureReason.PARTY_MISSING;
             case PC_INITIATIVES_MISSING -> CombatStartFailureReason.PC_INITIATIVES_MISSING;
-            case ENCOUNTER_MISSING -> CombatStartFailureReason.ENCOUNTER_MISSING;
-            case ENCOUNTER_SLOTS_INVALID -> CombatStartFailureReason.ENCOUNTER_SLOTS_INVALID;
+            case SLOTS_MISSING, SLOTS_INVALID -> CombatStartFailureReason.ENCOUNTER_SLOTS_INVALID;
             case PARTY_MEMBER_MISSING -> CombatStartFailureReason.PARTY_MEMBER_MISSING;
             case PC_INITIATIVE_VALUE_MISSING -> CombatStartFailureReason.PC_INITIATIVE_VALUE_MISSING;
             case PC_INITIATIVE_COUNT_MISMATCH -> CombatStartFailureReason.PC_INITIATIVE_COUNT_MISMATCH;
