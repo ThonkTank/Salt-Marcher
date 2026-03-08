@@ -45,6 +45,9 @@ final class CreatureHydrator {
         c.XP               = rs.getInt("xp");
         c.HP               = rs.getInt("hp");
         c.HitDice          = rs.getString("hit_dice");
+        c.HitDiceCount     = nullableInt(rs, "hit_dice_count");
+        c.HitDiceSides     = nullableInt(rs, "hit_dice_sides");
+        c.HitDiceModifier  = nullableInt(rs, "hit_dice_modifier");
         c.AC               = rs.getInt("ac");
         c.AcNotes          = rs.getString("ac_notes");
         c.Speed            = rs.getInt("speed");
@@ -82,6 +85,11 @@ final class CreatureHydrator {
         c.Reactions        = new ArrayList<>(); // populated by loadActions()
         c.LegendaryActions = new ArrayList<>(); // populated by loadActions()
         return c;
+    }
+
+    private static Integer nullableInt(ResultSet rs, String column) throws SQLException {
+        Number value = (Number) rs.getObject(column);
+        return value != null ? value.intValue() : null;
     }
 
     static void loadBiomes(Connection conn, List<Creature> creatures) throws SQLException {

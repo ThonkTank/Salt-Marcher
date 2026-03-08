@@ -1,6 +1,7 @@
 package features.encounter.service;
 
 import features.creaturecatalog.model.Creature;
+import features.creaturecatalog.model.HitDice;
 import features.encounter.model.EncounterCreatureSnapshot;
 
 /** Maps creaturecatalog entities to encounter-owned snapshots. */
@@ -17,6 +18,10 @@ public final class EncounterCreatureMapper {
                 creature.Name,
                 creature.XP,
                 creature.HP,
+                HitDice.fromParts(
+                        creature.HitDiceCount,
+                        creature.HitDiceSides,
+                        creature.HitDiceModifier).orElse(null),
                 creature.AC,
                 creature.InitiativeBonus,
                 creature.CR != null ? creature.CR.display : "0",

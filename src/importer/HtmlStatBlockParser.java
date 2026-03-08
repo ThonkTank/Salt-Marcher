@@ -1,6 +1,7 @@
 package importer;
 
 import features.creaturecatalog.model.Creature;
+import features.creaturecatalog.model.HitDice;
 import features.creaturecatalog.model.ChallengeRating;
 import features.creaturecatalog.service.ActionToHitParser;
 import org.jsoup.nodes.Document;
@@ -240,7 +241,12 @@ public final class HtmlStatBlockParser {
         String hpVal = attrValue(doc, prefix, hpLabel);
         if (hpVal != null) c.HP = parseInt(hpVal, 0);
         String hpExtra = attrExtra(doc, prefix, hpLabel);
-        if (hpExtra != null) c.HitDice = hpExtra;
+        c.HitDice = hpExtra;
+        HitDice.tryParse(hpExtra).ifPresent(hitDice -> {
+            c.HitDiceCount = hitDice.count();
+            c.HitDiceSides = hitDice.sides();
+            c.HitDiceModifier = hitDice.modifier();
+        });
 
         String speedVal = attrValue(doc, prefix, "Speed");
         if (speedVal != null) parseSpeedString(speedVal, c);

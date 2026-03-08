@@ -1,11 +1,14 @@
 package features.encounter.model;
 
+import features.creaturecatalog.model.HitDice;
+
 /** Encounter-owned creature projection used by encounter/combat models. */
 public class EncounterCreatureSnapshot {
     private final Long id;
     private final String name;
     private final int xp;
     private final int hp;
+    private final HitDice hitDice;
     private final int ac;
     private final int initiativeBonus;
     private final String crDisplay;
@@ -16,6 +19,7 @@ public class EncounterCreatureSnapshot {
             String name,
             int xp,
             int hp,
+            HitDice hitDice,
             int ac,
             int initiativeBonus,
             String crDisplay,
@@ -26,6 +30,7 @@ public class EncounterCreatureSnapshot {
         this.name = name;
         this.xp = xp;
         this.hp = hp;
+        this.hitDice = hitDice;
         this.ac = ac;
         this.initiativeBonus = initiativeBonus;
         this.crDisplay = crDisplay == null || crDisplay.isBlank() ? "0" : crDisplay;
@@ -46,6 +51,10 @@ public class EncounterCreatureSnapshot {
 
     public int getHp() {
         return hp;
+    }
+
+    public HitDice getHitDice() {
+        return hitDice;
     }
 
     public int getAc() {

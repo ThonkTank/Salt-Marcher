@@ -1,5 +1,7 @@
 package database;
 
+import features.creaturecatalog.model.HitDice;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -99,6 +101,9 @@ public final class DatabaseManager {
                     + "xp                     INTEGER DEFAULT 0,"
                     + "hp                     INTEGER DEFAULT 0,"
                     + "hit_dice               TEXT,"
+                    + "hit_dice_count         INTEGER,"
+                    + "hit_dice_sides         INTEGER,"
+                    + "hit_dice_modifier      INTEGER,"
                     + "ac                     INTEGER DEFAULT 10,"
                     + "ac_notes               TEXT,"
                     + "speed                  INTEGER DEFAULT 0,"
@@ -374,9 +379,50 @@ public final class DatabaseManager {
                 stmt.execute("ALTER TABLE creatures ADD COLUMN slug_key TEXT");
             }
         }
+        if (!columnExists(conn, "creatures", "hit_dice_count")) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE creatures ADD COLUMN hit_dice_count INTEGER");
+            }
+        }
+        if (!columnExists(conn, "creatures", "hit_dice_sides")) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE creatures ADD COLUMN hit_dice_sides INTEGER");
+            }
+        }
+        if (!columnExists(conn, "creatures", "hit_dice_modifier")) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE creatures ADD COLUMN hit_dice_modifier INTEGER");
+            }
+        }
+        backfillParsedHitDice(conn);
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_source_slug ON creatures(source_slug)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_slug_key ON creatures(slug_key)");
+        }
+    }
+
+    private static void backfillParsedHitDice(Connection conn) throws SQLException {
+        String selectSql = "SELECT id, hit_dice FROM creatures "
+                + "WHERE hit_dice IS NOT NULL AND TRIM(hit_dice) <> '' "
+                + "AND (hit_dice_count IS NULL OR hit_dice_sides IS NULL)";
+        String updateSql = "UPDATE creatures SET hit_dice_count = ?, hit_dice_sides = ?, hit_dice_modifier = ? "
+                + "WHERE id = ?";
+        try (PreparedStatement select = conn.prepareStatement(selectSql);
+             ResultSet rs = select.executeQuery();
+             PreparedStatement update = conn.prepareStatement(updateSql)) {
+            while (rs.next()) {
+                long creatureId = rs.getLong("id");
+                String hitDiceText = rs.getString("hit_dice");
+                var parsed = HitDice.tryParse(hitDiceText);
+                if (parsed.isEmpty()) continue;
+                HitDice hitDice = parsed.get();
+                update.setInt(1, hitDice.count());
+                update.setInt(2, hitDice.sides());
+                update.setInt(3, hitDice.modifier());
+                update.setLong(4, creatureId);
+                update.addBatch();
+            }
+            update.executeBatch();
         }
     }
 

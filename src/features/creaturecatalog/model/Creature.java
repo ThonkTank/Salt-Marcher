@@ -27,6 +27,9 @@ public class Creature {
     // --- AC & HP Details ---
     public String AcNotes;           // "natural armor", "leather armor, shield"
     public String HitDice;           // "2d6", "18d8+54"
+    public Integer HitDiceCount;     // parsed from HitDice (e.g. 18 in 18d8+54)
+    public Integer HitDiceSides;     // parsed from HitDice (e.g. 8 in 18d8+54)
+    public Integer HitDiceModifier;  // parsed from HitDice (e.g. +54 in 18d8+54)
 
     // --- Speed breakdown ---
     public int FlySpeed;

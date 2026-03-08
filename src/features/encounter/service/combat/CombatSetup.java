@@ -11,6 +11,9 @@ import features.encounter.model.EncounterSlot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.random.RandomGenerator;
 
 import features.encounter.service.EncounterCreatureMapper;
 import features.encounter.service.generation.EncounterScoring;
@@ -47,21 +50,6 @@ public final class CombatSetup {
         }
     }
 
-    private static MonsterCombatant monsterCombatantFrom(EncounterCreatureSnapshot c, int initiative) {
-        return new MonsterCombatant(
-                c.getName(),
-                initiative,
-                c.getInitiativeBonus(),
-                c.getHp(),
-                c.getHp(),
-                c.getAc(),
-                c);
-    }
-
-    private static MonsterCombatant monsterCombatantFrom(EncounterCreatureSnapshot c) {
-        return monsterCombatantFrom(c, InitiativeRoller.rollFor(c));
-    }
-
     /**
      * Builds the full combatant list for a combat encounter.
      * Monsters are always instantiated individually; mob turns are derived later as a runtime
@@ -77,6 +65,16 @@ public final class CombatSetup {
             List<Integer> pcInitiatives,
             Encounter encounter,
             List<Integer> monsterInitiatives) {
+        return buildCombatants(party, pcInitiatives, encounter, monsterInitiatives, ThreadLocalRandom.current());
+    }
+
+    static BuildCombatantsResult buildCombatants(
+            List<PlayerCharacter> party,
+            List<Integer> pcInitiatives,
+            Encounter encounter,
+            List<Integer> monsterInitiatives,
+            RandomGenerator random) {
+        Objects.requireNonNull(random, "random");
         if (party == null) {
             return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PARTY_MISSING);
         }
@@ -130,8 +128,7 @@ public final class CombatSetup {
                     : InitiativeRoller.rollFor(slot.getCreature());
             slotIdx++;
             for (int i = 1; i <= slot.getCount(); i++) {
-                MonsterCombatant mc = monsterCombatantFrom(slot.getCreature(), initiative);
-                if (slot.getCount() > 1) mc.rename(slot.getCreature().getName() + " #" + i);
+                MonsterCombatant mc = MonsterCombatantFactory.createFromSlot(slot, i, initiative, random);
                 combatants.add(mc);
             }
         }
@@ -180,6 +177,6 @@ public final class CombatSetup {
     }
 
     public static MonsterCombatant createReinforcement(EncounterCreatureSnapshot creature) {
-        return monsterCombatantFrom(creature);
+        return MonsterCombatantFactory.createReinforcement(creature);
     }
 }

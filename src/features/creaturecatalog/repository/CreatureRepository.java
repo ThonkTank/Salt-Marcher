@@ -75,26 +75,28 @@ public final class CreatureRepository {
 
     // Parameter positions for bindCreatureParams / MonsterImporter:
     // 1=id, 2=name, 3=size, 4=creature_type, 5=alignment,
-    // 6=cr, 7=xp, 8=hp, 9=hit_dice, 10=ac, 11=ac_notes,
-    // 12=speed, 13=fly_speed, 14=swim_speed, 15=climb_speed, 16=burrow_speed,
-    // 17=str, 18=dex, 19=con, 20=intel, 21=wis, 22=cha,
-    // 23=initiative_bonus, 24=proficiency_bonus, 25=saving_throws, 26=skills,
-    // 27=damage_vulnerabilities, 28=damage_resistances, 29=damage_immunities, 30=condition_immunities,
-    // 31=senses, 32=passive_perception, 33=languages, 34=legendary_action_count,
-    // 35=role, 36=source_slug, 37=slug_key
+    // 6=cr, 7=xp, 8=hp, 9=hit_dice, 10=hit_dice_count, 11=hit_dice_sides, 12=hit_dice_modifier,
+    // 13=ac, 14=ac_notes, 15=speed, 16=fly_speed, 17=swim_speed, 18=climb_speed, 19=burrow_speed,
+    // 20=str, 21=dex, 22=con, 23=intel, 24=wis, 25=cha,
+    // 26=initiative_bonus, 27=proficiency_bonus, 28=saving_throws, 29=skills,
+    // 30=damage_vulnerabilities, 31=damage_resistances, 32=damage_immunities, 33=condition_immunities,
+    // 34=senses, 35=passive_perception, 36=languages, 37=legendary_action_count,
+    // 38=role, 39=source_slug, 40=slug_key
     public static final String CREATURE_INSERT_SQL = "INSERT INTO creatures("
             + "id, name, size, creature_type, alignment,"
-            + "cr, xp, hp, hit_dice, ac, ac_notes,"
+            + "cr, xp, hp, hit_dice, hit_dice_count, hit_dice_sides, hit_dice_modifier, ac, ac_notes,"
             + "speed, fly_speed, swim_speed, climb_speed, burrow_speed,"
             + "str, dex, con, intel, wis, cha,"
             + "initiative_bonus, proficiency_bonus,"
             + "saving_throws, skills,"
             + "damage_vulnerabilities, damage_resistances, damage_immunities, condition_immunities,"
             + "senses, passive_perception, languages, legendary_action_count, role, source_slug, slug_key"
-            + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+            + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
             + " ON CONFLICT(id) DO UPDATE SET "
             + "name=excluded.name, size=excluded.size, creature_type=excluded.creature_type, alignment=excluded.alignment,"
-            + "cr=excluded.cr, xp=excluded.xp, hp=excluded.hp, hit_dice=excluded.hit_dice, ac=excluded.ac, ac_notes=excluded.ac_notes,"
+            + "cr=excluded.cr, xp=excluded.xp, hp=excluded.hp, hit_dice=excluded.hit_dice,"
+            + "hit_dice_count=excluded.hit_dice_count, hit_dice_sides=excluded.hit_dice_sides,"
+            + "hit_dice_modifier=excluded.hit_dice_modifier, ac=excluded.ac, ac_notes=excluded.ac_notes,"
             + "speed=excluded.speed, fly_speed=excluded.fly_speed, swim_speed=excluded.swim_speed, climb_speed=excluded.climb_speed,"
             + "burrow_speed=excluded.burrow_speed, str=excluded.str, dex=excluded.dex, con=excluded.con, intel=excluded.intel,"
             + "wis=excluded.wis, cha=excluded.cha, initiative_bonus=excluded.initiative_bonus,"
@@ -153,34 +155,37 @@ public final class CreatureRepository {
         ps.setInt   (7,  c.XP);
         ps.setInt   (8,  c.HP);
         ps.setString(9,  c.HitDice);
-        ps.setInt   (10, c.AC);
-        ps.setString(11, c.AcNotes);
-        ps.setInt   (12, c.Speed);
-        ps.setInt   (13, c.FlySpeed);
-        ps.setInt   (14, c.SwimSpeed);
-        ps.setInt   (15, c.ClimbSpeed);
-        ps.setInt   (16, c.BurrowSpeed);
-        ps.setInt   (17, c.Str);
-        ps.setInt   (18, c.Dex);
-        ps.setInt   (19, c.Con);
-        ps.setInt   (20, c.Intel);
-        ps.setInt   (21, c.Wis);
-        ps.setInt   (22, c.Cha);
-        ps.setInt   (23, c.InitiativeBonus);
-        ps.setInt   (24, c.ProficiencyBonus);
-        ps.setString(25, c.SavingThrows);
-        ps.setString(26, c.Skills);
-        ps.setString(27, c.DamageVulnerabilities);
-        ps.setString(28, c.DamageResistances);
-        ps.setString(29, c.DamageImmunities);
-        ps.setString(30, c.ConditionImmunities);
-        ps.setString(31, c.Senses);
-        ps.setInt   (32, c.PassivePerception);
-        ps.setString(33, c.Languages);
-        ps.setInt   (34, c.LegendaryActionCount);
-        ps.setString(35, c.Role);
-        ps.setString(36, c.SourceSlug);
-        ps.setString(37, c.SlugKey);
+        ps.setObject(10, c.HitDiceCount);
+        ps.setObject(11, c.HitDiceSides);
+        ps.setObject(12, c.HitDiceModifier);
+        ps.setInt   (13, c.AC);
+        ps.setString(14, c.AcNotes);
+        ps.setInt   (15, c.Speed);
+        ps.setInt   (16, c.FlySpeed);
+        ps.setInt   (17, c.SwimSpeed);
+        ps.setInt   (18, c.ClimbSpeed);
+        ps.setInt   (19, c.BurrowSpeed);
+        ps.setInt   (20, c.Str);
+        ps.setInt   (21, c.Dex);
+        ps.setInt   (22, c.Con);
+        ps.setInt   (23, c.Intel);
+        ps.setInt   (24, c.Wis);
+        ps.setInt   (25, c.Cha);
+        ps.setInt   (26, c.InitiativeBonus);
+        ps.setInt   (27, c.ProficiencyBonus);
+        ps.setString(28, c.SavingThrows);
+        ps.setString(29, c.Skills);
+        ps.setString(30, c.DamageVulnerabilities);
+        ps.setString(31, c.DamageResistances);
+        ps.setString(32, c.DamageImmunities);
+        ps.setString(33, c.ConditionImmunities);
+        ps.setString(34, c.Senses);
+        ps.setInt   (35, c.PassivePerception);
+        ps.setString(36, c.Languages);
+        ps.setInt   (37, c.LegendaryActionCount);
+        ps.setString(38, c.Role);
+        ps.setString(39, c.SourceSlug);
+        ps.setString(40, c.SlugKey);
     }
 
     private static void clearActions(Connection conn, Long creatureId) throws SQLException {
