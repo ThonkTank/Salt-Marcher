@@ -56,14 +56,14 @@ public class CombatResultsPane extends VBox {
         Label partyInfoLabel = new Label();
         partyInfoLabel.getStyleClass().add("text-secondary");
 
-        Label perPlayerGoldLabel = new Label();
-        perPlayerGoldLabel.getStyleClass().add("title");
-        perPlayerGoldLabel.setStyle("-fx-font-size: 1.5em;");
-
         Label goldInfoLabel = new Label();
-        goldInfoLabel.getStyleClass().add("text-secondary");
+        goldInfoLabel.getStyleClass().add("title");
+        goldInfoLabel.setStyle("-fx-font-size: 1.5em;");
 
-        VBox xpBox = new VBox(2, perPlayerLabel, partyInfoLabel, perPlayerGoldLabel, goldInfoLabel);
+        Label goldDetailLabel = new Label();
+        goldDetailLabel.getStyleClass().add("text-secondary");
+
+        VBox xpBox = new VBox(2, perPlayerLabel, partyInfoLabel, goldInfoLabel, goldDetailLabel);
         xpBox.setPadding(new Insets(8));
         xpBox.setAlignment(Pos.CENTER_LEFT);
 
@@ -123,8 +123,8 @@ public class CombatResultsPane extends VBox {
                     fractionValueLabel,
                     perPlayerLabel,
                     partyInfoLabel,
-                    perPlayerGoldLabel,
-                    goldInfoLabel);
+                    goldInfoLabel,
+                    goldDetailLabel);
         };
 
         thresholdSlider.valueProperty().addListener((o, ov, nv) -> update.run());
@@ -245,8 +245,8 @@ public class CombatResultsPane extends VBox {
             Label fractionValueLabel,
             Label perPlayerLabel,
             Label partyInfoLabel,
-            Label perPlayerGoldLabel,
-            Label goldInfoLabel) {
+            Label goldInfoLabel,
+            Label goldDetailLabel) {
         Set<MonsterCombatant> selectedOptionalLootCombatants =
                 collectSelectedOptionalLootCombatants(optionalLootRows);
         var settlement = this.encounterService.settleCombatRewards(
@@ -261,8 +261,8 @@ public class CombatResultsPane extends VBox {
         partyInfoLabel.setText("pro Spieler  (" + partySize + " Spieler · "
                 + xpSettlement.awardedXp() + " XP gesamt)");
 
-        perPlayerGoldLabel.setText(settlement.perPlayerLoot().formatCompact());
-        goldInfoLabel.setText("Loot-Pool: " + settlement.pooledLoot().formatCompact() + " gesamt ("
+        goldInfoLabel.setText(settlement.pooledLoot().formatCompact());
+        goldDetailLabel.setText("Loot-Pool gesamt ("
                 + settlement.deadLoot().formatCompact() + " durch tote Gegner)");
     }
 

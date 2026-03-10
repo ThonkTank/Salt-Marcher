@@ -24,7 +24,7 @@ public record PreparedEncounterSlot(
         List<LootCoins> copy = new ArrayList<>(perCreatureLoot.size());
         for (LootCoins loot : perCreatureLoot) {
             LootCoins safeValue = loot == null ? LootCoins.zero() : loot;
-            if (safeValue.totalCp() < 0) {
+            if (safeValue.totalCpValue() < 0) {
                 throw new IllegalArgumentException("perCreatureLoot values must be >= 0");
             }
             copy.add(safeValue);

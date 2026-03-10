@@ -31,6 +31,18 @@ public final class LootCalculator {
 
     public record GoldSettlement(int perPlayerGold, int totalGold, int avgLevelUsed) {}
 
+    public static int wealthAtLevel(int level) {
+        int safeLevel = Math.max(1, Math.min(MAX_LEVEL, level));
+        return WEALTH_AT_LEVEL[safeLevel];
+    }
+
+    public static int nextWealthAtLevel(int level) {
+        int safeLevel = Math.max(1, Math.min(MAX_LEVEL, level));
+        return safeLevel == MAX_LEVEL
+                ? WEALTH_AT_LEVEL[LEVEL_20_PLUS_INDEX]
+                : WEALTH_AT_LEVEL[safeLevel + 1];
+    }
+
     public static GoldSettlement settleGold(int averageLevel, int perPlayerAwardedXp, int partySize) {
         int safeLevel = Math.max(1, Math.min(MAX_LEVEL, averageLevel));
         int safePartySize = Math.max(1, partySize);
@@ -41,10 +53,8 @@ public final class LootCalculator {
                 ? currentXp + (XP_AT_LEVEL[MAX_LEVEL] - XP_AT_LEVEL[MAX_LEVEL - 1])
                 : XP_AT_LEVEL[safeLevel + 1];
 
-        int currentWealth = WEALTH_AT_LEVEL[safeLevel];
-        int nextWealth = safeLevel == MAX_LEVEL
-                ? WEALTH_AT_LEVEL[LEVEL_20_PLUS_INDEX]
-                : WEALTH_AT_LEVEL[safeLevel + 1];
+        int currentWealth = wealthAtLevel(safeLevel);
+        int nextWealth = nextWealthAtLevel(safeLevel);
 
         int xpDelta = Math.max(1, nextXp - currentXp);
         int wealthDelta = Math.max(0, nextWealth - currentWealth);

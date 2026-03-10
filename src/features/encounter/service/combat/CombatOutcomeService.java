@@ -19,8 +19,7 @@ public final class CombatOutcomeService {
             XpSettlement xpSettlement,
             LootCoins deadLoot,
             LootCoins optionalLoot,
-            LootCoins pooledLoot,
-            LootCoins perPlayerLoot) {}
+            LootCoins pooledLoot) {}
 
     public static XpSettlement settleXp(
             List<CombatSession.EnemyOutcome> outcomes,
@@ -78,9 +77,7 @@ public final class CombatOutcomeService {
             }
         }
         LootCoins pooledLoot = deadLoot.plus(optionalLoot);
-        int safePartySize = Math.max(1, partySize);
-        LootCoins perPlayerLoot = pooledLoot.dividedBy(safePartySize);
-        return new CombatRewardsSettlement(xpSettlement, deadLoot, optionalLoot, pooledLoot, perPlayerLoot);
+        return new CombatRewardsSettlement(xpSettlement, deadLoot, optionalLoot, pooledLoot);
     }
 
     static double hpLostRatio(MonsterCombatant combatant) {
