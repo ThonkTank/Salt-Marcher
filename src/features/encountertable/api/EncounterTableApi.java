@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Cross-feature read facade for encounter table data needed outside the feature.
+ * Public cross-feature read facade for encounter table data.
  */
-public final class EncounterTableCatalogService {
+public final class EncounterTableApi {
 
-    private EncounterTableCatalogService() {
+    private EncounterTableApi() {
         throw new AssertionError("No instances");
     }
 

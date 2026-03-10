@@ -1,12 +1,12 @@
 package features.encounter.combat.service;
 
-import features.creaturecatalog.model.Creature;
+import features.creatures.model.Creature;
 import features.encounter.combat.model.Combatant;
 import features.encounter.combat.model.MonsterCombatant;
 import features.encounter.combat.model.PcCombatant;
 import features.encounter.combat.model.PreparedEncounterSlot;
 import features.encounter.model.EncounterCreatureSnapshot;
-import features.party.model.PlayerCharacter;
+import features.party.api.PartyApi;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.random.RandomGenerator;
 
 import features.encounter.model.EncounterCreatureSnapshotMapper;
 import features.encounter.generation.service.EncounterScoring;
-import features.gamerules.service.XpCalculator;
+import shared.rules.service.XpCalculator;
 
 public final class CombatSetup {
     private CombatSetup() {
@@ -60,7 +60,7 @@ public final class CombatSetup {
      *                           Pass null to auto-roll every slot.
      */
     public static BuildCombatantsResult buildCombatants(
-            List<PlayerCharacter> party,
+            List<PartyApi.PartyMember> party,
             List<Integer> pcInitiatives,
             List<PreparedEncounterSlot> preparedSlots,
             List<Integer> monsterInitiatives) {
@@ -68,7 +68,7 @@ public final class CombatSetup {
     }
 
     static BuildCombatantsResult buildCombatants(
-            List<PlayerCharacter> party,
+            List<PartyApi.PartyMember> party,
             List<Integer> pcInitiatives,
             List<PreparedEncounterSlot> preparedSlots,
             List<Integer> monsterInitiatives,
@@ -89,7 +89,7 @@ public final class CombatSetup {
         if (pcInitiatives.size() != party.size()) {
             return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PC_INITIATIVE_COUNT_MISMATCH);
         }
-        for (PlayerCharacter pc : party) {
+        for (PartyApi.PartyMember pc : party) {
             if (pc == null) {
                 return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PARTY_MEMBER_MISSING);
             }
@@ -109,9 +109,9 @@ public final class CombatSetup {
 
         // PCs with manually entered initiative.
         for (int i = 0; i < party.size(); i++) {
-            PlayerCharacter pc = party.get(i);
+            PartyApi.PartyMember pc = party.get(i);
             PcCombatant cs     = new PcCombatant();
-            cs.rename(pc.Name + " (Lv." + pc.Level + ")");
+            cs.rename(pc.name() + " (Lv." + pc.level() + ")");
             cs.setInitiative(pcInitiatives.get(i));
             combatants.add(cs);
         }

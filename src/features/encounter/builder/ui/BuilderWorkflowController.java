@@ -13,7 +13,7 @@ import features.encounter.builder.application.ports.EncounterTableProvider;
 import features.encounter.internal.EncounterAsyncTaskSupport;
 import features.encountertable.model.EncounterTable;
 import features.encounter.partyanalysis.model.CreatureRoleProfile;
-import features.party.model.PlayerCharacter;
+import features.party.api.PartyApi;
 import javafx.concurrent.Task;
 import javafx.scene.control.Alert;
 import ui.shell.SceneHandle;
@@ -34,7 +34,7 @@ public final class BuilderWorkflowController {
     private final Consumer<InitiativePane> onShowInitiativePane;
     private final CombatWorkflowController combatWorkflowController;
 
-    private List<PlayerCharacter> partyCache = new ArrayList<>();
+    private List<PartyApi.PartyMember> partyCache = new ArrayList<>();
     private int cachedAvgLevel = 1;
     private Task<EncounterBuilderService.PartySnapshot> partyLoadTask;
     private Task<EncounterTableProvider.TableCatalogResult> tableLoadTask;
@@ -143,7 +143,7 @@ public final class BuilderWorkflowController {
         }
 
         Encounter encounter = rosterPane.buildEncounter();
-        List<PlayerCharacter> partyCopy = List.copyOf(partyCache);
+        List<PartyApi.PartyMember> partyCopy = List.copyOf(partyCache);
         InitiativePane initiativePane = new InitiativePane(partyCopy, encounter.slots());
         initiativePane.setOnCancel(() -> encounterScene.setContent(rosterPane));
         initiativePane.setOnConfirm(result -> combatWorkflowController.prepareCombat(
@@ -169,7 +169,7 @@ public final class BuilderWorkflowController {
         rosterPane.setStartCombatEnabled(rosterPane.hasSlots());
     }
 
-    List<PlayerCharacter> getPartyCache() {
+    List<PartyApi.PartyMember> getPartyCache() {
         return partyCache;
     }
 
