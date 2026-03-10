@@ -16,10 +16,9 @@ public final class EncounterSearchRelaxationPolicy {
 
     public static List<RelaxationProfile> orderedRelaxations() {
         return List.of(
-                new RelaxationProfile(0.0, 0.0, false, false, false),
-                new RelaxationProfile(0.75, 0.0, false, true, false),
-                new RelaxationProfile(0.75, 1.75, false, true, true),
-                new RelaxationProfile(0.75, 1.75, true, true, true)
+                new RelaxationProfile(0.0, false, false),
+                new RelaxationProfile(0.75, false, true),
+                new RelaxationProfile(0.75, true, true)
         );
     }
 }

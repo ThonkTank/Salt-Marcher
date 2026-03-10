@@ -5,8 +5,6 @@ package features.encounter.generation.service.search.model;
  */
 public record RelaxationProfile(
         double pacingSlackRounds,
-        double complexitySlack,
         boolean allowRoleRepeat,
-        boolean pacingRelaxed,
-        boolean complexityRelaxed
+        boolean pacingRelaxed
 ) {}

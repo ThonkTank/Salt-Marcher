@@ -103,6 +103,12 @@ val backfillCreatureAnalysis = registerJavaExecTask(
     taskMainClass = "importer.CreatureAnalysisBackfillTool"
 )
 
+val rebuildCreatureAnalysis = registerJavaExecTask(
+    taskName = "rebuildCreatureAnalysis",
+    taskDescription = "Rebuild persisted creature analysis for current analysis inputs and refresh the active party cache.",
+    taskMainClass = "importer.RebuildCreatureAnalysisTool"
+)
+
 val applyCreatureOverrides = registerJavaExecTask(
     taskName = "applyCreatureOverrides",
     taskDescription = "Apply versioned creature CR/XP overrides from data/creature_overrides.csv.",
@@ -129,6 +135,26 @@ val crawlerItemsSlugs = registerJavaExecTask(
     taskArgs = listOf("--build-slugs")
 )
 
+val crawlerSpells = registerJavaExecTask(
+    taskName = "crawlerSpells",
+    taskDescription = "Run spell crawler only.",
+    taskMainClass = "features.spells.importer.SpellCrawler"
+)
+
+val importSpells = registerJavaExecTask(
+    taskName = "importSpells",
+    taskDescription = "Run spell importer.",
+    taskMainClass = "features.spells.importer.SpellImporter",
+    dependsOnTask = crawlerSpells
+)
+
+val crawlerSpellsSlugs = registerJavaExecTask(
+    taskName = "crawlerSpellsSlugs",
+    taskDescription = "Build spell slug list only.",
+    taskMainClass = "features.spells.importer.SpellCrawler",
+    taskArgs = listOf("--build-slugs")
+)
+
 tasks.register("crawler") {
     group = "application"
     description = "Run monster crawler + importer."
@@ -139,6 +165,12 @@ tasks.register("crawlerItemsPipeline") {
     group = "application"
     description = "Run item crawler + importer."
     dependsOn(importItems)
+}
+
+tasks.register("crawlerSpellsPipeline") {
+    group = "application"
+    description = "Run spell crawler + importer."
+    dependsOn(importSpells)
 }
 
 val checkNoCompiledArtifactsInSource by tasks.registering {

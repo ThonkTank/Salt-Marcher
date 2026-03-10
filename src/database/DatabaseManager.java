@@ -1,5 +1,7 @@
 package database;
 
+import features.partyanalysis.model.AnalysisModelVersion;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -170,6 +172,52 @@ public final class DatabaseManager {
                     + "PRIMARY KEY (item_id, tag)"
                     + ")");
 
+            stmt.execute("CREATE TABLE IF NOT EXISTS spells ("
+                    + "id                        INTEGER PRIMARY KEY,"
+                    + "name                      TEXT    NOT NULL,"
+                    + "slug                      TEXT,"
+                    + "source                    TEXT,"
+                    + "level                     INTEGER NOT NULL DEFAULT 0,"
+                    + "school                    TEXT,"
+                    + "casting_time              TEXT,"
+                    + "range_text                TEXT,"
+                    + "duration_text             TEXT,"
+                    + "ritual                    INTEGER NOT NULL DEFAULT 0,"
+                    + "concentration             INTEGER NOT NULL DEFAULT 0,"
+                    + "components_text           TEXT,"
+                    + "material_component_text   TEXT,"
+                    + "classes_text              TEXT,"
+                    + "attack_or_save_text       TEXT,"
+                    + "damage_effect_text        TEXT,"
+                    + "description               TEXT,"
+                    + "higher_levels_text        TEXT,"
+                    + "casting_channel           TEXT,"
+                    + "target_profile            TEXT,"
+                    + "delivery_type             TEXT,"
+                    + "is_offensive              INTEGER NOT NULL DEFAULT 0,"
+                    + "expected_damage_single    REAL NOT NULL DEFAULT 0.0,"
+                    + "expected_damage_small_aoe REAL NOT NULL DEFAULT 0.0,"
+                    + "expected_damage_large_aoe REAL NOT NULL DEFAULT 0.0"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS spell_classes ("
+                    + "spell_id    INTEGER NOT NULL REFERENCES spells(id) ON DELETE CASCADE,"
+                    + "class_name  TEXT    NOT NULL,"
+                    + "PRIMARY KEY (spell_id, class_name)"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS spell_damage_types ("
+                    + "spell_id    INTEGER NOT NULL REFERENCES spells(id) ON DELETE CASCADE,"
+                    + "damage_type TEXT    NOT NULL,"
+                    + "PRIMARY KEY (spell_id, damage_type)"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS spell_tags ("
+                    + "spell_id INTEGER NOT NULL REFERENCES spells(id) ON DELETE CASCADE,"
+                    + "tag      TEXT    NOT NULL,"
+                    + "PRIMARY KEY (spell_id, tag)"
+                    + ")");
+
             stmt.execute("CREATE TABLE IF NOT EXISTS creature_biomes ("
                     + "creature_id INTEGER NOT NULL REFERENCES creatures(id) ON DELETE CASCADE,"
                     + "biome       TEXT    NOT NULL,"
@@ -279,23 +327,46 @@ public final class DatabaseManager {
 
             stmt.execute("CREATE TABLE IF NOT EXISTS creature_action_analysis ("
                     + "action_id             INTEGER PRIMARY KEY REFERENCES creature_actions(id) ON DELETE CASCADE,"
+                    + "analysis_version      INTEGER NOT NULL DEFAULT 1,"
                     + "is_melee              INTEGER NOT NULL DEFAULT 0,"
                     + "is_ranged             INTEGER NOT NULL DEFAULT 0,"
+                    + "is_mixed_melee_ranged INTEGER NOT NULL DEFAULT 0,"
                     + "is_aoe                INTEGER NOT NULL DEFAULT 0,"
                     + "is_buff               INTEGER NOT NULL DEFAULT 0,"
                     + "is_heal               INTEGER NOT NULL DEFAULT 0,"
                     + "is_control            INTEGER NOT NULL DEFAULT 0,"
                     + "has_mobility          INTEGER NOT NULL DEFAULT 0,"
                     + "has_summon            INTEGER NOT NULL DEFAULT 0,"
+                    + "is_spellcasting       INTEGER NOT NULL DEFAULT 0,"
+                    + "is_offensive_combat_option INTEGER NOT NULL DEFAULT 0,"
+                    + "is_support_combat_option   INTEGER NOT NULL DEFAULT 0,"
+                    + "is_passive_defense    INTEGER NOT NULL DEFAULT 0,"
+                    + "is_pure_utility       INTEGER NOT NULL DEFAULT 0,"
                     + "requires_recharge     INTEGER NOT NULL DEFAULT 0,"
                     + "estimated_rule_lines  INTEGER NOT NULL DEFAULT 1,"
                     + "complexity_points     INTEGER NOT NULL DEFAULT 1,"
                     + "expected_uses_per_round REAL NOT NULL DEFAULT 1.0,"
+                    + "action_channel        TEXT,"
+                    + "save_dc               INTEGER,"
+                    + "save_ability          TEXT,"
+                    + "half_damage_on_save   INTEGER NOT NULL DEFAULT 0,"
+                    + "targeting_hint        TEXT,"
+                    + "base_damage           REAL NOT NULL DEFAULT 0.0,"
+                    + "conditional_damage_factor REAL NOT NULL DEFAULT 1.0,"
+                    + "legendary_action_cost INTEGER NOT NULL DEFAULT 1,"
+                    + "limited_uses          INTEGER,"
+                    + "recharge_min          INTEGER,"
+                    + "recharge_max          INTEGER,"
+                    + "recurring_damage_trait INTEGER NOT NULL DEFAULT 0,"
+                    + "spell_level_cap       INTEGER,"
+                    + "multiattack_profile   TEXT,"
+                    + "spell_options_profile TEXT,"
                     + "parsed_at             TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP"
                     + ")");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS creature_static_analysis ("
                     + "creature_id                INTEGER PRIMARY KEY REFERENCES creatures(id) ON DELETE CASCADE,"
+                    + "analysis_version           INTEGER NOT NULL DEFAULT 1,"
                     + "primary_function_role      TEXT,"
                     + "capability_tags            TEXT,"
                     + "base_action_units_per_round REAL NOT NULL DEFAULT 1.0,"
@@ -307,15 +378,28 @@ public final class DatabaseManager {
                     + "control_signal_score       REAL NOT NULL DEFAULT 0.0,"
                     + "mobility_signal_score      REAL NOT NULL DEFAULT 0.0,"
                     + "ranged_signal_score        REAL NOT NULL DEFAULT 0.0,"
+                    + "ranged_identity_score      REAL NOT NULL DEFAULT 0.0,"
                     + "melee_signal_score         REAL NOT NULL DEFAULT 0.0,"
                     + "spellcasting_signal_score  REAL NOT NULL DEFAULT 0.0,"
                     + "aoe_signal_score           REAL NOT NULL DEFAULT 0.0,"
                     + "healing_signal_score       REAL NOT NULL DEFAULT 0.0,"
                     + "summon_signal_score        REAL NOT NULL DEFAULT 0.0,"
                     + "reaction_signal_score      REAL NOT NULL DEFAULT 0.0,"
+                    + "stealth_signal_score       REAL NOT NULL DEFAULT 0.0,"
+                    + "hide_signal_score          REAL NOT NULL DEFAULT 0.0,"
+                    + "invisibility_signal_score  REAL NOT NULL DEFAULT 0.0,"
+                    + "obscurement_signal_score   REAL NOT NULL DEFAULT 0.0,"
+                    + "forced_movement_signal_score REAL NOT NULL DEFAULT 0.0,"
+                    + "ally_enable_signal_score   REAL NOT NULL DEFAULT 0.0,"
+                    + "ally_command_signal_score  REAL NOT NULL DEFAULT 0.0,"
+                    + "defense_signal_score       REAL NOT NULL DEFAULT 0.0,"
+                    + "tank_signal_score          REAL NOT NULL DEFAULT 0.0,"
+                    + "ambusher_role_score        REAL NOT NULL DEFAULT 0.0,"
+                    + "artillery_role_score       REAL NOT NULL DEFAULT 0.0,"
+                    + "brute_role_score           REAL NOT NULL DEFAULT 0.0,"
                     + "soldier_role_score         REAL NOT NULL DEFAULT 0.0,"
-                    + "archer_role_score          REAL NOT NULL DEFAULT 0.0,"
                     + "controller_role_score      REAL NOT NULL DEFAULT 0.0,"
+                    + "leader_role_score          REAL NOT NULL DEFAULT 0.0,"
                     + "skirmisher_role_score      REAL NOT NULL DEFAULT 0.0,"
                     + "support_role_score         REAL NOT NULL DEFAULT 0.0,"
                     + "updated_at                 TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP"
@@ -335,6 +419,7 @@ public final class DatabaseManager {
                     + "id                 INTEGER PRIMARY KEY CHECK (id = 1),"
                     + "party_comp_hash    TEXT NOT NULL,"
                     + "party_comp_version INTEGER NOT NULL DEFAULT 0,"
+                    + "analysis_model_version INTEGER NOT NULL DEFAULT 1,"
                     + "active_run_id      INTEGER REFERENCES encounter_party_cache_runs(run_id),"
                     + "cache_status       TEXT NOT NULL DEFAULT 'INVALID',"
                     + "last_error         TEXT,"
@@ -346,8 +431,8 @@ public final class DatabaseManager {
                     + "creature_id           INTEGER NOT NULL REFERENCES creatures(id) ON DELETE CASCADE,"
                     + "weight_class          TEXT,"
                     + "survivability_actions REAL NOT NULL DEFAULT 0.0,"
+                    + "action_units_per_round REAL NOT NULL DEFAULT 1.0,"
                     + "offense_pressure      REAL NOT NULL DEFAULT 0.0,"
-                    + "expected_turn_share   REAL NOT NULL DEFAULT 0.0,"
                     + "minionness_score      REAL NOT NULL DEFAULT 0.0,"
                     + "gm_complexity_load    REAL NOT NULL DEFAULT 0.0,"
                     + "fit_flags             TEXT,"
@@ -361,6 +446,15 @@ public final class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_items_category ON items(category)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_items_rarity ON items(rarity)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_items_is_magic ON items(is_magic)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spells_level ON spells(level)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spells_school ON spells(school)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spells_slug ON spells(slug)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spells_is_offensive ON spells(is_offensive)");
+            stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_spells_name_norm_unique "
+                    + "ON spells(lower(trim(name)))");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spell_classes_class_name ON spell_classes(class_name)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spell_damage_types_damage_type ON spell_damage_types(damage_type)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spell_tags_tag ON spell_tags(tag)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_size ON creatures(size)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_alignment ON creatures(alignment)");
             // Note: no name index — all name queries use leading-wildcard LIKE which cannot use B-tree indexes
@@ -385,6 +479,7 @@ public final class DatabaseManager {
             ensureCreatureImportColumns(conn);
             ensureCreatureActionColumns(conn);
             ensureItemTagCompatibility(conn);
+            ensureSpellCompatibility(conn);
             ensureEncounterAnalysisColumns(conn);
             dropLegacyRoleColumns(conn);
 
@@ -449,8 +544,9 @@ public final class DatabaseManager {
             // Seed encounter cache singleton state (hash is replaced during first invalidation pass).
             try (PreparedStatement ps = conn.prepareStatement(
                     "INSERT OR IGNORE INTO encounter_party_cache_state"
-                            + "(id, party_comp_hash, party_comp_version, active_run_id, cache_status, updated_at)"
-                            + " VALUES(1, '', 0, NULL, 'INVALID', CURRENT_TIMESTAMP)")) {
+                            + "(id, party_comp_hash, party_comp_version, analysis_model_version, active_run_id, cache_status, updated_at)"
+                            + " VALUES(1, '', 0, ?, NULL, 'INVALID', CURRENT_TIMESTAMP)")) {
+                ps.setInt(1, AnalysisModelVersion.current());
                 ps.executeUpdate();
             }
 
@@ -560,19 +656,57 @@ public final class DatabaseManager {
     }
 
     private static void ensureEncounterAnalysisColumns(Connection conn) throws SQLException {
+        ensureColumn(conn, "creature_action_analysis", "analysis_version", "INTEGER NOT NULL DEFAULT 1");
+        ensureColumn(conn, "creature_action_analysis", "is_mixed_melee_ranged", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "creature_action_analysis", "is_spellcasting", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "creature_action_analysis", "is_offensive_combat_option", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "creature_action_analysis", "is_support_combat_option", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "creature_action_analysis", "is_passive_defense", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "creature_action_analysis", "is_pure_utility", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "creature_action_analysis", "action_channel", "TEXT");
+        ensureColumn(conn, "creature_action_analysis", "save_dc", "INTEGER");
+        ensureColumn(conn, "creature_action_analysis", "save_ability", "TEXT");
+        ensureColumn(conn, "creature_action_analysis", "half_damage_on_save", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "creature_action_analysis", "targeting_hint", "TEXT");
+        ensureColumn(conn, "creature_action_analysis", "base_damage", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_action_analysis", "conditional_damage_factor", "REAL NOT NULL DEFAULT 1.0");
+        ensureColumn(conn, "creature_action_analysis", "legendary_action_cost", "INTEGER NOT NULL DEFAULT 1");
+        ensureColumn(conn, "creature_action_analysis", "limited_uses", "INTEGER");
+        ensureColumn(conn, "creature_action_analysis", "recharge_min", "INTEGER");
+        ensureColumn(conn, "creature_action_analysis", "recharge_max", "INTEGER");
+        ensureColumn(conn, "creature_action_analysis", "recurring_damage_trait", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "creature_action_analysis", "spell_level_cap", "INTEGER");
+        ensureColumn(conn, "creature_action_analysis", "multiattack_profile", "TEXT");
+        ensureColumn(conn, "creature_action_analysis", "spell_options_profile", "TEXT");
+        ensureColumn(conn, "creature_static_analysis", "analysis_version", "INTEGER NOT NULL DEFAULT 1");
         ensureColumn(conn, "creature_static_analysis", "primary_function_role", "TEXT");
         ensureColumn(conn, "creature_static_analysis", "capability_tags", "TEXT");
+        ensureColumn(conn, "creature_static_analysis", "ranged_identity_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "spellcasting_signal_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "aoe_signal_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "healing_signal_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "summon_signal_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "reaction_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "stealth_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "hide_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "invisibility_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "obscurement_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "forced_movement_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "ally_enable_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "ally_command_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "defense_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "tank_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "ambusher_role_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "artillery_role_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "brute_role_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "soldier_role_score", "REAL NOT NULL DEFAULT 0.0");
-        ensureColumn(conn, "creature_static_analysis", "archer_role_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "controller_role_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "leader_role_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "skirmisher_role_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "support_role_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_party_analysis", "weight_class", "TEXT");
+        ensureColumn(conn, "creature_party_analysis", "action_units_per_round", "REAL NOT NULL DEFAULT 1.0");
+        ensureColumn(conn, "encounter_party_cache_state", "analysis_model_version", "INTEGER NOT NULL DEFAULT 1");
         dropColumnIfExists(conn, "creature_static_analysis", "secondary_function_role");
     }
 
@@ -609,6 +743,43 @@ public final class DatabaseManager {
                 }
             }
             insertTag.executeBatch();
+        }
+    }
+
+    private static void ensureSpellCompatibility(Connection conn) throws SQLException {
+        ensureColumn(conn, "spells", "slug", "TEXT");
+        ensureColumn(conn, "spells", "source", "TEXT");
+        ensureColumn(conn, "spells", "level", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "spells", "school", "TEXT");
+        ensureColumn(conn, "spells", "casting_time", "TEXT");
+        ensureColumn(conn, "spells", "range_text", "TEXT");
+        ensureColumn(conn, "spells", "duration_text", "TEXT");
+        ensureColumn(conn, "spells", "ritual", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "spells", "concentration", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "spells", "components_text", "TEXT");
+        ensureColumn(conn, "spells", "material_component_text", "TEXT");
+        ensureColumn(conn, "spells", "classes_text", "TEXT");
+        ensureColumn(conn, "spells", "attack_or_save_text", "TEXT");
+        ensureColumn(conn, "spells", "damage_effect_text", "TEXT");
+        ensureColumn(conn, "spells", "description", "TEXT");
+        ensureColumn(conn, "spells", "higher_levels_text", "TEXT");
+        ensureColumn(conn, "spells", "casting_channel", "TEXT");
+        ensureColumn(conn, "spells", "target_profile", "TEXT");
+        ensureColumn(conn, "spells", "delivery_type", "TEXT");
+        ensureColumn(conn, "spells", "is_offensive", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "spells", "expected_damage_single", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "spells", "expected_damage_small_aoe", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "spells", "expected_damage_large_aoe", "REAL NOT NULL DEFAULT 0.0");
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spells_level ON spells(level)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spells_school ON spells(school)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spells_slug ON spells(slug)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spells_is_offensive ON spells(is_offensive)");
+            stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_spells_name_norm_unique "
+                    + "ON spells(lower(trim(name)))");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spell_classes_class_name ON spell_classes(class_name)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spell_damage_types_damage_type ON spell_damage_types(damage_type)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_spell_tags_tag ON spell_tags(tag)");
         }
     }
 

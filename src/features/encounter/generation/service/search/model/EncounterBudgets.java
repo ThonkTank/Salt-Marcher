@@ -13,8 +13,8 @@ public record EncounterBudgets(
         double hardRounds,
         double minEnemyActionUnits,
         double maxEnemyActionUnits,
+        int targetMonsterTurnSlots,
         int softMonsterTurnSlots,
         int hardMonsterTurnSlots,
-        double softComplexity,
-        double hardComplexity
+        int maxComplexActions
 ) {}

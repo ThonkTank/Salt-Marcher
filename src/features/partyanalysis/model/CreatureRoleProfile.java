@@ -13,7 +13,6 @@ public record CreatureRoleProfile(
         double survivabilityActions,
         double actionUnitsPerRound,
         double offensePressure,
-        double expectedTurnShare,
-        double gmComplexityLoad,
+        int complexActionCount,
         Set<String> fitFlags
 ) {}

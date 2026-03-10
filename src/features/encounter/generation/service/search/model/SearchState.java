@@ -4,6 +4,7 @@ import features.creatures.model.EncounterFunctionRole;
 import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.search.policy.EncounterConstraintPolicy;
 import features.encounter.rules.EncounterMobSlotRules;
+import features.partyanalysis.model.EncounterWeightClass;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -26,7 +27,7 @@ public final class SearchState {
     private final int adjustedXp;
     private final double enemyActionUnits;
     private final int enemyTurnSlots;
-    private final double gmComplexityLoad;
+    private final int complexActionCount;
     private final double totalSurvivabilityActions;
     private List<StateEntry> entriesView;
     private Map<Long, Integer> countsView;
@@ -43,7 +44,7 @@ public final class SearchState {
         adjustedXp = 0;
         enemyActionUnits = 0.0;
         enemyTurnSlots = 0;
-        gmComplexityLoad = 0.0;
+        complexActionCount = 0;
         totalSurvivabilityActions = 0.0;
         entriesView = List.of();
         countsView = Map.of();
@@ -69,7 +70,7 @@ public final class SearchState {
         this.adjustedXp = EncounterScoring.applyMultiplier(rawXp, totalCreatureCount);
         this.enemyActionUnits = previous.enemyActionUnits + addition.enemyActionUnitsDelta();
         this.enemyTurnSlots = previous.enemyTurnSlots + addition.enemyTurnSlotsDelta();
-        this.gmComplexityLoad = previous.gmComplexityLoad + addition.gmComplexityDelta();
+        this.complexActionCount = previous.complexActionCount + addition.complexActionDelta();
         this.totalSurvivabilityActions = previous.totalSurvivabilityActions + addition.survivabilityActionsDelta();
     }
 
@@ -128,8 +129,8 @@ public final class SearchState {
         return distinctStatBlocks;
     }
 
-    public double gmComplexityLoad() {
-        return gmComplexityLoad;
+    public int complexActionCount() {
+        return complexActionCount;
     }
 
     public double totalSurvivabilityActions() {
@@ -203,7 +204,7 @@ public final class SearchState {
             int rawXpDelta,
             double enemyActionUnitsDelta,
             int enemyTurnSlotsDelta,
-            double gmComplexityDelta,
+            int complexActionDelta,
             double survivabilityActionsDelta,
             boolean hasHealingCapability
     ) {
@@ -214,9 +215,30 @@ public final class SearchState {
                     entry.creature().XP * count,
                     EncounterConstraintPolicy.enemyActionContribution(entry, count),
                     EncounterMobSlotRules.mobSlotCount(count),
-                    EncounterConstraintPolicy.encounterComplexityContribution(entry, count),
-                    entry.profile().survivabilityActions() * count,
+                    EncounterConstraintPolicy.encounterComplexActionContribution(entry, count),
+                    effectiveSurvivabilityActions(entry, count),
                     EncounterConstraintPolicy.hasHealingCapability(entry));
+        }
+
+        private static double effectiveSurvivabilityActions(CandidateEntry entry, int count) {
+            if (entry == null || count <= 0) {
+                return 0.0;
+            }
+            double base = Math.max(0.25, entry.profile().survivabilityActions());
+            double total = 0.0;
+            double additionalWeight = additionalCreatureWeight(entry.weightClass());
+            for (int i = 0; i < count; i++) {
+                total += base * Math.pow(additionalWeight, i);
+            }
+            return total;
+        }
+
+        private static double additionalCreatureWeight(EncounterWeightClass weightClass) {
+            return switch (weightClass) {
+                case MINION -> 0.52;
+                case REGULAR -> 0.74;
+                case BOSS -> 0.90;
+            };
         }
     }
 }

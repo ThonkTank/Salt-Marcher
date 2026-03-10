@@ -36,7 +36,7 @@ public final class EncounterConstraintPolicy {
                 && state.enemyActionUnits() <= budgets.maxEnemyActionUnits() + 0.25
                 && state.enemyTurnSlots() <= budgets.hardMonsterTurnSlots()
                 && state.distinctStatBlocks() <= MAX_DIFFERENT_CREATURES
-                && state.gmComplexityLoad() <= budgets.hardComplexity() + relaxation.complexitySlack()
+                && state.complexActionCount() <= budgets.maxComplexActions()
                 && state.estimatedRounds(budgets.party().actionsPerRound())
                 <= budgets.hardRounds() + relaxation.pacingSlackRounds();
     }
@@ -132,13 +132,26 @@ public final class EncounterConstraintPolicy {
         if (state.enemyTurnSlots() > budgets.hardMonsterTurnSlots()) {
             return false;
         }
-        if (state.gmComplexityLoad() > budgets.hardComplexity() + relaxation.complexitySlack()) {
+        if (state.complexActionCount() > budgets.maxComplexActions()) {
             return false;
         }
         if (state.estimatedRounds(budgets.party().actionsPerRound()) > budgets.hardRounds() + relaxation.pacingSlackRounds()) {
             return false;
         }
         return relaxation.allowRoleRepeat() || state.hasUniquePrimaryRoles();
+    }
+
+    public static boolean isViableFallback(
+            SearchState state,
+            EncounterBudgets budgets,
+            RelaxationProfile relaxation) {
+        if (state.isEmpty() || !passesHardConstraints(state, budgets, relaxation)) {
+            return false;
+        }
+        if (state.adjustedXp() < budgets.lowerAdjustedXp() * 0.80) {
+            return false;
+        }
+        return state.enemyActionUnits() >= budgets.minEnemyActionUnits() * 0.72;
     }
 
     public static OptimisticAddition bestOptimisticAddition(
@@ -220,18 +233,13 @@ public final class EncounterConstraintPolicy {
     public static double enemyActionContribution(CandidateEntry entry, int count) {
         double baseUnits = Math.max(0.25, entry.profile().actionUnitsPerRound());
         if (entry.weightClass() == EncounterWeightClass.MINION) {
-            return count * Math.max(0.25, baseUnits * 0.25);
+            return count * Math.max(0.25, baseUnits * 0.5);
         }
         return count * baseUnits;
     }
 
-    public static double encounterComplexityContribution(CandidateEntry entry, int count) {
-        double base = Math.max(0.25, entry.profile().gmComplexityLoad());
-        double repeats = Math.max(0, count - 1) * 0.35;
-        if (entry.weightClass() == EncounterWeightClass.MINION && count >= EncounterRules.MOB_MIN_SIZE) {
-            repeats *= 0.5;
-        }
-        return base * (1.0 + repeats);
+    public static int encounterComplexActionContribution(CandidateEntry entry, int count) {
+        return Math.max(0, entry.profile().complexActionCount()) * Math.max(0, count);
     }
 
     public static double supportRoundsMultiplier(
@@ -244,6 +252,9 @@ public final class EncounterConstraintPolicy {
             Set<EncounterFunctionRole> primaryRoles,
             boolean hasHealingCapability) {
         double multiplier = 1.0;
+        if (primaryRoles.contains(EncounterFunctionRole.LEADER)) {
+            multiplier += 0.12;
+        }
         if (primaryRoles.contains(EncounterFunctionRole.SUPPORT)) {
             multiplier += 0.12;
         }

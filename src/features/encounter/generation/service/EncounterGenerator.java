@@ -50,9 +50,8 @@ public final class EncounterGenerator {
             double enemyActionUnitsPerRound,
             int enemyTurnSlots,
             int distinctStatBlocks,
-            double totalGmComplexityLoad,
+            int totalComplexActions,
             boolean pacingRelaxed,
-            boolean complexityRelaxed,
             boolean diversityRelaxed
     ) {}
 

@@ -27,7 +27,32 @@ public final class CreatureAnalysisMaintenanceService {
         };
     }
 
+    public static AnalysisInputRefreshStatus refreshForAnalysisInputChange() {
+        return switch (EncounterPartyAnalysisService.refreshForAnalysisInputChange()) {
+            case INVALIDATED -> AnalysisInputRefreshStatus.INVALIDATED;
+            case REBUILT -> AnalysisInputRefreshStatus.REBUILT;
+            case INVALIDATED_NO_ACTIVE_PARTY -> AnalysisInputRefreshStatus.INVALIDATED_NO_ACTIVE_PARTY;
+            case STORAGE_ERROR -> AnalysisInputRefreshStatus.STORAGE_ERROR;
+        };
+    }
+
+    public static AnalysisInputRefreshStatus rebuildForAnalysisInputChange() {
+        return switch (EncounterPartyAnalysisService.rebuildForAnalysisInputChange()) {
+            case REBUILT -> AnalysisInputRefreshStatus.REBUILT;
+            case INVALIDATED -> AnalysisInputRefreshStatus.INVALIDATED;
+            case INVALIDATED_NO_ACTIVE_PARTY -> AnalysisInputRefreshStatus.INVALIDATED_NO_ACTIVE_PARTY;
+            case STORAGE_ERROR -> AnalysisInputRefreshStatus.STORAGE_ERROR;
+        };
+    }
+
     public enum CreatureDataRefreshStatus {
+        REBUILT,
+        INVALIDATED_NO_ACTIVE_PARTY,
+        STORAGE_ERROR
+    }
+
+    public enum AnalysisInputRefreshStatus {
+        INVALIDATED,
         REBUILT,
         INVALIDATED_NO_ACTIVE_PARTY,
         STORAGE_ERROR

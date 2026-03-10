@@ -80,12 +80,13 @@ public final class EncounterSearchEngine {
             return EncounterResultAssembler.buildNoSolutionResult();
         }
 
+        SearchOutcome bestFallback = null;
         for (RelaxationProfile relaxation : EncounterSearchRelaxationPolicy.orderedRelaxations()) {
             for (int attempt = 0; attempt < EncounterSearchRelaxationPolicy.ATTEMPTS_PER_RELAXATION; attempt++) {
                 if (ctx.isExpired(deadlineNanos)) {
                     return EncounterGenerator.GenerationResult.timeout();
                 }
-                SearchState result = search(
+                SearchOutcome outcome = search(
                         new SearchState(),
                         entries,
                         budgets,
@@ -93,32 +94,32 @@ public final class EncounterSearchEngine {
                         selectionWeights,
                         ctx,
                         deadlineNanos);
-                if (result == null) {
+                if (outcome == null || outcome.bestState() == null) {
                     continue;
                 }
-                List<EncounterSlot> slots = EncounterResultAssembler.toEncounterSlots(result);
-                Encounter encounter = new Encounter(
-                        slots,
-                        EncounterScoring.classifyDifficultyFromSlots(slots, avgLevel, partySize),
-                        avgLevel,
-                        partySize,
-                        budgets.upperAdjustedXp(),
-                        EncounterScoring.deriveShapeLabel(slots));
-                return EncounterGenerator.GenerationResult.success(
-                        encounter,
-                        null,
-                        EncounterResultAssembler.buildDiagnostics(result, budgets, relaxation));
+                if (outcome.exactMatch()) {
+                    return buildSuccessResult(outcome.bestState(), budgets, relaxation, avgLevel, partySize);
+                }
+                bestFallback = betterOutcome(bestFallback, outcome, budgets);
             }
         }
 
         if (ctx.isExpired(deadlineNanos)) {
             return EncounterGenerator.GenerationResult.timeout();
         }
+        if (bestFallback != null && bestFallback.bestState() != null) {
+            return buildSuccessResult(
+                    bestFallback.bestState(),
+                    budgets,
+                    bestFallback.relaxation(),
+                    avgLevel,
+                    partySize);
+        }
         return EncounterGenerator.GenerationResult.noSolution(
                 EncounterGenerator.GenerationFailureReason.AUTO_CONFIG_NO_SOLUTION);
     }
 
-    private static SearchState search(
+    private static SearchOutcome search(
             SearchState state,
             List<CandidateEntry> entries,
             EncounterBudgets budgets,
@@ -130,10 +131,13 @@ public final class EncounterSearchEngine {
             return null;
         }
         if (EncounterConstraintPolicy.isComplete(state, budgets, relaxation)) {
-            return state;
+            return new SearchOutcome(true, state, relaxation);
         }
+        SearchOutcome best = EncounterConstraintPolicy.isViableFallback(state, budgets, relaxation)
+                ? new SearchOutcome(false, state, relaxation)
+                : null;
         if (state.entries().size() >= EncounterConstraintPolicy.MAX_DIFFERENT_CREATURES) {
-            return null;
+            return best;
         }
 
         List<CandidateChoice> options = EncounterChoicePolicy.buildChoices(
@@ -143,7 +147,7 @@ public final class EncounterSearchEngine {
                 relaxation,
                 selectionWeights);
         if (options.isEmpty()) {
-            return null;
+            return best;
         }
         options = prioritizeOptions(options, context);
         if (options.size() > EncounterChoicePolicy.MAX_BRANCHES_PER_DEPTH) {
@@ -152,12 +156,16 @@ public final class EncounterSearchEngine {
 
         for (CandidateChoice option : options) {
             SearchState next = option.nextState();
-            SearchState result = search(next, entries, budgets, relaxation, selectionWeights, context, deadlineNanos);
-            if (result != null) {
-                return result;
+            SearchOutcome outcome = search(next, entries, budgets, relaxation, selectionWeights, context, deadlineNanos);
+            if (outcome == null) {
+                continue;
             }
+            if (outcome.exactMatch()) {
+                return outcome;
+            }
+            best = betterOutcome(best, outcome, budgets);
         }
-        return null;
+        return best;
     }
 
     private static List<CandidateChoice> prioritizeOptions(
@@ -184,7 +192,43 @@ public final class EncounterSearchEngine {
         return -Math.log(sample) / weight;
     }
 
+    private static SearchOutcome betterOutcome(
+            SearchOutcome currentBest,
+            SearchOutcome candidate,
+            EncounterBudgets budgets) {
+        if (candidate == null || candidate.bestState() == null) {
+            return currentBest;
+        }
+        if (currentBest == null || currentBest.bestState() == null) {
+            return candidate;
+        }
+        double candidateScore = EncounterChoicePolicy.scoreState(candidate.bestState(), budgets, candidate.relaxation());
+        double currentScore = EncounterChoicePolicy.scoreState(currentBest.bestState(), budgets, currentBest.relaxation());
+        return candidateScore > currentScore ? candidate : currentBest;
+    }
+
+    private static EncounterGenerator.GenerationResult buildSuccessResult(
+            SearchState result,
+            EncounterBudgets budgets,
+            RelaxationProfile relaxation,
+            int avgLevel,
+            int partySize) {
+        List<EncounterSlot> slots = EncounterResultAssembler.toEncounterSlots(result);
+        Encounter encounter = new Encounter(
+                slots,
+                EncounterScoring.classifyDifficultyFromSlots(slots, avgLevel, partySize),
+                avgLevel,
+                partySize,
+                budgets.upperAdjustedXp(),
+                EncounterScoring.deriveShapeLabel(slots));
+        return EncounterGenerator.GenerationResult.success(
+                encounter,
+                null,
+                EncounterResultAssembler.buildDiagnostics(result, budgets, relaxation));
+    }
+
     private record RankedChoice(CandidateChoice choice, double priority) {}
+    private record SearchOutcome(boolean exactMatch, SearchState bestState, RelaxationProfile relaxation) {}
 
     static List<Creature> filterUsable(List<Creature> candidates, int xpCeiling, double maxAllowedCr) {
         List<Creature> usable = new ArrayList<>();

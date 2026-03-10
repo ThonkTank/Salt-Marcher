@@ -1,5 +1,6 @@
 package features.partyanalysis.repository;
 
+import features.partyanalysis.model.AnalysisModelVersion;
 import features.party.api.PartyApi;
 
 import java.nio.charset.StandardCharsets;
@@ -13,7 +14,6 @@ import java.util.HexFormat;
 import java.util.List;
 
 public final class EncounterPartyCacheRepository {
-
     private EncounterPartyCacheRepository() {
         throw new AssertionError("No instances");
     }
@@ -28,6 +28,7 @@ public final class EncounterPartyCacheRepository {
     public record CacheState(
             String partyCompHash,
             int partyCompVersion,
+            int analysisModelVersion,
             Long activeRunId,
             CacheStatus cacheStatus
     ) {}
@@ -35,10 +36,11 @@ public final class EncounterPartyCacheRepository {
     public static CacheState ensureState(Connection conn) throws SQLException {
         String hash = computeCurrentPartyHash(conn);
         try (PreparedStatement insert = conn.prepareStatement(
-                "INSERT OR IGNORE INTO encounter_party_cache_state"
-                        + "(id, party_comp_hash, party_comp_version, active_run_id, cache_status, updated_at) "
-                        + "VALUES(1, ?, 0, NULL, 'INVALID', CURRENT_TIMESTAMP)")) {
+                "INSERT OR IGNORE INTO encounter_party_cache_state "
+                        + "(id, party_comp_hash, party_comp_version, analysis_model_version, active_run_id, cache_status, updated_at) "
+                        + "VALUES (1, ?, 0, ?, NULL, 'INVALID', CURRENT_TIMESTAMP)")) {
             insert.setString(1, hash);
+            insert.setInt(2, AnalysisModelVersion.current());
             insert.executeUpdate();
         }
         return getState(conn);
@@ -46,8 +48,9 @@ public final class EncounterPartyCacheRepository {
 
     public static CacheState getState(Connection conn) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT party_comp_hash, party_comp_version, active_run_id, cache_status "
-                        + "FROM encounter_party_cache_state WHERE id = 1");
+                "SELECT party_comp_hash, party_comp_version, analysis_model_version, active_run_id, cache_status "
+                        + "FROM encounter_party_cache_state "
+                        + "WHERE id = 1");
              ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) {
                 return ensureState(conn);
@@ -57,6 +60,7 @@ public final class EncounterPartyCacheRepository {
             return new CacheState(
                     rs.getString("party_comp_hash"),
                     rs.getInt("party_comp_version"),
+                    rs.getInt("analysis_model_version"),
                     activeRunId,
                     parseStatus(rs.getString("cache_status")));
         }
@@ -70,12 +74,28 @@ public final class EncounterPartyCacheRepository {
                     "UPDATE encounter_party_cache_state "
                             + "SET party_comp_hash = ?, "
                             + "party_comp_version = party_comp_version + 1, "
+                            + "analysis_model_version = ?, "
                             + "active_run_id = NULL, "
                             + "cache_status = 'INVALID', "
                             + "last_error = NULL, "
                             + "updated_at = CURRENT_TIMESTAMP "
                             + "WHERE id = 1")) {
                 update.setString(1, currentHash);
+                update.setInt(2, AnalysisModelVersion.current());
+                update.executeUpdate();
+            }
+            return getState(conn);
+        }
+        if (state.analysisModelVersion() != AnalysisModelVersion.current()) {
+            try (PreparedStatement update = conn.prepareStatement(
+                    "UPDATE encounter_party_cache_state "
+                            + "SET analysis_model_version = ?, "
+                            + "active_run_id = NULL, "
+                            + "cache_status = 'INVALID', "
+                            + "last_error = NULL, "
+                            + "updated_at = CURRENT_TIMESTAMP "
+                            + "WHERE id = 1")) {
+                update.setInt(1, AnalysisModelVersion.current());
                 update.executeUpdate();
             }
             return getState(conn);
@@ -88,11 +108,13 @@ public final class EncounterPartyCacheRepository {
         try (PreparedStatement update = conn.prepareStatement(
                 "UPDATE encounter_party_cache_state "
                         + "SET party_comp_version = party_comp_version + 1, "
+                        + "analysis_model_version = ?, "
                         + "active_run_id = NULL, "
                         + "cache_status = 'INVALID', "
                         + "last_error = NULL, "
                         + "updated_at = CURRENT_TIMESTAMP "
                         + "WHERE id = 1")) {
+            update.setInt(1, AnalysisModelVersion.current());
             update.executeUpdate();
         }
         return getState(conn);
@@ -104,11 +126,13 @@ public final class EncounterPartyCacheRepository {
                         + "SET active_run_id = ?, cache_status = 'REBUILDING', last_error = NULL, updated_at = CURRENT_TIMESTAMP "
                         + "WHERE id = 1 "
                         + "AND party_comp_version = ? "
+                        + "AND analysis_model_version = ? "
                         + "AND party_comp_hash = ? "
                         + "AND cache_status <> 'REBUILDING'")) {
             ps.setLong(1, runId);
             ps.setInt(2, expectedVersion);
-            ps.setString(3, expectedHash);
+            ps.setInt(3, AnalysisModelVersion.current());
+            ps.setString(4, expectedHash);
             return ps.executeUpdate() == 1;
         }
     }

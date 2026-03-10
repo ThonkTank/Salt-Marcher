@@ -47,9 +47,8 @@ public final class EncounterResultAssembler {
                 state.enemyActionUnits(),
                 state.enemyTurnSlots(),
                 state.distinctStatBlocks(),
-                state.gmComplexityLoad(),
+                state.complexActionCount(),
                 relaxation.pacingRelaxed(),
-                relaxation.complexityRelaxed(),
                 relaxation.allowRoleRepeat());
     }
 

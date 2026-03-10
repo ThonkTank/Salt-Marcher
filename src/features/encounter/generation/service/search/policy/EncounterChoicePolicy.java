@@ -44,10 +44,11 @@ public final class EncounterChoicePolicy {
                 if (!EncounterConstraintPolicy.passesHardConstraints(next, budgets, relaxation)) {
                     continue;
                 }
-                if (!EncounterConstraintPolicy.canStillReachCompletion(next, entries, budgets, relaxation)) {
+                if (!EncounterConstraintPolicy.canStillReachCompletion(next, entries, budgets, relaxation)
+                        && !EncounterConstraintPolicy.isViableFallback(next, budgets, relaxation)) {
                     continue;
                 }
-                double score = scoreChoice(state, next, entry, allowed.count(), budgets, selectionWeights);
+                double score = scoreChoice(state, next, entry, allowed.count(), budgets, relaxation, selectionWeights);
                 options.add(new CandidateChoice(entry, allowed.count(), next, score));
             }
         }
@@ -69,7 +70,7 @@ public final class EncounterChoicePolicy {
             if (next.adjustedXp() > budgets.upperAdjustedXp()) {
                 continue;
             }
-            if (next.gmComplexityLoad() > budgets.hardComplexity() + 1.75) {
+            if (next.complexActionCount() > budgets.maxComplexActions()) {
                 continue;
             }
             if (next.estimatedRounds(budgets.party().actionsPerRound()) > budgets.hardRounds() + 1.5) {
@@ -98,17 +99,14 @@ public final class EncounterChoicePolicy {
             CandidateEntry entry,
             int count,
             EncounterBudgets budgets,
+            RelaxationProfile relaxation,
             Map<Long, Integer> selectionWeights) {
-        double xpFit = xpBandFit(next.adjustedXp(), budgets.lowerAdjustedXp(), budgets.upperAdjustedXp());
+        double baseScore = scoreState(next, budgets, relaxation);
         double actionNeed = Math.max(0.0, budgets.minEnemyActionUnits() - current.enemyActionUnits());
         double actionGain = next.enemyActionUnits() - current.enemyActionUnits();
-        double actionFit = actionNeed <= 0.0
-                ? 1.0 / (1.0 + Math.max(0.0, next.enemyActionUnits() - budgets.maxEnemyActionUnits()))
+        double actionProgressBonus = actionNeed <= 0.0
+                ? 1.0
                 : 1.0 + (actionGain / Math.max(0.25, actionNeed));
-        double roundPenalty = 1.0 / (1.0 + Math.max(0.0,
-                next.estimatedRounds(budgets.party().actionsPerRound()) - budgets.targetRounds()));
-        double complexityPenalty = 1.0 / (1.0 + Math.max(0.0, next.gmComplexityLoad() - budgets.softComplexity()));
-        double turnPenalty = 1.0 / (1.0 + Math.max(0, next.enemyTurnSlots() - budgets.softMonsterTurnSlots()));
         double weightBonus = Math.max(1, selectionWeights.getOrDefault(entry.creature().Id, 1));
         double classBonus = switch (entry.weightClass()) {
             case MINION -> actionNeed > 0.5 ? 1.15 : 0.95;
@@ -116,7 +114,30 @@ public final class EncounterChoicePolicy {
             case REGULAR -> 1.0;
         };
         double countFit = 1.0 / (1.0 + Math.abs(preferredMidCount(entry) - count));
-        return xpFit * actionFit * roundPenalty * complexityPenalty * turnPenalty * classBonus * countFit * weightBonus;
+        return baseScore * actionProgressBonus * classBonus * countFit * weightBonus;
+    }
+
+    public static double scoreState(
+            SearchState state,
+            EncounterBudgets budgets,
+            RelaxationProfile relaxation) {
+        if (state == null || state.isEmpty()) {
+            return 0.0;
+        }
+        double xpFit = xpBandFit(state.adjustedXp(), budgets.lowerAdjustedXp(), budgets.upperAdjustedXp());
+        double targetEnemyActionUnits = (budgets.minEnemyActionUnits() + budgets.maxEnemyActionUnits()) * 0.5;
+        double actionFit = closenessScore(state.enemyActionUnits(), targetEnemyActionUnits,
+                Math.max(0.5, budgets.maxEnemyActionUnits() - budgets.minEnemyActionUnits()));
+        double roundFit = closenessScore(
+                state.estimatedRounds(budgets.party().actionsPerRound()),
+                budgets.targetRounds(),
+                Math.max(0.5, budgets.hardRounds() - budgets.targetRounds() + relaxation.pacingSlackRounds()));
+        double turnFit = closenessScore(
+                state.enemyTurnSlots(),
+                budgets.targetMonsterTurnSlots(),
+                Math.max(1.0, budgets.softMonsterTurnSlots() - budgets.targetMonsterTurnSlots() + 1.0));
+        double diversityFit = state.hasUniquePrimaryRoles() ? 1.08 : 0.72;
+        return xpFit * actionFit * roundFit * turnFit * diversityFit;
     }
 
     public static int preferredMinCount(CandidateEntry entry) {
@@ -166,6 +187,10 @@ public final class EncounterChoicePolicy {
             return 1.0 / (1.0 + ((adjustedXp - upperAdjustedXp) / (double) Math.max(50, upperAdjustedXp)));
         }
         return 1.2;
+    }
+
+    private static double closenessScore(double actual, double target, double tolerance) {
+        return 1.0 / (1.0 + (Math.abs(actual - target) / Math.max(0.25, tolerance)));
     }
 
     public record AllowedCount(int count, SearchState nextState) {}

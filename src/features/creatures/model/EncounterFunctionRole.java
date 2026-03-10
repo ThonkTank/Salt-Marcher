@@ -1,9 +1,12 @@
 package features.creatures.model;
 
 public enum EncounterFunctionRole {
-    SOLDIER,
-    ARCHER,
+    AMBUSHER,
+    ARTILLERY,
+    BRUTE,
     CONTROLLER,
+    LEADER,
     SKIRMISHER,
+    SOLDIER,
     SUPPORT
 }
