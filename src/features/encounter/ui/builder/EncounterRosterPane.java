@@ -27,9 +27,9 @@ import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
 import features.gamerules.model.MonsterRole;
 import features.encounter.model.EncounterCreatureSnapshot;
-import features.encounter.service.EncounterCreatureMapper;
-import features.encounter.service.EncounterService;
-import features.encounter.service.generation.EncounterGenerator;
+import features.encounter.application.EncounterApplicationService;
+import features.encounter.generation.service.EncounterGenerator;
+import features.encounter.model.EncounterCreatureSnapshotMapper;
 import features.gamerules.service.XpCalculator;
 import ui.components.DifficultyMeter;
 import ui.components.ThemeColors;
@@ -42,7 +42,7 @@ import ui.components.ThemeColors;
  */
 public class EncounterRosterPane extends VBox {
 
-    private final EncounterService encounterService;
+    private final EncounterApplicationService encounterService;
     private final List<EncounterSlot> slots = new ArrayList<>();
     private int partySize = 0;
     private int avgLevel = 1;
@@ -69,7 +69,7 @@ public class EncounterRosterPane extends VBox {
     private Runnable onStartCombat;
     private Consumer<Long> onRequestStatBlock;
 
-    public EncounterRosterPane(EncounterService encounterService) {
+    public EncounterRosterPane(EncounterApplicationService encounterService) {
         this.encounterService = Objects.requireNonNull(encounterService);
         setSpacing(0);
         setPadding(new Insets(8));
@@ -152,7 +152,7 @@ public class EncounterRosterPane extends VBox {
     public void setOnRequestStatBlock(Consumer<Long> callback) { this.onRequestStatBlock = callback; }
 
     public void addCreature(Creature creature, MonsterRole role) {
-        EncounterCreatureSnapshot snapshot = EncounterCreatureMapper.toSnapshot(creature);
+        EncounterCreatureSnapshot snapshot = EncounterCreatureSnapshotMapper.toSnapshot(creature);
         for (EncounterSlot slot : slots) {
             if (slot.getCreature().getId().equals(snapshot.getId())) {
                 if (slot.getCount() < encounterService.maxCreaturesPerSlot()) {

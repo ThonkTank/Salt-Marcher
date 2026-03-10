@@ -1,7 +1,7 @@
 package features.creaturecatalog.repository;
 
 import features.creaturecatalog.model.Creature;
-import features.encounter.service.analysis.CreatureStaticAnalysisService;
+import features.encounter.analysis.service.CreatureStaticAnalysisService;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

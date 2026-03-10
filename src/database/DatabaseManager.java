@@ -315,6 +315,11 @@ public final class DatabaseManager {
                     + "healing_signal_score       REAL NOT NULL DEFAULT 0.0,"
                     + "summon_signal_score        REAL NOT NULL DEFAULT 0.0,"
                     + "reaction_signal_score      REAL NOT NULL DEFAULT 0.0,"
+                    + "soldier_role_score         REAL NOT NULL DEFAULT 0.0,"
+                    + "archer_role_score          REAL NOT NULL DEFAULT 0.0,"
+                    + "controller_role_score      REAL NOT NULL DEFAULT 0.0,"
+                    + "skirmisher_role_score      REAL NOT NULL DEFAULT 0.0,"
+                    + "support_role_score         REAL NOT NULL DEFAULT 0.0,"
                     + "updated_at                 TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP"
                     + ")");
 
@@ -536,6 +541,11 @@ public final class DatabaseManager {
         ensureColumn(conn, "creature_static_analysis", "healing_signal_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "summon_signal_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "reaction_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "soldier_role_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "archer_role_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "controller_role_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "skirmisher_role_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "support_role_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_party_analysis", "weight_class", "TEXT");
     }
 

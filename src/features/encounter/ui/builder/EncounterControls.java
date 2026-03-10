@@ -1,7 +1,7 @@
 package features.encounter.ui.builder;
 
 import features.encountertable.model.EncounterTable;
-import features.encounter.service.EncounterService;
+import features.encounter.application.EncounterApplicationService;
 import features.creaturepicker.ui.FilterPane;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
@@ -31,7 +31,7 @@ import ui.components.ThemeColors;
  */
 public class EncounterControls extends VBox {
 
-    private final EncounterService encounterService;
+    private final EncounterApplicationService encounterService;
     private FilterPane filterPane;
     private Consumer<CreatureService.FilterCriteria> filterCallback;
     private Consumer<List<Long>> onTableChanged;
@@ -57,7 +57,7 @@ public class EncounterControls extends VBox {
     private int partySizeForSliders = 1;
     private int avgLevelForDifficulty = 1;
 
-    public EncounterControls(EncounterService encounterService) {
+    public EncounterControls(EncounterApplicationService encounterService) {
         this.encounterService = Objects.requireNonNull(encounterService);
         setSpacing(0);
         setPadding(new Insets(0));

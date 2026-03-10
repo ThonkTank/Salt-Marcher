@@ -1,6 +1,6 @@
 package features.encounter.ui;
 
-import features.encounter.service.EncounterService;
+import features.encounter.application.EncounterApplicationService;
 import ui.shell.SceneRegistry;
 import ui.components.statblock.StatBlockRequest;
 
@@ -15,4 +15,4 @@ public record EncounterViewCallbacks(
         Runnable onRefreshPanels,
         Consumer<StatBlockRequest> onRequestStatBlock,
         SceneRegistry sceneRegistry,
-        EncounterService encounterService) {}
+        EncounterApplicationService encounterService) {}

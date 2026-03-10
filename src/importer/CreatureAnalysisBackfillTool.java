@@ -1,6 +1,6 @@
 package importer;
 
-import features.encounter.service.analysis.EncounterPartyAnalysisService;
+import features.encounter.analysis.service.EncounterPartyAnalysisService;
 
 /**
  * Reimports crawled monsters from stored HTML and refreshes encounter-analysis caches.

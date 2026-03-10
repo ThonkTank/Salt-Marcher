@@ -1,10 +1,10 @@
 package features.encounter.ui.combat;
 
 import features.creaturecatalog.model.Creature;
-import features.encounter.model.Combatant;
-import features.encounter.model.MonsterCombatant;
-import features.encounter.service.combat.CombatSession;
-import features.encounter.service.combat.CombatTurnGrouper;
+import features.encounter.combat.model.Combatant;
+import features.encounter.combat.model.MonsterCombatant;
+import features.encounter.combat.service.CombatSession;
+import features.encounter.combat.service.CombatTurnGrouper;
 import features.gamerules.service.XpCalculator;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;

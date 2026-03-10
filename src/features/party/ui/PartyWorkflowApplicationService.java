@@ -1,6 +1,6 @@
 package features.party.ui;
 
-import features.encounter.service.application.EncounterPartyCacheApplicationService;
+import features.encounter.analysis.application.EncounterPartyCacheApplicationService;
 import features.party.service.PartyService;
 import javafx.concurrent.Task;
 import ui.async.UiAsyncTasks;

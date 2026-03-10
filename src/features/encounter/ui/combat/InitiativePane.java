@@ -1,7 +1,7 @@
 package features.encounter.ui.combat;
 
 import features.encounter.model.EncounterSlot;
-import features.encounter.service.combat.InitiativeRoller;
+import features.encounter.combat.service.InitiativeRoller;
 import features.party.model.PlayerCharacter;
 import ui.components.ThemeColors;
 import javafx.geometry.Insets;

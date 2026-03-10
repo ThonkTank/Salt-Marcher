@@ -11,10 +11,10 @@ import java.util.logging.Logger;
 import database.DatabaseManager;
 import features.creaturecatalog.service.CreatureRoleBackfillService;
 import features.creaturecatalog.service.CreatureService;
-import features.encounter.service.EncounterService;
-import features.encounter.service.adapter.StaticCreatureCandidateProvider;
-import features.encounter.service.adapter.StaticEncounterTableProvider;
-import features.encounter.service.adapter.StaticPartyProvider;
+import features.encounter.application.EncounterApplicationService;
+import features.encounter.application.adapter.StaticCreatureCandidateProvider;
+import features.encounter.application.adapter.StaticEncounterTableProvider;
+import features.encounter.application.adapter.StaticPartyProvider;
 import features.encounter.ui.EncounterView;
 import features.encounter.ui.EncounterViewCallbacks;
 import features.party.ui.PartyPopup;
@@ -44,7 +44,7 @@ public class SaltMarcherApp extends Application {
     public void start(Stage primaryStage) {
         AppShell shell = new AppShell();
 
-        EncounterService encounterService = new EncounterService(
+        EncounterApplicationService encounterService = new EncounterApplicationService(
                 new StaticPartyProvider(),
                 new StaticEncounterTableProvider(),
                 new StaticCreatureCandidateProvider()

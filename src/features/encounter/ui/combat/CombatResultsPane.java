@@ -1,9 +1,9 @@
 package features.encounter.ui.combat;
 
 import features.gamerules.model.LootCoins;
-import features.encounter.model.MonsterCombatant;
-import features.encounter.service.EncounterService;
-import features.encounter.service.combat.CombatSession;
+import features.encounter.combat.model.MonsterCombatant;
+import features.encounter.application.EncounterApplicationService;
+import features.encounter.combat.service.CombatSession;
 import features.party.model.PlayerCharacter;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -28,11 +28,11 @@ import java.util.Set;
  */
 public class CombatResultsPane extends VBox {
 
-    private final EncounterService encounterService;
+    private final EncounterApplicationService encounterService;
     private Runnable onDone;
 
     public CombatResultsPane(
-            EncounterService encounterService,
+            EncounterApplicationService encounterService,
             List<CombatSession.EnemyOutcome> outcomes,
             List<PlayerCharacter> party) {
         this.encounterService = Objects.requireNonNull(encounterService);

@@ -1,8 +1,8 @@
 package features.encounter.ui.combat;
 
-import features.encounter.model.Combatant;
-import features.encounter.service.combat.CombatSession;
-import features.encounter.service.combat.CombatTurnGrouper;
+import features.encounter.combat.model.Combatant;
+import features.encounter.combat.service.CombatSession;
+import features.encounter.combat.service.CombatTurnGrouper;
 
 import java.util.List;
 

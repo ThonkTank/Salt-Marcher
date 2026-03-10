@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Immutable encounter snapshot returned by {@link features.encounter.service.generation.EncounterGenerator}.
+ * Immutable encounter snapshot returned by {@link features.encounter.generation.service.EncounterGenerator}.
  * Slots are defensively copied and exposed as read-only snapshots.
  */
 public record Encounter(
@@ -14,7 +14,7 @@ public record Encounter(
     int averageLevel,
     int partySize,
     int xpBudget,
-    /** Human-readable encounter shape from {@link features.encounter.service.generation.EncounterScoring#deriveShapeLabel}. */
+    /** Human-readable encounter shape from {@link features.encounter.generation.service.EncounterScoring#deriveShapeLabel}. */
     String shapeLabel
 ) {
     public Encounter {

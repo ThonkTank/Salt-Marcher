@@ -1,6 +1,6 @@
 package features.encounter.ui.combat;
 
-import features.encounter.service.combat.CombatTurnGrouper;
+import features.encounter.combat.service.CombatTurnGrouper;
 import ui.components.statblock.StatBlockRequest;
 
 final class CombatStatBlockRequestMapper {

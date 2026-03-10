@@ -56,6 +56,30 @@ public final class PlayerCharacterRepository {
         return list;
     }
 
+    public static List<Integer> getActivePartyLevels(Connection conn) throws SQLException {
+        List<Integer> levels = new ArrayList<>();
+        String sql = "SELECT level FROM player_characters WHERE in_party = 1 ORDER BY id";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                levels.add(rs.getInt("level"));
+            }
+        }
+        return levels;
+    }
+
+    public static List<Integer> getActivePartyLevelsForComposition(Connection conn) throws SQLException {
+        List<Integer> levels = new ArrayList<>();
+        String sql = "SELECT level FROM player_characters WHERE in_party = 1 ORDER BY level ASC, id ASC";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                levels.add(rs.getInt("level"));
+            }
+        }
+        return levels;
+    }
+
     public static List<PlayerCharacter> getAvailableCharacters(Connection conn) throws SQLException {
         List<PlayerCharacter> list = new ArrayList<>();
         String sql = "SELECT id, name, level FROM player_characters WHERE in_party = 0 ORDER BY name";
