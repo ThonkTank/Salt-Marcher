@@ -1,7 +1,7 @@
 package features.party.ui;
 
-import features.encounter.analysis.application.EncounterPartyCacheApplicationService;
 import features.party.service.PartyService;
+import features.partyanalysis.api.PartyCacheRefreshPort;
 import javafx.concurrent.Task;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
@@ -17,9 +17,14 @@ import java.util.function.Supplier;
 public final class PartyWorkflowApplicationService {
 
     private final Runnable onPartyMutationSucceeded;
+    private final PartyCacheRefreshPort partyCacheRefreshPort;
 
-    public PartyWorkflowApplicationService(Runnable onPartyMutationSucceeded) {
+    public PartyWorkflowApplicationService(
+            Runnable onPartyMutationSucceeded,
+            PartyCacheRefreshPort partyCacheRefreshPort
+    ) {
         this.onPartyMutationSucceeded = Objects.requireNonNull(onPartyMutationSucceeded, "onPartyMutationSucceeded");
+        this.partyCacheRefreshPort = Objects.requireNonNull(partyCacheRefreshPort, "partyCacheRefreshPort");
     }
 
     public void loadPartySnapshot(Consumer<PartyService.PartySnapshotResult> onComplete) {
@@ -49,7 +54,7 @@ public final class PartyWorkflowApplicationService {
                     onComplete.accept(result);
                     if (result.mutationStatus() == PartyService.MutationStatus.SUCCESS) {
                         onPartyMutationSucceeded.run();
-                        EncounterPartyCacheApplicationService.refreshCurrentPartyCacheAsyncBestEffort();
+                        partyCacheRefreshPort.refreshCurrentPartyCacheAsyncBestEffort();
                     }
                 });
     }
@@ -74,7 +79,7 @@ public final class PartyWorkflowApplicationService {
                     onComplete.accept(result);
                     if (result.mutationStatus() == PartyService.MutationStatus.SUCCESS) {
                         onPartyMutationSucceeded.run();
-                        EncounterPartyCacheApplicationService.refreshCurrentPartyCacheAsyncBestEffort();
+                        partyCacheRefreshPort.refreshCurrentPartyCacheAsyncBestEffort();
                     }
                 });
     }

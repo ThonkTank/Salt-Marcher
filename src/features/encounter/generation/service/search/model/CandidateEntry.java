@@ -1,10 +1,9 @@
 package features.encounter.generation.service.search.model;
 
-import features.creaturecatalog.model.Creature;
-import features.encounter.analysis.model.CreatureRoleProfile;
-import features.encounter.analysis.model.EncounterFunctionRole;
-import features.encounter.analysis.model.EncounterWeightClass;
-import features.gamerules.model.MonsterRole;
+import features.creatures.model.Creature;
+import features.partyanalysis.model.CreatureRoleProfile;
+import features.partyanalysis.model.EncounterFunctionRole;
+import features.partyanalysis.model.EncounterWeightClass;
 
 /**
  * Candidate creature projection used by the V2 search pipeline.
@@ -12,7 +11,6 @@ import features.gamerules.model.MonsterRole;
 public record CandidateEntry(
         Creature creature,
         CreatureRoleProfile profile,
-        MonsterRole slotRole,
         EncounterWeightClass weightClass,
         EncounterFunctionRole primaryRole
 ) {}

@@ -5,9 +5,8 @@ import features.creatures.model.Creature;
 import features.creatures.repository.CreatureRepository;
 import features.creatures.repository.identity.CreatureImportAliasRepository;
 import features.creatures.application.identity.CreatureImportIdentityService;
-import features.creatures.service.RoleClassifier;
-import features.encounter.api.CreatureAnalysisMaintenanceService;
 import features.encountertable.api.EncounterTableRecoveryService;
+import features.partyanalysis.api.CreatureAnalysisMaintenanceService;
 import org.jsoup.Jsoup;
 import shared.crawler.slug.SlugIdentity;
 
@@ -129,7 +128,6 @@ public final class MonsterImportApplicationService {
                 CreatureImportIdentityService.resolveImportId(
                         conn, externalId, sourceSlug, slugKey, creature.Name, reservedIds);
         creature.Id = idResolution.localId();
-        creature.Role = creature.CR != null ? RoleClassifier.classify(creature).name() : null;
         CreatureRepository.save(creature, conn);
         CreatureAnalysisMaintenanceService.refreshForCreature(conn, creature.Id);
         CreatureImportAliasRepository.upsertAlias(

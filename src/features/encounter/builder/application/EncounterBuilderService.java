@@ -9,10 +9,10 @@ import features.encounter.generation.service.EncounterGenerator;
 import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.EncounterTuning;
 import features.encounter.model.EncounterSlot;
-import features.encounter.partyanalysis.application.EncounterPartyAnalysisService;
-import features.encounter.partyanalysis.model.CreatureRoleProfile;
 import features.encountertable.model.EncounterTable;
 import features.party.api.PartyApi;
+import features.partyanalysis.api.PartyAnalysisReadApi;
+import features.partyanalysis.model.CreatureRoleProfile;
 import shared.rules.service.XpCalculator;
 
 import java.util.HashSet;
@@ -76,7 +76,7 @@ public final class EncounterBuilderService {
     }
 
     public CreatureRoleProfile classifyRoleProfile(Creature creature) {
-        return EncounterPartyAnalysisService.classifyRoleProfileForActiveParty(creature);
+        return PartyAnalysisReadApi.classifyRoleProfileForActiveParty(creature);
     }
 
     public EncounterGenerator.GenerationResult generateEncounter(GenerationRequest request) {
@@ -94,8 +94,8 @@ public final class EncounterBuilderService {
             return EncounterGenerator.GenerationResult.blockedByUserInput(loadedCandidates.failureReason());
         }
 
-        EncounterPartyAnalysisService.GenerationSnapshot analysisSnapshot =
-                EncounterPartyAnalysisService.loadGenerationSnapshot(candidateIdsOf(loadedCandidates.candidates()));
+        PartyAnalysisReadApi.GenerationSnapshot analysisSnapshot =
+                PartyAnalysisReadApi.loadGenerationSnapshot(candidateIdsOf(loadedCandidates.candidates()));
         EncounterGenerator.GenerationAdvisory advisory = mapGenerationAdvisory(analysisSnapshot.readiness());
 
         EncounterGenerator.GenerationResult result = EncounterGenerator.generateEncounter(
@@ -137,7 +137,7 @@ public final class EncounterBuilderService {
             List<String> subtypes,
             List<String> biomes,
             Map<Long, Integer> selectionWeights,
-            EncounterPartyAnalysisService.GenerationSnapshot analysisSnapshot) {
+            PartyAnalysisReadApi.GenerationSnapshot analysisSnapshot) {
         return new EncounterGenerator.EncounterRequest(
                 request.partySize(),
                 request.avgLevel(),
@@ -192,7 +192,7 @@ public final class EncounterBuilderService {
     }
 
     private static EncounterGenerator.GenerationAdvisory mapGenerationAdvisory(
-            EncounterPartyAnalysisService.CacheReadiness readiness) {
+            PartyAnalysisReadApi.CacheReadiness readiness) {
         return switch (readiness) {
             case READY -> null;
             case NOT_READY -> EncounterGenerator.GenerationAdvisory.PARTY_ROLE_FALLBACK_CACHE_REBUILDING;

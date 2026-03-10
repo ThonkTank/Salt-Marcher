@@ -1,24 +1,30 @@
 package features.encounter.model;
 
-import features.gamerules.model.MonsterRole;
+import features.partyanalysis.model.EncounterFunctionRole;
+import features.partyanalysis.model.EncounterWeightClass;
 
-/** A single creature type with a count within an {@link Encounter}. {@code count} and {@code role} are mutable. */
+/** A single creature type with a count within an {@link Encounter}. */
 public class EncounterSlot {
     private final EncounterCreatureSnapshot creature;
     private int count;
-    private MonsterRole role;
+    private EncounterWeightClass weightClass;
+    private EncounterFunctionRole primaryFunctionRole;
 
-    public EncounterSlot(EncounterCreatureSnapshot creature, int count, MonsterRole role) {
+    public EncounterSlot(
+            EncounterCreatureSnapshot creature,
+            int count,
+            EncounterWeightClass weightClass,
+            EncounterFunctionRole primaryFunctionRole) {
         if (creature == null) throw new IllegalArgumentException("creature must be non-null");
         if (count < 1) throw new IllegalArgumentException("count must be >= 1");
-        if (role == null) throw new IllegalArgumentException("role must be non-null");
         this.creature = creature;
         this.count = count;
-        this.role = role;
+        this.weightClass = weightClass;
+        this.primaryFunctionRole = primaryFunctionRole;
     }
 
     public EncounterSlot(EncounterSlot other) {
-        this(other.creature, other.count, other.role);
+        this(other.creature, other.count, other.weightClass, other.primaryFunctionRole);
     }
 
     public EncounterSlot copy() {
@@ -46,12 +52,19 @@ public class EncounterSlot {
         setCount(count - 1);
     }
 
-    public MonsterRole getRole() {
-        return role;
+    public EncounterWeightClass getWeightClass() {
+        return weightClass;
     }
 
-    public void setRole(MonsterRole role) {
-        if (role == null) throw new IllegalArgumentException("role must be non-null");
-        this.role = role;
+    public void setWeightClass(EncounterWeightClass weightClass) {
+        this.weightClass = weightClass;
+    }
+
+    public EncounterFunctionRole getPrimaryFunctionRole() {
+        return primaryFunctionRole;
+    }
+
+    public void setPrimaryFunctionRole(EncounterFunctionRole primaryFunctionRole) {
+        this.primaryFunctionRole = primaryFunctionRole;
     }
 }

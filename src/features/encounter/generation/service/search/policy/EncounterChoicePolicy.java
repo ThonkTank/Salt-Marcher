@@ -1,6 +1,6 @@
 package features.encounter.generation.service.search.policy;
 
-import features.encounter.analysis.model.EncounterWeightClass;
+import features.partyanalysis.model.EncounterWeightClass;
 import features.encounter.generation.service.search.model.CandidateChoice;
 import features.encounter.generation.service.search.model.CandidateEntry;
 import features.encounter.generation.service.search.model.EncounterBudgets;

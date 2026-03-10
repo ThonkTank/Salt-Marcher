@@ -3,14 +3,14 @@ package features.encounter.generation.service;
 import java.util.List;
 import java.util.Map;
 
-import features.encounter.analysis.model.CreatureRoleProfile;
 import features.encounter.combat.model.Combatant;
-import features.creaturecatalog.model.Creature;
+import features.creatures.model.Creature;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
 import features.encounter.rules.EncounterMobSlotRules;
 import features.encounter.rules.EncounterRules;
 import features.encounter.generation.service.search.EncounterSearchEngine;
+import features.partyanalysis.model.CreatureRoleProfile;
 
 /**
  * Facade for encounter generation and XP helpers.

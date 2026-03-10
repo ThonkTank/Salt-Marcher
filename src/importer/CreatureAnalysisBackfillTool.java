@@ -1,7 +1,7 @@
 package importer;
 
-import features.encounter.api.CreatureAnalysisMaintenanceService.CreatureDataRefreshStatus;
-import features.encounter.api.EncounterPartyCacheService;
+import features.partyanalysis.api.CreatureAnalysisMaintenanceService.CreatureDataRefreshStatus;
+import features.partyanalysis.api.PartyAnalysisCacheService;
 
 /**
  * Reimports crawled monsters from stored HTML and refreshes encounter-analysis caches.
@@ -15,7 +15,7 @@ public final class CreatureAnalysisBackfillTool {
         try {
             MonsterImportApplicationService.ImportSummary summary =
                     MonsterImportApplicationService.importFromDefaultDirectory();
-            EncounterPartyCacheService cacheService = new EncounterPartyCacheService();
+            PartyAnalysisCacheService cacheService = new PartyAnalysisCacheService();
             var cacheOutcome = cacheService.refreshCacheForCreatureDataChange();
             System.out.println("Creature analysis backfill files=" + summary.fileCount()
                     + ", overridesUpdated=" + summary.overrideSummary().updated()

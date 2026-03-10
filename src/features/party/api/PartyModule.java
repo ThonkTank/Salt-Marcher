@@ -1,9 +1,9 @@
 package features.party.api;
 
-import features.encounter.api.PartyCacheRefreshPort;
 import features.party.ui.PartyPopup;
 import features.party.ui.PartyPopupController;
 import features.party.ui.PartyWorkflowApplicationService;
+import features.partyanalysis.api.PartyCacheRefreshPort;
 import javafx.scene.Node;
 
 import java.util.Objects;

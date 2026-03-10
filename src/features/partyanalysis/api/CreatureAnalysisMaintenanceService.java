@@ -1,13 +1,13 @@
-package features.encounter.api;
+package features.partyanalysis.api;
 
-import features.encounter.partyanalysis.application.EncounterPartyAnalysisService;
-import features.encounter.partyanalysis.service.CreatureStaticAnalysisService;
+import features.partyanalysis.application.EncounterPartyAnalysisService;
+import features.partyanalysis.service.CreatureStaticAnalysisService;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * Public maintenance-facing facade for encounter creature-analysis refresh workflows.
+ * Public maintenance-facing facade for creature-analysis refresh workflows.
  */
 public final class CreatureAnalysisMaintenanceService {
 

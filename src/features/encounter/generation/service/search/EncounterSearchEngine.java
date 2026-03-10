@@ -1,7 +1,6 @@
 package features.encounter.generation.service.search;
 
-import features.creaturecatalog.model.Creature;
-import features.encounter.analysis.model.CreatureRoleProfile;
+import features.creatures.model.Creature;
 import features.encounter.generation.service.EncounterGenerator;
 import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.EncounterTuning;
@@ -19,6 +18,7 @@ import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
 import features.encounter.calibration.service.EncounterCalibrationService;
 import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
+import features.partyanalysis.model.CreatureRoleProfile;
 
 import java.util.ArrayList;
 import java.util.Comparator;

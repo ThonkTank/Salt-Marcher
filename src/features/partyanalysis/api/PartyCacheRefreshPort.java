@@ -1,4 +1,4 @@
-package features.encounter.api;
+package features.partyanalysis.api;
 
 public interface PartyCacheRefreshPort {
 

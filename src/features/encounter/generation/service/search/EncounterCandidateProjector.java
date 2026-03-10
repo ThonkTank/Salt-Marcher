@@ -1,16 +1,15 @@
 package features.encounter.generation.service.search;
 
-import features.creaturecatalog.model.Creature;
-import features.encounter.analysis.model.CreatureRoleProfile;
-import features.encounter.analysis.service.CreatureFunctionRoleClassifier;
-import features.encounter.analysis.service.CreatureStaticAnalysisService;
-import features.encounter.analysis.service.EncounterRoleProjector;
-import features.encounter.analysis.service.EncounterWeightClassClassifier;
-import features.encounter.analysis.repository.EncounterPartyAnalysisRepository.CreatureStaticRow;
-import features.encounter.generation.service.search.model.CandidateEntry;
 import features.encounter.calibration.service.EncounterCalibrationService;
 import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
 import features.encounter.calibration.service.EncounterCalibrationService.PartyRelativeMetrics;
+import features.creatures.model.Creature;
+import features.encounter.generation.service.search.model.CandidateEntry;
+import features.partyanalysis.model.CreatureRoleProfile;
+import features.partyanalysis.repository.EncounterPartyAnalysisRepository.CreatureStaticRow;
+import features.partyanalysis.service.CreatureFunctionRoleClassifier;
+import features.partyanalysis.service.CreatureStaticAnalysisService;
+import features.partyanalysis.service.EncounterWeightClassClassifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +35,6 @@ public final class EncounterCandidateProjector {
             entries.add(new CandidateEntry(
                     creature,
                     profile,
-                    EncounterRoleProjector.projectMonsterRole(profile),
                     profile.weightClass(),
                     profile.primaryFunctionRole()));
         }
@@ -67,7 +65,6 @@ public final class EncounterCandidateProjector {
                 creature.Id,
                 weightClass,
                 classification.primaryRole(),
-                classification.secondaryRole(),
                 classification.capabilityTags(),
                 metrics.survivabilityActions(),
                 actionUnits,

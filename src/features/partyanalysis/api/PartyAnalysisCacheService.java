@@ -1,15 +1,15 @@
-package features.encounter.api;
+package features.partyanalysis.api;
 
-import features.encounter.partyanalysis.application.EncounterPartyAnalysisService;
+import features.partyanalysis.application.EncounterPartyAnalysisService;
 
 import java.util.logging.Logger;
 
 /**
- * Public facade for encounter party-cache workflows.
+ * Public facade for party-analysis cache workflows triggered by party mutations.
  */
-public final class EncounterPartyCacheService implements PartyCacheRefreshPort {
+public final class PartyAnalysisCacheService implements PartyCacheRefreshPort {
 
-    private static final Logger LOGGER = Logger.getLogger(EncounterPartyCacheService.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(PartyAnalysisCacheService.class.getName());
 
     public void ensureCurrentPartyCacheReadyBestEffort() {
         EncounterPartyAnalysisService.CacheReadiness readiness = EncounterPartyAnalysisService.ensureCacheReady();
@@ -22,7 +22,7 @@ public final class EncounterPartyCacheService implements PartyCacheRefreshPort {
         boolean invalidated = EncounterPartyAnalysisService.invalidateCurrentPartyCache();
         if (!invalidated) {
             LOGGER.warning(
-                    "EncounterPartyCacheService: encounter party-analysis cache invalidation failed");
+                    "PartyAnalysisCacheService: party-analysis cache invalidation failed");
         }
     }
 

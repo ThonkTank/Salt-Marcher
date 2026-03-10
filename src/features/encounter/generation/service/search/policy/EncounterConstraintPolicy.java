@@ -1,8 +1,8 @@
 package features.encounter.generation.service.search.policy;
 
-import features.encounter.analysis.model.CreatureCapabilityTag;
-import features.encounter.analysis.model.EncounterFunctionRole;
-import features.encounter.analysis.model.EncounterWeightClass;
+import features.partyanalysis.model.CreatureCapabilityTag;
+import features.partyanalysis.model.EncounterFunctionRole;
+import features.partyanalysis.model.EncounterWeightClass;
 import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.search.model.CandidateEntry;
 import features.encounter.generation.service.search.model.EncounterBudgets;

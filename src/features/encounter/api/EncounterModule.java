@@ -6,6 +6,8 @@ import features.encounter.internal.wiring.DefaultCreatureCandidateProvider;
 import features.encounter.internal.wiring.DefaultEncounterTableProvider;
 import features.encounter.internal.wiring.DefaultPartyProvider;
 import features.creatures.api.CreatureCatalogService;
+import features.partyanalysis.api.PartyAnalysisCacheService;
+import features.partyanalysis.api.PartyCacheRefreshPort;
 import ui.components.creatures.statblock.StatBlockRequest;
 import ui.shell.AppView;
 import ui.shell.SceneRegistry;
@@ -16,7 +18,7 @@ import java.util.function.Consumer;
 public final class EncounterModule {
 
     private final EncounterView view;
-    private final EncounterPartyCacheService partyCacheService;
+    private final PartyAnalysisCacheService partyCacheService;
 
     public EncounterModule(
             Runnable onRefreshToolbar,
@@ -37,7 +39,7 @@ public final class EncounterModule {
                 new DefaultCreatureCandidateProvider()
         );
         EncounterCombatService combatService = new EncounterCombatService();
-        this.partyCacheService = new EncounterPartyCacheService();
+        this.partyCacheService = new PartyAnalysisCacheService();
         this.view = new EncounterView(new EncounterViewCallbacks(
                 onRefreshToolbar,
                 onRefreshPanels,
