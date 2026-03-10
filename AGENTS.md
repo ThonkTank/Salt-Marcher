@@ -40,6 +40,7 @@
 - When touching static-only classes, enforce both `final` and a private constructor (`AssertionError("No instances")` pattern is preferred).
 - Use instance-based services only for stateful workflows/sessions (for example `*ApplicationService`, `*Session`).
 - Service/generation APIs should return typed failure reasons/status codes; UI layers own localized/user-facing message text.
+- Encounter generation cache-readiness is an advisory-only fallback concern on successful generation; reserve failure reasons/status codes for generation states that actually block or fail the result.
 - Do not use `System.out`/`System.err` in feature services; prefer structured logging or silent fallback handling.
 - Persistence row DTO models may remain mutable public-field carriers for JDBC mapping; domain/value models should prefer immutable camelCase APIs (`record` or final fields).
 - Keep ID types consistent per feature API surface; for creature/row IDs in this codebase, use `Long` end-to-end unless a primitive is required by an external API.
@@ -47,7 +48,7 @@
 - Language policy: backend code (model/repository/service and non-UI infrastructure) uses English for comments/docs/messages; frontend UI code uses German for user-facing text and inline UI comments.
 - UI text must be German by default; do not translate established DnD terminology.
 - DnD game terminology is not localized in UI text/comments (for example: "Encounter", "Stat Block", "CR", "XP", "Deadly").
-- For JavaFX background tasks in UI code, use `UiAsyncExecutor.submit(Task<?>)` instead of creating raw `Thread`s.
+- For JavaFX background tasks in UI code, use `UiAsyncTasks.submit(...)` as the public entrypoint instead of creating raw `Thread`s or calling `UiAsyncExecutor.submit(Task<?>)` directly.
 - For UI background-task failures, use `UiErrorReporter.reportBackgroundFailure(...)` instead of direct `System.err` logging.
 - In encounter generation, route time/random behavior through `GenerationContext` (no direct `System.nanoTime`/`ThreadLocalRandom` usage outside `GenerationContext`).
 - Prefer `try-with-resources` for JDBC.
@@ -75,3 +76,7 @@
 - Do not commit secrets. Keep session cookies in local `crawler.properties` only.
 - Start from `crawler.properties.example` for local setup.
 - Store local database backups under `data/backups/db/` (for example `data/backups/db/game.db.bak-<timestamp>`), never in the repository root.
+
+## Data management
+- The local implementation is the only working copy of this programme. Therefore, we don't need to plan around existing users outside of this environment.
+- We are working with a mix of crawled and custom data. Data pulled from crawler output doesn't need to be migrated when shemas change, we can simply re-parse and import it. user created data needs to be handled very carefully with migrations and backups.

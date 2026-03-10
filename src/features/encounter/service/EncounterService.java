@@ -12,6 +12,7 @@ import features.encounter.service.combat.CombatSetup;
 import features.encounter.service.combat.CombatSession;
 import features.encounter.service.combat.EncounterLootService;
 import features.encounter.service.combat.PreparedEncounterSlot;
+import features.encounter.service.analysis.EncounterPartyAnalysisService;
 import features.encounter.service.generation.EncounterScoring;
 import features.encounter.service.generation.EncounterGenerator;
 import features.encountertable.model.EncounterTable;
@@ -144,10 +145,18 @@ public class EncounterService {
     }
 
     public MonsterRole classifyRole(Creature creature) {
+        if (creature != null && creature.Id != null) {
+            MonsterRole dynamic = EncounterPartyAnalysisService.loadDynamicRoleForCreature(creature.Id);
+            if (dynamic != null) return dynamic;
+        }
         return MonsterRoleParser.parseOrBrute(creature != null ? creature.Role : null);
     }
 
     public EncounterGenerator.GenerationResult generateEncounter(GenerationRequest request) {
+        EncounterPartyAnalysisService.CacheReadiness readiness = EncounterPartyAnalysisService.ensureCacheReady();
+        EncounterGenerator.GenerationAdvisory advisory = mapGenerationAdvisory(readiness);
+        Map<Long, MonsterRole> dynamicRolesByCreatureId = loadDynamicRolesForGeneration(readiness);
+
         EncounterFilter filter = request.filter();
         List<String> types = filter == null ? null : nullIfEmpty(filter.types());
         List<String> subtypes = filter == null ? null : nullIfEmpty(filter.subtypes());
@@ -162,10 +171,19 @@ public class EncounterService {
             return EncounterGenerator.GenerationResult.blockedByUserInput(loadedCandidates.failureReason());
         }
 
-        return EncounterGenerator.generateEncounter(
-                toEncounterRequest(request, types, subtypes, biomes, loadedCandidates.selectionWeights()),
-                loadedCandidates.candidates()
-        );
+        EncounterGenerator.GenerationResult result = EncounterGenerator.generateEncounter(
+                toEncounterRequest(
+                        request,
+                        types,
+                        subtypes,
+                        biomes,
+                        loadedCandidates.selectionWeights(),
+                        dynamicRolesByCreatureId),
+                loadedCandidates.candidates());
+        if (result.status() == EncounterGenerator.GenerationStatus.SUCCESS) {
+            return EncounterGenerator.GenerationResult.success(result.encounter(), advisory);
+        }
+        return result;
     }
 
     public CombatStartResult prepareCombatants(CombatStartRequest request) {
@@ -244,7 +262,8 @@ public class EncounterService {
             List<String> types,
             List<String> subtypes,
             List<String> biomes,
-            Map<Long, Integer> selectionWeights) {
+            Map<Long, Integer> selectionWeights,
+            Map<Long, MonsterRole> dynamicRolesByCreatureId) {
         return new EncounterGenerator.EncounterRequest(
                 request.partySize(),
                 request.avgLevel(),
@@ -255,7 +274,8 @@ public class EncounterService {
                 request.amountValue(),
                 request.groupsLevel(),
                 request.balanceLevel(),
-                selectionWeights
+                selectionWeights,
+                dynamicRolesByCreatureId
         );
     }
 
@@ -300,6 +320,26 @@ public class EncounterService {
             case PARTY_MEMBER_MISSING -> CombatStartFailureReason.PARTY_MEMBER_MISSING;
             case PC_INITIATIVE_VALUE_MISSING -> CombatStartFailureReason.PC_INITIATIVE_VALUE_MISSING;
             case PC_INITIATIVE_COUNT_MISMATCH -> CombatStartFailureReason.PC_INITIATIVE_COUNT_MISMATCH;
+        };
+    }
+
+    private static Map<Long, MonsterRole> loadDynamicRolesForGeneration(
+            EncounterPartyAnalysisService.CacheReadiness readiness) {
+        if (readiness == EncounterPartyAnalysisService.CacheReadiness.READY) {
+            return EncounterPartyAnalysisService.loadDynamicRolesForActiveParty();
+        }
+        if (readiness == EncounterPartyAnalysisService.CacheReadiness.NOT_READY) {
+            EncounterPartyAnalysisService.rebuildCurrentPartyCacheAsyncBestEffort();
+        }
+        return Map.of();
+    }
+
+    private static EncounterGenerator.GenerationAdvisory mapGenerationAdvisory(
+            EncounterPartyAnalysisService.CacheReadiness readiness) {
+        return switch (readiness) {
+            case READY -> null;
+            case NOT_READY -> EncounterGenerator.GenerationAdvisory.PARTY_ROLE_FALLBACK_CACHE_REBUILDING;
+            case STORAGE_ERROR -> EncounterGenerator.GenerationAdvisory.PARTY_ROLE_FALLBACK_STORAGE_UNAVAILABLE;
         };
     }
 }

@@ -55,11 +55,14 @@ final class EncounterSearchEngine {
 
         Map<Long, Creature> byId = new HashMap<>();
         Map<Long, MonsterRole> roleMap = new HashMap<>();
+        Map<Long, MonsterRole> dynamicRoles = request.dynamicRolesByCreatureId() != null
+                ? request.dynamicRolesByCreatureId()
+                : Map.of();
         int globalMinXp = Integer.MAX_VALUE;
         int globalMaxXp = Integer.MIN_VALUE;
         for (Creature c : pool) {
             byId.put(c.Id, c);
-            roleMap.put(c.Id, CandidateScorer.parseRole(c.Role));
+            roleMap.put(c.Id, dynamicRoles.getOrDefault(c.Id, CandidateScorer.parseRole(c.Role)));
             globalMinXp = Math.min(globalMinXp, c.XP);
             globalMaxXp = Math.max(globalMaxXp, c.XP);
         }

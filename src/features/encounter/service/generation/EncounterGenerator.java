@@ -9,6 +9,7 @@ import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
 import features.encounter.service.rules.EncounterMobSlotRules;
 import features.encounter.service.rules.EncounterRules;
+import features.gamerules.model.MonsterRole;
 
 /**
  * Facade for encounter generation and XP helpers.
@@ -40,21 +41,35 @@ public final class EncounterGenerator {
         TIMEOUT
     }
 
-    public record GenerationResult(GenerationStatus status, Encounter encounter, GenerationFailureReason failureReason) {
+    public enum GenerationAdvisory {
+        PARTY_ROLE_FALLBACK_CACHE_REBUILDING,
+        PARTY_ROLE_FALLBACK_STORAGE_UNAVAILABLE
+    }
+
+    public record GenerationResult(
+            GenerationStatus status,
+            Encounter encounter,
+            GenerationFailureReason failureReason,
+            GenerationAdvisory advisory
+    ) {
         public static GenerationResult success(Encounter encounter) {
-            return new GenerationResult(GenerationStatus.SUCCESS, encounter, null);
+            return success(encounter, null);
+        }
+
+        public static GenerationResult success(Encounter encounter, GenerationAdvisory advisory) {
+            return new GenerationResult(GenerationStatus.SUCCESS, encounter, null, advisory);
         }
 
         public static GenerationResult noSolution(GenerationFailureReason failureReason) {
-            return new GenerationResult(GenerationStatus.NO_SOLUTION, null, failureReason);
+            return new GenerationResult(GenerationStatus.NO_SOLUTION, null, failureReason, null);
         }
 
         public static GenerationResult blockedByUserInput(GenerationFailureReason failureReason) {
-            return new GenerationResult(GenerationStatus.BLOCKED_BY_USER_INPUT, null, failureReason);
+            return new GenerationResult(GenerationStatus.BLOCKED_BY_USER_INPUT, null, failureReason, null);
         }
 
         public static GenerationResult timeout() {
-            return new GenerationResult(GenerationStatus.TIMEOUT, null, GenerationFailureReason.TIMEOUT);
+            return new GenerationResult(GenerationStatus.TIMEOUT, null, GenerationFailureReason.TIMEOUT, null);
         }
     }
 
@@ -76,7 +91,8 @@ public final class EncounterGenerator {
             double amountValue,
             int groupsLevel,
             int balanceLevel,
-            Map<Long, Integer> selectionWeights
+            Map<Long, Integer> selectionWeights,
+            Map<Long, MonsterRole> dynamicRolesByCreatureId
     ) {}
 
     /**

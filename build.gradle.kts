@@ -103,6 +103,12 @@ val recomputeRoles = registerJavaExecTask(
     taskMainClass = "importer.CreatureRoleRecomputeTool"
 )
 
+val backfillCreatureAnalysis = registerJavaExecTask(
+    taskName = "backfillCreatureAnalysis",
+    taskDescription = "Reimport crawled monsters from stored HTML and refresh encounter-analysis caches.",
+    taskMainClass = "importer.CreatureAnalysisBackfillTool"
+)
+
 val applyCreatureOverrides = registerJavaExecTask(
     taskName = "applyCreatureOverrides",
     taskDescription = "Apply versioned creature CR/XP overrides from data/creature_overrides.csv.",
@@ -225,8 +231,35 @@ val checkRepositorySqlExceptionConvention by tasks.registering {
     }
 }
 
+val checkUiAsyncSubmissionConvention by tasks.registering {
+    group = "verification"
+    description = "Fail when UI code bypasses UiAsyncTasks and calls UiAsyncExecutor.submit directly."
+    val directExecutorPattern = Regex("""\bUiAsyncExecutor\.submit\(""")
+
+    doLast {
+        val projectRoot = project.layout.projectDirectory.asFile.toPath()
+        val offenders = fileTree("src") {
+            include("**/*.java")
+            exclude("ui/async/**")
+        }.files
+            .map { projectRoot.relativize(it.toPath()).toString().replace('\\', '/') }
+            .filter { path -> directExecutorPattern.containsMatchIn(file(path).readText()) }
+            .sorted()
+
+        if (offenders.isNotEmpty()) {
+            val details = offenders.joinToString(separator = "\n") { " - $it" }
+            throw GradleException(
+                "UI async submission convention drift detected.\n" +
+                    "Use UiAsyncTasks.submit(...) as the public entrypoint; keep UiAsyncExecutor.submit(...) internal to ui.async.\n" +
+                    "Offending files:\n$details"
+            )
+        }
+    }
+}
+
 tasks.named("check") {
     dependsOn(checkNoCompiledArtifactsInSource)
     dependsOn(checkNoStdStreamsInFeatureServicesAndRepositories)
     dependsOn(checkRepositorySqlExceptionConvention)
+    dependsOn(checkUiAsyncSubmissionConvention)
 }

@@ -42,11 +42,10 @@ public class PartyPopup {
 
     private final ObservableList<PlayerCharacter> available = FXCollections.observableArrayList();
     private final FilteredList<PlayerCharacter> filtered = new FilteredList<>(available);
-    private final PartyPopupController controller = new PartyPopupController();
+    private final PartyPopupController controller;
 
-    private Runnable onPartyChanged;
-
-    public PartyPopup() {
+    public PartyPopup(PartyPopupController controller) {
+        this.controller = controller;
         triggerButton = new Button("Keine _Party \u25BE");
         triggerButton.getStyleClass().add("text-secondary");
         triggerButton.setTooltip(new javafx.scene.control.Tooltip("Party-Panel \u00f6ffnen (Alt+P)"));
@@ -66,8 +65,6 @@ public class PartyPopup {
     }
 
     public Button getTriggerButton() { return triggerButton; }
-
-    public void setOnPartyChanged(Runnable callback) { this.onPartyChanged = callback; }
 
     // ---- Panel-Aufbau ----
 
@@ -332,7 +329,7 @@ public class PartyPopup {
     }
 
     private void handleMutationAndReloadResult(
-            PartyPopupController.MutationAndReloadResult result,
+            PartyWorkflowApplicationService.MutationAndReloadResult result,
             String storageErrorMessage
     ) {
         if (result.mutationStatus() == PartyService.MutationStatus.NOT_FOUND) {
@@ -350,7 +347,6 @@ public class PartyPopup {
             return;
         }
         applyData(snapshot);
-        if (onPartyChanged != null) onPartyChanged.run();
     }
 
     private static PartyService.PartySnapshotResult emptySnapshot() {

@@ -18,6 +18,8 @@ import features.encounter.service.adapter.StaticPartyProvider;
 import features.encounter.ui.EncounterView;
 import features.encounter.ui.EncounterViewCallbacks;
 import features.party.ui.PartyPopup;
+import features.party.ui.PartyPopupController;
+import features.party.ui.PartyWorkflowApplicationService;
 import features.world.hexmap.ui.editor.MapEditorView;
 import features.world.hexmap.ui.overworld.OverworldView;
 import features.world.hexmap.ui.travel.TravelPane;
@@ -57,8 +59,9 @@ public class SaltMarcherApp extends Application {
         ));
         encounterView.setOnEnsureStatBlock(shell.getEnsureStatBlockHandler());
 
-        PartyPopup partyPopup = new PartyPopup();
-        partyPopup.setOnPartyChanged(encounterView::refreshPartyState);
+        PartyWorkflowApplicationService partyWorkflowApplicationService =
+                new PartyWorkflowApplicationService(encounterView::refreshPartyState);
+        PartyPopup partyPopup = new PartyPopup(new PartyPopupController(partyWorkflowApplicationService));
         shell.addPersistentToolbarItem(partyPopup.getTriggerButton());
 
         shell.getSceneRegistry().registerScene("\uD83D\uDDFA Reise", new TravelPane());

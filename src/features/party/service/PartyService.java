@@ -52,7 +52,9 @@ public final class PartyService {
 
     public static PartyListResult getActivePartyResult() {
         try (Connection conn = DatabaseManager.getConnection()) {
-            return new PartyListResult(ReadStatus.SUCCESS, PlayerCharacterRepository.getPartyMembers(conn));
+            return new PartyListResult(
+                    ReadStatus.SUCCESS,
+                    PlayerCharacterRepository.getPartyMembers(conn));
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "PartyService.getActivePartyResult(): DB access failed", e);
             return new PartyListResult(ReadStatus.STORAGE_ERROR, List.of());
@@ -61,8 +63,22 @@ public final class PartyService {
 
     public static MutationResult addToParty(Long id) {
         try (Connection conn = DatabaseManager.getConnection()) {
-            boolean updated = PlayerCharacterRepository.addToParty(conn, id);
-            return new MutationResult(updated ? MutationStatus.SUCCESS : MutationStatus.NOT_FOUND);
+            boolean oldAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                boolean updated = PlayerCharacterRepository.addToParty(conn, id);
+                if (!updated) {
+                    conn.rollback();
+                    return new MutationResult(MutationStatus.NOT_FOUND);
+                }
+                conn.commit();
+                return new MutationResult(MutationStatus.SUCCESS);
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAutoCommit);
+            }
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "PartyService.addToParty(): DB access failed", e);
             return new MutationResult(MutationStatus.STORAGE_ERROR);
@@ -71,8 +87,22 @@ public final class PartyService {
 
     public static MutationResult removeFromParty(Long id) {
         try (Connection conn = DatabaseManager.getConnection()) {
-            boolean updated = PlayerCharacterRepository.removeFromParty(conn, id);
-            return new MutationResult(updated ? MutationStatus.SUCCESS : MutationStatus.NOT_FOUND);
+            boolean oldAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                boolean updated = PlayerCharacterRepository.removeFromParty(conn, id);
+                if (!updated) {
+                    conn.rollback();
+                    return new MutationResult(MutationStatus.NOT_FOUND);
+                }
+                conn.commit();
+                return new MutationResult(MutationStatus.SUCCESS);
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAutoCommit);
+            }
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "PartyService.removeFromParty(): DB access failed", e);
             return new MutationResult(MutationStatus.STORAGE_ERROR);
@@ -81,8 +111,22 @@ public final class PartyService {
 
     public static MutationResult deleteCharacter(Long id) {
         try (Connection conn = DatabaseManager.getConnection()) {
-            boolean deleted = PlayerCharacterRepository.deleteCharacter(conn, id);
-            return new MutationResult(deleted ? MutationStatus.SUCCESS : MutationStatus.NOT_FOUND);
+            boolean oldAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                boolean deleted = PlayerCharacterRepository.deleteCharacter(conn, id);
+                if (!deleted) {
+                    conn.rollback();
+                    return new MutationResult(MutationStatus.NOT_FOUND);
+                }
+                conn.commit();
+                return new MutationResult(MutationStatus.SUCCESS);
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAutoCommit);
+            }
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "PartyService.deleteCharacter(): DB access failed", e);
             return new MutationResult(MutationStatus.STORAGE_ERROR);
@@ -118,5 +162,4 @@ public final class PartyService {
         return party.isEmpty() ? 1
                 : (int) Math.round(party.stream().mapToInt(pc -> pc.Level).average().orElse(1));
     }
-
 }

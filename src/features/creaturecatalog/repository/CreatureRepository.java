@@ -1,6 +1,7 @@
 package features.creaturecatalog.repository;
 
 import features.creaturecatalog.model.Creature;
+import features.encounter.service.analysis.CreatureStaticAnalysisService;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -139,6 +140,7 @@ public final class CreatureRepository {
         clearActions(conn, c.Id);
         insertAllActions(actionPs, c);
         actionPs.executeBatch();
+        CreatureStaticAnalysisService.refreshForCreature(conn, c.Id);
 
         saveBiomes(conn, c);
         saveSubtypes(conn, c);

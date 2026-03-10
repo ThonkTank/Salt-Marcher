@@ -276,6 +276,83 @@ public final class DatabaseManager {
                     + "CHECK (weight BETWEEN 1 AND 10)"
                     + ")");
 
+            stmt.execute("CREATE TABLE IF NOT EXISTS creature_action_analysis ("
+                    + "action_id             INTEGER PRIMARY KEY REFERENCES creature_actions(id) ON DELETE CASCADE,"
+                    + "analysis_version      INTEGER NOT NULL DEFAULT 1,"
+                    + "is_melee              INTEGER NOT NULL DEFAULT 0,"
+                    + "is_ranged             INTEGER NOT NULL DEFAULT 0,"
+                    + "is_aoe                INTEGER NOT NULL DEFAULT 0,"
+                    + "is_buff               INTEGER NOT NULL DEFAULT 0,"
+                    + "is_heal               INTEGER NOT NULL DEFAULT 0,"
+                    + "is_control            INTEGER NOT NULL DEFAULT 0,"
+                    + "has_mobility          INTEGER NOT NULL DEFAULT 0,"
+                    + "has_summon            INTEGER NOT NULL DEFAULT 0,"
+                    + "requires_recharge     INTEGER NOT NULL DEFAULT 0,"
+                    + "estimated_rule_lines  INTEGER NOT NULL DEFAULT 1,"
+                    + "complexity_points     INTEGER NOT NULL DEFAULT 1,"
+                    + "expected_uses_per_round REAL NOT NULL DEFAULT 1.0,"
+                    + "parsed_at             TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS creature_static_analysis ("
+                    + "creature_id                INTEGER PRIMARY KEY REFERENCES creatures(id) ON DELETE CASCADE,"
+                    + "analysis_version           INTEGER NOT NULL DEFAULT 1,"
+                    + "primary_function_role      TEXT,"
+                    + "secondary_function_role    TEXT,"
+                    + "capability_tags            TEXT,"
+                    + "base_action_units_per_round REAL NOT NULL DEFAULT 1.0,"
+                    + "legendary_action_units     REAL NOT NULL DEFAULT 0.0,"
+                    + "has_reaction               INTEGER NOT NULL DEFAULT 0,"
+                    + "total_complexity_points    INTEGER NOT NULL DEFAULT 0,"
+                    + "complex_feature_count      INTEGER NOT NULL DEFAULT 0,"
+                    + "support_signal_score       REAL NOT NULL DEFAULT 0.0,"
+                    + "control_signal_score       REAL NOT NULL DEFAULT 0.0,"
+                    + "mobility_signal_score      REAL NOT NULL DEFAULT 0.0,"
+                    + "ranged_signal_score        REAL NOT NULL DEFAULT 0.0,"
+                    + "melee_signal_score         REAL NOT NULL DEFAULT 0.0,"
+                    + "spellcasting_signal_score  REAL NOT NULL DEFAULT 0.0,"
+                    + "aoe_signal_score           REAL NOT NULL DEFAULT 0.0,"
+                    + "healing_signal_score       REAL NOT NULL DEFAULT 0.0,"
+                    + "summon_signal_score        REAL NOT NULL DEFAULT 0.0,"
+                    + "reaction_signal_score      REAL NOT NULL DEFAULT 0.0,"
+                    + "updated_at                 TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS encounter_party_cache_runs ("
+                    + "run_id             INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + "party_comp_version INTEGER NOT NULL,"
+                    + "party_comp_hash    TEXT NOT NULL,"
+                    + "status             TEXT NOT NULL,"
+                    + "started_at         TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+                    + "finished_at        TEXT,"
+                    + "error_message      TEXT"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS encounter_party_cache_state ("
+                    + "id                 INTEGER PRIMARY KEY CHECK (id = 1),"
+                    + "party_comp_hash    TEXT NOT NULL,"
+                    + "party_comp_version INTEGER NOT NULL DEFAULT 0,"
+                    + "active_run_id      INTEGER REFERENCES encounter_party_cache_runs(run_id),"
+                    + "cache_status       TEXT NOT NULL DEFAULT 'INVALID',"
+                    + "last_error         TEXT,"
+                    + "updated_at         TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP"
+                    + ")");
+
+            stmt.execute("CREATE TABLE IF NOT EXISTS creature_party_analysis ("
+                    + "run_id                INTEGER NOT NULL REFERENCES encounter_party_cache_runs(run_id) ON DELETE CASCADE,"
+                    + "creature_id           INTEGER NOT NULL REFERENCES creatures(id) ON DELETE CASCADE,"
+                    + "dynamic_role          TEXT NOT NULL,"
+                    + "weight_class          TEXT,"
+                    + "survivability_actions REAL NOT NULL DEFAULT 0.0,"
+                    + "offense_pressure      REAL NOT NULL DEFAULT 0.0,"
+                    + "expected_turn_share   REAL NOT NULL DEFAULT 0.0,"
+                    + "minionness_score      REAL NOT NULL DEFAULT 0.0,"
+                    + "gm_complexity_load    REAL NOT NULL DEFAULT 0.0,"
+                    + "fit_flags             TEXT,"
+                    + "computed_at           TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+                    + "PRIMARY KEY (run_id, creature_id)"
+                    + ")");
+
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_xp ON creatures(xp)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creatures_type ON creatures(creature_type)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_actions_creature_id ON creature_actions(creature_id)");
@@ -298,10 +375,18 @@ public final class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounter_table_entries_table ON encounter_table_entries(table_id)");
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_encounter_tables_name_norm_unique "
                     + "ON encounter_tables(lower(trim(name)))");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_action_analysis_version ON creature_action_analysis(analysis_version)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_static_analysis_version ON creature_static_analysis(analysis_version)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_party_analysis_run ON creature_party_analysis(run_id)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_party_analysis_run_role ON creature_party_analysis(run_id, dynamic_role)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_cache_runs_version_status "
+                    + "ON encounter_party_cache_runs(party_comp_version, status)");
+            stmt.execute("CREATE INDEX IF NOT EXISTS idx_cache_runs_hash ON encounter_party_cache_runs(party_comp_hash)");
 
             ensureCreatureImportColumns(conn);
             ensureCreatureActionColumns(conn);
             ensureItemTagCompatibility(conn);
+            ensureEncounterAnalysisColumns(conn);
 
             // Seed default time-of-day phases (German UI strings)
             try (PreparedStatement ps = conn.prepareStatement(
@@ -358,6 +443,14 @@ public final class DatabaseManager {
                     "INSERT OR IGNORE INTO campaign_state(campaign_id, calendar_id, current_epoch_day, current_phase_id) VALUES(1,?,0,?)")) {
                 ps.setLong(1, calendarId);
                 ps.setLong(2, morgenPhaseId);
+                ps.executeUpdate();
+            }
+
+            // Seed encounter cache singleton state (hash is replaced during first invalidation pass).
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "INSERT OR IGNORE INTO encounter_party_cache_state"
+                            + "(id, party_comp_hash, party_comp_version, active_run_id, cache_status, updated_at)"
+                            + " VALUES(1, '', 0, NULL, 'INVALID', CURRENT_TIMESTAMP)")) {
                 ps.executeUpdate();
             }
 
@@ -434,6 +527,18 @@ public final class DatabaseManager {
         }
     }
 
+    private static void ensureEncounterAnalysisColumns(Connection conn) throws SQLException {
+        ensureColumn(conn, "creature_static_analysis", "primary_function_role", "TEXT");
+        ensureColumn(conn, "creature_static_analysis", "secondary_function_role", "TEXT");
+        ensureColumn(conn, "creature_static_analysis", "capability_tags", "TEXT");
+        ensureColumn(conn, "creature_static_analysis", "spellcasting_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "aoe_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "healing_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "summon_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_static_analysis", "reaction_signal_score", "REAL NOT NULL DEFAULT 0.0");
+        ensureColumn(conn, "creature_party_analysis", "weight_class", "TEXT");
+    }
+
     private static void ensureItemTagCompatibility(Connection conn) throws SQLException {
         // One-way compatibility migration:
         // backfill canonical item_tags from legacy items.tags if that old column exists.
@@ -469,6 +574,13 @@ public final class DatabaseManager {
         hasTags.setLong(1, itemId);
         try (ResultSet rs = hasTags.executeQuery()) {
             return rs.next();
+        }
+    }
+
+    private static void ensureColumn(Connection conn, String table, String column, String definition) throws SQLException {
+        if (columnExists(conn, table, column)) return;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
         }
     }
 

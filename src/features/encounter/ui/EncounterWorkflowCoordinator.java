@@ -20,11 +20,12 @@ import javafx.concurrent.Task;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyEvent;
 import ui.shell.SceneHandle;
 import ui.components.statblock.StatBlockRequest;
-import ui.async.UiAsyncExecutor;
+import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 import features.creaturepicker.ui.MonsterListPane;
 
@@ -181,7 +182,10 @@ final class EncounterWorkflowCoordinator {
                 return;
             }
             switch (result.status()) {
-                case SUCCESS -> rosterPane.setEncounter(result.encounter());
+                case SUCCESS -> {
+                    rosterPane.setEncounter(result.encounter());
+                    showGenerationAdvisory(result.advisory());
+                }
                 case BLOCKED_BY_USER_INPUT, NO_SOLUTION, TIMEOUT ->
                         rosterPane.showGenerationFailed(mapGenerationFailure(result.failureReason()));
             }
@@ -404,6 +408,25 @@ final class EncounterWorkflowCoordinator {
         };
     }
 
+    private void showGenerationAdvisory(EncounterGenerator.GenerationAdvisory advisory) {
+        if (advisory == null) {
+            return;
+        }
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, mapGenerationAdvisory(advisory), ButtonType.OK);
+        alert.setTitle("Encounter Builder");
+        alert.setHeaderText("Encounter mit Fallback generiert");
+        alert.show();
+    }
+
+    private String mapGenerationAdvisory(EncounterGenerator.GenerationAdvisory advisory) {
+        return switch (advisory) {
+            case PARTY_ROLE_FALLBACK_CACHE_REBUILDING ->
+                    "Party-abhängige Rollen waren noch nicht bereit. Das Encounter wurde mit statischen Rollen generiert; der Cache wird im Hintergrund neu aufgebaut.";
+            case PARTY_ROLE_FALLBACK_STORAGE_UNAVAILABLE ->
+                    "Party-abhängige Rollen konnten wegen eines Speicherproblems nicht geladen werden. Das Encounter wurde mit statischen Rollen generiert.";
+        };
+    }
+
     private String mapCombatStartFailure(EncounterService.CombatStartFailureReason reason) {
         if (reason == null) {
             return "Kampfstart fehlgeschlagen. Eingaben pr\u00fcfen und erneut versuchen.";
@@ -457,25 +480,26 @@ final class EncounterWorkflowCoordinator {
             Runnable onFailure,
             BooleanSupplier isTaskActive
     ) {
-        task.setOnSucceeded(e -> {
-            if (task.isCancelled() || !isTaskActive.getAsBoolean()) {
-                return;
-            }
-            onSuccess.accept(task.getValue());
-        });
-        task.setOnFailed(e -> {
-            if (!task.isCancelled() && isTaskActive.getAsBoolean()) {
-                UiErrorReporter.reportBackgroundFailure(failureContext, task.getException());
-                if (onFailure != null) {
-                    onFailure.run();
-                }
-            }
-        });
-        task.setOnCancelled(e -> {
-            if (isTaskActive.getAsBoolean() && onFailure != null) {
-                onFailure.run();
-            }
-        });
-        UiAsyncExecutor.submit(task);
+        UiAsyncTasks.submit(
+                task,
+                result -> {
+                    if (task.isCancelled() || !isTaskActive.getAsBoolean()) {
+                        return;
+                    }
+                    onSuccess.accept(result);
+                },
+                throwable -> {
+                    if (!task.isCancelled() && isTaskActive.getAsBoolean()) {
+                        UiErrorReporter.reportBackgroundFailure(failureContext, throwable);
+                        if (onFailure != null) {
+                            onFailure.run();
+                        }
+                    }
+                },
+                () -> {
+                    if (isTaskActive.getAsBoolean() && onFailure != null) {
+                        onFailure.run();
+                    }
+                });
     }
 }
