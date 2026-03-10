@@ -16,6 +16,6 @@ public final class DefaultCreatureCandidateProvider implements CreatureCandidate
             List<String> biomes,
             List<String> subtypes
     ) {
-        return CreatureCatalogService.getCreaturesForEncounter(types, minXp, maxXp, biomes, subtypes).value();
+        return CreatureCatalogService.getCreaturesForEncounterGeneration(types, minXp, maxXp, biomes, subtypes).value();
     }
 }

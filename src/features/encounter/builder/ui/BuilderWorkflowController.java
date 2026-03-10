@@ -7,6 +7,7 @@ import features.encounter.combat.ui.CombatWorkflowController;
 import features.encounter.combat.ui.InitiativePane;
 import features.encounter.generation.service.EncounterDifficultyBand;
 import features.encounter.generation.service.EncounterGenerator;
+import features.encounter.generation.service.GenerationContext;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
 import features.encounter.builder.application.ports.EncounterTableProvider;
@@ -101,19 +102,21 @@ public final class BuilderWorkflowController {
         Task<EncounterGenerator.GenerationResult> task = new Task<>() {
             @Override
             protected EncounterGenerator.GenerationResult call() {
-                return encounterService.generateEncounter(new EncounterBuilderService.GenerationRequest(
-                        partySize,
-                        avgLevel,
-                        new EncounterBuilderService.EncounterFilter(
-                                criteria.types(),
-                                criteria.subtypes(),
-                                criteria.biomes()
+                return encounterService.generateEncounter(
+                        new EncounterBuilderService.GenerationRequest(
+                                partySize,
+                                avgLevel,
+                                new EncounterBuilderService.EncounterFilter(
+                                        criteria.types(),
+                                        criteria.subtypes(),
+                                        criteria.biomes()
+                                ),
+                                difficultyBand,
+                                balanceLevel,
+                                amountValue,
+                                tableIds
                         ),
-                        difficultyBand,
-                        balanceLevel,
-                        amountValue,
-                        tableIds
-                ));
+                        GenerationContext.defaultContext(this::isCancelled));
             }
         };
         generationTask = task;

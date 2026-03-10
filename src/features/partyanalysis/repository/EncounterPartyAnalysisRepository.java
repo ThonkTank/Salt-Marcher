@@ -513,7 +513,51 @@ public final class EncounterPartyAnalysisRepository {
 
     public static Map<Long, CreatureStaticRow> loadStaticRows(Connection conn) throws SQLException {
         Map<Long, CreatureStaticRow> rows = new HashMap<>();
-        String sql = "SELECT creature_id, analysis_version, primary_function_role, capability_tags, "
+        String sql = staticRowSelectSql();
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                long creatureId = rs.getLong("creature_id");
+                rows.put(creatureId, mapStaticRow(rs, creatureId));
+            }
+        }
+        return rows;
+    }
+
+    public static Map<Long, CreatureStaticRow> loadStaticRows(Connection conn, Set<Long> creatureIds) throws SQLException {
+        List<Long> filteredIds = normalizeCreatureIds(creatureIds);
+        if (filteredIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, CreatureStaticRow> rows = new HashMap<>(filteredIds.size());
+        for (List<Long> batch : partitionIds(filteredIds)) {
+            String sql = staticRowSelectSql() + " WHERE creature_id IN (" + inClausePlaceholders(batch.size()) + ")";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                bindCreatureIds(ps, batch, 1);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        long creatureId = rs.getLong("creature_id");
+                        rows.put(creatureId, mapStaticRow(rs, creatureId));
+                    }
+                }
+            }
+        }
+        return rows;
+    }
+
+    public static CreatureStaticRow loadStaticRow(Connection conn, long creatureId) throws SQLException {
+        String sql = staticRowSelectSql() + " WHERE creature_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, creatureId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return null;
+                return mapStaticRow(rs, creatureId);
+            }
+        }
+    }
+
+    private static String staticRowSelectSql() {
+        return "SELECT creature_id, analysis_version, primary_function_role, capability_tags, "
                 + "base_action_units_per_round, legendary_action_units, has_reaction, total_complexity_points, "
                 + "complex_feature_count, support_signal_score, control_signal_score, mobility_signal_score, "
                 + "ranged_signal_score, ranged_identity_score, melee_signal_score, spellcasting_signal_score, aoe_signal_score, "
@@ -523,108 +567,47 @@ public final class EncounterPartyAnalysisRepository {
                 + "ambusher_role_score, artillery_role_score, brute_role_score, soldier_role_score, "
                 + "controller_role_score, leader_role_score, skirmisher_role_score, support_role_score "
                 + "FROM creature_static_analysis";
-        try (PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                long creatureId = rs.getLong("creature_id");
-                rows.put(creatureId, new CreatureStaticRow(
-                        creatureId,
-                        rs.getInt("analysis_version"),
-                        parseEnumOrNull(rs.getString("primary_function_role"), EncounterFunctionRole.class),
-                        rs.getString("capability_tags"),
-                        rs.getDouble("base_action_units_per_round"),
-                        rs.getDouble("legendary_action_units"),
-                        rs.getInt("has_reaction"),
-                        rs.getInt("total_complexity_points"),
-                        rs.getInt("complex_feature_count"),
-                        rs.getDouble("support_signal_score"),
-                        rs.getDouble("control_signal_score"),
-                        rs.getDouble("mobility_signal_score"),
-                        rs.getDouble("ranged_signal_score"),
-                        rs.getDouble("ranged_identity_score"),
-                        rs.getDouble("melee_signal_score"),
-                        rs.getDouble("spellcasting_signal_score"),
-                        rs.getDouble("aoe_signal_score"),
-                        rs.getDouble("healing_signal_score"),
-                        rs.getDouble("summon_signal_score"),
-                        rs.getDouble("reaction_signal_score"),
-                        rs.getDouble("stealth_signal_score"),
-                        rs.getDouble("hide_signal_score"),
-                        rs.getDouble("invisibility_signal_score"),
-                        rs.getDouble("obscurement_signal_score"),
-                        rs.getDouble("forced_movement_signal_score"),
-                        rs.getDouble("ally_enable_signal_score"),
-                        rs.getDouble("ally_command_signal_score"),
-                        rs.getDouble("defense_signal_score"),
-                        rs.getDouble("tank_signal_score"),
-                        rs.getDouble("ambusher_role_score"),
-                        rs.getDouble("artillery_role_score"),
-                        rs.getDouble("brute_role_score"),
-                        rs.getDouble("soldier_role_score"),
-                        rs.getDouble("controller_role_score"),
-                        rs.getDouble("leader_role_score"),
-                        rs.getDouble("skirmisher_role_score"),
-                        rs.getDouble("support_role_score")));
-            }
-        }
-        return rows;
     }
 
-    public static CreatureStaticRow loadStaticRow(Connection conn, long creatureId) throws SQLException {
-        String sql = "SELECT creature_id, analysis_version, primary_function_role, capability_tags, "
-                + "base_action_units_per_round, legendary_action_units, has_reaction, total_complexity_points, "
-                + "complex_feature_count, support_signal_score, control_signal_score, mobility_signal_score, "
-                + "ranged_signal_score, ranged_identity_score, melee_signal_score, spellcasting_signal_score, aoe_signal_score, "
-                + "healing_signal_score, summon_signal_score, reaction_signal_score, stealth_signal_score, "
-                + "hide_signal_score, invisibility_signal_score, obscurement_signal_score, forced_movement_signal_score, "
-                + "ally_enable_signal_score, ally_command_signal_score, defense_signal_score, tank_signal_score, "
-                + "ambusher_role_score, artillery_role_score, brute_role_score, soldier_role_score, "
-                + "controller_role_score, leader_role_score, skirmisher_role_score, support_role_score "
-                + "FROM creature_static_analysis WHERE creature_id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, creatureId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) return null;
-                return new CreatureStaticRow(
-                        creatureId,
-                        rs.getInt("analysis_version"),
-                        parseEnumOrNull(rs.getString("primary_function_role"), EncounterFunctionRole.class),
-                        rs.getString("capability_tags"),
-                        rs.getDouble("base_action_units_per_round"),
-                        rs.getDouble("legendary_action_units"),
-                        rs.getInt("has_reaction"),
-                        rs.getInt("total_complexity_points"),
-                        rs.getInt("complex_feature_count"),
-                        rs.getDouble("support_signal_score"),
-                        rs.getDouble("control_signal_score"),
-                        rs.getDouble("mobility_signal_score"),
-                        rs.getDouble("ranged_signal_score"),
-                        rs.getDouble("ranged_identity_score"),
-                        rs.getDouble("melee_signal_score"),
-                        rs.getDouble("spellcasting_signal_score"),
-                        rs.getDouble("aoe_signal_score"),
-                        rs.getDouble("healing_signal_score"),
-                        rs.getDouble("summon_signal_score"),
-                        rs.getDouble("reaction_signal_score"),
-                        rs.getDouble("stealth_signal_score"),
-                        rs.getDouble("hide_signal_score"),
-                        rs.getDouble("invisibility_signal_score"),
-                        rs.getDouble("obscurement_signal_score"),
-                        rs.getDouble("forced_movement_signal_score"),
-                        rs.getDouble("ally_enable_signal_score"),
-                        rs.getDouble("ally_command_signal_score"),
-                        rs.getDouble("defense_signal_score"),
-                        rs.getDouble("tank_signal_score"),
-                        rs.getDouble("ambusher_role_score"),
-                        rs.getDouble("artillery_role_score"),
-                        rs.getDouble("brute_role_score"),
-                        rs.getDouble("soldier_role_score"),
-                        rs.getDouble("controller_role_score"),
-                        rs.getDouble("leader_role_score"),
-                        rs.getDouble("skirmisher_role_score"),
-                        rs.getDouble("support_role_score"));
-            }
-        }
+    private static CreatureStaticRow mapStaticRow(ResultSet rs, long creatureId) throws SQLException {
+        return new CreatureStaticRow(
+                creatureId,
+                rs.getInt("analysis_version"),
+                parseEnumOrNull(rs.getString("primary_function_role"), EncounterFunctionRole.class),
+                rs.getString("capability_tags"),
+                rs.getDouble("base_action_units_per_round"),
+                rs.getDouble("legendary_action_units"),
+                rs.getInt("has_reaction"),
+                rs.getInt("total_complexity_points"),
+                rs.getInt("complex_feature_count"),
+                rs.getDouble("support_signal_score"),
+                rs.getDouble("control_signal_score"),
+                rs.getDouble("mobility_signal_score"),
+                rs.getDouble("ranged_signal_score"),
+                rs.getDouble("ranged_identity_score"),
+                rs.getDouble("melee_signal_score"),
+                rs.getDouble("spellcasting_signal_score"),
+                rs.getDouble("aoe_signal_score"),
+                rs.getDouble("healing_signal_score"),
+                rs.getDouble("summon_signal_score"),
+                rs.getDouble("reaction_signal_score"),
+                rs.getDouble("stealth_signal_score"),
+                rs.getDouble("hide_signal_score"),
+                rs.getDouble("invisibility_signal_score"),
+                rs.getDouble("obscurement_signal_score"),
+                rs.getDouble("forced_movement_signal_score"),
+                rs.getDouble("ally_enable_signal_score"),
+                rs.getDouble("ally_command_signal_score"),
+                rs.getDouble("defense_signal_score"),
+                rs.getDouble("tank_signal_score"),
+                rs.getDouble("ambusher_role_score"),
+                rs.getDouble("artillery_role_score"),
+                rs.getDouble("brute_role_score"),
+                rs.getDouble("soldier_role_score"),
+                rs.getDouble("controller_role_score"),
+                rs.getDouble("leader_role_score"),
+                rs.getDouble("skirmisher_role_score"),
+                rs.getDouble("support_role_score"));
     }
 
     public static Map<Long, CreatureRoleProfile> loadRoleProfilesForActiveRun(Connection conn) throws SQLException {

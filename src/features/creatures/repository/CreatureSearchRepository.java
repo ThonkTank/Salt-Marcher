@@ -41,6 +41,36 @@ public final class CreatureSearchRepository {
         return creatures;
     }
 
+    public static List<Creature> getCreaturesForEncounterGeneration(
+            Connection conn,
+            List<String> creatureTypes,
+            int minXP,
+            int maxXP,
+            List<String> biomes,
+            List<String> subtypes) throws SQLException {
+        List<Creature> creatures = new ArrayList<>();
+        StringBuilder sql = new StringBuilder(
+                "SELECT id, name, creature_type, cr, xp, hp, hit_dice_count, hit_dice_sides, "
+                        + "hit_dice_modifier, ac, initiative_bonus, legendary_action_count "
+                        + "FROM creatures WHERE xp >= ? AND xp <= ?");
+        List<Object> params = new ArrayList<>();
+        params.add(minXP);
+        params.add(maxXP);
+        appendTypeClause(sql, params, creatureTypes);
+        appendSubtypeClause(sql, params, subtypes);
+        appendBiomesClause(sql, params, biomes);
+
+        try (PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            bindParams(ps, params);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    creatures.add(CreatureHydrator.mapEncounterGenerationRow(rs));
+                }
+            }
+        }
+        return creatures;
+    }
+
     /**
      * Returns creatures with base stats only - {@code Biomes}, {@code Actions}, {@code Subtypes},
      * and {@code Traits} are empty lists (not null, but not loaded). Suitable for autocomplete

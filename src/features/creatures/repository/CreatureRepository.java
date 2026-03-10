@@ -289,4 +289,20 @@ public final class CreatureRepository {
         CreatureHydrator.loadSubtypes(conn, creatures);
         return creatures;
     }
+
+    public static List<Creature> getCreaturesByIdsForEncounterGeneration(Connection conn, List<Long> ids) throws SQLException {
+        if (ids == null || ids.isEmpty()) return List.of();
+        String sql = "SELECT id, name, creature_type, cr, xp, hp, hit_dice_count, hit_dice_sides, "
+                + "hit_dice_modifier, ac, initiative_bonus, legendary_action_count "
+                + "FROM creatures WHERE id IN (" + placeholders(ids.size()) + ")";
+        List<Creature> creatures = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            int idx = 1;
+            for (Long id : ids) ps.setLong(idx++, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) creatures.add(CreatureHydrator.mapEncounterGenerationRow(rs));
+            }
+        }
+        return creatures;
+    }
 }

@@ -3,6 +3,7 @@ package features.encounter.generation.service;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
 import java.util.random.RandomGenerator;
 
@@ -15,22 +16,40 @@ public final class GenerationContext {
 
     private final LongSupplier nanoTimeSource;
     private final RandomGenerator random;
+    private final BooleanSupplier cancellationSignal;
     private final long timeoutNanos;
     private final long startNanos;
 
-    private GenerationContext(LongSupplier nanoTimeSource, RandomGenerator random, long timeoutMs) {
+    private GenerationContext(
+            LongSupplier nanoTimeSource,
+            RandomGenerator random,
+            long timeoutMs,
+            BooleanSupplier cancellationSignal) {
         this.nanoTimeSource = Objects.requireNonNull(nanoTimeSource, "nanoTimeSource");
         this.random = Objects.requireNonNull(random, "random");
+        this.cancellationSignal = Objects.requireNonNull(cancellationSignal, "cancellationSignal");
         this.timeoutNanos = Math.max(1L, timeoutMs) * 1_000_000L;
         this.startNanos = this.nanoTimeSource.getAsLong();
     }
 
     public static GenerationContext defaultContext() {
-        return new GenerationContext(System::nanoTime, ThreadLocalRandom.current(), DEFAULT_TIMEOUT_MS);
+        return defaultContext(() -> false);
+    }
+
+    public static GenerationContext defaultContext(BooleanSupplier cancellationSignal) {
+        return new GenerationContext(System::nanoTime, ThreadLocalRandom.current(), DEFAULT_TIMEOUT_MS, cancellationSignal);
     }
 
     public static GenerationContext of(LongSupplier nanoTimeSource, RandomGenerator random, long timeoutMs) {
-        return new GenerationContext(nanoTimeSource, random, timeoutMs);
+        return of(nanoTimeSource, random, timeoutMs, () -> false);
+    }
+
+    public static GenerationContext of(
+            LongSupplier nanoTimeSource,
+            RandomGenerator random,
+            long timeoutMs,
+            BooleanSupplier cancellationSignal) {
+        return new GenerationContext(nanoTimeSource, random, timeoutMs, cancellationSignal);
     }
 
     public long deadlineNanos() {
@@ -38,7 +57,11 @@ public final class GenerationContext {
     }
 
     public boolean isExpired(long deadlineNanos) {
-        return nanoTimeSource.getAsLong() > deadlineNanos;
+        return isCancelled() || nanoTimeSource.getAsLong() > deadlineNanos;
+    }
+
+    public boolean isCancelled() {
+        return cancellationSignal.getAsBoolean();
     }
 
     public int nextInt(int bound) {

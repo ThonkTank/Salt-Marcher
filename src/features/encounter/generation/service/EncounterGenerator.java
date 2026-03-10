@@ -2,9 +2,12 @@ package features.encounter.generation.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import features.encounter.combat.model.Combatant;
 import features.creatures.model.Creature;
+import features.creatures.model.CreatureCapabilityTag;
+import features.creatures.model.EncounterFunctionRole;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
 import features.encounter.rules.EncounterMobSlotRules;
@@ -57,15 +60,29 @@ public final class EncounterGenerator {
 
     public record GenerationDataSnapshot(
             Map<Long, Integer> selectionWeights,
-            Map<Long, CreatureRoleProfile> roleProfilesByCreatureId
+            Map<Long, CreatureRoleProfile> roleProfilesByCreatureId,
+            Map<Long, StaticCreatureRoleHint> staticRoleHintsByCreatureId
     ) {
         public GenerationDataSnapshot {
             selectionWeights = selectionWeights == null ? Map.of() : Map.copyOf(selectionWeights);
             roleProfilesByCreatureId = roleProfilesByCreatureId == null ? Map.of() : Map.copyOf(roleProfilesByCreatureId);
+            staticRoleHintsByCreatureId = staticRoleHintsByCreatureId == null ? Map.of() : Map.copyOf(staticRoleHintsByCreatureId);
         }
 
         public static GenerationDataSnapshot empty() {
-            return new GenerationDataSnapshot(Map.of(), Map.of());
+            return new GenerationDataSnapshot(Map.of(), Map.of(), Map.of());
+        }
+    }
+
+    public record StaticCreatureRoleHint(
+            EncounterFunctionRole primaryFunctionRole,
+            Set<CreatureCapabilityTag> capabilityTags,
+            int complexFeatureCount,
+            double baseActionUnitsPerRound,
+            double legendaryActionUnits
+    ) {
+        public StaticCreatureRoleHint {
+            capabilityTags = capabilityTags == null ? Set.of() : Set.copyOf(capabilityTags);
         }
     }
 

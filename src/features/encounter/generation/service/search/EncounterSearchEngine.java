@@ -71,10 +71,13 @@ public final class EncounterSearchEngine {
         EncounterGenerator.GenerationDataSnapshot analysisSnapshot = request.analysisSnapshot();
         Map<Long, CreatureRoleProfile> roleProfiles = analysisSnapshot.roleProfilesByCreatureId();
         Map<Long, Integer> selectionWeights = analysisSnapshot.selectionWeights();
+        Map<Long, EncounterGenerator.StaticCreatureRoleHint> staticRoleHints =
+                analysisSnapshot.staticRoleHintsByCreatureId();
 
         List<CandidateEntry> entries = EncounterCandidateProjector.buildCandidateEntries(
                 pool,
                 roleProfiles,
+                staticRoleHints,
                 party);
         if (entries.isEmpty()) {
             return EncounterResultAssembler.buildNoSolutionResult();
@@ -155,6 +158,9 @@ public final class EncounterSearchEngine {
         }
 
         for (CandidateChoice option : options) {
+            if (context.isExpired(deadlineNanos)) {
+                return best;
+            }
             SearchState next = option.nextState();
             SearchOutcome outcome = search(next, entries, budgets, relaxation, selectionWeights, context, deadlineNanos);
             if (outcome == null) {

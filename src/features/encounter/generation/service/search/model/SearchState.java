@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Immutable aggregate of the search state and its derived encounter metrics.
@@ -29,9 +30,10 @@ public final class SearchState {
     private final int enemyTurnSlots;
     private final int complexActionCount;
     private final double totalSurvivabilityActions;
+    private final Set<Long> usedCreatureIds;
+    private final Set<EncounterFunctionRole> usedPrimaryRoles;
     private List<StateEntry> entriesView;
     private Map<Long, Integer> countsView;
-    private Set<EncounterFunctionRole> usedPrimaryRolesView;
 
     public SearchState() {
         previous = null;
@@ -46,9 +48,10 @@ public final class SearchState {
         enemyTurnSlots = 0;
         complexActionCount = 0;
         totalSurvivabilityActions = 0.0;
+        usedCreatureIds = Set.of();
+        usedPrimaryRoles = Set.of();
         entriesView = List.of();
         countsView = Map.of();
-        usedPrimaryRolesView = Set.of();
     }
 
     public SearchState add(CandidateEntry entry, int count) {
@@ -72,6 +75,10 @@ public final class SearchState {
         this.enemyTurnSlots = previous.enemyTurnSlots + addition.enemyTurnSlotsDelta();
         this.complexActionCount = previous.complexActionCount + addition.complexActionDelta();
         this.totalSurvivabilityActions = previous.totalSurvivabilityActions + addition.survivabilityActionsDelta();
+        this.usedCreatureIds = appendCreatureId(previous.usedCreatureIds, addition.entry().creature().Id);
+        this.usedPrimaryRoles = appendPrimaryRole(previous.usedPrimaryRoles, addition.entry().primaryRole());
+        this.entriesView = null;
+        this.countsView = null;
     }
 
     public List<StateEntry> entries() {
@@ -93,12 +100,7 @@ public final class SearchState {
     }
 
     public Set<EncounterFunctionRole> usedPrimaryRoles() {
-        if (usedPrimaryRolesView == null) {
-            EnumSet<EncounterFunctionRole> materialized = EnumSet.noneOf(EncounterFunctionRole.class);
-            collectUsedPrimaryRoles(materialized);
-            usedPrimaryRolesView = Set.copyOf(materialized);
-        }
-        return usedPrimaryRolesView;
+        return usedPrimaryRoles;
     }
 
     public Set<EncounterFunctionRole> primaryRoles() {
@@ -151,24 +153,11 @@ public final class SearchState {
     }
 
     public boolean containsCreature(long creatureId) {
-        for (SearchState cursor = this; cursor != null && cursor.lastEntry != null; cursor = cursor.previous) {
-            if (cursor.lastEntry.entry().creature().Id == creatureId) {
-                return true;
-            }
-        }
-        return false;
+        return usedCreatureIds.contains(creatureId);
     }
 
     public boolean usesPrimaryRole(EncounterFunctionRole role) {
-        if (role == null) {
-            return false;
-        }
-        for (SearchState cursor = this; cursor != null && cursor.lastEntry != null; cursor = cursor.previous) {
-            if (role == cursor.lastEntry.entry().primaryRole()) {
-                return true;
-            }
-        }
-        return false;
+        return role != null && usedPrimaryRoles.contains(role);
     }
 
     private void collectEntries(List<StateEntry> materialized) {
@@ -189,13 +178,26 @@ public final class SearchState {
         }
     }
 
-    private void collectUsedPrimaryRoles(Set<EncounterFunctionRole> materialized) {
-        if (previous != null) {
-            previous.collectUsedPrimaryRoles(materialized);
+    private static Set<Long> appendCreatureId(Set<Long> existing, Long creatureId) {
+        if (creatureId == null) {
+            return existing;
         }
-        if (lastEntry != null && lastEntry.entry().primaryRole() != null) {
-            materialized.add(lastEntry.entry().primaryRole());
+        HashSet<Long> ids = new HashSet<>(existing);
+        ids.add(creatureId);
+        return Set.copyOf(ids);
+    }
+
+    private static Set<EncounterFunctionRole> appendPrimaryRole(
+            Set<EncounterFunctionRole> existing,
+            EncounterFunctionRole role) {
+        if (role == null) {
+            return existing;
         }
+        EnumSet<EncounterFunctionRole> roles = existing.isEmpty()
+                ? EnumSet.noneOf(EncounterFunctionRole.class)
+                : EnumSet.copyOf(existing);
+        roles.add(role);
+        return Set.copyOf(roles);
     }
 
     public record Addition(

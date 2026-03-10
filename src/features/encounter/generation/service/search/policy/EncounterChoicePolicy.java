@@ -28,7 +28,7 @@ public final class EncounterChoicePolicy {
             EncounterBudgets budgets,
             RelaxationProfile relaxation,
             Map<Long, Integer> selectionWeights) {
-        List<CandidateChoice> options = new ArrayList<>();
+        List<CandidateChoice> options = new ArrayList<>(MAX_BRANCHES_PER_DEPTH);
         for (CandidateEntry entry : entries) {
             if (state.containsCreature(entry.creature().Id)) {
                 continue;
@@ -49,7 +49,7 @@ public final class EncounterChoicePolicy {
                     continue;
                 }
                 double score = scoreChoice(state, next, entry, allowed.count(), budgets, relaxation, selectionWeights);
-                options.add(new CandidateChoice(entry, allowed.count(), next, score));
+                insertTopChoice(options, new CandidateChoice(entry, allowed.count(), next, score));
             }
         }
         return options;
@@ -191,6 +191,20 @@ public final class EncounterChoicePolicy {
 
     private static double closenessScore(double actual, double target, double tolerance) {
         return 1.0 / (1.0 + (Math.abs(actual - target) / Math.max(0.25, tolerance)));
+    }
+
+    private static void insertTopChoice(List<CandidateChoice> options, CandidateChoice candidate) {
+        int insertAt = options.size();
+        while (insertAt > 0 && options.get(insertAt - 1).score() < candidate.score()) {
+            insertAt--;
+        }
+        if (insertAt >= MAX_BRANCHES_PER_DEPTH) {
+            return;
+        }
+        options.add(insertAt, candidate);
+        if (options.size() > MAX_BRANCHES_PER_DEPTH) {
+            options.remove(options.size() - 1);
+        }
     }
 
     public record AllowedCount(int count, SearchState nextState) {}

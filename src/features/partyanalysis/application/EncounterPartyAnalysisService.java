@@ -19,6 +19,7 @@ import features.partyanalysis.repository.EncounterPartyCacheRepository.CacheStat
 import features.encounter.calibration.service.EncounterCalibrationService;
 import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
 import features.encounter.calibration.service.EncounterCalibrationService.PartyRelativeMetrics;
+import features.encounter.generation.service.EncounterGenerator;
 import features.party.api.PartyApi;
 
 import java.sql.Connection;
@@ -305,6 +306,31 @@ public final class EncounterPartyAnalysisService {
         }
     }
 
+    public static Map<Long, EncounterGenerator.StaticCreatureRoleHint> loadStaticRoleHints(Set<Long> creatureIds) {
+        if (creatureIds == null || creatureIds.isEmpty()) {
+            return Map.of();
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            Map<Long, CreatureStaticRow> rows = EncounterPartyAnalysisRepository.loadStaticRows(conn, creatureIds);
+            if (rows.isEmpty()) {
+                return Map.of();
+            }
+            Map<Long, EncounterGenerator.StaticCreatureRoleHint> hints = new java.util.HashMap<>(rows.size());
+            for (Map.Entry<Long, CreatureStaticRow> entry : rows.entrySet()) {
+                CreatureStaticRow row = entry.getValue();
+                if (row == null || row.analysisVersion() < AnalysisModelVersion.current()) {
+                    continue;
+                }
+                hints.put(entry.getKey(), toStaticRoleHint(row));
+            }
+            return hints.isEmpty() ? Map.of() : Map.copyOf(hints);
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING,
+                    "EncounterPartyAnalysisService.loadStaticRoleHints(): DB access failed", e);
+            return Map.of();
+        }
+    }
+
     private static boolean hasCurrentValidCache(Connection conn) throws SQLException {
         CacheState state = EncounterPartyCacheRepository.ensureState(conn);
         if (state.cacheStatus() != CacheStatus.VALID || state.activeRunId() == null) {
@@ -334,15 +360,11 @@ public final class EncounterPartyAnalysisService {
         for (CreatureBaseRow creature : creatures.values()) {
             CreatureStaticRow staticRow = persistedStaticRows.get(creature.creatureId());
             if (staticRow == null || staticRow.analysisVersion() < AnalysisModelVersion.current()) {
-                staticRow = CreatureStaticAnalysisService.ensureStaticRow(conn, creature.creatureId());
+                continue;
             }
-            if (staticRow == null) continue;
             List<ParsedActionProfile> actionProfiles = actionRowsByCreatureId.get(creature.creatureId());
             if (actionProfiles == null || hasIncompleteActionProfiles(actionProfiles)) {
-                CreatureStaticAnalysisService.refreshForCreature(conn, creature.creatureId());
-                staticRow = CreatureStaticAnalysisService.ensureStaticRow(conn, creature.creatureId());
-                actionProfiles = new ArrayList<>(EncounterPartyAnalysisRepository
-                        .loadParsedActionProfilesForCreature(conn, creature.creatureId()).values());
+                continue;
             }
             dynamicRows.add(computeDynamicRow(
                     creature,
@@ -433,34 +455,14 @@ public final class EncounterPartyAnalysisService {
                     0.0, 1.0, 0.0, 0, Set.of());
         }
         if (creature.Id == null) {
-            PartyRelativeMetrics metrics = EncounterCalibrationService.partyRelativeMetrics(creature.HP, creature.AC, party);
-            return new CreatureRoleProfile(
-                    null,
-                    EncounterWeightClass.REGULAR,
-                    null,
-                    Set.of(),
-                    metrics.survivabilityActions(),
-                    1.0,
-                    0.0,
-                    0,
-                    Set.of());
+            return defaultFallbackRoleProfile(null, creature, party);
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             return fallbackRoleProfile(creature, party, conn);
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING,
                     "EncounterPartyAnalysisService.fallbackRoleProfile(): DB access failed", e);
-            PartyRelativeMetrics metrics = EncounterCalibrationService.partyRelativeMetrics(creature.HP, creature.AC, party);
-            return new CreatureRoleProfile(
-                    creature.Id,
-                    EncounterWeightClass.REGULAR,
-                    null,
-                    Set.of(),
-                    metrics.survivabilityActions(),
-                    1.0,
-                    0.0,
-                    0,
-                    Set.of());
+            return defaultFallbackRoleProfile(creature.Id, creature, party);
         }
     }
 
@@ -468,65 +470,42 @@ public final class EncounterPartyAnalysisService {
             Creature creature,
             EncounterPartyBenchmarks party,
             Connection conn) throws SQLException {
-        ensurePersistedAnalysis(conn, creature.Id);
-        CreatureStaticRow staticRow = CreatureStaticAnalysisService.ensureStaticRow(conn, creature.Id);
-        List<ParsedActionProfile> actionRows = new ArrayList<>(
-                EncounterPartyAnalysisRepository.loadParsedActionProfilesForCreature(conn, creature.Id).values());
-        if (staticRow == null) {
-            return new CreatureRoleProfile(
-                    creature.Id,
-                    EncounterWeightClass.REGULAR,
-                    null,
-                    Set.of(),
-                    0.0,
-                    1.0,
-                    0.0,
-                    0,
-                    Set.of());
+        CreatureStaticRow staticRow = EncounterPartyAnalysisRepository.loadStaticRow(conn, creature.Id);
+        if (staticRow == null || staticRow.analysisVersion() < AnalysisModelVersion.current()) {
+            return defaultFallbackRoleProfile(creature.Id, creature, party);
         }
-        CreatureDamagePotentialCalculator.DamagePotentialSummary damagePotential =
-                CreatureDamagePotentialCalculator.summarize(
-                        actionRows,
-                        Math.max(0, creature.LegendaryActionCount),
-                        estimateSurvivabilityActions(creature.HP, creature.AC, party),
-                        party);
-        PartyRelativeMetrics metrics = EncounterCalibrationService.partyRelativeMetrics(
-                creature.HP,
-                creature.AC,
-                party);
-        EncounterWeightClass weightClass = EncounterWeightClassClassifier.classify(
-                metrics.survivabilityActions(),
-                metrics.survivabilityRounds(),
-                damagePotential.normalizedDamagePotential());
+        return fallbackRoleProfile(creature, party, toStaticRoleHint(staticRow));
+    }
+
+    public static CreatureRoleProfile fallbackRoleProfile(
+            Creature creature,
+            EncounterPartyBenchmarks party,
+            EncounterGenerator.StaticCreatureRoleHint staticRoleHint) {
+        if (creature == null) {
+            return new CreatureRoleProfile(null, EncounterWeightClass.REGULAR, null, Set.of(),
+                    0.0, 1.0, 0.0, 0, Set.of());
+        }
+        if (staticRoleHint == null) {
+            return defaultFallbackRoleProfile(creature.Id, creature, party);
+        }
+        PartyRelativeMetrics metrics = EncounterCalibrationService.partyRelativeMetrics(creature.HP, creature.AC, party);
+        double actionUnits = Math.max(
+                0.5,
+                staticRoleHint.baseActionUnitsPerRound() + staticRoleHint.legendaryActionUnits());
         return new CreatureRoleProfile(
                 creature.Id,
-                weightClass,
-                staticRow.primaryFunctionRole(),
-                parseCapabilityTags(staticRow.capabilityTags()),
+                EncounterWeightClass.REGULAR,
+                staticRoleHint.primaryFunctionRole(),
+                staticRoleHint.capabilityTags(),
                 metrics.survivabilityActions(),
-                damagePotential.actionUnitsPerRound(),
-                damagePotential.normalizedDamagePotential(),
-                staticRow.complexFeatureCount(),
+                actionUnits,
+                0.0,
+                staticRoleHint.complexFeatureCount(),
                 Set.of());
     }
 
     private static double estimateSurvivabilityActions(int hp, int ac, EncounterPartyBenchmarks party) {
         return EncounterCalibrationService.partyRelativeMetrics(hp, ac, party).survivabilityActions();
-    }
-
-    private static void ensurePersistedAnalysis(Connection conn, Long creatureId) throws SQLException {
-        if (creatureId == null) {
-            return;
-        }
-        CreatureStaticRow staticRow = EncounterPartyAnalysisRepository.loadStaticRow(conn, creatureId);
-        Map<Long, ParsedActionProfile> actionProfiles =
-                EncounterPartyAnalysisRepository.loadParsedActionProfilesForCreature(conn, creatureId);
-        if (staticRow == null
-                || staticRow.analysisVersion() < AnalysisModelVersion.current()
-                || actionProfiles.isEmpty()
-                || hasIncompleteActionProfiles(actionProfiles.values())) {
-            CreatureStaticAnalysisService.refreshForCreature(conn, creatureId);
-        }
     }
 
     private static boolean hasIncompleteActionProfiles(Iterable<ParsedActionProfile> actionProfiles) {
@@ -559,6 +538,32 @@ public final class EncounterPartyAnalysisService {
                     }
                 });
         return Set.copyOf(tags);
+    }
+
+    private static CreatureRoleProfile defaultFallbackRoleProfile(
+            Long creatureId,
+            Creature creature,
+            EncounterPartyBenchmarks party) {
+        PartyRelativeMetrics metrics = EncounterCalibrationService.partyRelativeMetrics(creature.HP, creature.AC, party);
+        return new CreatureRoleProfile(
+                creatureId,
+                EncounterWeightClass.REGULAR,
+                null,
+                Set.of(),
+                metrics.survivabilityActions(),
+                1.0,
+                0.0,
+                0,
+                Set.of());
+    }
+
+    private static EncounterGenerator.StaticCreatureRoleHint toStaticRoleHint(CreatureStaticRow staticRow) {
+        return new EncounterGenerator.StaticCreatureRoleHint(
+                staticRow.primaryFunctionRole(),
+                parseCapabilityTags(staticRow.capabilityTags()),
+                staticRow.complexFeatureCount(),
+                staticRow.baseActionUnitsPerRound(),
+                staticRow.legendaryActionUnits());
     }
 
     private static Map<Long, List<ParsedActionProfile>> groupActionRowsByCreatureId(Iterable<ParsedActionProfile> actionRows) {

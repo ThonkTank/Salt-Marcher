@@ -163,7 +163,7 @@ public final class EncounterTableService {
                 return new CandidatesResult(ReadStatus.SUCCESS, List.of(), selection.weights());
             }
             CreatureCatalogService.ServiceResult<List<Creature>> creatureResult =
-                    CreatureCatalogService.loadCreaturesByIds(List.copyOf(selection.weights().keySet()));
+                    CreatureCatalogService.loadCreaturesByIdsForEncounterGeneration(List.copyOf(selection.weights().keySet()));
             if (!creatureResult.isOk()) {
                 return new CandidatesResult(ReadStatus.STORAGE_ERROR, List.of(), Map.of());
             }

@@ -86,6 +86,35 @@ final class CreatureHydrator {
         return c;
     }
 
+    static Creature mapEncounterGenerationRow(ResultSet rs) throws SQLException {
+        Creature c = new Creature();
+        c.Id = rs.getLong("id");
+        c.Name = rs.getString("name");
+        c.CreatureType = rs.getString("creature_type");
+        try {
+            c.CR = ChallengeRating.of(rs.getString("cr"));
+        } catch (IllegalArgumentException e) {
+            LOGGER.log(Level.WARNING, "CreatureHydrator.mapEncounterGenerationRow(): invalid CR value, defaulting to 0", e);
+            c.CR = ChallengeRating.of("0");
+        }
+        c.XP = rs.getInt("xp");
+        c.HP = rs.getInt("hp");
+        c.HitDiceCount = nullableInt(rs, "hit_dice_count");
+        c.HitDiceSides = nullableInt(rs, "hit_dice_sides");
+        c.HitDiceModifier = nullableInt(rs, "hit_dice_modifier");
+        c.AC = rs.getInt("ac");
+        c.InitiativeBonus = rs.getInt("initiative_bonus");
+        c.LegendaryActionCount = rs.getInt("legendary_action_count");
+        c.Biomes = List.of();
+        c.Subtypes = List.of();
+        c.Traits = List.of();
+        c.Actions = List.of();
+        c.BonusActions = List.of();
+        c.Reactions = List.of();
+        c.LegendaryActions = List.of();
+        return c;
+    }
+
     private static Integer nullableInt(ResultSet rs, String column) throws SQLException {
         Number value = (Number) rs.getObject(column);
         return value != null ? value.intValue() : null;

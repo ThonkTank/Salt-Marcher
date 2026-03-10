@@ -8,6 +8,7 @@ import features.encounter.generation.service.EncounterDifficultyBand;
 import features.encounter.generation.service.EncounterGenerator;
 import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.EncounterTuning;
+import features.encounter.generation.service.GenerationContext;
 import features.encounter.model.EncounterSlot;
 import features.encountertable.model.EncounterTable;
 import features.party.api.PartyApi;
@@ -80,6 +81,12 @@ public final class EncounterBuilderService {
     }
 
     public EncounterGenerator.GenerationResult generateEncounter(GenerationRequest request) {
+        return generateEncounter(request, GenerationContext.defaultContext());
+    }
+
+    public EncounterGenerator.GenerationResult generateEncounter(
+            GenerationRequest request,
+            GenerationContext generationContext) {
         EncounterFilter filter = request.filter();
         List<String> types = filter == null ? null : nullIfEmpty(filter.types());
         List<String> subtypes = filter == null ? null : nullIfEmpty(filter.subtypes());
@@ -97,10 +104,20 @@ public final class EncounterBuilderService {
         PartyAnalysisReadApi.GenerationSnapshot analysisSnapshot =
                 PartyAnalysisReadApi.loadGenerationSnapshot(candidateIdsOf(loadedCandidates.candidates()));
         EncounterGenerator.GenerationAdvisory advisory = mapGenerationAdvisory(analysisSnapshot.readiness());
+        Map<Long, EncounterGenerator.StaticCreatureRoleHint> staticRoleHints =
+                PartyAnalysisReadApi.loadStaticRoleHints(candidateIdsOf(loadedCandidates.candidates()));
 
         EncounterGenerator.GenerationResult result = EncounterGenerator.generateEncounter(
-                toEncounterRequest(request, types, subtypes, biomes, loadedCandidates.selectionWeights(), analysisSnapshot),
-                loadedCandidates.candidates());
+                toEncounterRequest(
+                        request,
+                        types,
+                        subtypes,
+                        biomes,
+                        loadedCandidates.selectionWeights(),
+                        analysisSnapshot,
+                        staticRoleHints),
+                loadedCandidates.candidates(),
+                generationContext);
         if (result.status() == EncounterGenerator.GenerationStatus.SUCCESS) {
             return EncounterGenerator.GenerationResult.success(result.encounter(), advisory, result.diagnostics());
         }
@@ -137,7 +154,8 @@ public final class EncounterBuilderService {
             List<String> subtypes,
             List<String> biomes,
             Map<Long, Integer> selectionWeights,
-            PartyAnalysisReadApi.GenerationSnapshot analysisSnapshot) {
+            PartyAnalysisReadApi.GenerationSnapshot analysisSnapshot,
+            Map<Long, EncounterGenerator.StaticCreatureRoleHint> staticRoleHints) {
         return new EncounterGenerator.EncounterRequest(
                 request.partySize(),
                 request.avgLevel(),
@@ -149,7 +167,8 @@ public final class EncounterBuilderService {
                 request.balanceLevel(),
                 new EncounterGenerator.GenerationDataSnapshot(
                         selectionWeights,
-                        analysisSnapshot == null ? Map.of() : analysisSnapshot.roleProfilesByCreatureId())
+                        analysisSnapshot == null ? Map.of() : analysisSnapshot.roleProfilesByCreatureId(),
+                        staticRoleHints)
         );
     }
 

@@ -13,7 +13,6 @@ import features.encounter.generation.service.search.model.StateEntry;
 import features.encounter.rules.EncounterRules;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.function.ToDoubleFunction;
 import java.util.Set;
@@ -57,7 +56,10 @@ public final class EncounterConstraintPolicy {
             return false;
         }
 
-        List<CandidateEntry> remaining = new ArrayList<>();
+        OptimisticAddition[] optimisticXpAdditions = new OptimisticAddition[remainingDistinct];
+        OptimisticAddition[] optimisticActionAdditions = new OptimisticAddition[remainingDistinct];
+        int xpCandidates = 0;
+        int actionCandidates = 0;
         for (CandidateEntry entry : entries) {
             if (state.containsCreature(entry.creature().Id)) {
                 continue;
@@ -67,45 +69,35 @@ public final class EncounterConstraintPolicy {
                     && state.usesPrimaryRole(entry.primaryRole())) {
                 continue;
             }
-            remaining.add(entry);
-        }
-        if (remaining.isEmpty()) {
-            return false;
-        }
-
-        List<OptimisticAddition> optimisticXpAdditions = new ArrayList<>();
-        List<OptimisticAddition> optimisticActionAdditions = new ArrayList<>();
-        for (CandidateEntry entry : remaining) {
             OptimisticCandidates candidates = bestOptimisticAdditions(state, entry, budgets, relaxation);
             if (candidates.bestXp() != null) {
-                optimisticXpAdditions.add(candidates.bestXp());
+                xpCandidates++;
+                insertTopAddition(optimisticXpAdditions, candidates.bestXp(), true);
             }
             if (candidates.bestActions() != null) {
-                optimisticActionAdditions.add(candidates.bestActions());
+                actionCandidates++;
+                insertTopAddition(optimisticActionAdditions, candidates.bestActions(), false);
             }
         }
-        if (optimisticXpAdditions.isEmpty() && optimisticActionAdditions.isEmpty()) {
+        if (xpCandidates == 0 && actionCandidates == 0) {
             return false;
         }
-
-        optimisticXpAdditions.sort(Comparator
-                .comparingDouble((OptimisticAddition addition) -> addition.rawXp())
-                .reversed());
-        optimisticActionAdditions.sort(Comparator
-                .comparingDouble(OptimisticAddition::actionUnits)
-                .reversed());
 
         int optimisticRawXp = state.rawXp();
         int optimisticXpCount = state.totalCreatureCount();
-        for (int i = 0; i < Math.min(remainingDistinct, optimisticXpAdditions.size()); i++) {
-            OptimisticAddition addition = optimisticXpAdditions.get(i);
+        for (OptimisticAddition addition : optimisticXpAdditions) {
+            if (addition == null) {
+                continue;
+            }
             optimisticRawXp += addition.rawXp();
             optimisticXpCount += addition.count();
         }
 
         double optimisticActions = state.enemyActionUnits();
-        for (int i = 0; i < Math.min(remainingDistinct, optimisticActionAdditions.size()); i++) {
-            OptimisticAddition addition = optimisticActionAdditions.get(i);
+        for (OptimisticAddition addition : optimisticActionAdditions) {
+            if (addition == null) {
+                continue;
+            }
             optimisticActions += addition.actionUnits();
         }
 
@@ -113,6 +105,40 @@ public final class EncounterConstraintPolicy {
 
         return optimisticAdjustedXp >= budgets.lowerAdjustedXp()
                 && optimisticActions >= budgets.minEnemyActionUnits();
+    }
+
+    private static void insertTopAddition(
+            OptimisticAddition[] bestAdditions,
+            OptimisticAddition candidate,
+            boolean rankByXp) {
+        for (int i = 0; i < bestAdditions.length; i++) {
+            OptimisticAddition current = bestAdditions[i];
+            if (current != null && !isBetterTopAddition(candidate, current, rankByXp)) {
+                continue;
+            }
+            for (int shift = bestAdditions.length - 1; shift > i; shift--) {
+                bestAdditions[shift] = bestAdditions[shift - 1];
+            }
+            bestAdditions[i] = candidate;
+            return;
+        }
+    }
+
+    private static boolean isBetterTopAddition(
+            OptimisticAddition candidate,
+            OptimisticAddition current,
+            boolean rankByXp) {
+        if (current == null) {
+            return true;
+        }
+        double candidatePrimary = rankByXp ? candidate.rawXp() : candidate.actionUnits();
+        double currentPrimary = rankByXp ? current.rawXp() : current.actionUnits();
+        if (candidatePrimary != currentPrimary) {
+            return candidatePrimary > currentPrimary;
+        }
+        double candidateSecondary = rankByXp ? candidate.actionUnits() : candidate.rawXp();
+        double currentSecondary = rankByXp ? current.actionUnits() : current.rawXp();
+        return candidateSecondary > currentSecondary;
     }
 
     public static boolean isComplete(
