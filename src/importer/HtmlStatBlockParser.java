@@ -1,12 +1,13 @@
 package importer;
 
-import features.creaturecatalog.model.Creature;
-import features.creaturecatalog.model.HitDice;
-import features.creaturecatalog.model.ChallengeRating;
-import features.creaturecatalog.service.ActionToHitParser;
+import features.creatures.model.ChallengeRating;
+import features.creatures.model.Creature;
+import features.creatures.model.HitDice;
+import features.creatures.service.DndMath;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import shared.creatures.parser.ActionToHitParser;
 import shared.crawler.text.CaseText;
 
 import java.util.ArrayList;
@@ -112,7 +113,7 @@ public final class HtmlStatBlockParser {
         parseHabitat(doc, c);
 
         // Fallback: derive proficiency bonus from CR
-        if (c.ProficiencyBonus == 0 && c.CR != null) c.ProficiencyBonus = features.gamerules.service.DndMath.proficiencyBonus(c.CR);
+        if (c.ProficiencyBonus == 0 && c.CR != null) c.ProficiencyBonus = DndMath.proficiencyBonus(c.CR);
         // Fallback: derive initiative bonus from DEX for old format
         if (!isNew && c.InitiativeBonus == 0 && c.Dex != 0)
             c.InitiativeBonus = abilityModifier(c.Dex);

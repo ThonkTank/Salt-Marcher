@@ -1,6 +1,6 @@
 package features.world.hexmap.service.adapter;
 
-import features.campaignstate.repository.CampaignStateRepository;
+import features.campaignstate.api.CampaignStateApi;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -17,14 +17,14 @@ public final class HexMapCampaignStateAdapter {
     }
 
     public static Optional<Long> getPartyTileId(Connection conn) throws SQLException {
-        return CampaignStateRepository.get(conn).map(s -> s.PartyTileId);
+        return CampaignStateApi.get(conn).map(s -> s.PartyTileId);
     }
 
     public static void updatePartyTile(Connection conn, long tileId) throws SQLException {
-        CampaignStateRepository.updatePartyTile(conn, tileId);
+        CampaignStateApi.updatePartyTile(conn, tileId);
     }
 
     public static void clearPartyTileOutsideRadius(Connection conn, long mapId, int radius) throws SQLException {
-        CampaignStateRepository.clearPartyTileOutsideRadius(conn, mapId, radius);
+        CampaignStateApi.clearPartyTileOutsideRadius(conn, mapId, radius);
     }
 }

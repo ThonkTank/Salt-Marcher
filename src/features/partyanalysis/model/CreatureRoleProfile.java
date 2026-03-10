@@ -1,5 +1,8 @@
 package features.partyanalysis.model;
 
+import features.creatures.model.CreatureCapabilityTag;
+import features.creatures.model.EncounterFunctionRole;
+
 import java.util.Set;
 
 public record CreatureRoleProfile(

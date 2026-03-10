@@ -1,7 +1,7 @@
 package features.encounter.combat.model;
 
 import features.encounter.model.EncounterCreatureSnapshot;
-import features.gamerules.model.LootCoins;
+import shared.rules.model.LootCoins;
 
 import java.util.Objects;
 

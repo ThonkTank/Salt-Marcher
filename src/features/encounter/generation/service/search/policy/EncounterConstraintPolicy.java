@@ -1,7 +1,7 @@
 package features.encounter.generation.service.search.policy;
 
-import features.partyanalysis.model.CreatureCapabilityTag;
-import features.partyanalysis.model.EncounterFunctionRole;
+import features.creatures.model.CreatureCapabilityTag;
+import features.creatures.model.EncounterFunctionRole;
 import features.partyanalysis.model.EncounterWeightClass;
 import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.search.model.CandidateEntry;
@@ -169,6 +169,10 @@ public final class EncounterConstraintPolicy {
         OptimisticAddition bestPrimary = null;
         OptimisticAddition bestSecondary = null;
         for (int count = 1; count <= EncounterChoicePolicy.preferredMaxCount(entry); count++) {
+            if (count < EncounterChoicePolicy.minAllowedCount(entry)
+                    || count > EncounterChoicePolicy.maxAllowedCount(entry)) {
+                continue;
+            }
             SearchState.Addition addition = SearchState.Addition.of(entry, count);
             SearchState next = state.add(addition);
             if (!passesHardConstraints(next, budgets, relaxation)) {

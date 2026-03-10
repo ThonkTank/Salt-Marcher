@@ -1,6 +1,6 @@
 package features.partyanalysis.service;
 
-import features.partyanalysis.model.CreatureCapabilityTag;
+import features.creatures.model.CreatureCapabilityTag;
 import features.partyanalysis.model.EncounterWeightClass;
 import features.partyanalysis.repository.EncounterPartyAnalysisRepository.CreatureStaticRow;
 

@@ -1,6 +1,6 @@
 package importer;
 
-import features.creaturecatalog.repository.CreatureRepository;
+import features.creatures.repository.CreatureRepository;
 
 /**
  * CLI entry point: reads crawled HTML files from data/monsters/ and imports

@@ -2,7 +2,7 @@ package features.encounter.generation.service.search.model;
 
 import features.creatures.model.Creature;
 import features.partyanalysis.model.CreatureRoleProfile;
-import features.partyanalysis.model.EncounterFunctionRole;
+import features.creatures.model.EncounterFunctionRole;
 import features.partyanalysis.model.EncounterWeightClass;
 
 /**

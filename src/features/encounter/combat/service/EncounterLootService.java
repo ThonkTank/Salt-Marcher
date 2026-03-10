@@ -3,9 +3,9 @@ package features.encounter.combat.service;
 import features.encounter.model.EncounterSlot;
 import features.encounter.generation.service.GenerationContext;
 import features.encounter.combat.model.PreparedEncounterSlot;
-import features.gamerules.model.LootCoins;
-import features.gamerules.service.LootCalculator;
-import features.gamerules.service.XpCalculator;
+import shared.rules.model.LootCoins;
+import shared.rules.service.LootCalculator;
+import shared.rules.service.XpCalculator;
 
 import java.util.ArrayList;
 import java.util.Collections;

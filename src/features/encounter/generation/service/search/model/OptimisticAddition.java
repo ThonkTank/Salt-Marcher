@@ -1,6 +1,6 @@
 package features.encounter.generation.service.search.model;
 
-import features.partyanalysis.model.EncounterFunctionRole;
+import features.creatures.model.EncounterFunctionRole;
 
 /**
  * Best-case remaining addition used for optimistic feasibility pruning.

@@ -113,10 +113,6 @@ public final class CreatureCatalogService {
         }
     }
 
-    public static List<Creature> loadCreaturesByIds(Connection conn, List<Long> ids) throws SQLException {
-        return CreatureRepository.getCreaturesByIds(conn, ids);
-    }
-
     public static ServiceResult<List<Creature>> getCreaturesForEncounter(
             List<String> types, int minXP, int maxXP,
             List<String> biomes, List<String> subtypes) {
@@ -125,6 +121,18 @@ public final class CreatureCatalogService {
                     CreatureSearchRepository.getCreaturesByFilters(conn, types, minXP, maxXP, biomes, subtypes));
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "CreatureCatalogService.getCreaturesForEncounter(): DB access failed", e);
+            return ServiceResult.dbAccessFailed(List.of());
+        }
+    }
+
+    public static ServiceResult<List<Creature>> loadCreaturesByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return ServiceResult.ok(List.of());
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return ServiceResult.ok(CreatureRepository.getCreaturesByIds(conn, ids));
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "CreatureCatalogService.loadCreaturesByIds(): DB access failed", e);
             return ServiceResult.dbAccessFailed(List.of());
         }
     }

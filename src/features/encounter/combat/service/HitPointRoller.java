@@ -1,6 +1,6 @@
 package features.encounter.combat.service;
 
-import features.creaturecatalog.model.HitDice;
+import features.creatures.model.HitDice;
 import features.encounter.model.EncounterCreatureSnapshot;
 
 import java.util.Objects;

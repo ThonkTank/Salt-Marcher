@@ -10,7 +10,6 @@ import java.util.logging.Logger;
 
 import database.DatabaseManager;
 import features.creatures.api.CreatureCatalogService;
-import features.creatures.api.CreatureMaintenanceService;
 import features.party.api.PartyModule;
 import features.encounter.api.EncounterModule;
 import features.encountertable.api.EncounterTableModule;
@@ -112,15 +111,6 @@ public class SaltMarcherApp extends Application {
         } catch (RuntimeException e) {
             UiErrorReporter.reportBackgroundFailure("SaltMarcherApp.main()", e);
             System.exit(1);
-        }
-        CreatureMaintenanceService.BackfillSummary roleBackfill =
-                CreatureMaintenanceService.backfillMissingRoles();
-        if (roleBackfill.checked() > 0 || roleBackfill.failed() > 0) {
-            LOGGER.log(
-                    Level.INFO,
-                    "Role backfill checked={0}, updated={1}, failed={2}",
-                    new Object[] { roleBackfill.checked(), roleBackfill.updated(), roleBackfill.failed() }
-            );
         }
         // Startup diagnostic: show creature count so newcomers know if the DB is populated
         CreatureCatalogService.ServiceResult<Integer> countResult = CreatureCatalogService.countAll();

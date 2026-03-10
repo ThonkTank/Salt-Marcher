@@ -1,7 +1,7 @@
 package features.encounter.combat.service;
 
 import features.encounter.model.EncounterCreatureSnapshot;
-import features.gamerules.model.LootCoins;
+import shared.rules.model.LootCoins;
 import features.encounter.combat.model.MonsterCombatant;
 import features.encounter.combat.model.PreparedEncounterSlot;
 

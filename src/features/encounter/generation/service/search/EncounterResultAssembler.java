@@ -26,7 +26,11 @@ public final class EncounterResultAssembler {
         for (StateEntry entry : state.entries()) {
             EncounterCreatureSnapshot snapshot = EncounterCreatureSnapshotMapper.toSnapshot(entry.entry().creature());
             for (int part : EncounterMobSlotRules.splitForMobSlots(entry.count())) {
-                slots.add(new EncounterSlot(snapshot, part, entry.entry().slotRole()));
+                slots.add(new EncounterSlot(
+                        snapshot,
+                        part,
+                        entry.entry().weightClass(),
+                        entry.entry().primaryRole()));
             }
         }
         return slots;

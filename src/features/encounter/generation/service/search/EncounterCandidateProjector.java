@@ -3,11 +3,12 @@ package features.encounter.generation.service.search;
 import features.encounter.calibration.service.EncounterCalibrationService;
 import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
 import features.encounter.calibration.service.EncounterCalibrationService.PartyRelativeMetrics;
+import features.creatures.api.CreatureFunctionRoleClassifier;
+import features.creatures.api.CreatureFunctionRoleClassifier.CreatureRoleSignals;
 import features.creatures.model.Creature;
 import features.encounter.generation.service.search.model.CandidateEntry;
 import features.partyanalysis.model.CreatureRoleProfile;
 import features.partyanalysis.repository.EncounterPartyAnalysisRepository.CreatureStaticRow;
-import features.partyanalysis.service.CreatureFunctionRoleClassifier;
 import features.partyanalysis.service.CreatureStaticAnalysisService;
 import features.partyanalysis.service.EncounterWeightClassClassifier;
 
@@ -45,7 +46,8 @@ public final class EncounterCandidateProjector {
             Creature creature,
             EncounterPartyBenchmarks party) {
         CreatureStaticRow staticRow = CreatureStaticAnalysisService.analyzeCreature(creature);
-        CreatureFunctionRoleClassifier.Classification classification = CreatureFunctionRoleClassifier.classify(staticRow);
+        CreatureFunctionRoleClassifier.Classification classification = CreatureFunctionRoleClassifier.classify(
+                toCreatureRoleSignals(staticRow));
         double actionUnits = staticRow.baseActionUnitsPerRound();
         PartyRelativeMetrics metrics = EncounterCalibrationService.partyRelativeMetrics(
                 creature.HP,
@@ -72,5 +74,26 @@ public final class EncounterCandidateProjector {
                 metrics.expectedTurnShare(),
                 gmLoad,
                 java.util.Set.of());
+    }
+
+    private static CreatureRoleSignals toCreatureRoleSignals(CreatureStaticRow staticRow) {
+        return new CreatureRoleSignals(
+                staticRow.baseActionUnitsPerRound(),
+                staticRow.totalComplexityPoints(),
+                staticRow.supportSignalScore(),
+                staticRow.controlSignalScore(),
+                staticRow.mobilitySignalScore(),
+                staticRow.rangedSignalScore(),
+                staticRow.meleeSignalScore(),
+                staticRow.spellcastingSignalScore(),
+                staticRow.aoeSignalScore(),
+                staticRow.healingSignalScore(),
+                staticRow.summonSignalScore(),
+                staticRow.reactionSignalScore(),
+                staticRow.soldierRoleScore(),
+                staticRow.archerRoleScore(),
+                staticRow.controllerRoleScore(),
+                staticRow.skirmisherRoleScore(),
+                staticRow.supportRoleScore());
     }
 }

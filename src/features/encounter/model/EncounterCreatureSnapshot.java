@@ -1,6 +1,6 @@
 package features.encounter.model;
 
-import features.creaturecatalog.model.HitDice;
+import features.creatures.model.HitDice;
 
 /** Encounter-owned creature projection used by encounter/combat models. */
 public class EncounterCreatureSnapshot {

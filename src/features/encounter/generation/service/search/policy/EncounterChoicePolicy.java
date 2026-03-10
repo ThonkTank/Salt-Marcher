@@ -58,9 +58,10 @@ public final class EncounterChoicePolicy {
             CandidateEntry entry,
             EncounterBudgets budgets,
             SearchState state) {
-        int max = preferredMaxCount(entry);
+        int min = minAllowedCount(entry);
+        int max = maxAllowedCount(entry);
         List<AllowedCount> counts = new ArrayList<>();
-        for (int count = 1; count <= max; count++) {
+        for (int count = min; count <= max; count++) {
             SearchState next = state.add(SearchState.Addition.of(entry, count));
             if (next.enemyTurnSlots() > budgets.hardMonsterTurnSlots()) {
                 continue;
@@ -135,6 +136,21 @@ public final class EncounterChoicePolicy {
     }
 
     public static int preferredMaxCount(CandidateEntry entry) {
+        return switch (entry.weightClass()) {
+            case MINION -> EncounterRules.MAX_CREATURES_PER_SLOT;
+            case REGULAR -> 6;
+            case BOSS -> 2;
+        };
+    }
+
+    public static int minAllowedCount(CandidateEntry entry) {
+        return switch (entry.weightClass()) {
+            case MINION -> EncounterRules.MOB_MIN_SIZE;
+            case REGULAR, BOSS -> 1;
+        };
+    }
+
+    public static int maxAllowedCount(CandidateEntry entry) {
         return switch (entry.weightClass()) {
             case MINION -> EncounterRules.MAX_CREATURES_PER_SLOT;
             case REGULAR -> 6;

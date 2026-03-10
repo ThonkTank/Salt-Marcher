@@ -1,7 +1,7 @@
 package importer;
 
 import database.DatabaseManager;
-import features.encountertable.recovery.service.EncounterTableRecoveryService;
+import features.encountertable.api.EncounterTableRecoveryService;
 
 import java.io.IOException;
 import java.nio.file.Files;

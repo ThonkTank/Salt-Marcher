@@ -34,7 +34,6 @@ public final class PartyService {
     }
 
     public record PartySnapshotResult(ReadStatus status, List<PlayerCharacter> members, List<PlayerCharacter> available) {}
-    public record PartyListResult(ReadStatus status, List<PlayerCharacter> members) {}
     public record MutationResult(MutationStatus status) {}
     public record CreateResult(MutationStatus status, PlayerCharacter character) {}
 
@@ -47,17 +46,6 @@ public final class PartyService {
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "PartyService.loadPartySnapshot(): DB access failed", e);
             return new PartySnapshotResult(ReadStatus.STORAGE_ERROR, List.of(), List.of());
-        }
-    }
-
-    public static PartyListResult getActivePartyResult() {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            return new PartyListResult(
-                    ReadStatus.SUCCESS,
-                    PlayerCharacterRepository.getPartyMembers(conn));
-        } catch (SQLException e) {
-            LOGGER.log(Level.WARNING, "PartyService.getActivePartyResult(): DB access failed", e);
-            return new PartyListResult(ReadStatus.STORAGE_ERROR, List.of());
         }
     }
 

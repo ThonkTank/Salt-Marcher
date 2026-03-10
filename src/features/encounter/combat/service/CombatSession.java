@@ -1,6 +1,6 @@
 package features.encounter.combat.service;
 
-import features.creaturecatalog.model.Creature;
+import features.creatures.model.Creature;
 import features.encounter.combat.model.Combatant;
 import features.encounter.combat.model.MonsterCombatant;
 import features.encounter.combat.model.PcCombatant;

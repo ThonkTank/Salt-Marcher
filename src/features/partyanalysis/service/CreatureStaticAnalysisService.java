@@ -1,7 +1,9 @@
 package features.partyanalysis.service;
 
 import features.creatures.model.Creature;
-import features.partyanalysis.model.CreatureCapabilityTag;
+import features.creatures.model.CreatureCapabilityTag;
+import features.creatures.api.CreatureFunctionRoleClassifier;
+import features.creatures.api.CreatureFunctionRoleClassifier.CreatureRoleSignals;
 import features.partyanalysis.repository.EncounterPartyAnalysisRepository;
 import features.partyanalysis.repository.EncounterPartyAnalysisRepository.ActionAnalysisRow;
 import features.partyanalysis.repository.EncounterPartyAnalysisRepository.ActionRow;
@@ -240,38 +242,29 @@ public final class CreatureStaticAnalysisService {
 
         CreatureStaticRow toStaticRow(long creatureId) {
             double actions = baseActionUnitsPerRound > 0.0 ? baseActionUnitsPerRound : 1.0;
-            CreatureStaticRow baseRow = new CreatureStaticRow(
-                    creatureId,
-                    ANALYSIS_VERSION,
-                    null,
-                    null,
-                    "",
-                    actions + legendaryActionUnits,
-                    legendaryActionUnits,
-                    hasReaction,
-                    totalComplexityPoints,
-                    complexFeatureCount,
-                    supportSignalScore,
-                    controlSignalScore,
-                    mobilitySignalScore,
-                    rangedSignalScore,
-                    meleeSignalScore,
-                    spellcastingSignalScore,
-                    aoeSignalScore,
-                    healingSignalScore,
-                    summonSignalScore,
-                    reactionSignalScore,
-                    soldierRoleScore,
-                    archerRoleScore,
-                    controllerRoleScore,
-                    skirmisherRoleScore,
-                    supportRoleScore);
-            CreatureFunctionRoleClassifier.Classification classification = CreatureFunctionRoleClassifier.classify(baseRow);
+            CreatureFunctionRoleClassifier.Classification classification = CreatureFunctionRoleClassifier.classify(
+                    new CreatureRoleSignals(
+                            actions + legendaryActionUnits,
+                            totalComplexityPoints,
+                            supportSignalScore,
+                            controlSignalScore,
+                            mobilitySignalScore,
+                            rangedSignalScore,
+                            meleeSignalScore,
+                            spellcastingSignalScore,
+                            aoeSignalScore,
+                            healingSignalScore,
+                            summonSignalScore,
+                            reactionSignalScore,
+                            soldierRoleScore,
+                            archerRoleScore,
+                            controllerRoleScore,
+                            skirmisherRoleScore,
+                            supportRoleScore));
             return new CreatureStaticRow(
                     creatureId,
                     ANALYSIS_VERSION,
                     classification.primaryRole(),
-                    null,
                     joinCapabilityTags(classification.capabilityTags()),
                     actions + legendaryActionUnits,
                     legendaryActionUnits,

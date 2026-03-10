@@ -1,8 +1,8 @@
 package features.partyanalysis.repository;
 
-import features.partyanalysis.model.CreatureCapabilityTag;
+import features.creatures.model.CreatureCapabilityTag;
 import features.partyanalysis.model.CreatureRoleProfile;
-import features.partyanalysis.model.EncounterFunctionRole;
+import features.creatures.model.EncounterFunctionRole;
 import features.partyanalysis.model.EncounterWeightClass;
 
 import java.sql.Connection;
@@ -61,7 +61,6 @@ public final class EncounterPartyAnalysisRepository {
             long creatureId,
             int analysisVersion,
             EncounterFunctionRole primaryFunctionRole,
-            EncounterFunctionRole secondaryFunctionRole,
             String capabilityTags,
             double baseActionUnitsPerRound,
             double legendaryActionUnits,
@@ -207,17 +206,16 @@ public final class EncounterPartyAnalysisRepository {
 
     public static void upsertStaticRows(Connection conn, Iterable<CreatureStaticRow> rows) throws SQLException {
         String sql = "INSERT INTO creature_static_analysis("
-                + "creature_id, analysis_version, primary_function_role, secondary_function_role, capability_tags, "
+                + "creature_id, analysis_version, primary_function_role, capability_tags, "
                 + "base_action_units_per_round, legendary_action_units, has_reaction, total_complexity_points, "
                 + "complex_feature_count, support_signal_score, control_signal_score, mobility_signal_score, "
                 + "ranged_signal_score, melee_signal_score, spellcasting_signal_score, aoe_signal_score, "
                 + "healing_signal_score, summon_signal_score, reaction_signal_score, soldier_role_score, "
                 + "archer_role_score, controller_role_score, skirmisher_role_score, support_role_score, updated_at"
-                + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) "
+                + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) "
                 + "ON CONFLICT(creature_id) DO UPDATE SET "
                 + "analysis_version=excluded.analysis_version, "
                 + "primary_function_role=excluded.primary_function_role, "
-                + "secondary_function_role=excluded.secondary_function_role, "
                 + "capability_tags=excluded.capability_tags, "
                 + "base_action_units_per_round=excluded.base_action_units_per_round, "
                 + "legendary_action_units=excluded.legendary_action_units, "
@@ -246,28 +244,27 @@ public final class EncounterPartyAnalysisRepository {
                 ps.setLong(1, row.creatureId());
                 ps.setInt(2, row.analysisVersion());
                 ps.setString(3, enumName(row.primaryFunctionRole()));
-                ps.setString(4, enumName(row.secondaryFunctionRole()));
-                ps.setString(5, row.capabilityTags());
-                ps.setDouble(6, row.baseActionUnitsPerRound());
-                ps.setDouble(7, row.legendaryActionUnits());
-                ps.setInt(8, row.hasReaction());
-                ps.setInt(9, row.totalComplexityPoints());
-                ps.setInt(10, row.complexFeatureCount());
-                ps.setDouble(11, row.supportSignalScore());
-                ps.setDouble(12, row.controlSignalScore());
-                ps.setDouble(13, row.mobilitySignalScore());
-                ps.setDouble(14, row.rangedSignalScore());
-                ps.setDouble(15, row.meleeSignalScore());
-                ps.setDouble(16, row.spellcastingSignalScore());
-                ps.setDouble(17, row.aoeSignalScore());
-                ps.setDouble(18, row.healingSignalScore());
-                ps.setDouble(19, row.summonSignalScore());
-                ps.setDouble(20, row.reactionSignalScore());
-                ps.setDouble(21, row.soldierRoleScore());
-                ps.setDouble(22, row.archerRoleScore());
-                ps.setDouble(23, row.controllerRoleScore());
-                ps.setDouble(24, row.skirmisherRoleScore());
-                ps.setDouble(25, row.supportRoleScore());
+                ps.setString(4, row.capabilityTags());
+                ps.setDouble(5, row.baseActionUnitsPerRound());
+                ps.setDouble(6, row.legendaryActionUnits());
+                ps.setInt(7, row.hasReaction());
+                ps.setInt(8, row.totalComplexityPoints());
+                ps.setInt(9, row.complexFeatureCount());
+                ps.setDouble(10, row.supportSignalScore());
+                ps.setDouble(11, row.controlSignalScore());
+                ps.setDouble(12, row.mobilitySignalScore());
+                ps.setDouble(13, row.rangedSignalScore());
+                ps.setDouble(14, row.meleeSignalScore());
+                ps.setDouble(15, row.spellcastingSignalScore());
+                ps.setDouble(16, row.aoeSignalScore());
+                ps.setDouble(17, row.healingSignalScore());
+                ps.setDouble(18, row.summonSignalScore());
+                ps.setDouble(19, row.reactionSignalScore());
+                ps.setDouble(20, row.soldierRoleScore());
+                ps.setDouble(21, row.archerRoleScore());
+                ps.setDouble(22, row.controllerRoleScore());
+                ps.setDouble(23, row.skirmisherRoleScore());
+                ps.setDouble(24, row.supportRoleScore());
                 ps.addBatch();
             }
             ps.executeBatch();
@@ -320,7 +317,7 @@ public final class EncounterPartyAnalysisRepository {
 
     public static Map<Long, CreatureStaticRow> loadStaticRows(Connection conn) throws SQLException {
         Map<Long, CreatureStaticRow> rows = new HashMap<>();
-        String sql = "SELECT creature_id, analysis_version, primary_function_role, secondary_function_role, capability_tags, "
+        String sql = "SELECT creature_id, analysis_version, primary_function_role, capability_tags, "
                 + "base_action_units_per_round, legendary_action_units, has_reaction, total_complexity_points, "
                 + "complex_feature_count, support_signal_score, control_signal_score, mobility_signal_score, "
                 + "ranged_signal_score, melee_signal_score, spellcasting_signal_score, aoe_signal_score, "
@@ -335,7 +332,6 @@ public final class EncounterPartyAnalysisRepository {
                         creatureId,
                         rs.getInt("analysis_version"),
                         parseEnumOrNull(rs.getString("primary_function_role"), EncounterFunctionRole.class),
-                        parseEnumOrNull(rs.getString("secondary_function_role"), EncounterFunctionRole.class),
                         rs.getString("capability_tags"),
                         rs.getDouble("base_action_units_per_round"),
                         rs.getDouble("legendary_action_units"),
@@ -363,7 +359,7 @@ public final class EncounterPartyAnalysisRepository {
     }
 
     public static CreatureStaticRow loadStaticRow(Connection conn, long creatureId) throws SQLException {
-        String sql = "SELECT creature_id, analysis_version, primary_function_role, secondary_function_role, capability_tags, "
+        String sql = "SELECT creature_id, analysis_version, primary_function_role, capability_tags, "
                 + "base_action_units_per_round, legendary_action_units, has_reaction, total_complexity_points, "
                 + "complex_feature_count, support_signal_score, control_signal_score, mobility_signal_score, "
                 + "ranged_signal_score, melee_signal_score, spellcasting_signal_score, aoe_signal_score, "
@@ -378,7 +374,6 @@ public final class EncounterPartyAnalysisRepository {
                         creatureId,
                         rs.getInt("analysis_version"),
                         parseEnumOrNull(rs.getString("primary_function_role"), EncounterFunctionRole.class),
-                        parseEnumOrNull(rs.getString("secondary_function_role"), EncounterFunctionRole.class),
                         rs.getString("capability_tags"),
                         rs.getDouble("base_action_units_per_round"),
                         rs.getDouble("legendary_action_units"),
@@ -423,7 +418,7 @@ public final class EncounterPartyAnalysisRepository {
         Map<Long, CreatureRoleProfile> profiles = new HashMap<>();
         String sql = "SELECT cpa.creature_id, cpa.weight_class, cpa.survivability_actions, cpa.offense_pressure, "
                 + "cpa.expected_turn_share, cpa.gm_complexity_load, cpa.fit_flags, "
-                + "csa.primary_function_role, csa.secondary_function_role, csa.capability_tags, "
+                + "csa.primary_function_role, csa.capability_tags, "
                 + "csa.base_action_units_per_round "
                 + "FROM creature_party_analysis cpa "
                 + "JOIN creature_static_analysis csa ON csa.creature_id = cpa.creature_id "
@@ -463,7 +458,7 @@ public final class EncounterPartyAnalysisRepository {
         for (List<Long> batch : partitionIds(filteredIds)) {
             String sql = "SELECT cpa.creature_id, cpa.weight_class, cpa.survivability_actions, cpa.offense_pressure, "
                     + "cpa.expected_turn_share, cpa.gm_complexity_load, cpa.fit_flags, "
-                    + "csa.primary_function_role, csa.secondary_function_role, csa.capability_tags, "
+                    + "csa.primary_function_role, csa.capability_tags, "
                     + "csa.base_action_units_per_round "
                     + "FROM creature_party_analysis cpa "
                     + "JOIN creature_static_analysis csa ON csa.creature_id = cpa.creature_id "
@@ -493,7 +488,7 @@ public final class EncounterPartyAnalysisRepository {
     }
 
     public static CreatureRoleProfile loadRoleProfileForCreature(Connection conn, long creatureId) throws SQLException {
-        String sql = "SELECT cpa.creature_id, cpa.weight_class, csa.primary_function_role, csa.secondary_function_role, "
+        String sql = "SELECT cpa.creature_id, cpa.weight_class, csa.primary_function_role, "
                 + "csa.capability_tags, cpa.survivability_actions, csa.base_action_units_per_round, cpa.offense_pressure, "
                 + "cpa.expected_turn_share, cpa.gm_complexity_load, cpa.fit_flags "
                 + "FROM creature_party_analysis cpa "

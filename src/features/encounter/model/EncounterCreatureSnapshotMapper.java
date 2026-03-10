@@ -1,7 +1,7 @@
 package features.encounter.model;
 
-import features.creaturecatalog.model.Creature;
-import features.creaturecatalog.model.HitDice;
+import features.creatures.model.Creature;
+import features.creatures.model.HitDice;
 
 /** Maps creaturecatalog entities to encounter-owned snapshots. */
 public final class EncounterCreatureSnapshotMapper {

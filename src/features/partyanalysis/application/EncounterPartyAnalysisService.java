@@ -1,8 +1,13 @@
 package features.partyanalysis.application;
 
 import database.DatabaseManager;
+import features.creatures.api.CreatureFunctionRoleClassifier;
+import features.creatures.api.CreatureFunctionRoleClassifier.Classification;
+import features.creatures.api.CreatureFunctionRoleClassifier.CreatureRoleSignals;
 import features.creatures.model.Creature;
-import features.partyanalysis.model.CreatureCapabilityTag;
+import features.creatures.model.CreatureCapabilityTag;
+import features.partyanalysis.service.CreatureStaticAnalysisService;
+import features.partyanalysis.service.EncounterWeightClassClassifier;
 import features.partyanalysis.model.CreatureRoleProfile;
 import features.partyanalysis.model.EncounterWeightClass;
 import features.partyanalysis.repository.EncounterPartyAnalysisRepository;
@@ -12,10 +17,6 @@ import features.partyanalysis.repository.EncounterPartyAnalysisRepository.Creatu
 import features.partyanalysis.repository.EncounterPartyCacheRepository;
 import features.partyanalysis.repository.EncounterPartyCacheRepository.CacheState;
 import features.partyanalysis.repository.EncounterPartyCacheRepository.CacheStatus;
-import features.partyanalysis.service.CreatureFunctionRoleClassifier.Classification;
-import features.partyanalysis.service.CreatureFunctionRoleClassifier;
-import features.partyanalysis.service.CreatureStaticAnalysisService;
-import features.partyanalysis.service.EncounterWeightClassClassifier;
 import features.encounter.calibration.service.EncounterCalibrationService;
 import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
 import features.encounter.calibration.service.EncounterCalibrationService.PartyRelativeMetrics;
@@ -386,7 +387,7 @@ public final class EncounterPartyAnalysisService {
             Creature creature,
             EncounterPartyBenchmarks party) {
         CreatureStaticRow staticRow = CreatureStaticAnalysisService.analyzeCreature(creature);
-        Classification classification = CreatureFunctionRoleClassifier.classify(staticRow);
+        Classification classification = CreatureFunctionRoleClassifier.classify(toCreatureRoleSignals(staticRow));
         PartyRelativeMetrics metrics = EncounterCalibrationService.partyRelativeMetrics(
                 creature.HP,
                 creature.AC,
@@ -427,6 +428,27 @@ public final class EncounterPartyAnalysisService {
             }
         }
         return Set.copyOf(tags);
+    }
+
+    private static CreatureRoleSignals toCreatureRoleSignals(CreatureStaticRow staticRow) {
+        return new CreatureRoleSignals(
+                staticRow.baseActionUnitsPerRound(),
+                staticRow.totalComplexityPoints(),
+                staticRow.supportSignalScore(),
+                staticRow.controlSignalScore(),
+                staticRow.mobilitySignalScore(),
+                staticRow.rangedSignalScore(),
+                staticRow.meleeSignalScore(),
+                staticRow.spellcastingSignalScore(),
+                staticRow.aoeSignalScore(),
+                staticRow.healingSignalScore(),
+                staticRow.summonSignalScore(),
+                staticRow.reactionSignalScore(),
+                staticRow.soldierRoleScore(),
+                staticRow.archerRoleScore(),
+                staticRow.controllerRoleScore(),
+                staticRow.skirmisherRoleScore(),
+                staticRow.supportRoleScore());
     }
 
 }

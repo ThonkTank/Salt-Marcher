@@ -51,20 +51,22 @@ final class ActionEffectivenessEvaluator {
         double mobilityEffect = tags.hasMobility() > 0 ? expectedUses * (tags.isMelee() > 0 || tags.isRanged() > 0 ? 2.5 : 1.2) : 0.0;
         double spellcastingEffect = tags.isSpellcasting() > 0 ? SPELLCASTING_UTILITY * expectedUses : 0.0;
 
-        double soldier = expectedDamage * (tags.isMelee() > 0 ? 1.0 : 0.20)
-                + controlEffect * (tags.isMelee() > 0 ? 0.25 : 0.10);
-        double archer = expectedDamage * (tags.isRanged() > 0 ? 1.0 : 0.0)
-                + expectedDamage * (tags.isAoe() > 0 ? 0.20 : 0.0)
-                + controlEffect * (tags.isRanged() > 0 ? 0.15 : 0.0);
-        double controller = controlEffect
-                + expectedDamage * (tags.isAoe() > 0 ? 0.25 : 0.05)
-                + spellcastingEffect;
-        double skirmisher = expectedDamage * (tags.isMelee() > 0 || tags.isRanged() > 0 ? 0.55 : 0.0)
-                + mobilityEffect
-                + controlEffect * 0.10;
-        double support = supportEffect
+        double soldier = expectedDamage * (tags.isMelee() > 0 ? 1.10 : 0.10)
+                + controlEffect * (tags.isMelee() > 0 ? 0.18 : 0.05);
+        double archer = expectedDamage * (tags.isRanged() > 0 ? 1.15 : 0.0)
+                + expectedDamage * (tags.isAoe() > 0 ? 0.05 : 0.0)
+                + controlEffect * (tags.isRanged() > 0 ? 0.05 : 0.0)
+                - supportEffect * 0.08;
+        double controller = controlEffect * 1.15
+                + expectedDamage * (tags.isAoe() > 0 ? 0.35 : 0.02)
+                + spellcastingEffect
+                + (tags.isAoe() > 0 ? 1.0 * expectedUses : 0.0);
+        double skirmisher = expectedDamage * (tags.isMelee() > 0 || tags.isRanged() > 0 ? 0.65 : 0.0)
+                + mobilityEffect * 1.15
+                + controlEffect * 0.06;
+        double support = supportEffect * 1.10
                 + (tags.hasSummon() > 0 ? SUMMON_EQUIVALENT * expectedUses : 0.0)
-                + spellcastingEffect * 0.30;
+                + spellcastingEffect * 0.25;
 
         if (tags.isBuff() > 0 && supportEffect <= 0.0) {
             support += 3.0 * expectedUses;
@@ -73,11 +75,19 @@ final class ActionEffectivenessEvaluator {
             controller += 4.0 * expectedUses;
         }
         if (tags.isRanged() == 0 && tags.isMelee() == 0 && expectedDamage > 0.0) {
-            soldier += expectedDamage * 0.35;
-            archer += expectedDamage * 0.35;
+            soldier += expectedDamage * 0.20;
+            archer += expectedDamage * 0.15;
         }
         if (tags.hasMobility() > 0 && (tags.isMelee() > 0 || tags.isRanged() > 0)) {
-            skirmisher += expectedDamage * 0.35;
+            skirmisher += expectedDamage * 0.45;
+        }
+        if (tags.isAoe() > 0 && tags.isRanged() > 0) {
+            controller += expectedDamage * 0.10;
+            archer -= expectedDamage * 0.05;
+        }
+        if (tags.isBuff() > 0 || tags.isHeal() > 0) {
+            soldier -= expectedDamage * 0.04;
+            archer -= expectedDamage * 0.05;
         }
 
         return new ActionRoleWeights(

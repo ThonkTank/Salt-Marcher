@@ -159,10 +159,15 @@ public final class EncounterTableService {
         try (Connection conn = DatabaseManager.getConnection()) {
             EncounterTableRepository.GeneratorSelection selection =
                     EncounterTableRepository.getSelectionForGenerator(conn, tableIds, maxXp);
-            List<Creature> creatures = selection.weights().isEmpty()
-                    ? List.of()
-                    : CreatureCatalogService.loadCreaturesByIds(conn, List.copyOf(selection.weights().keySet()));
-            return new CandidatesResult(ReadStatus.SUCCESS, creatures, selection.weights());
+            if (selection.weights().isEmpty()) {
+                return new CandidatesResult(ReadStatus.SUCCESS, List.of(), selection.weights());
+            }
+            CreatureCatalogService.ServiceResult<List<Creature>> creatureResult =
+                    CreatureCatalogService.loadCreaturesByIds(List.copyOf(selection.weights().keySet()));
+            if (!creatureResult.isOk()) {
+                return new CandidatesResult(ReadStatus.STORAGE_ERROR, List.of(), Map.of());
+            }
+            return new CandidatesResult(ReadStatus.SUCCESS, creatureResult.value(), selection.weights());
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "EncounterTableService.getCandidatesFromTables(): DB access failed", e);
             return new CandidatesResult(ReadStatus.STORAGE_ERROR, List.of(), Map.of());

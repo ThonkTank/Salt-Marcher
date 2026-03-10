@@ -1,6 +1,6 @@
 package features.encounter.generation.service.search.model;
 
-import features.partyanalysis.model.EncounterFunctionRole;
+import features.creatures.model.EncounterFunctionRole;
 import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.search.policy.EncounterConstraintPolicy;
 import features.encounter.rules.EncounterMobSlotRules;

@@ -1,16 +1,20 @@
 package features.party.api;
 
+import database.DatabaseManager;
 import features.party.model.PlayerCharacter;
-import features.party.service.PartyService;
+import features.party.repository.PlayerCharacterRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Public cross-feature read facade for party state.
  */
 public final class PartyApi {
+    private static final Logger LOGGER = Logger.getLogger(PartyApi.class.getName());
 
     private PartyApi() {
         throw new AssertionError("No instances");
@@ -26,18 +30,26 @@ public final class PartyApi {
     public record PartySnapshotResult(ReadStatus status, List<PartyMember> members, List<PartyMember> available) {}
 
     public static ActivePartyResult loadActiveParty() {
-        PartyService.PartyListResult result = PartyService.getActivePartyResult();
-        return new ActivePartyResult(
-                mapStatus(result.status()),
-                mapMembers(result.members()));
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return new ActivePartyResult(
+                    ReadStatus.SUCCESS,
+                    mapMembers(PlayerCharacterRepository.getPartyMembers(conn)));
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "PartyApi.loadActiveParty(): DB access failed", e);
+            return new ActivePartyResult(ReadStatus.STORAGE_ERROR, List.of());
+        }
     }
 
     public static PartySnapshotResult loadPartySnapshot() {
-        PartyService.PartySnapshotResult result = PartyService.loadPartySnapshot();
-        return new PartySnapshotResult(
-                mapStatus(result.status()),
-                mapMembers(result.members()),
-                mapMembers(result.available()));
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return new PartySnapshotResult(
+                    ReadStatus.SUCCESS,
+                    mapMembers(PlayerCharacterRepository.getPartyMembers(conn)),
+                    mapMembers(PlayerCharacterRepository.getAvailableCharacters(conn)));
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "PartyApi.loadPartySnapshot(): DB access failed", e);
+            return new PartySnapshotResult(ReadStatus.STORAGE_ERROR, List.of(), List.of());
+        }
     }
 
     public static int calculatePartyLevel(List<PartyMember> party) {
@@ -47,17 +59,11 @@ public final class PartyApi {
     }
 
     public static List<Integer> loadActivePartyLevels(Connection conn) throws SQLException {
-        return PartyService.loadActivePartyLevels(conn);
+        return PlayerCharacterRepository.getActivePartyLevels(conn);
     }
 
     public static List<Integer> loadActivePartyLevelsForComposition(Connection conn) throws SQLException {
-        return PartyService.loadActivePartyLevelsForComposition(conn);
-    }
-
-    private static ReadStatus mapStatus(PartyService.ReadStatus status) {
-        return status == PartyService.ReadStatus.SUCCESS
-                ? ReadStatus.SUCCESS
-                : ReadStatus.STORAGE_ERROR;
+        return PlayerCharacterRepository.getActivePartyLevelsForComposition(conn);
     }
 
     private static List<PartyMember> mapMembers(List<PlayerCharacter> party) {

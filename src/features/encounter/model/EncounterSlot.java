@@ -1,6 +1,6 @@
 package features.encounter.model;
 
-import features.partyanalysis.model.EncounterFunctionRole;
+import features.creatures.model.EncounterFunctionRole;
 import features.partyanalysis.model.EncounterWeightClass;
 
 /** A single creature type with a count within an {@link Encounter}. */

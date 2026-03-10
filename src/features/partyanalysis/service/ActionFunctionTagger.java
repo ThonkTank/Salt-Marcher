@@ -16,12 +16,15 @@ final class ActionFunctionTagger {
 
         int isMelee = containsAny(joined, "melee weapon attack", "reach ") ? 1 : 0;
         int isRanged = containsAny(joined, "ranged weapon attack", "ranged spell attack", "range ") ? 1 : 0;
-        int isAoe = containsAny(joined, "cone", "radius", "line", "cube", "sphere", "each creature") ? 1 : 0;
+        int isAoe = containsAny(joined,
+                "cone", "radius", "line", "cube", "sphere", "each creature", "each enemy", "within ") ? 1 : 0;
         int isBuff = containsAny(joined, "advantage", "bonus to", "gains", "allies", "inspire", "leadership") ? 1 : 0;
         int isHeal = containsAny(joined, "regain", "heals", "hit points", "temporary hit points") ? 1 : 0;
         int isControl = containsAny(joined,
-                "stunned", "restrained", "grappled", "frightened", "charmed", "paralyzed", "prone", "blinded") ? 1 : 0;
-        int hasMobility = containsAny(joined, "teleport", "dash", "move up to", "disengage", "fly") ? 1 : 0;
+                "stunned", "restrained", "grappled", "frightened", "charmed", "paralyzed", "prone", "blinded",
+                "incapacitated", "petrified", "knocked prone", "speed becomes 0", "can't take reactions") ? 1 : 0;
+        int hasMobility = containsAny(joined,
+                "teleport", "dash", "move up to", "disengage", "fly", "moves up to", "without provoking") ? 1 : 0;
         int hasSummon = containsAny(joined, "summon", "conjure", "creates") ? 1 : 0;
         int isSpellcasting = containsAny(joined,
                 "spellcasting", "innate spellcasting", "spell attack", "cantrip", "spell save dc") ? 1 : 0;

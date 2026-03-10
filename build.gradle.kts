@@ -97,12 +97,6 @@ val recoverEncounterTables = registerJavaExecTask(
     taskMainClass = "importer.EncounterTableRecoveryTool"
 )
 
-val recomputeRoles = registerJavaExecTask(
-    taskName = "recomputeRoles",
-    taskDescription = "Recompute and persist creature tactical roles for all creatures.",
-    taskMainClass = "importer.CreatureRoleRecomputeTool"
-)
-
 val backfillCreatureAnalysis = registerJavaExecTask(
     taskName = "backfillCreatureAnalysis",
     taskDescription = "Reimport crawled monsters from stored HTML and refresh encounter-analysis caches.",

@@ -1,10 +1,8 @@
 package importer;
 
-import features.creaturecatalog.model.ChallengeRating;
-import features.creaturecatalog.model.Creature;
-import features.creaturecatalog.repository.CreatureRepository;
-import features.gamerules.model.MonsterRole;
-import features.gamerules.service.RoleClassifier;
+import features.creatures.model.ChallengeRating;
+import features.creatures.model.Creature;
+import features.creatures.repository.CreatureRepository;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -56,10 +54,6 @@ public final class CreatureOverridesApplier {
                 if (refreshed == null) {
                     throw new SQLException("Creature missing after override apply: id=" + creatureId);
                 }
-                MonsterRole role = refreshed.CR != null
-                        ? RoleClassifier.classify(refreshed)
-                        : MonsterRole.BRUTE;
-                CreatureRepository.updateRole(conn, creatureId, role.name());
                 updated++;
             }
             if (missing > 0 && failOnMissing) {

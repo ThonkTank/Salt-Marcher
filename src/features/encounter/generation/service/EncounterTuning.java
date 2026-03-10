@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import features.encounter.rules.EncounterRules;
-import features.gamerules.service.XpCalculator;
+import shared.rules.service.XpCalculator;
 
 public final class EncounterTuning {
     private EncounterTuning() {

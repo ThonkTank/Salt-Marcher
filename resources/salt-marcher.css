@@ -62,12 +62,13 @@
     /* Radius/size tokens: JavaFX CSS variables cannot carry Size values, so use literal
        values directly in rules below. (e.g. 20px for stat block name, 3/6 for radii) */
 
-    -sm-role-brute:      #e07070;
-    -sm-role-artillery:  #f9a825;
+    -sm-role-minion:     #e07070;
+    -sm-role-boss:       #d97706;
+    -sm-role-soldier:    #5a9ed6;
+    -sm-role-archer:     #f9a825;
     -sm-role-controller: #bd7fdc;  /* lightened to clear 4.5:1 on bg-card */
     -sm-role-skirmisher: #5aaf5e;
-    -sm-role-tank:       #5a9ed6;
-    -sm-role-leader:     #ff8f00;
+    -sm-role-support:    #ff8f00;
 
     -fx-font-family: "SansSerif";
     -fx-font-size: 13px;
@@ -415,12 +416,13 @@
     -fx-background-radius: 3;
     -fx-padding: 0 3 0 3;
 }
-.role-brute      { -fx-border-color: -sm-role-brute;      -fx-text-fill: -sm-role-brute; }
-.role-artillery  { -fx-border-color: -sm-role-artillery;  -fx-text-fill: -sm-role-artillery; }
+.role-minion     { -fx-border-color: -sm-role-minion;     -fx-text-fill: -sm-role-minion; }
+.role-boss       { -fx-border-color: -sm-role-boss;       -fx-text-fill: -sm-role-boss; }
+.role-soldier    { -fx-border-color: -sm-role-soldier;    -fx-text-fill: -sm-role-soldier; }
+.role-archer     { -fx-border-color: -sm-role-archer;     -fx-text-fill: -sm-role-archer; }
 .role-controller { -fx-border-color: -sm-role-controller; -fx-text-fill: -sm-role-controller; }
 .role-skirmisher { -fx-border-color: -sm-role-skirmisher; -fx-text-fill: -sm-role-skirmisher; }
-.role-tank       { -fx-border-color: -sm-role-tank;       -fx-text-fill: -sm-role-tank; }
-.role-leader     { -fx-border-color: -sm-role-leader;     -fx-text-fill: -sm-role-leader; }
+.role-support    { -fx-border-color: -sm-role-support;    -fx-text-fill: -sm-role-support; }
 
 /* ---- Creature link ---- */
 .creature-link {

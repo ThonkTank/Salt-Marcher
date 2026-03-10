@@ -1,7 +1,7 @@
 package features.encounter.combat.service;
 
 import features.encounter.combat.model.MonsterCombatant;
-import features.gamerules.model.LootCoins;
+import shared.rules.model.LootCoins;
 
 import java.util.List;
 import java.util.Set;

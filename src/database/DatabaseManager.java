@@ -1,7 +1,5 @@
 package database;
 
-import features.creaturecatalog.model.HitDice;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -9,10 +7,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class DatabaseManager {
 
     private static final String URL = "jdbc:sqlite:game.db";
+    private static final Pattern HIT_DICE_PATTERN =
+            Pattern.compile("^\\s*(\\d+)\\s*[dD]\\s*(\\d+)\\s*(([+-])\\s*(\\d+))?\\s*$");
 
     private DatabaseManager() {
         throw new AssertionError("No instances");
@@ -129,7 +131,6 @@ public final class DatabaseManager {
                     + "passive_perception     INTEGER DEFAULT 10,"
                     + "languages              TEXT,"
                     + "legendary_action_count INTEGER DEFAULT 0,"
-                    + "role                   TEXT,"
                     + "source_slug            TEXT,"
                     + "slug_key               TEXT"
                     + ")");
@@ -298,7 +299,6 @@ public final class DatabaseManager {
                     + "creature_id                INTEGER PRIMARY KEY REFERENCES creatures(id) ON DELETE CASCADE,"
                     + "analysis_version           INTEGER NOT NULL DEFAULT 1,"
                     + "primary_function_role      TEXT,"
-                    + "secondary_function_role    TEXT,"
                     + "capability_tags            TEXT,"
                     + "base_action_units_per_round REAL NOT NULL DEFAULT 1.0,"
                     + "legendary_action_units     REAL NOT NULL DEFAULT 0.0,"
@@ -346,7 +346,6 @@ public final class DatabaseManager {
             stmt.execute("CREATE TABLE IF NOT EXISTS creature_party_analysis ("
                     + "run_id                INTEGER NOT NULL REFERENCES encounter_party_cache_runs(run_id) ON DELETE CASCADE,"
                     + "creature_id           INTEGER NOT NULL REFERENCES creatures(id) ON DELETE CASCADE,"
-                    + "dynamic_role          TEXT NOT NULL,"
                     + "weight_class          TEXT,"
                     + "survivability_actions REAL NOT NULL DEFAULT 0.0,"
                     + "offense_pressure      REAL NOT NULL DEFAULT 0.0,"
@@ -383,7 +382,6 @@ public final class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_action_analysis_version ON creature_action_analysis(analysis_version)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_static_analysis_version ON creature_static_analysis(analysis_version)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_party_analysis_run ON creature_party_analysis(run_id)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_party_analysis_run_role ON creature_party_analysis(run_id, dynamic_role)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_cache_runs_version_status "
                     + "ON encounter_party_cache_runs(party_comp_version, status)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_cache_runs_hash ON encounter_party_cache_runs(party_comp_hash)");
@@ -392,6 +390,7 @@ public final class DatabaseManager {
             ensureCreatureActionColumns(conn);
             ensureItemTagCompatibility(conn);
             ensureEncounterAnalysisColumns(conn);
+            dropLegacyRoleColumns(conn);
 
             // Seed default time-of-day phases (German UI strings)
             try (PreparedStatement ps = conn.prepareStatement(
@@ -511,16 +510,48 @@ public final class DatabaseManager {
             while (rs.next()) {
                 long creatureId = rs.getLong("id");
                 String hitDiceText = rs.getString("hit_dice");
-                var parsed = HitDice.tryParse(hitDiceText);
+                ParsedHitDice parsed = parseHitDice(hitDiceText);
                 if (parsed.isEmpty()) continue;
-                HitDice hitDice = parsed.get();
-                update.setInt(1, hitDice.count());
-                update.setInt(2, hitDice.sides());
-                update.setInt(3, hitDice.modifier());
+                update.setInt(1, parsed.count());
+                update.setInt(2, parsed.sides());
+                update.setInt(3, parsed.modifier());
                 update.setLong(4, creatureId);
                 update.addBatch();
             }
             update.executeBatch();
+        }
+    }
+
+    private static ParsedHitDice parseHitDice(String expression) {
+        if (expression == null || expression.isBlank()) {
+            return ParsedHitDice.EMPTY;
+        }
+        Matcher matcher = HIT_DICE_PATTERN.matcher(expression);
+        if (!matcher.matches()) {
+            return ParsedHitDice.EMPTY;
+        }
+        try {
+            int count = Integer.parseInt(matcher.group(1));
+            int sides = Integer.parseInt(matcher.group(2));
+            int modifier = 0;
+            if (matcher.group(3) != null) {
+                int amount = Integer.parseInt(matcher.group(5));
+                modifier = "-".equals(matcher.group(4)) ? -amount : amount;
+            }
+            if (count <= 0 || sides <= 0) {
+                return ParsedHitDice.EMPTY;
+            }
+            return new ParsedHitDice(count, sides, modifier, false);
+        } catch (NumberFormatException ex) {
+            return ParsedHitDice.EMPTY;
+        }
+    }
+
+    private record ParsedHitDice(int count, int sides, int modifier, boolean empty) {
+        private static final ParsedHitDice EMPTY = new ParsedHitDice(0, 0, 0, true);
+
+        boolean isEmpty() {
+            return empty;
         }
     }
 
@@ -534,7 +565,6 @@ public final class DatabaseManager {
 
     private static void ensureEncounterAnalysisColumns(Connection conn) throws SQLException {
         ensureColumn(conn, "creature_static_analysis", "primary_function_role", "TEXT");
-        ensureColumn(conn, "creature_static_analysis", "secondary_function_role", "TEXT");
         ensureColumn(conn, "creature_static_analysis", "capability_tags", "TEXT");
         ensureColumn(conn, "creature_static_analysis", "spellcasting_signal_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "aoe_signal_score", "REAL NOT NULL DEFAULT 0.0");
@@ -547,6 +577,13 @@ public final class DatabaseManager {
         ensureColumn(conn, "creature_static_analysis", "skirmisher_role_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_static_analysis", "support_role_score", "REAL NOT NULL DEFAULT 0.0");
         ensureColumn(conn, "creature_party_analysis", "weight_class", "TEXT");
+        dropColumnIfExists(conn, "creature_static_analysis", "secondary_function_role");
+    }
+
+    private static void dropLegacyRoleColumns(Connection conn) throws SQLException {
+        dropIndexIfExists(conn, "idx_party_analysis_run_role");
+        dropColumnIfExists(conn, "creature_party_analysis", "dynamic_role");
+        dropColumnIfExists(conn, "creatures", "role");
     }
 
     private static void ensureItemTagCompatibility(Connection conn) throws SQLException {
@@ -591,6 +628,19 @@ public final class DatabaseManager {
         if (columnExists(conn, table, column)) return;
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
+        }
+    }
+
+    private static void dropColumnIfExists(Connection conn, String table, String column) throws SQLException {
+        if (!columnExists(conn, table, column)) return;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE " + table + " DROP COLUMN " + column);
+        }
+    }
+
+    private static void dropIndexIfExists(Connection conn, String index) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("DROP INDEX IF EXISTS " + index);
         }
     }
 

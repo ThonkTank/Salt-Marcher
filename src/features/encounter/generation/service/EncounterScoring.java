@@ -3,10 +3,10 @@ package features.encounter.generation.service;
 import java.util.List;
 
 import features.encounter.combat.model.Combatant;
-import features.creaturecatalog.model.Creature;
+import features.creatures.model.Creature;
 import features.encounter.model.EncounterSlot;
 import features.encounter.combat.model.MonsterCombatant;
-import features.gamerules.service.XpCalculator;
+import shared.rules.service.XpCalculator;
 
 public final class EncounterScoring {
     private EncounterScoring() {
