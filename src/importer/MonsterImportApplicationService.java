@@ -1,12 +1,13 @@
 package importer;
 
 import database.DatabaseManager;
-import features.creaturecatalog.model.Creature;
-import features.creaturecatalog.repository.CreatureImportAliasRepository;
-import features.creaturecatalog.repository.CreatureRepository;
-import features.creaturecatalog.service.CreatureImportIdentityResolutionService;
-import features.encountertable.recovery.service.EncounterTableRecoveryService;
-import features.gamerules.service.RoleClassifier;
+import features.creatures.model.Creature;
+import features.creatures.repository.CreatureRepository;
+import features.creatures.repository.identity.CreatureImportAliasRepository;
+import features.creatures.application.identity.CreatureImportIdentityService;
+import features.creatures.service.RoleClassifier;
+import features.encounter.api.CreatureAnalysisMaintenanceService;
+import features.encountertable.api.EncounterTableRecoveryService;
 import org.jsoup.Jsoup;
 import shared.crawler.slug.SlugIdentity;
 
@@ -124,12 +125,13 @@ public final class MonsterImportApplicationService {
         if (creature.Name == null || creature.Name.isBlank()) {
             throw new IllegalStateException("No name found");
         }
-        CreatureImportIdentityResolutionService.ImportIdResolution idResolution =
-                CreatureImportIdentityResolutionService.resolveImportId(
+        CreatureImportIdentityService.ImportIdResolution idResolution =
+                CreatureImportIdentityService.resolveImportId(
                         conn, externalId, sourceSlug, slugKey, creature.Name, reservedIds);
         creature.Id = idResolution.localId();
         creature.Role = creature.CR != null ? RoleClassifier.classify(creature).name() : null;
         CreatureRepository.save(creature, conn);
+        CreatureAnalysisMaintenanceService.refreshForCreature(conn, creature.Id);
         CreatureImportAliasRepository.upsertAlias(
                 conn, sourceSlug, slugKey, externalId, creature.Id);
         if (idResolution.driftReason() != null) {

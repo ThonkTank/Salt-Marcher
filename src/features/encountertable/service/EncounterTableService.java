@@ -1,8 +1,8 @@
 package features.encountertable.service;
 
 import database.DatabaseManager;
-import features.creaturecatalog.model.Creature;
-import features.creaturecatalog.repository.CreatureRepository;
+import features.creatures.api.CreatureCatalogService;
+import features.creatures.model.Creature;
 import features.encountertable.model.EncounterTable;
 import features.encountertable.repository.EncounterTableRepository;
 
@@ -161,7 +161,7 @@ public final class EncounterTableService {
                     EncounterTableRepository.getSelectionForGenerator(conn, tableIds, maxXp);
             List<Creature> creatures = selection.weights().isEmpty()
                     ? List.of()
-                    : CreatureRepository.getCreaturesByIds(conn, List.copyOf(selection.weights().keySet()));
+                    : CreatureCatalogService.loadCreaturesByIds(conn, List.copyOf(selection.weights().keySet()));
             return new CandidatesResult(ReadStatus.SUCCESS, creatures, selection.weights());
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "EncounterTableService.getCandidatesFromTables(): DB access failed", e);

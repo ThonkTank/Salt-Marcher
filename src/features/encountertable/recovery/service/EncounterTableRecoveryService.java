@@ -1,7 +1,7 @@
 package features.encountertable.recovery.service;
 
 import database.DatabaseManager;
-import features.creaturecatalog.service.CreatureIdentityResolutionService;
+import features.creatures.api.CreatureRecoveryIdentityService;
 import features.encountertable.recovery.model.RecoveryRestoreResult;
 import features.encountertable.recovery.model.TableSnapshot;
 import features.encountertable.recovery.repository.RecoveryRepository;
@@ -52,7 +52,7 @@ public final class EncounterTableRecoveryService {
                 restore = RecoveryRepository.recoverEncounterEntries(
                         conn,
                         snapshot,
-                        (connection, entry) -> CreatureIdentityResolutionService.resolveEncounterRecoveryId(
+                        (connection, entry) -> CreatureRecoveryIdentityService.resolveEncounterRecoveryId(
                                 connection,
                                 entry.creatureId(),
                                 entry.sourceSlug(),

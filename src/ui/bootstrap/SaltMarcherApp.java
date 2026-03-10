@@ -9,24 +9,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import database.DatabaseManager;
-import features.creaturecatalog.service.CreatureRoleBackfillService;
-import features.creaturecatalog.service.CreatureService;
-import features.encounter.application.EncounterApplicationService;
-import features.encounter.application.adapter.StaticCreatureCandidateProvider;
-import features.encounter.application.adapter.StaticEncounterTableProvider;
-import features.encounter.application.adapter.StaticPartyProvider;
-import features.encounter.ui.EncounterView;
-import features.encounter.ui.EncounterViewCallbacks;
-import features.party.ui.PartyPopup;
-import features.party.ui.PartyPopupController;
-import features.party.ui.PartyWorkflowApplicationService;
-import features.world.hexmap.ui.editor.MapEditorView;
-import features.world.hexmap.ui.overworld.OverworldView;
-import features.world.hexmap.ui.travel.TravelPane;
-import features.encountertable.ui.EncounterTableEditorView;
+import features.creatures.api.CreatureCatalogService;
+import features.creatures.api.CreatureMaintenanceService;
+import features.party.api.PartyModule;
+import features.encounter.api.EncounterModule;
+import features.encountertable.api.EncounterTableModule;
+import features.world.hexmap.api.HexMapModule;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 import ui.shell.AppShell;
+import ui.shell.AppView;
 import ui.shell.ViewId;
 
 /**
@@ -44,31 +36,27 @@ public class SaltMarcherApp extends Application {
     public void start(Stage primaryStage) {
         AppShell shell = new AppShell();
 
-        EncounterApplicationService encounterService = new EncounterApplicationService(
-                new StaticPartyProvider(),
-                new StaticEncounterTableProvider(),
-                new StaticCreatureCandidateProvider()
-        );
-
-        EncounterView encounterView = new EncounterView(new EncounterViewCallbacks(
+        EncounterModule encounterModule = new EncounterModule(
                 shell::refreshToolbar,
                 shell::refreshPanels,
                 shell.getShowStatBlockHandler(),
-                shell.getSceneRegistry(),
-                encounterService
-        ));
-        encounterView.setOnEnsureStatBlock(shell.getEnsureStatBlockHandler());
+                shell.getEnsureStatBlockHandler(),
+                shell.getSceneRegistry()
+        );
+        AppView encounterView = encounterModule.view();
 
-        PartyWorkflowApplicationService partyWorkflowApplicationService =
-                new PartyWorkflowApplicationService(encounterView::refreshPartyState);
-        PartyPopup partyPopup = new PartyPopup(new PartyPopupController(partyWorkflowApplicationService));
-        shell.addPersistentToolbarItem(partyPopup.getTriggerButton());
+        PartyModule partyModule = new PartyModule(
+                encounterModule::refreshPartyState,
+                encounterModule.partyCacheRefreshPort());
+        shell.addPersistentToolbarItem(partyModule.toolbarItem());
 
-        shell.getSceneRegistry().registerScene("\uD83D\uDDFA Reise", new TravelPane());
-        OverworldView overworldView = new OverworldView();
+        HexMapModule hexMapModule = new HexMapModule();
+        hexMapModule.registerScenes(shell.getSceneRegistry());
+        AppView overworldView = hexMapModule.overworldView();
+        AppView mapEditorView = hexMapModule.mapEditorView();
 
-        MapEditorView mapEditorView = new MapEditorView();
-        EncounterTableEditorView tableEditorView = new EncounterTableEditorView();
+        EncounterTableModule encounterTableModule = new EncounterTableModule();
+        AppView tableEditorView = encounterTableModule.view();
 
         // Register session views first, then editors (sidebar separator auto-inserts between categories)
         shell.registerView(ViewId.ENCOUNTER, encounterView);
@@ -91,9 +79,9 @@ public class SaltMarcherApp extends Application {
         // Filter data requires a DB query (creature types/biomes), so it is loaded asynchronously.
         // setFilterData() wires the filter-changed callback internally (see EncounterControls.setFilterData).
         // All other EncounterView callbacks above are wired synchronously.
-        Task<CreatureService.ServiceResult<CreatureService.FilterOptions>> filterTask = new Task<>() {
-            @Override protected CreatureService.ServiceResult<CreatureService.FilterOptions> call() {
-                return CreatureService.loadFilterOptions();
+        Task<CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions>> filterTask = new Task<>() {
+            @Override protected CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions> call() {
+                return CreatureCatalogService.loadFilterOptions();
             }
         };
         UiAsyncTasks.submit(
@@ -102,17 +90,17 @@ public class SaltMarcherApp extends Application {
                     if (!result.isOk()) {
                         UiErrorReporter.reportBackgroundFailure(
                                 "SaltMarcherApp.start() loadFilterOptions failed",
-                                new IllegalStateException("CreatureService status: " + result.status()));
+                                new IllegalStateException("CreatureCatalogService status: " + result.status()));
                     }
-                    CreatureService.FilterOptions filterData = result.value();
+                    CreatureCatalogService.FilterOptions filterData = result.value();
                     if (filterData == null) {
                         UiErrorReporter.reportBackgroundFailure(
                                 "SaltMarcherApp.start() loadFilterOptions returned null value",
                                 null);
                         return;
                     }
-                    encounterView.setFilterData(filterData);
-                    tableEditorView.setFilterData(filterData);
+                    encounterModule.setFilterData(filterData);
+                    encounterTableModule.setFilterData(filterData);
                 },
                 throwable -> UiErrorReporter.reportBackgroundFailure("SaltMarcherApp.start()", throwable));
 
@@ -125,8 +113,8 @@ public class SaltMarcherApp extends Application {
             UiErrorReporter.reportBackgroundFailure("SaltMarcherApp.main()", e);
             System.exit(1);
         }
-        CreatureRoleBackfillService.BackfillSummary roleBackfill =
-                CreatureRoleBackfillService.backfillMissingRoles();
+        CreatureMaintenanceService.BackfillSummary roleBackfill =
+                CreatureMaintenanceService.backfillMissingRoles();
         if (roleBackfill.checked() > 0 || roleBackfill.failed() > 0) {
             LOGGER.log(
                     Level.INFO,
@@ -135,7 +123,7 @@ public class SaltMarcherApp extends Application {
             );
         }
         // Startup diagnostic: show creature count so newcomers know if the DB is populated
-        CreatureService.ServiceResult<Integer> countResult = CreatureService.countAll();
+        CreatureCatalogService.ServiceResult<Integer> countResult = CreatureCatalogService.countAll();
         if (!countResult.isOk()) {
             LOGGER.log(Level.INFO, "Database check unavailable (DB access failed).");
         } else if (countResult.value() == 0) {

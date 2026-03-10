@@ -257,9 +257,103 @@ val checkUiAsyncSubmissionConvention by tasks.registering {
     }
 }
 
+val checkFeatureApiBoundaryConvention by tasks.registering {
+    group = "verification"
+    description = "Fail when cross-feature consumers bypass feature api packages."
+
+    data class FeatureBoundary(
+        val ownerPathPrefix: String,
+        val forbiddenImportPrefixes: List<String>
+    )
+
+    val importPattern = Regex("""^\s*import\s+([a-zA-Z0-9_.]+);""", RegexOption.MULTILINE)
+    val boundaries = listOf(
+        FeatureBoundary(
+            ownerPathPrefix = "features/encounter/",
+            forbiddenImportPrefixes = listOf(
+                "features.encounter.service.",
+                "features.encounter.repository.",
+                "features.encounter.ui.",
+                "features.encounter.internal.",
+                "features.encounter.partyanalysis.api."
+            )
+        ),
+        FeatureBoundary(
+            ownerPathPrefix = "features/encountertable/",
+            forbiddenImportPrefixes = listOf(
+                "features.encountertable.service.",
+                "features.encountertable.repository.",
+                "features.encountertable.ui.",
+                "features.encountertable.recovery."
+            )
+        ),
+        FeatureBoundary(
+            ownerPathPrefix = "features/party/",
+            forbiddenImportPrefixes = listOf(
+                "features.party.service.",
+                "features.party.repository.",
+                "features.party.ui."
+            )
+        ),
+        FeatureBoundary(
+            ownerPathPrefix = "features/world/hexmap/",
+            forbiddenImportPrefixes = listOf(
+                "features.world.hexmap.service.",
+                "features.world.hexmap.repository.",
+                "features.world.hexmap.ui."
+            )
+        ),
+        FeatureBoundary(
+            ownerPathPrefix = "features/creatures/",
+            forbiddenImportPrefixes = listOf(
+                "features.creatures.application.",
+                "features.creatures.repository.",
+                "features.creatures.service.",
+                "features.creatures.ui.",
+                "features.creatures.maintenance."
+            )
+        )
+    )
+
+    doLast {
+        val projectRoot = project.layout.projectDirectory.asFile.toPath()
+        val offenders = fileTree("src") {
+            include("features/**/*.java")
+            include("ui/**/*.java")
+        }.files
+            .flatMap { sourceFile ->
+                val path = projectRoot.relativize(sourceFile.toPath()).toString().replace('\\', '/')
+                val relativePath = path.removePrefix("src/")
+                val imports = importPattern.findAll(sourceFile.readText())
+                    .map { it.groupValues[1] }
+                    .toList()
+                boundaries.flatMap { boundary ->
+                    if (relativePath.startsWith(boundary.ownerPathPrefix)) {
+                        emptyList()
+                    } else {
+                        imports.filter { imported ->
+                            boundary.forbiddenImportPrefixes.any(imported::startsWith)
+                        }.map { imported -> "$path -> $imported" }
+                    }
+                }
+            }
+            .sorted()
+
+        if (offenders.isNotEmpty()) {
+            val details = offenders.joinToString(separator = "\n") { " - $it" }
+            throw GradleException(
+                "Feature API boundary drift detected.\n" +
+                    "Cross-feature consumers must go through the owning feature's api package.\n" +
+                    "Offending imports:\n$details"
+            )
+        }
+    }
+}
+
 tasks.named("check") {
     dependsOn(checkNoCompiledArtifactsInSource)
     dependsOn(checkNoStdStreamsInFeatureServicesAndRepositories)
     dependsOn(checkRepositorySqlExceptionConvention)
     dependsOn(checkUiAsyncSubmissionConvention)
+    dependsOn(checkFeatureApiBoundaryConvention)
 }

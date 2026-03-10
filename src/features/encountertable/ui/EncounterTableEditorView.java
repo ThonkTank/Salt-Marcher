@@ -1,15 +1,15 @@
 package features.encountertable.ui;
 
 import features.encountertable.model.EncounterTable;
-import features.creaturepicker.ui.MonsterListPane;
 import javafx.concurrent.Task;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.TextInputDialog;
-import features.creaturecatalog.service.CreatureService;
+import features.creatures.api.CreatureCatalogService;
 import features.encountertable.service.EncounterTableNameNormalizer;
 import features.encountertable.service.EncounterTableService;
+import ui.components.creatures.catalog.CreatureBrowserPane;
 import ui.shell.AppView;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  */
 public class EncounterTableEditorView implements AppView {
 
-    private final MonsterListPane monsterList;
+    private final CreatureBrowserPane monsterList;
     private final TableEditorControls controls;
     private final TableDetailsPane detailsPane;
     private final TableEntriesPane entriesPane;
@@ -38,7 +38,7 @@ public class EncounterTableEditorView implements AppView {
     private boolean initialLoadDone = false;
 
     public EncounterTableEditorView() {
-        monsterList = new MonsterListPane();
+        monsterList = new CreatureBrowserPane();
         controls    = new TableEditorControls();
         detailsPane = new TableDetailsPane();
         entriesPane = new TableEntriesPane();
@@ -54,7 +54,7 @@ public class EncounterTableEditorView implements AppView {
 
     // ---- Public API (wired by SaltMarcherApp) ----
 
-    public void setFilterData(CreatureService.FilterOptions data) {
+    public void setFilterData(CreatureCatalogService.FilterOptions data) {
         controls.setFilterData(data);
         controls.setOnFilterChanged(monsterList::applyFilters);
     }

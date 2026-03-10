@@ -1,15 +1,15 @@
 package features.encountertable.ui;
 
 import features.encountertable.model.EncounterTable;
-import features.creaturepicker.ui.FilterPane;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import features.creaturecatalog.service.CreatureService;
+import features.creatures.api.CreatureCatalogService;
 import ui.components.ThemeColors;
+import ui.components.creatures.catalog.CreatureFilterPane;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -17,12 +17,12 @@ import java.util.function.Consumer;
 /**
  * Controls panel for the encounter table editor.
  * Top section: table selector ComboBox + create/rename/delete actions.
- * Bottom section: FilterPane for the monster browser.
+ * Bottom section: CreatureFilterPane for the monster browser.
  */
 public class TableEditorControls extends VBox {
 
-    private FilterPane filterPane;
-    private Consumer<CreatureService.FilterCriteria> filterCallback;
+    private CreatureFilterPane filterPane;
+    private Consumer<CreatureCatalogService.FilterCriteria> filterCallback;
 
     private final ComboBox<EncounterTable> tableCombo;
     private final Button renameBtn;
@@ -94,19 +94,19 @@ public class TableEditorControls extends VBox {
 
     // ---- Public API ----
 
-    public void setFilterData(CreatureService.FilterOptions data) {
-        filterPane = new FilterPane(data);
+    public void setFilterData(CreatureCatalogService.FilterOptions data) {
+        filterPane = new CreatureFilterPane(data);
         filterRegion.getChildren().setAll(filterPane);
         if (filterCallback != null) filterPane.setOnFilterChanged(filterCallback);
     }
 
-    public void setOnFilterChanged(Consumer<CreatureService.FilterCriteria> callback) {
+    public void setOnFilterChanged(Consumer<CreatureCatalogService.FilterCriteria> callback) {
         this.filterCallback = callback;
         if (filterPane != null) filterPane.setOnFilterChanged(callback);
     }
 
-    public CreatureService.FilterCriteria buildCriteria() {
-        return filterPane != null ? filterPane.buildCriteria() : CreatureService.FilterCriteria.empty();
+    public CreatureCatalogService.FilterCriteria buildCriteria() {
+        return filterPane != null ? filterPane.buildCriteria() : CreatureCatalogService.FilterCriteria.empty();
     }
 
     /**
