@@ -9,7 +9,7 @@ import javafx.scene.control.TextInputDialog;
 import features.creatures.api.CreatureCatalogService;
 import features.encountertable.service.EncounterTableNameNormalizer;
 import features.encountertable.service.EncounterTableService;
-import ui.components.creatures.catalog.CreatureBrowserPane;
+import features.creatures.api.CreatureBrowserPane;
 import ui.shell.AppView;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;

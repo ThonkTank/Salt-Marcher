@@ -1,4 +1,4 @@
-package ui.components.creatures.catalog;
+package features.creatures.ui.shared.catalog;
 
 import features.creatures.api.CreatureCatalogService;
 import features.creatures.model.Creature;

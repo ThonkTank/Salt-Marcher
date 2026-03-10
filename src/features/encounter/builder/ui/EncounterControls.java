@@ -5,7 +5,7 @@ import features.creatures.api.CreatureCatalogService;
 import features.encountertable.model.EncounterTable;
 import features.encounter.generation.service.EncounterDifficultyBand;
 import features.encounter.internal.EncounterDifficultyUiText;
-import ui.components.creatures.catalog.CreatureFilterPane;
+import features.creatures.api.CreatureFilterPane;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.scene.Node;

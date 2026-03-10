@@ -9,7 +9,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import features.creatures.api.CreatureCatalogService;
 import ui.components.ThemeColors;
-import ui.components.creatures.catalog.CreatureFilterPane;
+import features.creatures.api.CreatureFilterPane;
 
 import java.util.List;
 import java.util.function.Consumer;

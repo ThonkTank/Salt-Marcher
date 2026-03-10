@@ -1,6 +1,7 @@
-package ui.components.creatures.statblock;
+package features.creatures.ui.shared.statblock;
 
 import features.creatures.api.CreatureCatalogService;
+import features.creatures.api.StatBlockRequest;
 import features.creatures.model.Creature;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableIntegerValue;

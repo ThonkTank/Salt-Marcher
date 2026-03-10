@@ -10,8 +10,8 @@ import features.creatures.api.CreatureCatalogService;
 import features.creatures.model.Creature;
 import features.encountertable.model.EncounterTable;
 import javafx.scene.Scene;
-import ui.components.creatures.catalog.CreatureBrowserPane;
-import ui.components.creatures.statblock.StatBlockRequest;
+import features.creatures.api.CreatureBrowserPane;
+import features.creatures.api.StatBlockRequest;
 import ui.shell.SceneHandle;
 
 import java.util.List;

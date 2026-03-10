@@ -3,7 +3,7 @@ package features.encounter.api;
 import features.encounter.builder.application.EncounterBuilderService;
 import features.encounter.combat.application.EncounterCombatService;
 import ui.shell.SceneRegistry;
-import ui.components.creatures.statblock.StatBlockRequest;
+import features.creatures.api.StatBlockRequest;
 
 import java.util.function.Consumer;
 

@@ -16,7 +16,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyEvent;
 import ui.shell.SceneHandle;
-import ui.components.creatures.statblock.StatBlockRequest;
+import features.creatures.api.StatBlockRequest;
 
 import java.util.List;
 import java.util.Objects;

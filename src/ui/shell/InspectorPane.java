@@ -14,8 +14,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import features.creaturecatalog.ui.StatBlockPane;
-import ui.components.statblock.StatBlockRequest;
+import features.creatures.api.StatBlockLoader;
+import features.creatures.api.StatBlockRequest;
 
 /**
  * Top-right panel: shows detailed info for a selected item.
@@ -120,7 +120,7 @@ public class InspectorPane extends VBox {
         detailTitle.setText("Stat Block");
         detailScroll.setVvalue(0);
         getChildren().setAll(detailSection);
-        pendingStatBlockTask = StatBlockPane.loadAsync(request, detailContent, mobTargetAc);
+        pendingStatBlockTask = StatBlockLoader.loadAsync(request, detailContent, mobTargetAc);
     }
 
     /**

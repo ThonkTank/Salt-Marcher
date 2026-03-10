@@ -8,7 +8,7 @@ import features.encounter.internal.wiring.DefaultPartyProvider;
 import features.creatures.api.CreatureCatalogService;
 import features.partyanalysis.api.PartyAnalysisCacheService;
 import features.partyanalysis.api.PartyCacheRefreshPort;
-import ui.components.creatures.statblock.StatBlockRequest;
+import features.creatures.api.StatBlockRequest;
 import ui.shell.AppView;
 import ui.shell.SceneRegistry;
 

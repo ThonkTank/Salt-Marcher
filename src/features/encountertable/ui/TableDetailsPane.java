@@ -11,7 +11,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import features.creaturecatalog.ui.StatBlockPane;
+import features.creatures.api.StatBlockLoader;
 
 /**
  * Details panel for the encounter table editor.
@@ -85,7 +85,7 @@ public class TableDetailsPane extends VBox {
         setPadding(Insets.EMPTY);
         setSpacing(0);
         getChildren().setAll(statBlockSection);
-        pendingTask = StatBlockPane.loadAsync(creatureId, statBlockContent);
+        pendingTask = StatBlockLoader.loadAsync(creatureId, statBlockContent);
     }
 
     // ---- Private ----

@@ -9,9 +9,9 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
-import ui.components.statblock.StatBlockRequest;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import features.creatures.api.StatBlockRequest;
 
 import java.util.EnumMap;
 import java.util.List;
