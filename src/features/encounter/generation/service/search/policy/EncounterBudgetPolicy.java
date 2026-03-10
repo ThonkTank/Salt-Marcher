@@ -25,8 +25,16 @@ public final class EncounterBudgetPolicy {
         EncounterDifficultyBand difficultyBand = EncounterTuning.resolveDifficultyBand(
                 request.difficultyBand(),
                 context);
+        int resolvedBalanceLevel = EncounterTuning.resolveLevel(request.balanceLevel(), context);
+        double resolvedAmountValue = EncounterTuning.resolveAmountValue(request.amountValue(), partySize, context);
         EncounterTuning.DifficultyBandBudgetRange bandBudgetRange =
                 EncounterTuning.difficultyBandBudgetRange(avgLevel, partySize, difficultyBand);
+        int targetAdjustedXp = targetAdjustedXp(
+                bandBudgetRange.lowerAdjustedXp(),
+                bandBudgetRange.upperAdjustedXp(),
+                resolvedBalanceLevel);
+        int targetCreatureCount = EncounterTuning.targetCreaturesForAmount(resolvedAmountValue, partySize);
+        int creatureCountTolerance = creatureCountTolerance(targetCreatureCount, partySize);
         double targetRounds = targetRounds(difficultyBand);
         double hardRounds = hardRounds(difficultyBand);
         double targetActionParity = targetActionParity(difficultyBand);
@@ -40,14 +48,40 @@ public final class EncounterBudgetPolicy {
                 party,
                 bandBudgetRange.lowerAdjustedXp(),
                 bandBudgetRange.upperAdjustedXp(),
+                targetAdjustedXp,
                 targetRounds,
                 hardRounds,
                 minEnemyActionUnits,
                 maxEnemyActionUnits,
+                resolvedBalanceLevel,
+                resolvedAmountValue,
+                targetCreatureCount,
+                creatureCountTolerance,
                 targetMonsterTurnSlots,
                 softMonsterTurnSlots,
                 hardMonsterTurnSlots,
                 4);
+    }
+
+    private static int targetAdjustedXp(int lowerAdjustedXp, int upperAdjustedXp, int balanceLevel) {
+        if (upperAdjustedXp <= lowerAdjustedXp) {
+            return lowerAdjustedXp;
+        }
+        double fraction = switch (balanceLevel) {
+            case 1 -> 0.05;
+            case 2 -> 0.30;
+            case 3 -> 0.50;
+            case 4 -> 0.70;
+            default -> 0.95;
+        };
+        return lowerAdjustedXp + (int) Math.round((upperAdjustedXp - lowerAdjustedXp) * fraction);
+    }
+
+    private static int creatureCountTolerance(int targetCreatureCount, int partySize) {
+        if (targetCreatureCount == Integer.MAX_VALUE) {
+            return Math.max(2, partySize);
+        }
+        return Math.max(1, (int) Math.ceil(Math.max(1, targetCreatureCount) * 0.25));
     }
 
     private static double targetActionParity(EncounterDifficultyBand difficultyBand) {

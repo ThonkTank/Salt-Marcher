@@ -38,17 +38,18 @@ public final class EncounterChoicePolicy {
                     && state.usesPrimaryRole(entry.primaryRole())) {
                 continue;
             }
-            List<AllowedCount> counts = allowedCountsFor(entry, budgets, state);
+            int selectionWeight = Math.max(1, selectionWeights.getOrDefault(entry.creature().Id, 1));
+            List<AllowedCount> counts = allowedCountsFor(entry, budgets, state, selectionWeight);
             for (AllowedCount allowed : counts) {
                 SearchState next = allowed.nextState();
                 if (!EncounterConstraintPolicy.passesHardConstraints(next, budgets, relaxation)) {
                     continue;
                 }
-                if (!EncounterConstraintPolicy.canStillReachCompletion(next, entries, budgets, relaxation)
+                if (!EncounterConstraintPolicy.mayStillReachCompletion(next, entries, budgets, relaxation, selectionWeights)
                         && !EncounterConstraintPolicy.isViableFallback(next, budgets, relaxation)) {
                     continue;
                 }
-                double score = scoreChoice(state, next, entry, allowed.count(), budgets, relaxation, selectionWeights);
+                double score = scoreChoice(state, next, entry, allowed.count(), budgets, relaxation);
                 insertTopChoice(options, new CandidateChoice(entry, allowed.count(), next, score));
             }
         }
@@ -58,12 +59,13 @@ public final class EncounterChoicePolicy {
     public static List<AllowedCount> allowedCountsFor(
             CandidateEntry entry,
             EncounterBudgets budgets,
-            SearchState state) {
+            SearchState state,
+            int selectionWeight) {
         int min = minAllowedCount(entry);
         int max = maxAllowedCount(entry);
         List<AllowedCount> counts = new ArrayList<>();
         for (int count = min; count <= max; count++) {
-            SearchState next = state.add(SearchState.Addition.of(entry, count));
+            SearchState next = state.add(SearchState.Addition.of(entry, count, selectionWeight));
             if (next.enemyTurnSlots() > budgets.hardMonsterTurnSlots()) {
                 continue;
             }
@@ -99,22 +101,20 @@ public final class EncounterChoicePolicy {
             CandidateEntry entry,
             int count,
             EncounterBudgets budgets,
-            RelaxationProfile relaxation,
-            Map<Long, Integer> selectionWeights) {
+            RelaxationProfile relaxation) {
         double baseScore = scoreState(next, budgets, relaxation);
         double actionNeed = Math.max(0.0, budgets.minEnemyActionUnits() - current.enemyActionUnits());
         double actionGain = next.enemyActionUnits() - current.enemyActionUnits();
         double actionProgressBonus = actionNeed <= 0.0
                 ? 1.0
                 : 1.0 + (actionGain / Math.max(0.25, actionNeed));
-        double weightBonus = Math.max(1, selectionWeights.getOrDefault(entry.creature().Id, 1));
         double classBonus = switch (entry.weightClass()) {
             case MINION -> actionNeed > 0.5 ? 1.15 : 0.95;
             case BOSS -> current.isEmpty() ? 1.12 : 0.92;
             case REGULAR -> 1.0;
         };
         double countFit = 1.0 / (1.0 + Math.abs(preferredMidCount(entry) - count));
-        return baseScore * actionProgressBonus * classBonus * countFit * weightBonus;
+        return baseScore * actionProgressBonus * classBonus * countFit;
     }
 
     public static double scoreState(
@@ -124,7 +124,7 @@ public final class EncounterChoicePolicy {
         if (state == null || state.isEmpty()) {
             return 0.0;
         }
-        double xpFit = xpBandFit(state.adjustedXp(), budgets.lowerAdjustedXp(), budgets.upperAdjustedXp());
+        double xpFit = xpFit(state.adjustedXp(), budgets);
         double targetEnemyActionUnits = (budgets.minEnemyActionUnits() + budgets.maxEnemyActionUnits()) * 0.5;
         double actionFit = closenessScore(state.enemyActionUnits(), targetEnemyActionUnits,
                 Math.max(0.5, budgets.maxEnemyActionUnits() - budgets.minEnemyActionUnits()));
@@ -136,8 +136,10 @@ public final class EncounterChoicePolicy {
                 state.enemyTurnSlots(),
                 budgets.targetMonsterTurnSlots(),
                 Math.max(1.0, budgets.softMonsterTurnSlots() - budgets.targetMonsterTurnSlots() + 1.0));
+        double creatureCountFit = creatureCountFit(state.totalCreatureCount(), budgets);
         double diversityFit = state.hasUniquePrimaryRoles() ? 1.08 : 0.72;
-        return xpFit * actionFit * roundFit * turnFit * diversityFit;
+        double weightFit = selectionWeightFit(state);
+        return xpFit * actionFit * roundFit * turnFit * creatureCountFit * diversityFit * weightFit;
     }
 
     public static int preferredMinCount(CandidateEntry entry) {
@@ -179,14 +181,34 @@ public final class EncounterChoicePolicy {
         };
     }
 
-    private static double xpBandFit(int adjustedXp, int lowerAdjustedXp, int upperAdjustedXp) {
-        if (adjustedXp < lowerAdjustedXp) {
-            return Math.max(0.2, adjustedXp / (double) Math.max(50, lowerAdjustedXp));
+    private static double xpFit(int adjustedXp, EncounterBudgets budgets) {
+        double bandTolerance = Math.max(75.0, (budgets.upperAdjustedXp() - budgets.lowerAdjustedXp()) * 0.25);
+        double fit = closenessScore(adjustedXp, budgets.targetAdjustedXp(), bandTolerance);
+        if (adjustedXp < budgets.lowerAdjustedXp()) {
+            double deficit = budgets.lowerAdjustedXp() - adjustedXp;
+            return fit * (1.0 / (1.0 + deficit / bandTolerance));
         }
-        if (adjustedXp > upperAdjustedXp) {
-            return 1.0 / (1.0 + ((adjustedXp - upperAdjustedXp) / (double) Math.max(50, upperAdjustedXp)));
+        if (adjustedXp > budgets.upperAdjustedXp()) {
+            double overflow = adjustedXp - budgets.upperAdjustedXp();
+            return fit * (1.0 / (1.0 + overflow / bandTolerance));
         }
-        return 1.2;
+        return fit * 1.15;
+    }
+
+    private static double creatureCountFit(int totalCreatureCount, EncounterBudgets budgets) {
+        if (budgets.targetCreatureCount() == Integer.MAX_VALUE) {
+            double scale = Math.max(2.0, budgets.party().partySize() * 2.0);
+            return 1.0 + Math.min(0.35, totalCreatureCount / scale * 0.10);
+        }
+        return closenessScore(
+                totalCreatureCount,
+                budgets.targetCreatureCount(),
+                Math.max(1.0, budgets.creatureCountTolerance()));
+    }
+
+    private static double selectionWeightFit(SearchState state) {
+        double averageSelectionWeight = state.averageSelectionWeight();
+        return 1.0 + Math.min(0.35, Math.max(0.0, averageSelectionWeight - 1.0) * 0.08);
     }
 
     private static double closenessScore(double actual, double target, double tolerance) {

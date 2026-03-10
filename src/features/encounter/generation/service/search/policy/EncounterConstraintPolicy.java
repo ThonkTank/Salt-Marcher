@@ -14,6 +14,7 @@ import features.encounter.rules.EncounterRules;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.ToDoubleFunction;
 import java.util.Set;
 
@@ -40,11 +41,12 @@ public final class EncounterConstraintPolicy {
                 <= budgets.hardRounds() + relaxation.pacingSlackRounds();
     }
 
-    public static boolean canStillReachCompletion(
+    public static boolean mayStillReachCompletion(
             SearchState state,
             List<CandidateEntry> entries,
             EncounterBudgets budgets,
-            RelaxationProfile relaxation) {
+            RelaxationProfile relaxation,
+            Map<Long, Integer> selectionWeights) {
         if (!passesHardConstraints(state, budgets, relaxation)) {
             return false;
         }
@@ -56,89 +58,43 @@ public final class EncounterConstraintPolicy {
             return false;
         }
 
-        OptimisticAddition[] optimisticXpAdditions = new OptimisticAddition[remainingDistinct];
-        OptimisticAddition[] optimisticActionAdditions = new OptimisticAddition[remainingDistinct];
-        int xpCandidates = 0;
-        int actionCandidates = 0;
-        for (CandidateEntry entry : entries) {
-            if (state.containsCreature(entry.creature().Id)) {
-                continue;
+        SearchState optimistic = state;
+        for (int i = 0; i < remainingDistinct; i++) {
+            SearchState bestNext = null;
+            double bestProgress = Double.NEGATIVE_INFINITY;
+            for (CandidateEntry entry : entries) {
+                if (optimistic.containsCreature(entry.creature().Id)) {
+                    continue;
+                }
+                if (!relaxation.allowRoleRepeat()
+                        && entry.primaryRole() != null
+                        && optimistic.usesPrimaryRole(entry.primaryRole())) {
+                    continue;
+                }
+                int selectionWeight = Math.max(1, selectionWeights.getOrDefault(entry.creature().Id, 1));
+                for (int count = EncounterChoicePolicy.minAllowedCount(entry);
+                     count <= EncounterChoicePolicy.maxAllowedCount(entry);
+                     count++) {
+                    SearchState next = optimistic.add(SearchState.Addition.of(entry, count, selectionWeight));
+                    if (!passesHardConstraints(next, budgets, relaxation)) {
+                        continue;
+                    }
+                    double progress = optimisticProgressScore(optimistic, next, budgets, relaxation);
+                    if (progress > bestProgress) {
+                        bestProgress = progress;
+                        bestNext = next;
+                    }
+                }
             }
-            if (!relaxation.allowRoleRepeat()
-                    && entry.primaryRole() != null
-                    && state.usesPrimaryRole(entry.primaryRole())) {
-                continue;
+            if (bestNext == null) {
+                return false;
             }
-            OptimisticCandidates candidates = bestOptimisticAdditions(state, entry, budgets, relaxation);
-            if (candidates.bestXp() != null) {
-                xpCandidates++;
-                insertTopAddition(optimisticXpAdditions, candidates.bestXp(), true);
-            }
-            if (candidates.bestActions() != null) {
-                actionCandidates++;
-                insertTopAddition(optimisticActionAdditions, candidates.bestActions(), false);
+            optimistic = bestNext;
+            if (isComplete(optimistic, budgets, relaxation)) {
+                return true;
             }
         }
-        if (xpCandidates == 0 && actionCandidates == 0) {
-            return false;
-        }
-
-        int optimisticRawXp = state.rawXp();
-        int optimisticXpCount = state.totalCreatureCount();
-        for (OptimisticAddition addition : optimisticXpAdditions) {
-            if (addition == null) {
-                continue;
-            }
-            optimisticRawXp += addition.rawXp();
-            optimisticXpCount += addition.count();
-        }
-
-        double optimisticActions = state.enemyActionUnits();
-        for (OptimisticAddition addition : optimisticActionAdditions) {
-            if (addition == null) {
-                continue;
-            }
-            optimisticActions += addition.actionUnits();
-        }
-
-        int optimisticAdjustedXp = EncounterScoring.applyMultiplier(optimisticRawXp, optimisticXpCount);
-
-        return optimisticAdjustedXp >= budgets.lowerAdjustedXp()
-                && optimisticActions >= budgets.minEnemyActionUnits();
-    }
-
-    private static void insertTopAddition(
-            OptimisticAddition[] bestAdditions,
-            OptimisticAddition candidate,
-            boolean rankByXp) {
-        for (int i = 0; i < bestAdditions.length; i++) {
-            OptimisticAddition current = bestAdditions[i];
-            if (current != null && !isBetterTopAddition(candidate, current, rankByXp)) {
-                continue;
-            }
-            for (int shift = bestAdditions.length - 1; shift > i; shift--) {
-                bestAdditions[shift] = bestAdditions[shift - 1];
-            }
-            bestAdditions[i] = candidate;
-            return;
-        }
-    }
-
-    private static boolean isBetterTopAddition(
-            OptimisticAddition candidate,
-            OptimisticAddition current,
-            boolean rankByXp) {
-        if (current == null) {
-            return true;
-        }
-        double candidatePrimary = rankByXp ? candidate.rawXp() : candidate.actionUnits();
-        double currentPrimary = rankByXp ? current.rawXp() : current.actionUnits();
-        if (candidatePrimary != currentPrimary) {
-            return candidatePrimary > currentPrimary;
-        }
-        double candidateSecondary = rankByXp ? candidate.actionUnits() : candidate.rawXp();
-        double currentSecondary = rankByXp ? current.actionUnits() : current.rawXp();
-        return candidateSecondary > currentSecondary;
+        return isComplete(optimistic, budgets, relaxation);
     }
 
     public static boolean isComplete(
@@ -254,6 +210,33 @@ public final class EncounterConstraintPolicy {
                 || primaryMetric.applyAsDouble(candidate) > primaryMetric.applyAsDouble(currentBest)
                 || (primaryMetric.applyAsDouble(candidate) == primaryMetric.applyAsDouble(currentBest)
                 && secondaryMetric.applyAsDouble(candidate) > secondaryMetric.applyAsDouble(currentBest));
+    }
+
+    private static double optimisticProgressScore(
+            SearchState current,
+            SearchState next,
+            EncounterBudgets budgets,
+            RelaxationProfile relaxation) {
+        double currentXpDeficit = Math.max(0.0, budgets.lowerAdjustedXp() - current.adjustedXp());
+        double nextXpDeficit = Math.max(0.0, budgets.lowerAdjustedXp() - next.adjustedXp());
+        double currentActionDeficit = Math.max(0.0, budgets.minEnemyActionUnits() - current.enemyActionUnits());
+        double nextActionDeficit = Math.max(0.0, budgets.minEnemyActionUnits() - next.enemyActionUnits());
+        double currentCreatureDeficit = creatureCountDeficit(current.totalCreatureCount(), budgets);
+        double nextCreatureDeficit = creatureCountDeficit(next.totalCreatureCount(), budgets);
+
+        double xpProgress = currentXpDeficit - nextXpDeficit;
+        double actionProgress = currentActionDeficit - nextActionDeficit;
+        double creatureProgress = currentCreatureDeficit - nextCreatureDeficit;
+        double stateScore = features.encounter.generation.service.search.policy.EncounterChoicePolicy
+                .scoreState(next, budgets, relaxation);
+        return xpProgress * 1.2 + actionProgress * 1.1 + creatureProgress * 0.35 + stateScore;
+    }
+
+    private static double creatureCountDeficit(int totalCreatureCount, EncounterBudgets budgets) {
+        if (budgets.targetCreatureCount() == Integer.MAX_VALUE) {
+            return 0.0;
+        }
+        return Math.max(0.0, budgets.targetCreatureCount() - totalCreatureCount);
     }
 
     public static double enemyActionContribution(CandidateEntry entry, int count) {

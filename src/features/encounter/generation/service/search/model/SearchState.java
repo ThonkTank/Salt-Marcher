@@ -30,6 +30,7 @@ public final class SearchState {
     private final int enemyTurnSlots;
     private final int complexActionCount;
     private final double totalSurvivabilityActions;
+    private final int selectionWeightTotal;
     private final Set<Long> usedCreatureIds;
     private final Set<EncounterFunctionRole> usedPrimaryRoles;
     private List<StateEntry> entriesView;
@@ -48,6 +49,7 @@ public final class SearchState {
         enemyTurnSlots = 0;
         complexActionCount = 0;
         totalSurvivabilityActions = 0.0;
+        selectionWeightTotal = 0;
         usedCreatureIds = Set.of();
         usedPrimaryRoles = Set.of();
         entriesView = List.of();
@@ -75,6 +77,7 @@ public final class SearchState {
         this.enemyTurnSlots = previous.enemyTurnSlots + addition.enemyTurnSlotsDelta();
         this.complexActionCount = previous.complexActionCount + addition.complexActionDelta();
         this.totalSurvivabilityActions = previous.totalSurvivabilityActions + addition.survivabilityActionsDelta();
+        this.selectionWeightTotal = previous.selectionWeightTotal + addition.selectionWeight();
         this.usedCreatureIds = appendCreatureId(previous.usedCreatureIds, addition.entry().creature().Id);
         this.usedPrimaryRoles = appendPrimaryRole(previous.usedPrimaryRoles, addition.entry().primaryRole());
         this.entriesView = null;
@@ -137,6 +140,14 @@ public final class SearchState {
 
     public double totalSurvivabilityActions() {
         return totalSurvivabilityActions;
+    }
+
+    public int selectionWeightTotal() {
+        return selectionWeightTotal;
+    }
+
+    public double averageSelectionWeight() {
+        return distinctStatBlocks == 0 ? 1.0 : selectionWeightTotal / (double) distinctStatBlocks;
     }
 
     public double estimatedRounds(double partyActionsPerRound) {
@@ -208,9 +219,14 @@ public final class SearchState {
             int enemyTurnSlotsDelta,
             int complexActionDelta,
             double survivabilityActionsDelta,
-            boolean hasHealingCapability
+            boolean hasHealingCapability,
+            int selectionWeight
     ) {
         public static Addition of(CandidateEntry entry, int count) {
+            return of(entry, count, 1);
+        }
+
+        public static Addition of(CandidateEntry entry, int count, int selectionWeight) {
             return new Addition(
                     entry,
                     count,
@@ -219,7 +235,8 @@ public final class SearchState {
                     EncounterMobSlotRules.mobSlotCount(count),
                     EncounterConstraintPolicy.encounterComplexActionContribution(entry, count),
                     effectiveSurvivabilityActions(entry, count),
-                    EncounterConstraintPolicy.hasHealingCapability(entry));
+                    EncounterConstraintPolicy.hasHealingCapability(entry),
+                    Math.max(1, selectionWeight));
         }
 
         private static double effectiveSurvivabilityActions(CandidateEntry entry, int count) {

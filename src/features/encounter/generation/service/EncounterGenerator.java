@@ -126,7 +126,7 @@ public final class EncounterGenerator {
      *
      * @param difficultyBand  difficulty band, {@code null} for Auto
      * @param amountValue     1.0..5.0, negative for Auto (few creatures -> many creatures)
-     * @param balanceLevel    1..5, negative for Auto (ends -> middle XP preference)
+     * @param balanceLevel    1..5, negative for Auto (lower band edge -> upper band edge)
      */
     public record EncounterRequest(
             int partySize,
