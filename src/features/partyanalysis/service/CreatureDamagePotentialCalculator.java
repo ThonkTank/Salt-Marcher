@@ -28,23 +28,22 @@ public final class CreatureDamagePotentialCalculator {
         List<ParsedActionProfile> rows = copy(actions);
         double lifetimeRounds = Math.max(1.0, survivabilityActions / Math.max(1.0, party.actionsPerRound()));
         double rounds = Math.max(1.0, Math.ceil(lifetimeRounds));
-        OptionSet options = buildOptions(rows, legendaryActionBudget, rounds, party);
+        List<OffensiveOption> options = buildOptions(rows, legendaryActionBudget, rounds, party);
 
         EnumMap<Channel, Double> remainingSlots = initialChannelSlots(rounds, legendaryActionBudget);
-        double spellDamage = allocateSpellDamage(options.spellOptions(), remainingSlots);
-        double actionDamage = allocateDamage(options.offensiveOptions(), Channel.ACTION, remainingSlots);
-        double bonusDamage = allocateDamage(options.offensiveOptions(), Channel.BONUS_ACTION, remainingSlots);
-        double reactionDamage = allocateDamage(options.offensiveOptions(), Channel.REACTION, remainingSlots);
-        double legendaryDamage = allocateDamage(options.offensiveOptions(), Channel.LEGENDARY, remainingSlots);
-        double passiveDamage = allocatePassiveDamage(options.offensiveOptions(), rounds);
-        double totalExpectedDamage = spellDamage + actionDamage + bonusDamage + reactionDamage + legendaryDamage + passiveDamage;
+        double actionDamage = allocateDamage(options, Channel.ACTION, remainingSlots);
+        double bonusDamage = allocateDamage(options, Channel.BONUS_ACTION, remainingSlots);
+        double reactionDamage = allocateDamage(options, Channel.REACTION, remainingSlots);
+        double legendaryDamage = allocateDamage(options, Channel.LEGENDARY, remainingSlots);
+        double passiveDamage = allocatePassiveDamage(options, rounds);
+        double totalExpectedDamage = actionDamage + bonusDamage + reactionDamage + legendaryDamage + passiveDamage;
         double normalizedDamagePotential = totalExpectedDamage / Math.max(1.0, party.partyHpPool());
 
         double actionUnitsPerRound = 1.0;
-        if (hasChannel(options.offensiveOptions(), Channel.BONUS_ACTION) || hasChannel(options.spellOptions(), Channel.BONUS_ACTION)) {
+        if (hasChannel(options, Channel.BONUS_ACTION)) {
             actionUnitsPerRound += 1.0;
         }
-        if (hasChannel(options.offensiveOptions(), Channel.REACTION) || hasChannel(options.spellOptions(), Channel.REACTION)) {
+        if (hasChannel(options, Channel.REACTION)) {
             actionUnitsPerRound += REACTION_ACTION_WEIGHT;
         }
         actionUnitsPerRound += legendaryActionUnits(options, legendaryActionBudget);
@@ -52,50 +51,47 @@ public final class CreatureDamagePotentialCalculator {
         return new DamagePotentialSummary(totalExpectedDamage, normalizedDamagePotential, actionUnitsPerRound);
     }
 
-    private static OptionSet buildOptions(
+    private static List<OffensiveOption> buildOptions(
             List<ParsedActionProfile> actions,
             int legendaryActionBudget,
             double rounds,
             EncounterPartyBenchmarks party) {
-        List<OffensiveOption> offensiveOptions = new ArrayList<>();
-        List<SpellOption> spellOptions = new ArrayList<>();
-        List<SpellOption> preparedSpellOptions = new ArrayList<>();
+        List<OffensiveOption> options = new ArrayList<>();
+        List<PreparedSpellOption> preparedSpellOptions = new ArrayList<>();
         for (ParsedActionProfile action : actions) {
             preparedSpellOptions.addAll(decodeStoredSpellOptions(action.spellOptionsProfile()));
         }
         for (ParsedActionProfile action : actions) {
-            ActionOptions actionOptions = toActionOptions(action, actions, preparedSpellOptions, legendaryActionBudget, rounds, party);
-            offensiveOptions.addAll(actionOptions.offensiveOptions());
-            spellOptions.addAll(actionOptions.spellOptions());
+            options.addAll(toOffensiveOptions(action, actions, preparedSpellOptions, legendaryActionBudget, rounds, party));
         }
-        return new OptionSet(offensiveOptions, spellOptions);
+        return options;
     }
 
-    private static ActionOptions toActionOptions(
+    private static List<OffensiveOption> toOffensiveOptions(
             ParsedActionProfile action,
             List<ParsedActionProfile> allActions,
-            List<SpellOption> preparedSpellOptions,
+            List<PreparedSpellOption> preparedSpellOptions,
             int legendaryActionBudget,
             double rounds,
             EncounterPartyBenchmarks party) {
         Channel channel = channelOf(action.actionChannel());
         if (channel == null) {
-            return ActionOptions.EMPTY;
+            return List.of();
         }
 
-        List<SpellOption> spellOptions = spellOptionsForAction(action, channel, preparedSpellOptions, rounds);
+        List<OffensiveOption> spellOptions = spellOptionsForAction(action, channel, preparedSpellOptions, rounds);
         if (!spellOptions.isEmpty()) {
-            return new ActionOptions(List.of(), spellOptions);
+            return spellOptions;
         }
 
         double damagePerUse = expectedDamagePerUse(action, party);
         if (hasText(action.multiattackProfile())) {
             damagePerUse = estimateMultiattackDamage(action.multiattackProfile(), allActions, party);
         } else if ("trait".equals(action.actionType()) && action.recurringDamageTrait() == 0) {
-            return ActionOptions.EMPTY;
+            return List.of();
         }
         if (damagePerUse <= 0.0) {
-            return ActionOptions.EMPTY;
+            return List.of();
         }
 
         double maxUses = switch (channel) {
@@ -111,27 +107,32 @@ public final class CreatureDamagePotentialCalculator {
             maxUses = Math.min(maxUses, 1.0 + Math.max(0.0, rounds - 1.0) * expectedRefreshesPerRound(action));
         }
         if (maxUses <= 0.0) {
-            return ActionOptions.EMPTY;
+            return List.of();
         }
         int slotCost = channel == Channel.LEGENDARY ? Math.max(1, action.legendaryActionCost()) : 1;
-        return new ActionOptions(List.of(new OffensiveOption(channel, damagePerUse, maxUses, slotCost)), List.of());
+        return List.of(new OffensiveOption(channel, damagePerUse, maxUses, slotCost, null));
     }
 
-    private static List<SpellOption> spellOptionsForAction(
+    private static List<OffensiveOption> spellOptionsForAction(
             ParsedActionProfile action,
             Channel channel,
-            List<SpellOption> preparedSpellOptions,
+            List<PreparedSpellOption> preparedSpellOptions,
             double rounds) {
         String lowerName = lower(action.name());
         if ("spellcasting".equals(lowerName) || "innate spellcasting".equals(lowerName)) {
-            List<SpellOption> options = new ArrayList<>();
-            for (SpellOption spellOption : decodeStoredSpellOptions(action.spellOptionsProfile())) {
+            List<OffensiveOption> options = new ArrayList<>();
+            for (PreparedSpellOption spellOption : decodeStoredSpellOptions(action.spellOptionsProfile())) {
                 Channel spellChannel = channelOfSpell(spellOption.castingChannel());
                 if (spellChannel == null) {
                     continue;
                 }
                 double maxUses = Math.min(rounds, spellOption.maxUses());
-                options.add(spellOption.withChannelAndMaxUses(spellChannel, maxUses));
+                options.add(new OffensiveOption(
+                        spellChannel,
+                        spellOption.expectedDamagePerUse(),
+                        maxUses,
+                        1,
+                        spellOption.poolKey()));
             }
             return options;
         }
@@ -139,7 +140,12 @@ public final class CreatureDamagePotentialCalculator {
             int levelCap = action.spellLevelCap() == null ? -1 : action.spellLevelCap();
             return preparedSpellOptions.stream()
                     .filter(option -> levelCap < 0 || option.spellLevel() <= levelCap)
-                    .map(option -> option.withChannelAndCost(channel, Math.max(1, action.legendaryActionCost())))
+                    .map(option -> new OffensiveOption(
+                            channel,
+                            option.expectedDamagePerUse(),
+                            option.maxUses(),
+                            Math.max(1, action.legendaryActionCost()),
+                            option.poolKey()))
                     .toList();
         }
         return List.of();
@@ -221,44 +227,10 @@ public final class CreatureDamagePotentialCalculator {
         return remainingSlots;
     }
 
-    private static double allocateSpellDamage(List<SpellOption> spellOptions, EnumMap<Channel, Double> remainingSlots) {
-        if (spellOptions.isEmpty()) {
-            return 0.0;
-        }
-        double totalDamage = 0.0;
-        Map<String, Double> remainingByPool = new HashMap<>();
-        List<SpellOption> candidates = spellOptions.stream()
-                .sorted(Comparator.comparingDouble(SpellOption::damagePerSlot).reversed())
-                .toList();
-        for (SpellOption option : candidates) {
-            Double remainingChannel = remainingSlots.get(option.channel());
-            if (remainingChannel == null || remainingChannel <= 0.0) {
-                continue;
-            }
-            double remainingPool = remainingPool(option, remainingByPool);
-            double uses = Math.min(remainingChannel / option.slotCost(), Math.min(option.maxUses(), remainingPool));
-            if (uses <= 0.0) {
-                continue;
-            }
-            totalDamage += uses * option.expectedDamagePerUse();
-            remainingSlots.put(option.channel(), remainingChannel - (uses * option.slotCost()));
-            if (hasText(option.poolKey())) {
-                remainingByPool.put(option.poolKey(), remainingPool - uses);
-            }
-        }
-        return totalDamage;
-    }
-
-    private static double remainingPool(SpellOption option, Map<String, Double> remainingByPool) {
-        if (!hasText(option.poolKey())) {
-            return option.maxUses();
-        }
-        return remainingByPool.computeIfAbsent(option.poolKey(), ignored -> option.maxUses());
-    }
-
     private static double allocateDamage(List<OffensiveOption> options, Channel channel, EnumMap<Channel, Double> remainingSlots) {
         double remainingChannelSlots = Math.max(0.0, remainingSlots.getOrDefault(channel, 0.0));
         double totalDamage = 0.0;
+        Map<String, Double> remainingByPool = new HashMap<>();
         List<OffensiveOption> candidates = options.stream()
                 .filter(option -> option.channel() == channel)
                 .sorted(Comparator.comparingDouble(OffensiveOption::damagePerSlot).reversed())
@@ -267,15 +239,26 @@ public final class CreatureDamagePotentialCalculator {
             if (remainingChannelSlots <= 0.0) {
                 break;
             }
-            double uses = Math.min(option.maxUses(), remainingChannelSlots / option.slotCost());
+            double remainingPool = remainingPool(option, remainingByPool);
+            double uses = Math.min(option.maxUses(), Math.min(remainingChannelSlots / option.slotCost(), remainingPool));
             if (uses <= 0.0) {
                 continue;
             }
             totalDamage += uses * option.damagePerUse();
             remainingChannelSlots -= uses * option.slotCost();
+            if (hasText(option.poolKey())) {
+                remainingByPool.put(option.poolKey(), remainingPool - uses);
+            }
         }
         remainingSlots.put(channel, remainingChannelSlots);
         return totalDamage;
+    }
+
+    private static double remainingPool(OffensiveOption option, Map<String, Double> remainingByPool) {
+        if (!hasText(option.poolKey())) {
+            return option.maxUses();
+        }
+        return remainingByPool.computeIfAbsent(option.poolKey(), ignored -> option.maxUses());
     }
 
     private static double allocatePassiveDamage(List<OffensiveOption> options, double rounds) {
@@ -297,12 +280,15 @@ public final class CreatureDamagePotentialCalculator {
         return false;
     }
 
-    private static double legendaryActionUnits(OptionSet options, int legendaryActionBudget) {
+    private static double legendaryActionUnits(List<OffensiveOption> options, int legendaryActionBudget) {
         if (legendaryActionBudget <= 0) {
             return 0.0;
         }
         int minCost = Integer.MAX_VALUE;
-        for (ChannelCarrier option : options.legendaryOptions()) {
+        for (OffensiveOption option : options) {
+            if (option.channel() != Channel.LEGENDARY) {
+                continue;
+            }
             if (option.slotCost() > 0) {
                 minCost = Math.min(minCost, option.slotCost());
             }
@@ -323,21 +309,19 @@ public final class CreatureDamagePotentialCalculator {
         return rows;
     }
 
-    private static List<SpellOption> decodeStoredSpellOptions(String profile) {
+    private static List<PreparedSpellOption> decodeStoredSpellOptions(String profile) {
         List<ActionProfileCodec.EncodedSpellOption> encoded = ActionProfileCodec.decodeSpellOptions(profile);
         if (encoded.isEmpty()) {
             return List.of();
         }
-        List<SpellOption> options = new ArrayList<>();
+        List<PreparedSpellOption> options = new ArrayList<>();
         for (ActionProfileCodec.EncodedSpellOption option : encoded) {
-            options.add(new SpellOption(
+            options.add(new PreparedSpellOption(
                     option.poolKey(),
                     option.spellLevel(),
                     option.castingChannel(),
                     option.expectedDamagePerUse(),
-                    option.maxUses() == null ? Double.POSITIVE_INFINITY : option.maxUses(),
-                    Channel.ACTION,
-                    1));
+                    option.maxUses() == null ? Double.POSITIVE_INFINITY : option.maxUses()));
         }
         return options;
     }
@@ -413,66 +397,26 @@ public final class CreatureDamagePotentialCalculator {
             Channel channel,
             double damagePerUse,
             double maxUses,
-            int slotCost
+            int slotCost,
+            String poolKey
     ) implements ChannelCarrier {
         double damagePerSlot() {
             return damagePerUse / Math.max(1, slotCost);
         }
     }
 
-    private record SpellOption(
+    private record PreparedSpellOption(
             String poolKey,
             int spellLevel,
             String castingChannel,
             double expectedDamagePerUse,
-            double maxUses,
-            Channel channel,
-            int slotCost
-    ) implements ChannelCarrier {
-        SpellOption withChannelAndMaxUses(Channel channel, double maxUses) {
-            return new SpellOption(poolKey, spellLevel, castingChannel, expectedDamagePerUse, maxUses, channel, 1);
-        }
-
-        SpellOption withChannelAndCost(Channel channel, int slotCost) {
-            return new SpellOption(poolKey, spellLevel, castingChannel, expectedDamagePerUse, maxUses, channel, slotCost);
-        }
-
-        double damagePerSlot() {
-            return expectedDamagePerUse / Math.max(1, slotCost);
-        }
-    }
+            double maxUses
+    ) {}
 
     private interface ChannelCarrier {
         Channel channel();
 
         int slotCost();
-    }
-
-    private record ActionOptions(
-            List<OffensiveOption> offensiveOptions,
-            List<SpellOption> spellOptions
-    ) {
-        private static final ActionOptions EMPTY = new ActionOptions(List.of(), List.of());
-    }
-
-    private record OptionSet(
-            List<OffensiveOption> offensiveOptions,
-            List<SpellOption> spellOptions
-    ) {
-        List<ChannelCarrier> legendaryOptions() {
-            List<ChannelCarrier> options = new ArrayList<>();
-            for (OffensiveOption option : offensiveOptions) {
-                if (option.channel() == Channel.LEGENDARY) {
-                    options.add(option);
-                }
-            }
-            for (SpellOption option : spellOptions) {
-                if (option.channel() == Channel.LEGENDARY) {
-                    options.add(option);
-                }
-            }
-            return options;
-        }
     }
 
     private enum Channel {

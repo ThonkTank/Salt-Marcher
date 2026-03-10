@@ -113,6 +113,9 @@ public final class CreatureStaticAnalysisService {
                             .toList()));
             actionRows.add(draft.toRow());
             accumulator.add(draft.signals(), draft.action().actionType());
+            for (SpellcastingActionInterpreter.ResolvedSpellOption spellOption : draft.spellOptions()) {
+                accumulator.addResolvedSpellOption(draft.action(), spellOption);
+            }
         }
         return new AnalysisSnapshot(actionRows, accumulator.toStaticRow(creatureId));
     }
@@ -584,6 +587,104 @@ public final class CreatureStaticAnalysisService {
             skirmisherRoleScore += signals.skirmisherRoleScore()
                     * (signals.hasMobility() > 0 && (signals.isMelee() > 0 || signals.isMixedMeleeRanged() > 0) ? offensiveWeight * 1.2 : offensiveWeight);
             supportRoleScore += signals.supportRoleScore() * supportWeight;
+        }
+
+        void addResolvedSpellOption(
+                ActionRow sourceAction,
+                SpellcastingActionInterpreter.ResolvedSpellOption spellOption) {
+            if (sourceAction == null || spellOption == null || spellOption.expectedDamagePerUse() <= 0.0) {
+                return;
+            }
+
+            String effectiveActionType = effectiveSpellActionType(sourceAction, spellOption);
+            double expectedUses = expectedUsesFor(effectiveActionType);
+            double offensiveWeight = offensiveSpellWeight(effectiveActionType);
+            if (expectedUses <= 0.0 || offensiveWeight <= 0.0) {
+                return;
+            }
+
+            markActionAvailability(effectiveActionType, sourceAction);
+            offensiveActionCount++;
+
+            boolean aoe = isSpellAoe(spellOption.targetProfile());
+            double weightedDamage = spellOption.expectedDamagePerUse() * expectedUses;
+            double spellcastingUtility = 1.2 * expectedUses;
+
+            totalComplexityPoints += 1;
+            if (spellOption.spellLevel() >= 3 || aoe) {
+                complexFeatureCount++;
+            }
+
+            rangedSignalScore += offensiveWeight;
+            rangedIdentityScore += offensiveWeight;
+            spellcastingSignalScore += 1.0;
+            if (aoe) {
+                aoeSignalScore += offensiveWeight;
+            }
+
+            artilleryRoleScore += weightedDamage * (aoe ? 0.78 : 0.90) * offensiveWeight;
+            bruteRoleScore += weightedDamage * 0.15 * offensiveWeight;
+            soldierRoleScore += weightedDamage * 0.12 * offensiveWeight;
+            controllerRoleScore += (weightedDamage * (aoe ? 0.42 : 0.05) + spellcastingUtility) * offensiveWeight;
+            leaderRoleScore += spellcastingUtility * 0.20 * offensiveWeight;
+            supportRoleScore += spellcastingUtility * 0.25 * offensiveWeight;
+        }
+
+        private void markActionAvailability(String actionType, ActionRow sourceAction) {
+            if ("action".equals(actionType)) {
+                hasStandardAction = true;
+                return;
+            }
+            if ("bonus_action".equals(actionType)) {
+                hasBonusAction = true;
+                return;
+            }
+            if ("reaction".equals(actionType)) {
+                hasReaction = 1;
+                reactionSignalScore += 1.0;
+                return;
+            }
+            if ("legendary_action".equals(actionType)) {
+                lowestLegendaryActionCost = Math.min(
+                        lowestLegendaryActionCost,
+                        Math.max(1, ActionEffectivenessEvaluator.parse(
+                                sourceAction,
+                                ActionFunctionTagger.tag(sourceAction)).legendaryActionCost()));
+            }
+        }
+
+        private String effectiveSpellActionType(
+                ActionRow sourceAction,
+                SpellcastingActionInterpreter.ResolvedSpellOption spellOption) {
+            String lowerName = sourceAction.name() == null ? "" : sourceAction.name().toLowerCase(Locale.ROOT);
+            if ("cast spell".equals(lowerName)) {
+                return sourceAction.actionType();
+            }
+            return switch (spellOption.castingChannel()) {
+                case "bonus_action" -> "bonus_action";
+                case "reaction" -> "reaction";
+                default -> "action";
+            };
+        }
+
+        private double expectedUsesFor(String actionType) {
+            return switch (actionType) {
+                case "bonus_action", "reaction" -> 0.6;
+                case "legendary_action", "action" -> 1.0;
+                default -> 0.0;
+            };
+        }
+
+        private double offensiveSpellWeight(String actionType) {
+            return switch (actionType) {
+                case "reaction" -> 0.55;
+                case "legendary_action", "action", "bonus_action" -> 1.0;
+                default -> 0.0;
+            };
+        }
+
+        private boolean isSpellAoe(String targetProfile) {
+            return "small_aoe".equals(targetProfile) || "large_aoe".equals(targetProfile);
         }
 
         CreatureStaticRow toStaticRow(long creatureId) {

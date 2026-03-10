@@ -1,7 +1,7 @@
 package features.partyanalysis.model;
 
 public final class AnalysisModelVersion {
-    private static final int CURRENT = 4;
+    private static final int CURRENT = 5;
 
     private AnalysisModelVersion() {
         throw new AssertionError("No instances");
