@@ -7,6 +7,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Static utility class combining two concerns:
@@ -52,12 +53,13 @@ public final class ThemeColors {
 
     public static void applyDifficultyStyle(Label label, String difficulty) {
         label.getStyleClass().removeAll(DIFFICULTY_STYLES);
-        String cls = switch (difficulty != null ? difficulty : "") {
-            case "Easy"   -> "difficulty-easy";
-            case "Medium" -> "difficulty-medium";
-            case "Hard"   -> "difficulty-hard";
-            case "Deadly" -> "difficulty-deadly";
-            default       -> "text-muted";
+        String normalized = difficulty == null ? "" : difficulty.trim().toUpperCase(Locale.ROOT);
+        String cls = switch (normalized) {
+            case "EASY" -> "difficulty-easy";
+            case "MEDIUM" -> "difficulty-medium";
+            case "HARD" -> "difficulty-hard";
+            case "DEADLY" -> "difficulty-deadly";
+            default -> "text-muted";
         };
         label.getStyleClass().add(cls);
     }

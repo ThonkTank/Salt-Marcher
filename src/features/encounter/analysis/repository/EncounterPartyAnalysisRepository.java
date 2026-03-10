@@ -12,13 +12,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public final class EncounterPartyAnalysisRepository {
+    private static final int IN_CLAUSE_BATCH_SIZE = 500;
 
     private EncounterPartyAnalysisRepository() {
         throw new AssertionError("No instances");
@@ -138,32 +143,34 @@ public final class EncounterPartyAnalysisRepository {
     }
 
     public static Map<Long, MonsterRole> loadDynamicRolesForActiveRun(Connection conn) throws SQLException {
+        String sql = "SELECT active_run_id FROM encounter_party_cache_state WHERE id = 1";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (!rs.next()) {
+                return Map.of();
+            }
+            Number runIdRaw = (Number) rs.getObject("active_run_id");
+            if (runIdRaw == null) {
+                return Map.of();
+            }
+            return loadDynamicRolesForRun(conn, runIdRaw.longValue());
+        }
+    }
+
+    public static Map<Long, MonsterRole> loadDynamicRolesForRun(Connection conn, long runId) throws SQLException {
         Map<Long, MonsterRole> roles = new HashMap<>();
         String sql = "SELECT cpa.creature_id, cpa.dynamic_role "
                 + "FROM creature_party_analysis cpa "
-                + "JOIN encounter_party_cache_state s ON s.id = 1 "
-                + "WHERE s.active_run_id IS NOT NULL AND cpa.run_id = s.active_run_id";
-        try (PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                roles.put(rs.getLong("creature_id"), MonsterRoleParser.parseOrBrute(rs.getString("dynamic_role")));
+                + "WHERE cpa.run_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, runId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    roles.put(rs.getLong("creature_id"), MonsterRoleParser.parseOrBrute(rs.getString("dynamic_role")));
+                }
             }
         }
         return roles;
-    }
-
-    public static MonsterRole loadDynamicRoleForCreature(Connection conn, long creatureId) throws SQLException {
-        String sql = "SELECT cpa.dynamic_role "
-                + "FROM creature_party_analysis cpa "
-                + "JOIN encounter_party_cache_state s ON s.id = 1 "
-                + "WHERE s.active_run_id IS NOT NULL AND cpa.run_id = s.active_run_id AND cpa.creature_id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, creatureId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) return null;
-                return MonsterRoleParser.parseOrBrute(rs.getString("dynamic_role"));
-            }
-        }
     }
 
     public static Map<Long, CreatureBaseRow> loadAllCreatureBaseRows(Connection conn) throws SQLException {
@@ -433,21 +440,111 @@ public final class EncounterPartyAnalysisRepository {
     }
 
     public static Map<Long, CreatureRoleProfile> loadRoleProfilesForActiveRun(Connection conn) throws SQLException {
+        String sql = "SELECT active_run_id FROM encounter_party_cache_state WHERE id = 1";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (!rs.next()) {
+                return Map.of();
+            }
+            Number runIdRaw = (Number) rs.getObject("active_run_id");
+            if (runIdRaw == null) {
+                return Map.of();
+            }
+            return loadRoleProfilesForRun(conn, runIdRaw.longValue());
+        }
+    }
+
+    public static Map<Long, CreatureRoleProfile> loadRoleProfilesForRun(Connection conn, long runId) throws SQLException {
         Map<Long, CreatureRoleProfile> profiles = new HashMap<>();
         String sql = "SELECT cpa.creature_id, cpa.weight_class, cpa.survivability_actions, cpa.offense_pressure, "
                 + "cpa.expected_turn_share, cpa.gm_complexity_load, cpa.fit_flags, "
                 + "csa.primary_function_role, csa.secondary_function_role, csa.capability_tags, "
                 + "csa.base_action_units_per_round "
                 + "FROM creature_party_analysis cpa "
-                + "JOIN encounter_party_cache_state s ON s.id = 1 "
                 + "JOIN creature_static_analysis csa ON csa.creature_id = cpa.creature_id "
-                + "WHERE s.active_run_id IS NOT NULL AND cpa.run_id = s.active_run_id";
-        try (PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                long creatureId = rs.getLong("creature_id");
-                profiles.put(creatureId, new CreatureRoleProfile(
-                        creatureId,
+                + "WHERE cpa.run_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, runId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long creatureId = rs.getLong("creature_id");
+                    profiles.put(creatureId, new CreatureRoleProfile(
+                            creatureId,
+                            parseEnumOrNull(rs.getString("weight_class"), EncounterWeightClass.class),
+                            parseEnumOrNull(rs.getString("primary_function_role"), EncounterFunctionRole.class),
+                            parseEnumOrNull(rs.getString("secondary_function_role"), EncounterFunctionRole.class),
+                            parseCapabilityTags(rs.getString("capability_tags")),
+                            rs.getDouble("survivability_actions"),
+                            rs.getDouble("base_action_units_per_round"),
+                            rs.getDouble("offense_pressure"),
+                            rs.getDouble("expected_turn_share"),
+                            rs.getDouble("gm_complexity_load"),
+                            parseFlags(rs.getString("fit_flags"))));
+                }
+            }
+        }
+        return profiles;
+    }
+
+    public static Map<Long, CreatureRoleProfile> loadRoleProfilesForRun(
+            Connection conn,
+            long runId,
+            Set<Long> creatureIds) throws SQLException {
+        List<Long> filteredIds = normalizeCreatureIds(creatureIds);
+        if (filteredIds.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, CreatureRoleProfile> profiles = new HashMap<>(filteredIds.size());
+        for (List<Long> batch : partitionIds(filteredIds)) {
+            String sql = "SELECT cpa.creature_id, cpa.weight_class, cpa.survivability_actions, cpa.offense_pressure, "
+                    + "cpa.expected_turn_share, cpa.gm_complexity_load, cpa.fit_flags, "
+                    + "csa.primary_function_role, csa.secondary_function_role, csa.capability_tags, "
+                    + "csa.base_action_units_per_round "
+                    + "FROM creature_party_analysis cpa "
+                    + "JOIN creature_static_analysis csa ON csa.creature_id = cpa.creature_id "
+                    + "WHERE cpa.run_id = ? AND cpa.creature_id IN (" + inClausePlaceholders(batch.size()) + ")";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setLong(1, runId);
+                bindCreatureIds(ps, batch, 2);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        long creatureId = rs.getLong("creature_id");
+                        profiles.put(creatureId, new CreatureRoleProfile(
+                                creatureId,
+                                parseEnumOrNull(rs.getString("weight_class"), EncounterWeightClass.class),
+                                parseEnumOrNull(rs.getString("primary_function_role"), EncounterFunctionRole.class),
+                                parseEnumOrNull(rs.getString("secondary_function_role"), EncounterFunctionRole.class),
+                                parseCapabilityTags(rs.getString("capability_tags")),
+                                rs.getDouble("survivability_actions"),
+                                rs.getDouble("base_action_units_per_round"),
+                                rs.getDouble("offense_pressure"),
+                                rs.getDouble("expected_turn_share"),
+                                rs.getDouble("gm_complexity_load"),
+                                parseFlags(rs.getString("fit_flags"))));
+                    }
+                }
+            }
+        }
+        return profiles;
+    }
+
+    public static CreatureRoleProfile loadRoleProfileForCreature(Connection conn, long creatureId) throws SQLException {
+        String sql = "SELECT cpa.creature_id, cpa.weight_class, csa.primary_function_role, csa.secondary_function_role, "
+                + "csa.capability_tags, cpa.survivability_actions, csa.base_action_units_per_round, cpa.offense_pressure, "
+                + "cpa.expected_turn_share, cpa.gm_complexity_load, cpa.fit_flags "
+                + "FROM creature_party_analysis cpa "
+                + "JOIN creature_static_analysis csa ON csa.creature_id = cpa.creature_id "
+                + "JOIN encounter_party_cache_state s ON s.id = 1 "
+                + "WHERE s.active_run_id IS NOT NULL AND cpa.run_id = s.active_run_id AND cpa.creature_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, creatureId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                return new CreatureRoleProfile(
+                        rs.getLong("creature_id"),
                         parseEnumOrNull(rs.getString("weight_class"), EncounterWeightClass.class),
                         parseEnumOrNull(rs.getString("primary_function_role"), EncounterFunctionRole.class),
                         parseEnumOrNull(rs.getString("secondary_function_role"), EncounterFunctionRole.class),
@@ -457,10 +554,9 @@ public final class EncounterPartyAnalysisRepository {
                         rs.getDouble("offense_pressure"),
                         rs.getDouble("expected_turn_share"),
                         rs.getDouble("gm_complexity_load"),
-                        parseFlags(rs.getString("fit_flags"))));
+                        parseFlags(rs.getString("fit_flags")));
             }
         }
-        return profiles;
     }
 
     public static Map<Long, ActionRow> loadAllActionRows(Connection conn) throws SQLException {
@@ -503,6 +599,40 @@ public final class EncounterPartyAnalysisRepository {
 
     private static String enumName(Enum<?> value) {
         return value == null ? null : value.name();
+    }
+
+    private static List<Long> normalizeCreatureIds(Set<Long> creatureIds) {
+        if (creatureIds == null || creatureIds.isEmpty()) {
+            return List.of();
+        }
+        LinkedHashSet<Long> filteredIds = new LinkedHashSet<>();
+        for (Long creatureId : creatureIds) {
+            if (creatureId != null) {
+                filteredIds.add(creatureId);
+            }
+        }
+        return filteredIds.isEmpty() ? List.of() : List.copyOf(filteredIds);
+    }
+
+    private static List<List<Long>> partitionIds(List<Long> creatureIds) {
+        if (creatureIds.isEmpty()) {
+            return List.of();
+        }
+        List<List<Long>> batches = new ArrayList<>((creatureIds.size() + IN_CLAUSE_BATCH_SIZE - 1) / IN_CLAUSE_BATCH_SIZE);
+        for (int index = 0; index < creatureIds.size(); index += IN_CLAUSE_BATCH_SIZE) {
+            batches.add(creatureIds.subList(index, Math.min(creatureIds.size(), index + IN_CLAUSE_BATCH_SIZE)));
+        }
+        return batches;
+    }
+
+    private static String inClausePlaceholders(int count) {
+        return String.join(",", Collections.nCopies(count, "?"));
+    }
+
+    private static void bindCreatureIds(PreparedStatement ps, List<Long> creatureIds, int startIndex) throws SQLException {
+        for (int index = 0; index < creatureIds.size(); index++) {
+            ps.setLong(startIndex + index, creatureIds.get(index));
+        }
     }
 
     private static <E extends Enum<E>> E parseEnumOrNull(String raw, Class<E> enumType) {

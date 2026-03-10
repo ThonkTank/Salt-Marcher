@@ -30,6 +30,7 @@ import features.encounter.model.EncounterCreatureSnapshot;
 import features.encounter.application.EncounterApplicationService;
 import features.encounter.generation.service.EncounterGenerator;
 import features.encounter.model.EncounterCreatureSnapshotMapper;
+import features.encounter.ui.EncounterDifficultyUiText;
 import features.gamerules.service.XpCalculator;
 import ui.components.DifficultyMeter;
 import ui.components.ThemeColors;
@@ -183,7 +184,7 @@ public class EncounterRosterPane extends VBox {
         notifyRosterChanged();
         if (enc.difficulty() != null) {
             currentDifficulty = enc.difficulty();
-            difficultyLabel.setText(enc.difficulty());
+            difficultyLabel.setText(EncounterDifficultyUiText.formatDifficulty(enc.difficulty()));
             ThemeColors.applyDifficultyStyle(difficultyLabel, enc.difficulty());
         }
         if (enc.shapeLabel() != null) {
@@ -338,7 +339,8 @@ public class EncounterRosterPane extends VBox {
             levelLabel.setText(partySize > 0 ? "Party: " + partySize + ", Lv " + avgLevel : "");
             return;
         }
-        difficultyMeter.update(ds.easyTh(), ds.mediumTh(), ds.hardTh(), ds.deadlyTh(), ds.adjXp(), ds.difficulty());
+        String difficultyText = EncounterDifficultyUiText.formatDifficulty(ds.difficulty());
+        difficultyMeter.update(ds.easyTh(), ds.mediumTh(), ds.hardTh(), ds.deadlyTh(), ds.adjXp(), difficultyText);
         easyThreshLabel.setText("Easy " + ds.easyTh());
         mediumThreshLabel.setText("Med. " + ds.mediumTh());
         hardThreshLabel.setText("Hard " + ds.hardTh());
@@ -346,7 +348,7 @@ public class EncounterRosterPane extends VBox {
         adjXpLabel.setText("Adj. XP: " + ds.adjXp());
         levelLabel.setText("Party: " + partySize + ", Lv " + avgLevel);
         currentDifficulty = ds.difficulty();
-        difficultyLabel.setText(ds.difficulty());
+        difficultyLabel.setText(difficultyText);
         ThemeColors.applyDifficultyStyle(difficultyLabel, ds.difficulty());
     }
 

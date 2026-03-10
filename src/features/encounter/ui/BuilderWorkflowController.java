@@ -2,6 +2,7 @@ package features.encounter.ui;
 
 import features.creaturecatalog.model.Creature;
 import features.creaturecatalog.service.CreatureService;
+import features.encounter.generation.service.EncounterDifficultyBand;
 import features.encounter.generation.service.EncounterGenerator;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
@@ -88,8 +89,7 @@ final class BuilderWorkflowController {
         int partySize = partyCache.size();
         int avgLevel = cachedAvgLevel;
         CreatureService.FilterCriteria criteria = criteriaSupplier.get();
-        double difficulty = encounterControls.getSelectedDifficulty();
-        int groupsLevel = encounterControls.getSelectedGroupsLevel();
+        EncounterDifficultyBand difficultyBand = encounterControls.getSelectedDifficultyBand();
         int balanceLevel = encounterControls.getSelectedBalanceLevel();
         double amountValue = encounterControls.getSelectedAmountValue();
         List<Long> tableIds = encounterControls.getSelectedTableIds();
@@ -108,8 +108,7 @@ final class BuilderWorkflowController {
                                 criteria.subtypes(),
                                 criteria.biomes()
                         ),
-                        difficulty,
-                        groupsLevel,
+                        difficultyBand,
                         balanceLevel,
                         amountValue,
                         tableIds
@@ -258,14 +257,8 @@ final class BuilderWorkflowController {
         return switch (reason) {
             case TABLE_CANDIDATES_STORAGE_ERROR ->
                     "Datenbankfehler: Tabellen-Kandidaten konnten nicht geladen werden.";
-            case SETTINGS_COMBINATION_INFEASIBLE ->
-                    "Kombination der gesetzten Einstellungen ist nicht machbar. Auto aktivieren oder Werte lockern.";
             case AUTO_CONFIG_NO_SOLUTION ->
                     "Keine machbare Auto-Kombination gefunden.";
-            case AMOUNT_GROUPS_CONFLICT ->
-                    "Menge und Gruppen passen nicht zusammen (Slots erlauben nur begrenzte Kreaturenzahl).";
-            case SLOT_DISTRIBUTION_INVALID ->
-                    "Unmögliche Kombination: Gruppen + Kreaturenzahl ergeben mit Mob-Regeln keine gültige Slot-Verteilung.";
             case TIMEOUT ->
                     "Zeitlimit erreicht. Einstellungen lockern oder Auto verwenden.";
         };

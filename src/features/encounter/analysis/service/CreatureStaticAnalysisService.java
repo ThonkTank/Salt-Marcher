@@ -1,5 +1,6 @@
 package features.encounter.analysis.service;
 
+import features.creaturecatalog.model.Creature;
 import features.encounter.analysis.model.CreatureCapabilityTag;
 import features.encounter.analysis.repository.EncounterPartyAnalysisRepository;
 import features.encounter.analysis.repository.EncounterPartyAnalysisRepository.ActionAnalysisRow;
@@ -11,6 +12,7 @@ import features.encounter.analysis.service.ActionFunctionTagger.ActionTags;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +40,20 @@ public final class CreatureStaticAnalysisService {
         if (existing != null && existing.analysisVersion() >= ANALYSIS_VERSION) return existing;
         refreshForCreature(conn, creatureId);
         return EncounterPartyAnalysisRepository.loadStaticRow(conn, creatureId);
+    }
+
+    public static CreatureStaticRow analyzeCreature(Creature creature) {
+        if (creature == null || creature.Id == null) {
+            throw new IllegalArgumentException("creature and creature.Id must be non-null");
+        }
+        List<ActionRow> actionRows = new ArrayList<>();
+        long actionId = -1L;
+        actionId = appendActionRows(actionRows, creature.Traits, "trait", creature.Id, actionId);
+        actionId = appendActionRows(actionRows, creature.Actions, "action", creature.Id, actionId);
+        actionId = appendActionRows(actionRows, creature.BonusActions, "bonus_action", creature.Id, actionId);
+        actionId = appendActionRows(actionRows, creature.Reactions, "reaction", creature.Id, actionId);
+        appendActionRows(actionRows, creature.LegendaryActions, "legendary_action", creature.Id, actionId);
+        return analyzeCreatureActions(creature.Id, actionRows).staticRow();
     }
 
     static AnalysisSnapshot analyzeCreatureActions(long creatureId, Iterable<ActionRow> actions) {
@@ -82,6 +98,32 @@ public final class CreatureStaticAnalysisService {
                 .map(Enum::name)
                 .sorted()
                 .collect(java.util.stream.Collectors.joining(","));
+    }
+
+    private static long appendActionRows(
+            List<ActionRow> target,
+            Collection<Creature.Action> actions,
+            String actionType,
+            long creatureId,
+            long nextActionId) {
+        if (actions == null) {
+            return nextActionId;
+        }
+        long actionId = nextActionId;
+        for (Creature.Action action : actions) {
+            if (action == null) {
+                continue;
+            }
+            target.add(new ActionRow(
+                    actionId,
+                    creatureId,
+                    actionType,
+                    action.Name,
+                    action.Description,
+                    action.ToHitBonus));
+            actionId--;
+        }
+        return actionId;
     }
 
     static final class AnalysisSnapshot {

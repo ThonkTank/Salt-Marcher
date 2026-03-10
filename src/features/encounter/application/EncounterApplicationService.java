@@ -9,19 +9,21 @@ import features.encounter.combat.service.CombatOutcomeService;
 import features.encounter.combat.service.CombatSession;
 import features.encounter.combat.service.CombatSetup;
 import features.encounter.combat.service.EncounterLootService;
+import features.encounter.generation.service.EncounterDifficultyBand;
 import features.encounter.generation.service.EncounterGenerator;
 import features.encounter.generation.service.EncounterScoring;
+import features.encounter.generation.service.EncounterTuning;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
 import features.encountertable.model.EncounterTable;
 import features.gamerules.model.MonsterRole;
-import features.gamerules.model.MonsterRoleParser;
 import features.gamerules.service.XpCalculator;
 import features.party.model.PlayerCharacter;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -69,8 +71,7 @@ public final class EncounterApplicationService {
             int partySize,
             int avgLevel,
             EncounterFilter filter,
-            double difficultyValue,
-            int groupsLevel,
+            EncounterDifficultyBand difficultyBand,
             int balanceLevel,
             double amountValue,
             List<Long> tableIds
@@ -145,33 +146,27 @@ public final class EncounterApplicationService {
     }
 
     public MonsterRole classifyRole(Creature creature) {
-        if (creature != null && creature.Id != null) {
-            MonsterRole dynamic = EncounterPartyAnalysisService.loadDynamicRoleForCreature(creature.Id);
-            if (dynamic != null) {
-                return dynamic;
-            }
-        }
-        return MonsterRoleParser.parseOrBrute(creature != null ? creature.Role : null);
+        return EncounterPartyAnalysisService.classifyRoleForActiveParty(creature);
     }
 
     public EncounterGenerator.GenerationResult generateEncounter(GenerationRequest request) {
-        EncounterPartyAnalysisService.CacheReadiness readiness = EncounterPartyAnalysisService.ensureCacheReady();
-        EncounterGenerator.GenerationAdvisory advisory = mapGenerationAdvisory(readiness);
-        Map<Long, MonsterRole> dynamicRolesByCreatureId = loadDynamicRolesForGeneration(readiness);
-
         EncounterFilter filter = request.filter();
         List<String> types = filter == null ? null : nullIfEmpty(filter.types());
         List<String> subtypes = filter == null ? null : nullIfEmpty(filter.subtypes());
         List<String> biomes = filter == null ? null : nullIfEmpty(filter.biomes());
 
         int xpCeiling = EncounterGenerator.computeXpCeiling(
-                request.avgLevel(), request.difficultyValue(), request.partySize());
+                request.avgLevel(), request.difficultyBand(), request.partySize());
 
         CandidateLoadResult loadedCandidates =
                 loadCandidates(request, xpCeiling, types, subtypes, biomes);
         if (loadedCandidates.isError()) {
             return EncounterGenerator.GenerationResult.blockedByUserInput(loadedCandidates.failureReason());
         }
+
+        EncounterPartyAnalysisService.GenerationSnapshot analysisSnapshot =
+                EncounterPartyAnalysisService.loadGenerationSnapshot(candidateIdsOf(loadedCandidates.candidates()));
+        EncounterGenerator.GenerationAdvisory advisory = mapGenerationAdvisory(analysisSnapshot.readiness());
 
         EncounterGenerator.GenerationResult result = EncounterGenerator.generateEncounter(
                 toEncounterRequest(
@@ -180,10 +175,10 @@ public final class EncounterApplicationService {
                         subtypes,
                         biomes,
                         loadedCandidates.selectionWeights(),
-                        dynamicRolesByCreatureId),
+                        analysisSnapshot),
                 loadedCandidates.candidates());
         if (result.status() == EncounterGenerator.GenerationStatus.SUCCESS) {
-            return EncounterGenerator.GenerationResult.success(result.encounter(), advisory);
+            return EncounterGenerator.GenerationResult.success(result.encounter(), advisory, result.diagnostics());
         }
         return result;
     }
@@ -225,12 +220,11 @@ public final class EncounterApplicationService {
         return XpCalculator.computeStats(EncounterScoring.adjustedXp(slots), partySize, avgLevel);
     }
 
-    public int previewDifficultyTargetXp(int avgLevel, int partySize, double difficultyValue) {
-        return EncounterGenerator.targetBudgetForDifficulty(avgLevel, partySize, difficultyValue);
-    }
-
-    public int previewTargetMonsterSlots(int partySize, int groupsLevel) {
-        return EncounterGenerator.targetMonsterSlotsForLevel(partySize, groupsLevel);
+    public EncounterTuning.DifficultyBandBudgetRange previewDifficultyBandRange(
+            int avgLevel,
+            int partySize,
+            EncounterDifficultyBand difficultyBand) {
+        return EncounterGenerator.difficultyBandBudgetRange(avgLevel, partySize, difficultyBand);
     }
 
     public int previewTargetCreaturesForAmount(double amountValue, int partySize) {
@@ -265,19 +259,19 @@ public final class EncounterApplicationService {
             List<String> subtypes,
             List<String> biomes,
             Map<Long, Integer> selectionWeights,
-            Map<Long, MonsterRole> dynamicRolesByCreatureId) {
+            EncounterPartyAnalysisService.GenerationSnapshot analysisSnapshot) {
         return new EncounterGenerator.EncounterRequest(
                 request.partySize(),
                 request.avgLevel(),
                 types,
                 subtypes,
                 biomes,
-                request.difficultyValue(),
+                request.difficultyBand(),
                 request.amountValue(),
-                request.groupsLevel(),
                 request.balanceLevel(),
-                selectionWeights,
-                dynamicRolesByCreatureId
+                new EncounterGenerator.GenerationDataSnapshot(
+                        selectionWeights,
+                        analysisSnapshot == null ? Map.of() : analysisSnapshot.roleProfilesByCreatureId())
         );
     }
 
@@ -310,6 +304,19 @@ public final class EncounterApplicationService {
         );
     }
 
+    private static Set<Long> candidateIdsOf(List<Creature> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return Set.of();
+        }
+        Set<Long> candidateIds = new HashSet<>();
+        for (Creature candidate : candidates) {
+            if (candidate != null && candidate.Id != null) {
+                candidateIds.add(candidate.Id);
+            }
+        }
+        return candidateIds.isEmpty() ? Set.of() : Set.copyOf(candidateIds);
+    }
+
     private static CombatStartFailureReason mapCombatStartFailureReason(
             CombatSetup.BuildCombatantsFailureReason failureReason) {
         if (failureReason == null) {
@@ -323,17 +330,6 @@ public final class EncounterApplicationService {
             case PC_INITIATIVE_VALUE_MISSING -> CombatStartFailureReason.PC_INITIATIVE_VALUE_MISSING;
             case PC_INITIATIVE_COUNT_MISMATCH -> CombatStartFailureReason.PC_INITIATIVE_COUNT_MISMATCH;
         };
-    }
-
-    private static Map<Long, MonsterRole> loadDynamicRolesForGeneration(
-            EncounterPartyAnalysisService.CacheReadiness readiness) {
-        if (readiness == EncounterPartyAnalysisService.CacheReadiness.READY) {
-            return EncounterPartyAnalysisService.loadDynamicRolesForActiveParty();
-        }
-        if (readiness == EncounterPartyAnalysisService.CacheReadiness.NOT_READY) {
-            EncounterPartyAnalysisService.rebuildCurrentPartyCacheAsyncBestEffort();
-        }
-        return Map.of();
     }
 
     private static EncounterGenerator.GenerationAdvisory mapGenerationAdvisory(

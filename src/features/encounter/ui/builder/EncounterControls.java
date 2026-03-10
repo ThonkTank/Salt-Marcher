@@ -2,6 +2,8 @@ package features.encounter.ui.builder;
 
 import features.encountertable.model.EncounterTable;
 import features.encounter.application.EncounterApplicationService;
+import features.encounter.generation.service.EncounterDifficultyBand;
+import features.encounter.ui.EncounterDifficultyUiText;
 import features.creaturepicker.ui.FilterPane;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
@@ -27,7 +29,7 @@ import ui.components.ThemeColors;
 
 /**
  * Encounter controls panel shown above the monster list.
- * Layout: filter section on top (including table selector), 2x2 slider grid below.
+ * Layout: filter section on top (including table selector), compact control grid below.
  */
 public class EncounterControls extends VBox {
 
@@ -36,7 +38,6 @@ public class EncounterControls extends VBox {
     private Consumer<CreatureService.FilterCriteria> filterCallback;
     private Consumer<List<Long>> onTableChanged;
     private final SliderControl difficultySlider;
-    private final SliderControl groupSlider;
     private final SliderControl balanceSlider;
     private final SliderControl amountSlider;
 
@@ -69,38 +70,22 @@ public class EncounterControls extends VBox {
         filterRegion.getChildren().add(loadingLabel);
 
         // Sliders
-        difficultySlider = new SliderControl("Schwierigkeit", 0, 100, 50, false,
-                "XP-Budget von Easy bis 125% Deadly",
-                new StringConverter<>() {
-                    @Override public String toString(Double v) { return ""; }
-                    @Override public Double fromString(String s) { return 0.0; }
-                },
-                v -> {
-                    double t = Math.max(0.0, Math.min(1.0, v / 100.0));
-                    int xp = EncounterControls.this.encounterService.previewDifficultyTargetXp(
-                            avgLevelForDifficulty, partySizeForSliders, t);
-                    return xp + " XP";
-                },
-                25.0);
-        difficultySlider.addSliderStyleClass("difficulty-slider");
-
-        groupSlider = new SliderControl("Gruppen", 1, 5, 3, true,
-                "Steuert die Ziel-Anzahl an Monster-Initiative-Slots (via Mob-Regeln)",
+        difficultySlider = new SliderControl("Schwierigkeit", 1, 4, 2, true,
+                "Schwierigkeitsbereich des Encounters",
                 new StringConverter<>() {
                     @Override public String toString(Double v) {
-                        int lvl = Math.max(1, Math.min(5, (int) Math.round(v)));
-                        int slots = EncounterControls.this.encounterService.previewTargetMonsterSlots(
-                                partySizeForSliders, lvl);
-                        return String.valueOf(slots);
+                        return EncounterDifficultyUiText.formatBand(toDifficultyBand(v));
                     }
                     @Override public Double fromString(String s) { return 0.0; }
                 },
                 v -> {
-                    int lvl = Math.max(1, Math.min(5, (int) Math.round(v)));
-                    int slots = EncounterControls.this.encounterService.previewTargetMonsterSlots(
-                            partySizeForSliders, lvl);
-                    return slots + " Init.-Slots";
-                });
+                    EncounterDifficultyBand band = toDifficultyBand(v);
+                    var range = EncounterControls.this.encounterService.previewDifficultyBandRange(
+                            avgLevelForDifficulty, partySizeForSliders, band);
+                    return range.lowerAdjustedXp() + "-" + range.upperAdjustedXp() + " XP";
+                },
+                1.0);
+        difficultySlider.addSliderStyleClass("difficulty-slider");
 
         balanceSlider = new SliderControl("Balance", 1, 5, 3, true,
                 "1: XP-Enden bevorzugen, 5: mittlere XP bevorzugen",
@@ -173,7 +158,6 @@ public class EncounterControls extends VBox {
         encounterHeader.getStyleClass().addAll("section-header", "text-muted");
 
         HBox.setHgrow(difficultySlider, Priority.ALWAYS);
-        HBox.setHgrow(groupSlider, Priority.ALWAYS);
         HBox.setHgrow(balanceSlider, Priority.ALWAYS);
         HBox.setHgrow(amountSlider, Priority.ALWAYS);
 
@@ -189,10 +173,8 @@ public class EncounterControls extends VBox {
         // Row 0: FILTER (includes table selector injected into FilterPane's filter row)
         VBox filterRow = buildFilterRow();
 
-        // Row 1: ENCOUNTER — 2×2 slider grid
-        HBox sliderRow1 = new HBox(8, difficultySlider, groupSlider);
-        HBox sliderRow2 = new HBox(8, balanceSlider, amountSlider);
-        VBox sliderGrid = new VBox(4, sliderRow1, sliderRow2);
+        HBox controlRow = new HBox(8, difficultySlider, balanceSlider, amountSlider);
+        VBox sliderGrid = new VBox(4, controlRow);
         sliderGrid.setMaxWidth(Double.MAX_VALUE);
         sliderGrid.setPadding(new Insets(0, 4, 0, 4));
 
@@ -374,21 +356,30 @@ public class EncounterControls extends VBox {
         return selectedTables.stream().map(t -> t.tableId).toList();
     }
 
-    /** @return slider value in [0.0, 1.0], or -1.0 ({@link ui.components.SliderControl#AUTO_VALUE}) if Auto is selected. */
-    public double getSelectedDifficulty() { return difficultySlider.isAuto() ? -1.0 : difficultySlider.getValue() / 100.0; }
-    /** @return groups level in [1, 5], or -1 if Auto is selected. */
-    public int getSelectedGroupsLevel()   { return groupSlider.isAuto() ? -1 : (int) Math.round(groupSlider.getValue()); }
+    /** @return selected band, or {@code null} if Auto is selected. */
+    public EncounterDifficultyBand getSelectedDifficultyBand() {
+        return difficultySlider.isAuto() ? null : toDifficultyBand(difficultySlider.getValue());
+    }
     /** @return balance level in [1, 5], or -1 if Auto is selected. */
     public int getSelectedBalanceLevel()  { return balanceSlider.isAuto() ? -1 : (int) Math.round(balanceSlider.getValue()); }
     /** @return amount value in [1.0, 5.0], or -1.0 if Auto is selected. */
     public double getSelectedAmountValue() { return amountSlider.isAuto() ? -1.0 : amountSlider.getValue(); }
 
-    /** Updates party-dependent slider labels (amount + exact difficulty XP budget). */
+    /** Updates party-dependent control labels. */
     public void setPartyContext(int partySize, int avgLevel) {
         this.partySizeForSliders = Math.max(1, partySize);
         this.avgLevelForDifficulty = Math.max(1, Math.min(20, avgLevel));
         difficultySlider.refreshDisplay();
-        groupSlider.refreshDisplay();
         amountSlider.refreshDisplay();
+    }
+
+    private static EncounterDifficultyBand toDifficultyBand(double sliderValue) {
+        int index = Math.max(1, Math.min(4, (int) Math.round(sliderValue)));
+        return switch (index) {
+            case 1 -> EncounterDifficultyBand.EASY;
+            case 2 -> EncounterDifficultyBand.MEDIUM;
+            case 3 -> EncounterDifficultyBand.HARD;
+            default -> EncounterDifficultyBand.DEADLY;
+        };
     }
 }

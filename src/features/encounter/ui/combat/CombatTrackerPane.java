@@ -5,6 +5,7 @@ import features.encounter.combat.model.Combatant;
 import features.encounter.combat.model.MonsterCombatant;
 import features.encounter.combat.service.CombatSession;
 import features.encounter.combat.service.CombatTurnGrouper;
+import features.encounter.ui.EncounterDifficultyUiText;
 import features.gamerules.service.XpCalculator;
 import javafx.application.Platform;
 import javafx.geometry.Bounds;
@@ -179,7 +180,7 @@ public class CombatTrackerPane extends VBox {
     /** Update round label and status bar. Called by EncounterView after each combat state change. */
     public void updateStatusBar(XpCalculator.DifficultyStats ds, int alive, int total, int roundValue) {
         roundLabel.setText("Runde " + roundValue);
-        statusBar.setText(alive + "/" + total + " - " + ds.difficulty());
+        statusBar.setText(alive + "/" + total + " - " + EncounterDifficultyUiText.formatDifficulty(ds.difficulty()));
     }
 
     public String getCurrentTurnName() { return state.currentTurnName(); }

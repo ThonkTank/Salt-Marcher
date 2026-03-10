@@ -28,24 +28,39 @@ public final class EncounterTuning {
     public record SlotBounds(int minSlots, int maxSlots) {}
     record AutoAmountAnchorProfile(List<Double> coreAnchors, List<Double> outliers) {}
 
+    public record DifficultyBandBudgetRange(int lowerAdjustedXp, int upperAdjustedXp) {}
+
     /**
      * Computes the XP ceiling for candidate pre-fetching.
      * Auto mode uses the global maximum (125% Deadly).
      */
-    public static int computeXpCeiling(int avgLevel, double difficultyValue, int partySize) {
-        int easy = XpCalculator.xpThreshold(avgLevel, XpCalculator.Difficulty.EASY) * Math.max(1, partySize);
-        int deadly125 = deadly125Budget(avgLevel, partySize);
-        if (difficultyValue < 0) return deadly125;
-        int target = mapDifficultyToBudget(avgLevel, partySize, difficultyValue);
-        return Math.max(easy, Math.max(target, (int) Math.ceil(target * 1.25)));
+    public static int computeXpCeiling(int avgLevel, EncounterDifficultyBand difficultyBand, int partySize) {
+        return difficultyBand == null
+                ? deadly125Budget(avgLevel, partySize)
+                : difficultyBandBudgetRange(avgLevel, partySize, difficultyBand).upperAdjustedXp();
     }
 
-    /** UI helper: maps difficulty [0..1] to the exact target XP budget for party+level. */
-    public static int targetBudgetForDifficulty(int avgLevel, int partySize, double difficultyValue) {
-        return mapDifficultyToBudget(
-                Math.max(1, Math.min(20, avgLevel)),
-                Math.max(1, partySize),
-                Math.max(0.0, Math.min(1.0, difficultyValue)));
+    /** UI helper: returns the adjusted XP range for the selected difficulty band. */
+    public static DifficultyBandBudgetRange difficultyBandBudgetRange(
+            int avgLevel,
+            int partySize,
+            EncounterDifficultyBand difficultyBand) {
+        int level = Math.max(1, Math.min(20, avgLevel));
+        int size = Math.max(1, partySize);
+        EncounterDifficultyBand band = difficultyBand != null ? difficultyBand : EncounterDifficultyBand.MEDIUM;
+
+        int easy = XpCalculator.xpThreshold(level, XpCalculator.Difficulty.EASY) * size;
+        int medium = XpCalculator.xpThreshold(level, XpCalculator.Difficulty.MEDIUM) * size;
+        int hard = XpCalculator.xpThreshold(level, XpCalculator.Difficulty.HARD) * size;
+        int deadly = XpCalculator.xpThreshold(level, XpCalculator.Difficulty.DEADLY) * size;
+        int deadly125 = deadly125Budget(level, size);
+
+        return switch (band) {
+            case EASY -> new DifficultyBandBudgetRange(easy, Math.max(easy, medium - 1));
+            case MEDIUM -> new DifficultyBandBudgetRange(medium, Math.max(medium, hard - 1));
+            case HARD -> new DifficultyBandBudgetRange(hard, Math.max(hard, deadly - 1));
+            case DEADLY -> new DifficultyBandBudgetRange(deadly, Math.max(deadly, deadly125));
+        };
     }
 
     /** UI helper: minimum feasible monster initiative slots for the current party context. */
@@ -56,12 +71,6 @@ public final class EncounterTuning {
     /** UI helper: maximum feasible monster initiative slots for the current party context. */
     public static int maxMonsterSlotsForParty(int partySize) {
         return computeMonsterSlotBounds(Math.max(1, partySize)).maxSlots();
-    }
-
-    /** UI helper: maps groups level [1..5] to exact target monster initiative slots. */
-    public static int targetMonsterSlotsForLevel(int partySize, int groupsLevel) {
-        SlotBounds bounds = computeMonsterSlotBounds(Math.max(1, partySize));
-        return targetSlotsForLevel(bounds, Math.max(1, Math.min(5, groupsLevel)));
     }
 
     public static int targetCreaturesForAmount(double amountValue, int partySize) {
@@ -206,25 +215,19 @@ public final class EncounterTuning {
         return new AutoAmountAnchorProfile(coreAnchors, outliers);
     }
 
-    public static double resolveDifficulty(double difficultyValue) {
-        return resolveDifficulty(difficultyValue, null);
-    }
-
-    public static double resolveDifficulty(double difficultyValue, GenerationContext context) {
+    public static EncounterDifficultyBand resolveDifficultyBand(
+            EncounterDifficultyBand difficultyBand,
+            GenerationContext context) {
         GenerationContext ctx = context != null ? context : GenerationContext.defaultContext();
-        if (difficultyValue < 0) return ctx.nextDouble();
-        return Math.max(0.0, Math.min(1.0, difficultyValue));
+        if (difficultyBand != null) {
+            return difficultyBand;
+        }
+        EncounterDifficultyBand[] bands = EncounterDifficultyBand.values();
+        return bands[ctx.nextInt(0, bands.length)];
     }
 
     public static int deadly125Budget(int avgLevel, int partySize) {
         int deadly = XpCalculator.xpThreshold(avgLevel, XpCalculator.Difficulty.DEADLY) * Math.max(1, partySize);
         return (int) Math.round(deadly * 1.25);
-    }
-
-    public static int mapDifficultyToBudget(int avgLevel, int partySize, double difficultyValue) {
-        int easy = XpCalculator.xpThreshold(avgLevel, XpCalculator.Difficulty.EASY) * Math.max(1, partySize);
-        int max = deadly125Budget(avgLevel, partySize);
-        double t = Math.max(0.0, Math.min(1.0, difficultyValue));
-        return (int) Math.round(easy + (max - easy) * t);
     }
 }

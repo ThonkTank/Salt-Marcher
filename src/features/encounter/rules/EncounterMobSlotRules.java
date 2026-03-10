@@ -17,6 +17,16 @@ public final class EncounterMobSlotRules {
      * 4-10 creatures: one slot
      * >10 creatures: split into multiple mob-sized slots (4..10)
      */
+    public static int mobSlotCount(int count) {
+        if (count <= 0) return 0;
+        if (count <= 3) return count;
+        if (count <= EncounterRules.MAX_CREATURES_PER_SLOT) return 1;
+
+        int k = (int) Math.ceil(count / (double) EncounterRules.MAX_CREATURES_PER_SLOT);
+        while (count < EncounterRules.MOB_MIN_SIZE * k) k++;
+        return k;
+    }
+
     public static List<Integer> splitForMobSlots(int count) {
         if (count <= 0) return List.of();
         if (count <= 3) {
@@ -26,8 +36,7 @@ public final class EncounterMobSlotRules {
         }
         if (count <= EncounterRules.MAX_CREATURES_PER_SLOT) return List.of(count);
 
-        int k = (int) Math.ceil(count / (double) EncounterRules.MAX_CREATURES_PER_SLOT);
-        while (count < EncounterRules.MOB_MIN_SIZE * k) k++;
+        int k = mobSlotCount(count);
 
         int base = count / k;
         int rem = count % k;
