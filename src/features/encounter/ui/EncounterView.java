@@ -1,13 +1,13 @@
-package features.encounter.api;
+package features.encounter.ui;
 
 import features.encounter.builder.ui.EncounterControls;
 import features.encounter.builder.ui.EncounterRosterPane;
-import features.encountertable.model.EncounterTable;
 import features.encounter.internal.EncounterWorkflowCoordinator;
-import features.creatures.api.CreatureCatalogService;
-import javafx.scene.Node;
+import features.encountertable.model.EncounterTable;
 import features.creatures.api.CreatureBrowserPane;
+import features.creatures.api.CreatureCatalogService;
 import features.creatures.api.StatBlockRequest;
+import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.shell.SceneHandle;
 

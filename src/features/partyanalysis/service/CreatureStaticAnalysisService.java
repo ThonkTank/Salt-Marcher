@@ -20,14 +20,8 @@ import java.util.Map;
 import java.util.Set;
 
 public final class CreatureStaticAnalysisService {
-    private static final int ANALYSIS_VERSION = 3;
-
     private CreatureStaticAnalysisService() {
         throw new AssertionError("No instances");
-    }
-
-    public static int analysisVersion() {
-        return ANALYSIS_VERSION;
     }
 
     public static void refreshForCreature(Connection conn, long creatureId) throws SQLException {
@@ -39,7 +33,7 @@ public final class CreatureStaticAnalysisService {
 
     public static CreatureStaticRow ensureStaticRow(Connection conn, long creatureId) throws SQLException {
         CreatureStaticRow existing = EncounterPartyAnalysisRepository.loadStaticRow(conn, creatureId);
-        if (existing != null && existing.analysisVersion() >= ANALYSIS_VERSION) return existing;
+        if (existing != null) return existing;
         refreshForCreature(conn, creatureId);
         return EncounterPartyAnalysisRepository.loadStaticRow(conn, creatureId);
     }
@@ -169,7 +163,6 @@ public final class CreatureStaticAnalysisService {
         ActionAnalysisRow toRow(long actionId) {
             return new ActionAnalysisRow(
                     actionId,
-                    ANALYSIS_VERSION,
                     isMelee,
                     isRanged,
                     isAoe,
@@ -263,7 +256,6 @@ public final class CreatureStaticAnalysisService {
                             supportRoleScore));
             return new CreatureStaticRow(
                     creatureId,
-                    ANALYSIS_VERSION,
                     classification.primaryRole(),
                     joinCapabilityTags(classification.capabilityTags()),
                     actions + legendaryActionUnits,

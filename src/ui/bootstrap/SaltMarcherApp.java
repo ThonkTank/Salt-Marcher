@@ -23,8 +23,8 @@ import ui.shell.ViewId;
 /**
  * Bootstrap class and cross-view wiring hub.
  * Constructs the AppShell and all views, then injects callbacks that cross view boundaries.
- * Internal wiring (between a view and its own sub-panes) is done inside view constructors.
- * Cross-view wiring (e.g. EncounterView updating InspectorPane via AppShell) is done here
+ * Internal feature wiring stays inside the modules/views.
+ * Cross-view wiring (e.g. encounter feature callbacks updating shell panels) is done here
  * because the bootstrap is the only place that holds references to both ends.
  */
 public class SaltMarcherApp extends Application {
@@ -77,7 +77,7 @@ public class SaltMarcherApp extends Application {
 
         // Filter data requires a DB query (creature types/biomes), so it is loaded asynchronously.
         // setFilterData() wires the filter-changed callback internally (see EncounterControls.setFilterData).
-        // All other EncounterView callbacks above are wired synchronously.
+        // All other encounter feature callbacks above are wired synchronously.
         Task<CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions>> filterTask = new Task<>() {
             @Override protected CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions> call() {
                 return CreatureCatalogService.loadFilterOptions();

@@ -1,6 +1,6 @@
 package features.encounter.internal;
 
-import features.encounter.api.EncounterViewCallbacks;
+import features.encounter.ui.EncounterViewCallbacks;
 import features.encounter.builder.application.EncounterBuilderService;
 import features.encounter.builder.ui.BuilderWorkflowController;
 import features.encounter.builder.ui.EncounterControls;

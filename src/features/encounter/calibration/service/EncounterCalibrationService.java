@@ -52,11 +52,12 @@ public final class EncounterCalibrationService {
         double survivabilityActions = Math.max(
                 0.5,
                 creatureHp / Math.max(1.0, party.damagePerAction() * hitChanceByParty));
+        double survivabilityRounds = survivabilityActions / Math.max(1.0, party.actionsPerRound());
         double offensePressure = estimateCreatureDamagePerAction(creatureXp)
                 * actionUnitsPerRound
                 / Math.max(1.0, party.partyHpPool());
         double expectedTurnShare = actionUnitsPerRound / Math.max(1.0, party.actionsPerRound());
-        return new PartyRelativeMetrics(survivabilityActions, offensePressure, expectedTurnShare);
+        return new PartyRelativeMetrics(survivabilityActions, survivabilityRounds, offensePressure, expectedTurnShare);
     }
 
     private static int clampLevel(int level) {
@@ -106,20 +107,11 @@ public final class EncounterCalibrationService {
             return (int) Math.round(damagePerAction);
         }
 
-        public double averageOffensePressurePerCreature() {
-            if (partySize <= 0 || partyHpPool <= 0.0) return 0.05;
-            return (0.25 * expectedPlayerHp(Math.max(1, averagePartyLevel()))) / partyHpPool;
-        }
-
-        private int averagePartyLevel() {
-            double hpPerCharacter = partyHpPool / Math.max(1, partySize);
-            int level = (int) Math.round((hpPerCharacter - 10.0) / 7.5);
-            return Math.max(1, Math.min(20, level));
-        }
     }
 
     public record PartyRelativeMetrics(
             double survivabilityActions,
+            double survivabilityRounds,
             double offensePressure,
             double expectedTurnShare
     ) {}

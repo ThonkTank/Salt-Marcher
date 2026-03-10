@@ -295,7 +295,7 @@ public final class EncounterPartyAnalysisService {
 
         for (CreatureBaseRow creature : creatures.values()) {
             CreatureStaticRow staticRow = persistedStaticRows.get(creature.creatureId());
-            if (staticRow == null || staticRow.analysisVersion() < CreatureStaticAnalysisService.analysisVersion()) {
+            if (staticRow == null) {
                 staticRow = CreatureStaticAnalysisService.ensureStaticRow(conn, creature.creatureId());
             }
             if (staticRow == null) continue;
@@ -328,29 +328,17 @@ public final class EncounterPartyAnalysisService {
         double expectedTurnShare = metrics.expectedTurnShare();
         double gmLoad = (staticRow.totalComplexityPoints() / 6.0) + (staticRow.baseActionUnitsPerRound() - 1.0);
         Set<CreatureCapabilityTag> capabilityTags = parseCapabilityTags(staticRow.capabilityTags());
-        double averageOffensePressure = party.averageOffensePressurePerCreature();
         EncounterWeightClass weightClass = EncounterWeightClassClassifier.classify(
                 staticRow,
                 capabilityTags,
-                survivabilityActions,
-                offensePressure,
-                averageOffensePressure,
-                gmLoad);
-        double minionness = EncounterWeightClassClassifier.minionness(
-                survivabilityActions,
-                offensePressure,
-                averageOffensePressure);
-        CreatureRoleProfile profile = new CreatureRoleProfile(
-                creature.creatureId(),
-                weightClass,
-                staticRow.primaryFunctionRole(),
-                capabilityTags,
-                survivabilityActions,
-                staticRow.baseActionUnitsPerRound(),
+                metrics.survivabilityRounds(),
                 offensePressure,
                 expectedTurnShare,
-                gmLoad,
-                Set.of());
+                gmLoad);
+        double minionness = EncounterWeightClassClassifier.minionness(
+                metrics.survivabilityRounds(),
+                offensePressure,
+                expectedTurnShare);
         String fitFlags = buildFitFlags(staticRow, survivabilityActions, expectedTurnShare);
 
         return new CreatureDynamicRow(
@@ -383,7 +371,7 @@ public final class EncounterPartyAnalysisService {
             List<CreatureDynamicRow> dynamicRows
     ) {}
 
-    private static CreatureRoleProfile fallbackRoleProfile(
+    public static CreatureRoleProfile fallbackRoleProfile(
             Creature creature,
             EncounterPartyBenchmarks party) {
         CreatureStaticRow staticRow = CreatureStaticAnalysisService.analyzeCreature(creature);
@@ -398,9 +386,9 @@ public final class EncounterPartyAnalysisService {
         EncounterWeightClass weightClass = EncounterWeightClassClassifier.classify(
                 staticRow,
                 classification.capabilityTags(),
-                metrics.survivabilityActions(),
+                metrics.survivabilityRounds(),
                 metrics.offensePressure(),
-                party.averageOffensePressurePerCreature(),
+                metrics.expectedTurnShare(),
                 gmLoad);
         return new CreatureRoleProfile(
                 creature.Id,

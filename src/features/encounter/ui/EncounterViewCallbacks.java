@@ -1,9 +1,9 @@
-package features.encounter.api;
+package features.encounter.ui;
 
 import features.encounter.builder.application.EncounterBuilderService;
 import features.encounter.combat.application.EncounterCombatService;
-import ui.shell.SceneRegistry;
 import features.creatures.api.StatBlockRequest;
+import ui.shell.SceneRegistry;
 
 import java.util.function.Consumer;
 

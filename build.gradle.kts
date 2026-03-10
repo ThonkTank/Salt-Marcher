@@ -306,6 +306,20 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
                 "features.creatures.ui.",
                 "features.creatures.maintenance."
             )
+        ),
+        FeatureBoundary(
+            ownerPathPrefix = "features/partyanalysis/",
+            forbiddenImportPrefixes = listOf(
+                "features.partyanalysis.application.",
+                "features.partyanalysis.repository.",
+                "features.partyanalysis.service."
+            )
+        ),
+        FeatureBoundary(
+            ownerPathPrefix = "features/campaignstate/",
+            forbiddenImportPrefixes = listOf(
+                "features.campaignstate.repository."
+            )
         )
     )
 

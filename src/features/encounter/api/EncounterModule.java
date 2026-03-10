@@ -5,10 +5,12 @@ import features.encounter.combat.application.EncounterCombatService;
 import features.encounter.internal.wiring.DefaultCreatureCandidateProvider;
 import features.encounter.internal.wiring.DefaultEncounterTableProvider;
 import features.encounter.internal.wiring.DefaultPartyProvider;
+import features.encounter.ui.EncounterView;
+import features.encounter.ui.EncounterViewCallbacks;
 import features.creatures.api.CreatureCatalogService;
+import features.creatures.api.StatBlockRequest;
 import features.partyanalysis.api.PartyAnalysisCacheService;
 import features.partyanalysis.api.PartyCacheRefreshPort;
-import features.creatures.api.StatBlockRequest;
 import ui.shell.AppView;
 import ui.shell.SceneRegistry;
 

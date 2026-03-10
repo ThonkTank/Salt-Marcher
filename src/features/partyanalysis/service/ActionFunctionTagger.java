@@ -33,7 +33,9 @@ final class ActionFunctionTagger {
         int lineCount = estimateLineCount(description);
         int complexity = estimateComplexity(lineCount, isAoe, isBuff, isHeal, isControl, hasMobility, hasSummon, recharge);
 
-        double expectedUses = "legendary_action".equals(action.actionType())
+        double expectedUses = "trait".equals(action.actionType())
+                ? 0.0
+                : "legendary_action".equals(action.actionType())
                 ? 1.0
                 : "bonus_action".equals(action.actionType()) || "reaction".equals(action.actionType())
                 ? 0.6

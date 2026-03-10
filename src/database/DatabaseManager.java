@@ -279,7 +279,6 @@ public final class DatabaseManager {
 
             stmt.execute("CREATE TABLE IF NOT EXISTS creature_action_analysis ("
                     + "action_id             INTEGER PRIMARY KEY REFERENCES creature_actions(id) ON DELETE CASCADE,"
-                    + "analysis_version      INTEGER NOT NULL DEFAULT 1,"
                     + "is_melee              INTEGER NOT NULL DEFAULT 0,"
                     + "is_ranged             INTEGER NOT NULL DEFAULT 0,"
                     + "is_aoe                INTEGER NOT NULL DEFAULT 0,"
@@ -297,7 +296,6 @@ public final class DatabaseManager {
 
             stmt.execute("CREATE TABLE IF NOT EXISTS creature_static_analysis ("
                     + "creature_id                INTEGER PRIMARY KEY REFERENCES creatures(id) ON DELETE CASCADE,"
-                    + "analysis_version           INTEGER NOT NULL DEFAULT 1,"
                     + "primary_function_role      TEXT,"
                     + "capability_tags            TEXT,"
                     + "base_action_units_per_round REAL NOT NULL DEFAULT 1.0,"
@@ -379,8 +377,6 @@ public final class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounter_table_entries_table ON encounter_table_entries(table_id)");
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_encounter_tables_name_norm_unique "
                     + "ON encounter_tables(lower(trim(name)))");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_action_analysis_version ON creature_action_analysis(analysis_version)");
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_static_analysis_version ON creature_static_analysis(analysis_version)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_party_analysis_run ON creature_party_analysis(run_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_cache_runs_version_status "
                     + "ON encounter_party_cache_runs(party_comp_version, status)");

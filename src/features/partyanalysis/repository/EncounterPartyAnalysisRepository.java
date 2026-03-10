@@ -59,7 +59,6 @@ public final class EncounterPartyAnalysisRepository {
 
     public record CreatureStaticRow(
             long creatureId,
-            int analysisVersion,
             EncounterFunctionRole primaryFunctionRole,
             String capabilityTags,
             double baseActionUnitsPerRound,
@@ -86,7 +85,6 @@ public final class EncounterPartyAnalysisRepository {
 
     public record ActionAnalysisRow(
             long actionId,
-            int analysisVersion,
             int isMelee,
             int isRanged,
             int isAoe,
@@ -206,15 +204,14 @@ public final class EncounterPartyAnalysisRepository {
 
     public static void upsertStaticRows(Connection conn, Iterable<CreatureStaticRow> rows) throws SQLException {
         String sql = "INSERT INTO creature_static_analysis("
-                + "creature_id, analysis_version, primary_function_role, capability_tags, "
+                + "creature_id, primary_function_role, capability_tags, "
                 + "base_action_units_per_round, legendary_action_units, has_reaction, total_complexity_points, "
                 + "complex_feature_count, support_signal_score, control_signal_score, mobility_signal_score, "
                 + "ranged_signal_score, melee_signal_score, spellcasting_signal_score, aoe_signal_score, "
                 + "healing_signal_score, summon_signal_score, reaction_signal_score, soldier_role_score, "
                 + "archer_role_score, controller_role_score, skirmisher_role_score, support_role_score, updated_at"
-                + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) "
+                + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) "
                 + "ON CONFLICT(creature_id) DO UPDATE SET "
-                + "analysis_version=excluded.analysis_version, "
                 + "primary_function_role=excluded.primary_function_role, "
                 + "capability_tags=excluded.capability_tags, "
                 + "base_action_units_per_round=excluded.base_action_units_per_round, "
@@ -242,29 +239,28 @@ public final class EncounterPartyAnalysisRepository {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (CreatureStaticRow row : rows) {
                 ps.setLong(1, row.creatureId());
-                ps.setInt(2, row.analysisVersion());
-                ps.setString(3, enumName(row.primaryFunctionRole()));
-                ps.setString(4, row.capabilityTags());
-                ps.setDouble(5, row.baseActionUnitsPerRound());
-                ps.setDouble(6, row.legendaryActionUnits());
-                ps.setInt(7, row.hasReaction());
-                ps.setInt(8, row.totalComplexityPoints());
-                ps.setInt(9, row.complexFeatureCount());
-                ps.setDouble(10, row.supportSignalScore());
-                ps.setDouble(11, row.controlSignalScore());
-                ps.setDouble(12, row.mobilitySignalScore());
-                ps.setDouble(13, row.rangedSignalScore());
-                ps.setDouble(14, row.meleeSignalScore());
-                ps.setDouble(15, row.spellcastingSignalScore());
-                ps.setDouble(16, row.aoeSignalScore());
-                ps.setDouble(17, row.healingSignalScore());
-                ps.setDouble(18, row.summonSignalScore());
-                ps.setDouble(19, row.reactionSignalScore());
-                ps.setDouble(20, row.soldierRoleScore());
-                ps.setDouble(21, row.archerRoleScore());
-                ps.setDouble(22, row.controllerRoleScore());
-                ps.setDouble(23, row.skirmisherRoleScore());
-                ps.setDouble(24, row.supportRoleScore());
+                ps.setString(2, enumName(row.primaryFunctionRole()));
+                ps.setString(3, row.capabilityTags());
+                ps.setDouble(4, row.baseActionUnitsPerRound());
+                ps.setDouble(5, row.legendaryActionUnits());
+                ps.setInt(6, row.hasReaction());
+                ps.setInt(7, row.totalComplexityPoints());
+                ps.setInt(8, row.complexFeatureCount());
+                ps.setDouble(9, row.supportSignalScore());
+                ps.setDouble(10, row.controlSignalScore());
+                ps.setDouble(11, row.mobilitySignalScore());
+                ps.setDouble(12, row.rangedSignalScore());
+                ps.setDouble(13, row.meleeSignalScore());
+                ps.setDouble(14, row.spellcastingSignalScore());
+                ps.setDouble(15, row.aoeSignalScore());
+                ps.setDouble(16, row.healingSignalScore());
+                ps.setDouble(17, row.summonSignalScore());
+                ps.setDouble(18, row.reactionSignalScore());
+                ps.setDouble(19, row.soldierRoleScore());
+                ps.setDouble(20, row.archerRoleScore());
+                ps.setDouble(21, row.controllerRoleScore());
+                ps.setDouble(22, row.skirmisherRoleScore());
+                ps.setDouble(23, row.supportRoleScore());
                 ps.addBatch();
             }
             ps.executeBatch();
@@ -273,12 +269,11 @@ public final class EncounterPartyAnalysisRepository {
 
     public static void upsertActionAnalysisRows(Connection conn, Iterable<ActionAnalysisRow> rows) throws SQLException {
         String sql = "INSERT INTO creature_action_analysis("
-                + "action_id, analysis_version, is_melee, is_ranged, is_aoe, is_buff, is_heal, is_control, "
+                + "action_id, is_melee, is_ranged, is_aoe, is_buff, is_heal, is_control, "
                 + "has_mobility, has_summon, requires_recharge, estimated_rule_lines, complexity_points, "
                 + "expected_uses_per_round, parsed_at"
-                + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) "
+                + ") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP) "
                 + "ON CONFLICT(action_id) DO UPDATE SET "
-                + "analysis_version=excluded.analysis_version, "
                 + "is_melee=excluded.is_melee, "
                 + "is_ranged=excluded.is_ranged, "
                 + "is_aoe=excluded.is_aoe, "
@@ -296,19 +291,18 @@ public final class EncounterPartyAnalysisRepository {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (ActionAnalysisRow row : rows) {
                 ps.setLong(1, row.actionId());
-                ps.setInt(2, row.analysisVersion());
-                ps.setInt(3, row.isMelee());
-                ps.setInt(4, row.isRanged());
-                ps.setInt(5, row.isAoe());
-                ps.setInt(6, row.isBuff());
-                ps.setInt(7, row.isHeal());
-                ps.setInt(8, row.isControl());
-                ps.setInt(9, row.hasMobility());
-                ps.setInt(10, row.hasSummon());
-                ps.setInt(11, row.requiresRecharge());
-                ps.setInt(12, row.estimatedRuleLines());
-                ps.setInt(13, row.complexityPoints());
-                ps.setDouble(14, row.expectedUsesPerRound());
+                ps.setInt(2, row.isMelee());
+                ps.setInt(3, row.isRanged());
+                ps.setInt(4, row.isAoe());
+                ps.setInt(5, row.isBuff());
+                ps.setInt(6, row.isHeal());
+                ps.setInt(7, row.isControl());
+                ps.setInt(8, row.hasMobility());
+                ps.setInt(9, row.hasSummon());
+                ps.setInt(10, row.requiresRecharge());
+                ps.setInt(11, row.estimatedRuleLines());
+                ps.setInt(12, row.complexityPoints());
+                ps.setDouble(13, row.expectedUsesPerRound());
                 ps.addBatch();
             }
             ps.executeBatch();
@@ -317,7 +311,7 @@ public final class EncounterPartyAnalysisRepository {
 
     public static Map<Long, CreatureStaticRow> loadStaticRows(Connection conn) throws SQLException {
         Map<Long, CreatureStaticRow> rows = new HashMap<>();
-        String sql = "SELECT creature_id, analysis_version, primary_function_role, capability_tags, "
+        String sql = "SELECT creature_id, primary_function_role, capability_tags, "
                 + "base_action_units_per_round, legendary_action_units, has_reaction, total_complexity_points, "
                 + "complex_feature_count, support_signal_score, control_signal_score, mobility_signal_score, "
                 + "ranged_signal_score, melee_signal_score, spellcasting_signal_score, aoe_signal_score, "
@@ -330,7 +324,6 @@ public final class EncounterPartyAnalysisRepository {
                 long creatureId = rs.getLong("creature_id");
                 rows.put(creatureId, new CreatureStaticRow(
                         creatureId,
-                        rs.getInt("analysis_version"),
                         parseEnumOrNull(rs.getString("primary_function_role"), EncounterFunctionRole.class),
                         rs.getString("capability_tags"),
                         rs.getDouble("base_action_units_per_round"),
@@ -359,7 +352,7 @@ public final class EncounterPartyAnalysisRepository {
     }
 
     public static CreatureStaticRow loadStaticRow(Connection conn, long creatureId) throws SQLException {
-        String sql = "SELECT creature_id, analysis_version, primary_function_role, capability_tags, "
+        String sql = "SELECT creature_id, primary_function_role, capability_tags, "
                 + "base_action_units_per_round, legendary_action_units, has_reaction, total_complexity_points, "
                 + "complex_feature_count, support_signal_score, control_signal_score, mobility_signal_score, "
                 + "ranged_signal_score, melee_signal_score, spellcasting_signal_score, aoe_signal_score, "
@@ -372,7 +365,6 @@ public final class EncounterPartyAnalysisRepository {
                 if (!rs.next()) return null;
                 return new CreatureStaticRow(
                         creatureId,
-                        rs.getInt("analysis_version"),
                         parseEnumOrNull(rs.getString("primary_function_role"), EncounterFunctionRole.class),
                         rs.getString("capability_tags"),
                         rs.getDouble("base_action_units_per_round"),

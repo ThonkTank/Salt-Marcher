@@ -3,6 +3,7 @@ package features.partyanalysis.api;
 import features.creatures.model.Creature;
 import features.partyanalysis.application.EncounterPartyAnalysisService;
 import features.partyanalysis.model.CreatureRoleProfile;
+import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
 
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +37,13 @@ public final class PartyAnalysisReadApi {
 
     public static CreatureRoleProfile classifyRoleProfileForActiveParty(Creature creature) {
         return EncounterPartyAnalysisService.classifyRoleProfileForActiveParty(creature);
+    }
+
+    public static CreatureRoleProfile fallbackRoleProfile(
+            Creature creature,
+            EncounterPartyBenchmarks partyBenchmarks
+    ) {
+        return EncounterPartyAnalysisService.fallbackRoleProfile(creature, partyBenchmarks);
     }
 
     public static Map<Long, CreatureRoleProfile> loadRoleProfilesForActiveParty() {
