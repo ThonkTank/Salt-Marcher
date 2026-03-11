@@ -5,9 +5,11 @@ import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEndpointRole;
 import features.world.dungeonmap.model.DungeonMap;
+import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
+import features.world.dungeonmap.model.PassageType;
 import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
@@ -60,7 +62,7 @@ final class DungeonEditingWorkflowController {
     }
 
     void handleCellPaint(DungeonMapPane.CellInteraction interaction) {
-        boolean filled = controls.getActiveTool() == features.world.dungeonmap.ui.editor.controls.DungeonEditorTool.PAINT;
+        boolean filled = controls.getActiveTool().paintsFilledSquares();
         Long roomId = filled ? toolSettingsPane.getActiveRoomId() : null;
         DungeonSquarePaint paint = new DungeonSquarePaint(interaction.x(), interaction.y(), filled, roomId);
         paintSession.previewPaint(state.currentMapId(), state.currentState(), paint);
@@ -77,6 +79,18 @@ final class DungeonEditingWorkflowController {
                             UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.flushPendingPaints()", ex);
                             reloadCurrentMap.run();
                         }));
+    }
+
+    void commitPendingPaints() {
+        flushPendingPaints();
+    }
+
+    void discardPendingPaints() {
+        paintSession.discardPendingPaints();
+    }
+
+    boolean hasPendingPaints() {
+        return paintSession.hasPendingPaints();
     }
 
     void handleCellClick(DungeonMapPane.CellInteraction interaction) {
@@ -99,6 +113,30 @@ final class DungeonEditingWorkflowController {
                         toId,
                         this::handleLinkCreateResult,
                         ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.createLink()", ex)));
+    }
+
+    void handleEdgeClick(DungeonMapPane.EdgeInteraction interaction) {
+        if (controls.getActiveTool() != features.world.dungeonmap.ui.editor.controls.DungeonEditorTool.PASSAGE) {
+            return;
+        }
+        DungeonPassage existing = interaction.existingPassage();
+        if (existing != null) {
+            selectionController.selectPassage(existing);
+            return;
+        }
+        if (state.currentMapId() == null) {
+            return;
+        }
+        savePassage(new DungeonPassage(
+                null,
+                state.currentMapId(),
+                interaction.x(),
+                interaction.y(),
+                interaction.direction(),
+                PassageType.DOOR,
+                "",
+                "",
+                null));
     }
 
     void createRoom(Node anchor) {
@@ -243,6 +281,34 @@ final class DungeonEditingWorkflowController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.updateLinkLabel()", ex));
     }
 
+    void savePassage(DungeonPassage passage) {
+        applicationService.savePassage(
+                passage,
+                passageId -> {
+                    state.setPendingPassageSelectionId(passageId);
+                    reloadCurrentMap.run();
+                },
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.savePassage()", ex));
+    }
+
+    void deletePassage(Long passageId, Node anchor) {
+        if (passageId == null) {
+            return;
+        }
+        String name = findPassageName(passageId);
+        confirmationDropdown.show(anchor,
+                "Durchgang löschen",
+                "Durchgang '" + name + "' löschen?",
+                "Löschen",
+                () -> {
+                    confirmationDropdown.hide();
+                    applicationService.deletePassage(
+                            passageId,
+                            reloadCurrentMap,
+                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.deletePassage()", ex));
+                });
+    }
+
     void showNewMapDropdown(Node anchor) {
         mapDropdowns.showNewMapDropdown(anchor, result -> applicationService.createMap(
                 result.name(),
@@ -344,15 +410,15 @@ final class DungeonEditingWorkflowController {
             return;
         }
         if (result.status() == DungeonMapEditorService.LinkCreateStatus.SAME_ENDPOINT) {
-            detailsPane.showInfoMessage("Linkerstellung abgebrochen: Bitte zwei verschiedene Übergänge wählen.");
+            selectionController.publishInfoMessage("Linkerstellung", "Linkerstellung abgebrochen: Bitte zwei verschiedene Übergänge wählen.");
             return;
         }
         if (result.status() == DungeonMapEditorService.LinkCreateStatus.DUPLICATE) {
-            detailsPane.showInfoMessage("Diese beiden Übergänge sind bereits verbunden.");
+            selectionController.publishInfoMessage("Linkerstellung", "Diese beiden Übergänge sind bereits verbunden.");
             return;
         }
         if (result.status() == DungeonMapEditorService.LinkCreateStatus.INVALID_ENDPOINT) {
-            detailsPane.showInfoMessage("Linkerstellung abgebrochen: Mindestens ein Übergang ist nicht mehr gültig.");
+            selectionController.publishInfoMessage("Linkerstellung", "Linkerstellung abgebrochen: Mindestens ein Übergang ist nicht mehr gültig.");
         }
     }
 
@@ -400,5 +466,17 @@ final class DungeonEditingWorkflowController {
             }
         }
         return "#" + endpointId;
+    }
+
+    private String findPassageName(Long passageId) {
+        if (state.currentState() != null) {
+            for (DungeonPassage passage : state.currentState().passages()) {
+                if (passageId.equals(passage.passageId())) {
+                    String name = passage.name();
+                    return (name != null && !name.isBlank()) ? name : "#" + passageId;
+                }
+            }
+        }
+        return "#" + passageId;
     }
 }

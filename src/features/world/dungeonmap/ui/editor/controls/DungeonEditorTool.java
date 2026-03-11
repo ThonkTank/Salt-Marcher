@@ -5,6 +5,19 @@ public enum DungeonEditorTool {
     PAINT,
     ERASE,
     AREA_ASSIGN,
+    PASSAGE,
     ENDPOINT,
-    LINK
+    LINK;
+
+    public boolean isBrushTool() {
+        return this == PAINT || this == ERASE;
+    }
+
+    public boolean paintsFilledSquares() {
+        return this == PAINT;
+    }
+
+    public boolean isHandTool() {
+        return this == ENDPOINT || this == LINK;
+    }
 }

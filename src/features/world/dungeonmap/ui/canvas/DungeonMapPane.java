@@ -4,9 +4,12 @@ import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonMapState;
+import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
+import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
@@ -17,6 +20,7 @@ import java.util.function.Supplier;
 public class DungeonMapPane extends StackPane {
 
     public record CellInteraction(int x, int y, DungeonSquare square) {}
+    public record EdgeInteraction(int x, int y, PassageDirection direction, DungeonPassage existingPassage) {}
 
     private final Canvas gridCanvas = new Canvas();
     private final Canvas selectionCanvas = new Canvas();
@@ -61,25 +65,20 @@ public class DungeonMapPane extends StackPane {
         }
     }
 
-    public void setPaintMode(boolean paintMode) {
-        interactionController.setPaintMode(paintMode);
-        interactionController.setEraseMode(false);
-    }
-
-    public void setEraseMode(boolean eraseMode) {
-        interactionController.setEraseMode(eraseMode);
-    }
-
-    public void setHandMode(boolean handMode) {
-        interactionController.setHandMode(handMode);
+    public void setBrushShapeSupplier(Supplier<BrushShape> supplier) {
+        interactionController.setBrushShapeSupplier(supplier);
     }
 
     public void setBrushSizeSupplier(Supplier<Integer> supplier) {
         interactionController.setBrushSizeSupplier(supplier);
     }
 
-    public void setBrushShapeSupplier(Supplier<BrushShape> supplier) {
-        interactionController.setBrushShapeSupplier(supplier);
+    public void setActiveTool(DungeonEditorTool tool) {
+        interactionController.setActiveTool(tool);
+    }
+
+    public void setOnEdgeClicked(Consumer<EdgeInteraction> onEdgeClicked) {
+        interactionController.setOnEdgeClicked(onEdgeClicked);
     }
 
     public void setShowLinks(boolean showLinks) {

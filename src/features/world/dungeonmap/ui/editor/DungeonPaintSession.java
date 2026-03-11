@@ -18,6 +18,7 @@ final class DungeonPaintSession {
 
     private final DungeonMapPane canvas;
     private final Map<String, DungeonSquarePaint> pendingPaints = new LinkedHashMap<>();
+    private Long pendingMapId;
 
     DungeonPaintSession(DungeonMapPane canvas) {
         this.canvas = canvas;
@@ -27,16 +28,34 @@ final class DungeonPaintSession {
         if (currentState == null || currentMapId == null) {
             return;
         }
+        if (pendingMapId != null && !pendingMapId.equals(currentMapId)) {
+            discardPendingPaints();
+        }
+        pendingMapId = currentMapId;
         pendingPaints.put(paint.x() + ":" + paint.y(), paint);
         canvas.previewPaint(paint);
     }
 
     void flushPendingPaints(Long currentMapId, PaintPersister persister) {
-        if (pendingPaints.isEmpty() || currentMapId == null) {
+        if (pendingPaints.isEmpty()) {
+            return;
+        }
+        if (currentMapId == null || pendingMapId == null || !pendingMapId.equals(currentMapId)) {
+            discardPendingPaints();
             return;
         }
         List<DungeonSquarePaint> paints = new ArrayList<>(pendingPaints.values());
         pendingPaints.clear();
+        pendingMapId = null;
         persister.persist(currentMapId, paints);
+    }
+
+    void discardPendingPaints() {
+        pendingPaints.clear();
+        pendingMapId = null;
+    }
+
+    boolean hasPendingPaints() {
+        return !pendingPaints.isEmpty();
     }
 }

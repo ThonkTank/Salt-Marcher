@@ -6,6 +6,9 @@ import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.panes.DungeonDetailsPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import javafx.scene.Node;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
@@ -17,10 +20,11 @@ public class DungeonEditorView implements AppView {
     private final DungeonToolSettingsPane toolSettingsPane = new DungeonToolSettingsPane();
     private final DungeonEditorApplicationService applicationService = new DungeonEditorApplicationService();
     private final DungeonPaintSession paintSession = new DungeonPaintSession(canvas);
-    private final DungeonSelectionWorkflowController selectionWorkflowController =
-            new DungeonSelectionWorkflowController(canvas, detailsPane, toolSettingsPane);
-    private final DungeonMapDropdowns mapDropdowns = new DungeonMapDropdowns();
     private final DungeonEditorState state = new DungeonEditorState();
+    private final DungeonSelectionWorkflowController selectionWorkflowController =
+            new DungeonSelectionWorkflowController(canvas, detailsPane, toolSettingsPane, state);
+    private final DungeonMapDropdowns mapDropdowns = new DungeonMapDropdowns();
+    private final VBox statePane = new VBox(8);
     private final DungeonMapLoadingWorkflowController loadingWorkflowController = new DungeonMapLoadingWorkflowController(
             state, applicationService, controls, canvas, detailsPane, toolSettingsPane, selectionWorkflowController);
     private final DungeonEditingWorkflowController editingWorkflowController = new DungeonEditingWorkflowController(
@@ -34,6 +38,8 @@ public class DungeonEditorView implements AppView {
                 () -> loadingWorkflowController.loadMapAsync(state.currentMapId()),
                 loadingWorkflowController::onShow);
         selectionWorkflowController.setDetailsNavigator(detailsNavigator);
+        VBox.setVgrow(detailsPane, Priority.ALWAYS);
+        statePane.getChildren().addAll(toolSettingsPane, detailsPane);
         bindControls();
         bindCanvas();
         bindSharedUi();
@@ -61,7 +67,10 @@ public class DungeonEditorView implements AppView {
 
     @Override
     public Node getStateContent() {
-        return toolSettingsPane;
+        ScrollPane scrollPane = new ScrollPane(statePane);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        return scrollPane;
     }
 
     @Override
@@ -70,10 +79,14 @@ public class DungeonEditorView implements AppView {
     }
 
     private void bindControls() {
-        controls.setOnMapSelected(loadingWorkflowController::loadMapAsync);
+        controls.setOnMapSelected(mapId -> {
+            editingWorkflowController.discardPendingPaints();
+            loadingWorkflowController.loadMapAsync(mapId);
+        });
         controls.setOnNewMapRequested(editingWorkflowController::showNewMapDropdown);
         controls.setOnEditMapRequested(editingWorkflowController::showEditMapDropdown);
         controls.setOnToolChanged(tool -> {
+            editingWorkflowController.commitPendingPaints();
             selectionWorkflowController.updateToolMode(tool);
             loadingWorkflowController.autoShowForTool(tool);
         });
@@ -85,7 +98,9 @@ public class DungeonEditorView implements AppView {
         canvas.setOnPaintStrokeFinished(editingWorkflowController::flushPendingPaints);
         canvas.setOnEndpointClicked(editingWorkflowController::handleEndpointClick);
         canvas.setOnLinkClicked(selectionWorkflowController::showLinkSelection);
+        canvas.setBrushSizeSupplier(toolSettingsPane::getBrushSize);
         canvas.setBrushShapeSupplier(toolSettingsPane::getBrushShape);
+        canvas.setOnEdgeClicked(editingWorkflowController::handleEdgeClick);
     }
 
     private void bindSharedUi() {

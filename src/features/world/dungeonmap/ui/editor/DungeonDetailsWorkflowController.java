@@ -3,6 +3,7 @@ package features.world.dungeonmap.ui.editor;
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.ui.editor.panes.DungeonDetailsPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
@@ -81,6 +82,22 @@ final class DungeonDetailsWorkflowController {
                 form.label(),
                 () -> loadingController.loadMapAsync(state.currentMapId())));
         detailsPane.setOnLinkDeleted(request -> editingWorkflowController.deleteLink(request.entityId()));
+        detailsPane.setOnPassageSaved(form -> {
+            DungeonPassage current = findPassage(form.passageId());
+            if (current != null) {
+                editingWorkflowController.savePassage(new DungeonPassage(
+                        current.passageId(),
+                        current.mapId(),
+                        current.x(),
+                        current.y(),
+                        current.direction(),
+                        form.type(),
+                        form.name(),
+                        form.notes(),
+                        form.endpointId()));
+            }
+        });
+        detailsPane.setOnPassageDeleted(request -> editingWorkflowController.deletePassage(request.entityId(), request.anchor()));
     }
 
     void handleAreaSelected(DungeonArea area) {
@@ -107,5 +124,17 @@ final class DungeonDetailsWorkflowController {
                 area.description(),
                 selectedTable == null ? null : selectedTable.tableId(),
                 selectedTable == null ? null : selectedTable.name()));
+    }
+
+    private DungeonPassage findPassage(Long passageId) {
+        if (state.currentState() == null || passageId == null) {
+            return null;
+        }
+        for (DungeonPassage passage : state.currentState().passages()) {
+            if (passageId.equals(passage.passageId())) {
+                return passage;
+            }
+        }
+        return null;
     }
 }
