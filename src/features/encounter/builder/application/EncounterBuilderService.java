@@ -3,17 +3,20 @@ package features.encounter.builder.application;
 import features.creatures.model.Creature;
 import features.encounter.builder.application.ports.CreatureCandidateProvider;
 import features.encounter.builder.application.ports.EncounterTableProvider;
+import features.encounter.builder.application.ports.PartyAnalysisProvider;
 import features.encounter.builder.application.ports.PartyProvider;
 import features.encounter.generation.service.EncounterDifficultyBand;
 import features.encounter.generation.service.EncounterGenerator;
 import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.EncounterTuning;
 import features.encounter.generation.service.GenerationContext;
+import features.encounter.calibration.service.EncounterCalibrationService;
+import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
 import features.encounter.model.EncounterSlot;
 import features.encountertable.model.EncounterTable;
 import features.party.api.PartyApi;
-import features.partyanalysis.api.PartyAnalysisReadApi;
 import features.partyanalysis.model.CreatureRoleProfile;
+import features.partyanalysis.model.StaticCreatureRoleHint;
 import shared.rules.service.XpCalculator;
 
 import java.util.HashSet;
@@ -39,6 +42,7 @@ public final class EncounterBuilderService {
             EncounterDifficultyBand difficultyBand,
             int balanceLevel,
             double amountValue,
+            int diversityLevel,
             List<Long> tableIds
     ) {}
 
@@ -53,15 +57,18 @@ public final class EncounterBuilderService {
     }
 
     private final PartyProvider partyProvider;
+    private final PartyAnalysisProvider partyAnalysisProvider;
     private final EncounterTableProvider encounterTableProvider;
     private final CreatureCandidateProvider creatureCandidateProvider;
 
     public EncounterBuilderService(
             PartyProvider partyProvider,
+            PartyAnalysisProvider partyAnalysisProvider,
             EncounterTableProvider encounterTableProvider,
             CreatureCandidateProvider creatureCandidateProvider
     ) {
         this.partyProvider = Objects.requireNonNull(partyProvider, "partyProvider");
+        this.partyAnalysisProvider = Objects.requireNonNull(partyAnalysisProvider, "partyAnalysisProvider");
         this.encounterTableProvider = Objects.requireNonNull(encounterTableProvider, "encounterTableProvider");
         this.creatureCandidateProvider = Objects.requireNonNull(creatureCandidateProvider, "creatureCandidateProvider");
     }
@@ -77,7 +84,7 @@ public final class EncounterBuilderService {
     }
 
     public CreatureRoleProfile classifyRoleProfile(Creature creature) {
-        return PartyAnalysisReadApi.classifyRoleProfileForActiveParty(creature);
+        return partyAnalysisProvider.classifyRoleProfileForActiveParty(creature);
     }
 
     public EncounterGenerator.GenerationResult generateEncounter(GenerationRequest request) {
@@ -87,41 +94,86 @@ public final class EncounterBuilderService {
     public EncounterGenerator.GenerationResult generateEncounter(
             GenerationRequest request,
             GenerationContext generationContext) {
+        EncounterGenerator.EncounterRequest normalizedRequest = EncounterGenerator.normalizeRequest(
+                new EncounterGenerator.EncounterRequest(
+                        request.partySize(),
+                        request.avgLevel(),
+                        request.difficultyBand(),
+                        request.amountValue(),
+                        request.balanceLevel(),
+                        request.diversityLevel(),
+                        EncounterGenerator.GenerationDataSnapshot.empty()));
         EncounterFilter filter = request.filter();
         List<String> types = filter == null ? null : nullIfEmpty(filter.types());
         List<String> subtypes = filter == null ? null : nullIfEmpty(filter.subtypes());
         List<String> biomes = filter == null ? null : nullIfEmpty(filter.biomes());
 
         int xpCeiling = EncounterGenerator.computeXpCeiling(
-                request.avgLevel(), request.difficultyBand(), request.partySize());
+                normalizedRequest.avgLevel(),
+                normalizedRequest.difficultyBand(),
+                normalizedRequest.partySize());
 
         CandidateLoadResult loadedCandidates =
-                loadCandidates(request, xpCeiling, types, subtypes, biomes);
+                loadCandidates(request.tableIds(), xpCeiling, types, subtypes, biomes);
         if (loadedCandidates.isError()) {
             return EncounterGenerator.GenerationResult.blockedByUserInput(loadedCandidates.failureReason());
         }
 
-        PartyAnalysisReadApi.GenerationSnapshot analysisSnapshot =
-                PartyAnalysisReadApi.loadGenerationSnapshot(candidateIdsOf(loadedCandidates.candidates()));
+        Set<Long> candidateIds = candidateIdsOf(loadedCandidates.candidates());
+        PartyAnalysisProvider.GenerationSnapshot analysisSnapshot =
+                partyAnalysisProvider.loadGenerationSnapshot(candidateIds);
         EncounterGenerator.GenerationAdvisory advisory = mapGenerationAdvisory(analysisSnapshot.readiness());
-        Map<Long, EncounterGenerator.StaticCreatureRoleHint> staticRoleHints =
-                PartyAnalysisReadApi.loadStaticRoleHints(candidateIdsOf(loadedCandidates.candidates()));
+        Map<Long, CreatureRoleProfile> roleProfiles = resolveRoleProfiles(
+                loadedCandidates.candidates(),
+                analysisSnapshot,
+                partyAnalysisProvider.loadStaticRoleHints(candidateIds),
+                normalizedRequest.avgLevel(),
+                normalizedRequest.partySize(),
+                partyAnalysisProvider);
 
         EncounterGenerator.GenerationResult result = EncounterGenerator.generateEncounter(
                 toEncounterRequest(
-                        request,
-                        types,
-                        subtypes,
-                        biomes,
+                        normalizedRequest,
                         loadedCandidates.selectionWeights(),
-                        analysisSnapshot,
-                        staticRoleHints),
+                        roleProfiles),
                 loadedCandidates.candidates(),
                 generationContext);
         if (result.status() == EncounterGenerator.GenerationStatus.SUCCESS) {
             return EncounterGenerator.GenerationResult.success(result.encounter(), advisory, result.diagnostics());
         }
         return result;
+    }
+
+    /**
+     * The builder boundary resolves party-analysis data so the search pipeline
+     * stays pure and does not reach back into other features.
+     */
+    private static Map<Long, CreatureRoleProfile> resolveRoleProfiles(
+            List<Creature> candidates,
+            PartyAnalysisProvider.GenerationSnapshot analysisSnapshot,
+            Map<Long, StaticCreatureRoleHint> staticRoleHints,
+            int avgLevel,
+            int partySize,
+            PartyAnalysisProvider partyAnalysisProvider) {
+        if (candidates == null || candidates.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, CreatureRoleProfile> cachedProfiles =
+                analysisSnapshot == null ? Map.of() : analysisSnapshot.roleProfilesByCreatureId();
+        java.util.HashMap<Long, CreatureRoleProfile> resolvedProfiles = new java.util.HashMap<>(cachedProfiles);
+        EncounterPartyBenchmarks partyBenchmarks =
+                EncounterCalibrationService.partyBenchmarksForAverageLevel(avgLevel, partySize);
+        for (Creature creature : candidates) {
+            if (creature == null || creature.Id == null || resolvedProfiles.containsKey(creature.Id)) {
+                continue;
+            }
+            StaticCreatureRoleHint staticRoleHint = staticRoleHints == null ? null : staticRoleHints.get(creature.Id);
+            CreatureRoleProfile fallbackProfile = staticRoleHint == null
+                    ? partyAnalysisProvider.fallbackRoleProfile(creature, partyBenchmarks)
+                    : partyAnalysisProvider.fallbackRoleProfile(creature, partyBenchmarks, staticRoleHint);
+            resolvedProfiles.put(creature.Id, fallbackProfile);
+        }
+        return resolvedProfiles.isEmpty() ? Map.of() : Map.copyOf(resolvedProfiles);
     }
 
     public XpCalculator.DifficultyStats computeRosterDifficultyStats(
@@ -136,8 +188,16 @@ public final class EncounterBuilderService {
         return EncounterGenerator.difficultyBandBudgetRange(avgLevel, partySize, difficultyBand);
     }
 
-    public int previewTargetCreaturesForAmount(double amountValue, int partySize) {
-        return EncounterGenerator.targetCreaturesForAmount(amountValue, partySize);
+    public String previewAmountValue(double amountValue) {
+        return EncounterTuning.describeAmountValue(amountValue);
+    }
+
+    public String previewBalanceLevel(int balanceLevel) {
+        return EncounterTuning.describeBalanceLevel(balanceLevel);
+    }
+
+    public String previewDiversityLevel(int diversityLevel) {
+        return EncounterTuning.describeDiversityLevel(diversityLevel);
     }
 
     public int maxCreaturesPerSlot() {
@@ -149,36 +209,29 @@ public final class EncounterBuilderService {
     }
 
     private static EncounterGenerator.EncounterRequest toEncounterRequest(
-            GenerationRequest request,
-            List<String> types,
-            List<String> subtypes,
-            List<String> biomes,
+            EncounterGenerator.EncounterRequest request,
             Map<Long, Integer> selectionWeights,
-            PartyAnalysisReadApi.GenerationSnapshot analysisSnapshot,
-            Map<Long, EncounterGenerator.StaticCreatureRoleHint> staticRoleHints) {
+            Map<Long, CreatureRoleProfile> roleProfiles) {
         return new EncounterGenerator.EncounterRequest(
                 request.partySize(),
                 request.avgLevel(),
-                types,
-                subtypes,
-                biomes,
                 request.difficultyBand(),
                 request.amountValue(),
                 request.balanceLevel(),
+                request.diversityLevel(),
                 new EncounterGenerator.GenerationDataSnapshot(
                         selectionWeights,
-                        analysisSnapshot == null ? Map.of() : analysisSnapshot.roleProfilesByCreatureId(),
-                        staticRoleHints)
+                        roleProfiles)
         );
     }
 
     private CandidateLoadResult loadCandidates(
-            GenerationRequest request,
+            List<Long> requestedTableIds,
             int xpCeiling,
             List<String> types,
             List<String> subtypes,
             List<String> biomes) {
-        List<Long> tableIds = request.tableIds() == null ? List.of() : request.tableIds();
+        List<Long> tableIds = requestedTableIds == null ? List.of() : requestedTableIds;
         if (!tableIds.isEmpty()) {
             EncounterTableProvider.CandidateSelection selection = encounterTableProvider.loadCandidates(tableIds, xpCeiling);
             if (selection.status() == EncounterTableProvider.TableLoadStatus.STORAGE_ERROR) {
@@ -211,11 +264,15 @@ public final class EncounterBuilderService {
     }
 
     private static EncounterGenerator.GenerationAdvisory mapGenerationAdvisory(
-            PartyAnalysisReadApi.CacheReadiness readiness) {
+            PartyAnalysisProvider.CacheReadiness readiness) {
+        if (readiness == null) {
+            return null;
+        }
         return switch (readiness) {
             case READY -> null;
             case NOT_READY -> EncounterGenerator.GenerationAdvisory.PARTY_ROLE_FALLBACK_CACHE_REBUILDING;
             case STORAGE_ERROR -> EncounterGenerator.GenerationAdvisory.PARTY_ROLE_FALLBACK_STORAGE_UNAVAILABLE;
         };
     }
+
 }

@@ -16,10 +16,43 @@ public record EncounterBudgets(
         double maxEnemyActionUnits,
         int resolvedBalanceLevel,
         double resolvedAmountValue,
+        int resolvedDiversityLevel,
         int targetCreatureCount,
         int creatureCountTolerance,
         int targetMonsterTurnSlots,
         int softMonsterTurnSlots,
         int hardMonsterTurnSlots,
-        int maxComplexActions
-) {}
+        int maxComplexActions,
+        BalanceProfile balanceProfile,
+        DistinctCreatureBudget distinctCreatureBudget,
+        CompositionProfile compositionProfile,
+        SearchHeuristics heuristics
+) {
+    public enum BalanceShape {
+        ENDS_EXTREME,
+        ENDS_SOFT,
+        NEUTRAL,
+        PEERS_SOFT,
+        PEERS_EXTREME
+    }
+
+    public record BalanceProfile(
+            BalanceShape shape,
+            double dominantXpRatio,
+            double maxPeerXpRatio
+    ) {}
+
+    public record DistinctCreatureBudget(
+            int minDistinctCreatures,
+            int targetDistinctCreatures,
+            int maxDistinctCreatures
+    ) {}
+
+    public record CompositionProfile(
+            double bossPreference,
+            double regularPreference,
+            double minionPreference,
+            int targetCreatureCount,
+            int creatureCountTolerance
+    ) {}
+}

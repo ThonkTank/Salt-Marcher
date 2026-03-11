@@ -4,6 +4,7 @@ import features.encounter.builder.application.EncounterBuilderService;
 import features.encounter.combat.application.EncounterCombatService;
 import features.encounter.internal.wiring.DefaultCreatureCandidateProvider;
 import features.encounter.internal.wiring.DefaultEncounterTableProvider;
+import features.encounter.internal.wiring.DefaultPartyAnalysisProvider;
 import features.encounter.internal.wiring.DefaultPartyProvider;
 import features.encounter.ui.EncounterView;
 import features.encounter.ui.EncounterViewCallbacks;
@@ -37,6 +38,7 @@ public final class EncounterModule {
 
         EncounterBuilderService builderService = new EncounterBuilderService(
                 new DefaultPartyProvider(),
+                new DefaultPartyAnalysisProvider(),
                 new DefaultEncounterTableProvider(),
                 new DefaultCreatureCandidateProvider()
         );

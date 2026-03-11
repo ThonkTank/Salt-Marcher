@@ -2,9 +2,6 @@ package features.encounter.generation.service.search.model;
 
 import features.creatures.model.EncounterFunctionRole;
 import features.encounter.generation.service.EncounterScoring;
-import features.encounter.generation.service.search.policy.EncounterConstraintPolicy;
-import features.encounter.rules.EncounterMobSlotRules;
-import features.partyanalysis.model.EncounterWeightClass;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -56,10 +53,6 @@ public final class SearchState {
         countsView = Map.of();
     }
 
-    public SearchState add(CandidateEntry entry, int count) {
-        return add(Addition.of(entry, count));
-    }
-
     public SearchState add(Addition addition) {
         return new SearchState(this, addition);
     }
@@ -106,10 +99,6 @@ public final class SearchState {
         return usedPrimaryRoles;
     }
 
-    public Set<EncounterFunctionRole> primaryRoles() {
-        return usedPrimaryRoles();
-    }
-
     public int rawXp() {
         return rawXp;
     }
@@ -150,9 +139,12 @@ public final class SearchState {
         return distinctStatBlocks == 0 ? 1.0 : selectionWeightTotal / (double) distinctStatBlocks;
     }
 
-    public double estimatedRounds(double partyActionsPerRound) {
-        return totalSurvivabilityActions * EncounterConstraintPolicy.supportRoundsMultiplier(usedPrimaryRoles(), hasHealingCapability)
-                / Math.max(1.0, partyActionsPerRound);
+    public boolean hasHealingCapability() {
+        return hasHealingCapability;
+    }
+
+    public double estimatedRounds(double partyActionsPerRound, double supportRoundsMultiplier) {
+        return totalSurvivabilityActions * supportRoundsMultiplier / Math.max(1.0, partyActionsPerRound);
     }
 
     public boolean hasUniquePrimaryRoles() {
@@ -221,43 +213,5 @@ public final class SearchState {
             double survivabilityActionsDelta,
             boolean hasHealingCapability,
             int selectionWeight
-    ) {
-        public static Addition of(CandidateEntry entry, int count) {
-            return of(entry, count, 1);
-        }
-
-        public static Addition of(CandidateEntry entry, int count, int selectionWeight) {
-            return new Addition(
-                    entry,
-                    count,
-                    entry.creature().XP * count,
-                    EncounterConstraintPolicy.enemyActionContribution(entry, count),
-                    EncounterMobSlotRules.mobSlotCount(count),
-                    EncounterConstraintPolicy.encounterComplexActionContribution(entry, count),
-                    effectiveSurvivabilityActions(entry, count),
-                    EncounterConstraintPolicy.hasHealingCapability(entry),
-                    Math.max(1, selectionWeight));
-        }
-
-        private static double effectiveSurvivabilityActions(CandidateEntry entry, int count) {
-            if (entry == null || count <= 0) {
-                return 0.0;
-            }
-            double base = Math.max(0.25, entry.profile().survivabilityActions());
-            double total = 0.0;
-            double additionalWeight = additionalCreatureWeight(entry.weightClass());
-            for (int i = 0; i < count; i++) {
-                total += base * Math.pow(additionalWeight, i);
-            }
-            return total;
-        }
-
-        private static double additionalCreatureWeight(EncounterWeightClass weightClass) {
-            return switch (weightClass) {
-                case MINION -> 0.52;
-                case REGULAR -> 0.74;
-                case BOSS -> 0.90;
-            };
-        }
-    }
+    ) {}
 }
