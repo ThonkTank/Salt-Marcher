@@ -13,22 +13,26 @@ import java.util.random.RandomGenerator;
  */
 public final class GenerationContext {
     public static final long DEFAULT_TIMEOUT_MS = 1200L;
+    public static final int DEFAULT_MAX_WORK_UNITS = 4_000;
 
     private final LongSupplier nanoTimeSource;
     private final RandomGenerator random;
     private final BooleanSupplier cancellationSignal;
     private final long timeoutNanos;
+    private final int maxWorkUnits;
     private final long startNanos;
 
     private GenerationContext(
             LongSupplier nanoTimeSource,
             RandomGenerator random,
             long timeoutMs,
+            int maxWorkUnits,
             BooleanSupplier cancellationSignal) {
         this.nanoTimeSource = Objects.requireNonNull(nanoTimeSource, "nanoTimeSource");
         this.random = Objects.requireNonNull(random, "random");
         this.cancellationSignal = Objects.requireNonNull(cancellationSignal, "cancellationSignal");
         this.timeoutNanos = Math.max(1L, timeoutMs) * 1_000_000L;
+        this.maxWorkUnits = Math.max(1, maxWorkUnits);
         this.startNanos = this.nanoTimeSource.getAsLong();
     }
 
@@ -37,11 +41,16 @@ public final class GenerationContext {
     }
 
     public static GenerationContext defaultContext(BooleanSupplier cancellationSignal) {
-        return new GenerationContext(System::nanoTime, ThreadLocalRandom.current(), DEFAULT_TIMEOUT_MS, cancellationSignal);
+        return new GenerationContext(
+                System::nanoTime,
+                ThreadLocalRandom.current(),
+                DEFAULT_TIMEOUT_MS,
+                DEFAULT_MAX_WORK_UNITS,
+                cancellationSignal);
     }
 
     public static GenerationContext of(LongSupplier nanoTimeSource, RandomGenerator random, long timeoutMs) {
-        return of(nanoTimeSource, random, timeoutMs, () -> false);
+        return of(nanoTimeSource, random, timeoutMs, DEFAULT_MAX_WORK_UNITS, () -> false);
     }
 
     public static GenerationContext of(
@@ -49,7 +58,16 @@ public final class GenerationContext {
             RandomGenerator random,
             long timeoutMs,
             BooleanSupplier cancellationSignal) {
-        return new GenerationContext(nanoTimeSource, random, timeoutMs, cancellationSignal);
+        return of(nanoTimeSource, random, timeoutMs, DEFAULT_MAX_WORK_UNITS, cancellationSignal);
+    }
+
+    public static GenerationContext of(
+            LongSupplier nanoTimeSource,
+            RandomGenerator random,
+            long timeoutMs,
+            int maxWorkUnits,
+            BooleanSupplier cancellationSignal) {
+        return new GenerationContext(nanoTimeSource, random, timeoutMs, maxWorkUnits, cancellationSignal);
     }
 
     public long deadlineNanos() {
@@ -62,6 +80,10 @@ public final class GenerationContext {
 
     public boolean isCancelled() {
         return cancellationSignal.getAsBoolean();
+    }
+
+    public int maxWorkUnits() {
+        return maxWorkUnits;
     }
 
     public int nextInt(int bound) {

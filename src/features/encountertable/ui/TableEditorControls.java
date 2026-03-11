@@ -1,6 +1,7 @@
 package features.encountertable.ui;
 
 import features.encountertable.model.EncounterTable;
+import features.loottable.api.LootTableApi;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -25,11 +26,13 @@ public class TableEditorControls extends VBox {
     private Consumer<CreatureCatalogService.FilterCriteria> filterCallback;
 
     private final ComboBox<EncounterTable> tableCombo;
+    private final ComboBox<LootTableApi.LootTableSummary> lootTableCombo;
     private final Button renameBtn;
     private final Button deleteBtn;
     private final VBox filterRegion;
 
     private Consumer<EncounterTable> onTableSelected;
+    private Consumer<LootTableApi.LootTableSummary> onLootTableSelected;
     private Runnable onCreateTable;
     private Runnable onRenameTable;
     private Runnable onDeleteTable;
@@ -48,7 +51,18 @@ public class TableEditorControls extends VBox {
         tableCombo.setOnAction(e -> {
             EncounterTable t = tableCombo.getValue();
             updateActionButtons(t != null);
+            syncLootTableSelection(t);
             if (onTableSelected != null) onTableSelected.accept(t);
+        });
+
+        lootTableCombo = new ComboBox<>();
+        lootTableCombo.setMaxWidth(Double.MAX_VALUE);
+        lootTableCombo.setPromptText("— Loot-Tabelle —");
+        lootTableCombo.setDisable(true);
+        lootTableCombo.setOnAction(e -> {
+            if (onLootTableSelected != null && !lootTableCombo.isDisable()) {
+                onLootTableSelected.accept(lootTableCombo.getValue());
+            }
         });
 
         Button createBtn = new Button("Neue Tabelle");
@@ -69,7 +83,10 @@ public class TableEditorControls extends VBox {
         HBox actionRow = new HBox(4, createBtn, renameBtn, deleteBtn);
         actionRow.setPadding(new Insets(4, 4, 4, 4));
 
-        VBox tableSection = new VBox(4, tableHeader, tableCombo, actionRow);
+        Label lootHeader = new Label("LOOT");
+        lootHeader.getStyleClass().addAll("section-header", "text-muted");
+
+        VBox tableSection = new VBox(4, tableHeader, tableCombo, actionRow, lootHeader, lootTableCombo);
         tableSection.setPadding(new Insets(0, 4, 4, 4));
 
         // ---- Filter section ----
@@ -90,6 +107,7 @@ public class TableEditorControls extends VBox {
     private void updateActionButtons(boolean hasTable) {
         renameBtn.setDisable(!hasTable);
         deleteBtn.setDisable(!hasTable);
+        lootTableCombo.setDisable(!hasTable);
     }
 
     // ---- Public API ----
@@ -125,7 +143,19 @@ public class TableEditorControls extends VBox {
                             () -> {
                                 tableCombo.setValue(null);
                                 updateActionButtons(false);
+                                syncLootTableSelection(null);
                             });
+        }
+    }
+
+    public void setLootTableList(List<LootTableApi.LootTableSummary> tables) {
+        lootTableCombo.getItems().setAll(tables);
+        LootTableApi.LootTableSummary none = new LootTableApi.LootTableSummary(-1L, "(Keine Loot-Tabelle)");
+        lootTableCombo.getItems().add(0, none);
+        if (tableCombo.getValue() != null) {
+            syncLootTableSelection(tableCombo.getValue());
+        } else {
+            lootTableCombo.setValue(none);
         }
     }
 
@@ -135,7 +165,20 @@ public class TableEditorControls extends VBox {
     public void selectTable(EncounterTable t) { tableCombo.setValue(t); }
 
     public void setOnTableSelected(Consumer<EncounterTable> cb) { this.onTableSelected = cb; }
+    public void setOnLootTableSelected(Consumer<LootTableApi.LootTableSummary> cb) { this.onLootTableSelected = cb; }
     public void setOnCreateTable(Runnable cb) { this.onCreateTable = cb; }
     public void setOnRenameTable(Runnable cb) { this.onRenameTable = cb; }
     public void setOnDeleteTable(Runnable cb) { this.onDeleteTable = cb; }
+
+    private void syncLootTableSelection(EncounterTable table) {
+        if (lootTableCombo.getItems().isEmpty()) return;
+        if (table == null || table.linkedLootTableId == null) {
+            lootTableCombo.getSelectionModel().selectFirst();
+            return;
+        }
+        lootTableCombo.getItems().stream()
+                .filter(ref -> ref.tableId() == table.linkedLootTableId)
+                .findFirst()
+                .ifPresentOrElse(lootTableCombo::setValue, () -> lootTableCombo.getSelectionModel().selectFirst());
+    }
 }

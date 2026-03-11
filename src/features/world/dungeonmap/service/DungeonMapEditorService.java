@@ -7,7 +7,12 @@ import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquarePaint;
+import features.world.dungeonmap.repository.DungeonAreaRepository;
+import features.world.dungeonmap.repository.DungeonEndpointRepository;
+import features.world.dungeonmap.repository.DungeonLinkRepository;
 import features.world.dungeonmap.repository.DungeonMapRepository;
+import features.world.dungeonmap.repository.DungeonRoomRepository;
+import features.world.dungeonmap.repository.DungeonSquareRepository;
 import features.world.dungeonmap.service.adapter.DungeonCampaignStateAdapter;
 
 import java.sql.Connection;
@@ -64,7 +69,7 @@ public final class DungeonMapEditorService {
             conn.setAutoCommit(false);
             try {
                 clearActiveEndpointIfErased(conn, mapId, paints);
-                DungeonMapRepository.applySquarePaints(conn, mapId, paints);
+                DungeonSquareRepository.applySquarePaints(conn, mapId, paints);
                 conn.commit();
             } catch (SQLException ex) {
                 conn.rollback();
@@ -77,49 +82,49 @@ public final class DungeonMapEditorService {
 
     public static long saveRoom(DungeonRoom room) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            return DungeonMapRepository.upsertRoom(conn, room);
+            return DungeonRoomRepository.upsertRoom(conn, room);
         }
     }
 
     public static void deleteRoom(long roomId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonMapRepository.deleteRoom(conn, roomId);
+            DungeonRoomRepository.deleteRoom(conn, roomId);
         }
     }
 
     public static void assignSquareRoom(long squareId, Long roomId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonMapRepository.assignSquareRoom(conn, squareId, roomId);
+            DungeonSquareRepository.assignSquareRoom(conn, squareId, roomId);
         }
     }
 
     public static long saveArea(DungeonArea area) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            return DungeonMapRepository.upsertArea(conn, area);
+            return DungeonAreaRepository.upsertArea(conn, area);
         }
     }
 
     public static void deleteArea(long areaId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonMapRepository.deleteArea(conn, areaId);
+            DungeonAreaRepository.deleteArea(conn, areaId);
         }
     }
 
     public static void assignRoomArea(long roomId, Long areaId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonMapRepository.assignRoomArea(conn, roomId, areaId);
+            DungeonRoomRepository.assignRoomArea(conn, roomId, areaId);
         }
     }
 
     public static long saveEndpoint(DungeonEndpoint endpoint) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            return DungeonMapRepository.upsertEndpoint(conn, endpoint);
+            return DungeonEndpointRepository.upsertEndpoint(conn, endpoint);
         }
     }
 
     public static void deleteEndpoint(long endpointId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            Optional<DungeonEndpoint> endpoint = DungeonMapRepository.findEndpoint(conn, endpointId);
+            Optional<DungeonEndpoint> endpoint = DungeonEndpointRepository.findEndpoint(conn, endpointId);
             if (endpoint.isEmpty()) {
                 return;
             }
@@ -131,7 +136,7 @@ public final class DungeonMapEditorService {
                     Long currentMapId = DungeonCampaignStateAdapter.getDungeonMapId(conn).orElse(endpoint.get().mapId());
                     DungeonCampaignStateAdapter.updateDungeonPosition(conn, currentMapId, null);
                 }
-                DungeonMapRepository.deleteEndpoint(conn, endpointId);
+                DungeonEndpointRepository.deleteEndpoint(conn, endpointId);
                 conn.commit();
             } catch (SQLException ex) {
                 conn.rollback();
@@ -147,18 +152,18 @@ public final class DungeonMapEditorService {
             return new LinkCreateResult(LinkCreateStatus.SAME_ENDPOINT, null);
         }
         try (Connection conn = DatabaseManager.getConnection()) {
-            Optional<DungeonEndpoint> from = DungeonMapRepository.findEndpoint(conn, fromEndpointId);
-            Optional<DungeonEndpoint> to = DungeonMapRepository.findEndpoint(conn, toEndpointId);
+            Optional<DungeonEndpoint> from = DungeonEndpointRepository.findEndpoint(conn, fromEndpointId);
+            Optional<DungeonEndpoint> to = DungeonEndpointRepository.findEndpoint(conn, toEndpointId);
             if (from.isEmpty() || to.isEmpty()
                     || from.get().mapId() != mapId
                     || to.get().mapId() != mapId) {
                 return new LinkCreateResult(LinkCreateStatus.INVALID_ENDPOINT, null);
             }
-            Long existing = DungeonMapRepository.findExistingLink(conn, mapId, fromEndpointId, toEndpointId).orElse(null);
+            Long existing = DungeonLinkRepository.findExistingLink(conn, mapId, fromEndpointId, toEndpointId).orElse(null);
             if (existing != null) {
                 return new LinkCreateResult(LinkCreateStatus.DUPLICATE, existing);
             }
-            long linkId = DungeonMapRepository.insertLink(conn, new DungeonLink(
+            long linkId = DungeonLinkRepository.insertLink(conn, new DungeonLink(
                     null, mapId, fromEndpointId, toEndpointId, label, null));
             return new LinkCreateResult(LinkCreateStatus.CREATED, linkId);
         }
@@ -166,13 +171,13 @@ public final class DungeonMapEditorService {
 
     public static void deleteLink(long linkId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonMapRepository.deleteLink(conn, linkId);
+            DungeonLinkRepository.deleteLink(conn, linkId);
         }
     }
 
     public static void updateLinkLabel(long linkId, String label) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonMapRepository.updateLinkLabel(conn, linkId, label);
+            DungeonLinkRepository.updateLinkLabel(conn, linkId, label);
         }
     }
 
@@ -211,7 +216,7 @@ public final class DungeonMapEditorService {
         if (currentEndpointId == null) {
             return Optional.empty();
         }
-        Optional<DungeonEndpoint> currentEndpoint = DungeonMapRepository.findEndpoint(conn, currentEndpointId);
+        Optional<DungeonEndpoint> currentEndpoint = DungeonEndpointRepository.findEndpoint(conn, currentEndpointId);
         if (currentEndpoint.isPresent() && currentEndpoint.get().mapId() == mapId) {
             return currentEndpoint;
         }

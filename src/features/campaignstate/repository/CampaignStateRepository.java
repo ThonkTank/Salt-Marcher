@@ -1,6 +1,7 @@
 package features.campaignstate.repository;
 
 import features.campaignstate.model.CampaignState;
+import features.campaignstate.model.DungeonPositionSnapshot;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -30,8 +31,8 @@ public final class CampaignStateRepository {
         }
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO campaign_state(campaign_id, map_id, party_tile_id, calendar_id,"
-                        + " current_epoch_day, current_phase_id, current_weather, notes)"
-                        + " VALUES(?,?,?,?,?,?,?,?)"
+                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_endpoint_id)"
+                        + " VALUES(?,?,?,?,?,?,?,?,?,?)"
                         + " ON CONFLICT(campaign_id) DO UPDATE SET"
                         + "   map_id=excluded.map_id,"
                         + "   party_tile_id=excluded.party_tile_id,"
@@ -39,7 +40,9 @@ public final class CampaignStateRepository {
                         + "   current_epoch_day=excluded.current_epoch_day,"
                         + "   current_phase_id=excluded.current_phase_id,"
                         + "   current_weather=excluded.current_weather,"
-                        + "   notes=excluded.notes")) {
+                        + "   notes=excluded.notes,"
+                        + "   dungeon_map_id=excluded.dungeon_map_id,"
+                        + "   dungeon_endpoint_id=excluded.dungeon_endpoint_id")) {
             ps.setLong(1, state.CampaignId);
             setNullableLong(ps, 2, state.MapId);
             setNullableLong(ps, 3, state.PartyTileId);
@@ -48,6 +51,8 @@ public final class CampaignStateRepository {
             setNullableLong(ps, 6, state.CurrentPhaseId);
             ps.setString(7, state.CurrentWeather);
             ps.setString(8, state.Notes);
+            setNullableLong(ps, 9, state.DungeonMapId);
+            setNullableLong(ps, 10, state.DungeonEndpointId);
             ps.executeUpdate();
         }
     }
@@ -76,6 +81,35 @@ public final class CampaignStateRepository {
             ps.setInt(2, radius);
             ps.executeUpdate();
         }
+    }
+
+    public static Optional<DungeonPositionSnapshot> getDungeonPosition(Connection conn) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT dungeon_map_id, dungeon_endpoint_id FROM campaign_state WHERE campaign_id=1");
+             ResultSet rs = ps.executeQuery()) {
+            if (!rs.next()) {
+                return Optional.empty();
+            }
+            Long mapId = getNullableLong(rs, "dungeon_map_id");
+            Long endpointId = getNullableLong(rs, "dungeon_endpoint_id");
+            if (mapId == null && endpointId == null) {
+                return Optional.empty();
+            }
+            return Optional.of(new DungeonPositionSnapshot(mapId, endpointId));
+        }
+    }
+
+    public static void updateDungeonPosition(Connection conn, Long mapId, Long endpointId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_endpoint_id=? WHERE campaign_id=1")) {
+            setNullableLong(ps, 1, mapId);
+            setNullableLong(ps, 2, endpointId);
+            ps.executeUpdate();
+        }
+    }
+
+    public static void clearDungeonPosition(Connection conn) throws SQLException {
+        updateDungeonPosition(conn, null, null);
     }
 
     /** @throws IllegalArgumentException if days is not positive */
@@ -149,11 +183,20 @@ public final class CampaignStateRepository {
         s.CurrentPhaseId = rs.wasNull() ? null : phaseId;
         s.CurrentWeather = rs.getString("current_weather");
         s.Notes = rs.getString("notes");
+        long dungeonMapId = rs.getLong("dungeon_map_id");
+        s.DungeonMapId = rs.wasNull() ? null : dungeonMapId;
+        long dungeonEndpointId = rs.getLong("dungeon_endpoint_id");
+        s.DungeonEndpointId = rs.wasNull() ? null : dungeonEndpointId;
         return s;
     }
 
     private static void setNullableLong(PreparedStatement ps, int idx, Long value) throws SQLException {
         if (value != null) ps.setLong(idx, value);
         else ps.setNull(idx, java.sql.Types.BIGINT);
+    }
+
+    private static Long getNullableLong(ResultSet rs, String column) throws SQLException {
+        long value = rs.getLong(column);
+        return rs.wasNull() ? null : value;
     }
 }

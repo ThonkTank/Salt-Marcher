@@ -1,7 +1,7 @@
 package features.world.dungeonmap.service.adapter;
 
 import features.encountertable.api.EncounterTableApi;
-import features.world.dungeonmap.model.DungeonEncounterTableSummary;
+import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 
 import java.util.List;
 

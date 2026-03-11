@@ -1,6 +1,7 @@
 package features.world.dungeonmap.ui.editor.controls;
 
 import features.world.dungeonmap.model.DungeonMap;
+import javafx.scene.Node;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -17,13 +18,15 @@ import java.util.function.Consumer;
 
 public class DungeonEditorControls extends HBox {
 
+    public record MapActionRequest(DungeonMap map, Node anchor) {}
+
     private final ComboBox<DungeonMap> mapCombo = new ComboBox<>();
     private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
     private boolean updatingMapCombo = false;
 
     private Consumer<Long> onMapSelected;
-    private Runnable onNewMapRequested;
-    private Consumer<DungeonMap> onEditMapRequested;
+    private Consumer<Node> onNewMapRequested;
+    private Consumer<MapActionRequest> onEditMapRequested;
     private Consumer<DungeonEditorTool> onToolChanged;
 
     public DungeonEditorControls() {
@@ -56,7 +59,7 @@ public class DungeonEditorControls extends HBox {
         newMapButton.setTooltip(new Tooltip("Neuen Dungeon anlegen"));
         newMapButton.setOnAction(event -> {
             if (onNewMapRequested != null) {
-                onNewMapRequested.run();
+                onNewMapRequested.accept(newMapButton);
             }
         });
 
@@ -65,7 +68,7 @@ public class DungeonEditorControls extends HBox {
         editMapButton.setTooltip(new Tooltip("Dungeon bearbeiten"));
         editMapButton.setOnAction(event -> {
             if (onEditMapRequested != null && mapCombo.getValue() != null) {
-                onEditMapRequested.accept(mapCombo.getValue());
+                onEditMapRequested.accept(new MapActionRequest(mapCombo.getValue(), editMapButton));
             }
         });
         editMapButton.disableProperty().bind(mapCombo.valueProperty().isNull());
@@ -75,7 +78,7 @@ public class DungeonEditorControls extends HBox {
         ToggleButton paintButton = buildToolButton("▣ Malen", DungeonEditorTool.PAINT, toolGroup, false);
         ToggleButton eraseButton = buildToolButton("⌫ Löschen", DungeonEditorTool.ERASE, toolGroup, false);
         ToggleButton areaButton = buildToolButton("▧ Bereich", DungeonEditorTool.AREA_ASSIGN, toolGroup, false);
-        ToggleButton endpointButton = buildToolButton("◉ Knoten", DungeonEditorTool.ENDPOINT, toolGroup, false);
+        ToggleButton endpointButton = buildToolButton("◉ Übergang", DungeonEditorTool.ENDPOINT, toolGroup, false);
         ToggleButton linkButton = buildToolButton("↔ Link", DungeonEditorTool.LINK, toolGroup, false);
 
         toolGroup.selectedToggleProperty().addListener((obs, oldValue, newValue) -> {
@@ -154,11 +157,11 @@ public class DungeonEditorControls extends HBox {
         this.onMapSelected = onMapSelected;
     }
 
-    public void setOnNewMapRequested(Runnable onNewMapRequested) {
+    public void setOnNewMapRequested(Consumer<Node> onNewMapRequested) {
         this.onNewMapRequested = onNewMapRequested;
     }
 
-    public void setOnEditMapRequested(Consumer<DungeonMap> onEditMapRequested) {
+    public void setOnEditMapRequested(Consumer<MapActionRequest> onEditMapRequested) {
         this.onEditMapRequested = onEditMapRequested;
     }
 

@@ -7,6 +7,7 @@ import features.partyanalysis.service.EncounterWeightClassClassifier;
 import features.partyanalysis.model.AnalysisModelVersion;
 import features.partyanalysis.model.CreatureRoleProfile;
 import features.partyanalysis.model.EncounterWeightClass;
+import features.partyanalysis.model.StaticCreatureRoleHint;
 import features.partyanalysis.repository.EncounterPartyAnalysisRepository;
 import features.partyanalysis.repository.EncounterPartyAnalysisRepository.CreatureBaseRow;
 import features.partyanalysis.repository.EncounterPartyAnalysisRepository.CreatureDynamicRow;
@@ -19,7 +20,6 @@ import features.partyanalysis.repository.EncounterPartyCacheRepository.CacheStat
 import features.encounter.calibration.service.EncounterCalibrationService;
 import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
 import features.encounter.calibration.service.EncounterCalibrationService.PartyRelativeMetrics;
-import features.encounter.generation.service.EncounterGenerator;
 import features.party.api.PartyApi;
 
 import java.sql.Connection;
@@ -306,7 +306,7 @@ public final class EncounterPartyAnalysisService {
         }
     }
 
-    public static Map<Long, EncounterGenerator.StaticCreatureRoleHint> loadStaticRoleHints(Set<Long> creatureIds) {
+    public static Map<Long, StaticCreatureRoleHint> loadStaticRoleHints(Set<Long> creatureIds) {
         if (creatureIds == null || creatureIds.isEmpty()) {
             return Map.of();
         }
@@ -315,7 +315,7 @@ public final class EncounterPartyAnalysisService {
             if (rows.isEmpty()) {
                 return Map.of();
             }
-            Map<Long, EncounterGenerator.StaticCreatureRoleHint> hints = new java.util.HashMap<>(rows.size());
+            Map<Long, StaticCreatureRoleHint> hints = new java.util.HashMap<>(rows.size());
             for (Map.Entry<Long, CreatureStaticRow> entry : rows.entrySet()) {
                 CreatureStaticRow row = entry.getValue();
                 if (row == null || row.analysisVersion() < AnalysisModelVersion.current()) {
@@ -480,7 +480,7 @@ public final class EncounterPartyAnalysisService {
     public static CreatureRoleProfile fallbackRoleProfile(
             Creature creature,
             EncounterPartyBenchmarks party,
-            EncounterGenerator.StaticCreatureRoleHint staticRoleHint) {
+            StaticCreatureRoleHint staticRoleHint) {
         if (creature == null) {
             return new CreatureRoleProfile(null, EncounterWeightClass.REGULAR, null, Set.of(),
                     0.0, 1.0, 0.0, 0, Set.of());
@@ -557,8 +557,8 @@ public final class EncounterPartyAnalysisService {
                 Set.of());
     }
 
-    private static EncounterGenerator.StaticCreatureRoleHint toStaticRoleHint(CreatureStaticRow staticRow) {
-        return new EncounterGenerator.StaticCreatureRoleHint(
+    private static StaticCreatureRoleHint toStaticRoleHint(CreatureStaticRow staticRow) {
+        return new StaticCreatureRoleHint(
                 staticRow.primaryFunctionRole(),
                 parseCapabilityTags(staticRow.capabilityTags()),
                 staticRow.complexFeatureCount(),

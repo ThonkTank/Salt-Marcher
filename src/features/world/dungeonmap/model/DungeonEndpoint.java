@@ -6,6 +6,8 @@ public record DungeonEndpoint(
         Long squareId,
         String name,
         String notes,
+        DungeonEndpointRole role,
+        boolean defaultEntry,
         int x,
         int y
 ) {

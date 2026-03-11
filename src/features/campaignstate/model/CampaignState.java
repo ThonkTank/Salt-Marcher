@@ -3,7 +3,8 @@ package features.campaignstate.model;
 /**
  * Singleton campaign state — exactly one row in the DB (campaign_id = 1).
  * Use CampaignStateRepository.get() / upsert() to read or update.
- * MapId, PartyTileId, CalendarId, and CurrentPhaseId are nullable FKs.
+ * MapId, PartyTileId, CalendarId, CurrentPhaseId, DungeonMapId, and
+ * DungeonEndpointId are nullable FKs.
  */
 public class CampaignState {
     public long CampaignId;
@@ -14,4 +15,6 @@ public class CampaignState {
     public Long CurrentPhaseId;
     public String CurrentWeather;
     public String Notes;
+    public Long DungeonMapId;
+    public Long DungeonEndpointId;
 }

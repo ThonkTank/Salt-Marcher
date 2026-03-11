@@ -1,8 +1,11 @@
 package features.encounter.combat.service;
 
-import features.encounter.model.EncounterSlot;
-import features.encounter.generation.service.GenerationContext;
+import features.encounter.combat.application.ports.EncounterLootProvider;
+import features.encounter.combat.model.CombatLoot;
+import features.encounter.combat.model.ItemLoot;
 import features.encounter.combat.model.PreparedEncounterSlot;
+import features.encounter.generation.service.GenerationContext;
+import features.encounter.model.EncounterSlot;
 import shared.rules.model.LootCoins;
 import shared.rules.service.LootCalculator;
 import shared.rules.service.XpCalculator;
@@ -11,11 +14,34 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Assigns encounter loot to concrete creature instances before combat starts.
+ *
+ * <p>Behavior contract for linked loot tables:
+ * when an encounter resolves to exactly one linked loot table, that table becomes the authoritative
+ * loot source for the combat. The service must not silently fall back to generated coin loot when the
+ * linked table cannot satisfy the current reward budget. Runtime also must not interrupt play in that
+ * case, so the result remains linked-loot-only and may legitimately be empty. This is intentional
+ * behavior, not a bug.
  */
 public final class EncounterLootService {
+    public enum LootAssignmentStatus {
+        SUCCESS,
+        AMBIGUOUS_LINKED_LOOT,
+        STORAGE_ERROR
+    }
+
+    public record LootAssignmentResult(
+            LootAssignmentStatus status,
+            List<PreparedEncounterSlot> preparedSlots
+    ) {
+        public LootAssignmentResult {
+            preparedSlots = preparedSlots == null ? List.of() : List.copyOf(preparedSlots);
+        }
+    }
+
     private static final double XP_VARIATION_MIN = 0.60;
     private static final double XP_VARIATION_MAX = 1.60;
     private static final double TYPICAL_ENCOUNTER_MULTIPLIER = 2.5;
@@ -39,21 +65,38 @@ public final class EncounterLootService {
         throw new AssertionError("No instances");
     }
 
-    public static List<PreparedEncounterSlot> assignLootToSlots(
-            List<EncounterSlot> slots,
-            int averageLevel,
-            int partySize) {
-        return assignLootToSlots(slots, averageLevel, partySize, GenerationContext.defaultContext());
-    }
-
-    public static List<PreparedEncounterSlot> assignLootToSlots(
+    /**
+     * Assigns loot to the encounter slots before combat starts.
+     *
+     * <p>When a single linked loot table is active, combat must stay non-blocking: the method keeps the
+     * linked loot result, even if that result is empty for the current budget, rather than interrupting
+     * play or silently swapping in generated coin loot.
+     */
+    public static LootAssignmentResult assignLootToSlots(
             List<EncounterSlot> slots,
             int averageLevel,
             int partySize,
-            GenerationContext context) {
+            List<Long> encounterTableIds,
+            EncounterLootProvider encounterLootProvider) {
+        return assignLootToSlots(
+                slots,
+                averageLevel,
+                partySize,
+                encounterTableIds,
+                GenerationContext.defaultContext(),
+                encounterLootProvider);
+    }
+
+    public static LootAssignmentResult assignLootToSlots(
+            List<EncounterSlot> slots,
+            int averageLevel,
+            int partySize,
+            List<Long> encounterTableIds,
+            GenerationContext context,
+            EncounterLootProvider encounterLootProvider) {
         GenerationContext ctx = context != null ? context : GenerationContext.defaultContext();
         if (slots == null || slots.isEmpty()) {
-            return List.of();
+            return success(List.of());
         }
 
         List<EncounterSlot> assignedSlots = new ArrayList<>(slots.size());
@@ -62,7 +105,7 @@ public final class EncounterLootService {
             assignedSlots.add(slot.copy());
         }
         if (assignedSlots.isEmpty()) {
-            return List.of();
+            return success(List.of());
         }
 
         long totalMonsterXp = 0L;
@@ -80,25 +123,36 @@ public final class EncounterLootService {
         int perPlayerXp = toIntSaturated(totalMonsterXp / safePartySize);
         int totalGold = LootCalculator.settleGold(averageLevel, perPlayerXp, safePartySize).totalGold();
         int totalCp = toIntSaturated(Math.max(0L, (long) totalGold * LootCoins.CP_PER_GP));
+        List<Integer> flatXp = flatXpValues(assignedSlots);
+        if (flatXp.isEmpty()) {
+            return success(List.of());
+        }
+        List<Integer> slotIndices = slotIndicesFor(assignedSlots);
 
-        List<Integer> flatXp = new ArrayList<>();
-        List<Integer> slotIndices = new ArrayList<>();
-        for (int slotIndex = 0; slotIndex < assignedSlots.size(); slotIndex++) {
-            EncounterSlot slot = assignedSlots.get(slotIndex);
-            int count = Math.max(0, slot.getCount());
-            int xp = Math.max(0, slot.getCreature().getXp());
-            for (int i = 0; i < count; i++) {
-                flatXp.add(xp);
-                slotIndices.add(slotIndex);
+        if (encounterLootProvider != null) {
+            EncounterLootProvider.LootResolution lootResolution = encounterLootProvider.resolveLoot(encounterTableIds);
+            switch (lootResolution.status()) {
+                case AMBIGUOUS_LINKED -> {
+                    return new LootAssignmentResult(LootAssignmentStatus.AMBIGUOUS_LINKED_LOOT, List.of());
+                }
+                case STORAGE_ERROR -> {
+                    return new LootAssignmentResult(LootAssignmentStatus.STORAGE_ERROR, List.of());
+                }
+                case UNIQUE_LINKED -> {
+                    ItemLootAssignmentResult itemLootResult = assignItemLoot(flatXp, totalCp, lootResolution.items(), ctx);
+                    return success(toPreparedSlots(
+                            assignedSlots,
+                            regroupLoot(itemLootResult.perCreatureLoot(), slotIndices, assignedSlots.size())));
+                }
+                case NONE_LINKED -> {
+                    // Preserve the existing coin-only fallback when no loot table is linked.
+                }
             }
         }
-        if (flatXp.isEmpty()) {
-            return List.of();
-        }
 
-        List<LootCoins> flatLoot;
+        List<CombatLoot> flatLoot;
         if (totalCp <= 0) {
-            flatLoot = new ArrayList<>(Collections.nCopies(flatXp.size(), LootCoins.zero()));
+            flatLoot = new ArrayList<>(Collections.nCopies(flatXp.size(), CombatLoot.empty()));
         } else {
             List<Integer> cpPerEnemy = distributeCopperByXp(flatXp, totalCp, ctx);
             double encounterRewardFraction = encounterRewardFraction(totalCp, averageLevel, safePartySize);
@@ -114,28 +168,20 @@ public final class EncounterLootService {
             flatLoot = new ArrayList<>(cpPerEnemy.size());
             for (Integer cp : cpPerEnemy) {
                 int value = Math.max(0, cp == null ? 0 : cp);
-                flatLoot.add(convertEnemyCpToSelectedDenoms(
+                flatLoot.add(new CombatLoot(convertEnemyCpToSelectedDenoms(
                         value,
                         denomMask,
                         ctx,
                         encounterRewardFraction,
-                        totalCp));
+                        totalCp), List.of()));
             }
         }
-
-        List<List<LootCoins>> perSlotLoot = new ArrayList<>(assignedSlots.size());
-        for (int i = 0; i < assignedSlots.size(); i++) {
-            perSlotLoot.add(new ArrayList<>());
-        }
-        for (int i = 0; i < flatLoot.size(); i++) {
-            perSlotLoot.get(slotIndices.get(i)).add(flatLoot.get(i));
-        }
-        return toPreparedSlots(assignedSlots, perSlotLoot);
+        return success(toPreparedSlots(assignedSlots, regroupLoot(flatLoot, slotIndices, assignedSlots.size())));
     }
 
     private static List<PreparedEncounterSlot> toPreparedSlots(
             List<EncounterSlot> assignedSlots,
-            List<List<LootCoins>> perSlotLoot) {
+            List<List<CombatLoot>> perSlotLoot) {
         List<PreparedEncounterSlot> preparedSlots = new ArrayList<>(assignedSlots.size());
         for (int i = 0; i < assignedSlots.size(); i++) {
             EncounterSlot slot = assignedSlots.get(i);
@@ -952,11 +998,202 @@ public final class EncounterLootService {
         return Math.max(min, Math.min(max, value));
     }
 
+    private static List<Integer> flatXpValues(List<EncounterSlot> assignedSlots) {
+        List<Integer> flatXp = new ArrayList<>();
+        for (EncounterSlot slot : assignedSlots) {
+            int count = Math.max(0, slot.getCount());
+            int xp = Math.max(0, slot.getCreature().getXp());
+            for (int i = 0; i < count; i++) {
+                flatXp.add(xp);
+            }
+        }
+        return flatXp;
+    }
+
+    private static List<Integer> slotIndicesFor(List<EncounterSlot> assignedSlots) {
+        List<Integer> slotIndices = new ArrayList<>();
+        for (int slotIndex = 0; slotIndex < assignedSlots.size(); slotIndex++) {
+            EncounterSlot slot = assignedSlots.get(slotIndex);
+            int count = Math.max(0, slot.getCount());
+            for (int i = 0; i < count; i++) {
+                slotIndices.add(slotIndex);
+            }
+        }
+        return slotIndices;
+    }
+
+    private static List<List<CombatLoot>> regroupLoot(List<CombatLoot> flatLoot, List<Integer> slotIndices, int slotCount) {
+        List<List<CombatLoot>> perSlotLoot = new ArrayList<>(slotCount);
+        for (int i = 0; i < slotCount; i++) {
+            perSlotLoot.add(new ArrayList<>());
+        }
+        for (int i = 0; i < flatLoot.size(); i++) {
+            perSlotLoot.get(slotIndices.get(i)).add(flatLoot.get(i));
+        }
+        return perSlotLoot;
+    }
+
+    private static LootAssignmentResult success(List<PreparedEncounterSlot> preparedSlots) {
+        return new LootAssignmentResult(LootAssignmentStatus.SUCCESS, preparedSlots);
+    }
+
+    /**
+     * Rolls item loot for an authoritative linked loot table.
+     *
+     * <p>If the encounter has a positive reward budget but the linked table has no affordable entries,
+     * the result remains empty instead of silently substituting generated coin loot. Linked loot is an
+     * explicit GM choice, so runtime stays non-blocking while still preserving loot-table authority.
+     */
+    private static ItemLootAssignmentResult assignItemLoot(
+            List<Integer> flatXp,
+            int totalCp,
+            List<EncounterLootProvider.WeightedLootItem> weightedItems,
+            GenerationContext context) {
+        if (flatXp == null || flatXp.isEmpty()) {
+            return new ItemLootAssignmentResult(ItemLootAssignmentStatus.SUCCESS, List.of());
+        }
+        if (totalCp <= 0) {
+            return new ItemLootAssignmentResult(
+                    ItemLootAssignmentStatus.SUCCESS,
+                    new ArrayList<>(Collections.nCopies(flatXp.size(), CombatLoot.empty())));
+        }
+        if (weightedItems == null || weightedItems.isEmpty()) {
+            return emptyItemLoot(flatXp);
+        }
+
+        List<EncounterLootProvider.WeightedLootItem> pricedItems = weightedItems.stream()
+                .filter(Objects::nonNull)
+                .filter(item -> item.costCp() > 0 && item.weight() > 0)
+                .toList();
+        if (pricedItems.isEmpty()) {
+            return emptyItemLoot(flatXp);
+        }
+
+        int cheapest = pricedItems.stream().mapToInt(EncounterLootProvider.WeightedLootItem::costCp)
+                .min()
+                .orElse(Integer.MAX_VALUE);
+        if (cheapest <= 0 || totalCp < cheapest) {
+            return emptyItemLoot(flatXp);
+        }
+
+        List<ItemLoot> rolledItems = rollItemsWithinBudget(totalCp, pricedItems, context);
+        if (rolledItems.isEmpty()) {
+            return emptyItemLoot(flatXp);
+        }
+
+        List<List<ItemLoot>> perCreatureItems = distributeItemsToCreatures(flatXp, rolledItems, context);
+        List<CombatLoot> perCreatureLoot = new ArrayList<>(perCreatureItems.size());
+        for (List<ItemLoot> creatureItems : perCreatureItems) {
+            perCreatureLoot.add(new CombatLoot(LootCoins.zero(), creatureItems));
+        }
+        return new ItemLootAssignmentResult(ItemLootAssignmentStatus.SUCCESS, perCreatureLoot);
+    }
+
+    private static ItemLootAssignmentResult emptyItemLoot(List<Integer> flatXp) {
+        return new ItemLootAssignmentResult(
+                ItemLootAssignmentStatus.SUCCESS,
+                new ArrayList<>(Collections.nCopies(flatXp.size(), CombatLoot.empty())));
+    }
+
+    private static List<ItemLoot> rollItemsWithinBudget(
+            int totalCp,
+            List<EncounterLootProvider.WeightedLootItem> weightedItems,
+            GenerationContext context) {
+        int remaining = totalCp;
+        List<ItemLoot> rolledItems = new ArrayList<>();
+        int safety = 0;
+        while (remaining > 0 && safety++ < 512) {
+            int budgetRemaining = remaining;
+            List<EncounterLootProvider.WeightedLootItem> affordable = weightedItems.stream()
+                    .filter(item -> item.costCp() <= budgetRemaining)
+                    .toList();
+            if (affordable.isEmpty()) {
+                break;
+            }
+            EncounterLootProvider.WeightedLootItem selected = pickWeightedItem(affordable, context);
+            if (selected == null) {
+                break;
+            }
+            rolledItems.add(new ItemLoot(
+                    selected.itemId(),
+                    selected.itemName(),
+                    selected.category(),
+                    selected.rarity(),
+                    selected.costCp(),
+                    selected.costDisplay()));
+            remaining -= selected.costCp();
+        }
+        return rolledItems;
+    }
+
+    private static EncounterLootProvider.WeightedLootItem pickWeightedItem(
+            List<EncounterLootProvider.WeightedLootItem> items,
+            GenerationContext context) {
+        if (items == null || items.isEmpty()) {
+            return null;
+        }
+        int totalWeight = 0;
+        for (EncounterLootProvider.WeightedLootItem item : items) {
+            totalWeight += Math.max(0, item.weight());
+        }
+        if (totalWeight <= 0) {
+            return items.get(0);
+        }
+        int roll = context.nextInt(totalWeight);
+        int running = 0;
+        for (EncounterLootProvider.WeightedLootItem item : items) {
+            running += Math.max(0, item.weight());
+            if (roll < running) return item;
+        }
+        return items.get(items.size() - 1);
+    }
+
+    private static List<List<ItemLoot>> distributeItemsToCreatures(
+            List<Integer> flatXp,
+            List<ItemLoot> items,
+            GenerationContext context) {
+        List<List<ItemLoot>> perCreature = new ArrayList<>(flatXp.size());
+        List<Integer> assignedCp = new ArrayList<>(flatXp.size());
+        int xpSum = flatXp.stream().mapToInt(v -> Math.max(0, v == null ? 0 : v)).sum();
+        int totalItemCp = items.stream().mapToInt(ItemLoot::costCp).sum();
+        for (int i = 0; i < flatXp.size(); i++) {
+            perCreature.add(new ArrayList<>());
+            assignedCp.add(0);
+        }
+        for (ItemLoot item : items) {
+            int targetIndex = 0;
+            double bestScore = Double.NEGATIVE_INFINITY;
+            for (int i = 0; i < flatXp.size(); i++) {
+                double share = xpSum <= 0 ? 1.0 / flatXp.size() : Math.max(0, flatXp.get(i)) / (double) xpSum;
+                double targetCp = share * totalItemCp;
+                double remaining = targetCp - assignedCp.get(i);
+                double jitter = context.nextDouble() * 0.01;
+                double score = remaining + jitter;
+                if (score > bestScore) {
+                    bestScore = score;
+                    targetIndex = i;
+                }
+            }
+            perCreature.get(targetIndex).add(item);
+            assignedCp.set(targetIndex, assignedCp.get(targetIndex) + Math.max(0, item.costCp()));
+        }
+        return perCreature;
+    }
+
     private record ScoreEntry(int index, double score) {}
 
     private record ScoredMask(int mask, double score) {}
 
     private record Adjustment(int index, int delta, int error) {}
+    private enum ItemLootAssignmentStatus { SUCCESS }
+    private record ItemLootAssignmentResult(
+            ItemLootAssignmentStatus status,
+            List<CombatLoot> perCreatureLoot
+    ) {
+        private ItemLootAssignmentResult {
+            perCreatureLoot = perCreatureLoot == null ? List.of() : List.copyOf(perCreatureLoot);
+        }
+    }
 
     private record DenominationRange(int minDenoms, int maxDenoms) {}
 

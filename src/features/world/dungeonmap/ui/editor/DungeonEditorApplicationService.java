@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.model.DungeonArea;
-import features.world.dungeonmap.model.DungeonEncounterTableSummary;
+import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;

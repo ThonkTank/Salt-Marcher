@@ -3,6 +3,7 @@ package features.encounter.api;
 import features.encounter.builder.application.EncounterBuilderService;
 import features.encounter.combat.application.EncounterCombatService;
 import features.encounter.internal.wiring.DefaultCreatureCandidateProvider;
+import features.encounter.internal.wiring.DefaultEncounterLootProvider;
 import features.encounter.internal.wiring.DefaultEncounterTableProvider;
 import features.encounter.internal.wiring.DefaultPartyAnalysisProvider;
 import features.encounter.internal.wiring.DefaultPartyProvider;
@@ -42,7 +43,7 @@ public final class EncounterModule {
                 new DefaultEncounterTableProvider(),
                 new DefaultCreatureCandidateProvider()
         );
-        EncounterCombatService combatService = new EncounterCombatService();
+        EncounterCombatService combatService = new EncounterCombatService(new DefaultEncounterLootProvider());
         this.partyCacheService = new PartyAnalysisCacheService();
         this.view = new EncounterView(new EncounterViewCallbacks(
                 onRefreshToolbar,

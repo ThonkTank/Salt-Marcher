@@ -10,8 +10,9 @@ import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.panes.DungeonDetailsPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import ui.shell.DetailsNavigator;
 
-final class DungeonEditorSelectionController {
+final class DungeonSelectionWorkflowController {
 
     @FunctionalInterface
     interface LinkCreator {
@@ -21,10 +22,11 @@ final class DungeonEditorSelectionController {
     private final DungeonMapPane canvas;
     private final DungeonDetailsPane detailsPane;
     private final DungeonToolSettingsPane toolSettingsPane;
+    private DetailsNavigator detailsNavigator;
 
     private Long pendingLinkStartId;
 
-    DungeonEditorSelectionController(
+    DungeonSelectionWorkflowController(
             DungeonMapPane canvas,
             DungeonDetailsPane detailsPane,
             DungeonToolSettingsPane toolSettingsPane
@@ -37,12 +39,18 @@ final class DungeonEditorSelectionController {
     void updateToolMode(DungeonEditorTool tool) {
         boolean paintMode = tool == DungeonEditorTool.PAINT || tool == DungeonEditorTool.ERASE;
         canvas.setPaintMode(paintMode);
+        canvas.setEraseMode(tool == DungeonEditorTool.ERASE);
+        canvas.setHandMode(tool == DungeonEditorTool.ENDPOINT || tool == DungeonEditorTool.LINK);
         clearPendingLink();
         toolSettingsPane.setActiveTool(tool);
     }
 
     void cancelPendingLink() {
         clearPendingLink();
+    }
+
+    void setDetailsNavigator(DetailsNavigator detailsNavigator) {
+        this.detailsNavigator = detailsNavigator;
     }
 
     void clearSelection() {
@@ -82,7 +90,7 @@ final class DungeonEditorSelectionController {
             case SELECT -> selectSquare(interaction.square(), interaction.x(), interaction.y(), currentMapId);
             case AREA_ASSIGN -> {
                 if (interaction.square() == null || interaction.square().roomId() == null) {
-                    detailsPane.showInfoMessage("Dieses Feld hat keinen Raum — erst Raum zuweisen.");
+                    showInfoMessage("Bereich zuweisen", "Dieses Feld hat keinen Raum — erst Raum zuweisen.");
                 } else {
                     onAssignRoomArea.accept(interaction.square());
                 }
@@ -160,7 +168,7 @@ final class DungeonEditorSelectionController {
 
     private void showSelection(DungeonSelection selection) {
         canvas.setSelectedSelection(selection);
-        detailsPane.showSelection(selection);
+        publishSelection(selection);
         if (selection.type() == DungeonSelection.SelectionType.ROOM && selection.room() != null) {
             toolSettingsPane.selectRoom(selection.room().roomId());
         } else if (selection.type() == DungeonSelection.SelectionType.AREA && selection.area() != null) {
@@ -179,5 +187,49 @@ final class DungeonEditorSelectionController {
         pendingLinkStartId = null;
         canvas.setPendingLinkStart(null);
         toolSettingsPane.showLinkPending(false);
+    }
+
+    private void publishSelection(DungeonSelection selection) {
+        if (detailsNavigator == null) {
+            detailsPane.showSelection(selection);
+            return;
+        }
+        detailsNavigator.showContent(selectionTitle(selection), selectionKey(selection), () -> {
+            detailsPane.showSelection(selection);
+            return detailsPane;
+        });
+    }
+
+    private void showInfoMessage(String title, String message) {
+        if (detailsNavigator == null) {
+            detailsPane.showInfoMessage(message);
+            return;
+        }
+        detailsNavigator.showContent(title, "dungeon-info:" + message, () -> {
+            detailsPane.showInfoMessage(message);
+            return detailsPane;
+        });
+    }
+
+    private static String selectionTitle(DungeonSelection selection) {
+        if (selection == null) return "Dungeon-Details";
+        return switch (selection.type()) {
+            case ROOM -> selection.room() != null && selection.room().name() != null && !selection.room().name().isBlank()
+                    ? selection.room().name() : "Raum";
+            case AREA -> selection.area() != null && selection.area().name() != null && !selection.area().name().isBlank()
+                    ? selection.area().name() : "Bereich";
+            case ENDPOINT -> selection.endpoint() != null && selection.endpoint().name() != null && !selection.endpoint().name().isBlank()
+                    ? selection.endpoint().name() : "Knoten";
+            case LINK -> "Link";
+            case SQUARE -> "Feld";
+            case NONE -> "Dungeon-Details";
+        };
+    }
+
+    private static Object selectionKey(DungeonSelection selection) {
+        if (selection == null) {
+            return "dungeon:none";
+        }
+        return selection.type().name() + ":" + (selection.id() == null ? "none" : selection.id());
     }
 }

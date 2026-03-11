@@ -1,7 +1,8 @@
 package features.world.dungeonmap.ui.editor.panes;
 
+import features.world.dungeonmap.api.DungeonEncounterTableSummary;
+import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonArea;
-import features.world.dungeonmap.model.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import javafx.geometry.Insets;
@@ -9,6 +10,12 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import ui.components.ThemeColors;
 
@@ -21,17 +28,24 @@ public class DungeonToolSettingsPane extends VBox {
     private final ComboBox<DungeonArea> areaCombo = new ComboBox<>();
     private final ComboBox<DungeonEncounterTableSummary> encounterTableCombo = new ComboBox<>();
     private final CheckBox linksVisible = new CheckBox("Links anzeigen");
-    private final CheckBox endpointsVisible = new CheckBox("Knoten anzeigen");
+    private final CheckBox endpointsVisible = new CheckBox("Übergänge anzeigen");
     private final Button newRoomButton = new Button("Raum neu");
     private final Button deleteRoomButton = new Button("Raum löschen");
     private final Button newAreaButton = new Button("Bereich neu");
     private final Button deleteAreaButton = new Button("Bereich löschen");
 
+    private final Spinner<Integer> brushSizeSpinner = new Spinner<>(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 5, 1));
+    private final ToggleGroup shapeGroup = new ToggleGroup();
+    private final ToggleButton squareShapeBtn = new ToggleButton("\u25a1 Viereck");
+    private final ToggleButton circleShapeBtn = new ToggleButton("\u25cb Kreis");
+    private final ToggleButton diamondShapeBtn = new ToggleButton("\u25c7 Raute");
+
     private final VBox roomGroup;
+    private final VBox brushGroup;
     private final VBox areaGroup;
     private final VBox visibilityGroup;
     private final VBox linkStatusGroup;
-    private final Label linkStatusLabel = new Label("Startknoten gewählt — zweiten Knoten klicken");
+    private final Label linkStatusLabel = new Label("Ersten Übergang klicken, dann zweiten Übergang klicken.");
     private final Button cancelLinkButton = new Button("Abbrechen");
 
     private boolean updatingSelections = false;
@@ -68,9 +82,29 @@ public class DungeonToolSettingsPane extends VBox {
             }
         });
 
+        squareShapeBtn.setToggleGroup(shapeGroup);
+        squareShapeBtn.setUserData(BrushShape.SQUARE);
+        squareShapeBtn.setSelected(true);
+        circleShapeBtn.setToggleGroup(shapeGroup);
+        circleShapeBtn.setUserData(BrushShape.CIRCLE);
+        diamondShapeBtn.setToggleGroup(shapeGroup);
+        diamondShapeBtn.setUserData(BrushShape.DIAMOND);
+        shapeGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            if (newToggle == null) oldToggle.setSelected(true);
+        });
+
         Label roomLabel = new Label("Aktiver Raum");
         roomLabel.getStyleClass().add("text-muted");
         roomGroup = new VBox(4, roomLabel, roomCombo, newRoomButton, deleteRoomButton);
+
+        brushSizeSpinner.setPrefWidth(70);
+        brushSizeSpinner.setEditable(false);
+        Label brushLabel = new Label("Pinselgröße");
+        brushLabel.getStyleClass().add("text-muted");
+        HBox brushRow = new HBox(6, brushLabel, brushSizeSpinner);
+        brushRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        HBox shapeRow = new HBox(4, squareShapeBtn, circleShapeBtn, diamondShapeBtn);
+        brushGroup = new VBox(4, brushRow, shapeRow);
 
         Label areaLabel = new Label("Aktiver Bereich");
         areaLabel.getStyleClass().add("text-muted");
@@ -89,27 +123,57 @@ public class DungeonToolSettingsPane extends VBox {
                 header,
                 ThemeColors.controlSeparator(),
                 roomGroup,
+                brushGroup,
                 areaGroup,
                 visibilityGroup,
                 linkStatusGroup);
 
         // start with no tool-specific groups visible
         setGroupVisible(roomGroup, false);
+        setGroupVisible(brushGroup, false);
         setGroupVisible(areaGroup, false);
+        setMapLoaded(false);
     }
 
     public void setActiveTool(DungeonEditorTool tool) {
-        boolean paintOrErase = tool == DungeonEditorTool.PAINT || tool == DungeonEditorTool.ERASE;
-        setGroupVisible(roomGroup, paintOrErase);
+        boolean paint = tool == DungeonEditorTool.PAINT;
+        boolean paintOrErase = paint || tool == DungeonEditorTool.ERASE;
+        setGroupVisible(roomGroup, paint);
+        setGroupVisible(brushGroup, paintOrErase);
         setGroupVisible(areaGroup, tool == DungeonEditorTool.AREA_ASSIGN);
-        if (tool != DungeonEditorTool.LINK) {
-            showLinkPending(false);
+        if (tool == DungeonEditorTool.LINK) {
+            linkStatusLabel.setText("Ersten Übergang klicken, dann zweiten Übergang klicken.");
+            setGroupVisible(linkStatusGroup, true);
+            cancelLinkButton.setVisible(false);
+            cancelLinkButton.setManaged(false);
+        } else {
+            setGroupVisible(linkStatusGroup, false);
         }
     }
 
     public void showLinkPending(boolean pending) {
-        linkStatusGroup.setVisible(pending);
-        linkStatusGroup.setManaged(pending);
+        if (pending) {
+            linkStatusLabel.setText("Startübergang gewählt - zweiten Übergang klicken");
+            setGroupVisible(linkStatusGroup, true);
+            cancelLinkButton.setVisible(true);
+            cancelLinkButton.setManaged(true);
+        } else {
+            setGroupVisible(linkStatusGroup, false);
+        }
+    }
+
+    public int getBrushSize() {
+        return brushSizeSpinner.getValue();
+    }
+
+    public BrushShape getBrushShape() {
+        Toggle selected = shapeGroup.getSelectedToggle();
+        return selected != null ? (BrushShape) selected.getUserData() : BrushShape.SQUARE;
+    }
+
+    public void setMapLoaded(boolean loaded) {
+        newRoomButton.setDisable(!loaded);
+        newAreaButton.setDisable(!loaded);
     }
 
     public Long getActiveRoomId() {

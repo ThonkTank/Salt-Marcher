@@ -8,6 +8,7 @@ public record DungeonMapState(
         List<DungeonRoom> rooms,
         List<DungeonArea> areas,
         List<DungeonEndpoint> endpoints,
-        List<DungeonLink> links
+        List<DungeonLink> links,
+        List<DungeonPassage> passages
 ) {
 }

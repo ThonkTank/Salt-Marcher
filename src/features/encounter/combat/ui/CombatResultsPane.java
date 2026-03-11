@@ -1,7 +1,8 @@
 package features.encounter.combat.ui;
 
 import features.encounter.combat.application.EncounterCombatService;
-import shared.rules.model.LootCoins;
+import features.encounter.combat.model.CombatLoot;
+import features.encounter.combat.model.ItemLoot;
 import features.encounter.combat.model.MonsterCombatant;
 import features.encounter.combat.service.CombatSession;
 import features.party.api.PartyApi;
@@ -167,10 +168,10 @@ public class CombatResultsPane extends VBox {
         return s;
     }
 
-    private static LootCoins lootOf(CombatSession.EnemyOutcome outcome) {
+    private static CombatLoot lootOf(CombatSession.EnemyOutcome outcome) {
         return outcome != null && outcome.combatant() != null
-                ? outcome.combatant().getLootCoins()
-                : LootCoins.zero();
+                ? outcome.combatant().getLoot()
+                : CombatLoot.empty();
     }
 
     private static String statusLabel(CombatSession.EnemyStatus status) {
@@ -203,7 +204,7 @@ public class CombatResultsPane extends VBox {
             CheckBox toggle = new CheckBox(
                     outcome.combatant().getName()
                             + " (" + statusLabel(outcome.status()) + ")"
-                            + " - " + lootOf(outcome).formatCompact());
+                            + " - " + lootSummary(lootOf(outcome)));
             rows.add(new OptionalLootRow(outcome.combatant(), toggle));
             list.getChildren().add(toggle);
         }
@@ -261,9 +262,36 @@ public class CombatResultsPane extends VBox {
         partyInfoLabel.setText("pro Spieler  (" + partySize + " Spieler · "
                 + xpSettlement.awardedXp() + " XP gesamt)");
 
-        goldInfoLabel.setText(settlement.pooledLoot().formatCompact());
-        goldDetailLabel.setText("Loot-Pool gesamt ("
-                + settlement.deadLoot().formatCompact() + " durch tote Gegner)");
+        goldInfoLabel.setText(lootSummary(settlement.pooledLoot()));
+        goldDetailLabel.setText(detailText(settlement.deadLoot(), settlement.optionalLoot()));
+    }
+
+    private static String lootSummary(CombatLoot loot) {
+        return loot == null ? "Kein Loot" : loot.formatCompact();
+    }
+
+    private static String detailText(CombatLoot deadLoot, CombatLoot optionalLoot) {
+        CombatLoot safeDead = deadLoot == null ? CombatLoot.empty() : deadLoot;
+        CombatLoot safeOptional = optionalLoot == null ? CombatLoot.empty() : optionalLoot;
+        StringBuilder sb = new StringBuilder("Loot-Pool gesamt");
+        if (safeDead.hasAnyLoot()) {
+            sb.append(" (").append(safeDead.formatCompact()).append(" durch tote Gegner");
+            if (safeOptional.hasAnyLoot()) {
+                sb.append(", ").append(safeOptional.formatCompact()).append(" optional");
+            }
+            sb.append(")");
+        }
+        List<ItemLoot> pooledItems = new ArrayList<>();
+        pooledItems.addAll(safeDead.items());
+        pooledItems.addAll(safeOptional.items());
+        if (!pooledItems.isEmpty()) {
+            sb.append(" · ");
+            sb.append(pooledItems.stream().limit(4).map(ItemLoot::summary).reduce((a, b) -> a + ", " + b).orElse(""));
+            if (pooledItems.size() > 4) {
+                sb.append(" …");
+            }
+        }
+        return sb.toString();
     }
 
     private record OptionalLootRow(MonsterCombatant combatant, CheckBox toggle) {}

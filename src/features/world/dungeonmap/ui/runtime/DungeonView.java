@@ -85,7 +85,7 @@ public class DungeonView implements AppView {
         if (currentState == null) {
             canvas.setPartyEndpoint(null);
             controls.selectMap(null);
-            controls.showLocation(null, null, null);
+            controls.showLocation(null, null, null, null);
             return;
         }
         rebuildLookups();
@@ -112,19 +112,19 @@ public class DungeonView implements AppView {
     private void updateLocationLabels() {
         if (currentState == null || activeEndpointId == null) {
             canvas.setPartyEndpoint(null);
-            controls.showLocation(null, null, null);
+            controls.showLocation(null, null, null, null);
             return;
         }
         DungeonEndpoint endpoint = endpointsById.get(activeEndpointId);
         if (endpoint == null) {
             canvas.setPartyEndpoint(null);
-            controls.showLocation(null, null, null);
+            controls.showLocation(null, null, null, null);
             return;
         }
         DungeonSquare square = squaresById.get(endpoint.squareId());
         if (square == null) {
             canvas.setPartyEndpoint(null);
-            controls.showLocation(null, null, null);
+            controls.showLocation(null, null, null, null);
             return;
         }
         String roomName = square.roomName();
@@ -136,7 +136,7 @@ public class DungeonView implements AppView {
                 tableName = area.encounterTableName();
             }
         }
-        controls.showLocation(roomName, areaName, tableName);
+        controls.showLocation(roomName, areaName, tableName, endpoint.name());
         canvas.setPartyEndpoint(activeEndpointId);
     }
 

@@ -280,7 +280,7 @@ public class CombatSession {
                 source.getCurrentHp(),
                 source.getMaxHp(),
                 source.getAc(),
-                source.getLootCoins(),
+                source.getLoot(),
                 source.getCreatureRef());
     }
 

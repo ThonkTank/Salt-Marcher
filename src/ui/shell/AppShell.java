@@ -9,7 +9,6 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import features.creatures.api.StatBlockRequest;
 
@@ -31,8 +30,8 @@ import java.util.Map;
  * Left column is a VBox (Controls takes natural height, Main fills rest — not resizable).
  * Right column is a vertical SplitPane (Details / State — resizable).
  * <p>
- * SESSION views leave Details/State null → shell shows InspectorPane + ScenePane (persistent across SESSION views).
- * EDITOR views override Details/State → shell shows view-specific content.
+ * Views leave State null → shell shows the shell-owned details pane + ScenePane.
+ * The upper-right details pane is shell-owned for all views.
  * <p>
  * SplitPane items are set once in the constructor and never mutated.
  * Content is swapped inside StackPane containers only, which preserves divider positions.
@@ -46,7 +45,7 @@ public class AppShell extends BorderPane {
     // ---- Cockpit panels ----
     private final VBox controlsPanel = new VBox();               // Top-left: controls
     private final StackPane mainPanel = new StackPane();         // Bottom-left: main workspace
-    private final StackPane detailsContainer = new StackPane(); // Top-right: wraps InspectorPane or view content
+    private final StackPane detailsContainer = new StackPane(); // Top-right: always wraps shell-owned details pane
     private final StackPane stateContainer = new StackPane();   // Bottom-right: wraps ScenePane or view content
 
     // ---- Shell-owned panel defaults (used when views return null) ----
@@ -84,7 +83,7 @@ public class AppShell extends BorderPane {
         toolbar.setAlignment(Pos.CENTER_LEFT);
         setTop(toolbar);
 
-        // ---- Inspector (shell-owned, SESSION default for Details panel) ----
+        // ---- Details pane (shell-owned, default for Details panel) ----
         inspectorPane = new InspectorPane();
 
         // ---- Left column: Controls (content height) + Main (fills rest) ----
@@ -197,10 +196,10 @@ public class AppShell extends BorderPane {
     public Consumer<StatBlockRequest> getShowStatBlockHandler() { return request -> inspectorPane.showStatBlock(request); }
     /** Returns a handler for {@link InspectorPane#ensureStatBlock(StatBlockRequest)} — shows without toggling. */
     public Consumer<StatBlockRequest> getEnsureStatBlockHandler() { return request -> inspectorPane.ensureStatBlock(request); }
+    /** Returns the shared upper-right details navigator. */
+    public DetailsNavigator getDetailsNavigator() { return inspectorPane; }
     /** Returns the SceneRegistry for tab-based game-activity registration. */
     public SceneRegistry getSceneRegistry() { return scenePane; }
-    /** Returns a handler for showing arbitrary content in the inspector panel. */
-    public BiConsumer<String, Node> getShowContentHandler() { return inspectorPane::showContent; }
 
     /** Add a node to the persistent (right-aligned) toolbar zone. Survives navigation. */
     public void addPersistentToolbarItem(Node item) {
@@ -231,11 +230,9 @@ public class AppShell extends BorderPane {
             mainPanel.getChildren().setAll(main);
         }
 
-        // Details panel (top-right) — null = shell-owned InspectorPane
-        Node details = target.getDetailsContent();
-        Node detailsNode = details != null ? details : inspectorPane;
-        if (!detailsContainer.getChildren().contains(detailsNode)) {
-            detailsContainer.getChildren().setAll(detailsNode);
+        // Details panel (top-right) — always the shell-owned details pane
+        if (!detailsContainer.getChildren().contains(inspectorPane)) {
+            detailsContainer.getChildren().setAll(inspectorPane);
         }
 
         // State panel (bottom-right) — null = shell-owned ScenePane

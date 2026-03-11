@@ -2,12 +2,9 @@ package features.encounter.generation.service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import features.encounter.combat.model.Combatant;
 import features.creatures.model.Creature;
-import features.creatures.model.CreatureCapabilityTag;
-import features.creatures.model.EncounterFunctionRole;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
 import features.encounter.rules.EncounterMobSlotRules;
@@ -53,36 +50,33 @@ public final class EncounterGenerator {
             double enemyActionUnitsPerRound,
             int enemyTurnSlots,
             int distinctStatBlocks,
+            int totalCreatureCount,
+            int bossCount,
+            int regularCount,
+            int minionCount,
             int totalComplexActions,
             boolean pacingRelaxed,
-            boolean diversityRelaxed
+            boolean diversityRelaxed,
+            int candidatePoolSize,
+            int iterations,
+            int candidateEvaluations,
+            int backtrackCount,
+            int relaxationStage,
+            boolean exactMatchFound,
+            boolean searchBudgetExhausted
     ) {}
 
     public record GenerationDataSnapshot(
             Map<Long, Integer> selectionWeights,
-            Map<Long, CreatureRoleProfile> roleProfilesByCreatureId,
-            Map<Long, StaticCreatureRoleHint> staticRoleHintsByCreatureId
+            Map<Long, CreatureRoleProfile> roleProfilesByCreatureId
     ) {
         public GenerationDataSnapshot {
             selectionWeights = selectionWeights == null ? Map.of() : Map.copyOf(selectionWeights);
             roleProfilesByCreatureId = roleProfilesByCreatureId == null ? Map.of() : Map.copyOf(roleProfilesByCreatureId);
-            staticRoleHintsByCreatureId = staticRoleHintsByCreatureId == null ? Map.of() : Map.copyOf(staticRoleHintsByCreatureId);
         }
 
         public static GenerationDataSnapshot empty() {
-            return new GenerationDataSnapshot(Map.of(), Map.of(), Map.of());
-        }
-    }
-
-    public record StaticCreatureRoleHint(
-            EncounterFunctionRole primaryFunctionRole,
-            Set<CreatureCapabilityTag> capabilityTags,
-            int complexFeatureCount,
-            double baseActionUnitsPerRound,
-            double legendaryActionUnits
-    ) {
-        public StaticCreatureRoleHint {
-            capabilityTags = capabilityTags == null ? Set.of() : Set.copyOf(capabilityTags);
+            return new GenerationDataSnapshot(Map.of(), Map.of());
         }
     }
 
@@ -124,24 +118,50 @@ public final class EncounterGenerator {
     /**
      * Parameters for encounter generation.
      *
+     * <p>The three shape sliders are intentionally orthogonal:
+     * difficulty chooses the XP band, amount chooses boss-vs-minion composition,
+     * balance chooses CR spread within the roster, and diversity chooses the number
+     * of distinct statblocks. Keeping those concepts separate avoids ambiguous tuning
+     * behavior in the builder and in the search policies.
+     *
      * @param difficultyBand  difficulty band, {@code null} for Auto
-     * @param amountValue     1.0..5.0, negative for Auto (few creatures -> many creatures)
-     * @param balanceLevel    1..5, negative for Auto (lower band edge -> upper band edge)
+     * @param amountValue     1.0..5.0, negative for Auto (boss-heavy -> minion-heavy)
+     * @param balanceLevel    1..5, negative for Auto (CR extremes -> CR averages)
+     * @param diversityLevel  1..4, negative for Auto (distinct statblocks)
      */
     public record EncounterRequest(
             int partySize,
             int avgLevel,
-            List<String> creatureTypes,
-            List<String> subtypes,
-            List<String> biomes,
             EncounterDifficultyBand difficultyBand,
             double amountValue,
             int balanceLevel,
+            int diversityLevel,
             GenerationDataSnapshot analysisSnapshot
     ) {
         public EncounterRequest {
             analysisSnapshot = analysisSnapshot == null ? GenerationDataSnapshot.empty() : analysisSnapshot;
         }
+    }
+
+    public static EncounterRequest normalizeRequest(EncounterRequest request) {
+        if (request == null) {
+            return new EncounterRequest(
+                    1,
+                    1,
+                    null,
+                    -1.0,
+                    -1,
+                    -1,
+                    GenerationDataSnapshot.empty());
+        }
+        return new EncounterRequest(
+                Math.max(1, request.partySize()),
+                Math.max(1, Math.min(20, request.avgLevel())),
+                request.difficultyBand(),
+                request.amountValue(),
+                request.balanceLevel(),
+                request.diversityLevel(),
+                request.analysisSnapshot());
     }
 
     /**

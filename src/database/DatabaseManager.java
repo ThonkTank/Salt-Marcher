@@ -1,6 +1,8 @@
 package database;
 
+import features.campaignstate.repository.CampaignStateSchemaSupport;
 import features.partyanalysis.model.AnalysisModelVersion;
+import features.world.dungeonmap.repository.DungeonSchemaSupport;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -245,6 +247,8 @@ public final class DatabaseManager {
                     + "radius     INTEGER"
                     + ")");
 
+            DungeonSchemaSupport.createSchema(stmt);
+
             stmt.execute("CREATE TABLE IF NOT EXISTS factions ("
                     + "faction_id  INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + "name        TEXT    NOT NULL UNIQUE,"
@@ -291,16 +295,7 @@ public final class DatabaseManager {
                     + "is_dark       INTEGER NOT NULL DEFAULT 0"
                     + ")");
 
-            stmt.execute("CREATE TABLE IF NOT EXISTS campaign_state ("
-                    + "campaign_id       INTEGER PRIMARY KEY DEFAULT 1,"
-                    + "map_id            INTEGER REFERENCES hex_maps(map_id),"
-                    + "party_tile_id     INTEGER REFERENCES hex_tiles(tile_id),"
-                    + "calendar_id       INTEGER REFERENCES calendar_config(calendar_id),"
-                    + "current_epoch_day INTEGER NOT NULL DEFAULT 0,"
-                    + "current_phase_id  INTEGER REFERENCES time_of_day_phases(phase_id),"
-                    + "current_weather   TEXT,"
-                    + "notes             TEXT"
-                    + ")");
+            CampaignStateSchemaSupport.createSchema(stmt);
 
             stmt.execute("CREATE TABLE IF NOT EXISTS tile_faction_influence ("
                     + "tile_id      INTEGER NOT NULL REFERENCES hex_tiles(tile_id) ON DELETE CASCADE,"
@@ -324,6 +319,8 @@ public final class DatabaseManager {
                     + "PRIMARY KEY (table_id, creature_id),"
                     + "CHECK (weight BETWEEN 1 AND 10)"
                     + ")");
+
+            createLootTableSchema(stmt);
 
             stmt.execute("CREATE TABLE IF NOT EXISTS creature_action_analysis ("
                     + "action_id             INTEGER PRIMARY KEY REFERENCES creature_actions(id) ON DELETE CASCADE,"
@@ -465,12 +462,14 @@ public final class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creature_aliases_slug_key ON creature_import_aliases(slug_key)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_map ON hex_tiles(map_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_faction ON hex_tiles(dominant_faction_id)");
+            DungeonSchemaSupport.createIndexes(stmt);
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_world_locations_tile ON world_locations(tile_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_tile_influence_faction ON tile_faction_influence(faction_id)");
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_tod_phases_order ON time_of_day_phases(display_order)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounter_table_entries_table ON encounter_table_entries(table_id)");
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_encounter_tables_name_norm_unique "
                     + "ON encounter_tables(lower(trim(name)))");
+            createLootTableIndexes(stmt);
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_party_analysis_run ON creature_party_analysis(run_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_cache_runs_version_status "
                     + "ON encounter_party_cache_runs(party_comp_version, status)");
@@ -481,6 +480,9 @@ public final class DatabaseManager {
             ensureItemTagCompatibility(conn);
             ensureSpellCompatibility(conn);
             ensureEncounterAnalysisColumns(conn);
+            ensureLootTableCompatibility(conn);
+            DungeonSchemaSupport.ensureCompatibility(conn);
+            CampaignStateSchemaSupport.ensureCompatibility(conn);
             dropLegacyRoleColumns(conn);
 
             // Seed default time-of-day phases (German UI strings)
@@ -781,6 +783,39 @@ public final class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_spell_damage_types_damage_type ON spell_damage_types(damage_type)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_spell_tags_tag ON spell_tags(tag)");
         }
+    }
+
+    private static void ensureLootTableCompatibility(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            createLootTableSchema(stmt);
+            createLootTableIndexes(stmt);
+        }
+    }
+
+    private static void createLootTableSchema(Statement stmt) throws SQLException {
+        stmt.execute("CREATE TABLE IF NOT EXISTS loot_tables ("
+                + "loot_table_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "name          TEXT NOT NULL,"
+                + "description   TEXT"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS loot_table_entries ("
+                + "loot_table_id INTEGER NOT NULL REFERENCES loot_tables(loot_table_id) ON DELETE CASCADE,"
+                + "item_id       INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,"
+                + "weight        INTEGER NOT NULL DEFAULT 1,"
+                + "PRIMARY KEY (loot_table_id, item_id),"
+                + "CHECK (weight BETWEEN 1 AND 10)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS encounter_table_loot_links ("
+                + "table_id      INTEGER PRIMARY KEY REFERENCES encounter_tables(table_id) ON DELETE CASCADE,"
+                + "loot_table_id INTEGER NOT NULL REFERENCES loot_tables(loot_table_id) ON DELETE CASCADE"
+                + ")");
+    }
+
+    private static void createLootTableIndexes(Statement stmt) throws SQLException {
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_loot_table_entries_table ON loot_table_entries(loot_table_id)");
+        stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_loot_tables_name_norm_unique "
+                + "ON loot_tables(lower(trim(name)))");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_encounter_table_loot_links_loot ON encounter_table_loot_links(loot_table_id)");
     }
 
     private static boolean itemHasCanonicalTags(PreparedStatement hasTags, long itemId) throws SQLException {

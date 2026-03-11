@@ -42,9 +42,9 @@ final class DungeonMapDialogs {
                 "Dungeon von " + map.width() + "x" + map.height() + " auf "
                         + newWidth + "x" + newHeight + " verkleinern?\n"
                         + impact.squaresRemoved() + " Felder, "
-                        + impact.endpointsRemoved() + " Knoten und "
+                        + impact.endpointsRemoved() + " Übergänge und "
                         + impact.linksRemoved() + " Links werden unwiderruflich gelöscht.\n"
-                        + "Falls die Gruppe auf einem entfernten Knoten steht, wird ihre Position zurückgesetzt.",
+                        + "Falls die Gruppe auf einem entfernten Übergang steht, wird ihre Position zurückgesetzt.",
                 ButtonType.CANCEL, ButtonType.OK);
         confirm.setHeaderText("Dungeonverkleinerung bestätigen");
         Button cancelButton = (Button) confirm.getDialogPane().lookupButton(ButtonType.CANCEL);

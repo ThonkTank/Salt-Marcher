@@ -103,6 +103,7 @@ public final class CombatWorkflowController {
             List<Integer> pcInitiatives,
             Encounter encounter,
             List<Integer> monsterInitiatives,
+            List<Long> encounterTableIds,
             Supplier<List<PartyApi.PartyMember>> partySupplier,
             IntSupplier avgLevelSupplier
     ) {
@@ -116,7 +117,8 @@ public final class CombatWorkflowController {
                         party,
                         pcInitiatives,
                         encounter,
-                        monsterInitiatives
+                        monsterInitiatives,
+                        encounterTableIds
                 ));
             }
         };
@@ -214,6 +216,10 @@ public final class CombatWorkflowController {
                     "Mindestens ein Initiativewert der Spieler ist leer.";
             case PC_INITIATIVE_COUNT_MISMATCH ->
                     "Anzahl der Spieler und Initiativewerte passt nicht zusammen.";
+            case LOOT_CONFIGURATION_AMBIGUOUS ->
+                    "Die ausgewählten Encounter-Tabellen verweisen auf unterschiedliche Loot-Tabellen. Für Kampfbeute darf höchstens eine verknüpfte Loot-Tabelle aktiv sein.";
+            case LOOT_DATA_UNAVAILABLE ->
+                    "Loot-Daten konnten nicht geladen werden. Erneut versuchen oder Loot-Verknüpfungen prüfen.";
         };
     }
 }

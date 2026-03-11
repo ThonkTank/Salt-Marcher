@@ -1,6 +1,8 @@
 package features.encountertable.ui;
 
 import features.encountertable.model.EncounterTable;
+import features.encountertable.service.EncounterTableLootCoverageAnalyzer;
+import features.loottable.api.LootTableApi;
 import javafx.concurrent.Task;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
@@ -10,7 +12,9 @@ import features.creatures.api.CreatureCatalogService;
 import features.encountertable.service.EncounterTableNameNormalizer;
 import features.encountertable.service.EncounterTableService;
 import features.creatures.api.CreatureBrowserPane;
+import features.creatures.api.StatBlockRequest;
 import ui.shell.AppView;
+import ui.shell.DetailsNavigator;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 
@@ -30,26 +34,29 @@ public class EncounterTableEditorView implements AppView {
 
     private final CreatureBrowserPane monsterList;
     private final TableEditorControls controls;
-    private final TableDetailsPane detailsPane;
     private final TableEntriesPane entriesPane;
 
     private EncounterTable currentTable = null;
     private List<EncounterTable> knownTables = List.of();
+    private List<LootTableApi.LootTableSummary> knownLootTables = List.of();
+    private String currentLootCoverageWarning = null;
+    private long lootCoverageRequestVersion = 0;
     private boolean initialLoadDone = false;
+    private DetailsNavigator detailsNavigator;
 
     public EncounterTableEditorView() {
         monsterList = new CreatureBrowserPane();
         controls    = new TableEditorControls();
-        detailsPane = new TableDetailsPane();
         entriesPane = new TableEntriesPane();
 
         controls.setOnTableSelected(this::onTableSelected);
+        controls.setOnLootTableSelected(this::onLootTableSelected);
         controls.setOnCreateTable(this::onCreateTable);
         controls.setOnRenameTable(this::onRenameTable);
         controls.setOnDeleteTable(this::onDeleteTable);
 
-        monsterList.setOnRequestStatBlock(detailsPane::showStatBlock);
-        entriesPane.setOnRequestStatBlock(detailsPane::showStatBlock);
+        monsterList.setOnRequestStatBlock(this::showStatBlock);
+        entriesPane.setOnRequestStatBlock(this::showStatBlock);
     }
 
     // ---- Public API (wired by SaltMarcherApp) ----
@@ -59,29 +66,35 @@ public class EncounterTableEditorView implements AppView {
         controls.setOnFilterChanged(monsterList::applyFilters);
     }
 
+    public void setDetailsNavigator(DetailsNavigator detailsNavigator) {
+        this.detailsNavigator = detailsNavigator;
+        refreshTableDetails();
+    }
+
     // ---- AppView interface ----
 
     @Override public Node getMainContent()     { return monsterList; }
     @Override public String getTitle()          { return "Tabellen-Editor"; }
     @Override public String getIconText()       { return "\uD83D\uDCCB"; }
     @Override public Node getControlsContent() { return controls; }
-    @Override public Node getDetailsContent()  { return detailsPane; }
     @Override public Node getStateContent()    { return entriesPane; }
 
     @Override
     public void onShow() {
         if (!initialLoadDone) {
             monsterList.loadInitial();
-            reloadTableList();
             initialLoadDone = true;
         }
+        reloadTableList();
+        reloadLootTableList();
     }
 
     // ---- Internal ----
 
     private void onTableSelected(EncounterTable table) {
         currentTable = table;
-        detailsPane.showTable(table);
+        currentLootCoverageWarning = null;
+        refreshTableDetails();
         if (table != null) {
             long tableId = table.tableId;
             monsterList.setOnAddCreature(creature -> runTask(
@@ -130,11 +143,7 @@ public class EncounterTableEditorView implements AppView {
             });
             reloadEntries();
         } else {
-            monsterList.setOnAddCreature(null);
-            entriesPane.setOnRemoveEntry(null);
-            entriesPane.setOnUpdateWeight(null);
-            entriesPane.setEntries(List.of());
-            monsterList.setExcludeIds(java.util.Set.of());
+            resetTableSelectionState();
         }
     }
 
@@ -147,13 +156,17 @@ public class EncounterTableEditorView implements AppView {
                     if (currentTable == null || currentTable.tableId != tableId) return;
                     if (result.status() == EncounterTableService.ReadStatus.SUCCESS && result.table() != null) {
                         EncounterTable loaded = result.table();
+                        currentTable.entries = loaded.entries;
+                        currentTable.linkedLootTableId = loaded.linkedLootTableId;
                         entriesPane.setEntries(loaded.entries);
                         java.util.Set<Long> ids = new java.util.HashSet<>();
                         for (EncounterTable.Entry entry : loaded.entries) ids.add(entry.creatureId());
                         monsterList.setExcludeIds(ids);
+                        refreshLinkedLootCoverageWarning();
                     } else if (result.status() == EncounterTableService.ReadStatus.NOT_FOUND) {
                         currentTable = null;
-                        detailsPane.showTable(null);
+                        currentLootCoverageWarning = null;
+                        refreshTableDetails();
                         entriesPane.setEntries(List.of());
                         monsterList.setExcludeIds(java.util.Set.of());
                         reloadTableList();
@@ -176,6 +189,19 @@ public class EncounterTableEditorView implements AppView {
                 });
     }
 
+    private void reloadLootTableList() {
+        runTask("reloadLootTableList", LootTableApi::loadAllSummaries, result -> {
+            if (result.status() == LootTableApi.ReadStatus.SUCCESS) {
+                knownLootTables = List.copyOf(result.tables());
+                controls.setLootTableList(result.tables());
+                refreshTableDetails();
+                refreshLinkedLootCoverageWarning();
+            } else {
+                showLoadErrorAlert("Loot-Tabellen konnten nicht geladen werden.");
+            }
+        });
+    }
+
     private void reloadTableListAndSelect(long selectId) {
         runTask("reloadTableListAndSelect",
                 EncounterTableService::loadAll,
@@ -186,6 +212,7 @@ public class EncounterTableEditorView implements AppView {
                     }
                     List<EncounterTable> tables = result.tables();
                     applyTableList(tables);
+                    controls.setLootTableList(knownLootTables);
                     tables.stream()
                             .filter(t -> t.tableId == selectId)
                             .findFirst()
@@ -243,7 +270,7 @@ public class EncounterTableEditorView implements AppView {
                         switch (status) {
                             case SUCCESS -> {
                                 currentTable.name = stripped;
-                                detailsPane.showTable(currentTable);
+                                refreshTableDetails();
                                 reloadTableList();
                             }
                             case DUPLICATE_NAME -> {
@@ -272,8 +299,7 @@ public class EncounterTableEditorView implements AppView {
                     status -> {
                         if (status == EncounterTableService.MutationStatus.SUCCESS) {
                             currentTable = null;
-                            detailsPane.showTable(null);
-                            entriesPane.setEntries(List.of());
+                            resetTableSelectionState();
                             reloadTableList();
                         } else {
                             showMutationErrorAlert("Tabelle konnte nicht gelöscht werden.");
@@ -281,6 +307,27 @@ public class EncounterTableEditorView implements AppView {
                         }
                     });
         });
+    }
+
+    private void onLootTableSelected(LootTableApi.LootTableSummary lootTable) {
+        if (currentTable == null) return;
+        Long lootTableId = lootTable == null || lootTable.tableId() < 0 ? null : lootTable.tableId();
+        if (java.util.Objects.equals(currentTable.linkedLootTableId, lootTableId)) return;
+        long tableId = currentTable.tableId;
+        runTask("updateLinkedLootTable",
+                () -> EncounterTableService.updateLinkedLootTable(tableId, lootTableId),
+                status -> {
+                    if (status == EncounterTableService.MutationStatus.SUCCESS) {
+                        currentTable.linkedLootTableId = lootTableId;
+                        currentLootCoverageWarning = null;
+                        refreshTableDetails();
+                        refreshLinkedLootCoverageWarning();
+                        reloadTableList();
+                    } else {
+                        showMutationErrorAlert("Loot-Verknüpfung konnte nicht gespeichert werden.");
+                        reloadTableListAndSelect(tableId);
+                    }
+                });
     }
 
     /** Runs {@code work} on the shared UI async executor; delivers result to FX thread via callbacks. */
@@ -306,6 +353,78 @@ public class EncounterTableEditorView implements AppView {
     private void applyTableList(List<EncounterTable> tables) {
         knownTables = List.copyOf(tables);
         controls.setTableList(tables);
+        controls.setLootTableList(knownLootTables);
+        refreshTableDetails();
+    }
+
+    private void resetTableSelectionState() {
+        currentLootCoverageWarning = null;
+        refreshTableDetails();
+        monsterList.setOnAddCreature(null);
+        entriesPane.setOnRemoveEntry(null);
+        entriesPane.setOnUpdateWeight(null);
+        entriesPane.setEntries(List.of());
+        monsterList.setExcludeIds(java.util.Set.of());
+    }
+
+    private void refreshTableDetails() {
+        if (detailsNavigator == null || currentTable == null) return;
+        int entryCount = currentTable.entries == null ? 0 : currentTable.entries.size();
+        detailsNavigator.showEncounterTable(new DetailsNavigator.EncounterTableSummary(
+                currentTable.tableId,
+                currentTable.name,
+                linkedLootTableName(currentTable),
+                currentLootCoverageWarning,
+                entryCount));
+    }
+
+    private void showStatBlock(Long creatureId) {
+        if (creatureId == null || detailsNavigator == null) return;
+        detailsNavigator.showStatBlock(StatBlockRequest.forCreature(creatureId));
+    }
+
+    private void refreshLinkedLootCoverageWarning() {
+        long requestVersion = ++lootCoverageRequestVersion;
+        if (currentTable == null || currentTable.linkedLootTableId == null || currentTable.entries == null || currentTable.entries.isEmpty()) {
+            currentLootCoverageWarning = null;
+            refreshTableDetails();
+            return;
+        }
+        Long lootTableId = currentTable.linkedLootTableId;
+        runTask("refreshLinkedLootCoverageWarning",
+                () -> LootTableApi.loadWeightedItems(lootTableId),
+                result -> {
+                    if (requestVersion != lootCoverageRequestVersion
+                            || currentTable == null
+                            || !java.util.Objects.equals(currentTable.linkedLootTableId, lootTableId)) {
+                        return;
+                    }
+                    if (result.status() != LootTableApi.ReadStatus.SUCCESS) {
+                        currentLootCoverageWarning = "Loot-Analyse konnte nicht geladen werden.";
+                    } else {
+                        currentLootCoverageWarning = EncounterTableLootCoverageAnalyzer.analyzeCoverageWarning(currentTable, result.items());
+                    }
+                    refreshTableDetails();
+                },
+                throwable -> {
+                    if (requestVersion != lootCoverageRequestVersion) {
+                        return;
+                    }
+                    currentLootCoverageWarning = "Loot-Analyse konnte nicht geladen werden.";
+                    refreshTableDetails();
+                });
+    }
+
+    private String linkedLootTableName(EncounterTable table) {
+        if (table == null || table.linkedLootTableId == null) {
+            return null;
+        }
+        for (LootTableApi.LootTableSummary ref : knownLootTables) {
+            if (ref.tableId() == table.linkedLootTableId) {
+                return ref.name();
+            }
+        }
+        return null;
     }
 
     private boolean isDuplicateTableName(String candidate, Long excludeTableId) {

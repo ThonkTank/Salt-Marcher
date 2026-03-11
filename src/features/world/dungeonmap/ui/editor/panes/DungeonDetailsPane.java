@@ -1,8 +1,9 @@
 package features.world.dungeonmap.ui.editor.panes;
 
 import features.world.dungeonmap.model.DungeonArea;
-import features.world.dungeonmap.model.DungeonEncounterTableSummary;
+import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonEndpointRole;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
@@ -10,12 +11,14 @@ import features.world.dungeonmap.model.DungeonSquare;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -24,17 +27,18 @@ public class DungeonDetailsPane extends VBox {
 
     public record RoomForm(Long roomId, String name, String description, Long areaId) {}
     public record AreaForm(Long areaId, String name, String description, Long encounterTableId) {}
-    public record EndpointForm(Long endpointId, String name, String notes) {}
+    public record EndpointForm(Long endpointId, String name, String notes, DungeonEndpointRole role, boolean defaultEntry) {}
     public record LinkForm(Long linkId, String label) {}
+    public record DeleteRequest(Long entityId, Node anchor) {}
 
     private Consumer<RoomForm> onRoomSaved;
-    private Consumer<Long> onRoomDeleted;
+    private Consumer<DeleteRequest> onRoomDeleted;
     private Consumer<AreaForm> onAreaSaved;
-    private Consumer<Long> onAreaDeleted;
+    private Consumer<DeleteRequest> onAreaDeleted;
     private Consumer<EndpointForm> onEndpointSaved;
-    private Consumer<Long> onEndpointDeleted;
+    private Consumer<DeleteRequest> onEndpointDeleted;
     private Consumer<LinkForm> onLinkSaved;
-    private Consumer<Long> onLinkDeleted;
+    private Consumer<DeleteRequest> onLinkDeleted;
 
     private List<DungeonArea> knownAreas = List.of();
     private List<DungeonEncounterTableSummary> knownEncounterTables = List.of();
@@ -134,7 +138,7 @@ public class DungeonDetailsPane extends VBox {
         Button deleteButton = new Button("Raum löschen");
         deleteButton.setOnAction(event -> {
             if (onRoomDeleted != null) {
-                onRoomDeleted.accept(room.roomId());
+                onRoomDeleted.accept(new DeleteRequest(room.roomId(), deleteButton));
             }
         });
         appendLabeled("Name", nameField);
@@ -171,7 +175,7 @@ public class DungeonDetailsPane extends VBox {
         Button deleteButton = new Button("Bereich löschen");
         deleteButton.setOnAction(event -> {
             if (onAreaDeleted != null) {
-                onAreaDeleted.accept(area.areaId());
+                onAreaDeleted.accept(new DeleteRequest(area.areaId(), deleteButton));
             }
         });
         appendLabeled("Name", nameField);
@@ -183,16 +187,55 @@ public class DungeonDetailsPane extends VBox {
     private void renderEndpoint(DungeonEndpoint endpoint) {
         TextField nameField = new TextField(endpoint.name() == null ? "" : endpoint.name());
         TextArea notesArea = new TextArea(endpoint.notes() == null ? "" : endpoint.notes());
-        Button saveButton = new Button("Knoten speichern");
-        saveButton.setOnAction(event -> {
-            if (onEndpointSaved != null) {
-                onEndpointSaved.accept(new EndpointForm(endpoint.endpointId(), nameField.getText().trim(), notesArea.getText()));
+        ComboBox<DungeonEndpointRole> roleCombo = new ComboBox<>();
+        roleCombo.getItems().setAll(DungeonEndpointRole.values());
+        roleCombo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(DungeonEndpointRole role) {
+                if (role == null) {
+                    return "";
+                }
+                return switch (role) {
+                    case ENTRY -> "Eingang";
+                    case EXIT -> "Ausgang";
+                    case BOTH -> "Ein- und Ausgang";
+                };
+            }
+
+            @Override
+            public DungeonEndpointRole fromString(String string) {
+                return null;
             }
         });
-        Button deleteButton = new Button("Knoten löschen");
+        roleCombo.setValue(endpoint.role() == null ? DungeonEndpointRole.BOTH : endpoint.role());
+        CheckBox defaultEntryCheckBox = new CheckBox("Als Standard-Eingang verwenden");
+        defaultEntryCheckBox.setSelected(endpoint.defaultEntry());
+        roleCombo.valueProperty().addListener((obs, oldValue, newValue) -> {
+            DungeonEndpointRole effectiveRole = newValue == null ? DungeonEndpointRole.BOTH : newValue;
+            boolean entryAllowed = effectiveRole.allowsEntry();
+            defaultEntryCheckBox.setDisable(!entryAllowed);
+            if (!entryAllowed) {
+                defaultEntryCheckBox.setSelected(false);
+            }
+        });
+        DungeonEndpointRole initialRole = roleCombo.getValue() == null ? DungeonEndpointRole.BOTH : roleCombo.getValue();
+        defaultEntryCheckBox.setDisable(!initialRole.allowsEntry());
+        Button saveButton = new Button("Übergang speichern");
+        saveButton.setOnAction(event -> {
+            if (onEndpointSaved != null) {
+                DungeonEndpointRole role = roleCombo.getValue() == null ? DungeonEndpointRole.BOTH : roleCombo.getValue();
+                onEndpointSaved.accept(new EndpointForm(
+                        endpoint.endpointId(),
+                        nameField.getText().trim(),
+                        notesArea.getText(),
+                        role,
+                        defaultEntryCheckBox.isSelected() && role.allowsEntry()));
+            }
+        });
+        Button deleteButton = new Button("Übergang löschen");
         deleteButton.setOnAction(event -> {
             if (onEndpointDeleted != null) {
-                onEndpointDeleted.accept(endpoint.endpointId());
+                onEndpointDeleted.accept(new DeleteRequest(endpoint.endpointId(), deleteButton));
             }
         });
         Label posLabel = new Label("Position");
@@ -200,6 +243,8 @@ public class DungeonDetailsPane extends VBox {
         getChildren().addAll(posLabel, new Label(endpoint.x() + ", " + endpoint.y()));
         appendLabeled("Name", nameField);
         appendLabeled("Notizen", notesArea);
+        appendLabeled("Typ", roleCombo);
+        getChildren().add(defaultEntryCheckBox);
         getChildren().addAll(saveButton, deleteButton);
     }
 
@@ -214,7 +259,7 @@ public class DungeonDetailsPane extends VBox {
         Button deleteButton = new Button("Link löschen");
         deleteButton.setOnAction(event -> {
             if (onLinkDeleted != null) {
-                onLinkDeleted.accept(link.linkId());
+                onLinkDeleted.accept(new DeleteRequest(link.linkId(), deleteButton));
             }
         });
         Label connLabel = new Label("Verbindet");
@@ -230,10 +275,10 @@ public class DungeonDetailsPane extends VBox {
         for (DungeonEndpoint endpoint : knownEndpoints) {
             if (endpointId == endpoint.endpointId()) {
                 String name = endpoint.name();
-                return (name != null && !name.isBlank()) ? name : "Knoten #" + endpointId;
+                return (name != null && !name.isBlank()) ? name : "Übergang #" + endpointId;
             }
         }
-        return "Knoten #" + endpointId;
+        return "Übergang #" + endpointId;
     }
 
     private void appendLabeled(String labelText, Node node) {
@@ -254,7 +299,7 @@ public class DungeonDetailsPane extends VBox {
         this.onRoomSaved = onRoomSaved;
     }
 
-    public void setOnRoomDeleted(Consumer<Long> onRoomDeleted) {
+    public void setOnRoomDeleted(Consumer<DeleteRequest> onRoomDeleted) {
         this.onRoomDeleted = onRoomDeleted;
     }
 
@@ -262,7 +307,7 @@ public class DungeonDetailsPane extends VBox {
         this.onAreaSaved = onAreaSaved;
     }
 
-    public void setOnAreaDeleted(Consumer<Long> onAreaDeleted) {
+    public void setOnAreaDeleted(Consumer<DeleteRequest> onAreaDeleted) {
         this.onAreaDeleted = onAreaDeleted;
     }
 
@@ -270,7 +315,7 @@ public class DungeonDetailsPane extends VBox {
         this.onEndpointSaved = onEndpointSaved;
     }
 
-    public void setOnEndpointDeleted(Consumer<Long> onEndpointDeleted) {
+    public void setOnEndpointDeleted(Consumer<DeleteRequest> onEndpointDeleted) {
         this.onEndpointDeleted = onEndpointDeleted;
     }
 
@@ -278,7 +323,7 @@ public class DungeonDetailsPane extends VBox {
         this.onLinkSaved = onLinkSaved;
     }
 
-    public void setOnLinkDeleted(Consumer<Long> onLinkDeleted) {
+    public void setOnLinkDeleted(Consumer<DeleteRequest> onLinkDeleted) {
         this.onLinkDeleted = onLinkDeleted;
     }
 }

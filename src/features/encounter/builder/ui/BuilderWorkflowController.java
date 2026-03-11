@@ -94,6 +94,7 @@ public final class BuilderWorkflowController {
         EncounterDifficultyBand difficultyBand = encounterControls.getSelectedDifficultyBand();
         int balanceLevel = encounterControls.getSelectedBalanceLevel();
         double amountValue = encounterControls.getSelectedAmountValue();
+        int diversityLevel = encounterControls.getSelectedDiversityLevel();
         List<Long> tableIds = encounterControls.getSelectedTableIds();
 
         rosterPane.showGenerating();
@@ -114,6 +115,7 @@ public final class BuilderWorkflowController {
                                 difficultyBand,
                                 balanceLevel,
                                 amountValue,
+                                diversityLevel,
                                 tableIds
                         ),
                         GenerationContext.defaultContext(this::isCancelled));
@@ -154,6 +156,7 @@ public final class BuilderWorkflowController {
                 result.pcInitiatives(),
                 encounter,
                 result.monsterInitiatives(),
+                encounterControls.getSelectedTableIds(),
                 this::getPartyCache,
                 this::getCachedAvgLevel
         ));

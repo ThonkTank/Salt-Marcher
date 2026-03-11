@@ -54,6 +54,24 @@
     -sm-chip-sub-border:   #307070;
     -sm-chip-cr-bg:        #1a2530;
     -sm-chip-cr-border:    #305070;
+    -sm-chip-item-search-bg:      -sm-chip-type-bg;
+    -sm-chip-item-search-border:  -sm-chip-type-border;
+    -sm-chip-item-cost-bg:        -sm-chip-cr-bg;
+    -sm-chip-item-cost-border:    -sm-chip-cr-border;
+    -sm-chip-item-magic-bg:       -sm-chip-align-bg;
+    -sm-chip-item-magic-border:   -sm-chip-align-border;
+    -sm-chip-item-attune-bg:      #2b2418;
+    -sm-chip-item-attune-border:  #8a6a35;
+    -sm-chip-item-category-bg:    -sm-chip-type-bg;
+    -sm-chip-item-category-border:-sm-chip-type-border;
+    -sm-chip-item-sub-bg:         -sm-chip-sub-bg;
+    -sm-chip-item-sub-border:     -sm-chip-sub-border;
+    -sm-chip-item-rarity-bg:      -sm-chip-cr-bg;
+    -sm-chip-item-rarity-border:  -sm-chip-cr-border;
+    -sm-chip-item-tag-bg:         -sm-chip-biome-bg;
+    -sm-chip-item-tag-border:     -sm-chip-biome-border;
+    -sm-chip-item-source-bg:      -sm-chip-size-bg;
+    -sm-chip-item-source-border:  -sm-chip-size-border;
 
     -sm-border-subtle: #333a3f;
 
@@ -74,6 +92,30 @@
     -fx-font-size: 13px;
     -fx-base: #12181c;
     -fx-background: #12181c;
+}
+
+/* ---- Startup ---- */
+.startup-root {
+    -fx-background-color:
+        radial-gradient(center 50% 35%, radius 85%, derive(-sm-accent, -50%) 0%, -sm-bg-darkest 55%);
+}
+.startup-card {
+    -fx-background-color: rgba(26, 32, 37, 0.96);
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 18, 0.2, 0, 8);
+}
+.startup-card .progress-indicator {
+    -fx-progress-color: -sm-accent-hover;
+}
+.startup-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+.startup-subtitle {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 12px;
 }
 
 /* ---- Global surfaces ---- */
@@ -425,12 +467,12 @@
 .role-support    { -fx-border-color: -sm-role-support;    -fx-text-fill: -sm-role-support; }
 
 /* ---- Creature link ---- */
-.creature-link {
+.creature-link, .item-link {
     -fx-text-fill: -sm-creature-link;
     -fx-font-weight: bold;
     -fx-cursor: hand;
 }
-.button.creature-link {
+.button.creature-link, .button.item-link {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-padding: 0;
@@ -438,11 +480,11 @@
     -fx-font-weight: bold;
     -fx-cursor: hand;
 }
-.button.creature-link:hover {
+.button.creature-link:hover, .button.item-link:hover {
     -fx-underline: true;
     -fx-background-color: transparent;
 }
-.creature-link:hover {
+.creature-link:hover, .item-link:hover {
     -fx-underline: true;
 }
 
@@ -460,6 +502,15 @@
 .chip-align   { -fx-background-color: -sm-chip-align-bg; -fx-border-color: -sm-chip-align-border; }
 .chip-subtype { -fx-background-color: -sm-chip-sub-bg;   -fx-border-color: -sm-chip-sub-border; }
 .chip-cr      { -fx-background-color: -sm-chip-cr-bg;    -fx-border-color: -sm-chip-cr-border; }
+.chip-item-search      { -fx-background-color: -sm-chip-item-search-bg;   -fx-border-color: -sm-chip-item-search-border; }
+.chip-item-cost        { -fx-background-color: -sm-chip-item-cost-bg;     -fx-border-color: -sm-chip-item-cost-border; }
+.chip-item-magic       { -fx-background-color: -sm-chip-item-magic-bg;    -fx-border-color: -sm-chip-item-magic-border; }
+.chip-item-attunement  { -fx-background-color: -sm-chip-item-attune-bg;   -fx-border-color: -sm-chip-item-attune-border; }
+.chip-item-category    { -fx-background-color: -sm-chip-item-category-bg; -fx-border-color: -sm-chip-item-category-border; }
+.chip-item-subcategory { -fx-background-color: -sm-chip-item-sub-bg;      -fx-border-color: -sm-chip-item-sub-border; }
+.chip-item-rarity      { -fx-background-color: -sm-chip-item-rarity-bg;   -fx-border-color: -sm-chip-item-rarity-border; }
+.chip-item-tag         { -fx-background-color: -sm-chip-item-tag-bg;      -fx-border-color: -sm-chip-item-tag-border; }
+.chip-item-source      { -fx-background-color: -sm-chip-item-source-bg;   -fx-border-color: -sm-chip-item-source-border; }
 
 /* ---- Utility ---- */
 .clickable {
@@ -936,6 +987,9 @@
 .map-editor-canvas {
     -fx-background-color: -sm-bg-darkest;
 }
+.dungeon-map-canvas {
+    -fx-background-color: -sm-bg-darkest;
+}
 .hex-map-placeholder {
     -fx-text-alignment: center;
     -fx-font-size: 16px;
@@ -1129,6 +1183,35 @@
     -fx-border-color: -sm-border-subtle;
     -fx-border-width: 0 1 1 1;
     -fx-max-height: 120;
+}
+
+/* ---- Anchored Dropdown Windows ---- */
+.dropdown-window {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.45), 12, 0, 0, 3);
+    -fx-min-width: 260;
+    -fx-pref-width: 320;
+}
+.dropdown-title {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-primary;
+}
+.dropdown-message {
+    -fx-text-fill: -sm-text-secondary;
+}
+.dropdown-actions {
+    -fx-alignment: center-left;
+}
+.dropdown-impact {
+    -fx-text-fill: -sm-warning;
+}
+.dropdown-subtle {
+    -fx-text-fill: -sm-text-muted;
 }
 .party-suggestions .list-cell {
     -fx-background-color: -sm-bg-card;

@@ -43,6 +43,7 @@ public final class EncounterTableService {
     public record TableListResult(ReadStatus status, List<EncounterTable> tables) {}
     public record TableResult(ReadStatus status, EncounterTable table) {}
     public record CandidatesResult(ReadStatus status, List<Creature> candidates, Map<Long, Integer> selectionWeights) {}
+    public record LinkedLootTableIdsResult(ReadStatus status, List<Long> lootTableIds) {}
 
     public static TableListResult loadAll() {
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -151,6 +152,16 @@ public final class EncounterTableService {
         }
     }
 
+    public static MutationStatus updateLinkedLootTable(long tableId, Long lootTableId) {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            EncounterTableRepository.updateLinkedLootTable(conn, tableId, lootTableId);
+            return MutationStatus.SUCCESS;
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "EncounterTableService.updateLinkedLootTable(): DB access failed", e);
+            return MutationStatus.STORAGE_ERROR;
+        }
+    }
+
     /**
      * Returns unique creature candidates plus optional table selection weights for the encounter generator.
      * Only creatures with XP ≤ maxXp are included.
@@ -171,6 +182,19 @@ public final class EncounterTableService {
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "EncounterTableService.getCandidatesFromTables(): DB access failed", e);
             return new CandidatesResult(ReadStatus.STORAGE_ERROR, List.of(), Map.of());
+        }
+    }
+
+    public static LinkedLootTableIdsResult loadDistinctLinkedLootTableIds(List<Long> encounterTableIds) {
+        if (encounterTableIds == null || encounterTableIds.isEmpty()) {
+            return new LinkedLootTableIdsResult(ReadStatus.SUCCESS, List.of());
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            List<Long> lootTableIds = EncounterTableRepository.getDistinctLinkedLootTableIds(conn, encounterTableIds);
+            return new LinkedLootTableIdsResult(ReadStatus.SUCCESS, lootTableIds);
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "EncounterTableService.loadDistinctLinkedLootTableIds(): DB access failed", e);
+            return new LinkedLootTableIdsResult(ReadStatus.STORAGE_ERROR, List.of());
         }
     }
 

@@ -3,7 +3,6 @@ package features.loottable.ui;
 import features.items.api.ItemBrowserPane;
 import features.items.api.ItemBrowserRowAction;
 import features.items.api.ItemCatalogService;
-import features.items.api.ItemViewerPane;
 import features.loottable.model.LootTable;
 import features.loottable.service.LootTableNameNormalizer;
 import features.loottable.service.LootTableService;
@@ -11,18 +10,16 @@ import javafx.concurrent.Task;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.Label;
 import javafx.scene.control.TextInputDialog;
-import javafx.scene.layout.VBox;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 import ui.shell.AppView;
+import ui.shell.DetailsNavigator;
 
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.HashSet;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public class LootTableEditorView implements AppView {
@@ -34,11 +31,9 @@ public class LootTableEditorView implements AppView {
     private LootTable currentTable;
     private List<LootTable> knownTables = List.of();
     private boolean initialLoadDone = false;
-    private BiConsumer<String, Node> inspectorContentHandler;
-    private Task<?> currentItemLoadTask;
-    private long itemLoadRequestVersion = 0;
     private final Set<Long> pendingWeightItemIds = new HashSet<>();
     private Set<Long> excludeIds = Set.of();
+    private DetailsNavigator detailsNavigator;
 
     public LootTableEditorView() {
         itemBrowserPane = new ItemBrowserPane();
@@ -59,8 +54,9 @@ public class LootTableEditorView implements AppView {
         controls.setOnFilterChanged(itemBrowserPane::applyFilters);
     }
 
-    public void setInspectorContentHandler(BiConsumer<String, Node> handler) {
-        inspectorContentHandler = handler;
+    public void setDetailsNavigator(DetailsNavigator detailsNavigator) {
+        this.detailsNavigator = detailsNavigator;
+        refreshTableDetails();
     }
 
     @Override public Node getMainContent() { return itemBrowserPane; }
@@ -80,6 +76,7 @@ public class LootTableEditorView implements AppView {
 
     private void onTableSelected(LootTable table) {
         currentTable = table;
+        refreshTableDetails();
         if (table == null) {
             setAddActionEnabled(false);
             entriesPane.setEntries(List.of());
@@ -150,12 +147,15 @@ public class LootTableEditorView implements AppView {
             if (currentTable == null || currentTable.tableId != tableId) return;
             if (result.status() == LootTableService.ReadStatus.SUCCESS && result.table() != null) {
                 LootTable loaded = result.table();
+                currentTable.description = loaded.description;
+                currentTable.entries = loaded.entries;
                 pendingWeightItemIds.clear();
                 entriesPane.setPendingWeightItemIds(Set.of());
                 entriesPane.setEntries(loaded.entries);
                 java.util.Set<Long> ids = new java.util.HashSet<>();
                 for (LootTable.Entry entry : loaded.entries) ids.add(entry.itemId());
                 setExcludeIds(ids);
+                refreshTableDetails();
             } else if (result.status() == LootTableService.ReadStatus.NOT_FOUND) {
                 currentTable = null;
                 pendingWeightItemIds.clear();
@@ -175,6 +175,7 @@ public class LootTableEditorView implements AppView {
             if (result.status() == LootTableService.ReadStatus.SUCCESS) {
                 knownTables = List.copyOf(result.tables());
                 controls.setTableList(result.tables());
+                refreshTableDetails();
             } else {
                 showLoadErrorAlert("Loot-Tabellen konnten nicht geladen werden.");
             }
@@ -232,6 +233,7 @@ public class LootTableEditorView implements AppView {
                 switch (status) {
                     case SUCCESS -> {
                         currentTable.name = stripped;
+                        refreshTableDetails();
                         reloadTableList();
                     }
                     case DUPLICATE_NAME -> showDuplicateNameAlert(stripped);
@@ -298,32 +300,8 @@ public class LootTableEditorView implements AppView {
     }
 
     private void showItemInInspector(Long itemId) {
-        if (itemId == null || inspectorContentHandler == null) return;
-        if (currentItemLoadTask != null && currentItemLoadTask.isRunning()) currentItemLoadTask.cancel();
-        long requestVersion = ++itemLoadRequestVersion;
-        inspectorContentHandler.accept("Item", loadingNode());
-        Task<ItemCatalogService.ServiceResult<ItemCatalogService.ItemDetails>> task = new Task<>() {
-            @Override protected ItemCatalogService.ServiceResult<ItemCatalogService.ItemDetails> call() {
-                return ItemCatalogService.getItem(itemId);
-            }
-        };
-        currentItemLoadTask = task;
-        UiAsyncTasks.submit(task, result -> {
-            if (requestVersion != itemLoadRequestVersion) return;
-            if (!result.isOk()) {
-                UiErrorReporter.reportBackgroundFailure(
-                        "LootTableEditorView.showItemInInspector() service failure",
-                        new IllegalStateException("ItemCatalogService status: " + result.status()));
-                inspectorContentHandler.accept("Item", messageNode("Item konnte nicht geladen werden."));
-                return;
-            }
-            ItemCatalogService.ItemDetails item = result.value();
-            inspectorContentHandler.accept(item != null && item.name() != null ? item.name() : "Item", new ItemViewerPane(item));
-        }, throwable -> {
-            if (task.isCancelled() || requestVersion != itemLoadRequestVersion) return;
-            UiErrorReporter.reportBackgroundFailure("LootTableEditorView.showItemInInspector()", throwable);
-            inspectorContentHandler.accept("Item", messageNode("Item konnte nicht geladen werden."));
-        });
+        if (itemId == null || detailsNavigator == null) return;
+        detailsNavigator.showItem(itemId);
     }
 
     private <T> void runTask(String errorLabel, Callable<T> work, Consumer<T> onSuccess) {
@@ -356,21 +334,18 @@ public class LootTableEditorView implements AppView {
         alert.showAndWait();
     }
 
-    private static Node loadingNode() {
-        Label label = new Label("Lade Item...");
-        label.getStyleClass().add("text-muted");
-        VBox box = new VBox(label);
-        box.setPadding(new javafx.geometry.Insets(12));
-        return box;
-    }
-
-    private static Node messageNode(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().add("text-muted");
-        label.setWrapText(true);
-        VBox box = new VBox(label);
-        box.setPadding(new javafx.geometry.Insets(12));
-        return box;
+    private void refreshTableDetails() {
+        if (detailsNavigator == null || currentTable == null) return;
+        int entryCount = currentTable.entries == null ? 0 : currentTable.entries.size();
+        int totalWeight = currentTable.entries == null ? 0 : currentTable.entries.stream()
+                .mapToInt(LootTable.Entry::weight)
+                .sum();
+        detailsNavigator.showLootTable(new DetailsNavigator.LootTableSummary(
+                currentTable.tableId,
+                currentTable.name,
+                currentTable.description,
+                entryCount,
+                totalWeight));
     }
 
     private void showMutationErrorAlert(String message) {

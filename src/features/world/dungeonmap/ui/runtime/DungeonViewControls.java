@@ -16,6 +16,7 @@ public class DungeonViewControls extends VBox {
     private final ComboBox<DungeonMap> mapCombo = new ComboBox<>();
     private final Label currentRoomLabel = new Label("-");
     private final Label currentAreaLabel = new Label("-");
+    private final Label currentEndpointLabel = new Label("-");
     private final Label encounterTableLabel = new Label("-");
     private boolean updating = false;
     private Consumer<Long> onMapSelected;
@@ -51,6 +52,8 @@ public class DungeonViewControls extends VBox {
         raumLabel.getStyleClass().add("text-muted");
         Label bereichLabel = new Label("Aktueller Bereich");
         bereichLabel.getStyleClass().add("text-muted");
+        Label endpointLabel = new Label("Aktueller Übergang");
+        endpointLabel.getStyleClass().add("text-muted");
         Label tableLabel = new Label("Encounter Table");
         tableLabel.getStyleClass().add("text-muted");
 
@@ -64,6 +67,8 @@ public class DungeonViewControls extends VBox {
                 currentRoomLabel,
                 bereichLabel,
                 currentAreaLabel,
+                endpointLabel,
+                currentEndpointLabel,
                 tableLabel,
                 encounterTableLabel);
     }
@@ -94,9 +99,10 @@ public class DungeonViewControls extends VBox {
         updating = previousUpdating;
     }
 
-    public void showLocation(String roomName, String areaName, String encounterTableName) {
+    public void showLocation(String roomName, String areaName, String encounterTableName, String endpointName) {
         currentRoomLabel.setText(roomName == null || roomName.isBlank() ? "-" : roomName);
         currentAreaLabel.setText(areaName == null || areaName.isBlank() ? "-" : areaName);
+        currentEndpointLabel.setText(endpointName == null || endpointName.isBlank() ? "-" : endpointName);
         encounterTableLabel.setText(encounterTableName == null || encounterTableName.isBlank() ? "-" : encounterTableName);
     }
 

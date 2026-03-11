@@ -1,5 +1,6 @@
 package features.encounter.combat.application;
 
+import features.encounter.combat.application.ports.EncounterLootProvider;
 import features.encounter.combat.model.Combatant;
 import features.encounter.combat.model.MonsterCombatant;
 import features.encounter.combat.model.PreparedEncounterSlot;
@@ -16,12 +17,18 @@ import java.util.List;
 import java.util.Set;
 
 public final class EncounterCombatService {
+    private final EncounterLootProvider encounterLootProvider;
+
+    public EncounterCombatService(EncounterLootProvider encounterLootProvider) {
+        this.encounterLootProvider = encounterLootProvider;
+    }
 
     public record CombatStartRequest(
             List<PartyApi.PartyMember> party,
             List<Integer> pcInitiatives,
             Encounter encounter,
-            List<Integer> monsterInitiatives
+            List<Integer> monsterInitiatives,
+            List<Long> encounterTableIds
     ) {}
 
     public enum CombatStartStatus { SUCCESS, INVALID_INPUT }
@@ -34,7 +41,9 @@ public final class EncounterCombatService {
         ENCOUNTER_SLOTS_INVALID,
         PARTY_MEMBER_MISSING,
         PC_INITIATIVE_VALUE_MISSING,
-        PC_INITIATIVE_COUNT_MISMATCH
+        PC_INITIATIVE_COUNT_MISMATCH,
+        LOOT_CONFIGURATION_AMBIGUOUS,
+        LOOT_DATA_UNAVAILABLE
     }
 
     public record CombatStartResult(
@@ -62,10 +71,19 @@ public final class EncounterCombatService {
         if (encounterSlots == null || encounterSlots.isEmpty()) {
             return CombatStartResult.invalidInput(CombatStartFailureReason.ENCOUNTER_SLOTS_INVALID);
         }
-        List<PreparedEncounterSlot> preparedSlots = EncounterLootService.assignLootToSlots(
+        EncounterLootService.LootAssignmentResult lootAssignmentResult = EncounterLootService.assignLootToSlots(
                 encounterSlots,
                 request.encounter().averageLevel(),
-                request.party() != null ? request.party().size() : request.encounter().partySize());
+                request.party() != null ? request.party().size() : request.encounter().partySize(),
+                request.encounterTableIds(),
+                encounterLootProvider);
+        if (lootAssignmentResult.status() == EncounterLootService.LootAssignmentStatus.AMBIGUOUS_LINKED_LOOT) {
+            return CombatStartResult.invalidInput(CombatStartFailureReason.LOOT_CONFIGURATION_AMBIGUOUS);
+        }
+        if (lootAssignmentResult.status() == EncounterLootService.LootAssignmentStatus.STORAGE_ERROR) {
+            return CombatStartResult.invalidInput(CombatStartFailureReason.LOOT_DATA_UNAVAILABLE);
+        }
+        List<PreparedEncounterSlot> preparedSlots = lootAssignmentResult.preparedSlots();
         CombatSetup.BuildCombatantsResult result = CombatSetup.buildCombatants(
                 request.party(),
                 request.pcInitiatives(),

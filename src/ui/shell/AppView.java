@@ -20,12 +20,11 @@ import java.util.List;
  * <ul>
  *   <li><b>Controls</b> — filters, sliders, tool palettes ({@link #getControlsContent()})</li>
  *   <li><b>Main</b> — primary workspace: monster table, hex map, canvas ({@link #getMainContent()})</li>
- *   <li><b>Details</b> — detail inspector: stat blocks, tile properties ({@link #getDetailsContent()})</li>
+ *   <li><b>Details</b> — shared shell-owned detail inspector</li>
  *   <li><b>State</b> — game state: encounter roster/tracker, travel info ({@link #getStateContent()})</li>
  * </ul>
- * SESSION views leave Details/State as {@code null} to use the shell-owned InspectorPane and ScenePane,
- * which persist across SESSION view switches. EDITOR views override Details/State to provide
- * view-specific content.
+ * The Details pane is shell-owned and shared across all views.
+ * Views leave State as {@code null} to use the shell-owned ScenePane.
  */
 public interface AppView {
 
@@ -43,13 +42,6 @@ public interface AppView {
 
     /** Controls panel (top-left): filters, sliders, tool palettes. Null = panel hidden. */
     default Node getControlsContent() { return null; }
-
-    /**
-     * Details panel (top-right): detail inspector content.
-     * Returns null (default) to use the shell-owned InspectorPane (stat blocks, arbitrary content).
-     * EDITOR views override this to provide view-specific detail content (e.g. tile properties).
-     */
-    default Node getDetailsContent() { return null; }
 
     /**
      * State panel (bottom-right): game state / activity content.

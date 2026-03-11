@@ -1,6 +1,7 @@
 package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonEndpointRole;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonSelection;
 import javafx.scene.input.MouseButton;
@@ -18,10 +19,13 @@ final class DungeonOverlayRenderer {
 
     private static final Color LINK_STROKE = Color.web("#c8a86a");
     private static final Color LINK_SELECTED_STROKE = Color.web("#41a9f2");
-    private static final Color ENDPOINT_FILL = Color.web("#e8b870");
+    private static final Color ENTRY_FILL = Color.web("#7cbf88");
+    private static final Color EXIT_FILL = Color.web("#cc7a6b");
+    private static final Color BOTH_FILL = Color.web("#e8b870");
     private static final Color ENDPOINT_PENDING_FILL = Color.web("#f4d35e");
     private static final Color ENDPOINT_STROKE = Color.web("#2b2012");
     private static final Color ENDPOINT_SELECTED_STROKE = Color.web("#f0a040");
+    private static final Color DEFAULT_ENTRY_STROKE = Color.web("#f8f3a6");
     private static final Color PARTY_STROKE = Color.web("#41a9f2");
 
     private final Pane linksLayer;
@@ -104,12 +108,21 @@ final class DungeonOverlayRenderer {
                     && endpointId.equals(selection.id());
             boolean isParty = endpointId.equals(model.partyEndpointId());
             boolean isPending = endpointId.equals(model.pendingLinkStartId());
-            circle.setFill(isPending ? ENDPOINT_PENDING_FILL : ENDPOINT_FILL);
-            circle.setStroke(isParty ? PARTY_STROKE : isSelected ? ENDPOINT_SELECTED_STROKE : ENDPOINT_STROKE);
+            DungeonEndpoint endpoint = model.endpointsById().get(endpointId);
+            circle.setFill(isPending ? ENDPOINT_PENDING_FILL : endpointFill(endpoint));
+            circle.setStroke(isParty
+                    ? PARTY_STROKE
+                    : isSelected
+                    ? ENDPOINT_SELECTED_STROKE
+                    : endpoint != null && endpoint.defaultEntry()
+                    ? DEFAULT_ENTRY_STROKE
+                    : ENDPOINT_STROKE);
             circle.setStrokeWidth(isParty || isSelected
                     ? Math.max(2.0, 3.0 * viewport.strokeScale())
                     : Math.max(1.0, viewport.strokeScale()));
-            circle.setRadius(isParty ? Math.max(4.0, 7.0 * viewport.strokeScale()) : Math.max(3.0, 5.0 * viewport.strokeScale()));
+            circle.setRadius(isParty || endpoint != null && endpoint.defaultEntry()
+                    ? Math.max(4.0, 7.0 * viewport.strokeScale())
+                    : Math.max(3.0, 5.0 * viewport.strokeScale()));
         }
     }
 
@@ -199,5 +212,16 @@ final class DungeonOverlayRenderer {
         linksLayer.setManaged(showLinks);
         endpointsLayer.setVisible(showEndpoints);
         endpointsLayer.setManaged(showEndpoints);
+    }
+
+    private Color endpointFill(DungeonEndpoint endpoint) {
+        if (endpoint == null || endpoint.role() == null) {
+            return BOTH_FILL;
+        }
+        return switch (endpoint.role()) {
+            case ENTRY -> ENTRY_FILL;
+            case EXIT -> EXIT_FILL;
+            case BOTH -> BOTH_FILL;
+        };
     }
 }

@@ -1,7 +1,7 @@
 package features.encounter.combat.service;
 
 import features.encounter.combat.model.MonsterCombatant;
-import shared.rules.model.LootCoins;
+import features.encounter.combat.model.CombatLoot;
 
 import java.util.List;
 import java.util.Set;
@@ -17,9 +17,9 @@ public final class CombatOutcomeService {
     public record XpSettlement(int defeatedCount, int eligibleXp, int awardedXp, int perPlayerXp) {}
     public record CombatRewardsSettlement(
             XpSettlement xpSettlement,
-            LootCoins deadLoot,
-            LootCoins optionalLoot,
-            LootCoins pooledLoot) {}
+            CombatLoot deadLoot,
+            CombatLoot optionalLoot,
+            CombatLoot pooledLoot) {}
 
     public static XpSettlement settleXp(
             List<CombatSession.EnemyOutcome> outcomes,
@@ -61,14 +61,14 @@ public final class CombatOutcomeService {
             Set<MonsterCombatant> optionalLootCombatants) {
         XpSettlement xpSettlement = settleXp(outcomes, partySize, defeatThreshold, xpFraction);
         Set<MonsterCombatant> selected = optionalLootCombatants == null ? Set.of() : optionalLootCombatants;
-        LootCoins deadLoot = LootCoins.zero();
-        LootCoins optionalLoot = LootCoins.zero();
+        CombatLoot deadLoot = CombatLoot.empty();
+        CombatLoot optionalLoot = CombatLoot.empty();
         if (outcomes != null && !outcomes.isEmpty()) {
             for (CombatSession.EnemyOutcome outcome : outcomes) {
                 if (outcome == null || outcome.combatant() == null) {
                     continue;
                 }
-                LootCoins loot = outcome.combatant().getLootCoins();
+                CombatLoot loot = outcome.combatant().getLoot();
                 if (outcome.status() == CombatSession.EnemyStatus.DEAD) {
                     deadLoot = deadLoot.plus(loot);
                 } else if (selected.contains(outcome.combatant())) {
@@ -76,7 +76,7 @@ public final class CombatOutcomeService {
                 }
             }
         }
-        LootCoins pooledLoot = deadLoot.plus(optionalLoot);
+        CombatLoot pooledLoot = deadLoot.plus(optionalLoot);
         return new CombatRewardsSettlement(xpSettlement, deadLoot, optionalLoot, pooledLoot);
     }
 

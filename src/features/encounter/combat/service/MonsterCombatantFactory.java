@@ -1,7 +1,7 @@
 package features.encounter.combat.service;
 
 import features.encounter.model.EncounterCreatureSnapshot;
-import shared.rules.model.LootCoins;
+import features.encounter.combat.model.CombatLoot;
 import features.encounter.combat.model.MonsterCombatant;
 import features.encounter.combat.model.PreparedEncounterSlot;
 
@@ -27,8 +27,8 @@ public final class MonsterCombatantFactory {
             throw new IllegalArgumentException("creatureIndex must be within slot count");
         }
 
-        LootCoins lootCoins = lootFor(slot.perCreatureLoot(), creatureIndex);
-        MonsterCombatant combatant = create(slot.creature(), initiative, lootCoins, random);
+        CombatLoot loot = lootFor(slot.perCreatureLoot(), creatureIndex);
+        MonsterCombatant combatant = create(slot.creature(), initiative, loot, random);
         if (slot.count() > 1) {
             combatant.rename(slot.creature().getName() + " #" + creatureIndex);
         }
@@ -41,13 +41,13 @@ public final class MonsterCombatantFactory {
 
     static MonsterCombatant createReinforcement(EncounterCreatureSnapshot creature, RandomGenerator random) {
         Objects.requireNonNull(creature, "creature");
-        return create(creature, InitiativeRoller.rollFor(creature), LootCoins.zero(), random);
+        return create(creature, InitiativeRoller.rollFor(creature), CombatLoot.empty(), random);
     }
 
     private static MonsterCombatant create(
             EncounterCreatureSnapshot creature,
             int initiative,
-            LootCoins lootCoins,
+            CombatLoot loot,
             RandomGenerator random) {
         int rolledHp = HitPointRoller.rollFor(creature, random);
         return new MonsterCombatant(
@@ -57,15 +57,15 @@ public final class MonsterCombatantFactory {
                 rolledHp,
                 rolledHp,
                 creature.getAc(),
-                lootCoins,
+                loot,
                 creature);
     }
 
-    private static LootCoins lootFor(List<LootCoins> perCreatureLoot, int creatureIndex) {
+    private static CombatLoot lootFor(List<CombatLoot> perCreatureLoot, int creatureIndex) {
         if (perCreatureLoot == null || perCreatureLoot.size() < creatureIndex) {
-            return LootCoins.zero();
+            return CombatLoot.empty();
         }
-        LootCoins value = perCreatureLoot.get(creatureIndex - 1);
-        return value == null ? LootCoins.zero() : value;
+        CombatLoot value = perCreatureLoot.get(creatureIndex - 1);
+        return value == null ? CombatLoot.empty() : value;
     }
 }

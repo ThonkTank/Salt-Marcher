@@ -5,6 +5,8 @@ import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonRuntimeState;
+import features.world.dungeonmap.repository.DungeonEndpointRepository;
+import features.world.dungeonmap.repository.DungeonLinkRepository;
 import features.world.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeonmap.service.adapter.DungeonCampaignStateAdapter;
 
@@ -40,18 +42,14 @@ public final class DungeonRuntimeService {
                 mapId = maps.get(0).mapId();
             }
             DungeonMapState state = DungeonMapQueryService.loadMapState(conn, mapId);
-            Long activeEndpointId = null;
-            Long campaignMapId = DungeonCampaignStateAdapter.getDungeonMapId(conn).orElse(null);
-            if (campaignMapId != null && campaignMapId.equals(mapId)) {
-                activeEndpointId = DungeonCampaignStateAdapter.getDungeonEndpointId(conn).orElse(null);
-            }
+            Long activeEndpointId = resolveActiveEndpointId(conn, mapId);
             return new DungeonRuntimeState(state, activeEndpointId);
         }
     }
 
     public static MoveResult movePartyToEndpoint(long mapId, long targetEndpointId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            Optional<DungeonEndpoint> targetEndpoint = DungeonMapRepository.findEndpoint(conn, targetEndpointId);
+            Optional<DungeonEndpoint> targetEndpoint = DungeonEndpointRepository.findEndpoint(conn, targetEndpointId);
             if (targetEndpoint.isEmpty() || targetEndpoint.get().mapId() != mapId) {
                 return new MoveResult(MoveStatus.NOT_CONNECTED, DungeonCampaignStateAdapter.getDungeonEndpointId(conn).orElse(null));
             }
@@ -61,11 +59,36 @@ public final class DungeonRuntimeService {
                 DungeonCampaignStateAdapter.updateDungeonPosition(conn, mapId, targetEndpointId);
                 return new MoveResult(MoveStatus.NO_CURRENT_POSITION, targetEndpointId);
             }
-            if (!DungeonMapRepository.areEndpointsLinked(conn, mapId, currentEndpointId, targetEndpointId)) {
+            if (!DungeonLinkRepository.areEndpointsLinked(conn, mapId, currentEndpointId, targetEndpointId)) {
                 return new MoveResult(MoveStatus.NOT_CONNECTED, currentEndpointId);
             }
             DungeonCampaignStateAdapter.updateDungeonPosition(conn, mapId, targetEndpointId);
             return new MoveResult(MoveStatus.MOVED, targetEndpointId);
         }
+    }
+
+    private static Long resolveActiveEndpointId(Connection conn, long mapId) throws Exception {
+        Long campaignMapId = DungeonCampaignStateAdapter.getDungeonMapId(conn).orElse(null);
+        if (campaignMapId != null && campaignMapId.equals(mapId)) {
+            Long campaignEndpointId = DungeonCampaignStateAdapter.getDungeonEndpointId(conn).orElse(null);
+            if (campaignEndpointId != null) {
+                Optional<DungeonEndpoint> storedEndpoint = DungeonEndpointRepository.findEndpoint(conn, campaignEndpointId);
+                if (storedEndpoint.isPresent() && storedEndpoint.get().mapId() == mapId) {
+                    return campaignEndpointId;
+                }
+                DungeonCampaignStateAdapter.updateDungeonPosition(conn, mapId, null);
+            }
+        }
+
+        Optional<DungeonEndpoint> defaultEntry = DungeonEndpointRepository.findDefaultEntry(conn, mapId);
+        if (defaultEntry.isPresent()) {
+            DungeonCampaignStateAdapter.updateDungeonPosition(conn, mapId, defaultEntry.get().endpointId());
+            return defaultEntry.get().endpointId();
+        }
+
+        if (campaignMapId == null || campaignMapId != mapId) {
+            DungeonCampaignStateAdapter.updateDungeonPosition(conn, mapId, null);
+        }
+        return null;
     }
 }

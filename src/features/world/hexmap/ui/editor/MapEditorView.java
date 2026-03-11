@@ -9,13 +9,13 @@ import features.world.hexmap.ui.editor.controls.MapEditorControls;
 import features.world.hexmap.ui.editor.dialogs.EditMapDialog;
 import features.world.hexmap.ui.editor.dialogs.NewMapDialog;
 import features.world.hexmap.ui.editor.panes.MapEditorCanvas;
-import features.world.hexmap.ui.editor.panes.TilePropertiesPane;
 import features.world.hexmap.ui.editor.panes.ToolSettingsPane;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import ui.shell.AppView;
+import ui.shell.DetailsNavigator;
 import ui.async.UiErrorReporter;
 
 import java.util.HashMap;
@@ -26,16 +26,16 @@ import java.util.function.Consumer;
 
 /**
  * Top-Level-Ansicht des Karteneditors fuer Hex-Map-Bearbeitung (Gelaende, Orte, Fraktionen).
- * Detailpanel: TilePropertiesPane (Infos zum ausgewaehlten Feld).
+ * Details werden im shell-owned DetailsPane gezeigt.
  * Zustandspanel: ToolSettingsPane (Gelaendepalette, spaetere Brush-Einstellungen).
  */
 public class MapEditorView implements AppView {
 
     private final MapEditorControls controls;
     private final MapEditorCanvas canvas;
-    private final TilePropertiesPane propertiesPane;
     private final ToolSettingsPane toolSettingsPane;
     private final MapEditorApplicationService applicationService;
+    private final DetailsNavigator detailsNavigator;
 
     /** Sammelt Tile-ID -> Gelaendeaenderung waehrend eines Malstrichs; Flush bei Mouse-Release. */
     private final Map<Long, HexTerrainType> dirtyTiles = new HashMap<>();
@@ -43,10 +43,10 @@ public class MapEditorView implements AppView {
     private Long currentMapId;
     private boolean initialLoadDone = false;
 
-    public MapEditorView() {
+    public MapEditorView(DetailsNavigator detailsNavigator) {
+        this.detailsNavigator = detailsNavigator;
         controls = new MapEditorControls();
         canvas = new MapEditorCanvas();
-        propertiesPane = new TilePropertiesPane();
         toolSettingsPane = new ToolSettingsPane();
         applicationService = new MapEditorApplicationService();
 
@@ -64,7 +64,7 @@ public class MapEditorView implements AppView {
 
         canvas.setOnTileClicked(tile -> {
             if (controls.getActiveTool() == EditorTool.SELECT) {
-                propertiesPane.showTile(tile);
+                showTileDetails(tile, null);
             } else if (controls.getActiveTool() == EditorTool.TERRAIN_BRUSH) {
                 paintTile(tile);
             }
@@ -82,7 +82,7 @@ public class MapEditorView implements AppView {
 
         canvas.updateTileTerrain(tile.tileId(), terrain);
         dirtyTiles.put(tile.tileId(), terrain);
-        propertiesPane.showTile(tile, terrain);
+        showTileDetails(tile, terrain);
     }
 
     /** Schreibt gesammelte Gelaendeaenderungen asynchron in die DB. */
@@ -192,7 +192,6 @@ public class MapEditorView implements AppView {
     @Override public String getTitle()        { return "Karteneditor"; }
     @Override public String getIconText()     { return "\u270F"; } // ✏
     @Override public Node getControlsContent() { return controls; }
-    @Override public Node getDetailsContent()  { return propertiesPane; }
     @Override public Node getStateContent()    { return toolSettingsPane; }
 
     @Override
@@ -201,5 +200,21 @@ public class MapEditorView implements AppView {
             loadMapList();
             initialLoadDone = true;
         }
+    }
+
+    private void showTileDetails(HexTile tile, HexTerrainType terrainOverride) {
+        if (tile == null) {
+            return;
+        }
+        HexTerrainType displayTerrain = terrainOverride != null ? terrainOverride : tile.terrainType();
+        detailsNavigator.showHexTile(new DetailsNavigator.HexTileSummary(
+                tile.tileId(),
+                tile.q(),
+                tile.r(),
+                displayTerrain == null ? null : displayTerrain.dbValue(),
+                tile.elevation(),
+                tile.biome() == null ? null : tile.biome().name(),
+                tile.explored(),
+                tile.notes()));
     }
 }

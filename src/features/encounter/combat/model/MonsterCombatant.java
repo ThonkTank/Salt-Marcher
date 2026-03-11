@@ -1,7 +1,6 @@
 package features.encounter.combat.model;
 
 import features.encounter.model.EncounterCreatureSnapshot;
-import shared.rules.model.LootCoins;
 
 import java.util.Objects;
 
@@ -10,7 +9,7 @@ public class MonsterCombatant extends Combatant {
     private int currentHp;
     private int maxHp;
     private int ac;
-    private LootCoins lootCoins;
+    private CombatLoot loot;
     private EncounterCreatureSnapshot creatureRef;
 
     public MonsterCombatant(
@@ -20,7 +19,7 @@ public class MonsterCombatant extends Combatant {
             int currentHp,
             int maxHp,
             int ac,
-            LootCoins lootCoins,
+            CombatLoot loot,
             EncounterCreatureSnapshot creatureRef) {
         rename(name);
         setInitiative(initiative);
@@ -29,7 +28,7 @@ public class MonsterCombatant extends Combatant {
         setMaxHp(maxHp);
         setCurrentHp(currentHp);
         setAc(ac);
-        setLootCoins(lootCoins);
+        setLoot(loot);
     }
 
     public int getCurrentHp() {
@@ -81,12 +80,12 @@ public class MonsterCombatant extends Combatant {
         this.creatureRef = Objects.requireNonNull(creatureRef, "creatureRef must be non-null");
     }
 
-    public LootCoins getLootCoins() {
-        return lootCoins;
+    public CombatLoot getLoot() {
+        return loot;
     }
 
-    public void setLootCoins(LootCoins lootCoins) {
-        this.lootCoins = Objects.requireNonNull(lootCoins, "lootCoins must be non-null");
+    public void setLoot(CombatLoot loot) {
+        this.loot = Objects.requireNonNull(loot, "loot must be non-null");
     }
 
     private static int clampHp(int currentHp, int maxHp) {

@@ -11,8 +11,7 @@ public enum ViewId {
     DUNGEON(ViewCategory.SESSION),
     MAP_EDITOR(ViewCategory.EDITOR),
     DUNGEON_EDITOR(ViewCategory.EDITOR),
-    TABLE_EDITOR(ViewCategory.EDITOR),
-    LOOT_TABLE_EDITOR(ViewCategory.EDITOR);
+    TABLE_EDITOR(ViewCategory.EDITOR);
 
     private final ViewCategory category;
     ViewId(ViewCategory category) { this.category = category; }

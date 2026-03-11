@@ -17,11 +17,11 @@ public final class DungeonCampaignStateAdapter {
     }
 
     public static Optional<Long> getDungeonMapId(Connection conn) throws SQLException {
-        return CampaignStateApi.getDungeonMapId(conn);
+        return CampaignStateApi.getDungeonPosition(conn).map(CampaignStateApi.DungeonPosition::mapId);
     }
 
     public static Optional<Long> getDungeonEndpointId(Connection conn) throws SQLException {
-        return CampaignStateApi.getDungeonEndpointId(conn);
+        return CampaignStateApi.getDungeonPosition(conn).map(CampaignStateApi.DungeonPosition::endpointId);
     }
 
     public static void updateDungeonPosition(Connection conn, Long mapId, Long endpointId) throws SQLException {

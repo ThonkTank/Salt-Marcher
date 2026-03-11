@@ -11,6 +11,7 @@ public class EncounterTable {
     public long tableId;
     public String name;
     public String description;
+    public Long linkedLootTableId;
     public List<Entry> entries;
 
     @Override

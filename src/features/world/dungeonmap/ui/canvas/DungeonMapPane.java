@@ -1,5 +1,6 @@
 package features.world.dungeonmap.ui.canvas;
 
+import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonMapState;
@@ -11,6 +12,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class DungeonMapPane extends StackPane {
 
@@ -38,6 +40,7 @@ public class DungeonMapPane extends StackPane {
         selectionCanvas.heightProperty().bind(heightProperty());
         selectionCanvas.widthProperty().addListener((obs, oldValue, newValue) -> redrawAll());
         selectionCanvas.heightProperty().addListener((obs, oldValue, newValue) -> redrawAll());
+        interactionController.setRedrawSelection(gridRenderer::redrawSelection);
 
         getChildren().addAll(gridCanvas, selectionCanvas, linksLayer, endpointsLayer);
     }
@@ -60,6 +63,23 @@ public class DungeonMapPane extends StackPane {
 
     public void setPaintMode(boolean paintMode) {
         interactionController.setPaintMode(paintMode);
+        interactionController.setEraseMode(false);
+    }
+
+    public void setEraseMode(boolean eraseMode) {
+        interactionController.setEraseMode(eraseMode);
+    }
+
+    public void setHandMode(boolean handMode) {
+        interactionController.setHandMode(handMode);
+    }
+
+    public void setBrushSizeSupplier(Supplier<Integer> supplier) {
+        interactionController.setBrushSizeSupplier(supplier);
+    }
+
+    public void setBrushShapeSupplier(Supplier<BrushShape> supplier) {
+        interactionController.setBrushShapeSupplier(supplier);
     }
 
     public void setShowLinks(boolean showLinks) {

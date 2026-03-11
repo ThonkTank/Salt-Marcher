@@ -25,7 +25,10 @@ public final class EncounterTableRepository {
     /** Returns all tables (name + description only, no entries loaded). */
     public static List<EncounterTable> getAll(Connection conn) throws SQLException {
         List<EncounterTable> tables = new ArrayList<>();
-        String sql = "SELECT table_id, name, description FROM encounter_tables ORDER BY name";
+        String sql = "SELECT t.table_id, t.name, t.description, l.loot_table_id"
+                + " FROM encounter_tables t"
+                + " LEFT JOIN encounter_table_loot_links l ON l.table_id = t.table_id"
+                + " ORDER BY t.name";
         try (PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -33,6 +36,7 @@ public final class EncounterTableRepository {
                 t.tableId     = rs.getLong("table_id");
                 t.name        = rs.getString("name");
                 t.description = rs.getString("description");
+                t.linkedLootTableId = nullableLong(rs, "loot_table_id");
                 tables.add(t);
             }
         }
@@ -43,7 +47,10 @@ public final class EncounterTableRepository {
     public static EncounterTable getWithEntries(Connection conn, long tableId) throws SQLException {
         EncounterTable table = null;
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT table_id, name, description FROM encounter_tables WHERE table_id = ?")) {
+                "SELECT t.table_id, t.name, t.description, l.loot_table_id"
+                        + " FROM encounter_tables t"
+                        + " LEFT JOIN encounter_table_loot_links l ON l.table_id = t.table_id"
+                        + " WHERE t.table_id = ?")) {
             ps.setLong(1, tableId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -51,6 +58,7 @@ public final class EncounterTableRepository {
                     table.tableId     = rs.getLong("table_id");
                     table.name        = rs.getString("name");
                     table.description = rs.getString("description");
+                    table.linkedLootTableId = nullableLong(rs, "loot_table_id");
                 }
             }
         }
@@ -187,5 +195,56 @@ public final class EncounterTableRepository {
             ps.setLong(3, creatureId);
             ps.executeUpdate();
         }
+    }
+
+    public static void updateLinkedLootTable(Connection conn, long tableId, Long lootTableId) throws SQLException {
+        boolean previousAutoCommit = conn.getAutoCommit();
+        conn.setAutoCommit(false);
+        try {
+            try (PreparedStatement delete = conn.prepareStatement(
+                    "DELETE FROM encounter_table_loot_links WHERE table_id = ?")) {
+                delete.setLong(1, tableId);
+                delete.executeUpdate();
+            }
+            if (lootTableId != null) {
+                try (PreparedStatement insert = conn.prepareStatement(
+                        "INSERT INTO encounter_table_loot_links(table_id, loot_table_id) VALUES(?, ?)")) {
+                    insert.setLong(1, tableId);
+                    insert.setLong(2, lootTableId);
+                    insert.executeUpdate();
+                }
+            }
+            conn.commit();
+        } catch (SQLException e) {
+            conn.rollback();
+            throw e;
+        } finally {
+            conn.setAutoCommit(previousAutoCommit);
+        }
+    }
+
+    public static List<Long> getDistinctLinkedLootTableIds(Connection conn, List<Long> tableIds) throws SQLException {
+        if (tableIds == null || tableIds.isEmpty()) {
+            return List.of();
+        }
+        String ph = String.join(",", Collections.nCopies(tableIds.size(), "?"));
+        String sql = "SELECT DISTINCT loot_table_id FROM encounter_table_loot_links WHERE table_id IN (" + ph + ")";
+        List<Long> lootTableIds = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 0; i < tableIds.size(); i++) {
+                ps.setLong(i + 1, tableIds.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    lootTableIds.add(rs.getLong("loot_table_id"));
+                }
+            }
+        }
+        return lootTableIds;
+    }
+
+    private static Long nullableLong(ResultSet rs, String column) throws SQLException {
+        long value = rs.getLong(column);
+        return rs.wasNull() ? null : value;
     }
 }

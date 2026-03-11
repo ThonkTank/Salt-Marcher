@@ -314,6 +314,14 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
             )
         ),
         FeatureBoundary(
+            ownerPathPrefix = "features/loottable/",
+            forbiddenImportPrefixes = listOf(
+                "features.loottable.service.",
+                "features.loottable.repository.",
+                "features.loottable.ui."
+            )
+        ),
+        FeatureBoundary(
             ownerPathPrefix = "features/party/",
             forbiddenImportPrefixes = listOf(
                 "features.party.service.",
@@ -345,6 +353,16 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
                 "features.partyanalysis.application.",
                 "features.partyanalysis.repository.",
                 "features.partyanalysis.service."
+            )
+        ),
+        FeatureBoundary(
+            ownerPathPrefix = "features/items/",
+            forbiddenImportPrefixes = listOf(
+                "features.items.service.",
+                "features.items.repository.",
+                "features.items.model.",
+                "features.items.ui.shared.",
+                "features.items.importer."
             )
         ),
         FeatureBoundary(

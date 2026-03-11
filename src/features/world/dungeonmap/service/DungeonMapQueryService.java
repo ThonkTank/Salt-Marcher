@@ -3,7 +3,12 @@ package features.world.dungeonmap.service;
 import database.DatabaseManager;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
+import features.world.dungeonmap.repository.DungeonAreaRepository;
+import features.world.dungeonmap.repository.DungeonEndpointRepository;
+import features.world.dungeonmap.repository.DungeonLinkRepository;
 import features.world.dungeonmap.repository.DungeonMapRepository;
+import features.world.dungeonmap.repository.DungeonRoomRepository;
+import features.world.dungeonmap.repository.DungeonSquareRepository;
 
 import java.sql.Connection;
 import java.util.List;
@@ -31,10 +36,10 @@ public final class DungeonMapQueryService {
                 .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + mapId));
         return new DungeonMapState(
                 map,
-                DungeonMapRepository.getSquares(conn, mapId),
-                DungeonMapRepository.getRooms(conn, mapId),
-                DungeonMapRepository.getAreas(conn, mapId),
-                DungeonMapRepository.getEndpoints(conn, mapId),
-                DungeonMapRepository.getLinks(conn, mapId));
+                DungeonSquareRepository.getSquares(conn, mapId),
+                DungeonRoomRepository.getRooms(conn, mapId),
+                DungeonAreaRepository.getAreas(conn, mapId),
+                DungeonEndpointRepository.getEndpoints(conn, mapId),
+                DungeonLinkRepository.getLinks(conn, mapId));
     }
 }

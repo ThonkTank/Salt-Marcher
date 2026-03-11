@@ -1,7 +1,6 @@
 package features.encounter.combat.model;
 
 import features.encounter.model.EncounterCreatureSnapshot;
-import shared.rules.model.LootCoins;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +10,7 @@ import java.util.Objects;
 public record PreparedEncounterSlot(
         EncounterCreatureSnapshot creature,
         int count,
-        List<LootCoins> perCreatureLoot) {
+        List<CombatLoot> perCreatureLoot) {
 
     public PreparedEncounterSlot {
         creature = Objects.requireNonNull(creature, "creature must be non-null");
@@ -21,11 +20,11 @@ public record PreparedEncounterSlot(
         if (perCreatureLoot == null || perCreatureLoot.size() != count) {
             throw new IllegalArgumentException("perCreatureLoot size must match count");
         }
-        List<LootCoins> copy = new ArrayList<>(perCreatureLoot.size());
-        for (LootCoins loot : perCreatureLoot) {
-            LootCoins safeValue = loot == null ? LootCoins.zero() : loot;
-            if (safeValue.totalCpValue() < 0) {
-                throw new IllegalArgumentException("perCreatureLoot values must be >= 0");
+        List<CombatLoot> copy = new ArrayList<>(perCreatureLoot.size());
+        for (CombatLoot loot : perCreatureLoot) {
+            CombatLoot safeValue = loot == null ? CombatLoot.empty() : loot;
+            if (safeValue.coins().totalCpValue() < 0) {
+                throw new IllegalArgumentException("perCreatureLoot coin values must be >= 0");
             }
             copy.add(safeValue);
         }

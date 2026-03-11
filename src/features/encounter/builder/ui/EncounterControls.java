@@ -12,6 +12,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -40,11 +41,13 @@ public class EncounterControls extends VBox {
     private final SliderControl difficultySlider;
     private final SliderControl balanceSlider;
     private final SliderControl amountSlider;
+    private final SliderControl diversitySlider;
 
     private final VBox filterRegion;
 
     // Table selector — a popup button styled like the other filter triggers, with checkbox multi-select
     private final Button tableButton;
+    private final Tooltip tableButtonTooltip;
     private final Popup tablePopup;
     private final VBox tableListBox;
     private final List<EncounterTable> selectedTables = new ArrayList<>();
@@ -88,45 +91,41 @@ public class EncounterControls extends VBox {
         difficultySlider.addSliderStyleClass("difficulty-slider");
 
         balanceSlider = new SliderControl("Balance", 1, 5, 3, true,
-                "1: XP-Enden bevorzugen, 5: mittlere XP bevorzugen",
+                "1: CR-Extreme bevorzugen, 5: CR-Durchschnitt bevorzugen",
                 new StringConverter<>() {
                     @Override public String toString(Double v) {
-                        if (v <= 1) return "Enden";
-                        if (v >= 5) return "Mitte";
+                        if (v <= 1) return "Extreme";
+                        if (v >= 5) return "Durchschnitt";
                         return "";
                     }
                     @Override public Double fromString(String s) { return 0.0; }
                 },
-                v -> {
-                    int lvl = (int) Math.round(v);
-                    return switch (lvl) {
-                        case 1 -> "Enden++";
-                        case 2 -> "Enden+";
-                        case 3 -> "Neutral";
-                        case 4 -> "Mitte+";
-                        default -> "Mitte++";
-                    };
-                });
+                v -> EncounterControls.this.encounterService.previewBalanceLevel((int) Math.round(v)));
 
         amountSlider = new SliderControl("Menge", 1, 5, 3, false,
-                "1: wenige Kreaturen, 5: viele Kreaturen",
+                "1: Bosse bevorzugen, 5: Minions bevorzugen",
                 new StringConverter<>() {
                     @Override public String toString(Double v) {
-                        if (Math.abs(v - 1.0) <= 0.1) return "1";
-                        if (Math.abs(v - 2.0) <= 0.1) return "x2";
-                        if (Math.abs(v - 3.0) <= 0.1) return "x4";
-                        if (Math.abs(v - 4.0) <= 0.1) return "x8";
-                        if (Math.abs(v - 5.0) <= 0.1) return "\u221E";
+                        if (v <= 1) return "Boss";
+                        if (v >= 5) return "Minions";
                         return "";
                     }
                     @Override public Double fromString(String s) { return 0.0; }
                 },
-                v -> {
-                    int target = EncounterControls.this.encounterService.previewTargetCreaturesForAmount(
-                            v, partySizeForSliders);
-                    return target == Integer.MAX_VALUE ? "\u221E" : String.valueOf(target);
-                },
+                v -> EncounterControls.this.encounterService.previewAmountValue(v),
                 1.0);
+
+        diversitySlider = new SliderControl("Diversit\u00e4t", 1, 4, 3, true,
+                "1: ein Statblock, 4: vier unterschiedliche Statblocks",
+                new StringConverter<>() {
+                    @Override public String toString(Double v) {
+                        if (v <= 1) return "1";
+                        if (v >= 4) return "4";
+                        return "";
+                    }
+                    @Override public Double fromString(String s) { return 0.0; }
+                },
+                v -> EncounterControls.this.encounterService.previewDiversityLevel((int) Math.round(v)));
 
         // Table selector button — styled like SearchableFilterButton
         tableListBox = new VBox(2);
@@ -139,6 +138,8 @@ public class EncounterControls extends VBox {
 
         tableButton = new Button("Tabelle \u25BE");
         tableButton.getStyleClass().addAll("compact", "filter-trigger");
+        tableButtonTooltip = new Tooltip("Mehrere Encounter-Tabellen können kombiniert werden.");
+        tableButton.setTooltip(tableButtonTooltip);
         tableButton.setOnAction(e -> {
             if (tablePopup.isShowing()) {
                 tablePopup.hide();
@@ -160,6 +161,7 @@ public class EncounterControls extends VBox {
         HBox.setHgrow(difficultySlider, Priority.ALWAYS);
         HBox.setHgrow(balanceSlider, Priority.ALWAYS);
         HBox.setHgrow(amountSlider, Priority.ALWAYS);
+        HBox.setHgrow(diversitySlider, Priority.ALWAYS);
 
         applyHorizontalLayout();
     }
@@ -173,7 +175,7 @@ public class EncounterControls extends VBox {
         // Row 0: FILTER (includes table selector injected into CreatureFilterPane's filter row)
         VBox filterRow = buildFilterRow();
 
-        HBox controlRow = new HBox(8, difficultySlider, balanceSlider, amountSlider);
+        HBox controlRow = new HBox(8, difficultySlider, balanceSlider, amountSlider, diversitySlider);
         VBox sliderGrid = new VBox(4, controlRow);
         sliderGrid.setMaxWidth(Double.MAX_VALUE);
         sliderGrid.setPadding(new Insets(0, 4, 0, 4));
@@ -288,15 +290,22 @@ public class EncounterControls extends VBox {
 
     private void updateTableButton() {
         tableButton.getStyleClass().remove("filter-trigger-active");
+        boolean ambiguousLootSelection = hasAmbiguousLootSelection();
         if (selectedTables.isEmpty()) {
             tableButton.setText("Tabelle \u25BE");
         } else if (selectedTables.size() == 1) {
             tableButton.setText(selectedTables.get(0).name + " \u25BE");
             tableButton.getStyleClass().add("filter-trigger-active");
+        } else if (ambiguousLootSelection) {
+            tableButton.setText("Tabellen (" + selectedTables.size() + ", Loot-Konflikt) \u25BE");
+            tableButton.getStyleClass().add("filter-trigger-active");
         } else {
             tableButton.setText("Tabellen (" + selectedTables.size() + ") \u25BE");
             tableButton.getStyleClass().add("filter-trigger-active");
         }
+        tableButtonTooltip.setText(ambiguousLootSelection
+                ? "Mehrere ausgewählte Tabellen verweisen auf unterschiedliche Loot-Tabellen. Kampfstart bleibt blockiert, bis höchstens eine verknüpfte Loot-Tabelle aktiv ist."
+                : "Mehrere Encounter-Tabellen können kombiniert werden.");
         // Rebuild chips in filter pane
         if (filterPane != null) {
             filterPane.setExternalChipSource(() -> buildTableChips());
@@ -309,6 +318,15 @@ public class EncounterControls extends VBox {
             List<Long> ids = selectedTables.stream().map(t -> t.tableId).toList();
             onTableChanged.accept(ids);
         }
+    }
+
+    private boolean hasAmbiguousLootSelection() {
+        return selectedTables.stream()
+                .map(table -> table.linkedLootTableId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .limit(2)
+                .count() > 1;
     }
 
     private List<Node> buildTableChips() {
@@ -364,6 +382,8 @@ public class EncounterControls extends VBox {
     public int getSelectedBalanceLevel()  { return balanceSlider.isAuto() ? -1 : (int) Math.round(balanceSlider.getValue()); }
     /** @return amount value in [1.0, 5.0], or -1.0 if Auto is selected. */
     public double getSelectedAmountValue() { return amountSlider.isAuto() ? -1.0 : amountSlider.getValue(); }
+    /** @return diversity level in [1, 4], or -1 if Auto is selected. */
+    public int getSelectedDiversityLevel() { return diversitySlider.isAuto() ? -1 : (int) Math.round(diversitySlider.getValue()); }
 
     /** Updates party-dependent control labels. */
     public void setPartyContext(int partySize, int avgLevel) {
@@ -371,6 +391,7 @@ public class EncounterControls extends VBox {
         this.avgLevelForDifficulty = Math.max(1, Math.min(20, avgLevel));
         difficultySlider.refreshDisplay();
         amountSlider.refreshDisplay();
+        diversitySlider.refreshDisplay();
     }
 
     private static EncounterDifficultyBand toDifficultyBand(double sliderValue) {

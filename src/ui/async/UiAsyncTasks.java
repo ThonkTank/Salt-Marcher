@@ -13,6 +13,10 @@ public final class UiAsyncTasks {
         throw new AssertionError("No instances");
     }
 
+    public static void submit(Task<?> task) {
+        UiAsyncExecutor.submit(task);
+    }
+
     public static <T> void submit(Task<T> task, Consumer<T> onSuccess, Consumer<Throwable> onError) {
         submit(task, onSuccess, onError, null);
     }

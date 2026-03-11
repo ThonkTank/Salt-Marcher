@@ -4,5 +4,6 @@
 | --- | --- | --- |
 | `features.world.api` | `hexmap`, `dungeonmap` | `ui.bootstrap` |
 
-`features.world` owns world navigation surfaces and shared world-session concerns.
-The persistent world session currently lives in `campaign_state` and stores both overworld and dungeon position.
+`features.world` owns world navigation surfaces and consumes world-session state through
+`features.campaignstate.api`.
+`features.campaignstate` owns the `campaign_state` schema and persists both overworld and dungeon position.

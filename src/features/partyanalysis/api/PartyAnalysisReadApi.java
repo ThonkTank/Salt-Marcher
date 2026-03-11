@@ -3,8 +3,8 @@ package features.partyanalysis.api;
 import features.creatures.model.Creature;
 import features.partyanalysis.application.EncounterPartyAnalysisService;
 import features.partyanalysis.model.CreatureRoleProfile;
-import features.encounter.generation.service.EncounterGenerator;
 import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
+import features.partyanalysis.model.StaticCreatureRoleHint;
 
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +50,7 @@ public final class PartyAnalysisReadApi {
     public static CreatureRoleProfile fallbackRoleProfile(
             Creature creature,
             EncounterPartyBenchmarks partyBenchmarks,
-            EncounterGenerator.StaticCreatureRoleHint staticRoleHint
+            StaticCreatureRoleHint staticRoleHint
     ) {
         return EncounterPartyAnalysisService.fallbackRoleProfile(creature, partyBenchmarks, staticRoleHint);
     }
@@ -67,7 +67,7 @@ public final class PartyAnalysisReadApi {
         return mapSnapshot(EncounterPartyAnalysisService.loadGenerationSnapshot(creatureIds));
     }
 
-    public static Map<Long, EncounterGenerator.StaticCreatureRoleHint> loadStaticRoleHints(Set<Long> creatureIds) {
+    public static Map<Long, StaticCreatureRoleHint> loadStaticRoleHints(Set<Long> creatureIds) {
         return EncounterPartyAnalysisService.loadStaticRoleHints(creatureIds);
     }
 
