@@ -4,42 +4,18 @@ import features.items.api.ItemBrowserPageLoader;
 import features.items.api.ItemBrowserRowAction;
 import features.items.api.ItemCatalogService;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.concurrent.Task;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import ui.async.UiAsyncTasks;
-import ui.async.UiErrorReporter;
+import ui.components.catalog.AbstractCatalogBrowserPane;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class ItemBrowserPane extends BorderPane {
-    private static final int PAGE_SIZE = 50;
-    private record SanitizedPageResult(
-            ItemCatalogService.PageResult page,
-            boolean serviceOk,
-            Throwable failureCause,
-            boolean loaderContractFailure) {}
-
-    private record SortOption(String label, String column, String dir) {
-        @Override public String toString() { return label; }
-    }
-
+public class ItemBrowserPane extends AbstractCatalogBrowserPane<ItemCatalogService.ItemSummary, ItemCatalogService.FilterCriteria> {
     private static final List<SortOption> SORT_OPTIONS = List.of(
             new SortOption("Name (A-Z)", "name", "ASC"),
             new SortOption("Name (Z-A)", "name", "DESC"),
@@ -47,49 +23,16 @@ public class ItemBrowserPane extends BorderPane {
             new SortOption("Wert (abst.)", "cost_cp", "DESC")
     );
 
-    private final ObservableList<ItemCatalogService.ItemSummary> items = FXCollections.observableArrayList();
-    private final TableView<ItemCatalogService.ItemSummary> table = new TableView<>(items);
-    private final Label countLabel = new Label("0 Items gefunden");
-    private final Label pageLabel = new Label("Seite 1");
-    private final Button prevButton = new Button("\u25C0 Zur\u00fcck");
-    private final Button nextButton = new Button("Weiter \u25B6");
-    private final ComboBox<SortOption> sortCombo = new ComboBox<>(FXCollections.observableArrayList(SORT_OPTIONS));
-    private final Label loadingPlaceholder = new Label("Lade...");
-    private final Label emptyPlaceholder = new Label("Keine Items gefunden");
-    private final Label errorPlaceholder = new Label("Fehler beim Laden");
     private final TableColumn<ItemCatalogService.ItemSummary, Void> actionCol = new TableColumn<>("");
     private final List<TableColumn<ItemCatalogService.ItemSummary, ?>> baseColumns;
 
     private Consumer<Long> onRequestItem;
-    private Task<?> currentTask;
-    private ItemCatalogService.FilterCriteria currentCriteria;
-    private int currentOffset = 0;
-    private int totalCount = 0;
-    private String sortColumn = "name";
-    private String sortDirection = "ASC";
     private ItemBrowserPageLoader pageLoader = (criteria, pageRequest) ->
             ItemCatalogService.searchItems(criteria, null, pageRequest);
     private ItemBrowserRowAction rowAction;
 
     public ItemBrowserPane() {
-        setPadding(new Insets(8));
-
-        HBox topBar = new HBox(8);
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setPadding(new Insets(0, 0, 6, 0));
-        countLabel.getStyleClass().add("text-secondary");
-        pageLabel.getStyleClass().add("text-secondary");
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label sortLabel = new Label("Sortierung:");
-        sortLabel.getStyleClass().add("text-muted");
-        sortCombo.getSelectionModel().selectFirst();
-        topBar.getChildren().addAll(countLabel, spacer, sortLabel, sortCombo);
-        setTop(topBar);
-
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        table.setPlaceholder(emptyPlaceholder);
+        super("0 Items gefunden", "Keine Items gefunden", SORT_OPTIONS);
 
         TableColumn<ItemCatalogService.ItemSummary, String> nameCol = new TableColumn<>("Name");
         nameCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().name()));
@@ -164,36 +107,10 @@ public class ItemBrowserPane extends BorderPane {
         });
 
         baseColumns = List.of(nameCol, typeCol, magicCol, costCol);
-        table.getColumns().addAll(baseColumns);
-        setCenter(table);
+        setColumns(baseColumns);
 
-        HBox pagination = new HBox(8, prevButton, pageLabel, nextButton);
-        pagination.setAlignment(Pos.CENTER);
-        pagination.setPadding(new Insets(6, 0, 0, 0));
-        setBottom(pagination);
-
-        prevButton.setOnAction(e -> {
-            if (currentOffset > 0) {
-                currentOffset = Math.max(0, currentOffset - PAGE_SIZE);
-                loadPage();
-            }
-        });
-        nextButton.setOnAction(e -> {
-            if (currentOffset + PAGE_SIZE < totalCount) {
-                currentOffset += PAGE_SIZE;
-                loadPage();
-            }
-        });
-        sortCombo.setOnAction(e -> {
-            SortOption option = sortCombo.getValue();
-            if (option == null) return;
-            sortColumn = option.column();
-            sortDirection = option.dir();
-            currentOffset = 0;
-            loadPage();
-        });
-        table.setOnKeyPressed(e -> {
-            ItemCatalogService.ItemSummary item = table.getSelectionModel().getSelectedItem();
+        table().setOnKeyPressed(e -> {
+            ItemCatalogService.ItemSummary item = table().getSelectionModel().getSelectedItem();
             if (item == null || item.itemId() <= 0) return;
             if (e.getCode() == KeyCode.ENTER && e.isShiftDown() && rowAction != null) {
                 rowAction.handler().accept(item);
@@ -205,85 +122,55 @@ public class ItemBrowserPane extends BorderPane {
         });
     }
 
-    public void setOnRequestItem(Consumer<Long> callback) { this.onRequestItem = callback; }
+    public void setOnRequestItem(Consumer<Long> callback) {
+        this.onRequestItem = callback;
+    }
+
     public void setPageLoader(ItemBrowserPageLoader loader) {
         pageLoader = loader != null ? loader : (criteria, pageRequest) ->
                 ItemCatalogService.searchItems(criteria, null, pageRequest);
-        if (!items.isEmpty() || currentCriteria != null) loadPage();
+        if (hasLoadedCriteria()) refresh();
     }
+
     public void setRowAction(ItemBrowserRowAction action) {
         rowAction = action;
-        table.getColumns().setAll(baseColumns);
-        if (rowAction != null) table.getColumns().add(actionCol);
-    }
-
-    public void applyFilters(ItemCatalogService.FilterCriteria criteria) {
-        currentCriteria = criteria;
-        currentOffset = 0;
-        loadPage();
-    }
-
-    public void loadInitial() {
-        if (!items.isEmpty()) return;
-        currentCriteria = ItemCatalogService.FilterCriteria.empty();
-        currentOffset = 0;
-        loadPage();
-    }
-
-    public void refresh() {
-        if (items.isEmpty() && currentCriteria == null) {
-            loadInitial();
+        if (rowAction == null) {
+            setColumns(baseColumns);
             return;
         }
-        loadPage();
+        List<TableColumn<ItemCatalogService.ItemSummary, ?>> columns = new ArrayList<>(baseColumns);
+        columns.add(actionCol);
+        setColumns(columns);
     }
 
-    private void loadPage() {
-        if (currentTask != null && currentTask.isRunning()) currentTask.cancel();
-        table.setPlaceholder(loadingPlaceholder);
-        prevButton.setDisable(true);
-        nextButton.setDisable(true);
-        sortCombo.setDisable(true);
-
-        ItemCatalogService.FilterCriteria criteria = currentCriteria != null
-                ? currentCriteria
-                : ItemCatalogService.FilterCriteria.empty();
-        int offset = currentOffset;
-        Task<ItemCatalogService.ServiceResult<ItemCatalogService.PageResult>> task = new Task<>() {
-            @Override
-            protected ItemCatalogService.ServiceResult<ItemCatalogService.PageResult> call() {
-                return pageLoader.load(
-                        criteria,
-                        new ItemCatalogService.PageRequest(sortColumn, sortDirection, PAGE_SIZE, offset));
-            }
-        };
-        currentTask = task;
-        UiAsyncTasks.submit(task, result -> {
-            SanitizedPageResult sanitized = sanitizeResult(result);
-            ItemCatalogService.PageResult page = sanitized.page();
-            totalCount = Math.max(0, page.totalCount());
-            items.setAll(page.items());
-            table.setPlaceholder(sanitized.serviceOk() ? emptyPlaceholder : errorPlaceholder);
-            sortCombo.setDisable(false);
-            updatePagination();
-            if (sanitized.failureCause() != null) {
-                UiErrorReporter.reportBackgroundFailure(
-                        sanitized.loaderContractFailure()
-                                ? "ItemBrowserPane.loadPage() invalid ItemBrowserPageLoader result"
-                                : "ItemBrowserPane.loadPage() service failure",
-                        sanitized.failureCause());
-            }
-        }, throwable -> {
-            if (!task.isCancelled()) {
-                UiErrorReporter.reportBackgroundFailure("ItemBrowserPane.loadPage()", throwable);
-                table.setPlaceholder(errorPlaceholder);
-                sortCombo.setDisable(false);
-                updatePagination();
-            }
-        });
+    @Override
+    protected ItemCatalogService.FilterCriteria emptyCriteria() {
+        return ItemCatalogService.FilterCriteria.empty();
     }
 
-    private static SanitizedPageResult sanitizeResult(
+    @Override
+    protected PageLoadResult<ItemCatalogService.ItemSummary> loadPage(
+            ItemCatalogService.FilterCriteria criteria,
+            String sortColumn,
+            String sortDirection,
+            int limit,
+            int offset) {
+        return sanitizeResult(pageLoader.load(
+                criteria,
+                new ItemCatalogService.PageRequest(sortColumn, sortDirection, limit, offset)));
+    }
+
+    @Override
+    protected String countLabelText(int totalCount) {
+        return totalCount + " Items gefunden";
+    }
+
+    @Override
+    protected String loadContext() {
+        return "ItemBrowserPane.loadPage()";
+    }
+
+    private static PageLoadResult<ItemCatalogService.ItemSummary> sanitizeResult(
             ItemCatalogService.ServiceResult<ItemCatalogService.PageResult> result) {
         if (result == null) {
             return invalidLoaderResult("ItemBrowserPageLoader returned null ServiceResult");
@@ -296,36 +183,19 @@ public class ItemBrowserPane extends BorderPane {
             return invalidLoaderResult("ItemBrowserPageLoader returned PageResult with null items");
         }
         if (!result.isOk()) {
-            return new SanitizedPageResult(
-                    page,
+            return new PageLoadResult<>(
+                    page.items(),
+                    page.totalCount(),
                     false,
                     new IllegalStateException("ItemCatalogService status: " + result.status()),
                     false
             );
         }
-        return new SanitizedPageResult(page, true, null, false);
+        return new PageLoadResult<>(page.items(), page.totalCount(), true, null, false);
     }
 
-    private static SanitizedPageResult invalidLoaderResult(String message) {
-        return new SanitizedPageResult(
-                new ItemCatalogService.PageResult(List.of(), 0),
-                false,
-                new IllegalStateException(message),
-                true);
-    }
-
-    private void updatePagination() {
-        int currentPage = totalCount == 0 ? 1 : (currentOffset / PAGE_SIZE) + 1;
-        int totalPages = totalCount == 0 ? 1 : (int) Math.ceil((double) totalCount / PAGE_SIZE);
-        countLabel.setText(totalCount + " Items gefunden");
-        pageLabel.setText("Seite " + currentPage + " / " + totalPages);
-        prevButton.setDisable(currentOffset <= 0);
-        nextButton.setDisable(currentOffset + PAGE_SIZE >= totalCount);
-    }
-
-    private ItemCatalogService.ItemSummary itemAt(int index) {
-        if (index < 0 || index >= items.size()) return null;
-        return items.get(index);
+    private static PageLoadResult<ItemCatalogService.ItemSummary> invalidLoaderResult(String message) {
+        return new PageLoadResult<>(List.of(), 0, false, new IllegalStateException(message), true);
     }
 
     private static String typeText(ItemCatalogService.ItemSummary item) {

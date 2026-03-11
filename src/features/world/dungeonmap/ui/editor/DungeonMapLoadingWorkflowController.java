@@ -2,6 +2,7 @@ package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
+import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
@@ -111,7 +112,9 @@ final class DungeonMapLoadingWorkflowController {
         canvas.loadState(loadedState);
         toolSettingsPane.setRooms(loadedState.rooms());
         toolSettingsPane.setAreas(loadedState.areas());
+        toolSettingsPane.setFeatures(loadedState.features());
         detailsPane.setAreas(loadedState.areas());
+        detailsPane.setFeatures(loadedState.features());
         detailsPane.setEndpoints(loadedState.endpoints());
         toolSettingsPane.setMapLoaded(loadedState.map() != null);
         selectionController.cancelPendingLink();
@@ -160,6 +163,16 @@ final class DungeonMapLoadingWorkflowController {
             for (DungeonPassage passage : loadedState.passages()) {
                 if (passageId.equals(passage.passageId())) {
                     selectionController.selectPassage(passage);
+                    return true;
+                }
+            }
+        }
+        if (state.pendingFeatureSelectionId() != null) {
+            Long featureId = state.pendingFeatureSelectionId();
+            state.setPendingFeatureSelectionId(null);
+            for (DungeonFeature feature : loadedState.features()) {
+                if (featureId.equals(feature.featureId())) {
+                    selectionController.selectFeature(feature);
                     return true;
                 }
             }

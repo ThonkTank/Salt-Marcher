@@ -6,17 +6,20 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 import java.util.List;
 import java.util.function.Consumer;
 
-public class DungeonEditorControls extends HBox {
+public class DungeonEditorControls extends VBox {
 
     public record MapActionRequest(DungeonMap map, Node anchor) {}
 
@@ -31,11 +34,12 @@ public class DungeonEditorControls extends HBox {
 
     public DungeonEditorControls() {
         getStyleClass().add("map-editor-toolbar");
-        setAlignment(Pos.CENTER_LEFT);
-        setSpacing(8);
-        setPadding(new Insets(6, 12, 6, 12));
+        getStyleClass().add("dungeon-editor-toolbar");
+        setSpacing(10);
+        setPadding(new Insets(10, 12, 10, 12));
 
         mapCombo.setPrefWidth(180);
+        mapCombo.setMaxWidth(Double.MAX_VALUE);
         mapCombo.setConverter(new StringConverter<>() {
             @Override
             public String toString(DungeonMap map) {
@@ -57,6 +61,7 @@ public class DungeonEditorControls extends HBox {
         Button newMapButton = new Button("+");
         newMapButton.getStyleClass().addAll("button", "compact");
         newMapButton.setTooltip(new Tooltip("Neuen Dungeon anlegen"));
+        newMapButton.setAccessibleText("Neuen Dungeon anlegen");
         newMapButton.setOnAction(event -> {
             if (onNewMapRequested != null) {
                 onNewMapRequested.accept(newMapButton);
@@ -66,6 +71,7 @@ public class DungeonEditorControls extends HBox {
         Button editMapButton = new Button("\u2699 Bearb.");
         editMapButton.getStyleClass().addAll("button", "compact");
         editMapButton.setTooltip(new Tooltip("Dungeon bearbeiten"));
+        editMapButton.setAccessibleText("Ausgewählten Dungeon bearbeiten");
         editMapButton.setOnAction(event -> {
             if (onEditMapRequested != null && mapCombo.getValue() != null) {
                 onEditMapRequested.accept(new MapActionRequest(mapCombo.getValue(), editMapButton));
@@ -78,7 +84,8 @@ public class DungeonEditorControls extends HBox {
         ToggleButton paintButton = buildToolButton("▣ Malen", DungeonEditorTool.PAINT, toolGroup, false);
         ToggleButton eraseButton = buildToolButton("⌫ Löschen", DungeonEditorTool.ERASE, toolGroup, false);
         ToggleButton areaButton = buildToolButton("▧ Bereich", DungeonEditorTool.AREA_ASSIGN, toolGroup, false);
-        ToggleButton passageButton = buildToolButton("\u229f Durchgang", DungeonEditorTool.PASSAGE, toolGroup, false);
+        ToggleButton featureButton = buildToolButton("✦ Feature", DungeonEditorTool.FEATURE, toolGroup, false);
+        ToggleButton passageButton = buildToolButton("\u2503\u2501 Wand/Kante", DungeonEditorTool.PASSAGE, toolGroup, false);
         ToggleButton endpointButton = buildToolButton("◉ Übergang", DungeonEditorTool.ENDPOINT, toolGroup, false);
         ToggleButton linkButton = buildToolButton("↔ Link", DungeonEditorTool.LINK, toolGroup, false);
 
@@ -95,22 +102,36 @@ public class DungeonEditorControls extends HBox {
             }
         });
 
-        Region separator = new Region();
-        separator.getStyleClass().add("toolbar-divider");
-        separator.setMinWidth(6);
+        Label mapLabel = sectionLabel("Dungeon");
+        HBox mapRow = new HBox(8, mapCombo, newMapButton, editMapButton);
+        mapRow.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(mapCombo, javafx.scene.layout.Priority.ALWAYS);
 
-        getChildren().addAll(
-                mapCombo,
-                newMapButton,
-                editMapButton,
-                separator,
+        VBox mapGroup = new VBox(6, mapLabel, mapRow);
+        mapGroup.getStyleClass().add("editor-toolbar-group");
+        HBox.setHgrow(mapGroup, javafx.scene.layout.Priority.ALWAYS);
+
+        Label toolsLabel = sectionLabel("Werkzeuge");
+        FlowPane toolRow = new FlowPane();
+        toolRow.setHgap(6);
+        toolRow.setVgap(6);
+        toolRow.getStyleClass().add("editor-tool-flow");
+        toolRow.getChildren().addAll(
                 selectButton,
                 paintButton,
                 eraseButton,
                 areaButton,
+                featureButton,
                 passageButton,
                 endpointButton,
                 linkButton);
+        VBox toolsGroup = new VBox(6, toolsLabel, toolRow);
+        toolsGroup.getStyleClass().add("editor-toolbar-group");
+
+        Region separator = new Region();
+        separator.getStyleClass().add("control-separator");
+
+        getChildren().addAll(mapGroup, separator, toolsGroup);
     }
 
     private ToggleButton buildToolButton(String label, DungeonEditorTool tool, ToggleGroup group, boolean selected) {
@@ -120,6 +141,12 @@ public class DungeonEditorControls extends HBox {
         button.setUserData(tool);
         button.setSelected(selected);
         return button;
+    }
+
+    private static Label sectionLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().addAll("section-header", "text-muted");
+        return label;
     }
 
     public DungeonEditorTool getActiveTool() {

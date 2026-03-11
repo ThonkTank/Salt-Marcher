@@ -2,6 +2,7 @@ package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
@@ -66,6 +67,8 @@ final class DungeonSelectionWorkflowController {
                 null,
                 null,
                 null,
+                java.util.List.of(),
+                null,
                 link,
                 null));
     }
@@ -77,6 +80,8 @@ final class DungeonSelectionWorkflowController {
                 null,
                 null,
                 null,
+                null,
+                java.util.List.of(),
                 endpoint,
                 null,
                 null));
@@ -137,6 +142,8 @@ final class DungeonSelectionWorkflowController {
                 room,
                 null,
                 null,
+                java.util.List.of(),
+                null,
                 null,
                 null));
     }
@@ -152,6 +159,25 @@ final class DungeonSelectionWorkflowController {
                 null,
                 area,
                 null,
+                java.util.List.of(),
+                null,
+                null,
+                null));
+    }
+
+    void selectFeature(DungeonFeature feature) {
+        if (feature == null) {
+            return;
+        }
+        showSelection(new DungeonSelection(
+                DungeonSelection.SelectionType.FEATURE,
+                feature.featureId(),
+                null,
+                null,
+                null,
+                feature,
+                java.util.List.of(),
+                null,
                 null,
                 null));
     }
@@ -166,6 +192,8 @@ final class DungeonSelectionWorkflowController {
                 null,
                 null,
                 null,
+                null,
+                java.util.List.of(),
                 null,
                 null,
                 passage));
@@ -183,18 +211,25 @@ final class DungeonSelectionWorkflowController {
                 null,
                 null,
                 null,
+                featuresAtSquare(effectiveSquare),
+                null,
                 null,
                 null));
     }
 
     private void showSelection(DungeonSelection selection) {
+        state.setCurrentSelection(selection);
         canvas.setSelectedSelection(selection);
         detailsPane.showSelection(selection);
+        toolSettingsPane.setTileContextFeatures(selection == null ? java.util.List.of() : selection.tileFeatures());
         publishSelection(selection);
         if (selection.type() == DungeonSelection.SelectionType.ROOM && selection.room() != null) {
             toolSettingsPane.selectRoom(selection.room().roomId());
         } else if (selection.type() == DungeonSelection.SelectionType.AREA && selection.area() != null) {
             toolSettingsPane.selectArea(selection.area().areaId());
+        } else if (selection.type() == DungeonSelection.SelectionType.FEATURE && selection.feature() != null) {
+            toolSettingsPane.selectFeatureCategory(selection.feature().category());
+            toolSettingsPane.selectFeature(selection.feature().featureId());
         } else if (selection.type() == DungeonSelection.SelectionType.SQUARE && selection.square() != null) {
             if (selection.square().roomId() != null) {
                 toolSettingsPane.selectRoom(selection.square().roomId());
@@ -251,6 +286,18 @@ final class DungeonSelectionWorkflowController {
                         selection.endpoint().defaultEntry(),
                         selection.endpoint().x(),
                         selection.endpoint().y()));
+            }
+            case FEATURE -> {
+                if (selection.feature() == null) {
+                    detailsNavigator.clear();
+                    return;
+                }
+                detailsNavigator.showDungeonFeature(new DetailsNavigator.DungeonFeatureSummary(
+                        selection.feature().featureId(),
+                        titleOrFallback(selection.feature().name(), selection.feature().category().label()),
+                        selection.feature().category().label(),
+                        selection.feature().notes(),
+                        featureTileCount(selection.feature().featureId())));
             }
             case LINK -> {
                 if (selection.link() == null) {
@@ -322,6 +369,38 @@ final class DungeonSelectionWorkflowController {
             }
         }
         return "Übergang #" + endpointId;
+    }
+
+    private java.util.List<DungeonFeature> featuresAtSquare(DungeonSquare square) {
+        if (square == null || square.squareId() == null || state.currentState() == null) {
+            return java.util.List.of();
+        }
+        java.util.List<DungeonFeature> result = new java.util.ArrayList<>();
+        for (var tile : state.currentState().featureTiles()) {
+            if (tile.squareId() != square.squareId()) {
+                continue;
+            }
+            for (DungeonFeature feature : state.currentState().features()) {
+                if (feature.featureId() == tile.featureId()) {
+                    result.add(feature);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    private int featureTileCount(Long featureId) {
+        if (featureId == null || state.currentState() == null) {
+            return 0;
+        }
+        int count = 0;
+        for (var tile : state.currentState().featureTiles()) {
+            if (featureId == tile.featureId()) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private static String endpointRoleLabel(DungeonEndpoint endpoint) {

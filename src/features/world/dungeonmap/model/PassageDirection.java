@@ -12,6 +12,12 @@ public enum PassageDirection {
     }
 
     public static PassageDirection fromDb(String value) {
-        return "south".equals(value) ? SOUTH : EAST;
+        if ("east".equals(value)) {
+            return EAST;
+        }
+        if ("south".equals(value)) {
+            return SOUTH;
+        }
+        throw new IllegalArgumentException("Unknown passage direction: " + value);
     }
 }

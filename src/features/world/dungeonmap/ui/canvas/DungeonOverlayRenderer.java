@@ -2,13 +2,18 @@ package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEndpointRole;
+import features.world.dungeonmap.model.DungeonFeature;
+import features.world.dungeonmap.model.DungeonFeatureCategory;
+import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonSelection;
 import javafx.scene.input.MouseButton;
+import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
 
 import java.util.HashMap;
@@ -17,6 +22,7 @@ import java.util.function.Consumer;
 
 final class DungeonOverlayRenderer {
 
+    private static final Color FEATURE_SELECTION_STROKE = Color.web("#f3e3a0");
     private static final Color LINK_STROKE = Color.web("#c8a86a");
     private static final Color LINK_SELECTED_STROKE = Color.web("#41a9f2");
     private static final Color ENTRY_FILL = Color.web("#7cbf88");
@@ -28,33 +34,58 @@ final class DungeonOverlayRenderer {
     private static final Color DEFAULT_ENTRY_STROKE = Color.web("#f8f3a6");
     private static final Color PARTY_STROKE = Color.web("#41a9f2");
 
+    private final Pane featuresLayer;
     private final Pane linksLayer;
     private final Pane endpointsLayer;
     private final DungeonCanvasModel model;
     private final DungeonViewport viewport;
+    private final Map<Long, Circle> featureAnchorNodes = new HashMap<>();
+    private final Map<Long, Label> featureLabelNodes = new HashMap<>();
+    private final Map<String, Rectangle> featureTileNodes = new HashMap<>();
     private final Map<Long, Circle> endpointNodes = new HashMap<>();
     private final Map<Long, Line> linkNodes = new HashMap<>();
 
     private Consumer<DungeonEndpoint> onEndpointClicked;
     private Consumer<DungeonLink> onLinkClicked;
+    private boolean showFeatures = true;
     private boolean showLinks = true;
     private boolean showEndpoints = true;
 
-    DungeonOverlayRenderer(Pane linksLayer, Pane endpointsLayer, DungeonCanvasModel model, DungeonViewport viewport) {
+    DungeonOverlayRenderer(Pane featuresLayer, Pane linksLayer, Pane endpointsLayer, DungeonCanvasModel model, DungeonViewport viewport) {
+        this.featuresLayer = featuresLayer;
         this.linksLayer = linksLayer;
         this.endpointsLayer = endpointsLayer;
         this.model = model;
         this.viewport = viewport;
+        this.featuresLayer.setPickOnBounds(false);
         this.linksLayer.setPickOnBounds(false);
         this.endpointsLayer.setPickOnBounds(false);
     }
 
     void rebuildNodes() {
+        featureAnchorNodes.clear();
+        featureLabelNodes.clear();
+        featureTileNodes.clear();
         endpointNodes.clear();
         linkNodes.clear();
+        featuresLayer.getChildren().clear();
         linksLayer.getChildren().clear();
         endpointsLayer.getChildren().clear();
 
+        for (Map.Entry<Long, DungeonFeature> entry : model.featuresById().entrySet()) {
+            Circle anchor = new Circle();
+            Label label = new Label(entry.getValue().toString());
+            label.getStyleClass().addAll("section-header", "text-muted");
+            featureAnchorNodes.put(entry.getKey(), anchor);
+            featureLabelNodes.put(entry.getKey(), label);
+            featuresLayer.getChildren().addAll(anchor, label);
+        }
+        for (Map.Entry<String, java.util.List<DungeonFeatureTile>> entry : model.featureTilesByCoord().entrySet()) {
+            Rectangle rectangle = new Rectangle();
+            rectangle.setMouseTransparent(true);
+            featureTileNodes.put(entry.getKey(), rectangle);
+            featuresLayer.getChildren().add(rectangle);
+        }
         for (DungeonEndpoint endpoint : model.endpointsById().values()) {
             Circle circle = buildEndpointNode(endpoint);
             endpointNodes.put(endpoint.endpointId(), circle);
@@ -70,12 +101,14 @@ final class DungeonOverlayRenderer {
     }
 
     void repositionOverlays(Region owner) {
+        positionFeatures(owner);
         for (Map.Entry<Long, DungeonEndpoint> entry : model.endpointsById().entrySet()) {
             positionEndpoint(owner, entry.getKey(), entry.getValue());
         }
         for (Map.Entry<Long, DungeonLink> entry : model.linksById().entrySet()) {
             positionLink(owner, entry.getKey(), entry.getValue());
         }
+        refreshFeatureStyles();
         refreshEndpointStyles();
         refreshLinkStyles();
     }
@@ -93,9 +126,45 @@ final class DungeonOverlayRenderer {
         updateVisibility();
     }
 
+    void setShowFeatures(boolean showFeatures) {
+        this.showFeatures = showFeatures;
+        updateVisibility();
+    }
+
     void setShowEndpoints(boolean showEndpoints) {
         this.showEndpoints = showEndpoints;
         updateVisibility();
+    }
+
+    void refreshFeatureStyles() {
+        for (Map.Entry<String, Rectangle> entry : featureTileNodes.entrySet()) {
+            Rectangle rectangle = entry.getValue();
+            java.util.List<DungeonFeatureTile> tiles = model.featureTilesByCoord().get(entry.getKey());
+            if (tiles == null || tiles.isEmpty()) {
+                continue;
+            }
+            DungeonFeature feature = model.featuresById().get(tiles.get(0).featureId());
+            boolean selected = isSelectedFeatureTile(tiles);
+            rectangle.setFill(featureColor(feature == null ? null : feature.category(), selected ? 0.40 : 0.20));
+            rectangle.setStroke(selected ? FEATURE_SELECTION_STROKE : featureColor(feature == null ? null : feature.category(), 0.65));
+            rectangle.setStrokeWidth(selected ? Math.max(2.0, 2.5 * viewport.strokeScale()) : Math.max(1.0, viewport.strokeScale()));
+        }
+        for (Map.Entry<Long, Circle> entry : featureAnchorNodes.entrySet()) {
+            DungeonFeature feature = model.featuresById().get(entry.getKey());
+            boolean selected = model.selection() != null
+                    && model.selection().type() == DungeonSelection.SelectionType.FEATURE
+                    && entry.getKey().equals(model.selection().id());
+            Circle circle = entry.getValue();
+            circle.setFill(featureColor(feature == null ? null : feature.category(), selected ? 0.95 : 0.75));
+            circle.setStroke(selected ? FEATURE_SELECTION_STROKE : Color.web("#2b2012"));
+            circle.setStrokeWidth(selected ? Math.max(2.0, 3.0 * viewport.strokeScale()) : Math.max(1.0, viewport.strokeScale()));
+            Label label = featureLabelNodes.get(entry.getKey());
+            if (label != null) {
+                label.setText(feature == null ? "Feature" : feature.toString());
+                label.setVisible(showFeatures);
+                label.setManaged(showFeatures);
+            }
+        }
     }
 
     void refreshEndpointStyles() {
@@ -208,10 +277,89 @@ final class DungeonOverlayRenderer {
     }
 
     private void updateVisibility() {
+        featuresLayer.setVisible(showFeatures);
+        featuresLayer.setManaged(showFeatures);
         linksLayer.setVisible(showLinks);
         linksLayer.setManaged(showLinks);
         endpointsLayer.setVisible(showEndpoints);
         endpointsLayer.setManaged(showEndpoints);
+    }
+
+    private void positionFeatures(Region owner) {
+        double cellSize = viewport.scaledCellSize();
+        for (Map.Entry<String, Rectangle> entry : featureTileNodes.entrySet()) {
+            String[] coords = entry.getKey().split(":");
+            int x = Integer.parseInt(coords[0]);
+            int y = Integer.parseInt(coords[1]);
+            Rectangle rectangle = entry.getValue();
+            rectangle.setX(viewport.screenX(x) + 2.0);
+            rectangle.setY(viewport.screenY(y) + 2.0);
+            rectangle.setWidth(Math.max(4.0, cellSize - 5.0));
+            rectangle.setHeight(Math.max(4.0, cellSize - 5.0));
+            boolean visible = viewport.isVisible(owner, rectangle.getX(), rectangle.getY(), rectangle.getWidth());
+            rectangle.setVisible(showFeatures && visible);
+            rectangle.setManaged(showFeatures && visible);
+        }
+        for (Map.Entry<Long, java.util.List<DungeonFeatureTile>> entry : model.featureTilesByFeatureId().entrySet()) {
+            java.util.List<DungeonFeatureTile> tiles = entry.getValue();
+            if (tiles == null || tiles.isEmpty()) {
+                continue;
+            }
+            double sumX = 0;
+            double sumY = 0;
+            for (DungeonFeatureTile tile : tiles) {
+                sumX += viewport.screenCenterX(tile.x());
+                sumY += viewport.screenCenterY(tile.y());
+            }
+            double centerX = sumX / tiles.size();
+            double centerY = sumY / tiles.size();
+            Circle anchor = featureAnchorNodes.get(entry.getKey());
+            Label label = featureLabelNodes.get(entry.getKey());
+            if (anchor != null) {
+                anchor.setCenterX(centerX);
+                anchor.setCenterY(centerY);
+                anchor.setRadius(Math.max(4.0, 5.5 * viewport.strokeScale()));
+                boolean visible = viewport.isVisible(owner, centerX, centerY, anchor.getRadius());
+                anchor.setVisible(showFeatures && visible);
+                anchor.setManaged(showFeatures && visible);
+            }
+            if (label != null) {
+                label.relocate(centerX + 6.0, centerY - 8.0);
+            }
+        }
+    }
+
+    private boolean isSelectedFeatureTile(java.util.List<DungeonFeatureTile> tiles) {
+        DungeonSelection selection = model.selection();
+        if (selection == null) {
+            return false;
+        }
+        if (selection.type() == DungeonSelection.SelectionType.FEATURE && selection.id() != null) {
+            for (DungeonFeatureTile tile : tiles) {
+                if (selection.id().equals(tile.featureId())) {
+                    return true;
+                }
+            }
+        }
+        if (selection.type() == DungeonSelection.SelectionType.SQUARE && selection.square() != null) {
+            for (DungeonFeatureTile tile : tiles) {
+                if (tile.x() == selection.square().x() && tile.y() == selection.square().y()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static Color featureColor(DungeonFeatureCategory category, double opacity) {
+        DungeonFeatureCategory effective = category == null ? DungeonFeatureCategory.CURIOSITY : category;
+        Color base = switch (effective) {
+            case HAZARD -> Color.web("#c85a48");
+            case ENCOUNTER -> Color.web("#4f85c5");
+            case TREASURE -> Color.web("#d4af37");
+            case CURIOSITY -> Color.web("#6ea27d");
+        };
+        return Color.color(base.getRed(), base.getGreen(), base.getBlue(), opacity);
     }
 
     private Color endpointFill(DungeonEndpoint endpoint) {

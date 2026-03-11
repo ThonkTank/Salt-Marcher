@@ -48,10 +48,11 @@ public class MapEditorView implements AppView {
         canvas = new MapEditorCanvas();
         toolSettingsPane = new ToolSettingsPane();
         applicationService = new MapEditorApplicationService();
+        toolSettingsPane.setActiveTool(controls.getActiveTool());
 
         controls.setOnToolChanged(tool -> {
             canvas.setPaintMode(tool == EditorTool.TERRAIN_BRUSH);
-            toolSettingsPane.setTerrainVisible(tool == EditorTool.TERRAIN_BRUSH);
+            toolSettingsPane.setActiveTool(tool);
         });
 
         controls.setOnMapSelected(mapId -> {

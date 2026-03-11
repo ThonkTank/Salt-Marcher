@@ -24,13 +24,14 @@ public class DungeonMapPane extends StackPane {
 
     private final Canvas gridCanvas = new Canvas();
     private final Canvas selectionCanvas = new Canvas();
+    private final Pane featuresLayer = new Pane();
     private final Pane linksLayer = new Pane();
     private final Pane endpointsLayer = new Pane();
 
     private final DungeonCanvasModel model = new DungeonCanvasModel();
     private final DungeonViewport viewport = new DungeonViewport();
     private final DungeonGridRenderer gridRenderer = new DungeonGridRenderer(gridCanvas, selectionCanvas, model, viewport);
-    private final DungeonOverlayRenderer overlayRenderer = new DungeonOverlayRenderer(linksLayer, endpointsLayer, model, viewport);
+    private final DungeonOverlayRenderer overlayRenderer = new DungeonOverlayRenderer(featuresLayer, linksLayer, endpointsLayer, model, viewport);
     private final DungeonInteractionController interactionController =
             new DungeonInteractionController(selectionCanvas, model, viewport, this::redrawAll);
 
@@ -46,7 +47,7 @@ public class DungeonMapPane extends StackPane {
         selectionCanvas.heightProperty().addListener((obs, oldValue, newValue) -> redrawAll());
         interactionController.setRedrawSelection(gridRenderer::redrawSelection);
 
-        getChildren().addAll(gridCanvas, selectionCanvas, linksLayer, endpointsLayer);
+        getChildren().addAll(gridCanvas, selectionCanvas, featuresLayer, linksLayer, endpointsLayer);
     }
 
     public void loadState(DungeonMapState state) {
@@ -87,6 +88,10 @@ public class DungeonMapPane extends StackPane {
 
     public void setShowEndpoints(boolean showEndpoints) {
         overlayRenderer.setShowEndpoints(showEndpoints);
+    }
+
+    public void setShowFeatures(boolean showFeatures) {
+        overlayRenderer.setShowFeatures(showFeatures);
     }
 
     public void setSelectedSelection(DungeonSelection selection) {

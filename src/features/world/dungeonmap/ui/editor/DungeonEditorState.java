@@ -1,16 +1,19 @@
 package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.model.DungeonMapState;
+import features.world.dungeonmap.model.DungeonSelection;
 
 final class DungeonEditorState {
 
     private Long currentMapId;
     private DungeonMapState currentState;
+    private DungeonSelection currentSelection = DungeonSelection.none();
     private long loadRequestToken;
     private boolean syncingAreaSelection;
     private Long pendingRoomSelectionId;
     private Long pendingAreaSelectionId;
     private Long pendingPassageSelectionId;
+    private Long pendingFeatureSelectionId;
 
     Long currentMapId() {
         return currentMapId;
@@ -26,6 +29,14 @@ final class DungeonEditorState {
 
     void setCurrentState(DungeonMapState currentState) {
         this.currentState = currentState;
+    }
+
+    DungeonSelection currentSelection() {
+        return currentSelection;
+    }
+
+    void setCurrentSelection(DungeonSelection currentSelection) {
+        this.currentSelection = currentSelection == null ? DungeonSelection.none() : currentSelection;
     }
 
     long nextLoadRequestToken() {
@@ -67,5 +78,13 @@ final class DungeonEditorState {
 
     void setPendingPassageSelectionId(Long pendingPassageSelectionId) {
         this.pendingPassageSelectionId = pendingPassageSelectionId;
+    }
+
+    Long pendingFeatureSelectionId() {
+        return pendingFeatureSelectionId;
+    }
+
+    void setPendingFeatureSelectionId(Long pendingFeatureSelectionId) {
+        this.pendingFeatureSelectionId = pendingFeatureSelectionId;
     }
 }

@@ -1,12 +1,15 @@
 package features.world.dungeonmap.service;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.PassageDirection;
 import features.world.dungeonmap.repository.DungeonEndpointRepository;
+import features.world.dungeonmap.repository.DungeonFeatureRepository;
+import features.world.dungeonmap.repository.DungeonFeatureTileRepository;
 import features.world.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeonmap.repository.DungeonPassageRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
@@ -63,8 +66,34 @@ public final class DungeonTopologyService {
 
     private static void reconcileAfterGeometryChange(Connection conn, long mapId, Set<Long> affectedRoomIds) throws SQLException {
         deleteInvalidPassages(conn, mapId);
+        DungeonFeatureRepository.deleteEmptyFeatures(conn, mapId);
         if (!affectedRoomIds.isEmpty()) {
             splitDisconnectedRooms(conn, mapId, affectedRoomIds);
+        }
+    }
+
+    public static void validateFeatureFootprintConnected(List<DungeonFeatureTile> featureTiles) {
+        if (featureTiles == null || featureTiles.size() <= 1) {
+            return;
+        }
+        Map<String, DungeonFeatureTile> tilesByCoord = new HashMap<>();
+        for (DungeonFeatureTile tile : featureTiles) {
+            tilesByCoord.put(coordKey(tile.x(), tile.y()), tile);
+        }
+        Set<String> visited = new HashSet<>();
+        Deque<DungeonFeatureTile> queue = new ArrayDeque<>();
+        DungeonFeatureTile start = featureTiles.get(0);
+        queue.add(start);
+        visited.add(coordKey(start.x(), start.y()));
+        while (!queue.isEmpty()) {
+            DungeonFeatureTile current = queue.removeFirst();
+            enqueueFeatureNeighbor(current.x() + 1, current.y(), tilesByCoord, visited, queue);
+            enqueueFeatureNeighbor(current.x() - 1, current.y(), tilesByCoord, visited, queue);
+            enqueueFeatureNeighbor(current.x(), current.y() + 1, tilesByCoord, visited, queue);
+            enqueueFeatureNeighbor(current.x(), current.y() - 1, tilesByCoord, visited, queue);
+        }
+        if (visited.size() != featureTiles.size()) {
+            throw new IllegalArgumentException("Feature footprint must stay contiguous");
         }
     }
 
@@ -209,6 +238,20 @@ public final class DungeonTopologyService {
     ) {
         String key = coordKey(x, y);
         DungeonSquare neighbor = squaresByCoord.get(key);
+        if (neighbor != null && visited.add(key)) {
+            queue.addLast(neighbor);
+        }
+    }
+
+    private static void enqueueFeatureNeighbor(
+            int x,
+            int y,
+            Map<String, DungeonFeatureTile> tilesByCoord,
+            Set<String> visited,
+            Deque<DungeonFeatureTile> queue
+    ) {
+        String key = coordKey(x, y);
+        DungeonFeatureTile neighbor = tilesByCoord.get(key);
         if (neighbor != null && visited.add(key)) {
             queue.addLast(neighbor);
         }

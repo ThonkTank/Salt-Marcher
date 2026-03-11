@@ -4,6 +4,8 @@ import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEndpointRole;
+import features.world.dungeonmap.model.DungeonFeature;
+import features.world.dungeonmap.model.DungeonFeatureCategory;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
@@ -28,6 +30,7 @@ final class DungeonEntityEditingWorkflowController {
     private final DungeonMapDropdowns mapDropdowns;
     private final TextInputDropdown roomDropdown = new TextInputDropdown();
     private final TextInputDropdown areaDropdown = new TextInputDropdown();
+    private final TextInputDropdown featureDropdown = new TextInputDropdown();
     private final ConfirmationDropdown confirmationDropdown = new ConfirmationDropdown();
     private Runnable reloadCurrentMap = () -> { };
     private Runnable reloadMapList = () -> { };
@@ -173,6 +176,89 @@ final class DungeonEntityEditingWorkflowController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.saveArea()", ex));
     }
 
+    void createFeature(Node anchor) {
+        if (state.currentMapId() == null) {
+            return;
+        }
+        DungeonFeatureCategory category = toolSettingsPane.getActiveFeatureCategory();
+        featureDropdown.show(anchor, "Feature erstellen", "Name", category.label(), "Erstellen", name -> {
+            saveFeature(new DungeonFeature(
+                    null,
+                    state.currentMapId(),
+                    category,
+                    name,
+                    ""));
+            featureDropdown.hide();
+        });
+    }
+
+    void saveFeature(DungeonFeature feature) {
+        applicationService.saveFeature(
+                feature,
+                featureId -> {
+                    state.setPendingFeatureSelectionId(featureId);
+                    reloadCurrentMap.run();
+                },
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.saveFeature()", ex));
+    }
+
+    void deleteActiveFeature(Node anchor) {
+        Long featureId = toolSettingsPane.getActiveFeatureId();
+        if (featureId != null) {
+            deleteFeature(featureId, anchor);
+        }
+    }
+
+    void deleteFeature(Long featureId, Node anchor) {
+        if (featureId == null) {
+            return;
+        }
+        String name = findFeatureName(featureId);
+        confirmationDropdown.show(anchor,
+                "Feature löschen",
+                "Feature '" + name + "' löschen? Die gesamte Flächenzuordnung wird entfernt.",
+                "Löschen",
+                () -> {
+                    confirmationDropdown.hide();
+                    applicationService.deleteFeature(
+                            featureId,
+                            reloadCurrentMap,
+                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.deleteFeature()", ex));
+                });
+    }
+
+    void addSelectedSquareToActiveFeature() {
+        DungeonSquare square = selectedSquare();
+        Long featureId = toolSettingsPane.getActiveFeatureId();
+        if (square == null || square.squareId() == null || featureId == null) {
+            return;
+        }
+        applicationService.addSquareToFeature(
+                featureId,
+                square.squareId(),
+                () -> {
+                    state.setPendingFeatureSelectionId(featureId);
+                    reloadCurrentMap.run();
+                },
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.addSelectedSquareToActiveFeature()", ex));
+    }
+
+    void removeSelectedSquareFromActiveFeature() {
+        DungeonSquare square = selectedSquare();
+        Long featureId = toolSettingsPane.getActiveFeatureId();
+        if (square == null || square.squareId() == null || featureId == null) {
+            return;
+        }
+        applicationService.removeSquareFromFeature(
+                featureId,
+                square.squareId(),
+                () -> {
+                    state.setPendingFeatureSelectionId(featureId);
+                    reloadCurrentMap.run();
+                },
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.removeSelectedSquareFromActiveFeature()", ex));
+    }
+
     void deleteActiveArea(Node anchor) {
         Long areaId = toolSettingsPane.getActiveAreaId();
         if (areaId != null) {
@@ -257,8 +343,8 @@ final class DungeonEntityEditingWorkflowController {
         }
         String name = findPassageName(passageId);
         confirmationDropdown.show(anchor,
-                "Durchgang löschen",
-                "Durchgang '" + name + "' löschen?",
+                "Kante zurücksetzen",
+                "Kante '" + name + "' löschen? Danach ist die Wand wieder geschlossen.",
                 "Löschen",
                 () -> {
                     confirmationDropdown.hide();
@@ -305,6 +391,18 @@ final class DungeonEntityEditingWorkflowController {
         for (DungeonEndpoint endpoint : state.currentState().endpoints()) {
             if (endpointId.equals(endpoint.endpointId())) {
                 return endpoint;
+            }
+        }
+        return null;
+    }
+
+    DungeonFeature findFeature(Long featureId) {
+        if (state.currentState() == null || featureId == null) {
+            return null;
+        }
+        for (DungeonFeature feature : state.currentState().features()) {
+            if (featureId.equals(feature.featureId())) {
+                return feature;
             }
         }
         return null;
@@ -359,6 +457,18 @@ final class DungeonEntityEditingWorkflowController {
                 false,
                 square.x(),
                 square.y()));
+    }
+
+    private String findFeatureName(Long featureId) {
+        DungeonFeature feature = findFeature(featureId);
+        return feature == null ? "Feature" : feature.toString();
+    }
+
+    private DungeonSquare selectedSquare() {
+        if (state.currentSelection() == null) {
+            return null;
+        }
+        return state.currentSelection().square();
     }
 
     private void handleLinkCreateResult(DungeonMapEditorService.LinkCreateResult result) {

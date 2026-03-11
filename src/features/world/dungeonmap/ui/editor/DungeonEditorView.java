@@ -114,5 +114,7 @@ public class DungeonEditorView implements AppView {
                 .addListener((obs, oldValue, newValue) -> canvas.setShowLinks(newValue));
         toolSettingsPane.endpointsVisibleCheckBox().selectedProperty()
                 .addListener((obs, oldValue, newValue) -> canvas.setShowEndpoints(newValue));
+        toolSettingsPane.featuresVisibleCheckBox().selectedProperty()
+                .addListener((obs, oldValue, newValue) -> canvas.setShowFeatures(newValue));
     }
 }

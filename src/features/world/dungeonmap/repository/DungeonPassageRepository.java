@@ -89,6 +89,30 @@ public final class DungeonPassageRepository {
         }
     }
 
+    public static void deleteInvalidPassages(Connection conn, long mapId) throws SQLException {
+        String sql = "DELETE FROM dungeon_passages "
+                + "WHERE map_id=? AND ("
+                + "(direction='east' AND ("
+                + "NOT EXISTS (SELECT 1 FROM dungeon_squares a WHERE a.map_id=dungeon_passages.map_id AND a.x=dungeon_passages.x AND a.y=dungeon_passages.y)"
+                + " OR NOT EXISTS (SELECT 1 FROM dungeon_squares b WHERE b.map_id=dungeon_passages.map_id AND b.x=dungeon_passages.x + 1 AND b.y=dungeon_passages.y)"
+                + "))"
+                + " OR "
+                + "(direction='south' AND ("
+                + "NOT EXISTS (SELECT 1 FROM dungeon_squares a WHERE a.map_id=dungeon_passages.map_id AND a.x=dungeon_passages.x AND a.y=dungeon_passages.y)"
+                + " OR NOT EXISTS (SELECT 1 FROM dungeon_squares b WHERE b.map_id=dungeon_passages.map_id AND b.x=dungeon_passages.x AND b.y=dungeon_passages.y + 1)"
+                + "))"
+                + " OR "
+                + "(endpoint_id IS NOT NULL AND NOT EXISTS ("
+                + "SELECT 1 FROM dungeon_endpoints e "
+                + "WHERE e.endpoint_id=dungeon_passages.endpoint_id AND e.map_id=dungeon_passages.map_id"
+                + "))"
+                + ")";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, mapId);
+            ps.executeUpdate();
+        }
+    }
+
     private static long fetchPassageId(Connection conn, long mapId, int x, int y, PassageDirection dir) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT passage_id FROM dungeon_passages WHERE map_id=? AND x=? AND y=? AND direction=?")) {
@@ -108,8 +132,14 @@ public final class DungeonPassageRepository {
         long mapId = rs.getLong("map_id");
         int x = rs.getInt("x");
         int y = rs.getInt("y");
-        PassageDirection dir = PassageDirection.fromDb(rs.getString("direction"));
-        PassageType type = PassageType.fromDb(rs.getString("passage_type"));
+        PassageDirection dir;
+        PassageType type;
+        try {
+            dir = PassageDirection.fromDb(rs.getString("direction"));
+            type = PassageType.fromDb(rs.getString("passage_type"));
+        } catch (IllegalArgumentException ex) {
+            throw new SQLException("Invalid dungeon passage enum value for passage_id=" + passageId, ex);
+        }
         String name = rs.getString("name");
         String notes = rs.getString("notes");
         long endpointIdRaw = rs.getLong("endpoint_id");

@@ -21,6 +21,7 @@ import database.DatabaseManager;
 import features.creatures.api.CreatureCatalogService;
 import features.party.api.PartyModule;
 import features.encounter.api.EncounterModule;
+import features.spells.api.SpellCatalogModule;
 import features.tables.api.TablesModule;
 import features.world.api.WorldModule;
 import ui.async.UiAsyncTasks;
@@ -92,6 +93,9 @@ public class SaltMarcherApp extends Application {
 
         TablesModule tablesModule = new TablesModule(shell.getDetailsNavigator());
         AppView tableEditorView = tablesModule.view();
+        SpellCatalogModule spellCatalogModule = new SpellCatalogModule();
+        spellCatalogModule.start(shell.getDetailsNavigator());
+        AppView spellCatalogView = spellCatalogModule.view();
 
         // Register session views first, then editors (sidebar separator auto-inserts between categories)
         shell.registerView(ViewId.ENCOUNTER, encounterView);
@@ -100,6 +104,7 @@ public class SaltMarcherApp extends Application {
         shell.registerView(ViewId.MAP_EDITOR, mapEditorView);
         shell.registerView(ViewId.DUNGEON_EDITOR, dungeonEditorView);
         shell.registerView(ViewId.TABLE_EDITOR, tableEditorView);
+        shell.registerView(ViewId.SPELLS, spellCatalogView);
 
         Scene scene = new Scene(shell, 1150, 700);
         scene.getStylesheets().add(

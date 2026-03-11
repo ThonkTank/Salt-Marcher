@@ -3,6 +3,7 @@ package features.world.dungeonmap.ui.editor;
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
@@ -117,6 +118,49 @@ public final class DungeonEditorApplicationService {
             @Override
             protected Void call() throws Exception {
                 DungeonMapEditorService.deleteArea(areaId);
+                return null;
+            }
+        };
+        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+    }
+
+    public void saveFeature(DungeonFeature feature, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
+        Task<Long> task = new Task<>() {
+            @Override
+            protected Long call() throws Exception {
+                return DungeonMapEditorService.saveFeature(feature);
+            }
+        };
+        UiAsyncTasks.submit(task, onSuccess, onError);
+    }
+
+    public void deleteFeature(long featureId, Runnable onSuccess, Consumer<Throwable> onError) {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                DungeonMapEditorService.deleteFeature(featureId);
+                return null;
+            }
+        };
+        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+    }
+
+    public void addSquareToFeature(long featureId, long squareId, Runnable onSuccess, Consumer<Throwable> onError) {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                DungeonMapEditorService.addSquareToFeature(featureId, squareId);
+                return null;
+            }
+        };
+        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+    }
+
+    public void removeSquareFromFeature(long featureId, long squareId, Runnable onSuccess, Consumer<Throwable> onError) {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                DungeonMapEditorService.removeSquareFromFeature(featureId, squareId);
                 return null;
             }
         };

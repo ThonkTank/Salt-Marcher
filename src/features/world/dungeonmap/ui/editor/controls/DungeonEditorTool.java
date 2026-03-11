@@ -7,6 +7,7 @@ public enum DungeonEditorTool {
     PAINT(true, true, true, true, false, false, Cursor.CROSSHAIR, CellClickAction.SELECT_SQUARE),
     ERASE(true, false, false, true, false, false, Cursor.DISAPPEAR, CellClickAction.SELECT_SQUARE),
     AREA_ASSIGN(false, false, false, false, true, false, Cursor.DEFAULT, CellClickAction.ASSIGN_ROOM_AREA),
+    FEATURE(false, false, false, false, false, false, Cursor.HAND, CellClickAction.SELECT_SQUARE),
     PASSAGE(false, false, false, false, false, true, Cursor.HAND, CellClickAction.SELECT_SQUARE),
     ENDPOINT(false, false, false, false, false, false, Cursor.HAND, CellClickAction.CREATE_OR_SELECT_ENDPOINT),
     LINK(false, false, false, false, false, false, Cursor.HAND, CellClickAction.SELECT_SQUARE);
@@ -80,6 +81,10 @@ public enum DungeonEditorTool {
 
     public boolean autoShowsSelectedArea() {
         return this == AREA_ASSIGN;
+    }
+
+    public boolean featureSettingsVisible() {
+        return this == FEATURE;
     }
 
     public Cursor cursor() {

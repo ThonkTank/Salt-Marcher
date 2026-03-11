@@ -7,6 +7,8 @@ public record DungeonMapState(
         List<DungeonSquare> squares,
         List<DungeonRoom> rooms,
         List<DungeonArea> areas,
+        List<DungeonFeature> features,
+        List<DungeonFeatureTile> featureTiles,
         List<DungeonEndpoint> endpoints,
         List<DungeonLink> links,
         List<DungeonPassage> passages

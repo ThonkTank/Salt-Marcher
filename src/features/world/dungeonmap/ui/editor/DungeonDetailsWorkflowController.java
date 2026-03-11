@@ -3,6 +3,7 @@ package features.world.dungeonmap.ui.editor;
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.ui.editor.panes.DungeonDetailsPane;
@@ -38,8 +39,14 @@ final class DungeonDetailsWorkflowController {
         toolSettingsPane.deleteRoomButton().setOnAction(event -> entityEditingWorkflowController.deleteActiveRoom(toolSettingsPane.deleteRoomButton()));
         toolSettingsPane.newAreaButton().setOnAction(event -> entityEditingWorkflowController.createArea(toolSettingsPane.newAreaButton()));
         toolSettingsPane.deleteAreaButton().setOnAction(event -> entityEditingWorkflowController.deleteActiveArea(toolSettingsPane.deleteAreaButton()));
+        toolSettingsPane.newFeatureButton().setOnAction(event -> entityEditingWorkflowController.createFeature(toolSettingsPane.newFeatureButton()));
+        toolSettingsPane.deleteFeatureButton().setOnAction(event -> entityEditingWorkflowController.deleteActiveFeature(toolSettingsPane.deleteFeatureButton()));
+        toolSettingsPane.addTileToFeatureButton().setOnAction(event -> entityEditingWorkflowController.addSelectedSquareToActiveFeature());
+        toolSettingsPane.removeTileFromFeatureButton().setOnAction(event -> entityEditingWorkflowController.removeSelectedSquareFromActiveFeature());
         toolSettingsPane.setOnRoomSelected(selectionController::selectRoom);
         toolSettingsPane.setOnAreaSelected(this::handleAreaSelected);
+        toolSettingsPane.setOnFeatureSelected(this::handleFeatureSelected);
+        toolSettingsPane.setOnTileContextFeatureSelected(this::handleFeatureSelected);
         toolSettingsPane.encounterTableComboBox().valueProperty()
                 .addListener((obs, oldValue, newValue) -> saveSelectedAreaEncounterTable(newValue));
         toolSettingsPane.setOnCancelLink(selectionController::cancelPendingLink);
@@ -61,6 +68,13 @@ final class DungeonDetailsWorkflowController {
                 form.encounterTableId(),
                 entityEditingWorkflowController.selectedEncounterTableName(form.encounterTableId()))));
         detailsPane.setOnAreaDeleted(request -> entityEditingWorkflowController.deleteArea(request.entityId(), request.anchor()));
+        detailsPane.setOnFeatureSaved(form -> entityEditingWorkflowController.saveFeature(new DungeonFeature(
+                form.featureId(),
+                state.currentMapId(),
+                form.category(),
+                form.name(),
+                form.notes())));
+        detailsPane.setOnFeatureDeleted(request -> entityEditingWorkflowController.deleteFeature(request.entityId(), request.anchor()));
         detailsPane.setOnEndpointSaved(form -> {
             DungeonEndpoint current = entityEditingWorkflowController.findEndpoint(form.endpointId());
             if (current != null) {
@@ -103,6 +117,10 @@ final class DungeonDetailsWorkflowController {
     void handleAreaSelected(DungeonArea area) {
         selectionController.selectArea(area);
         syncEncounterTableSelection();
+    }
+
+    void handleFeatureSelected(DungeonFeature feature) {
+        selectionController.selectFeature(feature);
     }
 
     void syncEncounterTableSelection() {

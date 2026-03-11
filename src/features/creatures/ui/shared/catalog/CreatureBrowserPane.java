@@ -1,31 +1,21 @@
 package features.creatures.ui.shared.catalog;
 
+import features.creatures.api.CreatureBrowserPageLoader;
+import features.creatures.api.CreatureBrowserRowAction;
 import features.creatures.api.CreatureCatalogService;
 import features.creatures.model.Creature;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.concurrent.Task;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import ui.async.UiAsyncTasks;
-import ui.async.UiErrorReporter;
+import ui.components.catalog.AbstractCatalogBrowserPane;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -33,75 +23,30 @@ import java.util.function.Consumer;
  * Stat blocks are displayed externally via onRequestStatBlock callback (routed to InspectorPane).
  * Filters live externally in EncounterControls (left panel).
  */
-public class CreatureBrowserPane extends BorderPane {
-
-    private static final int PAGE_SIZE = 50;
-
-    private final TableView<Creature> table;
-    private final ObservableList<Creature> items = FXCollections.observableArrayList();
-    private final Label countLabel;
-    private final Label pageLabel;
-    private final Button prevButton;
-    private final Button nextButton;
-    private final ComboBox<SortOption> sortCombo;
-
-    private record SortOption(String label, String column, String dir) {
-        @Override public String toString() { return label; }
-    }
-
+public class CreatureBrowserPane extends AbstractCatalogBrowserPane<Creature, CreatureCatalogService.FilterCriteria> {
     private static final List<SortOption> SORT_OPTIONS = List.of(
-            new SortOption("Name (A-Z)",   "name", "ASC"),
-            new SortOption("Name (Z-A)",   "name", "DESC"),
-            new SortOption("CR (aufst.)",  "cr",   "ASC"),
-            new SortOption("CR (abst.)",   "cr",   "DESC"),
-            new SortOption("XP (aufst.)",  "xp",   "ASC"),
-            new SortOption("XP (abst.)",   "xp",   "DESC")
+            new SortOption("Name (A-Z)", "name", "ASC"),
+            new SortOption("Name (Z-A)", "name", "DESC"),
+            new SortOption("CR (aufst.)", "cr", "ASC"),
+            new SortOption("CR (abst.)", "cr", "DESC"),
+            new SortOption("XP (aufst.)", "xp", "ASC"),
+            new SortOption("XP (abst.)", "xp", "DESC")
     );
 
-    private final Label loadingPlaceholder = new Label("Lade...");
-    private final Label emptyPlaceholder = new Label("Keine Monster gefunden");
-    private final Label errorPlaceholder = new Label("Fehler beim Laden");
+    private final TableColumn<Creature, Void> actionCol = new TableColumn<>("");
+    private final List<TableColumn<Creature, ?>> baseColumns;
 
     private Consumer<Creature> onAddCreature;
     private Consumer<Long> onRequestStatBlock;
-    private Task<?> currentTask;
     private boolean combatMode = false;
-
-    private CreatureCatalogService.FilterCriteria currentCriteria;
-    private java.util.Set<Long> excludeIds = java.util.Set.of();
+    private Set<Long> excludeIds = Set.of();
     private List<Long> currentTableIds = List.of();
-    private int currentOffset = 0;
-    private int totalCount = 0;
-    private String sortColumn = "name";
-    private String sortDirection = "ASC";
+    private CreatureBrowserPageLoader pageLoader = this::loadDefaultPage;
+    private CreatureBrowserRowAction rowAction;
+    private boolean compatibilityRowAction = true;
 
     public CreatureBrowserPane() {
-        setPadding(new Insets(8));
-
-        // ---- TOP: Count + Sort ----
-        HBox topBar = new HBox(8);
-        topBar.setAlignment(Pos.CENTER_LEFT);
-        topBar.setPadding(new Insets(0, 0, 6, 0));
-
-        countLabel = new Label("0 Monster gefunden");
-        countLabel.getStyleClass().add("text-secondary");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Label sortLabel = new Label("Sortierung:");
-        sortLabel.getStyleClass().add("text-muted");
-        sortCombo = new ComboBox<>(FXCollections.observableArrayList(SORT_OPTIONS));
-        sortCombo.getSelectionModel().selectFirst();
-
-        topBar.getChildren().addAll(countLabel, spacer, sortLabel, sortCombo);
-        setTop(topBar);
-
-        // ---- CENTER: Table ----
-        table = new TableView<>(items);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
-        table.setPlaceholder(emptyPlaceholder);
+        super("0 Monster gefunden", "Keine Monster gefunden", SORT_OPTIONS);
 
         TableColumn<Creature, String> nameCol = new TableColumn<>("Name");
         nameCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().Name));
@@ -112,15 +57,18 @@ public class CreatureBrowserPane extends BorderPane {
             {
                 lbl.getStyleClass().addAll("creature-link", "flat");
                 lbl.setOnAction(ev -> {
-                    if (getIndex() < 0 || getIndex() >= getTableView().getItems().size()) return;
-                    Creature c = getTableView().getItems().get(getIndex());
-                    if (onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
+                    Creature c = itemAt(getIndex());
+                    if (c != null && onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
                 });
             }
             @Override
             protected void updateItem(String name, boolean empty) {
                 super.updateItem(name, empty);
-                if (empty || name == null) { setText(null); setGraphic(null); return; }
+                if (empty || name == null) {
+                    setText(null);
+                    setGraphic(null);
+                    return;
+                }
                 lbl.setText(name);
                 lbl.setAccessibleText("Stat Block: " + name);
                 setGraphic(lbl);
@@ -153,183 +101,178 @@ public class CreatureBrowserPane extends BorderPane {
         xpCol.setPrefWidth(60);
         xpCol.setMaxWidth(75);
 
-        TableColumn<Creature, Void> addCol = new TableColumn<>("");
-        addCol.setMinWidth(55);
-        addCol.setPrefWidth(65);
-        addCol.setMaxWidth(75);
-        addCol.setSortable(false);
-        addCol.setCellFactory(col -> new TableCell<>() {
+        actionCol.setMinWidth(55);
+        actionCol.setPrefWidth(65);
+        actionCol.setMaxWidth(75);
+        actionCol.setSortable(false);
+        actionCol.setCellFactory(col -> new TableCell<>() {
             private final Button btn = new Button("+Add");
-            private final Tooltip addTip = new Tooltip();
+            private final Tooltip tip = new Tooltip();
             {
                 btn.getStyleClass().addAll("accent", "compact");
-                btn.setTooltip(addTip);
+                btn.setTooltip(tip);
                 btn.setOnAction(e -> {
-                    Creature c = getTableView().getItems().get(getIndex());
-                    if (onAddCreature != null) onAddCreature.accept(c);
+                    Creature creature = itemAt(getIndex());
+                    if (creature == null || rowAction == null) return;
+                    rowAction.handler().accept(creature);
                 });
             }
+
             @Override
-            protected void updateItem(Void v, boolean empty) {
-                super.updateItem(v, empty);
-                if (empty) { setGraphic(null); return; }
-                btn.setText(combatMode ? "+Reinf." : "+Add");
-                addTip.setText(combatMode
-                        ? "Als Verst\u00e4rkung hinzuf\u00fcgen"
-                        : "Zum Encounter hinzuf\u00fcgen (Shift+Enter)");
-                String creatureName = getTableView().getItems().get(getIndex()).Name;
-                btn.setAccessibleText((combatMode ? "Als Verstärkung hinzufügen: " : "Zum Encounter hinzufügen: ") + creatureName);
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                Creature creature = itemAt(getIndex());
+                if (empty || creature == null || rowAction == null) {
+                    setGraphic(null);
+                    return;
+                }
+                btn.setText(rowAction.label());
+                tip.setText(rowAction.tooltip());
+                btn.setAccessibleText(rowAction.label() + ": " + creature.Name);
                 setGraphic(btn);
             }
         });
 
-        table.getColumns().addAll(nameCol, crCol, typeCol, sizeCol, xpCol, addCol);
-        setCenter(table);
+        baseColumns = List.of(nameCol, crCol, typeCol, sizeCol, xpCol);
+        setColumns(baseColumns);
 
-        // ---- BOTTOM: Pagination ----
-        HBox pagination = new HBox(8);
-        pagination.setAlignment(Pos.CENTER);
-        pagination.setPadding(new Insets(6, 0, 0, 0));
-
-        prevButton = new Button("\u25C0 _Zur\u00fcck");
-        nextButton = new Button("_Weiter \u25B6");
-        pageLabel = new Label("Seite 1");
-        pageLabel.getStyleClass().add("text-secondary");
-
-        pagination.getChildren().addAll(prevButton, pageLabel, nextButton);
-        setBottom(pagination);
-
-        // ---- Listeners ----
-        prevButton.setOnAction(e -> {
-            if (currentOffset > 0) {
-                currentOffset = Math.max(0, currentOffset - PAGE_SIZE);
-                loadPage();
-            }
-        });
-        nextButton.setOnAction(e -> {
-            if (currentOffset + PAGE_SIZE < totalCount) {
-                currentOffset += PAGE_SIZE;
-                loadPage();
-            }
-        });
-        sortCombo.setOnAction(e -> {
-            SortOption sel = sortCombo.getValue();
-            if (sel == null) return;
-            sortColumn = sel.column();
-            sortDirection = sel.dir();
-            currentOffset = 0;
-            loadPage();
-        });
-
-        // Keyboard: ENTER -> stat block, Shift+ENTER -> add
-        table.setOnKeyPressed(e -> {
-            Creature c = table.getSelectionModel().getSelectedItem();
+        table().setOnKeyPressed(e -> {
+            Creature c = table().getSelectionModel().getSelectedItem();
             if (c == null) return;
             if (e.getCode() == KeyCode.ENTER && !e.isShiftDown()) {
                 if (onRequestStatBlock != null) onRequestStatBlock.accept(c.Id);
                 e.consume();
             } else if (e.getCode() == KeyCode.ENTER && e.isShiftDown()) {
-                if (onAddCreature != null) onAddCreature.accept(c);
+                if (rowAction != null) rowAction.handler().accept(c);
                 e.consume();
             }
         });
     }
 
-    public void setOnAddCreature(Consumer<Creature> callback) { this.onAddCreature = callback; }
-    public void setOnRequestStatBlock(Consumer<Long> callback) { this.onRequestStatBlock = callback; }
+    public void setOnAddCreature(Consumer<Creature> callback) {
+        this.onAddCreature = callback;
+        compatibilityRowAction = true;
+        syncCompatibilityRowAction();
+    }
+
+    public void setOnRequestStatBlock(Consumer<Long> callback) {
+        this.onRequestStatBlock = callback;
+    }
+
+    public void setPageLoader(CreatureBrowserPageLoader loader) {
+        pageLoader = loader != null ? loader : this::loadDefaultPage;
+        if (hasLoadedCriteria()) refresh();
+    }
+
+    public void setRowAction(CreatureBrowserRowAction action) {
+        compatibilityRowAction = false;
+        rowAction = action;
+        rebuildColumns();
+    }
 
     public void setCombatMode(boolean combat) {
         this.combatMode = combat;
-        table.refresh();
+        if (compatibilityRowAction) {
+            syncCompatibilityRowAction();
+        } else {
+            table().refresh();
+        }
     }
 
     /** Exclude these IDs from search results (e.g. already-added table entries). Pass empty set to clear. */
-    public void setExcludeIds(java.util.Set<Long> ids) {
-        this.excludeIds = ids == null ? java.util.Set.of() : ids;
-        if (!items.isEmpty() || currentCriteria != null) loadPage();
-    }
-
-    public void applyFilters(CreatureCatalogService.FilterCriteria criteria) {
-        this.currentCriteria = criteria;
-        this.currentOffset = 0;
-        loadPage();
+    public void setExcludeIds(Set<Long> ids) {
+        this.excludeIds = ids == null ? Set.of() : Set.copyOf(ids);
+        if (hasLoadedCriteria()) refresh();
     }
 
     /** Filter results to creatures in the given encounter tables (empty = all creatures). */
     public void setTableIds(List<Long> tableIds) {
-        this.currentTableIds = tableIds == null ? List.of() : tableIds;
-        this.currentOffset = 0;
-        loadPage();
+        this.currentTableIds = tableIds == null ? List.of() : List.copyOf(tableIds);
+        resetToFirstPage();
+        if (hasLoadedCriteria()) refresh();
     }
 
-    public void loadInitial() {
-        if (!items.isEmpty()) return;
-        this.currentCriteria = CreatureCatalogService.FilterCriteria.empty();
-        this.currentOffset = 0;
-        loadPage();
+    @Override
+    protected CreatureCatalogService.FilterCriteria emptyCriteria() {
+        return CreatureCatalogService.FilterCriteria.empty();
     }
 
-    private void loadPage() {
-        if (currentTask != null && currentTask.isRunning()) currentTask.cancel();
-
-        table.setPlaceholder(loadingPlaceholder);
-        prevButton.setDisable(true);
-        nextButton.setDisable(true);
-        sortCombo.setDisable(true);
-
-        CreatureCatalogService.FilterCriteria c = currentCriteria;
-        if (c == null) c = CreatureCatalogService.FilterCriteria.empty();
-
-        final CreatureCatalogService.FilterCriteria criteria = c;
-        final int offset = currentOffset;
-        final List<Long> tableIds = currentTableIds;
-
-        Task<CreatureCatalogService.ServiceResult<CreatureCatalogService.PageResult>> task = new Task<>() {
-            @Override
-            protected CreatureCatalogService.ServiceResult<CreatureCatalogService.PageResult> call() {
-                List<Long> excl = excludeIds.isEmpty() ? null : new java.util.ArrayList<>(excludeIds);
-                return CreatureCatalogService.searchCreatures(
-                        criteria,
-                        excl,
-                        tableIds,
-                        new CreatureCatalogService.PageRequest(sortColumn, sortDirection, PAGE_SIZE, offset));
-            }
-        };
-        currentTask = task;
-        UiAsyncTasks.submit(
-                task,
-                serviceResult -> {
-                    CreatureCatalogService.PageResult result = serviceResult.value();
-                    totalCount = result.totalCount();
-                    items.setAll(result.creatures());
-                    table.setPlaceholder(serviceResult.isOk() ? emptyPlaceholder : errorPlaceholder);
-                    sortCombo.setDisable(false);
-                    updatePagination();
-                    if (!serviceResult.isOk()) {
-                        UiErrorReporter.reportBackgroundFailure(
-                                "CreatureBrowserPane.loadPage() service failure",
-                                new IllegalStateException("CreatureCatalogService status: " + serviceResult.status()));
-                    }
-                },
-                throwable -> {
-                    if (!task.isCancelled()) {
-                        UiErrorReporter.reportBackgroundFailure("CreatureBrowserPane.loadPage()", throwable);
-                        table.setPlaceholder(errorPlaceholder);
-                        sortCombo.setDisable(false);
-                        prevButton.setDisable(currentOffset <= 0);
-                        nextButton.setDisable(currentOffset + PAGE_SIZE >= totalCount);
-                    }
-                });
+    @Override
+    protected PageLoadResult<Creature> loadPage(
+            CreatureCatalogService.FilterCriteria criteria,
+            String sortColumn,
+            String sortDirection,
+            int limit,
+            int offset) {
+        return sanitizeResult(pageLoader.load(
+                criteria,
+                new CreatureCatalogService.PageRequest(sortColumn, sortDirection, limit, offset)));
     }
 
-    private void updatePagination() {
-        int currentPage = (currentOffset / PAGE_SIZE) + 1;
-        int totalPages = Math.max(1, (int) Math.ceil((double) totalCount / PAGE_SIZE));
-        pageLabel.setText("Seite " + currentPage + " / " + totalPages);
-        prevButton.setDisable(currentOffset <= 0);
-        nextButton.setDisable(currentOffset + PAGE_SIZE >= totalCount);
-        countLabel.setText(totalCount + " Monster gefunden");
-        pageLabel.notifyAccessibleAttributeChanged(javafx.scene.AccessibleAttribute.TEXT);
-        countLabel.notifyAccessibleAttributeChanged(javafx.scene.AccessibleAttribute.TEXT);
+    @Override
+    protected String countLabelText(int totalCount) {
+        return totalCount + " Monster gefunden";
+    }
+
+    @Override
+    protected String loadContext() {
+        return "CreatureBrowserPane.loadPage()";
+    }
+
+    private CreatureCatalogService.ServiceResult<CreatureCatalogService.PageResult> loadDefaultPage(
+            CreatureCatalogService.FilterCriteria criteria,
+            CreatureCatalogService.PageRequest pageRequest) {
+        List<Long> excluded = excludeIds.isEmpty() ? null : List.copyOf(excludeIds);
+        return CreatureCatalogService.searchCreatures(criteria, excluded, currentTableIds, pageRequest);
+    }
+
+    private void syncCompatibilityRowAction() {
+        if (onAddCreature == null) {
+            rowAction = null;
+        } else {
+            rowAction = new CreatureBrowserRowAction(
+                    combatMode ? "+Reinf." : "+Add",
+                    combatMode ? "Als Verst\u00e4rkung hinzuf\u00fcgen" : "Zum Encounter hinzuf\u00fcgen (Shift+Enter)",
+                    onAddCreature);
+        }
+        rebuildColumns();
+        table().refresh();
+    }
+
+    private void rebuildColumns() {
+        if (rowAction == null) {
+            setColumns(baseColumns);
+            return;
+        }
+        List<TableColumn<Creature, ?>> columns = new ArrayList<>(baseColumns);
+        columns.add(actionCol);
+        setColumns(columns);
+    }
+
+    private static PageLoadResult<Creature> sanitizeResult(
+            CreatureCatalogService.ServiceResult<CreatureCatalogService.PageResult> result) {
+        if (result == null) {
+            return invalidResult("CreatureBrowserPageLoader returned null ServiceResult");
+        }
+        CreatureCatalogService.PageResult page = result.value();
+        if (page == null) {
+            return invalidResult("CreatureBrowserPageLoader returned null PageResult");
+        }
+        if (page.creatures() == null) {
+            return invalidResult("CreatureBrowserPageLoader returned PageResult with null creatures");
+        }
+        if (!result.isOk()) {
+            return new PageLoadResult<>(
+                    page.creatures(),
+                    page.totalCount(),
+                    false,
+                    new IllegalStateException("CreatureCatalogService status: " + result.status()),
+                    false);
+        }
+        return new PageLoadResult<>(page.creatures(), page.totalCount(), true, null, false);
+    }
+
+    private static PageLoadResult<Creature> invalidResult(String message) {
+        return new PageLoadResult<>(List.of(), 0, false, new IllegalStateException(message), true);
     }
 }

@@ -3,6 +3,8 @@ package features.world.dungeonmap.service;
 import database.DatabaseManager;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonFeature;
+import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonPassage;
@@ -10,6 +12,8 @@ import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.repository.DungeonAreaRepository;
 import features.world.dungeonmap.repository.DungeonEndpointRepository;
+import features.world.dungeonmap.repository.DungeonFeatureRepository;
+import features.world.dungeonmap.repository.DungeonFeatureTileRepository;
 import features.world.dungeonmap.repository.DungeonLinkRepository;
 import features.world.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeonmap.repository.DungeonPassageRepository;
@@ -103,6 +107,62 @@ public final class DungeonMapEditorService {
     public static void deleteArea(long areaId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonAreaRepository.deleteArea(conn, areaId);
+        }
+    }
+
+    public static long saveFeature(DungeonFeature feature) throws Exception {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            return DungeonFeatureRepository.upsertFeature(conn, feature);
+        }
+    }
+
+    public static void deleteFeature(long featureId) throws Exception {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonFeatureRepository.deleteFeature(conn, featureId);
+        }
+    }
+
+    public static void addSquareToFeature(long featureId, long squareId) throws Exception {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            Optional<DungeonFeature> feature = DungeonFeatureRepository.findFeature(conn, featureId);
+            if (feature.isEmpty()) {
+                throw new IllegalArgumentException("Unknown dungeon feature: " + featureId);
+            }
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                DungeonFeatureTileRepository.addTile(conn, featureId, squareId);
+                DungeonTopologyService.validateFeatureFootprintConnected(
+                        DungeonFeatureTileRepository.getTilesForFeature(conn, featureId));
+                conn.commit();
+            } catch (SQLException | RuntimeException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
+        }
+    }
+
+    public static void removeSquareFromFeature(long featureId, long squareId) throws Exception {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                DungeonFeatureTileRepository.removeTile(conn, featureId, squareId);
+                List<DungeonFeatureTile> remainingTiles = DungeonFeatureTileRepository.getTilesForFeature(conn, featureId);
+                if (remainingTiles.isEmpty()) {
+                    DungeonFeatureRepository.deleteFeature(conn, featureId);
+                } else {
+                    DungeonTopologyService.validateFeatureFootprintConnected(remainingTiles);
+                }
+                conn.commit();
+            } catch (SQLException | RuntimeException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
         }
     }
 

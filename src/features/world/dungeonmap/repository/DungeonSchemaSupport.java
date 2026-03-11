@@ -78,6 +78,18 @@ public final class DungeonSchemaSupport {
                 + "endpoint_id  INTEGER REFERENCES dungeon_endpoints(endpoint_id) ON DELETE SET NULL,"
                 + "UNIQUE (map_id, x, y, direction)"
                 + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_features ("
+                + "feature_id    INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "map_id        INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "category      TEXT NOT NULL CHECK(category IN ('hazard','encounter','treasure','curiosity')),"
+                + "name          TEXT,"
+                + "notes         TEXT"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_feature_tiles ("
+                + "feature_id    INTEGER NOT NULL REFERENCES dungeon_features(feature_id) ON DELETE CASCADE,"
+                + "square_id     INTEGER NOT NULL REFERENCES dungeon_squares(square_id) ON DELETE CASCADE,"
+                + "PRIMARY KEY (feature_id, square_id)"
+                + ")");
     }
 
     public static void createIndexes(Statement stmt) throws SQLException {
@@ -87,6 +99,9 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_endpoints_map ON dungeon_endpoints(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_links_map ON dungeon_links(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_passages_map ON dungeon_passages(map_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_features_map ON dungeon_features(map_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_features_category ON dungeon_features(category)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_feature_tiles_square ON dungeon_feature_tiles(square_id)");
     }
 
     public static void ensureCompatibility(Connection conn) throws SQLException {
@@ -98,6 +113,7 @@ public final class DungeonSchemaSupport {
         ensureColumn(conn, "dungeon_endpoints", "is_default_entry", "INTEGER NOT NULL DEFAULT 0");
         clearInvalidDefaultEntries(conn);
         normalizeDefaultEntryRoleCompatibility(conn);
+        normalizePassageTopologyCompatibility(conn);
     }
 
     private static void ensureColumn(Connection conn, String table, String column, String definition) throws SQLException {
@@ -135,5 +151,23 @@ public final class DungeonSchemaSupport {
                     + "SET is_default_entry=0 "
                     + "WHERE is_default_entry NOT IN (0,1)");
         }
+    }
+
+    private static void normalizePassageTopologyCompatibility(Connection conn) throws SQLException {
+        for (Long mapId : loadMapIdsWithPassages(conn)) {
+            DungeonPassageRepository.deleteInvalidPassages(conn, mapId);
+        }
+    }
+
+    private static java.util.List<Long> loadMapIdsWithPassages(Connection conn) throws SQLException {
+        java.util.List<Long> mapIds = new java.util.ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT DISTINCT map_id FROM dungeon_passages");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                mapIds.add(rs.getLong(1));
+            }
+        }
+        return mapIds;
     }
 }

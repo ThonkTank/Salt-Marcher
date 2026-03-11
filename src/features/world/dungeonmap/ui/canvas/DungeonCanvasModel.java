@@ -1,6 +1,8 @@
 package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonFeature;
+import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
@@ -15,9 +17,12 @@ import java.util.Map;
 final class DungeonCanvasModel {
 
     private final Map<String, DungeonSquare> squaresByCoord = new HashMap<>();
+    private final Map<Long, DungeonFeature> featuresById = new HashMap<>();
     private final Map<Long, DungeonEndpoint> endpointsById = new HashMap<>();
     private final Map<Long, DungeonLink> linksById = new HashMap<>();
     private final Map<String, DungeonPassage> passagesByEdge = new HashMap<>();
+    private final Map<String, java.util.List<DungeonFeatureTile>> featureTilesByCoord = new HashMap<>();
+    private final Map<Long, java.util.List<DungeonFeatureTile>> featureTilesByFeatureId = new HashMap<>();
 
     private DungeonMapState state;
     private DungeonSelection selection = DungeonSelection.none();
@@ -34,9 +39,12 @@ final class DungeonCanvasModel {
 
         this.state = state;
         squaresByCoord.clear();
+        featuresById.clear();
         endpointsById.clear();
         linksById.clear();
         passagesByEdge.clear();
+        featureTilesByCoord.clear();
+        featureTilesByFeatureId.clear();
 
         if (state == null || state.map() == null) {
             loadedMapId = null;
@@ -54,11 +62,18 @@ final class DungeonCanvasModel {
         for (DungeonEndpoint endpoint : state.endpoints()) {
             endpointsById.put(endpoint.endpointId(), endpoint);
         }
+        for (DungeonFeature feature : state.features()) {
+            featuresById.put(feature.featureId(), feature);
+        }
         for (DungeonLink link : state.links()) {
             linksById.put(link.linkId(), link);
         }
         for (DungeonPassage passage : state.passages()) {
             passagesByEdge.put(passage.edgeKey(), passage);
+        }
+        for (DungeonFeatureTile tile : state.featureTiles()) {
+            featureTilesByCoord.computeIfAbsent(key(tile.x(), tile.y()), ignored -> new java.util.ArrayList<>()).add(tile);
+            featureTilesByFeatureId.computeIfAbsent(tile.featureId(), ignored -> new java.util.ArrayList<>()).add(tile);
         }
 
         selection = DungeonSelection.none();
@@ -137,12 +152,24 @@ final class DungeonCanvasModel {
         return endpointsById;
     }
 
+    Map<Long, DungeonFeature> featuresById() {
+        return featuresById;
+    }
+
     Map<Long, DungeonLink> linksById() {
         return linksById;
     }
 
     Map<String, DungeonPassage> passagesByEdge() {
         return passagesByEdge;
+    }
+
+    Map<String, java.util.List<DungeonFeatureTile>> featureTilesByCoord() {
+        return featureTilesByCoord;
+    }
+
+    Map<Long, java.util.List<DungeonFeatureTile>> featureTilesByFeatureId() {
+        return featureTilesByFeatureId;
     }
 
     DungeonSelection selection() {
