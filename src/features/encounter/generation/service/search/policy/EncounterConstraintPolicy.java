@@ -15,6 +15,10 @@ import java.util.Map;
 
 /**
  * Owns hard-completion checks and optimistic feasibility pruning.
+ *
+ * <p>Public callers should use {@link #evaluateState(SearchState, EncounterBudgets, RelaxationProfile)},
+ * {@link #isComplete(SearchState, EncounterBudgets, RelaxationProfile)}, and
+ * {@link #mayStillReachCompletion(SearchState, List, EncounterBudgets, RelaxationProfile, Map)}.
  */
 public final class EncounterConstraintPolicy {
     public static final int MAX_DIFFERENT_CREATURES = 4;
@@ -42,36 +46,13 @@ public final class EncounterConstraintPolicy {
         return new ConstraintEvaluation(true, complete, viableFallback);
     }
 
-    public static boolean passesCurrentBudgets(
-            SearchState state,
-            EncounterBudgets budgets,
-            RelaxationProfile relaxation) {
-        return evaluateState(state, budgets, relaxation).allowsGrowth();
-    }
-
-    public static boolean passesHardConstraints(
-            SearchState state,
-            EncounterBudgets budgets,
-            RelaxationProfile relaxation) {
-        return passesCurrentBudgets(state, budgets, relaxation);
-    }
-
-    public static boolean leavesReachableFuture(
-            SearchState state,
-            List<CandidateEntry> entries,
-            EncounterBudgets budgets,
-            RelaxationProfile relaxation,
-            Map<Long, Integer> selectionWeights) {
-        return mayStillReachCompletion(state, entries, budgets, relaxation, selectionWeights);
-    }
-
     public static boolean mayStillReachCompletion(
             SearchState state,
             List<CandidateEntry> entries,
             EncounterBudgets budgets,
             RelaxationProfile relaxation,
             Map<Long, Integer> selectionWeights) {
-        if (!passesCurrentBudgets(state, budgets, relaxation)) {
+        if (!evaluateState(state, budgets, relaxation).allowsGrowth()) {
             return false;
         }
         if (isComplete(state, budgets, relaxation)) {
@@ -103,7 +84,7 @@ public final class EncounterConstraintPolicy {
                 for (int count : optimisticCountsFor(entry, budgets)) {
                     SearchState next = optimistic.add(
                             EncounterSearchMetrics.additionFor(entry, count, selectionWeight, budgets.heuristics()));
-                    if (!passesCurrentBudgets(next, budgets, relaxation)) {
+                    if (!evaluateState(next, budgets, relaxation).allowsGrowth()) {
                         continue;
                     }
                     double progress = optimisticProgressScore(optimistic, next, budgets, relaxation);
@@ -327,7 +308,7 @@ public final class EncounterConstraintPolicy {
             for (int count : optimisticCountsFor(entry, budgets)) {
                 SearchState next = state.add(
                         EncounterSearchMetrics.additionFor(entry, count, selectionWeight, budgets.heuristics()));
-                if (!passesCurrentBudgets(next, budgets, relaxation)) {
+                if (!evaluateState(next, budgets, relaxation).allowsGrowth()) {
                     continue;
                 }
                 int candidateXp = entry.creature().XP;
@@ -366,7 +347,7 @@ public final class EncounterConstraintPolicy {
             for (int count : optimisticCountsFor(entry, budgets)) {
                 SearchState next = state.add(
                         EncounterSearchMetrics.additionFor(entry, count, selectionWeight, budgets.heuristics()));
-                if (!passesCurrentBudgets(next, budgets, relaxation)) {
+                if (!evaluateState(next, budgets, relaxation).allowsGrowth()) {
                     continue;
                 }
                 feasible = true;

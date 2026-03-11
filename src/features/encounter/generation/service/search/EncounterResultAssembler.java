@@ -2,10 +2,12 @@ package features.encounter.generation.service.search;
 
 import features.encounter.generation.service.EncounterGenerator;
 import features.encounter.generation.service.EncounterSearchMetrics;
+import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.search.model.EncounterBudgets;
 import features.encounter.generation.service.search.model.RelaxationProfile;
 import features.encounter.generation.service.search.model.SearchState;
 import features.encounter.generation.service.search.model.StateEntry;
+import features.encounter.model.Encounter;
 import features.encounter.model.EncounterCreatureSnapshot;
 import features.encounter.model.EncounterCreatureSnapshotMapper;
 import features.encounter.model.EncounterSlot;
@@ -76,6 +78,74 @@ public final class EncounterResultAssembler {
     public static EncounterGenerator.GenerationResult buildNoSolutionResult() {
         return EncounterGenerator.GenerationResult.noSolution(
                 EncounterGenerator.GenerationFailureReason.AUTO_CONFIG_NO_SOLUTION);
+    }
+
+    public static EncounterGenerator.GenerationResult buildSuccessResult(
+            SearchState state,
+            EncounterBudgets budgets,
+            RelaxationProfile relaxation,
+            int avgLevel,
+            int partySize,
+            int candidatePoolSize,
+            int iterations,
+            int candidateEvaluations,
+            int backtrackCount,
+            int relaxationStage,
+            boolean exactMatchFound,
+            boolean searchBudgetExhausted) {
+        List<EncounterSlot> slots = toEncounterSlots(state);
+        Encounter encounter = new Encounter(
+                slots,
+                EncounterScoring.classifyDifficultyFromSlots(slots, avgLevel, partySize),
+                avgLevel,
+                partySize,
+                budgets.upperAdjustedXp(),
+                EncounterScoring.deriveShapeLabel(slots));
+        return EncounterGenerator.GenerationResult.success(
+                encounter,
+                null,
+                buildDiagnostics(
+                        state,
+                        budgets,
+                        relaxation,
+                        candidatePoolSize,
+                        iterations,
+                        candidateEvaluations,
+                        backtrackCount,
+                        relaxationStage,
+                        exactMatchFound,
+                        searchBudgetExhausted));
+    }
+
+    public static EncounterGenerator.GenerationResult buildTimeoutOrFallback(
+            SearchState fallbackState,
+            EncounterBudgets budgets,
+            RelaxationProfile relaxation,
+            int avgLevel,
+            int partySize,
+            int candidatePoolSize,
+            int iterations,
+            int candidateEvaluations,
+            int backtrackCount,
+            int relaxationStage,
+            boolean exactMatchFound,
+            boolean searchBudgetExhausted) {
+        if (fallbackState == null) {
+            return EncounterGenerator.GenerationResult.timeout();
+        }
+        return buildSuccessResult(
+                fallbackState,
+                budgets,
+                relaxation,
+                avgLevel,
+                partySize,
+                candidatePoolSize,
+                iterations,
+                candidateEvaluations,
+                backtrackCount,
+                relaxationStage,
+                exactMatchFound,
+                searchBudgetExhausted);
     }
 
     private static WeightClassSummary summarizeWeightClasses(SearchState state) {

@@ -2,7 +2,6 @@ package features.encounter.generation.service.search;
 
 import features.creatures.model.Creature;
 import features.encounter.generation.service.EncounterGenerator;
-import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.EncounterTuning;
 import features.encounter.generation.service.GenerationContext;
 import features.encounter.generation.service.search.model.CandidateChoice;
@@ -14,8 +13,6 @@ import features.encounter.generation.service.search.policy.EncounterBudgetPolicy
 import features.encounter.generation.service.search.policy.EncounterChoicePolicy;
 import features.encounter.generation.service.search.policy.EncounterConstraintPolicy;
 import features.encounter.generation.service.search.policy.EncounterSearchRelaxationPolicy;
-import features.encounter.model.Encounter;
-import features.encounter.model.EncounterSlot;
 import features.encounter.calibration.service.EncounterCalibrationService;
 import features.encounter.calibration.service.EncounterCalibrationService.EncounterPartyBenchmarks;
 import features.partyanalysis.model.CreatureRoleProfile;
@@ -32,6 +29,9 @@ import java.util.Set;
  * <p>At runtime, returning a decent fallback encounter is preferable to reporting failure after
  * the search has already found something playable. Exact matches still win, but budget exhaustion
  * should degrade into the best discovered encounter rather than "no solution".
+ *
+ * <p>This class coordinates the search only. Result construction lives in
+ * {@link EncounterResultAssembler}.
  */
 public final class EncounterSearchEngine {
     private EncounterSearchEngine() {
@@ -48,8 +48,8 @@ public final class EncounterSearchEngine {
             EncounterGenerator.EncounterRequest request,
             List<Creature> candidates,
             GenerationContext context) {
-        EncounterGenerator.EncounterRequest normalizedRequest = EncounterGenerator.normalizeRequest(request);
-        GenerationContext ctx = context != null ? context : GenerationContext.defaultContext();
+        EncounterGenerator.EncounterRequest normalizedRequest = java.util.Objects.requireNonNull(request, "request");
+        GenerationContext ctx = contextOrDefault(context);
         long deadlineNanos = ctx.deadlineNanos();
         int partySize = normalizedRequest.partySize();
         int avgLevel = normalizedRequest.avgLevel();
@@ -90,7 +90,19 @@ public final class EncounterSearchEngine {
             }
             for (int attempt = 0; attempt < EncounterSearchRelaxationPolicy.ATTEMPTS_PER_RELAXATION; attempt++) {
                 if (ctx.isExpired(deadlineNanos)) {
-                    return buildTimeoutOrFallback(bestFallback, budgets, avgLevel, partySize, candidatePoolSize);
+                    return EncounterResultAssembler.buildTimeoutOrFallback(
+                            bestFallback == null ? null : bestFallback.bestState(),
+                            budgets,
+                            bestFallback == null ? null : bestFallback.relaxation(),
+                            avgLevel,
+                            partySize,
+                            bestFallback == null ? candidatePoolSize : bestFallback.candidatePoolSize(),
+                            bestFallback == null ? 0 : bestFallback.iterations(),
+                            bestFallback == null ? 0 : bestFallback.candidateEvaluations(),
+                            bestFallback == null ? 0 : bestFallback.backtrackCount(),
+                            bestFallback == null ? relaxationStage : bestFallback.relaxationStage(),
+                            bestFallback != null && bestFallback.exactMatch(),
+                            true);
                 }
                 SearchOutcome outcome = searchAttempt(
                         shortlistedEntries,
@@ -105,32 +117,55 @@ public final class EncounterSearchEngine {
                     continue;
                 }
                 if (outcome.exactMatch()) {
-                    return buildSuccessResult(
+                    return EncounterResultAssembler.buildSuccessResult(
                             outcome.bestState(),
                             budgets,
                             relaxation,
                             avgLevel,
                             partySize,
-                            outcome);
+                            outcome.candidatePoolSize(),
+                            outcome.iterations(),
+                            outcome.candidateEvaluations(),
+                            outcome.backtrackCount(),
+                            outcome.relaxationStage(),
+                            outcome.exactMatch(),
+                            outcome.searchBudgetExhausted());
                 }
                 bestFallback = betterOutcome(bestFallback, outcome, budgets);
             }
         }
 
         if (ctx.isExpired(deadlineNanos)) {
-            return buildTimeoutOrFallback(bestFallback, budgets, avgLevel, partySize, candidatePoolSize);
+            return EncounterResultAssembler.buildTimeoutOrFallback(
+                    bestFallback == null ? null : bestFallback.bestState(),
+                    budgets,
+                    bestFallback == null ? null : bestFallback.relaxation(),
+                    avgLevel,
+                    partySize,
+                    bestFallback == null ? candidatePoolSize : bestFallback.candidatePoolSize(),
+                    bestFallback == null ? 0 : bestFallback.iterations(),
+                    bestFallback == null ? 0 : bestFallback.candidateEvaluations(),
+                    bestFallback == null ? 0 : bestFallback.backtrackCount(),
+                    bestFallback == null ? 0 : bestFallback.relaxationStage(),
+                    bestFallback != null && bestFallback.exactMatch(),
+                    true);
         }
         if (bestFallback != null && bestFallback.bestState() != null) {
-            return buildSuccessResult(
+            return EncounterResultAssembler.buildSuccessResult(
                     bestFallback.bestState(),
                     budgets,
                     bestFallback.relaxation(),
                     avgLevel,
                     partySize,
-                    bestFallback);
+                    bestFallback.candidatePoolSize(),
+                    bestFallback.iterations(),
+                    bestFallback.candidateEvaluations(),
+                    bestFallback.backtrackCount(),
+                    bestFallback.relaxationStage(),
+                    bestFallback.exactMatch(),
+                    bestFallback.searchBudgetExhausted());
         }
-        return EncounterGenerator.GenerationResult.noSolution(
-                EncounterGenerator.GenerationFailureReason.AUTO_CONFIG_NO_SOLUTION);
+        return EncounterResultAssembler.buildNoSolutionResult();
     }
 
     private static SearchOutcome searchAttempt(
@@ -234,9 +269,9 @@ public final class EncounterSearchEngine {
         for (CandidateEntry entry : entries) {
             int selectionWeight = Math.max(1, selectionWeights.getOrDefault(entry.creature().Id, 1));
             boolean feasible = false;
-            for (EncounterChoicePolicy.AllowedCount allowedCount
-                    : EncounterChoicePolicy.allowedCountsFor(entry, budgets, relaxation, empty, selectionWeight)) {
-                SearchState next = allowedCount.nextState();
+            for (CandidateChoice choice
+                    : EncounterChoicePolicy.buildChoicesForEntry(entry, empty, budgets, relaxation, selectionWeight)) {
+                SearchState next = choice.nextState();
                 if (!EncounterConstraintPolicy.evaluateState(next, budgets, relaxation).allowsGrowth()) {
                     continue;
                 }
@@ -327,55 +362,6 @@ public final class EncounterSearchEngine {
                 budgets,
                 currentBest.relaxation());
         return candidateScore >= currentScore ? candidate : currentBest;
-    }
-
-    private static EncounterGenerator.GenerationResult buildSuccessResult(
-            SearchState result,
-            EncounterBudgets budgets,
-            RelaxationProfile relaxation,
-            int avgLevel,
-            int partySize,
-            SearchOutcome outcome) {
-        List<EncounterSlot> slots = EncounterResultAssembler.toEncounterSlots(result);
-        Encounter encounter = new Encounter(
-                slots,
-                EncounterScoring.classifyDifficultyFromSlots(slots, avgLevel, partySize),
-                avgLevel,
-                partySize,
-                budgets.upperAdjustedXp(),
-                EncounterScoring.deriveShapeLabel(slots));
-        return EncounterGenerator.GenerationResult.success(
-                encounter,
-                null,
-                EncounterResultAssembler.buildDiagnostics(
-                        result,
-                        budgets,
-                        relaxation,
-                        outcome.candidatePoolSize(),
-                        outcome.iterations(),
-                        outcome.candidateEvaluations(),
-                        outcome.backtrackCount(),
-                        outcome.relaxationStage(),
-                        outcome.exactMatch(),
-                        outcome.searchBudgetExhausted()));
-    }
-
-    private static EncounterGenerator.GenerationResult buildTimeoutOrFallback(
-            SearchOutcome bestFallback,
-            EncounterBudgets budgets,
-            int avgLevel,
-            int partySize,
-            int candidatePoolSize) {
-        if (bestFallback != null && bestFallback.bestState() != null) {
-            return buildSuccessResult(
-                    bestFallback.bestState(),
-                    budgets,
-                    bestFallback.relaxation(),
-                    avgLevel,
-                    partySize,
-                    bestFallback);
-        }
-        return EncounterGenerator.GenerationResult.timeout();
     }
 
     private static SearchOutcome markSearchBudgetExhausted(SearchOutcome outcome) {
@@ -485,5 +471,9 @@ public final class EncounterSearchEngine {
             }
         }
         return creatureIds.getLast();
+    }
+
+    private static GenerationContext contextOrDefault(GenerationContext context) {
+        return context != null ? context : GenerationContext.defaultContext();
     }
 }

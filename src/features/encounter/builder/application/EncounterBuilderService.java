@@ -25,6 +25,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * Builder boundary for encounter generation.
+ *
+ * <p>This service owns request normalization and cross-feature enrichment before handing a
+ * normalized request to the pure generator/search pipeline.
+ */
 public final class EncounterBuilderService {
 
     public record PartySnapshot(List<PartyApi.PartyMember> party, int avgLevel) {}
@@ -94,15 +100,7 @@ public final class EncounterBuilderService {
     public EncounterGenerator.GenerationResult generateEncounter(
             GenerationRequest request,
             GenerationContext generationContext) {
-        EncounterGenerator.EncounterRequest normalizedRequest = EncounterGenerator.normalizeRequest(
-                new EncounterGenerator.EncounterRequest(
-                        request.partySize(),
-                        request.avgLevel(),
-                        request.difficultyBand(),
-                        request.amountValue(),
-                        request.balanceLevel(),
-                        request.diversityLevel(),
-                        EncounterGenerator.GenerationDataSnapshot.empty()));
+        EncounterGenerator.EncounterRequest normalizedRequest = normalizeEncounterRequest(request);
         EncounterFilter filter = request.filter();
         List<String> types = filter == null ? null : nullIfEmpty(filter.types());
         List<String> subtypes = filter == null ? null : nullIfEmpty(filter.subtypes());
@@ -223,6 +221,18 @@ public final class EncounterBuilderService {
                         selectionWeights,
                         roleProfiles)
         );
+    }
+
+    private static EncounterGenerator.EncounterRequest normalizeEncounterRequest(GenerationRequest request) {
+        return EncounterGenerator.normalizeRequest(
+                new EncounterGenerator.EncounterRequest(
+                        request.partySize(),
+                        request.avgLevel(),
+                        request.difficultyBand(),
+                        request.amountValue(),
+                        request.balanceLevel(),
+                        request.diversityLevel(),
+                        EncounterGenerator.GenerationDataSnapshot.empty()));
     }
 
     private CandidateLoadResult loadCandidates(

@@ -44,54 +44,62 @@ public final class EncounterChoicePolicy {
                 continue;
             }
             int selectionWeight = Math.max(1, selectionWeights.getOrDefault(entry.creature().Id, 1));
-            List<AllowedCount> counts = allowedCountsFor(entry, budgets, relaxation, state, selectionWeight);
-            for (AllowedCount allowed : counts) {
-                SearchState next = allowed.nextState();
+            for (CandidateChoice choice : buildChoicesForEntry(entry, state, budgets, relaxation, selectionWeight)) {
+                SearchState next = choice.nextState();
                 EncounterConstraintPolicy.ConstraintEvaluation evaluation =
                         EncounterConstraintPolicy.evaluateState(next, budgets, relaxation);
                 if (!evaluation.allowsGrowth()) {
                     continue;
                 }
-                if (!EncounterConstraintPolicy.leavesReachableFuture(next, entries, budgets, relaxation, selectionWeights)
+                if (!EncounterConstraintPolicy.mayStillReachCompletion(next, entries, budgets, relaxation, selectionWeights)
                         && !evaluation.isViableFallback()) {
                     continue;
                 }
-                options.add(new CandidateChoice(entry, allowed.count(), next));
+                options.add(choice);
             }
         }
         return options;
     }
 
-    public static List<AllowedCount> allowedCountsFor(
+    public static List<CandidateChoice> buildChoicesForEntry(
             CandidateEntry entry,
+            SearchState state,
             EncounterBudgets budgets,
             RelaxationProfile relaxation,
+            int selectionWeight) {
+        return candidateChoicesFor(entry, state, budgets, relaxation, selectionWeight);
+    }
+
+    private static List<CandidateChoice> candidateChoicesFor(
+            CandidateEntry entry,
             SearchState state,
+            EncounterBudgets budgets,
+            RelaxationProfile relaxation,
             int selectionWeight) {
         int min = minAllowedCount(entry);
         int max = maxAllowedCount(entry);
-        List<AllowedCount> counts = new ArrayList<>();
+        List<CandidateChoice> choices = new ArrayList<>();
         for (int count = min; count <= max; count++) {
             SearchState next = state.add(
                     EncounterSearchMetrics.additionFor(entry, count, selectionWeight, budgets.heuristics()));
             if (!EncounterConstraintPolicy.evaluateState(next, budgets, relaxation).allowsGrowth()) {
                 continue;
             }
-            counts.add(new AllowedCount(count, next));
+            choices.add(new CandidateChoice(entry, count, next));
         }
-        if (counts.isEmpty()) {
-            return counts;
+        if (choices.isEmpty()) {
+            return choices;
         }
 
-        List<AllowedCount> preferred = new ArrayList<>();
+        List<CandidateChoice> preferred = new ArrayList<>();
         int minPreferred = preferredMinCount(entry, budgets);
         int maxPreferred = preferredMaxCount(entry, budgets);
-        for (AllowedCount allowed : counts) {
-            if (allowed.count() >= minPreferred && allowed.count() <= maxPreferred) {
-                preferred.add(allowed);
+        for (CandidateChoice choice : choices) {
+            if (choice.count() >= minPreferred && choice.count() <= maxPreferred) {
+                preferred.add(choice);
             }
         }
-        return preferred.isEmpty() ? counts : preferred;
+        return preferred.isEmpty() ? choices : preferred;
     }
 
     public static int preferredMinCount(CandidateEntry entry) {
@@ -156,7 +164,4 @@ public final class EncounterChoicePolicy {
                 && budgets.compositionProfile().minionPreference()
                 > budgets.compositionProfile().bossPreference() + budgets.heuristics().compositionPreferenceBiasThreshold();
     }
-
-
-    public record AllowedCount(int count, SearchState nextState) {}
 }
