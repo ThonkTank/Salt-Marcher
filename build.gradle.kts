@@ -408,7 +408,7 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
     }
 }
 
-val checkDungeonEditorArchitectureBoundaries by tasks.registering {
+val checkDungeonEditorArchitectureConvention by tasks.registering {
     group = "verification"
     description = "Fail when dungeon editor UI packages reach through forbidden architecture boundaries."
 
@@ -455,5 +455,5 @@ tasks.named("check") {
     dependsOn(checkRepositorySqlExceptionConvention)
     dependsOn(checkUiAsyncSubmissionConvention)
     dependsOn(checkFeatureApiBoundaryConvention)
-    dependsOn(checkDungeonEditorArchitectureBoundaries)
+    dependsOn(checkDungeonEditorArchitectureConvention)
 }

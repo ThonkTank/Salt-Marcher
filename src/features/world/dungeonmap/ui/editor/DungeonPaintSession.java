@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 final class DungeonPaintSession {
 
@@ -15,12 +16,12 @@ final class DungeonPaintSession {
         void persist(long mapId, List<DungeonSquarePaint> paints);
     }
 
-    private final DungeonSquarePaintPreviewSink previewSink;
+    private final Consumer<DungeonSquarePaint> paintPreview;
     private final Map<String, DungeonSquarePaint> pendingPaints = new LinkedHashMap<>();
     private Long pendingMapId;
 
-    DungeonPaintSession(DungeonSquarePaintPreviewSink previewSink) {
-        this.previewSink = previewSink;
+    DungeonPaintSession(Consumer<DungeonSquarePaint> paintPreview) {
+        this.paintPreview = paintPreview;
     }
 
     void previewPaint(Long currentMapId, DungeonMapState currentState, DungeonSquarePaint paint) {
@@ -32,7 +33,7 @@ final class DungeonPaintSession {
         }
         pendingMapId = currentMapId;
         pendingPaints.put(paint.x() + ":" + paint.y(), paint);
-        previewSink.previewPaint(paint);
+        paintPreview.accept(paint);
     }
 
     void flushPendingPaints(Long currentMapId, PaintPersister persister) {

@@ -123,11 +123,11 @@ final class DungeonMapLoadingWorkflowController {
     }
 
     void autoShowForTool(DungeonEditorTool tool) {
-        DungeonToolBehavior behavior = DungeonToolBehavior.forTool(tool);
-        if (behavior.autoShowsSelectedRoom()) {
+        DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
+        if (effectiveTool.autoShowsSelectedRoom()) {
             DungeonRoom room = toolSettingsPane.roomComboBox().getValue();
             if (room != null) selectionController.selectRoom(room);
-        } else if (behavior.autoShowsSelectedArea()) {
+        } else if (effectiveTool.autoShowsSelectedArea()) {
             DungeonArea area = toolSettingsPane.areaComboBox().getValue();
             if (area != null) selectionController.selectArea(area);
         }

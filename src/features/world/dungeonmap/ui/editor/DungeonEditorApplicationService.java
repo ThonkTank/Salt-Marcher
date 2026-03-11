@@ -102,17 +102,6 @@ public final class DungeonEditorApplicationService {
         UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
     }
 
-    public void assignSquareRoom(long squareId, Long roomId, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.assignSquareRoom(squareId, roomId);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
-    }
-
     public void saveArea(DungeonArea area, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
         Task<Long> task = new Task<>() {
             @Override

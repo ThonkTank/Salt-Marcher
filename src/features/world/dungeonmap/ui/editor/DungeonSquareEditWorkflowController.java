@@ -3,6 +3,7 @@ package features.world.dungeonmap.ui.editor;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
+import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import ui.async.UiErrorReporter;
 
@@ -34,9 +35,9 @@ final class DungeonSquareEditWorkflowController {
     }
 
     void handleCellPaint(DungeonMapPane.CellInteraction interaction) {
-        DungeonToolBehavior toolBehavior = DungeonToolBehavior.forTool(controls.getActiveTool());
-        Long roomId = toolBehavior.fillsSquares() ? toolSettingsPane.getActiveRoomId() : null;
-        DungeonSquarePaint edit = new DungeonSquarePaint(interaction.x(), interaction.y(), toolBehavior.fillsSquares(), roomId);
+        DungeonEditorTool activeTool = controls.getActiveTool() == null ? DungeonEditorTool.SELECT : controls.getActiveTool();
+        Long roomId = activeTool.fillsSquares() ? toolSettingsPane.getActiveRoomId() : null;
+        DungeonSquarePaint edit = new DungeonSquarePaint(interaction.x(), interaction.y(), activeTool.fillsSquares(), roomId);
         paintSession.previewPaint(state.currentMapId(), state.currentState(), edit);
     }
 

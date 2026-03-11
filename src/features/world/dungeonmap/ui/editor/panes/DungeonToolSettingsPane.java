@@ -4,9 +4,9 @@ import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.ui.editor.DungeonToolBehavior;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -18,7 +18,6 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import ui.components.ThemeColors;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -46,6 +45,8 @@ public class DungeonToolSettingsPane extends VBox {
     private final VBox areaGroup;
     private final VBox visibilityGroup;
     private final VBox linkStatusGroup;
+    private final Label activeToolLabel = new Label("Auswahl");
+    private final Label activeToolHintLabel = new Label("Wähle ein Feld, einen Raum oder einen Übergang aus, um Details zu bearbeiten.");
     private final Label linkStatusLabel = new Label("Ersten Übergang klicken, dann zweiten Übergang klicken.");
     private final Button cancelLinkButton = new Button("Abbrechen");
 
@@ -55,17 +56,26 @@ public class DungeonToolSettingsPane extends VBox {
     private Runnable onCancelLink;
 
     public DungeonToolSettingsPane() {
-        setSpacing(8);
-        setPadding(new Insets(8));
+        getStyleClass().addAll("dungeon-sidebar-pane", "dungeon-tool-settings-pane");
+        setSpacing(12);
+        setPadding(new Insets(12));
 
         Label header = new Label("EINSTELLUNGEN");
         header.getStyleClass().addAll("section-header", "text-muted");
+        activeToolLabel.getStyleClass().add("dungeon-panel-title");
+        activeToolHintLabel.getStyleClass().add("text-secondary");
+        activeToolHintLabel.setWrapText(true);
 
         roomCombo.setPromptText("Raum wählen…");
         areaCombo.setPromptText("Bereich wählen…");
         encounterTableCombo.setPromptText("Encounter Table…");
+        roomCombo.setMaxWidth(Double.MAX_VALUE);
+        areaCombo.setMaxWidth(Double.MAX_VALUE);
+        encounterTableCombo.setMaxWidth(Double.MAX_VALUE);
         linksVisible.setSelected(true);
         endpointsVisible.setSelected(true);
+        deleteRoomButton.getStyleClass().add("danger");
+        deleteAreaButton.getStyleClass().add("danger");
 
         roomCombo.setOnAction(event -> {
             if (!updatingSelections && onRoomSelected != null) {
@@ -96,33 +106,42 @@ public class DungeonToolSettingsPane extends VBox {
 
         Label roomLabel = new Label("Aktiver Raum");
         roomLabel.getStyleClass().add("text-muted");
-        roomGroup = new VBox(4, roomLabel, roomCombo, newRoomButton, deleteRoomButton);
+        Label roomHint = helperLabel("Lege den Raum fest, den das Malwerkzeug auf neue oder bestehende Felder schreibt.");
+        HBox roomActions = actionRow(newRoomButton, deleteRoomButton);
+        roomGroup = card("Raumzuweisung", roomHint, new VBox(6, roomLabel, roomCombo, roomActions));
 
         brushSizeSpinner.setPrefWidth(70);
         brushSizeSpinner.setEditable(false);
         Label brushLabel = new Label("Pinselgröße");
         brushLabel.getStyleClass().add("text-muted");
         HBox brushRow = new HBox(6, brushLabel, brushSizeSpinner);
-        brushRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        brushRow.setAlignment(Pos.CENTER_LEFT);
         HBox shapeRow = new HBox(4, squareShapeBtn, circleShapeBtn, diamondShapeBtn);
-        brushGroup = new VBox(4, brushRow, shapeRow);
+        Label brushHint = helperLabel("Größe und Form bestimmen, welche Felder beim Ziehen gleichzeitig geändert werden.");
+        brushGroup = card("Pinsel", brushHint, new VBox(8, brushRow, shapeRow));
 
         Label areaLabel = new Label("Aktiver Bereich");
         areaLabel.getStyleClass().add("text-muted");
         Label tableLabel = new Label("Encounter Table");
         tableLabel.getStyleClass().add("text-muted");
-        areaGroup = new VBox(4, areaLabel, areaCombo, newAreaButton, deleteAreaButton, tableLabel, encounterTableCombo);
+        Label areaHint = helperLabel("Ordne Räume einem Bereich zu und verknüpfe optional eine Encounter Table.");
+        HBox areaActions = actionRow(newAreaButton, deleteAreaButton);
+        areaGroup = card("Bereich", areaHint, new VBox(6, areaLabel, areaCombo, areaActions, tableLabel, encounterTableCombo));
 
-        visibilityGroup = new VBox(4, linksVisible, endpointsVisible);
+        Label visibilityHint = helperLabel("Schalte Orientierungshilfen auf der Karte ein oder aus, ohne Daten zu verändern.");
+        visibilityGroup = card("Anzeige", visibilityHint, new VBox(6, linksVisible, endpointsVisible));
 
         linkStatusLabel.getStyleClass().add("text-muted");
-        linkStatusGroup = new VBox(4, linkStatusLabel, cancelLinkButton);
+        Label linkHint = helperLabel("Ein Link verbindet zwei Übergänge. Der Startpunkt bleibt markiert, bis du den zweiten Übergang auswählst.");
+        cancelLinkButton.getStyleClass().add("compact");
+        linkStatusGroup = card("Link erstellen", linkHint, new VBox(6, linkStatusLabel, cancelLinkButton));
         linkStatusGroup.setVisible(false);
         linkStatusGroup.setManaged(false);
 
+        VBox overviewCard = card("Aktives Werkzeug", activeToolHintLabel, activeToolLabel);
         getChildren().addAll(
                 header,
-                ThemeColors.controlSeparator(),
+                overviewCard,
                 roomGroup,
                 brushGroup,
                 areaGroup,
@@ -137,11 +156,13 @@ public class DungeonToolSettingsPane extends VBox {
     }
 
     public void setActiveTool(DungeonEditorTool tool) {
-        DungeonToolBehavior behavior = DungeonToolBehavior.forTool(tool);
-        setGroupVisible(roomGroup, behavior.roomSettingsVisible());
-        setGroupVisible(brushGroup, behavior.brushSettingsVisible());
-        setGroupVisible(areaGroup, behavior.areaSettingsVisible());
-        if (behavior.linkStatusVisible()) {
+        DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
+        activeToolLabel.setText(toolTitle(effectiveTool));
+        activeToolHintLabel.setText(toolHint(effectiveTool));
+        setGroupVisible(roomGroup, effectiveTool.roomSettingsVisible());
+        setGroupVisible(brushGroup, effectiveTool.brushSettingsVisible());
+        setGroupVisible(areaGroup, effectiveTool.areaSettingsVisible());
+        if (effectiveTool.linkStatusVisible()) {
             linkStatusLabel.setText("Ersten Übergang klicken, dann zweiten Übergang klicken.");
             setGroupVisible(linkStatusGroup, true);
             cancelLinkButton.setVisible(false);
@@ -319,6 +340,57 @@ public class DungeonToolSettingsPane extends VBox {
 
     public void setOnCancelLink(Runnable onCancelLink) {
         this.onCancelLink = onCancelLink;
+    }
+
+    private static VBox card(String title, Label hint, javafx.scene.Node... content) {
+        Label titleLabel = new Label(title);
+        titleLabel.getStyleClass().add("dungeon-panel-title");
+        VBox box = new VBox(8);
+        box.getStyleClass().add("dungeon-editor-card");
+        box.getChildren().addAll(titleLabel, hint);
+        box.getChildren().addAll(content);
+        return box;
+    }
+
+    private static Label helperLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("text-secondary");
+        label.setWrapText(true);
+        return label;
+    }
+
+    private static HBox actionRow(Button primary, Button secondary) {
+        primary.getStyleClass().add("compact");
+        secondary.getStyleClass().add("compact");
+        HBox row = new HBox(8, primary, secondary);
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
+    }
+
+    private static String toolTitle(DungeonEditorTool tool) {
+        DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
+        return switch (effectiveTool) {
+            case SELECT -> "Auswahl";
+            case PAINT -> "Raum malen";
+            case ERASE -> "Raum löschen";
+            case AREA_ASSIGN -> "Bereich zuweisen";
+            case PASSAGE -> "Wände und Kanten";
+            case ENDPOINT -> "Übergänge";
+            case LINK -> "Links";
+        };
+    }
+
+    private static String toolHint(DungeonEditorTool tool) {
+        DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
+        return switch (effectiveTool) {
+            case SELECT -> "Wähle ein Feld, einen Raum, einen Bereich oder eine Verbindung aus, um die Details rechts zu bearbeiten.";
+            case PAINT -> "Male Felder in den aktiven Raum. Pinselgröße und Form steuern die Ausdehnung des Malstrichs.";
+            case ERASE -> "Entferne Raumzuweisungen von Feldern. Die Form des Pinsels bestimmt, wie breit gelöscht wird.";
+            case AREA_ASSIGN -> "Klicke auf ein Feld mit Raum, um den aktiven Bereich diesem Raum zuzuweisen.";
+            case PASSAGE -> "Klicke auf Kanten zwischen Feldern, um Wände zu öffnen, Kantentypen zu ändern oder die geschlossene Wand wiederherzustellen.";
+            case ENDPOINT -> "Klicke auf ein Feld, um dort einen Übergang zu erstellen oder einen vorhandenen Übergang auszuwählen.";
+            case LINK -> "Wähle zwei Übergänge nacheinander aus, um einen Link zwischen ihnen zu erstellen.";
+        };
     }
 
     private static void setGroupVisible(VBox group, boolean visible) {

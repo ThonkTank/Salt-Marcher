@@ -9,3 +9,4 @@ It may read or update world-session state only through `features.campaignstate.a
 Cross-feature selector/read DTOs belong in `api`, while `model` stays focused on dungeon domain and editor state.
 The editor view is the composition root only; peer orchestration classes in `ui/editor` use the
 `*WorkflowController` suffix consistently.
+Use `paint*` naming for transient UI stroke/preview mechanics and `*SquareEdit*` naming for persisted square mutation commands.

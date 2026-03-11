@@ -89,7 +89,8 @@ final class DungeonSelectionWorkflowController {
             java.util.function.Consumer<DungeonSquare> onAssignRoomArea,
             java.util.function.Consumer<DungeonSquare> onCreateOrSelectEndpoint
     ) {
-        switch (DungeonToolBehavior.forTool(tool).cellClickAction()) {
+        DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
+        switch (effectiveTool.cellClickAction()) {
             case SELECT_SQUARE -> selectSquare(interaction.square(), interaction.x(), interaction.y(), currentMapId);
             case ASSIGN_ROOM_AREA -> {
                 if (interaction.square() == null || interaction.square().roomId() == null) {

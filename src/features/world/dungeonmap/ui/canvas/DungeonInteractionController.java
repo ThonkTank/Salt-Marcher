@@ -3,7 +3,6 @@ package features.world.dungeonmap.ui.canvas;
 import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.PassageDirection;
-import features.world.dungeonmap.ui.editor.DungeonToolBehavior;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -58,14 +57,13 @@ final class DungeonInteractionController {
 
     void setActiveTool(DungeonEditorTool activeTool) {
         this.activeTool = activeTool == null ? DungeonEditorTool.SELECT : activeTool;
-        DungeonToolBehavior behavior = DungeonToolBehavior.forTool(this.activeTool);
         lastDraggedCellKey = null;
-        if (behavior.isBrushTool()) {
+        if (this.activeTool.isBrushTool()) {
             drawHover();
         } else {
             clearHover();
         }
-        if (behavior.edgeHoverEnabled()) {
+        if (this.activeTool.edgeHoverEnabled()) {
             drawEdgeHover();
         } else {
             clearEdgeHover();
@@ -108,7 +106,7 @@ final class DungeonInteractionController {
                 viewport.startPan(event.getX(), event.getY());
                 return;
             }
-            if (event.getButton() == MouseButton.PRIMARY && DungeonToolBehavior.forTool(activeTool).isBrushTool()) {
+            if (event.getButton() == MouseButton.PRIMARY && activeTool.isBrushTool()) {
                 handlePaintAt(event.getX(), event.getY());
             }
         });
@@ -119,38 +117,33 @@ final class DungeonInteractionController {
                 redrawAll.run();
                 return;
             }
-            DungeonToolBehavior behavior = DungeonToolBehavior.forTool(activeTool);
-            if (behavior.isBrushTool() && event.isPrimaryButtonDown()) {
+            if (activeTool.isBrushTool() && event.isPrimaryButtonDown()) {
                 handlePaintAt(event.getX(), event.getY());
             }
-            if (behavior.isBrushTool()) {
+            if (activeTool.isBrushTool()) {
                 updateHover(event.getX(), event.getY());
-            } else if (behavior.edgeHoverEnabled()) {
+            } else if (activeTool.edgeHoverEnabled()) {
                 updateEdgeHover(event.getX(), event.getY());
             }
         });
         selectionCanvas.setOnMouseReleased(event -> {
             viewport.endPan();
             lastDraggedCellKey = null;
-            if (DungeonToolBehavior.forTool(activeTool).isBrushTool()
-                    && event.getButton() == MouseButton.PRIMARY
-                    && onPaintStrokeFinished != null) {
+            if (activeTool.isBrushTool() && event.getButton() == MouseButton.PRIMARY && onPaintStrokeFinished != null) {
                 onPaintStrokeFinished.run();
             }
         });
         selectionCanvas.setOnMouseMoved(event -> {
-            DungeonToolBehavior behavior = DungeonToolBehavior.forTool(activeTool);
-            if (behavior.isBrushTool()) {
+            if (activeTool.isBrushTool()) {
                 updateHover(event.getX(), event.getY());
-            } else if (behavior.edgeHoverEnabled()) {
+            } else if (activeTool.edgeHoverEnabled()) {
                 updateEdgeHover(event.getX(), event.getY());
             }
         });
         selectionCanvas.setOnMouseExited(event -> {
-            DungeonToolBehavior behavior = DungeonToolBehavior.forTool(activeTool);
-            if (behavior.isBrushTool()) {
+            if (activeTool.isBrushTool()) {
                 clearHover();
-            } else if (behavior.edgeHoverEnabled()) {
+            } else if (activeTool.edgeHoverEnabled()) {
                 clearEdgeHover();
             }
         });
@@ -162,7 +155,7 @@ final class DungeonInteractionController {
                 handleEdgeClick(event.getX(), event.getY());
                 return;
             }
-            if (DungeonToolBehavior.forTool(activeTool).isBrushTool()) {
+            if (activeTool.isBrushTool()) {
                 return;
             }
             DungeonMapPane.CellInteraction interaction = model.interactionAt(viewport, event.getX(), event.getY());
@@ -343,7 +336,7 @@ final class DungeonInteractionController {
     }
 
     private void updateCursor() {
-        selectionCanvas.setCursor(DungeonToolBehavior.forTool(activeTool).cursor());
+        selectionCanvas.setCursor(activeTool.cursor());
     }
 
     private int currentBrushSize() {

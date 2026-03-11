@@ -7,8 +7,6 @@ import features.world.dungeonmap.ui.editor.panes.DungeonDetailsPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
@@ -19,14 +17,13 @@ public class DungeonEditorView implements AppView {
     private final DungeonDetailsPane detailsPane = new DungeonDetailsPane();
     private final DungeonToolSettingsPane toolSettingsPane = new DungeonToolSettingsPane();
     private final DungeonEditorApplicationService applicationService = new DungeonEditorApplicationService();
-    private final DungeonPaintSession paintSession = new DungeonPaintSession(canvas);
+    private final DungeonPaintSession paintSession = new DungeonPaintSession(canvas::previewPaint);
     private final DungeonEditorState state = new DungeonEditorState();
     private final DungeonSelectionWorkflowController selectionWorkflowController =
             new DungeonSelectionWorkflowController(canvas, detailsPane, toolSettingsPane, state);
     private final DungeonSquareEditWorkflowController squareEditWorkflowController =
             new DungeonSquareEditWorkflowController(state, applicationService, controls, toolSettingsPane, paintSession);
     private final DungeonMapDropdowns mapDropdowns = new DungeonMapDropdowns();
-    private final VBox statePane = new VBox(8);
     private final DungeonMapLoadingWorkflowController loadingWorkflowController = new DungeonMapLoadingWorkflowController(
             state, applicationService, controls, canvas, detailsPane, toolSettingsPane, selectionWorkflowController);
     private final DungeonEntityEditingWorkflowController entityEditingWorkflowController = new DungeonEntityEditingWorkflowController(
@@ -41,8 +38,6 @@ public class DungeonEditorView implements AppView {
                 () -> loadingWorkflowController.loadMapAsync(state.currentMapId()),
                 loadingWorkflowController::onShow);
         selectionWorkflowController.setDetailsNavigator(detailsNavigator);
-        VBox.setVgrow(detailsPane, Priority.ALWAYS);
-        statePane.getChildren().addAll(toolSettingsPane, detailsPane);
         bindControls();
         bindCanvas();
         bindSharedUi();
@@ -68,9 +63,18 @@ public class DungeonEditorView implements AppView {
         return controls;
     }
 
+    public Node getDetailsContent() {
+        ScrollPane scrollPane = new ScrollPane(detailsPane);
+        scrollPane.getStyleClass().add("dungeon-editor-sidebar-scroll");
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        return scrollPane;
+    }
+
     @Override
     public Node getStateContent() {
-        ScrollPane scrollPane = new ScrollPane(statePane);
+        ScrollPane scrollPane = new ScrollPane(toolSettingsPane);
+        scrollPane.getStyleClass().add("dungeon-editor-sidebar-scroll");
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         return scrollPane;
