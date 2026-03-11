@@ -6,18 +6,18 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Horizontale Werkzeugleiste fuer den Karteneditor: Kartenauswahl + Tool-Toggles.
- * Liegt oberhalb der Kartenflaeche als kompakte Ein-Zeilen-Leiste (~36px).
+ * Kompakte Werkzeugleiste fuer den Karteneditor mit getrennten Gruppen fuer Kartenkontext und Werkzeugwahl.
  * Die Gelaendepalette befindet sich in der ToolSettingsPane (rechte Spalte).
  */
-public class MapEditorControls extends HBox {
+public class MapEditorControls extends VBox {
 
     public record MapActionRequest(HexMap map, Node anchor) {}
 
@@ -33,13 +33,11 @@ public class MapEditorControls extends HBox {
 
     public MapEditorControls() {
         getStyleClass().add("map-editor-toolbar");
-        setAlignment(Pos.CENTER_LEFT);
-        setSpacing(8);
-        setPadding(new Insets(6, 12, 6, 12));
+        setSpacing(10);
+        setPadding(new Insets(10, 12, 10, 12));
 
-        // -- Kartenauswahl --
         mapCombo.setPrefWidth(160);
-        mapCombo.setMaxWidth(160);
+        mapCombo.setMaxWidth(Double.MAX_VALUE);
         mapCombo.setPromptText("Karte wählen…");
         mapCombo.setConverter(new StringConverter<>() {
             @Override public String toString(HexMap m) { return m == null ? "" : m.name(); }
@@ -68,12 +66,6 @@ public class MapEditorControls extends HBox {
         });
         editMapBtn.disableProperty().bind(mapCombo.valueProperty().isNull());
 
-        // -- Trenner --
-        Region sep = new Region();
-        sep.getStyleClass().add("toolbar-divider");
-        HBox.setMargin(sep, new Insets(0, 4, 0, 4));
-
-        // -- Werkzeug-Toggles --
         ToggleGroup toolGroup = new ToggleGroup();
 
         ToggleButton selectBtn = new ToggleButton("↖ Auswahl");
@@ -87,14 +79,36 @@ public class MapEditorControls extends HBox {
         brushBtn.setToggleGroup(toolGroup);
         brushBtn.setAccessibleText("Gelände malen");
 
-        // Deselect verhindern (es bleibt immer ein Tool aktiv)
         toolGroup.selectedToggleProperty().addListener((obs, oldT, newT) -> {
             if (newT == null) { oldT.setSelected(true); return; }
             activeTool = (newT == selectBtn) ? EditorTool.SELECT : EditorTool.TERRAIN_BRUSH;
             if (onToolChanged != null) onToolChanged.accept(activeTool);
         });
 
-        getChildren().addAll(mapCombo, newMapBtn, editMapBtn, sep, selectBtn, brushBtn);
+        Label mapLabel = sectionLabel("Karte");
+        HBox mapRow = new HBox(8, mapCombo, newMapBtn, editMapBtn);
+        mapRow.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(mapCombo, Priority.ALWAYS);
+
+        VBox mapGroup = new VBox(6, mapLabel, mapRow);
+        mapGroup.getStyleClass().add("editor-toolbar-group");
+
+        Label toolsLabel = sectionLabel("Werkzeug");
+        HBox toolRow = new HBox(6, selectBtn, brushBtn);
+        toolRow.setAlignment(Pos.CENTER_LEFT);
+        VBox toolsGroup = new VBox(6, toolsLabel, toolRow);
+        toolsGroup.getStyleClass().add("editor-toolbar-group");
+
+        Separator separator = new Separator();
+        separator.getStyleClass().add("control-separator");
+
+        getChildren().addAll(mapGroup, separator, toolsGroup);
+    }
+
+    private static Label sectionLabel(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().addAll("section-header", "text-muted");
+        return label;
     }
 
     /** Fuellt die Karten-ComboBox ohne onMapSelected auszulösen. */
@@ -133,6 +147,6 @@ public class MapEditorControls extends HBox {
 
     public void setOnToolChanged(Consumer<EditorTool> cb)   { onToolChanged = cb; }
     public void setOnMapSelected(Consumer<Long> cb)         { onMapSelected = cb; }
-    public void setOnNewMapRequested(Consumer<Node> cb)            { onNewMapRequested = cb; }
-    public void setOnEditMapRequested(Consumer<MapActionRequest> cb)  { onEditMapRequested = cb; }
+    public void setOnNewMapRequested(Consumer<Node> cb) { onNewMapRequested = cb; }
+    public void setOnEditMapRequested(Consumer<MapActionRequest> cb) { onEditMapRequested = cb; }
 }

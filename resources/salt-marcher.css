@@ -889,6 +889,9 @@
 }
 .control-separator {
     -fx-background-color: -sm-border-subtle;
+    -fx-min-height: 1;
+    -fx-pref-height: 1;
+    -fx-max-height: 1;
 }
 
 .section-header {
@@ -1028,6 +1031,54 @@
     -fx-background-color: -sm-bg-panel;
     -fx-border-color: transparent transparent -sm-border-subtle transparent;
 }
+.map-editor-toolbar .combo-box {
+    -fx-max-width: Infinity;
+}
+.dungeon-editor-toolbar {
+    -fx-spacing: 10;
+}
+.editor-toolbar-group {
+    -fx-spacing: 6;
+}
+.editor-tool-flow {
+    -fx-padding: 0 0 2 0;
+}
+.dungeon-editor-sidebar-scroll {
+    -fx-background-color: -sm-bg-darkest;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+.dungeon-editor-sidebar-scroll > .viewport {
+    -fx-background-color: -sm-bg-darkest;
+}
+.dungeon-editor-sidebar {
+    -fx-spacing: 12;
+    -fx-padding: 0;
+}
+.dungeon-sidebar-pane {
+    -fx-background-color: transparent;
+}
+.editor-card,
+.dungeon-editor-card {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 12;
+    -fx-spacing: 8;
+}
+.editor-panel-title,
+.dungeon-panel-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-primary;
+}
+.dungeon-meta-row {
+    -fx-alignment: CENTER_LEFT;
+}
+.dungeon-meta-row .label {
+    -fx-font-size: 12px;
+}
 .toolbar-divider {
     -fx-background-color: -sm-border-subtle;
     -fx-min-width: 1;
@@ -1044,6 +1095,10 @@
     -fx-border-radius: 3;
     -fx-cursor: hand;
     -fx-alignment: CENTER_LEFT;
+    -fx-min-height: 30;
+}
+.map-editor-toolbar .tool-btn {
+    -fx-padding: 5 10;
 }
 .tool-btn:hover {
     -fx-background-color: -sm-bg-card;
@@ -1056,6 +1111,23 @@
 .tool-btn:focused {
     -fx-border-color: -sm-accent-hover;
     -fx-border-width: 2;
+}
+.dungeon-tool-settings-pane .combo-box,
+.dungeon-tool-settings-pane .spinner,
+.dungeon-details-pane .combo-box,
+.dungeon-details-pane .text-field,
+.dungeon-details-pane .text-area {
+    -fx-max-width: Infinity;
+}
+.map-editor-tool-settings-pane {
+    -fx-padding: 12;
+    -fx-spacing: 12;
+}
+.map-editor-tool-settings-pane .editor-card {
+    -fx-padding: 10;
+}
+.map-editor-terrain-grid {
+    -fx-pref-wrap-length: 236;
 }
 
 /* ---- Terrain Palette (right panel) ---- */
@@ -1080,6 +1152,14 @@
     -fx-border-radius: 3;
     -fx-cursor: hand;
     -fx-graphic-text-gap: 8;
+}
+.terrain-chip {
+    -fx-min-height: 34;
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: transparent;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
 }
 .terrain-btn:hover {
     -fx-background-color: -sm-bg-elevated;
