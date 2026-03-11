@@ -6,6 +6,7 @@ import features.items.api.ItemCatalogService;
 import features.loottable.model.LootTable;
 import features.loottable.service.LootTableNameNormalizer;
 import features.loottable.service.LootTableService;
+import features.tables.ui.TableActionRequest;
 import features.tables.ui.TableEditorTaskRunner;
 import javafx.scene.Node;
 import ui.components.ConfirmationDropdown;
@@ -193,7 +194,8 @@ public class LootTableEditorView implements AppView {
         });
     }
 
-    private void onCreateTable(Node anchor) {
+    private void onCreateTable(TableActionRequest<LootTable> request) {
+        Node anchor = request.anchor();
         TextInputDropdown tableNameDropdown = new TextInputDropdown();
         tableNameDropdown.show(anchor, "Neue Loot-Tabelle", "Name", "", "Erstellen", stripped -> {
             if (isDuplicateTableName(stripped, null)) {
@@ -214,7 +216,7 @@ public class LootTableEditorView implements AppView {
         });
     }
 
-    private void onRenameTable(LootTableEditorControls.TableActionRequest request) {
+    private void onRenameTable(TableActionRequest<LootTable> request) {
         LootTable table = request.table();
         if (table == null) return;
         TextInputDropdown tableNameDropdown = new TextInputDropdown();
@@ -240,7 +242,7 @@ public class LootTableEditorView implements AppView {
         });
     }
 
-    private void onDeleteTable(LootTableEditorControls.TableActionRequest request) {
+    private void onDeleteTable(TableActionRequest<LootTable> request) {
         LootTable table = request.table();
         if (table == null) return;
         ConfirmationDropdown deleteTableDropdown = new ConfirmationDropdown();
@@ -313,7 +315,11 @@ public class LootTableEditorView implements AppView {
     }
 
     private void refreshTableDetails() {
-        if (detailsNavigator == null || currentTable == null) return;
+        if (detailsNavigator == null) return;
+        if (currentTable == null) {
+            detailsNavigator.clear();
+            return;
+        }
         int entryCount = currentTable.entries == null ? 0 : currentTable.entries.size();
         int totalWeight = currentTable.entries == null ? 0 : currentTable.entries.stream()
                 .mapToInt(LootTable.Entry::weight)

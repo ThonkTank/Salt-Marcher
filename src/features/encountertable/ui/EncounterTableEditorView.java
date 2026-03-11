@@ -3,23 +3,21 @@ package features.encountertable.ui;
 import features.encountertable.model.EncounterTable;
 import features.encountertable.service.EncounterTableLootCoverageAnalyzer;
 import features.loottable.api.LootTableApi;
-import javafx.concurrent.Task;
+import features.tables.ui.TableActionRequest;
+import features.tables.ui.TableEditorTaskRunner;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.TextInputDialog;
 import features.creatures.api.CreatureCatalogService;
 import features.encountertable.service.EncounterTableNameNormalizer;
 import features.encountertable.service.EncounterTableService;
 import features.creatures.api.CreatureBrowserPane;
 import features.creatures.api.StatBlockRequest;
+import ui.components.ConfirmationDropdown;
+import ui.components.MessageDropdown;
+import ui.components.TextInputDropdown;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
-import ui.async.UiAsyncTasks;
-import ui.async.UiErrorReporter;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
@@ -43,6 +41,9 @@ public class EncounterTableEditorView implements AppView {
     private long lootCoverageRequestVersion = 0;
     private boolean initialLoadDone = false;
     private DetailsNavigator detailsNavigator;
+    private final TextInputDropdown tableNameDropdown = new TextInputDropdown();
+    private final ConfirmationDropdown deleteTableDropdown = new ConfirmationDropdown();
+    private final MessageDropdown messageDropdown = new MessageDropdown();
 
     public EncounterTableEditorView() {
         monsterList = new CreatureBrowserPane();
@@ -104,10 +105,10 @@ public class EncounterTableEditorView implements AppView {
                         if (status == EncounterTableService.MutationStatus.SUCCESS) {
                             reloadEntries();
                         } else if (status == EncounterTableService.MutationStatus.VALIDATION_ERROR) {
-                            showMutationErrorAlert("Gewichtung muss zwischen 1 und 10 liegen.");
+                            showMutationError("Encounter-Tabelle", "Gewichtung muss zwischen 1 und 10 liegen.", controls);
                             reloadEntries();
                         } else {
-                            showMutationErrorAlert("Kreatur konnte nicht zur Tabelle hinzugefügt werden.");
+                            showMutationError("Encounter-Tabelle", "Kreatur konnte nicht zur Tabelle hinzugefügt werden.", controls);
                             reloadEntries();
                         }
                     }));
@@ -118,7 +119,7 @@ public class EncounterTableEditorView implements AppView {
                         if (status == EncounterTableService.MutationStatus.SUCCESS) {
                             reloadEntries();
                         } else {
-                            showMutationErrorAlert("Kreatur konnte nicht aus der Tabelle entfernt werden.");
+                            showMutationError("Encounter-Tabelle", "Kreatur konnte nicht aus der Tabelle entfernt werden.", entriesPane);
                             reloadEntries();
                         }
                     }));
@@ -129,15 +130,15 @@ public class EncounterTableEditorView implements AppView {
                                 status -> {
                                     if (status == EncounterTableService.MutationStatus.SUCCESS) return;
                                     if (status == EncounterTableService.MutationStatus.VALIDATION_ERROR) {
-                                        showMutationErrorAlert("Gewichtung muss zwischen 1 und 10 liegen.");
+                                        showMutationError("Encounter-Tabelle", "Gewichtung muss zwischen 1 und 10 liegen.", entriesPane);
                                         reloadEntries();
                                         return;
                                     }
-                                    showMutationErrorAlert("Gewichtung konnte nicht gespeichert werden.");
+                                    showMutationError("Encounter-Tabelle", "Gewichtung konnte nicht gespeichert werden.", entriesPane);
                                     reloadEntries();
                                 },
                         throwable -> {
-                            showMutationErrorAlert("Gewichtung konnte nicht gespeichert werden.");
+                            showMutationError("Encounter-Tabelle", "Gewichtung konnte nicht gespeichert werden.", entriesPane);
                             reloadEntries();
                         });
             });
@@ -170,9 +171,9 @@ public class EncounterTableEditorView implements AppView {
                         entriesPane.setEntries(List.of());
                         monsterList.setExcludeIds(java.util.Set.of());
                         reloadTableList();
-                        showTableMissingAlert();
+                        showMessage("Tabelle nicht gefunden", "Die ausgewählte Tabelle existiert nicht mehr.", controls);
                     } else {
-                        showLoadErrorAlert("Tabelleneinträge konnten nicht geladen werden.");
+                        showLoadError("Tabelleneinträge konnten nicht geladen werden.", entriesPane);
                     }
                 });
     }
@@ -184,7 +185,7 @@ public class EncounterTableEditorView implements AppView {
                     if (result.status() == EncounterTableService.ReadStatus.SUCCESS) {
                         applyTableList(result.tables());
                     } else {
-                        showLoadErrorAlert("Tabellenliste konnte nicht geladen werden.");
+                        showLoadError("Tabellenliste konnte nicht geladen werden.", controls);
                     }
                 });
     }
@@ -197,7 +198,7 @@ public class EncounterTableEditorView implements AppView {
                 refreshTableDetails();
                 refreshLinkedLootCoverageWarning();
             } else {
-                showLoadErrorAlert("Loot-Tabellen konnten nicht geladen werden.");
+                showLoadError("Loot-Tabellen konnten nicht geladen werden.", controls);
             }
         });
     }
@@ -207,7 +208,7 @@ public class EncounterTableEditorView implements AppView {
                 EncounterTableService::loadAll,
                 result -> {
                     if (result.status() != EncounterTableService.ReadStatus.SUCCESS) {
-                        showLoadErrorAlert("Tabellenliste konnte nicht geladen werden.");
+                        showLoadError("Tabellenliste konnte nicht geladen werden.", controls);
                         return;
                     }
                     List<EncounterTable> tables = result.tables();
@@ -220,48 +221,38 @@ public class EncounterTableEditorView implements AppView {
                 });
     }
 
-    private void onCreateTable() {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Neue Tabelle");
-        dialog.setHeaderText("Name der neuen Encounter-Tabelle:");
-        dialog.setContentText("Name:");
-        Optional<String> result = dialog.showAndWait();
-        result.filter(name -> !name.isBlank()).ifPresent(name -> {
-            String stripped = name.strip();
+    private void onCreateTable(TableActionRequest<EncounterTable> request) {
+        tableNameDropdown.show(request.anchor(), "Neue Encounter-Tabelle", "Name", "", "Erstellen", stripped -> {
             if (isDuplicateTableName(stripped, null)) {
-                showDuplicateNameAlert(stripped);
+                tableNameDropdown.showError("Es existiert bereits eine Tabelle mit dem Namen „" + stripped + "“.");
                 return;
             }
             runTask("onCreateTable",
                     () -> EncounterTableService.createTable(stripped, ""),
                     createResult -> {
                         switch (createResult.status()) {
-                            case SUCCESS -> reloadTableListAndSelect(createResult.tableId());
+                            case SUCCESS -> {
+                                tableNameDropdown.hide();
+                                reloadTableListAndSelect(createResult.tableId());
+                            }
                             case DUPLICATE_NAME -> {
-                                showDuplicateNameAlert(stripped);
+                                tableNameDropdown.showError("Es existiert bereits eine Tabelle mit dem Namen „" + stripped + "“.");
                                 reloadTableList();
                             }
-                            case VALIDATION_ERROR ->
-                                    showMutationErrorAlert("Tabellenname ist ungültig.");
-                            case STORAGE_ERROR ->
-                                    showMutationErrorAlert("Tabelle konnte nicht erstellt werden.");
+                            case VALIDATION_ERROR -> tableNameDropdown.showError("Tabellenname ist ungültig.");
+                            case STORAGE_ERROR -> showMutationError("Encounter-Tabelle", "Tabelle konnte nicht erstellt werden.", request.anchor());
                         }
                     });
         });
     }
 
-    private void onRenameTable() {
-        if (currentTable == null) return;
-        TextInputDialog dialog = new TextInputDialog(currentTable.name);
-        dialog.setTitle("Tabelle umbenennen");
-        dialog.setHeaderText("Neuer Name:");
-        dialog.setContentText("Name:");
-        Optional<String> result = dialog.showAndWait();
-        result.filter(name -> !name.isBlank()).ifPresent(name -> {
-            long tableId = currentTable.tableId;
-            String stripped = name.strip();
+    private void onRenameTable(TableActionRequest<EncounterTable> request) {
+        EncounterTable table = request.table();
+        if (table == null) return;
+        tableNameDropdown.show(request.anchor(), "Encounter-Tabelle umbenennen", "Name", table.name, "Speichern", stripped -> {
+            long tableId = table.tableId;
             if (isDuplicateTableName(stripped, tableId)) {
-                showDuplicateNameAlert(stripped);
+                tableNameDropdown.showError("Es existiert bereits eine Tabelle mit dem Namen „" + stripped + "“.");
                 return;
             }
             runTask("onRenameTable",
@@ -269,40 +260,42 @@ public class EncounterTableEditorView implements AppView {
                     status -> {
                         switch (status) {
                             case SUCCESS -> {
+                                tableNameDropdown.hide();
                                 currentTable.name = stripped;
                                 refreshTableDetails();
                                 reloadTableList();
                             }
                             case DUPLICATE_NAME -> {
-                                showDuplicateNameAlert(stripped);
+                                tableNameDropdown.showError("Es existiert bereits eine Tabelle mit dem Namen „" + stripped + "“.");
                                 reloadTableList();
                             }
-                            case VALIDATION_ERROR ->
-                                    showMutationErrorAlert("Tabellenname ist ungültig.");
-                            case STORAGE_ERROR ->
-                                    showMutationErrorAlert("Tabelle konnte nicht umbenannt werden.");
+                            case VALIDATION_ERROR -> tableNameDropdown.showError("Tabellenname ist ungültig.");
+                            case STORAGE_ERROR -> showMutationError("Encounter-Tabelle", "Tabelle konnte nicht umbenannt werden.", request.anchor());
                         }
                     });
         });
     }
 
-    private void onDeleteTable() {
-        if (currentTable == null) return;
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Tabelle \u00bb" + currentTable.name + "\u00ab wirklich l\u00f6schen?",
-                ButtonType.OK, ButtonType.CANCEL);
-        confirm.setTitle("Tabelle l\u00f6schen");
-        confirm.showAndWait().filter(btn -> btn == ButtonType.OK).ifPresent(btn -> {
-            long tableId = currentTable.tableId;
+    private void onDeleteTable(TableActionRequest<EncounterTable> request) {
+        EncounterTable table = request.table();
+        if (table == null) return;
+        deleteTableDropdown.show(
+                request.anchor(),
+                "Encounter-Tabelle löschen",
+                "Encounter-Tabelle »" + table.name + "« wirklich löschen?",
+                "Löschen",
+                () -> {
+            long tableId = table.tableId;
             runTask("onDeleteTable",
                     () -> EncounterTableService.deleteTable(tableId),
                     status -> {
                         if (status == EncounterTableService.MutationStatus.SUCCESS) {
+                            deleteTableDropdown.hide();
                             currentTable = null;
                             resetTableSelectionState();
                             reloadTableList();
                         } else {
-                            showMutationErrorAlert("Tabelle konnte nicht gelöscht werden.");
+                            showMutationError("Encounter-Tabelle", "Tabelle konnte nicht gelöscht werden.", request.anchor());
                             reloadEntries();
                         }
                     });
@@ -324,7 +317,7 @@ public class EncounterTableEditorView implements AppView {
                         refreshLinkedLootCoverageWarning();
                         reloadTableList();
                     } else {
-                        showMutationErrorAlert("Loot-Verknüpfung konnte nicht gespeichert werden.");
+                        showMutationError("Encounter-Tabelle", "Loot-Verknüpfung konnte nicht gespeichert werden.", controls);
                         reloadTableListAndSelect(tableId);
                     }
                 });
@@ -337,17 +330,7 @@ public class EncounterTableEditorView implements AppView {
 
     private <T> void runTask(String errorLabel, Callable<T> work, Consumer<T> onSuccess,
                              Consumer<Throwable> onFailure) {
-        Task<T> task = new Task<>() {
-            @Override protected T call() throws Exception { return work.call(); }
-        };
-        Consumer<T> successHandler = onSuccess != null ? onSuccess : ignored -> {};
-        UiAsyncTasks.submit(
-                task,
-                successHandler,
-                throwable -> {
-                    UiErrorReporter.reportBackgroundFailure("EncounterTableEditorView." + errorLabel + "()", throwable);
-                    if (onFailure != null) onFailure.accept(throwable);
-                });
+        TableEditorTaskRunner.submit("EncounterTableEditorView", errorLabel, work, onSuccess, onFailure);
     }
 
     private void applyTableList(List<EncounterTable> tables) {
@@ -368,7 +351,11 @@ public class EncounterTableEditorView implements AppView {
     }
 
     private void refreshTableDetails() {
-        if (detailsNavigator == null || currentTable == null) return;
+        if (detailsNavigator == null) return;
+        if (currentTable == null) {
+            detailsNavigator.clear();
+            return;
+        }
         int entryCount = currentTable.entries == null ? 0 : currentTable.entries.size();
         detailsNavigator.showEncounterTable(new DetailsNavigator.EncounterTableSummary(
                 currentTable.tableId,
@@ -436,33 +423,15 @@ public class EncounterTableEditorView implements AppView {
         return false;
     }
 
-    private void showDuplicateNameAlert(String name) {
-        Alert alert = new Alert(Alert.AlertType.WARNING,
-                "Es existiert bereits eine Tabelle mit dem Namen „" + name + "“.");
-        alert.setTitle("Name bereits vergeben");
-        alert.setHeaderText("Tabellennamen müssen eindeutig sein.");
-        alert.showAndWait();
+    private void showMutationError(String title, String message, Node anchor) {
+        showMessage(title, message, anchor);
     }
 
-    private void showMutationErrorAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR, message);
-        alert.setTitle("Tabellen-Editor");
-        alert.setHeaderText("Datenbankänderung fehlgeschlagen");
-        alert.showAndWait();
+    private void showLoadError(String message, Node anchor) {
+        showMessage("Datenbankzugriff fehlgeschlagen", message, anchor);
     }
 
-    private void showLoadErrorAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR, message);
-        alert.setTitle("Tabellen-Editor");
-        alert.setHeaderText("Datenbankzugriff fehlgeschlagen");
-        alert.showAndWait();
-    }
-
-    private void showTableMissingAlert() {
-        Alert alert = new Alert(Alert.AlertType.WARNING,
-                "Die ausgewählte Tabelle existiert nicht mehr.");
-        alert.setTitle("Tabellen-Editor");
-        alert.setHeaderText("Tabelle nicht gefunden");
-        alert.showAndWait();
+    private void showMessage(String title, String message, Node anchor) {
+        messageDropdown.show(anchor == null ? controls : anchor, title, message);
     }
 }

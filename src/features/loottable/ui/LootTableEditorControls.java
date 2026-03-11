@@ -4,34 +4,18 @@ import features.items.api.ItemCatalogService;
 import features.items.api.ItemFilterPane;
 import features.loottable.model.LootTable;
 import features.tables.ui.ManagedTableControls;
-import javafx.scene.Node;
+import features.tables.ui.TableActionRequest;
 
 import java.util.List;
 import java.util.function.Consumer;
 
 public class LootTableEditorControls extends ManagedTableControls<LootTable> {
 
-    public record TableActionRequest(LootTable table, Node anchor) {}
-
     private ItemFilterPane filterPane;
     private Consumer<ItemCatalogService.FilterCriteria> filterCallback;
-    private Consumer<TableActionRequest> onRenameTable;
-    private Consumer<TableActionRequest> onDeleteTable;
 
     public LootTableEditorControls() {
         super("LOOT-TABELLE", "— Loot-Tabelle wählen —");
-        super.setOnRenameTable(anchor -> {
-            LootTable table = getSelectedTable();
-            if (onRenameTable != null && table != null) {
-                onRenameTable.accept(new TableActionRequest(table, anchor));
-            }
-        });
-        super.setOnDeleteTable(anchor -> {
-            LootTable table = getSelectedTable();
-            if (onDeleteTable != null && table != null) {
-                onDeleteTable.accept(new TableActionRequest(table, anchor));
-            }
-        });
     }
 
     public void setTableList(List<LootTable> tables) {
@@ -61,15 +45,15 @@ public class LootTableEditorControls extends ManagedTableControls<LootTable> {
         super.setOnTableSelected(callback);
     }
 
-    public void setOnCreateTable(Consumer<Node> callback) {
+    public void setOnCreateTable(Consumer<TableActionRequest<LootTable>> callback) {
         super.setOnCreateTable(callback);
     }
 
-    public void setOnRenameTableRequested(Consumer<TableActionRequest> callback) {
-        this.onRenameTable = callback;
+    public void setOnRenameTableRequested(Consumer<TableActionRequest<LootTable>> callback) {
+        super.setOnRenameTable(callback);
     }
 
-    public void setOnDeleteTableRequested(Consumer<TableActionRequest> callback) {
-        this.onDeleteTable = callback;
+    public void setOnDeleteTableRequested(Consumer<TableActionRequest<LootTable>> callback) {
+        super.setOnDeleteTable(callback);
     }
 }
