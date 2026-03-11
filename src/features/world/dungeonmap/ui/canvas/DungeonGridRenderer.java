@@ -130,20 +130,20 @@ final class DungeonGridRenderer {
     }
 
     private void drawWalls(GraphicsContext gc, int minX, int minY, int maxX, int maxY) {
-        Map<String, DungeonPassage> passages = model.passagesByEdge();
         double wallWidth = Math.max(1.5, 2.0 * viewport.strokeScale());
         gc.setStroke(WALL_COLOR);
         gc.setLineWidth(wallWidth);
         for (int y = minY; y <= maxY; y++) {
             for (int x = minX; x <= maxX; x++) {
-                if (model.squaresByCoord().get(x + ":" + y) == null) continue;
-                drawWallEdges(gc, x, y, passages, wallWidth);
+                if (!hasFilledSquare(x, y)) {
+                    continue;
+                }
+                drawWallEdges(gc, x, y, wallWidth);
             }
         }
     }
 
     void drawWallsForCell(GraphicsContext gc, int cx, int cy) {
-        Map<String, DungeonPassage> passages = model.passagesByEdge();
         double wallWidth = Math.max(1.5, 2.0 * viewport.strokeScale());
         gc.setStroke(WALL_COLOR);
         gc.setLineWidth(wallWidth);
@@ -151,42 +151,50 @@ final class DungeonGridRenderer {
             for (int dx = -1; dx <= 1; dx++) {
                 int x = cx + dx;
                 int y = cy + dy;
-                if (model.squaresByCoord().get(x + ":" + y) == null) continue;
-                drawWallEdges(gc, x, y, passages, wallWidth);
+                if (!hasFilledSquare(x, y)) {
+                    continue;
+                }
+                drawWallEdges(gc, x, y, wallWidth);
             }
         }
     }
 
-    private void drawWallEdges(GraphicsContext gc, int x, int y, Map<String, DungeonPassage> passages, double wallWidth) {
+    private void drawWallEdges(GraphicsContext gc, int x, int y, double wallWidth) {
         double sx = viewport.screenX(x);
         double sy = viewport.screenY(y);
         double ex = viewport.screenX(x + 1);
         double ey = viewport.screenY(y + 1);
 
-        // North wall: canonical = SOUTH of (x, y-1)
-        drawEdge(gc, passages, PassageDirection.SOUTH.edgeKey(x, y - 1),
-                sx, sy, ex, sy, true, wallWidth);
-        // South wall: canonical = SOUTH of (x, y)
-        drawEdge(gc, passages, PassageDirection.SOUTH.edgeKey(x, y),
+        if (!hasFilledSquare(x, y - 1)) {
+            drawEdge(gc, PassageDirection.SOUTH.edgeKey(x, y - 1),
+                    sx, sy, ex, sy, true, wallWidth);
+        }
+        drawEdge(gc, PassageDirection.SOUTH.edgeKey(x, y),
                 sx, ey, ex, ey, true, wallWidth);
-        // West wall: canonical = EAST of (x-1, y)
-        drawEdge(gc, passages, PassageDirection.EAST.edgeKey(x - 1, y),
-                sx, sy, sx, ey, false, wallWidth);
-        // East wall: canonical = EAST of (x, y)
-        drawEdge(gc, passages, PassageDirection.EAST.edgeKey(x, y),
+        if (!hasFilledSquare(x - 1, y)) {
+            drawEdge(gc, PassageDirection.EAST.edgeKey(x - 1, y),
+                    sx, sy, sx, ey, false, wallWidth);
+        }
+        drawEdge(gc, PassageDirection.EAST.edgeKey(x, y),
                 ex, sy, ex, ey, false, wallWidth);
     }
 
-    private void drawEdge(GraphicsContext gc, Map<String, DungeonPassage> passages,
-                          String edgeKey, double ax, double ay, double bx, double by,
-                          boolean horizontal, double wallWidth) {
-        DungeonPassage passage = passages.get(edgeKey);
-        if (passage == null) {
+    private void drawEdge(
+            GraphicsContext gc,
+            String edgeKey,
+            double ax,
+            double ay,
+            double bx,
+            double by,
+            boolean horizontal,
+            double wallWidth
+    ) {
+        DungeonPassage passage = model.passagesByEdge().get(edgeKey);
+        if (passage == null || passage.type() == PassageType.SECRET) {
             gc.setStroke(WALL_COLOR);
             gc.strokeLine(ax, ay, bx, by);
             return;
         }
-        // Draw wall in two segments with passage gap in the middle 40%
         double gapStart = 0.30;
         double gapEnd = 0.70;
         if (horizontal) {
@@ -223,6 +231,10 @@ final class DungeonGridRenderer {
             gc.setStroke(WALL_COLOR);
             gc.setLineWidth(wallWidth);
         }
+    }
+
+    private boolean hasFilledSquare(int x, int y) {
+        return model.squaresByCoord().get(x + ":" + y) != null;
     }
 
     private static Color passageColor(PassageType type) {

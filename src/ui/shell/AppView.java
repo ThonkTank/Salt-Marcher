@@ -20,10 +20,11 @@ import java.util.List;
  * <ul>
  *   <li><b>Controls</b> — filters, sliders, tool palettes ({@link #getControlsContent()})</li>
  *   <li><b>Main</b> — primary workspace: monster table, hex map, canvas ({@link #getMainContent()})</li>
- *   <li><b>Details</b> — shared shell-owned detail inspector</li>
- *   <li><b>State</b> — game state: encounter roster/tracker, travel info ({@link #getStateContent()})</li>
+ *   <li><b>Details</b> — shared shell-owned, mostly static inspector with navigation/history</li>
+ *   <li><b>State</b> — game state, tool-specific settings, and interactive editor UI ({@link #getStateContent()})</li>
  * </ul>
- * The Details pane is shell-owned and shared across all views.
+ * The Details pane is shell-owned and shared across all views. View-specific forms, editor controls,
+ * and any interactive workflow UI belong in the State pane instead of replacing the shared inspector.
  * Views leave State as {@code null} to use the shell-owned ScenePane.
  */
 public interface AppView {

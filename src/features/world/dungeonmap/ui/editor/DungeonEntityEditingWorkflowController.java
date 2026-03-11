@@ -93,7 +93,7 @@ final class DungeonEntityEditingWorkflowController {
                 interaction.x(),
                 interaction.y(),
                 interaction.direction(),
-                PassageType.DOOR,
+                PassageType.defaultNewEdgeType(),
                 "",
                 "",
                 null));

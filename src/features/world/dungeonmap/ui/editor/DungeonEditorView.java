@@ -7,6 +7,8 @@ import features.world.dungeonmap.ui.editor.panes.DungeonDetailsPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
@@ -24,6 +26,7 @@ public class DungeonEditorView implements AppView {
     private final DungeonSquareEditWorkflowController squareEditWorkflowController =
             new DungeonSquareEditWorkflowController(state, applicationService, controls, toolSettingsPane, paintSession);
     private final DungeonMapDropdowns mapDropdowns = new DungeonMapDropdowns();
+    private final VBox statePane = new VBox(8);
     private final DungeonMapLoadingWorkflowController loadingWorkflowController = new DungeonMapLoadingWorkflowController(
             state, applicationService, controls, canvas, detailsPane, toolSettingsPane, selectionWorkflowController);
     private final DungeonEntityEditingWorkflowController entityEditingWorkflowController = new DungeonEntityEditingWorkflowController(
@@ -38,6 +41,8 @@ public class DungeonEditorView implements AppView {
                 () -> loadingWorkflowController.loadMapAsync(state.currentMapId()),
                 loadingWorkflowController::onShow);
         selectionWorkflowController.setDetailsNavigator(detailsNavigator);
+        VBox.setVgrow(detailsPane, Priority.ALWAYS);
+        statePane.getChildren().addAll(toolSettingsPane, detailsPane);
         bindControls();
         bindCanvas();
         bindSharedUi();
@@ -63,17 +68,9 @@ public class DungeonEditorView implements AppView {
         return controls;
     }
 
-    public Node getDetailsContent() {
-        ScrollPane scrollPane = new ScrollPane(detailsPane);
-        scrollPane.getStyleClass().add("dungeon-editor-sidebar-scroll");
-        scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        return scrollPane;
-    }
-
     @Override
     public Node getStateContent() {
-        ScrollPane scrollPane = new ScrollPane(toolSettingsPane);
+        ScrollPane scrollPane = new ScrollPane(statePane);
         scrollPane.getStyleClass().add("dungeon-editor-sidebar-scroll");
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);

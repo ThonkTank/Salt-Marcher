@@ -72,7 +72,7 @@ public final class DungeonSchemaSupport {
                 + "x            INTEGER NOT NULL,"
                 + "y            INTEGER NOT NULL,"
                 + "direction    TEXT NOT NULL CHECK(direction IN ('east','south')),"
-                + "passage_type TEXT NOT NULL DEFAULT 'door',"
+                + "passage_type TEXT NOT NULL DEFAULT 'open',"
                 + "name         TEXT,"
                 + "notes        TEXT,"
                 + "endpoint_id  INTEGER REFERENCES dungeon_endpoints(endpoint_id) ON DELETE SET NULL,"

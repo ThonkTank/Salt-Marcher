@@ -21,14 +21,18 @@ public enum PassageType {
         return name().toLowerCase();
     }
 
+    public static PassageType defaultNewEdgeType() {
+        return OPEN;
+    }
+
     public static PassageType fromDb(String value) {
-        if (value == null) return DOOR;
         return switch (value) {
+            case "door" -> DOOR;
             case "open" -> OPEN;
             case "window" -> WINDOW;
             case "hole" -> HOLE;
             case "secret" -> SECRET;
-            default -> DOOR;
+            default -> throw new IllegalArgumentException("Unknown passage type: " + value);
         };
     }
 
