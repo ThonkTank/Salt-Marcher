@@ -8,27 +8,23 @@ import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.PassageType;
 import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
-import features.world.dungeonmap.ui.editor.panes.DungeonDetailsPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import javafx.scene.Node;
+import ui.async.UiErrorReporter;
 import ui.components.ConfirmationDropdown;
 import ui.components.TextInputDropdown;
-import ui.async.UiErrorReporter;
 
-final class DungeonEditingWorkflowController {
+final class DungeonEntityEditingWorkflowController {
 
     private final DungeonEditorState state;
     private final DungeonEditorApplicationService applicationService;
     private final DungeonEditorControls controls;
     private final DungeonToolSettingsPane toolSettingsPane;
-    private final DungeonDetailsPane detailsPane;
     private final DungeonSelectionWorkflowController selectionController;
-    private final DungeonPaintSession paintSession;
     private final DungeonMapDropdowns mapDropdowns;
     private final TextInputDropdown roomDropdown = new TextInputDropdown();
     private final TextInputDropdown areaDropdown = new TextInputDropdown();
@@ -36,61 +32,25 @@ final class DungeonEditingWorkflowController {
     private Runnable reloadCurrentMap = () -> { };
     private Runnable reloadMapList = () -> { };
 
-    DungeonEditingWorkflowController(
+    DungeonEntityEditingWorkflowController(
             DungeonEditorState state,
             DungeonEditorApplicationService applicationService,
             DungeonEditorControls controls,
             DungeonToolSettingsPane toolSettingsPane,
-            DungeonDetailsPane detailsPane,
             DungeonSelectionWorkflowController selectionController,
-            DungeonPaintSession paintSession,
             DungeonMapDropdowns mapDropdowns
     ) {
         this.state = state;
         this.applicationService = applicationService;
         this.controls = controls;
         this.toolSettingsPane = toolSettingsPane;
-        this.detailsPane = detailsPane;
         this.selectionController = selectionController;
-        this.paintSession = paintSession;
         this.mapDropdowns = mapDropdowns;
     }
 
     void setReloadCallbacks(Runnable reloadCurrentMap, Runnable reloadMapList) {
         this.reloadCurrentMap = reloadCurrentMap == null ? () -> { } : reloadCurrentMap;
         this.reloadMapList = reloadMapList == null ? () -> { } : reloadMapList;
-    }
-
-    void handleCellPaint(DungeonMapPane.CellInteraction interaction) {
-        boolean filled = controls.getActiveTool().paintsFilledSquares();
-        Long roomId = filled ? toolSettingsPane.getActiveRoomId() : null;
-        DungeonSquarePaint paint = new DungeonSquarePaint(interaction.x(), interaction.y(), filled, roomId);
-        paintSession.previewPaint(state.currentMapId(), state.currentState(), paint);
-    }
-
-    void flushPendingPaints() {
-        paintSession.flushPendingPaints(
-                state.currentMapId(),
-                (mapId, paints) -> applicationService.applySquarePaints(
-                        mapId,
-                        paints,
-                        reloadCurrentMap,
-                        ex -> {
-                            UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.flushPendingPaints()", ex);
-                            reloadCurrentMap.run();
-                        }));
-    }
-
-    void commitPendingPaints() {
-        flushPendingPaints();
-    }
-
-    void discardPendingPaints() {
-        paintSession.discardPendingPaints();
-    }
-
-    boolean hasPendingPaints() {
-        return paintSession.hasPendingPaints();
     }
 
     void handleCellClick(DungeonMapPane.CellInteraction interaction) {
@@ -112,7 +72,7 @@ final class DungeonEditingWorkflowController {
                         fromId,
                         toId,
                         this::handleLinkCreateResult,
-                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.createLink()", ex)));
+                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.createLink()", ex)));
     }
 
     void handleEdgeClick(DungeonMapPane.EdgeInteraction interaction) {
@@ -157,7 +117,7 @@ final class DungeonEditingWorkflowController {
                     state.setPendingAreaSelectionId(null);
                     reloadCurrentMap.run();
                 },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.saveRoom()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.saveRoom()", ex));
     }
 
     void deleteActiveRoom(Node anchor) {
@@ -181,7 +141,7 @@ final class DungeonEditingWorkflowController {
                     applicationService.deleteRoom(
                             roomId,
                             reloadCurrentMap,
-                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.deleteRoom()", ex));
+                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.deleteRoom()", ex));
                 });
     }
 
@@ -210,7 +170,7 @@ final class DungeonEditingWorkflowController {
                     state.setPendingRoomSelectionId(null);
                     reloadCurrentMap.run();
                 },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.saveArea()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.saveArea()", ex));
     }
 
     void deleteActiveArea(Node anchor) {
@@ -234,7 +194,7 @@ final class DungeonEditingWorkflowController {
                     applicationService.deleteArea(
                             areaId,
                             reloadCurrentMap,
-                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.deleteArea()", ex));
+                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.deleteArea()", ex));
                 });
     }
 
@@ -242,7 +202,7 @@ final class DungeonEditingWorkflowController {
         applicationService.saveEndpoint(
                 endpoint,
                 ignored -> reloadCurrentMap.run(),
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.saveEndpoint()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.saveEndpoint()", ex));
     }
 
     void deleteEndpoint(Long endpointId, Node anchor) {
@@ -259,7 +219,7 @@ final class DungeonEditingWorkflowController {
                     applicationService.deleteEndpoint(
                             endpointId,
                             reloadCurrentMap,
-                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.deleteEndpoint()", ex));
+                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.deleteEndpoint()", ex));
                 });
     }
 
@@ -270,7 +230,7 @@ final class DungeonEditingWorkflowController {
         applicationService.deleteLink(
                 linkId,
                 reloadCurrentMap,
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.deleteLink()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.deleteLink()", ex));
     }
 
     void updateLinkLabel(long linkId, String label, Runnable onSuccess) {
@@ -278,7 +238,7 @@ final class DungeonEditingWorkflowController {
                 linkId,
                 label,
                 onSuccess,
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.updateLinkLabel()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.updateLinkLabel()", ex));
     }
 
     void savePassage(DungeonPassage passage) {
@@ -288,7 +248,7 @@ final class DungeonEditingWorkflowController {
                     state.setPendingPassageSelectionId(passageId);
                     reloadCurrentMap.run();
                 },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.savePassage()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.savePassage()", ex));
     }
 
     void deletePassage(Long passageId, Node anchor) {
@@ -305,7 +265,7 @@ final class DungeonEditingWorkflowController {
                     applicationService.deletePassage(
                             passageId,
                             reloadCurrentMap,
-                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.deletePassage()", ex));
+                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.deletePassage()", ex));
                 });
     }
 
@@ -318,7 +278,7 @@ final class DungeonEditingWorkflowController {
                     state.setCurrentMapId(mapId);
                     reloadMapList.run();
                 },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.createMap()", ex)));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.createMap()", ex)));
     }
 
     void showEditMapDropdown(DungeonEditorControls.MapActionRequest request) {
@@ -335,7 +295,7 @@ final class DungeonEditingWorkflowController {
                             state.setCurrentMapId(request.map().mapId());
                             reloadMapList.run();
                         },
-                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.updateMap()", ex)));
+                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.updateMap()", ex)));
     }
 
     DungeonEndpoint findEndpoint(Long endpointId) {
@@ -377,7 +337,7 @@ final class DungeonEditingWorkflowController {
                 square.roomId(),
                 toolSettingsPane.getActiveAreaId(),
                 reloadCurrentMap,
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEditingWorkflowController.assignRoomToArea()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityEditingWorkflowController.assignRoomToArea()", ex));
     }
 
     private void createOrSelectEndpoint(DungeonSquare square) {

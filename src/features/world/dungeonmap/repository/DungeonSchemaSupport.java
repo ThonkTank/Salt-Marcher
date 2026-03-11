@@ -66,6 +66,18 @@ public final class DungeonSchemaSupport {
                 + "CHECK (from_endpoint_id < to_endpoint_id),"
                 + "UNIQUE (map_id, from_endpoint_id, to_endpoint_id)"
                 + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_passages ("
+                + "passage_id   INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "map_id       INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "x            INTEGER NOT NULL,"
+                + "y            INTEGER NOT NULL,"
+                + "direction    TEXT NOT NULL CHECK(direction IN ('east','south')),"
+                + "passage_type TEXT NOT NULL DEFAULT 'door',"
+                + "name         TEXT,"
+                + "notes        TEXT,"
+                + "endpoint_id  INTEGER REFERENCES dungeon_endpoints(endpoint_id) ON DELETE SET NULL,"
+                + "UNIQUE (map_id, x, y, direction)"
+                + ")");
     }
 
     public static void createIndexes(Statement stmt) throws SQLException {
@@ -74,6 +86,7 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_areas_map ON dungeon_areas(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_endpoints_map ON dungeon_endpoints(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_links_map ON dungeon_links(map_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_passages_map ON dungeon_passages(map_id)");
     }
 
     public static void ensureCompatibility(Connection conn) throws SQLException {

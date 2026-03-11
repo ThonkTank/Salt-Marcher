@@ -7,7 +7,8 @@ public record DungeonSelection(
         DungeonRoom room,
         DungeonArea area,
         DungeonEndpoint endpoint,
-        DungeonLink link
+        DungeonLink link,
+        DungeonPassage passage
 ) {
     public enum SelectionType {
         NONE,
@@ -15,10 +16,11 @@ public record DungeonSelection(
         ROOM,
         AREA,
         ENDPOINT,
-        LINK
+        LINK,
+        PASSAGE
     }
 
     public static DungeonSelection none() {
-        return new DungeonSelection(SelectionType.NONE, null, null, null, null, null, null);
+        return new DungeonSelection(SelectionType.NONE, null, null, null, null, null, null, null);
     }
 }

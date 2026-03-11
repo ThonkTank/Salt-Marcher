@@ -4,6 +4,7 @@ import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonRoom;
+import features.world.dungeonmap.ui.editor.DungeonToolBehavior;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -136,12 +137,11 @@ public class DungeonToolSettingsPane extends VBox {
     }
 
     public void setActiveTool(DungeonEditorTool tool) {
-        boolean paint = tool == DungeonEditorTool.PAINT;
-        boolean paintOrErase = paint || tool == DungeonEditorTool.ERASE;
-        setGroupVisible(roomGroup, paint);
-        setGroupVisible(brushGroup, paintOrErase);
-        setGroupVisible(areaGroup, tool == DungeonEditorTool.AREA_ASSIGN);
-        if (tool == DungeonEditorTool.LINK) {
+        DungeonToolBehavior behavior = DungeonToolBehavior.forTool(tool);
+        setGroupVisible(roomGroup, behavior.roomSettingsVisible());
+        setGroupVisible(brushGroup, behavior.brushSettingsVisible());
+        setGroupVisible(areaGroup, behavior.areaSettingsVisible());
+        if (behavior.linkStatusVisible()) {
             linkStatusLabel.setText("Ersten Übergang klicken, dann zweiten Übergang klicken.");
             setGroupVisible(linkStatusGroup, true);
             cancelLinkButton.setVisible(false);

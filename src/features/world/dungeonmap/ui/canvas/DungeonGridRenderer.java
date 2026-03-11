@@ -1,11 +1,16 @@
 package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonMapState;
+import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.model.PassageType;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+
+import java.util.Map;
 
 final class DungeonGridRenderer {
 
@@ -16,6 +21,10 @@ final class DungeonGridRenderer {
     private static final Color ROOM_STROKE = Color.web("#c8966a");
     private static final Color SELECTION_STROKE = Color.web("#d9c36a");
     private static final Color BOUNDARY_STROKE = Color.web("#4a5560", 0.55);
+    private static final Color WALL_COLOR = Color.web("#3a2a1a");
+    private static final Color PASSAGE_DOOR = Color.web("#c8966a");
+    private static final Color PASSAGE_WINDOW = Color.web("#88aacc");
+    private static final Color PASSAGE_HOLE = Color.web("#5a5a5a");
 
     private static final Color[] ROOM_PALETTE = {
         Color.web("#5a4a36"),
@@ -63,6 +72,8 @@ final class DungeonGridRenderer {
             }
         }
 
+        drawWalls(gc, minX, minY, maxX, maxY);
+
         // draw a visible boundary around the full map extent
         double bx = viewport.screenX(0);
         double by = viewport.screenY(0);
@@ -86,8 +97,10 @@ final class DungeonGridRenderer {
             return;
         }
         GraphicsContext gc = gridCanvas.getGraphicsContext2D();
-        gc.clearRect(screenX - 1, screenY - 1, size + 2, size + 2);
+        double clearPad = Math.max(2.0, 2.5 * viewport.strokeScale());
+        gc.clearRect(screenX - clearPad, screenY - clearPad, size + clearPad * 2, size + clearPad * 2);
         drawCell(gc, x, y);
+        drawWallsForCell(gc, x, y);
     }
 
     void redrawSelection() {
@@ -114,6 +127,112 @@ final class DungeonGridRenderer {
         gc.setStroke(SELECTION_STROKE);
         gc.setLineWidth(Math.max(2.0, 3.0 * viewport.strokeScale()));
         gc.strokeRect(viewport.screenX(square.x()), viewport.screenY(square.y()), size - 1, size - 1);
+    }
+
+    private void drawWalls(GraphicsContext gc, int minX, int minY, int maxX, int maxY) {
+        Map<String, DungeonPassage> passages = model.passagesByEdge();
+        double wallWidth = Math.max(1.5, 2.0 * viewport.strokeScale());
+        gc.setStroke(WALL_COLOR);
+        gc.setLineWidth(wallWidth);
+        for (int y = minY; y <= maxY; y++) {
+            for (int x = minX; x <= maxX; x++) {
+                if (model.squaresByCoord().get(x + ":" + y) == null) continue;
+                drawWallEdges(gc, x, y, passages, wallWidth);
+            }
+        }
+    }
+
+    void drawWallsForCell(GraphicsContext gc, int cx, int cy) {
+        Map<String, DungeonPassage> passages = model.passagesByEdge();
+        double wallWidth = Math.max(1.5, 2.0 * viewport.strokeScale());
+        gc.setStroke(WALL_COLOR);
+        gc.setLineWidth(wallWidth);
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int x = cx + dx;
+                int y = cy + dy;
+                if (model.squaresByCoord().get(x + ":" + y) == null) continue;
+                drawWallEdges(gc, x, y, passages, wallWidth);
+            }
+        }
+    }
+
+    private void drawWallEdges(GraphicsContext gc, int x, int y, Map<String, DungeonPassage> passages, double wallWidth) {
+        double sx = viewport.screenX(x);
+        double sy = viewport.screenY(y);
+        double ex = viewport.screenX(x + 1);
+        double ey = viewport.screenY(y + 1);
+
+        // North wall: canonical = SOUTH of (x, y-1)
+        drawEdge(gc, passages, PassageDirection.SOUTH.edgeKey(x, y - 1),
+                sx, sy, ex, sy, true, wallWidth);
+        // South wall: canonical = SOUTH of (x, y)
+        drawEdge(gc, passages, PassageDirection.SOUTH.edgeKey(x, y),
+                sx, ey, ex, ey, true, wallWidth);
+        // West wall: canonical = EAST of (x-1, y)
+        drawEdge(gc, passages, PassageDirection.EAST.edgeKey(x - 1, y),
+                sx, sy, sx, ey, false, wallWidth);
+        // East wall: canonical = EAST of (x, y)
+        drawEdge(gc, passages, PassageDirection.EAST.edgeKey(x, y),
+                ex, sy, ex, ey, false, wallWidth);
+    }
+
+    private void drawEdge(GraphicsContext gc, Map<String, DungeonPassage> passages,
+                          String edgeKey, double ax, double ay, double bx, double by,
+                          boolean horizontal, double wallWidth) {
+        DungeonPassage passage = passages.get(edgeKey);
+        if (passage == null) {
+            gc.setStroke(WALL_COLOR);
+            gc.strokeLine(ax, ay, bx, by);
+            return;
+        }
+        // Draw wall in two segments with passage gap in the middle 40%
+        double gapStart = 0.30;
+        double gapEnd = 0.70;
+        if (horizontal) {
+            double totalLen = bx - ax;
+            double g0 = ax + totalLen * gapStart;
+            double g1 = ax + totalLen * gapEnd;
+            gc.setStroke(WALL_COLOR);
+            gc.strokeLine(ax, ay, g0, ay);
+            gc.strokeLine(g1, ay, bx, ay);
+        } else {
+            double totalLen = by - ay;
+            double g0 = ay + totalLen * gapStart;
+            double g1 = ay + totalLen * gapEnd;
+            gc.setStroke(WALL_COLOR);
+            gc.strokeLine(ax, ay, ax, g0);
+            gc.strokeLine(ax, g1, ax, by);
+        }
+        // Draw passage marker
+        Color passageColor = passageColor(passage.type());
+        if (passageColor != null) {
+            gc.setStroke(passageColor);
+            gc.setLineWidth(Math.max(2.5, 3.5 * viewport.strokeScale()));
+            if (horizontal) {
+                double totalLen = bx - ax;
+                double g0 = ax + totalLen * gapStart;
+                double g1 = ax + totalLen * gapEnd;
+                gc.strokeLine(g0, ay, g1, ay);
+            } else {
+                double totalLen = by - ay;
+                double g0 = ay + totalLen * gapStart;
+                double g1 = ay + totalLen * gapEnd;
+                gc.strokeLine(ax, g0, ax, g1);
+            }
+            gc.setStroke(WALL_COLOR);
+            gc.setLineWidth(wallWidth);
+        }
+    }
+
+    private static Color passageColor(PassageType type) {
+        return switch (type) {
+            case DOOR -> PASSAGE_DOOR;
+            case WINDOW -> PASSAGE_WINDOW;
+            case HOLE -> PASSAGE_HOLE;
+            case OPEN -> null;    // transparent gap
+            case SECRET -> null;  // visually closed — already drawn as wall
+        };
     }
 
     private void drawCell(GraphicsContext gc, int x, int y) {

@@ -41,11 +41,7 @@ final class DungeonSelectionWorkflowController {
     }
 
     void updateToolMode(DungeonEditorTool tool) {
-        boolean paintMode = tool == DungeonEditorTool.PAINT || tool == DungeonEditorTool.ERASE;
-        canvas.setPaintMode(paintMode);
-        canvas.setEraseMode(tool == DungeonEditorTool.ERASE);
-        canvas.setHandMode(tool == DungeonEditorTool.ENDPOINT || tool == DungeonEditorTool.LINK);
-        canvas.setPassageMode(tool == DungeonEditorTool.PASSAGE);
+        canvas.setActiveTool(tool);
         clearPendingLink();
         toolSettingsPane.setActiveTool(tool);
     }
@@ -93,17 +89,16 @@ final class DungeonSelectionWorkflowController {
             java.util.function.Consumer<DungeonSquare> onAssignRoomArea,
             java.util.function.Consumer<DungeonSquare> onCreateOrSelectEndpoint
     ) {
-        switch (tool) {
-            case SELECT -> selectSquare(interaction.square(), interaction.x(), interaction.y(), currentMapId);
-            case AREA_ASSIGN -> {
+        switch (DungeonToolBehavior.forTool(tool).cellClickAction()) {
+            case SELECT_SQUARE -> selectSquare(interaction.square(), interaction.x(), interaction.y(), currentMapId);
+            case ASSIGN_ROOM_AREA -> {
                 if (interaction.square() == null || interaction.square().roomId() == null) {
                     publishInfoMessage("Bereich zuweisen", "Dieses Feld hat keinen Raum — erst Raum zuweisen.");
                 } else {
                     onAssignRoomArea.accept(interaction.square());
                 }
             }
-            case ENDPOINT -> onCreateOrSelectEndpoint.accept(interaction.square());
-            default -> selectSquare(interaction.square(), interaction.x(), interaction.y(), currentMapId);
+            case CREATE_OR_SELECT_ENDPOINT -> onCreateOrSelectEndpoint.accept(interaction.square());
         }
     }
 

@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.ui.editor.DungeonSquarePaintPreviewSink;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.Pane;
@@ -17,7 +18,7 @@ import javafx.scene.layout.StackPane;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class DungeonMapPane extends StackPane {
+public class DungeonMapPane extends StackPane implements DungeonSquarePaintPreviewSink {
 
     public record CellInteraction(int x, int y, DungeonSquare square) {}
     public record EdgeInteraction(int x, int y, PassageDirection direction, DungeonPassage existingPassage) {}
@@ -106,6 +107,7 @@ public class DungeonMapPane extends StackPane {
         overlayRenderer.refreshEndpointStyles();
     }
 
+    @Override
     public void previewPaint(DungeonSquarePaint paint) {
         model.previewPaint(paint);
         gridRenderer.redrawVisibleCell(paint.x(), paint.y());

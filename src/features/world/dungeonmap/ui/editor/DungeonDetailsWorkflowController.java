@@ -14,7 +14,7 @@ final class DungeonDetailsWorkflowController {
     private final DungeonDetailsPane detailsPane;
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonSelectionWorkflowController selectionController;
-    private final DungeonEditingWorkflowController editingWorkflowController;
+    private final DungeonEntityEditingWorkflowController entityEditingWorkflowController;
     private final DungeonMapLoadingWorkflowController loadingController;
 
     DungeonDetailsWorkflowController(
@@ -22,22 +22,22 @@ final class DungeonDetailsWorkflowController {
             DungeonDetailsPane detailsPane,
             DungeonToolSettingsPane toolSettingsPane,
             DungeonSelectionWorkflowController selectionController,
-            DungeonEditingWorkflowController editingWorkflowController,
+            DungeonEntityEditingWorkflowController entityEditingWorkflowController,
             DungeonMapLoadingWorkflowController loadingController
     ) {
         this.state = state;
         this.detailsPane = detailsPane;
         this.toolSettingsPane = toolSettingsPane;
         this.selectionController = selectionController;
-        this.editingWorkflowController = editingWorkflowController;
+        this.entityEditingWorkflowController = entityEditingWorkflowController;
         this.loadingController = loadingController;
     }
 
     void bindToolSettings() {
-        toolSettingsPane.newRoomButton().setOnAction(event -> editingWorkflowController.createRoom(toolSettingsPane.newRoomButton()));
-        toolSettingsPane.deleteRoomButton().setOnAction(event -> editingWorkflowController.deleteActiveRoom(toolSettingsPane.deleteRoomButton()));
-        toolSettingsPane.newAreaButton().setOnAction(event -> editingWorkflowController.createArea(toolSettingsPane.newAreaButton()));
-        toolSettingsPane.deleteAreaButton().setOnAction(event -> editingWorkflowController.deleteActiveArea(toolSettingsPane.deleteAreaButton()));
+        toolSettingsPane.newRoomButton().setOnAction(event -> entityEditingWorkflowController.createRoom(toolSettingsPane.newRoomButton()));
+        toolSettingsPane.deleteRoomButton().setOnAction(event -> entityEditingWorkflowController.deleteActiveRoom(toolSettingsPane.deleteRoomButton()));
+        toolSettingsPane.newAreaButton().setOnAction(event -> entityEditingWorkflowController.createArea(toolSettingsPane.newAreaButton()));
+        toolSettingsPane.deleteAreaButton().setOnAction(event -> entityEditingWorkflowController.deleteActiveArea(toolSettingsPane.deleteAreaButton()));
         toolSettingsPane.setOnRoomSelected(selectionController::selectRoom);
         toolSettingsPane.setOnAreaSelected(this::handleAreaSelected);
         toolSettingsPane.encounterTableComboBox().valueProperty()
@@ -46,25 +46,25 @@ final class DungeonDetailsWorkflowController {
     }
 
     void bindDetailsPane() {
-        detailsPane.setOnRoomSaved(form -> editingWorkflowController.saveRoom(new DungeonRoom(
+        detailsPane.setOnRoomSaved(form -> entityEditingWorkflowController.saveRoom(new DungeonRoom(
                 form.roomId(),
                 state.currentMapId(),
                 form.name(),
                 form.description(),
                 form.areaId())));
-        detailsPane.setOnRoomDeleted(request -> editingWorkflowController.deleteRoom(request.entityId(), request.anchor()));
-        detailsPane.setOnAreaSaved(form -> editingWorkflowController.saveArea(new DungeonArea(
+        detailsPane.setOnRoomDeleted(request -> entityEditingWorkflowController.deleteRoom(request.entityId(), request.anchor()));
+        detailsPane.setOnAreaSaved(form -> entityEditingWorkflowController.saveArea(new DungeonArea(
                 form.areaId(),
                 state.currentMapId(),
                 form.name(),
                 form.description(),
                 form.encounterTableId(),
-                editingWorkflowController.selectedEncounterTableName(form.encounterTableId()))));
-        detailsPane.setOnAreaDeleted(request -> editingWorkflowController.deleteArea(request.entityId(), request.anchor()));
+                entityEditingWorkflowController.selectedEncounterTableName(form.encounterTableId()))));
+        detailsPane.setOnAreaDeleted(request -> entityEditingWorkflowController.deleteArea(request.entityId(), request.anchor()));
         detailsPane.setOnEndpointSaved(form -> {
-            DungeonEndpoint current = editingWorkflowController.findEndpoint(form.endpointId());
+            DungeonEndpoint current = entityEditingWorkflowController.findEndpoint(form.endpointId());
             if (current != null) {
-                editingWorkflowController.saveEndpoint(new DungeonEndpoint(
+                entityEditingWorkflowController.saveEndpoint(new DungeonEndpoint(
                         current.endpointId(),
                         current.mapId(),
                         current.squareId(),
@@ -76,16 +76,16 @@ final class DungeonDetailsWorkflowController {
                         current.y()));
             }
         });
-        detailsPane.setOnEndpointDeleted(request -> editingWorkflowController.deleteEndpoint(request.entityId(), request.anchor()));
-        detailsPane.setOnLinkSaved(form -> editingWorkflowController.updateLinkLabel(
+        detailsPane.setOnEndpointDeleted(request -> entityEditingWorkflowController.deleteEndpoint(request.entityId(), request.anchor()));
+        detailsPane.setOnLinkSaved(form -> entityEditingWorkflowController.updateLinkLabel(
                 form.linkId(),
                 form.label(),
                 () -> loadingController.loadMapAsync(state.currentMapId())));
-        detailsPane.setOnLinkDeleted(request -> editingWorkflowController.deleteLink(request.entityId()));
+        detailsPane.setOnLinkDeleted(request -> entityEditingWorkflowController.deleteLink(request.entityId()));
         detailsPane.setOnPassageSaved(form -> {
             DungeonPassage current = findPassage(form.passageId());
             if (current != null) {
-                editingWorkflowController.savePassage(new DungeonPassage(
+                entityEditingWorkflowController.savePassage(new DungeonPassage(
                         current.passageId(),
                         current.mapId(),
                         current.x(),
@@ -97,7 +97,7 @@ final class DungeonDetailsWorkflowController {
                         form.endpointId()));
             }
         });
-        detailsPane.setOnPassageDeleted(request -> editingWorkflowController.deletePassage(request.entityId(), request.anchor()));
+        detailsPane.setOnPassageDeleted(request -> entityEditingWorkflowController.deletePassage(request.entityId(), request.anchor()));
     }
 
     void handleAreaSelected(DungeonArea area) {
@@ -117,7 +117,7 @@ final class DungeonDetailsWorkflowController {
         if (state.syncingAreaSelection() || area == null || state.currentState() == null) {
             return;
         }
-        editingWorkflowController.saveArea(new DungeonArea(
+        entityEditingWorkflowController.saveArea(new DungeonArea(
                 area.areaId(),
                 area.mapId(),
                 area.name(),

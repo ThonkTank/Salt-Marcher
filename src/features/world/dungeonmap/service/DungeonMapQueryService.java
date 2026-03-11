@@ -7,6 +7,7 @@ import features.world.dungeonmap.repository.DungeonAreaRepository;
 import features.world.dungeonmap.repository.DungeonEndpointRepository;
 import features.world.dungeonmap.repository.DungeonLinkRepository;
 import features.world.dungeonmap.repository.DungeonMapRepository;
+import features.world.dungeonmap.repository.DungeonPassageRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
 import features.world.dungeonmap.repository.DungeonSquareRepository;
 
@@ -40,6 +41,7 @@ public final class DungeonMapQueryService {
                 DungeonRoomRepository.getRooms(conn, mapId),
                 DungeonAreaRepository.getAreas(conn, mapId),
                 DungeonEndpointRepository.getEndpoints(conn, mapId),
-                DungeonLinkRepository.getLinks(conn, mapId));
+                DungeonLinkRepository.getLinks(conn, mapId),
+                DungeonPassageRepository.getPassages(conn, mapId));
     }
 }

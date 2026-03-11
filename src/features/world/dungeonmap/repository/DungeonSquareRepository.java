@@ -35,27 +35,27 @@ public final class DungeonSquareRepository {
         return result;
     }
 
-    public static void applySquarePaints(Connection conn, long mapId, List<DungeonSquarePaint> paints) throws SQLException {
+    public static void applySquareEdits(Connection conn, long mapId, List<DungeonSquarePaint> edits) throws SQLException {
         try (PreparedStatement upsert = conn.prepareStatement(
                 "INSERT INTO dungeon_squares(map_id, x, y, room_id) VALUES(?,?,?,?) "
                         + "ON CONFLICT(map_id, x, y) DO UPDATE SET room_id=excluded.room_id");
              PreparedStatement delete = conn.prepareStatement(
                      "DELETE FROM dungeon_squares WHERE map_id=? AND x=? AND y=?")) {
-            for (DungeonSquarePaint paint : paints) {
-                if (paint.filled()) {
+            for (DungeonSquarePaint edit : edits) {
+                if (edit.filled()) {
                     upsert.setLong(1, mapId);
-                    upsert.setInt(2, paint.x());
-                    upsert.setInt(3, paint.y());
-                    if (paint.roomId() != null) {
-                        upsert.setLong(4, paint.roomId());
+                    upsert.setInt(2, edit.x());
+                    upsert.setInt(3, edit.y());
+                    if (edit.roomId() != null) {
+                        upsert.setLong(4, edit.roomId());
                     } else {
                         upsert.setNull(4, java.sql.Types.INTEGER);
                     }
                     upsert.addBatch();
                 } else {
                     delete.setLong(1, mapId);
-                    delete.setInt(2, paint.x());
-                    delete.setInt(3, paint.y());
+                    delete.setInt(2, edit.x());
+                    delete.setInt(3, edit.y());
                     delete.addBatch();
                 }
             }

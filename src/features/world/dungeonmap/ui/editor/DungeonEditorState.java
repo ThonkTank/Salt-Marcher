@@ -10,6 +10,7 @@ final class DungeonEditorState {
     private boolean syncingAreaSelection;
     private Long pendingRoomSelectionId;
     private Long pendingAreaSelectionId;
+    private Long pendingPassageSelectionId;
 
     Long currentMapId() {
         return currentMapId;
@@ -58,5 +59,13 @@ final class DungeonEditorState {
 
     void setPendingAreaSelectionId(Long pendingAreaSelectionId) {
         this.pendingAreaSelectionId = pendingAreaSelectionId;
+    }
+
+    Long pendingPassageSelectionId() {
+        return pendingPassageSelectionId;
+    }
+
+    void setPendingPassageSelectionId(Long pendingPassageSelectionId) {
+        this.pendingPassageSelectionId = pendingPassageSelectionId;
     }
 }

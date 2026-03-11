@@ -4,6 +4,7 @@ import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
+import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
@@ -122,10 +123,11 @@ final class DungeonMapLoadingWorkflowController {
     }
 
     void autoShowForTool(DungeonEditorTool tool) {
-        if (tool == DungeonEditorTool.PAINT) {
+        DungeonToolBehavior behavior = DungeonToolBehavior.forTool(tool);
+        if (behavior.autoShowsSelectedRoom()) {
             DungeonRoom room = toolSettingsPane.roomComboBox().getValue();
             if (room != null) selectionController.selectRoom(room);
-        } else if (tool == DungeonEditorTool.AREA_ASSIGN) {
+        } else if (behavior.autoShowsSelectedArea()) {
             DungeonArea area = toolSettingsPane.areaComboBox().getValue();
             if (area != null) selectionController.selectArea(area);
         }
@@ -148,6 +150,16 @@ final class DungeonMapLoadingWorkflowController {
             for (DungeonArea area : loadedState.areas()) {
                 if (areaId.equals(area.areaId())) {
                     selectionController.selectArea(area);
+                    return true;
+                }
+            }
+        }
+        if (state.pendingPassageSelectionId() != null) {
+            Long passageId = state.pendingPassageSelectionId();
+            state.setPendingPassageSelectionId(null);
+            for (DungeonPassage passage : loadedState.passages()) {
+                if (passageId.equals(passage.passageId())) {
+                    selectionController.selectPassage(passage);
                     return true;
                 }
             }

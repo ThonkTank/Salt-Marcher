@@ -3,6 +3,7 @@ package features.world.dungeonmap.ui.canvas;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonMapState;
+import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
@@ -16,6 +17,7 @@ final class DungeonCanvasModel {
     private final Map<String, DungeonSquare> squaresByCoord = new HashMap<>();
     private final Map<Long, DungeonEndpoint> endpointsById = new HashMap<>();
     private final Map<Long, DungeonLink> linksById = new HashMap<>();
+    private final Map<String, DungeonPassage> passagesByEdge = new HashMap<>();
 
     private DungeonMapState state;
     private DungeonSelection selection = DungeonSelection.none();
@@ -34,6 +36,7 @@ final class DungeonCanvasModel {
         squaresByCoord.clear();
         endpointsById.clear();
         linksById.clear();
+        passagesByEdge.clear();
 
         if (state == null || state.map() == null) {
             loadedMapId = null;
@@ -53,6 +56,9 @@ final class DungeonCanvasModel {
         }
         for (DungeonLink link : state.links()) {
             linksById.put(link.linkId(), link);
+        }
+        for (DungeonPassage passage : state.passages()) {
+            passagesByEdge.put(passage.edgeKey(), passage);
         }
 
         selection = DungeonSelection.none();
@@ -133,6 +139,10 @@ final class DungeonCanvasModel {
 
     Map<Long, DungeonLink> linksById() {
         return linksById;
+    }
+
+    Map<String, DungeonPassage> passagesByEdge() {
+        return passagesByEdge;
     }
 
     DungeonSelection selection() {

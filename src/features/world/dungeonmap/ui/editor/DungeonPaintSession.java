@@ -2,7 +2,6 @@ package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonSquarePaint;
-import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -16,12 +15,12 @@ final class DungeonPaintSession {
         void persist(long mapId, List<DungeonSquarePaint> paints);
     }
 
-    private final DungeonMapPane canvas;
+    private final DungeonSquarePaintPreviewSink previewSink;
     private final Map<String, DungeonSquarePaint> pendingPaints = new LinkedHashMap<>();
     private Long pendingMapId;
 
-    DungeonPaintSession(DungeonMapPane canvas) {
-        this.canvas = canvas;
+    DungeonPaintSession(DungeonSquarePaintPreviewSink previewSink) {
+        this.previewSink = previewSink;
     }
 
     void previewPaint(Long currentMapId, DungeonMapState currentState, DungeonSquarePaint paint) {
@@ -33,7 +32,7 @@ final class DungeonPaintSession {
         }
         pendingMapId = currentMapId;
         pendingPaints.put(paint.x() + ":" + paint.y(), paint);
-        canvas.previewPaint(paint);
+        previewSink.previewPaint(paint);
     }
 
     void flushPendingPaints(Long currentMapId, PaintPersister persister) {

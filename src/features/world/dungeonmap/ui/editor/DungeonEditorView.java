@@ -23,18 +23,21 @@ public class DungeonEditorView implements AppView {
     private final DungeonEditorState state = new DungeonEditorState();
     private final DungeonSelectionWorkflowController selectionWorkflowController =
             new DungeonSelectionWorkflowController(canvas, detailsPane, toolSettingsPane, state);
+    private final DungeonSquareEditWorkflowController squareEditWorkflowController =
+            new DungeonSquareEditWorkflowController(state, applicationService, controls, toolSettingsPane, paintSession);
     private final DungeonMapDropdowns mapDropdowns = new DungeonMapDropdowns();
     private final VBox statePane = new VBox(8);
     private final DungeonMapLoadingWorkflowController loadingWorkflowController = new DungeonMapLoadingWorkflowController(
             state, applicationService, controls, canvas, detailsPane, toolSettingsPane, selectionWorkflowController);
-    private final DungeonEditingWorkflowController editingWorkflowController = new DungeonEditingWorkflowController(
-            state, applicationService, controls, toolSettingsPane, detailsPane, selectionWorkflowController, paintSession, mapDropdowns);
+    private final DungeonEntityEditingWorkflowController entityEditingWorkflowController = new DungeonEntityEditingWorkflowController(
+            state, applicationService, controls, toolSettingsPane, selectionWorkflowController, mapDropdowns);
     private final DungeonDetailsWorkflowController detailsWorkflowController = new DungeonDetailsWorkflowController(
-            state, detailsPane, toolSettingsPane, selectionWorkflowController, editingWorkflowController, loadingWorkflowController);
+            state, detailsPane, toolSettingsPane, selectionWorkflowController, entityEditingWorkflowController, loadingWorkflowController);
 
     public DungeonEditorView(DetailsNavigator detailsNavigator) {
         loadingWorkflowController.setOnEncounterTablesChanged(detailsWorkflowController::syncEncounterTableSelection);
-        editingWorkflowController.setReloadCallbacks(
+        squareEditWorkflowController.setReloadCurrentMap(() -> loadingWorkflowController.loadMapAsync(state.currentMapId()));
+        entityEditingWorkflowController.setReloadCallbacks(
                 () -> loadingWorkflowController.loadMapAsync(state.currentMapId()),
                 loadingWorkflowController::onShow);
         selectionWorkflowController.setDetailsNavigator(detailsNavigator);
@@ -80,27 +83,27 @@ public class DungeonEditorView implements AppView {
 
     private void bindControls() {
         controls.setOnMapSelected(mapId -> {
-            editingWorkflowController.discardPendingPaints();
+            squareEditWorkflowController.discardPendingSquareEdits();
             loadingWorkflowController.loadMapAsync(mapId);
         });
-        controls.setOnNewMapRequested(editingWorkflowController::showNewMapDropdown);
-        controls.setOnEditMapRequested(editingWorkflowController::showEditMapDropdown);
+        controls.setOnNewMapRequested(entityEditingWorkflowController::showNewMapDropdown);
+        controls.setOnEditMapRequested(entityEditingWorkflowController::showEditMapDropdown);
         controls.setOnToolChanged(tool -> {
-            editingWorkflowController.commitPendingPaints();
+            squareEditWorkflowController.commitPendingSquareEdits();
             selectionWorkflowController.updateToolMode(tool);
             loadingWorkflowController.autoShowForTool(tool);
         });
     }
 
     private void bindCanvas() {
-        canvas.setOnCellClicked(editingWorkflowController::handleCellClick);
-        canvas.setOnCellPainted(editingWorkflowController::handleCellPaint);
-        canvas.setOnPaintStrokeFinished(editingWorkflowController::flushPendingPaints);
-        canvas.setOnEndpointClicked(editingWorkflowController::handleEndpointClick);
+        canvas.setOnCellClicked(entityEditingWorkflowController::handleCellClick);
+        canvas.setOnCellPainted(squareEditWorkflowController::handleCellPaint);
+        canvas.setOnPaintStrokeFinished(squareEditWorkflowController::flushPendingSquareEdits);
+        canvas.setOnEndpointClicked(entityEditingWorkflowController::handleEndpointClick);
         canvas.setOnLinkClicked(selectionWorkflowController::showLinkSelection);
         canvas.setBrushSizeSupplier(toolSettingsPane::getBrushSize);
         canvas.setBrushShapeSupplier(toolSettingsPane::getBrushShape);
-        canvas.setOnEdgeClicked(editingWorkflowController::handleEdgeClick);
+        canvas.setOnEdgeClicked(entityEditingWorkflowController::handleEdgeClick);
     }
 
     private void bindSharedUi() {

@@ -1,10 +1,11 @@
 package features.world.dungeonmap.ui.editor;
 
-import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
+import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
+import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.service.DungeonMapEditorService;
@@ -69,11 +70,11 @@ public final class DungeonEditorApplicationService {
         UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
     }
 
-    public void applySquarePaints(long mapId, List<DungeonSquarePaint> paints, Runnable onSuccess, Consumer<Throwable> onError) {
+    public void applySquareEdits(long mapId, List<DungeonSquarePaint> edits, Runnable onSuccess, Consumer<Throwable> onError) {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                DungeonMapEditorService.applySquarePaints(mapId, paints);
+                DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits);
                 return null;
             }
         };
@@ -197,6 +198,27 @@ public final class DungeonEditorApplicationService {
             @Override
             protected Void call() throws Exception {
                 DungeonMapEditorService.updateLinkLabel(linkId, label);
+                return null;
+            }
+        };
+        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+    }
+
+    public void savePassage(DungeonPassage passage, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
+        Task<Long> task = new Task<>() {
+            @Override
+            protected Long call() throws Exception {
+                return DungeonMapEditorService.savePassage(passage);
+            }
+        };
+        UiAsyncTasks.submit(task, onSuccess, onError);
+    }
+
+    public void deletePassage(long passageId, Runnable onSuccess, Consumer<Throwable> onError) {
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                DungeonMapEditorService.deletePassage(passageId);
                 return null;
             }
         };

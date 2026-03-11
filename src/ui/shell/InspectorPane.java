@@ -4,6 +4,7 @@ import features.creatures.api.StatBlockLoader;
 import features.creatures.api.StatBlockRequest;
 import features.items.api.ItemCatalogService;
 import features.items.api.ItemViewerPane;
+import features.spells.api.SpellCatalogService;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -134,6 +135,12 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     }
 
     @Override
+    public void showSpell(SpellSummary summary) {
+        if (summary == null || summary.spellId() <= 0) return;
+        openEntry(new SpellEntry(summary.spellId()));
+    }
+
+    @Override
     public void showEncounterTable(EncounterTableSummary summary) {
         if (summary == null) return;
         openEntry(new EncounterTableEntry(summary));
@@ -149,6 +156,53 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     public void showHexTile(HexTileSummary summary) {
         if (summary == null) return;
         openEntry(new HexTileEntry(summary));
+    }
+
+    @Override
+    public void showDungeonSquare(DungeonSquareSummary summary) {
+        if (summary == null) return;
+        openEntry(new DungeonSquareEntry(summary));
+    }
+
+    @Override
+    public void showDungeonRoom(DungeonRoomSummary summary) {
+        if (summary == null) return;
+        openEntry(new DungeonRoomEntry(summary));
+    }
+
+    @Override
+    public void showDungeonArea(DungeonAreaSummary summary) {
+        if (summary == null) return;
+        openEntry(new DungeonAreaEntry(summary));
+    }
+
+    @Override
+    public void showDungeonEndpoint(DungeonEndpointSummary summary) {
+        if (summary == null) return;
+        openEntry(new DungeonEndpointEntry(summary));
+    }
+
+    @Override
+    public void showDungeonLink(DungeonLinkSummary summary) {
+        if (summary == null) return;
+        openEntry(new DungeonLinkEntry(summary));
+    }
+
+    @Override
+    public void showDungeonPassage(DungeonPassageSummary summary) {
+        if (summary == null) return;
+        openEntry(new DungeonPassageEntry(summary));
+    }
+
+    @Override
+    public void showInfo(String title, Object entryKey, String message) {
+        if (title == null || title.isBlank() || message == null || message.isBlank()) return;
+        openEntry(new InfoEntry(title, entryKey, message));
+    }
+
+    @Override
+    public void clear() {
+        hideCurrent();
     }
 
     @Override
@@ -246,6 +300,66 @@ public class InspectorPane extends VBox implements DetailsNavigator {
 
     private void renderHexTile(HexTileSummary summary) {
         showContentNode("Feld-Eigenschaften", buildHexTileNode(summary), false);
+    }
+
+    private void renderSpell(long spellId, long requestVersion) {
+        cancelPendingTask();
+        showContentNode("Spell", loadingNode("Lade Spell..."), false);
+        Task<SpellCatalogService.ServiceResult<SpellCatalogService.SpellDetails>> task = new Task<>() {
+            @Override protected SpellCatalogService.ServiceResult<SpellCatalogService.SpellDetails> call() {
+                return SpellCatalogService.getSpell(spellId);
+            }
+        };
+        pendingStatBlockTask = task;
+        ui.async.UiAsyncTasks.submit(task, result -> {
+            if (requestVersion != renderVersion) return;
+            if (!result.isOk()) {
+                ui.async.UiErrorReporter.reportBackgroundFailure(
+                        "InspectorPane.renderSpell() service failure",
+                        new IllegalStateException("SpellCatalogService status: " + result.status()));
+                showContentNode("Spell", loadingNode("Spell konnte nicht geladen werden."), false);
+                return;
+            }
+            SpellCatalogService.SpellDetails spell = result.value();
+            if (spell == null) {
+                showContentNode("Spell", loadingNode("Spell konnte nicht geladen werden."), false);
+                return;
+            }
+            showContentNode(spell.name(), buildSpellNode(spell), false);
+        }, throwable -> {
+            if (task.isCancelled() || requestVersion != renderVersion) return;
+            ui.async.UiErrorReporter.reportBackgroundFailure("InspectorPane.renderSpell()", throwable);
+            showContentNode("Spell", loadingNode("Spell konnte nicht geladen werden."), false);
+        });
+    }
+
+    private void renderDungeonSquare(DungeonSquareSummary summary) {
+        showContentNode("Feld", buildDungeonSquareNode(summary), false);
+    }
+
+    private void renderDungeonRoom(DungeonRoomSummary summary) {
+        showContentNode(summary.name(), buildDungeonRoomNode(summary), false);
+    }
+
+    private void renderDungeonArea(DungeonAreaSummary summary) {
+        showContentNode(summary.name(), buildDungeonAreaNode(summary), false);
+    }
+
+    private void renderDungeonEndpoint(DungeonEndpointSummary summary) {
+        showContentNode(summary.name(), buildDungeonEndpointNode(summary), false);
+    }
+
+    private void renderDungeonLink(DungeonLinkSummary summary) {
+        showContentNode("Link", buildDungeonLinkNode(summary), false);
+    }
+
+    private void renderDungeonPassage(DungeonPassageSummary summary) {
+        String title = summary.name() != null && !summary.name().isBlank() ? summary.name() : "Durchgang";
+        showContentNode(title, buildDungeonPassageNode(summary), false);
+    }
+
+    private void renderInfo(String title, String message) {
+        showContentNode(title, buildInfoNode(message), false);
     }
 
     private void showContentNode(String title, Node content, boolean mobContext) {
@@ -369,11 +483,166 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         return box;
     }
 
+    private static Node buildSpellNode(SpellCatalogService.SpellDetails spell) {
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(12));
+
+        Label kind = new Label(levelAndSchool(spell.level(), spell.school()));
+        kind.getStyleClass().addAll("section-header", "text-muted");
+        box.getChildren().add(kind);
+
+        addSecondary(box, "Zauberzeit: " + valueOrDash(spell.castingTime()));
+        addSecondary(box, "Reichweite: " + valueOrDash(spell.rangeText()));
+        addSecondary(box, "Dauer: " + valueOrDash(spell.durationText()));
+        addSecondary(box, "Komponenten: " + valueOrDash(spell.componentsText()));
+        if (spell.materialComponentText() != null && !spell.materialComponentText().isBlank()) {
+            addSecondary(box, "Material: " + spell.materialComponentText());
+        }
+        if (spell.classesText() != null && !spell.classesText().isBlank()) {
+            addSecondary(box, "Klassen: " + spell.classesText());
+        }
+        if (spell.attackOrSaveText() != null && !spell.attackOrSaveText().isBlank()) {
+            addSecondary(box, "Angriff/Rettung: " + spell.attackOrSaveText());
+        }
+        if (spell.damageEffectText() != null && !spell.damageEffectText().isBlank()) {
+            addSecondary(box, "Effekt: " + spell.damageEffectText());
+        }
+        if (spell.ritual() || spell.concentration()) {
+            addSecondary(box, (spell.ritual() ? "Ritual" : "") + (spell.ritual() && spell.concentration() ? " • " : "")
+                    + (spell.concentration() ? "Konzentration" : ""));
+        }
+        if (spell.description() != null && !spell.description().isBlank()) {
+            addSection(box, "Beschreibung", spell.description());
+        }
+        if (spell.higherLevelsText() != null && !spell.higherLevelsText().isBlank()) {
+            addSection(box, "Auf höheren Graden", spell.higherLevelsText());
+        }
+        if (!spell.tags().isEmpty()) {
+            addSecondary(box, "Tags: " + String.join(", ", spell.tags()));
+        }
+        if (spell.source() != null && !spell.source().isBlank()) {
+            addSecondary(box, "Quelle: " + spell.source());
+        }
+        return box;
+    }
+
+    private static Node buildDungeonSquareNode(DungeonSquareSummary summary) {
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(12));
+        Label kind = new Label("Dungeon-Feld");
+        kind.getStyleClass().addAll("section-header", "text-muted");
+        box.getChildren().addAll(
+                kind,
+                secondary("Position: " + summary.x() + ", " + summary.y()),
+                secondary("Raum: " + valueOrDash(summary.roomName())),
+                secondary("Bereich: " + valueOrDash(summary.areaName())));
+        return box;
+    }
+
+    private static Node buildDungeonRoomNode(DungeonRoomSummary summary) {
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(12));
+        Label kind = new Label("Raum");
+        kind.getStyleClass().addAll("section-header", "text-muted");
+        box.getChildren().addAll(kind, secondary("Bereich: " + valueOrDash(summary.areaName())));
+        if (summary.description() != null && !summary.description().isBlank()) {
+            addSection(box, "Beschreibung", summary.description());
+        }
+        return box;
+    }
+
+    private static Node buildDungeonAreaNode(DungeonAreaSummary summary) {
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(12));
+        Label kind = new Label("Bereich");
+        kind.getStyleClass().addAll("section-header", "text-muted");
+        box.getChildren().addAll(kind, secondary("Encounter Table: " + valueOrDash(summary.encounterTableName())));
+        if (summary.description() != null && !summary.description().isBlank()) {
+            addSection(box, "Beschreibung", summary.description());
+        }
+        return box;
+    }
+
+    private static Node buildDungeonEndpointNode(DungeonEndpointSummary summary) {
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(12));
+        Label kind = new Label("Übergang");
+        kind.getStyleClass().addAll("section-header", "text-muted");
+        box.getChildren().addAll(
+                kind,
+                secondary("Position: " + summary.x() + ", " + summary.y()),
+                secondary("Typ: " + valueOrDash(summary.roleLabel())),
+                secondary(summary.defaultEntry() ? "Standard-Einstieg" : "Kein Standard-Einstieg"));
+        if (summary.notes() != null && !summary.notes().isBlank()) {
+            addSection(box, "Notizen", summary.notes());
+        }
+        return box;
+    }
+
+    private static Node buildDungeonLinkNode(DungeonLinkSummary summary) {
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(12));
+        Label kind = new Label("Link");
+        kind.getStyleClass().addAll("section-header", "text-muted");
+        box.getChildren().addAll(
+                kind,
+                secondary("Von: " + valueOrDash(summary.fromName())),
+                secondary("Nach: " + valueOrDash(summary.toName())));
+        if (summary.label() != null && !summary.label().isBlank()) {
+            addSection(box, "Label", summary.label());
+        }
+        return box;
+    }
+
+    private static Node buildDungeonPassageNode(DungeonPassageSummary summary) {
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(12));
+        Label kind = new Label("Durchgang");
+        kind.getStyleClass().addAll("section-header", "text-muted");
+        box.getChildren().addAll(
+                kind,
+                secondary("Position: " + summary.x() + ", " + summary.y()),
+                secondary("Richtung: " + valueOrDash(summary.directionLabel())),
+                secondary("Typ: " + valueOrDash(summary.typeLabel())),
+                secondary("Verknüpfter Übergang: " + valueOrDash(summary.endpointName())));
+        if (summary.notes() != null && !summary.notes().isBlank()) {
+            addSection(box, "Notizen", summary.notes());
+        }
+        return box;
+    }
+
+    private static Node buildInfoNode(String message) {
+        VBox box = new VBox(10);
+        box.setPadding(new Insets(12));
+        Label label = new Label(message);
+        label.getStyleClass().add("text-muted");
+        label.setWrapText(true);
+        box.getChildren().add(label);
+        return box;
+    }
+
     private static String valueOrDash(String value) {
         return value == null || value.isBlank() ? "—" : value;
     }
 
-    private sealed interface HistoryEntry permits StatBlockEntry, ItemEntry, EncounterTableEntry, LootTableEntry, HexTileEntry, HostedContentEntry {
+    private static void addSecondary(VBox box, String text) {
+        box.getChildren().add(secondary(text));
+    }
+
+    private static void addSection(VBox box, String title, String text) {
+        Label header = new Label(title);
+        header.getStyleClass().addAll("section-header", "text-muted");
+        Label content = new Label(text);
+        content.setWrapText(true);
+        box.getChildren().addAll(header, content);
+    }
+
+    private static String levelAndSchool(int level, String school) {
+        String levelText = level <= 0 ? "Zaubertrick" : "Grad " + level;
+        return school == null || school.isBlank() ? levelText : levelText + " • " + school;
+    }
+
+    private sealed interface HistoryEntry permits StatBlockEntry, ItemEntry, SpellEntry, EncounterTableEntry, LootTableEntry, HexTileEntry, DungeonSquareEntry, DungeonRoomEntry, DungeonAreaEntry, DungeonEndpointEntry, DungeonLinkEntry, DungeonPassageEntry, InfoEntry, HostedContentEntry {
         boolean sameEntry(HistoryEntry other);
         void render(InspectorPane pane, long requestVersion);
     }
@@ -399,6 +668,18 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         @Override
         public void render(InspectorPane pane, long requestVersion) {
             pane.renderItem(itemId, requestVersion);
+        }
+    }
+
+    private record SpellEntry(long spellId) implements HistoryEntry {
+        @Override
+        public boolean sameEntry(HistoryEntry other) {
+            return other instanceof SpellEntry entry && spellId == entry.spellId;
+        }
+
+        @Override
+        public void render(InspectorPane pane, long requestVersion) {
+            pane.renderSpell(spellId, requestVersion);
         }
     }
 
@@ -438,6 +719,92 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         @Override
         public void render(InspectorPane pane, long requestVersion) {
             pane.renderHexTile(summary);
+        }
+    }
+
+    private record DungeonSquareEntry(DungeonSquareSummary summary) implements HistoryEntry {
+        @Override
+        public boolean sameEntry(HistoryEntry other) {
+            return other instanceof DungeonSquareEntry entry
+                    && summary.x() == entry.summary.x()
+                    && summary.y() == entry.summary.y();
+        }
+
+        @Override
+        public void render(InspectorPane pane, long requestVersion) {
+            pane.renderDungeonSquare(summary);
+        }
+    }
+
+    private record DungeonRoomEntry(DungeonRoomSummary summary) implements HistoryEntry {
+        @Override
+        public boolean sameEntry(HistoryEntry other) {
+            return other instanceof DungeonRoomEntry entry && summary.roomId() == entry.summary.roomId();
+        }
+
+        @Override
+        public void render(InspectorPane pane, long requestVersion) {
+            pane.renderDungeonRoom(summary);
+        }
+    }
+
+    private record DungeonAreaEntry(DungeonAreaSummary summary) implements HistoryEntry {
+        @Override
+        public boolean sameEntry(HistoryEntry other) {
+            return other instanceof DungeonAreaEntry entry && summary.areaId() == entry.summary.areaId();
+        }
+
+        @Override
+        public void render(InspectorPane pane, long requestVersion) {
+            pane.renderDungeonArea(summary);
+        }
+    }
+
+    private record DungeonEndpointEntry(DungeonEndpointSummary summary) implements HistoryEntry {
+        @Override
+        public boolean sameEntry(HistoryEntry other) {
+            return other instanceof DungeonEndpointEntry entry && summary.endpointId() == entry.summary.endpointId();
+        }
+
+        @Override
+        public void render(InspectorPane pane, long requestVersion) {
+            pane.renderDungeonEndpoint(summary);
+        }
+    }
+
+    private record DungeonLinkEntry(DungeonLinkSummary summary) implements HistoryEntry {
+        @Override
+        public boolean sameEntry(HistoryEntry other) {
+            return other instanceof DungeonLinkEntry entry && summary.linkId() == entry.summary.linkId();
+        }
+
+        @Override
+        public void render(InspectorPane pane, long requestVersion) {
+            pane.renderDungeonLink(summary);
+        }
+    }
+
+    private record DungeonPassageEntry(DungeonPassageSummary summary) implements HistoryEntry {
+        @Override
+        public boolean sameEntry(HistoryEntry other) {
+            return other instanceof DungeonPassageEntry entry && summary.passageId() == entry.summary.passageId();
+        }
+
+        @Override
+        public void render(InspectorPane pane, long requestVersion) {
+            pane.renderDungeonPassage(summary);
+        }
+    }
+
+    private record InfoEntry(String title, Object entryKey, String message) implements HistoryEntry {
+        @Override
+        public boolean sameEntry(HistoryEntry other) {
+            return other instanceof InfoEntry entry && Objects.equals(entryKey, entry.entryKey);
+        }
+
+        @Override
+        public void render(InspectorPane pane, long requestVersion) {
+            pane.renderInfo(title, message);
         }
     }
 

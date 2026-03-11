@@ -408,10 +408,52 @@ val checkFeatureApiBoundaryConvention by tasks.registering {
     }
 }
 
+val checkDungeonEditorArchitectureBoundaries by tasks.registering {
+    group = "verification"
+    description = "Fail when dungeon editor UI packages reach through forbidden architecture boundaries."
+
+    doLast {
+        val projectRoot = project.layout.projectDirectory.asFile.toPath()
+        val canvasOffenders = fileTree("src/features/world/dungeonmap/ui/canvas") {
+            include("**/*.java")
+        }.files
+            .map { projectRoot.relativize(it.toPath()).toString().replace('\\', '/') }
+            .filter { path ->
+                val content = file(path).readText()
+                content.contains("features.world.dungeonmap.service.")
+                    || content.contains("features.world.dungeonmap.repository.")
+            }
+            .sorted()
+
+        val editorControllerOffenders = fileTree("src/features/world/dungeonmap/ui/editor") {
+            include("**/*Controller.java")
+        }.files
+            .map { projectRoot.relativize(it.toPath()).toString().replace('\\', '/') }
+            .filter { path ->
+                file(path).readText().contains("features.world.dungeonmap.repository.")
+            }
+            .sorted()
+
+        if (canvasOffenders.isNotEmpty() || editorControllerOffenders.isNotEmpty()) {
+            val messages = mutableListOf<String>()
+            if (canvasOffenders.isNotEmpty()) {
+                messages += "Canvas UI must not import dungeon service/repository packages:\n" +
+                    canvasOffenders.joinToString(separator = "\n") { " - $it" }
+            }
+            if (editorControllerOffenders.isNotEmpty()) {
+                messages += "Editor workflow controllers must not import dungeon repository packages:\n" +
+                    editorControllerOffenders.joinToString(separator = "\n") { " - $it" }
+            }
+            throw GradleException(messages.joinToString(separator = "\n\n"))
+        }
+    }
+}
+
 tasks.named("check") {
     dependsOn(checkNoCompiledArtifactsInSource)
     dependsOn(checkNoStdStreamsInFeatureServicesAndRepositories)
     dependsOn(checkRepositorySqlExceptionConvention)
     dependsOn(checkUiAsyncSubmissionConvention)
     dependsOn(checkFeatureApiBoundaryConvention)
+    dependsOn(checkDungeonEditorArchitectureBoundaries)
 }
