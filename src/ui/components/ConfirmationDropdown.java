@@ -27,6 +27,8 @@ public final class ConfirmationDropdown {
         messageLabel.getStyleClass().add("dropdown-message");
         messageLabel.setWrapText(true);
 
+        dropdown = new AnchoredDropdown(panel);
+
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox actions = new HBox(8, cancelButton, spacer, confirmButton);
@@ -36,7 +38,6 @@ public final class ConfirmationDropdown {
         confirmButton.setOnAction(event -> onConfirm.run());
 
         panel.getChildren().addAll(titleLabel, messageLabel, actions);
-        dropdown = new AnchoredDropdown(panel);
     }
 
     public void show(Node anchor, String title, String message, String confirmLabel, Runnable onConfirm) {

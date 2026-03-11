@@ -36,7 +36,6 @@ public final class DungeonMapFormDropdown {
     private final Button confirmShrinkButton = new Button("Verkleinerung bestätigen");
 
     private Consumer<Result> onSubmit = result -> { };
-    private Result pendingResult;
     private BiFunction<Integer, Integer, String> shrinkImpactProvider = (width, height) -> "";
 
     public DungeonMapFormDropdown() {
@@ -72,12 +71,12 @@ public final class DungeonMapFormDropdown {
 
         cancelButton.setOnAction(event -> dropdown.hide());
         submitButton.setOnAction(event -> submit(false));
-        confirmShrinkButton.setOnAction(event -> {
-            if (pendingResult != null) {
-                onSubmit.accept(pendingResult);
-            }
-        });
+        confirmShrinkButton.setOnAction(event -> submit(true));
         nameField.setOnAction(event -> submit(false));
+        widthSpinner.valueProperty().addListener((obs, oldValue, newValue) -> resetShrinkConfirmation());
+        heightSpinner.valueProperty().addListener((obs, oldValue, newValue) -> resetShrinkConfirmation());
+        widthSpinner.getEditor().textProperty().addListener((obs, oldValue, newValue) -> resetShrinkConfirmation());
+        heightSpinner.getEditor().textProperty().addListener((obs, oldValue, newValue) -> resetShrinkConfirmation());
     }
 
     public void showCreate(Node anchor, Consumer<Result> onSubmit) {
@@ -129,7 +128,6 @@ public final class DungeonMapFormDropdown {
         Result result = new Result(name, widthSpinner.getValue(), heightSpinner.getValue());
         String shrinkImpactText = shrinkImpactProvider.apply(result.width(), result.height());
         if (!confirmedShrink && shrinkImpactText != null && !shrinkImpactText.isBlank()) {
-            pendingResult = result;
             impactLabel.setText(shrinkImpactText);
             impactLabel.setVisible(true);
             impactLabel.setManaged(true);
@@ -143,7 +141,10 @@ public final class DungeonMapFormDropdown {
     }
 
     private void resetTransientState() {
-        pendingResult = null;
+        resetShrinkConfirmation();
+    }
+
+    private void resetShrinkConfirmation() {
         impactLabel.setText("");
         impactLabel.setVisible(false);
         impactLabel.setManaged(false);

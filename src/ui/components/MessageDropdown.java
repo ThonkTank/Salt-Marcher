@@ -25,6 +25,8 @@ public final class MessageDropdown {
         messageLabel.getStyleClass().add("dropdown-message");
         messageLabel.setWrapText(true);
 
+        dropdown = new AnchoredDropdown(panel);
+
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox actions = new HBox(8, spacer, closeButton);
@@ -33,7 +35,6 @@ public final class MessageDropdown {
         closeButton.setOnAction(event -> dropdown.hide());
 
         panel.getChildren().addAll(titleLabel, messageLabel, actions);
-        dropdown = new AnchoredDropdown(panel);
     }
 
     public void show(Node anchor, String title, String message) {

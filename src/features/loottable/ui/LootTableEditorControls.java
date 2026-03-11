@@ -3,111 +3,73 @@ package features.loottable.ui;
 import features.items.api.ItemCatalogService;
 import features.items.api.ItemFilterPane;
 import features.loottable.model.LootTable;
-import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-import ui.components.ThemeColors;
+import features.tables.ui.ManagedTableControls;
+import javafx.scene.Node;
 
 import java.util.List;
 import java.util.function.Consumer;
 
-public class LootTableEditorControls extends VBox {
+public class LootTableEditorControls extends ManagedTableControls<LootTable> {
 
-    private final ComboBox<LootTable> tableCombo;
-    private final Button renameBtn;
-    private final Button deleteBtn;
-    private final VBox filterRegion;
+    public record TableActionRequest(LootTable table, Node anchor) {}
 
     private ItemFilterPane filterPane;
     private Consumer<ItemCatalogService.FilterCriteria> filterCallback;
-
-    private Consumer<LootTable> onTableSelected;
-    private Runnable onCreateTable;
-    private Runnable onRenameTable;
-    private Runnable onDeleteTable;
+    private Consumer<TableActionRequest> onRenameTable;
+    private Consumer<TableActionRequest> onDeleteTable;
 
     public LootTableEditorControls() {
-        setSpacing(0);
-        setPadding(new Insets(0));
-
-        Label tableHeader = new Label("LOOT-TABELLE");
-        tableHeader.getStyleClass().addAll("section-header", "text-muted");
-
-        ComboBox<LootTable> combo = new ComboBox<>();
-        combo.setMaxWidth(Double.MAX_VALUE);
-        combo.setPromptText("— Loot-Tabelle wählen —");
-
-        Button createBtn = new Button("Neue Tabelle");
-        Button rename = new Button("Umbenennen");
-        Button delete = new Button("Löschen");
-        createBtn.getStyleClass().add("compact");
-        rename.getStyleClass().add("compact");
-        delete.getStyleClass().add("compact");
-        rename.setDisable(true);
-        delete.setDisable(true);
-        combo.setOnAction(e -> {
-            LootTable t = combo.getValue();
-            rename.setDisable(t == null);
-            delete.setDisable(t == null);
-            if (onTableSelected != null) onTableSelected.accept(t);
+        super("LOOT-TABELLE", "— Loot-Tabelle wählen —");
+        super.setOnRenameTable(anchor -> {
+            LootTable table = getSelectedTable();
+            if (onRenameTable != null && table != null) {
+                onRenameTable.accept(new TableActionRequest(table, anchor));
+            }
         });
-        createBtn.setOnAction(e -> { if (onCreateTable != null) onCreateTable.run(); });
-        rename.setOnAction(e -> { if (onRenameTable != null) onRenameTable.run(); });
-        delete.setOnAction(e -> { if (onDeleteTable != null) onDeleteTable.run(); });
-
-        tableCombo = combo;
-        renameBtn = rename;
-        deleteBtn = delete;
-
-        HBox actionRow = new HBox(4, createBtn, rename, delete);
-        actionRow.setPadding(new Insets(4, 4, 4, 4));
-
-        VBox tableSection = new VBox(4, tableHeader, combo, actionRow);
-
-        Label filterHeader = new Label("FILTER");
-        filterHeader.getStyleClass().addAll("section-header", "text-muted");
-        filterRegion = new VBox();
-        Label loadingLabel = new Label("Lade Filter...");
-        loadingLabel.getStyleClass().add("text-muted");
-        filterRegion.getChildren().setAll(loadingLabel);
-        filterRegion.setPadding(new Insets(0, 4, 0, 4));
-        VBox filterSection = new VBox(0, filterHeader, filterRegion);
-
-        getChildren().setAll(tableSection, ThemeColors.controlSeparator(), filterSection);
+        super.setOnDeleteTable(anchor -> {
+            LootTable table = getSelectedTable();
+            if (onDeleteTable != null && table != null) {
+                onDeleteTable.accept(new TableActionRequest(table, anchor));
+            }
+        });
     }
 
     public void setTableList(List<LootTable> tables) {
-        LootTable current = tableCombo.getValue();
-        tableCombo.getItems().setAll(tables);
-        if (current != null) {
-            tables.stream()
-                    .filter(t -> t.tableId == current.tableId)
-                    .findFirst()
-                    .ifPresentOrElse(tableCombo::setValue, () -> {
-                        tableCombo.setValue(null);
-                        renameBtn.setDisable(true);
-                        deleteBtn.setDisable(true);
-                    });
-        }
+        super.setTableList(tables, table -> table.tableId);
     }
 
     public void setFilterData(ItemCatalogService.FilterOptions data) {
         filterPane = new ItemFilterPane(data);
-        filterRegion.getChildren().setAll(filterPane);
-        if (filterCallback != null) filterPane.setOnFilterChanged(filterCallback);
+        setFilterContent(filterPane);
+        if (filterCallback != null) {
+            filterPane.setOnFilterChanged(filterCallback);
+        }
     }
 
     public void setOnFilterChanged(Consumer<ItemCatalogService.FilterCriteria> callback) {
         filterCallback = callback;
-        if (filterPane != null) filterPane.setOnFilterChanged(callback);
+        if (filterPane != null) {
+            filterPane.setOnFilterChanged(callback);
+        }
     }
 
-    public void selectTable(LootTable table) { tableCombo.setValue(table); }
-    public void setOnTableSelected(Consumer<LootTable> cb) { this.onTableSelected = cb; }
-    public void setOnCreateTable(Runnable cb) { this.onCreateTable = cb; }
-    public void setOnRenameTable(Runnable cb) { this.onRenameTable = cb; }
-    public void setOnDeleteTable(Runnable cb) { this.onDeleteTable = cb; }
+    public void selectTable(LootTable table) {
+        super.selectTable(table);
+    }
+
+    public void setOnTableSelected(Consumer<LootTable> callback) {
+        super.setOnTableSelected(callback);
+    }
+
+    public void setOnCreateTable(Consumer<Node> callback) {
+        super.setOnCreateTable(callback);
+    }
+
+    public void setOnRenameTableRequested(Consumer<TableActionRequest> callback) {
+        this.onRenameTable = callback;
+    }
+
+    public void setOnDeleteTableRequested(Consumer<TableActionRequest> callback) {
+        this.onDeleteTable = callback;
+    }
 }

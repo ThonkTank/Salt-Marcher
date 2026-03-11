@@ -97,7 +97,7 @@ Builder mode (EncounterRosterPane) ↔ combat mode (CombatTrackerPane), Difficul
 
 - **HexGridPane** (shared renderer in `src/features/world/hexmap/ui/shared/`): flat-top hexagons, axial coordinates (q, r), `HEX_SIZE = 48px`. `tilePolygons: Map<Long, Polygon>` for O(1) tile-ID lookup. Zoom 0.2–5.0×, pan via middle/left drag. `setReadOnly(true)` for HexMapPane; `setPaintMode(true)` for MapEditorCanvas. Party token: draggable `StackPane` overlay, snap-to-hex on drop, `onPartyTokenMoved` callback
 - **HexMapService** provides `loadFirstMapWithPartyAsync` (overworld, loads tiles + party position), `loadFirstMapAsync`/`loadMapAsync` (editor). `updatePartyTileAsync` debounces saves with 300ms delay via `ScheduledExecutorService`. `updateMap()` handles name/radius changes in a transaction (grows or shrinks tile grid)
-- **MapEditorView** paint-and-flush: `dirtyTiles` map accumulates changes during paint stroke; `flushDirtyTiles()` batches in single transaction on `sm-save-terrain` thread. Canvas gets optimistic visual update immediately. `EditMapDialog` allows renaming and resizing maps (warns when shrinking)
+- **MapEditorView** paint-and-flush: `dirtyTiles` map accumulates changes during paint stroke; `flushDirtyTiles()` batches in single transaction on `sm-save-terrain` thread. Canvas gets optimistic visual update immediately. Anchored map dropdowns handle rename/resize and inline shrink confirmation without leaving fullscreen
 - **TerrainType** enum lives in `src/ui/components/` (shared between HexGridPane and TilePropertiesPane)
 - Forgotten Realms calendar (12×30 + 5 intercalary days). `CalendarService.ParsedCalendar.from(config)` parsed once, reused for many `fromEpochDay()` calls
 
@@ -111,6 +111,7 @@ Builder mode (EncounterRosterPane) ↔ combat mode (CombatTrackerPane), Difficul
 - **CSS-only theming:** `resources/salt-marcher.css` is the single source of truth for design tokens (CSS variables on `.root`). `ThemeColors.java` has `Color` constants mirroring CSS variables for Canvas-only drawing — must be kept in sync manually
 - **Async pattern:** `javafx.concurrent.Task` + `new Thread()` (daemon, named `sm-<operation>` e.g. `sm-filter-load`, `sm-encounter-gen`, `sm-combat-setup`, `sm-stat-block`, `sm-save-terrain`, with `setOnFailed` handler; guard cancellation via `if (!task.isCancelled())`)
 - **Callbacks:** `Consumer`/`Runnable` pattern; pane setters follow `setOn<Event>()` naming
-- **UI naming:** `*View` = AppView impls, `*Pane` = Region subclasses, `*Popup` = popup controllers (not Region), `*Controls` = left-column control panels, `*Canvas` = HexGridPane subclasses for specific contexts (e.g. `MapEditorCanvas`), `*Dialog` = `Dialog<>` subclasses (e.g. `NewMapDialog`, `EditMapDialog`)
+- **UI naming:** `*View` = AppView impls, `*Pane` = Region subclasses, `*Dropdown` = anchored, non-modal editor windows backed by `Popup`, `*Popup` = legacy popup controllers that have not been renamed yet, `*Controls` = left-column control panels, `*Canvas` = HexGridPane subclasses for specific contexts (e.g. `MapEditorCanvas`)
+- **Editor window convention:** editor create/rename/edit/delete flows use anchored dropdown windows only; do not introduce modal `Dialog<>`, `Alert`, `TextInputDialog`, or other pop-up windows for editor workflows
 - **Error logging:** `System.err.println` with format `ClassName.methodName(): message` (no logging framework)
 - **Language:** UI strings are German. Code identifiers, comments, and commit messages are English

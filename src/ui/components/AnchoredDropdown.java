@@ -4,6 +4,8 @@ import javafx.application.Platform;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 
@@ -18,14 +20,21 @@ public final class AnchoredDropdown {
     private final Parent content;
     private Node lastAnchor;
     private Runnable onHidden = () -> { };
+    private boolean restoreFocusOnHide = true;
 
     public AnchoredDropdown(Parent content) {
         this.content = content;
         popup.setAutoHide(true);
         popup.setHideOnEscape(true);
         popup.getContent().add(content);
+        popup.setOnAutoHide(event -> restoreFocusOnHide = false);
+        popup.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                restoreFocusOnHide = true;
+            }
+        });
         popup.setOnHidden(event -> {
-            if (lastAnchor != null) {
+            if (restoreFocusOnHide && lastAnchor != null) {
                 lastAnchor.requestFocus();
             }
             onHidden.run();
@@ -41,6 +50,12 @@ public final class AnchoredDropdown {
     }
 
     public void hide() {
+        restoreFocusOnHide = true;
+        popup.hide();
+    }
+
+    public void hideWithoutFocusRestore() {
+        restoreFocusOnHide = false;
         popup.hide();
     }
 
@@ -57,7 +72,9 @@ public final class AnchoredDropdown {
             return;
         }
         lastAnchor = anchor;
+        restoreFocusOnHide = true;
         if (popup.isShowing()) {
+            restoreFocusOnHide = false;
             popup.hide();
         }
         content.applyCss();

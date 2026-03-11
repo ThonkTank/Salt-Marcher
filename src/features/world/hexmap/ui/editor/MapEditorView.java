@@ -6,17 +6,14 @@ import features.world.hexmap.model.HexTile;
 import features.world.hexmap.ui.editor.MapEditorApplicationService;
 import features.world.hexmap.ui.editor.controls.EditorTool;
 import features.world.hexmap.ui.editor.controls.MapEditorControls;
-import features.world.hexmap.ui.editor.dialogs.EditMapDialog;
-import features.world.hexmap.ui.editor.dialogs.NewMapDialog;
+import features.world.hexmap.ui.editor.dropdowns.HexMapFormDropdown;
 import features.world.hexmap.ui.editor.panes.MapEditorCanvas;
 import features.world.hexmap.ui.editor.panes.ToolSettingsPane;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 import ui.async.UiErrorReporter;
+import ui.components.MessageDropdown;
 
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +33,8 @@ public class MapEditorView implements AppView {
     private final ToolSettingsPane toolSettingsPane;
     private final MapEditorApplicationService applicationService;
     private final DetailsNavigator detailsNavigator;
+    private final HexMapFormDropdown mapDropdown = new HexMapFormDropdown();
+    private final MessageDropdown messageDropdown = new MessageDropdown();
 
     /** Sammelt Tile-ID -> Gelaendeaenderung waehrend eines Malstrichs; Flush bei Mouse-Release. */
     private final Map<Long, HexTerrainType> dirtyTiles = new HashMap<>();
@@ -59,8 +58,8 @@ public class MapEditorView implements AppView {
             currentMapId = mapId;
             loadMapAsync(mapId);
         });
-        controls.setOnNewMapRequested(this::showNewMapDialog);
-        controls.setOnEditMapRequested(this::showEditMapDialog);
+        controls.setOnNewMapRequested(this::showNewMapDropdown);
+        controls.setOnEditMapRequested(this::showEditMapDropdown);
 
         canvas.setOnTileClicked(tile -> {
             if (controls.getActiveTool() == EditorTool.SELECT) {
@@ -96,41 +95,23 @@ public class MapEditorView implements AppView {
             if (currentMapId != null) {
                 loadMapAsync(currentMapId);
             }
-            new Alert(Alert.AlertType.ERROR,
-                    "Geländeänderungen konnten nicht gespeichert werden. Die Karte wurde neu geladen.")
-                    .showAndWait();
+            messageDropdown.show(controls,
+                    "Speichern fehlgeschlagen",
+                    "Geländeänderungen konnten nicht gespeichert werden. Die Karte wurde neu geladen.");
         });
     }
 
-    private void showEditMapDialog(HexMap map) {
+    private void showEditMapDropdown(MapEditorControls.MapActionRequest request) {
+        HexMap map = request.map();
         int oldRadius = map.radius() != null ? map.radius() : 0;
-        EditMapDialog dialog = new EditMapDialog(
+        mapDropdown.showEdit(
+                request.anchor(),
                 map,
-                newRadius -> applicationService.removedTilesForRadiusChange(oldRadius, newRadius));
-        dialog.showAndWait().ifPresent(result -> {
-            if (result.radius() < oldRadius && !confirmShrink(oldRadius, result.radius())) {
-                return;
-            }
-
-            submitMapUpdate(map.mapId(), result.name(), oldRadius, result.radius());
-        });
-    }
-
-    private boolean confirmShrink(int oldRadius, int newRadius) {
-        int tilesToRemove = applicationService.removedTilesForRadiusChange(oldRadius, newRadius);
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Radius von " + oldRadius + " auf " + newRadius + " verkleinern?\n"
-                + tilesToRemove + " Felder werden unwiderruflich gel\u00f6scht.\n"
-                + "Falls die Gruppe auf einem dieser Felder steht, wird ihre Position zur\u00fcckgesetzt.",
-                ButtonType.CANCEL, ButtonType.OK);
-        confirm.setHeaderText("Kartenverkleinerung best\u00e4tigen");
-        Button cancelBtn = (Button) confirm.getDialogPane().lookupButton(ButtonType.CANCEL);
-        cancelBtn.setDefaultButton(true);
-        Button okBtn = (Button) confirm.getDialogPane().lookupButton(ButtonType.OK);
-        okBtn.setDefaultButton(false);
-
-        var choice = confirm.showAndWait();
-        return choice.isPresent() && choice.get() == ButtonType.OK;
+                newRadius -> applicationService.removedTilesForRadiusChange(oldRadius, newRadius),
+                result -> {
+                    mapDropdown.hide();
+                    submitMapUpdate(map.mapId(), result.name(), oldRadius, result.radius());
+                });
     }
 
     private void submitMapUpdate(Long mapId, String name, int oldRadius, int newRadius) {
@@ -139,7 +120,7 @@ public class MapEditorView implements AppView {
             ex -> {
                 UiErrorReporter.reportBackgroundFailure("MapEditorView.editMap()", ex);
                 String msg = ex.getMessage() != null ? ex.getMessage() : "Unbekannter Fehler";
-                new Alert(Alert.AlertType.ERROR, "Fehler beim Speichern: " + msg).showAndWait();
+                messageDropdown.show(controls, "Fehler beim Speichern", msg);
             });
     }
 
@@ -147,19 +128,22 @@ public class MapEditorView implements AppView {
     private void loadMapList() {
         loadMapListAsync(maps -> {
             if (maps.isEmpty()) {
-                showNewMapDialog();
+                showNewMapDropdown(controls);
             } else {
                 controls.selectMap(maps.get(0).mapId());
             }
         });
     }
 
-    private void showNewMapDialog() {
-        NewMapDialog dialog = new NewMapDialog();
-        dialog.showAndWait().ifPresent(result -> {
+    private void showNewMapDropdown(Node anchor) {
+        mapDropdown.showCreate(anchor, result -> {
+            mapDropdown.hide();
             applicationService.createMap(result.name(), result.radius(),
                 newMapId -> loadMapListAsync(maps -> controls.selectMap(newMapId)),
-                ex -> UiErrorReporter.reportBackgroundFailure("MapEditorView.createMap()", ex));
+                ex -> {
+                    UiErrorReporter.reportBackgroundFailure("MapEditorView.createMap()", ex);
+                    messageDropdown.show(controls, "Karte konnte nicht erstellt werden", "Bitte Eingaben und Datenbankstatus prüfen.");
+                });
         });
     }
 

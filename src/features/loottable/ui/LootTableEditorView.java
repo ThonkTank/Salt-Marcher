@@ -6,13 +6,11 @@ import features.items.api.ItemCatalogService;
 import features.loottable.model.LootTable;
 import features.loottable.service.LootTableNameNormalizer;
 import features.loottable.service.LootTableService;
-import javafx.concurrent.Task;
+import features.tables.ui.TableEditorTaskRunner;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.TextInputDialog;
-import ui.async.UiAsyncTasks;
-import ui.async.UiErrorReporter;
+import ui.components.ConfirmationDropdown;
+import ui.components.MessageDropdown;
+import ui.components.TextInputDropdown;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
@@ -34,6 +32,7 @@ public class LootTableEditorView implements AppView {
     private final Set<Long> pendingWeightItemIds = new HashSet<>();
     private Set<Long> excludeIds = Set.of();
     private DetailsNavigator detailsNavigator;
+    private final MessageDropdown messageDropdown = new MessageDropdown();
 
     public LootTableEditorView() {
         itemBrowserPane = new ItemBrowserPane();
@@ -43,8 +42,8 @@ public class LootTableEditorView implements AppView {
         itemBrowserPane.setPageLoader(this::loadBrowserPage);
         controls.setOnTableSelected(this::onTableSelected);
         controls.setOnCreateTable(this::onCreateTable);
-        controls.setOnRenameTable(this::onRenameTable);
-        controls.setOnDeleteTable(this::onDeleteTable);
+        controls.setOnRenameTableRequested(this::onRenameTable);
+        controls.setOnDeleteTableRequested(this::onDeleteTable);
         itemBrowserPane.setOnRequestItem(this::showItemInInspector);
         entriesPane.setOnRequestItem(this::showItemInInspector);
     }
@@ -94,7 +93,7 @@ public class LootTableEditorView implements AppView {
                 () -> LootTableService.removeItem(tableId, itemId),
                 status -> {
                     if (status == LootTableService.MutationStatus.SUCCESS) reloadEntries();
-                    else showMutationErrorAlert("Item konnte nicht entfernt werden.");
+                    else showMutationError("Loot-Tabelle", "Item konnte nicht entfernt werden.", entriesPane);
                 }));
         entriesPane.setOnUpdateWeight((itemId, weight) -> {
             if (itemId == null || pendingWeightItemIds.contains(itemId)) {
@@ -109,13 +108,13 @@ public class LootTableEditorView implements AppView {
                         pendingWeightItemIds.remove(itemId);
                         entriesPane.setPendingWeightItemIds(pendingWeightItemIds);
                         if (status == LootTableService.MutationStatus.SUCCESS) return;
-                        showMutationErrorAlert("Gewichtung konnte nicht gespeichert werden.");
+                        showMutationError("Loot-Tabelle", "Gewichtung konnte nicht gespeichert werden.", entriesPane);
                         reloadEntries();
                     },
                     throwable -> {
                         pendingWeightItemIds.remove(itemId);
                         entriesPane.setPendingWeightItemIds(pendingWeightItemIds);
-                        showMutationErrorAlert("Gewichtung konnte nicht gespeichert werden.");
+                        showMutationError("Loot-Tabelle", "Gewichtung konnte nicht gespeichert werden.", entriesPane);
                         reloadEntries();
                     });
         });
@@ -131,11 +130,11 @@ public class LootTableEditorView implements AppView {
                     if (status == LootTableService.MutationStatus.SUCCESS) {
                         reloadEntries();
                     } else if (status == LootTableService.MutationStatus.DUPLICATE_ENTRY) {
-                        showDuplicateEntryAlert(item.name());
+                        showMessage("Item bereits vorhanden", "Item „" + item.name() + "“ ist bereits in der Tabelle.", controls);
                     } else if (status == LootTableService.MutationStatus.VALIDATION_ERROR) {
-                        showMutationErrorAlert("Nur Items mit positivem Wert können zu Loot-Tabellen hinzugefügt werden.");
+                        showMutationError("Loot-Tabelle", "Nur Items mit positivem Wert können zu Loot-Tabellen hinzugefügt werden.", controls);
                     } else {
-                        showMutationErrorAlert("Item konnte nicht zur Tabelle hinzugefügt werden.");
+                        showMutationError("Loot-Tabelle", "Item konnte nicht zur Tabelle hinzugefügt werden.", controls);
                     }
                 });
     }
@@ -163,9 +162,9 @@ public class LootTableEditorView implements AppView {
                 entriesPane.setEntries(List.of());
                 setExcludeIds(java.util.Set.of());
                 reloadTableList();
-                showLoadErrorAlert("Die ausgewählte Loot-Tabelle existiert nicht mehr.");
+                showMessage("Loot-Tabelle fehlt", "Die ausgewählte Loot-Tabelle existiert nicht mehr.", controls);
             } else {
-                showLoadErrorAlert("Loot-Tabelleneinträge konnten nicht geladen werden.");
+                showLoadError("Loot-Tabelleneinträge konnten nicht geladen werden.", null);
             }
         });
     }
@@ -177,7 +176,7 @@ public class LootTableEditorView implements AppView {
                 controls.setTableList(result.tables());
                 refreshTableDetails();
             } else {
-                showLoadErrorAlert("Loot-Tabellen konnten nicht geladen werden.");
+                showLoadError("Loot-Tabellen konnten nicht geladen werden.", null);
             }
         });
     }
@@ -185,7 +184,7 @@ public class LootTableEditorView implements AppView {
     private void reloadTableListAndSelect(long tableId) {
         runTask("reloadTableListAndSelect", LootTableService::loadAll, result -> {
             if (result.status() != LootTableService.ReadStatus.SUCCESS) {
-                showLoadErrorAlert("Loot-Tabellen konnten nicht geladen werden.");
+                showLoadError("Loot-Tabellen konnten nicht geladen werden.", null);
                 return;
             }
             knownTables = List.copyOf(result.tables());
@@ -194,66 +193,67 @@ public class LootTableEditorView implements AppView {
         });
     }
 
-    private void onCreateTable() {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Neue Loot-Tabelle");
-        dialog.setHeaderText("Name der neuen Loot-Tabelle:");
-        dialog.setContentText("Name:");
-        dialog.showAndWait().filter(name -> !name.isBlank()).ifPresent(name -> {
-            String stripped = name.strip();
+    private void onCreateTable(Node anchor) {
+        TextInputDropdown tableNameDropdown = new TextInputDropdown();
+        tableNameDropdown.show(anchor, "Neue Loot-Tabelle", "Name", "", "Erstellen", stripped -> {
             if (isDuplicateTableName(stripped, null)) {
-                showDuplicateNameAlert(stripped);
+                tableNameDropdown.showError("Es existiert bereits eine Loot-Tabelle mit dem Namen „" + stripped + "“.");
                 return;
             }
             runTask("createTable", () -> LootTableService.createTable(stripped, ""), result -> {
                 switch (result.status()) {
-                    case SUCCESS -> reloadTableListAndSelect(result.tableId());
-                    case DUPLICATE_NAME -> showDuplicateNameAlert(stripped);
-                    case VALIDATION_ERROR -> showMutationErrorAlert("Tabellenname ist ungültig.");
-                    case STORAGE_ERROR -> showMutationErrorAlert("Tabelle konnte nicht erstellt werden.");
+                    case SUCCESS -> {
+                        tableNameDropdown.hide();
+                        reloadTableListAndSelect(result.tableId());
+                    }
+                    case DUPLICATE_NAME -> tableNameDropdown.showError("Es existiert bereits eine Loot-Tabelle mit dem Namen „" + stripped + "“.");
+                    case VALIDATION_ERROR -> tableNameDropdown.showError("Tabellenname ist ungültig.");
+                    case STORAGE_ERROR -> showMutationError("Loot-Tabelle", "Tabelle konnte nicht erstellt werden.", anchor);
                 }
             });
         });
     }
 
-    private void onRenameTable() {
-        if (currentTable == null) return;
-        TextInputDialog dialog = new TextInputDialog(currentTable.name);
-        dialog.setTitle("Loot-Tabelle umbenennen");
-        dialog.setHeaderText("Neuer Name:");
-        dialog.setContentText("Name:");
-        dialog.showAndWait().filter(name -> !name.isBlank()).ifPresent(name -> {
-            String stripped = name.strip();
-            if (isDuplicateTableName(stripped, currentTable.tableId)) {
-                showDuplicateNameAlert(stripped);
+    private void onRenameTable(LootTableEditorControls.TableActionRequest request) {
+        LootTable table = request.table();
+        if (table == null) return;
+        TextInputDropdown tableNameDropdown = new TextInputDropdown();
+        tableNameDropdown.show(request.anchor(), "Loot-Tabelle umbenennen", "Name", table.name, "Speichern", stripped -> {
+            if (isDuplicateTableName(stripped, table.tableId)) {
+                tableNameDropdown.showError("Es existiert bereits eine Loot-Tabelle mit dem Namen „" + stripped + "“.");
                 return;
             }
-            long tableId = currentTable.tableId;
+            long tableId = table.tableId;
             runTask("renameTable", () -> LootTableService.renameTable(tableId, stripped), status -> {
                 switch (status) {
                     case SUCCESS -> {
+                        tableNameDropdown.hide();
                         currentTable.name = stripped;
                         refreshTableDetails();
                         reloadTableList();
                     }
-                    case DUPLICATE_NAME -> showDuplicateNameAlert(stripped);
-                    case VALIDATION_ERROR -> showMutationErrorAlert("Tabellenname ist ungültig.");
-                    case STORAGE_ERROR -> showMutationErrorAlert("Tabelle konnte nicht umbenannt werden.");
+                    case DUPLICATE_NAME -> tableNameDropdown.showError("Es existiert bereits eine Loot-Tabelle mit dem Namen „" + stripped + "“.");
+                    case VALIDATION_ERROR -> tableNameDropdown.showError("Tabellenname ist ungültig.");
+                    case STORAGE_ERROR -> showMutationError("Loot-Tabelle", "Tabelle konnte nicht umbenannt werden.", request.anchor());
                 }
             });
         });
     }
 
-    private void onDeleteTable() {
-        if (currentTable == null) return;
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Loot-Tabelle »" + currentTable.name + "« wirklich löschen?",
-                ButtonType.OK, ButtonType.CANCEL);
-        confirm.setTitle("Loot-Tabelle löschen");
-        confirm.showAndWait().filter(btn -> btn == ButtonType.OK).ifPresent(btn -> {
-            long tableId = currentTable.tableId;
+    private void onDeleteTable(LootTableEditorControls.TableActionRequest request) {
+        LootTable table = request.table();
+        if (table == null) return;
+        ConfirmationDropdown deleteTableDropdown = new ConfirmationDropdown();
+        deleteTableDropdown.show(
+                request.anchor(),
+                "Loot-Tabelle löschen",
+                "Loot-Tabelle »" + table.name + "« wirklich löschen?",
+                "Löschen",
+                () -> {
+            long tableId = table.tableId;
             runTask("deleteTable", () -> LootTableService.deleteTable(tableId), status -> {
                 if (status == LootTableService.MutationStatus.SUCCESS) {
+                    deleteTableDropdown.hide();
                     currentTable = null;
                     pendingWeightItemIds.clear();
                     entriesPane.setPendingWeightItemIds(Set.of());
@@ -261,7 +261,7 @@ public class LootTableEditorView implements AppView {
                     setExcludeIds(java.util.Set.of());
                     reloadTableList();
                 } else {
-                    showMutationErrorAlert("Tabelle konnte nicht gelöscht werden.");
+                    showMutationError("Loot-Tabelle", "Tabelle konnte nicht gelöscht werden.", request.anchor());
                 }
             });
         });
@@ -309,29 +309,7 @@ public class LootTableEditorView implements AppView {
     }
 
     private <T> void runTask(String errorLabel, Callable<T> work, Consumer<T> onSuccess, Consumer<Throwable> onFailure) {
-        Task<T> task = new Task<>() {
-            @Override protected T call() throws Exception { return work.call(); }
-        };
-        UiAsyncTasks.submit(task, onSuccess, throwable -> {
-            UiErrorReporter.reportBackgroundFailure("LootTableEditorView." + errorLabel + "()", throwable);
-            if (onFailure != null) onFailure.accept(throwable);
-        });
-    }
-
-    private void showDuplicateNameAlert(String name) {
-        Alert alert = new Alert(Alert.AlertType.WARNING,
-                "Es existiert bereits eine Loot-Tabelle mit dem Namen „" + name + "“.");
-        alert.setTitle("Name bereits vergeben");
-        alert.setHeaderText("Tabellennamen müssen eindeutig sein.");
-        alert.showAndWait();
-    }
-
-    private void showDuplicateEntryAlert(String itemName) {
-        Alert alert = new Alert(Alert.AlertType.WARNING,
-                "Item „" + itemName + "“ ist bereits in der Tabelle.");
-        alert.setTitle("Item bereits vorhanden");
-        alert.setHeaderText("Doppelte Einträge sind nicht erlaubt.");
-        alert.showAndWait();
+        TableEditorTaskRunner.submit("LootTableEditorView", errorLabel, work, onSuccess, onFailure);
     }
 
     private void refreshTableDetails() {
@@ -348,17 +326,15 @@ public class LootTableEditorView implements AppView {
                 totalWeight));
     }
 
-    private void showMutationErrorAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR, message);
-        alert.setTitle("Loot-Tabellen");
-        alert.setHeaderText("Datenbankänderung fehlgeschlagen");
-        alert.showAndWait();
+    private void showMutationError(String title, String message, Node anchor) {
+        showMessage(title, message, anchor);
     }
 
-    private void showLoadErrorAlert(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR, message);
-        alert.setTitle("Loot-Tabellen");
-        alert.setHeaderText("Datenbankzugriff fehlgeschlagen");
-        alert.showAndWait();
+    private void showLoadError(String message, Node anchor) {
+        showMessage("Datenbankzugriff fehlgeschlagen", message, anchor);
+    }
+
+    private void showMessage(String title, String message, Node anchor) {
+        messageDropdown.show(anchor == null ? controls : anchor, title, message);
     }
 }

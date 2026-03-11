@@ -3,6 +3,7 @@ package features.world.hexmap.ui.editor.controls;
 import features.world.hexmap.model.HexMap;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
@@ -18,12 +19,14 @@ import java.util.function.Consumer;
  */
 public class MapEditorControls extends HBox {
 
+    public record MapActionRequest(HexMap map, Node anchor) {}
+
     private EditorTool activeTool = EditorTool.SELECT;
 
     private Consumer<EditorTool> onToolChanged;
     private Consumer<Long> onMapSelected;
-    private Runnable onNewMapRequested;
-    private Consumer<HexMap> onEditMapRequested;
+    private Consumer<Node> onNewMapRequested;
+    private Consumer<MapActionRequest> onEditMapRequested;
 
     private final ComboBox<HexMap> mapCombo = new ComboBox<>();
     private boolean updatingMapCombo = false;
@@ -53,7 +56,7 @@ public class MapEditorControls extends HBox {
         newMapBtn.getStyleClass().addAll("button", "compact");
         newMapBtn.setTooltip(new Tooltip("Neue Karte"));
         newMapBtn.setAccessibleText("Neue Karte");
-        newMapBtn.setOnAction(e -> { if (onNewMapRequested != null) onNewMapRequested.run(); });
+        newMapBtn.setOnAction(e -> { if (onNewMapRequested != null) onNewMapRequested.accept(newMapBtn); });
 
         Button editMapBtn = new Button("\u2699 Bearb.");
         editMapBtn.getStyleClass().addAll("button", "compact");
@@ -61,7 +64,7 @@ public class MapEditorControls extends HBox {
         editMapBtn.setAccessibleText("Karte bearbeiten");
         editMapBtn.setOnAction(e -> {
             HexMap sel = mapCombo.getValue();
-            if (sel != null && onEditMapRequested != null) onEditMapRequested.accept(sel);
+            if (sel != null && onEditMapRequested != null) onEditMapRequested.accept(new MapActionRequest(sel, editMapBtn));
         });
         editMapBtn.disableProperty().bind(mapCombo.valueProperty().isNull());
 
@@ -130,6 +133,6 @@ public class MapEditorControls extends HBox {
 
     public void setOnToolChanged(Consumer<EditorTool> cb)   { onToolChanged = cb; }
     public void setOnMapSelected(Consumer<Long> cb)         { onMapSelected = cb; }
-    public void setOnNewMapRequested(Runnable cb)            { onNewMapRequested = cb; }
-    public void setOnEditMapRequested(Consumer<HexMap> cb)  { onEditMapRequested = cb; }
+    public void setOnNewMapRequested(Consumer<Node> cb)            { onNewMapRequested = cb; }
+    public void setOnEditMapRequested(Consumer<MapActionRequest> cb)  { onEditMapRequested = cb; }
 }

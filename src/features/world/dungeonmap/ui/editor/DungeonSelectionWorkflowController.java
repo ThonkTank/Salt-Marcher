@@ -3,6 +3,7 @@ package features.world.dungeonmap.ui.editor;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
@@ -41,6 +42,7 @@ final class DungeonSelectionWorkflowController {
         canvas.setPaintMode(paintMode);
         canvas.setEraseMode(tool == DungeonEditorTool.ERASE);
         canvas.setHandMode(tool == DungeonEditorTool.ENDPOINT || tool == DungeonEditorTool.LINK);
+        canvas.setPassageMode(tool == DungeonEditorTool.PASSAGE);
         clearPendingLink();
         toolSettingsPane.setActiveTool(tool);
     }
@@ -65,7 +67,8 @@ final class DungeonSelectionWorkflowController {
                 null,
                 null,
                 null,
-                link));
+                link,
+                null));
     }
 
     void showEndpointSelection(DungeonEndpoint endpoint) {
@@ -76,6 +79,7 @@ final class DungeonSelectionWorkflowController {
                 null,
                 null,
                 endpoint,
+                null,
                 null));
     }
 
@@ -134,6 +138,7 @@ final class DungeonSelectionWorkflowController {
                 room,
                 null,
                 null,
+                null,
                 null));
     }
 
@@ -148,6 +153,7 @@ final class DungeonSelectionWorkflowController {
                 null,
                 area,
                 null,
+                null,
                 null));
     }
 
@@ -160,6 +166,7 @@ final class DungeonSelectionWorkflowController {
                 DungeonSelection.SelectionType.SQUARE,
                 null,
                 effectiveSquare,
+                null,
                 null,
                 null,
                 null,
@@ -221,6 +228,7 @@ final class DungeonSelectionWorkflowController {
             case ENDPOINT -> selection.endpoint() != null && selection.endpoint().name() != null && !selection.endpoint().name().isBlank()
                     ? selection.endpoint().name() : "Knoten";
             case LINK -> "Link";
+            case PASSAGE -> "Passage";
             case SQUARE -> "Feld";
             case NONE -> "Dungeon-Details";
         };

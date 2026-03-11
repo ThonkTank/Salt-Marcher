@@ -6,6 +6,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -25,7 +26,9 @@ public final class HexMapFormDropdown {
     private final AnchoredDropdown dropdown;
     private final Label titleLabel = new Label();
     private final TextField nameField = new TextField();
-    private final Spinner<Integer> radiusSpinner = new Spinner<>(0, 20, 5);
+    private final SpinnerValueFactory.IntegerSpinnerValueFactory radiusValueFactory =
+            new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 20, 5);
+    private final Spinner<Integer> radiusSpinner = new Spinner<>();
     private final Label impactLabel = new Label();
     private final Button cancelButton = new Button("Abbrechen");
     private final Button submitButton = new Button("Erstellen");
@@ -46,6 +49,7 @@ public final class HexMapFormDropdown {
         confirmShrinkButton.setVisible(false);
         confirmShrinkButton.setManaged(false);
 
+        radiusSpinner.setValueFactory(radiusValueFactory);
         radiusSpinner.setEditable(true);
         radiusSpinner.setPrefWidth(90);
         radiusSpinner.focusedProperty().addListener((obs, oldValue, focused) -> {
@@ -80,10 +84,11 @@ public final class HexMapFormDropdown {
     public void showCreate(Node anchor, Consumer<Result> onSubmit) {
         titleLabel.setText("Neue Karte");
         nameField.setText("Neue Karte");
-        radiusSpinner.getValueFactory().setValue(5);
+        radiusValueFactory.setMin(1);
+        radiusValueFactory.setValue(5);
         submitButton.setText("Erstellen");
         removedTilesForRadius = radius -> 0;
-        originalRadius = 5;
+        originalRadius = 0;
         this.onSubmit = onSubmit == null ? result -> { } : onSubmit;
         resetTransientState();
         dropdown.show(anchor);
@@ -95,7 +100,8 @@ public final class HexMapFormDropdown {
         titleLabel.setText("Karte bearbeiten");
         nameField.setText(map.name());
         originalRadius = map.radius() == null ? 0 : map.radius();
-        radiusSpinner.getValueFactory().setValue(originalRadius);
+        radiusValueFactory.setMin(0);
+        radiusValueFactory.setValue(originalRadius);
         submitButton.setText("Speichern");
         this.removedTilesForRadius = removedTilesForRadius == null ? radius -> 0 : removedTilesForRadius;
         this.onSubmit = onSubmit == null ? result -> { } : onSubmit;
@@ -113,6 +119,12 @@ public final class HexMapFormDropdown {
         String name = nameField.getText() == null ? "" : nameField.getText().strip();
         if (name.isBlank()) {
             dropdown.requestFocus(nameField);
+            return;
+        }
+        try {
+            radiusSpinner.increment(0);
+        } catch (RuntimeException ex) {
+            dropdown.requestFocus(radiusSpinner.getEditor());
             return;
         }
         int radius = radiusSpinner.getValue();

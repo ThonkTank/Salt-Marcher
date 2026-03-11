@@ -11,6 +11,7 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.util.function.Consumer;
+import javafx.beans.binding.Bindings;
 
 public final class TextInputDropdown {
 
@@ -35,6 +36,9 @@ public final class TextInputDropdown {
         errorLabel.setVisible(false);
         errorLabel.setManaged(false);
 
+        dropdown = new AnchoredDropdown(panel);
+        dropdown.setOnHidden(this::resetError);
+
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         HBox actions = new HBox(8, cancelButton, spacer, submitButton);
@@ -43,11 +47,11 @@ public final class TextInputDropdown {
         cancelButton.setOnAction(event -> dropdown.hide());
         submitButton.setOnAction(event -> submit());
         textField.setOnAction(event -> submit());
-        submitButton.disableProperty().bind(textField.textProperty().map(String::isBlank));
+        submitButton.disableProperty().bind(Bindings.createBooleanBinding(
+                () -> textField.getText() == null || textField.getText().isBlank(),
+                textField.textProperty()));
 
         panel.getChildren().addAll(titleLabel, fieldLabel, textField, errorLabel, actions);
-        dropdown = new AnchoredDropdown(panel);
-        dropdown.setOnHidden(this::resetError);
     }
 
     public void show(Node anchor, String title, String label, String initialValue, String submitLabel, Consumer<String> onSubmit) {

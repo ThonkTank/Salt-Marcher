@@ -78,6 +78,7 @@ public class DungeonEditorControls extends HBox {
         ToggleButton paintButton = buildToolButton("▣ Malen", DungeonEditorTool.PAINT, toolGroup, false);
         ToggleButton eraseButton = buildToolButton("⌫ Löschen", DungeonEditorTool.ERASE, toolGroup, false);
         ToggleButton areaButton = buildToolButton("▧ Bereich", DungeonEditorTool.AREA_ASSIGN, toolGroup, false);
+        ToggleButton passageButton = buildToolButton("\u229f Durchgang", DungeonEditorTool.PASSAGE, toolGroup, false);
         ToggleButton endpointButton = buildToolButton("◉ Übergang", DungeonEditorTool.ENDPOINT, toolGroup, false);
         ToggleButton linkButton = buildToolButton("↔ Link", DungeonEditorTool.LINK, toolGroup, false);
 
@@ -107,6 +108,7 @@ public class DungeonEditorControls extends HBox {
                 paintButton,
                 eraseButton,
                 areaButton,
+                passageButton,
                 endpointButton,
                 linkButton);
     }
