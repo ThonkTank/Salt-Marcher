@@ -10,10 +10,17 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 
 import features.items.model.Item;
 
 public final class ItemRepository {
+
+    public record SearchResult(List<Item> items, int totalCount) {}
+    @FunctionalInterface
+    private interface SqlBinder {
+        void bind(PreparedStatement ps, int index) throws SQLException;
+    }
 
     private ItemRepository() {
         throw new AssertionError("No instances");
@@ -168,6 +175,63 @@ public final class ItemRepository {
         return items;
     }
 
+    public static SearchResult searchWithFiltersAndCount(
+            Connection conn,
+            String nameQuery,
+            Integer costMinCp,
+            Integer costMaxCp,
+            boolean magicOnly,
+            boolean attunementOnly,
+            List<String> categories,
+            List<String> subcategories,
+            List<String> rarities,
+            List<String> sources,
+            List<String> tags,
+            List<Long> excludeIds,
+            String sortColumn,
+            String sortDirection,
+            int limit,
+            int offset) throws SQLException {
+        List<SqlBinder> binders = new ArrayList<>();
+        String whereClause = buildSearchWhereClause(
+                binders,
+                nameQuery,
+                costMinCp,
+                costMaxCp,
+                magicOnly,
+                attunementOnly,
+                categories,
+                subcategories,
+                rarities,
+                sources,
+                tags,
+                excludeIds);
+
+        String orderBy = resolveOrderBy(sortColumn, sortDirection);
+        String pageSql = "SELECT * FROM items" + whereClause + orderBy + " LIMIT ? OFFSET ?";
+        List<Item> items = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(pageSql)) {
+            bindParams(ps, binders);
+            int nextIndex = binders.size() + 1;
+            ps.setInt(nextIndex++, Math.max(1, limit));
+            ps.setInt(nextIndex, Math.max(0, offset));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) items.add(mapRow(rs));
+            }
+        }
+        loadTags(conn, items);
+
+        String countSql = "SELECT COUNT(*) FROM items" + whereClause;
+        int totalCount = 0;
+        try (PreparedStatement ps = conn.prepareStatement(countSql)) {
+            bindParams(ps, binders);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) totalCount = rs.getInt(1);
+            }
+        }
+        return new SearchResult(items, totalCount);
+    }
+
     public static List<Item> getItemsByCategory(Connection conn, String category) throws SQLException {
         List<Item> items = new ArrayList<>();
         String sql = "SELECT * FROM items WHERE LOWER(category) = LOWER(?) ORDER BY name";
@@ -192,6 +256,132 @@ public final class ItemRepository {
             loadTags(conn, items);
         }
         return items;
+    }
+
+    public static List<String> getDistinctCategories(Connection conn) throws SQLException {
+        return getDistinctColumnValues(conn, "items", "category");
+    }
+
+    public static List<String> getDistinctSubcategories(Connection conn) throws SQLException {
+        return getDistinctColumnValues(conn, "items", "subcategory");
+    }
+
+    public static List<String> getDistinctRarities(Connection conn) throws SQLException {
+        return getDistinctColumnValues(conn, "items", "rarity");
+    }
+
+    public static List<String> getDistinctSources(Connection conn) throws SQLException {
+        return getDistinctColumnValues(conn, "items", "source");
+    }
+
+    public static List<String> getDistinctTags(Connection conn) throws SQLException {
+        List<String> values = new ArrayList<>();
+        String sql = "SELECT DISTINCT tag FROM item_tags WHERE tag IS NOT NULL AND TRIM(tag) <> '' ORDER BY LOWER(tag), tag";
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) values.add(rs.getString(1));
+        }
+        return values;
+    }
+
+    private static String buildSearchWhereClause(
+            List<SqlBinder> binders,
+            String nameQuery,
+            Integer costMinCp,
+            Integer costMaxCp,
+            boolean magicOnly,
+            boolean attunementOnly,
+            List<String> categories,
+            List<String> subcategories,
+            List<String> rarities,
+            List<String> sources,
+            List<String> tags,
+            List<Long> excludeIds) {
+        List<String> clauses = new ArrayList<>();
+        if (nameQuery != null && !nameQuery.isBlank()) {
+            clauses.add("LOWER(name) LIKE LOWER(?)");
+            binders.add((ps, index) -> ps.setString(index, "%" + nameQuery.trim() + "%"));
+        }
+        if (costMinCp != null) {
+            clauses.add("cost_cp >= ?");
+            binders.add((ps, index) -> ps.setInt(index, costMinCp));
+        }
+        if (costMaxCp != null) {
+            clauses.add("cost_cp <= ?");
+            binders.add((ps, index) -> ps.setInt(index, costMaxCp));
+        }
+        if (magicOnly) clauses.add("is_magic = 1");
+        if (attunementOnly) clauses.add("requires_attunement = 1");
+        addCaseInsensitiveInClause(clauses, binders, "category", categories);
+        addCaseInsensitiveInClause(clauses, binders, "subcategory", subcategories);
+        addCaseInsensitiveInClause(clauses, binders, "rarity", rarities);
+        addCaseInsensitiveInClause(clauses, binders, "source", sources);
+        if (tags != null && !tags.isEmpty()) {
+            clauses.add("EXISTS (SELECT 1 FROM item_tags tag_filter WHERE tag_filter.item_id = items.id AND LOWER(tag_filter.tag) IN ("
+                    + placeholders(tags.size()) + "))");
+            for (String tag : tags) {
+                String normalized = tag == null ? "" : tag.trim().toLowerCase(Locale.ROOT);
+                binders.add((ps, index) -> ps.setString(index, normalized));
+            }
+        }
+        if (excludeIds != null && !excludeIds.isEmpty()) {
+            List<Long> validExcludeIds = excludeIds.stream()
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
+            if (!validExcludeIds.isEmpty()) {
+                clauses.add("id NOT IN (" + placeholders(validExcludeIds.size()) + ")");
+                for (Long excludeId : validExcludeIds) {
+                    binders.add((ps, index) -> ps.setLong(index, excludeId));
+                }
+            }
+        }
+        return clauses.isEmpty() ? "" : " WHERE " + String.join(" AND ", clauses);
+    }
+
+    private static void addCaseInsensitiveInClause(
+            List<String> clauses,
+            List<SqlBinder> binders,
+            String column,
+            List<String> values) {
+        if (values == null || values.isEmpty()) return;
+        clauses.add("LOWER(" + column + ") IN (" + placeholders(values.size()) + ")");
+        for (String value : values) {
+            String normalized = value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+            binders.add((ps, index) -> ps.setString(index, normalized));
+        }
+    }
+
+    private static void bindParams(PreparedStatement ps, List<SqlBinder> binders) throws SQLException {
+        for (int i = 0; i < binders.size(); i++) {
+            binders.get(i).bind(ps, i + 1);
+        }
+    }
+
+    private static String resolveOrderBy(String sortColumn, String sortDirection) {
+        String dir = "DESC".equalsIgnoreCase(sortDirection) ? "DESC" : "ASC";
+        String column = sortColumn == null ? "name" : sortColumn.toLowerCase(Locale.ROOT);
+        String orderExpr = switch (column) {
+            case "cost_cp" -> "cost_cp";
+            case "category" -> "LOWER(category)";
+            default -> "LOWER(name)";
+        };
+        return " ORDER BY " + orderExpr + " " + dir + ", LOWER(name) ASC";
+    }
+
+    private static String placeholders(int count) {
+        return String.join(",", Collections.nCopies(Math.max(1, count), "?"));
+    }
+
+    private static List<String> getDistinctColumnValues(Connection conn, String table, String column) throws SQLException {
+        List<String> values = new ArrayList<>();
+        String sql = "SELECT DISTINCT " + column + " FROM " + table
+                + " WHERE " + column + " IS NOT NULL AND TRIM(" + column + ") <> ''"
+                + " ORDER BY LOWER(" + column + "), " + column;
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) values.add(rs.getString(1));
+        }
+        return values;
     }
 
     private static List<String> normalizeTags(List<String> tags) {

@@ -1,0 +1,284 @@
+package features.world.dungeonmap.ui.editor.panes;
+
+import features.world.dungeonmap.model.DungeonArea;
+import features.world.dungeonmap.model.DungeonEncounterTableSummary;
+import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.model.DungeonRoom;
+import features.world.dungeonmap.model.DungeonSelection;
+import features.world.dungeonmap.model.DungeonSquare;
+import javafx.geometry.Insets;
+import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+
+import java.util.List;
+import java.util.function.Consumer;
+
+public class DungeonDetailsPane extends VBox {
+
+    public record RoomForm(Long roomId, String name, String description, Long areaId) {}
+    public record AreaForm(Long areaId, String name, String description, Long encounterTableId) {}
+    public record EndpointForm(Long endpointId, String name, String notes) {}
+    public record LinkForm(Long linkId, String label) {}
+
+    private Consumer<RoomForm> onRoomSaved;
+    private Consumer<Long> onRoomDeleted;
+    private Consumer<AreaForm> onAreaSaved;
+    private Consumer<Long> onAreaDeleted;
+    private Consumer<EndpointForm> onEndpointSaved;
+    private Consumer<Long> onEndpointDeleted;
+    private Consumer<LinkForm> onLinkSaved;
+    private Consumer<Long> onLinkDeleted;
+
+    private List<DungeonArea> knownAreas = List.of();
+    private List<DungeonEncounterTableSummary> knownEncounterTables = List.of();
+    private List<DungeonEndpoint> knownEndpoints = List.of();
+
+    public DungeonDetailsPane() {
+        setSpacing(8);
+        setPadding(new Insets(8));
+        showSelection(DungeonSelection.none());
+    }
+
+    public void setAreas(List<DungeonArea> areas) {
+        knownAreas = areas == null ? List.of() : List.copyOf(areas);
+    }
+
+    public void setEncounterTables(List<DungeonEncounterTableSummary> encounterTables) {
+        knownEncounterTables = encounterTables == null ? List.of() : List.copyOf(encounterTables);
+    }
+
+    public void setEndpoints(List<DungeonEndpoint> endpoints) {
+        knownEndpoints = endpoints == null ? List.of() : List.copyOf(endpoints);
+    }
+
+    public void showInfoMessage(String message) {
+        getChildren().clear();
+        Label header = new Label("DETAILS");
+        header.getStyleClass().addAll("section-header", "text-muted");
+        Label msg = new Label(message);
+        msg.getStyleClass().add("text-muted");
+        msg.setWrapText(true);
+        getChildren().addAll(header, msg);
+    }
+
+    public void showSelection(DungeonSelection selection) {
+        getChildren().clear();
+        Label header = new Label("DETAILS");
+        header.getStyleClass().addAll("section-header", "text-muted");
+        getChildren().add(header);
+
+        if (selection == null || selection.type() == DungeonSelection.SelectionType.NONE) {
+            getChildren().add(new Label("Nichts ausgewählt."));
+            return;
+        }
+
+        switch (selection.type()) {
+            case SQUARE -> renderSquare(selection.square());
+            case ROOM -> renderRoom(selection.room());
+            case AREA -> renderArea(selection.area());
+            case ENDPOINT -> renderEndpoint(selection.endpoint());
+            case LINK -> renderLink(selection.link());
+            default -> getChildren().add(new Label("Nichts ausgewählt."));
+        }
+    }
+
+    private void renderSquare(DungeonSquare square) {
+        if (square == null) {
+            getChildren().add(new Label("Leeres Feld."));
+            return;
+        }
+        Label coordLabel = new Label("Koordinate");
+        coordLabel.getStyleClass().add("text-muted");
+        Label roomLabel = new Label("Raum");
+        roomLabel.getStyleClass().add("text-muted");
+        Label areaLabel = new Label("Bereich");
+        areaLabel.getStyleClass().add("text-muted");
+        getChildren().addAll(
+                coordLabel, new Label(square.x() + ", " + square.y()),
+                roomLabel, new Label(valueOrDash(square.roomName())),
+                areaLabel, new Label(valueOrDash(square.areaName())));
+    }
+
+    private void renderRoom(DungeonRoom room) {
+        if (room == null) {
+            getChildren().add(new Label("Kein Raum ausgewählt."));
+            return;
+        }
+        TextField nameField = new TextField(room.name());
+        TextArea descriptionArea = new TextArea(room.description() == null ? "" : room.description());
+        ComboBox<DungeonArea> areaCombo = new ComboBox<>();
+        areaCombo.getItems().setAll(knownAreas);
+        for (DungeonArea area : knownAreas) {
+            if (room.areaId() != null && room.areaId().equals(area.areaId())) {
+                areaCombo.setValue(area);
+                break;
+            }
+        }
+        Button saveButton = new Button("Raum speichern");
+        saveButton.setOnAction(event -> {
+            if (onRoomSaved != null) {
+                onRoomSaved.accept(new RoomForm(
+                        room.roomId(),
+                        nameField.getText().trim(),
+                        descriptionArea.getText(),
+                        areaCombo.getValue() == null ? null : areaCombo.getValue().areaId()));
+            }
+        });
+        Button deleteButton = new Button("Raum löschen");
+        deleteButton.setOnAction(event -> {
+            if (onRoomDeleted != null) {
+                onRoomDeleted.accept(room.roomId());
+            }
+        });
+        appendLabeled("Name", nameField);
+        appendLabeled("Beschreibung", descriptionArea);
+        appendLabeled("Bereich", areaCombo);
+        getChildren().addAll(saveButton, deleteButton);
+    }
+
+    private void renderArea(DungeonArea area) {
+        if (area == null) {
+            getChildren().add(new Label("Kein Bereich ausgewählt."));
+            return;
+        }
+        TextField nameField = new TextField(area.name());
+        TextArea descriptionArea = new TextArea(area.description() == null ? "" : area.description());
+        ComboBox<DungeonEncounterTableSummary> encounterCombo = new ComboBox<>();
+        encounterCombo.getItems().setAll(knownEncounterTables);
+        for (DungeonEncounterTableSummary table : knownEncounterTables) {
+            if (area.encounterTableId() != null && area.encounterTableId().equals(table.tableId())) {
+                encounterCombo.setValue(table);
+                break;
+            }
+        }
+        Button saveButton = new Button("Bereich speichern");
+        saveButton.setOnAction(event -> {
+            if (onAreaSaved != null) {
+                onAreaSaved.accept(new AreaForm(
+                        area.areaId(),
+                        nameField.getText().trim(),
+                        descriptionArea.getText(),
+                        encounterCombo.getValue() == null ? null : encounterCombo.getValue().tableId()));
+            }
+        });
+        Button deleteButton = new Button("Bereich löschen");
+        deleteButton.setOnAction(event -> {
+            if (onAreaDeleted != null) {
+                onAreaDeleted.accept(area.areaId());
+            }
+        });
+        appendLabeled("Name", nameField);
+        appendLabeled("Beschreibung", descriptionArea);
+        appendLabeled("Encounter Table", encounterCombo);
+        getChildren().addAll(saveButton, deleteButton);
+    }
+
+    private void renderEndpoint(DungeonEndpoint endpoint) {
+        TextField nameField = new TextField(endpoint.name() == null ? "" : endpoint.name());
+        TextArea notesArea = new TextArea(endpoint.notes() == null ? "" : endpoint.notes());
+        Button saveButton = new Button("Knoten speichern");
+        saveButton.setOnAction(event -> {
+            if (onEndpointSaved != null) {
+                onEndpointSaved.accept(new EndpointForm(endpoint.endpointId(), nameField.getText().trim(), notesArea.getText()));
+            }
+        });
+        Button deleteButton = new Button("Knoten löschen");
+        deleteButton.setOnAction(event -> {
+            if (onEndpointDeleted != null) {
+                onEndpointDeleted.accept(endpoint.endpointId());
+            }
+        });
+        Label posLabel = new Label("Position");
+        posLabel.getStyleClass().add("text-muted");
+        getChildren().addAll(posLabel, new Label(endpoint.x() + ", " + endpoint.y()));
+        appendLabeled("Name", nameField);
+        appendLabeled("Notizen", notesArea);
+        getChildren().addAll(saveButton, deleteButton);
+    }
+
+    private void renderLink(DungeonLink link) {
+        TextField labelField = new TextField(link.label() == null ? "" : link.label());
+        Button saveButton = new Button("Link speichern");
+        saveButton.setOnAction(event -> {
+            if (onLinkSaved != null) {
+                onLinkSaved.accept(new LinkForm(link.linkId(), labelField.getText().trim()));
+            }
+        });
+        Button deleteButton = new Button("Link löschen");
+        deleteButton.setOnAction(event -> {
+            if (onLinkDeleted != null) {
+                onLinkDeleted.accept(link.linkId());
+            }
+        });
+        Label connLabel = new Label("Verbindet");
+        connLabel.getStyleClass().add("text-muted");
+        String fromName = resolveEndpointName(link.fromEndpointId());
+        String toName = resolveEndpointName(link.toEndpointId());
+        getChildren().addAll(connLabel, new Label(fromName + " — " + toName));
+        appendLabeled("Label", labelField);
+        getChildren().addAll(saveButton, deleteButton);
+    }
+
+    private String resolveEndpointName(long endpointId) {
+        for (DungeonEndpoint endpoint : knownEndpoints) {
+            if (endpointId == endpoint.endpointId()) {
+                String name = endpoint.name();
+                return (name != null && !name.isBlank()) ? name : "Knoten #" + endpointId;
+            }
+        }
+        return "Knoten #" + endpointId;
+    }
+
+    private void appendLabeled(String labelText, Node node) {
+        Label label = new Label(labelText);
+        label.getStyleClass().add("text-muted");
+        getChildren().addAll(label, node);
+        if (node instanceof TextArea textArea) {
+            textArea.setPrefRowCount(4);
+            VBox.setVgrow(textArea, Priority.NEVER);
+        }
+    }
+
+    private static String valueOrDash(String value) {
+        return value == null || value.isBlank() ? "-" : value;
+    }
+
+    public void setOnRoomSaved(Consumer<RoomForm> onRoomSaved) {
+        this.onRoomSaved = onRoomSaved;
+    }
+
+    public void setOnRoomDeleted(Consumer<Long> onRoomDeleted) {
+        this.onRoomDeleted = onRoomDeleted;
+    }
+
+    public void setOnAreaSaved(Consumer<AreaForm> onAreaSaved) {
+        this.onAreaSaved = onAreaSaved;
+    }
+
+    public void setOnAreaDeleted(Consumer<Long> onAreaDeleted) {
+        this.onAreaDeleted = onAreaDeleted;
+    }
+
+    public void setOnEndpointSaved(Consumer<EndpointForm> onEndpointSaved) {
+        this.onEndpointSaved = onEndpointSaved;
+    }
+
+    public void setOnEndpointDeleted(Consumer<Long> onEndpointDeleted) {
+        this.onEndpointDeleted = onEndpointDeleted;
+    }
+
+    public void setOnLinkSaved(Consumer<LinkForm> onLinkSaved) {
+        this.onLinkSaved = onLinkSaved;
+    }
+
+    public void setOnLinkDeleted(Consumer<Long> onLinkDeleted) {
+        this.onLinkDeleted = onLinkDeleted;
+    }
+}

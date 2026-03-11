@@ -13,7 +13,8 @@ import features.creatures.api.CreatureCatalogService;
 import features.party.api.PartyModule;
 import features.encounter.api.EncounterModule;
 import features.encountertable.api.EncounterTableModule;
-import features.world.hexmap.api.HexMapModule;
+import features.loottable.api.LootTableModule;
+import features.world.api.WorldModule;
 import ui.async.UiAsyncTasks;
 import ui.async.UiErrorReporter;
 import ui.shell.AppShell;
@@ -49,19 +50,27 @@ public class SaltMarcherApp extends Application {
                 encounterModule.partyCacheRefreshPort());
         shell.addPersistentToolbarItem(partyModule.toolbarItem());
 
-        HexMapModule hexMapModule = new HexMapModule();
-        hexMapModule.registerScenes(shell.getSceneRegistry());
-        AppView overworldView = hexMapModule.overworldView();
-        AppView mapEditorView = hexMapModule.mapEditorView();
+        WorldModule worldModule = new WorldModule();
+        worldModule.registerScenes(shell.getSceneRegistry());
+        AppView overworldView = worldModule.overworldView();
+        AppView mapEditorView = worldModule.mapEditorView();
+        AppView dungeonView = worldModule.dungeonView();
+        AppView dungeonEditorView = worldModule.dungeonEditorView();
 
         EncounterTableModule encounterTableModule = new EncounterTableModule();
         AppView tableEditorView = encounterTableModule.view();
+        LootTableModule lootTableModule = new LootTableModule();
+        lootTableModule.start(shell.getShowContentHandler());
+        AppView lootTableEditorView = lootTableModule.view();
 
         // Register session views first, then editors (sidebar separator auto-inserts between categories)
         shell.registerView(ViewId.ENCOUNTER, encounterView);
         shell.registerView(ViewId.OVERWORLD, overworldView);
+        shell.registerView(ViewId.DUNGEON, dungeonView);
         shell.registerView(ViewId.MAP_EDITOR, mapEditorView);
+        shell.registerView(ViewId.DUNGEON_EDITOR, dungeonEditorView);
         shell.registerView(ViewId.TABLE_EDITOR, tableEditorView);
+        shell.registerView(ViewId.LOOT_TABLE_EDITOR, lootTableEditorView);
 
         Scene scene = new Scene(shell, 1150, 700);
         scene.getStylesheets().add(
