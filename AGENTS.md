@@ -9,6 +9,7 @@ After code changes, do not stop at `./gradlew build` alone when the desktop app 
 
 ## Coding Style & Naming Conventions
 The stack is Java 21, Gradle Kotlin DSL, JavaFX, and SQLite via JDBC. Use 4-space indentation, `PascalCase` for classes, `camelCase` for methods and locals, and lowercase packages. Keep repositories stateless and pass `Connection` in from callers. Let repositories propagate `SQLException`; fallback behavior belongs in services. Use `try-with-resources` for JDBC, avoid `System.out` and `System.err` in feature service/repository code, and keep cross-feature dependencies intentional. UI text stays German, but established DnD terms such as `Encounter`, `CR`, and `Deadly` remain English.
+When behavior is intentional but easy to misread as a bug or regression, document that intended behavior clearly and succinctly next to the relevant code so anyone changing it must read the intent before changing the implementation. Keep these comments short and focused on the invariant or UX rule being preserved.
 
 Editor UI windows must be anchored dropdown windows, not modal pop-up dialogs. For editor create/rename/edit/delete flows, use non-modal `Popup`-based dropdowns that stay within fullscreen mode, return focus to the trigger, and render confirmations inline instead of opening a second dialog.
 

@@ -29,8 +29,7 @@ final class DungeonInteractionController {
     private static final Color HOVER_ERASE_FILL = Color.web("#e53935", 0.35);
     private static final Color HOVER_EDGE_STROKE = Color.web("#d9a030", 0.70);
     private static final Color HOVER_EDGE_ERASE_STROKE = Color.web("#e53935", 0.75);
-    private static final double WALL_VERTEX_SNAP_RATIO = 0.35;
-
+    private static final int WALL_VERTEX_SEARCH_RADIUS = 1;
     private final Canvas selectionCanvas;
     private final DungeonCanvasModel model;
     private final DungeonViewport viewport;
@@ -259,7 +258,7 @@ final class DungeonInteractionController {
     }
 
     private void beginWallPaintPath(double screenX, double screenY) {
-        VertexRef vertex = findPaintVertexAt(screenX, screenY);
+        VertexRef vertex = findPaintVertexInSearchWindow(screenX, screenY);
         if (vertex == null) {
             clearActiveWallPaintPath();
             return;
@@ -275,7 +274,7 @@ final class DungeonInteractionController {
         if (activeWallPaintStart == null) {
             return;
         }
-        VertexRef target = findPaintVertexAt(screenX, screenY);
+        VertexRef target = findPaintVertexInSearchWindow(screenX, screenY);
         if (target == null) {
             activeWallPaintPath = List.of();
             if (onEdgePaintPathPreview != null) {
@@ -414,7 +413,7 @@ final class DungeonInteractionController {
 
     private void updateEdgeHover(double screenX, double screenY) {
         if (currentEdgeToolPolicy().usesWallPaintPath()) {
-            VertexRef vertex = findPaintVertexAt(screenX, screenY);
+            VertexRef vertex = findPaintVertexInSearchWindow(screenX, screenY);
             int newVertexX = vertex == null ? -1 : vertex.x();
             int newVertexY = vertex == null ? -1 : vertex.y();
             if (newVertexX == hoverVertexX && newVertexY == hoverVertexY) {
@@ -548,7 +547,9 @@ final class DungeonInteractionController {
         return new int[]{canonX, canonY, dir == PassageDirection.EAST ? 0 : 1};
     }
 
-    private VertexRef findPaintVertexAt(double screenX, double screenY) {
+    // Wall painting intentionally snaps within a forgiving local search window so minor
+    // pointer drift does not invalidate the intended path endpoint while dragging.
+    private VertexRef findPaintVertexInSearchWindow(double screenX, double screenY) {
         if (model.state() == null || model.state().map() == null) {
             return null;
         }
@@ -557,26 +558,40 @@ final class DungeonInteractionController {
         double fy = (screenY - viewport.screenY(0)) / cellSize;
         int baseX = (int) Math.floor(fx);
         int baseY = (int) Math.floor(fy);
-        VertexRef best = null;
-        double bestDistance = Double.MAX_VALUE;
-        for (int dx = 0; dx <= 1; dx++) {
-            for (int dy = 0; dy <= 1; dy++) {
-                int vx = baseX + dx;
-                int vy = baseY + dy;
-                double vertexScreenX = viewport.screenX(vx);
-                double vertexScreenY = viewport.screenY(vy);
-                double distance = Math.hypot(screenX - vertexScreenX, screenY - vertexScreenY);
-                if (distance < bestDistance) {
-                    VertexRef candidate = new VertexRef(vx, vy);
-                    if (isPaintVertex(candidate)) {
-                        best = candidate;
-                        bestDistance = distance;
-                    }
+        List<VertexRef> candidates = paintVertexCandidatesNear(baseX, baseY);
+        return choosePreferredPaintVertex(candidates, screenX, screenY);
+    }
+
+    private List<VertexRef> paintVertexCandidatesNear(int baseX, int baseY) {
+        List<VertexRef> candidates = new ArrayList<>();
+        for (int dx = -WALL_VERTEX_SEARCH_RADIUS; dx <= WALL_VERTEX_SEARCH_RADIUS + 1; dx++) {
+            for (int dy = -WALL_VERTEX_SEARCH_RADIUS; dy <= WALL_VERTEX_SEARCH_RADIUS + 1; dy++) {
+                VertexRef candidate = new VertexRef(baseX + dx, baseY + dy);
+                if (isPaintVertex(candidate)) {
+                    candidates.add(candidate);
                 }
             }
         }
-        if (best == null || bestDistance > cellSize * WALL_VERTEX_SNAP_RATIO) {
-            return null;
+        return candidates;
+    }
+
+    private VertexRef choosePreferredPaintVertex(List<VertexRef> candidates, double screenX, double screenY) {
+        VertexRef best = null;
+        double bestDistance = Double.MAX_VALUE;
+        for (VertexRef candidate : candidates) {
+            double distance = Math.hypot(
+                    screenX - viewport.screenX(candidate.x()),
+                    screenY - viewport.screenY(candidate.y()));
+            if (distance > bestDistance) {
+                continue;
+            }
+            if (distance < bestDistance
+                    || best == null
+                    || candidate.y() < best.y()
+                    || (candidate.y() == best.y() && candidate.x() < best.x())) {
+                best = candidate;
+                bestDistance = distance;
+            }
         }
         return best;
     }
