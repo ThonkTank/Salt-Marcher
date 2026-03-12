@@ -37,8 +37,8 @@ public final class DungeonSquareRepository {
 
     public static void applySquareEdits(Connection conn, long mapId, List<DungeonSquarePaint> edits) throws SQLException {
         try (PreparedStatement upsert = conn.prepareStatement(
-                "INSERT INTO dungeon_squares(map_id, x, y, room_id) VALUES(?,?,?,?) "
-                        + "ON CONFLICT(map_id, x, y) DO UPDATE SET room_id=excluded.room_id");
+                "INSERT INTO dungeon_squares(map_id, x, y, room_id) VALUES(?,?,?,NULL) "
+                        + "ON CONFLICT(map_id, x, y) DO NOTHING");
              PreparedStatement delete = conn.prepareStatement(
                      "DELETE FROM dungeon_squares WHERE map_id=? AND x=? AND y=?")) {
             for (DungeonSquarePaint edit : edits) {
@@ -46,11 +46,6 @@ public final class DungeonSquareRepository {
                     upsert.setLong(1, mapId);
                     upsert.setInt(2, edit.x());
                     upsert.setInt(3, edit.y());
-                    if (edit.roomId() != null) {
-                        upsert.setLong(4, edit.roomId());
-                    } else {
-                        upsert.setNull(4, java.sql.Types.INTEGER);
-                    }
                     upsert.addBatch();
                 } else {
                     delete.setLong(1, mapId);

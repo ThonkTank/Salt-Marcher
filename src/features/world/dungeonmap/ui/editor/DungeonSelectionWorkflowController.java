@@ -10,7 +10,6 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.panes.DungeonSelectionEditorPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import ui.shell.DetailsNavigator;
 
@@ -22,7 +21,6 @@ final class DungeonSelectionWorkflowController {
     }
 
     private final DungeonMapPane canvas;
-    private final DungeonSelectionEditorPane selectionEditorPane;
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonEditorState state;
     private DetailsNavigator detailsNavigator;
@@ -32,12 +30,10 @@ final class DungeonSelectionWorkflowController {
 
     DungeonSelectionWorkflowController(
             DungeonMapPane canvas,
-            DungeonSelectionEditorPane selectionEditorPane,
             DungeonToolSettingsPane toolSettingsPane,
             DungeonEditorState state
     ) {
         this.canvas = canvas;
-        this.selectionEditorPane = selectionEditorPane;
         this.toolSettingsPane = toolSettingsPane;
         this.state = state;
     }
@@ -197,7 +193,6 @@ final class DungeonSelectionWorkflowController {
     private void restoreSelection(DungeonSelection selection) {
         state.setCurrentSelection(selection);
         canvas.setSelectedSelection(selection);
-        selectionEditorPane.showSelection(selection);
         syncToolSettingsSelection(selection);
         openSelectionInInspector(selection, true);
     }
@@ -205,7 +200,7 @@ final class DungeonSelectionWorkflowController {
     private void showSelection(DungeonSelection selection, boolean openInspector) {
         state.setCurrentSelection(selection);
         canvas.setSelectedSelection(selection);
-        selectionEditorPane.showSelection(selection);
+        toolSettingsPane.clearWorkflowMessage();
         syncToolSettingsSelection(selection);
         if (openInspector) {
             openSelectionInInspector(selection, false);
@@ -280,7 +275,7 @@ final class DungeonSelectionWorkflowController {
     }
 
     void showWorkflowMessage(String title, String message) {
-        selectionEditorPane.showEditorMessage(message);
+        toolSettingsPane.showWorkflowMessage(title, message);
     }
 
     private java.util.List<DungeonFeature> featuresAtSquare(DungeonSquare square) {

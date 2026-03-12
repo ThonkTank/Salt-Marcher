@@ -6,7 +6,9 @@ import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureCategory;
 import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
+import features.world.dungeonmap.model.DungeonSquare;
 import javafx.scene.input.MouseButton;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
@@ -34,11 +36,13 @@ final class DungeonOverlayRenderer {
     private static final Color DEFAULT_ENTRY_STROKE = Color.web("#f8f3a6");
     private static final Color PARTY_STROKE = Color.web("#41a9f2");
 
+    private final Pane roomLabelsLayer;
     private final Pane featuresLayer;
     private final Pane linksLayer;
     private final Pane endpointsLayer;
     private final DungeonCanvasModel model;
     private final DungeonViewport viewport;
+    private final Map<Long, Label> roomLabelNodes = new HashMap<>();
     private final Map<Long, Circle> featureAnchorNodes = new HashMap<>();
     private final Map<Long, Label> featureLabelNodes = new HashMap<>();
     private final Map<String, Rectangle> featureTileNodes = new HashMap<>();
@@ -51,27 +55,45 @@ final class DungeonOverlayRenderer {
     private boolean showLinks = true;
     private boolean showEndpoints = true;
 
-    DungeonOverlayRenderer(Pane featuresLayer, Pane linksLayer, Pane endpointsLayer, DungeonCanvasModel model, DungeonViewport viewport) {
+    DungeonOverlayRenderer(
+            Pane roomLabelsLayer,
+            Pane featuresLayer,
+            Pane linksLayer,
+            Pane endpointsLayer,
+            DungeonCanvasModel model,
+            DungeonViewport viewport
+    ) {
+        this.roomLabelsLayer = roomLabelsLayer;
         this.featuresLayer = featuresLayer;
         this.linksLayer = linksLayer;
         this.endpointsLayer = endpointsLayer;
         this.model = model;
         this.viewport = viewport;
+        this.roomLabelsLayer.setPickOnBounds(false);
         this.featuresLayer.setPickOnBounds(false);
         this.linksLayer.setPickOnBounds(false);
         this.endpointsLayer.setPickOnBounds(false);
     }
 
     void rebuildNodes() {
+        roomLabelNodes.clear();
         featureAnchorNodes.clear();
         featureLabelNodes.clear();
         featureTileNodes.clear();
         endpointNodes.clear();
         linkNodes.clear();
+        roomLabelsLayer.getChildren().clear();
         featuresLayer.getChildren().clear();
         linksLayer.getChildren().clear();
         endpointsLayer.getChildren().clear();
 
+        for (DungeonRoom room : model.roomsById().values()) {
+            Label label = new Label();
+            label.setMouseTransparent(true);
+            label.getStyleClass().addAll("dungeon-room-map-label", "section-header");
+            roomLabelNodes.put(room.roomId(), label);
+            roomLabelsLayer.getChildren().add(label);
+        }
         for (Map.Entry<String, java.util.List<DungeonFeatureTile>> entry : model.featureTilesByCoord().entrySet()) {
             Rectangle rectangle = new Rectangle();
             rectangle.setMouseTransparent(true);
@@ -103,6 +125,7 @@ final class DungeonOverlayRenderer {
     }
 
     void repositionOverlays(Region owner) {
+        positionRoomLabels(owner);
         positionFeatures(owner);
         for (Map.Entry<Long, DungeonEndpoint> entry : model.endpointsById().entrySet()) {
             positionEndpoint(owner, entry.getKey(), entry.getValue());
@@ -279,6 +302,8 @@ final class DungeonOverlayRenderer {
     }
 
     private void updateVisibility() {
+        roomLabelsLayer.setVisible(true);
+        roomLabelsLayer.setManaged(true);
         featuresLayer.setVisible(showFeatures);
         featuresLayer.setManaged(showFeatures);
         linksLayer.setVisible(showLinks);
@@ -328,6 +353,36 @@ final class DungeonOverlayRenderer {
             if (label != null) {
                 label.relocate(centerX + 6.0, centerY - 8.0);
             }
+        }
+    }
+
+    private void positionRoomLabels(Region owner) {
+        for (Map.Entry<Long, Label> entry : roomLabelNodes.entrySet()) {
+            Long roomId = entry.getKey();
+            Label label = entry.getValue();
+            DungeonRoom room = model.roomsById().get(roomId);
+            java.util.List<DungeonSquare> squares = model.squaresByRoomId().get(roomId);
+            if (room == null || squares == null || squares.isEmpty()) {
+                label.setVisible(false);
+                label.setManaged(false);
+                continue;
+            }
+            double centerX = 0;
+            double centerY = 0;
+            for (DungeonSquare square : squares) {
+                centerX += viewport.screenCenterX(square.x());
+                centerY += viewport.screenCenterY(square.y());
+            }
+            centerX /= squares.size();
+            centerY /= squares.size();
+            label.setText(room.name() == null || room.name().isBlank() ? "Raum" : room.name());
+            double width = label.prefWidth(-1);
+            double height = label.prefHeight(width);
+            label.resize(width, height);
+            label.relocate(centerX - (width / 2.0), centerY - (height / 2.0));
+            boolean visible = viewport.isVisible(owner, centerX, centerY, Math.max(width, height) / 2.0);
+            label.setVisible(visible);
+            label.setManaged(visible);
         }
     }
 

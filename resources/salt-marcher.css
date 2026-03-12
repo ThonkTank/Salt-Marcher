@@ -897,6 +897,15 @@
     -fx-font-weight: bold;
     -fx-padding: 6 8 4 8;
 }
+.dungeon-room-map-label {
+    -fx-background-color: rgba(24, 18, 12, 0.72);
+    -fx-background-radius: 999;
+    -fx-border-color: rgba(240, 220, 176, 0.42);
+    -fx-border-radius: 999;
+    -fx-border-width: 1;
+    -fx-text-fill: #f6edd0;
+    -fx-padding: 2 8 2 8;
+}
 .encounter-controls-divider {
     -fx-background-color: -sm-border-subtle;
     -fx-min-width: 1;

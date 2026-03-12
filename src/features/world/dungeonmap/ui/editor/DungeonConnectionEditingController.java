@@ -136,10 +136,11 @@ final class DungeonConnectionEditingController {
     }
 
     void updateLinkLabel(long linkId, String label, Runnable onSuccess) {
+        Runnable effectiveOnSuccess = onSuccess == null ? () -> reloadCurrentMap.accept(null) : onSuccess;
         applicationService.updateLinkLabel(
                 linkId,
                 label,
-                onSuccess,
+                effectiveOnSuccess,
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.updateLinkLabel()", ex));
     }
 

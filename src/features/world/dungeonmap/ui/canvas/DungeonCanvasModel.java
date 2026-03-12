@@ -20,6 +20,7 @@ import java.util.Map;
 final class DungeonCanvasModel {
 
     private final Map<String, DungeonSquare> squaresByCoord = new HashMap<>();
+    private final Map<Long, DungeonRoom> roomsById = new HashMap<>();
     private final Map<Long, DungeonFeature> featuresById = new HashMap<>();
     private final Map<Long, DungeonEndpoint> endpointsById = new HashMap<>();
     private final Map<Long, DungeonLink> linksById = new HashMap<>();
@@ -31,6 +32,7 @@ final class DungeonCanvasModel {
     private final Map<String, DungeonWallEdit> activeWallPathPreviewEdits = new HashMap<>();
     private final Map<String, java.util.List<DungeonFeatureTile>> featureTilesByCoord = new HashMap<>();
     private final Map<Long, java.util.List<DungeonFeatureTile>> featureTilesByFeatureId = new HashMap<>();
+    private final Map<Long, java.util.List<DungeonSquare>> squaresByRoomId = new HashMap<>();
 
     private DungeonMapState state;
     private DungeonSelection selection = DungeonSelection.none();
@@ -51,6 +53,7 @@ final class DungeonCanvasModel {
 
         this.state = state;
         squaresByCoord.clear();
+        roomsById.clear();
         featuresById.clear();
         endpointsById.clear();
         linksById.clear();
@@ -62,6 +65,7 @@ final class DungeonCanvasModel {
         activeWallPathPreviewEdits.clear();
         featureTilesByCoord.clear();
         featureTilesByFeatureId.clear();
+        squaresByRoomId.clear();
 
         if (state == null || state.map() == null) {
             loadedMapId = null;
@@ -76,6 +80,9 @@ final class DungeonCanvasModel {
 
         for (DungeonSquare square : state.squares()) {
             squaresByCoord.put(key(square.x(), square.y()), square);
+        }
+        for (DungeonRoom room : state.rooms()) {
+            roomsById.put(room.roomId(), room);
         }
         for (DungeonEndpoint endpoint : state.endpoints()) {
             endpointsById.put(endpoint.endpointId(), endpoint);
@@ -104,6 +111,7 @@ final class DungeonCanvasModel {
         loadedMapId = state.map().mapId();
         loadedMapWidth = state.map().width();
         loadedMapHeight = state.map().height();
+        rebuildRoomSquareIndex();
         rebuildEdgeTopology();
 
         return previousMapId == null
@@ -121,7 +129,7 @@ final class DungeonCanvasModel {
         String key = key(paint.x(), paint.y());
         if (paint.filled()) {
             DungeonSquare existing = squaresByCoord.get(key);
-            Long roomId = paint.roomId() != null ? paint.roomId() : (existing == null ? null : existing.roomId());
+            Long roomId = existing == null ? null : existing.roomId();
             String roomName = resolveRoomName(roomId);
             Long areaId = existing == null ? null : existing.areaId();
             String areaName = existing == null ? null : existing.areaName();
@@ -137,6 +145,7 @@ final class DungeonCanvasModel {
         } else {
             squaresByCoord.remove(key);
         }
+        rebuildRoomSquareIndex();
     }
 
     void previewCommittedWallEdits(java.util.List<DungeonWallEdit> edits) {
@@ -199,6 +208,10 @@ final class DungeonCanvasModel {
         return endpointsById;
     }
 
+    Map<Long, DungeonRoom> roomsById() {
+        return roomsById;
+    }
+
     Map<Long, DungeonFeature> featuresById() {
         return featuresById;
     }
@@ -221,6 +234,10 @@ final class DungeonCanvasModel {
 
     Map<Long, java.util.List<DungeonFeatureTile>> featureTilesByFeatureId() {
         return featureTilesByFeatureId;
+    }
+
+    Map<Long, java.util.List<DungeonSquare>> squaresByRoomId() {
+        return squaresByRoomId;
     }
 
     DungeonSelection selection() {
@@ -257,6 +274,15 @@ final class DungeonCanvasModel {
         passagesByEdge.putAll(basePassagesByEdge);
         applyWallPreviewEdits(committedWallPreviewEdits);
         applyWallPreviewEdits(activeWallPathPreviewEdits);
+    }
+
+    private void rebuildRoomSquareIndex() {
+        squaresByRoomId.clear();
+        for (DungeonSquare square : squaresByCoord.values()) {
+            if (square.roomId() != null) {
+                squaresByRoomId.computeIfAbsent(square.roomId(), ignored -> new java.util.ArrayList<>()).add(square);
+            }
+        }
     }
 
     private void applyWallPreviewEdits(Map<String, DungeonWallEdit> edits) {

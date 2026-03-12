@@ -10,7 +10,6 @@ import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.panes.DungeonSelectionEditorPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import ui.async.UiErrorReporter;
 
@@ -22,7 +21,6 @@ final class DungeonMapLoadingWorkflowController {
     private final DungeonEditorApplicationService applicationService;
     private final DungeonEditorControls controls;
     private final DungeonMapPane canvas;
-    private final DungeonSelectionEditorPane selectionEditorPane;
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonSelectionWorkflowController selectionController;
     private Runnable onEncounterTablesChanged = () -> { };
@@ -34,7 +32,6 @@ final class DungeonMapLoadingWorkflowController {
             DungeonEditorApplicationService applicationService,
             DungeonEditorControls controls,
             DungeonMapPane canvas,
-            DungeonSelectionEditorPane selectionEditorPane,
             DungeonToolSettingsPane toolSettingsPane,
             DungeonSelectionWorkflowController selectionController
     ) {
@@ -42,7 +39,6 @@ final class DungeonMapLoadingWorkflowController {
         this.applicationService = applicationService;
         this.controls = controls;
         this.canvas = canvas;
-        this.selectionEditorPane = selectionEditorPane;
         this.toolSettingsPane = toolSettingsPane;
         this.selectionController = selectionController;
     }
@@ -96,7 +92,6 @@ final class DungeonMapLoadingWorkflowController {
                 tables -> {
                     state.setEncounterTables(tables);
                     toolSettingsPane.setEncounterTables(tables);
-                    selectionEditorPane.setEncounterTables(tables);
                     onEncounterTablesChanged.run();
                 },
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonMapLoadingWorkflowController.loadEncounterTables()", ex));
@@ -107,7 +102,6 @@ final class DungeonMapLoadingWorkflowController {
                 encounters -> {
                     state.setEncounters(encounters);
                     toolSettingsPane.setStoredEncounters(encounters);
-                    selectionEditorPane.setEncounterSummaries(encounters);
                     onStoredEncountersChanged.run();
                 },
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonMapLoadingWorkflowController.loadStoredEncounters()", ex));
@@ -149,10 +143,7 @@ final class DungeonMapLoadingWorkflowController {
 
     void autoShowForTool(DungeonEditorTool tool) {
         DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
-        if (effectiveTool.autoShowsSelectedRoom()) {
-            DungeonRoom room = toolSettingsPane.roomComboBox().getValue();
-            if (room != null) selectionController.selectRoom(room);
-        } else if (effectiveTool.autoShowsSelectedArea()) {
+        if (effectiveTool.autoShowsSelectedArea()) {
             DungeonArea area = toolSettingsPane.areaComboBox().getValue();
             if (area != null) selectionController.selectArea(area);
         }
@@ -193,8 +184,6 @@ final class DungeonMapLoadingWorkflowController {
         toolSettingsPane.setRooms(rooms);
         toolSettingsPane.setAreas(areas);
         toolSettingsPane.setFeatures(features);
-        selectionEditorPane.setAreas(areas);
-        selectionEditorPane.setEndpoints(loadedState == null ? List.of() : loadedState.endpoints());
         toolSettingsPane.setMapLoaded(loadedState != null && loadedState.map() != null);
     }
 

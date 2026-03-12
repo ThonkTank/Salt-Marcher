@@ -56,6 +56,16 @@ public final class DungeonEditorApplicationService {
         submitAction(() -> DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits), onSuccess, onError);
     }
 
+    public void applySquareEdits(
+            long mapId,
+            List<DungeonSquarePaint> edits,
+            List<Long> preferredPrimaryRoomIds,
+            Runnable onSuccess,
+            Consumer<Throwable> onError
+    ) {
+        submitAction(() -> DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits, preferredPrimaryRoomIds), onSuccess, onError);
+    }
+
     public void saveRoom(DungeonRoom room, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
         submitValue(() -> DungeonMapEditorService.saveRoom(room), onSuccess, onError);
     }
@@ -128,6 +138,16 @@ public final class DungeonEditorApplicationService {
 
     public void applyWallEdits(long mapId, List<DungeonWallEdit> edits, Runnable onSuccess, Consumer<Throwable> onError) {
         submitAction(() -> DungeonMapEditorService.applyWallEdits(mapId, edits), onSuccess, onError);
+    }
+
+    public void applyWallEdits(
+            long mapId,
+            List<DungeonWallEdit> edits,
+            List<Long> preferredPrimaryRoomIds,
+            Runnable onSuccess,
+            Consumer<Throwable> onError
+    ) {
+        submitAction(() -> DungeonMapEditorService.applyWallEdits(mapId, edits, preferredPrimaryRoomIds), onSuccess, onError);
     }
 
     private <T> void submitValue(Callable<T> action, Consumer<T> onSuccess, Consumer<Throwable> onError) {

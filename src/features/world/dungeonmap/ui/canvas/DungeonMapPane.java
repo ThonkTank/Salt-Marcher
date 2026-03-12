@@ -12,6 +12,7 @@ import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.PassageDirection;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.Pane;
@@ -32,6 +33,7 @@ public class DungeonMapPane extends StackPane {
 
     private final Canvas gridCanvas = new Canvas();
     private final Canvas selectionCanvas = new Canvas();
+    private final Pane roomLabelsLayer = new Pane();
     private final Pane featuresLayer = new Pane();
     private final Pane linksLayer = new Pane();
     private final Pane endpointsLayer = new Pane();
@@ -39,7 +41,8 @@ public class DungeonMapPane extends StackPane {
     private final DungeonCanvasModel model = new DungeonCanvasModel();
     private final DungeonViewport viewport = new DungeonViewport();
     private final DungeonGridRenderer gridRenderer = new DungeonGridRenderer(gridCanvas, selectionCanvas, model, viewport);
-    private final DungeonOverlayRenderer overlayRenderer = new DungeonOverlayRenderer(featuresLayer, linksLayer, endpointsLayer, model, viewport);
+    private final DungeonOverlayRenderer overlayRenderer =
+            new DungeonOverlayRenderer(roomLabelsLayer, featuresLayer, linksLayer, endpointsLayer, model, viewport);
     private final DungeonInteractionController interactionController =
             new DungeonInteractionController(selectionCanvas, model, viewport, this::redrawAll);
     private final PauseTransition invalidEdgeFlash = new PauseTransition(INVALID_EDGE_FLASH_DURATION);
@@ -60,7 +63,7 @@ public class DungeonMapPane extends StackPane {
             gridRenderer.redrawSelection();
         });
 
-        getChildren().addAll(gridCanvas, selectionCanvas, featuresLayer, linksLayer, endpointsLayer);
+        getChildren().addAll(gridCanvas, selectionCanvas, roomLabelsLayer, featuresLayer, linksLayer, endpointsLayer);
     }
 
     public void loadState(DungeonMapState state) {
@@ -85,6 +88,10 @@ public class DungeonMapPane extends StackPane {
 
     public void setBrushSizeSupplier(Supplier<Integer> supplier) {
         interactionController.setBrushSizeSupplier(supplier);
+    }
+
+    public void setPaintModeSupplier(Supplier<DungeonPaintMode> supplier) {
+        interactionController.setPaintModeSupplier(supplier);
     }
 
     public void setActiveTool(DungeonEditorTool tool) {

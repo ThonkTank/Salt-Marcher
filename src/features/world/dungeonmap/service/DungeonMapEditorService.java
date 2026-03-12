@@ -79,12 +79,16 @@ public final class DungeonMapEditorService {
     }
 
     public static void applySquareEditsAndReconcileState(long mapId, List<DungeonSquarePaint> edits) throws Exception {
+        applySquareEditsAndReconcileState(mapId, edits, List.of());
+    }
+
+    public static void applySquareEditsAndReconcileState(long mapId, List<DungeonSquarePaint> edits, List<Long> preferredPrimaryRoomIds) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
             boolean previousAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try {
                 clearInvalidActiveEndpointAfterEdits(conn, mapId, edits);
-                DungeonTopologyService.applySquareEdits(conn, mapId, edits);
+                DungeonTopologyService.applySquareEdits(conn, mapId, edits, preferredPrimaryRoomIds);
                 conn.commit();
             } catch (SQLException ex) {
                 conn.rollback();
@@ -272,12 +276,16 @@ public final class DungeonMapEditorService {
     }
 
     public static void applyWallEdits(long mapId, List<DungeonWallEdit> edits) throws Exception {
+        applyWallEdits(mapId, edits, List.of());
+    }
+
+    public static void applyWallEdits(long mapId, List<DungeonWallEdit> edits, List<Long> preferredPrimaryRoomIds) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
             boolean previousAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try {
                 deletePassagesReplacedByWalls(conn, mapId, edits);
-                DungeonTopologyService.applyWallEdits(conn, mapId, edits);
+                DungeonTopologyService.applyWallEdits(conn, mapId, edits, preferredPrimaryRoomIds);
                 conn.commit();
             } catch (SQLException | RuntimeException ex) {
                 conn.rollback();

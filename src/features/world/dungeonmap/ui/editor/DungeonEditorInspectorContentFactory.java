@@ -4,15 +4,18 @@ import features.world.dungeonmap.api.DungeonEncounterSummary;
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonEndpointRole;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureCategory;
 import features.world.dungeonmap.model.DungeonFeatureTile;
+import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquare;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
@@ -34,13 +37,16 @@ final class DungeonEditorInspectorContentFactory {
 
     private final DungeonEditorState state;
     private final DungeonEntityCrudController entityCrudController;
+    private final DungeonConnectionEditingController connectionEditingController;
 
     DungeonEditorInspectorContentFactory(
             DungeonEditorState state,
-            DungeonEntityCrudController entityCrudController
+            DungeonEntityCrudController entityCrudController,
+            DungeonConnectionEditingController connectionEditingController
     ) {
         this.state = state;
         this.entityCrudController = entityCrudController;
+        this.connectionEditingController = connectionEditingController;
     }
 
     Node buildRoomCard(DungeonRoom room) {
@@ -52,14 +58,12 @@ final class DungeonEditorInspectorContentFactory {
 
         TextField nameField = new TextField(room.name() == null ? "" : room.name());
         TextArea descriptionArea = textArea(room.description());
-        Button saveButton = saveButton(() -> {
-            entityCrudController.saveRoom(new DungeonRoom(
-                    room.roomId(),
-                    room.mapId(),
-                    nameField.getText().trim(),
-                    descriptionArea.getText(),
-                    room.areaId()));
-        });
+        Button saveButton = saveButton(() -> entityCrudController.saveRoom(new DungeonRoom(
+                room.roomId(),
+                room.mapId(),
+                nameField.getText().trim(),
+                descriptionArea.getText(),
+                room.areaId())));
 
         List<DungeonSquare> roomSquares = roomSquares(room.roomId());
         box.getChildren().addAll(
@@ -68,8 +72,8 @@ final class DungeonEditorInspectorContentFactory {
                 section("Name", nameField, saveRow(saveButton)),
                 section("Beschreibung", descriptionArea));
         appendListSection(box, "Features", describeRoomFeatures(room.roomId()));
-        appendListSection(box, "Übergänge", describeRoomEndpoints(room.roomId()));
-        appendListSection(box, "Durchgänge", describeRoomPassages(room.roomId()));
+        appendRoomEndpointSection(box, room.roomId());
+        appendRoomPassageSection(box, room.roomId());
         return box;
     }
 
@@ -157,9 +161,150 @@ final class DungeonEditorInspectorContentFactory {
         return box;
     }
 
+    private void appendRoomEndpointSection(VBox parent, Long roomId) {
+        List<DungeonEndpoint> endpoints = roomEndpoints(roomId);
+        if (endpoints.isEmpty()) {
+            return;
+        }
+        VBox content = new VBox(8);
+        for (DungeonEndpoint endpoint : endpoints) {
+            content.getChildren().add(buildEndpointEditor(endpoint));
+        }
+        parent.getChildren().add(section("Übergänge", content));
+    }
+
+    private void appendRoomPassageSection(VBox parent, Long roomId) {
+        List<DungeonPassage> passages = roomPassages(roomId);
+        if (passages.isEmpty()) {
+            return;
+        }
+        VBox content = new VBox(8);
+        for (DungeonPassage passage : passages) {
+            content.getChildren().add(buildPassageEditor(passage));
+        }
+        parent.getChildren().add(section("Durchgänge", content));
+    }
+
+    private VBox buildEndpointEditor(DungeonEndpoint endpoint) {
+        VBox box = editorCard();
+        TextField nameField = new TextField(endpoint.name() == null ? "" : endpoint.name());
+        TextArea notesArea = compactTextArea(endpoint.notes());
+        ComboBox<DungeonEndpointRole> roleCombo = new ComboBox<>();
+        roleCombo.setMaxWidth(Double.MAX_VALUE);
+        roleCombo.getItems().setAll(DungeonEndpointRole.values());
+        roleCombo.setConverter(namedConverter(this::endpointRoleLabel));
+        roleCombo.setValue(endpoint.role() == null ? DungeonEndpointRole.BOTH : endpoint.role());
+        CheckBox defaultEntryCheckBox = new CheckBox("Standard-Eingang");
+        defaultEntryCheckBox.setSelected(endpoint.defaultEntry());
+        updateDefaultEntryState(defaultEntryCheckBox, roleCombo.getValue());
+        roleCombo.valueProperty().addListener((obs, oldValue, newValue) -> updateDefaultEntryState(defaultEntryCheckBox, newValue));
+
+        Button saveButton = saveButton(() -> {
+            DungeonEndpointRole selectedRole = roleCombo.getValue() == null ? DungeonEndpointRole.BOTH : roleCombo.getValue();
+            connectionEditingController.saveEndpoint(new DungeonEndpoint(
+                    endpoint.endpointId(),
+                    endpoint.mapId(),
+                    endpoint.squareId(),
+                    nameField.getText().trim(),
+                    notesArea.getText(),
+                    selectedRole,
+                    defaultEntryCheckBox.isSelected() && selectedRole.allowsEntry(),
+                    endpoint.x(),
+                    endpoint.y()));
+        });
+        Button deleteButton = dangerButton("Löschen");
+        deleteButton.setOnAction(event -> connectionEditingController.deleteEndpoint(endpoint.endpointId(), deleteButton));
+
+        box.getChildren().addAll(
+                secondary(titleOrFallback(endpoint.name(), "Übergang") + " • " + formatPosition(endpoint.x(), endpoint.y())),
+                section("Name", nameField),
+                section("Notizen", notesArea),
+                section("Typ", roleCombo, defaultEntryCheckBox, saveRow(saveButton, deleteButton)));
+        appendEndpointLinks(box, endpoint);
+        return box;
+    }
+
+    private void appendEndpointLinks(VBox parent, DungeonEndpoint endpoint) {
+        List<DungeonLink> links = linksForEndpoint(endpoint.endpointId());
+        if (links.isEmpty()) {
+            return;
+        }
+        VBox content = new VBox(6);
+        for (DungeonLink link : links) {
+            content.getChildren().add(buildLinkEditor(link, endpoint.endpointId()));
+        }
+        parent.getChildren().add(section("Links", content));
+    }
+
+    private VBox buildLinkEditor(DungeonLink link, Long endpointId) {
+        VBox box = new VBox(6);
+        TextField labelField = new TextField(link.label() == null ? "" : link.label());
+        Button saveButton = saveButton(() -> {
+            if (link.linkId() != null) {
+                connectionEditingController.updateLinkLabel(link.linkId(), labelField.getText().trim(), null);
+            }
+        });
+        Button deleteButton = dangerButton("Löschen");
+        deleteButton.setOnAction(event -> connectionEditingController.deleteLink(link.linkId()));
+        box.getChildren().addAll(
+                secondary(resolveLinkCounterpartName(link, endpointId)),
+                section("Label", labelField, saveRow(saveButton, deleteButton)));
+        return box;
+    }
+
+    private VBox buildPassageEditor(DungeonPassage passage) {
+        VBox box = editorCard();
+        TextField nameField = new TextField(passage.name() == null ? "" : passage.name());
+        TextArea notesArea = compactTextArea(passage.notes());
+        ComboBox<DungeonEndpoint> endpointCombo = new ComboBox<>();
+        endpointCombo.setMaxWidth(Double.MAX_VALUE);
+        endpointCombo.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(DungeonEndpoint endpoint) {
+                return endpoint == null ? "Kein Übergang" : titleOrFallback(endpoint.name(), "Übergang");
+            }
+
+            @Override
+            public DungeonEndpoint fromString(String string) {
+                return null;
+            }
+        });
+        endpointCombo.getItems().setAll(state.currentState() == null ? List.of() : state.currentState().endpoints());
+        endpointCombo.setValue(findById(
+                state.currentState() == null ? List.<DungeonEndpoint>of() : state.currentState().endpoints(),
+                passage.endpointId(),
+                DungeonEndpoint::endpointId));
+
+        Button saveButton = saveButton(() -> connectionEditingController.savePassage(new DungeonPassage(
+                passage.passageId(),
+                passage.mapId(),
+                passage.x(),
+                passage.y(),
+                passage.direction(),
+                nameField.getText().trim(),
+                notesArea.getText(),
+                endpointCombo.getValue() == null ? null : endpointCombo.getValue().endpointId())));
+        Button deleteButton = dangerButton("Zurücksetzen");
+        deleteButton.setOnAction(event -> connectionEditingController.deletePassage(passage.passageId(), deleteButton));
+
+        box.getChildren().addAll(
+                secondary(titleOrFallback(passage.name(), "Durchgang") + " • " + formatPassagePosition(passage)),
+                section("Übergang", endpointCombo),
+                section("Name", nameField),
+                section("Notizen", notesArea, saveRow(saveButton, deleteButton)));
+        return box;
+    }
+
     private static VBox card() {
         VBox box = new VBox(10);
         box.setPadding(new Insets(12));
+        return box;
+    }
+
+    private static VBox editorCard() {
+        VBox box = new VBox(8);
+        box.getStyleClass().add("dungeon-editor-card");
+        box.setPadding(new Insets(10));
         return box;
     }
 
@@ -186,9 +331,21 @@ final class DungeonEditorInspectorContentFactory {
         return area;
     }
 
+    private static TextArea compactTextArea(String value) {
+        TextArea area = textArea(value);
+        area.setPrefRowCount(3);
+        return area;
+    }
+
     private static Button saveButton(Runnable onSave) {
         Button button = new Button("Speichern");
         button.setOnAction(event -> onSave.run());
+        return button;
+    }
+
+    private static Button dangerButton(String text) {
+        Button button = new Button(text);
+        button.getStyleClass().add("danger");
         return button;
     }
 
@@ -275,6 +432,46 @@ final class DungeonEditorInspectorContentFactory {
         return result;
     }
 
+    private List<DungeonEndpoint> roomEndpoints(Long roomId) {
+        List<DungeonEndpoint> result = new ArrayList<>();
+        if (roomId == null || state.currentState() == null) {
+            return result;
+        }
+        for (DungeonEndpoint endpoint : state.currentState().endpoints()) {
+            DungeonSquare square = squareAt(endpoint.x(), endpoint.y());
+            if (square != null && roomId.equals(square.roomId())) {
+                result.add(endpoint);
+            }
+        }
+        return result;
+    }
+
+    private List<DungeonPassage> roomPassages(Long roomId) {
+        List<DungeonPassage> result = new ArrayList<>();
+        if (roomId == null || state.currentState() == null) {
+            return result;
+        }
+        for (DungeonPassage passage : state.currentState().passages()) {
+            if (passageTouchesRoom(passage, roomId)) {
+                result.add(passage);
+            }
+        }
+        return result;
+    }
+
+    private List<DungeonLink> linksForEndpoint(Long endpointId) {
+        List<DungeonLink> result = new ArrayList<>();
+        if (endpointId == null || state.currentState() == null) {
+            return result;
+        }
+        for (DungeonLink link : state.currentState().links()) {
+            if (endpointId.equals(link.fromEndpointId()) || endpointId.equals(link.toEndpointId())) {
+                result.add(link);
+            }
+        }
+        return result;
+    }
+
     private List<String> describeRoomFeatures(Long roomId) {
         if (roomId == null || state.currentState() == null) {
             return List.of();
@@ -293,38 +490,6 @@ final class DungeonEditorInspectorContentFactory {
             DungeonFeature feature = findFeature(entry.getKey());
             lines.add(titleOrFallback(feature == null ? null : feature.toString(), "Feature")
                     + " (" + String.join(", ", entry.getValue()) + ")");
-        }
-        return lines;
-    }
-
-    private List<String> describeRoomEndpoints(Long roomId) {
-        if (roomId == null || state.currentState() == null) {
-            return List.of();
-        }
-        List<String> lines = new ArrayList<>();
-        for (DungeonEndpoint endpoint : state.currentState().endpoints()) {
-            DungeonSquare square = squareAt(endpoint.x(), endpoint.y());
-            if (square == null || !roomId.equals(square.roomId())) {
-                continue;
-            }
-            lines.add(titleOrFallback(endpoint.name(), "Übergang")
-                    + " (" + formatPosition(endpoint.x(), endpoint.y()) + ")");
-        }
-        return lines;
-    }
-
-    private List<String> describeRoomPassages(Long roomId) {
-        if (roomId == null || state.currentState() == null) {
-            return List.of();
-        }
-        List<String> lines = new ArrayList<>();
-        for (DungeonPassage passage : state.currentState().passages()) {
-            if (!passageTouchesRoom(passage, roomId)) {
-                continue;
-            }
-            lines.add(titleOrFallback(passage.name(), "Durchgang")
-                    + " (" + formatPosition(passage.x(), passage.y()) + ", "
-                    + valueOrDash(passage.direction() == null ? null : passage.direction().name()) + ")");
         }
         return lines;
     }
@@ -395,6 +560,18 @@ final class DungeonEditorInspectorContentFactory {
         return null;
     }
 
+    private DungeonEndpoint findEndpoint(Long endpointId) {
+        if (endpointId == null || state.currentState() == null) {
+            return null;
+        }
+        for (DungeonEndpoint endpoint : state.currentState().endpoints()) {
+            if (endpointId.equals(endpoint.endpointId())) {
+                return endpoint;
+            }
+        }
+        return null;
+    }
+
     private boolean passageTouchesRoom(DungeonPassage passage, Long roomId) {
         DungeonSquare primary = squareAt(passage.x(), passage.y());
         if (primary != null && roomId.equals(primary.roomId())) {
@@ -409,7 +586,8 @@ final class DungeonEditorInspectorContentFactory {
     }
 
     private String resolveAreaName(Long areaId) {
-        DungeonArea area = findById(state.currentState() == null ? List.<DungeonArea>of() : state.currentState().areas(),
+        DungeonArea area = findById(
+                state.currentState() == null ? List.<DungeonArea>of() : state.currentState().areas(),
                 areaId,
                 DungeonArea::areaId);
         return area == null ? null : area.name();
@@ -423,6 +601,39 @@ final class DungeonEditorInspectorContentFactory {
     private String resolveEncounterName(Long encounterId) {
         DungeonEncounterSummary summary = findById(state.encounters(), encounterId, DungeonEncounterSummary::encounterId);
         return summary == null ? null : summary.name();
+    }
+
+    private String resolveLinkCounterpartName(DungeonLink link, Long endpointId) {
+        Long counterpartId = Objects.equals(endpointId, link.fromEndpointId()) ? link.toEndpointId() : link.fromEndpointId();
+        DungeonEndpoint counterpart = findEndpoint(counterpartId);
+        String name = counterpart == null ? "Unbekannter Übergang" : titleOrFallback(counterpart.name(), "Übergang");
+        String notes = link.notes();
+        return notes == null || notes.isBlank() ? name : name + " • " + notes;
+    }
+
+    private String formatPassagePosition(DungeonPassage passage) {
+        return switch (passage.direction()) {
+            case EAST -> formatPosition(passage.x(), passage.y()) + " -> " + formatPosition(passage.x() + 1, passage.y());
+            case SOUTH -> formatPosition(passage.x(), passage.y()) + " -> " + formatPosition(passage.x(), passage.y() + 1);
+        };
+    }
+
+    private void updateDefaultEntryState(CheckBox checkBox, DungeonEndpointRole role) {
+        DungeonEndpointRole effectiveRole = role == null ? DungeonEndpointRole.BOTH : role;
+        boolean entryAllowed = effectiveRole.allowsEntry();
+        checkBox.setDisable(!entryAllowed);
+        if (!entryAllowed) {
+            checkBox.setSelected(false);
+        }
+    }
+
+    private String endpointRoleLabel(DungeonEndpointRole role) {
+        DungeonEndpointRole effectiveRole = role == null ? DungeonEndpointRole.BOTH : role;
+        return switch (effectiveRole) {
+            case ENTRY -> "Eingang";
+            case EXIT -> "Ausgang";
+            case BOTH -> "Ein- und Ausgang";
+        };
     }
 
     private static <T> T findById(List<T> values, Long id, Function<T, Long> idExtractor) {

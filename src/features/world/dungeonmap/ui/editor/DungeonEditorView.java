@@ -2,7 +2,6 @@ package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
-import features.world.dungeonmap.ui.editor.panes.DungeonSelectionEditorPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
@@ -14,20 +13,19 @@ public class DungeonEditorView implements AppView {
 
     private final DungeonEditorControls controls = new DungeonEditorControls();
     private final DungeonMapPane canvas = new DungeonMapPane();
-    private final DungeonSelectionEditorPane selectionEditorPane = new DungeonSelectionEditorPane();
     private final DungeonToolSettingsPane toolSettingsPane = new DungeonToolSettingsPane();
     private final DungeonEditorApplicationService applicationService = new DungeonEditorApplicationService();
     private final DungeonPaintSession paintSession = new DungeonPaintSession(canvas::previewPaint);
     private final DungeonWallPaintSession wallPaintSession = new DungeonWallPaintSession(canvas::previewCommittedWallEdits);
     private final DungeonEditorState state = new DungeonEditorState();
     private final DungeonSelectionWorkflowController selectionWorkflowController =
-            new DungeonSelectionWorkflowController(canvas, selectionEditorPane, toolSettingsPane, state);
+            new DungeonSelectionWorkflowController(canvas, toolSettingsPane, state);
     private final DungeonSquareEditWorkflowController squareEditWorkflowController =
             new DungeonSquareEditWorkflowController(state, applicationService, canvas, controls, toolSettingsPane, paintSession, wallPaintSession);
     private final DungeonMapDropdowns mapDropdowns = new DungeonMapDropdowns();
     private final VBox statePane = new VBox(8);
     private final DungeonMapLoadingWorkflowController loadingWorkflowController = new DungeonMapLoadingWorkflowController(
-            state, applicationService, controls, canvas, selectionEditorPane, toolSettingsPane, selectionWorkflowController);
+            state, applicationService, controls, canvas, toolSettingsPane, selectionWorkflowController);
     private final DungeonMapEditingController mapEditingController = new DungeonMapEditingController(
             state, applicationService, mapDropdowns);
     private final DungeonEntityCrudController entityCrudController = new DungeonEntityCrudController(
@@ -35,9 +33,9 @@ public class DungeonEditorView implements AppView {
     private final DungeonConnectionEditingController connectionEditingController = new DungeonConnectionEditingController(
             state, applicationService, canvas, controls, selectionWorkflowController);
     private final DungeonEditorInspectorContentFactory inspectorContentFactory = new DungeonEditorInspectorContentFactory(
-            state, entityCrudController);
+            state, entityCrudController, connectionEditingController);
     private final DungeonSelectionEditorWorkflowController selectionEditorWorkflowController = new DungeonSelectionEditorWorkflowController(
-            state, selectionEditorPane, toolSettingsPane, selectionWorkflowController, entityCrudController, connectionEditingController, loadingWorkflowController);
+            state, toolSettingsPane, selectionWorkflowController, entityCrudController);
 
     public DungeonEditorView(DetailsNavigator detailsNavigator) {
         squareEditWorkflowController.setReloadCurrentMap(loadingWorkflowController::reloadCurrentMap);
@@ -126,6 +124,7 @@ public class DungeonEditorView implements AppView {
         canvas.setOnLinkClicked(selectionWorkflowController::showLinkSelection);
         canvas.setBrushSizeSupplier(toolSettingsPane::getBrushSize);
         canvas.setBrushShapeSupplier(toolSettingsPane::getBrushShape);
+        canvas.setPaintModeSupplier(toolSettingsPane::getPaintMode);
         canvas.setWallEditorModeSupplier(toolSettingsPane::getWallEditorMode);
         canvas.setOnEdgeClicked(connectionEditingController::handleEdgeClick);
     }
