@@ -2,10 +2,8 @@ package features.encounter.ui;
 
 import features.encounter.builder.application.EncounterBuilderService;
 import features.encounter.combat.application.EncounterCombatService;
-import features.creatures.api.StatBlockRequest;
+import ui.shell.DetailsNavigator;
 import ui.shell.SceneRegistry;
-
-import java.util.function.Consumer;
 
 /**
  * Required cross-view callbacks for EncounterView, injected at construction time.
@@ -14,7 +12,7 @@ import java.util.function.Consumer;
 public record EncounterViewCallbacks(
         Runnable onRefreshToolbar,
         Runnable onRefreshPanels,
-        Consumer<StatBlockRequest> onRequestStatBlock,
+        DetailsNavigator detailsNavigator,
         SceneRegistry sceneRegistry,
         EncounterBuilderService builderService,
         EncounterCombatService combatService) {}

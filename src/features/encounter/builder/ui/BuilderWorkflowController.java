@@ -2,6 +2,7 @@ package features.encounter.builder.ui;
 
 import features.creatures.api.CreatureCatalogService;
 import features.creatures.model.Creature;
+import features.encounter.api.EncounterStorageApi;
 import features.encounter.builder.application.EncounterBuilderService;
 import features.encounter.combat.ui.CombatWorkflowController;
 import features.encounter.combat.ui.InitiativePane;
@@ -40,6 +41,7 @@ public final class BuilderWorkflowController {
     private Task<EncounterBuilderService.PartySnapshot> partyLoadTask;
     private Task<EncounterTableProvider.TableCatalogResult> tableLoadTask;
     private Task<EncounterGenerator.GenerationResult> generationTask;
+    private Task<EncounterStorageApi.SaveEncounterResult> saveEncounterTask;
 
     public BuilderWorkflowController(
             EncounterBuilderService encounterService,
@@ -57,6 +59,7 @@ public final class BuilderWorkflowController {
         this.criteriaSupplier = Objects.requireNonNull(criteriaSupplier, "criteriaSupplier");
         this.onShowInitiativePane = Objects.requireNonNull(onShowInitiativePane, "onShowInitiativePane");
         this.combatWorkflowController = Objects.requireNonNull(combatWorkflowController, "combatWorkflowController");
+        this.rosterPane.setOnSaveEncounter(this::saveEncounter);
     }
 
     public void setFilterData(CreatureCatalogService.FilterOptions data) {
@@ -76,6 +79,7 @@ public final class BuilderWorkflowController {
         EncounterAsyncTaskSupport.cancel(partyLoadTask);
         EncounterAsyncTaskSupport.cancel(tableLoadTask);
         EncounterAsyncTaskSupport.cancel(generationTask);
+        EncounterAsyncTaskSupport.cancel(saveEncounterTask);
     }
 
     public void addCreature(Creature creature, CreatureRoleProfile roleProfile) {
@@ -172,6 +176,7 @@ public final class BuilderWorkflowController {
         } else {
             rosterPane.updateSummary(null);
         }
+        rosterPane.setSaveEncounterEnabled(rosterPane.hasSlots());
         rosterPane.setStartCombatEnabled(rosterPane.hasSlots());
     }
 
@@ -187,6 +192,7 @@ public final class BuilderWorkflowController {
         EncounterAsyncTaskSupport.cancel(partyLoadTask);
         rosterPane.setGenerateEnabled(false);
         rosterPane.setStartCombatEnabled(false);
+        rosterPane.setSaveEncounterEnabled(false);
         Task<EncounterBuilderService.PartySnapshot> task = new Task<>() {
             @Override
             protected EncounterBuilderService.PartySnapshot call() {
@@ -207,11 +213,44 @@ public final class BuilderWorkflowController {
                 encounterControls.setPartyContext(1, 1);
             }
             rosterPane.setGenerateEnabled(true);
+            rosterPane.setSaveEncounterEnabled(rosterPane.hasSlots());
             rosterPane.setStartCombatEnabled(rosterPane.hasSlots());
         }, () -> {
             rosterPane.setGenerateEnabled(true);
+            rosterPane.setSaveEncounterEnabled(rosterPane.hasSlots());
             rosterPane.setStartCombatEnabled(rosterPane.hasSlots());
         }, () -> partyLoadTask == task);
+    }
+
+    private void saveEncounter(String name) {
+        if (!rosterPane.hasSlots() || !ensurePartyExists()) {
+            return;
+        }
+        EncounterAsyncTaskSupport.cancel(saveEncounterTask);
+        Encounter encounter = rosterPane.buildEncounter();
+        rosterPane.setSaveEncounterEnabled(false);
+        Task<EncounterStorageApi.SaveEncounterResult> task = new Task<>() {
+            @Override
+            protected EncounterStorageApi.SaveEncounterResult call() {
+                return EncounterStorageApi.saveEncounter(name, encounter);
+            }
+        };
+        saveEncounterTask = task;
+        EncounterAsyncTaskSupport.submit(task, "BuilderWorkflowController.saveEncounter()", result -> {
+            rosterPane.setSaveEncounterEnabled(rosterPane.hasSlots());
+            if (result == null || result.status() == EncounterStorageApi.SaveStatus.STORAGE_ERROR) {
+                new Alert(Alert.AlertType.ERROR, "Encounter konnte nicht gespeichert werden.").show();
+                return;
+            }
+            if (result.status() == EncounterStorageApi.SaveStatus.INVALID_INPUT) {
+                new Alert(Alert.AlertType.WARNING, "Encounter ist leer oder der Name fehlt.").show();
+                return;
+            }
+            new Alert(Alert.AlertType.INFORMATION, "Encounter gespeichert: " + name).show();
+        }, () -> {
+            rosterPane.setSaveEncounterEnabled(rosterPane.hasSlots());
+            new Alert(Alert.AlertType.ERROR, "Encounter konnte nicht gespeichert werden.").show();
+        }, () -> saveEncounterTask == task);
     }
 
     private void refreshTableState() {

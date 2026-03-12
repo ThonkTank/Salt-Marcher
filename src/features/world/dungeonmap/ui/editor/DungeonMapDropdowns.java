@@ -26,13 +26,18 @@ final class DungeonMapDropdowns {
             Node anchor,
             DungeonMap map,
             DungeonMapState currentState,
-            Consumer<DungeonMapFormDropdown.Result> onUpdateRequested
+            Consumer<DungeonMapFormDropdown.Result> onUpdateRequested,
+            Runnable onDeleteRequested
     ) {
         mapFormDropdown.showEdit(anchor, map,
                 (newWidth, newHeight) -> shrinkImpactText(map, currentState, newWidth, newHeight),
+                () -> deleteImpactText(map, currentState),
                 result -> {
             mapFormDropdown.hide();
             onUpdateRequested.accept(result);
+        }, () -> {
+            mapFormDropdown.hide();
+            onDeleteRequested.run();
         });
     }
 
@@ -72,6 +77,21 @@ final class DungeonMapDropdowns {
             }
         }
         return new ResizeImpact(removedSquareIds.size(), removedEndpointIds.size(), removedLinks);
+    }
+
+    private String deleteImpactText(DungeonMap map, DungeonMapState currentState) {
+        if (currentState == null) {
+            return "Dungeon '" + map.name() + "' unwiderruflich löschen?";
+        }
+        return "Dungeon '" + map.name() + "' unwiderruflich löschen?\n"
+                + currentState.squares().size() + " Felder, "
+                + currentState.rooms().size() + " Räume, "
+                + currentState.areas().size() + " Bereiche, "
+                + currentState.features().size() + " Features, "
+                + currentState.endpoints().size() + " Übergänge und "
+                + currentState.links().size() + " Links werden entfernt.\n"
+                + currentState.passages().size() + " Durchgänge und "
+                + currentState.walls().size() + " Wände gehen ebenfalls verloren.";
     }
 
     private record ResizeImpact(int squaresRemoved, int endpointsRemoved, int linksRemoved) {}

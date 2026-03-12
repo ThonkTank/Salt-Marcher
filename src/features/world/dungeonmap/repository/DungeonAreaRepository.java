@@ -56,10 +56,8 @@ public final class DungeonAreaRepository {
     public static List<DungeonArea> getAreas(Connection conn, long mapId) throws SQLException {
         List<DungeonArea> result = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT a.area_id, a.map_id, a.name, a.description, a.encounter_table_id, et.name AS encounter_table_name "
-                        + "FROM dungeon_areas a "
-                        + "LEFT JOIN encounter_tables et ON et.table_id = a.encounter_table_id "
-                        + "WHERE a.map_id=? ORDER BY a.area_id")) {
+                "SELECT area_id, map_id, name, description, encounter_table_id "
+                        + "FROM dungeon_areas WHERE map_id=? ORDER BY area_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -68,8 +66,7 @@ public final class DungeonAreaRepository {
                             rs.getLong("map_id"),
                             rs.getString("name"),
                             rs.getString("description"),
-                            getNullableLong(rs, "encounter_table_id"),
-                            rs.getString("encounter_table_name")));
+                            getNullableLong(rs, "encounter_table_id")));
                 }
             }
         }

@@ -3,6 +3,7 @@ package features.spells.ui;
 import features.spells.api.SpellBrowserPane;
 import features.spells.api.SpellCatalogService;
 import features.spells.api.SpellFilterPane;
+import features.spells.api.SpellSummary;
 import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
@@ -53,6 +54,6 @@ public final class SpellCatalogView implements AppView {
 
     private void showSpellInInspector(Long spellId) {
         if (spellId == null || detailsNavigator == null) return;
-        detailsNavigator.showSpell(new DetailsNavigator.SpellSummary(spellId));
+        detailsNavigator.showSpell(new SpellSummary(spellId));
     }
 }

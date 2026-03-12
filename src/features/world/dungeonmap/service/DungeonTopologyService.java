@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
+import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.model.PassageDirection;
 import features.world.dungeonmap.repository.DungeonEndpointRepository;
 import features.world.dungeonmap.repository.DungeonFeatureRepository;
@@ -14,6 +15,7 @@ import features.world.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeonmap.repository.DungeonPassageRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
 import features.world.dungeonmap.repository.DungeonSquareRepository;
+import features.world.dungeonmap.repository.DungeonWallRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -51,6 +53,9 @@ public final class DungeonTopologyService {
         if (!isPassageEdgeValid(conn, passage.mapId(), passage.x(), passage.y(), passage.direction())) {
             throw new IllegalArgumentException("Passage edge is no longer valid for map " + passage.mapId());
         }
+        if (passage.passageId() == null && !wallExists(conn, passage.mapId(), passage.x(), passage.y(), passage.direction())) {
+            throw new IllegalArgumentException("New passages require an existing wall on map " + passage.mapId());
+        }
         if (passage.endpointId() == null) {
             return;
         }
@@ -64,8 +69,18 @@ public final class DungeonTopologyService {
         DungeonPassageRepository.deleteInvalidPassages(conn, mapId);
     }
 
+    public static void applyWallEdits(Connection conn, long mapId, List<DungeonWallEdit> edits) throws SQLException {
+        for (DungeonWallEdit edit : edits) {
+            if (!isWallEdgeValid(conn, mapId, edit.x(), edit.y(), edit.direction())) {
+                throw new IllegalArgumentException("Wall edge is no longer valid for map " + mapId);
+            }
+        }
+        DungeonWallRepository.applyWallEdits(conn, mapId, edits);
+    }
+
     private static void reconcileAfterGeometryChange(Connection conn, long mapId, Set<Long> affectedRoomIds) throws SQLException {
         deleteInvalidPassages(conn, mapId);
+        DungeonWallRepository.deleteInvalidWalls(conn, mapId);
         DungeonFeatureRepository.deleteEmptyFeatures(conn, mapId);
         if (!affectedRoomIds.isEmpty()) {
             splitDisconnectedRooms(conn, mapId, affectedRoomIds);
@@ -98,10 +113,19 @@ public final class DungeonTopologyService {
     }
 
     private static boolean isPassageEdgeValid(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
-        if (direction == PassageDirection.EAST) {
-            return squareExists(conn, mapId, x, y) && squareExists(conn, mapId, x + 1, y);
-        }
-        return squareExists(conn, mapId, x, y) && squareExists(conn, mapId, x, y + 1);
+        boolean sideA = squareExists(conn, mapId, x, y);
+        boolean sideB = direction == PassageDirection.EAST
+                ? squareExists(conn, mapId, x + 1, y)
+                : squareExists(conn, mapId, x, y + 1);
+        return sideA && sideB;
+    }
+
+    private static boolean isWallEdgeValid(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
+        boolean sideA = squareExists(conn, mapId, x, y);
+        boolean sideB = direction == PassageDirection.EAST
+                ? squareExists(conn, mapId, x + 1, y)
+                : squareExists(conn, mapId, x, y + 1);
+        return sideA && sideB;
     }
 
     private static boolean squareExists(Connection conn, long mapId, int x, int y) throws SQLException {
@@ -110,6 +134,19 @@ public final class DungeonTopologyService {
             ps.setLong(1, mapId);
             ps.setInt(2, x);
             ps.setInt(3, y);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private static boolean wallExists(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT 1 FROM dungeon_walls WHERE map_id=? AND x=? AND y=? AND direction=?")) {
+            ps.setLong(1, mapId);
+            ps.setInt(2, x);
+            ps.setInt(3, y);
+            ps.setString(4, direction.dbValue());
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }

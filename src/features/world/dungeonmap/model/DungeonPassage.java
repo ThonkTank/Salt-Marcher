@@ -6,7 +6,6 @@ public record DungeonPassage(
         int x,
         int y,
         PassageDirection direction,
-        PassageType type,
         String name,
         String notes,
         Long endpointId

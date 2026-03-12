@@ -35,8 +35,8 @@ public class DungeonEditorControls extends VBox {
     public DungeonEditorControls() {
         getStyleClass().add("map-editor-toolbar");
         getStyleClass().add("dungeon-editor-toolbar");
-        setSpacing(10);
-        setPadding(new Insets(10, 12, 10, 12));
+        setSpacing(8);
+        setPadding(new Insets(8, 10, 8, 10));
 
         mapCombo.setPrefWidth(180);
         mapCombo.setMaxWidth(Double.MAX_VALUE);
@@ -58,7 +58,7 @@ public class DungeonEditorControls extends VBox {
             }
         });
 
-        Button newMapButton = new Button("+");
+        Button newMapButton = new Button("Neu");
         newMapButton.getStyleClass().addAll("button", "compact");
         newMapButton.setTooltip(new Tooltip("Neuen Dungeon anlegen"));
         newMapButton.setAccessibleText("Neuen Dungeon anlegen");
@@ -68,7 +68,7 @@ public class DungeonEditorControls extends VBox {
             }
         });
 
-        Button editMapButton = new Button("\u2699 Bearb.");
+        Button editMapButton = new Button("Bearbeiten");
         editMapButton.getStyleClass().addAll("button", "compact");
         editMapButton.setTooltip(new Tooltip("Dungeon bearbeiten"));
         editMapButton.setAccessibleText("Ausgewählten Dungeon bearbeiten");
@@ -80,14 +80,14 @@ public class DungeonEditorControls extends VBox {
         editMapButton.disableProperty().bind(mapCombo.valueProperty().isNull());
 
         ToggleGroup toolGroup = new ToggleGroup();
-        ToggleButton selectButton = buildToolButton("↖ Auswahl", DungeonEditorTool.SELECT, toolGroup, true);
-        ToggleButton paintButton = buildToolButton("▣ Malen", DungeonEditorTool.PAINT, toolGroup, false);
-        ToggleButton eraseButton = buildToolButton("⌫ Löschen", DungeonEditorTool.ERASE, toolGroup, false);
-        ToggleButton areaButton = buildToolButton("▧ Bereich", DungeonEditorTool.AREA_ASSIGN, toolGroup, false);
-        ToggleButton featureButton = buildToolButton("✦ Feature", DungeonEditorTool.FEATURE, toolGroup, false);
-        ToggleButton passageButton = buildToolButton("\u2503\u2501 Wand/Kante", DungeonEditorTool.PASSAGE, toolGroup, false);
-        ToggleButton endpointButton = buildToolButton("◉ Übergang", DungeonEditorTool.ENDPOINT, toolGroup, false);
-        ToggleButton linkButton = buildToolButton("↔ Link", DungeonEditorTool.LINK, toolGroup, false);
+        ToggleButton selectButton = buildToolButton("Auswahl", DungeonEditorTool.SELECT, toolGroup, true);
+        ToggleButton paintButton = buildToolButton("Malen", DungeonEditorTool.PAINT, toolGroup, false);
+        ToggleButton eraseButton = buildToolButton("Löschen", DungeonEditorTool.ERASE, toolGroup, false);
+        ToggleButton areaButton = buildToolButton("Bereich", DungeonEditorTool.AREA_ASSIGN, toolGroup, false);
+        ToggleButton featureButton = buildToolButton("Feature", DungeonEditorTool.FEATURE, toolGroup, false);
+        ToggleButton passageButton = buildToolButton("Wände", DungeonEditorTool.PASSAGE, toolGroup, false);
+        ToggleButton endpointButton = buildToolButton("Übergang", DungeonEditorTool.ENDPOINT, toolGroup, false);
+        ToggleButton linkButton = buildToolButton("Link", DungeonEditorTool.LINK, toolGroup, false);
 
         toolGroup.selectedToggleProperty().addListener((obs, oldValue, newValue) -> {
             if (newValue == null) {
@@ -106,6 +106,7 @@ public class DungeonEditorControls extends VBox {
         HBox mapRow = new HBox(8, mapCombo, newMapButton, editMapButton);
         mapRow.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(mapCombo, javafx.scene.layout.Priority.ALWAYS);
+        mapRow.getStyleClass().add("editor-action-row");
 
         VBox mapGroup = new VBox(6, mapLabel, mapRow);
         mapGroup.getStyleClass().add("editor-toolbar-group");
@@ -127,11 +128,7 @@ public class DungeonEditorControls extends VBox {
                 linkButton);
         VBox toolsGroup = new VBox(6, toolsLabel, toolRow);
         toolsGroup.getStyleClass().add("editor-toolbar-group");
-
-        Region separator = new Region();
-        separator.getStyleClass().add("control-separator");
-
-        getChildren().addAll(mapGroup, separator, toolsGroup);
+        getChildren().addAll(mapGroup, toolsGroup);
     }
 
     private ToggleButton buildToolButton(String label, DungeonEditorTool tool, ToggleGroup group, boolean selected) {

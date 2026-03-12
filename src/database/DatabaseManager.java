@@ -1,6 +1,7 @@
 package database;
 
 import features.campaignstate.repository.CampaignStateSchemaSupport;
+import features.encounter.repository.EncounterSchemaSupport;
 import features.partyanalysis.model.AnalysisModelVersion;
 import features.world.dungeonmap.repository.DungeonSchemaSupport;
 
@@ -248,6 +249,7 @@ public final class DatabaseManager {
                     + ")");
 
             DungeonSchemaSupport.createSchema(stmt);
+            EncounterSchemaSupport.createSchema(stmt);
 
             stmt.execute("CREATE TABLE IF NOT EXISTS factions ("
                     + "faction_id  INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -463,6 +465,7 @@ public final class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_map ON hex_tiles(map_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_faction ON hex_tiles(dominant_faction_id)");
             DungeonSchemaSupport.createIndexes(stmt);
+            EncounterSchemaSupport.createIndexes(stmt);
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_world_locations_tile ON world_locations(tile_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_tile_influence_faction ON tile_faction_influence(faction_id)");
             stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_tod_phases_order ON time_of_day_phases(display_order)");
@@ -482,6 +485,7 @@ public final class DatabaseManager {
             ensureEncounterAnalysisColumns(conn);
             ensureLootTableCompatibility(conn);
             DungeonSchemaSupport.ensureCompatibility(conn);
+            EncounterSchemaSupport.ensureCompatibility(conn);
             CampaignStateSchemaSupport.ensureCompatibility(conn);
             dropLegacyRoleColumns(conn);
 

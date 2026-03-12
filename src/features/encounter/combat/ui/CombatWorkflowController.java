@@ -15,12 +15,11 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyEvent;
+import ui.shell.DetailsNavigator;
 import ui.shell.SceneHandle;
-import features.creatures.api.StatBlockRequest;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
@@ -31,9 +30,7 @@ public final class CombatWorkflowController {
     private final EncounterRosterPane rosterPane;
     private final Runnable onEnterCombatMode;
     private final Runnable onExitCombatMode;
-    private final Consumer<StatBlockRequest> onRequestStatBlock;
-
-    private Consumer<StatBlockRequest> onEnsureStatBlock;
+    private final DetailsNavigator detailsNavigator;
     private CombatTrackerPane trackerPane;
     private Scene scene;
     private Task<EncounterCombatService.CombatStartResult> combatPreparationTask;
@@ -47,18 +44,14 @@ public final class CombatWorkflowController {
             EncounterRosterPane rosterPane,
             Runnable onEnterCombatMode,
             Runnable onExitCombatMode,
-            Consumer<StatBlockRequest> onRequestStatBlock
+            DetailsNavigator detailsNavigator
     ) {
         this.encounterService = Objects.requireNonNull(encounterService, "encounterService");
         this.encounterScene = Objects.requireNonNull(encounterScene, "encounterScene");
         this.rosterPane = Objects.requireNonNull(rosterPane, "rosterPane");
         this.onEnterCombatMode = Objects.requireNonNull(onEnterCombatMode, "onEnterCombatMode");
         this.onExitCombatMode = Objects.requireNonNull(onExitCombatMode, "onExitCombatMode");
-        this.onRequestStatBlock = Objects.requireNonNull(onRequestStatBlock, "onRequestStatBlock");
-    }
-
-    public void setOnEnsureStatBlock(Consumer<StatBlockRequest> callback) {
-        this.onEnsureStatBlock = callback;
+        this.detailsNavigator = Objects.requireNonNull(detailsNavigator, "detailsNavigator");
     }
 
     public void onSceneChanged(Scene oldScene, Scene newScene, boolean combatModeActive) {
@@ -129,8 +122,8 @@ public final class CombatWorkflowController {
 
     private void startCombat(List<Combatant> combatants) {
         trackerPane = new CombatTrackerPane();
-        trackerPane.setOnRequestStatBlock(onRequestStatBlock);
-        trackerPane.setOnEnsureStatBlock(onEnsureStatBlock);
+        trackerPane.setOnRequestStatBlock(detailsNavigator::showStatBlock);
+        trackerPane.setOnEnsureStatBlock(detailsNavigator::ensureStatBlock);
         trackerPane.setOnCombatStateChanged(this::updateCombatStatus);
         trackerPane.setOnEndCombat(this::onEndCombat);
         trackerPane.startCombat(combatants);

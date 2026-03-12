@@ -10,7 +10,7 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.panes.DungeonDetailsPane;
+import features.world.dungeonmap.ui.editor.panes.DungeonSelectionEditorPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import ui.shell.DetailsNavigator;
 
@@ -22,21 +22,22 @@ final class DungeonSelectionWorkflowController {
     }
 
     private final DungeonMapPane canvas;
-    private final DungeonDetailsPane detailsPane;
+    private final DungeonSelectionEditorPane selectionEditorPane;
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonEditorState state;
     private DetailsNavigator detailsNavigator;
+    private DungeonEditorInspectorContentFactory inspectorContentFactory;
 
     private Long pendingLinkStartId;
 
     DungeonSelectionWorkflowController(
             DungeonMapPane canvas,
-            DungeonDetailsPane detailsPane,
+            DungeonSelectionEditorPane selectionEditorPane,
             DungeonToolSettingsPane toolSettingsPane,
             DungeonEditorState state
     ) {
         this.canvas = canvas;
-        this.detailsPane = detailsPane;
+        this.selectionEditorPane = selectionEditorPane;
         this.toolSettingsPane = toolSettingsPane;
         this.state = state;
     }
@@ -55,36 +56,20 @@ final class DungeonSelectionWorkflowController {
         this.detailsNavigator = detailsNavigator;
     }
 
+    void setInspectorContentFactory(DungeonEditorInspectorContentFactory inspectorContentFactory) {
+        this.inspectorContentFactory = inspectorContentFactory;
+    }
+
     void clearSelection() {
-        showSelection(DungeonSelection.none());
+        showSelection(DungeonSelection.none(), false);
     }
 
     void showLinkSelection(DungeonLink link) {
-        showSelection(new DungeonSelection(
-                DungeonSelection.SelectionType.LINK,
-                link.linkId(),
-                null,
-                null,
-                null,
-                null,
-                java.util.List.of(),
-                null,
-                link,
-                null));
+        showSelection(DungeonSelection.link(link), false);
     }
 
     void showEndpointSelection(DungeonEndpoint endpoint) {
-        showSelection(new DungeonSelection(
-                DungeonSelection.SelectionType.ENDPOINT,
-                endpoint.endpointId(),
-                null,
-                null,
-                null,
-                null,
-                java.util.List.of(),
-                endpoint,
-                null,
-                null));
+        showSelection(DungeonSelection.endpoint(endpoint), false);
     }
 
     void handleCellClick(
@@ -99,7 +84,7 @@ final class DungeonSelectionWorkflowController {
             case SELECT_SQUARE -> selectSquare(interaction.square(), interaction.x(), interaction.y(), currentMapId);
             case ASSIGN_ROOM_AREA -> {
                 if (interaction.square() == null || interaction.square().roomId() == null) {
-                    publishInfoMessage("Bereich zuweisen", "Dieses Feld hat keinen Raum — erst Raum zuweisen.");
+                    showWorkflowMessage("Bereich zuweisen", "Dieses Feld hat keinen Raum — erst Raum zuweisen.");
                 } else {
                     onAssignRoomArea.accept(interaction.square());
                 }
@@ -135,108 +120,95 @@ final class DungeonSelectionWorkflowController {
         if (room == null) {
             return;
         }
-        showSelection(new DungeonSelection(
-                DungeonSelection.SelectionType.ROOM,
-                room.roomId(),
-                null,
-                room,
-                null,
-                null,
-                java.util.List.of(),
-                null,
-                null,
-                null));
+        showSelection(DungeonSelection.room(room), true);
     }
 
     void selectArea(DungeonArea area) {
         if (area == null) {
             return;
         }
-        showSelection(new DungeonSelection(
-                DungeonSelection.SelectionType.AREA,
-                area.areaId(),
-                null,
-                null,
-                area,
-                null,
-                java.util.List.of(),
-                null,
-                null,
-                null));
+        showSelection(DungeonSelection.area(area), true);
     }
 
     void selectFeature(DungeonFeature feature) {
         if (feature == null) {
             return;
         }
-        showSelection(new DungeonSelection(
-                DungeonSelection.SelectionType.FEATURE,
-                feature.featureId(),
-                null,
-                null,
-                null,
-                feature,
-                java.util.List.of(),
-                null,
-                null,
-                null));
+        showSelection(DungeonSelection.feature(feature), true);
     }
 
     void selectPassage(DungeonPassage passage) {
         if (passage == null) {
             return;
         }
-        showSelection(new DungeonSelection(
-                DungeonSelection.SelectionType.PASSAGE,
-                passage.passageId(),
-                null,
-                null,
-                null,
-                null,
-                java.util.List.of(),
-                null,
-                null,
-                passage));
+        showSelection(DungeonSelection.passage(passage), false);
+    }
+
+    void restoreRoomSelection(DungeonRoom room) {
+        if (room == null) {
+            return;
+        }
+        restoreSelection(DungeonSelection.room(room));
+    }
+
+    void restoreAreaSelection(DungeonArea area) {
+        if (area == null) {
+            return;
+        }
+        restoreSelection(DungeonSelection.area(area));
+    }
+
+    void restoreFeatureSelection(DungeonFeature feature) {
+        if (feature == null) {
+            return;
+        }
+        restoreSelection(DungeonSelection.feature(feature));
+    }
+
+    void restorePassageSelection(DungeonPassage passage) {
+        if (passage == null) {
+            return;
+        }
+        restoreSelection(DungeonSelection.passage(passage));
+    }
+
+    void refreshInspectorForCurrentSelection() {
+        if (state.currentSelection() == null) {
+            return;
+        }
+        openSelectionInInspector(state.currentSelection(), true);
     }
 
     private void selectSquare(DungeonSquare square, int x, int y, Long currentMapId) {
+        if (square != null && square.roomId() != null) {
+            DungeonRoom room = findRoom(square.roomId());
+            if (room != null) {
+                showSelection(DungeonSelection.room(room), true);
+                return;
+            }
+        }
         DungeonSquare effectiveSquare = square;
         if (effectiveSquare == null && currentMapId != null) {
             effectiveSquare = new DungeonSquare(null, currentMapId, x, y, null, null, null, null);
         }
-        showSelection(new DungeonSelection(
-                DungeonSelection.SelectionType.SQUARE,
-                null,
-                effectiveSquare,
-                null,
-                null,
-                null,
-                featuresAtSquare(effectiveSquare),
-                null,
-                null,
-                null));
+        showSelection(DungeonSelection.square(effectiveSquare, featuresAtSquare(effectiveSquare)), false);
     }
 
-    private void showSelection(DungeonSelection selection) {
+    private void restoreSelection(DungeonSelection selection) {
         state.setCurrentSelection(selection);
         canvas.setSelectedSelection(selection);
-        detailsPane.showSelection(selection);
-        toolSettingsPane.setTileContextFeatures(selection == null ? java.util.List.of() : selection.tileFeatures());
-        publishSelection(selection);
-        if (selection.type() == DungeonSelection.SelectionType.ROOM && selection.room() != null) {
-            toolSettingsPane.selectRoom(selection.room().roomId());
-        } else if (selection.type() == DungeonSelection.SelectionType.AREA && selection.area() != null) {
-            toolSettingsPane.selectArea(selection.area().areaId());
-        } else if (selection.type() == DungeonSelection.SelectionType.FEATURE && selection.feature() != null) {
-            toolSettingsPane.selectFeatureCategory(selection.feature().category());
-            toolSettingsPane.selectFeature(selection.feature().featureId());
-        } else if (selection.type() == DungeonSelection.SelectionType.SQUARE && selection.square() != null) {
-            if (selection.square().roomId() != null) {
-                toolSettingsPane.selectRoom(selection.square().roomId());
-            }
-            if (selection.square().areaId() != null) {
-                toolSettingsPane.selectArea(selection.square().areaId());
-            }
+        selectionEditorPane.showSelection(selection);
+        syncToolSettingsSelection(selection);
+        openSelectionInInspector(selection, true);
+    }
+
+    private void showSelection(DungeonSelection selection, boolean openInspector) {
+        state.setCurrentSelection(selection);
+        canvas.setSelectedSelection(selection);
+        selectionEditorPane.showSelection(selection);
+        syncToolSettingsSelection(selection);
+        if (openInspector) {
+            openSelectionInInspector(selection, false);
         }
     }
 
@@ -246,129 +218,69 @@ final class DungeonSelectionWorkflowController {
         toolSettingsPane.showLinkPending(false);
     }
 
-    private void publishSelection(DungeonSelection selection) {
-        if (detailsNavigator == null || selection == null) {
+    private void syncToolSettingsSelection(DungeonSelection selection) {
+        if (selection == null) {
+            toolSettingsPane.clearEntitySelections();
             return;
         }
         switch (selection.type()) {
             case ROOM -> {
-                if (selection.room() == null) {
-                    detailsNavigator.clear();
-                    return;
-                }
-                detailsNavigator.showDungeonRoom(new DetailsNavigator.DungeonRoomSummary(
-                        selection.room().roomId(),
-                        titleOrFallback(selection.room().name(), "Raum"),
-                        selection.room().description(),
-                        resolveAreaName(selection.room().areaId())));
+                toolSettingsPane.clearFeatureSelection();
+                toolSettingsPane.setTileContextFeatures(java.util.List.of());
+                toolSettingsPane.selectArea(null);
+                toolSettingsPane.selectRoom(selection.room() == null ? null : selection.room().roomId());
             }
             case AREA -> {
-                if (selection.area() == null) {
-                    detailsNavigator.clear();
-                    return;
-                }
-                detailsNavigator.showDungeonArea(new DetailsNavigator.DungeonAreaSummary(
-                        selection.area().areaId(),
-                        titleOrFallback(selection.area().name(), "Bereich"),
-                        selection.area().description(),
-                        selection.area().encounterTableName()));
-            }
-            case ENDPOINT -> {
-                if (selection.endpoint() == null) {
-                    detailsNavigator.clear();
-                    return;
-                }
-                detailsNavigator.showDungeonEndpoint(new DetailsNavigator.DungeonEndpointSummary(
-                        selection.endpoint().endpointId(),
-                        titleOrFallback(selection.endpoint().name(), "Übergang"),
-                        selection.endpoint().notes(),
-                        endpointRoleLabel(selection.endpoint()),
-                        selection.endpoint().defaultEntry(),
-                        selection.endpoint().x(),
-                        selection.endpoint().y()));
+                toolSettingsPane.clearFeatureSelection();
+                toolSettingsPane.setTileContextFeatures(java.util.List.of());
+                toolSettingsPane.selectRoom(null);
+                toolSettingsPane.selectArea(selection.area() == null ? null : selection.area().areaId());
             }
             case FEATURE -> {
+                toolSettingsPane.selectRoom(null);
+                toolSettingsPane.selectArea(null);
+                toolSettingsPane.setTileContextFeatures(java.util.List.of());
                 if (selection.feature() == null) {
-                    detailsNavigator.clear();
-                    return;
+                    toolSettingsPane.clearFeatureSelection();
+                } else {
+                    toolSettingsPane.selectFeatureCategory(selection.feature().category());
+                    toolSettingsPane.selectFeature(selection.feature().featureId());
                 }
-                detailsNavigator.showDungeonFeature(new DetailsNavigator.DungeonFeatureSummary(
-                        selection.feature().featureId(),
-                        titleOrFallback(selection.feature().name(), selection.feature().category().label()),
-                        selection.feature().category().label(),
-                        selection.feature().notes(),
-                        featureTileCount(selection.feature().featureId())));
-            }
-            case LINK -> {
-                if (selection.link() == null) {
-                    detailsNavigator.clear();
-                    return;
-                }
-                detailsNavigator.showDungeonLink(new DetailsNavigator.DungeonLinkSummary(
-                        selection.link().linkId(),
-                        selection.link().label(),
-                        resolveEndpointName(selection.link().fromEndpointId()),
-                        resolveEndpointName(selection.link().toEndpointId())));
-            }
-            case PASSAGE -> {
-                if (selection.passage() == null || selection.passage().passageId() == null) {
-                    detailsNavigator.clear();
-                    return;
-                }
-                detailsNavigator.showDungeonPassage(new DetailsNavigator.DungeonPassageSummary(
-                        selection.passage().passageId(),
-                        selection.passage().name(),
-                        selection.passage().notes(),
-                        selection.passage().type() == null ? null : selection.passage().type().label(),
-                        selection.passage().direction() == null ? null : selection.passage().direction().name(),
-                        selection.passage().x(),
-                        selection.passage().y(),
-                        resolveEndpointName(selection.passage().endpointId())));
             }
             case SQUARE -> {
+                toolSettingsPane.clearFeatureSelection();
+                toolSettingsPane.setTileContextFeatures(selection.tileFeatures());
                 if (selection.square() == null) {
-                    detailsNavigator.clear();
-                    return;
+                    toolSettingsPane.selectRoom(null);
+                    toolSettingsPane.selectArea(null);
+                } else {
+                    toolSettingsPane.selectRoom(selection.square().roomId());
+                    toolSettingsPane.selectArea(selection.square().areaId());
                 }
-                detailsNavigator.showDungeonSquare(new DetailsNavigator.DungeonSquareSummary(
-                        selection.square().x(),
-                        selection.square().y(),
-                        selection.square().roomName(),
-                        selection.square().areaName()));
             }
-            case NONE -> detailsNavigator.clear();
+            case ENDPOINT, LINK, PASSAGE, NONE -> toolSettingsPane.clearEntitySelections();
         }
     }
 
-    void publishInfoMessage(String title, String message) {
-        detailsPane.showInfoMessage(message);
-        if (detailsNavigator != null) {
-            detailsNavigator.showInfo(title, "dungeon-info:" + message, message);
+    void openSelectionInInspector(DungeonSelection selection, boolean refreshOnlyIfVisible) {
+        if (detailsNavigator == null || inspectorContentFactory == null || selection == null) {
+            return;
+        }
+        switch (selection.type()) {
+            case ROOM -> showRoomInspector(selection.room(), refreshOnlyIfVisible);
+            case AREA -> showAreaInspector(selection.area(), refreshOnlyIfVisible);
+            case FEATURE -> showFeatureInspector(selection.feature(), refreshOnlyIfVisible);
+            case NONE -> {
+                // Keep the last global inspector entry visible until the GM opens or closes it explicitly.
+            }
+            case SQUARE, ENDPOINT, LINK, PASSAGE -> {
+                // These remain local workflow selections in the editor, not inspector cards.
+            }
         }
     }
 
-    private String resolveAreaName(Long areaId) {
-        if (areaId == null || state.currentState() == null) {
-            return null;
-        }
-        for (DungeonArea area : state.currentState().areas()) {
-            if (areaId.equals(area.areaId())) {
-                return area.name();
-            }
-        }
-        return null;
-    }
-
-    private String resolveEndpointName(Long endpointId) {
-        if (endpointId == null || state.currentState() == null) {
-            return null;
-        }
-        for (DungeonEndpoint endpoint : state.currentState().endpoints()) {
-            if (endpointId.equals(endpoint.endpointId())) {
-                return titleOrFallback(endpoint.name(), "Übergang #" + endpointId);
-            }
-        }
-        return "Übergang #" + endpointId;
+    void showWorkflowMessage(String title, String message) {
+        selectionEditorPane.showEditorMessage(message);
     }
 
     private java.util.List<DungeonFeature> featuresAtSquare(DungeonSquare square) {
@@ -377,11 +289,11 @@ final class DungeonSelectionWorkflowController {
         }
         java.util.List<DungeonFeature> result = new java.util.ArrayList<>();
         for (var tile : state.currentState().featureTiles()) {
-            if (tile.squareId() != square.squareId()) {
+            if (tile.squareId() != square.squareId().longValue()) {
                 continue;
             }
             for (DungeonFeature feature : state.currentState().features()) {
-                if (feature.featureId() == tile.featureId()) {
+                if (feature.featureId() != null && feature.featureId() == tile.featureId()) {
                     result.add(feature);
                     break;
                 }
@@ -390,28 +302,74 @@ final class DungeonSelectionWorkflowController {
         return result;
     }
 
-    private int featureTileCount(Long featureId) {
-        if (featureId == null || state.currentState() == null) {
-            return 0;
-        }
-        int count = 0;
-        for (var tile : state.currentState().featureTiles()) {
-            if (featureId == tile.featureId()) {
-                count++;
-            }
-        }
-        return count;
-    }
-
-    private static String endpointRoleLabel(DungeonEndpoint endpoint) {
-        if (endpoint == null || endpoint.role() == null) {
+    private DungeonRoom findRoom(Long roomId) {
+        if (roomId == null || state.currentState() == null) {
             return null;
         }
-        return switch (endpoint.role()) {
-            case ENTRY -> "Eingang";
-            case EXIT -> "Ausgang";
-            case BOTH -> "Ein- und Ausgang";
-        };
+        for (DungeonRoom room : state.currentState().rooms()) {
+            if (roomId.equals(room.roomId())) {
+                return room;
+            }
+        }
+        return null;
+    }
+
+    private void showRoomInspector(DungeonRoom room, boolean refreshOnlyIfVisible) {
+        if (room == null || room.roomId() == null) {
+            return;
+        }
+        Object entryKey = roomEntryKey(room.roomId());
+        if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
+            return;
+        }
+        detailsNavigator.showContent(
+                titleOrFallback(room.name(), "Raum"),
+                entryKey,
+                () -> inspectorContentFactory.buildRoomCard(room));
+    }
+
+    private void showAreaInspector(DungeonArea area, boolean refreshOnlyIfVisible) {
+        if (area == null || area.areaId() == null) {
+            return;
+        }
+        Object entryKey = areaEntryKey(area.areaId());
+        if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
+            return;
+        }
+        detailsNavigator.showContent(
+                titleOrFallback(area.name(), "Bereich"),
+                entryKey,
+                () -> inspectorContentFactory.buildAreaCard(area));
+    }
+
+    private void showFeatureInspector(DungeonFeature feature, boolean refreshOnlyIfVisible) {
+        if (feature == null || feature.featureId() == null) {
+            return;
+        }
+        Object entryKey = featureEntryKey(feature.featureId());
+        if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
+            return;
+        }
+        detailsNavigator.showContent(
+                titleOrFallback(feature.name(), feature.category() == null ? "Feature" : feature.category().label()),
+                entryKey,
+                () -> inspectorContentFactory.buildFeatureCard(feature));
+    }
+
+    private boolean isShowingContent(Object key) {
+        return detailsNavigator.isShowing(new DetailsNavigator.EntryKey("content", key));
+    }
+
+    private static String roomEntryKey(Long roomId) {
+        return "dungeon-editor-room:" + roomId;
+    }
+
+    private static String areaEntryKey(Long areaId) {
+        return "dungeon-editor-area:" + areaId;
+    }
+
+    private static String featureEntryKey(Long featureId) {
+        return "dungeon-editor-feature:" + featureId;
     }
 
     private static String titleOrFallback(String value, String fallback) {

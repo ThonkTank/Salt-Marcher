@@ -18,6 +18,7 @@ import ui.components.AnchoredDropdown;
 
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 public final class DungeonMapFormDropdown {
@@ -32,11 +33,16 @@ public final class DungeonMapFormDropdown {
     private final Spinner<Integer> heightSpinner = createDimensionSpinner();
     private final Label impactLabel = new Label();
     private final Button cancelButton = new Button("Abbrechen");
+    private final Button deleteButton = new Button("Dungeon löschen");
+    private final Button confirmDeleteButton = new Button("Löschen bestätigen");
     private final Button submitButton = new Button("Erstellen");
     private final Button confirmShrinkButton = new Button("Verkleinerung bestätigen");
 
     private Consumer<Result> onSubmit = result -> { };
+    private Runnable onDelete = () -> { };
     private BiFunction<Integer, Integer, String> shrinkImpactProvider = (width, height) -> "";
+    private Supplier<String> deleteImpactProvider = () -> "";
+    private String submitLabel = "Erstellen";
 
     public DungeonMapFormDropdown() {
         panel.getStyleClass().add("dropdown-window");
@@ -47,6 +53,12 @@ public final class DungeonMapFormDropdown {
         impactLabel.setWrapText(true);
         impactLabel.setVisible(false);
         impactLabel.setManaged(false);
+        deleteButton.getStyleClass().add("danger");
+        deleteButton.setVisible(false);
+        deleteButton.setManaged(false);
+        confirmDeleteButton.getStyleClass().add("danger");
+        confirmDeleteButton.setVisible(false);
+        confirmDeleteButton.setManaged(false);
         confirmShrinkButton.setVisible(false);
         confirmShrinkButton.setManaged(false);
 
@@ -62,7 +74,7 @@ public final class DungeonMapFormDropdown {
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox actions = new HBox(8, cancelButton, spacer, confirmShrinkButton, submitButton);
+        HBox actions = new HBox(8, cancelButton, spacer, deleteButton, confirmDeleteButton, confirmShrinkButton, submitButton);
         actions.getStyleClass().add("dropdown-actions");
 
         panel.getChildren().addAll(titleLabel, grid, impactLabel, actions);
@@ -70,6 +82,8 @@ public final class DungeonMapFormDropdown {
         dropdown.setOnHidden(this::resetTransientState);
 
         cancelButton.setOnAction(event -> dropdown.hide());
+        deleteButton.setOnAction(event -> prepareDeleteConfirmation());
+        confirmDeleteButton.setOnAction(event -> onDelete.run());
         submitButton.setOnAction(event -> submit(false));
         confirmShrinkButton.setOnAction(event -> submit(true));
         nameField.setOnAction(event -> submit(false));
@@ -84,9 +98,14 @@ public final class DungeonMapFormDropdown {
         nameField.setText("Neuer Dungeon");
         widthSpinner.getValueFactory().setValue(24);
         heightSpinner.getValueFactory().setValue(24);
-        submitButton.setText("Erstellen");
+        submitLabel = "Erstellen";
+        submitButton.setText(submitLabel);
         this.onSubmit = onSubmit == null ? result -> { } : onSubmit;
+        this.onDelete = () -> { };
         this.shrinkImpactProvider = (width, height) -> "";
+        this.deleteImpactProvider = () -> "";
+        deleteButton.setVisible(false);
+        deleteButton.setManaged(false);
         resetTransientState();
         dropdown.show(anchor);
         dropdown.requestFocus(nameField);
@@ -97,15 +116,22 @@ public final class DungeonMapFormDropdown {
             Node anchor,
             DungeonMap map,
             BiFunction<Integer, Integer, String> shrinkImpactProvider,
-            Consumer<Result> onSubmit
+            Supplier<String> deleteImpactProvider,
+            Consumer<Result> onSubmit,
+            Runnable onDelete
     ) {
         titleLabel.setText("Dungeon bearbeiten");
         nameField.setText(map.name());
         widthSpinner.getValueFactory().setValue(map.width());
         heightSpinner.getValueFactory().setValue(map.height());
-        submitButton.setText("Speichern");
+        submitLabel = "Speichern";
+        submitButton.setText(submitLabel);
         this.shrinkImpactProvider = shrinkImpactProvider == null ? (width, height) -> "" : shrinkImpactProvider;
+        this.deleteImpactProvider = deleteImpactProvider == null ? () -> "" : deleteImpactProvider;
         this.onSubmit = onSubmit == null ? result -> { } : onSubmit;
+        this.onDelete = onDelete == null ? () -> { } : onDelete;
+        deleteButton.setVisible(true);
+        deleteButton.setManaged(true);
         resetTransientState();
         dropdown.show(anchor);
         dropdown.requestFocus(nameField);
@@ -131,6 +157,8 @@ public final class DungeonMapFormDropdown {
             impactLabel.setText(shrinkImpactText);
             impactLabel.setVisible(true);
             impactLabel.setManaged(true);
+            confirmDeleteButton.setVisible(false);
+            confirmDeleteButton.setManaged(false);
             confirmShrinkButton.setVisible(true);
             confirmShrinkButton.setManaged(true);
             submitButton.setText("Werte prüfen");
@@ -141,15 +169,33 @@ public final class DungeonMapFormDropdown {
     }
 
     private void resetTransientState() {
-        resetShrinkConfirmation();
-    }
-
-    private void resetShrinkConfirmation() {
         impactLabel.setText("");
         impactLabel.setVisible(false);
         impactLabel.setManaged(false);
         confirmShrinkButton.setVisible(false);
         confirmShrinkButton.setManaged(false);
+        confirmDeleteButton.setVisible(false);
+        confirmDeleteButton.setManaged(false);
+        submitButton.setText(submitLabel);
+    }
+
+    private void resetShrinkConfirmation() {
+        if (confirmDeleteButton.isVisible()) {
+            return;
+        }
+        resetTransientState();
+    }
+
+    private void prepareDeleteConfirmation() {
+        impactLabel.setText(deleteImpactProvider.get());
+        impactLabel.setVisible(true);
+        impactLabel.setManaged(true);
+        confirmShrinkButton.setVisible(false);
+        confirmShrinkButton.setManaged(false);
+        confirmDeleteButton.setVisible(true);
+        confirmDeleteButton.setManaged(true);
+        submitButton.setText(submitLabel);
+        dropdown.requestFocus(confirmDeleteButton);
     }
 
     private static Spinner<Integer> createDimensionSpinner() {

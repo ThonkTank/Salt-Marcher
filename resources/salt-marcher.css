@@ -696,12 +696,10 @@
     -fx-background-radius: 3;
 }
 .hp-bar-text {
-    -fx-text-fill: -sm-text-primary;
+    -fx-text-fill: -sm-bg-darkest;
     -fx-font-size: 11px;
     -fx-font-weight: bold;
-}
-.hp-text-dark {
-    -fx-text-fill: -sm-bg-darkest;
+    -fx-effect: dropshadow(three-pass-box, rgba(236, 237, 238, 0.95), 0, 0, 0, 0);
 }
 .hp-fill-healthy  { -fx-background-color: -sm-hp-healthy; }
 .hp-fill-wounded  { -fx-background-color: -sm-hp-wounded; }
@@ -1035,13 +1033,13 @@
     -fx-max-width: Infinity;
 }
 .dungeon-editor-toolbar {
-    -fx-spacing: 10;
+    -fx-spacing: 8;
 }
 .editor-toolbar-group {
-    -fx-spacing: 6;
+    -fx-spacing: 4;
 }
 .editor-tool-flow {
-    -fx-padding: 0 0 2 0;
+    -fx-padding: 0;
 }
 .dungeon-editor-sidebar-scroll {
     -fx-background-color: -sm-bg-darkest;
@@ -1064,20 +1062,29 @@
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 6;
     -fx-background-radius: 6;
-    -fx-padding: 12;
-    -fx-spacing: 8;
+    -fx-padding: 10;
+    -fx-spacing: 6;
 }
 .editor-panel-title,
 .dungeon-panel-title {
-    -fx-font-size: 14px;
+    -fx-font-size: 13px;
     -fx-font-weight: bold;
     -fx-text-fill: -sm-text-primary;
 }
 .dungeon-meta-row {
     -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 6;
 }
 .dungeon-meta-row .label {
     -fx-font-size: 12px;
+}
+.editor-action-row {
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 8;
+}
+.editor-subsection {
+    -fx-spacing: 6;
+    -fx-padding: 2 0 0 0;
 }
 .toolbar-divider {
     -fx-background-color: -sm-border-subtle;
@@ -1090,15 +1097,15 @@
 .tool-btn {
     -fx-background-color: -sm-bg-elevated;
     -fx-text-fill: -sm-text-secondary;
-    -fx-padding: 6 10;
+    -fx-padding: 5 9;
     -fx-background-radius: 3;
     -fx-border-radius: 3;
     -fx-cursor: hand;
     -fx-alignment: CENTER_LEFT;
-    -fx-min-height: 30;
+    -fx-min-height: 28;
 }
 .map-editor-toolbar .tool-btn {
-    -fx-padding: 5 10;
+    -fx-padding: 5 8;
 }
 .tool-btn:hover {
     -fx-background-color: -sm-bg-card;
@@ -1114,20 +1121,20 @@
 }
 .dungeon-tool-settings-pane .combo-box,
 .dungeon-tool-settings-pane .spinner,
-.dungeon-details-pane .combo-box,
-.dungeon-details-pane .text-field,
-.dungeon-details-pane .text-area {
+.dungeon-selection-editor-pane .combo-box,
+.dungeon-selection-editor-pane .text-field,
+.dungeon-selection-editor-pane .text-area {
     -fx-max-width: Infinity;
 }
 .map-editor-tool-settings-pane {
-    -fx-padding: 12;
-    -fx-spacing: 12;
+    -fx-padding: 10;
+    -fx-spacing: 10;
 }
 .map-editor-tool-settings-pane .editor-card {
-    -fx-padding: 10;
+    -fx-padding: 9;
 }
 .map-editor-terrain-grid {
-    -fx-pref-wrap-length: 236;
+    -fx-pref-wrap-length: 218;
 }
 
 /* ---- Terrain Palette (right panel) ---- */
@@ -1147,14 +1154,14 @@
 .terrain-btn {
     -fx-background-color: transparent;
     -fx-text-fill: -sm-text-secondary;
-    -fx-padding: 4 8;
+    -fx-padding: 4 7;
     -fx-background-radius: 3;
     -fx-border-radius: 3;
     -fx-cursor: hand;
-    -fx-graphic-text-gap: 8;
+    -fx-graphic-text-gap: 6;
 }
 .terrain-chip {
-    -fx-min-height: 34;
+    -fx-min-height: 30;
     -fx-background-color: -sm-bg-elevated;
     -fx-border-color: transparent;
     -fx-border-width: 1;

@@ -12,7 +12,6 @@ import ui.shell.AppView;
 import ui.shell.SceneHandle;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Encounter workflow view: orchestrates builder and combat modes.
@@ -42,17 +41,12 @@ public class EncounterView implements AppView {
                 workflow.onSceneChanged(oldScene, newScene));
 
         monsterList.setOnAddCreature(workflow::onAddCreature);
-        monsterList.setOnRequestStatBlock(id -> callbacks.onRequestStatBlock().accept(StatBlockRequest.forCreature(id)));
+        monsterList.setOnRequestStatBlock(id -> callbacks.detailsNavigator().showStatBlock(StatBlockRequest.forCreature(id)));
 
         rosterPane.setOnGenerate(workflow::onGenerate);
         rosterPane.setOnStartCombat(workflow::onRequestCombat);
         rosterPane.setOnRosterChanged(workflow::onRosterChanged);
-        rosterPane.setOnRequestStatBlock(id -> callbacks.onRequestStatBlock().accept(StatBlockRequest.forCreature(id)));
-    }
-
-    /** Optional: omitting disables auto-show (without toggle) for stat blocks during combat. */
-    public void setOnEnsureStatBlock(Consumer<StatBlockRequest> callback) {
-        workflow.setOnEnsureStatBlock(callback);
+        rosterPane.setOnRequestStatBlock(id -> callbacks.detailsNavigator().showStatBlock(StatBlockRequest.forCreature(id)));
     }
 
     public void setFilterData(CreatureCatalogService.FilterOptions data) {

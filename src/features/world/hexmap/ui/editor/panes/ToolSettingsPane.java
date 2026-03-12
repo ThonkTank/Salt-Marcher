@@ -19,7 +19,6 @@ import java.util.function.Consumer;
 public class ToolSettingsPane extends VBox {
 
     private final Label activeToolLabel = new Label("Auswahl");
-    private final Label activeToolHintLabel = new Label("Wähle ein Hexfeld aus, um seine Details rechts oben zu prüfen.");
     private final VBox terrainSection;
     private EditorTool activeTool = EditorTool.SELECT;
     private HexTerrainType activeTerrainType = HexTerrainType.GRASSLAND;
@@ -27,22 +26,20 @@ public class ToolSettingsPane extends VBox {
 
     public ToolSettingsPane() {
         getStyleClass().addAll("tool-settings-pane", "map-editor-tool-settings-pane");
-        setSpacing(12);
-        Label header = new Label("EINSTELLUNGEN");
-        header.getStyleClass().addAll("section-header", "text-muted");
+        setSpacing(10);
+        activeToolLabel.getStyleClass().add("editor-panel-title");
 
-        VBox overviewCard = card("Aktives Werkzeug", activeToolHintLabel, activeToolLabel);
+        VBox overviewCard = card("Werkzeug", activeToolLabel);
         terrainSection = buildTerrainSection();
         setGroupVisible(terrainSection, false);
 
-        getChildren().addAll(header, overviewCard, terrainSection);
+        getChildren().addAll(overviewCard, terrainSection);
     }
 
     private VBox buildTerrainSection() {
-        Label hint = helperLabel("Wähle das Gelände für den nächsten Malstrich. Farbe und Text bleiben gekoppelt, damit die Auswahl schnell lesbar ist.");
         FlowPane terrainGrid = new FlowPane();
-        terrainGrid.setHgap(8);
-        terrainGrid.setVgap(8);
+        terrainGrid.setHgap(6);
+        terrainGrid.setVgap(6);
         terrainGrid.getStyleClass().add("map-editor-terrain-grid");
 
         ToggleGroup terrainGroup = new ToggleGroup();
@@ -56,7 +53,7 @@ public class ToolSettingsPane extends VBox {
             btn.setToggleGroup(terrainGroup);
             btn.getStyleClass().add("terrain-btn");
             btn.getStyleClass().add("terrain-chip");
-            btn.setPrefWidth(112);
+            btn.setPrefWidth(104);
             btn.setAlignment(Pos.CENTER_LEFT);
             btn.setAccessibleText(terrain.label);
 
@@ -76,31 +73,23 @@ public class ToolSettingsPane extends VBox {
             terrainGrid.getChildren().add(btn);
         }
 
-        return card("Gelände", hint, terrainGrid);
+        return card("Gelände", terrainGrid);
     }
 
     public void setActiveTool(EditorTool tool) {
         activeTool = tool == null ? EditorTool.SELECT : tool;
         activeToolLabel.setText(toolTitle(activeTool));
-        activeToolHintLabel.setText(toolHint(activeTool));
         setGroupVisible(terrainSection, activeTool == EditorTool.TERRAIN_BRUSH);
     }
 
-    private static VBox card(String title, Label hint, javafx.scene.Node... content) {
+    private static VBox card(String title, javafx.scene.Node... content) {
         Label titleLabel = new Label(title);
         titleLabel.getStyleClass().add("editor-panel-title");
-        VBox box = new VBox(8);
+        VBox box = new VBox(6);
         box.getStyleClass().add("editor-card");
-        box.getChildren().addAll(titleLabel, hint);
+        box.getChildren().add(titleLabel);
         box.getChildren().addAll(content);
         return box;
-    }
-
-    private static Label helperLabel(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().add("text-secondary");
-        label.setWrapText(true);
-        return label;
     }
 
     private static void setGroupVisible(VBox group, boolean visible) {
@@ -110,12 +99,6 @@ public class ToolSettingsPane extends VBox {
 
     private static String toolTitle(EditorTool tool) {
         return tool == EditorTool.TERRAIN_BRUSH ? "Gelände malen" : "Auswahl";
-    }
-
-    private static String toolHint(EditorTool tool) {
-        return tool == EditorTool.TERRAIN_BRUSH
-                ? "Male Hexfelder direkt auf der Karte. Die Geländewahl unten bleibt aktiv, bis du sie wechselst."
-                : "Wähle ein Hexfeld aus, um seine Details rechts oben zu prüfen.";
     }
 
     public HexTerrainType getActiveTerrainType() { return activeTerrainType; }

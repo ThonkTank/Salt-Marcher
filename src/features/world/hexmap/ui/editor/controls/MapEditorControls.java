@@ -33,8 +33,8 @@ public class MapEditorControls extends VBox {
 
     public MapEditorControls() {
         getStyleClass().add("map-editor-toolbar");
-        setSpacing(10);
-        setPadding(new Insets(10, 12, 10, 12));
+        setSpacing(8);
+        setPadding(new Insets(8, 10, 8, 10));
 
         mapCombo.setPrefWidth(160);
         mapCombo.setMaxWidth(Double.MAX_VALUE);
@@ -50,13 +50,13 @@ public class MapEditorControls extends VBox {
             }
         });
 
-        Button newMapBtn = new Button("+");
+        Button newMapBtn = new Button("Neu");
         newMapBtn.getStyleClass().addAll("button", "compact");
         newMapBtn.setTooltip(new Tooltip("Neue Karte"));
         newMapBtn.setAccessibleText("Neue Karte");
         newMapBtn.setOnAction(e -> { if (onNewMapRequested != null) onNewMapRequested.accept(newMapBtn); });
 
-        Button editMapBtn = new Button("\u2699 Bearb.");
+        Button editMapBtn = new Button("Bearbeiten");
         editMapBtn.getStyleClass().addAll("button", "compact");
         editMapBtn.setTooltip(new Tooltip("Karte bearbeiten"));
         editMapBtn.setAccessibleText("Karte bearbeiten");
@@ -68,13 +68,13 @@ public class MapEditorControls extends VBox {
 
         ToggleGroup toolGroup = new ToggleGroup();
 
-        ToggleButton selectBtn = new ToggleButton("↖ Auswahl");
+        ToggleButton selectBtn = new ToggleButton("Auswahl");
         selectBtn.getStyleClass().add("tool-btn");
         selectBtn.setToggleGroup(toolGroup);
         selectBtn.setSelected(true);
         selectBtn.setAccessibleText("Auswahl-Werkzeug");
 
-        ToggleButton brushBtn = new ToggleButton("🖌 Malen");
+        ToggleButton brushBtn = new ToggleButton("Malen");
         brushBtn.getStyleClass().add("tool-btn");
         brushBtn.setToggleGroup(toolGroup);
         brushBtn.setAccessibleText("Gelände malen");
@@ -89,6 +89,7 @@ public class MapEditorControls extends VBox {
         HBox mapRow = new HBox(8, mapCombo, newMapBtn, editMapBtn);
         mapRow.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(mapCombo, Priority.ALWAYS);
+        mapRow.getStyleClass().add("editor-action-row");
 
         VBox mapGroup = new VBox(6, mapLabel, mapRow);
         mapGroup.getStyleClass().add("editor-toolbar-group");
@@ -98,11 +99,7 @@ public class MapEditorControls extends VBox {
         toolRow.setAlignment(Pos.CENTER_LEFT);
         VBox toolsGroup = new VBox(6, toolsLabel, toolRow);
         toolsGroup.getStyleClass().add("editor-toolbar-group");
-
-        Separator separator = new Separator();
-        separator.getStyleClass().add("control-separator");
-
-        getChildren().addAll(mapGroup, separator, toolsGroup);
+        getChildren().addAll(mapGroup, toolsGroup);
     }
 
     private static Label sectionLabel(String text) {

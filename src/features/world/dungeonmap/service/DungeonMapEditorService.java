@@ -10,6 +10,7 @@ import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquarePaint;
+import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.repository.DungeonAreaRepository;
 import features.world.dungeonmap.repository.DungeonEndpointRepository;
 import features.world.dungeonmap.repository.DungeonFeatureRepository;
@@ -19,9 +20,11 @@ import features.world.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeonmap.repository.DungeonPassageRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
 import features.world.dungeonmap.repository.DungeonSquareRepository;
+import features.world.dungeonmap.repository.DungeonWallRepository;
 import features.world.dungeonmap.service.adapter.DungeonCampaignStateAdapter;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
@@ -66,6 +69,12 @@ public final class DungeonMapEditorService {
             } finally {
                 conn.setAutoCommit(previousAutoCommit);
             }
+        }
+    }
+
+    public static void deleteMap(long mapId) throws Exception {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonMapRepository.deleteMap(conn, mapId);
         }
     }
 
@@ -239,14 +248,43 @@ public final class DungeonMapEditorService {
 
     public static long savePassage(DungeonPassage passage) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonTopologyService.validatePassageForSave(conn, passage);
-            return DungeonPassageRepository.upsertPassage(conn, passage);
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                DungeonTopologyService.validatePassageForSave(conn, passage);
+                deleteWallAtEdge(conn, passage.mapId(), passage.x(), passage.y(), passage.direction());
+                long passageId = DungeonPassageRepository.upsertPassage(conn, passage);
+                conn.commit();
+                return passageId;
+            } catch (SQLException | RuntimeException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
         }
     }
 
     public static void deletePassage(long passageId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonPassageRepository.deletePassage(conn, passageId);
+        }
+    }
+
+    public static void applyWallEdits(long mapId, List<DungeonWallEdit> edits) throws Exception {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                deletePassagesReplacedByWalls(conn, mapId, edits);
+                DungeonTopologyService.applyWallEdits(conn, mapId, edits);
+                conn.commit();
+            } catch (SQLException | RuntimeException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
         }
     }
 
@@ -291,5 +329,25 @@ public final class DungeonMapEditorService {
         }
         DungeonCampaignStateAdapter.updateDungeonPosition(conn, mapId, null);
         return Optional.empty();
+    }
+
+    private static void deletePassagesReplacedByWalls(Connection conn, long mapId, List<DungeonWallEdit> edits) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM dungeon_passages WHERE map_id=? AND x=? AND y=? AND direction=?")) {
+            for (DungeonWallEdit edit : edits) {
+                if (!edit.wallPresent()) {
+                    continue;
+                }
+                ps.setLong(1, mapId);
+                ps.setInt(2, edit.x());
+                ps.setInt(3, edit.y());
+                ps.setString(4, edit.direction().dbValue());
+                ps.executeUpdate();
+            }
+        }
+    }
+
+    private static void deleteWallAtEdge(Connection conn, long mapId, int x, int y, features.world.dungeonmap.model.PassageDirection direction) throws SQLException {
+        DungeonWallRepository.applyWallEdits(conn, mapId, List.of(new DungeonWallEdit(x, y, direction, false)));
     }
 }

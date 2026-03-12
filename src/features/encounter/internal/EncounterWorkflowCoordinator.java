@@ -11,12 +11,11 @@ import features.creatures.model.Creature;
 import features.encountertable.model.EncounterTable;
 import javafx.scene.Scene;
 import features.creatures.api.CreatureBrowserPane;
-import features.creatures.api.StatBlockRequest;
+import ui.shell.DetailsNavigator;
 import ui.shell.SceneHandle;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
 
 public final class EncounterWorkflowCoordinator {
 
@@ -24,7 +23,7 @@ public final class EncounterWorkflowCoordinator {
 
     private final Runnable onRefreshToolbar;
     private final Runnable onRefreshPanels;
-    private final Consumer<StatBlockRequest> onRequestStatBlock;
+    private final DetailsNavigator detailsNavigator;
 
     private final EncounterBuilderService builderService;
     private final SceneHandle encounterScene;
@@ -45,7 +44,7 @@ public final class EncounterWorkflowCoordinator {
     ) {
         this.onRefreshToolbar = callbacks.onRefreshToolbar();
         this.onRefreshPanels = callbacks.onRefreshPanels();
-        this.onRequestStatBlock = callbacks.onRequestStatBlock();
+        this.detailsNavigator = Objects.requireNonNull(callbacks.detailsNavigator(), "detailsNavigator");
         this.builderService = Objects.requireNonNull(callbacks.builderService(), "builderService");
         this.encounterScene = Objects.requireNonNull(encounterScene, "encounterScene");
         this.monsterList = Objects.requireNonNull(monsterList, "monsterList");
@@ -57,7 +56,7 @@ public final class EncounterWorkflowCoordinator {
                 rosterPane,
                 () -> switchMode(Mode.COMBAT),
                 () -> switchMode(Mode.BUILDER),
-                onRequestStatBlock
+                detailsNavigator
         );
         this.combatWorkflowController = combatWorkflowController;
         this.builderWorkflowController = new BuilderWorkflowController(
@@ -69,10 +68,6 @@ public final class EncounterWorkflowCoordinator {
                 encounterScene::setContent,
                 combatWorkflowController
         );
-    }
-
-    public void setOnEnsureStatBlock(Consumer<StatBlockRequest> callback) {
-        combatWorkflowController.setOnEnsureStatBlock(callback);
     }
 
     public String getTitle() {

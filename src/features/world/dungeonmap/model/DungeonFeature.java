@@ -4,6 +4,7 @@ public record DungeonFeature(
         Long featureId,
         Long mapId,
         DungeonFeatureCategory category,
+        Long encounterId,
         String name,
         String notes
 ) {

@@ -2,17 +2,11 @@ package ui.bootstrap;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.application.Preloader;
 import javafx.concurrent.Task;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -45,9 +39,7 @@ public class SaltMarcherApp extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        Stage startupStage = createStartupStage();
-        startupStage.show();
-
+        Platform.setImplicitExit(false);
         Task<Void> startupTask = new Task<>() {
             @Override
             protected Void call() {
@@ -58,23 +50,25 @@ public class SaltMarcherApp extends Application {
         };
         startupTask.setOnSucceeded(event -> {
             try {
-                showMainStage(primaryStage, startupStage);
+                showMainStage(primaryStage);
             } catch (RuntimeException e) {
-                handleStartupFailure(startupStage, e);
+                handleStartupFailure(e);
             }
         });
-        startupTask.setOnFailed(event -> handleStartupFailure(startupStage, startupTask.getException()));
-        UiAsyncTasks.submit(startupTask);
+        startupTask.setOnFailed(event -> handleStartupFailure(startupTask.getException()));
+        Thread startupThread = new Thread(startupTask, "sm-startup");
+        // The app must stay alive until the first stage is shown.
+        startupThread.setDaemon(false);
+        startupThread.start();
     }
 
-    private void showMainStage(Stage primaryStage, Stage startupStage) {
+    private void showMainStage(Stage primaryStage) {
         AppShell shell = new AppShell();
 
         EncounterModule encounterModule = new EncounterModule(
                 shell::refreshToolbar,
                 shell::refreshPanels,
-                shell.getShowStatBlockHandler(),
-                shell.getEnsureStatBlockHandler(),
+                shell.getDetailsNavigator(),
                 shell.getSceneRegistry()
         );
         AppView encounterView = encounterModule.view();
@@ -117,7 +111,8 @@ public class SaltMarcherApp extends Application {
         primaryStage.setMinWidth(900);
         primaryStage.setMinHeight(500);
         primaryStage.show();
-        startupStage.hide();
+        Platform.setImplicitExit(true);
+        notifyPreloader(new SaltMarcherPreloader.AppReadyNotification());
 
         // Filter data requires a DB query (creature types/biomes), so it is loaded asynchronously.
         // setFilterData() wires the filter-changed callback internally (see EncounterControls.setFilterData).
@@ -148,42 +143,10 @@ public class SaltMarcherApp extends Application {
                 throwable -> UiErrorReporter.reportBackgroundFailure("SaltMarcherApp.start()", throwable));
     }
 
-    private static Stage createStartupStage() {
-        ProgressIndicator progressIndicator = new ProgressIndicator();
-        progressIndicator.setMaxSize(56, 56);
-
-        Label title = new Label("Salt Marcher");
-        title.getStyleClass().add("startup-title");
-
-        Label subtitle = new Label("Salt Marcher wird gestartet...");
-        subtitle.getStyleClass().add("startup-subtitle");
-
-        VBox card = new VBox(12, progressIndicator, title, subtitle);
-        card.getStyleClass().add("startup-card");
-        card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(28));
-
-        VBox root = new VBox(card);
-        root.getStyleClass().add("startup-root");
-        root.setAlignment(Pos.CENTER);
-        root.setPadding(new Insets(24));
-
-        Scene startupScene = new Scene(root, 360, 220);
-        startupScene.getStylesheets().add(
-                SaltMarcherApp.class.getResource("/salt-marcher.css").toExternalForm());
-
-        Stage startupStage = new Stage(StageStyle.UNDECORATED);
-        startupStage.initModality(Modality.NONE);
-        startupStage.setTitle("Salt Marcher");
-        startupStage.setScene(startupScene);
-        startupStage.setResizable(false);
-        startupStage.centerOnScreen();
-        return startupStage;
-    }
-
-    private static void handleStartupFailure(Stage startupStage, Throwable throwable) {
+    private void handleStartupFailure(Throwable throwable) {
         UiErrorReporter.reportBackgroundFailure("SaltMarcherApp.start()", throwable);
-        startupStage.hide();
+        notifyPreloader(new Preloader.StateChangeNotification(
+                Preloader.StateChangeNotification.Type.BEFORE_START));
 
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(STARTUP_ERROR_TITLE);

@@ -1,12 +1,35 @@
 import java.nio.file.Files
+import java.nio.file.FileVisitResult
+import java.nio.file.FileVisitOption
+import java.nio.file.LinkOption
 import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.SimpleFileVisitor
+import java.nio.file.StandardCopyOption
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.attribute.PosixFilePermission
+import java.io.ByteArrayOutputStream
+import java.util.EnumSet
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.JavaExec
+import org.gradle.jvm.application.tasks.CreateStartScripts
+import org.gradle.api.tasks.Sync
 
 plugins {
     java
     application
     id("org.openjfx.javafxplugin") version "0.1.0"
+}
+
+val desktopAppName = "Salt Marcher"
+val launcherName = "salt-marcher"
+val preloaderJvmArg = "-Djavafx.preloader=ui.bootstrap.SaltMarcherPreloader"
+val jpackageModulePathArg = "--module-path=${'$'}APPDIR"
+val jpackageAddModulesArg = "--add-modules=javafx.controls"
+val desktopIconRelativePath = "icons/salt-marcher.svg"
+val packageVersion = providers.gradleProperty("saltMarcherVersion").orElse("0.1.0")
+val localRuntimeImage = providers.provider {
+    Paths.get(System.getProperty("java.home"))
 }
 
 repositories {
@@ -49,14 +72,261 @@ dependencies {
 
 application {
     mainClass = "ui.bootstrap.SaltMarcherApp"
+    applicationDefaultJvmArgs = listOf(preloaderJvmArg)
 }
 
 tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
+tasks.withType<CreateStartScripts>().configureEach {
+    applicationName = launcherName
+}
+
 tasks.test {
     useJUnitPlatform()
+}
+
+val jpackageInputDir = layout.buildDirectory.dir("packaging/jpackage-input")
+val jpackageOutputDir = layout.buildDirectory.dir("packaging/jpackage")
+val jpackageTempDir = layout.buildDirectory.dir("packaging/tmp")
+val preparedRuntimeImageDir = layout.buildDirectory.dir("packaging/runtime-image")
+val packagedAppImageDir = jpackageOutputDir.map { it.dir(launcherName) }
+val installedAppDir = providers.provider {
+    Paths.get(System.getProperty("user.home"), ".local", "opt", launcherName)
+}
+val installedDesktopIcon = installedAppDir.map { it.resolve(desktopIconRelativePath) }
+val desktopEntryName = "$desktopAppName.desktop"
+val desktopEntryContent = providers.provider {
+    val execPath = installedAppDir.get().resolve("bin").resolve(launcherName)
+    val iconPath = installedDesktopIcon.get()
+    """
+    [Desktop Entry]
+    Version=1.0
+    Type=Application
+    Name=$desktopAppName
+    Comment=Launch Salt Marcher
+    Exec=${execPath.toAbsolutePath()}
+    Icon=${iconPath.toAbsolutePath()}
+    Terminal=false
+    Categories=Game;Utility;
+    StartupNotify=true
+    """.trimIndent() + "\n"
+}
+
+val stageJpackageInput by tasks.registering(Sync::class) {
+    dependsOn(tasks.named("jar"))
+    from(tasks.named("jar"))
+    from(configurations.runtimeClasspath)
+    into(jpackageInputDir)
+}
+
+val prepareRuntimeImage by tasks.registering {
+    description = "Create a materialized runtime image for jpackage without external symlink dependencies."
+
+    inputs.dir(localRuntimeImage)
+    outputs.dir(preparedRuntimeImageDir)
+
+    doLast {
+        val sourceDir = localRuntimeImage.get().toRealPath()
+        val targetDir = preparedRuntimeImageDir.get().asFile.toPath()
+
+        delete(targetDir.toFile())
+        Files.createDirectories(targetDir)
+        copyRuntimeImage(sourceDir, targetDir)
+    }
+}
+
+val packageAppImage by tasks.registering(Exec::class) {
+    group = "distribution"
+    description = "Build a self-contained Linux app image with jpackage."
+    dependsOn(stageJpackageInput, prepareRuntimeImage)
+
+    val mainJar = tasks.named<Jar>("jar").flatMap { it.archiveFileName }
+    inputs.dir(jpackageInputDir)
+    inputs.file(layout.projectDirectory.file("resources/$desktopIconRelativePath"))
+    inputs.dir(preparedRuntimeImageDir)
+    outputs.dir(packagedAppImageDir)
+
+    doFirst {
+        delete(packagedAppImageDir.get().asFile)
+        delete(jpackageTempDir.get().asFile)
+        jpackageOutputDir.get().asFile.mkdirs()
+        jpackageTempDir.get().asFile.mkdirs()
+        commandLine(
+            "jpackage",
+            "--type", "app-image",
+            "--dest", jpackageOutputDir.get().asFile.absolutePath,
+            "--temp", jpackageTempDir.get().asFile.absolutePath,
+            "--input", jpackageInputDir.get().asFile.absolutePath,
+            "--name", launcherName,
+            "--app-version", packageVersion.get(),
+            "--vendor", "Salt Marcher",
+            "--runtime-image", preparedRuntimeImageDir.get().asFile.absolutePath,
+            "--main-jar", mainJar.get(),
+            "--main-class", application.mainClass.get(),
+            "--java-options", jpackageModulePathArg,
+            "--java-options", jpackageAddModulesArg,
+            "--java-options", preloaderJvmArg
+        )
+    }
+}
+
+val installAppImage by tasks.registering {
+    group = "distribution"
+    description = "Install the packaged app image into ~/.local/opt/salt-marcher."
+    dependsOn(packageAppImage)
+
+    inputs.dir(packagedAppImageDir)
+    inputs.file(layout.projectDirectory.file("resources/$desktopIconRelativePath"))
+    outputs.dir(installedAppDir)
+
+    doLast {
+        val sourceDir = packagedAppImageDir.get().asFile.toPath()
+        val targetDir = installedAppDir.get()
+        val stagingDir = targetDir.resolveSibling("${targetDir.fileName}.tmp")
+
+        delete(stagingDir.toFile())
+        copy {
+            from(sourceDir)
+            into(stagingDir)
+        }
+
+        val iconTarget = stagingDir.resolve(desktopIconRelativePath)
+        Files.createDirectories(iconTarget.parent)
+        Files.copy(
+            layout.projectDirectory.file("resources/$desktopIconRelativePath").asFile.toPath(),
+            iconTarget,
+            StandardCopyOption.REPLACE_EXISTING
+        )
+
+        delete(targetDir.toFile())
+        Files.move(stagingDir, targetDir, StandardCopyOption.REPLACE_EXISTING)
+    }
+}
+
+val installDesktopEntries by tasks.registering {
+    group = "distribution"
+    description = "Install desktop shortcut entries for the packaged Salt Marcher app."
+    dependsOn(installAppImage)
+
+    inputs.property("desktopEntryContent", desktopEntryContent)
+    outputs.files(
+        providers.provider {
+            val desktopDir = resolveDesktopDirectory()
+            listOf(
+                desktopDir.resolve(desktopEntryName).toFile(),
+                Paths.get(System.getProperty("user.home"), ".local", "share", "applications", "$launcherName.desktop").toFile()
+            )
+        }
+    )
+
+    doLast {
+        val desktopDir = resolveDesktopDirectory()
+        val desktopFile = desktopDir.resolve(desktopEntryName)
+        val applicationsFile = Paths.get(
+            System.getProperty("user.home"),
+            ".local",
+            "share",
+            "applications",
+            "$launcherName.desktop"
+        )
+
+        Files.createDirectories(desktopDir)
+        Files.createDirectories(applicationsFile.parent)
+        Files.writeString(desktopFile, desktopEntryContent.get())
+        Files.writeString(applicationsFile, desktopEntryContent.get())
+        setExecutableDesktopFile(desktopFile)
+        setExecutableDesktopFile(applicationsFile)
+    }
+}
+
+tasks.register("installDesktopApp") {
+    group = "distribution"
+    description = "Build, install, and register Salt Marcher as a desktop application."
+    dependsOn(installDesktopEntries)
+}
+
+fun resolveDesktopDirectory(): Path {
+    val output = ByteArrayOutputStream()
+    val result = exec {
+        commandLine("xdg-user-dir", "DESKTOP")
+        standardOutput = output
+        isIgnoreExitValue = true
+    }
+    if (result.exitValue == 0) {
+        val path = output.toString().trim()
+        if (path.isNotBlank()) {
+            return Paths.get(path)
+        }
+    }
+    return Paths.get(System.getProperty("user.home"), "Schreibtisch")
+}
+
+fun setExecutableDesktopFile(path: Path) {
+    try {
+        Files.setPosixFilePermissions(
+            path,
+            setOf(
+                PosixFilePermission.OWNER_READ,
+                PosixFilePermission.OWNER_WRITE,
+                PosixFilePermission.OWNER_EXECUTE,
+                PosixFilePermission.GROUP_READ,
+                PosixFilePermission.GROUP_EXECUTE,
+                PosixFilePermission.OTHERS_READ,
+                PosixFilePermission.OTHERS_EXECUTE
+            )
+        )
+    } catch (_: UnsupportedOperationException) {
+        // Non-POSIX filesystems still get a valid desktop entry without chmod support.
+    }
+}
+
+fun copyRuntimeImage(sourceDir: Path, targetDir: Path) {
+    Files.walkFileTree(sourceDir, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Int.MAX_VALUE, object : SimpleFileVisitor<Path>() {
+        override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+            val target = targetDir.resolve(sourceDir.relativize(dir).toString())
+            Files.createDirectories(target)
+            return FileVisitResult.CONTINUE
+        }
+
+        override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+            val resolvedSource = if (Files.isSymbolicLink(file)) {
+                file.toRealPath()
+            } else {
+                file
+            }
+            val target = targetDir.resolve(sourceDir.relativize(file).toString())
+            Files.createDirectories(target.parent)
+            Files.copy(
+                resolvedSource,
+                target,
+                StandardCopyOption.REPLACE_EXISTING,
+                StandardCopyOption.COPY_ATTRIBUTES
+            )
+            return FileVisitResult.CONTINUE
+        }
+
+        override fun postVisitDirectory(dir: Path, exc: java.io.IOException?): FileVisitResult {
+            if (exc != null) {
+                throw exc
+            }
+            val source = if (Files.isSymbolicLink(dir)) {
+                dir.toRealPath()
+            } else {
+                dir
+            }
+            val target = targetDir.resolve(sourceDir.relativize(dir).toString())
+            if (Files.exists(source, LinkOption.NOFOLLOW_LINKS)) {
+                try {
+                    Files.setLastModifiedTime(target, Files.getLastModifiedTime(source))
+                } catch (_: UnsupportedOperationException) {
+                    // Some filesystems do not support preserving directory timestamps.
+                }
+            }
+            return FileVisitResult.CONTINUE
+        }
+    })
 }
 
 fun registerJavaExecTask(

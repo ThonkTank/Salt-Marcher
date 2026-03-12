@@ -21,7 +21,7 @@ public final class DungeonFeatureRepository {
     public static List<DungeonFeature> getFeatures(Connection conn, long mapId) throws SQLException {
         List<DungeonFeature> result = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT feature_id, map_id, category, name, notes "
+                "SELECT feature_id, map_id, category, encounter_id, name, notes "
                         + "FROM dungeon_features WHERE map_id=? ORDER BY category, feature_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -35,7 +35,7 @@ public final class DungeonFeatureRepository {
 
     public static Optional<DungeonFeature> findFeature(Connection conn, long featureId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT feature_id, map_id, category, name, notes "
+                "SELECT feature_id, map_id, category, encounter_id, name, notes "
                         + "FROM dungeon_features WHERE feature_id=?")) {
             ps.setLong(1, featureId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -49,14 +49,20 @@ public final class DungeonFeatureRepository {
 
     public static long upsertFeature(Connection conn, DungeonFeature feature) throws SQLException {
         DungeonFeatureCategory category = feature.category() == null ? DungeonFeatureCategory.CURIOSITY : feature.category();
+        Long encounterId = category == DungeonFeatureCategory.ENCOUNTER ? feature.encounterId() : null;
         if (feature.featureId() == null) {
             try (PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO dungeon_features(map_id, category, name, notes) VALUES(?,?,?,?)",
+                    "INSERT INTO dungeon_features(map_id, category, encounter_id, name, notes) VALUES(?,?,?,?,?)",
                     Statement.RETURN_GENERATED_KEYS)) {
                 ps.setLong(1, feature.mapId());
                 ps.setString(2, category.dbValue());
-                ps.setString(3, feature.name());
-                ps.setString(4, feature.notes());
+                if (encounterId != null) {
+                    ps.setLong(3, encounterId);
+                } else {
+                    ps.setNull(3, java.sql.Types.INTEGER);
+                }
+                ps.setString(4, feature.name());
+                ps.setString(5, feature.notes());
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     if (!keys.next()) {
@@ -67,11 +73,16 @@ public final class DungeonFeatureRepository {
             }
         }
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE dungeon_features SET category=?, name=?, notes=? WHERE feature_id=?")) {
+                "UPDATE dungeon_features SET category=?, encounter_id=?, name=?, notes=? WHERE feature_id=?")) {
             ps.setString(1, category.dbValue());
-            ps.setString(2, feature.name());
-            ps.setString(3, feature.notes());
-            ps.setLong(4, feature.featureId());
+            if (encounterId != null) {
+                ps.setLong(2, encounterId);
+            } else {
+                ps.setNull(2, java.sql.Types.INTEGER);
+            }
+            ps.setString(3, feature.name());
+            ps.setString(4, feature.notes());
+            ps.setLong(5, feature.featureId());
             ps.executeUpdate();
             return feature.featureId();
         }
@@ -101,7 +112,13 @@ public final class DungeonFeatureRepository {
                 rs.getLong("feature_id"),
                 rs.getLong("map_id"),
                 DungeonFeatureCategory.fromDbValue(rs.getString("category")),
+                getNullableLong(rs, "encounter_id"),
                 rs.getString("name"),
                 rs.getString("notes"));
+    }
+
+    private static Long getNullableLong(ResultSet rs, String column) throws SQLException {
+        long value = rs.getLong(column);
+        return rs.wasNull() ? null : value;
     }
 }

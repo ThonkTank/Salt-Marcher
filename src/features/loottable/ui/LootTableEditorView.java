@@ -3,6 +3,7 @@ package features.loottable.ui;
 import features.items.api.ItemBrowserPane;
 import features.items.api.ItemBrowserRowAction;
 import features.items.api.ItemCatalogService;
+import features.loottable.api.LootTableSummary;
 import features.loottable.model.LootTable;
 import features.loottable.service.LootTableNameNormalizer;
 import features.loottable.service.LootTableService;
@@ -56,7 +57,6 @@ public class LootTableEditorView implements AppView {
 
     public void setDetailsNavigator(DetailsNavigator detailsNavigator) {
         this.detailsNavigator = detailsNavigator;
-        refreshTableDetails();
     }
 
     @Override public Node getMainContent() { return itemBrowserPane; }
@@ -76,7 +76,6 @@ public class LootTableEditorView implements AppView {
 
     private void onTableSelected(LootTable table) {
         currentTable = table;
-        refreshTableDetails();
         if (table == null) {
             setAddActionEnabled(false);
             entriesPane.setEntries(List.of());
@@ -87,6 +86,7 @@ public class LootTableEditorView implements AppView {
             setExcludeIds(java.util.Set.of());
             return;
         }
+        publishSelectedTableToInspector();
         setAddActionEnabled(true);
         long tableId = table.tableId;
         entriesPane.setOnRemoveEntry(itemId -> runTask(
@@ -155,7 +155,7 @@ public class LootTableEditorView implements AppView {
                 java.util.Set<Long> ids = new java.util.HashSet<>();
                 for (LootTable.Entry entry : loaded.entries) ids.add(entry.itemId());
                 setExcludeIds(ids);
-                refreshTableDetails();
+                refreshInspectorTableIfVisible(tableId);
             } else if (result.status() == LootTableService.ReadStatus.NOT_FOUND) {
                 currentTable = null;
                 pendingWeightItemIds.clear();
@@ -175,7 +175,9 @@ public class LootTableEditorView implements AppView {
             if (result.status() == LootTableService.ReadStatus.SUCCESS) {
                 knownTables = List.copyOf(result.tables());
                 controls.setTableList(result.tables());
-                refreshTableDetails();
+                if (currentTable != null) {
+                    refreshInspectorTableIfVisible(currentTable.tableId);
+                }
             } else {
                 showLoadError("Loot-Tabellen konnten nicht geladen werden.", null);
             }
@@ -231,7 +233,7 @@ public class LootTableEditorView implements AppView {
                     case SUCCESS -> {
                         tableNameDropdown.hide();
                         currentTable.name = stripped;
-                        refreshTableDetails();
+                        refreshInspectorTableIfVisible(tableId);
                         reloadTableList();
                     }
                     case DUPLICATE_NAME -> tableNameDropdown.showError("Es existiert bereits eine Loot-Tabelle mit dem Namen „" + stripped + "“.");
@@ -314,22 +316,38 @@ public class LootTableEditorView implements AppView {
         TableEditorTaskRunner.submit("LootTableEditorView", errorLabel, work, onSuccess, onFailure);
     }
 
-    private void refreshTableDetails() {
-        if (detailsNavigator == null) return;
-        if (currentTable == null) {
-            detailsNavigator.clear();
+    private void publishSelectedTableToInspector() {
+        if (detailsNavigator == null || currentTable == null) {
             return;
         }
-        int entryCount = currentTable.entries == null ? 0 : currentTable.entries.size();
-        int totalWeight = currentTable.entries == null ? 0 : currentTable.entries.stream()
+        detailsNavigator.showLootTable(buildInspectorSummary(currentTable));
+    }
+
+    private void refreshInspectorTableIfVisible(long tableId) {
+        if (detailsNavigator == null || currentTable == null || currentTable.tableId != tableId) {
+            return;
+        }
+        if (!detailsNavigator.isShowing(inspectorEntryKey(tableId))) {
+            return;
+        }
+        detailsNavigator.showLootTable(buildInspectorSummary(currentTable));
+    }
+
+    private LootTableSummary buildInspectorSummary(LootTable table) {
+        int entryCount = table.entries == null ? 0 : table.entries.size();
+        int totalWeight = table.entries == null ? 0 : table.entries.stream()
                 .mapToInt(LootTable.Entry::weight)
                 .sum();
-        detailsNavigator.showLootTable(new DetailsNavigator.LootTableSummary(
-                currentTable.tableId,
-                currentTable.name,
-                currentTable.description,
+        return new LootTableSummary(
+                table.tableId,
+                table.name,
+                table.description,
                 entryCount,
-                totalWeight));
+                totalWeight);
+    }
+
+    private static String inspectorEntryKey(long tableId) {
+        return "loot-table:" + tableId;
     }
 
     private void showMutationError(String title, String message, Node anchor) {

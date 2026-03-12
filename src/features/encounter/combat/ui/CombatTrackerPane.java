@@ -451,7 +451,6 @@ public class CombatTrackerPane extends VBox {
 
         Label hpText = new Label((frac <= HP_CRITICAL ? "! " : "") + currentHp + " / " + maxHp);
         hpText.getStyleClass().add("hp-bar-text");
-        if (frac > HP_CRITICAL) hpText.getStyleClass().add("hp-text-dark");
 
         StackPane bar = new StackPane(track, fill, hpText);
         bar.setAlignment(Pos.CENTER_LEFT);

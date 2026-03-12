@@ -61,6 +61,14 @@ public final class DungeonMapRepository {
         }
     }
 
+    public static void deleteMap(Connection conn, long mapId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM dungeon_maps WHERE dungeon_map_id=?")) {
+            ps.setLong(1, mapId);
+            ps.executeUpdate();
+        }
+    }
+
     public static void deleteSquaresOutsideBounds(Connection conn, long mapId, int width, int height) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM dungeon_squares WHERE map_id=? AND (x >= ? OR y >= ?)")) {

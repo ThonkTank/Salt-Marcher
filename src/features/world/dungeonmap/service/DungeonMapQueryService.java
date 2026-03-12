@@ -12,6 +12,7 @@ import features.world.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeonmap.repository.DungeonPassageRepository;
 import features.world.dungeonmap.repository.DungeonRoomRepository;
 import features.world.dungeonmap.repository.DungeonSquareRepository;
+import features.world.dungeonmap.repository.DungeonWallRepository;
 
 import java.sql.Connection;
 import java.util.List;
@@ -46,6 +47,7 @@ public final class DungeonMapQueryService {
                 DungeonFeatureTileRepository.getFeatureTiles(conn, mapId),
                 DungeonEndpointRepository.getEndpoints(conn, mapId),
                 DungeonLinkRepository.getLinks(conn, mapId),
+                DungeonWallRepository.getWalls(conn, mapId),
                 DungeonPassageRepository.getPassages(conn, mapId));
     }
 }

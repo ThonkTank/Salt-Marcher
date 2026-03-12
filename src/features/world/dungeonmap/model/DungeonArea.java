@@ -5,8 +5,7 @@ public record DungeonArea(
         Long mapId,
         String name,
         String description,
-        Long encounterTableId,
-        String encounterTableName
+        Long encounterTableId
 ) {
     @Override
     public String toString() {

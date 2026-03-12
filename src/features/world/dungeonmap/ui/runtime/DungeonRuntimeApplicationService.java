@@ -1,9 +1,11 @@
 package features.world.dungeonmap.ui.runtime;
 
+import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonRuntimeState;
 import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.service.DungeonRuntimeService;
+import features.world.dungeonmap.service.adapter.DungeonEncounterTableCatalogAdapter;
 import javafx.concurrent.Task;
 import ui.async.UiAsyncTasks;
 
@@ -17,6 +19,16 @@ public final class DungeonRuntimeApplicationService {
             @Override
             protected List<DungeonMap> call() throws Exception {
                 return DungeonMapQueryService.getAllMaps();
+            }
+        };
+        UiAsyncTasks.submit(task, onSuccess, onError);
+    }
+
+    public void loadEncounterTables(Consumer<List<DungeonEncounterTableSummary>> onSuccess, Consumer<Throwable> onError) {
+        Task<List<DungeonEncounterTableSummary>> task = new Task<>() {
+            @Override
+            protected List<DungeonEncounterTableSummary> call() {
+                return DungeonEncounterTableCatalogAdapter.loadSummaries();
             }
         };
         UiAsyncTasks.submit(task, onSuccess, onError);

@@ -11,6 +11,7 @@ public record DungeonMapState(
         List<DungeonFeatureTile> featureTiles,
         List<DungeonEndpoint> endpoints,
         List<DungeonLink> links,
+        List<DungeonWall> walls,
         List<DungeonPassage> passages
 ) {
 }

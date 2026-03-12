@@ -28,11 +28,13 @@ import features.encounter.model.Encounter;
 import features.encounter.model.EncounterSlot;
 import features.encounter.model.EncounterCreatureSnapshot;
 import features.encounter.generation.service.EncounterGenerator;
+import features.encounter.generation.service.EncounterScoring;
 import features.encounter.model.EncounterCreatureSnapshotMapper;
 import features.encounter.internal.EncounterDifficultyUiText;
 import features.partyanalysis.model.CreatureRoleProfile;
 import shared.rules.service.XpCalculator;
 import ui.components.DifficultyMeter;
+import ui.components.TextInputDropdown;
 import ui.components.ThemeColors;
 
 
@@ -63,11 +65,14 @@ public class EncounterRosterPane extends VBox {
     private final Label placeholder;
     private final ScrollPane cardScroll;
     private final Button generateButton;
+    private final Button saveEncounterButton;
     private final Button startCombatButton;
+    private final TextInputDropdown saveEncounterDropdown = new TextInputDropdown();
 
     private Runnable onRosterChanged;
     private Runnable onGenerate;
     private Runnable onStartCombat;
+    private Consumer<String> onSaveEncounter;
     private Consumer<Long> onRequestStatBlock;
 
     public EncounterRosterPane(EncounterBuilderService encounterService) {
@@ -128,6 +133,27 @@ public class EncounterRosterPane extends VBox {
         generateButton.setTooltip(new Tooltip("Encounter generieren (Alt+G)"));
         generateButton.setOnAction(e -> { if (onGenerate != null) onGenerate.run(); });
 
+        saveEncounterButton = new Button("Für Dungeon speichern");
+        saveEncounterButton.getStyleClass().add("compact");
+        saveEncounterButton.setDisable(true);
+        saveEncounterButton.setMaxWidth(Double.MAX_VALUE);
+        saveEncounterButton.setTooltip(new Tooltip("Persistiert dieses Encounter zur späteren Verwendung auf der Dungeon-Map."));
+        saveEncounterButton.setOnAction(e -> {
+            if (onSaveEncounter == null || slots.isEmpty()) {
+                return;
+            }
+            saveEncounterDropdown.show(
+                    saveEncounterButton,
+                    "Encounter speichern",
+                    "Name",
+                    suggestedEncounterName(),
+                    "Speichern",
+                    name -> {
+                        saveEncounterDropdown.hide();
+                        onSaveEncounter.accept(name);
+                    });
+        });
+
         startCombatButton = new Button("_Kampf starten");
         startCombatButton.getStyleClass().add("accent");
         startCombatButton.setDisable(true);
@@ -135,7 +161,7 @@ public class EncounterRosterPane extends VBox {
         startCombatButton.setTooltip(new Tooltip("Kampf starten (Alt+K)"));
         startCombatButton.setOnAction(e -> { if (onStartCombat != null) onStartCombat.run(); });
 
-        VBox actionRegion = new VBox(8, generateButton, startCombatButton);
+        VBox actionRegion = new VBox(8, generateButton, saveEncounterButton, startCombatButton);
         actionRegion.setPadding(new Insets(8, 0, 0, 0));
         VBox.setVgrow(actionRegion, Priority.NEVER);
 
@@ -148,7 +174,9 @@ public class EncounterRosterPane extends VBox {
     public void setOnRosterChanged(Runnable callback) { this.onRosterChanged = callback; }
     public void setOnGenerate(Runnable callback) { this.onGenerate = callback; }
     public void setOnStartCombat(Runnable callback) { this.onStartCombat = callback; }
+    public void setOnSaveEncounter(Consumer<String> callback) { this.onSaveEncounter = callback; }
     public void setStartCombatEnabled(boolean enabled) { startCombatButton.setDisable(!enabled); }
+    public void setSaveEncounterEnabled(boolean enabled) { saveEncounterButton.setDisable(!enabled); }
     public void setGenerateEnabled(boolean enabled) { generateButton.setDisable(!enabled); }
     public void setOnRequestStatBlock(Consumer<Long> callback) { this.onRequestStatBlock = callback; }
 
@@ -203,7 +231,8 @@ public class EncounterRosterPane extends VBox {
                 .map(EncounterSlot::copy)
                 .collect(Collectors.toList());
         String freshDifficulty = encounterService.computeRosterDifficultyStats(copy, partySize, avgLevel).difficulty();
-        return new Encounter(copy, freshDifficulty, avgLevel, partySize, 0, currentShapeLabel);
+        int adjustedXp = EncounterScoring.adjustedXp(copy);
+        return new Encounter(copy, freshDifficulty, avgLevel, partySize, adjustedXp, currentShapeLabel);
     }
 
     public List<EncounterSlot> getSlots() { return Collections.unmodifiableList(slots); }
@@ -215,6 +244,20 @@ public class EncounterRosterPane extends VBox {
     }
 
     public boolean hasSlots() { return !slots.isEmpty(); }
+
+    public String suggestedEncounterName() {
+        if (!currentShapeLabel.isBlank()) {
+            return currentShapeLabel;
+        }
+        if (!slots.isEmpty()) {
+            EncounterSlot first = slots.get(0);
+            String creatureName = first.getCreature() == null ? null : first.getCreature().getName();
+            if (creatureName != null && !creatureName.isBlank()) {
+                return slots.size() == 1 ? creatureName : creatureName + " Gruppe";
+            }
+        }
+        return "Neues Encounter";
+    }
 
     public void showGenerating() {
         placeholder.setText("Generiere Encounter...");

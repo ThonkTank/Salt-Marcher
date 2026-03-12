@@ -1,5 +1,6 @@
 package features.world.hexmap.ui.editor;
 
+import features.world.hexmap.api.HexTileSummary;
 import features.world.hexmap.model.HexMap;
 import features.world.hexmap.model.HexTerrainType;
 import features.world.hexmap.model.HexTile;
@@ -192,7 +193,7 @@ public class MapEditorView implements AppView {
             return;
         }
         HexTerrainType displayTerrain = terrainOverride != null ? terrainOverride : tile.terrainType();
-        detailsNavigator.showHexTile(new DetailsNavigator.HexTileSummary(
+        detailsNavigator.showHexTile(new HexTileSummary(
                 tile.tileId(),
                 tile.q(),
                 tile.r(),

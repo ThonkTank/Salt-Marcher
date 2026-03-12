@@ -1,11 +1,7 @@
 package features.world.dungeonmap.model;
 
 public enum PassageType {
-    DOOR("Tür"),
-    OPEN("Offener Durchgang"),
-    WINDOW("Fenster"),
-    HOLE("Loch"),
-    SECRET("Geheimtür");
+    OPEN("Durchgang");
 
     private final String label;
 
@@ -26,12 +22,11 @@ public enum PassageType {
     }
 
     public static PassageType fromDb(String value) {
+        if (value == null) {
+            return OPEN;
+        }
         return switch (value) {
-            case "door" -> DOOR;
-            case "open" -> OPEN;
-            case "window" -> WINDOW;
-            case "hole" -> HOLE;
-            case "secret" -> SECRET;
+            case "door", "open", "window", "hole", "secret" -> OPEN;
             default -> throw new IllegalArgumentException("Unknown passage type: " + value);
         };
     }

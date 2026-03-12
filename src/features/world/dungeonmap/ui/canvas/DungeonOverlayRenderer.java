@@ -72,19 +72,21 @@ final class DungeonOverlayRenderer {
         linksLayer.getChildren().clear();
         endpointsLayer.getChildren().clear();
 
-        for (Map.Entry<Long, DungeonFeature> entry : model.featuresById().entrySet()) {
-            Circle anchor = new Circle();
-            Label label = new Label(entry.getValue().toString());
-            label.getStyleClass().addAll("section-header", "text-muted");
-            featureAnchorNodes.put(entry.getKey(), anchor);
-            featureLabelNodes.put(entry.getKey(), label);
-            featuresLayer.getChildren().addAll(anchor, label);
-        }
         for (Map.Entry<String, java.util.List<DungeonFeatureTile>> entry : model.featureTilesByCoord().entrySet()) {
             Rectangle rectangle = new Rectangle();
             rectangle.setMouseTransparent(true);
             featureTileNodes.put(entry.getKey(), rectangle);
             featuresLayer.getChildren().add(rectangle);
+        }
+        for (Map.Entry<Long, DungeonFeature> entry : model.featuresById().entrySet()) {
+            Circle anchor = new Circle();
+            anchor.setMouseTransparent(true);
+            Label label = new Label(entry.getValue().toString());
+            label.setMouseTransparent(true);
+            label.getStyleClass().addAll("section-header", "text-muted");
+            featureAnchorNodes.put(entry.getKey(), anchor);
+            featureLabelNodes.put(entry.getKey(), label);
+            featuresLayer.getChildren().addAll(anchor, label);
         }
         for (DungeonEndpoint endpoint : model.endpointsById().values()) {
             Circle circle = buildEndpointNode(endpoint);

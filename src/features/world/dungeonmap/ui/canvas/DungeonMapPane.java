@@ -8,19 +8,27 @@ import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
+import features.world.dungeonmap.model.DungeonWallEdit;
+import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.PassageDirection;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class DungeonMapPane extends StackPane {
 
+    private static final Duration INVALID_EDGE_FLASH_DURATION = Duration.millis(500);
+
     public record CellInteraction(int x, int y, DungeonSquare square) {}
-    public record EdgeInteraction(int x, int y, PassageDirection direction, DungeonPassage existingPassage) {}
+    public record EdgeInteraction(int x, int y, PassageDirection direction, DungeonWall existingWall, DungeonPassage existingPassage) {}
 
     private final Canvas gridCanvas = new Canvas();
     private final Canvas selectionCanvas = new Canvas();
@@ -34,6 +42,7 @@ public class DungeonMapPane extends StackPane {
     private final DungeonOverlayRenderer overlayRenderer = new DungeonOverlayRenderer(featuresLayer, linksLayer, endpointsLayer, model, viewport);
     private final DungeonInteractionController interactionController =
             new DungeonInteractionController(selectionCanvas, model, viewport, this::redrawAll);
+    private final PauseTransition invalidEdgeFlash = new PauseTransition(INVALID_EDGE_FLASH_DURATION);
 
     public DungeonMapPane() {
         getStyleClass().add("dungeon-map-canvas");
@@ -46,6 +55,10 @@ public class DungeonMapPane extends StackPane {
         selectionCanvas.widthProperty().addListener((obs, oldValue, newValue) -> redrawAll());
         selectionCanvas.heightProperty().addListener((obs, oldValue, newValue) -> redrawAll());
         interactionController.setRedrawSelection(gridRenderer::redrawSelection);
+        invalidEdgeFlash.setOnFinished(event -> {
+            model.clearInvalidEdge();
+            gridRenderer.redrawSelection();
+        });
 
         getChildren().addAll(gridCanvas, selectionCanvas, featuresLayer, linksLayer, endpointsLayer);
     }
@@ -78,8 +91,28 @@ public class DungeonMapPane extends StackPane {
         interactionController.setActiveTool(tool);
     }
 
+    public void setWallEditorModeSupplier(Supplier<WallEditorMode> supplier) {
+        interactionController.setWallEditorModeSupplier(supplier);
+    }
+
     public void setOnEdgeClicked(Consumer<EdgeInteraction> onEdgeClicked) {
         interactionController.setOnEdgeClicked(onEdgeClicked);
+    }
+
+    public void setOnEdgePainted(Consumer<EdgeInteraction> onEdgePainted) {
+        interactionController.setOnEdgePainted(onEdgePainted);
+    }
+
+    public void setOnEdgePaintPathPreview(Consumer<List<EdgeInteraction>> onEdgePaintPathPreview) {
+        interactionController.setOnEdgePaintPathPreview(onEdgePaintPathPreview);
+    }
+
+    public void setOnEdgePaintPathFinished(Consumer<List<EdgeInteraction>> onEdgePaintPathFinished) {
+        interactionController.setOnEdgePaintPathFinished(onEdgePaintPathFinished);
+    }
+
+    public void setOnEdgeStrokeFinished(Runnable onEdgeStrokeFinished) {
+        interactionController.setOnEdgeStrokeFinished(onEdgeStrokeFinished);
     }
 
     public void setShowLinks(boolean showLinks) {
@@ -115,6 +148,31 @@ public class DungeonMapPane extends StackPane {
         model.previewPaint(paint);
         gridRenderer.redrawVisibleCell(paint.x(), paint.y());
         gridRenderer.redrawSelection();
+    }
+
+    public void previewCommittedWallEdits(java.util.List<DungeonWallEdit> edits) {
+        model.previewCommittedWallEdits(edits);
+        redrawAll();
+    }
+
+    public void previewActiveWallPath(java.util.List<DungeonWallEdit> edits) {
+        model.previewActiveWallPath(edits);
+        redrawAll();
+    }
+
+    public void clearActiveWallPathPreview() {
+        model.clearActiveWallPathPreview();
+        redrawAll();
+    }
+
+    public void flashInvalidEdge(EdgeInteraction interaction) {
+        if (interaction == null) {
+            return;
+        }
+        model.setInvalidEdge(interaction.x(), interaction.y(), interaction.direction());
+        gridRenderer.redrawSelection();
+        invalidEdgeFlash.stop();
+        invalidEdgeFlash.playFromStart();
     }
 
     public void setOnCellClicked(Consumer<CellInteraction> onCellClicked) {

@@ -9,9 +9,6 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
-import java.util.function.Consumer;
-import features.creatures.api.StatBlockRequest;
-
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -192,10 +189,6 @@ public class AppShell extends BorderPane {
         }
     }
 
-    /** Returns a handler for {@link InspectorPane#showStatBlock(StatBlockRequest)} — toggles the stat block panel. */
-    public Consumer<StatBlockRequest> getShowStatBlockHandler() { return request -> inspectorPane.showStatBlock(request); }
-    /** Returns a handler for {@link InspectorPane#ensureStatBlock(StatBlockRequest)} — shows without toggling. */
-    public Consumer<StatBlockRequest> getEnsureStatBlockHandler() { return request -> inspectorPane.ensureStatBlock(request); }
     /** Returns the shared upper-right details navigator. */
     public DetailsNavigator getDetailsNavigator() { return inspectorPane; }
     /** Returns the SceneRegistry for tab-based game-activity registration. */

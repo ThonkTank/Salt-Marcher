@@ -1,6 +1,7 @@
 package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
+import features.world.dungeonmap.api.DungeonEncounterSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -9,194 +10,94 @@ import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquarePaint;
+import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.service.DungeonMapQueryService;
+import features.world.dungeonmap.service.adapter.DungeonEncounterCatalogAdapter;
 import features.world.dungeonmap.service.adapter.DungeonEncounterTableCatalogAdapter;
 import javafx.concurrent.Task;
 import ui.async.UiAsyncTasks;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 
 public final class DungeonEditorApplicationService {
 
     public void loadMapList(Consumer<List<DungeonMap>> onSuccess, Consumer<Throwable> onError) {
-        Task<List<DungeonMap>> task = new Task<>() {
-            @Override
-            protected List<DungeonMap> call() throws Exception {
-                return DungeonMapQueryService.getAllMaps();
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        submitValue(DungeonMapQueryService::getAllMaps, onSuccess, onError);
     }
 
     public void loadEncounterTables(Consumer<List<DungeonEncounterTableSummary>> onSuccess, Consumer<Throwable> onError) {
-        Task<List<DungeonEncounterTableSummary>> task = new Task<>() {
-            @Override
-            protected List<DungeonEncounterTableSummary> call() {
-                return DungeonEncounterTableCatalogAdapter.loadSummaries();
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        submitValue(DungeonEncounterTableCatalogAdapter::loadSummaries, onSuccess, onError);
+    }
+
+    public void loadStoredEncounters(Consumer<List<DungeonEncounterSummary>> onSuccess, Consumer<Throwable> onError) {
+        submitValue(DungeonEncounterCatalogAdapter::loadSummaries, onSuccess, onError);
     }
 
     public void loadMap(long mapId, Consumer<DungeonMapState> onSuccess, Consumer<Throwable> onError) {
-        Task<DungeonMapState> task = new Task<>() {
-            @Override
-            protected DungeonMapState call() throws Exception {
-                return DungeonMapQueryService.loadMapState(mapId);
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        submitValue(() -> DungeonMapQueryService.loadMapState(mapId), onSuccess, onError);
     }
 
     public void createMap(String name, int width, int height, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
-        Task<Long> task = new Task<>() {
-            @Override
-            protected Long call() throws Exception {
-                return DungeonMapEditorService.createMap(name, width, height);
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        submitValue(() -> DungeonMapEditorService.createMap(name, width, height), onSuccess, onError);
     }
 
     public void updateMap(long mapId, String name, int width, int height, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.updateMap(mapId, name, width, height);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.updateMap(mapId, name, width, height), onSuccess, onError);
+    }
+
+    public void deleteMap(long mapId, Runnable onSuccess, Consumer<Throwable> onError) {
+        submitAction(() -> DungeonMapEditorService.deleteMap(mapId), onSuccess, onError);
     }
 
     public void applySquareEdits(long mapId, List<DungeonSquarePaint> edits, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits), onSuccess, onError);
     }
 
     public void saveRoom(DungeonRoom room, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
-        Task<Long> task = new Task<>() {
-            @Override
-            protected Long call() throws Exception {
-                return DungeonMapEditorService.saveRoom(room);
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        submitValue(() -> DungeonMapEditorService.saveRoom(room), onSuccess, onError);
     }
 
     public void deleteRoom(long roomId, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.deleteRoom(roomId);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.deleteRoom(roomId), onSuccess, onError);
     }
 
     public void saveArea(DungeonArea area, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
-        Task<Long> task = new Task<>() {
-            @Override
-            protected Long call() throws Exception {
-                return DungeonMapEditorService.saveArea(area);
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        submitValue(() -> DungeonMapEditorService.saveArea(area), onSuccess, onError);
     }
 
     public void deleteArea(long areaId, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.deleteArea(areaId);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.deleteArea(areaId), onSuccess, onError);
     }
 
     public void saveFeature(DungeonFeature feature, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
-        Task<Long> task = new Task<>() {
-            @Override
-            protected Long call() throws Exception {
-                return DungeonMapEditorService.saveFeature(feature);
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        submitValue(() -> DungeonMapEditorService.saveFeature(feature), onSuccess, onError);
     }
 
     public void deleteFeature(long featureId, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.deleteFeature(featureId);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.deleteFeature(featureId), onSuccess, onError);
     }
 
     public void addSquareToFeature(long featureId, long squareId, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.addSquareToFeature(featureId, squareId);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.addSquareToFeature(featureId, squareId), onSuccess, onError);
     }
 
     public void removeSquareFromFeature(long featureId, long squareId, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.removeSquareFromFeature(featureId, squareId);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.removeSquareFromFeature(featureId, squareId), onSuccess, onError);
     }
 
     public void assignRoomArea(long roomId, Long areaId, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.assignRoomArea(roomId, areaId);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.assignRoomArea(roomId, areaId), onSuccess, onError);
     }
 
     public void saveEndpoint(DungeonEndpoint endpoint, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
-        Task<Long> task = new Task<>() {
-            @Override
-            protected Long call() throws Exception {
-                return DungeonMapEditorService.saveEndpoint(endpoint);
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        submitValue(() -> DungeonMapEditorService.saveEndpoint(endpoint), onSuccess, onError);
     }
 
     public void deleteEndpoint(long endpointId, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.deleteEndpoint(endpointId);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.deleteEndpoint(endpointId), onSuccess, onError);
     }
 
     public void createLink(
@@ -206,55 +107,52 @@ public final class DungeonEditorApplicationService {
             Consumer<DungeonMapEditorService.LinkCreateResult> onSuccess,
             Consumer<Throwable> onError
     ) {
-        Task<DungeonMapEditorService.LinkCreateResult> task = new Task<>() {
-            @Override
-            protected DungeonMapEditorService.LinkCreateResult call() throws Exception {
-                return DungeonMapEditorService.createLink(mapId, fromEndpointId, toEndpointId, "");
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        submitValue(() -> DungeonMapEditorService.createLink(mapId, fromEndpointId, toEndpointId, ""), onSuccess, onError);
     }
 
     public void deleteLink(long linkId, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.deleteLink(linkId);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.deleteLink(linkId), onSuccess, onError);
     }
 
     public void updateLinkLabel(long linkId, String label, Runnable onSuccess, Consumer<Throwable> onError) {
-        Task<Void> task = new Task<>() {
-            @Override
-            protected Void call() throws Exception {
-                DungeonMapEditorService.updateLinkLabel(linkId, label);
-                return null;
-            }
-        };
-        UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+        submitAction(() -> DungeonMapEditorService.updateLinkLabel(linkId, label), onSuccess, onError);
     }
 
     public void savePassage(DungeonPassage passage, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
-        Task<Long> task = new Task<>() {
+        submitValue(() -> DungeonMapEditorService.savePassage(passage), onSuccess, onError);
+    }
+
+    public void deletePassage(long passageId, Runnable onSuccess, Consumer<Throwable> onError) {
+        submitAction(() -> DungeonMapEditorService.deletePassage(passageId), onSuccess, onError);
+    }
+
+    public void applyWallEdits(long mapId, List<DungeonWallEdit> edits, Runnable onSuccess, Consumer<Throwable> onError) {
+        submitAction(() -> DungeonMapEditorService.applyWallEdits(mapId, edits), onSuccess, onError);
+    }
+
+    private <T> void submitValue(Callable<T> action, Consumer<T> onSuccess, Consumer<Throwable> onError) {
+        Task<T> task = new Task<>() {
             @Override
-            protected Long call() throws Exception {
-                return DungeonMapEditorService.savePassage(passage);
+            protected T call() throws Exception {
+                return action.call();
             }
         };
         UiAsyncTasks.submit(task, onSuccess, onError);
     }
 
-    public void deletePassage(long passageId, Runnable onSuccess, Consumer<Throwable> onError) {
+    private void submitAction(ThrowingRunnable action, Runnable onSuccess, Consumer<Throwable> onError) {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                DungeonMapEditorService.deletePassage(passageId);
+                action.run();
                 return null;
             }
         };
         UiAsyncTasks.submit(task, ignored -> onSuccess.run(), onError);
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
     }
 }

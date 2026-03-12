@@ -10,14 +10,13 @@ import features.encounter.internal.wiring.DefaultPartyProvider;
 import features.encounter.ui.EncounterView;
 import features.encounter.ui.EncounterViewCallbacks;
 import features.creatures.api.CreatureCatalogService;
-import features.creatures.api.StatBlockRequest;
 import features.partyanalysis.api.PartyAnalysisCacheService;
 import features.partyanalysis.api.PartyCacheRefreshPort;
 import ui.shell.AppView;
+import ui.shell.DetailsNavigator;
 import ui.shell.SceneRegistry;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 
 public final class EncounterModule {
 
@@ -27,14 +26,12 @@ public final class EncounterModule {
     public EncounterModule(
             Runnable onRefreshToolbar,
             Runnable onRefreshPanels,
-            Consumer<StatBlockRequest> onRequestStatBlock,
-            Consumer<StatBlockRequest> onEnsureStatBlock,
+            DetailsNavigator detailsNavigator,
             SceneRegistry sceneRegistry
     ) {
         Objects.requireNonNull(onRefreshToolbar, "onRefreshToolbar");
         Objects.requireNonNull(onRefreshPanels, "onRefreshPanels");
-        Objects.requireNonNull(onRequestStatBlock, "onRequestStatBlock");
-        Objects.requireNonNull(onEnsureStatBlock, "onEnsureStatBlock");
+        Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         Objects.requireNonNull(sceneRegistry, "sceneRegistry");
 
         EncounterBuilderService builderService = new EncounterBuilderService(
@@ -48,12 +45,11 @@ public final class EncounterModule {
         this.view = new EncounterView(new EncounterViewCallbacks(
                 onRefreshToolbar,
                 onRefreshPanels,
-                onRequestStatBlock,
+                detailsNavigator,
                 sceneRegistry,
                 builderService,
                 combatService
         ));
-        this.view.setOnEnsureStatBlock(onEnsureStatBlock);
     }
 
     public AppView view() {

@@ -1,5 +1,6 @@
 package features.world.dungeonmap.ui.runtime;
 
+import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonMapState;
@@ -25,6 +26,7 @@ public class DungeonView implements AppView {
     private final Map<Long, DungeonEndpoint> endpointsById = new HashMap<>();
     private final Map<Long, DungeonSquare> squaresById = new HashMap<>();
     private final Map<Long, DungeonArea> areasById = new HashMap<>();
+    private final Map<Long, String> encounterTableNamesById = new HashMap<>();
     private long loadRequestToken = 0;
     private Long selectedMapId;
 
@@ -60,6 +62,9 @@ public class DungeonView implements AppView {
         applicationService.loadMapList(
                 maps -> controls.setMaps(maps, selectedMapId),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonView.loadMapList()", ex));
+        applicationService.loadEncounterTables(
+                this::setEncounterTables,
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonView.loadEncounterTables()", ex));
         loadMap(null);
     }
 
@@ -133,11 +138,21 @@ public class DungeonView implements AppView {
         if (square.areaId() != null) {
             DungeonArea area = areasById.get(square.areaId());
             if (area != null) {
-                tableName = area.encounterTableName();
+                tableName = encounterTableNamesById.get(area.encounterTableId());
             }
         }
         controls.showLocation(roomName, areaName, tableName, endpoint.name());
         canvas.setPartyEndpoint(activeEndpointId);
+    }
+
+    private void setEncounterTables(java.util.List<DungeonEncounterTableSummary> tables) {
+        encounterTableNamesById.clear();
+        if (tables != null) {
+            for (DungeonEncounterTableSummary table : tables) {
+                encounterTableNamesById.put(table.tableId(), table.name());
+            }
+        }
+        updateLocationLabels();
     }
 
     private void rebuildLookups() {

@@ -25,7 +25,9 @@ import java.util.List;
  * </ul>
  * The Details pane is shell-owned and shared across all views. View-specific forms, editor controls,
  * and any interactive workflow UI belong in the State pane instead of replacing the shared inspector.
- * Views leave State as {@code null} to use the shell-owned ScenePane.
+ * Views leave State as {@code null} to use the shell-owned ScenePane. Local selection state and
+ * inspector state are separate: views should open inspector cards intentionally instead of mirroring
+ * every local selection into the shared history.
  */
 public interface AppView {
 

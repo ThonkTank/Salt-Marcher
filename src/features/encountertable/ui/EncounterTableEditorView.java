@@ -1,5 +1,6 @@
 package features.encountertable.ui;
 
+import features.encountertable.api.EncounterTableSummary;
 import features.encountertable.model.EncounterTable;
 import features.encountertable.service.EncounterTableLootCoverageAnalyzer;
 import features.loottable.api.LootTableApi;
@@ -25,7 +26,7 @@ import java.util.function.Consumer;
  * EDITOR view for creating and managing encounter tables.
  * Controls: table selector + manage actions + filter.
  * Main:     monster browser (add creatures to the selected table).
- * Details:  selected table name.
+ * Inspector: read-only table summary on explicit table selection.
  * State:    creature entries in the selected table.
  */
 public class EncounterTableEditorView implements AppView {
@@ -69,7 +70,6 @@ public class EncounterTableEditorView implements AppView {
 
     public void setDetailsNavigator(DetailsNavigator detailsNavigator) {
         this.detailsNavigator = detailsNavigator;
-        refreshTableDetails();
     }
 
     // ---- AppView interface ----
@@ -95,8 +95,8 @@ public class EncounterTableEditorView implements AppView {
     private void onTableSelected(EncounterTable table) {
         currentTable = table;
         currentLootCoverageWarning = null;
-        refreshTableDetails();
         if (table != null) {
+            publishSelectedTableToInspector();
             long tableId = table.tableId;
             monsterList.setOnAddCreature(creature -> runTask(
                     "addCreature",
@@ -167,7 +167,6 @@ public class EncounterTableEditorView implements AppView {
                     } else if (result.status() == EncounterTableService.ReadStatus.NOT_FOUND) {
                         currentTable = null;
                         currentLootCoverageWarning = null;
-                        refreshTableDetails();
                         entriesPane.setEntries(List.of());
                         monsterList.setExcludeIds(java.util.Set.of());
                         reloadTableList();
@@ -195,8 +194,10 @@ public class EncounterTableEditorView implements AppView {
             if (result.status() == LootTableApi.ReadStatus.SUCCESS) {
                 knownLootTables = List.copyOf(result.tables());
                 controls.setLootTableList(result.tables());
-                refreshTableDetails();
-                refreshLinkedLootCoverageWarning();
+                if (currentTable != null) {
+                    refreshInspectorTableIfVisible(currentTable.tableId);
+                    refreshLinkedLootCoverageWarning();
+                }
             } else {
                 showLoadError("Loot-Tabellen konnten nicht geladen werden.", controls);
             }
@@ -262,7 +263,7 @@ public class EncounterTableEditorView implements AppView {
                             case SUCCESS -> {
                                 tableNameDropdown.hide();
                                 currentTable.name = stripped;
-                                refreshTableDetails();
+                                refreshInspectorTableIfVisible(tableId);
                                 reloadTableList();
                             }
                             case DUPLICATE_NAME -> {
@@ -313,7 +314,7 @@ public class EncounterTableEditorView implements AppView {
                     if (status == EncounterTableService.MutationStatus.SUCCESS) {
                         currentTable.linkedLootTableId = lootTableId;
                         currentLootCoverageWarning = null;
-                        refreshTableDetails();
+                        refreshInspectorTableIfVisible(tableId);
                         refreshLinkedLootCoverageWarning();
                         reloadTableList();
                     } else {
@@ -337,12 +338,10 @@ public class EncounterTableEditorView implements AppView {
         knownTables = List.copyOf(tables);
         controls.setTableList(tables);
         controls.setLootTableList(knownLootTables);
-        refreshTableDetails();
     }
 
     private void resetTableSelectionState() {
         currentLootCoverageWarning = null;
-        refreshTableDetails();
         monsterList.setOnAddCreature(null);
         entriesPane.setOnRemoveEntry(null);
         entriesPane.setOnUpdateWeight(null);
@@ -350,19 +349,31 @@ public class EncounterTableEditorView implements AppView {
         monsterList.setExcludeIds(java.util.Set.of());
     }
 
-    private void refreshTableDetails() {
-        if (detailsNavigator == null) return;
-        if (currentTable == null) {
-            detailsNavigator.clear();
+    private void publishSelectedTableToInspector() {
+        if (detailsNavigator == null || currentTable == null) {
             return;
         }
-        int entryCount = currentTable.entries == null ? 0 : currentTable.entries.size();
-        detailsNavigator.showEncounterTable(new DetailsNavigator.EncounterTableSummary(
-                currentTable.tableId,
-                currentTable.name,
-                linkedLootTableName(currentTable),
+        detailsNavigator.showEncounterTable(buildInspectorSummary(currentTable));
+    }
+
+    private void refreshInspectorTableIfVisible(long tableId) {
+        if (detailsNavigator == null || currentTable == null || currentTable.tableId != tableId) {
+            return;
+        }
+        if (!detailsNavigator.isShowing(inspectorEntryKey(tableId))) {
+            return;
+        }
+        detailsNavigator.showEncounterTable(buildInspectorSummary(currentTable));
+    }
+
+    private EncounterTableSummary buildInspectorSummary(EncounterTable table) {
+        int entryCount = table.entries == null ? 0 : table.entries.size();
+        return new EncounterTableSummary(
+                table.tableId,
+                table.name,
+                linkedLootTableName(table),
                 currentLootCoverageWarning,
-                entryCount));
+                entryCount);
     }
 
     private void showStatBlock(Long creatureId) {
@@ -372,9 +383,14 @@ public class EncounterTableEditorView implements AppView {
 
     private void refreshLinkedLootCoverageWarning() {
         long requestVersion = ++lootCoverageRequestVersion;
-        if (currentTable == null || currentTable.linkedLootTableId == null || currentTable.entries == null || currentTable.entries.isEmpty()) {
+        if (currentTable == null) {
             currentLootCoverageWarning = null;
-            refreshTableDetails();
+            return;
+        }
+        long tableId = currentTable.tableId;
+        if (currentTable.linkedLootTableId == null || currentTable.entries == null || currentTable.entries.isEmpty()) {
+            currentLootCoverageWarning = null;
+            refreshInspectorTableIfVisible(tableId);
             return;
         }
         Long lootTableId = currentTable.linkedLootTableId;
@@ -391,15 +407,19 @@ public class EncounterTableEditorView implements AppView {
                     } else {
                         currentLootCoverageWarning = EncounterTableLootCoverageAnalyzer.analyzeCoverageWarning(currentTable, result.items());
                     }
-                    refreshTableDetails();
+                    refreshInspectorTableIfVisible(tableId);
                 },
                 throwable -> {
                     if (requestVersion != lootCoverageRequestVersion) {
                         return;
                     }
                     currentLootCoverageWarning = "Loot-Analyse konnte nicht geladen werden.";
-                    refreshTableDetails();
+                    refreshInspectorTableIfVisible(tableId);
                 });
+    }
+
+    private static String inspectorEntryKey(long tableId) {
+        return "encounter-table:" + tableId;
     }
 
     private String linkedLootTableName(EncounterTable table) {

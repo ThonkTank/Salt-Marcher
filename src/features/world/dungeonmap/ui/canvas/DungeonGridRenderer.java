@@ -4,8 +4,8 @@ import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.PassageDirection;
-import features.world.dungeonmap.model.PassageType;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -20,11 +20,9 @@ final class DungeonGridRenderer {
     private static final Color FILLED_STROKE = Color.web("#b89060");
     private static final Color ROOM_STROKE = Color.web("#c8966a");
     private static final Color SELECTION_STROKE = Color.web("#d9c36a");
+    private static final Color INVALID_EDGE_STROKE = Color.web("#e53935", 0.90);
     private static final Color BOUNDARY_STROKE = Color.web("#4a5560", 0.55);
     private static final Color WALL_COLOR = Color.web("#3a2a1a");
-    private static final Color PASSAGE_DOOR = Color.web("#c8966a");
-    private static final Color PASSAGE_WINDOW = Color.web("#88aacc");
-    private static final Color PASSAGE_HOLE = Color.web("#5a5a5a");
 
     private static final Color[] ROOM_PALETTE = {
         Color.web("#5a4a36"),
@@ -108,25 +106,92 @@ final class DungeonGridRenderer {
         gc.clearRect(0, 0, selectionCanvas.getWidth(), selectionCanvas.getHeight());
 
         DungeonMapState state = model.state();
-        DungeonSelection selection = model.selection();
-        if (selection == null || selection.type() != DungeonSelection.SelectionType.SQUARE || selection.square() == null) {
-            return;
-        }
         if (state == null || state.map() == null) {
             return;
         }
 
-        DungeonSquare square = selection.square();
+        DungeonSelection selection = model.selection();
+        if (selection != null) {
+            if (selection.type() == DungeonSelection.SelectionType.SQUARE && selection.square() != null) {
+                drawSquareSelection(gc, selection.square(), state);
+            } else if (selection.type() == DungeonSelection.SelectionType.ROOM && selection.room() != null) {
+                drawRoomSelection(gc, selection.room().roomId(), state);
+            }
+        }
+        drawInvalidEdge(gc);
+    }
+
+    private void drawSquareSelection(GraphicsContext gc, DungeonSquare square, DungeonMapState state) {
         if (square.x() < 0 || square.y() < 0
                 || square.x() >= state.map().width()
                 || square.y() >= state.map().height()) {
             return;
         }
-
         double size = viewport.scaledCellSize();
         gc.setStroke(SELECTION_STROKE);
         gc.setLineWidth(Math.max(2.0, 3.0 * viewport.strokeScale()));
         gc.strokeRect(viewport.screenX(square.x()), viewport.screenY(square.y()), size - 1, size - 1);
+    }
+
+    private void drawRoomSelection(GraphicsContext gc, Long roomId, DungeonMapState state) {
+        if (roomId == null) {
+            return;
+        }
+        gc.setStroke(SELECTION_STROKE);
+        gc.setLineWidth(Math.max(2.0, 3.0 * viewport.strokeScale()));
+        for (DungeonSquare square : state.squares()) {
+            if (!roomId.equals(square.roomId())) {
+                continue;
+            }
+            drawRoomSelectionEdges(gc, square, roomId);
+        }
+    }
+
+    private void drawRoomSelectionEdges(GraphicsContext gc, DungeonSquare square, Long roomId) {
+        double x0 = viewport.screenX(square.x());
+        double y0 = viewport.screenY(square.y());
+        double x1 = viewport.screenX(square.x() + 1);
+        double y1 = viewport.screenY(square.y() + 1);
+
+        if (!sameRoom(square.x(), square.y() - 1, roomId)) {
+            gc.strokeLine(x0, y0, x1, y0);
+        }
+        if (!sameRoom(square.x(), square.y() + 1, roomId)) {
+            gc.strokeLine(x0, y1, x1, y1);
+        }
+        if (!sameRoom(square.x() - 1, square.y(), roomId)) {
+            gc.strokeLine(x0, y0, x0, y1);
+        }
+        if (!sameRoom(square.x() + 1, square.y(), roomId)) {
+            gc.strokeLine(x1, y0, x1, y1);
+        }
+    }
+
+    private boolean sameRoom(int x, int y, Long roomId) {
+        DungeonSquare square = model.squareAt(x, y);
+        return square != null && roomId.equals(square.roomId());
+    }
+
+    private void drawInvalidEdge(GraphicsContext gc) {
+        Integer edgeX = model.invalidEdgeX();
+        Integer edgeY = model.invalidEdgeY();
+        PassageDirection edgeDirection = model.invalidEdgeDirection();
+        if (edgeX == null || edgeY == null || edgeDirection == null) {
+            return;
+        }
+        gc.setStroke(INVALID_EDGE_STROKE);
+        gc.setLineWidth(Math.max(3.0, 4.0 * viewport.strokeScale()));
+        if (edgeDirection == PassageDirection.EAST) {
+            double sx = viewport.screenX(edgeX + 1);
+            double sy = viewport.screenY(edgeY);
+            double ey = viewport.screenY(edgeY + 1);
+            gc.strokeLine(sx, sy, sx, ey);
+            return;
+        }
+        double sx = viewport.screenX(edgeX);
+        double sy = viewport.screenY(edgeY + 1);
+        double ex = viewport.screenX(edgeX + 1);
+        gc.strokeLine(sx, sy, ex, sy);
     }
 
     private void drawWalls(GraphicsContext gc, int minX, int minY, int maxX, int maxY) {
@@ -165,18 +230,23 @@ final class DungeonGridRenderer {
         double ex = viewport.screenX(x + 1);
         double ey = viewport.screenY(y + 1);
 
-        if (!hasFilledSquare(x, y - 1)) {
+        boolean northFilled = hasFilledSquare(x, y - 1);
+        boolean southFilled = hasFilledSquare(x, y + 1);
+        boolean westFilled = hasFilledSquare(x - 1, y);
+        boolean eastFilled = hasFilledSquare(x + 1, y);
+
+        if (!northFilled) {
             drawEdge(gc, PassageDirection.SOUTH.edgeKey(x, y - 1),
-                    sx, sy, ex, sy, true, wallWidth);
+                    sx, sy, ex, sy, true, wallWidth, true, northFilled);
         }
         drawEdge(gc, PassageDirection.SOUTH.edgeKey(x, y),
-                sx, ey, ex, ey, true, wallWidth);
-        if (!hasFilledSquare(x - 1, y)) {
+                sx, ey, ex, ey, true, wallWidth, true, southFilled);
+        if (!westFilled) {
             drawEdge(gc, PassageDirection.EAST.edgeKey(x - 1, y),
-                    sx, sy, sx, ey, false, wallWidth);
+                    sx, sy, sx, ey, false, wallWidth, true, westFilled);
         }
         drawEdge(gc, PassageDirection.EAST.edgeKey(x, y),
-                ex, sy, ex, ey, false, wallWidth);
+                ex, sy, ex, ey, false, wallWidth, true, eastFilled);
     }
 
     private void drawEdge(
@@ -187,12 +257,22 @@ final class DungeonGridRenderer {
             double bx,
             double by,
             boolean horizontal,
-            double wallWidth
+            double wallWidth,
+            boolean firstSideFilled,
+            boolean secondSideFilled
     ) {
+        if (!firstSideFilled) {
+            return;
+        }
+        DungeonWall wall = model.wallsByEdge().get(edgeKey);
         DungeonPassage passage = model.passagesByEdge().get(edgeKey);
-        if (passage == null || passage.type() == PassageType.SECRET) {
+        boolean interiorEdge = secondSideFilled;
+        if (!interiorEdge || wall != null) {
             gc.setStroke(WALL_COLOR);
             gc.strokeLine(ax, ay, bx, by);
+            return;
+        }
+        if (passage == null) {
             return;
         }
         double gapStart = 0.30;
@@ -212,39 +292,10 @@ final class DungeonGridRenderer {
             gc.strokeLine(ax, ay, ax, g0);
             gc.strokeLine(ax, g1, ax, by);
         }
-        // Draw passage marker
-        Color passageColor = passageColor(passage.type());
-        if (passageColor != null) {
-            gc.setStroke(passageColor);
-            gc.setLineWidth(Math.max(2.5, 3.5 * viewport.strokeScale()));
-            if (horizontal) {
-                double totalLen = bx - ax;
-                double g0 = ax + totalLen * gapStart;
-                double g1 = ax + totalLen * gapEnd;
-                gc.strokeLine(g0, ay, g1, ay);
-            } else {
-                double totalLen = by - ay;
-                double g0 = ay + totalLen * gapStart;
-                double g1 = ay + totalLen * gapEnd;
-                gc.strokeLine(ax, g0, ax, g1);
-            }
-            gc.setStroke(WALL_COLOR);
-            gc.setLineWidth(wallWidth);
-        }
     }
 
     private boolean hasFilledSquare(int x, int y) {
         return model.squaresByCoord().get(x + ":" + y) != null;
-    }
-
-    private static Color passageColor(PassageType type) {
-        return switch (type) {
-            case DOOR -> PASSAGE_DOOR;
-            case WINDOW -> PASSAGE_WINDOW;
-            case HOLE -> PASSAGE_HOLE;
-            case OPEN -> null;    // transparent gap
-            case SECRET -> null;  // visually closed — already drawn as wall
-        };
     }
 
     private void drawCell(GraphicsContext gc, int x, int y) {

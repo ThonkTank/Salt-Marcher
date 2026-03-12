@@ -1,6 +1,7 @@
 package features.world.dungeonmap.ui.editor.panes;
 
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
+import features.world.dungeonmap.api.DungeonEncounterSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEndpointRole;
@@ -12,7 +13,6 @@ import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.PassageDirection;
-import features.world.dungeonmap.model.PassageType;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -29,14 +29,14 @@ import javafx.util.StringConverter;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class DungeonDetailsPane extends VBox {
+public class DungeonSelectionEditorPane extends VBox {
 
     public record RoomForm(Long roomId, String name, String description, Long areaId) {}
     public record AreaForm(Long areaId, String name, String description, Long encounterTableId) {}
-    public record FeatureForm(Long featureId, DungeonFeatureCategory category, String name, String notes) {}
+    public record FeatureForm(Long featureId, DungeonFeatureCategory category, Long encounterId, String name, String notes) {}
     public record EndpointForm(Long endpointId, String name, String notes, DungeonEndpointRole role, boolean defaultEntry) {}
     public record LinkForm(Long linkId, String label) {}
-    public record PassageForm(Long passageId, String name, String notes, PassageType type, Long endpointId) {}
+    public record PassageForm(Long passageId, String name, String notes, Long endpointId) {}
     public record DeleteRequest(Long entityId, Node anchor) {}
 
     private Consumer<RoomForm> onRoomSaved;
@@ -54,11 +54,11 @@ public class DungeonDetailsPane extends VBox {
 
     private List<DungeonArea> knownAreas = List.of();
     private List<DungeonEncounterTableSummary> knownEncounterTables = List.of();
-    private List<DungeonFeature> knownFeatures = List.of();
+    private List<DungeonEncounterSummary> knownEncounterSummaries = List.of();
     private List<DungeonEndpoint> knownEndpoints = List.of();
 
-    public DungeonDetailsPane() {
-        getStyleClass().addAll("dungeon-sidebar-pane", "dungeon-details-pane");
+    public DungeonSelectionEditorPane() {
+        getStyleClass().addAll("dungeon-sidebar-pane", "dungeon-selection-editor-pane");
         setSpacing(12);
         setPadding(new Insets(12));
         showSelection(DungeonSelection.none());
@@ -68,38 +68,33 @@ public class DungeonDetailsPane extends VBox {
         knownAreas = areas == null ? List.of() : List.copyOf(areas);
     }
 
-    public void setFeatures(List<DungeonFeature> features) {
-        knownFeatures = features == null ? List.of() : List.copyOf(features);
-    }
-
     public void setEncounterTables(List<DungeonEncounterTableSummary> encounterTables) {
         knownEncounterTables = encounterTables == null ? List.of() : List.copyOf(encounterTables);
+    }
+
+    public void setEncounterSummaries(List<DungeonEncounterSummary> encounterSummaries) {
+        knownEncounterSummaries = encounterSummaries == null ? List.of() : List.copyOf(encounterSummaries);
     }
 
     public void setEndpoints(List<DungeonEndpoint> endpoints) {
         knownEndpoints = endpoints == null ? List.of() : List.copyOf(endpoints);
     }
 
-    public void showInfoMessage(String message) {
-        getChildren().clear();
-        Label header = new Label("DETAILS");
-        header.getStyleClass().addAll("section-header", "text-muted");
-        getChildren().addAll(header, infoCard("Hinweis", message));
+    public void showEditorMessage(String message) {
+        resetContent();
+        getChildren().add(infoCard("Editor-Hinweis", message));
     }
 
     public void showSelection(DungeonSelection selection) {
-        getChildren().clear();
-        Label header = new Label("DETAILS");
-        header.getStyleClass().addAll("section-header", "text-muted");
-        getChildren().add(header);
+        resetContent();
 
         if (selection == null || selection.type() == DungeonSelection.SelectionType.NONE) {
-            getChildren().add(infoCard("Nichts ausgewählt", "Wähle ein Feld, einen Raum, einen Bereich, ein Feature oder eine Verbindung auf der Karte aus."));
+            getChildren().add(infoCard("Nichts ausgewählt", "Wähle ein Feld oder eine Entität, um Bearbeitungsaktionen anzuzeigen."));
             return;
         }
 
         switch (selection.type()) {
-            case SQUARE -> renderSquare(selection.square(), selection.tileFeatures());
+            case SQUARE -> renderSquare(selection.square());
             case ROOM -> renderRoom(selection.room());
             case AREA -> renderArea(selection.area());
             case FEATURE -> renderFeature(selection.feature());
@@ -110,46 +105,24 @@ public class DungeonDetailsPane extends VBox {
         }
     }
 
-    private void renderSquare(DungeonSquare square, List<DungeonFeature> tileFeatures) {
+    private void renderSquare(DungeonSquare square) {
         if (square == null) {
-            getChildren().add(infoCard("Leeres Feld", "Dieses Feld existiert noch nicht als bearbeiteter Karteneintrag."));
+            getChildren().add(infoCard("Leeres Feld", "Noch kein Karteneintrag."));
             return;
         }
-        VBox featureBox = new VBox(4);
-        if (tileFeatures == null || tileFeatures.isEmpty()) {
-            featureBox.getChildren().add(kvRow("Features", "-"));
-        } else {
-            featureBox.getChildren().add(kvRow("Features", Integer.toString(tileFeatures.size())));
-            for (DungeonFeature feature : tileFeatures) {
-                featureBox.getChildren().add(kvRow(feature.category().label(), valueOrDash(feature.name())));
-            }
-        }
-        getChildren().add(summaryCard(
-                "Feld",
-                "Position " + square.x() + ", " + square.y(),
-                kvRow("Raum", valueOrDash(square.roomName())),
-                kvRow("Bereich", valueOrDash(square.areaName())),
-                featureBox));
+        getChildren().add(editorCard(
+                "Feld " + square.x() + ", " + square.y()));
     }
 
     private void renderRoom(DungeonRoom room) {
         if (room == null) {
-            getChildren().add(infoCard("Kein Raum ausgewählt", "Wähle einen Raum auf der Karte oder in den Werkzeugeinstellungen aus."));
+            getChildren().add(infoCard("Raum", "Keine Auswahl."));
             return;
         }
         TextField nameField = new TextField(room.name());
         TextArea descriptionArea = new TextArea(room.description() == null ? "" : room.description());
-        ComboBox<DungeonArea> areaCombo = new ComboBox<>();
-        areaCombo.setMaxWidth(Double.MAX_VALUE);
-        areaCombo.getItems().setAll(knownAreas);
-        for (DungeonArea area : knownAreas) {
-            if (room.areaId() != null && room.areaId().equals(area.areaId())) {
-                areaCombo.setValue(area);
-                break;
-            }
-        }
-        Button saveButton = new Button("Raum speichern");
-        saveButton.setOnAction(event -> {
+        ComboBox<DungeonArea> areaCombo = buildComboBox(knownAreas, room.areaId(), DungeonArea::areaId);
+        Button saveButton = actionButton("Raum speichern", event -> {
             if (onRoomSaved != null) {
                 onRoomSaved.accept(new RoomForm(
                         room.roomId(),
@@ -165,29 +138,24 @@ public class DungeonDetailsPane extends VBox {
                 onRoomDeleted.accept(new DeleteRequest(room.roomId(), deleteButton));
             }
         });
-        getChildren().add(summaryCard("Raum", titleOrFallback(room.name(), "Unbenannter Raum"), kvRow("Bereich", resolveAreaName(room.areaId()))));
-        getChildren().add(formCard("Raum bearbeiten", "Namen, Beschreibung und Bereich dieses Raums anpassen.",
-                labeledField("Name", nameField), labeledField("Beschreibung", descriptionArea), labeledField("Bereich", areaCombo), actionRow(saveButton, deleteButton)));
+        getChildren().add(editorCard(
+                titleOrFallback(room.name(), "Unbenannter Raum"),
+                labeledField("Name", nameField),
+                labeledField("Beschreibung", descriptionArea),
+                labeledField("Bereich", areaCombo),
+                actionRow(saveButton, deleteButton)));
     }
 
     private void renderArea(DungeonArea area) {
         if (area == null) {
-            getChildren().add(infoCard("Kein Bereich ausgewählt", "Wähle einen Bereich auf der Karte oder in den Werkzeugeinstellungen aus."));
+            getChildren().add(infoCard("Bereich", "Keine Auswahl."));
             return;
         }
         TextField nameField = new TextField(area.name());
         TextArea descriptionArea = new TextArea(area.description() == null ? "" : area.description());
-        ComboBox<DungeonEncounterTableSummary> encounterCombo = new ComboBox<>();
-        encounterCombo.setMaxWidth(Double.MAX_VALUE);
-        encounterCombo.getItems().setAll(knownEncounterTables);
-        for (DungeonEncounterTableSummary table : knownEncounterTables) {
-            if (area.encounterTableId() != null && area.encounterTableId().equals(table.tableId())) {
-                encounterCombo.setValue(table);
-                break;
-            }
-        }
-        Button saveButton = new Button("Bereich speichern");
-        saveButton.setOnAction(event -> {
+        ComboBox<DungeonEncounterTableSummary> encounterCombo =
+                buildComboBox(knownEncounterTables, area.encounterTableId(), DungeonEncounterTableSummary::tableId);
+        Button saveButton = actionButton("Bereich speichern", event -> {
             if (onAreaSaved != null) {
                 onAreaSaved.accept(new AreaForm(
                         area.areaId(),
@@ -203,14 +171,17 @@ public class DungeonDetailsPane extends VBox {
                 onAreaDeleted.accept(new DeleteRequest(area.areaId(), deleteButton));
             }
         });
-        getChildren().add(summaryCard("Bereich", titleOrFallback(area.name(), "Unbenannter Bereich"), kvRow("Encounter Table", valueOrDash(area.encounterTableName()))));
-        getChildren().add(formCard("Bereich bearbeiten", "Bereiche fassen mehrere Räume zusammen und können eine Encounter Table mitführen.",
-                labeledField("Name", nameField), labeledField("Beschreibung", descriptionArea), labeledField("Encounter Table", encounterCombo), actionRow(saveButton, deleteButton)));
+        getChildren().add(editorCard(
+                titleOrFallback(area.name(), "Unbenannter Bereich"),
+                labeledField("Name", nameField),
+                labeledField("Beschreibung", descriptionArea),
+                labeledField("Encounter Table", encounterCombo),
+                actionRow(saveButton, deleteButton)));
     }
 
     private void renderFeature(DungeonFeature feature) {
         if (feature == null) {
-            getChildren().add(infoCard("Kein Feature ausgewählt", "Wähle ein Feature auf einem Feld oder in den Werkzeugeinstellungen aus."));
+            getChildren().add(infoCard("Feature", "Keine Auswahl."));
             return;
         }
         TextField nameField = new TextField(feature.name() == null ? "" : feature.name());
@@ -219,12 +190,25 @@ public class DungeonDetailsPane extends VBox {
         categoryCombo.setMaxWidth(Double.MAX_VALUE);
         categoryCombo.getItems().setAll(DungeonFeatureCategory.values());
         categoryCombo.setValue(feature.category() == null ? DungeonFeatureCategory.CURIOSITY : feature.category());
-        Button saveButton = new Button("Feature speichern");
-        saveButton.setOnAction(event -> {
+        ComboBox<DungeonEncounterSummary> encounterCombo =
+                buildComboBox(knownEncounterSummaries, feature.encounterId(), DungeonEncounterSummary::encounterId);
+        VBox encounterField = labeledField("Gebundenes Encounter", encounterCombo);
+        updateEncounterFieldVisibility(encounterField, categoryCombo.getValue());
+        categoryCombo.valueProperty().addListener((obs, oldValue, newValue) -> {
+            updateEncounterFieldVisibility(encounterField, newValue);
+            if (newValue != DungeonFeatureCategory.ENCOUNTER) {
+                encounterCombo.setValue(null);
+            }
+        });
+        Button saveButton = actionButton("Feature speichern", event -> {
             if (onFeatureSaved != null) {
+                DungeonFeatureCategory category = categoryCombo.getValue() == null ? DungeonFeatureCategory.CURIOSITY : categoryCombo.getValue();
                 onFeatureSaved.accept(new FeatureForm(
                         feature.featureId(),
-                        categoryCombo.getValue() == null ? DungeonFeatureCategory.CURIOSITY : categoryCombo.getValue(),
+                        category,
+                        category == DungeonFeatureCategory.ENCOUNTER && encounterCombo.getValue() != null
+                                ? encounterCombo.getValue().encounterId()
+                                : null,
                         nameField.getText().trim(),
                         notesArea.getText()));
             }
@@ -236,14 +220,18 @@ public class DungeonDetailsPane extends VBox {
                 onFeatureDeleted.accept(new DeleteRequest(feature.featureId(), deleteButton));
             }
         });
-        getChildren().add(summaryCard("Feature", titleOrFallback(feature.name(), feature.category().label()), kvRow("Kategorie", feature.category().label())));
-        getChildren().add(formCard("Feature bearbeiten", "Verwalte Kategorie, Namen und Notizen. Die Feldzuordnung erfolgt im Feature-Werkzeug.",
-                labeledField("Kategorie", categoryCombo), labeledField("Name", nameField), labeledField("Notizen", notesArea), actionRow(saveButton, deleteButton)));
+        getChildren().add(editorCard(
+                titleOrFallback(feature.name(), feature.category().label()),
+                labeledField("Kategorie", categoryCombo),
+                encounterField,
+                labeledField("Name", nameField),
+                labeledField("Notizen", notesArea),
+                actionRow(saveButton, deleteButton)));
     }
 
     private void renderEndpoint(DungeonEndpoint endpoint) {
         if (endpoint == null) {
-            getChildren().add(infoCard("Kein Übergang ausgewählt", "Wähle einen Übergang auf der Karte aus."));
+            getChildren().add(infoCard("Übergang", "Keine Auswahl."));
             return;
         }
         TextField nameField = new TextField(endpoint.name() == null ? "" : endpoint.name());
@@ -278,8 +266,7 @@ public class DungeonDetailsPane extends VBox {
         });
         DungeonEndpointRole initialRole = roleCombo.getValue() == null ? DungeonEndpointRole.BOTH : roleCombo.getValue();
         defaultEntryCheckBox.setDisable(!initialRole.allowsEntry());
-        Button saveButton = new Button("Übergang speichern");
-        saveButton.setOnAction(event -> {
+        Button saveButton = actionButton("Übergang speichern", event -> {
             if (onEndpointSaved != null) {
                 DungeonEndpointRole role = roleCombo.getValue() == null ? DungeonEndpointRole.BOTH : roleCombo.getValue();
                 onEndpointSaved.accept(new EndpointForm(endpoint.endpointId(), nameField.getText().trim(), notesArea.getText(), role, defaultEntryCheckBox.isSelected() && role.allowsEntry()));
@@ -292,22 +279,21 @@ public class DungeonDetailsPane extends VBox {
                 onEndpointDeleted.accept(new DeleteRequest(endpoint.endpointId(), deleteButton));
             }
         });
-        getChildren().add(summaryCard("Übergang", titleOrFallback(endpoint.name(), "Unbenannter Übergang"),
-                kvRow("Position", endpoint.x() + ", " + endpoint.y()),
-                kvRow("Typ", endpointRoleLabel(endpoint.role())),
-                kvRow("Standard-Einstieg", endpoint.defaultEntry() ? "Ja" : "Nein")));
-        getChildren().add(formCard("Übergang bearbeiten", "Übergänge verbinden die Karte mit Passagen und Links.",
-                labeledField("Name", nameField), labeledField("Notizen", notesArea), labeledField("Typ", roleCombo), defaultEntryCheckBox, actionRow(saveButton, deleteButton)));
+        getChildren().add(editorCard(titleOrFallback(endpoint.name(), "Unbenannter Übergang"),
+                labeledField("Name", nameField),
+                labeledField("Notizen", notesArea),
+                labeledField("Typ", roleCombo),
+                defaultEntryCheckBox,
+                actionRow(saveButton, deleteButton)));
     }
 
     private void renderLink(DungeonLink link) {
         if (link == null) {
-            getChildren().add(infoCard("Kein Link ausgewählt", "Wähle einen Link zwischen zwei Übergängen aus."));
+            getChildren().add(infoCard("Link", "Keine Auswahl."));
             return;
         }
         TextField labelField = new TextField(link.label() == null ? "" : link.label());
-        Button saveButton = new Button("Link speichern");
-        saveButton.setOnAction(event -> {
+        Button saveButton = actionButton("Link speichern", event -> {
             if (onLinkSaved != null) {
                 onLinkSaved.accept(new LinkForm(link.linkId(), labelField.getText().trim()));
             }
@@ -321,14 +307,15 @@ public class DungeonDetailsPane extends VBox {
         });
         String fromName = resolveEndpointName(link.fromEndpointId());
         String toName = resolveEndpointName(link.toEndpointId());
-        getChildren().add(summaryCard("Link", fromName + " -> " + toName, kvRow("Von", fromName), kvRow("Nach", toName)));
-        getChildren().add(formCard("Link bearbeiten", "Links erzeugen gerichtete Verbindungen zwischen zwei Übergängen.",
-                labeledField("Label", labelField), actionRow(saveButton, deleteButton)));
+        getChildren().add(editorCard(
+                fromName + " -> " + toName,
+                labeledField("Label", labelField),
+                actionRow(saveButton, deleteButton)));
     }
 
     private void renderPassage(DungeonPassage passage) {
         if (passage == null) {
-            getChildren().add(infoCard("Keine Kante ausgewählt", "Wähle eine Kante auf der Karte aus, um ihren Wand- oder Durchgangszustand zu bearbeiten."));
+            getChildren().add(infoCard("Kante", "Keine Auswahl."));
             return;
         }
         String edgeDesc = passage.direction() == PassageDirection.EAST
@@ -336,13 +323,7 @@ public class DungeonDetailsPane extends VBox {
                 : "(" + passage.x() + "," + passage.y() + ") → (" + passage.x() + "," + (passage.y() + 1) + ")";
         TextField nameField = new TextField(passage.name() == null ? "" : passage.name());
         TextArea notesArea = new TextArea(passage.notes() == null ? "" : passage.notes());
-        ComboBox<PassageType> typeCombo = new ComboBox<>();
-        typeCombo.setMaxWidth(Double.MAX_VALUE);
-        typeCombo.getItems().setAll(PassageType.values());
-        typeCombo.setValue(passage.type() == null ? PassageType.OPEN : passage.type());
-        ComboBox<DungeonEndpoint> endpointCombo = new ComboBox<>();
-        endpointCombo.setMaxWidth(Double.MAX_VALUE);
-        endpointCombo.getItems().setAll(knownEndpoints);
+        ComboBox<DungeonEndpoint> endpointCombo = buildComboBox(knownEndpoints, passage.endpointId(), DungeonEndpoint::endpointId);
         endpointCombo.setConverter(new StringConverter<>() {
             @Override
             public String toString(DungeonEndpoint endpoint) {
@@ -358,22 +339,12 @@ public class DungeonDetailsPane extends VBox {
                 return null;
             }
         });
-        if (passage.endpointId() != null) {
-            for (DungeonEndpoint endpoint : knownEndpoints) {
-                if (passage.endpointId().equals(endpoint.endpointId())) {
-                    endpointCombo.setValue(endpoint);
-                    break;
-                }
-            }
-        }
-        Button saveButton = new Button("Kante speichern");
-        saveButton.setOnAction(event -> {
+        Button saveButton = actionButton("Kante speichern", event -> {
             if (onPassageSaved != null) {
                 onPassageSaved.accept(new PassageForm(
                         passage.passageId(),
                         nameField.getText().trim(),
                         notesArea.getText(),
-                        typeCombo.getValue() == null ? PassageType.DOOR : typeCombo.getValue(),
                         endpointCombo.getValue() == null ? null : endpointCombo.getValue().endpointId()));
             }
         });
@@ -384,12 +355,11 @@ public class DungeonDetailsPane extends VBox {
                 onPassageDeleted.accept(new DeleteRequest(passage.passageId(), deleteButton));
             }
         });
-        getChildren().add(summaryCard("Kante", titleOrFallback(passage.name(), "Unbenannte Kante"),
-                kvRow("Kante", edgeDesc),
-                kvRow("Typ", passage.type() == null ? PassageType.OPEN.toString() : passage.type().toString()),
-                kvRow("Verknüpfter Übergang", resolveOptionalEndpointName(passage.endpointId()))));
-        getChildren().add(formCard("Kante bearbeiten", "Lege fest, ob die Kante eine geschlossene Wand, ein offener Durchgang, eine Tür, ein Fenster, ein Loch oder eine Geheimtür ist. Das Löschen stellt die normale geschlossene Wand wieder her.",
-                labeledField("Name", nameField), labeledField("Notizen", notesArea), labeledField("Typ", typeCombo), labeledField("Verknüpfter Übergang", endpointCombo), actionRow(saveButton, deleteButton)));
+        getChildren().add(editorCard(titleOrFallback(passage.name(), "Unbenannte Kante"),
+                labeledField("Verknüpfter Übergang", endpointCombo),
+                labeledField("Name", nameField),
+                labeledField("Notizen", notesArea),
+                actionRow(saveButton, deleteButton)));
     }
 
     private String resolveEndpointName(long endpointId) {
@@ -413,29 +383,14 @@ public class DungeonDetailsPane extends VBox {
         return box;
     }
 
-    private VBox summaryCard(String kind, String headline, Node... details) {
-        Label kindLabel = new Label(kind.toUpperCase());
-        kindLabel.getStyleClass().addAll("section-header", "text-muted");
+    private VBox editorCard(String headline, Node... details) {
         Label headlineLabel = new Label(headline);
         headlineLabel.getStyleClass().add("dungeon-panel-title");
         headlineLabel.setWrapText(true);
-        VBox box = new VBox(8);
+        VBox box = new VBox(6);
         box.getStyleClass().add("dungeon-editor-card");
-        box.getChildren().addAll(kindLabel, headlineLabel);
+        box.getChildren().add(headlineLabel);
         box.getChildren().addAll(details);
-        return box;
-    }
-
-    private VBox formCard(String title, String hint, Node... content) {
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("dungeon-panel-title");
-        Label hintLabel = new Label(hint);
-        hintLabel.getStyleClass().add("text-secondary");
-        hintLabel.setWrapText(true);
-        VBox box = new VBox(8);
-        box.getStyleClass().add("dungeon-editor-card");
-        box.getChildren().addAll(titleLabel, hintLabel);
-        box.getChildren().addAll(content);
         return box;
     }
 
@@ -445,25 +400,50 @@ public class DungeonDetailsPane extends VBox {
         Label bodyLabel = new Label(body);
         bodyLabel.getStyleClass().add("text-secondary");
         bodyLabel.setWrapText(true);
-        VBox box = new VBox(8, titleLabel, bodyLabel);
+        VBox box = new VBox(6, titleLabel, bodyLabel);
         box.getStyleClass().add("dungeon-editor-card");
         return box;
     }
 
-    private HBox kvRow(String labelText, String valueText) {
-        Label label = new Label(labelText);
-        label.getStyleClass().add("text-muted");
-        Label value = new Label(valueText);
-        value.getStyleClass().add("text-secondary");
-        value.setWrapText(true);
-        HBox row = new HBox(8, label, value);
-        row.getStyleClass().add("dungeon-meta-row");
-        HBox.setHgrow(value, Priority.ALWAYS);
+    private HBox actionRow(Button saveButton, Button deleteButton) {
+        HBox row = new HBox(8, saveButton, deleteButton);
+        row.getStyleClass().add("editor-action-row");
         return row;
     }
 
-    private HBox actionRow(Button saveButton, Button deleteButton) {
-        return new HBox(8, saveButton, deleteButton);
+    private void resetContent() {
+        getChildren().clear();
+        Label header = new Label("BEARBEITEN");
+        header.getStyleClass().addAll("section-header", "text-muted");
+        getChildren().add(header);
+    }
+
+    private Button actionButton(String text, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
+        Button button = new Button(text);
+        button.setOnAction(handler);
+        return button;
+    }
+
+    private <T> ComboBox<T> buildComboBox(List<T> items, Long selectedId, java.util.function.Function<T, Long> idGetter) {
+        ComboBox<T> comboBox = new ComboBox<>();
+        comboBox.setMaxWidth(Double.MAX_VALUE);
+        comboBox.getItems().setAll(items == null ? List.of() : items);
+        if (selectedId != null) {
+            for (T item : comboBox.getItems()) {
+                Long itemId = idGetter.apply(item);
+                if (selectedId.equals(itemId)) {
+                    comboBox.setValue(item);
+                    break;
+                }
+            }
+        }
+        return comboBox;
+    }
+
+    private static void updateEncounterFieldVisibility(Node node, DungeonFeatureCategory category) {
+        boolean visible = category == DungeonFeatureCategory.ENCOUNTER;
+        node.setVisible(visible);
+        node.setManaged(visible);
     }
 
     private String resolveAreaName(Long areaId) {
@@ -483,6 +463,30 @@ public class DungeonDetailsPane extends VBox {
             return "-";
         }
         return resolveEndpointName(endpointId);
+    }
+
+    private String resolveEncounterTableName(Long encounterTableId) {
+        if (encounterTableId == null) {
+            return null;
+        }
+        for (DungeonEncounterTableSummary table : knownEncounterTables) {
+            if (encounterTableId.equals(table.tableId())) {
+                return table.name();
+            }
+        }
+        return null;
+    }
+
+    private String resolveEncounterName(Long encounterId) {
+        if (encounterId == null) {
+            return null;
+        }
+        for (DungeonEncounterSummary encounter : knownEncounterSummaries) {
+            if (encounterId.equals(encounter.encounterId())) {
+                return encounter.name();
+            }
+        }
+        return null;
     }
 
     private String endpointRoleLabel(DungeonEndpointRole role) {
@@ -549,4 +553,5 @@ public class DungeonDetailsPane extends VBox {
     public void setOnPassageDeleted(Consumer<DeleteRequest> onPassageDeleted) {
         this.onPassageDeleted = onPassageDeleted;
     }
+
 }
