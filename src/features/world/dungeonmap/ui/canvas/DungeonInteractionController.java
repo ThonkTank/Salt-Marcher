@@ -1,6 +1,7 @@
 package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.BrushShape;
+import features.world.dungeonmap.model.DungeonEdgeSummary;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.PassageDirection;
@@ -310,7 +311,7 @@ final class DungeonInteractionController {
         if (interaction == null || onEdgePainted == null) {
             return;
         }
-        String edgeKey = interaction.direction().edgeKey(interaction.x(), interaction.y());
+        String edgeKey = interaction.edge().edgeKey();
         if (edgeKey.equals(lastDraggedEdgeKey)) {
             return;
         }
@@ -430,9 +431,9 @@ final class DungeonInteractionController {
         hoverVertexX = -1;
         hoverVertexY = -1;
         DungeonMapPane.EdgeInteraction interaction = interactionAt(screenX, screenY);
-        int newX = interaction == null ? -1 : interaction.x();
-        int newY = interaction == null ? -1 : interaction.y();
-        PassageDirection newDir = interaction == null ? null : interaction.direction();
+        int newX = interaction == null ? -1 : interaction.edge().x();
+        int newY = interaction == null ? -1 : interaction.edge().y();
+        PassageDirection newDir = interaction == null ? null : interaction.edge().direction();
         if (newX == hoverEdgeX && newY == hoverEdgeY && newDir == hoverEdgeDir) {
             return;
         }
@@ -487,17 +488,8 @@ final class DungeonInteractionController {
             return null;
         }
         PassageDirection dir = edge[2] == 0 ? PassageDirection.EAST : PassageDirection.SOUTH;
-        String edgeKey = dir.edgeKey(edge[0], edge[1]);
-        DungeonWall existingWall = model.wallsByEdge().get(edgeKey);
-        DungeonPassage existingPassage = model.passagesByEdge().get(edgeKey);
-        if (!currentEdgeToolPolicy().allowsInteraction(
-                edge[0],
-                edge[1],
-                dir,
-                existingWall,
-                existingPassage,
-                this::isEditableEdge,
-                this::isInteriorEdge)) {
+        DungeonEdgeSummary edgeSummary = model.edgeAt(dir.edgeKey(edge[0], edge[1]));
+        if (!currentEdgeToolPolicy().allowsInteraction(edgeSummary)) {
             if (!currentEdgeToolPolicy().edgeHoverEnabled()) {
                 return null;
             }
@@ -505,7 +497,7 @@ final class DungeonInteractionController {
                 return null;
             }
         }
-        return new DungeonMapPane.EdgeInteraction(edge[0], edge[1], dir, existingWall, existingPassage);
+        return edgeSummary == null ? null : new DungeonMapPane.EdgeInteraction(edgeSummary);
     }
 
     private int[] findEdgeAt(double screenX, double screenY) {
@@ -541,7 +533,8 @@ final class DungeonInteractionController {
             dir = PassageDirection.SOUTH;
         }
 
-        if (!isEditableEdge(canonX, canonY, dir) && !isInteriorEdge(canonX, canonY, dir)) {
+        DungeonEdgeSummary edge = model.edgeAt(dir.edgeKey(canonX, canonY));
+        if (edge == null || !edge.hasInteractiveContext()) {
             return null;
         }
         return new int[]{canonX, canonY, dir == PassageDirection.EAST ? 0 : 1};
@@ -656,8 +649,11 @@ final class DungeonInteractionController {
 
     private void addPaintableStep(List<VertexStep> steps, VertexRef from, VertexRef to) {
         EdgeRef edge = edgeBetween(from, to);
-        if (edge != null && isPaintableWallEdge(edge.x(), edge.y(), edge.direction())) {
-            steps.add(new VertexStep(to, edge, from));
+        if (edge != null) {
+            DungeonEdgeSummary summary = model.edgeAt(edge.direction().edgeKey(edge.x(), edge.y()));
+            if (summary != null && summary.canCreateManualWall()) {
+                steps.add(new VertexStep(to, edge, from));
+            }
         }
     }
 
@@ -695,37 +691,8 @@ final class DungeonInteractionController {
     }
 
     private DungeonMapPane.EdgeInteraction toInteraction(EdgeRef edge) {
-        String edgeKey = edge.direction().edgeKey(edge.x(), edge.y());
-        return new DungeonMapPane.EdgeInteraction(
-                edge.x(),
-                edge.y(),
-                edge.direction(),
-                model.wallsByEdge().get(edgeKey),
-                model.passagesByEdge().get(edgeKey));
-    }
-
-    private boolean isEditableEdge(int x, int y, PassageDirection dir) {
-        boolean sideA = hasFilledSquare(x, y);
-        boolean sideB = dir == PassageDirection.EAST
-                ? hasFilledSquare(x + 1, y)
-                : hasFilledSquare(x, y + 1);
-        return sideA || sideB;
-    }
-
-    private boolean isInteriorEdge(int x, int y, PassageDirection dir) {
-        boolean sideA = hasFilledSquare(x, y);
-        boolean sideB = dir == PassageDirection.EAST
-                ? hasFilledSquare(x + 1, y)
-                : hasFilledSquare(x, y + 1);
-        return sideA && sideB;
-    }
-
-    private boolean isPaintableWallEdge(int x, int y, PassageDirection dir) {
-        return isInteriorEdge(x, y, dir);
-    }
-
-    private boolean hasFilledSquare(int x, int y) {
-        return model.squaresByCoord().get(x + ":" + y) != null;
+        DungeonEdgeSummary edgeSummary = model.edgeAt(edge.direction().edgeKey(edge.x(), edge.y()));
+        return edgeSummary == null ? null : new DungeonMapPane.EdgeInteraction(edgeSummary);
     }
 
     private void strokeEdge(GraphicsContext gc, int x, int y, PassageDirection dir) {

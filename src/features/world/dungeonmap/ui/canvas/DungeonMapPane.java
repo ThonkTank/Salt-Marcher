@@ -2,15 +2,13 @@ package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonEdgeSummary;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
-import features.world.dungeonmap.model.DungeonWall;
-import features.world.dungeonmap.model.PassageDirection;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
@@ -30,7 +28,7 @@ public class DungeonMapPane extends StackPane {
     private static final Duration INVALID_EDGE_FLASH_DURATION = Duration.millis(500);
 
     public record CellInteraction(int x, int y, DungeonSquare square) {}
-    public record EdgeInteraction(int x, int y, PassageDirection direction, DungeonWall existingWall, DungeonPassage existingPassage) {}
+    public record EdgeInteraction(DungeonEdgeSummary edge) {}
 
     private final Canvas gridCanvas = new Canvas();
     private final Canvas selectionCanvas = new Canvas();
@@ -181,7 +179,7 @@ public class DungeonMapPane extends StackPane {
         if (interaction == null) {
             return;
         }
-        model.setInvalidEdge(interaction.x(), interaction.y(), interaction.direction());
+        model.setInvalidEdge(interaction.edge().x(), interaction.edge().y(), interaction.edge().direction());
         gridRenderer.redrawSelection();
         invalidEdgeFlash.stop();
         invalidEdgeFlash.playFromStart();

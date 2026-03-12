@@ -86,18 +86,19 @@ public final class DungeonPassageRepository {
     }
 
     public static void deleteInvalidPassages(Connection conn, long mapId) throws SQLException {
-        // Same invariant as service.topology.DungeonTopologyService.validatePassageForSave(): passages only exist on wall edges.
+        // Compatibility cleanup only removes persisted passages that lost their required wall or
+        // all adjacent squares. Topology still owns where walls should exist in the first place.
         String sql = "DELETE FROM dungeon_passages "
                 + "WHERE map_id=? AND ("
                 + "(direction='east' AND ("
-                + "NOT EXISTS (SELECT 1 FROM dungeon_squares a WHERE a.map_id=dungeon_passages.map_id AND a.x=dungeon_passages.x AND a.y=dungeon_passages.y)"
-                + " OR NOT EXISTS (SELECT 1 FROM dungeon_squares b WHERE b.map_id=dungeon_passages.map_id AND b.x=dungeon_passages.x + 1 AND b.y=dungeon_passages.y)"
+                + "(NOT EXISTS (SELECT 1 FROM dungeon_squares a WHERE a.map_id=dungeon_passages.map_id AND a.x=dungeon_passages.x AND a.y=dungeon_passages.y)"
+                + " AND NOT EXISTS (SELECT 1 FROM dungeon_squares b WHERE b.map_id=dungeon_passages.map_id AND b.x=dungeon_passages.x + 1 AND b.y=dungeon_passages.y))"
                 + " OR NOT EXISTS (SELECT 1 FROM dungeon_walls w WHERE w.map_id=dungeon_passages.map_id AND w.x=dungeon_passages.x AND w.y=dungeon_passages.y AND w.direction='east')"
                 + "))"
                 + " OR "
                 + "(direction='south' AND ("
-                + "NOT EXISTS (SELECT 1 FROM dungeon_squares a WHERE a.map_id=dungeon_passages.map_id AND a.x=dungeon_passages.x AND a.y=dungeon_passages.y)"
-                + " OR NOT EXISTS (SELECT 1 FROM dungeon_squares b WHERE b.map_id=dungeon_passages.map_id AND b.x=dungeon_passages.x AND b.y=dungeon_passages.y + 1)"
+                + "(NOT EXISTS (SELECT 1 FROM dungeon_squares a WHERE a.map_id=dungeon_passages.map_id AND a.x=dungeon_passages.x AND a.y=dungeon_passages.y)"
+                + " AND NOT EXISTS (SELECT 1 FROM dungeon_squares b WHERE b.map_id=dungeon_passages.map_id AND b.x=dungeon_passages.x AND b.y=dungeon_passages.y + 1))"
                 + " OR NOT EXISTS (SELECT 1 FROM dungeon_walls w WHERE w.map_id=dungeon_passages.map_id AND w.x=dungeon_passages.x AND w.y=dungeon_passages.y AND w.direction='south')"
                 + "))"
                 + " OR "

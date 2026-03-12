@@ -1,5 +1,6 @@
 package features.world.dungeonmap.service.topology;
 
+import features.world.dungeonmap.model.DungeonEdgeRules;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
@@ -26,10 +27,6 @@ final class BoundaryWallReconciler {
             TopologyIntent intent,
             TopologyWorkspace workspace
     ) throws SQLException {
-        /*
-         * Before component reconciliation runs, every touched edge that is already a room boundary must have a wall
-         * unless a passage owns that edge. This preserves the rule that adjacent paint without overlap stays a new room.
-         */
         if (intent.squareEdits().isEmpty()) {
             return;
         }
@@ -38,14 +35,7 @@ final class BoundaryWallReconciler {
         for (EdgeRef edge : touchedEdges(intent.squareEdits())) {
             DungeonSquare currentA = workspace.currentSquaresByCoord().get(TopologyWorkspace.coordKey(edge.x(), edge.y()));
             DungeonSquare currentB = workspace.currentSquaresByCoord().get(TopologyWorkspace.coordKey(edge.adjacentX(), edge.adjacentY()));
-            if (currentA == null || currentB == null) {
-                continue;
-            }
-
-            boolean currentBoundary = differentRooms(currentA, currentB);
-            String edgeKey = edge.direction().edgeKey(edge.x(), edge.y());
-
-            if (currentBoundary && !workspace.passagesByEdge().containsKey(edgeKey)) {
+            if (DungeonEdgeRules.requiresTopologyWall(currentA, currentB)) {
                 wallEdits.add(new DungeonWallEdit(edge.x(), edge.y(), edge.direction(), true));
             }
         }
@@ -59,10 +49,6 @@ final class BoundaryWallReconciler {
             TopologyIntent intent,
             TopologyWorkspace workspace
     ) throws SQLException {
-        /*
-         * After room reconciliation settles, touched edges that stopped being room boundaries must lose their wall
-         * because they are now internal to an extended or merged room.
-         */
         if (intent.squareEdits().isEmpty()) {
             return;
         }
@@ -71,13 +57,9 @@ final class BoundaryWallReconciler {
         for (EdgeRef edge : touchedEdges(intent.squareEdits())) {
             DungeonSquare currentA = workspace.currentSquaresByCoord().get(TopologyWorkspace.coordKey(edge.x(), edge.y()));
             DungeonSquare currentB = workspace.currentSquaresByCoord().get(TopologyWorkspace.coordKey(edge.adjacentX(), edge.adjacentY()));
-            if (currentA == null || currentB == null) {
-                continue;
-            }
-
-            boolean currentBoundary = differentRooms(currentA, currentB);
-            boolean previousBoundary = wasBoundaryEdge(workspace.previousSquaresByCoord(), edge);
-            if (previousBoundary && !currentBoundary) {
+            boolean currentRequiresWall = DungeonEdgeRules.requiresTopologyWall(currentA, currentB);
+            boolean previousRequiresWall = requiredTopologyWall(workspace.previousSquaresByCoord(), edge);
+            if (previousRequiresWall && !currentRequiresWall) {
                 wallEdits.add(new DungeonWallEdit(edge.x(), edge.y(), edge.direction(), false));
             }
         }
@@ -96,20 +78,10 @@ final class BoundaryWallReconciler {
         return result;
     }
 
-    private static boolean wasBoundaryEdge(Map<String, DungeonSquare> previousSquaresByCoord, EdgeRef edge) {
-        DungeonSquare previousA = previousSquaresByCoord.get(TopologyWorkspace.coordKey(edge.x(), edge.y()));
-        DungeonSquare previousB = previousSquaresByCoord.get(TopologyWorkspace.coordKey(edge.adjacentX(), edge.adjacentY()));
-        if (previousA == null || previousB == null) {
-            return false;
-        }
-        return differentRooms(previousA, previousB);
-    }
-
-    private static boolean differentRooms(DungeonSquare left, DungeonSquare right) {
-        if (left == null || right == null || left.roomId() == null || right.roomId() == null) {
-            return false;
-        }
-        return !left.roomId().equals(right.roomId());
+    private static boolean requiredTopologyWall(Map<String, DungeonSquare> squaresByCoord, EdgeRef edge) {
+        DungeonSquare sideA = squaresByCoord.get(TopologyWorkspace.coordKey(edge.x(), edge.y()));
+        DungeonSquare sideB = squaresByCoord.get(TopologyWorkspace.coordKey(edge.adjacentX(), edge.adjacentY()));
+        return DungeonEdgeRules.requiresTopologyWall(sideA, sideB);
     }
 
     private static List<DungeonWallEdit> dedupeWallEdits(List<DungeonWallEdit> edits) {

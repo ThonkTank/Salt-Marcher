@@ -30,6 +30,10 @@ import java.util.Set;
 public final class DungeonTopologyService {
 
     /*
+     * Topology owns which edges require persisted walls during writes. Repository normalization only
+     * repairs stored compatibility rows, and the derived edge builder mirrors the same boundary rule
+     * for read-model and preview reconstruction.
+     *
      * Square paint rules:
      * - Painting isolated empty space creates a new room and walls on every exposed edge.
      * - Painting empty space directly adjacent to one or more rooms still creates a new room and only adds boundary walls
@@ -62,10 +66,6 @@ public final class DungeonTopologyService {
         if (!isPassageEdgeValid(conn, passage.mapId(), passage.x(), passage.y(), passage.direction())) {
             throw new IllegalArgumentException("Passage edge is no longer valid for map " + passage.mapId());
         }
-        // Same invariant as DungeonPassageRepository.deleteInvalidPassages(): passages only exist on wall edges.
-        if (!wallExists(conn, passage.mapId(), passage.x(), passage.y(), passage.direction())) {
-            throw new IllegalArgumentException("Passages require an existing wall on map " + passage.mapId());
-        }
         if (passage.endpointId() == null) {
             return;
         }
@@ -84,6 +84,7 @@ public final class DungeonTopologyService {
             long mapId,
             List<DungeonWallEdit> edits
     ) throws SQLException {
+        // Manual wall edits stay interior-only. One-sided boundary walls are topology-owned and reconciled separately.
         for (DungeonWallEdit edit : edits) {
             if (!isWallEdgeValid(conn, mapId, edit.x(), edit.y(), edit.direction())) {
                 throw new IllegalArgumentException("Wall edge is no longer valid for map " + mapId);
@@ -119,7 +120,7 @@ public final class DungeonTopologyService {
     }
 
     private static void reconcileTopology(Connection conn, long mapId, TopologyIntent intent) throws SQLException {
-        DungeonWallRepository.deleteInvalidWalls(conn, mapId);
+        DungeonWallRepository.normalizePersistedBoundaryWalls(conn, mapId);
         DungeonFeatureRepository.deleteEmptyFeatures(conn, mapId);
 
         TopologyWorkspace workspace = TopologyWorkspace.load(conn, mapId, intent.previousSquares());
@@ -146,7 +147,7 @@ public final class DungeonTopologyService {
         boolean sideB = direction == PassageDirection.EAST
                 ? squareExists(conn, mapId, x + 1, y)
                 : squareExists(conn, mapId, x, y + 1);
-        return sideA && sideB;
+        return (sideA || sideB) && wallExists(conn, mapId, x, y, direction);
     }
 
     private static boolean isWallEdgeValid(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {

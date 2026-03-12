@@ -64,6 +64,7 @@ public final class DungeonSquareEditWorkflowController {
         if (interaction == null || state.currentMapId() == null || state.currentState() == null) {
             return;
         }
+        var edge = interaction.edge();
         WallEditorMode mode = interactionState.wallEditorMode();
         if (!mode.erasesWalls()) {
             return;
@@ -72,9 +73,9 @@ public final class DungeonSquareEditWorkflowController {
                 state.currentMapId(),
                 state.currentState(),
                 new DungeonWallEdit(
-                        interaction.x(),
-                        interaction.y(),
-                        interaction.direction(),
+                        edge.x(),
+                        edge.y(),
+                        edge.direction(),
                         mode.paintsWalls()));
     }
 
@@ -143,10 +144,14 @@ public final class DungeonSquareEditWorkflowController {
             if (interaction == null) {
                 continue;
             }
+            var edge = interaction.edge();
+            if (wallPresent && edge.wallPresent() && !edge.canEraseManualWall()) {
+                continue;
+            }
             DungeonWallEdit edit = new DungeonWallEdit(
-                    interaction.x(),
-                    interaction.y(),
-                    interaction.direction(),
+                    edge.x(),
+                    edge.y(),
+                    edge.direction(),
                     wallPresent);
             deduped.put(edit.edgeKey(), edit);
         }

@@ -1,6 +1,7 @@
 package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonMapState;
+import features.world.dungeonmap.model.DungeonEdgeSummary;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
@@ -237,16 +238,16 @@ final class DungeonGridRenderer {
 
         if (!northFilled) {
             drawEdge(gc, PassageDirection.SOUTH.edgeKey(x, y - 1),
-                    sx, sy, ex, sy, true, wallWidth, true, northFilled);
+                    sx, sy, ex, sy, true, wallWidth);
         }
         drawEdge(gc, PassageDirection.SOUTH.edgeKey(x, y),
-                sx, ey, ex, ey, true, wallWidth, true, southFilled);
+                sx, ey, ex, ey, true, wallWidth);
         if (!westFilled) {
             drawEdge(gc, PassageDirection.EAST.edgeKey(x - 1, y),
-                    sx, sy, sx, ey, false, wallWidth, true, westFilled);
+                    sx, sy, sx, ey, false, wallWidth);
         }
         drawEdge(gc, PassageDirection.EAST.edgeKey(x, y),
-                ex, sy, ex, ey, false, wallWidth, true, eastFilled);
+                ex, sy, ex, ey, false, wallWidth);
     }
 
     private void drawEdge(
@@ -257,24 +258,20 @@ final class DungeonGridRenderer {
             double bx,
             double by,
             boolean horizontal,
-            double wallWidth,
-            boolean firstSideFilled,
-            boolean secondSideFilled
+            double wallWidth
     ) {
-        if (!firstSideFilled) {
+        DungeonEdgeSummary edge = model.edgeAt(edgeKey);
+        if (edge == null) {
             return;
         }
-        DungeonWall wall = model.wallsByEdge().get(edgeKey);
-        DungeonPassage passage = model.passagesByEdge().get(edgeKey);
-        boolean interiorEdge = secondSideFilled;
+        DungeonPassage passage = edge.passage();
         if (passage != null) {
             drawPassageEdge(gc, ax, ay, bx, by, horizontal);
             return;
         }
-        if (!interiorEdge || wall != null) {
+        if (edge.wallPresent()) {
             gc.setStroke(WALL_COLOR);
             gc.strokeLine(ax, ay, bx, by);
-            return;
         }
     }
 

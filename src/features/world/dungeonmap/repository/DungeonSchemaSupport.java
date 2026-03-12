@@ -131,8 +131,8 @@ public final class DungeonSchemaSupport {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_features_encounter ON dungeon_features(encounter_id)");
         }
         normalizeDefaultEntryRoleCompatibility(conn);
-        normalizePassageTopologyCompatibility(conn);
         normalizeWallTopologyCompatibility(conn);
+        normalizePassageTopologyCompatibility(conn);
     }
 
     private static void removePassageTypeCompatibilityColumn(Connection conn) throws SQLException {
@@ -193,33 +193,22 @@ public final class DungeonSchemaSupport {
     }
 
     private static void normalizePassageTopologyCompatibility(Connection conn) throws SQLException {
-        for (Long mapId : loadMapIdsWithPassages(conn)) {
+        for (Long mapId : loadDungeonMapIds(conn)) {
+            // Compatibility cleanup only enforces persisted-row validity.
             DungeonPassageRepository.deleteInvalidPassages(conn, mapId);
         }
     }
 
     private static void normalizeWallTopologyCompatibility(Connection conn) throws SQLException {
-        for (Long mapId : loadMapIdsWithWalls(conn)) {
-            DungeonWallRepository.deleteInvalidWalls(conn, mapId);
+        for (Long mapId : loadDungeonMapIds(conn)) {
+            DungeonWallRepository.normalizePersistedBoundaryWalls(conn, mapId);
         }
     }
 
-    private static java.util.List<Long> loadMapIdsWithPassages(Connection conn) throws SQLException {
+    private static java.util.List<Long> loadDungeonMapIds(Connection conn) throws SQLException {
         java.util.List<Long> mapIds = new java.util.ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT DISTINCT map_id FROM dungeon_passages");
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                mapIds.add(rs.getLong(1));
-            }
-        }
-        return mapIds;
-    }
-
-    private static java.util.List<Long> loadMapIdsWithWalls(Connection conn) throws SQLException {
-        java.util.List<Long> mapIds = new java.util.ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT DISTINCT map_id FROM dungeon_walls");
+                "SELECT dungeon_map_id FROM dungeon_maps");
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 mapIds.add(rs.getLong(1));

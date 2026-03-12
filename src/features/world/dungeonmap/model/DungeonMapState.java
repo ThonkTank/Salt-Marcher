@@ -3,9 +3,9 @@ package features.world.dungeonmap.model;
 import java.util.List;
 
 /**
- * `edges` is the canonical read model for wall/passage state on a specific edge.
- * Raw `walls` and `passages` remain available for entity-oriented workflows such as
- * selection restore and passage editing forms.
+ * `edgeIndex` is the canonical derived edge read model for canvas/editor lookups.
+ * Raw `walls` and `passages` remain entity-oriented views for workflows that restore
+ * selection or edit a specific persisted row by id.
  */
 public record DungeonMapState(
         DungeonMap map,
@@ -18,13 +18,17 @@ public record DungeonMapState(
         List<DungeonLink> links,
         List<DungeonWall> walls,
         List<DungeonPassage> passages,
-        List<DungeonEdgeSummary> edges
+        DungeonEdgeIndex edgeIndex
 ) {
+    public DungeonEdgeSummary edgeAt(String edgeKey) {
+        return edgeIndex == null ? null : edgeIndex.edgeAt(edgeKey);
+    }
+
     public long wallEdgeCount() {
-        return edges.stream().filter(edge -> edge.wall() != null).count();
+        return walls().size();
     }
 
     public long passageEdgeCount() {
-        return edges.stream().filter(edge -> edge.passage() != null).count();
+        return passages().size();
     }
 }

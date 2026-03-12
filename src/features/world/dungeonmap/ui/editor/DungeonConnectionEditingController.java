@@ -64,8 +64,9 @@ final class DungeonConnectionEditingController {
         if (interactionState.activeTool() != DungeonEditorTool.PASSAGE) {
             return;
         }
+        var edge = interaction.edge();
         PassageEditorMode mode = interactionState.passageEditorMode();
-        DungeonPassage existing = interaction.existingPassage();
+        DungeonPassage existing = edge.passage();
         if (mode.deletesPassages()) {
             if (existing != null && existing.passageId() != null) {
                 applicationService.deletePassage(
@@ -79,7 +80,7 @@ final class DungeonConnectionEditingController {
             selectionController.selectPassage(existing);
             return;
         }
-        if (interaction.existingWall() == null) {
+        if (!interaction.edge().canCreatePassage()) {
             canvas.flashInvalidEdge(interaction);
             return;
         }
@@ -89,9 +90,9 @@ final class DungeonConnectionEditingController {
         savePassage(new DungeonPassage(
                 null,
                 state.currentMapId(),
-                interaction.x(),
-                interaction.y(),
-                interaction.direction(),
+                edge.x(),
+                edge.y(),
+                edge.direction(),
                 "",
                 "",
                 null));

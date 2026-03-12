@@ -1,8 +1,6 @@
 package features.world.dungeonmap.ui.canvas;
 
-import features.world.dungeonmap.model.DungeonPassage;
-import features.world.dungeonmap.model.DungeonWall;
-import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.model.DungeonEdgeSummary;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
@@ -56,27 +54,17 @@ record DungeonEdgeToolPolicy(
         return interactionMode == EdgeInteractionMode.PASSAGE_CLICK;
     }
 
-    boolean allowsInteraction(
-            int x,
-            int y,
-            PassageDirection direction,
-            DungeonWall existingWall,
-            DungeonPassage existingPassage,
-            EdgePredicate isEditableEdge,
-            EdgePredicate isInteriorEdge
-    ) {
+    boolean allowsInteraction(DungeonEdgeSummary edge) {
+        if (edge == null) {
+            return false;
+        }
         return switch (interactionMode) {
             case NONE -> false;
-            case WALL_PAINT_PATH -> isInteriorEdge.test(x, y, direction);
-            case WALL_ERASE_DRAG -> existingWall != null;
+            case WALL_PAINT_PATH -> edge.canCreateManualWall();
+            case WALL_ERASE_DRAG -> edge.canEraseManualWall();
             case PASSAGE_CLICK -> destructiveHover
-                    ? existingPassage != null
-                    : isEditableEdge.test(x, y, direction);
+                    ? edge.passage() != null
+                    : edge.canCreatePassage();
         };
-    }
-
-    @FunctionalInterface
-    interface EdgePredicate {
-        boolean test(int x, int y, PassageDirection direction);
     }
 }
