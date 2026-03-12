@@ -90,8 +90,8 @@ final class DungeonMapDropdowns {
                 + currentState.features().size() + " Features, "
                 + currentState.endpoints().size() + " Übergänge und "
                 + currentState.links().size() + " Links werden entfernt.\n"
-                + currentState.passages().size() + " Durchgänge und "
-                + currentState.walls().size() + " Wände gehen ebenfalls verloren.";
+                + currentState.passageEdgeCount() + " Durchgänge und "
+                + currentState.wallEdgeCount() + " Wände gehen ebenfalls verloren.";
     }
 
     private record ResizeImpact(int squaresRemoved, int endpointsRemoved, int linksRemoved) {}

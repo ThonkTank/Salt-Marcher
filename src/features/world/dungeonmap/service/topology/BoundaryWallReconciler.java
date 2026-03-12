@@ -45,7 +45,7 @@ final class BoundaryWallReconciler {
             boolean currentBoundary = differentRooms(currentA, currentB);
             String edgeKey = edge.direction().edgeKey(edge.x(), edge.y());
 
-            if (currentBoundary && !workspace.passageEdges().contains(edgeKey)) {
+            if (currentBoundary && !workspace.passagesByEdge().containsKey(edgeKey)) {
                 wallEdits.add(new DungeonWallEdit(edge.x(), edge.y(), edge.direction(), true));
             }
         }

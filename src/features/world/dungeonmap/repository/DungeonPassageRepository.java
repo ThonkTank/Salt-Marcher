@@ -34,23 +34,21 @@ public final class DungeonPassageRepository {
 
     public static long upsertPassage(Connection conn, DungeonPassage passage) throws SQLException {
         if (passage.passageId() == null) {
-            String sql = "INSERT INTO dungeon_passages(map_id, x, y, direction, passage_type, name, notes, endpoint_id) "
-                    + "VALUES(?,?,?,?,?,?,?,?) "
+            String sql = "INSERT INTO dungeon_passages(map_id, x, y, direction, name, notes, endpoint_id) "
+                    + "VALUES(?,?,?,?,?,?,?) "
                     + "ON CONFLICT(map_id, x, y, direction) DO UPDATE SET "
-                    + "passage_type=excluded.passage_type, name=excluded.name, "
-                    + "notes=excluded.notes, endpoint_id=excluded.endpoint_id";
+                    + "name=excluded.name, notes=excluded.notes, endpoint_id=excluded.endpoint_id";
             try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                 ps.setLong(1, passage.mapId());
                 ps.setInt(2, passage.x());
                 ps.setInt(3, passage.y());
                 ps.setString(4, passage.direction().dbValue());
-                ps.setString(5, "open");
-                ps.setString(6, passage.name());
-                ps.setString(7, passage.notes());
+                ps.setString(5, passage.name());
+                ps.setString(6, passage.notes());
                 if (passage.endpointId() != null) {
-                    ps.setLong(8, passage.endpointId());
+                    ps.setLong(7, passage.endpointId());
                 } else {
-                    ps.setNull(8, java.sql.Types.INTEGER);
+                    ps.setNull(7, java.sql.Types.INTEGER);
                 }
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
@@ -62,18 +60,17 @@ public final class DungeonPassageRepository {
                 return fetchPassageId(conn, passage.mapId(), passage.x(), passage.y(), passage.direction());
             }
         } else {
-            String sql = "UPDATE dungeon_passages SET passage_type=?, name=?, notes=?, endpoint_id=? "
+            String sql = "UPDATE dungeon_passages SET name=?, notes=?, endpoint_id=? "
                     + "WHERE passage_id=?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, "open");
-                ps.setString(2, passage.name());
-                ps.setString(3, passage.notes());
+                ps.setString(1, passage.name());
+                ps.setString(2, passage.notes());
                 if (passage.endpointId() != null) {
-                    ps.setLong(4, passage.endpointId());
+                    ps.setLong(3, passage.endpointId());
                 } else {
-                    ps.setNull(4, java.sql.Types.INTEGER);
+                    ps.setNull(3, java.sql.Types.INTEGER);
                 }
-                ps.setLong(5, passage.passageId());
+                ps.setLong(4, passage.passageId());
                 ps.executeUpdate();
                 return passage.passageId();
             }

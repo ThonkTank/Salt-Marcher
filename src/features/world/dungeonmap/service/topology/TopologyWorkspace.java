@@ -27,7 +27,7 @@ final class TopologyWorkspace {
     private List<DungeonRoom> rooms = List.of();
     private Map<Long, DungeonRoom> roomsById = Map.of();
     private Map<String, DungeonWall> wallsByEdge = Map.of();
-    private Set<String> passageEdges = Set.of();
+    private Map<String, DungeonPassage> passagesByEdge = Map.of();
     private Map<Long, Integer> currentRoomSquareCounts = Map.of();
 
     private TopologyWorkspace(long mapId, List<DungeonSquare> previousSquares) {
@@ -48,7 +48,7 @@ final class TopologyWorkspace {
         rooms = DungeonRoomRepository.getRooms(conn, mapId);
         roomsById = roomsById(rooms);
         wallsByEdge = wallsByEdge(DungeonWallRepository.getWalls(conn, mapId));
-        passageEdges = passageEdges(DungeonPassageRepository.getPassages(conn, mapId));
+        passagesByEdge = passagesByEdge(DungeonPassageRepository.getPassages(conn, mapId));
         currentRoomSquareCounts = roomSquareCounts(currentSquares);
     }
 
@@ -80,8 +80,8 @@ final class TopologyWorkspace {
         return wallsByEdge;
     }
 
-    Set<String> passageEdges() {
-        return passageEdges;
+    Map<String, DungeonPassage> passagesByEdge() {
+        return passagesByEdge;
     }
 
     Map<Long, Integer> currentRoomSquareCounts() {
@@ -119,10 +119,10 @@ final class TopologyWorkspace {
         return result;
     }
 
-    private static Set<String> passageEdges(List<DungeonPassage> passages) {
-        Set<String> result = new HashSet<>();
+    private static Map<String, DungeonPassage> passagesByEdge(List<DungeonPassage> passages) {
+        Map<String, DungeonPassage> result = new HashMap<>();
         for (DungeonPassage passage : passages) {
-            result.add(passage.edgeKey());
+            result.put(passage.edgeKey(), passage);
         }
         return result;
     }

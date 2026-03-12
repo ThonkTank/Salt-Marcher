@@ -1,6 +1,7 @@
 package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonEdgeSummary;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
@@ -97,11 +98,13 @@ final class DungeonCanvasModel {
         for (DungeonLink link : state.links()) {
             linksById.put(link.linkId(), link);
         }
-        for (DungeonWall wall : state.walls()) {
-            baseWallsByEdge.put(wall.edgeKey(), wall);
-        }
-        for (DungeonPassage passage : state.passages()) {
-            basePassagesByEdge.put(passage.edgeKey(), passage);
+        for (DungeonEdgeSummary edge : state.edges()) {
+            if (edge.wall() != null) {
+                baseWallsByEdge.put(edge.edgeKey(), edge.wall());
+            }
+            if (edge.passage() != null) {
+                basePassagesByEdge.put(edge.edgeKey(), edge.passage());
+            }
         }
         for (DungeonFeatureTile tile : state.featureTiles()) {
             featureTilesByCoord.computeIfAbsent(key(tile.x(), tile.y()), ignored -> new java.util.ArrayList<>()).add(tile);

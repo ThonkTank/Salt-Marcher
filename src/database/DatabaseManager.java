@@ -76,12 +76,13 @@ public final class DatabaseManager {
      * Schema policy:
      * - Imported source data (monsters/items/equipment/spells) is disposable and
      *   can be rebuilt by re-crawling.
-     * - User-created campaign data (e.g. encounter tables) must be preserved.
+     * - Encounter and campaign state data should be preserved.
+     * - Dungeon map editor data is still in flux during active development, so
+     *   compatibility work may occasionally reshape that local schema directly.
      *
-     * Therefore this method allows lightweight, additive, idempotent compatibility
-     * migrations where needed to keep existing user databases usable
-     * (see ensureCreatureImportColumns). We intentionally avoid destructive or
-     * multi-step migration ladders here.
+     * Therefore this method prefers lightweight, additive, idempotent compatibility
+     * migrations where practical, but dungeon-map compatibility may use broader
+     * rewrites while the editor schema is still stabilizing.
      */
     public static void setupDatabase() {
         try (Connection conn = getConnection();
