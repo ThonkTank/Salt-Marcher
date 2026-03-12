@@ -79,6 +79,7 @@ public final class DungeonMapLoadingWorkflowController {
 
     public void loadMapAsync(Long mapId) {
         if (mapId == null) {
+            clearLoadedState();
             return;
         }
         selectionController.cancelPendingLink();
@@ -91,7 +92,12 @@ public final class DungeonMapLoadingWorkflowController {
                         applyLoadedState(loadedState);
                     }
                 },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonMapLoadingWorkflowController.loadMapAsync()", ex));
+                ex -> {
+                    if (requestToken == state.loadRequestToken() && mapId.equals(state.currentMapId())) {
+                        handleLoadFailure();
+                    }
+                    UiErrorReporter.reportBackgroundFailure("DungeonMapLoadingWorkflowController.loadMapAsync()", ex);
+                });
     }
 
     private void loadEncounterTables() {
@@ -129,7 +135,10 @@ public final class DungeonMapLoadingWorkflowController {
                         loadMapAsync(mapToSelect);
                     }
                 },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonMapLoadingWorkflowController.loadMapList()", ex));
+                ex -> {
+                    canvas.showLoadError("Dungeonliste konnte nicht geladen werden");
+                    UiErrorReporter.reportBackgroundFailure("DungeonMapLoadingWorkflowController.loadMapList()", ex);
+                });
     }
 
     private Long resolveMapSelection(List<DungeonMap> maps) {
@@ -176,6 +185,16 @@ public final class DungeonMapLoadingWorkflowController {
         state.setCurrentMapId(null);
         state.setCurrentState(null);
         applyEditorState(null);
+    }
+
+    private void handleLoadFailure() {
+        state.setCurrentState(null);
+        canvas.showLoadError("Dungeon konnte nicht geladen werden");
+        toolSettingsPane.setMapLoaded(false);
+        toolSettingsPane.setAreas(List.of());
+        toolSettingsPane.setFeatures(List.of());
+        selectionController.cancelPendingLink();
+        selectionController.clearSelection();
     }
 
     private void applyEditorState(DungeonMapState loadedState) {

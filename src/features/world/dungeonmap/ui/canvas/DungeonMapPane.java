@@ -15,7 +15,9 @@ import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
@@ -37,6 +39,8 @@ public class DungeonMapPane extends StackPane {
     private final Pane featuresLayer = new Pane();
     private final Pane linksLayer = new Pane();
     private final Pane endpointsLayer = new Pane();
+    private final Label statusLabel = new Label("Kein Dungeon geladen");
+    private String statusMessage = "Kein Dungeon geladen";
 
     private final DungeonCanvasModel model = new DungeonCanvasModel();
     private final DungeonViewport viewport = new DungeonViewport();
@@ -50,11 +54,21 @@ public class DungeonMapPane extends StackPane {
     public DungeonMapPane() {
         getStyleClass().add("dungeon-map-canvas");
         setMinSize(200, 200);
+        setPrefSize(Region.USE_COMPUTED_SIZE, Region.USE_COMPUTED_SIZE);
+        setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
         gridCanvas.widthProperty().bind(widthProperty());
         gridCanvas.heightProperty().bind(heightProperty());
         selectionCanvas.widthProperty().bind(widthProperty());
         selectionCanvas.heightProperty().bind(heightProperty());
+        roomLabelsLayer.prefWidthProperty().bind(widthProperty());
+        roomLabelsLayer.prefHeightProperty().bind(heightProperty());
+        featuresLayer.prefWidthProperty().bind(widthProperty());
+        featuresLayer.prefHeightProperty().bind(heightProperty());
+        linksLayer.prefWidthProperty().bind(widthProperty());
+        linksLayer.prefHeightProperty().bind(heightProperty());
+        endpointsLayer.prefWidthProperty().bind(widthProperty());
+        endpointsLayer.prefHeightProperty().bind(heightProperty());
         selectionCanvas.widthProperty().addListener((obs, oldValue, newValue) -> redrawAll());
         selectionCanvas.heightProperty().addListener((obs, oldValue, newValue) -> redrawAll());
         interactionController.setRedrawSelection(gridRenderer::redrawSelection);
@@ -62,13 +76,28 @@ public class DungeonMapPane extends StackPane {
             model.clearInvalidEdge();
             gridRenderer.redrawSelection();
         });
+        statusLabel.getStyleClass().addAll("text-muted", "dungeon-map-empty-state");
+        statusLabel.setMouseTransparent(true);
+        updateStatusLabel();
 
-        getChildren().addAll(gridCanvas, selectionCanvas, roomLabelsLayer, featuresLayer, linksLayer, endpointsLayer);
+        getChildren().addAll(
+                gridCanvas,
+                selectionCanvas,
+                roomLabelsLayer,
+                featuresLayer,
+                linksLayer,
+                endpointsLayer,
+                statusLabel);
     }
 
     public void loadState(DungeonMapState state) {
         boolean shouldFitViewport = model.loadState(state);
         overlayRenderer.rebuildNodes();
+        if (state == null || state.map() == null) {
+            showEmptyState();
+        } else {
+            clearStatus();
+        }
         if (state == null || state.map() == null) {
             viewport.resetForMissingState(this);
             redrawAll();
@@ -207,9 +236,33 @@ public class DungeonMapPane extends StackPane {
         interactionController.setOnPaintStrokeFinished(onPaintStrokeFinished);
     }
 
+    public void showEmptyState() {
+        statusMessage = "Kein Dungeon geladen";
+        updateStatusLabel();
+    }
+
+    public void showLoadError(String message) {
+        statusMessage = message == null || message.isBlank()
+                ? "Dungeon konnte nicht geladen werden"
+                : message;
+        updateStatusLabel();
+    }
+
+    public void clearStatus() {
+        statusMessage = null;
+        updateStatusLabel();
+    }
+
     private void redrawAll() {
         gridRenderer.redrawGrid();
         gridRenderer.redrawSelection();
         overlayRenderer.repositionOverlays(this);
+    }
+
+    private void updateStatusLabel() {
+        boolean showStatus = statusMessage != null && !statusMessage.isBlank();
+        statusLabel.setText(showStatus ? statusMessage : "");
+        statusLabel.setVisible(showStatus);
+        statusLabel.setManaged(showStatus);
     }
 }

@@ -1000,6 +1000,10 @@
 .dungeon-map-canvas {
     -fx-background-color: -sm-bg-darkest;
 }
+.dungeon-map-empty-state {
+    -fx-text-alignment: center;
+    -fx-font-size: 16px;
+}
 .hex-map-placeholder {
     -fx-text-alignment: center;
     -fx-font-size: 16px;

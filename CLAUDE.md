@@ -21,7 +21,7 @@ Crawler tasks:
 ./gradlew crawlerItemsSlugs      # slug-list only
 ```
 
-No test framework. No linter. Database is `game.db` (SQLite, auto-created on first run). Schema changes require deleting `game.db` and re-running `./scripts/crawl.sh` — there are no ALTER TABLE migrations.
+No test framework. No linter. The app database is SQLite at `${XDG_DATA_HOME:-~/.local/share}/salt-marcher/game.db` (auto-created on first run). Schema changes require deleting that DB and re-running `./scripts/crawl.sh` — there are no ALTER TABLE migrations.
 
 **After every code change, recompile immediately** to catch errors early:
 ```bash

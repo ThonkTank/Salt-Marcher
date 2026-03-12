@@ -5,6 +5,9 @@ import features.encounter.repository.EncounterSchemaSupport;
 import features.partyanalysis.model.AnalysisModelVersion;
 import features.world.dungeonmap.repository.DungeonSchemaSupport;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,14 +15,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class DatabaseManager {
 
-    private static final String URL = "jdbc:sqlite:game.db";
+    private static final Logger LOGGER = Logger.getLogger(DatabaseManager.class.getName());
+    private static final String APP_DATA_DIR_NAME = "salt-marcher";
+    private static final String DB_FILE_NAME = "game.db";
+    private static final Path DATABASE_PATH = resolveDatabasePath();
+    private static final String URL = "jdbc:sqlite:" + DATABASE_PATH.toAbsolutePath();
     private static final Pattern HIT_DICE_PATTERN =
             Pattern.compile("^\\s*(\\d+)\\s*[dD]\\s*(\\d+)\\s*(([+-])\\s*(\\d+))?\\s*$");
+    private static volatile boolean databasePathPrepared = false;
 
     private DatabaseManager() {
         throw new AssertionError("No instances");
@@ -31,6 +41,7 @@ public final class DatabaseManager {
      * SQLite WAL mode handles file-level concurrency across multiple connections.
      */
     public static Connection getConnection() throws SQLException {
+        prepareDatabasePath();
         Connection conn = DriverManager.getConnection(URL);
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = ON");
@@ -66,6 +77,45 @@ public final class DatabaseManager {
             stmt.execute("PRAGMA synchronous = FULL");
             stmt.execute("PRAGMA cache_size = -2000");
         }
+    }
+
+    public static Path databasePath() {
+        return DATABASE_PATH;
+    }
+
+    private static synchronized void prepareDatabasePath() throws SQLException {
+        if (databasePathPrepared) {
+            return;
+        }
+        try {
+            Files.createDirectories(DATABASE_PATH.getParent());
+            migrateLegacyDatabaseIfNeeded();
+            LOGGER.log(Level.INFO, "Using SQLite database at {0}", DATABASE_PATH.toAbsolutePath());
+            databasePathPrepared = true;
+        } catch (Exception ex) {
+            throw new SQLException("Failed to prepare database path " + DATABASE_PATH.toAbsolutePath(), ex);
+        }
+    }
+
+    private static void migrateLegacyDatabaseIfNeeded() throws Exception {
+        Path legacyPath = Path.of(DB_FILE_NAME).toAbsolutePath().normalize();
+        Path targetPath = DATABASE_PATH.toAbsolutePath().normalize();
+        if (legacyPath.equals(targetPath) || Files.exists(targetPath) || !Files.exists(legacyPath)) {
+            return;
+        }
+        Files.copy(legacyPath, targetPath, StandardCopyOption.COPY_ATTRIBUTES);
+        LOGGER.log(Level.INFO, "Migrated legacy SQLite database from {0} to {1}",
+                new Object[]{legacyPath, targetPath});
+    }
+
+    private static Path resolveDatabasePath() {
+        String xdgDataHome = System.getenv("XDG_DATA_HOME");
+        if (xdgDataHome != null && !xdgDataHome.isBlank()) {
+            return Path.of(xdgDataHome, APP_DATA_DIR_NAME, DB_FILE_NAME).toAbsolutePath().normalize();
+        }
+        return Path.of(System.getProperty("user.home"), ".local", "share", APP_DATA_DIR_NAME, DB_FILE_NAME)
+                .toAbsolutePath()
+                .normalize();
     }
 
     /**

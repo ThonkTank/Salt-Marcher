@@ -61,7 +61,10 @@ public class DungeonView implements AppView {
     public void onShow() {
         applicationService.loadMapList(
                 maps -> controls.setMaps(maps, selectedMapId),
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonView.loadMapList()", ex));
+                ex -> {
+                    canvas.showLoadError("Dungeonliste konnte nicht geladen werden");
+                    UiErrorReporter.reportBackgroundFailure("DungeonView.loadMapList()", ex);
+                });
         applicationService.loadEncounterTables(
                 this::setEncounterTables,
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonView.loadEncounterTables()", ex));
@@ -80,7 +83,7 @@ public class DungeonView implements AppView {
                     }
                     applyRuntimeState(runtimeState);
                 },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonView.loadMap()", ex));
+                ex -> handleLoadFailure(requestToken, mapId, ex));
     }
 
     private void applyRuntimeState(DungeonRuntimeState runtimeState) {
@@ -88,6 +91,7 @@ public class DungeonView implements AppView {
         activeEndpointId = runtimeState.activeEndpointId();
         selectedMapId = currentState == null || currentState.map() == null ? null : currentState.map().mapId();
         if (currentState == null) {
+            canvas.showEmptyState();
             canvas.setPartyEndpoint(null);
             controls.selectMap(null);
             controls.showLocation(null, null, null, null);
@@ -143,6 +147,21 @@ public class DungeonView implements AppView {
         }
         controls.showLocation(roomName, areaName, tableName, endpoint.name());
         canvas.setPartyEndpoint(activeEndpointId);
+    }
+
+    private void handleLoadFailure(long requestToken, Long mapId, Throwable throwable) {
+        if (requestToken != loadRequestToken) {
+            return;
+        }
+        currentState = null;
+        activeEndpointId = null;
+        if (mapId != null) {
+            selectedMapId = mapId;
+        }
+        canvas.showLoadError("Dungeon konnte nicht geladen werden");
+        canvas.setPartyEndpoint(null);
+        controls.showLocation(null, null, null, null);
+        UiErrorReporter.reportBackgroundFailure("DungeonView.loadMap()", throwable);
     }
 
     private void setEncounterTables(java.util.List<DungeonEncounterTableSummary> tables) {
