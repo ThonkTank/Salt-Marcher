@@ -13,6 +13,7 @@ import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.PassageDirection;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.Pane;
@@ -100,6 +101,10 @@ public class DungeonMapPane extends StackPane {
 
     public void setWallEditorModeSupplier(Supplier<WallEditorMode> supplier) {
         interactionController.setWallEditorModeSupplier(supplier);
+    }
+
+    public void setPassageEditorModeSupplier(Supplier<PassageEditorMode> supplier) {
+        interactionController.setPassageEditorModeSupplier(supplier);
     }
 
     public void setOnEdgeClicked(Consumer<EdgeInteraction> onEdgeClicked) {

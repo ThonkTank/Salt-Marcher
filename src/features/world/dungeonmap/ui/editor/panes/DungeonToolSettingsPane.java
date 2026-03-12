@@ -517,16 +517,7 @@ public class DungeonToolSettingsPane extends VBox {
     }
 
     private static String toolTitle(DungeonEditorTool tool) {
-        return switch (tool) {
-            case SELECT -> "Auswahl";
-            case PAINT -> "Malen";
-            case ERASE -> "Löschen";
-            case AREA_ASSIGN -> "Bereich";
-            case FEATURE -> "Feature";
-            case PASSAGE -> "Wandeditor";
-            case ENDPOINT -> "Übergang";
-            case LINK -> "Link";
-        };
+        return tool.panelTitle();
     }
 
 }

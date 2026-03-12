@@ -8,6 +8,7 @@ import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
@@ -63,7 +64,17 @@ final class DungeonConnectionEditingController {
         if (interactionState.activeTool() != DungeonEditorTool.PASSAGE) {
             return;
         }
+        PassageEditorMode mode = interactionState.passageEditorMode();
         DungeonPassage existing = interaction.existingPassage();
+        if (mode.deletesPassages()) {
+            if (existing != null && existing.passageId() != null) {
+                applicationService.deletePassage(
+                        existing.passageId(),
+                        () -> reloadCurrentMap.accept(null),
+                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.deletePassageImmediate()", ex));
+            }
+            return;
+        }
         if (existing != null) {
             selectionController.selectPassage(existing);
             return;

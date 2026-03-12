@@ -2,6 +2,7 @@ package features.world.dungeonmap.ui.editor.state;
 
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
 
 import java.util.ArrayList;
@@ -13,10 +14,12 @@ public final class DungeonEditorInteractionState {
     private final List<Consumer<DungeonEditorTool>> toolListeners = new ArrayList<>();
     private final List<Consumer<DungeonPaintMode>> paintModeListeners = new ArrayList<>();
     private final List<Consumer<WallEditorMode>> wallModeListeners = new ArrayList<>();
+    private final List<Consumer<PassageEditorMode>> passageModeListeners = new ArrayList<>();
 
     private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
     private DungeonPaintMode paintMode = DungeonPaintMode.BRUSH;
     private WallEditorMode wallEditorMode = WallEditorMode.PAINT_WALL;
+    private PassageEditorMode passageEditorMode = PassageEditorMode.PLACE_PASSAGE;
 
     public DungeonEditorTool activeTool() {
         return activeTool;
@@ -63,6 +66,21 @@ public final class DungeonEditorInteractionState {
         }
     }
 
+    public PassageEditorMode passageEditorMode() {
+        return passageEditorMode;
+    }
+
+    public void setPassageEditorMode(PassageEditorMode mode) {
+        PassageEditorMode effectiveMode = mode == null ? PassageEditorMode.PLACE_PASSAGE : mode;
+        if (passageEditorMode == effectiveMode) {
+            return;
+        }
+        passageEditorMode = effectiveMode;
+        for (Consumer<PassageEditorMode> listener : List.copyOf(passageModeListeners)) {
+            listener.accept(effectiveMode);
+        }
+    }
+
     public void onActiveToolChanged(Consumer<DungeonEditorTool> listener) {
         if (listener != null) {
             toolListeners.add(listener);
@@ -78,6 +96,12 @@ public final class DungeonEditorInteractionState {
     public void onWallEditorModeChanged(Consumer<WallEditorMode> listener) {
         if (listener != null) {
             wallModeListeners.add(listener);
+        }
+    }
+
+    public void onPassageEditorModeChanged(Consumer<PassageEditorMode> listener) {
+        if (listener != null) {
+            passageModeListeners.add(listener);
         }
     }
 }

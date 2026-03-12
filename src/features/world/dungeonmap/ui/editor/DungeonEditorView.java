@@ -113,6 +113,7 @@ public class DungeonEditorView implements AppView {
             canvas.setActiveTool(interactionState.activeTool());
         });
         interactionState.onWallEditorModeChanged(mode -> canvas.setActiveTool(interactionState.activeTool()));
+        interactionState.onPassageEditorModeChanged(mode -> canvas.setActiveTool(interactionState.activeTool()));
         interactionState.onActiveToolChanged(tool -> {
             squareEditWorkflowController.commitPendingSquareEdits();
             selectionWorkflowController.updateToolMode(tool);
@@ -139,6 +140,7 @@ public class DungeonEditorView implements AppView {
         canvas.setBrushShapeSupplier(toolSettingsPane::getBrushShape);
         canvas.setPaintModeSupplier(interactionState::paintMode);
         canvas.setWallEditorModeSupplier(interactionState::wallEditorMode);
+        canvas.setPassageEditorModeSupplier(interactionState::passageEditorMode);
         canvas.setOnEdgeClicked(connectionEditingController::handleEdgeClick);
     }
 

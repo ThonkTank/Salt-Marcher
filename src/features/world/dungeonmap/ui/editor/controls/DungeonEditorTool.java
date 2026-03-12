@@ -3,14 +3,15 @@ package features.world.dungeonmap.ui.editor.controls;
 import javafx.scene.Cursor;
 
 public enum DungeonEditorTool {
-    SELECT(false, false, false, false, false, Cursor.DEFAULT, CellClickAction.SELECT_SQUARE),
-    PAINT(true, true, true, false, false, Cursor.CROSSHAIR, CellClickAction.SELECT_SQUARE),
-    ERASE(true, false, true, false, false, Cursor.CROSSHAIR, CellClickAction.SELECT_SQUARE),
-    AREA_ASSIGN(false, false, false, true, false, Cursor.DEFAULT, CellClickAction.ASSIGN_ROOM_AREA),
-    FEATURE(false, false, false, false, false, Cursor.HAND, CellClickAction.SELECT_SQUARE),
-    PASSAGE(false, false, false, false, true, Cursor.HAND, CellClickAction.SELECT_SQUARE),
-    ENDPOINT(false, false, false, false, false, Cursor.HAND, CellClickAction.CREATE_OR_SELECT_ENDPOINT),
-    LINK(false, false, false, false, false, Cursor.HAND, CellClickAction.SELECT_SQUARE);
+    SELECT("Auswahl", "Auswahl", false, false, false, false, false, Cursor.DEFAULT, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.NONE),
+    PAINT("Malen", "Malen", true, true, true, false, false, Cursor.CROSSHAIR, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.PAINT),
+    ERASE("Löschen", "Löschen", true, false, true, false, false, Cursor.CROSSHAIR, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.PAINT),
+    WALL("Wände", "Wandeditor", false, false, false, false, true, Cursor.HAND, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.WALL),
+    AREA_ASSIGN("Bereich", "Bereich", false, false, false, true, false, Cursor.DEFAULT, CellClickAction.ASSIGN_ROOM_AREA, ModeDropdownTarget.NONE),
+    FEATURE("Feature", "Feature", false, false, false, false, false, Cursor.HAND, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.NONE),
+    PASSAGE("Durchgänge", "Durchgänge", false, false, false, false, true, Cursor.HAND, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.PASSAGE),
+    ENDPOINT("Übergang", "Übergang", false, false, false, false, false, Cursor.HAND, CellClickAction.CREATE_OR_SELECT_ENDPOINT, ModeDropdownTarget.NONE),
+    LINK("Link", "Link", false, false, false, false, false, Cursor.HAND, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.NONE);
 
     public enum CellClickAction {
         SELECT_SQUARE,
@@ -18,6 +19,15 @@ public enum DungeonEditorTool {
         CREATE_OR_SELECT_ENDPOINT
     }
 
+    public enum ModeDropdownTarget {
+        NONE,
+        PAINT,
+        WALL,
+        PASSAGE
+    }
+
+    private final String toolbarLabel;
+    private final String panelTitle;
     private final boolean brushTool;
     private final boolean fillsSquares;
     private final boolean brushSettingsVisible;
@@ -25,16 +35,22 @@ public enum DungeonEditorTool {
     private final boolean edgeHoverEnabled;
     private final Cursor cursor;
     private final CellClickAction cellClickAction;
+    private final ModeDropdownTarget modeDropdownTarget;
 
     DungeonEditorTool(
+            String toolbarLabel,
+            String panelTitle,
             boolean brushTool,
             boolean fillsSquares,
             boolean brushSettingsVisible,
             boolean areaSettingsVisible,
             boolean edgeHoverEnabled,
             Cursor cursor,
-            CellClickAction cellClickAction
+            CellClickAction cellClickAction,
+            ModeDropdownTarget modeDropdownTarget
     ) {
+        this.toolbarLabel = toolbarLabel;
+        this.panelTitle = panelTitle;
         this.brushTool = brushTool;
         this.fillsSquares = fillsSquares;
         this.brushSettingsVisible = brushSettingsVisible;
@@ -42,6 +58,15 @@ public enum DungeonEditorTool {
         this.edgeHoverEnabled = edgeHoverEnabled;
         this.cursor = cursor;
         this.cellClickAction = cellClickAction;
+        this.modeDropdownTarget = modeDropdownTarget;
+    }
+
+    public String toolbarLabel() {
+        return toolbarLabel;
+    }
+
+    public String panelTitle() {
+        return panelTitle;
     }
 
     public boolean isBrushTool() {
@@ -82,5 +107,9 @@ public enum DungeonEditorTool {
 
     public CellClickAction cellClickAction() {
         return cellClickAction;
+    }
+
+    public ModeDropdownTarget modeDropdownTarget() {
+        return modeDropdownTarget;
     }
 }

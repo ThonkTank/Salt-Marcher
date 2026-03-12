@@ -23,19 +23,13 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 public class DungeonEditorControls extends VBox {
-
-    private enum ToolModeDropdownTarget {
-        NONE,
-        PAINT,
-        WALL
-    }
-
     public record MapActionRequest(DungeonMap map, Node anchor) {}
 
     private final DungeonEditorInteractionState interactionState;
     private final ComboBox<DungeonMap> mapCombo = new ComboBox<>();
     private final DungeonToolModeDropdown<DungeonPaintMode> paintModeDropdown = new DungeonToolModeDropdown<>("Malmodus");
     private final DungeonToolModeDropdown<WallEditorMode> wallModeDropdown = new DungeonToolModeDropdown<>("Wandmodus");
+    private final DungeonToolModeDropdown<PassageEditorMode> passageModeDropdown = new DungeonToolModeDropdown<>("Durchgangsmodus");
     private final EnumMap<DungeonEditorTool, ToggleButton> toolButtons = new EnumMap<>(DungeonEditorTool.class);
     private boolean updatingMapCombo = false;
 
@@ -54,8 +48,10 @@ public class DungeonEditorControls extends VBox {
                 new DungeonToolModeDropdown.Option<>(DungeonPaintMode.SELECTION, "Auswahl")));
         wallModeDropdown.setOptions(List.of(
                 new DungeonToolModeDropdown.Option<>(WallEditorMode.PAINT_WALL, WallEditorMode.PAINT_WALL.label()),
-                new DungeonToolModeDropdown.Option<>(WallEditorMode.ERASE_WALL, WallEditorMode.ERASE_WALL.label()),
-                new DungeonToolModeDropdown.Option<>(WallEditorMode.PLACE_PASSAGE, WallEditorMode.PLACE_PASSAGE.label())));
+                new DungeonToolModeDropdown.Option<>(WallEditorMode.ERASE_WALL, WallEditorMode.ERASE_WALL.label())));
+        passageModeDropdown.setOptions(List.of(
+                new DungeonToolModeDropdown.Option<>(PassageEditorMode.PLACE_PASSAGE, PassageEditorMode.PLACE_PASSAGE.label()),
+                new DungeonToolModeDropdown.Option<>(PassageEditorMode.DELETE_PASSAGE, PassageEditorMode.DELETE_PASSAGE.label())));
 
         mapCombo.setPrefWidth(180);
         mapCombo.setMaxWidth(Double.MAX_VALUE);
@@ -99,14 +95,15 @@ public class DungeonEditorControls extends VBox {
         editMapButton.disableProperty().bind(mapCombo.valueProperty().isNull());
 
         ToggleGroup toolGroup = new ToggleGroup();
-        ToggleButton selectButton = buildToolButton("Auswahl", DungeonEditorTool.SELECT, toolGroup, true);
-        ToggleButton paintButton = buildToolButton("Malen", DungeonEditorTool.PAINT, toolGroup, false);
-        ToggleButton eraseButton = buildToolButton("Löschen", DungeonEditorTool.ERASE, toolGroup, false);
-        ToggleButton areaButton = buildToolButton("Bereich", DungeonEditorTool.AREA_ASSIGN, toolGroup, false);
-        ToggleButton featureButton = buildToolButton("Feature", DungeonEditorTool.FEATURE, toolGroup, false);
-        ToggleButton passageButton = buildToolButton("Wände", DungeonEditorTool.PASSAGE, toolGroup, false);
-        ToggleButton endpointButton = buildToolButton("Übergang", DungeonEditorTool.ENDPOINT, toolGroup, false);
-        ToggleButton linkButton = buildToolButton("Link", DungeonEditorTool.LINK, toolGroup, false);
+        ToggleButton selectButton = buildToolButton(DungeonEditorTool.SELECT, toolGroup, true);
+        ToggleButton paintButton = buildToolButton(DungeonEditorTool.PAINT, toolGroup, false);
+        ToggleButton eraseButton = buildToolButton(DungeonEditorTool.ERASE, toolGroup, false);
+        ToggleButton wallButton = buildToolButton(DungeonEditorTool.WALL, toolGroup, false);
+        ToggleButton passageButton = buildToolButton(DungeonEditorTool.PASSAGE, toolGroup, false);
+        ToggleButton areaButton = buildToolButton(DungeonEditorTool.AREA_ASSIGN, toolGroup, false);
+        ToggleButton featureButton = buildToolButton(DungeonEditorTool.FEATURE, toolGroup, false);
+        ToggleButton endpointButton = buildToolButton(DungeonEditorTool.ENDPOINT, toolGroup, false);
+        ToggleButton linkButton = buildToolButton(DungeonEditorTool.LINK, toolGroup, false);
 
         toolGroup.selectedToggleProperty().addListener((obs, oldValue, newValue) -> {
             if (newValue == null && oldValue != null) {
@@ -133,9 +130,10 @@ public class DungeonEditorControls extends VBox {
                 selectButton,
                 paintButton,
                 eraseButton,
+                wallButton,
+                passageButton,
                 areaButton,
                 featureButton,
-                passageButton,
                 endpointButton,
                 linkButton);
         VBox toolsGroup = new VBox(6, toolsLabel, toolRow);
@@ -147,14 +145,14 @@ public class DungeonEditorControls extends VBox {
             if (button != null && !button.isSelected()) {
                 button.setSelected(true);
             }
-            if (dropdownTarget(tool) == ToolModeDropdownTarget.NONE) {
+            if (tool.modeDropdownTarget() == DungeonEditorTool.ModeDropdownTarget.NONE) {
                 hideToolModeDropdowns();
             }
         });
     }
 
-    private ToggleButton buildToolButton(String label, DungeonEditorTool tool, ToggleGroup group, boolean selected) {
-        ToggleButton button = new ToggleButton(label);
+    private ToggleButton buildToolButton(DungeonEditorTool tool, ToggleGroup group, boolean selected) {
+        ToggleButton button = new ToggleButton(tool.toolbarLabel());
         button.getStyleClass().add("tool-btn");
         button.setToggleGroup(group);
         button.setUserData(tool);
@@ -165,7 +163,7 @@ public class DungeonEditorControls extends VBox {
                 return;
             }
             interactionState.setActiveTool(tool);
-            if (dropdownTarget(tool) == ToolModeDropdownTarget.NONE) {
+            if (tool.modeDropdownTarget() == DungeonEditorTool.ModeDropdownTarget.NONE) {
                 hideToolModeDropdowns();
                 return;
             }
@@ -222,30 +220,29 @@ public class DungeonEditorControls extends VBox {
     }
 
     private void showToolModeDropdown(DungeonEditorTool tool, ToggleButton button) {
-        ToolModeDropdownTarget target = dropdownTarget(tool);
-        if (target == ToolModeDropdownTarget.PAINT) {
+        DungeonEditorTool.ModeDropdownTarget target = tool.modeDropdownTarget();
+        if (target == DungeonEditorTool.ModeDropdownTarget.PAINT) {
+            passageModeDropdown.hide();
             wallModeDropdown.hide();
             paintModeDropdown.show(button, interactionState.paintMode(), interactionState::setPaintMode);
             return;
         }
-        if (target == ToolModeDropdownTarget.WALL) {
+        if (target == DungeonEditorTool.ModeDropdownTarget.WALL) {
+            passageModeDropdown.hide();
             paintModeDropdown.hide();
             wallModeDropdown.show(button, interactionState.wallEditorMode(), interactionState::setWallEditorMode);
+            return;
+        }
+        if (target == DungeonEditorTool.ModeDropdownTarget.PASSAGE) {
+            paintModeDropdown.hide();
+            wallModeDropdown.hide();
+            passageModeDropdown.show(button, interactionState.passageEditorMode(), interactionState::setPassageEditorMode);
         }
     }
 
     private void hideToolModeDropdowns() {
         paintModeDropdown.hide();
         wallModeDropdown.hide();
-    }
-
-    private static ToolModeDropdownTarget dropdownTarget(DungeonEditorTool tool) {
-        if (tool == DungeonEditorTool.PAINT || tool == DungeonEditorTool.ERASE) {
-            return ToolModeDropdownTarget.PAINT;
-        }
-        if (tool == DungeonEditorTool.PASSAGE) {
-            return ToolModeDropdownTarget.WALL;
-        }
-        return ToolModeDropdownTarget.NONE;
+        passageModeDropdown.hide();
     }
 }

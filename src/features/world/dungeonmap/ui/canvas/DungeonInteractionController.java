@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.PassageDirection;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -50,6 +51,7 @@ final class DungeonInteractionController {
     private Supplier<BrushShape> brushShapeSupplier;
     private Supplier<DungeonPaintMode> paintModeSupplier;
     private Supplier<WallEditorMode> wallEditorModeSupplier;
+    private Supplier<PassageEditorMode> passageEditorModeSupplier;
     private Consumer<DungeonMapPane.CellInteraction> onCellClicked;
     private Consumer<DungeonMapPane.CellInteraction> onCellPainted;
     private Runnable onPaintStrokeFinished;
@@ -119,6 +121,10 @@ final class DungeonInteractionController {
         this.wallEditorModeSupplier = supplier;
     }
 
+    void setPassageEditorModeSupplier(Supplier<PassageEditorMode> supplier) {
+        this.passageEditorModeSupplier = supplier;
+    }
+
     void setOnCellClicked(Consumer<DungeonMapPane.CellInteraction> onCellClicked) {
         this.onCellClicked = onCellClicked;
     }
@@ -163,9 +169,9 @@ final class DungeonInteractionController {
                 beginSelectionDrag(event.getX(), event.getY());
             } else if (event.getButton() == MouseButton.PRIMARY && activeTool.isBrushTool()) {
                 handlePaintAt(event.getX(), event.getY());
-            } else if (event.getButton() == MouseButton.PRIMARY && isWallPaintPathMode()) {
+            } else if (event.getButton() == MouseButton.PRIMARY && currentEdgeToolPolicy().usesWallPaintPath()) {
                 beginWallPaintPath(event.getX(), event.getY());
-            } else if (event.getButton() == MouseButton.PRIMARY && usesWallEraseBrush()) {
+            } else if (event.getButton() == MouseButton.PRIMARY && currentEdgeToolPolicy().usesWallEraseDrag()) {
                 handleEdgeEraseAt(event.getX(), event.getY());
             }
         });
@@ -181,9 +187,9 @@ final class DungeonInteractionController {
             } else if (activeTool.isBrushTool() && event.isPrimaryButtonDown()) {
                 handlePaintAt(event.getX(), event.getY());
             }
-            if (isWallPaintPathMode() && event.isPrimaryButtonDown()) {
+            if (currentEdgeToolPolicy().usesWallPaintPath() && event.isPrimaryButtonDown()) {
                 updateWallPaintPath(event.getX(), event.getY());
-            } else if (usesWallEraseBrush() && event.isPrimaryButtonDown()) {
+            } else if (currentEdgeToolPolicy().usesWallEraseDrag() && event.isPrimaryButtonDown()) {
                 handleEdgeEraseAt(event.getX(), event.getY());
             }
             if (activeTool.isBrushTool()) {
@@ -203,12 +209,14 @@ final class DungeonInteractionController {
                     onPaintStrokeFinished.run();
                 }
             }
-            if (event.getButton() == MouseButton.PRIMARY && isWallPaintPathMode()) {
+            if (event.getButton() == MouseButton.PRIMARY && currentEdgeToolPolicy().usesWallPaintPath()) {
                 finishWallPaintPath();
                 if (onEdgeStrokeFinished != null) {
                     onEdgeStrokeFinished.run();
                 }
-            } else if (event.getButton() == MouseButton.PRIMARY && usesWallEraseBrush() && onEdgeStrokeFinished != null) {
+            } else if (event.getButton() == MouseButton.PRIMARY
+                    && currentEdgeToolPolicy().usesWallEraseDrag()
+                    && onEdgeStrokeFinished != null) {
                 onEdgeStrokeFinished.run();
             }
         });
@@ -233,11 +241,11 @@ final class DungeonInteractionController {
             if (event.getButton() != MouseButton.PRIMARY || !event.isStillSincePress()) {
                 return;
             }
-            if (activeTool == DungeonEditorTool.PASSAGE && currentWallEditorMode().placesPassages()) {
+            if (currentEdgeToolPolicy().usesPassageClick()) {
                 handleEdgeClick(event.getX(), event.getY());
                 return;
             }
-            if (activeTool == DungeonEditorTool.PASSAGE && !currentWallEditorMode().placesPassages()) {
+            if (currentEdgeToolPolicy().edgeHoverEnabled()) {
                 return;
             }
             if (activeTool.isBrushTool()) {
@@ -299,7 +307,7 @@ final class DungeonInteractionController {
     }
 
     private void handleEdgeEraseAt(double screenX, double screenY) {
-        DungeonMapPane.EdgeInteraction interaction = interactionAt(screenX, screenY, true);
+        DungeonMapPane.EdgeInteraction interaction = interactionAt(screenX, screenY);
         if (interaction == null || onEdgePainted == null) {
             return;
         }
@@ -405,7 +413,7 @@ final class DungeonInteractionController {
     }
 
     private void updateEdgeHover(double screenX, double screenY) {
-        if (isWallPaintPathMode()) {
+        if (currentEdgeToolPolicy().usesWallPaintPath()) {
             VertexRef vertex = findPaintVertexAt(screenX, screenY);
             int newVertexX = vertex == null ? -1 : vertex.x();
             int newVertexY = vertex == null ? -1 : vertex.y();
@@ -422,7 +430,7 @@ final class DungeonInteractionController {
         }
         hoverVertexX = -1;
         hoverVertexY = -1;
-        DungeonMapPane.EdgeInteraction interaction = interactionAt(screenX, screenY, isWallStrokeMode());
+        DungeonMapPane.EdgeInteraction interaction = interactionAt(screenX, screenY);
         int newX = interaction == null ? -1 : interaction.x();
         int newY = interaction == null ? -1 : interaction.y();
         PassageDirection newDir = interaction == null ? null : interaction.direction();
@@ -450,7 +458,7 @@ final class DungeonInteractionController {
         if (redrawSelection != null) {
             redrawSelection.run();
         }
-        if (isWallPaintPathMode() && hoverVertexX >= 0 && hoverVertexY >= 0) {
+        if (currentEdgeToolPolicy().usesWallPaintPath() && hoverVertexX >= 0 && hoverVertexY >= 0) {
             gc.setFill(HOVER_EDGE_STROKE);
             double radius = Math.max(4.0, 5.0 * viewport.strokeScale());
             double centerX = viewport.screenX(hoverVertexX);
@@ -461,20 +469,20 @@ final class DungeonInteractionController {
         if (hoverEdgeX < 0 || hoverEdgeDir == null) {
             return;
         }
-        gc.setStroke(currentWallEditorMode().erasesWalls() ? HOVER_EDGE_ERASE_STROKE : HOVER_EDGE_STROKE);
+        gc.setStroke(currentEdgeToolPolicy().destructiveHover() ? HOVER_EDGE_ERASE_STROKE : HOVER_EDGE_STROKE);
         gc.setLineWidth(Math.max(3.0, 5.0 * viewport.strokeScale()));
         strokeEdge(gc, hoverEdgeX, hoverEdgeY, hoverEdgeDir);
     }
 
     private void handleEdgeClick(double screenX, double screenY) {
-        DungeonMapPane.EdgeInteraction interaction = interactionAt(screenX, screenY, false);
+        DungeonMapPane.EdgeInteraction interaction = interactionAt(screenX, screenY);
         if (interaction == null || onEdgeClicked == null) {
             return;
         }
         onEdgeClicked.accept(interaction);
     }
 
-    private DungeonMapPane.EdgeInteraction interactionAt(double screenX, double screenY, boolean strokeEditing) {
+    private DungeonMapPane.EdgeInteraction interactionAt(double screenX, double screenY) {
         int[] edge = findEdgeAt(screenX, screenY);
         if (edge == null) {
             return null;
@@ -483,16 +491,20 @@ final class DungeonInteractionController {
         String edgeKey = dir.edgeKey(edge[0], edge[1]);
         DungeonWall existingWall = model.wallsByEdge().get(edgeKey);
         DungeonPassage existingPassage = model.passagesByEdge().get(edgeKey);
-        if (strokeEditing) {
-            WallEditorMode mode = currentWallEditorMode();
-            if (mode.paintsWalls() && !isPaintableWallEdge(edge[0], edge[1], dir)) {
+        if (!currentEdgeToolPolicy().allowsInteraction(
+                edge[0],
+                edge[1],
+                dir,
+                existingWall,
+                existingPassage,
+                this::isEditableEdge,
+                this::isInteriorEdge)) {
+            if (!currentEdgeToolPolicy().edgeHoverEnabled()) {
                 return null;
             }
-            if (mode.erasesWalls() && existingWall == null) {
+            if (currentEdgeToolPolicy().interactionMode() != DungeonEdgeToolPolicy.EdgeInteractionMode.NONE) {
                 return null;
             }
-        } else if (currentWallEditorMode().placesPassages() && !isEditableEdge(edge[0], edge[1], dir)) {
-            return null;
         }
         return new DungeonMapPane.EdgeInteraction(edge[0], edge[1], dir, existingWall, existingPassage);
     }
@@ -748,23 +760,15 @@ final class DungeonInteractionController {
     }
 
     private boolean edgeHoverEnabled() {
-        return activeTool == DungeonEditorTool.PASSAGE || activeTool.edgeHoverEnabled();
+        return currentEdgeToolPolicy().edgeHoverEnabled();
     }
 
     private boolean usesSelectionPaint() {
         return activeTool.isBrushTool() && currentPaintMode() == DungeonPaintMode.SELECTION;
     }
 
-    private boolean isWallStrokeMode() {
-        return activeTool == DungeonEditorTool.PASSAGE && !currentWallEditorMode().placesPassages();
-    }
-
-    private boolean isWallPaintPathMode() {
-        return activeTool == DungeonEditorTool.PASSAGE && currentWallEditorMode().paintsWalls();
-    }
-
-    private boolean usesWallEraseBrush() {
-        return activeTool == DungeonEditorTool.PASSAGE && currentWallEditorMode().erasesWalls();
+    private DungeonEdgeToolPolicy currentEdgeToolPolicy() {
+        return DungeonEdgeToolPolicy.resolve(activeTool, currentWallEditorMode(), currentPassageEditorMode());
     }
 
     private WallEditorMode currentWallEditorMode() {
@@ -775,6 +779,16 @@ final class DungeonInteractionController {
             }
         }
         return WallEditorMode.PAINT_WALL;
+    }
+
+    private PassageEditorMode currentPassageEditorMode() {
+        if (passageEditorModeSupplier != null) {
+            PassageEditorMode mode = passageEditorModeSupplier.get();
+            if (mode != null) {
+                return mode;
+            }
+        }
+        return PassageEditorMode.PLACE_PASSAGE;
     }
 
     private int currentBrushSize() {
