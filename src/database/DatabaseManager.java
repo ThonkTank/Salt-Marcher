@@ -77,12 +77,8 @@ public final class DatabaseManager {
      * - Imported source data (monsters/items/equipment/spells) is disposable and
      *   can be rebuilt by re-crawling.
      * - Encounter and campaign state data should be preserved.
-     * - Dungeon map editor data is still in flux during active development, so
-     *   compatibility work may occasionally reshape that local schema directly.
-     *
-     * Therefore this method prefers lightweight, additive, idempotent compatibility
-     * migrations where practical, but dungeon-map compatibility may use broader
-     * rewrites while the editor schema is still stabilizing.
+     * - Dungeon map data is local-only and currently disposable; startup only creates
+     *   the current dungeon schema and does not attempt compatibility upgrades.
      */
     public static void setupDatabase() {
         try (Connection conn = getConnection();
@@ -485,7 +481,6 @@ public final class DatabaseManager {
             ensureSpellCompatibility(conn);
             ensureEncounterAnalysisColumns(conn);
             ensureLootTableCompatibility(conn);
-            DungeonSchemaSupport.ensureCompatibility(conn);
             EncounterSchemaSupport.ensureCompatibility(conn);
             CampaignStateSchemaSupport.ensureCompatibility(conn);
             dropLegacyRoleColumns(conn);

@@ -2,6 +2,8 @@ package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonEdgeSummary;
+import features.world.dungeonmap.model.DungeonLinkAnchor;
+import features.world.dungeonmap.model.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
@@ -21,6 +23,7 @@ final class DungeonGridRenderer {
     private static final Color FILLED_STROKE = Color.web("#b89060");
     private static final Color ROOM_STROKE = Color.web("#c8966a");
     private static final Color SELECTION_STROKE = Color.web("#d9c36a");
+    private static final Color PENDING_LINK_STROKE = Color.web("#f4d35e");
     private static final Color INVALID_EDGE_STROKE = Color.web("#e53935", 0.90);
     private static final Color BOUNDARY_STROKE = Color.web("#4a5560", 0.55);
     private static final Color WALL_COLOR = Color.web("#3a2a1a");
@@ -117,8 +120,11 @@ final class DungeonGridRenderer {
                 drawSquareSelection(gc, selection.square(), state);
             } else if (selection.type() == DungeonSelection.SelectionType.ROOM && selection.room() != null) {
                 drawRoomSelection(gc, selection.room().roomId(), state);
+            } else if (selection.type() == DungeonSelection.SelectionType.PASSAGE && selection.passage() != null) {
+                drawPassageSelection(gc, selection.passage(), SELECTION_STROKE);
             }
         }
+        drawPendingLinkStart(gc);
         drawInvalidEdge(gc);
     }
 
@@ -192,6 +198,34 @@ final class DungeonGridRenderer {
         double sx = viewport.screenX(edgeX);
         double sy = viewport.screenY(edgeY + 1);
         double ex = viewport.screenX(edgeX + 1);
+        gc.strokeLine(sx, sy, ex, sy);
+    }
+
+    private void drawPendingLinkStart(GraphicsContext gc) {
+        DungeonLinkAnchor pendingAnchor = model.pendingLinkStart();
+        if (pendingAnchor == null || pendingAnchor.type() != DungeonLinkAnchorType.PASSAGE) {
+            return;
+        }
+        DungeonPassage passage = model.passagesById().get(pendingAnchor.anchorId());
+        if (passage == null) {
+            return;
+        }
+        drawPassageSelection(gc, passage, PENDING_LINK_STROKE);
+    }
+
+    private void drawPassageSelection(GraphicsContext gc, DungeonPassage passage, Color stroke) {
+        gc.setStroke(stroke);
+        gc.setLineWidth(Math.max(3.0, 4.0 * viewport.strokeScale()));
+        if (passage.direction() == PassageDirection.EAST) {
+            double sx = viewport.screenX(passage.x() + 1);
+            double sy = viewport.screenY(passage.y());
+            double ey = viewport.screenY(passage.y() + 1);
+            gc.strokeLine(sx, sy, sx, ey);
+            return;
+        }
+        double sx = viewport.screenX(passage.x());
+        double sy = viewport.screenY(passage.y() + 1);
+        double ex = viewport.screenX(passage.x() + 1);
         gc.strokeLine(sx, sy, ex, sy);
     }
 

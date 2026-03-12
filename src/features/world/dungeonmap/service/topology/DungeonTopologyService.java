@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.model.PassageDirection;
 import features.world.dungeonmap.repository.DungeonEndpointRepository;
 import features.world.dungeonmap.repository.DungeonFeatureRepository;
+import features.world.dungeonmap.repository.DungeonLinkRepository;
 import features.world.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeonmap.repository.DungeonPassageRepository;
 import features.world.dungeonmap.repository.DungeonSquareRepository;
@@ -30,9 +31,8 @@ import java.util.Set;
 public final class DungeonTopologyService {
 
     /*
-     * Topology owns which edges require persisted walls during writes. Repository normalization only
-     * repairs stored compatibility rows, and the derived edge builder mirrors the same boundary rule
-     * for read-model and preview reconstruction.
+     * Topology owns which edges require persisted walls during writes, and the derived edge builder
+     * mirrors the same boundary rule for read-model and preview reconstruction.
      *
      * Square paint rules:
      * - Painting isolated empty space creates a new room and walls on every exposed edge.
@@ -129,6 +129,7 @@ public final class DungeonTopologyService {
             reconcileSquarePaintTopology(conn, mapId, effectiveIntent, workspace);
         }
         deleteInvalidPassages(conn, mapId);
+        DungeonLinkRepository.deleteLinksWithMissingAnchors(conn, mapId);
     }
 
     private static void reconcileSquarePaintTopology(

@@ -54,8 +54,8 @@ public final class DungeonWallRepository {
     }
 
     /*
-     * Persistence compatibility only repairs stored rows. Keep this aligned with the shared
-     * derived edge model so preview/read behavior and normalization follow the same boundary rule.
+     * Keep this aligned with the shared derived edge model so preview/read behavior and
+     * persisted boundary-wall normalization follow the same boundary rule.
      */
     public static void normalizePersistedBoundaryWalls(Connection conn, long mapId) throws SQLException {
         List<DungeonSquare> squares = DungeonSquareRepository.getSquares(conn, mapId);

@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEdgeSummary;
 import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
@@ -144,8 +145,9 @@ public class DungeonMapPane extends StackPane {
         overlayRenderer.refreshEndpointStyles();
     }
 
-    public void setPendingLinkStart(Long endpointId) {
-        model.setPendingLinkStartId(endpointId);
+    public void setPendingLinkStart(DungeonLinkAnchor anchor) {
+        model.setPendingLinkStart(anchor);
+        gridRenderer.redrawSelection();
         overlayRenderer.refreshEndpointStyles();
     }
 

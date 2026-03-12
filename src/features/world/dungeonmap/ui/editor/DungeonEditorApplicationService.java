@@ -4,6 +4,7 @@ import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.api.DungeonEncounterSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
@@ -102,12 +103,12 @@ public final class DungeonEditorApplicationService {
 
     public void createLink(
             long mapId,
-            long fromEndpointId,
-            long toEndpointId,
+            DungeonLinkAnchor fromAnchor,
+            DungeonLinkAnchor toAnchor,
             Consumer<DungeonMapEditorService.LinkCreateResult> onSuccess,
             Consumer<Throwable> onError
     ) {
-        submitValue(() -> DungeonMapEditorService.createLink(mapId, fromEndpointId, toEndpointId, ""), onSuccess, onError);
+        submitValue(() -> DungeonMapEditorService.createLink(mapId, fromAnchor, toAnchor, ""), onSuccess, onError);
     }
 
     public void deleteLink(long linkId, Runnable onSuccess, Consumer<Throwable> onError) {

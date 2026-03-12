@@ -9,6 +9,8 @@ import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureCategory;
 import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.model.DungeonLinkAnchor;
+import features.world.dungeonmap.model.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquare;
@@ -231,13 +233,14 @@ public final class DungeonEditorInspectorContentFactory {
             return;
         }
         VBox content = new VBox(6);
+        DungeonLinkAnchor anchor = DungeonLinkAnchor.endpoint(endpoint.endpointId());
         for (DungeonLink link : links) {
-            content.getChildren().add(buildLinkEditor(link, endpoint.endpointId()));
+            content.getChildren().add(buildLinkEditor(link, anchor));
         }
         parent.getChildren().add(section("Links", content));
     }
 
-    private VBox buildLinkEditor(DungeonLink link, Long endpointId) {
+    private VBox buildLinkEditor(DungeonLink link, DungeonLinkAnchor currentAnchor) {
         VBox box = new VBox(6);
         TextField labelField = new TextField(link.label() == null ? "" : link.label());
         Button saveButton = saveButton(() -> {
@@ -248,7 +251,7 @@ public final class DungeonEditorInspectorContentFactory {
         Button deleteButton = dangerButton("Löschen");
         deleteButton.setOnAction(event -> connectionEditingController.deleteLink(link.linkId()));
         box.getChildren().addAll(
-                secondary(resolveLinkCounterpartName(link, endpointId)),
+                secondary(resolveLinkCounterpartName(link, currentAnchor)),
                 section("Label", labelField, saveRow(saveButton, deleteButton)));
         return box;
     }
@@ -293,6 +296,7 @@ public final class DungeonEditorInspectorContentFactory {
                 section("Übergang", endpointCombo),
                 section("Name", nameField),
                 section("Notizen", notesArea, saveRow(saveButton, deleteButton)));
+        appendPassageLinks(box, passage);
         return box;
     }
 
@@ -461,12 +465,20 @@ public final class DungeonEditorInspectorContentFactory {
     }
 
     private List<DungeonLink> linksForEndpoint(Long endpointId) {
+        return linksForAnchor(endpointId == null ? null : DungeonLinkAnchor.endpoint(endpointId));
+    }
+
+    private List<DungeonLink> linksForPassage(Long passageId) {
+        return linksForAnchor(passageId == null ? null : DungeonLinkAnchor.passage(passageId));
+    }
+
+    private List<DungeonLink> linksForAnchor(DungeonLinkAnchor anchor) {
         List<DungeonLink> result = new ArrayList<>();
-        if (endpointId == null || state.currentState() == null) {
+        if (anchor == null || state.currentState() == null) {
             return result;
         }
         for (DungeonLink link : state.currentState().links()) {
-            if (endpointId.equals(link.fromEndpointId()) || endpointId.equals(link.toEndpointId())) {
+            if (anchor.equals(link.fromAnchor()) || anchor.equals(link.toAnchor())) {
                 result.add(link);
             }
         }
@@ -573,6 +585,18 @@ public final class DungeonEditorInspectorContentFactory {
         return null;
     }
 
+    private DungeonPassage findPassage(Long passageId) {
+        if (passageId == null || state.currentState() == null) {
+            return null;
+        }
+        for (DungeonPassage passage : state.currentState().passages()) {
+            if (passageId.equals(passage.passageId())) {
+                return passage;
+            }
+        }
+        return null;
+    }
+
     private boolean passageTouchesRoom(DungeonPassage passage, Long roomId) {
         DungeonSquare primary = squareAt(passage.x(), passage.y());
         if (primary != null && roomId.equals(primary.roomId())) {
@@ -604,12 +628,41 @@ public final class DungeonEditorInspectorContentFactory {
         return summary == null ? null : summary.name();
     }
 
-    private String resolveLinkCounterpartName(DungeonLink link, Long endpointId) {
-        Long counterpartId = Objects.equals(endpointId, link.fromEndpointId()) ? link.toEndpointId() : link.fromEndpointId();
-        DungeonEndpoint counterpart = findEndpoint(counterpartId);
-        String name = counterpart == null ? "Unbekannter Übergang" : titleOrFallback(counterpart.name(), "Übergang");
+    private void appendPassageLinks(VBox parent, DungeonPassage passage) {
+        if (passage == null || passage.passageId() == null) {
+            return;
+        }
+        List<DungeonLink> links = linksForPassage(passage.passageId());
+        if (links.isEmpty()) {
+            return;
+        }
+        VBox content = new VBox(6);
+        DungeonLinkAnchor anchor = DungeonLinkAnchor.passage(passage.passageId());
+        for (DungeonLink link : links) {
+            content.getChildren().add(buildLinkEditor(link, anchor));
+        }
+        parent.getChildren().add(section("Links", content));
+    }
+
+    private String resolveLinkCounterpartName(DungeonLink link, DungeonLinkAnchor currentAnchor) {
+        DungeonLinkAnchor counterpartAnchor = currentAnchor.equals(link.fromAnchor()) ? link.toAnchor() : link.fromAnchor();
+        String name = describeLinkAnchor(counterpartAnchor);
         String notes = link.notes();
         return notes == null || notes.isBlank() ? name : name + " • " + notes;
+    }
+
+    private String describeLinkAnchor(DungeonLinkAnchor anchor) {
+        if (anchor == null) {
+            return "Unbekannte Verbindung";
+        }
+        if (anchor.type() == DungeonLinkAnchorType.ENDPOINT) {
+            DungeonEndpoint endpoint = findEndpoint(anchor.anchorId());
+            return endpoint == null ? "Unbekannter Übergang" : titleOrFallback(endpoint.name(), "Übergang");
+        }
+        DungeonPassage passage = findPassage(anchor.anchorId());
+        return passage == null
+                ? "Unbekannter Durchgang"
+                : titleOrFallback(passage.name(), "Durchgang") + " • " + formatPassagePosition(passage);
     }
 
     private String formatPassagePosition(DungeonPassage passage) {

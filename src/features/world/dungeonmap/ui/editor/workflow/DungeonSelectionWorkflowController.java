@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
@@ -19,7 +20,7 @@ public final class DungeonSelectionWorkflowController {
 
     @FunctionalInterface
     public interface LinkCreator {
-        void create(long mapId, long fromEndpointId, long toEndpointId);
+        void create(long mapId, DungeonLinkAnchor fromAnchor, DungeonLinkAnchor toAnchor);
     }
 
     private final DungeonMapPane canvas;
@@ -28,7 +29,7 @@ public final class DungeonSelectionWorkflowController {
     private DetailsNavigator detailsNavigator;
     private DungeonEditorInspectorContentFactory inspectorContentFactory;
 
-    private Long pendingLinkStartId;
+    private DungeonLinkAnchor pendingLinkStart;
 
     public DungeonSelectionWorkflowController(
             DungeonMapPane canvas,
@@ -99,20 +100,48 @@ public final class DungeonSelectionWorkflowController {
             LinkCreator onCreateLink
     ) {
         if (tool == DungeonEditorTool.LINK) {
-            if (pendingLinkStartId == null) {
-                pendingLinkStartId = endpoint.endpointId();
-                canvas.setPendingLinkStart(pendingLinkStartId);
+            DungeonLinkAnchor clickedAnchor = DungeonLinkAnchor.endpoint(endpoint.endpointId());
+            if (pendingLinkStart == null) {
+                pendingLinkStart = clickedAnchor;
+                canvas.setPendingLinkStart(pendingLinkStart);
                 toolSettingsPane.showLinkPending(true);
                 return;
             }
-            Long fromId = pendingLinkStartId;
+            DungeonLinkAnchor fromAnchor = pendingLinkStart;
             clearPendingLink();
             if (currentMapId != null) {
-                onCreateLink.create(currentMapId, fromId, endpoint.endpointId());
+                onCreateLink.create(currentMapId, fromAnchor, clickedAnchor);
             }
             return;
         }
         showEndpointSelection(endpoint);
+    }
+
+    public void handlePassageClick(
+            DungeonEditorTool tool,
+            DungeonPassage passage,
+            Long currentMapId,
+            LinkCreator onCreateLink
+    ) {
+        if (passage == null) {
+            return;
+        }
+        if (tool == DungeonEditorTool.LINK && passage.passageId() != null) {
+            DungeonLinkAnchor clickedAnchor = DungeonLinkAnchor.passage(passage.passageId());
+            if (pendingLinkStart == null) {
+                pendingLinkStart = clickedAnchor;
+                canvas.setPendingLinkStart(pendingLinkStart);
+                toolSettingsPane.showLinkPending(true);
+                return;
+            }
+            DungeonLinkAnchor fromAnchor = pendingLinkStart;
+            clearPendingLink();
+            if (currentMapId != null) {
+                onCreateLink.create(currentMapId, fromAnchor, clickedAnchor);
+            }
+            return;
+        }
+        selectPassage(passage);
     }
 
     public void selectArea(DungeonArea area) {
@@ -204,7 +233,7 @@ public final class DungeonSelectionWorkflowController {
     }
 
     private void clearPendingLink() {
-        pendingLinkStartId = null;
+        pendingLinkStart = null;
         canvas.setPendingLinkStart(null);
         toolSettingsPane.showLinkPending(false);
     }

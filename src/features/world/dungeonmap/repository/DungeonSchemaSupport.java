@@ -1,5 +1,7 @@
 package features.world.dungeonmap.repository;
 
+import features.world.dungeonmap.model.DungeonLinkAnchorType;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -7,8 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * Encapsulates dungeon-specific schema creation and compatibility work so bootstrap
- * only orchestrates feature migrations instead of owning their SQL details.
+ * Encapsulates dungeon-specific schema creation so bootstrap does not own the SQL details.
  */
 public final class DungeonSchemaSupport {
 
@@ -22,6 +23,28 @@ public final class DungeonSchemaSupport {
             + "notes        TEXT,"
             + "endpoint_id  INTEGER REFERENCES dungeon_endpoints(endpoint_id) ON DELETE SET NULL,"
             + "UNIQUE (map_id, x, y, direction)"
+            + ")";
+    private static final String DUNGEON_LINKS_TABLE_COLUMNS = "("
+            + "link_id            INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + "map_id             INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+            + "from_anchor_type   TEXT NOT NULL CHECK(from_anchor_type IN ('endpoint','passage')),"
+            + "from_anchor_id     INTEGER NOT NULL,"
+            + "to_anchor_type     TEXT NOT NULL CHECK(to_anchor_type IN ('endpoint','passage')),"
+            + "to_anchor_id       INTEGER NOT NULL,"
+            + "label              TEXT,"
+            + "notes              TEXT,"
+            + "CHECK ("
+            + "CASE from_anchor_type "
+            + "WHEN '" + canonicalAnchorTypeForSchema(DungeonLinkAnchorType.ENDPOINT) + "' THEN " + DungeonLinkAnchorType.ENDPOINT.persistenceOrder() + " "
+            + "WHEN '" + canonicalAnchorTypeForSchema(DungeonLinkAnchorType.PASSAGE) + "' THEN " + DungeonLinkAnchorType.PASSAGE.persistenceOrder() + " "
+            + "END < "
+            + "CASE to_anchor_type "
+            + "WHEN '" + canonicalAnchorTypeForSchema(DungeonLinkAnchorType.ENDPOINT) + "' THEN " + DungeonLinkAnchorType.ENDPOINT.persistenceOrder() + " "
+            + "WHEN '" + canonicalAnchorTypeForSchema(DungeonLinkAnchorType.PASSAGE) + "' THEN " + DungeonLinkAnchorType.PASSAGE.persistenceOrder() + " "
+            + "END "
+            + "OR (from_anchor_type = to_anchor_type AND from_anchor_id < to_anchor_id)"
+            + "),"
+            + "UNIQUE (map_id, from_anchor_type, from_anchor_id, to_anchor_type, to_anchor_id)"
             + ")";
 
     private DungeonSchemaSupport() {
@@ -68,16 +91,7 @@ public final class DungeonSchemaSupport {
                 + "is_default_entry INTEGER NOT NULL DEFAULT 0,"
                 + "UNIQUE (square_id)"
                 + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_links ("
-                + "link_id            INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + "map_id             INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "from_endpoint_id   INTEGER NOT NULL REFERENCES dungeon_endpoints(endpoint_id) ON DELETE CASCADE,"
-                + "to_endpoint_id     INTEGER NOT NULL REFERENCES dungeon_endpoints(endpoint_id) ON DELETE CASCADE,"
-                + "label              TEXT,"
-                + "notes              TEXT,"
-                + "CHECK (from_endpoint_id < to_endpoint_id),"
-                + "UNIQUE (map_id, from_endpoint_id, to_endpoint_id)"
-                + ")");
+        stmt.execute(createDungeonLinksTableSql("dungeon_links", true));
         stmt.execute(createDungeonPassagesTableSql("dungeon_passages", true));
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_walls ("
                 + "wall_id      INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -115,105 +129,18 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_feature_tiles_square ON dungeon_feature_tiles(square_id)");
     }
 
-    public static void ensureCompatibility(Connection conn) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            createSchema(stmt);
-        }
-        removePassageTypeCompatibilityColumn(conn);
-        try (Statement stmt = conn.createStatement()) {
-            createIndexes(stmt);
-        }
-        ensureColumn(conn, "dungeon_endpoints", "role", "TEXT NOT NULL DEFAULT 'both'");
-        ensureColumn(conn, "dungeon_endpoints", "is_default_entry", "INTEGER NOT NULL DEFAULT 0");
-        clearInvalidDefaultEntries(conn);
-        ensureColumn(conn, "dungeon_features", "encounter_id", "INTEGER");
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_features_encounter ON dungeon_features(encounter_id)");
-        }
-        normalizeDefaultEntryRoleCompatibility(conn);
-        normalizeWallTopologyCompatibility(conn);
-        normalizePassageTopologyCompatibility(conn);
-    }
-
-    private static void removePassageTypeCompatibilityColumn(Connection conn) throws SQLException {
-        if (!columnExists(conn, "dungeon_passages", "passage_type")) {
-            return;
-        }
-        // Dungeon map editor data is still intentionally disposable during active schema iteration, so
-        // rebuilding this local table is preferable to carrying a dead compatibility column indefinitely.
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("ALTER TABLE dungeon_passages RENAME TO dungeon_passages_legacy");
-            stmt.execute(createDungeonPassagesTableSql("dungeon_passages", false));
-            stmt.execute("INSERT INTO dungeon_passages(passage_id, map_id, x, y, direction, name, notes, endpoint_id) "
-                    + "SELECT passage_id, map_id, x, y, direction, name, notes, endpoint_id "
-                    + "FROM dungeon_passages_legacy");
-            stmt.execute("DROP TABLE dungeon_passages_legacy");
-        }
-    }
-
     private static String createDungeonPassagesTableSql(String tableName, boolean ifNotExists) {
         return "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + tableName + " " + DUNGEON_PASSAGES_TABLE_COLUMNS;
     }
 
-    private static void ensureColumn(Connection conn, String table, String column, String definition) throws SQLException {
-        if (columnExists(conn, table, column)) {
-            return;
-        }
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
-        }
+    private static String createDungeonLinksTableSql(String tableName, boolean ifNotExists) {
+        return "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + tableName + " " + DUNGEON_LINKS_TABLE_COLUMNS;
     }
 
-    private static boolean columnExists(Connection conn, String table, String column) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("PRAGMA table_info(" + table + ")");
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                if (column.equalsIgnoreCase(rs.getString("name"))) {
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
-
-    private static void normalizeDefaultEntryRoleCompatibility(Connection conn) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("UPDATE dungeon_endpoints "
-                    + "SET is_default_entry=0 "
-                    + "WHERE is_default_entry=1 AND role='exit'");
-        }
-    }
-
-    private static void clearInvalidDefaultEntries(Connection conn) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate("UPDATE dungeon_endpoints "
-                    + "SET is_default_entry=0 "
-                    + "WHERE is_default_entry NOT IN (0,1)");
-        }
-    }
-
-    private static void normalizePassageTopologyCompatibility(Connection conn) throws SQLException {
-        for (Long mapId : loadDungeonMapIds(conn)) {
-            // Compatibility cleanup only enforces persisted-row validity.
-            DungeonPassageRepository.deleteInvalidPassages(conn, mapId);
-        }
-    }
-
-    private static void normalizeWallTopologyCompatibility(Connection conn) throws SQLException {
-        for (Long mapId : loadDungeonMapIds(conn)) {
-            DungeonWallRepository.normalizePersistedBoundaryWalls(conn, mapId);
-        }
-    }
-
-    private static java.util.List<Long> loadDungeonMapIds(Connection conn) throws SQLException {
-        java.util.List<Long> mapIds = new java.util.ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT dungeon_map_id FROM dungeon_maps");
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                mapIds.add(rs.getLong(1));
-            }
-        }
-        return mapIds;
+    static String canonicalAnchorTypeForSchema(DungeonLinkAnchorType type) {
+        return switch (type) {
+            case ENDPOINT -> "endpoint";
+            case PASSAGE -> "passage";
+        };
     }
 }

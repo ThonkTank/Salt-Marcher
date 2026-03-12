@@ -632,8 +632,8 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         kind.getStyleClass().addAll("section-header", "text-muted");
         box.getChildren().addAll(
                 kind,
-                secondary("Von: " + valueOrDash(summary.fromName())),
-                secondary("Nach: " + valueOrDash(summary.toName())));
+                secondary("Von: " + valueOrDash(summary.fromAnchorName())),
+                secondary("Nach: " + valueOrDash(summary.toAnchorName())));
         if (summary.label() != null && !summary.label().isBlank()) {
             addSection(box, "Label", summary.label());
         }

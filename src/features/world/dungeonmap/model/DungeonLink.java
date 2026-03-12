@@ -3,8 +3,8 @@ package features.world.dungeonmap.model;
 public record DungeonLink(
         Long linkId,
         Long mapId,
-        Long fromEndpointId,
-        Long toEndpointId,
+        DungeonLinkAnchor fromAnchor,
+        DungeonLinkAnchor toAnchor,
         String label,
         String notes
 ) {

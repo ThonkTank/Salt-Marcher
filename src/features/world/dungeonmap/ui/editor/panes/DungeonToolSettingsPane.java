@@ -58,7 +58,7 @@ public class DungeonToolSettingsPane extends VBox {
     private final VBox workflowMessageGroup;
     private final Label activeToolLabel = new Label("Auswahl");
     private final Label encounterSelectionLabel = new Label("Gebundenes Encounter");
-    private final Label linkStatusLabel = new Label("Ersten Übergang klicken, dann zweiten Übergang klicken.");
+    private final Label linkStatusLabel = new Label("Erste Verbindung klicken, dann zweite Verbindung klicken.");
     private final Label workflowMessageTitleLabel = new Label("Hinweis");
     private final Label workflowMessageLabel = new Label();
     private final Button cancelLinkButton = new Button("Abbrechen");
@@ -208,7 +208,7 @@ public class DungeonToolSettingsPane extends VBox {
         setGroupVisible(areaGroup, effectiveTool.areaSettingsVisible());
         setGroupVisible(featureGroup, effectiveTool.featureSettingsVisible());
         if (effectiveTool.linkStatusVisible()) {
-            linkStatusLabel.setText("Ersten Übergang klicken, dann zweiten Übergang klicken.");
+            linkStatusLabel.setText("Erste Verbindung klicken, dann zweite Verbindung klicken.");
             setGroupVisible(linkStatusGroup, true);
             cancelLinkButton.setVisible(false);
             cancelLinkButton.setManaged(false);
@@ -219,7 +219,7 @@ public class DungeonToolSettingsPane extends VBox {
 
     public void showLinkPending(boolean pending) {
         if (pending) {
-            linkStatusLabel.setText("Startübergang gewählt - zweiten Übergang klicken");
+            linkStatusLabel.setText("Link-Start gewählt - zweite Verbindung klicken");
             setGroupVisible(linkStatusGroup, true);
             cancelLinkButton.setVisible(true);
             cancelLinkButton.setManaged(true);

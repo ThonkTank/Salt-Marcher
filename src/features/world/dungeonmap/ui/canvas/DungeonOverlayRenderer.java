@@ -6,6 +6,9 @@ import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureCategory;
 import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.model.DungeonLinkAnchor;
+import features.world.dungeonmap.model.DungeonLinkAnchorType;
+import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import javafx.scene.input.MouseButton;
@@ -200,7 +203,7 @@ final class DungeonOverlayRenderer {
                     && selection.type() == DungeonSelection.SelectionType.ENDPOINT
                     && endpointId.equals(selection.id());
             boolean isParty = endpointId.equals(model.partyEndpointId());
-            boolean isPending = endpointId.equals(model.pendingLinkStartId());
+            boolean isPending = isPendingEndpoint(endpointId);
             DungeonEndpoint endpoint = model.endpointsById().get(endpointId);
             circle.setFill(isPending ? ENDPOINT_PENDING_FILL : endpointFill(endpoint));
             circle.setStroke(isParty
@@ -243,8 +246,8 @@ final class DungeonOverlayRenderer {
     }
 
     private Line buildLinkNode(DungeonLink link) {
-        DungeonEndpoint from = model.endpointsById().get(link.fromEndpointId());
-        DungeonEndpoint to = model.endpointsById().get(link.toEndpointId());
+        Point from = resolveAnchorPoint(link.fromAnchor());
+        Point to = resolveAnchorPoint(link.toAnchor());
         if (from == null || to == null) {
             return null;
         }
@@ -278,17 +281,17 @@ final class DungeonOverlayRenderer {
         if (line == null) {
             return;
         }
-        DungeonEndpoint from = model.endpointsById().get(link.fromEndpointId());
-        DungeonEndpoint to = model.endpointsById().get(link.toEndpointId());
+        Point from = resolveAnchorPoint(link.fromAnchor());
+        Point to = resolveAnchorPoint(link.toAnchor());
         if (from == null || to == null) {
             line.setVisible(false);
             line.setManaged(false);
             return;
         }
-        double x1 = viewport.screenCenterX(from.x());
-        double y1 = viewport.screenCenterY(from.y());
-        double x2 = viewport.screenCenterX(to.x());
-        double y2 = viewport.screenCenterY(to.y());
+        double x1 = from.x();
+        double y1 = from.y();
+        double x2 = to.x();
+        double y2 = to.y();
         line.setStartX(x1);
         line.setStartY(y1);
         line.setEndX(x2);
@@ -421,5 +424,41 @@ final class DungeonOverlayRenderer {
             case EXIT -> EXIT_FILL;
             case BOTH -> BOTH_FILL;
         };
+    }
+
+    private boolean isPendingEndpoint(Long endpointId) {
+        DungeonLinkAnchor pendingAnchor = model.pendingLinkStart();
+        return pendingAnchor != null
+                && pendingAnchor.type() == DungeonLinkAnchorType.ENDPOINT
+                && endpointId != null
+                && endpointId == pendingAnchor.anchorId();
+    }
+
+    private Point resolveAnchorPoint(DungeonLinkAnchor anchor) {
+        if (anchor == null) {
+            return null;
+        }
+        return switch (anchor.type()) {
+            case ENDPOINT -> {
+                DungeonEndpoint endpoint = model.endpointsById().get(anchor.anchorId());
+                if (endpoint == null) {
+                    yield null;
+                }
+                yield new Point(viewport.screenCenterX(endpoint.x()), viewport.screenCenterY(endpoint.y()));
+            }
+            case PASSAGE -> {
+                DungeonPassage passage = model.passagesById().get(anchor.anchorId());
+                if (passage == null) {
+                    yield null;
+                }
+                yield switch (passage.direction()) {
+                    case EAST -> new Point(viewport.screenX(passage.x() + 1), viewport.screenCenterY(passage.y()));
+                    case SOUTH -> new Point(viewport.screenCenterX(passage.x()), viewport.screenY(passage.y() + 1));
+                };
+            }
+        };
+    }
+
+    private record Point(double x, double y) {
     }
 }

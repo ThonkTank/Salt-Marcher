@@ -7,6 +7,7 @@ import features.world.dungeonmap.model.DungeonEdgeSummaryBuilder;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
@@ -29,6 +30,7 @@ final class DungeonCanvasModel {
     private final Map<Long, DungeonRoom> roomsById = new HashMap<>();
     private final Map<Long, DungeonFeature> featuresById = new HashMap<>();
     private final Map<Long, DungeonEndpoint> endpointsById = new HashMap<>();
+    private final Map<Long, DungeonPassage> passagesById = new HashMap<>();
     private final Map<Long, DungeonLink> linksById = new HashMap<>();
     private final Map<String, DungeonWall> baseWallsByEdge = new HashMap<>();
     private final Map<String, DungeonPassage> basePassagesByEdge = new HashMap<>();
@@ -42,7 +44,7 @@ final class DungeonCanvasModel {
 
     private DungeonMapState state;
     private DungeonSelection selection = DungeonSelection.none();
-    private Long pendingLinkStartId;
+    private DungeonLinkAnchor pendingLinkStart;
     private Long partyEndpointId;
     private String invalidEdgeKey;
     private Integer invalidEdgeX;
@@ -62,6 +64,7 @@ final class DungeonCanvasModel {
         roomsById.clear();
         featuresById.clear();
         endpointsById.clear();
+        passagesById.clear();
         linksById.clear();
         baseWallsByEdge.clear();
         basePassagesByEdge.clear();
@@ -78,7 +81,7 @@ final class DungeonCanvasModel {
             loadedMapWidth = null;
             loadedMapHeight = null;
             selection = DungeonSelection.none();
-            pendingLinkStartId = null;
+            pendingLinkStart = null;
             partyEndpointId = null;
             clearInvalidEdge();
             return true;
@@ -96,6 +99,11 @@ final class DungeonCanvasModel {
         for (DungeonFeature feature : state.features()) {
             featuresById.put(feature.featureId(), feature);
         }
+        for (DungeonPassage passage : state.passages()) {
+            if (passage.passageId() != null) {
+                passagesById.put(passage.passageId(), passage);
+            }
+        }
         for (DungeonLink link : state.links()) {
             linksById.put(link.linkId(), link);
         }
@@ -107,7 +115,7 @@ final class DungeonCanvasModel {
 
         selection = DungeonSelection.none();
         partyEndpointId = null;
-        pendingLinkStartId = null;
+        pendingLinkStart = null;
         clearInvalidEdge();
         loadedMapId = state.map().mapId();
         loadedMapWidth = state.map().width();
@@ -222,6 +230,10 @@ final class DungeonCanvasModel {
         return linksById;
     }
 
+    Map<Long, DungeonPassage> passagesById() {
+        return passagesById;
+    }
+
     DungeonEdgeSummary edgeAt(String edgeKey) {
         return edgeIndex.edgeAt(edgeKey);
     }
@@ -250,12 +262,12 @@ final class DungeonCanvasModel {
         this.selection = selection == null ? DungeonSelection.none() : selection;
     }
 
-    Long pendingLinkStartId() {
-        return pendingLinkStartId;
+    DungeonLinkAnchor pendingLinkStart() {
+        return pendingLinkStart;
     }
 
-    void setPendingLinkStartId(Long pendingLinkStartId) {
-        this.pendingLinkStartId = pendingLinkStartId;
+    void setPendingLinkStart(DungeonLinkAnchor pendingLinkStart) {
+        this.pendingLinkStart = pendingLinkStart;
     }
 
     private void storeWallPreviewEdits(Map<String, DungeonWallEdit> target, java.util.List<DungeonWallEdit> edits) {

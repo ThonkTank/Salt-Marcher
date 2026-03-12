@@ -2,6 +2,7 @@ package features.world.dungeonmap.service;
 
 import database.DatabaseManager;
 import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonRuntimeState;
@@ -59,7 +60,11 @@ public final class DungeonRuntimeService {
                 DungeonCampaignStateAdapter.updateDungeonPosition(conn, mapId, targetEndpointId);
                 return new MoveResult(MoveStatus.NO_CURRENT_POSITION, targetEndpointId);
             }
-            if (!DungeonLinkRepository.areEndpointsLinked(conn, mapId, currentEndpointId, targetEndpointId)) {
+            if (!DungeonLinkRepository.areAnchorsLinked(
+                    conn,
+                    mapId,
+                    DungeonLinkAnchor.endpoint(currentEndpointId),
+                    DungeonLinkAnchor.endpoint(targetEndpointId))) {
                 return new MoveResult(MoveStatus.NOT_CONNECTED, currentEndpointId);
             }
             DungeonCampaignStateAdapter.updateDungeonPosition(conn, mapId, targetEndpointId);

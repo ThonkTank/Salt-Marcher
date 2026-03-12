@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public final class DungeonPassageRepository {
 
@@ -73,6 +74,20 @@ public final class DungeonPassageRepository {
                 ps.setLong(4, passage.passageId());
                 ps.executeUpdate();
                 return passage.passageId();
+            }
+        }
+    }
+
+    public static Optional<DungeonPassage> findPassage(Connection conn, long passageId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT passage_id, map_id, x, y, direction, name, notes, endpoint_id "
+                        + "FROM dungeon_passages WHERE passage_id=?")) {
+            ps.setLong(1, passageId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(mapRow(rs));
             }
         }
     }

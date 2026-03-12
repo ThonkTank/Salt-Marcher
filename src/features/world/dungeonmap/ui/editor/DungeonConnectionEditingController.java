@@ -2,6 +2,7 @@ package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEndpointRole;
+import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
@@ -61,12 +62,29 @@ final class DungeonConnectionEditingController {
     }
 
     void handleEdgeClick(DungeonMapPane.EdgeInteraction interaction) {
+        DungeonPassage existing = interaction.edge().passage();
+        if (interactionState.activeTool() == DungeonEditorTool.LINK) {
+            if (existing == null || existing.passageId() == null) {
+                canvas.flashInvalidEdge(interaction);
+                return;
+            }
+            selectionController.handlePassageClick(
+                    interactionState.activeTool(),
+                    existing,
+                    state.currentMapId(),
+                    (mapId, fromAnchor, toAnchor) -> applicationService.createLink(
+                            mapId,
+                            fromAnchor,
+                            toAnchor,
+                            this::handleLinkCreateResult,
+                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.createLink()", ex)));
+            return;
+        }
         if (interactionState.activeTool() != DungeonEditorTool.PASSAGE) {
             return;
         }
         var edge = interaction.edge();
         PassageEditorMode mode = interactionState.passageEditorMode();
-        DungeonPassage existing = edge.passage();
         if (mode.deletesPassages()) {
             if (existing != null && existing.passageId() != null) {
                 applicationService.deletePassage(
@@ -202,16 +220,16 @@ final class DungeonConnectionEditingController {
             reloadCurrentMap.accept(null);
             return;
         }
-        if (result.status() == DungeonMapEditorService.LinkCreateStatus.SAME_ENDPOINT) {
-            selectionController.showWorkflowMessage("Linkerstellung", "Linkerstellung abgebrochen: Bitte zwei verschiedene Übergänge wählen.");
+        if (result.status() == DungeonMapEditorService.LinkCreateStatus.SAME_ANCHOR) {
+            selectionController.showWorkflowMessage("Linkerstellung", "Linkerstellung abgebrochen: Bitte zwei verschiedene Verbindungen wählen.");
             return;
         }
         if (result.status() == DungeonMapEditorService.LinkCreateStatus.DUPLICATE) {
-            selectionController.showWorkflowMessage("Linkerstellung", "Diese beiden Übergänge sind bereits verbunden.");
+            selectionController.showWorkflowMessage("Linkerstellung", "Diese beiden Verbindungen sind bereits verbunden.");
             return;
         }
-        if (result.status() == DungeonMapEditorService.LinkCreateStatus.INVALID_ENDPOINT) {
-            selectionController.showWorkflowMessage("Linkerstellung", "Linkerstellung abgebrochen: Mindestens ein Übergang ist nicht mehr gültig.");
+        if (result.status() == DungeonMapEditorService.LinkCreateStatus.INVALID_ANCHOR) {
+            selectionController.showWorkflowMessage("Linkerstellung", "Linkerstellung abgebrochen: Mindestens eine Verbindung ist nicht mehr gültig.");
         }
     }
 

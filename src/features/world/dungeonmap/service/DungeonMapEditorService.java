@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
@@ -34,9 +35,9 @@ public final class DungeonMapEditorService {
 
     public enum LinkCreateStatus {
         CREATED,
-        SAME_ENDPOINT,
+        SAME_ANCHOR,
         DUPLICATE,
-        INVALID_ENDPOINT
+        INVALID_ANCHOR
     }
 
     public record LinkCreateResult(LinkCreateStatus status, Long linkId) {}
@@ -199,6 +200,7 @@ public final class DungeonMapEditorService {
                     Long currentMapId = DungeonCampaignStateAdapter.getDungeonMapId(conn).orElse(endpoint.get().mapId());
                     DungeonCampaignStateAdapter.updateDungeonPosition(conn, currentMapId, null);
                 }
+                DungeonLinkRepository.deleteLinksTouchingAnchor(conn, DungeonLinkAnchor.endpoint(endpointId));
                 DungeonEndpointRepository.deleteEndpoint(conn, endpointId);
                 conn.commit();
             } catch (SQLException ex) {
@@ -210,24 +212,23 @@ public final class DungeonMapEditorService {
         }
     }
 
-    public static LinkCreateResult createLink(long mapId, long fromEndpointId, long toEndpointId, String label) throws Exception {
-        if (fromEndpointId == toEndpointId) {
-            return new LinkCreateResult(LinkCreateStatus.SAME_ENDPOINT, null);
+    public static LinkCreateResult createLink(long mapId, DungeonLinkAnchor fromAnchor, DungeonLinkAnchor toAnchor, String label) throws Exception {
+        if (fromAnchor == null || toAnchor == null) {
+            return new LinkCreateResult(LinkCreateStatus.INVALID_ANCHOR, null);
+        }
+        if (fromAnchor.equals(toAnchor)) {
+            return new LinkCreateResult(LinkCreateStatus.SAME_ANCHOR, null);
         }
         try (Connection conn = DatabaseManager.getConnection()) {
-            Optional<DungeonEndpoint> from = DungeonEndpointRepository.findEndpoint(conn, fromEndpointId);
-            Optional<DungeonEndpoint> to = DungeonEndpointRepository.findEndpoint(conn, toEndpointId);
-            if (from.isEmpty() || to.isEmpty()
-                    || from.get().mapId() != mapId
-                    || to.get().mapId() != mapId) {
-                return new LinkCreateResult(LinkCreateStatus.INVALID_ENDPOINT, null);
+            if (!isValidLinkAnchor(conn, mapId, fromAnchor) || !isValidLinkAnchor(conn, mapId, toAnchor)) {
+                return new LinkCreateResult(LinkCreateStatus.INVALID_ANCHOR, null);
             }
-            Long existing = DungeonLinkRepository.findExistingLink(conn, mapId, fromEndpointId, toEndpointId).orElse(null);
+            Long existing = DungeonLinkRepository.findExistingLink(conn, mapId, fromAnchor, toAnchor).orElse(null);
             if (existing != null) {
                 return new LinkCreateResult(LinkCreateStatus.DUPLICATE, existing);
             }
             long linkId = DungeonLinkRepository.insertLink(conn, new DungeonLink(
-                    null, mapId, fromEndpointId, toEndpointId, label, null));
+                    null, mapId, fromAnchor, toAnchor, label, null));
             return new LinkCreateResult(LinkCreateStatus.CREATED, linkId);
         }
     }
@@ -264,6 +265,7 @@ public final class DungeonMapEditorService {
 
     public static void deletePassage(long passageId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
+            DungeonLinkRepository.deleteLinksTouchingAnchor(conn, DungeonLinkAnchor.passage(passageId));
             DungeonPassageRepository.deletePassage(conn, passageId);
         }
     }
@@ -333,7 +335,7 @@ public final class DungeonMapEditorService {
 
     private static void deletePassagesReplacedByWalls(Connection conn, long mapId, List<DungeonWallEdit> edits) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "DELETE FROM dungeon_passages WHERE map_id=? AND x=? AND y=? AND direction=?")) {
+                "SELECT passage_id FROM dungeon_passages WHERE map_id=? AND x=? AND y=? AND direction=?")) {
             for (DungeonWallEdit edit : edits) {
                 if (!edit.wallPresent()) {
                     continue;
@@ -342,9 +344,26 @@ public final class DungeonMapEditorService {
                 ps.setInt(2, edit.x());
                 ps.setInt(3, edit.y());
                 ps.setString(4, edit.direction().dbValue());
-                ps.executeUpdate();
+                try (var rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        long passageId = rs.getLong("passage_id");
+                        DungeonLinkRepository.deleteLinksTouchingAnchor(conn, DungeonLinkAnchor.passage(passageId));
+                        DungeonPassageRepository.deletePassage(conn, passageId);
+                    }
+                }
             }
         }
+    }
+
+    private static boolean isValidLinkAnchor(Connection conn, long mapId, DungeonLinkAnchor anchor) throws SQLException {
+        return switch (anchor.type()) {
+            case ENDPOINT -> DungeonEndpointRepository.findEndpoint(conn, anchor.anchorId())
+                    .map(endpoint -> endpoint.mapId() == mapId)
+                    .orElse(false);
+            case PASSAGE -> DungeonPassageRepository.findPassage(conn, anchor.anchorId())
+                    .map(passage -> passage.mapId() == mapId)
+                    .orElse(false);
+        };
     }
 
 }
