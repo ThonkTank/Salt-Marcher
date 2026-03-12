@@ -1,19 +1,21 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.ui.editor.workflow;
 
-import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.api.DungeonEncounterSummary;
+import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
+import features.world.dungeonmap.ui.editor.DungeonEntityCrudController;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 
-final class DungeonSelectionEditorWorkflowController {
+public final class DungeonSelectionEditorWorkflowController {
 
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonSelectionWorkflowController selectionController;
     private final DungeonEntityCrudController entityCrudController;
 
-    DungeonSelectionEditorWorkflowController(
+    public DungeonSelectionEditorWorkflowController(
             DungeonEditorState state,
             DungeonToolSettingsPane toolSettingsPane,
             DungeonSelectionWorkflowController selectionController,
@@ -25,7 +27,7 @@ final class DungeonSelectionEditorWorkflowController {
         this.entityCrudController = entityCrudController;
     }
 
-    void bindToolSettings() {
+    public void bindToolSettings() {
         bindToolActionButtons();
         bindToolSelections();
         bindToolDerivedSelections();
@@ -54,23 +56,23 @@ final class DungeonSelectionEditorWorkflowController {
                 .addListener((obs, oldValue, newValue) -> saveSelectedFeatureEncounter(newValue));
     }
 
-    void handleAreaSelected(DungeonArea area) {
+    public void handleAreaSelected(DungeonArea area) {
         selectionController.selectArea(area);
         syncEncounterTableSelection();
     }
 
-    void handleFeatureSelected(DungeonFeature feature) {
+    public void handleFeatureSelected(DungeonFeature feature) {
         selectionController.selectFeature(feature);
         syncFeatureEncounterSelection();
     }
 
-    void syncEncounterTableSelection() {
+    public void syncEncounterTableSelection() {
         DungeonArea selectedArea = toolSettingsPane.areaComboBox().getValue();
         state.runWhileSyncingAreaSelection(() ->
                 toolSettingsPane.selectEncounterTable(selectedArea == null ? null : selectedArea.encounterTableId()));
     }
 
-    void syncFeatureEncounterSelection() {
+    public void syncFeatureEncounterSelection() {
         DungeonFeature selectedFeature = toolSettingsPane.activeFeatureComboBox().getValue();
         state.runWhileSyncingFeatureSelection(() ->
                 toolSettingsPane.selectEncounter(selectedFeature == null ? null : selectedFeature.encounterId()));

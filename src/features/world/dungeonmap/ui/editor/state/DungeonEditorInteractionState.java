@@ -1,0 +1,83 @@
+package features.world.dungeonmap.ui.editor.state;
+
+import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+public final class DungeonEditorInteractionState {
+
+    private final List<Consumer<DungeonEditorTool>> toolListeners = new ArrayList<>();
+    private final List<Consumer<DungeonPaintMode>> paintModeListeners = new ArrayList<>();
+    private final List<Consumer<WallEditorMode>> wallModeListeners = new ArrayList<>();
+
+    private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
+    private DungeonPaintMode paintMode = DungeonPaintMode.BRUSH;
+    private WallEditorMode wallEditorMode = WallEditorMode.PAINT_WALL;
+
+    public DungeonEditorTool activeTool() {
+        return activeTool;
+    }
+
+    public void setActiveTool(DungeonEditorTool tool) {
+        DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
+        if (activeTool == effectiveTool) {
+            return;
+        }
+        activeTool = effectiveTool;
+        for (Consumer<DungeonEditorTool> listener : List.copyOf(toolListeners)) {
+            listener.accept(effectiveTool);
+        }
+    }
+
+    public DungeonPaintMode paintMode() {
+        return paintMode;
+    }
+
+    public void setPaintMode(DungeonPaintMode mode) {
+        DungeonPaintMode effectiveMode = mode == null ? DungeonPaintMode.BRUSH : mode;
+        if (paintMode == effectiveMode) {
+            return;
+        }
+        paintMode = effectiveMode;
+        for (Consumer<DungeonPaintMode> listener : List.copyOf(paintModeListeners)) {
+            listener.accept(effectiveMode);
+        }
+    }
+
+    public WallEditorMode wallEditorMode() {
+        return wallEditorMode;
+    }
+
+    public void setWallEditorMode(WallEditorMode mode) {
+        WallEditorMode effectiveMode = mode == null ? WallEditorMode.PAINT_WALL : mode;
+        if (wallEditorMode == effectiveMode) {
+            return;
+        }
+        wallEditorMode = effectiveMode;
+        for (Consumer<WallEditorMode> listener : List.copyOf(wallModeListeners)) {
+            listener.accept(effectiveMode);
+        }
+    }
+
+    public void onActiveToolChanged(Consumer<DungeonEditorTool> listener) {
+        if (listener != null) {
+            toolListeners.add(listener);
+        }
+    }
+
+    public void onPaintModeChanged(Consumer<DungeonPaintMode> listener) {
+        if (listener != null) {
+            paintModeListeners.add(listener);
+        }
+    }
+
+    public void onWallEditorModeChanged(Consumer<WallEditorMode> listener) {
+        if (listener != null) {
+            wallModeListeners.add(listener);
+        }
+    }
+}

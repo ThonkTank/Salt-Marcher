@@ -2,7 +2,14 @@ package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
+import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
+import features.world.dungeonmap.ui.editor.workflow.DungeonMapLoadingWorkflowController;
+import features.world.dungeonmap.ui.editor.workflow.DungeonSelectionEditorWorkflowController;
+import features.world.dungeonmap.ui.editor.workflow.DungeonSelectionWorkflowController;
+import features.world.dungeonmap.ui.editor.workflow.DungeonSquareEditWorkflowController;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
@@ -11,27 +18,26 @@ import ui.shell.DetailsNavigator;
 
 public class DungeonEditorView implements AppView {
 
-    private final DungeonEditorControls controls = new DungeonEditorControls();
+    private final DungeonEditorInteractionState interactionState = new DungeonEditorInteractionState();
+    private final DungeonEditorControls controls = new DungeonEditorControls(interactionState);
     private final DungeonMapPane canvas = new DungeonMapPane();
     private final DungeonToolSettingsPane toolSettingsPane = new DungeonToolSettingsPane();
     private final DungeonEditorApplicationService applicationService = new DungeonEditorApplicationService();
-    private final DungeonPaintSession paintSession = new DungeonPaintSession(canvas::previewPaint);
-    private final DungeonWallPaintSession wallPaintSession = new DungeonWallPaintSession(canvas::previewCommittedWallEdits);
     private final DungeonEditorState state = new DungeonEditorState();
     private final DungeonSelectionWorkflowController selectionWorkflowController =
             new DungeonSelectionWorkflowController(canvas, toolSettingsPane, state);
     private final DungeonSquareEditWorkflowController squareEditWorkflowController =
-            new DungeonSquareEditWorkflowController(state, applicationService, canvas, controls, toolSettingsPane, paintSession, wallPaintSession);
+            new DungeonSquareEditWorkflowController(state, interactionState, applicationService, canvas);
     private final DungeonMapDropdowns mapDropdowns = new DungeonMapDropdowns();
     private final VBox statePane = new VBox(8);
     private final DungeonMapLoadingWorkflowController loadingWorkflowController = new DungeonMapLoadingWorkflowController(
-            state, applicationService, controls, canvas, toolSettingsPane, selectionWorkflowController);
+            state, interactionState, applicationService, controls, canvas, toolSettingsPane, selectionWorkflowController);
     private final DungeonMapEditingController mapEditingController = new DungeonMapEditingController(
             state, applicationService, mapDropdowns);
     private final DungeonEntityCrudController entityCrudController = new DungeonEntityCrudController(
             state, applicationService, toolSettingsPane);
     private final DungeonConnectionEditingController connectionEditingController = new DungeonConnectionEditingController(
-            state, applicationService, canvas, controls, selectionWorkflowController);
+            state, interactionState, applicationService, canvas, selectionWorkflowController);
     private final DungeonEditorInspectorContentFactory inspectorContentFactory = new DungeonEditorInspectorContentFactory(
             state, entityCrudController, connectionEditingController);
     private final DungeonSelectionEditorWorkflowController selectionEditorWorkflowController = new DungeonSelectionEditorWorkflowController(
@@ -94,13 +100,20 @@ public class DungeonEditorView implements AppView {
     }
 
     private void bindControls() {
+        toolSettingsPane.setBrushPaintModeActive(interactionState.paintMode() == DungeonPaintMode.BRUSH);
+        selectionWorkflowController.updateToolMode(interactionState.activeTool());
         controls.setOnMapSelected(mapId -> {
             squareEditWorkflowController.discardPendingSquareEdits();
             loadingWorkflowController.loadMapAsync(mapId);
         });
         controls.setOnNewMapRequested(mapEditingController::showNewMapDropdown);
         controls.setOnEditMapRequested(mapEditingController::showEditMapDropdown);
-        controls.setOnToolChanged(tool -> {
+        interactionState.onPaintModeChanged(mode -> {
+            toolSettingsPane.setBrushPaintModeActive(mode == DungeonPaintMode.BRUSH);
+            canvas.setActiveTool(interactionState.activeTool());
+        });
+        interactionState.onWallEditorModeChanged(mode -> canvas.setActiveTool(interactionState.activeTool()));
+        interactionState.onActiveToolChanged(tool -> {
             squareEditWorkflowController.commitPendingSquareEdits();
             selectionWorkflowController.updateToolMode(tool);
             loadingWorkflowController.autoShowForTool(tool);
@@ -109,7 +122,7 @@ public class DungeonEditorView implements AppView {
 
     private void bindCanvas() {
         canvas.setOnCellClicked(interaction -> selectionWorkflowController.handleCellClick(
-                controls.getActiveTool(),
+                interactionState.activeTool(),
                 interaction,
                 state.currentMapId(),
                 entityCrudController::assignRoomToArea,
@@ -124,8 +137,8 @@ public class DungeonEditorView implements AppView {
         canvas.setOnLinkClicked(selectionWorkflowController::showLinkSelection);
         canvas.setBrushSizeSupplier(toolSettingsPane::getBrushSize);
         canvas.setBrushShapeSupplier(toolSettingsPane::getBrushShape);
-        canvas.setPaintModeSupplier(toolSettingsPane::getPaintMode);
-        canvas.setWallEditorModeSupplier(toolSettingsPane::getWallEditorMode);
+        canvas.setPaintModeSupplier(interactionState::paintMode);
+        canvas.setWallEditorModeSupplier(interactionState::wallEditorMode);
         canvas.setOnEdgeClicked(connectionEditingController::handleEdgeClick);
     }
 

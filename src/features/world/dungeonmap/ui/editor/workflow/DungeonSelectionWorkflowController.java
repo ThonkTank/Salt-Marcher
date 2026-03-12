@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
@@ -9,14 +9,16 @@ import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
+import features.world.dungeonmap.ui.editor.DungeonEditorInspectorContentFactory;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import ui.shell.DetailsNavigator;
 
-final class DungeonSelectionWorkflowController {
+public final class DungeonSelectionWorkflowController {
 
     @FunctionalInterface
-    interface LinkCreator {
+    public interface LinkCreator {
         void create(long mapId, long fromEndpointId, long toEndpointId);
     }
 
@@ -28,7 +30,7 @@ final class DungeonSelectionWorkflowController {
 
     private Long pendingLinkStartId;
 
-    DungeonSelectionWorkflowController(
+    public DungeonSelectionWorkflowController(
             DungeonMapPane canvas,
             DungeonToolSettingsPane toolSettingsPane,
             DungeonEditorState state
@@ -38,37 +40,37 @@ final class DungeonSelectionWorkflowController {
         this.state = state;
     }
 
-    void updateToolMode(DungeonEditorTool tool) {
+    public void updateToolMode(DungeonEditorTool tool) {
         canvas.setActiveTool(tool);
         clearPendingLink();
         toolSettingsPane.setActiveTool(tool);
     }
 
-    void cancelPendingLink() {
+    public void cancelPendingLink() {
         clearPendingLink();
     }
 
-    void setDetailsNavigator(DetailsNavigator detailsNavigator) {
+    public void setDetailsNavigator(DetailsNavigator detailsNavigator) {
         this.detailsNavigator = detailsNavigator;
     }
 
-    void setInspectorContentFactory(DungeonEditorInspectorContentFactory inspectorContentFactory) {
+    public void setInspectorContentFactory(DungeonEditorInspectorContentFactory inspectorContentFactory) {
         this.inspectorContentFactory = inspectorContentFactory;
     }
 
-    void clearSelection() {
+    public void clearSelection() {
         showSelection(DungeonSelection.none(), false);
     }
 
-    void showLinkSelection(DungeonLink link) {
+    public void showLinkSelection(DungeonLink link) {
         showSelection(DungeonSelection.link(link), false);
     }
 
-    void showEndpointSelection(DungeonEndpoint endpoint) {
+    public void showEndpointSelection(DungeonEndpoint endpoint) {
         showSelection(DungeonSelection.endpoint(endpoint), false);
     }
 
-    void handleCellClick(
+    public void handleCellClick(
             DungeonEditorTool tool,
             DungeonMapPane.CellInteraction interaction,
             Long currentMapId,
@@ -90,7 +92,7 @@ final class DungeonSelectionWorkflowController {
         }
     }
 
-    void handleEndpointClick(
+    public void handleEndpointClick(
             DungeonEditorTool tool,
             DungeonEndpoint endpoint,
             Long currentMapId,
@@ -113,56 +115,56 @@ final class DungeonSelectionWorkflowController {
         showEndpointSelection(endpoint);
     }
 
-    void selectArea(DungeonArea area) {
+    public void selectArea(DungeonArea area) {
         if (area == null) {
             return;
         }
         showSelection(DungeonSelection.area(area), true);
     }
 
-    void selectFeature(DungeonFeature feature) {
+    public void selectFeature(DungeonFeature feature) {
         if (feature == null) {
             return;
         }
         showSelection(DungeonSelection.feature(feature), true);
     }
 
-    void selectPassage(DungeonPassage passage) {
+    public void selectPassage(DungeonPassage passage) {
         if (passage == null) {
             return;
         }
         showSelection(DungeonSelection.passage(passage), false);
     }
 
-    void restoreRoomSelection(DungeonRoom room) {
+    public void restoreRoomSelection(DungeonRoom room) {
         if (room == null) {
             return;
         }
         restoreSelection(DungeonSelection.room(room));
     }
 
-    void restoreAreaSelection(DungeonArea area) {
+    public void restoreAreaSelection(DungeonArea area) {
         if (area == null) {
             return;
         }
         restoreSelection(DungeonSelection.area(area));
     }
 
-    void restoreFeatureSelection(DungeonFeature feature) {
+    public void restoreFeatureSelection(DungeonFeature feature) {
         if (feature == null) {
             return;
         }
         restoreSelection(DungeonSelection.feature(feature));
     }
 
-    void restorePassageSelection(DungeonPassage passage) {
+    public void restorePassageSelection(DungeonPassage passage) {
         if (passage == null) {
             return;
         }
         restoreSelection(DungeonSelection.passage(passage));
     }
 
-    void refreshInspectorForCurrentSelection() {
+    public void refreshInspectorForCurrentSelection() {
         if (state.currentSelection() == null) {
             return;
         }
@@ -246,7 +248,7 @@ final class DungeonSelectionWorkflowController {
         }
     }
 
-    void openSelectionInInspector(DungeonSelection selection, boolean refreshOnlyIfVisible) {
+    public void openSelectionInInspector(DungeonSelection selection, boolean refreshOnlyIfVisible) {
         if (detailsNavigator == null || inspectorContentFactory == null || selection == null) {
             return;
         }
@@ -263,7 +265,7 @@ final class DungeonSelectionWorkflowController {
         }
     }
 
-    void showWorkflowMessage(String title, String message) {
+    public void showWorkflowMessage(String title, String message) {
         toolSettingsPane.showWorkflowMessage(title, message);
     }
 

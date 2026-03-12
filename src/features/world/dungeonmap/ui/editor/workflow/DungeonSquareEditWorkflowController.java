@@ -1,57 +1,53 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
+import features.world.dungeonmap.ui.editor.DungeonEditorApplicationService;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
-import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import ui.async.UiErrorReporter;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 
-final class DungeonSquareEditWorkflowController {
+public final class DungeonSquareEditWorkflowController {
 
     private final DungeonEditorState state;
+    private final DungeonEditorInteractionState interactionState;
     private final DungeonEditorApplicationService applicationService;
     private final DungeonMapPane canvas;
-    private final DungeonEditorControls controls;
-    private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonPaintSession paintSession;
     private final DungeonWallPaintSession wallPaintSession;
     private Runnable reloadCurrentMap = () -> { };
 
-    DungeonSquareEditWorkflowController(
+    public DungeonSquareEditWorkflowController(
             DungeonEditorState state,
+            DungeonEditorInteractionState interactionState,
             DungeonEditorApplicationService applicationService,
-            DungeonMapPane canvas,
-            DungeonEditorControls controls,
-            DungeonToolSettingsPane toolSettingsPane,
-            DungeonPaintSession paintSession,
-            DungeonWallPaintSession wallPaintSession
+            DungeonMapPane canvas
     ) {
         this.state = state;
+        this.interactionState = interactionState;
         this.applicationService = applicationService;
         this.canvas = canvas;
-        this.controls = controls;
-        this.toolSettingsPane = toolSettingsPane;
-        this.paintSession = paintSession;
-        this.wallPaintSession = wallPaintSession;
+        this.paintSession = new DungeonPaintSession(canvas::previewPaint);
+        this.wallPaintSession = new DungeonWallPaintSession(canvas::previewCommittedWallEdits);
     }
 
-    void setReloadCurrentMap(Runnable reloadCurrentMap) {
+    public void setReloadCurrentMap(Runnable reloadCurrentMap) {
         this.reloadCurrentMap = reloadCurrentMap == null ? () -> { } : reloadCurrentMap;
     }
 
-    void handleCellPaint(DungeonMapPane.CellInteraction interaction) {
-        DungeonEditorTool activeTool = controls.getActiveTool() == null ? DungeonEditorTool.SELECT : controls.getActiveTool();
+    public void handleCellPaint(DungeonMapPane.CellInteraction interaction) {
+        DungeonEditorTool activeTool = interactionState.activeTool() == null ? DungeonEditorTool.SELECT : interactionState.activeTool();
         DungeonSquarePaint edit = new DungeonSquarePaint(interaction.x(), interaction.y(), activeTool.fillsSquares());
         paintSession.previewPaint(state.currentMapId(), state.currentState(), edit);
     }
 
-    void flushPendingSquareEdits() {
+    public void flushPendingSquareEdits() {
         paintSession.flushPendingPaints(
                 state.currentMapId(),
                 (mapId, edits) -> applicationService.applySquareEdits(
@@ -64,11 +60,11 @@ final class DungeonSquareEditWorkflowController {
                         }));
     }
 
-    void handleEdgePaint(DungeonMapPane.EdgeInteraction interaction) {
+    public void handleEdgePaint(DungeonMapPane.EdgeInteraction interaction) {
         if (interaction == null || state.currentMapId() == null || state.currentState() == null) {
             return;
         }
-        WallEditorMode mode = toolSettingsPane.getWallEditorMode();
+        WallEditorMode mode = interactionState.wallEditorMode();
         if (!mode.erasesWalls()) {
             return;
         }
@@ -82,7 +78,7 @@ final class DungeonSquareEditWorkflowController {
                         mode.paintsWalls()));
     }
 
-    void previewWallPaintPath(List<DungeonMapPane.EdgeInteraction> path) {
+    public void previewWallPaintPath(List<DungeonMapPane.EdgeInteraction> path) {
         if (state.currentMapId() == null || state.currentState() == null) {
             canvas.clearActiveWallPathPreview();
             return;
@@ -90,7 +86,7 @@ final class DungeonSquareEditWorkflowController {
         canvas.previewActiveWallPath(toWallEdits(path, true));
     }
 
-    void commitWallPaintPath(List<DungeonMapPane.EdgeInteraction> path) {
+    public void commitWallPaintPath(List<DungeonMapPane.EdgeInteraction> path) {
         if (state.currentMapId() == null || state.currentState() == null) {
             canvas.clearActiveWallPathPreview();
             return;
@@ -104,7 +100,7 @@ final class DungeonSquareEditWorkflowController {
         canvas.clearActiveWallPathPreview();
     }
 
-    void flushPendingWallEdits() {
+    public void flushPendingWallEdits() {
         canvas.clearActiveWallPathPreview();
         wallPaintSession.flushPendingEdits(
                 state.currentMapId(),
@@ -118,22 +114,22 @@ final class DungeonSquareEditWorkflowController {
                         }));
     }
 
-    void commitPendingSquareEdits() {
+    public void commitPendingSquareEdits() {
         flushPendingSquareEdits();
         flushPendingWallEdits();
     }
 
-    void discardPendingSquareEdits() {
+    public void discardPendingSquareEdits() {
         paintSession.discardPendingPaints();
         wallPaintSession.discardPendingEdits();
         canvas.clearActiveWallPathPreview();
     }
 
-    boolean hasPendingSquareEdits() {
+    public boolean hasPendingSquareEdits() {
         return paintSession.hasPendingPaints() || wallPaintSession.hasPendingEdits();
     }
 
-    void handleMapLoaded() {
+    public void handleMapLoaded() {
         wallPaintSession.discardPendingEdits();
         canvas.clearActiveWallPathPreview();
     }

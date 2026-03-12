@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
@@ -8,16 +8,21 @@ import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
+import features.world.dungeonmap.ui.editor.DungeonEditorApplicationService;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import ui.async.UiErrorReporter;
 
 import java.util.List;
 
-final class DungeonMapLoadingWorkflowController {
+public final class DungeonMapLoadingWorkflowController {
 
     private final DungeonEditorState state;
+    private final DungeonEditorInteractionState interactionState;
     private final DungeonEditorApplicationService applicationService;
     private final DungeonEditorControls controls;
     private final DungeonMapPane canvas;
@@ -27,8 +32,9 @@ final class DungeonMapLoadingWorkflowController {
     private Runnable onStoredEncountersChanged = () -> { };
     private Runnable onMapLoaded = () -> { };
 
-    DungeonMapLoadingWorkflowController(
+    public DungeonMapLoadingWorkflowController(
             DungeonEditorState state,
+            DungeonEditorInteractionState interactionState,
             DungeonEditorApplicationService applicationService,
             DungeonEditorControls controls,
             DungeonMapPane canvas,
@@ -36,6 +42,7 @@ final class DungeonMapLoadingWorkflowController {
             DungeonSelectionWorkflowController selectionController
     ) {
         this.state = state;
+        this.interactionState = interactionState;
         this.applicationService = applicationService;
         this.controls = controls;
         this.canvas = canvas;
@@ -43,34 +50,34 @@ final class DungeonMapLoadingWorkflowController {
         this.selectionController = selectionController;
     }
 
-    void setOnEncounterTablesChanged(Runnable onEncounterTablesChanged) {
+    public void setOnEncounterTablesChanged(Runnable onEncounterTablesChanged) {
         this.onEncounterTablesChanged = onEncounterTablesChanged == null ? () -> { } : onEncounterTablesChanged;
     }
 
-    void setOnStoredEncountersChanged(Runnable onStoredEncountersChanged) {
+    public void setOnStoredEncountersChanged(Runnable onStoredEncountersChanged) {
         this.onStoredEncountersChanged = onStoredEncountersChanged == null ? () -> { } : onStoredEncountersChanged;
     }
 
-    void setOnMapLoaded(Runnable onMapLoaded) {
+    public void setOnMapLoaded(Runnable onMapLoaded) {
         this.onMapLoaded = onMapLoaded == null ? () -> { } : onMapLoaded;
     }
 
-    void onShow() {
+    public void onShow() {
         loadEncounterTables();
         loadStoredEncounters();
         loadMapList();
     }
 
-    void reloadCurrentMap() {
+    public void reloadCurrentMap() {
         reloadCurrentMap(null);
     }
 
-    void reloadCurrentMap(DungeonSelectionRestoreRequest selectionRestoreRequest) {
+    public void reloadCurrentMap(DungeonSelectionRestoreRequest selectionRestoreRequest) {
         state.setPendingSelectionRestore(selectionRestoreRequest);
         loadMapAsync(state.currentMapId());
     }
 
-    void loadMapAsync(Long mapId) {
+    public void loadMapAsync(Long mapId) {
         if (mapId == null) {
             return;
         }
@@ -116,6 +123,8 @@ final class DungeonMapLoadingWorkflowController {
                         clearLoadedState();
                     } else {
                         toolSettingsPane.setMapLoaded(true);
+                        // Keep the toolbar selection in sync with the restored map list.
+                        // The interaction state does not own map selection.
                         controls.selectMap(mapToSelect);
                         loadMapAsync(mapToSelect);
                     }
@@ -141,7 +150,7 @@ final class DungeonMapLoadingWorkflowController {
         applyEditorState(loadedState);
     }
 
-    void autoShowForTool(DungeonEditorTool tool) {
+    public void autoShowForTool(DungeonEditorTool tool) {
         DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
         if (effectiveTool.autoShowsSelectedArea()) {
             DungeonArea area = toolSettingsPane.areaComboBox().getValue();
@@ -195,7 +204,7 @@ final class DungeonMapLoadingWorkflowController {
             return;
         }
         if (loadedState != null) {
-            autoShowForTool(controls.getActiveTool());
+            autoShowForTool(interactionState.activeTool());
         }
     }
 

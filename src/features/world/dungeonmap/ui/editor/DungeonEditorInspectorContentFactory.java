@@ -12,6 +12,7 @@ import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -33,13 +34,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-final class DungeonEditorInspectorContentFactory {
+public final class DungeonEditorInspectorContentFactory {
 
     private final DungeonEditorState state;
     private final DungeonEntityCrudController entityCrudController;
     private final DungeonConnectionEditingController connectionEditingController;
 
-    DungeonEditorInspectorContentFactory(
+    public DungeonEditorInspectorContentFactory(
             DungeonEditorState state,
             DungeonEntityCrudController entityCrudController,
             DungeonConnectionEditingController connectionEditingController
@@ -49,7 +50,7 @@ final class DungeonEditorInspectorContentFactory {
         this.connectionEditingController = connectionEditingController;
     }
 
-    Node buildRoomCard(DungeonRoom room) {
+    public Node buildRoomCard(DungeonRoom room) {
         VBox box = card();
         if (room == null) {
             box.getChildren().add(secondary("Raum nicht gefunden."));
@@ -77,7 +78,7 @@ final class DungeonEditorInspectorContentFactory {
         return box;
     }
 
-    Node buildAreaCard(DungeonArea area) {
+    public Node buildAreaCard(DungeonArea area) {
         VBox box = card();
         if (area == null) {
             box.getChildren().add(secondary("Bereich nicht gefunden."));
@@ -112,7 +113,7 @@ final class DungeonEditorInspectorContentFactory {
         return box;
     }
 
-    Node buildFeatureCard(DungeonFeature feature) {
+    public Node buildFeatureCard(DungeonFeature feature) {
         VBox box = card();
         if (feature == null) {
             box.getChildren().add(secondary("Feature nicht gefunden."));

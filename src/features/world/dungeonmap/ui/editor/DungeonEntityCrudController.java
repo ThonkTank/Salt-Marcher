@@ -8,6 +8,8 @@ import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
+import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.components.ConfirmationDropdown;
@@ -15,7 +17,7 @@ import ui.components.TextInputDropdown;
 
 import java.util.function.Consumer;
 
-final class DungeonEntityCrudController {
+public final class DungeonEntityCrudController {
 
     private final DungeonEditorState state;
     private final DungeonEditorApplicationService applicationService;
@@ -25,7 +27,7 @@ final class DungeonEntityCrudController {
     private final TextInputDropdown featureDropdown = new TextInputDropdown();
     private Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap = ignored -> { };
 
-    DungeonEntityCrudController(
+    public DungeonEntityCrudController(
             DungeonEditorState state,
             DungeonEditorApplicationService applicationService,
             DungeonToolSettingsPane toolSettingsPane
@@ -35,11 +37,11 @@ final class DungeonEntityCrudController {
         this.toolSettingsPane = toolSettingsPane;
     }
 
-    void setReloadCurrentMap(Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap) {
+    public void setReloadCurrentMap(Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap) {
         this.reloadCurrentMap = reloadCurrentMap == null ? ignored -> { } : reloadCurrentMap;
     }
 
-    void updateRoomMetadata(DungeonRoom room) {
+    public void updateRoomMetadata(DungeonRoom room) {
         if (room == null || room.roomId() == null) {
             return;
         }
@@ -51,7 +53,7 @@ final class DungeonEntityCrudController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.updateRoomMetadata()", ex));
     }
 
-    void createArea(Node anchor) {
+    public void createArea(Node anchor) {
         if (state.currentMapId() == null) {
             return;
         }
@@ -67,7 +69,7 @@ final class DungeonEntityCrudController {
         });
     }
 
-    void saveArea(DungeonArea area) {
+    public void saveArea(DungeonArea area) {
         applicationService.saveArea(
                 area,
                 areaId -> {
@@ -76,7 +78,7 @@ final class DungeonEntityCrudController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.saveArea()", ex));
     }
 
-    void deleteActiveArea(Node anchor) {
+    public void deleteActiveArea(Node anchor) {
         Long areaId = selectedAreaIdForActions();
         if (areaId != null) {
             deleteArea(areaId, anchor);
@@ -97,7 +99,7 @@ final class DungeonEntityCrudController {
                         ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.deleteArea()", ex)));
     }
 
-    void createFeature(Node anchor) {
+    public void createFeature(Node anchor) {
         if (state.currentMapId() == null) {
             return;
         }
@@ -114,7 +116,7 @@ final class DungeonEntityCrudController {
         });
     }
 
-    void saveFeature(DungeonFeature feature) {
+    public void saveFeature(DungeonFeature feature) {
         applicationService.saveFeature(
                 feature,
                 featureId -> {
@@ -123,7 +125,7 @@ final class DungeonEntityCrudController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.saveFeature()", ex));
     }
 
-    void deleteActiveFeature(Node anchor) {
+    public void deleteActiveFeature(Node anchor) {
         Long featureId = selectedFeatureIdForActions();
         if (featureId != null) {
             deleteFeature(featureId, anchor);
@@ -144,7 +146,7 @@ final class DungeonEntityCrudController {
                         ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.deleteFeature()", ex)));
     }
 
-    void addSelectedSquareToActiveFeature() {
+    public void addSelectedSquareToActiveFeature() {
         DungeonSquare square = selectedSquare();
         Long featureId = selectedFeatureIdForActions();
         if (square == null || square.squareId() == null || featureId == null) {
@@ -157,7 +159,7 @@ final class DungeonEntityCrudController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.addSelectedSquareToActiveFeature()", ex));
     }
 
-    void removeSelectedSquareFromActiveFeature() {
+    public void removeSelectedSquareFromActiveFeature() {
         DungeonSquare square = selectedSquare();
         Long featureId = selectedFeatureIdForActions();
         if (square == null || square.squareId() == null || featureId == null) {
@@ -170,7 +172,7 @@ final class DungeonEntityCrudController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.removeSelectedSquareFromActiveFeature()", ex));
     }
 
-    void assignRoomToArea(DungeonSquare square) {
+    public void assignRoomToArea(DungeonSquare square) {
         if (square == null || square.roomId() == null) {
             return;
         }

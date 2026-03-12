@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.ui.editor.state;
 
 import features.world.dungeonmap.api.DungeonEncounterSummary;
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
@@ -7,7 +7,7 @@ import features.world.dungeonmap.model.DungeonSelection;
 
 import java.util.List;
 
-final class DungeonEditorState {
+public final class DungeonEditorState {
 
     private Long currentMapId;
     private DungeonMapState currentState;
@@ -19,31 +19,31 @@ final class DungeonEditorState {
     private List<DungeonEncounterTableSummary> encounterTables = List.of();
     private List<DungeonEncounterSummary> encounters = List.of();
 
-    Long currentMapId() {
+    public Long currentMapId() {
         return currentMapId;
     }
 
-    void setCurrentMapId(Long currentMapId) {
+    public void setCurrentMapId(Long currentMapId) {
         this.currentMapId = currentMapId;
     }
 
-    DungeonMapState currentState() {
+    public DungeonMapState currentState() {
         return currentState;
     }
 
-    void setCurrentState(DungeonMapState currentState) {
+    public void setCurrentState(DungeonMapState currentState) {
         this.currentState = currentState;
     }
 
-    DungeonSelection currentSelection() {
+    public DungeonSelection currentSelection() {
         return currentSelection;
     }
 
-    void setCurrentSelection(DungeonSelection currentSelection) {
+    public void setCurrentSelection(DungeonSelection currentSelection) {
         this.currentSelection = currentSelection == null ? DungeonSelection.none() : currentSelection;
     }
 
-    void runWhileSyncingAreaSelection(Runnable action) {
+    public void runWhileSyncingAreaSelection(Runnable action) {
         syncingAreaSelection = true;
         try {
             action.run();
@@ -52,7 +52,7 @@ final class DungeonEditorState {
         }
     }
 
-    void runWhileSyncingFeatureSelection(Runnable action) {
+    public void runWhileSyncingFeatureSelection(Runnable action) {
         syncingFeatureSelection = true;
         try {
             action.run();
@@ -61,44 +61,44 @@ final class DungeonEditorState {
         }
     }
 
-    long nextLoadRequestToken() {
+    public long nextLoadRequestToken() {
         loadRequestToken += 1;
         return loadRequestToken;
     }
 
-    long loadRequestToken() {
+    public long loadRequestToken() {
         return loadRequestToken;
     }
 
-    boolean syncingAreaSelection() {
+    public boolean syncingAreaSelection() {
         return syncingAreaSelection;
     }
 
-    boolean syncingFeatureSelection() {
+    public boolean syncingFeatureSelection() {
         return syncingFeatureSelection;
     }
 
-    DungeonSelectionRestoreRequest pendingSelectionRestore() {
+    public DungeonSelectionRestoreRequest pendingSelectionRestore() {
         return pendingSelectionRestore;
     }
 
-    void setPendingSelectionRestore(DungeonSelectionRestoreRequest pendingSelectionRestore) {
+    public void setPendingSelectionRestore(DungeonSelectionRestoreRequest pendingSelectionRestore) {
         this.pendingSelectionRestore = pendingSelectionRestore;
     }
 
-    List<DungeonEncounterTableSummary> encounterTables() {
+    public List<DungeonEncounterTableSummary> encounterTables() {
         return encounterTables;
     }
 
-    void setEncounterTables(List<DungeonEncounterTableSummary> encounterTables) {
+    public void setEncounterTables(List<DungeonEncounterTableSummary> encounterTables) {
         this.encounterTables = encounterTables == null ? List.of() : List.copyOf(encounterTables);
     }
 
-    List<DungeonEncounterSummary> encounters() {
+    public List<DungeonEncounterSummary> encounters() {
         return encounters;
     }
 
-    void setEncounters(List<DungeonEncounterSummary> encounters) {
+    public void setEncounters(List<DungeonEncounterSummary> encounters) {
         this.encounters = encounters == null ? List.of() : List.copyOf(encounters);
     }
 }

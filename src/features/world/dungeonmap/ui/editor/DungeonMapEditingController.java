@@ -1,6 +1,7 @@
 package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 

@@ -6,9 +6,7 @@ import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureCategory;
-import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -47,9 +45,6 @@ public class DungeonToolSettingsPane extends VBox {
     private final Button removeTileFromFeatureButton = new Button("Ausgewähltes Feld entfernen");
 
     private final Spinner<Integer> brushSizeSpinner = new Spinner<>(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 5, 1));
-    private final ToggleGroup paintModeGroup = new ToggleGroup();
-    private final ToggleButton brushModeBtn = new ToggleButton("Pinsel");
-    private final ToggleButton selectionModeBtn = new ToggleButton("Auswahl");
     private final ToggleGroup shapeGroup = new ToggleGroup();
     private final ToggleButton squareShapeBtn = new ToggleButton("\u25a1 Viereck");
     private final ToggleButton circleShapeBtn = new ToggleButton("\u25cb Kreis");
@@ -58,7 +53,6 @@ public class DungeonToolSettingsPane extends VBox {
     private final VBox brushGroup;
     private final VBox areaGroup;
     private final VBox featureGroup;
-    private final VBox wallGroup;
     private final VBox visibilityGroup;
     private final VBox linkStatusGroup;
     private final VBox workflowMessageGroup;
@@ -75,7 +69,7 @@ public class DungeonToolSettingsPane extends VBox {
     private Consumer<DungeonFeature> onTileContextFeatureSelected;
     private Runnable onCancelLink;
     private List<DungeonFeature> knownFeatures = List.of();
-    private final ToggleGroup wallModeGroup = new ToggleGroup();
+    private boolean brushPaintModeActive = true;
 
     public DungeonToolSettingsPane() {
         getStyleClass().addAll("dungeon-sidebar-pane", "dungeon-tool-settings-pane");
@@ -130,19 +124,6 @@ public class DungeonToolSettingsPane extends VBox {
             }
         });
 
-        brushModeBtn.setToggleGroup(paintModeGroup);
-        brushModeBtn.setUserData(DungeonPaintMode.BRUSH);
-        brushModeBtn.setSelected(true);
-        selectionModeBtn.setToggleGroup(paintModeGroup);
-        selectionModeBtn.setUserData(DungeonPaintMode.SELECTION);
-        paintModeGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
-            if (newToggle == null && oldToggle != null) {
-                oldToggle.setSelected(true);
-                return;
-            }
-            updateBrushControlState();
-        });
-
         squareShapeBtn.setToggleGroup(shapeGroup);
         squareShapeBtn.setUserData(BrushShape.SQUARE);
         squareShapeBtn.setSelected(true);
@@ -158,15 +139,12 @@ public class DungeonToolSettingsPane extends VBox {
 
         brushSizeSpinner.setPrefWidth(70);
         brushSizeSpinner.setEditable(false);
-        Label modeLabel = new Label("Modus");
-        modeLabel.getStyleClass().add("text-muted");
-        HBox modeRow = new HBox(4, brushModeBtn, selectionModeBtn);
         Label brushLabel = new Label("Pinselgröße");
         brushLabel.getStyleClass().add("text-muted");
         HBox brushRow = new HBox(6, brushLabel, brushSizeSpinner);
         brushRow.setAlignment(Pos.CENTER_LEFT);
         HBox shapeRow = new HBox(4, squareShapeBtn, circleShapeBtn, diamondShapeBtn);
-        brushGroup = card("Pinsel", new VBox(6, modeLabel, modeRow, brushRow, shapeRow));
+        brushGroup = card("Pinsel", new VBox(6, brushRow, shapeRow));
 
         Label areaLabel = new Label("Aktiver Bereich");
         areaLabel.getStyleClass().add("text-muted");
@@ -174,23 +152,6 @@ public class DungeonToolSettingsPane extends VBox {
         tableLabel.getStyleClass().add("text-muted");
         HBox areaActions = actionRow(newAreaButton, deleteAreaButton);
         areaGroup = card("Bereich", new VBox(6, areaLabel, areaCombo, areaActions, tableLabel, encounterTableCombo));
-
-        ToggleButton paintWallButton = new ToggleButton(WallEditorMode.PAINT_WALL.label());
-        paintWallButton.setToggleGroup(wallModeGroup);
-        paintWallButton.setUserData(WallEditorMode.PAINT_WALL);
-        paintWallButton.setSelected(true);
-        ToggleButton eraseWallButton = new ToggleButton(WallEditorMode.ERASE_WALL.label());
-        eraseWallButton.setToggleGroup(wallModeGroup);
-        eraseWallButton.setUserData(WallEditorMode.ERASE_WALL);
-        ToggleButton passageButton = new ToggleButton(WallEditorMode.PLACE_PASSAGE.label());
-        passageButton.setToggleGroup(wallModeGroup);
-        passageButton.setUserData(WallEditorMode.PLACE_PASSAGE);
-        wallModeGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
-            if (newToggle == null && oldToggle != null) {
-                oldToggle.setSelected(true);
-            }
-        });
-        wallGroup = card("Wände", new HBox(4, paintWallButton, eraseWallButton, passageButton));
 
         Label featureCategoryLabel = new Label("Aktive Kategorie");
         featureCategoryLabel.getStyleClass().add("text-muted");
@@ -229,11 +190,10 @@ public class DungeonToolSettingsPane extends VBox {
         workflowMessageGroup.setManaged(false);
 
         VBox overviewCard = card("Werkzeug", activeToolLabel);
-        getChildren().addAll(overviewCard, workflowMessageGroup, brushGroup, areaGroup, wallGroup, featureGroup, visibilityGroup, linkStatusGroup);
+        getChildren().addAll(overviewCard, workflowMessageGroup, brushGroup, areaGroup, featureGroup, visibilityGroup, linkStatusGroup);
 
         setGroupVisible(brushGroup, false);
         setGroupVisible(areaGroup, false);
-        setGroupVisible(wallGroup, false);
         setGroupVisible(featureGroup, false);
         updateEncounterSelectionState();
         updateBrushControlState();
@@ -246,7 +206,6 @@ public class DungeonToolSettingsPane extends VBox {
         clearWorkflowMessage();
         setGroupVisible(brushGroup, effectiveTool.brushSettingsVisible());
         setGroupVisible(areaGroup, effectiveTool.areaSettingsVisible());
-        setGroupVisible(wallGroup, effectiveTool == DungeonEditorTool.PASSAGE);
         setGroupVisible(featureGroup, effectiveTool.featureSettingsVisible());
         if (effectiveTool.linkStatusVisible()) {
             linkStatusLabel.setText("Ersten Übergang klicken, dann zweiten Übergang klicken.");
@@ -284,19 +243,14 @@ public class DungeonToolSettingsPane extends VBox {
         return brushSizeSpinner.getValue();
     }
 
-    public WallEditorMode getWallEditorMode() {
-        Toggle selected = wallModeGroup.getSelectedToggle();
-        return selected == null ? WallEditorMode.PAINT_WALL : (WallEditorMode) selected.getUserData();
-    }
-
     public BrushShape getBrushShape() {
         Toggle selected = shapeGroup.getSelectedToggle();
         return selected != null ? (BrushShape) selected.getUserData() : BrushShape.SQUARE;
     }
 
-    public DungeonPaintMode getPaintMode() {
-        Toggle selected = paintModeGroup.getSelectedToggle();
-        return selected != null ? (DungeonPaintMode) selected.getUserData() : DungeonPaintMode.BRUSH;
+    public void setBrushPaintModeActive(boolean brushPaintModeActive) {
+        this.brushPaintModeActive = brushPaintModeActive;
+        updateBrushControlState();
     }
 
     public void setMapLoaded(boolean loaded) {
@@ -527,7 +481,7 @@ public class DungeonToolSettingsPane extends VBox {
     }
 
     private void updateBrushControlState() {
-        brushSizeSpinner.setDisable(getPaintMode() != DungeonPaintMode.BRUSH);
+        brushSizeSpinner.setDisable(!brushPaintModeActive);
     }
 
     private static <T> T findById(List<T> items, Long id, java.util.function.Function<T, Long> idGetter, T fallback) {

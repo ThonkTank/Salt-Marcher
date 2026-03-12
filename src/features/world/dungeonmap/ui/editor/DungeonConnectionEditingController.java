@@ -7,8 +7,11 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
+import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
+import features.world.dungeonmap.ui.editor.workflow.DungeonSelectionWorkflowController;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.components.ConfirmationDropdown;
@@ -18,24 +21,24 @@ import java.util.function.Consumer;
 final class DungeonConnectionEditingController {
 
     private final DungeonEditorState state;
+    private final DungeonEditorInteractionState interactionState;
     private final DungeonEditorApplicationService applicationService;
     private final DungeonMapPane canvas;
-    private final DungeonEditorControls controls;
     private final DungeonSelectionWorkflowController selectionController;
     private final ConfirmationDropdown confirmationDropdown = new ConfirmationDropdown();
     private Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap = ignored -> { };
 
     DungeonConnectionEditingController(
             DungeonEditorState state,
+            DungeonEditorInteractionState interactionState,
             DungeonEditorApplicationService applicationService,
             DungeonMapPane canvas,
-            DungeonEditorControls controls,
             DungeonSelectionWorkflowController selectionController
     ) {
         this.state = state;
+        this.interactionState = interactionState;
         this.applicationService = applicationService;
         this.canvas = canvas;
-        this.controls = controls;
         this.selectionController = selectionController;
     }
 
@@ -45,7 +48,7 @@ final class DungeonConnectionEditingController {
 
     void handleEndpointClick(DungeonEndpoint endpoint) {
         selectionController.handleEndpointClick(
-                controls.getActiveTool(),
+                interactionState.activeTool(),
                 endpoint,
                 state.currentMapId(),
                 (mapId, fromId, toId) -> applicationService.createLink(
@@ -57,7 +60,7 @@ final class DungeonConnectionEditingController {
     }
 
     void handleEdgeClick(DungeonMapPane.EdgeInteraction interaction) {
-        if (controls.getActiveTool() != DungeonEditorTool.PASSAGE) {
+        if (interactionState.activeTool() != DungeonEditorTool.PASSAGE) {
             return;
         }
         DungeonPassage existing = interaction.existingPassage();
