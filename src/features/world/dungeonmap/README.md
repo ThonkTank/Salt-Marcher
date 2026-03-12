@@ -10,6 +10,7 @@ Cross-feature selector/read DTOs belong in `api`, while `model` stays focused on
 The editor view is the composition root only; peer orchestration classes in `ui/editor` use the
 `*WorkflowController` suffix consistently.
 Use `paint*` naming for transient UI stroke/preview mechanics and `*SquareEdit*` naming for persisted square mutation commands.
+Dungeon square paint topology is overlap-driven, not adjacency-driven: painting isolated empty space creates a new room with walls on all exposed edges; painting empty space directly adjacent to rooms still creates a new room and only adds missing boundary walls; painting across empty space plus exactly one existing room extends that overlapped room, adding new outer walls and removing walls that become internal; painting across empty space plus multiple existing rooms merges all overlapped rooms into one room, keeping only the outer perimeter walls.
 The shell-owned upper-right inspector is the single cross-view information surface. Room, area, feature,
 endpoint, passage, stat-block, item, and similar reference content must flow through the shared
 `DetailsNavigator` so history/back/forward stays coherent for the GM. Dungeon-editor forms, tool settings,

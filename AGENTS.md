@@ -19,6 +19,10 @@ Editor controls and settings panes must be self-explanatory without helper prose
 
 Feature module APIs should expose narrow, role-specific setup methods. Do not add generic `initialize(...)` methods that bundle unrelated wiring such as shell callbacks plus async data loading.
 
+Within a feature's `service/` package, keep public feature-facing services at the package root by default. When one service concern grows into a real internal subsystem with multiple package-private collaborators and workflow state, place the public coordinator and its helpers together in a focused subpackage such as `service.topology` or `service.search` rather than leaving a flat cluster in `service/`.
+
+For dungeon room paint topology, preserve these semantics exactly: painting isolated empty space creates a new room with walls on every exposed edge; painting empty space directly adjacent to existing rooms still creates a new room and only adds missing boundary walls; painting over empty space plus exactly one existing room extends that overlapped room, adds perimeter walls on the new outer edges, and removes walls that become internal; painting over empty space plus multiple existing rooms merges every overlapped room into one room, keeps walls on the full outer perimeter, and removes walls that become internal to the merged room.
+
 Cross-feature read DTOs belong in `src/features/<feature>/api/`, not in `model/`. Keep `model/` focused on domain/editor state. For lightweight selector DTOs exposed across features, use the `*Summary` naming pattern consistently. Duplicate payload shapes only at explicit boundary adapters such as `application/ports`; avoid redefining the same read DTO in repository, service, model, and API layers without a boundary reason.
 
 ## Testing Guidelines

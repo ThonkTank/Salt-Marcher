@@ -2,7 +2,6 @@ package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
-import features.world.dungeonmap.service.DungeonTopologyReconcileContext;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
@@ -22,7 +21,6 @@ final class DungeonSquareEditWorkflowController {
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonPaintSession paintSession;
     private final DungeonWallPaintSession wallPaintSession;
-    private final DungeonTopologyContextFactory topologyContextFactory = new DungeonTopologyContextFactory();
     private Runnable reloadCurrentMap = () -> { };
 
     DungeonSquareEditWorkflowController(
@@ -59,7 +57,6 @@ final class DungeonSquareEditWorkflowController {
                 (mapId, edits) -> applicationService.applySquareEdits(
                         mapId,
                         edits,
-                        reconcileContextForSquareEdits(edits),
                         reloadCurrentMap,
                         ex -> {
                             UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflowController.flushPendingSquareEdits()", ex);
@@ -114,7 +111,6 @@ final class DungeonSquareEditWorkflowController {
                 (mapId, edits) -> applicationService.applyWallEdits(
                         mapId,
                         edits,
-                        reconcileContextForWallEdits(edits),
                         reloadCurrentMap,
                         ex -> {
                             UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflowController.flushPendingWallEdits()", ex);
@@ -161,17 +157,4 @@ final class DungeonSquareEditWorkflowController {
         return List.copyOf(deduped.values());
     }
 
-    private DungeonTopologyReconcileContext reconcileContextForSquareEdits(List<DungeonSquarePaint> edits) {
-        if (state.currentState() == null) {
-            return DungeonTopologyReconcileContext.empty();
-        }
-        return topologyContextFactory.forSquareEdits(state.currentState().squares(), edits);
-    }
-
-    private DungeonTopologyReconcileContext reconcileContextForWallEdits(List<DungeonWallEdit> edits) {
-        if (state.currentState() == null) {
-            return DungeonTopologyReconcileContext.empty();
-        }
-        return topologyContextFactory.forWallEdits(state.currentState().squares(), edits);
-    }
 }

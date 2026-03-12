@@ -22,6 +22,7 @@ import features.world.dungeonmap.repository.DungeonRoomRepository;
 import features.world.dungeonmap.repository.DungeonSquareRepository;
 import features.world.dungeonmap.repository.DungeonWallRepository;
 import features.world.dungeonmap.service.adapter.DungeonCampaignStateAdapter;
+import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -80,15 +81,14 @@ public final class DungeonMapEditorService {
 
     public static void applySquareEditsAndReconcileState(
             long mapId,
-            List<DungeonSquarePaint> edits,
-            DungeonTopologyReconcileContext reconcileContext
+            List<DungeonSquarePaint> edits
     ) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
             boolean previousAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try {
                 clearInvalidActiveEndpointAfterEdits(conn, mapId, edits);
-                DungeonTopologyService.applySquareEdits(conn, mapId, edits, reconcileContext);
+                DungeonTopologyService.applySquareEdits(conn, mapId, edits);
                 conn.commit();
             } catch (SQLException ex) {
                 conn.rollback();
@@ -271,15 +271,14 @@ public final class DungeonMapEditorService {
 
     public static void applyWallEdits(
             long mapId,
-            List<DungeonWallEdit> edits,
-            DungeonTopologyReconcileContext reconcileContext
+            List<DungeonWallEdit> edits
     ) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
             boolean previousAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try {
                 deletePassagesReplacedByWalls(conn, mapId, edits);
-                DungeonTopologyService.applyWallEdits(conn, mapId, edits, reconcileContext);
+                DungeonTopologyService.applyWallEdits(conn, mapId, edits);
                 conn.commit();
             } catch (SQLException | RuntimeException ex) {
                 conn.rollback();
