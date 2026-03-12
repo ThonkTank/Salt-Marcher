@@ -148,7 +148,7 @@ final class RoomTopologyReconciler {
             return;
         }
 
-        List<RoomComponent> components = buildRoomComponents(squares, workspace.wallsByEdge());
+        List<RoomComponent> components = buildRoomComponents(squares, workspace.wallsByEdge(), workspace.passageEdges());
         Map<Long, Integer> largestComponentByRoomId = findLargestComponentByRoom(components, intent);
         int nextDefaultRoomNumber = PaintedSquareRoomAssigner.nextDefaultRoomNumber(rooms);
         Set<Long> retainedRoomIds = new HashSet<>();
@@ -329,7 +329,11 @@ final class RoomTopologyReconciler {
         return left.equals(right);
     }
 
-    private static List<RoomComponent> buildRoomComponents(List<DungeonSquare> squares, Map<String, DungeonWall> wallsByEdge) {
+    private static List<RoomComponent> buildRoomComponents(
+            List<DungeonSquare> squares,
+            Map<String, DungeonWall> wallsByEdge,
+            Set<String> passageEdges
+    ) {
         Map<String, DungeonSquare> squaresByCoord = new HashMap<>();
         for (DungeonSquare square : squares) {
             squaresByCoord.put(TopologyWorkspace.coordKey(square.x(), square.y()), square);
@@ -355,10 +359,10 @@ final class RoomTopologyReconciler {
                     roomIds.add(current.roomId());
                     roomSquareCounts.merge(current.roomId(), 1, Integer::sum);
                 }
-                enqueueRoomNeighbor(current, current.x() + 1, current.y(), squaresByCoord, wallsByEdge, visited, queue);
-                enqueueRoomNeighbor(current, current.x() - 1, current.y(), squaresByCoord, wallsByEdge, visited, queue);
-                enqueueRoomNeighbor(current, current.x(), current.y() + 1, squaresByCoord, wallsByEdge, visited, queue);
-                enqueueRoomNeighbor(current, current.x(), current.y() - 1, squaresByCoord, wallsByEdge, visited, queue);
+                enqueueRoomNeighbor(current, current.x() + 1, current.y(), squaresByCoord, wallsByEdge, passageEdges, visited, queue);
+                enqueueRoomNeighbor(current, current.x() - 1, current.y(), squaresByCoord, wallsByEdge, passageEdges, visited, queue);
+                enqueueRoomNeighbor(current, current.x(), current.y() + 1, squaresByCoord, wallsByEdge, passageEdges, visited, queue);
+                enqueueRoomNeighbor(current, current.x(), current.y() - 1, squaresByCoord, wallsByEdge, passageEdges, visited, queue);
             }
             int minX = Integer.MAX_VALUE;
             int minY = Integer.MAX_VALUE;
@@ -379,11 +383,12 @@ final class RoomTopologyReconciler {
             int neighborY,
             Map<String, DungeonSquare> squaresByCoord,
             Map<String, DungeonWall> wallsByEdge,
+            Set<String> passageEdges,
             Set<String> visited,
             Deque<DungeonSquare> queue
     ) {
         DungeonSquare neighbor = squaresByCoord.get(TopologyWorkspace.coordKey(neighborX, neighborY));
-        if (neighbor == null || wallSeparates(current.x(), current.y(), neighborX, neighborY, wallsByEdge)) {
+        if (neighbor == null || edgeSeparates(current.x(), current.y(), neighborX, neighborY, wallsByEdge, passageEdges)) {
             return;
         }
         String key = TopologyWorkspace.coordKey(neighborX, neighborY);
@@ -392,13 +397,22 @@ final class RoomTopologyReconciler {
         }
     }
 
-    private static boolean wallSeparates(int x1, int y1, int x2, int y2, Map<String, DungeonWall> wallsByEdge) {
+    private static boolean edgeSeparates(
+            int x1,
+            int y1,
+            int x2,
+            int y2,
+            Map<String, DungeonWall> wallsByEdge,
+            Set<String> passageEdges
+    ) {
         if (x1 == x2) {
             int minY = Math.min(y1, y2);
-            return wallsByEdge.containsKey(PassageDirection.SOUTH.edgeKey(x1, minY));
+            String edgeKey = PassageDirection.SOUTH.edgeKey(x1, minY);
+            return wallsByEdge.containsKey(edgeKey) || passageEdges.contains(edgeKey);
         }
         int minX = Math.min(x1, x2);
-        return wallsByEdge.containsKey(PassageDirection.EAST.edgeKey(minX, y1));
+        String edgeKey = PassageDirection.EAST.edgeKey(minX, y1);
+        return wallsByEdge.containsKey(edgeKey) || passageEdges.contains(edgeKey);
     }
 
     private static Map<Long, Integer> findLargestComponentByRoom(

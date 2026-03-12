@@ -250,7 +250,6 @@ public final class DungeonMapEditorService {
             conn.setAutoCommit(false);
             try {
                 DungeonTopologyService.validatePassageForSave(conn, passage);
-                deleteWallAtEdge(conn, passage.mapId(), passage.x(), passage.y(), passage.direction());
                 long passageId = DungeonPassageRepository.upsertPassage(conn, passage);
                 conn.commit();
                 return passageId;
@@ -348,7 +347,4 @@ public final class DungeonMapEditorService {
         }
     }
 
-    private static void deleteWallAtEdge(Connection conn, long mapId, int x, int y, features.world.dungeonmap.model.PassageDirection direction) throws SQLException {
-        DungeonWallRepository.applyWallEdits(conn, mapId, List.of(new DungeonWallEdit(x, y, direction, false)));
-    }
 }

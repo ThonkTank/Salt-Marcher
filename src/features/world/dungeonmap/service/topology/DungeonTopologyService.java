@@ -63,8 +63,8 @@ public final class DungeonTopologyService {
             throw new IllegalArgumentException("Passage edge is no longer valid for map " + passage.mapId());
         }
         // Same invariant as DungeonPassageRepository.deleteInvalidPassages(): passages only exist on wall edges.
-        if (passage.passageId() == null && !wallExists(conn, passage.mapId(), passage.x(), passage.y(), passage.direction())) {
-            throw new IllegalArgumentException("New passages require an existing wall on map " + passage.mapId());
+        if (!wallExists(conn, passage.mapId(), passage.x(), passage.y(), passage.direction())) {
+            throw new IllegalArgumentException("Passages require an existing wall on map " + passage.mapId());
         }
         if (passage.endpointId() == null) {
             return;

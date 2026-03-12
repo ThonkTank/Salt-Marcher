@@ -267,14 +267,25 @@ final class DungeonGridRenderer {
         DungeonWall wall = model.wallsByEdge().get(edgeKey);
         DungeonPassage passage = model.passagesByEdge().get(edgeKey);
         boolean interiorEdge = secondSideFilled;
+        if (passage != null) {
+            drawPassageEdge(gc, ax, ay, bx, by, horizontal);
+            return;
+        }
         if (!interiorEdge || wall != null) {
             gc.setStroke(WALL_COLOR);
             gc.strokeLine(ax, ay, bx, by);
             return;
         }
-        if (passage == null) {
-            return;
-        }
+    }
+
+    private void drawPassageEdge(
+            GraphicsContext gc,
+            double ax,
+            double ay,
+            double bx,
+            double by,
+            boolean horizontal
+    ) {
         double gapStart = 0.30;
         double gapEnd = 0.70;
         if (horizontal) {
