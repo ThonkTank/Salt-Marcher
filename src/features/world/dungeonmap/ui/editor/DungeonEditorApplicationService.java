@@ -8,11 +8,11 @@ import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
-import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.service.DungeonMapQueryService;
+import features.world.dungeonmap.service.DungeonTopologyReconcileContext;
 import features.world.dungeonmap.service.adapter.DungeonEncounterCatalogAdapter;
 import features.world.dungeonmap.service.adapter.DungeonEncounterTableCatalogAdapter;
 import javafx.concurrent.Task;
@@ -52,26 +52,18 @@ public final class DungeonEditorApplicationService {
         submitAction(() -> DungeonMapEditorService.deleteMap(mapId), onSuccess, onError);
     }
 
-    public void applySquareEdits(long mapId, List<DungeonSquarePaint> edits, Runnable onSuccess, Consumer<Throwable> onError) {
-        submitAction(() -> DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits), onSuccess, onError);
-    }
-
     public void applySquareEdits(
             long mapId,
             List<DungeonSquarePaint> edits,
-            List<Long> preferredPrimaryRoomIds,
+            DungeonTopologyReconcileContext reconcileContext,
             Runnable onSuccess,
             Consumer<Throwable> onError
     ) {
-        submitAction(() -> DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits, preferredPrimaryRoomIds), onSuccess, onError);
+        submitAction(() -> DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits, reconcileContext), onSuccess, onError);
     }
 
-    public void saveRoom(DungeonRoom room, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
-        submitValue(() -> DungeonMapEditorService.saveRoom(room), onSuccess, onError);
-    }
-
-    public void deleteRoom(long roomId, Runnable onSuccess, Consumer<Throwable> onError) {
-        submitAction(() -> DungeonMapEditorService.deleteRoom(roomId), onSuccess, onError);
+    public void updateRoomMetadata(long roomId, String name, String description, Runnable onSuccess, Consumer<Throwable> onError) {
+        submitAction(() -> DungeonMapEditorService.updateRoomMetadata(roomId, name, description), onSuccess, onError);
     }
 
     public void saveArea(DungeonArea area, Consumer<Long> onSuccess, Consumer<Throwable> onError) {
@@ -136,18 +128,14 @@ public final class DungeonEditorApplicationService {
         submitAction(() -> DungeonMapEditorService.deletePassage(passageId), onSuccess, onError);
     }
 
-    public void applyWallEdits(long mapId, List<DungeonWallEdit> edits, Runnable onSuccess, Consumer<Throwable> onError) {
-        submitAction(() -> DungeonMapEditorService.applyWallEdits(mapId, edits), onSuccess, onError);
-    }
-
     public void applyWallEdits(
             long mapId,
             List<DungeonWallEdit> edits,
-            List<Long> preferredPrimaryRoomIds,
+            DungeonTopologyReconcileContext reconcileContext,
             Runnable onSuccess,
             Consumer<Throwable> onError
     ) {
-        submitAction(() -> DungeonMapEditorService.applyWallEdits(mapId, edits, preferredPrimaryRoomIds), onSuccess, onError);
+        submitAction(() -> DungeonMapEditorService.applyWallEdits(mapId, edits, reconcileContext), onSuccess, onError);
     }
 
     private <T> void submitValue(Callable<T> action, Consumer<T> onSuccess, Consumer<Throwable> onError) {

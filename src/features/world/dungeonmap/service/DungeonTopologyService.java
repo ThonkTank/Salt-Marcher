@@ -44,19 +44,20 @@ public final class DungeonTopologyService {
         throw new AssertionError("No instances");
     }
 
-    public static void applySquareEdits(Connection conn, long mapId, List<DungeonSquarePaint> edits) throws SQLException {
-        applySquareEdits(conn, mapId, edits, List.of());
-    }
-
-    public static void applySquareEdits(Connection conn, long mapId, List<DungeonSquarePaint> edits, List<Long> preferredPrimaryRoomIds)
+    public static void applySquareEdits(
+            Connection conn,
+            long mapId,
+            List<DungeonSquarePaint> edits,
+            DungeonTopologyReconcileContext reconcileContext
+    )
             throws SQLException {
         DungeonSquareRepository.applySquareEdits(conn, mapId, edits);
-        reconcileAfterGeometryChange(conn, mapId, preferredPrimaryRoomIds);
+        reconcileAfterGeometryChange(conn, mapId, reconcileContext);
     }
 
     public static void shrinkMap(Connection conn, long mapId, int width, int height) throws SQLException {
         DungeonMapRepository.deleteSquaresOutsideBounds(conn, mapId, width, height);
-        reconcileAfterGeometryChange(conn, mapId, List.of());
+        reconcileAfterGeometryChange(conn, mapId, DungeonTopologyReconcileContext.empty());
     }
 
     public static void validatePassageForSave(Connection conn, DungeonPassage passage) throws SQLException {
@@ -79,11 +80,12 @@ public final class DungeonTopologyService {
         DungeonPassageRepository.deleteInvalidPassages(conn, mapId);
     }
 
-    public static void applyWallEdits(Connection conn, long mapId, List<DungeonWallEdit> edits) throws SQLException {
-        applyWallEdits(conn, mapId, edits, List.of());
-    }
-
-    public static void applyWallEdits(Connection conn, long mapId, List<DungeonWallEdit> edits, List<Long> preferredPrimaryRoomIds)
+    public static void applyWallEdits(
+            Connection conn,
+            long mapId,
+            List<DungeonWallEdit> edits,
+            DungeonTopologyReconcileContext reconcileContext
+    )
             throws SQLException {
         for (DungeonWallEdit edit : edits) {
             if (!isWallEdgeValid(conn, mapId, edit.x(), edit.y(), edit.direction())) {
@@ -91,7 +93,7 @@ public final class DungeonTopologyService {
             }
         }
         DungeonWallRepository.applyWallEdits(conn, mapId, edits);
-        reconcileAfterGeometryChange(conn, mapId, preferredPrimaryRoomIds);
+        reconcileAfterGeometryChange(conn, mapId, reconcileContext);
     }
 
     public static void validateFeatureFootprintConnected(List<DungeonFeatureTile> featureTiles) {
@@ -119,14 +121,14 @@ public final class DungeonTopologyService {
         }
     }
 
-    private static void reconcileAfterGeometryChange(Connection conn, long mapId, List<Long> preferredPrimaryRoomIds) throws SQLException {
+    private static void reconcileAfterGeometryChange(Connection conn, long mapId, DungeonTopologyReconcileContext reconcileContext) throws SQLException {
         deleteInvalidPassages(conn, mapId);
         DungeonWallRepository.deleteInvalidWalls(conn, mapId);
         DungeonFeatureRepository.deleteEmptyFeatures(conn, mapId);
-        reconcileRooms(conn, mapId, preferredPrimaryRoomIds == null ? List.of() : preferredPrimaryRoomIds);
+        reconcileRooms(conn, mapId, reconcileContext == null ? DungeonTopologyReconcileContext.empty() : reconcileContext);
     }
 
-    private static void reconcileRooms(Connection conn, long mapId, List<Long> preferredPrimaryRoomIds) throws SQLException {
+    private static void reconcileRooms(Connection conn, long mapId, DungeonTopologyReconcileContext reconcileContext) throws SQLException {
         List<DungeonSquare> squares = DungeonSquareRepository.getSquares(conn, mapId);
         List<DungeonRoom> rooms = DungeonRoomRepository.getRooms(conn, mapId);
         Map<Long, DungeonRoom> roomsById = new HashMap<>();
@@ -146,25 +148,25 @@ public final class DungeonTopologyService {
         }
 
         List<RoomComponent> components = buildRoomComponents(squares, wallsByEdge);
-        Map<Long, Integer> largestComponentByRoomId = findLargestComponentByRoom(components);
+        Map<Long, Integer> largestComponentByRoomId = findLargestComponentByRoom(components, reconcileContext);
         int nextDefaultRoomNumber = nextDefaultRoomNumber(rooms);
         Set<Long> retainedRoomIds = new HashSet<>();
 
         for (RoomComponent component : components) {
             List<Long> retainableRoomIds = retainableRoomIds(component, largestComponentByRoomId);
-            Long primaryRoomId = selectPrimaryRoomId(retainableRoomIds, component.roomSquareCounts(), preferredPrimaryRoomIds);
+            Long primaryRoomId = selectPrimaryRoomId(retainableRoomIds, component.roomSquareCounts(), reconcileContext);
             Long targetRoomId;
             if (primaryRoomId != null) {
                 retainedRoomIds.add(primaryRoomId);
                 targetRoomId = primaryRoomId;
-                updatePrimaryRoom(conn, component, primaryRoomId, largestComponentByRoomId, roomsById, preferredPrimaryRoomIds);
+                updatePrimaryRoom(conn, component, primaryRoomId, largestComponentByRoomId, roomsById, reconcileContext);
             } else {
-                DungeonRoom templateRoom = selectTemplateRoom(component, roomsById, preferredPrimaryRoomIds);
+                DungeonRoom templateRoom = selectTemplateRoom(component, roomsById, reconcileContext);
                 DungeonRoom newRoom = new DungeonRoom(
                         null,
                         mapId,
                         "Raum #" + nextDefaultRoomNumber++,
-                        "",
+                        templateRoom == null ? "" : coalesceText(templateRoom.description()),
                         templateRoom == null ? null : templateRoom.areaId());
                 targetRoomId = DungeonRoomRepository.upsertRoom(conn, newRoom);
             }
@@ -189,16 +191,17 @@ public final class DungeonTopologyService {
             long primaryRoomId,
             Map<Long, Integer> largestComponentByRoomId,
             Map<Long, DungeonRoom> roomsById,
-            List<Long> preferredPrimaryRoomIds
+            DungeonTopologyReconcileContext reconcileContext
     ) throws SQLException {
         DungeonRoom primaryRoom = roomsById.get(primaryRoomId);
         if (primaryRoom == null) {
             return;
         }
 
-        List<DungeonRoom> mergedRooms = mergedRooms(component, primaryRoomId, largestComponentByRoomId, roomsById, preferredPrimaryRoomIds);
+        List<DungeonRoom> mergedRooms = mergedRooms(component, primaryRoomId, largestComponentByRoomId, roomsById, reconcileContext);
         String mergedDescription = mergeDescriptions(primaryRoom.description(), mergedRooms);
-        if (sameText(primaryRoom.description(), mergedDescription)) {
+        Long mergedAreaId = mergeAreaAssignment(primaryRoom.areaId(), mergedRooms);
+        if (sameText(primaryRoom.description(), mergedDescription) && sameNullableId(primaryRoom.areaId(), mergedAreaId)) {
             return;
         }
         DungeonRoomRepository.upsertRoom(conn, new DungeonRoom(
@@ -206,7 +209,7 @@ public final class DungeonTopologyService {
                 primaryRoom.mapId(),
                 primaryRoom.name(),
                 mergedDescription,
-                primaryRoom.areaId()));
+                mergedAreaId));
     }
 
     private static List<DungeonRoom> mergedRooms(
@@ -214,7 +217,7 @@ public final class DungeonTopologyService {
             long primaryRoomId,
             Map<Long, Integer> largestComponentByRoomId,
             Map<Long, DungeonRoom> roomsById,
-            List<Long> preferredPrimaryRoomIds
+            DungeonTopologyReconcileContext reconcileContext
     ) {
         List<Long> mergedRoomIds = new ArrayList<>();
         for (Long roomId : component.roomIds()) {
@@ -225,7 +228,7 @@ public final class DungeonTopologyService {
                 mergedRoomIds.add(roomId);
             }
         }
-        mergedRoomIds.sort(roomMergeComparator(component.roomSquareCounts(), preferredPrimaryRoomIds));
+        mergedRoomIds.sort(roomMergeComparator(component.roomSquareCounts(), reconcileContext));
 
         List<DungeonRoom> result = new ArrayList<>();
         for (Long roomId : mergedRoomIds) {
@@ -237,8 +240,8 @@ public final class DungeonTopologyService {
         return result;
     }
 
-    private static Comparator<Long> roomMergeComparator(Map<Long, Integer> roomSquareCounts, List<Long> preferredPrimaryRoomIds) {
-        Map<Long, Integer> preferredOrder = preferredOrder(preferredPrimaryRoomIds);
+    private static Comparator<Long> roomMergeComparator(Map<Long, Integer> roomSquareCounts, DungeonTopologyReconcileContext reconcileContext) {
+        Map<Long, Integer> preferredOrder = preferredOrder(reconcileContext);
         return Comparator
                 .comparingInt((Long roomId) -> preferredOrder.getOrDefault(roomId, Integer.MAX_VALUE))
                 .thenComparing((Long roomId) -> -roomSquareCounts.getOrDefault(roomId, 0))
@@ -262,12 +265,32 @@ public final class DungeonTopologyService {
         return parts.isEmpty() ? "" : String.join("\n\n", parts);
     }
 
+    private static Long mergeAreaAssignment(Long primaryAreaId, List<DungeonRoom> mergedRooms) {
+        if (primaryAreaId != null) {
+            return primaryAreaId;
+        }
+        Long resolvedAreaId = null;
+        for (DungeonRoom room : mergedRooms) {
+            if (room == null || room.areaId() == null) {
+                continue;
+            }
+            if (resolvedAreaId == null) {
+                resolvedAreaId = room.areaId();
+                continue;
+            }
+            if (!resolvedAreaId.equals(room.areaId())) {
+                return null;
+            }
+        }
+        return resolvedAreaId;
+    }
+
     private static DungeonRoom selectTemplateRoom(
             RoomComponent component,
             Map<Long, DungeonRoom> roomsById,
-            List<Long> preferredPrimaryRoomIds
+            DungeonTopologyReconcileContext reconcileContext
     ) {
-        Long templateRoomId = selectPreferredRoomId(List.copyOf(component.roomIds()), component.roomSquareCounts(), preferredPrimaryRoomIds);
+        Long templateRoomId = selectPreferredRoomId(List.copyOf(component.roomIds()), component.roomSquareCounts(), reconcileContext);
         if (templateRoomId == null) {
             return null;
         }
@@ -277,20 +300,20 @@ public final class DungeonTopologyService {
     private static Long selectPrimaryRoomId(
             List<Long> retainableRoomIds,
             Map<Long, Integer> roomSquareCounts,
-            List<Long> preferredPrimaryRoomIds
+            DungeonTopologyReconcileContext reconcileContext
     ) {
-        return selectPreferredRoomId(retainableRoomIds, roomSquareCounts, preferredPrimaryRoomIds);
+        return selectPreferredRoomId(retainableRoomIds, roomSquareCounts, reconcileContext);
     }
 
     private static Long selectPreferredRoomId(
             List<Long> candidateRoomIds,
             Map<Long, Integer> roomSquareCounts,
-            List<Long> preferredPrimaryRoomIds
+            DungeonTopologyReconcileContext reconcileContext
     ) {
         if (candidateRoomIds == null || candidateRoomIds.isEmpty()) {
             return null;
         }
-        Map<Long, Integer> preferredOrder = preferredOrder(preferredPrimaryRoomIds);
+        Map<Long, Integer> preferredOrder = preferredOrder(reconcileContext);
         Long selected = null;
         for (Long roomId : candidateRoomIds) {
             if (roomId == null) {
@@ -317,11 +340,12 @@ public final class DungeonTopologyService {
         return selected;
     }
 
-    private static Map<Long, Integer> preferredOrder(List<Long> preferredPrimaryRoomIds) {
+    private static Map<Long, Integer> preferredOrder(DungeonTopologyReconcileContext reconcileContext) {
         Map<Long, Integer> order = new HashMap<>();
-        if (preferredPrimaryRoomIds == null) {
+        if (reconcileContext == null) {
             return order;
         }
+        List<Long> preferredPrimaryRoomIds = reconcileContext.primaryRoomPriority();
         for (int i = 0; i < preferredPrimaryRoomIds.size(); i++) {
             Long roomId = preferredPrimaryRoomIds.get(i);
             if (roomId != null) {
@@ -341,7 +365,10 @@ public final class DungeonTopologyService {
         return result;
     }
 
-    private static Map<Long, Integer> findLargestComponentByRoom(List<RoomComponent> components) {
+    private static Map<Long, Integer> findLargestComponentByRoom(
+            List<RoomComponent> components,
+            DungeonTopologyReconcileContext reconcileContext
+    ) {
         Map<Long, Integer> result = new HashMap<>();
         Map<Long, Integer> bestSizeByRoom = new HashMap<>();
         for (RoomComponent component : components) {
@@ -350,7 +377,7 @@ public final class DungeonTopologyService {
                 if (roomId == null) {
                     continue;
                 }
-                int componentSize = component.squares().size();
+                int componentSize = entry.getValue();
                 int currentBestSize = bestSizeByRoom.getOrDefault(roomId, -1);
                 if (componentSize > currentBestSize) {
                     bestSizeByRoom.put(roomId, componentSize);
@@ -359,13 +386,46 @@ public final class DungeonTopologyService {
                 }
                 if (componentSize == currentBestSize) {
                     int currentBestIndex = result.get(roomId);
-                    if (component.index() < currentBestIndex) {
+                    RoomComponent currentBestComponent = components.get(currentBestIndex);
+                    if (componentWinsTie(component, currentBestComponent, reconcileContext)) {
                         result.put(roomId, component.index());
                     }
                 }
             }
         }
         return result;
+    }
+
+    private static boolean componentWinsTie(
+            RoomComponent candidate,
+            RoomComponent currentBest,
+            DungeonTopologyReconcileContext reconcileContext
+    ) {
+        int candidateEditedOrder = firstEditedCellOrder(candidate, reconcileContext);
+        int currentEditedOrder = firstEditedCellOrder(currentBest, reconcileContext);
+        if (candidateEditedOrder != currentEditedOrder) {
+            return candidateEditedOrder < currentEditedOrder;
+        }
+        if (candidate.minY() != currentBest.minY()) {
+            return candidate.minY() < currentBest.minY();
+        }
+        if (candidate.minX() != currentBest.minX()) {
+            return candidate.minX() < currentBest.minX();
+        }
+        return candidate.index() < currentBest.index();
+    }
+
+    private static int firstEditedCellOrder(RoomComponent component, DungeonTopologyReconcileContext reconcileContext) {
+        if (reconcileContext == null || reconcileContext.componentPriorityCells().isEmpty()) {
+            return Integer.MAX_VALUE;
+        }
+        for (int i = 0; i < reconcileContext.componentPriorityCells().size(); i++) {
+            DungeonTopologyReconcileContext.EditedCell editedCell = reconcileContext.componentPriorityCells().get(i);
+            if (component.contains(editedCell.x(), editedCell.y())) {
+                return i;
+            }
+        }
+        return Integer.MAX_VALUE;
     }
 
     private static List<RoomComponent> buildRoomComponents(List<DungeonSquare> squares, Map<String, DungeonWall> wallsByEdge) {
@@ -399,7 +459,15 @@ public final class DungeonTopologyService {
                 enqueueRoomNeighbor(current, current.x(), current.y() + 1, squaresByCoord, wallsByEdge, visited, queue);
                 enqueueRoomNeighbor(current, current.x(), current.y() - 1, squaresByCoord, wallsByEdge, visited, queue);
             }
-            components.add(new RoomComponent(componentIndex++, componentSquares, roomSquareCounts, roomIds));
+            int minX = Integer.MAX_VALUE;
+            int minY = Integer.MAX_VALUE;
+            Set<String> squareCoords = new HashSet<>();
+            for (DungeonSquare square : componentSquares) {
+                minX = Math.min(minX, square.x());
+                minY = Math.min(minY, square.y());
+                squareCoords.add(coordKey(square.x(), square.y()));
+            }
+            components.add(new RoomComponent(componentIndex++, componentSquares, roomSquareCounts, roomIds, squareCoords, minX, minY));
         }
         return components;
     }
@@ -458,6 +526,10 @@ public final class DungeonTopologyService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private static String coalesceText(String value) {
+        return value == null ? "" : value;
+    }
+
     private static boolean sameText(String left, String right) {
         String normalizedLeft = normalizedText(left);
         String normalizedRight = normalizedText(right);
@@ -468,6 +540,16 @@ public final class DungeonTopologyService {
             return false;
         }
         return normalizedLeft.equals(normalizedRight);
+    }
+
+    private static boolean sameNullableId(Long left, Long right) {
+        if (left == null && right == null) {
+            return true;
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        return left.equals(right);
     }
 
     private static boolean isPassageEdgeValid(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
@@ -533,7 +615,13 @@ public final class DungeonTopologyService {
             int index,
             List<DungeonSquare> squares,
             Map<Long, Integer> roomSquareCounts,
-            Set<Long> roomIds
+            Set<Long> roomIds,
+            Set<String> squareCoords,
+            int minX,
+            int minY
     ) {
+        private boolean contains(int x, int y) {
+            return squareCoords.contains(coordKey(x, y));
+        }
     }
 }

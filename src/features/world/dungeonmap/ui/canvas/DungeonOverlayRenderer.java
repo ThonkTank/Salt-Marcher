@@ -8,7 +8,6 @@ import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
-import features.world.dungeonmap.model.DungeonSquare;
 import javafx.scene.input.MouseButton;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
@@ -361,20 +360,14 @@ final class DungeonOverlayRenderer {
             Long roomId = entry.getKey();
             Label label = entry.getValue();
             DungeonRoom room = model.roomsById().get(roomId);
-            java.util.List<DungeonSquare> squares = model.squaresByRoomId().get(roomId);
-            if (room == null || squares == null || squares.isEmpty()) {
+            DungeonCanvasModel.RoomLabelAnchor anchor = model.roomLabelAnchors().get(roomId);
+            if (room == null || anchor == null || anchor.squareCount() == 0) {
                 label.setVisible(false);
                 label.setManaged(false);
                 continue;
             }
-            double centerX = 0;
-            double centerY = 0;
-            for (DungeonSquare square : squares) {
-                centerX += viewport.screenCenterX(square.x());
-                centerY += viewport.screenCenterY(square.y());
-            }
-            centerX /= squares.size();
-            centerY /= squares.size();
+            double centerX = viewport.screenCenterX(anchor.x());
+            double centerY = viewport.screenCenterY(anchor.y());
             label.setText(room.name() == null || room.name().isBlank() ? "Raum" : room.name());
             double width = label.prefWidth(-1);
             double height = label.prefHeight(width);

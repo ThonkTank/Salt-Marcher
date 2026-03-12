@@ -97,6 +97,16 @@ public final class DungeonRoomRepository {
         }
     }
 
+    public static void updateRoomMetadata(Connection conn, long roomId, String name, String description) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "UPDATE dungeon_rooms SET name=?, description=? WHERE room_id=?")) {
+            ps.setString(1, name);
+            ps.setString(2, description);
+            ps.setLong(3, roomId);
+            ps.executeUpdate();
+        }
+    }
+
     private static Long getNullableLong(ResultSet rs, String column) throws SQLException {
         long value = rs.getLong(column);
         return rs.wasNull() ? null : value;

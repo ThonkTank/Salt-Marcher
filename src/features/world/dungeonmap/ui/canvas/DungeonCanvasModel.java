@@ -16,6 +16,8 @@ import features.world.dungeonmap.model.PassageDirection;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 final class DungeonCanvasModel {
 
@@ -33,6 +35,7 @@ final class DungeonCanvasModel {
     private final Map<String, java.util.List<DungeonFeatureTile>> featureTilesByCoord = new HashMap<>();
     private final Map<Long, java.util.List<DungeonFeatureTile>> featureTilesByFeatureId = new HashMap<>();
     private final Map<Long, java.util.List<DungeonSquare>> squaresByRoomId = new HashMap<>();
+    private final Map<Long, RoomLabelAnchor> roomLabelAnchors = new HashMap<>();
 
     private DungeonMapState state;
     private DungeonSelection selection = DungeonSelection.none();
@@ -66,6 +69,7 @@ final class DungeonCanvasModel {
         featureTilesByCoord.clear();
         featureTilesByFeatureId.clear();
         squaresByRoomId.clear();
+        roomLabelAnchors.clear();
 
         if (state == null || state.map() == null) {
             loadedMapId = null;
@@ -240,6 +244,10 @@ final class DungeonCanvasModel {
         return squaresByRoomId;
     }
 
+    Map<Long, RoomLabelAnchor> roomLabelAnchors() {
+        return roomLabelAnchors;
+    }
+
     DungeonSelection selection() {
         return selection;
     }
@@ -278,11 +286,63 @@ final class DungeonCanvasModel {
 
     private void rebuildRoomSquareIndex() {
         squaresByRoomId.clear();
+        roomLabelAnchors.clear();
         for (DungeonSquare square : squaresByCoord.values()) {
             if (square.roomId() != null) {
                 squaresByRoomId.computeIfAbsent(square.roomId(), ignored -> new java.util.ArrayList<>()).add(square);
             }
         }
+        for (Map.Entry<Long, java.util.List<DungeonSquare>> entry : squaresByRoomId.entrySet()) {
+            RoomLabelAnchor anchor = selectRoomLabelAnchor(entry.getValue());
+            if (anchor != null) {
+                roomLabelAnchors.put(entry.getKey(), anchor);
+            }
+        }
+    }
+
+    private RoomLabelAnchor selectRoomLabelAnchor(java.util.List<DungeonSquare> squares) {
+        if (squares == null || squares.isEmpty()) {
+            return null;
+        }
+        Set<String> roomCoords = new HashSet<>();
+        double centerX = 0.0;
+        double centerY = 0.0;
+        for (DungeonSquare square : squares) {
+            roomCoords.add(key(square.x(), square.y()));
+            centerX += square.x() + 0.5;
+            centerY += square.y() + 0.5;
+        }
+        centerX /= squares.size();
+        centerY /= squares.size();
+
+        DungeonSquare bestSquare = null;
+        int bestNeighborCount = -1;
+        double bestDistance = Double.MAX_VALUE;
+        for (DungeonSquare square : squares) {
+            int neighborCount = roomNeighborCount(square, roomCoords);
+            double dx = (square.x() + 0.5) - centerX;
+            double dy = (square.y() + 0.5) - centerY;
+            double distance = (dx * dx) + (dy * dy);
+            if (bestSquare == null
+                    || neighborCount > bestNeighborCount
+                    || neighborCount == bestNeighborCount && distance < bestDistance
+                    || neighborCount == bestNeighborCount && distance == bestDistance && square.y() < bestSquare.y()
+                    || neighborCount == bestNeighborCount && distance == bestDistance && square.y() == bestSquare.y() && square.x() < bestSquare.x()) {
+                bestSquare = square;
+                bestNeighborCount = neighborCount;
+                bestDistance = distance;
+            }
+        }
+        return new RoomLabelAnchor(bestSquare.x(), bestSquare.y(), squares.size());
+    }
+
+    private int roomNeighborCount(DungeonSquare square, Set<String> roomCoords) {
+        int neighbors = 0;
+        if (roomCoords.contains(key(square.x() - 1, square.y()))) neighbors++;
+        if (roomCoords.contains(key(square.x() + 1, square.y()))) neighbors++;
+        if (roomCoords.contains(key(square.x(), square.y() - 1))) neighbors++;
+        if (roomCoords.contains(key(square.x(), square.y() + 1))) neighbors++;
+        return neighbors;
     }
 
     private void applyWallPreviewEdits(Map<String, DungeonWallEdit> edits) {
@@ -344,5 +404,8 @@ final class DungeonCanvasModel {
 
     private static String key(int x, int y) {
         return x + ":" + y;
+    }
+
+    record RoomLabelAnchor(int x, int y, int squareCount) {
     }
 }

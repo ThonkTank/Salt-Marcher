@@ -80,7 +80,8 @@ final class DungeonSelectionWorkflowController {
             case SELECT_SQUARE -> selectSquare(interaction.square(), interaction.x(), interaction.y(), currentMapId);
             case ASSIGN_ROOM_AREA -> {
                 if (interaction.square() == null || interaction.square().roomId() == null) {
-                    showWorkflowMessage("Bereich zuweisen", "Dieses Feld hat keinen Raum — erst Raum zuweisen.");
+                    selectSquare(interaction.square(), interaction.x(), interaction.y(), currentMapId);
+                    showWorkflowMessage("Bereich zuweisen", "Dieses Feld gehoert noch zu keinem Raum.");
                 } else {
                     onAssignRoomArea.accept(interaction.square());
                 }
@@ -110,13 +111,6 @@ final class DungeonSelectionWorkflowController {
             return;
         }
         showEndpointSelection(endpoint);
-    }
-
-    void selectRoom(DungeonRoom room) {
-        if (room == null) {
-            return;
-        }
-        showSelection(DungeonSelection.room(room), true);
     }
 
     void selectArea(DungeonArea area) {
@@ -223,16 +217,13 @@ final class DungeonSelectionWorkflowController {
                 toolSettingsPane.clearFeatureSelection();
                 toolSettingsPane.setTileContextFeatures(java.util.List.of());
                 toolSettingsPane.selectArea(null);
-                toolSettingsPane.selectRoom(selection.room() == null ? null : selection.room().roomId());
             }
             case AREA -> {
                 toolSettingsPane.clearFeatureSelection();
                 toolSettingsPane.setTileContextFeatures(java.util.List.of());
-                toolSettingsPane.selectRoom(null);
                 toolSettingsPane.selectArea(selection.area() == null ? null : selection.area().areaId());
             }
             case FEATURE -> {
-                toolSettingsPane.selectRoom(null);
                 toolSettingsPane.selectArea(null);
                 toolSettingsPane.setTileContextFeatures(java.util.List.of());
                 if (selection.feature() == null) {
@@ -246,10 +237,8 @@ final class DungeonSelectionWorkflowController {
                 toolSettingsPane.clearFeatureSelection();
                 toolSettingsPane.setTileContextFeatures(selection.tileFeatures());
                 if (selection.square() == null) {
-                    toolSettingsPane.selectRoom(null);
                     toolSettingsPane.selectArea(null);
                 } else {
-                    toolSettingsPane.selectRoom(selection.square().roomId());
                     toolSettingsPane.selectArea(selection.square().areaId());
                 }
             }

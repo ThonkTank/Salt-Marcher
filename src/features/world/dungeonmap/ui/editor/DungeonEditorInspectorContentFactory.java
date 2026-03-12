@@ -58,7 +58,7 @@ final class DungeonEditorInspectorContentFactory {
 
         TextField nameField = new TextField(room.name() == null ? "" : room.name());
         TextArea descriptionArea = textArea(room.description());
-        Button saveButton = saveButton(() -> entityCrudController.saveRoom(new DungeonRoom(
+        Button saveButton = saveButton(() -> entityCrudController.updateRoomMetadata(new DungeonRoom(
                 room.roomId(),
                 room.mapId(),
                 nameField.getText().trim(),

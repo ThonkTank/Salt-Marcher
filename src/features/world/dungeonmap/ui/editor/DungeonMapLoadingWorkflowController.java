@@ -178,10 +178,8 @@ final class DungeonMapLoadingWorkflowController {
 
     private void applyViewData(DungeonMapState loadedState) {
         canvas.loadState(loadedState);
-        List<DungeonRoom> rooms = loadedState == null ? List.of() : loadedState.rooms();
         List<DungeonArea> areas = loadedState == null ? List.of() : loadedState.areas();
         List<DungeonFeature> features = loadedState == null ? List.of() : loadedState.features();
-        toolSettingsPane.setRooms(rooms);
         toolSettingsPane.setAreas(areas);
         toolSettingsPane.setFeatures(features);
         toolSettingsPane.setMapLoaded(loadedState != null && loadedState.map() != null);

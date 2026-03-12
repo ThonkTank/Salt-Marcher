@@ -140,7 +140,15 @@ final class DungeonViewport {
         return translateX + x * CELL_SIZE * scale;
     }
 
+    double screenX(double x) {
+        return translateX + x * CELL_SIZE * scale;
+    }
+
     double screenY(int y) {
+        return translateY + y * CELL_SIZE * scale;
+    }
+
+    double screenY(double y) {
         return translateY + y * CELL_SIZE * scale;
     }
 

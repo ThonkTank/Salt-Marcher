@@ -78,17 +78,17 @@ public final class DungeonMapEditorService {
         }
     }
 
-    public static void applySquareEditsAndReconcileState(long mapId, List<DungeonSquarePaint> edits) throws Exception {
-        applySquareEditsAndReconcileState(mapId, edits, List.of());
-    }
-
-    public static void applySquareEditsAndReconcileState(long mapId, List<DungeonSquarePaint> edits, List<Long> preferredPrimaryRoomIds) throws Exception {
+    public static void applySquareEditsAndReconcileState(
+            long mapId,
+            List<DungeonSquarePaint> edits,
+            DungeonTopologyReconcileContext reconcileContext
+    ) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
             boolean previousAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try {
                 clearInvalidActiveEndpointAfterEdits(conn, mapId, edits);
-                DungeonTopologyService.applySquareEdits(conn, mapId, edits, preferredPrimaryRoomIds);
+                DungeonTopologyService.applySquareEdits(conn, mapId, edits, reconcileContext);
                 conn.commit();
             } catch (SQLException ex) {
                 conn.rollback();
@@ -99,15 +99,9 @@ public final class DungeonMapEditorService {
         }
     }
 
-    public static long saveRoom(DungeonRoom room) throws Exception {
+    public static void updateRoomMetadata(long roomId, String name, String description) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            return DungeonRoomRepository.upsertRoom(conn, room);
-        }
-    }
-
-    public static void deleteRoom(long roomId) throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonRoomRepository.deleteRoom(conn, roomId);
+            DungeonRoomRepository.updateRoomMetadata(conn, roomId, name, description);
         }
     }
 
@@ -275,17 +269,17 @@ public final class DungeonMapEditorService {
         }
     }
 
-    public static void applyWallEdits(long mapId, List<DungeonWallEdit> edits) throws Exception {
-        applyWallEdits(mapId, edits, List.of());
-    }
-
-    public static void applyWallEdits(long mapId, List<DungeonWallEdit> edits, List<Long> preferredPrimaryRoomIds) throws Exception {
+    public static void applyWallEdits(
+            long mapId,
+            List<DungeonWallEdit> edits,
+            DungeonTopologyReconcileContext reconcileContext
+    ) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
             boolean previousAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try {
                 deletePassagesReplacedByWalls(conn, mapId, edits);
-                DungeonTopologyService.applyWallEdits(conn, mapId, edits, preferredPrimaryRoomIds);
+                DungeonTopologyService.applyWallEdits(conn, mapId, edits, reconcileContext);
                 conn.commit();
             } catch (SQLException | RuntimeException ex) {
                 conn.rollback();

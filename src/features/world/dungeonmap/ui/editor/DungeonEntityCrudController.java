@@ -21,7 +21,6 @@ final class DungeonEntityCrudController {
     private final DungeonEditorApplicationService applicationService;
     private final DungeonToolSettingsPane toolSettingsPane;
     private final ConfirmationDropdown confirmationDropdown = new ConfirmationDropdown();
-    private final TextInputDropdown roomDropdown = new TextInputDropdown();
     private final TextInputDropdown areaDropdown = new TextInputDropdown();
     private final TextInputDropdown featureDropdown = new TextInputDropdown();
     private Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap = ignored -> { };
@@ -40,44 +39,16 @@ final class DungeonEntityCrudController {
         this.reloadCurrentMap = reloadCurrentMap == null ? ignored -> { } : reloadCurrentMap;
     }
 
-    void createRoom(Node anchor) {
-        if (state.currentMapId() == null) {
+    void updateRoomMetadata(DungeonRoom room) {
+        if (room == null || room.roomId() == null) {
             return;
         }
-        roomDropdown.show(anchor, "Raum erstellen", "Name", "Neuer Raum", "Erstellen", name -> {
-            saveRoom(new DungeonRoom(null, state.currentMapId(), name, "", toolSettingsPane.getActiveAreaId()));
-            roomDropdown.hide();
-        });
-    }
-
-    void saveRoom(DungeonRoom room) {
-        applicationService.saveRoom(
-                room,
-                roomId -> {
-                    reloadCurrentMap.accept(DungeonSelectionRestoreRequest.room(roomId));
-                },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.saveRoom()", ex));
-    }
-
-    void deleteActiveRoom(Node anchor) {
-        Long roomId = selectedRoomIdForActions();
-        if (roomId != null) {
-            deleteRoom(roomId, anchor);
-        }
-    }
-
-    void deleteRoom(Long roomId, Node anchor) {
-        if (roomId == null) {
-            return;
-        }
-        confirmDelete(
-                anchor,
-                "Raum löschen",
-                "Raum '" + findRoomName(roomId) + "' löschen? Alle zugewiesenen Felder werden freigegeben.",
-                () -> applicationService.deleteRoom(
-                        roomId,
-                        () -> reloadCurrentMap.accept(null),
-                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.deleteRoom()", ex)));
+        applicationService.updateRoomMetadata(
+                room.roomId(),
+                room.name(),
+                room.description(),
+                () -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.room(room.roomId())),
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.updateRoomMetadata()", ex));
     }
 
     void createArea(Node anchor) {
@@ -233,13 +204,6 @@ final class DungeonEntityCrudController {
         return state.currentSelection() == null ? null : state.currentSelection().square();
     }
 
-    private Long selectedRoomIdForActions() {
-        if (state.currentSelection() != null && state.currentSelection().type() == DungeonSelection.SelectionType.ROOM) {
-            return state.currentSelection().room() == null ? null : state.currentSelection().room().roomId();
-        }
-        return toolSettingsPane.getActiveRoomId();
-    }
-
     private Long selectedAreaIdForActions() {
         if (state.currentSelection() != null && state.currentSelection().type() == DungeonSelection.SelectionType.AREA) {
             return state.currentSelection().area() == null ? null : state.currentSelection().area().areaId();
@@ -253,18 +217,6 @@ final class DungeonEntityCrudController {
         }
         return toolSettingsPane.getActiveFeatureId();
     }
-
-    private String findRoomName(Long roomId) {
-        if (state.currentState() != null) {
-            for (DungeonRoom room : state.currentState().rooms()) {
-                if (roomId.equals(room.roomId())) {
-                    return room.name();
-                }
-            }
-        }
-        return "#" + roomId;
-    }
-
     private String findAreaName(Long areaId) {
         if (state.currentState() != null) {
             for (DungeonArea area : state.currentState().areas()) {

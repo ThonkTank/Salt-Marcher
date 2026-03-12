@@ -6,7 +6,6 @@ import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureCategory;
-import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
@@ -31,7 +30,6 @@ import java.util.function.Consumer;
 
 public class DungeonToolSettingsPane extends VBox {
 
-    private final ComboBox<DungeonRoom> roomCombo = new ComboBox<>();
     private final ComboBox<DungeonArea> areaCombo = new ComboBox<>();
     private final ComboBox<DungeonEncounterTableSummary> encounterTableCombo = new ComboBox<>();
     private final ComboBox<DungeonEncounterSummary> encounterCombo = new ComboBox<>();
@@ -41,8 +39,6 @@ public class DungeonToolSettingsPane extends VBox {
     private final CheckBox linksVisible = new CheckBox("Links anzeigen");
     private final CheckBox endpointsVisible = new CheckBox("Übergänge anzeigen");
     private final CheckBox featuresVisible = new CheckBox("Features anzeigen");
-    private final Button newRoomButton = new Button("Raum neu");
-    private final Button deleteRoomButton = new Button("Raum löschen");
     private final Button newAreaButton = new Button("Bereich neu");
     private final Button deleteAreaButton = new Button("Bereich löschen");
     private final Button newFeatureButton = new Button("Feature neu");
@@ -59,7 +55,6 @@ public class DungeonToolSettingsPane extends VBox {
     private final ToggleButton circleShapeBtn = new ToggleButton("\u25cb Kreis");
     private final ToggleButton diamondShapeBtn = new ToggleButton("\u25c7 Raute");
 
-    private final VBox roomGroup;
     private final VBox brushGroup;
     private final VBox areaGroup;
     private final VBox featureGroup;
@@ -75,7 +70,6 @@ public class DungeonToolSettingsPane extends VBox {
     private final Button cancelLinkButton = new Button("Abbrechen");
 
     private boolean updatingSelections = false;
-    private Consumer<DungeonRoom> onRoomSelected;
     private Consumer<DungeonArea> onAreaSelected;
     private Consumer<DungeonFeature> onFeatureSelected;
     private Consumer<DungeonFeature> onTileContextFeatureSelected;
@@ -89,14 +83,12 @@ public class DungeonToolSettingsPane extends VBox {
         setPadding(new Insets(10));
         activeToolLabel.getStyleClass().add("dungeon-panel-title");
 
-        roomCombo.setPromptText("Raum wählen…");
         areaCombo.setPromptText("Bereich wählen…");
         encounterTableCombo.setPromptText("Encounter Table…");
         encounterCombo.setPromptText("Encounter wählen…");
         featureCategoryCombo.setPromptText("Kategorie wählen…");
         activeFeatureCombo.setPromptText("Feature wählen…");
         tileFeatureCombo.setPromptText("Feature auf Feld…");
-        roomCombo.setMaxWidth(Double.MAX_VALUE);
         areaCombo.setMaxWidth(Double.MAX_VALUE);
         encounterTableCombo.setMaxWidth(Double.MAX_VALUE);
         encounterCombo.setMaxWidth(Double.MAX_VALUE);
@@ -108,15 +100,9 @@ public class DungeonToolSettingsPane extends VBox {
         linksVisible.setSelected(true);
         endpointsVisible.setSelected(true);
         featuresVisible.setSelected(true);
-        deleteRoomButton.getStyleClass().add("danger");
         deleteAreaButton.getStyleClass().add("danger");
         deleteFeatureButton.getStyleClass().add("danger");
 
-        roomCombo.setOnAction(event -> {
-            if (!updatingSelections && onRoomSelected != null) {
-                onRoomSelected.accept(roomCombo.getValue());
-            }
-        });
         areaCombo.setOnAction(event -> {
             if (!updatingSelections && onAreaSelected != null) {
                 onAreaSelected.accept(areaCombo.getValue());
@@ -169,11 +155,6 @@ public class DungeonToolSettingsPane extends VBox {
                 oldToggle.setSelected(true);
             }
         });
-
-        Label roomLabel = new Label("Aktiver Raum");
-        roomLabel.getStyleClass().add("text-muted");
-        HBox roomActions = actionRow(newRoomButton, deleteRoomButton);
-        roomGroup = card("Raum", new VBox(6, roomLabel, roomCombo, roomActions));
 
         brushSizeSpinner.setPrefWidth(70);
         brushSizeSpinner.setEditable(false);
@@ -248,9 +229,8 @@ public class DungeonToolSettingsPane extends VBox {
         workflowMessageGroup.setManaged(false);
 
         VBox overviewCard = card("Werkzeug", activeToolLabel);
-        getChildren().addAll(overviewCard, workflowMessageGroup, roomGroup, brushGroup, areaGroup, wallGroup, featureGroup, visibilityGroup, linkStatusGroup);
+        getChildren().addAll(overviewCard, workflowMessageGroup, brushGroup, areaGroup, wallGroup, featureGroup, visibilityGroup, linkStatusGroup);
 
-        setGroupVisible(roomGroup, false);
         setGroupVisible(brushGroup, false);
         setGroupVisible(areaGroup, false);
         setGroupVisible(wallGroup, false);
@@ -264,7 +244,6 @@ public class DungeonToolSettingsPane extends VBox {
         DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
         activeToolLabel.setText(toolTitle(effectiveTool));
         clearWorkflowMessage();
-        setGroupVisible(roomGroup, false);
         setGroupVisible(brushGroup, effectiveTool.brushSettingsVisible());
         setGroupVisible(areaGroup, effectiveTool.areaSettingsVisible());
         setGroupVisible(wallGroup, effectiveTool == DungeonEditorTool.PASSAGE);
@@ -321,16 +300,10 @@ public class DungeonToolSettingsPane extends VBox {
     }
 
     public void setMapLoaded(boolean loaded) {
-        newRoomButton.setDisable(!loaded);
-        deleteRoomButton.setDisable(!loaded);
         newAreaButton.setDisable(!loaded);
         deleteAreaButton.setDisable(!loaded);
         newFeatureButton.setDisable(!loaded);
         deleteFeatureButton.setDisable(!loaded);
-    }
-
-    public Long getActiveRoomId() {
-        return roomCombo.getValue() == null ? null : roomCombo.getValue().roomId();
     }
 
     public Long getActiveAreaId() {
@@ -351,14 +324,6 @@ public class DungeonToolSettingsPane extends VBox {
 
     public DungeonEncounterSummary getSelectedEncounter() {
         return encounterCombo.getValue();
-    }
-
-    public void setRooms(List<DungeonRoom> rooms) {
-        updatingSelections = true;
-        DungeonRoom previous = roomCombo.getValue();
-        roomCombo.getItems().setAll(rooms);
-        roomCombo.setValue(findById(rooms, previous == null ? null : previous.roomId(), DungeonRoom::roomId, rooms.isEmpty() ? null : rooms.get(0)));
-        updatingSelections = false;
     }
 
     public void setAreas(List<DungeonArea> areas) {
@@ -392,12 +357,6 @@ public class DungeonToolSettingsPane extends VBox {
         updateEncounterSelectionState();
     }
 
-    public void selectRoom(Long roomId) {
-        updatingSelections = true;
-        roomCombo.setValue(findById(roomCombo.getItems(), roomId, DungeonRoom::roomId, null));
-        updatingSelections = false;
-    }
-
     public void selectArea(Long areaId) {
         updatingSelections = true;
         areaCombo.setValue(findById(areaCombo.getItems(), areaId, DungeonArea::areaId, null));
@@ -425,7 +384,6 @@ public class DungeonToolSettingsPane extends VBox {
 
     public void clearEntitySelections() {
         updatingSelections = true;
-        roomCombo.setValue(null);
         areaCombo.setValue(null);
         activeFeatureCombo.setValue(null);
         encounterTableCombo.setValue(null);
@@ -473,10 +431,6 @@ public class DungeonToolSettingsPane extends VBox {
         encounterCombo.setValue(null);
     }
 
-    public ComboBox<DungeonRoom> roomComboBox() {
-        return roomCombo;
-    }
-
     public ComboBox<DungeonArea> areaComboBox() {
         return areaCombo;
     }
@@ -505,14 +459,6 @@ public class DungeonToolSettingsPane extends VBox {
         return featuresVisible;
     }
 
-    public Button newRoomButton() {
-        return newRoomButton;
-    }
-
-    public Button deleteRoomButton() {
-        return deleteRoomButton;
-    }
-
     public Button newAreaButton() {
         return newAreaButton;
     }
@@ -535,10 +481,6 @@ public class DungeonToolSettingsPane extends VBox {
 
     public Button removeTileFromFeatureButton() {
         return removeTileFromFeatureButton;
-    }
-
-    public void setOnRoomSelected(Consumer<DungeonRoom> onRoomSelected) {
-        this.onRoomSelected = onRoomSelected;
     }
 
     public void setOnAreaSelected(Consumer<DungeonArea> onAreaSelected) {
