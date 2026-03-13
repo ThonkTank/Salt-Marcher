@@ -1,12 +1,12 @@
 package features.world.dungeonmap.ui.editor.screen;
 
 import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.workflow.DungeonEditorController;
 import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
+import features.world.dungeonmap.ui.editor.workflow.tools.DungeonCanvasStateMapper;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.service.DungeonMapQueryService;
 import javafx.scene.Node;
@@ -91,9 +91,9 @@ public class DungeonEditorView implements AppView {
         canvas.setOnLinkClicked(controller::showLinkSelection);
         canvas.setBrushSizeSupplier(controller::brushSize);
         canvas.setBrushShapeSupplier(controller::brushShape);
-        canvas.setPaintModeSupplier(controller::paintMode);
-        canvas.setWallEditorModeSupplier(controller::wallEditorMode);
-        canvas.setPassageEditorModeSupplier(controller::passageEditorMode);
+        canvas.setPaintModeSupplier(() -> DungeonCanvasStateMapper.toCanvasPaintMode(controller.paintMode()));
+        canvas.setWallModeSupplier(() -> DungeonCanvasStateMapper.toCanvasWallMode(controller.wallEditorMode()));
+        canvas.setPassageModeSupplier(() -> DungeonCanvasStateMapper.toCanvasPassageMode(controller.passageEditorMode()));
         canvas.setOnEdgeClicked(controller::handleEdgeClick);
     }
 

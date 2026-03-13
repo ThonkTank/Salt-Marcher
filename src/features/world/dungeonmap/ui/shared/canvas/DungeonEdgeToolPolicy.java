@@ -1,9 +1,6 @@
 package features.world.dungeonmap.ui.shared.canvas;
 
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
-import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.state.PassageEditorMode;
-import features.world.dungeonmap.ui.editor.state.WallEditorMode;
 
 record DungeonEdgeToolPolicy(
         boolean edgeHoverEnabled,
@@ -21,13 +18,13 @@ record DungeonEdgeToolPolicy(
     }
 
     static DungeonEdgeToolPolicy resolve(
-            DungeonEditorTool tool,
-            WallEditorMode wallMode,
-            PassageEditorMode passageMode
+            DungeonCanvasTool tool,
+            DungeonCanvasWallMode wallMode,
+            DungeonCanvasPassageMode passageMode
     ) {
-        DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
-        WallEditorMode effectiveWallMode = wallMode == null ? WallEditorMode.PAINT_WALL : wallMode;
-        PassageEditorMode effectivePassageMode = passageMode == null ? PassageEditorMode.PLACE_PASSAGE : passageMode;
+        DungeonCanvasTool effectiveTool = tool == null ? DungeonCanvasTool.SELECT : tool;
+        DungeonCanvasWallMode effectiveWallMode = wallMode == null ? DungeonCanvasWallMode.PAINT_WALL : wallMode;
+        DungeonCanvasPassageMode effectivePassageMode = passageMode == null ? DungeonCanvasPassageMode.PLACE_PASSAGE : passageMode;
         return switch (effectiveTool) {
             case WALL -> new DungeonEdgeToolPolicy(
                     true,

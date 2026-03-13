@@ -2,8 +2,6 @@ package features.world.dungeonmap.ui.shared.canvas;
 
 import features.world.dungeonmap.model.editing.BrushShape;
 import features.world.dungeonmap.model.domain.PassageDirection;
-import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.state.DungeonPaintMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -50,8 +48,8 @@ final class DungeonInteractionOverlayController {
     }
 
     void refreshForToolState(
-            DungeonEditorTool activeTool,
-            DungeonPaintMode paintMode,
+            DungeonCanvasTool activeTool,
+            DungeonCanvasPaintMode paintMode,
             BrushShape brushShape,
             int brushSize,
             DungeonEdgeToolPolicy edgeToolPolicy
@@ -68,7 +66,7 @@ final class DungeonInteractionOverlayController {
         }
     }
 
-    void beginSelectionDrag(double screenX, double screenY, DungeonEditorTool activeTool, DungeonPaintMode paintMode, BrushShape brushShape, int brushSize) {
+    void beginSelectionDrag(double screenX, double screenY, DungeonCanvasTool activeTool, DungeonCanvasPaintMode paintMode, BrushShape brushShape, int brushSize) {
         CellRef start = cellRefAt(screenX, screenY);
         if (start == null) {
             clearSelectionDrag(true, activeTool, paintMode, brushShape, brushSize);
@@ -79,7 +77,7 @@ final class DungeonInteractionOverlayController {
         drawHover(activeTool, paintMode, brushShape, brushSize);
     }
 
-    void updateSelectionDrag(double screenX, double screenY, DungeonEditorTool activeTool, DungeonPaintMode paintMode, BrushShape brushShape, int brushSize) {
+    void updateSelectionDrag(double screenX, double screenY, DungeonCanvasTool activeTool, DungeonCanvasPaintMode paintMode, BrushShape brushShape, int brushSize) {
         if (selectionDragStart == null) {
             beginSelectionDrag(screenX, screenY, activeTool, paintMode, brushShape, brushSize);
             return;
@@ -92,13 +90,13 @@ final class DungeonInteractionOverlayController {
         drawHover(activeTool, paintMode, brushShape, brushSize);
     }
 
-    List<DungeonMapPane.CellInteraction> finishSelectionDrag(DungeonEditorTool activeTool, DungeonPaintMode paintMode, BrushShape brushShape, int brushSize) {
+    List<DungeonMapPane.CellInteraction> finishSelectionDrag(DungeonCanvasTool activeTool, DungeonCanvasPaintMode paintMode, BrushShape brushShape, int brushSize) {
         List<DungeonMapPane.CellInteraction> cells = selectionCells(brushShape);
         clearSelectionDrag(true, activeTool, paintMode, brushShape, brushSize);
         return cells;
     }
 
-    void updateHover(double screenX, double screenY, DungeonEditorTool activeTool, DungeonPaintMode paintMode, BrushShape brushShape, int brushSize) {
+    void updateHover(double screenX, double screenY, DungeonCanvasTool activeTool, DungeonCanvasPaintMode paintMode, BrushShape brushShape, int brushSize) {
         DungeonMapPane.CellInteraction interaction = model.interactionAt(viewport, screenX, screenY);
         int newX = interaction == null ? -1 : interaction.x();
         int newY = interaction == null ? -1 : interaction.y();
@@ -110,7 +108,7 @@ final class DungeonInteractionOverlayController {
         drawHover(activeTool, paintMode, brushShape, brushSize);
     }
 
-    void clearHover(DungeonEditorTool activeTool, DungeonPaintMode paintMode, BrushShape brushShape, int brushSize) {
+    void clearHover(DungeonCanvasTool activeTool, DungeonCanvasPaintMode paintMode, BrushShape brushShape, int brushSize) {
         hoverCellX = -1;
         hoverCellY = -1;
         drawHover(activeTool, paintMode, brushShape, brushSize);
@@ -162,7 +160,7 @@ final class DungeonInteractionOverlayController {
         drawEdgeHover(edgeToolPolicy);
     }
 
-    void clearSelectionDrag(boolean redraw, DungeonEditorTool activeTool, DungeonPaintMode paintMode, BrushShape brushShape, int brushSize) {
+    void clearSelectionDrag(boolean redraw, DungeonCanvasTool activeTool, DungeonCanvasPaintMode paintMode, BrushShape brushShape, int brushSize) {
         if (selectionDragStart == null && selectionDragCurrent == null) {
             return;
         }
@@ -173,7 +171,7 @@ final class DungeonInteractionOverlayController {
         }
     }
 
-    private void drawHover(DungeonEditorTool activeTool, DungeonPaintMode paintMode, BrushShape brushShape, int brushSize) {
+    private void drawHover(DungeonCanvasTool activeTool, DungeonCanvasPaintMode paintMode, BrushShape brushShape, int brushSize) {
         GraphicsContext gc = selectionCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, selectionCanvas.getWidth(), selectionCanvas.getHeight());
         if (redrawSelection != null) {
@@ -183,7 +181,7 @@ final class DungeonInteractionOverlayController {
         if (previewCells.isEmpty()) {
             return;
         }
-        gc.setFill(activeTool == DungeonEditorTool.ERASE ? HOVER_ERASE_FILL : HOVER_PAINT_FILL);
+        gc.setFill(activeTool == DungeonCanvasTool.ERASE ? HOVER_ERASE_FILL : HOVER_PAINT_FILL);
         double cellSize = viewport.scaledCellSize();
         for (DungeonMapPane.CellInteraction cell : previewCells) {
             gc.fillRect(viewport.screenX(cell.x()), viewport.screenY(cell.y()), cellSize - 1, cellSize - 1);
@@ -213,12 +211,12 @@ final class DungeonInteractionOverlayController {
     }
 
     private List<DungeonMapPane.CellInteraction> hoverPreviewCells(
-            DungeonEditorTool activeTool,
-            DungeonPaintMode paintMode,
+            DungeonCanvasTool activeTool,
+            DungeonCanvasPaintMode paintMode,
             BrushShape brushShape,
             int brushSize
     ) {
-        if (activeTool.isBrushTool() && paintMode == DungeonPaintMode.SELECTION) {
+        if (activeTool.isBrushTool() && paintMode == DungeonCanvasPaintMode.SELECTION) {
             if (selectionDragStart != null && selectionDragCurrent != null) {
                 return selectionCells(brushShape);
             }

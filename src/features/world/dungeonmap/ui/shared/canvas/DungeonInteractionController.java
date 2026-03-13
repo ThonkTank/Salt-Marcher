@@ -3,10 +3,6 @@ package features.world.dungeonmap.ui.shared.canvas;
 import features.world.dungeonmap.model.editing.BrushShape;
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
 import features.world.dungeonmap.model.domain.PassageDirection;
-import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.state.DungeonPaintMode;
-import features.world.dungeonmap.ui.editor.state.PassageEditorMode;
-import features.world.dungeonmap.ui.editor.state.WallEditorMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.input.MouseButton;
 
@@ -24,12 +20,12 @@ final class DungeonInteractionController {
     private final DungeonInteractionOverlayController overlayController;
     private final DungeonInteractionGestureController gestureController;
 
-    private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
+    private DungeonCanvasTool activeTool = DungeonCanvasTool.SELECT;
     private Supplier<Integer> brushSizeSupplier;
     private Supplier<BrushShape> brushShapeSupplier;
-    private Supplier<DungeonPaintMode> paintModeSupplier;
-    private Supplier<WallEditorMode> wallEditorModeSupplier;
-    private Supplier<PassageEditorMode> passageEditorModeSupplier;
+    private Supplier<DungeonCanvasPaintMode> paintModeSupplier;
+    private Supplier<DungeonCanvasWallMode> wallModeSupplier;
+    private Supplier<DungeonCanvasPassageMode> passageModeSupplier;
     private Consumer<DungeonMapPane.CellInteraction> onCellClicked;
     private Consumer<DungeonMapPane.CellInteraction> onCellPainted;
     private Runnable onPaintStrokeFinished;
@@ -59,8 +55,8 @@ final class DungeonInteractionController {
         overlayController.setRedrawSelection(redrawSelection);
     }
 
-    void setActiveTool(DungeonEditorTool activeTool) {
-        this.activeTool = activeTool == null ? DungeonEditorTool.SELECT : activeTool;
+    void setActiveTool(DungeonCanvasTool activeTool) {
+        this.activeTool = activeTool == null ? DungeonCanvasTool.SELECT : activeTool;
         gestureController.resetDragState();
         overlayController.clearSelectionDrag(false, this.activeTool, currentPaintMode(), currentBrushShape(), currentBrushSize());
         gestureController.clearActiveWallPaintPath(onEdgePaintPathPreview);
@@ -85,16 +81,16 @@ final class DungeonInteractionController {
         this.brushShapeSupplier = supplier;
     }
 
-    void setPaintModeSupplier(Supplier<DungeonPaintMode> supplier) {
+    void setPaintModeSupplier(Supplier<DungeonCanvasPaintMode> supplier) {
         this.paintModeSupplier = supplier;
     }
 
-    void setWallEditorModeSupplier(Supplier<WallEditorMode> supplier) {
-        this.wallEditorModeSupplier = supplier;
+    void setWallModeSupplier(Supplier<DungeonCanvasWallMode> supplier) {
+        this.wallModeSupplier = supplier;
     }
 
-    void setPassageEditorModeSupplier(Supplier<PassageEditorMode> supplier) {
-        this.passageEditorModeSupplier = supplier;
+    void setPassageModeSupplier(Supplier<DungeonCanvasPassageMode> supplier) {
+        this.passageModeSupplier = supplier;
     }
 
     void setOnCellClicked(Consumer<DungeonMapPane.CellInteraction> onCellClicked) {
@@ -350,31 +346,31 @@ final class DungeonInteractionController {
     }
 
     private boolean usesSelectionPaint() {
-        return activeTool.isBrushTool() && currentPaintMode() == DungeonPaintMode.SELECTION;
+        return activeTool.isBrushTool() && currentPaintMode() == DungeonCanvasPaintMode.SELECTION;
     }
 
     private DungeonEdgeToolPolicy currentEdgeToolPolicy() {
-        return DungeonEdgeToolPolicy.resolve(activeTool, currentWallEditorMode(), currentPassageEditorMode());
+        return DungeonEdgeToolPolicy.resolve(activeTool, currentWallMode(), currentPassageMode());
     }
 
-    private WallEditorMode currentWallEditorMode() {
-        if (wallEditorModeSupplier != null) {
-            WallEditorMode mode = wallEditorModeSupplier.get();
+    private DungeonCanvasWallMode currentWallMode() {
+        if (wallModeSupplier != null) {
+            DungeonCanvasWallMode mode = wallModeSupplier.get();
             if (mode != null) {
                 return mode;
             }
         }
-        return WallEditorMode.PAINT_WALL;
+        return DungeonCanvasWallMode.PAINT_WALL;
     }
 
-    private PassageEditorMode currentPassageEditorMode() {
-        if (passageEditorModeSupplier != null) {
-            PassageEditorMode mode = passageEditorModeSupplier.get();
+    private DungeonCanvasPassageMode currentPassageMode() {
+        if (passageModeSupplier != null) {
+            DungeonCanvasPassageMode mode = passageModeSupplier.get();
             if (mode != null) {
                 return mode;
             }
         }
-        return PassageEditorMode.PLACE_PASSAGE;
+        return DungeonCanvasPassageMode.PLACE_PASSAGE;
     }
 
     private int currentBrushSize() {
@@ -397,13 +393,13 @@ final class DungeonInteractionController {
         return BrushShape.SQUARE;
     }
 
-    private DungeonPaintMode currentPaintMode() {
+    private DungeonCanvasPaintMode currentPaintMode() {
         if (paintModeSupplier != null) {
-            DungeonPaintMode mode = paintModeSupplier.get();
+            DungeonCanvasPaintMode mode = paintModeSupplier.get();
             if (mode != null) {
                 return mode;
             }
         }
-        return DungeonPaintMode.BRUSH;
+        return DungeonCanvasPaintMode.BRUSH;
     }
 }

@@ -10,11 +10,6 @@ import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;
-import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
-import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.state.DungeonPaintMode;
-import features.world.dungeonmap.ui.editor.state.PassageEditorMode;
-import features.world.dungeonmap.ui.editor.state.WallEditorMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
@@ -120,15 +115,15 @@ public class DungeonMapPane extends StackPane {
         interactionController.setBrushSizeSupplier(supplier);
     }
 
-    public void setPaintModeSupplier(Supplier<DungeonPaintMode> supplier) {
+    public void setPaintModeSupplier(Supplier<DungeonCanvasPaintMode> supplier) {
         interactionController.setPaintModeSupplier(supplier);
     }
 
-    public void setActiveTool(DungeonEditorTool tool) {
+    public void setActiveTool(DungeonCanvasTool tool) {
         interactionController.setActiveTool(tool);
     }
 
-    public void setColorRenderMode(DungeonColorRenderMode mode) {
+    public void setColorRenderMode(DungeonCanvasColorMode mode) {
         gridRenderer.setColorRenderMode(mode);
         overlayRenderer.setColorRenderMode(mode);
         gridRenderer.redrawGrid();
@@ -136,12 +131,12 @@ public class DungeonMapPane extends StackPane {
         overlayRenderer.repositionOverlays(this);
     }
 
-    public void setWallEditorModeSupplier(Supplier<WallEditorMode> supplier) {
-        interactionController.setWallEditorModeSupplier(supplier);
+    public void setWallModeSupplier(Supplier<DungeonCanvasWallMode> supplier) {
+        interactionController.setWallModeSupplier(supplier);
     }
 
-    public void setPassageEditorModeSupplier(Supplier<PassageEditorMode> supplier) {
-        interactionController.setPassageEditorModeSupplier(supplier);
+    public void setPassageModeSupplier(Supplier<DungeonCanvasPassageMode> supplier) {
+        interactionController.setPassageModeSupplier(supplier);
     }
 
     public void setOnEdgeClicked(Consumer<EdgeInteraction> onEdgeClicked) {

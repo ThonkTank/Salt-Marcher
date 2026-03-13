@@ -30,6 +30,7 @@ import features.world.dungeonmap.ui.editor.workflow.paint.DungeonSquareEditWorkf
 import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
 import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionInspectorPublisher;
 import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionRestorer;
+import features.world.dungeonmap.ui.editor.workflow.tools.DungeonCanvasStateMapper;
 import ui.shell.DetailsNavigator;
 
 import java.util.List;
@@ -112,8 +113,8 @@ public final class DungeonEditorController {
     public void initializeUi() {
         toolSettingsPane.setBrushPaintModeActive(interactionState.paintMode() == DungeonPaintMode.BRUSH);
         toolSettingsPane.setColorRenderMode(interactionState.colorRenderMode());
-        canvas.setColorRenderMode(interactionState.colorRenderMode());
-        canvas.setActiveTool(interactionState.activeTool());
+        canvas.setColorRenderMode(DungeonCanvasStateMapper.toCanvasColorMode(interactionState.colorRenderMode()));
+        canvas.setActiveTool(DungeonCanvasStateMapper.toCanvasTool(interactionState.activeTool()));
         toolSettingsPane.setActiveTool(interactionState.activeTool());
         canvas.setShowLinks(toolSettingsPane.linksVisible());
         canvas.setShowEndpoints(toolSettingsPane.endpointsVisible());
@@ -140,20 +141,20 @@ public final class DungeonEditorController {
 
     public void handlePaintModeChanged(DungeonPaintMode mode) {
         toolSettingsPane.setBrushPaintModeActive(mode == DungeonPaintMode.BRUSH);
-        canvas.setActiveTool(interactionState.activeTool());
+        canvas.setActiveTool(DungeonCanvasStateMapper.toCanvasTool(interactionState.activeTool()));
     }
 
     public void handleColorRenderModeChanged(DungeonColorRenderMode mode) {
         toolSettingsPane.setColorRenderMode(mode);
-        canvas.setColorRenderMode(mode);
+        canvas.setColorRenderMode(DungeonCanvasStateMapper.toCanvasColorMode(mode));
     }
 
     public void handleWallEditorModeChanged() {
-        canvas.setActiveTool(interactionState.activeTool());
+        canvas.setActiveTool(DungeonCanvasStateMapper.toCanvasTool(interactionState.activeTool()));
     }
 
     public void handlePassageEditorModeChanged() {
-        canvas.setActiveTool(interactionState.activeTool());
+        canvas.setActiveTool(DungeonCanvasStateMapper.toCanvasTool(interactionState.activeTool()));
     }
 
     public void handleActiveToolChanged(DungeonEditorTool tool) {
@@ -162,7 +163,7 @@ public final class DungeonEditorController {
         if (preferredColorMode != null) {
             interactionState.setColorRenderMode(preferredColorMode);
         }
-        canvas.setActiveTool(tool);
+        canvas.setActiveTool(DungeonCanvasStateMapper.toCanvasTool(tool));
         linkFlow.cancelPendingLink();
         toolSettingsPane.setActiveTool(tool);
         selectionRestorer.autoShowForTool(tool);

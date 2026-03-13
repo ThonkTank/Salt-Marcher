@@ -9,7 +9,6 @@ import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
 import features.world.dungeonmap.model.domain.PassageDirection;
-import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -56,7 +55,7 @@ final class DungeonGridRenderer {
     private final Canvas selectionCanvas;
     private final DungeonCanvasModel model;
     private final DungeonViewport viewport;
-    private DungeonColorRenderMode colorRenderMode = DungeonColorRenderMode.ROOMS;
+    private DungeonCanvasColorMode colorRenderMode = DungeonCanvasColorMode.ROOMS;
 
     DungeonGridRenderer(Canvas gridCanvas, Canvas selectionCanvas, DungeonCanvasModel model, DungeonViewport viewport) {
         this.gridCanvas = gridCanvas;
@@ -65,8 +64,8 @@ final class DungeonGridRenderer {
         this.viewport = viewport;
     }
 
-    void setColorRenderMode(DungeonColorRenderMode colorRenderMode) {
-        this.colorRenderMode = colorRenderMode == null ? DungeonColorRenderMode.ROOMS : colorRenderMode;
+    void setColorRenderMode(DungeonCanvasColorMode colorRenderMode) {
+        this.colorRenderMode = colorRenderMode == null ? DungeonCanvasColorMode.ROOMS : colorRenderMode;
     }
 
     void redrawGrid() {
@@ -446,10 +445,10 @@ final class DungeonGridRenderer {
     }
 
     private Color resolveFilledRoomColor(DungeonSquare square) {
-        long paletteKey = colorRenderMode == DungeonColorRenderMode.AREAS && square.areaId() != null
+        long paletteKey = colorRenderMode == DungeonCanvasColorMode.AREAS && square.areaId() != null
                 ? square.areaId()
                 : square.roomId();
-        Color[] palette = colorRenderMode == DungeonColorRenderMode.AREAS ? AREA_PALETTE : ROOM_PALETTE;
+        Color[] palette = colorRenderMode == DungeonCanvasColorMode.AREAS ? AREA_PALETTE : ROOM_PALETTE;
         int idx = (int) (Math.abs(paletteKey) % palette.length);
         return palette[idx];
     }

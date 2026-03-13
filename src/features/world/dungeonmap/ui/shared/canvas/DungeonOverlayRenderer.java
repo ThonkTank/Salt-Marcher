@@ -11,7 +11,6 @@ import features.world.dungeonmap.model.domain.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
-import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
@@ -60,7 +59,7 @@ final class DungeonOverlayRenderer {
     private boolean showFeatures = true;
     private boolean showLinks = true;
     private boolean showEndpoints = true;
-    private DungeonColorRenderMode colorRenderMode = DungeonColorRenderMode.ROOMS;
+    private DungeonCanvasColorMode colorRenderMode = DungeonCanvasColorMode.ROOMS;
 
     DungeonOverlayRenderer(
             Pane roomLabelsLayer,
@@ -176,8 +175,8 @@ final class DungeonOverlayRenderer {
         updateVisibility();
     }
 
-    void setColorRenderMode(DungeonColorRenderMode colorRenderMode) {
-        this.colorRenderMode = colorRenderMode == null ? DungeonColorRenderMode.ROOMS : colorRenderMode;
+    void setColorRenderMode(DungeonCanvasColorMode colorRenderMode) {
+        this.colorRenderMode = colorRenderMode == null ? DungeonCanvasColorMode.ROOMS : colorRenderMode;
     }
 
     void refreshFeatureStyles() {
@@ -395,7 +394,7 @@ final class DungeonOverlayRenderer {
     }
 
     private void positionRoomLabels(Region owner) {
-        boolean roomMode = colorRenderMode == DungeonColorRenderMode.ROOMS;
+        boolean roomMode = colorRenderMode == DungeonCanvasColorMode.ROOMS;
         for (Map.Entry<Long, Label> entry : roomLabelNodes.entrySet()) {
             Long roomId = entry.getKey();
             Label label = entry.getValue();
@@ -417,7 +416,7 @@ final class DungeonOverlayRenderer {
             label.setVisible(roomMode && visible);
             label.setManaged(roomMode && visible);
         }
-        boolean areaMode = colorRenderMode == DungeonColorRenderMode.AREAS;
+        boolean areaMode = colorRenderMode == DungeonCanvasColorMode.AREAS;
         List<DungeonCanvasLabelLayout.AreaLabelAnchor> anchors = model.areaLabelAnchors();
         for (int i = 0; i < areaLabelNodes.size(); i++) {
             Label label = areaLabelNodes.get(i);
