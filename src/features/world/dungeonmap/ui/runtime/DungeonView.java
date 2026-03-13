@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.runtime.screen;
+package features.world.dungeonmap.ui.runtime;
 
 import features.encounter.api.EncounterRuntimePort;
 import features.world.dungeonmap.service.DungeonMapQueryService;
@@ -8,9 +8,6 @@ import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.runtime.chrome.controls.DungeonViewControls;
 import features.world.dungeonmap.ui.runtime.chrome.inspector.DungeonRuntimeInspectorContentFactory;
 import features.world.dungeonmap.ui.runtime.chrome.state.DungeonRuntimeStatePane;
-import features.world.dungeonmap.ui.runtime.state.DungeonRuntimeViewState;
-import features.world.dungeonmap.ui.runtime.workflow.DungeonRuntimeLoader;
-import features.world.dungeonmap.ui.runtime.workflow.DungeonRuntimeMovementWorkflow;
 import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.runtime.state;
+package features.world.dungeonmap.ui.runtime;
 
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;

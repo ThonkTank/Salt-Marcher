@@ -7,11 +7,11 @@ import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;
-import features.world.dungeonmap.service.command.connection.DungeonConnectionEditingService;
-import features.world.dungeonmap.service.command.connection.DungeonLinkCreateResult;
-import features.world.dungeonmap.service.command.feature.DungeonFeatureEditingService;
-import features.world.dungeonmap.service.command.map.DungeonMapLifecycleEditingService;
-import features.world.dungeonmap.service.command.topology.DungeonTopologyEditingService;
+import features.world.dungeonmap.service.editing.connection.DungeonConnectionEditingService;
+import features.world.dungeonmap.service.editing.connection.DungeonLinkCreateResult;
+import features.world.dungeonmap.service.editing.feature.DungeonFeatureEditingService;
+import features.world.dungeonmap.service.editing.map.DungeonMapLifecycleEditingService;
+import features.world.dungeonmap.service.editing.topology.DungeonTopologyEditingService;
 
 import java.util.List;
 

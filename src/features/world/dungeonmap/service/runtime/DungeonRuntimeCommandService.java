@@ -5,7 +5,7 @@ import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.service.integration.campaign.DungeonCampaignStateAdapter;
-import features.world.dungeonmap.service.query.projection.DungeonMapStateLoader;
+import features.world.dungeonmap.service.projection.DungeonMapStateLoader;
 
 import java.sql.Connection;
 import java.util.List;

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.service.command.support;
+package features.world.dungeonmap.service.editing.campaign;
 
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;

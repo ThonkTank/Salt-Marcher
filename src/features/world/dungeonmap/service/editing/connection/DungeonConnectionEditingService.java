@@ -1,4 +1,4 @@
-package features.world.dungeonmap.service.command.connection;
+package features.world.dungeonmap.service.editing.connection;
 
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonLink;
@@ -7,7 +7,7 @@ import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.repository.connection.DungeonEndpointRepository;
 import features.world.dungeonmap.repository.connection.DungeonLinkRepository;
 import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
-import features.world.dungeonmap.service.command.support.DungeonEditingTransactions;
+import features.world.dungeonmap.service.editing.DungeonEditingTransactions;
 import features.world.dungeonmap.service.integration.campaign.DungeonCampaignStateAdapter;
 import features.world.dungeonmap.service.topology.DungeonLinkIntegrityService;
 import features.world.dungeonmap.service.topology.DungeonTopologyService;

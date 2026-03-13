@@ -4,7 +4,7 @@ import features.encounter.api.EncounterRuntimePort;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.editor.screen.DungeonEditorView;
-import features.world.dungeonmap.ui.runtime.screen.DungeonView;
+import features.world.dungeonmap.ui.runtime.DungeonView;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 import ui.shell.SceneRegistry;

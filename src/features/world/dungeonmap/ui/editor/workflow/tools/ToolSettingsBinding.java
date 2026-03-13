@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.binding;
+package features.world.dungeonmap.ui.editor.workflow.tools;
 
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonFeature;

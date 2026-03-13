@@ -12,7 +12,7 @@ import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
 import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-import features.world.dungeonmap.ui.editor.workflow.binding.EditorMessageBus;
+import features.world.dungeonmap.ui.editor.workflow.tools.EditorMessageBus;
 
 public final class DungeonSelectionController {
 

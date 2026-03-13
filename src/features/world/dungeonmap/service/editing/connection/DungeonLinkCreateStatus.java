@@ -1,4 +1,4 @@
-package features.world.dungeonmap.service.command.connection;
+package features.world.dungeonmap.service.editing.connection;
 
 public enum DungeonLinkCreateStatus {
     CREATED,

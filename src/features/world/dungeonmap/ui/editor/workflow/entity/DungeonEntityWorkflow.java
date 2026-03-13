@@ -13,7 +13,7 @@ import features.world.dungeonmap.ui.editor.chrome.inspector.DungeonEntityInspect
 import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
-import features.world.dungeonmap.ui.editor.workflow.binding.EditorMessageBus;
+import features.world.dungeonmap.ui.editor.workflow.tools.EditorMessageBus;
 import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;

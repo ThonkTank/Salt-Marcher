@@ -1,4 +1,4 @@
-package features.world.dungeonmap.service.command.support;
+package features.world.dungeonmap.service.editing;
 
 import database.DatabaseManager;
 

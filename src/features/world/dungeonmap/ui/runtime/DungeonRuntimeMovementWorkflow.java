@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.runtime.workflow;
+package features.world.dungeonmap.ui.runtime;
 
 import features.encounter.api.EncounterRuntimePort;
 import features.world.dungeonmap.model.domain.DungeonArea;
@@ -10,7 +10,6 @@ import features.world.dungeonmap.service.runtime.DungeonMoveStatus;
 import features.world.dungeonmap.service.runtime.DungeonRuntimeCommandService;
 import features.world.dungeonmap.ui.runtime.chrome.inspector.DungeonRuntimeInspectorContentFactory;
 import features.world.dungeonmap.ui.runtime.chrome.state.DungeonRuntimeStatePane;
-import features.world.dungeonmap.ui.runtime.state.DungeonRuntimeViewState;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.shared.format.DungeonAreaEncounterText;
 import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.service.query.projection;
+package features.world.dungeonmap.service.projection;
 
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;

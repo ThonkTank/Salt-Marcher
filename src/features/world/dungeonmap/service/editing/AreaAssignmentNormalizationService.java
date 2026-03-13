@@ -1,4 +1,4 @@
-package features.world.dungeonmap.service.command.area;
+package features.world.dungeonmap.service.editing;
 
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonMap;

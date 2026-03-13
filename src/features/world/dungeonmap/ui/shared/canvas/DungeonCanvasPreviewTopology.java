@@ -2,7 +2,7 @@ package features.world.dungeonmap.ui.shared.canvas;
 
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeIndex;
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
-import features.world.dungeonmap.service.query.projection.DungeonEdgeSummaryBuilder;
+import features.world.dungeonmap.service.projection.DungeonEdgeSummaryBuilder;
 import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonSquare;

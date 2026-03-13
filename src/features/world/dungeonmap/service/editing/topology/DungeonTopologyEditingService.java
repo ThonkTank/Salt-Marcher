@@ -1,13 +1,13 @@
-package features.world.dungeonmap.service.command.topology;
+package features.world.dungeonmap.service.editing.topology;
 
 import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;
 import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
 import features.world.dungeonmap.service.topology.DungeonLinkIntegrityService;
-import features.world.dungeonmap.service.command.support.DungeonCampaignPositionEditingSupport;
-import features.world.dungeonmap.service.command.support.DungeonEditingTransactions;
-import features.world.dungeonmap.service.command.area.AreaAssignmentNormalizationService;
+import features.world.dungeonmap.service.editing.campaign.DungeonCampaignPositionEditingSupport;
+import features.world.dungeonmap.service.editing.DungeonEditingTransactions;
+import features.world.dungeonmap.service.editing.AreaAssignmentNormalizationService;
 import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 import java.sql.Connection;

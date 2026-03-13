@@ -4,7 +4,7 @@ import database.DatabaseManager;
 import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.domain.DungeonMap;
 import features.world.dungeonmap.repository.map.DungeonMapRepository;
-import features.world.dungeonmap.service.query.projection.DungeonMapStateLoader;
+import features.world.dungeonmap.service.projection.DungeonMapStateLoader;
 
 import java.sql.Connection;
 import java.util.List;

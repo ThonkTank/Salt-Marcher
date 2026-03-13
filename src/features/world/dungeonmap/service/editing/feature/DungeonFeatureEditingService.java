@@ -1,4 +1,4 @@
-package features.world.dungeonmap.service.command.feature;
+package features.world.dungeonmap.service.editing.feature;
 
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonFeature;
@@ -8,8 +8,8 @@ import features.world.dungeonmap.repository.feature.DungeonAreaRepository;
 import features.world.dungeonmap.repository.feature.DungeonFeatureRepository;
 import features.world.dungeonmap.repository.feature.DungeonFeatureTileRepository;
 import features.world.dungeonmap.repository.map.DungeonRoomRepository;
-import features.world.dungeonmap.service.command.support.DungeonEditingTransactions;
-import features.world.dungeonmap.service.command.area.AreaAssignmentNormalizationService;
+import features.world.dungeonmap.service.editing.DungeonEditingTransactions;
+import features.world.dungeonmap.service.editing.AreaAssignmentNormalizationService;
 import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 import java.sql.Connection;
