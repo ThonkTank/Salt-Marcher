@@ -1,13 +1,13 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.entity;
 
 import features.world.dungeonmap.service.catalog.DungeonEncounterCatalogAdapter;
 import features.world.dungeonmap.service.catalog.DungeonEncounterTableCatalogAdapter;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import ui.async.UiErrorReporter;
 
-final class DungeonCatalogLoader {
+public final class DungeonCatalogLoader {
 
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;

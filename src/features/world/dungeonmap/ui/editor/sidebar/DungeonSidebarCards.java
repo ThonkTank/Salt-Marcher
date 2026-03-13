@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.panes.cards;
+package features.world.dungeonmap.ui.editor.sidebar;
 
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -7,7 +7,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-public final class DungeonSidebarCards {
+final class DungeonSidebarCards {
 
     private DungeonSidebarCards() {
     }

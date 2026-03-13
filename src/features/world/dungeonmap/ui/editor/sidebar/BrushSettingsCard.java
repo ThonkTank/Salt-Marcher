@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.panes.cards;
+package features.world.dungeonmap.ui.editor.sidebar;
 
 import features.world.dungeonmap.model.BrushShape;
 import javafx.geometry.Pos;
@@ -12,7 +12,7 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-public final class BrushSettingsCard {
+final class BrushSettingsCard {
 
     private final Spinner<Integer> brushSizeSpinner = new Spinner<>(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 5, 1));
     private final ToggleGroup shapeGroup = new ToggleGroup();

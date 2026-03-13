@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.paint;
 
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonWallEdit;

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.connection;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEndpointRole;
@@ -11,19 +11,21 @@ import features.world.dungeonmap.service.editing.DungeonLinkCreateResult;
 import features.world.dungeonmap.service.editing.DungeonLinkCreateStatus;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.editor.inspector.actions.DungeonConnectionInspectorActions;
+import features.world.dungeonmap.ui.editor.inspector.DungeonConnectionInspectorActions;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
+import features.world.dungeonmap.ui.editor.workflow.entity.EditorMessageBus;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.components.ConfirmationDropdown;
 
 import java.util.function.Consumer;
 
-final class DungeonConnectionWorkflow implements DungeonConnectionInspectorActions {
+public final class DungeonConnectionWorkflow implements DungeonConnectionInspectorActions {
 
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.panes.cards;
+package features.world.dungeonmap.ui.editor.sidebar;
 
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureCategory;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public final class FeatureSettingsCard {
+final class FeatureSettingsCard {
 
     private final ComboBox<DungeonFeatureCategory> featureCategoryCombo = new ComboBox<>();
     private final ComboBox<DungeonFeature> activeFeatureCombo = new ComboBox<>();

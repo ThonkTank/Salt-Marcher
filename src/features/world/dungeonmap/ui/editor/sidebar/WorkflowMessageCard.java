@@ -1,10 +1,10 @@
-package features.world.dungeonmap.ui.editor.panes.cards;
+package features.world.dungeonmap.ui.editor.sidebar;
 
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
-public final class WorkflowMessageCard {
+final class WorkflowMessageCard {
 
     private final Label titleLabel = new Label("Hinweis");
     private final Label messageLabel = new Label();

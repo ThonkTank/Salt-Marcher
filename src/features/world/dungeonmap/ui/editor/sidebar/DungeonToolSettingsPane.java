@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.panes;
+package features.world.dungeonmap.ui.editor.sidebar;
 
 import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonArea;
@@ -8,13 +8,6 @@ import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
 import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.panes.cards.AreaSettingsCard;
-import features.world.dungeonmap.ui.editor.panes.cards.BrushSettingsCard;
-import features.world.dungeonmap.ui.editor.panes.cards.DungeonSidebarCards;
-import features.world.dungeonmap.ui.editor.panes.cards.FeatureSettingsCard;
-import features.world.dungeonmap.ui.editor.panes.cards.LinkStatusCard;
-import features.world.dungeonmap.ui.editor.panes.cards.VisibilitySettingsCard;
-import features.world.dungeonmap.ui.editor.panes.cards.WorkflowMessageCard;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;

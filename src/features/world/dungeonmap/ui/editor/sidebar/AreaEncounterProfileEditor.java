@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.panes;
+package features.world.dungeonmap.ui.editor.sidebar;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonAreaEncounterTableLink;
@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public final class AreaEncounterProfileEditor extends VBox {
+final class AreaEncounterProfileEditor extends VBox {
 
     private final TextField areaNameField = new TextField();
     private final Spinner<Integer> encounterEveryHoursSpinner = new Spinner<>(

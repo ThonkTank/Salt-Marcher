@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.map;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -8,14 +8,17 @@ import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
-import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
+import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionRestorer;
 import ui.async.UiErrorReporter;
 
 import java.util.List;
 
-final class DungeonMapLoader {
+public final class DungeonMapLoader {
 
     private final DungeonEditorState state;
     private final DungeonEditorControls controls;

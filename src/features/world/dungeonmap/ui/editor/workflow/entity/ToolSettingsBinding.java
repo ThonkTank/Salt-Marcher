@@ -1,11 +1,14 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.entity;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
-import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-final class ToolSettingsBinding {
+import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
+
+public final class ToolSettingsBinding {
 
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;

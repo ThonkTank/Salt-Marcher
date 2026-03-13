@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.map;
 
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
@@ -8,7 +8,7 @@ import javafx.scene.Node;
 
 import java.util.function.Consumer;
 
-final class DungeonMapDropdownPresenter {
+public final class DungeonMapDropdownPresenter {
 
     private final DungeonMapFormDropdown mapFormDropdown = new DungeonMapFormDropdown();
     private final DungeonMapImpactPreviewService impactPreviewService = new DungeonMapImpactPreviewService();

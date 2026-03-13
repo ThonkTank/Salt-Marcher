@@ -1,8 +1,7 @@
-package features.world.dungeonmap.ui.editor.panes.cards;
+package features.world.dungeonmap.ui.editor.sidebar;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
-import features.world.dungeonmap.ui.editor.panes.AreaEncounterProfileEditor;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -13,7 +12,7 @@ import javafx.scene.layout.VBox;
 import java.util.List;
 import java.util.function.Consumer;
 
-public final class AreaSettingsCard {
+final class AreaSettingsCard {
 
     private final ComboBox<DungeonArea> areaCombo = new ComboBox<>();
     private final Button newAreaButton = new Button("Bereich neu");

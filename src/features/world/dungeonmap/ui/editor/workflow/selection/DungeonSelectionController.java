@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.selection;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
@@ -10,9 +10,10 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.index.DungeonMapIndex;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-final class DungeonSelectionController {
+import features.world.dungeonmap.ui.editor.workflow.entity.EditorMessageBus;
+public final class DungeonSelectionController {
 
     private final DungeonMapPane canvas;
     private final DungeonToolSettingsPane toolSettingsPane;

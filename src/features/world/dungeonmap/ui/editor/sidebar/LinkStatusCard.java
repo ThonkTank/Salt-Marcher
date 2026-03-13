@@ -1,11 +1,11 @@
-package features.world.dungeonmap.ui.editor.panes.cards;
+package features.world.dungeonmap.ui.editor.sidebar;
 
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 
-public final class LinkStatusCard {
+final class LinkStatusCard {
 
     private static final String DEFAULT_MESSAGE = "Erste Verbindung klicken, dann zweite Verbindung klicken.";
     private static final String PENDING_MESSAGE = "Link-Start gewählt - zweite Verbindung klicken";

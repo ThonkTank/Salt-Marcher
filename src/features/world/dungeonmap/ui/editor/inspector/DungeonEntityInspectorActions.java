@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.inspector.actions;
+package features.world.dungeonmap.ui.editor.inspector;
 
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonRoom;

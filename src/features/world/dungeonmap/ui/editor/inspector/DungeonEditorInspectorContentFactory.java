@@ -15,8 +15,6 @@ import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.index.DungeonMapIndex;
 import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.ui.DungeonAreaEncounterText;
-import features.world.dungeonmap.ui.editor.inspector.actions.DungeonConnectionInspectorActions;
-import features.world.dungeonmap.ui.editor.inspector.actions.DungeonEntityInspectorActions;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.scene.Node;
 import javafx.scene.control.ComboBox;

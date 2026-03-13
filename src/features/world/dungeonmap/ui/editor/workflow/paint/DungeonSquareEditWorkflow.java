@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.paint;
 
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
@@ -14,7 +14,7 @@ import ui.async.UiErrorReporter;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-final class DungeonSquareEditWorkflow {
+public final class DungeonSquareEditWorkflow {
 
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;

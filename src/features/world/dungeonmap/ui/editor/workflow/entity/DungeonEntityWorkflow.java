@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.entity;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -9,10 +9,11 @@ import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.editor.inspector.actions.DungeonEntityInspectorActions;
-import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.inspector.DungeonEntityInspectorActions;
+import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.components.ConfirmationDropdown;
@@ -20,7 +21,7 @@ import ui.components.TextInputDropdown;
 
 import java.util.function.Consumer;
 
-final class DungeonEntityWorkflow implements DungeonEntityInspectorActions {
+public final class DungeonEntityWorkflow implements DungeonEntityInspectorActions {
 
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;

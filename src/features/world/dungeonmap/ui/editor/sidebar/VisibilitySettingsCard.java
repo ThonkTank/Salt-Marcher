@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.panes.cards;
+package features.world.dungeonmap.ui.editor.sidebar;
 
 import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import javafx.geometry.Pos;
@@ -13,7 +13,7 @@ import javafx.scene.layout.VBox;
 
 import java.util.function.Consumer;
 
-public final class VisibilitySettingsCard {
+final class VisibilitySettingsCard {
 
     private final CheckBox linksVisibleCheckBox = new CheckBox("Links anzeigen");
     private final CheckBox endpointsVisibleCheckBox = new CheckBox("Übergänge anzeigen");
