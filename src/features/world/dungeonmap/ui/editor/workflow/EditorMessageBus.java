@@ -1,8 +1,8 @@
-package features.world.dungeonmap.ui.editor.workflow.messaging;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 
-public final class EditorMessageBus {
+final class EditorMessageBus {
 
     private final DungeonToolSettingsPane toolSettingsPane;
 

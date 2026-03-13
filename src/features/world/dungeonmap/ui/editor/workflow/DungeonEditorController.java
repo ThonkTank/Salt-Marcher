@@ -7,18 +7,6 @@ import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.service.DungeonMapQueries;
 import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.DungeonMapDropdowns;
-import features.world.dungeonmap.ui.editor.workflow.binding.ToolSettingsBinding;
-import features.world.dungeonmap.ui.editor.workflow.connection.DungeonConnectionWorkflow;
-import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
-import features.world.dungeonmap.ui.editor.workflow.entity.DungeonEntityWorkflow;
-import features.world.dungeonmap.ui.editor.workflow.entity.DungeonMapActions;
-import features.world.dungeonmap.ui.editor.workflow.loading.DungeonCatalogLoader;
-import features.world.dungeonmap.ui.editor.workflow.loading.DungeonMapLoader;
-import features.world.dungeonmap.ui.editor.workflow.messaging.EditorMessageBus;
-import features.world.dungeonmap.ui.editor.workflow.painting.DungeonSquareEditWorkflow;
-import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
-import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionInspectorPublisher;
-import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionRestorer;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
@@ -29,7 +17,7 @@ import ui.shell.DetailsNavigator;
 
 import java.util.List;
 
-public final class DungeonEditorCoordinator {
+public final class DungeonEditorController {
 
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;
@@ -46,7 +34,7 @@ public final class DungeonEditorCoordinator {
     private final DungeonMapLoader mapLoader;
     private final DungeonCatalogLoader catalogLoader;
 
-    public DungeonEditorCoordinator(
+    public DungeonEditorController(
             DungeonEditorState state,
             DungeonEditorInteractionState interactionState,
             DungeonEditorControls controls,

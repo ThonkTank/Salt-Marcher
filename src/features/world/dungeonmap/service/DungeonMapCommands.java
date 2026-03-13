@@ -8,88 +8,92 @@ import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
+import features.world.dungeonmap.service.editing.DungeonConnectionEditingService;
+import features.world.dungeonmap.service.editing.DungeonFeatureEditingService;
+import features.world.dungeonmap.service.editing.DungeonMapLifecycleEditingService;
+import features.world.dungeonmap.service.editing.DungeonTopologyEditingService;
 
 import java.util.List;
 
 public final class DungeonMapCommands {
 
     public long createMap(String name, int width, int height) throws Exception {
-        return DungeonMapEditorService.createMap(name, width, height);
+        return DungeonMapLifecycleEditingService.createMap(name, width, height);
     }
 
     public void updateMap(long mapId, String name, int width, int height) throws Exception {
-        DungeonMapEditorService.updateMap(mapId, name, width, height);
+        DungeonMapLifecycleEditingService.updateMap(mapId, name, width, height);
     }
 
     public void deleteMap(long mapId) throws Exception {
-        DungeonMapEditorService.deleteMap(mapId);
+        DungeonMapLifecycleEditingService.deleteMap(mapId);
     }
 
     public void applySquareEditsAndReconcileState(long mapId, List<DungeonSquarePaint> edits) throws Exception {
-        DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits);
+        DungeonTopologyEditingService.applySquareEditsAndReconcileState(mapId, edits);
     }
 
     public void updateRoomMetadata(long roomId, String name, String description) throws Exception {
-        DungeonMapEditorService.updateRoomMetadata(roomId, name, description);
+        DungeonFeatureEditingService.updateRoomMetadata(roomId, name, description);
     }
 
     public long saveArea(DungeonArea area) throws Exception {
-        return DungeonMapEditorService.saveArea(area);
+        return DungeonFeatureEditingService.saveArea(area);
     }
 
     public void deleteArea(long areaId) throws Exception {
-        DungeonMapEditorService.deleteArea(areaId);
+        DungeonFeatureEditingService.deleteArea(areaId);
     }
 
     public long saveFeature(DungeonFeature feature) throws Exception {
-        return DungeonMapEditorService.saveFeature(feature);
+        return DungeonFeatureEditingService.saveFeature(feature);
     }
 
     public void deleteFeature(long featureId) throws Exception {
-        DungeonMapEditorService.deleteFeature(featureId);
+        DungeonFeatureEditingService.deleteFeature(featureId);
     }
 
     public void addSquareToFeature(long featureId, long squareId) throws Exception {
-        DungeonMapEditorService.addSquareToFeature(featureId, squareId);
+        DungeonFeatureEditingService.addSquareToFeature(featureId, squareId);
     }
 
     public void removeSquareFromFeature(long featureId, long squareId) throws Exception {
-        DungeonMapEditorService.removeSquareFromFeature(featureId, squareId);
+        DungeonFeatureEditingService.removeSquareFromFeature(featureId, squareId);
     }
 
     public void assignRoomArea(long roomId, long areaId) throws Exception {
-        DungeonMapEditorService.assignRoomArea(roomId, areaId);
+        DungeonFeatureEditingService.assignRoomArea(roomId, areaId);
     }
 
     public long saveEndpoint(DungeonEndpoint endpoint) throws Exception {
-        return DungeonMapEditorService.saveEndpoint(endpoint);
+        return DungeonConnectionEditingService.saveEndpoint(endpoint);
     }
 
     public void deleteEndpoint(long endpointId) throws Exception {
-        DungeonMapEditorService.deleteEndpoint(endpointId);
+        DungeonConnectionEditingService.deleteEndpoint(endpointId);
     }
 
     public DungeonLinkCreateResult createLink(long mapId, DungeonLinkAnchor fromAnchor, DungeonLinkAnchor toAnchor, String label) throws Exception {
-        return DungeonMapEditorService.createLink(mapId, fromAnchor, toAnchor, label);
+        return DungeonConnectionEditingService.createLink(mapId, fromAnchor, toAnchor, label);
     }
 
     public void deleteLink(long linkId) throws Exception {
-        DungeonMapEditorService.deleteLink(linkId);
+        DungeonConnectionEditingService.deleteLink(linkId);
     }
 
     public void updateLinkLabel(long linkId, String label) throws Exception {
-        DungeonMapEditorService.updateLinkLabel(linkId, label);
+        DungeonConnectionEditingService.updateLinkLabel(linkId, label);
     }
 
     public long savePassage(DungeonPassage passage) throws Exception {
-        return DungeonMapEditorService.savePassage(passage);
+        return DungeonConnectionEditingService.savePassage(passage);
     }
 
     public void deletePassage(long passageId) throws Exception {
-        DungeonMapEditorService.deletePassage(passageId);
+        DungeonConnectionEditingService.deletePassage(passageId);
     }
 
     public void applyWallEdits(long mapId, List<DungeonWallEdit> edits) throws Exception {
-        DungeonMapEditorService.applyWallEdits(mapId, edits);
+        DungeonTopologyEditingService.applyWallEdits(mapId, edits);
     }
 }

@@ -36,7 +36,7 @@ public final class DungeonRuntimeService {
                 }
                 mapId = maps.get(0).mapId();
             }
-            DungeonMapState state = DungeonMapQueryService.loadMapState(conn, mapId);
+            DungeonMapState state = DungeonMapQueries.loadMapState(conn, mapId);
             Long activeEndpointId = resolveActiveEndpointId(conn, mapId);
             return new DungeonRuntimeState(state, activeEndpointId);
         }

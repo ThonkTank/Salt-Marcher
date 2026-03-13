@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.loading;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.service.catalog.DungeonEncounterCatalogAdapter;
 import features.world.dungeonmap.service.catalog.DungeonEncounterTableCatalogAdapter;
@@ -7,7 +7,7 @@ import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import ui.async.UiErrorReporter;
 
-public final class DungeonCatalogLoader {
+final class DungeonCatalogLoader {
 
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;

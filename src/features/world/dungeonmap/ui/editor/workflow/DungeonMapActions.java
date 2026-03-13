@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.entity;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.service.DungeonMapCommands;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
@@ -8,7 +8,7 @@ import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 
-public final class DungeonMapActions {
+final class DungeonMapActions {
 
     private final DungeonEditorState state;
     private final DungeonMapDropdowns mapDropdowns;

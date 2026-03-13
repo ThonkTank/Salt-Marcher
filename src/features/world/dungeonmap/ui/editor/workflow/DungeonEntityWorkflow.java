@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.entity;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -13,8 +13,6 @@ import features.world.dungeonmap.ui.editor.inspector.actions.DungeonEntityInspec
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
-import features.world.dungeonmap.ui.editor.workflow.messaging.EditorMessageBus;
-import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.components.ConfirmationDropdown;
@@ -22,7 +20,7 @@ import ui.components.TextInputDropdown;
 
 import java.util.function.Consumer;
 
-public final class DungeonEntityWorkflow implements DungeonEntityInspectorActions {
+final class DungeonEntityWorkflow implements DungeonEntityInspectorActions {
 
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;

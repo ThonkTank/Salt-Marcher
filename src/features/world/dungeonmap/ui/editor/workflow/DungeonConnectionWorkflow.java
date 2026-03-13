@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.connection;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEndpointRole;
@@ -17,15 +17,13 @@ import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
-import features.world.dungeonmap.ui.editor.workflow.messaging.EditorMessageBus;
-import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.components.ConfirmationDropdown;
 
 import java.util.function.Consumer;
 
-public final class DungeonConnectionWorkflow implements DungeonConnectionInspectorActions {
+final class DungeonConnectionWorkflow implements DungeonConnectionInspectorActions {
 
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;

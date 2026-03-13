@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.selection;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
@@ -10,7 +10,7 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.ui.editor.inspector.DungeonEditorInspectorContentFactory;
 import ui.shell.DetailsNavigator;
 
-public final class DungeonSelectionInspectorPublisher {
+final class DungeonSelectionInspectorPublisher {
 
     private final DetailsNavigator detailsNavigator;
     private final DungeonEditorInspectorContentFactory inspectorContentFactory;

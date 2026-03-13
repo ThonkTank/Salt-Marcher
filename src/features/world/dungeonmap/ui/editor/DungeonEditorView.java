@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor;
 
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.workflow.DungeonEditorCoordinator;
+import features.world.dungeonmap.ui.editor.workflow.DungeonEditorController;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
@@ -22,12 +22,12 @@ public class DungeonEditorView implements AppView {
     private final DungeonToolSettingsPane toolSettingsPane = new DungeonToolSettingsPane();
     private final DungeonEditorState state = new DungeonEditorState();
     private final VBox statePane = new VBox(8);
-    private final DungeonEditorCoordinator coordinator;
+    private final DungeonEditorController controller;
 
     public DungeonEditorView(DetailsNavigator detailsNavigator, DungeonMapQueries queries, DungeonMapCommands commands) {
-        coordinator = new DungeonEditorCoordinator(state, interactionState, controls, canvas, toolSettingsPane, queries, commands, detailsNavigator);
+        controller = new DungeonEditorController(state, interactionState, controls, canvas, toolSettingsPane, queries, commands, detailsNavigator);
         statePane.getChildren().add(toolSettingsPane);
-        coordinator.initializeUi();
+        controller.initializeUi();
         bindControls();
         bindCanvas();
         bindSharedUi();
@@ -64,42 +64,42 @@ public class DungeonEditorView implements AppView {
 
     @Override
     public void onShow() {
-        coordinator.onShow();
+        controller.onShow();
     }
 
     private void bindControls() {
-        controls.setOnMapSelected(coordinator::handleMapSelected);
-        controls.setOnNewMapRequested(coordinator::showNewMapDropdown);
-        controls.setOnEditMapRequested(coordinator::showEditMapDropdown);
-        interactionState.onPaintModeChanged(coordinator::handlePaintModeChanged);
-        interactionState.onColorRenderModeChanged(coordinator::handleColorRenderModeChanged);
-        interactionState.onWallEditorModeChanged(ignored -> coordinator.handleWallEditorModeChanged());
-        interactionState.onPassageEditorModeChanged(ignored -> coordinator.handlePassageEditorModeChanged());
-        interactionState.onActiveToolChanged(coordinator::handleActiveToolChanged);
+        controls.setOnMapSelected(controller::handleMapSelected);
+        controls.setOnNewMapRequested(controller::showNewMapDropdown);
+        controls.setOnEditMapRequested(controller::showEditMapDropdown);
+        interactionState.onPaintModeChanged(controller::handlePaintModeChanged);
+        interactionState.onColorRenderModeChanged(controller::handleColorRenderModeChanged);
+        interactionState.onWallEditorModeChanged(ignored -> controller.handleWallEditorModeChanged());
+        interactionState.onPassageEditorModeChanged(ignored -> controller.handlePassageEditorModeChanged());
+        interactionState.onActiveToolChanged(controller::handleActiveToolChanged);
     }
 
     private void bindCanvas() {
-        canvas.setOnCellClicked(coordinator::handleCellClicked);
-        canvas.setOnCellPainted(coordinator::handleCellPaint);
-        canvas.setOnPaintStrokeFinished(coordinator::flushPendingSquareEdits);
-        canvas.setOnEdgePainted(coordinator::handleEdgePaint);
-        canvas.setOnEdgePaintPathPreview(coordinator::previewWallPaintPath);
-        canvas.setOnEdgePaintPathFinished(coordinator::commitWallPaintPath);
-        canvas.setOnEdgeStrokeFinished(coordinator::flushPendingWallEdits);
-        canvas.setOnEndpointClicked(coordinator::handleEndpointClick);
-        canvas.setOnLinkClicked(coordinator::showLinkSelection);
-        canvas.setBrushSizeSupplier(coordinator::brushSize);
-        canvas.setBrushShapeSupplier(coordinator::brushShape);
-        canvas.setPaintModeSupplier(coordinator::paintMode);
-        canvas.setWallEditorModeSupplier(coordinator::wallEditorMode);
-        canvas.setPassageEditorModeSupplier(coordinator::passageEditorMode);
-        canvas.setOnEdgeClicked(coordinator::handleEdgeClick);
+        canvas.setOnCellClicked(controller::handleCellClicked);
+        canvas.setOnCellPainted(controller::handleCellPaint);
+        canvas.setOnPaintStrokeFinished(controller::flushPendingSquareEdits);
+        canvas.setOnEdgePainted(controller::handleEdgePaint);
+        canvas.setOnEdgePaintPathPreview(controller::previewWallPaintPath);
+        canvas.setOnEdgePaintPathFinished(controller::commitWallPaintPath);
+        canvas.setOnEdgeStrokeFinished(controller::flushPendingWallEdits);
+        canvas.setOnEndpointClicked(controller::handleEndpointClick);
+        canvas.setOnLinkClicked(controller::showLinkSelection);
+        canvas.setBrushSizeSupplier(controller::brushSize);
+        canvas.setBrushShapeSupplier(controller::brushShape);
+        canvas.setPaintModeSupplier(controller::paintMode);
+        canvas.setWallEditorModeSupplier(controller::wallEditorMode);
+        canvas.setPassageEditorModeSupplier(controller::passageEditorMode);
+        canvas.setOnEdgeClicked(controller::handleEdgeClick);
     }
 
     private void bindSharedUi() {
-        toolSettingsPane.setOnLinksVisibilityChanged(coordinator::setShowLinks);
-        toolSettingsPane.setOnEndpointsVisibilityChanged(coordinator::setShowEndpoints);
-        toolSettingsPane.setOnFeaturesVisibilityChanged(coordinator::setShowFeatures);
-        toolSettingsPane.setOnColorRenderModeChanged(coordinator::setColorRenderMode);
+        toolSettingsPane.setOnLinksVisibilityChanged(controller::setShowLinks);
+        toolSettingsPane.setOnEndpointsVisibilityChanged(controller::setShowEndpoints);
+        toolSettingsPane.setOnFeaturesVisibilityChanged(controller::setShowFeatures);
+        toolSettingsPane.setOnColorRenderModeChanged(controller::setColorRenderMode);
     }
 }

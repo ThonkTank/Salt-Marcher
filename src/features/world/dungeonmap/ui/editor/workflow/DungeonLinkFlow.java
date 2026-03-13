@@ -1,10 +1,10 @@
-package features.world.dungeonmap.ui.editor.workflow.connection;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 
-public final class DungeonLinkFlow {
+final class DungeonLinkFlow {
 
     @FunctionalInterface
     public interface LinkCreator {

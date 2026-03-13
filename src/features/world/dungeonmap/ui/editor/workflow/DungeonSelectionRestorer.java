@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.selection;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -13,7 +13,7 @@ import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
 
 import java.util.function.Supplier;
 
-public final class DungeonSelectionRestorer {
+final class DungeonSelectionRestorer {
 
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;
