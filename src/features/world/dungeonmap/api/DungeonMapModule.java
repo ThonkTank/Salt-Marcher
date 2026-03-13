@@ -1,28 +1,29 @@
 package features.world.dungeonmap.api;
 
-import features.world.dungeonmap.ui.editor.DungeonEditorView;
-import features.world.dungeonmap.ui.runtime.DungeonView;
+import features.world.dungeonmap.ui.DungeonMapUiModule;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
 import java.util.Objects;
 
+/**
+ * Stable world-facing facade for dungeon map views. External consumers depend on this boundary
+ * instead of reaching into the feature's internal UI package directly.
+ */
 public final class DungeonMapModule {
 
-    private final AppView dungeonView;
-    private final AppView dungeonEditorView;
+    private final DungeonMapUiModule uiModule;
 
     public DungeonMapModule(DetailsNavigator detailsNavigator) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
-        this.dungeonView = new DungeonView();
-        this.dungeonEditorView = new DungeonEditorView(detailsNavigator);
+        this.uiModule = new DungeonMapUiModule(detailsNavigator);
     }
 
     public AppView dungeonView() {
-        return dungeonView;
+        return uiModule.dungeonView();
     }
 
     public AppView dungeonEditorView() {
-        return dungeonEditorView;
+        return uiModule.dungeonEditorView();
     }
 }

@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor.inspector;
 
-import features.world.dungeonmap.api.DungeonEncounterSummary;
 import features.world.dungeonmap.model.DungeonPassage;
+import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;

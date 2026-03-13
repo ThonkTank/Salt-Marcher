@@ -1,11 +1,11 @@
 package features.world.dungeonmap.ui.editor.panes;
 
-import features.world.dungeonmap.api.DungeonEncounterSummary;
-import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureCategory;
+import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
+import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
 import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import javafx.geometry.Insets;

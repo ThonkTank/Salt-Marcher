@@ -1,7 +1,6 @@
-package features.world.dungeonmap.service.adapter;
+package features.world.dungeonmap.service.catalog;
 
 import features.encounter.api.EncounterStorageApi;
-import features.world.dungeonmap.api.DungeonEncounterSummary;
 
 import java.util.List;
 

@@ -1,9 +1,9 @@
 package features.world.dungeonmap.ui.editor.state;
 
-import features.world.dungeonmap.api.DungeonEncounterSummary;
-import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonSelection;
+import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
+import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
 
 import java.util.List;
 

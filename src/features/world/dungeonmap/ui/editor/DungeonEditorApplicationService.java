@@ -1,7 +1,5 @@
 package features.world.dungeonmap.ui.editor;
 
-import features.world.dungeonmap.api.DungeonEncounterTableSummary;
-import features.world.dungeonmap.api.DungeonEncounterSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonLinkAnchor;
@@ -13,8 +11,10 @@ import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.service.DungeonMapQueryService;
-import features.world.dungeonmap.service.adapter.DungeonEncounterCatalogAdapter;
-import features.world.dungeonmap.service.adapter.DungeonEncounterTableCatalogAdapter;
+import features.world.dungeonmap.service.catalog.DungeonEncounterCatalogAdapter;
+import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
+import features.world.dungeonmap.service.catalog.DungeonEncounterTableCatalogAdapter;
+import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
 import javafx.concurrent.Task;
 import ui.async.UiAsyncTasks;
 

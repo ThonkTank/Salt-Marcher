@@ -1,6 +1,5 @@
 package features.world.dungeonmap.ui.editor.inspector;
 
-import features.world.dungeonmap.api.DungeonEncounterSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonAreaEncounterTableLink;
 import features.world.dungeonmap.model.DungeonEndpoint;
@@ -13,6 +12,7 @@ import features.world.dungeonmap.model.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.ui.DungeonAreaEncounterText;
 import features.world.dungeonmap.ui.editor.DungeonConnectionEditingController;
 import features.world.dungeonmap.ui.editor.DungeonEntityCrudController;

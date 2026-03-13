@@ -1,8 +1,8 @@
 package features.world.dungeonmap.ui.editor.workflow;
 
-import features.world.dungeonmap.api.DungeonEncounterSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
+import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.ui.editor.DungeonEntityCrudController;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;

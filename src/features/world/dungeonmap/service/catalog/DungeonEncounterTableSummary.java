@@ -1,4 +1,4 @@
-package features.world.dungeonmap.api;
+package features.world.dungeonmap.service.catalog;
 
 public record DungeonEncounterTableSummary(long tableId, String name) {
     @Override

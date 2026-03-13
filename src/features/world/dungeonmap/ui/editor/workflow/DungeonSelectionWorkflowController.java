@@ -343,6 +343,8 @@ public final class DungeonSelectionWorkflowController {
         if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
             return;
         }
+        // Dungeon inspector cards stay feature-local because they include lightweight entity-specific
+        // interactions; the shell just hosts them in global history.
         detailsNavigator.showContent(
                 titleOrFallback(room.name(), "Raum"),
                 entryKey,

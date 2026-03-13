@@ -8,12 +8,6 @@ import features.items.api.ItemViewerPane;
 import features.loottable.api.LootTableSummary;
 import features.spells.api.SpellSummary;
 import features.spells.api.SpellCatalogService;
-import features.world.dungeonmap.api.DungeonEndpointSummary;
-import features.world.dungeonmap.api.DungeonFeatureSummary;
-import features.world.dungeonmap.api.DungeonLinkSummary;
-import features.world.dungeonmap.api.DungeonPassageSummary;
-import features.world.dungeonmap.api.DungeonRoomSummary;
-import features.world.dungeonmap.api.DungeonSquareSummary;
 import features.world.hexmap.api.HexTileSummary;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -170,42 +164,6 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     }
 
     @Override
-    public void showDungeonSquare(DungeonSquareSummary summary) {
-        if (summary == null) return;
-        openEntry(new DungeonSquareEntry(summary));
-    }
-
-    @Override
-    public void showDungeonRoom(DungeonRoomSummary summary) {
-        if (summary == null) return;
-        openEntry(new DungeonRoomEntry(summary));
-    }
-
-    @Override
-    public void showDungeonFeature(DungeonFeatureSummary summary) {
-        if (summary == null) return;
-        openEntry(new DungeonFeatureEntry(summary));
-    }
-
-    @Override
-    public void showDungeonEndpoint(DungeonEndpointSummary summary) {
-        if (summary == null) return;
-        openEntry(new DungeonEndpointEntry(summary));
-    }
-
-    @Override
-    public void showDungeonLink(DungeonLinkSummary summary) {
-        if (summary == null) return;
-        openEntry(new DungeonLinkEntry(summary));
-    }
-
-    @Override
-    public void showDungeonPassage(DungeonPassageSummary summary) {
-        if (summary == null) return;
-        openEntry(new DungeonPassageEntry(summary));
-    }
-
-    @Override
     public void showInfo(String title, Object entryKey, String message) {
         if (title == null || title.isBlank() || message == null || message.isBlank()) return;
         openEntry(new InfoEntry(title, entryKey, message));
@@ -350,31 +308,6 @@ public class InspectorPane extends VBox implements DetailsNavigator {
             ui.async.UiErrorReporter.reportBackgroundFailure("InspectorPane.renderSpell()", throwable);
             showContentNode("Spell", loadingNode("Spell konnte nicht geladen werden."), false);
         });
-    }
-
-    private void renderDungeonSquare(DungeonSquareSummary summary) {
-        showContentNode("Feld", buildDungeonSquareNode(summary), false);
-    }
-
-    private void renderDungeonRoom(DungeonRoomSummary summary) {
-        showContentNode(summary.name(), buildDungeonRoomNode(summary), false);
-    }
-
-    private void renderDungeonFeature(DungeonFeatureSummary summary) {
-        showContentNode(summary.name(), buildDungeonFeatureNode(summary), false);
-    }
-
-    private void renderDungeonEndpoint(DungeonEndpointSummary summary) {
-        showContentNode(summary.name(), buildDungeonEndpointNode(summary), false);
-    }
-
-    private void renderDungeonLink(DungeonLinkSummary summary) {
-        showContentNode("Link", buildDungeonLinkNode(summary), false);
-    }
-
-    private void renderDungeonPassage(DungeonPassageSummary summary) {
-        String title = summary.name() != null && !summary.name().isBlank() ? summary.name() : "Durchgang";
-        showContentNode(title, buildDungeonPassageNode(summary), false);
     }
 
     private void renderInfo(String title, String message) {
@@ -545,95 +478,6 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         return box;
     }
 
-    private static Node buildDungeonSquareNode(DungeonSquareSummary summary) {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(12));
-        Label kind = new Label("Dungeon-Feld");
-        kind.getStyleClass().addAll("section-header", "text-muted");
-        box.getChildren().addAll(
-                kind,
-                secondary("Position: " + summary.x() + ", " + summary.y()),
-                secondary("Raum: " + valueOrDash(summary.roomName())),
-                secondary("Bereich: " + valueOrDash(summary.areaName())));
-        return box;
-    }
-
-    private static Node buildDungeonRoomNode(DungeonRoomSummary summary) {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(12));
-        Label kind = new Label("Raum");
-        kind.getStyleClass().addAll("section-header", "text-muted");
-        box.getChildren().addAll(kind, secondary("Bereich: " + valueOrDash(summary.areaName())));
-        if (summary.description() != null && !summary.description().isBlank()) {
-            addSection(box, "Beschreibung", summary.description());
-        }
-        return box;
-    }
-
-    private static Node buildDungeonFeatureNode(DungeonFeatureSummary summary) {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(12));
-        Label kind = new Label("Feature");
-        kind.getStyleClass().addAll("section-header", "text-muted");
-        box.getChildren().addAll(
-                kind,
-                secondary("Kategorie: " + valueOrDash(summary.categoryLabel())),
-                secondary("Encounter: " + valueOrDash(summary.encounterName())),
-                secondary("Felder: " + Math.max(summary.tileCount(), 0)));
-        if (summary.notes() != null && !summary.notes().isBlank()) {
-            addSection(box, "Notizen", summary.notes());
-        }
-        return box;
-    }
-
-    private static Node buildDungeonEndpointNode(DungeonEndpointSummary summary) {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(12));
-        Label kind = new Label("Übergang");
-        kind.getStyleClass().addAll("section-header", "text-muted");
-        box.getChildren().addAll(
-                kind,
-                secondary("Position: " + summary.x() + ", " + summary.y()),
-                secondary("Typ: " + valueOrDash(summary.roleLabel())),
-                secondary(summary.defaultEntry() ? "Standard-Einstieg" : "Kein Standard-Einstieg"));
-        if (summary.notes() != null && !summary.notes().isBlank()) {
-            addSection(box, "Notizen", summary.notes());
-        }
-        return box;
-    }
-
-    private static Node buildDungeonLinkNode(DungeonLinkSummary summary) {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(12));
-        Label kind = new Label("Link");
-        kind.getStyleClass().addAll("section-header", "text-muted");
-        box.getChildren().addAll(
-                kind,
-                secondary("Von: " + valueOrDash(summary.fromAnchorName())),
-                secondary("Nach: " + valueOrDash(summary.toAnchorName())));
-        if (summary.label() != null && !summary.label().isBlank()) {
-            addSection(box, "Label", summary.label());
-        }
-        return box;
-    }
-
-    private static Node buildDungeonPassageNode(DungeonPassageSummary summary) {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(12));
-        Label kind = new Label("Durchgang");
-        kind.getStyleClass().addAll("section-header", "text-muted");
-        box.getChildren().addAll(
-                kind,
-                secondary("Position: " + summary.x() + ", " + summary.y()),
-                secondary("Richtung: " + valueOrDash(summary.directionLabel())),
-                secondary("Typ: " + valueOrDash(summary.typeLabel())),
-                secondary("Verknüpfter Übergang: " + valueOrDash(summary.endpointName())));
-        if (summary.notes() != null && !summary.notes().isBlank()) {
-            addSection(box, "Notizen", summary.notes());
-        }
-        return box;
-    }
-
     private static Node buildInfoNode(String message) {
         VBox box = new VBox(10);
         box.setPadding(new Insets(12));
@@ -665,7 +509,7 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         return school == null || school.isBlank() ? levelText : levelText + " • " + school;
     }
 
-    private sealed interface HistoryEntry permits StatBlockEntry, ItemEntry, SpellEntry, EncounterTableEntry, LootTableEntry, HexTileEntry, DungeonSquareEntry, DungeonRoomEntry, DungeonFeatureEntry, DungeonEndpointEntry, DungeonLinkEntry, DungeonPassageEntry, InfoEntry, HostedContentEntry {
+    private sealed interface HistoryEntry permits StatBlockEntry, ItemEntry, SpellEntry, EncounterTableEntry, LootTableEntry, HexTileEntry, InfoEntry, HostedContentEntry {
         Object entryKey();
         boolean sameEntry(HistoryEntry other);
         void render(InspectorPane pane, long requestVersion);
@@ -773,110 +617,6 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         @Override
         public void render(InspectorPane pane, long requestVersion) {
             pane.renderHexTile(summary);
-        }
-    }
-
-    private record DungeonSquareEntry(DungeonSquareSummary summary) implements HistoryEntry {
-        @Override
-        public Object entryKey() {
-            return new DetailsNavigator.EntryKey("dungeon-square", summary.x() + ":" + summary.y());
-        }
-
-        @Override
-        public boolean sameEntry(HistoryEntry other) {
-            return other instanceof DungeonSquareEntry entry
-                    && summary.x() == entry.summary.x()
-                    && summary.y() == entry.summary.y();
-        }
-
-        @Override
-        public void render(InspectorPane pane, long requestVersion) {
-            pane.renderDungeonSquare(summary);
-        }
-    }
-
-    private record DungeonRoomEntry(DungeonRoomSummary summary) implements HistoryEntry {
-        @Override
-        public Object entryKey() {
-            return new DetailsNavigator.EntryKey("dungeon-room", summary.roomId());
-        }
-
-        @Override
-        public boolean sameEntry(HistoryEntry other) {
-            return other instanceof DungeonRoomEntry entry && summary.roomId() == entry.summary.roomId();
-        }
-
-        @Override
-        public void render(InspectorPane pane, long requestVersion) {
-            pane.renderDungeonRoom(summary);
-        }
-    }
-
-    private record DungeonFeatureEntry(DungeonFeatureSummary summary) implements HistoryEntry {
-        @Override
-        public Object entryKey() {
-            return new DetailsNavigator.EntryKey("dungeon-feature", summary.featureId());
-        }
-
-        @Override
-        public boolean sameEntry(HistoryEntry other) {
-            return other instanceof DungeonFeatureEntry entry && summary.featureId() == entry.summary.featureId();
-        }
-
-        @Override
-        public void render(InspectorPane pane, long requestVersion) {
-            pane.renderDungeonFeature(summary);
-        }
-    }
-
-    private record DungeonEndpointEntry(DungeonEndpointSummary summary) implements HistoryEntry {
-        @Override
-        public Object entryKey() {
-            return new DetailsNavigator.EntryKey("dungeon-endpoint", summary.endpointId());
-        }
-
-        @Override
-        public boolean sameEntry(HistoryEntry other) {
-            return other instanceof DungeonEndpointEntry entry && summary.endpointId() == entry.summary.endpointId();
-        }
-
-        @Override
-        public void render(InspectorPane pane, long requestVersion) {
-            pane.renderDungeonEndpoint(summary);
-        }
-    }
-
-    private record DungeonLinkEntry(DungeonLinkSummary summary) implements HistoryEntry {
-        @Override
-        public Object entryKey() {
-            return new DetailsNavigator.EntryKey("dungeon-link", summary.linkId());
-        }
-
-        @Override
-        public boolean sameEntry(HistoryEntry other) {
-            return other instanceof DungeonLinkEntry entry && summary.linkId() == entry.summary.linkId();
-        }
-
-        @Override
-        public void render(InspectorPane pane, long requestVersion) {
-            pane.renderDungeonLink(summary);
-        }
-    }
-
-    private record DungeonPassageEntry(DungeonPassageSummary summary) implements HistoryEntry {
-        @Override
-        public Object entryKey() {
-            return new DetailsNavigator.EntryKey("dungeon-passage", summary.passageId());
-        }
-
-        @Override
-        public boolean sameEntry(HistoryEntry other) {
-            return other instanceof DungeonPassageEntry entry && summary.passageId() == entry.summary.passageId();
-        }
-
-        @Override
-        public void render(InspectorPane pane, long requestVersion) {
-            pane.renderDungeonPassage(summary);
         }
     }
 

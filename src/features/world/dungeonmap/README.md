@@ -6,7 +6,10 @@
 
 `dungeonmap` owns only dungeon-specific tables and workflows.
 It may read or update world-session state only through `features.campaignstate.api`.
-Cross-feature selector/read DTOs belong in `api`, while `model` stays focused on dungeon domain and editor state.
+Cross-feature selector/read DTOs belong in `api` when dungeon data must cross a feature boundary, while `model` stays focused on dungeon domain and editor state.
+Editor-only encounter and encounter-table selector catalogs belong in internal `service.catalog`, not in `api`.
+`api` exposes only stable contracts consumed outside `dungeonmap`; the current public surface is the world-facing
+`DungeonMapModule` facade, while dungeon view composition stays in internal `ui`.
 The editor view is the composition root only; peer orchestration classes in `ui/editor` use the
 `*WorkflowController` suffix consistently.
 Use `paint*` naming for transient UI stroke/preview mechanics and `*SquareEdit*` naming for persisted square mutation commands.

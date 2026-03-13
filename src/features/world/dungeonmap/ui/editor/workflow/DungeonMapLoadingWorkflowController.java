@@ -1,12 +1,12 @@
 package features.world.dungeonmap.ui.editor.workflow;
 
-import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
+import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.DungeonEditorApplicationService;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
