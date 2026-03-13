@@ -24,7 +24,8 @@ import java.util.List;
  *   <li><b>State</b> — game state, tool-specific settings, and interactive editor UI ({@link #getStateContent()})</li>
  * </ul>
  * Session/runtime views use shell-owned shared right-side panes (history-aware Details + tabbed State).
- * Editor views may provide their own right-side panes instead. Local selection state and runtime
+ * Editor views may provide their own right-side panes instead; until a given editor does, explicit
+ * reference-detail actions still flow through the shared inspector. Local selection state and runtime
  * inspector history remain separate concerns: views should open inspector cards intentionally instead
  * of mirroring every local selection into shared history.
  */
@@ -48,7 +49,8 @@ public interface AppView {
     /**
      * Details panel (top-right).
      * Session views normally leave this null because the shell provides the shared runtime inspector.
-     * Editor views may override this to provide local details content instead.
+     * Editor views may override this to provide local details content instead; otherwise the shell
+     * continues showing the shared inspector for compatibility with existing detail publishers.
      */
     default Node getDetailsContent() { return null; }
 

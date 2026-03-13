@@ -5,7 +5,6 @@ import features.world.hexmap.ui.overworld.OverworldView;
 import features.world.hexmap.ui.travel.TravelPane;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
-import ui.shell.SceneHandle;
 import ui.shell.SceneRegistry;
 
 import java.util.Objects;
@@ -23,8 +22,7 @@ public final class HexMapModule {
 
     public void registerScenes(SceneRegistry sceneRegistry) {
         Objects.requireNonNull(sceneRegistry, "sceneRegistry");
-        SceneHandle travelScene = sceneRegistry.registerScene("\uD83D\uDDFA Reise", new TravelPane());
-        overworldView.setTravelScene(travelScene);
+        sceneRegistry.registerScene("\uD83D\uDDFA Reise", new TravelPane());
     }
 
     public AppView overworldView() {

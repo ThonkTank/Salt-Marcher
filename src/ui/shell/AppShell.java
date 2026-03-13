@@ -28,7 +28,8 @@ import java.util.Map;
  * Right column is a vertical SplitPane (Details / State — resizable).
  * <p>
  * Session views use the shell-owned Details + Scene panes.
- * Editor views may provide local right-side panes instead.
+ * Editor views may provide local right-side panes instead; until they do, editor detail actions
+ * continue to use the shared inspector so existing read-only reference flows stay visible.
  * <p>
  * SplitPane items are set once in the constructor and never mutated.
  * Content is swapped inside StackPane containers only, which preserves divider positions.
@@ -48,7 +49,6 @@ public class AppShell extends BorderPane {
     // ---- Shell-owned panel defaults (used when views return null) ----
     private final InspectorPane inspectorPane;
     private final ScenePane scenePane = new ScenePane();
-    private final Node editorDetailsPlaceholder = createPlaceholderPane("Details", "Keine lokalen Details");
     private final Node editorStatePlaceholder = createPlaceholderPane("Status", "Kein lokaler Zustand");
 
     // ---- Layout structure ----
@@ -236,7 +236,7 @@ public class AppShell extends BorderPane {
         }
 
         Node details = target.getDetailsContent();
-        Node detailsNode = details != null ? details : editorDetailsPlaceholder;
+        Node detailsNode = details != null ? details : inspectorPane;
         if (!detailsContainer.getChildren().contains(detailsNode)) {
             detailsContainer.getChildren().setAll(detailsNode);
         }
