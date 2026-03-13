@@ -10,6 +10,7 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
+import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
@@ -125,6 +126,14 @@ public class DungeonMapPane extends StackPane {
 
     public void setActiveTool(DungeonEditorTool tool) {
         interactionController.setActiveTool(tool);
+    }
+
+    public void setColorRenderMode(DungeonColorRenderMode mode) {
+        gridRenderer.setColorRenderMode(mode);
+        overlayRenderer.setColorRenderMode(mode);
+        gridRenderer.redrawGrid();
+        gridRenderer.redrawSelection();
+        overlayRenderer.repositionOverlays(this);
     }
 
     public void setWallEditorModeSupplier(Supplier<WallEditorMode> supplier) {

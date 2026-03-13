@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public final class DungeonAreaRepository {
 
@@ -73,7 +74,27 @@ public final class DungeonAreaRepository {
         return result;
     }
 
+    public static Optional<DungeonArea> findArea(Connection conn, long areaId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT area_id, map_id, name, description, encounter_table_id "
+                        + "FROM dungeon_areas WHERE area_id=?")) {
+            ps.setLong(1, areaId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(new DungeonArea(
+                        rs.getLong("area_id"),
+                        rs.getLong("map_id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        getNullableLong(rs, "encounter_table_id")));
+            }
+        }
+    }
+
     public static void deleteArea(Connection conn, long areaId) throws SQLException {
+        // Callers must normalize area assignments in the same transaction before commit.
         try (PreparedStatement clearRooms = conn.prepareStatement(
                 "UPDATE dungeon_rooms SET area_id=NULL WHERE area_id=?");
              PreparedStatement deleteArea = conn.prepareStatement(

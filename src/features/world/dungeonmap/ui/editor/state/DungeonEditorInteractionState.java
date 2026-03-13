@@ -1,5 +1,6 @@
 package features.world.dungeonmap.ui.editor.state;
 
+import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
@@ -13,11 +14,13 @@ public final class DungeonEditorInteractionState {
 
     private final List<Consumer<DungeonEditorTool>> toolListeners = new ArrayList<>();
     private final List<Consumer<DungeonPaintMode>> paintModeListeners = new ArrayList<>();
+    private final List<Consumer<DungeonColorRenderMode>> colorRenderModeListeners = new ArrayList<>();
     private final List<Consumer<WallEditorMode>> wallModeListeners = new ArrayList<>();
     private final List<Consumer<PassageEditorMode>> passageModeListeners = new ArrayList<>();
 
     private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
     private DungeonPaintMode paintMode = DungeonPaintMode.BRUSH;
+    private DungeonColorRenderMode colorRenderMode = DungeonColorRenderMode.ROOMS;
     private WallEditorMode wallEditorMode = WallEditorMode.PAINT_WALL;
     private PassageEditorMode passageEditorMode = PassageEditorMode.PLACE_PASSAGE;
 
@@ -47,6 +50,21 @@ public final class DungeonEditorInteractionState {
         }
         paintMode = effectiveMode;
         for (Consumer<DungeonPaintMode> listener : List.copyOf(paintModeListeners)) {
+            listener.accept(effectiveMode);
+        }
+    }
+
+    public DungeonColorRenderMode colorRenderMode() {
+        return colorRenderMode;
+    }
+
+    public void setColorRenderMode(DungeonColorRenderMode mode) {
+        DungeonColorRenderMode effectiveMode = mode == null ? DungeonColorRenderMode.ROOMS : mode;
+        if (colorRenderMode == effectiveMode) {
+            return;
+        }
+        colorRenderMode = effectiveMode;
+        for (Consumer<DungeonColorRenderMode> listener : List.copyOf(colorRenderModeListeners)) {
             listener.accept(effectiveMode);
         }
     }
@@ -90,6 +108,12 @@ public final class DungeonEditorInteractionState {
     public void onPaintModeChanged(Consumer<DungeonPaintMode> listener) {
         if (listener != null) {
             paintModeListeners.add(listener);
+        }
+    }
+
+    public void onColorRenderModeChanged(Consumer<DungeonColorRenderMode> listener) {
+        if (listener != null) {
+            colorRenderModeListeners.add(listener);
         }
     }
 

@@ -21,6 +21,7 @@ import features.world.dungeonmap.model.PassageDirection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +42,7 @@ final class DungeonCanvasModel {
     private final Map<Long, java.util.List<DungeonFeatureTile>> featureTilesByFeatureId = new HashMap<>();
     private final Map<Long, java.util.List<DungeonSquare>> squaresByRoomId = new HashMap<>();
     private final Map<Long, RoomLabelAnchor> roomLabelAnchors = new HashMap<>();
+    private final List<AreaLabelAnchor> areaLabelAnchors = new ArrayList<>();
 
     private DungeonMapState state;
     private DungeonSelection selection = DungeonSelection.none();
@@ -75,6 +77,7 @@ final class DungeonCanvasModel {
         featureTilesByFeatureId.clear();
         squaresByRoomId.clear();
         roomLabelAnchors.clear();
+        areaLabelAnchors.clear();
 
         if (state == null || state.map() == null) {
             loadedMapId = null;
@@ -254,6 +257,10 @@ final class DungeonCanvasModel {
         return roomLabelAnchors;
     }
 
+    List<AreaLabelAnchor> areaLabelAnchors() {
+        return areaLabelAnchors;
+    }
+
     DungeonSelection selection() {
         return selection;
     }
@@ -311,6 +318,7 @@ final class DungeonCanvasModel {
     private void rebuildRoomSquareIndex() {
         squaresByRoomId.clear();
         roomLabelAnchors.clear();
+        areaLabelAnchors.clear();
         for (DungeonSquare square : squaresByCoord.values()) {
             if (square.roomId() != null) {
                 squaresByRoomId.computeIfAbsent(square.roomId(), ignored -> new java.util.ArrayList<>()).add(square);
@@ -322,9 +330,75 @@ final class DungeonCanvasModel {
                 roomLabelAnchors.put(entry.getKey(), anchor);
             }
         }
+        rebuildAreaLabelAnchors();
     }
 
     private RoomLabelAnchor selectRoomLabelAnchor(java.util.List<DungeonSquare> squares) {
+        LabelAnchor anchor = selectLabelAnchor(squares);
+        return anchor == null ? null : new RoomLabelAnchor(anchor.x(), anchor.y(), anchor.squareCount());
+    }
+
+    private void rebuildAreaLabelAnchors() {
+        Set<String> visited = new HashSet<>();
+        for (DungeonSquare square : squaresByCoord.values()) {
+            if (square.areaId() == null || square.areaName() == null || square.areaName().isBlank()) {
+                continue;
+            }
+            String coordKey = key(square.x(), square.y());
+            if (visited.contains(coordKey)) {
+                continue;
+            }
+            java.util.List<DungeonSquare> componentSquares = collectAreaComponent(square, visited);
+            LabelAnchor anchor = selectLabelAnchor(componentSquares);
+            if (anchor == null) {
+                continue;
+            }
+            areaLabelAnchors.add(new AreaLabelAnchor(
+                    square.areaId(),
+                    square.areaName(),
+                    anchor.x(),
+                    anchor.y(),
+                    anchor.squareCount()));
+        }
+    }
+
+    private java.util.List<DungeonSquare> collectAreaComponent(DungeonSquare start, Set<String> visited) {
+        java.util.List<DungeonSquare> component = new java.util.ArrayList<>();
+        java.util.ArrayDeque<DungeonSquare> queue = new java.util.ArrayDeque<>();
+        queue.add(start);
+        visited.add(key(start.x(), start.y()));
+        Long areaId = start.areaId();
+        while (!queue.isEmpty()) {
+            DungeonSquare current = queue.removeFirst();
+            component.add(current);
+            collectAreaNeighbor(areaId, current.x() - 1, current.y(), visited, queue);
+            collectAreaNeighbor(areaId, current.x() + 1, current.y(), visited, queue);
+            collectAreaNeighbor(areaId, current.x(), current.y() - 1, visited, queue);
+            collectAreaNeighbor(areaId, current.x(), current.y() + 1, visited, queue);
+        }
+        return component;
+    }
+
+    private void collectAreaNeighbor(
+            Long areaId,
+            int x,
+            int y,
+            Set<String> visited,
+            java.util.ArrayDeque<DungeonSquare> queue
+    ) {
+        String coordKey = key(x, y);
+        if (visited.contains(coordKey)) {
+            return;
+        }
+        DungeonSquare neighbor = squaresByCoord.get(coordKey);
+        if (neighbor == null || neighbor.areaId() == null || !neighbor.areaId().equals(areaId)) {
+            return;
+        }
+        visited.add(coordKey);
+        queue.addLast(neighbor);
+    }
+
+    private LabelAnchor selectLabelAnchor(java.util.List<DungeonSquare> squares) {
         if (squares == null || squares.isEmpty()) {
             return null;
         }
@@ -357,7 +431,7 @@ final class DungeonCanvasModel {
                 bestDistance = distance;
             }
         }
-        return new RoomLabelAnchor(bestSquare.x(), bestSquare.y(), squares.size());
+        return new LabelAnchor(bestSquare.x(), bestSquare.y(), squares.size());
     }
 
     private int roomNeighborCount(DungeonSquare square, Set<String> roomCoords) {
@@ -434,6 +508,12 @@ final class DungeonCanvasModel {
         return x + ":" + y;
     }
 
+    private record LabelAnchor(int x, int y, int squareCount) {
+    }
+
     record RoomLabelAnchor(int x, int y, int squareCount) {
+    }
+
+    record AreaLabelAnchor(Long areaId, String areaName, int x, int y, int squareCount) {
     }
 }

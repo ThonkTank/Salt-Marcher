@@ -1,5 +1,6 @@
 package features.world.dungeonmap.ui.editor.controls;
 
+import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import javafx.scene.Cursor;
 
 public enum DungeonEditorTool {
@@ -99,6 +100,14 @@ public enum DungeonEditorTool {
 
     public boolean featureSettingsVisible() {
         return this == FEATURE;
+    }
+
+    public DungeonColorRenderMode preferredColorRenderMode() {
+        return switch (this) {
+            case PAINT, ERASE -> DungeonColorRenderMode.ROOMS;
+            case AREA_ASSIGN -> DungeonColorRenderMode.AREAS;
+            default -> null;
+        };
     }
 
     public Cursor cursor() {

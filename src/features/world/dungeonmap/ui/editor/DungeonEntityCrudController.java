@@ -92,7 +92,7 @@ public final class DungeonEntityCrudController {
         confirmDelete(
                 anchor,
                 "Bereich löschen",
-                "Bereich '" + findAreaName(areaId) + "' löschen? Alle zugehörigen Räume werden vom Bereich getrennt.",
+                "Bereich '" + findAreaName(areaId) + "' löschen? Alle zugehörigen Räume werden automatisch neu zugeordnet.",
                 () -> applicationService.deleteArea(
                         areaId,
                         () -> reloadCurrentMap.accept(null),
@@ -173,12 +173,13 @@ public final class DungeonEntityCrudController {
     }
 
     public void assignRoomToArea(DungeonSquare square) {
-        if (square == null || square.roomId() == null) {
+        Long areaId = toolSettingsPane.getActiveAreaId();
+        if (square == null || square.roomId() == null || areaId == null) {
             return;
         }
         applicationService.assignRoomArea(
                 square.roomId(),
-                toolSettingsPane.getActiveAreaId(),
+                areaId,
                 () -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.room(square.roomId())),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.assignRoomToArea()", ex));
     }

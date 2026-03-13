@@ -101,6 +101,8 @@ public class DungeonEditorView implements AppView {
 
     private void bindControls() {
         toolSettingsPane.setBrushPaintModeActive(interactionState.paintMode() == DungeonPaintMode.BRUSH);
+        toolSettingsPane.setColorRenderMode(interactionState.colorRenderMode());
+        canvas.setColorRenderMode(interactionState.colorRenderMode());
         selectionWorkflowController.updateToolMode(interactionState.activeTool());
         controls.setOnMapSelected(mapId -> {
             squareEditWorkflowController.discardPendingSquareEdits();
@@ -112,10 +114,18 @@ public class DungeonEditorView implements AppView {
             toolSettingsPane.setBrushPaintModeActive(mode == DungeonPaintMode.BRUSH);
             canvas.setActiveTool(interactionState.activeTool());
         });
+        interactionState.onColorRenderModeChanged(mode -> {
+            toolSettingsPane.setColorRenderMode(mode);
+            canvas.setColorRenderMode(mode);
+        });
         interactionState.onWallEditorModeChanged(mode -> canvas.setActiveTool(interactionState.activeTool()));
         interactionState.onPassageEditorModeChanged(mode -> canvas.setActiveTool(interactionState.activeTool()));
         interactionState.onActiveToolChanged(tool -> {
             squareEditWorkflowController.commitPendingSquareEdits();
+            DungeonColorRenderMode preferredColorMode = tool.preferredColorRenderMode();
+            if (preferredColorMode != null) {
+                interactionState.setColorRenderMode(preferredColorMode);
+            }
             selectionWorkflowController.updateToolMode(tool);
             loadingWorkflowController.autoShowForTool(tool);
         });
@@ -152,5 +162,6 @@ public class DungeonEditorView implements AppView {
                 .addListener((obs, oldValue, newValue) -> canvas.setShowEndpoints(newValue));
         toolSettingsPane.featuresVisibleCheckBox().selectedProperty()
                 .addListener((obs, oldValue, newValue) -> canvas.setShowFeatures(newValue));
+        toolSettingsPane.setOnColorRenderModeChanged(interactionState::setColorRenderMode);
     }
 }

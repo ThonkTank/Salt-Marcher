@@ -89,7 +89,7 @@ public final class DungeonEditorApplicationService {
         submitAction(() -> DungeonMapEditorService.removeSquareFromFeature(featureId, squareId), onSuccess, onError);
     }
 
-    public void assignRoomArea(long roomId, Long areaId, Runnable onSuccess, Consumer<Throwable> onError) {
+    public void assignRoomArea(long roomId, long areaId, Runnable onSuccess, Consumer<Throwable> onError) {
         submitAction(() -> DungeonMapEditorService.assignRoomArea(roomId, areaId), onSuccess, onError);
     }
 

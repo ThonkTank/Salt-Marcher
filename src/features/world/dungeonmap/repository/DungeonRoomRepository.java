@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public final class DungeonRoomRepository {
 
@@ -72,6 +73,24 @@ public final class DungeonRoomRepository {
         return result;
     }
 
+    public static Optional<DungeonRoom> findRoom(Connection conn, long roomId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT room_id, map_id, name, description, area_id FROM dungeon_rooms WHERE room_id=?")) {
+            ps.setLong(1, roomId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(new DungeonRoom(
+                        rs.getLong("room_id"),
+                        rs.getLong("map_id"),
+                        rs.getString("name"),
+                        rs.getString("description"),
+                        getNullableLong(rs, "area_id")));
+            }
+        }
+    }
+
     public static void deleteRoom(Connection conn, long roomId) throws SQLException {
         try (PreparedStatement clearSquares = conn.prepareStatement(
                 "UPDATE dungeon_squares SET room_id=NULL WHERE room_id=?");
@@ -84,14 +103,10 @@ public final class DungeonRoomRepository {
         }
     }
 
-    public static void assignRoomArea(Connection conn, long roomId, Long areaId) throws SQLException {
+    public static void assignRoomArea(Connection conn, long roomId, long areaId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_rooms SET area_id=? WHERE room_id=?")) {
-            if (areaId != null) {
-                ps.setLong(1, areaId);
-            } else {
-                ps.setNull(1, java.sql.Types.INTEGER);
-            }
+            ps.setLong(1, areaId);
             ps.setLong(2, roomId);
             ps.executeUpdate();
         }

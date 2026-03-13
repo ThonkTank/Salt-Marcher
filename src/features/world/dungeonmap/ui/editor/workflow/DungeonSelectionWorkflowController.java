@@ -85,6 +85,9 @@ public final class DungeonSelectionWorkflowController {
                 if (interaction.square() == null || interaction.square().roomId() == null) {
                     selectSquare(interaction.square(), interaction.x(), interaction.y(), currentMapId);
                     showWorkflowMessage("Bereich zuweisen", "Dieses Feld gehoert noch zu keinem Raum.");
+                } else if (toolSettingsPane.getActiveAreaId() == null) {
+                    showSelection(DungeonSelection.room(findRoom(interaction.square().roomId())), true);
+                    showWorkflowMessage("Bereich zuweisen", "Zuerst einen Bereich im State-Panel auswaehlen.");
                 } else {
                     onAssignRoomArea.accept(interaction.square());
                 }

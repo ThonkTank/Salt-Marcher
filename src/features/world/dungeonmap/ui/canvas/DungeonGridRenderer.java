@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
@@ -38,17 +39,32 @@ final class DungeonGridRenderer {
         Color.web("#4a3d5a"),
         Color.web("#5a4a3d"),
     };
+    private static final Color[] AREA_PALETTE = {
+        Color.web("#78583d"),
+        Color.web("#4d6179"),
+        Color.web("#536f47"),
+        Color.web("#7a5162"),
+        Color.web("#827247"),
+        Color.web("#3f6d70"),
+        Color.web("#65507d"),
+        Color.web("#8a654b"),
+    };
 
     private final Canvas gridCanvas;
     private final Canvas selectionCanvas;
     private final DungeonCanvasModel model;
     private final DungeonViewport viewport;
+    private DungeonColorRenderMode colorRenderMode = DungeonColorRenderMode.ROOMS;
 
     DungeonGridRenderer(Canvas gridCanvas, Canvas selectionCanvas, DungeonCanvasModel model, DungeonViewport viewport) {
         this.gridCanvas = gridCanvas;
         this.selectionCanvas = selectionCanvas;
         this.model = model;
         this.viewport = viewport;
+    }
+
+    void setColorRenderMode(DungeonColorRenderMode colorRenderMode) {
+        this.colorRenderMode = colorRenderMode == null ? DungeonColorRenderMode.ROOMS : colorRenderMode;
     }
 
     void redrawGrid() {
@@ -120,6 +136,8 @@ final class DungeonGridRenderer {
                 drawSquareSelection(gc, selection.square(), state);
             } else if (selection.type() == DungeonSelection.SelectionType.ROOM && selection.room() != null) {
                 drawRoomSelection(gc, selection.room().roomId(), state);
+            } else if (selection.type() == DungeonSelection.SelectionType.AREA && selection.area() != null) {
+                drawAreaSelection(gc, selection.area().areaId(), state);
             } else if (selection.type() == DungeonSelection.SelectionType.PASSAGE && selection.passage() != null) {
                 drawPassageSelection(gc, selection.passage(), SELECTION_STROKE);
             }
@@ -154,6 +172,20 @@ final class DungeonGridRenderer {
         }
     }
 
+    private void drawAreaSelection(GraphicsContext gc, Long areaId, DungeonMapState state) {
+        if (areaId == null) {
+            return;
+        }
+        gc.setStroke(SELECTION_STROKE);
+        gc.setLineWidth(Math.max(2.0, 3.0 * viewport.strokeScale()));
+        for (DungeonSquare square : state.squares()) {
+            if (!areaId.equals(square.areaId())) {
+                continue;
+            }
+            drawAreaSelectionEdges(gc, square, areaId);
+        }
+    }
+
     private void drawRoomSelectionEdges(GraphicsContext gc, DungeonSquare square, Long roomId) {
         double x0 = viewport.screenX(square.x());
         double y0 = viewport.screenY(square.y());
@@ -177,6 +209,31 @@ final class DungeonGridRenderer {
     private boolean sameRoom(int x, int y, Long roomId) {
         DungeonSquare square = model.squareAt(x, y);
         return square != null && roomId.equals(square.roomId());
+    }
+
+    private void drawAreaSelectionEdges(GraphicsContext gc, DungeonSquare square, Long areaId) {
+        double x0 = viewport.screenX(square.x());
+        double y0 = viewport.screenY(square.y());
+        double x1 = viewport.screenX(square.x() + 1);
+        double y1 = viewport.screenY(square.y() + 1);
+
+        if (!sameArea(square.x(), square.y() - 1, areaId)) {
+            gc.strokeLine(x0, y0, x1, y0);
+        }
+        if (!sameArea(square.x(), square.y() + 1, areaId)) {
+            gc.strokeLine(x0, y1, x1, y1);
+        }
+        if (!sameArea(square.x() - 1, square.y(), areaId)) {
+            gc.strokeLine(x0, y0, x0, y1);
+        }
+        if (!sameArea(square.x() + 1, square.y(), areaId)) {
+            gc.strokeLine(x1, y0, x1, y1);
+        }
+    }
+
+    private boolean sameArea(int x, int y, Long areaId) {
+        DungeonSquare square = model.squareAt(x, y);
+        return square != null && areaId.equals(square.areaId());
     }
 
     private void drawInvalidEdge(GraphicsContext gc) {
@@ -351,8 +408,7 @@ final class DungeonGridRenderer {
             fill = EMPTY_FILL;
             stroke = EMPTY_STROKE;
         } else if (square.roomId() != null) {
-            int idx = (int) (Math.abs(square.roomId()) % ROOM_PALETTE.length);
-            fill = ROOM_PALETTE[idx];
+            fill = resolveFilledRoomColor(square);
             stroke = ROOM_STROKE;
         } else {
             fill = FILLED_FILL;
@@ -364,5 +420,14 @@ final class DungeonGridRenderer {
         gc.setStroke(stroke);
         gc.setLineWidth(Math.max(0.6, viewport.strokeScale()));
         gc.strokeRect(screenX, screenY, size - 1, size - 1);
+    }
+
+    private Color resolveFilledRoomColor(DungeonSquare square) {
+        long paletteKey = colorRenderMode == DungeonColorRenderMode.AREAS && square.areaId() != null
+                ? square.areaId()
+                : square.roomId();
+        Color[] palette = colorRenderMode == DungeonColorRenderMode.AREAS ? AREA_PALETTE : ROOM_PALETTE;
+        int idx = (int) (Math.abs(paletteKey) % palette.length);
+        return palette[idx];
     }
 }

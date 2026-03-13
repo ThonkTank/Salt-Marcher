@@ -11,6 +11,7 @@ import features.world.dungeonmap.model.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
+import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
@@ -21,6 +22,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -46,6 +48,7 @@ final class DungeonOverlayRenderer {
     private final DungeonCanvasModel model;
     private final DungeonViewport viewport;
     private final Map<Long, Label> roomLabelNodes = new HashMap<>();
+    private final List<Label> areaLabelNodes = new java.util.ArrayList<>();
     private final Map<Long, Circle> featureAnchorNodes = new HashMap<>();
     private final Map<Long, Label> featureLabelNodes = new HashMap<>();
     private final Map<String, Rectangle> featureTileNodes = new HashMap<>();
@@ -57,6 +60,7 @@ final class DungeonOverlayRenderer {
     private boolean showFeatures = true;
     private boolean showLinks = true;
     private boolean showEndpoints = true;
+    private DungeonColorRenderMode colorRenderMode = DungeonColorRenderMode.ROOMS;
 
     DungeonOverlayRenderer(
             Pane roomLabelsLayer,
@@ -80,6 +84,7 @@ final class DungeonOverlayRenderer {
 
     void rebuildNodes() {
         roomLabelNodes.clear();
+        areaLabelNodes.clear();
         featureAnchorNodes.clear();
         featureLabelNodes.clear();
         featureTileNodes.clear();
@@ -95,6 +100,13 @@ final class DungeonOverlayRenderer {
             label.setMouseTransparent(true);
             label.getStyleClass().addAll("dungeon-room-map-label", "section-header");
             roomLabelNodes.put(room.roomId(), label);
+            roomLabelsLayer.getChildren().add(label);
+        }
+        for (int i = 0; i < model.areaLabelAnchors().size(); i++) {
+            Label label = new Label();
+            label.setMouseTransparent(true);
+            label.getStyleClass().addAll("dungeon-room-map-label", "section-header");
+            areaLabelNodes.add(label);
             roomLabelsLayer.getChildren().add(label);
         }
         for (Map.Entry<String, java.util.List<DungeonFeatureTile>> entry : model.featureTilesByCoord().entrySet()) {
@@ -162,6 +174,10 @@ final class DungeonOverlayRenderer {
     void setShowEndpoints(boolean showEndpoints) {
         this.showEndpoints = showEndpoints;
         updateVisibility();
+    }
+
+    void setColorRenderMode(DungeonColorRenderMode colorRenderMode) {
+        this.colorRenderMode = colorRenderMode == null ? DungeonColorRenderMode.ROOMS : colorRenderMode;
     }
 
     void refreshFeatureStyles() {
@@ -379,6 +395,7 @@ final class DungeonOverlayRenderer {
     }
 
     private void positionRoomLabels(Region owner) {
+        boolean roomMode = colorRenderMode == DungeonColorRenderMode.ROOMS;
         for (Map.Entry<Long, Label> entry : roomLabelNodes.entrySet()) {
             Long roomId = entry.getKey();
             Label label = entry.getValue();
@@ -397,8 +414,29 @@ final class DungeonOverlayRenderer {
             label.resize(width, height);
             label.relocate(centerX - (width / 2.0), centerY - (height / 2.0));
             boolean visible = viewport.isVisible(owner, centerX, centerY, Math.max(width, height) / 2.0);
-            label.setVisible(visible);
-            label.setManaged(visible);
+            label.setVisible(roomMode && visible);
+            label.setManaged(roomMode && visible);
+        }
+        boolean areaMode = colorRenderMode == DungeonColorRenderMode.AREAS;
+        List<DungeonCanvasModel.AreaLabelAnchor> anchors = model.areaLabelAnchors();
+        for (int i = 0; i < areaLabelNodes.size(); i++) {
+            Label label = areaLabelNodes.get(i);
+            DungeonCanvasModel.AreaLabelAnchor anchor = i < anchors.size() ? anchors.get(i) : null;
+            if (anchor == null || anchor.squareCount() == 0) {
+                label.setVisible(false);
+                label.setManaged(false);
+                continue;
+            }
+            double centerX = viewport.screenCenterX(anchor.x());
+            double centerY = viewport.screenCenterY(anchor.y());
+            label.setText(anchor.areaName() == null || anchor.areaName().isBlank() ? "Bereich" : anchor.areaName());
+            double width = label.prefWidth(-1);
+            double height = label.prefHeight(width);
+            label.resize(width, height);
+            label.relocate(centerX - (width / 2.0), centerY - (height / 2.0));
+            boolean visible = viewport.isVisible(owner, centerX, centerY, Math.max(width, height) / 2.0);
+            label.setVisible(areaMode && visible);
+            label.setManaged(areaMode && visible);
         }
     }
 

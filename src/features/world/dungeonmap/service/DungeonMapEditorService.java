@@ -23,6 +23,7 @@ import features.world.dungeonmap.repository.DungeonRoomRepository;
 import features.world.dungeonmap.repository.DungeonSquareRepository;
 import features.world.dungeonmap.repository.DungeonWallRepository;
 import features.world.dungeonmap.service.adapter.DungeonCampaignStateAdapter;
+import features.world.dungeonmap.service.topology.DungeonAreaNormalizationService;
 import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 import java.sql.Connection;
@@ -32,6 +33,8 @@ import java.util.List;
 import java.util.Optional;
 
 public final class DungeonMapEditorService {
+
+    // Area normalization is a write-side invariant and must not run from query/load flows.
 
     public enum LinkCreateStatus {
         CREATED,
@@ -48,7 +51,19 @@ public final class DungeonMapEditorService {
 
     public static long createMap(String name, int width, int height) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            return DungeonMapRepository.insertMap(conn, new DungeonMap(null, name, width, height));
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                long mapId = DungeonMapRepository.insertMap(conn, new DungeonMap(null, name, width, height));
+                normalizeAreaAssignments(conn, mapId);
+                conn.commit();
+                return mapId;
+            } catch (SQLException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
         }
     }
 
@@ -64,6 +79,7 @@ public final class DungeonMapEditorService {
                     clearActiveEndpointIfOutsideBounds(conn, mapId, width, height);
                     DungeonTopologyService.shrinkMap(conn, mapId, width, height);
                 }
+                normalizeAreaAssignments(conn, mapId);
                 conn.commit();
             } catch (SQLException ex) {
                 conn.rollback();
@@ -90,6 +106,7 @@ public final class DungeonMapEditorService {
             try {
                 clearInvalidActiveEndpointAfterEdits(conn, mapId, edits);
                 DungeonTopologyService.applySquareEdits(conn, mapId, edits);
+                normalizeAreaAssignments(conn, mapId);
                 conn.commit();
             } catch (SQLException ex) {
                 conn.rollback();
@@ -114,7 +131,22 @@ public final class DungeonMapEditorService {
 
     public static void deleteArea(long areaId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonAreaRepository.deleteArea(conn, areaId);
+            var existingArea = DungeonAreaRepository.findArea(conn, areaId);
+            if (existingArea.isEmpty()) {
+                return;
+            }
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                DungeonAreaRepository.deleteArea(conn, areaId);
+                normalizeAreaAssignments(conn, existingArea.get().mapId());
+                conn.commit();
+            } catch (SQLException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
         }
     }
 
@@ -174,10 +206,41 @@ public final class DungeonMapEditorService {
         }
     }
 
-    public static void assignRoomArea(long roomId, Long areaId) throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonRoomRepository.assignRoomArea(conn, roomId, areaId);
+    public static void assignRoomArea(long roomId, long areaId) throws Exception {
+        if (areaId <= 0) {
+            throw new IllegalArgumentException("areaId must be persisted");
         }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                assignRoomAreaWithinMap(conn, roomId, areaId);
+                conn.commit();
+            } catch (SQLException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
+        }
+    }
+
+    private static void assignRoomAreaWithinMap(Connection conn, long roomId, long areaId) throws SQLException {
+        DungeonRoom room = DungeonRoomRepository.findRoom(conn, roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon room: " + roomId));
+        DungeonArea area = DungeonAreaRepository.findArea(conn, areaId)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon area: " + areaId));
+        if (room.mapId() != area.mapId()) {
+            throw new IllegalArgumentException(
+                    "Dungeon room " + roomId + " cannot be assigned to area " + areaId + " from a different map");
+        }
+        DungeonRoomRepository.assignRoomArea(conn, roomId, areaId);
+        normalizeAreaAssignments(conn, room.mapId());
+    }
+
+    // All room/area writes should pass through this helper so the invariant stays transaction-scoped.
+    private static void normalizeAreaAssignments(Connection conn, long mapId) throws SQLException {
+        DungeonAreaNormalizationService.normalizeMapAreas(conn, mapId);
     }
 
     public static long saveEndpoint(DungeonEndpoint endpoint) throws Exception {

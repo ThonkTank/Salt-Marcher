@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureCategory;
+import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -37,6 +38,9 @@ public class DungeonToolSettingsPane extends VBox {
     private final CheckBox linksVisible = new CheckBox("Links anzeigen");
     private final CheckBox endpointsVisible = new CheckBox("Übergänge anzeigen");
     private final CheckBox featuresVisible = new CheckBox("Features anzeigen");
+    private final ToggleGroup colorRenderModeGroup = new ToggleGroup();
+    private final ToggleButton roomColorModeButton = new ToggleButton(DungeonColorRenderMode.ROOMS.label());
+    private final ToggleButton areaColorModeButton = new ToggleButton(DungeonColorRenderMode.AREAS.label());
     private final Button newAreaButton = new Button("Bereich neu");
     private final Button deleteAreaButton = new Button("Bereich löschen");
     private final Button newFeatureButton = new Button("Feature neu");
@@ -67,6 +71,7 @@ public class DungeonToolSettingsPane extends VBox {
     private Consumer<DungeonArea> onAreaSelected;
     private Consumer<DungeonFeature> onFeatureSelected;
     private Consumer<DungeonFeature> onTileContextFeatureSelected;
+    private Consumer<DungeonColorRenderMode> onColorRenderModeChanged;
     private Runnable onCancelLink;
     private List<DungeonFeature> knownFeatures = List.of();
     private boolean brushPaintModeActive = true;
@@ -94,6 +99,11 @@ public class DungeonToolSettingsPane extends VBox {
         linksVisible.setSelected(true);
         endpointsVisible.setSelected(true);
         featuresVisible.setSelected(true);
+        roomColorModeButton.setToggleGroup(colorRenderModeGroup);
+        roomColorModeButton.setUserData(DungeonColorRenderMode.ROOMS);
+        roomColorModeButton.setSelected(true);
+        areaColorModeButton.setToggleGroup(colorRenderModeGroup);
+        areaColorModeButton.setUserData(DungeonColorRenderMode.AREAS);
         deleteAreaButton.getStyleClass().add("danger");
         deleteFeatureButton.getStyleClass().add("danger");
 
@@ -116,6 +126,15 @@ public class DungeonToolSettingsPane extends VBox {
             if (!updatingSelections) {
                 refreshFeatureChoices(activeFeatureCombo.getValue() == null ? null : activeFeatureCombo.getValue().featureId());
                 updateEncounterSelectionState();
+            }
+        });
+        colorRenderModeGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            if (newToggle == null && oldToggle != null) {
+                oldToggle.setSelected(true);
+                return;
+            }
+            if (!updatingSelections && newToggle != null && onColorRenderModeChanged != null) {
+                onColorRenderModeChanged.accept((DungeonColorRenderMode) newToggle.getUserData());
             }
         });
         cancelLinkButton.setOnAction(event -> {
@@ -173,7 +192,11 @@ public class DungeonToolSettingsPane extends VBox {
         tileAssignment.getStyleClass().add("editor-subsection");
         featureGroup = card("Features", featureManagement, tileAssignment);
 
-        visibilityGroup = card("Anzeige", new VBox(4, featuresVisible, linksVisible, endpointsVisible));
+        Label colorModeLabel = new Label("Farben");
+        colorModeLabel.getStyleClass().add("text-muted");
+        HBox colorModeRow = new HBox(6, roomColorModeButton, areaColorModeButton);
+        colorModeRow.setAlignment(Pos.CENTER_LEFT);
+        visibilityGroup = card("Anzeige", new VBox(6, colorModeLabel, colorModeRow, featuresVisible, linksVisible, endpointsVisible));
 
         linkStatusLabel.getStyleClass().add("text-muted");
         cancelLinkButton.getStyleClass().add("compact");
@@ -251,6 +274,17 @@ public class DungeonToolSettingsPane extends VBox {
     public void setBrushPaintModeActive(boolean brushPaintModeActive) {
         this.brushPaintModeActive = brushPaintModeActive;
         updateBrushControlState();
+    }
+
+    public void setColorRenderMode(DungeonColorRenderMode mode) {
+        updatingSelections = true;
+        DungeonColorRenderMode effectiveMode = mode == null ? DungeonColorRenderMode.ROOMS : mode;
+        if (effectiveMode == DungeonColorRenderMode.AREAS) {
+            areaColorModeButton.setSelected(true);
+        } else {
+            roomColorModeButton.setSelected(true);
+        }
+        updatingSelections = false;
     }
 
     public void setMapLoaded(boolean loaded) {
@@ -451,6 +485,10 @@ public class DungeonToolSettingsPane extends VBox {
 
     public void setOnCancelLink(Runnable onCancelLink) {
         this.onCancelLink = onCancelLink;
+    }
+
+    public void setOnColorRenderModeChanged(Consumer<DungeonColorRenderMode> onColorRenderModeChanged) {
+        this.onColorRenderModeChanged = onColorRenderModeChanged;
     }
 
     private void refreshFeatureChoices(Long preferredFeatureId) {

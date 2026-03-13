@@ -17,6 +17,7 @@ The upper-right shell inspector is the single global, context-spanning informati
 Selection state and inspector state are separate concerns. A view may publish a read-only summary to the inspector when the user explicitly opens or selects that reference content, but background reloads, selector refreshes, and other local state churn must only update the inspector if that same inspector card is still the currently visible global entry. Do not continuously republish local selection into the inspector just to keep it synchronized.
 
 Editor controls and settings panes must be self-explanatory without helper prose. Do not add explanatory helper copy, onboarding text, repeated summaries, or other filler text to editor sidebars and selection editors just to narrate obvious controls. Prefer short labels, stable grouping, and consistent ordering over explanatory text. In editor sidebars, place active context first, tool-specific settings second, management actions after the relevant selectors, and visibility toggles last. Avoid duplicate summary-plus-form blocks when one compact editor card can show the same information.
+When editor modes or enum-backed settings expose user-visible labels, render control text from the enum's label/value accessor instead of duplicating the same German strings in multiple panes or dropdowns.
 
 Feature module APIs should expose narrow, role-specific setup methods. Do not add generic `initialize(...)` methods that bundle unrelated wiring such as shell callbacks plus async data loading.
 
