@@ -6,8 +6,8 @@ import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonRuntimeState;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.service.DungeonRuntimeService;
 import features.world.dungeonmap.ui.DungeonAreaEncounterText;
+import features.world.dungeonmap.ui.DungeonMoveStatus;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
@@ -106,7 +106,7 @@ public class DungeonView implements AppView {
         }
         applicationService.movePartyToEndpoint(currentState.map().mapId(), endpoint.endpointId(),
                 result -> {
-                    if (result.status() == DungeonRuntimeService.MoveStatus.NOT_CONNECTED) {
+                    if (result.status() == DungeonMoveStatus.NOT_CONNECTED) {
                         return;
                     }
                     loadMap(currentState.map().mapId());

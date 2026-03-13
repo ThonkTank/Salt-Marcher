@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.DungeonFeatureCategory;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.ui.editor.DungeonEditorApplicationService;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;

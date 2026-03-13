@@ -10,8 +10,13 @@ Cross-feature selector/read DTOs belong in `api` when dungeon data must cross a 
 Editor-only encounter and encounter-table selector catalogs belong in internal `service.catalog`, not in `api`.
 `api` exposes only stable contracts consumed outside `dungeonmap`; the current public surface is the world-facing
 `DungeonMapModule` facade, while dungeon view composition stays in internal `ui`.
-The editor view is the composition root only; peer orchestration classes in `ui/editor` use the
-`*WorkflowController` suffix consistently.
+`ui/editor` is the editor composition and widget layer: `DungeonEditorView` is the composition root there, and the
+package also owns editor controls, dropdown/widget helpers, inspector builders, and editor state holders.
+Editor orchestration belongs in `ui/editor/workflow`, which owns both the broad `*WorkflowController` coordinators
+and narrower editor-specific controllers such as `DungeonMapEditingController`, `DungeonEntityCrudController`, and
+`DungeonConnectionEditingController`. Keep `DungeonEditorView` focused on wiring; workflow ownership stays in those
+`ui/editor/workflow` classes rather than drifting back into the view. UI helpers such as `DungeonMapDropdowns`
+remain in `ui/editor` because they render anchored editor UI instead of coordinating workflow.
 Use `paint*` naming for transient UI stroke/preview mechanics and `*SquareEdit*` naming for persisted square mutation commands.
 Dungeon square paint topology is overlap-driven, not adjacency-driven: painting isolated empty space creates a new room with walls on all exposed edges; painting empty space directly adjacent to rooms still creates a new room and only adds missing boundary walls; painting across empty space plus exactly one existing room extends that overlapped room, adding new outer walls and removing walls that become internal; painting across empty space plus multiple existing rooms merges all overlapped rooms into one room, keeping only the outer perimeter walls.
 The shell-owned upper-right inspector is the single cross-view information surface. Room, area, feature,

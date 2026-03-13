@@ -37,15 +37,6 @@ public final class DungeonMapEditorService {
 
     // Area normalization is a write-side invariant and must not run from query/load flows.
 
-    public enum LinkCreateStatus {
-        CREATED,
-        SAME_ANCHOR,
-        DUPLICATE,
-        INVALID_ANCHOR
-    }
-
-    public record LinkCreateResult(LinkCreateStatus status, Long linkId) {}
-
     private DungeonMapEditorService() {
         throw new AssertionError("No instances");
     }
@@ -287,25 +278,25 @@ public final class DungeonMapEditorService {
         }
     }
 
-    public static LinkCreateResult createLink(long mapId, DungeonLinkAnchor fromAnchor, DungeonLinkAnchor toAnchor, String label) throws Exception {
+    public static DungeonLinkCreateResult createLink(long mapId, DungeonLinkAnchor fromAnchor, DungeonLinkAnchor toAnchor, String label) throws Exception {
         if (fromAnchor == null || toAnchor == null) {
-            return new LinkCreateResult(LinkCreateStatus.INVALID_ANCHOR, null);
+            return new DungeonLinkCreateResult(DungeonLinkCreateStatus.INVALID_ANCHOR, null);
         }
         if (fromAnchor.equals(toAnchor)) {
-            return new LinkCreateResult(LinkCreateStatus.SAME_ANCHOR, null);
+            return new DungeonLinkCreateResult(DungeonLinkCreateStatus.SAME_ANCHOR, null);
         }
         try (Connection conn = DatabaseManager.getConnection()) {
             if (!DungeonLinkIntegrityService.isValidAnchor(conn, mapId, fromAnchor)
                     || !DungeonLinkIntegrityService.isValidAnchor(conn, mapId, toAnchor)) {
-                return new LinkCreateResult(LinkCreateStatus.INVALID_ANCHOR, null);
+                return new DungeonLinkCreateResult(DungeonLinkCreateStatus.INVALID_ANCHOR, null);
             }
             Long existing = DungeonLinkIntegrityService.findExistingLink(conn, mapId, fromAnchor, toAnchor).orElse(null);
             if (existing != null) {
-                return new LinkCreateResult(LinkCreateStatus.DUPLICATE, existing);
+                return new DungeonLinkCreateResult(DungeonLinkCreateStatus.DUPLICATE, existing);
             }
             long linkId = DungeonLinkRepository.insertLink(conn, new DungeonLink(
                     null, mapId, fromAnchor, toAnchor, label, null));
-            return new LinkCreateResult(LinkCreateStatus.CREATED, linkId);
+            return new DungeonLinkCreateResult(DungeonLinkCreateStatus.CREATED, linkId);
         }
     }
 

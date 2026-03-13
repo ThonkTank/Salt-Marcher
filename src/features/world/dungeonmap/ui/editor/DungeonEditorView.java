@@ -7,7 +7,10 @@ import features.world.dungeonmap.ui.editor.inspector.DungeonEditorInspectorConte
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
+import features.world.dungeonmap.ui.editor.workflow.DungeonConnectionEditingController;
 import features.world.dungeonmap.ui.editor.workflow.DungeonMapLoadingWorkflowController;
+import features.world.dungeonmap.ui.editor.workflow.DungeonMapEditingController;
+import features.world.dungeonmap.ui.editor.workflow.DungeonEntityCrudController;
 import features.world.dungeonmap.ui.editor.workflow.DungeonSelectionEditorWorkflowController;
 import features.world.dungeonmap.ui.editor.workflow.DungeonSelectionWorkflowController;
 import features.world.dungeonmap.ui.editor.workflow.DungeonSquareEditWorkflowController;

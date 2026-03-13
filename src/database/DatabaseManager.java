@@ -3,8 +3,7 @@ package database;
 import features.campaignstate.repository.CampaignStateSchemaSupport;
 import features.encounter.repository.EncounterSchemaSupport;
 import features.partyanalysis.model.AnalysisModelVersion;
-import features.world.dungeonmap.repository.DungeonSchemaSupport;
-import features.world.dungeonmap.service.linking.DungeonLinkIntegrityService;
+import features.world.dungeonmap.api.DungeonMapBootstrap;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -296,7 +295,7 @@ public final class DatabaseManager {
                     + "radius     INTEGER"
                     + ")");
 
-            DungeonSchemaSupport.createSchema(stmt);
+            DungeonMapBootstrap.createSchema(stmt);
             EncounterSchemaSupport.createSchema(stmt);
 
             stmt.execute("CREATE TABLE IF NOT EXISTS factions ("
@@ -512,8 +511,7 @@ public final class DatabaseManager {
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_creature_aliases_slug_key ON creature_import_aliases(slug_key)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_map ON hex_tiles(map_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_hex_tiles_faction ON hex_tiles(dominant_faction_id)");
-            DungeonSchemaSupport.createIndexes(stmt);
-            DungeonLinkIntegrityService.reconcileAllMaps(conn);
+            DungeonMapBootstrap.finalizeStartup(conn, stmt);
             EncounterSchemaSupport.createIndexes(stmt);
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_world_locations_tile ON world_locations(tile_id)");
             stmt.execute("CREATE INDEX IF NOT EXISTS idx_tile_influence_faction ON tile_faction_influence(faction_id)");

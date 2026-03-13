@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEndpointRole;
@@ -6,14 +6,15 @@ import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.service.DungeonMapEditorService;
+import features.world.dungeonmap.ui.DungeonLinkCreateResult;
+import features.world.dungeonmap.ui.DungeonLinkCreateStatus;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
+import features.world.dungeonmap.ui.editor.DungeonEditorApplicationService;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
-import features.world.dungeonmap.ui.editor.workflow.DungeonSelectionWorkflowController;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.components.ConfirmationDropdown;
@@ -48,7 +49,7 @@ public final class DungeonConnectionEditingController {
         this.reloadCurrentMap = reloadCurrentMap == null ? ignored -> { } : reloadCurrentMap;
     }
 
-    void handleEndpointClick(DungeonEndpoint endpoint) {
+    public void handleEndpointClick(DungeonEndpoint endpoint) {
         selectionController.handleEndpointClick(
                 interactionState.activeTool(),
                 endpoint,
@@ -61,7 +62,7 @@ public final class DungeonConnectionEditingController {
                         ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.createLink()", ex)));
     }
 
-    void handleEdgeClick(DungeonMapPane.EdgeInteraction interaction) {
+    public void handleEdgeClick(DungeonMapPane.EdgeInteraction interaction) {
         DungeonPassage existing = interaction.edge().passage();
         if (interactionState.activeTool() == DungeonEditorTool.LINK) {
             if (existing == null || existing.passageId() == null) {
@@ -116,7 +117,7 @@ public final class DungeonConnectionEditingController {
                 null));
     }
 
-    void createOrSelectEndpoint(DungeonSquare square) {
+    public void createOrSelectEndpoint(DungeonSquare square) {
         if (square == null || square.squareId() == null || state.currentMapId() == null) {
             return;
         }
@@ -212,23 +213,23 @@ public final class DungeonConnectionEditingController {
         return null;
     }
 
-    private void handleLinkCreateResult(DungeonMapEditorService.LinkCreateResult result) {
+    private void handleLinkCreateResult(DungeonLinkCreateResult result) {
         if (result == null) {
             return;
         }
-        if (result.status() == DungeonMapEditorService.LinkCreateStatus.CREATED) {
+        if (result.status() == DungeonLinkCreateStatus.CREATED) {
             reloadCurrentMap.accept(null);
             return;
         }
-        if (result.status() == DungeonMapEditorService.LinkCreateStatus.SAME_ANCHOR) {
+        if (result.status() == DungeonLinkCreateStatus.SAME_ANCHOR) {
             selectionController.showWorkflowMessage("Linkerstellung", "Linkerstellung abgebrochen: Bitte zwei verschiedene Verbindungen wählen.");
             return;
         }
-        if (result.status() == DungeonMapEditorService.LinkCreateStatus.DUPLICATE) {
+        if (result.status() == DungeonLinkCreateStatus.DUPLICATE) {
             selectionController.showWorkflowMessage("Linkerstellung", "Diese beiden Verbindungen sind bereits verbunden.");
             return;
         }
-        if (result.status() == DungeonMapEditorService.LinkCreateStatus.INVALID_ANCHOR) {
+        if (result.status() == DungeonLinkCreateStatus.INVALID_ANCHOR) {
             selectionController.showWorkflowMessage("Linkerstellung", "Linkerstellung abgebrochen: Mindestens eine Verbindung ist nicht mehr gültig.");
         }
     }

@@ -17,14 +17,6 @@ import java.util.Optional;
 
 public final class DungeonRuntimeService {
 
-    public enum MoveStatus {
-        MOVED,
-        NOT_CONNECTED,
-        NO_CURRENT_POSITION
-    }
-
-    public record MoveResult(MoveStatus status, Long endpointId) {}
-
     private DungeonRuntimeService() {
         throw new AssertionError("No instances");
     }
@@ -48,27 +40,27 @@ public final class DungeonRuntimeService {
         }
     }
 
-    public static MoveResult movePartyToEndpoint(long mapId, long targetEndpointId) throws Exception {
+    public static DungeonMoveResult movePartyToEndpoint(long mapId, long targetEndpointId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
             Optional<DungeonEndpoint> targetEndpoint = DungeonEndpointRepository.findEndpoint(conn, targetEndpointId);
             if (targetEndpoint.isEmpty() || targetEndpoint.get().mapId() != mapId) {
-                return new MoveResult(MoveStatus.NOT_CONNECTED, DungeonCampaignStateAdapter.getDungeonEndpointId(conn).orElse(null));
+                return new DungeonMoveResult(DungeonMoveStatus.NOT_CONNECTED, DungeonCampaignStateAdapter.getDungeonEndpointId(conn).orElse(null));
             }
             Long currentMapId = DungeonCampaignStateAdapter.getDungeonMapId(conn).orElse(null);
             Long currentEndpointId = DungeonCampaignStateAdapter.getDungeonEndpointId(conn).orElse(null);
             if (currentEndpointId == null || currentMapId == null || currentMapId != mapId) {
                 DungeonCampaignStateAdapter.updateDungeonPosition(conn, mapId, targetEndpointId);
-                return new MoveResult(MoveStatus.NO_CURRENT_POSITION, targetEndpointId);
+                return new DungeonMoveResult(DungeonMoveStatus.NO_CURRENT_POSITION, targetEndpointId);
             }
             if (!DungeonLinkRepository.areAnchorsLinked(
                     conn,
                     mapId,
                     DungeonLinkAnchor.endpoint(currentEndpointId),
                     DungeonLinkAnchor.endpoint(targetEndpointId))) {
-                return new MoveResult(MoveStatus.NOT_CONNECTED, currentEndpointId);
+                return new DungeonMoveResult(DungeonMoveStatus.NOT_CONNECTED, currentEndpointId);
             }
             DungeonCampaignStateAdapter.updateDungeonPosition(conn, mapId, targetEndpointId);
-            return new MoveResult(MoveStatus.MOVED, targetEndpointId);
+            return new DungeonMoveResult(DungeonMoveStatus.MOVED, targetEndpointId);
         }
     }
 

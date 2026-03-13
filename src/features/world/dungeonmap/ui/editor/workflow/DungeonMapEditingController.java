@@ -1,18 +1,20 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.ui.editor.workflow;
 
+import features.world.dungeonmap.ui.editor.DungeonEditorApplicationService;
+import features.world.dungeonmap.ui.editor.DungeonMapDropdowns;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 
-final class DungeonMapEditingController {
+public final class DungeonMapEditingController {
 
     private final DungeonEditorState state;
     private final DungeonEditorApplicationService applicationService;
     private final DungeonMapDropdowns mapDropdowns;
     private Runnable reloadMapList = () -> { };
 
-    DungeonMapEditingController(
+    public DungeonMapEditingController(
             DungeonEditorState state,
             DungeonEditorApplicationService applicationService,
             DungeonMapDropdowns mapDropdowns
@@ -22,11 +24,11 @@ final class DungeonMapEditingController {
         this.mapDropdowns = mapDropdowns;
     }
 
-    void setReloadMapList(Runnable reloadMapList) {
+    public void setReloadMapList(Runnable reloadMapList) {
         this.reloadMapList = reloadMapList == null ? () -> { } : reloadMapList;
     }
 
-    void showNewMapDropdown(Node anchor) {
+    public void showNewMapDropdown(Node anchor) {
         mapDropdowns.showNewMapDropdown(anchor, result -> applicationService.createMap(
                 result.name(),
                 result.width(),
@@ -38,7 +40,7 @@ final class DungeonMapEditingController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonMapEditingController.createMap()", ex)));
     }
 
-    void showEditMapDropdown(DungeonEditorControls.MapActionRequest request) {
+    public void showEditMapDropdown(DungeonEditorControls.MapActionRequest request) {
         mapDropdowns.showEditMapDropdown(
                 request.anchor(),
                 request.map(),

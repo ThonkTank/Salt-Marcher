@@ -13,18 +13,18 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
-final class DungeonMapDropdowns {
+public final class DungeonMapDropdowns {
 
     private final DungeonMapFormDropdown mapFormDropdown = new DungeonMapFormDropdown();
 
-    void showNewMapDropdown(Node anchor, Consumer<DungeonMapFormDropdown.Result> onCreateRequested) {
+    public void showNewMapDropdown(Node anchor, Consumer<DungeonMapFormDropdown.Result> onCreateRequested) {
         mapFormDropdown.showCreate(anchor, result -> {
             mapFormDropdown.hide();
             onCreateRequested.accept(result);
         });
     }
 
-    void showEditMapDropdown(
+    public void showEditMapDropdown(
             Node anchor,
             DungeonMap map,
             DungeonMapState currentState,

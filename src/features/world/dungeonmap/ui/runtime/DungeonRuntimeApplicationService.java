@@ -3,9 +3,10 @@ package features.world.dungeonmap.ui.runtime;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonRuntimeState;
 import features.world.dungeonmap.service.DungeonMapQueryService;
+import features.world.dungeonmap.service.DungeonMoveResult;
+import features.world.dungeonmap.service.DungeonMoveStatus;
 import features.world.dungeonmap.service.DungeonRuntimeService;
-import javafx.concurrent.Task;
-import ui.async.UiAsyncTasks;
+import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -13,32 +14,35 @@ import java.util.function.Consumer;
 public final class DungeonRuntimeApplicationService {
 
     public void loadMapList(Consumer<List<DungeonMap>> onSuccess, Consumer<Throwable> onError) {
-        Task<List<DungeonMap>> task = new Task<>() {
-            @Override
-            protected List<DungeonMap> call() throws Exception {
-                return DungeonMapQueryService.getAllMaps();
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        DungeonUiAsyncSupport.submitValue(DungeonMapQueryService::getAllMaps, onSuccess, onError);
     }
 
     public void loadRuntimeState(Long requestedMapId, Consumer<DungeonRuntimeState> onSuccess, Consumer<Throwable> onError) {
-        Task<DungeonRuntimeState> task = new Task<>() {
-            @Override
-            protected DungeonRuntimeState call() throws Exception {
-                return DungeonRuntimeService.loadRuntimeState(requestedMapId);
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+        DungeonUiAsyncSupport.submitValue(() -> DungeonRuntimeService.loadRuntimeState(requestedMapId), onSuccess, onError);
     }
 
-    public void movePartyToEndpoint(long mapId, long endpointId, Consumer<DungeonRuntimeService.MoveResult> onSuccess, Consumer<Throwable> onError) {
-        Task<DungeonRuntimeService.MoveResult> task = new Task<>() {
-            @Override
-            protected DungeonRuntimeService.MoveResult call() throws Exception {
-                return DungeonRuntimeService.movePartyToEndpoint(mapId, endpointId);
-            }
-        };
-        UiAsyncTasks.submit(task, onSuccess, onError);
+    public void movePartyToEndpoint(
+            long mapId,
+            long endpointId,
+            Consumer<features.world.dungeonmap.ui.DungeonMoveResult> onSuccess,
+            Consumer<Throwable> onError
+    ) {
+        DungeonUiAsyncSupport.submitValue(
+                () -> toDungeonMoveResult(DungeonRuntimeService.movePartyToEndpoint(mapId, endpointId)),
+                onSuccess,
+                onError);
+    }
+
+    private features.world.dungeonmap.ui.DungeonMoveResult toDungeonMoveResult(DungeonMoveResult result) {
+        if (result == null) {
+            return null;
+        }
+        return new features.world.dungeonmap.ui.DungeonMoveResult(
+                switch (result.status()) {
+                    case MOVED -> features.world.dungeonmap.ui.DungeonMoveStatus.MOVED;
+                    case NOT_CONNECTED -> features.world.dungeonmap.ui.DungeonMoveStatus.NOT_CONNECTED;
+                    case NO_CURRENT_POSITION -> features.world.dungeonmap.ui.DungeonMoveStatus.NO_CURRENT_POSITION;
+                },
+                result.endpointId());
     }
 }
