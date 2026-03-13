@@ -148,9 +148,7 @@ final class RoomTopologyReconciler {
             return;
         }
 
-        List<RoomComponent> components = buildRoomComponents(
-                squares,
-                effectiveWallsForComponentReconciliation(intent, workspace));
+        List<RoomComponent> components = buildRoomComponents(squares, workspace.wallsByEdge());
         Map<Long, Integer> largestComponentByRoomId = findLargestComponentByRoom(components, intent);
         int nextDefaultRoomNumber = PaintedSquareRoomAssigner.nextDefaultRoomNumber(rooms);
         Set<Long> retainedRoomIds = new HashSet<>();
@@ -167,24 +165,6 @@ final class RoomTopologyReconciler {
 
         deleteUnretainedRooms(conn, rooms, retainedRoomIds);
     }
-
-    private static Map<String, DungeonWall> effectiveWallsForComponentReconciliation(
-            TopologyIntent intent,
-            TopologyWorkspace workspace
-    ) {
-        if (intent.squareEdits().isEmpty()) {
-            return workspace.wallsByEdge();
-        }
-
-        Map<String, DungeonWall> effectiveWalls = new HashMap<>(workspace.wallsByEdge());
-        for (EdgeRef edge : SquarePaintEdgeTransitions.touchedEdges(intent.squareEdits())) {
-            if (SquarePaintEdgeTransitions.becameInternal(workspace, edge)) {
-                effectiveWalls.remove(edge.direction().edgeKey(edge.x(), edge.y()));
-            }
-        }
-        return effectiveWalls;
-    }
-
     private static ComponentAssignment assignComponentRoom(
             Connection conn,
             long mapId,

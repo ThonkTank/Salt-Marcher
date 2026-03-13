@@ -18,33 +18,30 @@ public final class DungeonEdgeSummaryBuilder {
             Collection<DungeonWall> walls,
             Collection<DungeonPassage> passages
     ) {
-        return buildIndexInternal(squares, walls, passages, false);
+        return buildIndexInternal(squares, walls, passages);
     }
 
     /*
-     * Preview callers can request synthesized one-sided boundary walls so the derived edge model
-     * matches persisted topology-owned walls before a reload.
+     * Preview and persisted reads now share the same derived edge model: one-sided boundaries
+     * are synthesized from squares, while persisted wall rows represent only interior walls.
      */
     public static DungeonEdgeIndex buildPreviewIndex(
             Collection<DungeonSquare> squares,
             Collection<DungeonWall> walls,
             Collection<DungeonPassage> passages
     ) {
-        return buildIndexInternal(squares, walls, passages, true);
+        return buildIndex(squares, walls, passages);
     }
 
     private static DungeonEdgeIndex buildIndexInternal(
             Collection<DungeonSquare> squares,
             Collection<DungeonWall> walls,
-            Collection<DungeonPassage> passages,
-            boolean synthesizeBoundaryWalls
+            Collection<DungeonPassage> passages
     ) {
         Map<String, DungeonSquare> squaresByCoord = squaresByCoord(squares);
         Map<String, DungeonWall> wallsByEdge = wallsByEdge(walls);
         Map<String, DungeonPassage> passagesByEdge = passagesByEdge(passages);
-        if (synthesizeBoundaryWalls) {
-            addBoundaryWalls(squaresByCoord, wallsByEdge, passagesByEdge);
-        }
+        addBoundaryWalls(squaresByCoord, wallsByEdge, passagesByEdge);
         Map<String, DungeonEdgeSummary> edgesByKey = new LinkedHashMap<>();
 
         List<DungeonSquare> sortedSquares = new ArrayList<>(squares == null ? List.of() : squares);
@@ -56,7 +53,6 @@ public final class DungeonEdgeSummaryBuilder {
             addEdge(edgesByKey, squaresByCoord, wallsByEdge, passagesByEdge, square.x(), square.y(), PassageDirection.SOUTH);
         }
 
-        // Keep persisted edge rows readable until topology normalization removes rows that no longer border squares.
         for (DungeonWall wall : wallsByEdge.values()) {
             edgesByKey.putIfAbsent(wall.edgeKey(), buildEdge(squaresByCoord, wall.x(), wall.y(), wall.direction(), wall, passagesByEdge.get(wall.edgeKey())));
         }

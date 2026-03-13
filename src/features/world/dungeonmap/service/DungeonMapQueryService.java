@@ -43,6 +43,7 @@ public final class DungeonMapQueryService {
     static DungeonMapState loadMapState(Connection conn, long mapId) throws Exception {
         DungeonMap map = DungeonMapRepository.findMap(conn, mapId)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + mapId));
+        DungeonWallRepository.deleteDerivedBoundaryWallsAndOrphans(conn, mapId);
         List<DungeonSquare> squares = DungeonSquareRepository.getSquares(conn, mapId);
         List<DungeonWall> walls = DungeonWallRepository.getWalls(conn, mapId);
         List<DungeonPassage> passages = DungeonPassageRepository.getPassages(conn, mapId);

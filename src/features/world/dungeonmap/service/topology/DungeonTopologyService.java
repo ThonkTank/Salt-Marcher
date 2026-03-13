@@ -3,8 +3,10 @@ package features.world.dungeonmap.service.topology;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonPassage;
+import features.world.dungeonmap.model.DungeonEdgeRules;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
+import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.model.PassageDirection;
 import features.world.dungeonmap.repository.DungeonEndpointRepository;
@@ -76,7 +78,17 @@ public final class DungeonTopologyService {
     }
 
     public static void deleteInvalidPassages(Connection conn, long mapId) throws SQLException {
-        DungeonPassageRepository.deleteInvalidPassages(conn, mapId);
+        List<DungeonSquare> squares = DungeonSquareRepository.getSquares(conn, mapId);
+        List<DungeonWall> walls = DungeonWallRepository.getWalls(conn, mapId);
+        Map<String, DungeonSquare> squaresByCoord = squaresByCoord(squares);
+        Set<String> manualWallsByEdge = wallEdges(walls);
+        Set<Long> endpointIds = endpointIds(conn, mapId);
+        for (DungeonPassage passage : DungeonPassageRepository.getPassages(conn, mapId)) {
+            if (!isPassageEdgeValid(squaresByCoord, manualWallsByEdge, passage)
+                    || passage.endpointId() != null && !endpointIds.contains(passage.endpointId())) {
+                DungeonPassageRepository.deletePassage(conn, passage.passageId());
+            }
+        }
     }
 
     public static void applyWallEdits(
@@ -84,7 +96,8 @@ public final class DungeonTopologyService {
             long mapId,
             List<DungeonWallEdit> edits
     ) throws SQLException {
-        // Manual wall edits stay interior-only. One-sided boundary walls are topology-owned and reconciled separately.
+        // Manual wall edits stay available between two occupied squares so shared walls can merge rooms.
+        // One-sided boundary walls are derived from squares and never persisted as manual edits.
         for (DungeonWallEdit edit : edits) {
             if (!isWallEdgeValid(conn, mapId, edit.x(), edit.y(), edit.direction())) {
                 throw new IllegalArgumentException("Wall edge is no longer valid for map " + mapId);
@@ -120,7 +133,7 @@ public final class DungeonTopologyService {
     }
 
     private static void reconcileTopology(Connection conn, long mapId, TopologyIntent intent) throws SQLException {
-        DungeonWallRepository.normalizePersistedBoundaryWalls(conn, mapId);
+        DungeonWallRepository.deleteDerivedBoundaryWallsAndOrphans(conn, mapId);
         DungeonFeatureRepository.deleteEmptyFeatures(conn, mapId);
 
         TopologyWorkspace workspace = TopologyWorkspace.load(conn, mapId, intent.previousSquares());
@@ -140,15 +153,15 @@ public final class DungeonTopologyService {
     ) throws SQLException {
         BoundaryWallReconciler.ensureBoundaryWallsForSquarePaint(conn, mapId, intent, workspace);
         RoomTopologyReconciler.reconcileRoomComponentsAfterBoundaryWalls(conn, mapId, intent, workspace);
-        BoundaryWallReconciler.removeInternalWallsForSquarePaint(conn, mapId, intent, workspace);
     }
 
     private static boolean isPassageEdgeValid(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
-        boolean sideA = squareExists(conn, mapId, x, y);
-        boolean sideB = direction == PassageDirection.EAST
-                ? squareExists(conn, mapId, x + 1, y)
-                : squareExists(conn, mapId, x, y + 1);
-        return (sideA || sideB) && wallExists(conn, mapId, x, y, direction);
+        List<DungeonSquare> squares = DungeonSquareRepository.getSquares(conn, mapId);
+        List<DungeonWall> walls = DungeonWallRepository.getWalls(conn, mapId);
+        return isPassageEdgeValid(
+                squaresByCoord(squares),
+                wallEdges(walls),
+                new DungeonPassage(null, mapId, x, y, direction, null, null, null));
     }
 
     private static boolean isWallEdgeValid(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
@@ -171,17 +184,16 @@ public final class DungeonTopologyService {
         }
     }
 
-    private static boolean wallExists(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT 1 FROM dungeon_walls WHERE map_id=? AND x=? AND y=? AND direction=?")) {
-            ps.setLong(1, mapId);
-            ps.setInt(2, x);
-            ps.setInt(3, y);
-            ps.setString(4, direction.dbValue());
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
-            }
-        }
+    private static boolean isPassageEdgeValid(
+            Map<String, DungeonSquare> squaresByCoord,
+            Set<String> manualWallsByEdge,
+            DungeonPassage passage
+    ) {
+        DungeonSquare sideA = squaresByCoord.get(coordKey(passage.x(), passage.y()));
+        DungeonSquare sideB = passage.direction() == PassageDirection.EAST
+                ? squaresByCoord.get(coordKey(passage.x() + 1, passage.y()))
+                : squaresByCoord.get(coordKey(passage.x(), passage.y() + 1));
+        return DungeonEdgeRules.canCreatePassage(sideA, sideB, manualWallsByEdge.contains(passage.edgeKey()));
     }
 
     private static void enqueueFeatureNeighbor(
@@ -200,5 +212,29 @@ public final class DungeonTopologyService {
 
     private static String coordKey(int x, int y) {
         return x + ":" + y;
+    }
+
+    private static Map<String, DungeonSquare> squaresByCoord(List<DungeonSquare> squares) {
+        Map<String, DungeonSquare> result = new HashMap<>();
+        for (DungeonSquare square : squares) {
+            result.put(coordKey(square.x(), square.y()), square);
+        }
+        return result;
+    }
+
+    private static Set<String> wallEdges(List<DungeonWall> walls) {
+        Set<String> result = new HashSet<>();
+        for (DungeonWall wall : walls) {
+            result.add(wall.edgeKey());
+        }
+        return result;
+    }
+
+    private static Set<Long> endpointIds(Connection conn, long mapId) throws SQLException {
+        Set<Long> result = new HashSet<>();
+        for (DungeonEndpoint endpoint : DungeonEndpointRepository.getEndpoints(conn, mapId)) {
+            result.add(endpoint.endpointId());
+        }
+        return result;
     }
 }

@@ -100,34 +100,6 @@ public final class DungeonPassageRepository {
         }
     }
 
-    public static void deleteInvalidPassages(Connection conn, long mapId) throws SQLException {
-        // Compatibility cleanup only removes persisted passages that lost their required wall or
-        // all adjacent squares. Topology still owns where walls should exist in the first place.
-        String sql = "DELETE FROM dungeon_passages "
-                + "WHERE map_id=? AND ("
-                + "(direction='east' AND ("
-                + "(NOT EXISTS (SELECT 1 FROM dungeon_squares a WHERE a.map_id=dungeon_passages.map_id AND a.x=dungeon_passages.x AND a.y=dungeon_passages.y)"
-                + " AND NOT EXISTS (SELECT 1 FROM dungeon_squares b WHERE b.map_id=dungeon_passages.map_id AND b.x=dungeon_passages.x + 1 AND b.y=dungeon_passages.y))"
-                + " OR NOT EXISTS (SELECT 1 FROM dungeon_walls w WHERE w.map_id=dungeon_passages.map_id AND w.x=dungeon_passages.x AND w.y=dungeon_passages.y AND w.direction='east')"
-                + "))"
-                + " OR "
-                + "(direction='south' AND ("
-                + "(NOT EXISTS (SELECT 1 FROM dungeon_squares a WHERE a.map_id=dungeon_passages.map_id AND a.x=dungeon_passages.x AND a.y=dungeon_passages.y)"
-                + " AND NOT EXISTS (SELECT 1 FROM dungeon_squares b WHERE b.map_id=dungeon_passages.map_id AND b.x=dungeon_passages.x AND b.y=dungeon_passages.y + 1))"
-                + " OR NOT EXISTS (SELECT 1 FROM dungeon_walls w WHERE w.map_id=dungeon_passages.map_id AND w.x=dungeon_passages.x AND w.y=dungeon_passages.y AND w.direction='south')"
-                + "))"
-                + " OR "
-                + "(endpoint_id IS NOT NULL AND NOT EXISTS ("
-                + "SELECT 1 FROM dungeon_endpoints e "
-                + "WHERE e.endpoint_id=dungeon_passages.endpoint_id AND e.map_id=dungeon_passages.map_id"
-                + "))"
-                + ")";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setLong(1, mapId);
-            ps.executeUpdate();
-        }
-    }
-
     private static long fetchPassageId(Connection conn, long mapId, int x, int y, PassageDirection dir) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT passage_id FROM dungeon_passages WHERE map_id=? AND x=? AND y=? AND direction=?")) {

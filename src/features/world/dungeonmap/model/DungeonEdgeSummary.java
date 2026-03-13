@@ -30,7 +30,7 @@ public record DungeonEdgeSummary(
     }
 
     public boolean canCreateManualWall() {
-        return DungeonEdgeRules.isInterior(sideASquare, sideBSquare);
+        return DungeonEdgeRules.canPersistManualWall(sideASquare, sideBSquare);
     }
 
     public boolean canEraseManualWall() {
@@ -38,6 +38,6 @@ public record DungeonEdgeSummary(
     }
 
     public boolean canCreatePassage() {
-        return wallPresent() && hasInteractiveContext();
+        return DungeonEdgeRules.canCreatePassage(sideASquare, sideBSquare, canEraseManualWall());
     }
 }

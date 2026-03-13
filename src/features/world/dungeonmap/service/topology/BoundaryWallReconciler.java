@@ -1,8 +1,6 @@
 package features.world.dungeonmap.service.topology;
 
-import features.world.dungeonmap.model.DungeonEdgeRules;
 import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.repository.DungeonWallRepository;
 
@@ -32,34 +30,20 @@ final class BoundaryWallReconciler {
         for (EdgeRef edge : SquarePaintEdgeTransitions.touchedEdges(intent.squareEdits())) {
             DungeonSquare currentA = workspace.currentSquaresByCoord().get(TopologyWorkspace.coordKey(edge.x(), edge.y()));
             DungeonSquare currentB = workspace.currentSquaresByCoord().get(TopologyWorkspace.coordKey(edge.adjacentX(), edge.adjacentY()));
-            if (DungeonEdgeRules.requiresTopologyWall(currentA, currentB)) {
+            /*
+             * Square paint still persists a shared wall when the touched edge separates two current
+             * rooms. That keeps adjacent paint operations as distinct rooms until the GM explicitly
+             * removes the barrier, instead of auto-merging on adjacency alone.
+             */
+            if (currentA != null && currentB != null && !sameRoom(currentA, currentB)) {
                 wallEdits.add(new DungeonWallEdit(edge.x(), edge.y(), edge.direction(), true));
+                continue;
             }
+            wallEdits.add(new DungeonWallEdit(edge.x(), edge.y(), edge.direction(), false));
         }
 
         applyWallEdits(conn, mapId, workspace, wallEdits);
     }
-
-    static void removeInternalWallsForSquarePaint(
-            Connection conn,
-            long mapId,
-            TopologyIntent intent,
-            TopologyWorkspace workspace
-    ) throws SQLException {
-        if (intent.squareEdits().isEmpty()) {
-            return;
-        }
-
-        List<DungeonWallEdit> wallEdits = new ArrayList<>();
-        for (EdgeRef edge : SquarePaintEdgeTransitions.touchedEdges(intent.squareEdits())) {
-            if (SquarePaintEdgeTransitions.becameInternal(workspace, edge)) {
-                wallEdits.add(new DungeonWallEdit(edge.x(), edge.y(), edge.direction(), false));
-            }
-        }
-
-        applyWallEdits(conn, mapId, workspace, wallEdits);
-    }
-
     private static List<DungeonWallEdit> dedupeWallEdits(List<DungeonWallEdit> edits) {
         Map<String, DungeonWallEdit> deduped = new HashMap<>();
         for (DungeonWallEdit edit : edits) {
@@ -79,5 +63,9 @@ final class BoundaryWallReconciler {
         }
         DungeonWallRepository.applyWallEdits(conn, mapId, dedupeWallEdits(wallEdits));
         workspace.reload(conn);
+    }
+
+    private static boolean sameRoom(DungeonSquare left, DungeonSquare right) {
+        return left.roomId() != null && left.roomId().equals(right.roomId());
     }
 }

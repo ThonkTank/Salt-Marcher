@@ -11,29 +11,26 @@ import java.util.List;
 record TopologyIntent(
         List<DungeonSquare> previousSquares,
         List<DungeonSquarePaint> squareEdits,
-        List<EditedCell> editedCells,
-        List<EditedCell> componentPriorityCells,
-        List<Long> primaryRoomPriority
+        RoomSelectionContext roomSelection
 ) {
     TopologyIntent {
         previousSquares = previousSquares == null ? List.of() : List.copyOf(previousSquares);
         squareEdits = squareEdits == null ? List.of() : List.copyOf(squareEdits);
-        editedCells = editedCells == null ? List.of() : List.copyOf(editedCells);
-        componentPriorityCells = componentPriorityCells == null ? List.of() : List.copyOf(componentPriorityCells);
-        primaryRoomPriority = primaryRoomPriority == null ? List.of() : List.copyOf(primaryRoomPriority);
+        roomSelection = roomSelection == null ? RoomSelectionContext.empty() : roomSelection;
     }
 
     static TopologyIntent geometryChange() {
-        return new TopologyIntent(List.of(), List.of(), List.of(), List.of(), List.of());
+        return new TopologyIntent(List.of(), List.of(), RoomSelectionContext.empty());
     }
 
     static TopologyIntent forSquareEdits(List<DungeonSquarePaint> edits, List<DungeonSquare> previousSquares) {
         return new TopologyIntent(
                 previousSquares,
                 edits,
-                editedCellsForSquareEdits(edits),
-                componentPriorityCellsForSquareEdits(edits),
-                List.of());
+                new RoomSelectionContext(
+                        editedCellsForSquareEdits(edits),
+                        componentPriorityCellsForSquareEdits(edits),
+                        List.of()));
     }
 
     static TopologyIntent forWallEdits(List<DungeonWallEdit> edits) {
@@ -41,18 +38,26 @@ record TopologyIntent(
         return new TopologyIntent(
                 List.of(),
                 List.of(),
-                editedCells,
-                editedCells,
-                List.of());
+                new RoomSelectionContext(editedCells, editedCells, List.of()));
     }
 
     TopologyIntent withPrimaryRoomPriority(List<Long> updatedPrimaryRoomPriority) {
         return new TopologyIntent(
                 previousSquares,
                 squareEdits,
-                editedCells,
-                componentPriorityCells,
-                updatedPrimaryRoomPriority);
+                roomSelection.withPrimaryRoomPriority(updatedPrimaryRoomPriority));
+    }
+
+    List<EditedCell> editedCells() {
+        return roomSelection.editedCells();
+    }
+
+    List<EditedCell> componentPriorityCells() {
+        return roomSelection.componentPriorityCells();
+    }
+
+    List<Long> primaryRoomPriority() {
+        return roomSelection.primaryRoomPriority();
     }
 
     private static List<EditedCell> editedCellsForSquareEdits(List<DungeonSquarePaint> edits) {
@@ -97,6 +102,26 @@ record TopologyIntent(
             }
         }
         return List.copyOf(editedCells);
+    }
+}
+
+record RoomSelectionContext(
+        List<EditedCell> editedCells,
+        List<EditedCell> componentPriorityCells,
+        List<Long> primaryRoomPriority
+) {
+    RoomSelectionContext {
+        editedCells = editedCells == null ? List.of() : List.copyOf(editedCells);
+        componentPriorityCells = componentPriorityCells == null ? List.of() : List.copyOf(componentPriorityCells);
+        primaryRoomPriority = primaryRoomPriority == null ? List.of() : List.copyOf(primaryRoomPriority);
+    }
+
+    static RoomSelectionContext empty() {
+        return new RoomSelectionContext(List.of(), List.of(), List.of());
+    }
+
+    RoomSelectionContext withPrimaryRoomPriority(List<Long> updatedPrimaryRoomPriority) {
+        return new RoomSelectionContext(editedCells, componentPriorityCells, updatedPrimaryRoomPriority);
     }
 }
 

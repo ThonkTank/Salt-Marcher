@@ -1,7 +1,6 @@
 package features.world.dungeonmap.repository;
 
-import features.world.dungeonmap.model.DungeonEdgeSummary;
-import features.world.dungeonmap.model.DungeonEdgeSummaryBuilder;
+import features.world.dungeonmap.model.DungeonEdgeRules;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.DungeonWallEdit;
@@ -12,9 +11,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 public final class DungeonWallRepository {
 
@@ -54,29 +52,25 @@ public final class DungeonWallRepository {
     }
 
     /*
-     * Keep this aligned with the shared derived edge model so preview/read behavior and
-     * persisted boundary-wall normalization follow the same boundary rule.
+     * Compatibility cleanup removes legacy topology-owned boundary rows so persisted walls only
+     * represent manual interior barriers. Derived edge models synthesize one-sided boundaries.
      */
-    public static void normalizePersistedBoundaryWalls(Connection conn, long mapId) throws SQLException {
+    public static void deleteDerivedBoundaryWallsAndOrphans(Connection conn, long mapId) throws SQLException {
         List<DungeonSquare> squares = DungeonSquareRepository.getSquares(conn, mapId);
         List<DungeonWall> walls = getWalls(conn, mapId);
-        Set<String> persistedEdges = new HashSet<>();
-        for (DungeonWall wall : walls) {
-            persistedEdges.add(wall.edgeKey());
-        }
-
-        List<DungeonWall> missingBoundaryWalls = new ArrayList<>();
+        Map<String, DungeonSquare> squaresByCoord = squaresByCoord(squares);
         List<DungeonWall> orphanWalls = new ArrayList<>();
-        for (DungeonEdgeSummary edge : DungeonEdgeSummaryBuilder.buildPreviewIndex(squares, walls, List.of()).edgesByKey().values()) {
-            if (edge.isBoundary() && edge.wallPresent() && !persistedEdges.contains(edge.edgeKey())) {
-                missingBoundaryWalls.add(new DungeonWall(null, mapId, edge.x(), edge.y(), edge.direction()));
-            }
-            if (edge.wall() != null && !edge.hasInteractiveContext()) {
-                orphanWalls.add(edge.wall());
+
+        for (DungeonWall wall : walls) {
+            DungeonSquare sideA = squaresByCoord.get(coordKey(wall.x(), wall.y()));
+            DungeonSquare sideB = wall.direction() == PassageDirection.EAST
+                    ? squaresByCoord.get(coordKey(wall.x() + 1, wall.y()))
+                    : squaresByCoord.get(coordKey(wall.x(), wall.y() + 1));
+            if (!DungeonEdgeRules.canPersistManualWall(sideA, sideB)) {
+                orphanWalls.add(wall);
             }
         }
 
-        insertWalls(conn, missingBoundaryWalls);
         deleteWalls(conn, orphanWalls);
     }
 
@@ -122,5 +116,17 @@ public final class DungeonWallRepository {
                 rs.getInt("x"),
                 rs.getInt("y"),
                 PassageDirection.fromDb(rs.getString("direction")));
+    }
+
+    private static Map<String, DungeonSquare> squaresByCoord(List<DungeonSquare> squares) {
+        java.util.Map<String, DungeonSquare> result = new java.util.HashMap<>();
+        for (DungeonSquare square : squares) {
+            result.put(coordKey(square.x(), square.y()), square);
+        }
+        return result;
+    }
+
+    private static String coordKey(int x, int y) {
+        return x + ":" + y;
     }
 }
