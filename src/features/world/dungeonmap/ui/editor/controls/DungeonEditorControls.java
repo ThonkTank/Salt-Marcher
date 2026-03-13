@@ -2,7 +2,6 @@ package features.world.dungeonmap.ui.editor.controls;
 
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
-import features.world.dungeonmap.ui.editor.dropdowns.DungeonToolModeDropdown;
 import javafx.scene.Node;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

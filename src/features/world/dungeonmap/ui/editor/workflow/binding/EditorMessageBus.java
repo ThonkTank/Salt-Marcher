@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.entity;
+package features.world.dungeonmap.ui.editor.workflow.binding;
 
 import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 

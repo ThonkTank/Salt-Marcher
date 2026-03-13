@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.dropdowns;
+package features.world.dungeonmap.ui.editor.workflow.map;
 
 import features.world.dungeonmap.model.DungeonMap;
 import javafx.geometry.Insets;

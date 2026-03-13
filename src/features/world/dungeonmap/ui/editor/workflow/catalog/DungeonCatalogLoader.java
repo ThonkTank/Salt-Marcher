@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.entity;
+package features.world.dungeonmap.ui.editor.workflow.catalog;
 
 import features.world.dungeonmap.service.catalog.DungeonEncounterCatalogAdapter;
 import features.world.dungeonmap.service.catalog.DungeonEncounterTableCatalogAdapter;

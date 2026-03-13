@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.editor.state;
 
-import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.editor.controls.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;

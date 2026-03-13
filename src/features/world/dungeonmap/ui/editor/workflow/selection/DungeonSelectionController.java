@@ -12,7 +12,8 @@ import features.world.dungeonmap.model.index.DungeonMapIndex;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-import features.world.dungeonmap.ui.editor.workflow.entity.EditorMessageBus;
+import features.world.dungeonmap.ui.editor.workflow.binding.EditorMessageBus;
+
 public final class DungeonSelectionController {
 
     private final DungeonMapPane canvas;

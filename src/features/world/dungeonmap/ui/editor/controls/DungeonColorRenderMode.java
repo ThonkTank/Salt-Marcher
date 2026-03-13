@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.ui.editor.controls;
 
 public enum DungeonColorRenderMode {
     ROOMS("Raumfarben"),

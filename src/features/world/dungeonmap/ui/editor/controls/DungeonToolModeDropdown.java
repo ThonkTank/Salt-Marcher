@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.dropdowns;
+package features.world.dungeonmap.ui.editor.controls;
 
 import javafx.geometry.Insets;
 import javafx.scene.Node;

@@ -9,7 +9,7 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.PassageDirection;
-import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.editor.controls.DungeonColorRenderMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;

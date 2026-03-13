@@ -1,6 +1,5 @@
 package features.world.dungeonmap.ui.editor.controls;
 
-import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import javafx.scene.Cursor;
 
 public enum DungeonEditorTool {
