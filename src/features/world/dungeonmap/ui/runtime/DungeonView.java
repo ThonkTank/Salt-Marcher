@@ -1,13 +1,16 @@
 package features.world.dungeonmap.ui.runtime;
 
+import features.world.dungeonmap.service.DungeonMapQueryService;
+import features.world.dungeonmap.service.DungeonRuntimeService;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonRuntimeState;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.application.DungeonMoveStatus;
 import features.world.dungeonmap.ui.DungeonAreaEncounterText;
-import features.world.dungeonmap.ui.DungeonMoveStatus;
+import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
@@ -20,7 +23,6 @@ public class DungeonView implements AppView {
 
     private final DungeonViewControls controls = new DungeonViewControls();
     private final DungeonMapPane canvas = new DungeonMapPane();
-    private final DungeonRuntimeApplicationService applicationService = new DungeonRuntimeApplicationService();
     private DungeonMapState currentState;
     private Long activeEndpointId;
     private final Map<Long, DungeonEndpoint> endpointsById = new HashMap<>();
@@ -58,7 +60,8 @@ public class DungeonView implements AppView {
 
     @Override
     public void onShow() {
-        applicationService.loadMapList(
+        DungeonUiAsyncSupport.submitValue(
+                DungeonMapQueryService::getAllMaps,
                 maps -> controls.setMaps(maps, selectedMapId),
                 ex -> {
                     canvas.showLoadError("Dungeonliste konnte nicht geladen werden");
@@ -72,7 +75,8 @@ public class DungeonView implements AppView {
             selectedMapId = mapId;
         }
         long requestToken = ++loadRequestToken;
-        applicationService.loadRuntimeState(mapId,
+        DungeonUiAsyncSupport.submitValue(
+                () -> DungeonRuntimeService.loadRuntimeState(mapId),
                 runtimeState -> {
                     if (requestToken != loadRequestToken) {
                         return;
@@ -104,7 +108,8 @@ public class DungeonView implements AppView {
         if (currentState == null || currentState.map() == null || endpoint == null) {
             return;
         }
-        applicationService.movePartyToEndpoint(currentState.map().mapId(), endpoint.endpointId(),
+        DungeonUiAsyncSupport.submitValue(
+                () -> DungeonRuntimeService.movePartyToEndpoint(currentState.map().mapId(), endpoint.endpointId()),
                 result -> {
                     if (result.status() == DungeonMoveStatus.NOT_CONNECTED) {
                         return;

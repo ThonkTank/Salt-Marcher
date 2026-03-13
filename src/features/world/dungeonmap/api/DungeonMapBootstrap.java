@@ -1,7 +1,7 @@
 package features.world.dungeonmap.api;
 
 import features.world.dungeonmap.repository.DungeonSchemaSupport;
-import features.world.dungeonmap.service.linking.DungeonLinkIntegrityService;
+import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -22,6 +22,7 @@ public final class DungeonMapBootstrap {
 
     public static void finalizeStartup(Connection conn, Statement stmt) throws SQLException {
         DungeonSchemaSupport.createIndexes(stmt);
-        DungeonLinkIntegrityService.reconcileAllMaps(conn);
+        // Startup owns one-time cleanup of persisted legacy rows so query flows remain strictly read-only.
+        DungeonTopologyService.reconcilePersistedTopologyState(conn);
     }
 }

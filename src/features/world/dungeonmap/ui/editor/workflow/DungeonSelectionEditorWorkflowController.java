@@ -11,17 +11,20 @@ public final class DungeonSelectionEditorWorkflowController {
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonSelectionWorkflowController selectionController;
+    private final DungeonLinkWorkflowController linkWorkflowController;
     private final DungeonEntityCrudController entityCrudController;
 
     public DungeonSelectionEditorWorkflowController(
             DungeonEditorState state,
             DungeonToolSettingsPane toolSettingsPane,
             DungeonSelectionWorkflowController selectionController,
+            DungeonLinkWorkflowController linkWorkflowController,
             DungeonEntityCrudController entityCrudController
     ) {
         this.state = state;
         this.toolSettingsPane = toolSettingsPane;
         this.selectionController = selectionController;
+        this.linkWorkflowController = linkWorkflowController;
         this.entityCrudController = entityCrudController;
     }
 
@@ -38,7 +41,7 @@ public final class DungeonSelectionEditorWorkflowController {
         toolSettingsPane.deleteFeatureButton().setOnAction(event -> entityCrudController.deleteActiveFeature(toolSettingsPane.deleteFeatureButton()));
         toolSettingsPane.addTileToFeatureButton().setOnAction(event -> entityCrudController.addSelectedSquareToActiveFeature());
         toolSettingsPane.removeTileFromFeatureButton().setOnAction(event -> entityCrudController.removeSelectedSquareFromActiveFeature());
-        toolSettingsPane.setOnCancelLink(selectionController::cancelPendingLink);
+        toolSettingsPane.setOnCancelLink(linkWorkflowController::cancelPendingLink);
     }
 
     private void bindToolSelections() {

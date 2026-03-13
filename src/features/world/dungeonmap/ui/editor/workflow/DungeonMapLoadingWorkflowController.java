@@ -6,9 +6,12 @@ import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
+import features.world.dungeonmap.service.DungeonMapQueryService;
+import features.world.dungeonmap.service.catalog.DungeonEncounterCatalogAdapter;
 import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
+import features.world.dungeonmap.service.catalog.DungeonEncounterTableCatalogAdapter;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.DungeonEditorApplicationService;
+import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
@@ -23,11 +26,11 @@ public final class DungeonMapLoadingWorkflowController {
 
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;
-    private final DungeonEditorApplicationService applicationService;
     private final DungeonEditorControls controls;
     private final DungeonMapPane canvas;
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonSelectionWorkflowController selectionController;
+    private final DungeonLinkWorkflowController linkWorkflowController;
     private Runnable onEncounterTablesChanged = () -> { };
     private Runnable onStoredEncountersChanged = () -> { };
     private Runnable onMapLoaded = () -> { };
@@ -35,19 +38,19 @@ public final class DungeonMapLoadingWorkflowController {
     public DungeonMapLoadingWorkflowController(
             DungeonEditorState state,
             DungeonEditorInteractionState interactionState,
-            DungeonEditorApplicationService applicationService,
             DungeonEditorControls controls,
             DungeonMapPane canvas,
             DungeonToolSettingsPane toolSettingsPane,
-            DungeonSelectionWorkflowController selectionController
+            DungeonSelectionWorkflowController selectionController,
+            DungeonLinkWorkflowController linkWorkflowController
     ) {
         this.state = state;
         this.interactionState = interactionState;
-        this.applicationService = applicationService;
         this.controls = controls;
         this.canvas = canvas;
         this.toolSettingsPane = toolSettingsPane;
         this.selectionController = selectionController;
+        this.linkWorkflowController = linkWorkflowController;
     }
 
     public void setOnEncounterTablesChanged(Runnable onEncounterTablesChanged) {
@@ -82,11 +85,11 @@ public final class DungeonMapLoadingWorkflowController {
             clearLoadedState();
             return;
         }
-        selectionController.cancelPendingLink();
+        linkWorkflowController.cancelPendingLink();
         state.setCurrentMapId(mapId);
         long requestToken = state.nextLoadRequestToken();
-        applicationService.loadMap(
-                mapId,
+        DungeonUiAsyncSupport.submitValue(
+                () -> DungeonMapQueryService.loadMapState(mapId),
                 loadedState -> {
                     if (requestToken == state.loadRequestToken() && mapId.equals(state.currentMapId())) {
                         applyLoadedState(loadedState);
@@ -101,7 +104,8 @@ public final class DungeonMapLoadingWorkflowController {
     }
 
     private void loadEncounterTables() {
-        applicationService.loadEncounterTables(
+        DungeonUiAsyncSupport.submitValue(
+                DungeonEncounterTableCatalogAdapter::loadSummaries,
                 tables -> {
                     state.setEncounterTables(tables);
                     toolSettingsPane.setEncounterTables(tables);
@@ -111,7 +115,8 @@ public final class DungeonMapLoadingWorkflowController {
     }
 
     private void loadStoredEncounters() {
-        applicationService.loadStoredEncounters(
+        DungeonUiAsyncSupport.submitValue(
+                DungeonEncounterCatalogAdapter::loadSummaries,
                 encounters -> {
                     state.setEncounters(encounters);
                     toolSettingsPane.setStoredEncounters(encounters);
@@ -121,7 +126,8 @@ public final class DungeonMapLoadingWorkflowController {
     }
 
     private void loadMapList() {
-        applicationService.loadMapList(
+        DungeonUiAsyncSupport.submitValue(
+                DungeonMapQueryService::getAllMaps,
                 maps -> {
                     controls.setMaps(maps);
                     Long mapToSelect = resolveMapSelection(maps);
@@ -193,7 +199,7 @@ public final class DungeonMapLoadingWorkflowController {
         toolSettingsPane.setMapLoaded(false);
         toolSettingsPane.setAreas(List.of());
         toolSettingsPane.setFeatures(List.of());
-        selectionController.cancelPendingLink();
+        linkWorkflowController.cancelPendingLink();
         selectionController.clearSelection();
     }
 
@@ -213,7 +219,7 @@ public final class DungeonMapLoadingWorkflowController {
     }
 
     private void resetTransientUiState() {
-        selectionController.cancelPendingLink();
+        linkWorkflowController.cancelPendingLink();
         selectionController.clearSelection();
     }
 

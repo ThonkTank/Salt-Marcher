@@ -1,3 +1,3 @@
-package features.world.dungeonmap.ui;
+package features.world.dungeonmap.application;
 
 public record DungeonLinkCreateResult(DungeonLinkCreateStatus status, Long linkId) {}

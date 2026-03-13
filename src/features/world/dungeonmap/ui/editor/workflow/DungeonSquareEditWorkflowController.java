@@ -2,8 +2,9 @@ package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
+import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.DungeonEditorApplicationService;
+import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
@@ -17,7 +18,6 @@ public final class DungeonSquareEditWorkflowController {
 
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;
-    private final DungeonEditorApplicationService applicationService;
     private final DungeonMapPane canvas;
     private final DungeonPaintSession paintSession;
     private final DungeonWallPaintSession wallPaintSession;
@@ -26,12 +26,10 @@ public final class DungeonSquareEditWorkflowController {
     public DungeonSquareEditWorkflowController(
             DungeonEditorState state,
             DungeonEditorInteractionState interactionState,
-            DungeonEditorApplicationService applicationService,
             DungeonMapPane canvas
     ) {
         this.state = state;
         this.interactionState = interactionState;
-        this.applicationService = applicationService;
         this.canvas = canvas;
         this.paintSession = new DungeonPaintSession(canvas::previewPaint);
         this.wallPaintSession = new DungeonWallPaintSession(canvas::previewCommittedWallEdits);
@@ -50,9 +48,8 @@ public final class DungeonSquareEditWorkflowController {
     public void flushPendingSquareEdits() {
         paintSession.flushPendingPaints(
                 state.currentMapId(),
-                (mapId, edits) -> applicationService.applySquareEdits(
-                        mapId,
-                        edits,
+                (mapId, edits) -> DungeonUiAsyncSupport.submitAction(
+                        () -> DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits),
                         reloadCurrentMap,
                         ex -> {
                             UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflowController.flushPendingSquareEdits()", ex);
@@ -105,9 +102,8 @@ public final class DungeonSquareEditWorkflowController {
         canvas.clearActiveWallPathPreview();
         wallPaintSession.flushPendingEdits(
                 state.currentMapId(),
-                (mapId, edits) -> applicationService.applyWallEdits(
-                        mapId,
-                        edits,
+                (mapId, edits) -> DungeonUiAsyncSupport.submitAction(
+                        () -> DungeonMapEditorService.applyWallEdits(mapId, edits),
                         reloadCurrentMap,
                         ex -> {
                             UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflowController.flushPendingWallEdits()", ex);

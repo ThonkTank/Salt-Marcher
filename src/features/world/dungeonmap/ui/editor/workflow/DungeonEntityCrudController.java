@@ -6,7 +6,9 @@ import features.world.dungeonmap.model.DungeonFeatureCategory;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.ui.editor.DungeonEditorApplicationService;
+import features.world.dungeonmap.ui.canvas.DungeonMapPane;
+import features.world.dungeonmap.service.DungeonMapEditorService;
+import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
@@ -20,8 +22,9 @@ import java.util.function.Consumer;
 public final class DungeonEntityCrudController {
 
     private final DungeonEditorState state;
-    private final DungeonEditorApplicationService applicationService;
     private final DungeonToolSettingsPane toolSettingsPane;
+    private final DungeonSelectionWorkflowController selectionController;
+    private final DungeonWorkflowMessageController workflowMessageController;
     private final ConfirmationDropdown confirmationDropdown = new ConfirmationDropdown();
     private final TextInputDropdown areaDropdown = new TextInputDropdown();
     private final TextInputDropdown featureDropdown = new TextInputDropdown();
@@ -29,12 +32,14 @@ public final class DungeonEntityCrudController {
 
     public DungeonEntityCrudController(
             DungeonEditorState state,
-            DungeonEditorApplicationService applicationService,
-            DungeonToolSettingsPane toolSettingsPane
+            DungeonToolSettingsPane toolSettingsPane,
+            DungeonSelectionWorkflowController selectionController,
+            DungeonWorkflowMessageController workflowMessageController
     ) {
         this.state = state;
-        this.applicationService = applicationService;
         this.toolSettingsPane = toolSettingsPane;
+        this.selectionController = selectionController;
+        this.workflowMessageController = workflowMessageController;
     }
 
     public void setReloadCurrentMap(Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap) {
@@ -45,10 +50,8 @@ public final class DungeonEntityCrudController {
         if (room == null || room.roomId() == null) {
             return;
         }
-        applicationService.updateRoomMetadata(
-                room.roomId(),
-                room.name(),
-                room.description(),
+        DungeonUiAsyncSupport.submitAction(
+                () -> DungeonMapEditorService.updateRoomMetadata(room.roomId(), room.name(), room.description()),
                 () -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.room(room.roomId())),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.updateRoomMetadata()", ex));
     }
@@ -69,8 +72,8 @@ public final class DungeonEntityCrudController {
     }
 
     public void saveArea(DungeonArea area) {
-        applicationService.saveArea(
-                area,
+        DungeonUiAsyncSupport.submitValue(
+                () -> DungeonMapEditorService.saveArea(area),
                 areaId -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.area(areaId)),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.saveArea()", ex));
     }
@@ -90,8 +93,8 @@ public final class DungeonEntityCrudController {
                 anchor,
                 "Bereich löschen",
                 "Bereich '" + findAreaName(areaId) + "' löschen? Alle zugehörigen Räume werden automatisch neu zugeordnet.",
-                () -> applicationService.deleteArea(
-                        areaId,
+                () -> DungeonUiAsyncSupport.submitAction(
+                        () -> DungeonMapEditorService.deleteArea(areaId),
                         () -> reloadCurrentMap.accept(null),
                         ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.deleteArea()", ex)));
     }
@@ -114,8 +117,8 @@ public final class DungeonEntityCrudController {
     }
 
     public void saveFeature(DungeonFeature feature) {
-        applicationService.saveFeature(
-                feature,
+        DungeonUiAsyncSupport.submitValue(
+                () -> DungeonMapEditorService.saveFeature(feature),
                 featureId -> {
                     reloadCurrentMap.accept(DungeonSelectionRestoreRequest.feature(featureId));
                 },
@@ -137,8 +140,8 @@ public final class DungeonEntityCrudController {
                 anchor,
                 "Feature löschen",
                 "Feature '" + findFeatureName(featureId) + "' löschen? Die gesamte Flächenzuordnung wird entfernt.",
-                () -> applicationService.deleteFeature(
-                        featureId,
+                () -> DungeonUiAsyncSupport.submitAction(
+                        () -> DungeonMapEditorService.deleteFeature(featureId),
                         () -> reloadCurrentMap.accept(null),
                         ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.deleteFeature()", ex)));
     }
@@ -149,9 +152,8 @@ public final class DungeonEntityCrudController {
         if (square == null || square.squareId() == null || featureId == null) {
             return;
         }
-        applicationService.addSquareToFeature(
-                featureId,
-                square.squareId(),
+        DungeonUiAsyncSupport.submitAction(
+                () -> DungeonMapEditorService.addSquareToFeature(featureId, square.squareId()),
                 () -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.feature(featureId)),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.addSelectedSquareToActiveFeature()", ex));
     }
@@ -162,9 +164,8 @@ public final class DungeonEntityCrudController {
         if (square == null || square.squareId() == null || featureId == null) {
             return;
         }
-        applicationService.removeSquareFromFeature(
-                featureId,
-                square.squareId(),
+        DungeonUiAsyncSupport.submitAction(
+                () -> DungeonMapEditorService.removeSquareFromFeature(featureId, square.squareId()),
                 () -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.feature(featureId)),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.removeSelectedSquareFromActiveFeature()", ex));
     }
@@ -174,11 +175,28 @@ public final class DungeonEntityCrudController {
         if (square == null || square.roomId() == null || areaId == null) {
             return;
         }
-        applicationService.assignRoomArea(
-                square.roomId(),
-                areaId,
+        DungeonUiAsyncSupport.submitAction(
+                () -> DungeonMapEditorService.assignRoomArea(square.roomId(), areaId),
                 () -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.room(square.roomId())),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.assignRoomToArea()", ex));
+    }
+
+    public void handleAreaAssignClick(DungeonMapPane.CellInteraction interaction, Long currentMapId) {
+        if (interaction == null) {
+            return;
+        }
+        DungeonSquare square = interaction.square();
+        if (square == null || square.roomId() == null) {
+            selectionController.handleSquareClick(interaction, currentMapId);
+            workflowMessageController.showMessage("Bereich zuweisen", "Dieses Feld gehoert noch zu keinem Raum.");
+            return;
+        }
+        if (toolSettingsPane.getActiveAreaId() == null) {
+            selectionController.handleSquareClick(interaction, currentMapId);
+            workflowMessageController.showMessage("Bereich zuweisen", "Zuerst einen Bereich im State-Panel auswaehlen.");
+            return;
+        }
+        assignRoomToArea(square);
     }
 
     DungeonFeature findFeature(Long featureId) {

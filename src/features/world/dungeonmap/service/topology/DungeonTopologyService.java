@@ -133,7 +133,14 @@ public final class DungeonTopologyService {
         }
     }
 
+    public static void reconcilePersistedTopologyState(Connection conn) throws SQLException {
+        for (var map : DungeonMapRepository.getAllMaps(conn)) {
+            reconcilePersistedTopologyState(conn, map.mapId());
+        }
+    }
+
     private static void reconcileTopology(Connection conn, long mapId, TopologyIntent intent) throws SQLException {
+        // Write-side topology reconciliation owns persisted wall cleanup after mutating map geometry.
         DungeonWallRepository.deleteDerivedBoundaryWallsAndOrphans(conn, mapId);
         DungeonFeatureRepository.deleteEmptyFeatures(conn, mapId);
 
@@ -142,6 +149,13 @@ public final class DungeonTopologyService {
         if (!effectiveIntent.squareEdits().isEmpty()) {
             reconcileSquarePaintTopology(conn, mapId, effectiveIntent, workspace);
         }
+        deleteInvalidPassages(conn, mapId);
+        DungeonLinkIntegrityService.reconcileMap(conn, mapId);
+    }
+
+    private static void reconcilePersistedTopologyState(Connection conn, long mapId) throws SQLException {
+        DungeonWallRepository.deleteDerivedBoundaryWallsAndOrphans(conn, mapId);
+        DungeonFeatureRepository.deleteEmptyFeatures(conn, mapId);
         deleteInvalidPassages(conn, mapId);
         DungeonLinkIntegrityService.reconcileMap(conn, mapId);
     }

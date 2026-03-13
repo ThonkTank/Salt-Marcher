@@ -1,6 +1,8 @@
 package features.world.dungeonmap.service;
 
 import database.DatabaseManager;
+import features.world.dungeonmap.application.DungeonMoveResult;
+import features.world.dungeonmap.application.DungeonMoveStatus;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonMap;

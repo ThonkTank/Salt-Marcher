@@ -2,51 +2,29 @@ package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonEdgeSummary;
-import features.world.dungeonmap.model.DungeonPassage;
-import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.PassageDirection;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.MouseButton;
-import javafx.scene.paint.Color;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 final class DungeonInteractionController {
 
-    private static final Color HOVER_PAINT_FILL = Color.web("#d9a030", 0.35);
-    private static final Color HOVER_ERASE_FILL = Color.web("#e53935", 0.35);
-    private static final Color HOVER_EDGE_STROKE = Color.web("#d9a030", 0.70);
-    private static final Color HOVER_EDGE_ERASE_STROKE = Color.web("#e53935", 0.75);
-    private static final int WALL_VERTEX_SEARCH_RADIUS = 1;
     private final Canvas selectionCanvas;
     private final DungeonCanvasModel model;
     private final DungeonViewport viewport;
     private final Runnable redrawAll;
-    private Runnable redrawSelection;
+    private final DungeonWallPathFinder wallPathFinder;
+    private final DungeonInteractionOverlayController overlayController;
+    private final DungeonInteractionGestureController gestureController;
 
     private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
-    private String lastDraggedCellKey;
-    private String lastDraggedEdgeKey;
-    private int hoverCellX = -1;
-    private int hoverCellY = -1;
-    private int hoverEdgeX = -1;
-    private int hoverEdgeY = -1;
-    private PassageDirection hoverEdgeDir;
-    private int hoverVertexX = -1;
-    private int hoverVertexY = -1;
     private Supplier<Integer> brushSizeSupplier;
     private Supplier<BrushShape> brushShapeSupplier;
     private Supplier<DungeonPaintMode> paintModeSupplier;
@@ -60,10 +38,6 @@ final class DungeonInteractionController {
     private Consumer<List<DungeonMapPane.EdgeInteraction>> onEdgePaintPathPreview;
     private Consumer<List<DungeonMapPane.EdgeInteraction>> onEdgePaintPathFinished;
     private Runnable onEdgeStrokeFinished;
-    private VertexRef activeWallPaintStart;
-    private List<DungeonMapPane.EdgeInteraction> activeWallPaintPath = List.of();
-    private CellRef selectionDragStart;
-    private CellRef selectionDragCurrent;
 
     DungeonInteractionController(
             Canvas selectionCanvas,
@@ -75,29 +49,27 @@ final class DungeonInteractionController {
         this.model = model;
         this.viewport = viewport;
         this.redrawAll = redrawAll;
+        this.wallPathFinder = new DungeonWallPathFinder(model, viewport);
+        this.overlayController = new DungeonInteractionOverlayController(selectionCanvas, model, viewport);
+        this.gestureController = new DungeonInteractionGestureController(model, viewport, wallPathFinder);
         bind();
     }
 
     void setRedrawSelection(Runnable redrawSelection) {
-        this.redrawSelection = redrawSelection;
+        overlayController.setRedrawSelection(redrawSelection);
     }
 
     void setActiveTool(DungeonEditorTool activeTool) {
         this.activeTool = activeTool == null ? DungeonEditorTool.SELECT : activeTool;
-        lastDraggedCellKey = null;
-        lastDraggedEdgeKey = null;
-        clearSelectionDrag(false);
-        clearActiveWallPaintPath();
-        if (activeTool.isBrushTool()) {
-            drawHover();
-        } else {
-            clearHover();
-        }
-        if (edgeHoverEnabled()) {
-            drawEdgeHover();
-        } else {
-            clearEdgeHover();
-        }
+        gestureController.resetDragState();
+        overlayController.clearSelectionDrag(false, this.activeTool, currentPaintMode(), currentBrushShape(), currentBrushSize());
+        gestureController.clearActiveWallPaintPath(onEdgePaintPathPreview);
+        overlayController.refreshForToolState(
+                this.activeTool,
+                currentPaintMode(),
+                currentBrushShape(),
+                currentBrushSize(),
+                currentEdgeToolPolicy());
         updateCursor();
     }
 
@@ -161,56 +133,95 @@ final class DungeonInteractionController {
         });
         selectionCanvas.setOnMousePressed(event -> {
             if (event.getButton() == MouseButton.SECONDARY) {
-                clearSelectionDrag(true);
+                overlayController.clearSelectionDrag(true, activeTool, currentPaintMode(), currentBrushShape(), currentBrushSize());
                 viewport.startPan(event.getX(), event.getY());
                 return;
             }
             if (event.getButton() == MouseButton.PRIMARY && usesSelectionPaint()) {
-                beginSelectionDrag(event.getX(), event.getY());
+                overlayController.beginSelectionDrag(
+                        event.getX(),
+                        event.getY(),
+                        activeTool,
+                        currentPaintMode(),
+                        currentBrushShape(),
+                        currentBrushSize());
             } else if (event.getButton() == MouseButton.PRIMARY && activeTool.isBrushTool()) {
-                handlePaintAt(event.getX(), event.getY());
+                gestureController.handlePaintAt(
+                        event.getX(),
+                        event.getY(),
+                        onCellPainted,
+                        currentBrushSize(),
+                        currentBrushShape());
             } else if (event.getButton() == MouseButton.PRIMARY && currentEdgeToolPolicy().usesWallPaintPath()) {
-                beginWallPaintPath(event.getX(), event.getY());
+                gestureController.beginWallPaintPath(event.getX(), event.getY(), onEdgePaintPathPreview);
             } else if (event.getButton() == MouseButton.PRIMARY && currentEdgeToolPolicy().usesWallEraseDrag()) {
-                handleEdgeEraseAt(event.getX(), event.getY());
+                gestureController.handleEdgeEraseAt(event.getX(), event.getY(), onEdgePainted, this::interactionAt);
             }
         });
         selectionCanvas.setOnMouseDragged(event -> {
             if (viewport.isPanning()) {
                 viewport.panTo(event.getX(), event.getY());
-                clearHover();
+                overlayController.clearHover(activeTool, currentPaintMode(), currentBrushShape(), currentBrushSize());
                 redrawAll.run();
                 return;
             }
             if (usesSelectionPaint() && event.isPrimaryButtonDown()) {
-                updateSelectionDrag(event.getX(), event.getY());
+                overlayController.updateSelectionDrag(
+                        event.getX(),
+                        event.getY(),
+                        activeTool,
+                        currentPaintMode(),
+                        currentBrushShape(),
+                        currentBrushSize());
             } else if (activeTool.isBrushTool() && event.isPrimaryButtonDown()) {
-                handlePaintAt(event.getX(), event.getY());
+                gestureController.handlePaintAt(
+                        event.getX(),
+                        event.getY(),
+                        onCellPainted,
+                        currentBrushSize(),
+                        currentBrushShape());
             }
             if (currentEdgeToolPolicy().usesWallPaintPath() && event.isPrimaryButtonDown()) {
-                updateWallPaintPath(event.getX(), event.getY());
+                gestureController.updateWallPaintPath(event.getX(), event.getY(), onEdgePaintPathPreview);
             } else if (currentEdgeToolPolicy().usesWallEraseDrag() && event.isPrimaryButtonDown()) {
-                handleEdgeEraseAt(event.getX(), event.getY());
+                gestureController.handleEdgeEraseAt(event.getX(), event.getY(), onEdgePainted, this::interactionAt);
             }
             if (activeTool.isBrushTool()) {
-                updateHover(event.getX(), event.getY());
+                overlayController.updateHover(
+                        event.getX(),
+                        event.getY(),
+                        activeTool,
+                        currentPaintMode(),
+                        currentBrushShape(),
+                        currentBrushSize());
             } else if (edgeHoverEnabled()) {
-                updateEdgeHover(event.getX(), event.getY());
+                overlayController.updateEdgeHover(event.getX(), event.getY(), currentEdgeToolPolicy(), wallPathFinder, this::interactionAt);
             }
         });
         selectionCanvas.setOnMouseReleased(event -> {
             viewport.endPan();
-            lastDraggedCellKey = null;
-            lastDraggedEdgeKey = null;
+            gestureController.resetDragState();
             if (event.getButton() == MouseButton.PRIMARY) {
                 if (usesSelectionPaint()) {
-                    finishSelectionDrag();
+                    List<DungeonMapPane.CellInteraction> cells = overlayController.finishSelectionDrag(
+                            activeTool,
+                            currentPaintMode(),
+                            currentBrushShape(),
+                            currentBrushSize());
+                    if (!cells.isEmpty() && onCellPainted != null) {
+                        for (DungeonMapPane.CellInteraction cell : cells) {
+                            onCellPainted.accept(cell);
+                        }
+                        if (onPaintStrokeFinished != null) {
+                            onPaintStrokeFinished.run();
+                        }
+                    }
                 } else if (activeTool.isBrushTool() && onPaintStrokeFinished != null) {
                     onPaintStrokeFinished.run();
                 }
             }
             if (event.getButton() == MouseButton.PRIMARY && currentEdgeToolPolicy().usesWallPaintPath()) {
-                finishWallPaintPath();
+                gestureController.finishWallPaintPath(onEdgePaintPathPreview, onEdgePaintPathFinished);
                 if (onEdgeStrokeFinished != null) {
                     onEdgeStrokeFinished.run();
                 }
@@ -222,19 +233,25 @@ final class DungeonInteractionController {
         });
         selectionCanvas.setOnMouseMoved(event -> {
             if (activeTool.isBrushTool()) {
-                updateHover(event.getX(), event.getY());
+                overlayController.updateHover(
+                        event.getX(),
+                        event.getY(),
+                        activeTool,
+                        currentPaintMode(),
+                        currentBrushShape(),
+                        currentBrushSize());
             } else if (edgeHoverEnabled()) {
-                updateEdgeHover(event.getX(), event.getY());
+                overlayController.updateEdgeHover(event.getX(), event.getY(), currentEdgeToolPolicy(), wallPathFinder, this::interactionAt);
             }
         });
         selectionCanvas.setOnMouseExited(event -> {
             if (usesSelectionPaint()) {
-                clearSelectionDrag(true);
+                overlayController.clearSelectionDrag(true, activeTool, currentPaintMode(), currentBrushShape(), currentBrushSize());
             }
             if (activeTool.isBrushTool()) {
-                clearHover();
+                overlayController.clearHover(activeTool, currentPaintMode(), currentBrushShape(), currentBrushSize());
             } else if (edgeHoverEnabled()) {
-                clearEdgeHover();
+                overlayController.clearEdgeHover(currentEdgeToolPolicy());
             }
         });
         selectionCanvas.setOnMouseClicked(event -> {
@@ -256,226 +273,6 @@ final class DungeonInteractionController {
                 onCellClicked.accept(interaction);
             }
         });
-    }
-
-    private void beginWallPaintPath(double screenX, double screenY) {
-        VertexRef vertex = findPaintVertexInSearchWindow(screenX, screenY);
-        if (vertex == null) {
-            clearActiveWallPaintPath();
-            return;
-        }
-        activeWallPaintStart = vertex;
-        activeWallPaintPath = List.of();
-        if (onEdgePaintPathPreview != null) {
-            onEdgePaintPathPreview.accept(List.of());
-        }
-    }
-
-    private void updateWallPaintPath(double screenX, double screenY) {
-        if (activeWallPaintStart == null) {
-            return;
-        }
-        VertexRef target = findPaintVertexInSearchWindow(screenX, screenY);
-        if (target == null) {
-            activeWallPaintPath = List.of();
-            if (onEdgePaintPathPreview != null) {
-                onEdgePaintPathPreview.accept(List.of());
-            }
-            return;
-        }
-        List<DungeonMapPane.EdgeInteraction> path = findWallPaintPath(activeWallPaintStart, target);
-        activeWallPaintPath = path;
-        if (onEdgePaintPathPreview != null) {
-            onEdgePaintPathPreview.accept(path);
-        }
-    }
-
-    private void finishWallPaintPath() {
-        List<DungeonMapPane.EdgeInteraction> finishedPath = activeWallPaintPath;
-        clearActiveWallPaintPath();
-        if (!finishedPath.isEmpty() && onEdgePaintPathFinished != null) {
-            onEdgePaintPathFinished.accept(finishedPath);
-        }
-    }
-
-    private void clearActiveWallPaintPath() {
-        activeWallPaintStart = null;
-        activeWallPaintPath = List.of();
-        if (onEdgePaintPathPreview != null) {
-            onEdgePaintPathPreview.accept(List.of());
-        }
-    }
-
-    private void handleEdgeEraseAt(double screenX, double screenY) {
-        DungeonMapPane.EdgeInteraction interaction = interactionAt(screenX, screenY);
-        if (interaction == null || onEdgePainted == null) {
-            return;
-        }
-        String edgeKey = interaction.edge().edgeKey();
-        if (edgeKey.equals(lastDraggedEdgeKey)) {
-            return;
-        }
-        lastDraggedEdgeKey = edgeKey;
-        onEdgePainted.accept(interaction);
-    }
-
-    private void handlePaintAt(double screenX, double screenY) {
-        DungeonMapPane.CellInteraction interaction = model.interactionAt(viewport, screenX, screenY);
-        if (interaction == null || onCellPainted == null) {
-            return;
-        }
-        List<DungeonMapPane.CellInteraction> cells = brushCells(interaction.x(), interaction.y());
-        if (cells.size() == 1) {
-            String cellKey = interaction.x() + ":" + interaction.y();
-            if (!cellKey.equals(lastDraggedCellKey)) {
-                lastDraggedCellKey = cellKey;
-                onCellPainted.accept(cells.get(0));
-            }
-            return;
-        }
-        for (DungeonMapPane.CellInteraction cell : cells) {
-            onCellPainted.accept(cell);
-        }
-        lastDraggedCellKey = interaction.x() + ":" + interaction.y();
-    }
-
-    private void beginSelectionDrag(double screenX, double screenY) {
-        CellRef start = cellRefAt(screenX, screenY);
-        if (start == null) {
-            clearSelectionDrag(true);
-            return;
-        }
-        selectionDragStart = start;
-        selectionDragCurrent = start;
-        drawHover();
-    }
-
-    private void updateSelectionDrag(double screenX, double screenY) {
-        if (selectionDragStart == null) {
-            beginSelectionDrag(screenX, screenY);
-            return;
-        }
-        CellRef current = cellRefAt(screenX, screenY);
-        if (current == null || current.equals(selectionDragCurrent)) {
-            return;
-        }
-        selectionDragCurrent = current;
-        drawHover();
-    }
-
-    private void finishSelectionDrag() {
-        List<DungeonMapPane.CellInteraction> cells = selectionCells();
-        clearSelectionDrag(true);
-        if (cells.isEmpty() || onCellPainted == null) {
-            return;
-        }
-        for (DungeonMapPane.CellInteraction cell : cells) {
-            onCellPainted.accept(cell);
-        }
-        if (onPaintStrokeFinished != null) {
-            onPaintStrokeFinished.run();
-        }
-    }
-
-    private void updateHover(double screenX, double screenY) {
-        DungeonMapPane.CellInteraction interaction = model.interactionAt(viewport, screenX, screenY);
-        int newX = interaction == null ? -1 : interaction.x();
-        int newY = interaction == null ? -1 : interaction.y();
-        if (newX == hoverCellX && newY == hoverCellY) {
-            return;
-        }
-        hoverCellX = newX;
-        hoverCellY = newY;
-        drawHover();
-    }
-
-    private void clearHover() {
-        hoverCellX = -1;
-        hoverCellY = -1;
-        drawHover();
-    }
-
-    private void drawHover() {
-        GraphicsContext gc = selectionCanvas.getGraphicsContext2D();
-        gc.clearRect(0, 0, selectionCanvas.getWidth(), selectionCanvas.getHeight());
-        if (redrawSelection != null) {
-            redrawSelection.run();
-        }
-        List<DungeonMapPane.CellInteraction> previewCells = hoverPreviewCells();
-        if (previewCells.isEmpty()) {
-            return;
-        }
-        gc.setFill(activeTool == DungeonEditorTool.ERASE ? HOVER_ERASE_FILL : HOVER_PAINT_FILL);
-        double cellSize = viewport.scaledCellSize();
-        for (DungeonMapPane.CellInteraction cell : previewCells) {
-            gc.fillRect(viewport.screenX(cell.x()), viewport.screenY(cell.y()), cellSize - 1, cellSize - 1);
-        }
-    }
-
-    private void updateEdgeHover(double screenX, double screenY) {
-        if (currentEdgeToolPolicy().usesWallPaintPath()) {
-            VertexRef vertex = findPaintVertexInSearchWindow(screenX, screenY);
-            int newVertexX = vertex == null ? -1 : vertex.x();
-            int newVertexY = vertex == null ? -1 : vertex.y();
-            if (newVertexX == hoverVertexX && newVertexY == hoverVertexY) {
-                return;
-            }
-            hoverVertexX = newVertexX;
-            hoverVertexY = newVertexY;
-            hoverEdgeX = -1;
-            hoverEdgeY = -1;
-            hoverEdgeDir = null;
-            drawEdgeHover();
-            return;
-        }
-        hoverVertexX = -1;
-        hoverVertexY = -1;
-        DungeonMapPane.EdgeInteraction interaction = interactionAt(screenX, screenY);
-        int newX = interaction == null ? -1 : interaction.edge().x();
-        int newY = interaction == null ? -1 : interaction.edge().y();
-        PassageDirection newDir = interaction == null ? null : interaction.edge().direction();
-        if (newX == hoverEdgeX && newY == hoverEdgeY && newDir == hoverEdgeDir) {
-            return;
-        }
-        hoverEdgeX = newX;
-        hoverEdgeY = newY;
-        hoverEdgeDir = newDir;
-        drawEdgeHover();
-    }
-
-    private void clearEdgeHover() {
-        hoverEdgeX = -1;
-        hoverEdgeY = -1;
-        hoverEdgeDir = null;
-        hoverVertexX = -1;
-        hoverVertexY = -1;
-        drawEdgeHover();
-    }
-
-    private void drawEdgeHover() {
-        GraphicsContext gc = selectionCanvas.getGraphicsContext2D();
-        gc.clearRect(0, 0, selectionCanvas.getWidth(), selectionCanvas.getHeight());
-        if (redrawSelection != null) {
-            redrawSelection.run();
-        }
-        if (currentEdgeToolPolicy().usesWallPaintPath() && hoverVertexX >= 0 && hoverVertexY >= 0) {
-            gc.setFill(HOVER_EDGE_STROKE);
-            double radius = Math.max(4.0, 5.0 * viewport.strokeScale());
-            double centerX = viewport.screenX(hoverVertexX);
-            double centerY = viewport.screenY(hoverVertexY);
-            gc.fillOval(centerX - radius, centerY - radius, radius * 2.0, radius * 2.0);
-            return;
-        }
-        if (hoverEdgeX < 0 || hoverEdgeDir == null) {
-            return;
-        }
-        gc.setStroke(edgeHoverStroke());
-        gc.setLineWidth(Math.max(3.0, 5.0 * viewport.strokeScale()));
-        strokeEdge(gc, hoverEdgeX, hoverEdgeY, hoverEdgeDir);
-    }
-
-    private Color edgeHoverStroke() {
-        return currentEdgeToolPolicy().destructiveHover() ? HOVER_EDGE_ERASE_STROKE : HOVER_EDGE_STROKE;
     }
 
     private void handleEdgeClick(double screenX, double screenY) {
@@ -544,205 +341,8 @@ final class DungeonInteractionController {
         return new int[]{canonX, canonY, dir == PassageDirection.EAST ? 0 : 1};
     }
 
-    // Wall painting intentionally snaps within a forgiving local search window so minor
-    // pointer drift does not invalidate the intended path endpoint while dragging.
-    private VertexRef findPaintVertexInSearchWindow(double screenX, double screenY) {
-        if (model.state() == null || model.state().map() == null) {
-            return null;
-        }
-        double cellSize = viewport.scaledCellSize();
-        double fx = (screenX - viewport.screenX(0)) / cellSize;
-        double fy = (screenY - viewport.screenY(0)) / cellSize;
-        int baseX = (int) Math.floor(fx);
-        int baseY = (int) Math.floor(fy);
-        List<VertexRef> candidates = paintVertexCandidatesNear(baseX, baseY);
-        return choosePreferredPaintVertex(candidates, screenX, screenY);
-    }
-
-    private List<VertexRef> paintVertexCandidatesNear(int baseX, int baseY) {
-        List<VertexRef> candidates = new ArrayList<>();
-        for (int dx = -WALL_VERTEX_SEARCH_RADIUS; dx <= WALL_VERTEX_SEARCH_RADIUS + 1; dx++) {
-            for (int dy = -WALL_VERTEX_SEARCH_RADIUS; dy <= WALL_VERTEX_SEARCH_RADIUS + 1; dy++) {
-                VertexRef candidate = new VertexRef(baseX + dx, baseY + dy);
-                if (isPaintVertex(candidate)) {
-                    candidates.add(candidate);
-                }
-            }
-        }
-        return candidates;
-    }
-
-    private VertexRef choosePreferredPaintVertex(List<VertexRef> candidates, double screenX, double screenY) {
-        VertexRef best = null;
-        double bestDistance = Double.MAX_VALUE;
-        for (VertexRef candidate : candidates) {
-            double distance = Math.hypot(
-                    screenX - viewport.screenX(candidate.x()),
-                    screenY - viewport.screenY(candidate.y()));
-            if (distance > bestDistance) {
-                continue;
-            }
-            if (distance < bestDistance
-                    || best == null
-                    || candidate.y() < best.y()
-                    || (candidate.y() == best.y() && candidate.x() < best.x())) {
-                best = candidate;
-                bestDistance = distance;
-            }
-        }
-        return best;
-    }
-
-    private boolean isPaintVertex(VertexRef vertex) {
-        return !neighboringPaintableEdges(vertex).isEmpty();
-    }
-
-    private List<DungeonMapPane.EdgeInteraction> findWallPaintPath(VertexRef start, VertexRef goal) {
-        if (start == null || goal == null || start.equals(goal)) {
-            return List.of();
-        }
-        PriorityQueue<VertexPathNode> openSet = new PriorityQueue<>(Comparator
-                .comparingInt(VertexPathNode::priority)
-                .thenComparingInt(VertexPathNode::heuristic)
-                .thenComparingInt(node -> node.vertex().y())
-                .thenComparingInt(node -> node.vertex().x()));
-        Map<VertexRef, Integer> costByVertex = new HashMap<>();
-        Map<VertexRef, VertexStep> previous = new HashMap<>();
-        int initialHeuristic = heuristic(start, goal);
-        openSet.add(new VertexPathNode(start, initialHeuristic, initialHeuristic));
-        costByVertex.put(start, 0);
-
-        while (!openSet.isEmpty()) {
-            VertexPathNode current = openSet.poll();
-            if (current.vertex().equals(goal)) {
-                return rebuildPath(previous, current.vertex());
-            }
-            Integer knownCost = costByVertex.get(current.vertex());
-            if (knownCost == null || knownCost + heuristic(current.vertex(), goal) < current.priority()) {
-                continue;
-            }
-            for (VertexStep neighbor : neighboringPaintableEdges(current.vertex())) {
-                int nextCost = knownCost + 1;
-                Integer existingCost = costByVertex.get(neighbor.vertex());
-                if (existingCost != null && existingCost <= nextCost) {
-                    continue;
-                }
-                previous.put(neighbor.vertex(), neighbor);
-                costByVertex.put(neighbor.vertex(), nextCost);
-                int heuristic = heuristic(neighbor.vertex(), goal);
-                openSet.add(new VertexPathNode(neighbor.vertex(), nextCost + heuristic, heuristic));
-            }
-        }
-        return List.of();
-    }
-
-    private List<VertexStep> neighboringPaintableEdges(VertexRef vertex) {
-        List<VertexStep> neighbors = new ArrayList<>(4);
-        addPaintableStep(neighbors, vertex, new VertexRef(vertex.x() - 1, vertex.y()));
-        addPaintableStep(neighbors, vertex, new VertexRef(vertex.x() + 1, vertex.y()));
-        addPaintableStep(neighbors, vertex, new VertexRef(vertex.x(), vertex.y() - 1));
-        addPaintableStep(neighbors, vertex, new VertexRef(vertex.x(), vertex.y() + 1));
-        neighbors.sort(Comparator
-                .comparingInt((VertexStep step) -> step.vertex().y())
-                .thenComparingInt(step -> step.vertex().x())
-                .thenComparingInt(step -> step.edge().direction().ordinal())
-                .thenComparingInt(step -> step.edge().y())
-                .thenComparingInt(step -> step.edge().x()));
-        return neighbors;
-    }
-
-    private void addPaintableStep(List<VertexStep> steps, VertexRef from, VertexRef to) {
-        EdgeRef edge = edgeBetween(from, to);
-        if (edge != null) {
-            DungeonEdgeSummary summary = model.edgeAt(edge.direction().edgeKey(edge.x(), edge.y()));
-            if (summary != null && summary.canCreateManualWall()) {
-                steps.add(new VertexStep(to, edge, from));
-            }
-        }
-    }
-
-    private EdgeRef edgeBetween(VertexRef from, VertexRef to) {
-        int dx = to.x() - from.x();
-        int dy = to.y() - from.y();
-        if (Math.abs(dx) + Math.abs(dy) != 1) {
-            return null;
-        }
-        if (dx == 1) {
-            return new EdgeRef(from.x(), from.y() - 1, PassageDirection.SOUTH);
-        }
-        if (dx == -1) {
-            return new EdgeRef(to.x(), to.y() - 1, PassageDirection.SOUTH);
-        }
-        if (dy == 1) {
-            return new EdgeRef(from.x() - 1, from.y(), PassageDirection.EAST);
-        }
-        return new EdgeRef(to.x() - 1, to.y(), PassageDirection.EAST);
-    }
-
-    private List<DungeonMapPane.EdgeInteraction> rebuildPath(Map<VertexRef, VertexStep> previous, VertexRef end) {
-        List<DungeonMapPane.EdgeInteraction> path = new ArrayList<>();
-        VertexRef current = end;
-        while (previous.containsKey(current)) {
-            VertexStep step = previous.get(current);
-            path.add(0, toInteraction(step.edge()));
-            current = step.previousVertex();
-        }
-        return path;
-    }
-
-    private int heuristic(VertexRef a, VertexRef b) {
-        return Math.abs(a.x() - b.x()) + Math.abs(a.y() - b.y());
-    }
-
-    private DungeonMapPane.EdgeInteraction toInteraction(EdgeRef edge) {
-        DungeonEdgeSummary edgeSummary = model.edgeAt(edge.direction().edgeKey(edge.x(), edge.y()));
-        return edgeSummary == null ? null : new DungeonMapPane.EdgeInteraction(edgeSummary);
-    }
-
-    private void strokeEdge(GraphicsContext gc, int x, int y, PassageDirection dir) {
-        if (dir == PassageDirection.EAST) {
-            double sx = viewport.screenX(x + 1);
-            double sy = viewport.screenY(y);
-            double ey = viewport.screenY(y + 1);
-            gc.strokeLine(sx, sy, sx, ey);
-            return;
-        }
-        double sx = viewport.screenX(x);
-        double sy = viewport.screenY(y + 1);
-        double ex = viewport.screenX(x + 1);
-        gc.strokeLine(sx, sy, ex, sy);
-    }
-
     private void updateCursor() {
         selectionCanvas.setCursor(activeTool.cursor());
-    }
-
-    private void clearSelectionDrag(boolean redraw) {
-        if (selectionDragStart == null && selectionDragCurrent == null) {
-            return;
-        }
-        selectionDragStart = null;
-        selectionDragCurrent = null;
-        if (redraw) {
-            drawHover();
-        }
-    }
-
-    private List<DungeonMapPane.CellInteraction> hoverPreviewCells() {
-        if (usesSelectionPaint()) {
-            if (selectionDragStart != null && selectionDragCurrent != null) {
-                return selectionCells();
-            }
-            if (hoverCellX < 0 || hoverCellY < 0) {
-                return List.of();
-            }
-            DungeonMapPane.CellInteraction hoveredCell = cellAt(hoverCellX, hoverCellY);
-            return hoveredCell == null ? List.of() : List.of(hoveredCell);
-        }
-        if (hoverCellX < 0 || hoverCellY < 0) {
-            return List.of();
-        }
-        return brushCells(hoverCellX, hoverCellY);
     }
 
     private boolean edgeHoverEnabled() {
@@ -805,115 +405,5 @@ final class DungeonInteractionController {
             }
         }
         return DungeonPaintMode.BRUSH;
-    }
-
-    private CellRef cellRefAt(double screenX, double screenY) {
-        DungeonMapPane.CellInteraction interaction = model.interactionAt(viewport, screenX, screenY);
-        return interaction == null ? null : new CellRef(interaction.x(), interaction.y());
-    }
-
-    private List<DungeonMapPane.CellInteraction> brushCells(int centerX, int centerY) {
-        int radius = currentBrushSize() - 1;
-        if (radius == 0) {
-            DungeonMapPane.CellInteraction single = cellAt(centerX, centerY);
-            return single == null ? List.of() : List.of(single);
-        }
-        List<DungeonMapPane.CellInteraction> cells = new ArrayList<>();
-        for (int dy = -radius; dy <= radius; dy++) {
-            for (int dx = -radius; dx <= radius; dx++) {
-                if (!inBrushShape(currentBrushShape(), dx, dy, radius)) {
-                    continue;
-                }
-                DungeonMapPane.CellInteraction cell = cellAt(centerX + dx, centerY + dy);
-                if (cell != null) {
-                    cells.add(cell);
-                }
-            }
-        }
-        return cells;
-    }
-
-    private List<DungeonMapPane.CellInteraction> selectionCells() {
-        if (selectionDragStart == null || selectionDragCurrent == null) {
-            return List.of();
-        }
-        int minX = Math.min(selectionDragStart.x(), selectionDragCurrent.x());
-        int maxX = Math.max(selectionDragStart.x(), selectionDragCurrent.x());
-        int minY = Math.min(selectionDragStart.y(), selectionDragCurrent.y());
-        int maxY = Math.max(selectionDragStart.y(), selectionDragCurrent.y());
-        LinkedHashMap<String, DungeonMapPane.CellInteraction> cells = new LinkedHashMap<>();
-        for (int y = minY; y <= maxY; y++) {
-            for (int x = minX; x <= maxX; x++) {
-                if (!inSelectionShape(currentBrushShape(), x, y, minX, minY, maxX, maxY)) {
-                    continue;
-                }
-                DungeonMapPane.CellInteraction cell = cellAt(x, y);
-                if (cell != null) {
-                    cells.put(x + ":" + y, cell);
-                }
-            }
-        }
-        return List.copyOf(cells.values());
-    }
-
-    private DungeonMapPane.CellInteraction cellAt(int x, int y) {
-        if (model.state() == null || model.state().map() == null) {
-            return null;
-        }
-        if (x < 0 || y < 0 || x >= model.state().map().width() || y >= model.state().map().height()) {
-            return null;
-        }
-        return new DungeonMapPane.CellInteraction(x, y, model.squareAt(x, y));
-    }
-
-    private static boolean inBrushShape(BrushShape shape, int dx, int dy, int radius) {
-        return switch (shape) {
-            case SQUARE -> true;
-            case CIRCLE -> dx * dx + dy * dy <= radius * radius;
-            case DIAMOND -> Math.abs(dx) + Math.abs(dy) <= radius;
-        };
-    }
-
-    private static boolean inSelectionShape(BrushShape shape, int x, int y, int minX, int minY, int maxX, int maxY) {
-        return switch (shape) {
-            case SQUARE -> true;
-            case CIRCLE -> inEllipse(x, y, minX, minY, maxX, maxY);
-            case DIAMOND -> inDiamond(x, y, minX, minY, maxX, maxY);
-        };
-    }
-
-    private static boolean inEllipse(int x, int y, int minX, int minY, int maxX, int maxY) {
-        double centerX = (minX + maxX) / 2.0;
-        double centerY = (minY + maxY) / 2.0;
-        double radiusX = Math.max(0.5, (maxX - minX + 1) / 2.0);
-        double radiusY = Math.max(0.5, (maxY - minY + 1) / 2.0);
-        double normalizedX = (x + 0.5 - centerX) / radiusX;
-        double normalizedY = (y + 0.5 - centerY) / radiusY;
-        return normalizedX * normalizedX + normalizedY * normalizedY <= 1.0;
-    }
-
-    private static boolean inDiamond(int x, int y, int minX, int minY, int maxX, int maxY) {
-        double centerX = (minX + maxX) / 2.0;
-        double centerY = (minY + maxY) / 2.0;
-        double radiusX = Math.max(0.5, (maxX - minX + 1) / 2.0);
-        double radiusY = Math.max(0.5, (maxY - minY + 1) / 2.0);
-        double normalizedX = Math.abs(x + 0.5 - centerX) / radiusX;
-        double normalizedY = Math.abs(y + 0.5 - centerY) / radiusY;
-        return normalizedX + normalizedY <= 1.0;
-    }
-
-    private record EdgeRef(int x, int y, PassageDirection direction) {
-    }
-
-    private record VertexRef(int x, int y) {
-    }
-
-    private record CellRef(int x, int y) {
-    }
-
-    private record VertexStep(VertexRef vertex, EdgeRef edge, VertexRef previousVertex) {
-    }
-
-    private record VertexPathNode(VertexRef vertex, int priority, int heuristic) {
     }
 }

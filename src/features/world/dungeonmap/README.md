@@ -8,14 +8,18 @@
 It may read or update world-session state only through `features.campaignstate.api`.
 Cross-feature selector/read DTOs belong in `api` when dungeon data must cross a feature boundary, while `model` stays focused on dungeon domain and editor state.
 Editor-only encounter and encounter-table selector catalogs belong in internal `service.catalog`, not in `api`.
+Feature-internal workflow result DTOs that must be shared between low-level services and UI/application code belong in `application`.
+`DungeonLinkCreateResult`/`DungeonMoveResult` and their status enums live there as the canonical result model; do not mirror them in `service` or `ui`.
 `api` exposes only stable contracts consumed outside `dungeonmap`; the current public surface is the world-facing
-`DungeonMapModule` facade, while dungeon view composition stays in internal `ui`.
+`DungeonMapModule` facade plus the explicit bootstrap surface in `api/DungeonMapBootstrap`, while dungeon view composition stays in internal `ui`.
+`service` is split by read/write responsibility:
+- `DungeonMapQueryService` is strictly read-only. Query flows must not reconcile or delete persisted state.
+- Startup/bootstrap owns one-time persisted reconciliation for legacy rows, and write-side services own ongoing invariants after mutations.
+- `DungeonMapEditorService` is the narrow feature-facing write facade; focused write collaborators live under `service.editing` for map lifecycle, topology edits, feature edits, and endpoint/link/passage management.
+`ui/canvas` owns map rendering, hit-testing, hover/selection overlays, and raw canvas gesture mechanics.
 `ui/editor` is the editor composition and widget layer: `DungeonEditorView` is the composition root there, and the
 package also owns editor controls, dropdown/widget helpers, inspector builders, and editor state holders.
-Editor orchestration belongs in `ui/editor/workflow`, which owns both the broad `*WorkflowController` coordinators
-and narrower editor-specific controllers such as `DungeonMapEditingController`, `DungeonEntityCrudController`, and
-`DungeonConnectionEditingController`. Keep `DungeonEditorView` focused on wiring; workflow ownership stays in those
-`ui/editor/workflow` classes rather than drifting back into the view. UI helpers such as `DungeonMapDropdowns`
+`ui/editor/workflow` owns editor orchestration only: loading, selection sync, write-side editor actions, link/message workflows, and inspector publishing coordination. Keep `DungeonEditorView` focused on wiring and event routing rather than reabsorbing workflow policy. UI helpers such as `DungeonMapDropdowns`
 remain in `ui/editor` because they render anchored editor UI instead of coordinating workflow.
 Use `paint*` naming for transient UI stroke/preview mechanics and `*SquareEdit*` naming for persisted square mutation commands.
 Dungeon square paint topology is overlap-driven, not adjacency-driven: painting isolated empty space creates a new room with walls on all exposed edges; painting empty space directly adjacent to rooms still creates a new room and only adds missing boundary walls; painting across empty space plus exactly one existing room extends that overlapped room, adding new outer walls and removing walls that become internal; painting across empty space plus multiple existing rooms merges all overlapped rooms into one room, keeping only the outer perimeter walls.
