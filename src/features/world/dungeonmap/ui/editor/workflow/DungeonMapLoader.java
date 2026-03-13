@@ -4,7 +4,7 @@ import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.service.DungeonMapQueries;
+import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
@@ -24,7 +24,7 @@ final class DungeonMapLoader {
     private final DungeonSelectionController selectionController;
     private final DungeonLinkFlow linkFlow;
     private final DungeonSelectionRestorer selectionRestorer;
-    private final DungeonMapQueries queries;
+    private final DungeonMapQueryService queries;
     private final Runnable onMapLoaded;
 
     public DungeonMapLoader(
@@ -35,7 +35,7 @@ final class DungeonMapLoader {
             DungeonSelectionController selectionController,
             DungeonLinkFlow linkFlow,
             DungeonSelectionRestorer selectionRestorer,
-            DungeonMapQueries queries,
+            DungeonMapQueryService queries,
             Runnable onMapLoaded
     ) {
         this.state = state;

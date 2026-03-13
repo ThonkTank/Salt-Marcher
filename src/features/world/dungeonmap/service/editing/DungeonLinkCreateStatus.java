@@ -1,4 +1,4 @@
-package features.world.dungeonmap.application;
+package features.world.dungeonmap.service.editing;
 
 public enum DungeonLinkCreateStatus {
     CREATED,

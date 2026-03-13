@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui;
 
-import features.world.dungeonmap.service.DungeonMapCommands;
-import features.world.dungeonmap.service.DungeonMapQueries;
+import features.world.dungeonmap.service.DungeonMapCommandService;
+import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.editor.DungeonEditorView;
 import features.world.dungeonmap.ui.runtime.DungeonView;
 import ui.shell.AppView;
@@ -20,8 +20,8 @@ public final class DungeonMapUiModule {
 
     public DungeonMapUiModule(DetailsNavigator detailsNavigator) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
-        DungeonMapQueries queries = new DungeonMapQueries();
-        DungeonMapCommands commands = new DungeonMapCommands();
+        DungeonMapQueryService queries = new DungeonMapQueryService();
+        DungeonMapCommandService commands = new DungeonMapCommandService();
         this.dungeonView = new DungeonView(queries);
         this.dungeonEditorView = new DungeonEditorView(detailsNavigator, queries, commands);
     }

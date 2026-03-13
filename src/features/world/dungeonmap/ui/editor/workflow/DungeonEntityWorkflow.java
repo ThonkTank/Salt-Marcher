@@ -7,7 +7,7 @@ import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.service.DungeonMapCommands;
+import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.inspector.actions.DungeonEntityInspectorActions;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
@@ -26,7 +26,7 @@ final class DungeonEntityWorkflow implements DungeonEntityInspectorActions {
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonSelectionController selectionController;
     private final EditorMessageBus workflowMessageBus;
-    private final DungeonMapCommands commands;
+    private final DungeonMapCommandService commands;
     private final ConfirmationDropdown confirmationDropdown = new ConfirmationDropdown();
     private final TextInputDropdown areaDropdown = new TextInputDropdown();
     private final TextInputDropdown featureDropdown = new TextInputDropdown();
@@ -37,7 +37,7 @@ final class DungeonEntityWorkflow implements DungeonEntityInspectorActions {
             DungeonToolSettingsPane toolSettingsPane,
             DungeonSelectionController selectionController,
             EditorMessageBus workflowMessageBus,
-            DungeonMapCommands commands,
+            DungeonMapCommandService commands,
             Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap
     ) {
         this.state = state;

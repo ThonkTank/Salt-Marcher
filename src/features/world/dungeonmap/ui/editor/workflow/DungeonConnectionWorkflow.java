@@ -6,9 +6,9 @@ import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.application.DungeonLinkCreateResult;
-import features.world.dungeonmap.application.DungeonLinkCreateStatus;
-import features.world.dungeonmap.service.DungeonMapCommands;
+import features.world.dungeonmap.service.DungeonMapCommandService;
+import features.world.dungeonmap.service.editing.DungeonLinkCreateResult;
+import features.world.dungeonmap.service.editing.DungeonLinkCreateStatus;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.inspector.actions.DungeonConnectionInspectorActions;
@@ -31,7 +31,7 @@ final class DungeonConnectionWorkflow implements DungeonConnectionInspectorActio
     private final DungeonSelectionController selectionController;
     private final DungeonLinkFlow linkFlow;
     private final EditorMessageBus workflowMessageBus;
-    private final DungeonMapCommands commands;
+    private final DungeonMapCommandService commands;
     private final ConfirmationDropdown confirmationDropdown = new ConfirmationDropdown();
     private final Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap;
 
@@ -42,7 +42,7 @@ final class DungeonConnectionWorkflow implements DungeonConnectionInspectorActio
             DungeonSelectionController selectionController,
             DungeonLinkFlow linkFlow,
             EditorMessageBus workflowMessageBus,
-            DungeonMapCommands commands,
+            DungeonMapCommandService commands,
             Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap
     ) {
         this.state = state;

@@ -6,8 +6,8 @@ import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-import features.world.dungeonmap.service.DungeonMapCommands;
-import features.world.dungeonmap.service.DungeonMapQueries;
+import features.world.dungeonmap.service.DungeonMapCommandService;
+import features.world.dungeonmap.service.DungeonMapQueryService;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
@@ -24,7 +24,7 @@ public class DungeonEditorView implements AppView {
     private final VBox statePane = new VBox(8);
     private final DungeonEditorController controller;
 
-    public DungeonEditorView(DetailsNavigator detailsNavigator, DungeonMapQueries queries, DungeonMapCommands commands) {
+    public DungeonEditorView(DetailsNavigator detailsNavigator, DungeonMapQueryService queries, DungeonMapCommandService commands) {
         controller = new DungeonEditorController(state, interactionState, controls, canvas, toolSettingsPane, queries, commands, detailsNavigator);
         statePane.getChildren().add(toolSettingsPane);
         controller.initializeUi();

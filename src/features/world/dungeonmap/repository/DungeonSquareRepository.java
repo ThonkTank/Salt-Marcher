@@ -72,6 +72,18 @@ public final class DungeonSquareRepository {
         }
     }
 
+    public static boolean existsAt(Connection conn, long mapId, int x, int y) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT 1 FROM dungeon_squares WHERE map_id=? AND x=? AND y=?")) {
+            ps.setLong(1, mapId);
+            ps.setInt(2, x);
+            ps.setInt(3, y);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
     private static DungeonSquare mapSquare(ResultSet rs) throws SQLException {
         return new DungeonSquare(
                 rs.getLong("square_id"),

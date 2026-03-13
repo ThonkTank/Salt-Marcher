@@ -19,8 +19,6 @@ import features.world.dungeonmap.repository.DungeonWallRepository;
 import features.world.dungeonmap.service.linking.DungeonLinkIntegrityService;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -180,23 +178,11 @@ public final class DungeonTopologyService {
     }
 
     private static boolean isWallEdgeValid(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
-        boolean sideA = squareExists(conn, mapId, x, y);
+        boolean sideA = DungeonSquareRepository.existsAt(conn, mapId, x, y);
         boolean sideB = direction == PassageDirection.EAST
-                ? squareExists(conn, mapId, x + 1, y)
-                : squareExists(conn, mapId, x, y + 1);
+                ? DungeonSquareRepository.existsAt(conn, mapId, x + 1, y)
+                : DungeonSquareRepository.existsAt(conn, mapId, x, y + 1);
         return sideA && sideB;
-    }
-
-    private static boolean squareExists(Connection conn, long mapId, int x, int y) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT 1 FROM dungeon_squares WHERE map_id=? AND x=? AND y=?")) {
-            ps.setLong(1, mapId);
-            ps.setInt(2, x);
-            ps.setInt(3, y);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
-            }
-        }
     }
 
     private static boolean isPassageEdgeValid(

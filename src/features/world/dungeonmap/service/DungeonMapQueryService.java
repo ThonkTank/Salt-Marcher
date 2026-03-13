@@ -24,7 +24,7 @@ import features.world.dungeonmap.repository.DungeonWallRepository;
 import java.sql.Connection;
 import java.util.List;
 
-public final class DungeonMapQueries {
+public final class DungeonMapQueryService {
 
     public List<DungeonMap> getAllMaps() throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -38,7 +38,7 @@ public final class DungeonMapQueries {
         }
     }
 
-    static DungeonMapState loadMapState(Connection conn, long mapId) throws Exception {
+    public static DungeonMapState loadMapState(Connection conn, long mapId) throws Exception {
         DungeonMap map = DungeonMapRepository.findMap(conn, mapId)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown dungeon map: " + mapId));
         List<DungeonSquare> squares = DungeonSquareRepository.getSquares(conn, mapId);

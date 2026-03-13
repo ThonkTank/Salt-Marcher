@@ -9,7 +9,6 @@ import features.world.dungeonmap.service.topology.DungeonAreaNormalizationServic
 import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -39,23 +38,13 @@ public final class DungeonTopologyEditingService {
     }
 
     private static void deletePassagesReplacedByWalls(Connection conn, long mapId, List<DungeonWallEdit> edits) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT passage_id FROM dungeon_passages WHERE map_id=? AND x=? AND y=? AND direction=?")) {
-            for (DungeonWallEdit edit : edits) {
-                if (!edit.wallPresent()) {
-                    continue;
-                }
-                ps.setLong(1, mapId);
-                ps.setInt(2, edit.x());
-                ps.setInt(3, edit.y());
-                ps.setString(4, edit.direction().dbValue());
-                try (var rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        long passageId = rs.getLong("passage_id");
-                        DungeonLinkIntegrityService.deleteLinksTouchingAnchor(conn, DungeonLinkAnchor.passage(passageId));
-                        DungeonPassageRepository.deletePassage(conn, passageId);
-                    }
-                }
+        for (DungeonWallEdit edit : edits) {
+            if (!edit.wallPresent()) {
+                continue;
+            }
+            for (long passageId : DungeonPassageRepository.findIdsByEdge(conn, mapId, edit.x(), edit.y(), edit.direction())) {
+                DungeonLinkIntegrityService.deleteLinksTouchingAnchor(conn, DungeonLinkAnchor.passage(passageId));
+                DungeonPassageRepository.deletePassage(conn, passageId);
             }
         }
     }

@@ -2,7 +2,7 @@ package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
-import features.world.dungeonmap.service.DungeonMapCommands;
+import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
@@ -19,7 +19,7 @@ final class DungeonSquareEditWorkflow {
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;
     private final DungeonMapPane canvas;
-    private final DungeonMapCommands commands;
+    private final DungeonMapCommandService commands;
     private final DungeonPaintSession paintSession;
     private final DungeonWallPaintSession wallPaintSession;
     private final Runnable reloadCurrentMap;
@@ -28,7 +28,7 @@ final class DungeonSquareEditWorkflow {
             DungeonEditorState state,
             DungeonEditorInteractionState interactionState,
             DungeonMapPane canvas,
-            DungeonMapCommands commands,
+            DungeonMapCommandService commands,
             Runnable reloadCurrentMap
     ) {
         this.state = state;

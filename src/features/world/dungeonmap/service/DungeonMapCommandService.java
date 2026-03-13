@@ -1,6 +1,5 @@
 package features.world.dungeonmap.service;
 
-import features.world.dungeonmap.application.DungeonLinkCreateResult;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -9,13 +8,14 @@ import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.service.editing.DungeonConnectionEditingService;
+import features.world.dungeonmap.service.editing.DungeonLinkCreateResult;
 import features.world.dungeonmap.service.editing.DungeonFeatureEditingService;
 import features.world.dungeonmap.service.editing.DungeonMapLifecycleEditingService;
 import features.world.dungeonmap.service.editing.DungeonTopologyEditingService;
 
 import java.util.List;
 
-public final class DungeonMapCommands {
+public final class DungeonMapCommandService {
 
     public long createMap(String name, int width, int height) throws Exception {
         return DungeonMapLifecycleEditingService.createMap(name, width, height);

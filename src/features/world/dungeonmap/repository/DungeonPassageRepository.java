@@ -100,16 +100,27 @@ public final class DungeonPassageRepository {
         }
     }
 
-    private static long fetchPassageId(Connection conn, long mapId, int x, int y, PassageDirection dir) throws SQLException {
+    public static List<Long> findIdsByEdge(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT passage_id FROM dungeon_passages WHERE map_id=? AND x=? AND y=? AND direction=?")) {
             ps.setLong(1, mapId);
             ps.setInt(2, x);
             ps.setInt(3, y);
-            ps.setString(4, dir.dbValue());
+            ps.setString(4, direction.dbValue());
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getLong(1);
+                List<Long> result = new ArrayList<>();
+                while (rs.next()) {
+                    result.add(rs.getLong("passage_id"));
+                }
+                return result;
             }
+        }
+    }
+
+    private static long fetchPassageId(Connection conn, long mapId, int x, int y, PassageDirection dir) throws SQLException {
+        List<Long> ids = findIdsByEdge(conn, mapId, x, y, dir);
+        if (!ids.isEmpty()) {
+            return ids.get(0);
         }
         throw new SQLException("Passage not found after upsert");
     }

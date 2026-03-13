@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.service.preview;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonLinkAnchorType;
@@ -6,44 +6,13 @@ import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.ui.editor.dropdowns.DungeonMapFormDropdown;
-import javafx.scene.Node;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Consumer;
 
-public final class DungeonMapDropdowns {
+public final class DungeonMapImpactPreviewService {
 
-    private final DungeonMapFormDropdown mapFormDropdown = new DungeonMapFormDropdown();
-
-    public void showNewMapDropdown(Node anchor, Consumer<DungeonMapFormDropdown.Result> onCreateRequested) {
-        mapFormDropdown.showCreate(anchor, result -> {
-            mapFormDropdown.hide();
-            onCreateRequested.accept(result);
-        });
-    }
-
-    public void showEditMapDropdown(
-            Node anchor,
-            DungeonMap map,
-            DungeonMapState currentState,
-            Consumer<DungeonMapFormDropdown.Result> onUpdateRequested,
-            Runnable onDeleteRequested
-    ) {
-        mapFormDropdown.showEdit(anchor, map,
-                (newWidth, newHeight) -> shrinkImpactText(map, currentState, newWidth, newHeight),
-                () -> deleteImpactText(map, currentState),
-                result -> {
-            mapFormDropdown.hide();
-            onUpdateRequested.accept(result);
-        }, () -> {
-            mapFormDropdown.hide();
-            onDeleteRequested.run();
-        });
-    }
-
-    private String shrinkImpactText(DungeonMap map, DungeonMapState currentState, int newWidth, int newHeight) {
+    public String shrinkImpactText(DungeonMap map, DungeonMapState currentState, int newWidth, int newHeight) {
         if (newWidth >= map.width() && newHeight >= map.height()) {
             return "";
         }
@@ -54,6 +23,21 @@ public final class DungeonMapDropdowns {
                 + impact.endpointsRemoved() + " Übergänge und "
                 + impact.linksRemoved() + " Links werden unwiderruflich gelöscht.\n"
                 + "Falls die Gruppe auf einem entfernten Übergang steht, wird ihre Position zurückgesetzt.";
+    }
+
+    public String deleteImpactText(DungeonMap map, DungeonMapState currentState) {
+        if (currentState == null) {
+            return "Dungeon '" + map.name() + "' unwiderruflich löschen?";
+        }
+        return "Dungeon '" + map.name() + "' unwiderruflich löschen?\n"
+                + currentState.squares().size() + " Felder, "
+                + currentState.rooms().size() + " Räume, "
+                + currentState.areas().size() + " Bereiche, "
+                + currentState.features().size() + " Features, "
+                + currentState.endpoints().size() + " Übergänge und "
+                + currentState.links().size() + " Links werden entfernt.\n"
+                + currentState.passageEdgeCount() + " Durchgänge und "
+                + currentState.wallEdgeCount() + " Wände gehen ebenfalls verloren.";
     }
 
     private ResizeImpact calculateResizeImpact(DungeonMapState currentState, int newWidth, int newHeight) {
@@ -119,21 +103,6 @@ public final class DungeonMapDropdowns {
             return removedEndpointIds.contains(anchor.anchorId());
         }
         return removedPassageIds.contains(anchor.anchorId());
-    }
-
-    private String deleteImpactText(DungeonMap map, DungeonMapState currentState) {
-        if (currentState == null) {
-            return "Dungeon '" + map.name() + "' unwiderruflich löschen?";
-        }
-        return "Dungeon '" + map.name() + "' unwiderruflich löschen?\n"
-                + currentState.squares().size() + " Felder, "
-                + currentState.rooms().size() + " Räume, "
-                + currentState.areas().size() + " Bereiche, "
-                + currentState.features().size() + " Features, "
-                + currentState.endpoints().size() + " Übergänge und "
-                + currentState.links().size() + " Links werden entfernt.\n"
-                + currentState.passageEdgeCount() + " Durchgänge und "
-                + currentState.wallEdgeCount() + " Wände gehen ebenfalls verloren.";
     }
 
     private record ResizeImpact(int squaresRemoved, int endpointsRemoved, int linksRemoved) {}

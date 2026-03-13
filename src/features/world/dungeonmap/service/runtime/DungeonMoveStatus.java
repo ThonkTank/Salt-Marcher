@@ -1,4 +1,4 @@
-package features.world.dungeonmap.application;
+package features.world.dungeonmap.service.runtime;
 
 public enum DungeonMoveStatus {
     MOVED,

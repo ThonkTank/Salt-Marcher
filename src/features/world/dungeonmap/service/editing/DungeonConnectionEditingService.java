@@ -1,7 +1,5 @@
 package features.world.dungeonmap.service.editing;
 
-import features.world.dungeonmap.application.DungeonLinkCreateResult;
-import features.world.dungeonmap.application.DungeonLinkCreateStatus;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonLinkAnchor;
@@ -9,8 +7,8 @@ import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.repository.DungeonEndpointRepository;
 import features.world.dungeonmap.repository.DungeonLinkRepository;
 import features.world.dungeonmap.repository.DungeonPassageRepository;
-import features.world.dungeonmap.service.adapter.DungeonCampaignStateAdapter;
 import features.world.dungeonmap.service.linking.DungeonLinkIntegrityService;
+import features.world.dungeonmap.service.runtime.DungeonCampaignStateAdapter;
 import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 import java.sql.SQLException;

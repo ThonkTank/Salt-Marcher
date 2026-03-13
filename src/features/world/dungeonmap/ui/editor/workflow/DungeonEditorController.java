@@ -2,11 +2,10 @@ package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonLink;
-import features.world.dungeonmap.service.DungeonMapCommands;
+import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.service.DungeonMapQueries;
+import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
-import features.world.dungeonmap.ui.editor.DungeonMapDropdowns;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
@@ -40,8 +39,8 @@ public final class DungeonEditorController {
             DungeonEditorControls controls,
             DungeonMapPane canvas,
             DungeonToolSettingsPane toolSettingsPane,
-            DungeonMapQueries queries,
-            DungeonMapCommands commands,
+            DungeonMapQueryService queries,
+            DungeonMapCommandService commands,
             DetailsNavigator detailsNavigator
     ) {
         this.state = state;
@@ -53,7 +52,7 @@ public final class DungeonEditorController {
         linkFlow = new DungeonLinkFlow(canvas, toolSettingsPane);
         selectionController = new DungeonSelectionController(canvas, toolSettingsPane, state, workflowMessages);
         squareEditWorkflow = new DungeonSquareEditWorkflow(state, interactionState, canvas, commands, this::reloadCurrentMap);
-        mapActions = new DungeonMapActions(state, new DungeonMapDropdowns(), commands, this::onShow);
+        mapActions = new DungeonMapActions(state, new DungeonMapDropdownPresenter(), commands, this::onShow);
         entityWorkflow = new DungeonEntityWorkflow(state, toolSettingsPane, selectionController, workflowMessages, commands, this::reloadCurrentMap);
         connectionWorkflow = new DungeonConnectionWorkflow(
                 state,

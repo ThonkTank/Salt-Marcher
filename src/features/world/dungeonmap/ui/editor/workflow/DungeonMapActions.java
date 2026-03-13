@@ -1,8 +1,7 @@
 package features.world.dungeonmap.ui.editor.workflow;
 
-import features.world.dungeonmap.service.DungeonMapCommands;
+import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.editor.DungeonMapDropdowns;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.scene.Node;
@@ -11,14 +10,14 @@ import ui.async.UiErrorReporter;
 final class DungeonMapActions {
 
     private final DungeonEditorState state;
-    private final DungeonMapDropdowns mapDropdowns;
-    private final DungeonMapCommands commands;
+    private final DungeonMapDropdownPresenter mapDropdowns;
+    private final DungeonMapCommandService commands;
     private final Runnable reloadMapList;
 
     public DungeonMapActions(
             DungeonEditorState state,
-            DungeonMapDropdowns mapDropdowns,
-            DungeonMapCommands commands,
+            DungeonMapDropdownPresenter mapDropdowns,
+            DungeonMapCommandService commands,
             Runnable reloadMapList
     ) {
         this.state = state;

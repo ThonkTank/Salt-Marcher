@@ -1,4 +1,4 @@
-package features.world.dungeonmap.service.adapter;
+package features.world.dungeonmap.service.runtime;
 
 import features.campaignstate.api.CampaignStateApi;
 

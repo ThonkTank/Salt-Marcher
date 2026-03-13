@@ -3,7 +3,7 @@ package features.world.dungeonmap.service.editing;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.repository.DungeonEndpointRepository;
-import features.world.dungeonmap.service.adapter.DungeonCampaignStateAdapter;
+import features.world.dungeonmap.service.runtime.DungeonCampaignStateAdapter;
 
 import java.sql.Connection;
 import java.sql.SQLException;
