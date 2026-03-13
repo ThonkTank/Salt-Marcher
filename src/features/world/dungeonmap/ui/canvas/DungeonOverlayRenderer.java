@@ -11,7 +11,6 @@ import features.world.dungeonmap.model.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
-import features.world.dungeonmap.ui.canvas.model.DungeonCanvasLabelLayout;
 import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.control.Label;

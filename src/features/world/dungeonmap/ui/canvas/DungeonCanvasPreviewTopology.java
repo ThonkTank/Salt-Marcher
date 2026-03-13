@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.canvas.model;
+package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonEdgeIndex;
 import features.world.dungeonmap.model.DungeonEdgeSummary;
@@ -14,19 +14,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public final class DungeonCanvasPreviewTopology {
+final class DungeonCanvasPreviewTopology {
 
     private final Map<String, DungeonWallEdit> committedWallPreviewEdits = new HashMap<>();
     private final Map<String, DungeonWallEdit> activeWallPathPreviewEdits = new HashMap<>();
     private DungeonEdgeIndex edgeIndex = DungeonEdgeIndex.empty();
 
-    public void resetForLoadedState(DungeonMapState state) {
+    void resetForLoadedState(DungeonMapState state) {
         committedWallPreviewEdits.clear();
         activeWallPathPreviewEdits.clear();
         edgeIndex = state == null || state.edgeIndex() == null ? DungeonEdgeIndex.empty() : state.edgeIndex();
     }
 
-    public void previewCommittedWallEdits(
+    void previewCommittedWallEdits(
             DungeonMapState state,
             Map<String, DungeonSquare> squaresByCoord,
             Map<String, DungeonWall> baseWallsByEdge,
@@ -38,7 +38,7 @@ public final class DungeonCanvasPreviewTopology {
         rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge, basePassagesByEdge);
     }
 
-    public void previewActiveWallPath(
+    void previewActiveWallPath(
             DungeonMapState state,
             Map<String, DungeonSquare> squaresByCoord,
             Map<String, DungeonWall> baseWallsByEdge,
@@ -50,7 +50,7 @@ public final class DungeonCanvasPreviewTopology {
         rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge, basePassagesByEdge);
     }
 
-    public boolean clearActiveWallPathPreview(
+    boolean clearActiveWallPathPreview(
             DungeonMapState state,
             Map<String, DungeonSquare> squaresByCoord,
             Map<String, DungeonWall> baseWallsByEdge,
@@ -64,7 +64,7 @@ public final class DungeonCanvasPreviewTopology {
         return true;
     }
 
-    public void rebuildAfterSquarePreview(
+    void rebuildAfterSquarePreview(
             DungeonMapState state,
             Map<String, DungeonSquare> squaresByCoord,
             Map<String, DungeonWall> baseWallsByEdge,
@@ -73,7 +73,7 @@ public final class DungeonCanvasPreviewTopology {
         rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge, basePassagesByEdge);
     }
 
-    public DungeonEdgeSummary edgeAt(String edgeKey) {
+    DungeonEdgeSummary edgeAt(String edgeKey) {
         return edgeIndex.edgeAt(edgeKey);
     }
 

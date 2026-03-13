@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.canvas.model;
+package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public final class DungeonCanvasLoadedState {
+final class DungeonCanvasLoadedState {
 
     private final Map<String, DungeonSquare> squaresByCoord = new HashMap<>();
     private final Map<Long, DungeonRoom> roomsById = new HashMap<>();
@@ -32,7 +32,7 @@ public final class DungeonCanvasLoadedState {
     private Integer loadedMapWidth;
     private Integer loadedMapHeight;
 
-    public boolean loadState(DungeonMapState nextState) {
+    boolean loadState(DungeonMapState nextState) {
         Long previousMapId = loadedMapId;
         Integer previousWidth = loadedMapWidth;
         Integer previousHeight = loadedMapHeight;
@@ -98,55 +98,55 @@ public final class DungeonCanvasLoadedState {
                 || !previousHeight.equals(loadedMapHeight);
     }
 
-    public DungeonMapState state() {
+    DungeonMapState state() {
         return state;
     }
 
-    public Map<String, DungeonSquare> squaresByCoord() {
+    Map<String, DungeonSquare> squaresByCoord() {
         return squaresByCoord;
     }
 
-    public DungeonSquare squareAt(int x, int y) {
+    DungeonSquare squareAt(int x, int y) {
         return squaresByCoord.get(key(x, y));
     }
 
-    public Map<Long, DungeonRoom> roomsById() {
+    Map<Long, DungeonRoom> roomsById() {
         return roomsById;
     }
 
-    public Map<Long, DungeonFeature> featuresById() {
+    Map<Long, DungeonFeature> featuresById() {
         return featuresById;
     }
 
-    public Map<Long, DungeonEndpoint> endpointsById() {
+    Map<Long, DungeonEndpoint> endpointsById() {
         return endpointsById;
     }
 
-    public Map<Long, DungeonPassage> passagesById() {
+    Map<Long, DungeonPassage> passagesById() {
         return passagesById;
     }
 
-    public Map<Long, DungeonLink> linksById() {
+    Map<Long, DungeonLink> linksById() {
         return linksById;
     }
 
-    public Map<String, DungeonWall> baseWallsByEdge() {
+    Map<String, DungeonWall> baseWallsByEdge() {
         return baseWallsByEdge;
     }
 
-    public Map<String, DungeonPassage> basePassagesByEdge() {
+    Map<String, DungeonPassage> basePassagesByEdge() {
         return basePassagesByEdge;
     }
 
-    public Map<String, List<DungeonFeatureTile>> featureTilesByCoord() {
+    Map<String, List<DungeonFeatureTile>> featureTilesByCoord() {
         return featureTilesByCoord;
     }
 
-    public Map<Long, List<DungeonFeatureTile>> featureTilesByFeatureId() {
+    Map<Long, List<DungeonFeatureTile>> featureTilesByFeatureId() {
         return featureTilesByFeatureId;
     }
 
-    public String resolveRoomName(Long roomId) {
+    String resolveRoomName(Long roomId) {
         DungeonRoom room = roomId == null ? null : roomsById.get(roomId);
         return room == null ? null : room.name();
     }

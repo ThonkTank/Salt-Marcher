@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.canvas.model;
+package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonSquare;
 
@@ -10,13 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public final class DungeonCanvasLabelLayout {
+final class DungeonCanvasLabelLayout {
 
     private final Map<Long, List<DungeonSquare>> squaresByRoomId = new HashMap<>();
     private final Map<Long, RoomLabelAnchor> roomLabelAnchors = new HashMap<>();
     private final List<AreaLabelAnchor> areaLabelAnchors = new ArrayList<>();
 
-    public void rebuild(Map<String, DungeonSquare> squaresByCoord) {
+    void rebuild(Map<String, DungeonSquare> squaresByCoord) {
         squaresByRoomId.clear();
         roomLabelAnchors.clear();
         areaLabelAnchors.clear();
@@ -34,15 +34,15 @@ public final class DungeonCanvasLabelLayout {
         rebuildAreaLabelAnchors(squaresByCoord);
     }
 
-    public Map<Long, List<DungeonSquare>> squaresByRoomId() {
+    Map<Long, List<DungeonSquare>> squaresByRoomId() {
         return squaresByRoomId;
     }
 
-    public Map<Long, RoomLabelAnchor> roomLabelAnchors() {
+    Map<Long, RoomLabelAnchor> roomLabelAnchors() {
         return roomLabelAnchors;
     }
 
-    public List<AreaLabelAnchor> areaLabelAnchors() {
+    List<AreaLabelAnchor> areaLabelAnchors() {
         return areaLabelAnchors;
     }
 
@@ -168,9 +168,9 @@ public final class DungeonCanvasLabelLayout {
     private record LabelAnchor(int x, int y, int squareCount) {
     }
 
-    public record RoomLabelAnchor(int x, int y, int squareCount) {
+    record RoomLabelAnchor(int x, int y, int squareCount) {
     }
 
-    public record AreaLabelAnchor(Long areaId, String areaName, int x, int y, int squareCount) {
+    record AreaLabelAnchor(Long areaId, String areaName, int x, int y, int squareCount) {
     }
 }

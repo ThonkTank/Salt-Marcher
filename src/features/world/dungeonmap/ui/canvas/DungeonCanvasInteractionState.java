@@ -1,10 +1,10 @@
-package features.world.dungeonmap.ui.canvas.model;
+package features.world.dungeonmap.ui.canvas;
 
 import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.PassageDirection;
 
-public final class DungeonCanvasInteractionState {
+final class DungeonCanvasInteractionState {
 
     private DungeonSelection selection = DungeonSelection.none();
     private DungeonLinkAnchor pendingLinkStart;
@@ -13,38 +13,38 @@ public final class DungeonCanvasInteractionState {
     private Integer invalidEdgeY;
     private PassageDirection invalidEdgeDirection;
 
-    public DungeonSelection selection() {
+    DungeonSelection selection() {
         return selection;
     }
 
-    public void resetForLoadedState() {
+    void resetForLoadedState() {
         selection = DungeonSelection.none();
         partyEndpointId = null;
         pendingLinkStart = null;
         clearInvalidEdge();
     }
 
-    public void setSelection(DungeonSelection selection) {
+    void setSelection(DungeonSelection selection) {
         this.selection = selection == null ? DungeonSelection.none() : selection;
     }
 
-    public DungeonLinkAnchor pendingLinkStart() {
+    DungeonLinkAnchor pendingLinkStart() {
         return pendingLinkStart;
     }
 
-    public void setPendingLinkStart(DungeonLinkAnchor pendingLinkStart) {
+    void setPendingLinkStart(DungeonLinkAnchor pendingLinkStart) {
         this.pendingLinkStart = pendingLinkStart;
     }
 
-    public Long partyEndpointId() {
+    Long partyEndpointId() {
         return partyEndpointId;
     }
 
-    public void setPartyEndpointId(Long partyEndpointId) {
+    void setPartyEndpointId(Long partyEndpointId) {
         this.partyEndpointId = partyEndpointId;
     }
 
-    public void setInvalidEdge(int x, int y, PassageDirection direction) {
+    void setInvalidEdge(int x, int y, PassageDirection direction) {
         if (direction == null) {
             clearInvalidEdge();
             return;
@@ -54,21 +54,21 @@ public final class DungeonCanvasInteractionState {
         invalidEdgeDirection = direction;
     }
 
-    public void clearInvalidEdge() {
+    void clearInvalidEdge() {
         invalidEdgeX = null;
         invalidEdgeY = null;
         invalidEdgeDirection = null;
     }
 
-    public Integer invalidEdgeX() {
+    Integer invalidEdgeX() {
         return invalidEdgeX;
     }
 
-    public Integer invalidEdgeY() {
+    Integer invalidEdgeY() {
         return invalidEdgeY;
     }
 
-    public PassageDirection invalidEdgeDirection() {
+    PassageDirection invalidEdgeDirection() {
         return invalidEdgeDirection;
     }
 }

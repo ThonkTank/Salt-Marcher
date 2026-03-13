@@ -14,11 +14,6 @@ import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
 import features.world.dungeonmap.model.PassageDirection;
-import features.world.dungeonmap.ui.canvas.model.DungeonCanvasInteractionState;
-import features.world.dungeonmap.ui.canvas.model.DungeonCanvasLabelLayout;
-import features.world.dungeonmap.ui.canvas.model.DungeonCanvasLoadedState;
-import features.world.dungeonmap.ui.canvas.model.DungeonCanvasPreviewTopology;
-
 import java.util.List;
 import java.util.Map;
 
