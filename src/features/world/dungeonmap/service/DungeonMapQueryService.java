@@ -8,6 +8,8 @@ import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonEdgeIndex;
 import features.world.dungeonmap.model.DungeonEdgeSummaryBuilder;
 import features.world.dungeonmap.model.DungeonWall;
+import features.world.dungeonmap.model.index.DungeonMapIndex;
+import features.world.dungeonmap.model.index.DungeonMapIndexBuilder;
 import features.world.dungeonmap.repository.DungeonAreaRepository;
 import features.world.dungeonmap.repository.DungeonEndpointRepository;
 import features.world.dungeonmap.repository.DungeonFeatureRepository;
@@ -47,7 +49,7 @@ public final class DungeonMapQueryService {
         List<DungeonWall> walls = DungeonWallRepository.getWalls(conn, mapId);
         List<DungeonPassage> passages = DungeonPassageRepository.getPassages(conn, mapId);
         DungeonEdgeIndex edgeIndex = DungeonEdgeSummaryBuilder.buildIndex(squares, walls, passages);
-        return new DungeonMapState(
+        DungeonMapState state = new DungeonMapState(
                 map,
                 squares,
                 DungeonRoomRepository.getRooms(conn, mapId),
@@ -58,6 +60,21 @@ public final class DungeonMapQueryService {
                 DungeonLinkRepository.getLinks(conn, mapId),
                 walls,
                 passages,
+                DungeonMapIndex.empty(),
                 edgeIndex);
+        DungeonMapIndex index = DungeonMapIndexBuilder.build(state);
+        return new DungeonMapState(
+                state.map(),
+                state.squares(),
+                state.rooms(),
+                state.areas(),
+                state.features(),
+                state.featureTiles(),
+                state.endpoints(),
+                state.links(),
+                state.walls(),
+                state.passages(),
+                index,
+                state.edgeIndex());
     }
 }

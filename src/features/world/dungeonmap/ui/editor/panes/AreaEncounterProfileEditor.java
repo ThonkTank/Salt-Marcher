@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-final class AreaEncounterProfileEditor extends VBox {
+public final class AreaEncounterProfileEditor extends VBox {
 
     private final TextField areaNameField = new TextField();
     private final Spinner<Integer> encounterEveryHoursSpinner = new Spinner<>(
@@ -39,7 +39,7 @@ final class AreaEncounterProfileEditor extends VBox {
     private boolean editable;
     private boolean updating;
 
-    AreaEncounterProfileEditor() {
+    public AreaEncounterProfileEditor() {
         setSpacing(8);
 
         areaNameField.setPromptText("Bereichsname");
@@ -81,7 +81,7 @@ final class AreaEncounterProfileEditor extends VBox {
         setEditable(false);
     }
 
-    void setArea(DungeonArea area) {
+    public void setArea(DungeonArea area) {
         selectedArea = area;
         updating = true;
         areaNameField.setText(area == null || area.name() == null ? "" : area.name());
@@ -96,19 +96,19 @@ final class AreaEncounterProfileEditor extends VBox {
         updateDisabledState();
     }
 
-    void setEncounterTables(List<DungeonEncounterTableSummary> tables) {
+    public void setEncounterTables(List<DungeonEncounterTableSummary> tables) {
         knownEncounterTables = tables == null ? List.of() : List.copyOf(tables);
         refreshEncounterTableChoices();
         renderEncounterTableRows();
         updateDisabledState();
     }
 
-    void setEditable(boolean editable) {
+    public void setEditable(boolean editable) {
         this.editable = editable;
         updateDisabledState();
     }
 
-    void setOnSaveRequested(Consumer<DungeonArea> onSaveRequested) {
+    public void setOnSaveRequested(Consumer<DungeonArea> onSaveRequested) {
         this.onSaveRequested = onSaveRequested;
     }
 

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.selection;
 
 import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;

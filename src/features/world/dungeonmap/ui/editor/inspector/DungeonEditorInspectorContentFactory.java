@@ -12,11 +12,12 @@ import features.world.dungeonmap.model.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.model.index.DungeonMapIndex;
 import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.ui.DungeonAreaEncounterText;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-import features.world.dungeonmap.ui.editor.workflow.DungeonConnectionEditingController;
-import features.world.dungeonmap.ui.editor.workflow.DungeonEntityCrudController;
+import features.world.dungeonmap.ui.editor.workflow.editing.DungeonConnectionEditingController;
+import features.world.dungeonmap.ui.editor.workflow.editing.DungeonEntityCrudController;
 import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
@@ -228,69 +229,23 @@ public final class DungeonEditorInspectorContentFactory {
     }
 
     private List<DungeonSquare> roomSquares(Long roomId) {
-        List<DungeonSquare> result = new ArrayList<>();
-        if (roomId == null || state.currentState() == null) {
-            return result;
-        }
-        for (DungeonSquare square : state.currentState().squares()) {
-            if (roomId.equals(square.roomId())) {
-                result.add(square);
-            }
-        }
-        return result;
+        return currentIndex().squaresForRoom(roomId);
     }
 
     private List<DungeonRoom> roomsForArea(Long areaId) {
-        List<DungeonRoom> result = new ArrayList<>();
-        if (areaId == null || state.currentState() == null) {
-            return result;
-        }
-        for (DungeonRoom room : state.currentState().rooms()) {
-            if (areaId.equals(room.areaId())) {
-                result.add(room);
-            }
-        }
-        return result;
+        return currentIndex().roomsForArea(areaId);
     }
 
     private List<DungeonFeatureTile> featureTiles(Long featureId) {
-        List<DungeonFeatureTile> result = new ArrayList<>();
-        if (featureId == null || state.currentState() == null) {
-            return result;
-        }
-        for (DungeonFeatureTile tile : state.currentState().featureTiles()) {
-            if (featureId.equals(tile.featureId())) {
-                result.add(tile);
-            }
-        }
-        return result;
+        return currentIndex().featureTilesForFeature(featureId);
     }
 
     private List<DungeonEndpoint> roomEndpoints(Long roomId) {
-        List<DungeonEndpoint> result = new ArrayList<>();
-        if (roomId == null || state.currentState() == null) {
-            return result;
-        }
-        for (DungeonEndpoint endpoint : state.currentState().endpoints()) {
-            DungeonSquare square = squareAt(endpoint.x(), endpoint.y());
-            if (square != null && roomId.equals(square.roomId())) {
-                result.add(endpoint);
-            }
-        }
-        return result;
+        return currentIndex().endpointsForRoom(roomId);
     }
 
     private List<DungeonPassage> roomPassages(Long roomId) {
-        List<DungeonPassage> result = new ArrayList<>();
-        if (roomId == null || state.currentState() == null) {
-            return result;
-        }
-        for (DungeonPassage passage : state.currentState().passages()) {
-            if (passageTouchesRoom(passage, roomId)) {
-                result.add(passage);
-            }
-        }
-        return result;
+        return currentIndex().passagesForRoom(roomId);
     }
 
     private List<DungeonLink> linksForEndpoint(Long endpointId) {
@@ -302,34 +257,31 @@ public final class DungeonEditorInspectorContentFactory {
     }
 
     private List<DungeonLink> linksForAnchor(DungeonLinkAnchor anchor) {
-        List<DungeonLink> result = new ArrayList<>();
-        if (anchor == null || state.currentState() == null) {
-            return result;
-        }
-        for (DungeonLink link : state.currentState().links()) {
-            if (anchor.equals(link.fromAnchor()) || anchor.equals(link.toAnchor())) {
-                result.add(link);
-            }
-        }
-        return result;
+        return currentIndex().linksForAnchor(anchor);
     }
 
     private List<String> describeRoomFeatures(Long roomId) {
-        if (roomId == null || state.currentState() == null) {
+        if (roomId == null) {
             return List.of();
         }
         Map<Long, List<String>> positionsByFeature = new LinkedHashMap<>();
-        for (DungeonFeatureTile tile : state.currentState().featureTiles()) {
-            DungeonSquare square = findSquareById(tile.squareId());
-            if (square == null || !roomId.equals(square.roomId())) {
-                continue;
+        for (DungeonSquare roomSquare : roomSquares(roomId)) {
+            for (DungeonFeature feature : currentIndex().featuresAtSquare(roomSquare.squareId())) {
+                if (feature.featureId() == null) {
+                    continue;
+                }
+                for (DungeonFeatureTile tile : featureTiles(feature.featureId())) {
+                    if (tile.squareId() != roomSquare.squareId().longValue()) {
+                        continue;
+                    }
+                    positionsByFeature.computeIfAbsent(feature.featureId(), ignored -> new ArrayList<>())
+                            .add(DungeonInspectorCards.formatPosition(tile.x(), tile.y()));
+                }
             }
-            positionsByFeature.computeIfAbsent(tile.featureId(), ignored -> new ArrayList<>())
-                    .add(DungeonInspectorCards.formatPosition(tile.x(), tile.y()));
         }
         List<String> lines = new ArrayList<>();
         for (Map.Entry<Long, List<String>> entry : positionsByFeature.entrySet()) {
-            DungeonFeature feature = findFeature(entry.getKey());
+            DungeonFeature feature = currentIndex().findFeature(entry.getKey());
             lines.add(DungeonInspectorCards.titleOrFallback(feature == null ? null : feature.toString(), "Feature")
                     + " (" + String.join(", ", entry.getValue()) + ")");
         }
@@ -347,7 +299,7 @@ public final class DungeonEditorInspectorContentFactory {
     private List<String> describeFeatureTiles(List<DungeonFeatureTile> tiles) {
         List<String> lines = new ArrayList<>();
         for (DungeonFeatureTile tile : tiles) {
-            DungeonSquare square = findSquareById(tile.squareId());
+            DungeonSquare square = currentIndex().findSquare(tile.squareId());
             String roomName = square == null ? null : square.roomName();
             lines.add(DungeonInspectorCards.formatPosition(tile.x(), tile.y())
                     + (roomName == null || roomName.isBlank() ? "" : " • " + roomName));
@@ -358,7 +310,7 @@ public final class DungeonEditorInspectorContentFactory {
     private List<String> describeFeatureRooms(List<DungeonFeatureTile> tiles) {
         LinkedHashSet<String> names = new LinkedHashSet<>();
         for (DungeonFeatureTile tile : tiles) {
-            DungeonSquare square = findSquareById(tile.squareId());
+            DungeonSquare square = currentIndex().findSquare(tile.squareId());
             if (square != null && square.roomName() != null && !square.roomName().isBlank()) {
                 names.add(square.roomName());
             }
@@ -376,7 +328,7 @@ public final class DungeonEditorInspectorContentFactory {
     }
 
     private String resolveAreaName(Long areaId) {
-        DungeonArea area = findArea(areaId);
+        DungeonArea area = currentIndex().findArea(areaId);
         return area == null ? null : area.name();
     }
 
@@ -396,13 +348,13 @@ public final class DungeonEditorInspectorContentFactory {
         }
         return switch (anchor.type()) {
             case ENDPOINT -> {
-                DungeonEndpoint endpoint = findEndpoint(anchor.anchorId());
+                DungeonEndpoint endpoint = currentIndex().findEndpoint(anchor.anchorId());
                 yield endpoint == null
                         ? "Übergang #" + anchor.anchorId()
                         : DungeonInspectorCards.titleOrFallback(endpoint.name(), "Übergang #" + anchor.anchorId());
             }
             case PASSAGE -> {
-                DungeonPassage passage = findPassage(anchor.anchorId());
+                DungeonPassage passage = currentIndex().findPassage(anchor.anchorId());
                 yield passage == null
                         ? "Durchgang #" + anchor.anchorId()
                         : DungeonInspectorCards.titleOrFallback(passage.name(), "Durchgang") + " • "
@@ -411,85 +363,7 @@ public final class DungeonEditorInspectorContentFactory {
         };
     }
 
-    private DungeonSquare squareAt(int x, int y) {
-        if (state.currentState() == null) {
-            return null;
-        }
-        for (DungeonSquare square : state.currentState().squares()) {
-            if (square.x() == x && square.y() == y) {
-                return square;
-            }
-        }
-        return null;
-    }
-
-    private DungeonSquare findSquareById(Long squareId) {
-        if (state.currentState() == null || squareId == null) {
-            return null;
-        }
-        for (DungeonSquare square : state.currentState().squares()) {
-            if (squareId.equals(square.squareId())) {
-                return square;
-            }
-        }
-        return null;
-    }
-
-    private DungeonFeature findFeature(Long featureId) {
-        if (state.currentState() == null || featureId == null) {
-            return null;
-        }
-        for (DungeonFeature feature : state.currentState().features()) {
-            if (featureId.equals(feature.featureId())) {
-                return feature;
-            }
-        }
-        return null;
-    }
-
-    private DungeonArea findArea(Long areaId) {
-        if (state.currentState() == null || areaId == null) {
-            return null;
-        }
-        for (DungeonArea area : state.currentState().areas()) {
-            if (areaId.equals(area.areaId())) {
-                return area;
-            }
-        }
-        return null;
-    }
-
-    private DungeonEndpoint findEndpoint(Long endpointId) {
-        if (state.currentState() == null || endpointId == null) {
-            return null;
-        }
-        for (DungeonEndpoint endpoint : state.currentState().endpoints()) {
-            if (endpointId.equals(endpoint.endpointId())) {
-                return endpoint;
-            }
-        }
-        return null;
-    }
-
-    private DungeonPassage findPassage(Long passageId) {
-        if (state.currentState() == null || passageId == null) {
-            return null;
-        }
-        for (DungeonPassage passage : state.currentState().passages()) {
-            if (passageId.equals(passage.passageId())) {
-                return passage;
-            }
-        }
-        return null;
-    }
-
-    private boolean passageTouchesRoom(DungeonPassage passage, Long roomId) {
-        DungeonSquare sideA = squareAt(passage.x(), passage.y());
-        DungeonSquare sideB = switch (passage.direction()) {
-            case EAST -> squareAt(passage.x() + 1, passage.y());
-            case SOUTH -> squareAt(passage.x(), passage.y() + 1);
-        };
-        return sideA != null && roomId.equals(sideA.roomId())
-                || sideB != null && roomId.equals(sideB.roomId());
+    private DungeonMapIndex currentIndex() {
+        return state.currentState() == null ? DungeonMapIndex.empty() : state.currentState().index();
     }
 }

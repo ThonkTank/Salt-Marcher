@@ -7,16 +7,16 @@ import features.world.dungeonmap.ui.editor.inspector.DungeonEditorInspectorConte
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-import features.world.dungeonmap.ui.editor.workflow.DungeonConnectionEditingController;
-import features.world.dungeonmap.ui.editor.workflow.DungeonLinkWorkflowController;
-import features.world.dungeonmap.ui.editor.workflow.DungeonMapLoadingWorkflowController;
-import features.world.dungeonmap.ui.editor.workflow.DungeonMapEditingController;
-import features.world.dungeonmap.ui.editor.workflow.DungeonEntityCrudController;
-import features.world.dungeonmap.ui.editor.workflow.DungeonSelectionInspectorPublisher;
-import features.world.dungeonmap.ui.editor.workflow.DungeonSelectionEditorWorkflowController;
-import features.world.dungeonmap.ui.editor.workflow.DungeonSelectionWorkflowController;
-import features.world.dungeonmap.ui.editor.workflow.DungeonSquareEditWorkflowController;
-import features.world.dungeonmap.ui.editor.workflow.DungeonWorkflowMessageController;
+import features.world.dungeonmap.ui.editor.workflow.DungeonEditorWorkflow;
+import features.world.dungeonmap.ui.editor.workflow.editing.DungeonConnectionEditingController;
+import features.world.dungeonmap.ui.editor.workflow.editing.DungeonEntityCrudController;
+import features.world.dungeonmap.ui.editor.workflow.editing.DungeonMapEditingController;
+import features.world.dungeonmap.ui.editor.workflow.editing.DungeonSquareEditWorkflowController;
+import features.world.dungeonmap.ui.editor.workflow.messaging.DungeonWorkflowMessageController;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonLinkWorkflowController;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionEditorWorkflowController;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionInspectorPublisher;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionWorkflowController;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
@@ -38,8 +38,6 @@ public class DungeonEditorView implements AppView {
             new DungeonSquareEditWorkflowController(state, interactionState, canvas);
     private final DungeonMapDropdowns mapDropdowns = new DungeonMapDropdowns();
     private final VBox statePane = new VBox(8);
-    private final DungeonMapLoadingWorkflowController loadingWorkflowController = new DungeonMapLoadingWorkflowController(
-            state, interactionState, controls, canvas, toolSettingsPane, selectionWorkflowController, linkWorkflowController);
     private final DungeonMapEditingController mapEditingController = new DungeonMapEditingController(
             state, mapDropdowns);
     private final DungeonEntityCrudController entityCrudController = new DungeonEntityCrudController(
@@ -50,21 +48,22 @@ public class DungeonEditorView implements AppView {
             state, entityCrudController, connectionEditingController);
     private final DungeonSelectionEditorWorkflowController selectionEditorWorkflowController = new DungeonSelectionEditorWorkflowController(
             state, toolSettingsPane, selectionWorkflowController, linkWorkflowController, entityCrudController);
+    private final DungeonEditorWorkflow editorWorkflow = new DungeonEditorWorkflow(
+            state,
+            interactionState,
+            controls,
+            canvas,
+            toolSettingsPane,
+            selectionWorkflowController,
+            linkWorkflowController,
+            squareEditWorkflowController,
+            mapEditingController,
+            entityCrudController,
+            connectionEditingController,
+            selectionEditorWorkflowController);
 
     public DungeonEditorView(DetailsNavigator detailsNavigator) {
         selectionWorkflowController.setInspectorPublisher(new DungeonSelectionInspectorPublisher(detailsNavigator, inspectorContentFactory));
-        squareEditWorkflowController.setReloadCurrentMap(loadingWorkflowController::reloadCurrentMap);
-        loadingWorkflowController.setOnMapLoaded(squareEditWorkflowController::handleMapLoaded);
-        mapEditingController.setReloadMapList(loadingWorkflowController::onShow);
-        entityCrudController.setReloadCurrentMap(loadingWorkflowController::reloadCurrentMap);
-        connectionEditingController.setReloadCurrentMap(loadingWorkflowController::reloadCurrentMap);
-        loadingWorkflowController.setOnEncounterTablesChanged(() -> {
-            selectionWorkflowController.refreshInspectorForCurrentSelection();
-        });
-        loadingWorkflowController.setOnStoredEncountersChanged(() -> {
-            selectionEditorWorkflowController.syncFeatureEncounterSelection();
-            selectionWorkflowController.refreshInspectorForCurrentSelection();
-        });
         statePane.getChildren().add(toolSettingsPane);
         bindControls();
         bindCanvas();
@@ -102,7 +101,7 @@ public class DungeonEditorView implements AppView {
 
     @Override
     public void onShow() {
-        loadingWorkflowController.onShow();
+        editorWorkflow.onShow();
     }
 
     private void bindControls() {
@@ -113,7 +112,7 @@ public class DungeonEditorView implements AppView {
         toolSettingsPane.setActiveTool(interactionState.activeTool());
         controls.setOnMapSelected(mapId -> {
             squareEditWorkflowController.discardPendingSquareEdits();
-            loadingWorkflowController.loadMapAsync(mapId);
+            editorWorkflow.loadMapAsync(mapId);
         });
         controls.setOnNewMapRequested(mapEditingController::showNewMapDropdown);
         controls.setOnEditMapRequested(mapEditingController::showEditMapDropdown);
@@ -136,7 +135,7 @@ public class DungeonEditorView implements AppView {
             canvas.setActiveTool(tool);
             linkWorkflowController.cancelPendingLink();
             toolSettingsPane.setActiveTool(tool);
-            loadingWorkflowController.autoShowForTool(tool);
+            editorWorkflow.autoShowForTool(tool);
         });
     }
 
@@ -166,12 +165,12 @@ public class DungeonEditorView implements AppView {
 
     private void bindSharedUi() {
         selectionEditorWorkflowController.bindToolSettings();
-        toolSettingsPane.linksVisibleCheckBox().selectedProperty()
-                .addListener((obs, oldValue, newValue) -> canvas.setShowLinks(newValue));
-        toolSettingsPane.endpointsVisibleCheckBox().selectedProperty()
-                .addListener((obs, oldValue, newValue) -> canvas.setShowEndpoints(newValue));
-        toolSettingsPane.featuresVisibleCheckBox().selectedProperty()
-                .addListener((obs, oldValue, newValue) -> canvas.setShowFeatures(newValue));
+        canvas.setShowLinks(toolSettingsPane.linksVisible());
+        canvas.setShowEndpoints(toolSettingsPane.endpointsVisible());
+        canvas.setShowFeatures(toolSettingsPane.featuresVisible());
+        toolSettingsPane.setOnLinksVisibilityChanged(canvas::setShowLinks);
+        toolSettingsPane.setOnEndpointsVisibilityChanged(canvas::setShowEndpoints);
+        toolSettingsPane.setOnFeaturesVisibilityChanged(canvas::setShowFeatures);
         toolSettingsPane.setOnColorRenderModeChanged(interactionState::setColorRenderMode);
     }
 }

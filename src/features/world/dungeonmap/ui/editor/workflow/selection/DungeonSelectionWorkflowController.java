@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.selection;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
@@ -8,9 +8,11 @@ import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.model.index.DungeonMapIndex;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
+import features.world.dungeonmap.ui.editor.workflow.messaging.DungeonWorkflowMessageController;
 
 public final class DungeonSelectionWorkflowController {
 
@@ -113,7 +115,7 @@ public final class DungeonSelectionWorkflowController {
 
     private void selectSquare(DungeonSquare square, int x, int y, Long currentMapId) {
         if (square != null && square.roomId() != null) {
-            DungeonRoom room = findRoom(square.roomId());
+            DungeonRoom room = currentIndex().findRoom(square.roomId());
             if (room != null) {
                 showSelection(DungeonSelection.room(room), true);
                 return;
@@ -123,7 +125,7 @@ public final class DungeonSelectionWorkflowController {
         if (effectiveSquare == null && currentMapId != null) {
             effectiveSquare = new DungeonSquare(null, currentMapId, x, y, null, null, null, null);
         }
-        showSelection(DungeonSelection.square(effectiveSquare, featuresAtSquare(effectiveSquare)), false);
+        showSelection(DungeonSelection.square(effectiveSquare, currentIndex().featuresAtSquare(effectiveSquare == null ? null : effectiveSquare.squareId())), false);
     }
 
     private void restoreSelection(DungeonSelection selection) {
@@ -154,64 +156,37 @@ public final class DungeonSelectionWorkflowController {
             case ROOM -> {
                 toolSettingsPane.clearFeatureSelection();
                 toolSettingsPane.setTileContextFeatures(java.util.List.of());
-                toolSettingsPane.selectArea(null);
+                toolSettingsPane.setSelectedArea(null);
             }
             case AREA -> {
                 toolSettingsPane.clearFeatureSelection();
                 toolSettingsPane.setTileContextFeatures(java.util.List.of());
-                toolSettingsPane.selectArea(selection.area() == null ? null : selection.area().areaId());
+                toolSettingsPane.setSelectedArea(selection.area() == null ? null : selection.area().areaId());
             }
             case FEATURE -> {
-                toolSettingsPane.selectArea(null);
+                toolSettingsPane.setSelectedArea(null);
                 toolSettingsPane.setTileContextFeatures(java.util.List.of());
                 if (selection.feature() == null) {
                     toolSettingsPane.clearFeatureSelection();
                 } else {
-                    toolSettingsPane.selectFeatureCategory(selection.feature().category());
-                    toolSettingsPane.selectFeature(selection.feature().featureId());
+                    toolSettingsPane.setSelectedFeatureCategory(selection.feature().category());
+                    toolSettingsPane.setSelectedFeature(selection.feature().featureId());
                 }
             }
             case SQUARE -> {
                 toolSettingsPane.clearFeatureSelection();
                 toolSettingsPane.setTileContextFeatures(selection.tileFeatures());
                 if (selection.square() == null) {
-                    toolSettingsPane.selectArea(null);
+                    toolSettingsPane.setSelectedArea(null);
                 } else {
-                    toolSettingsPane.selectArea(selection.square().areaId());
+                    toolSettingsPane.setSelectedArea(selection.square().areaId());
                 }
             }
             case ENDPOINT, LINK, PASSAGE, NONE -> toolSettingsPane.clearEntitySelections();
         }
     }
 
-    private java.util.List<DungeonFeature> featuresAtSquare(DungeonSquare square) {
-        if (square == null || square.squareId() == null || state.currentState() == null) {
-            return java.util.List.of();
-        }
-        java.util.List<DungeonFeature> result = new java.util.ArrayList<>();
-        for (var tile : state.currentState().featureTiles()) {
-            if (tile.squareId() != square.squareId().longValue()) {
-                continue;
-            }
-            for (DungeonFeature feature : state.currentState().features()) {
-                if (feature.featureId() != null && feature.featureId() == tile.featureId()) {
-                    result.add(feature);
-                    break;
-                }
-            }
-        }
-        return result;
-    }
-
-    private DungeonRoom findRoom(Long roomId) {
-        if (roomId == null || state.currentState() == null) {
-            return null;
-        }
-        for (DungeonRoom room : state.currentState().rooms()) {
-            if (roomId.equals(room.roomId())) {
-                return room;
-            }
-        }
-        return null;
+    private DungeonMapIndex currentIndex() {
+        return state.currentState() == null ? DungeonMapIndex.empty() : state.currentState().index();
     }
 }

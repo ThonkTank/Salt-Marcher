@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.editing;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -12,6 +12,8 @@ import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
+import features.world.dungeonmap.ui.editor.workflow.messaging.DungeonWorkflowMessageController;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionWorkflowController;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.components.ConfirmationDropdown;
@@ -103,7 +105,7 @@ public final class DungeonEntityCrudController {
         if (state.currentMapId() == null) {
             return;
         }
-        DungeonFeatureCategory category = toolSettingsPane.getActiveFeatureCategory();
+        DungeonFeatureCategory category = toolSettingsPane.selectedFeatureCategory();
         featureDropdown.show(anchor, "Feature erstellen", "Name", category.label(), "Erstellen", name -> {
             saveFeature(new DungeonFeature(
                     null,
@@ -171,7 +173,7 @@ public final class DungeonEntityCrudController {
     }
 
     public void assignRoomToArea(DungeonSquare square) {
-        Long areaId = toolSettingsPane.getActiveAreaId();
+        Long areaId = toolSettingsPane.selectedAreaId();
         if (square == null || square.roomId() == null || areaId == null) {
             return;
         }
@@ -191,7 +193,7 @@ public final class DungeonEntityCrudController {
             workflowMessageController.showMessage("Bereich zuweisen", "Dieses Feld gehoert noch zu keinem Raum.");
             return;
         }
-        if (toolSettingsPane.getActiveAreaId() == null) {
+        if (toolSettingsPane.selectedAreaId() == null) {
             selectionController.handleSquareClick(interaction, currentMapId);
             workflowMessageController.showMessage("Bereich zuweisen", "Zuerst einen Bereich im State-Panel auswaehlen.");
             return;
@@ -226,14 +228,14 @@ public final class DungeonEntityCrudController {
         if (state.currentSelection() != null && state.currentSelection().type() == DungeonSelection.SelectionType.AREA) {
             return state.currentSelection().area() == null ? null : state.currentSelection().area().areaId();
         }
-        return toolSettingsPane.getActiveAreaId();
+        return toolSettingsPane.selectedAreaId();
     }
 
     private Long selectedFeatureIdForActions() {
         if (state.currentSelection() != null && state.currentSelection().type() == DungeonSelection.SelectionType.FEATURE) {
             return state.currentSelection().feature() == null ? null : state.currentSelection().feature().featureId();
         }
-        return toolSettingsPane.getActiveFeatureId();
+        return toolSettingsPane.selectedFeatureId();
     }
     private String findAreaName(Long areaId) {
         if (state.currentState() != null) {

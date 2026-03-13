@@ -6,7 +6,7 @@ import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-import features.world.dungeonmap.ui.editor.workflow.DungeonConnectionEditingController;
+import features.world.dungeonmap.ui.editor.workflow.editing.DungeonConnectionEditingController;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;

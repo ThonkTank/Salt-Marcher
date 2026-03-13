@@ -1,10 +1,11 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.selection;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
+import features.world.dungeonmap.ui.editor.workflow.editing.DungeonEntityCrudController;
 
 public final class DungeonSelectionEditorWorkflowController {
 
@@ -35,12 +36,12 @@ public final class DungeonSelectionEditorWorkflowController {
     }
 
     private void bindToolActionButtons() {
-        toolSettingsPane.newAreaButton().setOnAction(event -> entityCrudController.createArea(toolSettingsPane.newAreaButton()));
-        toolSettingsPane.deleteAreaButton().setOnAction(event -> entityCrudController.deleteActiveArea(toolSettingsPane.deleteAreaButton()));
-        toolSettingsPane.newFeatureButton().setOnAction(event -> entityCrudController.createFeature(toolSettingsPane.newFeatureButton()));
-        toolSettingsPane.deleteFeatureButton().setOnAction(event -> entityCrudController.deleteActiveFeature(toolSettingsPane.deleteFeatureButton()));
-        toolSettingsPane.addTileToFeatureButton().setOnAction(event -> entityCrudController.addSelectedSquareToActiveFeature());
-        toolSettingsPane.removeTileFromFeatureButton().setOnAction(event -> entityCrudController.removeSelectedSquareFromActiveFeature());
+        toolSettingsPane.setOnNewAreaRequested(entityCrudController::createArea);
+        toolSettingsPane.setOnDeleteAreaRequested(entityCrudController::deleteActiveArea);
+        toolSettingsPane.setOnNewFeatureRequested(entityCrudController::createFeature);
+        toolSettingsPane.setOnDeleteFeatureRequested(entityCrudController::deleteActiveFeature);
+        toolSettingsPane.setOnAddTileToFeatureRequested(entityCrudController::addSelectedSquareToActiveFeature);
+        toolSettingsPane.setOnRemoveTileFromFeatureRequested(entityCrudController::removeSelectedSquareFromActiveFeature);
         toolSettingsPane.setOnCancelLink(linkWorkflowController::cancelPendingLink);
     }
 
@@ -52,8 +53,7 @@ public final class DungeonSelectionEditorWorkflowController {
     }
 
     private void bindToolDerivedSelections() {
-        toolSettingsPane.encounterComboBox().valueProperty()
-                .addListener((obs, oldValue, newValue) -> saveSelectedFeatureEncounter(newValue));
+        toolSettingsPane.setOnEncounterSelected(this::saveSelectedFeatureEncounter);
     }
 
     public void handleAreaSelected(DungeonArea area) {
@@ -66,7 +66,7 @@ public final class DungeonSelectionEditorWorkflowController {
     }
 
     public void syncFeatureEncounterSelection() {
-        DungeonFeature selectedFeature = toolSettingsPane.activeFeatureComboBox().getValue();
+        DungeonFeature selectedFeature = toolSettingsPane.selectedFeature();
         state.runWhileSyncingFeatureSelection(() ->
                 toolSettingsPane.selectEncounter(selectedFeature == null ? null : selectedFeature.encounterId()));
     }
@@ -79,7 +79,7 @@ public final class DungeonSelectionEditorWorkflowController {
     }
 
     private void saveSelectedFeatureEncounter(DungeonEncounterSummary selectedEncounter) {
-        DungeonFeature feature = toolSettingsPane.activeFeatureComboBox().getValue();
+        DungeonFeature feature = toolSettingsPane.selectedFeature();
         if (state.syncingFeatureSelection()
                 || feature == null
                 || state.currentState() == null

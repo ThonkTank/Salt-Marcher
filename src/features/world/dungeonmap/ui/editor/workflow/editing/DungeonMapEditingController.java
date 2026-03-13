@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow;
+package features.world.dungeonmap.ui.editor.workflow.editing;
 
 import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;

@@ -8,556 +8,246 @@ import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
 import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.panes.cards.AreaSettingsCard;
+import features.world.dungeonmap.ui.editor.panes.cards.BrushSettingsCard;
+import features.world.dungeonmap.ui.editor.panes.cards.DungeonSidebarCards;
+import features.world.dungeonmap.ui.editor.panes.cards.FeatureSettingsCard;
+import features.world.dungeonmap.ui.editor.panes.cards.LinkStatusCard;
+import features.world.dungeonmap.ui.editor.panes.cards.VisibilitySettingsCard;
+import features.world.dungeonmap.ui.editor.panes.cards.WorkflowMessageCard;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.CheckBox;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory;
-import javafx.scene.control.Toggle;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.ToggleGroup;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
 public class DungeonToolSettingsPane extends VBox {
 
-    private final ComboBox<DungeonArea> areaCombo = new ComboBox<>();
-    private final AreaEncounterProfileEditor areaProfileEditor = new AreaEncounterProfileEditor();
-    private final ComboBox<DungeonEncounterSummary> encounterCombo = new ComboBox<>();
-    private final ComboBox<DungeonFeatureCategory> featureCategoryCombo = new ComboBox<>();
-    private final ComboBox<DungeonFeature> activeFeatureCombo = new ComboBox<>();
-    private final ComboBox<DungeonFeature> tileFeatureCombo = new ComboBox<>();
-    private final CheckBox linksVisible = new CheckBox("Links anzeigen");
-    private final CheckBox endpointsVisible = new CheckBox("Übergänge anzeigen");
-    private final CheckBox featuresVisible = new CheckBox("Features anzeigen");
-    private final ToggleGroup colorRenderModeGroup = new ToggleGroup();
-    private final ToggleButton roomColorModeButton = new ToggleButton(DungeonColorRenderMode.ROOMS.label());
-    private final ToggleButton areaColorModeButton = new ToggleButton(DungeonColorRenderMode.AREAS.label());
-    private final Button newAreaButton = new Button("Bereich neu");
-    private final Button deleteAreaButton = new Button("Bereich löschen");
-    private final Button newFeatureButton = new Button("Feature neu");
-    private final Button deleteFeatureButton = new Button("Feature löschen");
-    private final Button addTileToFeatureButton = new Button("Ausgewähltes Feld hinzufügen");
-    private final Button removeTileFromFeatureButton = new Button("Ausgewähltes Feld entfernen");
-
-    private final Spinner<Integer> brushSizeSpinner = new Spinner<>(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 5, 1));
-    private final ToggleGroup shapeGroup = new ToggleGroup();
-    private final ToggleButton squareShapeBtn = new ToggleButton("\u25a1 Viereck");
-    private final ToggleButton circleShapeBtn = new ToggleButton("\u25cb Kreis");
-    private final ToggleButton diamondShapeBtn = new ToggleButton("\u25c7 Raute");
-
-    private final VBox brushGroup;
-    private final VBox areaGroup;
-    private final VBox featureGroup;
-    private final VBox visibilityGroup;
-    private final VBox linkStatusGroup;
-    private final VBox workflowMessageGroup;
     private final Label activeToolLabel = new Label("Auswahl");
-    private final Label encounterSelectionLabel = new Label("Gebundenes Encounter");
-    private final Label linkStatusLabel = new Label("Erste Verbindung klicken, dann zweite Verbindung klicken.");
-    private final Label workflowMessageTitleLabel = new Label("Hinweis");
-    private final Label workflowMessageLabel = new Label();
-    private final Button cancelLinkButton = new Button("Abbrechen");
-
-    private boolean updatingSelections = false;
-    private Consumer<DungeonArea> onAreaSelected;
-    private Consumer<DungeonFeature> onFeatureSelected;
-    private Consumer<DungeonFeature> onTileContextFeatureSelected;
-    private Consumer<DungeonColorRenderMode> onColorRenderModeChanged;
-    private Runnable onCancelLink;
-    private List<DungeonFeature> knownFeatures = List.of();
-    private boolean brushPaintModeActive = true;
+    private final Node overviewCard = DungeonSidebarCards.createCard("Werkzeug", activeToolLabel);
+    private final WorkflowMessageCard workflowMessageCard = new WorkflowMessageCard();
+    private final BrushSettingsCard brushSettingsCard = new BrushSettingsCard();
+    private final AreaSettingsCard areaSettingsCard = new AreaSettingsCard();
+    private final FeatureSettingsCard featureSettingsCard = new FeatureSettingsCard();
+    private final VisibilitySettingsCard visibilitySettingsCard = new VisibilitySettingsCard();
+    private final LinkStatusCard linkStatusCard = new LinkStatusCard();
 
     public DungeonToolSettingsPane() {
         getStyleClass().addAll("dungeon-sidebar-pane", "dungeon-tool-settings-pane");
         setSpacing(10);
         setPadding(new Insets(10));
         activeToolLabel.getStyleClass().add("dungeon-panel-title");
+        getChildren().addAll(
+                overviewCard,
+                workflowMessageCard.root(),
+                brushSettingsCard.root(),
+                areaSettingsCard.root(),
+                featureSettingsCard.root(),
+                visibilitySettingsCard.root(),
+                linkStatusCard.root());
 
-        areaCombo.setPromptText("Bereich wählen…");
-        encounterCombo.setPromptText("Encounter wählen…");
-        featureCategoryCombo.setPromptText("Kategorie wählen…");
-        activeFeatureCombo.setPromptText("Feature wählen…");
-        tileFeatureCombo.setPromptText("Feature auf Feld…");
-        areaCombo.setMaxWidth(Double.MAX_VALUE);
-        encounterCombo.setMaxWidth(Double.MAX_VALUE);
-        featureCategoryCombo.setMaxWidth(Double.MAX_VALUE);
-        activeFeatureCombo.setMaxWidth(Double.MAX_VALUE);
-        tileFeatureCombo.setMaxWidth(Double.MAX_VALUE);
-        featureCategoryCombo.getItems().setAll(DungeonFeatureCategory.values());
-        featureCategoryCombo.setValue(DungeonFeatureCategory.HAZARD);
-        linksVisible.setSelected(true);
-        endpointsVisible.setSelected(true);
-        featuresVisible.setSelected(true);
-        roomColorModeButton.setToggleGroup(colorRenderModeGroup);
-        roomColorModeButton.setUserData(DungeonColorRenderMode.ROOMS);
-        roomColorModeButton.setSelected(true);
-        areaColorModeButton.setToggleGroup(colorRenderModeGroup);
-        areaColorModeButton.setUserData(DungeonColorRenderMode.AREAS);
-        deleteAreaButton.getStyleClass().add("danger");
-        deleteFeatureButton.getStyleClass().add("danger");
-
-        areaCombo.setOnAction(event -> {
-            if (updatingSelections) {
-                return;
-            }
-            updateSelectedAreaEditor();
-            if (onAreaSelected != null) {
-                onAreaSelected.accept(areaCombo.getValue());
-            }
-        });
-        activeFeatureCombo.setOnAction(event -> {
-            if (!updatingSelections && onFeatureSelected != null) {
-                onFeatureSelected.accept(activeFeatureCombo.getValue());
-            }
-        });
-        tileFeatureCombo.setOnAction(event -> {
-            if (!updatingSelections && onTileContextFeatureSelected != null) {
-                onTileContextFeatureSelected.accept(tileFeatureCombo.getValue());
-            }
-        });
-        featureCategoryCombo.setOnAction(event -> {
-            if (!updatingSelections) {
-                refreshFeatureChoices(activeFeatureCombo.getValue() == null ? null : activeFeatureCombo.getValue().featureId());
-                updateEncounterSelectionState();
-            }
-        });
-        colorRenderModeGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
-            if (newToggle == null && oldToggle != null) {
-                oldToggle.setSelected(true);
-                return;
-            }
-            if (!updatingSelections && newToggle != null && onColorRenderModeChanged != null) {
-                onColorRenderModeChanged.accept((DungeonColorRenderMode) newToggle.getUserData());
-            }
-        });
-        cancelLinkButton.setOnAction(event -> {
-            if (onCancelLink != null) {
-                onCancelLink.run();
-            }
-        });
-
-        squareShapeBtn.setToggleGroup(shapeGroup);
-        squareShapeBtn.setUserData(BrushShape.SQUARE);
-        squareShapeBtn.setSelected(true);
-        circleShapeBtn.setToggleGroup(shapeGroup);
-        circleShapeBtn.setUserData(BrushShape.CIRCLE);
-        diamondShapeBtn.setToggleGroup(shapeGroup);
-        diamondShapeBtn.setUserData(BrushShape.DIAMOND);
-        shapeGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
-            if (newToggle == null && oldToggle != null) {
-                oldToggle.setSelected(true);
-            }
-        });
-
-        brushSizeSpinner.setPrefWidth(70);
-        brushSizeSpinner.setEditable(false);
-
-        Label brushLabel = new Label("Pinselgröße");
-        brushLabel.getStyleClass().add("text-muted");
-        HBox brushRow = new HBox(6, brushLabel, brushSizeSpinner);
-        brushRow.setAlignment(Pos.CENTER_LEFT);
-        HBox shapeRow = new HBox(4, squareShapeBtn, circleShapeBtn, diamondShapeBtn);
-        brushGroup = card("Pinsel", new VBox(6, brushRow, shapeRow));
-
-        Label areaLabel = new Label("Aktiver Bereich");
-        areaLabel.getStyleClass().add("text-muted");
-        HBox areaActions = actionRow(newAreaButton, deleteAreaButton);
-        areaGroup = card("Bereich", new VBox(8, areaLabel, areaCombo, areaActions, areaProfileEditor));
-
-        Label featureCategoryLabel = new Label("Aktive Kategorie");
-        featureCategoryLabel.getStyleClass().add("text-muted");
-        Label activeFeatureLabel = new Label("Aktives Feature");
-        activeFeatureLabel.getStyleClass().add("text-muted");
-        encounterSelectionLabel.getStyleClass().add("text-muted");
-        Label tileFeatureLabel = new Label("Features auf ausgewähltem Feld");
-        tileFeatureLabel.getStyleClass().add("text-muted");
-        HBox featureActions = actionRow(newFeatureButton, deleteFeatureButton);
-        VBox featureManagement = new VBox(
-                6,
-                featureCategoryLabel,
-                featureCategoryCombo,
-                activeFeatureLabel,
-                activeFeatureCombo,
-                encounterSelectionLabel,
-                encounterCombo,
-                featureActions);
-        featureManagement.getStyleClass().add("editor-subsection");
-        VBox tileAssignment = new VBox(
-                6,
-                tileFeatureLabel,
-                tileFeatureCombo,
-                actionRow(addTileToFeatureButton, removeTileFromFeatureButton));
-        tileAssignment.getStyleClass().add("editor-subsection");
-        featureGroup = card("Features", featureManagement, tileAssignment);
-
-        Label colorModeLabel = new Label("Farben");
-        colorModeLabel.getStyleClass().add("text-muted");
-        HBox colorModeRow = new HBox(6, roomColorModeButton, areaColorModeButton);
-        colorModeRow.setAlignment(Pos.CENTER_LEFT);
-        visibilityGroup = card("Anzeige", new VBox(6, colorModeLabel, colorModeRow, featuresVisible, linksVisible, endpointsVisible));
-
-        linkStatusLabel.getStyleClass().add("text-muted");
-        cancelLinkButton.getStyleClass().add("compact");
-        linkStatusGroup = card("Link", new VBox(6, linkStatusLabel, cancelLinkButton));
-        linkStatusGroup.setVisible(false);
-        linkStatusGroup.setManaged(false);
-
-        workflowMessageTitleLabel.getStyleClass().add("dungeon-panel-title");
-        workflowMessageLabel.getStyleClass().add("text-secondary");
-        workflowMessageLabel.setWrapText(true);
-        workflowMessageGroup = new VBox(6, workflowMessageTitleLabel, workflowMessageLabel);
-        workflowMessageGroup.getStyleClass().add("dungeon-editor-card");
-        workflowMessageGroup.setVisible(false);
-        workflowMessageGroup.setManaged(false);
-
-        VBox overviewCard = card("Werkzeug", activeToolLabel);
-        getChildren().addAll(overviewCard, workflowMessageGroup, brushGroup, areaGroup, featureGroup, visibilityGroup, linkStatusGroup);
-
-        setGroupVisible(brushGroup, false);
-        setGroupVisible(areaGroup, false);
-        setGroupVisible(featureGroup, false);
-        updateEncounterSelectionState();
-        updateBrushControlState();
-        updateSelectedAreaEditor();
+        DungeonSidebarCards.setVisible(brushSettingsCard.root(), false);
+        DungeonSidebarCards.setVisible(areaSettingsCard.root(), false);
+        DungeonSidebarCards.setVisible(featureSettingsCard.root(), false);
+        linkStatusCard.reset();
         setMapLoaded(false);
     }
 
     public void setActiveTool(DungeonEditorTool tool) {
         DungeonEditorTool effectiveTool = tool == null ? DungeonEditorTool.SELECT : tool;
-        activeToolLabel.setText(toolTitle(effectiveTool));
+        activeToolLabel.setText(effectiveTool.panelTitle());
         clearWorkflowMessage();
-        setGroupVisible(brushGroup, effectiveTool.brushSettingsVisible());
-        setGroupVisible(areaGroup, effectiveTool.areaSettingsVisible());
-        setGroupVisible(featureGroup, effectiveTool.featureSettingsVisible());
+        DungeonSidebarCards.setVisible(brushSettingsCard.root(), effectiveTool.brushSettingsVisible());
+        DungeonSidebarCards.setVisible(areaSettingsCard.root(), effectiveTool.areaSettingsVisible());
+        DungeonSidebarCards.setVisible(featureSettingsCard.root(), effectiveTool.featureSettingsVisible());
         if (effectiveTool.linkStatusVisible()) {
-            linkStatusLabel.setText("Erste Verbindung klicken, dann zweite Verbindung klicken.");
-            setGroupVisible(linkStatusGroup, true);
-            cancelLinkButton.setVisible(false);
-            cancelLinkButton.setManaged(false);
+            linkStatusCard.showDefaultPrompt();
         } else {
-            setGroupVisible(linkStatusGroup, false);
+            linkStatusCard.reset();
         }
     }
 
     public void showLinkPending(boolean pending) {
         if (pending) {
-            linkStatusLabel.setText("Link-Start gewählt - zweite Verbindung klicken");
-            setGroupVisible(linkStatusGroup, true);
-            cancelLinkButton.setVisible(true);
-            cancelLinkButton.setManaged(true);
-        } else {
-            setGroupVisible(linkStatusGroup, false);
+            linkStatusCard.showPending();
+            return;
         }
+        linkStatusCard.reset();
     }
 
     public void showWorkflowMessage(String title, String message) {
-        workflowMessageTitleLabel.setText(title == null || title.isBlank() ? "Hinweis" : title);
-        workflowMessageLabel.setText(message == null ? "" : message);
-        setGroupVisible(workflowMessageGroup, message != null && !message.isBlank());
+        workflowMessageCard.showMessage(title, message);
     }
 
     public void clearWorkflowMessage() {
-        workflowMessageLabel.setText("");
-        setGroupVisible(workflowMessageGroup, false);
+        workflowMessageCard.clear();
     }
 
     public int getBrushSize() {
-        return brushSizeSpinner.getValue();
+        return brushSettingsCard.brushSize();
     }
 
     public BrushShape getBrushShape() {
-        Toggle selected = shapeGroup.getSelectedToggle();
-        return selected != null ? (BrushShape) selected.getUserData() : BrushShape.SQUARE;
+        return brushSettingsCard.brushShape();
     }
 
     public void setBrushPaintModeActive(boolean brushPaintModeActive) {
-        this.brushPaintModeActive = brushPaintModeActive;
-        updateBrushControlState();
+        brushSettingsCard.setBrushPaintModeActive(brushPaintModeActive);
     }
 
     public void setColorRenderMode(DungeonColorRenderMode mode) {
-        updatingSelections = true;
-        DungeonColorRenderMode effectiveMode = mode == null ? DungeonColorRenderMode.ROOMS : mode;
-        if (effectiveMode == DungeonColorRenderMode.AREAS) {
-            areaColorModeButton.setSelected(true);
-        } else {
-            roomColorModeButton.setSelected(true);
-        }
-        updatingSelections = false;
+        visibilitySettingsCard.setColorRenderMode(mode);
     }
 
     public void setMapLoaded(boolean loaded) {
-        newAreaButton.setDisable(!loaded);
-        deleteAreaButton.setDisable(!loaded);
-        newFeatureButton.setDisable(!loaded);
-        deleteFeatureButton.setDisable(!loaded);
-        areaProfileEditor.setEditable(loaded && areaCombo.getValue() != null);
+        areaSettingsCard.setMapLoaded(loaded);
+        featureSettingsCard.setMapLoaded(loaded);
     }
 
-    public Long getActiveAreaId() {
-        return areaCombo.getValue() == null ? null : areaCombo.getValue().areaId();
+    public DungeonArea selectedArea() {
+        return areaSettingsCard.selectedArea();
     }
 
-    public Long getActiveFeatureId() {
-        return activeFeatureCombo.getValue() == null ? null : activeFeatureCombo.getValue().featureId();
+    public Long selectedAreaId() {
+        return areaSettingsCard.selectedAreaId();
     }
 
-    public DungeonFeatureCategory getActiveFeatureCategory() {
-        return featureCategoryCombo.getValue() == null ? DungeonFeatureCategory.HAZARD : featureCategoryCombo.getValue();
+    public DungeonFeature selectedFeature() {
+        return featureSettingsCard.selectedFeature();
     }
 
-    public DungeonEncounterSummary getSelectedEncounter() {
-        return encounterCombo.getValue();
+    public Long selectedFeatureId() {
+        return featureSettingsCard.selectedFeatureId();
+    }
+
+    public DungeonFeatureCategory selectedFeatureCategory() {
+        return featureSettingsCard.selectedFeatureCategory();
+    }
+
+    public DungeonEncounterSummary selectedEncounter() {
+        return featureSettingsCard.selectedEncounter();
+    }
+
+    public boolean linksVisible() {
+        return visibilitySettingsCard.linksVisible();
+    }
+
+    public boolean endpointsVisible() {
+        return visibilitySettingsCard.endpointsVisible();
+    }
+
+    public boolean featuresVisible() {
+        return visibilitySettingsCard.featuresVisible();
     }
 
     public void setAreas(List<DungeonArea> areas) {
-        updatingSelections = true;
-        DungeonArea previous = areaCombo.getValue();
-        areaCombo.getItems().setAll(areas);
-        areaCombo.setValue(findById(
-                areas,
-                previous == null ? null : previous.areaId(),
-                DungeonArea::areaId,
-                areas.isEmpty() ? null : areas.get(0)));
-        updatingSelections = false;
-        updateSelectedAreaEditor();
+        areaSettingsCard.setAreas(areas);
     }
 
     public void setFeatures(List<DungeonFeature> features) {
-        knownFeatures = features == null ? List.of() : List.copyOf(features);
-        refreshFeatureChoices(activeFeatureCombo.getValue() == null ? null : activeFeatureCombo.getValue().featureId());
-        updateEncounterSelectionState();
+        featureSettingsCard.setFeatures(features);
     }
 
     public void setTileContextFeatures(List<DungeonFeature> features) {
-        updatingSelections = true;
-        List<DungeonFeature> safe = features == null ? List.of() : List.copyOf(features);
-        tileFeatureCombo.getItems().setAll(safe);
-        tileFeatureCombo.setValue(safe.isEmpty() ? null : safe.get(0));
-        updatingSelections = false;
+        featureSettingsCard.setTileContextFeatures(features);
     }
 
     public void setEncounterTables(List<DungeonEncounterTableSummary> tables) {
-        areaProfileEditor.setEncounterTables(tables);
+        areaSettingsCard.setEncounterTables(tables);
     }
 
     public void setStoredEncounters(List<DungeonEncounterSummary> encounters) {
-        encounterCombo.getItems().setAll(encounters == null ? List.of() : encounters);
-        updateEncounterSelectionState();
+        featureSettingsCard.setStoredEncounters(encounters);
     }
 
-    public void selectArea(Long areaId) {
-        updatingSelections = true;
-        areaCombo.setValue(findById(areaCombo.getItems(), areaId, DungeonArea::areaId, null));
-        updatingSelections = false;
-        updateSelectedAreaEditor();
+    public void setSelectedArea(Long areaId) {
+        areaSettingsCard.setSelectedArea(areaId);
     }
 
-    public void selectFeatureCategory(DungeonFeatureCategory category) {
-        updatingSelections = true;
-        featureCategoryCombo.setValue(category == null ? DungeonFeatureCategory.HAZARD : category);
-        refreshFeatureChoices(activeFeatureCombo.getValue() == null ? null : activeFeatureCombo.getValue().featureId());
-        updatingSelections = false;
+    public void setSelectedFeatureCategory(DungeonFeatureCategory category) {
+        featureSettingsCard.setSelectedFeatureCategory(category);
     }
 
-    public void selectFeature(Long featureId) {
-        updatingSelections = true;
-        DungeonFeature selected = findById(knownFeatures, featureId, DungeonFeature::featureId, null);
-        if (selected != null) {
-            featureCategoryCombo.setValue(selected.category());
-        }
-        refreshFeatureChoices(featureId);
-        selectEncounter(selected == null ? null : selected.encounterId());
-        updateEncounterSelectionState();
-        updatingSelections = false;
+    public void setSelectedFeature(Long featureId) {
+        featureSettingsCard.setSelectedFeature(featureId);
     }
 
     public void clearEntitySelections() {
-        updatingSelections = true;
-        areaCombo.setValue(null);
-        activeFeatureCombo.setValue(null);
-        encounterCombo.setValue(null);
-        tileFeatureCombo.getItems().clear();
-        tileFeatureCombo.setValue(null);
-        updatingSelections = false;
-        updateSelectedAreaEditor();
-        updateEncounterSelectionState();
+        areaSettingsCard.setSelectedArea(null);
+        featureSettingsCard.clearSelection();
     }
 
     public void clearFeatureSelection() {
-        updatingSelections = true;
-        activeFeatureCombo.setValue(null);
-        encounterCombo.setValue(null);
-        tileFeatureCombo.getItems().clear();
-        tileFeatureCombo.setValue(null);
-        updatingSelections = false;
-        updateEncounterSelectionState();
+        featureSettingsCard.clearSelection();
     }
 
     public void selectEncounter(Long encounterId) {
-        if (encounterId == null) {
-            encounterCombo.setValue(null);
-            return;
-        }
-        for (DungeonEncounterSummary encounter : encounterCombo.getItems()) {
-            if (encounter.encounterId() == encounterId) {
-                encounterCombo.setValue(encounter);
-                return;
-            }
-        }
-        encounterCombo.setValue(null);
-    }
-
-    public ComboBox<DungeonArea> areaComboBox() {
-        return areaCombo;
-    }
-
-    public ComboBox<DungeonEncounterSummary> encounterComboBox() {
-        return encounterCombo;
-    }
-
-    public ComboBox<DungeonFeature> activeFeatureComboBox() {
-        return activeFeatureCombo;
-    }
-
-    public CheckBox linksVisibleCheckBox() {
-        return linksVisible;
-    }
-
-    public CheckBox endpointsVisibleCheckBox() {
-        return endpointsVisible;
-    }
-
-    public CheckBox featuresVisibleCheckBox() {
-        return featuresVisible;
-    }
-
-    public Button newAreaButton() {
-        return newAreaButton;
-    }
-
-    public Button deleteAreaButton() {
-        return deleteAreaButton;
-    }
-
-    public Button newFeatureButton() {
-        return newFeatureButton;
-    }
-
-    public Button deleteFeatureButton() {
-        return deleteFeatureButton;
-    }
-
-    public Button addTileToFeatureButton() {
-        return addTileToFeatureButton;
-    }
-
-    public Button removeTileFromFeatureButton() {
-        return removeTileFromFeatureButton;
+        featureSettingsCard.selectEncounter(encounterId);
     }
 
     public void setOnAreaSelected(Consumer<DungeonArea> onAreaSelected) {
-        this.onAreaSelected = onAreaSelected;
+        areaSettingsCard.setOnAreaSelected(onAreaSelected);
     }
 
     public void setOnAreaProfileSaveRequested(Consumer<DungeonArea> onAreaProfileSaveRequested) {
-        areaProfileEditor.setOnSaveRequested(onAreaProfileSaveRequested);
+        areaSettingsCard.setOnSaveRequested(onAreaProfileSaveRequested);
     }
 
     public void setOnFeatureSelected(Consumer<DungeonFeature> onFeatureSelected) {
-        this.onFeatureSelected = onFeatureSelected;
+        featureSettingsCard.setOnFeatureSelected(onFeatureSelected);
     }
 
     public void setOnTileContextFeatureSelected(Consumer<DungeonFeature> onTileContextFeatureSelected) {
-        this.onTileContextFeatureSelected = onTileContextFeatureSelected;
+        featureSettingsCard.setOnTileContextFeatureSelected(onTileContextFeatureSelected);
+    }
+
+    public void setOnEncounterSelected(Consumer<DungeonEncounterSummary> onEncounterSelected) {
+        featureSettingsCard.setOnEncounterSelected(onEncounterSelected);
+    }
+
+    public void setOnNewAreaRequested(Consumer<Node> callback) {
+        areaSettingsCard.setOnCreateRequested(callback);
+    }
+
+    public void setOnDeleteAreaRequested(Consumer<Node> callback) {
+        areaSettingsCard.setOnDeleteRequested(callback);
+    }
+
+    public void setOnNewFeatureRequested(Consumer<Node> callback) {
+        featureSettingsCard.setOnCreateRequested(callback);
+    }
+
+    public void setOnDeleteFeatureRequested(Consumer<Node> callback) {
+        featureSettingsCard.setOnDeleteRequested(callback);
+    }
+
+    public void setOnAddTileToFeatureRequested(Runnable callback) {
+        featureSettingsCard.setOnAddTileRequested(callback);
+    }
+
+    public void setOnRemoveTileFromFeatureRequested(Runnable callback) {
+        featureSettingsCard.setOnRemoveTileRequested(callback);
     }
 
     public void setOnCancelLink(Runnable onCancelLink) {
-        this.onCancelLink = onCancelLink;
+        linkStatusCard.setOnCancel(onCancelLink);
+    }
+
+    public void setOnLinksVisibilityChanged(Consumer<Boolean> callback) {
+        visibilitySettingsCard.setOnLinksVisibilityChanged(callback);
+    }
+
+    public void setOnEndpointsVisibilityChanged(Consumer<Boolean> callback) {
+        visibilitySettingsCard.setOnEndpointsVisibilityChanged(callback);
+    }
+
+    public void setOnFeaturesVisibilityChanged(Consumer<Boolean> callback) {
+        visibilitySettingsCard.setOnFeaturesVisibilityChanged(callback);
     }
 
     public void setOnColorRenderModeChanged(Consumer<DungeonColorRenderMode> onColorRenderModeChanged) {
-        this.onColorRenderModeChanged = onColorRenderModeChanged;
-    }
-
-    private void refreshFeatureChoices(Long preferredFeatureId) {
-        List<DungeonFeature> filtered = new ArrayList<>();
-        DungeonFeatureCategory category = getActiveFeatureCategory();
-        for (DungeonFeature feature : knownFeatures) {
-            if (feature.category() == category) {
-                filtered.add(feature);
-            }
-        }
-        updatingSelections = true;
-        activeFeatureCombo.getItems().setAll(filtered);
-        activeFeatureCombo.setValue(findById(filtered, preferredFeatureId, DungeonFeature::featureId, filtered.isEmpty() ? null : filtered.get(0)));
-        updatingSelections = false;
-        updateEncounterSelectionState();
-    }
-
-    private void updateEncounterSelectionState() {
-        boolean enabled = getActiveFeatureCategory() == DungeonFeatureCategory.ENCOUNTER;
-        encounterSelectionLabel.setVisible(enabled);
-        encounterSelectionLabel.setManaged(enabled);
-        encounterCombo.setVisible(enabled);
-        encounterCombo.setManaged(enabled);
-        encounterCombo.setDisable(!enabled);
-        if (!enabled) {
-            encounterCombo.setValue(null);
-        }
-    }
-
-    private void updateSelectedAreaEditor() {
-        areaProfileEditor.setArea(areaCombo.getValue());
-        areaProfileEditor.setEditable(!newAreaButton.isDisabled() && areaCombo.getValue() != null);
-    }
-
-    private void updateBrushControlState() {
-        brushSizeSpinner.setDisable(!brushPaintModeActive);
-    }
-
-    private static <T> T findById(List<T> items, Long id, java.util.function.Function<T, Long> idGetter, T fallback) {
-        if (id != null) {
-            for (T item : items) {
-                Long candidateId = idGetter.apply(item);
-                if (candidateId != null && candidateId.equals(id)) {
-                    return item;
-                }
-            }
-        }
-        return fallback;
-    }
-
-    private VBox card(String title, Node... content) {
-        Label titleLabel = new Label(title);
-        titleLabel.getStyleClass().add("dungeon-panel-title");
-        VBox box = new VBox(6, titleLabel);
-        box.getStyleClass().add("dungeon-editor-card");
-        box.getChildren().addAll(content);
-        return box;
-    }
-
-    private static HBox actionRow(Button... buttons) {
-        HBox row = new HBox(8, buttons);
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
-    }
-
-    private static void setGroupVisible(VBox group, boolean visible) {
-        group.setVisible(visible);
-        group.setManaged(visible);
-    }
-
-    private static String toolTitle(DungeonEditorTool tool) {
-        return tool.panelTitle();
+        visibilitySettingsCard.setOnColorRenderModeChanged(onColorRenderModeChanged);
     }
 }
