@@ -15,7 +15,9 @@ record DungeonEdgeToolPolicy(
         NONE,
         WALL_PAINT_PATH,
         WALL_ERASE_DRAG,
-        PASSAGE_CLICK
+        PASSAGE_CREATE_CLICK,
+        PASSAGE_DELETE_CLICK,
+        LINK_PASSAGE_CLICK
     }
 
     static DungeonEdgeToolPolicy resolve(
@@ -33,8 +35,14 @@ record DungeonEdgeToolPolicy(
                     effectiveWallMode.erasesWalls());
             case PASSAGE -> new DungeonEdgeToolPolicy(
                     true,
-                    EdgeInteractionMode.PASSAGE_CLICK,
+                    effectivePassageMode.deletesPassages()
+                            ? EdgeInteractionMode.PASSAGE_DELETE_CLICK
+                            : EdgeInteractionMode.PASSAGE_CREATE_CLICK,
                     effectivePassageMode.deletesPassages());
+            case LINK -> new DungeonEdgeToolPolicy(
+                    true,
+                    EdgeInteractionMode.LINK_PASSAGE_CLICK,
+                    false);
             default -> new DungeonEdgeToolPolicy(
                     effectiveTool.edgeHoverEnabled(),
                     EdgeInteractionMode.NONE,
@@ -51,7 +59,10 @@ record DungeonEdgeToolPolicy(
     }
 
     boolean usesPassageClick() {
-        return interactionMode == EdgeInteractionMode.PASSAGE_CLICK;
+        return switch (interactionMode) {
+            case PASSAGE_CREATE_CLICK, PASSAGE_DELETE_CLICK, LINK_PASSAGE_CLICK -> true;
+            default -> false;
+        };
     }
 
     boolean allowsInteraction(DungeonEdgeSummary edge) {
@@ -62,9 +73,8 @@ record DungeonEdgeToolPolicy(
             case NONE -> false;
             case WALL_PAINT_PATH -> edge.canCreateManualWall();
             case WALL_ERASE_DRAG -> edge.canEraseManualWall();
-            case PASSAGE_CLICK -> destructiveHover
-                    ? edge.passage() != null
-                    : edge.canCreatePassage();
+            case PASSAGE_CREATE_CLICK -> edge.canCreatePassage();
+            case PASSAGE_DELETE_CLICK, LINK_PASSAGE_CLICK -> edge.passage() != null;
         };
     }
 }

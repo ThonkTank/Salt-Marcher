@@ -37,6 +37,7 @@ final class DungeonOverlayRenderer {
     private static final Color ENDPOINT_SELECTED_STROKE = Color.web("#f0a040");
     private static final Color DEFAULT_ENTRY_STROKE = Color.web("#f8f3a6");
     private static final Color PARTY_STROKE = Color.web("#41a9f2");
+    private static final double ENDPOINT_HIT_RADIUS = 10.0;
 
     private final Pane roomLabelsLayer;
     private final Pane featuresLayer;
@@ -48,7 +49,7 @@ final class DungeonOverlayRenderer {
     private final Map<Long, Circle> featureAnchorNodes = new HashMap<>();
     private final Map<Long, Label> featureLabelNodes = new HashMap<>();
     private final Map<String, Rectangle> featureTileNodes = new HashMap<>();
-    private final Map<Long, Circle> endpointNodes = new HashMap<>();
+    private final Map<Long, EndpointNode> endpointNodes = new HashMap<>();
     private final Map<Long, Line> linkNodes = new HashMap<>();
 
     private Consumer<DungeonEndpoint> onEndpointClicked;
@@ -113,9 +114,9 @@ final class DungeonOverlayRenderer {
             featuresLayer.getChildren().addAll(anchor, label);
         }
         for (DungeonEndpoint endpoint : model.endpointsById().values()) {
-            Circle circle = buildEndpointNode(endpoint);
-            endpointNodes.put(endpoint.endpointId(), circle);
-            endpointsLayer.getChildren().add(circle);
+            EndpointNode endpointNode = buildEndpointNode(endpoint);
+            endpointNodes.put(endpoint.endpointId(), endpointNode);
+            endpointsLayer.getChildren().addAll(endpointNode.hitTarget(), endpointNode.visual());
         }
         for (DungeonLink link : model.linksById().values()) {
             Line line = buildLinkNode(link);
@@ -195,9 +196,10 @@ final class DungeonOverlayRenderer {
     }
 
     void refreshEndpointStyles() {
-        for (Map.Entry<Long, Circle> entry : endpointNodes.entrySet()) {
+        for (Map.Entry<Long, EndpointNode> entry : endpointNodes.entrySet()) {
             Long endpointId = entry.getKey();
-            Circle circle = entry.getValue();
+            EndpointNode endpointNode = entry.getValue();
+            Circle circle = endpointNode.visual();
             DungeonSelection selection = model.selection();
             boolean isSelected = selection != null
                     && selection.type() == DungeonSelection.SelectionType.ENDPOINT
@@ -216,9 +218,9 @@ final class DungeonOverlayRenderer {
             circle.setStrokeWidth(isParty || isSelected
                     ? Math.max(2.0, 3.0 * viewport.strokeScale())
                     : Math.max(1.0, viewport.strokeScale()));
-            circle.setRadius(isParty || endpoint != null && endpoint.defaultEntry()
-                    ? Math.max(4.0, 7.0 * viewport.strokeScale())
-                    : Math.max(3.0, 5.0 * viewport.strokeScale()));
+            EndpointRadii radii = endpointRadii(endpoint, isParty);
+            circle.setRadius(radii.visualRadius());
+            endpointNode.hitTarget().setRadius(radii.hitRadius());
         }
     }
 
@@ -234,15 +236,19 @@ final class DungeonOverlayRenderer {
         }
     }
 
-    private Circle buildEndpointNode(DungeonEndpoint endpoint) {
-        Circle circle = new Circle();
-        circle.setOnMouseClicked(event -> {
+    private EndpointNode buildEndpointNode(DungeonEndpoint endpoint) {
+        Circle visual = new Circle();
+        visual.setMouseTransparent(true);
+        Circle hitTarget = new Circle();
+        hitTarget.setFill(Color.TRANSPARENT);
+        hitTarget.setStroke(Color.TRANSPARENT);
+        hitTarget.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.PRIMARY && onEndpointClicked != null) {
                 onEndpointClicked.accept(endpoint);
             }
             event.consume();
         });
-        return circle;
+        return new EndpointNode(visual, hitTarget);
     }
 
     private Line buildLinkNode(DungeonLink link) {
@@ -261,19 +267,33 @@ final class DungeonOverlayRenderer {
     }
 
     private void positionEndpoint(Region owner, Long endpointId, DungeonEndpoint endpoint) {
-        Circle circle = endpointNodes.get(endpointId);
-        if (circle == null) {
+        EndpointNode endpointNode = endpointNodes.get(endpointId);
+        if (endpointNode == null) {
             return;
         }
+        Circle circle = endpointNode.visual();
+        Circle hitTarget = endpointNode.hitTarget();
         double cx = viewport.screenCenterX(endpoint.x());
         double cy = viewport.screenCenterY(endpoint.y());
-        double radius = Math.max(3.0, 5.0 * viewport.strokeScale());
+        EndpointRadii radii = endpointRadii(endpoint, endpointId.equals(model.partyEndpointId()));
         circle.setCenterX(cx);
         circle.setCenterY(cy);
-        circle.setRadius(radius);
-        boolean visible = viewport.isVisible(owner, cx, cy, radius);
+        circle.setRadius(radii.visualRadius());
+        hitTarget.setCenterX(cx);
+        hitTarget.setCenterY(cy);
+        hitTarget.setRadius(radii.hitRadius());
+        boolean visible = viewport.isVisible(owner, cx, cy, radii.hitRadius());
         circle.setVisible(showEndpoints && visible);
         circle.setManaged(showEndpoints && visible);
+        hitTarget.setVisible(showEndpoints && visible);
+        hitTarget.setManaged(showEndpoints && visible);
+    }
+
+    private EndpointRadii endpointRadii(DungeonEndpoint endpoint, boolean isParty) {
+        double visualRadius = isParty || endpoint != null && endpoint.defaultEntry()
+                ? Math.max(4.0, 7.0 * viewport.strokeScale())
+                : Math.max(3.0, 5.0 * viewport.strokeScale());
+        return new EndpointRadii(visualRadius, Math.max(ENDPOINT_HIT_RADIUS, visualRadius));
     }
 
     private void positionLink(Region owner, Long linkId, DungeonLink link) {
@@ -460,5 +480,11 @@ final class DungeonOverlayRenderer {
     }
 
     private record Point(double x, double y) {
+    }
+
+    private record EndpointRadii(double visualRadius, double hitRadius) {
+    }
+
+    private record EndpointNode(Circle visual, Circle hitTarget) {
     }
 }

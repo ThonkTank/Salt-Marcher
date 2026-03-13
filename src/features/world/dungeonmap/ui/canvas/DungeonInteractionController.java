@@ -469,9 +469,13 @@ final class DungeonInteractionController {
         if (hoverEdgeX < 0 || hoverEdgeDir == null) {
             return;
         }
-        gc.setStroke(currentEdgeToolPolicy().destructiveHover() ? HOVER_EDGE_ERASE_STROKE : HOVER_EDGE_STROKE);
+        gc.setStroke(edgeHoverStroke());
         gc.setLineWidth(Math.max(3.0, 5.0 * viewport.strokeScale()));
         strokeEdge(gc, hoverEdgeX, hoverEdgeY, hoverEdgeDir);
+    }
+
+    private Color edgeHoverStroke() {
+        return currentEdgeToolPolicy().destructiveHover() ? HOVER_EDGE_ERASE_STROKE : HOVER_EDGE_STROKE;
     }
 
     private void handleEdgeClick(double screenX, double screenY) {
