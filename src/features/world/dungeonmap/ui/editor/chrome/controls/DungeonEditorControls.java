@@ -2,6 +2,10 @@ package features.world.dungeonmap.ui.editor.chrome.controls;
 
 import features.world.dungeonmap.model.domain.DungeonMap;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.state.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.state.PassageEditorMode;
+import features.world.dungeonmap.ui.editor.state.WallEditorMode;
 import javafx.scene.Node;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -43,8 +47,8 @@ public class DungeonEditorControls extends VBox {
         setSpacing(8);
         setPadding(new Insets(8, 10, 8, 10));
         paintModeDropdown.setOptions(List.of(
-                new DungeonToolModeDropdown.Option<>(DungeonPaintMode.BRUSH, "Pinsel"),
-                new DungeonToolModeDropdown.Option<>(DungeonPaintMode.SELECTION, "Auswahl")));
+                new DungeonToolModeDropdown.Option<>(DungeonPaintMode.BRUSH, DungeonPaintMode.BRUSH.label()),
+                new DungeonToolModeDropdown.Option<>(DungeonPaintMode.SELECTION, DungeonPaintMode.SELECTION.label())));
         wallModeDropdown.setOptions(List.of(
                 new DungeonToolModeDropdown.Option<>(WallEditorMode.PAINT_WALL, WallEditorMode.PAINT_WALL.label()),
                 new DungeonToolModeDropdown.Option<>(WallEditorMode.ERASE_WALL, WallEditorMode.ERASE_WALL.label())));

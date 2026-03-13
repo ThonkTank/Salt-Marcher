@@ -4,7 +4,7 @@ import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;
 import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
-import features.world.dungeonmap.service.support.DungeonLinkIntegrityService;
+import features.world.dungeonmap.service.topology.DungeonLinkIntegrityService;
 import features.world.dungeonmap.service.command.support.DungeonCampaignPositionEditingSupport;
 import features.world.dungeonmap.service.command.support.DungeonEditingTransactions;
 import features.world.dungeonmap.service.command.area.AreaAssignmentNormalizationService;

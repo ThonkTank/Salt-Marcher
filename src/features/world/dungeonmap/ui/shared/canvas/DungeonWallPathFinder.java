@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.mapcanvas;
+package features.world.dungeonmap.ui.shared.canvas;
 
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
 import features.world.dungeonmap.model.domain.PassageDirection;

@@ -7,7 +7,7 @@ import features.world.dungeonmap.ui.runtime.chrome.controls.DungeonViewControls;
 import features.world.dungeonmap.ui.runtime.chrome.state.DungeonRuntimeStatePane;
 import features.world.dungeonmap.ui.runtime.state.DungeonRuntimeViewState;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.mapcanvas.DungeonMapPane;
+import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import ui.async.UiErrorReporter;
 
 public final class DungeonRuntimeLoader {
@@ -17,20 +17,22 @@ public final class DungeonRuntimeLoader {
     private final DungeonRuntimeStatePane statePane;
     private final DungeonMapPane canvas;
     private final DungeonMapQueryService queries;
-    private final DungeonRuntimeQueryService runtimeQueries = new DungeonRuntimeQueryService();
+    private final DungeonRuntimeQueryService runtimeQueries;
 
     public DungeonRuntimeLoader(
             DungeonRuntimeViewState state,
             DungeonViewControls controls,
             DungeonRuntimeStatePane statePane,
             DungeonMapPane canvas,
-            DungeonMapQueryService queries
+            DungeonMapQueryService queries,
+            DungeonRuntimeQueryService runtimeQueries
     ) {
         this.state = state;
         this.controls = controls;
         this.statePane = statePane;
         this.canvas = canvas;
         this.queries = queries;
+        this.runtimeQueries = runtimeQueries;
     }
 
     public void onShow(Runnable afterLoad) {

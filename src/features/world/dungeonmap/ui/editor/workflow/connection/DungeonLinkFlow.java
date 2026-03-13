@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor.workflow.connection;
 
 import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
-import features.world.dungeonmap.ui.mapcanvas.DungeonMapPane;
+import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 
 public final class DungeonLinkFlow {

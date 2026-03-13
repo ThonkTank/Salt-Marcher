@@ -6,7 +6,7 @@ import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;

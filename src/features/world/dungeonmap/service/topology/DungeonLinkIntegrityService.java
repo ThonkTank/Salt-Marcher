@@ -1,4 +1,4 @@
-package features.world.dungeonmap.service.support;
+package features.world.dungeonmap.service.topology;
 
 import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
 import features.world.dungeonmap.repository.connection.DungeonEndpointRepository;

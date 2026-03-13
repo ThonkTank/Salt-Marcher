@@ -16,7 +16,6 @@ import features.world.dungeonmap.repository.map.DungeonMapRepository;
 import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
 import features.world.dungeonmap.repository.map.DungeonSquareRepository;
 import features.world.dungeonmap.repository.topology.DungeonWallRepository;
-import features.world.dungeonmap.service.support.DungeonLinkIntegrityService;
 
 import java.sql.Connection;
 import java.sql.SQLException;

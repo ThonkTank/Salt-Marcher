@@ -1,4 +1,4 @@
-package features.world.dungeonmap.model.projection.index;
+package features.world.dungeonmap.service.query.projection;
 
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
@@ -11,6 +11,7 @@ import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.PassageDirection;
 import features.world.dungeonmap.model.projection.DungeonMapState;
+import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

@@ -1,8 +1,10 @@
-package features.world.dungeonmap.model.projection.edge;
+package features.world.dungeonmap.service.query.projection;
 
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
+import features.world.dungeonmap.model.projection.edge.DungeonEdgeIndex;
+import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
 import features.world.dungeonmap.model.rules.DungeonEdgeRules;
 import features.world.dungeonmap.model.domain.PassageDirection;
 

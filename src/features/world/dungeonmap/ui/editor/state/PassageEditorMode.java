@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.chrome.controls;
+package features.world.dungeonmap.ui.editor.state;
 
 public enum PassageEditorMode {
     PLACE_PASSAGE("Durchgang setzen"),

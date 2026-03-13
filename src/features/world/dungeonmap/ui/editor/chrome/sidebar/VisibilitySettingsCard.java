@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.editor.chrome.sidebar;
 
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.CheckBox;

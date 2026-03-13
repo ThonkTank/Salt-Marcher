@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.mapcanvas;
+package features.world.dungeonmap.ui.shared.canvas;
 
 import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
@@ -9,7 +9,7 @@ import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
 import features.world.dungeonmap.model.domain.PassageDirection;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;

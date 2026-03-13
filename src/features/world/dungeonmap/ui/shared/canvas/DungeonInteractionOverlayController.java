@@ -1,9 +1,9 @@
-package features.world.dungeonmap.ui.mapcanvas;
+package features.world.dungeonmap.ui.shared.canvas;
 
 import features.world.dungeonmap.model.editing.BrushShape;
 import features.world.dungeonmap.model.domain.PassageDirection;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.state.DungeonPaintMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;

@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor.screen;
 
-import features.world.dungeonmap.ui.mapcanvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
+import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.workflow.DungeonEditorController;
 import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;

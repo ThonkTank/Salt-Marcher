@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.mapcanvas;
+package features.world.dungeonmap.ui.shared.canvas;
 
 import features.world.dungeonmap.model.editing.BrushShape;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
@@ -10,11 +10,11 @@ import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonColorRenderMode;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonPaintMode;
-import features.world.dungeonmap.ui.editor.chrome.controls.PassageEditorMode;
-import features.world.dungeonmap.ui.editor.chrome.controls.WallEditorMode;
+import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.state.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.state.PassageEditorMode;
+import features.world.dungeonmap.ui.editor.state.WallEditorMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;

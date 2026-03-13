@@ -1,9 +1,9 @@
-package features.world.dungeonmap.ui.mapcanvas;
+package features.world.dungeonmap.ui.shared.canvas;
 
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.chrome.controls.PassageEditorMode;
-import features.world.dungeonmap.ui.editor.chrome.controls.WallEditorMode;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.state.PassageEditorMode;
+import features.world.dungeonmap.ui.editor.state.WallEditorMode;
 
 record DungeonEdgeToolPolicy(
         boolean edgeHoverEnabled,

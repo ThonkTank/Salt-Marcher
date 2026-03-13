@@ -2,7 +2,9 @@ package features.world.dungeonmap.ui.runtime.screen;
 
 import features.encounter.api.EncounterRuntimePort;
 import features.world.dungeonmap.service.DungeonMapQueryService;
-import features.world.dungeonmap.ui.mapcanvas.DungeonMapPane;
+import features.world.dungeonmap.service.runtime.DungeonRuntimeCommandService;
+import features.world.dungeonmap.service.runtime.DungeonRuntimeQueryService;
+import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.runtime.chrome.controls.DungeonViewControls;
 import features.world.dungeonmap.ui.runtime.chrome.inspector.DungeonRuntimeInspectorContentFactory;
 import features.world.dungeonmap.ui.runtime.chrome.state.DungeonRuntimeStatePane;
@@ -24,13 +26,16 @@ public class DungeonView implements AppView {
     private final DungeonRuntimeMovementWorkflow movementWorkflow;
 
     public DungeonView(DetailsNavigator detailsNavigator, DungeonMapQueryService queries, EncounterRuntimePort encounterRuntimePort) {
-        loader = new DungeonRuntimeLoader(state, controls, runtimeStatePane, canvas, queries);
+        DungeonRuntimeQueryService runtimeQueries = new DungeonRuntimeQueryService();
+        DungeonRuntimeCommandService runtimeCommands = new DungeonRuntimeCommandService();
+        loader = new DungeonRuntimeLoader(state, controls, runtimeStatePane, canvas, queries, runtimeQueries);
         movementWorkflow = new DungeonRuntimeMovementWorkflow(
                 state,
                 runtimeStatePane,
                 canvas,
                 detailsNavigator,
                 new DungeonRuntimeInspectorContentFactory(),
+                runtimeCommands,
                 encounterRuntimePort,
                 this::reloadRuntimeView);
         controls.setOnMapSelected(mapId -> loader.handleMapSelected(mapId, movementWorkflow::updateLocationLabels));

@@ -6,7 +6,7 @@ import features.world.dungeonmap.model.domain.DungeonMap;
 import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.mapcanvas.DungeonMapPane;
+import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;

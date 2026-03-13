@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.mapcanvas;
+package features.world.dungeonmap.ui.shared.canvas;
 
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonEndpointRole;
@@ -11,7 +11,7 @@ import features.world.dungeonmap.model.domain.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;

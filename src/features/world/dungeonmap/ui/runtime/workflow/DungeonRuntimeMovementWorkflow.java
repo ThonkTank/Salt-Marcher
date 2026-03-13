@@ -13,7 +13,7 @@ import features.world.dungeonmap.ui.runtime.chrome.state.DungeonRuntimeStatePane
 import features.world.dungeonmap.ui.runtime.state.DungeonRuntimeViewState;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.shared.format.DungeonAreaEncounterText;
-import features.world.dungeonmap.ui.mapcanvas.DungeonMapPane;
+import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import ui.async.UiErrorReporter;
 import ui.shell.DetailsNavigator;
 
@@ -24,7 +24,7 @@ public final class DungeonRuntimeMovementWorkflow {
     private final DungeonMapPane canvas;
     private final DetailsNavigator detailsNavigator;
     private final DungeonRuntimeInspectorContentFactory inspectorContentFactory;
-    private final DungeonRuntimeCommandService runtimeCommands = new DungeonRuntimeCommandService();
+    private final DungeonRuntimeCommandService runtimeCommands;
     private final EncounterRuntimePort encounterRuntimePort;
     private final Runnable reloadCurrentMap;
 
@@ -34,6 +34,7 @@ public final class DungeonRuntimeMovementWorkflow {
             DungeonMapPane canvas,
             DetailsNavigator detailsNavigator,
             DungeonRuntimeInspectorContentFactory inspectorContentFactory,
+            DungeonRuntimeCommandService runtimeCommands,
             EncounterRuntimePort encounterRuntimePort,
             Runnable reloadCurrentMap
     ) {
@@ -42,6 +43,7 @@ public final class DungeonRuntimeMovementWorkflow {
         this.canvas = canvas;
         this.detailsNavigator = detailsNavigator;
         this.inspectorContentFactory = inspectorContentFactory;
+        this.runtimeCommands = runtimeCommands;
         this.encounterRuntimePort = encounterRuntimePort;
         this.reloadCurrentMap = reloadCurrentMap;
     }

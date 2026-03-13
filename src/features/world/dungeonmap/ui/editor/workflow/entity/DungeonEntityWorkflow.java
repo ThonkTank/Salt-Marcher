@@ -6,7 +6,7 @@ import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
-import features.world.dungeonmap.ui.mapcanvas.DungeonMapPane;
+import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.chrome.inspector.DungeonEntityInspectorActions;
