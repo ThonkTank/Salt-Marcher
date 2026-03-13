@@ -1,19 +1,19 @@
 package features.world.dungeonmap.ui.canvas;
 
-import features.world.dungeonmap.model.DungeonEdgeSummary;
-import features.world.dungeonmap.model.DungeonEndpoint;
-import features.world.dungeonmap.model.DungeonFeature;
-import features.world.dungeonmap.model.DungeonFeatureTile;
-import features.world.dungeonmap.model.DungeonLink;
-import features.world.dungeonmap.model.DungeonLinkAnchor;
-import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.model.DungeonPassage;
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonSelection;
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.DungeonSquarePaint;
-import features.world.dungeonmap.model.DungeonWallEdit;
-import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.model.readmodel.edge.DungeonEdgeSummary;
+import features.world.dungeonmap.model.domain.DungeonEndpoint;
+import features.world.dungeonmap.model.domain.DungeonFeature;
+import features.world.dungeonmap.model.domain.DungeonFeatureTile;
+import features.world.dungeonmap.model.domain.DungeonLink;
+import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
+import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.domain.DungeonPassage;
+import features.world.dungeonmap.model.domain.DungeonRoom;
+import features.world.dungeonmap.model.editing.DungeonSelection;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.editing.DungeonSquarePaint;
+import features.world.dungeonmap.model.editing.DungeonWallEdit;
+import features.world.dungeonmap.model.domain.PassageDirection;
 import java.util.List;
 import java.util.Map;
 

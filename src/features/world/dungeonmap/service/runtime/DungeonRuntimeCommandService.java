@@ -1,10 +1,11 @@
 package features.world.dungeonmap.service.runtime;
 
 import database.DatabaseManager;
-import features.world.dungeonmap.model.DungeonEndpoint;
-import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.service.DungeonMapQueryService;
+import features.world.dungeonmap.model.domain.DungeonEndpoint;
+import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.service.integration.campaign.DungeonCampaignStateAdapter;
+import features.world.dungeonmap.service.query.readmodel.DungeonMapStateLoader;
 
 import java.sql.Connection;
 import java.util.List;
@@ -16,7 +17,7 @@ public final class DungeonRuntimeCommandService {
 
     public DungeonMoveResult setInitialPartyPosition(long mapId, long targetSquareId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonMapState state = DungeonMapQueryService.loadMapState(conn, mapId);
+            DungeonMapState state = DungeonMapStateLoader.load(conn, mapId);
             DungeonSquare targetSquare = state.index().findSquare(targetSquareId);
             if (targetSquare == null) {
                 return new DungeonMoveResult(
@@ -43,7 +44,7 @@ public final class DungeonRuntimeCommandService {
 
     public DungeonMoveResult movePartyToSquare(long mapId, long targetSquareId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonMapState state = DungeonMapQueryService.loadMapState(conn, mapId);
+            DungeonMapState state = DungeonMapStateLoader.load(conn, mapId);
             DungeonSquare targetSquare = state.index().findSquare(targetSquareId);
             if (targetSquare == null) {
                 return new DungeonMoveResult(

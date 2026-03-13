@@ -1,13 +1,13 @@
 package features.world.dungeonmap.ui.canvas;
 
-import features.world.dungeonmap.model.DungeonEdgeIndex;
-import features.world.dungeonmap.model.DungeonEdgeSummary;
-import features.world.dungeonmap.model.DungeonEdgeSummaryBuilder;
-import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.model.DungeonPassage;
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.DungeonWall;
-import features.world.dungeonmap.model.DungeonWallEdit;
+import features.world.dungeonmap.model.readmodel.edge.DungeonEdgeIndex;
+import features.world.dungeonmap.model.readmodel.edge.DungeonEdgeSummary;
+import features.world.dungeonmap.model.readmodel.edge.DungeonEdgeSummaryBuilder;
+import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.domain.DungeonPassage;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.domain.DungeonWall;
+import features.world.dungeonmap.model.editing.DungeonWallEdit;
 
 import java.util.ArrayList;
 import java.util.HashMap;

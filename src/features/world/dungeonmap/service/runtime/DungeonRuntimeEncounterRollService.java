@@ -1,7 +1,7 @@
 package features.world.dungeonmap.service.runtime;
 
-import features.world.dungeonmap.model.DungeonArea;
-import features.world.dungeonmap.model.DungeonAreaEncounterTableLink;
+import features.world.dungeonmap.model.domain.DungeonArea;
+import features.world.dungeonmap.model.domain.DungeonAreaEncounterTableLink;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.editor.sidebar;
 
-import features.world.dungeonmap.model.BrushShape;
+import features.world.dungeonmap.model.editing.BrushShape;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;

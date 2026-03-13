@@ -1,9 +1,9 @@
 package features.world.dungeonmap.service.runtime;
 
-import features.world.dungeonmap.model.DungeonEdgeSummary;
-import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.model.readmodel.edge.DungeonEdgeSummary;
+import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.domain.PassageDirection;
 
 final class DungeonRuntimeTraversalService {
 

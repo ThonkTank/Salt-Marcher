@@ -1,7 +1,7 @@
 package features.world.dungeonmap.api;
 
 import features.encounter.api.EncounterRuntimePort;
-import features.world.dungeonmap.ui.DungeonMapUiModule;
+import features.world.dungeonmap.composition.DungeonMapComposition;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
@@ -13,19 +13,19 @@ import java.util.Objects;
  */
 public final class DungeonMapModule {
 
-    private final DungeonMapUiModule uiModule;
+    private final DungeonMapComposition composition;
 
     public DungeonMapModule(DetailsNavigator detailsNavigator, EncounterRuntimePort encounterRuntimePort) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
         Objects.requireNonNull(encounterRuntimePort, "encounterRuntimePort");
-        this.uiModule = new DungeonMapUiModule(detailsNavigator, encounterRuntimePort);
+        this.composition = new DungeonMapComposition(detailsNavigator, encounterRuntimePort);
     }
 
     public AppView dungeonView() {
-        return uiModule.dungeonView();
+        return composition.dungeonView();
     }
 
     public AppView dungeonEditorView() {
-        return uiModule.dungeonEditorView();
+        return composition.dungeonEditorView();
     }
 }

@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.editor.workflow.map;
 
-import features.world.dungeonmap.model.DungeonMap;
+import features.world.dungeonmap.model.domain.DungeonMap;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Button;

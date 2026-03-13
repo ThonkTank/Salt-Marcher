@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor.sidebar;
 
-import features.world.dungeonmap.model.DungeonArea;
-import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
+import features.world.dungeonmap.model.domain.DungeonArea;
+import features.world.dungeonmap.api.catalog.DungeonEncounterTableSummary;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;

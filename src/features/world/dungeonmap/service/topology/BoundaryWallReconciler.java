@@ -1,8 +1,8 @@
 package features.world.dungeonmap.service.topology;
 
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.DungeonWallEdit;
-import features.world.dungeonmap.repository.DungeonWallRepository;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.editing.DungeonWallEdit;
+import features.world.dungeonmap.repository.topology.DungeonWallRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;

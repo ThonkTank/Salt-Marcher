@@ -1,12 +1,12 @@
 package features.world.dungeonmap.ui.editor.workflow.paint;
 
-import features.world.dungeonmap.model.DungeonSquarePaint;
-import features.world.dungeonmap.model.DungeonWallEdit;
+import features.world.dungeonmap.model.editing.DungeonSquarePaint;
+import features.world.dungeonmap.model.editing.DungeonWallEdit;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.controls.WallEditorMode;
+import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
+import features.world.dungeonmap.ui.editor.toolbar.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.toolbar.WallEditorMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import ui.async.UiErrorReporter;

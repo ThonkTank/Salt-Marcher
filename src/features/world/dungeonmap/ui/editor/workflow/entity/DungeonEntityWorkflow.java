@@ -1,14 +1,14 @@
 package features.world.dungeonmap.ui.editor.workflow.entity;
 
-import features.world.dungeonmap.model.DungeonArea;
-import features.world.dungeonmap.model.DungeonFeature;
-import features.world.dungeonmap.model.DungeonFeatureCategory;
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonSelection;
-import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.model.domain.DungeonArea;
+import features.world.dungeonmap.model.domain.DungeonFeature;
+import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
+import features.world.dungeonmap.model.domain.DungeonRoom;
+import features.world.dungeonmap.model.editing.DungeonSelection;
+import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.service.DungeonMapCommandService;
-import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
+import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.inspector.DungeonEntityInspectorActions;
 import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;

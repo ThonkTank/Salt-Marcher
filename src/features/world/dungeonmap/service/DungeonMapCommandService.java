@@ -1,17 +1,17 @@
 package features.world.dungeonmap.service;
 
-import features.world.dungeonmap.model.DungeonArea;
-import features.world.dungeonmap.model.DungeonEndpoint;
-import features.world.dungeonmap.model.DungeonFeature;
-import features.world.dungeonmap.model.DungeonLinkAnchor;
-import features.world.dungeonmap.model.DungeonPassage;
-import features.world.dungeonmap.model.DungeonSquarePaint;
-import features.world.dungeonmap.model.DungeonWallEdit;
-import features.world.dungeonmap.service.editing.DungeonConnectionEditingService;
-import features.world.dungeonmap.service.editing.DungeonLinkCreateResult;
-import features.world.dungeonmap.service.editing.DungeonFeatureEditingService;
-import features.world.dungeonmap.service.editing.DungeonMapLifecycleEditingService;
-import features.world.dungeonmap.service.editing.DungeonTopologyEditingService;
+import features.world.dungeonmap.model.domain.DungeonArea;
+import features.world.dungeonmap.model.domain.DungeonEndpoint;
+import features.world.dungeonmap.model.domain.DungeonFeature;
+import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
+import features.world.dungeonmap.model.domain.DungeonPassage;
+import features.world.dungeonmap.model.editing.DungeonSquarePaint;
+import features.world.dungeonmap.model.editing.DungeonWallEdit;
+import features.world.dungeonmap.service.command.connection.DungeonConnectionEditingService;
+import features.world.dungeonmap.service.command.connection.DungeonLinkCreateResult;
+import features.world.dungeonmap.service.command.feature.DungeonFeatureEditingService;
+import features.world.dungeonmap.service.command.map.DungeonMapLifecycleEditingService;
+import features.world.dungeonmap.service.command.topology.DungeonTopologyEditingService;
 
 import java.util.List;
 

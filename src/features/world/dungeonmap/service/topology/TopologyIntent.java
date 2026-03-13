@@ -1,9 +1,9 @@
 package features.world.dungeonmap.service.topology;
 
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.DungeonSquarePaint;
-import features.world.dungeonmap.model.DungeonWallEdit;
-import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.editing.DungeonSquarePaint;
+import features.world.dungeonmap.model.editing.DungeonWallEdit;
+import features.world.dungeonmap.model.domain.PassageDirection;
 
 import java.util.LinkedHashSet;
 import java.util.List;

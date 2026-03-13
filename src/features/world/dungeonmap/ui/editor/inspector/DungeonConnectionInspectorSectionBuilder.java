@@ -1,10 +1,10 @@
 package features.world.dungeonmap.ui.editor.inspector;
 
-import features.world.dungeonmap.model.DungeonEndpoint;
-import features.world.dungeonmap.model.DungeonEndpointRole;
-import features.world.dungeonmap.model.DungeonLink;
-import features.world.dungeonmap.model.DungeonLinkAnchor;
-import features.world.dungeonmap.model.DungeonPassage;
+import features.world.dungeonmap.model.domain.DungeonEndpoint;
+import features.world.dungeonmap.model.domain.DungeonEndpointRole;
+import features.world.dungeonmap.model.domain.DungeonLink;
+import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
+import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;

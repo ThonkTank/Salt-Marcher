@@ -1,8 +1,7 @@
 package features.world.dungeonmap.ui.editor.workflow.map;
 
-import features.world.dungeonmap.model.DungeonMap;
-import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.service.preview.DungeonMapImpactPreviewService;
+import features.world.dungeonmap.model.domain.DungeonMap;
+import features.world.dungeonmap.model.readmodel.DungeonMapState;
 import javafx.scene.Node;
 
 import java.util.function.Consumer;

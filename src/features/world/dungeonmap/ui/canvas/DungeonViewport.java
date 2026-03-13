@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.canvas;
 
-import features.world.dungeonmap.model.DungeonMapState;
+import features.world.dungeonmap.model.readmodel.DungeonMapState;
 import javafx.beans.value.ChangeListener;
 import javafx.scene.layout.Region;
 

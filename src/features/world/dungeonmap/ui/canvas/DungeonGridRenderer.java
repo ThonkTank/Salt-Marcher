@@ -1,15 +1,15 @@
 package features.world.dungeonmap.ui.canvas;
 
-import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.model.DungeonEdgeSummary;
-import features.world.dungeonmap.model.DungeonLinkAnchor;
-import features.world.dungeonmap.model.DungeonLinkAnchorType;
-import features.world.dungeonmap.model.DungeonPassage;
-import features.world.dungeonmap.model.DungeonSelection;
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.DungeonWall;
-import features.world.dungeonmap.model.PassageDirection;
-import features.world.dungeonmap.ui.editor.controls.DungeonColorRenderMode;
+import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.readmodel.edge.DungeonEdgeSummary;
+import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
+import features.world.dungeonmap.model.domain.DungeonLinkAnchorType;
+import features.world.dungeonmap.model.domain.DungeonPassage;
+import features.world.dungeonmap.model.editing.DungeonSelection;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.domain.DungeonWall;
+import features.world.dungeonmap.model.domain.PassageDirection;
+import features.world.dungeonmap.ui.editor.toolbar.DungeonColorRenderMode;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;

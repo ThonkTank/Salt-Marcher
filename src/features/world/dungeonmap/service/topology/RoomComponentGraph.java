@@ -1,8 +1,8 @@
 package features.world.dungeonmap.service.topology;
 
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.DungeonWall;
-import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.domain.DungeonWall;
+import features.world.dungeonmap.model.domain.PassageDirection;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

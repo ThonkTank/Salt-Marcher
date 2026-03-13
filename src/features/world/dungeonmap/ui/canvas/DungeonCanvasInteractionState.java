@@ -1,8 +1,8 @@
 package features.world.dungeonmap.ui.canvas;
 
-import features.world.dungeonmap.model.DungeonLinkAnchor;
-import features.world.dungeonmap.model.DungeonSelection;
-import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
+import features.world.dungeonmap.model.editing.DungeonSelection;
+import features.world.dungeonmap.model.domain.PassageDirection;
 
 final class DungeonCanvasInteractionState {
 

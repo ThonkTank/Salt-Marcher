@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.canvas;
 
-import features.world.dungeonmap.model.DungeonEdgeSummary;
-import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.model.readmodel.edge.DungeonEdgeSummary;
+import features.world.dungeonmap.model.domain.PassageDirection;
 
 import java.util.ArrayList;
 import java.util.Comparator;

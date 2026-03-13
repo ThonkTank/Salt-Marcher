@@ -1,13 +1,14 @@
 package features.world.dungeonmap.service.runtime;
 
 import database.DatabaseManager;
-import features.world.dungeonmap.model.DungeonEndpoint;
-import features.world.dungeonmap.model.DungeonMap;
-import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.model.DungeonRuntimeState;
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.repository.DungeonMapRepository;
-import features.world.dungeonmap.service.DungeonMapQueryService;
+import features.world.dungeonmap.model.domain.DungeonEndpoint;
+import features.world.dungeonmap.model.domain.DungeonMap;
+import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.readmodel.DungeonRuntimeState;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.repository.map.DungeonMapRepository;
+import features.world.dungeonmap.service.integration.campaign.DungeonCampaignStateAdapter;
+import features.world.dungeonmap.service.query.readmodel.DungeonMapStateLoader;
 
 import java.sql.Connection;
 import java.util.Comparator;
@@ -28,7 +29,7 @@ public final class DungeonRuntimeQueryService {
                 }
                 mapId = maps.get(0).mapId();
             }
-            DungeonMapState state = DungeonMapQueryService.loadMapState(conn, mapId);
+            DungeonMapState state = DungeonMapStateLoader.load(conn, mapId);
             PositionResolution resolution = resolvePosition(conn, state);
             return new DungeonRuntimeState(
                     state,

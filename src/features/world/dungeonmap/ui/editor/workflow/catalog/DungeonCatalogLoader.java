@@ -1,8 +1,8 @@
 package features.world.dungeonmap.ui.editor.workflow.catalog;
 
-import features.world.dungeonmap.service.catalog.DungeonEncounterCatalogAdapter;
-import features.world.dungeonmap.service.catalog.DungeonEncounterTableCatalogAdapter;
-import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
+import features.world.dungeonmap.service.integration.catalog.DungeonEncounterCatalogAdapter;
+import features.world.dungeonmap.service.integration.catalog.DungeonEncounterTableCatalogAdapter;
+import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import ui.async.UiErrorReporter;

@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor.workflow.paint;
 
-import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.model.DungeonWallEdit;
+import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.editing.DungeonWallEdit;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

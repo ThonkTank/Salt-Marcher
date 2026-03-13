@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.canvas;
 
-import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.model.domain.DungeonSquare;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;

@@ -1,13 +1,13 @@
 package features.world.dungeonmap.service.topology;
 
-import features.world.dungeonmap.model.DungeonPassage;
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.DungeonWall;
-import features.world.dungeonmap.repository.DungeonPassageRepository;
-import features.world.dungeonmap.repository.DungeonRoomRepository;
-import features.world.dungeonmap.repository.DungeonSquareRepository;
-import features.world.dungeonmap.repository.DungeonWallRepository;
+import features.world.dungeonmap.model.domain.DungeonPassage;
+import features.world.dungeonmap.model.domain.DungeonRoom;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.domain.DungeonWall;
+import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
+import features.world.dungeonmap.repository.map.DungeonRoomRepository;
+import features.world.dungeonmap.repository.map.DungeonSquareRepository;
+import features.world.dungeonmap.repository.topology.DungeonWallRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;

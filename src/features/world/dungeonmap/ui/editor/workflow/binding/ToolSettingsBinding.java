@@ -1,8 +1,8 @@
 package features.world.dungeonmap.ui.editor.workflow.binding;
 
-import features.world.dungeonmap.model.DungeonArea;
-import features.world.dungeonmap.model.DungeonFeature;
-import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
+import features.world.dungeonmap.model.domain.DungeonArea;
+import features.world.dungeonmap.model.domain.DungeonFeature;
+import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
@@ -72,7 +72,7 @@ public final class ToolSettingsBinding {
         if (state.syncingFeatureSelection()
                 || feature == null
                 || state.currentState() == null
-                || feature.category() != features.world.dungeonmap.model.DungeonFeatureCategory.ENCOUNTER) {
+                || feature.category() != features.world.dungeonmap.model.domain.DungeonFeatureCategory.ENCOUNTER) {
             return;
         }
         entityWorkflow.saveFeature(new DungeonFeature(

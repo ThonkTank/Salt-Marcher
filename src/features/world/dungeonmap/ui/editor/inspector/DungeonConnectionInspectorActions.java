@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor.inspector;
 
-import features.world.dungeonmap.model.DungeonEndpoint;
-import features.world.dungeonmap.model.DungeonPassage;
+import features.world.dungeonmap.model.domain.DungeonEndpoint;
+import features.world.dungeonmap.model.domain.DungeonPassage;
 import javafx.scene.Node;
 
 public interface DungeonConnectionInspectorActions {

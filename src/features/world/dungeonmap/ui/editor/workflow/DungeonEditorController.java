@@ -1,14 +1,14 @@
 package features.world.dungeonmap.ui.editor.workflow;
 
-import features.world.dungeonmap.model.DungeonEndpoint;
-import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.model.domain.DungeonEndpoint;
+import features.world.dungeonmap.model.domain.DungeonLink;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
-import features.world.dungeonmap.ui.editor.controls.DungeonColorRenderMode;
-import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.toolbar.DungeonEditorControls;
+import features.world.dungeonmap.ui.editor.toolbar.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.editor.toolbar.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.toolbar.DungeonPaintMode;
 import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
@@ -211,7 +211,7 @@ public final class DungeonEditorController {
         return toolSettingsPane.getBrushSize();
     }
 
-    public features.world.dungeonmap.model.BrushShape brushShape() {
+    public features.world.dungeonmap.model.editing.BrushShape brushShape() {
         return toolSettingsPane.getBrushShape();
     }
 
@@ -219,11 +219,11 @@ public final class DungeonEditorController {
         return interactionState.paintMode();
     }
 
-    public features.world.dungeonmap.ui.editor.controls.WallEditorMode wallEditorMode() {
+    public features.world.dungeonmap.ui.editor.toolbar.WallEditorMode wallEditorMode() {
         return interactionState.wallEditorMode();
     }
 
-    public features.world.dungeonmap.ui.editor.controls.PassageEditorMode passageEditorMode() {
+    public features.world.dungeonmap.ui.editor.toolbar.PassageEditorMode passageEditorMode() {
         return interactionState.passageEditorMode();
     }
 

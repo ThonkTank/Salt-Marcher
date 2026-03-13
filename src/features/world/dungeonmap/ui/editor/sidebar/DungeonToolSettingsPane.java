@@ -1,13 +1,13 @@
 package features.world.dungeonmap.ui.editor.sidebar;
 
-import features.world.dungeonmap.model.BrushShape;
-import features.world.dungeonmap.model.DungeonArea;
-import features.world.dungeonmap.model.DungeonFeature;
-import features.world.dungeonmap.model.DungeonFeatureCategory;
-import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
-import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
-import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.controls.DungeonColorRenderMode;
+import features.world.dungeonmap.model.editing.BrushShape;
+import features.world.dungeonmap.model.domain.DungeonArea;
+import features.world.dungeonmap.model.domain.DungeonFeature;
+import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
+import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
+import features.world.dungeonmap.api.catalog.DungeonEncounterTableSummary;
+import features.world.dungeonmap.ui.editor.toolbar.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.toolbar.DungeonColorRenderMode;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;

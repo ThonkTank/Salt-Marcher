@@ -1,9 +1,9 @@
 package features.world.dungeonmap.ui.editor.sidebar;
 
-import features.world.dungeonmap.model.DungeonArea;
-import features.world.dungeonmap.model.DungeonAreaEncounterTableLink;
-import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
-import features.world.dungeonmap.ui.DungeonAreaEncounterText;
+import features.world.dungeonmap.model.domain.DungeonArea;
+import features.world.dungeonmap.model.domain.DungeonAreaEncounterTableLink;
+import features.world.dungeonmap.api.catalog.DungeonEncounterTableSummary;
+import features.world.dungeonmap.ui.shared.format.DungeonAreaEncounterText;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;

@@ -1,10 +1,10 @@
 package features.world.dungeonmap.service.topology;
 
-import features.world.dungeonmap.model.DungeonRoom;
-import features.world.dungeonmap.model.DungeonSquare;
-import features.world.dungeonmap.model.DungeonSquarePaint;
-import features.world.dungeonmap.repository.DungeonRoomRepository;
-import features.world.dungeonmap.repository.DungeonSquareRepository;
+import features.world.dungeonmap.model.domain.DungeonRoom;
+import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.editing.DungeonSquarePaint;
+import features.world.dungeonmap.repository.map.DungeonRoomRepository;
+import features.world.dungeonmap.repository.map.DungeonSquareRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;

@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor.inspector;
 
-import features.world.dungeonmap.model.DungeonFeature;
-import features.world.dungeonmap.model.DungeonRoom;
+import features.world.dungeonmap.model.domain.DungeonFeature;
+import features.world.dungeonmap.model.domain.DungeonRoom;
 
 public interface DungeonEntityInspectorActions {
 

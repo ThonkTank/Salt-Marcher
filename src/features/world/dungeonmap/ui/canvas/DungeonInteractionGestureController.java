@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.canvas;
 
-import features.world.dungeonmap.model.BrushShape;
+import features.world.dungeonmap.model.editing.BrushShape;
 
 import java.util.ArrayList;
 import java.util.List;

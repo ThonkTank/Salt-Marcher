@@ -1,8 +1,8 @@
 package features.world.dungeonmap.ui.editor.sidebar;
 
-import features.world.dungeonmap.model.DungeonFeature;
-import features.world.dungeonmap.model.DungeonFeatureCategory;
-import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
+import features.world.dungeonmap.model.domain.DungeonFeature;
+import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
+import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
