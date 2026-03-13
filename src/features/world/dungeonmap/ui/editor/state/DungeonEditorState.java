@@ -1,12 +1,12 @@
 package features.world.dungeonmap.ui.editor.state;
 
-import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonPassage;
-import features.world.dungeonmap.model.editing.DungeonSelection;
-import features.world.dungeonmap.model.readmodel.index.DungeonMapIndex;
+import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
+import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
 import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.api.catalog.DungeonEncounterTableSummary;
 

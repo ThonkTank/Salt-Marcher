@@ -2,16 +2,21 @@ package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonLink;
+import features.world.dungeonmap.model.editing.BrushShape;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.service.DungeonMapQueryService;
-import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.toolbar.DungeonEditorControls;
-import features.world.dungeonmap.ui.editor.toolbar.DungeonColorRenderMode;
-import features.world.dungeonmap.ui.editor.toolbar.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.toolbar.DungeonPaintMode;
-import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorControls;
+import features.world.dungeonmap.ui.editor.chrome.controls.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.chrome.controls.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.chrome.controls.PassageEditorMode;
+import features.world.dungeonmap.ui.editor.chrome.controls.WallEditorMode;
+import features.world.dungeonmap.ui.editor.chrome.inspector.DungeonEditorInspectorContentFactory;
+import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
+import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
+import features.world.dungeonmap.ui.mapcanvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.workflow.binding.EditorMessageBus;
 import features.world.dungeonmap.ui.editor.workflow.binding.ToolSettingsBinding;
 import features.world.dungeonmap.ui.editor.workflow.catalog.DungeonCatalogLoader;
@@ -76,7 +81,7 @@ public final class DungeonEditorController {
                 workflowMessages,
                 commands,
                 this::reloadCurrentMap);
-        var inspectorContentFactory = new features.world.dungeonmap.ui.editor.inspector.DungeonEditorInspectorContentFactory(
+        var inspectorContentFactory = new DungeonEditorInspectorContentFactory(
                 state,
                 entityWorkflow,
                 connectionWorkflow);
@@ -211,7 +216,7 @@ public final class DungeonEditorController {
         return toolSettingsPane.getBrushSize();
     }
 
-    public features.world.dungeonmap.model.editing.BrushShape brushShape() {
+    public BrushShape brushShape() {
         return toolSettingsPane.getBrushShape();
     }
 
@@ -219,11 +224,11 @@ public final class DungeonEditorController {
         return interactionState.paintMode();
     }
 
-    public features.world.dungeonmap.ui.editor.toolbar.WallEditorMode wallEditorMode() {
+    public WallEditorMode wallEditorMode() {
         return interactionState.wallEditorMode();
     }
 
-    public features.world.dungeonmap.ui.editor.toolbar.PassageEditorMode passageEditorMode() {
+    public PassageEditorMode passageEditorMode() {
         return interactionState.passageEditorMode();
     }
 
@@ -247,7 +252,7 @@ public final class DungeonEditorController {
         mapLoader.reloadCurrentMap();
     }
 
-    public void reloadCurrentMap(features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest request) {
+    public void reloadCurrentMap(DungeonSelectionRestoreRequest request) {
         mapLoader.reloadCurrentMap(request);
     }
 }

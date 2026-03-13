@@ -9,6 +9,7 @@ import features.world.dungeonmap.repository.connection.DungeonLinkRepository;
 import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
 import features.world.dungeonmap.service.command.support.DungeonEditingTransactions;
 import features.world.dungeonmap.service.integration.campaign.DungeonCampaignStateAdapter;
+import features.world.dungeonmap.service.support.DungeonLinkIntegrityService;
 import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 import java.sql.SQLException;

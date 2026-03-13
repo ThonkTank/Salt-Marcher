@@ -4,7 +4,7 @@ import features.world.dungeonmap.model.domain.DungeonMap;
 import features.world.dungeonmap.repository.map.DungeonMapRepository;
 import features.world.dungeonmap.service.command.support.DungeonCampaignPositionEditingSupport;
 import features.world.dungeonmap.service.command.support.DungeonEditingTransactions;
-import features.world.dungeonmap.service.topology.DungeonAreaNormalizationService;
+import features.world.dungeonmap.service.command.area.AreaAssignmentNormalizationService;
 import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 public final class DungeonMapLifecycleEditingService {
@@ -39,6 +39,6 @@ public final class DungeonMapLifecycleEditingService {
     }
 
     private static void normalizeAreaAssignments(java.sql.Connection conn, long mapId) throws java.sql.SQLException {
-        DungeonAreaNormalizationService.normalizeMapAreas(conn, mapId);
+        AreaAssignmentNormalizationService.normalizeMapAreas(conn, mapId);
     }
 }

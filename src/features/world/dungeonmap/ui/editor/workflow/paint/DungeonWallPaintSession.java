@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.editor.workflow.paint;
 
-import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;
 
 import java.util.ArrayList;

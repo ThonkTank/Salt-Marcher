@@ -3,7 +3,7 @@ package features.world.dungeonmap.ui.editor.workflow.map;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.domain.DungeonMap;
-import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 

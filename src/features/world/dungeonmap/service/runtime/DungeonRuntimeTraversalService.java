@@ -1,7 +1,7 @@
 package features.world.dungeonmap.service.runtime;
 
-import features.world.dungeonmap.model.readmodel.edge.DungeonEdgeSummary;
-import features.world.dungeonmap.model.readmodel.DungeonMapState;
+import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
+import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.PassageDirection;
 

@@ -6,8 +6,8 @@ import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonLink;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
-import features.world.dungeonmap.model.editing.DungeonSelection;
-import features.world.dungeonmap.ui.editor.inspector.DungeonEditorInspectorContentFactory;
+import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
+import features.world.dungeonmap.ui.editor.chrome.inspector.DungeonEditorInspectorContentFactory;
 import ui.shell.DetailsNavigator;
 
 public final class DungeonSelectionInspectorPublisher {

@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.editor.workflow.binding;
 
-import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 
 public final class EditorMessageBus {
 

@@ -2,7 +2,7 @@ package features.world.dungeonmap.ui.editor.workflow.map;
 
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.editor.toolbar.DungeonEditorControls;
+import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;

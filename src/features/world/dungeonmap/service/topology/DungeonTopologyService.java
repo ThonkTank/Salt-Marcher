@@ -3,7 +3,7 @@ package features.world.dungeonmap.service.topology;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
 import features.world.dungeonmap.model.domain.DungeonPassage;
-import features.world.dungeonmap.model.topology.DungeonEdgeRules;
+import features.world.dungeonmap.model.rules.DungeonEdgeRules;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;
 import features.world.dungeonmap.model.domain.DungeonWall;
@@ -16,7 +16,7 @@ import features.world.dungeonmap.repository.map.DungeonMapRepository;
 import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
 import features.world.dungeonmap.repository.map.DungeonSquareRepository;
 import features.world.dungeonmap.repository.topology.DungeonWallRepository;
-import features.world.dungeonmap.service.command.connection.DungeonLinkIntegrityService;
+import features.world.dungeonmap.service.support.DungeonLinkIntegrityService;
 
 import java.sql.Connection;
 import java.sql.SQLException;

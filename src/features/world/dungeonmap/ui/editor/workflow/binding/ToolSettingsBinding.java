@@ -3,7 +3,7 @@ package features.world.dungeonmap.ui.editor.workflow.binding;
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
-import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
 import features.world.dungeonmap.ui.editor.workflow.entity.DungeonEntityWorkflow;

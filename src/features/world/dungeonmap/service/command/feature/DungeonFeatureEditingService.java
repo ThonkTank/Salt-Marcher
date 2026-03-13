@@ -9,7 +9,7 @@ import features.world.dungeonmap.repository.feature.DungeonFeatureRepository;
 import features.world.dungeonmap.repository.feature.DungeonFeatureTileRepository;
 import features.world.dungeonmap.repository.map.DungeonRoomRepository;
 import features.world.dungeonmap.service.command.support.DungeonEditingTransactions;
-import features.world.dungeonmap.service.topology.DungeonAreaNormalizationService;
+import features.world.dungeonmap.service.command.area.AreaAssignmentNormalizationService;
 import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 import java.sql.Connection;
@@ -95,6 +95,6 @@ public final class DungeonFeatureEditingService {
     }
 
     private static void normalizeAreaAssignments(Connection conn, long mapId) throws SQLException {
-        DungeonAreaNormalizationService.normalizeMapAreas(conn, mapId);
+        AreaAssignmentNormalizationService.normalizeMapAreas(conn, mapId);
     }
 }

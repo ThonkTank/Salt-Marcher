@@ -1,6 +1,6 @@
 package features.world.dungeonmap.api;
 
-import features.world.dungeonmap.composition.DungeonMapPersistenceComposition;
+import features.world.dungeonmap.bootstrap.DungeonMapStartupTasks;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -16,10 +16,10 @@ public final class DungeonMapPersistenceApi {
     }
 
     public static void createSchema(Statement stmt) throws SQLException {
-        DungeonMapPersistenceComposition.createSchema(stmt);
+        DungeonMapStartupTasks.createSchema(stmt);
     }
 
     public static void finalizeStartup(Connection conn, Statement stmt) throws SQLException {
-        DungeonMapPersistenceComposition.finalizeStartup(conn, stmt);
+        DungeonMapStartupTasks.finalizeStartup(conn, stmt);
     }
 }

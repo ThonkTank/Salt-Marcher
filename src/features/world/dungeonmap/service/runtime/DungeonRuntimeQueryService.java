@@ -3,12 +3,12 @@ package features.world.dungeonmap.service.runtime;
 import database.DatabaseManager;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonMap;
-import features.world.dungeonmap.model.readmodel.DungeonMapState;
-import features.world.dungeonmap.model.readmodel.DungeonRuntimeState;
+import features.world.dungeonmap.model.projection.DungeonMapState;
+import features.world.dungeonmap.model.projection.DungeonRuntimeState;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.repository.map.DungeonMapRepository;
 import features.world.dungeonmap.service.integration.campaign.DungeonCampaignStateAdapter;
-import features.world.dungeonmap.service.query.readmodel.DungeonMapStateLoader;
+import features.world.dungeonmap.service.query.projection.DungeonMapStateLoader;
 
 import java.sql.Connection;
 import java.util.Comparator;

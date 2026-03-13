@@ -1,6 +1,6 @@
 package features.world.dungeonmap.repository.topology;
 
-import features.world.dungeonmap.model.topology.DungeonEdgeRules;
+import features.world.dungeonmap.model.rules.DungeonEdgeRules;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;

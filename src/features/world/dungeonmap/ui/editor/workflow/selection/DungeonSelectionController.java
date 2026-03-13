@@ -6,11 +6,11 @@ import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonLink;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
-import features.world.dungeonmap.model.editing.DungeonSelection;
+import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
-import features.world.dungeonmap.model.readmodel.index.DungeonMapIndex;
-import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.sidebar.DungeonToolSettingsPane;
+import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
+import features.world.dungeonmap.ui.mapcanvas.DungeonMapPane;
+import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.workflow.binding.EditorMessageBus;
 

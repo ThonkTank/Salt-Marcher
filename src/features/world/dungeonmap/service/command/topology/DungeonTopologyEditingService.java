@@ -4,10 +4,10 @@ import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;
 import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
-import features.world.dungeonmap.service.command.connection.DungeonLinkIntegrityService;
+import features.world.dungeonmap.service.support.DungeonLinkIntegrityService;
 import features.world.dungeonmap.service.command.support.DungeonCampaignPositionEditingSupport;
 import features.world.dungeonmap.service.command.support.DungeonEditingTransactions;
-import features.world.dungeonmap.service.topology.DungeonAreaNormalizationService;
+import features.world.dungeonmap.service.command.area.AreaAssignmentNormalizationService;
 import features.world.dungeonmap.service.topology.DungeonTopologyService;
 
 import java.sql.Connection;
@@ -36,7 +36,7 @@ public final class DungeonTopologyEditingService {
     }
 
     private static void normalizeAreaAssignments(Connection conn, long mapId) throws SQLException {
-        DungeonAreaNormalizationService.normalizeMapAreas(conn, mapId);
+        AreaAssignmentNormalizationService.normalizeMapAreas(conn, mapId);
     }
 
     private static void deletePassagesReplacedByWalls(Connection conn, long mapId, List<DungeonWallEdit> edits) throws SQLException {

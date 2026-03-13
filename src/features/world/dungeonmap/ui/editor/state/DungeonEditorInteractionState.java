@@ -1,10 +1,10 @@
 package features.world.dungeonmap.ui.editor.state;
 
-import features.world.dungeonmap.ui.editor.toolbar.DungeonColorRenderMode;
-import features.world.dungeonmap.ui.editor.toolbar.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.toolbar.DungeonPaintMode;
-import features.world.dungeonmap.ui.editor.toolbar.PassageEditorMode;
-import features.world.dungeonmap.ui.editor.toolbar.WallEditorMode;
+import features.world.dungeonmap.ui.editor.chrome.controls.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.chrome.controls.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.chrome.controls.PassageEditorMode;
+import features.world.dungeonmap.ui.editor.chrome.controls.WallEditorMode;
 
 import java.util.ArrayList;
 import java.util.List;
