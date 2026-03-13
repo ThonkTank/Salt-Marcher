@@ -11,6 +11,7 @@ import features.world.dungeonmap.application.DungeonLinkCreateStatus;
 import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
+import features.world.dungeonmap.ui.editor.inspector.actions.DungeonConnectionInspectorActions;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
@@ -25,7 +26,7 @@ import ui.components.ConfirmationDropdown;
 
 import java.util.function.Consumer;
 
-public final class DungeonConnectionEditingController {
+public final class DungeonConnectionEditingController implements DungeonConnectionInspectorActions {
 
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;
@@ -143,6 +144,7 @@ public final class DungeonConnectionEditingController {
                 square.y()));
     }
 
+    @Override
     public void saveEndpoint(DungeonEndpoint endpoint) {
         DungeonUiAsyncSupport.submitValue(
                 () -> DungeonMapEditorService.saveEndpoint(endpoint),
@@ -150,6 +152,7 @@ public final class DungeonConnectionEditingController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.saveEndpoint()", ex));
     }
 
+    @Override
     public void deleteEndpoint(Long endpointId, Node anchor) {
         if (endpointId == null) {
             return;
@@ -164,6 +167,7 @@ public final class DungeonConnectionEditingController {
                         ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.deleteEndpoint()", ex)));
     }
 
+    @Override
     public void deleteLink(Long linkId) {
         if (linkId == null) {
             return;
@@ -174,6 +178,7 @@ public final class DungeonConnectionEditingController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.deleteLink()", ex));
     }
 
+    @Override
     public void updateLinkLabel(long linkId, String label, Runnable onSuccess) {
         Runnable effectiveOnSuccess = onSuccess == null ? () -> reloadCurrentMap.accept(null) : onSuccess;
         DungeonUiAsyncSupport.submitAction(
@@ -182,6 +187,7 @@ public final class DungeonConnectionEditingController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.updateLinkLabel()", ex));
     }
 
+    @Override
     public void savePassage(DungeonPassage passage) {
         DungeonUiAsyncSupport.submitValue(
                 () -> DungeonMapEditorService.savePassage(passage),
@@ -191,6 +197,7 @@ public final class DungeonConnectionEditingController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.savePassage()", ex));
     }
 
+    @Override
     public void deletePassage(Long passageId, Node anchor) {
         if (passageId == null) {
             return;
@@ -206,15 +213,7 @@ public final class DungeonConnectionEditingController {
     }
 
     DungeonEndpoint findEndpoint(Long endpointId) {
-        if (state.currentState() == null || endpointId == null) {
-            return null;
-        }
-        for (DungeonEndpoint endpoint : state.currentState().endpoints()) {
-            if (endpointId.equals(endpoint.endpointId())) {
-                return endpoint;
-            }
-        }
-        return null;
+        return state.findEndpoint(endpointId);
     }
 
     private void handleLinkCreateResult(DungeonLinkCreateResult result) {
@@ -239,10 +238,10 @@ public final class DungeonConnectionEditingController {
     }
 
     private DungeonEndpoint findEndpointBySquare(Long squareId) {
-        if (state.currentState() == null || squareId == null) {
+        if (squareId == null) {
             return null;
         }
-        for (DungeonEndpoint endpoint : state.currentState().endpoints()) {
+        for (DungeonEndpoint endpoint : state.index().endpointsById().values()) {
             if (squareId.equals(endpoint.squareId())) {
                 return endpoint;
             }
@@ -258,25 +257,19 @@ public final class DungeonConnectionEditingController {
     }
 
     private String findEndpointName(Long endpointId) {
-        if (state.currentState() != null) {
-            for (DungeonEndpoint endpoint : state.currentState().endpoints()) {
-                if (endpointId.equals(endpoint.endpointId())) {
-                    String name = endpoint.name();
-                    return (name != null && !name.isBlank()) ? name : "#" + endpointId;
-                }
-            }
+        DungeonEndpoint endpoint = state.findEndpoint(endpointId);
+        if (endpoint != null) {
+            String name = endpoint.name();
+            return (name != null && !name.isBlank()) ? name : "#" + endpointId;
         }
         return "#" + endpointId;
     }
 
     private String findPassageName(Long passageId) {
-        if (state.currentState() != null) {
-            for (DungeonPassage passage : state.currentState().passages()) {
-                if (passageId.equals(passage.passageId())) {
-                    String name = passage.name();
-                    return (name != null && !name.isBlank()) ? name : "#" + passageId;
-                }
-            }
+        DungeonPassage passage = state.findPassage(passageId);
+        if (passage != null) {
+            String name = passage.name();
+            return (name != null && !name.isBlank()) ? name : "#" + passageId;
         }
         return "#" + passageId;
     }

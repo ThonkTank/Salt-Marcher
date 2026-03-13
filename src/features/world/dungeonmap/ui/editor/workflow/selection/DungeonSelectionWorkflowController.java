@@ -187,6 +187,6 @@ public final class DungeonSelectionWorkflowController {
     }
 
     private DungeonMapIndex currentIndex() {
-        return state.currentState() == null ? DungeonMapIndex.empty() : state.currentState().index();
+        return state.index();
     }
 }

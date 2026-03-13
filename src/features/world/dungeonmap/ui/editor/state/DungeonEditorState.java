@@ -1,7 +1,12 @@
 package features.world.dungeonmap.ui.editor.state;
 
 import features.world.dungeonmap.model.DungeonMapState;
+import features.world.dungeonmap.model.DungeonArea;
+import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonFeature;
+import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonSelection;
+import features.world.dungeonmap.model.index.DungeonMapIndex;
 import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.service.catalog.DungeonEncounterTableSummary;
 
@@ -33,6 +38,26 @@ public final class DungeonEditorState {
 
     public void setCurrentState(DungeonMapState currentState) {
         this.currentState = currentState;
+    }
+
+    public DungeonMapIndex index() {
+        return currentState == null ? DungeonMapIndex.empty() : currentState.index();
+    }
+
+    public DungeonArea findArea(Long areaId) {
+        return index().findArea(areaId);
+    }
+
+    public DungeonFeature findFeature(Long featureId) {
+        return index().findFeature(featureId);
+    }
+
+    public DungeonEndpoint findEndpoint(Long endpointId) {
+        return index().findEndpoint(endpointId);
+    }
+
+    public DungeonPassage findPassage(Long passageId) {
+        return index().findPassage(passageId);
     }
 
     public DungeonSelection currentSelection() {

@@ -9,6 +9,7 @@ import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.service.DungeonMapEditorService;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
+import features.world.dungeonmap.ui.editor.inspector.actions.DungeonEntityInspectorActions;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
@@ -21,7 +22,7 @@ import ui.components.TextInputDropdown;
 
 import java.util.function.Consumer;
 
-public final class DungeonEntityCrudController {
+public final class DungeonEntityCrudController implements DungeonEntityInspectorActions {
 
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;
@@ -48,6 +49,7 @@ public final class DungeonEntityCrudController {
         this.reloadCurrentMap = reloadCurrentMap == null ? ignored -> { } : reloadCurrentMap;
     }
 
+    @Override
     public void updateRoomMetadata(DungeonRoom room) {
         if (room == null || room.roomId() == null) {
             return;
@@ -118,6 +120,7 @@ public final class DungeonEntityCrudController {
         });
     }
 
+    @Override
     public void saveFeature(DungeonFeature feature) {
         DungeonUiAsyncSupport.submitValue(
                 () -> DungeonMapEditorService.saveFeature(feature),
@@ -202,15 +205,7 @@ public final class DungeonEntityCrudController {
     }
 
     DungeonFeature findFeature(Long featureId) {
-        if (state.currentState() == null || featureId == null) {
-            return null;
-        }
-        for (DungeonFeature feature : state.currentState().features()) {
-            if (featureId.equals(feature.featureId())) {
-                return feature;
-            }
-        }
-        return null;
+        return state.findFeature(featureId);
     }
 
     private void confirmDelete(Node anchor, String title, String message, Runnable onConfirm) {
@@ -238,12 +233,9 @@ public final class DungeonEntityCrudController {
         return toolSettingsPane.selectedFeatureId();
     }
     private String findAreaName(Long areaId) {
-        if (state.currentState() != null) {
-            for (DungeonArea area : state.currentState().areas()) {
-                if (areaId.equals(area.areaId())) {
-                    return area.name();
-                }
-            }
+        DungeonArea area = state.findArea(areaId);
+        if (area != null) {
+            return area.name();
         }
         return "#" + areaId;
     }

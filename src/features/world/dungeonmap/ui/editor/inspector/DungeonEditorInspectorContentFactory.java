@@ -15,9 +15,9 @@ import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.index.DungeonMapIndex;
 import features.world.dungeonmap.service.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.ui.DungeonAreaEncounterText;
+import features.world.dungeonmap.ui.editor.inspector.actions.DungeonConnectionInspectorActions;
+import features.world.dungeonmap.ui.editor.inspector.actions.DungeonEntityInspectorActions;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-import features.world.dungeonmap.ui.editor.workflow.editing.DungeonConnectionEditingController;
-import features.world.dungeonmap.ui.editor.workflow.editing.DungeonEntityCrudController;
 import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
@@ -34,19 +34,17 @@ import java.util.Objects;
 public final class DungeonEditorInspectorContentFactory {
 
     private final DungeonEditorState state;
-    private final DungeonEntityCrudController entityCrudController;
-    private final DungeonConnectionEditingController connectionEditingController;
+    private final DungeonEntityInspectorActions entityActions;
     private final DungeonConnectionInspectorSectionBuilder connectionSectionBuilder;
 
     public DungeonEditorInspectorContentFactory(
             DungeonEditorState state,
-            DungeonEntityCrudController entityCrudController,
-            DungeonConnectionEditingController connectionEditingController
+            DungeonEntityInspectorActions entityActions,
+            DungeonConnectionInspectorActions connectionActions
     ) {
         this.state = state;
-        this.entityCrudController = entityCrudController;
-        this.connectionEditingController = connectionEditingController;
-        this.connectionSectionBuilder = new DungeonConnectionInspectorSectionBuilder(state, connectionEditingController);
+        this.entityActions = entityActions;
+        this.connectionSectionBuilder = new DungeonConnectionInspectorSectionBuilder(state, connectionActions);
     }
 
     public Node buildRoomCard(DungeonRoom room) {
@@ -58,7 +56,7 @@ public final class DungeonEditorInspectorContentFactory {
 
         TextField nameField = new TextField(room.name() == null ? "" : room.name());
         TextArea descriptionArea = DungeonInspectorCards.textArea(room.description());
-        var saveButton = DungeonInspectorCards.saveButton(() -> entityCrudController.updateRoomMetadata(new DungeonRoom(
+        var saveButton = DungeonInspectorCards.saveButton(() -> entityActions.updateRoomMetadata(new DungeonRoom(
                 room.roomId(),
                 room.mapId(),
                 nameField.getText().trim(),
@@ -118,7 +116,7 @@ public final class DungeonEditorInspectorContentFactory {
         var saveButton = DungeonInspectorCards.saveButton(() -> {
             DungeonFeatureCategory category = categoryCombo.getValue() == null ? DungeonFeatureCategory.CURIOSITY : categoryCombo.getValue();
             DungeonEncounterSummary selectedEncounter = encounterCombo.getValue();
-            entityCrudController.saveFeature(new DungeonFeature(
+            entityActions.saveFeature(new DungeonFeature(
                     feature.featureId(),
                     feature.mapId(),
                     category,
@@ -364,6 +362,6 @@ public final class DungeonEditorInspectorContentFactory {
     }
 
     private DungeonMapIndex currentIndex() {
-        return state.currentState() == null ? DungeonMapIndex.empty() : state.currentState().index();
+        return state.index();
     }
 }

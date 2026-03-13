@@ -62,19 +62,6 @@ public final class DungeonMapQueryService {
                 passages,
                 DungeonMapIndex.empty(),
                 edgeIndex);
-        DungeonMapIndex index = DungeonMapIndexBuilder.build(state);
-        return new DungeonMapState(
-                state.map(),
-                state.squares(),
-                state.rooms(),
-                state.areas(),
-                state.features(),
-                state.featureTiles(),
-                state.endpoints(),
-                state.links(),
-                state.walls(),
-                state.passages(),
-                index,
-                state.edgeIndex());
+        return state.withIndex(DungeonMapIndexBuilder.build(state));
     }
 }

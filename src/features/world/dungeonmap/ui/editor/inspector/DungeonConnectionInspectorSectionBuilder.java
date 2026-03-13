@@ -5,8 +5,8 @@ import features.world.dungeonmap.model.DungeonEndpointRole;
 import features.world.dungeonmap.model.DungeonLink;
 import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.model.DungeonPassage;
+import features.world.dungeonmap.ui.editor.inspector.actions.DungeonConnectionInspectorActions;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-import features.world.dungeonmap.ui.editor.workflow.editing.DungeonConnectionEditingController;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -20,14 +20,14 @@ import java.util.List;
 final class DungeonConnectionInspectorSectionBuilder {
 
     private final DungeonEditorState state;
-    private final DungeonConnectionEditingController connectionEditingController;
+    private final DungeonConnectionInspectorActions connectionActions;
 
     DungeonConnectionInspectorSectionBuilder(
             DungeonEditorState state,
-            DungeonConnectionEditingController connectionEditingController
+            DungeonConnectionInspectorActions connectionActions
     ) {
         this.state = state;
-        this.connectionEditingController = connectionEditingController;
+        this.connectionActions = connectionActions;
     }
 
     VBox buildEndpointEditor(DungeonEndpoint endpoint) {
@@ -46,7 +46,7 @@ final class DungeonConnectionInspectorSectionBuilder {
 
         Button saveButton = DungeonInspectorCards.saveButton(() -> {
             DungeonEndpointRole selectedRole = roleCombo.getValue() == null ? DungeonEndpointRole.BOTH : roleCombo.getValue();
-            connectionEditingController.saveEndpoint(new DungeonEndpoint(
+            connectionActions.saveEndpoint(new DungeonEndpoint(
                     endpoint.endpointId(),
                     endpoint.mapId(),
                     endpoint.squareId(),
@@ -58,7 +58,7 @@ final class DungeonConnectionInspectorSectionBuilder {
                     endpoint.y()));
         });
         Button deleteButton = DungeonInspectorCards.dangerButton("Löschen");
-        deleteButton.setOnAction(event -> connectionEditingController.deleteEndpoint(endpoint.endpointId(), deleteButton));
+        deleteButton.setOnAction(event -> connectionActions.deleteEndpoint(endpoint.endpointId(), deleteButton));
 
         box.getChildren().addAll(
                 DungeonInspectorCards.secondary(DungeonInspectorCards.titleOrFallback(endpoint.name(), "Übergang")
@@ -86,13 +86,13 @@ final class DungeonConnectionInspectorSectionBuilder {
                 return null;
             }
         });
-        endpointCombo.getItems().setAll(state.currentState() == null ? List.of() : state.currentState().endpoints());
+        endpointCombo.getItems().setAll(state.index().endpointsById().values());
         endpointCombo.setValue(DungeonInspectorCards.findById(
-                state.currentState() == null ? List.<DungeonEndpoint>of() : state.currentState().endpoints(),
+                List.copyOf(state.index().endpointsById().values()),
                 passage.endpointId(),
                 DungeonEndpoint::endpointId));
 
-        Button saveButton = DungeonInspectorCards.saveButton(() -> connectionEditingController.savePassage(new DungeonPassage(
+        Button saveButton = DungeonInspectorCards.saveButton(() -> connectionActions.savePassage(new DungeonPassage(
                 passage.passageId(),
                 passage.mapId(),
                 passage.x(),
@@ -102,7 +102,7 @@ final class DungeonConnectionInspectorSectionBuilder {
                 notesArea.getText(),
                 endpointCombo.getValue() == null ? null : endpointCombo.getValue().endpointId())));
         Button deleteButton = DungeonInspectorCards.dangerButton("Zurücksetzen");
-        deleteButton.setOnAction(event -> connectionEditingController.deletePassage(passage.passageId(), deleteButton));
+        deleteButton.setOnAction(event -> connectionActions.deletePassage(passage.passageId(), deleteButton));
 
         box.getChildren().addAll(
                 DungeonInspectorCards.secondary(DungeonInspectorCards.titleOrFallback(passage.name(), "Durchgang")
@@ -118,11 +118,11 @@ final class DungeonConnectionInspectorSectionBuilder {
         TextField labelField = new TextField(link.label() == null ? "" : link.label());
         Button saveButton = DungeonInspectorCards.saveButton(() -> {
             if (link.linkId() != null) {
-                connectionEditingController.updateLinkLabel(link.linkId(), labelField.getText().trim(), null);
+                connectionActions.updateLinkLabel(link.linkId(), labelField.getText().trim(), null);
             }
         });
         Button deleteButton = DungeonInspectorCards.dangerButton("Löschen");
-        deleteButton.setOnAction(event -> connectionEditingController.deleteLink(link.linkId()));
+        deleteButton.setOnAction(event -> connectionActions.deleteLink(link.linkId()));
         box.getChildren().addAll(
                 DungeonInspectorCards.secondary(counterpartName),
                 DungeonInspectorCards.section("Label", labelField, DungeonInspectorCards.saveRow(saveButton, deleteButton)));

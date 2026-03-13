@@ -29,6 +29,22 @@ public record DungeonMapState(
         return index == null ? DungeonMapIndex.empty() : index;
     }
 
+    public DungeonMapState withIndex(DungeonMapIndex updatedIndex) {
+        return new DungeonMapState(
+                map,
+                squares,
+                rooms,
+                areas,
+                features,
+                featureTiles,
+                endpoints,
+                links,
+                walls,
+                passages,
+                updatedIndex,
+                edgeIndex);
+    }
+
     public DungeonEdgeSummary edgeAt(String edgeKey) {
         return edgeIndex == null ? null : edgeIndex.edgeAt(edgeKey);
     }

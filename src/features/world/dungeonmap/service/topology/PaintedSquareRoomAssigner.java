@@ -48,13 +48,13 @@ final class PaintedSquareRoomAssigner {
             targetRoomId = createDefaultRoom(conn, mapId, nextDefaultRoomNumber(workspace.rooms()), null);
         } else {
             TopologyIntent priorityIntent = intent.withPrimaryRoomPriority(overlappedRoomIds);
-            Long selectedRoomId = RoomTopologyReconciler.selectPreferredRoomId(
+            Long selectedRoomId = PreferredRoomSelector.selectPreferredRoomId(
                     overlappedRoomIds,
                     workspace.currentRoomSquareCounts(),
                     priorityIntent);
             targetRoomId = selectedRoomId == null ? overlappedRoomIds.get(0) : selectedRoomId;
             List<Long> targetFirstRoomIds = prioritizeTargetRoom(targetRoomId, overlappedRoomIds);
-            RoomTopologyReconciler.updateMergedRoomMetadata(
+            RoomMetadataMerger.updateMergedRoomMetadata(
                     conn,
                     targetRoomId,
                     overlappedRoomIds,
@@ -149,7 +149,7 @@ final class PaintedSquareRoomAssigner {
                 null,
                 mapId,
                 "Raum #" + roomNumber,
-                templateRoom == null ? "" : RoomTopologyReconciler.coalesceText(templateRoom.description()),
+                templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.description()),
                 templateRoom == null ? null : templateRoom.areaId());
         return DungeonRoomRepository.upsertRoom(conn, newRoom);
     }

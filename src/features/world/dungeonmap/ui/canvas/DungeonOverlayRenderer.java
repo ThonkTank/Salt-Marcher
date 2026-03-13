@@ -11,6 +11,7 @@ import features.world.dungeonmap.model.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
+import features.world.dungeonmap.ui.canvas.model.DungeonCanvasLabelLayout;
 import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.control.Label;
@@ -400,7 +401,7 @@ final class DungeonOverlayRenderer {
             Long roomId = entry.getKey();
             Label label = entry.getValue();
             DungeonRoom room = model.roomsById().get(roomId);
-            DungeonCanvasModel.RoomLabelAnchor anchor = model.roomLabelAnchors().get(roomId);
+            DungeonCanvasLabelLayout.RoomLabelAnchor anchor = model.roomLabelAnchors().get(roomId);
             if (room == null || anchor == null || anchor.squareCount() == 0) {
                 label.setVisible(false);
                 label.setManaged(false);
@@ -418,10 +419,10 @@ final class DungeonOverlayRenderer {
             label.setManaged(roomMode && visible);
         }
         boolean areaMode = colorRenderMode == DungeonColorRenderMode.AREAS;
-        List<DungeonCanvasModel.AreaLabelAnchor> anchors = model.areaLabelAnchors();
+        List<DungeonCanvasLabelLayout.AreaLabelAnchor> anchors = model.areaLabelAnchors();
         for (int i = 0; i < areaLabelNodes.size(); i++) {
             Label label = areaLabelNodes.get(i);
-            DungeonCanvasModel.AreaLabelAnchor anchor = i < anchors.size() ? anchors.get(i) : null;
+            DungeonCanvasLabelLayout.AreaLabelAnchor anchor = i < anchors.size() ? anchors.get(i) : null;
             if (anchor == null || anchor.squareCount() == 0) {
                 label.setVisible(false);
                 label.setManaged(false);

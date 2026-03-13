@@ -1,9 +1,7 @@
 package features.world.dungeonmap.ui.canvas;
 
-import features.world.dungeonmap.model.DungeonEndpoint;
-import features.world.dungeonmap.model.DungeonEdgeIndex;
 import features.world.dungeonmap.model.DungeonEdgeSummary;
-import features.world.dungeonmap.model.DungeonEdgeSummaryBuilder;
+import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureTile;
 import features.world.dungeonmap.model.DungeonLink;
@@ -15,139 +13,44 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
-import features.world.dungeonmap.model.DungeonWall;
 import features.world.dungeonmap.model.PassageDirection;
+import features.world.dungeonmap.ui.canvas.model.DungeonCanvasInteractionState;
+import features.world.dungeonmap.ui.canvas.model.DungeonCanvasLabelLayout;
+import features.world.dungeonmap.ui.canvas.model.DungeonCanvasLoadedState;
+import features.world.dungeonmap.ui.canvas.model.DungeonCanvasPreviewTopology;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 final class DungeonCanvasModel {
 
-    private final Map<String, DungeonSquare> squaresByCoord = new HashMap<>();
-    private final Map<Long, DungeonRoom> roomsById = new HashMap<>();
-    private final Map<Long, DungeonFeature> featuresById = new HashMap<>();
-    private final Map<Long, DungeonEndpoint> endpointsById = new HashMap<>();
-    private final Map<Long, DungeonPassage> passagesById = new HashMap<>();
-    private final Map<Long, DungeonLink> linksById = new HashMap<>();
-    private final Map<String, DungeonWall> baseWallsByEdge = new HashMap<>();
-    private final Map<String, DungeonPassage> basePassagesByEdge = new HashMap<>();
-    private DungeonEdgeIndex edgeIndex = DungeonEdgeIndex.empty();
-    private final Map<String, DungeonWallEdit> committedWallPreviewEdits = new HashMap<>();
-    private final Map<String, DungeonWallEdit> activeWallPathPreviewEdits = new HashMap<>();
-    private final Map<String, java.util.List<DungeonFeatureTile>> featureTilesByCoord = new HashMap<>();
-    private final Map<Long, java.util.List<DungeonFeatureTile>> featureTilesByFeatureId = new HashMap<>();
-    private final Map<Long, java.util.List<DungeonSquare>> squaresByRoomId = new HashMap<>();
-    private final Map<Long, RoomLabelAnchor> roomLabelAnchors = new HashMap<>();
-    private final List<AreaLabelAnchor> areaLabelAnchors = new ArrayList<>();
-
-    private DungeonMapState state;
-    private DungeonSelection selection = DungeonSelection.none();
-    private DungeonLinkAnchor pendingLinkStart;
-    private Long partyEndpointId;
-    private String invalidEdgeKey;
-    private Integer invalidEdgeX;
-    private Integer invalidEdgeY;
-    private PassageDirection invalidEdgeDirection;
-    private Long loadedMapId;
-    private Integer loadedMapWidth;
-    private Integer loadedMapHeight;
+    private final DungeonCanvasLoadedState loadedState = new DungeonCanvasLoadedState();
+    private final DungeonCanvasPreviewTopology previewTopology = new DungeonCanvasPreviewTopology();
+    private final DungeonCanvasLabelLayout labelLayout = new DungeonCanvasLabelLayout();
+    private final DungeonCanvasInteractionState interactionState = new DungeonCanvasInteractionState();
 
     boolean loadState(DungeonMapState state) {
-        Long previousMapId = loadedMapId;
-        Integer previousWidth = loadedMapWidth;
-        Integer previousHeight = loadedMapHeight;
-
-        this.state = state;
-        squaresByCoord.clear();
-        roomsById.clear();
-        featuresById.clear();
-        endpointsById.clear();
-        passagesById.clear();
-        linksById.clear();
-        baseWallsByEdge.clear();
-        basePassagesByEdge.clear();
-        edgeIndex = DungeonEdgeIndex.empty();
-        committedWallPreviewEdits.clear();
-        activeWallPathPreviewEdits.clear();
-        featureTilesByCoord.clear();
-        featureTilesByFeatureId.clear();
-        squaresByRoomId.clear();
-        roomLabelAnchors.clear();
-        areaLabelAnchors.clear();
-
-        if (state == null || state.map() == null) {
-            loadedMapId = null;
-            loadedMapWidth = null;
-            loadedMapHeight = null;
-            selection = DungeonSelection.none();
-            pendingLinkStart = null;
-            partyEndpointId = null;
-            clearInvalidEdge();
-            return true;
-        }
-
-        for (DungeonSquare square : state.squares()) {
-            squaresByCoord.put(key(square.x(), square.y()), square);
-        }
-        for (DungeonRoom room : state.rooms()) {
-            roomsById.put(room.roomId(), room);
-        }
-        for (DungeonEndpoint endpoint : state.endpoints()) {
-            endpointsById.put(endpoint.endpointId(), endpoint);
-        }
-        for (DungeonFeature feature : state.features()) {
-            featuresById.put(feature.featureId(), feature);
-        }
-        for (DungeonPassage passage : state.passages()) {
-            if (passage.passageId() != null) {
-                passagesById.put(passage.passageId(), passage);
-            }
-        }
-        for (DungeonLink link : state.links()) {
-            linksById.put(link.linkId(), link);
-        }
-        loadBaseTopology(state);
-        for (DungeonFeatureTile tile : state.featureTiles()) {
-            featureTilesByCoord.computeIfAbsent(key(tile.x(), tile.y()), ignored -> new java.util.ArrayList<>()).add(tile);
-            featureTilesByFeatureId.computeIfAbsent(tile.featureId(), ignored -> new java.util.ArrayList<>()).add(tile);
-        }
-
-        selection = DungeonSelection.none();
-        partyEndpointId = null;
-        pendingLinkStart = null;
-        clearInvalidEdge();
-        loadedMapId = state.map().mapId();
-        loadedMapWidth = state.map().width();
-        loadedMapHeight = state.map().height();
-        rebuildRoomSquareIndex();
-        edgeIndex = state.edgeIndex() == null ? DungeonEdgeIndex.empty() : state.edgeIndex();
-
-        return previousMapId == null
-                || !previousMapId.equals(loadedMapId)
-                || previousWidth == null
-                || previousHeight == null
-                || !previousWidth.equals(loadedMapWidth)
-                || !previousHeight.equals(loadedMapHeight);
+        boolean shouldFitViewport = loadedState.loadState(state);
+        interactionState.resetForLoadedState();
+        previewTopology.resetForLoadedState(state);
+        labelLayout.rebuild(loadedState.squaresByCoord());
+        return shouldFitViewport;
     }
 
     void previewPaint(DungeonSquarePaint paint) {
-        if (state == null || state.map() == null) {
+        if (state() == null || state().map() == null) {
             return;
         }
         String key = key(paint.x(), paint.y());
         if (paint.filled()) {
-            DungeonSquare existing = squaresByCoord.get(key);
+            DungeonSquare existing = loadedState.squaresByCoord().get(key);
             Long roomId = existing == null ? null : existing.roomId();
-            String roomName = resolveRoomName(roomId);
+            String roomName = loadedState.resolveRoomName(roomId);
             Long areaId = existing == null ? null : existing.areaId();
             String areaName = existing == null ? null : existing.areaName();
-            squaresByCoord.put(key, new DungeonSquare(
+            loadedState.squaresByCoord().put(key, new DungeonSquare(
                     existing == null ? null : existing.squareId(),
-                    state.map().mapId(),
+                    state().map().mapId(),
                     paint.x(),
                     paint.y(),
                     roomId,
@@ -155,365 +58,155 @@ final class DungeonCanvasModel {
                     areaId,
                     areaName));
         } else {
-            squaresByCoord.remove(key);
+            loadedState.squaresByCoord().remove(key);
         }
-        rebuildRoomSquareIndex();
-        rebuildEdgeTopology();
+        labelLayout.rebuild(loadedState.squaresByCoord());
+        previewTopology.rebuildAfterSquarePreview(
+                state(),
+                loadedState.squaresByCoord(),
+                loadedState.baseWallsByEdge(),
+                loadedState.basePassagesByEdge());
     }
 
-    void previewCommittedWallEdits(java.util.List<DungeonWallEdit> edits) {
-        committedWallPreviewEdits.clear();
-        storeWallPreviewEdits(committedWallPreviewEdits, edits);
-        rebuildEdgeTopology();
+    void previewCommittedWallEdits(List<DungeonWallEdit> edits) {
+        previewTopology.previewCommittedWallEdits(
+                state(),
+                loadedState.squaresByCoord(),
+                loadedState.baseWallsByEdge(),
+                loadedState.basePassagesByEdge(),
+                edits);
     }
 
-    void previewActiveWallPath(java.util.List<DungeonWallEdit> edits) {
-        activeWallPathPreviewEdits.clear();
-        storeWallPreviewEdits(activeWallPathPreviewEdits, edits);
-        rebuildEdgeTopology();
+    void previewActiveWallPath(List<DungeonWallEdit> edits) {
+        previewTopology.previewActiveWallPath(
+                state(),
+                loadedState.squaresByCoord(),
+                loadedState.baseWallsByEdge(),
+                loadedState.basePassagesByEdge(),
+                edits);
     }
 
     void clearActiveWallPathPreview() {
-        if (activeWallPathPreviewEdits.isEmpty()) {
-            return;
-        }
-        activeWallPathPreviewEdits.clear();
-        rebuildEdgeTopology();
-    }
-
-    private String resolveRoomName(Long roomId) {
-        if (roomId == null || state == null) {
-            return null;
-        }
-        for (DungeonRoom room : state.rooms()) {
-            if (roomId.equals(room.roomId())) {
-                return room.name();
-            }
-        }
-        return null;
+        previewTopology.clearActiveWallPathPreview(
+                state(),
+                loadedState.squaresByCoord(),
+                loadedState.baseWallsByEdge(),
+                loadedState.basePassagesByEdge());
     }
 
     DungeonMapPane.CellInteraction interactionAt(DungeonViewport viewport, double screenX, double screenY) {
-        if (state == null || state.map() == null) {
+        if (state() == null || state().map() == null) {
             return null;
         }
         int cellX = viewport.cellX(screenX);
         int cellY = viewport.cellY(screenY);
-        if (cellX < 0 || cellY < 0 || cellX >= state.map().width() || cellY >= state.map().height()) {
+        if (cellX < 0 || cellY < 0 || cellX >= state().map().width() || cellY >= state().map().height()) {
             return null;
         }
-        return new DungeonMapPane.CellInteraction(cellX, cellY, squaresByCoord.get(key(cellX, cellY)));
+        return new DungeonMapPane.CellInteraction(cellX, cellY, squareAt(cellX, cellY));
     }
 
     DungeonMapState state() {
-        return state;
+        return loadedState.state();
     }
 
     Map<String, DungeonSquare> squaresByCoord() {
-        return squaresByCoord;
+        return loadedState.squaresByCoord();
     }
 
     DungeonSquare squareAt(int x, int y) {
-        return squaresByCoord.get(key(x, y));
+        return loadedState.squareAt(x, y);
     }
 
     Map<Long, DungeonEndpoint> endpointsById() {
-        return endpointsById;
+        return loadedState.endpointsById();
     }
 
     Map<Long, DungeonRoom> roomsById() {
-        return roomsById;
+        return loadedState.roomsById();
     }
 
     Map<Long, DungeonFeature> featuresById() {
-        return featuresById;
+        return loadedState.featuresById();
     }
 
     Map<Long, DungeonLink> linksById() {
-        return linksById;
+        return loadedState.linksById();
     }
 
     Map<Long, DungeonPassage> passagesById() {
-        return passagesById;
+        return loadedState.passagesById();
     }
 
     DungeonEdgeSummary edgeAt(String edgeKey) {
-        return edgeIndex.edgeAt(edgeKey);
+        return previewTopology.edgeAt(edgeKey);
     }
 
-    Map<String, java.util.List<DungeonFeatureTile>> featureTilesByCoord() {
-        return featureTilesByCoord;
+    Map<String, List<DungeonFeatureTile>> featureTilesByCoord() {
+        return loadedState.featureTilesByCoord();
     }
 
-    Map<Long, java.util.List<DungeonFeatureTile>> featureTilesByFeatureId() {
-        return featureTilesByFeatureId;
+    Map<Long, List<DungeonFeatureTile>> featureTilesByFeatureId() {
+        return loadedState.featureTilesByFeatureId();
     }
 
-    Map<Long, java.util.List<DungeonSquare>> squaresByRoomId() {
-        return squaresByRoomId;
+    Map<Long, List<DungeonSquare>> squaresByRoomId() {
+        return labelLayout.squaresByRoomId();
     }
 
-    Map<Long, RoomLabelAnchor> roomLabelAnchors() {
-        return roomLabelAnchors;
+    Map<Long, DungeonCanvasLabelLayout.RoomLabelAnchor> roomLabelAnchors() {
+        return labelLayout.roomLabelAnchors();
     }
 
-    List<AreaLabelAnchor> areaLabelAnchors() {
-        return areaLabelAnchors;
+    List<DungeonCanvasLabelLayout.AreaLabelAnchor> areaLabelAnchors() {
+        return labelLayout.areaLabelAnchors();
     }
 
     DungeonSelection selection() {
-        return selection;
+        return interactionState.selection();
     }
 
     void setSelection(DungeonSelection selection) {
-        this.selection = selection == null ? DungeonSelection.none() : selection;
+        interactionState.setSelection(selection);
     }
 
     DungeonLinkAnchor pendingLinkStart() {
-        return pendingLinkStart;
+        return interactionState.pendingLinkStart();
     }
 
     void setPendingLinkStart(DungeonLinkAnchor pendingLinkStart) {
-        this.pendingLinkStart = pendingLinkStart;
-    }
-
-    private void storeWallPreviewEdits(Map<String, DungeonWallEdit> target, java.util.List<DungeonWallEdit> edits) {
-        if (state == null || state.map() == null || edits == null) {
-            return;
-        }
-        for (DungeonWallEdit edit : edits) {
-            if (edit != null) {
-                target.put(edit.edgeKey(), edit);
-            }
-        }
-    }
-
-    private void rebuildEdgeTopology() {
-        Map<String, DungeonWall> previewWallsByEdge = new HashMap<>(baseWallsByEdge);
-        Map<String, DungeonPassage> previewPassagesByEdge = new HashMap<>(basePassagesByEdge);
-        applyWallPreviewEdits(previewWallsByEdge, previewPassagesByEdge, committedWallPreviewEdits);
-        applyWallPreviewEdits(previewWallsByEdge, previewPassagesByEdge, activeWallPathPreviewEdits);
-        // The shared edge builder owns preview synthesis of topology boundary walls so the
-        // canvas stays a consumer of the derived edge model instead of reimplementing it.
-        edgeIndex = DungeonEdgeSummaryBuilder.buildPreviewIndex(
-                new ArrayList<>(squaresByCoord.values()),
-                new ArrayList<>(previewWallsByEdge.values()),
-                new ArrayList<>(previewPassagesByEdge.values()));
-    }
-
-    private void loadBaseTopology(DungeonMapState state) {
-        baseWallsByEdge.clear();
-        basePassagesByEdge.clear();
-        if (state == null) {
-            return;
-        }
-        for (DungeonWall wall : state.walls()) {
-            baseWallsByEdge.put(wall.edgeKey(), wall);
-        }
-        for (DungeonPassage passage : state.passages()) {
-            basePassagesByEdge.put(passage.edgeKey(), passage);
-        }
-    }
-
-    private void rebuildRoomSquareIndex() {
-        squaresByRoomId.clear();
-        roomLabelAnchors.clear();
-        areaLabelAnchors.clear();
-        for (DungeonSquare square : squaresByCoord.values()) {
-            if (square.roomId() != null) {
-                squaresByRoomId.computeIfAbsent(square.roomId(), ignored -> new java.util.ArrayList<>()).add(square);
-            }
-        }
-        for (Map.Entry<Long, java.util.List<DungeonSquare>> entry : squaresByRoomId.entrySet()) {
-            RoomLabelAnchor anchor = selectRoomLabelAnchor(entry.getValue());
-            if (anchor != null) {
-                roomLabelAnchors.put(entry.getKey(), anchor);
-            }
-        }
-        rebuildAreaLabelAnchors();
-    }
-
-    private RoomLabelAnchor selectRoomLabelAnchor(java.util.List<DungeonSquare> squares) {
-        LabelAnchor anchor = selectLabelAnchor(squares);
-        return anchor == null ? null : new RoomLabelAnchor(anchor.x(), anchor.y(), anchor.squareCount());
-    }
-
-    private void rebuildAreaLabelAnchors() {
-        Set<String> visited = new HashSet<>();
-        for (DungeonSquare square : squaresByCoord.values()) {
-            if (square.areaId() == null || square.areaName() == null || square.areaName().isBlank()) {
-                continue;
-            }
-            String coordKey = key(square.x(), square.y());
-            if (visited.contains(coordKey)) {
-                continue;
-            }
-            java.util.List<DungeonSquare> componentSquares = collectAreaComponent(square, visited);
-            LabelAnchor anchor = selectLabelAnchor(componentSquares);
-            if (anchor == null) {
-                continue;
-            }
-            areaLabelAnchors.add(new AreaLabelAnchor(
-                    square.areaId(),
-                    square.areaName(),
-                    anchor.x(),
-                    anchor.y(),
-                    anchor.squareCount()));
-        }
-    }
-
-    private java.util.List<DungeonSquare> collectAreaComponent(DungeonSquare start, Set<String> visited) {
-        java.util.List<DungeonSquare> component = new java.util.ArrayList<>();
-        java.util.ArrayDeque<DungeonSquare> queue = new java.util.ArrayDeque<>();
-        queue.add(start);
-        visited.add(key(start.x(), start.y()));
-        Long areaId = start.areaId();
-        while (!queue.isEmpty()) {
-            DungeonSquare current = queue.removeFirst();
-            component.add(current);
-            collectAreaNeighbor(areaId, current.x() - 1, current.y(), visited, queue);
-            collectAreaNeighbor(areaId, current.x() + 1, current.y(), visited, queue);
-            collectAreaNeighbor(areaId, current.x(), current.y() - 1, visited, queue);
-            collectAreaNeighbor(areaId, current.x(), current.y() + 1, visited, queue);
-        }
-        return component;
-    }
-
-    private void collectAreaNeighbor(
-            Long areaId,
-            int x,
-            int y,
-            Set<String> visited,
-            java.util.ArrayDeque<DungeonSquare> queue
-    ) {
-        String coordKey = key(x, y);
-        if (visited.contains(coordKey)) {
-            return;
-        }
-        DungeonSquare neighbor = squaresByCoord.get(coordKey);
-        if (neighbor == null || neighbor.areaId() == null || !neighbor.areaId().equals(areaId)) {
-            return;
-        }
-        visited.add(coordKey);
-        queue.addLast(neighbor);
-    }
-
-    private LabelAnchor selectLabelAnchor(java.util.List<DungeonSquare> squares) {
-        if (squares == null || squares.isEmpty()) {
-            return null;
-        }
-        Set<String> roomCoords = new HashSet<>();
-        double centerX = 0.0;
-        double centerY = 0.0;
-        for (DungeonSquare square : squares) {
-            roomCoords.add(key(square.x(), square.y()));
-            centerX += square.x() + 0.5;
-            centerY += square.y() + 0.5;
-        }
-        centerX /= squares.size();
-        centerY /= squares.size();
-
-        DungeonSquare bestSquare = null;
-        int bestNeighborCount = -1;
-        double bestDistance = Double.MAX_VALUE;
-        for (DungeonSquare square : squares) {
-            int neighborCount = roomNeighborCount(square, roomCoords);
-            double dx = (square.x() + 0.5) - centerX;
-            double dy = (square.y() + 0.5) - centerY;
-            double distance = (dx * dx) + (dy * dy);
-            if (bestSquare == null
-                    || neighborCount > bestNeighborCount
-                    || neighborCount == bestNeighborCount && distance < bestDistance
-                    || neighborCount == bestNeighborCount && distance == bestDistance && square.y() < bestSquare.y()
-                    || neighborCount == bestNeighborCount && distance == bestDistance && square.y() == bestSquare.y() && square.x() < bestSquare.x()) {
-                bestSquare = square;
-                bestNeighborCount = neighborCount;
-                bestDistance = distance;
-            }
-        }
-        return new LabelAnchor(bestSquare.x(), bestSquare.y(), squares.size());
-    }
-
-    private int roomNeighborCount(DungeonSquare square, Set<String> roomCoords) {
-        int neighbors = 0;
-        if (roomCoords.contains(key(square.x() - 1, square.y()))) neighbors++;
-        if (roomCoords.contains(key(square.x() + 1, square.y()))) neighbors++;
-        if (roomCoords.contains(key(square.x(), square.y() - 1))) neighbors++;
-        if (roomCoords.contains(key(square.x(), square.y() + 1))) neighbors++;
-        return neighbors;
-    }
-
-    private void applyWallPreviewEdits(
-            Map<String, DungeonWall> previewWallsByEdge,
-            Map<String, DungeonPassage> previewPassagesByEdge,
-            Map<String, DungeonWallEdit> edits
-    ) {
-        if (state == null || state.map() == null) {
-            return;
-        }
-        for (DungeonWallEdit edit : edits.values()) {
-            String edgeKey = edit.edgeKey();
-            if (edit.wallPresent()) {
-                previewWallsByEdge.put(edgeKey, new DungeonWall(null, state.map().mapId(), edit.x(), edit.y(), edit.direction()));
-                previewPassagesByEdge.remove(edgeKey);
-            } else {
-                previewWallsByEdge.remove(edgeKey);
-            }
-        }
+        interactionState.setPendingLinkStart(pendingLinkStart);
     }
 
     Long partyEndpointId() {
-        return partyEndpointId;
+        return interactionState.partyEndpointId();
     }
 
     void setPartyEndpointId(Long partyEndpointId) {
-        this.partyEndpointId = partyEndpointId;
+        interactionState.setPartyEndpointId(partyEndpointId);
     }
 
     void setInvalidEdge(int x, int y, PassageDirection direction) {
-        if (direction == null) {
-            clearInvalidEdge();
-            return;
-        }
-        invalidEdgeX = x;
-        invalidEdgeY = y;
-        invalidEdgeDirection = direction;
-        invalidEdgeKey = direction.edgeKey(x, y);
+        interactionState.setInvalidEdge(x, y, direction);
     }
 
     void clearInvalidEdge() {
-        invalidEdgeX = null;
-        invalidEdgeY = null;
-        invalidEdgeDirection = null;
-        invalidEdgeKey = null;
-    }
-
-    String invalidEdgeKey() {
-        return invalidEdgeKey;
+        interactionState.clearInvalidEdge();
     }
 
     Integer invalidEdgeX() {
-        return invalidEdgeX;
+        return interactionState.invalidEdgeX();
     }
 
     Integer invalidEdgeY() {
-        return invalidEdgeY;
+        return interactionState.invalidEdgeY();
     }
 
     PassageDirection invalidEdgeDirection() {
-        return invalidEdgeDirection;
+        return interactionState.invalidEdgeDirection();
     }
 
     private static String key(int x, int y) {
         return x + ":" + y;
-    }
-
-    private record LabelAnchor(int x, int y, int squareCount) {
-    }
-
-    record RoomLabelAnchor(int x, int y, int squareCount) {
-    }
-
-    record AreaLabelAnchor(Long areaId, String areaName, int x, int y, int squareCount) {
     }
 }
