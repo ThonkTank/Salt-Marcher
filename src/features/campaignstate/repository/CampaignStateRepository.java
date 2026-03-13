@@ -31,8 +31,8 @@ public final class CampaignStateRepository {
         }
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO campaign_state(campaign_id, map_id, party_tile_id, calendar_id,"
-                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_endpoint_id)"
-                        + " VALUES(?,?,?,?,?,?,?,?,?,?)"
+                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_endpoint_id, dungeon_square_id)"
+                        + " VALUES(?,?,?,?,?,?,?,?,?,?,?)"
                         + " ON CONFLICT(campaign_id) DO UPDATE SET"
                         + "   map_id=excluded.map_id,"
                         + "   party_tile_id=excluded.party_tile_id,"
@@ -42,7 +42,8 @@ public final class CampaignStateRepository {
                         + "   current_weather=excluded.current_weather,"
                         + "   notes=excluded.notes,"
                         + "   dungeon_map_id=excluded.dungeon_map_id,"
-                        + "   dungeon_endpoint_id=excluded.dungeon_endpoint_id")) {
+                        + "   dungeon_endpoint_id=excluded.dungeon_endpoint_id,"
+                        + "   dungeon_square_id=excluded.dungeon_square_id")) {
             ps.setLong(1, state.CampaignId);
             setNullableLong(ps, 2, state.MapId);
             setNullableLong(ps, 3, state.PartyTileId);
@@ -53,6 +54,7 @@ public final class CampaignStateRepository {
             ps.setString(8, state.Notes);
             setNullableLong(ps, 9, state.DungeonMapId);
             setNullableLong(ps, 10, state.DungeonEndpointId);
+            setNullableLong(ps, 11, state.DungeonSquareId);
             ps.executeUpdate();
         }
     }
@@ -85,25 +87,31 @@ public final class CampaignStateRepository {
 
     public static Optional<DungeonPositionSnapshot> getDungeonPosition(Connection conn) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT dungeon_map_id, dungeon_endpoint_id FROM campaign_state WHERE campaign_id=1");
+                "SELECT dungeon_map_id, dungeon_endpoint_id, dungeon_square_id FROM campaign_state WHERE campaign_id=1");
              ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) {
                 return Optional.empty();
             }
             Long mapId = getNullableLong(rs, "dungeon_map_id");
             Long endpointId = getNullableLong(rs, "dungeon_endpoint_id");
-            if (mapId == null && endpointId == null) {
+            Long squareId = getNullableLong(rs, "dungeon_square_id");
+            if (mapId == null && endpointId == null && squareId == null) {
                 return Optional.empty();
             }
-            return Optional.of(new DungeonPositionSnapshot(mapId, endpointId));
+            return Optional.of(new DungeonPositionSnapshot(mapId, endpointId, squareId));
         }
     }
 
     public static void updateDungeonPosition(Connection conn, Long mapId, Long endpointId) throws SQLException {
+        updateDungeonPosition(conn, mapId, endpointId, null);
+    }
+
+    public static void updateDungeonPosition(Connection conn, Long mapId, Long endpointId, Long squareId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_endpoint_id=? WHERE campaign_id=1")) {
+                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_endpoint_id=?, dungeon_square_id=? WHERE campaign_id=1")) {
             setNullableLong(ps, 1, mapId);
             setNullableLong(ps, 2, endpointId);
+            setNullableLong(ps, 3, squareId);
             ps.executeUpdate();
         }
     }
@@ -187,6 +195,8 @@ public final class CampaignStateRepository {
         s.DungeonMapId = rs.wasNull() ? null : dungeonMapId;
         long dungeonEndpointId = rs.getLong("dungeon_endpoint_id");
         s.DungeonEndpointId = rs.wasNull() ? null : dungeonEndpointId;
+        long dungeonSquareId = rs.getLong("dungeon_square_id");
+        s.DungeonSquareId = rs.wasNull() ? null : dungeonSquareId;
         return s;
     }
 

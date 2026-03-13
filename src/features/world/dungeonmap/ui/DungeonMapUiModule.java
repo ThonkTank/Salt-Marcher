@@ -1,5 +1,6 @@
 package features.world.dungeonmap.ui;
 
+import features.encounter.api.EncounterRuntimePort;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.editor.DungeonEditorView;
@@ -18,11 +19,12 @@ public final class DungeonMapUiModule {
     private final AppView dungeonView;
     private final AppView dungeonEditorView;
 
-    public DungeonMapUiModule(DetailsNavigator detailsNavigator) {
+    public DungeonMapUiModule(DetailsNavigator detailsNavigator, EncounterRuntimePort encounterRuntimePort) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
+        Objects.requireNonNull(encounterRuntimePort, "encounterRuntimePort");
         DungeonMapQueryService queries = new DungeonMapQueryService();
         DungeonMapCommandService commands = new DungeonMapCommandService();
-        this.dungeonView = new DungeonView(queries);
+        this.dungeonView = new DungeonView(queries, encounterRuntimePort);
         this.dungeonEditorView = new DungeonEditorView(detailsNavigator, queries, commands);
     }
 

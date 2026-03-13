@@ -51,6 +51,8 @@ public class EncounterControls extends VBox {
     private final Popup tablePopup;
     private final VBox tableListBox;
     private final List<EncounterTable> selectedTables = new ArrayList<>();
+    private List<Long> requestedSelectionIds = List.of();
+    private final Map<Long, EncounterTable> tableCatalogById = new LinkedHashMap<>();
     // CheckBox nodes keyed by stable table ID.
     private final Map<Long, CheckBox> tableCheckboxById = new LinkedHashMap<>();
 
@@ -237,19 +239,22 @@ public class EncounterControls extends VBox {
     public void setTableList(List<EncounterTable> tables) {
         tableListBox.getChildren().clear();
         tableCheckboxById.clear();
+        tableCatalogById.clear();
 
-        List<Long> beforeIds = selectedTables.stream().map(t -> t.tableId).toList();
-        Map<Long, EncounterTable> tableById = new LinkedHashMap<>();
-        for (EncounterTable t : tables) tableById.put(t.tableId, t);
+        List<Long> beforeIds = requestedSelectionIds.isEmpty()
+                ? selectedTables.stream().map(t -> t.tableId).toList()
+                : requestedSelectionIds;
+        for (EncounterTable t : tables) tableCatalogById.put(t.tableId, t);
 
         List<EncounterTable> reboundSelection = new ArrayList<>();
         for (Long id : beforeIds) {
-            EncounterTable fresh = tableById.get(id);
+            EncounterTable fresh = tableCatalogById.get(id);
             if (fresh != null) reboundSelection.add(fresh);
         }
         selectedTables.clear();
         selectedTables.addAll(reboundSelection);
         List<Long> afterIds = selectedTables.stream().map(t -> t.tableId).toList();
+        requestedSelectionIds = afterIds;
 
         // "Alle Monster" clear button
         Button clearAll = new Button("(Alle Monster)");
@@ -257,6 +262,7 @@ public class EncounterControls extends VBox {
         clearAll.getStyleClass().addAll("flat", "compact");
         clearAll.setOnAction(e -> {
             selectedTables.clear();
+            requestedSelectionIds = List.of();
             tableCheckboxById.values().forEach(cb -> cb.setSelected(false));
             tablePopup.hide();
             updateTableButton();
@@ -277,6 +283,7 @@ public class EncounterControls extends VBox {
                 } else {
                     selectedTables.removeIf(s -> s.tableId == t.tableId);
                 }
+                requestedSelectionIds = selectedTables.stream().map(table -> table.tableId).toList();
                 updateTableButton();
                 fireTableChanged();
             });
@@ -341,6 +348,7 @@ public class EncounterControls extends VBox {
             x.setOnAction(e -> {
                 long tableId = t.tableId;
                 selectedTables.removeIf(s -> s.tableId == tableId);
+                requestedSelectionIds = selectedTables.stream().map(table -> table.tableId).toList();
                 uncheckTableCheckbox(tableId);
                 updateTableButton();
                 fireTableChanged();
@@ -372,6 +380,29 @@ public class EncounterControls extends VBox {
      */
     public List<Long> getSelectedTableIds() {
         return selectedTables.stream().map(t -> t.tableId).toList();
+    }
+
+    public void selectTableIds(List<Long> tableIds) {
+        List<Long> ids = tableIds == null ? List.of() : List.copyOf(tableIds);
+        requestedSelectionIds = ids;
+        selectedTables.clear();
+        for (Long id : ids) {
+            EncounterTable table = tableCatalogById.get(id);
+            if (table != null) {
+                selectedTables.add(table);
+            }
+        }
+        for (CheckBox cb : tableCheckboxById.values()) {
+            cb.setSelected(false);
+        }
+        for (Long id : ids) {
+            CheckBox checkbox = tableCheckboxById.get(id);
+            if (checkbox != null) {
+                checkbox.setSelected(true);
+            }
+        }
+        updateTableButton();
+        fireTableChanged();
     }
 
     /** @return selected band, or {@code null} if Auto is selected. */

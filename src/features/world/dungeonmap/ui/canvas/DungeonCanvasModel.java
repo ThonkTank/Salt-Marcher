@@ -181,6 +181,14 @@ final class DungeonCanvasModel {
         interactionState.setPartyEndpointId(partyEndpointId);
     }
 
+    Long partySquareId() {
+        return interactionState.partySquareId();
+    }
+
+    void setPartySquareId(Long partySquareId) {
+        interactionState.setPartySquareId(partySquareId);
+    }
+
     void setInvalidEdge(int x, int y, PassageDirection direction) {
         interactionState.setInvalidEdge(x, y, direction);
     }

@@ -78,7 +78,7 @@ public class SaltMarcherApp extends Application {
                 encounterModule.partyCacheRefreshPort());
         shell.addPersistentToolbarItem(partyModule.toolbarItem());
 
-        WorldModule worldModule = new WorldModule(shell.getDetailsNavigator());
+        WorldModule worldModule = new WorldModule(shell.getDetailsNavigator(), encounterModule.runtimePort());
         worldModule.registerScenes(shell.getSceneRegistry());
         AppView overworldView = worldModule.overworldView();
         AppView mapEditorView = worldModule.mapEditorView();

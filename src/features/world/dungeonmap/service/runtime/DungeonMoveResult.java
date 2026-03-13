@@ -1,3 +1,15 @@
 package features.world.dungeonmap.service.runtime;
 
-public record DungeonMoveResult(DungeonMoveStatus status, Long endpointId) {}
+import java.util.List;
+
+public record DungeonMoveResult(
+        DungeonMoveStatus status,
+        Long endpointId,
+        Long squareId,
+        List<Long> triggeredTableIds,
+        String message
+) {
+    public DungeonMoveResult {
+        triggeredTableIds = triggeredTableIds == null ? List.of() : List.copyOf(triggeredTableIds);
+    }
+}

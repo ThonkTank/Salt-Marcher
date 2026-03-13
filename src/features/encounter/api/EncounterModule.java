@@ -22,6 +22,7 @@ public final class EncounterModule {
 
     private final EncounterView view;
     private final PartyAnalysisCacheService partyCacheService;
+    private final EncounterRuntimePort runtimePort;
 
     public EncounterModule(
             Runnable onRefreshToolbar,
@@ -50,6 +51,7 @@ public final class EncounterModule {
                 builderService,
                 combatService
         ));
+        this.runtimePort = view::launchRuntimeEncounter;
     }
 
     public AppView view() {
@@ -66,5 +68,9 @@ public final class EncounterModule {
 
     public void refreshPartyState() {
         view.refreshPartyState();
+    }
+
+    public EncounterRuntimePort runtimePort() {
+        return runtimePort;
     }
 }

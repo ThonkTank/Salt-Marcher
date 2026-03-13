@@ -129,6 +129,12 @@ public final class EncounterWorkflowCoordinator {
         builderWorkflowController.refreshState();
     }
 
+    public boolean launchRuntimeEncounter(List<Long> tableIds) {
+        switchMode(Mode.BUILDER);
+        encounterScene.activate();
+        return builderWorkflowController.launchRuntimeEncounter(tableIds);
+    }
+
     private void switchMode(Mode mode) {
         Mode oldMode = currentMode;
         currentMode = mode;

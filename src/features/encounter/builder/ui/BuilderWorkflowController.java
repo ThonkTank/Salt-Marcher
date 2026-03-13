@@ -42,6 +42,7 @@ public final class BuilderWorkflowController {
     private Task<EncounterTableProvider.TableCatalogResult> tableLoadTask;
     private Task<EncounterGenerator.GenerationResult> generationTask;
     private Task<EncounterStorageApi.SaveEncounterResult> saveEncounterTask;
+    private List<Long> pendingRuntimeTableIds = List.of();
 
     public BuilderWorkflowController(
             EncounterBuilderService encounterService,
@@ -100,7 +101,6 @@ public final class BuilderWorkflowController {
         double amountValue = encounterControls.getSelectedAmountValue();
         int diversityLevel = encounterControls.getSelectedDiversityLevel();
         List<Long> tableIds = encounterControls.getSelectedTableIds();
-
         rosterPane.showGenerating();
         rosterPane.setGenerateEnabled(false);
 
@@ -144,6 +144,103 @@ public final class BuilderWorkflowController {
             rosterPane.setGenerateEnabled(true);
             rosterPane.showGenerationFailed();
         }, () -> generationTask == task);
+    }
+
+    public boolean launchRuntimeEncounter(List<Long> tableIds) {
+        if (tableIds == null || tableIds.isEmpty()) {
+            return false;
+        }
+        List<Long> requestedTableIds = List.copyOf(tableIds);
+        encounterControls.selectTableIds(requestedTableIds);
+        if (partyCache.isEmpty()) {
+            pendingRuntimeTableIds = requestedTableIds;
+            refreshPartyStateForRuntime();
+            return true;
+        }
+        startRuntimeEncounterGeneration(requestedTableIds);
+        return true;
+    }
+
+    private void startRuntimeEncounterGeneration(List<Long> tableIds) {
+        pendingRuntimeTableIds = List.of();
+        EncounterAsyncTaskSupport.cancel(generationTask);
+        rosterPane.showGenerating();
+        rosterPane.setGenerateEnabled(false);
+        Task<EncounterGenerator.GenerationResult> task = new Task<>() {
+            @Override
+            protected EncounterGenerator.GenerationResult call() {
+                return encounterService.generateEncounter(
+                        new EncounterBuilderService.GenerationRequest(
+                                partyCache.size(),
+                                cachedAvgLevel,
+                                new EncounterBuilderService.EncounterFilter(List.of(), List.of(), List.of()),
+                                null,
+                                -1,
+                                -1.0,
+                                -1,
+                                tableIds),
+                        GenerationContext.defaultContext(this::isCancelled));
+            }
+        };
+        generationTask = task;
+        EncounterAsyncTaskSupport.submit(task, "BuilderWorkflowController.launchRuntimeEncounter()", result -> {
+            rosterPane.setGenerateEnabled(true);
+            if (result == null) {
+                rosterPane.showGenerationFailed();
+                return;
+            }
+            if (result.status() == EncounterGenerator.GenerationStatus.SUCCESS) {
+                rosterPane.setEncounter(result.encounter());
+                return;
+            }
+            rosterPane.showGenerationFailed(mapGenerationFailure(result.failureReason()));
+        }, () -> {
+            rosterPane.setGenerateEnabled(true);
+            rosterPane.showGenerationFailed();
+        }, () -> generationTask == task);
+    }
+
+    private void refreshPartyStateForRuntime() {
+        EncounterAsyncTaskSupport.cancel(partyLoadTask);
+        rosterPane.setGenerateEnabled(false);
+        Task<EncounterBuilderService.PartySnapshot> task = new Task<>() {
+            @Override
+            protected EncounterBuilderService.PartySnapshot call() {
+                return encounterService.loadPartySnapshot();
+            }
+        };
+        partyLoadTask = task;
+        EncounterAsyncTaskSupport.submit(task, "BuilderWorkflowController.refreshPartyStateForRuntime()", snapshot -> {
+            applyPartySnapshot(snapshot);
+            rosterPane.setGenerateEnabled(true);
+            if (!pendingRuntimeTableIds.isEmpty()) {
+                List<Long> requestedTableIds = pendingRuntimeTableIds;
+                if (partyCache.isEmpty()) {
+                    pendingRuntimeTableIds = List.of();
+                    rosterPane.showGenerationFailed("Die Party hat keine Mitglieder.");
+                } else {
+                    startRuntimeEncounterGeneration(requestedTableIds);
+                }
+            }
+        }, () -> {
+            pendingRuntimeTableIds = List.of();
+            rosterPane.setGenerateEnabled(true);
+            rosterPane.showGenerationFailed("Party konnte nicht geladen werden.");
+        }, () -> partyLoadTask == task);
+    }
+
+    private void applyPartySnapshot(EncounterBuilderService.PartySnapshot snapshot) {
+        partyCache = snapshot.party();
+        int size = partyCache.size();
+        if (size > 0) {
+            cachedAvgLevel = snapshot.avgLevel();
+            rosterPane.setPartyInfo(size, cachedAvgLevel);
+            encounterControls.setPartyContext(size, cachedAvgLevel);
+            return;
+        }
+        cachedAvgLevel = 1;
+        rosterPane.setPartyInfo(0, 1);
+        encounterControls.setPartyContext(1, 1);
     }
 
     public void onRequestCombat() {
@@ -201,17 +298,7 @@ public final class BuilderWorkflowController {
         };
         partyLoadTask = task;
         EncounterAsyncTaskSupport.submit(task, "EncounterView.refreshPartyState()", snapshot -> {
-            partyCache = snapshot.party();
-            int size = partyCache.size();
-            if (size > 0) {
-                cachedAvgLevel = snapshot.avgLevel();
-                rosterPane.setPartyInfo(size, cachedAvgLevel);
-                encounterControls.setPartyContext(size, cachedAvgLevel);
-            } else {
-                cachedAvgLevel = 1;
-                rosterPane.setPartyInfo(0, 1);
-                encounterControls.setPartyContext(1, 1);
-            }
+            applyPartySnapshot(snapshot);
             rosterPane.setGenerateEnabled(true);
             rosterPane.setSaveEncounterEnabled(rosterPane.hasSlots());
             rosterPane.setStartCombatEnabled(rosterPane.hasSlots());

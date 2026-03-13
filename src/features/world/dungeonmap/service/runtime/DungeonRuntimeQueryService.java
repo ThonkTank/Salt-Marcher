@@ -1,14 +1,16 @@
 package features.world.dungeonmap.service.runtime;
 
 import database.DatabaseManager;
+import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonRuntimeState;
-import features.world.dungeonmap.repository.DungeonEndpointRepository;
+import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeonmap.service.DungeonMapQueryService;
 
 import java.sql.Connection;
+import java.util.Comparator;
 import java.util.List;
 
 public final class DungeonRuntimeQueryService {
@@ -22,30 +24,68 @@ public final class DungeonRuntimeQueryService {
             if (mapId == null) {
                 List<DungeonMap> maps = DungeonMapRepository.getAllMaps(conn);
                 if (maps.isEmpty()) {
-                    return new DungeonRuntimeState(null, null);
+                    return new DungeonRuntimeState(null, null, null, false);
                 }
                 mapId = maps.get(0).mapId();
             }
             DungeonMapState state = DungeonMapQueryService.loadMapState(conn, mapId);
-            Long activeEndpointId = resolveActiveEndpointId(conn, mapId);
-            return new DungeonRuntimeState(state, activeEndpointId);
+            PositionResolution resolution = resolvePosition(conn, state);
+            return new DungeonRuntimeState(
+                    state,
+                    resolution.activeEndpointId(),
+                    resolution.activeSquareId(),
+                    resolution.requiresInitialPosition());
         }
     }
 
-    private Long resolveActiveEndpointId(Connection conn, long mapId) throws Exception {
-        Long campaignMapId = DungeonCampaignStateAdapter.getDungeonMapId(conn).orElse(null);
-        if (campaignMapId != null && campaignMapId.equals(mapId)) {
-            Long campaignEndpointId = DungeonCampaignStateAdapter.getDungeonEndpointId(conn).orElse(null);
-            if (campaignEndpointId != null) {
-                var storedEndpoint = DungeonEndpointRepository.findEndpoint(conn, campaignEndpointId);
-                if (storedEndpoint.isPresent() && storedEndpoint.get().mapId() == mapId) {
-                    return campaignEndpointId;
-                }
-            }
+    private PositionResolution resolvePosition(Connection conn, DungeonMapState state) throws Exception {
+        if (state == null || state.map() == null) {
+            return PositionResolution.missing();
         }
 
-        return DungeonEndpointRepository.findDefaultEntry(conn, mapId)
-                .map(endpoint -> endpoint.endpointId())
+        Long campaignMapId = DungeonCampaignStateAdapter.getDungeonMapId(conn).orElse(null);
+        // The runner must not silently jump to a default entry when this dungeon has no stored party position.
+        if (campaignMapId == null || !campaignMapId.equals(state.map().mapId())) {
+            return PositionResolution.missing();
+        }
+
+        Long storedSquareId = DungeonCampaignStateAdapter.getDungeonSquareId(conn).orElse(null);
+        DungeonSquare storedSquare = state.index().findSquare(storedSquareId);
+        Long storedEndpointId = DungeonCampaignStateAdapter.getDungeonEndpointId(conn).orElse(null);
+        DungeonEndpoint storedEndpoint = state.index().findEndpoint(storedEndpointId);
+
+        if (storedSquare != null) {
+            DungeonEndpoint endpoint = storedEndpoint != null && storedSquareId != null
+                    && storedSquareId.equals(storedEndpoint.squareId())
+                    ? storedEndpoint
+                    : resolveEndpointForSquare(state, storedSquare.squareId());
+            return new PositionResolution(endpoint == null ? null : endpoint.endpointId(), storedSquare.squareId(), false);
+        }
+
+        // Legacy fallback: endpoint-only state still counts as an existing party location.
+        if (storedEndpoint != null) {
+            return new PositionResolution(storedEndpoint.endpointId(), storedEndpoint.squareId(), false);
+        }
+
+        return PositionResolution.missing();
+    }
+
+    static DungeonEndpoint resolveEndpointForSquare(DungeonMapState state, Long squareId) {
+        if (state == null || squareId == null) {
+            return null;
+        }
+        return state.endpoints().stream()
+                .filter(endpoint -> squareId.equals(endpoint.squareId()))
+                .sorted(Comparator
+                        .comparing(DungeonEndpoint::defaultEntry).reversed()
+                        .thenComparing(endpoint -> endpoint.endpointId() == null ? Long.MAX_VALUE : endpoint.endpointId()))
+                .findFirst()
                 .orElse(null);
+    }
+
+    private record PositionResolution(Long activeEndpointId, Long activeSquareId, boolean requiresInitialPosition) {
+        static PositionResolution missing() {
+            return new PositionResolution(null, null, true);
+        }
     }
 }

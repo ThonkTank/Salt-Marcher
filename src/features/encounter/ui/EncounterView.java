@@ -62,6 +62,10 @@ public class EncounterView implements AppView {
         workflow.refreshPartyStateFromExternal();
     }
 
+    public boolean launchRuntimeEncounter(List<Long> tableIds) {
+        return workflow.launchRuntimeEncounter(tableIds);
+    }
+
     @Override
     public Node getMainContent() {
         return monsterList;

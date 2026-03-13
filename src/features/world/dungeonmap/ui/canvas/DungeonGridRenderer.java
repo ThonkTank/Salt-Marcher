@@ -28,6 +28,8 @@ final class DungeonGridRenderer {
     private static final Color INVALID_EDGE_STROKE = Color.web("#e53935", 0.90);
     private static final Color BOUNDARY_STROKE = Color.web("#4a5560", 0.55);
     private static final Color WALL_COLOR = Color.web("#3a2a1a");
+    private static final Color PARTY_TOKEN_FILL = Color.web("#f5efe1");
+    private static final Color PARTY_TOKEN_STROKE = Color.web("#2f7fd1");
 
     private static final Color[] ROOM_PALETTE = {
         Color.web("#5a4a36"),
@@ -144,6 +146,7 @@ final class DungeonGridRenderer {
         }
         drawPendingLinkStart(gc);
         drawInvalidEdge(gc);
+        drawPartyToken(gc);
     }
 
     private void drawSquareSelection(GraphicsContext gc, DungeonSquare square, DungeonMapState state) {
@@ -256,6 +259,26 @@ final class DungeonGridRenderer {
         double sy = viewport.screenY(edgeY + 1);
         double ex = viewport.screenX(edgeX + 1);
         gc.strokeLine(sx, sy, ex, sy);
+    }
+
+    private void drawPartyToken(GraphicsContext gc) {
+        Long partySquareId = model.partySquareId();
+        if (partySquareId == null || model.state() == null) {
+            return;
+        }
+        DungeonSquare square = model.state().index().findSquare(partySquareId);
+        if (square == null) {
+            return;
+        }
+        double size = viewport.scaledCellSize();
+        double centerX = viewport.screenX(square.x()) + size / 2.0;
+        double centerY = viewport.screenY(square.y()) + size / 2.0;
+        double radius = Math.max(5.0, size * 0.24);
+        gc.setFill(PARTY_TOKEN_FILL);
+        gc.fillOval(centerX - radius, centerY - radius, radius * 2.0, radius * 2.0);
+        gc.setStroke(PARTY_TOKEN_STROKE);
+        gc.setLineWidth(Math.max(2.0, 3.0 * viewport.strokeScale()));
+        gc.strokeOval(centerX - radius, centerY - radius, radius * 2.0, radius * 2.0);
     }
 
     private void drawPendingLinkStart(GraphicsContext gc) {

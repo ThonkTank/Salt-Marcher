@@ -9,6 +9,7 @@ final class DungeonCanvasInteractionState {
     private DungeonSelection selection = DungeonSelection.none();
     private DungeonLinkAnchor pendingLinkStart;
     private Long partyEndpointId;
+    private Long partySquareId;
     private Integer invalidEdgeX;
     private Integer invalidEdgeY;
     private PassageDirection invalidEdgeDirection;
@@ -20,6 +21,7 @@ final class DungeonCanvasInteractionState {
     void resetForLoadedState() {
         selection = DungeonSelection.none();
         partyEndpointId = null;
+        partySquareId = null;
         pendingLinkStart = null;
         clearInvalidEdge();
     }
@@ -42,6 +44,14 @@ final class DungeonCanvasInteractionState {
 
     void setPartyEndpointId(Long partyEndpointId) {
         this.partyEndpointId = partyEndpointId;
+    }
+
+    Long partySquareId() {
+        return partySquareId;
+    }
+
+    void setPartySquareId(Long partySquareId) {
+        this.partySquareId = partySquareId;
     }
 
     void setInvalidEdge(int x, int y, PassageDirection direction) {

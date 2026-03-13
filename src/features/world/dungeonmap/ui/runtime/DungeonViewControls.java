@@ -18,6 +18,7 @@ public class DungeonViewControls extends VBox {
     private final Label currentAreaLabel = new Label("-");
     private final Label currentEndpointLabel = new Label("-");
     private final Label encounterProfileLabel = new Label("-");
+    private final Label statusLabel = new Label("-");
     private boolean updating = false;
     private Consumer<Long> onMapSelected;
 
@@ -56,6 +57,9 @@ public class DungeonViewControls extends VBox {
         endpointLabel.getStyleClass().add("text-muted");
         Label encounterProfileTitle = new Label("Encounter-Profil");
         encounterProfileTitle.getStyleClass().add("text-muted");
+        Label statusTitle = new Label("Status");
+        statusTitle.getStyleClass().add("text-muted");
+        statusLabel.setWrapText(true);
 
         getChildren().addAll(
                 header,
@@ -70,7 +74,9 @@ public class DungeonViewControls extends VBox {
                 endpointLabel,
                 currentEndpointLabel,
                 encounterProfileTitle,
-                encounterProfileLabel);
+                encounterProfileLabel,
+                statusTitle,
+                statusLabel);
     }
 
     public void setMaps(List<DungeonMap> maps, Long selectedMapId) {
@@ -99,11 +105,12 @@ public class DungeonViewControls extends VBox {
         updating = previousUpdating;
     }
 
-    public void showLocation(String roomName, String areaName, String encounterProfile, String endpointName) {
+    public void showLocation(String roomName, String areaName, String encounterProfile, String endpointName, String statusText) {
         currentRoomLabel.setText(roomName == null || roomName.isBlank() ? "-" : roomName);
         currentAreaLabel.setText(areaName == null || areaName.isBlank() ? "-" : areaName);
         currentEndpointLabel.setText(endpointName == null || endpointName.isBlank() ? "-" : endpointName);
         encounterProfileLabel.setText(encounterProfile == null || encounterProfile.isBlank() ? "-" : encounterProfile);
+        statusLabel.setText(statusText == null || statusText.isBlank() ? "-" : statusText);
     }
 
     public void setOnMapSelected(Consumer<Long> onMapSelected) {

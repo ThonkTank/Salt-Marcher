@@ -194,6 +194,11 @@ public class DungeonMapPane extends StackPane {
         overlayRenderer.refreshEndpointStyles();
     }
 
+    public void setPartySquare(Long squareId) {
+        model.setPartySquareId(squareId);
+        gridRenderer.redrawSelection();
+    }
+
     public void previewPaint(DungeonSquarePaint paint) {
         model.previewPaint(paint);
         gridRenderer.redrawVisibleCell(paint.x(), paint.y());
