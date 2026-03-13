@@ -17,7 +17,7 @@ public class DungeonViewControls extends VBox {
     private final Label currentRoomLabel = new Label("-");
     private final Label currentAreaLabel = new Label("-");
     private final Label currentEndpointLabel = new Label("-");
-    private final Label encounterTableLabel = new Label("-");
+    private final Label encounterProfileLabel = new Label("-");
     private boolean updating = false;
     private Consumer<Long> onMapSelected;
 
@@ -54,8 +54,8 @@ public class DungeonViewControls extends VBox {
         bereichLabel.getStyleClass().add("text-muted");
         Label endpointLabel = new Label("Aktueller Übergang");
         endpointLabel.getStyleClass().add("text-muted");
-        Label tableLabel = new Label("Encounter Table");
-        tableLabel.getStyleClass().add("text-muted");
+        Label encounterProfileTitle = new Label("Encounter-Profil");
+        encounterProfileTitle.getStyleClass().add("text-muted");
 
         getChildren().addAll(
                 header,
@@ -69,8 +69,8 @@ public class DungeonViewControls extends VBox {
                 currentAreaLabel,
                 endpointLabel,
                 currentEndpointLabel,
-                tableLabel,
-                encounterTableLabel);
+                encounterProfileTitle,
+                encounterProfileLabel);
     }
 
     public void setMaps(List<DungeonMap> maps, Long selectedMapId) {
@@ -99,11 +99,11 @@ public class DungeonViewControls extends VBox {
         updating = previousUpdating;
     }
 
-    public void showLocation(String roomName, String areaName, String encounterTableName, String endpointName) {
+    public void showLocation(String roomName, String areaName, String encounterProfile, String endpointName) {
         currentRoomLabel.setText(roomName == null || roomName.isBlank() ? "-" : roomName);
         currentAreaLabel.setText(areaName == null || areaName.isBlank() ? "-" : areaName);
         currentEndpointLabel.setText(endpointName == null || endpointName.isBlank() ? "-" : endpointName);
-        encounterTableLabel.setText(encounterTableName == null || encounterTableName.isBlank() ? "-" : encounterTableName);
+        encounterProfileLabel.setText(encounterProfile == null || encounterProfile.isBlank() ? "-" : encounterProfile);
     }
 
     public void setOnMapSelected(Consumer<Long> onMapSelected) {

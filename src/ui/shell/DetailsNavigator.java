@@ -4,7 +4,6 @@ import features.creatures.api.StatBlockRequest;
 import features.encountertable.api.EncounterTableSummary;
 import features.loottable.api.LootTableSummary;
 import features.spells.api.SpellSummary;
-import features.world.dungeonmap.api.DungeonAreaSummary;
 import features.world.dungeonmap.api.DungeonEndpointSummary;
 import features.world.dungeonmap.api.DungeonFeatureSummary;
 import features.world.dungeonmap.api.DungeonLinkSummary;
@@ -44,8 +43,11 @@ public interface DetailsNavigator {
 
     void showDungeonRoom(DungeonRoomSummary summary);
 
-    void showDungeonArea(DungeonAreaSummary summary);
-
+    /**
+     * Dungeon editor room/feature inspector cards may host lightweight single-entity quick edits
+     * when they need to stay available while running the game. Multi-step workflow UI still belongs
+     * in the lower-right state pane.
+     */
     void showDungeonFeature(DungeonFeatureSummary summary);
 
     void showDungeonEndpoint(DungeonEndpointSummary summary);

@@ -3,6 +3,7 @@ package features.world.dungeonmap.ui.editor;
 import features.world.dungeonmap.api.DungeonEncounterSummary;
 import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
+import features.world.dungeonmap.model.DungeonAreaEncounterTableLink;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEndpointRole;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -14,6 +15,7 @@ import features.world.dungeonmap.model.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSquare;
+import features.world.dungeonmap.ui.DungeonAreaEncounterText;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
@@ -59,6 +61,8 @@ public final class DungeonEditorInspectorContentFactory {
             return box;
         }
 
+        // Room metadata remains a lightweight inspector quick edit so the GM can keep the room
+        // reference card open while adjusting only that room's own name/description.
         TextField nameField = new TextField(room.name() == null ? "" : room.name());
         TextArea descriptionArea = textArea(room.description());
         Button saveButton = saveButton(() -> entityCrudController.updateRoomMetadata(new DungeonRoom(
@@ -87,30 +91,12 @@ public final class DungeonEditorInspectorContentFactory {
             return box;
         }
 
-        TextField nameField = new TextField(area.name() == null ? "" : area.name());
-        TextArea descriptionArea = textArea(area.description());
-        ComboBox<DungeonEncounterTableSummary> encounterTableCombo = new ComboBox<>();
-        encounterTableCombo.setMaxWidth(Double.MAX_VALUE);
-        encounterTableCombo.setConverter(namedConverter(DungeonEncounterTableSummary::name));
-        encounterTableCombo.getItems().setAll(state.encounterTables());
-        encounterTableCombo.setValue(findById(state.encounterTables(), area.encounterTableId(), DungeonEncounterTableSummary::tableId));
-        Button saveButton = saveButton(() -> {
-            DungeonEncounterTableSummary selectedTable = encounterTableCombo.getValue();
-            entityCrudController.saveArea(new DungeonArea(
-                    area.areaId(),
-                    area.mapId(),
-                    nameField.getText().trim(),
-                    descriptionArea.getText(),
-                    selectedTable == null ? null : selectedTable.tableId()));
-        });
-
         List<DungeonRoom> rooms = roomsForArea(area.areaId());
         box.getChildren().addAll(
-                secondary("Encounter Table: " + valueOrDash(resolveEncounterTableName(area.encounterTableId()))),
-                secondary("Räume: " + rooms.size()),
-                section("Name", nameField),
-                section("Beschreibung", descriptionArea),
-                section("Encounter Table", encounterTableCombo, saveRow(saveButton)));
+                secondary("Name: " + valueOrDash(area.name())),
+                secondary("Encounter-Rhythmus: " + DungeonAreaEncounterText.formatCadence(area.encounterEveryHours())),
+                secondary("Räume: " + rooms.size()));
+        appendListSection(box, "Encounter-Tabellen", describeEncounterTables(area.encounterTableLinks()));
         appendListSection(box, "Räume", describeRooms(rooms));
         return box;
     }
@@ -122,6 +108,8 @@ public final class DungeonEditorInspectorContentFactory {
             return box;
         }
 
+        // Feature edits here are intentionally single-entity scoped quick edits; broader editor
+        // workflow state still lives in the lower-right pane.
         TextField nameField = new TextField(feature.name() == null ? "" : feature.name());
         TextArea notesArea = textArea(feature.notes());
         ComboBox<DungeonFeatureCategory> categoryCombo = new ComboBox<>();
@@ -618,9 +606,23 @@ public final class DungeonEditorInspectorContentFactory {
         return area == null ? null : area.name();
     }
 
+    private List<String> describeEncounterTables(List<DungeonAreaEncounterTableLink> encounterTableLinks) {
+        if (encounterTableLinks == null || encounterTableLinks.isEmpty()) {
+            return List.of("Keine Encounter-Tabellen");
+        }
+        int totalWeight = DungeonAreaEncounterText.totalWeight(encounterTableLinks);
+        List<String> rows = new ArrayList<>();
+        for (DungeonAreaEncounterTableLink link : encounterTableLinks) {
+            rows.add(resolveEncounterTableName(link.tableId())
+                    + " - Gewicht " + Math.max(1, link.weight())
+                    + " (" + DungeonAreaEncounterText.formatPercent(link.weight(), totalWeight) + ")");
+        }
+        return rows;
+    }
+
     private String resolveEncounterTableName(Long encounterTableId) {
         DungeonEncounterTableSummary summary = findById(state.encounterTables(), encounterTableId, DungeonEncounterTableSummary::tableId);
-        return summary == null ? null : summary.name();
+        return summary == null ? "#" + encounterTableId : summary.name();
     }
 
     private String resolveEncounterName(Long encounterId) {

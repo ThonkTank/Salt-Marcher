@@ -51,8 +51,8 @@ public final class DungeonAreaNormalizationService {
                 null,
                 map.mapId(),
                 map.name(),
-                "",
-                null));
+                DungeonArea.DEFAULT_ENCOUNTER_EVERY_HOURS,
+                List.of()));
     }
 
     private static void assignUnassignedRooms(Connection conn, long mapId, List<DungeonArea> areas) throws SQLException {

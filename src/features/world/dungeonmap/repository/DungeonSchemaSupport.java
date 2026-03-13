@@ -1,5 +1,6 @@
 package features.world.dungeonmap.repository;
 
+import database.SchemaCompatibility;
 import features.world.dungeonmap.model.DungeonLinkAnchorType;
 
 import java.sql.SQLException;
@@ -60,7 +61,25 @@ public final class DungeonSchemaSupport {
                 + "map_id              INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "name                TEXT NOT NULL,"
                 + "description         TEXT,"
+                + "encounter_every_hours INTEGER NOT NULL DEFAULT 6,"
+                // Keep the legacy single-table column so older local databases stay readable until rebuilt.
                 + "encounter_table_id  INTEGER"
+                + ")");
+        ensureColumn(stmt, "dungeon_areas", "encounter_every_hours", "INTEGER NOT NULL DEFAULT 6");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_area_encounter_tables ("
+                + "area_id      INTEGER NOT NULL REFERENCES dungeon_areas(area_id) ON DELETE CASCADE,"
+                + "table_id     INTEGER NOT NULL REFERENCES encounter_tables(table_id) ON DELETE CASCADE,"
+                + "weight       INTEGER NOT NULL DEFAULT 1,"
+                + "sort_order   INTEGER NOT NULL DEFAULT 0,"
+                + "PRIMARY KEY (area_id, table_id)"
+                + ")");
+        // Legacy single-table values should only seed areas that have not been migrated yet.
+        stmt.execute("INSERT INTO dungeon_area_encounter_tables(area_id, table_id, weight, sort_order) "
+                + "SELECT areas.area_id, areas.encounter_table_id, 1, 0 "
+                + "FROM dungeon_areas areas "
+                + "WHERE areas.encounter_table_id IS NOT NULL "
+                + "AND NOT EXISTS ("
+                + "SELECT 1 FROM dungeon_area_encounter_tables links WHERE links.area_id = areas.area_id"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_rooms ("
                 + "room_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -117,6 +136,8 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_squares_map ON dungeon_squares(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_rooms_map ON dungeon_rooms(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_areas_map ON dungeon_areas(map_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_area_encounter_tables_area ON dungeon_area_encounter_tables(area_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_area_encounter_tables_table ON dungeon_area_encounter_tables(table_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_endpoints_map ON dungeon_endpoints(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_links_map ON dungeon_links(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_passages_map ON dungeon_passages(map_id)");
@@ -139,5 +160,14 @@ public final class DungeonSchemaSupport {
             case ENDPOINT -> "endpoint";
             case PASSAGE -> "passage";
         };
+    }
+
+    private static void ensureColumn(
+            Statement stmt,
+            String tableName,
+            String columnName,
+            String columnDefinition
+    ) throws SQLException {
+        SchemaCompatibility.ensureColumn(stmt.getConnection(), tableName, columnName, columnDefinition);
     }
 }

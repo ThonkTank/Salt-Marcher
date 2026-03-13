@@ -201,7 +201,6 @@ public final class DungeonMapLoadingWorkflowController {
         applyViewData(loadedState);
         resetTransientUiState();
         restoreSelection(loadedState);
-        onEncounterTablesChanged.run();
     }
 
     private void applyViewData(DungeonMapState loadedState) {

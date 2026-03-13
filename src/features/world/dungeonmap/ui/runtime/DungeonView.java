@@ -1,6 +1,5 @@
 package features.world.dungeonmap.ui.runtime;
 
-import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonMapState;
@@ -8,6 +7,7 @@ import features.world.dungeonmap.model.DungeonRuntimeState;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.service.DungeonRuntimeService;
+import features.world.dungeonmap.ui.DungeonAreaEncounterText;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
@@ -26,7 +26,6 @@ public class DungeonView implements AppView {
     private final Map<Long, DungeonEndpoint> endpointsById = new HashMap<>();
     private final Map<Long, DungeonSquare> squaresById = new HashMap<>();
     private final Map<Long, DungeonArea> areasById = new HashMap<>();
-    private final Map<Long, String> encounterTableNamesById = new HashMap<>();
     private long loadRequestToken = 0;
     private Long selectedMapId;
 
@@ -65,9 +64,6 @@ public class DungeonView implements AppView {
                     canvas.showLoadError("Dungeonliste konnte nicht geladen werden");
                     UiErrorReporter.reportBackgroundFailure("DungeonView.loadMapList()", ex);
                 });
-        applicationService.loadEncounterTables(
-                this::setEncounterTables,
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonView.loadEncounterTables()", ex));
         loadMap(null);
     }
 
@@ -138,14 +134,14 @@ public class DungeonView implements AppView {
         }
         String roomName = square.roomName();
         String areaName = square.areaName();
-        String tableName = null;
+        String encounterProfile = null;
         if (square.areaId() != null) {
             DungeonArea area = areasById.get(square.areaId());
             if (area != null) {
-                tableName = encounterTableNamesById.get(area.encounterTableId());
+                encounterProfile = DungeonAreaEncounterText.formatAreaSummary(area);
             }
         }
-        controls.showLocation(roomName, areaName, tableName, endpoint.name());
+        controls.showLocation(roomName, areaName, encounterProfile, endpoint.name());
         canvas.setPartyEndpoint(activeEndpointId);
     }
 
@@ -162,16 +158,6 @@ public class DungeonView implements AppView {
         canvas.setPartyEndpoint(null);
         controls.showLocation(null, null, null, null);
         UiErrorReporter.reportBackgroundFailure("DungeonView.loadMap()", throwable);
-    }
-
-    private void setEncounterTables(java.util.List<DungeonEncounterTableSummary> tables) {
-        encounterTableNamesById.clear();
-        if (tables != null) {
-            for (DungeonEncounterTableSummary table : tables) {
-                encounterTableNamesById.put(table.tableId(), table.name());
-            }
-        }
-        updateLocationLabels();
     }
 
     private void rebuildLookups() {

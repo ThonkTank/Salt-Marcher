@@ -52,7 +52,6 @@ public class DungeonEditorView implements AppView {
         selectionWorkflowController.setDetailsNavigator(detailsNavigator);
         selectionWorkflowController.setInspectorContentFactory(inspectorContentFactory);
         loadingWorkflowController.setOnEncounterTablesChanged(() -> {
-            selectionEditorWorkflowController.syncEncounterTableSelection();
             selectionWorkflowController.refreshInspectorForCurrentSelection();
         });
         loadingWorkflowController.setOnStoredEncountersChanged(() -> {

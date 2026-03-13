@@ -8,7 +8,6 @@ import features.items.api.ItemViewerPane;
 import features.loottable.api.LootTableSummary;
 import features.spells.api.SpellSummary;
 import features.spells.api.SpellCatalogService;
-import features.world.dungeonmap.api.DungeonAreaSummary;
 import features.world.dungeonmap.api.DungeonEndpointSummary;
 import features.world.dungeonmap.api.DungeonFeatureSummary;
 import features.world.dungeonmap.api.DungeonLinkSummary;
@@ -180,12 +179,6 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     public void showDungeonRoom(DungeonRoomSummary summary) {
         if (summary == null) return;
         openEntry(new DungeonRoomEntry(summary));
-    }
-
-    @Override
-    public void showDungeonArea(DungeonAreaSummary summary) {
-        if (summary == null) return;
-        openEntry(new DungeonAreaEntry(summary));
     }
 
     @Override
@@ -365,10 +358,6 @@ public class InspectorPane extends VBox implements DetailsNavigator {
 
     private void renderDungeonRoom(DungeonRoomSummary summary) {
         showContentNode(summary.name(), buildDungeonRoomNode(summary), false);
-    }
-
-    private void renderDungeonArea(DungeonAreaSummary summary) {
-        showContentNode(summary.name(), buildDungeonAreaNode(summary), false);
     }
 
     private void renderDungeonFeature(DungeonFeatureSummary summary) {
@@ -581,18 +570,6 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         return box;
     }
 
-    private static Node buildDungeonAreaNode(DungeonAreaSummary summary) {
-        VBox box = new VBox(6);
-        box.setPadding(new Insets(12));
-        Label kind = new Label("Bereich");
-        kind.getStyleClass().addAll("section-header", "text-muted");
-        box.getChildren().addAll(kind, secondary("Encounter Table: " + valueOrDash(summary.encounterTableName())));
-        if (summary.description() != null && !summary.description().isBlank()) {
-            addSection(box, "Beschreibung", summary.description());
-        }
-        return box;
-    }
-
     private static Node buildDungeonFeatureNode(DungeonFeatureSummary summary) {
         VBox box = new VBox(6);
         box.setPadding(new Insets(12));
@@ -688,7 +665,7 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         return school == null || school.isBlank() ? levelText : levelText + " • " + school;
     }
 
-    private sealed interface HistoryEntry permits StatBlockEntry, ItemEntry, SpellEntry, EncounterTableEntry, LootTableEntry, HexTileEntry, DungeonSquareEntry, DungeonRoomEntry, DungeonAreaEntry, DungeonFeatureEntry, DungeonEndpointEntry, DungeonLinkEntry, DungeonPassageEntry, InfoEntry, HostedContentEntry {
+    private sealed interface HistoryEntry permits StatBlockEntry, ItemEntry, SpellEntry, EncounterTableEntry, LootTableEntry, HexTileEntry, DungeonSquareEntry, DungeonRoomEntry, DungeonFeatureEntry, DungeonEndpointEntry, DungeonLinkEntry, DungeonPassageEntry, InfoEntry, HostedContentEntry {
         Object entryKey();
         boolean sameEntry(HistoryEntry other);
         void render(InspectorPane pane, long requestVersion);
@@ -832,23 +809,6 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         @Override
         public void render(InspectorPane pane, long requestVersion) {
             pane.renderDungeonRoom(summary);
-        }
-    }
-
-    private record DungeonAreaEntry(DungeonAreaSummary summary) implements HistoryEntry {
-        @Override
-        public Object entryKey() {
-            return new DetailsNavigator.EntryKey("dungeon-area", summary.areaId());
-        }
-
-        @Override
-        public boolean sameEntry(HistoryEntry other) {
-            return other instanceof DungeonAreaEntry entry && summary.areaId() == entry.summary.areaId();
-        }
-
-        @Override
-        public void render(InspectorPane pane, long requestVersion) {
-            pane.renderDungeonArea(summary);
         }
     }
 

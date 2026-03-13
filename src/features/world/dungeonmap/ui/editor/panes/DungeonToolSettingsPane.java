@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor.panes;
 
-import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.api.DungeonEncounterSummary;
+import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.BrushShape;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 public class DungeonToolSettingsPane extends VBox {
 
     private final ComboBox<DungeonArea> areaCombo = new ComboBox<>();
-    private final ComboBox<DungeonEncounterTableSummary> encounterTableCombo = new ComboBox<>();
+    private final AreaEncounterProfileEditor areaProfileEditor = new AreaEncounterProfileEditor();
     private final ComboBox<DungeonEncounterSummary> encounterCombo = new ComboBox<>();
     private final ComboBox<DungeonFeatureCategory> featureCategoryCombo = new ComboBox<>();
     private final ComboBox<DungeonFeature> activeFeatureCombo = new ComboBox<>();
@@ -83,13 +83,11 @@ public class DungeonToolSettingsPane extends VBox {
         activeToolLabel.getStyleClass().add("dungeon-panel-title");
 
         areaCombo.setPromptText("Bereich wählen…");
-        encounterTableCombo.setPromptText("Encounter Table…");
         encounterCombo.setPromptText("Encounter wählen…");
         featureCategoryCombo.setPromptText("Kategorie wählen…");
         activeFeatureCombo.setPromptText("Feature wählen…");
         tileFeatureCombo.setPromptText("Feature auf Feld…");
         areaCombo.setMaxWidth(Double.MAX_VALUE);
-        encounterTableCombo.setMaxWidth(Double.MAX_VALUE);
         encounterCombo.setMaxWidth(Double.MAX_VALUE);
         featureCategoryCombo.setMaxWidth(Double.MAX_VALUE);
         activeFeatureCombo.setMaxWidth(Double.MAX_VALUE);
@@ -108,7 +106,11 @@ public class DungeonToolSettingsPane extends VBox {
         deleteFeatureButton.getStyleClass().add("danger");
 
         areaCombo.setOnAction(event -> {
-            if (!updatingSelections && onAreaSelected != null) {
+            if (updatingSelections) {
+                return;
+            }
+            updateSelectedAreaEditor();
+            if (onAreaSelected != null) {
                 onAreaSelected.accept(areaCombo.getValue());
             }
         });
@@ -158,6 +160,7 @@ public class DungeonToolSettingsPane extends VBox {
 
         brushSizeSpinner.setPrefWidth(70);
         brushSizeSpinner.setEditable(false);
+
         Label brushLabel = new Label("Pinselgröße");
         brushLabel.getStyleClass().add("text-muted");
         HBox brushRow = new HBox(6, brushLabel, brushSizeSpinner);
@@ -167,10 +170,8 @@ public class DungeonToolSettingsPane extends VBox {
 
         Label areaLabel = new Label("Aktiver Bereich");
         areaLabel.getStyleClass().add("text-muted");
-        Label tableLabel = new Label("Encounter Table");
-        tableLabel.getStyleClass().add("text-muted");
         HBox areaActions = actionRow(newAreaButton, deleteAreaButton);
-        areaGroup = card("Bereich", new VBox(6, areaLabel, areaCombo, areaActions, tableLabel, encounterTableCombo));
+        areaGroup = card("Bereich", new VBox(8, areaLabel, areaCombo, areaActions, areaProfileEditor));
 
         Label featureCategoryLabel = new Label("Aktive Kategorie");
         featureCategoryLabel.getStyleClass().add("text-muted");
@@ -180,14 +181,20 @@ public class DungeonToolSettingsPane extends VBox {
         Label tileFeatureLabel = new Label("Features auf ausgewähltem Feld");
         tileFeatureLabel.getStyleClass().add("text-muted");
         HBox featureActions = actionRow(newFeatureButton, deleteFeatureButton);
-        VBox featureManagement = new VBox(6,
-                featureCategoryLabel, featureCategoryCombo,
-                activeFeatureLabel, activeFeatureCombo,
-                encounterSelectionLabel, encounterCombo,
+        VBox featureManagement = new VBox(
+                6,
+                featureCategoryLabel,
+                featureCategoryCombo,
+                activeFeatureLabel,
+                activeFeatureCombo,
+                encounterSelectionLabel,
+                encounterCombo,
                 featureActions);
         featureManagement.getStyleClass().add("editor-subsection");
-        VBox tileAssignment = new VBox(6,
-                tileFeatureLabel, tileFeatureCombo,
+        VBox tileAssignment = new VBox(
+                6,
+                tileFeatureLabel,
+                tileFeatureCombo,
                 actionRow(addTileToFeatureButton, removeTileFromFeatureButton));
         tileAssignment.getStyleClass().add("editor-subsection");
         featureGroup = card("Features", featureManagement, tileAssignment);
@@ -220,6 +227,7 @@ public class DungeonToolSettingsPane extends VBox {
         setGroupVisible(featureGroup, false);
         updateEncounterSelectionState();
         updateBrushControlState();
+        updateSelectedAreaEditor();
         setMapLoaded(false);
     }
 
@@ -292,6 +300,7 @@ public class DungeonToolSettingsPane extends VBox {
         deleteAreaButton.setDisable(!loaded);
         newFeatureButton.setDisable(!loaded);
         deleteFeatureButton.setDisable(!loaded);
+        areaProfileEditor.setEditable(loaded && areaCombo.getValue() != null);
     }
 
     public Long getActiveAreaId() {
@@ -306,10 +315,6 @@ public class DungeonToolSettingsPane extends VBox {
         return featureCategoryCombo.getValue() == null ? DungeonFeatureCategory.HAZARD : featureCategoryCombo.getValue();
     }
 
-    public DungeonEncounterTableSummary getSelectedEncounterTable() {
-        return encounterTableCombo.getValue();
-    }
-
     public DungeonEncounterSummary getSelectedEncounter() {
         return encounterCombo.getValue();
     }
@@ -318,8 +323,13 @@ public class DungeonToolSettingsPane extends VBox {
         updatingSelections = true;
         DungeonArea previous = areaCombo.getValue();
         areaCombo.getItems().setAll(areas);
-        areaCombo.setValue(findById(areas, previous == null ? null : previous.areaId(), DungeonArea::areaId, areas.isEmpty() ? null : areas.get(0)));
+        areaCombo.setValue(findById(
+                areas,
+                previous == null ? null : previous.areaId(),
+                DungeonArea::areaId,
+                areas.isEmpty() ? null : areas.get(0)));
         updatingSelections = false;
+        updateSelectedAreaEditor();
     }
 
     public void setFeatures(List<DungeonFeature> features) {
@@ -337,7 +347,7 @@ public class DungeonToolSettingsPane extends VBox {
     }
 
     public void setEncounterTables(List<DungeonEncounterTableSummary> tables) {
-        encounterTableCombo.getItems().setAll(tables);
+        areaProfileEditor.setEncounterTables(tables);
     }
 
     public void setStoredEncounters(List<DungeonEncounterSummary> encounters) {
@@ -349,6 +359,7 @@ public class DungeonToolSettingsPane extends VBox {
         updatingSelections = true;
         areaCombo.setValue(findById(areaCombo.getItems(), areaId, DungeonArea::areaId, null));
         updatingSelections = false;
+        updateSelectedAreaEditor();
     }
 
     public void selectFeatureCategory(DungeonFeatureCategory category) {
@@ -374,11 +385,11 @@ public class DungeonToolSettingsPane extends VBox {
         updatingSelections = true;
         areaCombo.setValue(null);
         activeFeatureCombo.setValue(null);
-        encounterTableCombo.setValue(null);
         encounterCombo.setValue(null);
         tileFeatureCombo.getItems().clear();
         tileFeatureCombo.setValue(null);
         updatingSelections = false;
+        updateSelectedAreaEditor();
         updateEncounterSelectionState();
     }
 
@@ -390,19 +401,6 @@ public class DungeonToolSettingsPane extends VBox {
         tileFeatureCombo.setValue(null);
         updatingSelections = false;
         updateEncounterSelectionState();
-    }
-
-    public void selectEncounterTable(Long tableId) {
-        if (tableId == null) {
-            encounterTableCombo.setValue(null);
-            return;
-        }
-        for (DungeonEncounterTableSummary table : encounterTableCombo.getItems()) {
-            if (table.tableId() == tableId) {
-                encounterTableCombo.setValue(table);
-                return;
-            }
-        }
     }
 
     public void selectEncounter(Long encounterId) {
@@ -421,10 +419,6 @@ public class DungeonToolSettingsPane extends VBox {
 
     public ComboBox<DungeonArea> areaComboBox() {
         return areaCombo;
-    }
-
-    public ComboBox<DungeonEncounterTableSummary> encounterTableComboBox() {
-        return encounterTableCombo;
     }
 
     public ComboBox<DungeonEncounterSummary> encounterComboBox() {
@@ -475,6 +469,10 @@ public class DungeonToolSettingsPane extends VBox {
         this.onAreaSelected = onAreaSelected;
     }
 
+    public void setOnAreaProfileSaveRequested(Consumer<DungeonArea> onAreaProfileSaveRequested) {
+        areaProfileEditor.setOnSaveRequested(onAreaProfileSaveRequested);
+    }
+
     public void setOnFeatureSelected(Consumer<DungeonFeature> onFeatureSelected) {
         this.onFeatureSelected = onFeatureSelected;
     }
@@ -518,6 +516,11 @@ public class DungeonToolSettingsPane extends VBox {
         }
     }
 
+    private void updateSelectedAreaEditor() {
+        areaProfileEditor.setArea(areaCombo.getValue());
+        areaProfileEditor.setEditable(!newAreaButton.isDisabled() && areaCombo.getValue() != null);
+    }
+
     private void updateBrushControlState() {
         brushSizeSpinner.setDisable(!brushPaintModeActive);
     }
@@ -557,5 +560,4 @@ public class DungeonToolSettingsPane extends VBox {
     private static String toolTitle(DungeonEditorTool tool) {
         return tool.panelTitle();
     }
-
 }

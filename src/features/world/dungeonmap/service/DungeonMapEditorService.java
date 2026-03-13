@@ -125,7 +125,18 @@ public final class DungeonMapEditorService {
 
     public static long saveArea(DungeonArea area) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
-            return DungeonAreaRepository.upsertArea(conn, area);
+            boolean previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                long areaId = DungeonAreaRepository.upsertArea(conn, area);
+                conn.commit();
+                return areaId;
+            } catch (SQLException ex) {
+                conn.rollback();
+                throw ex;
+            } finally {
+                conn.setAutoCommit(previousAutoCommit);
+            }
         }
     }
 

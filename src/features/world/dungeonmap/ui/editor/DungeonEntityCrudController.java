@@ -1,6 +1,5 @@
 package features.world.dungeonmap.ui.editor;
 
-import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonFeatureCategory;
@@ -58,13 +57,12 @@ public final class DungeonEntityCrudController {
             return;
         }
         areaDropdown.show(anchor, "Bereich erstellen", "Name", "Neuer Bereich", "Erstellen", name -> {
-            DungeonEncounterTableSummary selectedTable = toolSettingsPane.getSelectedEncounterTable();
             saveArea(new DungeonArea(
                     null,
                     state.currentMapId(),
                     name,
-                    "",
-                    selectedTable == null ? null : selectedTable.tableId()));
+                    DungeonArea.DEFAULT_ENCOUNTER_EVERY_HOURS,
+                    java.util.List.of()));
             areaDropdown.hide();
         });
     }
@@ -72,9 +70,7 @@ public final class DungeonEntityCrudController {
     public void saveArea(DungeonArea area) {
         applicationService.saveArea(
                 area,
-                areaId -> {
-                    reloadCurrentMap.accept(DungeonSelectionRestoreRequest.area(areaId));
-                },
+                areaId -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.area(areaId)),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityCrudController.saveArea()", ex));
     }
 

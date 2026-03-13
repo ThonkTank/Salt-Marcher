@@ -1,7 +1,6 @@
 package features.world.dungeonmap.ui.editor.workflow;
 
 import features.world.dungeonmap.api.DungeonEncounterSummary;
-import features.world.dungeonmap.api.DungeonEncounterTableSummary;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.ui.editor.DungeonEntityCrudController;
@@ -45,31 +44,23 @@ public final class DungeonSelectionEditorWorkflowController {
 
     private void bindToolSelections() {
         toolSettingsPane.setOnAreaSelected(this::handleAreaSelected);
+        toolSettingsPane.setOnAreaProfileSaveRequested(this::saveAreaProfile);
         toolSettingsPane.setOnFeatureSelected(this::handleFeatureSelected);
         toolSettingsPane.setOnTileContextFeatureSelected(this::handleFeatureSelected);
     }
 
     private void bindToolDerivedSelections() {
-        toolSettingsPane.encounterTableComboBox().valueProperty()
-                .addListener((obs, oldValue, newValue) -> saveSelectedAreaEncounterTable(newValue));
         toolSettingsPane.encounterComboBox().valueProperty()
                 .addListener((obs, oldValue, newValue) -> saveSelectedFeatureEncounter(newValue));
     }
 
     public void handleAreaSelected(DungeonArea area) {
         selectionController.selectArea(area);
-        syncEncounterTableSelection();
     }
 
     public void handleFeatureSelected(DungeonFeature feature) {
         selectionController.selectFeature(feature);
         syncFeatureEncounterSelection();
-    }
-
-    public void syncEncounterTableSelection() {
-        DungeonArea selectedArea = toolSettingsPane.areaComboBox().getValue();
-        state.runWhileSyncingAreaSelection(() ->
-                toolSettingsPane.selectEncounterTable(selectedArea == null ? null : selectedArea.encounterTableId()));
     }
 
     public void syncFeatureEncounterSelection() {
@@ -78,17 +69,11 @@ public final class DungeonSelectionEditorWorkflowController {
                 toolSettingsPane.selectEncounter(selectedFeature == null ? null : selectedFeature.encounterId()));
     }
 
-    private void saveSelectedAreaEncounterTable(DungeonEncounterTableSummary selectedTable) {
-        DungeonArea area = toolSettingsPane.areaComboBox().getValue();
+    private void saveAreaProfile(DungeonArea area) {
         if (state.syncingAreaSelection() || area == null || state.currentState() == null) {
             return;
         }
-        entityCrudController.saveArea(new DungeonArea(
-                area.areaId(),
-                area.mapId(),
-                area.name(),
-                area.description(),
-                selectedTable == null ? null : selectedTable.tableId()));
+        entityCrudController.saveArea(area);
     }
 
     private void saveSelectedFeatureEncounter(DungeonEncounterSummary selectedEncounter) {
@@ -107,4 +92,5 @@ public final class DungeonSelectionEditorWorkflowController {
                 feature.name(),
                 feature.notes()));
     }
+
 }
