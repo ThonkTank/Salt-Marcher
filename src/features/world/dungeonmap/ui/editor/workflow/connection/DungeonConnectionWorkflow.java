@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.editing;
+package features.world.dungeonmap.ui.editor.workflow.connection;
 
 import features.world.dungeonmap.model.DungeonEndpoint;
 import features.world.dungeonmap.model.DungeonEndpointRole;
@@ -8,7 +8,7 @@ import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.application.DungeonLinkCreateResult;
 import features.world.dungeonmap.application.DungeonLinkCreateStatus;
-import features.world.dungeonmap.service.DungeonMapEditorService;
+import features.world.dungeonmap.service.DungeonMapCommands;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.inspector.actions.DungeonConnectionInspectorActions;
@@ -17,55 +17,55 @@ import features.world.dungeonmap.ui.editor.controls.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
-import features.world.dungeonmap.ui.editor.workflow.messaging.DungeonWorkflowMessageController;
-import features.world.dungeonmap.ui.editor.workflow.selection.DungeonLinkWorkflowController;
-import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionWorkflowController;
+import features.world.dungeonmap.ui.editor.workflow.messaging.EditorMessageBus;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.components.ConfirmationDropdown;
 
 import java.util.function.Consumer;
 
-public final class DungeonConnectionEditingController implements DungeonConnectionInspectorActions {
+public final class DungeonConnectionWorkflow implements DungeonConnectionInspectorActions {
 
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;
     private final DungeonMapPane canvas;
-    private final DungeonSelectionWorkflowController selectionController;
-    private final DungeonLinkWorkflowController linkWorkflowController;
-    private final DungeonWorkflowMessageController workflowMessageController;
+    private final DungeonSelectionController selectionController;
+    private final DungeonLinkFlow linkFlow;
+    private final EditorMessageBus workflowMessageBus;
+    private final DungeonMapCommands commands;
     private final ConfirmationDropdown confirmationDropdown = new ConfirmationDropdown();
-    private Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap = ignored -> { };
+    private final Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap;
 
-    public DungeonConnectionEditingController(
+    public DungeonConnectionWorkflow(
             DungeonEditorState state,
             DungeonEditorInteractionState interactionState,
             DungeonMapPane canvas,
-            DungeonSelectionWorkflowController selectionController,
-            DungeonLinkWorkflowController linkWorkflowController,
-            DungeonWorkflowMessageController workflowMessageController
+            DungeonSelectionController selectionController,
+            DungeonLinkFlow linkFlow,
+            EditorMessageBus workflowMessageBus,
+            DungeonMapCommands commands,
+            Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap
     ) {
         this.state = state;
         this.interactionState = interactionState;
         this.canvas = canvas;
         this.selectionController = selectionController;
-        this.linkWorkflowController = linkWorkflowController;
-        this.workflowMessageController = workflowMessageController;
-    }
-
-    public void setReloadCurrentMap(Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap) {
+        this.linkFlow = linkFlow;
+        this.workflowMessageBus = workflowMessageBus;
+        this.commands = commands;
         this.reloadCurrentMap = reloadCurrentMap == null ? ignored -> { } : reloadCurrentMap;
     }
 
     public void handleEndpointClick(DungeonEndpoint endpoint) {
         if (interactionState.activeTool() == DungeonEditorTool.LINK) {
-            linkWorkflowController.beginOrCompleteLink(
+            linkFlow.beginOrCompleteLink(
                     DungeonLinkAnchor.endpoint(endpoint.endpointId()),
                     state.currentMapId(),
                     (mapId, fromId, toId) -> DungeonUiAsyncSupport.submitValue(
-                            () -> DungeonMapEditorService.createLink(mapId, fromId, toId, ""),
+                            () -> commands.createLink(mapId, fromId, toId, ""),
                             this::handleLinkCreateResult,
-                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.createLink()", ex)));
+                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.createLink()", ex)));
             return;
         }
         selectionController.showEndpointSelection(endpoint);
@@ -78,13 +78,13 @@ public final class DungeonConnectionEditingController implements DungeonConnecti
                 canvas.flashInvalidEdge(interaction);
                 return;
             }
-            linkWorkflowController.beginOrCompleteLink(
+            linkFlow.beginOrCompleteLink(
                     DungeonLinkAnchor.passage(existing.passageId()),
                     state.currentMapId(),
                     (mapId, fromAnchor, toAnchor) -> DungeonUiAsyncSupport.submitValue(
-                            () -> DungeonMapEditorService.createLink(mapId, fromAnchor, toAnchor, ""),
+                            () -> commands.createLink(mapId, fromAnchor, toAnchor, ""),
                             this::handleLinkCreateResult,
-                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.createLink()", ex)));
+                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.createLink()", ex)));
             return;
         }
         if (interactionState.activeTool() != DungeonEditorTool.PASSAGE) {
@@ -95,9 +95,9 @@ public final class DungeonConnectionEditingController implements DungeonConnecti
         if (mode.deletesPassages()) {
             if (existing != null && existing.passageId() != null) {
                 DungeonUiAsyncSupport.submitAction(
-                        () -> DungeonMapEditorService.deletePassage(existing.passageId()),
+                        () -> commands.deletePassage(existing.passageId()),
                         () -> reloadCurrentMap.accept(null),
-                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.deletePassageImmediate()", ex));
+                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.deletePassageImmediate()", ex));
             }
             return;
         }
@@ -147,9 +147,9 @@ public final class DungeonConnectionEditingController implements DungeonConnecti
     @Override
     public void saveEndpoint(DungeonEndpoint endpoint) {
         DungeonUiAsyncSupport.submitValue(
-                () -> DungeonMapEditorService.saveEndpoint(endpoint),
+                () -> commands.saveEndpoint(endpoint),
                 ignored -> reloadCurrentMap.accept(null),
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.saveEndpoint()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.saveEndpoint()", ex));
     }
 
     @Override
@@ -162,9 +162,9 @@ public final class DungeonConnectionEditingController implements DungeonConnecti
                 "Übergang löschen",
                 "Übergang '" + findEndpointName(endpointId) + "' löschen? Alle verbundenen Links werden ebenfalls entfernt.",
                 () -> DungeonUiAsyncSupport.submitAction(
-                        () -> DungeonMapEditorService.deleteEndpoint(endpointId),
+                        () -> commands.deleteEndpoint(endpointId),
                         () -> reloadCurrentMap.accept(null),
-                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.deleteEndpoint()", ex)));
+                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.deleteEndpoint()", ex)));
     }
 
     @Override
@@ -173,28 +173,28 @@ public final class DungeonConnectionEditingController implements DungeonConnecti
             return;
         }
         DungeonUiAsyncSupport.submitAction(
-                () -> DungeonMapEditorService.deleteLink(linkId),
+                () -> commands.deleteLink(linkId),
                 () -> reloadCurrentMap.accept(null),
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.deleteLink()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.deleteLink()", ex));
     }
 
     @Override
     public void updateLinkLabel(long linkId, String label, Runnable onSuccess) {
         Runnable effectiveOnSuccess = onSuccess == null ? () -> reloadCurrentMap.accept(null) : onSuccess;
         DungeonUiAsyncSupport.submitAction(
-                () -> DungeonMapEditorService.updateLinkLabel(linkId, label),
+                () -> commands.updateLinkLabel(linkId, label),
                 effectiveOnSuccess,
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.updateLinkLabel()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.updateLinkLabel()", ex));
     }
 
     @Override
     public void savePassage(DungeonPassage passage) {
         DungeonUiAsyncSupport.submitValue(
-                () -> DungeonMapEditorService.savePassage(passage),
+                () -> commands.savePassage(passage),
                 passageId -> {
                     reloadCurrentMap.accept(DungeonSelectionRestoreRequest.passage(passageId));
                 },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.savePassage()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.savePassage()", ex));
     }
 
     @Override
@@ -207,13 +207,9 @@ public final class DungeonConnectionEditingController implements DungeonConnecti
                 "Kante zurücksetzen",
                 "Kante '" + findPassageName(passageId) + "' löschen? Danach ist die Wand wieder geschlossen.",
                 () -> DungeonUiAsyncSupport.submitAction(
-                        () -> DungeonMapEditorService.deletePassage(passageId),
+                        () -> commands.deletePassage(passageId),
                         () -> reloadCurrentMap.accept(null),
-                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.deletePassage()", ex)));
-    }
-
-    DungeonEndpoint findEndpoint(Long endpointId) {
-        return state.findEndpoint(endpointId);
+                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.deletePassage()", ex)));
     }
 
     private void handleLinkCreateResult(DungeonLinkCreateResult result) {
@@ -225,15 +221,15 @@ public final class DungeonConnectionEditingController implements DungeonConnecti
             return;
         }
         if (result.status() == DungeonLinkCreateStatus.SAME_ANCHOR) {
-            workflowMessageController.showMessage("Linkerstellung", "Linkerstellung abgebrochen: Bitte zwei verschiedene Verbindungen wählen.");
+            workflowMessageBus.showMessage("Linkerstellung", "Linkerstellung abgebrochen: Bitte zwei verschiedene Verbindungen wählen.");
             return;
         }
         if (result.status() == DungeonLinkCreateStatus.DUPLICATE) {
-            workflowMessageController.showMessage("Linkerstellung", "Diese beiden Verbindungen sind bereits verbunden.");
+            workflowMessageBus.showMessage("Linkerstellung", "Diese beiden Verbindungen sind bereits verbunden.");
             return;
         }
         if (result.status() == DungeonLinkCreateStatus.INVALID_ANCHOR) {
-            workflowMessageController.showMessage("Linkerstellung", "Linkerstellung abgebrochen: Mindestens eine Verbindung ist nicht mehr gültig.");
+            workflowMessageBus.showMessage("Linkerstellung", "Linkerstellung abgebrochen: Mindestens eine Verbindung ist nicht mehr gültig.");
         }
     }
 

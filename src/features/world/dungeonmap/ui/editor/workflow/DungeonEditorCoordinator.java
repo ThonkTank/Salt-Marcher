@@ -1,0 +1,253 @@
+package features.world.dungeonmap.ui.editor.workflow;
+
+import features.world.dungeonmap.model.DungeonEndpoint;
+import features.world.dungeonmap.model.DungeonLink;
+import features.world.dungeonmap.service.DungeonMapCommands;
+import features.world.dungeonmap.ui.canvas.DungeonMapPane;
+import features.world.dungeonmap.service.DungeonMapQueries;
+import features.world.dungeonmap.ui.editor.DungeonColorRenderMode;
+import features.world.dungeonmap.ui.editor.DungeonMapDropdowns;
+import features.world.dungeonmap.ui.editor.workflow.binding.ToolSettingsBinding;
+import features.world.dungeonmap.ui.editor.workflow.connection.DungeonConnectionWorkflow;
+import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
+import features.world.dungeonmap.ui.editor.workflow.entity.DungeonEntityWorkflow;
+import features.world.dungeonmap.ui.editor.workflow.entity.DungeonMapActions;
+import features.world.dungeonmap.ui.editor.workflow.loading.DungeonCatalogLoader;
+import features.world.dungeonmap.ui.editor.workflow.loading.DungeonMapLoader;
+import features.world.dungeonmap.ui.editor.workflow.messaging.EditorMessageBus;
+import features.world.dungeonmap.ui.editor.workflow.painting.DungeonSquareEditWorkflow;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionInspectorPublisher;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionRestorer;
+import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
+import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
+import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
+import ui.shell.DetailsNavigator;
+
+import java.util.List;
+
+public final class DungeonEditorCoordinator {
+
+    private final DungeonEditorState state;
+    private final DungeonEditorInteractionState interactionState;
+    private final DungeonMapPane canvas;
+    private final DungeonToolSettingsPane toolSettingsPane;
+    private final DungeonLinkFlow linkFlow;
+    private final DungeonSelectionController selectionController;
+    private final DungeonSquareEditWorkflow squareEditWorkflow;
+    private final DungeonMapActions mapActions;
+    private final DungeonEntityWorkflow entityWorkflow;
+    private final DungeonConnectionWorkflow connectionWorkflow;
+    private final ToolSettingsBinding toolSettingsBinding;
+    private final DungeonSelectionRestorer selectionRestorer;
+    private final DungeonMapLoader mapLoader;
+    private final DungeonCatalogLoader catalogLoader;
+
+    public DungeonEditorCoordinator(
+            DungeonEditorState state,
+            DungeonEditorInteractionState interactionState,
+            DungeonEditorControls controls,
+            DungeonMapPane canvas,
+            DungeonToolSettingsPane toolSettingsPane,
+            DungeonMapQueries queries,
+            DungeonMapCommands commands,
+            DetailsNavigator detailsNavigator
+    ) {
+        this.state = state;
+        this.interactionState = interactionState;
+        this.canvas = canvas;
+        this.toolSettingsPane = toolSettingsPane;
+
+        EditorMessageBus workflowMessages = new EditorMessageBus(toolSettingsPane);
+        linkFlow = new DungeonLinkFlow(canvas, toolSettingsPane);
+        selectionController = new DungeonSelectionController(canvas, toolSettingsPane, state, workflowMessages);
+        squareEditWorkflow = new DungeonSquareEditWorkflow(state, interactionState, canvas, commands, this::reloadCurrentMap);
+        mapActions = new DungeonMapActions(state, new DungeonMapDropdowns(), commands, this::onShow);
+        entityWorkflow = new DungeonEntityWorkflow(state, toolSettingsPane, selectionController, workflowMessages, commands, this::reloadCurrentMap);
+        connectionWorkflow = new DungeonConnectionWorkflow(
+                state,
+                interactionState,
+                canvas,
+                selectionController,
+                linkFlow,
+                workflowMessages,
+                commands,
+                this::reloadCurrentMap);
+        var inspectorContentFactory = new features.world.dungeonmap.ui.editor.inspector.DungeonEditorInspectorContentFactory(
+                state,
+                entityWorkflow,
+                connectionWorkflow);
+        selectionController.setInspectorPublisher(new DungeonSelectionInspectorPublisher(detailsNavigator, inspectorContentFactory));
+        toolSettingsBinding = new ToolSettingsBinding(state, toolSettingsPane, selectionController, linkFlow, entityWorkflow);
+        selectionRestorer = new DungeonSelectionRestorer(state, toolSettingsPane, selectionController, interactionState::activeTool);
+        mapLoader = new DungeonMapLoader(
+                state,
+                controls,
+                canvas,
+                toolSettingsPane,
+                selectionController,
+                linkFlow,
+                selectionRestorer,
+                queries,
+                squareEditWorkflow::handleMapLoaded);
+        catalogLoader = new DungeonCatalogLoader(
+                state,
+                toolSettingsPane,
+                selectionController::refreshInspectorForCurrentSelection,
+                () -> {
+                    toolSettingsBinding.syncFeatureEncounterSelection();
+                    selectionController.refreshInspectorForCurrentSelection();
+                });
+        toolSettingsBinding.bindToolSettings();
+    }
+
+    public void initializeUi() {
+        toolSettingsPane.setBrushPaintModeActive(interactionState.paintMode() == DungeonPaintMode.BRUSH);
+        toolSettingsPane.setColorRenderMode(interactionState.colorRenderMode());
+        canvas.setColorRenderMode(interactionState.colorRenderMode());
+        canvas.setActiveTool(interactionState.activeTool());
+        toolSettingsPane.setActiveTool(interactionState.activeTool());
+        canvas.setShowLinks(toolSettingsPane.linksVisible());
+        canvas.setShowEndpoints(toolSettingsPane.endpointsVisible());
+        canvas.setShowFeatures(toolSettingsPane.featuresVisible());
+    }
+
+    public void onShow() {
+        catalogLoader.loadCatalogs();
+        mapLoader.onShow();
+    }
+
+    public void handleMapSelected(Long mapId) {
+        squareEditWorkflow.discardPendingSquareEdits();
+        mapLoader.loadMapAsync(mapId);
+    }
+
+    public void showNewMapDropdown(javafx.scene.Node anchor) {
+        mapActions.showNewMapDropdown(anchor);
+    }
+
+    public void showEditMapDropdown(DungeonEditorControls.MapActionRequest request) {
+        mapActions.showEditMapDropdown(request);
+    }
+
+    public void handlePaintModeChanged(DungeonPaintMode mode) {
+        toolSettingsPane.setBrushPaintModeActive(mode == DungeonPaintMode.BRUSH);
+        canvas.setActiveTool(interactionState.activeTool());
+    }
+
+    public void handleColorRenderModeChanged(DungeonColorRenderMode mode) {
+        toolSettingsPane.setColorRenderMode(mode);
+        canvas.setColorRenderMode(mode);
+    }
+
+    public void handleWallEditorModeChanged() {
+        canvas.setActiveTool(interactionState.activeTool());
+    }
+
+    public void handlePassageEditorModeChanged() {
+        canvas.setActiveTool(interactionState.activeTool());
+    }
+
+    public void handleActiveToolChanged(DungeonEditorTool tool) {
+        squareEditWorkflow.commitPendingSquareEdits();
+        DungeonColorRenderMode preferredColorMode = tool.preferredColorRenderMode();
+        if (preferredColorMode != null) {
+            interactionState.setColorRenderMode(preferredColorMode);
+        }
+        canvas.setActiveTool(tool);
+        linkFlow.cancelPendingLink();
+        toolSettingsPane.setActiveTool(tool);
+        selectionRestorer.autoShowForTool(tool);
+    }
+
+    public void handleCellClicked(DungeonMapPane.CellInteraction interaction) {
+        switch (interactionState.activeTool().cellClickAction()) {
+            case SELECT_SQUARE -> selectionController.handleSquareClick(interaction, state.currentMapId());
+            case ASSIGN_ROOM_AREA -> entityWorkflow.handleAreaAssignClick(interaction, state.currentMapId());
+            case CREATE_OR_SELECT_ENDPOINT -> connectionWorkflow.createOrSelectEndpoint(interaction.square());
+        }
+    }
+
+    public void handleCellPaint(DungeonMapPane.CellInteraction interaction) {
+        squareEditWorkflow.handleCellPaint(interaction);
+    }
+
+    public void flushPendingSquareEdits() {
+        squareEditWorkflow.flushPendingSquareEdits();
+    }
+
+    public void handleEdgePaint(DungeonMapPane.EdgeInteraction interaction) {
+        squareEditWorkflow.handleEdgePaint(interaction);
+    }
+
+    public void previewWallPaintPath(List<DungeonMapPane.EdgeInteraction> path) {
+        squareEditWorkflow.previewWallPaintPath(path);
+    }
+
+    public void commitWallPaintPath(List<DungeonMapPane.EdgeInteraction> path) {
+        squareEditWorkflow.commitWallPaintPath(path);
+    }
+
+    public void flushPendingWallEdits() {
+        squareEditWorkflow.flushPendingWallEdits();
+    }
+
+    public void handleEndpointClick(DungeonEndpoint endpoint) {
+        connectionWorkflow.handleEndpointClick(endpoint);
+    }
+
+    public void showLinkSelection(DungeonLink link) {
+        selectionController.showLinkSelection(link);
+    }
+
+    public void handleEdgeClick(DungeonMapPane.EdgeInteraction interaction) {
+        connectionWorkflow.handleEdgeClick(interaction);
+    }
+
+    public int brushSize() {
+        return toolSettingsPane.getBrushSize();
+    }
+
+    public features.world.dungeonmap.model.BrushShape brushShape() {
+        return toolSettingsPane.getBrushShape();
+    }
+
+    public DungeonPaintMode paintMode() {
+        return interactionState.paintMode();
+    }
+
+    public features.world.dungeonmap.ui.editor.controls.WallEditorMode wallEditorMode() {
+        return interactionState.wallEditorMode();
+    }
+
+    public features.world.dungeonmap.ui.editor.controls.PassageEditorMode passageEditorMode() {
+        return interactionState.passageEditorMode();
+    }
+
+    public void setShowLinks(boolean showLinks) {
+        canvas.setShowLinks(showLinks);
+    }
+
+    public void setShowEndpoints(boolean showEndpoints) {
+        canvas.setShowEndpoints(showEndpoints);
+    }
+
+    public void setShowFeatures(boolean showFeatures) {
+        canvas.setShowFeatures(showFeatures);
+    }
+
+    public void setColorRenderMode(DungeonColorRenderMode mode) {
+        interactionState.setColorRenderMode(mode);
+    }
+
+    public void reloadCurrentMap() {
+        mapLoader.reloadCurrentMap();
+    }
+
+    public void reloadCurrentMap(features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest request) {
+        mapLoader.reloadCurrentMap(request);
+    }
+}

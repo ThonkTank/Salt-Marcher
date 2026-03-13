@@ -4,46 +4,52 @@ import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonMapState;
-import features.world.dungeonmap.service.DungeonMapQueryService;
+import features.world.dungeonmap.service.DungeonMapQueries;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
-import features.world.dungeonmap.ui.editor.workflow.selection.DungeonLinkWorkflowController;
-import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionWorkflowController;
+import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
+import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionRestorer;
 import ui.async.UiErrorReporter;
 
 import java.util.List;
 
-public final class DungeonMapLoadingController {
+public final class DungeonMapLoader {
 
     private final DungeonEditorState state;
     private final DungeonEditorControls controls;
     private final DungeonMapPane canvas;
     private final DungeonToolSettingsPane toolSettingsPane;
-    private final DungeonSelectionWorkflowController selectionController;
-    private final DungeonLinkWorkflowController linkWorkflowController;
-    private final DungeonSelectionRestoreController selectionRestoreController;
-    private Runnable onMapLoaded = () -> { };
+    private final DungeonSelectionController selectionController;
+    private final DungeonLinkFlow linkFlow;
+    private final DungeonSelectionRestorer selectionRestorer;
+    private final DungeonMapQueries queries;
+    private final Runnable onMapLoaded;
 
-    public DungeonMapLoadingController(
+    public DungeonMapLoader(
             DungeonEditorState state,
             DungeonEditorControls controls,
             DungeonMapPane canvas,
             DungeonToolSettingsPane toolSettingsPane,
-            DungeonSelectionWorkflowController selectionController,
-            DungeonLinkWorkflowController linkWorkflowController,
-            DungeonSelectionRestoreController selectionRestoreController
+            DungeonSelectionController selectionController,
+            DungeonLinkFlow linkFlow,
+            DungeonSelectionRestorer selectionRestorer,
+            DungeonMapQueries queries,
+            Runnable onMapLoaded
     ) {
         this.state = state;
         this.controls = controls;
         this.canvas = canvas;
         this.toolSettingsPane = toolSettingsPane;
         this.selectionController = selectionController;
-        this.linkWorkflowController = linkWorkflowController;
-        this.selectionRestoreController = selectionRestoreController;
+        this.linkFlow = linkFlow;
+        this.selectionRestorer = selectionRestorer;
+        this.queries = queries;
+        this.onMapLoaded = onMapLoaded == null ? () -> { } : onMapLoaded;
     }
 
     public void onShow() {
@@ -55,11 +61,11 @@ public final class DungeonMapLoadingController {
             clearLoadedState();
             return;
         }
-        linkWorkflowController.cancelPendingLink();
+        linkFlow.cancelPendingLink();
         state.setCurrentMapId(mapId);
         long requestToken = state.nextLoadRequestToken();
         DungeonUiAsyncSupport.submitValue(
-                () -> DungeonMapQueryService.loadMapState(mapId),
+                () -> queries.loadMapState(mapId),
                 loadedState -> {
                     if (requestToken == state.loadRequestToken() && mapId.equals(state.currentMapId())) {
                         applyLoadedState(loadedState);
@@ -69,7 +75,7 @@ public final class DungeonMapLoadingController {
                     if (requestToken == state.loadRequestToken() && mapId.equals(state.currentMapId())) {
                         handleLoadFailure();
                     }
-                    UiErrorReporter.reportBackgroundFailure("DungeonMapLoadingController.loadMapAsync()", ex);
+                    UiErrorReporter.reportBackgroundFailure("DungeonMapLoader.loadMapAsync()", ex);
                 });
     }
 
@@ -78,17 +84,13 @@ public final class DungeonMapLoadingController {
     }
 
     public void reloadCurrentMap(DungeonSelectionRestoreRequest request) {
-        selectionRestoreController.setPendingSelectionRestore(request);
+        selectionRestorer.setPendingSelectionRestore(request);
         loadMapAsync(state.currentMapId());
     }
 
-    public void setOnMapLoaded(Runnable callback) {
-        onMapLoaded = callback == null ? () -> { } : callback;
-    }
-
-    void loadMapList() {
+    private void loadMapList() {
         DungeonUiAsyncSupport.submitValue(
-                DungeonMapQueryService::getAllMaps,
+                queries::getAllMaps,
                 maps -> {
                     controls.setMaps(maps);
                     Long mapToSelect = resolveMapSelection(maps);
@@ -96,19 +98,17 @@ public final class DungeonMapLoadingController {
                         clearLoadedState();
                     } else {
                         toolSettingsPane.setMapLoaded(true);
-                        // Keep the toolbar selection in sync with the restored map list.
-                        // The interaction state does not own map selection.
                         controls.selectMap(mapToSelect);
                         loadMapAsync(mapToSelect);
                     }
                 },
                 ex -> {
                     canvas.showLoadError("Dungeonliste konnte nicht geladen werden");
-                    UiErrorReporter.reportBackgroundFailure("DungeonMapLoadingController.loadMapList()", ex);
+                    UiErrorReporter.reportBackgroundFailure("DungeonMapLoader.loadMapList()", ex);
                 });
     }
 
-    Long resolveMapSelection(List<DungeonMap> maps) {
+    private Long resolveMapSelection(List<DungeonMap> maps) {
         Long mapToSelect = state.currentMapId();
         if (mapToSelect != null) {
             for (DungeonMap map : maps) {
@@ -138,27 +138,19 @@ public final class DungeonMapLoadingController {
         toolSettingsPane.setMapLoaded(false);
         toolSettingsPane.setAreas(List.of());
         toolSettingsPane.setFeatures(List.of());
-        linkWorkflowController.cancelPendingLink();
+        linkFlow.cancelPendingLink();
         selectionController.clearSelection();
     }
 
     private void applyEditorState(DungeonMapState loadedState) {
-        applyViewData(loadedState);
-        resetTransientUiState();
-        selectionRestoreController.restoreAfterLoad(loadedState);
-    }
-
-    private void applyViewData(DungeonMapState loadedState) {
         canvas.loadState(loadedState);
         List<DungeonArea> areas = loadedState == null ? List.of() : loadedState.areas();
         List<DungeonFeature> features = loadedState == null ? List.of() : loadedState.features();
         toolSettingsPane.setAreas(areas);
         toolSettingsPane.setFeatures(features);
         toolSettingsPane.setMapLoaded(loadedState != null && loadedState.map() != null);
-    }
-
-    private void resetTransientUiState() {
-        linkWorkflowController.cancelPendingLink();
+        linkFlow.cancelPendingLink();
         selectionController.clearSelection();
+        selectionRestorer.restoreAfterLoad(loadedState);
     }
 }

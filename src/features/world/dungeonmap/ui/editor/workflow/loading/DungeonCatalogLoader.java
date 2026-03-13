@@ -7,32 +7,28 @@ import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import ui.async.UiErrorReporter;
 
-public final class DungeonCatalogLoadingController {
+public final class DungeonCatalogLoader {
 
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;
-    private Runnable onEncounterTablesChanged = () -> { };
-    private Runnable onStoredEncountersChanged = () -> { };
+    private final Runnable onEncounterTablesChanged;
+    private final Runnable onStoredEncountersChanged;
 
-    public DungeonCatalogLoadingController(
+    public DungeonCatalogLoader(
             DungeonEditorState state,
-            DungeonToolSettingsPane toolSettingsPane
+            DungeonToolSettingsPane toolSettingsPane,
+            Runnable onEncounterTablesChanged,
+            Runnable onStoredEncountersChanged
     ) {
         this.state = state;
         this.toolSettingsPane = toolSettingsPane;
+        this.onEncounterTablesChanged = onEncounterTablesChanged == null ? () -> { } : onEncounterTablesChanged;
+        this.onStoredEncountersChanged = onStoredEncountersChanged == null ? () -> { } : onStoredEncountersChanged;
     }
 
     public void loadCatalogs() {
         loadEncounterTables();
         loadStoredEncounters();
-    }
-
-    public void setOnEncounterTablesChanged(Runnable callback) {
-        onEncounterTablesChanged = callback == null ? () -> { } : callback;
-    }
-
-    public void setOnStoredEncountersChanged(Runnable callback) {
-        onStoredEncountersChanged = callback == null ? () -> { } : callback;
     }
 
     private void loadEncounterTables() {
@@ -43,7 +39,7 @@ public final class DungeonCatalogLoadingController {
                     toolSettingsPane.setEncounterTables(tables);
                     onEncounterTablesChanged.run();
                 },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonCatalogLoadingController.loadEncounterTables()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonCatalogLoader.loadEncounterTables()", ex));
     }
 
     private void loadStoredEncounters() {
@@ -54,6 +50,6 @@ public final class DungeonCatalogLoadingController {
                     toolSettingsPane.setStoredEncounters(encounters);
                     onStoredEncountersChanged.run();
                 },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonCatalogLoadingController.loadStoredEncounters()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonCatalogLoader.loadStoredEncounters()", ex));
     }
 }

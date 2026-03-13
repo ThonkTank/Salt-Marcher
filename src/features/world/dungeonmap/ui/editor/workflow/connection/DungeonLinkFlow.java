@@ -1,10 +1,10 @@
-package features.world.dungeonmap.ui.editor.workflow.selection;
+package features.world.dungeonmap.ui.editor.workflow.connection;
 
 import features.world.dungeonmap.model.DungeonLinkAnchor;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 
-public final class DungeonLinkWorkflowController {
+public final class DungeonLinkFlow {
 
     @FunctionalInterface
     public interface LinkCreator {
@@ -15,7 +15,7 @@ public final class DungeonLinkWorkflowController {
     private final DungeonToolSettingsPane toolSettingsPane;
     private DungeonLinkAnchor pendingLinkStart;
 
-    public DungeonLinkWorkflowController(
+    public DungeonLinkFlow(
             DungeonMapPane canvas,
             DungeonToolSettingsPane toolSettingsPane
     ) {

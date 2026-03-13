@@ -1,5 +1,6 @@
 package features.world.dungeonmap.ui;
 
+import features.world.dungeonmap.service.DungeonMapServices;
 import features.world.dungeonmap.ui.editor.DungeonEditorView;
 import features.world.dungeonmap.ui.runtime.DungeonView;
 import ui.shell.AppView;
@@ -18,8 +19,9 @@ public final class DungeonMapUiModule {
 
     public DungeonMapUiModule(DetailsNavigator detailsNavigator) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
-        this.dungeonView = new DungeonView();
-        this.dungeonEditorView = new DungeonEditorView(detailsNavigator);
+        DungeonMapServices services = new DungeonMapServices();
+        this.dungeonView = new DungeonView(services.queries());
+        this.dungeonEditorView = new DungeonEditorView(detailsNavigator, services.queries(), services.commands());
     }
 
     public AppView dungeonView() {

@@ -1,29 +1,29 @@
-package features.world.dungeonmap.ui.editor.workflow.loading;
+package features.world.dungeonmap.ui.editor.workflow.selection;
 
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonFeature;
 import features.world.dungeonmap.model.DungeonMapState;
 import features.world.dungeonmap.model.DungeonPassage;
 import features.world.dungeonmap.model.DungeonRoom;
+import features.world.dungeonmap.model.index.DungeonMapIndex;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
-import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionWorkflowController;
 
 import java.util.function.Supplier;
 
-public final class DungeonSelectionRestoreController {
+public final class DungeonSelectionRestorer {
 
     private final DungeonEditorState state;
     private final DungeonToolSettingsPane toolSettingsPane;
-    private final DungeonSelectionWorkflowController selectionController;
+    private final DungeonSelectionController selectionController;
     private final Supplier<DungeonEditorTool> activeToolSupplier;
 
-    public DungeonSelectionRestoreController(
+    public DungeonSelectionRestorer(
             DungeonEditorState state,
             DungeonToolSettingsPane toolSettingsPane,
-            DungeonSelectionWorkflowController selectionController,
+            DungeonSelectionController selectionController,
             Supplier<DungeonEditorTool> activeToolSupplier
     ) {
         this.state = state;
@@ -41,7 +41,7 @@ public final class DungeonSelectionRestoreController {
             state.setPendingSelectionRestore(null);
             return false;
         }
-        if (applyPendingSelection(loadedState)) {
+        if (applyPendingSelection(loadedState.index())) {
             return true;
         }
         autoShowForTool(activeToolSupplier.get());
@@ -59,57 +59,53 @@ public final class DungeonSelectionRestoreController {
         }
     }
 
-    private boolean applyPendingSelection(DungeonMapState loadedState) {
+    private boolean applyPendingSelection(DungeonMapIndex index) {
         DungeonSelectionRestoreRequest restoreRequest = state.pendingSelectionRestore();
         state.setPendingSelectionRestore(null);
         if (restoreRequest == null || restoreRequest.entityId() == null) {
             return false;
         }
         return switch (restoreRequest.type()) {
-            case ROOM -> restoreRoomSelection(loadedState, restoreRequest.entityId());
-            case AREA -> restoreAreaSelection(loadedState, restoreRequest.entityId());
-            case FEATURE -> restoreFeatureSelection(loadedState, restoreRequest.entityId());
-            case PASSAGE -> restorePassageSelection(loadedState, restoreRequest.entityId());
+            case ROOM -> restoreRoomSelection(index, restoreRequest.entityId());
+            case AREA -> restoreAreaSelection(index, restoreRequest.entityId());
+            case FEATURE -> restoreFeatureSelection(index, restoreRequest.entityId());
+            case PASSAGE -> restorePassageSelection(index, restoreRequest.entityId());
         };
     }
 
-    private boolean restoreRoomSelection(DungeonMapState loadedState, Long roomId) {
-        for (DungeonRoom room : loadedState.rooms()) {
-            if (roomId.equals(room.roomId())) {
-                selectionController.restoreRoomSelection(room);
-                return true;
-            }
+    private boolean restoreRoomSelection(DungeonMapIndex index, Long roomId) {
+        DungeonRoom room = index.findRoom(roomId);
+        if (room == null) {
+            return false;
         }
-        return false;
+        selectionController.restoreRoomSelection(room);
+        return true;
     }
 
-    private boolean restoreAreaSelection(DungeonMapState loadedState, Long areaId) {
-        for (DungeonArea area : loadedState.areas()) {
-            if (areaId.equals(area.areaId())) {
-                selectionController.restoreAreaSelection(area);
-                return true;
-            }
+    private boolean restoreAreaSelection(DungeonMapIndex index, Long areaId) {
+        DungeonArea area = index.findArea(areaId);
+        if (area == null) {
+            return false;
         }
-        return false;
+        selectionController.restoreAreaSelection(area);
+        return true;
     }
 
-    private boolean restoreFeatureSelection(DungeonMapState loadedState, Long featureId) {
-        for (DungeonFeature feature : loadedState.features()) {
-            if (featureId.equals(feature.featureId())) {
-                selectionController.restoreFeatureSelection(feature);
-                return true;
-            }
+    private boolean restoreFeatureSelection(DungeonMapIndex index, Long featureId) {
+        DungeonFeature feature = index.findFeature(featureId);
+        if (feature == null) {
+            return false;
         }
-        return false;
+        selectionController.restoreFeatureSelection(feature);
+        return true;
     }
 
-    private boolean restorePassageSelection(DungeonMapState loadedState, Long passageId) {
-        for (DungeonPassage passage : loadedState.passages()) {
-            if (passageId.equals(passage.passageId())) {
-                selectionController.restorePassageSelection(passage);
-                return true;
-            }
+    private boolean restorePassageSelection(DungeonMapIndex index, Long passageId) {
+        DungeonPassage passage = index.findPassage(passageId);
+        if (passage == null) {
+            return false;
         }
-        return false;
+        selectionController.restorePassageSelection(passage);
+        return true;
     }
 }

@@ -59,12 +59,7 @@ public final class DungeonSelectionInspectorPublisher {
         if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
             return;
         }
-        // Dungeon inspector cards stay feature-local because they include lightweight entity-specific
-        // interactions; the shell just hosts them in global history.
-        detailsNavigator.showContent(
-                titleOrFallback(room.name(), "Raum"),
-                entryKey,
-                () -> inspectorContentFactory.buildRoomCard(room));
+        detailsNavigator.showContent(titleOrFallback(room.name(), "Raum"), entryKey, () -> inspectorContentFactory.buildRoomCard(room));
     }
 
     private void showAreaInspector(DungeonArea area, boolean refreshOnlyIfVisible) {
@@ -75,10 +70,7 @@ public final class DungeonSelectionInspectorPublisher {
         if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
             return;
         }
-        detailsNavigator.showContent(
-                titleOrFallback(area.name(), "Bereich"),
-                entryKey,
-                () -> inspectorContentFactory.buildAreaCard(area));
+        detailsNavigator.showContent(titleOrFallback(area.name(), "Bereich"), entryKey, () -> inspectorContentFactory.buildAreaCard(area));
     }
 
     private void showFeatureInspector(DungeonFeature feature, boolean refreshOnlyIfVisible) {
@@ -103,10 +95,7 @@ public final class DungeonSelectionInspectorPublisher {
         if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
             return;
         }
-        detailsNavigator.showContent(
-                titleOrFallback(endpoint.name(), "Übergang"),
-                entryKey,
-                () -> inspectorContentFactory.buildEndpointCard(endpoint));
+        detailsNavigator.showContent(titleOrFallback(endpoint.name(), "Übergang"), entryKey, () -> inspectorContentFactory.buildEndpointCard(endpoint));
     }
 
     private void showLinkInspector(DungeonLink link, boolean refreshOnlyIfVisible) {
@@ -117,10 +106,7 @@ public final class DungeonSelectionInspectorPublisher {
         if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
             return;
         }
-        detailsNavigator.showContent(
-                titleOrFallback(link.label(), "Link"),
-                entryKey,
-                () -> inspectorContentFactory.buildLinkCard(link));
+        detailsNavigator.showContent(titleOrFallback(link.label(), "Link"), entryKey, () -> inspectorContentFactory.buildLinkCard(link));
     }
 
     private void showPassageInspector(DungeonPassage passage, boolean refreshOnlyIfVisible) {
@@ -131,10 +117,7 @@ public final class DungeonSelectionInspectorPublisher {
         if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
             return;
         }
-        detailsNavigator.showContent(
-                titleOrFallback(passage.name(), "Durchgang"),
-                entryKey,
-                () -> inspectorContentFactory.buildPassageCard(passage));
+        detailsNavigator.showContent(titleOrFallback(passage.name(), "Durchgang"), entryKey, () -> inspectorContentFactory.buildPassageCard(passage));
     }
 
     private boolean isShowingContent(Object key) {

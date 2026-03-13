@@ -1,6 +1,6 @@
 package features.world.dungeonmap.ui.runtime;
 
-import features.world.dungeonmap.service.DungeonMapQueryService;
+import features.world.dungeonmap.service.DungeonMapQueries;
 import features.world.dungeonmap.service.DungeonRuntimeService;
 import features.world.dungeonmap.model.DungeonArea;
 import features.world.dungeonmap.model.DungeonEndpoint;
@@ -30,8 +30,10 @@ public class DungeonView implements AppView {
     private final Map<Long, DungeonArea> areasById = new HashMap<>();
     private long loadRequestToken = 0;
     private Long selectedMapId;
+    private final DungeonMapQueries queries;
 
-    public DungeonView() {
+    public DungeonView(DungeonMapQueries queries) {
+        this.queries = queries;
         controls.setOnMapSelected(this::loadMap);
         canvas.setOnEndpointClicked(this::moveToEndpoint);
         canvas.setShowEndpoints(true);
@@ -61,7 +63,7 @@ public class DungeonView implements AppView {
     @Override
     public void onShow() {
         DungeonUiAsyncSupport.submitValue(
-                DungeonMapQueryService::getAllMaps,
+                queries::getAllMaps,
                 maps -> controls.setMaps(maps, selectedMapId),
                 ex -> {
                     canvas.showLoadError("Dungeonliste konnte nicht geladen werden");

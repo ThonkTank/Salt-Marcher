@@ -14,9 +14,10 @@ Feature-internal workflow result DTOs that must be shared between low-level serv
 `api` exposes only stable contracts consumed outside `dungeonmap`; the current public surface is the world-facing
 `DungeonMapModule` facade plus the explicit bootstrap surface in `api/DungeonMapBootstrap`, while dungeon view composition stays in internal `ui`.
 `service` is split by read/write responsibility:
-- `DungeonMapQueryService` is strictly read-only. Query flows must not reconcile or delete persisted state.
+- `DungeonMapQueries` is the UI-facing read surface and delegates to the canonical read-only query logic in `DungeonMapQueryService`. Query flows must not reconcile or delete persisted state.
+- `DungeonMapCommands` is the UI-facing write surface and delegates to the canonical write facade in `DungeonMapEditorService`.
+- `DungeonMapServices` is the feature-local composition bundle passed into dungeon views so UI workflow code does not reach into static services directly.
 - Startup/bootstrap owns one-time persisted reconciliation for legacy rows, and write-side services own ongoing invariants after mutations.
-- `DungeonMapEditorService` is the narrow feature-facing write facade; focused write collaborators live under `service.editing` for map lifecycle, topology edits, feature edits, and endpoint/link/passage management.
 `ui/canvas` owns map rendering, hit-testing, hover/selection overlays, and raw canvas gesture mechanics.
 `ui/canvas/model` owns canvas-only loaded-state caches, preview topology, label layout, and interaction state.
 Keep `DungeonCanvasModel` as the root canvas-facing facade, with focused collaborators under `ui/canvas/model`
@@ -27,7 +28,7 @@ package also owns editor controls, dropdown/widget helpers, inspector builders, 
 on those action contracts rather than concrete workflow controllers so the global inspector remains a composition layer,
 not another editing coordinator.
 `ui/editor/panes/cards` contains widget-only sidebar card components; workflow/orchestration stays outside those cards in the editor view/controllers.
-`ui/editor/workflow` owns editor orchestration only, grouped by responsibility instead of a flat controller cluster. `DungeonEditorWorkflow` stays at the package root as the editor-level coordinator. `ui/editor/workflow/loading` owns startup and async load flows (catalog loading, map loading, selection restore). `ui/editor/workflow/selection` owns selection state, inspector publication, and selection-driven UI/link sync. `ui/editor/workflow/editing` owns write-side editor actions such as map/entity/connection edits and square-paint persistence. `ui/editor/workflow/messaging` owns transient workflow messages. Keep `DungeonEditorView` focused on wiring and event routing rather than reabsorbing workflow policy. UI helpers such as `DungeonMapDropdowns` remain in `ui/editor` because they render anchored editor UI instead of coordinating workflow.
+`ui/editor/workflow` owns editor orchestration only. `DungeonEditorCoordinator` stays at the package root as the single editor orchestration facade. `workflow/loading` owns startup and async load flows, `workflow/selection` owns selection state plus inspector publication/restore, `workflow/connection` owns link/endpoint/passage interaction flows, `workflow/entity` owns map/area/feature editing flows, `workflow/painting` owns transient paint sessions plus persisted square/wall edit submission, and `workflow/binding` owns sidebar event wiring. Keep `DungeonEditorView` focused on wiring shell surfaces and delegating editor behavior to the coordinator. UI helpers such as `DungeonMapDropdowns` remain in `ui/editor` because they render anchored editor UI instead of coordinating workflow.
 Use `paint*` naming for transient UI stroke/preview mechanics and `*SquareEdit*` naming for persisted square mutation commands.
 Within `service.topology`, keep reconciliation collaborators narrow and policy-focused: room-selection preference,
 component discovery, and merged-room metadata rules should live in dedicated helpers instead of collapsing back into

@@ -1,8 +1,8 @@
-package features.world.dungeonmap.ui.editor.workflow.editing;
+package features.world.dungeonmap.ui.editor.workflow.painting;
 
 import features.world.dungeonmap.model.DungeonSquarePaint;
 import features.world.dungeonmap.model.DungeonWallEdit;
-import features.world.dungeonmap.service.DungeonMapEditorService;
+import features.world.dungeonmap.service.DungeonMapCommands;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
@@ -14,28 +14,29 @@ import ui.async.UiErrorReporter;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-public final class DungeonSquareEditWorkflowController {
+public final class DungeonSquareEditWorkflow {
 
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;
     private final DungeonMapPane canvas;
+    private final DungeonMapCommands commands;
     private final DungeonPaintSession paintSession;
     private final DungeonWallPaintSession wallPaintSession;
-    private Runnable reloadCurrentMap = () -> { };
+    private final Runnable reloadCurrentMap;
 
-    public DungeonSquareEditWorkflowController(
+    public DungeonSquareEditWorkflow(
             DungeonEditorState state,
             DungeonEditorInteractionState interactionState,
-            DungeonMapPane canvas
+            DungeonMapPane canvas,
+            DungeonMapCommands commands,
+            Runnable reloadCurrentMap
     ) {
         this.state = state;
         this.interactionState = interactionState;
         this.canvas = canvas;
+        this.commands = commands;
         this.paintSession = new DungeonPaintSession(canvas::previewPaint);
         this.wallPaintSession = new DungeonWallPaintSession(canvas::previewCommittedWallEdits);
-    }
-
-    public void setReloadCurrentMap(Runnable reloadCurrentMap) {
         this.reloadCurrentMap = reloadCurrentMap == null ? () -> { } : reloadCurrentMap;
     }
 
@@ -49,10 +50,10 @@ public final class DungeonSquareEditWorkflowController {
         paintSession.flushPendingPaints(
                 state.currentMapId(),
                 (mapId, edits) -> DungeonUiAsyncSupport.submitAction(
-                        () -> DungeonMapEditorService.applySquareEditsAndReconcileState(mapId, edits),
+                        () -> commands.applySquareEditsAndReconcileState(mapId, edits),
                         reloadCurrentMap,
                         ex -> {
-                            UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflowController.flushPendingSquareEdits()", ex);
+                            UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflow.flushPendingSquareEdits()", ex);
                             reloadCurrentMap.run();
                         }));
     }
@@ -103,10 +104,10 @@ public final class DungeonSquareEditWorkflowController {
         wallPaintSession.flushPendingEdits(
                 state.currentMapId(),
                 (mapId, edits) -> DungeonUiAsyncSupport.submitAction(
-                        () -> DungeonMapEditorService.applyWallEdits(mapId, edits),
+                        () -> commands.applyWallEdits(mapId, edits),
                         reloadCurrentMap,
                         ex -> {
-                            UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflowController.flushPendingWallEdits()", ex);
+                            UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflow.flushPendingWallEdits()", ex);
                             reloadCurrentMap.run();
                         }));
     }
@@ -120,10 +121,6 @@ public final class DungeonSquareEditWorkflowController {
         paintSession.discardPendingPaints();
         wallPaintSession.discardPendingEdits();
         canvas.clearActiveWallPathPreview();
-    }
-
-    public boolean hasPendingSquareEdits() {
-        return paintSession.hasPendingPaints() || wallPaintSession.hasPendingEdits();
     }
 
     public void handleMapLoaded() {

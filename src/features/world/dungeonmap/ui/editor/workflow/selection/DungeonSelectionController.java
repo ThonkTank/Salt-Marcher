@@ -12,26 +12,26 @@ import features.world.dungeonmap.model.index.DungeonMapIndex;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
-import features.world.dungeonmap.ui.editor.workflow.messaging.DungeonWorkflowMessageController;
+import features.world.dungeonmap.ui.editor.workflow.messaging.EditorMessageBus;
 
-public final class DungeonSelectionWorkflowController {
+public final class DungeonSelectionController {
 
     private final DungeonMapPane canvas;
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonEditorState state;
-    private final DungeonWorkflowMessageController workflowMessageController;
+    private final EditorMessageBus workflowMessages;
     private DungeonSelectionInspectorPublisher inspectorPublisher;
 
-    public DungeonSelectionWorkflowController(
+    public DungeonSelectionController(
             DungeonMapPane canvas,
             DungeonToolSettingsPane toolSettingsPane,
             DungeonEditorState state,
-            DungeonWorkflowMessageController workflowMessageController
+            EditorMessageBus workflowMessages
     ) {
         this.canvas = canvas;
         this.toolSettingsPane = toolSettingsPane;
         this.state = state;
-        this.workflowMessageController = workflowMessageController;
+        this.workflowMessages = workflowMessages;
     }
 
     public void setInspectorPublisher(DungeonSelectionInspectorPublisher inspectorPublisher) {
@@ -58,59 +58,51 @@ public final class DungeonSelectionWorkflowController {
     }
 
     public void selectArea(DungeonArea area) {
-        if (area == null) {
-            return;
+        if (area != null) {
+            showSelection(DungeonSelection.area(area), true);
         }
-        showSelection(DungeonSelection.area(area), true);
     }
 
     public void selectFeature(DungeonFeature feature) {
-        if (feature == null) {
-            return;
+        if (feature != null) {
+            showSelection(DungeonSelection.feature(feature), true);
         }
-        showSelection(DungeonSelection.feature(feature), true);
     }
 
     public void selectPassage(DungeonPassage passage) {
-        if (passage == null) {
-            return;
+        if (passage != null) {
+            showSelection(DungeonSelection.passage(passage), true);
         }
-        showSelection(DungeonSelection.passage(passage), true);
     }
 
     public void restoreRoomSelection(DungeonRoom room) {
-        if (room == null) {
-            return;
+        if (room != null) {
+            restoreSelection(DungeonSelection.room(room));
         }
-        restoreSelection(DungeonSelection.room(room));
     }
 
     public void restoreAreaSelection(DungeonArea area) {
-        if (area == null) {
-            return;
+        if (area != null) {
+            restoreSelection(DungeonSelection.area(area));
         }
-        restoreSelection(DungeonSelection.area(area));
     }
 
     public void restoreFeatureSelection(DungeonFeature feature) {
-        if (feature == null) {
-            return;
+        if (feature != null) {
+            restoreSelection(DungeonSelection.feature(feature));
         }
-        restoreSelection(DungeonSelection.feature(feature));
     }
 
     public void restorePassageSelection(DungeonPassage passage) {
-        if (passage == null) {
-            return;
+        if (passage != null) {
+            restoreSelection(DungeonSelection.passage(passage));
         }
-        restoreSelection(DungeonSelection.passage(passage));
     }
 
     public void refreshInspectorForCurrentSelection() {
-        if (state.currentSelection() == null || inspectorPublisher == null) {
-            return;
+        if (state.currentSelection() != null && inspectorPublisher != null) {
+            inspectorPublisher.refreshSelectionIfVisible(state.currentSelection());
         }
-        inspectorPublisher.refreshSelectionIfVisible(state.currentSelection());
     }
 
     private void selectSquare(DungeonSquare square, int x, int y, Long currentMapId) {
@@ -125,7 +117,11 @@ public final class DungeonSelectionWorkflowController {
         if (effectiveSquare == null && currentMapId != null) {
             effectiveSquare = new DungeonSquare(null, currentMapId, x, y, null, null, null, null);
         }
-        showSelection(DungeonSelection.square(effectiveSquare, currentIndex().featuresAtSquare(effectiveSquare == null ? null : effectiveSquare.squareId())), false);
+        showSelection(
+                DungeonSelection.square(
+                        effectiveSquare,
+                        currentIndex().featuresAtSquare(effectiveSquare == null ? null : effectiveSquare.squareId())),
+                false);
     }
 
     private void restoreSelection(DungeonSelection selection) {
@@ -140,7 +136,7 @@ public final class DungeonSelectionWorkflowController {
     private void showSelection(DungeonSelection selection, boolean openInspector) {
         state.setCurrentSelection(selection);
         canvas.setSelectedSelection(selection);
-        workflowMessageController.clearMessage();
+        workflowMessages.clearMessage();
         syncToolSettingsSelection(selection);
         if (openInspector && inspectorPublisher != null) {
             inspectorPublisher.showSelection(selection);
@@ -176,11 +172,7 @@ public final class DungeonSelectionWorkflowController {
             case SQUARE -> {
                 toolSettingsPane.clearFeatureSelection();
                 toolSettingsPane.setTileContextFeatures(selection.tileFeatures());
-                if (selection.square() == null) {
-                    toolSettingsPane.setSelectedArea(null);
-                } else {
-                    toolSettingsPane.setSelectedArea(selection.square().areaId());
-                }
+                toolSettingsPane.setSelectedArea(selection.square() == null ? null : selection.square().areaId());
             }
             case ENDPOINT, LINK, PASSAGE, NONE -> toolSettingsPane.clearEntitySelections();
         }
