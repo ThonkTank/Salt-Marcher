@@ -189,17 +189,32 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     }
 
     private void openEntry(HistoryEntry entry) {
-        if (historyIndex >= 0 && history.get(historyIndex).sameEntry(entry)) {
+        if (historyIndex >= 0
+                && historyIndex < history.size()
+                && Objects.equals(history.get(historyIndex).entryKey(), entry.entryKey())) {
             history.set(historyIndex, entry);
         } else {
             if (historyIndex < history.size() - 1) {
                 history.subList(historyIndex + 1, history.size()).clear();
             }
+            removeDuplicateEntries(entry.entryKey());
             history.add(entry);
             historyIndex = history.size() - 1;
         }
         placeholderVisible = false;
         renderCurrentEntry();
+    }
+
+    private void removeDuplicateEntries(Object entryKey) {
+        for (int i = history.size() - 1; i >= 0; i--) {
+            if (!Objects.equals(history.get(i).entryKey(), entryKey)) {
+                continue;
+            }
+            history.remove(i);
+            if (i <= historyIndex) {
+                historyIndex--;
+            }
+        }
     }
 
     private void goBack() {

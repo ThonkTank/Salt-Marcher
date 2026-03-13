@@ -7,12 +7,13 @@ import features.world.dungeonmap.ui.editor.screen.DungeonEditorView;
 import features.world.dungeonmap.ui.runtime.screen.DungeonView;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
+import ui.shell.SceneRegistry;
 
 import java.util.Objects;
 
 public final class DungeonMapUiBootstrap {
 
-    private final AppView dungeonView;
+    private final DungeonView dungeonView;
     private final AppView dungeonEditorView;
 
     public DungeonMapUiBootstrap(DetailsNavigator detailsNavigator, EncounterRuntimePort encounterRuntimePort) {
@@ -30,5 +31,10 @@ public final class DungeonMapUiBootstrap {
 
     public AppView dungeonEditorView() {
         return dungeonEditorView;
+    }
+
+    public void registerScenes(SceneRegistry sceneRegistry) {
+        Objects.requireNonNull(sceneRegistry, "sceneRegistry");
+        dungeonView.registerScenes(sceneRegistry);
     }
 }

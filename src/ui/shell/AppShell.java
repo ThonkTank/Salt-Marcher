@@ -27,8 +27,8 @@ import java.util.Map;
  * Left column is a VBox (Controls takes natural height, Main fills rest — not resizable).
  * Right column is a vertical SplitPane (Details / State — resizable).
  * <p>
- * Views leave State null → shell shows the shell-owned details pane + ScenePane.
- * The upper-right details pane is shell-owned for all views.
+ * Session views use the shell-owned Details + Scene panes.
+ * Editor views may provide local right-side panes instead.
  * <p>
  * SplitPane items are set once in the constructor and never mutated.
  * Content is swapped inside StackPane containers only, which preserves divider positions.
@@ -48,6 +48,8 @@ public class AppShell extends BorderPane {
     // ---- Shell-owned panel defaults (used when views return null) ----
     private final InspectorPane inspectorPane;
     private final ScenePane scenePane = new ScenePane();
+    private final Node editorDetailsPlaceholder = createPlaceholderPane("Details", "Keine lokalen Details");
+    private final Node editorStatePlaceholder = createPlaceholderPane("Status", "Kein lokaler Zustand");
 
     // ---- Layout structure ----
     private final HBox toolbar = new HBox(8);
@@ -223,17 +225,39 @@ public class AppShell extends BorderPane {
             mainPanel.getChildren().setAll(main);
         }
 
-        // Details panel (top-right) — always the shell-owned details pane
-        if (!detailsContainer.getChildren().contains(inspectorPane)) {
-            detailsContainer.getChildren().setAll(inspectorPane);
+        if (activeViewId != null && activeViewId.getCategory() == ViewCategory.SESSION) {
+            if (!detailsContainer.getChildren().contains(inspectorPane)) {
+                detailsContainer.getChildren().setAll(inspectorPane);
+            }
+            if (!stateContainer.getChildren().contains(scenePane)) {
+                stateContainer.getChildren().setAll(scenePane);
+            }
+            return;
         }
 
-        // State panel (bottom-right) — null = shell-owned ScenePane
+        Node details = target.getDetailsContent();
+        Node detailsNode = details != null ? details : editorDetailsPlaceholder;
+        if (!detailsContainer.getChildren().contains(detailsNode)) {
+            detailsContainer.getChildren().setAll(detailsNode);
+        }
+
         Node state = target.getStateContent();
-        Node stateNode = state != null ? state : scenePane;
+        Node stateNode = state != null ? state : editorStatePlaceholder;
         if (!stateContainer.getChildren().contains(stateNode)) {
             stateContainer.getChildren().setAll(stateNode);
         }
+    }
+
+    private static Node createPlaceholderPane(String titleText, String bodyText) {
+        Label title = new Label(titleText);
+        title.getStyleClass().addAll("section-header", "text-muted");
+        Label body = new Label(bodyText);
+        body.getStyleClass().add("text-muted");
+        body.setWrapText(true);
+        VBox box = new VBox(8, title, body);
+        box.setFillWidth(true);
+        box.setPadding(new javafx.geometry.Insets(12));
+        return box;
     }
 
     private void rebuildToolbar(AppView view) {

@@ -2,6 +2,7 @@ package features.world.hexmap.ui.overworld;
 
 import javafx.scene.Node;
 import ui.shell.AppView;
+import ui.shell.SceneHandle;
 import ui.async.UiErrorReporter;
 
 /**
@@ -13,6 +14,7 @@ public class OverworldView implements AppView {
     private final OverworldControls overworldControls;
     private final HexMapPane hexMapPane;
     private final OverworldApplicationService applicationService;
+    private SceneHandle travelScene;
     private boolean mapLoaded = false;
 
     public OverworldView() {
@@ -32,6 +34,9 @@ public class OverworldView implements AppView {
 
     @Override
     public void onShow() {
+        if (travelScene != null) {
+            travelScene.activate();
+        }
         if (!mapLoaded) {
             applicationService.loadInitialMap(
                     mapState -> {
@@ -59,5 +64,9 @@ public class OverworldView implements AppView {
     @Override
     public void onHide() {
         applicationService.shutdownPartyPositionSession();
+    }
+
+    public void setTravelScene(SceneHandle travelScene) {
+        this.travelScene = travelScene;
     }
 }

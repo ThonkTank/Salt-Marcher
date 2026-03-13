@@ -4,6 +4,7 @@ import features.encounter.api.EncounterRuntimePort;
 import features.world.dungeonmap.bootstrap.DungeonMapUiBootstrap;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
+import ui.shell.SceneRegistry;
 
 import java.util.Objects;
 
@@ -27,5 +28,10 @@ public final class DungeonMapModule {
 
     public AppView dungeonEditorView() {
         return uiBootstrap.dungeonEditorView();
+    }
+
+    public void registerScenes(SceneRegistry sceneRegistry) {
+        Objects.requireNonNull(sceneRegistry, "sceneRegistry");
+        uiBootstrap.registerScenes(sceneRegistry);
     }
 }

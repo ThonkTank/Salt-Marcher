@@ -12,6 +12,8 @@ import features.world.dungeonmap.ui.runtime.workflow.DungeonRuntimeMovementWorkf
 import javafx.scene.Node;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
+import ui.shell.SceneHandle;
+import ui.shell.SceneRegistry;
 
 public class DungeonView implements AppView {
 
@@ -21,6 +23,7 @@ public class DungeonView implements AppView {
     private final DungeonRuntimeViewState state = new DungeonRuntimeViewState();
     private final DungeonRuntimeLoader loader;
     private final DungeonRuntimeMovementWorkflow movementWorkflow;
+    private SceneHandle runtimeScene;
 
     public DungeonView(DetailsNavigator detailsNavigator, DungeonMapQueryService queries, EncounterRuntimePort encounterRuntimePort) {
         loader = new DungeonRuntimeLoader(state, controls, runtimeStatePane, canvas, queries);
@@ -64,16 +67,21 @@ public class DungeonView implements AppView {
     }
 
     @Override
-    public Node getStateContent() {
-        return runtimeStatePane;
-    }
-
-    @Override
     public void onShow() {
+        if (runtimeScene != null) {
+            runtimeScene.activate();
+        }
         loader.onShow(movementWorkflow::updateLocationLabels);
     }
 
     private void reloadRuntimeView() {
         loader.reloadCurrentMap(movementWorkflow::updateLocationLabels);
+    }
+
+    public void registerScenes(SceneRegistry sceneRegistry) {
+        if (runtimeScene != null) {
+            return;
+        }
+        runtimeScene = sceneRegistry.registerScene("\u25A3 Dungeon", runtimeStatePane);
     }
 }

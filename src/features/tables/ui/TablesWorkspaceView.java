@@ -24,6 +24,7 @@ public final class TablesWorkspaceView implements AppView {
     private final AppView encounterView;
     private final AppView lootView;
     private final StackPane controlsHost = new StackPane();
+    private final StackPane detailsHost = new StackPane();
     private final StackPane mainHost = new StackPane();
     private final StackPane stateHost = new StackPane();
     private final HBox modeToggle = new HBox(4);
@@ -78,6 +79,11 @@ public final class TablesWorkspaceView implements AppView {
     }
 
     @Override
+    public Node getDetailsContent() {
+        return activeView().getDetailsContent() == null ? null : detailsHost;
+    }
+
+    @Override
     public Node getStateContent() {
         return stateHost;
     }
@@ -113,6 +119,7 @@ public final class TablesWorkspaceView implements AppView {
     private void refreshHosts() {
         AppView activeView = activeView();
         setHostContent(controlsHost, activeView.getControlsContent());
+        setHostContent(detailsHost, activeView.getDetailsContent());
         setHostContent(mainHost, activeView.getMainContent());
         setHostContent(stateHost, activeView.getStateContent());
     }

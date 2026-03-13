@@ -20,14 +20,13 @@ import java.util.List;
  * <ul>
  *   <li><b>Controls</b> — filters, sliders, tool palettes ({@link #getControlsContent()})</li>
  *   <li><b>Main</b> — primary workspace: monster table, hex map, canvas ({@link #getMainContent()})</li>
- *   <li><b>Details</b> — shared shell-owned, mostly static inspector with navigation/history</li>
+ *   <li><b>Details</b> — runtime inspector or editor-local details ({@link #getDetailsContent()})</li>
  *   <li><b>State</b> — game state, tool-specific settings, and interactive editor UI ({@link #getStateContent()})</li>
  * </ul>
- * The Details pane is shell-owned and shared across all views. View-specific forms, editor controls,
- * and any interactive workflow UI belong in the State pane instead of replacing the shared inspector.
- * Views leave State as {@code null} to use the shell-owned ScenePane. Local selection state and
- * inspector state are separate: views should open inspector cards intentionally instead of mirroring
- * every local selection into the shared history.
+ * Session/runtime views use shell-owned shared right-side panes (history-aware Details + tabbed State).
+ * Editor views may provide their own right-side panes instead. Local selection state and runtime
+ * inspector history remain separate concerns: views should open inspector cards intentionally instead
+ * of mirroring every local selection into shared history.
  */
 public interface AppView {
 
@@ -47,9 +46,16 @@ public interface AppView {
     default Node getControlsContent() { return null; }
 
     /**
+     * Details panel (top-right).
+     * Session views normally leave this null because the shell provides the shared runtime inspector.
+     * Editor views may override this to provide local details content instead.
+     */
+    default Node getDetailsContent() { return null; }
+
+    /**
      * State panel (bottom-right): game state / activity content.
-     * Returns null (default) to use the shell-owned ScenePane (tabbed game activities).
-     * EDITOR views override this to provide view-specific state content.
+     * Session views normally leave this null because the shell provides the shared ScenePane.
+     * Editor views may override this to provide local state content instead.
      */
     default Node getStateContent() { return null; }
 
