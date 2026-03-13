@@ -2,9 +2,10 @@ package features.world.dungeonmap.ui.runtime.state;
 
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
+import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
-import features.world.dungeonmap.model.readmodel.DungeonMapState;
-import features.world.dungeonmap.model.readmodel.DungeonRuntimeState;
+import features.world.dungeonmap.model.projection.DungeonMapState;
+import features.world.dungeonmap.model.projection.DungeonRuntimeState;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -97,6 +98,11 @@ public final class DungeonRuntimeViewState {
 
     public DungeonArea areaById(Long areaId) {
         return areaId == null ? null : areasById.get(areaId);
+    }
+
+    public DungeonRoom activeRoom() {
+        DungeonSquare square = squareById(activeSquareId);
+        return square == null || currentState == null ? null : currentState.index().findRoom(square.roomId());
     }
 
     private void rebuildLookups() {

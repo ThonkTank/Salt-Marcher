@@ -1,18 +1,20 @@
 package features.world.dungeonmap.ui.runtime.workflow;
 
-import features.world.dungeonmap.model.editing.DungeonSelection;
+import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.service.runtime.DungeonRuntimeQueryService;
-import features.world.dungeonmap.ui.runtime.controls.DungeonViewControls;
+import features.world.dungeonmap.ui.runtime.chrome.controls.DungeonViewControls;
+import features.world.dungeonmap.ui.runtime.chrome.state.DungeonRuntimeStatePane;
 import features.world.dungeonmap.ui.runtime.state.DungeonRuntimeViewState;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.canvas.DungeonMapPane;
+import features.world.dungeonmap.ui.mapcanvas.DungeonMapPane;
 import ui.async.UiErrorReporter;
 
 public final class DungeonRuntimeLoader {
 
     private final DungeonRuntimeViewState state;
     private final DungeonViewControls controls;
+    private final DungeonRuntimeStatePane statePane;
     private final DungeonMapPane canvas;
     private final DungeonMapQueryService queries;
     private final DungeonRuntimeQueryService runtimeQueries = new DungeonRuntimeQueryService();
@@ -20,11 +22,13 @@ public final class DungeonRuntimeLoader {
     public DungeonRuntimeLoader(
             DungeonRuntimeViewState state,
             DungeonViewControls controls,
+            DungeonRuntimeStatePane statePane,
             DungeonMapPane canvas,
             DungeonMapQueryService queries
     ) {
         this.state = state;
         this.controls = controls;
+        this.statePane = statePane;
         this.canvas = canvas;
         this.queries = queries;
     }
@@ -63,7 +67,7 @@ public final class DungeonRuntimeLoader {
                         canvas.setPartyEndpoint(null);
                         canvas.setPartySquare(null);
                         controls.selectMap(null);
-                        controls.showLocation(null, null, null, null, null);
+                        statePane.showLocation(null, null, null, null, null);
                         return;
                     }
                     controls.selectMap(state.selectedMapId());
@@ -82,7 +86,7 @@ public final class DungeonRuntimeLoader {
         canvas.showLoadError("Dungeon konnte nicht geladen werden");
         canvas.setPartyEndpoint(null);
         canvas.setPartySquare(null);
-        controls.showLocation(null, null, null, null, state.runtimeStatusMessage());
+        statePane.showLocation(null, null, null, null, state.runtimeStatusMessage());
         UiErrorReporter.reportBackgroundFailure("DungeonRuntimeLoader.loadMap()", throwable);
     }
 }
