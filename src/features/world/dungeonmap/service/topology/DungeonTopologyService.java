@@ -16,6 +16,7 @@ import features.world.dungeonmap.repository.DungeonMapRepository;
 import features.world.dungeonmap.repository.DungeonPassageRepository;
 import features.world.dungeonmap.repository.DungeonSquareRepository;
 import features.world.dungeonmap.repository.DungeonWallRepository;
+import features.world.dungeonmap.service.linking.DungeonLinkIntegrityService;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -142,7 +143,7 @@ public final class DungeonTopologyService {
             reconcileSquarePaintTopology(conn, mapId, effectiveIntent, workspace);
         }
         deleteInvalidPassages(conn, mapId);
-        DungeonLinkRepository.deleteLinksWithMissingAnchors(conn, mapId);
+        DungeonLinkIntegrityService.reconcileMap(conn, mapId);
     }
 
     private static void reconcileSquarePaintTopology(

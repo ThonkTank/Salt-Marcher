@@ -10,7 +10,7 @@ import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonSelection;
 import features.world.dungeonmap.model.DungeonSquare;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
-import features.world.dungeonmap.ui.editor.DungeonEditorInspectorContentFactory;
+import features.world.dungeonmap.ui.editor.inspector.DungeonEditorInspectorContentFactory;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
@@ -64,11 +64,11 @@ public final class DungeonSelectionWorkflowController {
     }
 
     public void showLinkSelection(DungeonLink link) {
-        showSelection(DungeonSelection.link(link), false);
+        showSelection(DungeonSelection.link(link), true);
     }
 
     public void showEndpointSelection(DungeonEndpoint endpoint) {
-        showSelection(DungeonSelection.endpoint(endpoint), false);
+        showSelection(DungeonSelection.endpoint(endpoint), true);
     }
 
     public void handleCellClick(
@@ -165,7 +165,7 @@ public final class DungeonSelectionWorkflowController {
         if (passage == null) {
             return;
         }
-        showSelection(DungeonSelection.passage(passage), false);
+        showSelection(DungeonSelection.passage(passage), true);
     }
 
     public void restoreRoomSelection(DungeonRoom room) {
@@ -288,11 +288,14 @@ public final class DungeonSelectionWorkflowController {
             case ROOM -> showRoomInspector(selection.room(), refreshOnlyIfVisible);
             case AREA -> showAreaInspector(selection.area(), refreshOnlyIfVisible);
             case FEATURE -> showFeatureInspector(selection.feature(), refreshOnlyIfVisible);
+            case ENDPOINT -> showEndpointInspector(selection.endpoint(), refreshOnlyIfVisible);
+            case LINK -> showLinkInspector(selection.link(), refreshOnlyIfVisible);
+            case PASSAGE -> showPassageInspector(selection.passage(), refreshOnlyIfVisible);
             case NONE -> {
                 // Keep the last global inspector entry visible until the GM opens or closes it explicitly.
             }
-            case SQUARE, ENDPOINT, LINK, PASSAGE -> {
-                // These remain local workflow selections in the editor, not inspector cards.
+            case SQUARE -> {
+                // Empty/background square selection stays editor-local.
             }
         }
     }
@@ -374,6 +377,48 @@ public final class DungeonSelectionWorkflowController {
                 () -> inspectorContentFactory.buildFeatureCard(feature));
     }
 
+    private void showEndpointInspector(DungeonEndpoint endpoint, boolean refreshOnlyIfVisible) {
+        if (endpoint == null || endpoint.endpointId() == null) {
+            return;
+        }
+        Object entryKey = endpointEntryKey(endpoint.endpointId());
+        if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
+            return;
+        }
+        detailsNavigator.showContent(
+                titleOrFallback(endpoint.name(), "Übergang"),
+                entryKey,
+                () -> inspectorContentFactory.buildEndpointCard(endpoint));
+    }
+
+    private void showLinkInspector(DungeonLink link, boolean refreshOnlyIfVisible) {
+        if (link == null || link.linkId() == null) {
+            return;
+        }
+        Object entryKey = linkEntryKey(link.linkId());
+        if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
+            return;
+        }
+        detailsNavigator.showContent(
+                titleOrFallback(link.label(), "Link"),
+                entryKey,
+                () -> inspectorContentFactory.buildLinkCard(link));
+    }
+
+    private void showPassageInspector(DungeonPassage passage, boolean refreshOnlyIfVisible) {
+        if (passage == null || passage.passageId() == null) {
+            return;
+        }
+        Object entryKey = passageEntryKey(passage.passageId());
+        if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
+            return;
+        }
+        detailsNavigator.showContent(
+                titleOrFallback(passage.name(), "Durchgang"),
+                entryKey,
+                () -> inspectorContentFactory.buildPassageCard(passage));
+    }
+
     private boolean isShowingContent(Object key) {
         return detailsNavigator.isShowing(new DetailsNavigator.EntryKey("content", key));
     }
@@ -388,6 +433,18 @@ public final class DungeonSelectionWorkflowController {
 
     private static String featureEntryKey(Long featureId) {
         return "dungeon-editor-feature:" + featureId;
+    }
+
+    private static String endpointEntryKey(Long endpointId) {
+        return "dungeon-editor-endpoint:" + endpointId;
+    }
+
+    private static String linkEntryKey(Long linkId) {
+        return "dungeon-editor-link:" + linkId;
+    }
+
+    private static String passageEntryKey(Long passageId) {
+        return "dungeon-editor-passage:" + passageId;
     }
 
     private static String titleOrFallback(String value, String fallback) {

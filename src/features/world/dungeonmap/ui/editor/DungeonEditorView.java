@@ -3,6 +3,7 @@ package features.world.dungeonmap.ui.editor;
 import features.world.dungeonmap.ui.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.editor.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.controls.DungeonPaintMode;
+import features.world.dungeonmap.ui.editor.inspector.DungeonEditorInspectorContentFactory;
 import features.world.dungeonmap.ui.editor.panes.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;

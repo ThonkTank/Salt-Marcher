@@ -20,7 +20,7 @@ import ui.components.ConfirmationDropdown;
 
 import java.util.function.Consumer;
 
-final class DungeonConnectionEditingController {
+public final class DungeonConnectionEditingController {
 
     private final DungeonEditorState state;
     private final DungeonEditorInteractionState interactionState;
@@ -30,7 +30,7 @@ final class DungeonConnectionEditingController {
     private final ConfirmationDropdown confirmationDropdown = new ConfirmationDropdown();
     private Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap = ignored -> { };
 
-    DungeonConnectionEditingController(
+    public DungeonConnectionEditingController(
             DungeonEditorState state,
             DungeonEditorInteractionState interactionState,
             DungeonEditorApplicationService applicationService,
@@ -44,7 +44,7 @@ final class DungeonConnectionEditingController {
         this.selectionController = selectionController;
     }
 
-    void setReloadCurrentMap(Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap) {
+    public void setReloadCurrentMap(Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap) {
         this.reloadCurrentMap = reloadCurrentMap == null ? ignored -> { } : reloadCurrentMap;
     }
 
@@ -137,14 +137,14 @@ final class DungeonConnectionEditingController {
                 square.y()));
     }
 
-    void saveEndpoint(DungeonEndpoint endpoint) {
+    public void saveEndpoint(DungeonEndpoint endpoint) {
         applicationService.saveEndpoint(
                 endpoint,
                 ignored -> reloadCurrentMap.accept(null),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.saveEndpoint()", ex));
     }
 
-    void deleteEndpoint(Long endpointId, Node anchor) {
+    public void deleteEndpoint(Long endpointId, Node anchor) {
         if (endpointId == null) {
             return;
         }
@@ -158,7 +158,7 @@ final class DungeonConnectionEditingController {
                         ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.deleteEndpoint()", ex)));
     }
 
-    void deleteLink(Long linkId) {
+    public void deleteLink(Long linkId) {
         if (linkId == null) {
             return;
         }
@@ -168,7 +168,7 @@ final class DungeonConnectionEditingController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.deleteLink()", ex));
     }
 
-    void updateLinkLabel(long linkId, String label, Runnable onSuccess) {
+    public void updateLinkLabel(long linkId, String label, Runnable onSuccess) {
         Runnable effectiveOnSuccess = onSuccess == null ? () -> reloadCurrentMap.accept(null) : onSuccess;
         applicationService.updateLinkLabel(
                 linkId,
@@ -177,7 +177,7 @@ final class DungeonConnectionEditingController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.updateLinkLabel()", ex));
     }
 
-    void savePassage(DungeonPassage passage) {
+    public void savePassage(DungeonPassage passage) {
         applicationService.savePassage(
                 passage,
                 passageId -> {
@@ -186,7 +186,7 @@ final class DungeonConnectionEditingController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionEditingController.savePassage()", ex));
     }
 
-    void deletePassage(Long passageId, Node anchor) {
+    public void deletePassage(Long passageId, Node anchor) {
         if (passageId == null) {
             return;
         }
