@@ -8,7 +8,7 @@ import java.util.List;
  * Defines the ordered relaxation stages for the V2 search.
  */
 public final class EncounterSearchRelaxationPolicy {
-    public static final int ATTEMPTS_PER_RELAXATION = 12;
+    public static final int ATTEMPTS_PER_RELAXATION = 4;
 
     private EncounterSearchRelaxationPolicy() {
         throw new AssertionError("No instances");

@@ -5,7 +5,9 @@ import features.encounter.generation.service.EncounterSearchMetrics;
 import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.search.model.EncounterBudgets;
 import features.encounter.generation.service.search.model.RelaxationProfile;
+import features.encounter.generation.service.search.model.SearchExecutionDebugMetadata;
 import features.encounter.generation.service.search.model.SearchState;
+import features.encounter.generation.service.search.model.SearchStopReason;
 import features.encounter.generation.service.search.model.StateEntry;
 import features.encounter.model.Encounter;
 import features.encounter.model.EncounterCreatureSnapshot;
@@ -44,13 +46,7 @@ public final class EncounterResultAssembler {
             SearchState state,
             EncounterBudgets budgets,
             RelaxationProfile relaxation,
-            int candidatePoolSize,
-            int iterations,
-            int candidateEvaluations,
-            int backtrackCount,
-            int relaxationStage,
-            boolean exactMatchFound,
-            boolean searchBudgetExhausted) {
+            SearchExecutionDebugMetadata debugMetadata) {
         WeightClassSummary weightClassSummary = summarizeWeightClasses(state);
         return new EncounterGenerator.GenerationDiagnostics(
                 state.adjustedXp(),
@@ -66,13 +62,11 @@ public final class EncounterResultAssembler {
                 state.complexActionCount(),
                 relaxation.pacingRelaxed(),
                 relaxation.allowRoleRepeat(),
-                candidatePoolSize,
-                iterations,
-                candidateEvaluations,
-                backtrackCount,
-                relaxationStage,
-                exactMatchFound,
-                searchBudgetExhausted);
+                deriveSolutionQuality(debugMetadata),
+                deriveStopCategory(debugMetadata),
+                debugMetadata == null ? 0 : debugMetadata.candidatePoolSize(),
+                debugMetadata == null ? 0 : debugMetadata.iterations(),
+                debugMetadata == null ? 0 : debugMetadata.candidateEvaluations());
     }
 
     public static EncounterGenerator.GenerationResult buildNoSolutionResult() {
@@ -81,18 +75,13 @@ public final class EncounterResultAssembler {
     }
 
     public static EncounterGenerator.GenerationResult buildSuccessResult(
-            SearchState state,
+            SearchTermination termination,
             EncounterBudgets budgets,
-            RelaxationProfile relaxation,
             int avgLevel,
-            int partySize,
-            int candidatePoolSize,
-            int iterations,
-            int candidateEvaluations,
-            int backtrackCount,
-            int relaxationStage,
-            boolean exactMatchFound,
-            boolean searchBudgetExhausted) {
+            int partySize) {
+        SearchState state = termination.bestState();
+        RelaxationProfile relaxation = termination.relaxation();
+        SearchExecutionDebugMetadata debugMetadata = termination.debugMetadata();
         List<EncounterSlot> slots = toEncounterSlots(state);
         Encounter encounter = new Encounter(
                 slots,
@@ -103,49 +92,53 @@ public final class EncounterResultAssembler {
                 EncounterScoring.deriveShapeLabel(slots));
         return EncounterGenerator.GenerationResult.success(
                 encounter,
-                null,
-                buildDiagnostics(
-                        state,
-                        budgets,
-                        relaxation,
-                        candidatePoolSize,
-                        iterations,
-                        candidateEvaluations,
-                        backtrackCount,
-                        relaxationStage,
-                        exactMatchFound,
-                        searchBudgetExhausted));
+                deriveSolutionQuality(debugMetadata),
+                deriveSearchAdvisories(debugMetadata),
+                buildDiagnostics(state, budgets, relaxation, debugMetadata));
     }
 
     public static EncounterGenerator.GenerationResult buildTimeoutOrFallback(
-            SearchState fallbackState,
+            SearchTermination termination,
             EncounterBudgets budgets,
-            RelaxationProfile relaxation,
             int avgLevel,
-            int partySize,
-            int candidatePoolSize,
-            int iterations,
-            int candidateEvaluations,
-            int backtrackCount,
-            int relaxationStage,
-            boolean exactMatchFound,
-            boolean searchBudgetExhausted) {
-        if (fallbackState == null) {
+            int partySize) {
+        if (termination == null || termination.bestState() == null) {
             return EncounterGenerator.GenerationResult.timeout();
         }
-        return buildSuccessResult(
-                fallbackState,
-                budgets,
-                relaxation,
-                avgLevel,
-                partySize,
-                candidatePoolSize,
-                iterations,
-                candidateEvaluations,
-                backtrackCount,
-                relaxationStage,
-                exactMatchFound,
-                searchBudgetExhausted);
+        return buildSuccessResult(termination, budgets, avgLevel, partySize);
+    }
+
+    private static List<EncounterGenerator.GenerationAdvisory> deriveSearchAdvisories(
+            SearchExecutionDebugMetadata debugMetadata) {
+        if (debugMetadata == null) {
+            return List.of();
+        }
+        return switch (debugMetadata.stopReason()) {
+            case WORK_BUDGET_EXHAUSTED, DEADLINE_EXHAUSTED, CANCELLED ->
+                    List.of(EncounterGenerator.GenerationAdvisory.SEARCH_BUDGET_FALLBACK_USED);
+            case EXACT_MATCH, SEARCH_SPACE_EXHAUSTED -> List.of();
+        };
+    }
+
+    private static EncounterGenerator.GenerationSolutionQuality deriveSolutionQuality(
+            SearchExecutionDebugMetadata debugMetadata) {
+        return debugMetadata != null && debugMetadata.stopReason() == SearchStopReason.EXACT_MATCH
+                ? EncounterGenerator.GenerationSolutionQuality.EXACT
+                : EncounterGenerator.GenerationSolutionQuality.FALLBACK;
+    }
+
+    private static EncounterGenerator.GenerationStopCategory deriveStopCategory(
+            SearchExecutionDebugMetadata debugMetadata) {
+        if (debugMetadata == null) {
+            return EncounterGenerator.GenerationStopCategory.SEARCH_EXHAUSTED;
+        }
+        return switch (debugMetadata.stopReason()) {
+            case EXACT_MATCH -> EncounterGenerator.GenerationStopCategory.COMPLETED;
+            case SEARCH_SPACE_EXHAUSTED -> EncounterGenerator.GenerationStopCategory.SEARCH_EXHAUSTED;
+            case WORK_BUDGET_EXHAUSTED -> EncounterGenerator.GenerationStopCategory.WORK_BUDGET;
+            case DEADLINE_EXHAUSTED -> EncounterGenerator.GenerationStopCategory.DEADLINE;
+            case CANCELLED -> EncounterGenerator.GenerationStopCategory.CANCELLED;
+        };
     }
 
     private static WeightClassSummary summarizeWeightClasses(SearchState state) {

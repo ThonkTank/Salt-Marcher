@@ -96,21 +96,7 @@ public final class EncounterBudgetPolicy {
     }
 
     private static SearchHeuristics defaultHeuristics() {
-        return new SearchHeuristics(
-                72,
-                2,
-                0.80,
-                0.72,
-                1.2,
-                1.1,
-                0.60,
-                0.25,
-                0.20,
-                0.5,
-                0.12,
-                0.12,
-                0.06,
-                0.04);
+        return SearchHeuristics.runtimeDefaults();
     }
 
     /**

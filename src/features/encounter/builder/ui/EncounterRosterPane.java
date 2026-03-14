@@ -62,6 +62,7 @@ public class EncounterRosterPane extends VBox {
     private final Label deadlyThreshLabel = new Label();
     private final Label adjXpLabel = new Label();
     private final VBox cardList;
+    private final VBox advisoryRegion;
     private final Label placeholder;
     private final ScrollPane cardScroll;
     private final Button generateButton;
@@ -74,6 +75,8 @@ public class EncounterRosterPane extends VBox {
     private Runnable onStartCombat;
     private Consumer<String> onSaveEncounter;
     private Consumer<Long> onRequestStatBlock;
+    private RosterProvenance rosterProvenance = RosterProvenance.EMPTY;
+    private List<EncounterGenerator.GenerationAdvisory> generationAdvisories = List.of();
 
     public EncounterRosterPane(EncounterBuilderService encounterService) {
         this.encounterService = Objects.requireNonNull(encounterService);
@@ -119,6 +122,11 @@ public class EncounterRosterPane extends VBox {
         cardScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         cardScroll.setVisible(false);
         cardScroll.setManaged(false);
+
+        advisoryRegion = new VBox(4);
+        advisoryRegion.setPadding(new Insets(8, 0, 0, 0));
+        advisoryRegion.setVisible(false);
+        advisoryRegion.setManaged(false);
 
         // StackPane wrapper: placeholder and cardScroll overlay each other (one visible at a time).
         // VGrow on the wrapper pushes actionRegion to the bottom regardless of content state.
@@ -166,7 +174,7 @@ public class EncounterRosterPane extends VBox {
         VBox.setVgrow(actionRegion, Priority.NEVER);
 
         getChildren().addAll(title, headerRow, difficultyMeter, thresholdRow, adjXpLabel,
-                contentArea, ThemeColors.controlSeparator(), actionRegion);
+                contentArea, advisoryRegion, ThemeColors.controlSeparator(), actionRegion);
     }
 
     // ---- Public API ----
@@ -181,6 +189,7 @@ public class EncounterRosterPane extends VBox {
     public void setOnRequestStatBlock(Consumer<Long> callback) { this.onRequestStatBlock = callback; }
 
     public void addCreature(Creature creature, CreatureRoleProfile roleProfile) {
+        markRosterAsManualEdit();
         EncounterCreatureSnapshot snapshot = EncounterCreatureSnapshotMapper.toSnapshot(creature);
         for (EncounterSlot slot : slots) {
             if (slot.getCreature().getId().equals(snapshot.getId())) {
@@ -205,6 +214,7 @@ public class EncounterRosterPane extends VBox {
     }
 
     public void setEncounter(Encounter enc) {
+        setNoticeState(RosterProvenance.EMPTY, List.of());
         if (enc == null || enc.slots() == null) return;
         slots.clear();
         for (EncounterSlot slot : enc.slots()) {
@@ -213,7 +223,6 @@ public class EncounterRosterPane extends VBox {
         if (slots.isEmpty()) { showPlaceholder(); return; }
         showCards();
         rebuildCards();
-        notifyRosterChanged();
         if (enc.difficulty() != null) {
             currentDifficulty = enc.difficulty();
             difficultyLabel.setText(EncounterDifficultyUiText.formatDifficulty(enc.difficulty()));
@@ -223,6 +232,7 @@ public class EncounterRosterPane extends VBox {
             currentShapeLabel = enc.shapeLabel();
             templateLabel.setText(enc.shapeLabel());
         }
+        notifyRosterChanged();
     }
 
     public Encounter buildEncounter() {
@@ -260,23 +270,35 @@ public class EncounterRosterPane extends VBox {
     }
 
     public void showGenerating() {
+        setNoticeState(RosterProvenance.EMPTY, List.of());
         placeholder.setText("Generiere Encounter...");
         showPlaceholder();
         placeholder.notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
     }
 
     public void showGenerationFailed() {
+        setNoticeState(RosterProvenance.EMPTY, List.of());
         placeholder.setText("Generierung fehlgeschlagen. Nochmal versuchen.");
         showPlaceholder();
         placeholder.notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
     }
 
     public void showGenerationFailed(String message) {
+        setNoticeState(RosterProvenance.EMPTY, List.of());
         placeholder.setText(message == null || message.isBlank()
                 ? "Generierung fehlgeschlagen. Nochmal versuchen."
                 : message);
         showPlaceholder();
         placeholder.notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+    }
+
+    public void showGenerationSuccess(Encounter encounter, List<EncounterGenerator.GenerationAdvisory> advisories) {
+        applyGeneratedEncounter(encounter, advisories);
+    }
+
+    public void applyGeneratedEncounter(Encounter encounter, List<EncounterGenerator.GenerationAdvisory> advisories) {
+        setEncounter(encounter);
+        setNoticeState(RosterProvenance.GENERATED, advisories);
     }
 
     // ---- Internal ----
@@ -296,6 +318,42 @@ public class EncounterRosterPane extends VBox {
         cardScroll.setVisible(true);   cardScroll.setManaged(true);
     }
 
+    private void renderNoticeState() {
+        advisoryRegion.getChildren().clear();
+        advisoryRegion.setVisible(false);
+        advisoryRegion.setManaged(false);
+        if (rosterProvenance != RosterProvenance.GENERATED || generationAdvisories.isEmpty()) {
+            return;
+        }
+        Label title = new Label("Hinweise");
+        title.getStyleClass().addAll("small", "text-secondary");
+        advisoryRegion.getChildren().add(title);
+        for (EncounterGenerator.GenerationAdvisory advisory : generationAdvisories) {
+            if (advisory == null) {
+                continue;
+            }
+            Label row = new Label(mapGenerationAdvisory(advisory));
+            row.setWrapText(true);
+            row.getStyleClass().add("text-secondary");
+            advisoryRegion.getChildren().add(row);
+        }
+        advisoryRegion.setVisible(true);
+        advisoryRegion.setManaged(true);
+    }
+
+    private void setNoticeState(
+            RosterProvenance provenance,
+            List<EncounterGenerator.GenerationAdvisory> advisories) {
+        rosterProvenance = provenance == null ? RosterProvenance.EMPTY : provenance;
+        generationAdvisories = advisories == null || advisories.isEmpty() ? List.of() : List.copyOf(advisories);
+        renderNoticeState();
+    }
+
+    private void markRosterAsManualEdit() {
+        // Generation advisories describe the provenance of the untouched generated roster only.
+        setNoticeState(RosterProvenance.MANUAL, List.of());
+    }
+
     private void rebuildCards() {
         cardList.getChildren().clear();
         for (EncounterSlot slot : slots) {
@@ -307,6 +365,7 @@ public class EncounterRosterPane extends VBox {
                     slot.getPrimaryFunctionRole(),
                     () -> {
                         if (slot.getCount() < encounterService.maxCreaturesPerSlot()) {
+                            markRosterAsManualEdit();
                             slot.incrementCount();
                             ref.get().updateCount(slot.getCount());
                             notifyRosterChanged();
@@ -314,6 +373,7 @@ public class EncounterRosterPane extends VBox {
                     },
                     () -> {
                         if (slot.getCount() > 1) {
+                            markRosterAsManualEdit();
                             slot.decrementCount();
                             ref.get().updateCount(slot.getCount());
                             notifyRosterChanged();
@@ -330,6 +390,7 @@ public class EncounterRosterPane extends VBox {
         int slotIndex = slots.indexOf(slot);
         if (slotIndex < 0) return;
         int cardIndex = cardList.getChildren().indexOf(card);
+        markRosterAsManualEdit();
         slots.remove(slotIndex);
         notifyRosterChanged();
         if (slots.isEmpty()) showPlaceholder();
@@ -355,6 +416,7 @@ public class EncounterRosterPane extends VBox {
         undoBtn.setOnAction(e -> {
             pause.stop();
             int restoreIndex = Math.min(slotIndex, slots.size());
+            markRosterAsManualEdit();
             slots.add(restoreIndex, slot);
             showCards();
             rebuildCards();
@@ -416,5 +478,22 @@ public class EncounterRosterPane extends VBox {
 
     private void styleThreshLabel(Label label, String styleClass) {
         label.getStyleClass().addAll("small", styleClass);
+    }
+
+    private static String mapGenerationAdvisory(EncounterGenerator.GenerationAdvisory advisory) {
+        return switch (advisory) {
+            case SEARCH_BUDGET_FALLBACK_USED ->
+                    "Der Generator hat das Suchbudget vorzeitig beendet und den besten bis dahin gefundenen Encounter verwendet.";
+            case PARTY_ROLE_FALLBACK_CACHE_REBUILDING ->
+                    "Party-abhängige Rollen waren noch nicht bereit. Das Encounter wurde mit statischen Rollen generiert; der Cache wird im Hintergrund neu aufgebaut.";
+            case PARTY_ROLE_FALLBACK_STORAGE_UNAVAILABLE ->
+                    "Party-abhängige Rollen konnten wegen eines Speicherproblems nicht geladen werden. Das Encounter wurde mit statischen Rollen generiert.";
+        };
+    }
+
+    private enum RosterProvenance {
+        EMPTY,
+        GENERATED,
+        MANUAL
     }
 }

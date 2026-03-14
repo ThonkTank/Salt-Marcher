@@ -39,8 +39,22 @@ public final class EncounterGenerator {
     }
 
     public enum GenerationAdvisory {
+        SEARCH_BUDGET_FALLBACK_USED,
         PARTY_ROLE_FALLBACK_CACHE_REBUILDING,
         PARTY_ROLE_FALLBACK_STORAGE_UNAVAILABLE
+    }
+
+    public enum GenerationSolutionQuality {
+        EXACT,
+        FALLBACK
+    }
+
+    public enum GenerationStopCategory {
+        COMPLETED,
+        SEARCH_EXHAUSTED,
+        WORK_BUDGET,
+        DEADLINE,
+        CANCELLED
     }
 
     public record GenerationDiagnostics(
@@ -57,13 +71,11 @@ public final class EncounterGenerator {
             int totalComplexActions,
             boolean pacingRelaxed,
             boolean diversityRelaxed,
+            GenerationSolutionQuality solutionQuality,
+            GenerationStopCategory stopCategory,
             int candidatePoolSize,
             int iterations,
-            int candidateEvaluations,
-            int backtrackCount,
-            int relaxationStage,
-            boolean exactMatchFound,
-            boolean searchBudgetExhausted
+            int candidateEvaluations
     ) {}
 
     public record GenerationDataSnapshot(
@@ -84,34 +96,44 @@ public final class EncounterGenerator {
             GenerationStatus status,
             Encounter encounter,
             GenerationFailureReason failureReason,
-            GenerationAdvisory advisory,
+            GenerationSolutionQuality solutionQuality,
+            List<GenerationAdvisory> advisories,
             GenerationDiagnostics diagnostics
     ) {
-        public static GenerationResult success(Encounter encounter) {
-            return success(encounter, null, null);
+        public GenerationResult {
+            advisories = advisories == null || advisories.isEmpty() ? List.of() : List.copyOf(advisories);
         }
 
-        public static GenerationResult success(Encounter encounter, GenerationAdvisory advisory) {
-            return success(encounter, advisory, null);
+        public static GenerationResult success(Encounter encounter) {
+            return success(encounter, GenerationSolutionQuality.EXACT, List.of(), null);
         }
 
         public static GenerationResult success(
                 Encounter encounter,
-                GenerationAdvisory advisory,
+                GenerationSolutionQuality solutionQuality,
+                List<GenerationAdvisory> advisories,
                 GenerationDiagnostics diagnostics) {
-            return new GenerationResult(GenerationStatus.SUCCESS, encounter, null, advisory, diagnostics);
+            return new GenerationResult(GenerationStatus.SUCCESS, encounter, null, solutionQuality, advisories, diagnostics);
         }
 
         public static GenerationResult noSolution(GenerationFailureReason failureReason) {
-            return new GenerationResult(GenerationStatus.NO_SOLUTION, null, failureReason, null, null);
+            return new GenerationResult(GenerationStatus.NO_SOLUTION, null, failureReason, null, List.of(), null);
         }
 
         public static GenerationResult blockedByUserInput(GenerationFailureReason failureReason) {
-            return new GenerationResult(GenerationStatus.BLOCKED_BY_USER_INPUT, null, failureReason, null, null);
+            return new GenerationResult(GenerationStatus.BLOCKED_BY_USER_INPUT, null, failureReason, null, List.of(), null);
         }
 
         public static GenerationResult timeout() {
-            return new GenerationResult(GenerationStatus.TIMEOUT, null, GenerationFailureReason.TIMEOUT, null, null);
+            return new GenerationResult(GenerationStatus.TIMEOUT, null, GenerationFailureReason.TIMEOUT, null, List.of(), null);
+        }
+
+        public boolean isSuccess() {
+            return status == GenerationStatus.SUCCESS;
+        }
+
+        public boolean usedFallback() {
+            return solutionQuality == GenerationSolutionQuality.FALLBACK;
         }
     }
 

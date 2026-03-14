@@ -1,6 +1,7 @@
 package features.encounter.generation.service.search.policy;
 
 import features.partyanalysis.model.EncounterWeightClass;
+import features.encounter.generation.service.EncounterScoring;
 import features.encounter.generation.service.EncounterSearchMetrics;
 import features.encounter.generation.service.search.model.CandidateEntry;
 import features.encounter.generation.service.search.model.EncounterBudgets;
@@ -10,6 +11,7 @@ import features.encounter.generation.service.search.model.StateEntry;
 import features.encounter.rules.EncounterRules;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -65,44 +67,18 @@ public final class EncounterConstraintPolicy {
         if (!canStillSatisfyBalanceProfile(state, entries, budgets, relaxation, selectionWeights, remainingDistinct)) {
             return false;
         }
-
-        SearchState optimistic = state;
-        for (int i = 0; i < remainingDistinct; i++) {
-            SearchState bestNext = null;
-            double bestProgress = Double.NEGATIVE_INFINITY;
-            for (CandidateEntry entry : reachableRemainingEntries(
-                    optimistic, entries, budgets, relaxation, selectionWeights)) {
-                if (optimistic.containsCreature(entry.creature().Id)) {
-                    continue;
-                }
-                if (!relaxation.allowRoleRepeat()
-                        && entry.primaryRole() != null
-                        && optimistic.usesPrimaryRole(entry.primaryRole())) {
-                    continue;
-                }
-                int selectionWeight = Math.max(1, selectionWeights.getOrDefault(entry.creature().Id, 1));
-                for (int count : optimisticCountsFor(entry, budgets)) {
-                    SearchState next = optimistic.add(
-                            EncounterSearchMetrics.additionFor(entry, count, selectionWeight, budgets.heuristics()));
-                    if (!evaluateState(next, budgets, relaxation).allowsGrowth()) {
-                        continue;
-                    }
-                    double progress = optimisticProgressScore(optimistic, next, budgets, relaxation);
-                    if (progress > bestProgress) {
-                        bestProgress = progress;
-                        bestNext = next;
-                    }
-                }
-            }
-            if (bestNext == null) {
-                return false;
-            }
-            optimistic = bestNext;
-            if (isComplete(optimistic, budgets, relaxation)) {
-                return true;
-            }
+        ReachabilityUpperBound upperBound = reachabilityUpperBound(state, entries, budgets, relaxation, selectionWeights);
+        if (upperBound.feasibleEntryCount() == 0) {
+            return false;
         }
-        return isComplete(optimistic, budgets, relaxation);
+        if (state.distinctStatBlocks() + Math.min(remainingDistinct, upperBound.feasibleEntryCount())
+                < minDistinctCreatures(budgets)) {
+            return false;
+        }
+        if (upperBound.maxAdjustedXp() < budgets.lowerAdjustedXp()) {
+            return false;
+        }
+        return upperBound.maxEnemyActionUnits() >= budgets.minEnemyActionUnits();
     }
 
     public static boolean isComplete(
@@ -222,7 +198,7 @@ public final class EncounterConstraintPolicy {
                 && matchesCompleteBalanceProfile(state, budgets);
     }
 
-    private static double optimisticProgressScore(
+    static double optimisticProgressScore(
             SearchState current,
             SearchState next,
             EncounterBudgets budgets,
@@ -252,20 +228,6 @@ public final class EncounterConstraintPolicy {
         return switch (profile.shape()) {
             case PEERS_SOFT, PEERS_EXTREME -> peerSpreadRatio(state) <= profile.maxPeerXpRatio();
             default -> true;
-        };
-    }
-
-    private static boolean matchesCompleteBalanceProfile(SearchState state, EncounterBudgets budgets) {
-        EncounterBudgets.BalanceProfile profile = budgets.balanceProfile();
-        if (profile == null || state.isEmpty()) {
-            return true;
-        }
-        return switch (profile.shape()) {
-            case ENDS_EXTREME -> stateHasDominantCreature(state, profile.dominantXpRatio());
-            case ENDS_SOFT -> stateHasDominantCreature(state, profile.dominantXpRatio() * 0.85)
-                    || peerSpreadRatio(state) >= profile.dominantXpRatio();
-            case PEERS_SOFT, PEERS_EXTREME -> peerSpreadRatio(state) <= profile.maxPeerXpRatio();
-            case NEUTRAL -> true;
         };
     }
 
@@ -323,16 +285,21 @@ public final class EncounterConstraintPolicy {
     }
 
     /**
-     * Reachability checks must examine the full feasible set rather than the first N entries in
-     * input order. Otherwise a later outlier can be incorrectly treated as unreachable.
+     * Reachability bounds may over-estimate what a branch can still add, but they must never
+     * under-estimate it. Heuristics may rank branches; only conservative bounds may prune them.
      */
-    private static List<CandidateEntry> reachableRemainingEntries(
+    private static ReachabilityUpperBound reachabilityUpperBound(
             SearchState state,
             List<CandidateEntry> entries,
             EncounterBudgets budgets,
             RelaxationProfile relaxation,
             Map<Long, Integer> selectionWeights) {
-        List<CandidateEntry> feasibleEntries = new ArrayList<>();
+        int remainingDistinct = maxDistinctCreatures(budgets) - state.distinctStatBlocks();
+        if (remainingDistinct <= 0) {
+            return new ReachabilityUpperBound(0, state.adjustedXp(), state.enemyActionUnits());
+        }
+
+        List<ReachabilityContribution> feasible = new ArrayList<>();
         for (CandidateEntry entry : entries) {
             if (state.containsCreature(entry.creature().Id)) {
                 continue;
@@ -343,21 +310,58 @@ public final class EncounterConstraintPolicy {
                 continue;
             }
             int selectionWeight = Math.max(1, selectionWeights.getOrDefault(entry.creature().Id, 1));
-            boolean feasible = false;
+            int bestRawXpDelta = 0;
+            int bestCreatureCountDelta = 0;
+            double bestEnemyActionUnitsDelta = 0.0;
+            boolean feasibleEntry = false;
             for (int count : optimisticCountsFor(entry, budgets)) {
                 SearchState next = state.add(
                         EncounterSearchMetrics.additionFor(entry, count, selectionWeight, budgets.heuristics()));
                 if (!evaluateState(next, budgets, relaxation).allowsGrowth()) {
                     continue;
                 }
-                feasible = true;
-                break;
+                feasibleEntry = true;
+                bestRawXpDelta = Math.max(bestRawXpDelta, next.rawXp() - state.rawXp());
+                bestCreatureCountDelta = Math.max(bestCreatureCountDelta, next.totalCreatureCount() - state.totalCreatureCount());
+                bestEnemyActionUnitsDelta = Math.max(bestEnemyActionUnitsDelta, next.enemyActionUnits() - state.enemyActionUnits());
             }
-            if (feasible) {
-                feasibleEntries.add(entry);
+            if (feasibleEntry) {
+                feasible.add(new ReachabilityContribution(
+                        bestRawXpDelta,
+                        bestCreatureCountDelta,
+                        bestEnemyActionUnitsDelta));
             }
         }
-        return feasibleEntries;
+        if (feasible.isEmpty()) {
+            return new ReachabilityUpperBound(0, state.adjustedXp(), state.enemyActionUnits());
+        }
+
+        int limit = Math.min(remainingDistinct, feasible.size());
+        int maxRawXp = state.rawXp();
+        int maxCreatureCount = state.totalCreatureCount();
+        for (ReachabilityContribution candidate : feasible.stream()
+                .sorted(Comparator.comparingInt(ReachabilityContribution::maxRawXpDelta).reversed())
+                .limit(limit)
+                .toList()) {
+            maxRawXp += candidate.maxRawXpDelta();
+        }
+        for (ReachabilityContribution candidate : feasible.stream()
+                .sorted(Comparator.comparingInt(ReachabilityContribution::maxCreatureCountDelta).reversed())
+                .limit(limit)
+                .toList()) {
+            maxCreatureCount += candidate.maxCreatureCountDelta();
+        }
+        double maxEnemyActionUnits = state.enemyActionUnits();
+        for (ReachabilityContribution candidate : feasible.stream()
+                .sorted(Comparator.comparingDouble(ReachabilityContribution::maxEnemyActionUnitsDelta).reversed())
+                .limit(limit)
+                .toList()) {
+            maxEnemyActionUnits += candidate.maxEnemyActionUnitsDelta();
+        }
+        return new ReachabilityUpperBound(
+                feasible.size(),
+                EncounterScoring.applyMultiplier(maxRawXp, maxCreatureCount),
+                maxEnemyActionUnits);
     }
 
     private static int[] optimisticCountsFor(CandidateEntry entry, EncounterBudgets budgets) {
@@ -397,35 +401,6 @@ public final class EncounterConstraintPolicy {
         }
         progress += compositionFit(next, budgets) - compositionFit(current, budgets);
         return progress;
-    }
-
-    /**
-     * Ranks discovered states for fallback selection.
-     *
-     * <p>The generator prefers exact matches, then viable near-misses, and only then weaker
-     * partial states. This lets the running game receive "the best encounter found so far"
-     * instead of a false hard failure after the search has already made useful progress.
-     */
-    public static double outcomeScore(SearchState state, EncounterBudgets budgets, RelaxationProfile relaxation) {
-        if (state == null || state.isEmpty()) {
-            return Double.NEGATIVE_INFINITY;
-        }
-        double score = 0.0;
-        score -= Math.abs(state.distinctStatBlocks() - budgets.distinctCreatureBudget().targetDistinctCreatures()) * 40.0;
-        score -= Math.abs(budgets.targetAdjustedXp() - state.adjustedXp()) / 20.0;
-        double targetActions = (budgets.minEnemyActionUnits() + budgets.maxEnemyActionUnits()) * 0.5;
-        score -= Math.abs(targetActions - state.enemyActionUnits()) * 14.0;
-        score -= Math.abs(budgets.compositionProfile().targetCreatureCount() - state.totalCreatureCount()) * 6.0;
-        score += compositionFit(state, budgets) * 24.0;
-        if (matchesCompleteBalanceProfile(state, budgets)) {
-            score += 18.0;
-        }
-        if (isComplete(state, budgets, relaxation)) {
-            score += 80.0;
-        } else if (isViableFallback(state, budgets, relaxation)) {
-            score += 24.0;
-        }
-        return score;
     }
 
     private static int countByWeightClass(SearchState state, EncounterWeightClass weightClass) {
@@ -523,7 +498,21 @@ public final class EncounterConstraintPolicy {
                 > budgets.compositionProfile().bossPreference() + budgets.heuristics().compositionPreferenceBiasThreshold();
     }
 
-    private static double compositionFit(SearchState state, EncounterBudgets budgets) {
+    static boolean matchesCompleteBalanceProfile(SearchState state, EncounterBudgets budgets) {
+        EncounterBudgets.BalanceProfile profile = budgets.balanceProfile();
+        if (profile == null || state.isEmpty()) {
+            return true;
+        }
+        return switch (profile.shape()) {
+            case ENDS_EXTREME -> stateHasDominantCreature(state, profile.dominantXpRatio());
+            case ENDS_SOFT -> stateHasDominantCreature(state, profile.dominantXpRatio() * 0.85)
+                    || peerSpreadRatio(state) >= profile.dominantXpRatio();
+            case PEERS_SOFT, PEERS_EXTREME -> peerSpreadRatio(state) <= profile.maxPeerXpRatio();
+            case NEUTRAL -> true;
+        };
+    }
+
+    static double compositionFit(SearchState state, EncounterBudgets budgets) {
         EncounterBudgets.CompositionProfile profile = budgets.compositionProfile();
         if (profile == null || state.isEmpty()) {
             return 0.0;
@@ -558,5 +547,17 @@ public final class EncounterConstraintPolicy {
             case MINION -> profile.minionPreference();
         };
     }
+
+    private record ReachabilityContribution(
+            int maxRawXpDelta,
+            int maxCreatureCountDelta,
+            double maxEnemyActionUnitsDelta
+    ) {}
+
+    private record ReachabilityUpperBound(
+            int feasibleEntryCount,
+            int maxAdjustedXp,
+            double maxEnemyActionUnits
+    ) {}
 
 }

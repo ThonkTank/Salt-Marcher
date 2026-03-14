@@ -20,6 +20,7 @@ import features.partyanalysis.model.StaticCreatureRoleHint;
 import shared.rules.service.XpCalculator;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -120,7 +121,7 @@ public final class EncounterBuilderService {
         Set<Long> candidateIds = candidateIdsOf(loadedCandidates.candidates());
         PartyAnalysisProvider.GenerationSnapshot analysisSnapshot =
                 partyAnalysisProvider.loadGenerationSnapshot(candidateIds);
-        EncounterGenerator.GenerationAdvisory advisory = mapGenerationAdvisory(analysisSnapshot.readiness());
+        List<EncounterGenerator.GenerationAdvisory> advisories = mapGenerationAdvisories(analysisSnapshot.readiness());
         Map<Long, CreatureRoleProfile> roleProfiles = resolveRoleProfiles(
                 loadedCandidates.candidates(),
                 analysisSnapshot,
@@ -136,8 +137,12 @@ public final class EncounterBuilderService {
                         roleProfiles),
                 loadedCandidates.candidates(),
                 generationContext);
-        if (result.status() == EncounterGenerator.GenerationStatus.SUCCESS) {
-            return EncounterGenerator.GenerationResult.success(result.encounter(), advisory, result.diagnostics());
+        if (result.isSuccess()) {
+            return EncounterGenerator.GenerationResult.success(
+                    result.encounter(),
+                    result.solutionQuality(),
+                    mergeAdvisories(result.advisories(), advisories),
+                    result.diagnostics());
         }
         return result;
     }
@@ -273,15 +278,28 @@ public final class EncounterBuilderService {
         return candidateIds.isEmpty() ? Set.of() : Set.copyOf(candidateIds);
     }
 
-    private static EncounterGenerator.GenerationAdvisory mapGenerationAdvisory(
+    private static List<EncounterGenerator.GenerationAdvisory> mergeAdvisories(
+            List<EncounterGenerator.GenerationAdvisory> searchAdvisories,
+            List<EncounterGenerator.GenerationAdvisory> builderAdvisories) {
+        LinkedHashSet<EncounterGenerator.GenerationAdvisory> merged = new LinkedHashSet<>();
+        if (searchAdvisories != null) {
+            merged.addAll(searchAdvisories);
+        }
+        if (builderAdvisories != null) {
+            merged.addAll(builderAdvisories);
+        }
+        return merged.isEmpty() ? List.of() : List.copyOf(merged);
+    }
+
+    private static List<EncounterGenerator.GenerationAdvisory> mapGenerationAdvisories(
             PartyAnalysisProvider.CacheReadiness readiness) {
         if (readiness == null) {
-            return null;
+            return List.of();
         }
         return switch (readiness) {
-            case READY -> null;
-            case NOT_READY -> EncounterGenerator.GenerationAdvisory.PARTY_ROLE_FALLBACK_CACHE_REBUILDING;
-            case STORAGE_ERROR -> EncounterGenerator.GenerationAdvisory.PARTY_ROLE_FALLBACK_STORAGE_UNAVAILABLE;
+            case READY -> List.of();
+            case NOT_READY -> List.of(EncounterGenerator.GenerationAdvisory.PARTY_ROLE_FALLBACK_CACHE_REBUILDING);
+            case STORAGE_ERROR -> List.of(EncounterGenerator.GenerationAdvisory.PARTY_ROLE_FALLBACK_STORAGE_UNAVAILABLE);
         };
     }
 

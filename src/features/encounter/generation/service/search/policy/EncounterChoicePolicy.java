@@ -10,6 +10,7 @@ import features.encounter.generation.service.search.model.SearchState;
 import features.encounter.rules.EncounterRules;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -58,7 +59,17 @@ public final class EncounterChoicePolicy {
                 options.add(choice);
             }
         }
-        return options;
+        options.sort(Comparator.comparingDouble(
+                (CandidateChoice choice) -> EncounterSearchScoringPolicy.branchProgressScore(
+                        state,
+                        choice.nextState(),
+                        budgets,
+                        relaxation)).reversed());
+        int maxChoices = Math.max(1, budgets.heuristics().maxChoicesPerState());
+        if (options.size() <= maxChoices) {
+            return options;
+        }
+        return new ArrayList<>(options.subList(0, maxChoices));
     }
 
     public static List<CandidateChoice> buildChoicesForEntry(

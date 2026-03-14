@@ -132,14 +132,11 @@ public final class BuilderWorkflowController {
                 rosterPane.showGenerationFailed();
                 return;
             }
-            switch (result.status()) {
-                case SUCCESS -> {
-                    rosterPane.setEncounter(result.encounter());
-                    showGenerationAdvisory(result.advisory());
-                }
-                case BLOCKED_BY_USER_INPUT, NO_SOLUTION, TIMEOUT ->
-                        rosterPane.showGenerationFailed(mapGenerationFailure(result.failureReason()));
+            if (result.isSuccess()) {
+                rosterPane.applyGeneratedEncounter(result.encounter(), result.advisories());
+                return;
             }
+            rosterPane.showGenerationFailed(mapGenerationFailure(result.failureReason()));
         }, () -> {
             rosterPane.setGenerateEnabled(true);
             rosterPane.showGenerationFailed();
@@ -189,8 +186,8 @@ public final class BuilderWorkflowController {
                 rosterPane.showGenerationFailed();
                 return;
             }
-            if (result.status() == EncounterGenerator.GenerationStatus.SUCCESS) {
-                rosterPane.setEncounter(result.encounter());
+            if (result.isSuccess()) {
+                rosterPane.applyGeneratedEncounter(result.encounter(), result.advisories());
                 return;
             }
             rosterPane.showGenerationFailed(mapGenerationFailure(result.failureReason()));
@@ -373,16 +370,6 @@ public final class BuilderWorkflowController {
         return true;
     }
 
-    private void showGenerationAdvisory(EncounterGenerator.GenerationAdvisory advisory) {
-        if (advisory == null) {
-            return;
-        }
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, mapGenerationAdvisory(advisory));
-        alert.setTitle("Encounter Builder");
-        alert.setHeaderText("Encounter mit Fallback generiert");
-        alert.show();
-    }
-
     private String mapGenerationFailure(EncounterGenerator.GenerationFailureReason reason) {
         if (reason == null) {
             return "Generierung fehlgeschlagen. Nochmal versuchen.";
@@ -397,12 +384,4 @@ public final class BuilderWorkflowController {
         };
     }
 
-    private String mapGenerationAdvisory(EncounterGenerator.GenerationAdvisory advisory) {
-        return switch (advisory) {
-            case PARTY_ROLE_FALLBACK_CACHE_REBUILDING ->
-                    "Party-abhängige Rollen waren noch nicht bereit. Das Encounter wurde mit statischen Rollen generiert; der Cache wird im Hintergrund neu aufgebaut.";
-            case PARTY_ROLE_FALLBACK_STORAGE_UNAVAILABLE ->
-                    "Party-abhängige Rollen konnten wegen eines Speicherproblems nicht geladen werden. Das Encounter wurde mit statischen Rollen generiert.";
-        };
-    }
 }
