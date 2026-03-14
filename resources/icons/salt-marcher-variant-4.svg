@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d3bb7c"/>
+      <stop offset="100%" stop-color="#8c5a2a"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fff7db"/>
+      <stop offset="100%" stop-color="#efe1b6"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="16" y="16" width="224" height="224" rx="40" fill="url(#bg)"/>
+  <path
+    d="M92 65.646
+       L164 65.646
+       L200 128
+       L164 190.354
+       L92 190.354
+       L56 128
+       Z"
+    fill="url(#paper)"
+    stroke="#3f2a18"
+    stroke-width="8"
+    stroke-linejoin="round"
+  />
+
+  <path
+    d="M106 90.761
+       L150 90.761
+       L172 128
+       L150 165.239
+       L106 165.239
+       L84 128
+       Z"
+    fill="none"
+    stroke="#d3bb7c"
+    stroke-width="6"
+    stroke-linejoin="round"
+  />
+
+  <g transform="translate(128 128)">
+    <circle r="40" fill="none" stroke="#8c5a2a" stroke-width="7"/>
+
+    <path d="M0 -52L11 -12L0 -26L-11 -12Z" fill="#3f2a18"/>
+    <path d="M45 -45L12 -4L16 -16L4 -12Z" fill="#8c5a2a"/>
+    <path d="M52 0L12 11L26 0L12 -11Z" fill="#3f2a18"/>
+    <path d="M45 45L4 12L16 16L12 4Z" fill="#8c5a2a"/>
+    <path d="M0 52L-11 12L0 26L11 12Z" fill="#3f2a18"/>
+    <path d="M-45 45L-12 4L-16 16L-4 12Z" fill="#8c5a2a"/>
+    <path d="M-52 0L-12 -11L-26 0L-12 11Z" fill="#3f2a18"/>
+    <path d="M-45 -45L-4 -12L-16 -16L-12 -4Z" fill="#8c5a2a"/>
+
+    <circle r="6" fill="#3f2a18"/>
+  </g>
+</svg>

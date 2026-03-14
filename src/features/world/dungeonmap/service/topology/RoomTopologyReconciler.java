@@ -106,11 +106,16 @@ final class RoomTopologyReconciler {
         }
 
         DungeonRoom templateRoom = selectTemplateRoom(component, roomsById, intent);
+        String templateGlance = templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.glanceDescription());
+        String templateDetail = templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.detailDescription());
         DungeonRoom newRoom = new DungeonRoom(
                 null,
                 mapId,
                 "Raum #" + nextDefaultRoomNumber,
-                templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.description()),
+                templateGlance,
+                templateDetail,
+                templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.reactiveChecks()),
+                templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.gmBackground()),
                 templateRoom == null ? null : templateRoom.areaId());
         return new ComponentAssignment(DungeonRoomRepository.upsertRoom(conn, newRoom), true);
     }

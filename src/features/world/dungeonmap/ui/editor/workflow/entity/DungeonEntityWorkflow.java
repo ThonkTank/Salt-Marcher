@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.ui.shared.format.DungeonRoomFeatureOrder;
 import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
@@ -32,6 +33,7 @@ public final class DungeonEntityWorkflow implements DungeonEntityInspectorAction
     private final ConfirmationDropdown confirmationDropdown = new ConfirmationDropdown();
     private final TextInputDropdown areaDropdown = new TextInputDropdown();
     private final TextInputDropdown featureDropdown = new TextInputDropdown();
+    private final DungeonRoomEditorDropdown roomEditorDropdown = new DungeonRoomEditorDropdown();
     private final Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap;
 
     public DungeonEntityWorkflow(
@@ -51,14 +53,36 @@ public final class DungeonEntityWorkflow implements DungeonEntityInspectorAction
     }
 
     @Override
-    public void updateRoomMetadata(DungeonRoom room) {
-        if (room == null || room.roomId() == null) {
+    public void updateRoomMetadata(
+            long roomId,
+            String name,
+            String glanceDescription,
+            String detailDescription,
+            String reactiveChecks,
+            String gmBackground
+    ) {
+        if (roomId <= 0) {
             return;
         }
         DungeonUiAsyncSupport.submitAction(
-                () -> commands.updateRoomMetadata(room.roomId(), room.name(), room.description()),
-                () -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.room(room.roomId())),
+                () -> commands.updateRoomMetadata(roomId, name, glanceDescription, detailDescription, reactiveChecks, gmBackground),
+                () -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.room(roomId)),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityWorkflow.updateRoomMetadata()", ex));
+    }
+
+    @Override
+    public void openRoomEditor(Node anchor, long roomId) {
+        DungeonRoom room = state.index().findRoom(roomId);
+        if (anchor == null || room == null) {
+            return;
+        }
+        roomEditorDropdown.show(
+                anchor,
+                room,
+                orderedRoomFeatures(roomId),
+                state.encounters(),
+                this::saveRoom,
+                this::saveFeature);
     }
 
     public void createArea(Node anchor) {
@@ -110,13 +134,7 @@ public final class DungeonEntityWorkflow implements DungeonEntityInspectorAction
         }
         DungeonFeatureCategory category = toolSettingsPane.selectedFeatureCategory();
         featureDropdown.show(anchor, "Feature erstellen", "Name", category.label(), "Erstellen", name -> {
-            saveFeature(new DungeonFeature(
-                    null,
-                    state.currentMapId(),
-                    category,
-                    null,
-                    name,
-                    ""));
+            saveFeature(DungeonFeature.create(state.currentMapId(), category, name));
             featureDropdown.hide();
         });
     }
@@ -129,6 +147,19 @@ public final class DungeonEntityWorkflow implements DungeonEntityInspectorAction
                     reloadCurrentMap.accept(DungeonSelectionRestoreRequest.feature(featureId));
                 },
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityWorkflow.saveFeature()", ex));
+    }
+
+    private void saveRoom(DungeonRoom room) {
+        if (room == null || room.roomId() == null) {
+            return;
+        }
+        updateRoomMetadata(
+                room.roomId(),
+                room.name(),
+                room.glanceDescription(),
+                room.detailDescription(),
+                room.reactiveChecks(),
+                room.gmBackground());
     }
 
     public void deleteActiveFeature(Node anchor) {
@@ -207,6 +238,10 @@ public final class DungeonEntityWorkflow implements DungeonEntityInspectorAction
 
     DungeonFeature findFeature(Long featureId) {
         return state.findFeature(featureId);
+    }
+
+    private java.util.List<DungeonFeature> orderedRoomFeatures(long roomId) {
+        return DungeonRoomFeatureOrder.orderedRoomFeatures(state.index(), roomId);
     }
 
     private void confirmDelete(Node anchor, String title, String message, Runnable onConfirm) {

@@ -14,15 +14,21 @@ import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
 import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
+import features.world.dungeonmap.ui.shared.format.DungeonRoomFeatureOrder;
+import features.world.dungeonmap.ui.shared.inspector.DungeonRoomGmCard;
 import features.world.dungeonmap.ui.shared.format.DungeonAreaEncounterText;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -51,23 +57,24 @@ public final class DungeonEditorInspectorContentFactory {
             box.getChildren().add(DungeonInspectorCards.secondary("Raum nicht gefunden."));
             return box;
         }
+        box.getChildren().add(
+                new DungeonRoomGmCard(room, resolveAreaName(room.areaId()), orderedRoomFeatures(room.roomId()), new DungeonRoomGmCard.Callbacks() {
+                    @Override
+                    public void saveRoom(DungeonRoom updatedRoom) {
+                        entityActions.updateRoomMetadata(
+                                updatedRoom.roomId(),
+                                updatedRoom.name(),
+                                updatedRoom.glanceDescription(),
+                                updatedRoom.detailDescription(),
+                                updatedRoom.reactiveChecks(),
+                                updatedRoom.gmBackground());
+                    }
 
-        TextField nameField = new TextField(room.name() == null ? "" : room.name());
-        TextArea descriptionArea = DungeonInspectorCards.textArea(room.description());
-        var saveButton = DungeonInspectorCards.saveButton(() -> entityActions.updateRoomMetadata(new DungeonRoom(
-                room.roomId(),
-                room.mapId(),
-                nameField.getText().trim(),
-                descriptionArea.getText(),
-                room.areaId())));
-
-        List<DungeonSquare> roomSquares = roomSquares(room.roomId());
-        box.getChildren().addAll(
-                DungeonInspectorCards.secondary("Bereich: " + DungeonInspectorCards.valueOrDash(resolveAreaName(room.areaId()))),
-                DungeonInspectorCards.secondary("Felder: " + roomSquares.size()),
-                DungeonInspectorCards.section("Name", nameField, DungeonInspectorCards.saveRow(saveButton)),
-                DungeonInspectorCards.section("Beschreibung", descriptionArea));
-        DungeonInspectorCards.appendListSection(box, "Features", describeRoomFeatures(room.roomId()));
+                    @Override
+                    public void saveFeature(DungeonFeature feature) {
+                        entityActions.saveFeature(feature);
+                    }
+                }));
         appendRoomEndpointSection(box, room.roomId());
         appendRoomPassageSection(box, room.roomId());
         return box;
@@ -98,7 +105,14 @@ public final class DungeonEditorInspectorContentFactory {
         }
 
         TextField nameField = new TextField(feature.name() == null ? "" : feature.name());
-        TextArea notesArea = DungeonInspectorCards.textArea(feature.notes());
+        TextArea glanceArea = DungeonInspectorCards.compactTextArea(feature.glanceDescription());
+        TextArea detailArea = DungeonInspectorCards.textArea(feature.detailDescription());
+        TextArea reactiveChecksArea = DungeonInspectorCards.compactTextArea(feature.reactiveChecks());
+        TextArea gmBackgroundArea = DungeonInspectorCards.compactTextArea(feature.gmBackground());
+        Spinner<Integer> sortOrderSpinner = new Spinner<>();
+        sortOrderSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(-999, 999, feature.sortOrder()));
+        sortOrderSpinner.setEditable(true);
+        sortOrderSpinner.setMaxWidth(Double.MAX_VALUE);
         ComboBox<DungeonFeatureCategory> categoryCombo = new ComboBox<>();
         categoryCombo.setMaxWidth(Double.MAX_VALUE);
         categoryCombo.getItems().setAll(DungeonFeatureCategory.values());
@@ -114,15 +128,15 @@ public final class DungeonEditorInspectorContentFactory {
         var saveButton = DungeonInspectorCards.saveButton(() -> {
             DungeonFeatureCategory category = categoryCombo.getValue() == null ? DungeonFeatureCategory.CURIOSITY : categoryCombo.getValue();
             DungeonEncounterSummary selectedEncounter = encounterCombo.getValue();
-            entityActions.saveFeature(new DungeonFeature(
-                    feature.featureId(),
-                    feature.mapId(),
+            entityActions.saveFeature(feature.withEditorValues(
                     category,
-                    category == DungeonFeatureCategory.ENCOUNTER && selectedEncounter != null
-                            ? selectedEncounter.encounterId()
-                            : null,
+                    category == DungeonFeatureCategory.ENCOUNTER && selectedEncounter != null ? selectedEncounter.encounterId() : null,
                     nameField.getText().trim(),
-                    notesArea.getText()));
+                    glanceArea.getText(),
+                    detailArea.getText(),
+                    reactiveChecksArea.getText(),
+                    gmBackgroundArea.getText(),
+                    sortOrderSpinner.getValue() == null ? 0 : sortOrderSpinner.getValue()));
         });
 
         List<DungeonFeatureTile> tiles = featureTiles(feature.featureId());
@@ -133,7 +147,11 @@ public final class DungeonEditorInspectorContentFactory {
                 DungeonInspectorCards.section("Name", nameField),
                 DungeonInspectorCards.section("Kategorie", categoryCombo),
                 DungeonInspectorCards.section("Encounter", encounterCombo),
-                DungeonInspectorCards.section("Notizen", notesArea, DungeonInspectorCards.saveRow(saveButton)));
+                DungeonInspectorCards.section("Reihenfolge", sortOrderSpinner),
+                DungeonInspectorCards.section("Blicktext", glanceArea),
+                DungeonInspectorCards.section("Detailbeschreibung", detailArea),
+                DungeonInspectorCards.section("Reaktive Checks", reactiveChecksArea),
+                DungeonInspectorCards.section("GM-Hintergrund", gmBackgroundArea, DungeonInspectorCards.saveRow(saveButton)));
         DungeonInspectorCards.appendListSection(box, "Positionen", describeFeatureTiles(tiles));
         DungeonInspectorCards.appendListSection(box, "Räume", describeFeatureRooms(tiles));
         return box;
@@ -196,6 +214,20 @@ public final class DungeonEditorInspectorContentFactory {
             content.getChildren().add(connectionSectionBuilder.buildPassageEditor(passage));
         }
         parent.getChildren().add(DungeonInspectorCards.section("Durchgänge", content));
+    }
+
+    public Node buildRoomFooter(DungeonRoom room) {
+        if (room == null || room.roomId() == null) {
+            return null;
+        }
+        VBox footer = new VBox();
+        footer.getStyleClass().add("dungeon-room-inspector-footer");
+        Button button = new Button("Voll bearbeiten");
+        button.getStyleClass().addAll("accent", "dungeon-room-inspector-footer-button");
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setOnAction(event -> entityActions.openRoomEditor(button, room.roomId()));
+        footer.getChildren().add(button);
+        return footer;
     }
 
     private void appendEndpointLinks(VBox parent, DungeonEndpoint endpoint) {
@@ -282,6 +314,10 @@ public final class DungeonEditorInspectorContentFactory {
                     + " (" + String.join(", ", entry.getValue()) + ")");
         }
         return lines;
+    }
+
+    private List<DungeonFeature> orderedRoomFeatures(Long roomId) {
+        return DungeonRoomFeatureOrder.orderedRoomFeatures(currentIndex(), roomId);
     }
 
     private List<String> describeRooms(List<DungeonRoom> rooms) {

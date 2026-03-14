@@ -21,8 +21,9 @@ public final class DungeonFeatureRepository {
     public static List<DungeonFeature> getFeatures(Connection conn, long mapId) throws SQLException {
         List<DungeonFeature> result = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT feature_id, map_id, category, encounter_id, name, notes "
-                        + "FROM dungeon_features WHERE map_id=? ORDER BY category, feature_id")) {
+                "SELECT feature_id, map_id, category, encounter_id, name, glance_description, detail_description, "
+                        + "reactive_checks, gm_background, sort_order "
+                        + "FROM dungeon_features WHERE map_id=? ORDER BY sort_order, category, feature_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -35,7 +36,8 @@ public final class DungeonFeatureRepository {
 
     public static Optional<DungeonFeature> findFeature(Connection conn, long featureId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT feature_id, map_id, category, encounter_id, name, notes "
+                "SELECT feature_id, map_id, category, encounter_id, name, glance_description, detail_description, "
+                        + "reactive_checks, gm_background, sort_order "
                         + "FROM dungeon_features WHERE feature_id=?")) {
             ps.setLong(1, featureId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -52,7 +54,8 @@ public final class DungeonFeatureRepository {
         Long encounterId = category == DungeonFeatureCategory.ENCOUNTER ? feature.encounterId() : null;
         if (feature.featureId() == null) {
             try (PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO dungeon_features(map_id, category, encounter_id, name, notes) VALUES(?,?,?,?,?)",
+                    "INSERT INTO dungeon_features(map_id, category, encounter_id, name, glance_description, detail_description, "
+                            + "reactive_checks, gm_background, sort_order) VALUES(?,?,?,?,?,?,?,?,?)",
                     Statement.RETURN_GENERATED_KEYS)) {
                 ps.setLong(1, feature.mapId());
                 ps.setString(2, category.dbValue());
@@ -62,7 +65,11 @@ public final class DungeonFeatureRepository {
                     ps.setNull(3, java.sql.Types.INTEGER);
                 }
                 ps.setString(4, feature.name());
-                ps.setString(5, feature.notes());
+                ps.setString(5, feature.glanceDescription());
+                ps.setString(6, feature.detailDescription());
+                ps.setString(7, feature.reactiveChecks());
+                ps.setString(8, feature.gmBackground());
+                ps.setInt(9, feature.sortOrder());
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     if (!keys.next()) {
@@ -73,7 +80,8 @@ public final class DungeonFeatureRepository {
             }
         }
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE dungeon_features SET category=?, encounter_id=?, name=?, notes=? WHERE feature_id=?")) {
+                "UPDATE dungeon_features SET category=?, encounter_id=?, name=?, glance_description=?, detail_description=?, "
+                        + "reactive_checks=?, gm_background=?, sort_order=? WHERE feature_id=?")) {
             ps.setString(1, category.dbValue());
             if (encounterId != null) {
                 ps.setLong(2, encounterId);
@@ -81,8 +89,12 @@ public final class DungeonFeatureRepository {
                 ps.setNull(2, java.sql.Types.INTEGER);
             }
             ps.setString(3, feature.name());
-            ps.setString(4, feature.notes());
-            ps.setLong(5, feature.featureId());
+            ps.setString(4, feature.glanceDescription());
+            ps.setString(5, feature.detailDescription());
+            ps.setString(6, feature.reactiveChecks());
+            ps.setString(7, feature.gmBackground());
+            ps.setInt(8, feature.sortOrder());
+            ps.setLong(9, feature.featureId());
             ps.executeUpdate();
             return feature.featureId();
         }
@@ -114,7 +126,11 @@ public final class DungeonFeatureRepository {
                 DungeonFeatureCategory.fromDbValue(rs.getString("category")),
                 getNullableLong(rs, "encounter_id"),
                 rs.getString("name"),
-                rs.getString("notes"));
+                rs.getString("glance_description"),
+                rs.getString("detail_description"),
+                rs.getString("reactive_checks"),
+                rs.getString("gm_background"),
+                rs.getInt("sort_order"));
     }
 
     private static Long getNullableLong(ResultSet rs, String column) throws SQLException {

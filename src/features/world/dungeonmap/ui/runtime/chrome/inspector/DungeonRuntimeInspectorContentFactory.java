@@ -4,6 +4,8 @@ import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.projection.DungeonMapState;
+import features.world.dungeonmap.ui.shared.format.DungeonRoomFeatureOrder;
+import features.world.dungeonmap.ui.shared.inspector.DungeonRoomGmCard;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
@@ -16,14 +18,11 @@ public final class DungeonRuntimeInspectorContentFactory {
         box.setPadding(new Insets(12));
 
         String areaName = resolveAreaName(mapState, square, room);
-        box.getChildren().add(secondary("Bereich: " + valueOrDash(areaName)));
-
         if (room != null && mapState != null && mapState.index() != null) {
-            int fieldCount = mapState.index().squaresForRoom(room.roomId()).size();
-            box.getChildren().add(secondary("Felder: " + fieldCount));
+            box.getChildren().add(new DungeonRoomGmCard(room, areaName, DungeonRoomFeatureOrder.orderedRoomFeatures(mapState.index(), room.roomId())));
+        } else {
+            box.getChildren().add(section("Beschreibung", "— Keine Beschreibung —"));
         }
-
-        box.getChildren().add(section("Beschreibung", resolveDescription(room)));
         return box;
     }
 
@@ -42,33 +41,11 @@ public final class DungeonRuntimeInspectorContentFactory {
         return square == null ? null : square.areaName();
     }
 
-    private static String resolveDescription(DungeonRoom room) {
-        if (room == null) {
-            return "— Keine Beschreibung —";
-        }
-        return valueOrFallback(room.description(), "— Keine Beschreibung —");
-    }
-
-    private static Label secondary(String text) {
-        Label label = new Label(text);
-        label.getStyleClass().add("text-muted");
-        label.setWrapText(true);
-        return label;
-    }
-
     private static Node section(String title, String content) {
         Label header = new Label(title);
         header.getStyleClass().addAll("section-header", "text-muted");
         Label body = new Label(content);
         body.setWrapText(true);
         return new VBox(6, header, body);
-    }
-
-    private static String valueOrDash(String value) {
-        return value == null || value.isBlank() ? "-" : value;
-    }
-
-    private static String valueOrFallback(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value;
     }
 }

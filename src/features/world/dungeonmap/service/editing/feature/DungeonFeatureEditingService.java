@@ -23,8 +23,22 @@ public final class DungeonFeatureEditingService {
         throw new AssertionError("No instances");
     }
 
-    public static void updateRoomMetadata(long roomId, String name, String description) throws Exception {
-        DungeonEditingTransactions.withConnectionVoid(conn -> DungeonRoomRepository.updateRoomMetadata(conn, roomId, name, description));
+    public static void updateRoomMetadata(
+            long roomId,
+            String name,
+            String glanceDescription,
+            String detailDescription,
+            String reactiveChecks,
+            String gmBackground
+    ) throws Exception {
+        DungeonEditingTransactions.withConnectionVoid(conn -> DungeonRoomRepository.updateRoomMetadata(
+                conn,
+                roomId,
+                name,
+                glanceDescription,
+                detailDescription,
+                reactiveChecks,
+                gmBackground));
     }
 
     public static long saveArea(DungeonArea area) throws Exception {

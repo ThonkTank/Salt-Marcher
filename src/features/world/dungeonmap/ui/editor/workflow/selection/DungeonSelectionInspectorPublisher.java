@@ -59,7 +59,11 @@ public final class DungeonSelectionInspectorPublisher {
         if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
             return;
         }
-        detailsNavigator.showContent(titleOrFallback(room.name(), "Raum"), entryKey, () -> inspectorContentFactory.buildRoomCard(room));
+        detailsNavigator.showContent(
+                titleOrFallback(room.name(), "Raum"),
+                entryKey,
+                () -> inspectorContentFactory.buildRoomCard(room),
+                () -> inspectorContentFactory.buildRoomFooter(room));
     }
 
     private void showAreaInspector(DungeonArea area, boolean refreshOnlyIfVisible) {

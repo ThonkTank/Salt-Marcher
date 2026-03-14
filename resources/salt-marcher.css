@@ -610,6 +610,11 @@
     -fx-border-color: -sm-border-subtle transparent transparent transparent;
     -fx-border-width: 1 0 0 0;
 }
+.inspector-footer-host {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-border-color: -sm-border-subtle transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
 .inspector-mob-ac-field {
     -fx-padding: 2 6 2 6;
 }
@@ -1098,6 +1103,70 @@
 .editor-subsection {
     -fx-spacing: 6;
     -fx-padding: 2 0 0 0;
+}
+.dungeon-gm-card {
+    -fx-background-color: -sm-bg-panel;
+    -fx-border-color: -sm-stat-red transparent transparent transparent;
+    -fx-border-width: 2 0 0 0;
+    -fx-padding: 8 0 0 0;
+}
+.dungeon-gm-title {
+    -fx-text-fill: -sm-stat-red-light;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Serif";
+}
+.dungeon-gm-meta {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+    -fx-padding: 0 0 4 0;
+}
+.dungeon-gm-entry {
+    -fx-padding: 0;
+}
+.dungeon-gm-flow {
+    -fx-line-spacing: 0;
+}
+.dungeon-gm-subtle-title {
+    -fx-fill: -sm-text-secondary;
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-font-size: 13px;
+}
+.dungeon-gm-subtle-body {
+    -fx-fill: -sm-text-secondary;
+    -fx-font-size: 13px;
+    -fx-font-style: italic;
+}
+.dungeon-gm-inline-action {
+    -fx-font-size: 11px;
+    -fx-padding: 1 6 1 6;
+}
+.dungeon-gm-inline-editor {
+    -fx-pref-row-count: 4;
+}
+.dungeon-gm-inline-edit-title {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+.dungeon-room-editor-sheet {
+    -fx-pref-width: 760;
+    -fx-max-width: 760;
+}
+.dungeon-room-editor-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+.dungeon-room-editor-card {
+    -fx-background-color: -sm-bg-card;
+}
+.dungeon-room-inspector-footer {
+    -fx-padding: 8 12 8 12;
+}
+.dungeon-room-inspector-footer-button {
+    -fx-max-width: Infinity;
 }
 .toolbar-divider {
     -fx-background-color: -sm-border-subtle;

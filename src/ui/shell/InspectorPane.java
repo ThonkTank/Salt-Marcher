@@ -37,6 +37,7 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     private final VBox detailContent;
     private final Label detailTitle;
     private final ScrollPane detailScroll;
+    private final VBox footerHost;
     private final HBox mobFooter;
     private final TextField mobAcField;
     private final IntegerProperty mobTargetAc = new SimpleIntegerProperty(15);
@@ -103,8 +104,11 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         mobFooter.setAlignment(Pos.CENTER_LEFT);
         mobFooter.setPadding(new Insets(6, 8, 6, 8));
         mobFooter.getStyleClass().add("inspector-mob-footer");
-        mobFooter.setVisible(false);
-        mobFooter.setManaged(false);
+
+        footerHost = new VBox();
+        footerHost.getStyleClass().add("inspector-footer-host");
+        footerHost.setVisible(false);
+        footerHost.setManaged(false);
 
         placeholder = new Label("Keine Details ausgewählt");
         placeholder.getStyleClass().add("text-muted");
@@ -112,7 +116,7 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         placeholder.setWrapText(true);
 
         VBox.setVgrow(detailScroll, Priority.ALWAYS);
-        getChildren().addAll(detailHeader, detailScroll, mobFooter);
+        getChildren().addAll(detailHeader, detailScroll, footerHost);
         showPlaceholder();
     }
 
@@ -183,9 +187,9 @@ public class InspectorPane extends VBox implements DetailsNavigator {
     }
 
     @Override
-    public void showContent(String title, Object entryKey, Supplier<Node> contentSupplier) {
+    public void showContent(String title, Object entryKey, Supplier<Node> contentSupplier, Supplier<Node> footerSupplier) {
         if (title == null || title.isBlank() || contentSupplier == null) return;
-        openEntry(new HostedContentEntry(title, entryKey, contentSupplier));
+        openEntry(new HostedContentEntry(title, entryKey, contentSupplier, footerSupplier));
     }
 
     private void openEntry(HistoryEntry entry) {
@@ -334,8 +338,21 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         detailTitle.setText(title);
         detailContent.getChildren().setAll(content);
         detailScroll.setVvalue(0);
-        mobFooter.setVisible(mobContext);
-        mobFooter.setManaged(mobContext);
+        footerHost.getChildren().clear();
+        Node hostedFooter = historyIndex >= 0 && historyIndex < history.size()
+                && history.get(historyIndex) instanceof HostedContentEntry entry
+                && entry.footerSupplier() != null
+                ? entry.footerSupplier().get()
+                : null;
+        if (hostedFooter != null) {
+            footerHost.getChildren().add(hostedFooter);
+        }
+        if (mobContext) {
+            footerHost.getChildren().add(mobFooter);
+        }
+        boolean showFooter = !footerHost.getChildren().isEmpty();
+        footerHost.setVisible(showFooter);
+        footerHost.setManaged(showFooter);
         placeholderVisible = false;
         updateNavigationState();
     }
@@ -350,8 +367,9 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         detailContent.getChildren().clear();
         detailContent.getChildren().add(placeholder);
         detailScroll.setVvalue(0);
-        mobFooter.setVisible(false);
-        mobFooter.setManaged(false);
+        footerHost.getChildren().clear();
+        footerHost.setVisible(false);
+        footerHost.setManaged(false);
         placeholderVisible = true;
         updateNavigationState();
     }
@@ -652,7 +670,12 @@ public class InspectorPane extends VBox implements DetailsNavigator {
         }
     }
 
-    private record HostedContentEntry(String title, Object entryKey, Supplier<Node> contentSupplier) implements HistoryEntry {
+    private record HostedContentEntry(
+            String title,
+            Object entryKey,
+            Supplier<Node> contentSupplier,
+            Supplier<Node> footerSupplier
+    ) implements HistoryEntry {
         @Override
         public Object entryKey() {
             return new DetailsNavigator.EntryKey("content", entryKey);

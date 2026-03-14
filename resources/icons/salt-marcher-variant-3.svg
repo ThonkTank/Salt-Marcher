@@ -25,20 +25,18 @@
     stroke-linejoin="round"
   />
 
+  <g stroke-linejoin="round" stroke-linecap="round">
+    <path d="M128 72L128 184" stroke="#8c5a2a" stroke-width="7"/>
+    <path d="M72 128L184 128" stroke="#8c5a2a" stroke-width="7"/>
+    <path d="M88 88L168 168" stroke="#d3bb7c" stroke-width="5"/>
+    <path d="M168 88L88 168" stroke="#d3bb7c" stroke-width="5"/>
+  </g>
+
   <g transform="translate(128 128)">
-    <circle r="44" fill="none" stroke="#8c5a2a" stroke-width="8"/>
-    <circle r="28" fill="none" stroke="#d3bb7c" stroke-width="6"/>
-
-    <path d="M0 -52L10 -12L0 -28L-10 -12Z" fill="#3f2a18"/>
-    <path d="M52 0L12 10L28 0L12 -10Z" fill="#8c5a2a"/>
-    <path d="M0 52L-10 12L0 28L10 12Z" fill="#8c5a2a"/>
-    <path d="M-52 0L-12 -10L-28 0L-12 10Z" fill="#3f2a18"/>
-
-    <path d="M0 -34L6 -6L0 -14L-6 -6Z" fill="#3f2a18"/>
-    <path d="M34 0L6 6L14 0L6 -6Z" fill="#8c5a2a"/>
-    <path d="M0 34L-6 6L0 14L6 6Z" fill="#8c5a2a"/>
-    <path d="M-34 0L-6 -6L-14 0L-6 6Z" fill="#3f2a18"/>
-
-    <circle r="7" fill="#3f2a18"/>
+    <path d="M0 -50L12 -8L0 -20L-12 -8Z" fill="#3f2a18"/>
+    <path d="M50 0L8 12L20 0L8 -12Z" fill="#3f2a18"/>
+    <path d="M0 50L-12 8L0 20L12 8Z" fill="#8c5a2a"/>
+    <path d="M-50 0L-8 -12L-20 0L-8 12Z" fill="#8c5a2a"/>
+    <circle r="10" fill="#fff7db" stroke="#3f2a18" stroke-width="6"/>
   </g>
 </svg>

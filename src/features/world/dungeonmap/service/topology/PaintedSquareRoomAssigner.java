@@ -145,11 +145,16 @@ final class PaintedSquareRoomAssigner {
     }
 
     private static long createDefaultRoom(Connection conn, long mapId, int roomNumber, DungeonRoom templateRoom) throws SQLException {
+        String templateGlance = templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.glanceDescription());
+        String templateDetail = templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.detailDescription());
         DungeonRoom newRoom = new DungeonRoom(
                 null,
                 mapId,
                 "Raum #" + roomNumber,
-                templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.description()),
+                templateGlance,
+                templateDetail,
+                templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.reactiveChecks()),
+                templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.gmBackground()),
                 templateRoom == null ? null : templateRoom.areaId());
         return DungeonRoomRepository.upsertRoom(conn, newRoom);
     }

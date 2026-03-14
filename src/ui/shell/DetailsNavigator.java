@@ -56,5 +56,9 @@ public interface DetailsNavigator {
      * Escape hatch for uncommon inspector content. Keep hosted content read-mostly; view-specific
      * forms and workflow controls belong in the lower-right state pane instead.
      */
-    void showContent(String title, Object entryKey, Supplier<Node> contentSupplier);
+    default void showContent(String title, Object entryKey, Supplier<Node> contentSupplier) {
+        showContent(title, entryKey, contentSupplier, null);
+    }
+
+    void showContent(String title, Object entryKey, Supplier<Node> contentSupplier, Supplier<Node> footerSupplier);
 }

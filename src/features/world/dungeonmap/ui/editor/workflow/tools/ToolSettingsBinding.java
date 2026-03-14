@@ -75,12 +75,6 @@ public final class ToolSettingsBinding {
                 || feature.category() != features.world.dungeonmap.model.domain.DungeonFeatureCategory.ENCOUNTER) {
             return;
         }
-        entityWorkflow.saveFeature(new DungeonFeature(
-                feature.featureId(),
-                feature.mapId(),
-                feature.category(),
-                selectedEncounter == null ? null : selectedEncounter.encounterId(),
-                feature.name(),
-                feature.notes()));
+        entityWorkflow.saveFeature(feature.withEncounterId(selectedEncounter == null ? null : selectedEncounter.encounterId()));
     }
 }

@@ -25,6 +25,8 @@ Within a feature's `service/` package, keep public feature-facing services at th
 
 For dungeon room paint topology, preserve these semantics exactly: painting isolated empty space creates a new room with walls on every exposed edge; painting empty space directly adjacent to existing rooms still creates a new room and only adds missing boundary walls; painting over empty space plus exactly one existing room extends that overlapped room, adds perimeter walls on the new outer edges, and removes walls that become internal; painting over empty space plus multiple existing rooms merges every overlapped room into one room, keeps walls on the full outer perimeter, and removes walls that become internal to the merged room.
 
+Dungeon room and feature detail text uses only the canonical structured fields. For rooms these are `glanceDescription`, `detailDescription`, `reactiveChecks`, and `gmBackground`; for features use the same field vocabulary plus `sortOrder`. Do not reintroduce legacy parallel text fields or keep two persisted sources of truth synchronized in UI/service code.
+
 Cross-feature read DTOs belong in `src/features/<feature>/api/`, not in `model/`. Keep `model/` focused on domain/editor state. For lightweight selector DTOs exposed across features, use the `*Summary` naming pattern consistently. Duplicate payload shapes only at explicit boundary adapters such as `application/ports`; avoid redefining the same read DTO in repository, service, model, and API layers without a boundary reason.
 
 ## Testing Guidelines

@@ -26,18 +26,18 @@
   />
 
   <g transform="translate(128 128)">
-    <circle r="44" fill="none" stroke="#8c5a2a" stroke-width="8"/>
+    <circle r="46" fill="none" stroke="#8c5a2a" stroke-width="8"/>
     <circle r="28" fill="none" stroke="#d3bb7c" stroke-width="6"/>
 
-    <path d="M0 -52L10 -12L0 -28L-10 -12Z" fill="#3f2a18"/>
-    <path d="M52 0L12 10L28 0L12 -10Z" fill="#8c5a2a"/>
-    <path d="M0 52L-10 12L0 28L10 12Z" fill="#8c5a2a"/>
-    <path d="M-52 0L-12 -10L-28 0L-12 10Z" fill="#3f2a18"/>
+    <path d="M0 -54L10 -14L0 -30L-10 -14Z" fill="#3f2a18"/>
+    <path d="M54 0L14 10L30 0L14 -10Z" fill="#8c5a2a"/>
+    <path d="M0 54L-10 14L0 30L10 14Z" fill="#8c5a2a"/>
+    <path d="M-54 0L-14 -10L-30 0L-14 10Z" fill="#3f2a18"/>
 
-    <path d="M0 -34L6 -6L0 -14L-6 -6Z" fill="#3f2a18"/>
-    <path d="M34 0L6 6L14 0L6 -6Z" fill="#8c5a2a"/>
-    <path d="M0 34L-6 6L0 14L6 6Z" fill="#8c5a2a"/>
-    <path d="M-34 0L-6 -6L-14 0L-6 6Z" fill="#3f2a18"/>
+    <path d="M0 -36L6 -7L0 -16L-6 -7Z" fill="#3f2a18"/>
+    <path d="M36 0L7 6L16 0L7 -6Z" fill="#8c5a2a"/>
+    <path d="M0 36L-6 7L0 16L6 7Z" fill="#8c5a2a"/>
+    <path d="M-36 0L-7 -6L-16 0L-7 6Z" fill="#3f2a18"/>
 
     <circle r="7" fill="#3f2a18"/>
   </g>

@@ -1,11 +1,20 @@
 package features.world.dungeonmap.ui.editor.chrome.inspector;
 
 import features.world.dungeonmap.model.domain.DungeonFeature;
-import features.world.dungeonmap.model.domain.DungeonRoom;
+import javafx.scene.Node;
 
 public interface DungeonEntityInspectorActions {
 
-    void updateRoomMetadata(DungeonRoom room);
+    void updateRoomMetadata(
+            long roomId,
+            String name,
+            String glanceDescription,
+            String detailDescription,
+            String reactiveChecks,
+            String gmBackground
+    );
+
+    void openRoomEditor(Node anchor, long roomId);
 
     void saveFeature(DungeonFeature feature);
 }

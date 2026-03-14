@@ -50,6 +50,7 @@ public final class DungeonSchemaSupport {
     }
 
     public static void createSchema(Statement stmt) throws SQLException {
+        resetLegacyDungeonSchema(stmt);
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_maps ("
                 + "dungeon_map_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "name           TEXT NOT NULL,"
@@ -85,7 +86,10 @@ public final class DungeonSchemaSupport {
                 + "room_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "map_id        INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "name          TEXT NOT NULL,"
-                + "description   TEXT,"
+                + "glance_description TEXT,"
+                + "detail_description TEXT,"
+                + "reactive_checks TEXT,"
+                + "gm_background TEXT,"
                 + "area_id       INTEGER REFERENCES dungeon_areas(area_id) ON DELETE SET NULL"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_squares ("
@@ -123,7 +127,11 @@ public final class DungeonSchemaSupport {
                 + "category      TEXT NOT NULL CHECK(category IN ('hazard','encounter','treasure','curiosity')),"
                 + "encounter_id  INTEGER,"
                 + "name          TEXT,"
-                + "notes         TEXT"
+                + "glance_description TEXT,"
+                + "detail_description TEXT,"
+                + "reactive_checks TEXT,"
+                + "gm_background TEXT,"
+                + "sort_order    INTEGER NOT NULL DEFAULT 0"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_feature_tiles ("
                 + "feature_id    INTEGER NOT NULL REFERENCES dungeon_features(feature_id) ON DELETE CASCADE,"
@@ -169,5 +177,33 @@ public final class DungeonSchemaSupport {
             String columnDefinition
     ) throws SQLException {
         SchemaCompatibility.ensureColumn(stmt.getConnection(), tableName, columnName, columnDefinition);
+    }
+
+    private static void resetLegacyDungeonSchema(Statement stmt) throws SQLException {
+        if (!needsDungeonSchemaReset(stmt)) {
+            return;
+        }
+        stmt.execute("DROP TABLE IF EXISTS dungeon_feature_tiles");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_links");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_passages");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_endpoints");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_walls");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_squares");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_features");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_area_encounter_tables");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_rooms");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_areas");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_maps");
+    }
+
+    private static boolean needsDungeonSchemaReset(Statement stmt) throws SQLException {
+        return tableHasColumn(stmt, "dungeon_rooms", "description")
+                || !tableHasColumn(stmt, "dungeon_rooms", "detail_description")
+                || tableHasColumn(stmt, "dungeon_features", "notes")
+                || tableHasColumn(stmt, "dungeon_features", "summary_description");
+    }
+
+    private static boolean tableHasColumn(Statement stmt, String tableName, String columnName) throws SQLException {
+        return SchemaCompatibility.columnExists(stmt.getConnection(), tableName, columnName);
     }
 }

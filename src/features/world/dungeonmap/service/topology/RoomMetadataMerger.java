@@ -61,16 +61,26 @@ final class RoomMetadataMerger {
     }
 
     private static void upsertMergedMetadata(Connection conn, DungeonRoom primaryRoom, List<DungeonRoom> secondaryRooms) throws SQLException {
-        String mergedDescription = mergeDescriptions(primaryRoom.description(), secondaryRooms);
+        String mergedGlanceDescription = mergeText(primaryRoom.glanceDescription(), secondaryRooms, DungeonRoom::glanceDescription);
+        String mergedDetailDescription = mergeText(primaryRoom.detailDescription(), secondaryRooms, DungeonRoom::detailDescription);
+        String mergedReactiveChecks = mergeText(primaryRoom.reactiveChecks(), secondaryRooms, DungeonRoom::reactiveChecks);
+        String mergedGmBackground = mergeText(primaryRoom.gmBackground(), secondaryRooms, DungeonRoom::gmBackground);
         Long mergedAreaId = mergeAreaAssignment(primaryRoom.areaId(), secondaryRooms);
-        if (sameText(primaryRoom.description(), mergedDescription) && sameNullableId(primaryRoom.areaId(), mergedAreaId)) {
+        if (sameText(primaryRoom.glanceDescription(), mergedGlanceDescription)
+                && sameText(primaryRoom.detailDescription(), mergedDetailDescription)
+                && sameText(primaryRoom.reactiveChecks(), mergedReactiveChecks)
+                && sameText(primaryRoom.gmBackground(), mergedGmBackground)
+                && sameNullableId(primaryRoom.areaId(), mergedAreaId)) {
             return;
         }
         DungeonRoomRepository.upsertRoom(conn, new DungeonRoom(
                 primaryRoom.roomId(),
                 primaryRoom.mapId(),
                 primaryRoom.name(),
-                mergedDescription,
+                mergedGlanceDescription,
+                mergedDetailDescription,
+                mergedReactiveChecks,
+                mergedGmBackground,
                 mergedAreaId));
     }
 
@@ -94,17 +104,21 @@ final class RoomMetadataMerger {
         return resolvedAreaId;
     }
 
-    private static String mergeDescriptions(String primaryDescription, List<DungeonRoom> mergedRooms) {
+    private static <T> String mergeText(
+            String primaryValue,
+            List<DungeonRoom> mergedRooms,
+            java.util.function.Function<DungeonRoom, String> accessor
+    ) {
         List<String> parts = new ArrayList<>();
-        String base = normalizedText(primaryDescription);
+        String base = normalizedText(primaryValue);
         if (base != null) {
             parts.add(base);
         }
         Set<String> seen = new LinkedHashSet<>(parts);
         for (DungeonRoom room : mergedRooms) {
-            String description = normalizedText(room.description());
-            if (description != null && seen.add(description)) {
-                parts.add(description);
+            String value = normalizedText(accessor.apply(room));
+            if (value != null && seen.add(value)) {
+                parts.add(value);
             }
         }
         return parts.isEmpty() ? "" : String.join("\n\n", parts);

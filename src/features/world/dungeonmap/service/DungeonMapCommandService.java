@@ -33,8 +33,21 @@ public final class DungeonMapCommandService {
         DungeonTopologyEditingService.applySquareEditsAndReconcileState(mapId, edits);
     }
 
-    public void updateRoomMetadata(long roomId, String name, String description) throws Exception {
-        DungeonFeatureEditingService.updateRoomMetadata(roomId, name, description);
+    public void updateRoomMetadata(
+            long roomId,
+            String name,
+            String glanceDescription,
+            String detailDescription,
+            String reactiveChecks,
+            String gmBackground
+    ) throws Exception {
+        DungeonFeatureEditingService.updateRoomMetadata(
+                roomId,
+                name,
+                glanceDescription,
+                detailDescription,
+                reactiveChecks,
+                gmBackground);
     }
 
     public long saveArea(DungeonArea area) throws Exception {

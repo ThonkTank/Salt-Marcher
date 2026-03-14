@@ -12,12 +12,12 @@
 
   <rect x="16" y="16" width="224" height="224" rx="40" fill="url(#bg)"/>
   <path
-    d="M88 58.718
-       L168 58.718
-       L208 128
-       L168 197.282
-       L88 197.282
-       L48 128
+    d="M85 53.522
+       L171 53.522
+       L214 128
+       L171 202.478
+       L85 202.478
+       L42 128
        Z"
     fill="url(#paper)"
     stroke="#3f2a18"
@@ -26,18 +26,16 @@
   />
 
   <g transform="translate(128 128)">
-    <circle r="44" fill="none" stroke="#8c5a2a" stroke-width="8"/>
-    <circle r="28" fill="none" stroke="#d3bb7c" stroke-width="6"/>
+    <circle r="44" fill="none" stroke="#8c5a2a" stroke-width="7"/>
 
-    <path d="M0 -52L10 -12L0 -28L-10 -12Z" fill="#3f2a18"/>
-    <path d="M52 0L12 10L28 0L12 -10Z" fill="#8c5a2a"/>
-    <path d="M0 52L-10 12L0 28L10 12Z" fill="#8c5a2a"/>
-    <path d="M-52 0L-12 -10L-28 0L-12 10Z" fill="#3f2a18"/>
-
-    <path d="M0 -34L6 -6L0 -14L-6 -6Z" fill="#3f2a18"/>
-    <path d="M34 0L6 6L14 0L6 -6Z" fill="#8c5a2a"/>
-    <path d="M0 34L-6 6L0 14L6 6Z" fill="#8c5a2a"/>
-    <path d="M-34 0L-6 -6L-14 0L-6 6Z" fill="#3f2a18"/>
+    <path d="M0 -102L16 -18L0 -50L-16 -18Z" fill="#3f2a18"/>
+    <path d="M84 -84L18 -6L26 -26L6 -18Z" fill="#8c5a2a"/>
+    <path d="M102 0L18 16L50 0L18 -16Z" fill="#3f2a18"/>
+    <path d="M84 84L6 18L26 26L18 6Z" fill="#8c5a2a"/>
+    <path d="M0 102L-16 18L0 50L16 18Z" fill="#3f2a18"/>
+    <path d="M-84 84L-18 6L-26 26L-6 18Z" fill="#8c5a2a"/>
+    <path d="M-102 0L-18 -16L-50 0L-18 16Z" fill="#3f2a18"/>
+    <path d="M-84 -84L-6 -18L-26 -26L-18 -6Z" fill="#8c5a2a"/>
 
     <circle r="7" fill="#3f2a18"/>
   </g>
