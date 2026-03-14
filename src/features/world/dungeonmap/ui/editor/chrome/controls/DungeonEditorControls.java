@@ -1,6 +1,7 @@
 package features.world.dungeonmap.ui.editor.chrome.controls;
 
 import features.world.dungeonmap.model.domain.DungeonMap;
+import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.state.DungeonPaintMode;
@@ -31,6 +32,7 @@ public class DungeonEditorControls extends VBox {
     private final DungeonEditorInteractionState interactionState;
     private final ComboBox<DungeonMap> mapCombo = new ComboBox<>();
     private final DungeonToolModeDropdown<DungeonPaintMode> paintModeDropdown = new DungeonToolModeDropdown<>("Malmodus");
+    private final DungeonToolModeDropdown<DungeonFeatureCategory> featureCategoryDropdown = new DungeonToolModeDropdown<>("Feature-Art");
     private final DungeonToolModeDropdown<WallEditorMode> wallModeDropdown = new DungeonToolModeDropdown<>("Wandmodus");
     private final DungeonToolModeDropdown<PassageEditorMode> passageModeDropdown = new DungeonToolModeDropdown<>("Durchgangsmodus");
     private final EnumMap<DungeonEditorTool, ToggleButton> toolButtons = new EnumMap<>(DungeonEditorTool.class);
@@ -49,6 +51,11 @@ public class DungeonEditorControls extends VBox {
         paintModeDropdown.setOptions(List.of(
                 new DungeonToolModeDropdown.Option<>(DungeonPaintMode.BRUSH, DungeonPaintMode.BRUSH.label()),
                 new DungeonToolModeDropdown.Option<>(DungeonPaintMode.SELECTION, DungeonPaintMode.SELECTION.label())));
+        featureCategoryDropdown.setOptions(List.of(
+                new DungeonToolModeDropdown.Option<>(DungeonFeatureCategory.HAZARD, DungeonFeatureCategory.HAZARD.label()),
+                new DungeonToolModeDropdown.Option<>(DungeonFeatureCategory.ENCOUNTER, DungeonFeatureCategory.ENCOUNTER.label()),
+                new DungeonToolModeDropdown.Option<>(DungeonFeatureCategory.TREASURE, DungeonFeatureCategory.TREASURE.label()),
+                new DungeonToolModeDropdown.Option<>(DungeonFeatureCategory.CURIOSITY, DungeonFeatureCategory.CURIOSITY.label())));
         wallModeDropdown.setOptions(List.of(
                 new DungeonToolModeDropdown.Option<>(WallEditorMode.PAINT_WALL, WallEditorMode.PAINT_WALL.label()),
                 new DungeonToolModeDropdown.Option<>(WallEditorMode.ERASE_WALL, WallEditorMode.ERASE_WALL.label())));
@@ -225,18 +232,28 @@ public class DungeonEditorControls extends VBox {
     private void showToolModeDropdown(DungeonEditorTool tool, ToggleButton button) {
         DungeonEditorTool.ModeDropdownTarget target = tool.modeDropdownTarget();
         if (target == DungeonEditorTool.ModeDropdownTarget.PAINT) {
+            featureCategoryDropdown.hide();
             passageModeDropdown.hide();
             wallModeDropdown.hide();
             paintModeDropdown.show(button, interactionState.paintMode(), interactionState::setPaintMode);
             return;
         }
+        if (target == DungeonEditorTool.ModeDropdownTarget.FEATURE_CATEGORY) {
+            passageModeDropdown.hide();
+            wallModeDropdown.hide();
+            paintModeDropdown.hide();
+            featureCategoryDropdown.show(button, interactionState.activeFeatureCategory(), interactionState::setActiveFeatureCategory);
+            return;
+        }
         if (target == DungeonEditorTool.ModeDropdownTarget.WALL) {
             passageModeDropdown.hide();
+            featureCategoryDropdown.hide();
             paintModeDropdown.hide();
             wallModeDropdown.show(button, interactionState.wallEditorMode(), interactionState::setWallEditorMode);
             return;
         }
         if (target == DungeonEditorTool.ModeDropdownTarget.PASSAGE) {
+            featureCategoryDropdown.hide();
             paintModeDropdown.hide();
             wallModeDropdown.hide();
             passageModeDropdown.show(button, interactionState.passageEditorMode(), interactionState::setPassageEditorMode);
@@ -245,6 +262,7 @@ public class DungeonEditorControls extends VBox {
 
     private void hideToolModeDropdowns() {
         paintModeDropdown.hide();
+        featureCategoryDropdown.hide();
         wallModeDropdown.hide();
         passageModeDropdown.hide();
     }

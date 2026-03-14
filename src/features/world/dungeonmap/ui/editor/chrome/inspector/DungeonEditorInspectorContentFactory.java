@@ -15,6 +15,7 @@ import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
 import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.ui.shared.format.DungeonRoomFeatureOrder;
+import features.world.dungeonmap.ui.shared.format.DungeonFeatureDetailRenderer;
 import features.world.dungeonmap.ui.shared.inspector.DungeonRoomGmCard;
 import features.world.dungeonmap.ui.shared.format.DungeonAreaEncounterText;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
@@ -103,55 +104,9 @@ public final class DungeonEditorInspectorContentFactory {
             box.getChildren().add(DungeonInspectorCards.secondary("Feature nicht gefunden."));
             return box;
         }
-
-        TextField nameField = new TextField(feature.name() == null ? "" : feature.name());
-        TextArea glanceArea = DungeonInspectorCards.compactTextArea(feature.glanceDescription());
-        TextArea detailArea = DungeonInspectorCards.textArea(feature.detailDescription());
-        TextArea reactiveChecksArea = DungeonInspectorCards.compactTextArea(feature.reactiveChecks());
-        TextArea gmBackgroundArea = DungeonInspectorCards.compactTextArea(feature.gmBackground());
-        Spinner<Integer> sortOrderSpinner = new Spinner<>();
-        sortOrderSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(-999, 999, feature.sortOrder()));
-        sortOrderSpinner.setEditable(true);
-        sortOrderSpinner.setMaxWidth(Double.MAX_VALUE);
-        ComboBox<DungeonFeatureCategory> categoryCombo = new ComboBox<>();
-        categoryCombo.setMaxWidth(Double.MAX_VALUE);
-        categoryCombo.getItems().setAll(DungeonFeatureCategory.values());
-        categoryCombo.setConverter(DungeonInspectorCards.namedConverter(DungeonFeatureCategory::label));
-        categoryCombo.setValue(feature.category() == null ? DungeonFeatureCategory.CURIOSITY : feature.category());
-        ComboBox<DungeonEncounterSummary> encounterCombo = new ComboBox<>();
-        encounterCombo.setMaxWidth(Double.MAX_VALUE);
-        encounterCombo.setConverter(DungeonInspectorCards.namedConverter(DungeonEncounterSummary::name));
-        encounterCombo.getItems().setAll(state.encounters());
-        encounterCombo.setValue(DungeonInspectorCards.findById(state.encounters(), feature.encounterId(), DungeonEncounterSummary::encounterId));
-        DungeonInspectorCards.updateEncounterComboState(encounterCombo, categoryCombo.getValue());
-        categoryCombo.valueProperty().addListener((obs, oldValue, newValue) -> DungeonInspectorCards.updateEncounterComboState(encounterCombo, newValue));
-        var saveButton = DungeonInspectorCards.saveButton(() -> {
-            DungeonFeatureCategory category = categoryCombo.getValue() == null ? DungeonFeatureCategory.CURIOSITY : categoryCombo.getValue();
-            DungeonEncounterSummary selectedEncounter = encounterCombo.getValue();
-            entityActions.saveFeature(feature.withEditorValues(
-                    category,
-                    category == DungeonFeatureCategory.ENCOUNTER && selectedEncounter != null ? selectedEncounter.encounterId() : null,
-                    nameField.getText().trim(),
-                    glanceArea.getText(),
-                    detailArea.getText(),
-                    reactiveChecksArea.getText(),
-                    gmBackgroundArea.getText(),
-                    sortOrderSpinner.getValue() == null ? 0 : sortOrderSpinner.getValue()));
-        });
-
+        DungeonFeatureDetailRenderer.appendStructuredDetails(box, feature, resolveEncounterName(feature.encounterId()));
         List<DungeonFeatureTile> tiles = featureTiles(feature.featureId());
-        box.getChildren().addAll(
-                DungeonInspectorCards.secondary("Kategorie: " + DungeonInspectorCards.valueOrDash(feature.category() == null ? null : feature.category().label())),
-                DungeonInspectorCards.secondary("Encounter: " + DungeonInspectorCards.valueOrDash(resolveEncounterName(feature.encounterId()))),
-                DungeonInspectorCards.secondary("Felder: " + tiles.size()),
-                DungeonInspectorCards.section("Name", nameField),
-                DungeonInspectorCards.section("Kategorie", categoryCombo),
-                DungeonInspectorCards.section("Encounter", encounterCombo),
-                DungeonInspectorCards.section("Reihenfolge", sortOrderSpinner),
-                DungeonInspectorCards.section("Blicktext", glanceArea),
-                DungeonInspectorCards.section("Detailbeschreibung", detailArea),
-                DungeonInspectorCards.section("Reaktive Checks", reactiveChecksArea),
-                DungeonInspectorCards.section("GM-Hintergrund", gmBackgroundArea, DungeonInspectorCards.saveRow(saveButton)));
+        box.getChildren().add(DungeonInspectorCards.secondary("Felder: " + tiles.size()));
         DungeonInspectorCards.appendListSection(box, "Positionen", describeFeatureTiles(tiles));
         DungeonInspectorCards.appendListSection(box, "Räume", describeFeatureRooms(tiles));
         return box;
@@ -226,6 +181,20 @@ public final class DungeonEditorInspectorContentFactory {
         button.getStyleClass().addAll("accent", "dungeon-room-inspector-footer-button");
         button.setMaxWidth(Double.MAX_VALUE);
         button.setOnAction(event -> entityActions.openRoomEditor(button, room.roomId()));
+        footer.getChildren().add(button);
+        return footer;
+    }
+
+    public Node buildFeatureFooter(DungeonFeature feature) {
+        if (feature == null || feature.featureId() == null) {
+            return null;
+        }
+        VBox footer = new VBox();
+        footer.getStyleClass().add("dungeon-room-inspector-footer");
+        Button button = new Button("Voll bearbeiten");
+        button.getStyleClass().addAll("accent", "dungeon-room-inspector-footer-button");
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setOnAction(event -> entityActions.openFeatureEditor(button, feature.featureId()));
         footer.getChildren().add(button);
         return footer;
     }

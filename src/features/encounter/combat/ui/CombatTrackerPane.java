@@ -28,6 +28,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Popup;
 import features.creatures.api.StatBlockRequest;
 
@@ -435,6 +436,7 @@ public class CombatTrackerPane extends VBox {
 
     private StackPane buildHpBar(String name, int currentHp, int maxHp) {
         double frac = maxHp > 0 ? Math.max(0, Math.min(1, (double) currentHp / maxHp)) : 0;
+        double fillWidth = BAR_WIDTH * frac;
 
         Region track = new Region();
         track.getStyleClass().add("hp-bar-track");
@@ -443,19 +445,31 @@ public class CombatTrackerPane extends VBox {
 
         Region fill = new Region();
         fill.getStyleClass().add("hp-bar-fill");
-        fill.setPrefSize(BAR_WIDTH * frac, BAR_HEIGHT);
-        fill.setMaxSize(BAR_WIDTH * frac, BAR_HEIGHT);
+        fill.setPrefSize(fillWidth, BAR_HEIGHT);
+        fill.setMaxSize(fillWidth, BAR_HEIGHT);
         if (frac > HP_HEALTHY) fill.getStyleClass().add("hp-fill-healthy");
         else if (frac > HP_CRITICAL) fill.getStyleClass().add("hp-fill-wounded");
         else fill.getStyleClass().add("hp-fill-critical");
 
-        Label hpText = new Label((frac <= HP_CRITICAL ? "! " : "") + currentHp + " / " + maxHp);
-        hpText.getStyleClass().add("hp-bar-text");
+        String hpLabel = (frac <= HP_CRITICAL ? "! " : "") + currentHp + " / " + maxHp;
+        // The label spans both the colored fill and the dark track, so a single text color becomes
+        // unreadable at the boundary. Mirror the same centered text into two clipped layers instead.
+        Label hpTextOnTrack = new Label(hpLabel);
+        hpTextOnTrack.getStyleClass().addAll("hp-bar-text", "hp-bar-text-on-track");
+        hpTextOnTrack.setMouseTransparent(true);
 
-        StackPane bar = new StackPane(track, fill, hpText);
+        Label hpTextOnFill = new Label(hpLabel);
+        hpTextOnFill.getStyleClass().addAll("hp-bar-text", "hp-bar-text-on-fill");
+        hpTextOnFill.setMouseTransparent(true);
+
+        installHpTextClip(hpTextOnFill, fillWidth, true);
+        installHpTextClip(hpTextOnTrack, fillWidth, false);
+
+        StackPane bar = new StackPane(track, fill, hpTextOnTrack, hpTextOnFill);
         bar.setAlignment(Pos.CENTER_LEFT);
         StackPane.setAlignment(fill, Pos.CENTER_LEFT);
-        StackPane.setAlignment(hpText, Pos.CENTER);
+        StackPane.setAlignment(hpTextOnTrack, Pos.CENTER);
+        StackPane.setAlignment(hpTextOnFill, Pos.CENTER);
         bar.setMaxWidth(BAR_WIDTH);
         bar.setPrefWidth(BAR_WIDTH);
         bar.setFocusTraversable(false);
@@ -463,6 +477,29 @@ public class CombatTrackerPane extends VBox {
         bar.setAccessibleText(name + " HP bearbeiten: " + currentHp + "/" + maxHp);
         Tooltip.install(bar, new Tooltip("HP bearbeiten (Klick oder F2)"));
         return bar;
+    }
+
+    private void installHpTextClip(Label label, double fillWidth, boolean showFillPortion) {
+        Rectangle clip = new Rectangle();
+        clip.heightProperty().bind(label.heightProperty());
+        label.setClip(clip);
+
+        Runnable updateClip = () -> {
+            double textWidth = label.getLayoutBounds().getWidth();
+            double textStartX = (BAR_WIDTH - textWidth) / 2.0;
+            double visibleStart = showFillPortion ? 0.0 : fillWidth;
+            double visibleEnd = showFillPortion ? fillWidth : BAR_WIDTH;
+
+            double clipStart = Math.max(0.0, visibleStart - textStartX);
+            double clipEnd = Math.min(textWidth, visibleEnd - textStartX);
+            double clipWidth = Math.max(0.0, clipEnd - clipStart);
+
+            clip.setX(clipStart);
+            clip.setWidth(clipWidth);
+        };
+
+        label.layoutBoundsProperty().addListener((obs, oldBounds, newBounds) -> updateClip.run());
+        Platform.runLater(updateClip);
     }
 
     // ---- Turn logic ----

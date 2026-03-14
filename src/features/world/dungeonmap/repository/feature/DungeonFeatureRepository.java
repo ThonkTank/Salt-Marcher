@@ -34,6 +34,24 @@ public final class DungeonFeatureRepository {
         return result;
     }
 
+    public static List<DungeonFeature> getFeaturesForCategory(Connection conn, long mapId, DungeonFeatureCategory category) throws SQLException {
+        List<DungeonFeature> result = new ArrayList<>();
+        DungeonFeatureCategory effectiveCategory = category == null ? DungeonFeatureCategory.CURIOSITY : category;
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT feature_id, map_id, category, encounter_id, name, glance_description, detail_description, "
+                        + "reactive_checks, gm_background, sort_order "
+                        + "FROM dungeon_features WHERE map_id=? AND category=? ORDER BY sort_order, feature_id")) {
+            ps.setLong(1, mapId);
+            ps.setString(2, effectiveCategory.dbValue());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.add(mapFeature(rs));
+                }
+            }
+        }
+        return result;
+    }
+
     public static Optional<DungeonFeature> findFeature(Connection conn, long featureId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT feature_id, map_id, category, encounter_id, name, glance_description, detail_description, "

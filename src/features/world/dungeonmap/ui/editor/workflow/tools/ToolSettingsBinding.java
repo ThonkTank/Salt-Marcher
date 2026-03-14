@@ -1,8 +1,6 @@
 package features.world.dungeonmap.ui.editor.workflow.tools;
 
 import features.world.dungeonmap.model.domain.DungeonArea;
-import features.world.dungeonmap.model.domain.DungeonFeature;
-import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
@@ -34,47 +32,19 @@ public final class ToolSettingsBinding {
     public void bindToolSettings() {
         toolSettingsPane.setOnNewAreaRequested(entityWorkflow::createArea);
         toolSettingsPane.setOnDeleteAreaRequested(entityWorkflow::deleteActiveArea);
-        toolSettingsPane.setOnNewFeatureRequested(entityWorkflow::createFeature);
         toolSettingsPane.setOnDeleteFeatureRequested(entityWorkflow::deleteActiveFeature);
-        toolSettingsPane.setOnAddTileToFeatureRequested(entityWorkflow::addSelectedSquareToActiveFeature);
-        toolSettingsPane.setOnRemoveTileFromFeatureRequested(entityWorkflow::removeSelectedSquareFromActiveFeature);
         toolSettingsPane.setOnCancelLink(linkFlow::cancelPendingLink);
         toolSettingsPane.setOnAreaSelected(this::handleAreaSelected);
         toolSettingsPane.setOnAreaProfileSaveRequested(this::saveAreaProfile);
-        toolSettingsPane.setOnFeatureSelected(this::handleFeatureSelected);
-        toolSettingsPane.setOnTileContextFeatureSelected(this::handleFeatureSelected);
-        toolSettingsPane.setOnEncounterSelected(this::saveSelectedFeatureEncounter);
-    }
-
-    public void syncFeatureEncounterSelection() {
-        DungeonFeature selectedFeature = toolSettingsPane.selectedFeature();
-        state.runWhileSyncingFeatureSelection(() ->
-                toolSettingsPane.selectEncounter(selectedFeature == null ? null : selectedFeature.encounterId()));
     }
 
     private void handleAreaSelected(DungeonArea area) {
         selectionController.selectArea(area);
     }
 
-    private void handleFeatureSelected(DungeonFeature feature) {
-        selectionController.selectFeature(feature);
-        syncFeatureEncounterSelection();
-    }
-
     private void saveAreaProfile(DungeonArea area) {
         if (!state.syncingAreaSelection() && area != null && state.currentState() != null) {
             entityWorkflow.saveArea(area);
         }
-    }
-
-    private void saveSelectedFeatureEncounter(DungeonEncounterSummary selectedEncounter) {
-        DungeonFeature feature = toolSettingsPane.selectedFeature();
-        if (state.syncingFeatureSelection()
-                || feature == null
-                || state.currentState() == null
-                || feature.category() != features.world.dungeonmap.model.domain.DungeonFeatureCategory.ENCOUNTER) {
-            return;
-        }
-        entityWorkflow.saveFeature(feature.withEncounterId(selectedEncounter == null ? null : selectedEncounter.encounterId()));
     }
 }

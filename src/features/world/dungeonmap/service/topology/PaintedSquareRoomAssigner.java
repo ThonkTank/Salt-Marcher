@@ -35,25 +35,30 @@ final class PaintedSquareRoomAssigner {
          * - overlap one room => extend that room across the painted empty cells
          * - overlap multiple rooms => merge all overlapped rooms into one room
          */
-        List<DungeonSquarePaint> filledEdits = filledEdits(intent.squareEdits());
+        List<DungeonSquarePaint> filledEdits = TopologyPaintSupport.filledEdits(intent.squareEdits());
         if (filledEdits.isEmpty() || workspace.currentSquares().isEmpty()) {
             return intent;
         }
 
-        List<Long> overlappedRoomIds = overlappedRoomIds(filledEdits, workspace.previousSquaresByCoord());
-        SquarePaintOutcome outcome = classifySquarePaintOutcome(overlappedRoomIds);
+        List<Long> overlappedRoomIds = TopologyPaintSupport.overlappedOwnerIds(
+                filledEdits,
+                key -> {
+                    DungeonSquare previousSquare = workspace.previousSquaresByCoord().get(key);
+                    return previousSquare == null ? null : previousSquare.roomId();
+                });
+        SquarePaintOutcome outcome = TopologyPaintSupport.classifySquarePaintOutcome(overlappedRoomIds);
 
         long targetRoomId;
         if (outcome == SquarePaintOutcome.NEW_ROOM) {
             targetRoomId = createDefaultRoom(conn, mapId, nextDefaultRoomNumber(workspace.rooms()), null);
         } else {
             TopologyIntent priorityIntent = intent.withPrimaryRoomPriority(overlappedRoomIds);
-            Long selectedRoomId = PreferredRoomSelector.selectPreferredRoomId(
+            Long selectedRoomId = TopologyEntitySelectionSupport.selectPreferredEntityId(
                     overlappedRoomIds,
                     workspace.currentRoomSquareCounts(),
                     priorityIntent);
             targetRoomId = selectedRoomId == null ? overlappedRoomIds.get(0) : selectedRoomId;
-            List<Long> targetFirstRoomIds = prioritizeTargetRoom(targetRoomId, overlappedRoomIds);
+            List<Long> targetFirstRoomIds = TopologyPaintSupport.prioritizeTargetEntity(targetRoomId, overlappedRoomIds);
             RoomMetadataMerger.updateMergedRoomMetadata(
                     conn,
                     targetRoomId,
@@ -70,7 +75,7 @@ final class PaintedSquareRoomAssigner {
                 workspace,
                 filledEdits,
                 targetRoomId,
-                intent.withPrimaryRoomPriority(prioritizeTargetRoom(targetRoomId, overlappedRoomIds)));
+                intent.withPrimaryRoomPriority(TopologyPaintSupport.prioritizeTargetEntity(targetRoomId, overlappedRoomIds)));
     }
 
     private static TopologyIntent assignFilledSquares(
@@ -110,40 +115,6 @@ final class PaintedSquareRoomAssigner {
         }
     }
 
-    private static List<DungeonSquarePaint> filledEdits(List<DungeonSquarePaint> edits) {
-        List<DungeonSquarePaint> result = new ArrayList<>();
-        for (DungeonSquarePaint edit : edits) {
-            if (edit.filled()) {
-                result.add(edit);
-            }
-        }
-        return result;
-    }
-
-    private static List<Long> overlappedRoomIds(
-            List<DungeonSquarePaint> filledEdits,
-            java.util.Map<String, DungeonSquare> previousSquaresByCoord
-    ) {
-        List<Long> result = new ArrayList<>();
-        Set<Long> seen = new LinkedHashSet<>();
-        for (DungeonSquarePaint edit : filledEdits) {
-            DungeonSquare previousSquare = previousSquaresByCoord.get(TopologyWorkspace.coordKey(edit.x(), edit.y()));
-            if (previousSquare != null && previousSquare.roomId() != null && seen.add(previousSquare.roomId())) {
-                result.add(previousSquare.roomId());
-            }
-        }
-        return result;
-    }
-
-    private static List<Long> prioritizeTargetRoom(long targetRoomId, List<Long> relatedRoomIds) {
-        LinkedHashSet<Long> ordered = new LinkedHashSet<>();
-        ordered.add(targetRoomId);
-        if (relatedRoomIds != null) {
-            ordered.addAll(relatedRoomIds);
-        }
-        return List.copyOf(ordered);
-    }
-
     private static long createDefaultRoom(Connection conn, long mapId, int roomNumber, DungeonRoom templateRoom) throws SQLException {
         String templateGlance = templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.glanceDescription());
         String templateDetail = templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.detailDescription());
@@ -171,16 +142,6 @@ final class PaintedSquareRoomAssigner {
             }
         }
         return next;
-    }
-
-    private static SquarePaintOutcome classifySquarePaintOutcome(List<Long> overlappedRoomIds) {
-        if (overlappedRoomIds.isEmpty()) {
-            return SquarePaintOutcome.NEW_ROOM;
-        }
-        if (overlappedRoomIds.size() == 1) {
-            return SquarePaintOutcome.EXTEND_EXISTING_ROOM;
-        }
-        return SquarePaintOutcome.MERGE_EXISTING_ROOMS;
     }
 
     private static boolean targetRoomIdEquals(Long currentRoomId, long targetRoomId) {

@@ -88,7 +88,8 @@ public final class DungeonSelectionInspectorPublisher {
         detailsNavigator.showContent(
                 titleOrFallback(feature.name(), feature.category() == null ? "Feature" : feature.category().label()),
                 entryKey,
-                () -> inspectorContentFactory.buildFeatureCard(feature));
+                () -> inspectorContentFactory.buildFeatureCard(feature),
+                () -> inspectorContentFactory.buildFeatureFooter(feature));
     }
 
     private void showEndpointInspector(DungeonEndpoint endpoint, boolean refreshOnlyIfVisible) {

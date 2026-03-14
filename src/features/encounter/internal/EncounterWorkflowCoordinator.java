@@ -68,6 +68,8 @@ public final class EncounterWorkflowCoordinator {
                 encounterScene::setContent,
                 combatWorkflowController
         );
+        this.encounterControls.setOnFilterChanged(monsterList::applyFilters);
+        this.encounterControls.setOnTableChanged(monsterList::setTableIds);
     }
 
     public String getTitle() {

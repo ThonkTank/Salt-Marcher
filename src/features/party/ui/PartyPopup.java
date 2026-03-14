@@ -1,6 +1,7 @@
 package features.party.ui;
 
 import features.party.model.PlayerCharacter;
+import features.party.service.PartyService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -10,22 +11,17 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Control;
-import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Separator;
-import javafx.scene.control.Spinner;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.application.Platform;
 import javafx.stage.Popup;
-import features.party.service.PartyService;
 
 import java.util.List;
 
@@ -39,6 +35,7 @@ public class PartyPopup {
     private final ListView<PlayerCharacter> suggestionList = new ListView<>();
     private final TextField searchField = new TextField();
     private final Label summaryLabel = new Label();
+    private final PartyCharacterEditorDropdown characterEditorDropdown = new PartyCharacterEditorDropdown();
 
     private final ObservableList<PlayerCharacter> available = FXCollections.observableArrayList();
     private final FilteredList<PlayerCharacter> filtered = new FilteredList<>(available);
@@ -60,7 +57,10 @@ public class PartyPopup {
 
         triggerButton.setOnAction(e -> togglePopup());
         popup.setOnShowing(e -> triggerButton.setAccessibleText("Party-Panel geöffnet – Escape zum Schließen"));
-        popup.setOnHiding(e -> triggerButton.setAccessibleText(triggerButton.getText().replace("_", "")));
+        popup.setOnHiding(e -> {
+            triggerButton.setAccessibleText(triggerButton.getText().replace("_", ""));
+            characterEditorDropdown.hide();
+        });
         popup.setOnHidden(e -> triggerButton.requestFocus());
     }
 
@@ -138,7 +138,7 @@ public class PartyPopup {
 
         Button newCharBtn = new Button("+ _Neuer Charakter");
         newCharBtn.setMaxWidth(Double.MAX_VALUE);
-        newCharBtn.setOnAction(e -> onNewCharacter());
+        newCharBtn.setOnAction(e -> onNewCharacter(newCharBtn));
         VBox newCharBox = new VBox(newCharBtn);
         newCharBox.getStyleClass().add("party-search");
 
@@ -216,6 +216,10 @@ public class PartyPopup {
     private HBox buildMemberRow(PlayerCharacter pc) {
         Label nameLabel = new Label(pc.Name + "  Lv " + pc.Level);
         nameLabel.getStyleClass().add("text-secondary");
+        Label detailLabel = new Label(buildMemberDetails(pc));
+        detailLabel.getStyleClass().add("text-muted");
+        VBox infoBox = new VBox(2, nameLabel, detailLabel);
+
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
@@ -224,12 +228,12 @@ public class PartyPopup {
         removeBtn.setTooltip(new Tooltip("Aus aktiver Party entfernen\n(Charakter bleibt in der Datenbank)"));
         removeBtn.setOnAction(e -> onRemoveFromParty(pc));
 
-        Button deleteBtn = new Button("L\u00f6schen");
-        deleteBtn.getStyleClass().addAll("party-btn", "delete");
-        deleteBtn.setTooltip(new Tooltip("Dauerhaft l\u00f6schen\n(Kann nicht r\u00fcckg\u00e4ngig gemacht werden)"));
-        deleteBtn.setOnAction(e -> onDeleteCharacter(pc));
+        Button editBtn = new Button("Bearbeiten");
+        editBtn.getStyleClass().addAll("party-btn", "edit");
+        editBtn.setTooltip(new Tooltip("Charakter bearbeiten"));
+        editBtn.setOnAction(e -> onEditCharacter(editBtn, pc));
 
-        HBox row = new HBox(8, nameLabel, spacer, removeBtn, deleteBtn);
+        HBox row = new HBox(8, infoBox, spacer, removeBtn, editBtn);
         row.getStyleClass().add("party-row");
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
@@ -264,68 +268,62 @@ public class PartyPopup {
                 result -> handleMutationAndReloadResult(result, "Charakter konnte nicht aus der Party entfernt werden."));
     }
 
-    private void onDeleteCharacter(PlayerCharacter pc) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "\"" + pc.Name + "\" wirklich dauerhaft l\u00f6schen?\nDieser Schritt kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
-                ButtonType.CANCEL, ButtonType.OK);
-        confirm.setHeaderText("Charakter l\u00f6schen");
-        // Abbrechen als Default, damit Enter nicht versehentlich loescht
-        Button cancelBt = (Button) confirm.getDialogPane().lookupButton(ButtonType.CANCEL);
-        cancelBt.setDefaultButton(true);
-        Button okBt = (Button) confirm.getDialogPane().lookupButton(ButtonType.OK);
-        okBt.setDefaultButton(false);
-        confirm.showAndWait().ifPresent(bt -> {
-            if (bt != ButtonType.OK) return;
-            controller.mutateAndReload(
-                    () -> PartyService.deleteCharacter(pc.Id),
-                    "PartyPopup.onDeleteCharacter(id=" + pc.Id + ")",
-                    result -> handleMutationAndReloadResult(result, "Charakter konnte nicht gelöscht werden."));
-        });
+    private void onEditCharacter(Button anchor, PlayerCharacter pc) {
+        characterEditorDropdown.showEdit(
+                anchor,
+                pc,
+                draft -> controller.mutateAndReload(
+                        () -> PartyService.updateCharacter(pc.Id, draft),
+                        "PartyPopup.onEditCharacter(id=" + pc.Id + ")",
+                        result -> handleEditorMutationAndReloadResult(
+                                result,
+                                "Charakter konnte nicht gespeichert werden.")),
+                () -> controller.mutateAndReload(
+                        () -> PartyService.deleteCharacter(pc.Id),
+                        "PartyPopup.onDeleteCharacter(id=" + pc.Id + ")",
+                        result -> handleEditorMutationAndReloadResult(
+                                result,
+                                "Charakter konnte nicht gelöscht werden.")));
     }
 
-    private void onNewCharacter() {
-        Dialog<ButtonType> dlg = new Dialog<>();
-        dlg.setTitle("Neuer Charakter");
-        dlg.setHeaderText("Charakter erstellen und zur Party hinzuf\u00fcgen");
-        dlg.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+    private void onNewCharacter(Button anchor) {
+        characterEditorDropdown.showCreate(
+                anchor,
+                draft -> controller.createAndAddCharacterAndReload(
+                        draft,
+                        result -> handleEditorMutationAndReloadResult(
+                                result,
+                                "Charakter konnte nicht erstellt werden.")));
+    }
 
-        TextField nameField = new TextField();
-        nameField.setPromptText("Name");
-        // Kein setAccessibleText: setLabelFor unten ist ausreichend und korrekter (WCAG 1.3.1)
-        Spinner<Integer> levelSpinner = new Spinner<>(1, 20, 1);
-        levelSpinner.setEditable(true);
-        levelSpinner.setPrefWidth(80);
+    private void handleEditorMutationAndReloadResult(
+            PartyWorkflowApplicationService.MutationAndReloadResult result,
+            String storageErrorMessage
+    ) {
+        if (result.mutationStatus() == PartyService.MutationStatus.NOT_FOUND) {
+            characterEditorDropdown.showError("Charakter wurde nicht gefunden.");
+            return;
+        }
+        if (result.mutationStatus() != PartyService.MutationStatus.SUCCESS) {
+            characterEditorDropdown.showError(storageErrorMessage);
+            return;
+        }
+        PartyService.PartySnapshotResult snapshot = result.snapshotResult();
+        if (snapshot == null || snapshot.status() != PartyService.ReadStatus.SUCCESS) {
+            applyData(emptySnapshot());
+            characterEditorDropdown.showError("Party konnte nach der Änderung nicht neu geladen werden.");
+            return;
+        }
+        characterEditorDropdown.hide();
+        applyData(snapshot);
+    }
 
-        Label nameGridLabel = new Label("Name:");
-        nameGridLabel.setLabelFor(nameField);
-        Label levelGridLabel = new Label("Level:");
-        levelGridLabel.setLabelFor(levelSpinner);
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(8);
-        grid.add(nameGridLabel, 0, 0);
-        grid.add(nameField, 1, 0);
-        grid.add(levelGridLabel, 0, 1);
-        grid.add(levelSpinner, 1, 1);
-        dlg.getDialogPane().setContent(grid);
-
-        // OK deaktivieren, solange der Name leer ist
-        javafx.scene.Node okButton = dlg.getDialogPane().lookupButton(ButtonType.OK);
-        okButton.setDisable(true);
-        nameField.textProperty().addListener((obs, o, n) -> okButton.setDisable(n.trim().isEmpty()));
-
-        Platform.runLater(nameField::requestFocus);
-
-        dlg.showAndWait().ifPresent(bt -> {
-            if (bt != ButtonType.OK) return;
-            String name = nameField.getText().trim();
-            if (name.isEmpty()) return;
-            int level = levelSpinner.getValue();
-            controller.createAndAddCharacterAndReload(
-                    name,
-                    level,
-                    result -> handleMutationAndReloadResult(result, "Charakter konnte nicht erstellt werden."));
-        });
+    private static String buildMemberDetails(PlayerCharacter pc) {
+        String playerName = pc.PlayerName == null || pc.PlayerName.isBlank()
+                ? null
+                : pc.PlayerName.trim();
+        String prefix = playerName == null ? "" : playerName + "  ·  ";
+        return prefix + "AC " + pc.ArmorClass + "  ·  PP " + pc.PassivePerception;
     }
 
     private void handleMutationAndReloadResult(

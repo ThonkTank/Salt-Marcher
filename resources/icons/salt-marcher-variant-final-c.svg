@@ -20,23 +20,21 @@
        L42 128
        Z"
     fill="url(#paper)"
-    stroke="#4a2d18"
+    stroke="#b48961"
     stroke-width="6"
     stroke-linejoin="round"
   />
 
   <g transform="translate(128 128)">
-    <circle r="22" fill="none" stroke="#432613" stroke-width="6"/>
+    <path d="M0 -102L19 -16L0 -28L-19 -16Z" fill="#0f0501"/>
+    <path d="M74 -74L24 -10L16 -24L24 -24Z" fill="#341b0e"/>
+    <path d="M102 0L19 19L28 0L19 -19Z" fill="#0f0501"/>
+    <path d="M74 74L24 24L24 16L10 24Z" fill="#341b0e"/>
+    <path d="M0 102L-19 16L0 28L19 16Z" fill="#0f0501"/>
+    <path d="M-74 74L-24 10L-24 24L-16 24Z" fill="#341b0e"/>
+    <path d="M-102 0L-19 -19L-28 0L-19 19Z" fill="#0f0501"/>
+    <path d="M-74 -74L-10 -24L-24 -24L-24 -16Z" fill="#341b0e"/>
 
-    <path d="M0 -102L16 -16L0 -50L-16 -16Z" fill="#0f0501"/>
-    <path d="M84 -84L16 -4L24 -24L4 -16Z" fill="#341b0e"/>
-    <path d="M102 0L16 16L50 0L16 -16Z" fill="#0f0501"/>
-    <path d="M84 84L4 16L24 24L16 4Z" fill="#341b0e"/>
-    <path d="M0 102L-16 16L0 50L16 16Z" fill="#0f0501"/>
-    <path d="M-84 84L-16 4L-24 24L-4 16Z" fill="#341b0e"/>
-    <path d="M-102 0L-16 -16L-50 0L-16 16Z" fill="#0f0501"/>
-    <path d="M-84 -84L-4 -16L-24 -24L-16 -4Z" fill="#341b0e"/>
-
-    <circle r="7" fill="#080300"/>
+    <circle r="4" fill="#080300"/>
   </g>
 </svg>

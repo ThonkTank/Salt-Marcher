@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.editing.BrushShape;
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
-import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
 import features.world.dungeonmap.api.catalog.DungeonEncounterTableSummary;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
@@ -116,11 +115,7 @@ public class DungeonToolSettingsPane extends VBox {
     }
 
     public DungeonFeatureCategory selectedFeatureCategory() {
-        return featureSettingsCard.selectedFeatureCategory();
-    }
-
-    public DungeonEncounterSummary selectedEncounter() {
-        return featureSettingsCard.selectedEncounter();
+        return featureSettingsCard.activeCategory();
     }
 
     public boolean linksVisible() {
@@ -143,16 +138,11 @@ public class DungeonToolSettingsPane extends VBox {
         featureSettingsCard.setFeatures(features);
     }
 
-    public void setTileContextFeatures(List<DungeonFeature> features) {
-        featureSettingsCard.setTileContextFeatures(features);
-    }
-
     public void setEncounterTables(List<DungeonEncounterTableSummary> tables) {
         areaSettingsCard.setEncounterTables(tables);
     }
 
-    public void setStoredEncounters(List<DungeonEncounterSummary> encounters) {
-        featureSettingsCard.setStoredEncounters(encounters);
+    public void setStoredEncounters(List<features.world.dungeonmap.api.catalog.DungeonEncounterSummary> encounters) {
     }
 
     public void setSelectedArea(Long areaId) {
@@ -160,7 +150,7 @@ public class DungeonToolSettingsPane extends VBox {
     }
 
     public void setSelectedFeatureCategory(DungeonFeatureCategory category) {
-        featureSettingsCard.setSelectedFeatureCategory(category);
+        featureSettingsCard.setActiveCategory(category);
     }
 
     public void setSelectedFeature(Long featureId) {
@@ -176,28 +166,12 @@ public class DungeonToolSettingsPane extends VBox {
         featureSettingsCard.clearSelection();
     }
 
-    public void selectEncounter(Long encounterId) {
-        featureSettingsCard.selectEncounter(encounterId);
-    }
-
     public void setOnAreaSelected(Consumer<DungeonArea> onAreaSelected) {
         areaSettingsCard.setOnAreaSelected(onAreaSelected);
     }
 
     public void setOnAreaProfileSaveRequested(Consumer<DungeonArea> onAreaProfileSaveRequested) {
         areaSettingsCard.setOnSaveRequested(onAreaProfileSaveRequested);
-    }
-
-    public void setOnFeatureSelected(Consumer<DungeonFeature> onFeatureSelected) {
-        featureSettingsCard.setOnFeatureSelected(onFeatureSelected);
-    }
-
-    public void setOnTileContextFeatureSelected(Consumer<DungeonFeature> onTileContextFeatureSelected) {
-        featureSettingsCard.setOnTileContextFeatureSelected(onTileContextFeatureSelected);
-    }
-
-    public void setOnEncounterSelected(Consumer<DungeonEncounterSummary> onEncounterSelected) {
-        featureSettingsCard.setOnEncounterSelected(onEncounterSelected);
     }
 
     public void setOnNewAreaRequested(Consumer<Node> callback) {
@@ -208,20 +182,8 @@ public class DungeonToolSettingsPane extends VBox {
         areaSettingsCard.setOnDeleteRequested(callback);
     }
 
-    public void setOnNewFeatureRequested(Consumer<Node> callback) {
-        featureSettingsCard.setOnCreateRequested(callback);
-    }
-
     public void setOnDeleteFeatureRequested(Consumer<Node> callback) {
         featureSettingsCard.setOnDeleteRequested(callback);
-    }
-
-    public void setOnAddTileToFeatureRequested(Runnable callback) {
-        featureSettingsCard.setOnAddTileRequested(callback);
-    }
-
-    public void setOnRemoveTileFromFeatureRequested(Runnable callback) {
-        featureSettingsCard.setOnRemoveTileRequested(callback);
     }
 
     public void setOnCancelLink(Runnable onCancelLink) {

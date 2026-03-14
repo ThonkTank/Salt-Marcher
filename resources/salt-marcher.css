@@ -701,10 +701,14 @@
     -fx-background-radius: 3;
 }
 .hp-bar-text {
-    -fx-text-fill: -sm-bg-darkest;
     -fx-font-size: 11px;
     -fx-font-weight: bold;
-    -fx-effect: dropshadow(three-pass-box, rgba(236, 237, 238, 0.95), 0, 0, 0, 0);
+}
+.hp-bar-text-on-track {
+    -fx-text-fill: -sm-text-primary;
+}
+.hp-bar-text-on-fill {
+    -fx-text-fill: -sm-bg-darkest;
 }
 .hp-fill-healthy  { -fx-background-color: -sm-hp-healthy; }
 .hp-fill-wounded  { -fx-background-color: -sm-hp-wounded; }
@@ -1337,12 +1341,37 @@
     -fx-background-color: derive(-sm-bg-elevated, 20%);
     -fx-text-fill: -sm-text-primary;
 }
+.party-btn.edit {
+    -fx-background-color: -sm-accent;
+    -fx-text-fill: -sm-text-primary;
+}
+.party-btn.edit:hover {
+    -fx-background-color: -sm-accent-hover;
+}
 .party-btn.delete {
     -fx-background-color: -sm-monster-red;
     -fx-text-fill: -sm-text-primary;
 }
 .party-btn.delete:hover {
     -fx-background-color: derive(-sm-monster-red, 25%);
+}
+.party-editor-dropdown {
+    -fx-min-width: 340;
+    -fx-pref-width: 360;
+}
+.party-editor-form .text-field {
+    -fx-pref-width: 180;
+}
+.party-editor-delete-section {
+    -fx-background-color: derive(-sm-monster-red, -70%);
+    -fx-border-color: derive(-sm-monster-red, 5%);
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8;
+}
+.party-editor-delete-actions {
+    -fx-alignment: center-right;
 }
 .party-search {
     -fx-padding: 8 8 4 8;

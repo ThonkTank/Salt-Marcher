@@ -394,6 +394,9 @@ final class DungeonInteractionController {
     }
 
     private DungeonCanvasPaintMode currentPaintMode() {
+        if (activeTool == DungeonCanvasTool.FEATURE) {
+            return DungeonCanvasPaintMode.BRUSH;
+        }
         if (paintModeSupplier != null) {
             DungeonCanvasPaintMode mode = paintModeSupplier.get();
             if (mode != null) {

@@ -139,10 +139,13 @@ public final class DatabaseManager {
             // Table creation order respects FK constraints: parent tables precede child tables.
 
             stmt.execute("CREATE TABLE IF NOT EXISTS player_characters ("
-                    + "id       INTEGER PRIMARY KEY,"
-                    + "name     TEXT    NOT NULL,"
-                    + "level    INTEGER NOT NULL DEFAULT 1,"
-                    + "in_party INTEGER NOT NULL DEFAULT 1"
+                    + "id                 INTEGER PRIMARY KEY,"
+                    + "name               TEXT    NOT NULL,"
+                    + "player_name        TEXT,"
+                    + "level              INTEGER NOT NULL DEFAULT 1,"
+                    + "passive_perception INTEGER NOT NULL DEFAULT 10,"
+                    + "ac                 INTEGER NOT NULL DEFAULT 10,"
+                    + "in_party           INTEGER NOT NULL DEFAULT 1"
                     + ")");
 
             stmt.execute("CREATE TABLE IF NOT EXISTS creatures ("
@@ -527,6 +530,7 @@ public final class DatabaseManager {
 
             ensureCreatureImportColumns(conn);
             ensureCreatureActionColumns(conn);
+            ensurePartyCharacterCompatibility(conn);
             ensureItemTagCompatibility(conn);
             ensureSpellCompatibility(conn);
             ensureEncounterAnalysisColumns(conn);
@@ -766,6 +770,12 @@ public final class DatabaseManager {
         dropIndexIfExists(conn, "idx_party_analysis_run_role");
         dropColumnIfExists(conn, "creature_party_analysis", "dynamic_role");
         dropColumnIfExists(conn, "creatures", "role");
+    }
+
+    private static void ensurePartyCharacterCompatibility(Connection conn) throws SQLException {
+        ensureColumn(conn, "player_characters", "player_name", "TEXT");
+        ensureColumn(conn, "player_characters", "passive_perception", "INTEGER NOT NULL DEFAULT 10");
+        ensureColumn(conn, "player_characters", "ac", "INTEGER NOT NULL DEFAULT 10");
     }
 
     private static void ensureItemTagCompatibility(Connection conn) throws SQLException {

@@ -6,6 +6,7 @@ import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
+import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
 import features.world.dungeonmap.ui.editor.state.WallEditorMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
@@ -13,6 +14,7 @@ import ui.async.UiErrorReporter;
 
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.function.Consumer;
 
 public final class DungeonSquareEditWorkflow {
 
@@ -22,14 +24,14 @@ public final class DungeonSquareEditWorkflow {
     private final DungeonMapCommandService commands;
     private final DungeonPaintSession paintSession;
     private final DungeonWallPaintSession wallPaintSession;
-    private final Runnable reloadCurrentMap;
+    private final Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap;
 
     public DungeonSquareEditWorkflow(
             DungeonEditorState state,
             DungeonEditorInteractionState interactionState,
             DungeonMapPane canvas,
             DungeonMapCommandService commands,
-            Runnable reloadCurrentMap
+            Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap
     ) {
         this.state = state;
         this.interactionState = interactionState;
@@ -37,7 +39,7 @@ public final class DungeonSquareEditWorkflow {
         this.commands = commands;
         this.paintSession = new DungeonPaintSession(canvas::previewPaint);
         this.wallPaintSession = new DungeonWallPaintSession(canvas::previewCommittedWallEdits);
-        this.reloadCurrentMap = reloadCurrentMap == null ? () -> { } : reloadCurrentMap;
+        this.reloadCurrentMap = reloadCurrentMap == null ? ignored -> { } : reloadCurrentMap;
     }
 
     public void handleCellPaint(DungeonMapPane.CellInteraction interaction) {
@@ -49,13 +51,28 @@ public final class DungeonSquareEditWorkflow {
     public void flushPendingSquareEdits() {
         paintSession.flushPendingPaints(
                 state.currentMapId(),
-                (mapId, edits) -> DungeonUiAsyncSupport.submitAction(
-                        () -> commands.applySquareEditsAndReconcileState(mapId, edits),
-                        reloadCurrentMap,
-                        ex -> {
-                            UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflow.flushPendingSquareEdits()", ex);
-                            reloadCurrentMap.run();
-                        }));
+                (mapId, edits) -> {
+                    if (interactionState.activeTool() == DungeonEditorTool.FEATURE) {
+                        DungeonUiAsyncSupport.submitValue(
+                                () -> commands.applyFeatureEditsAndReconcileState(
+                                        mapId,
+                                        interactionState.activeFeatureCategory(),
+                                        edits),
+                                featureId -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.feature(featureId)),
+                                ex -> {
+                                    UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflow.flushPendingSquareEdits()", ex);
+                                    reloadCurrentMap.accept(null);
+                                });
+                        return;
+                    }
+                    DungeonUiAsyncSupport.submitAction(
+                            () -> commands.applySquareEditsAndReconcileState(mapId, edits),
+                            () -> reloadCurrentMap.accept(null),
+                            ex -> {
+                                UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflow.flushPendingSquareEdits()", ex);
+                                reloadCurrentMap.accept(null);
+                            });
+                });
     }
 
     public void handleEdgePaint(DungeonMapPane.EdgeInteraction interaction) {
@@ -105,10 +122,10 @@ public final class DungeonSquareEditWorkflow {
                 state.currentMapId(),
                 (mapId, edits) -> DungeonUiAsyncSupport.submitAction(
                         () -> commands.applyWallEdits(mapId, edits),
-                        reloadCurrentMap,
+                        () -> reloadCurrentMap.accept(null),
                         ex -> {
                             UiErrorReporter.reportBackgroundFailure("DungeonSquareEditWorkflow.flushPendingWallEdits()", ex);
-                            reloadCurrentMap.run();
+                            reloadCurrentMap.accept(null);
                         }));
     }
 

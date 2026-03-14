@@ -10,16 +10,23 @@ import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
 import features.world.dungeonmap.model.domain.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
+import features.world.dungeonmap.ui.shared.format.DungeonRoomFeatureOrder;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import javafx.scene.input.MouseButton;
 import javafx.scene.control.Label;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
+import javafx.scene.paint.CycleMethod;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Stop;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +55,6 @@ final class DungeonOverlayRenderer {
     private final DungeonViewport viewport;
     private final Map<Long, Label> roomLabelNodes = new HashMap<>();
     private final List<Label> areaLabelNodes = new java.util.ArrayList<>();
-    private final Map<Long, Circle> featureAnchorNodes = new HashMap<>();
     private final Map<Long, Label> featureLabelNodes = new HashMap<>();
     private final Map<String, Rectangle> featureTileNodes = new HashMap<>();
     private final Map<Long, EndpointNode> endpointNodes = new HashMap<>();
@@ -56,6 +62,7 @@ final class DungeonOverlayRenderer {
 
     private Consumer<DungeonEndpoint> onEndpointClicked;
     private Consumer<DungeonLink> onLinkClicked;
+    private Consumer<DungeonFeature> onFeatureClicked;
     private boolean showFeatures = true;
     private boolean showLinks = true;
     private boolean showEndpoints = true;
@@ -84,7 +91,6 @@ final class DungeonOverlayRenderer {
     void rebuildNodes() {
         roomLabelNodes.clear();
         areaLabelNodes.clear();
-        featureAnchorNodes.clear();
         featureLabelNodes.clear();
         featureTileNodes.clear();
         endpointNodes.clear();
@@ -115,14 +121,11 @@ final class DungeonOverlayRenderer {
             featuresLayer.getChildren().add(rectangle);
         }
         for (Map.Entry<Long, DungeonFeature> entry : model.featuresById().entrySet()) {
-            Circle anchor = new Circle();
-            anchor.setMouseTransparent(true);
             Label label = new Label(entry.getValue().toString());
-            label.setMouseTransparent(true);
-            label.getStyleClass().addAll("section-header", "text-muted");
-            featureAnchorNodes.put(entry.getKey(), anchor);
+            label.getStyleClass().addAll("dungeon-room-map-label", "section-header");
+            label.setOnMouseClicked(event -> handleFeatureClick(event.getButton(), entry.getKey()));
             featureLabelNodes.put(entry.getKey(), label);
-            featuresLayer.getChildren().addAll(anchor, label);
+            featuresLayer.getChildren().add(label);
         }
         for (DungeonEndpoint endpoint : model.endpointsById().values()) {
             EndpointNode endpointNode = buildEndpointNode(endpoint);
@@ -160,6 +163,10 @@ final class DungeonOverlayRenderer {
         this.onLinkClicked = onLinkClicked;
     }
 
+    void setOnFeatureClicked(Consumer<DungeonFeature> onFeatureClicked) {
+        this.onFeatureClicked = onFeatureClicked;
+    }
+
     void setShowLinks(boolean showLinks) {
         this.showLinks = showLinks;
         updateVisibility();
@@ -186,27 +193,22 @@ final class DungeonOverlayRenderer {
             if (tiles == null || tiles.isEmpty()) {
                 continue;
             }
-            DungeonFeature feature = model.featuresById().get(tiles.get(0).featureId());
             boolean selected = isSelectedFeatureTile(tiles);
-            rectangle.setFill(featureColor(feature == null ? null : feature.category(), selected ? 0.40 : 0.20));
-            rectangle.setStroke(selected ? FEATURE_SELECTION_STROKE : featureColor(feature == null ? null : feature.category(), 0.65));
+            rectangle.setFill(featureTileFill(tiles, selected));
+            rectangle.setStroke(selected ? FEATURE_SELECTION_STROKE : featureStrokeColor(tiles));
             rectangle.setStrokeWidth(selected ? Math.max(2.0, 2.5 * viewport.strokeScale()) : Math.max(1.0, viewport.strokeScale()));
         }
-        for (Map.Entry<Long, Circle> entry : featureAnchorNodes.entrySet()) {
+        for (Map.Entry<Long, Label> entry : featureLabelNodes.entrySet()) {
             DungeonFeature feature = model.featuresById().get(entry.getKey());
             boolean selected = model.selection() != null
                     && model.selection().type() == DungeonSelection.SelectionType.FEATURE
                     && entry.getKey().equals(model.selection().id());
-            Circle circle = entry.getValue();
-            circle.setFill(featureColor(feature == null ? null : feature.category(), selected ? 0.95 : 0.75));
-            circle.setStroke(selected ? FEATURE_SELECTION_STROKE : Color.web("#2b2012"));
-            circle.setStrokeWidth(selected ? Math.max(2.0, 3.0 * viewport.strokeScale()) : Math.max(1.0, viewport.strokeScale()));
-            Label label = featureLabelNodes.get(entry.getKey());
-            if (label != null) {
-                label.setText(feature == null ? "Feature" : feature.toString());
-                label.setVisible(showFeatures);
-                label.setManaged(showFeatures);
-            }
+            Label label = entry.getValue();
+            label.setText(feature == null ? "Feature" : feature.toString());
+            label.setVisible(showFeatures);
+            label.setManaged(showFeatures);
+            label.setOpacity(selected ? 1.0 : 0.9);
+            label.setStyle(selected ? "-fx-border-color: rgba(243, 227, 160, 0.95);" : "");
         }
     }
 
@@ -264,6 +266,16 @@ final class DungeonOverlayRenderer {
             event.consume();
         });
         return new EndpointNode(visual, hitTarget);
+    }
+
+    private void handleFeatureClick(MouseButton button, Long featureId) {
+        if (button != MouseButton.PRIMARY || onFeatureClicked == null || featureId == null) {
+            return;
+        }
+        DungeonFeature feature = model.featuresById().get(featureId);
+        if (feature != null) {
+            onFeatureClicked.accept(feature);
+        }
     }
 
     private Line buildLinkNode(DungeonLink link) {
@@ -364,7 +376,10 @@ final class DungeonOverlayRenderer {
             rectangle.setVisible(showFeatures && visible);
             rectangle.setManaged(showFeatures && visible);
         }
-        for (Map.Entry<Long, java.util.List<DungeonFeatureTile>> entry : model.featureTilesByFeatureId().entrySet()) {
+        List<Map.Entry<Long, java.util.List<DungeonFeatureTile>>> entries = new ArrayList<>(model.featureTilesByFeatureId().entrySet());
+        entries.sort(Comparator.comparingLong(Map.Entry::getKey));
+        int labelIndex = 0;
+        for (Map.Entry<Long, java.util.List<DungeonFeatureTile>> entry : entries) {
             java.util.List<DungeonFeatureTile> tiles = entry.getValue();
             if (tiles == null || tiles.isEmpty()) {
                 continue;
@@ -377,18 +392,17 @@ final class DungeonOverlayRenderer {
             }
             double centerX = sumX / tiles.size();
             double centerY = sumY / tiles.size();
-            Circle anchor = featureAnchorNodes.get(entry.getKey());
             Label label = featureLabelNodes.get(entry.getKey());
-            if (anchor != null) {
-                anchor.setCenterX(centerX);
-                anchor.setCenterY(centerY);
-                anchor.setRadius(Math.max(4.0, 5.5 * viewport.strokeScale()));
-                boolean visible = viewport.isVisible(owner, centerX, centerY, anchor.getRadius());
-                anchor.setVisible(showFeatures && visible);
-                anchor.setManaged(showFeatures && visible);
-            }
             if (label != null) {
-                label.relocate(centerX + 6.0, centerY - 8.0);
+                double width = label.prefWidth(-1);
+                double height = label.prefHeight(width);
+                label.resize(width, height);
+                double offsetY = 18.0 + (labelIndex % 3) * (height + 6.0);
+                label.relocate(centerX - (width / 2.0), centerY - (height / 2.0) + offsetY);
+                boolean visible = viewport.isVisible(owner, centerX, centerY + offsetY, Math.max(width, height) / 2.0);
+                label.setVisible(showFeatures && visible);
+                label.setManaged(showFeatures && visible);
+                labelIndex++;
             }
         }
     }
@@ -470,6 +484,70 @@ final class DungeonOverlayRenderer {
             case CURIOSITY -> Color.web("#6ea27d");
         };
         return Color.color(base.getRed(), base.getGreen(), base.getBlue(), opacity);
+    }
+
+    private Paint featureTileFill(List<DungeonFeatureTile> tiles, boolean selected) {
+        List<Color> colors = orderedFeatureColors(tiles, selected ? 0.42 : 0.24);
+        if (colors.isEmpty()) {
+            return Color.TRANSPARENT;
+        }
+        if (colors.size() == 1) {
+            return colors.get(0);
+        }
+        List<Stop> stops = new ArrayList<>();
+        double bandSize = 1.0 / colors.size();
+        for (int i = 0; i < colors.size(); i++) {
+            double start = i * bandSize;
+            double end = Math.min(1.0, start + bandSize);
+            Color color = colors.get(i);
+            stops.add(new Stop(start, color));
+            stops.add(new Stop(Math.max(start, end - 0.001), color));
+        }
+        return new LinearGradient(
+                0,
+                0,
+                10,
+                10,
+                false,
+                CycleMethod.REPEAT,
+                stops);
+    }
+
+    private Color featureStrokeColor(List<DungeonFeatureTile> tiles) {
+        List<Color> colors = orderedFeatureColors(tiles, 0.65);
+        return colors.isEmpty() ? Color.TRANSPARENT : colors.get(0);
+    }
+
+    private List<Color> orderedFeatureColors(List<DungeonFeatureTile> tiles, double opacity) {
+        List<DungeonFeature> features = orderedFeaturesForTiles(tiles);
+        List<Color> colors = new ArrayList<>();
+        for (DungeonFeature feature : features) {
+            colors.add(featureColor(feature == null ? null : feature.category(), opacity));
+        }
+        return colors;
+    }
+
+    private List<DungeonFeature> orderedFeaturesForTiles(List<DungeonFeatureTile> tiles) {
+        if (tiles == null || tiles.isEmpty()) {
+            return List.of();
+        }
+        List<DungeonFeature> features = new ArrayList<>();
+        java.util.LinkedHashSet<Long> featureIds = new java.util.LinkedHashSet<>();
+        for (DungeonFeatureTile tile : tiles) {
+            if (tile != null) {
+                featureIds.add(tile.featureId());
+            }
+        }
+        for (Long featureId : featureIds) {
+            DungeonFeature feature = model.featuresById().get(featureId);
+            if (feature != null) {
+                features.add(feature);
+            }
+        }
+        features.sort(Comparator.comparingInt((DungeonFeature feature) -> feature.sortOrder())
+                .thenComparing(DungeonFeature::toString, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(DungeonFeature::featureId));
+        return features;
     }
 
     private Color endpointFill(DungeonEndpoint endpoint) {

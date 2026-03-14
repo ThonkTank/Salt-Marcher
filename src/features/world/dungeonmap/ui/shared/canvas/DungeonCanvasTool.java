@@ -8,7 +8,7 @@ public enum DungeonCanvasTool {
     ERASE(true, false, false, Cursor.CROSSHAIR),
     WALL(false, false, true, Cursor.HAND),
     AREA_ASSIGN(false, false, false, Cursor.DEFAULT),
-    FEATURE(false, false, false, Cursor.HAND),
+    FEATURE(true, true, false, Cursor.CROSSHAIR),
     PASSAGE(false, false, true, Cursor.HAND),
     ENDPOINT(false, false, false, Cursor.HAND),
     LINK(false, false, false, Cursor.HAND);

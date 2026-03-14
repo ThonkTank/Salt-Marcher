@@ -53,11 +53,7 @@ final class RoomMetadataMerger {
     }
 
     static Comparator<Long> roomMergeComparator(Map<Long, Integer> roomSquareCounts, TopologyIntent intent) {
-        Map<Long, Integer> preferredOrder = PreferredRoomSelector.preferredOrder(intent);
-        return Comparator
-                .comparingInt((Long roomId) -> preferredOrder.getOrDefault(roomId, Integer.MAX_VALUE))
-                .thenComparing((Long roomId) -> -roomSquareCounts.getOrDefault(roomId, 0))
-                .thenComparingLong(Long::longValue);
+        return TopologyEntitySelectionSupport.mergeComparator(roomSquareCounts, intent);
     }
 
     private static void upsertMergedMetadata(Connection conn, DungeonRoom primaryRoom, List<DungeonRoom> secondaryRooms) throws SQLException {

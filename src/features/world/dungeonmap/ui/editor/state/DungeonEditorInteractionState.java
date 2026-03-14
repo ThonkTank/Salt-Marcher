@@ -1,5 +1,7 @@
 package features.world.dungeonmap.ui.editor.state;
 
+import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -8,12 +10,14 @@ public final class DungeonEditorInteractionState {
 
     private final List<Consumer<DungeonEditorTool>> toolListeners = new ArrayList<>();
     private final List<Consumer<DungeonPaintMode>> paintModeListeners = new ArrayList<>();
+    private final List<Consumer<DungeonFeatureCategory>> featureCategoryListeners = new ArrayList<>();
     private final List<Consumer<DungeonColorRenderMode>> colorRenderModeListeners = new ArrayList<>();
     private final List<Consumer<WallEditorMode>> wallModeListeners = new ArrayList<>();
     private final List<Consumer<PassageEditorMode>> passageModeListeners = new ArrayList<>();
 
     private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
     private DungeonPaintMode paintMode = DungeonPaintMode.BRUSH;
+    private DungeonFeatureCategory activeFeatureCategory = DungeonFeatureCategory.HAZARD;
     private DungeonColorRenderMode colorRenderMode = DungeonColorRenderMode.ROOMS;
     private WallEditorMode wallEditorMode = WallEditorMode.PAINT_WALL;
     private PassageEditorMode passageEditorMode = PassageEditorMode.PLACE_PASSAGE;
@@ -50,6 +54,21 @@ public final class DungeonEditorInteractionState {
 
     public DungeonColorRenderMode colorRenderMode() {
         return colorRenderMode;
+    }
+
+    public DungeonFeatureCategory activeFeatureCategory() {
+        return activeFeatureCategory;
+    }
+
+    public void setActiveFeatureCategory(DungeonFeatureCategory category) {
+        DungeonFeatureCategory effectiveCategory = category == null ? DungeonFeatureCategory.HAZARD : category;
+        if (activeFeatureCategory == effectiveCategory) {
+            return;
+        }
+        activeFeatureCategory = effectiveCategory;
+        for (Consumer<DungeonFeatureCategory> listener : List.copyOf(featureCategoryListeners)) {
+            listener.accept(effectiveCategory);
+        }
     }
 
     public void setColorRenderMode(DungeonColorRenderMode mode) {
@@ -108,6 +127,12 @@ public final class DungeonEditorInteractionState {
     public void onColorRenderModeChanged(Consumer<DungeonColorRenderMode> listener) {
         if (listener != null) {
             colorRenderModeListeners.add(listener);
+        }
+    }
+
+    public void onFeatureCategoryChanged(Consumer<DungeonFeatureCategory> listener) {
+        if (listener != null) {
+            featureCategoryListeners.add(listener);
         }
     }
 

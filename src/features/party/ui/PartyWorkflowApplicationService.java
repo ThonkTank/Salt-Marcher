@@ -60,13 +60,12 @@ public final class PartyWorkflowApplicationService {
     }
 
     public void createAndAddCharacterAndReload(
-            String name,
-            int level,
+            PartyService.CharacterDraft draft,
             Consumer<MutationAndReloadResult> onComplete
     ) {
         submitTask(
                 () -> {
-                    PartyService.CreateResult createResult = PartyService.createCharacterAndAddToParty(name, level);
+                    PartyService.CreateResult createResult = PartyService.createCharacterAndAddToParty(draft);
                     if (createResult.status() != PartyService.MutationStatus.SUCCESS) {
                         return new MutationAndReloadResult(createResult.status(), null);
                     }

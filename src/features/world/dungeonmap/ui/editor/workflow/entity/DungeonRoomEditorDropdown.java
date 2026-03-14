@@ -64,12 +64,40 @@ public final class DungeonRoomEditorDropdown {
         dropdown.show(anchor, AnchoredDropdown.HorizontalAlignment.RIGHT, 6);
     }
 
+    public void showFeature(
+            Node anchor,
+            DungeonFeature feature,
+            List<DungeonEncounterSummary> encounters,
+            Consumer<DungeonFeature> onSaveFeature
+    ) {
+        if (anchor == null || feature == null) {
+            return;
+        }
+        content.getChildren().setAll(
+                buildFeatureHeader(feature),
+                buildFeatureEditor(feature, encounters, onSaveFeature));
+        dropdown.show(anchor, AnchoredDropdown.HorizontalAlignment.RIGHT, 6);
+    }
+
     public void hide() {
         dropdown.hide();
     }
 
     private Node buildHeader(DungeonRoom room) {
         Label title = new Label("Raum bearbeiten: " + (room.name() == null || room.name().isBlank() ? "Raum" : room.name()));
+        title.getStyleClass().add("dropdown-title");
+        Button closeButton = new Button("Schließen");
+        closeButton.setOnAction(event -> hide());
+        HBox row = new HBox(8, title, spacer(), closeButton);
+        row.getStyleClass().add("dropdown-actions");
+        return row;
+    }
+
+    private Node buildFeatureHeader(DungeonFeature feature) {
+        String label = feature.name() == null || feature.name().isBlank()
+                ? (feature.category() == null ? "Feature" : feature.category().label())
+                : feature.name();
+        Label title = new Label("Feature bearbeiten: " + label);
         title.getStyleClass().add("dropdown-title");
         Button closeButton = new Button("Schließen");
         closeButton.setOnAction(event -> hide());

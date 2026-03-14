@@ -241,6 +241,10 @@ public class DungeonMapPane extends StackPane {
         overlayRenderer.setOnLinkClicked(onLinkClicked);
     }
 
+    public void setOnFeatureClicked(Consumer<features.world.dungeonmap.model.domain.DungeonFeature> onFeatureClicked) {
+        overlayRenderer.setOnFeatureClicked(onFeatureClicked);
+    }
+
     public void setOnPaintStrokeFinished(Runnable onPaintStrokeFinished) {
         interactionController.setOnPaintStrokeFinished(onPaintStrokeFinished);
     }

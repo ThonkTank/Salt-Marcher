@@ -33,6 +33,14 @@ public final class PartyService {
         STORAGE_ERROR
     }
 
+    public record CharacterDraft(
+            String name,
+            String playerName,
+            int level,
+            int passivePerception,
+            int armorClass
+    ) {}
+
     public record PartySnapshotResult(ReadStatus status, List<PlayerCharacter> members, List<PlayerCharacter> available) {}
     public record MutationResult(MutationStatus status) {}
     public record CreateResult(MutationStatus status, PlayerCharacter character) {}
@@ -121,12 +129,50 @@ public final class PartyService {
         }
     }
 
-    public static CreateResult createCharacterAndAddToParty(String name, int level) {
+    public static MutationResult updateCharacter(Long id, CharacterDraft draft) {
         try (Connection conn = DatabaseManager.getConnection()) {
             boolean oldAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try {
-                PlayerCharacter created = PlayerCharacterRepository.createCharacter(conn, name, level, true);
+                boolean updated = PlayerCharacterRepository.updateCharacter(
+                        conn,
+                        id,
+                        draft.name(),
+                        draft.playerName(),
+                        draft.level(),
+                        draft.passivePerception(),
+                        draft.armorClass());
+                if (!updated) {
+                    conn.rollback();
+                    return new MutationResult(MutationStatus.NOT_FOUND);
+                }
+                conn.commit();
+                return new MutationResult(MutationStatus.SUCCESS);
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAutoCommit);
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "PartyService.updateCharacter(): DB access failed", e);
+            return new MutationResult(MutationStatus.STORAGE_ERROR);
+        }
+    }
+
+    public static CreateResult createCharacterAndAddToParty(CharacterDraft draft) {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            boolean oldAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                PlayerCharacter created = PlayerCharacterRepository.createCharacter(
+                        conn,
+                        draft.name(),
+                        draft.playerName(),
+                        draft.level(),
+                        draft.passivePerception(),
+                        draft.armorClass(),
+                        true);
                 if (created == null) {
                     conn.rollback();
                     return new CreateResult(MutationStatus.STORAGE_ERROR, null);

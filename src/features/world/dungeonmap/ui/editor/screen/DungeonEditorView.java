@@ -73,6 +73,7 @@ public class DungeonEditorView implements AppView {
         controls.setOnNewMapRequested(controller::showNewMapDropdown);
         controls.setOnEditMapRequested(controller::showEditMapDropdown);
         interactionState.onPaintModeChanged(controller::handlePaintModeChanged);
+        interactionState.onFeatureCategoryChanged(ignored -> controller.handleFeatureCategoryChanged());
         interactionState.onColorRenderModeChanged(controller::handleColorRenderModeChanged);
         interactionState.onWallEditorModeChanged(ignored -> controller.handleWallEditorModeChanged());
         interactionState.onPassageEditorModeChanged(ignored -> controller.handlePassageEditorModeChanged());
@@ -88,6 +89,7 @@ public class DungeonEditorView implements AppView {
         canvas.setOnEdgePaintPathFinished(controller::commitWallPaintPath);
         canvas.setOnEdgeStrokeFinished(controller::flushPendingWallEdits);
         canvas.setOnEndpointClicked(controller::handleEndpointClick);
+        canvas.setOnFeatureClicked(controller::handleFeatureClick);
         canvas.setOnLinkClicked(controller::showLinkSelection);
         canvas.setBrushSizeSupplier(controller::brushSize);
         canvas.setBrushShapeSupplier(controller::brushShape);

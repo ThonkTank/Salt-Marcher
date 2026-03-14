@@ -16,5 +16,7 @@ public interface DungeonEntityInspectorActions {
 
     void openRoomEditor(Node anchor, long roomId);
 
+    void openFeatureEditor(Node anchor, long featureId);
+
     void saveFeature(DungeonFeature feature);
 }

@@ -99,7 +99,7 @@ final class RoomTopologyReconciler {
             int nextDefaultRoomNumber
     ) throws SQLException {
         List<Long> retainableRoomIds = RoomComponentGraph.retainableRoomIds(component, largestComponentByRoomId);
-        Long primaryRoomId = PreferredRoomSelector.selectPreferredRoomId(retainableRoomIds, component.roomSquareCounts(), intent);
+        Long primaryRoomId = TopologyEntitySelectionSupport.selectPreferredEntityId(retainableRoomIds, component.roomSquareCounts(), intent);
         if (primaryRoomId != null) {
             updatePrimaryRoom(conn, component, primaryRoomId, largestComponentByRoomId, roomsById, intent);
             return new ComponentAssignment(primaryRoomId, false);
@@ -152,7 +152,7 @@ final class RoomTopologyReconciler {
             Map<Long, DungeonRoom> roomsById,
             TopologyIntent intent
     ) {
-        Long templateRoomId = PreferredRoomSelector.selectPreferredRoomId(
+        Long templateRoomId = TopologyEntitySelectionSupport.selectPreferredEntityId(
                 List.copyOf(component.roomIds()),
                 component.roomSquareCounts(),
                 intent);

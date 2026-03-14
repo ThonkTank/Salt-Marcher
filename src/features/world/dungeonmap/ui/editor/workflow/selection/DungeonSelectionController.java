@@ -151,27 +151,22 @@ public final class DungeonSelectionController {
         switch (selection.type()) {
             case ROOM -> {
                 toolSettingsPane.clearFeatureSelection();
-                toolSettingsPane.setTileContextFeatures(java.util.List.of());
                 toolSettingsPane.setSelectedArea(null);
             }
             case AREA -> {
                 toolSettingsPane.clearFeatureSelection();
-                toolSettingsPane.setTileContextFeatures(java.util.List.of());
                 toolSettingsPane.setSelectedArea(selection.area() == null ? null : selection.area().areaId());
             }
             case FEATURE -> {
                 toolSettingsPane.setSelectedArea(null);
-                toolSettingsPane.setTileContextFeatures(java.util.List.of());
                 if (selection.feature() == null) {
                     toolSettingsPane.clearFeatureSelection();
                 } else {
-                    toolSettingsPane.setSelectedFeatureCategory(selection.feature().category());
                     toolSettingsPane.setSelectedFeature(selection.feature().featureId());
                 }
             }
             case SQUARE -> {
                 toolSettingsPane.clearFeatureSelection();
-                toolSettingsPane.setTileContextFeatures(selection.tileFeatures());
                 toolSettingsPane.setSelectedArea(selection.square() == null ? null : selection.square().areaId());
             }
             case ENDPOINT, LINK, PASSAGE, NONE -> toolSettingsPane.clearEntitySelections();

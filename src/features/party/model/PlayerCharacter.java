@@ -10,5 +10,8 @@ package features.party.model;
 public class PlayerCharacter {
     public Long Id;
     public String Name;
+    public String PlayerName;
     public int Level;
+    public int PassivePerception;
+    public int ArmorClass;
 }

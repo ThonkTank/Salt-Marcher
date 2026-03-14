@@ -2,8 +2,10 @@ package features.world.dungeonmap.service.editing.feature;
 
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonFeature;
+import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
 import features.world.dungeonmap.model.domain.DungeonRoom;
+import features.world.dungeonmap.model.editing.DungeonSquarePaint;
 import features.world.dungeonmap.repository.feature.DungeonAreaRepository;
 import features.world.dungeonmap.repository.feature.DungeonFeatureRepository;
 import features.world.dungeonmap.repository.feature.DungeonFeatureTileRepository;
@@ -58,6 +60,11 @@ public final class DungeonFeatureEditingService {
 
     public static long saveFeature(DungeonFeature feature) throws Exception {
         return DungeonEditingTransactions.withConnection(conn -> DungeonFeatureRepository.upsertFeature(conn, feature));
+    }
+
+    public static Long applyFeaturePaints(long mapId, DungeonFeatureCategory category, List<DungeonSquarePaint> edits) throws Exception {
+        return DungeonEditingTransactions.inTransactionRollbackOnSql(conn ->
+                DungeonTopologyService.applyFeaturePaints(conn, mapId, category, edits));
     }
 
     public static void deleteFeature(long featureId) throws Exception {

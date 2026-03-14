@@ -3,6 +3,7 @@ package features.world.dungeonmap.service;
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
+import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
 import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;
@@ -60,6 +61,10 @@ public final class DungeonMapCommandService {
 
     public long saveFeature(DungeonFeature feature) throws Exception {
         return DungeonFeatureEditingService.saveFeature(feature);
+    }
+
+    public Long applyFeatureEditsAndReconcileState(long mapId, DungeonFeatureCategory category, List<DungeonSquarePaint> edits) throws Exception {
+        return DungeonFeatureEditingService.applyFeaturePaints(mapId, category, edits);
     }
 
     public void deleteFeature(long featureId) throws Exception {

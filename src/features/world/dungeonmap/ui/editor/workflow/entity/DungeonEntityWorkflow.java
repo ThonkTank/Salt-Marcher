@@ -85,6 +85,19 @@ public final class DungeonEntityWorkflow implements DungeonEntityInspectorAction
                 this::saveFeature);
     }
 
+    @Override
+    public void openFeatureEditor(Node anchor, long featureId) {
+        DungeonFeature feature = state.index().findFeature(featureId);
+        if (anchor == null || feature == null) {
+            return;
+        }
+        roomEditorDropdown.showFeature(
+                anchor,
+                feature,
+                state.encounters(),
+                this::saveFeature);
+    }
+
     public void createArea(Node anchor) {
         if (state.currentMapId() == null) {
             return;

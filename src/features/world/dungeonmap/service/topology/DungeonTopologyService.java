@@ -1,6 +1,7 @@
 package features.world.dungeonmap.service.topology;
 
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
+import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.rules.DungeonEdgeRules;
@@ -128,6 +129,15 @@ public final class DungeonTopologyService {
         if (visited.size() != featureTiles.size()) {
             throw new IllegalArgumentException("Feature footprint must stay contiguous");
         }
+    }
+
+    public static Long applyFeaturePaints(
+            Connection conn,
+            long mapId,
+            DungeonFeatureCategory category,
+            List<DungeonSquarePaint> edits
+    ) throws SQLException {
+        return DungeonFeatureTopologyService.applyFeaturePaints(conn, mapId, category, edits);
     }
 
     public static void reconcilePersistedTopologyState(Connection conn) throws SQLException {

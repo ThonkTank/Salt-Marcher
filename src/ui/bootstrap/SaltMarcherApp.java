@@ -115,7 +115,7 @@ public class SaltMarcherApp extends Application {
         notifyPreloader(new SaltMarcherPreloader.AppReadyNotification());
 
         // Filter data requires a DB query (creature types/biomes), so it is loaded asynchronously.
-        // setFilterData() wires the filter-changed callback internally (see EncounterControls.setFilterData).
+        // The encounter/table views complete their own browser/filter wiring when the data arrives.
         // All other encounter feature callbacks above are wired synchronously.
         Task<CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions>> filterTask = new Task<>() {
             @Override protected CreatureCatalogService.ServiceResult<CreatureCatalogService.FilterOptions> call() {

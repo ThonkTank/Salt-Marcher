@@ -26,10 +26,9 @@ public final class PartyPopupController {
     }
 
     void createAndAddCharacterAndReload(
-            String name,
-            int level,
+            PartyService.CharacterDraft draft,
             Consumer<PartyWorkflowApplicationService.MutationAndReloadResult> onComplete
     ) {
-        workflowApplicationService.createAndAddCharacterAndReload(name, level, onComplete);
+        workflowApplicationService.createAndAddCharacterAndReload(draft, onComplete);
     }
 }
