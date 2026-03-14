@@ -9,9 +9,20 @@ public record SearchExecutionDebugMetadata(
         int backtrackCount,
         int relaxationStage,
         SearchStopReason stopReason,
-        boolean fallbackSeedUsed
+        boolean fallbackSeedEstablished
 ) {
     public SearchExecutionDebugMetadata {
         stopReason = Objects.requireNonNull(stopReason, "stopReason");
+    }
+
+    public SearchExecutionDebugMetadata withStopReason(SearchStopReason newStopReason) {
+        return new SearchExecutionDebugMetadata(
+                candidatePoolSize,
+                iterations,
+                candidateEvaluations,
+                backtrackCount,
+                relaxationStage,
+                newStopReason,
+                fallbackSeedEstablished);
     }
 }
