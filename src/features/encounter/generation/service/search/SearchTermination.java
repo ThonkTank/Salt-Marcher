@@ -1,9 +1,7 @@
 package features.encounter.generation.service.search;
 
 import features.encounter.generation.service.search.model.RelaxationProfile;
-import features.encounter.generation.service.search.model.SearchExecutionDebugMetadata;
 import features.encounter.generation.service.search.model.SearchState;
-import features.encounter.generation.service.search.model.SearchStopReason;
 
 record SearchTermination(
         SearchState bestState,
