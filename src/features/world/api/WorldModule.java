@@ -1,6 +1,5 @@
 package features.world.api;
 
-import features.encounter.api.EncounterRuntimePort;
 import features.world.dungeonmap.api.DungeonMapModule;
 import features.world.hexmap.api.HexMapModule;
 import ui.shell.AppView;
@@ -17,11 +16,10 @@ public final class WorldModule {
     private final HexMapModule hexMapModule;
     private final DungeonMapModule dungeonMapModule;
 
-    public WorldModule(DetailsNavigator detailsNavigator, EncounterRuntimePort encounterRuntimePort) {
+    public WorldModule(DetailsNavigator detailsNavigator) {
         Objects.requireNonNull(detailsNavigator, "detailsNavigator");
-        Objects.requireNonNull(encounterRuntimePort, "encounterRuntimePort");
         this.hexMapModule = new HexMapModule(detailsNavigator);
-        this.dungeonMapModule = new DungeonMapModule(detailsNavigator, encounterRuntimePort);
+        this.dungeonMapModule = new DungeonMapModule(detailsNavigator);
     }
 
     public void registerScenes(SceneRegistry sceneRegistry) {

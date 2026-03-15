@@ -1,7 +1,7 @@
 package features.campaignstate.repository;
 
+import features.campaignstate.api.DungeonPositionSummary;
 import features.campaignstate.model.CampaignState;
-import features.campaignstate.model.DungeonPositionSnapshot;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -31,7 +31,7 @@ public final class CampaignStateRepository {
         }
         try (PreparedStatement ps = conn.prepareStatement(
                 "INSERT INTO campaign_state(campaign_id, map_id, party_tile_id, calendar_id,"
-                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_square_id)"
+                        + " current_epoch_day, current_phase_id, current_weather, notes, dungeon_map_id, dungeon_room_id)"
                         + " VALUES(?,?,?,?,?,?,?,?,?,?)"
                         + " ON CONFLICT(campaign_id) DO UPDATE SET"
                         + "   map_id=excluded.map_id,"
@@ -42,7 +42,7 @@ public final class CampaignStateRepository {
                         + "   current_weather=excluded.current_weather,"
                         + "   notes=excluded.notes,"
                         + "   dungeon_map_id=excluded.dungeon_map_id,"
-                        + "   dungeon_square_id=excluded.dungeon_square_id")) {
+                        + "   dungeon_room_id=excluded.dungeon_room_id")) {
             ps.setLong(1, state.CampaignId);
             setNullableLong(ps, 2, state.MapId);
             setNullableLong(ps, 3, state.PartyTileId);
@@ -52,7 +52,7 @@ public final class CampaignStateRepository {
             ps.setString(7, state.CurrentWeather);
             ps.setString(8, state.Notes);
             setNullableLong(ps, 9, state.DungeonMapId);
-            setNullableLong(ps, 10, state.DungeonSquareId);
+            setNullableLong(ps, 10, state.DungeonRoomId);
             ps.executeUpdate();
         }
     }
@@ -83,27 +83,27 @@ public final class CampaignStateRepository {
         }
     }
 
-    public static Optional<DungeonPositionSnapshot> getDungeonPosition(Connection conn) throws SQLException {
+    public static Optional<DungeonPositionSummary> getDungeonPosition(Connection conn) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT dungeon_map_id, dungeon_square_id FROM campaign_state WHERE campaign_id=1");
+                "SELECT dungeon_map_id, dungeon_room_id FROM campaign_state WHERE campaign_id=1");
              ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) {
                 return Optional.empty();
             }
             Long mapId = getNullableLong(rs, "dungeon_map_id");
-            Long squareId = getNullableLong(rs, "dungeon_square_id");
-            if (mapId == null && squareId == null) {
+            Long roomId = getNullableLong(rs, "dungeon_room_id");
+            if (mapId == null && roomId == null) {
                 return Optional.empty();
             }
-            return Optional.of(new DungeonPositionSnapshot(mapId, squareId));
+            return Optional.of(new DungeonPositionSummary(mapId, roomId));
         }
     }
 
-    public static void setDungeonPosition(Connection conn, Long mapId, Long squareId) throws SQLException {
+    public static void setDungeonPosition(Connection conn, Long mapId, Long roomId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_square_id=? WHERE campaign_id=1")) {
+                "UPDATE campaign_state SET dungeon_map_id=?, dungeon_room_id=? WHERE campaign_id=1")) {
             setNullableLong(ps, 1, mapId);
-            setNullableLong(ps, 2, squareId);
+            setNullableLong(ps, 2, roomId);
             ps.executeUpdate();
         }
     }
@@ -185,8 +185,8 @@ public final class CampaignStateRepository {
         s.Notes = rs.getString("notes");
         long dungeonMapId = rs.getLong("dungeon_map_id");
         s.DungeonMapId = rs.wasNull() ? null : dungeonMapId;
-        long dungeonSquareId = rs.getLong("dungeon_square_id");
-        s.DungeonSquareId = rs.wasNull() ? null : dungeonSquareId;
+        long dungeonRoomId = rs.getLong("dungeon_room_id");
+        s.DungeonRoomId = rs.wasNull() ? null : dungeonRoomId;
         return s;
     }
 

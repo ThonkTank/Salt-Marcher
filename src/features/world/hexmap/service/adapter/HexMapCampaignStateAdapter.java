@@ -1,5 +1,6 @@
 package features.world.hexmap.service.adapter;
 
+import features.campaignstate.api.CampaignStateReadApi;
 import features.campaignstate.api.CampaignStateApi;
 
 import java.sql.Connection;
@@ -17,7 +18,7 @@ public final class HexMapCampaignStateAdapter {
     }
 
     public static Optional<Long> getPartyTileId(Connection conn) throws SQLException {
-        return CampaignStateApi.get(conn).map(s -> s.PartyTileId);
+        return CampaignStateReadApi.getPartyTileId(conn);
     }
 
     public static void updatePartyTile(Connection conn, long tileId) throws SQLException {

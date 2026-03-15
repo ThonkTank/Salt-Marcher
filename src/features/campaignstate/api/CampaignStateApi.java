@@ -9,8 +9,6 @@ import java.util.Optional;
 
 public final class CampaignStateApi {
 
-    public record DungeonPosition(Long mapId, Long squareId) {}
-
     private CampaignStateApi() {
         throw new AssertionError("No instances");
     }
@@ -31,13 +29,8 @@ public final class CampaignStateApi {
         CampaignStateRepository.clearPartyTileOutsideRadius(conn, mapId, radius);
     }
 
-    public static Optional<DungeonPosition> getDungeonPosition(Connection conn) throws SQLException {
-        return CampaignStateRepository.getDungeonPosition(conn)
-                .map(position -> new DungeonPosition(position.mapId(), position.squareId()));
-    }
-
-    public static void setDungeonPosition(Connection conn, Long mapId, Long squareId) throws SQLException {
-        CampaignStateRepository.setDungeonPosition(conn, mapId, squareId);
+    public static void setDungeonPosition(Connection conn, Long mapId, Long roomId) throws SQLException {
+        CampaignStateRepository.setDungeonPosition(conn, mapId, roomId);
     }
 
     public static void clearDungeonPosition(Connection conn) throws SQLException {
