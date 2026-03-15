@@ -121,6 +121,41 @@ public final class DungeonSchemaSupport {
                 + "is_default_entry INTEGER NOT NULL DEFAULT 0,"
                 + "UNIQUE (square_id)"
                 + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_concept_levels ("
+                + "concept_level_id        INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "map_id                  INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "sort_order              INTEGER NOT NULL,"
+                + "start_level             INTEGER NOT NULL DEFAULT 1,"
+                + "end_level               INTEGER NOT NULL DEFAULT 1,"
+                + "progress_fraction       REAL NOT NULL DEFAULT 1.0,"
+                + "adventuring_days_target REAL NOT NULL DEFAULT 1.0,"
+                + "entrance_count          INTEGER NOT NULL DEFAULT 0,"
+                + "UNIQUE (map_id, sort_order)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_concept_party_profiles ("
+                + "map_id      INTEGER PRIMARY KEY REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "party_size  INTEGER NOT NULL DEFAULT 4"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_concept_level_connections ("
+                + "concept_connection_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "map_id                INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "level_a_id            INTEGER NOT NULL REFERENCES dungeon_concept_levels(concept_level_id) ON DELETE CASCADE,"
+                + "level_b_id            INTEGER NOT NULL REFERENCES dungeon_concept_levels(concept_level_id) ON DELETE CASCADE,"
+                + "CHECK(level_a_id <> level_b_id)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_concept_node_positions ("
+                + "concept_position_id   INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "map_id                INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "concept_level_id      INTEGER NOT NULL REFERENCES dungeon_concept_levels(concept_level_id) ON DELETE CASCADE,"
+                + "node_key              TEXT NOT NULL,"
+                + "node_type             TEXT NOT NULL CHECK(node_type IN ('entrance','level_transition')),"
+                + "entrance_index        INTEGER,"
+                + "concept_connection_id INTEGER REFERENCES dungeon_concept_level_connections(concept_connection_id) ON DELETE CASCADE,"
+                + "x                     REAL NOT NULL,"
+                + "y                     REAL NOT NULL,"
+                + "UNIQUE (map_id, concept_level_id, node_key)"
+                + ")");
+        stmt.execute("DROP TABLE IF EXISTS dungeon_concept_nodes");
         stmt.execute(createDungeonLinksTableSql("dungeon_links", true));
         stmt.execute(createDungeonPassagesTableSql("dungeon_passages", true));
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_walls ("
@@ -157,6 +192,16 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_area_encounter_tables_area ON dungeon_area_encounter_tables(area_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_area_encounter_tables_table ON dungeon_area_encounter_tables(table_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_endpoints_map ON dungeon_endpoints(map_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_levels_map ON dungeon_concept_levels(map_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_party_profiles_map ON dungeon_concept_party_profiles(map_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_connections_map ON dungeon_concept_level_connections(map_id)");
+        stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_dungeon_concept_connections_unique_pair "
+                + "ON dungeon_concept_level_connections(map_id, "
+                + "CASE WHEN level_a_id < level_b_id THEN level_a_id ELSE level_b_id END, "
+                + "CASE WHEN level_a_id < level_b_id THEN level_b_id ELSE level_a_id END)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_positions_map ON dungeon_concept_node_positions(map_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_positions_level ON dungeon_concept_node_positions(concept_level_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_positions_connection ON dungeon_concept_node_positions(concept_connection_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_links_map ON dungeon_links(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_passages_map ON dungeon_passages(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_walls_map ON dungeon_walls(map_id)");

@@ -7,6 +7,8 @@ import features.world.dungeonmap.model.editing.BrushShape;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorControls;
+import features.world.dungeonmap.ui.editor.chrome.map.DungeonMapControlsPane;
+import features.world.dungeonmap.ui.editor.chrome.map.DungeonMapDropdownPresenter;
 import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.state.DungeonPaintMode;
@@ -25,7 +27,6 @@ import features.world.dungeonmap.ui.editor.workflow.connection.DungeonConnection
 import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
 import features.world.dungeonmap.ui.editor.workflow.entity.DungeonEntityWorkflow;
 import features.world.dungeonmap.ui.editor.workflow.map.DungeonMapActions;
-import features.world.dungeonmap.ui.editor.workflow.map.DungeonMapDropdownPresenter;
 import features.world.dungeonmap.ui.editor.workflow.map.DungeonMapLoader;
 import features.world.dungeonmap.ui.editor.workflow.paint.DungeonSquareEditWorkflow;
 import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
@@ -135,7 +136,7 @@ public final class DungeonEditorController {
         mapActions.showNewMapDropdown(anchor);
     }
 
-    public void showEditMapDropdown(DungeonEditorControls.MapActionRequest request) {
+    public void showEditMapDropdown(DungeonMapControlsPane.MapActionRequest request) {
         mapActions.showEditMapDropdown(request);
     }
 

@@ -68,6 +68,15 @@ public class DungeonEditorView implements AppView {
         controller.onShow();
     }
 
+    public Long currentMapId() {
+        return state.currentMapId();
+    }
+
+    public void setPreferredMapId(Long mapId) {
+        state.setCurrentMapId(mapId);
+        controls.selectMap(mapId);
+    }
+
     private void bindControls() {
         controls.setOnMapSelected(controller::handleMapSelected);
         controls.setOnNewMapRequested(controller::showNewMapDropdown);

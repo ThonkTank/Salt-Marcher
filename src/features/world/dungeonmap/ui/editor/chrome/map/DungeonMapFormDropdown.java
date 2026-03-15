@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.map;
+package features.world.dungeonmap.ui.editor.chrome.map;
 
 import features.world.dungeonmap.model.domain.DungeonMap;
 import javafx.geometry.Insets;

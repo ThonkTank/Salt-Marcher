@@ -1,11 +1,11 @@
-package features.world.dungeonmap.ui.editor.workflow.map;
+package features.world.dungeonmap.ui.editor.chrome.map;
 
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonLinkAnchorType;
 import features.world.dungeonmap.model.domain.DungeonMap;
-import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.projection.DungeonMapState;
 
 import java.util.HashSet;
 import java.util.Set;

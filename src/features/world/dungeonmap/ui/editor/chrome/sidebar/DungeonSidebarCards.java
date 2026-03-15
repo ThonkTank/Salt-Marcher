@@ -7,7 +7,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-final class DungeonSidebarCards {
+public final class DungeonSidebarCards {
 
     private DungeonSidebarCards() {
     }

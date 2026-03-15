@@ -1108,6 +1108,40 @@
     -fx-spacing: 6;
     -fx-padding: 2 0 0 0;
 }
+.concept-level-card {
+    -fx-padding: 8;
+    -fx-spacing: 5;
+}
+.concept-level-card.selected {
+    -fx-border-color: -sm-accent, -sm-border-default;
+    -fx-border-width: 1, 1;
+    -fx-border-insets: 0, 1;
+    -fx-background-color: -sm-bg-panel-strong;
+}
+.concept-compact-field {
+    -fx-spacing: 1;
+}
+.concept-compact-field > .label {
+    -fx-font-size: 10px;
+}
+.concept-compact-spinner,
+.concept-compact-text-field,
+.concept-compact-combo {
+    -fx-font-size: 11px;
+}
+.concept-compact-spinner > .text-field,
+.concept-compact-text-field {
+    -fx-padding: 2 5 2 5;
+}
+.concept-compact-combo > .list-cell,
+.concept-compact-combo > .text-field {
+    -fx-padding: 2 5 2 5;
+    -fx-font-size: 11px;
+}
+.concept-connection-token {
+    -fx-padding: 2 6 2 6;
+    -fx-spacing: 4;
+}
 .dungeon-gm-card {
     -fx-background-color: -sm-bg-panel;
     -fx-border-color: -sm-stat-red transparent transparent transparent;

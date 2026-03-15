@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.workflow.map;
+package features.world.dungeonmap.ui.editor.chrome.map;
 
 import features.world.dungeonmap.model.domain.DungeonMap;
 import features.world.dungeonmap.model.projection.DungeonMapState;
@@ -29,11 +29,11 @@ public final class DungeonMapDropdownPresenter {
                 (newWidth, newHeight) -> impactPreviewService.shrinkImpactText(map, currentState, newWidth, newHeight),
                 () -> impactPreviewService.deleteImpactText(map, currentState),
                 result -> {
-            mapFormDropdown.hide();
-            onUpdateRequested.accept(result);
-        }, () -> {
-            mapFormDropdown.hide();
-            onDeleteRequested.run();
-        });
+                    mapFormDropdown.hide();
+                    onUpdateRequested.accept(result);
+                }, () -> {
+                    mapFormDropdown.hide();
+                    onDeleteRequested.run();
+                });
     }
 }

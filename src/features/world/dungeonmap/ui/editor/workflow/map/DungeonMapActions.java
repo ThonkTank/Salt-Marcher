@@ -1,8 +1,9 @@
 package features.world.dungeonmap.ui.editor.workflow.map;
 
 import features.world.dungeonmap.service.DungeonMapCommandService;
+import features.world.dungeonmap.ui.editor.chrome.map.DungeonMapControlsPane;
+import features.world.dungeonmap.ui.editor.chrome.map.DungeonMapDropdownPresenter;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorControls;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
@@ -36,7 +37,7 @@ public final class DungeonMapActions {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonMapActions.createMap()", ex)));
     }
 
-    public void showEditMapDropdown(DungeonEditorControls.MapActionRequest request) {
+    public void showEditMapDropdown(DungeonMapControlsPane.MapActionRequest request) {
         mapDropdowns.showEditMapDropdown(
                 request.anchor(),
                 request.map(),
