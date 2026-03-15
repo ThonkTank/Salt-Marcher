@@ -5,6 +5,7 @@ import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonRuntimeState;
 import features.world.dungeonmap.ui.shared.DungeonSplitWorkspace;
+import features.world.dungeonmap.ui.shared.DungeonViewMode;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.shell.AppView;
@@ -74,6 +75,7 @@ public final class DungeonView implements AppView {
         currentState = state;
         DungeonLayout layout = state.layout();
         Long activeRoomId = state.activeRoomId();
+        workspace.setViewMode(DungeonViewMode.GRID);
         workspace.showLayout(layout, activeRoomId, activeRoomId);
         controls.selectMap(layout.map().mapId());
         controls.setActiveRoomName(layout.rooms().stream()

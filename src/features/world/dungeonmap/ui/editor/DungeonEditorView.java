@@ -6,6 +6,7 @@ import features.world.dungeonmap.model.DungeonMap;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.Point2i;
 import features.world.dungeonmap.ui.shared.DungeonSplitWorkspace;
+import features.world.dungeonmap.ui.shared.DungeonViewMode;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.components.MessageDropdown;
@@ -28,6 +29,7 @@ public final class DungeonEditorView implements AppView {
     private Long currentMapId;
     private DungeonLayout currentLayout;
     private DungeonRoom selectedRoom;
+    private DungeonViewMode viewMode = DungeonViewMode.GRID;
     private boolean initialLoadDone;
 
     public DungeonEditorView(DetailsNavigator detailsNavigator) {
@@ -36,6 +38,7 @@ public final class DungeonEditorView implements AppView {
         workspace.setOnRoomMoved(this::moveRoom);
         controls.setOnMapSelected(this::loadLayoutAsync);
         controls.setOnReloadRequested(this::reloadCurrentMap);
+        controls.setOnViewModeChanged(this::setViewMode);
         statePane.setOnCreateMap(this::createMap);
         statePane.setOnRenameMap(this::renameMap, () -> currentMapId);
         statePane.setOnAddRoom(this::addRoom);
@@ -115,6 +118,8 @@ public final class DungeonEditorView implements AppView {
 
     private void render() {
         controls.setSelectionText(selectedRoom == null ? "Kein Raum gewählt" : selectedRoom.name());
+        controls.selectViewMode(viewMode);
+        workspace.setViewMode(viewMode);
         Long selectedRoomId = selectedRoom == null ? null : selectedRoom.roomId();
         workspace.showLayout(currentLayout, selectedRoomId, null);
         statePane.bindLayout(currentLayout, selectedRoom);
@@ -197,5 +202,10 @@ public final class DungeonEditorView implements AppView {
         } else {
             loadMaps();
         }
+    }
+
+    private void setViewMode(DungeonViewMode viewMode) {
+        this.viewMode = viewMode == null ? DungeonViewMode.GRID : viewMode;
+        workspace.setViewMode(this.viewMode);
     }
 }
