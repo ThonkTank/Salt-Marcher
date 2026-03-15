@@ -160,6 +160,7 @@ public class PartyPopup {
         shortRestButton.setOnAction(event -> onShortRest());
         longRestButton.setOnAction(event -> onLongRest());
         HBox restActions = new HBox(6, shortRestButton, longRestButton);
+        restActions.getStyleClass().add("party-rest-actions");
 
         VBox panel = new VBox(
                 header,
@@ -194,8 +195,9 @@ public class PartyPopup {
         triggerButton.layout();
         Bounds screenBounds = triggerButton.localToScreen(triggerButton.getBoundsInLocal());
         if (screenBounds != null) {
+            final double popupWidth = 380;
             popup.show(triggerButton.getScene().getWindow(),
-                    screenBounds.getMaxX() - 320,
+                    screenBounds.getMaxX() - popupWidth,
                     screenBounds.getMaxY() + 2);
         }
     }
@@ -231,40 +233,59 @@ public class PartyPopup {
         updateSummary(result.members());
     }
 
-    private HBox buildMemberRow(PlayerCharacter pc) {
-        Label nameLabel = new Label(pc.Name + "  Lv " + pc.Level);
-        nameLabel.getStyleClass().add("text-secondary");
-        Label detailLabel = new Label(buildMemberDetails(pc));
-        detailLabel.getStyleClass().add("text-muted");
-        Label progressionLabel = new Label(buildProgressionDetails(pc));
-        progressionLabel.getStyleClass().add("text-muted");
-        progressionLabel.setWrapText(true);
-        VBox infoBox = new VBox(2, nameLabel, detailLabel, progressionLabel);
+    private VBox buildMemberRow(PlayerCharacter pc) {
+        Label nameLabel = new Label(pc.Name);
+        nameLabel.getStyleClass().add("party-member-name");
+        nameLabel.setWrapText(true);
+        HBox.setHgrow(nameLabel, Priority.ALWAYS);
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Label levelLabel = new Label("Lv " + pc.Level);
+        levelLabel.getStyleClass().add("party-member-level");
+        HBox headerRow = new HBox(8, nameLabel, levelLabel);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
+        Label detailLabel = new Label(buildMemberDetails(pc));
+        detailLabel.getStyleClass().add("party-member-meta");
+        detailLabel.setWrapText(true);
+
+        Label progressionLabel = new Label(buildProgressionDetails(pc));
+        progressionLabel.getStyleClass().add("party-member-progression");
+        progressionLabel.setWrapText(true);
 
         TextField xpField = createIntegerField();
         xpField.setPromptText("XP");
-        xpField.setPrefColumnCount(5);
+        xpField.getStyleClass().add("party-xp-field");
+        xpField.setPrefColumnCount(6);
         Button xpButton = new Button("+XP");
         xpButton.getStyleClass().add("compact");
         xpButton.setOnAction(e -> onAwardXp(pc, xpField));
         xpField.setOnAction(e -> onAwardXp(pc, xpField));
+        HBox xpActions = new HBox(6, xpField, xpButton);
+        xpActions.getStyleClass().add("party-xp-actions");
+        xpActions.setAlignment(Pos.CENTER_LEFT);
 
-        Button removeBtn = new Button("Entfernen");
+        Button removeBtn = new Button("Raus");
         removeBtn.getStyleClass().addAll("party-btn", "remove");
         removeBtn.setTooltip(new Tooltip("Aus aktiver Party entfernen\n(Charakter bleibt in der Datenbank)"));
         removeBtn.setOnAction(e -> onRemoveFromParty(pc));
 
-        Button editBtn = new Button("Bearbeiten");
+        Button editBtn = new Button("Bearb.");
         editBtn.getStyleClass().addAll("party-btn", "edit");
         editBtn.setTooltip(new Tooltip("Charakter bearbeiten"));
         editBtn.setOnAction(e -> onEditCharacter(editBtn, pc));
 
-        HBox row = new HBox(8, infoBox, spacer, xpField, xpButton, removeBtn, editBtn);
+        Region actionSpacer = new Region();
+        HBox.setHgrow(actionSpacer, Priority.ALWAYS);
+        HBox managementActions = new HBox(6, editBtn, removeBtn);
+        managementActions.getStyleClass().add("party-management-actions");
+        managementActions.setAlignment(Pos.CENTER_RIGHT);
+
+        HBox actionRow = new HBox(8, xpActions, actionSpacer, managementActions);
+        actionRow.getStyleClass().add("party-action-row");
+        actionRow.setAlignment(Pos.CENTER_LEFT);
+
+        VBox row = new VBox(4, headerRow, detailLabel, progressionLabel, actionRow);
         row.getStyleClass().add("party-row");
-        row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
 
@@ -279,7 +300,7 @@ public class PartyPopup {
             double avgLevelExact = members.stream().mapToInt(pc -> pc.Level).average().orElse(1.0);
             int avgLvl = PartyService.averageLevel(members);
             triggerButton.setText(size + " Charaktere, \u00D8 Lv " + avgLvl + " \u25BE");
-            summaryLabel.setText("\u00D8 Lv: " + String.format("%.1f", avgLevelExact));
+            summaryLabel.setText(size + " Charaktere  \u00B7  \u00D8 Lv " + String.format("%.1f", avgLevelExact));
             shortRestButton.setDisable(false);
             longRestButton.setDisable(false);
         }
