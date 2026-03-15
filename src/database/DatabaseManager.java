@@ -27,6 +27,7 @@ public final class DatabaseManager {
     private static final String APP_DATA_DIR_NAME = "salt-marcher";
     private static final String DB_FILE_NAME = "game.db";
     private static final Path DATABASE_PATH = resolveDatabasePath();
+    private static final Path SQLITE_NATIVE_TMP_DIR = DATABASE_PATH.getParent().resolve("sqlite-native");
     private static final String URL = "jdbc:sqlite:" + DATABASE_PATH.toAbsolutePath();
     private static final Pattern HIT_DICE_PATTERN =
             Pattern.compile("^\\s*(\\d+)\\s*[dD]\\s*(\\d+)\\s*(([+-])\\s*(\\d+))?\\s*$");
@@ -43,6 +44,7 @@ public final class DatabaseManager {
      */
     public static Connection getConnection() throws SQLException {
         prepareDatabasePath();
+        ensureSqliteDriverLoaded();
         Connection conn = DriverManager.getConnection(URL);
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("PRAGMA foreign_keys = ON");
@@ -90,6 +92,7 @@ public final class DatabaseManager {
         }
         try {
             Files.createDirectories(DATABASE_PATH.getParent());
+            prepareSqliteNativeTempDirectory();
             migrateLegacyDatabaseIfNeeded();
             LOGGER.log(Level.INFO, "Using SQLite database at {0}", DATABASE_PATH.toAbsolutePath());
             databasePathPrepared = true;
@@ -117,6 +120,21 @@ public final class DatabaseManager {
         return Path.of(System.getProperty("user.home"), ".local", "share", APP_DATA_DIR_NAME, DB_FILE_NAME)
                 .toAbsolutePath()
                 .normalize();
+    }
+
+    private static void prepareSqliteNativeTempDirectory() throws Exception {
+        Files.createDirectories(SQLITE_NATIVE_TMP_DIR);
+        // sqlite-jdbc extracts its bundled native library before the first connection opens.
+        // Keep it inside the app data directory so launches do not depend on /tmp mount semantics.
+        System.setProperty("org.sqlite.tmpdir", SQLITE_NATIVE_TMP_DIR.toString());
+    }
+
+    private static void ensureSqliteDriverLoaded() throws SQLException {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException ex) {
+            throw new SQLException("SQLite JDBC driver not found on the runtime classpath.", ex);
+        }
     }
 
     /**
