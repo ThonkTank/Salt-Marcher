@@ -12,6 +12,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
@@ -88,7 +89,11 @@ public class EncounterRosterPane extends VBox {
         title.getStyleClass().add("title");
         title.setPadding(new Insets(0, 0, 4, 0));
 
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+
         HBox headerRow = new HBox(8);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
         difficultyLabel.getStyleClass().add("text-secondary");
         templateLabel.getStyleClass().addAll("small", "text-secondary");
         levelLabel.getStyleClass().add("text-secondary");
@@ -141,10 +146,10 @@ public class EncounterRosterPane extends VBox {
         generateButton.setTooltip(new Tooltip("Encounter generieren (Alt+G)"));
         generateButton.setOnAction(e -> { if (onGenerate != null) onGenerate.run(); });
 
-        saveEncounterButton = new Button("Für Dungeon speichern");
-        saveEncounterButton.getStyleClass().add("compact");
+        saveEncounterButton = new Button("Speichern");
+        saveEncounterButton.getStyleClass().addAll("compact", "neutral-action");
         saveEncounterButton.setDisable(true);
-        saveEncounterButton.setMaxWidth(Double.MAX_VALUE);
+        saveEncounterButton.setMinWidth(Region.USE_PREF_SIZE);
         saveEncounterButton.setTooltip(new Tooltip("Persistiert dieses Encounter zur späteren Verwendung auf der Dungeon-Map."));
         saveEncounterButton.setOnAction(e -> {
             if (onSaveEncounter == null || slots.isEmpty()) {
@@ -162,6 +167,9 @@ public class EncounterRosterPane extends VBox {
                     });
         });
 
+        HBox titleRow = new HBox(8, title, headerSpacer, saveEncounterButton);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
+
         startCombatButton = new Button("_Kampf starten");
         startCombatButton.getStyleClass().add("accent");
         startCombatButton.setDisable(true);
@@ -169,11 +177,17 @@ public class EncounterRosterPane extends VBox {
         startCombatButton.setTooltip(new Tooltip("Kampf starten (Alt+K)"));
         startCombatButton.setOnAction(e -> { if (onStartCombat != null) onStartCombat.run(); });
 
-        VBox actionRegion = new VBox(8, generateButton, saveEncounterButton, startCombatButton);
+        generateButton.getStyleClass().remove("accent");
+        generateButton.getStyleClass().add("neutral-action");
+
+        HBox.setHgrow(generateButton, Priority.ALWAYS);
+        HBox.setHgrow(startCombatButton, Priority.ALWAYS);
+        HBox actionRegion = new HBox(12, generateButton, startCombatButton);
+        actionRegion.setAlignment(Pos.CENTER_LEFT);
         actionRegion.setPadding(new Insets(8, 0, 0, 0));
         VBox.setVgrow(actionRegion, Priority.NEVER);
 
-        getChildren().addAll(title, headerRow, difficultyMeter, thresholdRow, adjXpLabel,
+        getChildren().addAll(titleRow, headerRow, difficultyMeter, thresholdRow, adjXpLabel,
                 contentArea, advisoryRegion, ThemeColors.controlSeparator(), actionRegion);
     }
 

@@ -4,6 +4,8 @@ import features.creatures.model.Creature;
 import features.encounter.builder.ui.EncounterRosterPane;
 import features.encounter.combat.application.EncounterCombatService;
 import features.encounter.combat.model.Combatant;
+import features.encounter.combat.model.PartyCombatantCandidate;
+import features.encounter.combat.model.PcCombatant;
 import features.encounter.combat.service.CombatSession;
 import features.encounter.model.Encounter;
 import features.encounter.internal.EncounterAsyncTaskSupport;
@@ -23,6 +25,7 @@ import ui.shell.SceneHandle;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
@@ -93,6 +96,30 @@ public final class CombatWorkflowController {
         updateCombatStatus();
     }
 
+    private List<PartyCombatantCandidate> getMissingPartyMembers() {
+        if (trackerPane == null) {
+            return List.of();
+        }
+        Set<Long> activePcIds = trackerPane.getCombatants().stream()
+                .filter(PcCombatant.class::isInstance)
+                .map(PcCombatant.class::cast)
+                .map(PcCombatant::getPartyMemberId)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        return partySupplier.get().stream()
+                .filter(member -> member != null && (member.id() == null || !activePcIds.contains(member.id())))
+                .map(member -> new PartyCombatantCandidate(member.id(), member.name(), member.level()))
+                .toList();
+    }
+
+    private void addPartyMemberToCombat(PartyCombatantCandidate partyMember, int initiative) {
+        if (trackerPane == null || partyMember == null) {
+            return;
+        }
+        trackerPane.addPartyMember(partyMember, initiative);
+        updateCombatStatus();
+    }
+
     public CombatTrackerPane getTrackerPane() {
         return trackerPane;
     }
@@ -132,6 +159,8 @@ public final class CombatWorkflowController {
         trackerPane.setOnEnsureStatBlock(detailsNavigator::ensureStatBlock);
         trackerPane.setOnCombatStateChanged(this::updateCombatStatus);
         trackerPane.setOnEndCombat(this::onEndCombat);
+        trackerPane.setMissingPartyMemberProvider(this::getMissingPartyMembers);
+        trackerPane.setOnAddPartyMember(this::addPartyMemberToCombat);
         trackerPane.startCombat(combatants);
 
         onEnterCombatMode.run();

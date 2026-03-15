@@ -3,6 +3,7 @@ package features.encounter.combat.service;
 import features.creatures.model.Creature;
 import features.encounter.combat.model.Combatant;
 import features.encounter.combat.model.MonsterCombatant;
+import features.encounter.combat.model.PartyCombatantCandidate;
 import features.encounter.combat.model.PcCombatant;
 import features.encounter.model.EncounterCreatureSnapshot;
 
@@ -123,6 +124,14 @@ public class CombatSession {
             mc.rename(CombatSetup.uniqueNameFor(creature, combatants));
             combatants.add(mc);
         });
+    }
+
+    public void addPartyMember(PartyCombatantCandidate partyMember, int initiative) {
+        if (partyMember == null) return;
+        Long partyMemberId = partyMember.partyMemberId();
+        // Running combat keeps at most one combatant per party member even if the add action is repeated.
+        if (partyMemberId != null && containsPartyMember(partyMemberId)) return;
+        mutateAndNormalize(() -> combatants.add(CombatSetup.createPcCombatant(partyMember, initiative)));
     }
 
     /**
@@ -268,6 +277,27 @@ public class CombatSession {
         });
     }
 
+    public void healInactiveDead(InactiveEnemy deadEnemy, int heal) {
+        if (deadEnemy == null || deadEnemy.status() != EnemyStatus.DEAD || heal <= 0) return;
+        MonsterCombatant restored = copyCombatant(deadEnemy.combatant());
+        // Revived enemies never exceed their archived max HP, even if the heal amount overshoots.
+        restored.setCurrentHp(Math.min(restored.getCurrentHp() + heal, restored.getMaxHp()));
+        mutateAndNormalize(TurnRef.forMonster(restored), TurnRef.forMonster(restored), () -> {
+            inactiveEnemies.removeIf(ie -> ie.id() == deadEnemy.id());
+            combatants.add(restored);
+        });
+    }
+
+    public void reviveDead(InactiveEnemy deadEnemy, int hitPoints) {
+        if (deadEnemy == null || deadEnemy.status() != EnemyStatus.DEAD || hitPoints <= 0) return;
+        MonsterCombatant restored = copyCombatant(deadEnemy.combatant());
+        restored.setCurrentHp(Math.min(hitPoints, restored.getMaxHp()));
+        mutateAndNormalize(TurnRef.forMonster(restored), TurnRef.forMonster(restored), () -> {
+            inactiveEnemies.removeIf(ie -> ie.id() == deadEnemy.id());
+            combatants.add(restored);
+        });
+    }
+
     private void archiveMonster(MonsterCombatant mc, EnemyStatus status) {
         inactiveEnemies.add(new InactiveEnemy(inactiveEnemySeq++, copyCombatant(mc), status));
     }
@@ -282,6 +312,15 @@ public class CombatSession {
                 source.getAc(),
                 source.getLoot(),
                 source.getCreatureRef());
+    }
+
+    private boolean containsPartyMember(Long partyMemberId) {
+        for (Combatant combatant : combatants) {
+            if (combatant instanceof PcCombatant pc && partyMemberId.equals(pc.getPartyMemberId())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean isAlive(CombatTurnGrouper.GroupedTurnEntry entry) {

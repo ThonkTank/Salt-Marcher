@@ -193,6 +193,15 @@
 .button.accent:hover {
     -fx-background-color: -sm-accent-hover;
 }
+.button.neutral-action {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-text-fill: -sm-text-primary;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-width: 1;
+}
+.button.neutral-action:hover {
+    -fx-background-color: derive(-sm-bg-elevated, 18%);
+}
 .button.compact {
     -fx-padding: 2 6 2 6;
     -fx-font-size: 11px;
@@ -1142,6 +1151,81 @@
     -fx-padding: 2 6 2 6;
     -fx-spacing: 4;
 }
+.dungeon-concept-edge {
+    -fx-stroke: rgba(180, 186, 193, 0.42);
+    -fx-stroke-width: 3.4;
+}
+.dungeon-concept-edge-hit {
+    -fx-stroke: rgba(255, 255, 255, 0.001);
+    -fx-stroke-width: 14;
+}
+.dungeon-concept-edge:target {
+    -fx-stroke: rgba(214, 224, 234, 0.9);
+    -fx-stroke-width: 5;
+}
+.dungeon-concept-draft-edge {
+    -fx-stroke: rgba(203, 214, 226, 0.78);
+    -fx-stroke-width: 3.8;
+    -fx-stroke-dash-array: 7 5;
+}
+.dungeon-concept-node {
+    -fx-pick-on-bounds: false;
+}
+.dungeon-concept-node-glyph {
+    -fx-min-width: 28;
+    -fx-min-height: 28;
+    -fx-pref-width: 28;
+    -fx-pref-height: 28;
+    -fx-max-width: 28;
+    -fx-max-height: 28;
+}
+.dungeon-concept-node-dot {
+    -fx-fill: -sm-bg-panel-strong;
+    -fx-stroke: -sm-border-default;
+    -fx-stroke-width: 1.5;
+}
+.dungeon-concept-node:hover .dungeon-concept-node-dot {
+    -fx-stroke: rgba(241, 246, 250, 0.96);
+    -fx-stroke-width: 3;
+}
+.dungeon-concept-node-icon {
+    -fx-font-size: 13px;
+}
+.dungeon-concept-node-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-primary;
+    -fx-padding: 0 2 0 2;
+    -fx-effect: dropshadow(gaussian, rgba(8, 11, 13, 0.98), 3, 0, 0, 0);
+}
+.dungeon-concept-node-entrance .dungeon-concept-node-dot {
+    -fx-fill: rgba(181, 151, 95, 0.95);
+    -fx-stroke: #e8d4a8;
+}
+.dungeon-concept-node-transition .dungeon-concept-node-dot {
+    -fx-fill: rgba(88, 127, 154, 0.95);
+    -fx-stroke: #acc7d8;
+}
+.dungeon-concept-node-exit .dungeon-concept-node-dot {
+    -fx-fill: rgba(142, 98, 136, 0.95);
+    -fx-stroke: #dfb8da;
+}
+.dungeon-concept-node-room .dungeon-concept-node-dot {
+    -fx-fill: rgba(111, 122, 95, 0.95);
+    -fx-stroke: #d0d7bd;
+}
+.dungeon-concept-node:selected .dungeon-concept-node-dot,
+.dungeon-concept-node:focused .dungeon-concept-node-dot,
+.dungeon-concept-node:connecting .dungeon-concept-node-dot {
+    -fx-stroke: -sm-accent;
+    -fx-stroke-width: 3;
+}
+.dungeon-concept-node:selected .dungeon-concept-node-label {
+    -fx-text-fill: -sm-text-primary;
+}
+.dungeon-concept-node:hover .dungeon-concept-node-label {
+    -fx-text-fill: rgba(247, 250, 252, 0.98);
+}
 .dungeon-gm-card {
     -fx-background-color: -sm-bg-panel;
     -fx-border-color: -sm-stat-red transparent transparent transparent;
@@ -1390,8 +1474,8 @@
     -fx-border-radius: 6;
     -fx-background-radius: 6;
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 12, 0, 0, 3);
-    -fx-min-width: 280;
-    -fx-pref-width: 320;
+    -fx-min-width: 340;
+    -fx-pref-width: 380;
 }
 .party-header {
     -fx-background-color: -sm-bg-elevated;
@@ -1405,13 +1489,57 @@
     -fx-font-weight: bold;
     -fx-padding: 6 8 2 8;
 }
+.party-list {
+    -fx-spacing: 6;
+    -fx-padding: 0 8 0 8;
+}
 .party-row {
-    -fx-padding: 5 8 5 8;
-    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-padding: 8;
+    -fx-spacing: 4;
+    -fx-background-color: -sm-bg-card;
+    -fx-background-radius: 6;
+    -fx-border-color: -sm-border-subtle;
     -fx-border-width: 1;
+    -fx-border-radius: 6;
 }
 .party-row:hover {
-    -fx-background-color: derive(-sm-bg-panel, 15%);
+    -fx-background-color: derive(-sm-bg-card, 12%);
+}
+.party-member-name {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+.party-member-level {
+    -fx-background-color: -sm-bg-elevated;
+    -fx-background-radius: 999;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-width: 1;
+    -fx-border-radius: 999;
+    -fx-padding: 1 8 1 8;
+    -fx-font-size: 11px;
+    -fx-text-fill: -sm-text-secondary;
+}
+.party-member-meta {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+}
+.party-member-progression {
+    -fx-text-fill: -sm-text-muted;
+    -fx-font-size: 11px;
+}
+.party-action-row {
+    -fx-padding: 2 0 0 0;
+}
+.party-xp-actions {
+    -fx-alignment: center-left;
+}
+.party-xp-field {
+    -fx-pref-width: 68;
+    -fx-max-width: 68;
+}
+.party-management-actions {
+    -fx-alignment: center-right;
 }
 .party-btn {
     -fx-padding: 2 8 2 8;
@@ -1461,6 +1589,9 @@
 }
 .party-search {
     -fx-padding: 8 8 4 8;
+}
+.party-rest-actions {
+    -fx-padding: 4 8 6 8;
 }
 .party-suggestions {
     -fx-background-color: -sm-bg-card;

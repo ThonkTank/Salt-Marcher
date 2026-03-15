@@ -3,6 +3,7 @@ package features.encounter.combat.ui;
 import features.creatures.model.Creature;
 import features.encounter.combat.model.Combatant;
 import features.encounter.combat.model.MonsterCombatant;
+import features.encounter.combat.model.PartyCombatantCandidate;
 import features.encounter.combat.service.CombatSession;
 import features.encounter.combat.service.CombatTurnGrouper;
 import features.encounter.internal.EncounterDifficultyUiText;
@@ -36,7 +37,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /** ScenePane content for combat mode. */
 public class CombatTrackerPane extends VBox {
@@ -56,12 +59,16 @@ public class CombatTrackerPane extends VBox {
     private final ScrollPane cardScroll;
     private final Label roundLabel;
     private final Label statusBar;
+    private final Button addPartyMemberButton;
     private final Button nextTurnButton;
     private final HBox endButtonContainer;
 
     private Consumer<StatBlockRequest> onRequestStatBlock;
     private Runnable onEndCombat;
+    private Supplier<List<PartyCombatantCandidate>> missingPartyMemberProvider = List::of;
+    private BiConsumer<PartyCombatantCandidate, Integer> onAddPartyMember;
     private Button endCombatButton;
+    private final CombatPartyMemberDropdown addPartyMemberDropdown = new CombatPartyMemberDropdown();
 
     public CombatTrackerPane() {
         setSpacing(0);
@@ -73,6 +80,15 @@ public class CombatTrackerPane extends VBox {
         statusBar = new Label();
         statusBar.getStyleClass().add("text-secondary");
         statusBar.setPadding(new Insets(0, 8, 4, 8));
+
+        addPartyMemberButton = new Button("SC hinzufügen");
+        addPartyMemberButton.getStyleClass().addAll("compact", "neutral-action");
+        addPartyMemberButton.setTooltip(new Tooltip("Aktives Party-Mitglied in den laufenden Kampf aufnehmen"));
+        addPartyMemberButton.setOnAction(e -> showAddPartyMemberPopup(addPartyMemberButton));
+
+        HBox headerActions = new HBox(addPartyMemberButton);
+        headerActions.setAlignment(Pos.CENTER_RIGHT);
+        headerActions.setPadding(new Insets(0, 8, 4, 8));
 
         cardList = new VBox(6);
         cardList.setPadding(new Insets(4, 8, 4, 8));
@@ -97,9 +113,10 @@ public class CombatTrackerPane extends VBox {
         HBox.setHgrow(nextTurnButton, Priority.ALWAYS);
         HBox.setHgrow(endButtonContainer, Priority.ALWAYS);
 
-        getChildren().addAll(roundLabel, statusBar, cardScroll, turnRow);
+        getChildren().addAll(roundLabel, statusBar, headerActions, cardScroll, turnRow);
         coordinator.setOnRenderStateChanged(newState -> {
             state = newState;
+            syncHeaderActions();
             buildAllCards();
         });
     }
@@ -112,6 +129,14 @@ public class CombatTrackerPane extends VBox {
         coordinator.setOnCombatStateChanged(callback);
     }
     public void setOnEndCombat(Runnable callback) { this.onEndCombat = callback; }
+    void setMissingPartyMemberProvider(Supplier<List<PartyCombatantCandidate>> provider) {
+        this.missingPartyMemberProvider = provider == null ? List::of : provider;
+        syncHeaderActions();
+    }
+    void setOnAddPartyMember(BiConsumer<PartyCombatantCandidate, Integer> callback) {
+        this.onAddPartyMember = callback;
+        syncHeaderActions();
+    }
 
     /** Handle a combat keyboard shortcut. Returns true if the event was consumed. */
     public boolean handleCombatKey(javafx.scene.input.KeyEvent e) {
@@ -196,6 +221,10 @@ public class CombatTrackerPane extends VBox {
         coordinator.addReinforcement(creature);
     }
 
+    void addPartyMember(PartyCombatantCandidate partyMember, int initiative) {
+        coordinator.addPartyMember(partyMember, initiative);
+    }
+
     private boolean isAlive(CombatTurnGrouper.GroupedTurnEntry entry) {
         if (entry.kind() == CombatTurnGrouper.GroupedTurnKind.PC) return entry.pc() != null && entry.pc().isAlive();
         for (MonsterCombatant mc : entry.monsters()) if (mc.isAlive()) return true;
@@ -261,7 +290,7 @@ public class CombatTrackerPane extends VBox {
             deadHeader.setPadding(new Insets(4, 0, 0, 0));
             cardList.getChildren().add(deadHeader);
             for (List<CombatSession.InactiveEnemy> group : deadGroups.values()) {
-                cardList.getChildren().add(buildInactiveRow(group, false));
+                cardList.getChildren().add(buildDeadRow(group));
             }
         }
     }
@@ -296,6 +325,33 @@ public class CombatTrackerPane extends VBox {
         return row;
     }
 
+    private HBox buildDeadRow(List<CombatSession.InactiveEnemy> group) {
+        CombatSession.InactiveEnemy sample = group.get(0);
+        MonsterCombatant mc = sample.combatant();
+
+        HBox row = new HBox(8);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(0, 0, 0, 12));
+
+        Label name = new Label(mc.getName() + "  x" + group.size());
+        name.getStyleClass().add("combat-name");
+
+        StackPane hpBar = buildHpBar(mc.getName(), mc.getCurrentHp(), mc.getMaxHp());
+        hpBar.getStyleClass().add("clickable");
+        hpBar.setOnMouseClicked(e -> {
+            showInactiveDeadHpPopup(hpBar, sample);
+            e.consume();
+        });
+
+        Label init = new Label("Init " + mc.getInitiative());
+        init.getStyleClass().add("combat-detail");
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        row.getChildren().addAll(name, hpBar, init, spacer);
+        return row;
+    }
+
     private String groupKey(CombatSession.InactiveEnemy ie) {
         MonsterCombatant mc = ie.combatant();
         String id = mc.getCreatureRef() != null && mc.getCreatureRef().getId() != null ? String.valueOf(mc.getCreatureRef().getId()) : "unknown";
@@ -314,21 +370,6 @@ public class CombatTrackerPane extends VBox {
 
         TopRowResult topRow = buildTopRow(entry, index, isActive, isDead);
         card.getChildren().add(topRow.row);
-
-        MonsterCombatant front = frontMonster(entry);
-        if (entry.kind() != CombatTurnGrouper.GroupedTurnKind.PC && front != null && front.getCreatureRef() != null && !isDead) {
-            HBox detail = new HBox(8);
-            detail.setPadding(new Insets(0, 0, 0, 32));
-            String text = "CR " + front.getCreatureRef().getCrDisplay();
-            if (front.getCreatureRef().getCreatureType() != null && !front.getCreatureRef().getCreatureType().isBlank()) {
-                text += "  |  " + front.getCreatureRef().getCreatureType();
-            }
-            if (isMob(entry)) text += "  |  Mob";
-            Label d = new Label(text);
-            d.getStyleClass().add("combat-detail");
-            detail.getChildren().add(d);
-            card.getChildren().add(detail);
-        }
 
         attachContextMenu(card, entry, isDead);
         return new CardResult(card);
@@ -621,6 +662,42 @@ public class CombatTrackerPane extends VBox {
         coordinator.restoreRemoved(removed);
     }
 
+    private void reviveDead(CombatSession.InactiveEnemy deadEnemy, int hitPoints) {
+        coordinator.healInactiveDead(deadEnemy, hitPoints);
+    }
+
+    private void showInactiveDeadHpPopup(Node anchor, CombatSession.InactiveEnemy deadEnemy) {
+        int[] value = {1};
+        SpinnerParts sp = buildSpinner(1, value);
+        sp.field().setAccessibleText("Heilung für toten Gegner eingeben");
+        Popup popup = new Popup();
+        popup.setAutoHide(true);
+        Button healButton = new Button("+");
+        Runnable apply = () -> {
+            int hp = Math.max(1, parseOrDefault(sp.field().getText(), value[0]));
+            popup.hide();
+            reviveDead(deadEnemy, hp);
+        };
+        healButton.setOnAction(e -> apply.run());
+        sp.field().setOnAction(e -> apply.run());
+        showAtAnchor(popup, anchor, buildPopupContent(sp.dec(), sp.field(), sp.inc(), healButton), sp.field());
+    }
+
+    private void showAddPartyMemberPopup(Node anchor) {
+        List<PartyCombatantCandidate> candidates = missingPartyMemberProvider.get();
+        if (candidates == null || candidates.isEmpty() || onAddPartyMember == null) {
+            syncHeaderActions();
+            return;
+        }
+        addPartyMemberDropdown.show(anchor, candidates, onAddPartyMember);
+    }
+
+    private void syncHeaderActions() {
+        List<PartyCombatantCandidate> missingMembers = missingPartyMemberProvider.get();
+        boolean canAddPartyMember = onAddPartyMember != null && missingMembers != null && !missingMembers.isEmpty();
+        addPartyMemberButton.setDisable(!canAddPartyMember);
+    }
+
     // ---- Popup helpers ----
 
     private record SpinnerParts(Button dec, TextField field, Button inc) {}
@@ -660,6 +737,7 @@ public class CombatTrackerPane extends VBox {
 
     private void showAtAnchor(Popup popup, Node anchor, HBox content, TextField focus) {
         popup.getContent().add(content);
+        popup.setOnHidden(e -> anchor.requestFocus());
         Bounds bounds = anchor.localToScreen(anchor.getBoundsInLocal());
         if (bounds != null) popup.show(anchor, bounds.getMinX(), bounds.getMaxY() + 8);
         Platform.runLater(focus::requestFocus);

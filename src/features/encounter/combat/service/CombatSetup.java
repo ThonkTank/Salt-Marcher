@@ -3,6 +3,7 @@ package features.encounter.combat.service;
 import features.creatures.model.Creature;
 import features.encounter.combat.model.Combatant;
 import features.encounter.combat.model.MonsterCombatant;
+import features.encounter.combat.model.PartyCombatantCandidate;
 import features.encounter.combat.model.PcCombatant;
 import features.encounter.combat.model.PreparedEncounterSlot;
 import features.encounter.model.EncounterCreatureSnapshot;
@@ -109,11 +110,7 @@ public final class CombatSetup {
 
         // PCs with manually entered initiative.
         for (int i = 0; i < party.size(); i++) {
-            PartyApi.PartyMemberSummary pc = party.get(i);
-            PcCombatant cs     = new PcCombatant();
-            cs.rename(pc.name() + " (Lv." + pc.level() + ")");
-            cs.setInitiative(pcInitiatives.get(i));
-            combatants.add(cs);
+            combatants.add(createPcCombatant(party.get(i), pcInitiatives.get(i)));
         }
 
         // Monsters are always individual combatants. Runtime mob grouping is handled by CombatTrackerPane.
@@ -177,5 +174,22 @@ public final class CombatSetup {
 
     public static MonsterCombatant createReinforcement(EncounterCreatureSnapshot creature) {
         return MonsterCombatantFactory.createReinforcement(creature);
+    }
+
+    public static PcCombatant createPcCombatant(PartyApi.PartyMemberSummary partyMember, int initiative) {
+        return createPcCombatant(
+                new PartyCombatantCandidate(partyMember.id(), partyMember.name(), partyMember.level()),
+                initiative);
+    }
+
+    public static PcCombatant createPcCombatant(PartyCombatantCandidate partyMember, int initiative) {
+        if (partyMember == null) {
+            throw new IllegalArgumentException("partyMember must be non-null");
+        }
+        PcCombatant combatant = new PcCombatant();
+        combatant.setPartyMemberId(partyMember.partyMemberId());
+        combatant.rename(partyMember.displayName() + " (Lv." + partyMember.level() + ")");
+        combatant.setInitiative(initiative);
+        return combatant;
     }
 }

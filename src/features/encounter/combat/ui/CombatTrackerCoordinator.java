@@ -3,9 +3,11 @@ package features.encounter.combat.ui;
 import features.creatures.model.Creature;
 import features.encounter.combat.model.Combatant;
 import features.encounter.combat.model.MonsterCombatant;
+import features.encounter.combat.model.PartyCombatantCandidate;
 import features.encounter.combat.service.CombatSession;
 import features.encounter.combat.service.CombatTurnGrouper;
 import features.creatures.api.StatBlockRequest;
+import features.party.api.PartyApi;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -38,6 +40,10 @@ final class CombatTrackerCoordinator {
 
     void addReinforcement(Creature creature) {
         dispatchCommand(() -> session.addReinforcement(creature));
+    }
+
+    void addPartyMember(PartyCombatantCandidate partyMember, int initiative) {
+        dispatchCommand(() -> session.addPartyMember(partyMember, initiative));
     }
 
     void nextTurn() {
@@ -91,6 +97,10 @@ final class CombatTrackerCoordinator {
 
     void restoreRemoved(CombatSession.InactiveEnemy removed) {
         dispatchCommand(() -> session.restoreRemoved(removed));
+    }
+
+    void healInactiveDead(CombatSession.InactiveEnemy deadEnemy, int heal) {
+        dispatchCommand(() -> session.healInactiveDead(deadEnemy, heal));
     }
 
     private void fireCombatStateChanged() {
