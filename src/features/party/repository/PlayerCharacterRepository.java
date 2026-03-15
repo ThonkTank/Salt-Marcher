@@ -38,11 +38,9 @@ public final class PlayerCharacterRepository {
             int armorClass,
             boolean inParty
     ) throws SQLException {
-        // Legacy compatibility: short_rests_taken stays in the table shape for existing DBs,
-        // but new gameplay logic no longer reads it into the active party model.
         String sql = "INSERT INTO player_characters("
-                + "name, player_name, level, current_xp, xp_since_long_rest, xp_since_short_rest, short_rests_taken,"
-                + " passive_perception, ac, in_party) VALUES(?,?,?,?,?,?,?,?,?,?)";
+                + "name, player_name, level, current_xp, xp_since_long_rest, xp_since_short_rest,"
+                + " passive_perception, ac, in_party) VALUES(?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql,
                 java.sql.Statement.RETURN_GENERATED_KEYS)) {
 
@@ -53,10 +51,9 @@ public final class PlayerCharacterRepository {
             ps.setInt(4, safeCurrentXp);
             ps.setInt(5, 0);
             ps.setInt(6, 0);
-            ps.setInt(7, 0);
-            ps.setInt(8, passivePerception);
-            ps.setInt(9, armorClass);
-            ps.setInt(10, inParty ? 1 : 0);
+            ps.setInt(7, passivePerception);
+            ps.setInt(8, armorClass);
+            ps.setInt(9, inParty ? 1 : 0);
             ps.executeUpdate();
 
             try (ResultSet keys = ps.getGeneratedKeys()) {

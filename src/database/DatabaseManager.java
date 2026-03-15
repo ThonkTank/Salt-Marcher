@@ -147,9 +147,6 @@ public final class DatabaseManager {
                     + "current_xp         INTEGER NOT NULL DEFAULT 0,"
                     + "xp_since_long_rest INTEGER NOT NULL DEFAULT 0,"
                     + "xp_since_short_rest INTEGER NOT NULL DEFAULT 0,"
-                    // Legacy compatibility: short rest count is no longer an active gameplay rule,
-                    // but older local databases may still carry this column.
-                    + "short_rests_taken  INTEGER NOT NULL DEFAULT 0,"
                     + "passive_perception INTEGER NOT NULL DEFAULT 10,"
                     + "ac                 INTEGER NOT NULL DEFAULT 10,"
                     + "in_party           INTEGER NOT NULL DEFAULT 1"
@@ -786,8 +783,7 @@ public final class DatabaseManager {
         ensureColumn(conn, "player_characters", "current_xp", "INTEGER NOT NULL DEFAULT 0");
         ensureColumn(conn, "player_characters", "xp_since_long_rest", "INTEGER NOT NULL DEFAULT 0");
         ensureColumn(conn, "player_characters", "xp_since_short_rest", "INTEGER NOT NULL DEFAULT 0");
-        // Legacy compatibility only; the app no longer reads this field into active gameplay decisions.
-        ensureColumn(conn, "player_characters", "short_rests_taken", "INTEGER NOT NULL DEFAULT 0");
+        dropColumnIfExists(conn, "player_characters", "short_rests_taken");
         backfillCharacterXpFloors(conn);
     }
 
