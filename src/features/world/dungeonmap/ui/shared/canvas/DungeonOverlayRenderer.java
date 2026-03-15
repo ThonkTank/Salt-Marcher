@@ -494,6 +494,8 @@ final class DungeonOverlayRenderer {
         if (colors.size() == 1) {
             return colors.get(0);
         }
+        // Shared tiles stay visibly shared: keep every participating feature color in the hatch
+        // instead of collapsing the tile to a single "primary" feature.
         List<Stop> stops = new ArrayList<>();
         double bandSize = 1.0 / colors.size();
         for (int i = 0; i < colors.size(); i++) {
@@ -544,9 +546,7 @@ final class DungeonOverlayRenderer {
                 features.add(feature);
             }
         }
-        features.sort(Comparator.comparingInt((DungeonFeature feature) -> feature.sortOrder())
-                .thenComparing(DungeonFeature::toString, String.CASE_INSENSITIVE_ORDER)
-                .thenComparing(DungeonFeature::featureId));
+        features.sort(DungeonRoomFeatureOrder.comparator());
         return features;
     }
 

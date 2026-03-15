@@ -1156,8 +1156,8 @@
     -fx-font-weight: bold;
 }
 .dungeon-room-editor-sheet {
-    -fx-pref-width: 760;
-    -fx-max-width: 760;
+    -fx-pref-width: 980;
+    -fx-max-width: 980;
 }
 .dungeon-room-editor-scroll {
     -fx-background-color: transparent;
@@ -1171,6 +1171,58 @@
 }
 .dungeon-room-inspector-footer-button {
     -fx-max-width: Infinity;
+}
+.dungeon-detail-section {
+    -fx-spacing: 8;
+    -fx-padding: 0 0 8 0;
+}
+.dungeon-detail-action-body {
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-size: 13px;
+    -fx-line-spacing: 1px;
+}
+.dungeon-room-briefing {
+    -fx-padding: 2 0 4 0;
+}
+.dungeon-feature-glance-flow {
+    -fx-line-spacing: 1px;
+    -fx-padding: 0 0 4 0;
+}
+.dungeon-feature-glance-flow Text {
+    -fx-fill: -sm-text-primary;
+}
+.dungeon-feature-glance-link {
+    -fx-padding: 0;
+    -fx-text-fill: -sm-stat-red-light;
+    -fx-font-weight: bold;
+    -fx-font-style: italic;
+    -fx-underline: false;
+}
+.dungeon-feature-glance-link:hover {
+    -fx-underline: true;
+}
+.dungeon-support-flow {
+    -fx-padding: 2 0 2 10;
+    -fx-line-spacing: 1px;
+}
+.dungeon-support-label {
+    -fx-fill: -sm-text-secondary;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}
+.dungeon-support-body {
+    -fx-text-fill: -sm-text-secondary;
+    -fx-fill: -sm-text-secondary;
+}
+.dungeon-feature-block {
+    -fx-spacing: 4;
+    -fx-padding: 2 0 6 0;
+}
+.dungeon-feature-block-title {
+    -fx-padding: 0 0 2 0;
+}
+.dungeon-feature-block-body {
+    -fx-padding: 0 0 0 10;
 }
 .toolbar-divider {
     -fx-background-color: -sm-border-subtle;

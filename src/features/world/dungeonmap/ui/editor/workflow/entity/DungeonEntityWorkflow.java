@@ -56,6 +56,11 @@ public final class DungeonEntityWorkflow implements DungeonEntityInspectorAction
     public void updateRoomMetadata(
             long roomId,
             String name,
+            String lightLevel,
+            String visualDescription,
+            String soundsDescription,
+            String smellsDescription,
+            String otherDescription,
             String glanceDescription,
             String detailDescription,
             String reactiveChecks,
@@ -65,7 +70,18 @@ public final class DungeonEntityWorkflow implements DungeonEntityInspectorAction
             return;
         }
         DungeonUiAsyncSupport.submitAction(
-                () -> commands.updateRoomMetadata(roomId, name, glanceDescription, detailDescription, reactiveChecks, gmBackground),
+                () -> commands.updateRoomMetadata(
+                        roomId,
+                        name,
+                        lightLevel,
+                        visualDescription,
+                        soundsDescription,
+                        smellsDescription,
+                        otherDescription,
+                        glanceDescription,
+                        detailDescription,
+                        reactiveChecks,
+                        gmBackground),
                 () -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.room(roomId)),
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonEntityWorkflow.updateRoomMetadata()", ex));
     }
@@ -169,6 +185,11 @@ public final class DungeonEntityWorkflow implements DungeonEntityInspectorAction
         updateRoomMetadata(
                 room.roomId(),
                 room.name(),
+                room.lightLevel(),
+                room.visualDescription(),
+                room.soundsDescription(),
+                room.smellsDescription(),
+                room.otherDescription(),
                 room.glanceDescription(),
                 room.detailDescription(),
                 room.reactiveChecks(),

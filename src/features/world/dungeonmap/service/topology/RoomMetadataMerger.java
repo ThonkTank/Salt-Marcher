@@ -57,12 +57,22 @@ final class RoomMetadataMerger {
     }
 
     private static void upsertMergedMetadata(Connection conn, DungeonRoom primaryRoom, List<DungeonRoom> secondaryRooms) throws SQLException {
+        String mergedLightLevel = mergeText(primaryRoom.lightLevel(), secondaryRooms, DungeonRoom::lightLevel);
+        String mergedVisualDescription = mergeText(primaryRoom.visualDescription(), secondaryRooms, DungeonRoom::visualDescription);
+        String mergedSoundsDescription = mergeText(primaryRoom.soundsDescription(), secondaryRooms, DungeonRoom::soundsDescription);
+        String mergedSmellsDescription = mergeText(primaryRoom.smellsDescription(), secondaryRooms, DungeonRoom::smellsDescription);
+        String mergedOtherDescription = mergeText(primaryRoom.otherDescription(), secondaryRooms, DungeonRoom::otherDescription);
         String mergedGlanceDescription = mergeText(primaryRoom.glanceDescription(), secondaryRooms, DungeonRoom::glanceDescription);
         String mergedDetailDescription = mergeText(primaryRoom.detailDescription(), secondaryRooms, DungeonRoom::detailDescription);
         String mergedReactiveChecks = mergeText(primaryRoom.reactiveChecks(), secondaryRooms, DungeonRoom::reactiveChecks);
         String mergedGmBackground = mergeText(primaryRoom.gmBackground(), secondaryRooms, DungeonRoom::gmBackground);
         Long mergedAreaId = mergeAreaAssignment(primaryRoom.areaId(), secondaryRooms);
-        if (sameText(primaryRoom.glanceDescription(), mergedGlanceDescription)
+        if (sameText(primaryRoom.lightLevel(), mergedLightLevel)
+                && sameText(primaryRoom.visualDescription(), mergedVisualDescription)
+                && sameText(primaryRoom.soundsDescription(), mergedSoundsDescription)
+                && sameText(primaryRoom.smellsDescription(), mergedSmellsDescription)
+                && sameText(primaryRoom.otherDescription(), mergedOtherDescription)
+                && sameText(primaryRoom.glanceDescription(), mergedGlanceDescription)
                 && sameText(primaryRoom.detailDescription(), mergedDetailDescription)
                 && sameText(primaryRoom.reactiveChecks(), mergedReactiveChecks)
                 && sameText(primaryRoom.gmBackground(), mergedGmBackground)
@@ -73,6 +83,11 @@ final class RoomMetadataMerger {
                 primaryRoom.roomId(),
                 primaryRoom.mapId(),
                 primaryRoom.name(),
+                mergedLightLevel,
+                mergedVisualDescription,
+                mergedSoundsDescription,
+                mergedSmellsDescription,
+                mergedOtherDescription,
                 mergedGlanceDescription,
                 mergedDetailDescription,
                 mergedReactiveChecks,

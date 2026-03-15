@@ -8,6 +8,11 @@ public interface DungeonEntityInspectorActions {
     void updateRoomMetadata(
             long roomId,
             String name,
+            String lightLevel,
+            String visualDescription,
+            String soundsDescription,
+            String smellsDescription,
+            String otherDescription,
             String glanceDescription,
             String detailDescription,
             String reactiveChecks,

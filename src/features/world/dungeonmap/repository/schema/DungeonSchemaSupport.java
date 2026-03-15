@@ -86,12 +86,22 @@ public final class DungeonSchemaSupport {
                 + "room_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "map_id        INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "name          TEXT NOT NULL,"
+                + "light_level   TEXT,"
+                + "visual_description TEXT,"
+                + "sounds_description TEXT,"
+                + "smells_description TEXT,"
+                + "other_description TEXT,"
                 + "glance_description TEXT,"
                 + "detail_description TEXT,"
                 + "reactive_checks TEXT,"
                 + "gm_background TEXT,"
                 + "area_id       INTEGER REFERENCES dungeon_areas(area_id) ON DELETE SET NULL"
                 + ")");
+        ensureColumn(stmt, "dungeon_rooms", "light_level", "TEXT");
+        ensureColumn(stmt, "dungeon_rooms", "visual_description", "TEXT");
+        ensureColumn(stmt, "dungeon_rooms", "sounds_description", "TEXT");
+        ensureColumn(stmt, "dungeon_rooms", "smells_description", "TEXT");
+        ensureColumn(stmt, "dungeon_rooms", "other_description", "TEXT");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_squares ("
                 + "square_id      INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "map_id         INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"

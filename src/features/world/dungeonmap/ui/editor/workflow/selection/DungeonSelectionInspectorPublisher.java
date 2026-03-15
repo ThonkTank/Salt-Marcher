@@ -81,15 +81,15 @@ public final class DungeonSelectionInspectorPublisher {
         if (feature == null || feature.featureId() == null) {
             return;
         }
-        Object entryKey = featureEntryKey(feature.featureId());
+        DungeonRoom room = inspectorContentFactory.resolveOwningRoom(feature);
+        if (room == null || room.roomId() == null) {
+            return;
+        }
+        Object entryKey = roomEntryKey(room.roomId());
         if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
             return;
         }
-        detailsNavigator.showContent(
-                titleOrFallback(feature.name(), feature.category() == null ? "Feature" : feature.category().label()),
-                entryKey,
-                () -> inspectorContentFactory.buildFeatureCard(feature),
-                () -> inspectorContentFactory.buildFeatureFooter(feature));
+        detailsNavigator.showContent(titleOrFallback(room.name(), "Raum"), entryKey, () -> inspectorContentFactory.buildRoomCard(room), () -> inspectorContentFactory.buildRoomFooter(room));
     }
 
     private void showEndpointInspector(DungeonEndpoint endpoint, boolean refreshOnlyIfVisible) {
@@ -135,10 +135,6 @@ public final class DungeonSelectionInspectorPublisher {
 
     private static String areaEntryKey(Long areaId) {
         return "dungeon-editor-area:" + areaId;
-    }
-
-    private static String featureEntryKey(Long featureId) {
-        return "dungeon-editor-feature:" + featureId;
     }
 
     private static String endpointEntryKey(Long endpointId) {

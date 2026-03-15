@@ -37,6 +37,11 @@ public final class DungeonMapCommandService {
     public void updateRoomMetadata(
             long roomId,
             String name,
+            String lightLevel,
+            String visualDescription,
+            String soundsDescription,
+            String smellsDescription,
+            String otherDescription,
             String glanceDescription,
             String detailDescription,
             String reactiveChecks,
@@ -45,6 +50,11 @@ public final class DungeonMapCommandService {
         DungeonFeatureEditingService.updateRoomMetadata(
                 roomId,
                 name,
+                lightLevel,
+                visualDescription,
+                soundsDescription,
+                smellsDescription,
+                otherDescription,
                 glanceDescription,
                 detailDescription,
                 reactiveChecks,

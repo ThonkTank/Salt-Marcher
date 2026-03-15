@@ -4,9 +4,7 @@ import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.projection.DungeonMapState;
-import features.world.dungeonmap.ui.shared.format.DungeonRoomFeatureOrder;
-import features.world.dungeonmap.ui.shared.inspector.DungeonRoomGmCard;
-import javafx.geometry.Insets;
+import features.world.dungeonmap.ui.shared.format.DungeonRoomDetailRenderer;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -15,11 +13,11 @@ public final class DungeonRuntimeInspectorContentFactory {
 
     public Node buildRoomCard(DungeonMapState mapState, DungeonSquare square, DungeonRoom room) {
         VBox box = new VBox(10);
-        box.setPadding(new Insets(12));
+        box.setPadding(new javafx.geometry.Insets(12));
 
         String areaName = resolveAreaName(mapState, square, room);
         if (room != null && mapState != null && mapState.index() != null) {
-            box.getChildren().add(new DungeonRoomGmCard(room, areaName, DungeonRoomFeatureOrder.orderedRoomFeatures(mapState.index(), room.roomId())));
+            DungeonRoomDetailRenderer.appendStructuredDetails(box, mapState.index(), room, areaName);
         } else {
             box.getChildren().add(section("Beschreibung", "— Keine Beschreibung —"));
         }

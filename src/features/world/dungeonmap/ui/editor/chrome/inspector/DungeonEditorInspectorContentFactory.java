@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonAreaEncounterTableLink;
 import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
-import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
 import features.world.dungeonmap.model.domain.DungeonLink;
 import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
@@ -13,19 +12,11 @@ import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
-import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
-import features.world.dungeonmap.ui.shared.format.DungeonRoomFeatureOrder;
-import features.world.dungeonmap.ui.shared.format.DungeonFeatureDetailRenderer;
-import features.world.dungeonmap.ui.shared.inspector.DungeonRoomGmCard;
 import features.world.dungeonmap.ui.shared.format.DungeonAreaEncounterText;
+import features.world.dungeonmap.ui.shared.format.DungeonRoomDetailRenderer;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
@@ -58,24 +49,7 @@ public final class DungeonEditorInspectorContentFactory {
             box.getChildren().add(DungeonInspectorCards.secondary("Raum nicht gefunden."));
             return box;
         }
-        box.getChildren().add(
-                new DungeonRoomGmCard(room, resolveAreaName(room.areaId()), orderedRoomFeatures(room.roomId()), new DungeonRoomGmCard.Callbacks() {
-                    @Override
-                    public void saveRoom(DungeonRoom updatedRoom) {
-                        entityActions.updateRoomMetadata(
-                                updatedRoom.roomId(),
-                                updatedRoom.name(),
-                                updatedRoom.glanceDescription(),
-                                updatedRoom.detailDescription(),
-                                updatedRoom.reactiveChecks(),
-                                updatedRoom.gmBackground());
-                    }
-
-                    @Override
-                    public void saveFeature(DungeonFeature feature) {
-                        entityActions.saveFeature(feature);
-                    }
-                }));
+        DungeonRoomDetailRenderer.appendStructuredDetails(box, currentIndex(), room, resolveAreaName(room.areaId()));
         appendRoomEndpointSection(box, room.roomId());
         appendRoomPassageSection(box, room.roomId());
         return box;
@@ -104,7 +78,12 @@ public final class DungeonEditorInspectorContentFactory {
             box.getChildren().add(DungeonInspectorCards.secondary("Feature nicht gefunden."));
             return box;
         }
-        DungeonFeatureDetailRenderer.appendStructuredDetails(box, feature, resolveEncounterName(feature.encounterId()));
+        DungeonRoom room = resolveOwningRoom(feature);
+        if (room != null) {
+            DungeonRoomDetailRenderer.appendStructuredDetails(box, currentIndex(), room, resolveAreaName(room.areaId()));
+            return box;
+        }
+        box.getChildren().add(DungeonInspectorCards.secondary("Dieses Feature ist aktuell keinem Raum zugeordnet."));
         List<DungeonFeatureTile> tiles = featureTiles(feature.featureId());
         box.getChildren().add(DungeonInspectorCards.secondary("Felder: " + tiles.size()));
         DungeonInspectorCards.appendListSection(box, "Positionen", describeFeatureTiles(tiles));
@@ -257,36 +236,25 @@ public final class DungeonEditorInspectorContentFactory {
         return currentIndex().linksForAnchor(anchor);
     }
 
-    private List<String> describeRoomFeatures(Long roomId) {
-        if (roomId == null) {
-            return List.of();
+    public DungeonRoom resolveOwningRoom(DungeonFeature feature) {
+        if (feature == null || feature.featureId() == null) {
+            return null;
         }
-        Map<Long, List<String>> positionsByFeature = new LinkedHashMap<>();
-        for (DungeonSquare roomSquare : roomSquares(roomId)) {
-            for (DungeonFeature feature : currentIndex().featuresAtSquare(roomSquare.squareId())) {
-                if (feature.featureId() == null) {
-                    continue;
-                }
-                for (DungeonFeatureTile tile : featureTiles(feature.featureId())) {
-                    if (tile.squareId() != roomSquare.squareId().longValue()) {
-                        continue;
-                    }
-                    positionsByFeature.computeIfAbsent(feature.featureId(), ignored -> new ArrayList<>())
-                            .add(DungeonInspectorCards.formatPosition(tile.x(), tile.y()));
-                }
+        Map<Long, Integer> roomTileCounts = new LinkedHashMap<>();
+        for (DungeonFeatureTile tile : featureTiles(feature.featureId())) {
+            DungeonSquare square = currentIndex().findSquare(tile.squareId());
+            if (square == null || square.roomId() == null) {
+                continue;
             }
+            roomTileCounts.merge(square.roomId(), 1, Integer::sum);
         }
-        List<String> lines = new ArrayList<>();
-        for (Map.Entry<Long, List<String>> entry : positionsByFeature.entrySet()) {
-            DungeonFeature feature = currentIndex().findFeature(entry.getKey());
-            lines.add(DungeonInspectorCards.titleOrFallback(feature == null ? null : feature.toString(), "Feature")
-                    + " (" + String.join(", ", entry.getValue()) + ")");
-        }
-        return lines;
-    }
-
-    private List<DungeonFeature> orderedRoomFeatures(Long roomId) {
-        return DungeonRoomFeatureOrder.orderedRoomFeatures(currentIndex(), roomId);
+        return roomTileCounts.entrySet().stream()
+                .sorted(Map.Entry.<Long, Integer>comparingByValue(Comparator.reverseOrder())
+                        .thenComparing(Map.Entry::getKey))
+                .map(entry -> currentIndex().findRoom(entry.getKey()))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
     }
 
     private List<String> describeRooms(List<DungeonRoom> rooms) {
@@ -331,11 +299,6 @@ public final class DungeonEditorInspectorContentFactory {
     private String resolveAreaName(Long areaId) {
         DungeonArea area = currentIndex().findArea(areaId);
         return area == null ? null : area.name();
-    }
-
-    private String resolveEncounterName(Long encounterId) {
-        DungeonEncounterSummary encounter = DungeonInspectorCards.findById(state.encounters(), encounterId, DungeonEncounterSummary::encounterId);
-        return encounter == null ? null : encounter.name();
     }
 
     private String resolveLinkCounterpartName(DungeonLink link, DungeonLinkAnchor currentAnchor) {

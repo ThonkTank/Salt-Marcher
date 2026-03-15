@@ -14,6 +14,7 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -26,6 +27,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 public final class DungeonRoomEditorDropdown {
+    private static final double PANEL_WIDTH = 980;
+    private static final double VIEWPORT_WIDTH = 944;
+    private static final double VIEWPORT_HEIGHT = 560;
 
     private final VBox panel = new VBox(12);
     private final VBox content = new VBox(12);
@@ -34,12 +38,23 @@ public final class DungeonRoomEditorDropdown {
     public DungeonRoomEditorDropdown() {
         panel.getStyleClass().addAll("dropdown-window", "dungeon-room-editor-sheet");
         panel.setPadding(new Insets(12));
-        panel.setPrefWidth(760);
+        panel.setMinWidth(PANEL_WIDTH);
+        panel.setPrefWidth(PANEL_WIDTH);
+        panel.setMaxWidth(PANEL_WIDTH);
+
+        content.setFillWidth(true);
+        content.setMinWidth(VIEWPORT_WIDTH);
+        content.setPrefWidth(VIEWPORT_WIDTH);
+        content.setMaxWidth(VIEWPORT_WIDTH);
 
         ScrollPane scrollPane = new ScrollPane(content);
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.setPrefViewportHeight(720);
+        scrollPane.setPrefViewportWidth(VIEWPORT_WIDTH);
+        scrollPane.setPrefViewportHeight(VIEWPORT_HEIGHT);
+        scrollPane.setMinWidth(VIEWPORT_WIDTH);
+        scrollPane.setPrefWidth(VIEWPORT_WIDTH);
+        scrollPane.setMaxWidth(VIEWPORT_WIDTH);
         scrollPane.getStyleClass().add("dungeon-room-editor-scroll");
 
         panel.getChildren().add(scrollPane);
@@ -86,6 +101,9 @@ public final class DungeonRoomEditorDropdown {
     private Node buildHeader(DungeonRoom room) {
         Label title = new Label("Raum bearbeiten: " + (room.name() == null || room.name().isBlank() ? "Raum" : room.name()));
         title.getStyleClass().add("dropdown-title");
+        title.setWrapText(true);
+        title.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(title, Priority.ALWAYS);
         Button closeButton = new Button("Schließen");
         closeButton.setOnAction(event -> hide());
         HBox row = new HBox(8, title, spacer(), closeButton);
@@ -99,6 +117,9 @@ public final class DungeonRoomEditorDropdown {
                 : feature.name();
         Label title = new Label("Feature bearbeiten: " + label);
         title.getStyleClass().add("dropdown-title");
+        title.setWrapText(true);
+        title.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(title, Priority.ALWAYS);
         Button closeButton = new Button("Schließen");
         closeButton.setOnAction(event -> hide());
         HBox row = new HBox(8, title, spacer(), closeButton);
@@ -109,23 +130,37 @@ public final class DungeonRoomEditorDropdown {
     private Node buildRoomEditor(DungeonRoom room, Consumer<DungeonRoom> onSaveRoom) {
         VBox card = sectionCard("Raum");
         TextField nameField = new TextField(room.name() == null ? "" : room.name());
-        TextArea glanceArea = textArea(room.glanceDescription(), 4);
-        TextArea detailArea = textArea(room.detailDescription(), 8);
-        TextArea reactiveArea = textArea(room.reactiveChecks(), 4);
-        TextArea gmArea = textArea(room.gmBackground(), 4);
+        TextArea lightArea = textArea(room.lightLevel());
+        TextArea visualArea = textArea(room.visualDescription());
+        TextArea soundsArea = textArea(room.soundsDescription());
+        TextArea smellsArea = textArea(room.smellsDescription());
+        TextArea otherArea = textArea(room.otherDescription());
+        TextArea reactiveArea = textArea(room.reactiveChecks());
+        TextArea gmArea = textArea(room.gmBackground());
         Button saveButton = new Button("Raum speichern");
-        saveButton.setOnAction(event -> onSaveRoom.accept(room.withDetails(
+        saveButton.setOnAction(event -> onSaveRoom.accept(room.withMetadata(
                 nameField.getText().trim(),
-                glanceArea.getText(),
-                detailArea.getText(),
+                lightArea.getText(),
+                visualArea.getText(),
+                soundsArea.getText(),
+                smellsArea.getText(),
+                otherArea.getText(),
+                room.glanceDescription(),
+                room.detailDescription(),
                 reactiveArea.getText(),
                 gmArea.getText())));
         card.getChildren().addAll(
                 field("Name", nameField),
-                field("Blicktext", glanceArea),
-                field("Detailbeschreibung", detailArea),
-                field("Reaktive Checks", reactiveArea),
-                field("GM-Hintergrund", gmArea),
+                twoColumnFields(
+                        field("Lichtlevel", lightArea),
+                        field("Visuelle Beschreibung", visualArea)),
+                twoColumnFields(
+                        field("Geräusche", soundsArea),
+                        field("Gerüche", smellsArea)),
+                twoColumnFields(
+                        field("Anderes", otherArea),
+                        field("Mechanische Effekte und Inhalte", reactiveArea)),
+                field("GM-Details", gmArea),
                 actionRow(saveButton));
         return card;
     }
@@ -136,8 +171,11 @@ public final class DungeonRoomEditorDropdown {
             Consumer<DungeonFeature> onSaveFeature
     ) {
         VBox wrapper = new VBox(10);
+        wrapper.setMaxWidth(Double.MAX_VALUE);
         Label title = new Label("Features");
         title.getStyleClass().add("dungeon-gm-section-header");
+        title.setWrapText(true);
+        title.setMaxWidth(Double.MAX_VALUE);
         wrapper.getChildren().add(title);
         for (DungeonFeature feature : features == null ? List.<DungeonFeature>of() : features) {
             wrapper.getChildren().add(buildFeatureEditor(feature, encounters, onSaveFeature));
@@ -170,10 +208,10 @@ public final class DungeonRoomEditorDropdown {
         sortOrderSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(-999, 999, feature.sortOrder()));
         sortOrderSpinner.setEditable(true);
         sortOrderSpinner.setMaxWidth(Double.MAX_VALUE);
-        TextArea glanceArea = textArea(feature.glanceDescription(), 3);
-        TextArea detailArea = textArea(feature.detailDescription(), 6);
-        TextArea reactiveArea = textArea(feature.reactiveChecks(), 3);
-        TextArea gmArea = textArea(feature.gmBackground(), 3);
+        TextArea glanceArea = textArea(feature.glanceDescription());
+        TextArea detailArea = textArea(feature.detailDescription());
+        TextArea reactiveArea = textArea(feature.reactiveChecks());
+        TextArea gmArea = textArea(feature.gmBackground());
 
         Button saveButton = new Button("Feature speichern");
         saveButton.setOnAction(event -> {
@@ -191,14 +229,18 @@ public final class DungeonRoomEditorDropdown {
         });
 
         card.getChildren().addAll(
-                field("Name", nameField),
-                field("Kategorie", categoryCombo),
-                field("Encounter", encounterCombo),
-                field("Reihenfolge", sortOrderSpinner),
-                field("Blicktext", glanceArea),
-                field("Detailbeschreibung", detailArea),
-                field("Reaktive Checks", reactiveArea),
-                field("GM-Hintergrund", gmArea),
+                twoColumnFields(
+                        field("Name", nameField),
+                        field("Kategorie", categoryCombo)),
+                twoColumnFields(
+                        field("Encounter", encounterCombo),
+                        field("Reihenfolge", sortOrderSpinner)),
+                twoColumnFields(
+                        field("At a glance", glanceArea),
+                        field("Detailbeschreibung", detailArea)),
+                twoColumnFields(
+                        field("Mechanische Effekte und Inhalte", reactiveArea),
+                        field("GM details", gmArea)),
                 actionRow(saveButton));
         return card;
     }
@@ -207,25 +249,66 @@ public final class DungeonRoomEditorDropdown {
         VBox card = new VBox(8);
         card.getStyleClass().addAll("dungeon-editor-card", "dungeon-room-editor-card");
         card.setPadding(new Insets(10));
+        card.setMaxWidth(Double.MAX_VALUE);
         Label title = new Label(titleText);
         title.getStyleClass().add("dungeon-gm-block-title");
+        title.setWrapText(true);
+        title.setMaxWidth(Double.MAX_VALUE);
         card.getChildren().add(title);
         return card;
     }
 
     private static VBox field(String title, Node input) {
         VBox box = new VBox(6);
+        box.setMaxWidth(Double.MAX_VALUE);
         Label label = new Label(title);
         label.getStyleClass().addAll("section-header", "text-muted");
         box.getChildren().addAll(label, input);
+        if (input instanceof Region region) {
+            region.setMaxWidth(Double.MAX_VALUE);
+        }
         return box;
     }
 
-    private static TextArea textArea(String value, int rows) {
+    private static Node twoColumnFields(Node left, Node right) {
+        GridPane grid = new GridPane();
+        grid.setHgap(12);
+        grid.setVgap(0);
+        grid.setMaxWidth(Double.MAX_VALUE);
+        GridPane.setHgrow(left, Priority.ALWAYS);
+        GridPane.setHgrow(right, Priority.ALWAYS);
+        grid.add(left, 0, 0);
+        grid.add(right, 1, 0);
+        return grid;
+    }
+
+    private static TextArea textArea(String value) {
         TextArea area = new TextArea(value == null ? "" : value);
         area.setWrapText(true);
-        area.setPrefRowCount(rows);
+        area.setPrefRowCount(1);
+        area.setMinHeight(Region.USE_PREF_SIZE);
+        bindCompactHeight(area);
         return area;
+    }
+
+    private static void bindCompactHeight(TextArea area) {
+        updateTextAreaHeight(area);
+        area.textProperty().addListener((obs, oldValue, newValue) -> updateTextAreaHeight(area));
+    }
+
+    private static void updateTextAreaHeight(TextArea area) {
+        int rows = estimatedRows(area == null ? null : area.getText());
+        area.setPrefRowCount(rows);
+        area.setMaxHeight(Region.USE_PREF_SIZE);
+    }
+
+    private static int estimatedRows(String value) {
+        if (value == null || value.isBlank()) {
+            return 1;
+        }
+        int lineCount = value.split("\\R", -1).length;
+        int wrappedEstimate = Math.max(1, (int) Math.ceil(value.length() / 80.0));
+        return Math.max(1, Math.min(3, Math.max(lineCount, wrappedEstimate)));
     }
 
     private static HBox actionRow(Node... nodes) {

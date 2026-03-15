@@ -12,7 +12,16 @@ import java.util.Map;
 
 public final class DungeonRoomFeatureOrder {
 
+    private static final Comparator<DungeonFeature> FEATURE_COMPARATOR = Comparator
+            .comparingInt(DungeonFeature::sortOrder)
+            .thenComparing(feature -> normalized(feature.name()))
+            .thenComparing(feature -> feature.featureId() == null ? Long.MAX_VALUE : feature.featureId());
+
     private DungeonRoomFeatureOrder() {
+    }
+
+    public static Comparator<DungeonFeature> comparator() {
+        return FEATURE_COMPARATOR;
     }
 
     public static List<DungeonFeature> orderedRoomFeatures(DungeonMapIndex index, Long roomId) {
@@ -28,10 +37,7 @@ public final class DungeonRoomFeatureOrder {
             }
         }
         List<DungeonFeature> features = new ArrayList<>(featuresById.values());
-        features.sort(Comparator
-                .comparingInt(DungeonFeature::sortOrder)
-                .thenComparing(feature -> normalized(feature.name()))
-                .thenComparing(feature -> feature.featureId() == null ? Long.MAX_VALUE : feature.featureId()));
+        features.sort(FEATURE_COMPARATOR);
         return features;
     }
 
