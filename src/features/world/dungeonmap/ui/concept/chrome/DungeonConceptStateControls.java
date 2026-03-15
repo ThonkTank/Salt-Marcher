@@ -7,6 +7,7 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -38,6 +39,15 @@ final class DungeonConceptStateControls {
                 HBox.setHgrow(region, Priority.NEVER);
             }
         }
+        return row;
+    }
+
+    static FlowPane wrappingRow(Node... nodes) {
+        FlowPane row = new FlowPane(8, 6);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setMaxWidth(Double.MAX_VALUE);
+        row.prefWrapLengthProperty().bind(row.widthProperty());
+        row.getChildren().addAll(nodes);
         return row;
     }
 

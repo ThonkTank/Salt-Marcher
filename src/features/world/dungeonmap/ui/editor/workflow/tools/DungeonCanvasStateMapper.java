@@ -3,11 +3,9 @@ package features.world.dungeonmap.ui.editor.workflow.tools;
 import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.state.DungeonPaintMode;
-import features.world.dungeonmap.ui.editor.state.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.state.WallEditorMode;
 import features.world.dungeonmap.ui.shared.canvas.DungeonCanvasColorMode;
 import features.world.dungeonmap.ui.shared.canvas.DungeonCanvasPaintMode;
-import features.world.dungeonmap.ui.shared.canvas.DungeonCanvasPassageMode;
 import features.world.dungeonmap.ui.shared.canvas.DungeonCanvasTool;
 import features.world.dungeonmap.ui.shared.canvas.DungeonCanvasWallMode;
 
@@ -28,9 +26,6 @@ public final class DungeonCanvasStateMapper {
             case WALL -> DungeonCanvasTool.WALL;
             case AREA_ASSIGN -> DungeonCanvasTool.AREA_ASSIGN;
             case FEATURE -> DungeonCanvasTool.FEATURE;
-            case PASSAGE -> DungeonCanvasTool.PASSAGE;
-            case ENDPOINT -> DungeonCanvasTool.ENDPOINT;
-            case LINK -> DungeonCanvasTool.LINK;
         };
     }
 
@@ -64,13 +59,4 @@ public final class DungeonCanvasStateMapper {
         };
     }
 
-    public static DungeonCanvasPassageMode toCanvasPassageMode(PassageEditorMode mode) {
-        if (mode == null) {
-            return DungeonCanvasPassageMode.PLACE_PASSAGE;
-        }
-        return switch (mode) {
-            case PLACE_PASSAGE -> DungeonCanvasPassageMode.PLACE_PASSAGE;
-            case DELETE_PASSAGE -> DungeonCanvasPassageMode.DELETE_PASSAGE;
-        };
-    }
 }

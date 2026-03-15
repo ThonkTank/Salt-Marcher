@@ -25,7 +25,7 @@ final class DungeonConceptSeedOperations {
         List<DungeonConceptLevel> levels = DungeonConceptLevelRepository.getLevels(conn, mapId);
         if (levels.isEmpty()) {
             DungeonConceptLevelRepository.insertLevel(conn,
-                    new DungeonConceptLevel(null, mapId, 1, 1, 1, 1.0, 1.0, 1));
+                    new DungeonConceptLevel(null, mapId, 1, 1, 1, 1.0, 1.0, 1, 0));
         }
     }
 }

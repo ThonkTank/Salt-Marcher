@@ -1,10 +1,9 @@
 package features.world.dungeonmap.ui.editor.state;
 
+import features.world.dungeonmap.model.domain.DungeonConnection;
 import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.domain.DungeonArea;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
 import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
@@ -52,12 +51,8 @@ public final class DungeonEditorState {
         return index().findFeature(featureId);
     }
 
-    public DungeonEndpoint findEndpoint(Long endpointId) {
-        return index().findEndpoint(endpointId);
-    }
-
-    public DungeonPassage findPassage(Long passageId) {
-        return index().findPassage(passageId);
+    public DungeonConnection findConnection(Long connectionId) {
+        return index().findConnection(connectionId);
     }
 
     public DungeonSelection currentSelection() {

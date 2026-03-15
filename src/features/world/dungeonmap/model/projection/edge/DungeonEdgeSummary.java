@@ -1,6 +1,5 @@
 package features.world.dungeonmap.model.projection.edge;
 
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
 import features.world.dungeonmap.model.rules.DungeonEdgeRules;
@@ -11,7 +10,6 @@ public record DungeonEdgeSummary(
         int y,
         PassageDirection direction,
         DungeonWall wall,
-        DungeonPassage passage,
         DungeonSquare sideASquare,
         DungeonSquare sideBSquare
 ) {
@@ -41,9 +39,5 @@ public record DungeonEdgeSummary(
 
     public boolean canEraseManualWall() {
         return wallPresent() && canCreateManualWall() && !requiresTopologyWall();
-    }
-
-    public boolean canCreatePassage() {
-        return DungeonEdgeRules.canCreatePassage(sideASquare, sideBSquare, canEraseManualWall());
     }
 }

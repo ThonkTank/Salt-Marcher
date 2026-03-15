@@ -6,6 +6,7 @@ public record DungeonConceptLevelConnection(
         Long levelAId,
         Long levelBId
 ) {
+    // Each record is one concrete transition instance between two levels; parallel transitions are intentional.
     public DungeonConceptLevelConnection {
         if (mapId == null || mapId <= 0) {
             throw new IllegalArgumentException("mapId must be positive");

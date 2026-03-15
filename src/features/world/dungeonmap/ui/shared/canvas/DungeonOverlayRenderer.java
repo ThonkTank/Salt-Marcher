@@ -1,33 +1,30 @@
 package features.world.dungeonmap.ui.shared.canvas;
 
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
-import features.world.dungeonmap.model.domain.DungeonEndpointRole;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
-import features.world.dungeonmap.model.domain.DungeonLink;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchorType;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
+import features.world.dungeonmap.model.projection.DungeonMapConnectionPath;
 import features.world.dungeonmap.ui.shared.format.DungeonRoomFeatureOrder;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
-import javafx.scene.input.MouseButton;
+import javafx.geometry.Point2D;
 import javafx.scene.control.Label;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Region;
-import javafx.scene.paint.CycleMethod;
-import javafx.scene.paint.Paint;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Line;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.CycleMethod;
 import javafx.scene.paint.LinearGradient;
+import javafx.scene.paint.Paint;
 import javafx.scene.paint.Stop;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Polyline;
+import javafx.scene.shape.Rectangle;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -35,57 +32,45 @@ import java.util.function.Consumer;
 final class DungeonOverlayRenderer {
 
     private static final Color FEATURE_SELECTION_STROKE = Color.web("#f3e3a0");
-    private static final Color LINK_STROKE = Color.web("#c8a86a");
-    private static final Color LINK_SELECTED_STROKE = Color.web("#41a9f2");
-    private static final Color ENTRY_FILL = Color.web("#7cbf88");
-    private static final Color EXIT_FILL = Color.web("#cc7a6b");
-    private static final Color BOTH_FILL = Color.web("#e8b870");
-    private static final Color ENDPOINT_PENDING_FILL = Color.web("#f4d35e");
-    private static final Color ENDPOINT_STROKE = Color.web("#2b2012");
-    private static final Color ENDPOINT_SELECTED_STROKE = Color.web("#f0a040");
-    private static final Color DEFAULT_ENTRY_STROKE = Color.web("#f8f3a6");
-    private static final Color PARTY_STROKE = Color.web("#41a9f2");
-    private static final double ENDPOINT_HIT_RADIUS = 10.0;
+    private static final Color CONNECTION_STROKE = Color.web("#d6c28a");
+    private static final Color CONNECTION_SELECTED_STROKE = Color.web("#5ba8f0");
+    private static final Color CONNECTION_HANDLE_FILL = Color.web("#f5e2aa");
+    private static final Color CONNECTION_HANDLE_SELECTED_FILL = Color.web("#ffffff");
 
     private final Pane roomLabelsLayer;
     private final Pane featuresLayer;
-    private final Pane linksLayer;
-    private final Pane endpointsLayer;
+    private final Pane connectionsLayer;
     private final DungeonCanvasModel model;
     private final DungeonViewport viewport;
     private final Map<Long, Label> roomLabelNodes = new HashMap<>();
-    private final List<Label> areaLabelNodes = new java.util.ArrayList<>();
+    private final List<Label> areaLabelNodes = new ArrayList<>();
     private final Map<Long, Label> featureLabelNodes = new HashMap<>();
     private final Map<String, Rectangle> featureTileNodes = new HashMap<>();
-    private final Map<Long, EndpointNode> endpointNodes = new HashMap<>();
-    private final Map<Long, Line> linkNodes = new HashMap<>();
+    private final Map<Long, ConnectionNode> connectionNodes = new HashMap<>();
 
-    private Consumer<DungeonEndpoint> onEndpointClicked;
-    private Consumer<DungeonLink> onLinkClicked;
+    private Consumer<Long> onConnectionClicked;
+    private Consumer<DungeonMapPane.ConnectionPointMoveRequest> onConnectionPointMoved;
+    private Consumer<DungeonMapPane.ConnectionPointInsertRequest> onConnectionPointInserted;
+    private Consumer<DungeonMapPane.ConnectionPointDeleteRequest> onConnectionPointDeleted;
     private Consumer<DungeonFeature> onFeatureClicked;
     private boolean showFeatures = true;
-    private boolean showLinks = true;
-    private boolean showEndpoints = true;
     private DungeonCanvasColorMode colorRenderMode = DungeonCanvasColorMode.ROOMS;
 
     DungeonOverlayRenderer(
             Pane roomLabelsLayer,
             Pane featuresLayer,
-            Pane linksLayer,
-            Pane endpointsLayer,
+            Pane connectionsLayer,
             DungeonCanvasModel model,
             DungeonViewport viewport
     ) {
         this.roomLabelsLayer = roomLabelsLayer;
         this.featuresLayer = featuresLayer;
-        this.linksLayer = linksLayer;
-        this.endpointsLayer = endpointsLayer;
+        this.connectionsLayer = connectionsLayer;
         this.model = model;
         this.viewport = viewport;
         this.roomLabelsLayer.setPickOnBounds(false);
         this.featuresLayer.setPickOnBounds(false);
-        this.linksLayer.setPickOnBounds(false);
-        this.endpointsLayer.setPickOnBounds(false);
+        this.connectionsLayer.setPickOnBounds(false);
     }
 
     void rebuildNodes() {
@@ -93,12 +78,10 @@ final class DungeonOverlayRenderer {
         areaLabelNodes.clear();
         featureLabelNodes.clear();
         featureTileNodes.clear();
-        endpointNodes.clear();
-        linkNodes.clear();
+        connectionNodes.clear();
         roomLabelsLayer.getChildren().clear();
         featuresLayer.getChildren().clear();
-        linksLayer.getChildren().clear();
-        endpointsLayer.getChildren().clear();
+        connectionsLayer.getChildren().clear();
 
         for (DungeonRoom room : model.roomsById().values()) {
             Label label = new Label();
@@ -114,7 +97,7 @@ final class DungeonOverlayRenderer {
             areaLabelNodes.add(label);
             roomLabelsLayer.getChildren().add(label);
         }
-        for (Map.Entry<String, java.util.List<DungeonFeatureTile>> entry : model.featureTilesByCoord().entrySet()) {
+        for (Map.Entry<String, List<DungeonFeatureTile>> entry : model.featureTilesByCoord().entrySet()) {
             Rectangle rectangle = new Rectangle();
             rectangle.setMouseTransparent(true);
             featureTileNodes.put(entry.getKey(), rectangle);
@@ -127,58 +110,47 @@ final class DungeonOverlayRenderer {
             featureLabelNodes.put(entry.getKey(), label);
             featuresLayer.getChildren().add(label);
         }
-        for (DungeonEndpoint endpoint : model.endpointsById().values()) {
-            EndpointNode endpointNode = buildEndpointNode(endpoint);
-            endpointNodes.put(endpoint.endpointId(), endpointNode);
-            endpointsLayer.getChildren().addAll(endpointNode.hitTarget(), endpointNode.visual());
-        }
-        for (DungeonLink link : model.linksById().values()) {
-            Line line = buildLinkNode(link);
-            if (line != null) {
-                linkNodes.put(link.linkId(), line);
-                linksLayer.getChildren().add(line);
-            }
+        for (DungeonMapConnectionPath connectionPath : model.roomConnections()) {
+            ConnectionNode connectionNode = buildConnectionNode(connectionPath);
+            connectionNodes.put(connectionPath.connectionId(), connectionNode);
+            connectionsLayer.getChildren().add(connectionNode.line());
+            connectionsLayer.getChildren().add(connectionNode.hitLine());
+            connectionsLayer.getChildren().addAll(connectionNode.handles());
         }
     }
 
     void repositionOverlays(Region owner) {
         positionRoomLabels(owner);
         positionFeatures(owner);
-        for (Map.Entry<Long, DungeonEndpoint> entry : model.endpointsById().entrySet()) {
-            positionEndpoint(owner, entry.getKey(), entry.getValue());
-        }
-        for (Map.Entry<Long, DungeonLink> entry : model.linksById().entrySet()) {
-            positionLink(owner, entry.getKey(), entry.getValue());
+        for (DungeonMapConnectionPath connectionPath : model.roomConnections()) {
+            positionConnection(owner, connectionPath);
         }
         refreshFeatureStyles();
-        refreshEndpointStyles();
-        refreshLinkStyles();
+        refreshConnectionStyles();
     }
 
-    void setOnEndpointClicked(Consumer<DungeonEndpoint> onEndpointClicked) {
-        this.onEndpointClicked = onEndpointClicked;
+    void setOnConnectionClicked(Consumer<Long> onConnectionClicked) {
+        this.onConnectionClicked = onConnectionClicked;
     }
 
-    void setOnLinkClicked(Consumer<DungeonLink> onLinkClicked) {
-        this.onLinkClicked = onLinkClicked;
+    void setOnConnectionPointMoved(Consumer<DungeonMapPane.ConnectionPointMoveRequest> onConnectionPointMoved) {
+        this.onConnectionPointMoved = onConnectionPointMoved;
+    }
+
+    void setOnConnectionPointInserted(Consumer<DungeonMapPane.ConnectionPointInsertRequest> onConnectionPointInserted) {
+        this.onConnectionPointInserted = onConnectionPointInserted;
+    }
+
+    void setOnConnectionPointDeleted(Consumer<DungeonMapPane.ConnectionPointDeleteRequest> onConnectionPointDeleted) {
+        this.onConnectionPointDeleted = onConnectionPointDeleted;
     }
 
     void setOnFeatureClicked(Consumer<DungeonFeature> onFeatureClicked) {
         this.onFeatureClicked = onFeatureClicked;
     }
 
-    void setShowLinks(boolean showLinks) {
-        this.showLinks = showLinks;
-        updateVisibility();
-    }
-
     void setShowFeatures(boolean showFeatures) {
         this.showFeatures = showFeatures;
-        updateVisibility();
-    }
-
-    void setShowEndpoints(boolean showEndpoints) {
-        this.showEndpoints = showEndpoints;
         updateVisibility();
     }
 
@@ -189,7 +161,7 @@ final class DungeonOverlayRenderer {
     void refreshFeatureStyles() {
         for (Map.Entry<String, Rectangle> entry : featureTileNodes.entrySet()) {
             Rectangle rectangle = entry.getValue();
-            java.util.List<DungeonFeatureTile> tiles = model.featureTilesByCoord().get(entry.getKey());
+            List<DungeonFeatureTile> tiles = model.featureTilesByCoord().get(entry.getKey());
             if (tiles == null || tiles.isEmpty()) {
                 continue;
             }
@@ -212,60 +184,22 @@ final class DungeonOverlayRenderer {
         }
     }
 
-    void refreshEndpointStyles() {
-        for (Map.Entry<Long, EndpointNode> entry : endpointNodes.entrySet()) {
-            Long endpointId = entry.getKey();
-            EndpointNode endpointNode = entry.getValue();
-            Circle circle = endpointNode.visual();
-            DungeonSelection selection = model.selection();
-            boolean isSelected = selection != null
-                    && selection.type() == DungeonSelection.SelectionType.ENDPOINT
-                    && endpointId.equals(selection.id());
-            boolean isParty = endpointId.equals(model.partyEndpointId());
-            boolean isPending = isPendingEndpoint(endpointId);
-            DungeonEndpoint endpoint = model.endpointsById().get(endpointId);
-            circle.setFill(isPending ? ENDPOINT_PENDING_FILL : endpointFill(endpoint));
-            circle.setStroke(isParty
-                    ? PARTY_STROKE
-                    : isSelected
-                    ? ENDPOINT_SELECTED_STROKE
-                    : endpoint != null && endpoint.defaultEntry()
-                    ? DEFAULT_ENTRY_STROKE
-                    : ENDPOINT_STROKE);
-            circle.setStrokeWidth(isParty || isSelected
-                    ? Math.max(2.0, 3.0 * viewport.strokeScale())
-                    : Math.max(1.0, viewport.strokeScale()));
-            EndpointRadii radii = endpointRadii(endpoint, isParty);
-            circle.setRadius(radii.visualRadius());
-            endpointNode.hitTarget().setRadius(radii.hitRadius());
-        }
-    }
-
-    void refreshLinkStyles() {
-        for (Map.Entry<Long, Line> entry : linkNodes.entrySet()) {
-            DungeonSelection selection = model.selection();
-            boolean isSelected = selection != null
-                    && selection.type() == DungeonSelection.SelectionType.LINK
-                    && entry.getKey().equals(selection.id());
-            Line line = entry.getValue();
-            line.setStroke(isSelected ? LINK_SELECTED_STROKE : LINK_STROKE);
-            line.setStrokeWidth(isSelected ? Math.max(3.0, 5.0 * viewport.strokeScale()) : Math.max(2.0, 3.0 * viewport.strokeScale()));
-        }
-    }
-
-    private EndpointNode buildEndpointNode(DungeonEndpoint endpoint) {
-        Circle visual = new Circle();
-        visual.setMouseTransparent(true);
-        Circle hitTarget = new Circle();
-        hitTarget.setFill(Color.TRANSPARENT);
-        hitTarget.setStroke(Color.TRANSPARENT);
-        hitTarget.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY && onEndpointClicked != null) {
-                onEndpointClicked.accept(endpoint);
+    void refreshConnectionStyles() {
+        DungeonSelection selection = model.selection();
+        Long selectedConnectionId = selection != null && selection.type() == DungeonSelection.SelectionType.CONNECTION
+                ? selection.id()
+                : null;
+        for (Map.Entry<Long, ConnectionNode> entry : connectionNodes.entrySet()) {
+            boolean selected = selectedConnectionId != null && selectedConnectionId.equals(entry.getKey());
+            ConnectionNode node = entry.getValue();
+            node.line().setStroke(selected ? CONNECTION_SELECTED_STROKE : CONNECTION_STROKE);
+            node.line().setStrokeWidth(selected ? Math.max(3.0, 4.0 * viewport.strokeScale()) : Math.max(2.0, 3.0 * viewport.strokeScale()));
+            for (Circle handle : node.handles()) {
+                handle.setFill(selected ? CONNECTION_HANDLE_SELECTED_FILL : CONNECTION_HANDLE_FILL);
+                handle.setStroke(selected ? CONNECTION_SELECTED_STROKE : CONNECTION_STROKE);
+                handle.setStrokeWidth(Math.max(1.0, 1.5 * viewport.strokeScale()));
             }
-            event.consume();
-        });
-        return new EndpointNode(visual, hitTarget);
+        }
     }
 
     private void handleFeatureClick(MouseButton button, Long featureId) {
@@ -278,76 +212,90 @@ final class DungeonOverlayRenderer {
         }
     }
 
-    private Line buildLinkNode(DungeonLink link) {
-        Point from = resolveAnchorPoint(link.fromAnchor());
-        Point to = resolveAnchorPoint(link.toAnchor());
-        if (from == null || to == null) {
-            return null;
-        }
-        Line line = new Line();
-        line.setOnMouseClicked(event -> {
-            if (event.getButton() == MouseButton.PRIMARY && onLinkClicked != null) {
-                onLinkClicked.accept(link);
+    private ConnectionNode buildConnectionNode(DungeonMapConnectionPath connectionPath) {
+        Polyline line = new Polyline();
+        line.setFill(Color.TRANSPARENT);
+        line.setMouseTransparent(true);
+        Polyline hitLine = new Polyline();
+        hitLine.setFill(Color.TRANSPARENT);
+        hitLine.setStroke(Color.TRANSPARENT);
+        hitLine.setStrokeWidth(Math.max(10.0, 14.0 * viewport.strokeScale()));
+        hitLine.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && onConnectionClicked != null) {
+                onConnectionClicked.accept(connectionPath.connectionId());
+                if (event.getClickCount() >= 2 && onConnectionPointInserted != null) {
+                    Point2D point = connectionsLayer.sceneToLocal(event.getSceneX(), event.getSceneY());
+                    onConnectionPointInserted.accept(new DungeonMapPane.ConnectionPointInsertRequest(
+                            connectionPath.connectionId(),
+                            viewport.cellX(point.getX()),
+                            viewport.cellY(point.getY())));
+                }
+                event.consume();
             }
         });
-        return line;
+        List<Circle> handles = new ArrayList<>();
+        for (int index = 0; index < connectionPath.controlPoints().size(); index++) {
+            handles.add(buildConnectionHandle(connectionPath.connectionId(), index));
+        }
+        return new ConnectionNode(line, hitLine, handles);
     }
 
-    private void positionEndpoint(Region owner, Long endpointId, DungeonEndpoint endpoint) {
-        EndpointNode endpointNode = endpointNodes.get(endpointId);
-        if (endpointNode == null) {
-            return;
-        }
-        Circle circle = endpointNode.visual();
-        Circle hitTarget = endpointNode.hitTarget();
-        double cx = viewport.screenCenterX(endpoint.x());
-        double cy = viewport.screenCenterY(endpoint.y());
-        EndpointRadii radii = endpointRadii(endpoint, endpointId.equals(model.partyEndpointId()));
-        circle.setCenterX(cx);
-        circle.setCenterY(cy);
-        circle.setRadius(radii.visualRadius());
-        hitTarget.setCenterX(cx);
-        hitTarget.setCenterY(cy);
-        hitTarget.setRadius(radii.hitRadius());
-        boolean visible = viewport.isVisible(owner, cx, cy, radii.hitRadius());
-        circle.setVisible(showEndpoints && visible);
-        circle.setManaged(showEndpoints && visible);
-        hitTarget.setVisible(showEndpoints && visible);
-        hitTarget.setManaged(showEndpoints && visible);
+    private Circle buildConnectionHandle(Long connectionId, int pointIndex) {
+        Circle handle = new Circle();
+        handle.setRadius(Math.max(4.0, 5.0 * viewport.strokeScale()));
+        handle.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY && onConnectionClicked != null) {
+                onConnectionClicked.accept(connectionId);
+                event.consume();
+                return;
+            }
+            if (event.getButton() == MouseButton.SECONDARY && onConnectionPointDeleted != null) {
+                onConnectionPointDeleted.accept(new DungeonMapPane.ConnectionPointDeleteRequest(connectionId, pointIndex));
+                event.consume();
+            }
+        });
+        handle.setOnMouseDragged(event -> {
+            if (onConnectionPointMoved == null) {
+                return;
+            }
+            Point2D point = connectionsLayer.sceneToLocal(event.getSceneX(), event.getSceneY());
+            onConnectionPointMoved.accept(new DungeonMapPane.ConnectionPointMoveRequest(
+                    connectionId,
+                    pointIndex,
+                    viewport.cellX(point.getX()),
+                    viewport.cellY(point.getY())));
+            event.consume();
+        });
+        return handle;
     }
 
-    private EndpointRadii endpointRadii(DungeonEndpoint endpoint, boolean isParty) {
-        double visualRadius = isParty || endpoint != null && endpoint.defaultEntry()
-                ? Math.max(4.0, 7.0 * viewport.strokeScale())
-                : Math.max(3.0, 5.0 * viewport.strokeScale());
-        return new EndpointRadii(visualRadius, Math.max(ENDPOINT_HIT_RADIUS, visualRadius));
-    }
-
-    private void positionLink(Region owner, Long linkId, DungeonLink link) {
-        Line line = linkNodes.get(linkId);
-        if (line == null) {
+    private void positionConnection(Region owner, DungeonMapConnectionPath connectionPath) {
+        ConnectionNode node = connectionNodes.get(connectionPath.connectionId());
+        if (node == null) {
             return;
         }
-        Point from = resolveAnchorPoint(link.fromAnchor());
-        Point to = resolveAnchorPoint(link.toAnchor());
-        if (from == null || to == null) {
-            line.setVisible(false);
-            line.setManaged(false);
-            return;
+        node.line().getPoints().setAll(connectionPolylinePoints(connectionPath));
+        node.hitLine().getPoints().setAll(connectionPolylinePoints(connectionPath));
+        boolean selected = model.selection() != null
+                && model.selection().type() == DungeonSelection.SelectionType.CONNECTION
+                && connectionPath.connectionId().equals(model.selection().id());
+        boolean visible = node.line().getPoints().size() >= 4;
+        node.line().setVisible(visible);
+        node.line().setManaged(visible);
+        node.hitLine().setVisible(visible);
+        node.hitLine().setManaged(visible);
+        for (int index = 0; index < node.handles().size(); index++) {
+            Circle handle = node.handles().get(index);
+            boolean handleVisible = visible && selected && index < connectionPath.controlPoints().size();
+            if (handleVisible) {
+                var point = connectionPath.controlPoints().get(index);
+                handle.setCenterX(viewport.screenCenterX(point.x()));
+                handle.setCenterY(viewport.screenCenterY(point.y()));
+                handle.setRadius(Math.max(4.0, 5.0 * viewport.strokeScale()));
+            }
+            handle.setVisible(handleVisible);
+            handle.setManaged(handleVisible);
         }
-        double x1 = from.x();
-        double y1 = from.y();
-        double x2 = to.x();
-        double y2 = to.y();
-        line.setStartX(x1);
-        line.setStartY(y1);
-        line.setEndX(x2);
-        line.setEndY(y2);
-        boolean visible = viewport.isVisible(owner, x1, y1, 2.0)
-                || viewport.isVisible(owner, x2, y2, 2.0)
-                || viewport.lineIntersectsViewport(owner, x1, y1, x2, y2);
-        line.setVisible(showLinks && visible);
-        line.setManaged(showLinks && visible);
     }
 
     private void updateVisibility() {
@@ -355,10 +303,17 @@ final class DungeonOverlayRenderer {
         roomLabelsLayer.setManaged(true);
         featuresLayer.setVisible(showFeatures);
         featuresLayer.setManaged(showFeatures);
-        linksLayer.setVisible(showLinks);
-        linksLayer.setManaged(showLinks);
-        endpointsLayer.setVisible(showEndpoints);
-        endpointsLayer.setManaged(showEndpoints);
+        connectionsLayer.setVisible(true);
+        connectionsLayer.setManaged(true);
+    }
+
+    private List<Double> connectionPolylinePoints(DungeonMapConnectionPath connectionPath) {
+        List<Double> points = new ArrayList<>();
+        for (DungeonMapConnectionPath.GridPoint point : connectionPath.routePoints()) {
+            points.add(viewport.screenX(point.x()));
+            points.add(viewport.screenY(point.y()));
+        }
+        return points;
     }
 
     private void positionFeatures(Region owner) {
@@ -376,11 +331,11 @@ final class DungeonOverlayRenderer {
             rectangle.setVisible(showFeatures && visible);
             rectangle.setManaged(showFeatures && visible);
         }
-        List<Map.Entry<Long, java.util.List<DungeonFeatureTile>>> entries = new ArrayList<>(model.featureTilesByFeatureId().entrySet());
+        List<Map.Entry<Long, List<DungeonFeatureTile>>> entries = new ArrayList<>(model.featureTilesByFeatureId().entrySet());
         entries.sort(Comparator.comparingLong(Map.Entry::getKey));
         int labelIndex = 0;
-        for (Map.Entry<Long, java.util.List<DungeonFeatureTile>> entry : entries) {
-            java.util.List<DungeonFeatureTile> tiles = entry.getValue();
+        for (Map.Entry<Long, List<DungeonFeatureTile>> entry : entries) {
+            List<DungeonFeatureTile> tiles = entry.getValue();
             if (tiles == null || tiles.isEmpty()) {
                 continue;
             }
@@ -453,7 +408,7 @@ final class DungeonOverlayRenderer {
         }
     }
 
-    private boolean isSelectedFeatureTile(java.util.List<DungeonFeatureTile> tiles) {
+    private boolean isSelectedFeatureTile(List<DungeonFeatureTile> tiles) {
         DungeonSelection selection = model.selection();
         if (selection == null) {
             return false;
@@ -494,8 +449,6 @@ final class DungeonOverlayRenderer {
         if (colors.size() == 1) {
             return colors.get(0);
         }
-        // Shared tiles stay visibly shared: keep every participating feature color in the hatch
-        // instead of collapsing the tile to a single "primary" feature.
         List<Stop> stops = new ArrayList<>();
         double bandSize = 1.0 / colors.size();
         for (int i = 0; i < colors.size(); i++) {
@@ -505,14 +458,7 @@ final class DungeonOverlayRenderer {
             stops.add(new Stop(start, color));
             stops.add(new Stop(Math.max(start, end - 0.001), color));
         }
-        return new LinearGradient(
-                0,
-                0,
-                10,
-                10,
-                false,
-                CycleMethod.REPEAT,
-                stops);
+        return new LinearGradient(0, 0, 10, 10, false, CycleMethod.REPEAT, stops);
     }
 
     private Color featureStrokeColor(List<DungeonFeatureTile> tiles) {
@@ -534,7 +480,7 @@ final class DungeonOverlayRenderer {
             return List.of();
         }
         List<DungeonFeature> features = new ArrayList<>();
-        java.util.LinkedHashSet<Long> featureIds = new java.util.LinkedHashSet<>();
+        LinkedHashSet<Long> featureIds = new LinkedHashSet<>();
         for (DungeonFeatureTile tile : tiles) {
             if (tile != null) {
                 featureIds.add(tile.featureId());
@@ -550,56 +496,6 @@ final class DungeonOverlayRenderer {
         return features;
     }
 
-    private Color endpointFill(DungeonEndpoint endpoint) {
-        if (endpoint == null || endpoint.role() == null) {
-            return BOTH_FILL;
-        }
-        return switch (endpoint.role()) {
-            case ENTRY -> ENTRY_FILL;
-            case EXIT -> EXIT_FILL;
-            case BOTH -> BOTH_FILL;
-        };
-    }
-
-    private boolean isPendingEndpoint(Long endpointId) {
-        DungeonLinkAnchor pendingAnchor = model.pendingLinkStart();
-        return pendingAnchor != null
-                && pendingAnchor.type() == DungeonLinkAnchorType.ENDPOINT
-                && endpointId != null
-                && endpointId == pendingAnchor.anchorId();
-    }
-
-    private Point resolveAnchorPoint(DungeonLinkAnchor anchor) {
-        if (anchor == null) {
-            return null;
-        }
-        return switch (anchor.type()) {
-            case ENDPOINT -> {
-                DungeonEndpoint endpoint = model.endpointsById().get(anchor.anchorId());
-                if (endpoint == null) {
-                    yield null;
-                }
-                yield new Point(viewport.screenCenterX(endpoint.x()), viewport.screenCenterY(endpoint.y()));
-            }
-            case PASSAGE -> {
-                DungeonPassage passage = model.passagesById().get(anchor.anchorId());
-                if (passage == null) {
-                    yield null;
-                }
-                yield switch (passage.direction()) {
-                    case EAST -> new Point(viewport.screenX(passage.x() + 1), viewport.screenCenterY(passage.y()));
-                    case SOUTH -> new Point(viewport.screenCenterX(passage.x()), viewport.screenY(passage.y() + 1));
-                };
-            }
-        };
-    }
-
-    private record Point(double x, double y) {
-    }
-
-    private record EndpointRadii(double visualRadius, double hitRadius) {
-    }
-
-    private record EndpointNode(Circle visual, Circle hitTarget) {
+    private record ConnectionNode(Polyline line, Polyline hitLine, List<Circle> handles) {
     }
 }

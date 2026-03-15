@@ -25,7 +25,6 @@ final class DungeonInteractionController {
     private Supplier<BrushShape> brushShapeSupplier;
     private Supplier<DungeonCanvasPaintMode> paintModeSupplier;
     private Supplier<DungeonCanvasWallMode> wallModeSupplier;
-    private Supplier<DungeonCanvasPassageMode> passageModeSupplier;
     private Consumer<DungeonMapPane.CellInteraction> onCellClicked;
     private Consumer<DungeonMapPane.CellInteraction> onCellPainted;
     private Runnable onPaintStrokeFinished;
@@ -87,10 +86,6 @@ final class DungeonInteractionController {
 
     void setWallModeSupplier(Supplier<DungeonCanvasWallMode> supplier) {
         this.wallModeSupplier = supplier;
-    }
-
-    void setPassageModeSupplier(Supplier<DungeonCanvasPassageMode> supplier) {
-        this.passageModeSupplier = supplier;
     }
 
     void setOnCellClicked(Consumer<DungeonMapPane.CellInteraction> onCellClicked) {
@@ -254,10 +249,6 @@ final class DungeonInteractionController {
             if (event.getButton() != MouseButton.PRIMARY || !event.isStillSincePress()) {
                 return;
             }
-            if (currentEdgeToolPolicy().usesPassageClick()) {
-                handleEdgeClick(event.getX(), event.getY());
-                return;
-            }
             if (currentEdgeToolPolicy().edgeHoverEnabled()) {
                 return;
             }
@@ -350,7 +341,7 @@ final class DungeonInteractionController {
     }
 
     private DungeonEdgeToolPolicy currentEdgeToolPolicy() {
-        return DungeonEdgeToolPolicy.resolve(activeTool, currentWallMode(), currentPassageMode());
+        return DungeonEdgeToolPolicy.resolve(activeTool, currentWallMode());
     }
 
     private DungeonCanvasWallMode currentWallMode() {
@@ -361,16 +352,6 @@ final class DungeonInteractionController {
             }
         }
         return DungeonCanvasWallMode.PAINT_WALL;
-    }
-
-    private DungeonCanvasPassageMode currentPassageMode() {
-        if (passageModeSupplier != null) {
-            DungeonCanvasPassageMode mode = passageModeSupplier.get();
-            if (mode != null) {
-                return mode;
-            }
-        }
-        return DungeonCanvasPassageMode.PLACE_PASSAGE;
     }
 
     private int currentBrushSize() {

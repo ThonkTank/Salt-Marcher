@@ -20,20 +20,12 @@ public final class DungeonCampaignStateAdapter {
         return CampaignStateApi.getDungeonPosition(conn).map(CampaignStateApi.DungeonPosition::mapId);
     }
 
-    public static Optional<Long> getDungeonEndpointId(Connection conn) throws SQLException {
-        return CampaignStateApi.getDungeonPosition(conn).map(CampaignStateApi.DungeonPosition::endpointId);
-    }
-
     public static Optional<Long> getDungeonSquareId(Connection conn) throws SQLException {
         return CampaignStateApi.getDungeonPosition(conn).map(CampaignStateApi.DungeonPosition::squareId);
     }
 
-    public static void updateDungeonPosition(Connection conn, Long mapId, Long endpointId) throws SQLException {
-        CampaignStateApi.updateDungeonPosition(conn, mapId, endpointId, null);
-    }
-
-    public static void updateDungeonPosition(Connection conn, Long mapId, Long endpointId, Long squareId) throws SQLException {
-        CampaignStateApi.updateDungeonPosition(conn, mapId, endpointId, squareId);
+    public static void setDungeonPosition(Connection conn, Long mapId, Long squareId) throws SQLException {
+        CampaignStateApi.setDungeonPosition(conn, mapId, squareId);
     }
 
     public static void clearDungeonPosition(Connection conn) throws SQLException {

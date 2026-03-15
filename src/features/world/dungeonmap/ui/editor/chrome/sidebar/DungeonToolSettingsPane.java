@@ -24,7 +24,6 @@ public class DungeonToolSettingsPane extends VBox {
     private final AreaSettingsCard areaSettingsCard = new AreaSettingsCard();
     private final FeatureSettingsCard featureSettingsCard = new FeatureSettingsCard();
     private final VisibilitySettingsCard visibilitySettingsCard = new VisibilitySettingsCard();
-    private final LinkStatusCard linkStatusCard = new LinkStatusCard();
 
     public DungeonToolSettingsPane() {
         getStyleClass().addAll("dungeon-sidebar-pane", "dungeon-tool-settings-pane");
@@ -37,13 +36,11 @@ public class DungeonToolSettingsPane extends VBox {
                 brushSettingsCard.root(),
                 areaSettingsCard.root(),
                 featureSettingsCard.root(),
-                visibilitySettingsCard.root(),
-                linkStatusCard.root());
+                visibilitySettingsCard.root());
 
         DungeonSidebarCards.setVisible(brushSettingsCard.root(), false);
         DungeonSidebarCards.setVisible(areaSettingsCard.root(), false);
         DungeonSidebarCards.setVisible(featureSettingsCard.root(), false);
-        linkStatusCard.reset();
         setMapLoaded(false);
     }
 
@@ -54,19 +51,6 @@ public class DungeonToolSettingsPane extends VBox {
         DungeonSidebarCards.setVisible(brushSettingsCard.root(), effectiveTool.brushSettingsVisible());
         DungeonSidebarCards.setVisible(areaSettingsCard.root(), effectiveTool.areaSettingsVisible());
         DungeonSidebarCards.setVisible(featureSettingsCard.root(), effectiveTool.featureSettingsVisible());
-        if (effectiveTool.linkStatusVisible()) {
-            linkStatusCard.showDefaultPrompt();
-        } else {
-            linkStatusCard.reset();
-        }
-    }
-
-    public void showLinkPending(boolean pending) {
-        if (pending) {
-            linkStatusCard.showPending();
-            return;
-        }
-        linkStatusCard.reset();
     }
 
     public void showWorkflowMessage(String title, String message) {
@@ -116,14 +100,6 @@ public class DungeonToolSettingsPane extends VBox {
 
     public DungeonFeatureCategory selectedFeatureCategory() {
         return featureSettingsCard.activeCategory();
-    }
-
-    public boolean linksVisible() {
-        return visibilitySettingsCard.linksVisible();
-    }
-
-    public boolean endpointsVisible() {
-        return visibilitySettingsCard.endpointsVisible();
     }
 
     public boolean featuresVisible() {
@@ -184,18 +160,6 @@ public class DungeonToolSettingsPane extends VBox {
 
     public void setOnDeleteFeatureRequested(Consumer<Node> callback) {
         featureSettingsCard.setOnDeleteRequested(callback);
-    }
-
-    public void setOnCancelLink(Runnable onCancelLink) {
-        linkStatusCard.setOnCancel(onCancelLink);
-    }
-
-    public void setOnLinksVisibilityChanged(Consumer<Boolean> callback) {
-        visibilitySettingsCard.setOnLinksVisibilityChanged(callback);
-    }
-
-    public void setOnEndpointsVisibilityChanged(Consumer<Boolean> callback) {
-        visibilitySettingsCard.setOnEndpointsVisibilityChanged(callback);
     }
 
     public void setOnFeaturesVisibilityChanged(Consumer<Boolean> callback) {

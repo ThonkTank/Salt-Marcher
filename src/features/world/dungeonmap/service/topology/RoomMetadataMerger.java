@@ -92,7 +92,8 @@ final class RoomMetadataMerger {
                 mergedDetailDescription,
                 mergedReactiveChecks,
                 mergedGmBackground,
-                mergedAreaId));
+                mergedAreaId,
+                primaryRoom.conceptLevelId()));
     }
 
     private static Long mergeAreaAssignment(Long primaryAreaId, List<DungeonRoom> mergedRooms) {

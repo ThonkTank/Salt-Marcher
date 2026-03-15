@@ -1,14 +1,11 @@
 package features.world.dungeonmap.ui.shared.canvas;
 
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.PassageDirection;
 
 final class DungeonCanvasInteractionState {
 
     private DungeonSelection selection = DungeonSelection.none();
-    private DungeonLinkAnchor pendingLinkStart;
-    private Long partyEndpointId;
     private Long partySquareId;
     private Integer invalidEdgeX;
     private Integer invalidEdgeY;
@@ -20,30 +17,12 @@ final class DungeonCanvasInteractionState {
 
     void resetForLoadedState() {
         selection = DungeonSelection.none();
-        partyEndpointId = null;
         partySquareId = null;
-        pendingLinkStart = null;
         clearInvalidEdge();
     }
 
     void setSelection(DungeonSelection selection) {
         this.selection = selection == null ? DungeonSelection.none() : selection;
-    }
-
-    DungeonLinkAnchor pendingLinkStart() {
-        return pendingLinkStart;
-    }
-
-    void setPendingLinkStart(DungeonLinkAnchor pendingLinkStart) {
-        this.pendingLinkStart = pendingLinkStart;
-    }
-
-    Long partyEndpointId() {
-        return partyEndpointId;
-    }
-
-    void setPartyEndpointId(Long partyEndpointId) {
-        this.partyEndpointId = partyEndpointId;
     }
 
     Long partySquareId() {

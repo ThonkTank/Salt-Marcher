@@ -1,17 +1,15 @@
 package features.world.dungeonmap.service.projection;
 
+import features.world.dungeonmap.model.domain.DungeonConnection;
 import features.world.dungeonmap.model.domain.DungeonArea;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
-import features.world.dungeonmap.model.domain.DungeonLink;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
-import features.world.dungeonmap.model.domain.PassageDirection;
+import features.world.dungeonmap.model.projection.DungeonMapConnectionPath;
 import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
+import features.world.dungeonmap.model.projection.index.DungeonRoomConnectionSummary;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -34,8 +32,7 @@ public final class DungeonMapIndexBuilder {
         Map<Long, DungeonRoom> roomsById = indexById(state.rooms(), DungeonRoom::roomId);
         Map<Long, DungeonArea> areasById = indexById(state.areas(), DungeonArea::areaId);
         Map<Long, DungeonFeature> featuresById = indexById(state.features(), DungeonFeature::featureId);
-        Map<Long, DungeonEndpoint> endpointsById = indexById(state.endpoints(), DungeonEndpoint::endpointId);
-        Map<Long, DungeonPassage> passagesById = indexById(state.passages(), DungeonPassage::passageId);
+        Map<Long, DungeonConnection> connectionsById = indexById(state.connections(), DungeonConnection::connectionId);
 
         Map<Long, List<DungeonSquare>> squaresByRoomId = new LinkedHashMap<>();
         for (DungeonSquare square : state.squares()) {
@@ -61,30 +58,10 @@ public final class DungeonMapIndexBuilder {
             }
         }
 
-        Map<Long, List<DungeonEndpoint>> endpointsByRoomId = new LinkedHashMap<>();
-        for (DungeonEndpoint endpoint : state.endpoints()) {
-            DungeonSquare square = endpoint.squareId() == null
-                    ? squaresByCoordinate.get(new DungeonMapIndex.SquareCoordinate(endpoint.x(), endpoint.y()))
-                    : squaresById.get(endpoint.squareId());
-            if (square != null) {
-                addGrouped(endpointsByRoomId, square.roomId(), endpoint);
-            }
-        }
-
-        Map<Long, List<DungeonPassage>> passagesByRoomId = new LinkedHashMap<>();
-        for (DungeonPassage passage : state.passages()) {
-            addPassageRoomGrouping(passagesByRoomId, squaresByCoordinate, passage, passage.x(), passage.y());
-            if (passage.direction() == PassageDirection.EAST) {
-                addPassageRoomGrouping(passagesByRoomId, squaresByCoordinate, passage, passage.x() + 1, passage.y());
-            } else if (passage.direction() == PassageDirection.SOUTH) {
-                addPassageRoomGrouping(passagesByRoomId, squaresByCoordinate, passage, passage.x(), passage.y() + 1);
-            }
-        }
-
-        Map<DungeonLinkAnchor, List<DungeonLink>> linksByAnchor = new LinkedHashMap<>();
-        for (DungeonLink link : state.links()) {
-            addGrouped(linksByAnchor, link.fromAnchor(), link);
-            addGrouped(linksByAnchor, link.toAnchor(), link);
+        Map<Long, List<DungeonRoomConnectionSummary>> roomConnectionsByRoomId = new LinkedHashMap<>();
+        for (DungeonMapConnectionPath connectionPath : state.roomConnections()) {
+            addRoomConnectionGrouping(roomConnectionsByRoomId, connectionPath.fromRoomId(), connectionPath);
+            addRoomConnectionGrouping(roomConnectionsByRoomId, connectionPath.toRoomId(), connectionPath);
         }
 
         return new DungeonMapIndex(
@@ -93,28 +70,26 @@ public final class DungeonMapIndexBuilder {
                 Map.copyOf(roomsById),
                 Map.copyOf(areasById),
                 Map.copyOf(featuresById),
-                Map.copyOf(endpointsById),
-                Map.copyOf(passagesById),
+                Map.copyOf(connectionsById),
                 immutableGroupedMap(featuresBySquareId),
                 immutableGroupedMap(squaresByRoomId),
                 immutableGroupedMap(roomsByAreaId),
                 immutableGroupedMap(featureTilesByFeatureId),
-                immutableGroupedMap(endpointsByRoomId),
-                immutableGroupedMap(passagesByRoomId),
-                immutableGroupedMap(linksByAnchor));
+                immutableGroupedMap(roomConnectionsByRoomId));
     }
 
-    private static void addPassageRoomGrouping(
-            Map<Long, List<DungeonPassage>> passagesByRoomId,
-            Map<DungeonMapIndex.SquareCoordinate, DungeonSquare> squaresByCoordinate,
-            DungeonPassage passage,
-            int x,
-            int y
+    private static void addRoomConnectionGrouping(
+            Map<Long, List<DungeonRoomConnectionSummary>> roomConnectionsByRoomId,
+            Long roomId,
+            DungeonMapConnectionPath connectionPath
     ) {
-        DungeonSquare square = squaresByCoordinate.get(new DungeonMapIndex.SquareCoordinate(x, y));
-        if (square != null) {
-            addGroupedUnique(passagesByRoomId, square.roomId(), passage);
+        if (roomId == null || connectionPath == null || connectionPath.connectionId() == null) {
+            return;
         }
+        Long counterpartRoomId = roomId.equals(connectionPath.fromRoomId())
+                ? connectionPath.toRoomId()
+                : connectionPath.fromRoomId();
+        addGroupedUnique(roomConnectionsByRoomId, roomId, new DungeonRoomConnectionSummary(connectionPath.connectionId(), counterpartRoomId));
     }
 
     private static <K, V> void addGrouped(Map<K, List<V>> grouped, K key, V value) {

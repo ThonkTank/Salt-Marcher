@@ -1,7 +1,6 @@
 package features.world.dungeonmap.service.runtime;
 
 import database.DatabaseManager;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.service.integration.campaign.DungeonCampaignStateAdapter;
@@ -23,19 +22,12 @@ public final class DungeonRuntimeCommandService {
                 return new DungeonMoveResult(
                         DungeonMoveStatus.INVALID_DESTINATION,
                         null,
-                        null,
                         List.of(),
                         "Startposition ist ungültig.");
             }
-            DungeonEndpoint endpoint = DungeonRuntimeQueryService.resolveEndpointForSquare(state, targetSquare.squareId());
-            DungeonCampaignStateAdapter.updateDungeonPosition(
-                    conn,
-                    mapId,
-                    endpoint == null ? null : endpoint.endpointId(),
-                    targetSquare.squareId());
+            DungeonCampaignStateAdapter.setDungeonPosition(conn, mapId, targetSquare.squareId());
             return new DungeonMoveResult(
                     DungeonMoveStatus.POSITION_SET,
-                    endpoint == null ? null : endpoint.endpointId(),
                     targetSquare.squareId(),
                     List.of(),
                     "Startposition gesetzt.");
@@ -50,7 +42,6 @@ public final class DungeonRuntimeCommandService {
                 return new DungeonMoveResult(
                         DungeonMoveStatus.INVALID_DESTINATION,
                         null,
-                        null,
                         List.of(),
                         "Zielposition ist ungültig.");
             }
@@ -60,7 +51,6 @@ public final class DungeonRuntimeCommandService {
                 return new DungeonMoveResult(
                         DungeonMoveStatus.NO_CURRENT_POSITION,
                         null,
-                        null,
                         List.of(),
                         "Party-Position fehlt.");
             }
@@ -68,20 +58,18 @@ public final class DungeonRuntimeCommandService {
             if (targetSquare.squareId().equals(currentPosition.square().squareId())) {
                 return new DungeonMoveResult(
                         DungeonMoveStatus.MOVED_SAME_ROOM,
-                        currentPosition.endpointId(),
                         currentPosition.square().squareId(),
                         List.of(),
                         "Position unverändert.");
             }
 
             if (traversalService.sameRoom(currentPosition.square(), targetSquare)) {
-                return persistMove(conn, state, mapId, targetSquare, DungeonMoveStatus.MOVED_SAME_ROOM, List.of(), "Position im Raum aktualisiert.");
+                return persistMove(conn, mapId, targetSquare, DungeonMoveStatus.MOVED_SAME_ROOM, List.of(), "Position im Raum aktualisiert.");
             }
 
             if (!traversalService.canMoveBetweenRooms(state, currentPosition.square(), targetSquare)) {
                 return new DungeonMoveResult(
                         DungeonMoveStatus.NOT_CONNECTED,
-                        currentPosition.endpointId(),
                         currentPosition.square().squareId(),
                         List.of(),
                         "Raum ist nicht direkt erreichbar.");
@@ -91,28 +79,21 @@ public final class DungeonRuntimeCommandService {
             String message = triggeredTableIds.isEmpty()
                     ? "Raum gewechselt."
                     : "Random Encounter ausgelöst.";
-            return persistMove(conn, state, mapId, targetSquare, DungeonMoveStatus.MOVED, triggeredTableIds, message);
+            return persistMove(conn, mapId, targetSquare, DungeonMoveStatus.MOVED, triggeredTableIds, message);
         }
     }
 
     private DungeonMoveResult persistMove(
             Connection conn,
-            DungeonMapState state,
             long mapId,
             DungeonSquare targetSquare,
             DungeonMoveStatus status,
             List<Long> triggeredTableIds,
             String message
     ) throws Exception {
-        DungeonEndpoint endpoint = DungeonRuntimeQueryService.resolveEndpointForSquare(state, targetSquare.squareId());
-        DungeonCampaignStateAdapter.updateDungeonPosition(
-                conn,
-                mapId,
-                endpoint == null ? null : endpoint.endpointId(),
-                targetSquare.squareId());
+        DungeonCampaignStateAdapter.setDungeonPosition(conn, mapId, targetSquare.squareId());
         return new DungeonMoveResult(
                 status,
-                endpoint == null ? null : endpoint.endpointId(),
                 targetSquare.squareId(),
                 triggeredTableIds,
                 message);
@@ -120,28 +101,21 @@ public final class DungeonRuntimeCommandService {
 
     private ResolvedPosition resolveCurrentPosition(Connection conn, DungeonMapState state) throws Exception {
         if (state == null || state.map() == null) {
-            return new ResolvedPosition(null, null);
+            return new ResolvedPosition(null);
         }
         Long currentMapId = DungeonCampaignStateAdapter.getDungeonMapId(conn).orElse(null);
         if (currentMapId == null || !currentMapId.equals(state.map().mapId())) {
-            return new ResolvedPosition(null, null);
+            return new ResolvedPosition(null);
         }
 
         Long currentSquareId = DungeonCampaignStateAdapter.getDungeonSquareId(conn).orElse(null);
         DungeonSquare currentSquare = state.index().findSquare(currentSquareId);
-        Long currentEndpointId = DungeonCampaignStateAdapter.getDungeonEndpointId(conn).orElse(null);
         if (currentSquare != null) {
-            return new ResolvedPosition(currentSquare, currentEndpointId);
+            return new ResolvedPosition(currentSquare);
         }
-
-        DungeonEndpoint endpoint = state.index().findEndpoint(currentEndpointId);
-        if (endpoint != null) {
-            return new ResolvedPosition(state.index().findSquare(endpoint.squareId()), endpoint.endpointId());
-        }
-
-        return new ResolvedPosition(null, null);
+        return new ResolvedPosition(null);
     }
 
-    private record ResolvedPosition(DungeonSquare square, Long endpointId) {
+    private record ResolvedPosition(DungeonSquare square) {
     }
 }

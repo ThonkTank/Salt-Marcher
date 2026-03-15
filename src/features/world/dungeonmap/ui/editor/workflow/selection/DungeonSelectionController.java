@@ -1,10 +1,8 @@
 package features.world.dungeonmap.ui.editor.workflow.selection;
 
+import features.world.dungeonmap.model.domain.DungeonConnection;
 import features.world.dungeonmap.model.domain.DungeonArea;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
-import features.world.dungeonmap.model.domain.DungeonLink;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
@@ -49,14 +47,6 @@ public final class DungeonSelectionController {
         selectSquare(interaction.square(), interaction.x(), interaction.y(), currentMapId);
     }
 
-    public void showLinkSelection(DungeonLink link) {
-        showSelection(DungeonSelection.link(link), true);
-    }
-
-    public void showEndpointSelection(DungeonEndpoint endpoint) {
-        showSelection(DungeonSelection.endpoint(endpoint), true);
-    }
-
     public void selectArea(DungeonArea area) {
         if (area != null) {
             showSelection(DungeonSelection.area(area), true);
@@ -69,9 +59,9 @@ public final class DungeonSelectionController {
         }
     }
 
-    public void selectPassage(DungeonPassage passage) {
-        if (passage != null) {
-            showSelection(DungeonSelection.passage(passage), true);
+    public void selectConnection(DungeonConnection connection) {
+        if (connection != null) {
+            showSelection(DungeonSelection.connection(connection), true);
         }
     }
 
@@ -90,12 +80,6 @@ public final class DungeonSelectionController {
     public void restoreFeatureSelection(DungeonFeature feature) {
         if (feature != null) {
             restoreSelection(DungeonSelection.feature(feature));
-        }
-    }
-
-    public void restorePassageSelection(DungeonPassage passage) {
-        if (passage != null) {
-            restoreSelection(DungeonSelection.passage(passage));
         }
     }
 
@@ -165,11 +149,12 @@ public final class DungeonSelectionController {
                     toolSettingsPane.setSelectedFeature(selection.feature().featureId());
                 }
             }
+            case CONNECTION -> toolSettingsPane.clearEntitySelections();
             case SQUARE -> {
                 toolSettingsPane.clearFeatureSelection();
                 toolSettingsPane.setSelectedArea(selection.square() == null ? null : selection.square().areaId());
             }
-            case ENDPOINT, LINK, PASSAGE, NONE -> toolSettingsPane.clearEntitySelections();
+            case NONE -> toolSettingsPane.clearEntitySelections();
         }
     }
 

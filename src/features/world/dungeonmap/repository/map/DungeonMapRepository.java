@@ -65,7 +65,10 @@ public final class DungeonMapRepository {
         try (PreparedStatement ps = conn.prepareStatement(
                 "DELETE FROM dungeon_maps WHERE dungeon_map_id=?")) {
             ps.setLong(1, mapId);
-            ps.executeUpdate();
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                throw new SQLException("Dungeon map not found for delete: " + mapId);
+            }
         }
     }
 

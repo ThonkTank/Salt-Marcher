@@ -2,9 +2,6 @@ package features.world.dungeonmap.ui.shared.canvas;
 
 import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchorType;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
@@ -23,7 +20,6 @@ final class DungeonGridRenderer {
     private static final Color FILLED_STROKE = Color.web("#b89060");
     private static final Color ROOM_STROKE = Color.web("#c8966a");
     private static final Color SELECTION_STROKE = Color.web("#d9c36a");
-    private static final Color PENDING_LINK_STROKE = Color.web("#f4d35e");
     private static final Color INVALID_EDGE_STROKE = Color.web("#e53935", 0.90);
     private static final Color BOUNDARY_STROKE = Color.web("#4a5560", 0.55);
     private static final Color WALL_COLOR = Color.web("#3a2a1a");
@@ -139,11 +135,8 @@ final class DungeonGridRenderer {
                 drawRoomSelection(gc, selection.room().roomId(), state);
             } else if (selection.type() == DungeonSelection.SelectionType.AREA && selection.area() != null) {
                 drawAreaSelection(gc, selection.area().areaId(), state);
-            } else if (selection.type() == DungeonSelection.SelectionType.PASSAGE && selection.passage() != null) {
-                drawPassageSelection(gc, selection.passage(), SELECTION_STROKE);
             }
         }
-        drawPendingLinkStart(gc);
         drawInvalidEdge(gc);
         drawPartyToken(gc);
     }
@@ -280,34 +273,6 @@ final class DungeonGridRenderer {
         gc.strokeOval(centerX - radius, centerY - radius, radius * 2.0, radius * 2.0);
     }
 
-    private void drawPendingLinkStart(GraphicsContext gc) {
-        DungeonLinkAnchor pendingAnchor = model.pendingLinkStart();
-        if (pendingAnchor == null || pendingAnchor.type() != DungeonLinkAnchorType.PASSAGE) {
-            return;
-        }
-        DungeonPassage passage = model.passagesById().get(pendingAnchor.anchorId());
-        if (passage == null) {
-            return;
-        }
-        drawPassageSelection(gc, passage, PENDING_LINK_STROKE);
-    }
-
-    private void drawPassageSelection(GraphicsContext gc, DungeonPassage passage, Color stroke) {
-        gc.setStroke(stroke);
-        gc.setLineWidth(Math.max(3.0, 4.0 * viewport.strokeScale()));
-        if (passage.direction() == PassageDirection.EAST) {
-            double sx = viewport.screenX(passage.x() + 1);
-            double sy = viewport.screenY(passage.y());
-            double ey = viewport.screenY(passage.y() + 1);
-            gc.strokeLine(sx, sy, sx, ey);
-            return;
-        }
-        double sx = viewport.screenX(passage.x());
-        double sy = viewport.screenY(passage.y() + 1);
-        double ex = viewport.screenX(passage.x() + 1);
-        gc.strokeLine(sx, sy, ex, sy);
-    }
-
     private void drawWalls(GraphicsContext gc, int minX, int minY, int maxX, int maxY) {
         double wallWidth = Math.max(1.5, 2.0 * viewport.strokeScale());
         gc.setStroke(WALL_COLOR);
@@ -377,41 +342,9 @@ final class DungeonGridRenderer {
         if (edge == null) {
             return;
         }
-        DungeonPassage passage = edge.passage();
-        if (passage != null) {
-            drawPassageEdge(gc, ax, ay, bx, by, horizontal);
-            return;
-        }
         if (edge.wallPresent()) {
             gc.setStroke(WALL_COLOR);
             gc.strokeLine(ax, ay, bx, by);
-        }
-    }
-
-    private void drawPassageEdge(
-            GraphicsContext gc,
-            double ax,
-            double ay,
-            double bx,
-            double by,
-            boolean horizontal
-    ) {
-        double gapStart = 0.30;
-        double gapEnd = 0.70;
-        if (horizontal) {
-            double totalLen = bx - ax;
-            double g0 = ax + totalLen * gapStart;
-            double g1 = ax + totalLen * gapEnd;
-            gc.setStroke(WALL_COLOR);
-            gc.strokeLine(ax, ay, g0, ay);
-            gc.strokeLine(g1, ay, bx, ay);
-        } else {
-            double totalLen = by - ay;
-            double g0 = ay + totalLen * gapStart;
-            double g1 = ay + totalLen * gapEnd;
-            gc.setStroke(WALL_COLOR);
-            gc.strokeLine(ax, ay, ax, g0);
-            gc.strokeLine(ax, g1, ax, by);
         }
     }
 

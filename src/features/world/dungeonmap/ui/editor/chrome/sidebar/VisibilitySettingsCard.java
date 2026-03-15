@@ -15,8 +15,6 @@ import java.util.function.Consumer;
 
 final class VisibilitySettingsCard {
 
-    private final CheckBox linksVisibleCheckBox = new CheckBox("Links anzeigen");
-    private final CheckBox endpointsVisibleCheckBox = new CheckBox("Übergänge anzeigen");
     private final CheckBox featuresVisibleCheckBox = new CheckBox("Features anzeigen");
     private final ToggleGroup colorRenderModeGroup = new ToggleGroup();
     private final ToggleButton roomColorModeButton = new ToggleButton(DungeonColorRenderMode.ROOMS.label());
@@ -26,8 +24,6 @@ final class VisibilitySettingsCard {
     private Consumer<DungeonColorRenderMode> onColorRenderModeChanged;
 
     public VisibilitySettingsCard() {
-        linksVisibleCheckBox.setSelected(true);
-        endpointsVisibleCheckBox.setSelected(true);
         featuresVisibleCheckBox.setSelected(true);
 
         roomColorModeButton.setToggleGroup(colorRenderModeGroup);
@@ -49,7 +45,7 @@ final class VisibilitySettingsCard {
         colorModeLabel.getStyleClass().add("text-muted");
         HBox colorModeRow = new HBox(6, roomColorModeButton, areaColorModeButton);
         colorModeRow.setAlignment(Pos.CENTER_LEFT);
-        root = DungeonSidebarCards.createCard("Anzeige", new VBox(6, colorModeLabel, colorModeRow, featuresVisibleCheckBox, linksVisibleCheckBox, endpointsVisibleCheckBox));
+        root = DungeonSidebarCards.createCard("Anzeige", new VBox(6, colorModeLabel, colorModeRow, featuresVisibleCheckBox));
     }
 
     public Node root() {
@@ -67,26 +63,8 @@ final class VisibilitySettingsCard {
         updating = false;
     }
 
-    public boolean linksVisible() {
-        return linksVisibleCheckBox.isSelected();
-    }
-
-    public boolean endpointsVisible() {
-        return endpointsVisibleCheckBox.isSelected();
-    }
-
     public boolean featuresVisible() {
         return featuresVisibleCheckBox.isSelected();
-    }
-
-    public void setOnLinksVisibilityChanged(Consumer<Boolean> callback) {
-        Consumer<Boolean> safeCallback = callback == null ? ignored -> { } : callback;
-        linksVisibleCheckBox.selectedProperty().addListener((obs, oldValue, newValue) -> safeCallback.accept(newValue));
-    }
-
-    public void setOnEndpointsVisibilityChanged(Consumer<Boolean> callback) {
-        Consumer<Boolean> safeCallback = callback == null ? ignored -> { } : callback;
-        endpointsVisibleCheckBox.selectedProperty().addListener((obs, oldValue, newValue) -> safeCallback.accept(newValue));
     }
 
     public void setOnFeaturesVisibilityChanged(Consumer<Boolean> callback) {

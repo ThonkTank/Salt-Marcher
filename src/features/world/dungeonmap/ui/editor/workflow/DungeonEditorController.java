@@ -1,18 +1,13 @@
 package features.world.dungeonmap.ui.editor.workflow;
 
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
-import features.world.dungeonmap.model.domain.DungeonLink;
 import features.world.dungeonmap.model.editing.BrushShape;
 import features.world.dungeonmap.service.DungeonMapCommandService;
 import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorControls;
-import features.world.dungeonmap.ui.editor.chrome.map.DungeonMapControlsPane;
-import features.world.dungeonmap.ui.editor.chrome.map.DungeonMapDropdownPresenter;
 import features.world.dungeonmap.ui.editor.state.DungeonColorRenderMode;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
 import features.world.dungeonmap.ui.editor.state.DungeonPaintMode;
-import features.world.dungeonmap.ui.editor.state.PassageEditorMode;
 import features.world.dungeonmap.ui.editor.state.WallEditorMode;
 import features.world.dungeonmap.ui.editor.chrome.inspector.DungeonEditorInspectorContentFactory;
 import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
@@ -24,7 +19,6 @@ import features.world.dungeonmap.ui.editor.workflow.tools.EditorMessageBus;
 import features.world.dungeonmap.ui.editor.workflow.tools.ToolSettingsBinding;
 import features.world.dungeonmap.ui.editor.workflow.catalog.DungeonCatalogLoader;
 import features.world.dungeonmap.ui.editor.workflow.connection.DungeonConnectionWorkflow;
-import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
 import features.world.dungeonmap.ui.editor.workflow.entity.DungeonEntityWorkflow;
 import features.world.dungeonmap.ui.editor.workflow.map.DungeonMapActions;
 import features.world.dungeonmap.ui.editor.workflow.map.DungeonMapLoader;
@@ -33,6 +27,8 @@ import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionCo
 import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionInspectorPublisher;
 import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionRestorer;
 import features.world.dungeonmap.ui.editor.workflow.tools.DungeonCanvasStateMapper;
+import features.world.dungeonmap.ui.shared.map.DungeonMapControlsPane;
+import features.world.dungeonmap.ui.shared.map.DungeonMapDropdownPresenter;
 import ui.shell.DetailsNavigator;
 
 import java.util.List;
@@ -43,7 +39,6 @@ public final class DungeonEditorController {
     private final DungeonEditorInteractionState interactionState;
     private final DungeonMapPane canvas;
     private final DungeonToolSettingsPane toolSettingsPane;
-    private final DungeonLinkFlow linkFlow;
     private final DungeonSelectionController selectionController;
     private final DungeonSquareEditWorkflow squareEditWorkflow;
     private final DungeonMapActions mapActions;
@@ -70,26 +65,20 @@ public final class DungeonEditorController {
         this.toolSettingsPane = toolSettingsPane;
 
         EditorMessageBus workflowMessages = new EditorMessageBus(toolSettingsPane);
-        linkFlow = new DungeonLinkFlow(canvas, toolSettingsPane);
         selectionController = new DungeonSelectionController(canvas, toolSettingsPane, state, workflowMessages);
         squareEditWorkflow = new DungeonSquareEditWorkflow(state, interactionState, canvas, commands, this::reloadCurrentMap);
         mapActions = new DungeonMapActions(state, new DungeonMapDropdownPresenter(), commands, this::onShow);
         entityWorkflow = new DungeonEntityWorkflow(state, toolSettingsPane, selectionController, workflowMessages, commands, this::reloadCurrentMap);
         connectionWorkflow = new DungeonConnectionWorkflow(
                 state,
-                interactionState,
-                canvas,
                 selectionController,
-                linkFlow,
-                workflowMessages,
                 commands,
                 this::reloadCurrentMap);
         var inspectorContentFactory = new DungeonEditorInspectorContentFactory(
                 state,
-                entityWorkflow,
-                connectionWorkflow);
+                entityWorkflow);
         selectionController.setInspectorPublisher(new DungeonSelectionInspectorPublisher(detailsNavigator, inspectorContentFactory));
-        toolSettingsBinding = new ToolSettingsBinding(state, toolSettingsPane, selectionController, linkFlow, entityWorkflow);
+        toolSettingsBinding = new ToolSettingsBinding(state, toolSettingsPane, selectionController, entityWorkflow);
         selectionRestorer = new DungeonSelectionRestorer(state, toolSettingsPane, selectionController, interactionState::activeTool);
         mapLoader = new DungeonMapLoader(
                 state,
@@ -97,7 +86,6 @@ public final class DungeonEditorController {
                 canvas,
                 toolSettingsPane,
                 selectionController,
-                linkFlow,
                 selectionRestorer,
                 queries,
                 squareEditWorkflow::handleMapLoaded);
@@ -117,8 +105,6 @@ public final class DungeonEditorController {
         canvas.setColorRenderMode(DungeonCanvasStateMapper.toCanvasColorMode(interactionState.colorRenderMode()));
         canvas.setActiveTool(DungeonCanvasStateMapper.toCanvasTool(interactionState.activeTool()));
         toolSettingsPane.setActiveTool(interactionState.activeTool());
-        canvas.setShowLinks(toolSettingsPane.linksVisible());
-        canvas.setShowEndpoints(toolSettingsPane.endpointsVisible());
         canvas.setShowFeatures(toolSettingsPane.featuresVisible());
     }
 
@@ -158,10 +144,6 @@ public final class DungeonEditorController {
         toolSettingsPane.setSelectedFeatureCategory(interactionState.activeFeatureCategory());
     }
 
-    public void handlePassageEditorModeChanged() {
-        canvas.setActiveTool(DungeonCanvasStateMapper.toCanvasTool(interactionState.activeTool()));
-    }
-
     public void handleActiveToolChanged(DungeonEditorTool tool) {
         squareEditWorkflow.commitPendingSquareEdits();
         DungeonColorRenderMode preferredColorMode = tool.preferredColorRenderMode();
@@ -169,7 +151,6 @@ public final class DungeonEditorController {
             interactionState.setColorRenderMode(preferredColorMode);
         }
         canvas.setActiveTool(DungeonCanvasStateMapper.toCanvasTool(tool));
-        linkFlow.cancelPendingLink();
         toolSettingsPane.setActiveTool(tool);
         toolSettingsPane.setBrushPaintModeActive(tool == DungeonEditorTool.FEATURE || interactionState.paintMode() == DungeonPaintMode.BRUSH);
         selectionRestorer.autoShowForTool(tool);
@@ -179,7 +160,6 @@ public final class DungeonEditorController {
         switch (interactionState.activeTool().cellClickAction()) {
             case SELECT_SQUARE -> selectionController.handleSquareClick(interaction, state.currentMapId());
             case ASSIGN_ROOM_AREA -> entityWorkflow.handleAreaAssignClick(interaction, state.currentMapId());
-            case CREATE_OR_SELECT_ENDPOINT -> connectionWorkflow.createOrSelectEndpoint(interaction.square());
         }
     }
 
@@ -207,20 +187,24 @@ public final class DungeonEditorController {
         squareEditWorkflow.flushPendingWallEdits();
     }
 
-    public void handleEndpointClick(DungeonEndpoint endpoint) {
-        connectionWorkflow.handleEndpointClick(endpoint);
-    }
-
     public void handleFeatureClick(DungeonFeature feature) {
         selectionController.selectFeature(feature);
     }
 
-    public void showLinkSelection(DungeonLink link) {
-        selectionController.showLinkSelection(link);
+    public void handleConnectionClicked(Long connectionId) {
+        connectionWorkflow.selectConnection(connectionId);
     }
 
-    public void handleEdgeClick(DungeonMapPane.EdgeInteraction interaction) {
-        connectionWorkflow.handleEdgeClick(interaction);
+    public void handleConnectionPointMoved(DungeonMapPane.ConnectionPointMoveRequest request) {
+        connectionWorkflow.moveConnectionPoint(request);
+    }
+
+    public void handleConnectionPointInserted(DungeonMapPane.ConnectionPointInsertRequest request) {
+        connectionWorkflow.insertConnectionPoint(request);
+    }
+
+    public void handleConnectionPointDeleted(DungeonMapPane.ConnectionPointDeleteRequest request) {
+        connectionWorkflow.deleteConnectionPoint(request);
     }
 
     public int brushSize() {
@@ -237,18 +221,6 @@ public final class DungeonEditorController {
 
     public WallEditorMode wallEditorMode() {
         return interactionState.wallEditorMode();
-    }
-
-    public PassageEditorMode passageEditorMode() {
-        return interactionState.passageEditorMode();
-    }
-
-    public void setShowLinks(boolean showLinks) {
-        canvas.setShowLinks(showLinks);
-    }
-
-    public void setShowEndpoints(boolean showEndpoints) {
-        canvas.setShowEndpoints(showEndpoints);
     }
 
     public void setShowFeatures(boolean showFeatures) {

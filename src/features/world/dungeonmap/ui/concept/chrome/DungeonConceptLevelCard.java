@@ -4,7 +4,7 @@ import features.world.dungeonmap.model.domain.DungeonConceptLevel;
 import features.world.dungeonmap.model.domain.DungeonConceptLevelConnection;
 import features.world.dungeonmap.model.projection.DungeonConceptState;
 import features.world.dungeonmap.ui.concept.state.DungeonConceptLevelMetrics;
-import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonSidebarCards;
+import features.world.dungeonmap.ui.shared.format.DungeonConceptTransitionText;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -14,14 +14,10 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -38,8 +34,8 @@ final class DungeonConceptLevelCard extends VBox {
             DungeonConceptLevelMetrics metrics,
             Consumer<Long> onActiveLevelSelected,
             Consumer<DungeonConceptStatePane.LevelPlanUpdate> onLevelPlanChanged,
-            BiConsumer<Long, Long> onConnectionAddRequested,
-            BiConsumer<Long, Long> onConnectionRemoveRequested
+            BiConsumer<Long, Long> onConnectionCreateRequested,
+            Consumer<Long> onConnectionDeleteRequested
     ) {
         this.conceptLevelId = level.conceptLevelId();
         getStyleClass().addAll("dungeon-editor-card", "concept-level-card");
@@ -51,6 +47,7 @@ final class DungeonConceptLevelCard extends VBox {
         TextField progressField = DungeonConceptStateControls.createDecimalField(DungeonConceptStateControls.formatDecimal(level.progressFraction()));
         TextField daysField = DungeonConceptStateControls.createDecimalField(DungeonConceptStateControls.formatDecimal(level.adventuringDaysTarget()));
         Spinner<Integer> entranceSpinner = DungeonConceptStateControls.createIntegerSpinner(0, 20, level.entranceCount());
+        Spinner<Integer> exitSpinner = DungeonConceptStateControls.createIntegerSpinner(0, 20, level.exitCount());
         AtomicReference<DungeonConceptStatePane.LevelPlanUpdate> lastSubmitted = new AtomicReference<>();
 
         Runnable commit = () -> commitLevelPlan(
@@ -60,12 +57,14 @@ final class DungeonConceptLevelCard extends VBox {
                 progressField,
                 daysField,
                 entranceSpinner,
+                exitSpinner,
                 onLevelPlanChanged,
                 lastSubmitted);
 
         startLevelSpinner.valueProperty().addListener((obs, oldValue, newValue) -> commit.run());
         endLevelSpinner.valueProperty().addListener((obs, oldValue, newValue) -> commit.run());
         entranceSpinner.valueProperty().addListener((obs, oldValue, newValue) -> commit.run());
+        exitSpinner.valueProperty().addListener((obs, oldValue, newValue) -> commit.run());
         startLevelSpinner.focusedProperty().addListener((obs, oldValue, focused) -> {
             if (!focused) {
                 DungeonConceptStateControls.commitSpinnerValue(startLevelSpinner);
@@ -81,6 +80,11 @@ final class DungeonConceptLevelCard extends VBox {
                 DungeonConceptStateControls.commitSpinnerValue(entranceSpinner);
             }
         });
+        exitSpinner.focusedProperty().addListener((obs, oldValue, focused) -> {
+            if (!focused) {
+                DungeonConceptStateControls.commitSpinnerValue(exitSpinner);
+            }
+        });
         DungeonConceptStateControls.bindCommit(progressField, commit);
         DungeonConceptStateControls.bindCommit(daysField, commit);
 
@@ -89,50 +93,55 @@ final class DungeonConceptLevelCard extends VBox {
         addConnectionCombo.setPrefWidth(110);
         addConnectionCombo.setMinWidth(110);
         addConnectionCombo.setMaxWidth(110);
+        addConnectionCombo.setPromptText("Ebene...");
         addConnectionCombo.getStyleClass().add("concept-compact-combo");
         addConnectionCombo.getItems().setAll(availableTargets(state, level));
-        Button addConnectionButton = new Button("Hinzufügen");
-        addConnectionButton.getStyleClass().add("compact");
-        addConnectionButton.setDisable(addConnectionCombo.getItems().isEmpty());
-        addConnectionButton.setOnAction(event -> {
-            if (onConnectionAddRequested != null && addConnectionCombo.getValue() != null) {
-                onConnectionAddRequested.accept(level.conceptLevelId(), addConnectionCombo.getValue().conceptLevelId());
+        addConnectionCombo.setDisable(addConnectionCombo.getItems().isEmpty());
+        addConnectionCombo.setOnAction(event -> {
+            DungeonConceptLevel selectedTarget = addConnectionCombo.getValue();
+            if (selectedTarget == null) {
+                return;
             }
+            if (onConnectionCreateRequested != null) {
+                onConnectionCreateRequested.accept(level.conceptLevelId(), selectedTarget.conceptLevelId());
+            }
+            addConnectionCombo.getSelectionModel().clearSelection();
         });
 
-        FlowPane connectionTokens = new FlowPane(4, 4);
+        FlowPane transitionRow = DungeonConceptStateControls.wrappingRow();
         for (DungeonConceptLevelConnection connection : connectionsForLevel(state, level.conceptLevelId())) {
             Long targetLevelId = connection.otherLevelId(level.conceptLevelId());
             DungeonConceptLevel targetLevel = state.findLevel(targetLevelId);
             if (targetLevel != null) {
-                connectionTokens.getChildren().add(buildConnectionToken(level.conceptLevelId(), targetLevel, onConnectionRemoveRequested));
+                transitionRow.getChildren().add(buildConnectionToken(state, level, connection, targetLevel, onConnectionDeleteRequested));
             }
         }
 
-        HBox titleRow = new HBox(8);
-        titleRow.setAlignment(Pos.CENTER_LEFT);
         Label titleLabel = new Label(level.displayName());
         titleLabel.getStyleClass().add("dungeon-panel-title");
-        Region titleSpacer = new Region();
-        HBox.setHgrow(titleSpacer, Priority.ALWAYS);
-        titleRow.getChildren().addAll(
-                titleLabel,
-                titleSpacer,
+        HBox headerRow = new HBox(titleLabel);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+        FlowPane controlsRow = DungeonConceptStateControls.wrappingRow(
                 DungeonConceptStateControls.labeledControl("Von", startLevelSpinner),
                 DungeonConceptStateControls.labeledControl("Bis", endLevelSpinner),
-                DungeonConceptStateControls.labeledControl("Ein", entranceSpinner));
+                DungeonConceptStateControls.labeledControl("Fort", progressField),
+                DungeonConceptStateControls.labeledControl("Tage", daysField),
+                DungeonConceptStateControls.labeledControl("Ein", entranceSpinner),
+                DungeonConceptStateControls.labeledControl("Aus", exitSpinner),
+                DungeonConceptStateControls.metricValue("XP", metrics.progressTargetGroupXp() + " XP"),
+                DungeonConceptStateControls.metricValue("Tage", DungeonConceptStateControls.formatDecimal(metrics.progressTargetDays())));
+
+        Label transitionsLabel = new Label("Übergänge");
+        transitionsLabel.getStyleClass().addAll("small", "text-muted");
+        transitionRow.getChildren().add(0, addConnectionCombo);
+        transitionRow.getChildren().add(0, transitionsLabel);
+        VBox detailsBox = new VBox(5, controlsRow, transitionRow);
+        detailsBox.setManaged(active);
+        detailsBox.setVisible(active);
 
         getChildren().addAll(
-                titleRow,
-                DungeonConceptStateControls.compactRow(
-                        DungeonConceptStateControls.labeledControl("Fort", progressField),
-                        DungeonConceptStateControls.labeledControl("Tage", daysField),
-                        DungeonConceptStateControls.metricValue("XP", metrics.progressTargetGroupXp() + " XP"),
-                        DungeonConceptStateControls.metricValue("Tage", DungeonConceptStateControls.formatDecimal(metrics.progressTargetDays()))),
-                DungeonConceptStateControls.compactRow(
-                        DungeonConceptStateControls.labeledControl("Übergänge", addConnectionCombo),
-                        addConnectionButton),
-                connectionTokens);
+                headerRow,
+                detailsBox);
 
         setOnMouseClicked(event -> {
             if (onActiveLevelSelected != null) {
@@ -155,6 +164,7 @@ final class DungeonConceptLevelCard extends VBox {
             TextField progressField,
             TextField daysField,
             Spinner<Integer> entranceSpinner,
+            Spinner<Integer> exitSpinner,
             Consumer<DungeonConceptStatePane.LevelPlanUpdate> onLevelPlanChanged,
             AtomicReference<DungeonConceptStatePane.LevelPlanUpdate> lastSubmitted
     ) {
@@ -164,6 +174,7 @@ final class DungeonConceptLevelCard extends VBox {
         DungeonConceptStateControls.commitSpinnerValue(startLevelSpinner);
         DungeonConceptStateControls.commitSpinnerValue(endLevelSpinner);
         DungeonConceptStateControls.commitSpinnerValue(entranceSpinner);
+        DungeonConceptStateControls.commitSpinnerValue(exitSpinner);
         int startLevel = startLevelSpinner.getValue();
         int endLevel = Math.max(startLevel, endLevelSpinner.getValue());
         if (!Objects.equals(endLevel, endLevelSpinner.getValue())) {
@@ -175,7 +186,8 @@ final class DungeonConceptLevelCard extends VBox {
                 endLevel,
                 DungeonConceptStateControls.parseDecimal(progressField.getText(), level.progressFraction()),
                 DungeonConceptStateControls.parseDecimal(daysField.getText(), level.adventuringDaysTarget()),
-                entranceSpinner.getValue());
+                entranceSpinner.getValue(),
+                exitSpinner.getValue());
         if (Objects.equals(lastSubmitted.get(), update)) {
             return;
         }
@@ -184,17 +196,23 @@ final class DungeonConceptLevelCard extends VBox {
     }
 
     private static HBox buildConnectionToken(
-            Long sourceLevelId,
+            DungeonConceptState state,
+            DungeonConceptLevel sourceLevel,
+            DungeonConceptLevelConnection connection,
             DungeonConceptLevel targetLevel,
-            BiConsumer<Long, Long> onConnectionRemoveRequested
+            Consumer<Long> onConnectionDeleteRequested
     ) {
-        Label label = new Label(targetLevel.displayName());
+        Label label = new Label(DungeonConceptTransitionText.targetChipLabel(
+                state.connections(),
+                state.levels(),
+                sourceLevel.conceptLevelId(),
+                connection));
         Button removeButton = new Button("×");
         removeButton.getStyleClass().add("compact");
         removeButton.setOnAction(event -> {
             event.consume();
-            if (onConnectionRemoveRequested != null) {
-                onConnectionRemoveRequested.accept(sourceLevelId, targetLevel.conceptLevelId());
+            if (onConnectionDeleteRequested != null) {
+                onConnectionDeleteRequested.accept(connection.connectionId());
             }
         });
         HBox token = new HBox(6, label, removeButton);
@@ -205,18 +223,10 @@ final class DungeonConceptLevelCard extends VBox {
     }
 
     private static List<DungeonConceptLevel> availableTargets(DungeonConceptState state, DungeonConceptLevel sourceLevel) {
-        Map<Long, DungeonConceptLevel> blocked = new LinkedHashMap<>();
-        blocked.put(sourceLevel.conceptLevelId(), sourceLevel);
-        for (DungeonConceptLevelConnection connection : connectionsForLevel(state, sourceLevel.conceptLevelId())) {
-            Long otherLevelId = connection.otherLevelId(sourceLevel.conceptLevelId());
-            DungeonConceptLevel otherLevel = state.findLevel(otherLevelId);
-            if (otherLevel != null) {
-                blocked.put(otherLevel.conceptLevelId(), otherLevel);
-            }
-        }
         List<DungeonConceptLevel> result = new java.util.ArrayList<>();
         for (DungeonConceptLevel level : state.levels()) {
-            if (!blocked.containsKey(level.conceptLevelId())) {
+            // Parallel transitions between the same pair of levels are intentional and must stay selectable.
+            if (!Objects.equals(level.conceptLevelId(), sourceLevel.conceptLevelId())) {
                 result.add(level);
             }
         }

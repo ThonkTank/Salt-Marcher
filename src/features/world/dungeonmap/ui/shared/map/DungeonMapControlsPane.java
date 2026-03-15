@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor.chrome.map;
+package features.world.dungeonmap.ui.shared.map;
 
 import features.world.dungeonmap.model.domain.DungeonMap;
 import javafx.geometry.Pos;
@@ -17,12 +17,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public final class DungeonMapControlsPane extends VBox {
+public final class DungeonMapControlsPane extends VBox implements DungeonInlineControlsHost {
     public record MapActionRequest(DungeonMap map, Node anchor) {}
 
     private final ComboBox<DungeonMap> mapCombo = new ComboBox<>();
     private final HBox mapRow;
-    private final HBox inlineExtras = new HBox(6);
+    private final HBox primaryInlineExtras = new HBox(6);
     private final Region trailingSpacer = new Region();
     private boolean updatingMapCombo = false;
 
@@ -73,8 +73,8 @@ public final class DungeonMapControlsPane extends VBox {
             }
         });
 
-        inlineExtras.setAlignment(Pos.CENTER_LEFT);
-        mapRow = new HBox(8, mapCombo, newMapButton, editMapButton, inlineExtras, trailingSpacer);
+        primaryInlineExtras.setAlignment(Pos.CENTER_LEFT);
+        mapRow = new HBox(8, mapCombo, newMapButton, editMapButton, primaryInlineExtras, trailingSpacer);
         mapRow.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(mapCombo, Priority.ALWAYS);
         HBox.setHgrow(trailingSpacer, Priority.ALWAYS);
@@ -108,6 +108,15 @@ public final class DungeonMapControlsPane extends VBox {
 
     public void selectMap(Long mapId, boolean notifyListeners) {
         if (mapId == null) {
+            boolean previousUpdating = updatingMapCombo;
+            if (!notifyListeners) {
+                updatingMapCombo = true;
+            }
+            try {
+                mapCombo.setValue(null);
+            } finally {
+                updatingMapCombo = previousUpdating;
+            }
             return;
         }
         boolean previousUpdating = updatingMapCombo;
@@ -126,6 +135,10 @@ public final class DungeonMapControlsPane extends VBox {
         }
     }
 
+    public void clearMapSelection() {
+        selectMap(null, false);
+    }
+
     public void setOnMapSelected(Consumer<Long> onMapSelected) {
         this.onMapSelected = onMapSelected;
     }
@@ -139,9 +152,9 @@ public final class DungeonMapControlsPane extends VBox {
     }
 
     public void setInlineTrailingNode(Node node) {
-        inlineExtras.getChildren().setAll();
+        primaryInlineExtras.getChildren().setAll();
         if (node != null) {
-            inlineExtras.getChildren().setAll(node);
+            primaryInlineExtras.getChildren().setAll(node);
         }
     }
 

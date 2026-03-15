@@ -11,7 +11,6 @@ import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorControls
 import features.world.dungeonmap.ui.editor.chrome.sidebar.DungeonToolSettingsPane;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
-import features.world.dungeonmap.ui.editor.workflow.connection.DungeonLinkFlow;
 import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
 import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionRestorer;
 import ui.async.UiErrorReporter;
@@ -25,7 +24,6 @@ public final class DungeonMapLoader {
     private final DungeonMapPane canvas;
     private final DungeonToolSettingsPane toolSettingsPane;
     private final DungeonSelectionController selectionController;
-    private final DungeonLinkFlow linkFlow;
     private final DungeonSelectionRestorer selectionRestorer;
     private final DungeonMapQueryService queries;
     private final Runnable onMapLoaded;
@@ -36,7 +34,6 @@ public final class DungeonMapLoader {
             DungeonMapPane canvas,
             DungeonToolSettingsPane toolSettingsPane,
             DungeonSelectionController selectionController,
-            DungeonLinkFlow linkFlow,
             DungeonSelectionRestorer selectionRestorer,
             DungeonMapQueryService queries,
             Runnable onMapLoaded
@@ -46,7 +43,6 @@ public final class DungeonMapLoader {
         this.canvas = canvas;
         this.toolSettingsPane = toolSettingsPane;
         this.selectionController = selectionController;
-        this.linkFlow = linkFlow;
         this.selectionRestorer = selectionRestorer;
         this.queries = queries;
         this.onMapLoaded = onMapLoaded == null ? () -> { } : onMapLoaded;
@@ -61,7 +57,6 @@ public final class DungeonMapLoader {
             clearLoadedState();
             return;
         }
-        linkFlow.cancelPendingLink();
         state.setCurrentMapId(mapId);
         long requestToken = state.nextLoadRequestToken();
         DungeonUiAsyncSupport.submitValue(
@@ -95,6 +90,7 @@ public final class DungeonMapLoader {
                     controls.setMaps(maps);
                     Long mapToSelect = resolveMapSelection(maps);
                     if (mapToSelect == null) {
+                        controls.clearMapSelection();
                         clearLoadedState();
                     } else {
                         toolSettingsPane.setMapLoaded(true);
@@ -129,17 +125,13 @@ public final class DungeonMapLoader {
     private void clearLoadedState() {
         state.setCurrentMapId(null);
         state.setCurrentState(null);
+        controls.clearMapSelection();
         applyEditorState(null);
     }
 
     private void handleLoadFailure() {
-        state.setCurrentState(null);
         canvas.showLoadError("Dungeon konnte nicht geladen werden");
-        toolSettingsPane.setMapLoaded(false);
-        toolSettingsPane.setAreas(List.of());
-        toolSettingsPane.setFeatures(List.of());
-        linkFlow.cancelPendingLink();
-        selectionController.clearSelection();
+        clearLoadedState();
     }
 
     private void applyEditorState(DungeonMapState loadedState) {
@@ -149,7 +141,6 @@ public final class DungeonMapLoader {
         toolSettingsPane.setAreas(areas);
         toolSettingsPane.setFeatures(features);
         toolSettingsPane.setMapLoaded(loadedState != null && loadedState.map() != null);
-        linkFlow.cancelPendingLink();
         selectionController.clearSelection();
         selectionRestorer.restoreAfterLoad(loadedState);
     }

@@ -1,10 +1,8 @@
 package features.world.dungeonmap.ui.editor.workflow.selection;
 
+import features.world.dungeonmap.model.domain.DungeonConnection;
 import features.world.dungeonmap.model.domain.DungeonArea;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
-import features.world.dungeonmap.model.domain.DungeonLink;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.ui.editor.chrome.inspector.DungeonEditorInspectorContentFactory;
@@ -39,9 +37,7 @@ public final class DungeonSelectionInspectorPublisher {
             case ROOM -> showRoomInspector(selection.room(), refreshOnlyIfVisible);
             case AREA -> showAreaInspector(selection.area(), refreshOnlyIfVisible);
             case FEATURE -> showFeatureInspector(selection.feature(), refreshOnlyIfVisible);
-            case ENDPOINT -> showEndpointInspector(selection.endpoint(), refreshOnlyIfVisible);
-            case LINK -> showLinkInspector(selection.link(), refreshOnlyIfVisible);
-            case PASSAGE -> showPassageInspector(selection.passage(), refreshOnlyIfVisible);
+            case CONNECTION -> showConnectionInspector(selection.connection(), refreshOnlyIfVisible);
             case NONE -> {
                 // Keep the last global inspector entry visible until the GM opens or closes it explicitly.
             }
@@ -92,37 +88,15 @@ public final class DungeonSelectionInspectorPublisher {
         detailsNavigator.showContent(titleOrFallback(room.name(), "Raum"), entryKey, () -> inspectorContentFactory.buildRoomCard(room), () -> inspectorContentFactory.buildRoomFooter(room));
     }
 
-    private void showEndpointInspector(DungeonEndpoint endpoint, boolean refreshOnlyIfVisible) {
-        if (endpoint == null || endpoint.endpointId() == null) {
+    private void showConnectionInspector(DungeonConnection connection, boolean refreshOnlyIfVisible) {
+        if (connection == null || connection.connectionId() == null) {
             return;
         }
-        Object entryKey = endpointEntryKey(endpoint.endpointId());
+        Object entryKey = connectionEntryKey(connection.connectionId());
         if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
             return;
         }
-        detailsNavigator.showContent(titleOrFallback(endpoint.name(), "Übergang"), entryKey, () -> inspectorContentFactory.buildEndpointCard(endpoint));
-    }
-
-    private void showLinkInspector(DungeonLink link, boolean refreshOnlyIfVisible) {
-        if (link == null || link.linkId() == null) {
-            return;
-        }
-        Object entryKey = linkEntryKey(link.linkId());
-        if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
-            return;
-        }
-        detailsNavigator.showContent(titleOrFallback(link.label(), "Link"), entryKey, () -> inspectorContentFactory.buildLinkCard(link));
-    }
-
-    private void showPassageInspector(DungeonPassage passage, boolean refreshOnlyIfVisible) {
-        if (passage == null || passage.passageId() == null) {
-            return;
-        }
-        Object entryKey = passageEntryKey(passage.passageId());
-        if (refreshOnlyIfVisible && !isShowingContent(entryKey)) {
-            return;
-        }
-        detailsNavigator.showContent(titleOrFallback(passage.name(), "Durchgang"), entryKey, () -> inspectorContentFactory.buildPassageCard(passage));
+        detailsNavigator.showContent("Verbindung", entryKey, () -> inspectorContentFactory.buildConnectionCard(connection));
     }
 
     private boolean isShowingContent(Object key) {
@@ -137,16 +111,8 @@ public final class DungeonSelectionInspectorPublisher {
         return "dungeon-editor-area:" + areaId;
     }
 
-    private static String endpointEntryKey(Long endpointId) {
-        return "dungeon-editor-endpoint:" + endpointId;
-    }
-
-    private static String linkEntryKey(Long linkId) {
-        return "dungeon-editor-link:" + linkId;
-    }
-
-    private static String passageEntryKey(Long passageId) {
-        return "dungeon-editor-passage:" + passageId;
+    private static String connectionEntryKey(Long connectionId) {
+        return "dungeon-editor-connection:" + connectionId;
     }
 
     private static String titleOrFallback(String value, String fallback) {

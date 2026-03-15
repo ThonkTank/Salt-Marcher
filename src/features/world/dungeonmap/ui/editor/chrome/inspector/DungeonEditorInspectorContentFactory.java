@@ -1,17 +1,15 @@
 package features.world.dungeonmap.ui.editor.chrome.inspector;
 
+import features.world.dungeonmap.model.domain.DungeonConnection;
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonAreaEncounterTableLink;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
-import features.world.dungeonmap.model.domain.DungeonLink;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchorType;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
+import features.world.dungeonmap.model.projection.index.DungeonRoomConnectionSummary;
+import features.world.dungeonmap.service.room.DungeonRoomConnectionRoutes;
 import features.world.dungeonmap.ui.shared.format.DungeonAreaEncounterText;
 import features.world.dungeonmap.ui.shared.format.DungeonRoomDetailRenderer;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
@@ -31,16 +29,13 @@ public final class DungeonEditorInspectorContentFactory {
 
     private final DungeonEditorState state;
     private final DungeonEntityInspectorActions entityActions;
-    private final DungeonConnectionInspectorSectionBuilder connectionSectionBuilder;
 
     public DungeonEditorInspectorContentFactory(
             DungeonEditorState state,
-            DungeonEntityInspectorActions entityActions,
-            DungeonConnectionInspectorActions connectionActions
+            DungeonEntityInspectorActions entityActions
     ) {
         this.state = state;
         this.entityActions = entityActions;
-        this.connectionSectionBuilder = new DungeonConnectionInspectorSectionBuilder(state, connectionActions);
     }
 
     public Node buildRoomCard(DungeonRoom room) {
@@ -50,8 +45,7 @@ public final class DungeonEditorInspectorContentFactory {
             return box;
         }
         DungeonRoomDetailRenderer.appendStructuredDetails(box, currentIndex(), room, resolveAreaName(room.areaId()));
-        appendRoomEndpointSection(box, room.roomId());
-        appendRoomPassageSection(box, room.roomId());
+        appendRoomConnectionSection(box, room.roomId());
         return box;
     }
 
@@ -91,63 +85,33 @@ public final class DungeonEditorInspectorContentFactory {
         return box;
     }
 
-    public Node buildEndpointCard(DungeonEndpoint endpoint) {
+    public Node buildConnectionCard(DungeonConnection connection) {
         VBox box = DungeonInspectorCards.card();
-        if (endpoint == null) {
-            box.getChildren().add(DungeonInspectorCards.secondary("Übergang nicht gefunden."));
+        if (connection == null) {
+            box.getChildren().add(DungeonInspectorCards.secondary("Verbindung nicht gefunden."));
             return box;
         }
-        box.getChildren().add(connectionSectionBuilder.buildEndpointEditor(endpoint));
-        appendEndpointLinks(box, endpoint);
-        return box;
-    }
-
-    public Node buildPassageCard(DungeonPassage passage) {
-        VBox box = DungeonInspectorCards.card();
-        if (passage == null) {
-            box.getChildren().add(DungeonInspectorCards.secondary("Durchgang nicht gefunden."));
-            return box;
-        }
-        box.getChildren().add(connectionSectionBuilder.buildPassageEditor(passage));
-        appendPassageLinks(box, passage);
-        return box;
-    }
-
-    public Node buildLinkCard(DungeonLink link) {
-        VBox box = DungeonInspectorCards.card();
-        if (link == null) {
-            box.getChildren().add(DungeonInspectorCards.secondary("Link nicht gefunden."));
-            return box;
-        }
+        DungeonRoom leftRoom = resolveConnectionRoom(connection.leftNodeKey());
+        DungeonRoom rightRoom = resolveConnectionRoom(connection.rightNodeKey());
         box.getChildren().addAll(
-                DungeonInspectorCards.secondary("Von: " + resolveAnchorName(link.fromAnchor())),
-                DungeonInspectorCards.secondary("Nach: " + resolveAnchorName(link.toAnchor())),
-                connectionSectionBuilder.buildLinkEditor(link, link.fromAnchor(), resolveLinkCounterpartName(link, link.fromAnchor())));
+                DungeonInspectorCards.secondary("Von: " + DungeonInspectorCards.titleOrFallback(leftRoom == null ? null : leftRoom.name(), connection.leftNodeKey())),
+                DungeonInspectorCards.secondary("Nach: " + DungeonInspectorCards.titleOrFallback(rightRoom == null ? null : rightRoom.name(), connection.rightNodeKey())),
+                DungeonInspectorCards.secondary("Knoten: " + describeConnectionPointCount(connection.connectionId())));
         return box;
     }
 
-    private void appendRoomEndpointSection(VBox parent, Long roomId) {
-        List<DungeonEndpoint> endpoints = roomEndpoints(roomId);
-        if (endpoints.isEmpty()) {
+    private void appendRoomConnectionSection(VBox parent, Long roomId) {
+        List<DungeonRoomConnectionSummary> connections = roomConnections(roomId);
+        if (connections.isEmpty()) {
             return;
         }
-        VBox content = new VBox(8);
-        for (DungeonEndpoint endpoint : endpoints) {
-            content.getChildren().add(connectionSectionBuilder.buildEndpointEditor(endpoint));
+        List<String> lines = new ArrayList<>();
+        for (DungeonRoomConnectionSummary connection : connections) {
+            DungeonRoom counterpart = currentIndex().findRoom(connection.counterpartRoomId());
+            lines.add(DungeonInspectorCards.titleOrFallback(counterpart == null ? null : counterpart.name(), "Verbindung")
+                    + " • " + describeConnectionPointCount(connection.connectionId()));
         }
-        parent.getChildren().add(DungeonInspectorCards.section("Übergänge", content));
-    }
-
-    private void appendRoomPassageSection(VBox parent, Long roomId) {
-        List<DungeonPassage> passages = roomPassages(roomId);
-        if (passages.isEmpty()) {
-            return;
-        }
-        VBox content = new VBox(8);
-        for (DungeonPassage passage : passages) {
-            content.getChildren().add(connectionSectionBuilder.buildPassageEditor(passage));
-        }
-        parent.getChildren().add(DungeonInspectorCards.section("Durchgänge", content));
+        DungeonInspectorCards.appendListSection(parent, "Verbindungen", lines);
     }
 
     public Node buildRoomFooter(DungeonRoom room) {
@@ -178,32 +142,6 @@ public final class DungeonEditorInspectorContentFactory {
         return footer;
     }
 
-    private void appendEndpointLinks(VBox parent, DungeonEndpoint endpoint) {
-        List<DungeonLink> links = linksForEndpoint(endpoint.endpointId());
-        if (links.isEmpty()) {
-            return;
-        }
-        VBox content = new VBox(6);
-        DungeonLinkAnchor anchor = DungeonLinkAnchor.endpoint(endpoint.endpointId());
-        for (DungeonLink link : links) {
-            content.getChildren().add(connectionSectionBuilder.buildLinkEditor(link, anchor, resolveLinkCounterpartName(link, anchor)));
-        }
-        parent.getChildren().add(DungeonInspectorCards.section("Links", content));
-    }
-
-    private void appendPassageLinks(VBox parent, DungeonPassage passage) {
-        List<DungeonLink> links = linksForPassage(passage.passageId());
-        if (links.isEmpty()) {
-            return;
-        }
-        VBox content = new VBox(6);
-        DungeonLinkAnchor anchor = DungeonLinkAnchor.passage(passage.passageId());
-        for (DungeonLink link : links) {
-            content.getChildren().add(connectionSectionBuilder.buildLinkEditor(link, anchor, resolveLinkCounterpartName(link, anchor)));
-        }
-        parent.getChildren().add(DungeonInspectorCards.section("Links", content));
-    }
-
     private List<DungeonSquare> roomSquares(Long roomId) {
         return currentIndex().squaresForRoom(roomId);
     }
@@ -216,24 +154,8 @@ public final class DungeonEditorInspectorContentFactory {
         return currentIndex().featureTilesForFeature(featureId);
     }
 
-    private List<DungeonEndpoint> roomEndpoints(Long roomId) {
-        return currentIndex().endpointsForRoom(roomId);
-    }
-
-    private List<DungeonPassage> roomPassages(Long roomId) {
-        return currentIndex().passagesForRoom(roomId);
-    }
-
-    private List<DungeonLink> linksForEndpoint(Long endpointId) {
-        return linksForAnchor(endpointId == null ? null : DungeonLinkAnchor.endpoint(endpointId));
-    }
-
-    private List<DungeonLink> linksForPassage(Long passageId) {
-        return linksForAnchor(passageId == null ? null : DungeonLinkAnchor.passage(passageId));
-    }
-
-    private List<DungeonLink> linksForAnchor(DungeonLinkAnchor anchor) {
-        return currentIndex().linksForAnchor(anchor);
+    private List<DungeonRoomConnectionSummary> roomConnections(Long roomId) {
+        return currentIndex().roomConnectionsForRoom(roomId);
     }
 
     public DungeonRoom resolveOwningRoom(DungeonFeature feature) {
@@ -301,30 +223,16 @@ public final class DungeonEditorInspectorContentFactory {
         return area == null ? null : area.name();
     }
 
-    private String resolveLinkCounterpartName(DungeonLink link, DungeonLinkAnchor currentAnchor) {
-        DungeonLinkAnchor counterpart = Objects.equals(link.fromAnchor(), currentAnchor) ? link.toAnchor() : link.fromAnchor();
-        return resolveAnchorName(counterpart);
+    private DungeonRoom resolveConnectionRoom(String nodeKey) {
+        Long roomId = DungeonRoomConnectionRoutes.roomIdFromNodeKey(nodeKey);
+        return currentIndex().findRoom(roomId);
     }
 
-    private String resolveAnchorName(DungeonLinkAnchor anchor) {
-        if (anchor == null) {
-            return "-";
-        }
-        return switch (anchor.type()) {
-            case ENDPOINT -> {
-                DungeonEndpoint endpoint = currentIndex().findEndpoint(anchor.anchorId());
-                yield endpoint == null
-                        ? "Übergang #" + anchor.anchorId()
-                        : DungeonInspectorCards.titleOrFallback(endpoint.name(), "Übergang #" + anchor.anchorId());
-            }
-            case PASSAGE -> {
-                DungeonPassage passage = currentIndex().findPassage(anchor.anchorId());
-                yield passage == null
-                        ? "Durchgang #" + anchor.anchorId()
-                        : DungeonInspectorCards.titleOrFallback(passage.name(), "Durchgang") + " • "
-                        + DungeonInspectorCards.formatPassagePosition(passage);
-            }
-        };
+    private String describeConnectionPointCount(Long connectionId) {
+        long pointCount = state.currentState() == null ? 0 : state.currentState().connectionPoints().stream()
+                .filter(point -> Objects.equals(connectionId, point.connectionId()))
+                .count();
+        return pointCount == 0 ? "direkt" : pointCount + " Wegpunkte";
     }
 
     private DungeonMapIndex currentIndex() {

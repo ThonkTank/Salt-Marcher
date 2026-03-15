@@ -1,9 +1,8 @@
 package features.world.dungeonmap.service.runtime;
 
-import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
 import features.world.dungeonmap.model.projection.DungeonMapState;
+import features.world.dungeonmap.model.projection.DungeonMapConnectionPath;
 import features.world.dungeonmap.model.domain.DungeonSquare;
-import features.world.dungeonmap.model.domain.PassageDirection;
 
 final class DungeonRuntimeTraversalService {
 
@@ -24,40 +23,19 @@ final class DungeonRuntimeTraversalService {
         if (currentSquare.roomId() == null || targetSquare.roomId() == null) {
             return false;
         }
-
-        for (DungeonSquare roomSquare : state.index().squaresForRoom(currentSquare.roomId())) {
-            if (touchesRoomThroughPassableEdge(state, roomSquare, targetSquare.roomId())) {
+        for (DungeonMapConnectionPath connectionPath : state.roomConnections()) {
+            if (connectsRooms(connectionPath, currentSquare.roomId(), targetSquare.roomId())) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean touchesRoomThroughPassableEdge(DungeonMapState state, DungeonSquare sourceSquare, Long targetRoomId) {
-        return isPassableToRoom(state, sourceSquare, sourceSquare.x() + 1, sourceSquare.y(), PassageDirection.EAST, targetRoomId)
-                || isPassableToRoom(state, sourceSquare, sourceSquare.x() - 1, sourceSquare.y(), PassageDirection.EAST, targetRoomId)
-                || isPassableToRoom(state, sourceSquare, sourceSquare.x(), sourceSquare.y() + 1, PassageDirection.SOUTH, targetRoomId)
-                || isPassableToRoom(state, sourceSquare, sourceSquare.x(), sourceSquare.y() - 1, PassageDirection.SOUTH, targetRoomId);
-    }
-
-    private boolean isPassableToRoom(
-            DungeonMapState state,
-            DungeonSquare sourceSquare,
-            int neighborX,
-            int neighborY,
-            PassageDirection direction,
-            Long targetRoomId
-    ) {
-        DungeonSquare neighbor = state.index().squareAt(neighborX, neighborY);
-        if (neighbor == null || targetRoomId == null || !targetRoomId.equals(neighbor.roomId())) {
+    private boolean connectsRooms(DungeonMapConnectionPath connectionPath, Long currentRoomId, Long targetRoomId) {
+        if (connectionPath == null || currentRoomId == null || targetRoomId == null) {
             return false;
         }
-        DungeonEdgeSummary edge = direction == PassageDirection.EAST
-                ? state.edgeAt(direction.edgeKey(Math.min(sourceSquare.x(), neighborX), sourceSquare.y()))
-                : state.edgeAt(direction.edgeKey(sourceSquare.x(), Math.min(sourceSquare.y(), neighborY)));
-        if (edge == null || edge.sideASquare() == null || edge.sideBSquare() == null) {
-            return false;
-        }
-        return edge.passage() != null || !edge.wallPresent();
+        return currentRoomId.equals(connectionPath.fromRoomId()) && targetRoomId.equals(connectionPath.toRoomId())
+                || currentRoomId.equals(connectionPath.toRoomId()) && targetRoomId.equals(connectionPath.fromRoomId());
     }
 }

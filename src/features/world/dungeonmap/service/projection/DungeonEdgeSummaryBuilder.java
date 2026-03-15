@@ -1,6 +1,5 @@
 package features.world.dungeonmap.service.projection;
 
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeIndex;
@@ -23,10 +22,9 @@ public final class DungeonEdgeSummaryBuilder {
 
     public static DungeonEdgeIndex buildIndex(
             Collection<DungeonSquare> squares,
-            Collection<DungeonWall> walls,
-            Collection<DungeonPassage> passages
+            Collection<DungeonWall> walls
     ) {
-        return buildIndexInternal(squares, walls, passages);
+        return buildIndexInternal(squares, walls);
     }
 
     /*
@@ -35,21 +33,18 @@ public final class DungeonEdgeSummaryBuilder {
      */
     public static DungeonEdgeIndex buildPreviewIndex(
             Collection<DungeonSquare> squares,
-            Collection<DungeonWall> walls,
-            Collection<DungeonPassage> passages
+            Collection<DungeonWall> walls
     ) {
-        return buildIndex(squares, walls, passages);
+        return buildIndex(squares, walls);
     }
 
     private static DungeonEdgeIndex buildIndexInternal(
             Collection<DungeonSquare> squares,
-            Collection<DungeonWall> walls,
-            Collection<DungeonPassage> passages
+            Collection<DungeonWall> walls
     ) {
         Map<String, DungeonSquare> squaresByCoord = squaresByCoord(squares);
         Map<String, DungeonWall> wallsByEdge = wallsByEdge(walls);
-        Map<String, DungeonPassage> passagesByEdge = passagesByEdge(passages);
-        addBoundaryWalls(squaresByCoord, wallsByEdge, passagesByEdge);
+        addBoundaryWalls(squaresByCoord, wallsByEdge);
         Map<String, DungeonEdgeSummary> edgesByKey = new LinkedHashMap<>();
 
         List<DungeonSquare> sortedSquares = new ArrayList<>(squares == null ? List.of() : squares);
@@ -57,17 +52,12 @@ public final class DungeonEdgeSummaryBuilder {
                 .comparingInt(DungeonSquare::y)
                 .thenComparingInt(DungeonSquare::x));
         for (DungeonSquare square : sortedSquares) {
-            addEdge(edgesByKey, squaresByCoord, wallsByEdge, passagesByEdge, square.x(), square.y(), PassageDirection.EAST);
-            addEdge(edgesByKey, squaresByCoord, wallsByEdge, passagesByEdge, square.x(), square.y(), PassageDirection.SOUTH);
+            addEdge(edgesByKey, squaresByCoord, wallsByEdge, square.x(), square.y(), PassageDirection.EAST);
+            addEdge(edgesByKey, squaresByCoord, wallsByEdge, square.x(), square.y(), PassageDirection.SOUTH);
         }
 
         for (DungeonWall wall : wallsByEdge.values()) {
-            edgesByKey.putIfAbsent(wall.edgeKey(), buildEdge(squaresByCoord, wall.x(), wall.y(), wall.direction(), wall, passagesByEdge.get(wall.edgeKey())));
-        }
-        for (DungeonPassage passage : passagesByEdge.values()) {
-            edgesByKey.putIfAbsent(
-                    passage.edgeKey(),
-                    buildEdge(squaresByCoord, passage.x(), passage.y(), passage.direction(), wallsByEdge.get(passage.edgeKey()), passage));
+            edgesByKey.putIfAbsent(wall.edgeKey(), buildEdge(squaresByCoord, wall.x(), wall.y(), wall.direction(), wall));
         }
 
         return new DungeonEdgeIndex(Map.copyOf(edgesByKey));
@@ -77,13 +67,12 @@ public final class DungeonEdgeSummaryBuilder {
             Map<String, DungeonEdgeSummary> edgesByKey,
             Map<String, DungeonSquare> squaresByCoord,
             Map<String, DungeonWall> wallsByEdge,
-            Map<String, DungeonPassage> passagesByEdge,
             int x,
             int y,
             PassageDirection direction
     ) {
         String edgeKey = direction.edgeKey(x, y);
-        edgesByKey.put(edgeKey, buildEdge(squaresByCoord, x, y, direction, wallsByEdge.get(edgeKey), passagesByEdge.get(edgeKey)));
+        edgesByKey.put(edgeKey, buildEdge(squaresByCoord, x, y, direction, wallsByEdge.get(edgeKey)));
     }
 
     private static DungeonEdgeSummary buildEdge(
@@ -91,8 +80,7 @@ public final class DungeonEdgeSummaryBuilder {
             int x,
             int y,
             PassageDirection direction,
-            DungeonWall wall,
-            DungeonPassage passage
+            DungeonWall wall
     ) {
         DungeonSquare sideASquare = squaresByCoord.get(coordKey(x, y));
         DungeonSquare sideBSquare = direction == PassageDirection.EAST
@@ -103,7 +91,6 @@ public final class DungeonEdgeSummaryBuilder {
                 y,
                 direction,
                 wall,
-                passage,
                 sideASquare,
                 sideBSquare);
     }
@@ -130,23 +117,11 @@ public final class DungeonEdgeSummaryBuilder {
         return result;
     }
 
-    private static Map<String, DungeonPassage> passagesByEdge(Collection<DungeonPassage> passages) {
-        Map<String, DungeonPassage> result = new LinkedHashMap<>();
-        if (passages == null) {
-            return result;
-        }
-        for (DungeonPassage passage : passages) {
-            result.put(passage.edgeKey(), passage);
-        }
-        return result;
-    }
-
     private static void addBoundaryWalls(
             Map<String, DungeonSquare> squaresByCoord,
-            Map<String, DungeonWall> wallsByEdge,
-            Map<String, DungeonPassage> passagesByEdge
+            Map<String, DungeonWall> wallsByEdge
     ) {
-        Long mapId = resolveMapId(squaresByCoord, wallsByEdge, passagesByEdge);
+        Long mapId = resolveMapId(squaresByCoord, wallsByEdge);
         if (mapId == null) {
             return;
         }
@@ -179,14 +154,10 @@ public final class DungeonEdgeSummaryBuilder {
 
     private static Long resolveMapId(
             Map<String, DungeonSquare> squaresByCoord,
-            Map<String, DungeonWall> wallsByEdge,
-            Map<String, DungeonPassage> passagesByEdge
+            Map<String, DungeonWall> wallsByEdge
     ) {
         if (!wallsByEdge.isEmpty()) {
             return wallsByEdge.values().iterator().next().mapId();
-        }
-        if (!passagesByEdge.isEmpty()) {
-            return passagesByEdge.values().iterator().next().mapId();
         }
         if (!squaresByCoord.isEmpty()) {
             return squaresByCoord.values().iterator().next().mapId();

@@ -6,7 +6,7 @@ public record DungeonSelectionRestoreRequest(Type type, Long entityId) {
         ROOM,
         AREA,
         FEATURE,
-        PASSAGE
+        CONNECTION
     }
 
     public static DungeonSelectionRestoreRequest room(Long roomId) {
@@ -21,7 +21,7 @@ public record DungeonSelectionRestoreRequest(Type type, Long entityId) {
         return featureId == null ? null : new DungeonSelectionRestoreRequest(Type.FEATURE, featureId);
     }
 
-    public static DungeonSelectionRestoreRequest passage(Long passageId) {
-        return passageId == null ? null : new DungeonSelectionRestoreRequest(Type.PASSAGE, passageId);
+    public static DungeonSelectionRestoreRequest connection(Long connectionId) {
+        return connectionId == null ? null : new DungeonSelectionRestoreRequest(Type.CONNECTION, connectionId);
     }
 }

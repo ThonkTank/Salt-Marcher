@@ -12,6 +12,7 @@ public final class DungeonConceptEditorState {
     private DungeonConceptState currentState;
     private Long activeLevelId;
     private DungeonConceptSelection selection = DungeonConceptSelection.none();
+    private DungeonConceptTool activeTool = DungeonConceptTool.SELECT;
     private boolean positionSaveInFlight;
     private long queuedPositionSaveToken;
     private List<DungeonConceptNodePosition> queuedPositionSaveNodes = List.of();
@@ -55,6 +56,14 @@ public final class DungeonConceptEditorState {
 
     public void setSelection(DungeonConceptSelection selection) {
         this.selection = selection == null ? DungeonConceptSelection.none() : selection;
+    }
+
+    public DungeonConceptTool activeTool() {
+        return activeTool;
+    }
+
+    public void setActiveTool(DungeonConceptTool activeTool) {
+        this.activeTool = activeTool == null ? DungeonConceptTool.SELECT : activeTool;
     }
 
     public boolean positionSaveInFlight() {

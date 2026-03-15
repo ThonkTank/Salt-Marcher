@@ -40,7 +40,7 @@ public final class DungeonAreaRepository {
         } else {
             try (PreparedStatement ps = conn.prepareStatement(
                     "UPDATE dungeon_areas "
-                            + "SET name=?, encounter_every_hours=?, encounter_table_id=NULL "
+                            + "SET name=?, encounter_every_hours=? "
                             + "WHERE area_id=?")) {
                 ps.setString(1, area.name());
                 ps.setInt(2, Math.max(1, area.encounterEveryHours()));

@@ -1,12 +1,9 @@
 package features.world.dungeonmap.model.projection.index;
 
+import features.world.dungeonmap.model.domain.DungeonConnection;
 import features.world.dungeonmap.model.domain.DungeonArea;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
-import features.world.dungeonmap.model.domain.DungeonLink;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 
@@ -19,21 +16,15 @@ public record DungeonMapIndex(
         Map<Long, DungeonRoom> roomsById,
         Map<Long, DungeonArea> areasById,
         Map<Long, DungeonFeature> featuresById,
-        Map<Long, DungeonEndpoint> endpointsById,
-        Map<Long, DungeonPassage> passagesById,
+        Map<Long, DungeonConnection> connectionsById,
         Map<Long, List<DungeonFeature>> featuresBySquareId,
         Map<Long, List<DungeonSquare>> squaresByRoomId,
         Map<Long, List<DungeonRoom>> roomsByAreaId,
         Map<Long, List<DungeonFeatureTile>> featureTilesByFeatureId,
-        Map<Long, List<DungeonEndpoint>> endpointsByRoomId,
-        Map<Long, List<DungeonPassage>> passagesByRoomId,
-        Map<DungeonLinkAnchor, List<DungeonLink>> linksByAnchor
+        Map<Long, List<DungeonRoomConnectionSummary>> roomConnectionsByRoomId
 ) {
     public static DungeonMapIndex empty() {
         return new DungeonMapIndex(
-                Map.of(),
-                Map.of(),
-                Map.of(),
                 Map.of(),
                 Map.of(),
                 Map.of(),
@@ -67,12 +58,8 @@ public record DungeonMapIndex(
         return featureId == null ? null : featuresById.get(featureId);
     }
 
-    public DungeonEndpoint findEndpoint(Long endpointId) {
-        return endpointId == null ? null : endpointsById.get(endpointId);
-    }
-
-    public DungeonPassage findPassage(Long passageId) {
-        return passageId == null ? null : passagesById.get(passageId);
+    public DungeonConnection findConnection(Long connectionId) {
+        return connectionId == null ? null : connectionsById.get(connectionId);
     }
 
     public List<DungeonFeature> featuresAtSquare(Long squareId) {
@@ -91,16 +78,8 @@ public record DungeonMapIndex(
         return featureId == null ? List.of() : featureTilesByFeatureId.getOrDefault(featureId, List.of());
     }
 
-    public List<DungeonEndpoint> endpointsForRoom(Long roomId) {
-        return roomId == null ? List.of() : endpointsByRoomId.getOrDefault(roomId, List.of());
-    }
-
-    public List<DungeonPassage> passagesForRoom(Long roomId) {
-        return roomId == null ? List.of() : passagesByRoomId.getOrDefault(roomId, List.of());
-    }
-
-    public List<DungeonLink> linksForAnchor(DungeonLinkAnchor anchor) {
-        return anchor == null ? List.of() : linksByAnchor.getOrDefault(anchor, List.of());
+    public List<DungeonRoomConnectionSummary> roomConnectionsForRoom(Long roomId) {
+        return roomId == null ? List.of() : roomConnectionsByRoomId.getOrDefault(roomId, List.of());
     }
 
     public record SquareCoordinate(int x, int y) {

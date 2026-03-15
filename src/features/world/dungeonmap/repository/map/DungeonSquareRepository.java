@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public final class DungeonSquareRepository {
 
@@ -80,6 +81,34 @@ public final class DungeonSquareRepository {
             ps.setInt(3, y);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
+            }
+        }
+    }
+
+    public static Optional<DungeonSquare> findSquare(Connection conn, long squareId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT s.square_id, s.map_id, s.x, s.y, s.room_id, "
+                        + "r.name AS room_name, r.area_id, a.name AS area_name "
+                        + "FROM dungeon_squares s "
+                        + "LEFT JOIN dungeon_rooms r ON r.room_id = s.room_id "
+                        + "LEFT JOIN dungeon_areas a ON a.area_id = r.area_id "
+                        + "WHERE s.square_id=?")) {
+            ps.setLong(1, squareId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return Optional.of(mapSquare(rs));
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    public static int countSquaresForRoom(Connection conn, long roomId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT COUNT(*) FROM dungeon_squares WHERE room_id=?")) {
+            ps.setLong(1, roomId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
             }
         }
     }

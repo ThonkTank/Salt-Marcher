@@ -1,12 +1,11 @@
 package features.world.dungeonmap.model.projection;
 
+import features.world.dungeonmap.model.domain.DungeonConnection;
+import features.world.dungeonmap.model.domain.DungeonConnectionPoint;
 import features.world.dungeonmap.model.domain.DungeonArea;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
-import features.world.dungeonmap.model.domain.DungeonLink;
 import features.world.dungeonmap.model.domain.DungeonMap;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
@@ -18,8 +17,6 @@ import java.util.List;
 
 /**
  * `edgeIndex` is the canonical derived edge read model for canvas/editor lookups.
- * Raw `walls` and `passages` remain entity-oriented views for workflows that restore
- * selection or edit a specific persisted row by id.
  * Raw entity lists remain the canonical loaded entities, while `index` is the
  * canonical shared lookup surface for read-side in-memory queries.
  */
@@ -30,10 +27,10 @@ public record DungeonMapState(
         List<DungeonArea> areas,
         List<DungeonFeature> features,
         List<DungeonFeatureTile> featureTiles,
-        List<DungeonEndpoint> endpoints,
-        List<DungeonLink> links,
+        List<DungeonConnection> connections,
+        List<DungeonConnectionPoint> connectionPoints,
+        List<DungeonMapConnectionPath> roomConnections,
         List<DungeonWall> walls,
-        List<DungeonPassage> passages,
         DungeonMapIndex index,
         DungeonEdgeIndex edgeIndex
 ) {
@@ -49,10 +46,10 @@ public record DungeonMapState(
                 areas,
                 features,
                 featureTiles,
-                endpoints,
-                links,
+                connections,
+                connectionPoints,
+                roomConnections,
                 walls,
-                passages,
                 updatedIndex,
                 edgeIndex);
     }
@@ -63,9 +60,5 @@ public record DungeonMapState(
 
     public long wallEdgeCount() {
         return walls().size();
-    }
-
-    public long passageEdgeCount() {
-        return passages().size();
     }
 }

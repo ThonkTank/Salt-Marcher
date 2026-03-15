@@ -4,6 +4,7 @@ import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.repository.map.DungeonRoomRepository;
 import features.world.dungeonmap.repository.map.DungeonSquareRepository;
+import features.world.dungeonmap.service.room.DungeonRoomLifecycleCoordinator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -99,9 +100,17 @@ final class RoomTopologyReconciler {
             int nextDefaultRoomNumber
     ) throws SQLException {
         List<Long> retainableRoomIds = RoomComponentGraph.retainableRoomIds(component, largestComponentByRoomId);
+        Long conceptLevelId = TopologyConceptLevelSupport.requireConsistentConceptLevel(
+                component.roomIds(),
+                roomsById,
+                "Raster-Topologie");
         Long primaryRoomId = TopologyEntitySelectionSupport.selectPreferredEntityId(retainableRoomIds, component.roomSquareCounts(), intent);
         if (primaryRoomId != null) {
             updatePrimaryRoom(conn, component, primaryRoomId, largestComponentByRoomId, roomsById, intent);
+            DungeonRoom primaryRoom = roomsById.get(primaryRoomId);
+            if (conceptLevelId != null && primaryRoom != null && !conceptLevelId.equals(primaryRoom.conceptLevelId())) {
+                throw new IllegalStateException("Raster-Topologie darf keinen Raum in eine andere Graph-Ebene verschieben.");
+            }
             return new ComponentAssignment(primaryRoomId, false);
         }
 
@@ -126,7 +135,8 @@ final class RoomTopologyReconciler {
                 templateDetail,
                 templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.reactiveChecks()),
                 templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.gmBackground()),
-                templateRoom == null ? null : templateRoom.areaId());
+                templateRoom == null ? null : templateRoom.areaId(),
+                conceptLevelId);
         return new ComponentAssignment(DungeonRoomRepository.upsertRoom(conn, newRoom), true);
     }
 
@@ -180,14 +190,14 @@ final class RoomTopologyReconciler {
     private static void deleteUnretainedRooms(Connection conn, List<DungeonRoom> rooms, Set<Long> retainedRoomIds) throws SQLException {
         for (DungeonRoom room : rooms) {
             if (!retainedRoomIds.contains(room.roomId())) {
-                DungeonRoomRepository.deleteRoom(conn, room.roomId());
+                DungeonRoomLifecycleCoordinator.deleteRoom(conn, room.roomId());
             }
         }
     }
 
     private static void deleteAllRooms(Connection conn, List<DungeonRoom> rooms) throws SQLException {
         for (DungeonRoom room : rooms) {
-            DungeonRoomRepository.deleteRoom(conn, room.roomId());
+            DungeonRoomLifecycleCoordinator.deleteRoom(conn, room.roomId());
         }
     }
 

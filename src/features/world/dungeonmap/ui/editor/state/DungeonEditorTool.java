@@ -8,23 +8,18 @@ public enum DungeonEditorTool {
     ERASE("Löschen", "Löschen", true, false, true, false, false, Cursor.CROSSHAIR, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.PAINT),
     WALL("Wände", "Wandeditor", false, false, false, false, true, Cursor.HAND, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.WALL),
     AREA_ASSIGN("Bereich", "Bereich", false, false, false, true, false, Cursor.DEFAULT, CellClickAction.ASSIGN_ROOM_AREA, ModeDropdownTarget.NONE),
-    FEATURE("Feature", "Feature", true, true, true, false, false, Cursor.CROSSHAIR, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.FEATURE_CATEGORY),
-    PASSAGE("Durchgänge", "Durchgänge", false, false, false, false, true, Cursor.HAND, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.PASSAGE),
-    ENDPOINT("Übergang", "Übergang", false, false, false, false, false, Cursor.HAND, CellClickAction.CREATE_OR_SELECT_ENDPOINT, ModeDropdownTarget.NONE),
-    LINK("Link", "Link", false, false, false, false, false, Cursor.HAND, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.NONE);
+    FEATURE("Feature", "Feature", true, true, true, false, false, Cursor.CROSSHAIR, CellClickAction.SELECT_SQUARE, ModeDropdownTarget.FEATURE_CATEGORY);
 
     public enum CellClickAction {
         SELECT_SQUARE,
-        ASSIGN_ROOM_AREA,
-        CREATE_OR_SELECT_ENDPOINT
+        ASSIGN_ROOM_AREA
     }
 
     public enum ModeDropdownTarget {
         NONE,
         PAINT,
         FEATURE_CATEGORY,
-        WALL,
-        PASSAGE
+        WALL
     }
 
     private final String toolbarLabel;
@@ -84,10 +79,6 @@ public enum DungeonEditorTool {
 
     public boolean areaSettingsVisible() {
         return areaSettingsVisible;
-    }
-
-    public boolean linkStatusVisible() {
-        return this == LINK;
     }
 
     public boolean edgeHoverEnabled() {

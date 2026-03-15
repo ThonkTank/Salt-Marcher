@@ -1,7 +1,6 @@
 package features.world.dungeonmap.repository.schema;
 
 import database.SchemaCompatibility;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchorType;
 
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -11,46 +10,11 @@ import java.sql.Statement;
  */
 public final class DungeonSchemaSupport {
 
-    private static final String DUNGEON_PASSAGES_TABLE_COLUMNS = "("
-            + "passage_id   INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + "map_id       INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-            + "x            INTEGER NOT NULL,"
-            + "y            INTEGER NOT NULL,"
-            + "direction    TEXT NOT NULL CHECK(direction IN ('east','south')),"
-            + "name         TEXT,"
-            + "notes        TEXT,"
-            + "endpoint_id  INTEGER REFERENCES dungeon_endpoints(endpoint_id) ON DELETE SET NULL,"
-            + "UNIQUE (map_id, x, y, direction)"
-            + ")";
-    private static final String DUNGEON_LINKS_TABLE_COLUMNS = "("
-            + "link_id            INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + "map_id             INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-            + "from_anchor_type   TEXT NOT NULL CHECK(from_anchor_type IN ('endpoint','passage')),"
-            + "from_anchor_id     INTEGER NOT NULL,"
-            + "to_anchor_type     TEXT NOT NULL CHECK(to_anchor_type IN ('endpoint','passage')),"
-            + "to_anchor_id       INTEGER NOT NULL,"
-            + "label              TEXT,"
-            + "notes              TEXT,"
-            + "CHECK ("
-            + "CASE from_anchor_type "
-            + "WHEN '" + canonicalAnchorTypeForSchema(DungeonLinkAnchorType.ENDPOINT) + "' THEN " + DungeonLinkAnchorType.ENDPOINT.persistenceOrder() + " "
-            + "WHEN '" + canonicalAnchorTypeForSchema(DungeonLinkAnchorType.PASSAGE) + "' THEN " + DungeonLinkAnchorType.PASSAGE.persistenceOrder() + " "
-            + "END < "
-            + "CASE to_anchor_type "
-            + "WHEN '" + canonicalAnchorTypeForSchema(DungeonLinkAnchorType.ENDPOINT) + "' THEN " + DungeonLinkAnchorType.ENDPOINT.persistenceOrder() + " "
-            + "WHEN '" + canonicalAnchorTypeForSchema(DungeonLinkAnchorType.PASSAGE) + "' THEN " + DungeonLinkAnchorType.PASSAGE.persistenceOrder() + " "
-            + "END "
-            + "OR (from_anchor_type = to_anchor_type AND from_anchor_id < to_anchor_id)"
-            + "),"
-            + "UNIQUE (map_id, from_anchor_type, from_anchor_id, to_anchor_type, to_anchor_id)"
-            + ")";
-
     private DungeonSchemaSupport() {
         throw new AssertionError("No instances");
     }
 
     public static void createSchema(Statement stmt) throws SQLException {
-        resetLegacyDungeonSchema(stmt);
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_maps ("
                 + "dungeon_map_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "name           TEXT NOT NULL,"
@@ -62,9 +26,7 @@ public final class DungeonSchemaSupport {
                 + "map_id              INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "name                TEXT NOT NULL,"
                 + "description         TEXT,"
-                + "encounter_every_hours INTEGER NOT NULL DEFAULT 6,"
-                // Keep the legacy single-table column so older local databases stay readable until rebuilt.
-                + "encounter_table_id  INTEGER"
+                + "encounter_every_hours INTEGER NOT NULL DEFAULT 6"
                 + ")");
         ensureColumn(stmt, "dungeon_areas", "encounter_every_hours", "INTEGER NOT NULL DEFAULT 6");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_area_encounter_tables ("
@@ -73,14 +35,6 @@ public final class DungeonSchemaSupport {
                 + "weight       INTEGER NOT NULL DEFAULT 1,"
                 + "sort_order   INTEGER NOT NULL DEFAULT 0,"
                 + "PRIMARY KEY (area_id, table_id)"
-                + ")");
-        // Legacy single-table values should only seed areas that have not been migrated yet.
-        stmt.execute("INSERT INTO dungeon_area_encounter_tables(area_id, table_id, weight, sort_order) "
-                + "SELECT areas.area_id, areas.encounter_table_id, 1, 0 "
-                + "FROM dungeon_areas areas "
-                + "WHERE areas.encounter_table_id IS NOT NULL "
-                + "AND NOT EXISTS ("
-                + "SELECT 1 FROM dungeon_area_encounter_tables links WHERE links.area_id = areas.area_id"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_rooms ("
                 + "room_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -95,13 +49,15 @@ public final class DungeonSchemaSupport {
                 + "detail_description TEXT,"
                 + "reactive_checks TEXT,"
                 + "gm_background TEXT,"
-                + "area_id       INTEGER REFERENCES dungeon_areas(area_id) ON DELETE SET NULL"
+                + "area_id       INTEGER REFERENCES dungeon_areas(area_id) ON DELETE SET NULL,"
+                + "concept_level_id INTEGER REFERENCES dungeon_concept_levels(concept_level_id) ON DELETE SET NULL"
                 + ")");
         ensureColumn(stmt, "dungeon_rooms", "light_level", "TEXT");
         ensureColumn(stmt, "dungeon_rooms", "visual_description", "TEXT");
         ensureColumn(stmt, "dungeon_rooms", "sounds_description", "TEXT");
         ensureColumn(stmt, "dungeon_rooms", "smells_description", "TEXT");
         ensureColumn(stmt, "dungeon_rooms", "other_description", "TEXT");
+        ensureColumn(stmt, "dungeon_rooms", "concept_level_id", "INTEGER REFERENCES dungeon_concept_levels(concept_level_id) ON DELETE SET NULL");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_squares ("
                 + "square_id      INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "map_id         INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
@@ -110,16 +66,6 @@ public final class DungeonSchemaSupport {
                 + "terrain_type   TEXT NOT NULL DEFAULT 'room_floor',"
                 + "room_id        INTEGER REFERENCES dungeon_rooms(room_id) ON DELETE SET NULL,"
                 + "UNIQUE (map_id, x, y)"
-                + ")");
-        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_endpoints ("
-                + "endpoint_id    INTEGER PRIMARY KEY AUTOINCREMENT,"
-                + "map_id         INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
-                + "square_id      INTEGER NOT NULL REFERENCES dungeon_squares(square_id) ON DELETE CASCADE,"
-                + "name           TEXT,"
-                + "notes          TEXT,"
-                + "role           TEXT NOT NULL DEFAULT 'both',"
-                + "is_default_entry INTEGER NOT NULL DEFAULT 0,"
-                + "UNIQUE (square_id)"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_concept_levels ("
                 + "concept_level_id        INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -130,6 +76,7 @@ public final class DungeonSchemaSupport {
                 + "progress_fraction       REAL NOT NULL DEFAULT 1.0,"
                 + "adventuring_days_target REAL NOT NULL DEFAULT 1.0,"
                 + "entrance_count          INTEGER NOT NULL DEFAULT 0,"
+                + "exit_count              INTEGER NOT NULL DEFAULT 0,"
                 + "UNIQUE (map_id, sort_order)"
                 + ")");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_concept_party_profiles ("
@@ -148,16 +95,31 @@ public final class DungeonSchemaSupport {
                 + "map_id                INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
                 + "concept_level_id      INTEGER NOT NULL REFERENCES dungeon_concept_levels(concept_level_id) ON DELETE CASCADE,"
                 + "node_key              TEXT NOT NULL,"
-                + "node_type             TEXT NOT NULL CHECK(node_type IN ('entrance','level_transition')),"
+                + "node_type             TEXT NOT NULL CHECK(node_type IN ('entrance','exit','level_transition','room')),"
                 + "entrance_index        INTEGER,"
                 + "concept_connection_id INTEGER REFERENCES dungeon_concept_level_connections(concept_connection_id) ON DELETE CASCADE,"
                 + "x                     REAL NOT NULL,"
                 + "y                     REAL NOT NULL,"
                 + "UNIQUE (map_id, concept_level_id, node_key)"
                 + ")");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_concept_nodes");
-        stmt.execute(createDungeonLinksTableSql("dungeon_links", true));
-        stmt.execute(createDungeonPassagesTableSql("dungeon_passages", true));
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_connections ("
+                + "connection_id         INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "map_id                INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                + "concept_level_id      INTEGER NOT NULL REFERENCES dungeon_concept_levels(concept_level_id) ON DELETE CASCADE,"
+                + "left_node_key         TEXT NOT NULL,"
+                + "right_node_key        TEXT NOT NULL,"
+                + "CHECK(left_node_key <> right_node_key),"
+                + "UNIQUE (concept_level_id, left_node_key, right_node_key)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_connection_points ("
+                + "connection_point_id   INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "connection_id         INTEGER NOT NULL REFERENCES dungeon_connections(connection_id) ON DELETE CASCADE,"
+                + "sort_order            INTEGER NOT NULL,"
+                + "x                     INTEGER NOT NULL,"
+                + "y                     INTEGER NOT NULL,"
+                + "UNIQUE (connection_id, sort_order)"
+                + ")");
+        ensureColumn(stmt, "dungeon_concept_levels", "exit_count", "INTEGER NOT NULL DEFAULT 0");
         stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_walls ("
                 + "wall_id      INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "map_id       INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
@@ -191,38 +153,19 @@ public final class DungeonSchemaSupport {
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_areas_map ON dungeon_areas(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_area_encounter_tables_area ON dungeon_area_encounter_tables(area_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_area_encounter_tables_table ON dungeon_area_encounter_tables(table_id)");
-        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_endpoints_map ON dungeon_endpoints(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_levels_map ON dungeon_concept_levels(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_party_profiles_map ON dungeon_concept_party_profiles(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_connections_map ON dungeon_concept_level_connections(map_id)");
-        stmt.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_dungeon_concept_connections_unique_pair "
-                + "ON dungeon_concept_level_connections(map_id, "
-                + "CASE WHEN level_a_id < level_b_id THEN level_a_id ELSE level_b_id END, "
-                + "CASE WHEN level_a_id < level_b_id THEN level_b_id ELSE level_a_id END)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_positions_map ON dungeon_concept_node_positions(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_positions_level ON dungeon_concept_node_positions(concept_level_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_concept_positions_connection ON dungeon_concept_node_positions(concept_connection_id)");
-        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_links_map ON dungeon_links(map_id)");
-        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_passages_map ON dungeon_passages(map_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_connections_map ON dungeon_connections(map_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_connections_level ON dungeon_connections(concept_level_id)");
+        stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_connection_points_connection ON dungeon_connection_points(connection_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_walls_map ON dungeon_walls(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_features_map ON dungeon_features(map_id)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_features_category ON dungeon_features(category)");
         stmt.execute("CREATE INDEX IF NOT EXISTS idx_dungeon_feature_tiles_square ON dungeon_feature_tiles(square_id)");
-    }
-
-    private static String createDungeonPassagesTableSql(String tableName, boolean ifNotExists) {
-        return "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + tableName + " " + DUNGEON_PASSAGES_TABLE_COLUMNS;
-    }
-
-    private static String createDungeonLinksTableSql(String tableName, boolean ifNotExists) {
-        return "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + tableName + " " + DUNGEON_LINKS_TABLE_COLUMNS;
-    }
-
-    static String canonicalAnchorTypeForSchema(DungeonLinkAnchorType type) {
-        return switch (type) {
-            case ENDPOINT -> "endpoint";
-            case PASSAGE -> "passage";
-        };
     }
 
     private static void ensureColumn(
@@ -232,33 +175,5 @@ public final class DungeonSchemaSupport {
             String columnDefinition
     ) throws SQLException {
         SchemaCompatibility.ensureColumn(stmt.getConnection(), tableName, columnName, columnDefinition);
-    }
-
-    private static void resetLegacyDungeonSchema(Statement stmt) throws SQLException {
-        if (!needsDungeonSchemaReset(stmt)) {
-            return;
-        }
-        stmt.execute("DROP TABLE IF EXISTS dungeon_feature_tiles");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_links");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_passages");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_endpoints");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_walls");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_squares");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_features");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_area_encounter_tables");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_rooms");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_areas");
-        stmt.execute("DROP TABLE IF EXISTS dungeon_maps");
-    }
-
-    private static boolean needsDungeonSchemaReset(Statement stmt) throws SQLException {
-        return tableHasColumn(stmt, "dungeon_rooms", "description")
-                || !tableHasColumn(stmt, "dungeon_rooms", "detail_description")
-                || tableHasColumn(stmt, "dungeon_features", "notes")
-                || tableHasColumn(stmt, "dungeon_features", "summary_description");
-    }
-
-    private static boolean tableHasColumn(Statement stmt, String tableName, String columnName) throws SQLException {
-        return SchemaCompatibility.columnExists(stmt.getConnection(), tableName, columnName);
     }
 }

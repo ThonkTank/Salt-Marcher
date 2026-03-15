@@ -21,7 +21,8 @@ public final class DungeonConceptStatePane extends VBox {
             int endLevel,
             double progressFraction,
             double adventuringDaysTarget,
-            int entranceCount
+            int entranceCount,
+            int exitCount
     ) {}
 
     private final Spinner<Integer> levelCountSpinner = DungeonConceptStateControls.createIntegerSpinner(1, 20, 1);
@@ -34,8 +35,8 @@ public final class DungeonConceptStatePane extends VBox {
     private Consumer<Integer> onPartySizeChanged;
     private Consumer<Long> onActiveLevelSelected;
     private Consumer<LevelPlanUpdate> onLevelPlanChanged;
-    private BiConsumer<Long, Long> onConnectionAddRequested;
-    private BiConsumer<Long, Long> onConnectionRemoveRequested;
+    private BiConsumer<Long, Long> onConnectionCreateRequested;
+    private Consumer<Long> onConnectionDeleteRequested;
     private Integer lastEmittedLevelCount;
     private Integer lastEmittedPartySize;
 
@@ -107,8 +108,8 @@ public final class DungeonConceptStatePane extends VBox {
                                 : metricsByLevelId.getOrDefault(level.conceptLevelId(), DungeonConceptLevelMetrics.empty()),
                         this::emitActiveLevelSelected,
                         this::emitLevelPlanChanged,
-                        this::emitConnectionAddRequested,
-                        this::emitConnectionRemoveRequested));
+                        this::emitConnectionCreateRequested,
+                        this::emitConnectionDeleteRequested));
             }
         } finally {
             updating = false;
@@ -131,12 +132,12 @@ public final class DungeonConceptStatePane extends VBox {
         this.onLevelPlanChanged = onLevelPlanChanged;
     }
 
-    public void setOnConnectionAddRequested(BiConsumer<Long, Long> onConnectionAddRequested) {
-        this.onConnectionAddRequested = onConnectionAddRequested;
+    public void setOnConnectionCreateRequested(BiConsumer<Long, Long> onConnectionCreateRequested) {
+        this.onConnectionCreateRequested = onConnectionCreateRequested;
     }
 
-    public void setOnConnectionRemoveRequested(BiConsumer<Long, Long> onConnectionRemoveRequested) {
-        this.onConnectionRemoveRequested = onConnectionRemoveRequested;
+    public void setOnConnectionDeleteRequested(Consumer<Long> onConnectionDeleteRequested) {
+        this.onConnectionDeleteRequested = onConnectionDeleteRequested;
     }
 
     private void emitActiveLevelSelected(Long conceptLevelId) {
@@ -151,15 +152,15 @@ public final class DungeonConceptStatePane extends VBox {
         }
     }
 
-    private void emitConnectionAddRequested(Long sourceLevelId, Long targetLevelId) {
-        if (!updating && onConnectionAddRequested != null) {
-            onConnectionAddRequested.accept(sourceLevelId, targetLevelId);
+    private void emitConnectionCreateRequested(Long sourceLevelId, Long targetLevelId) {
+        if (!updating && onConnectionCreateRequested != null) {
+            onConnectionCreateRequested.accept(sourceLevelId, targetLevelId);
         }
     }
 
-    private void emitConnectionRemoveRequested(Long sourceLevelId, Long targetLevelId) {
-        if (!updating && onConnectionRemoveRequested != null) {
-            onConnectionRemoveRequested.accept(sourceLevelId, targetLevelId);
+    private void emitConnectionDeleteRequested(Long connectionId) {
+        if (!updating && onConnectionDeleteRequested != null) {
+            onConnectionDeleteRequested.accept(connectionId);
         }
     }
 

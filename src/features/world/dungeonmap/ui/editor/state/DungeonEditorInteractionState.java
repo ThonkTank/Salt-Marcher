@@ -13,14 +13,11 @@ public final class DungeonEditorInteractionState {
     private final List<Consumer<DungeonFeatureCategory>> featureCategoryListeners = new ArrayList<>();
     private final List<Consumer<DungeonColorRenderMode>> colorRenderModeListeners = new ArrayList<>();
     private final List<Consumer<WallEditorMode>> wallModeListeners = new ArrayList<>();
-    private final List<Consumer<PassageEditorMode>> passageModeListeners = new ArrayList<>();
-
     private DungeonEditorTool activeTool = DungeonEditorTool.SELECT;
     private DungeonPaintMode paintMode = DungeonPaintMode.BRUSH;
     private DungeonFeatureCategory activeFeatureCategory = DungeonFeatureCategory.HAZARD;
     private DungeonColorRenderMode colorRenderMode = DungeonColorRenderMode.ROOMS;
     private WallEditorMode wallEditorMode = WallEditorMode.PAINT_WALL;
-    private PassageEditorMode passageEditorMode = PassageEditorMode.PLACE_PASSAGE;
 
     public DungeonEditorTool activeTool() {
         return activeTool;
@@ -97,21 +94,6 @@ public final class DungeonEditorInteractionState {
         }
     }
 
-    public PassageEditorMode passageEditorMode() {
-        return passageEditorMode;
-    }
-
-    public void setPassageEditorMode(PassageEditorMode mode) {
-        PassageEditorMode effectiveMode = mode == null ? PassageEditorMode.PLACE_PASSAGE : mode;
-        if (passageEditorMode == effectiveMode) {
-            return;
-        }
-        passageEditorMode = effectiveMode;
-        for (Consumer<PassageEditorMode> listener : List.copyOf(passageModeListeners)) {
-            listener.accept(effectiveMode);
-        }
-    }
-
     public void onActiveToolChanged(Consumer<DungeonEditorTool> listener) {
         if (listener != null) {
             toolListeners.add(listener);
@@ -142,9 +124,4 @@ public final class DungeonEditorInteractionState {
         }
     }
 
-    public void onPassageEditorModeChanged(Consumer<PassageEditorMode> listener) {
-        if (listener != null) {
-            passageModeListeners.add(listener);
-        }
-    }
 }

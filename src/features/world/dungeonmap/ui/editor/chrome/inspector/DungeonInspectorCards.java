@@ -1,6 +1,5 @@
 package features.world.dungeonmap.ui.editor.chrome.inspector;
 
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.api.catalog.DungeonEncounterSummary;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -132,13 +131,6 @@ final class DungeonInspectorCards {
 
     static String formatPosition(int x, int y) {
         return "(" + x + ", " + y + ")";
-    }
-
-    static String formatPassagePosition(DungeonPassage passage) {
-        return switch (passage.direction()) {
-            case EAST -> "(" + passage.x() + ", " + passage.y() + ") → (" + (passage.x() + 1) + ", " + passage.y() + ")";
-            case SOUTH -> "(" + passage.x() + ", " + passage.y() + ") → (" + passage.x() + ", " + (passage.y() + 1) + ")";
-        };
     }
 
     static String titleOrFallback(String value, String fallback) {

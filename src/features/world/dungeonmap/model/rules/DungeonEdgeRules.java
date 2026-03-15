@@ -24,7 +24,7 @@ public final class DungeonEdgeRules {
      * Boundary walls are topology-owned only for one-sided edges with a square on exactly one side.
      * Interior walls between two squares stay manual, including room-to-room separators created by
      * square paint, so explicitly deleting that shared wall can merge adjacent rooms on demand.
-     * Passages can sit on either a derived one-sided boundary or a persisted interior wall.
+     * Room connections are routed separately; edge barriers here only describe wall topology.
      */
     public static boolean requiresTopologyWall(DungeonSquare sideA, DungeonSquare sideB) {
         if (!hasInteractiveContext(sideA, sideB)) {

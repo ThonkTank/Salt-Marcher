@@ -1,10 +1,8 @@
 package features.world.dungeonmap.service.topology;
 
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
-import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
 import features.world.dungeonmap.repository.map.DungeonRoomRepository;
 import features.world.dungeonmap.repository.map.DungeonSquareRepository;
 import features.world.dungeonmap.repository.topology.DungeonWallRepository;
@@ -27,7 +25,6 @@ final class TopologyWorkspace {
     private List<DungeonRoom> rooms = List.of();
     private Map<Long, DungeonRoom> roomsById = Map.of();
     private Map<String, DungeonWall> wallsByEdge = Map.of();
-    private Map<String, DungeonPassage> passagesByEdge = Map.of();
     private Map<Long, Integer> currentRoomSquareCounts = Map.of();
 
     private TopologyWorkspace(long mapId, List<DungeonSquare> previousSquares) {
@@ -48,7 +45,6 @@ final class TopologyWorkspace {
         rooms = DungeonRoomRepository.getRooms(conn, mapId);
         roomsById = roomsById(rooms);
         wallsByEdge = wallsByEdge(DungeonWallRepository.getWalls(conn, mapId));
-        passagesByEdge = passagesByEdge(DungeonPassageRepository.getPassages(conn, mapId));
         currentRoomSquareCounts = roomSquareCounts(currentSquares);
     }
 
@@ -78,10 +74,6 @@ final class TopologyWorkspace {
 
     Map<String, DungeonWall> wallsByEdge() {
         return wallsByEdge;
-    }
-
-    Map<String, DungeonPassage> passagesByEdge() {
-        return passagesByEdge;
     }
 
     Map<Long, Integer> currentRoomSquareCounts() {
@@ -115,14 +107,6 @@ final class TopologyWorkspace {
         Map<String, DungeonWall> result = new HashMap<>();
         for (DungeonWall wall : walls) {
             result.put(wall.edgeKey(), wall);
-        }
-        return result;
-    }
-
-    private static Map<String, DungeonPassage> passagesByEdge(List<DungeonPassage> passages) {
-        Map<String, DungeonPassage> result = new HashMap<>();
-        for (DungeonPassage passage : passages) {
-            result.put(passage.edgeKey(), passage);
         }
         return result;
     }

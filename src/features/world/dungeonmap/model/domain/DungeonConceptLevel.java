@@ -8,7 +8,8 @@ public record DungeonConceptLevel(
         int endLevel,
         double progressFraction,
         double adventuringDaysTarget,
-        int entranceCount
+        int entranceCount,
+        int exitCount
 ) {
     public DungeonConceptLevel {
         if (mapId == null || mapId <= 0) {
@@ -26,8 +27,8 @@ public record DungeonConceptLevel(
         if (adventuringDaysTarget < 0.0) {
             throw new IllegalArgumentException("adventuringDaysTarget must not be negative");
         }
-        if (entranceCount < 0) {
-            throw new IllegalArgumentException("entranceCount must not be negative");
+        if (entranceCount < 0 || exitCount < 0) {
+            throw new IllegalArgumentException("node counts must not be negative");
         }
     }
 

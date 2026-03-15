@@ -1,7 +1,7 @@
 package features.world.dungeonmap.ui.editor.screen;
 
 import features.world.dungeonmap.ui.editor.chrome.controls.DungeonEditorControls;
-import features.world.dungeonmap.ui.editor.chrome.map.DungeonMapControlsPane;
+import features.world.dungeonmap.ui.shared.map.DungeonInlineControlsHost;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ToggleButton;
@@ -114,10 +114,9 @@ public final class DungeonEditorWorkspaceView implements AppView {
         setHostContent(mainHost, activeView.getMainContent());
         setHostContent(stateHost, activeView.getStateContent());
         Node controls = activeView.getControlsContent();
-        if (controls instanceof DungeonMapControlsPane mapControlsPane) {
-            mapControlsPane.setInlineTrailingNode(modeToggle);
-        } else if (controls instanceof DungeonEditorControls editorControls) {
-            editorControls.setInlineTrailingNode(modeToggle);
+        if (controls instanceof DungeonInlineControlsHost inlineControlsHost) {
+            // The shell contributes the shared mode toggle because raster and concept are alternate dungeon views.
+            inlineControlsHost.setInlineTrailingNode(modeToggle);
         }
     }
 

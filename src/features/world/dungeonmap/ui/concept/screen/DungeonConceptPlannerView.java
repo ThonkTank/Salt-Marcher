@@ -7,16 +7,22 @@ import features.world.dungeonmap.service.DungeonMapQueryService;
 import features.world.dungeonmap.ui.concept.canvas.DungeonConceptPane;
 import features.world.dungeonmap.ui.concept.chrome.DungeonConceptStatePane;
 import features.world.dungeonmap.ui.concept.state.DungeonConceptEditorState;
+import features.world.dungeonmap.ui.concept.state.DungeonConceptTool;
 import features.world.dungeonmap.ui.concept.workflow.DungeonConceptController;
-import features.world.dungeonmap.ui.editor.chrome.map.DungeonMapControlsPane;
+import features.world.dungeonmap.ui.shared.map.DungeonEditorToolbar;
+import features.world.dungeonmap.ui.shared.map.DungeonMapControlsPane;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
 public final class DungeonConceptPlannerView implements AppView {
 
+    // Concept and raster mode intentionally point at the same dungeon selection controls.
     private final DungeonMapControlsPane controls = new DungeonMapControlsPane();
+    private final DungeonEditorToolbar toolbar = new DungeonEditorToolbar(controls);
     private final DungeonConceptPane pane = new DungeonConceptPane();
     private final DungeonConceptStatePane statePane = new DungeonConceptStatePane();
     private final ScrollPane stateScrollPane = createStateScrollPane();
@@ -40,6 +46,7 @@ public final class DungeonConceptPlannerView implements AppView {
                 conceptQueries,
                 conceptCommands,
                 detailsNavigator);
+        buildToolRow();
         bind();
     }
 
@@ -60,7 +67,7 @@ public final class DungeonConceptPlannerView implements AppView {
 
     @Override
     public Node getControlsContent() {
-        return controls;
+        return toolbar;
     }
 
     @Override
@@ -91,12 +98,17 @@ public final class DungeonConceptPlannerView implements AppView {
         statePane.setOnPartySizeChanged(controller::handlePartySizeChanged);
         statePane.setOnActiveLevelSelected(controller::handleActiveLevelSelected);
         statePane.setOnLevelPlanChanged(controller::handleLevelPlanChanged);
-        statePane.setOnConnectionAddRequested(controller::addLevelConnection);
-        statePane.setOnConnectionRemoveRequested(controller::removeLevelConnection);
+        statePane.setOnConnectionCreateRequested(controller::createLevelConnection);
+        statePane.setOnConnectionDeleteRequested(controller::deleteLevelConnection);
 
         pane.setOnNodeSelected(controller::handleNodeSelected);
+        pane.setOnNodeDeleteRequested(controller::handleNodeDeleteRequested);
         pane.setOnBackgroundSelected(controller::clearSelection);
         pane.setOnLayoutSettled(controller::persistNodePositions);
+        pane.setOnConnectionRequested(controller::handleGraphConnectionRequested);
+        pane.setOnEdgeDeleteRequested(controller::handleGraphEdgeDeleteRequested);
+        pane.setOnEdgeSplitRequested(controller::handleGraphEdgeSplitRequested);
+        pane.setOnRoomCreateRequested(controller::handleCreateRoomNodeRequested);
     }
 
     private ScrollPane createStateScrollPane() {
@@ -105,5 +117,24 @@ public final class DungeonConceptPlannerView implements AppView {
         scrollPane.setFitToWidth(true);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         return scrollPane;
+    }
+
+    private void buildToolRow() {
+        DungeonEditorToolbar.FlowGroup toolGroup = toolbar.createFlowGroup("Werkzeuge");
+        ToggleGroup group = new ToggleGroup();
+        for (DungeonConceptTool tool : DungeonConceptTool.values()) {
+            ToggleButton button = new ToggleButton(tool.label());
+            button.getStyleClass().add("tool-btn");
+            button.setToggleGroup(group);
+            button.setSelected(tool == DungeonConceptTool.SELECT);
+            button.setOnAction(event -> {
+                if (button.isSelected()) {
+                    controller.handleActiveToolChanged(tool);
+                }
+            });
+            toolGroup.flow().getChildren().add(button);
+        }
+        toolbar.setToolbarGroups(toolGroup.container());
+        controller.handleActiveToolChanged(DungeonConceptTool.SELECT);
     }
 }

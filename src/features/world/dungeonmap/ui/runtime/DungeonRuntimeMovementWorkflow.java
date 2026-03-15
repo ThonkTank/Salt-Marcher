@@ -2,7 +2,6 @@ package features.world.dungeonmap.ui.runtime;
 
 import features.encounter.api.EncounterRuntimePort;
 import features.world.dungeonmap.model.domain.DungeonArea;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.service.runtime.DungeonMoveResult;
@@ -64,13 +63,11 @@ public final class DungeonRuntimeMovementWorkflow {
 
     public void updateLocationLabels() {
         if (state.currentState() == null) {
-            canvas.setPartyEndpoint(null);
             canvas.setPartySquare(null);
             statePane.showLocation(null, null, null, null, state.runtimeStatusMessage());
             return;
         }
         if (state.requiresInitialPosition() || state.activeSquareId() == null) {
-            canvas.setPartyEndpoint(null);
             canvas.setPartySquare(null);
             String statusText = state.runtimeStatusMessage() == null || state.runtimeStatusMessage().isBlank()
                     ? "Startposition auf der Karte wählen."
@@ -80,12 +77,10 @@ public final class DungeonRuntimeMovementWorkflow {
         }
         DungeonSquare square = state.squareById(state.activeSquareId());
         if (square == null) {
-            canvas.setPartyEndpoint(null);
             canvas.setPartySquare(null);
             statePane.showLocation(null, null, null, null, state.runtimeStatusMessage());
             return;
         }
-        DungeonEndpoint endpoint = state.endpointById(state.activeEndpointId());
         String encounterProfile = null;
         if (square.areaId() != null) {
             DungeonArea area = state.areaById(square.areaId());
@@ -97,9 +92,8 @@ public final class DungeonRuntimeMovementWorkflow {
                 square.roomName(),
                 square.areaName(),
                 encounterProfile,
-                endpoint == null ? null : endpoint.name(),
+                null,
                 state.runtimeStatusMessage());
-        canvas.setPartyEndpoint(state.activeEndpointId());
         canvas.setPartySquare(state.activeSquareId());
         showCurrentRoomInInspector(square);
     }

@@ -20,6 +20,7 @@ public final class DungeonConceptNodePositionRepository {
     public static List<DungeonConceptNodePosition> getPositions(Connection conn, long mapId) throws SQLException {
         List<DungeonConceptNodePosition> result = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
+                // Legacy column name kept because there is no user-visible value in renaming the table field.
                 "SELECT concept_position_id, map_id, concept_level_id, node_key, node_type, entrance_index, concept_connection_id, x, y "
                         + "FROM dungeon_concept_node_positions WHERE map_id=? ORDER BY concept_level_id, node_key")) {
             ps.setLong(1, mapId);
@@ -47,10 +48,10 @@ public final class DungeonConceptNodePositionRepository {
                     continue;
                 }
                 update.setString(1, position.nodeType().persistenceValue());
-                if (position.entranceIndex() == null) {
+                if (position.externalNodeIndex() == null) {
                     update.setNull(2, java.sql.Types.INTEGER);
                 } else {
-                    update.setInt(2, position.entranceIndex());
+                    update.setInt(2, position.externalNodeIndex());
                 }
                 if (position.connectionId() == null) {
                     update.setNull(3, java.sql.Types.INTEGER);
@@ -70,10 +71,10 @@ public final class DungeonConceptNodePositionRepository {
                 insert.setLong(2, position.conceptLevelId());
                 insert.setString(3, position.nodeKey());
                 insert.setString(4, position.nodeType().persistenceValue());
-                if (position.entranceIndex() == null) {
+                if (position.externalNodeIndex() == null) {
                     insert.setNull(5, java.sql.Types.INTEGER);
                 } else {
-                    insert.setInt(5, position.entranceIndex());
+                    insert.setInt(5, position.externalNodeIndex());
                 }
                 if (position.connectionId() == null) {
                     insert.setNull(6, java.sql.Types.INTEGER);
@@ -87,8 +88,36 @@ public final class DungeonConceptNodePositionRepository {
         }
     }
 
+    public static void deletePositionsForNode(Connection conn, long conceptLevelId, String nodeKey) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM dungeon_concept_node_positions WHERE concept_level_id=? AND node_key=?")) {
+            ps.setLong(1, conceptLevelId);
+            ps.setString(2, nodeKey);
+            ps.executeUpdate();
+        }
+    }
+
+    public static void deletePositionsForNode(Connection conn, String nodeKey) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM dungeon_concept_node_positions WHERE node_key=?")) {
+            ps.setString(1, nodeKey);
+            ps.executeUpdate();
+        }
+    }
+
+    public static void deletePosition(Connection conn, Long conceptPositionId) throws SQLException {
+        if (conceptPositionId == null) {
+            return;
+        }
+        try (PreparedStatement ps = conn.prepareStatement(
+                "DELETE FROM dungeon_concept_node_positions WHERE concept_position_id=?")) {
+            ps.setLong(1, conceptPositionId);
+            ps.executeUpdate();
+        }
+    }
+
     private static DungeonConceptNodePosition map(ResultSet rs) throws SQLException {
-        Integer entranceIndex = rs.getObject("entrance_index") == null ? null : rs.getInt("entrance_index");
+        Integer externalNodeIndex = rs.getObject("entrance_index") == null ? null : rs.getInt("entrance_index");
         Long connectionId = rs.getObject("concept_connection_id") == null ? null : rs.getLong("concept_connection_id");
         return new DungeonConceptNodePosition(
                 rs.getLong("concept_position_id"),
@@ -96,7 +125,7 @@ public final class DungeonConceptNodePositionRepository {
                 rs.getLong("concept_level_id"),
                 rs.getString("node_key"),
                 DungeonConceptNodeType.fromPersistenceValue(rs.getString("node_type")),
-                entranceIndex,
+                externalNodeIndex,
                 connectionId,
                 rs.getDouble("x"),
                 rs.getDouble("y"));

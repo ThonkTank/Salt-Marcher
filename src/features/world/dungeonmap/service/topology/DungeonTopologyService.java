@@ -1,20 +1,14 @@
 package features.world.dungeonmap.service.topology;
 
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
-import features.world.dungeonmap.model.domain.DungeonPassage;
-import features.world.dungeonmap.model.rules.DungeonEdgeRules;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;
 import features.world.dungeonmap.model.domain.DungeonWall;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;
 import features.world.dungeonmap.model.domain.PassageDirection;
-import features.world.dungeonmap.repository.connection.DungeonEndpointRepository;
 import features.world.dungeonmap.repository.feature.DungeonFeatureRepository;
-import features.world.dungeonmap.repository.connection.DungeonLinkRepository;
 import features.world.dungeonmap.repository.map.DungeonMapRepository;
-import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
 import features.world.dungeonmap.repository.map.DungeonSquareRepository;
 import features.world.dungeonmap.repository.topology.DungeonWallRepository;
 
@@ -26,7 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 public final class DungeonTopologyService {
@@ -61,33 +54,6 @@ public final class DungeonTopologyService {
     public static void shrinkMap(Connection conn, long mapId, int width, int height) throws SQLException {
         DungeonMapRepository.deleteSquaresOutsideBounds(conn, mapId, width, height);
         reconcileTopology(conn, mapId, TopologyIntent.geometryChange());
-    }
-
-    public static void validatePassageForSave(Connection conn, DungeonPassage passage) throws SQLException {
-        if (!isPassageEdgeValid(conn, passage.mapId(), passage.x(), passage.y(), passage.direction())) {
-            throw new IllegalArgumentException("Passage edge is no longer valid for map " + passage.mapId());
-        }
-        if (passage.endpointId() == null) {
-            return;
-        }
-        Optional<DungeonEndpoint> endpoint = DungeonEndpointRepository.findEndpoint(conn, passage.endpointId());
-        if (endpoint.isEmpty() || endpoint.get().mapId() == null || endpoint.get().mapId() != passage.mapId()) {
-            throw new IllegalArgumentException("Passage endpoint does not belong to map " + passage.mapId());
-        }
-    }
-
-    public static void deleteInvalidPassages(Connection conn, long mapId) throws SQLException {
-        List<DungeonSquare> squares = DungeonSquareRepository.getSquares(conn, mapId);
-        List<DungeonWall> walls = DungeonWallRepository.getWalls(conn, mapId);
-        Map<String, DungeonSquare> squaresByCoord = squaresByCoord(squares);
-        Set<String> manualWallsByEdge = wallEdges(walls);
-        Set<Long> endpointIds = endpointIds(conn, mapId);
-        for (DungeonPassage passage : DungeonPassageRepository.getPassages(conn, mapId)) {
-            if (!isPassageEdgeValid(squaresByCoord, manualWallsByEdge, passage)
-                    || passage.endpointId() != null && !endpointIds.contains(passage.endpointId())) {
-                DungeonPassageRepository.deletePassage(conn, passage.passageId());
-            }
-        }
     }
 
     public static void applyWallEdits(
@@ -156,15 +122,11 @@ public final class DungeonTopologyService {
         if (!effectiveIntent.squareEdits().isEmpty()) {
             reconcileSquarePaintTopology(conn, mapId, effectiveIntent, workspace);
         }
-        deleteInvalidPassages(conn, mapId);
-        DungeonLinkIntegrityService.reconcileMap(conn, mapId);
     }
 
     private static void reconcilePersistedTopologyState(Connection conn, long mapId) throws SQLException {
         DungeonWallRepository.deleteDerivedBoundaryWallsAndOrphans(conn, mapId);
         DungeonFeatureRepository.deleteEmptyFeatures(conn, mapId);
-        deleteInvalidPassages(conn, mapId);
-        DungeonLinkIntegrityService.reconcileMap(conn, mapId);
     }
 
     private static void reconcileSquarePaintTopology(
@@ -177,33 +139,12 @@ public final class DungeonTopologyService {
         RoomTopologyReconciler.reconcileRoomComponentsAfterBoundaryWalls(conn, mapId, intent, workspace);
     }
 
-    private static boolean isPassageEdgeValid(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
-        List<DungeonSquare> squares = DungeonSquareRepository.getSquares(conn, mapId);
-        List<DungeonWall> walls = DungeonWallRepository.getWalls(conn, mapId);
-        return isPassageEdgeValid(
-                squaresByCoord(squares),
-                wallEdges(walls),
-                new DungeonPassage(null, mapId, x, y, direction, null, null, null));
-    }
-
     private static boolean isWallEdgeValid(Connection conn, long mapId, int x, int y, PassageDirection direction) throws SQLException {
         boolean sideA = DungeonSquareRepository.existsAt(conn, mapId, x, y);
         boolean sideB = direction == PassageDirection.EAST
                 ? DungeonSquareRepository.existsAt(conn, mapId, x + 1, y)
                 : DungeonSquareRepository.existsAt(conn, mapId, x, y + 1);
         return sideA && sideB;
-    }
-
-    private static boolean isPassageEdgeValid(
-            Map<String, DungeonSquare> squaresByCoord,
-            Set<String> manualWallsByEdge,
-            DungeonPassage passage
-    ) {
-        DungeonSquare sideA = squaresByCoord.get(coordKey(passage.x(), passage.y()));
-        DungeonSquare sideB = passage.direction() == PassageDirection.EAST
-                ? squaresByCoord.get(coordKey(passage.x() + 1, passage.y()))
-                : squaresByCoord.get(coordKey(passage.x(), passage.y() + 1));
-        return DungeonEdgeRules.canCreatePassage(sideA, sideB, manualWallsByEdge.contains(passage.edgeKey()));
     }
 
     private static void enqueueFeatureNeighbor(
@@ -232,19 +173,4 @@ public final class DungeonTopologyService {
         return result;
     }
 
-    private static Set<String> wallEdges(List<DungeonWall> walls) {
-        Set<String> result = new HashSet<>();
-        for (DungeonWall wall : walls) {
-            result.add(wall.edgeKey());
-        }
-        return result;
-    }
-
-    private static Set<Long> endpointIds(Connection conn, long mapId) throws SQLException {
-        Set<Long> result = new HashSet<>();
-        for (DungeonEndpoint endpoint : DungeonEndpointRepository.getEndpoints(conn, mapId)) {
-            result.add(endpoint.endpointId());
-        }
-        return result;
-    }
 }

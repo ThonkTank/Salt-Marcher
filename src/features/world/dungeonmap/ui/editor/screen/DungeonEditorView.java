@@ -51,7 +51,7 @@ public class DungeonEditorView implements AppView {
 
     @Override
     public Node getControlsContent() {
-        return controls;
+        return controls.node();
     }
 
     @Override
@@ -85,7 +85,6 @@ public class DungeonEditorView implements AppView {
         interactionState.onFeatureCategoryChanged(ignored -> controller.handleFeatureCategoryChanged());
         interactionState.onColorRenderModeChanged(controller::handleColorRenderModeChanged);
         interactionState.onWallEditorModeChanged(ignored -> controller.handleWallEditorModeChanged());
-        interactionState.onPassageEditorModeChanged(ignored -> controller.handlePassageEditorModeChanged());
         interactionState.onActiveToolChanged(controller::handleActiveToolChanged);
     }
 
@@ -97,20 +96,18 @@ public class DungeonEditorView implements AppView {
         canvas.setOnEdgePaintPathPreview(controller::previewWallPaintPath);
         canvas.setOnEdgePaintPathFinished(controller::commitWallPaintPath);
         canvas.setOnEdgeStrokeFinished(controller::flushPendingWallEdits);
-        canvas.setOnEndpointClicked(controller::handleEndpointClick);
+        canvas.setOnConnectionClicked(controller::handleConnectionClicked);
+        canvas.setOnConnectionPointMoved(controller::handleConnectionPointMoved);
+        canvas.setOnConnectionPointInserted(controller::handleConnectionPointInserted);
+        canvas.setOnConnectionPointDeleted(controller::handleConnectionPointDeleted);
         canvas.setOnFeatureClicked(controller::handleFeatureClick);
-        canvas.setOnLinkClicked(controller::showLinkSelection);
         canvas.setBrushSizeSupplier(controller::brushSize);
         canvas.setBrushShapeSupplier(controller::brushShape);
         canvas.setPaintModeSupplier(() -> DungeonCanvasStateMapper.toCanvasPaintMode(controller.paintMode()));
         canvas.setWallModeSupplier(() -> DungeonCanvasStateMapper.toCanvasWallMode(controller.wallEditorMode()));
-        canvas.setPassageModeSupplier(() -> DungeonCanvasStateMapper.toCanvasPassageMode(controller.passageEditorMode()));
-        canvas.setOnEdgeClicked(controller::handleEdgeClick);
     }
 
     private void bindSharedUi() {
-        toolSettingsPane.setOnLinksVisibilityChanged(controller::setShowLinks);
-        toolSettingsPane.setOnEndpointsVisibilityChanged(controller::setShowEndpoints);
         toolSettingsPane.setOnFeaturesVisibilityChanged(controller::setShowFeatures);
         toolSettingsPane.setOnColorRenderModeChanged(controller::setColorRenderMode);
     }

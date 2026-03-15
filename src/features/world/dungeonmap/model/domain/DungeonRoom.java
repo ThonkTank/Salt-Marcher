@@ -13,7 +13,10 @@ public record DungeonRoom(
         String detailDescription,
         String reactiveChecks,
         String gmBackground,
-        Long areaId
+        Long areaId,
+        // Grid and concept mode are two views onto the same dungeon room model.
+        // conceptLevelId only tells the concept canvas which level should render this room node.
+        Long conceptLevelId
 ) {
     public DungeonRoom withMetadata(
             String updatedName,
@@ -40,11 +43,12 @@ public record DungeonRoom(
                 updatedDetailDescription,
                 updatedReactiveChecks,
                 updatedGmBackground,
-                areaId);
+                areaId,
+                conceptLevelId);
     }
 
     public static DungeonRoom createDefault(Long mapId, String name) {
-        return new DungeonRoom(null, mapId, name, "", "", "", "", "", "", "", "", "", null);
+        return new DungeonRoom(null, mapId, name, "", "", "", "", "", "", "", "", "", null, null);
     }
 
     @Override

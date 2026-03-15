@@ -1,19 +1,16 @@
 package features.world.dungeonmap.service.editing.connection;
 
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
-import features.world.dungeonmap.model.domain.DungeonLink;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
-import features.world.dungeonmap.model.domain.DungeonPassage;
-import features.world.dungeonmap.repository.connection.DungeonEndpointRepository;
-import features.world.dungeonmap.repository.connection.DungeonLinkRepository;
-import features.world.dungeonmap.repository.connection.DungeonPassageRepository;
+import features.world.dungeonmap.model.domain.DungeonConnection;
+import features.world.dungeonmap.model.domain.DungeonConnectionPoint;
+import features.world.dungeonmap.repository.connection.DungeonConnectionPointRepository;
+import features.world.dungeonmap.repository.connection.DungeonConnectionRepository;
 import features.world.dungeonmap.service.editing.DungeonEditingTransactions;
-import features.world.dungeonmap.service.integration.campaign.DungeonCampaignStateAdapter;
-import features.world.dungeonmap.service.topology.DungeonLinkIntegrityService;
-import features.world.dungeonmap.service.topology.DungeonTopologyService;
+import features.world.dungeonmap.service.projection.DungeonMapStateLoader;
+import features.world.dungeonmap.service.room.DungeonRoomConnectionRoutes;
 
+import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Optional;
+import java.util.List;
 
 public final class DungeonConnectionEditingService {
 
@@ -21,67 +18,35 @@ public final class DungeonConnectionEditingService {
         throw new AssertionError("No instances");
     }
 
-    public static long saveEndpoint(DungeonEndpoint endpoint) throws Exception {
-        return DungeonEditingTransactions.withConnection(conn -> DungeonEndpointRepository.upsertEndpoint(conn, endpoint));
-    }
-
-    public static void deleteEndpoint(long endpointId) throws Exception {
-        DungeonEditingTransactions.inTransactionRollbackOnSqlVoid(conn -> {
-            Optional<DungeonEndpoint> endpoint = DungeonEndpointRepository.findEndpoint(conn, endpointId);
-            if (endpoint.isEmpty()) {
-                return;
-            }
-            Long currentEndpointId = DungeonCampaignStateAdapter.getDungeonEndpointId(conn).orElse(null);
-            if (currentEndpointId != null && currentEndpointId.equals(endpointId)) {
-                Long currentMapId = DungeonCampaignStateAdapter.getDungeonMapId(conn).orElse(endpoint.get().mapId());
-                DungeonCampaignStateAdapter.updateDungeonPosition(conn, currentMapId, null);
-            }
-            DungeonLinkIntegrityService.deleteLinksTouchingAnchor(conn, DungeonLinkAnchor.endpoint(endpointId));
-            DungeonEndpointRepository.deleteEndpoint(conn, endpointId);
+    public static void replaceConnectionPoints(long connectionId, List<DungeonConnectionPoint> points) throws Exception {
+        DungeonEditingTransactions.inTransactionRollbackOnSqlOrRuntimeVoid(conn -> {
+            DungeonConnection connection = DungeonConnectionRepository.findConnection(conn, connectionId)
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown connection: " + connectionId));
+            List<DungeonConnectionPoint> normalizedPoints = normalizePoints(connectionId, points);
+            validateConnectionPoints(conn, connection, normalizedPoints);
+            DungeonConnectionPointRepository.replacePoints(conn, connectionId, normalizedPoints);
         });
     }
 
-    public static DungeonLinkCreateResult createLink(long mapId, DungeonLinkAnchor fromAnchor, DungeonLinkAnchor toAnchor, String label) throws Exception {
-        if (fromAnchor == null || toAnchor == null) {
-            return new DungeonLinkCreateResult(DungeonLinkCreateStatus.INVALID_ANCHOR, null);
+    private static List<DungeonConnectionPoint> normalizePoints(long connectionId, List<DungeonConnectionPoint> points) {
+        return DungeonRoomConnectionRoutes.normalizeControlPoints(connectionId, points);
+    }
+
+    private static void validateConnectionPoints(Connection conn, DungeonConnection connection, List<DungeonConnectionPoint> points) throws SQLException {
+        var state = DungeonMapStateLoader.load(conn, connection.mapId());
+        for (DungeonConnectionPoint point : points == null ? List.<DungeonConnectionPoint>of() : points) {
+            if (point == null) {
+                continue;
+            }
+            if (point.x() < 0 || point.y() < 0 || point.x() >= state.map().width() || point.y() >= state.map().height()) {
+                throw new IllegalArgumentException("Connection point lies outside map bounds");
+            }
+            if (state.index().squareAt(point.x(), point.y()) != null) {
+                throw new IllegalArgumentException("Connection point must stay on empty map cells");
+            }
         }
-        if (fromAnchor.equals(toAnchor)) {
-            return new DungeonLinkCreateResult(DungeonLinkCreateStatus.SAME_ANCHOR, null);
+        if (DungeonRoomConnectionRoutes.projectConnection(state.map(), state.index(), connection, points).isEmpty()) {
+            throw new IllegalArgumentException("Connection route is blocked on the current map");
         }
-        return DungeonEditingTransactions.withConnection(conn -> {
-            if (!DungeonLinkIntegrityService.isValidAnchor(conn, mapId, fromAnchor)
-                    || !DungeonLinkIntegrityService.isValidAnchor(conn, mapId, toAnchor)) {
-                return new DungeonLinkCreateResult(DungeonLinkCreateStatus.INVALID_ANCHOR, null);
-            }
-            Long existing = DungeonLinkIntegrityService.findExistingLink(conn, mapId, fromAnchor, toAnchor).orElse(null);
-            if (existing != null) {
-                return new DungeonLinkCreateResult(DungeonLinkCreateStatus.DUPLICATE, existing);
-            }
-            long linkId = DungeonLinkRepository.insertLink(conn, new DungeonLink(
-                    null, mapId, fromAnchor, toAnchor, label, null));
-            return new DungeonLinkCreateResult(DungeonLinkCreateStatus.CREATED, linkId);
-        });
-    }
-
-    public static void deleteLink(long linkId) throws Exception {
-        DungeonEditingTransactions.withConnectionVoid(conn -> DungeonLinkRepository.deleteLink(conn, linkId));
-    }
-
-    public static void updateLinkLabel(long linkId, String label) throws Exception {
-        DungeonEditingTransactions.withConnectionVoid(conn -> DungeonLinkRepository.updateLinkLabel(conn, linkId, label));
-    }
-
-    public static long savePassage(DungeonPassage passage) throws Exception {
-        return DungeonEditingTransactions.inTransactionRollbackOnSqlOrRuntime(conn -> {
-            DungeonTopologyService.validatePassageForSave(conn, passage);
-            return DungeonPassageRepository.upsertPassage(conn, passage);
-        });
-    }
-
-    public static void deletePassage(long passageId) throws Exception {
-        DungeonEditingTransactions.withConnectionVoid(conn -> {
-            DungeonLinkIntegrityService.deleteLinksTouchingAnchor(conn, DungeonLinkAnchor.passage(passageId));
-            DungeonPassageRepository.deletePassage(conn, passageId);
-        });
     }
 }

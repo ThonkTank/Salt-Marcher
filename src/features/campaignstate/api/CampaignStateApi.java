@@ -1,7 +1,6 @@
 package features.campaignstate.api;
 
 import features.campaignstate.model.CampaignState;
-import features.campaignstate.model.DungeonPositionSnapshot;
 import features.campaignstate.repository.CampaignStateRepository;
 
 import java.sql.Connection;
@@ -10,7 +9,7 @@ import java.util.Optional;
 
 public final class CampaignStateApi {
 
-    public record DungeonPosition(Long mapId, Long endpointId, Long squareId) {}
+    public record DungeonPosition(Long mapId, Long squareId) {}
 
     private CampaignStateApi() {
         throw new AssertionError("No instances");
@@ -34,15 +33,11 @@ public final class CampaignStateApi {
 
     public static Optional<DungeonPosition> getDungeonPosition(Connection conn) throws SQLException {
         return CampaignStateRepository.getDungeonPosition(conn)
-                .map(position -> new DungeonPosition(position.mapId(), position.endpointId(), position.squareId()));
+                .map(position -> new DungeonPosition(position.mapId(), position.squareId()));
     }
 
-    public static void updateDungeonPosition(Connection conn, Long mapId, Long endpointId) throws SQLException {
-        CampaignStateRepository.updateDungeonPosition(conn, mapId, endpointId, null);
-    }
-
-    public static void updateDungeonPosition(Connection conn, Long mapId, Long endpointId, Long squareId) throws SQLException {
-        CampaignStateRepository.updateDungeonPosition(conn, mapId, endpointId, squareId);
+    public static void setDungeonPosition(Connection conn, Long mapId, Long squareId) throws SQLException {
+        CampaignStateRepository.setDungeonPosition(conn, mapId, squareId);
     }
 
     public static void clearDungeonPosition(Connection conn) throws SQLException {

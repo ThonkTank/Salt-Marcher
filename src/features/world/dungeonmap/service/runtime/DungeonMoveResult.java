@@ -4,7 +4,6 @@ import java.util.List;
 
 public record DungeonMoveResult(
         DungeonMoveStatus status,
-        Long endpointId,
         Long squareId,
         List<Long> triggeredTableIds,
         String message

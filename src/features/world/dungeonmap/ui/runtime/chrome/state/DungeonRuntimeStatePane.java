@@ -8,7 +8,6 @@ public final class DungeonRuntimeStatePane extends VBox {
 
     private final Label currentRoomLabel = new Label("-");
     private final Label currentAreaLabel = new Label("-");
-    private final Label currentEndpointLabel = new Label("-");
     private final Label encounterProfileLabel = new Label("-");
     private final Label statusLabel = new Label("-");
 
@@ -28,18 +27,15 @@ public final class DungeonRuntimeStatePane extends VBox {
                 currentRoomLabel,
                 sectionLabel("Aktueller Bereich"),
                 currentAreaLabel,
-                sectionLabel("Aktueller Übergang"),
-                currentEndpointLabel,
                 sectionLabel("Encounter-Profil"),
                 encounterProfileLabel,
                 sectionLabel("Status"),
                 statusLabel);
     }
 
-    public void showLocation(String roomName, String areaName, String encounterProfile, String endpointName, String statusText) {
+    public void showLocation(String roomName, String areaName, String encounterProfile, String ignoredConnectionName, String statusText) {
         currentRoomLabel.setText(valueOrDash(roomName));
         currentAreaLabel.setText(valueOrDash(areaName));
-        currentEndpointLabel.setText(valueOrDash(endpointName));
         encounterProfileLabel.setText(valueOrDash(encounterProfile));
         statusLabel.setText(valueOrDash(statusText));
     }

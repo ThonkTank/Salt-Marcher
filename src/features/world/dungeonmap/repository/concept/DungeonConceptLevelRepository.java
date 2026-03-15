@@ -20,7 +20,7 @@ public final class DungeonConceptLevelRepository {
     public static List<DungeonConceptLevel> getLevels(Connection conn, long mapId) throws SQLException {
         List<DungeonConceptLevel> result = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT concept_level_id, map_id, sort_order, start_level, end_level, progress_fraction, adventuring_days_target, entrance_count "
+                "SELECT concept_level_id, map_id, sort_order, start_level, end_level, progress_fraction, adventuring_days_target, entrance_count, exit_count "
                         + "FROM dungeon_concept_levels WHERE map_id=? ORDER BY sort_order, concept_level_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -34,7 +34,7 @@ public final class DungeonConceptLevelRepository {
 
     public static Optional<DungeonConceptLevel> findLevel(Connection conn, long conceptLevelId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "SELECT concept_level_id, map_id, sort_order, start_level, end_level, progress_fraction, adventuring_days_target, entrance_count "
+                "SELECT concept_level_id, map_id, sort_order, start_level, end_level, progress_fraction, adventuring_days_target, entrance_count, exit_count "
                         + "FROM dungeon_concept_levels WHERE concept_level_id=?")) {
             ps.setLong(1, conceptLevelId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -48,8 +48,8 @@ public final class DungeonConceptLevelRepository {
 
     public static long insertLevel(Connection conn, DungeonConceptLevel level) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO dungeon_concept_levels(map_id, sort_order, start_level, end_level, progress_fraction, adventuring_days_target, entrance_count) "
-                        + "VALUES(?,?,?,?,?,?,?)",
+                "INSERT INTO dungeon_concept_levels(map_id, sort_order, start_level, end_level, progress_fraction, adventuring_days_target, entrance_count, exit_count) "
+                        + "VALUES(?,?,?,?,?,?,?,?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, level.mapId());
             ps.setInt(2, level.sortOrder());
@@ -58,6 +58,7 @@ public final class DungeonConceptLevelRepository {
             ps.setDouble(5, level.progressFraction());
             ps.setDouble(6, level.adventuringDaysTarget());
             ps.setInt(7, level.entranceCount());
+            ps.setInt(8, level.exitCount());
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (!keys.next()) {
@@ -71,14 +72,15 @@ public final class DungeonConceptLevelRepository {
     public static void updateLevel(Connection conn, DungeonConceptLevel level) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "UPDATE dungeon_concept_levels "
-                        + "SET start_level=?, end_level=?, progress_fraction=?, adventuring_days_target=?, entrance_count=? "
+                        + "SET start_level=?, end_level=?, progress_fraction=?, adventuring_days_target=?, entrance_count=?, exit_count=? "
                         + "WHERE concept_level_id=?")) {
             ps.setInt(1, level.startLevel());
             ps.setInt(2, level.endLevel());
             ps.setDouble(3, level.progressFraction());
             ps.setDouble(4, level.adventuringDaysTarget());
             ps.setInt(5, level.entranceCount());
-            ps.setLong(6, level.conceptLevelId());
+            ps.setInt(6, level.exitCount());
+            ps.setLong(7, level.conceptLevelId());
             ps.executeUpdate();
         }
     }
@@ -101,6 +103,7 @@ public final class DungeonConceptLevelRepository {
                 rs.getInt("end_level"),
                 rs.getDouble("progress_fraction"),
                 rs.getDouble("adventuring_days_target"),
-                rs.getInt("entrance_count"));
+                rs.getInt("entrance_count"),
+                rs.getInt("exit_count"));
     }
 }

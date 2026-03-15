@@ -1,13 +1,11 @@
 package features.world.dungeonmap.ui.shared.canvas;
 
+import features.world.dungeonmap.model.domain.DungeonConnection;
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
-import features.world.dungeonmap.model.domain.DungeonLink;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
+import features.world.dungeonmap.model.projection.DungeonMapConnectionPath;
 import features.world.dungeonmap.model.projection.DungeonMapState;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
@@ -59,8 +57,7 @@ final class DungeonCanvasModel {
         previewTopology.rebuildAfterSquarePreview(
                 state(),
                 loadedState.squaresByCoord(),
-                loadedState.baseWallsByEdge(),
-                loadedState.basePassagesByEdge());
+                loadedState.baseWallsByEdge());
     }
 
     void previewCommittedWallEdits(List<DungeonWallEdit> edits) {
@@ -68,7 +65,6 @@ final class DungeonCanvasModel {
                 state(),
                 loadedState.squaresByCoord(),
                 loadedState.baseWallsByEdge(),
-                loadedState.basePassagesByEdge(),
                 edits);
     }
 
@@ -77,7 +73,6 @@ final class DungeonCanvasModel {
                 state(),
                 loadedState.squaresByCoord(),
                 loadedState.baseWallsByEdge(),
-                loadedState.basePassagesByEdge(),
                 edits);
     }
 
@@ -85,8 +80,7 @@ final class DungeonCanvasModel {
         previewTopology.clearActiveWallPathPreview(
                 state(),
                 loadedState.squaresByCoord(),
-                loadedState.baseWallsByEdge(),
-                loadedState.basePassagesByEdge());
+                loadedState.baseWallsByEdge());
     }
 
     DungeonMapPane.CellInteraction interactionAt(DungeonViewport viewport, double screenX, double screenY) {
@@ -113,10 +107,6 @@ final class DungeonCanvasModel {
         return loadedState.squareAt(x, y);
     }
 
-    Map<Long, DungeonEndpoint> endpointsById() {
-        return loadedState.endpointsById();
-    }
-
     Map<Long, DungeonRoom> roomsById() {
         return loadedState.roomsById();
     }
@@ -125,12 +115,8 @@ final class DungeonCanvasModel {
         return loadedState.featuresById();
     }
 
-    Map<Long, DungeonLink> linksById() {
-        return loadedState.linksById();
-    }
-
-    Map<Long, DungeonPassage> passagesById() {
-        return loadedState.passagesById();
+    Map<Long, DungeonConnection> connectionsById() {
+        return loadedState.connectionsById();
     }
 
     DungeonEdgeSummary edgeAt(String edgeKey) {
@@ -143,6 +129,10 @@ final class DungeonCanvasModel {
 
     Map<Long, List<DungeonFeatureTile>> featureTilesByFeatureId() {
         return loadedState.featureTilesByFeatureId();
+    }
+
+    List<DungeonMapConnectionPath> roomConnections() {
+        return loadedState.roomConnections();
     }
 
     Map<Long, List<DungeonSquare>> squaresByRoomId() {
@@ -163,22 +153,6 @@ final class DungeonCanvasModel {
 
     void setSelection(DungeonSelection selection) {
         interactionState.setSelection(selection);
-    }
-
-    DungeonLinkAnchor pendingLinkStart() {
-        return interactionState.pendingLinkStart();
-    }
-
-    void setPendingLinkStart(DungeonLinkAnchor pendingLinkStart) {
-        interactionState.setPendingLinkStart(pendingLinkStart);
-    }
-
-    Long partyEndpointId() {
-        return interactionState.partyEndpointId();
-    }
-
-    void setPartyEndpointId(Long partyEndpointId) {
-        interactionState.setPartyEndpointId(partyEndpointId);
     }
 
     Long partySquareId() {

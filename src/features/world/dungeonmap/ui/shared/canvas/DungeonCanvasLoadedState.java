@@ -1,11 +1,10 @@
 package features.world.dungeonmap.ui.shared.canvas;
 
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
+import features.world.dungeonmap.model.domain.DungeonConnection;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonFeatureTile;
-import features.world.dungeonmap.model.domain.DungeonLink;
+import features.world.dungeonmap.model.projection.DungeonMapConnectionPath;
 import features.world.dungeonmap.model.projection.DungeonMapState;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
@@ -19,13 +18,11 @@ final class DungeonCanvasLoadedState {
     private final Map<String, DungeonSquare> squaresByCoord = new HashMap<>();
     private final Map<Long, DungeonRoom> roomsById = new HashMap<>();
     private final Map<Long, DungeonFeature> featuresById = new HashMap<>();
-    private final Map<Long, DungeonEndpoint> endpointsById = new HashMap<>();
-    private final Map<Long, DungeonPassage> passagesById = new HashMap<>();
-    private final Map<Long, DungeonLink> linksById = new HashMap<>();
+    private final Map<Long, DungeonConnection> connectionsById = new HashMap<>();
     private final Map<String, DungeonWall> baseWallsByEdge = new HashMap<>();
-    private final Map<String, DungeonPassage> basePassagesByEdge = new HashMap<>();
     private final Map<String, List<DungeonFeatureTile>> featureTilesByCoord = new HashMap<>();
     private final Map<Long, List<DungeonFeatureTile>> featureTilesByFeatureId = new HashMap<>();
+    private final List<DungeonMapConnectionPath> roomConnections = new java.util.ArrayList<>();
 
     private DungeonMapState state;
     private Long loadedMapId;
@@ -41,13 +38,11 @@ final class DungeonCanvasLoadedState {
         squaresByCoord.clear();
         roomsById.clear();
         featuresById.clear();
-        endpointsById.clear();
-        passagesById.clear();
-        linksById.clear();
+        connectionsById.clear();
         baseWallsByEdge.clear();
-        basePassagesByEdge.clear();
         featureTilesByCoord.clear();
         featureTilesByFeatureId.clear();
+        roomConnections.clear();
 
         if (nextState == null || nextState.map() == null) {
             loadedMapId = null;
@@ -62,30 +57,22 @@ final class DungeonCanvasLoadedState {
         for (DungeonRoom room : nextState.rooms()) {
             roomsById.put(room.roomId(), room);
         }
-        for (DungeonEndpoint endpoint : nextState.endpoints()) {
-            endpointsById.put(endpoint.endpointId(), endpoint);
+        for (DungeonConnection connection : nextState.connections()) {
+            if (connection.connectionId() != null) {
+                connectionsById.put(connection.connectionId(), connection);
+            }
         }
         for (DungeonFeature feature : nextState.features()) {
             featuresById.put(feature.featureId(), feature);
         }
-        for (DungeonPassage passage : nextState.passages()) {
-            if (passage.passageId() != null) {
-                passagesById.put(passage.passageId(), passage);
-            }
-        }
-        for (DungeonLink link : nextState.links()) {
-            linksById.put(link.linkId(), link);
-        }
         for (DungeonWall wall : nextState.walls()) {
             baseWallsByEdge.put(wall.edgeKey(), wall);
-        }
-        for (DungeonPassage passage : nextState.passages()) {
-            basePassagesByEdge.put(passage.edgeKey(), passage);
         }
         for (DungeonFeatureTile tile : nextState.featureTiles()) {
             featureTilesByCoord.computeIfAbsent(key(tile.x(), tile.y()), ignored -> new java.util.ArrayList<>()).add(tile);
             featureTilesByFeatureId.computeIfAbsent(tile.featureId(), ignored -> new java.util.ArrayList<>()).add(tile);
         }
+        roomConnections.addAll(nextState.roomConnections());
 
         loadedMapId = nextState.map().mapId();
         loadedMapWidth = nextState.map().width();
@@ -118,24 +105,12 @@ final class DungeonCanvasLoadedState {
         return featuresById;
     }
 
-    Map<Long, DungeonEndpoint> endpointsById() {
-        return endpointsById;
-    }
-
-    Map<Long, DungeonPassage> passagesById() {
-        return passagesById;
-    }
-
-    Map<Long, DungeonLink> linksById() {
-        return linksById;
+    Map<Long, DungeonConnection> connectionsById() {
+        return connectionsById;
     }
 
     Map<String, DungeonWall> baseWallsByEdge() {
         return baseWallsByEdge;
-    }
-
-    Map<String, DungeonPassage> basePassagesByEdge() {
-        return basePassagesByEdge;
     }
 
     Map<String, List<DungeonFeatureTile>> featureTilesByCoord() {
@@ -144,6 +119,10 @@ final class DungeonCanvasLoadedState {
 
     Map<Long, List<DungeonFeatureTile>> featureTilesByFeatureId() {
         return featureTilesByFeatureId;
+    }
+
+    List<DungeonMapConnectionPath> roomConnections() {
+        return roomConnections;
     }
 
     String resolveRoomName(Long roomId) {

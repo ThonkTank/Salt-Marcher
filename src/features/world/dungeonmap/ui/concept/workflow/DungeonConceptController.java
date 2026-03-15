@@ -16,9 +16,11 @@ import features.world.dungeonmap.ui.concept.chrome.DungeonConceptStatePane;
 import features.world.dungeonmap.ui.concept.state.DungeonConceptEditorState;
 import features.world.dungeonmap.ui.concept.state.DungeonConceptLevelMetrics;
 import features.world.dungeonmap.ui.concept.state.DungeonConceptSelection;
-import features.world.dungeonmap.ui.editor.chrome.map.DungeonMapControlsPane;
-import features.world.dungeonmap.ui.editor.chrome.map.DungeonMapDropdownPresenter;
+import features.world.dungeonmap.ui.concept.state.DungeonConceptTool;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
+import features.world.dungeonmap.ui.shared.format.DungeonConceptTransitionText;
+import features.world.dungeonmap.ui.shared.map.DungeonMapControlsPane;
+import features.world.dungeonmap.ui.shared.map.DungeonMapDropdownPresenter;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -126,7 +128,8 @@ public final class DungeonConceptController {
                         update.endLevel(),
                         update.progressFraction(),
                         update.adventuringDaysTarget(),
-                        update.entranceCount()),
+                        update.entranceCount(),
+                        update.exitCount()),
                 this::reloadCurrentMap,
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.updateLevelPlan()", ex));
     }
@@ -142,24 +145,86 @@ public final class DungeonConceptController {
                 ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.updatePartySize()", ex));
     }
 
-    public void addLevelConnection(Long sourceLevelId, Long targetLevelId) {
+    public void createLevelConnection(Long sourceLevelId, Long targetLevelId) {
         if (sourceLevelId == null || targetLevelId == null) {
             return;
         }
         DungeonUiAsyncSupport.submitAction(
                 () -> conceptCommands.addLevelConnection(sourceLevelId, targetLevelId),
                 this::reloadCurrentMap,
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.addLevelConnection()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.createLevelConnection()", ex));
     }
 
-    public void removeLevelConnection(Long sourceLevelId, Long targetLevelId) {
-        if (sourceLevelId == null || targetLevelId == null) {
+    public void deleteLevelConnection(Long connectionId) {
+        if (connectionId == null) {
             return;
         }
         DungeonUiAsyncSupport.submitAction(
-                () -> conceptCommands.removeLevelConnection(sourceLevelId, targetLevelId),
+                () -> conceptCommands.removeLevelConnection(connectionId),
                 this::reloadCurrentMap,
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.removeLevelConnection()", ex));
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.deleteLevelConnection()", ex));
+    }
+
+    public void handleActiveToolChanged(DungeonConceptTool tool) {
+        state.setActiveTool(tool);
+        pane.setActiveTool(tool);
+    }
+
+    public void handleGraphConnectionRequested(DungeonConceptCanvasNode startNode, DungeonConceptCanvasNode targetNode) {
+        if (startNode == null || targetNode == null) {
+            return;
+        }
+        if (!Objects.equals(startNode.conceptLevelId(), targetNode.conceptLevelId())) {
+            return;
+        }
+        DungeonConceptState currentState = state.currentState();
+        if (currentState != null && currentState.hasCanvasEdge(startNode.conceptLevelId(), startNode.nodeKey(), targetNode.nodeKey())) {
+            return;
+        }
+        DungeonUiAsyncSupport.submitAction(
+                () -> conceptCommands.addGraphEdge(startNode.conceptLevelId(), startNode.nodeKey(), targetNode.nodeKey()),
+                this::reloadCurrentMap,
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.addGraphEdge()", ex));
+    }
+
+    public void handleGraphEdgeDeleteRequested(Long edgeId) {
+        if (edgeId == null) {
+            return;
+        }
+        DungeonUiAsyncSupport.submitAction(
+                () -> conceptCommands.removeGraphEdge(edgeId),
+                this::reloadCurrentMap,
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.removeGraphEdge()", ex));
+    }
+
+    public void handleGraphEdgeSplitRequested(DungeonConceptPane.EdgeSplitRequest request) {
+        if (request == null || request.edgeId() == null) {
+            return;
+        }
+        DungeonUiAsyncSupport.submitAction(
+                () -> conceptCommands.splitGraphEdge(request.edgeId(), request.x(), request.y()),
+                this::reloadCurrentMap,
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.splitGraphEdge()", ex));
+    }
+
+    public void handleCreateRoomNodeRequested(DungeonConceptPane.RoomCreateRequest request) {
+        if (request == null || request.conceptLevelId() == null) {
+            return;
+        }
+        DungeonUiAsyncSupport.submitAction(
+                () -> conceptCommands.createRoomNodeAt(request.conceptLevelId(), request.x(), request.y()),
+                this::reloadCurrentMap,
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.createRoomNodeAt()", ex));
+    }
+
+    public void handleNodeDeleteRequested(DungeonConceptCanvasNode node) {
+        if (node == null || node.conceptLevelId() == null || node.nodeKey() == null) {
+            return;
+        }
+        DungeonUiAsyncSupport.submitAction(
+                () -> conceptCommands.deleteCanvasNode(node.conceptLevelId(), node.nodeKey()),
+                this::reloadCurrentMap,
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConceptController.deleteCanvasNode()", ex));
     }
 
     public void handleNodeSelected(DungeonConceptCanvasNode node) {
@@ -168,14 +233,14 @@ public final class DungeonConceptController {
         }
         state.setActiveLevelId(node.conceptLevelId());
         state.setSelection(DungeonConceptSelection.node(node));
-        pane.setSelection(node.nodeKey());
+        pane.setSelection(node.nodeKey(), null);
         refreshStatePane();
         showNodeInspector(node, false);
     }
 
     public void clearSelection() {
         state.setSelection(DungeonConceptSelection.none());
-        pane.setSelection(null);
+        pane.setSelection(null, null);
         refreshStatePane();
     }
 
@@ -210,6 +275,7 @@ public final class DungeonConceptController {
                     mapControls.setMaps(maps);
                     Long mapId = resolveMapSelection(maps);
                     if (mapId == null) {
+                        mapControls.clearMapSelection();
                         clearLoadedState();
                         return;
                     }
@@ -265,8 +331,9 @@ public final class DungeonConceptController {
         state.setCurrentState(loadedState);
         state.setActiveLevelId(resolveActiveLevelId(loadedState, state.activeLevelId(), state.selection()));
         refreshSelectionAfterReload();
+        pane.setActiveTool(state.activeTool());
         pane.loadState(loadedState, state.activeLevelId());
-        pane.setSelection(selectedNodeKey());
+        pane.setSelection(selectedNodeKey(), null);
         refreshStatePane();
         refreshInspector();
     }
@@ -285,6 +352,12 @@ public final class DungeonConceptController {
                 return selectedLevelId;
             }
         }
+        if (selection != null && selection.edge() != null) {
+            Long selectedLevelId = selection.edge().conceptLevelId();
+            if (loadedState.findLevel(selectedLevelId) != null) {
+                return selectedLevelId;
+            }
+        }
         if (preferredLevelId != null && loadedState.findLevel(preferredLevelId) != null) {
             return preferredLevelId;
         }
@@ -292,24 +365,30 @@ public final class DungeonConceptController {
     }
 
     private void refreshSelectionAfterReload() {
-        if (state.currentState() == null || state.selection() == null || state.selection().node() == null) {
+        if (state.currentState() == null || state.selection() == null) {
             state.setSelection(DungeonConceptSelection.none());
             return;
         }
-        DungeonConceptCanvasNode updatedNode = state.currentState().findNode(
-                state.selection().node().nodeKey(),
-                state.selection().node().conceptLevelId());
-        if (updatedNode == null) {
-            state.setSelection(DungeonConceptSelection.none());
+        if (state.selection().node() != null) {
+            DungeonConceptCanvasNode updatedNode = state.currentState().findNode(
+                    state.selection().node().nodeKey(),
+                    state.selection().node().conceptLevelId());
+            if (updatedNode == null) {
+                state.setSelection(DungeonConceptSelection.none());
+                return;
+            }
+            state.setSelection(DungeonConceptSelection.node(updatedNode));
             return;
         }
-        state.setSelection(DungeonConceptSelection.node(updatedNode));
+        state.setSelection(DungeonConceptSelection.none());
     }
 
     private void clearLoadedState() {
+        state.setCurrentMapId(null);
         state.setCurrentState(null);
         state.setActiveLevelId(null);
         state.setSelection(DungeonConceptSelection.none());
+        mapControls.clearMapSelection();
         pane.loadState(null, null);
         refreshStatePane();
     }
@@ -384,7 +463,7 @@ public final class DungeonConceptController {
                     position.conceptLevelId(),
                     position.nodeKey(),
                     position.nodeType(),
-                    position.entranceIndex(),
+                    position.externalNodeIndex(),
                     position.connectionId(),
                     position.x(),
                     position.y()));
@@ -479,16 +558,29 @@ public final class DungeonConceptController {
         DungeonConceptLevel targetLevel = node.targetLevelId() == null || state.currentState() == null
                 ? null
                 : state.currentState().findLevel(node.targetLevelId());
-        detailsNavigator.showContent(node.displayName(), entryKey, () -> {
+        detailsNavigator.showContent(DungeonConceptTransitionText.nodeLabel(node), entryKey, () -> {
             VBox box = new VBox(6);
             box.getChildren().addAll(
                     new Label("Typ: " + node.nodeType().label()),
                     new Label("Position: " + Math.round(node.x()) + " / " + Math.round(node.y())));
+            if (node.nodeType() == DungeonConceptNodeType.ROOM && node.roomId() != null) {
+                var room = state.currentState() == null ? null : state.currentState().findRoom(node.roomId());
+                if (room != null) {
+                    box.getChildren().add(new Label("Raum-ID: " + room.roomId()));
+                }
+            }
             if (node.nodeType() == DungeonConceptNodeType.LEVEL_TRANSITION) {
-                box.getChildren().add(new Label("Ziel: " + (targetLevel == null ? "Nicht gesetzt" : targetLevel.displayName())));
+                box.getChildren().add(new Label("Ziel: " + transitionTargetLabel(node, targetLevel)));
             }
             return box;
         });
+    }
+
+    private String transitionTargetLabel(DungeonConceptCanvasNode node, DungeonConceptLevel targetLevel) {
+        return DungeonConceptTransitionText.targetChipLabel(
+                targetLevel == null ? null : targetLevel.displayName(),
+                node.transitionVariantIndex(),
+                node.transitionVariantCount());
     }
 
     private Long resolveMapSelection(List<DungeonMap> maps) {

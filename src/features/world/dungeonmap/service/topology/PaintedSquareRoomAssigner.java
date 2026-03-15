@@ -50,8 +50,12 @@ final class PaintedSquareRoomAssigner {
 
         long targetRoomId;
         if (outcome == SquarePaintOutcome.NEW_ROOM) {
-            targetRoomId = createDefaultRoom(conn, mapId, nextDefaultRoomNumber(workspace.rooms()), null);
+            targetRoomId = createDefaultRoom(conn, mapId, nextDefaultRoomNumber(workspace.rooms()), null, null);
         } else {
+            Long conceptLevelId = TopologyConceptLevelSupport.requireConsistentConceptLevel(
+                    overlappedRoomIds,
+                    workspace.roomsById(),
+                    "Malen");
             TopologyIntent priorityIntent = intent.withPrimaryRoomPriority(overlappedRoomIds);
             Long selectedRoomId = TopologyEntitySelectionSupport.selectPreferredEntityId(
                     overlappedRoomIds,
@@ -67,6 +71,10 @@ final class PaintedSquareRoomAssigner {
                     workspace.currentRoomSquareCounts(),
                     intent.withPrimaryRoomPriority(targetFirstRoomIds));
             reassignMergedRooms(conn, targetRoomId, overlappedRoomIds, workspace.currentSquares());
+            DungeonRoom targetRoom = workspace.roomsById().get(targetRoomId);
+            if (conceptLevelId != null && targetRoom != null && !conceptLevelId.equals(targetRoom.conceptLevelId())) {
+                throw new IllegalStateException("Malen darf keine Raeume in eine andere Graph-Ebene verschieben.");
+            }
             return assignFilledSquares(conn, workspace, filledEdits, targetRoomId, intent.withPrimaryRoomPriority(targetFirstRoomIds));
         }
 
@@ -115,7 +123,13 @@ final class PaintedSquareRoomAssigner {
         }
     }
 
-    private static long createDefaultRoom(Connection conn, long mapId, int roomNumber, DungeonRoom templateRoom) throws SQLException {
+    private static long createDefaultRoom(
+            Connection conn,
+            long mapId,
+            int roomNumber,
+            DungeonRoom templateRoom,
+            Long conceptLevelId
+    ) throws SQLException {
         String templateLightLevel = templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.lightLevel());
         String templateVisual = templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.visualDescription());
         String templateSounds = templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.soundsDescription());
@@ -136,7 +150,8 @@ final class PaintedSquareRoomAssigner {
                 templateDetail,
                 templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.reactiveChecks()),
                 templateRoom == null ? "" : RoomMetadataMerger.coalesceText(templateRoom.gmBackground()),
-                templateRoom == null ? null : templateRoom.areaId());
+                templateRoom == null ? null : templateRoom.areaId(),
+                conceptLevelId);
         return DungeonRoomRepository.upsertRoom(conn, newRoom);
     }
 

@@ -1,15 +1,12 @@
 package features.world.dungeonmap.service;
 
+import features.world.dungeonmap.model.domain.DungeonConnectionPoint;
 import features.world.dungeonmap.model.domain.DungeonArea;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.domain.DungeonFeatureCategory;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.editing.DungeonSquarePaint;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;
 import features.world.dungeonmap.service.editing.connection.DungeonConnectionEditingService;
-import features.world.dungeonmap.service.editing.connection.DungeonLinkCreateResult;
 import features.world.dungeonmap.service.editing.feature.DungeonFeatureEditingService;
 import features.world.dungeonmap.service.editing.map.DungeonMapLifecycleEditingService;
 import features.world.dungeonmap.service.editing.topology.DungeonTopologyEditingService;
@@ -93,32 +90,8 @@ public final class DungeonMapCommandService {
         DungeonFeatureEditingService.assignRoomArea(roomId, areaId);
     }
 
-    public long saveEndpoint(DungeonEndpoint endpoint) throws Exception {
-        return DungeonConnectionEditingService.saveEndpoint(endpoint);
-    }
-
-    public void deleteEndpoint(long endpointId) throws Exception {
-        DungeonConnectionEditingService.deleteEndpoint(endpointId);
-    }
-
-    public DungeonLinkCreateResult createLink(long mapId, DungeonLinkAnchor fromAnchor, DungeonLinkAnchor toAnchor, String label) throws Exception {
-        return DungeonConnectionEditingService.createLink(mapId, fromAnchor, toAnchor, label);
-    }
-
-    public void deleteLink(long linkId) throws Exception {
-        DungeonConnectionEditingService.deleteLink(linkId);
-    }
-
-    public void updateLinkLabel(long linkId, String label) throws Exception {
-        DungeonConnectionEditingService.updateLinkLabel(linkId, label);
-    }
-
-    public long savePassage(DungeonPassage passage) throws Exception {
-        return DungeonConnectionEditingService.savePassage(passage);
-    }
-
-    public void deletePassage(long passageId) throws Exception {
-        DungeonConnectionEditingService.deletePassage(passageId);
+    public void replaceConnectionPoints(long connectionId, List<DungeonConnectionPoint> points) throws Exception {
+        DungeonConnectionEditingService.replaceConnectionPoints(connectionId, points);
     }
 
     public void applyWallEdits(long mapId, List<DungeonWallEdit> edits) throws Exception {

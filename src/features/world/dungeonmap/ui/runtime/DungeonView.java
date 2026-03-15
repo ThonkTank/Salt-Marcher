@@ -37,13 +37,6 @@ public class DungeonView implements AppView {
                 this::reloadRuntimeView);
         controls.setOnMapSelected(mapId -> loader.handleMapSelected(mapId, movementWorkflow::updateLocationLabels));
         canvas.setOnCellClicked(interaction -> movementWorkflow.handleSquareClicked(interaction.square()));
-        canvas.setOnEndpointClicked(endpoint -> {
-            if (endpoint != null && endpoint.squareId() != null) {
-                movementWorkflow.handleSquareClicked(state.squareById(endpoint.squareId()));
-            }
-        });
-        canvas.setShowEndpoints(true);
-        canvas.setShowLinks(true);
     }
 
     @Override

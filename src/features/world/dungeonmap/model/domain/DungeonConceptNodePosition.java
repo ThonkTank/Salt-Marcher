@@ -6,7 +6,7 @@ public record DungeonConceptNodePosition(
         Long conceptLevelId,
         String nodeKey,
         DungeonConceptNodeType nodeType,
-        Integer entranceIndex,
+        Integer externalNodeIndex,
         Long connectionId,
         double x,
         double y

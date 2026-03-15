@@ -65,7 +65,6 @@ public final class DungeonRuntimeLoader {
                     state.applyRuntimeState(runtimeState);
                     if (state.currentState() == null) {
                         canvas.showEmptyState();
-                        canvas.setPartyEndpoint(null);
                         canvas.setPartySquare(null);
                         controls.selectMap(null);
                         statePane.showLocation(null, null, null, null, null);
@@ -85,7 +84,6 @@ public final class DungeonRuntimeLoader {
         }
         state.applyLoadFailure(mapId);
         canvas.showLoadError("Dungeon konnte nicht geladen werden");
-        canvas.setPartyEndpoint(null);
         canvas.setPartySquare(null);
         statePane.showLocation(null, null, null, null, state.runtimeStatusMessage());
         UiErrorReporter.reportBackgroundFailure("DungeonRuntimeLoader.loadMap()", throwable);

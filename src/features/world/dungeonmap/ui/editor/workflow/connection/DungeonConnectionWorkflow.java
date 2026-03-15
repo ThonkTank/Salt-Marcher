@@ -1,272 +1,163 @@
 package features.world.dungeonmap.ui.editor.workflow.connection;
 
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
-import features.world.dungeonmap.model.domain.DungeonEndpointRole;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
-import features.world.dungeonmap.model.domain.DungeonPassage;
-import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
-import features.world.dungeonmap.model.domain.DungeonSquare;
+import features.world.dungeonmap.model.domain.DungeonConnection;
+import features.world.dungeonmap.model.domain.DungeonConnectionPoint;
+import features.world.dungeonmap.model.projection.DungeonMapConnectionPath;
 import features.world.dungeonmap.service.DungeonMapCommandService;
-import features.world.dungeonmap.service.editing.connection.DungeonLinkCreateResult;
-import features.world.dungeonmap.service.editing.connection.DungeonLinkCreateStatus;
 import features.world.dungeonmap.ui.shared.canvas.DungeonMapPane;
 import features.world.dungeonmap.ui.shared.async.DungeonUiAsyncSupport;
-import features.world.dungeonmap.ui.editor.chrome.inspector.DungeonConnectionInspectorActions;
-import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
-import features.world.dungeonmap.ui.editor.state.PassageEditorMode;
-import features.world.dungeonmap.ui.editor.state.DungeonEditorInteractionState;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorState;
 import features.world.dungeonmap.ui.editor.state.DungeonSelectionRestoreRequest;
-import features.world.dungeonmap.ui.editor.workflow.tools.EditorMessageBus;
 import features.world.dungeonmap.ui.editor.workflow.selection.DungeonSelectionController;
-import javafx.scene.Node;
 import ui.async.UiErrorReporter;
-import ui.components.ConfirmationDropdown;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
-public final class DungeonConnectionWorkflow implements DungeonConnectionInspectorActions {
+public final class DungeonConnectionWorkflow {
 
     private final DungeonEditorState state;
-    private final DungeonEditorInteractionState interactionState;
-    private final DungeonMapPane canvas;
     private final DungeonSelectionController selectionController;
-    private final DungeonLinkFlow linkFlow;
-    private final EditorMessageBus workflowMessageBus;
     private final DungeonMapCommandService commands;
-    private final ConfirmationDropdown confirmationDropdown = new ConfirmationDropdown();
     private final Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap;
 
     public DungeonConnectionWorkflow(
             DungeonEditorState state,
-            DungeonEditorInteractionState interactionState,
-            DungeonMapPane canvas,
             DungeonSelectionController selectionController,
-            DungeonLinkFlow linkFlow,
-            EditorMessageBus workflowMessageBus,
             DungeonMapCommandService commands,
             Consumer<DungeonSelectionRestoreRequest> reloadCurrentMap
     ) {
         this.state = state;
-        this.interactionState = interactionState;
-        this.canvas = canvas;
         this.selectionController = selectionController;
-        this.linkFlow = linkFlow;
-        this.workflowMessageBus = workflowMessageBus;
         this.commands = commands;
         this.reloadCurrentMap = reloadCurrentMap == null ? ignored -> { } : reloadCurrentMap;
     }
 
-    public void handleEndpointClick(DungeonEndpoint endpoint) {
-        if (interactionState.activeTool() == DungeonEditorTool.LINK) {
-            linkFlow.beginOrCompleteLink(
-                    DungeonLinkAnchor.endpoint(endpoint.endpointId()),
-                    state.currentMapId(),
-                    (mapId, fromId, toId) -> DungeonUiAsyncSupport.submitValue(
-                            () -> commands.createLink(mapId, fromId, toId, ""),
-                            this::handleLinkCreateResult,
-                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.createLink()", ex)));
+    public void selectConnection(Long connectionId) {
+        if (connectionId == null) {
             return;
         }
-        selectionController.showEndpointSelection(endpoint);
+        DungeonConnection connection = state.findConnection(connectionId);
+        if (connection != null) {
+            selectionController.selectConnection(connection);
+        }
     }
 
-    public void handleEdgeClick(DungeonMapPane.EdgeInteraction interaction) {
-        DungeonPassage existing = interaction.edge().passage();
-        if (interactionState.activeTool() == DungeonEditorTool.LINK) {
-            if (existing == null || existing.passageId() == null) {
-                canvas.flashInvalidEdge(interaction);
-                return;
-            }
-            linkFlow.beginOrCompleteLink(
-                    DungeonLinkAnchor.passage(existing.passageId()),
-                    state.currentMapId(),
-                    (mapId, fromAnchor, toAnchor) -> DungeonUiAsyncSupport.submitValue(
-                            () -> commands.createLink(mapId, fromAnchor, toAnchor, ""),
-                            this::handleLinkCreateResult,
-                            ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.createLink()", ex)));
+    public void moveConnectionPoint(DungeonMapPane.ConnectionPointMoveRequest request) {
+        if (request == null || request.connectionId() == null) {
             return;
         }
-        if (interactionState.activeTool() != DungeonEditorTool.PASSAGE) {
+        List<DungeonConnectionPoint> points = editablePoints(request.connectionId());
+        if (request.pointIndex() < 0 || request.pointIndex() >= points.size()) {
             return;
         }
-        var edge = interaction.edge();
-        PassageEditorMode mode = interactionState.passageEditorMode();
-        if (mode.deletesPassages()) {
-            if (existing != null && existing.passageId() != null) {
-                DungeonUiAsyncSupport.submitAction(
-                        () -> commands.deletePassage(existing.passageId()),
-                        () -> reloadCurrentMap.accept(null),
-                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.deletePassageImmediate()", ex));
-            }
+        DungeonConnectionPoint existing = points.get(request.pointIndex());
+        if (existing.x() == request.x() && existing.y() == request.y()) {
             return;
         }
-        if (existing != null) {
-            selectionController.selectPassage(existing);
-            return;
-        }
-        if (!interaction.edge().canCreatePassage()) {
-            canvas.flashInvalidEdge(interaction);
-            return;
-        }
-        if (state.currentMapId() == null) {
-            return;
-        }
-        savePassage(new DungeonPassage(
+        points.set(request.pointIndex(), new DungeonConnectionPoint(
                 null,
-                state.currentMapId(),
-                edge.x(),
-                edge.y(),
-                edge.direction(),
-                "",
-                "",
-                null));
+                request.connectionId(),
+                request.pointIndex(),
+                request.x(),
+                request.y()));
+        persistConnectionPoints(request.connectionId(), points);
     }
 
-    public void createOrSelectEndpoint(DungeonSquare square) {
-        if (square == null || square.squareId() == null || state.currentMapId() == null) {
+    public void insertConnectionPoint(DungeonMapPane.ConnectionPointInsertRequest request) {
+        if (request == null || request.connectionId() == null) {
             return;
         }
-        DungeonEndpoint existing = findEndpointBySquare(square.squareId());
-        if (existing != null) {
-            selectionController.showEndpointSelection(existing);
+        List<DungeonConnectionPoint> points = editablePoints(request.connectionId());
+        int insertIndex = resolveInsertIndex(request.connectionId(), request.x(), request.y(), points);
+        points.add(insertIndex, new DungeonConnectionPoint(null, request.connectionId(), insertIndex, request.x(), request.y()));
+        persistConnectionPoints(request.connectionId(), points);
+    }
+
+    public void deleteConnectionPoint(DungeonMapPane.ConnectionPointDeleteRequest request) {
+        if (request == null || request.connectionId() == null) {
             return;
         }
-        saveEndpoint(new DungeonEndpoint(
-                null,
-                state.currentMapId(),
-                square.squareId(),
-                "Übergang " + square.x() + "," + square.y(),
-                "",
-                DungeonEndpointRole.BOTH,
-                false,
-                square.x(),
-                square.y()));
-    }
-
-    @Override
-    public void saveEndpoint(DungeonEndpoint endpoint) {
-        DungeonUiAsyncSupport.submitValue(
-                () -> commands.saveEndpoint(endpoint),
-                ignored -> reloadCurrentMap.accept(null),
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.saveEndpoint()", ex));
-    }
-
-    @Override
-    public void deleteEndpoint(Long endpointId, Node anchor) {
-        if (endpointId == null) {
+        List<DungeonConnectionPoint> points = editablePoints(request.connectionId());
+        if (request.pointIndex() < 0 || request.pointIndex() >= points.size()) {
             return;
         }
-        confirmDelete(
-                anchor,
-                "Übergang löschen",
-                "Übergang '" + findEndpointName(endpointId) + "' löschen? Alle verbundenen Links werden ebenfalls entfernt.",
-                () -> DungeonUiAsyncSupport.submitAction(
-                        () -> commands.deleteEndpoint(endpointId),
-                        () -> reloadCurrentMap.accept(null),
-                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.deleteEndpoint()", ex)));
+        points.remove(request.pointIndex());
+        persistConnectionPoints(request.connectionId(), points);
     }
 
-    @Override
-    public void deleteLink(Long linkId) {
-        if (linkId == null) {
+    private void persistConnectionPoints(Long connectionId, List<DungeonConnectionPoint> points) {
+        if (connectionId == null) {
             return;
         }
         DungeonUiAsyncSupport.submitAction(
-                () -> commands.deleteLink(linkId),
-                () -> reloadCurrentMap.accept(null),
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.deleteLink()", ex));
+                () -> commands.replaceConnectionPoints(connectionId, points),
+                () -> reloadCurrentMap.accept(DungeonSelectionRestoreRequest.connection(connectionId)),
+                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.replaceConnectionPoints()", ex));
     }
 
-    @Override
-    public void updateLinkLabel(long linkId, String label, Runnable onSuccess) {
-        Runnable effectiveOnSuccess = onSuccess == null ? () -> reloadCurrentMap.accept(null) : onSuccess;
-        DungeonUiAsyncSupport.submitAction(
-                () -> commands.updateLinkLabel(linkId, label),
-                effectiveOnSuccess,
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.updateLinkLabel()", ex));
+    private List<DungeonConnectionPoint> editablePoints(Long connectionId) {
+        List<DungeonConnectionPoint> result = new ArrayList<>();
+        if (state.currentState() == null || connectionId == null) {
+            return result;
+        }
+        for (DungeonConnectionPoint point : state.currentState().connectionPoints()) {
+            if (connectionId.equals(point.connectionId())) {
+                result.add(point);
+            }
+        }
+        result.sort(java.util.Comparator.comparingInt(DungeonConnectionPoint::sortOrder));
+        return result;
     }
 
-    @Override
-    public void savePassage(DungeonPassage passage) {
-        DungeonUiAsyncSupport.submitValue(
-                () -> commands.savePassage(passage),
-                passageId -> {
-                    reloadCurrentMap.accept(DungeonSelectionRestoreRequest.passage(passageId));
-                },
-                ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.savePassage()", ex));
+    private int resolveInsertIndex(Long connectionId, int x, int y, List<DungeonConnectionPoint> points) {
+        DungeonMapConnectionPath path = findConnectionPath(connectionId);
+        if (path == null || points.isEmpty()) {
+            return 0;
+        }
+        int nearestRouteIndex = 0;
+        double bestDistance = Double.MAX_VALUE;
+        for (int index = 0; index < path.routePoints().size(); index++) {
+            DungeonMapConnectionPath.GridPoint routePoint = path.routePoints().get(index);
+            double dx = (routePoint.x() - 0.5) - x;
+            double dy = (routePoint.y() - 0.5) - y;
+            double distance = dx * dx + dy * dy;
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                nearestRouteIndex = index;
+            }
+        }
+        int insertIndex = 0;
+        for (DungeonConnectionPoint point : points) {
+            int routeIndex = routeIndexForPoint(path, point);
+            if (routeIndex >= 0 && routeIndex < nearestRouteIndex) {
+                insertIndex += 1;
+            }
+        }
+        return Math.max(0, Math.min(points.size(), insertIndex));
     }
 
-    @Override
-    public void deletePassage(Long passageId, Node anchor) {
-        if (passageId == null) {
-            return;
+    private int routeIndexForPoint(DungeonMapConnectionPath path, DungeonConnectionPoint point) {
+        for (int index = 0; index < path.routePoints().size(); index++) {
+            DungeonMapConnectionPath.GridPoint routePoint = path.routePoints().get(index);
+            if (Math.abs(routePoint.x() - (point.x() + 0.5)) < 0.001
+                    && Math.abs(routePoint.y() - (point.y() + 0.5)) < 0.001) {
+                return index;
+            }
         }
-        confirmDelete(
-                anchor,
-                "Kante zurücksetzen",
-                "Kante '" + findPassageName(passageId) + "' löschen? Danach ist die Wand wieder geschlossen.",
-                () -> DungeonUiAsyncSupport.submitAction(
-                        () -> commands.deletePassage(passageId),
-                        () -> reloadCurrentMap.accept(null),
-                        ex -> UiErrorReporter.reportBackgroundFailure("DungeonConnectionWorkflow.deletePassage()", ex)));
+        return -1;
     }
 
-    private void handleLinkCreateResult(DungeonLinkCreateResult result) {
-        if (result == null) {
-            return;
-        }
-        if (result.status() == DungeonLinkCreateStatus.CREATED) {
-            reloadCurrentMap.accept(null);
-            return;
-        }
-        if (result.status() == DungeonLinkCreateStatus.SAME_ANCHOR) {
-            workflowMessageBus.showMessage("Linkerstellung", "Linkerstellung abgebrochen: Bitte zwei verschiedene Verbindungen wählen.");
-            return;
-        }
-        if (result.status() == DungeonLinkCreateStatus.DUPLICATE) {
-            workflowMessageBus.showMessage("Linkerstellung", "Diese beiden Verbindungen sind bereits verbunden.");
-            return;
-        }
-        if (result.status() == DungeonLinkCreateStatus.INVALID_ANCHOR) {
-            workflowMessageBus.showMessage("Linkerstellung", "Linkerstellung abgebrochen: Mindestens eine Verbindung ist nicht mehr gültig.");
-        }
-    }
-
-    private DungeonEndpoint findEndpointBySquare(Long squareId) {
-        if (squareId == null) {
+    private DungeonMapConnectionPath findConnectionPath(Long connectionId) {
+        if (state.currentState() == null || connectionId == null) {
             return null;
         }
-        for (DungeonEndpoint endpoint : state.index().endpointsById().values()) {
-            if (squareId.equals(endpoint.squareId())) {
-                return endpoint;
+        for (DungeonMapConnectionPath connectionPath : state.currentState().roomConnections()) {
+            if (connectionId.equals(connectionPath.connectionId())) {
+                return connectionPath;
             }
         }
         return null;
-    }
-
-    private void confirmDelete(Node anchor, String title, String message, Runnable onConfirm) {
-        confirmationDropdown.show(anchor, title, message, "Löschen", () -> {
-            confirmationDropdown.hide();
-            onConfirm.run();
-        });
-    }
-
-    private String findEndpointName(Long endpointId) {
-        DungeonEndpoint endpoint = state.findEndpoint(endpointId);
-        if (endpoint != null) {
-            String name = endpoint.name();
-            return (name != null && !name.isBlank()) ? name : "#" + endpointId;
-        }
-        return "#" + endpointId;
-    }
-
-    private String findPassageName(Long passageId) {
-        DungeonPassage passage = state.findPassage(passageId);
-        if (passage != null) {
-            String name = passage.name();
-            return (name != null && !name.isBlank()) ? name : "#" + passageId;
-        }
-        return "#" + passageId;
     }
 }

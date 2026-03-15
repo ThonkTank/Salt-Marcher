@@ -7,7 +7,9 @@ import features.world.dungeonmap.repository.concept.DungeonConceptConnectionRepo
 import features.world.dungeonmap.repository.concept.DungeonConceptLevelRepository;
 import features.world.dungeonmap.repository.concept.DungeonConceptNodePositionRepository;
 import features.world.dungeonmap.repository.concept.DungeonConceptPartyProfileRepository;
+import features.world.dungeonmap.repository.connection.DungeonConnectionRepository;
 import features.world.dungeonmap.repository.map.DungeonMapRepository;
+import features.world.dungeonmap.repository.map.DungeonRoomRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -25,14 +27,20 @@ public final class DungeonConceptStateLoader {
                 .orElse(new DungeonConceptPartyProfile(mapId, 4));
         var levels = DungeonConceptLevelRepository.getLevels(conn, mapId);
         var connections = DungeonConceptConnectionRepository.getConnections(conn, mapId);
+        var rooms = DungeonRoomRepository.getRooms(conn, mapId);
+        DungeonConceptCanvasProjection canvasProjection = DungeonConceptCanvasProjector.project(
+                levels,
+                connections,
+                rooms,
+                DungeonConnectionRepository.getConnections(conn, mapId),
+                DungeonConceptNodePositionRepository.getPositions(conn, mapId));
         return new DungeonConceptState(
                 map,
                 partyProfile,
                 levels,
                 connections,
-                DungeonConceptCanvasProjector.project(
-                        levels,
-                        connections,
-                        DungeonConceptNodePositionRepository.getPositions(conn, mapId)));
+                rooms,
+                canvasProjection.nodes(),
+                canvasProjection.edges());
     }
 }

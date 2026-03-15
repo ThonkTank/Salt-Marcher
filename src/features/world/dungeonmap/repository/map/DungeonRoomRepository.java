@@ -22,8 +22,8 @@ public final class DungeonRoomRepository {
             try (PreparedStatement ps = conn.prepareStatement(
                     "INSERT INTO dungeon_rooms(map_id, name, light_level, visual_description, sounds_description, "
                             + "smells_description, other_description, glance_description, detail_description, "
-                            + "reactive_checks, gm_background, area_id) "
-                            + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                            + "reactive_checks, gm_background, area_id, concept_level_id) "
+                            + "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                     Statement.RETURN_GENERATED_KEYS)) {
                 ps.setLong(1, room.mapId());
                 ps.setString(2, room.name());
@@ -41,6 +41,11 @@ public final class DungeonRoomRepository {
                 } else {
                     ps.setNull(12, java.sql.Types.INTEGER);
                 }
+                if (room.conceptLevelId() != null) {
+                    ps.setLong(13, room.conceptLevelId());
+                } else {
+                    ps.setNull(13, java.sql.Types.INTEGER);
+                }
                 ps.executeUpdate();
                 try (ResultSet keys = ps.getGeneratedKeys()) {
                     if (!keys.next()) {
@@ -54,7 +59,7 @@ public final class DungeonRoomRepository {
                 "UPDATE dungeon_rooms "
                         + "SET name=?, light_level=?, visual_description=?, sounds_description=?, smells_description=?, "
                         + "other_description=?, glance_description=?, detail_description=?, reactive_checks=?, "
-                        + "gm_background=?, area_id=? "
+                        + "gm_background=?, area_id=?, concept_level_id=? "
                         + "WHERE room_id=?")) {
             ps.setString(1, room.name());
             ps.setString(2, room.lightLevel());
@@ -71,7 +76,12 @@ public final class DungeonRoomRepository {
             } else {
                 ps.setNull(11, java.sql.Types.INTEGER);
             }
-            ps.setLong(12, room.roomId());
+            if (room.conceptLevelId() != null) {
+                ps.setLong(12, room.conceptLevelId());
+            } else {
+                ps.setNull(12, java.sql.Types.INTEGER);
+            }
+            ps.setLong(13, room.roomId());
             ps.executeUpdate();
             return room.roomId();
         }
@@ -81,7 +91,7 @@ public final class DungeonRoomRepository {
         List<DungeonRoom> result = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT room_id, map_id, name, light_level, visual_description, sounds_description, smells_description, "
-                        + "other_description, glance_description, detail_description, reactive_checks, gm_background, area_id "
+                        + "other_description, glance_description, detail_description, reactive_checks, gm_background, area_id, concept_level_id "
                         + "FROM dungeon_rooms WHERE map_id=? ORDER BY room_id")) {
             ps.setLong(1, mapId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -99,7 +109,8 @@ public final class DungeonRoomRepository {
                             rs.getString("detail_description"),
                             rs.getString("reactive_checks"),
                             rs.getString("gm_background"),
-                            getNullableLong(rs, "area_id")));
+                            getNullableLong(rs, "area_id"),
+                            getNullableLong(rs, "concept_level_id")));
                 }
             }
         }
@@ -109,7 +120,7 @@ public final class DungeonRoomRepository {
     public static Optional<DungeonRoom> findRoom(Connection conn, long roomId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT room_id, map_id, name, light_level, visual_description, sounds_description, smells_description, "
-                        + "other_description, glance_description, detail_description, reactive_checks, gm_background, area_id "
+                        + "other_description, glance_description, detail_description, reactive_checks, gm_background, area_id, concept_level_id "
                         + "FROM dungeon_rooms WHERE room_id=?")) {
             ps.setLong(1, roomId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -129,7 +140,8 @@ public final class DungeonRoomRepository {
                         rs.getString("detail_description"),
                         rs.getString("reactive_checks"),
                         rs.getString("gm_background"),
-                        getNullableLong(rs, "area_id")));
+                        getNullableLong(rs, "area_id"),
+                        getNullableLong(rs, "concept_level_id")));
             }
         }
     }

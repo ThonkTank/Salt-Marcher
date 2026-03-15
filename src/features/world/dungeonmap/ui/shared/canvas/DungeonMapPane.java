@@ -1,10 +1,8 @@
 package features.world.dungeonmap.ui.shared.canvas;
 
+import features.world.dungeonmap.model.domain.DungeonConnectionPoint;
 import features.world.dungeonmap.model.editing.BrushShape;
-import features.world.dungeonmap.model.domain.DungeonEndpoint;
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
-import features.world.dungeonmap.model.domain.DungeonLink;
-import features.world.dungeonmap.model.domain.DungeonLinkAnchor;
 import features.world.dungeonmap.model.projection.DungeonMapState;
 import features.world.dungeonmap.ui.shared.selection.DungeonSelection;
 import features.world.dungeonmap.model.domain.DungeonSquare;
@@ -28,13 +26,15 @@ public class DungeonMapPane extends StackPane {
 
     public record CellInteraction(int x, int y, DungeonSquare square) {}
     public record EdgeInteraction(DungeonEdgeSummary edge) {}
+    public record ConnectionPointMoveRequest(Long connectionId, int pointIndex, int x, int y) {}
+    public record ConnectionPointInsertRequest(Long connectionId, int x, int y) {}
+    public record ConnectionPointDeleteRequest(Long connectionId, int pointIndex) {}
 
     private final Canvas gridCanvas = new Canvas();
     private final Canvas selectionCanvas = new Canvas();
     private final Pane roomLabelsLayer = new Pane();
     private final Pane featuresLayer = new Pane();
-    private final Pane linksLayer = new Pane();
-    private final Pane endpointsLayer = new Pane();
+    private final Pane connectionsLayer = new Pane();
     private final Label statusLabel = new Label("Kein Dungeon geladen");
     private String statusMessage = "Kein Dungeon geladen";
 
@@ -42,7 +42,7 @@ public class DungeonMapPane extends StackPane {
     private final DungeonViewport viewport = new DungeonViewport();
     private final DungeonGridRenderer gridRenderer = new DungeonGridRenderer(gridCanvas, selectionCanvas, model, viewport);
     private final DungeonOverlayRenderer overlayRenderer =
-            new DungeonOverlayRenderer(roomLabelsLayer, featuresLayer, linksLayer, endpointsLayer, model, viewport);
+            new DungeonOverlayRenderer(roomLabelsLayer, featuresLayer, connectionsLayer, model, viewport);
     private final DungeonInteractionController interactionController =
             new DungeonInteractionController(selectionCanvas, model, viewport, this::redrawAll);
     private final PauseTransition invalidEdgeFlash = new PauseTransition(INVALID_EDGE_FLASH_DURATION);
@@ -61,10 +61,8 @@ public class DungeonMapPane extends StackPane {
         roomLabelsLayer.prefHeightProperty().bind(heightProperty());
         featuresLayer.prefWidthProperty().bind(widthProperty());
         featuresLayer.prefHeightProperty().bind(heightProperty());
-        linksLayer.prefWidthProperty().bind(widthProperty());
-        linksLayer.prefHeightProperty().bind(heightProperty());
-        endpointsLayer.prefWidthProperty().bind(widthProperty());
-        endpointsLayer.prefHeightProperty().bind(heightProperty());
+        connectionsLayer.prefWidthProperty().bind(widthProperty());
+        connectionsLayer.prefHeightProperty().bind(heightProperty());
         selectionCanvas.widthProperty().addListener((obs, oldValue, newValue) -> redrawAll());
         selectionCanvas.heightProperty().addListener((obs, oldValue, newValue) -> redrawAll());
         interactionController.setRedrawSelection(gridRenderer::redrawSelection);
@@ -81,8 +79,7 @@ public class DungeonMapPane extends StackPane {
                 selectionCanvas,
                 roomLabelsLayer,
                 featuresLayer,
-                linksLayer,
-                endpointsLayer,
+                connectionsLayer,
                 statusLabel);
     }
 
@@ -135,10 +132,6 @@ public class DungeonMapPane extends StackPane {
         interactionController.setWallModeSupplier(supplier);
     }
 
-    public void setPassageModeSupplier(Supplier<DungeonCanvasPassageMode> supplier) {
-        interactionController.setPassageModeSupplier(supplier);
-    }
-
     public void setOnEdgeClicked(Consumer<EdgeInteraction> onEdgeClicked) {
         interactionController.setOnEdgeClicked(onEdgeClicked);
     }
@@ -159,14 +152,6 @@ public class DungeonMapPane extends StackPane {
         interactionController.setOnEdgeStrokeFinished(onEdgeStrokeFinished);
     }
 
-    public void setShowLinks(boolean showLinks) {
-        overlayRenderer.setShowLinks(showLinks);
-    }
-
-    public void setShowEndpoints(boolean showEndpoints) {
-        overlayRenderer.setShowEndpoints(showEndpoints);
-    }
-
     public void setShowFeatures(boolean showFeatures) {
         overlayRenderer.setShowFeatures(showFeatures);
     }
@@ -174,19 +159,7 @@ public class DungeonMapPane extends StackPane {
     public void setSelectedSelection(DungeonSelection selection) {
         model.setSelection(selection);
         gridRenderer.redrawSelection();
-        overlayRenderer.refreshLinkStyles();
-        overlayRenderer.refreshEndpointStyles();
-    }
-
-    public void setPendingLinkStart(DungeonLinkAnchor anchor) {
-        model.setPendingLinkStart(anchor);
-        gridRenderer.redrawSelection();
-        overlayRenderer.refreshEndpointStyles();
-    }
-
-    public void setPartyEndpoint(Long endpointId) {
-        model.setPartyEndpointId(endpointId);
-        overlayRenderer.refreshEndpointStyles();
+        overlayRenderer.refreshConnectionStyles();
     }
 
     public void setPartySquare(Long squareId) {
@@ -233,12 +206,20 @@ public class DungeonMapPane extends StackPane {
         interactionController.setOnCellPainted(onCellPainted);
     }
 
-    public void setOnEndpointClicked(Consumer<DungeonEndpoint> onEndpointClicked) {
-        overlayRenderer.setOnEndpointClicked(onEndpointClicked);
+    public void setOnConnectionClicked(Consumer<Long> onConnectionClicked) {
+        overlayRenderer.setOnConnectionClicked(onConnectionClicked);
     }
 
-    public void setOnLinkClicked(Consumer<DungeonLink> onLinkClicked) {
-        overlayRenderer.setOnLinkClicked(onLinkClicked);
+    public void setOnConnectionPointMoved(Consumer<ConnectionPointMoveRequest> onConnectionPointMoved) {
+        overlayRenderer.setOnConnectionPointMoved(onConnectionPointMoved);
+    }
+
+    public void setOnConnectionPointInserted(Consumer<ConnectionPointInsertRequest> onConnectionPointInserted) {
+        overlayRenderer.setOnConnectionPointInserted(onConnectionPointInserted);
+    }
+
+    public void setOnConnectionPointDeleted(Consumer<ConnectionPointDeleteRequest> onConnectionPointDeleted) {
+        overlayRenderer.setOnConnectionPointDeleted(onConnectionPointDeleted);
     }
 
     public void setOnFeatureClicked(Consumer<features.world.dungeonmap.model.domain.DungeonFeature> onFeatureClicked) {

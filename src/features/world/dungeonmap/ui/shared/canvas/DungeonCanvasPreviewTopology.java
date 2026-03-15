@@ -4,7 +4,6 @@ import features.world.dungeonmap.model.projection.edge.DungeonEdgeIndex;
 import features.world.dungeonmap.model.projection.edge.DungeonEdgeSummary;
 import features.world.dungeonmap.service.projection.DungeonEdgeSummaryBuilder;
 import features.world.dungeonmap.model.projection.DungeonMapState;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonSquare;
 import features.world.dungeonmap.model.domain.DungeonWall;
 import features.world.dungeonmap.model.editing.DungeonWallEdit;
@@ -30,47 +29,43 @@ final class DungeonCanvasPreviewTopology {
             DungeonMapState state,
             Map<String, DungeonSquare> squaresByCoord,
             Map<String, DungeonWall> baseWallsByEdge,
-            Map<String, DungeonPassage> basePassagesByEdge,
             List<DungeonWallEdit> edits
     ) {
         committedWallPreviewEdits.clear();
         storeWallPreviewEdits(state, committedWallPreviewEdits, edits);
-        rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge, basePassagesByEdge);
+        rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge);
     }
 
     void previewActiveWallPath(
             DungeonMapState state,
             Map<String, DungeonSquare> squaresByCoord,
             Map<String, DungeonWall> baseWallsByEdge,
-            Map<String, DungeonPassage> basePassagesByEdge,
             List<DungeonWallEdit> edits
     ) {
         activeWallPathPreviewEdits.clear();
         storeWallPreviewEdits(state, activeWallPathPreviewEdits, edits);
-        rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge, basePassagesByEdge);
+        rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge);
     }
 
     boolean clearActiveWallPathPreview(
             DungeonMapState state,
             Map<String, DungeonSquare> squaresByCoord,
-            Map<String, DungeonWall> baseWallsByEdge,
-            Map<String, DungeonPassage> basePassagesByEdge
+            Map<String, DungeonWall> baseWallsByEdge
     ) {
         if (activeWallPathPreviewEdits.isEmpty()) {
             return false;
         }
         activeWallPathPreviewEdits.clear();
-        rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge, basePassagesByEdge);
+        rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge);
         return true;
     }
 
     void rebuildAfterSquarePreview(
             DungeonMapState state,
             Map<String, DungeonSquare> squaresByCoord,
-            Map<String, DungeonWall> baseWallsByEdge,
-            Map<String, DungeonPassage> basePassagesByEdge
+            Map<String, DungeonWall> baseWallsByEdge
     ) {
-        rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge, basePassagesByEdge);
+        rebuildEdgeTopology(state, squaresByCoord, baseWallsByEdge);
     }
 
     DungeonEdgeSummary edgeAt(String edgeKey) {
@@ -91,23 +86,19 @@ final class DungeonCanvasPreviewTopology {
     private void rebuildEdgeTopology(
             DungeonMapState state,
             Map<String, DungeonSquare> squaresByCoord,
-            Map<String, DungeonWall> baseWallsByEdge,
-            Map<String, DungeonPassage> basePassagesByEdge
+            Map<String, DungeonWall> baseWallsByEdge
     ) {
         Map<String, DungeonWall> previewWallsByEdge = new HashMap<>(baseWallsByEdge);
-        Map<String, DungeonPassage> previewPassagesByEdge = new HashMap<>(basePassagesByEdge);
-        applyWallPreviewEdits(state, previewWallsByEdge, previewPassagesByEdge, committedWallPreviewEdits);
-        applyWallPreviewEdits(state, previewWallsByEdge, previewPassagesByEdge, activeWallPathPreviewEdits);
+        applyWallPreviewEdits(state, previewWallsByEdge, committedWallPreviewEdits);
+        applyWallPreviewEdits(state, previewWallsByEdge, activeWallPathPreviewEdits);
         edgeIndex = DungeonEdgeSummaryBuilder.buildPreviewIndex(
                 new ArrayList<>(squaresByCoord.values()),
-                new ArrayList<>(previewWallsByEdge.values()),
-                new ArrayList<>(previewPassagesByEdge.values()));
+                new ArrayList<>(previewWallsByEdge.values()));
     }
 
     private void applyWallPreviewEdits(
             DungeonMapState state,
             Map<String, DungeonWall> previewWallsByEdge,
-            Map<String, DungeonPassage> previewPassagesByEdge,
             Map<String, DungeonWallEdit> edits
     ) {
         if (state == null || state.map() == null) {
@@ -117,7 +108,6 @@ final class DungeonCanvasPreviewTopology {
             String edgeKey = edit.edgeKey();
             if (edit.wallPresent()) {
                 previewWallsByEdge.put(edgeKey, new DungeonWall(null, state.map().mapId(), edit.x(), edit.y(), edit.direction()));
-                previewPassagesByEdge.remove(edgeKey);
             } else {
                 previewWallsByEdge.remove(edgeKey);
             }

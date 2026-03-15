@@ -1,9 +1,9 @@
 package features.world.dungeonmap.ui.editor.workflow.selection;
 
+import features.world.dungeonmap.model.domain.DungeonConnection;
 import features.world.dungeonmap.model.domain.DungeonArea;
 import features.world.dungeonmap.model.domain.DungeonFeature;
 import features.world.dungeonmap.model.projection.DungeonMapState;
-import features.world.dungeonmap.model.domain.DungeonPassage;
 import features.world.dungeonmap.model.domain.DungeonRoom;
 import features.world.dungeonmap.model.projection.index.DungeonMapIndex;
 import features.world.dungeonmap.ui.editor.state.DungeonEditorTool;
@@ -69,7 +69,7 @@ public final class DungeonSelectionRestorer {
             case ROOM -> restoreRoomSelection(index, restoreRequest.entityId());
             case AREA -> restoreAreaSelection(index, restoreRequest.entityId());
             case FEATURE -> restoreFeatureSelection(index, restoreRequest.entityId());
-            case PASSAGE -> restorePassageSelection(index, restoreRequest.entityId());
+            case CONNECTION -> restoreConnectionSelection(index, restoreRequest.entityId());
         };
     }
 
@@ -100,12 +100,13 @@ public final class DungeonSelectionRestorer {
         return true;
     }
 
-    private boolean restorePassageSelection(DungeonMapIndex index, Long passageId) {
-        DungeonPassage passage = index.findPassage(passageId);
-        if (passage == null) {
+    private boolean restoreConnectionSelection(DungeonMapIndex index, Long connectionId) {
+        DungeonConnection connection = index.findConnection(connectionId);
+        if (connection == null) {
             return false;
         }
-        selectionController.restorePassageSelection(passage);
+        selectionController.selectConnection(connection);
         return true;
     }
+
 }
