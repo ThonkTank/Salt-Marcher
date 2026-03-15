@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 public final class XpCalculator {
+    private static final int MAX_LEVEL = 20;
+
     private XpCalculator() {
         throw new AssertionError("No instances");
     }
@@ -88,13 +90,28 @@ public final class XpCalculator {
         {2800,   5700,  8500, 12700},  // Level 20
     };
 
+    // Source: D&D 5e Dungeon Master's Guide (2014), p.84, "Adventuring Day XP".
+    private static final int[] ADVENTURING_DAY_XP = {
+         300,   600,  1200,  1700,  3500,
+        4000,  5000,  6000,  7500,  9000,
+       10500, 11500, 13500, 15000, 18000,
+       20000, 25000, 27000, 30000, 40000
+    };
+
+    // Source: D&D 5e Player's Handbook (2014), Character Advancement.
+    private static final int[] XP_AT_LEVEL = {
+            0,
+            0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000,
+            85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000
+    };
+
     private static final int EASY_COL = 0;
     private static final int MEDIUM_COL = 1;
     private static final int HARD_COL = 2;
     private static final int DEADLY_COL = 3;
 
     public static int xpThreshold(int avgLevel, Difficulty difficulty) {
-        if (avgLevel < 1 || avgLevel > 20) {
+        if (avgLevel < 1 || avgLevel > MAX_LEVEL) {
             throw new IllegalArgumentException("Invalid level: " + avgLevel);
         }
         int col = switch (difficulty) {
@@ -104,6 +121,48 @@ public final class XpCalculator {
             case DEADLY -> DEADLY_COL;
         };
         return THRESHOLDS[avgLevel - 1][col];
+    }
+
+    public static int adventuringDayXpPerCharacter(int level) {
+        if (level < 1 || level > MAX_LEVEL) {
+            throw new IllegalArgumentException("Invalid level: " + level);
+        }
+        return ADVENTURING_DAY_XP[level - 1];
+    }
+
+    public static int xpAtLevel(int level) {
+        if (level < 1 || level > MAX_LEVEL) {
+            throw new IllegalArgumentException("Invalid level: " + level);
+        }
+        return XP_AT_LEVEL[level];
+    }
+
+    public static AdventuringDayBudget computeAdventuringDayBudget(List<Integer> levels) {
+        if (levels == null || levels.isEmpty()) {
+            return new AdventuringDayBudget(0, 0, 0, 0, 0);
+        }
+        int totalXp = 0;
+        int characterCount = 0;
+        for (Integer level : levels) {
+            if (level == null) {
+                continue;
+            }
+            totalXp += adventuringDayXpPerCharacter(level);
+            characterCount++;
+        }
+        if (characterCount == 0) {
+            return new AdventuringDayBudget(0, 0, 0, 0, 0);
+        }
+        int perThirdXp = (int) Math.round(totalXp / 3.0);
+        // DMG guidance expects two short rests roughly one-third and two-thirds through the day.
+        int shortRestAfterFirstThirdXp = perThirdXp;
+        int shortRestAfterSecondThirdXp = (int) Math.round((totalXp * 2.0) / 3.0);
+        return new AdventuringDayBudget(
+                totalXp,
+                perThirdXp,
+                shortRestAfterFirstThirdXp,
+                shortRestAfterSecondThirdXp,
+                characterCount);
     }
 
     /**
@@ -149,6 +208,13 @@ public final class XpCalculator {
 
     public record DifficultyStats(int adjXp, String difficulty,
                                   int easyTh, int mediumTh, int hardTh, int deadlyTh) {}
+
+    public record AdventuringDayBudget(
+            int totalXp,
+            int perThirdXp,
+            int shortRestAfterFirstThirdXp,
+            int shortRestAfterSecondThirdXp,
+            int characterCount) {}
 
     public static DifficultyStats computeStats(int adjXp, int partySize, int avgLevel) {
         int partySz = Math.max(1, partySize);

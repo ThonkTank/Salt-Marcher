@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 
 import database.DatabaseManager;
 import features.creatures.api.CreatureCatalogService;
+import features.encounter.api.AdventuringDayToolbarModule;
 import features.party.api.PartyModule;
 import features.encounter.api.EncounterModule;
 import features.spells.api.SpellCatalogModule;
@@ -73,9 +74,15 @@ public class SaltMarcherApp extends Application {
         );
         AppView encounterView = encounterModule.view();
 
+        AdventuringDayToolbarModule adventuringDayToolbarModule = new AdventuringDayToolbarModule();
+        Runnable refreshPartyConsumers = () -> {
+            encounterModule.refreshPartyState();
+            adventuringDayToolbarModule.refreshActivePartyState();
+        };
         PartyModule partyModule = new PartyModule(
-                encounterModule::refreshPartyState,
+                refreshPartyConsumers,
                 encounterModule.partyCacheRefreshPort());
+        shell.addPersistentToolbarItem(adventuringDayToolbarModule.toolbarItem());
         shell.addPersistentToolbarItem(partyModule.toolbarItem());
 
         WorldModule worldModule = new WorldModule(shell.getDetailsNavigator(), encounterModule.runtimePort());

@@ -1446,6 +1446,18 @@
     -fx-min-width: 260;
     -fx-pref-width: 320;
 }
+.adventuring-day-toolbar-popup {
+    -fx-min-width: 380;
+    -fx-pref-width: 420;
+}
+.adventuring-day-toolbar-popup .scroll-pane,
+.adventuring-day-toolbar-popup .scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+.adventuring-day-timeline-scroll,
+.adventuring-day-timeline-scroll > .viewport {
+    -fx-background-color: transparent;
+}
 .dropdown-title {
     -fx-font-size: 12px;
     -fx-font-weight: bold;
