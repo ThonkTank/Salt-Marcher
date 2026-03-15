@@ -34,7 +34,7 @@ import java.util.Set;
  */
 public final class EncounterBuilderService {
 
-    public record PartySnapshot(List<PartyApi.PartyMember> party, int avgLevel) {}
+    public record PartySnapshot(List<PartyApi.PartyMemberSummary> party, int avgLevel) {}
 
     public record EncounterFilter(
             List<String> types,
@@ -81,7 +81,7 @@ public final class EncounterBuilderService {
     }
 
     public PartySnapshot loadPartySnapshot() {
-        List<PartyApi.PartyMember> party = partyProvider.getActiveParty();
+        List<PartyApi.PartyMemberSummary> party = partyProvider.getActiveParty();
         int avgLevel = partyProvider.averageLevel(party);
         return new PartySnapshot(party, avgLevel);
     }

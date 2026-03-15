@@ -12,7 +12,7 @@ public final class AdventuringDayToolbarController {
         this.workflowService = workflowService;
     }
 
-    public void loadActiveParty(Consumer<PartyApi.ActivePartyResult> onComplete) {
-        workflowService.loadActiveParty(onComplete);
+    public void loadAdventuringDayParty(Consumer<PartyApi.AdventuringDayPartyResult> onComplete) {
+        workflowService.loadAdventuringDayParty(onComplete);
     }
 }

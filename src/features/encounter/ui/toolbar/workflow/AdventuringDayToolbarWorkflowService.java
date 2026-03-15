@@ -9,18 +9,18 @@ import java.util.function.Consumer;
 
 public final class AdventuringDayToolbarWorkflowService {
 
-    public void loadActiveParty(Consumer<PartyApi.ActivePartyResult> onComplete) {
-        Task<PartyApi.ActivePartyResult> task = new Task<>() {
+    public void loadAdventuringDayParty(Consumer<PartyApi.AdventuringDayPartyResult> onComplete) {
+        Task<PartyApi.AdventuringDayPartyResult> task = new Task<>() {
             @Override
-            protected PartyApi.ActivePartyResult call() {
-                return PartyApi.loadActiveParty();
+            protected PartyApi.AdventuringDayPartyResult call() {
+                return PartyApi.loadAdventuringDayParty();
             }
         };
         UiAsyncTasks.submit(
                 task,
                 onComplete,
                 throwable -> UiErrorReporter.reportBackgroundFailure(
-                        "AdventuringDayToolbarWorkflowService.loadActiveParty()",
+                        "AdventuringDayToolbarWorkflowService.loadAdventuringDayParty()",
                         throwable));
     }
 }

@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Post-combat summary shown in the ScenePane (state panel).
@@ -30,15 +31,22 @@ import java.util.Set;
 public class CombatResultsPane extends VBox {
 
     private final EncounterCombatService encounterService;
+    private final List<PartyApi.PartyMemberSummary> party;
+    private final Label actionStatusLabel = new Label();
+    private final Button awardXpButton = new Button("XP verteilen");
+    private Consumer<Integer> onAwardXpRequested = xp -> { };
+    private int currentPerPlayerXp;
+    private boolean xpAwarded;
     private Runnable onDone;
 
     public CombatResultsPane(
             EncounterCombatService encounterService,
             List<CombatSession.EnemyOutcome> outcomes,
-            List<PartyApi.PartyMember> party) {
+            List<PartyApi.PartyMemberSummary> party) {
         this.encounterService = Objects.requireNonNull(encounterService);
+        this.party = party == null ? List.of() : List.copyOf(party);
         setSpacing(0);
-        int partySize = Math.max(1, party.size());
+        int partySize = Math.max(1, this.party.size());
 
         // ---- Header ----
         Label titleLabel = new Label("Kampfergebnis");
@@ -102,13 +110,19 @@ public class CombatResultsPane extends VBox {
         List<CombatSession.EnemyOutcome> safeOutcomes = outcomes == null ? List.of() : outcomes;
         OptionalLootSection optionalLootSection = buildOptionalLootSection(safeOutcomes);
 
-        // ---- Done button ----
+        // ---- Action buttons ----
+        actionStatusLabel.getStyleClass().add("text-secondary");
+        actionStatusLabel.setWrapText(true);
+
+        awardXpButton.setMaxWidth(Double.MAX_VALUE);
+        awardXpButton.setPadding(new Insets(8));
         Button doneButton = new Button("Abschließen");
         doneButton.setMaxWidth(Double.MAX_VALUE);
         doneButton.setPadding(new Insets(8));
         doneButton.setOnAction(e -> { if (onDone != null) onDone.run(); });
-        HBox doneRow = new HBox(doneButton);
-        doneRow.setPadding(new Insets(4, 8, 8, 8));
+        HBox doneRow = new HBox(8, awardXpButton, doneButton);
+        doneRow.setPadding(new Insets(4, 8, 4, 8));
+        HBox.setHgrow(awardXpButton, Priority.ALWAYS);
         HBox.setHgrow(doneButton, Priority.ALWAYS);
 
         // ---- Reactive update ----
@@ -126,6 +140,10 @@ public class CombatResultsPane extends VBox {
                     partyInfoLabel,
                     goldInfoLabel,
                     goldDetailLabel);
+            if (!xpAwarded) {
+                actionStatusLabel.setText("");
+            }
+            awardXpButton.setDisable(xpAwarded || party.isEmpty() || currentPerPlayerXp <= 0);
         };
 
         thresholdSlider.valueProperty().addListener((o, ov, nv) -> update.run());
@@ -133,6 +151,7 @@ public class CombatResultsPane extends VBox {
         for (OptionalLootRow row : optionalLootSection.rows()) {
             row.toggle().selectedProperty().addListener((o, ov, nv) -> update.run());
         }
+        awardXpButton.setOnAction(event -> requestAwardXp());
         update.run();
 
         getChildren().addAll(
@@ -149,11 +168,31 @@ public class CombatResultsPane extends VBox {
                 optionalLootSection.title(),
                 optionalLootSection.scrollPane(),
                 new Separator(),
+                actionStatusLabel,
                 doneRow
         );
     }
 
     public void setOnDone(Runnable callback) { this.onDone = callback; }
+    public void setOnAwardXpRequested(Consumer<Integer> callback) {
+        onAwardXpRequested = callback == null ? xp -> { } : callback;
+    }
+
+    public void markAwardXpInProgress() {
+        actionStatusLabel.setText("XP werden gespeichert...");
+        awardXpButton.setDisable(true);
+    }
+
+    public void markAwardXpSucceeded() {
+        xpAwarded = true;
+        actionStatusLabel.setText("XP an die Party verteilt.");
+        awardXpButton.setDisable(true);
+    }
+
+    public void markAwardXpFailed() {
+        actionStatusLabel.setText("XP konnten nicht gespeichert werden.");
+        awardXpButton.setDisable(party.isEmpty() || currentPerPlayerXp <= 0);
+    }
 
     private static Slider makePercentSlider(double defaultValue) {
         Slider s = new Slider(0, 1, defaultValue);
@@ -258,12 +297,22 @@ public class CombatResultsPane extends VBox {
                 + xpSettlement.eligibleXp() + " XP");
         thresholdValueLabel.setText((int) Math.round(threshold * 100) + "%");
         fractionValueLabel.setText((int) Math.round(fraction * 100) + "%");
+        currentPerPlayerXp = xpSettlement.perPlayerXp();
         perPlayerLabel.setText(xpSettlement.perPlayerXp() + " XP");
         partyInfoLabel.setText("pro Spieler  (" + partySize + " Spieler · "
                 + xpSettlement.awardedXp() + " XP gesamt)");
 
         goldInfoLabel.setText(lootSummary(settlement.pooledLoot()));
         goldDetailLabel.setText(detailText(settlement.deadLoot(), settlement.optionalLoot()));
+    }
+
+    private void requestAwardXp() {
+        if (party.isEmpty() || currentPerPlayerXp <= 0) {
+            actionStatusLabel.setText("Keine XP zum Verteilen.");
+            return;
+        }
+        markAwardXpInProgress();
+        onAwardXpRequested.accept(currentPerPlayerXp);
     }
 
     private static String lootSummary(CombatLoot loot) {

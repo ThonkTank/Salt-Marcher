@@ -19,6 +19,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import features.party.service.PartyProgressionRules;
 
 public final class DatabaseManager {
 
@@ -143,6 +144,12 @@ public final class DatabaseManager {
                     + "name               TEXT    NOT NULL,"
                     + "player_name        TEXT,"
                     + "level              INTEGER NOT NULL DEFAULT 1,"
+                    + "current_xp         INTEGER NOT NULL DEFAULT 0,"
+                    + "xp_since_long_rest INTEGER NOT NULL DEFAULT 0,"
+                    + "xp_since_short_rest INTEGER NOT NULL DEFAULT 0,"
+                    // Legacy compatibility: short rest count is no longer an active gameplay rule,
+                    // but older local databases may still carry this column.
+                    + "short_rests_taken  INTEGER NOT NULL DEFAULT 0,"
                     + "passive_perception INTEGER NOT NULL DEFAULT 10,"
                     + "ac                 INTEGER NOT NULL DEFAULT 10,"
                     + "in_party           INTEGER NOT NULL DEFAULT 1"
@@ -776,6 +783,34 @@ public final class DatabaseManager {
         ensureColumn(conn, "player_characters", "player_name", "TEXT");
         ensureColumn(conn, "player_characters", "passive_perception", "INTEGER NOT NULL DEFAULT 10");
         ensureColumn(conn, "player_characters", "ac", "INTEGER NOT NULL DEFAULT 10");
+        ensureColumn(conn, "player_characters", "current_xp", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "player_characters", "xp_since_long_rest", "INTEGER NOT NULL DEFAULT 0");
+        ensureColumn(conn, "player_characters", "xp_since_short_rest", "INTEGER NOT NULL DEFAULT 0");
+        // Legacy compatibility only; the app no longer reads this field into active gameplay decisions.
+        ensureColumn(conn, "player_characters", "short_rests_taken", "INTEGER NOT NULL DEFAULT 0");
+        backfillCharacterXpFloors(conn);
+    }
+
+    private static void backfillCharacterXpFloors(Connection conn) throws SQLException {
+        String selectSql = "SELECT id, level, current_xp FROM player_characters";
+        String updateSql = "UPDATE player_characters SET current_xp = ? WHERE id = ?";
+        try (PreparedStatement select = conn.prepareStatement(selectSql);
+             ResultSet rs = select.executeQuery();
+             PreparedStatement update = conn.prepareStatement(updateSql)) {
+            while (rs.next()) {
+                long id = rs.getLong("id");
+                int level = rs.getInt("level");
+                int currentXp = rs.getInt("current_xp");
+                int normalizedXp = Math.max(currentXp, PartyProgressionRules.minimumXpForLevel(level));
+                if (normalizedXp == currentXp) {
+                    continue;
+                }
+                update.setInt(1, normalizedXp);
+                update.setLong(2, id);
+                update.addBatch();
+            }
+            update.executeBatch();
+        }
     }
 
     private static void ensureItemTagCompatibility(Connection conn) throws SQLException {

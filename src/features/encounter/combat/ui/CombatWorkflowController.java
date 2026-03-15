@@ -8,6 +8,7 @@ import features.encounter.combat.service.CombatSession;
 import features.encounter.model.Encounter;
 import features.encounter.internal.EncounterAsyncTaskSupport;
 import features.party.api.PartyApi;
+import features.party.api.PartyMutationApi;
 import shared.rules.service.XpCalculator;
 import javafx.concurrent.Task;
 import javafx.event.EventHandler;
@@ -15,6 +16,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TextInputControl;
 import javafx.scene.input.KeyEvent;
+import ui.async.UiAsyncTasks;
+import ui.async.UiErrorReporter;
 import ui.shell.DetailsNavigator;
 import ui.shell.SceneHandle;
 
@@ -30,12 +33,13 @@ public final class CombatWorkflowController {
     private final EncounterRosterPane rosterPane;
     private final Runnable onEnterCombatMode;
     private final Runnable onExitCombatMode;
+    private final Runnable onPartyXpAwarded;
     private final DetailsNavigator detailsNavigator;
     private CombatTrackerPane trackerPane;
     private Scene scene;
     private Task<EncounterCombatService.CombatStartResult> combatPreparationTask;
     private final EventHandler<KeyEvent> combatKeyHandler = this::handleSceneCombatKey;
-    private Supplier<List<PartyApi.PartyMember>> partySupplier = List::of;
+    private Supplier<List<PartyApi.PartyMemberSummary>> partySupplier = List::of;
     private IntSupplier avgLevelSupplier = () -> 1;
 
     public CombatWorkflowController(
@@ -44,6 +48,7 @@ public final class CombatWorkflowController {
             EncounterRosterPane rosterPane,
             Runnable onEnterCombatMode,
             Runnable onExitCombatMode,
+            Runnable onPartyXpAwarded,
             DetailsNavigator detailsNavigator
     ) {
         this.encounterService = Objects.requireNonNull(encounterService, "encounterService");
@@ -51,6 +56,7 @@ public final class CombatWorkflowController {
         this.rosterPane = Objects.requireNonNull(rosterPane, "rosterPane");
         this.onEnterCombatMode = Objects.requireNonNull(onEnterCombatMode, "onEnterCombatMode");
         this.onExitCombatMode = Objects.requireNonNull(onExitCombatMode, "onExitCombatMode");
+        this.onPartyXpAwarded = Objects.requireNonNull(onPartyXpAwarded, "onPartyXpAwarded");
         this.detailsNavigator = Objects.requireNonNull(detailsNavigator, "detailsNavigator");
     }
 
@@ -92,12 +98,12 @@ public final class CombatWorkflowController {
     }
 
     public void prepareCombat(
-            List<PartyApi.PartyMember> party,
+            List<PartyApi.PartyMemberSummary> party,
             List<Integer> pcInitiatives,
             Encounter encounter,
             List<Integer> monsterInitiatives,
             List<Long> encounterTableIds,
-            Supplier<List<PartyApi.PartyMember>> partySupplier,
+            Supplier<List<PartyApi.PartyMemberSummary>> partySupplier,
             IntSupplier avgLevelSupplier
     ) {
         this.partySupplier = Objects.requireNonNull(partySupplier, "partySupplier");
@@ -155,18 +161,61 @@ public final class CombatWorkflowController {
             return;
         }
         List<CombatSession.EnemyOutcome> outcomes = trackerPane.getEnemyOutcomes();
+        List<PartyApi.PartyMemberSummary> resultsParty = List.copyOf(partySupplier.get());
         trackerPane = null;
         onExitCombatMode.run();
-        CombatResultsPane resultsPane = new CombatResultsPane(encounterService, outcomes, partySupplier.get());
+        CombatResultsPane resultsPane = new CombatResultsPane(
+                encounterService,
+                outcomes,
+                resultsParty);
+        resultsPane.setOnAwardXpRequested(perPlayerXp -> awardXpToParty(resultsPane, resultsParty, perPlayerXp));
         resultsPane.setOnDone(() -> encounterScene.setContent(rosterPane));
         encounterScene.setContent(resultsPane);
+    }
+
+    private void awardXpToParty(
+            CombatResultsPane resultsPane,
+            List<PartyApi.PartyMemberSummary> party,
+            int perPlayerXp
+    ) {
+        if (resultsPane == null) {
+            return;
+        }
+        List<Long> partyIds = party == null ? List.of() : party.stream()
+                .map(PartyApi.PartyMemberSummary::id)
+                .filter(Objects::nonNull)
+                .toList();
+        if (partyIds.isEmpty() || perPlayerXp <= 0) {
+            resultsPane.markAwardXpFailed();
+            return;
+        }
+        Task<PartyMutationApi.MutationResult> task = new Task<>() {
+            @Override
+            protected PartyMutationApi.MutationResult call() {
+                return PartyMutationApi.awardXpToCharacters(partyIds, perPlayerXp);
+            }
+        };
+        UiAsyncTasks.submit(
+                task,
+                result -> {
+                    if (result == null || result.status() != PartyMutationApi.MutationStatus.SUCCESS) {
+                        resultsPane.markAwardXpFailed();
+                        return;
+                    }
+                    resultsPane.markAwardXpSucceeded();
+                    onPartyXpAwarded.run();
+                },
+                throwable -> {
+                    resultsPane.markAwardXpFailed();
+                    UiErrorReporter.reportBackgroundFailure("CombatWorkflowController.awardXpToParty()", throwable);
+                });
     }
 
     private void updateCombatStatus() {
         if (trackerPane == null) {
             return;
         }
-        List<PartyApi.PartyMember> party = partySupplier.get();
+        List<PartyApi.PartyMemberSummary> party = partySupplier.get();
         CombatSession.EnemyTotals totals = trackerPane.getEnemyTotals();
         XpCalculator.DifficultyStats difficultyStats = encounterService.computeLiveDifficultyStats(
                 trackerPane.getCombatants(),

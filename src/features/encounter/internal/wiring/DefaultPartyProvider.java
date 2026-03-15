@@ -8,12 +8,12 @@ import java.util.List;
 public final class DefaultPartyProvider implements PartyProvider {
 
     @Override
-    public List<PartyApi.PartyMember> getActiveParty() {
+    public List<PartyApi.PartyMemberSummary> getActiveParty() {
         return PartyApi.loadActiveParty().members();
     }
 
     @Override
-    public int averageLevel(List<PartyApi.PartyMember> party) {
+    public int averageLevel(List<PartyApi.PartyMemberSummary> party) {
         return PartyApi.calculatePartyLevel(party);
     }
 }

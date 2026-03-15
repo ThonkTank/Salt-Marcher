@@ -24,7 +24,7 @@ public final class EncounterCombatService {
     }
 
     public record CombatStartRequest(
-            List<PartyApi.PartyMember> party,
+            List<PartyApi.PartyMemberSummary> party,
             List<Integer> pcInitiatives,
             Encounter encounter,
             List<Integer> monsterInitiatives,

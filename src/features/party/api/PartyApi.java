@@ -3,6 +3,7 @@ package features.party.api;
 import database.DatabaseManager;
 import features.party.model.PlayerCharacter;
 import features.party.repository.PlayerCharacterRepository;
+import features.party.service.PartyProgressionRules;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -25,9 +26,23 @@ public final class PartyApi {
         STORAGE_ERROR
     }
 
-    public record PartyMember(Long id, String name, int level) {}
-    public record ActivePartyResult(ReadStatus status, List<PartyMember> members) {}
-    public record PartySnapshotResult(ReadStatus status, List<PartyMember> members, List<PartyMember> available) {}
+    public record PartyMemberSummary(
+            Long id,
+            String name,
+            int level
+    ) {}
+    public record ActivePartyResult(ReadStatus status, List<PartyMemberSummary> members) {}
+    public record PartySnapshotResult(
+            ReadStatus status,
+            List<PartyMemberSummary> members,
+            List<PartyMemberSummary> available
+    ) {}
+    public record AdventuringDayPartySummary(
+            List<Integer> activePartyLevels,
+            int remainingToShortRest,
+            int remainingToLongRest
+    ) {}
+    public record AdventuringDayPartyResult(ReadStatus status, AdventuringDayPartySummary summary) {}
 
     public static ActivePartyResult loadActiveParty() {
         try (Connection conn = DatabaseManager.getConnection()) {
@@ -52,10 +67,26 @@ public final class PartyApi {
         }
     }
 
-    public static int calculatePartyLevel(List<PartyMember> party) {
+    public static AdventuringDayPartyResult loadAdventuringDayParty() {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            List<PlayerCharacter> members = PlayerCharacterRepository.getPartyMembers(conn);
+            PartyProgressionRules.AdventuringDayStatus status = PartyProgressionRules.computeAdventuringDayStatus(members);
+            return new AdventuringDayPartyResult(
+                    ReadStatus.SUCCESS,
+                    new AdventuringDayPartySummary(
+                            members.stream().map(pc -> pc.Level).toList(),
+                            status.remainingToShortRest(),
+                            status.remainingToLongRest()));
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "PartyApi.loadAdventuringDayParty(): DB access failed", e);
+            return new AdventuringDayPartyResult(ReadStatus.STORAGE_ERROR, null);
+        }
+    }
+
+    public static int calculatePartyLevel(List<PartyMemberSummary> party) {
         return party == null || party.isEmpty()
                 ? 1
-                : (int) Math.round(party.stream().mapToInt(PartyMember::level).average().orElse(1));
+                : (int) Math.round(party.stream().mapToInt(PartyMemberSummary::level).average().orElse(1));
     }
 
     public static List<Integer> loadActivePartyLevels(Connection conn) throws SQLException {
@@ -66,12 +97,15 @@ public final class PartyApi {
         return PlayerCharacterRepository.getActivePartyLevelsForComposition(conn);
     }
 
-    private static List<PartyMember> mapMembers(List<PlayerCharacter> party) {
+    private static List<PartyMemberSummary> mapMembers(List<PlayerCharacter> party) {
         if (party == null || party.isEmpty()) {
             return List.of();
         }
         return party.stream()
-                .map(pc -> new PartyMember(pc.Id, pc.Name, pc.Level))
+                .map(pc -> new PartyMemberSummary(
+                        pc.Id,
+                        pc.Name,
+                        pc.Level))
                 .toList();
     }
 }

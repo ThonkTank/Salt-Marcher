@@ -56,6 +56,7 @@ public final class EncounterWorkflowCoordinator {
                 rosterPane,
                 () -> switchMode(Mode.COMBAT),
                 () -> switchMode(Mode.BUILDER),
+                this::refreshPartyViews,
                 detailsNavigator
         );
         this.combatWorkflowController = combatWorkflowController;
@@ -148,6 +149,12 @@ public final class EncounterWorkflowCoordinator {
         }
 
         encounterScene.setContent(mode == Mode.COMBAT ? combatWorkflowController.getTrackerPane() : rosterPane);
+        onRefreshToolbar.run();
+        onRefreshPanels.run();
+    }
+
+    private void refreshPartyViews() {
+        builderWorkflowController.refreshState();
         onRefreshToolbar.run();
         onRefreshPanels.run();
     }

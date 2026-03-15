@@ -1,6 +1,7 @@
 package features.party.ui;
 
 import features.party.model.PlayerCharacter;
+import features.party.service.PartyProgressionRules;
 import features.party.service.PartyService;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,6 +17,7 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -35,6 +37,9 @@ public class PartyPopup {
     private final ListView<PlayerCharacter> suggestionList = new ListView<>();
     private final TextField searchField = new TextField();
     private final Label summaryLabel = new Label();
+    private final Label actionStatusLabel = new Label();
+    private final Button shortRestButton = new Button("Short Rest");
+    private final Button longRestButton = new Button("Long Rest");
     private final PartyCharacterEditorDropdown characterEditorDropdown = new PartyCharacterEditorDropdown();
 
     private final ObservableList<PlayerCharacter> available = FXCollections.observableArrayList();
@@ -145,16 +150,28 @@ public class PartyPopup {
         // Statistik-Fusszeile
         summaryLabel.getStyleClass().add("party-summary");
         summaryLabel.setMaxWidth(Double.MAX_VALUE);
+        actionStatusLabel.getStyleClass().add("text-muted");
+        actionStatusLabel.setWrapText(true);
+        actionStatusLabel.setVisible(false);
+        actionStatusLabel.setManaged(false);
+
+        shortRestButton.getStyleClass().add("compact");
+        longRestButton.getStyleClass().add("compact");
+        shortRestButton.setOnAction(event -> onShortRest());
+        longRestButton.setOnAction(event -> onLongRest());
+        HBox restActions = new HBox(6, shortRestButton, longRestButton);
 
         VBox panel = new VBox(
                 header,
                 partyLabel,
                 memberList,
+                restActions,
                 new Separator(),
                 searchLabel,
                 searchBox,
                 newCharBox,
-                summaryLabel
+                summaryLabel,
+                actionStatusLabel
         );
         panel.setFillWidth(true);
         return panel;
@@ -197,6 +214,7 @@ public class PartyPopup {
     }
 
     private void applyData(PartyService.PartySnapshotResult result) {
+        clearStatus();
         // Mitgliederliste aktualisieren
         memberList.getChildren().clear();
         for (PlayerCharacter pc : result.members()) {
@@ -218,10 +236,21 @@ public class PartyPopup {
         nameLabel.getStyleClass().add("text-secondary");
         Label detailLabel = new Label(buildMemberDetails(pc));
         detailLabel.getStyleClass().add("text-muted");
-        VBox infoBox = new VBox(2, nameLabel, detailLabel);
+        Label progressionLabel = new Label(buildProgressionDetails(pc));
+        progressionLabel.getStyleClass().add("text-muted");
+        progressionLabel.setWrapText(true);
+        VBox infoBox = new VBox(2, nameLabel, detailLabel, progressionLabel);
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        TextField xpField = createIntegerField();
+        xpField.setPromptText("XP");
+        xpField.setPrefColumnCount(5);
+        Button xpButton = new Button("+XP");
+        xpButton.getStyleClass().add("compact");
+        xpButton.setOnAction(e -> onAwardXp(pc, xpField));
+        xpField.setOnAction(e -> onAwardXp(pc, xpField));
 
         Button removeBtn = new Button("Entfernen");
         removeBtn.getStyleClass().addAll("party-btn", "remove");
@@ -233,7 +262,7 @@ public class PartyPopup {
         editBtn.setTooltip(new Tooltip("Charakter bearbeiten"));
         editBtn.setOnAction(e -> onEditCharacter(editBtn, pc));
 
-        HBox row = new HBox(8, infoBox, spacer, removeBtn, editBtn);
+        HBox row = new HBox(8, infoBox, spacer, xpField, xpButton, removeBtn, editBtn);
         row.getStyleClass().add("party-row");
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
@@ -243,12 +272,16 @@ public class PartyPopup {
         if (members.isEmpty()) {
             triggerButton.setText("Keine _Party \u25BE");
             summaryLabel.setText("Keine Party-Mitglieder");
+            shortRestButton.setDisable(true);
+            longRestButton.setDisable(true);
         } else {
             int size = members.size();
             double avgLevelExact = members.stream().mapToInt(pc -> pc.Level).average().orElse(1.0);
             int avgLvl = PartyService.averageLevel(members);
-            triggerButton.setText("_Party: " + size + " Charaktere, \u00D8 Lv " + avgLvl + " \u25BE");
+            triggerButton.setText(size + " Charaktere, \u00D8 Lv " + avgLvl + " \u25BE");
             summaryLabel.setText("\u00D8 Lv: " + String.format("%.1f", avgLevelExact));
+            shortRestButton.setDisable(false);
+            longRestButton.setDisable(false);
         }
     }
 
@@ -296,6 +329,42 @@ public class PartyPopup {
                                 "Charakter konnte nicht erstellt werden.")));
     }
 
+    private void onAwardXp(PlayerCharacter pc, TextField xpField) {
+        int xpAmount = parsePositiveInt(xpField.getText());
+        if (xpAmount <= 0) {
+            showStatus("XP muss größer als 0 sein.", true);
+            return;
+        }
+        controller.awardXpToCharacterAndReload(
+                pc.Id,
+                xpAmount,
+                result -> {
+                    if (!handleMutationAndReloadResult(result, "XP konnten nicht gespeichert werden.")) {
+                        return;
+                    }
+                    xpField.clear();
+                    showStatus(pc.Name + " erhält " + xpAmount + " XP.", false);
+                });
+    }
+
+    private void onShortRest() {
+        controller.performShortRestAndReload(result -> {
+            if (!handleMutationAndReloadResult(result, "Short Rest konnte nicht gespeichert werden.")) {
+                return;
+            }
+            showStatus("Short Rest durchgeführt.", false);
+        });
+    }
+
+    private void onLongRest() {
+        controller.performLongRestAndReload(result -> {
+            if (!handleMutationAndReloadResult(result, "Long Rest konnte nicht gespeichert werden.")) {
+                return;
+            }
+            showStatus("Long Rest durchgeführt.", false);
+        });
+    }
+
     private void handleEditorMutationAndReloadResult(
             PartyWorkflowApplicationService.MutationAndReloadResult result,
             String storageErrorMessage
@@ -326,25 +395,37 @@ public class PartyPopup {
         return prefix + "AC " + pc.ArmorClass + "  ·  PP " + pc.PassivePerception;
     }
 
-    private void handleMutationAndReloadResult(
+    private static String buildProgressionDetails(PlayerCharacter pc) {
+        if (pc.Level >= 20) {
+            return "Max-Level erreicht";
+        }
+        if (PartyProgressionRules.isLevelUpReady(pc.Level, pc.CurrentXp)) {
+            return "Level-up bereit";
+        }
+        int xpToNext = PartyProgressionRules.xpToNextLevel(pc.Level, pc.CurrentXp);
+        return xpToNext + " XP bis Level " + (pc.Level + 1);
+    }
+
+    private boolean handleMutationAndReloadResult(
             PartyWorkflowApplicationService.MutationAndReloadResult result,
             String storageErrorMessage
     ) {
         if (result.mutationStatus() == PartyService.MutationStatus.NOT_FOUND) {
             showStorageError("Charakter wurde nicht gefunden.");
-            return;
+            return false;
         }
         if (result.mutationStatus() != PartyService.MutationStatus.SUCCESS) {
             showStorageError(storageErrorMessage);
-            return;
+            return false;
         }
         PartyService.PartySnapshotResult snapshot = result.snapshotResult();
         if (snapshot == null || snapshot.status() != PartyService.ReadStatus.SUCCESS) {
             applyData(emptySnapshot());
             showStorageError("Party konnte nach der Änderung nicht neu geladen werden.");
-            return;
+            return false;
         }
         applyData(snapshot);
+        return true;
     }
 
     private static PartyService.PartySnapshotResult emptySnapshot() {
@@ -355,9 +436,41 @@ public class PartyPopup {
     }
 
     private void showStorageError(String message) {
+        showStatus(message, true);
         Alert alert = new Alert(Alert.AlertType.WARNING, message, ButtonType.OK);
         alert.setHeaderText("Speicherfehler");
         alert.show();
+    }
+
+    private void showStatus(String message, boolean error) {
+        actionStatusLabel.setText(message == null ? "" : message);
+        actionStatusLabel.getStyleClass().removeAll("text-warning", "text-muted");
+        actionStatusLabel.getStyleClass().add(error ? "text-warning" : "text-muted");
+        actionStatusLabel.setVisible(message != null && !message.isBlank());
+        actionStatusLabel.setManaged(actionStatusLabel.isVisible());
+    }
+
+    private void clearStatus() {
+        actionStatusLabel.setText("");
+        actionStatusLabel.setVisible(false);
+        actionStatusLabel.setManaged(false);
+    }
+
+    private static int parsePositiveInt(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return 0;
+        }
+        try {
+            return Math.max(0, Integer.parseInt(raw));
+        } catch (NumberFormatException ex) {
+            return 0;
+        }
+    }
+
+    private static TextField createIntegerField() {
+        TextField field = new TextField();
+        field.setTextFormatter(new TextFormatter<>(change -> change.getText().matches("[0-9]*") ? change : null));
+        return field;
     }
 
 }

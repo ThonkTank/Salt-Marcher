@@ -83,6 +83,31 @@ public final class PartyWorkflowApplicationService {
                 });
     }
 
+    public void awardXpToCharacterAndReload(
+            Long id,
+            int xpAmount,
+            Consumer<MutationAndReloadResult> onComplete
+    ) {
+        mutateAndReload(
+                () -> PartyService.awardXpToCharacter(id, xpAmount),
+                "PartyWorkflowApplicationService.awardXpToCharacterAndReload()",
+                onComplete);
+    }
+
+    public void performShortRestAndReload(Consumer<MutationAndReloadResult> onComplete) {
+        mutateAndReload(
+                PartyService::performShortRest,
+                "PartyWorkflowApplicationService.performShortRestAndReload()",
+                onComplete);
+    }
+
+    public void performLongRestAndReload(Consumer<MutationAndReloadResult> onComplete) {
+        mutateAndReload(
+                PartyService::performLongRest,
+                "PartyWorkflowApplicationService.performLongRestAndReload()",
+                onComplete);
+    }
+
     public record MutationAndReloadResult(
             PartyService.MutationStatus mutationStatus,
             PartyService.PartySnapshotResult snapshotResult

@@ -31,4 +31,20 @@ public final class PartyPopupController {
     ) {
         workflowApplicationService.createAndAddCharacterAndReload(draft, onComplete);
     }
+
+    void awardXpToCharacterAndReload(
+            Long id,
+            int xpAmount,
+            Consumer<PartyWorkflowApplicationService.MutationAndReloadResult> onComplete
+    ) {
+        workflowApplicationService.awardXpToCharacterAndReload(id, xpAmount, onComplete);
+    }
+
+    void performShortRestAndReload(Consumer<PartyWorkflowApplicationService.MutationAndReloadResult> onComplete) {
+        workflowApplicationService.performShortRestAndReload(onComplete);
+    }
+
+    void performLongRestAndReload(Consumer<PartyWorkflowApplicationService.MutationAndReloadResult> onComplete) {
+        workflowApplicationService.performLongRestAndReload(onComplete);
+    }
 }

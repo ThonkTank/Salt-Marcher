@@ -60,7 +60,7 @@ public final class CombatSetup {
      *                           Pass null to auto-roll every slot.
      */
     public static BuildCombatantsResult buildCombatants(
-            List<PartyApi.PartyMember> party,
+            List<PartyApi.PartyMemberSummary> party,
             List<Integer> pcInitiatives,
             List<PreparedEncounterSlot> preparedSlots,
             List<Integer> monsterInitiatives) {
@@ -68,7 +68,7 @@ public final class CombatSetup {
     }
 
     static BuildCombatantsResult buildCombatants(
-            List<PartyApi.PartyMember> party,
+            List<PartyApi.PartyMemberSummary> party,
             List<Integer> pcInitiatives,
             List<PreparedEncounterSlot> preparedSlots,
             List<Integer> monsterInitiatives,
@@ -89,7 +89,7 @@ public final class CombatSetup {
         if (pcInitiatives.size() != party.size()) {
             return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PC_INITIATIVE_COUNT_MISMATCH);
         }
-        for (PartyApi.PartyMember pc : party) {
+        for (PartyApi.PartyMemberSummary pc : party) {
             if (pc == null) {
                 return BuildCombatantsResult.invalidInput(BuildCombatantsFailureReason.PARTY_MEMBER_MISSING);
             }
@@ -109,7 +109,7 @@ public final class CombatSetup {
 
         // PCs with manually entered initiative.
         for (int i = 0; i < party.size(); i++) {
-            PartyApi.PartyMember pc = party.get(i);
+            PartyApi.PartyMemberSummary pc = party.get(i);
             PcCombatant cs     = new PcCombatant();
             cs.rename(pc.name() + " (Lv." + pc.level() + ")");
             cs.setInitiative(pcInitiatives.get(i));

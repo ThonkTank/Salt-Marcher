@@ -14,7 +14,12 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+
 public final class AdventuringDayToolbarPopup {
+
+    private static final NumberFormat INTEGER_FORMAT = NumberFormat.getIntegerInstance(Locale.GERMANY);
 
     private final Button triggerButton;
     private final Popup popup;
@@ -23,7 +28,7 @@ public final class AdventuringDayToolbarPopup {
 
     public AdventuringDayToolbarPopup(AdventuringDayToolbarController controller) {
         this.controller = controller;
-        triggerButton = new Button("Adventuring _Day ▾");
+        triggerButton = new Button("Rastbudget ▾");
         triggerButton.getStyleClass().add("text-secondary");
         triggerButton.setTooltip(new Tooltip("Adventuring-Day-Rechner öffnen"));
 
@@ -88,14 +93,28 @@ public final class AdventuringDayToolbarPopup {
     }
 
     private void loadActiveParty() {
-        controller.loadActiveParty(result -> {
+        controller.loadAdventuringDayParty(result -> {
             if (result == null || result.status() != PartyApi.ReadStatus.SUCCESS) {
                 calculatorPane.markActivePartyRefreshFailed();
+                triggerButton.setText("Rastbudget nicht verfügbar ▾");
                 return;
             }
-            calculatorPane.setActivePartySnapshot(result.members().stream()
-                    .map(PartyApi.PartyMember::level)
-                    .toList());
+            PartyApi.AdventuringDayPartySummary summary = result.summary();
+            calculatorPane.setActivePartySnapshot(summary == null ? java.util.List.of() : summary.activePartyLevels());
+            updateTriggerText(summary);
         });
+    }
+
+    private void updateTriggerText(PartyApi.AdventuringDayPartySummary summary) {
+        if (summary == null || summary.activePartyLevels() == null || summary.activePartyLevels().isEmpty()) {
+            triggerButton.setText("Kein Rastbudget ▾");
+            return;
+        }
+        triggerButton.setText("SR " + formatInt(summary.remainingToShortRest())
+                + " · LR " + formatInt(summary.remainingToLongRest()) + " ▾");
+    }
+
+    private static String formatInt(int value) {
+        return INTEGER_FORMAT.format(Math.max(0, value));
     }
 }

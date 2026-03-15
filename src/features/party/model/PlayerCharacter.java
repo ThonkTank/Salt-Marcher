@@ -12,6 +12,9 @@ public class PlayerCharacter {
     public String Name;
     public String PlayerName;
     public int Level;
+    public int CurrentXp;
+    public int XpSinceLongRest;
+    public int XpSinceShortRest;
     public int PassivePerception;
     public int ArmorClass;
 }

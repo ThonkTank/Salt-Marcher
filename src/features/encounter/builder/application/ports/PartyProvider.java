@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface PartyProvider {
 
-    List<PartyApi.PartyMember> getActiveParty();
+    List<PartyApi.PartyMemberSummary> getActiveParty();
 
-    int averageLevel(List<PartyApi.PartyMember> party);
+    int averageLevel(List<PartyApi.PartyMemberSummary> party);
 }

@@ -134,12 +134,18 @@ public final class PartyService {
             boolean oldAutoCommit = conn.getAutoCommit();
             conn.setAutoCommit(false);
             try {
+                PlayerCharacter existing = PlayerCharacterRepository.getCharacterById(conn, id);
+                if (existing == null) {
+                    conn.rollback();
+                    return new MutationResult(MutationStatus.NOT_FOUND);
+                }
                 boolean updated = PlayerCharacterRepository.updateCharacter(
                         conn,
                         id,
                         draft.name(),
                         draft.playerName(),
                         draft.level(),
+                        PartyProgressionRules.normalizeCurrentXpForLevel(draft.level(), existing.CurrentXp),
                         draft.passivePerception(),
                         draft.armorClass());
                 if (!updated) {
@@ -188,6 +194,100 @@ public final class PartyService {
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "PartyService.createCharacterAndAddToParty(): DB access failed", e);
             return new CreateResult(MutationStatus.STORAGE_ERROR, null);
+        }
+    }
+
+    public static MutationResult awardXpToCharacter(Long id, int xpAmount) {
+        if (xpAmount <= 0) {
+            return new MutationResult(MutationStatus.NOT_FOUND);
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            boolean oldAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                int updated = PlayerCharacterRepository.awardXpToCharacter(conn, id, xpAmount);
+                if (updated <= 0) {
+                    conn.rollback();
+                    return new MutationResult(MutationStatus.NOT_FOUND);
+                }
+                conn.commit();
+                return new MutationResult(MutationStatus.SUCCESS);
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAutoCommit);
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "PartyService.awardXpToCharacter(): DB access failed", e);
+            return new MutationResult(MutationStatus.STORAGE_ERROR);
+        }
+    }
+
+    public static MutationResult awardXpToCharacters(List<Long> ids, int xpPerCharacter) {
+        if (ids == null || ids.isEmpty() || xpPerCharacter <= 0) {
+            return new MutationResult(MutationStatus.NOT_FOUND);
+        }
+        try (Connection conn = DatabaseManager.getConnection()) {
+            boolean oldAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                int updated = PlayerCharacterRepository.awardXpToCharacters(conn, ids, xpPerCharacter);
+                if (updated <= 0) {
+                    conn.rollback();
+                    return new MutationResult(MutationStatus.NOT_FOUND);
+                }
+                conn.commit();
+                return new MutationResult(MutationStatus.SUCCESS);
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAutoCommit);
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "PartyService.awardXpToCharacters(): DB access failed", e);
+            return new MutationResult(MutationStatus.STORAGE_ERROR);
+        }
+    }
+
+    public static MutationResult performShortRest() {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            boolean oldAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                PlayerCharacterRepository.performShortRest(conn);
+                conn.commit();
+                return new MutationResult(MutationStatus.SUCCESS);
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAutoCommit);
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "PartyService.performShortRest(): DB access failed", e);
+            return new MutationResult(MutationStatus.STORAGE_ERROR);
+        }
+    }
+
+    public static MutationResult performLongRest() {
+        try (Connection conn = DatabaseManager.getConnection()) {
+            boolean oldAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                PlayerCharacterRepository.performLongRest(conn);
+                conn.commit();
+                return new MutationResult(MutationStatus.SUCCESS);
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(oldAutoCommit);
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.WARNING, "PartyService.performLongRest(): DB access failed", e);
+            return new MutationResult(MutationStatus.STORAGE_ERROR);
         }
     }
 

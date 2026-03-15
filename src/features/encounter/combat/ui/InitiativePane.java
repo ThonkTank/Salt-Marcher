@@ -33,7 +33,7 @@ public class InitiativePane extends VBox {
     /** A single monster row: display name, initiative bonus, spinner. */
     private record MonsterEntry(String name, int initBonus, Spinner<Integer> spinner) {}
 
-    public InitiativePane(List<PartyApi.PartyMember> party, List<EncounterSlot> slots) {
+    public InitiativePane(List<PartyApi.PartyMemberSummary> party, List<EncounterSlot> slots) {
         setSpacing(0);
 
         VBox content = new VBox(10);
@@ -49,7 +49,7 @@ public class InitiativePane extends VBox {
 
             GridPane pcGrid = buildGrid();
             for (int i = 0; i < party.size(); i++) {
-                PartyApi.PartyMember pc = party.get(i);
+                PartyApi.PartyMemberSummary pc = party.get(i);
                 Label nameLabel = new Label(pc.name() + " (Lv." + pc.level() + ")");
                 nameLabel.setMaxWidth(Double.MAX_VALUE);
                 GridPane.setHgrow(nameLabel, Priority.ALWAYS);

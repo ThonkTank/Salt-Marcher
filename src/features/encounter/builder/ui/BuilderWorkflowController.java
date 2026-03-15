@@ -36,7 +36,7 @@ public final class BuilderWorkflowController {
     private final Consumer<InitiativePane> onShowInitiativePane;
     private final CombatWorkflowController combatWorkflowController;
 
-    private List<PartyApi.PartyMember> partyCache = new ArrayList<>();
+    private List<PartyApi.PartyMemberSummary> partyCache = new ArrayList<>();
     private int cachedAvgLevel = 1;
     private Task<EncounterBuilderService.PartySnapshot> partyLoadTask;
     private Task<EncounterTableProvider.TableCatalogResult> tableLoadTask;
@@ -246,7 +246,7 @@ public final class BuilderWorkflowController {
         }
 
         Encounter encounter = rosterPane.buildEncounter();
-        List<PartyApi.PartyMember> partyCopy = List.copyOf(partyCache);
+        List<PartyApi.PartyMemberSummary> partyCopy = List.copyOf(partyCache);
         InitiativePane initiativePane = new InitiativePane(partyCopy, encounter.slots());
         initiativePane.setOnCancel(() -> encounterScene.setContent(rosterPane));
         initiativePane.setOnConfirm(result -> combatWorkflowController.prepareCombat(
@@ -274,7 +274,7 @@ public final class BuilderWorkflowController {
         rosterPane.setStartCombatEnabled(rosterPane.hasSlots());
     }
 
-    List<PartyApi.PartyMember> getPartyCache() {
+    List<PartyApi.PartyMemberSummary> getPartyCache() {
         return partyCache;
     }
 
