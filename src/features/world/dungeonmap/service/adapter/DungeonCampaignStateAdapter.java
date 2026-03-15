@@ -3,8 +3,6 @@ package features.world.dungeonmap.service.adapter;
 import features.campaignstate.api.CampaignStateApi;
 import features.campaignstate.api.CampaignStateReadApi;
 import features.campaignstate.api.DungeonPositionSummary;
-import features.world.dungeonmap.model.DungeonRoom;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Optional;
@@ -26,15 +24,8 @@ public final class DungeonCampaignStateAdapter {
                 .orElse(null);
     }
 
-    public static Long recoverActiveRoom(Connection conn, long mapId, Iterable<DungeonRoom> rooms) throws SQLException {
-        for (DungeonRoom room : rooms) {
-            if (room.roomId() != null) {
-                updateActiveRoom(conn, mapId, room.roomId());
-                return room.roomId();
-            }
-        }
+    public static void clearActiveRoom(Connection conn) throws SQLException {
         CampaignStateApi.clearDungeonPosition(conn);
-        return null;
     }
 
     public static void updateActiveRoom(Connection conn, long mapId, Long roomId) throws SQLException {

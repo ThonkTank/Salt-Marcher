@@ -18,6 +18,8 @@ import java.util.function.Supplier;
 
 public final class DungeonEditorStatePane extends VBox {
 
+    public record CorridorConnectionRequest(long fromRoomId, long toRoomId) {}
+
     private final TextField mapNameField = new TextField();
     private final Button createMapButton = new Button("Dungeon anlegen");
     private final Button renameMapButton = new Button("Namen speichern");
@@ -58,6 +60,10 @@ public final class DungeonEditorStatePane extends VBox {
         corridorToSelector.getItems().setAll(rooms);
         List<DungeonCorridor> corridors = layout == null ? List.of() : layout.corridors();
         corridorSelector.getItems().setAll(corridors);
+        setSelectedRoom(selectedRoom);
+    }
+
+    public void setSelectedRoom(DungeonRoom selectedRoom) {
         roomLabel.setText(selectedRoom == null
                 ? "Kein Raum gewählt"
                 : selectedRoom.name() + " @ " + selectedRoom.center().x() + "/" + selectedRoom.center().y());
@@ -68,11 +74,11 @@ public final class DungeonEditorStatePane extends VBox {
         createMapButton.setOnAction(event -> onCreateMap.accept(nonBlankOrFallback(mapNameField.getText(), "Dungeon")));
     }
 
-    public void setOnRenameMap(java.util.function.BiConsumer<Long, String> onRenameMap, Supplier<Long> currentMapSupplier) {
+    public void setOnUpdateMap(java.util.function.BiConsumer<Long, String> onUpdateMap, Supplier<Long> currentMapSupplier) {
         renameMapButton.setOnAction(event -> {
             Long mapId = currentMapSupplier.get();
             if (mapId != null) {
-                onRenameMap.accept(mapId, nonBlankOrFallback(mapNameField.getText(), "Dungeon"));
+                onUpdateMap.accept(mapId, nonBlankOrFallback(mapNameField.getText(), "Dungeon"));
             }
         });
     }
@@ -90,12 +96,12 @@ public final class DungeonEditorStatePane extends VBox {
         });
     }
 
-    public void setOnAddCorridor(Consumer<long[]> onAddCorridor) {
+    public void setOnAddCorridor(Consumer<CorridorConnectionRequest> onAddCorridor) {
         addCorridorButton.setOnAction(event -> {
             DungeonRoom from = corridorFromSelector.getSelectionModel().getSelectedItem();
             DungeonRoom to = corridorToSelector.getSelectionModel().getSelectedItem();
             if (from != null && to != null && from.roomId() != null && to.roomId() != null && !from.roomId().equals(to.roomId())) {
-                onAddCorridor.accept(new long[]{from.roomId(), to.roomId()});
+                onAddCorridor.accept(new CorridorConnectionRequest(from.roomId(), to.roomId()));
             }
         });
     }

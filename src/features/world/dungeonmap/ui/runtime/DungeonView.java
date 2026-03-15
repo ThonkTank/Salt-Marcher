@@ -4,19 +4,23 @@ import features.world.dungeonmap.api.DungeonRoomSummary;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonRoom;
 import features.world.dungeonmap.model.DungeonRuntimeState;
-import features.world.dungeonmap.ui.shared.DungeonSplitWorkspace;
-import features.world.dungeonmap.ui.shared.DungeonViewMode;
+import features.world.dungeonmap.ui.DungeonAsyncService;
+import features.world.dungeonmap.ui.shared.workspace.DungeonSplitWorkspace;
+import features.world.dungeonmap.ui.shared.workspace.DungeonViewMode;
 import javafx.scene.Node;
 import ui.async.UiErrorReporter;
 import ui.shell.AppView;
 import ui.shell.DetailsNavigator;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 public final class DungeonView implements AppView {
 
     private final DungeonControls controls = new DungeonControls();
     private final DungeonSplitWorkspace workspace = new DungeonSplitWorkspace(false);
-    private final DungeonApplicationService applicationService = new DungeonApplicationService();
+    private final DungeonAsyncService applicationService = new DungeonAsyncService();
     private final DetailsNavigator detailsNavigator;
+    private final AtomicLong loadSequence = new AtomicLong();
 
     private DungeonRuntimeState currentState;
     private boolean initialLoadDone;
@@ -51,24 +55,59 @@ public final class DungeonView implements AppView {
     @Override
     public void onShow() {
         if (!initialLoadDone) {
-            applicationService.loadRuntimeState(state -> {
-                        showState(state);
-                        applicationService.loadMaps(maps -> {
-                                    controls.setMaps(maps);
-                                    if (state.layout() != null && state.layout().map() != null) {
-                                        controls.selectMap(state.layout().map().mapId());
-                                    }
-                                },
-                                throwable -> UiErrorReporter.reportBackgroundFailure("DungeonView.loadMaps()", throwable));
-                    },
-                    throwable -> UiErrorReporter.reportBackgroundFailure("DungeonView.loadRuntimeState()", throwable));
+            loadPreferredRuntimeState();
             initialLoadDone = true;
         }
     }
 
+    private void loadPreferredRuntimeState() {
+        long request = loadSequence.incrementAndGet();
+        applicationService.loadPreferredRuntimeState(state -> {
+                    if (request != loadSequence.get()) {
+                        return;
+                    }
+                    showState(state);
+                    loadMapsForSelection(request, state.layout().map().mapId());
+                },
+                throwable -> {
+                    if (request != loadSequence.get()) {
+                        return;
+                    }
+                    UiErrorReporter.reportBackgroundFailure("DungeonView.loadRuntimeState()", throwable);
+                });
+    }
+
     private void loadRuntimeState(long mapId) {
-        applicationService.loadRuntimeState(mapId, this::showState,
-                throwable -> UiErrorReporter.reportBackgroundFailure("DungeonView.loadRuntimeState(mapId)", throwable));
+        long request = loadSequence.incrementAndGet();
+        applicationService.loadRuntimeState(mapId, state -> {
+                    if (request != loadSequence.get()) {
+                        return;
+                    }
+                    showState(state);
+                    loadMapsForSelection(request, mapId);
+                },
+                throwable -> {
+                    if (request != loadSequence.get()) {
+                        return;
+                    }
+                    UiErrorReporter.reportBackgroundFailure("DungeonView.loadRuntimeState(mapId)", throwable);
+                });
+    }
+
+    private void loadMapsForSelection(long request, long selectedMapId) {
+        applicationService.loadMaps(maps -> {
+                    if (request != loadSequence.get()) {
+                        return;
+                    }
+                    controls.setMaps(maps);
+                    controls.selectMap(selectedMapId);
+                },
+                throwable -> {
+                    if (request != loadSequence.get()) {
+                        return;
+                    }
+                    UiErrorReporter.reportBackgroundFailure("DungeonView.loadMaps()", throwable);
+                });
     }
 
     private void showState(DungeonRuntimeState state) {
@@ -86,6 +125,11 @@ public final class DungeonView implements AppView {
     }
 
     private void selectRoom(DungeonRoom room) {
+        publishRoomDetails(room);
+        movePartyToSelectedRoom(room);
+    }
+
+    private void publishRoomDetails(DungeonRoom room) {
         detailsNavigator.showDungeonRoom(new DungeonRoomSummary(
                 room.roomId(),
                 currentState != null && currentState.layout() != null && currentState.layout().map() != null
@@ -96,6 +140,9 @@ public final class DungeonView implements AppView {
                 room.center().y(),
                 room.relativeVertices().size(),
                 currentState != null && room.roomId() != null && room.roomId().equals(currentState.activeRoomId())));
+    }
+
+    private void movePartyToSelectedRoom(DungeonRoom room) {
         if (currentState == null || currentState.layout() == null || currentState.layout().map() == null || room.roomId() == null) {
             return;
         }

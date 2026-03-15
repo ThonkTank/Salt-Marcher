@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.shared;
+package features.world.dungeonmap.ui.shared.workspace;
 
 public enum DungeonViewMode {
     GRID("Raster"),

@@ -1,4 +1,4 @@
-package features.world.dungeonmap.ui.editor;
+package features.world.dungeonmap.ui.shared.cell;
 
 import features.world.dungeonmap.model.DungeonMap;
 import javafx.scene.control.ListCell;

@@ -75,18 +75,6 @@ public final class DungeonMapService {
         }
     }
 
-    public static Long recoverActiveRoom(long mapId) throws Exception {
-        try (Connection conn = DatabaseManager.getConnection()) {
-            DungeonLayout layout = DungeonRepository.loadLayout(conn, mapId)
-                    .orElseThrow(() -> new IllegalArgumentException("Unbekannte Dungeon-Map: " + mapId));
-            Long storedActiveRoomId = DungeonCampaignStateAdapter.getStoredActiveRoomId(conn, mapId);
-            if (storedActiveRoomId != null && containsRoomId(layout, storedActiveRoomId)) {
-                return storedActiveRoomId;
-            }
-            return DungeonCampaignStateAdapter.recoverActiveRoom(conn, mapId, layout.rooms());
-        }
-    }
-
     public static long addRoom(long mapId) throws Exception {
         try (Connection conn = DatabaseManager.getConnection()) {
             DungeonLayout layout = DungeonRepository.loadLayout(conn, mapId)
@@ -143,8 +131,24 @@ public final class DungeonMapService {
     }
 
     private static DungeonRuntimeState toRuntimeState(Connection conn, DungeonLayout layout) throws SQLException {
+        Long activeRoomId = resolveAndRepairActiveRoomId(conn, layout);
+        return new DungeonRuntimeState(layout, activeRoomId);
+    }
+
+    private static Long resolveAndRepairActiveRoomId(Connection conn, DungeonLayout layout) throws SQLException {
         Long storedActiveRoomId = DungeonCampaignStateAdapter.getStoredActiveRoomId(conn, layout.map().mapId());
-        return new DungeonRuntimeState(layout, resolveActiveRoomId(layout, storedActiveRoomId));
+        Long resolvedActiveRoomId = resolveActiveRoomId(layout, storedActiveRoomId);
+        if (resolvedActiveRoomId != null) {
+            if (!resolvedActiveRoomId.equals(storedActiveRoomId)) {
+                // Runtime state and persisted campaign state must agree on the active room.
+                DungeonCampaignStateAdapter.updateActiveRoom(conn, layout.map().mapId(), resolvedActiveRoomId);
+            }
+            return resolvedActiveRoomId;
+        }
+        if (storedActiveRoomId != null) {
+            DungeonCampaignStateAdapter.clearActiveRoom(conn);
+        }
+        return null;
     }
 
     private static Long resolveActiveRoomId(DungeonLayout layout, Long roomId) {
