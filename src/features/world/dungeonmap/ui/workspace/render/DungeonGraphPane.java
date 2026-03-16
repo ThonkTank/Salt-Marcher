@@ -11,6 +11,7 @@ import features.world.dungeonmap.model.DungeonRoomGeometry;
 import features.world.dungeonmap.model.DungeonRoomCluster;
 import features.world.dungeonmap.model.DungeonRuntimeLocation;
 import features.world.dungeonmap.model.Point2i;
+import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 
@@ -30,6 +31,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     private static final double NODE_CENTER_RADIUS = 3;
     private static final double SHARED_SEGMENT_OFFSET = 7.0;
     private static final double MAX_SHARED_OFFSET = 20.0;
+    private static final Point2i ZERO = new Point2i(0, 0);
     private static final Color[] GRAPH_GROUP_COLORS = {
             Color.web("#e56b6f"),
             Color.web("#4fb286"),
@@ -54,7 +56,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         drawRoomOutlines(gc);
         drawCorridorComponentOutlines(gc);
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData == null ? null : renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometry(corridor);
             if (geometry == null) {
                 continue;
             }
@@ -71,6 +73,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                         corridorRenderState.corridorIdsByDoorMarker(),
                         corridorRenderState.laneOrderBySegment(),
                         corridorRenderState.displayPaths().get(corridor.corridorId()));
+                drawCorridorWaypointMarkers(gc, corridor, geometry);
             } else {
                 drawInvalidCorridor(gc, corridor, geometry);
             }
@@ -79,7 +82,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             if (cluster.clusterId() == null) {
                 continue;
             }
-            Point2i center = cluster.center();
+            Point2i center = previewCenter(cluster);
             double screenX = camera.toScreenX(center.x() + 0.5);
             double screenY = camera.toScreenY(center.y() + 0.5);
             boolean active = isActive(cluster);
@@ -112,8 +115,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         DungeonRoomCluster closest = null;
         double bestDistance = Double.POSITIVE_INFINITY;
         for (DungeonRoomCluster cluster : layout.clusters()) {
-            double centerX = camera.toScreenX(cluster.center().x() + 0.5);
-            double centerY = camera.toScreenY(cluster.center().y() + 0.5);
+            Point2i previewCenter = previewCenter(cluster);
+            double centerX = camera.toScreenX(previewCenter.x() + 0.5);
+            double centerY = camera.toScreenY(previewCenter.y() + 0.5);
             double distance = Math.hypot(centerX - screenX, centerY - screenY);
             if (distance < bestDistance && distance <= NODE_RADIUS) {
                 bestDistance = distance;
@@ -131,7 +135,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             if (room == null || room.roomId() == null) {
                 continue;
             }
-            Point2i center = layout.roomShape(room.roomId()).center();
+            Point2i center = previewCenter(room);
             double centerX = camera.toScreenX(center.x() + 0.5);
             double centerY = camera.toScreenY(center.y() + 0.5);
             double distance = Math.hypot(centerX - screenX, centerY - screenY);
@@ -152,7 +156,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         DungeonCorridor closest = null;
         double bestDistance = Double.POSITIVE_INFINITY;
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometry(corridor);
             if (geometry == null) {
                 continue;
             }
@@ -174,7 +178,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         CorridorDoorHit bestHit = null;
         double bestDistance = Double.POSITIVE_INFINITY;
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometry(corridor);
             if (geometry == null || !geometry.routable()) {
                 continue;
             }
@@ -199,6 +203,84 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
+    protected CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
+        CorridorSelectionContext context = selectedCorridorContext();
+        if (context == null) {
+            return null;
+        }
+        CorridorRenderState corridorRenderState = corridorRenderState();
+        CorridorEditInteractionController.DoorHandle best = null;
+        double bestDistance = Double.POSITIVE_INFINITY;
+        for (DoorSegment door : context.geometry().doors()) {
+            MarkerPoint marker = markerPoint(
+                    door,
+                    context.corridor().corridorId(),
+                    corridorRenderState.corridorIdsByDoorMarker(),
+                    corridorRenderState.laneOrderBySegment(),
+                    corridorRenderState.displayPaths().get(context.corridor().corridorId()));
+            double markerDistance = Math.hypot(screenX - marker.x(), screenY - marker.y());
+            if (markerDistance <= 9 && markerDistance < bestDistance) {
+                bestDistance = markerDistance;
+                best = new CorridorEditInteractionController.DoorHandle(context.corridor().corridorId(), door.roomId());
+            }
+        }
+        return best;
+    }
+
+    @Override
+    protected CorridorEditInteractionController.WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY) {
+        CorridorSelectionContext context = selectedCorridorContext();
+        if (context == null) {
+            return null;
+        }
+        CorridorEditInteractionController.WaypointHandle best = null;
+        double bestDistance = Double.POSITIVE_INFINITY;
+        for (int index = 0; index < context.geometry().waypointCells().size(); index++) {
+            Point2i waypoint = context.geometry().waypointCells().get(index);
+            double centerX = camera.toScreenX(waypoint.x() + 0.5);
+            double centerY = camera.toScreenY(waypoint.y() + 0.5);
+            double distance = Math.hypot(screenX - centerX, screenY - centerY);
+            if (distance <= 10 && distance < bestDistance) {
+                bestDistance = distance;
+                best = new CorridorEditInteractionController.WaypointHandle(context.corridor().corridorId(), index);
+            }
+        }
+        return best;
+    }
+
+    @Override
+    protected CorridorEditInteractionController.SegmentInsertHit findCorridorSegmentInsertHitAt(double screenX, double screenY) {
+        CorridorSelectionContext context = selectedCorridorContext();
+        CorridorDisplayPath displayPath = context == null ? null : corridorRenderState().displayPaths().get(context.corridor().corridorId());
+        if (context == null || displayPath == null || displayPath.segments().isEmpty()) {
+            return null;
+        }
+        SegmentKey bestSegmentKey = null;
+        double bestDistance = Double.POSITIVE_INFINITY;
+        for (OffsetLine segment : displayPath.segments()) {
+            if (segment.canonicalSegment() == null) {
+                continue;
+            }
+            double distance = distanceToSegment(screenX, screenY, segment.x1(), segment.y1(), segment.x2(), segment.y2());
+            if (distance <= 10 && distance < bestDistance) {
+                bestDistance = distance;
+                bestSegmentKey = segment.canonicalSegment();
+            }
+        }
+        if (bestSegmentKey == null) {
+            return null;
+        }
+        int bestSegmentIndex = segmentIndexForKey(context.geometry(), bestSegmentKey);
+        if (bestSegmentIndex < 0) {
+            return null;
+        }
+        return new CorridorEditInteractionController.SegmentInsertHit(
+                context.corridor().corridorId(),
+                insertIndexForSegment(context.corridor().corridorId(), context.geometry(), bestSegmentIndex),
+                worldPointAt(screenX, screenY));
+    }
+
+    @Override
     protected EditorSurface surface() {
         return EditorSurface.GRAPH;
     }
@@ -210,7 +292,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         }
         for (DungeonRoomCluster cluster : layout.clusters()) {
             for (Point2i cell : DungeonRoomGeometry.graphRoomCells(world)) {
-                if (layout.clusterCells(cluster.clusterId()).contains(cell)) {
+                if (clusterCellsFor(cluster).contains(cell)) {
                     return false;
                 }
             }
@@ -219,17 +301,24 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     private CorridorRenderState corridorRenderState() {
+        if (!previewClusterCenters.isEmpty()) {
+            return buildCorridorRenderState();
+        }
         if (cachedCorridorRenderState == null || cachedRenderStateLayout != layout || cachedRenderStateData != renderData) {
             cachedRenderStateLayout = layout;
             cachedRenderStateData = renderData;
-            Map<SegmentKey, List<Long>> corridorIdsBySegment = corridorIdsBySegment();
-            Map<SegmentKey, List<Long>> laneOrderBySegment = laneOrderBySegment(corridorIdsBySegment);
-            cachedCorridorRenderState = new CorridorRenderState(
-                    laneOrderBySegment,
-                    corridorIdsByDoorMarker(),
-                    corridorDisplayPaths(laneOrderBySegment));
+            cachedCorridorRenderState = buildCorridorRenderState();
         }
         return cachedCorridorRenderState;
+    }
+
+    private CorridorRenderState buildCorridorRenderState() {
+        Map<SegmentKey, List<Long>> corridorIdsBySegment = corridorIdsBySegment();
+        Map<SegmentKey, List<Long>> laneOrderBySegment = laneOrderBySegment(corridorIdsBySegment);
+        return new CorridorRenderState(
+                laneOrderBySegment,
+                corridorIdsByDoorMarker(),
+                corridorDisplayPaths(laneOrderBySegment));
     }
 
     private void drawRoomOutlines(GraphicsContext gc) {
@@ -241,7 +330,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                     ? DungeonCanvasTheme.GRAPH_ROOM_OUTLINE_SELECTED
                     : DungeonCanvasTheme.GRAPH_ROOM_OUTLINE);
             gc.setLineWidth(isSelected(cluster) ? 2.5 : 1.5);
-            for (List<Point2i> loop : layout.clusterLoops(cluster.clusterId())) {
+            for (List<Point2i> loop : clusterLoopsFor(cluster)) {
                 if (loop.isEmpty()) {
                     continue;
                 }
@@ -261,9 +350,10 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             if (!Objects.equals(room.clusterId(), cluster.clusterId())) {
                 continue;
             }
-            double clusterX = camera.toScreenX(cluster.center().x() + 0.5);
-            double clusterY = camera.toScreenY(cluster.center().y() + 0.5);
-            Point2i roomCenter = layout.roomShape(room.roomId()).center();
+            Point2i clusterCenter = previewCenter(cluster);
+            double clusterX = camera.toScreenX(clusterCenter.x() + 0.5);
+            double clusterY = camera.toScreenY(clusterCenter.y() + 0.5);
+            Point2i roomCenter = previewCenter(room);
             double roomX = camera.toScreenX(roomCenter.x() + 0.5);
             double roomY = camera.toScreenY(roomCenter.y() + 0.5);
             gc.setStroke(DungeonCanvasTheme.GRAPH_ROOM_OUTLINE);
@@ -278,7 +368,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     private void drawCorridorComponentOutlines(GraphicsContext gc) {
-        if (renderData == null) {
+        if (renderData == null || !previewClusterCenters.isEmpty()) {
+            // Corridor component outlines stay hidden during drag preview until we have
+            // a preview-safe topology projection for those aggregate shapes as well.
             return;
         }
         for (CorridorComponent component : renderData.corridorTopology().componentsById().values()) {
@@ -332,7 +424,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             Map<SegmentKey, List<Long>> laneOrderBySegment,
             CorridorDisplayPath displayPath
     ) {
-        if (!editable || editorTool != features.world.dungeonmap.ui.workspace.DungeonEditorTool.CORRIDOR_DELETE) {
+        boolean showDeleteMarkers = editable && editorTool == DungeonEditorTool.CORRIDOR_DELETE;
+        boolean showSelectionMarkers = editable && editorTool == DungeonEditorTool.SELECT && isSelected(corridor);
+        if (!showDeleteMarkers && !showSelectionMarkers) {
             return;
         }
         Color markerColor = strokeColor(corridor);
@@ -343,6 +437,21 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             gc.setStroke(Color.rgb(18, 24, 28, 0.95));
             gc.setLineWidth(1.5);
             gc.strokeOval(marker.x() - 4.5, marker.y() - 4.5, 9, 9);
+        }
+    }
+
+    private void drawCorridorWaypointMarkers(GraphicsContext gc, DungeonCorridor corridor, CorridorGeometry geometry) {
+        if (!editable || editorTool != DungeonEditorTool.SELECT || !isSelected(corridor)) {
+            return;
+        }
+        gc.setLineWidth(1.5);
+        for (Point2i waypoint : geometry.waypointCells()) {
+            double centerX = camera.toScreenX(waypoint.x() + 0.5);
+            double centerY = camera.toScreenY(waypoint.y() + 0.5);
+            gc.setFill(strokeColor(corridor));
+            gc.fillOval(centerX - 5, centerY - 5, 10, 10);
+            gc.setStroke(Color.rgb(18, 24, 28, 0.95));
+            gc.strokeOval(centerX - 5, centerY - 5, 10, 10);
         }
     }
 
@@ -431,7 +540,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             return result;
         }
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometry(corridor);
             if (geometry == null || !geometry.routable()) {
                 continue;
             }
@@ -451,7 +560,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             return result;
         }
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometry(corridor);
             if (geometry == null || !geometry.routable()) {
                 continue;
             }
@@ -471,7 +580,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             return result;
         }
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometry(corridor);
             if (geometry == null || !geometry.routable()) {
                 continue;
             }
@@ -714,6 +823,109 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         return bestDistance <= 1 ? bestSegment : null;
     }
 
+    private CorridorGeometry corridorGeometry(DungeonCorridor corridor) {
+        if (corridor == null || corridor.corridorId() == null || renderData == null) {
+            return null;
+        }
+        CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+        if (geometry == null || previewClusterCenters.isEmpty()) {
+            return geometry;
+        }
+        PreviewDeltaState deltaState = previewDeltaState(geometry);
+        if (deltaState == PreviewDeltaState.NONE) {
+            return geometry;
+        }
+        if (deltaState == PreviewDeltaState.MIXED) {
+            return new CorridorGeometry(
+                    geometry.corridorId(),
+                    geometry.roomIds(),
+                    List.of(),
+                    Set.of(),
+                    List.of(),
+                    geometry.waypointCells(),
+                    geometry.directlyAdjacent(),
+                    false,
+                    geometry.componentId());
+        }
+        Point2i delta = sharedPreviewDelta(geometry);
+        return translateGeometry(geometry, delta);
+    }
+
+    private PreviewDeltaState previewDeltaState(CorridorGeometry geometry) {
+        Point2i sharedDelta = null;
+        boolean sawPreview = false;
+        for (Long roomId : geometry.roomIds()) {
+            DungeonRoom room = layout == null ? null : layout.roomById(roomId);
+            if (room == null) {
+                continue;
+            }
+            Point2i delta = previewDelta(room.clusterId());
+            if (delta.equals(ZERO)) {
+                if (sawPreview) {
+                    return PreviewDeltaState.MIXED;
+                }
+                continue;
+            }
+            if (sharedDelta == null) {
+                sharedDelta = delta;
+                sawPreview = true;
+                continue;
+            }
+            if (!sharedDelta.equals(delta)) {
+                return PreviewDeltaState.MIXED;
+            }
+        }
+        return sawPreview ? PreviewDeltaState.SHARED : PreviewDeltaState.NONE;
+    }
+
+    private Point2i sharedPreviewDelta(CorridorGeometry geometry) {
+        for (Long roomId : geometry.roomIds()) {
+            DungeonRoom room = layout == null ? null : layout.roomById(roomId);
+            if (room == null) {
+                continue;
+            }
+            Point2i delta = previewDelta(room.clusterId());
+            if (!delta.equals(ZERO)) {
+                return delta;
+            }
+        }
+        return ZERO;
+    }
+
+    private CorridorGeometry translateGeometry(CorridorGeometry geometry, Point2i delta) {
+        if (delta.equals(ZERO)) {
+            return geometry;
+        }
+        List<GridSegment> translatedSegments = geometry.segments().stream()
+                .map(segment -> new GridSegment(segment.from().add(delta), segment.to().add(delta)))
+                .toList();
+        Set<Point2i> translatedCells = geometry.cells().stream()
+                .map(cell -> cell.add(delta))
+                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
+        List<DoorSegment> translatedDoors = geometry.doors().stream()
+                .map(door -> new DoorSegment(
+                        door.start().add(delta),
+                        door.end().add(delta),
+                        door.roomId(),
+                        door.roomCell().add(delta)))
+                .toList();
+        return new CorridorGeometry(
+                geometry.corridorId(),
+                geometry.roomIds(),
+                translatedSegments,
+                translatedCells,
+                translatedDoors,
+                geometry.waypointCells().stream().map(point -> point.add(delta)).toList(),
+                geometry.directlyAdjacent(),
+                geometry.routable(),
+                geometry.componentId());
+    }
+
+    @Override
+    protected CorridorGeometry corridorGeometryForSelection(DungeonCorridor corridor) {
+        return corridorGeometry(corridor);
+    }
+
     private Point2i outsideCellForDoor(DoorSegment door) {
         Point2i roomCell = door.roomCell();
         if (door.start().x() == door.end().x()) {
@@ -732,6 +944,19 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
 
     private int manhattan(Point2i a, Point2i b) {
         return Math.abs(a.x() - b.x()) + Math.abs(a.y() - b.y());
+    }
+
+    private int segmentIndexForKey(CorridorGeometry geometry, SegmentKey targetKey) {
+        if (geometry == null || targetKey == null) {
+            return -1;
+        }
+        for (int index = 0; index < geometry.segments().size(); index++) {
+            GridSegment segment = geometry.segments().get(index);
+            if (SegmentKey.of(segment.from(), segment.to()).equals(targetKey)) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private record SegmentKey(Point2i start, Point2i end) {
@@ -783,6 +1008,13 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
         private CorridorDisplayPath {
             segments = List.copyOf(segments);
         }
+    }
+
+
+    private enum PreviewDeltaState {
+        NONE,
+        SHARED,
+        MIXED
     }
 
     private record CorridorRenderState(

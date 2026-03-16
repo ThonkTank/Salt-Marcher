@@ -1,13 +1,18 @@
 package features.world.dungeonmap.service.topology;
 
+import features.world.dungeonmap.model.CorridorDoorOverride;
+import features.world.dungeonmap.model.CorridorWaypoint;
 import features.world.dungeonmap.model.DungeonCorridor;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonLayoutEditResult;
 import features.world.dungeonmap.model.DungeonRoom;
+import features.world.dungeonmap.model.DungeonRoomCluster;
 import features.world.dungeonmap.model.DungeonSelection;
+import features.world.dungeonmap.model.Point2i;
 import features.world.dungeonmap.repository.DungeonRepository;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -80,6 +85,193 @@ public final class DungeonCorridorTopologySupport {
     public static DungeonLayoutEditResult deleteCorridor(Connection conn, long mapId, long corridorId) throws Exception {
         DungeonRepository.deleteCorridor(conn, mapId, corridorId);
         return loadEditResult(conn, mapId, null);
+    }
+
+    static void reanchorCorridorClusterBindings(
+            Connection conn,
+            DungeonLayout layout,
+            Map<Long, ClusterAnchor> replacementAnchorsByClusterId,
+            Set<Long> deletedClusterIds
+    ) throws SQLException {
+        boolean hasReplacementAnchors = replacementAnchorsByClusterId != null && !replacementAnchorsByClusterId.isEmpty();
+        boolean hasDeletedClusters = deletedClusterIds != null && !deletedClusterIds.isEmpty();
+        if (layout == null || (!hasReplacementAnchors && !hasDeletedClusters)) {
+            return;
+        }
+        for (DungeonCorridor corridor : layout.corridors()) {
+            if (corridor == null || corridor.corridorId() == null) {
+                continue;
+            }
+            List<CorridorWaypoint> updatedWaypoints = new ArrayList<>();
+            List<CorridorDoorOverride> updatedDoorOverrides = new ArrayList<>();
+            boolean waypointsChanged = false;
+            boolean doorOverridesChanged = false;
+            for (CorridorWaypoint waypoint : corridor.waypoints()) {
+                if (waypoint == null) {
+                    continue;
+                }
+                ClusterAnchor targetAnchor = targetAnchorForClusterBinding(
+                        layout,
+                        corridor,
+                        waypoint.clusterId(),
+                        deletedClusterIds,
+                        replacementAnchorsByClusterId);
+                if (targetAnchor == null) {
+                    if (clusterBindingAffected(waypoint.clusterId(), deletedClusterIds, replacementAnchorsByClusterId)) {
+                        waypointsChanged = true;
+                    } else {
+                        updatedWaypoints.add(waypoint);
+                    }
+                    continue;
+                }
+                if (targetAnchor.clusterId() == waypoint.clusterId()
+                        && !hasCenterChanged(waypoint.clusterId(), layout, targetAnchor, replacementAnchorsByClusterId)) {
+                    updatedWaypoints.add(waypoint);
+                    continue;
+                }
+                DungeonRoomCluster previousCluster = layout.clusterById(waypoint.clusterId());
+                if (previousCluster == null) {
+                    waypointsChanged = true;
+                    continue;
+                }
+                Point2i absoluteCell = waypoint.absoluteCell(previousCluster.center());
+                updatedWaypoints.add(new CorridorWaypoint(
+                        targetAnchor.clusterId(),
+                        absoluteCell.subtract(targetAnchor.center())));
+                waypointsChanged = true;
+            }
+            for (CorridorDoorOverride override : corridor.doorOverrides()) {
+                if (override == null) {
+                    continue;
+                }
+                ClusterAnchor targetAnchor = targetAnchorForDoorOverride(
+                        layout,
+                        override,
+                        deletedClusterIds,
+                        replacementAnchorsByClusterId);
+                if (targetAnchor == null) {
+                    if (clusterBindingAffected(override.clusterId(), deletedClusterIds, replacementAnchorsByClusterId)) {
+                        doorOverridesChanged = true;
+                    } else {
+                        updatedDoorOverrides.add(override);
+                    }
+                    continue;
+                }
+                if (targetAnchor.clusterId() == override.clusterId()
+                        && !hasCenterChanged(override.clusterId(), layout, targetAnchor, replacementAnchorsByClusterId)) {
+                    updatedDoorOverrides.add(override);
+                    continue;
+                }
+                DungeonRoomCluster previousCluster = layout.clusterById(override.clusterId());
+                if (previousCluster == null) {
+                    doorOverridesChanged = true;
+                    continue;
+                }
+                Point2i absoluteCell = override.absoluteCell(previousCluster.center());
+                updatedDoorOverrides.add(new CorridorDoorOverride(
+                        override.roomId(),
+                        targetAnchor.clusterId(),
+                        absoluteCell.subtract(targetAnchor.center()),
+                        override.edgeDirection()));
+                doorOverridesChanged = true;
+            }
+            if (waypointsChanged) {
+                DungeonRepository.replaceCorridorWaypoints(conn, layout.map().mapId(), corridor.corridorId(), updatedWaypoints);
+            }
+            if (doorOverridesChanged) {
+                DungeonRepository.replaceCorridorDoorOverrides(conn, layout.map().mapId(), corridor.corridorId(), updatedDoorOverrides);
+            }
+        }
+    }
+
+    public static DungeonLayoutEditResult moveCorridorDoor(
+            Connection conn,
+            long mapId,
+            long corridorId,
+            long roomId,
+            Point2i cell,
+            DungeonRoomCluster.EdgeDirection direction
+    ) throws Exception {
+        DungeonLayout layout = requireLayout(conn, mapId);
+        DungeonCorridor corridor = requireCorridor(layout, corridorId);
+        DungeonRoom room = requireRoom(layout, roomId);
+        if (!corridor.roomIds().contains(roomId)) {
+            throw new IllegalArgumentException("Raum " + roomId + " gehört nicht zu Korridor " + corridorId);
+        }
+        if (cell == null || direction == null || !layout.roomCells(roomId).contains(cell)) {
+            throw new IllegalArgumentException("Tür-Override muss auf einer gültigen Raumkante liegen");
+        }
+        if (layout.roomCells(roomId).contains(cell.add(direction.delta()))) {
+            throw new IllegalArgumentException("Tür-Override muss auf einer exponierten Raumkante liegen");
+        }
+        CorridorDoorOverride override = new CorridorDoorOverride(
+                roomId,
+                room.clusterId(),
+                cell.subtract(layout.clusterById(room.clusterId()).center()),
+                direction);
+        List<CorridorDoorOverride> overrides = new ArrayList<>(corridor.doorOverrides().stream()
+                .filter(existing -> existing.roomId() != roomId)
+                .toList());
+        overrides.add(override);
+        DungeonRepository.replaceCorridorDoorOverrides(conn, mapId, corridorId, overrides);
+        return loadEditResult(conn, mapId, corridorId);
+    }
+
+    public static DungeonLayoutEditResult resetCorridorDoor(Connection conn, long mapId, long corridorId, long roomId) throws Exception {
+        DungeonRepository.deleteCorridorDoorOverride(conn, corridorId, roomId);
+        return loadEditResult(conn, mapId, corridorId);
+    }
+
+    public static DungeonLayoutEditResult addCorridorWaypoint(
+            Connection conn,
+            long mapId,
+            long corridorId,
+            int insertIndex,
+            Point2i cell
+    ) throws Exception {
+        DungeonLayout layout = requireLayout(conn, mapId);
+        DungeonCorridor corridor = requireCorridor(layout, corridorId);
+        CorridorWaypoint waypoint = waypointForCell(layout, corridor, cell);
+        List<CorridorWaypoint> waypoints = new ArrayList<>(corridor.waypoints());
+        int clampedIndex = Math.max(0, Math.min(insertIndex, waypoints.size()));
+        waypoints.add(clampedIndex, waypoint);
+        DungeonRepository.replaceCorridorWaypoints(conn, mapId, corridorId, waypoints);
+        return loadEditResult(conn, mapId, corridorId);
+    }
+
+    public static DungeonLayoutEditResult moveCorridorWaypoint(
+            Connection conn,
+            long mapId,
+            long corridorId,
+            int waypointIndex,
+            Point2i cell
+    ) throws Exception {
+        DungeonLayout layout = requireLayout(conn, mapId);
+        DungeonCorridor corridor = requireCorridor(layout, corridorId);
+        List<CorridorWaypoint> waypoints = new ArrayList<>(corridor.waypoints());
+        if (waypointIndex < 0 || waypointIndex >= waypoints.size()) {
+            throw new IllegalArgumentException("Ungültiger Korridor-Zwischenpunkt: " + waypointIndex);
+        }
+        CorridorWaypoint previous = waypoints.get(waypointIndex);
+        DungeonRoomCluster cluster = layout.clusterById(previous.clusterId());
+        if (cluster == null) {
+            throw new IllegalArgumentException("Referenz-Cluster für Zwischenpunkt fehlt: " + previous.clusterId());
+        }
+        waypoints.set(waypointIndex, new CorridorWaypoint(previous.clusterId(), cell.subtract(cluster.center())));
+        DungeonRepository.replaceCorridorWaypoints(conn, mapId, corridorId, waypoints);
+        return loadEditResult(conn, mapId, corridorId);
+    }
+
+    public static DungeonLayoutEditResult deleteCorridorWaypoint(Connection conn, long mapId, long corridorId, int waypointIndex) throws Exception {
+        DungeonLayout layout = requireLayout(conn, mapId);
+        DungeonCorridor corridor = requireCorridor(layout, corridorId);
+        List<CorridorWaypoint> waypoints = new ArrayList<>(corridor.waypoints());
+        if (waypointIndex < 0 || waypointIndex >= waypoints.size()) {
+            throw new IllegalArgumentException("Ungültiger Korridor-Zwischenpunkt: " + waypointIndex);
+        }
+        waypoints.remove(waypointIndex);
+        DungeonRepository.replaceCorridorWaypoints(conn, mapId, corridorId, waypoints);
+        return loadEditResult(conn, mapId, corridorId);
     }
 
     static void reassignMergedRoomCorridors(Connection conn, DungeonLayout layout, Long primaryRoomId, List<DungeonRoom> mergedRooms) throws SQLException {
@@ -184,6 +376,134 @@ public final class DungeonCorridorTopologySupport {
     private static DungeonLayout requireLayout(Connection conn, long mapId) throws SQLException {
         return DungeonRepository.loadLayout(conn, mapId)
                 .orElseThrow(() -> new IllegalArgumentException("Unbekannte Dungeon-Map: " + mapId));
+    }
+
+    private static DungeonCorridor requireCorridor(DungeonLayout layout, long corridorId) {
+        DungeonCorridor corridor = layout == null ? null : layout.corridorById(corridorId);
+        if (corridor == null) {
+            throw new IllegalArgumentException("Unbekannter Korridor: " + corridorId);
+        }
+        return corridor;
+    }
+
+    private static DungeonRoom requireRoom(DungeonLayout layout, long roomId) {
+        DungeonRoom room = layout == null ? null : layout.roomById(roomId);
+        if (room == null) {
+            throw new IllegalArgumentException("Unbekannter Raum: " + roomId);
+        }
+        return room;
+    }
+
+    private static CorridorWaypoint waypointForCell(DungeonLayout layout, DungeonCorridor corridor, Point2i cell) {
+        if (layout == null || corridor == null || cell == null) {
+            throw new IllegalArgumentException("Waypoint braucht Layout, Korridor und Zielzelle");
+        }
+        DungeonRoom bestRoom = corridor.roomIds().stream()
+                .map(layout::roomById)
+                .filter(java.util.Objects::nonNull)
+                .min(java.util.Comparator.comparingInt(room -> manhattan(room.componentAnchor(), cell)))
+                .orElseThrow(() -> new IllegalArgumentException("Korridor braucht mindestens einen Raum"));
+        DungeonRoomCluster cluster = layout.clusterById(bestRoom.clusterId());
+        if (cluster == null) {
+            throw new IllegalArgumentException("Cluster für Raum " + bestRoom.roomId() + " fehlt");
+        }
+        return new CorridorWaypoint(cluster.clusterId(), cell.subtract(cluster.center()));
+    }
+
+    private static int manhattan(Point2i left, Point2i right) {
+        return Math.abs(left.x() - right.x()) + Math.abs(left.y() - right.y());
+    }
+
+    private static ClusterAnchor fallbackWaypointAnchor(
+            DungeonLayout layout,
+            DungeonCorridor corridor,
+            Set<Long> deletedClusterIds,
+            Map<Long, ClusterAnchor> replacementAnchorsByClusterId
+    ) {
+        if (layout == null || corridor == null) {
+            return null;
+        }
+        return corridor.roomIds().stream()
+                .map(layout::roomById)
+                .filter(java.util.Objects::nonNull)
+                .map(room -> anchorForCluster(layout, room.clusterId(), deletedClusterIds, replacementAnchorsByClusterId))
+                .filter(java.util.Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static ClusterAnchor anchorForCluster(
+            DungeonLayout layout,
+            long clusterId,
+            Set<Long> deletedClusterIds,
+            Map<Long, ClusterAnchor> replacementAnchorsByClusterId
+    ) {
+        if (replacementAnchorsByClusterId != null && replacementAnchorsByClusterId.containsKey(clusterId)) {
+            return replacementAnchorsByClusterId.get(clusterId);
+        }
+        if (deletedClusterIds != null && deletedClusterIds.contains(clusterId)) {
+            return null;
+        }
+        DungeonRoomCluster cluster = layout == null ? null : layout.clusterById(clusterId);
+        return cluster == null ? null : new ClusterAnchor(cluster.clusterId(), cluster.center());
+    }
+
+    private static ClusterAnchor targetAnchorForClusterBinding(
+            DungeonLayout layout,
+            DungeonCorridor corridor,
+            long clusterId,
+            Set<Long> deletedClusterIds,
+            Map<Long, ClusterAnchor> replacementAnchorsByClusterId
+    ) {
+        ClusterAnchor directAnchor = replacementAnchorsByClusterId == null ? null : replacementAnchorsByClusterId.get(clusterId);
+        if (directAnchor != null) {
+            return directAnchor;
+        }
+        if (deletedClusterIds != null && deletedClusterIds.contains(clusterId)) {
+            return fallbackWaypointAnchor(layout, corridor, deletedClusterIds, replacementAnchorsByClusterId);
+        }
+        return anchorForCluster(layout, clusterId, deletedClusterIds, replacementAnchorsByClusterId);
+    }
+
+    private static ClusterAnchor targetAnchorForDoorOverride(
+            DungeonLayout layout,
+            CorridorDoorOverride override,
+            Set<Long> deletedClusterIds,
+            Map<Long, ClusterAnchor> replacementAnchorsByClusterId
+    ) {
+        if (layout == null || override == null) {
+            return null;
+        }
+        DungeonRoom room = layout.roomById(override.roomId());
+        if (room == null) {
+            return null;
+        }
+        return anchorForCluster(layout, room.clusterId(), deletedClusterIds, replacementAnchorsByClusterId);
+    }
+
+    private static boolean clusterBindingAffected(
+            long clusterId,
+            Set<Long> deletedClusterIds,
+            Map<Long, ClusterAnchor> replacementAnchorsByClusterId
+    ) {
+        return (deletedClusterIds != null && deletedClusterIds.contains(clusterId))
+                || (replacementAnchorsByClusterId != null && replacementAnchorsByClusterId.containsKey(clusterId));
+    }
+
+    private static boolean hasCenterChanged(
+            long clusterId,
+            DungeonLayout layout,
+            ClusterAnchor targetAnchor,
+            Map<Long, ClusterAnchor> replacementAnchorsByClusterId
+    ) {
+        if (layout == null || targetAnchor == null || replacementAnchorsByClusterId == null || !replacementAnchorsByClusterId.containsKey(clusterId)) {
+            return false;
+        }
+        DungeonRoomCluster cluster = layout.clusterById(clusterId);
+        return cluster == null || !cluster.center().equals(targetAnchor.center());
+    }
+
+    record ClusterAnchor(long clusterId, Point2i center) {
     }
 
     private static DungeonLayoutEditResult loadEditResult(Connection conn, long mapId, Long focusCorridorId) throws SQLException {

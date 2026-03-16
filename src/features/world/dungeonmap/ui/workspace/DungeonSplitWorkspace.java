@@ -12,6 +12,7 @@ import features.world.dungeonmap.model.Point2i;
 import features.world.dungeonmap.ui.workspace.render.DungeonCanvasBounds;
 import features.world.dungeonmap.ui.workspace.render.DungeonCanvasCamera;
 import features.world.dungeonmap.ui.workspace.render.CorridorDoorHit;
+import features.world.dungeonmap.ui.workspace.render.CorridorEditInteractionController;
 import features.world.dungeonmap.ui.workspace.render.DungeonGraphPane;
 import features.world.dungeonmap.ui.workspace.render.DungeonGridPane;
 import features.world.dungeonmap.ui.workspace.render.DungeonLayoutRenderData;
@@ -147,6 +148,35 @@ public final class DungeonSplitWorkspace extends BorderPane {
     public void setOnCorridorRoomRemoved(Consumer<CorridorDoorHit> onCorridorRoomRemoved) {
         gridPane.setOnCorridorRoomRemoved(onCorridorRoomRemoved);
         graphPane.setOnCorridorRoomRemoved(onCorridorRoomRemoved);
+    }
+
+    public void setOnCorridorDoorSelected(Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelected) {
+        gridPane.setOnCorridorDoorSelected(onCorridorDoorSelected);
+        graphPane.setOnCorridorDoorSelected(onCorridorDoorSelected);
+    }
+
+    public void setOnCorridorDoorMoved(
+            BiConsumer<CorridorEditInteractionController.DoorHandle, CorridorEditInteractionController.DoorMoveTarget> onCorridorDoorMoved
+    ) {
+        gridPane.setOnCorridorDoorMoved(onCorridorDoorMoved);
+        graphPane.setOnCorridorDoorMoved(onCorridorDoorMoved);
+    }
+
+    public void setOnCorridorWaypointSelected(Consumer<CorridorEditInteractionController.WaypointHandle> onCorridorWaypointSelected) {
+        gridPane.setOnCorridorWaypointSelected(onCorridorWaypointSelected);
+        graphPane.setOnCorridorWaypointSelected(onCorridorWaypointSelected);
+    }
+
+    public void setOnCorridorWaypointAdded(Consumer<CorridorEditInteractionController.SegmentInsertHit> onCorridorWaypointAdded) {
+        gridPane.setOnCorridorWaypointAdded(onCorridorWaypointAdded);
+        graphPane.setOnCorridorWaypointAdded(onCorridorWaypointAdded);
+    }
+
+    public void setOnCorridorWaypointMoved(
+            BiConsumer<CorridorEditInteractionController.WaypointHandle, Point2i> onCorridorWaypointMoved
+    ) {
+        gridPane.setOnCorridorWaypointMoved(onCorridorWaypointMoved);
+        graphPane.setOnCorridorWaypointMoved(onCorridorWaypointMoved);
     }
 
     public void setEditorTool(DungeonEditorTool editorTool) {

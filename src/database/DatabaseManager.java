@@ -146,11 +146,11 @@ public final class DatabaseManager {
      * - Imported source data (monsters/items/equipment/spells) is disposable and
      *   can be rebuilt by re-crawling.
      * - Encounter and campaign state data should be preserved.
-     * - Dungeon map data is local-only and currently disposable. During the current
-     *   early editor iteration, prefer clearing local dungeon rows and replacing the
-     *   schema shape directly instead of carrying compatibility layers or migrations.
-     * - Startup only creates the current dungeon schema and does not attempt
-     *   compatibility upgrades for dungeon storage.
+     * - Dungeon map data is local-only and currently disposable when developers
+     *   explicitly choose to reset it during schema work.
+     * - Normal startup must not delete persisted dungeon rows; it only creates the
+     *   current schema shape when tables are missing.
+     * - Startup does not attempt compatibility upgrades for dungeon storage.
      */
     public static void setupDatabase() {
         try (Connection conn = getConnection();
@@ -560,7 +560,8 @@ public final class DatabaseManager {
             ensureEncounterAnalysisColumns(conn);
             ensureLootTableCompatibility(conn);
             EncounterSchemaSupport.ensureCompatibility(conn);
-            DungeonSchemaSupport.resetSchema(conn);
+            // Dungeon data must survive normal app restarts. Explicit dungeon schema
+            // resets remain a manual development action, never part of startup.
             CampaignStateSchemaSupport.ensureCompatibility(conn);
             dropLegacyRoleColumns(conn);
 

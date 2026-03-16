@@ -1,5 +1,6 @@
 package features.world.dungeonmap.service.editor;
 
+import features.world.dungeonmap.model.DungeonRoomCluster;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonLayoutEditResult;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
@@ -92,6 +93,27 @@ public final class DungeonEditorService {
 
     public DungeonLayoutEditResult deleteCorridor(long mapId, long corridorId) throws Exception {
         return mutate(conn -> DungeonCorridorTopologySupport.deleteCorridor(conn, mapId, corridorId));
+    }
+
+    public DungeonLayoutEditResult moveCorridorDoor(long mapId, long corridorId, long roomId, Point2i cell, DungeonRoomCluster.EdgeDirection direction)
+            throws Exception {
+        return mutate(conn -> DungeonCorridorTopologySupport.moveCorridorDoor(conn, mapId, corridorId, roomId, cell, direction));
+    }
+
+    public DungeonLayoutEditResult resetCorridorDoor(long mapId, long corridorId, long roomId) throws Exception {
+        return mutate(conn -> DungeonCorridorTopologySupport.resetCorridorDoor(conn, mapId, corridorId, roomId));
+    }
+
+    public DungeonLayoutEditResult addCorridorWaypoint(long mapId, long corridorId, int insertIndex, Point2i cell) throws Exception {
+        return mutate(conn -> DungeonCorridorTopologySupport.addCorridorWaypoint(conn, mapId, corridorId, insertIndex, cell));
+    }
+
+    public DungeonLayoutEditResult moveCorridorWaypoint(long mapId, long corridorId, int waypointIndex, Point2i cell) throws Exception {
+        return mutate(conn -> DungeonCorridorTopologySupport.moveCorridorWaypoint(conn, mapId, corridorId, waypointIndex, cell));
+    }
+
+    public DungeonLayoutEditResult deleteCorridorWaypoint(long mapId, long corridorId, int waypointIndex) throws Exception {
+        return mutate(conn -> DungeonCorridorTopologySupport.deleteCorridorWaypoint(conn, mapId, corridorId, waypointIndex));
     }
 
     private DungeonLayoutEditResult mutate(SqlEditWork work) throws Exception {

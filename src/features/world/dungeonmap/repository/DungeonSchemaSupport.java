@@ -54,6 +54,24 @@ public final class DungeonSchemaSupport {
                 + "edge_type        TEXT NOT NULL,"
                 + "PRIMARY KEY (cluster_id, cell_x, cell_y, edge_direction)"
                 + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_door_overrides ("
+                + "corridor_id       INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                + "room_id           INTEGER NOT NULL REFERENCES dungeon_rooms(room_id) ON DELETE CASCADE,"
+                + "cluster_id        INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
+                + "relative_cell_x   INTEGER NOT NULL,"
+                + "relative_cell_y   INTEGER NOT NULL,"
+                + "edge_direction    TEXT NOT NULL,"
+                + "sort_order        INTEGER NOT NULL DEFAULT 0,"
+                + "PRIMARY KEY (corridor_id, room_id)"
+                + ")");
+        stmt.execute("CREATE TABLE IF NOT EXISTS dungeon_corridor_waypoints ("
+                + "corridor_id       INTEGER NOT NULL REFERENCES dungeon_corridors(corridor_id) ON DELETE CASCADE,"
+                + "sort_order        INTEGER NOT NULL,"
+                + "cluster_id        INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
+                + "relative_x        INTEGER NOT NULL,"
+                + "relative_y        INTEGER NOT NULL,"
+                + "PRIMARY KEY (corridor_id, sort_order)"
+                + ")");
     }
 
     public static void resetSchema(Connection conn) throws SQLException {
@@ -61,6 +79,8 @@ public final class DungeonSchemaSupport {
             stmt.execute("PRAGMA foreign_keys = OFF");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_edges");
             stmt.execute("DROP TABLE IF EXISTS dungeon_room_cluster_vertices");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_waypoints");
+            stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_door_overrides");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridor_members");
             stmt.execute("DROP TABLE IF EXISTS dungeon_corridors");
             stmt.execute("DROP TABLE IF EXISTS dungeon_rooms");

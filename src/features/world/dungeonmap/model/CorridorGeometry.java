@@ -9,11 +9,12 @@ public record CorridorGeometry(
         List<GridSegment> segments,
         Set<Point2i> cells,
         List<DoorSegment> doors,
+        List<Point2i> waypointCells,
         boolean directlyAdjacent,
         boolean routable,
         String componentId
 ) {
     public CorridorGeometry withComponentId(String componentId) {
-        return new CorridorGeometry(corridorId, roomIds, segments, cells, doors, directlyAdjacent, routable, componentId);
+        return new CorridorGeometry(corridorId, roomIds, segments, cells, doors, waypointCells, directlyAdjacent, routable, componentId);
     }
 }

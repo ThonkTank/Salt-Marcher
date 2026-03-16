@@ -78,10 +78,20 @@ public final class DungeonRoomTopologySupport {
                 continue;
             }
             if (remainingCells.isEmpty()) {
+                DungeonCorridorTopologySupport.reanchorCorridorClusterBindings(
+                        conn,
+                        layout,
+                        Map.of(),
+                        Set.of(cluster.clusterId()));
                 DungeonRepository.deleteCluster(conn, cluster.clusterId());
                 continue;
             }
             RoomShape shape = DungeonRoomGeometry.roomShapeForCells(remainingCells);
+            DungeonCorridorTopologySupport.reanchorCorridorClusterBindings(
+                    conn,
+                    layout,
+                    Map.of(cluster.clusterId(), new DungeonCorridorTopologySupport.ClusterAnchor(cluster.clusterId(), shape.center())),
+                    Set.of());
             writeClusterGeometry(conn, cluster.clusterId(), remainingCells);
             List<DungeonRoomCluster.EdgeOverride> shiftedEdges = shiftEdges(cluster.center(), shape.center(), cluster.edgeOverrides());
             List<DungeonRoomCluster.EdgeOverride> sanitizedEdges = DungeonRoomCluster.sanitizeInternalEdges(shape.center(), remainingCells, shiftedEdges);
@@ -98,6 +108,12 @@ public final class DungeonRoomTopologySupport {
     }
 
     public static DungeonLayoutEditResult deleteGraphCluster(Connection conn, long mapId, long clusterId) throws Exception {
+        DungeonLayout layout = requireLayout(conn, mapId);
+        DungeonCorridorTopologySupport.reanchorCorridorClusterBindings(
+                conn,
+                layout,
+                Map.of(),
+                Set.of(clusterId));
         DungeonRepository.deleteCluster(conn, clusterId);
         return loadEditResult(conn, mapId, null);
     }
@@ -171,12 +187,28 @@ public final class DungeonRoomTopologySupport {
         }
 
         RoomShape mergedShape = DungeonRoomGeometry.roomShapeForCells(mergedCells);
+        Map<Long, DungeonCorridorTopologySupport.ClusterAnchor> replacementAnchors = new LinkedHashMap<>();
+        replacementAnchors.put(
+                primaryCluster.clusterId(),
+                new DungeonCorridorTopologySupport.ClusterAnchor(primaryCluster.clusterId(), mergedShape.center()));
         writeClusterGeometry(conn, primaryCluster.clusterId(), mergedCells);
         for (DungeonRoom room : mergedRooms) {
             if (!Objects.equals(room.clusterId(), primaryCluster.clusterId())) {
                 DungeonRepository.reassignRoomCluster(conn, room.roomId(), primaryCluster.clusterId());
             }
         }
+        Set<Long> deletedClusterIds = new LinkedHashSet<>();
+        for (int i = 1; i < overlappingClusters.size(); i++) {
+            deletedClusterIds.add(overlappingClusters.get(i).clusterId());
+            replacementAnchors.put(
+                    overlappingClusters.get(i).clusterId(),
+                    new DungeonCorridorTopologySupport.ClusterAnchor(primaryCluster.clusterId(), mergedShape.center()));
+        }
+        DungeonCorridorTopologySupport.reanchorCorridorClusterBindings(
+                conn,
+                layout,
+                replacementAnchors,
+                deletedClusterIds);
         for (int i = 1; i < overlappingClusters.size(); i++) {
             DungeonRepository.deleteCluster(conn, overlappingClusters.get(i).clusterId());
         }

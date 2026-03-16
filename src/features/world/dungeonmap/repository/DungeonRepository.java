@@ -1,5 +1,7 @@
 package features.world.dungeonmap.repository;
 
+import features.world.dungeonmap.model.CorridorDoorOverride;
+import features.world.dungeonmap.model.CorridorWaypoint;
 import features.world.dungeonmap.model.DungeonCorridor;
 import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonMap;
@@ -261,6 +263,7 @@ public final class DungeonRepository {
 
     public static void replaceCorridorRooms(Connection conn, long mapId, long corridorId, List<Long> roomIds) throws SQLException {
         ensureCorridorBelongsToMap(conn, mapId, corridorId);
+        List<Long> existingRoomIds = loadCorridorRoomIds(conn, corridorId);
         List<Long> normalizedRoomIds = normalizeRoomIds(roomIds);
         if (normalizedRoomIds.size() < 2) {
             deleteCorridor(conn, mapId, corridorId);
@@ -283,6 +286,11 @@ public final class DungeonRepository {
                 insert.addBatch();
             }
             insert.executeBatch();
+        }
+        for (Long existingRoomId : existingRoomIds) {
+            if (!normalizedRoomIds.contains(existingRoomId)) {
+                deleteCorridorDoorOverride(conn, corridorId, existingRoomId);
+            }
         }
     }
 
@@ -313,6 +321,82 @@ public final class DungeonRepository {
         deleteCorridor(conn, corridorId);
     }
 
+    public static void replaceCorridorDoorOverrides(
+            Connection conn,
+            long mapId,
+            long corridorId,
+            List<CorridorDoorOverride> doorOverrides
+    ) throws SQLException {
+        ensureCorridorBelongsToMap(conn, mapId, corridorId);
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_corridor_door_overrides WHERE corridor_id=?")) {
+            delete.setLong(1, corridorId);
+            delete.executeUpdate();
+        }
+        try (PreparedStatement insert = conn.prepareStatement(
+                "INSERT INTO dungeon_corridor_door_overrides(corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y, edge_direction, sort_order)"
+                        + " VALUES(?,?,?,?,?,?,?)")) {
+            int order = 0;
+            for (CorridorDoorOverride override : doorOverrides == null ? List.<CorridorDoorOverride>of() : doorOverrides) {
+                if (override == null) {
+                    continue;
+                }
+                ensureRoomBelongsToMap(conn, mapId, override.roomId());
+                ensureClusterBelongsToMap(conn, mapId, override.clusterId());
+                insert.setLong(1, corridorId);
+                insert.setLong(2, override.roomId());
+                insert.setLong(3, override.clusterId());
+                insert.setInt(4, override.relativeCell().x());
+                insert.setInt(5, override.relativeCell().y());
+                insert.setString(6, override.edgeDirection().name());
+                insert.setInt(7, order++);
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    public static void replaceCorridorWaypoints(
+            Connection conn,
+            long mapId,
+            long corridorId,
+            List<CorridorWaypoint> waypoints
+    ) throws SQLException {
+        ensureCorridorBelongsToMap(conn, mapId, corridorId);
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_corridor_waypoints WHERE corridor_id=?")) {
+            delete.setLong(1, corridorId);
+            delete.executeUpdate();
+        }
+        try (PreparedStatement insert = conn.prepareStatement(
+                "INSERT INTO dungeon_corridor_waypoints(corridor_id, sort_order, cluster_id, relative_x, relative_y)"
+                        + " VALUES(?,?,?,?,?)")) {
+            int order = 0;
+            for (CorridorWaypoint waypoint : waypoints == null ? List.<CorridorWaypoint>of() : waypoints) {
+                if (waypoint == null) {
+                    continue;
+                }
+                ensureClusterBelongsToMap(conn, mapId, waypoint.clusterId());
+                insert.setLong(1, corridorId);
+                insert.setInt(2, order++);
+                insert.setLong(3, waypoint.clusterId());
+                insert.setInt(4, waypoint.relativeCell().x());
+                insert.setInt(5, waypoint.relativeCell().y());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
+    public static void deleteCorridorDoorOverride(Connection conn, long corridorId, long roomId) throws SQLException {
+        try (PreparedStatement delete = conn.prepareStatement(
+                "DELETE FROM dungeon_corridor_door_overrides WHERE corridor_id=? AND room_id=?")) {
+            delete.setLong(1, corridorId);
+            delete.setLong(2, roomId);
+            delete.executeUpdate();
+        }
+    }
+
     private static void ensureRoomBelongsToMap(Connection conn, long mapId, long roomId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT 1 FROM dungeon_rooms WHERE room_id=? AND dungeon_map_id=?")) {
@@ -325,6 +409,20 @@ public final class DungeonRepository {
             }
         }
         throw new SQLException("Raum " + roomId + " gehört nicht zu Dungeon-Map " + mapId);
+    }
+
+    private static void ensureClusterBelongsToMap(Connection conn, long mapId, long clusterId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT 1 FROM dungeon_room_clusters WHERE cluster_id=? AND dungeon_map_id=?")) {
+            ps.setLong(1, clusterId);
+            ps.setLong(2, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return;
+                }
+            }
+        }
+        throw new SQLException("Cluster " + clusterId + " gehört nicht zu Dungeon-Map " + mapId);
     }
 
     private static void ensureCorridorBelongsToMap(Connection conn, long mapId, long corridorId) throws SQLException {
@@ -437,6 +535,42 @@ public final class DungeonRepository {
                 }
             }
         }
+        Map<Long, List<CorridorDoorOverride>> doorOverridesByCorridorId = new HashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y, edge_direction"
+                        + " FROM dungeon_corridor_door_overrides"
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
+                        + " ORDER BY corridor_id, sort_order, room_id")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long corridorId = rs.getLong("corridor_id");
+                    doorOverridesByCorridorId.computeIfAbsent(corridorId, ignored -> new ArrayList<>())
+                            .add(new CorridorDoorOverride(
+                                    rs.getLong("room_id"),
+                                    rs.getLong("cluster_id"),
+                                    new Point2i(rs.getInt("relative_cell_x"), rs.getInt("relative_cell_y")),
+                                    DungeonRoomCluster.EdgeDirection.valueOf(rs.getString("edge_direction"))));
+                }
+            }
+        }
+        Map<Long, List<CorridorWaypoint>> waypointsByCorridorId = new HashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT corridor_id, cluster_id, relative_x, relative_y"
+                        + " FROM dungeon_corridor_waypoints"
+                        + " WHERE corridor_id IN (SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=?)"
+                        + " ORDER BY corridor_id, sort_order")) {
+            ps.setLong(1, mapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long corridorId = rs.getLong("corridor_id");
+                    waypointsByCorridorId.computeIfAbsent(corridorId, ignored -> new ArrayList<>())
+                            .add(new CorridorWaypoint(
+                                    rs.getLong("cluster_id"),
+                                    new Point2i(rs.getInt("relative_x"), rs.getInt("relative_y"))));
+                }
+            }
+        }
         List<DungeonCorridor> result = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT corridor_id, dungeon_map_id FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id")) {
@@ -447,7 +581,9 @@ public final class DungeonRepository {
                     result.add(new DungeonCorridor(
                             corridorId,
                             rs.getLong("dungeon_map_id"),
-                            membersByCorridorId.getOrDefault(corridorId, List.of())));
+                            membersByCorridorId.getOrDefault(corridorId, List.of()),
+                            doorOverridesByCorridorId.getOrDefault(corridorId, List.of()),
+                            waypointsByCorridorId.getOrDefault(corridorId, List.of())));
                 }
             }
         }

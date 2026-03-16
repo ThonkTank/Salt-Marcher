@@ -20,7 +20,9 @@ import features.world.dungeonmap.ui.workspace.DungeonEditorTool;
 import features.world.dungeonmap.ui.workspace.DungeonSplitWorkspace;
 import features.world.dungeonmap.ui.workspace.DungeonViewMode;
 import features.world.dungeonmap.ui.workspace.render.CorridorDoorHit;
+import features.world.dungeonmap.ui.workspace.render.CorridorEditInteractionController;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import ui.async.UiAsyncTasks;
@@ -42,6 +44,9 @@ public final class DungeonEditorView implements AppView {
     private final DungeonSplitWorkspace workspace = new DungeonSplitWorkspace(true);
     private final VBox statePane = new VBox();
     private final Label activeToolLabel = new Label(DungeonEditorTool.SELECT.label());
+    private final Label corridorEditSelectionLabel = new Label("Kein Korridor gewählt");
+    private final Button resetCorridorDoorButton = new Button("Auf Auto zurücksetzen");
+    private final Button deleteCorridorWaypointButton = new Button("Zwischenpunkt löschen");
     private final DungeonMapCatalogService mapCatalogService;
     private final DungeonEditorService editorService;
     private final DetailsNavigator detailsNavigator;
@@ -58,6 +63,8 @@ public final class DungeonEditorView implements AppView {
     private DungeonEditorTool editorTool = DungeonEditorTool.SELECT;
     private Long activeMapId;
     private boolean initialLoadDone;
+    private CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle;
+    private CorridorEditInteractionController.WaypointHandle selectedCorridorWaypointHandle;
 
     public DungeonEditorView(
             DetailsNavigator detailsNavigator,
@@ -81,6 +88,11 @@ public final class DungeonEditorView implements AppView {
         workspace.setOnGraphClusterDeleted(this::deleteGraphCluster);
         workspace.setOnCorridorDeleted(this::deleteCorridor);
         workspace.setOnCorridorRoomRemoved(this::removeCorridorRoom);
+        workspace.setOnCorridorDoorSelected(this::selectCorridorDoorHandle);
+        workspace.setOnCorridorDoorMoved(this::moveCorridorDoorHandle);
+        workspace.setOnCorridorWaypointSelected(this::selectCorridorWaypointHandle);
+        workspace.setOnCorridorWaypointAdded(this::addCorridorWaypoint);
+        workspace.setOnCorridorWaypointMoved(this::moveCorridorWaypointHandle);
         controls.setOnMapSelected(this::loadLayoutAsync);
         controls.setOnNewMapRequested(this::showNewMapDropdown);
         controls.setOnEditMapRequested(this::showEditMapDropdown);
@@ -138,6 +150,7 @@ public final class DungeonEditorView implements AppView {
 
     private void renderSelection() {
         workspace.updateSelection(selectedTarget, null);
+        refreshStatePane();
     }
 
     private void selectCluster(DungeonRoomCluster cluster) {
@@ -157,6 +170,8 @@ public final class DungeonEditorView implements AppView {
             selectCorridorTarget(DungeonCorridorEndpoint.corridor(corridor.corridorId()));
             return;
         }
+        selectedCorridorDoorHandle = null;
+        selectedCorridorWaypointHandle = null;
         showTarget(corridor == null || corridor.corridorId() == null ? null : DungeonSelection.corridor(corridor.corridorId()), true);
     }
 
@@ -266,6 +281,7 @@ public final class DungeonEditorView implements AppView {
         currentLayout = result.layout();
         render();
         refreshVisibleInspectorForTarget(selectedTarget);
+        refreshStatePane();
     }
 
     private void showLoadState(DungeonEditorLoadState loadState) {
@@ -296,6 +312,72 @@ public final class DungeonEditorView implements AppView {
         clearTransientState();
         controls.selectMap(null);
         render();
+    }
+
+    private void selectCorridorDoorHandle(CorridorEditInteractionController.DoorHandle handle) {
+        if (handle == null) {
+            return;
+        }
+        selectedCorridorDoorHandle = handle;
+        selectedCorridorWaypointHandle = null;
+        showTarget(DungeonSelection.corridor(handle.corridorId()), false);
+    }
+
+    private void moveCorridorDoorHandle(
+            CorridorEditInteractionController.DoorHandle handle,
+            CorridorEditInteractionController.DoorMoveTarget target
+    ) {
+        if (currentMapId == null || handle == null || target == null) {
+            return;
+        }
+        selectedCorridorDoorHandle = handle;
+        selectedCorridorWaypointHandle = null;
+        runEdit("DungeonEditorView.moveCorridorDoor()",
+                result -> applyCorridorEditResult(result, handle, null),
+                (mapId, onSuccess, onError) -> submitEdit(
+                        mapId,
+                        () -> editorService.moveCorridorDoor(mapId, handle.corridorId(), handle.roomId(), target.roomCell(), target.direction()),
+                        onSuccess,
+                        onError));
+    }
+
+    private void selectCorridorWaypointHandle(CorridorEditInteractionController.WaypointHandle handle) {
+        if (handle == null) {
+            return;
+        }
+        selectedCorridorWaypointHandle = handle;
+        selectedCorridorDoorHandle = null;
+        showTarget(DungeonSelection.corridor(handle.corridorId()), false);
+    }
+
+    private void addCorridorWaypoint(CorridorEditInteractionController.SegmentInsertHit hit) {
+        if (currentMapId == null || hit == null) {
+            return;
+        }
+        CorridorEditInteractionController.WaypointHandle selectedHandle =
+                new CorridorEditInteractionController.WaypointHandle(hit.corridorId(), hit.insertIndex());
+        runEdit("DungeonEditorView.addCorridorWaypoint()",
+                result -> applyCorridorEditResult(result, null, selectedHandle),
+                (mapId, onSuccess, onError) -> submitEdit(
+                        mapId,
+                        () -> editorService.addCorridorWaypoint(mapId, hit.corridorId(), hit.insertIndex(), hit.cell()),
+                        onSuccess,
+                        onError));
+    }
+
+    private void moveCorridorWaypointHandle(CorridorEditInteractionController.WaypointHandle handle, Point2i cell) {
+        if (currentMapId == null || handle == null || cell == null) {
+            return;
+        }
+        selectedCorridorWaypointHandle = handle;
+        selectedCorridorDoorHandle = null;
+        runEdit("DungeonEditorView.moveCorridorWaypoint()",
+                result -> applyCorridorEditResult(result, null, handle),
+                (mapId, onSuccess, onError) -> submitEdit(
+                        mapId,
+                        () -> editorService.moveCorridorWaypoint(mapId, handle.corridorId(), handle.waypointIndex(), cell),
+                        onSuccess,
+                        onError));
     }
 
     private void paintRoomCells(Set<Point2i> cells) {
@@ -425,6 +507,18 @@ public final class DungeonEditorView implements AppView {
         selectedTarget = focusedTarget(currentLayout, result);
         render();
         refreshVisibleInspectorForTarget(selectedTarget);
+        refreshStatePane();
+    }
+
+    private void applyCorridorEditResult(
+            DungeonLayoutEditResult result,
+            CorridorEditInteractionController.DoorHandle doorHandle,
+            CorridorEditInteractionController.WaypointHandle waypointHandle
+    ) {
+        applyRoomEditResult(result);
+        selectedCorridorDoorHandle = doorHandle;
+        selectedCorridorWaypointHandle = waypointHandle;
+        refreshStatePane();
     }
 
     private void syncEditorTool() {
@@ -503,7 +597,12 @@ public final class DungeonEditorView implements AppView {
     private void configureStatePane() {
         statePane.getStyleClass().add("dungeon-editor-sidebar");
         activeToolLabel.getStyleClass().add("editor-panel-title");
-        statePane.getChildren().add(card("Werkzeug", activeToolLabel));
+        resetCorridorDoorButton.setOnAction(event -> resetSelectedCorridorDoor());
+        deleteCorridorWaypointButton.setOnAction(event -> deleteSelectedCorridorWaypoint());
+        statePane.getChildren().addAll(
+                card("Werkzeug", activeToolLabel),
+                card("Korridor", corridorEditSelectionLabel, resetCorridorDoorButton, deleteCorridorWaypointButton));
+        refreshStatePane();
     }
 
     private void refreshMapsAndLayout(Long preferredMapId) {
@@ -578,6 +677,9 @@ public final class DungeonEditorView implements AppView {
 
     private void clearTransientState() {
         pendingCorridorStart = null;
+        selectedCorridorDoorHandle = null;
+        selectedCorridorWaypointHandle = null;
+        refreshStatePane();
     }
 
     private static Long resolveMapSelection(List<DungeonMap> maps, Long preferredMapId) {
@@ -646,6 +748,8 @@ public final class DungeonEditorView implements AppView {
     private void showTarget(DungeonSelection target, boolean publishInspector) {
         if (target == null) {
             selectedTarget = null;
+            selectedCorridorDoorHandle = null;
+            selectedCorridorWaypointHandle = null;
             renderSelection();
             return;
         }
@@ -696,6 +800,8 @@ public final class DungeonEditorView implements AppView {
 
     private void showSelectedCluster(DungeonRoomCluster cluster, boolean publishInspector) {
         selectedTarget = cluster == null || cluster.clusterId() == null ? null : DungeonSelection.roomCluster(cluster.clusterId());
+        selectedCorridorDoorHandle = null;
+        selectedCorridorWaypointHandle = null;
         if (publishInspector) {
             DungeonRoomClusterSummary summary = DungeonInspectorPresenter.clusterSummary(currentLayout, cluster, false);
             if (summary != null) {
@@ -703,6 +809,69 @@ public final class DungeonEditorView implements AppView {
             }
         }
         renderSelection();
+    }
+
+    private void resetSelectedCorridorDoor() {
+        if (currentMapId == null || selectedCorridorDoorHandle == null) {
+            return;
+        }
+        CorridorEditInteractionController.DoorHandle handle = selectedCorridorDoorHandle;
+        runEdit("DungeonEditorView.resetCorridorDoor()",
+                result -> applyCorridorEditResult(result, null, null),
+                (mapId, onSuccess, onError) -> submitEdit(
+                        mapId,
+                        () -> editorService.resetCorridorDoor(mapId, handle.corridorId(), handle.roomId()),
+                        onSuccess,
+                        onError));
+    }
+
+    private void deleteSelectedCorridorWaypoint() {
+        if (currentMapId == null || selectedCorridorWaypointHandle == null) {
+            return;
+        }
+        CorridorEditInteractionController.WaypointHandle handle = selectedCorridorWaypointHandle;
+        runEdit("DungeonEditorView.deleteCorridorWaypoint()",
+                result -> applyCorridorEditResult(result, null, null),
+                (mapId, onSuccess, onError) -> submitEdit(
+                        mapId,
+                        () -> editorService.deleteCorridorWaypoint(mapId, handle.corridorId(), handle.waypointIndex()),
+                        onSuccess,
+                        onError));
+    }
+
+    private void refreshStatePane() {
+        DungeonCorridor selectedCorridor = selectedTarget instanceof DungeonSelection.Corridor corridorSelection && currentLayout != null
+                ? currentLayout.corridorById(corridorSelection.corridorId())
+                : null;
+        if (selectedCorridor == null || selectedCorridor.corridorId() == null) {
+            corridorEditSelectionLabel.setText("Kein Korridor gewählt");
+            resetCorridorDoorButton.setManaged(false);
+            resetCorridorDoorButton.setVisible(false);
+            deleteCorridorWaypointButton.setManaged(false);
+            deleteCorridorWaypointButton.setVisible(false);
+            return;
+        }
+        if (selectedCorridorDoorHandle != null && selectedCorridorDoorHandle.corridorId() == selectedCorridor.corridorId()) {
+            corridorEditSelectionLabel.setText("Tür an Raum " + selectedCorridorDoorHandle.roomId());
+            resetCorridorDoorButton.setManaged(true);
+            resetCorridorDoorButton.setVisible(true);
+            deleteCorridorWaypointButton.setManaged(false);
+            deleteCorridorWaypointButton.setVisible(false);
+            return;
+        }
+        if (selectedCorridorWaypointHandle != null && selectedCorridorWaypointHandle.corridorId() == selectedCorridor.corridorId()) {
+            corridorEditSelectionLabel.setText("Zwischenpunkt " + (selectedCorridorWaypointHandle.waypointIndex() + 1));
+            resetCorridorDoorButton.setManaged(false);
+            resetCorridorDoorButton.setVisible(false);
+            deleteCorridorWaypointButton.setManaged(true);
+            deleteCorridorWaypointButton.setVisible(true);
+            return;
+        }
+        corridorEditSelectionLabel.setText("Korridor " + selectedCorridor.corridorId() + " ausgewählt");
+        resetCorridorDoorButton.setManaged(false);
+        resetCorridorDoorButton.setVisible(false);
+        deleteCorridorWaypointButton.setManaged(false);
+        deleteCorridorWaypointButton.setVisible(false);
     }
 
     @FunctionalInterface

@@ -33,6 +33,8 @@ import java.util.function.Consumer;
 
 abstract class AbstractDungeonPane extends StackPane {
 
+    private static final Point2i ZERO = new Point2i(0, 0);
+
     protected final Canvas canvas = new Canvas();
     protected final DungeonCanvasCamera camera;
     protected DungeonLayout layout;
@@ -40,7 +42,7 @@ abstract class AbstractDungeonPane extends StackPane {
     protected DungeonSelection selectedTarget;
     protected DungeonRuntimeLocation activeLocation;
     protected boolean editable;
-    protected final Map<Long, Point2i> previewCenters = new HashMap<>();
+    protected final Map<Long, Point2i> previewClusterCenters = new HashMap<>();
     protected final Set<Point2i> previewPaintCells = new LinkedHashSet<>();
     protected DungeonEditorTool editorTool = DungeonEditorTool.SELECT;
     protected Point2i selectionStartCell;
@@ -49,10 +51,46 @@ abstract class AbstractDungeonPane extends StackPane {
     protected Point2i paintEndCell;
 
     private final PaneCallbacks callbacks = new PaneCallbacks();
+    private final CorridorEditInteractionController corridorEditController;
     private PointerInteraction pointerInteraction = IdleInteraction.INSTANCE;
 
     protected AbstractDungeonPane(DungeonCanvasCamera camera) {
         this.camera = Objects.requireNonNull(camera, "camera");
+        this.corridorEditController = new CorridorEditInteractionController(new CorridorEditInteractionController.Host() {
+            @Override
+            public boolean editable() {
+                return AbstractDungeonPane.this.editable;
+            }
+
+            @Override
+            public DungeonEditorTool editorTool() {
+                return AbstractDungeonPane.this.editorTool;
+            }
+
+            @Override
+            public CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
+                return AbstractDungeonPane.this.findCorridorDoorHandleAt(screenX, screenY);
+            }
+
+            @Override
+            public CorridorEditInteractionController.DoorMoveTarget corridorDoorMoveTargetAt(
+                    double screenX,
+                    double screenY,
+                    CorridorEditInteractionController.DoorHandle handle
+            ) {
+                return AbstractDungeonPane.this.corridorDoorMoveTargetAt(screenX, screenY, handle);
+            }
+
+            @Override
+            public CorridorEditInteractionController.WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY) {
+                return AbstractDungeonPane.this.findCorridorWaypointHandleAt(screenX, screenY);
+            }
+
+            @Override
+            public CorridorEditInteractionController.SegmentInsertHit findCorridorSegmentInsertHitAt(double screenX, double screenY) {
+                return AbstractDungeonPane.this.findCorridorSegmentInsertHitAt(screenX, screenY);
+            }
+        });
         getChildren().add(canvas);
         widthProperty().addListener((obs, oldValue, newValue) -> resizeCanvas());
         heightProperty().addListener((obs, oldValue, newValue) -> resizeCanvas());
@@ -95,6 +133,7 @@ abstract class AbstractDungeonPane extends StackPane {
         previewPaintCells.clear();
         clearSelectionPreview();
         clearPaintPreview();
+        corridorEditController.cancel();
         render();
     }
 
@@ -146,6 +185,30 @@ abstract class AbstractDungeonPane extends StackPane {
         callbacks.onCorridorRoomRemoved = Objects.requireNonNull(onCorridorRoomRemoved, "onCorridorRoomRemoved");
     }
 
+    public final void setOnCorridorDoorSelected(Consumer<CorridorEditInteractionController.DoorHandle> onCorridorDoorSelected) {
+        corridorEditController.setOnCorridorDoorSelected(onCorridorDoorSelected);
+    }
+
+    public final void setOnCorridorDoorMoved(
+            BiConsumer<CorridorEditInteractionController.DoorHandle, CorridorEditInteractionController.DoorMoveTarget> onCorridorDoorMoved
+    ) {
+        corridorEditController.setOnCorridorDoorMoved(onCorridorDoorMoved);
+    }
+
+    public final void setOnCorridorWaypointSelected(Consumer<CorridorEditInteractionController.WaypointHandle> onCorridorWaypointSelected) {
+        corridorEditController.setOnCorridorWaypointSelected(onCorridorWaypointSelected);
+    }
+
+    public final void setOnCorridorWaypointAdded(Consumer<CorridorEditInteractionController.SegmentInsertHit> onCorridorWaypointAdded) {
+        corridorEditController.setOnCorridorWaypointAdded(onCorridorWaypointAdded);
+    }
+
+    public final void setOnCorridorWaypointMoved(
+            BiConsumer<CorridorEditInteractionController.WaypointHandle, Point2i> onCorridorWaypointMoved
+    ) {
+        corridorEditController.setOnCorridorWaypointMoved(onCorridorWaypointMoved);
+    }
+
     public final void showLayout(
             DungeonLayout layout,
             DungeonLayoutRenderData renderData,
@@ -157,10 +220,11 @@ abstract class AbstractDungeonPane extends StackPane {
         this.renderData = renderData;
         this.selectedTarget = selectedTarget;
         this.activeLocation = activeLocation;
-        this.previewCenters.clear();
+        this.previewClusterCenters.clear();
         this.previewPaintCells.clear();
         clearSelectionPreview();
         clearPaintPreview();
+        corridorEditController.cancel();
         if (renderNow) {
             render();
         }
@@ -181,7 +245,16 @@ abstract class AbstractDungeonPane extends StackPane {
     protected final Point2i previewCenter(DungeonRoom room) {
         RoomShape shape = Objects.requireNonNull(layout, "layout").roomShape(room.roomId());
         Point2i center = Objects.requireNonNull(shape, "shape").center();
-        return previewCenters.getOrDefault(room.roomId(), center);
+        return center.add(previewDelta(room.clusterId()));
+    }
+
+    protected final Point2i previewCenter(DungeonRoomCluster cluster) {
+        Point2i center = Objects.requireNonNull(cluster, "cluster").center();
+        return center.add(previewDelta(cluster.clusterId()));
+    }
+
+    protected final Point2i previewClusterCell(DungeonRoomCluster cluster, Point2i relativeCell) {
+        return previewCenter(cluster).add(relativeCell);
     }
 
     protected final boolean isActive(DungeonRoom room) {
@@ -251,6 +324,72 @@ abstract class AbstractDungeonPane extends StackPane {
         return null;
     }
 
+    protected CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
+        return null;
+    }
+
+    protected CorridorEditInteractionController.DoorMoveTarget corridorDoorMoveTargetAt(
+            double screenX,
+            double screenY,
+            CorridorEditInteractionController.DoorHandle handle
+    ) {
+        return null;
+    }
+
+    protected CorridorEditInteractionController.WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY) {
+        return null;
+    }
+
+    protected CorridorEditInteractionController.SegmentInsertHit findCorridorSegmentInsertHitAt(double screenX, double screenY) {
+        return null;
+    }
+
+    protected CorridorGeometry corridorGeometryForSelection(DungeonCorridor corridor) {
+        if (corridor == null || corridor.corridorId() == null || renderData == null) {
+            return null;
+        }
+        return renderData.corridorGeometry(corridor.corridorId());
+    }
+
+    protected final CorridorSelectionContext selectedCorridorContext() {
+        if (layout == null || renderData == null || !(selectedTarget instanceof DungeonSelection.Corridor selectedCorridor)) {
+            return null;
+        }
+        DungeonCorridor corridor = layout.corridorById(selectedCorridor.corridorId());
+        CorridorGeometry geometry = corridorGeometryForSelection(corridor);
+        if (corridor == null || geometry == null || !geometry.routable()) {
+            return null;
+        }
+        return new CorridorSelectionContext(corridor, geometry);
+    }
+
+    protected final int insertIndexForSegment(long corridorId, CorridorGeometry geometry, int segmentIndex) {
+        List<Point2i> path = renderData == null ? List.of() : renderData.corridorPath(corridorId);
+        if (path.isEmpty() || geometry == null || geometry.waypointCells().isEmpty()) {
+            return geometry == null ? 0 : geometry.waypointCells().size();
+        }
+        List<Integer> waypointPathIndices = new java.util.ArrayList<>();
+        for (Point2i waypoint : geometry.waypointCells()) {
+            int bestIndex = 0;
+            int bestDistance = Integer.MAX_VALUE;
+            for (int index = 0; index < path.size(); index++) {
+                Point2i pathPoint = path.get(index);
+                int distance = Math.abs(pathPoint.x() - waypoint.x()) + Math.abs(pathPoint.y() - waypoint.y());
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    bestIndex = index;
+                }
+            }
+            waypointPathIndices.add(bestIndex);
+        }
+        int pathIndexAfterSegment = Math.min(segmentIndex + 1, path.size() - 1);
+        int insertIndex = 0;
+        while (insertIndex < waypointPathIndices.size() && waypointPathIndices.get(insertIndex) <= pathIndexAfterSegment) {
+            insertIndex++;
+        }
+        return insertIndex;
+    }
+
     protected abstract EditorSurface surface();
 
     protected DungeonRoomCluster findClusterInSelection(Point2i startInclusive, Point2i endInclusive) {
@@ -265,11 +404,11 @@ abstract class AbstractDungeonPane extends StackPane {
         if (room == null) {
             return Set.of();
         }
-        Point2i previewCenter = previewCenters.get(room.roomId());
-        if (previewCenter == null && renderData != null) {
+        Point2i delta = previewDelta(room.clusterId());
+        if (delta.equals(ZERO) && renderData != null) {
             return layout.roomCells(room.roomId());
         }
-        return roomCellsForShape(room, previewCenter);
+        return translateCells(layout.roomCells(room.roomId()), delta);
     }
 
     protected final List<List<Point2i>> roomLoopsFor(DungeonRoom room) {
@@ -277,18 +416,57 @@ abstract class AbstractDungeonPane extends StackPane {
             return List.of();
         }
         Point2i center = previewCenter(room);
-        return DungeonRoomGeometry.absoluteLoops(DungeonRoomGeometry.roomShapeForCells(roomCellsForShape(room, center), center));
+        return DungeonRoomGeometry.absoluteLoops(DungeonRoomGeometry.roomShapeForCells(roomCellsFor(room), center));
     }
 
-    private Set<Point2i> roomCellsForShape(DungeonRoom room, Point2i center) {
-        RoomShape shape = Objects.requireNonNull(layout, "layout").roomShape(room.roomId());
-        Point2i targetCenter = center == null ? shape.center() : center;
-        Point2i delta = targetCenter.subtract(shape.center());
+    protected final Set<Point2i> clusterCellsFor(DungeonRoomCluster cluster) {
+        if (cluster == null || cluster.clusterId() == null) {
+            return Set.of();
+        }
+        Point2i delta = previewDelta(cluster.clusterId());
+        if (delta.equals(ZERO)) {
+            return layout.clusterCells(cluster.clusterId());
+        }
+        return translateCells(layout.clusterCells(cluster.clusterId()), delta);
+    }
+
+    protected final List<List<Point2i>> clusterLoopsFor(DungeonRoomCluster cluster) {
+        if (cluster == null || cluster.clusterId() == null) {
+            return List.of();
+        }
+        Point2i delta = previewDelta(cluster.clusterId());
+        if (delta.equals(ZERO)) {
+            return layout.clusterLoops(cluster.clusterId());
+        }
+        return translateLoops(layout.clusterLoops(cluster.clusterId()), delta);
+    }
+
+    protected final Point2i previewDelta(Long clusterId) {
+        if (clusterId == null || layout == null) {
+            return ZERO;
+        }
+        DungeonRoomCluster cluster = layout.clusterById(clusterId);
+        Point2i previewCenter = previewClusterCenters.get(clusterId);
+        if (cluster == null || previewCenter == null) {
+            return ZERO;
+        }
+        return previewCenter.subtract(cluster.center());
+    }
+
+    private Set<Point2i> translateCells(Set<Point2i> cells, Point2i delta) {
         Set<Point2i> translated = new LinkedHashSet<>();
-        for (Point2i cell : shape.cells()) {
+        for (Point2i cell : cells) {
             translated.add(cell.add(delta));
         }
         return translated;
+    }
+
+    private List<List<Point2i>> translateLoops(List<List<Point2i>> loops, Point2i delta) {
+        return loops.stream()
+                .map(loop -> loop.stream()
+                        .map(point -> point.add(delta))
+                        .toList())
+                .toList();
     }
 
     protected final boolean sameDoorSegment(DoorSegment left, DoorSegment right) {
@@ -488,9 +666,7 @@ abstract class AbstractDungeonPane extends StackPane {
     private void updateDragPreview(DragInteraction dragInteraction, Point2i world) {
         Point2i delta = world.subtract(dragInteraction.anchorWorld());
         Point2i previewCenter = dragInteraction.originalCenter().add(delta);
-        for (DungeonRoom room : layout.roomsForCluster(dragInteraction.cluster().clusterId())) {
-            previewCenters.put(room.roomId(), previewCenter);
-        }
+        previewClusterCenters.put(dragInteraction.cluster().clusterId(), previewCenter);
         render();
     }
 
@@ -502,9 +678,7 @@ abstract class AbstractDungeonPane extends StackPane {
             // Dropping the preview immediately would repaint the stale layout for one frame.
             callbacks.onClusterMoved.accept(dragInteraction.cluster(), newCenter);
         } else {
-            for (DungeonRoom room : layout.roomsForCluster(dragInteraction.cluster().clusterId())) {
-                previewCenters.remove(room.roomId());
-            }
+            previewClusterCenters.remove(dragInteraction.cluster().clusterId());
             render();
         }
     }
@@ -521,6 +695,9 @@ abstract class AbstractDungeonPane extends StackPane {
             return;
         }
         if (handleCorridorToolPress(event, context)) {
+            return;
+        }
+        if (corridorEditController.handlePress(event)) {
             return;
         }
         if (handleRoomDragPress(event, context)) {
@@ -566,7 +743,7 @@ abstract class AbstractDungeonPane extends StackPane {
         if (handleEditableRelease(world)) {
             return;
         }
-        handleDragRelease(world);
+        handleDragRelease(event, world);
     }
 
     private boolean handlePanPress(MouseEvent event) {
@@ -710,16 +887,28 @@ abstract class AbstractDungeonPane extends StackPane {
             callbacks.onGraphClusterDeleted.accept(graphDeleteInteraction.cluster());
             return true;
         }
+        if (corridorEditController.handleEditableRelease(world)) {
+            pointerInteraction = IdleInteraction.INSTANCE;
+            return true;
+        }
         return false;
     }
 
-    private void handleDragRelease(Point2i world) {
-        if (!editable || !(pointerInteraction instanceof DragInteraction dragInteraction)) {
+    private void handleDragRelease(MouseEvent event, Point2i world) {
+        if (!editable) {
+            pointerInteraction = IdleInteraction.INSTANCE;
+            return;
+        }
+        if (pointerInteraction instanceof DragInteraction dragInteraction) {
+            pointerInteraction = IdleInteraction.INSTANCE;
+            commitDrag(dragInteraction, world);
+            return;
+        }
+        if (corridorEditController.handleDragRelease(event)) {
             pointerInteraction = IdleInteraction.INSTANCE;
             return;
         }
         pointerInteraction = IdleInteraction.INSTANCE;
-        commitDrag(dragInteraction, world);
     }
 
     private void handleScroll(ScrollEvent event) {
@@ -736,7 +925,8 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private sealed interface PointerInteraction
-            permits IdleInteraction, PanInteraction, SelectionInteraction, PaintInteraction, DragInteraction, GraphCreateInteraction, GraphDeleteInteraction {
+            permits IdleInteraction, PanInteraction, SelectionInteraction, PaintInteraction, DragInteraction,
+            GraphCreateInteraction, GraphDeleteInteraction {
     }
 
     private enum IdleInteraction implements PointerInteraction {
@@ -771,6 +961,9 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     protected record InvalidCorridorLink(DungeonRoom from, DungeonRoom to) {
+    }
+
+    protected record CorridorSelectionContext(DungeonCorridor corridor, CorridorGeometry geometry) {
     }
 
     private static final class PaneCallbacks {
