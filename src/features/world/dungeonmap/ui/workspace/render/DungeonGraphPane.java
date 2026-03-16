@@ -45,6 +45,8 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     private DungeonLayout cachedRenderStateLayout;
     private DungeonLayoutRenderData cachedRenderStateData;
     private Map<Long, Point2i> cachedPreviewCenters = Map.of();
+    private CorridorEditInteractionController.DoorHandle cachedPreviewDoorHandle;
+    private CorridorEditInteractionController.DoorMoveTarget cachedPreviewDoorTarget;
     private CorridorRenderState cachedCorridorRenderState;
 
     public DungeonGraphPane(DungeonCanvasCamera camera) {
@@ -206,6 +208,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
 
     @Override
     protected CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
+        if (hasClusterDragPreview()) {
+            return null;
+        }
         CorridorSelectionContext context = selectedCorridorContext();
         if (context == null) {
             return null;
@@ -235,6 +240,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             double screenY,
             CorridorEditInteractionController.DoorHandle handle
     ) {
+        if (hasClusterDragPreview()) {
+            return null;
+        }
         return nearestCorridorDoorMoveTarget(screenX, screenY, handle, 18);
     }
 
@@ -305,13 +313,18 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     private CorridorRenderState corridorRenderState() {
+        DungeonLayoutRenderData corridorRenderData = corridorRenderDataForDisplay();
         if (cachedCorridorRenderState == null
                 || cachedRenderStateLayout != layout
-                || cachedRenderStateData != renderData
-                || !cachedPreviewCenters.equals(previewClusterCenters)) {
+                || cachedRenderStateData != corridorRenderData
+                || !cachedPreviewCenters.equals(previewClusterCenters)
+                || !Objects.equals(cachedPreviewDoorHandle, previewCorridorDoorHandle)
+                || !Objects.equals(cachedPreviewDoorTarget, previewCorridorDoorTarget)) {
             cachedRenderStateLayout = layout;
-            cachedRenderStateData = renderData;
+            cachedRenderStateData = corridorRenderData;
             cachedPreviewCenters = Map.copyOf(previewClusterCenters);
+            cachedPreviewDoorHandle = previewCorridorDoorHandle;
+            cachedPreviewDoorTarget = previewCorridorDoorTarget;
             cachedCorridorRenderState = buildCorridorRenderState();
         }
         return cachedCorridorRenderState;
@@ -394,7 +407,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     private void drawCorridorComponentOutlines(GraphicsContext gc) {
-        if (renderData == null || !previewClusterCenters.isEmpty()) {
+        if (renderData == null || !previewClusterCenters.isEmpty() || previewCorridorGeometry != null) {
             // Corridor component outlines stay hidden during drag preview until we have
             // a preview-safe topology projection for those aggregate shapes as well.
             return;
@@ -852,10 +865,10 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     private CorridorGeometry corridorGeometry(DungeonCorridor corridor) {
-        if (corridor == null || corridor.corridorId() == null || renderData == null) {
+        if (corridor == null || corridor.corridorId() == null || corridorRenderDataForDisplay() == null) {
             return null;
         }
-        CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+        CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
         if (geometry == null || previewClusterCenters.isEmpty()) {
             return geometry;
         }

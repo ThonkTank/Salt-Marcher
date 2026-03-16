@@ -26,6 +26,26 @@ public final class DungeonCorridorGeometry {
     }
 
     public static CorridorTopology corridorTopology(DungeonLayout layout) {
+        LayoutContext context = layoutContext(layout);
+
+        Map<Long, CorridorGeometry> result = new LinkedHashMap<>();
+        for (DungeonCorridor corridor : layout.corridors()) {
+            List<DungeonRoom> corridorRooms = corridor.roomIds().stream()
+                    .map(context.roomsById()::get)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+            result.put(corridor.corridorId(), layoutCorridorGeometry(
+                    layout,
+                    corridor,
+                    corridorRooms,
+                    context.roomCellsById(),
+                    context.roomOccupancy()));
+        }
+        return buildCorridorTopology(layout, result);
+    }
+
+    public static LayoutContext layoutContext(DungeonLayout layout) {
         Map<Long, DungeonRoom> roomsById = roomsById(layout.rooms());
         Map<Long, Set<Point2i>> roomCellsById = new LinkedHashMap<>();
         Map<Point2i, Long> roomOccupancy = new HashMap<>();
@@ -36,17 +56,23 @@ public final class DungeonCorridorGeometry {
                 roomOccupancy.put(cell, room.roomId());
             }
         }
+        return new LayoutContext(Map.copyOf(roomsById), immutableSetMap(roomCellsById), Map.copyOf(roomOccupancy));
+    }
 
-        Map<Long, CorridorGeometry> result = new LinkedHashMap<>();
-        for (DungeonCorridor corridor : layout.corridors()) {
-            List<DungeonRoom> corridorRooms = corridor.roomIds().stream()
-                    .map(roomsById::get)
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
-            result.put(corridor.corridorId(), layoutCorridorGeometry(layout, corridor, corridorRooms, roomCellsById, roomOccupancy));
+    public static CorridorGeometry corridorGeometry(DungeonLayout layout, DungeonCorridor corridor) {
+        return corridorGeometry(layout, corridor, layoutContext(layout));
+    }
+
+    public static CorridorGeometry corridorGeometry(DungeonLayout layout, DungeonCorridor corridor, LayoutContext context) {
+        if (layout == null || corridor == null || context == null) {
+            return null;
         }
-        return buildCorridorTopology(layout, result);
+        List<DungeonRoom> corridorRooms = corridor.roomIds().stream()
+                .map(context.roomsById()::get)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        return layoutCorridorGeometry(layout, corridor, corridorRooms, context.roomCellsById(), context.roomOccupancy());
     }
 
     public static Point2i suggestNewRoomCenter(Collection<DungeonRoom> rooms) {
@@ -151,6 +177,14 @@ public final class DungeonCorridorGeometry {
             adjacentCorridors.computeIfAbsent(corridorId, ignored -> new LinkedHashSet<>()).addAll(corridorIds);
             adjacentCorridors.get(corridorId).remove(corridorId);
         }
+    }
+
+    private static Map<Long, Set<Point2i>> immutableSetMap(Map<Long, Set<Point2i>> source) {
+        Map<Long, Set<Point2i>> copy = new LinkedHashMap<>();
+        for (Map.Entry<Long, Set<Point2i>> entry : source.entrySet()) {
+            copy.put(entry.getKey(), Set.copyOf(entry.getValue()));
+        }
+        return Map.copyOf(copy);
     }
 
     private static String componentIdFor(Set<Long> corridorIds) {
@@ -960,5 +994,12 @@ public final class DungeonCorridorGeometry {
     }
 
     private record DoorKey(Point2i start, Point2i end) {
+    }
+
+    public record LayoutContext(
+            Map<Long, DungeonRoom> roomsById,
+            Map<Long, Set<Point2i>> roomCellsById,
+            Map<Point2i, Long> roomOccupancy
+    ) {
     }
 }

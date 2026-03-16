@@ -1,8 +1,10 @@
 package features.world.dungeonmap.ui.workspace.render;
 
-import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.CorridorGeometry;
+import features.world.dungeonmap.model.CorridorDoorOverride;
+import features.world.dungeonmap.model.DungeonLayout;
 import features.world.dungeonmap.model.DungeonCorridor;
+import features.world.dungeonmap.model.DungeonCorridorGeometry;
 import features.world.dungeonmap.model.DungeonClusterEdgeRef;
 import features.world.dungeonmap.model.DungeonCorridorEndpoint;
 import features.world.dungeonmap.model.DungeonSelection;
@@ -52,6 +54,10 @@ abstract class AbstractDungeonPane extends StackPane {
     protected Point2i paintStartCell;
     protected Point2i paintEndCell;
     protected CorridorEditInteractionController.DoorHandle selectedCorridorDoorHandle;
+    protected CorridorEditInteractionController.DoorHandle previewCorridorDoorHandle;
+    protected CorridorEditInteractionController.DoorMoveTarget previewCorridorDoorTarget;
+    protected CorridorGeometry previewCorridorGeometry;
+    protected features.world.dungeonmap.model.DungeonCorridorGeometry.LayoutContext corridorLayoutContext;
 
     private final PaneCallbacks callbacks = new PaneCallbacks();
     private final CorridorEditInteractionController corridorEditController;
@@ -83,6 +89,19 @@ abstract class AbstractDungeonPane extends StackPane {
                     CorridorEditInteractionController.DoorHandle handle
             ) {
                 return AbstractDungeonPane.this.corridorDoorMoveTargetAt(screenX, screenY, handle);
+            }
+
+            @Override
+            public boolean updateCorridorDoorPreview(
+                    CorridorEditInteractionController.DoorHandle handle,
+                    CorridorEditInteractionController.DoorMoveTarget target
+            ) {
+                return AbstractDungeonPane.this.updateCorridorDoorPreview(handle, target);
+            }
+
+            @Override
+            public boolean clearCorridorDoorPreview() {
+                return AbstractDungeonPane.this.clearCorridorDoorPreview();
             }
 
             @Override
@@ -184,6 +203,7 @@ abstract class AbstractDungeonPane extends StackPane {
         clearPaintPreview();
         wallPathController.reset();
         corridorEditController.cancel();
+        clearCorridorDoorPreview();
         if (this.editorTool != DungeonEditorTool.SELECT) {
             applySelectedCorridorDoorHandle(null, false, false);
         } else {
@@ -283,12 +303,14 @@ abstract class AbstractDungeonPane extends StackPane {
         this.renderData = renderData;
         this.selectedTarget = selectedTarget;
         this.activeLocation = activeLocation;
+        this.corridorLayoutContext = layout == null ? null : DungeonCorridorGeometry.layoutContext(layout);
         this.previewClusterCenters.clear();
         this.previewPaintCells.clear();
         clearSelectionPreview();
         clearPaintPreview();
         wallPathController.reset();
         corridorEditController.cancel();
+        clearCorridorDoorPreview();
         applySelectedCorridorDoorHandle(selectedCorridorDoorHandle, false, false);
         if (renderNow) {
             render();
@@ -298,6 +320,7 @@ abstract class AbstractDungeonPane extends StackPane {
     public final void updateSelection(DungeonSelection selectedTarget, DungeonRuntimeLocation activeLocation, boolean renderNow) {
         this.selectedTarget = selectedTarget;
         this.activeLocation = activeLocation;
+        clearCorridorDoorPreview();
         applySelectedCorridorDoorHandle(selectedCorridorDoorHandle, false, false);
         if (renderNow) {
             render();
@@ -451,10 +474,23 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     protected CorridorGeometry corridorGeometryForSelection(DungeonCorridor corridor) {
-        if (corridor == null || corridor.corridorId() == null || renderData == null) {
+        return corridorGeometryForDisplay(corridor);
+    }
+
+    protected final CorridorGeometry corridorGeometryForDisplay(DungeonCorridor corridor) {
+        if (corridor == null || corridor.corridorId() == null) {
             return null;
         }
-        return renderData.corridorGeometry(corridor.corridorId());
+        if (previewCorridorGeometry != null
+                && previewCorridorDoorHandle != null
+                && previewCorridorDoorHandle.corridorId() == corridor.corridorId()) {
+            return previewCorridorGeometry;
+        }
+        return renderData == null ? null : renderData.corridorGeometry(corridor.corridorId());
+    }
+
+    protected final DungeonLayoutRenderData corridorRenderDataForDisplay() {
+        return renderData;
     }
 
     protected final CorridorSelectionContext selectedCorridorContext() {
@@ -628,6 +664,78 @@ abstract class AbstractDungeonPane extends StackPane {
 
     protected final boolean updateCorridorPressMode(MouseEvent event) {
         return corridorEditController.updatePreviewPressMode(event);
+    }
+
+    protected final boolean hasClusterDragPreview() {
+        return !previewClusterCenters.isEmpty();
+    }
+
+    private boolean updateCorridorDoorPreview(
+            CorridorEditInteractionController.DoorHandle handle,
+            CorridorEditInteractionController.DoorMoveTarget target
+    ) {
+        if (hasClusterDragPreview()) {
+            return clearCorridorDoorPreview();
+        }
+        if (handle == null || target == null) {
+            return clearCorridorDoorPreview();
+        }
+        if (Objects.equals(previewCorridorDoorHandle, handle)
+                && Objects.equals(previewCorridorDoorTarget, target)) {
+            return false;
+        }
+        CorridorGeometry nextGeometry = buildCorridorDoorPreviewGeometry(handle, target);
+        if (nextGeometry == null) {
+            return clearCorridorDoorPreview();
+        }
+        previewCorridorDoorHandle = handle;
+        previewCorridorDoorTarget = target;
+        previewCorridorGeometry = nextGeometry;
+        return true;
+    }
+
+    private boolean clearCorridorDoorPreview() {
+        if (previewCorridorDoorHandle == null && previewCorridorDoorTarget == null && previewCorridorGeometry == null) {
+            return false;
+        }
+        previewCorridorDoorHandle = null;
+        previewCorridorDoorTarget = null;
+        previewCorridorGeometry = null;
+        return true;
+    }
+
+    private CorridorGeometry buildCorridorDoorPreviewGeometry(
+            CorridorEditInteractionController.DoorHandle handle,
+            CorridorEditInteractionController.DoorMoveTarget target
+    ) {
+        if (layout == null || handle == null || target == null) {
+            return null;
+        }
+        DungeonCorridor corridor = layout.corridorById(handle.corridorId());
+        DungeonRoom room = layout.roomById(handle.roomId());
+        if (corridor == null || room == null) {
+            return null;
+        }
+        DungeonRoomCluster cluster = layout.clusterById(room.clusterId());
+        if (cluster == null) {
+            return null;
+        }
+        CorridorDoorOverride override = new CorridorDoorOverride(
+                room.roomId(),
+                room.clusterId(),
+                target.roomCell().subtract(cluster.center()),
+                target.direction());
+        java.util.List<CorridorDoorOverride> overrides = corridor.doorOverrides().stream()
+                .filter(existing -> existing.roomId() != room.roomId())
+                .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+        overrides.add(override);
+        DungeonCorridor previewCorridor = new DungeonCorridor(
+                corridor.corridorId(),
+                corridor.mapId(),
+                corridor.roomIds(),
+                overrides,
+                corridor.waypoints());
+        return DungeonCorridorGeometry.corridorGeometry(layout, previewCorridor, corridorLayoutContext);
     }
 
     protected abstract EditorSurface surface();
@@ -835,6 +943,7 @@ abstract class AbstractDungeonPane extends StackPane {
         selectionStartCell = null;
         selectionEndCell = null;
         corridorEditController.clearPreviewPressMode();
+        clearCorridorDoorPreview();
     }
 
     private void clearPaintPreview() {
@@ -1000,6 +1109,10 @@ abstract class AbstractDungeonPane extends StackPane {
         }
         if (pointerInteraction instanceof PanInteraction) {
             callbacks.onViewportPanned.accept(new Point2D(event.getX(), event.getY()));
+            return;
+        }
+        if (corridorEditController.handleDrag(event)) {
+            render();
             return;
         }
         wallPathController.handlePointerMove(event.getX(), event.getY());
@@ -1183,6 +1296,7 @@ abstract class AbstractDungeonPane extends StackPane {
 
     private void handleDragRelease(MouseEvent event, Point2i world) {
         if (!editable) {
+            clearCorridorDoorPreview();
             pointerInteraction = IdleInteraction.INSTANCE;
             return;
         }
@@ -1193,6 +1307,7 @@ abstract class AbstractDungeonPane extends StackPane {
         }
         if (corridorEditController.handleDragRelease(event)) {
             pointerInteraction = IdleInteraction.INSTANCE;
+            render();
             return;
         }
         pointerInteraction = IdleInteraction.INSTANCE;

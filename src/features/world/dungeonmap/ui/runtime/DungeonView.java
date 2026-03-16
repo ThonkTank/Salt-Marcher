@@ -78,7 +78,6 @@ public final class DungeonView implements AppView {
     private void showLoadState(DungeonRuntimeLoadState loadState) {
         currentState = loadState.state();
         DungeonLayout layout = loadState.state().layout();
-        workspace.setViewMode(DungeonViewMode.GRID);
         workspace.showLayout(layout, null, loadState.state().activeLocation());
         controls.setMaps(loadState.maps());
         controls.selectMap(loadState.selectedMapId());

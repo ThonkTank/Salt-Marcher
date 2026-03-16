@@ -170,6 +170,9 @@ public final class DungeonGridPane extends AbstractDungeonPane {
 
     @Override
     protected CorridorEditInteractionController.DoorHandle findCorridorDoorHandleAt(double screenX, double screenY) {
+        if (hasClusterDragPreview()) {
+            return null;
+        }
         CorridorSelectionContext context = selectedCorridorContext();
         if (context == null) {
             return null;
@@ -192,6 +195,9 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             double screenY,
             CorridorEditInteractionController.DoorHandle handle
     ) {
+        if (hasClusterDragPreview()) {
+            return null;
+        }
         return nearestCorridorDoorMoveTarget(screenX, screenY, handle, 14);
     }
 
@@ -309,17 +315,18 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     private void drawCorridors(GraphicsContext gc) {
-        if (renderData == null) {
+        DungeonLayoutRenderData corridorRenderData = corridorRenderDataForDisplay();
+        if (corridorRenderData == null) {
             return;
         }
-        Set<Point2i> allCorridorCells = renderData.corridorCells();
+        Set<Point2i> allCorridorCells = displayedCorridorCells(corridorRenderData);
         if (allCorridorCells.isEmpty()) {
             return;
         }
         drawRegion(gc, allCorridorCells, DungeonCanvasTheme.CORRIDOR, DungeonCanvasTheme.ROOM_STROKE, 2, allDoorSegments());
 
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
             if (geometry == null || !geometry.routable() || geometry.cells().isEmpty()) {
                 continue;
             }
@@ -335,11 +342,11 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     private void drawDoors(GraphicsContext gc) {
-        if (renderData == null) {
+        if (corridorRenderDataForDisplay() == null) {
             return;
         }
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
             if (geometry == null || !geometry.routable()) {
                 continue;
             }
@@ -602,11 +609,11 @@ public final class DungeonGridPane extends AbstractDungeonPane {
 
     private Set<SegmentKey> allDoorSegments() {
         Set<SegmentKey> segments = new LinkedHashSet<>();
-        if (renderData == null || layout == null) {
+        if (corridorRenderDataForDisplay() == null || layout == null) {
             return segments;
         }
         for (DungeonCorridor corridor : layout.corridors()) {
-            CorridorGeometry geometry = renderData.corridorGeometry(corridor.corridorId());
+            CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
             if (geometry == null || !geometry.routable()) {
                 continue;
             }
@@ -615,6 +622,21 @@ public final class DungeonGridPane extends AbstractDungeonPane {
             }
         }
         return segments;
+    }
+
+    private Set<Point2i> displayedCorridorCells(DungeonLayoutRenderData corridorRenderData) {
+        if (previewCorridorGeometry == null || layout == null) {
+            return corridorRenderData.corridorCells();
+        }
+        Set<Point2i> cells = new LinkedHashSet<>();
+        for (DungeonCorridor corridor : layout.corridors()) {
+            CorridorGeometry geometry = corridorGeometryForDisplay(corridor);
+            if (geometry == null || !geometry.routable()) {
+                continue;
+            }
+            cells.addAll(geometry.cells());
+        }
+        return cells;
     }
 
     private record SegmentKey(Point2i start, Point2i end) {

@@ -50,6 +50,7 @@ public final class CorridorEditInteractionController {
     }
 
     void cancel() {
+        host.clearCorridorDoorPreview();
         dragState = IdleDragState.INSTANCE;
     }
 
@@ -125,6 +126,7 @@ public final class CorridorEditInteractionController {
         }
         if (hit instanceof DoorPressHit doorHit) {
             onCorridorDoorSelected.accept(doorHit.handle());
+            host.clearCorridorDoorPreview();
             // A handle hit starts the drag. The drop target is validated on release.
             dragState = new DoorDragState(doorHit.handle());
             return true;
@@ -145,13 +147,25 @@ public final class CorridorEditInteractionController {
         return true;
     }
 
+    boolean handleDrag(MouseEvent event) {
+        if (!(dragState instanceof DoorDragState doorDragState)) {
+            return false;
+        }
+        DoorMoveTarget target = host.corridorDoorMoveTargetAt(event.getX(), event.getY(), doorDragState.handle());
+        return target == null
+                ? host.clearCorridorDoorPreview()
+                : host.updateCorridorDoorPreview(doorDragState.handle(), target);
+    }
+
     boolean handleDragRelease(MouseEvent event) {
         if (!(dragState instanceof DoorDragState doorDragState)) {
+            host.clearCorridorDoorPreview();
             dragState = IdleDragState.INSTANCE;
             return false;
         }
-        dragState = IdleDragState.INSTANCE;
         DoorMoveTarget target = host.corridorDoorMoveTargetAt(event.getX(), event.getY(), doorDragState.handle());
+        host.clearCorridorDoorPreview();
+        dragState = IdleDragState.INSTANCE;
         if (target != null) {
             onCorridorDoorMoved.accept(doorDragState.handle(), target);
         }
@@ -163,6 +177,8 @@ public final class CorridorEditInteractionController {
         DungeonEditorTool editorTool();
         DoorHandle findCorridorDoorHandleAt(double screenX, double screenY);
         DoorMoveTarget corridorDoorMoveTargetAt(double screenX, double screenY, DoorHandle handle);
+        boolean updateCorridorDoorPreview(DoorHandle handle, DoorMoveTarget target);
+        boolean clearCorridorDoorPreview();
         WaypointHandle findCorridorWaypointHandleAt(double screenX, double screenY);
         WaypointHandle findCorridorWaypointRemoveHandleAt(double screenX, double screenY);
         SegmentInsertHit findCorridorSegmentInsertHitAt(double screenX, double screenY);
