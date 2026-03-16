@@ -215,10 +215,10 @@ public final class DungeonGridPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorEditInteractionController.SegmentInsertHit findCorridorSegmentInsertHitAt(double screenX, double screenY) {
+    protected int corridorSegmentIndexAt(double screenX, double screenY) {
         CorridorSelectionContext context = selectedCorridorContext();
         if (context == null || context.geometry().segments().isEmpty()) {
-            return null;
+            return -1;
         }
         int bestSegmentIndex = -1;
         double bestDistance = Double.POSITIVE_INFINITY;
@@ -230,13 +230,7 @@ public final class DungeonGridPane extends AbstractDungeonPane {
                 bestSegmentIndex = index;
             }
         }
-        if (bestSegmentIndex < 0) {
-            return null;
-        }
-        return new CorridorEditInteractionController.SegmentInsertHit(
-                context.corridor().corridorId(),
-                insertIndexForSegment(context.corridor().corridorId(), context.geometry(), bestSegmentIndex),
-                worldPointAt(screenX, screenY));
+        return bestSegmentIndex;
     }
 
     @Override
@@ -363,8 +357,23 @@ public final class DungeonGridPane extends AbstractDungeonPane {
 
     private void drawCorridorEditHandles(GraphicsContext gc) {
         CorridorSelectionContext context = selectedCorridorContext();
-        if (context == null || editorTool != DungeonEditorTool.SELECT) {
+        CorridorEditInteractionController.PressMode pressMode = corridorPressMode();
+        if (!editable
+                || context == null
+                || editorTool != DungeonEditorTool.SELECT
+                || pressMode == CorridorEditInteractionController.PressMode.DEFAULT) {
             return;
+        }
+        gc.setStroke(pressMode == CorridorEditInteractionController.PressMode.REMOVE_WAYPOINT
+                ? DungeonCanvasTheme.ROOM_SELECTED_STROKE
+                : DungeonCanvasTheme.CORRIDOR_SELECTED);
+        gc.setLineWidth(4);
+        for (features.world.dungeonmap.model.GridSegment segment : context.geometry().segments()) {
+            gc.strokeLine(
+                    camera.toScreenX(segment.from().x() + 0.5),
+                    camera.toScreenY(segment.from().y() + 0.5),
+                    camera.toScreenX(segment.to().x() + 0.5),
+                    camera.toScreenY(segment.to().y() + 0.5));
         }
         gc.setLineWidth(2);
         for (DoorSegment door : context.geometry().doors()) {

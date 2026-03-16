@@ -98,6 +98,7 @@ public final class DungeonEditorView implements AppView {
         workspace.setOnCorridorDoorMoved(this::moveCorridorDoorHandle);
         workspace.setOnCorridorWaypointSelected(this::selectCorridorWaypointHandle);
         workspace.setOnCorridorWaypointAdded(this::addCorridorWaypoint);
+        workspace.setOnCorridorWaypointRemoved(this::removeCorridorWaypointHandle);
         workspace.setOnCorridorWaypointMoved(this::moveCorridorWaypointHandle);
         controls.setOnMapSelected(this::loadLayoutAsync);
         controls.setOnNewMapRequested(this::showNewMapDropdown);
@@ -395,6 +396,13 @@ public final class DungeonEditorView implements AppView {
                         onError));
     }
 
+    private void removeCorridorWaypointHandle(CorridorEditInteractionController.WaypointHandle handle) {
+        if (currentMapId == null || handle == null) {
+            return;
+        }
+        deleteCorridorWaypoint(handle, "DungeonEditorView.removeCorridorWaypointHandle()");
+    }
+
     private void paintRoomCells(Set<Point2i> cells) {
         if (currentMapId == null || cells == null || cells.isEmpty()) {
             return;
@@ -549,11 +557,26 @@ public final class DungeonEditorView implements AppView {
             DungeonLayoutEditResult result,
             CorridorEditInteractionController.DoorHandle doorHandle,
             CorridorEditInteractionController.WaypointHandle waypointHandle
-        ) {
+    ) {
         applyRoomEditResult(result);
         workspace.setSelectedCorridorDoorHandle(doorHandle);
         selectedCorridorWaypointHandle = waypointHandle;
         refreshStatePane();
+    }
+
+    private void applyDeletedCorridorWaypointResult(
+            DungeonLayoutEditResult result,
+            CorridorEditInteractionController.WaypointHandle deletedHandle
+    ) {
+        CorridorEditInteractionController.WaypointHandle nextHandle = null;
+        if (result != null && result.layout() != null && deletedHandle != null) {
+            DungeonCorridor corridor = result.layout().corridorById(deletedHandle.corridorId());
+            if (corridor != null && !corridor.waypoints().isEmpty()) {
+                int nextIndex = Math.min(deletedHandle.waypointIndex(), corridor.waypoints().size() - 1);
+                nextHandle = new CorridorEditInteractionController.WaypointHandle(deletedHandle.corridorId(), nextIndex);
+            }
+        }
+        applyCorridorEditResult(result, null, nextHandle);
     }
 
     private void syncEditorTool() {
@@ -866,9 +889,15 @@ public final class DungeonEditorView implements AppView {
         if (currentMapId == null || selectedCorridorWaypointHandle == null) {
             return;
         }
-        CorridorEditInteractionController.WaypointHandle handle = selectedCorridorWaypointHandle;
-        runEdit("DungeonEditorView.deleteCorridorWaypoint()",
-                result -> applyCorridorEditResult(result, null, null),
+        deleteCorridorWaypoint(selectedCorridorWaypointHandle, "DungeonEditorView.deleteCorridorWaypoint()");
+    }
+
+    private void deleteCorridorWaypoint(CorridorEditInteractionController.WaypointHandle handle, String action) {
+        if (currentMapId == null || handle == null) {
+            return;
+        }
+        runEdit(action,
+                result -> applyDeletedCorridorWaypointResult(result, handle),
                 (mapId, onSuccess, onError) -> submitEdit(
                         mapId,
                         () -> editorService.deleteCorridorWaypoint(mapId, handle.corridorId(), handle.waypointIndex()),

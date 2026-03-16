@@ -192,6 +192,11 @@ public final class DungeonSplitWorkspace extends BorderPane {
         graphPane.setOnCorridorWaypointAdded(onCorridorWaypointAdded);
     }
 
+    public void setOnCorridorWaypointRemoved(Consumer<CorridorEditInteractionController.WaypointHandle> onCorridorWaypointRemoved) {
+        gridPane.setOnCorridorWaypointRemoved(onCorridorWaypointRemoved);
+        graphPane.setOnCorridorWaypointRemoved(onCorridorWaypointRemoved);
+    }
+
     public void setOnCorridorWaypointMoved(
             BiConsumer<CorridorEditInteractionController.WaypointHandle, Point2i> onCorridorWaypointMoved
     ) {

@@ -67,6 +67,7 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 gc.setLineDashes(null);
                 drawCorridorPath(gc, corridorRenderState.displayPaths().get(corridor.corridorId()));
                 drawCorridorDoors(gc, geometry);
+                drawCorridorSegmentHandles(gc, corridorRenderState.displayPaths().get(corridor.corridorId()), corridor);
                 drawCorridorDoorMarkers(
                         gc,
                         corridor,
@@ -259,11 +260,11 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
     }
 
     @Override
-    protected CorridorEditInteractionController.SegmentInsertHit findCorridorSegmentInsertHitAt(double screenX, double screenY) {
+    protected int corridorSegmentIndexAt(double screenX, double screenY) {
         CorridorSelectionContext context = selectedCorridorContext();
         CorridorDisplayPath displayPath = context == null ? null : corridorRenderState().displayPaths().get(context.corridor().corridorId());
         if (context == null || displayPath == null || displayPath.segments().isEmpty()) {
-            return null;
+            return -1;
         }
         SegmentKey bestSegmentKey = null;
         double bestDistance = Double.POSITIVE_INFINITY;
@@ -278,16 +279,9 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
             }
         }
         if (bestSegmentKey == null) {
-            return null;
+            return -1;
         }
-        int bestSegmentIndex = segmentIndexForKey(context.geometry(), bestSegmentKey);
-        if (bestSegmentIndex < 0) {
-            return null;
-        }
-        return new CorridorEditInteractionController.SegmentInsertHit(
-                context.corridor().corridorId(),
-                insertIndexForSegment(context.corridor().corridorId(), context.geometry(), bestSegmentIndex),
-                worldPointAt(screenX, screenY));
+        return segmentIndexForKey(context.geometry(), bestSegmentKey);
     }
 
     @Override
@@ -330,6 +324,27 @@ public final class DungeonGraphPane extends AbstractDungeonPane {
                 laneOrderBySegment,
                 corridorIdsByDoorMarker(),
                 corridorDisplayPaths(laneOrderBySegment));
+    }
+
+    private void drawCorridorSegmentHandles(GraphicsContext gc, CorridorDisplayPath displayPath, DungeonCorridor corridor) {
+        CorridorEditInteractionController.PressMode pressMode = corridorPressMode();
+        if (!editable
+                || editorTool != DungeonEditorTool.SELECT
+                || !isSelected(corridor)
+                || displayPath == null
+                || pressMode == CorridorEditInteractionController.PressMode.DEFAULT) {
+            return;
+        }
+        gc.setStroke(pressMode == CorridorEditInteractionController.PressMode.REMOVE_WAYPOINT
+                ? Color.rgb(191, 77, 77, 0.9)
+                : Color.rgb(244, 204, 140, 0.9));
+        gc.setLineWidth(7);
+        for (OffsetLine segment : displayPath.segments()) {
+            if (segment.canonicalSegment() == null) {
+                continue;
+            }
+            gc.strokeLine(segment.x1(), segment.y1(), segment.x2(), segment.y2());
+        }
     }
 
     private void drawRoomOutlines(GraphicsContext gc) {

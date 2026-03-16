@@ -91,6 +91,11 @@ abstract class AbstractDungeonPane extends StackPane {
             }
 
             @Override
+            public CorridorEditInteractionController.WaypointHandle findCorridorWaypointRemoveHandleAt(double screenX, double screenY) {
+                return AbstractDungeonPane.this.findCorridorWaypointRemoveHandleAt(screenX, screenY);
+            }
+
+            @Override
             public CorridorEditInteractionController.SegmentInsertHit findCorridorSegmentInsertHitAt(double screenX, double screenY) {
                 return AbstractDungeonPane.this.findCorridorSegmentInsertHitAt(screenX, screenY);
             }
@@ -257,6 +262,10 @@ abstract class AbstractDungeonPane extends StackPane {
         corridorEditController.setOnCorridorWaypointAdded(onCorridorWaypointAdded);
     }
 
+    public final void setOnCorridorWaypointRemoved(Consumer<CorridorEditInteractionController.WaypointHandle> onCorridorWaypointRemoved) {
+        corridorEditController.setOnCorridorWaypointRemoved(onCorridorWaypointRemoved);
+    }
+
     public final void setOnCorridorWaypointMoved(
             BiConsumer<CorridorEditInteractionController.WaypointHandle, Point2i> onCorridorWaypointMoved
     ) {
@@ -409,8 +418,36 @@ abstract class AbstractDungeonPane extends StackPane {
         return null;
     }
 
+    protected int corridorSegmentIndexAt(double screenX, double screenY) {
+        return -1;
+    }
+
+    protected CorridorEditInteractionController.WaypointHandle findCorridorWaypointRemoveHandleAt(double screenX, double screenY) {
+        CorridorSelectionContext context = selectedCorridorContext();
+        if (context == null || context.geometry().segments().size() <= 1 || context.geometry().waypointCells().isEmpty()) {
+            return null;
+        }
+        int segmentIndex = corridorSegmentIndexAt(screenX, screenY);
+        CorridorEditInteractionController.WaypointHandle waypointHandle = findCorridorWaypointHandleAt(screenX, screenY);
+        if (waypointHandle != null) {
+            return waypointHandle;
+        }
+        return waypointHandleForSegmentRemoval(context, screenX, screenY, segmentIndex);
+    }
+
     protected CorridorEditInteractionController.SegmentInsertHit findCorridorSegmentInsertHitAt(double screenX, double screenY) {
-        return null;
+        CorridorSelectionContext context = selectedCorridorContext();
+        if (context == null || context.geometry().segments().isEmpty()) {
+            return null;
+        }
+        int segmentIndex = corridorSegmentIndexAt(screenX, screenY);
+        if (segmentIndex < 0) {
+            return null;
+        }
+        return new CorridorEditInteractionController.SegmentInsertHit(
+                context.corridor().corridorId(),
+                insertIndexForSegment(context.corridor().corridorId(), context.geometry(), segmentIndex),
+                worldPointAt(screenX, screenY));
     }
 
     protected CorridorGeometry corridorGeometryForSelection(DungeonCorridor corridor) {
@@ -489,15 +526,89 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     protected final int insertIndexForSegment(long corridorId, CorridorGeometry geometry, int segmentIndex) {
+        List<Integer> waypointPathIndices = corridorWaypointPathIndices(corridorId, geometry);
         List<Point2i> path = renderData == null ? List.of() : renderData.corridorPath(corridorId);
         if (path.isEmpty() || geometry == null || geometry.waypointCells().isEmpty()) {
             return geometry == null ? 0 : geometry.waypointCells().size();
         }
+        int pathIndexAfterSegment = Math.min(segmentIndex + 1, path.size() - 1);
+        int insertIndex = 0;
+        while (insertIndex < waypointPathIndices.size() && waypointPathIndices.get(insertIndex) <= pathIndexAfterSegment) {
+            insertIndex++;
+        }
+        return insertIndex;
+    }
+
+    protected final CorridorEditInteractionController.WaypointHandle waypointHandleForSegmentRemoval(
+            CorridorSelectionContext context,
+            double screenX,
+            double screenY,
+            int segmentIndex
+    ) {
+        List<Point2i> waypointCells = context == null ? List.of() : context.geometry().waypointCells();
+        if (context == null || segmentIndex < 0 || waypointCells.isEmpty()) {
+            return null;
+        }
+        List<Point2i> path = renderData == null ? List.of() : renderData.corridorPath(context.corridor().corridorId());
+        List<Integer> waypointPathIndices = corridorWaypointPathIndices(context.corridor().corridorId(), context.geometry());
+        if (path.size() < 2 || waypointPathIndices.isEmpty()) {
+            return null;
+        }
+        int segmentStartPathIndex = Math.min(segmentIndex, path.size() - 2);
+        int segmentEndPathIndex = segmentStartPathIndex + 1;
+        Integer previousWaypointIndex = null;
+        Integer nextWaypointIndex = null;
+        for (int index = 0; index < waypointPathIndices.size(); index++) {
+            int waypointPathIndex = waypointPathIndices.get(index);
+            if (waypointPathIndex <= segmentStartPathIndex) {
+                previousWaypointIndex = index;
+            }
+            if (waypointPathIndex >= segmentEndPathIndex) {
+                nextWaypointIndex = index;
+                break;
+            }
+        }
+        int candidateIndex;
+        if (previousWaypointIndex == null) {
+            candidateIndex = nextWaypointIndex == null ? -1 : nextWaypointIndex;
+        } else if (nextWaypointIndex == null) {
+            candidateIndex = previousWaypointIndex;
+        } else {
+            Point2i previousWaypoint = waypointCells.get(previousWaypointIndex);
+            Point2i nextWaypoint = waypointCells.get(nextWaypointIndex);
+            double previousDistance = distanceToRoomCell(screenX, screenY, previousWaypoint);
+            double nextDistance = distanceToRoomCell(screenX, screenY, nextWaypoint);
+            candidateIndex = previousDistance <= nextDistance ? previousWaypointIndex : nextWaypointIndex;
+        }
+        if (candidateIndex < 0) {
+            return null;
+        }
+        return new CorridorEditInteractionController.WaypointHandle(context.corridor().corridorId(), candidateIndex);
+    }
+
+    private List<Integer> corridorWaypointPathIndices(long corridorId, CorridorGeometry geometry) {
+        List<Point2i> path = renderData == null ? List.of() : renderData.corridorPath(corridorId);
+        if (path.isEmpty() || geometry == null || geometry.waypointCells().isEmpty()) {
+            return List.of();
+        }
         List<Integer> waypointPathIndices = new java.util.ArrayList<>();
+        int searchStartIndex = 0;
         for (Point2i waypoint : geometry.waypointCells()) {
-            int bestIndex = 0;
+            int exactIndex = -1;
+            for (int index = searchStartIndex; index < path.size(); index++) {
+                if (path.get(index).equals(waypoint)) {
+                    exactIndex = index;
+                    break;
+                }
+            }
+            if (exactIndex >= 0) {
+                waypointPathIndices.add(exactIndex);
+                searchStartIndex = Math.min(exactIndex + 1, path.size() - 1);
+                continue;
+            }
+            int bestIndex = Math.min(searchStartIndex, path.size() - 1);
             int bestDistance = Integer.MAX_VALUE;
-            for (int index = 0; index < path.size(); index++) {
+            for (int index = searchStartIndex; index < path.size(); index++) {
                 Point2i pathPoint = path.get(index);
                 int distance = Math.abs(pathPoint.x() - waypoint.x()) + Math.abs(pathPoint.y() - waypoint.y());
                 if (distance < bestDistance) {
@@ -506,13 +617,17 @@ abstract class AbstractDungeonPane extends StackPane {
                 }
             }
             waypointPathIndices.add(bestIndex);
+            searchStartIndex = Math.min(bestIndex + 1, path.size() - 1);
         }
-        int pathIndexAfterSegment = Math.min(segmentIndex + 1, path.size() - 1);
-        int insertIndex = 0;
-        while (insertIndex < waypointPathIndices.size() && waypointPathIndices.get(insertIndex) <= pathIndexAfterSegment) {
-            insertIndex++;
-        }
-        return insertIndex;
+        return waypointPathIndices;
+    }
+
+    protected final CorridorEditInteractionController.PressMode corridorPressMode() {
+        return corridorEditController.previewPressMode();
+    }
+
+    protected final boolean updateCorridorPressMode(MouseEvent event) {
+        return corridorEditController.updatePreviewPressMode(event);
     }
 
     protected abstract EditorSurface surface();
@@ -719,6 +834,7 @@ abstract class AbstractDungeonPane extends StackPane {
     private void clearSelectionPreview() {
         selectionStartCell = null;
         selectionEndCell = null;
+        corridorEditController.clearPreviewPressMode();
     }
 
     private void clearPaintPreview() {
@@ -839,14 +955,15 @@ abstract class AbstractDungeonPane extends StackPane {
         if (handlePanPress(event)) {
             return;
         }
+        CorridorEditInteractionController.PressHit corridorPressHit = corridorEditController.hitTest(event);
+        if (corridorEditController.handlePress(corridorPressHit)) {
+            return;
+        }
         PointerContext context = pointerContext(event);
         if (handleRoomToolPress(event, context)) {
             return;
         }
         if (handleCorridorToolPress(event, context)) {
-            return;
-        }
-        if (corridorEditController.handlePress(event)) {
             return;
         }
         if (handleRoomDragPress(event, context)) {
@@ -871,10 +988,16 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private void handleMouseMoved(MouseEvent event) {
+        if (updateCorridorPressMode(event)) {
+            render();
+        }
         wallPathController.handlePointerMove(event.getX(), event.getY());
     }
 
     private void handleMouseDragged(MouseEvent event) {
+        if (updateCorridorPressMode(event)) {
+            render();
+        }
         if (pointerInteraction instanceof PanInteraction) {
             callbacks.onViewportPanned.accept(new Point2D(event.getX(), event.getY()));
             return;
@@ -889,6 +1012,9 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private void handleMouseReleased(MouseEvent event) {
+        if (updateCorridorPressMode(event)) {
+            render();
+        }
         if (pointerInteraction instanceof PanInteraction) {
             pointerInteraction = IdleInteraction.INSTANCE;
             return;
@@ -901,6 +1027,9 @@ abstract class AbstractDungeonPane extends StackPane {
     }
 
     private boolean handlePanPress(MouseEvent event) {
+        if (updateCorridorPressMode(event)) {
+            render();
+        }
         if (event.getButton() == MouseButton.SECONDARY && wallPathController.handleSecondaryPress()) {
             render();
             return true;
