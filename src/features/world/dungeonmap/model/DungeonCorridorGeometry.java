@@ -25,13 +25,6 @@ public final class DungeonCorridorGeometry {
         throw new AssertionError("No instances");
     }
 
-    public static Map<Long, List<Point2i>> corridorPaths(DungeonLayout layout) {
-        return corridorTopology(layout).corridorGeometries().entrySet().stream()
-                .collect(LinkedHashMap::new,
-                        (map, entry) -> map.put(entry.getKey(), flattenSegments(entry.getValue().segments())),
-                        Map::putAll);
-    }
-
     public static CorridorTopology corridorTopology(DungeonLayout layout) {
         Map<Long, DungeonRoom> roomsById = roomsById(layout.rooms());
         Map<Point2i, Long> roomOccupancy = new HashMap<>();
@@ -48,26 +41,9 @@ public final class DungeonCorridorGeometry {
                     .filter(Objects::nonNull)
                     .distinct()
                     .toList();
-            result.put(corridor.corridorId(), corridorGeometry(corridor.corridorId(), corridorRooms, roomOccupancy));
+            result.put(corridor.corridorId(), layoutCorridorGeometry(corridor.corridorId(), corridorRooms, roomOccupancy));
         }
         return buildCorridorTopology(layout, result);
-    }
-
-    public static CorridorGeometry corridorGeometry(
-            Collection<DungeonRoom> occupancyRooms,
-            DungeonRoom from,
-            DungeonRoom to
-    ) {
-        Objects.requireNonNull(occupancyRooms, "occupancyRooms");
-        Objects.requireNonNull(from, "from");
-        Objects.requireNonNull(to, "to");
-        Map<Point2i, Long> roomOccupancy = new HashMap<>();
-        for (DungeonRoom room : occupancyRooms) {
-            for (Point2i cell : Set.of(room.componentAnchor())) {
-                roomOccupancy.put(cell, room.roomId());
-            }
-        }
-        return corridorGeometry(null, List.of(from, to), roomOccupancy);
     }
 
     public static Point2i suggestNewRoomCenter(Collection<DungeonRoom> rooms) {
@@ -183,7 +159,7 @@ public final class DungeonCorridorGeometry {
     }
 
     // Multi-room corridors should grow as one shared group shape instead of degrading into separate room-pair links.
-    private static CorridorGeometry corridorGeometry(
+    private static CorridorGeometry layoutCorridorGeometry(
             Long corridorId,
             List<DungeonRoom> rooms,
             Map<Point2i, Long> roomOccupancy
@@ -287,10 +263,7 @@ public final class DungeonCorridorGeometry {
         boolean hasExistingCorridorShape = !corridorCells.isEmpty();
         ConnectionCandidate bestCorridorJoin = bestCorridorJoinCandidate(room, corridorCells, roomOccupancy, roomExits);
         if (hasExistingCorridorShape) {
-            if (bestCorridorJoin != null) {
-                return bestCorridorJoin;
-            }
-            return bestSharedDoor;
+            return bestCandidate(bestSharedDoor, bestCorridorJoin);
         }
 
         ConnectionCandidate bestFreshPath = bestFreshPathCandidate(room, cellsByRoomId, connectedRoomIds, roomOccupancy, roomExits);
@@ -469,20 +442,6 @@ public final class DungeonCorridorGeometry {
             result.add(new GridSegment(path.get(i - 1), path.get(i)));
         }
         return List.copyOf(result);
-    }
-
-    private static List<Point2i> flattenSegments(List<GridSegment> segments) {
-        if (segments.isEmpty()) {
-            return List.of();
-        }
-        List<Point2i> points = new ArrayList<>();
-        for (GridSegment segment : segments) {
-            if (points.isEmpty() || !points.get(points.size() - 1).equals(segment.from())) {
-                points.add(segment.from());
-            }
-            points.add(segment.to());
-        }
-        return List.copyOf(points);
     }
 
     private static List<Point2i> shortestPath(
